@@ -5,6 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Probability.Distribution
 import Probability.Expectation
 import Probability.Lift
+import Probability.Conditional
 import Probability.Coupling
 import Probability.MultiCoupling
 import Probability.FiberCoupling
@@ -14,6 +15,7 @@ import Probability.UniversalHash
 /-!
 # Probability
 
-Finitely supported distributions, expectation, statistical distance, couplings,
-and universal hashing.  Independent of any system model.
+Finitely supported distributions, expectation, conditional probability,
+statistical distance, couplings, and universal hashing.  Independent of any
+system model.
 -/
