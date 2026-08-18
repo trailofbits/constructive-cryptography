@@ -934,6 +934,28 @@ theorem epsilonRelaxation_parF_left_subset (ε : ℝ≥0∞) (𝓡 𝒯 : Specif
     ⟨T ∥ r, AbstractCryptography.par_mem_par hT hr,
       (edist_parF_left_le (h0 T hT) (h1 T hT) y r).trans hyr⟩
 
+/-- **Definition 5.7, first clause, at `parF`, on the face-bounded part of the
+ball** — the form a consumer can actually discharge.
+
+`parF · T` moves its own splitting with its argument, so beyond sub-probability
+of the partner the right slot needs one splitting `c` that carries *both*
+points compared, and one of them is an arbitrary member of the `ε`-ball rather
+than a law of `𝓡`.  Restricting the ball to its `c`-faced part is the honest
+way to say that, and it demands nothing of the laws it drops.  The unrestricted
+clause is `epsilonRelaxation_parF_right_subset`, one hypothesis away. -/
+theorem epsilonRelaxation_parF_right_subset_of_support {c : Set Uni.{u}} (ε : ℝ≥0∞)
+    (𝓡 𝒯 : Specification Phi.{u})
+    (h0 : ∀ T ∈ 𝒯, ∀ t, 0 ≤ ofPhi T t) (h1 : ∀ T ∈ 𝒯, (ofPhi T).weight ≤ 1)
+    (hT : ∀ T ∈ 𝒯, Disjoint (RandomSystems.support T) c)
+    (h𝓡 : ∀ R ∈ 𝓡, RandomSystems.support R ⊆ c) :
+    {L | L ∈ Relaxation.epsilonRelaxation ε 𝓡 ∧ RandomSystems.support L ⊆ c} ∥ 𝒯 ⊆
+      Relaxation.epsilonRelaxation ε (𝓡 ∥ 𝒯) := by
+  rintro x ⟨y, ⟨hy, hyc⟩, T, hT', rfl⟩
+  obtain ⟨r, hr, hyr⟩ := Relaxation.mem_epsilonRelaxation_iff.mp hy
+  exact Relaxation.mem_epsilonRelaxation_iff.mpr
+    ⟨r ∥ T, AbstractCryptography.par_mem_par hr hT',
+      (edist_parF_right_le (h0 T hT') (h1 T hT') hyc (h𝓡 r hr) (hT T hT')).trans hyr⟩
+
 /-- **Definition 5.7, first clause, at `parF`** — the frame on the RIGHT:
 `[𝓡ᵋ, 𝒯] ⊆ [𝓡, 𝒯]ᵋ`.
 
@@ -942,7 +964,12 @@ sub-probability of the partner the clause needs one splitting `c` that carries
 both points compared — every law of `𝓡` *and* every law of the `ε`-ball around
 it — and misses the partner's face.  That is `edist_parF_right_le`'s price, and
 it cannot be dropped: `parF_absorb` is what a partner inside the splitting
-does instead. -/
+does instead.
+
+The clause over the whole ball is the printed form; the version that asks
+nothing of the laws it drops is
+`epsilonRelaxation_parF_right_subset_of_support`, of which this is the
+corollary at a face-bounded ball. -/
 theorem epsilonRelaxation_parF_right_subset {c : Set Uni.{u}} (ε : ℝ≥0∞)
     (𝓡 𝒯 : Specification Phi.{u})
     (h0 : ∀ T ∈ 𝒯, ∀ t, 0 ≤ ofPhi T t) (h1 : ∀ T ∈ 𝒯, (ofPhi T).weight ≤ 1)
@@ -951,12 +978,9 @@ theorem epsilonRelaxation_parF_right_subset {c : Set Uni.{u}} (ε : ℝ≥0∞)
     (hball : ∀ L ∈ Relaxation.epsilonRelaxation ε 𝓡, RandomSystems.support L ⊆ c) :
     Relaxation.epsilonRelaxation ε 𝓡 ∥ 𝒯 ⊆
       Relaxation.epsilonRelaxation ε (𝓡 ∥ 𝒯) := by
+  refine subset_trans ?_ (epsilonRelaxation_parF_right_subset_of_support ε 𝓡 𝒯 h0 h1 hT h𝓡)
   rintro x ⟨y, hy, T, hT', rfl⟩
-  obtain ⟨r, hr, hyr⟩ := Relaxation.mem_epsilonRelaxation_iff.mp hy
-  exact Relaxation.mem_epsilonRelaxation_iff.mpr
-    ⟨r ∥ T, AbstractCryptography.par_mem_par hr hT',
-      (edist_parF_right_le (h0 T hT') (h1 T hT') (hball y hy) (h𝓡 r hr)
-        (hT T hT')).trans hyr⟩
+  exact AbstractCryptography.par_mem_par ⟨hy, hball y hy⟩ hT'
 
 end Metric
 
