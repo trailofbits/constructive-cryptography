@@ -33,7 +33,9 @@ number): Def 4.9 iidPow / Def 4.10 clonePow (Distribution.lean), Def 6.2
 δ-AUH + Def 7.2 2-universal (UniversalHash.lean), Exercise 4.4
 (StatisticalDistance.lean), Def 5.9 (Algebra/Star.lean, CITATION-ONLY).
 Also: Converter/Cascade.lean is converter SERIAL composition, NOT system
-cascade Def 3.11 (stretch S-02); "free interface" (§5.3.1, a ROLE)
+cascade Def 3.11 — Def 3.11 itself IS in the tree as `System.cascade`
+(Converter/Converter.lean, `⊲ₚ`), PARTIAL-ONLY; see S-02 in the STRETCH
+REGISTER ASSESSMENT (2026-08-18); "free interface" (§5.3.1, a ROLE)
 collides with Algebra/Indexed.lean's exposed-index usage — disambiguate on
 any future use.
 
@@ -3327,19 +3329,22 @@ and part of §4.4, and no matrix in the LEDGER enumerates it.**
 
 # THE STRETCH REGISTER
 
-22 items. `route` = the primary source that touches the same ground under the R8
+23 items (S-08 was assigned at the Chunk-D reading log but dropped from this
+table; row restored 2026-08-18).  Per-item build assessment: see THE STRETCH
+REGISTER ASSESSMENT below. `route` = the primary source that touches the same ground under the R8
 hierarchy (MauRen16 > Jost > LiuMau20 > Lanzenberger); `CR18-ONLY` = none does.
 Size is a build guess, not a priority.
 
 | # | ch / printed p. | content (one line) | route | size |
 |---|---|---|---|---|
 | **S-01** | 2 p.26; 4 p.92 | **bit-guessing problems** as a first-class type: Def 2.9 `Λ^D((S,B)) := 2(Pr(Z=B)−½)`, Def 4.8 `[S;B]`, and the two-way dictionary to distinction problems (Lemma 2.3 / eq. 4.7 `[S_U;U] = ⟨S₀|S₁⟩`; Lemma 2.4 / eq. 4.8) | **CR18-ONLY**. The *distribution-level* twin already exists (`Probability/StatisticalDistance.lean` `avgSuccessProb`, Bayes-error identity); missing is the system-level pair and the dictionary | S |
-| **S-02** | 3 p.63 | **system cascade `s ▷ t`** (Def 3.11) of an `(𝒳,𝒴)`-DDS with a `(𝒴,𝒵)`-DDS, and its converter form `casc[s,t] = s ▷ t` on parallel access | **CR18-ONLY**. `Converter/Cascade.lean` is converter *serial composition*, a different object. Load-bearing in the source (Thm 6.2, Cor 6.4) | S |
-| **S-03** | 3 p.63 | **output combination `s ⋆ t`** (Def 3.12) for an operation `⋆` on `𝒴`, and its converter form `comb^⋆[s,t]` | **CR18-ONLY** | S |
+| **S-02** | 3 p.63 | **system cascade `s ▷ t`** (Def 3.11) of an `(𝒳,𝒴)`-DDS with a `(𝒴,𝒵)`-DDS, and its converter form `casc[s,t] = s ▷ t` on parallel access | **CR18-ONLY — but IN TREE** (register was mis-scoped; corrected 2026-08-18): `System.cascade` = Def 3.11 (`Converter/Converter.lean`, notation `⊲ₚ`) with `cascadeAccess`/`cascadeConverter`/`cascadeViaConverter` (`cascadeViaConverter_eq_cascade`), all already listed under §PARTIAL-ONLY above. `Converter/Cascade.lean` is a *different* object (converter serial composition). Residue = the honest realization theorem (reference repo `CascadeRealization.lean`) + the Φ lift. Load-bearing in the source (Thm 6.2, Cor 6.4) | **XS** (COVERED-PARTIAL) |
+| **S-03** | 3 p.63 | **output combination `s ⋆ t`** (Def 3.12) for an operation `⋆` on `𝒴`, and its converter form `comb^⋆[s,t]` | **CR18-ONLY — but IN TREE** (same correction): `System.combine` = Def 3.12 (`Converter/Converter.lean`, `⋆ₚ[op]`) with `combineConverter`/`combineViaConverter`, already §PARTIAL-ONLY. Residue = realization theorem + Φ lift; do with S-02 as one commit | **XS** (COVERED-PARTIAL) |
 | **S-04** | 4 pp.73, 85–89 | **abstract problems, solvers, performance, and the reduction calculus**: Def 4.1 search problem (with an *instance distribution*), Def 4.2 problem `(Σ_p, (Ω_p,≤), p̄)`, Def 4.3 + eq. (4.1) `τ p̄ ≤ q̄ρ`, the dual eq. (4.3) `p̄ ≤ λ q̄ρ`, Lemmas 4.5/4.6 composition, §4.4.9 generalized (list-indexed) reductions eqs. (4.4)/(4.5), Def 4.4 worst-case problem `𝒫̄(s) := inf_p p̄(s)` | **Lanzenberger Ch. 3** (§3.2/§3.3.1/§3.5) is the un-enumerated primary; recast route = enumerate Lanz Ch. 3 first, then state CR18's frame as its abstraction | L |
 | **S-05** | 3 pp.55–57, 64 | **named random-object layer**: Def 3.1 `𝒴`-source (memoryless / with memory), Ex 3.2 beacon `B_n`, Ex 3.3 `U_n`, **Def 3.15 `(𝒳,𝒴)`-random function / `𝒳`-random permutation as function-valued random variables**, Ex 3.5 `R_{m,n}` / `P_m` | MauRen16 §3.2 has the URF, but only as **APPLICATION rows 14–16 (declared out of scope)**; no primary makes the function-valued-RV presentation a definition | S–M |
 | **S-06** | 3 p.64 | **probabilistic discrete converter (PDC)**, Def 3.17: a random variable over DDCs, with the lifted composition `(α,s) ↦ αs`; "equivalence of converters is defined" (used at CR18 eq. 6.1) | **CR18-ONLY**. AC's `Σ`/`converterMonoidAt` is a monoid of *deterministic* converters; there is no distribution over converters anywhere | M |
 | **S-07** | 3 pp.65–66 | **the channel layer**: a channel as a single-input PDS, `p^C_{Y\|X}`, channel equivalence `C₁ ≡ C₂` and the reading of a conditional distribution as *the equivalence class* of PDS, and the channel cascade `p^{C▷D}_{Z\|X} = Σ_y p^C p^D` | **CR18-ONLY**. `Behaviour.lean` has the general quotient but not the single-round channel nor its composition law | S |
+| **S-08** | 3 §3.7.2 | **discrete distinguisher (DDD)** Def 3.24: an environment with two stop symbols `⊣₀`/`⊣₁`, output = index of the stop symbol, `0` if it never stops | **CR18-ONLY**. AC environments carry one stop and the verdict is a *third* factor of the transcript law (F-7), so the two-stop convention is an **encoding, not a semantics**: one `Equiv` "two stop symbols ≃ one stop × Bool verdict" | XS |
 | **S-09** | 4 pp.87–88 | **the complexity layer** (§4.4.7): `Σ_c := {s \| γ(s) ≤ c}`, the derived problem `p̄'(c) = sup{p̄(s) : s ∈ Σ_c}` and derived reduction `ρ'(c) = sup{γ(ρ(s))}`, with the paper's *explicit refusal* to fix a computational model. **This is the only complexity/asymptotic apparatus in the whole of CR18** (§1.3.3 argues against carrying efficiency in definitions) | **CR18-ONLY**. MR16 row 32's "models 2–4" (`PARTIAL`, gap G9) is the *converter-class* version, a different axis | M |
 | **S-10** | 4 p.91 | **Lemma 4.7**: a distinguisher class closed under complementing the output bit makes `Δ^𝒟` a **pseudo-metric**, and collapses `sup Δ^D` to `sup \|Δ^D\|` — the criterion, on a class, rather than an instance | **CR18-ONLY within the hierarchy**; the class object (`edistD`) is MauRen11 Def 15/16 and is **FENCED** | S |
 | **S-11** | 4 p.93 | **`q`-fold instantiation vs cloning lifted to systems**: `S^q`, `S^{[q]}`, `E^q`, `C^q`, the interchange `C^q S^q = (CS)^q`, and `⟨X⟩` (countably many independent copies) | **CR18-ONLY**. Defs 4.9/4.10 already exist at the *distribution* level (`Distribution.lean:1487,1528`); the system/converter/environment lift and the interchange law do not | M |
@@ -3379,6 +3384,99 @@ the amplification half routes to Lanz Ch. 3) · **S-15** (the *free* interface r
 | S-18 | Jost Def 2.2.9 / JM20 Def 3 — the file exists and is **FENCED** |
 | S-16 | MauRen16 §3.5 row 32 / gap G9 |
 | S-05 | MauRen16 §3.2 (application rows 14–16, currently declared out of scope) |
+
+
+---
+
+# THE STRETCH REGISTER ASSESSMENT (2026-08-18)
+
+Read-only assessment pass (agent) over both repositories; **every "in tree"
+claim below was re-verified by the coordinator against the named declaration
+before it entered this section** (docstring provenance included: `System.cascade`
+carries "CR18 Definition 3.11", `combine` "CR18 Definition 3.12",
+`ParCompatible` quotes Def 5.7, `relax_trans` quotes eq. (5.4)).  Path
+convention: `Specification/`, `Metric/`, `Algebra/` resolve under
+`AbstractCryptography/`; `Multiparty/` under `ConstructiveCryptography/`;
+`System/`, `Converter/` under `RandomSystems/`.
+
+Revised sizes: **XS 4 · S 7 · S–M 5 · M 3 · L 4** (23 rows) — the register's
+build guesses were 7 S/S–M · 11 M · 4 L.  `⚠Bn` = breakage row below.
+
+## Per-item: really missing / route on existing infra
+
+| # | really missing | route (non-breaking) | size | ⚠ |
+|---|---|---|---|---|
+| S-01 | the system-level pair `(S,B)` + dictionary; `avgSuccessProb` + `sSup_avgSuccessProb_eq_half_add_half_statDist` landed (`Probability/StatisticalDistance.lean`); the carrier shape is `PDG`'s with `Bool` for the condition | reserved `System/Advantage.lean`: `BitPDS := Distribution (DDS X Y × Bool)`; `guessAdv` over `trLawFullyDefined`; eq. (4.7) = sup-exchange over the Bayes identity (`=` on the `[Fintype]` slice per F-2, `≤` unconditional); eq. (4.8) from `advFullyDefined_sum_le`. Do NOT model the bit as an output — collides with `toBitSystem`'s monotone-bit convention | S (easier after T5) | B4 |
+| S-02 | realization theorem + Φ lift only (see corrected row) | transplant reference `CascadeRealization.lean` (DDS-level, carrier delta none); `cascadeLaw S T := fTransform (fun p => System.cascade p.1 p.2) (Distribution.prod S T)` + one support lemma in the `faceT` idiom | **XS** | B9 B10 |
+| S-03 | realization theorem + Φ lift only | identical shape: `combineLaw op`; one commit with S-02 | **XS** | B9 B10 |
+| S-04 | genuinely new — nothing in the tree is a "problem"/"performance"; nearest: `gameSpec`, `Constructible` | **F-5 gate first** (visual enumeration of Lanz Ch. 3 §3.2/§3.3.1/§3.5 — a research task, not code); then carrier-free order theory in `AbstractCryptography/Problem.lean`: `Problem` triple, `Reduction` with eq. (4.1) `perf_p ≤ perf_q ∘ τ`, Lemmas 4.5/4.6 = `le_trans`, Def 4.4 = `iInf`; reuse the `Relaxation`/`Constructs` ordering idiom | L (M code + enumeration). **The register's critical path: S-09b, S-12b hang off it** | — |
+| S-05 | only the NAMED objects — `functionEvaluator` (`DiscreteSystem.lean`) already IS Def 3.15's function-valued-RV presentation; `singleQueryEquiv` the single-query reading; URP mass law = `uniform_perm_consistent_mass_eq` (`Probability/Counting.lean`) | `urf`/`urp`/`beacon`/`unif` as `fTransform` pushes of uniform distributions; per F-1 unbounded objects enter as **families of bounded slices** indexed via `filterQueries` | S | B8 B9 |
+| S-06 | named PDC + composition + converter equivalence + a probabilistic Σ; `connectPhi` (`ConnectPhi.lean`) already IS Def 3.17's lifted `(α,s) ↦ αs`; the mixture step is `mem_nonexpandingConverters_of_sum` (`Absorb.lean`) — the Absorb scope note ("deterministic input missing") predates legs (c)/(d) and is superseded | `attachLawAt i EL := fun R => fTransform (fun p => attachEngineFully i p.1 p.2) (prod EL R)`; a **NEW** submonoid `converterMonoidAtProb` + its own nonexpansion instance (containment proved, generator set of `converterMonoidAt` untouched — now pinned, check 5); converter equivalence = equality of induced `Function.End Phi` | S–M | **B2** |
+| S-07 | the name `Channel`, the kernel `X → Distribution Y` + round trip, the cascade law; single-round object + class reading landed (`SingleQuery.lean`, `Behaviour.lean`) | `Channel X Y := {C : PDS X Y // HasDomain C (singleQueryDomain X)}`; kernel via the answer pushforward; kernel = complete invariant of `Behaviour`; cascade law consumes S-02's `cascadeLaw` + `Conditional.mass_eq_sum_condProb_mul_mass` | S, **after S-02** | B9 |
+| S-08 | an encoding, not a semantics (F-7: verdict = third factor) | one `Equiv` "two stop symbols ≃ one stop × Bool verdict" | XS | — |
+| S-09 | **split**: converter half = `Constructible.mono_constructors` (`ConstructorClass.lean`), i.e. "shrink the solver set, the problem gets harder", already stated for constructions; performance half (`p̄'`, `ρ'`) is content-empty without S-04 | cheap half now: `costBounded (γ : Sigma → ℕ∞) c := {s \| γ s ≤ c}` + the monotone chain, γ a parameter (matching the source's explicit refusal to fix a computational model); rest folds into S-04 | S (half) + folded | — |
+| S-10 | only the *criterion* — the conclusion is landed twice (`instance PseudoEMetricSpace Phi` by ⊔-symmetrization; `advFullyDefined_comm_of_weight_eq` = symmetry at equal weight with NO class hypothesis); F-3 records this | fence-clean form if ever funded: `OutputFlipClosed` on **environment sets** + one sup-collapse theorem via `statDist_symm_of_eq_weight`; never over the fenced class objects | S — **PROPOSED CUT 1** | B4 |
+| S-11 | `S^{[q]}` (one sample, q addresses), `C^q`, the interchange; `S^q` in substance = `tuple`/`copy` at disjoint fibers (landed R7″ surface) | `clonePhi q R` via `System.copy` folds; `converterPow q := ∏ attachAt (fiber k) E` inside `converterMonoidAt`; interchange by iterating `attachAt_mul_parF` + `smul_parF`, disjointness by `face_copy_disjoint`, commutation by `parF_copy_comm`. NO unconditional interchange (`parF_absorb` documents off-disjoint; `parF_self` needs weight 1) | S–M | — |
+| S-12 | **split**. ρ^C is `MonotoneCondition.comap` — RECAST-PLANNED, not stretch. S-12a (Def 4.12 q-clonability `KG ≡ G^{[q]∨}`, Def 4.13 RSR `∀g, Rg ≡ G`, Lemma 4.9, Thm 4.10 skeleton): two `gameEquivalent` statements + a `supWinProb_congr_gameEquivalent` chain. S-12b (ψ_q, χ_q, Lemma 4.8): F-5-blocked | S-12a in `RandomSystems/Game/` (gate-free) after S-11; S-12b only after the Lanz Ch. 3 enumeration | S-12a M · S-12b L | — |
+| S-13 | genuinely new AND entirely F-5-blocked (recast bound to Lanz Ch. 3 §3.3, un-enumerated); adjacent assets landed: `expect_mul_sq_le_sq_mul_sq`, `ConcaveOn.le_map_expect`/`ConvexOn.map_expect_le`, `one_sub_sum_le_prod_one_sub`; the `∧`-combination = the landed `MonotoneCondition` lattice meet on a product system — no new lattice | (1) F-5 enumeration; (2) the two-argument `[0,1]` lemma on `Distribution.expect` (carrier-free); (3) Thm 4.12/4.14 over `supWinProb` | L — **PROPOSED CUT 3** (sequencing, not value) | — |
+| S-14 | almost nothing: `Relaxation.ParCompatible` IS Def 5.7, `Constructs.relax_trans` IS eq. (5.4), `relax_par`/`relax_par_right` + `Constructs.epsilonRelaxation_par(_resource)` = eq. (5.3) binary. Whole residue = `epsilonRelaxation_parCompatible` takes `[IsNonexpandingPar Φ]`, **not obtainable at the RS Phi** (spike G6.f) | one Φ-level theorem in `ParFace.lean`'s metric section: `parF`-slot containment of ε-relaxations under a separating splitting + sub-probability, via `edist_parF_right_le`/`edist_parF_left_le`; leave the class **uninstantiated** (now gated, check 5) | **XS** | **B6** |
+| S-15 | the third interface ROLE + a name for `Φ_E`; two-role split landed everywhere (`attachedWithin`, `filteredAt`, `zSub`/`zStar`, `converterMonoidWithin`); §7.2.1's `Φ_E` already IS `star (converterMonoidWithin E)` (eliminator `mem_star_converterMonoidWithin_iff`) | three pairwise-disjoint sets `(iP, iA, iF)`; admissible Σ = `converterMonoidWithin (iF)ᶜ`; role algebra free from `converterMonoidWithin_mono` + `commute_converterMonoidWithin`. Name the role `openInterface`/`environmentInterface` — **never `freeInterface`** (F-4) | S | B7 |
+| S-16 | the reification `αR = π[R, α̃]` only (converter-class choices already parametric via `Constructible (Γ)`; row 32 = recorded modeling CHOICE) | `α̃ := copy k (ofDDS E)` into a disjoint fiber; `π := attachAt (i ∪ fiber k) W` an ordinary `InnerTotal` + `AnswersWithinUniformBudget` engine; one theorem via `attachAt_parF` + `attachAt_mul_parF` + `face_copy_disjoint`; precedent: `exists_attachAt_eq_block` | M — **highest breakage risk** | **B1** |
+| S-17 | the set `T̂^⊥`, Lemma 5.3, Def 5.6/5.7 compatibility; **Lemma 5.2's engine is proved** (`advFullyDefined_toBitLaw_le_supWinProb`, `Winnability.lean`) | `gameRelaxation (T̂ : PDG X Y) : Specification Phi` off the fired set (`winningMass`/`gameTrLaw`); containment `gameRelaxation T̂ ⊆ epsilonRelaxation (ofReal (supWinProb T̂)) {forget T̂}` — **⊆ only, NOT `=`** (the ε-ball is strictly larger; do not define `T̂^⊥` as a ball); Lemma 5.3 = `supWinProb_le_infWinnability` ∘ containment; compatibility descends from `epsilonRelaxation_compatible` + the S-14 Φ-form to the subset. Thm 5.4 (authentication amplification) scoped out as an application rider | S–M — **nearly free NOW** (T2 closed) | B5 |
+| S-18 | mathematically nothing — `Metric/ReductionRelaxation.lean` (fenced) already has the object, composition, three compatibility legs, `relax`-trans/par, and both scalar comparisons (`reductionRelaxation_const_eq_epsilonRelaxation`, `…_singleton_ne_…`) | administrative resolution FIRST: (a) scalar reading = `epsilonRelaxation`, already landed and consumed; (b) fence-clean twin = re-index the budget by environment sets, re-prove the four lemmas. Unfence only at the MR11 reconciliation task | S (a) / M (b) | B3 |
+| S-19 | the family statement eq. (5.6) + coherence; **both filter realization theorems are proven** (`apply_restrictionFn`, `apply_queryLimitFn`, `Converter/Cascade.lean`) — the A8 `PENDING` filter row understates the tree | `ParameterizedConstruction (φ ψ : Z → Sigma) (π : Sigma)` with a single quantified `π`; coherence `ψ r * π * φ r = ψ r * π` collapses the family, via `constructs_congr_protocol` + `approximately_constructs_congr_protocol`. Prereq: Φ-level `fTransform (filterQueries q)` (one line; check-1 row; prove membership in `converterMonoidAt` — the `block Q` generator is the precedent) | S–M | B9 |
+| S-20 | the four construction theorems + the objects; landed: δ-AUH (`IsAlmostUniversalFor`) + collision lemmas, `birthday_bound`/`switching_ratio_le` | each theorem = `Constructs … (epsilonRelaxation ε …)` with the probabilistic leaf handed to the H/counting layer; k-wise-independence half = carrier-free `Probability/` algebra (reference `KWiseIndepPoly.lean` is a statement shape, NOT an import) | L — blocked on S-05 + S-17 + T5 | **B11** |
+| S-21 | the entire IT layer (no entropy/MI/divergence anywhere) = **T6's declared content**; then the four-operation monotonicity argument + Thm 7.3/Cor 7.4 | after T6: one inductive statement over a four-constructor protocol-step type with `I(X';Y'\|Z')` monotone in each; concavity via `ConcaveOn.le_map_expect`, conditioning via `Conditional`'s chain rules | M after T6 / L without — strictly after T6 | — |
+| S-22 | `p_max`/`p_coll`/`H_∞`/Rényi + Lemmas 7.6/7.7 + Thm 7.9; landed: `Is2Universal`, `IsAlmostXorUniversal`, `mass_exists_ne_le_choose_two_mul`, `statDist_eq_one_sub_sum_min` | `pColl X := ∑ a, (X a)^2` + `pMax`; Lemma 7.6 by Cauchy–Schwarz; Lemma 7.7 by `expect_mul_sq_le_sq_mul_sq`; Thm 7.9 = 7.7 + the 2-universal collision bound. **T6-independent** if `H_∞ := −log pMax` (statement-only use) | S–M — first of the IT trio | — |
+| S-23 | `PO_k` as printed is outside Φ (F-1: uncountable sample space); no `PO_k`, no uninstantiability statement anywhere | bounded family `poK k n := urf (Fin n → Bool) (Fin k → Bool)` (after S-05); "accessible to all parties" = a shared query set under R3 (ownership exogenous — no `copy` needed); ROM KA = ordinary `Constructs` + probabilistic leaf; docstring must cite F-1 (family, not the paper's single infinite object). **Thm 7.10: PROPOSED CUT 2** — proof sketch in the source, and `Unconstructible`'s ∀-over-all-instantiations cannot be honestly discharged | S with the cut | B8 B9 |
+
+## Dependency-ordered shortlist
+
+* **Tier 0 — S-size today, no T dependency:** S-02+S-03 (one commit) · S-14 (XS)
+  · S-05 · S-15 · S-09 converter half · S-06 · S-19.
+* **Tier 1 — nearly free after their input:** **S-17 (input = T2, CLOSED — buildable
+  now)** · S-07 (after S-02) · S-01 (after T5) · S-12a (after S-11) · S-22
+  (T6-independent route) · S-21 (after T6).
+* **Tier 2 — stay M/L:** S-11 · S-16 (B1) · S-18b · S-23 · S-04 (F-5) ·
+  S-13 (F-5) · S-20 · S-12b (F-5).
+* **PROPOSED CUTS (pending Marc, recorded not decided):** (1) S-10 entire —
+  conclusion landed twice, the criterion is about a fenced object, no in-tree
+  consumer; (2) S-23's Thm 7.10 — see row; (3) S-13 until the F-5 enumeration —
+  a sequencing cut; funding it from CR18 first would reproduce the R8 defect.
+
+## Breakage risks (assessment rows B1–B11)
+
+| # | items | risk | gate | mitigation |
+|---|---|---|---|---|
+| B1 | S-16 | the reification's natural implementation is a **relay** (REFUTED design family) | check 3 (`relayExcept`/`attachFullyAt`/`botToken`) | `π` = ordinary `InnerTotal` + `AnswersWithinUniformBudget` engine at `attachAt`; never `attachFully`/`connectFully` |
+| B2 | S-06 | widening `converterMonoidAt` — the metric-facing Σ carrying `IsNonexpandingSMul` + all leg-(c)/(d) receipts | **check 5 pin (added 2026-08-18; previously ungated)** | new submonoid `converterMonoidAtProb` + own instance; prove containment |
+| B3 | S-18 | `Metric/ReductionRelaxation.lean` is FENCED | check 2 | scalar reading, or the environment-indexed twin; never import |
+| B4 | S-10, S-01 | natural home = fenced class objects (`Metric/Distinguisher`, `System/DistinguisherClass`) | check 2 | state over environment sets + `PDS.Distinguisher`/`outputOne` (MR16-CORE) |
+| B5 | S-17 | `Multiparty/GameMetric` (FENCED) vs `Multiparty/Basic` (MR16-CORE) — one split file, easy to confuse | check 2 | import `Multiparty/Basic` only |
+| B6 | S-14 | registering `instance : IsNonexpandingPar Phi` — recorded NOT OBTAINABLE (G6.f); would silently unlock `epsilonRelaxation_parCompatible` unsoundly | **check 5 tripwire (added 2026-08-18; previously ungated)** | hypothesised Φ-form over `edist_parF_parF_le`; class stays uninstantiated |
+| B7 | S-15 | F-4 vocabulary collision ("free interface") | none (brief-level) | `openInterface`/`environmentInterface` |
+| B8 | S-05, S-20, S-23 | unbounded ideal objects are outside Φ (F-1/R1); a definition no PDS inhabits | none (F-1 is prose) | families of bounded slices; a first-class unbounded object = carrier-extension **ruling (fork to Marc, only if ever needed)** |
+| B9 | S-02/03/05/07/11/19/23 | new names under `System/`/`Converter/` | check 1 | LEDGER rows in the same commit, or the gate-free homes |
+| B10 | S-02, S-03 | `cascade`/`combine` are §PARTIAL-ONLY: **no metric claims before A6-style migration** | none automatic | the Φ lift is fine as an object; any `Adv⊥` bound over it needs the migration first |
+| B11 | S-20 | CBC-MAC/SoP/switching kits exist only in the read-only reference repo (different carrier) | none | re-derive at Φ, or scope out |
+
+Non-risks verified: reserved 10-line homes exist for S-01/S-12a/S-13/S-17; zero
+`sorry` across all five build trees; `Probability/` items (S-13/S-21/S-22) are
+carrier-free and gate-free.
+
+## Register defects corrected in this pass
+
+1. **S-02/S-03 were mis-scoped** — route cells corrected in place; §PARTIAL-ONLY
+   had listed `cascade`/`combine` all along (the register contradicted the
+   ledger's own classification).  Header note amended likewise.
+2. **S-08 row restored** (was named at the Chunk-D reading log, dropped from the
+   table; count corrected 22 → 23).
+3. **Re-priced from the tree:** S-05, S-06, S-14, S-17, S-19 (per rows above).
+4. **S-09/S-12 recorded as splits** (register rows kept as the reading record;
+   the split is the build plan).
+5. **Two previously ungated risks gated:** `ledgerAudit.sh` check 5 —
+   `IsNonexpandingPar`-at-`Phi` instance tripwire + `converterMonoidAt`
+   definition pin (hash; a legitimate re-ruling updates pin + registry together).
 
 ---
 

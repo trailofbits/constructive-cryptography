@@ -73,3 +73,32 @@ if ! lake env lean RandomSystems.lean >/dev/null 2>&1; then
 fi
 echo "rootAudit: OK (root aggregator elaborates)"
 echo "fenceAudit: OK ($(printf '%s\n' "$fenced" | wc -l | tr -d ' ') modules fenced, $checked MR16-track files clean)"
+# ---------------------------------------------------------------- check 5
+# Registry tripwires (2026-08-18, stretch-assessment B2/B6 — both previously
+# ungated):
+#  (a) `IsNonexpandingPar` must never be INSTANTIATED at the RS carrier `Phi`:
+#      the PRIMITIVE REGISTRY records it as not obtainable (spike G6.f), and an
+#      instance would silently unlock `epsilonRelaxation_parCompatible` with
+#      unsound content.  The `D.Behaviour` instance (Metric/Behaviour.lean) is
+#      legitimate and does not match.  Hypothesis use `[IsNonexpandingPar Φ]`
+#      over a variable carrier is fine.
+#  (b) `converterMonoidAt` is the registry's metric-facing Σ; its generator set
+#      carries `IsNonexpandingSMul ↥converterMonoidAt Phi` and every leg-(c)/(d)
+#      receipt.  Widening it silently changes what the landed receipts mean —
+#      probabilistic converters etc. get a NEW submonoid instead (LEDGER
+#      PRIMITIVE REGISTRY).  Pin = hash of the definition block; a legitimate
+#      re-ruling updates the hash here AND the registry entry in the same commit.
+if grep -rnE "^(noncomputable )?instance[^:]*:[[:space:]]*(RandomSystems\.)?IsNonexpandingPar[[:space:]]+(RandomSystems\.)?Phi" --include="*.lean" RandomSystems/ AbstractCryptography/ ConstructiveCryptography/ Applications/ 2>/dev/null; then
+  echo "registryAudit: FAIL — IsNonexpandingPar instantiated at Phi (registry: not obtainable, spike G6.f)" >&2
+  exit 1
+fi
+pin_expect="dca1e2e8643141c0379a9ee44e3ae2e03566dd0a666ca6665a95cee2d350475e"
+pin_actual=$(awk '/^def converterMonoidAt : Submonoid/{f=1} f{print} f&&/^$/{exit}' RandomSystems/System/AttachEngineFully.lean | shasum -a 256 | awk '{print $1}')
+if [ "$pin_actual" != "$pin_expect" ]; then
+  echo "registryAudit: FAIL — converterMonoidAt definition changed (metric-facing Σ pin)." >&2
+  echo "  It carries the IsNonexpandingSMul instance and the leg-(c)/(d) receipts;" >&2
+  echo "  add a NEW submonoid instead of widening it (LEDGER PRIMITIVE REGISTRY)," >&2
+  echo "  or update the pin + registry entry together if Marc re-ruled." >&2
+  exit 1
+fi
+echo "registryAudit: OK (IsNonexpandingPar uninstantiated at Phi; converterMonoidAt pinned)"
