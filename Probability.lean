@@ -11,7 +11,6 @@ import Probability.MultiCoupling
 import Probability.FiberCoupling
 import Probability.StatisticalDistance
 import Probability.Counting
-import Probability.CountingResidue
 import Probability.UniversalHash
 import Probability.Entropy
 import Probability.ShannonEntropy
@@ -23,8 +22,7 @@ import Probability.DistributionMeasure
 
 Finitely supported distributions, expectation, conditional probability,
 statistical distance, couplings, universal hashing, the counting kernel
-concrete bounds bottom out in (`Counting` plus the staging module
-`CountingResidue`, which merges into it), and the information theory stated on
+concrete bounds bottom out in (`Counting`), and the information theory stated on
 that carrier — min-entropy and the collision calculus, the Shannon layer, and
 Kullback-Leibler divergence with Pinsker's inequality, together with the
 one-way `isProbDist → PMF` transport (`DistributionMeasure`) that lets the

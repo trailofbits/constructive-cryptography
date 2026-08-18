@@ -487,48 +487,15 @@ already in the carrier, and the H-lemmas were simply never revisited.
 *in place of* `hTechnique_ratio`, which is then its `Fintype` instance and needs
 no separate proof.  It is kept here only to respect the T5 lane. -/
 
-/-- **Layer 2 without `[Fintype]`.**  If the real/ideal density ratio is at
-least `1 - ε` on good points then `δ(real, ideal) ≤ Pr_ideal[Bad] + ε`.  Sums
-run over `(ideal - real).support ∪ ideal.support`, so no finiteness of the
-carrier is used. -/
-theorem statDist_le_probBad_add_of_ratio_on_good {A : Type*}
-    (real ideal : Distribution A) (Bad : A → Prop) (eps : ℝ≥0)
-    (h_real_nonneg : real.NonNeg) (h_ideal_nonneg : ideal.NonNeg)
-    (h_weight : real.weight = ideal.weight)
-    (h_ideal_le : ideal.weight ≤ 1)
-    (h_ratio : ∀ a, ¬ Bad a → (1 - eps) * ideal a ≤ real a) :
-    statDist real ideal ≤ probBad ideal Bad + eps := by
-  classical
-  set s : Finset A := (ideal - real).support ∪ ideal.support with hs
-  have hsub : (ideal - real).support ⊆ s := Finset.subset_union_left
-  have hsupp : ideal.support ⊆ s := Finset.subset_union_right
-  rw [statDist_symm_of_eq_weight real ideal h_weight,
-    statDist_eq_sum_of_support_subset ideal real hsub]
-  have hterm : ∀ a ∈ s,
-      max (ideal a - real a) 0 ≤ (if Bad a then ideal a else 0) + eps * ideal a := by
-    intro a _
-    by_cases hbad : Bad a
-    · have h0 := h_ideal_nonneg a
-      have h1 := h_real_nonneg a
-      have h2 : 0 ≤ (eps : ℝ) * ideal a :=
-        mul_nonneg eps.coe_nonneg (h_ideal_nonneg a)
-      simp only [hbad, if_true]
-      exact max_le (by linarith) (by linarith)
-    · simp only [hbad, if_false, zero_add]
-      exact max_le (sub_le_mul_of_one_sub_mul_le (h_ratio a hbad))
-        (mul_nonneg eps.coe_nonneg (h_ideal_nonneg a))
-  calc ∑ a ∈ s, max (ideal a - real a) 0
-      ≤ ∑ a ∈ s, ((if Bad a then ideal a else 0) + (eps : ℝ) * ideal a) :=
-        Finset.sum_le_sum hterm
-    _ = (∑ a ∈ s.filter Bad, ideal a) + (eps : ℝ) * ∑ a ∈ s, ideal a := by
-        rw [Finset.sum_add_distrib, ← Finset.mul_sum, Finset.sum_filter]
-    _ = probBad ideal Bad + (eps : ℝ) * ideal.weight := by
-        rw [probBad, Distribution.mass_eq_sum_of_support_subset ideal hsupp,
-          Distribution.weight_eq_sum_of_support_subset ideal hsupp]
-    _ ≤ probBad ideal Bad + eps := by
-        have : (eps : ℝ) * ideal.weight ≤ (eps : ℝ) * 1 :=
-          mul_le_mul_of_nonneg_left h_ideal_le eps.coe_nonneg
-        linarith
+/-! ### The layer-2 kernel at an infinite carrier
+
+The kernel this file's endpoints consume is
+`Probability.statDist_le_probBad_add_of_ratio_on_good` — `hTechnique_ratio`
+with `[Fintype A]` deleted, since the transcript space `List (X × Option Y)` is
+infinite even for finite alphabets.  It now lives in
+`Probability/StatisticalDistance.lean` beside `probBad` and the `[Fintype]`
+form, which is its instance; the proposed relocation this file used to carry
+has been applied. -/
 
 namespace PDS
 

@@ -25,7 +25,9 @@ Lanzenberger-Maurer (TCC 2020).
 
 * `statDist_self` — `δ(X, X) = 0` (proved)
 * `statDist_symm_of_eq_weight` — `δ(X, Y) = δ(Y, X)` when `|X| = |Y|`
-* `statDist_eq_weight_sub_sum_min` — min form `δ(X, Y) = |X| - ∑ a, min (X a) (Y a)`
+* `statDist_eq_weight_sub_sum_min_of_support_subset` — min form
+  `δ(P, Q) = |P| - ∑_{a ∈ s} min (P a) (Q a)` on any carrier (MaPiRe07 eq. (3));
+  `statDist_eq_weight_sub_sum_min` is its `[Fintype]` instance
 * `statDist_eq_half_sum_abs_of_weight_eq` — half-`L1` form for equal weight
 * `sSup_avgSuccessProb_eq_half_add_half_statDist` — optimal-test identity
   (mathlib decision theory: `1 - bayesRisk` at 0-1 loss and uniform prior)
@@ -224,24 +226,46 @@ forms, `δ(X, Y) = ∑_a max(0, X(a) - Y(a)) = |X| - ∑_a min(X(a), Y(a))`, and
 notes the half-`L1` form `δ(X, Y) = ½ ∑_a |X(a) - Y(a)|` for equal weight.
 `statDist` is the max form; the other two are derived here. -/
 
-/-- **Min form of statistical distance** (LanMau20 Definition 3, second form):
-`δ(X, Y) = |X| - ∑_a min(X(a), Y(a))`.
+/-- **Min form of statistical distance on an arbitrary carrier**
+(LanMau20 Definition 3, second form; **MaPiRe07 equation (3), printed p. 140**,
+used in the proof of their Lemma 5): `δ(P,Q) = |P| − ∑ min(P,Q)`, the sum taken
+over any finite set containing both supports.
 
-The identity is the pointwise lattice identity `max (x - y) 0 = x - min x y`
-summed over the carrier, so it holds for *arbitrary* signed distributions:
-neither `Distribution.NonNeg` nor equal weight is needed.  The asymmetry the paper
-notes for unequal weight is visible here — the right-hand side carries `|X|`,
-not `|Y|`. -/
-theorem statDist_eq_weight_sub_sum_min {A : Type*} [Fintype A] (X Y : Distribution A) :
-    statDist X Y = X.weight - ∑ a : A, min (X a) (Y a) := by
-  simp only [statDist_eq_sum_univ]
-  have key : ∀ a : A, max (X a - Y a) 0 = X a - min (X a) (Y a) := by
+`Distribution` is `A →₀ ℝ`, so finite support is already in the carrier and no
+`Fintype A` is needed; the `[Fintype]` form below is the instance at
+`s = Finset.univ`.  The carriers that force the general form are the genuinely
+infinite ones — transcript spaces `List (X × Option Y)`, system laws
+`Distribution (DDS X Y)`; this is the companion of
+`statDist_eq_sum_of_support_subset` and
+`Distribution.weight_eq_sum_of_support_subset` one level up.
+
+Like the `Fintype` form it needs neither non-negativity nor equal weight: the
+pointwise lattice identity `max (x − y) 0 = x − min x y` is all it uses.  The
+asymmetry the paper notes for unequal weight is visible — the right-hand side
+carries `|P|`, not `|Q|`. -/
+theorem statDist_eq_weight_sub_sum_min_of_support_subset {A : Type*}
+    (P Q : Distribution A) {s : Finset A} (hP : P.support ⊆ s)
+    (hQ : Q.support ⊆ s) :
+    statDist P Q = P.weight - ∑ a ∈ s, min (P a) (Q a) := by
+  haveI : DecidableEq A := Classical.decEq A
+  have hsub : (P - Q).support ⊆ s := fun a ha => by
+    rcases Finset.mem_union.mp (Finsupp.support_sub ha) with h | h
+    · exact hP h
+    · exact hQ h
+  rw [statDist_eq_sum_of_support_subset P Q hsub]
+  have key : ∀ a : A, max (P a - Q a) 0 = P a - min (P a) (Q a) := by
     intro a
-    rcases le_total (X a) (Y a) with h | h
+    rcases le_total (P a) (Q a) with h | h
     · rw [max_eq_right (sub_nonpos.mpr h), min_eq_left h, sub_self]
     · rw [max_eq_left (sub_nonneg.mpr h), min_eq_right h]
   rw [Finset.sum_congr rfl (fun a _ => key a), Finset.sum_sub_distrib,
-    ← Distribution.weight_eq_sum]
+    ← Distribution.weight_eq_sum_of_support_subset P hP]
+
+/-- The `Fintype` instance of the min form: take `s = Finset.univ`. -/
+theorem statDist_eq_weight_sub_sum_min {A : Type*} [Fintype A] (X Y : Distribution A) :
+    statDist X Y = X.weight - ∑ a : A, min (X a) (Y a) :=
+  statDist_eq_weight_sub_sum_min_of_support_subset X Y
+    (fun a _ => Finset.mem_univ a) (fun a _ => Finset.mem_univ a)
 
 /-- Weight-one specialization of the min form (MaPiRe07 equation (3), used in
 the proof of their Lemma 5): `δ(X, Y) = 1 - ∑_a min(X(a), Y(a))`.
@@ -742,6 +766,56 @@ theorem probBad_iUnion_le {A ι : Type*} [Fintype A] [Fintype ι]
   · intro a _ _
     exact hD a
 
+/-- **The H-technique ratio bound on an arbitrary carrier.**  If the
+real/ideal density ratio is at least `1 - eps` on good points then
+`δ(real, ideal) ≤ Pr_ideal[Bad] + eps`.
+
+`Distribution` is `A →₀ ℝ`: the sums run over
+`(ideal - real).support ∪ ideal.support`, so no finiteness of the carrier is
+used, and `hTechnique_ratio` below is the `[Fintype]` instance.  The carrier
+that forces the general form is the transcript space
+`List (X × Option Y)`, which is infinite even for finite alphabets — see
+`RandomSystems/Technique/HCoefficient.lean`, whose endpoints all consume this
+form. -/
+theorem statDist_le_probBad_add_of_ratio_on_good {A : Type*}
+    (real ideal : Distribution A) (Bad : A → Prop) (eps : ℝ≥0)
+    (h_real_nonneg : real.NonNeg) (h_ideal_nonneg : ideal.NonNeg)
+    (h_weight : real.weight = ideal.weight)
+    (h_ideal_le : ideal.weight ≤ 1)
+    (h_ratio : ∀ a, ¬ Bad a → (1 - eps) * ideal a ≤ real a) :
+    statDist real ideal ≤ probBad ideal Bad + eps := by
+  classical
+  set s : Finset A := (ideal - real).support ∪ ideal.support with hs
+  have hsub : (ideal - real).support ⊆ s := Finset.subset_union_left
+  have hsupp : ideal.support ⊆ s := Finset.subset_union_right
+  rw [statDist_symm_of_eq_weight real ideal h_weight,
+    statDist_eq_sum_of_support_subset ideal real hsub]
+  have hterm : ∀ a ∈ s,
+      max (ideal a - real a) 0 ≤ (if Bad a then ideal a else 0) + eps * ideal a := by
+    intro a _
+    by_cases hbad : Bad a
+    · have h0 := h_ideal_nonneg a
+      have h1 := h_real_nonneg a
+      have h2 : 0 ≤ (eps : ℝ) * ideal a :=
+        mul_nonneg eps.coe_nonneg (h_ideal_nonneg a)
+      simp only [hbad, if_true]
+      exact max_le (by linarith) (by linarith)
+    · simp only [hbad, if_false, zero_add]
+      exact max_le (sub_le_mul_of_one_sub_mul_le (h_ratio a hbad))
+        (mul_nonneg eps.coe_nonneg (h_ideal_nonneg a))
+  calc ∑ a ∈ s, max (ideal a - real a) 0
+      ≤ ∑ a ∈ s, ((if Bad a then ideal a else 0) + (eps : ℝ) * ideal a) :=
+        Finset.sum_le_sum hterm
+    _ = (∑ a ∈ s.filter Bad, ideal a) + (eps : ℝ) * ∑ a ∈ s, ideal a := by
+        rw [Finset.sum_add_distrib, ← Finset.mul_sum, Finset.sum_filter]
+    _ = probBad ideal Bad + (eps : ℝ) * ideal.weight := by
+        rw [probBad, Distribution.mass_eq_sum_of_support_subset ideal hsupp,
+          Distribution.weight_eq_sum_of_support_subset ideal hsupp]
+    _ ≤ probBad ideal Bad + eps := by
+        have : (eps : ℝ) * ideal.weight ≤ (eps : ℝ) * 1 :=
+          mul_le_mul_of_nonneg_left h_ideal_le eps.coe_nonneg
+        linarith
+
 /-- Extended H-technique: if the real/ideal density ratio is at least
 `1 - eps` on good points, then statistical distance is bounded by bad mass plus
 `eps`. -/
@@ -754,39 +828,9 @@ theorem hTechnique_ratio {A : Type*} [Fintype A]
     (h_weight : real.weight = ideal.weight)
     (h_ideal_le : ideal.weight ≤ 1)
     (h_ratio : ∀ a, ¬ B a → (1 - eps) * ideal a ≤ real a) :
-    statDist real ideal ≤ probBad ideal B + eps := by
-  classical
-  rw [statDist_symm_of_eq_weight real ideal h_weight]
-  let charge : A → ℝ := fun a => (if B a then ideal a else 0) + eps * ideal a
-  have h_charge_nonneg : ∀ a, 0 ≤ charge a := by
-    intro a
-    refine add_nonneg ?_ (mul_nonneg eps.coe_nonneg (h_ideal_nonneg a))
-    by_cases h : B a <;> simp [h, h_ideal_nonneg a]
-  have h_term_bound : ∀ a, ideal a - real a ≤ charge a := by
-    intro a
-    by_cases h_bad : B a
-    · simp only [charge, h_bad, if_true]
-      have := h_real_nonneg a
-      have := mul_nonneg eps.coe_nonneg (h_ideal_nonneg a)
-      linarith
-    · simp only [charge, h_bad, if_false, zero_add]
-      exact sub_le_mul_of_one_sub_mul_le (h_ratio a h_bad)
-  have h_eps_weight_le : (eps : ℝ) * ideal.weight ≤ eps := by
-    calc (eps : ℝ) * ideal.weight ≤ (eps : ℝ) * 1 :=
-        mul_le_mul_of_nonneg_left h_ideal_le eps.coe_nonneg
-      _ = eps := mul_one _
-  refine le_trans
-    (statDist_le_sum_of_forall_tsub_le ideal real charge h_charge_nonneg h_term_bound) ?_
-  calc ∑ a, charge a
-    _ = (∑ a, if B a then ideal a else 0) + ∑ a, (eps : ℝ) * ideal a := by
-        simp only [charge]
-        rw [Finset.sum_add_distrib]
-    _ = (∑ a, if B a then ideal a else 0) + (eps : ℝ) * ∑ a, ideal a := by
-        rw [← Finset.mul_sum]
-    _ = probBad ideal B + (eps : ℝ) * ideal.weight := by
-        rw [probBad, Distribution.mass_eq_sum, ← Distribution.weight_eq_sum ideal]
-    _ ≤ probBad ideal B + eps :=
-        add_le_add le_rfl h_eps_weight_le
+    statDist real ideal ≤ probBad ideal B + eps :=
+  statDist_le_probBad_add_of_ratio_on_good real ideal B eps h_real_nonneg
+    h_ideal_nonneg h_weight h_ideal_le h_ratio
 
 /-- Expectation-method H-technique bound with a point-dependent error term. -/
 theorem hTechnique_expectation {A : Type*} [Fintype A]

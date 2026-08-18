@@ -55,9 +55,10 @@ incomplete, and the reason is recorded in the obstruction section below.
 
 **Proved.**  MPR07's proof runs on two identities, and both transport.
 
-* **eq. (3)** (printed p. 140) `δ(P,Q) = 1 − ∑ min(P,Q)` — here
-  `Probability.statDist_eq_weight_sub_sum_min_of_support_subset`, the
-  `Fintype`-free form the transcript carrier needs.
+* **eq. (3)** (printed p. 140) `δ(P,Q) = 1 − ∑ min(P,Q)` — the `Fintype`-free
+  form the transcript carrier needs,
+  `Probability.statDist_eq_weight_sub_sum_min_of_support_subset`, landed in
+  `Probability/StatisticalDistance.lean` beside its `[Fintype]` instance.
 * **eq. (4)** (printed p. 141) `p^Ŝ_{YⁱAᵢ|Xⁱ}(yⁱ,0,xⁱ) = m = min(p^S,p^T)` — here
   in three parts: `PDG.winningMass_eq_statDist_iff_notWonLaw_eq_min` shows the
   minimum is not one choice among many but the **only** not-won law a
@@ -82,18 +83,33 @@ From them:
 * `PDS.exists_gamesFor_notWonLaw_eq_min_of_equivalent` — the equivalent corner,
   where the whole of Lemma 5 does hold uniformly, with Definition 2.20's
   never-won pole as the condition.
+* `PDS.winning_probability_attainment_theorem` — **footnote 16 at the
+  supremum**, with the pair *produced* rather than assumed: on Lanzenberger
+  Theorem 2.31's attained representatives the atom-level meet `S′ ⊓ T′` carries
+  the whole not-won mass, so `Adv⊥(S,T) = ν(Ŝ) = ν(T̂)` outright.  Its witness is
+  two-valued, hence won at the empty history and **not** per-`D` tight — the
+  theorem's docstring proves why no two-valued condition can be.
 
 **Not proved: the quantifier order.**  Lemma 5's content is
-`∀ S,T ∃ Ŝ,T̂ ∀ D` — *one* pair of games serving every distinguisher — and the
-games built above depend on `(e, n)`.  The step does not transport, and the
-reason is a carrier fact rather than a missing lemma:
-`PDG.mass_notWon_add_mass_notWon_le_notWonMass` states the obstacle, and the
-obstruction section at the end of this file explains it.  A tight pair for the
-uniform statement must be carried by a **different presentation** of `S` — one
-Definition 2.17-equivalent to it but not equal — and no construction of one is
-landed here.
+`∀ S,T ∃ Ŝ,T̂ ∀ D ∀ k` — *one* pair of games serving every distinguisher — and
+the games built above depend on `(e, n)`.  What blocks the uniform statement is
+**a fixed presentation**, not the carrier: with the atoms of `S` themselves, two
+environments sharing a prefix draw their surviving mass from the same branch
+point (`PDG.mass_notWon_add_mass_notWon_le_notWonMass`), while equation (4)
+prescribes each branch's surviving mass independently.  It is dissolved by a
+Definition-2.17-equivalent **re-decomposition** of `S`, which Lanzenberger
+licenses on the page (printed p. 23 fn. 8: a DDS defined for first inputs
+`{x₁,…,x_q}` "can be represented equivalently as a tuple `(s_{x₁},…,s_{x_q})`";
+printed p. 25, in the proof of Theorem 2.37: "an *arbitrary* joint distribution
+of such PDS … defines a (unique) PDS") and for which AC has the machinery landed
+(`System.DDS.glue`, `PDS.exists_finiteClassJointWitness_of_common_side_weights`
+= Lemma 2.33, `PDS.successorTransform`/`PDS.prependTransform`).  The route is
+MPR07 p. 141's own alive-conditional recursion
+`p^Ŝ_{Y_i A_i | Xⁱ Yⁱ⁻¹ Aⁱ⁻¹}(y_i, 0, …) = m_{xⁱ,yⁱ} / m_{xⁱ⁻¹,yⁱ⁻¹}`
+(footnote 17: `m_{x⁰,y⁰} = 1`) run by the landed Theorem-2.31 induction with
+`min` in place of the coupling.
 
-`PDG.notWonMass_eq_zero_of_condEquiv_of_notWonLaw_eq_min` records the other
+`PDG.notWonMass_eq_zero_of_condEquiv` records the other
 half of the charter's correction: the relation MPR07 Lemma 5 completes is
 **Lemma 4**'s restricted equivalence, not Maurer13b Definition 13's conditional
 equivalence.
@@ -113,43 +129,6 @@ equivalence.
   the game), so every citation carries paper *and* printed page.
 -/
 
-namespace Probability
-
-/-! ## MPR07 equation (3) on an infinite carrier
-
-UPSTREAM-CANDIDATE for `Probability/StatisticalDistance.lean`, beside
-`statDist_eq_weight_sub_sum_min`, whose `[Fintype A]` the transcript space
-`List (X × Option Y)` does not have. -/
-
-/-- **MPR07 equation (3)** (printed p. 140), in the tree's `Fintype`-free
-idiom: `δ(P,Q) = |P| − ∑ min(P,Q)`, the sum taken over any finite set
-containing both supports.
-
-`Probability.statDist_eq_weight_sub_sum_min` is the same identity over
-`Finset.univ`; the carriers this file works on — transcript lists, system laws
-— are genuinely infinite, and the companion pattern is
-`statDist_eq_sum_of_support_subset`.  Like the `Fintype` version it needs
-neither non-negativity nor equal weight: the pointwise lattice identity
-`max (x − y) 0 = x − min x y` is all it uses. -/
-theorem statDist_eq_weight_sub_sum_min_of_support_subset {A : Type*}
-    (P Q : Distribution A) {s : Finset A} (hP : P.support ⊆ s)
-    (hQ : Q.support ⊆ s) :
-    statDist P Q = P.weight - ∑ a ∈ s, min (P a) (Q a) := by
-  haveI : DecidableEq A := Classical.decEq A
-  have hsub : (P - Q).support ⊆ s := fun a ha => by
-    rcases Finset.mem_union.mp (Finsupp.support_sub ha) with h | h
-    · exact hP h
-    · exact hQ h
-  rw [statDist_eq_sum_of_support_subset P Q hsub]
-  have key : ∀ a : A, max (P a - Q a) 0 = P a - min (P a) (Q a) := by
-    intro a
-    rcases le_total (P a) (Q a) with h | h
-    · rw [max_eq_right (sub_nonpos.mpr h), min_eq_left h, sub_self]
-    · rw [max_eq_left (sub_nonneg.mpr h), min_eq_right h]
-  rw [Finset.sum_congr rfl (fun a _ => key a), Finset.sum_sub_distrib,
-    ← Distribution.weight_eq_sum_of_support_subset P hP]
-
-end Probability
 
 namespace RandomSystems
 
@@ -651,11 +630,120 @@ theorem exists_gamesFor_notWonLaw_eq_min_of_equivalent {S T : PDS X Y}
     · rw [notWonLaw_adjoin_bot, notWonLaw_adjoin_bot, heq e n]
     · rw [notWonLaw_adjoin_bot, heq e n, min_self]
 
+/-! ## MPR07 footnote 16 at the supremum
+
+Footnote 16 (printed p. 140) reads: "This also implies, for example,
+`Δ_k(S,T) = ν_k(Ŝ)` and `Δ_k^NA(S,T) = ν_k^NA(Ŝ)`."  At the *supremum* — where
+`Adv⊥` lives, Ruling R4 — that consequence can be produced outright rather than
+assumed, because Lanzenberger **Theorem 2.31**'s attainment half supplies
+representatives whose own atom laws are exactly `Adv⊥(S,T)` apart
+(`PDS.exists_equivalent_statDist_eq_advFullyDefined_of_commonDomain_bounded`),
+and at *those* representatives the atom-level minimum `S′ ⊓ T′` — the diagonal
+of `Probability.optimalJoint` — already carries the whole not-won mass.
+
+The coupling kernel is the right engine **there, and only there**: at an
+arbitrary presentation the atom-level distance over-counts against the
+transcript distance, which is why the per-interaction statements above run on
+equation (3)'s min form and the atomwise split `PDS.notWonPart` instead. -/
+
+/-- **MPR07 Lemma 5 footnote 16** (printed p. 140), at the supremum: for any two
+honest systems of equal weight on a common `q`-bounded domain there exist a
+game `Ŝ` for a representative of `S` and a game `T̂` for a representative of `T`
+which are restricted equivalent at **every** environment and interaction length
+(their not-won laws are equal) and whose winning probabilities are the distance:
+
+  `Adv⊥(S,T) = ν(Ŝ) = ν(T̂)`.
+
+So the `fundamental_lemma_of_game_playing` bound is *attained*: a gap left by an
+application is a gap in the chosen condition, not in the technique.
+
+**This is not Lemma 5.**  Lemma 5(iv) asks for `δ_k^D(S,T) = ν_k^D(Ŝ)` at every
+distinguisher *separately*, and the witness built here provably fails that.  Its
+condition is two-valued — Lanzenberger Definition 2.20's `⊤` on the discarded
+mass — so `ν` is already achieved at `n = 0`, where the witness is **won at the
+empty history**: outside MPR07 p. 138's "this bit … is initially set to 0"
+reading and outside the `hnil` clause the `ω`/winnability endpoints carry.
+Concretely, at `n = 0` both transcript laws are the point mass at `[]` with the
+systems' (equal) weights, so `δ_0^D(S,T) = 0` while `ν_0^D(Ŝ) = Adv⊥(S,T)`;
+per-`D` tightness would force `Adv⊥(S,T) = 0`.  More generally a condition that
+never fires *during* the interaction has constant not-won mass, while equation
+(4)'s is `|S| − δ_k^D`.
+
+The hypothesis bundle is Theorem 2.31's own (`[Fintype X]`, honesty, one named
+common domain, a query bound) plus **equal weight**, which is not decoration:
+without it the `T̂` side reads `ν(T̂) = δ(S′,T′) + (|T′| − |S′|)`.  MPR07 has
+equal weight standing — its objects are probability systems. -/
+theorem winning_probability_attainment_theorem [Fintype X] {S T : PDS X Y}
+    {D : Set (List X)} {q : ℕ} (hS : S.NonNeg) (hT : T.NonNeg)
+    (hw : S.weight = T.weight) (hb : HaveCommonDomainAndBounded S T D q) :
+    ∃ (S' T' : PDS X Y) (G : GamesFor S') (H : GamesFor T'),
+      equivalent S S' ∧ equivalent T T' ∧ G.1.NonNeg ∧ H.1.NonNeg ∧
+      PDG.forget G.1 = S' ∧ PDG.forget H.1 = T' ∧
+      (∀ (e : System.DDE.Total Y X) (n : ℕ),
+        PDG.notWonLaw e n G.1 = PDG.notWonLaw e n H.1) ∧
+      advFullyDefined S T = ν[G.1] ∧ advFullyDefined S T = ν[H.1] := by
+  classical
+  obtain ⟨S', T', hS'nn, hT'nn, hSS', hTT', hwS, hwT, hatt⟩ :=
+    exists_equivalent_statDist_eq_advFullyDefined_of_commonDomain_bounded hS hT hb
+  have hww : S'.weight = T'.weight := by rw [hwS, hwT, hw]
+  have hsupp : (S' ⊓ T').support ⊆ S'.support ∪ T'.support := by
+    intro a ha
+    rw [Finsupp.mem_support_iff, Finsupp.inf_apply] at ha
+    by_contra hc
+    rw [Finset.mem_union, Finsupp.mem_support_iff, Finsupp.mem_support_iff,
+      not_or, not_not, not_not] at hc
+    rw [hc.1, hc.2, min_self] at ha
+    exact ha rfl
+  have hRw : (S' ⊓ T').weight = S'.weight - statDist S' T' := by
+    rw [Distribution.weight_eq_sum_of_support_subset _ hsupp,
+      Probability.statDist_eq_weight_sub_sum_min_of_support_subset S' T'
+        Finset.subset_union_left Finset.subset_union_right]
+    simp [Finsupp.inf_apply]
+  have hRnn : (S' ⊓ T').NonNeg := fun a => by
+    rw [Finsupp.inf_apply]; exact le_min (hS'nn a) (hT'nn a)
+  obtain ⟨G, hGnn, hGf, hGlaw⟩ :=
+    exists_gamesFor_notWonLaw_eq_trLawFullyDefined (S := S') (R := S' ⊓ T') hRnn
+      (fun a => by rw [Finsupp.sub_apply, Finsupp.inf_apply, sub_nonneg]
+                   exact min_le_left _ _)
+  obtain ⟨H, hHnn, hHf, hHlaw⟩ :=
+    exists_gamesFor_notWonLaw_eq_trLawFullyDefined (S := T') (R := S' ⊓ T') hRnn
+      (fun a => by rw [Finsupp.sub_apply, Finsupp.inf_apply, sub_nonneg]
+                   exact min_le_right _ _)
+  have hconst : ∀ {U : PDS X Y} (K : GamesFor U), PDG.forget K.1 = U →
+      (∀ (e : System.DDE.Total Y X) (n : ℕ),
+        PDG.notWonLaw e n K.1 = trLawFullyDefined e n (S' ⊓ T')) →
+      U.weight = S'.weight →
+      ∀ (e : System.DDE.Total Y X) (n : ℕ),
+        PDG.winningMass e n K.1 = statDist S' T' := by
+    intro U K hKf hKlaw hUw e n
+    have h1 : PDG.notWonMass e n K.1 = (S' ⊓ T').weight := by
+      rw [← PDG.weight_notWonLaw, hKlaw e n, weight_trLawFullyDefined]
+    have h2 : K.1.weight = U.weight := by rw [← PDG.weight_forget, hKf]
+    have h3 := PDG.winningMass_add_notWonMass e n K.1
+    rw [h1, h2, hUw] at h3
+    linarith [hRw]
+  have hwinG := hconst G hGf hGlaw rfl
+  have hwinH := hconst H hHf hHlaw hww.symm
+  have hsup : ∀ {U : PDS X Y} (K : GamesFor U), K.1.NonNeg →
+      (∀ (e : System.DDE.Total Y X) (n : ℕ),
+        PDG.winningMass e n K.1 = statDist S' T') →
+      PDG.supWinProb K.1 = statDist S' T' := by
+    intro U K hKnn hK
+    refine le_antisymm (PDG.supWinProb_le_of_forall fun e n => le_of_eq (hK e n)) ?_
+    have := PDG.winningMass_le_supWinProb hKnn
+      (System.DDE.Total.playQueries ([] : List X)) 0
+    rwa [hK] at this
+  refine ⟨S', T', G, H, hSS', hTT', hGnn, hHnn, hGf, hHf, fun e n => ?_, ?_, ?_⟩
+  · rw [hGlaw e n, hHlaw e n]
+  · rw [hsup G hGnn hwinG, hatt]
+  · rw [hsup H hHnn hwinH, hatt]
+
+
 end PDS
 
 namespace PDG
 
-/-! ## The obstruction: why the `∀ D` quantifier does not transport
+/-! ## The obstruction, and what it does and does not bind
 
 MPR07's `Ŝ` is a *random system* — a family of conditional distributions
 `p^Ŝ_{YⁱAᵢ|Xⁱ}` — and equation (4) fixes that family one query sequence at a
@@ -663,7 +751,7 @@ time.  A game here is Lanzenberger Definition 2.22's law over pairs `(s, A)`,
 so a single realization commits, before the interaction starts, to an answer at
 *every* input history and to a condition that fires at *every* input history.
 Two environments that share a prefix and then diverge are two branches of one
-commitment, and that is a constraint MPR07's presentation does not have.
+commitment.
 
 `mass_notWon_add_mass_notWon_le_notWonMass` is that constraint.  Read it with
 `P₁`/`P₂` two disjoint classes of realizations and `e₁`, `e₂` two environments
@@ -671,10 +759,16 @@ agreeing up to move `m`: the masses that survive down the two branches are
 drawn from the *same* mass that survived to the branch point.  MPR07 equation
 (4) prescribes the surviving mass on each branch independently — it is
 `min(p^S, p^T)` computed on that branch's own transcript law — and the two
-prescriptions can exceed what the branch point has to give.  Closing Lemma 5 on
-this carrier therefore needs a game whose underlying law is a *different*
-presentation of `S` (Definition 2.17-equivalent, not equal), and constructing
-one in general is open here.
+prescriptions can exceed what the branch point has to give.
+
+**What that binds is a fixed presentation, not the carrier.**  The bite comes
+from atoms that answer a query the same way wherever it occurs; once `S` may be
+re-decomposed — which Lanzenberger licenses, printed p. 23 fn. 8 and the
+Theorem-2.37 proof on p. 25 — the surviving realizations may answer `x` one way
+as the second query and another way as the third, and the inequality is
+satisfied.  So the lemma is a tool for proving "*this* presentation cannot",
+which is what it does in the worked example, and not a barrier to Lemma 5.  The
+uniform statement is a construction (module docstring), not an open problem.
 
 This is also why the completeness statement is about MPR07 Lemma 4's
 restricted equivalence and not about Maurer13b Definition 13's conditional
@@ -685,31 +779,36 @@ the two agree only when one law dominates the other. -/
 /-- **Why the completed relation is Lemma 4's and not Definition 13's.**
 Maurer13b **Definition 13**'s conditional equivalence (`PDG.CondEquiv`) makes
 the not-won law a *scalar multiple of `T`'s whole transcript law*, while MPR07
-equation (4) makes it the *pointwise minimum* of the two transcript laws.  The
-two can agree only where `T`'s law is dominated: at a transcript that `T`
-produces and `S` does not, the minimum is `0`, so conditional equivalence
-forces the not-won mass to vanish outright — the game is already won with
-probability one and `ν` returns the trivial bound `|G|`.
+equation (4) makes it the *pointwise minimum* of the two transcript laws.  Where
+`T` puts transcript mass that `S` does not, the two cannot be reconciled: the
+minimum is `0` there, and conditional equivalence propagates that zero to the
+whole not-won mass — the game is already won with probability one at that query
+list, and `ν` returns the trivial bound `|G|`.
+
+No tightness hypothesis is needed for this: honesty alone forces the not-won law
+below `PDG.forget G`'s transcript law
+(`notWonLaw_le_trLawFullyDefined_forget`), so the conclusion holds for **every**
+game for `S`, not only for the ones equation (4) would pick.  Concretely, for
+`S = ½δ_a + ½δ_b` and `T = ½δ_a + ½δ_c` at one query the distance is `½` while
+every `CondEquiv` game for `S` against `T` has `ν = |G|`.
 
 MPR07 Lemma 5 is therefore the converse of **Lemma 4** (restricted
 equivalence), which is what the file proves; it is not a completeness statement
 for Definition 13. -/
-theorem notWonMass_eq_zero_of_condEquiv_of_notWonLaw_eq_min {G : PDG X Y}
+theorem notWonMass_eq_zero_of_condEquiv {G : PDG X Y} (hG : G.NonNeg)
     {T : PDS X Y} (hCE : CondEquiv G T) (l : List X)
     {t : List (X × Option Y)}
-    (hmin : notWonLaw (System.DDE.Total.playQueries l) l.length G t
-      = min (PDS.trLawFullyDefined (System.DDE.Total.playQueries l) l.length
-              (forget G) t)
-          (PDS.trLawFullyDefined (System.DDE.Total.playQueries l) l.length T t))
     (hzero : PDS.trLawFullyDefined (System.DDE.Total.playQueries l) l.length
       (forget G) t = 0)
     (hpos : 0 < PDS.trLawFullyDefined (System.DDE.Total.playQueries l) l.length
       T t) :
     notWonMass (System.DDE.Total.playQueries l) l.length G = 0 := by
+  have h0 : notWonLaw (System.DDE.Total.playQueries l) l.length G t = 0 :=
+    le_antisymm (hzero ▸ notWonLaw_le_trLawFullyDefined_forget hG _ _ t)
+      (nonNeg_notWonLaw hG _ _ t)
   have hkey := condEquiv_apply hCE l t
-  rw [hmin, hzero, min_eq_left (le_of_lt hpos), mul_zero] at hkey
+  rw [h0, mul_zero] at hkey
   exact (mul_eq_zero.mp hkey.symm).resolve_right (ne_of_gt hpos)
-
 
 /-- **The branch constraint.**  Two disjoint classes of realizations, followed
 down two environments that agree up to move `m`, cannot between them keep more
