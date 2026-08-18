@@ -2697,12 +2697,27 @@ gates, adversarial audit before deltas apply):
      quotient; MaPiRe07.pdf p. 140, visual).
   T5 H layer-3: the η·σ factorization + the environment-uniform
      corollary; then the counting layer for applications.
+  T6 (Marc 2026-08-18: integrate even without consumers): the reference
+     repository's remaining probability material — the information-theory
+     layer (Divergence.lean, DistExpect.lean: divergences, entropy,
+     expectation extras) and the counting residue listed at the T4.10
+     closure — through the established toPMF bridge on the honest
+     subcarrier; statements restated on Distribution.
   SKILL (SEQUENCED LAST — after T1-T5 land, so it cites real endpoint
      names; Marc 2026-08-18: premature before the techniques exist): the
      abstract-crypto proving skill — METHOD from random-systems-proofs
      (seven stages + routing), contents re-targeted, plus per-technique
      ADMISSIBILITY CONDITIONS.  Drafted by an agent, applied by the
      coordinator, only once the technique layer is in the tree.
+
+R10 REFINEMENT (Marc 2026-08-18): a monotone condition is DEFINED as the
+thesis writes it — a monotone predicate (the subtype {A : List X → Bool //
+monotone in the prefix order}); the upper-set correspondence is a LEMMA,
+not the definition.  The GAME is the linking: the pair carrier, with
+"conditions on S" = the fiber of the forgetful projection over S's
+behaviour (membership = the forgetting law), and adjoin = the fiber's
+constructor.  Obligation 1 lives in the MC subtype, obligation 2 in the
+fiber membership — no ad-hoc structure fields.
 
 DRIFT TRIPWIRES for every T-brief: the R10 vocabulary rules (LEDGER +
 PHI-SPEC); games are PAIRS (bit view derived); conditions are per-atom
