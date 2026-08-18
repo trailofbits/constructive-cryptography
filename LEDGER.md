@@ -1148,7 +1148,15 @@ TRANSPLANT RULES (from the audit's nine pin-contradictions):
     should be sup; Thm 2.29 min over pairs should be max.  State the
     CORRECTED forms; cite the erratum in the docstring.
 
-SCOPE (Marc, 2026-08-18): PURE RANDOM-SYSTEMS MATERIAL ONLY until further
+SCOPE AMENDMENT (Marc, 2026-08-18b): THE TECHNIQUE PROGRAM IS OPENED —
+game winnability/blinders (Lanz Ch.2 L4's technique half), conditional
+equivalence (Maurer02/Mau13), MBO + MPR07's optimal failure condition,
+the Patarin H-coefficient technique — integrated as MODELING (first-class
+objects) + PROOF TECHNIQUE (bound theorems against Adv⊥/classDistance +
+application kits).  L5's amplification APPLICATION theorems stay deferred.
+Survey matrix first (from disk + visual sources), then legs.
+
+SCOPE (original, 2026-08-18): PURE RANDOM-SYSTEMS MATERIAL ONLY until further
 ruling — L4 (games, rows 2.20-2.25/2.35-2.37) and L5 (amplification, §2.5)
 are DEFERRED; active queue: L2b (Thms 2.29/2.30, errata-corrected max
 forms), row 2.19 (#72 Behaviour quotient), U1 (single-query tuple reading),
