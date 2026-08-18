@@ -93,8 +93,9 @@ system-side history (CR18 Definition 3.3).  The condition is therefore
 evaluated at `answeredQueries t = keptPrefix s (t↓ₓ)`
 (`System.DDE.Total.answeredQueries_transcript`) — the input history the system
 actually processed, which is the thesis's `t'` whenever no query is refused.
-`keptPrefix` is itself prefix-monotone (`MonotoneCondition.prefixMonotoneMap_keptPrefix`), so this is a
-`comap` of the condition and not an ad-hoc evaluation rule.  The quarry makes
+`keptPrefix` is itself prefix-monotone
+(`MonotoneCondition.prefixMonotoneMap_keptPrefix`), so this is a `comap` of
+the condition and not an ad-hoc evaluation rule.  The quarry makes
 the same reading (`Q:RandomSystems/GameWinnability.lean:31`).
 -/
 
@@ -666,7 +667,153 @@ theorem toBitLaw_ofBitLaw {T : PDS X (Y × Bool)}
     (Distribution.fTransform_id T)
   exact fun t ht => System.toBitSystem_ofBitSystem (hT t ht)
 
+/-! ## Remark 2.24: adjoining a condition to a system -/
+
+/-- Dropping the condition: the system law underlying a game.  This is the
+forgetful map whose sections `adjoin` builds. -/
+def forget (G : PDG X Y) : PDS X Y :=
+  Distribution.fTransform Prod.fst G
+
+@[simp] theorem weight_forget (G : PDG X Y) : (forget G).weight = G.weight :=
+  Distribution.weight_fTransform _ G
+
+theorem nonNeg_forget {G : PDG X Y} (hG : G.NonNeg) : (forget G).NonNeg :=
+  hG.fTransform _
+
+/-- Forgetting the condition of the pushforward `s ↦ (s, A s)` returns the
+system law on the nose — the computation behind the forgetting law. -/
+theorem forget_pair_fTransform (S : PDS X Y)
+    (A : System.DDS X Y → System.MonotoneCondition X) :
+    forget (Distribution.fTransform (fun s => (s, A s)) S) = S := by
+  rw [forget, Distribution.fTransform_fTransform]
+  exact Distribution.fTransform_id S
+
 end PDG
+
+namespace PDS
+
+/-- Lanzenberger **Definition 2.20** attaches a condition to a system — "a
+monotone condition (or MC) **for** an `(𝒳,𝒴)`-DDS `s`" — and **Remark 2.24**
+does it at the law level: "An MC `A`, specified by distributions
+`p^A_{Aᵢ|XⁱYⁱAᵢ₋₁}`, can be *adjoined* to a random system, i.e., given
+distributions `p^S_{Yᵢ|XⁱYⁱ⁻¹}` it induces distributions
+`p^{S^A}_{YᵢAᵢ|XⁱYⁱ⁻¹,Aᵢ₋₁}`."
+
+`GamesFor S` is the type of games for `S`: those whose underlying behaviour is
+`S`.  Membership *is* the forgetting law — dropping the condition returns `S`
+— and it is stated against the equivalence class (Lanzenberger Definition
+2.17, `PDS.equivalent`), not against a representative, so which presentation a
+construction happens to produce is the user's discharge obligation and not a
+modeling wrinkle.  Definition 2.20's other obligation, monotonicity, lives in
+`MonotoneCondition` itself.  There are therefore no proof fields anywhere in
+this development: the two obligations are the two subtypes. -/
+def GamesFor (S : PDS X Y) : Type (max u v) :=
+  {G : PDG X Y // equivalent (PDG.forget G) S}
+
+namespace GamesFor
+
+/-- The forgetting law, as carried by membership. -/
+theorem equivalent_forget {S : PDS X Y} (G : GamesFor S) :
+    equivalent (PDG.forget G.1) S :=
+  G.2
+
+/-- The forgetting law at the quotient: a game for `S` forgets to `S`'s
+behaviour (Lanzenberger Notation 2.19). -/
+theorem toBehaviour_forget {S : PDS X Y} (G : GamesFor S) :
+    toBehaviour (PDG.forget G.1) = toBehaviour S :=
+  toBehaviour_eq_iff.mpr G.2
+
+/-- A game for `S` carries `S`'s weight — the first consequence of the
+forgetting law, and the hypothesis every symmetry statement about `Adv⊥`
+needs. -/
+theorem weight_eq {S : PDS X Y} (G : GamesFor S) : G.1.weight = S.weight := by
+  rw [← PDG.weight_forget]
+  exact weight_eq_of_equivalent G.2
+
+end GamesFor
+
+/-- **Remark 2.24's constructor**: adjoining to `S` the condition `A s` chosen
+per deterministic atom `s`.  The result is a game *for* `S`; the joint law is
+the pushforward of `S` along `s ↦ (s, A s)`, so the condition is correlated
+with the system exactly as `A`'s dependence on `s` prescribes — which is what
+Remark 2.24's conditioning on `XⁱYⁱ` amounts to on this carrier.
+
+The two obligations are discharged by construction: monotonicity because `A`
+lands in `MonotoneCondition`, and the forgetting law because the second
+component of the subtype is proved here, on the nose rather than up to
+equivalence. -/
+def adjoin (S : PDS X Y) (A : System.DDS X Y → System.MonotoneCondition X) :
+    GamesFor S :=
+  ⟨Distribution.fTransform (fun s => (s, A s)) S,
+    by rw [PDG.forget_pair_fTransform]; exact equivalent_refl S⟩
+
+@[simp] theorem coe_adjoin (S : PDS X Y)
+    (A : System.DDS X Y → System.MonotoneCondition X) :
+    (adjoin S A).1 = Distribution.fTransform (fun s => (s, A s)) S :=
+  rfl
+
+/-- The forgetting law for `adjoin`, in its strongest form: an equality of
+laws, not merely of behaviours. -/
+@[simp] theorem forget_adjoin (S : PDS X Y)
+    (A : System.DDS X Y → System.MonotoneCondition X) :
+    PDG.forget (adjoin S A).1 = S :=
+  PDG.forget_pair_fTransform S A
+
+theorem nonNeg_adjoin {S : PDS X Y} (hS : S.NonNeg)
+    (A : System.DDS X Y → System.MonotoneCondition X) :
+    (adjoin S A).1.NonNeg :=
+  hS.fTransform _
+
+/-- Definition 2.25's winning mass of an adjoined game, computed: the mass of
+the deterministic systems whose own answered history triggers their own
+condition. -/
+theorem winningMass_adjoin (S : PDS X Y)
+    (A : System.DDS X Y → System.MonotoneCondition X)
+    (e : System.DDE.Total Y X) (n : ℕ) :
+    PDG.winningMass e n (adjoin S A).1 =
+      S.mass fun s => System.answeredQueries (System.DDE.Total.transcript s e n)
+        ∈ (A s).1 :=
+  Distribution.mass_fTransform _ S _
+
+/-! ### Worked receipt: the never-won and the already-won poles
+
+Adjoining the bottom condition forgets to the original system and is never
+won; adjoining the top condition forgets to it too and is always won.  The
+first is the thesis's always-losing `V` (printed p. 26) obtained as a
+constructor call rather than as a separate object; together they show the
+forgetting law is genuinely independent of the condition adjoined. -/
+
+@[simp] theorem forget_adjoin_bot (S : PDS X Y) :
+    PDG.forget (adjoin S fun _ => ⊥).1 = S :=
+  forget_adjoin S _
+
+@[simp] theorem winningMass_adjoin_bot (S : PDS X Y)
+    (e : System.DDE.Total Y X) (n : ℕ) :
+    PDG.winningMass e n (adjoin S fun _ => ⊥).1 = 0 := by
+  rw [winningMass_adjoin]
+  exact Distribution.mass_eq_zero_of_forall_not S fun _ => Set.notMem_empty _
+
+@[simp] theorem supWinProb_adjoin_bot (S : PDS X Y) :
+    PDG.supWinProb (adjoin S fun _ => ⊥).1 = 0 := by
+  have h : ∀ p : System.DDE.Total Y X × ℕ,
+      PDG.winningMass p.1 p.2 (adjoin S fun _ => ⊥).1 = 0 :=
+    fun p => winningMass_adjoin_bot S p.1 p.2
+  calc (⨆ p : System.DDE.Total Y X × ℕ,
+        PDG.winningMass p.1 p.2 (adjoin S fun _ => ⊥).1)
+      = ⨆ _ : System.DDE.Total Y X × ℕ, (0 : ℝ) := iSup_congr h
+    _ = 0 := ciSup_const
+
+@[simp] theorem forget_adjoin_top (S : PDS X Y) :
+    PDG.forget (adjoin S fun _ => ⊤).1 = S :=
+  forget_adjoin S _
+
+@[simp] theorem winningMass_adjoin_top (S : PDS X Y)
+    (e : System.DDE.Total Y X) (n : ℕ) :
+    PDG.winningMass e n (adjoin S fun _ => ⊤).1 = S.weight := by
+  rw [winningMass_adjoin]
+  exact Distribution.mass_true S
+
+end PDS
 
 end
 
