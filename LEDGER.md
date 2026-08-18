@@ -47,7 +47,12 @@ Shannon layer.  The min-entropy chain rule in the SAME file is PRIMARY
 
 **Rule (binding).** Every `def`/`abbrev`/`structure`/`instance` in
 `RandomSystems/System/` and `RandomSystems/Converter/` must appear in this
-file, classified. The gate `scripts/ledgerAudit.sh` extracts the inventory
+file, classified.  AGENT EXCEPTION (2026-08-19, after two lanes hit the
+conflict in one round): an implementing agent MAY make the minimal
+mechanical LEDGER edit that check 1 forces for ITS OWN new names — name
+insertion into an existing list, or a new row — nothing else; the edit is
+disclosed in its report and the coordinator reviews it at closure.  All
+other LEDGER/PHI-SPEC content remains coordinator-only. The gate `scripts/ledgerAudit.sh` extracts the inventory
 from disk and FAILS listing any unclassified name. Run it before dispatching
 any pipeline task and in every task's final gates. Rows are derived from the
 tree, never from memory — that is the point of this document (defect record:
