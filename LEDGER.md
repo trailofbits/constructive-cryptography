@@ -179,9 +179,9 @@ is `attachAt_comm`, stated with no packaging.
 
 Lanzenberger L1 additions (`RandomSystems/System/ClassDistance.lean`): the
 rejection-pruning machine for the coding map — `pruneStep`, `Blocked`,
-`pruneRun`, `prunedNext` (house-continuation of the quarry's names, not
-paper names), `prunedEnv` (coinage, quarry `prunedPartialDDE`),
-`markAnswers` (coinage, quarry `someMap`).  Endpoints:
+`pruneRun`, `prunedNext` (house-continuation of the reference repository's names, not
+paper names), `prunedEnv` (coinage, reference repository `prunedPartialDDE`),
+`markAnswers` (coinage, reference repository `someMap`).  Endpoints:
 `PDS.equivalent_iff_nonAdaptive` (Lanz Lemma 2.18),
 `PDS.equivalent_ofTyped_iff`, `PDS.Adv_le_advFullyDefined` (unconditional),
 `PDS.advFullyDefined_eq_Adv_of_dom_eq` (the coding map — shared-domain
@@ -194,7 +194,7 @@ form exists.
 Lanzenberger L2a/L3 additions (`RandomSystems/System/Attainment.lean`):
 Notation 2.34's successor calculus (System.DDS.successor,
 System.DDE.Total.successor, PDS.successorTransform — paper names) and its
-inverse (System.DDS.prepend, PDS.prependTransform — quarry-continuation);
+inverse (System.DDS.prepend, PDS.prependTransform — reference repository-continuation);
 the finite shared-domain slice as a HYPOTHESIS BUNDLE
 PDS.HaveCommonDomainAndBounded (coinage; no subtype — List X is infinite at
 finite X) with the first-answer carriers PDS.firstQueries,
@@ -1188,7 +1188,7 @@ rows close only by commit references.  In particular matrix rows 17, 19, 20,
 22, 27, 35, 36, 41 and 44 may not be read as `D+I` for the interface-indexed
 `αⁱ` while their RS-B home is whole-face application.
 
-# LANZENBERGER OBLIGATION MATRIX + quarry-reuse map
+# LANZENBERGER OBLIGATION MATRIX + reference-repository-reuse map
 
 **SCOPE NOTE (CR18 sweep F-5, 2026-08-18): this matrix enumerates thesis
 CHAPTER 2 ONLY.  Chapter 3 (Theory of Amplification, printed pp. 43-84 —
@@ -1199,34 +1199,39 @@ from CR18.  A Ch. 3 matrix extension is owed when amplification opens.**
 
 **LANE RULES (binding for every Lanzenberger-lane brief; Marc, 2026-08-17).**
 
-TERMINOLOGY (Marc, 2026-08-18): the read-only source tree at
-../random-systems is called THE REFERENCE REPOSITORY (older text says
-"quarry" — same object; Q: pointers abbreviate it).
+TERMINOLOGY (Marc, 2026-08-18; re-broken and re-fixed same day — the
+coordinator's own T3 briefs reintroduced the retired word, which then
+propagated into an agent report): the read-only source tree at
+../random-systems is called THE REFERENCE REPOSITORY.  The word "quarry"
+is RETIRED and BANNED in prose, briefs, reports, and docstrings; the
+frozen `Q:` path-prefix label is the only surviving trace (it abbreviates
+"reference repository path").  Every brief's vocabulary block carries
+this ban.
 
 REUSE RULE.  Existing RS work is reused WHENEVER POSSIBLE, in this order:
-  (1) current-tree declarations as-is; (2) quarry proof ARCHITECTURE
+  (1) current-tree declarations as-is; (2) reference repository proof ARCHITECTURE
   (invariants, induction shapes, case splits — transplanted, cited by
-  file:line); (3) quarry statement shapes (restated on the current carrier,
-  never copied).  Building fresh what the quarry already proves is a
-  brief violation; the matrix's quarry column is the authority on what
-  exists.  The quarry is READ-ONLY, always.
+  file:line); (3) reference repository statement shapes (restated on the current carrier,
+  never copied).  Building fresh what the reference repository already proves is a
+  brief violation; the matrix's reference repository column is the authority on what
+  exists.  The reference repository is READ-ONLY, always.
 
 TRANSPLANT RULES (from the audit's nine pin-contradictions):
-  - Quarry `Δ(S, T)` notation means `maxAdvantage`, NOT `classDistance` —
+  - Reference repository `Δ(S, T)` notation means `maxAdvantage`, NOT `classDistance` —
     verbatim copying silently changes theorems.  Restate everything.
   - `maxAdvantage` / `maxEDist` are FORBIDDEN statement targets (pin 2);
-    quarry results stated against them are re-targeted to
+    reference repository results stated against them are re-targeted to
     `advFullyDefined`/`classDistance` or not transplanted.
   - `adv_eq_maxAdvantage_swap`: the argument order SWAPS — the naive
     pairing is documented refutable.
   - Thm 2.31 forms carry the finiteness bundle (HasFixedDomain + QBounded +
     finite alphabets) — attainment is FALSE without it
     (AttainmentCounterexample.lean:766).
-  - Three live quarry sorries are never forwarded:
+  - Three live reference repository sorries are never forwarded:
     Legacy/FundamentalTheorem.lean:172, Legacy/Amplification.lean:119,
     CBCStructureGraph.lean:1415.  Legacy `advantage` is non-adaptive — it
     is NOT Def 2.26.
-  - Thesis errata (kernel-checked in the quarry): Def 2.27/2.28 inner inf
+  - Thesis errata (kernel-checked in the reference repository): Def 2.27/2.28 inner inf
     should be sup; Thm 2.29 min over pairs should be max.  State the
     CORRECTED forms; cite the erratum in the docstring.
 
@@ -1297,10 +1302,10 @@ edited.
    `System.exists_absorb_ofTyped_typed` `:1009`), **not** in `ClassDistance.lean`
    — `ClassDistance.lean` contains no `ofTyped` declaration at all.
 
-## The quarry rule
+## The reference repository rule
 
 `/Users/marcilunga/Documents/tob/research/random-systems` is READ-ONLY, always.
-Nothing there is imported, built, or edited.  A quarry verdict is a claim about
+Nothing there is imported, built, or edited.  A reference repository verdict is a claim about
 what *transplants*, and every REUSE verdict carries a **transplant delta**
 saying what must change:
 
@@ -1316,7 +1321,7 @@ saying what must change:
 | `REUSE-ARCH` | the proof structure transplants; the row names the file:line and the invariant/technique |
 | `REUSE-STMT` | the statement shape transplants; the proof must be redone on the current carrier |
 | `REF-ONLY` | informs the work but does not transplant |
-| `NONE` | nothing in the quarry |
+| `NONE` | nothing in the reference repository |
 
 ## The five series legs
 
@@ -1426,29 +1431,29 @@ Not yet populated." stubs.  **The whole of L4 has no home yet.**
 
 # M4 — THE MATRIX
 
-Pages are **printed** thesis pages.  `AC:` = abstract-crypto path, `Q:` = quarry
+Pages are **printed** thesis pages.  `AC:` = abstract-crypto path, `Q:` = reference repository
 path (`RandomSystems/…` under
 `/Users/marcilunga/Documents/tob/research/random-systems`).
 
-## Quarry vocabulary trap (read before using any pointer below)
+## Reference repository vocabulary trap (read before using any pointer below)
 
-The quarry and the current tree use **the same notation for different objects**:
+The reference repository and the current tree use **the same notation for different objects**:
 
-| symbol | quarry meaning | current-tree meaning |
+| symbol | reference repository meaning | current-tree meaning |
 |---|---|---|
 | `Δ(S, T)` (with parens) | `maxAdvantage` — `sSup` over probability **distinguishers** `D` of the *signed* `verdictProb D T − verdictProb D S` (`Q: Distinguishing.lean:136,139`) | `PDS.classDistance` — Def 2.28's infimum over representatives (`AC: ClassDistance.lean:149`) |
 | `Δ S T` (no parens) | the class distance, Def 2.28 (`Q: RandomSystem.lean:8358`) | — |
 | `Adv S T` | `sup_e δ(tr(S,e), tr(T,e))`, Def 2.26 (`Q: RandomSystem.lean:901`) | `PDS.Adv` (`AC: Environment.lean:251`), **off-pin** |
 | — | — | `Adv⊥(S, T)` = `advFullyDefined`, the pin-2 object |
 
-Any transplant that copies a quarry statement verbatim will silently change
+Any transplant that copies a reference repository statement verbatim will silently change
 which distance is being claimed.  Every `metric` delta below is this.
 
 ---
 
 ## L0 — substrate (closed, or no obligation)
 
-| item | p. | kind | content | current tree | quarry verdict |
+| item | p. | kind | content | current tree | reference repository verdict |
 |---|---|---|---|---|---|
 | 2.1 | 11 | Def | distribution over `A`: `A → ℝ≥0` with finite support; weight `\|X\|`; **weight is not required to be 1** | **DONE** `Probability.Distribution := A →₀ ℝ`, `.weight`, `.isProbDist` (`AC: Probability/Distribution.lean:56,77,138`) | REF-ONLY — `Q: Dist.lean:55` is the identical `Dist A := A →₀ ℝ`; the current tree is a copy already. delta `none` |
 | 2.2 | 12 | Def | marginal `Xᵢ` of a distribution over a product | **DONE** `Distribution.marginal`, `marginalAt` (`AC: Distribution.lean:658,667`) | REF-ONLY — `Q: Dist.lean:617,626`. delta `none` |
@@ -1456,51 +1461,51 @@ which distance is being claimed.  Every `metric` delta below is this.
 | 2.6 | 12 | Def | `f`-transformation `f(X) := X ∘ f⁻¹` | **DONE** `Distribution.fTransform` (`AC: Distribution.lean:685`) | REF-ONLY — `Q: Dist.lean:644`. delta `none` |
 | 2.7 | 13 | Lem | data processing: `δ(X,Y) ≥ δ(f(X), f(Y))` for total `f` | **DONE** `statDist_fTransform_le` (`AC: StatisticalDistance.lean:921`) | REF-ONLY — `Q: StatDist.lean:815`, plus the equality-under-injectivity companion `:914`. delta `none` |
 | 2.8 | 13 | Lem | Coupling Lemma (Aldous 3.6): (1) any joint gives `δ ≤ Pr(X≠Y)`; (2) a joint attaining equality exists | **DONE** (1) `statDist_le_offDiagonalMass` (`AC: Coupling.lean:247`); (2) `exists_coupling_offDiagonalMass_eq` `:326`, witness `optimalJoint` `:126` | REF-ONLY — `Q: Coupling.lean:149,378`, witness `optimalJoint` `:191`, header cites this as *"Lemma 4 of Lanzenberger–Maurer (TCC 2020)"*. Identical shape; the current tree already carries the improved `IsCoupling`/`offDiagonalMass` split. delta `none` |
-| 2.9 | 13 | Def | `(X,Y)`-DDS: partial `s : X⁺ → Y` with prefix-closed domain; *finite* if `X` finite and `dom(s) ⊆ ∪_{i≤n} Xⁱ`; `dom₁(s)` | **DONE** (object) `System.DDS`, `Valid` (`AC: DiscreteSystem.lean:66,60`); **PARTIAL** (finiteness clause) — see L2 | REF-ONLY — `Q: PFunDDS.lean:64` `{S : List X →. Y // Valid S}` is the same object. delta `carrier` (the quarry rides `PFunDDS`, the tree rides `PFun (List X) Y` with `Valid`; equivalent but not literally interchangeable) |
+| 2.9 | 13 | Def | `(X,Y)`-DDS: partial `s : X⁺ → Y` with prefix-closed domain; *finite* if `X` finite and `dom(s) ⊆ ∪_{i≤n} Xⁱ`; `dom₁(s)` | **DONE** (object) `System.DDS`, `Valid` (`AC: DiscreteSystem.lean:66,60`); **PARTIAL** (finiteness clause) — see L2 | REF-ONLY — `Q: PFunDDS.lean:64` `{S : List X →. Y // Valid S}` is the same object. delta `carrier` (the reference repository rides `PFunDDS`, the tree rides `PFun (List X) Y` with `Valid`; equivalent but not literally interchangeable) |
 | 2.10 | 14 | Ex | the four single-query `({0,1},{0,1})`-DDS `zero, one, id, flip` | **MISSING** — no worked instance; `functionEvaluator` (`AC: DiscreteSystem.lean:114`) covers the genus | REUSE-STMT — `Q: AttainmentCounterexample.lean:44–57` builds four concrete `Bool`-query atoms in exactly this style. delta `carrier` |
 | 2.11 | 14 | Def | DDE `e : Y* → X`, partial, prefix-closed domain | **DONE** `System.DDE` (`AC: Environment.lean:72`) | REF-ONLY — `Q: PFunDDS.DDE`. delta `carrier` |
 | 2.12 | 14 | Def | transcript `tr(s,e)`; compatibility ("`e` never queries outside `dom s`"); the environment may stop | **DONE** `trN`, `tr`, `Stops`, `Compatible` (`AC: Environment.lean:114,155,150,170`); the pin-2 line replaces compatibility+stopping by the total presentation `DDE.Total.transcript` `:356` | REF-ONLY — `Q` uses `transcriptDist S e n` throughout (`BoundedAttainment`, `TranscriptHybrid`), the same length-indexed shape. delta `carrier` |
 | 2.14 | 15 | Def | PDS = distribution over DDS, all support elements sharing one domain; always finite | **DONE** `PDS X Y := Distribution (System.DDS X Y)`, common-domain clause as `HasFixedDomain` (`AC: ProbabilisticSystem.lean:73,85`) | REF-ONLY — `Q: PDS.lean:68` `PFunPDS X Y := Dist (PFunDDS.DDS X Y)`, normalized subtype `PFunPDS.Prob` `:76`. delta `carrier` |
 | 2.15 | 15 | Def | PDE = distribution over DDE | **DONE** `PDE Y X` (`AC: Environment.lean:217`) | REF-ONLY. delta `carrier` |
 | 2.23 | 17 | Rem | an environment does not observe the MC; this matters in the probabilistic case | **PROSE** — no obligation | NONE |
-| 2.26 | 18 | Def | `Adv(S,T) := sup_e δ(tr(S,e), tr(T,e))`, same domain | **PARTIAL** — Def 2.26 verbatim is `PDS.Adv` (`AC: Environment.lean:251`), which pin 2 forbids; the pin-2 object `advFullyDefined` `:636` is Def 2.26 *over the CR18 total presentation*. **The coding map between them is not stated anywhere** (the tree's own `ClassDistance.lean:312` admits this) | REUSE-STMT — `Q: RandomSystem.lean:901` is Def 2.26 verbatim on the partial carrier; `Q: TranscriptAdvantage.lean:109` `maxAdvantage_eq_transcriptAdvantageOn_of_common_fTransform` is the **only** quarry statement of the shape "restricting the environment index set is lossless", which is the shape the missing coding map needs. delta `both` |
+| 2.26 | 18 | Def | `Adv(S,T) := sup_e δ(tr(S,e), tr(T,e))`, same domain | **PARTIAL** — Def 2.26 verbatim is `PDS.Adv` (`AC: Environment.lean:251`), which pin 2 forbids; the pin-2 object `advFullyDefined` `:636` is Def 2.26 *over the CR18 total presentation*. **The coding map between them is not stated anywhere** (the tree's own `ClassDistance.lean:312` admits this) | REUSE-STMT — `Q: RandomSystem.lean:901` is Def 2.26 verbatim on the partial carrier; `Q: TranscriptAdvantage.lean:109` `maxAdvantage_eq_transcriptAdvantageOn_of_common_fTransform` is the **only** reference repository statement of the shape "restricting the environment index set is lossless", which is the shape the missing coding map needs. delta `both` |
 
-**L0 tally: 14 items — 11 DONE, 1 PARTIAL (2.26), 1 MISSING (2.10), 1 PROSE (2.23); quarry 2 REUSE-STMT, 11 REF-ONLY, 1 NONE.**
+**L0 tally: 14 items — 11 DONE, 1 PARTIAL (2.26), 1 MISSING (2.10), 1 PROSE (2.23); reference repository 2 REUSE-STMT, 11 REF-ONLY, 1 NONE.**
 
 ---
 
 ## L1 — equivalence and the non-adaptive reduction
 
-| item | p. | kind | content | current tree | quarry verdict |
+| item | p. | kind | content | current tree | reference repository verdict |
 |---|---|---|---|---|---|
 | 2.16 | 15 | Ex | `V := {(zero,¼),(one,¼),(id,¼),(flip,¼)}`, `V′`, and the family `V_α`; **`[V] = {V_α \| α ∈ [0,½]}`** — the equivalence class of a PDS is a nontrivial line | **MISSING** — no worked class in the tree at all | **REUSE-ARCH** — `Q: Example216.lean` is this example, complete and `sorry`-free: `singleQuery` `:129`, `V` `:310`, `isProbDist_V` `:356`, `classBehavior` `:367`, `observableBehavior_V` `:387`, `equivalent_V` `:439` (`α,β ≤ ½ → Equivalent (V α) (V β)`), `delta_V0_Vhalf` `:490` (`δ(V 0, V ½) = 1`). The invariant that transplants: **the whole class is pinned by one closed-form behavior function** (`classBehavior`), so `equivalent_V` is a `rfl`-after-`observableBehavior_V` argument rather than an environment induction. delta `carrier` (`PFunPDS Bool Bool` → `PDS Bool Bool`; `δ` → `statDist`, which are *equal* on non-negative laws, `Q: RandomSystem.lean:93`) |
 | 2.17 | 16 | Def | `S ≡ T` iff same domain **and** `tr(S,e) = tr(T,e)` for all compatible DDE `e`; `[S]` | **DONE** `PDS.equivalent` (`AC: ClassDistance.lean:85`), over `DDE.Total` at every length; the domain clause is documented as subsumed by the total presentation | **REUSE-STMT + a decisive bridge.** `Q: RandomSystem.lean:550` `Equivalent` is the same total-presentation definition. **The important find is `Q: ThesisModel.lean`**, which states Def 2.17 in the *thesis's own* shape — a partial environment `PartialDDE := {e : List Y →. X // prefix-closed}` `:88`, `Compatible` `:220`, `ThesisEquivalent` `:244` — and then proves **`equivalent_iff_thesisEquivalent` `:786`** under `HasFixedDomain S D`/`HasFixedDomain T D`. delta `carrier` |
-| 2.18 | 16 | Lem | `S ≡ T` ⟺ transcripts agree for all compatible **non-adaptive** DDE | **MISSING** — `AC: ClassDistance.lean:82` explicitly records it as "a *characterization* … not needed by anything below" | **REUSE-ARCH** — proved twice in the quarry: `Q: RandomSystem.lean:796` `transcript_equivalent_of_nonadaptive_transcript_equivalent` (with `NonAdaptive e := ∀ y y', y.length = y'.length → e y = e y'` `:622` and the replay environment `playQueries` `:767`), restated in thesis shape as `Q: LanzenbergerChain.lean:188` `lemma_2_18_nonadaptive_environments_suffice`. The transplantable invariant is the Appendix-A.1 device `Q: LanzenbergerChain.lean:160` `fixed_transcript_event_eq_fixed_query_event`: *a fixed transcript event is a fixed-query event*, which is exactly the replay step of the thesis proof. There is also a *legacy* proof on the total carrier, `Q: Legacy/Equiv.lean:895` `equivAdaptive_iff_nonadaptive`, whose machinery (`firstInputIndex`, position tapes, fiber counting) is a **different, much heavier** route — do not transplant that one. delta `carrier` |
+| 2.18 | 16 | Lem | `S ≡ T` ⟺ transcripts agree for all compatible **non-adaptive** DDE | **MISSING** — `AC: ClassDistance.lean:82` explicitly records it as "a *characterization* … not needed by anything below" | **REUSE-ARCH** — proved twice in the reference repository: `Q: RandomSystem.lean:796` `transcript_equivalent_of_nonadaptive_transcript_equivalent` (with `NonAdaptive e := ∀ y y', y.length = y'.length → e y = e y'` `:622` and the replay environment `playQueries` `:767`), restated in thesis shape as `Q: LanzenbergerChain.lean:188` `lemma_2_18_nonadaptive_environments_suffice`. The transplantable invariant is the Appendix-A.1 device `Q: LanzenbergerChain.lean:160` `fixed_transcript_event_eq_fixed_query_event`: *a fixed transcript event is a fixed-query event*, which is exactly the replay step of the thesis proof. There is also a *legacy* proof on the total carrier, `Q: Legacy/Equiv.lean:895` `equivAdaptive_iff_nonadaptive`, whose machinery (`firstInputIndex`, position tapes, fiber counting) is a **different, much heavier** route — do not transplant that one. delta `carrier` |
 | 2.19 | 16 | Not | bold `S` = the equivalence class; `tr(S,e)` well defined on the class | **PARTIAL** — the tree works with representatives + `advFullyDefined_congr` (`AC: ClassDistance.lean:118`) and never forms the quotient | REUSE-STMT — `Q: RandomSystemQuotient.lean:99` builds the actual quotient `RandomSystem X Y` with `ofProb` `:150`, `of_prob_eq_of_prob_iff` `:154`, and a descended distance `maximalAdvantage` `:171`; `Q: RandomSystemMetric.lean:59` upgrades it to a genuine `MetricSpace` via `maximal_advantage_eq_zero_iff_equivalent` `:49`. **delta `metric`** — that `MetricSpace` instance is built on `maxAdvantage`, which pin 2 forbids; the quotient *construction* transplants, the metric instance does not |
 
-**L1 tally: 4 items — 1 DONE, 1 PARTIAL, 2 MISSING; quarry 2 REUSE-ARCH, 2 REUSE-STMT, 0 NONE.**
-**L1 is the cheapest leg in the whole matrix: every obligation has a finished quarry proof.**
+**L1 tally: 4 items — 1 DONE, 1 PARTIAL, 2 MISSING; reference repository 2 REUSE-ARCH, 2 REUSE-STMT, 0 NONE.**
+**L1 is the cheapest leg in the whole matrix: every obligation has a finished reference repository proof.**
 
 ---
 
 ## L2 — the finite slice and the multi-system distance
 
-| item | p. | kind | content | current tree | quarry verdict |
+| item | p. | kind | content | current tree | reference repository verdict |
 |---|---|---|---|---|---|
-| 2.9 (fin) | 13 | Def | a DDS is *finite* when `X` is finite and `dom(s) ⊆ ∪_{i≤n} Xⁱ`; the thesis restricts to finite systems throughout | **MISSING** — the two ingredients exist as *predicates* (`QBounded` `AC: DiscreteSystem.lean:37`, `HasFixedDomain` `ProbabilisticSystem.lean:85`) but **`QBounded` has zero call sites** and there is **no `Fintype` on any system carrier anywhere in the tree** (verified by grep). `AC: ClassDistance.lean:301` states the obstruction: `List X` is infinite even at finite `X`, so the `Fintype` must come from a `q`-query *subtype* | **REUSE-STMT** — the quarry never builds a `Fintype` subcarrier either; it packages the three hypotheses instead: `Q: BoundedAttainment.lean:90` `PFunPDS.HaveCommonDomainAndBounded S T D q` = `[Fintype X]` + `HasFixedDomain … D` + `QBounded D q`, and every attainment theorem carries it. **This is the shape to copy**: the finite slice is a *hypothesis bundle*, not a subtype. delta `carrier` |
-| U5 | 38 | Unn | "On the Number of Queries": `q` is a property of the **system** (how many queries it answers), not of the distinguisher; a bound on the components induces a bound `q′` on the construction | **MISSING** as a ruling; `filterQueries` (`AC: DiscreteSystem.lean:403`) is the mechanism | REUSE-ARCH — the quarry adopts exactly this ruling and mechanizes it: `Q: PFunDDS.lean:395` `filterQueries`, `Q: MaxWinProb.lean` docstring ("impose the bound by the filter `[q]` on the *game*, not here"), and the normalization predicates `Q: GameOf.lean:1163` `DeltaFiniteQueryNormalization` / `:1176` `DeltaFilteredFiniteQueryNormalization` with the discharge `:1204` from `TotalOnNonempty`. delta `carrier` |
+| 2.9 (fin) | 13 | Def | a DDS is *finite* when `X` is finite and `dom(s) ⊆ ∪_{i≤n} Xⁱ`; the thesis restricts to finite systems throughout | **MISSING** — the two ingredients exist as *predicates* (`QBounded` `AC: DiscreteSystem.lean:37`, `HasFixedDomain` `ProbabilisticSystem.lean:85`) but **`QBounded` has zero call sites** and there is **no `Fintype` on any system carrier anywhere in the tree** (verified by grep). `AC: ClassDistance.lean:301` states the obstruction: `List X` is infinite even at finite `X`, so the `Fintype` must come from a `q`-query *subtype* | **REUSE-STMT** — the reference repository never builds a `Fintype` subcarrier either; it packages the three hypotheses instead: `Q: BoundedAttainment.lean:90` `PFunPDS.HaveCommonDomainAndBounded S T D q` = `[Fintype X]` + `HasFixedDomain … D` + `QBounded D q`, and every attainment theorem carries it. **This is the shape to copy**: the finite slice is a *hypothesis bundle*, not a subtype. delta `carrier` |
+| U5 | 38 | Unn | "On the Number of Queries": `q` is a property of the **system** (how many queries it answers), not of the distinguisher; a bound on the components induces a bound `q′` on the construction | **MISSING** as a ruling; `filterQueries` (`AC: DiscreteSystem.lean:403`) is the mechanism | REUSE-ARCH — the reference repository adopts exactly this ruling and mechanizes it: `Q: PFunDDS.lean:395` `filterQueries`, `Q: MaxWinProb.lean` docstring ("impose the bound by the filter `[q]` on the *game*, not here"), and the normalization predicates `Q: GameOf.lean:1163` `DeltaFiniteQueryNormalization` / `:1176` `DeltaFilteredFiniteQueryNormalization` with the discharge `:1204` from `TotalOnNonempty`. delta `carrier` |
 | 2.27 | 18 | Def | `Δ(𝒮) := 1 − inf_{(S₁,…,Sₙ)} sup_ℰ Pr(S₁ = … = Sₙ)` for a finite set of random systems | **MISSING** | **REUSE-ARCH, with a source erratum.** `Q: MultiSystemCoupling.lean` builds the agreement side: `IsJointOf` `:215`, `agreementMass` `:243`, `supAgreement` `:248`, `overlapDist` `:374` (pointwise min), `agreementMass_le_weight_overlapDist` `:422`, existence `:477`, **attainment `supAgreement_eq_weight_overlapDist` `:550`**, and the `n=2` bridge `supAgreement_pair_eq_weight_sub_delta` `:615`. `Q: LanzenbergerChain.lean:350` `multiSystemDistance` packages Def 2.27 **with `inf` corrected to `sup`**, keeping the verbatim printed form as `printedMultiSystemDistance` `:366` and refuting it with `Q: Example216.lean:591` `definition_2_28_printed_displays_disagree` (`printedMultiSystemDistance (fun _ : Fin 2 => V 0) ≠ Δ (V 0) (V 0)`), while `:602` `corrected_display_agrees_at_V` confirms the corrected form. **Do not transplant the printed display.** delta `carrier` (the agreement machinery is on plain `Dist A` with no system content — delta `none` for `MultiSystemCoupling` itself) |
 | 2.29 | 19 | Thm | `min_{i≠j} Δ(Sᵢ,Sⱼ) ≤ Δ(𝒮) ≤ (min(n,ℓ)−1)·min_{i≠j} Δ(Sᵢ,Sⱼ)`, `ℓ = \|∪ᵢ∪_{Sᵢ} supp(Sᵢ)\|` | **MISSING** | **REUSE-ARCH, with a second source erratum.** `Q: MultiSystemCoupling.lean:774` `theorem_2_29_distribution_upper_bound` proves the upper bound in **attained `∃ i ≠ j` form**, and `:958` `printed_min_form_counterexample` is a **kernel-checked refutation of the printed `min` over pairs** (3 laws on `Fin 3`); the correct reading is `max`. `Q: LanzenbergerChain.lean:567,577,608` carries the lower bound, the refuted min-form, and the corrected upper bound as three named declarations. delta `none` for the distribution-level content, `carrier` for the system-level wrapper |
 | 2.30 | 19 | Lem | matrix lemma: `A ∈ ℝ₊^{n×m}`, every column has a zero, every row sums to `δ` ⟹ `min_{i,j} Σ_k min(A_ik, A_jk) ≤ (1 − 1/(min(m,n)−1))·δ` | **MISSING** | **REUSE-ARCH** — `Q: MultiSystemCoupling.lean:641` `lemma_2_30_zero_column_matrix_bound`, stated in `∃ i ≠ i'` form over `[Fintype row] [Fintype col]` with `2 ≤ card`. The one deviation worth copying: the thesis's "WLOG reorder the rows" is replaced by an explicit **zero-row selector** `z : column → row`, which is what makes the case split formalizable. delta `none` — this is pure real-matrix combinatorics, no carrier and no metric |
 
-**L2 tally: 4 items (2.27, 2.29, 2.30, U5) — all 4 MISSING; quarry 3 REUSE-ARCH, 1 REUSE-STMT.**  The first row above (`2.9 (fin)`) is an *annex*: it re-opens the finiteness clause of item 2.9, counted once in L0, and it is L2's entry obligation.
-**L2 carries the two source errata; both are kernel-checked in the quarry and must travel with the transplant.**
+**L2 tally: 4 items (2.27, 2.29, 2.30, U5) — all 4 MISSING; reference repository 3 REUSE-ARCH, 1 REUSE-STMT.**  The first row above (`2.9 (fin)`) is an *annex*: it re-opens the finiteness clause of item 2.9, counted once in L0, and it is L2's entry obligation.
+**L2 carries the two source errata; both are kernel-checked in the reference repository and must travel with the transplant.**
 
 ---
 
 ## L3 — attainment: Theorems 2.31 / 2.32
 
-| item | p. | kind | content | current tree | quarry verdict |
+| item | p. | kind | content | current tree | reference repository verdict |
 |---|---|---|---|---|---|
 | 2.3 | 12 | Lem | `n` distributions of a common weight `p` admit a joint with those marginals (witness `p^{-(n-1)}∏ᵢXᵢ`) | **PARTIAL** — `Probability/FiberCoupling.lean:242` `exists_coupling_of_fTransform_eq` is the *2-ary conditional* gluing (equal pushforward along a shared projection); the `n`-ary equal-weight product is not there | REUSE-STMT — `Q: DistCoupling.lean:242` is the same 2-ary fiber statement (the current tree's file is a rename of it); the `n`-ary form appears only inside `Q: RandomSystem.lean`'s Lemma-2.33 apparatus (`jointProfileList` `:2835`, `crossJointOf` `:3586`). delta `none` |
 | 2.5 | 12 | Lem | `δ(X,Y) = Σᵢ δ(Xᵢ,Yᵢ)` for a partition with `supp(Xᵢ), supp(Yᵢ) ⊆ 𝒜ᵢ` | **DONE** at the distribution level (`AC: StatisticalDistance.lean:896`); **MISSING** in the form L3 actually consumes — additivity across *first-answer branches* of a transcript law | **REUSE-ARCH** — `Q: TranscriptBranchDistance.lean:35` is exactly the consumed form: `δ(Σ_{y∈ys} (x,y)::Sf y, Σ_{y∈ys} (x,y)::Tf y) = Σ_{y∈ys} δ(Sf y, Tf y)`, with the branch index an explicit `Finset (Option Y)` and disjointness *derived* from distinct first answers rather than assumed. Its one hypothesis (`Tf` branchwise `NonNeg`) is defended in-file as Lemma 2.5's own, not an artifact. delta `carrier` |
@@ -1509,59 +1514,59 @@ which distance is being claimed.  Every `metric` delta below is this.
 | 2.33 | 21 | Lem | families `Xᵢ, Yᵢ` of common weights `p_X, p_Y` admit joints `X, Y` with those marginals and `δ(X,Y) = max_i δ(Xᵢ,Yᵢ)` | **MISSING** — `AC: ClassDistance.lean:307` names it as one of the three missing objects and correctly notes `exists_coupling_offDiagonalMass_eq` is "the two-law case, **not** this" | **REUSE-ARCH** — `Q: RandomSystem.lean:4113` `exists_finite_class_joint_witness_of_common_side_weights` (structure `FiniteClassJointWitness` at `:4075`) is Lemma 2.33 at finite first-query classes, built from `jointProfileList` `:2835`, `jointProfile` `:3048`, `classChoiceDist` `:3120`, `choiceOf` `:3275`, `trimOf` `:3349`, `crossJointOf` `:3586`. This is ~1300 lines of apparatus and is the single largest transplantable asset for L3. delta `carrier` |
 | 2.34 | 21 | Not | successor system `s^{↑x}`, successor environment `e^{↑y}`, and the PDS transform `S^{↑x↓y}` — **weight `\|S^{↑x↓y}\|` = Pr[S answers `y` to `x`], so it is *not* a probability distribution**; this is why Def 2.1 must allow arbitrary weight | **MISSING** | **REUSE-ARCH** — `Q` has it twice. Live carrier: `successorTransform` with `Q: RandomSystem.lean:2169` `weight_successorTransform` (`= S.mass fun s => output (fullyDefined s) [x] _ = y`) — exactly the thesis's weight identity — plus `Q: BoundedAttainment.lean:254` (successor pairs keep a common domain with bound `q−1`), `:539` (transcript law splits over the first-answer image), `:584` (reassembly: equal weight + rejection agreement off `D` + successorwise equivalence ⟹ `Equivalent`), `:1129` (per-answer δ identity). Legacy carrier: `Q: Legacy/Successor.lean:42` `firstQueryMass`, `:51` `successor_weight`, `:128` `successor_preserves_equiv` — same content, crushed by a two-level `Fintype` instance burden the file itself flags as its "defining friction". **Transplant the live one.** delta `carrier` |
 | U2 | 22 | Unn | eq. (2.1) and its induction: for all `q`-query PDS with the same domain, `∃ S′∈[S], T′∈[T]` with `δ(S′,T′) = sup_e δ(tr(S,e),tr(T,e))`; induction on `q` with the adaptive step `sup_e = max_x Σ_y sup_{e′}` and an initial-query prepend | **MISSING** — this *is* the missing induction | **REUSE-ARCH** — `Q: BoundedAttainment.lean:751` `exists_bounded_attainment_witness_of_finite_common_domain_and_bounded` **is this induction, finished**, returning `Nonempty (BoundedAttainmentWitness S T q)` (structure `:705` carrying the two representatives, their equivalences, their preserved weights, an attaining environment, and the δ = transcript-δ identity). delta `carrier` |
-| 2.31 | 20 | Thm | `Δ(S,T) = Adv(S,T)`, **with attainment** | **PARTIAL — one half only.** `AC: ClassDistance.lean:246` `advFullyDefined_le_classDistance` is `Adv⊥ ≤ Δ`, unconditional. The reverse is absent by design; `:290–320` itemizes what is missing | **REUSE-ARCH — the theorem is proved in the quarry.** `Q: BoundedAttainment.lean:1106` `class_distance_eq_optimal_advantage_of_finite_common_domain_and_bounded : Δ S T = Adv S T`, with the attainment form at `:1074`, restated in thesis shape as `Q: LanzenbergerChain.lean:208` `theorem_2_31_distance_eq_advantage_attained` (conjunction of the equality and the attaining pair). **Critical caveat: this is `Adv` (Def 2.26 on the quarry's partial carrier), not `Adv⊥`, and it carries `[Fintype X] + HaveCommonDomainAndBounded`.** delta `both` |
+| 2.31 | 20 | Thm | `Δ(S,T) = Adv(S,T)`, **with attainment** | **PARTIAL — one half only.** `AC: ClassDistance.lean:246` `advFullyDefined_le_classDistance` is `Adv⊥ ≤ Δ`, unconditional. The reverse is absent by design; `:290–320` itemizes what is missing | **REUSE-ARCH — the theorem is proved in the reference repository.** `Q: BoundedAttainment.lean:1106` `class_distance_eq_optimal_advantage_of_finite_common_domain_and_bounded : Δ S T = Adv S T`, with the attainment form at `:1074`, restated in thesis shape as `Q: LanzenbergerChain.lean:208` `theorem_2_31_distance_eq_advantage_attained` (conjunction of the equality and the attaining pair). **Critical caveat: this is `Adv` (Def 2.26 on the reference repository's partial carrier), not `Adv⊥`, and it carries `[Fintype X] + HaveCommonDomainAndBounded`.** delta `both` |
 | 2.32 | 20 | Thm | Coupling Theorem for Random Systems: `∃ S∈S, T∈T` with a joint s.t. `Adv(S,T) = Pr(S ≠ T)` | **PARTIAL** — the inequality direction is `AC: ClassDistance.lean:282` `advFullyDefined_le_offDiagonalMass_of_equivalent`, and Lemma 2.8's attainment half is `AC: Coupling.lean:326`; the *composition* (attained representatives ∘ optimal coupling) is missing because 2.31 is | **REUSE-ARCH** — `Q: RandomSystemCoupling.lean:112` `exists_equivalent_representatives_with_probability_coupling_disagreement_eq_optimal_advantage_of_finite_common_domain_and_bounded`, restated at `Q: LanzenbergerChain.lean:260`. The proof is literally three lines once 2.31 is available — attained pair, then `optimal_probability_coupling_exists` `:48`. delta `both` |
 | — | — | — | **the unrestricted strengthening is FALSE** (a project finding, not a thesis claim) | **not recorded in the tree** | **REUSE-ARCH (a refutation you must import).** `Q: AttainmentCounterexample.lean:766` `four_pattern_unrestricted_class_distance_ne_optimal_advantage`: at `PFunPDS Bool PUnit`, `Adv = ½` (`:643`) while **every** equivalent representative pair has `δ = 1` (`:718`), so `Δ = 1` (`:734`); the pair has no common support domain (`:252`). The mechanism is CR18 Def 3.3: a rejected query is *visibly* `⊥` and is deleted only from the DDS-side history, giving the environment a free domain probe. **The current tree's `advFullyDefined` runs on exactly that presentation (`DDE.Total.transcript` over `s⊥`), so this counterexample is expected to apply verbatim — Theorem 2.31 must be stated with `HasFixedDomain` + `QBounded` + finite `X`, never unrestricted.** delta `carrier` |
 | 2.26↔`Adv⊥` | 18 | Unn | the coding map: Def 2.26's compatible/stopping environments vs. the total presentation | **MISSING** — named as gap (iii) at `AC: ClassDistance.lean:312` | **REUSE-ARCH — this is the highest-leverage find in the whole survey.** `Q: ThesisModel.lean` builds the thesis's partial-environment model inside the CR18 carrier and closes both bridges: `PartialDDE.toDDE` `:296` (totalization), `transcript_toDDE_eq_someMap_thesisTranscript` `:339` (the coded environment reproduces the thesis transcript), `prunedPartialDDE` `:490` + `compatible_prunedPartialDDE` `:635` (the rejection-pruning replay, which is the hard direction), and the two endpoints **`equivalent_iff_thesisEquivalent` `:786`** and **`adv_eq_thesisAdv` `:847`** — both under `HasFixedDomain` on each side. delta `carrier` |
 
-**L3 tally: 9 items (2.3, 2.5, 2.28, 2.31, 2.32, 2.33, 2.34, U1, U2) — 1 DONE (2.28), 4 PARTIAL (2.3, 2.5, 2.31, 2.32), 4 MISSING (2.33, 2.34, U1, U2); quarry 7 REUSE-ARCH, 1 REUSE-STMT, 1 REF-ONLY.**  The last two rows above are *annexes*, not thesis items: the attainment counterexample (a project finding that constrains how 2.31 may be stated) and the `Adv`↔`Adv⊥` coding map (gap (iii) of the tree's own queued note).
-**Every L3 obligation has a finished quarry proof; not one of them is on the current carrier or the pin-2 metric.**
+**L3 tally: 9 items (2.3, 2.5, 2.28, 2.31, 2.32, 2.33, 2.34, U1, U2) — 1 DONE (2.28), 4 PARTIAL (2.3, 2.5, 2.31, 2.32), 4 MISSING (2.33, 2.34, U1, U2); reference repository 7 REUSE-ARCH, 1 REUSE-STMT, 1 REF-ONLY.**  The last two rows above are *annexes*, not thesis items: the attainment counterexample (a project finding that constrains how 2.31 may be stated) and the `Adv`↔`Adv⊥` coding map (gap (iii) of the tree's own queued note).
+**Every L3 obligation has a finished reference repository proof; not one of them is on the current carrier or the pin-2 metric.**
 
 ---
 
 ## L4 — games and winnability
 
-| item | p. | kind | content | current tree | quarry verdict |
+| item | p. | kind | content | current tree | reference repository verdict |
 |---|---|---|---|---|---|
-| 2.20 | 17 | Def | monotone condition `A : X* → {0,1}` (monotone: `A(t)=1 → A(t\|t′)=1`); a DDG is the pair `s^A` | **MISSING** — `RandomSystems/Game/MonotoneCondition.lean` is a 10-line "Not yet populated" stub | **REUSE-ARCH** — carriers all exist: `Q: PDS.lean:3045` `IsMBO`, `:3060` `DDS.IsGame`, `:3066` `DDG`, `:3101` `MonotoneMBO`; transcript-level `Q: GameOf.lean:280` `MonotoneCond` and the constructor `Q: GameOf.lean:230` `gameOfDDS` with `Q: GameOf.lean:268` `ignoreMBO_gameOfDDS` (`Ŝ⁻ = s`). `Q: LanzenbergerChain.lean:63` records the reconciliation between the thesis's per-realization predicate `A_s : X* → {0,1}` and CR18's MBO-as-extra-output-bit. **Modeling delta to decide up front:** the quarry realizes a game as `PDS X (Y × Bool)` (bit adjoined to the answer), not as a pair `(s, A)`. delta `carrier` |
+| 2.20 | 17 | Def | monotone condition `A : X* → {0,1}` (monotone: `A(t)=1 → A(t\|t′)=1`); a DDG is the pair `s^A` | **MISSING** — `RandomSystems/Game/MonotoneCondition.lean` is a 10-line "Not yet populated" stub | **REUSE-ARCH** — carriers all exist: `Q: PDS.lean:3045` `IsMBO`, `:3060` `DDS.IsGame`, `:3066` `DDG`, `:3101` `MonotoneMBO`; transcript-level `Q: GameOf.lean:280` `MonotoneCond` and the constructor `Q: GameOf.lean:230` `gameOfDDS` with `Q: GameOf.lean:268` `ignoreMBO_gameOfDDS` (`Ŝ⁻ = s`). `Q: LanzenbergerChain.lean:63` records the reconciliation between the thesis's per-realization predicate `A_s : X* → {0,1}` and CR18's MBO-as-extra-output-bit. **Modeling delta to decide up front:** the reference repository realizes a game as `PDS X (Y × Bool)` (bit adjoined to the answer), not as a pair `(s, A)`. delta `carrier` |
 | 2.21 | 17 | Def | transcript of a DDG: `tr(s^A, e) = (t, A(t′))` — the environment sees the answers and the **final** MC value, not the per-round bits | **MISSING** | **REUSE-ARCH** — `Q: GameWinnability.lean:144` `wonFlag`, `:177` `gameTranscriptView` (`t ↦ (t.map (·,·.map Prod.fst), wonFlag t)`), `:181` `gameTranscriptDist`. The docstring states the modeling point explicitly: per-round MC bits are **not** observable, which is Remark 2.23 made structural. delta `carrier` |
 | 2.22 | 17 | Def | PDG = distribution over DDG; two PDG are equivalent when domains agree and DDG-transcript laws agree in all environments | **MISSING** | **REUSE-ARCH** — `Q: GameWinnability.lean:194` `GameEquivalent` (`∀ winner n, gameTranscriptDist G winner n = gameTranscriptDist H winner n`). A *second, coarser* relation also exists — `Q: GameEquivalence.lean:64` `GameEquiv` (`≡ᵍ`, CR18 Def 4.16, equality of pre-winning behavior) — **which is not Def 2.22**; picking the wrong one silently weakens every downstream statement. delta `carrier` |
 | 2.24 | 17 | Rem | a random game `S^A` is an equivalence class of PDG, characterized by `p^{S^A}_{Y_i A_i \| X^i Y^{i-1} A_{i-1}}`; an MC can be *adjoined* to a random system | **MISSING** | REUSE-ARCH — adjunction is `Q: GameOf.lean:988` `gameOf S cond` with `:1018` `ignoreMBO_gameOf` (`Ŝ⁻ = S`, proved) and `:1031` `monotoneMBO_gameOf`; the class-level half is `Q: GameWinnability.lean:205` `gameEquivalent_of_equivalent`. delta `carrier` |
 | 2.25 | 18 | Def | `ν(S^A) := sup_e Pr(tr(S^A,e) ∈ 𝒯_w)`, `𝒯_w` = transcripts ending in `(·,1)`; deterministic environments suffice | **MISSING** | **REUSE-ARCH** — `Q: GameWinnability.lean:105` `WinningTranscript` (with `:111` monotonicity), `:124` `winningMass`, `:248` `supWinProb` (`ν`). The bridge to CR18's `Γ` is proved: `Q: GameWinnability.lean:885` `maxWinProb_eq_supWinProb`, so `Q: MaxWinProb.lean:170` `GamePerf.maxWinProb` (Def 4.17, fully generic in `Winner`/`Game`) and `Q: WinProb.lean:63` are usable as the same object. `Q: MaxWinProb.lean:156` `winProb_eq_expect_single` is the "deterministic winners suffice" step, hypothesis-free. delta `carrier` |
-| U3 | 23–24 | Unn | the games `G`, `G′` on two ε-biased coins: equivalent as games, yet `G′` is **unwinnable with probability ½−ε** over its own randomness while `G` is winnable with probability 1 — the motivating gap between `ν` and per-representative winnability | **MISSING** | **NONE** — no quarry file builds this pair. It is the game-side analogue of Example 2.16, and `Q: Example216.lean` is the template for how to build such a worked pair on this carrier, but the content is absent |
+| U3 | 23–24 | Unn | the games `G`, `G′` on two ε-biased coins: equivalent as games, yet `G′` is **unwinnable with probability ½−ε** over its own randomness while `G` is winnable with probability 1 — the motivating gap between `ν` and per-representative winnability | **MISSING** | **NONE** — no reference repository file builds this pair. It is the game-side analogue of Example 2.16, and `Q: Example216.lean` is the template for how to build such a worked pair on this carrier, but the content is absent |
 | 2.35 | 24 | Def | a DDG `s^A` is **winnable** if `∃ x̂ ∈ dom(s)` with `A(x̂) = 1` | **MISSING** | **REUSE-ARCH** — `Q: GameWinnability.lean:281` `PFunDDS.Winnable` (`∃ l, ∃ hl : l ∈ dom g, (output g l hl).2 = true`). delta `carrier` |
 | 2.36 | 24 | Def | `ω(S^A) := inf_{S^A ∈ S^A} Pr^{S^A}(S^A is winnable)` | **MISSING** | **REUSE-ARCH** — `Q: GameWinnability.lean:294` `infWinnability`, taken over `{H \| H.NonNeg ∧ GameEquivalent H G}`. delta `carrier` |
-| 2.37 | 24 | Thm | **Winnability Theorem**: `ν(S^A) = ω(S^A)`, with an attaining representative | **MISSING** | **REUSE-ARCH — proved in the quarry.** `Q: GameWinnability.lean:778` `winnability_theorem_of_fixed_domain_and_bounded`: under `[Fintype X]`, `HasFixedDomain G D`, `QBounded D q`, `G.NonNeg`, concludes `supWinProb G = infWinnability G ∧ ∃ G', G'.NonNeg ∧ Equivalent G' G ∧ G'.mass Winnable = supWinProb G`. The trivial direction is `:338` `supWinProb_le_infWinnability`. Two **documented deviations from the thesis** that transplant with it: MC monotonicity is *never assumed* (the winning event's own monotonicity `:111` replaces it), and no probability-normalization hypothesis is used (`NonNeg` only — Def 2.1's arbitrary-weight generality). Restated in thesis shape at `Q: LanzenbergerChain.lean:300`. delta `carrier` |
+| 2.37 | 24 | Thm | **Winnability Theorem**: `ν(S^A) = ω(S^A)`, with an attaining representative | **MISSING** | **REUSE-ARCH — proved in the reference repository.** `Q: GameWinnability.lean:778` `winnability_theorem_of_fixed_domain_and_bounded`: under `[Fintype X]`, `HasFixedDomain G D`, `QBounded D q`, `G.NonNeg`, concludes `supWinProb G = infWinnability G ∧ ∃ G', G'.NonNeg ∧ Equivalent G' G ∧ G'.mass Winnable = supWinProb G`. The trivial direction is `:338` `supWinProb_le_infWinnability`. Two **documented deviations from the thesis** that transplant with it: MC monotonicity is *never assumed* (the winning event's own monotonicity `:111` replaces it), and no probability-normalization hypothesis is used (`NonNeg` only — Def 2.1's arbitrary-weight generality). Restated in thesis shape at `Q: LanzenbergerChain.lean:300`. delta `carrier` |
 | U4 | 26 | Unn | the **alternative proof of 2.37 via Theorem 2.31**: build `T : (X, Y×{0,1})`-system emitting the monotone win bit and `V` the same system always emitting `0`; then `Adv(T,V) = ν(S^A)`, and Theorem 2.31's attainment makes `T` unwinnable with probability `1 − ν` | **MISSING** | **REUSE-ARCH** — the `V` half is exactly `Q: GameWinnability.lean:356` `PFunDDS.zeroMBO` / `:374` `zeroMBODist`, and the `Adv(T,V) ≤ ν` half is `:747` `adv_zeroMBODist_le_supWinProb`; `:737` `winningMass_eq_winningMass_blindize` supplies the "bit-adaptivity is useless" step the reduction needs. **This is the route that makes L4 a corollary of L3 rather than an independent induction** — worth choosing deliberately. delta `both` |
 
-**L4 tally: 10 items — 0 DONE, 0 PARTIAL, 10 MISSING; quarry 9 REUSE-ARCH, 0 REUSE-STMT, 1 NONE.**
-**L4 has no home in the current tree at all** (three empty `Game/` stubs), and the most complete quarry coverage of any leg: `GameWinnability.lean` is a direct, `sorry`-free formalization of thesis §2.3.3 + §2.4.3.
+**L4 tally: 10 items — 0 DONE, 0 PARTIAL, 10 MISSING; reference repository 9 REUSE-ARCH, 0 REUSE-STMT, 1 NONE.**
+**L4 has no home in the current tree at all** (three empty `Game/` stubs), and the most complete reference repository coverage of any leg: `GameWinnability.lean` is a direct, `sorry`-free formalization of thesis §2.3.3 + §2.4.3.
 
 ---
 
 ## L5 — applications (§2.5)
 
-| item | p. | kind | content | current tree | quarry verdict |
+| item | p. | kind | content | current tree | reference repository verdict |
 |---|---|---|---|---|---|
 | 2.13 | 14 | Def | parallel composition `[s₁,…,sₙ]` as an `(X×[n], Y)`-DDS, by projecting the input list to each component | **DONE** `System.parallel`, `parallelDom` (`AC: DiscreteSystem.lean:585,580`), `restrict` `:479`; law level `PDS.parLaw` (`AC: Parallel.lean:76`) | REF-ONLY — `Q: PFunDDS.lean:577,572` is the same construction, annotated "Lanzenberger Def 2.13 = CR18 Def 3.4". delta `carrier` |
 | 2.38 | 28–29 | Ex | 20 permutations → 4, `64ε⁵` by MPR07 Thm 1 | **MISSING** (illustration) | REF-ONLY — `Q: Legacy/Applications/CascadePRP.lean:90` `URPfunCascade_eq_URPfun` proves the *perfect* case (composing two uniform permutations is uniform), which is the `(1,2)`-combiner core the example instantiates. No ε-version. delta `both` |
 | 2.39 | 29 | Ex | 15 permutations → 4, `320ε⁶` | **MISSING** (illustration) | **NONE** |
-| 2.40 | 30 | Ex | 10 random functions + a `4×10` MDS matrix → 4 functions, `7680ε⁷` | **MISSING** (illustration) | **NONE** — no MDS-matrix construction anywhere in the quarry (grep-checked) |
+| 2.40 | 30 | Ex | 10 random functions + a `4×10` MDS matrix → 4 functions, `7680ε⁷` | **MISSING** (illustration) | **NONE** — no MDS-matrix construction anywhere in the reference repository (grep-checked) |
 | 2.41 | 30 | Def | an `n`-ary **construction** `C` is a probability distribution over functions `𝒮₁×…×𝒮ₙ → 𝒮_{n+1}` that respects `≡` in every slot | **MISSING** | REUSE-STMT — `Q: Legacy/Construction.lean:39` `structure Construction` (LM20 Def 13) has exactly the `respects_equiv` field, and `Q: Legacy/HConstruction.lean:35` generalizes to heterogeneous index types with a substitution operator `:160`. **But pin 3 bites here**: a construction wires calls to component systems, i.e. it is attachment. Under the converter-free pin this row **routes to the MR16 track** (`attachEngineFully`) rather than being built inside this matrix. delta `both` |
-| 2.42 | 31 | Def | for a **monotone** `𝒜 ⊆ {0,1}ⁿ`, `C` is an `𝒜`-combiner for `(F₁,I₁),…,(Fₙ,Iₙ)` iff `C(⟨F/I⟩_{bⁿ}) ≡ C(I₁,…,Iₙ)` for every `bⁿ ∈ 𝒜` | **MISSING** | REUSE-STMT **with a shape mismatch to fix.** `Q: Legacy/Combiner.lean:44` `IsCombiner` is LM20 Def 14 — "*ideal when **all** components are ideal*" — which is the `𝒜 = {1ⁿ}` special case, **not** the thesis's monotone-set-indexed definition. The `⟨F/I⟩_{bⁿ}` mixed-tuple notation has no quarry counterpart at all. delta `both` (+ statement generalization) |
+| 2.42 | 31 | Def | for a **monotone** `𝒜 ⊆ {0,1}ⁿ`, `C` is an `𝒜`-combiner for `(F₁,I₁),…,(Fₙ,Iₙ)` iff `C(⟨F/I⟩_{bⁿ}) ≡ C(I₁,…,Iₙ)` for every `bⁿ ∈ 𝒜` | **MISSING** | REUSE-STMT **with a shape mismatch to fix.** `Q: Legacy/Combiner.lean:44` `IsCombiner` is LM20 Def 14 — "*ideal when **all** components are ideal*" — which is the `𝒜 = {1ⁿ}` special case, **not** the thesis's monotone-set-indexed definition. The `⟨F/I⟩_{bⁿ}` mixed-tuple notation has no reference repository counterpart at all. delta `both` (+ statement generalization) |
 | 2.43 | 31 | Def | `(k,n)`-combiner: an `𝒜`-combiner with `{bⁿ \| Σbᵢ ≥ k} ⊆ 𝒜` | **MISSING** | REUSE-STMT — `Q: Legacy/Combiner.lean:61` `IsThresholdCombiner` is this, phrased over a `Finset (Fin n) J` with `k ≤ J.card`; `:75` `threshold_combiner_is_combiner`. Closest thesis match in the whole of L5. delta `both` |
-| 2.44 | 32 | Lem | the blinding lemma: `Adv(C(F),C(I)) ≤ B(0ⁿ)⁻¹ · Σ_{e∈{0,1}ⁿ} δ(blind(B,e), blind(B′,e))·Pr(E = e)`, for probability laws `B, B′` on `𝒜 ∪ {0ⁿ}` with `B(0ⁿ)>0`, `B′(0ⁿ)=0` | **MISSING** | **NONE** — no `blind` operation on multisets/tuples, and no quarry statement of this shape |
+| 2.44 | 32 | Lem | the blinding lemma: `Adv(C(F),C(I)) ≤ B(0ⁿ)⁻¹ · Σ_{e∈{0,1}ⁿ} δ(blind(B,e), blind(B′,e))·Pr(E = e)`, for probability laws `B, B′` on `𝒜 ∪ {0ⁿ}` with `B(0ⁿ)>0`, `B′(0ⁿ)=0` | **MISSING** | **NONE** — no `blind` operation on multisets/tuples, and no reference repository statement of this shape |
 | 2.45 | 34 | Thm | `(k,n)`-combiner amplification: `Adv ≤ Σ_{i=n−k+1}^{n} ζ_{i−(n−k),i}·Pr(Σ_{j} E_j = n−k+1)` with `ζ_{l,m} = ½(1 + Σ_{j=l}^{m} C(m,j)C(j−1,l−1))` | **MISSING** | **REF-ONLY, and a trap.** `Q: Legacy/Amplification.lean:57` `amplification_theorem` is LM20 **Theorem 3**, a *different* statement (`Adv ≤ C(n,k−1)·εᵏ`, no `ζ`, no Bernoulli sum), it takes the black-box reduction as an **explicit hypothesis**, and **its `k ≥ 2` branch is `sorry` at `:119`**. `Q: Legacy/Amplification.lean:127` `amplification_theorem_k1` (`≤ n·ε`) and `:165` `threshold_combiner_bound_1_2` (`≤ 2ε`) are independently proved but are plain hybrid bounds — **not amplification** (no exponent in ε). **Nothing here may be forwarded as evidence for Theorem 2.45.** |
-| 2.46 | 36 | Cor | (i) `2^{n−k}Σ_j C(j−1,n−k)Pr(ΣEᵢ=j)`; (ii) `½C(n,k−1)(2ε)^{n−k+1}`; (iii) `(2e·n/(n−k+1)·ε)^{n−k+1}` | **MISSING** | **NONE** for the bounds. The one reusable *fragment* is the binomial identity `Σ_{j≥m} C(j,m)C(n,j)εʲ(1−ε)^{n−j} = C(n,m)εᵐ` proved in the source by `E[C(X,m)]`; the current tree has `Distribution.expect` (`AC: Probability/Expectation.lean:65`) and `Distribution.prod`/`iidPow` (`Distribution.lean:1356,1422`), and the quarry has `Q: Counting.lean` for the surrounding inequalities, but the identity itself is nowhere |
-| U6 | 38 | Unn | a simple `(k,n)`-combiner for random functions: `C(x) := A·xᵀ` for an MDS matrix `A ∈ 𝔽^{k×n}`; hence `Adv((F′₁,…,F′ₖ), Rᵏ) ≤ ½C(n,k−1)(2ε)^{n−k+1}` | **MISSING** | REF-ONLY — the nearest quarry object is `Q: KWiseIndepPoly.lean:197` `kIndepRV_polyEval` (`k`-wise independence from polynomial evaluation over an arbitrary finite field, CR18 §6.1.2), which shares the "linear-algebraic combiner over a finite field" genre and the `k ≤ \|F\|` side condition — but a Vandermonde/Cauchy matrix is a *different* object from an MDS `k×n` matrix and no MDS predicate exists. delta `none` (pure algebra) |
-| 2.47 | 39 | Lem | quasigroup sharing construction: partition `n` systems into `m+1` sets, combine with `⊙`; `Adv(C(Q),Uⁿ) ≤ m(m+1)/4·(2ε)^{2n/(m+1)}` | **MISSING** | **NONE** — no quasigroup structure in the quarry |
+| 2.46 | 36 | Cor | (i) `2^{n−k}Σ_j C(j−1,n−k)Pr(ΣEᵢ=j)`; (ii) `½C(n,k−1)(2ε)^{n−k+1}`; (iii) `(2e·n/(n−k+1)·ε)^{n−k+1}` | **MISSING** | **NONE** for the bounds. The one reusable *fragment* is the binomial identity `Σ_{j≥m} C(j,m)C(n,j)εʲ(1−ε)^{n−j} = C(n,m)εᵐ` proved in the source by `E[C(X,m)]`; the current tree has `Distribution.expect` (`AC: Probability/Expectation.lean:65`) and `Distribution.prod`/`iidPow` (`Distribution.lean:1356,1422`), and the reference repository has `Q: Counting.lean` for the surrounding inequalities, but the identity itself is nowhere |
+| U6 | 38 | Unn | a simple `(k,n)`-combiner for random functions: `C(x) := A·xᵀ` for an MDS matrix `A ∈ 𝔽^{k×n}`; hence `Adv((F′₁,…,F′ₖ), Rᵏ) ≤ ½C(n,k−1)(2ε)^{n−k+1}` | **MISSING** | REF-ONLY — the nearest reference repository object is `Q: KWiseIndepPoly.lean:197` `kIndepRV_polyEval` (`k`-wise independence from polynomial evaluation over an arbitrary finite field, CR18 §6.1.2), which shares the "linear-algebraic combiner over a finite field" genre and the `k ≤ \|F\|` side condition — but a Vandermonde/Cauchy matrix is a *different* object from an MDS `k×n` matrix and no MDS predicate exists. delta `none` (pure algebra) |
+| 2.47 | 39 | Lem | quasigroup sharing construction: partition `n` systems into `m+1` sets, combine with `⊙`; `Adv(C(Q),Uⁿ) ≤ m(m+1)/4·(2ε)^{2n/(m+1)}` | **MISSING** | **NONE** — no quasigroup structure in the reference repository |
 | 2.48 | 41 | Def | for a monotone `ψ : {0,1}ⁿ → {0,1}`, the MC `ψ_{A₁..ₙ}(x̂) := ψ(A₁(x̂\|₁),…,Aₙ(x̂\|ₙ))` and the ψ-parallel composition `[s₁,…,sₙ]^{ψ_{A₁..ₙ}}` | **MISSING** | REUSE-STMT — the two halves exist separately and have never been combined: parallel composition `Q: PFunDDS.lean:577` with its projection `restrict` `:471`, and the MBO carriers `Q: PDS.lean:3045,3101`. The composite MC is not defined anywhere. delta `carrier` |
 | 2.49 | 41 | Cor | `ω([S₁,…,Sₙ]^{ψ}) = Pr(ψ(B₁,…,Bₙ)=1)` with `Bᵢ` independent Bernoulli of parameter `ω(Sᵢ^{Aᵢ})` — the exact winnability of an arbitrary monotone combination of parallel games | **MISSING** | **NONE** for the statement, **REUSE-ARCH for its two inputs**: `ω` is `Q: GameWinnability.lean:294` and Theorem 2.37 is `:778`; the proof is `≤` by picking each sub-game's minimal representative and `≥` by playing independently, then Theorem 2.37. Independent-Bernoulli machinery: the current tree has `Distribution.prod`/`iidPow` but no Bernoulli vector; `Q` has none either. delta `carrier` |
 | A.1 | 88 | Lem | (cf. MPR07 Lemma 3) `Adv(⟨S/T⟩_B, T) = B(0)·Adv(S,T)` for a probability law `B` on `{0,1}` — the exact scaling of the advantage under a two-point mixture | **MISSING** — the tree has only the inequality direction, `advFullyDefined_sum_le` (`AC: Environment.lean:710`) | REF-ONLY — `Q: Distinguishing.lean:187` `advantage_eq_expect_single` and `Q: MaxWinProb.lean:156` `winProb_eq_expect_single` are the linearity facts A.1 is built from, both hypothesis-free; A.1's *equality* (which needs the `sSup` to commute with the scaling) is not stated. delta `both` |
-| A.2 | 88–89 | Lem | `ζ_{l,m} = 2ζ_{l,m−1} + ζ_{l−1,m−1} − 1`, and `2^{m−l}C(m−1,l−1) ∈ [ζ_{l,m}, 2ζ_{l,m}−1]` | **MISSING** | **NONE** — pure binomial recursion, nothing analogous in the quarry. delta `none` (would be written from scratch, carrier- and metric-free) |
+| A.2 | 88–89 | Lem | `ζ_{l,m} = 2ζ_{l,m−1} + ζ_{l−1,m−1} − 1`, and `2^{m−l}C(m−1,l−1) ∈ [ζ_{l,m}, 2ζ_{l,m}−1]` | **MISSING** | **NONE** — pure binomial recursion, nothing analogous in the reference repository. delta `none` (would be written from scratch, carrier- and metric-free) |
 
-**L5 tally: 16 items — 1 DONE (2.13), 0 PARTIAL, 15 MISSING; quarry 1 REUSE-ARCH(partial, for 2.49's inputs), 4 REUSE-STMT, 4 REF-ONLY, 7 NONE.**
-**L5 is the only leg where the quarry is nearly empty**, and it is also the leg where **pin 3 disqualifies the core**: Definitions 2.41–2.43 and Theorem 2.45 are statements about a construction `C` wiring component systems, which is attachment and therefore MR16-track work.
+**L5 tally: 16 items — 1 DONE (2.13), 0 PARTIAL, 15 MISSING; reference repository 1 REUSE-ARCH(partial, for 2.49's inputs), 4 REUSE-STMT, 4 REF-ONLY, 7 NONE.**
+**L5 is the only leg where the reference repository is nearly empty**, and it is also the leg where **pin 3 disqualifies the core**: Definitions 2.41–2.43 and Theorem 2.45 are statements about a construction `C` wiring component systems, which is attachment and therefore MR16-track work.
 
 ---
 
@@ -1577,19 +1582,19 @@ which distance is being claimed.  Every `metric` delta below is this.
 | L5 | 16 | 1 | 0 | 15 | 0 | 1 | 4 | 4 | 7 |
 | **total** | **57** | **14** | **6** | **36** | **1** | **22** | **10** | **16** | **9** |
 
-Read the two halves together: **42 of 57 obligations are open** (MISSING or PARTIAL), and **31 of those 42 have a REUSE-ARCH or REUSE-STMT verdict** — the quarry already contains a finished proof or a usable statement shape for three quarters of the open work.  The residue with no quarry support is concentrated almost entirely in L5.
+Read the two halves together: **42 of 57 obligations are open** (MISSING or PARTIAL), and **31 of those 42 have a REUSE-ARCH or REUSE-STMT verdict** — the reference repository already contains a finished proof or a usable statement shape for three quarters of the open work.  The residue with no reference repository support is concentrated almost entirely in L5.
 
 ---
 
-# Pin conflicts — what the quarry contains that must NOT be transplanted as-is
+# Pin conflicts — what the reference repository contains that must NOT be transplanted as-is
 
-Nine hazards, each verified in the quarry source.
+Nine hazards, each verified in the reference repository source.
 
-1. **`Δ(S, T)` means `maxAdvantage`, not `classDistance`.**  In the quarry, `Δ(·,·)` **with parentheses** is `sSup` over probability *distinguishers* of the signed `verdictProb D T − verdictProb D S` (`Q: Distinguishing.lean:136,139`), while the class distance is `Δ S T` **without** parentheses (`Q: RandomSystem.lean:8358`).  The current tree binds `Δ(S, T)` to `classDistance` (`AC: ClassDistance.lean:149`).  A verbatim copy silently changes the theorem.
+1. **`Δ(S, T)` means `maxAdvantage`, not `classDistance`.**  In the reference repository, `Δ(·,·)` **with parentheses** is `sSup` over probability *distinguishers* of the signed `verdictProb D T − verdictProb D S` (`Q: Distinguishing.lean:136,139`), while the class distance is `Δ S T` **without** parentheses (`Q: RandomSystem.lean:8358`).  The current tree binds `Δ(S, T)` to `classDistance` (`AC: ClassDistance.lean:149`).  A verbatim copy silently changes the theorem.
 
-2. **`maxAdvantage` is forbidden by pin 2, and it is load-bearing across the quarry.**  `Q: CompatibleMetric.lean:1358` (eq. (4), non-expansion), `:1396` (eq. (3)), `:1421` (symmetry), `Q: RandomSystemMetric.lean:59` (the `MetricSpace` instance), `Q: AbsorbDPI.lean:991,2240` (converter DPI), `Q: SwitchingLemma.lean:1864`, `Q: CBCMAC.lean:1077,1103`, `Q: GameOf.lean:1431,1472` are all stated on it.  Each is a *statement-shape* asset only; the metric must be re-based on `advFullyDefined`.
+2. **`maxAdvantage` is forbidden by pin 2, and it is load-bearing across the reference repository.**  `Q: CompatibleMetric.lean:1358` (eq. (4), non-expansion), `:1396` (eq. (3)), `:1421` (symmetry), `Q: RandomSystemMetric.lean:59` (the `MetricSpace` instance), `Q: AbsorbDPI.lean:991,2240` (converter DPI), `Q: SwitchingLemma.lean:1864`, `Q: CBCMAC.lean:1077,1103`, `Q: GameOf.lean:1431,1472` are all stated on it.  Each is a *statement-shape* asset only; the metric must be re-based on `advFullyDefined`.
 
-3. **`maxEDist` is forbidden by pin 2, and the quarry itself records that it is strictly weaker.**  `Q: StrictContext.lean:158` defines it; `Q: StrictContextAdvantage.lean:403` proves `maxEDist ≤ ofReal Δ(·,·)` **unconditionally**, with equality only on total laws (`Q: StrictContextTotal.lean:474`) or on the shared-domain subcarrier (`Q: StrictContextSharedDomain.lean:934`).  `Q: StrictParallel.lean`'s header states the consequence outright: *"the strict metric is only bounded by `Δ` (`AttainmentCounterexample` refutes the converse), so Maurer's eq. (3) for `Δ` transfers nothing to `maxEDist`."*  Do not import any `StrictContext*` or `StrictParallel` statement into this matrix's work.
+3. **`maxEDist` is forbidden by pin 2, and the reference repository itself records that it is strictly weaker.**  `Q: StrictContext.lean:158` defines it; `Q: StrictContextAdvantage.lean:403` proves `maxEDist ≤ ofReal Δ(·,·)` **unconditionally**, with equality only on total laws (`Q: StrictContextTotal.lean:474`) or on the shared-domain subcarrier (`Q: StrictContextSharedDomain.lean:934`).  `Q: StrictParallel.lean`'s header states the consequence outright: *"the strict metric is only bounded by `Δ` (`AttainmentCounterexample` refutes the converse), so Maurer's eq. (3) for `Δ` transfers nothing to `maxEDist`."*  Do not import any `StrictContext*` or `StrictParallel` statement into this matrix's work.
 
 4. **The `Adv` ↔ `Δ(·,·)` orientation is forced and counter-intuitive.**  `Q: RandomSystem.lean:1830` `adv_eq_maxAdvantage_swap` proves `Adv S T = Δ(T, S)` — arguments **swapped** — and its docstring records that the naive pairing `Adv S T = Δ(S, T)` is *refutable* (at `S = 0`, `Adv 0 T = 0` while `Δ(0, T)` is `T`'s weight).  Any transplant that guesses the orientation gets a false statement.
 
@@ -1597,13 +1602,13 @@ Nine hazards, each verified in the quarry source.
 
 6. **Three live `sorry`s.  None may be forwarded as evidence.**  `Q: Legacy/FundamentalTheorem.lean:172` (the successor branch of Theorem 1 — so `delta_le_advantage` `:189` and `delta_eq_advantage` `:216` are *not* proved); `Q: Legacy/Amplification.lean:119` (the `k ≥ 2` branch of Theorem 3 — so `amplification_theorem` `:57` is *not* proved); `Q: CBCStructureGraph.lean:1415` (`mass_cbcGraphBad_le`, whose own docstring flags that the stated constant is unreachable by the intended union bound).  The live-carrier attainment results (`BoundedAttainment`, `RandomSystemCoupling`, `GameWinnability`, `MultiSystemCoupling`, `Example216`, `ThesisModel`, `LanzenbergerChain`) are `sorry`-free at source level; note that **none of the four surveys ran `#print axioms`**, so "axiom-clean" is not established, only "no source-level `sorry`/`axiom`".
 
-7. **Pin 3 disqualifies the converter-attached quarry assets.**  `Q: AbsorbDPI.lean` (the whole DPI development), `Q: CompatibleMetric.lean:1358` eq. (4), `Q: CBCMAC.lean`, and — decisively — thesis Definitions 2.41–2.43 and Theorem 2.45 are statements about attaching a construction to component systems.  They belong to the MR16 attachment track (`attachEngineFully`), not here.
+7. **Pin 3 disqualifies the converter-attached reference repository assets.**  `Q: AbsorbDPI.lean` (the whole DPI development), `Q: CompatibleMetric.lean:1358` eq. (4), `Q: CBCMAC.lean`, and — decisively — thesis Definitions 2.41–2.43 and Theorem 2.45 are statements about attaching a construction to component systems.  They belong to the MR16 attachment track (`attachEngineFully`), not here.
 
-8. **Two source errata must travel with the L2 transplant.**  (a) Definition 2.27/2.28's inner `inf` over representatives is wrong; the quarry keeps the verbatim display as `Q: LanzenbergerChain.lean:366` `printedMultiSystemDistance` and *refutes* it with `Q: Example216.lean:591` `definition_2_28_printed_displays_disagree`, using the corrected `sup` form `:350` everywhere else.  (b) Theorem 2.29's printed `min_{i≠j}` in the upper bound should be `max`; refuted by `Q: MultiSystemCoupling.lean:958` `printed_min_form_counterexample`.  Transplanting the printed forms imports two false statements.
+8. **Two source errata must travel with the L2 transplant.**  (a) Definition 2.27/2.28's inner `inf` over representatives is wrong; the reference repository keeps the verbatim display as `Q: LanzenbergerChain.lean:366` `printedMultiSystemDistance` and *refutes* it with `Q: Example216.lean:591` `definition_2_28_printed_displays_disagree`, using the corrected `sup` form `:350` everywhere else.  (b) Theorem 2.29's printed `min_{i≠j}` in the upper bound should be `max`; refuted by `Q: MultiSystemCoupling.lean:958` `printed_min_form_counterexample`.  Transplanting the printed forms imports two false statements.
 
 9. **Attainment is FALSE without the finiteness bundle, on exactly the presentation the current tree uses.**  `Q: AttainmentCounterexample.lean:766` refutes `Δ = Adv` unrestricted, and the mechanism is CR18 Def 3.3 — a rejected query is a *visible* `⊥` deleted only from the DDS-side history, giving the environment a free domain probe.  `PDS.advFullyDefined` is built on precisely that presentation (`DDE.Total.transcript` over `s⊥`).  **Theorem 2.31 must therefore be stated with `HasFixedDomain` + `QBounded` + finite `X`; an unrestricted statement should be expected to be false, not merely unproved.**
 
-**One further definitional decision the quarry forces into the open.**  The quarry's `Δ` (`Q: RandomSystem.lean:8358`) quantifies over **non-negative** representatives only; the current tree's `classDistance` (`AC: ClassDistance.lean:143`) is unrestricted.  On the signed carrier these are different infima.  Pick one before any L3 statement is written.
+**One further definitional decision the reference repository forces into the open.**  The reference repository's `Δ` (`Q: RandomSystem.lean:8358`) quantifies over **non-negative** representatives only; the current tree's `classDistance` (`AC: ClassDistance.lean:143`) is unrestricted.  On the signed carrier these are different infima.  Pick one before any L3 statement is written.
 
 ---
 
@@ -1612,22 +1617,22 @@ Nine hazards, each verified in the quarry source.
 **L1 → L2a → L3 → L4 → (L2b in parallel) → L5-residue.**
 
 **1. L1 (equivalence + non-adaptive reduction) — first, and cheap.**
-Four items, every one with a finished quarry proof, and the leg where the current tree is already closest (Def 2.17 is `DONE`).  Two of its assets are prerequisites for everything after it: `Q: ThesisModel.lean`'s `equivalent_iff_thesisEquivalent` `:786` / `adv_eq_thesisAdv` `:847` are the **`Adv` ↔ `Adv⊥` coding map**, which the tree's own queued note names as blocking gap (iii) of Theorem 2.31; and `Q: LanzenbergerChain.lean:160`'s "fixed transcript event = fixed query event" device is the replay step Lemma 2.18 needs.  Doing L1 first converts the pin-2 metric from an *unrelated* object into Definition 2.26 proper, which is what makes every later statement citable against the thesis.
+Four items, every one with a finished reference repository proof, and the leg where the current tree is already closest (Def 2.17 is `DONE`).  Two of its assets are prerequisites for everything after it: `Q: ThesisModel.lean`'s `equivalent_iff_thesisEquivalent` `:786` / `adv_eq_thesisAdv` `:847` are the **`Adv` ↔ `Adv⊥` coding map**, which the tree's own queued note names as blocking gap (iii) of Theorem 2.31; and `Q: LanzenbergerChain.lean:160`'s "fixed transcript event = fixed query event" device is the replay step Lemma 2.18 needs.  Doing L1 first converts the pin-2 metric from an *unrelated* object into Definition 2.26 proper, which is what makes every later statement citable against the thesis.
 
 **2. L2a (the finite slice: 2.9's finiteness clause + U5's query ruling) — the gate.**
-Not a leg so much as an entry condition.  The current tree has `QBounded` with **zero call sites** and no `Fintype` on any system carrier.  The quarry's answer is decisive and cheap to copy: **do not build a subtype — bundle the hypotheses**, exactly as `Q: BoundedAttainment.lean:90` `HaveCommonDomainAndBounded` does (`[Fintype X]` + `HasFixedDomain … D` + `QBounded D q`).  Nothing in L3 or L4 can be *stated correctly* until this exists, because of pin conflict 9.
+Not a leg so much as an entry condition.  The current tree has `QBounded` with **zero call sites** and no `Fintype` on any system carrier.  The reference repository's answer is decisive and cheap to copy: **do not build a subtype — bundle the hypotheses**, exactly as `Q: BoundedAttainment.lean:90` `HaveCommonDomainAndBounded` does (`[Fintype X]` + `HasFixedDomain … D` + `QBounded D q`).  Nothing in L3 or L4 can be *stated correctly* until this exists, because of pin conflict 9.
 
 **3. L3 (attainment) — the largest payoff, and it must come third.**
-Nine items, seven REUSE-ARCH, and the whole leg is finished in the quarry: Lemma 2.33's ~1300-line apparatus (`Q: RandomSystem.lean:4113`), Notation 2.34's successor calculus with the weight identity (`Q: RandomSystem.lean:2169` + `Q: BoundedAttainment.lean:254,539,584,1129`), the branch-additivity form of Lemma 2.5 (`Q: TranscriptBranchDistance.lean:35`), the query induction (`Q: BoundedAttainment.lean:751`), Theorem 2.31 (`:1106`) and Theorem 2.32 (`Q: RandomSystemCoupling.lean:112`).  It depends on L1 (the coding map) and L2a (the hypothesis bundle) and on nothing else.  Budget it as the long leg: every piece needs re-basing onto `PDS X Y = Distribution (System.DDS X Y)` and onto `advFullyDefined`.
+Nine items, seven REUSE-ARCH, and the whole leg is finished in the reference repository: Lemma 2.33's ~1300-line apparatus (`Q: RandomSystem.lean:4113`), Notation 2.34's successor calculus with the weight identity (`Q: RandomSystem.lean:2169` + `Q: BoundedAttainment.lean:254,539,584,1129`), the branch-additivity form of Lemma 2.5 (`Q: TranscriptBranchDistance.lean:35`), the query induction (`Q: BoundedAttainment.lean:751`), Theorem 2.31 (`:1106`) and Theorem 2.32 (`Q: RandomSystemCoupling.lean:112`).  It depends on L1 (the coding map) and L2a (the hypothesis bundle) and on nothing else.  Budget it as the long leg: every piece needs re-basing onto `PDS X Y = Distribution (System.DDS X Y)` and onto `advFullyDefined`.
 
 **4. L4 (games and winnability) — short *if* it comes after L3.**
-Ten items, nine REUSE-ARCH, no home in the current tree (three empty stubs).  The choice that determines its cost is which proof of Theorem 2.37 to take: the quarry's self-contained induction (`Q: GameWinnability.lean:778`) repeats L3's successor machinery, whereas the thesis's **alternative proof (U4)** derives 2.37 from Theorem 2.31 through the always-lose twin `V` — and the quarry already has both halves of that reduction (`Q: GameWinnability.lean:356,374,747,737`).  Sequenced after L3, L4 is a reduction; sequenced before it, L4 is a second induction.  Sequence it after.
+Ten items, nine REUSE-ARCH, no home in the current tree (three empty stubs).  The choice that determines its cost is which proof of Theorem 2.37 to take: the reference repository's self-contained induction (`Q: GameWinnability.lean:778`) repeats L3's successor machinery, whereas the thesis's **alternative proof (U4)** derives 2.37 from Theorem 2.31 through the always-lose twin `V` — and the reference repository already has both halves of that reduction (`Q: GameWinnability.lean:356,374,747,737`).  Sequenced after L3, L4 is a reduction; sequenced before it, L4 is a second induction.  Sequence it after.
 
 **5. L2b (multi-system Δ: 2.27, 2.29, 2.30) — parallelizable, low priority.**
 Genuinely independent: `Q: MultiSystemCoupling.lean` is on plain `Dist A` with no system content and no metric, so its transplant delta is `none` for the combinatorial core.  Nothing in L3, L4 or L5 consumes it.  Hand it to a separate worker at any time — but ship the two errata (pin conflict 8) with it, since the printed statements are false.
 
 **6. L5 (applications) — last, and mostly out of scope.**
-Sixteen items, seven with no quarry support at all, and **pin 3 removes its core**: Definitions 2.41–2.43 and Theorem 2.45 are attachment statements that belong to the MR16 track.  What genuinely remains inside this matrix is a short tail — Definition 2.48's composite MC, Corollary 2.49 (a two-line consequence of Theorem 2.37 once L4 exists), and Lemma A.2's binomial recursion (carrier-free, writable from scratch).  Everything else in L5 should be recorded as deferred rather than scheduled.
+Sixteen items, seven with no reference repository support at all, and **pin 3 removes its core**: Definitions 2.41–2.43 and Theorem 2.45 are attachment statements that belong to the MR16 track.  What genuinely remains inside this matrix is a short tail — Definition 2.48's composite MC, Corollary 2.49 (a two-line consequence of Theorem 2.37 once L4 exists), and Lemma A.2's binomial recursion (carrier-free, writable from scratch).  Everything else in L5 should be recorded as deferred rather than scheduled.
 
 **Dependency summary.**
 
@@ -1649,11 +1654,11 @@ TECHNIQUE (bound theorems against `Adv⊥`/`classDistance` + application kits).
 This document is the from-disk inventory that prices the integration.
 
 * Target tree (**AC**): `/Users/marcilunga/Documents/tob/research/abstract-crypto`
-* Quarry (**Q**, READ-ONLY): `/Users/marcilunga/Documents/tob/research/random-systems`
+* Reference repository (**Q**, READ-ONLY): `/Users/marcilunga/Documents/tob/research/random-systems`
 * Papers (visual reads only): `Q:papers/`
 
 Status: SURVEY.  Nothing here is a landed statement; every "verdict" is a claim
-about what transplants, in the LEDGER "quarry rule" sense.
+about what transplants, in the LEDGER "reference repository rule" sense.
 
 ---
 
@@ -1668,9 +1673,9 @@ about what transplants, in the LEDGER "quarry rule" sense.
 | **total** | **3** | **19** | **9** | **4** | 3 | **38** |
 
 **Headline reading.** The program is dominated by **TRANSPLANT** (19/38): the
-mathematics exists and is sorry-free in the quarry, and the cost is re-basing
+mathematics exists and is sorry-free in the reference repository, and the cost is re-basing
 statements onto `Adv⊥`/`Δ` and the fully-defined carrier — not new proofs.  Only
-**T2 is genuinely MODEL-NEW** (the quarry has ingredients but never states MPR07
+**T2 is genuinely MODEL-NEW** (the reference repository has ingredients but never states MPR07
 Lemma 5), and only **T4 has anything already PRESENT** — its entire distribution-level
 kernel is landed in `AC:Probability/StatisticalDistance.lean`.
 
@@ -1678,14 +1683,14 @@ kernel is landed in `AC:Probability/StatisticalDistance.lean`.
 
 | ruling | content | consequence for the technique program |
 |---|---|---|
-| R1 | `Φ := PDS Uni Uni`; the official carrier is the **fully defined slice**; partial systems enter via `s⊥`; deletion is the embedding's shape, not an interaction rule (`AC:PHI-SPEC.md:14-18`) | every quarry technique statement conditioned on a *partial* domain must be re-read (§CONFLICTS) |
+| R1 | `Φ := PDS Uni Uni`; the official carrier is the **fully defined slice**; partial systems enter via `s⊥`; deletion is the embedding's shape, not an interaction rule (`AC:PHI-SPEC.md:14-18`) | every reference repository technique statement conditioned on a *partial* domain must be re-read (§CONFLICTS) |
 | R2 | refusal is observable (`⊥ = none`) and **non-fatal**, for every system incl. converters (`AC:PHI-SPEC.md:19-21`) | the MBO bit must survive `⊥`-completion; the CE conditioning event lives on completed transcripts |
 | R3 | addressing is exogenous: an interface is a `Set Uni`; ownership never inferred from domains | games/blinders are not interface objects — technique work is converter-free (pin 3) |
-| R4 | statement-facing metric is `Adv⊥ = PDS.advFullyDefined` (`AC:RandomSystems/System/Environment.lean:751`), notation `Adv⊥(S,T)`; `maxAdvantage`/`maxEDist` are FORBIDDEN statement targets (pin 2) | **every** technique's main bound must land on `Adv⊥` or `Δ`, never on the quarry's `Δ(S,T) = maxAdvantage` |
+| R4 | statement-facing metric is `Adv⊥ = PDS.advFullyDefined` (`AC:RandomSystems/System/Environment.lean:751`), notation `Adv⊥(S,T)`; `maxAdvantage`/`maxEDist` are FORBIDDEN statement targets (pin 2) | **every** technique's main bound must land on `Adv⊥` or `Δ`, never on the reference repository's `Δ(S,T) = maxAdvantage` |
 | R4′ | both presentations first-class: `equivalent` (Def 2.17, `ClassDistance.lean:1322`), `classDistance` (Def 2.28, `ClassDistance.lean:1546`), `Adv⊥ ≤ Δ`, coupling bounds land on `Adv⊥`; domain-indexed strict layer `HasDomain`/`CompatibleD`/`AdvD` | techniques may target either, and the crossing API already exists |
-| R9 | `classDistance` infimizes over **honest (NonNeg)** representatives; signed representatives are proof tools only | the quarry's `infWinnability` already writes the `NonNeg` conjunct — see T3 |
-| SOURCE HIERARCHY | MauRen16 > Jost > LiuMau20 > Lanzenberger; **CR18 DEMOTED** to fallback-only, and only for a concept no primary covers (`AC:LEDGER.md:7-15`) | **the single largest re-basing cost of this program**: the quarry's CE/MBO/game development is presented as *CR18 Defs 4.15–4.19 / Thm 4.17*.  Lanzenberger Ch.2 §2.3.3/§2.4.3 and Maurer02 §4 are the primary-source presentations that must carry the AC statements; CR18 numbering may survive only as historical provenance in docstrings |
-| naming (3 layers) | paper names first; mathlib grammar; RS house patterns; a non-paper name is a flagged COINAGE | `massYAfalse`, `blindMaxWinProb`, `zeroMBO`, `prewinBehavior` are quarry coinages and must be re-named or flagged |
+| R9 | `classDistance` infimizes over **honest (NonNeg)** representatives; signed representatives are proof tools only | the reference repository's `infWinnability` already writes the `NonNeg` conjunct — see T3 |
+| SOURCE HIERARCHY | MauRen16 > Jost > LiuMau20 > Lanzenberger; **CR18 DEMOTED** to fallback-only, and only for a concept no primary covers (`AC:LEDGER.md:7-15`) | **the single largest re-basing cost of this program**: the reference repository's CE/MBO/game development is presented as *CR18 Defs 4.15–4.19 / Thm 4.17*.  Lanzenberger Ch.2 §2.3.3/§2.4.3 and Maurer02 §4 are the primary-source presentations that must carry the AC statements; CR18 numbering may survive only as historical provenance in docstrings |
+| naming (3 layers) | paper names first; mathlib grammar; RS house patterns; a non-paper name is a flagged COINAGE | `massYAfalse`, `blindMaxWinProb`, `zeroMBO`, `prewinBehavior` are reference repository coinages and must be re-named or flagged |
 | escalation filter | a fork goes to Marc only after checking the PRIMITIVE REGISTRY and the rulings (`AC:LEDGER.md:672-676`) | every CONFLICT below is *flagged*, not resolved, per this brief |
 
 **Correction to the charter's shorthand.** The brief (and this document's first
@@ -1721,7 +1726,7 @@ Verified visually, and it changes two rows of the brief:
    among the two files on disk.  T3's primary source is thesis §2.3.3 + §2.4.3, full stop.
    (The token `blind` occurs 23× in LanMau20 but is a *helper function* in its §5
    amplification proof — `blind(x,m)` deletes coordinates where `mᵢ = 0`.  It is
-   unrelated to any blinder object.  Do not let the name collide with the quarry's
+   unrelated to any blinder object.  Do not let the name collide with the reference repository's
    `blindMaxWinProb`.)
 
 2. **There is no "blinder" object anywhere in thesis Ch. 2.**  §2.3.3's numbered
@@ -1729,7 +1734,7 @@ Verified visually, and it changes two rows of the brief:
    are exactly Defs 2.35, 2.36, Thm 2.37.  "Def/Lemma 2.38" does not exist (2.38 is
    an unrelated Example in §2.5.1).  The nearest object is the **unnamed always-losing
    system `V`** inside the *alternative* proof of Thm 2.37 (printed p. 26) — which is
-   exactly what the quarry named `zeroMBO` / `zeroMBODist`
+   exactly what the reference repository named `zeroMBO` / `zeroMBODist`
    (`Q:RandomSystems/GameWinnability.lean:356,374`).  **`zeroMBO` is therefore a
    COINAGE under the naming ruling and must be flagged as one.**
 
@@ -1769,7 +1774,7 @@ preprint**, self-numbered 1–23 — *not* the LNCS 2332 pp. 110–132 paginatio
 ### Verbatim anchors worth pinning
 
 * **CR18 Def 4.19** `[printed p. 108 / PDF 60]`: `S ⊫ T` iff `p^S_{Yⁱ | Xⁱ, Aᵢ=0} = p^T_{Yⁱ | Xⁱ}` for `i ≥ 1`; product form **eq. (4.38)** `p^S_{Yⁱ, Aᵢ=0 | Xⁱ} = p^S_{Aᵢ=0|Xⁱ} · p^T_{Yⁱ|Xⁱ}`.  The notes then say `T` *is* `S⁻`, and read CE as **factorization**: `S` splits into a `Y`-component and an *independent* MBO component while the MBO is 0.
-* **CR18 footnote 29** `[p. 108]`: "Two conditional probability distributions are considered to be equal if they are equal for all arguments for which they are both defined."  This is exactly what the quarry's cross-multiplied `CondEquiv` honours (`Q:CondEquiv.lean:25`).
+* **CR18 footnote 29** `[p. 108]`: "Two conditional probability distributions are considered to be equal if they are equal for all arguments for which they are both defined."  This is exactly what the reference repository's cross-multiplied `CondEquiv` honours (`Q:CondEquiv.lean:25`).
 * **CR18 Lem 4.16** `[p. 107]`: `S ≡ᵍ T ⟹ ⟨S⁻|T⁻⟩ ≤ S̄` — pointwise in `D`, adaptive, **one-sided** (`⟨S|T⟩(D)` is the *signed* `Pr^{DT}(Z=1) − Pr^{DS}(Z=1)`, and `Δ := sup_D`, not a sup of an absolute value).
 * **CR18 Thm 4.17 proof** `[p. 110]`: enhance `T` by `p^T̂_{Yⁱ Aᵢ | Xⁱ} = p^T_{Yⁱ|Xⁱ} · p^Ŝ_{Aᵢ|Xⁱ}`, i.e. **`T̂`'s MBO depends only on the inputs**; then `Ŝ ≡ᵍ T̂` (4.39), `T̂ = T̃ b Ŝ` (4.40), and absorb `T̃` into the winner.  *That input-only enhancement is precisely what converts an adaptive distinguisher into a blind winner.*
 * **CR18 §4.10 standing simplification** `[p. 105]`: environments stop after finitely many queries, `q` an upper bound, and **short runs are padded with dummy queries** so transcripts are fixed-length `(X^q, Y^q)`.  **There is no `⊥`, no refusal, and no partial-domain apparatus in §4.10-4.11 at all.**
@@ -1795,12 +1800,12 @@ Maurer09c `[printed p. 45]` restates this informally, verbatim the same sentence
 
 ### Cross-source traps (must be in any transplant brief)
 
-1. **POLARITY FLIP.**  Maurer02's `Aᵢ = 1` = condition **satisfied** (good), failure is `Āᵢ`.  MPR07 / Maurer13b / CR18: `Aᵢ = 1` = game **won** (bad).  Maurer02's `Aᵢ` ≙ Maurer13b's `{Aᵢ = 0}`.  Transcribing between papers requires flipping the bit.  *The quarry follows the CR18 polarity* (`false = 0 = not won`, `Q:CondEquiv.lean:16`) — so a Maurer02-sourced statement must be flipped before comparison.
-2. **CE is not one relation.**  Maurer02 Def 6 is the **one-step** form `p_{Yᵢ|Xⁱ Y^{i−1} Aᵢ}`; Maurer13b Def 13 and CR18 Def 4.19 are the **joint** form `p_{Yⁱ|Xⁱ, Aᵢ=0}`.  They coincide only after the eq.(1) chain-rule conversion *and* the polarity flip.  The quarry implements the **joint** (CR18/Maurer13b) form.
+1. **POLARITY FLIP.**  Maurer02's `Aᵢ = 1` = condition **satisfied** (good), failure is `Āᵢ`.  MPR07 / Maurer13b / CR18: `Aᵢ = 1` = game **won** (bad).  Maurer02's `Aᵢ` ≙ Maurer13b's `{Aᵢ = 0}`.  Transcribing between papers requires flipping the bit.  *The reference repository follows the CR18 polarity* (`false = 0 = not won`, `Q:CondEquiv.lean:16`) — so a Maurer02-sourced statement must be flipped before comparison.
+2. **CE is not one relation.**  Maurer02 Def 6 is the **one-step** form `p_{Yᵢ|Xⁱ Y^{i−1} Aᵢ}`; Maurer13b Def 13 and CR18 Def 4.19 are the **joint** form `p_{Yⁱ|Xⁱ, Aᵢ=0}`.  They coincide only after the eq.(1) chain-rule conversion *and* the polarity flip.  The reference repository implements the **joint** (CR18/Maurer13b) form.
 3. **ADAPTIVE vs NON-ADAPTIVE RHS is a real strengthening, not a restatement.**  Maurer02 Thm 1's RHS is the *adaptive* `ν`; the non-adaptive `μ` is reached only through **Thm 2 (p. 13)** under the extra hypothesis `p^F_{Aᵢ|Xⁱ Y^{i−1} A_{i−1}} = p^F_{Aᵢ|Xⁱ A_{i−1}}`.  Maurer13b Thm 3 and CR18 Thm 4.17 get the non-adaptive RHS **unconditionally**, via the blinding operator.  Stating the AC endpoint with a blind RHS while citing Maurer02 Thm 1 would be a false citation.
 4. **Definition- and equation-number collisions across papers.**  "Definition 9" is *distinguisher* (Maurer02 p. 10), *MBO + `S⁻`/`S⊣`* (MPR07 p. 138), *game* (Maurer13b p. 3152).  "Definition 6" is *CE* (Maurer02 p. 8), *distinguisher* (Maurer13b p. 3151), *advantage `Δ`* (MPR07 p. 137).  "eq. (1)" is the chain rule (MPR07 p. 135), the transcript law (Maurer13b p. 3152), and Thm 2's adaptivity criterion (Maurer02 p. 13).  **Never cite by bare number across papers** — every AC docstring must carry paper + page.
 5. **Maurer13b does NOT contain the completeness result** — it cites MPR07 only for the easy direction (its Lemma 2).  **Maurer09c defines no `S⁻`, no CE, no `ν`/`Γ`** — it is a 2-page keynote note and can only be cited for the informal restatement.
-6. **CR18's `Γ(bŜ)` is a *converter* application** (Def 4.20: `b` blocks the replies), where Maurer13b uses the operator `⟦DT⟧` and the quarry uses a **predicate on winners** (`IsBlind`, `Q:BlindConverter.lean:51`).  Three different renderings of one idea — see the ARCHITECTURE note below.
+6. **CR18's `Γ(bŜ)` is a *converter* application** (Def 4.20: `b` blocks the replies), where Maurer13b uses the operator `⟦DT⟧` and the reference repository uses a **predicate on winners** (`IsBlind`, `Q:BlindConverter.lean:51`).  Three different renderings of one idea — see the ARCHITECTURE note below.
 
 # T1 — CONDITIONAL EQUIVALENCE (CE) + MBO
 
@@ -1818,13 +1823,13 @@ technique converts "these two systems look alike" into "this bad event is rare".
 `PDS.advFullyDefined` (`AC:RandomSystems/System/Environment.lean:751`), with `Δ`
 following through the existing `Adv⊥ ≤ Δ` / finite-slice identification.
 
-## Quarry home (from disk)
+## Reference repository home (from disk)
 
-The quarry's CE development is **CR18-shaped** (Defs 4.15–4.19, Thm 4.17) and is
+The reference repository's CE development is **CR18-shaped** (Defs 4.15–4.19, Thm 4.17) and is
 one of its most complete chains — definition, filtration algebra, seed-indexed
 constructors, and two paper-facing endpoints, with real applications hanging off it.
 
-| object | quarry `file:line` | what it is |
+| object | reference repository `file:line` | what it is |
 |---|---|---|
 | `PFunDDS.stripMBO` / `PFunPDS.stripMBO`, notation `S⁻` | `Q:RandomSystems/SystemMBO.lean:29`, `:45`, `:48` | CR18 Def 4.18: post-compose the output with `Prod.fst`; at the law level `Dist.fTransform` of the deterministic strip.  **Domain-preserving definitionally** (`stripMBO_dom`, `:32`) — validity needs no proof |
 | `massYAfalse` (game numerator) | `Q:RandomSystems/CondEquiv.lean:61` | `p^Ŝ_{Yⁱ,Aᵢ=0|Xⁱ}` as one `Dist.mass` over a prefix-match predicate that additionally requires every prefix MBO bit `false` |
@@ -1853,7 +1858,7 @@ constructors, and two paper-facing endpoints, with real applications hanging off
 | blind-winner reduction | `Q:BlindConverter.lean:208`, `:247`; `Q:BlindAbsorption.lean:642`, `:699`, `:729`, `:743` | per-winner and per-`D` forms; `BlindAbsorption` is the absorption route to `Γᵇ` | blind |
 | domain-filtered form | `Q:FilterDomNormalization.lean:1220` | the `filterDom` sibling of `GameOf.lean:1431` | blind |
 
-### Applications already riding the quarry CE chain (evidence the architecture works)
+### Applications already riding the reference repository CE chain (evidence the architecture works)
 
 `Q:RandomSystems/CBCMAC.lean:932` `cbc_condEquiv`; `Q:CBCStructureGraph.lean:317`
 `cbcGraphGame_condEquiv`; `Q:SumOfPermutations.lean:196` `sop_condEquiv` and
@@ -1870,13 +1875,13 @@ constructors, and two paper-facing endpoints, with real applications hanging off
   with the fully-defined slice as the official object — same *shape*, different
   type, and the ⊥-convention differs (see CONFLICTS C1).
 * **metric**: the endpoints are stated against `advantage` (per-`D`) and
-  `Δ(S,T) = maxAdvantage` (the quarry's `Δ`, **not** AC's `classDistance`).  Under
+  `Δ(S,T) = maxAdvantage` (the reference repository's `Δ`, **not** AC's `classDistance`).  Under
   pin 2 both are FORBIDDEN statement targets.  Every endpoint above is
   delta = **both**.
 
 ### T1 matrix rows
 
-| # | object / theorem | source | quarry home + carrier delta | AC asset | verdict | size |
+| # | object / theorem | source | reference repository home + carrier delta | AC asset | verdict | size |
 |---|---|---|---|---|---|---|
 | T1.1 | MBO / monotone condition as a first-class object | Maurer02 §4; Maurer13b Def 9; thesis Def 2.20 (input-only MC) | `Q:PDS.lean:3045` `IsMBO`, `:3060` `IsGame`, `:3066` `DDG`, `:3101` `MonotoneMBO`; delta `carrier` | `AC:RandomSystems/Game/MonotoneCondition.lean` is a **10-line placeholder** | **MODEL-NEW** — needs the carrier decision first (T3 "carrier shape" fork) | S |
 | T1.2 | `S⁻` (strip the MBO) | CR18 Def 4.18 (CR18-fallback: check whether a primary states it) | `Q:SystemMBO.lean:29,45` (50 lines total); delta `carrier` | none | **TRANSPLANT** — trivial once T1.1 lands; the `stripMBO_dom` definitional-domain trick transplants verbatim | S |
@@ -1885,8 +1890,8 @@ constructors, and two paper-facing endpoints, with real applications hanging off
 | T1.5 | seed-indexed MBO constructor kit | none (formalization-forced) | `Q:CondEquiv.lean:256-347`; delta `carrier` | AC has `historyEvaluator` at `DiscreteSystem.lean:157` | **TRANSPLANT** | M |
 | T1.6 | `gameEnhance` / eq. (4.39): `Ŝ \|≡ T ⟹ Ŝ ≡ᵍ T̂` with `T̂⁻ = T` | CR18 eq. (4.39) | `Q:Theorem417.lean:33` + `Q:GameOf.lean:1497`; delta `carrier` | none | **TRANSPLANT** (REUSE-ARCH — the independent-product construction is the whole proof) | M |
 | T1.7 | **CE ⟹ indistinguishability, adaptive** `Adv ≤ Γ(Ŝ)` | Maurer02 Thm 1; CR18 Thm 4.17 | `Q:Theorem417.lean:764` (and `:724`); delta `both` | none; target distance `Adv⊥` exists (`Environment.lean:751`) | **TRANSPLANT** — restate on `Adv⊥`; the hypothesis bundle re-derives (see C2/C3) | L |
-| T1.8 | **CE ⟹ indistinguishability, blind** `Δ ≤ Γ(bŜ)` (the headline) | **Maurer13b Thm 3, printed p. 3154** (via `⟦DT⟧`); **CR18 Thm 4.17, printed p. 110** (via the blocking converter `b`, Def 4.20 p. 109) — both VERIFIED, both NON-ADAPTIVE RHS unconditionally | `Q:GameOf.lean:1472`, `:1431`; delta `both` | none | **TRANSPLANT** — the strictly stronger endpoint; needs T3.2.  **See the `b`-as-converter note below: AC can state this paper-faithfully where the quarry could not** | PARTIAL (T1: gameTranscript/gameTrLaw/supWinProb landed; Γ/Γᵇ deliberately NOT built — T3.9, hierarchy prefers ν stated once) |
-| T1.7b | Maurer02's adaptive route + its non-adaptive side condition | **Maurer02 Thm 1, preprint p. 12** (adaptive `ν`); **Thm 2, p. 13** (`ν = μ` under `p^F_{Aᵢ\|Xⁱ Y^{i−1} A_{i−1}} = p^F_{Aᵢ\|Xⁱ A_{i−1}}`) | not formalized in the quarry | none | **REF-ONLY** — record as the historical route; the CR18/Maurer13b blinding argument supersedes it and needs no side condition | — |
+| T1.8 | **CE ⟹ indistinguishability, blind** `Δ ≤ Γ(bŜ)` (the headline) | **Maurer13b Thm 3, printed p. 3154** (via `⟦DT⟧`); **CR18 Thm 4.17, printed p. 110** (via the blocking converter `b`, Def 4.20 p. 109) — both VERIFIED, both NON-ADAPTIVE RHS unconditionally | `Q:GameOf.lean:1472`, `:1431`; delta `both` | none | **TRANSPLANT** — the strictly stronger endpoint; needs T3.2.  **See the `b`-as-converter note below: AC can state this paper-faithfully where the reference repository could not** | PARTIAL (T1: gameTranscript/gameTrLaw/supWinProb landed; Γ/Γᵇ deliberately NOT built — T3.9, hierarchy prefers ν stated once) |
+| T1.7b | Maurer02's adaptive route + its non-adaptive side condition | **Maurer02 Thm 1, preprint p. 12** (adaptive `ν`); **Thm 2, p. 13** (`ν = μ` under `p^F_{Aᵢ\|Xⁱ Y^{i−1} A_{i−1}} = p^F_{Aᵢ\|Xⁱ A_{i−1}}`) | not formalized in the reference repository | none | **REF-ONLY** — record as the historical route; the CR18/Maurer13b blinding argument supersedes it and needs no side condition | — |
 | T1.9 | conditional-probability toolkit the CE proofs stand on | MPR07 eq. (1) chain rule | `Q:RandomSystems/DistCond.lean` (592 lines): `condProb` `:88`, multiplication rule `:134`, Bayes `:145`/`:155`, total probability `:168-192`, chain rules `:213`/`:244`/`:287`; delta `none` (pure `Dist`) | `AC:Probability/Distribution.lean:476` `cond` (Part-valued), `condPMF`, a chain rule at `:1138` | **PARTIAL / TRANSPLANT** — AC has the `Part`-valued `cond` but **not** the total `condProb` nor the hypothesis-free multiplication/chain rules; delta `none` makes this the cheapest, highest-leverage row | CLOSED (T0 cee67d7: Conditional.lean — condProb :106, mult :169/:178, Bayes :190/:200, cross-mult :216, total prob :266-290, chain rules :312/:343/:386; independence half out-of-row, not transplanted) |
 | T1.10 | CE application kits (CBC-MAC, SoP, switching, history-condition) | — | `Q:CBCMAC.lean:932`, `Q:SumOfPermutations.lean:196`, `Q:SwitchingLemma.lean:563`, `Q:HistoryConditionC.lean:211` | none | **BLOCKED-ON** T1.7/T1.8 + the converter layer | L (out of first scope) |
 
@@ -1905,12 +1910,12 @@ optimality statement about a monotone condition, whose optimum equals a distance
 already in the tree (`Adv⊥` or `Δ`).  Its natural AC home is a *completeness*
 theorem sitting beside T1's endpoint.
 
-## Quarry home: essentially EMPTY — this is the one MODEL-NEW technique
+## Reference repository home: essentially EMPTY — this is the one MODEL-NEW technique
 
-Exhaustive grep of the quarry for `MPR07`/`MaPiRe07`/`optimal failure`/`Pietrzak`
+Exhaustive grep of the reference repository for `MPR07`/`MaPiRe07`/`optimal failure`/`Pietrzak`
 returns only **ingredients and citations**, never the lemma:
 
-| quarry hit | `file:line` | what it actually is |
+| reference repository hit | `file:line` | what it actually is |
 |---|---|---|
 | MPR07 eq. (1), the defining identity of a random system | `Q:RandomSystems/DistCond.lean:275` `condProb_biForall_lt_eq_prod_condProb` (+ header `:24`, `:64`) | the chain rule `p_{Yⁿ\|Xⁿ} = ∏ p_{Y_j\|X^j Y^{j-1}}` — an ingredient |
 | MPR07 eq. (3), min-form of statistical distance | `Q:RandomSystems/StatDist.lean:211` (weight-one specialization); also `Q:SoP/SoP2.lean:853` | an ingredient |
@@ -1918,7 +1923,7 @@ returns only **ingredients and citations**, never the lemma:
 | MPR07 Theorem 3 (amplification) | `Q:Legacy/Amplification.lean` — `amplification_theorem`, **`sorry` at `:119`** (the `k ≥ 2` case, with a written proof outline) | a LEGACY, **never-forward** item under the LEDGER lane rules; also L5, deferred by scope |
 | "events generalize MPR07's MBOs" | `Q:RandomSystemsCC/EventHistory.lean:25` | see the source-hierarchy note below — this is the most important T2 hit |
 
-**No declaration in the quarry states the completeness/optimality lemma.**
+**No declaration in the reference repository states the completeness/optimality lemma.**
 Verdict for the whole technique: **MODEL-NEW**, with delta `none` ingredients
 available.
 
@@ -1934,7 +1939,7 @@ new axioms (`compositeEventAlgebra`).
 
 Why this matters for the charter: the SOURCE HIERARCHY demotes CR18 to
 fallback-only, "consult it ONLY for a concept none of the primaries addresses"
-(`AC:LEDGER.md:8-10`).  The quarry's own reading says **Jost — a PRIMARY — does
+(`AC:LEDGER.md:8-10`).  The reference repository's own reading says **Jost — a PRIMARY — does
 address the MBO concept**, as events.  So the T1/T2 modeling layer should be
 grounded on Jost's events (+ Maurer02/Maurer13b/thesis for the CE and game
 statements), with CR18 Def 4.18/4.19 retained only as historical docstring
@@ -1948,7 +1953,7 @@ and it is exactly the kind of question the registry says to check before forking
 
 ## T2 matrix rows
 
-| # | object / theorem | source | quarry home + delta | AC asset | verdict | size |
+| # | object / theorem | source | reference repository home + delta | AC asset | verdict | size |
 |---|---|---|---|---|---|---|
 | T2.1 | MBO / monotone condition as an *event* (the primary-source presentation) | Jost thesis p. 33 + §3.2.2 (per `Q:EventHistory.lean:10-40`; **visual re-verification owed** — this row is the one unverified source claim in the matrix) | `Q:RandomSystemsCC/EventHistory.lean` (174 lines), delta `none` (order theory) | `AC:AbstractCryptography/EventAlgebra.lean` (775 lines) — abstract half **PRESENT**; the history instantiation ABSENT | **TRANSPLANT** (order-theoretic, carrier-free) — and it is the SOURCE-HIERARCHY-correct home for T1.1 | M |
 | T2.2 | **MPR07 Lemma 5** — tight MBO existence (the converse of the bad-event bound): `∀ S,T ∃ Ŝ,T̂` with `Ŝ⁻≡S`, `T̂⁻≡T`, `Ŝ⊣≡T̂⊣`, and `δ_k^D(S,T) = ν_k^D(Ŝ) = ν_k^D(T̂)` **for all `D`** | **MPR07 Lem 5, printed p. 140 (PDF 11)** — VISUALLY VERIFIED; construction eq. (4) p. 141 = **maximal coupling** on eq. (3) p. 140 | **NONE** | none; but AC has `Probability/Coupling.lean:143` `optimalJoint` + `:196` `isCoupling_optimalJoint` + `:225` `offDiagonalMass_optimalJoint` — **the maximal-coupling kernel MPR07's proof runs on is already landed** | **MODEL-NEW**, but the proof engine is PRESENT | M–L (down from L) |
@@ -1988,23 +1993,23 @@ whole T3 design:
   onto two real things: (i) **Rem 2.23** — the environment never observes the MC
   during the interaction, i.e. strategies are *bit-blind by definition*; and
   (ii) the unnamed **always-losing system `V`** in the alternative proof of
-  Thm 2.37 (printed p. 26).  The quarry named (ii) `zeroMBO`/`zeroMBODist`
+  Thm 2.37 (printed p. 26).  The reference repository named (ii) `zeroMBO`/`zeroMBODist`
   (`Q:GameWinnability.lean:356`, `:374`) — a **COINAGE**, to be flagged as such.
-  The quarry named (i)'s formal counterpart `blindize`/`IsBlind`
+  The reference repository named (i)'s formal counterpart `blindize`/`IsBlind`
   (`Q:GameWinnability.lean:658`, `Q:BlindConverter.lean:51`) — also coinages.
 * **Def 2.20's MC is input-only**: `A : X* → {0,1}` monotone, and a deterministic
   game is the **pair** `s^A = (s, A)`.  The `Y × {0,1}` output-alphabet
   presentation is **Maurer13b Def 9** and appears in the thesis only inside the
   alternative proof of Thm 2.37.  **This is the T3 design fork.**
 
-## Quarry home (from disk) — the strongest single asset in this program
+## Reference repository home (from disk) — the strongest single asset in this program
 
 `Q:RandomSystems/GameWinnability.lean` (916 lines) is a **thesis-primary** file
 (header: "Lanzenberger thesis §2.3.3 and §2.4.3"), not a CR18 file, and it
 already carries the model bridge, the CR18 reconciliation, and two documented
 *generalizations* beyond the thesis.
 
-| object | quarry `file:line` | notes |
+| object | reference repository `file:line` | notes |
 |---|---|---|
 | `WinningTranscript` (`𝒯_w`, Def 2.25) | `:105`; monotonicity `:111` | "some answered query carries MC bit `1`" — the ∃-form, chosen as the faithful reading in the ⊥-totalized model |
 | `winningMass` | `:124`; `= mass transcriptDist` `:130`; **class-invariance** `:138` `winningMass_congr_equivalent` | |
@@ -2022,7 +2027,7 @@ already carries the model bridge, the CR18 reconciliation, and two documented
 | **THE WINNABILITY THEOREM (Thm 2.37)** | **`:778` `winnability_theorem_of_fixed_domain_and_bounded`** | see below |
 | CR18 reconciliation `Γ = ν` | `:829`+ (`winProb_eq_sum_mass` `:829`, `winProb_single_eq_mass` `:839`), endpoint `maxWinProb_eq_supWinProb` | proves the CR18-shaped `Γ` layer *states* thesis Def 2.25 |
 
-### The winnability theorem, exactly as the quarry states it
+### The winnability theorem, exactly as the reference repository states it
 
 ```
 theorem winnability_theorem_of_fixed_domain_and_bounded
@@ -2045,28 +2050,28 @@ documented in the file's own header (`:44-56`):
    arbitrary-weight generality, with `NonNeg` where and only where it is needed.
 
 **Integration shape (the charter's KEY DESIGN QUESTION), answered from disk.**
-The quarry's answer is: a game is **`PFunPDS X (Y × Bool)`** — a PDS at output
+The reference repository's answer is: a game is **`PFunPDS X (Y × Bool)`** — a PDS at output
 alphabet `Y × Bool` — with monotonicity a *separate, support-wise predicate*
 (`MonotoneMBO`, `Q:PDS.lean:3101`), **not** a bundled structure; `DDG` exists as a
-subtype (`Q:PDS.lean:3066`) but the theorems do not use it.  The quarry documents
+subtype (`Q:PDS.lean:3066`) but the theorems do not use it.  The reference repository documents
 the bridge from the thesis's pair `(s, A)` to this carrier explicitly at
 `Q:GameWinnability.lean:16-40`: a thesis pair is `gameOfDDS` at an *input-only*
 condition, the thesis environment is `Winner X Y = DDE X Y` acting through
 `winnerView`, and the thesis observable is `gameTranscriptDist`.
-**So the fork is already surveyed and answered in the quarry — the transplant
+**So the fork is already surveyed and answered in the reference repository — the transplant
 inherits a decision, it does not have to make one.**  What AC must decide is only
-whether to keep the CR18/Maurer13b `Y × Bool` carrier (quarry's choice, and the
-one all the CE machinery needs) or the thesis's Def-2.20 pair — and the quarry's
+whether to keep the CR18/Maurer13b `Y × Bool` carrier (reference repository's choice, and the
+one all the CE machinery needs) or the thesis's Def-2.20 pair — and the reference repository's
 own bridge argues for `Y × Bool` with the pair recovered as a special case.
 
 ### Carrier + metric delta
 
 * delta **carrier** throughout (`PFunPDS` → `PDS`), and the proof route depends on
-  the quarry's `Adv`/`δ`/`Equivalent`/`HasFixedDomain`/`QBounded` bundle.
+  the reference repository's `Adv`/`δ`/`Equivalent`/`HasFixedDomain`/`QBounded` bundle.
 * delta **metric** only in step 6 (`adv_zeroMBODist_le_supWinProb` uses the
-  quarry's `Adv`).  `ν` and `ω` themselves are **metric-free** (`ℝ`-valued sups of
+  reference repository's `Adv`).  `ν` and `ω` themselves are **metric-free** (`ℝ`-valued sups of
   masses) — delta `none` for the definitions.
-* **The AC substrate for the proof route already exists.**  The quarry proves
+* **The AC substrate for the proof route already exists.**  The reference repository proves
   Thm 2.37 by *reducing to Thm 2.31* rather than repeating the thesis induction
   (`Q:GameWinnability.lean:58-77`), and AC has Thm 2.31/2.32 landed at both the
   presentation level (`AC:RandomSystems/System/Attainment.lean`) and the
@@ -2076,16 +2081,16 @@ own bridge argues for `Y × Bool` with the pair recovered as a special case.
 
 ### T3 matrix rows
 
-| # | object / theorem | source (visually verified) | quarry home + delta | AC asset | verdict | size |
+| # | object / theorem | source (visually verified) | reference repository home + delta | AC asset | verdict | size |
 |---|---|---|---|---|---|---|
-| T3.1 | game object + MC/MBO | thesis Def 2.20 (printed p.16) = pair `(s, A)`, `A : X* → {0,1}` monotone, **input-only**; Maurer13b Def 9 = `Y × {0,1}` | `Q:PDS.lean:3045/3060/3066/3101` + bridge `Q:GameWinnability.lean:16-40`; delta `carrier` | `AC:RandomSystems/Game/Game.lean` + `Game/MonotoneCondition.lean` — **10-line placeholders** | **MODEL-NEW**, decision pre-surveyed by the quarry | CLOSED (T1 c6f460e/7949cf6: Game.lean; the empty Game/ placeholders superseded — games live under System/ where the gate covers them) |
+| T3.1 | game object + MC/MBO | thesis Def 2.20 (printed p.16) = pair `(s, A)`, `A : X* → {0,1}` monotone, **input-only**; Maurer13b Def 9 = `Y × {0,1}` | `Q:PDS.lean:3045/3060/3066/3101` + bridge `Q:GameWinnability.lean:16-40`; delta `carrier` | `AC:RandomSystems/Game/Game.lean` + `Game/MonotoneCondition.lean` — **10-line placeholders** | **MODEL-NEW**, decision pre-surveyed by the reference repository | CLOSED (T1 c6f460e/7949cf6: Game.lean; the empty Game/ placeholders superseded — games live under System/ where the gate covers them) |
 | T3.2 | game transcript + observable; `Γ`, `Γᵇ`, `ν` | thesis Def 2.21, Rem 2.23 (bit-blind), Def 2.25 | `Q:GameWinnability.lean:156/177/184/248`; `Q:WinProb.lean:32/38/63`; `Q:BlindConverter.lean:51/67/108`; delta `carrier` | none | **MODEL-NEW + TRANSPLANT** | PARTIAL (T1: gameTranscript/gameTrLaw/supWinProb landed; Γ/Γᵇ deliberately NOT built — T3.9, hierarchy prefers ν stated once) |
 | T3.3 | game equivalence (Def 2.22) and class-invariance of `ν` | thesis Def 2.22 | `Q:GameWinnability.lean:194/198/205/234`; delta `carrier` | AC has Def-2.17 `equivalent` (`ClassDistance.lean:1322`) and the `Behaviour` quotient (`Behaviour.lean:151`) — the **coarser** game quotient is missing | **MODEL-NEW** (a second, coarser quotient beside `Behaviour`) | CLOSED (T2 9a5dccc/a9d9546: gameEquivalent + GameBehaviour; ν and ω descend) |
 | T3.4 | `Winnable` (Def 2.35), `ω` (Def 2.36) | thesis Def 2.35, 2.36 (printed pp. 23-27) | `Q:GameWinnability.lean:281`, `:294`; delta `none` for the defs | none | **MODEL-NEW** — and R9-aligned already (the `NonNeg` conjunct is exactly R9's honest-representative discipline) | CLOSED (T2 9a5dccc: Winnable, infWinnability; R9-aligned) |
 | T3.5 | `ν ≤ ω` | thesis Thm 2.37, easy half | `Q:GameWinnability.lean:310`, `:338`; delta `carrier` | none | **TRANSPLANT** (REUSE-ARCH) | CLOSED (T2: supWinProb_le_infWinnability; carries the necessary empty-history clause) |
 | T3.6 | the never-won twin `V` and its no-winnable-representative lemma | thesis p. 26 (unnamed `V`) | `Q:GameWinnability.lean:356/374/535`; delta `carrier` | none | **TRANSPLANT**; **rename** — `zeroMBO` is a coinage | CLOSED by construction (⊥ in the condition lattice; supWinProb_adjoin_bot = 0; zeroMBO retired) |
 | T3.7 | bit-adaptivity is useless (`blindize`) | thesis Rem 2.23 (the *reason*), formalized as a theorem | `Q:GameWinnability.lean:658/690/737`; delta `carrier` | none | **TRANSPLANT** — this is the honest formal content of "blinder" | SUBSUMED (pair carrier: no bit-adaptive environment exists by type; contentful residue proved for the derived view — winningMass_eq_mass_lastBit_toBitLaw; BlindConverter/BlindAbsorption not needed) |
-| T3.8 | **Winnability Theorem `ν = ω` + attainment** | thesis Thm 2.37 + its alternative proof, printed p. 26 | `Q:GameWinnability.lean:778`; delta `both` (step 6 only) | **substrate PRESENT**: Thm 2.31/2.32 at `AC:Attainment.lean` + `AC:BehaviourAttainment.lean:149-258`; the finiteness bundle is `PDS.HaveCommonDomainAndBounded` (`AC:Attainment.lean:481`), `PDS.HasDomain` (`AC:Environment.lean:284`), `QBounded` (`AC:DiscreteSystem.lean:37`) — **trap**: AC's `PDS.HasFixedDomain` (`AC:ProbabilisticSystem.lean:85`) is the one-system *existential* class, documented as NOT usable for two-system statements (`AC:Environment.lean:280`, `AC:Attainment.lean:456`), whereas the quarry's `PFunPDS.HasFixedDomain G D` is a two-argument relation — the transplant must re-target it to `HasDomain` | **TRANSPLANT** (REUSE-ARCH, the p.26 alternative proof) — highest-confidence row in the program | CLOSED (T2 e221d9e/65a87f2: winnability_theorem via the p.26 alternative proof; HasFixedDomain trap avoided — one PDG.HasDomain clause; all three reference strengthenings kept) |
+| T3.8 | **Winnability Theorem `ν = ω` + attainment** | thesis Thm 2.37 + its alternative proof, printed p. 26 | `Q:GameWinnability.lean:778`; delta `both` (step 6 only) | **substrate PRESENT**: Thm 2.31/2.32 at `AC:Attainment.lean` + `AC:BehaviourAttainment.lean:149-258`; the finiteness bundle is `PDS.HaveCommonDomainAndBounded` (`AC:Attainment.lean:481`), `PDS.HasDomain` (`AC:Environment.lean:284`), `QBounded` (`AC:DiscreteSystem.lean:37`) — **trap**: AC's `PDS.HasFixedDomain` (`AC:ProbabilisticSystem.lean:85`) is the one-system *existential* class, documented as NOT usable for two-system statements (`AC:Environment.lean:280`, `AC:Attainment.lean:456`), whereas the reference repository's `PFunPDS.HasFixedDomain G D` is a two-argument relation — the transplant must re-target it to `HasDomain` | **TRANSPLANT** (REUSE-ARCH, the p.26 alternative proof) — highest-confidence row in the program | CLOSED (T2 e221d9e/65a87f2: winnability_theorem via the p.26 alternative proof; HasFixedDomain trap avoided — one PDG.HasDomain clause; all three reference strengthenings kept) |
 | T3.9 | `Γ = ν` (CR18 layer states the thesis definition) | reconciliation, not a paper claim | `Q:GameWinnability.lean:829+`, endpoint `maxWinProb_eq_supWinProb`; delta `carrier` | none | **TRANSPLANT** — only needed if both presentations are kept; under the SOURCE HIERARCHY, prefer stating `ν` once and deriving | S |
 
 ### DESIGN NOTE — the three renderings of "blind", and why AC gets the paper's one
@@ -2093,7 +2098,7 @@ own bridge argues for `Y × Bool` with the pair recovered as a special case.
 CR18 Def 4.20 `[p. 109]` defines `bS` as **`S` with a blocking converter applied**:
 "`b` is the simple converter that is transparent for the queries `Xᵢ` but blocks
 the replies `Yᵢ`", and the headline is `Δ(S,T) ≤ Γ(bŜ)`.  Maurer13b instead uses
-the operator `⟦DT⟧`.  The quarry, having no converter layer available at that
+the operator `⟦DT⟧`.  The reference repository, having no converter layer available at that
 point, rendered blindness as a **predicate on winners** — `IsBlind`
 (`Q:BlindConverter.lean:51`), `blindMaxWinProb` (`:67`) — a coinage, plus a whole
 file (`Q:BlindAbsorption.lean`) to push bounds through it.
@@ -2105,7 +2110,7 @@ RECEIPT row (`fullyDefined_blockSet`); `block` at the Resource level is PROVEN
 attachment primitive (PRIMITIVE REGISTRY).  So the AC statement can be
 `Adv⊥(S,T) ≤ Γ(b • Ŝ)` with `b` an actual member of the metric-facing `Σ` —
 **CR18 Def 4.20 verbatim**, no `IsBlind` coinage, and `Q:BlindConverter.lean` +
-`Q:BlindAbsorption.lean` (≈1400 lines of quarry machinery) become unnecessary
+`Q:BlindAbsorption.lean` (≈1400 lines of reference repository machinery) become unnecessary
 rather than transplanted.
 
 Two caveats, **flagged not decided** (escalation filter):
@@ -2118,7 +2123,7 @@ Two caveats, **flagged not decided** (escalation filter):
 
 **Certification note.** The charter says "the L4 matrix already certified it
 sorry-free".  From disk: `Q:GameWinnability.lean` contains no `sorry`; the three
-live quarry sorries named by the LEDGER lane rules
+live reference repository sorries named by the LEDGER lane rules
 (`Legacy/FundamentalTheorem.lean:172`, `Legacy/Amplification.lean:119`,
 `CBCStructureGraph.lean:1415`) are all outside this file.
 
@@ -2139,7 +2144,7 @@ HCTR2, hash-then-PRF).
 shape of `AC:Environment.lean:751`**.  T4 is the technique whose target distance AC
 already has in the right form.
 
-## Provenance — what the quarry ACTUALLY cites (not what one might assume)
+## Provenance — what the reference repository ACTUALLY cites (not what one might assume)
 
 Recorded verbatim, because the brief requires the tree's own citation and forbids
 inventing one:
@@ -2151,7 +2156,7 @@ inventing one:
 * `Q:HTechnique/Derivation.lean:20-23` — the derivation follows "the chain of `DESIGN.md` §9 (thesis references: **Lanzenberger**, Defs 2.9–2.19, Lemma 2.18/App. A.1, Def 2.26, Thm 2.31)"; `:43-45` cites "thesis App. A.1; **CR18 Lemma 3.2**".
 * `Q:HTechnique/HashThenPRF.lean:18` — "**Jha-Nandi §5.1, Lemma 5.1**"; `Q:HTechnique/TweakablePRP.lean:11` — "ePrint 2021/1441 §3.5, [HR03] App. C Lemma 6"; `Q:HTechnique/HCTR2Paper.lean:13` — "ePrint 2021/1441 p. 17".
 
-**Names the quarry does NOT cite anywhere in `HTechnique/`**: Hoang, Tessaro,
+**Names the reference repository does NOT cite anywhere in `HTechnique/`**: Hoang, Tessaro,
 Mennink, Bellare, Rogaway.  No bibliography entry, year, or full citation string
 exists for Patarin or Chen–Steinberger — **they appear as bare author names in
 prose.**  Under the AC naming/source rules, the transplant must upgrade these to
@@ -2160,12 +2165,12 @@ Chen–Steinberger sit relative to the SOURCE HIERARCHY, which does not mention 
 at all (they are outside the MauRen16/Jost/LiuMau20/Lanzenberger list).  **Flagged.**
 
 **Hygiene**: `grep -rnE "\bsorry\b|\badmit\b|^axiom "` over all 42 files of
-`Q:RandomSystems/HTechnique/` returns **zero matches** — the quarry's H-technique
+`Q:RandomSystems/HTechnique/` returns **zero matches** — the reference repository's H-technique
 tree is sorry-free, admit-free, and axiom-free.
 
-## Architecture of the quarry's technique (the layer names are the quarry's own)
+## Architecture of the reference repository's technique (the layer names are the reference repository's own)
 
-| layer | content | quarry `file:line` | bounds | carrier |
+| layer | content | reference repository `file:line` | bounds | carrier |
 |---|---|---|---|---|
 | **C** | the distribution-level H-lemmas: ratio, expectation, eq-on-good, one-sided, mass-function, `fTransform` variants | **owner** `Q:RandomSystems/StatDist.lean:587,631,682,707,720,738,751,775,836,858`; forwarded by `Q:HTechnique/Density.lean:53-153` and `Q:HTechnique/TranscriptLawCore.lean:33,53` | `statDist` + `probBad` | plain `Dist A` |
 | **B** | the σ·η **factorization / adaptive bridge**: a fixed-query pointwise ratio transfers to every environment (CR18 Lem 3.2 / thesis App. A.1) | `Q:HTechnique/Derivation.lean:212-220`, `:602`, `:634`; law-level owner `Q:RandomSystems/AdaptiveLawBridge.lean:597-609`, `:694-710`; representative compat `Q:HTechnique/AdaptiveBridge.lean:42-56`, `:98-116` | pointwise, then `statDist` | `ProbPDS`/`ProbPDE` |
@@ -2179,7 +2184,7 @@ tree is sorry-free, admit-free, and axiom-free.
 | apps | HCTR2 (`HCTR2Paper.lean:2237`), TweakablePRP (`:940`), SoP (`SoPBoundary.lean:47-168`), HashThenPRF, switching (`Derivation.lean:5244`, `:5456`), StrongPRP models, ProjectedBirthday, RepeatNormalization, GF2Field | — | `Adv`/`advPRF`/`advPRP` | `ProbPDS` |
 
 `Q:Derivation.lean:84-86` states the technique's single adaptive residue in the
-quarry's own words: *"The residual adaptivity is isolated in exactly one
+reference repository's own words: *"The residual adaptivity is isolated in exactly one
 hypothesis: the bad-transcript mass `Pr_{tr(T,E)}[Bad]` is bounded uniformly over
 environments; everything else is checked non-adaptively."*  **That sentence is the
 integration contract** — it is what an AC endpoint must reproduce.
@@ -2187,12 +2192,12 @@ integration contract** — it is what an AC endpoint must reproduce.
 ## What the target tree already has — Layer C, complete and name-for-name
 
 `AC:Probability/StatisticalDistance.lean` carries an **independently proved** (not
-aliased) port of the quarry's entire Layer C, same names, same hypotheses:
+aliased) port of the reference repository's entire Layer C, same names, same hypotheses:
 
 | declaration | `AC:Probability/StatisticalDistance.lean` |
 |---|---|
 | `probBad` (def) | `:651` |
-| `probBad_const_pair`, `probBad_eq_evalPred`, `probBad_iUnion_le` | `:659`, `:668`, `:675` — **richer than the quarry's `Density` layer** |
+| `probBad_const_pair`, `probBad_eq_evalPred`, `probBad_iUnion_le` | `:659`, `:668`, `:675` — **richer than the reference repository's `Density` layer** |
 | `statDist_le_of_one_sub_mul_le` (the shared engine) | `:629`; helper `sub_le_mul_of_one_sub_mul_le` `:618`; `statDist_le_sum_of_forall_tsub_le` `:609` |
 | **`hTechnique_ratio`** | `:692` |
 | **`hTechnique_expectation`** | `:736` |
@@ -2233,7 +2238,7 @@ prefix type and no per-environment law indexed by a query vector"**.
 
 ## T4 matrix rows
 
-| # | object / theorem | source (as the quarry cites it) | quarry home + delta | AC asset | verdict | size |
+| # | object / theorem | source (as the reference repository cites it) | reference repository home + delta | AC asset | verdict | size |
 |---|---|---|---|---|---|---|
 | T4.1 | Layer C: `hTechnique_ratio` + the eq-on-good / expectation / one-sided / massFunction / fTransform family | "Patarin/Jha-Nandi H-coefficient ratio bound" (`Q:Density.lean:15`) | `Q:StatDist.lean:587-872`; delta `none` | **`AC:StatisticalDistance.lean:692,736,787,812,825,843,856,880,972,994`** | **PRESENT** (complete, and richer on `probBad`) | — |
 | T4.2 | `probBad` API + DPI + partition identity | thesis Lem 2.7 (data processing) per `Q:Derivation.lean:58` | `Q:Derivation.lean` | `AC:…:651-687`, `:903`, `:928` | **PRESENT** | — |
@@ -2246,7 +2251,7 @@ prefix type and no per-environment law indexed by a query vector"**.
 | T4.9 | Layers E′/E″ — reveal/`aug` extended transcripts | — | `Q:Derivation.lean:1076-1085`, `:1270-1285`; delta `carrier` | ABSENT | **BLOCKED-ON** T4.4 | M |
 | T4.10 | counting kernel (falling factorials, permutation-consistency mass, SoP fiber ratio, gate sums) | "Jha-Nandi Proposition 8.1" (`Q:Counting.lean:21`) | `Q:Counting.lean:42`; `Q:RandomSystems/Counting.lean`; `Q:Derivation.lean:4071-4600`, `:4886-5030`; delta `none` | **ABSENT** — AC has only generic uniform-mass atoms (`Distribution.lean:1571`, `:1588`, `:1732`) | **TRANSPLANT** (delta `none` — pure combinatorics, the cheapest large win) | CLOSED (T0 ce0eb22: Probability/Counting.lean, 34 declarations; residue available cheaply: two-sided birthday, sorted-pair sums, function fibers, block-major encoding, re-randomisation fibers) |
 | T4.11 | security-definition wrappers (`fixedQueryAdv`, `Adv`, `advPRF/PRP`, `filteredDelta_le_Adv`) | thesis Def 2.17/2.19/2.26 (`Q:SecurityDefs.lean:17-23`) | `Q:SecurityDefs.lean:51-234`; delta `both` | `System/Advantage.lean` is the reserved empty home; `Adv⊥`/`Adv`/`AdvD`/`Δ` all exist in `Environment.lean`/`ClassDistance.lean` | **TRANSPLANT** — but re-target: AC does **not** need a second advantage object, only the `q`-filtered *reading* of `Adv⊥` | M |
-| T4.12 | filtered advantage + pointless-query self-answer WLOG + environment/chooser duality | `Q:Derivation.lean:1804-1809` (the paper's §3.4 restriction, and the quarry's note that it is **NOT** WLOG when the two worlds are not both permutations) | `Q:Derivation.lean:1802-2373`, `:2719-3594`, `:3730`; delta `both` | ABSENT | **TRANSPLANT** — and the "not WLOG" caveat must travel with it | L |
+| T4.12 | filtered advantage + pointless-query self-answer WLOG + environment/chooser duality | `Q:Derivation.lean:1804-1809` (the paper's §3.4 restriction, and the reference repository's note that it is **NOT** WLOG when the two worlds are not both permutations) | `Q:Derivation.lean:1802-2373`, `:2719-3594`, `:3730`; delta `both` | ABSENT | **TRANSPLANT** — and the "not WLOG" caveat must travel with it | L |
 | T4.13 | application kits (HCTR2, SoP, hash-then-PRF, switching, tweakable/strong PRP, projected birthday) | ePrint 2021/1441; Jha-Nandi §5.1; [HR03] | `Q:HTechnique/*` | AC has `Probability/UniversalHash.lean` (299 lines), the ε-AXU family hash-then-PRF consumes | **BLOCKED-ON** T4.4–T4.6 | L (out of first scope) |
 
 **T4's headline for pricing: the technique is exactly half-present.**  The
@@ -2344,7 +2349,7 @@ Three load-bearing observations:
    it computable is T3.8 (`ν = ω`: the sup over strategies collapses to a mass) and
    T3.7 (bit-adaptivity is useless: the sup is over *blind* strategies).  Ordering
    T1 before T3 buys an endpoint whose RHS nobody can evaluate.
-2. **T3.8's proof consumes AC's Thm 2.31, which is already landed.**  The quarry's
+2. **T3.8's proof consumes AC's Thm 2.31, which is already landed.**  The reference repository's
    route (`Q:GameWinnability.lean:58-77`) reduces winnability to attainment rather
    than repeating the thesis induction — and `AC:Attainment.lean` +
    `AC:BehaviourAttainment.lean` supply exactly that, at both the presentation and
@@ -2357,7 +2362,7 @@ Three load-bearing observations:
 
 ## Naming obligations under the three-layer convention
 
-Quarry names that are **COINAGES** and must be renamed-or-flagged in AC:
+Reference repository names that are **COINAGES** and must be renamed-or-flagged in AC:
 `massYAfalse`, `massAfalse`, `massY`, `massDom`, `TotalOnNonempty`, `gameEnhance`,
 `combineSys`, `zeroMBO`/`zeroMBODist`, `blindize`, `blindMaxWinProb`,
 `prewinBehavior`, `wonFlag`, `gameTranscriptView`, `Winnable` (thesis says
@@ -2367,19 +2372,19 @@ symbols, the mildest category).
 
 # CONFLICTS — what each technique's transplant must RE-READ because of the carrier change
 
-Per the brief: **flagged, not solved.**  Each row names the quarry decision, the AC
+Per the brief: **flagged, not solved.**  Each row names the reference repository decision, the AC
 ruling it meets, and the specific statement that has to be re-derived rather than
-copied.  Nothing here is a defect in the quarry — these are consequences of a
+copied.  Nothing here is a defect in the reference repository — these are consequences of a
 deliberate carrier change.
 
 ## C1 — RS-PARTIAL-001 (partiality intentional) vs R1 (fully defined is the carrier)
 
-The quarry's governing decision, retrieved from its own decision store:
+The reference repository's governing decision, retrieved from its own decision store:
 
 > **RS-PARTIAL-001** — "CR18 partial systems and observable bottom are intentional.
 > Model CR18 systems as prefix-closed partial functions and preserve the
 > observable-bottom conventions.  **Partiality is a modeling choice, not a defect
-> to erase through an unrelated total carrier.**"  (authority: quarry `DESIGN.md`
+> to erase through an unrelated total carrier.**"  (authority: reference repository `DESIGN.md`
 > §8; anchors `RandomSystems/PFunDDS.lean`, `RandomSystems/PDS.lean`)
 
 AC's R1 says the *official interaction carrier* is the **fully defined slice**,
@@ -2388,16 +2393,16 @@ interaction rule" (`AC:PHI-SPEC.md:14-18`).
 
 **These are not contradictory at the level of objects** — AC keeps the partial
 `System.DDS` and completes it — but they are contradictory at the level of
-*where a statement lives*.  Every quarry technique theorem is stated on the
+*where a statement lives*.  Every reference repository technique theorem is stated on the
 partial object with partiality-aware hypotheses; every AC technique theorem must
 be stated after completion.  The four re-reads this forces:
 
 | # | what must be re-read | why |
 |---|---|---|
-| C1.1 | **`TotalOnNonempty`** (`Q:CondEquiv.lean:96`) — "every support realization accepts every nonempty history" | This is the quarry's rendering of the papers' standing "systems are defined on the histories under discussion".  Under R1 **every** system is total after `⊥`-completion, so the hypothesis is either vacuous (drop it) or it is secretly saying something else (that no query is *refused*, which after completion is an observable statement about the answer being `some`).  Deciding which is a **statement-shape decision**, and it propagates to every endpoint: `Q:Theorem417.lean:764`, `Q:GameOf.lean:1431`, `:1472`, `Q:HistoryConditionC.lean:450`. |
+| C1.1 | **`TotalOnNonempty`** (`Q:CondEquiv.lean:96`) — "every support realization accepts every nonempty history" | This is the reference repository's rendering of the papers' standing "systems are defined on the histories under discussion".  Under R1 **every** system is total after `⊥`-completion, so the hypothesis is either vacuous (drop it) or it is secretly saying something else (that no query is *refused*, which after completion is an observable statement about the answer being `some`).  Deciding which is a **statement-shape decision**, and it propagates to every endpoint: `Q:Theorem417.lean:764`, `Q:GameOf.lean:1431`, `:1472`, `Q:HistoryConditionC.lean:450`. |
 | C1.2 | **the CE conditioning event** | `CondEquiv` (`Q:CondEquiv.lean:118`) is guarded by `massAfalse Ŝ xⁱ ≠ 0 → massDom T xⁱ ≠ 0 →`.  `massDom` (`:88`) is *the mass of realizations that accept `xⁱ`* — a **partiality** normalizer.  After completion `massDom` is the total weight (`Q:CondEquiv.lean:131` already proves this under `TotalOnNonempty`), so the guard collapses on one side but **not** the other: `massAfalse ≠ 0` survives as CR18 footnote 29's "where both are defined".  The AC definition therefore has *one* guard, not two — a genuinely different `Prop`. |
-| C1.3 | **the MBO bit under completion** | A game is `PDS X (Y × Bool)`; completion gives answers in `Option (Y × Bool)`, so a **refused round carries no bit at all**.  The quarry anticipated exactly this: `WinningTranscript` is the `∃`-form ("some *answered* query carries MC bit 1") and its docstring says so is "the faithful reading in the `⊥`-totalized model (where a rejected query is answered `none` and deleted)" (`Q:GameWinnability.lean:105`, header `:36-40`).  **The `∃`-form transplants; the "transcript ends with `(·,1)`" form does not.**  What must be re-derived is `MonotoneMBO` (`Q:PDS.lean:3101`), a *support-wise per-realization* property whose interaction with completion is not stated anywhere. |
-| C1.4 | **the environment class** | Quarry `ν` (`Q:GameWinnability.lean:248`) sups over `Winner X Y = DDE X Y` — the *partial* environment.  AC's `Adv⊥` sups over `System.DDE.Total` (`AC:Environment.lean:399`, `:751`).  The winnability theorem's `ν` must move to `DDE.Total` or the two sides of `ν = ω` are indexed by different sets.  Note AC already has the pruning apparatus for exactly this migration (`AC:ClassDistance.lean:603-897`: `pruneStep`/`Blocked`/`pruneRun`/`prunedEnv`). |
+| C1.3 | **the MBO bit under completion** | A game is `PDS X (Y × Bool)`; completion gives answers in `Option (Y × Bool)`, so a **refused round carries no bit at all**.  The reference repository anticipated exactly this: `WinningTranscript` is the `∃`-form ("some *answered* query carries MC bit 1") and its docstring says so is "the faithful reading in the `⊥`-totalized model (where a rejected query is answered `none` and deleted)" (`Q:GameWinnability.lean:105`, header `:36-40`).  **The `∃`-form transplants; the "transcript ends with `(·,1)`" form does not.**  What must be re-derived is `MonotoneMBO` (`Q:PDS.lean:3101`), a *support-wise per-realization* property whose interaction with completion is not stated anywhere. |
+| C1.4 | **the environment class** | Reference repository `ν` (`Q:GameWinnability.lean:248`) sups over `Winner X Y = DDE X Y` — the *partial* environment.  AC's `Adv⊥` sups over `System.DDE.Total` (`AC:Environment.lean:399`, `:751`).  The winnability theorem's `ν` must move to `DDE.Total` or the two sides of `ν = ω` are indexed by different sets.  Note AC already has the pruning apparatus for exactly this migration (`AC:ClassDistance.lean:603-897`: `pruneStep`/`Blocked`/`pruneRun`/`prunedEnv`). |
 
 ## C2 — the sources themselves have no ⊥ convention (a *source*-side conflict)
 
@@ -2409,7 +2414,7 @@ likewise work with `p_{Yⁱ|Xⁱ}` on all histories.
 *This is good news for AC and bad news for verbatim transplanting.*  AC's
 `advFullyDefined` — a supremum over `DDE.Total` environments **and over lengths
 `n`** of `statDist` of transcript laws (`AC:Environment.lean:751`) — is a very
-close formal match to "fixed-length `q`-transcripts, sup over `q`".  The quarry's
+close formal match to "fixed-length `q`-transcripts, sup over `q`".  The reference repository's
 `QueriesExactly (i+1)` hypotheses on `D.support` (`Q:Theorem417.lean:724`, `:764`)
 and its whole `DeltaFiniteQueryNormalization` apparatus
 (`Q:GameOf.lean:1163`, `:1176`, `:1204`) exist to *recover* that fixed-length
@@ -2421,7 +2426,7 @@ it looks" item, and also the largest risk of silently weakening a theorem.
 
 ## C3 — the `Δ` vocabulary trap, twice over
 
-The LEDGER already records that quarry `Δ(S,T)` = `maxAdvantage` while AC `Δ` =
+The LEDGER already records that reference repository `Δ(S,T)` = `maxAdvantage` while AC `Δ` =
 `classDistance` (`AC:LEDGER.md` M4 vocabulary table).  The source ledger above adds
 a **second** layer of the same trap:
 
@@ -2439,12 +2444,12 @@ a **second** layer of the same trap:
 
 ## C4 — a NON-conflict worth recording (so no leg re-litigates it)
 
-**R9 and the quarry's `ω` already agree.**  R9 requires `classDistance` to
+**R9 and the reference repository's `ω` already agree.**  R9 requires `classDistance` to
 infimize over *honest* (`NonNeg`) representatives.  `Q:GameWinnability.lean:294`
 defines `infWinnability` as an `sInf` over `{H | H.NonNeg ∧ GameEquivalent H G}`,
 and its docstring gives R9's exact reason: "on the signed carrier the conjunct
 `H.NonNeg` has to be written down … dropping it would let a signed `H` with the
-same observable drive the infimum to `−∞`."  The quarry independently arrived at
+same observable drive the infimum to `−∞`."  The reference repository independently arrived at
 AC's ruling.  **`ω` transplants with its honesty clause intact; no re-reading
 needed.**
 
@@ -2452,7 +2457,7 @@ needed.**
 
 Traps 1–3 of the source ledger (polarity flip; one-step vs joint CE; adaptive vs
 non-adaptive RHS) are **not** carrier issues but they will bite exactly as hard.
-The quarry follows the CR18 polarity and the joint CE form; a leg that reaches for
+The reference repository follows the CR18 polarity and the joint CE form; a leg that reaches for
 Maurer02 (a primary is not available for CE — see C6) must flip and convert.
 
 ## C6 — the SOURCE HIERARCHY problem for T1 (structural, needs a ruling)
@@ -2482,24 +2487,24 @@ mentions CE, games, or MBOs.  Suggested shape of the ruling (not applied): add C
 citation, since Maurer13b is the paper whose statement AC would actually be
 formalizing (non-adaptive RHS, joint form).
 
-# SKILLS REVIEW — can the quarry's skills be re-based onto AC?
+# SKILLS REVIEW — can the reference repository's skills be re-based onto AC?
 
 **Framing fact established first**: `AC` has **no `.claude/` directory at all** — no
 skills exist on the target side today, and no `.mcp.json` and no `tools/rs-memory`.
-So this is a *port*, not a merge.  The quarry's four files total 1,531 lines.
+So this is a *port*, not a merge.  The reference repository's four files total 1,531 lines.
 
 ## Per-file verdict table
 
-| file | lines | (a) what it prescribes | (b) quarry-carrier-bound | (c) transfers as-is | verdict |
+| file | lines | (a) what it prescribes | (b) reference repository-carrier-bound | (c) transfers as-is | verdict |
 |---|---|---|---|---|---|
-| **`Q:.claude/skills/random-systems-proofs/SKILL.md`** (+6 `references/`) | 466 | rs-memory preflight; the premise that every statement is an advantage bound proved by a **closed set of seven technique families**; a **7-stage checklist** (SKETCH → DAG → REUSE SEARCH → AUDIT → SKELETON → FILL LEAVES → RECEIPTS) with an artifact and a gate each; the stage-4 source audit (quote the sentence, sum the number); Lean-free stage 1; the **routing ladder**; the `[LIB]`/`[ROUTINE]`/`[CREATIVE]` obligation ledger; five proof-shape rules; 18 rationalizations to reject | **20 items**, incl.: `Δ(S,T)`/`maxAdvantage`/`maxEDist` as statement targets (`:3`, `:115`, `:216-221`, `:250-253`, `:311`, `:426-428`) — all forbidden by pin 2; **the entire `[ROUTINE]` tactic table** `cr18_*`/`htechnique_*` (`:190-199`) — *zero* of which resolve in AC; **"`cr18_total` fails ⇒ the system carries partiality it should not"** (`:207`, `:414-415`) — **exactly backwards under R2**, where refusal is observable and non-fatal; "family I, is the distance ZERO, CHECK FIRST" (`:134`) — but in AC `Δ(S,S) = ⊤` off the honest carrier (R9); `CHEATSHEET.md` "**Always first**" and `LanzenbergerChain.lean` (`:288-289`, `:370-374`) — **neither file exists in AC**; the `Adv S T = Δ(T,S)` orientation (`:324-326`) pins the documented swap to the wrong pair; `rs_prepare_task` preflight (`:10-16`) | the whole stage-4 source-audit discipline (`:38-67`); Lean-free stage 1 + the anchoring argument (`:69-98`); the freedom-per-stage table; the three-class obligation ledger *as a concept*; skeleton-compiles-first (`:211-234`); **all five proof-shape rules** (`:236-280`); DPI-as-pushforward; most rationalizations | **RE-BASE AS METHOD ONLY** — the workflow is gold, the entire endpoint catalogue, metric vocabulary, tactic layer and reuse index are quarry-bound |
+| **`Q:.claude/skills/random-systems-proofs/SKILL.md`** (+6 `references/`) | 466 | rs-memory preflight; the premise that every statement is an advantage bound proved by a **closed set of seven technique families**; a **7-stage checklist** (SKETCH → DAG → REUSE SEARCH → AUDIT → SKELETON → FILL LEAVES → RECEIPTS) with an artifact and a gate each; the stage-4 source audit (quote the sentence, sum the number); Lean-free stage 1; the **routing ladder**; the `[LIB]`/`[ROUTINE]`/`[CREATIVE]` obligation ledger; five proof-shape rules; 18 rationalizations to reject | **20 items**, incl.: `Δ(S,T)`/`maxAdvantage`/`maxEDist` as statement targets (`:3`, `:115`, `:216-221`, `:250-253`, `:311`, `:426-428`) — all forbidden by pin 2; **the entire `[ROUTINE]` tactic table** `cr18_*`/`htechnique_*` (`:190-199`) — *zero* of which resolve in AC; **"`cr18_total` fails ⇒ the system carries partiality it should not"** (`:207`, `:414-415`) — **exactly backwards under R2**, where refusal is observable and non-fatal; "family I, is the distance ZERO, CHECK FIRST" (`:134`) — but in AC `Δ(S,S) = ⊤` off the honest carrier (R9); `CHEATSHEET.md` "**Always first**" and `LanzenbergerChain.lean` (`:288-289`, `:370-374`) — **neither file exists in AC**; the `Adv S T = Δ(T,S)` orientation (`:324-326`) pins the documented swap to the wrong pair; `rs_prepare_task` preflight (`:10-16`) | the whole stage-4 source-audit discipline (`:38-67`); Lean-free stage 1 + the anchoring argument (`:69-98`); the freedom-per-stage table; the three-class obligation ledger *as a concept*; skeleton-compiles-first (`:211-234`); **all five proof-shape rules** (`:236-280`); DPI-as-pushforward; most rationalizations | **RE-BASE AS METHOD ONLY** — the workflow is gold, the entire endpoint catalogue, metric vocabulary, tactic layer and reuse index are reference repository-bound |
 | **`Q:.claude/skills/cc-constructions/SKILL.md`** (+1 reference) | 227 | audit-before-building as rule #1; the **L0–L6 tower** and "almost every failure mode is working at the wrong floor"; the **two-intervention rule** (probability enters exactly twice); the **identity ladder** (rungs 1–3, zero-slack rule); the reduction pattern; the leaf handoff to `random-systems-proofs` | **worst of the four.** Carrier rows `DependentDDS`/`PFunDDS`/`Machine`/`TypedResource` (`:46-48`) — none exist in AC; the whole **"Maurer-pass surface"** paragraph (`:52-63`) incl. `α •[i] R` and a **glyph collision**: `≈[ε]` exists in AC too, as MauRen16 Def 2; **"Prefer total machines: `step = none` is blocking divergence"** (`:96-99`) — a **direct contradiction of R2**; `Services`/`Services.free` kernel codes (`:103-109`) — the shape AC's C8 spike **REFUTED**; every discovery pointer (`Jost.lean`, `CHEATSHEET.md`, `DESIGN.md §10.11`, `STATUS.md`) | audit-before-building (`:17-26`); wrong-floor diagnosis; the **two-intervention rule** and "never cross a specification boundary" (`:65-75`); the identity ladder + zero-slack rule (`:111-131`); the reduction pattern; the leaf-handoff protocol incl. "**never a conclusion-shaped hint**" (`:144-149`) | **REWRITE** — keep four principles, replace the tower, the surface, and the totality ruling |
-| **`Q:skills/PROOF-WORKFLOWS.md`** | 643 | self-described "design prep for a skill", read off the quarry at commit `4376f54` with a `file:line` per claim; the six-stage workflow; **per-technique obligation ledgers** (H's three axes/five analyses, CE's two doors, coupling, winnability, counting); 13 anti-rabbit-hole rules; the measured cost of a wrong technique choice | pinned to the quarry tree by construction (`:14`); the family-II table is *entirely* `maxAdvantage_*` (`:451-456`); **§3.9 literally instructs "State headline results in `Δ`"** (`:478-481`) — i.e. instructs a pin-2 violation; a 15-endpoint H catalogue and CE/coupling/winnability door lists that **do not exist in AC**; legacy-carrier entry points incl. two of the three never-forward sorries; `ccprover` framed as reference-only — **in AC it is a downstream consumer to build**; the coupling exactness claim (`:421-423`) stated **without** AC's finiteness bundle, licensing a false exactness claim | §0's tractability argument; the six-stage workflow with artifact+gate; the sketch's five required contents incl. "**technique choice, with the negative**"; the DAG node contract; "**a `NEW` verdict with no search record is not a verdict**" (`:267`); receipts + axiom envelope; §3's *questions* minus every name; **rule 12: papers are read visually, text extraction fails silently** (`:502-503`); "**never pass a conclusion-shaped constraint or another agent's unverified claim to a subagent**" (`:578-581`) | **HARVEST** — mine the workflow and the per-technique *questions*; discard the catalogue |
+| **`Q:skills/PROOF-WORKFLOWS.md`** | 643 | self-described "design prep for a skill", read off the reference repository at commit `4376f54` with a `file:line` per claim; the six-stage workflow; **per-technique obligation ledgers** (H's three axes/five analyses, CE's two doors, coupling, winnability, counting); 13 anti-rabbit-hole rules; the measured cost of a wrong technique choice | pinned to the reference repository tree by construction (`:14`); the family-II table is *entirely* `maxAdvantage_*` (`:451-456`); **§3.9 literally instructs "State headline results in `Δ`"** (`:478-481`) — i.e. instructs a pin-2 violation; a 15-endpoint H catalogue and CE/coupling/winnability door lists that **do not exist in AC**; legacy-carrier entry points incl. two of the three never-forward sorries; `ccprover` framed as reference-only — **in AC it is a downstream consumer to build**; the coupling exactness claim (`:421-423`) stated **without** AC's finiteness bundle, licensing a false exactness claim | §0's tractability argument; the six-stage workflow with artifact+gate; the sketch's five required contents incl. "**technique choice, with the negative**"; the DAG node contract; "**a `NEW` verdict with no search record is not a verdict**" (`:267`); receipts + axiom envelope; §3's *questions* minus every name; **rule 12: papers are read visually, text extraction fails silently** (`:502-503`); "**never pass a conclusion-shaped constraint or another agent's unverified claim to a subagent**" (`:578-581`) | **HARVEST** — mine the workflow and the per-technique *questions*; discard the catalogue |
 | **`Q:.claude/skills/writing-lean-proofs/SKILL.md`** (+5 references) | 195 | "design top-down, prove bottom-up; statements are the stable interface, proofs are disposable"; design definitions **and their API** first; sorry-skeleton at project and proof scale; one focused goal at a time; verify mechanically; the extraction ladder; a rule table with the enforcing linter per row | **almost none** — 4 frictions, all EDIT-sized: "prefer total functions with **junk values** over `Option`" (`:45-47`) — in AC `none` **is** the semantics (R1/R2); "defer to CONTRIBUTING" (`:34-36`) — AC has none; the `! grep sorry` recipe (`:107-110`) vs AC's four scans; "name lemmas from their statements" (`:167`) — insufficient under AC's paper-names-first + COINAGE rule | essentially the whole file | **RE-BASE WITH ~4 EDITS** — the cheapest port |
 
-**`research-memory`** exists as a fifth quarry skill (41 lines) and routes to the
+**`research-memory`** exists as a fifth reference repository skill (41 lines) and routes to the
 `rs-memory` MCP + the page-addressable PDF corpus.  AC has neither the MCP config
-nor the corpus (the papers live in the quarry).  Its *rule* — "extracted text is
+nor the corpus (the papers live in the reference repository).  Its *rule* — "extracted text is
 navigation only until the original page is visually checked" — must survive the
 port even though its mechanism cannot.
 
@@ -2559,7 +2564,7 @@ additions a re-based skill would make:
 8. **AC has the list but not the criteria.**  `AC:AGENTS.md:102-103` enumerates
    routes ("direct metric, simulator, conditional equivalence, coupling,
    H-coefficient, hybrid, or reduction") with **zero** selection guidance, and
-   `:209-210` forbids automating the choice.  So: **AC has the list, the quarry has
+   `:209-210` forbids automating the choice.  So: **AC has the list, the reference repository has
    the criteria, and neither has criteria calibrated to `Adv⊥`/`classDistance`.**
 
 ## Delta list for the re-based AC skill (52 items, condensed by theme)
@@ -2574,7 +2579,7 @@ in full + `LEDGER.md` (source hierarchy, the four pins, lane rules) and **run
 carried: extracted text is navigation until the page is visually verified.
 
 **Metric & carrier** — 5 EDIT every `Δ(S,T)`/`maxAdvantage`/`maxEDist`/`Adv[q]` to
-`Adv⊥`/`classDistance`, **with the explicit warning that quarry `Δ` means
+`Adv⊥`/`classDistance`, **with the explicit warning that reference repository `Δ` means
 `maxAdvantage`**.  6 NEW an opening "which metric is your statement in?" with the
 R4′ crossing API and its two connection lemmas.  7 EDIT the "≤ vs =" receipt to carry
 its finiteness hypotheses.  8 EDIT the orientation rule to AC's recorded
@@ -2599,17 +2604,17 @@ three REFUTED names `relayExcept`/`attachFullyAt`/`botToken`; (4)
 and a cross-lane duplicate declaration can hide behind a green build.  17 NEW AC's
 verification recipes + the `#print axioms` envelope.  18 EDIT the dev loop: keep
 "read the goal state, not the build log"; note `lake build RandomSystems` in AC globs
-**all** submodules, unlike the quarry.  19 DROP "do not write `private`" — no AC gate
+**all** submodules, unlike the reference repository.  19 DROP "do not write `private`" — no AC gate
 enforces it.
 
 **Reuse, transplant, provenance** — 20 DROP `CHEATSHEET.md`-first and
 `LanzenbergerChain.lean` as the anti-false-gap check.  21 NEW the LEDGER reuse order
-(tree declarations → quarry **architecture** cited `file:line` → quarry statement
-**shapes** restated, never copied) and "building fresh what the quarry already proves
+(tree declarations → reference repository **architecture** cited `file:line` → reference repository statement
+**shapes** restated, never copied) and "building fresh what the reference repository already proves
 is a brief violation".  22 NEW the delta vocabulary (`carrier`/`metric`/`both`/`none`)
-and verdicts (`REUSE-ARCH`/`REUSE-STMT`/`REF-ONLY`/`NONE`), **replacing** the quarry's
+and verdicts (`REUSE-ARCH`/`REUSE-STMT`/`REF-ONLY`/`NONE`), **replacing** the reference repository's
 REUSE/ADAPT/NEW scale.  23 NEW the seven transplant rules as a checklist.  24 NEW the
-quarry rule (READ-ONLY, always; never imported or built).  25 NEW the SOURCE HIERARCHY
+reference repository rule (READ-ONLY, always; never imported or built).  25 NEW the SOURCE HIERARCHY
 + CR18 demotion + the five-item fallback register + the duty to say so explicitly.
 26 EDIT "CR18 numbering is not evidence of conformance" into "CR18-derived **names**
 stay; their docstring citations are historical provenance, not authority".  27 NEW the
@@ -2629,7 +2634,7 @@ produces a red gate on first use.  33 EDIT house-style deferral to
 Maurer-pass surface paragraph.  37 NEW R7″ in its place (`attachAt`,
 `converterMonoidAt`, `parF`, the fn.23 ruling, `α∣α = α²` recorded,
 `IsNonexpandingPar` unconditional NOT obtainable).  38 NEW a **glyph warning**: `≈[ε]`
-in AC is MauRen16 Def 2, not the quarry's surface closeness.  39 DROP `Services`/kernel
+in AC is MauRen16 Def 2, not the reference repository's surface closeness.  39 DROP `Services`/kernel
 codes; NEW R3 + the C8 lesson (value-level addressing; type-level tags REFUTED).
 40 KEEP the identity ladder, the two-intervention rule, "never cross a specification
 boundary", the reduction pattern, the leaf handoff — restated on AC names.  41 NEW the
@@ -2706,7 +2711,7 @@ raises, and both must be closed before T1/T3 code is written.
 
 | # | question | evidence assembled here |
 |---|---|---|
-| **R-A** | **Game carrier**: `PDS X (Y × Bool)` with a separate `MonotoneMBO` predicate (quarry's choice, and what all the CE machinery needs), or the thesis Def 2.20 pair `(s, A)` with an *input-only* MC? | The quarry surveyed this and chose `Y × Bool`, documenting the bridge at `Q:GameWinnability.lean:16-40`.  Maurer13b Def 9 and CR18 Def 3.22 both *define* the game that way.  The thesis pair is recoverable as `gameOfDDS` at an input-only condition. |
+| **R-A** | **Game carrier**: `PDS X (Y × Bool)` with a separate `MonotoneMBO` predicate (reference repository's choice, and what all the CE machinery needs), or the thesis Def 2.20 pair `(s, A)` with an *input-only* MC? | The reference repository surveyed this and chose `Y × Bool`, documenting the bridge at `Q:GameWinnability.lean:16-40`.  Maurer13b Def 9 and CR18 Def 3.22 both *define* the game that way.  The thesis pair is recoverable as `gameOfDDS` at an input-only condition. |
 | **R-B** | **Source hierarchy for CE**: no primary defines conditional equivalence (§C6).  Does CE enter the CR18-FALLBACK register, with Maurer13b named as the preferred citation? | §C6 + the source ledger.  Registry checked: neither the PRIMITIVE REGISTRY nor PHI-SPEC nor the CR18-FALLBACK register mentions CE, games, or MBOs. |
 | *(secondary)* | **R-C**: is the MBO an `EventAlgebra` element (Jost, a primary) or a `Bool`-valued monotone predicate? | §T2, `AC:AbstractCryptography/EventAlgebra.lean` (775 lines) vs `Q:RandomSystemsCC/EventHistory.lean` (174 lines).  Note this one can be deferred without blocking: the `Bool` reading is a model of the event reading. |
 | *(secondary)* | **R-D**: is CR18 Def 4.20's blocking converter `b` expressible with AC's landed `blockSet`/`block`/`attachAt`, and does pin 3 permit it in a technique statement? | The `b`-as-converter design note in §T1. |
@@ -2718,10 +2723,10 @@ raises, and both must be closed before T1/T3 code is written.
 | **L-1** | **Game objects**: game carrier, `S⁻`, `MonotoneMBO`, game transcript/observable, game equivalence (the coarser quotient beside `Behaviour`), `ν`, `Winnable`, `ω` | T1.1, T1.2, T3.1–T3.4 | **M–L** | R-A | CLOSED (T2 9a5dccc: Winnable, infWinnability; R9-aligned) |
 | **L-2** | **The Winnability Theorem** `ν = ω` + attainment, via the thesis p. 26 alternative proof reducing to Thm 2.31 | T3.5–T3.8 | **L** | L-1 | CLOSED (T2 e221d9e/65a87f2: winnability_theorem via the p.26 alternative proof; HasFixedDomain trap avoided — one PDG.HasDomain clause; all three reference strengthenings kept) |
 | **L-3** | **CE definition + filtration algebra + seed kit + `gameEnhance`** | T1.3–T1.6 | **M–L** | L-1, R-B, P0.1 | populates `Technique/ConditionalEquivalence.lean` |
-| **L-4** | **CE ⟹ indistinguishability**: `Adv⊥(S,T) ≤ Γ(Ŝ)` then the blind headline `Adv⊥(S,T) ≤ Γ(bŜ)` | T1.7, T1.8 | **L** | L-2, L-3, R-D | the payoff theorem; with R-D resolved it is stated **CR18 Def 4.20 verbatim** and ≈1400 lines of quarry blind-winner machinery are *not needed* |
+| **L-4** | **CE ⟹ indistinguishability**: `Adv⊥(S,T) ≤ Γ(Ŝ)` then the blind headline `Adv⊥(S,T) ≤ Γ(bŜ)` | T1.7, T1.8 | **L** | L-2, L-3, R-D | the payoff theorem; with R-D resolved it is stated **CR18 Def 4.20 verbatim** and ≈1400 lines of reference repository blind-winner machinery are *not needed* |
 | **L-5** | **H-technique system half**: `q`-indexed transcript prefix + query-vector-indexed law, then the σ·η factorization, then the adaptive endpoint on `Adv⊥` | T4.4–T4.6, T4.11 | **L** | P0.2, P0.3 (helpful, not blocking) | **runs in parallel with L-1…L-4 — no shared files beyond `Probability/`** |
 | **L-6** | **MPR07 Lemma 5** (tight MBO existence), stated at the `Behaviour` quotient, with the maximal-coupling construction | T2.2, T2.3 | **M–L** | L-3, L-4 | completeness of the whole T1 method; the proof engine (`optimalJoint`, `isCoupling_optimalJoint`, `offDiagonalMass_optimalJoint`) is already landed in `AC:Coupling.lean:143,196,225` |
-| **L-7** | filtered advantage + the pointless-query WLOG (carrying the quarry's "NOT WLOG when the worlds are not both permutations" caveat) | T4.12 | **L** | L-5 | needed before any concrete application |
+| **L-7** | filtered advantage + the pointless-query WLOG (carrying the reference repository's "NOT WLOG when the worlds are not both permutations" caveat) | T4.12 | **L** | L-5 | needed before any concrete application |
 | **L-8** | the events/MBO reconciliation (`EventAlgebra` instantiated on interaction histories) | T2.1 | **M** | R-C | source-hierarchy hygiene; optional if R-C defers |
 | **L-9** | application kits (switching, SoP, hash-then-PRF, CBC-MAC, HCTR2) | T1.10, T4.13 | **L**× | L-4, L-5, L-7 | out of first scope |
 
@@ -2749,7 +2754,7 @@ the H-technique branch).  Writing it up front would document a tree that isn't t
 ### If only one leg can be funded
 
 **L-2 (the Winnability Theorem).**  It is primary-sourced (Lanzenberger Thm 2.37,
-a source in the hierarchy), its quarry proof is sorry-free and thesis-shaped, its
+a source in the hierarchy), its reference repository proof is sorry-free and thesis-shaped, its
 proof route consumes an AC theorem that is already landed, its `ω` already writes
 R9's honesty clause, and it is the result that makes every `Γ` on the right-hand
 side of a CE bound computable.  It is the highest ratio of theorem-weight to
@@ -2759,7 +2764,7 @@ carrier risk in the program.
 
 LEGS (each: comprehensive brief, code + proposed doc deltas, all four
 gates, adversarial audit before deltas apply):
-  T0 CLOSED (cee67d7/dbe169e/ce0eb22; 63 declarations, all axiom-clean; coinages condProb/condDist flagged in-code; Patarin/Chen-Steinberger/Jha-Nandi attributions remain UNVERIFIED as the quarry's own, flagged in-code, papers not on disk — citation upgrade owed). Was: conditional-probability toolkit, the two
+  T0 CLOSED (cee67d7/dbe169e/ce0eb22; 63 declarations, all axiom-clean; coinages condProb/condDist flagged in-code; Patarin/Chen-Steinberger/Jha-Nandi attributions remain UNVERIFIED as the reference repository's own, flagged in-code, papers not on disk — citation upgrade owed). Was: conditional-probability toolkit, the two
      H-technique refinements, the counting kernel — carrier-delta-free
      rows of the matrix above.
   T1 games: Def 2.20-2.25 objects (pair primitive), the bit-output view +
@@ -2774,7 +2779,7 @@ gates, adversarial audit before deltas apply):
   T3 conditional equivalence: definition + the CE bound against Adv⊥.
      GATE RESOLVED 2026-08-18 (PHI-SPEC CE-sources line): no admission
      needed — charter sources + trap list govern.  Contract = R11(a)+(b):
-     one new relation over the landed observables; the quarry's proven
+     one new relation over the landed observables; the reference repository's proven
      CondEquiv/Theorem417 lemma DAG transported along the CE dictionary
      (RECAST POLICY, CE rows).  DISPATCHABLE.
   T4 MPR07 Lemma 5 as constructor completeness (on the Behaviour
@@ -2833,7 +2838,7 @@ endpoint `CondEquiv G T → Adv⊥(forget G, T) ≤ ofReal (supWinProb G)` with
 the coupling core generalizing T2's `statDist_fTransform_le_mass_of_eq_off`
 route via T0's chain rules; everything on the `Adv⊥` ⊥-total carrier (F-2
 — CR18 §4.10's no-refusal simplification is rejected).  R11(b) minimal
-migration: the quarry's PROVEN `CondEquiv.lean`/`Theorem417.lean` lemma
+migration: the reference repository's PROVEN `CondEquiv.lean`/`Theorem417.lean` lemma
 DAG is the route — transport it along this dictionary, re-elaborating
 each node on our observables; change only what the recast forces; do NOT
 invent a fresh proof route, and do NOT transcribe text across carriers.
