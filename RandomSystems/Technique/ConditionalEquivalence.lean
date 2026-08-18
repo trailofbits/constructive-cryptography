@@ -41,6 +41,9 @@ game, condition or conditioning notion is introduced here, and no `S⁻`, `Γ`,
 * `PDG.EquivalentAsGames` — **Maurer13b Definition 11, printed p. 3153**:
   "Two `(𝒳,𝒴×{0,1})`-systems with MBO, `S` and `T`, are *equivalent as games*,
   denoted `S ≡ᵍ T`, if, for `i ≥ 1`, `p^S_{Yⁱ,Aᵢ=0|Xⁱ} = p^T_{Yⁱ,Aᵢ=0|Xⁱ}`."
+  The `i ≥ 1` is taken literally (`l ≠ []`); quantifying over `[]` too would be
+  strictly stronger than Definition 11
+  (`PDS.exists_equivalentAsGames_notWonLaw_nil_ne`).
 * `PDG.CondEquiv` — **Maurer13b Definition 13, printed p. 3153**: `S|𝒜 ≡ T`
   iff `p^S_{Yⁱ|Xⁱ,Aᵢ=0} = p^T_{Yⁱ|Xⁱ}` for `i ≥ 1`, stated in the paper's own
   **division-free product form**, printed on the same page: "Since
@@ -73,7 +76,9 @@ fiber identity because environments are deterministic.
   **Maurer13b Lemma 2, printed p. 3153**: "If `S ≡ᵍ T`, then, for any
   distinguisher `D` and any `q`, `Δ^D_q(S⁻,T⁻) ≤ Γ^D_q(S)`", the statement the
   paper says "implies the so-called fundamental lemma of game playing".
-  (CR18 Lemma 4.16, printed p. 107.)
+  (CR18 Lemma 4.16, printed p. 107.)  It carries `‖G‖ = ‖H‖`, which Maurer13b
+  has standing (its objects are systems, hence probability distributions) and
+  which Definition 11's `i ≥ 1` makes necessary — see the theorem's docstring.
 * `PDG.advFullyDefined_forget_le_supWinProb_of_condEquiv` — **Maurer02
   Theorem 1(i), preprint p. 12**: "If `F^𝒜 ≡ G^ℬ` or `F|𝒜 ≡ G`, then
   `Δₖ(F,G) ≤ ν(F, Āₖ)`", the **adaptive** right-hand side; equivalently the
@@ -90,6 +95,19 @@ fiber identity because environments are deterministic.
   rather than as a supremum over strategies.  The papers' non-adaptive
   `Γ^{NA}(Ŝ)` / `Γ(bŜ)` **is** strictly smaller in general and is **not**
   obtained here (see the adaptivity note below).
+
+## The receipts, and what they are evidence of
+
+The `⊥`/`⊤` poles show the relation is satisfiable and not free, but they do
+**not** pin the placement of the two scalars — see the receipts section.  The
+interpolation family `PDS.condEquivInterp` is the non-degenerate witness: for
+`0 < c < 1` it satisfies every hypothesis of the endpoint with
+`forget G ≠ T` and `0 < ν = c·‖S₀‖ < ‖G‖`, so the endpoint is neither vacuous
+nor trivial.  `PDS.exists_equivalentAsGames_notWonLaw_nil_ne` separates
+Definition 11 from its `[]`-including variant.  The last two were built by the
+T3 adversarial audit (`t3-audit/check2.lean`, and its §3.1 observation) and are
+landed here so they travel with the definitions.  No *application* (switching
+lemma, CBC-MAC, sum of permutations) is discharged in this module.
 
 ## Reading the papers against this file
 
@@ -209,6 +227,20 @@ theorem not_won_iff_gameTranscript (g : DDG X Y) (e : DDE.Total Y X) (n : ℕ) :
   rw [won_iff_gameTranscript]
   cases (gameTranscript g e n).2 <;> simp
 
+/-- The condition that fires as soon as one query has been answered: the upper
+set of nonempty histories.  Upward closure is immediate — an extension of a
+nonempty history is nonempty.  Unlike the lattice's `⊥` and `⊤` (Lanzenberger
+Definition 2.20's two poles, `Game.lean`) this one fires *during* the
+interaction, which is what makes it a separating witness for Maurer13b
+Definition 11's `i ≥ 1` clause
+(`PDS.exists_equivalentAsGames_notWonLaw_nil_ne`). -/
+def MonotoneCondition.nonNil : MonotoneCondition X :=
+  ⟨{l : List X | l ≠ []}, fun _ _ hpre ht hnil => ht (List.prefix_nil.mp (hnil ▸ hpre))⟩
+
+@[simp] theorem MonotoneCondition.mem_nonNil {l : List X} :
+    l ∈ (MonotoneCondition.nonNil : MonotoneCondition X).1 ↔ l ≠ [] :=
+  Iff.rfl
+
 end System
 
 namespace PDG
@@ -293,6 +325,26 @@ theorem notWonLaw_le_trLawFullyDefined_forget {G : PDG X Y} (hG : G.NonNeg)
     Distribution.fTransform_fTransform, Distribution.fTransform_apply_eq_mass]
   exact Distribution.mass_mono hG fun g hg => hg.2
 
+theorem notWonLaw_le_weight {G : PDG X Y} (hG : G.NonNeg)
+    (e : System.DDE.Total Y X) (n : ℕ) (t : List (X × Option Y)) :
+    notWonLaw e n G t ≤ G.weight := by
+  rw [notWonLaw_apply]
+  exact Distribution.mass_le_weight hG _
+
+/-- Before the first move every realization has produced the empty transcript,
+so the length-`0` transcript law is `S`'s weight concentrated at `[]`.  This is
+the index at which Definition 11's `i ≥ 1` clause bites (`EquivalentAsGames`
+says nothing there, and the honest weight hypothesis carries the step
+instead). -/
+theorem trLawFullyDefined_zero_apply_nil (e : System.DDE.Total Y X)
+    (S : PDS X Y) :
+    PDS.trLawFullyDefined e 0 S ([] : List (X × Option Y)) = S.weight := by
+  rw [PDS.trLawFullyDefined, Distribution.fTransform_apply_eq_mass]
+  exact (Distribution.mass_congr S
+    (P := fun s => System.DDE.Total.transcript s e 0 = ([] : List (X × Option Y)))
+    (Q := fun _ => True) (fun _ => iff_of_true rfl trivial)).trans
+      (Distribution.mass_true S)
+
 /-! ## Maurer13b Definition 11 and Definition 13 -/
 
 /-- **Maurer13b Definition 11** (printed p. 3153): "Two `(𝒳,𝒴×{0,1})`-systems
@@ -301,12 +353,20 @@ with MBO, `S` and `T`, are *equivalent as games*, denoted `S ≡ᵍ T`, if, for
 printed p. 105.)
 
 The fixed input sequence `Xⁱ` is the non-adaptive environment
-`playQueries l` at its own length, as the module docstring explains.  This is
-*weaker* than Lanzenberger Definition 2.22 (`PDG.gameEquivalent`), which
-compares the whole game transcript law: the two games may differ freely after
-the condition has fired (`equivalentAsGames_of_gameEquivalent`). -/
+`playQueries l` at its own length, as the module docstring explains, and the
+**`i ≥ 1` restriction is taken literally**: `l` ranges over the *nonempty*
+query lists only.  That is not cosmetic — the `[]` instance would additionally
+demand that the two games have the same *already-won* mass at the empty
+history, which Definition 11 does not ask and which the `i ≥ 1` family does not
+imply (`PDS.exists_equivalentAsGames_notWonLaw_nil_ne`).  Definition 13 is the
+opposite case: there the `[]` instance is an unconditional identity
+(`smul_notWonLaw_nil`), which is why `CondEquiv` quantifies over every `l`.
+
+This is *weaker* than Lanzenberger Definition 2.22 (`PDG.gameEquivalent`),
+which compares the whole game transcript law: the two games may differ freely
+after the condition has fired (`equivalentAsGames_of_gameEquivalent`). -/
 def EquivalentAsGames (G H : PDG X Y) : Prop :=
-  ∀ l : List X,
+  ∀ l : List X, l ≠ [] →
     notWonLaw (System.DDE.Total.playQueries l) l.length G
       = notWonLaw (System.DDE.Total.playQueries l) l.length H
 
@@ -314,20 +374,20 @@ def EquivalentAsGames (G H : PDG X Y) : Prop :=
 scoped notation:50 G " ≡ᵍ " H => EquivalentAsGames G H
 
 theorem equivalentAsGames_refl (G : PDG X Y) : EquivalentAsGames G G :=
-  fun _ => rfl
+  fun _ _ => rfl
 
 theorem EquivalentAsGames.symm {G H : PDG X Y} (h : EquivalentAsGames G H) :
-    EquivalentAsGames H G := fun l => (h l).symm
+    EquivalentAsGames H G := fun l hl => (h l hl).symm
 
 theorem EquivalentAsGames.trans {G H K : PDG X Y} (h : EquivalentAsGames G H)
     (h' : EquivalentAsGames H K) : EquivalentAsGames G K :=
-  fun l => (h l).trans (h' l)
+  fun l hl => (h l hl).trans (h' l hl)
 
 /-- Lanzenberger Definition 2.22 refines Maurer13b Definition 11: agreeing on
 the *whole* game transcript law in every environment implies agreeing on the
 not-won slice at the fixed query lists. -/
 theorem equivalentAsGames_of_gameEquivalent {G H : PDG X Y}
-    (h : gameEquivalent G H) : EquivalentAsGames G H := fun l => by
+    (h : gameEquivalent G H) : EquivalentAsGames G H := fun l _ => by
   rw [notWonLaw, notWonLaw, h]
 
 /-- **Maurer13b Definition 13** (printed p. 3153), in the paper's own
@@ -352,13 +412,19 @@ def CondEquiv (G : PDG X Y) (T : PDS X Y) : Prop :=
 @[inherit_doc CondEquiv]
 scoped notation:50 G " |≡ " T => CondEquiv G T
 
-/-- **The index the papers exclude carries no information.**  Maurer13b
-Definition 13 and CR18 Definition 4.19 both quantify over `i ≥ 1`, while
-`CondEquiv` quantifies over every query list, `[]` included.  Nothing is
-strengthened: at the empty query list the interaction is the empty transcript
-in every realization, so both sides of the product form are the already-won
-mass times `T`'s weight, concentrated at `[]`.  The two quantifications
-therefore define the same relation. -/
+/-- **The index the papers exclude carries no information — for Definition 13.**
+Maurer13b Definition 13 and CR18 Definition 4.19 both quantify over `i ≥ 1`,
+while `CondEquiv` quantifies over every query list, `[]` included.  Nothing is
+strengthened: at the empty query list the interaction is the empty transcript in
+every realization, so both sides of the product form are the **not-yet-won**
+mass at the empty history times `T`'s weight, concentrated at `[]`.  The two
+quantifications therefore define the same relation.
+
+The reason this works is that Definition 13's `[]` instance compares `G` with
+*itself* — `notWonMass` occurs on both sides.  Definition 11 compares two
+different games, and there the `[]` instance is a real constraint, which is why
+`EquivalentAsGames` carries `l ≠ []`
+(`PDS.exists_equivalentAsGames_notWonLaw_nil_ne`). -/
 theorem smul_notWonLaw_nil (G : PDG X Y) (T : PDS X Y) :
     T.weight • notWonLaw (System.DDE.Total.playQueries ([] : List X))
         ([] : List X).length G
@@ -406,15 +472,20 @@ theorem condEquiv_apply {G : PDG X Y} {T : PDS X Y} (h : CondEquiv G T)
   simpa using this
 
 /-- Conditional equivalence to `T` is a statement about the not-won slice
-alone, so it transports along Definition 11. -/
+alone, so it transports along Definition 11.  Maurer13b uses exactly this move
+inside Theorem 3 (printed p. 3154, "`Γ^D_q(Ŝ) = Γ^D_q(T̂)` by Lemma 1").  The
+`i = 0` index Definition 11 omits costs nothing: there the product form is an
+identity for *every* game (`smul_notWonLaw_nil`). -/
 theorem CondEquiv.congr_equivalentAsGames {G H : PDG X Y} {T : PDS X Y}
     (h : CondEquiv G T) (hGH : EquivalentAsGames G H) : CondEquiv H T := by
   intro l
-  have hmass : notWonMass (System.DDE.Total.playQueries l) l.length G
-      = notWonMass (System.DDE.Total.playQueries l) l.length H := by
-    rw [← weight_notWonLaw, ← weight_notWonLaw, hGH l]
-  rw [← hGH l, ← hmass]
-  exact h l
+  rcases eq_or_ne l ([] : List X) with rfl | hl
+  · exact smul_notWonLaw_nil H T
+  · have hmass : notWonMass (System.DDE.Total.playQueries l) l.length G
+        = notWonMass (System.DDE.Total.playQueries l) l.length H := by
+      rw [← weight_notWonLaw, ← weight_notWonLaw, hGH l hl]
+    rw [← hGH l hl, ← hmass]
+    exact h l
 
 end PDG
 
@@ -567,20 +638,44 @@ distinguisher `D` and any `q`, `Δ^D_q(S⁻,T⁻) ≤ Γ^D_q(S)`."  The paper ad
 which is stated (and proved) only for a specific type of system description."
 (CR18 Lemma 4.16, printed p. 107, in its `⟨S⁻|T⁻⟩ ≤ S̄` form.)
 
-Here `S⁻` is `PDG.forget` (PHI-SPEC R11(a): the forgetful map, never an
-operator), the advantage is Ruling R4's `Adv⊥`, and `Γ^D_q` is Definition
-2.25's `ν` — one number rather than a per-distinguisher family, since `Adv⊥`
-already takes the supremum. -/
+Here `S⁻` is `PDG.forget` — Maurer13b **Definition 12** (printed p. 3153):
+"`S⁻` … the `(𝒳,𝒴)`-system resulting from `S` by ignoring the MBO, i.e.
+`p^{S⁻}_{Yⁱ|Xⁱ} = p^S_{Yⁱ|Xⁱ}`", the *marginal*, not an operator with content
+(CR18 Definition 4.18, printed p. 107, is the same, as provenance).  PHI-SPEC
+R11(a) bars `S⁻` as an operator; the landed `forget = fTransform Prod.fst` is
+exactly Definition 12's marginal.  The advantage is Ruling R4's `Adv⊥`, and
+`Γ^D_q` is Definition 2.25's `ν` — one number rather than a per-distinguisher
+family, since `Adv⊥` already takes the supremum.
+
+**The weight hypothesis is not decoration.**  Definition 11 constrains only
+`i ≥ 1`, so it says nothing at the empty history, where the two transcript laws
+are `‖G‖·δ_[]` and `‖H‖·δ_[]`: at `n = 0` the statement reads
+`max(‖G‖ − ‖H‖, 0) ≤ ν(G)` and is false for a heavy `G` against a light `H`.
+Maurer13b states Lemma 2 for *systems*, i.e. probability distributions, so
+`‖G‖ = ‖H‖` is its own standing hypothesis; it is also the bundle `Adv⊥`'s
+symmetry needs (`advFullyDefined_comm_of_weight_eq`) and the one the Definition
+13 endpoint already carries. -/
 theorem advFullyDefined_forget_le_supWinProb_of_equivalentAsGames
-    {G H : PDG X Y} (hG : G.NonNeg) (hH : H.NonNeg)
+    {G H : PDG X Y} (hG : G.NonNeg) (hH : H.NonNeg) (hw : G.weight = H.weight)
     (h : EquivalentAsGames G H) :
     PDS.advFullyDefined (forget G) (forget H)
       ≤ ENNReal.ofReal (supWinProb G) := by
-  refine advFullyDefined_forget_le_supWinProb_of_notWonLaw_le hG (nonNeg_forget hH) fun t => ?_
-  have hEq := h (System.transcriptInputs t)
-  simp only [System.length_transcriptInputs] at hEq
-  rw [hEq]
-  exact notWonLaw_le_trLawFullyDefined_forget hH _ _ t
+  refine advFullyDefined_forget_le_supWinProb_of_notWonLaw_le hG (nonNeg_forget hH)
+    fun t => ?_
+  rcases eq_or_ne t ([] : List (X × Option Y)) with rfl | ht
+  · -- Definition 11 is silent at `i = 0`; the weight hypothesis carries it.
+    calc notWonLaw (System.DDE.Total.playQueries
+            (System.transcriptInputs ([] : List (X × Option Y))))
+          ([] : List (X × Option Y)).length G ([] : List (X × Option Y))
+        ≤ G.weight := notWonLaw_le_weight hG _ _ _
+      _ = (forget H).weight := by rw [hw, weight_forget]
+      _ = _ := (trLawFullyDefined_zero_apply_nil _ (forget H)).symm
+  · have hnil : System.transcriptInputs t ≠ [] := by
+      simpa [System.transcriptInputs] using ht
+    have hEq := h (System.transcriptInputs t) hnil
+    simp only [System.length_transcriptInputs] at hEq
+    rw [hEq]
+    exact notWonLaw_le_trLawFullyDefined_forget hH _ _ t
 
 /-! ## Maurer02 Theorem 1 / Maurer13b Theorem 3 — the adaptive endpoint -/
 
@@ -786,13 +881,25 @@ theorem advFullyDefined_le_supWinProb_gamesFor_of_condEquiv {S T : PDS X Y}
 /-! ### Worked receipts: the two poles of the condition lattice
 
 `Game.lean`'s `⊥`/`⊤` receipts, read through conditional equivalence.  They
-bracket the technique and pin the definition's normalization: adjoining the
-never-won condition to `T` itself is conditionally equivalent to `T` and wins
-with probability `0`, so the endpoint returns `Adv⊥(T,T) ≤ 0`; adjoining the
-already-won condition is conditionally equivalent to *every* `T` — the not-won
-slice is empty and Maurer13b's product form is `0 = 0` — and the endpoint
-returns the trivial bound `Adv⊥(S,T) ≤ |S|`.  Non-vacuity in both directions:
-the relation is satisfiable, and it is not satisfiable for free. -/
+bracket the technique: adjoining the never-won condition to `T` itself is
+conditionally equivalent to `T` and wins with probability `0`, so the endpoint
+returns `Adv⊥(T,T) ≤ 0`; adjoining the already-won condition is conditionally
+equivalent to *every* `T` — the not-won slice is empty and Maurer13b's product
+form is `0 = 0` — and the endpoint returns the trivial bound `Adv⊥(S,T) ≤ |S|`.
+
+**What the poles do and do not test.**  They show the relation is satisfiable
+and that it is not satisfiable for free.  They do **not** pin the placement of
+the two scalars: at the `⊥` pole `notWonMass = ‖T‖` (`notWonMass_adjoin_bot`),
+so the two scalars of the product form are *literally the same number* there
+and the receipt is discharged verbatim by the scalar-exchanged relation and by
+the `‖G‖`-in-place-of-`‖T‖` variant as well.  (Kernel-checked by the T3
+adversarial audit, `t3-audit/check3.lean`, which built both rivals; an earlier
+version of this comment claimed the pole detects a misplaced `‖T‖`, and that
+claim was false.)  What the pole does detect is the *total absence* of a
+scalar.  The definition's faithfulness rests instead on the algebra — both
+sides of the landed identity are of degree one in `G` and degree one in `T`, so
+it is equivalent to Maurer13b's printed form at every pair of weights, not only
+at weight one — and its non-degeneracy on the interpolation family below. -/
 
 @[simp] theorem notWonMass_adjoin_bot (T : PDS X Y)
     (e : System.DDE.Total Y X) (n : ℕ) :
@@ -842,6 +949,218 @@ technique's degenerate corner, not a soundness hole. -/
 theorem condEquiv_adjoin_top (S T : PDS X Y) :
     PDG.CondEquiv (adjoin S fun _ => (⊤ : System.MonotoneCondition X)).1 T :=
   fun l => by rw [notWonLaw_adjoin_top, notWonMass_adjoin_top, smul_zero, zero_smul]
+
+/-! ### Definition 11's `i ≥ 1` is load-bearing
+
+`EquivalentAsGames` renders Definition 11 literally, over nonempty query lists
+only.  The witness below shows the omitted `[]` index is a genuine extra
+demand rather than a free consequence: two games that agree on the not-won
+slice at **every** nonempty query list, and disagree at the empty one.
+
+It is not a degenerate-alphabet artefact — it lives at any `X` whatever, on a
+system that answers every nonempty history (`System.functionEvaluator`), with a
+condition that fires as soon as one query is answered.  This is also the shape
+the T3 audit recorded as missing from the interpolation family below, whose
+condition fires already at `[]`. -/
+
+/-- The mass of an event under a law concentrated on one deterministic system.
+UPSTREAM-CANDIDATE for `System/ProbabilisticSystem.lean`, beside `PDS.ofDDS`. -/
+theorem mass_ofDDS (s : System.DDS X Y) (P : System.DDS X Y → Prop) :
+    (ofDDS s).mass P = if P s then 1 else 0 := by
+  rw [ofDDS, Distribution.mass]
+  exact Finsupp.sum_single_index (by simp)
+
+theorem nonNeg_ofDDS (s : System.DDS X Y) : (ofDDS s).NonNeg := by
+  intro a
+  rw [ofDDS, Finsupp.single_apply]
+  split <;> norm_num
+
+/-- **Definition 11's `i ≥ 1` clause is not cosmetic.**  Two games over one
+system — the same total system, carrying the condition "some query has been
+answered" and the already-won condition `⊤` — agree on the not-won slice at
+every nonempty query list (both slices are empty: the condition has fired) and
+disagree at the empty one (nothing has fired yet in the first, everything has
+in the second).
+
+So quantifying `EquivalentAsGames` over `[]` as well would be strictly stronger
+than Maurer13b Definition 11, and the corresponding Lemma 2 correspondingly
+weaker.  This is why the definition carries `l ≠ []` and Lemma 2 carries the
+weight hypothesis instead. -/
+theorem exists_equivalentAsGames_notWonLaw_nil_ne [Nonempty Y] :
+    ∃ G H : PDG X Y, G.NonNeg ∧ H.NonNeg ∧ PDG.EquivalentAsGames G H ∧
+      PDG.notWonLaw (System.DDE.Total.playQueries ([] : List X))
+          ([] : List X).length G
+        ≠ PDG.notWonLaw (System.DDE.Total.playQueries ([] : List X))
+          ([] : List X).length H := by
+  classical
+  set s₀ : System.DDS X Y :=
+    System.functionEvaluator (fun _ => (Classical.arbitrary Y)) with hs₀
+  set S : PDS X Y := ofDDS s₀ with hS
+  refine ⟨(adjoin S fun _ => System.MonotoneCondition.nonNil).1,
+    (adjoin S fun _ => (⊤ : System.MonotoneCondition X)).1,
+    nonNeg_adjoin (nonNeg_ofDDS s₀) _, nonNeg_adjoin (nonNeg_ofDDS s₀) _,
+    ?_, ?_⟩
+  · -- the two not-won slices are empty at every nonempty query list
+    intro l hl
+    rw [notWonLaw_adjoin_top]
+    ext t
+    rw [PDG.notWonLaw_apply, coe_adjoin, Distribution.mass_fTransform, hS,
+      mass_ofDDS, if_neg, Finsupp.zero_apply]
+    rintro ⟨hnotwon, -⟩
+    refine hnotwon ?_
+    show System.answeredQueries (System.DDE.Total.transcript s₀
+      (System.DDE.Total.playQueries l) l.length) ∈ _
+    rw [System.answeredQueries_transcript_playQueries s₀
+      (by rw [hs₀, System.dom_functionEvaluator]; exact hl)]
+    exact hl
+  · -- but they disagree at the empty query list
+    rw [notWonLaw_adjoin_top]
+    intro hEq
+    have happ := DFunLike.congr_fun hEq ([] : List (X × Option Y))
+    rw [PDG.notWonLaw_apply, coe_adjoin, Distribution.mass_fTransform, hS,
+      mass_ofDDS, if_pos ⟨fun hc => hc rfl, rfl⟩, Finsupp.zero_apply] at happ
+    exact one_ne_zero happ
+
+/-! ### The interior: a one-parameter family strictly between the poles
+
+The poles alone leave open whether `CondEquiv G T` at equal weights forces
+`forget G = T` — in which case the endpoint would be `Adv⊥ = 0 ≤ ν` and say
+nothing.  It does not, and the witness is built from the two pole games alone:
+mixing them with weight `c` gives, for every `c`, a game conditionally
+equivalent to `T` whose forgetful image is the mixture `(1−c)·T + c·S₀` and
+whose winning probability is exactly `c·‖S₀‖`.  Instantiating at
+`0 < c < 1`, `S₀ ≠ T`, `‖S₀‖ = ‖T‖ > 0`, every hypothesis of the endpoint holds
+(`nonNeg_condEquivInterp`, `weight_condEquivInterp`, `condEquiv_condEquivInterp`),
+the forgetful image is *not* `T` (`forget_condEquivInterp_ne`), and the bound is
+`c·‖S₀‖` (`supWinProb_condEquivInterp`) — strictly between `0` and the game's
+weight, by arithmetic from those last two.  So the endpoint is neither vacuous
+nor trivial.
+
+Origin: the T3 adversarial audit built and kernel-checked this family in its
+scratch `t3-audit/check2.lean` while attacking the endpoint for vacuity; it is
+landed here so the non-degeneracy travels with the definition.
+
+**What it does not witness** (recorded by the audit as the honest residual):
+the condition that fires here is `⊤`, already satisfied at the empty history,
+so the family does *not* satisfy the empty-history clause the `ω` endpoint
+carries.  Swapping `⊤` for `System.MonotoneCondition.nonNil` repairs that — the
+product form still holds at `[]`, since both sides pick up the same
+`(1−c)‖T‖ + c‖S₀‖` factor — but it needs `S₀`'s realizations to answer a first
+query, which is a totality clause this module does not otherwise carry, and it
+is not built.  Maurer13b's own non-degeneracy witnesses are Examples 7 and 8
+(printed p. 3153) — a URF is conditionally equivalent to a beacon, and to a
+URP — and they need concrete systems, i.e. an application. -/
+
+/-- The interpolation between the two pole games: the never-won game over `T`
+with weight `1 − c`, the already-won game over `S₀` with weight `c`. -/
+def condEquivInterp (T S₀ : PDS X Y) (c : ℝ) : PDG X Y :=
+  (1 - c) • (adjoin T fun _ => (⊥ : System.MonotoneCondition X)).1
+    + c • (adjoin S₀ fun _ => (⊤ : System.MonotoneCondition X)).1
+
+@[simp] theorem notWonLaw_condEquivInterp (T S₀ : PDS X Y) (c : ℝ)
+    (e : System.DDE.Total Y X) (n : ℕ) :
+    PDG.notWonLaw e n (condEquivInterp T S₀ c)
+      = (1 - c) • trLawFullyDefined e n T := by
+  ext t
+  rw [PDG.notWonLaw_apply, condEquivInterp, Distribution.mass_add,
+    Distribution.mass_smul, Distribution.mass_smul, Finsupp.smul_apply,
+    smul_eq_mul]
+  have h1 : ((adjoin T fun _ => (⊥ : System.MonotoneCondition X)).1.mass
+      fun g => ¬ System.Won g e n ∧ System.DDE.Total.transcript g.1 e n = t)
+      = trLawFullyDefined e n T t := by
+    rw [← PDG.notWonLaw_apply, notWonLaw_adjoin_bot]
+  have h2 : ((adjoin S₀ fun _ => (⊤ : System.MonotoneCondition X)).1.mass
+      fun g => ¬ System.Won g e n ∧ System.DDE.Total.transcript g.1 e n = t)
+      = 0 := by
+    rw [← PDG.notWonLaw_apply, notWonLaw_adjoin_top]
+    rfl
+  rw [h1, h2, mul_zero, add_zero]
+
+@[simp] theorem notWonMass_condEquivInterp (T S₀ : PDS X Y) (c : ℝ)
+    (e : System.DDE.Total Y X) (n : ℕ) :
+    PDG.notWonMass e n (condEquivInterp T S₀ c) = (1 - c) * T.weight := by
+  rw [← PDG.weight_notWonLaw, notWonLaw_condEquivInterp,
+    Distribution.weight_smul, weight_trLawFullyDefined]
+
+/-- **Every member of the family is conditionally equivalent to `T`.** -/
+theorem condEquiv_condEquivInterp (T S₀ : PDS X Y) (c : ℝ) :
+    PDG.CondEquiv (condEquivInterp T S₀ c) T := by
+  intro l
+  rw [notWonLaw_condEquivInterp, notWonMass_condEquivInterp]
+  ext t
+  simp only [Finsupp.smul_apply, smul_eq_mul]
+  ring
+
+/-- The forgetful image is the mixture of the two systems, not `T`. -/
+theorem forget_condEquivInterp (T S₀ : PDS X Y) (c : ℝ) :
+    PDG.forget (condEquivInterp T S₀ c) = (1 - c) • T + c • S₀ := by
+  rw [condEquivInterp, PDG.forget, Distribution.fTransform_add,
+    Distribution.fTransform_smul, Distribution.fTransform_smul, ← PDG.forget,
+    ← PDG.forget, forget_adjoin, forget_adjoin]
+
+@[simp] theorem winningMass_condEquivInterp (T S₀ : PDS X Y) (c : ℝ)
+    (e : System.DDE.Total Y X) (n : ℕ) :
+    PDG.winningMass e n (condEquivInterp T S₀ c) = c * S₀.weight := by
+  rw [PDG.winningMass, condEquivInterp, Distribution.mass_add,
+    Distribution.mass_smul, Distribution.mass_smul]
+  have h1 : ((adjoin T fun _ => (⊥ : System.MonotoneCondition X)).1.mass
+      fun g => System.Won g e n) = 0 := by
+    rw [coe_adjoin, Distribution.mass_fTransform]
+    exact Distribution.mass_eq_zero_of_forall_not T fun s hs =>
+      System.not_won_bot s e n hs
+  have h2 : ((adjoin S₀ fun _ => (⊤ : System.MonotoneCondition X)).1.mass
+      fun g => System.Won g e n) = S₀.weight := by
+    rw [coe_adjoin, Distribution.mass_fTransform,
+      Distribution.mass_congr S₀ (Q := fun _ => True)
+        (fun s => iff_of_true (System.won_top s e n) trivial),
+      Distribution.mass_true]
+  rw [h1, h2, mul_zero, zero_add]
+
+/-- **The bound the endpoint returns on the family is `ν = c·‖S₀‖`** — neither
+`0` nor the whole weight. -/
+theorem supWinProb_condEquivInterp (T S₀ : PDS X Y) (c : ℝ) :
+    PDG.supWinProb (condEquivInterp T S₀ c) = c * S₀.weight := by
+  have hbdd : BddAbove (Set.range fun p : System.DDE.Total Y X × ℕ =>
+      PDG.winningMass p.1 p.2 (condEquivInterp T S₀ c)) := by
+    refine ⟨c * S₀.weight, ?_⟩
+    rintro _ ⟨p, rfl⟩
+    exact le_of_eq (winningMass_condEquivInterp T S₀ c p.1 p.2)
+  refine le_antisymm (PDG.supWinProb_le_of_forall fun e n => ?_) ?_
+  · rw [winningMass_condEquivInterp]
+  · rw [← winningMass_condEquivInterp T S₀ c (fun _ => none) 0]
+    exact le_ciSup hbdd ((fun _ => none), 0)
+
+theorem weight_condEquivInterp (T S₀ : PDS X Y) (c : ℝ)
+    (h : S₀.weight = T.weight) : (condEquivInterp T S₀ c).weight = T.weight := by
+  rw [← Distribution.mass_true, condEquivInterp, Distribution.mass_add,
+    Distribution.mass_smul, Distribution.mass_smul, Distribution.mass_true,
+    Distribution.mass_true, ← PDG.weight_forget, ← PDG.weight_forget,
+    forget_adjoin, forget_adjoin, h]
+  ring
+
+theorem nonNeg_condEquivInterp {T S₀ : PDS X Y} (hT : T.NonNeg) (hS : S₀.NonNeg)
+    {c : ℝ} (hc0 : 0 ≤ c) (hc1 : c ≤ 1) : (condEquivInterp T S₀ c).NonNeg := by
+  intro g
+  have hA := (nonNeg_adjoin hT fun _ => (⊥ : System.MonotoneCondition X)) g
+  have hB := (nonNeg_adjoin hS fun _ => (⊤ : System.MonotoneCondition X)) g
+  have h1 : (0:ℝ) ≤ 1 - c := by linarith
+  show (0:ℝ) ≤ (condEquivInterp T S₀ c) g
+  rw [condEquivInterp]
+  simp only [Finsupp.add_apply, Finsupp.smul_apply, smul_eq_mul]
+  nlinarith [mul_nonneg h1 hA, mul_nonneg hc0 hB]
+
+/-- **Conditional equivalence does not force `forget G = T`.**  The one fact
+that makes the endpoint worth stating: its hypothesis is satisfiable by games
+whose forgetful image is genuinely different from `T`. -/
+theorem forget_condEquivInterp_ne (T S₀ : PDS X Y) {c : ℝ} (hc : c ≠ 0)
+    (hne : S₀ ≠ T) : PDG.forget (condEquivInterp T S₀ c) ≠ T := by
+  rw [forget_condEquivInterp]
+  intro hEq
+  refine hne ?_
+  have h2 : c • S₀ = c • T := by
+    have hd := congrArg (fun z : PDS X Y => z - (1 - c) • T) hEq
+    simpa [sub_smul, one_smul, sub_sub_cancel] using hd
+  exact smul_right_injective _ hc h2
 
 end PDS
 
