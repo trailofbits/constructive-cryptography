@@ -95,5 +95,13 @@ micro-questions: see LEDGER.md.
   "σ/η factorization", "good/bad", "deficiency".  FORBIDDEN: "blinder" as
   an object (none exists in any source); the bit-output form as primitive;
   any environment that observes the condition (Rem 2.23).
-- PENDING (Marc): admitting Maurer02 + Maurer13b as governing sources for
-  conditional equivalence (no primary defines it; R8 fallback clause).
+- CE sources (RESOLVED 2026-08-18, Marc: "already accounted for in the
+  CR18 migration"): NO separate admission — the T3 charter (LEDGER
+  SOURCE-IDENTITY CORRECTION) already assigns the presentations: thesis
+  Ch. 2 §2.3.3/§2.4.3 in-hierarchy where it covers the ground; Maurer02
+  §4 / MPR07 / Maurer13b as the verified original papers (cite paper +
+  printed page, never bare numbers — the charter's trap list is binding);
+  CR18 §4.10–4.11 numbering as historical provenance in docstrings only.
+  Consistent with the standing T4 MPR07 leg, which never had an
+  admission gate.  The former PENDING line was an escalation-filter
+  miss: it re-asked what the charter had settled.
