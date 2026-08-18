@@ -60,12 +60,12 @@ this carrier a fixed input sequence is the non-adaptive environment
 `System.DDE.Total.playQueries l` run for `l.length` moves (Lanzenberger fn. 6,
 `ClassDistance.lean`), so both relations quantify over `l : List X` and nothing
 else.  That the *adaptive* metric is nevertheless bounded is the content of the
-endpoint, and the mechanism is the deterministic fibre factorization
+endpoint, and the mechanism is the deterministic fiber factorization
 (`System.DDE.Total.transcript_eq_iff_of_consistent`): the mass a transcript law
 puts on a value `t` is cut out by a condition on the system alone, so the
-adaptive environment's fibre at `t` is the fibre of `playQueries t↓ₓ`.  That is
+adaptive environment's fiber at `t` is the fiber of `playQueries t↓ₓ`.  That is
 the `η`-cancellation of the H-coefficient factorization, available here as a
-fibre identity because environments are deterministic.
+fiber identity because environments are deterministic.
 
 ## The endpoints
 
@@ -131,10 +131,10 @@ carrier and are therefore absent:
   statistical distances of transcript laws, so the enhancement's only job,
   turning a two-game comparison into a system comparison, is not needed:
   `notWonLaw_le_trLawFullyDefined_of_condEquiv` compares `G`'s not-won law
-  with `T`'s law directly.  `advFullyDefined_forget_le_supWinProb_of_le` is
+  with `T`'s law directly.  `advFullyDefined_forget_le_supWinProb_of_notWonLaw_le` is
   the shared coupling core both endpoints factor through: the same idea as
   `Winnability.lean`'s `advFullyDefined_toBitLaw_le_supWinProb` — bound each
-  fibre's excess by its winning part — carried out for *two* laws instead of
+  fiber's excess by its winning part — carried out for *two* laws instead of
   two readings of one law.  It is not a literal generalization of that
   statement, which lives at the output alphabet `𝒴 × {0,1}`; what it shares is
   the coupling, and `Probability.statDist_fTransform_le_mass_of_eq_off` is
@@ -177,7 +177,7 @@ theorem won_congr_transcript {g : DDG X Y} {e e' : DDE.Total Y X} {n n' : ℕ}
   unfold Won
   rw [h, h']
 
-/-- **The fibre of an adaptive environment is the fibre of a fixed query
+/-- **The fiber of an adaptive environment is the fiber of a fixed query
 list.**  At a value `t` the adaptive `e` can produce, "the transcript is `t`"
 is the same condition on the system as it is for the non-adaptive
 `playQueries t↓ₓ` at `t`'s own length — both unfold, by
@@ -434,10 +434,10 @@ namespace PDG
 
 The three moves are: split each transcript value's mass by whether the game was
 won (`Distribution.mass_and_add_mass_not_and`); exchange the adaptive
-environment for the fixed query list `t↓ₓ` on the fibre over `t`
+environment for the fixed query list `t↓ₓ` on the fiber over `t`
 (`System.transcript_eq_iff_playQueries`, and `System.won_congr_transcript` for
 the winning event, which is where the environment's adaptivity is spent); and
-sum the won parts back over the fibres
+sum the won parts back over the fibers
 (`Distribution.mass_eq_sum_mass_fiber`).
 
 This generalizes `Winnability.lean`'s `advFullyDefined_toBitLaw_le_supWinProb`,
@@ -546,7 +546,7 @@ theorem statDist_trLawFullyDefined_forget_le_winningMass {G : PDG X Y}
 /-- **The coupling core at the metric.**  Pointwise domination of the not-won
 law at every fixed query list bounds the *adaptive* `Adv⊥` by Definition 2.25's
 `ν`. -/
-theorem advFullyDefined_forget_le_supWinProb_of_le {G : PDG X Y} {T : PDS X Y}
+theorem advFullyDefined_forget_le_supWinProb_of_notWonLaw_le {G : PDG X Y} {T : PDS X Y}
     (hG : G.NonNeg) (hT : T.NonNeg)
     (hle : ∀ t : List (X × Option Y),
       notWonLaw (System.DDE.Total.playQueries (System.transcriptInputs t))
@@ -576,7 +576,7 @@ theorem advFullyDefined_forget_le_supWinProb_of_equivalentAsGames
     (h : EquivalentAsGames G H) :
     PDS.advFullyDefined (forget G) (forget H)
       ≤ ENNReal.ofReal (supWinProb G) := by
-  refine advFullyDefined_forget_le_supWinProb_of_le hG (nonNeg_forget hH) fun t => ?_
+  refine advFullyDefined_forget_le_supWinProb_of_notWonLaw_le hG (nonNeg_forget hH) fun t => ?_
   have hEq := h (System.transcriptInputs t)
   simp only [System.length_transcriptInputs] at hEq
   rw [hEq]
@@ -637,7 +637,7 @@ theorem advFullyDefined_forget_le_supWinProb_of_condEquiv {G : PDG X Y}
     {T : PDS X Y} (hG : G.NonNeg) (hT : T.NonNeg) (hw : G.weight = T.weight)
     (hCE : CondEquiv G T) :
     PDS.advFullyDefined (forget G) T ≤ ENNReal.ofReal (supWinProb G) := by
-  refine advFullyDefined_forget_le_supWinProb_of_le hG hT fun t => ?_
+  refine advFullyDefined_forget_le_supWinProb_of_notWonLaw_le hG hT fun t => ?_
   have h := notWonLaw_le_trLawFullyDefined_of_condEquiv hG hT hw hCE
     (System.transcriptInputs t) t
   simpa using h
@@ -776,7 +776,7 @@ holds only up to Lanzenberger Definition 2.17 (`PDS.GamesFor` membership).
 `Adv⊥` transports along equivalence in both slots
 (`PDS.advFullyDefined_congr`), so which representative a construction happens
 to produce is not a modeling wrinkle. -/
-theorem advFullyDefined_le_supWinProb_of_condEquiv_gamesFor {S T : PDS X Y}
+theorem advFullyDefined_le_supWinProb_gamesFor_of_condEquiv {S T : PDS X Y}
     (G : GamesFor S) (hG : G.1.NonNeg) (hT : T.NonNeg)
     (hw : G.1.weight = T.weight) (hCE : PDG.CondEquiv G.1 T) :
     advFullyDefined S T ≤ ENNReal.ofReal (PDG.supWinProb G.1) := by
