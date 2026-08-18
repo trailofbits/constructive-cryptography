@@ -2942,6 +2942,18 @@ gates, adversarial audit before deltas apply):
   SEQUENCING (Marc 2026-08-18): T4, T5, T6 are MUTUALLY INDEPENDENT —
      T4 consumes T1–T3, T5 consumes T0 layers 1–2, T6 only the toPMF
      bridge; all three are parallel-eligible.
+  AUTOMATION ITEM (Marc 2026-08-18, automation-first rule; sequenced
+     immediately AFTER T4 phase 2 lands, extracting the signature from
+     that fresh instance): package the presentation-change induction as
+     a recursion principle — `PDS.branchRebuild` (branch policy in:
+     per-(x,y) continuations of matching weight, equivalent per branch;
+     out: the re-glued presentation + `equivalent` proven once) + an
+     invariant-fusion companion + a bookkeeping simp-set/tactic for the
+     four recurring side-goal families (weight, NonNeg, transcript-law
+     recurrence, budget induction).  The per-branch CHOICE stays manual —
+     it is each theorem's content.  Receipts on landing: refactor the
+     Thm-2.31 attainment proof, exists_unwinnable_representative, and
+     the Lemma-5 completion to consume it.
   SKILL (SEQUENCED LAST — after the T legs AND the stretch goals, so it
      cites the full real surface; Marc 2026-08-18, superseding the
      earlier after-T5 line; original ruling: premature before the
