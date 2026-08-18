@@ -524,6 +524,172 @@ theorem ofBitSystem_toBitSystem {g : DDG X Y} (hg : DomainSupported g) :
     rw [output_toBitSystem, MonotoneCondition.toPred_eq_true]
     exact hl'bit
 
+/-! ## Remark 2.23 for the derived view: the bit is hidden by relabelling
+
+On Definition 2.20's pair, Remark 2.23 is the type of the environment (module
+docstring).  On the *derived* bit view the bit is a real output, so blindness
+has content, and CR18 Definition 4.20's rendering is the right one: the
+environment meets the system through a trivial converter that blocks what it
+may not see.  Here that converter is `relabel id Prod.fst` — an existing
+generator of the trivial-converter monoid with its own receipts
+(`answer_relabel`, `exists_absorb_relabel`) — and no `IsBlind` predicate on
+environments is introduced.
+
+The two statements below are the honest content:
+
+* `mapOutputs_transcript_toBitSystem` — the environment's entire record of an
+  interaction with the bit view erases to its record of the interaction with
+  the plain system.  Nothing the bit does reaches the environment.
+* `winningMass_eq_mass_lastBit_toBitLaw` — Definition 2.25's winning
+  probability is unchanged when it is read off the bit view through that
+  converter, on the conditions the bit view can express. -/
+
+/-- The environment for a `Y'`-system induced by an environment for the
+`Y`-system it relabels to: the environment side of `relabel id g`.  At
+`g = Prod.fst` it is the environment of Remark 2.23 for the bit view — it
+receives the answers with the bit erased. -/
+def DDE.Total.relabelOut {Y' : Type v} (g : Y' → Y) (e : DDE.Total Y X) :
+    DDE.Total Y' X :=
+  fun ys => e (ys.map (Option.map g))
+
+/-- The record erasure matching `DDE.Total.relabelOut`: translate every answer,
+keeping the refusals refusals. -/
+def mapOutputs {Y' : Type v} (g : Y' → Y) (t : List (X × Option Y')) :
+    List (X × Option Y) :=
+  t.map fun p => (p.1, p.2.map g)
+
+@[simp] theorem mapOutputs_nil {Y' : Type v} (g : Y' → Y) :
+    mapOutputs (X := X) g [] = [] := rfl
+
+@[simp] theorem mapOutputs_append {Y' : Type v} (g : Y' → Y)
+    (t : List (X × Option Y')) (p : X × Option Y') :
+    mapOutputs g (t ++ [p]) = mapOutputs g t ++ [(p.1, p.2.map g)] := by
+  simp [mapOutputs]
+
+@[simp] theorem transcriptOutputs_mapOutputs {Y' : Type v} (g : Y' → Y)
+    (t : List (X × Option Y')) :
+    (mapOutputs g t)↓ᵧ = t↓ᵧ.map (Option.map g) := by
+  simp [mapOutputs, transcriptOutputs, List.map_map, Function.comp_def]
+
+@[simp] theorem transcriptInputs_mapOutputs {Y' : Type v} (g : Y' → Y)
+    (t : List (X × Option Y')) : (mapOutputs g t)↓ₓ = t↓ₓ := by
+  simp [mapOutputs, transcriptInputs, List.map_map, Function.comp_def]
+
+@[simp] theorem answeredQueries_mapOutputs {Y' : Type v} (g : Y' → Y)
+    (t : List (X × Option Y')) :
+    answeredQueries (mapOutputs g t) = answeredQueries t := by
+  induction t with
+  | nil => rfl
+  | cons p t ih => rcases p with ⟨_, _ | _⟩ <;> simp [mapOutputs, answeredQueries] at ih ⊢ <;> simp [ih]
+
+/-- **A relabelling is absorbed by the environment, concretely.**  Interacting
+with `relabel id g S` is interacting with `S` through the induced environment
+and erasing the record.  (`exists_absorb_relabel` states the same absorption
+existentially; this is the explicit witness, which is what a statement about
+*what the environment sees* needs.) -/
+theorem transcript_relabel_id {Y' : Type v} (g : Y' → Y) (S : DDS X Y')
+    (e : DDE.Total Y X) (n : ℕ) :
+    DDE.Total.transcript (relabel id g S) e n =
+      mapOutputs g (DDE.Total.transcript S (DDE.Total.relabelOut g e) n) := by
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+      have hstep : e (DDE.Total.transcript (relabel id g S) e n)↓ᵧ =
+          DDE.Total.relabelOut g e
+            (DDE.Total.transcript S (DDE.Total.relabelOut g e) n)↓ᵧ := by
+        rw [ih, transcriptOutputs_mapOutputs]
+        rfl
+      rcases hx : DDE.Total.relabelOut g e
+          (DDE.Total.transcript S (DDE.Total.relabelOut g e) n)↓ᵧ with _ | x
+      · rw [DDE.Total.transcript_succ_of_stop _ _ (hstep.trans hx),
+          DDE.Total.transcript_succ_of_stop _ _ hx]
+        exact ih
+      · rw [DDE.Total.transcript_succ_of_query _ _ (hstep.trans hx),
+          DDE.Total.transcript_succ_of_query _ _ hx, mapOutputs_append, ih,
+          transcriptInputs_mapOutputs, answer_relabel, List.map_id]
+        rfl
+
+/-- **Remark 2.23 for the bit view.**  The environment's whole record of an
+interaction with the bit view, met through the bit-erasing converter, is its
+record of the interaction with the plain system.  The bit reaches nothing. -/
+theorem mapOutputs_transcript_toBitSystem (g : DDG X Y) (e : DDE.Total Y X)
+    (n : ℕ) :
+    mapOutputs Prod.fst (DDE.Total.transcript (toBitSystem g)
+        (DDE.Total.relabelOut Prod.fst e) n) =
+      DDE.Total.transcript g.1 e n := by
+  rw [← transcript_relabel_id, relabel_fst_toBitSystem]
+
+@[simp] theorem answeredQueries_transcript_toBitSystem (g : DDG X Y)
+    (e : DDE.Total Y X) (n : ℕ) :
+    answeredQueries (DDE.Total.transcript (toBitSystem g)
+        (DDE.Total.relabelOut Prod.fst e) n) =
+      answeredQueries (DDE.Total.transcript g.1 e n) := by
+  rw [← mapOutputs_transcript_toBitSystem g e n, answeredQueries_mapOutputs]
+
+/-- Definition 2.25's test on the derived view, reading only the record: the
+last bit the system showed.  `none` when the system has answered nothing. -/
+def lastBit (t : List (X × Option (Y × Bool))) : Option Bool :=
+  (answeredEntries t).getLast?.map fun p => p.2.2
+
+@[simp] theorem lastBit_nil : lastBit ([] : List (X × Option (Y × Bool))) = none :=
+  rfl
+
+/-- The bit view answers where the system answers, and shows the condition at
+the history the system processed. -/
+theorem answer_toBitSystem (g : DDG X Y) (l : List X) (x : X) :
+    answer (toBitSystem g) l x =
+      (answer g.1 l x).map fun y =>
+        (y, MonotoneCondition.toPred g.2 (keptPrefix g.1 l ++ [x])) := by
+  rw [answer_eq, answer_eq]
+  by_cases h : keptPrefix g.1 l ++ [x] ∈ dom g.1
+  · rw [dif_pos (show keptPrefix (toBitSystem g) l ++ [x] ∈ dom (toBitSystem g)
+      from h), dif_pos h]
+    rfl
+  · rw [dif_neg (show ¬ keptPrefix (toBitSystem g) l ++ [x] ∈ dom (toBitSystem g)
+      from h), dif_neg h]
+    rfl
+
+/-- **The winning test transported to the bit view.**  The last bit shown in
+the blinded interaction with the bit view is the condition evaluated at the
+history the system processed — and `none` exactly when the system has answered
+nothing.  The `none` case is where Definition 2.20's `A([]) = 1` lives: the
+bit view has no place to show it, which is `DomainSupported` again. -/
+theorem lastBit_transcript_toBitSystem (g : DDG X Y) (e : DDE.Total Y X)
+    (n : ℕ) :
+    lastBit (DDE.Total.transcript (toBitSystem g)
+        (DDE.Total.relabelOut Prod.fst e) n) =
+      if answeredQueries (DDE.Total.transcript g.1 e n) = [] then none
+      else some (MonotoneCondition.toPred g.2
+        (answeredQueries (DDE.Total.transcript g.1 e n))) := by
+  induction n with
+  | zero => simp [lastBit, DDE.Total.transcript, answeredQueries, answeredEntries]
+  | succ n ih =>
+      have hstep : DDE.Total.relabelOut Prod.fst e
+          (DDE.Total.transcript (toBitSystem g)
+            (DDE.Total.relabelOut Prod.fst e) n)↓ᵧ =
+          e (DDE.Total.transcript g.1 e n)↓ᵧ := by
+        rw [← mapOutputs_transcript_toBitSystem g e n,
+          transcriptOutputs_mapOutputs]
+        rfl
+      have hinputs : (DDE.Total.transcript (toBitSystem g)
+          (DDE.Total.relabelOut Prod.fst e) n)↓ₓ =
+          (DDE.Total.transcript g.1 e n)↓ₓ := by
+        rw [← mapOutputs_transcript_toBitSystem g e n,
+          transcriptInputs_mapOutputs]
+      have hkept : keptPrefix g.1 (DDE.Total.transcript g.1 e n)↓ₓ =
+          answeredQueries (DDE.Total.transcript g.1 e n) :=
+        (DDE.Total.answeredQueries_transcript g.1 e n).symm
+      rcases hx : e (DDE.Total.transcript g.1 e n)↓ᵧ with _ | x
+      · rw [DDE.Total.transcript_succ_of_stop _ _ (hstep.trans hx),
+          DDE.Total.transcript_succ_of_stop _ _ hx]
+        exact ih
+      · rw [DDE.Total.transcript_succ_of_query _ _ (hstep.trans hx),
+          DDE.Total.transcript_succ_of_query _ _ hx, hinputs,
+          answer_toBitSystem, hkept]
+        rcases hans : answer g.1 (DDE.Total.transcript g.1 e n)↓ₓ x with _ | y
+        · simpa [lastBit] using ih
+        · simp [lastBit]
+
 end
 
 end System
@@ -648,6 +814,37 @@ theorem monotoneBit_of_mem_support_toBitLaw (G : PDG X Y)
     System.MonotoneBit t := by
   obtain ⟨g, -, rfl⟩ := Distribution.mem_support_fTransform _ G ht
   exact System.monotoneBit_toBitSystem g
+
+/-- **Definition 2.25 is invariant under the bit-hiding view.**  The winning
+probability read off the derived bit view — through the trivial converter that
+erases the bit, by the test `lastBit … = some true` that reads only the
+interaction record — is the winning probability of the game.
+
+The hypothesis is exactly the expressiveness gap of §4: a condition already
+satisfied at the empty history has no bit to be shown, so the bit view can
+only report the conditions the domain supports
+(`System.not_mem_nil_of_domainSupported` gives it for every domain-supported
+game).  This is the one *contentful* blindness statement here; on Definition
+2.20's pair, Remark 2.23 is the type of the environment and needs no
+theorem. -/
+theorem winningMass_eq_mass_lastBit_toBitLaw {G : PDG X Y}
+    (hG : ∀ g ∈ G.support, [] ∉ g.2.1) (e : System.DDE.Total Y X) (n : ℕ) :
+    winningMass e n G =
+      (toBitLaw G).mass fun t =>
+        System.lastBit (System.DDE.Total.transcript t
+          (System.DDE.Total.relabelOut Prod.fst e) n) = some true := by
+  rw [toBitLaw, Distribution.mass_fTransform, winningMass]
+  refine Distribution.mass_congr_of_support G fun g hg => ?_
+  rw [System.lastBit_transcript_toBitSystem]
+  by_cases hnil : System.answeredQueries
+      (System.DDE.Total.transcript g.1 e n) = []
+  · rw [if_pos hnil]
+    exact ⟨fun hwon => absurd (hnil ▸ hwon) (hG g hg), fun h => by simp at h⟩
+  · rw [if_neg hnil]
+    rw [show (some (System.MonotoneCondition.toPred g.2
+        (System.answeredQueries (System.DDE.Total.transcript g.1 e n)))
+          = some true) ↔ _ from Option.some_inj]
+    exact System.MonotoneCondition.toPred_eq_true.symm
 
 /-- **Round trip at the law level**, one way. -/
 theorem ofBitLaw_toBitLaw {G : PDG X Y}

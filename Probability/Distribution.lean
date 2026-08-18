@@ -289,6 +289,14 @@ theorem mass_congr {A : Type*} (X : Distribution A) {P Q : A → Prop} (h : ∀ 
   funext a w
   simp only [h a]
 
+/-- `mass_congr` with the equivalence required only on the support — mass sums
+over the support, so that is all it reads. -/
+theorem mass_congr_of_support {A : Type*} (X : Distribution A) {P Q : A → Prop}
+    (h : ∀ a ∈ X.support, (P a ↔ Q a)) : X.mass P = X.mass Q := by
+  unfold mass
+  refine Finsupp.sum_congr fun a ha => ?_
+  simp only [h a ha]
+
 open scoped Classical in
 /-- An event and its complement partition the total mass: `X(P) + X(¬P) = |X|`. -/
 theorem mass_add_compl {A : Type*} (X : Distribution A) (P : A → Prop) :
