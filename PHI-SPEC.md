@@ -12,11 +12,15 @@ CR18 is fallback-only (register in LEDGER.md top); MauRen11 is behind the
 provenance fence pending an explicit reconciliation.
 
 ## Carrier (R1–R3)
-*(Scope limit, recorded 2026-08-18: objects with no underlying PDS —
-CR18's variable-input-length URF, Ex 3.7/Def 6.1, uncountable sample
-space — are outside this carrier BY CONSTRUCTION; Behaviour quotients
-PDS.  A limit, not a defect; any VIL work needs a carrier extension
-ruling first.)*
+*(Scope note, corrected 2026-08-18 — Marc: variable-input-length SYSTEMS
+are ordinary PDS (the alphabet may be List Bool; CBC = finite-support
+mixture over its keys, in Φ).  The limit concerns only infinite-domain
+IDEAL objects — the uniform random function over {0,1}*, CR18 Ex 3.7 —
+which need uncountable randomness: no finite-support PDS realizes or is
+behaviorally equal to one.  They enter as families of bounded slices
+(bounded query count/length restrictions ARE honest PDS), which is how
+every quantitative theorem uses them; a carrier-extension ruling is owed
+only if an UNBOUNDED ideal object must ever be first-class.)*
 - **R1** Φ := `PDS Uni Uni`, `Uni := Σ X : Type u, X`; the official
   interaction carrier is the FULLY DEFINED slice (CR18 Def 3.3's completion
   promoted to object); partial systems enter via `s⊥`; deletion is the
