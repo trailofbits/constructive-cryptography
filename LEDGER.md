@@ -2908,7 +2908,12 @@ PAPER-IDENTITY names (Marc 2026-08-18: `winnability_theorem`,
 statement-shaped names are for the internal chain only); METRIC-SIDE
 COERCION NOISE is hidden behind paper-symbol scoped notation
 (`ν[G]`/`ω[G]` = ENNReal.ofReal of supWinProb/infWinnability) — never
-repeat `ENNReal.ofReal` across endpoint statements.
+repeat `ENNReal.ofReal` across endpoint statements; and NEVER register a
+`Coe ℝ ℝ≥0∞` instance (Marc 2026-08-18): ofReal is lossy (clamps
+negatives) and non-homomorphic, and on the SIGNED carrier a silent
+coercion would clamp legitimate negative masses invisibly — coercion
+happens only behind the paper-symbol notations, at the provably
+nonnegative sites.
 
 # CR18 full-sweep register — stretch goals for abstract-crypto
 
