@@ -12,11 +12,17 @@ import Probability.FiberCoupling
 import Probability.StatisticalDistance
 import Probability.Counting
 import Probability.UniversalHash
+import Probability.Entropy
+import Probability.ShannonEntropy
+import Probability.Divergence
 
 /-!
 # Probability
 
 Finitely supported distributions, expectation, conditional probability,
-statistical distance, couplings, universal hashing, and the counting kernel
-concrete bounds bottom out in.  Independent of any system model.
+statistical distance, couplings, universal hashing, the counting kernel
+concrete bounds bottom out in, and the information theory stated on that
+carrier — min-entropy and the collision calculus, the Shannon layer, and
+Kullback-Leibler divergence with Pinsker's inequality.  Independent of any
+system model.
 -/
