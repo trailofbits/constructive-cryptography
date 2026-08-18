@@ -5,6 +5,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Probability.StatisticalDistance
 import Mathlib.Analysis.SpecialFunctions.Log.NegMulLog
 import Mathlib.Analysis.Convex.Deriv
+import Probability.DistributionMeasure
+import Mathlib.InformationTheory.KullbackLeibler.Basic
 
 /-!
 # Relative entropy and Pinsker's inequality (tower level L2)
@@ -14,31 +16,35 @@ inequality in any form.  This module supplies the missing half, and does so
 **natively on `Distribution`** rather than by transporting into mathlib and
 pulling back.
 
-## Why native, and why the choice is forced here
+## Why native, and why that is checkable rather than asserted
 
-Two independent reasons, and the second is decisive in this tree.
+Pinsker's left-hand side is `statDist`, a first-class object of this library;
+mathlib's `klDiv` lives on `Measure`, and the transport of a finitely supported
+law into a `PMF` requires `[Fintype]` on the carrier.  The carriers this
+inequality is wanted on (transcript spaces, system laws) must not be `Fintype`,
+so stating it after transport would restrict it to exactly the carriers that do
+not need it.  So `Distribution.klDiv` is defined here directly.
 
-*The reference development's reason.*  Pinsker's left-hand side is `statDist`, a
-first-class object of this library; mathlib's `klDiv` lives on `Measure`, and
-the transport of a finitely supported law into a `PMF` requires `[Fintype]` on
-the carrier.  The carriers this inequality is wanted on (transcript spaces,
-system laws) must not be `Fintype`, so stating it after transport would restrict
-it to exactly the carriers that do not need it.
+To keep that from becoming an ad hoc convention, §4 proves `klDiv_toPMF`: on a
+`Fintype` carrier the divergence **is** mathlib's `InformationTheory.klDiv` of
+the transported measures.  Nothing above §4 depends on that lemma — it exists so
+the native/transport choice is a checked fact rather than a claim.
 
-*This tree's reason.*  There **is no transport**: `Distribution.toPMF` does not
-exist in abstract-crypto.  The only occurrence of the name is a forward
-docstring pointer in `Probability/Expectation.lean`.  So the pullback route is
-not merely inconvenient here, it is unavailable, and the native definition is
-the only one on offer.  The consequence is recorded honestly: the reference
-development carries a §4 *receipt* proving that its native `klDiv` is mathlib's
-`InformationTheory.klDiv` of the transported measures on a `Fintype` carrier,
-and **that receipt is not transported here** — it cannot be stated without the
-`PMF`/`Measure` bridge.  Until the bridge lands, the agreement with mathlib is a
-believed fact, not a kernel-checked one.  What *is* kernel-checked, and is the
-piece the receipt would use, is the pointwise identification below:
-`sq_sub_one_div_le_mul_log_sub_add_one` bounds mathlib's `klFun x = x·log x − x + 1`
-from below, and `klDiv_eq_expect` puts the divergence in the `expect` vocabulary
-that any future bridge will consume.
+The agreement is **scoped**, and both qualifications are load-bearing:
+
+1. **Only on the `isProbDist` slice.**  mathlib's `klDiv` carries a correction
+   term `ν(univ) − μ(univ)` that the native sum does not, so off total weight one
+   the two are genuinely different functions, not two renderings of one.  This is
+   exactly why the weight-general Pinsker below — the form used *before* a law
+   has been renormalized — has no mathlib counterpart to agree with.
+2. **Modulo `ENNReal.ofReal`.**  mathlib's is `ℝ≥0∞`-valued; the receipt reads
+   `klDiv μ ν = ENNReal.ofReal (klDiv X Y)`, not a real equality.
+
+*Historical note (T6 follow-up).*  This receipt was initially recorded as blocked
+on an absent `PMF`/`Measure` bridge.  That was a mispricing, corrected by
+adversarial audit: the bridge is five declarations of pure mathlib and now lives
+in `Probability/DistributionMeasure.lean`, and the reference development's proof
+transported against it unchanged.  Nothing external was ever needed.
 
 ## Base: nats, not bits
 
@@ -403,5 +409,81 @@ theorem statDist_le_sqrt_klDiv_div_two {A : Type*} {X Y : Distribution A}
   have hd : 0 ≤ statDist X Y := Finset.sum_nonneg fun _ _ => le_max_right _ _
   calc statDist X Y = Real.sqrt (statDist X Y ^ 2) := (Real.sqrt_sq hd).symm
     _ ≤ Real.sqrt (Distribution.klDiv X Y / 2) := Real.sqrt_le_sqrt h
+
+/-! ## 4. Agreement with mathlib's `klDiv` under the transport
+
+The receipt that `Distribution.klDiv` is not an ad hoc convention: on a `Fintype`
+carrier it is exactly mathlib's `InformationTheory.klDiv` of the transported
+measures.  This is the one statement in the file whose conclusion is a
+measure-theory object, so — per the instance discipline of
+`Probability/DistributionMeasure.lean` — it is also the only one carrying
+`[MeasurableSpace A]`.  Nothing above depends on it; it is what makes the
+native/transport choice checkable rather than asserted. -/
+
+namespace Distribution
+
+open MeasureTheory ProbabilityTheory
+
+variable {A : Type*} [Fintype A] [MeasurableSpace A] [MeasurableSingletonClass A]
+
+/-- Singleton mass of the transported measure. -/
+theorem toPMF_toMeasure_singleton (X : Distribution A) (hX : X.isProbDist) (a : A) :
+    (toPMF X hX).toMeasure {a} = ENNReal.ofReal (X a) := by
+  classical
+  rw [show ({a} : Set A) = {x | x = a} by ext x; simp, toPMF_toMeasure_apply, mass_eq_sum]
+  simp
+
+/-- Under absolute continuity the transported `X` is a density against the
+transported `Y`, the density being the pointwise ratio. -/
+theorem toPMF_toMeasure_eq_withDensity (X Y : Distribution A) (hX : X.isProbDist)
+    (hY : Y.isProbDist) (hac : X.support ⊆ Y.support) :
+    (toPMF X hX).toMeasure
+      = (toPMF Y hY).toMeasure.withDensity fun a => ENNReal.ofReal (X a / Y a) := by
+  refine Measure.ext_of_singleton fun a => ?_
+  rw [withDensity_apply _ (measurableSet_singleton a), lintegral_singleton,
+    toPMF_toMeasure_singleton, toPMF_toMeasure_singleton]
+  by_cases h0 : Y a = 0
+  · have hX0 : X a = 0 := by
+      by_contra h
+      exact Finsupp.mem_support_iff.mp (hac (Finsupp.mem_support_iff.mpr h)) h0
+    simp [h0, hX0]
+  · rw [← ENNReal.ofReal_mul (div_nonneg (hX.1 a) (hY.1 a)), div_mul_cancel₀ _ h0]
+
+/-- **`Distribution.klDiv` is mathlib's `klDiv`**: the Kullback–Leibler divergence of
+the transported measures is `ENNReal.ofReal` of the discrete formula, under
+absolute continuity.  (Ported from the measured probe
+`scratch/IndepProbe.lean`, Q3.) -/
+theorem klDiv_toPMF (X Y : Distribution A) (hX : X.isProbDist) (hY : Y.isProbDist)
+    (hac : X.support ⊆ Y.support) :
+    InformationTheory.klDiv (toPMF X hX).toMeasure (toPMF Y hY).toMeasure
+      = ENNReal.ofReal (klDiv X Y) := by
+  classical
+  set μ := (toPMF X hX).toMeasure with hμ
+  set ν := (toPMF Y hY).toMeasure with hν
+  have hdens : μ = ν.withDensity fun a => ENNReal.ofReal (X a / Y a) :=
+    toPMF_toMeasure_eq_withDensity X Y hX hY hac
+  have hAC : μ ≪ ν := hdens ▸ withDensity_absolutelyContinuous ν _
+  have hint : Integrable (llr μ ν) μ := .of_finite
+  have hrn : μ.rnDeriv ν =ᵐ[μ] fun a => ENNReal.ofReal (X a / Y a) := by
+    have h1 : μ.rnDeriv ν =ᵐ[ν] fun a => ENNReal.ofReal (X a / Y a) := by
+      conv_lhs => rw [hdens]
+      exact Measure.rnDeriv_withDensity ν Measurable.of_discrete
+    exact h1.filter_mono hAC.ae_le
+  have hllr : llr μ ν =ᵐ[μ] fun a => Real.log (X a / Y a) := by
+    filter_upwards [hrn] with a ha
+    show Real.log (μ.rnDeriv ν a).toReal = _
+    rw [ha, ENNReal.toReal_ofReal (div_nonneg (hX.1 a) (hY.1 a))]
+  have hν1 : ν.real Set.univ = 1 := by
+    have : IsProbabilityMeasure ν := by rw [hν]; infer_instance
+    simp
+  have hμ1 : μ.real Set.univ = 1 := by
+    have : IsProbabilityMeasure μ := by rw [hμ]; infer_instance
+    simp
+  rw [InformationTheory.klDiv_of_ac_of_integrable hAC hint, integral_congr_ae hllr,
+    integral_toPMF_eq_expect X hX, klDiv_eq_expect, hν1, hμ1]
+  congr 1
+  ring
+
+end Distribution
 
 end Probability

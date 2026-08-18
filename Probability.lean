@@ -16,6 +16,7 @@ import Probability.UniversalHash
 import Probability.Entropy
 import Probability.ShannonEntropy
 import Probability.Divergence
+import Probability.DistributionMeasure
 
 /-!
 # Probability
@@ -25,6 +26,7 @@ statistical distance, couplings, universal hashing, the counting kernel
 concrete bounds bottom out in (`Counting` plus the staging module
 `CountingResidue`, which merges into it), and the information theory stated on
 that carrier — min-entropy and the collision calculus, the Shannon layer, and
-Kullback-Leibler divergence with Pinsker's inequality.  Independent of any
-system model.
+Kullback-Leibler divergence with Pinsker's inequality, together with the
+one-way `isProbDist → PMF` transport (`DistributionMeasure`) that lets the
+divergence be checked against mathlib's.  Independent of any system model.
 -/

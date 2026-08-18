@@ -12,7 +12,23 @@ The second information-theory module, and the one `Probability.Entropy`
 deferred: *Maurer, "Cryptography Foundations" lecture notes (CR18)* Appendix
 A.2, Definitions A.7-A.9 and Theorems A.1-A.3.  CR18 is the **R8 fallback**
 source here and is flagged as such: no primary (MauRen16, Jost, LiuMau20,
-Lanzenberger) develops the Shannon calculus.  Everything is stated on the
+Lanzenberger) develops the Shannon calculus — an assessment of the transporter,
+not a verified negative over those four sources.
+
+**Page-numbering trap (verified 2026-08-18 by reading the rendered PDF).**  The
+CR18 appendix **restarts its own page numbering at 1**, so the repository's
+main-body 2-up formula (`printed P → PDF ⌊(P+13)/2⌋`) does NOT apply to it.
+App. A.2 is **appendix printed pp. 4-7** = rendered PDF pp. 80-82.  Citations
+below give the appendix page.  Landmarks: Def. A.7 and Thm A.1 on app. pp. 4-5;
+Thm A.2, Def. A.8, the unnumbered chain-rule display and Def. A.9 on app. p. 6;
+Thm A.3 on app. p. 7.
+
+**Completeness of the transport.**  All three theorems land with **both** of
+their printed clauses, equality conditions included.  Two of those equality
+clauses are absent in the reference development and are added here:
+Thm A.2's *first* clause (`entropy_marginalSnd_le_entropy`, equality via
+`entropy_eq_entropy_marginalSnd_iff_condEntropy_eq_zero` +
+`condEntropy_eq_zero_iff`) and Thm A.3's (`condMutualInfo_eq_zero_iff`).  Everything is stated on the
 library's own `Distribution A = A →₀ ℝ` and built only out of
 `Probability.Distribution` and `Probability.Expectation`.
 
@@ -26,15 +42,19 @@ library's own `Distribution A = A →₀ ℝ` and built only out of
   is the convention `Distribution.condGuessProb` / `Distribution.condMinEntropy`
   already fixed in `Probability.Entropy` (guess the first component from the
   second).
-* `Distribution.mutualInfo` — `I(X;Y) = H(X) − H(X|Y)` (CR18 Def. A.9 as
-  printed).
+* `Distribution.mutualInfo` — `I(X;Y) = H(X) − H(X|Y)`.  CR18 defines it in
+  **Def. A.8** (app. p. 6), in the same block as conditional entropy and in the
+  symmetric form `H(X) + H(Y) − H(XY)`; that identity is
+  `mutualInfo_eq_entropy_marginal_add_entropy_marginalSnd_sub_entropy`.
 * `Distribution.condMutualInfo` — `I(X;Y|Z) = H(X|Z) − H(X|YZ)`, on a law over
   `α × γ × ζ`.
 * the chain rule `H(XY) = H(Y) + H(X|Y)`, sub-additivity, "conditioning reduces
   entropy", `0 ≤ H ≤ log₂|𝒳|`, data processing `H(f(X)) ≤ H(X)`, strong
   sub-additivity (`condMutualInfo_nonneg`), and the equality condition of each
-  bound: uniformity at `H = log₂|𝒳|`, determinism at `H = 0`, and independence
-  at each of `H(XY) = H(X)+H(Y)`, `H(X|Y) = H(X)`, `I(X;Y) = 0`.
+  bound: uniformity at `H = log₂|𝒳|`, determinism at `H = 0`, `H(X|Y) = 0`
+  exactly when `X` is a function of `Y`, and independence at each of
+  `H(XY) = H(X)+H(Y)`, `H(X|Y) = H(X)`, `I(X;Y) = 0`, `I(X;Y|Z) = 0`
+  (the last conditionally on `Z`).
 
 ## What mathlib has, and what this module adds
 
@@ -335,7 +355,7 @@ acquires a real second marginal next to `marginal` this line is deleted with no
 proof churn. -/
 abbrev marginalSnd (X : Distribution (α × γ)) : Distribution γ := fTransform Prod.snd X
 
-/-! ## 1. Shannon entropy — CR18 Def. A.7
+/-! ## 1. Shannon entropy — CR18 Def. A.7 (app. p. 4)
 
 `H(X) = −∑ₓ P(x)·log₂ P(x)`, written as the L1 expectation of the
 *self-information* `−log₂ P_X`.  Summing over the finite support carried by
@@ -509,7 +529,7 @@ theorem entropy_eq_expect_neg_logb_iff_eq {X Y : Distribution A} (hX : X.NonNeg)
     subst h
     rfl
 
-/-! ## 3. The maximum-entropy bound — CR18 Thm A.1
+/-! ## 3. The maximum-entropy bound — CR18 Thm A.1 (app. p. 5)
 
 `0 ≤ H(X) ≤ log₂|𝒳|`, with equality on the right exactly at the uniform
 distribution.  Gibbs at `Q = uniform`. -/
@@ -662,7 +682,14 @@ theorem minEntropy_le_entropy {X : Distribution A} (hX : X.isProbDist) :
     X.minEntropy ≤ X.entropy :=
   (minEntropy_le_collisionEntropy hX).trans (collisionEntropy_le_entropy hX)
 
-/-! ## 5. Conditional entropy and the chain rule — CR18 Def. A.8, Thm A.3 -/
+/-! ## 5. Conditional entropy and the chain rule — CR18 Def. A.8 (app. p. 6)
+
+The chain rule is **not** a numbered CR18 theorem.  `H(Y|X) := H(XY) − H(X)` is
+Def. A.8 itself, so the two-variable chain rule `H(XY) = H(X) + H(Y|X)` is that
+definition rearranged; the `N`-variable form
+`H(X₁⋯X_N) = ∑ₙ H(Xₙ|X₁⋯X_{n−1})` is an unnumbered display immediately after it
+("The so-called chain rule follows by repeated application of this
+definition").  Thm A.3 is a different statement — `I(X;Y|Z) ≥ 0`, §8 below. -/
 
 /-- **Conditional entropy** `H(X|Y) = −∑ₓ,ᵧ P(x,y)·log₂ (P(x,y)/P_Y(y))`
 (CR18 App. A.2, Def. A.8), for the joint law of a pair, **conditioning on the
@@ -706,12 +733,63 @@ theorem condEntropy_eq_entropy_sub_entropy_marginalSnd {X : Distribution (α × 
     ring
   rw [hkey, expect_sub_right, ← entropy, expect_neg_logb_fTransform_comp]
 
-/-- **The chain rule** `H(XY) = H(Y) + H(X|Y)` (CR18 App. A.2, Thm A.3).
-`NonNeg` layer. -/
+/-- **The chain rule** `H(XY) = H(Y) + H(X|Y)` — CR18 App. A.2, **Def. A.8
+rearranged** (app. p. 6), the two-variable case of the unnumbered chain-rule
+display that follows it.  `NonNeg` layer. -/
 theorem entropy_eq_entropy_marginalSnd_add_condEntropy {X : Distribution (α × γ)} (hX : X.NonNeg) :
     X.entropy = X.marginalSnd.entropy + X.condEntropy := by
   rw [condEntropy_eq_entropy_sub_entropy_marginalSnd hX]
   ring
+
+/-- **`H(X|Y) = 0` exactly when the first component is determined by the
+second.**  The equality condition of `condEntropy_nonneg`: every term of
+`H(X|Y)` is nonnegative, so the sum vanishes only where each conditional ratio
+`P(x,y)/P_Y(y)` is `1`, i.e. where the joint law already carries all of its
+second marginal's mass.
+
+`isProbDist` layer.  Nonnegativity alone gives the termwise split, but reading
+`log₂ r = 0` back as `r = 1` needs `r > 0`, which is where the layer is spent.
+Stated on `supp X` because off the support the ratio is the junk value `0/·`
+and constrains nothing. -/
+theorem condEntropy_eq_zero_iff {X : Distribution (α × γ)} (hX : X.isProbDist) :
+    X.condEntropy = 0 ↔ ∀ p ∈ X.support, X p = X.marginalSnd p.2 := by
+  classical
+  have hterm : ∀ p ∈ X.support, 0 ≤ X p * -Real.logb 2 (X p / X.marginalSnd p.2) := by
+    intro p _
+    have h2 := apply_le_fTransform_apply Prod.snd hX.1 p
+    have hden : 0 ≤ X.marginalSnd p.2 := (hX.1 p).trans h2
+    exact mul_nonneg (hX.1 p) (neg_nonneg.mpr (Real.logb_nonpos one_lt_two
+      (div_nonneg (hX.1 p) hden) (div_le_one_of_le₀ h2 hden)))
+  have hsplit : X.condEntropy = ∑ p ∈ X.support, X p * -Real.logb 2 (X p / X.marginalSnd p.2) := by
+    rw [condEntropy, expect, Finsupp.sum]
+  rw [hsplit, Finset.sum_eq_zero_iff_of_nonneg hterm]
+  refine forall_congr' fun p => forall_congr' fun hp => ?_
+  have hx : X p ≠ 0 := Finsupp.mem_support_iff.mp hp
+  have hpos : 0 < X p := lt_of_le_of_ne (hX.1 p) (Ne.symm hx)
+  have hsnd : 0 < X.marginalSnd p.2 := hpos.trans_le (apply_le_fTransform_apply Prod.snd hX.1 p)
+  constructor
+  · intro h
+    have hlog : Real.logb 2 (X p / X.marginalSnd p.2) = 0 := by
+      rcases mul_eq_zero.mp h with h0 | h0
+      · exact absurd h0 hx
+      · linarith [neg_eq_zero.mp h0]
+    have hone : X p / X.marginalSnd p.2 = 1 :=
+      Real.eq_one_of_pos_of_logb_eq_zero one_lt_two (div_pos hpos hsnd) hlog
+    field_simp at hone
+    exact hone
+  · intro h
+    rw [h, div_self hsnd.ne', Real.logb_one, neg_zero, mul_zero]
+
+/-- **CR18 Thm A.2, first clause, equality condition** (app. p. 6): `H(Y) = H(XY)`
+exactly when `X` is determined by `Y`.  The chain rule turns the gap into
+`H(X|Y)`, and `condEntropy_eq_zero_iff` reads that off. -/
+theorem entropy_eq_entropy_marginalSnd_iff_condEntropy_eq_zero
+    {X : Distribution (α × γ)} (hX : X.NonNeg) :
+    X.entropy = X.marginalSnd.entropy ↔ X.condEntropy = 0 := by
+  rw [entropy_eq_entropy_marginalSnd_add_condEntropy hX]
+  constructor
+  · intro h; linarith
+  · intro h; rw [h, add_zero]
 
 /-- **Data processing at the entropy level**: a deterministic function of `X`
 carries no more entropy than `X`, `H(f(X)) ≤ H(X)`.  `NonNeg` layer.
@@ -743,7 +821,13 @@ theorem entropy_marginalSnd_le_entropy {X : Distribution (α × γ)} (hX : X.Non
     X.marginalSnd.entropy ≤ X.entropy :=
   entropy_fTransform_le_entropy hX Prod.snd
 
-/-! ## 6. Sub-additivity and its equality condition — CR18 Thm A.2 -/
+/-! ## 6. Sub-additivity and its equality condition — CR18 Thm A.2 (app. p. 6)
+
+Thm A.2 has TWO clauses: `H(X) ≤ H(XY)` with equality iff one component is
+determined by the other, and `H(XY) ≤ H(X) + H(Y)` with equality iff the two are
+independent.  The first clause is `entropy_marginalSnd_le_entropy` in §5 (its
+equality condition is `entropy_eq_entropy_marginalSnd_iff_condEntropy_eq_zero`,
+resolved through `condEntropy_eq_zero_iff`); the second is this section. -/
 
 /-- The product of the two marginals, as the comparison law of Gibbs'
 inequality.  Its absolute-continuity and weight side conditions are what the
@@ -825,10 +909,15 @@ theorem condEntropy_le_entropy_marginal {X : Distribution (α × γ)} (hX : X.No
   rw [condEntropy_eq_entropy_sub_entropy_marginalSnd hX]
   linarith [entropy_le_entropy_marginal_add_entropy_marginalSnd hX hw]
 
-/-! ## 7. Mutual information — CR18 Def. A.9 -/
+/-! ## 7. Mutual information — CR18 Def. A.8 -/
 
-/-- **Mutual information** `I(X;Y) = H(X) − H(X|Y)` (CR18 App. A.2, Def. A.9,
-as printed).  The symmetric form `H(X) + H(Y) − H(XY)` is
+/-- **Mutual information** `I(X;Y) = H(X) − H(X|Y)`.
+
+CR18 App. A.2, **Def. A.8** (app. p. 6) — the same numbered definition as
+conditional entropy, and printed there in the symmetric form
+`I(X;Y) := H(X) + H(Y) − H(XY)`.  (Def. A.9 is the *conditional* mutual
+information; citing A.9 here, as the reference development does, is a slip.)
+The symmetric form is
 `mutualInfo_eq_entropy_marginal_add_entropy_marginalSnd_sub_entropy`, and
 symmetry itself is `mutualInfo_fTransform_swap`. -/
 def mutualInfo (X : Distribution (α × γ)) : ℝ := X.marginal.entropy - X.condEntropy
@@ -894,7 +983,9 @@ the first component is `X`, the second pair is `(Y,Z)`, so `X.condEntropy` is
 already `H(X|YZ)` and `H(X|Z)` is the conditional entropy of the law of `(X,Z)`. -/
 
 /-- **Conditional mutual information** `I(X;Y|Z) = H(X|Z) − H(X|YZ)`
-(CR18 App. A.2, Def. A.9). -/
+(CR18 App. A.2, Def. A.9, app. p. 6, printed as
+`I(X;Y|Z) := H(XZ) + H(YZ) − H(XYZ) − H(Z)`; that form is
+`condMutualInfo_eq_entropy_add_entropy_sub_entropy_sub_entropy`). -/
 def condMutualInfo (X : Distribution (α × γ × ζ)) : ℝ :=
   (fTransform (fun p : α × γ × ζ => (p.1, p.2.2)) X).condEntropy - X.condEntropy
 
@@ -925,43 +1016,36 @@ theorem sum_apply_eq_marginalSnd [Fintype α] [Fintype γ] (J : Distribution (α
   rw [marginalSnd, fTransform_apply_eq_mass, mass_eq_sum, Fintype.sum_prod_type]
   exact Finset.sum_congr rfl fun a _ => by
     simp [Finset.sum_ite_eq' Finset.univ c fun b => J (a, b)]
+/-! ### The Gibbs comparison behind Theorem A.3
 
-/-- **Strong sub-additivity**, `0 ≤ I(X;Y|Z)`, equivalently
-`H(XYZ) + H(Z) ≤ H(XZ) + H(YZ)` (CR18 App. A.2, Thm A.2 in its conditional
-form).
-
-The log-sum inequality at the comparison weight
-`Q(x,y,z) = P_{XZ}(x,z)·P_{YZ}(y,z)/P_Z(z)`, which is not a distribution the
+Strong sub-additivity and its equality condition are the log-sum inequality and
+its equality condition at one and the same comparison weight
+`Q(x,y,z) = P_{XZ}(x,z)·P_{YZ}(y,z)/P_Z(z)`, which is *not* a distribution the
 caller has in hand — this is exactly why the primitive of §0a is stated on bare
-weight functions rather than on `Distribution`.  `Q` has total mass `∑_z P_Z(z)` over
-the `z` it charges, hence at most `1`.
+weight functions rather than on `Distribution`.  The two facts that feed both
+endpoints are isolated here: `Q` is dominated in total mass by `X`
+(`sum_comparison_le` — `Q` charges at most `∑_z P_Z(z) ≤ 1`), and the Gibbs
+difference against `Q` *is* `−I(X;Y|Z)` (`neg_condMutualInfo_eq_sum_logb_div`). -/
 
-`isProbDist` plus finiteness of all three alphabets (the comparison weight is
-summed over the whole carrier). -/
-theorem condMutualInfo_nonneg [Fintype α] [Fintype γ] [Fintype ζ]
+/-- The comparison weight `P_{XZ}·P_{YZ}/P_Z` spends no more mass on `supp X`
+than `X` itself does.  `isProbDist` plus finiteness of all three alphabets (the
+weight is summed over the whole carrier). -/
+theorem sum_comparison_le [Fintype α] [Fintype γ] [Fintype ζ]
     {X : Distribution (α × γ × ζ)} (hX : X.isProbDist) :
-    0 ≤ X.condMutualInfo := by
+    ∑ t ∈ X.support, (fTransform (fun p : α × γ × ζ => (p.1, p.2.2)) X) (t.1, t.2.2)
+        * X.marginalSnd t.2 / (fTransform (fun p : α × γ × ζ => p.2.2) X) t.2.2
+      ≤ ∑ t ∈ X.support, X t := by
   classical
   set XZ : Distribution (α × ζ) := fTransform (fun p : α × γ × ζ => (p.1, p.2.2)) X with hXZ
   set YZ : Distribution (γ × ζ) := X.marginalSnd with hYZ
   set Z : Distribution ζ := fTransform (fun p : α × γ × ζ => p.2.2) X with hZ
-  have hXZnn : XZ.NonNeg := hX.1.fTransform _
-  have hYZnn : YZ.NonNeg := hX.1.fTransform _
   have hZnn : Z.NonNeg := hX.1.fTransform _
   have hYZsnd : YZ.marginalSnd = Z := fTransform_comp Prod.snd Prod.snd X
   have hXZsnd : XZ.marginalSnd = Z :=
     fTransform_comp Prod.snd (fun p : α × γ × ζ => (p.1, p.2.2)) X
-  -- The comparison weight.
   set Q : α × γ × ζ → ℝ := fun t => XZ (t.1, t.2.2) * YZ t.2 / Z t.2.2 with hQ
   have hQnn : ∀ t : α × γ × ζ, 0 ≤ Q t := fun t =>
-    div_nonneg (mul_nonneg (hXZnn _) (hYZnn _)) (hZnn _)
-  -- Pointwise mass bounds: a joint mass is dominated by each of its images.
-  have hXZle : ∀ t : α × γ × ζ, X t ≤ XZ (t.1, t.2.2) := fun t =>
-    apply_le_fTransform_apply (fun p : α × γ × ζ => (p.1, p.2.2)) hX.1 t
-  have hYZle : ∀ t : α × γ × ζ, X t ≤ YZ t.2 := fun t => apply_le_fTransform_apply Prod.snd hX.1 t
-  have hZle : ∀ t : α × γ × ζ, X t ≤ Z t.2.2 := fun t =>
-    apply_le_fTransform_apply (fun p : α × γ × ζ => p.2.2) hX.1 t
-  -- `∑_carrier Q ≤ 1`.
+    div_nonneg (mul_nonneg (hX.1.fTransform _ _) (hX.1.fTransform _ _)) (hZnn _)
   have hQsum : ∑ t : α × γ × ζ, Q t ≤ 1 := by
     have einner : ∀ a : α, ∑ w : γ × ζ, Q (a, w) = ∑ b : γ, ∑ c : ζ, Q (a, b, c) :=
       fun a => Fintype.sum_prod_type (f := fun w : γ × ζ => Q (a, w))
@@ -993,36 +1077,45 @@ theorem condMutualInfo_nonneg [Fintype α] [Fintype γ] [Fintype ζ]
       · rw [mul_div_assoc, div_self h0.ne', mul_one]
     refine (Finset.sum_le_sum fun c _ => hbd c).trans ?_
     rw [← weight_eq_sum, hZ, weight_fTransform, hX.2]
-  -- The log-sum inequality on the support of `X`.
-  have hle : ∑ t ∈ X.support, Q t ≤ ∑ t ∈ X.support, X t := by
-    have h1 : ∑ t ∈ X.support, Q t ≤ ∑ t : α × γ × ζ, Q t :=
-      Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _) fun t _ _ => hQnn t
-    have h2 : ∑ t ∈ X.support, X t = 1 := by
-      have : ∑ t ∈ X.support, X t = X.weight := by rw [weight, Finsupp.sum]
-      rw [this, hX.2]
-    linarith
-  have hsum := sum_mul_logb_div_nonpos (s := X.support) (p := (X : α × γ × ζ → ℝ)) (q := Q)
-    (fun t _ => hX.1 t) (fun t _ => hQnn t)
-    (fun t _ h => by
-      have hpos : 0 < X t := lt_of_le_of_ne (hX.1 t) (Ne.symm h)
-      exact (div_pos (mul_pos (hpos.trans_le (hXZle t)) (hpos.trans_le (hYZle t)))
-        (hpos.trans_le (hZle t))).ne')
-    hle
-  -- Expand the summand.
-  have hexp : ∀ t ∈ X.support, X t * Real.logb 2 (Q t / X t)
+  have h1 : ∑ t ∈ X.support, Q t ≤ ∑ t : α × γ × ζ, Q t :=
+    Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _) fun t _ _ => hQnn t
+  have h2 : ∑ t ∈ X.support, X t = 1 := by
+    have : ∑ t ∈ X.support, X t = X.weight := by rw [weight, Finsupp.sum]
+    rw [this, hX.2]
+  rw [h2]
+  linarith
+
+/-- **The Gibbs difference against `P_{XZ}·P_{YZ}/P_Z` is `−I(X;Y|Z)`.**  The
+single identity both halves of Theorem A.3 are read off; `NonNeg` layer, since
+it is four applications of the chain-rule bookkeeping and no normalization. -/
+theorem neg_condMutualInfo_eq_sum_logb_div [Fintype α] [Fintype γ] [Fintype ζ]
+    {X : Distribution (α × γ × ζ)} (hX : X.NonNeg) :
+    ∑ t ∈ X.support, X t * Real.logb 2
+        (((fTransform (fun p : α × γ × ζ => (p.1, p.2.2)) X) (t.1, t.2.2)
+            * X.marginalSnd t.2 / (fTransform (fun p : α × γ × ζ => p.2.2) X) t.2.2) / X t)
+      = -X.condMutualInfo := by
+  classical
+  set XZ : Distribution (α × ζ) := fTransform (fun p : α × γ × ζ => (p.1, p.2.2)) X with hXZ
+  set YZ : Distribution (γ × ζ) := X.marginalSnd with hYZ
+  set Z : Distribution ζ := fTransform (fun p : α × γ × ζ => p.2.2) X with hZ
+  have hXZle : ∀ t : α × γ × ζ, X t ≤ XZ (t.1, t.2.2) := fun t =>
+    apply_le_fTransform_apply (fun p : α × γ × ζ => (p.1, p.2.2)) hX t
+  have hYZle : ∀ t : α × γ × ζ, X t ≤ YZ t.2 := fun t => apply_le_fTransform_apply Prod.snd hX t
+  have hZle : ∀ t : α × γ × ζ, X t ≤ Z t.2.2 := fun t =>
+    apply_le_fTransform_apply (fun p : α × γ × ζ => p.2.2) hX t
+  have hexp : ∀ t ∈ X.support,
+      X t * Real.logb 2 ((XZ (t.1, t.2.2) * YZ t.2 / Z t.2.2) / X t)
       = X t * -Real.logb 2 (X t) - X t * -Real.logb 2 (XZ (t.1, t.2.2))
         - X t * -Real.logb 2 (YZ t.2) + X t * -Real.logb 2 (Z t.2.2) := by
     intro t ht
     have hx : X t ≠ 0 := Finsupp.mem_support_iff.mp ht
-    have hpos : 0 < X t := lt_of_le_of_ne (hX.1 t) (Ne.symm hx)
+    have hpos : 0 < X t := lt_of_le_of_ne (hX t) (Ne.symm hx)
     have h1 : XZ (t.1, t.2.2) ≠ 0 := (hpos.trans_le (hXZle t)).ne'
     have h2 : YZ t.2 ≠ 0 := (hpos.trans_le (hYZle t)).ne'
     have h3 : Z t.2.2 ≠ 0 := (hpos.trans_le (hZle t)).ne'
-    rw [hQ, Real.logb_div (by exact div_ne_zero (mul_ne_zero h1 h2) h3) hx,
+    rw [Real.logb_div (by exact div_ne_zero (mul_ne_zero h1 h2) h3) hx,
       Real.logb_div (mul_ne_zero h1 h2) h3, Real.logb_mul h1 h2]
     ring
-  rw [Finset.sum_congr rfl hexp] at hsum
-  -- Each of the four sums is an entropy.
   have hentX : ∑ t ∈ X.support, X t * -Real.logb 2 (X t) = X.entropy := by
     rw [entropy, expect, Finsupp.sum]
   have hentXZ : ∑ t ∈ X.support, X t * -Real.logb 2 (XZ (t.1, t.2.2)) = XZ.entropy := by
@@ -1033,10 +1126,79 @@ theorem condMutualInfo_nonneg [Fintype α] [Fintype γ] [Fintype ζ]
   have hentZ : ∑ t ∈ X.support, X t * -Real.logb 2 (Z t.2.2) = Z.entropy := by
     rw [hZ, ← expect_neg_logb_fTransform_comp X (fun p : α × γ × ζ => p.2.2), expect,
       Finsupp.sum]
-  rw [Finset.sum_add_distrib, Finset.sum_sub_distrib, Finset.sum_sub_distrib,
-    hentX, hentXZ, hentYZ, hentZ] at hsum
-  rw [condMutualInfo_eq_entropy_add_entropy_sub_entropy_sub_entropy hX.1, ← hXZ, ← hYZ, ← hZ]
+  rw [Finset.sum_congr rfl hexp, Finset.sum_add_distrib, Finset.sum_sub_distrib,
+    Finset.sum_sub_distrib, hentX, hentXZ, hentYZ, hentZ,
+    condMutualInfo_eq_entropy_add_entropy_sub_entropy_sub_entropy hX, ← hXZ, ← hYZ, ← hZ]
+  ring
+
+/-- Absolute continuity of `X` with respect to the comparison weight: where the
+joint law charges, each of its three images does, so their combination does. -/
+theorem comparison_ne_zero [Fintype α] [Fintype γ] [Fintype ζ]
+    {X : Distribution (α × γ × ζ)} (hX : X.NonNeg) {t : α × γ × ζ} (h : X t ≠ 0) :
+    (fTransform (fun p : α × γ × ζ => (p.1, p.2.2)) X) (t.1, t.2.2)
+        * X.marginalSnd t.2 / (fTransform (fun p : α × γ × ζ => p.2.2) X) t.2.2 ≠ 0 := by
+  have hpos : 0 < X t := lt_of_le_of_ne (hX t) (Ne.symm h)
+  exact (div_pos
+    (mul_pos (hpos.trans_le (apply_le_fTransform_apply (fun p : α × γ × ζ => (p.1, p.2.2)) hX t))
+      (hpos.trans_le (apply_le_fTransform_apply Prod.snd hX t)))
+    (hpos.trans_le (apply_le_fTransform_apply (fun p : α × γ × ζ => p.2.2) hX t))).ne'
+
+/-- Nonnegativity of the comparison weight. -/
+theorem comparison_nonneg [Fintype α] [Fintype γ] [Fintype ζ]
+    {X : Distribution (α × γ × ζ)} (hX : X.NonNeg) (t : α × γ × ζ) :
+    0 ≤ (fTransform (fun p : α × γ × ζ => (p.1, p.2.2)) X) (t.1, t.2.2)
+        * X.marginalSnd t.2 / (fTransform (fun p : α × γ × ζ => p.2.2) X) t.2.2 :=
+  div_nonneg (mul_nonneg (hX.fTransform _ _) (hX.fTransform _ _)) (hX.fTransform _ _)
+
+/-- **Strong sub-additivity**, `0 ≤ I(X;Y|Z)`, equivalently
+`H(XYZ) + H(Z) ≤ H(XZ) + H(YZ)`.  This is the inequality half of CR18 App. A.2
+**Theorem A.3** (app. p. 7) — *"We have `I(X;Y|Z) ≥ 0` with equality if and only
+if X and Y are statistically independent when given Z"*; the equality half is
+`condMutualInfo_eq_zero_iff` below.  (The reference development cites this as
+"Thm A.2 in its conditional form", which is a slip — Thm A.2 is the
+unconditional sub-additivity pair of §6.)
+
+The log-sum inequality at `Q(x,y,z) = P_{XZ}(x,z)·P_{YZ}(y,z)/P_Z(z)`.
+`isProbDist` plus finiteness of all three alphabets. -/
+theorem condMutualInfo_nonneg [Fintype α] [Fintype γ] [Fintype ζ]
+    {X : Distribution (α × γ × ζ)} (hX : X.isProbDist) :
+    0 ≤ X.condMutualInfo := by
+  have hsum := sum_mul_logb_div_nonpos (s := X.support) (p := (X : α × γ × ζ → ℝ))
+    (q := fun t => (fTransform (fun p : α × γ × ζ => (p.1, p.2.2)) X) (t.1, t.2.2)
+      * X.marginalSnd t.2 / (fTransform (fun p : α × γ × ζ => p.2.2) X) t.2.2)
+    (fun t _ => hX.1 t) (fun t _ => comparison_nonneg hX.1 t)
+    (fun t _ h => comparison_ne_zero hX.1 h) (sum_comparison_le hX)
+  rw [neg_condMutualInfo_eq_sum_logb_div hX.1] at hsum
   linarith
+
+/-- **Equality in strong sub-additivity characterises conditional
+independence**: `I(X;Y|Z) = 0` exactly when `P_{XYZ}·P_Z = P_{XZ}·P_{YZ}` on the
+support of the joint law — CR18 App. A.2 **Theorem A.3**'s equality clause
+(app. p. 7), *"with equality if and only if X and Y are statistically
+independent when given Z"*.
+
+The product identity is CR18 Def. A.6's independence, taken conditionally on
+`Z`: dividing by `P_Z(z) > 0` turns it into
+`P_{XY|Z=z}(x,y) = P_{X|Z=z}(x)·P_{Y|Z=z}(y)`.  It is stated on `supp X` rather
+than everywhere because off the support both sides of the divided form are
+unconstrained — the comparison weight may still charge there, which is exactly
+the slack `sum_comparison_le` allows.
+
+`isProbDist` plus finiteness of all three alphabets, as for the inequality; this
+is `sum_mul_logb_div_eq_zero_iff` where `condMutualInfo_nonneg` is
+`sum_mul_logb_div_nonpos`, at the same comparison weight. -/
+theorem condMutualInfo_eq_zero_iff [Fintype α] [Fintype γ] [Fintype ζ]
+    {X : Distribution (α × γ × ζ)} (hX : X.isProbDist) :
+    X.condMutualInfo = 0 ↔ ∀ t ∈ X.support,
+      (fTransform (fun p : α × γ × ζ => (p.1, p.2.2)) X) (t.1, t.2.2)
+        * X.marginalSnd t.2 / (fTransform (fun p : α × γ × ζ => p.2.2) X) t.2.2 = X t := by
+  have hiff := sum_mul_logb_div_eq_zero_iff (s := X.support) (p := (X : α × γ × ζ → ℝ))
+    (q := fun t => (fTransform (fun p : α × γ × ζ => (p.1, p.2.2)) X) (t.1, t.2.2)
+      * X.marginalSnd t.2 / (fTransform (fun p : α × γ × ζ => p.2.2) X) t.2.2)
+    (fun t _ => hX.1 t) (fun t _ => comparison_nonneg hX.1 t)
+    (fun t _ h => comparison_ne_zero hX.1 h) (sum_comparison_le hX)
+  rw [neg_condMutualInfo_eq_sum_logb_div hX.1, neg_eq_zero] at hiff
+  exact hiff
 
 end Distribution
 

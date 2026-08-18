@@ -21,11 +21,13 @@ consumer sees a difference, since both files export into the same namespace.
 
 Five groups, matching the reference development's own section order:
 
-* **the birthday bound, two-sided** — Boneh-Shoup Theorem B.1 in both
-  directions.  `Probability/Counting.lean` carries only the one-sided
+* **the birthday bound, two-sided** — Boneh-Shoup Theorem B.1 (book p. 1101) in
+  both directions.  `Probability/Counting.lean` carries only the one-sided
   `birthday_bound` (`1 − (N)_q/N^q ≤ q(q−1)/2N`), which is the direction that
-  proves security; the *lower* bound is what an attack argument needs.  Plus
-  the `k = 2` case of Corollary B.2 (`inv_card_le_sum_sq`);
+  proves security; the *lower* bound is what an attack argument needs.  Plus the
+  two-draw uniformity bound `inv_card_le_sum_sq` — the `k = 2` case of the
+  maximization claim inside Corollary B.2's *proof* (book p. 1103), **not** of
+  the corollary's own conclusion; see its docstring;
 * **sorted-pair sum identities** — exact closed forms for sums over the sorted
   pairs `p.1 < p.2` of a linearly ordered `Fintype`: the pen-and-paper
   `(Σx)² = Σx² + 2Σ_{r<s}xᵣxₛ` and `Σ_{r<s}(xᵣ+xₛ) = (q−1)Σx`;
@@ -43,6 +45,9 @@ Five groups, matching the reference development's own section order:
 
 The arithmetic is standard; the one named source is Boneh-Shoup,
 *A Graduate Course in Applied Cryptography*, Appendix B, cited per statement.
+Page numbers are **book** pages (the PDF on disk is offset by 14) and were
+checked against the rendered pages on 2026-08-18: Thm B.1 and Cor B.2 are both
+stated on p. 1101, Figure B.1 is p. 1102, and Cor B.2's proof is p. 1103.
 Every declaration is transported from the reference repository's
 `RandomSystems/Counting.lean` (READ-ONLY), restated on this tree's namespace.
 None of them mentions a distribution, a distance or a system, so no carrier or
@@ -192,12 +197,30 @@ theorem one_sub_prod_sub_div_pow_le_one_sub_exp {N q : ℕ} (h : 2 * q ≤ N) (h
       ≤ 1 - Real.exp (-((q : ℝ) * ((q : ℝ) - 1) / N)) :=
   sub_le_sub_left (exp_le_prod_sub_div_pow h h_pos) 1
 
-/-- **Uniformity minimises the collision probability, at two draws**
-(the `k = 2` case of Boneh–Shoup Corollary B.2, book p. 1103): for any probability vector `p` on a finite set, the chance that two
-i.i.d. draws agree is `∑ pᵢ²`, and that is at least `1/|s|`, the uniform value.
+/-- **Uniformity minimises the collision probability, at two draws**: for any
+probability vector `p` on a finite set, the chance that two i.i.d. draws agree is
+`∑ pᵢ²`, and that is at least `1/|s|`, the uniform value.  This is
+Cauchy–Schwarz.
 
-This is Cauchy–Schwarz.  The general-`k` Corollary B.2 needs Maclaurin's
-inequality on elementary symmetric polynomials, which mathlib does not carry. -/
+**Citation, corrected 2026-08-18 by reading the rendered pages.**  This is *not*
+"the `k = 2` case of Boneh–Shoup Corollary B.2".  Cor B.2 (stated book p. 1101,
+proved p. 1103) concludes `Pr[C] ≥ min{k(k−1)/(4n), 0.63}`, which at `k = 2`
+reads `Pr[C] ≥ min{1/(2n), 0.63}` — weaker than this statement by a factor of
+two.  What this *is* is the `k = 2` case of the **maximization claim inside that
+corollary's proof** (p. 1103: "We show that this sum is maximized when
+`p₁ = … = p_n = 1/n`"), which at `k = 2` says exactly `1 − ∑pᵢ² ≤ 1 − 1/n`.
+
+Verbatim the same content as CR18 Lemma 7.6's lower half, landed on the
+`Distribution` carrier as `Distribution.one_div_card_le_collProb`
+(`Probability/Entropy.lean`); this is its bare-`Finset` form, which is what the
+counting layer consumes.  Not an R11(a) duplicate — two carriers, one fact —
+but the pair should be cross-referenced, not re-derived, at the merge.
+
+The general-`k` corollary is not transported.  The reason is **not** a missing
+mathlib prerequisite: Boneh and Shoup prove it by an elementary ε-smoothing
+exchange (if some `pᵢ ≠ 1/n`, pick `p_j > 1/n`, shift `ε` from `j` to `i`, show
+the sum strictly increases, iterate at most `n` times).  It is simply an
+`n`-step induction with no consumer here yet. -/
 theorem inv_card_le_sum_sq {ι : Type*} (s : Finset ι) (p : ι → ℝ)
     (h_sum : ∑ i ∈ s, p i = 1) :
     1 / (s.card : ℝ) ≤ ∑ i ∈ s, (p i) ^ 2 := by

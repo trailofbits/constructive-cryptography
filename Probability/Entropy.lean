@@ -19,7 +19,9 @@ only out of `Probability.Distribution` and `Probability.Expectation`.
 ## Contents
 
 *Maurer, "Cryptography Foundations" lecture notes (CR18) §7.2.3, printed
-pp. 138-139.*  CR18 is the **R8 fallback** source here and is flagged as such:
+pp. 138-139* (**main-body** printed pages, verified 2026-08-18 against the
+rendered PDF; note that CR18's appendix restarts its own page numbering, so
+`Probability.ShannonEntropy`'s App. A.2 citations use appendix pages instead).  CR18 is the **R8 fallback** source here and is flagged as such:
 none of the primaries (MauRen16, Jost, LiuMau20, Lanzenberger) treats the
 collision/guessing calculus.  For a random variable `X` over a finite alphabet
 `𝒳`, the three quantities
