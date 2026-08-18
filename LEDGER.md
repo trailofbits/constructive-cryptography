@@ -1,0 +1,1653 @@
+# Carrier ledger — the validation gate
+
+*(Commit hashes cited in this file resolve on branch
+`archive/pre-squash-2026-08-18`; `main` is the squashed two-commit
+history.)*
+
+**SOURCE HIERARCHY (Marc, 2026-08-18; binding for every brief and ruling).**
+Primary sources, in order: **MauRen16**, then **Jost thesis**, **LiuMau20 /
+Liu-Zhang**, **Lanzenberger thesis**.  **CR18 is DEMOTED**: consult it ONLY
+for a concept none of the primaries addresses (enumerated below), and say so
+explicitly when doing it.  Never cite CR18 as the semantic authority for a
+concept a primary covers — the 2026-08-18 defect this prevents: the par
+output-alphabet question was argued from CR18 Def 3.4 as if it took a stance
+(it does not; the paper never treats addressing), when MR16 §2.1-2.2 + Jost
+are the governing sources.
+
+CR18-FALLBACK register (load-bearing today; each flagged for re-grounding
+review against Jost's formal system layer before extension):
+  - the ⊥-completion semantics (fullyDefined/keptPrefix, "CR18 Def 3.3") and
+    the total-environment transcript (DDE.Total, "Defs 3.6/3.7") — the
+    Lanz-primary compatible-environment presentation EXISTS in-tree and the
+    L1 coding map CONNECTS them; new metric statements prefer the primary
+    presentation where both serve;
+  - the converter budget (AnswersWithinBudget, "Def 3.8");
+  - the concrete converter application (DDC.apply/connectFully, "Def 3.9") —
+    MR16 §3.3 is the abstract authority; CR18 only realizes it;
+  - filters ("Def 3.10", A8, deferred); memoryless attachment ("Def 3.13",
+    PARTIAL-ONLY).
+Existing NAMES citing CR18 definitions stay (renames are churn); their
+docstring citations are historical provenance, not authority.
+
+**Rule (binding).** Every `def`/`abbrev`/`structure`/`instance` in
+`RandomSystems/System/` and `RandomSystems/Converter/` must appear in this
+file, classified. The gate `scripts/ledgerAudit.sh` extracts the inventory
+from disk and FAILS listing any unclassified name. Run it before dispatching
+any pipeline task and in every task's final gates. Rows are derived from the
+tree, never from memory — that is the point of this document (defect record:
+the 2026-08-17 B4 refutation was discoverable at planning time; the Phase-A
+checklist was written from memory and missed `connect`).
+
+Classifications:
+- **RECEIPT** — carrier endomorphism with an s ↦ s⊥ homomorphism receipt
+  (status PROVEN / PENDING / REFUTED). Metric work may consume PROVEN only.
+- **METRIC** — the fully defined metric layer itself (migrated by construction).
+- **PARTIAL-ONLY** — algebra on the partial carrier; receipts intact at their
+  own level; NO metric claims may consume them before A6-style migration.
+- **PRIMITIVE** — carrier plumbing/proof machinery; no receipt applicable.
+
+## RECEIPT rows
+
+| op | status | receipt / action |
+|---|---|---|
+| par, parRaw, historyAt | PROVEN | `fullyDefined_par` |
+| blockSet | PROVEN | `fullyDefined_blockSet` |
+| parallel, parallelDom, restrict, optionSigma | PROVEN | `parallel_fullyDefined` (output-agreement form) |
+| emptySystem | PROVEN | trivial |
+| par-partner endo (B6) | PROVEN | `exists_absorb_par` (B6), since A7 an instance of the general relay (`exists_absorb_relay`) |
+| ofTyped, ofTypedRaw | PROVEN (A7), and as an ISOMETRY | crux `keptPrefix_ofTyped` (an undecodable query is refused by a condition on the HISTORY, so refusal precedes all traffic — `not_mem_dom_ofTyped_of_decodeOption_none`), `answer_ofTyped_none`/`_some`, `exists_absorb_ofTyped` (outwards, the relay at `decodeOption`) and `exists_absorb_ofTyped_typed` (inwards, the encoding environment `encodeEnv`, no replay needed); metric endpoint `PDS.advFullyDefined_ofTyped : Adv⊥(ofTyped RL, ofTyped SL) = Adv⊥(RL, SL)` |
+| relabel | PROVEN (A7) | crux `keptPrefix_relabel` (pointwise, no window), `answer_relabel`, `exists_absorb_relabel`; metric: `PDS.advFullyDefined_relabelLaw_le` at arbitrary alphabets and `relabelLaw_mem_nonexpandingConverters` at `Uni`, where `relabelLaw` IS an endomorphism of Φ |
+| block (Resource-level, Set P) | PROVEN (A7) | `fullyDefined_block` (the `s⊥` receipt) and `exists_absorb_block` (the absorption receipt), both the `blockSet` row read at the tag cylinder through `block_eq_blockSet` |
+| filterDom, filterQueries | PENDING (CR18 Def 3.10 filters; O8/Budget) | A8 |
+| connectFully (A6) | PROVEN (B4-RESUME, 2026-08-17) | refusal-first: `connectFully_refusal_first` under `InnerTotal` + `AnswersWithinBudget`; absorption: `exists_absorb_connectFully` under `InnerTotal` + `AnswersWithinBudget` + a **uniform** bound on the budget (CR18 Def 3.8's own "finite upper bound on consecutive requests"; the uniformity is load-bearing — see the def's docstring for why a merely well-founded budget admits no single inner length) |
+| attachEngineFully (DRIFT-REPAIR legs a+b) | PROVEN (leg b, 2026-08-17) | refusal-first at the owned face `attachEngineFully_refusal_first` (InnerTotal + AnswersWithinBudget); transparency at the foreign face `attachEngineFully_transparent` — one equation of partial values (domain, answer, refusal all pass through; neither G1 relay witness applies); frontier receipts off `attachEngineFully_concat_round`; demotion bridge `attachEngineFully_univ`; **absorption `exists_absorb_attachEngineFully`** (InnerTotal + AnswersWithinBudget + uniform bound) at the mixed count `m := n * max K 1` — an owned round costs ≤ K, a foreign round exactly one, and `n * K` is wrong at `K = 0`; resource histories agree up to CR18 Def 3.3 deletion, invisible to rounds (`exists_mem_resolve_of_keptPrefix_eq`).  Metric endpoint `attachEngineFully_mem_nonexpandingConverters` (no `RequestsWithin` — absorption does not consume it) |
+| idEngineFully | PROVEN | `connectFully_idEngineFully : connectFully idEngineFully R = R⊥` — the migrated identity IS the completion; not a Φ endomorphism (outer answers land in `Option Uni`) |
+| connect, serve, runAux, lift, liftImpl, liftEvent, connectPhi (System), validate | REFUTED for attach-nonexpansion (B4 witness): serve makes inner refusal fatal → rewind | PARTIAL-ONLY: superseded for metric work by `connectFully` (A6); the old layer keeps its own §3.3/§3.4 receipts |
+| toTyped, toTypedRaw | REFUTED-genre (decodes after inner traffic) | NOT touched by A6 (which is additive and leaves the old layer alone); belongs with A7's inclusion receipts, restated on `connectFully`.  A7 delivered the `ofTyped` isometry INSTEAD — which is the honest half: the inclusion transports in both directions, the projection does not, and `PDS.advFullyDefined_ofTyped` is what the `ℕ ⊆ ℝ` discipline needs |
+| attachFully | PROVEN | `attachFully_mem_nonexpandingConverters` (InnerTotal + budget + uniform bound), via `exists_absorb_connectFully` and the pushforward reduction |
+| converterMonoidFullyBudgeted | PROVEN | `converterMonoidFullyBudgeted_le_nonexpandingConverters` — the metric-facing Σ: uniformly budgeted attachments ∪ blocks ∪ par frames.  `AnswersWithinUniformBudget` is CR18 Def 3.8's request bound verbatim |
+| converterMonoidFully | NOT CLAIMED (documented delta) | its attachment family asks only `∃ β, AnswersWithinBudget E β`, which absorption does not support; the budgeted sub-closure is what the metric consumes, and `converterMonoidFullyBudgeted_le_converterMonoidFully` records the relation.  `converterMonoid` is NOT changed |
+| attach, block (Φ), connectPhi (Φ), converterMonoid, relabelLaw, blockLaw, connectLaw, attachEngineLaw, applyLaw, General.attachAtLaw | inherit their System rows; `converterMonoid` stays as it is (B4 witness inside it); the re-based Σ is `converterMonoidFully` (A6-M4) |
+| fullyDefinedSpec, ofPhi | slice bookkeeping on Φ | done (A3/B4-M5) |
+
+## METRIC layer (migrated by construction)
+
+R9 + DEF-2.14 FAITHFULNESS additions (2026-08-18; ClassDistance.lean,
+Environment.lean, Behaviour.lean; audit: all six claims HOLD, incl. the
+probed Δ(S,S)=⊤ edge and the degenerate-D congruence): `HasDomain` (Def
+2.14's attribute at a named D), `CompatibleD` (Def 2.12's clause at the
+domain), `Halts` (COINAGE — environment-only round bound; a D-indexed
+stopping clause cannot carry the congruence), `AdvD` (COINAGE — Def 2.26
+indexed by the domain; `AdvD_congr` NO HYPOTHESIS), `Behaviour.AdvD`
+(COINAGE — the descent, a Quotient.lift₂).  classDistance now infimizes
+over HONEST representatives (R9); Δ(S,S)=⊤ off the honest carrier (empty
+infimum — thesis-correct, `classDistance_self` carries NonNeg, no simp);
+Def 2.28's pair identity is the EQUALITY
+`classDistance_eq_ofReal_multiSystemDistance`; couplings supply honesty
+free (`IsCoupling.nonNeg_left/_right`).  G-6 addition (ParFace.lean):
+`instParConverterMonoidAt` — MauRen11 §6.2's α∣β at the metric-facing Σ.
+
+DRIFT-REPAIR leg (c) additions (`AttachEngineFully.lean` Φ-level section,
+`MetricFullyDefined.lean`): `attachAt` — MauRen16 §3.3's αⁱ at the Φ level,
+pushforward of `System.attachEngineFully`; receipt
+`attachAt_mem_nonexpandingConverters`; supersedes `attachFully` = its
+`i = Set.univ` case (`attachAt_univ`).  `converterMonoidAt` — THE metric-facing
+Σ, interface-indexed (coinage, flagged): attachments at InnerTotal +
+AnswersWithinUniformBudget ∪ blocks ∪ both parallel frames (last three
+verbatim from `converterMonoidFullyBudgeted`); receipts
+`converterMonoidAt_le_nonexpandingConverters` + S4 endpoints
+`edist_apply_le_of_mem_converterMonoidAt`, `edist_mul_smul_le_of_edist_le_at`,
+`constructs_epsilonRelaxation_trans_at`, derived IsNonexpandingSMul instance.
+`converterMonoidAtWeakBudget` — the A6-budget variant (coinage, flagged), no
+nonexpansion receipt, delta `converterMonoidAt_le_converterMonoidAtWeakBudget`.
+
+DRIFT-REPAIR leg (d) addition: `ProtocolWithin` — MauRen16 §7's tuple of
+converters, one per party, confined per-index (`RequestsWithin`) and in the
+Σ-admitted class; abbrev, coinage flagged; packaging only — the mathematics
+is `attachAt_comm`, stated with no packaging.
+
+Lanzenberger L1 additions (`RandomSystems/System/ClassDistance.lean`): the
+rejection-pruning machine for the coding map — `pruneStep`, `Blocked`,
+`pruneRun`, `prunedNext` (house-continuation of the quarry's names, not
+paper names), `prunedEnv` (coinage, quarry `prunedPartialDDE`),
+`markAnswers` (coinage, quarry `someMap`).  Endpoints:
+`PDS.equivalent_iff_nonAdaptive` (Lanz Lemma 2.18),
+`PDS.equivalent_ofTyped_iff`, `PDS.Adv_le_advFullyDefined` (unconditional),
+`PDS.advFullyDefined_eq_Adv_of_dom_eq` (the coding map — shared-domain
+clause ONLY; no finiteness).  NOTE: `PDS.HasFixedDomain` is unusable for
+two-system statements (one-system existential; two instances need not share
+the domain, and the theorem is FALSE across distinct domains) — L2/L3
+statements carry the explicit two-support `D` bundle until a two-argument
+form exists.
+
+Lanzenberger L2a/L3 additions (`RandomSystems/System/Attainment.lean`):
+Notation 2.34's successor calculus (System.DDS.successor,
+System.DDE.Total.successor, PDS.successorTransform — paper names) and its
+inverse (System.DDS.prepend, PDS.prependTransform — quarry-continuation);
+the finite shared-domain slice as a HYPOTHESIS BUNDLE
+PDS.HaveCommonDomainAndBounded (coinage; no subtype — List X is infinite at
+finite X) with the first-answer carriers PDS.firstQueries,
+PDS.firstAnswerImage, PDS.firstAnsweredValues (coinages); Lemma 2.33's
+apparatus System.DDS.glue, System.glueProfile, System.sliceOf, System.contOf,
+System.profileOf, PDS.classChoiceDist, PDS.choiceOf, PDS.overlapOf,
+PDS.trimOf, PDS.crossJointOf (coinages), System.successorDomain, and its
+output PDS.FiniteClassJointWitness; the induction invariant
+PDS.BoundedAttainmentWitness.  ENDPOINTS: Lemma 2.33
+(exists_finiteClassJointWitness_of_common_side_weights); **Theorem 2.31**
+(classDistance_eq_advFullyDefined_of_commonDomain_bounded + attainment +
+classDistance_eq_Adv_of_commonDomain_bounded via the L1 coding map);
+**Theorem 2.32** (exists_equivalent_coupling/probCoupling_offDiagonalMass_
+eq_advFullyDefined_of_commonDomain_bounded).  Domain clause = explicit
+two-support condition per the L1 HasFixedDomain note.
+
+Lanzenberger L2b additions (`RandomSystems/System/MultiDistance.lean`):
+Def 2.27's multi-system distance `multiSystemDistance` (COINAGE,
+errata-corrected — printed outer inf over representatives is a sup), the
+verbatim printed display `printedMultiSystemDistance` (COINAGE; erratum
+target only), its supremum set `agreementValues` (COINAGE).  ENDPOINTS:
+Def 2.28 eliminators at a pair (multiSystemDistance_le_statDist_of_
+equivalent, le_multiSystemDistance); classDistance_le_ofReal_
+multiSystemDistance (always-true direction ONLY — the unrestricted-vs-
+probability-representatives question is OPEN and load-bearing, see pin
+list); Thm 2.29 lower (classDistance_le_ofReal_multiSystemDistance_of_mem,
+inf'_classDistance_le_multiSystemDistance) and upper
+(exists_pair_multiSystemDistance_le, corrected max form).  Distribution
+layer = Probability/MultiCoupling.lean (IsJointOf, agreementMass,
+supAgreement, overlapDist, supportUnion, selectPair, Distribution.pi;
+Lemma 2.30 = exists_pair_sum_min_le_of_forall_column_zero; the kernel-
+checked printed_min_form_counterexample re-proved on this carrier).
+
+Lanzenberger 2.19 additions (`RandomSystems/System/Behaviour.lean`):
+`equivalentSetoid`, `Behaviour` (COINAGE; thesis writes bold S),
+`toBehaviour`, descended `Behaviour.weight`, `Behaviour.advFullyDefined`, `Behaviour.classDistance`;
+the metric is an **EMetricSpace** (quotient separates points:
+equivalent_iff_advFullyDefined_eq_zero) — a strengthening over the pseudo
+instance at Phi.  MR16-clean; the fenced MR11 Metric/Behaviour.lean is a
+different object.
+
+Lanzenberger U1 additions (`RandomSystems/System/SingleQuery.lean`):
+`singleQueryDomain` (COINAGE), `DDS.singleQuery`, `singleQueryEquiv`;
+endpoints eq_of_qBounded_one_of_answer_eq ((Option Y)^n reading at
+QBounded-at-D) and singleQueryEquiv + card_singleQuerySubtype (the thesis's
+Y^n reading at total single-query domain; the thesis never sees refusal).
+
+R7'' additions (`RandomSystems/System/ParFace.lean`): `faceT` (typed
+interface set), `parF` (RECEIPT/PROVEN — rides `par`'s `fullyDefined_par`),
+`instParPhi` (the `Par Phi` registration), `copy` (RECEIPT/PROVEN —
+composite of `relabel` + `blockSet`, both PROVEN; law level =
+`blockLaw ∘ relabelLaw`, `copy_eq_blockLaw_relabelLaw`), `parUnit`,
+`parTuple`, `tupleOn`, `tuple`, `parTyped` (surface; binary at an explicit
+`ULift (Fin 2)` index list — `Finset.toList` order is unprovable).
+Endpoints: two-splitting canonicity `par_eq_of_separating` +
+`par_eq_parF_of_separating`; `parF_comm`/`parF_assoc` (separated faces);
+`parF_absorb` (H1's documented off-regime theorem, `ofPhi` scalar; audit
+D3: absorption CAN fire on copies when the right leg's face is EMPTY —
+disjointness does not exclude `support M ⊆ support L` at empty faces; the
+"unreachable from the surface" claim is corrected to "unreachable for
+nonempty-faced legs", side condition never stated in-tree);
+`face_copy_disjoint` + `parF_copy_comm` (surface separation by
+construction); metric: `edist_parF_left_le` — unconditional in the VARYING argument only
+(the fixed frame carries nonneg + weight ≤ 1 hypotheses; audit D2), `edist_parF_right_le`
+conditional, `edist_parF_parF_le` the four-point conditional form (the
+bare IsNonexpandingPar class stays unobtainable, G6.f); consumers:
+`contextInsensitive_par_left` (§2.2, with `Par Sigma` + `SMulParClass`
+carried as NAMED instance hypotheses, not hidden),
+`constructs_star_par_converterMonoidWithin` (G7 carrier home; lives in
+ParFace because StarFullyDefined is imported by it).
+
+Lanzenberger 2.31/2.32-at-the-quotient additions
+(`RandomSystems/System/BehaviourAttainment.lean`, NEW FILE — keeps
+Behaviour.lean's import surface): `Behaviour.HaveCommonDomainAndBounded`
+(COINAGE, ∃-form over toBehaviour fibres — the bundle constrains a
+presentation, not a behaviour, so it does not descend; conclusions
+choice-independent).  Endpoints: Thm 2.31 on classes
+(`Behaviour.classDistance_eq_advFullyDefined_of_commonDomain_bounded`),
+attainment as a MINIMUM over the fibre product, the EMetricSpace reading
+(`Behaviour.edist_eq_classDistance_of_commonDomain_bounded` — the quotient
+distance IS Δ on the slice), the Def-2.26 reading at representatives (strict Adv NOT DESCENDED —
+shape observation, not a non-descent theorem.  TAXONOMY (Marc-probed, twice):
+the theory NEVER READS the support — the thesis's Adv is indexed by
+dom(S), a single attribute Def 2.14 equips every PDS with and Def 2.17
+fixes classwide (supports differ freely, Example 2.16, and nothing
+notices).  OUR PDS deliberately carries NO domain attribute (R1/R2,
+partiality per-atom, no Def 2.14 constraint), so the strict Compatible
+had to be rendered per-atom over the SUPPORT — presentation data — and
+the signed carrier makes that data non-observable (canceling atoms).
+The descent question is entirely an artifact of that substitution; same
+root as the coding map's explicit D-bundle and unusable HasFixedDomain:
+wherever the thesis says "the domain of S", our carrier must say
+something per-presentation.  No counterexample produced; open micro-question whether
+HONEST classes are Adv-invariant (refusal-pattern law plausibly pins the
+domains present); priced at zero by R4′ — Adv⊥ reads nothing
+presentation-bound and descends), Thm 2.32 both forms.  `Behaviour.ind` unused; no new induction.  Figure 2.1 closure:
+`figure_2_1_single_query/_answers/_exhaustive/_exhaustive_dds`
+(Example216.lean; the figure's 0 is `false`).  U5: convention recorded at
+the bundle's docstring (q is a property of the SYSTEM; the tree has no
+environment-side budget object); residue = A8-blocked bridge + pin-3/L5
+construction half.  QBounded call-site claim now stale (SingleQuery.lean,
+Attainment.lean).
+
+Lanzenberger 2.16 artifact (`RandomSystems/System/Example216.lean`, worked
+example): zeroFn, oneFn, idFn, flipFn, atom, V, extremes, classPair;
+equivalent_V via successor transformations (α-independent — no behaviour
+function needed); statDist_V_zero_V_half = 1 with V_zero_ne_V_half;
+definition_2_28_printed_displays_disagree + corrected_display_agrees_at_V
+(the Def 2.27/2.28 erratum, kernel-checked in-tree).
+
+RS-DISCHARGE #77 additions (`RandomSystems/System/StarFullyDefined.lean`):
+`converterMonoidWithin A` — MR16 §3.4's admitted converter class AT ONE
+INTERFACE (coinage, flagged): the sub-class of `converterMonoidAt` generated
+by attachments with interface and requests inside `A`; blocks/par-frames
+deliberately excluded (⊣ is RightOutbound's separate blk; frames act outside
+the interface).  `blockConverterAt A` — §3.4's ⊣ as an element of the
+metric-facing Σ (coinage; NOT named blockAt — `Converter.blockAt` is an
+unrelated PARTIAL-ONLY object and check 1 matches bare names).  Key carrier
+theorem: `System.attachEngineFully_eq_blockSet_of_dom_eq_empty` — ⊣ IS an
+interface-local attachment (block A = attachAt A at the silent engine), so
+block inherits `attachAt_comm` with no new induction, and ⊣ lies inside the
+class at A.
+
+DDE, EnvValid, Total, PDE, Compatible, Stops, Transcript, trStep, trN, tr,
+trLaw, transcript, transcriptInputs, transcriptOutputs, answeredEntries,
+answeredQueries, Complete, total, trLawFullyDefined, advFullyDefined, Adv,
+maxEDist, nonexpandingConverters, absorb, answer, Distinguisher,
+distinguishers, Equivalent, verdict, sysAnswer, sysAnswers
+
+A7 generalization (2026-08-17): the block and par replays were the same
+machine, and are now ONE — `relayReplayStep, relayReplay, relayNeed,
+absorbRelay` (the re-simulation for any construction whose outer round costs at
+most one inner query), with `exists_absorb_blockSet`, `exists_absorb_par`,
+`exists_absorb_relabel` and `exists_absorb_ofTyped` derived from
+`exists_absorb_relay` at their own relay data.  The names `blockReplay*,
+blockNeed, absorbBlock, parReplay*, parNeed, absorbPar` are GONE, not renamed;
+the theorem statements they served are unchanged.
+
+A7 inclusion plumbing: decodeOption (decoding as a total function — the
+`Option` form of `decode`, one named term so every use site elaborates the same
+decidability instance), encodeEntry, encodeEnv (the encoding environment for
+the inward direction).
+
+B4-RESUME additions (the engine's re-simulation machinery, same genre one layer
+deeper — a round issues several inner queries, so it cannot be a relay):
+move, roundReplay, fullyReplayStep, fullyNeed, fullyReplay, absorbFully.
+`move` is the engine's move as a total function (general infrastructure,
+coinage, stated at the point of use as `answer` is).
+
+R4' additions (`ClassDistance.lean`, the second thesis presentation of the
+distance, first-class alongside `advFullyDefined`): equivalent (Lanzenberger
+Definition 2.17 over the CR18 total presentation — the domain clause is
+subsumed, refusals being observable answers) and classDistance (Definition
+2.28, `Δ(S,T)` = the infimum of `δ` over pairs of equivalent representatives).
+`equivalent` is not to be confused with `Equivalent` above, which is Jost's
+strict-test relation.
+
+## PARTIAL-ONLY algebra (no metric claims before A6-style migration)
+
+liftAt, liftAtRaw, attachEngine, attachEngineAt, tagAt, AttachState, eProj,
+eProjStep, lastTag, idEngine, cascade, cascadeAccess, cascadeAccessStep,
+cascadeConverter, cascadeLeftHistory, cascadeMiddle, cascadeRightHistory,
+cascadeViaConverter, combine, combineConverter, combineViaConverter, comp,
+compAt, compGo, connStep, attachAt, attachDefined, attachDrive, attachEntry,
+attachEntryD, attachEntryStep, attachFamily, attachHistory, attachOutput,
+attachRaw, attachResolve, attachStep, relabelAt, blockAt, monoid, act,
+connectionAct, instMulAction, instMulActionConnection, instSMul, moveOf,
+drive, driveFrom, driveOuter, apply, applyRaw, applyRawAt, DDC, IsDDC,
+IsDDCEventually, idDDC, blkDDC, toDDC, toDDCRaw, toNu, fromCOut, CIn, COut,
+ConverterImpl, Protocol, ProtocolFn, engine, engineRaw, run, state, step,
+stepOutput, botReactive, BotFree, JunkFree, ParsesTo, ParsesToAux,
+AnswersEventually, AnswersInY, AnswersWithin, AnswersWithinAt,
+AnswersWithinDepth, TraceEquiv, Rel, normalize, pair, replay, resolve,
+queryLimit, queryLimitApply, queryLimitFn, queryLimitOutputFrom,
+queryLimitTrace, growBudget, answerGrowthFn, roundGrowthFn, roundsInner,
+roundsInputs, roundsMiddle, roundsOutputs, roundsTrace, restrictionFn,
+simpleFn, simpleFnJunk, outputOne, Filter
+
+## PRIMITIVE (carrier plumbing; no receipt applicable)
+
+DRIFT-REPAIR leg (a) additions (the ownership-dispatch plumbing and the
+interface-indexed converter class; `RandomSystems/System/AttachEngineFully.lean`):
+RequestsWithin, attachEngineFullyRound, attachEngineFullyDrive,
+attachEngineFullyRaw, ReachedAt.  `RequestsWithin` is the engine-side clause
+owed by an interface-local attachment — the engine's requests carry addresses
+in `i` — orthogonal to `InnerTotal` / `AnswersWithinBudget` /
+`AnswersWithinUniformBudget`, which say how the engine reacts, not where it
+reaches; it is the clause leg (d)'s commutation consumes.
+`attachEngineFullyRound` is the dispatch itself (a query in `i` is a CR18
+Def 3.9 round against `R⊥`, a query outside `i` is the resource's own step,
+undefined exactly where the resource declines); `attachEngineFullyDrive` is the
+outer iteration and `attachEngineFullyRaw` its last-answer projection.
+`ReachedAt` is `ReachedState` made `i`-aware, and stays a relation for the same
+reason `ReachedState` is one: an owned round is a least fixed point, so no
+total scan computes the reached state.
+
+DRIFT-REPAIR leg (b) additions (the interface-indexed re-simulation machinery,
+`RandomSystems/System/AttachEngineFully.lean`): attachEngineFullyReplayStep,
+attachEngineFullyNeed, attachEngineFullyReplay, absorbAttachEngineFully.  The
+B4-RESUME block one dispatch deeper: `attachEngineFullyReplayStep` routes an
+owned outer query into `roundReplay` (an owned round IS the same engine round,
+so A38 is reused verbatim) and a foreign one into the relay genre — one inner
+answer, returned unchanged, which is what `attachEngineFully_transparent` buys;
+`attachEngineFullyNeed` reports the round replay's request inside `i` and the
+foreign query itself outside it; `attachEngineFullyReplay` is the iterate and
+`absorbAttachEngineFully` the absorbed environment, which depends on the outer
+environment, the length, the interface, the engine and the budget — never on
+the resource.
+
+A6 additions (label plumbing and the converter-class predicates; not
+endomorphisms, so no receipt applies): ofEngine, unlabel, ReachedState,
+InnerTotal, AnswersWithinBudget, AnswersWithinUniformBudget (B4-RESUME: the
+same clause with the bound uniform over histories, which is how CR18 Def 3.8
+states it and what absorption needs).  `InnerTotal` is a flagged REPLACEMENT for
+CR18 Def 3.8's input-alphabet clause (`Converter.AnswersInY`, which demands the
+opposite and is the B4 pathology in the definition); `AnswersWithinBudget` is
+Def 3.8's finite-bound clause in well-founded form.
+
+DDS, Raw, Valid, PDS, Phi, Uni, Resource, TypedAt, typed, dom, output,
+toPFun, support, encode, decode, decodeList, keptPrefix, fullyDefined, ofDDS,
+functionEvaluator, historyEvaluator, ioTranscript, QBounded, QExtensible,
+PrefixClosed, inputInterface, interfaceAlphabet, parAddr, parAlphabet,
+parAns, parLaw, paperAlphabet, paper1, paper2, paper3, paper4
+
+# MR16 OBLIGATION MATRIX
+
+**LAYERING RULE (Marc, 2026-08-17).** The work order follows MauRen16's own
+architecture: the ABSTRACT theory ((Phi, Sigma, d) axioms and the
+specification calculus proven from them) completes FIRST; RS-DISCHARGE
+receipts (the Random Systems model verifying each axiom) follow.  Every gap
+below is tagged ABSTRACT or RS-DISCHARGE; no RS-discharge leg is dispatched
+while an ABSTRACT gap of the same section is open.
+
+**Purpose.**  Certify that the *generic core* of MauRen16 — the crypto algebra
+that Liu-Zhang, Jost and Lanzenberger layers will all depend on — is formalized
+abstractly and instantiable at the RandomSystems level.  Applications are out
+of scope.  This section turns "is MR16 done?" from an assertion into a
+checkable artifact.
+
+**Rule (binding).**  *Every* GENERIC-CORE row must reach
+**DONE-ABSTRACT+INSTANTIATED** before the "MR16 basics are done" claim may be
+made anywhere in this repository.  APPLICATION rows are explicitly out of
+scope and are never a reason to hold the claim.  A row whose only home is a
+module behind the provenance fence below counts as a **gap**, not as done.
+
+**Status vocabulary.**
+
+| status | meaning |
+|---|---|
+| `D+I` | DONE-ABSTRACT+INSTANTIATED — an abstract declaration *and* a RandomSystems instantiation, both named |
+| `DA` | DONE-ABSTRACT-ONLY — the abstract statement exists and is proved; no RandomSystems carrier instantiates it |
+| `PARTIAL` | present but incomplete; the row says exactly what is missing |
+| `MISSING` | no declaration anywhere |
+| `FENCE-ONLY` | the only home is a fenced module — a gap by the rule above |
+| `PROSE` | modeling discipline with no formal content; no obligation |
+
+**The two RandomSystems carriers.**  The MR16 obligations are split across two
+distinct carriers, and this split is itself the largest finding (gap G5).
+
+* **RS-A** — `Φ := PDS (P × X) Y`, `Σ := FreeMonoid (P × Converter.DDC X Y X Y)`
+  acting by `Converter.attachFamily`.  Home of §3.3, §3.4 and §7.  Carries
+  `PDS.maxEDist` but **no** `PseudoEMetricSpace` instance.  The receipts file
+  `RandomSystemsReceipts.lean` is stated here, and its closing FRONTIER comment
+  is an in-tree admission of the missing metric joins.
+* **RS-B** — `Φ := Phi.{u} = PDS Uni Uni`, `Σ := converterMonoidAt` — the
+  interface-indexed attachments `attachAt i E` (InnerTotal + CR18 Def 3.8
+  uniform bound) ∪ blocks ∪ both parallel frames.  `converterMonoidFullyBudgeted`
+  is the whole-face sub-closure `i = Set.univ`, still valid
+  (`converterMonoidFullyBudgeted_le_converterMonoidAt`), no longer the Σ new
+  statements name
+  (a `Submonoid (Function.End Phi)`).  Home of the metric: `edist` = the
+  symmetrization of `PDS.advFullyDefined`, MauRen16 Definition 2, and the
+  ε-relaxation calculus.  Carries **none** of §3.4's relaxations.
+* **RS-A′** — `Phi` under the older `attach` / `connectPhi` action
+  (`converterMonoid`).  Classified PARTIAL-ONLY above (the B4 witness lives
+  inside it), so its receipts may not be consumed by metric work.
+
+**Enumeration.**  MauRen16 (TCC 2016-B, pp. 1–22) read visually in full.
+**69 items** enumerated: **48 GENERIC-CORE**, **21 APPLICATION**.
+GENERIC-CORE status tally (2026-08-17, after G8/G12): **28 `D+I`**, 8 `DA`,
+9 `PARTIAL`, 1 `MISSING`, 1 `FENCE-ONLY`, 1 `PROSE`.
+**28 of 48 — the "basics done" claim was not yet supported (superseded — see MATRIX CENSUS).**
+
+## GENERIC-CORE rows
+
+| # | item | p. | abstract home | RandomSystems instantiation | status |
+|---|---|---|---|---|---|
+| 1 | §2.1 construction `𝓡 —γ→ 𝓢` | 4 | `Constructs` (`Specification/Basic.lean`), `HasReduction` instance | RS-A `RandomSystemsReceipts.lean` §2; RS-B via `constructs_singleton_epsilonRelaxation_iff` | `D+I` |
+| 2 | §2.1 constructor set `Γ`, possibly cost-restricted | `Constructible` (Specification/ConstructorClass.lean); `Unconstructible` = its negation | RS-B ParFace.lean §ConstructorSet (d6f07c3), TWO readings: Γ = the metric-facing Σ in Function.End Phi (generic entry constructible_of_constructs_converterMonoidAt; constructible_attachAt; fn.6 closure constructible_trans_attachAt; §4.2 constructible_star_epsilonRelaxation_of_simulator_at; constructible_parF_left; unconstructible_converterMonoidAt_iff puts rows 2/3 over ONE Γ) and Γ = converterMonoidWithin B inside Σ (Lemma 3 constructible_star_converterMonoidWithin; Cor 1.1 constructible_epsilonRelaxation_trans_converterMonoidWithin; mono). HONEST: the ε-calculus exists only in the subtype reading — IsNonexpandingSMul is FALSE at Function.End Phi | — | `D+I` (2026-08-18, d6f07c3) |
+| 3 | §2.1 non-constructibility `𝓡 ↛ 𝓢` | 4 | `Unconstructible` (`Specification/Outbound.lean`) | RS-A `RandomSystemsReceipts.lean` §4 | `D+I` |
+| 4 | §2.1 tuple specification `[𝓡₁,𝓡₂,𝓡₃]` | 4 | `Par` class (`Refinement/Basic.lean`), `instance Par (Specification Φ)` | `RandomSystems.par`, `parLaw`, `par_comm`, `par_assoc` exist — but **no `Par Phi` instance is registered** | `D+I` (rescore 2026-08-18, audit-verified: instParPhi + parTuple/PDS.tuple/parTyped (R7'', cad5da1..b0a6265)) |
+| 5 | §2.2 composability `𝓡—γ→𝓢 ∧ 𝓢—γ′→𝓣 ⟹ 𝓡—γ′∘γ→𝓣` | 4 | `Constructs.trans`, `IsSeriallyComposable` instance | RS-A `RandomSystemsReceipts.lean` §2 | `D+I` |
+| 6 | §2.2 context-insensitivity `[𝓤,𝓡,𝓥] —γ→ [𝓤,𝓢,𝓥]` (+ fn. 1 addressing) | 5 | `IsContextInsensitive` instance, `Constructs.par_left`, `red_one_par` | `attachEngine_par` (`Par.lean`) is the concrete content, not presented as `IsContextInsensitive`; needs row 4 | `D+I` (rescore 2026-08-18, audit-verified: constructs_parF_left/constructs_parF + smul_parF (G-6, 5471084)) |
+| 7 | §2.3 specification = subset of a universe `Φ` | 5 | `Specification Φ := Set Φ` | `Phi` (`Phi.lean`), `fullyDefinedSpec : Set Phi` | `D+I` |
+| 8 | §2.3 ε-ball at a point `Rᵋ = {R′ \| R′ ≈ᵋ R}` | 5 | `Relaxation.epsilonRelaxation`, `WithinEDistance` | RS-B `instance : PseudoEMetricSpace Phi`, `edist_def` | `D+I` |
+| 9 | §2.3 ε-ball at a specification `𝓡ᵋ = ⋃_{R∈𝓡} Rᵋ` | 5 | `epsilonRelaxation` (built by `ofPointwise`, the union lift), `mem_epsilonRelaxation_iff` | RS-B, same instance | `D+I` |
+| 10 | §2.3 monotonicity `𝓡′⊆𝓡, 𝓢⊆𝓢′ ⟹ 𝓡′—γ→𝓢′` | 5 | `Constructs.mono` | fires at both carriers by instance | `D+I` |
+| 11 | §2.3 impossibility duality `𝓡⊆𝓡′, 𝓢′⊆𝓢 ⟹ 𝓡′↛𝓢′` | 6 | `Unconstructible.anti` | RS-A `RandomSystemsReceipts.lean` §4 | `D+I` |
+| 12 | §3.1 multi-interface resources; two-interface (Alice left / Eve right) | 6 | `Specification/Interfaces.lean` (`attachedWithin`), `Outbound.lean`'s `eL`/`eR` hom pair | interface address in the query: `P × X` (RS-A), tags on `Uni` (RS-B) | `D+I` |
+| 13 | §3.1 metric = optimal distinguishing advantage of a class `𝓓` (informal; the paper defers it) | 6 | MR16 track has only `PseudoEMetricSpace`; the class-indexed object `DistinguisherClass` / `edistD` is fenced | RS-A `PDS.maxEDist`; RS-B `advFullyDefined` / `edist` — **two different distances** | `PARTIAL` (gaps G5, G10) |
+| 17 | §3.3 converter set `Σ`, `αⁱ : Φ → Φ` | 7 | `Monoid Sigma` + `MulAction Sigma Φ`, `mulActionOfAttach`, `attachedWithin` | RS-A `Converter.attachFamily` action; RS-B `converterMonoidFullyBudgeted` | `D+I` |
+| 18 | §3.3 `(β∘α)ⁱR = βⁱ(αⁱR)` | 7 | `attach_mul`, `mul_smul` | action laws by construction at both carriers (`Function.End` composition at RS-B) | `D+I` |
+| 19 | §3.3 `id ∈ Σ`, `id∘α = α∘id = α` | 7 | `attach_one`, `one_smul` | RS-A `Converter.attachFamily_idDDC_smul`; RS-B `idEngineFully`, `connectFully_idEngineFully`, `connectPhi_id` | `D+I` |
+| 20 | §3.3 `Σ∘Σ = Σ` (closure; equality because `id ∈ Σ`) | 8 | `Submonoid Sigma`, `supportedOn`, `nonexpandingEnd` | `converterMonoid`, `converterMonoidFully`, `converterMonoidFullyBudgeted`, `Converter.monoid` — all `Submonoid` | `D+I` |
+| 21 | §3.3 two-interface notation `αR`, `Rβ` | 8 | `eL : SigmaL →* Sigma`, `eR : SigmaR →* Sigma` (`Outbound.lean`) | RS-A `attachedWithin e Z₁` / `attachedWithin e Z₂` | `D+I` |
+| 22 | **§3.3 commutation `(αR)β = α(Rβ)`** | 8 | `OrderInvariant`, `PairwiseOrderInvariant`, `orderInvariant_attachedWithin`, `actCommute_of_disjoint` | RS-A `Converter.pairwiseOrderInvariant_attach`, `Converter.orderInvariant_attach`; RS-A′ `ConnectPhi.pairwiseOrderInvariant_attach`, `orderInvariant_attach` — **no receipt at all for `attachFully` / `converterMonoidFullyBudgeted`**; the interface-local family it needs is supplied by the ruled `attachAt` primitive, whose row list and legs are the `DRIFT-REPAIR` section below (the refuted `relayExcept` design is retained there as row C22) | `D+I` (leg d: `attachEngineFully_comm`, `attachAt_comm`/`attachAt_actCommute`, `pairwiseOrderInvariant_attachAt`, `orderInvariant_attachAt`, inside Σ via `attachedWithin_attachAt_le_converterMonoidAt`) |
+| 23 | §3.3 `𝓡 ⊆ Φ`; singleton `{R}` | 8 | `Specification`, `⟪R⟫`, `constructs_singleton_iff` | RS-B uses the singleton form throughout `MetricFullyDefined.lean` | `D+I` |
+| 24 | §3.3 `α𝓡 = {αR \| R∈𝓡}`, `𝓡β`, `α𝓡β` | 8 | pointwise `•` on `Set Φ` (mathlib `Pointwise`) | consumed at both carriers | `D+I` |
+| 25 | §3.4 `𝓡* := 𝓡Σ` | 8 | `Relaxation.star` (`Algebra/Star.lean`), `mem_star_iff`, `star_mono_submonoid` | **none** — every use site is abstract | `D+I` (rescore 2026-08-18, audit-verified: converterMonoidWithin + mem_star_ iff (#77, f63c4ed)) |
+| 26 | §3.4 **eq. (1)** `𝓡 ⊆ 𝓡* = (𝓡*)*` | 8 | `Relaxation.star`'s `le_toFun` field; `star_idem` | none | `D+I` (rescore 2026-08-18, audit-verified: subset_star_/star_idem_converterMonoidWithin (#77)) |
+| 27 | §3.4 blocking converter `⊣`; `R⊣` | 8 | `blk : SigmaR`, `blocked` (`Outbound.lean`); `blk` parameter in `Algebra/Star.lean` | RS-A `Converter.blkDDC`, `blkDDC_mem_attachedWithin`; RS-B `block`, `blockSet`, `blockLaw`, `block_mem_converterMonoidFullyBudgeted`, `block_mem_nonexpandingConverters` | `D+I` |
+| 28 | §3.4 right-outbound `R*⊣ = R⊣` | 8 | `RightOutbound` — **two renderings**: `Outbound.lean` (`eL`/`eR`) and `Relaxation.RightOutbound` (homogeneous) | RS-A `Converter.rightOutbound_attach` (a *theorem* there: every resource is right-outbound at single-interface blocking); RS-B none | `D+I` (rescore 2026-08-18, audit-verified: rightOutbound_blockConverterAt + rightOutbound_subtype (#77, ff66d4d)) |
+| 29 | §3.4 `𝓡⟦ := {S \| S right-outbound, S⊣ ∈ 𝓡⊣}` | 9 | `outboundCompatible` (`Outbound.lean`) and `Relaxation.outboundHull` (`Star.lean`) — duplicate renderings | RS-A `RandomSystemsReceipts.lean` §4; RS-B none | `D+I` (rescore 2026-08-18, audit-verified: mem_outboundHull_blockConverterAt_iff, both renderings (#77)) |
+| 30 | §3.4 **eq. (2)** `𝓡 ⊆ 𝓡⟦ = (𝓡⟦)⟦` | 9 | equality: `outboundCompatible_idem`, `outboundHull_idem`.  Containment: `subset_outboundCompatible_iff`, `subset_outboundHull` — **with the tree's correction that it is NOT unconditional**, and the counterexample `outboundHull_eq_empty_of_top` | only the `RightOutbound` premise, at RS-A | `D+I` (rescore 2026-08-18, audit-verified: subset_outboundHull_blockConverterAt UNCONDITIONAL here (#77)) |
+| 31 | §3.5 everything relevant is modeled as part of the resource | 9 | recorded in `THEORY.md` and module docstrings; no declaration | — | `PROSE` |
+| 32 | §3.5 `Σ` as a parameter (models 1–4: IT / memory-bounded / connect-only / poly-time) | 9–10 | `Sigma` is a type parameter; `Submonoid Sigma` and `supportedOn` select a class | model 1 (IT) is what both carriers instantiate; models 2–4 unmodeled | `PARTIAL` (gap G9) |
+| 33 | §4.1 **Definition 1** `𝓡 —π→ 𝓢 :⟺ π𝓡 ⊆ 𝓢` | 11 | `Constructs`, `constructs_iff` | RS-A and RS-B (see row 1) | `D+I` |
+| 34 | §4.1 **Lemma 1** composability | 11 | `Constructs.trans`, `IsSeriallyComposable` instance | RS-A `RandomSystemsReceipts.lean` §2 | `D+I` |
+| 35 | §4.1 **Definition 2** non-expanding, *both* clauses | 11 | `IsNonexpandingSMul`, `edist_smul_le`, `nonexpandingEnd` | RS-B `nonexpandingConverters_le_nonexpandingEnd`, `edist_apply_le_of_mem_nonexpandingConverters`, `edist_apply_le_of_mem_converterMonoidFullyBudgeted`, two `IsNonexpandingSMul` instances; RS-A `PDS.maxEDist_applyLaw_le` (deterministic application only) | `D+I` — β-clause verdict below |
+| 36 | §4.1 **Lemma 2** non-expanding ⟹ `𝓡—π→𝓢 ⟹ 𝓡ᵋ—π→𝓢ᵋ` | 11 | `Relaxation.epsilonRelaxation_compatible` with `compatible_iff` (together exactly Lemma 2) | RS-B: fires by the registered `IsNonexpandingSMul` instance and is consumed by `constructs_epsilonRelaxation_trans_phi` / `_fully`; never separately stated at `Phi` | `D+I` |
+| 37 | §4.1 **Lemma 3** `𝓡—π→𝓢 ⟹ 𝓡*—π→𝓢*` (paper gives no proof) | 11 | `Relaxation.constructs_star` — proved | **none**; needs `star` at Φ (row 25) and the commutation premise (row 22) | `D+I` (rescore 2026-08-18, audit-verified: constructs_star_converterMonoidWithin (#77)) |
+| 38 | §4.1 **Lemma 4** `𝓡—π→𝓢 ⟹ 𝓡⟦—π→𝓢⟦` (paper gives no proof) | 11 | `Constructs.outboundCompatible` and `Relaxation.constructs_outboundHull` — proved | RS-A `RandomSystemsReceipts.lean` §4, premise discharged by `orderInvariant_attachedWithin`; RS-B none | `D+I` (at RS-A only — gap G4) |
+| 39 | §4.2 **eq. (3)** `πR ≈ᵋ Sσ` | 12 | `Indifferentiable`; the `edist (π • R) (σ • S) ≤ ε` premise of `constructs_of_simulator` | none | `D+I` (rescore 2026-08-18, audit-verified: indifferentiable_iff_at (#77, 01f64e9)) |
+| 40 | §4.2 **Lemma 5** `∃σ∈Σ: πR ≈ᵋ Sσ ⟹ R —π→ (S*)ᵋ` | 12 | `constructs_of_simulator`, `Indifferentiable.construct`, `Relaxation.star_construct_eps` | **none** — `RandomSystemsReceipts.lean`'s FRONTIER comment says so in-tree | `D+I` (rescore 2026-08-18, audit-verified: constructs_star_epsilonRelaxation_of_simulator_at (#77)) |
+| 41 | §4.2 remark `πRβ ≈ᵋ Sσβ` (the β-clause's load-bearing use) | 12 | `edist_mul_smul_le_of_edist_le` (`Metric/Nonexpansion.lean`, beside Definition 2) — right attachment is multiplication in the one monoid, so `IsNonexpandingSMul` is the whole hypothesis | RS-B `edist_mul_smul_le_of_edist_le_fully` at `converterMonoidFullyBudgeted`, by the registered `IsNonexpandingSMul` instance | `D+I` (G12 closed) |
+| 42 | §4.2 indifferentiability as a construction type: `T ⊆ (S*)ᵋ`; `T = πR ⟹ R—π→(S*)ᵋ` | 12 | `Indifferentiable`, `Indifferentiable.construct`, `Indifferentiable.trans` | none (`Applications/Sponge.lean` consumes the pattern but is itself abstract) | `D+I` (rescore 2026-08-18, audit-verified: indifferentiable_construct_at + constructs_star_epsilonRelaxation_trans_at (#77)) |
+| 43 | §4.2 simulators are a proof device, not part of the definition | 12 | structural: `Constructs` carries no σ; recorded at `Specification/Basic.lean` and `Algebra/Star.lean` | holds at both carriers by construction | `D+I` |
+| 44 | §4.3 a converter absorbed into the distinguisher ⟹ the metric is non-expanding | 12 | the justification of `IsNonexpandingSMul`; no separate abstract declaration | RS-B `RandomSystems/System/Absorb.lean` entire: `absorb`, `exists_absorb_relay`, `exists_absorb_connectFully`, `exists_absorb_blockSet`, `exists_absorb_par`, `exists_absorb_ofTyped`, `exists_absorb_relabel`, `PDS.advFullyDefined_fTransform_le` | `D+I` |
+| 45 | §4.3 `πR = Sβ`, `β ∉ Σ` ⟹ `πR = [S,β̄]σ` and `R —π→ ([S,β̄])*` | 13 | — | — | `D+I` (rescore 2026-08-18, audit-verified: constructs_star_par_converterMonoidWithin (ParFace, R7''); abstract home constructs_star_par_of_smul_eq (Algebra/Star.lean)) |
+| 48 | §5 **fn. 9** `d(R,S) = sup_{D∈𝓓} Δ^D(R,S)` | 13 | class-indexed suprema live only in `Metric/Distinguisher.lean` (`edistD`), which is fenced | RS-A `PDS.maxEDist`; RS-B `advFullyDefined` / `edist` | `FENCE-ONLY` abstractly (gap G10) |
+| 61 | §6 unnumbered, inside Theorem 2's proof: `(𝓡ᵋ)* ⊆ (𝓡*)ᵋ` | 18 | `Relaxation.star_epsilonRelaxation_subset_epsilonRelaxation_star` (`Algebra/Star.lean`) — from `IsNonexpandingSMul` alone, as the matrix predicted; the reverse inclusion is not claimed | none — needs `star` at Φ (row 25) | `D+I` (rescore 2026-08-18, audit-verified: star_epsilonRelaxation_subset_epsilonRelaxation_star_converterMonoidWithin (#77)) |
+| 62 | §7 left interface = one sub-interface per honest party; combined converter = list of converters | 19 | `attachedWithin e Z`, `patternAttach`, `supportedOn` | RS-A `Converter.attachFamily` over `P`; RS-A′ at `Phi` | `D+I` |
+| 63 | §7 protocol = tuple of converters, one per potentially honest party | 19 | the tuple monoid `∀ i, Γ i`; `patternAttach P π` | RS-A `attachedWithin` products | `D+I` |
+| 64 | §7 grouping: honest interfaces left, dishonest right; one statement per dishonest set | 19 | `orderInvariant_attachedWithin`, `actCommute_of_disjoint` | RS-A `RandomSystemsReceipts.lean` §3; RS-A′ `ConnectPhi.orderInvariant_attach` | `D+I` |
+| 65 | §8 indifferentiability restated: special type `S*` with `S` right-outbound | 19 | same as row 42 | none | `D+I` (rescore 2026-08-18, audit-verified: constructs_star_epsilonRelaxation_trans_at (#77)) |
+
+**Definition 2, the β-side — verdict.**  The tree has **no distinct β-side
+statement**, and on the carriers it actually uses it does not need one.
+`IsNonexpandingSMul` quantifies over *every* `c : Sigma`, and in both the
+abstract interface-indexed model and the RS instantiations `αR` and `Rβ` are
+actions of elements of the *same* monoid (`Pi.mulSingle` at a left- resp.
+right-face interface; a tag-addressed `attachFully` at RS-B).  So the β-clause
+is the same universally quantified statement, not a second axiom — row 35 is
+genuinely `D+I`.  The residue is real but narrow: `Specification/Outbound.lean`
+is the one place where left and right attachment are *distinct* monoids
+(`eL`, `eR`), and that module imports no metric at all, so
+`d(Rβ, Sβ) ≤ d(R, S)` is nowhere stated in the two-sided presentation and the
+two presentations are not connected (gap G11).  Recorded at
+`Metric/Nonexpansion.lean` by the M3 pass.
+
+## APPLICATION rows — out of scope
+
+Enumerated for completeness; no obligation follows from any of them.
+
+| # | item | p. |
+|---|---|---|
+| 14–16 | §3.2 URF resource; the five example specifications 1–5; fixed- and arbitrary-input-length random oracles | 6–7 |
+| 46–47 | §5 `PRᵏ` public randomness; `RO^{m→n}_{[q,q′]}` random oracle | 13 |
+| 49–51 | §5 **Lemma 6** `PRᵏ ↛ PR^{k+1}⟦ᵋ`; **eq. (4)**; distinguisher `D₁` | 14 |
+| 52–53 | §5 **Corollary 1**; **eqs. (5), (6)** | 15 |
+| 54–55 | §5 **Theorem 1**; **eq. (7)**; distinguisher `D₂` | 16 |
+| 56–60 | §6 **Theorem 2** and **eq. (8)**; **Lemma 7**; the simulator σ algorithm; **eqs. (9), (10)** | 17–18 |
+| 66–69 | Appendix `H_min(X\|Y)`; **eq. (11)** chain rule; **Proposition 1**; **Corollary 2** | 20 |
+
+## GAP LIST
+
+Ordered by dependency: G1 is the root; G2 and G3 chain off it.
+
+**G1 — §3.3's commutation `(αR)β = α(Rβ)` is not proved for the
+metric-facing Σ.**  `converterMonoidFullyBudgeted`, built from `attachFully`,
+has no `ActCommute` / `OrderInvariant` / `PairwiseOrderInvariant` receipt of
+any kind.  The only Φ-level commutation receipts
+(`ConnectPhi.pairwiseOrderInvariant_attach`, `ConnectPhi.orderInvariant_attach`)
+are stated for the older `attach` / `connectPhi` action, which the carrier
+ledger above classifies PARTIAL-ONLY because the B4 witness lives inside it —
+so metric work may not consume them.  Row 22.  *Everything below in G2, G3 and
+G4 consumes this.*
+
+**G1 — SUPERSEDED BY THE DRIFT REPAIR (2026-08-17).**  The gap is not a missing
+receipt over `converterMonoidFullyBudgeted`; it is that the migrated primitive
+is the wrong one.  MauRen16 §3.3's `αⁱ` is interface-indexed, the tree's is
+whole-face application, and the ruled repair replaces the primitive rather than
+adding a receipt on top of it.  **See `# DRIFT-REPAIR: attachment primitive
+(whole-face → attachAt)` below** for the audited closure, the classified row
+list, the six repair legs and the BLOCKING RULE.  G1 closes when leg (d) —
+rows C9, C12, C20, C21 there — closes; the refuted relay design recorded in the
+next paragraph is retained only as the record of why (row C22, class RETIRE).
+
+**[RETIRED — record-of-why; G1 CLOSED by leg (d), see the leg-(d) closures
+paragraph.  The witnesses below refute the RELAY design only; the delivered
+ownership-dispatch design is immune by construction.]**
+
+**G1 — DESIGN FINDING, 2026-08-17 (pen-and-paper, two explicit witnesses; not
+machine-checked, and deliberately not implemented).**  *Historical: this is the
+refuted `relayExcept` design, superseded by the drift-repair section below.*
+The receipt needs an
+interface-local attachment family — `relayExcept i E`, serving outer queries
+in `i` through `E` and relaying every other outer query verbatim, with
+`attachFullyAt i E := attachFully (relayExcept i E)` — and the obvious such
+engine **does not commute**, on either of its two faces.
+
+A relayed round has already issued its request when the completion's answer
+`o : Option Uni` comes back, so it cannot refuse (that is the B4 pathology; it
+would cost `InnerTotal` and with it `exists_absorb_connectFully`).  It must
+therefore render `⊥` as a designated `botToken : Uni` — and *rendering on one
+side only* is what breaks the equation.  At `i = {a}`, `j = {b}`, `a ≠ b`:
+
+* *inner face.*  `E` requests `a` and answers `c₁` on `some _`, `c₀` on
+  `none`; `s` refuses `a`.  Attached outermost, `E` is driven against
+  `connectFully (relayExcept j F) s`, whose relay round at `a ∉ j` answers
+  `botToken` and never refuses — `E` sees `some botToken` and the composite
+  answers `c₁`.  Attached innermost, `E` queries `s` directly, sees `none`,
+  and the composite answers `c₀`.
+* *outer face.*  `E` refuses the outer query `a`.  Attached outermost the
+  composite refuses (observable `⊥`, query deleted by CR18 Def 3.3); attached
+  innermost that refusal is read by a relay round of `relayExcept j F` and
+  rendered `botToken` — a defined answer, query kept.
+
+Neither is repairable by a hypothesis on `E`, `F` and `botToken`: the first
+turns on whether `s` refuses, and row 22 is an equation of *endomorphisms*, so
+it must hold at every `s`.
+
+**The repair, and the ruling it needs.**  The composite's `⊥` and the relayed
+inner `⊥` must be *identified*: (1) the engine feeds `E` the rendered answer
+`some (ρ o)`, `ρ (some v) = v`, `ρ none = botToken` — forced, because
+transparency needs `ρ (some (ρ o)) = ρ o`, which no injective rendering
+satisfies, so the identification is unavoidable and this is the smallest one;
+and (2) *either* the engine is total on outer queries, answering `botToken`
+where `E` refuses (unconditional commutation; `attachFullyAt i E` then never
+refuses and its image lies in the total subcarrier), *or* refusals are kept
+and row 22 carries the hypothesis that `E` and `F` never refuse an outer query
+(a converter-class restriction, faithful to the paper, whose converters always
+respond).  Under (1)+(2)-total the receipts are cheap: `InnerTotal` is free
+(the engine is total), the budget is `max K 1` (relay rounds cost one request,
+`E`'s rounds keep `E`'s bound), and membership in
+`converterMonoidFullyBudgeted` needs only `AnswersWithinUniformBudget E`.
+Both readings change what an attachment *is* on this carrier, so the family is
+not defined until the ruling is made.  Full statement of the finding at the
+closing section of `RandomSystems/System/ConnectFullyDefined.lean`.
+
+**G2 — `𝓡* = 𝓡Σ` is not instantiated on any RandomSystems carrier.**
+`Relaxation.star` fires only at an abstract `Φ`; the in-tree consumers
+(`Multiparty/Basic.lean`'s `∗Z`, `Specification/Filtered.lean`,
+`Applications/Sponge.lean`) are all themselves abstract.  This blocks eq. (1)
+(row 26) and Lemma 3 (row 37) at the carrier.  Depends on G1 for
+`constructs_star`'s commutation premise.
+
+**G3 — Lemma 5, eq. (3) and `Indifferentiable` are not instantiated on any
+RandomSystems carrier.**  `RandomSystemsReceipts.lean`'s closing FRONTIER
+comment names this exactly and correctly.  Rows 39, 40, 42, 65.  Depends on
+G2 (needs `star` at Φ) and G1.
+
+**G4 — §3.4's `𝓡⟦`, right-outboundness and Lemma 4 are instantiated only on
+the metric-free carrier RS-A.**  Nothing states `RightOutbound`,
+`outboundCompatible` or `Constructs.outboundCompatible` at `Phi`, which is
+where the metric lives.  Rows 28, 29, 30, 38.
+
+**G5 — no single RandomSystems carrier carries the whole MR16 core.**  RS-A
+has §3.3, §3.4, §7 and Lemma 4 but no `PseudoEMetricSpace`; RS-B has the
+metric, Definition 2 and Lemmas 1–2 but none of §3.4's relaxations and no
+commutation receipt.  The two carriers do not even agree on the distance —
+RS-A's is `PDS.maxEDist`, RS-B's is the symmetrization of
+`PDS.advFullyDefined`.  Until one carrier carries all of §§2–4, "the MR16
+basics are instantiated" is true only of a union that no theorem ranges over.
+
+**G6 — `Par Phi` is not registered**, so MR16 §2.1's `[𝓡₁,…,𝓡ₙ]` and §2.2's
+context-insensitivity never reach the metric carrier, and the parallel half of
+JM20 Corollary 1 stays unavailable.  `RandomSystems.par` and its laws
+(`par_comm`, `par_assoc`) exist and are unconditional; the blocker is the
+addressing ruling — `par` is indexed by a splitting `c : Set Uni`, and electing
+one splitting to be *the* parallel composition is an arbitrary choice of
+addressing.  Recorded at `MetricFullyDefined.lean` under "Deferred".  Rows 4, 6.
+
+**G7 — MR16 §4.3 p. 13's explicit-simulation-resource rephrasing is missing.**
+`πR = Sβ` with `β ∉ Σ` becomes `πR = [S, β̄]σ` for the trivial connecting
+converter σ, hence `R —π→ ([S, β̄])*`, "which makes the computational resource
+required for the simulation explicit".  No declaration anywhere.  Row 45.
+
+**G8 — CLOSED (abstractly), 2026-08-17.**  `(𝓡ᵋ)* ⊆ (𝓡*)ᵋ`, the generic ε/∗
+interchange MauRen16 uses unnumbered inside Theorem 2's proof (p. 18), is
+`Relaxation.star_epsilonRelaxation_subset_epsilonRelaxation_star`.  The
+matrix's prediction held: `IsNonexpandingSMul` alone is the hypothesis — `σ`
+moves two points by at most their distance — with no commutation and no
+property of `H`.  The reverse inclusion is deliberately not claimed (a point
+within `ε` of `σr` need not be `σ` of anything).  Row 61 is `DA`, not `D+I`:
+its carrier home waits on G2, which is what gives `star` a Φ-level meaning.
+
+**G9 — the admitted-constructor set `Γ` has no possibility-direction
+rendering.**  `Unconstructible` takes `Γ : Set Sigma`, but `Constructs`
+quantifies over all of `Sigma`, so §2.1's "`Γ`, possibly restricted in terms of
+efficiency or implementation cost" is unmodeled on the positive side.  §3.5's
+models 2–4 (memory-bounded, connect-only, efficiently implementable) are
+likewise unmodeled; only model 1 (information-theoretic) is instantiated.
+Rows 2, 32.
+
+**G10 — fn. 9's `d = sup_{D∈𝓓} Δ^D` has no MR16-track abstract home.**  The
+class-indexed distance is `DistinguisherClass.edistD`, which sits behind the
+provenance fence on MauRen11 Definition 15/16 provenance; the MR16 track
+carries only the structural `PseudoEMetricSpace`.  By the rule at the head of
+this section a fenced-only home is a gap.  Note this is *not* a defect of the
+fence: MauRen16 itself defers the distinguisher class to one informal sentence
+in §3.1, so what is owed is an MR16-track supremum object, not the lifting of
+the fence.  Rows 13, 48.
+
+**G11 — Definition 2's β-clause is unstated in the two-sided presentation.**
+`Specification/Outbound.lean` is the only module where left and right
+attachment are distinct monoids (`eL`, `eR`), and it imports no metric, so
+`d(Rβ, Sβ) ≤ d(R, S)` cannot be stated there.  The homogeneous reading
+subsumes the clause (see the verdict above); what is missing is the bridge
+saying so.  Row 35.
+
+**G12 — CLOSED, 2026-08-17.**  MR16 §4.2's remark `πRβ ≈ᵋ Sσβ` — the one place
+the paper actually spends non-expansion in §4.2 — is now
+`edist_mul_smul_le_of_edist_le` (`Metric/Nonexpansion.lean`), stated beside
+Definition 2 whose β-clause it consumes, and instantiated at RS-B as
+`edist_mul_smul_le_of_edist_le_fully`.  Right attachment is multiplication in
+the one monoid (matrix row 35's verdict), so appending `β` to `πR` is the
+action of `β * π` and `IsNonexpandingSMul` is the whole hypothesis; the
+statement is no longer only inline inside `Relaxation.star_construct_eps` and
+`Indifferentiable.trans`.  Row 41.
+
+# PRIMITIVE REGISTRY (binding; briefs must name primitives from here)
+
+  PARALLEL — R7'' RATIFIED & IMPLEMENTED (2026-08-18; commits cad5da1/
+  0cb5055/fad28cb/b0a6265; home RandomSystems/System/ParFace.lean; C13''-
+  validated, spike proofs transplanted).  NOT ADDRESSED by this entry (so
+  no later leg re-plans from it): Par ↥converterMonoidAt (MauRen11 §6.2
+  α∣β), SMulParClass Sigma Phi (the framing law at Φ — statement shape
+  exists at the wrong carrier as System.attachEngine_par), HasFixedDomain
+  transfer through parF.  Original candidate record:
+    Φ UNCHANGED (PDS Uni Uni).  NO special alphabet: W/List Λ is one typed
+    alphabet among all; no word carrier, no privileged face, no `encode W`
+    design element, no Encodable embeddings, no chosen equivalence, no
+    type-level tags — ALL STRUCK (drafts R7/R7' superseded).
+    Design: face L := ⋃ s ∈ L.support, System.support s;
+    parF L M := par (face L) L M; instance Par Φ := ⟨parF⟩;
+    canonicity par_eq_parF_of_separating; parF_comm/parF_assoc on disjoint
+    faces; self-composition via copy k R := blockSet {p | p.1 ≠ k}
+    (relabel Prod.snd id R) — n definedness-disjoint copies inside ONE
+    typed alphabet (value-level fibers); tuple [R₁,…,Rₙ] = parF-fold.
+    THE C8 LESSON (binding trap): addressing must live at the VALUE level
+    of a single type — type-level tags are unreadable (type-constructor
+    injectivity neither provable nor refutable; spike C8, REFUTED).
+    IsNonexpandingPar Φ unconditional: NOT obtainable (spike G6.f) — the
+    conditional form is the deliverable.
+    ESCALATION FILTER (binding, from the H1 incident): a fork may be put
+    to Marc ONLY after checking this registry and the rulings — a fork the
+    record already answers is applied, not asked; agent reports must cite
+    the registry entry their RISK/DECISION items were checked against.
+    H1 RECORD: parF's absorption off the disjoint regime is parF_absorb
+    (a documented theorem, unreachable from the copy-based user surface) —
+    NOT a fork; both proposed guard options were superseded by the copies
+    mechanism already recorded above.
+    Spike verdict record (2026-08-18, /private/tmp/r7prime/VERDICT.md):
+    C1 CONFIRMED (parallel Fin-only, zero delta) · C3-C6 CONFIRMED
+    (attach-at-fiber, RequestsWithin structural, disjointness, grouping) ·
+    C7 refuted-as-claimed (ingredients verified, assembly owed) · C8
+    REFUTED (type-tags) · C11 CORRECTED BY MARC: CR18 takes NO stance on
+    addressing/output tagging (fn.2/§3.2.3 under-specify it) — the spike's
+    "untagged-output fidelity delta" is formalization freedom, NOT a
+    mismatch; MR16 §2.1-2.2 + Jost Def 2.2.1 govern addressing (R8).
+
+  ATTACHMENT (current): `attachEngineFully i E` — direct ownership dispatch
+    (q ∉ i: resource verbatim, refusal preserved; q ∈ i: engine round vs R⊥;
+    engine class InnerTotal + uniform budget + RequestsWithin i).
+    Status: legs (a) 637938d/c31b9e9/87fdde3, (b) 8e4eed4/9aaeba2/c17c2df,
+      (c) cf9bf55/5a1c49e — DONE.  Leg (c) put the primitive at the Φ level
+      as `RandomSystems.attachAt`, re-based the metric-facing Σ as
+      `RandomSystems.converterMonoidAt` (and A6's weaker monoid as
+      `converterMonoidAtWeakBudget`), and re-derived the S4 receipts over it.
+      All leg-(a)/(b)/(c) rows closed; every declaration axiom-clean.
+      Homes: `RandomSystems/System/AttachEngineFully.lean`,
+      `RandomSystems/System/MetricFullyDefined.lean`.
+      Leg (d) 8a796e6(d1, landed inside a concurrent lane's add -A commit)/
+      0475135/b405e9e/c8166ac — DONE: G1 CLOSED — the commutation
+      (αR)β = α(Rβ) and MR16 §7 grouping hold over converterMonoidAt, at
+      the price of Disjoint + two RequestsWithin and NO engine class
+      (commutation is an equation of partial values; a diverging round
+      diverges on both sides).
+      Legs (e)+(f) DONE (coordinator, 2026-08-17): demotion bridges had
+      landed in legs (a)/(c) (`attachEngineFully_univ`, `attachAt_univ`,
+      the two monoid containments); RETIRE rows C21/C22 + the CFD closing
+      note marked retired-as-record; matrix re-score: row 22 D+I, G1
+      closed, D+I tally 28 -> 29, PARTIAL 9 -> 8.
+      DRIFT-REPAIR COMPLETE — all 86 non-UNAFFECTED rows closed.
+  SUPERSEDED — never the primitive again:
+    `attachFully` / `converterMonoidFully` / `converterMonoidFullyBudgeted`
+      (whole-face Φ level) -> superseded by `attachAt` /
+      `converterMonoidAtWeakBudget` / `converterMonoidAt` (leg c); NOT
+      deleted; containments: `converterMonoidFullyBudgeted_le_converterMonoidAt`,
+      `converterMonoidFully_le_converterMonoidAtWeakBudget`, both riding
+      `attachAt_univ : attachAt Set.univ E = attachFully E`.
+    `connectFully` (whole-face, CR18 Def 3.9) -> becomes attachEngineFully univ
+      via the leg-(e) bridge; until then RE-BASE rows only.
+    `connect (liftAt i E)` (old carrier) -> PARTIAL-ONLY; proof TEMPLATES only
+      (statement shapes, commutation invariant); the wrapper-engine MECHANISM
+      is retired.
+    `relayExcept`/`attachFullyAt`/`botToken` -> REFUTED design, never landed;
+      tripwired in scripts/ledgerAudit.sh check 3.
+  KEPT vs NOT-KEPT (the ruling): statements + proof architecture + engine-class
+  predicates are reused; the relay mechanism is not.
+
+**MATRIX CENSUS (2026-08-18, counted from the cells after the audited
+rescore; supersedes every earlier tally line, several of which were stale —
+including one applied by a commit whose message claimed more than its diff
+did (23b0cd2), caught by the final audit):**
+43 D+I · 0 DA · 3 PARTIAL · 0 MISSING · 1 FENCE-ONLY · 1 PROSE  (of 48).
+**BASICS-DONE VERDICT: YES (2026-08-18, row 2 landed d6f07c3)** — with the
+residue stated: rows 13/48 (gap G10 — fn. 9's class-indexed supremum;
+MauRen16 itself defers the distinguisher class to one informal sentence;
+fenced by design, not omission), row 32 (§3.5 models 2-4 — after d6f07c3 a
+modeling CHOICE, not a missing mechanism: Γ is a parameter with carrier
+entry points on both sides), row 31 (PROSE — a modeling principle by
+nature).  Census counted from the cells: 44 D+I · 2 PARTIAL · 1 FENCE-ONLY · 1 PROSE of 48.
+
+**GAP STATUS CONSOLIDATION (authoritative; older gap paragraphs are
+historical record):** G1 CLOSED (leg d) · G2/G3/G4 CLOSED at the carrier
+(#77) · G5 CLOSED for the generic core · G6 CLOSED (R7'' + G-6 leg:
+instParPhi, instParConverterMonoidAt with the fn.23 ruling audit-verified
+TWO-SIDED — attachAt_mul_parF compiles in the paper display's exact shape;
+the two abstract classes SMulParClass/IsNonexpandingPar are uninstantiable
+BY SHAPE, conditional theorems in the classes' own shapes are the
+endpoints, constructs_parF_left/constructs_parF/
+constructs_epsilonRelaxation_parF the usable class-free forms; honest note:
+α∣α = α² at the converter Par, the twin of parF_self, recorded not hidden)
+· G7 CLOSED (abstract + carrier) · G8 CLOSED (abstract + carrier) · G9 CLOSED (abstract + carrier, d6f07c3: both Γ-readings at RS-B; models 2-4 = row 32, a choice not a gap) · G12 CLOSED.  CORRECTION
+to the earlier AUDIT RECORD: `Par ↥converterMonoidAt` IS now synthesizable
+(410bf05); C5's conclusion stood only via SMulParClass, and C5 is now
+closed by the class-free forms.
+
+# DRIFT-REPAIR: attachment primitive (whole-face → attachEngineFully)
+
+**The drift.**  MauRen16 §3.3's primitive is the *interface-indexed* attachment
+`αⁱ : Φ → Φ`; the tree's migrated primitive is *whole-face* application —
+`System.connectFully E R := DDC.apply (DDC.ofEngine E) R`, CR18 Def 3.9 through
+`DDC.apply` — adopted at A6 by expedience, with every Φ-level object above it
+(`attachFully`, `converterMonoidFully(Budgeted)`, the S4 receipts) inheriting
+the whole face.  The relay design that was to recover `αⁱ` from it
+(`relayExcept i E`, `attachFullyAt i E := attachFully (relayExcept i E)`) is
+REFUTED on both faces (LEDGER G1; `ConnectFullyDefined.lean` closing section).
+
+**The repair (ruled).**  A first-class `attachAt i E` by *ownership dispatch*:
+a query outside `i` reaches the resource verbatim — its partiality, its
+refusals and CR18 Def 3.3 deletion untouched, so nothing is ever *rendered* —
+while a query in `i` runs the converter rounds with the engine's requests
+confined to `i`.  Whole-face application is demoted to the special case
+`i = univ`.  This section is the audited row list the repair executes against;
+it does not build anything.
+
+**M1 evidence note (from disk, not memory).**  MR16's αⁱ is already in the tree
+one carrier down: `System.attachEngine i E R = connect (liftAt i E) R`
+(`RandomSystems/System/Connect.lean:694`) is exactly ownership dispatch —
+`liftAtRaw`'s foreign branch relays a non-`i` query down verbatim — and its
+commutation `System.attachEngine_comm` (`Connect.lean:1573`, aux at 1327) is
+PROVEN, lifted to `Converter.attachEngineAt_actCommute` /
+`pairwiseOrderInvariant_attachEngineAt` (`Converter/Sigma.lean:151-179`).  It
+is unusable only because it rides `connect`, which the B4 witness refutes.  So
+leg (a) is a *migration* of `attachEngine` onto the completion, and leg (d) has
+a proof template rather than a blank page.  Two genres meet in one definition:
+the non-`i` face is the relay genre (one inner query per outer query, refusal
+preserved, `exists_absorb_relay` applies), the `i` face is the engine genre
+(`InnerTotal` + budget against `R⊥`).  That split is what makes both G1
+witnesses evaporate — the non-`i` face never renders `⊥`, it *is* the
+resource's `⊥`.
+
+**Naming.**  `attachAt` is already taken twice, both in `Converter`
+(`Converter.attachAt`, CR18 Def 3.13 memoryless, `Converter.lean:1920`;
+`Converter.General.attachAt`, `Converter.lean:2149`), and `General.attachAtLaw`
+is a carrier-ledger row, so the primitive took the registry name
+`System.attachEngineFully` instead and the collision does not arise.
+
+**Leg (a) closures (2026-08-17):** A12 `87fdde3` (`attachEngineFully_univ`);
+A13 `637938d`+`87fdde3` (`ReachedAt`, univ instance via the bridge);
+A14 `637938d` (`reachedAt_nil`); A15 `637938d` (`ReachedAt.unique`);
+A16 `637938d` (`mem_attachEngineFullyDrive_concat`); A17 `c31b9e9`
+(`attachEngineFully_concat_round` + `mem_dom_…_concat_{mem,not_mem}`);
+A18 `c31b9e9` (`output_…_concat_{mem,not_mem}`); A19 `637938d`
+(`attachEngineFully_reached_concat{,_not_mem,_mem}`); A27 `c31b9e9`
+(`attachEngineFully_refusal_first` + `attachEngineFully_transparent`);
+A28 `87fdde3` (`mem_dom_…_of_nil_{mem,not_mem}`); A29 `87fdde3`
+(`mem_dom_…_of_nil_congr`).
+
+**Leg (b) closures (2026-08-17):** A42 `8e4eed4` (`attachEngineFullyReplayStep`);
+A43 `8e4eed4` (`attachEngineFullyNeed`); A44 `8e4eed4`
+(`attachEngineFullyReplayStep_stop`); A45 `8e4eed4`
+(`attachEngineFullyReplayStep_refuse` at the owned face +
+`attachEngineFullyReplayStep_foreign`, the branch the dispatch splits off);
+A46 `8e4eed4` (`attachEngineFullyReplayStep_round`); A47 `8e4eed4`
+(`attachEngineFullyReplayStep_stall` + `attachEngineFullyReplayStep_foreign_stall`);
+A48 `8e4eed4` (`attachEngineFullyNeed_round` + `attachEngineFullyNeed_foreign`);
+A49 `8e4eed4` (`attachEngineFullyReplay`); A50 `8e4eed4`
+(`attachEngineFullyReplay_zero`); A51 `8e4eed4` (`attachEngineFullyReplay_succ`);
+A52 `8e4eed4` (`attachEngineFullyReplay_of_fixed`); A53 `8e4eed4`
+(`absorbAttachEngineFully`); A54 `8e4eed4` (`answer_attachEngineFully_refuse` +
+`answer_attachEngineFully_foreign`, the outside-`i` passthrough the row owed);
+A55 `8e4eed4` (`answer_attachEngineFully_round`); A59 `8e4eed4`
+(`attachEngineFullyReplay_invariant`); A60 `9aaeba2`
+(`exists_absorb_attachEngineFully`).  All 16 leg-(b) rows closed; every
+declaration axiom-clean.  A36–A41 and A56 were reused verbatim as the audit
+certified — the inner induction `exists_roundReplay_absorb` applied at the
+environment's own resource history and needed nothing.
+
+**Leg (b) additions beyond the row list.**  Four bridging theorems the row list
+does not name: the composite's resource history and an absorbing environment's
+differ by exactly the foreign queries the resource refuses — the composite's
+round is undefined there, so the query never enters its history, while the
+environment must ask to learn the refusal.  CR18 Definition 3.3 deletes
+precisely those, so the two agree up to `keptPrefix`, and that is the
+invariant's new clause.  `mem_connStep_iff` (one connection step characterized)
+and `exists_mem_resolve_of_keptPrefix_eq` ("a deleted query is invisible to a
+round", by `PFun.fix_bisim`) say a round cannot tell the two histories apart;
+`keptPrefix_append_congr` and `answer_congr_keptPrefix` say neither can the
+completion.  This is what kept `exists_roundReplay_absorb` verbatim.  All four
+are DDC-general and belong with the round equations in ConnectFullyDefined;
+they live in AttachEngineFully.lean because leg (b) is their only consumer.
+
+**Leg (b) extra deliverable.**  `attachEngineFully_mem_nonexpandingConverters`
+(`c17c2df`): the metric consequence of A60 through
+`PDS.advFullyDefined_fTransform_le`, stated at the raw pushforward so leg (c)
+may name the Σ generator as it pleases; does NOT close A68 (a leg-(c) row).
+`RequestsWithin` deliberately not a hypothesis — absorption is indifferent to
+where requests point; the clause stays owed by leg (d)'s commutation.
+
+**Leg (c) closures (2026-08-17):** A61 `cf9bf55` (`attachAt` + `attachAt_univ`);
+A62–A67 `cf9bf55` (`converterMonoidAtWeakBudget` + its four memberships + unit
+examples); A68 `cf9bf55` (`attachAt_mem_nonexpandingConverters`); A69–A73
+`cf9bf55` (`converterMonoidAt` + its four memberships); A74 `cf9bf55`
+(`converterMonoidAt_le_converterMonoidAtWeakBudget`); A75 `cf9bf55`
+(`converterMonoidAt_le_nonexpandingConverters`); B8–B11 `5a1c49e` (derived
+IsNonexpandingSMul instance, `edist_apply_le_of_mem_converterMonoidAt`,
+`edist_mul_smul_le_of_edist_le_at`, `constructs_epsilonRelaxation_trans_at`);
+B12 `5a1c49e` (MFD Scope paragraph); C19 (RS-B bullet, this commit).  All 21
+leg-(c) rows closed.  Bridges beyond the rows: `attachAt_univ`,
+`converterMonoidFullyBudgeted_le_converterMonoidAt`,
+`converterMonoidFully_le_converterMonoidAtWeakBudget`.  Leg (f) re-points
+C4/C14/C16/C30/C34 to `converterMonoidAt` and C3 to `attachAt`.
+
+**Leg (d) closures (2026-08-17):** C9, C12, C20, C21 — `8a796e6`(d1)/`0475135`/
+`b405e9e`/`c8166ac`.  Endpoints: `exists_mem_resolve_of_requestsWithin` +
+`resolve_requests_within` + `mem_ofEngine_in_iff` (d1); frontier converses +
+`answer_attachEngineFully_congr` + `exists_reachedAt_attachEngineFully_concat`
++ the round transfers (d2a); `attachEngineFully_comm_aux` +
+`attachEngineFully_comm` (d2b); `attachAt_comm`, `attachAt_actCommute`,
+`pairwiseOrderInvariant_attachAt`, `orderInvariant_attachAt`,
+`attachedWithin_attachAt_le_converterMonoidAt` (d3).  All axiom-clean.  The
+template `attachEngine_comm` transferred as architecture; new content = the
+kept-prefix cross-identification of the two bottom histories and the
+inner-face confinement lemma tagAt gave the old carrier for free.
+**G1 — CLOSED (leg d).**  Commutation holds for the metric-facing Σ with NO
+engine class (Disjoint + two RequestsWithin only); grouping discharged over
+an abstract index ι with pairwise-disjoint w : ι → Set Uni and
+protocol-valued converters (`ProtocolWithin`); the grouped converters are
+INSIDE converterMonoidAt (`attachedWithin_attachAt_le_converterMonoidAt`).
+Matrix rows 17/22 read D+I as of this closure; the fine-grained cell
+re-pointing and tally re-read are leg (f)'s (row C18).  Consequential:
+row 37 gap list drops G1; G2/G3 depend on G2's own star work only.
+
+## Classified closure
+
+File keys: **CFD** = `RandomSystems/System/ConnectFullyDefined.lean`,
+**MFD** = `RandomSystems/System/MetricFullyDefined.lean`,
+**ABS** = `RandomSystems/System/Absorb.lean`, **LED** = `LEDGER.md`,
+**PHI** = `PHI-SPEC.md`, **THv2** = `THEORY-v2.md`.
+
+Classes: **U** = UNAFFECTED, **RB** = RE-BASE, **DM** = DEMOTE (kept as
+`i = univ` behind a bridging lemma), **RT** = RETIRE.  Legs are M3's, below.
+
+### A — `ConnectFullyDefined.lean` (all 75 declarations; superset of the closure)
+
+| # | name | file | class | leg | reason |
+|---|---|---|---|---|---|
+| A1 | `unlabel` | CFD | U | — | label stripping on `CIn`; no attachment |
+| A2 | `unlabel_query` | CFD | U | — | `simp` equation for A1 |
+| A3 | `unlabel_answer` | CFD | U | — | `simp` equation for A1 |
+| A4 | `ofEngine` | CFD | U | — | engine → CR18 Def 3.8 converter; reused verbatim by `attachAt`'s `i`-rounds |
+| A5 | `mem_dom_ofEngine` | CFD | U | — | domain of A4 |
+| A6 | `output_ofEngine` | CFD | U | — | output of A4 |
+| A7 | `mem_ofEngine_of_mem` | CFD | U | — | membership transport through A4 |
+| A8 | `mem_ofEngine_out` | CFD | U | — | outer-answer case of A7 |
+| A9 | `mem_ofEngine_in` | CFD | U | — | request case of A7 |
+| A10 | `exists_move_ofEngine` | CFD | U | — | the answer/request dichotomy; per-round, attachment-agnostic |
+| A11 | `mem_driveFrom_singleton` | CFD | U | — | one-query fold = one resolution; about `driveFrom`, not the face |
+| A12 | `connectFully` | CFD | DM | a | *the* whole-face primitive; becomes `attachAt univ` with a bridging equation |
+| A13 | `ReachedState` | CFD | DM | a | folds **every** outer query through the engine; `attachAt` needs an `i`-aware state |
+| A14 | `reachedState_nil` | CFD | DM | a | base case of A13 |
+| A15 | `ReachedState.unique` | CFD | DM | a | determinism of A13 |
+| A16 | `mem_driveFrom_concat` | CFD | DM | a | frontier step of the whole-face fold |
+| A17 | `mem_dom_connectFully_concat` | CFD | DM | a | frontier domain receipt, stated at `connectFully` |
+| A18 | `output_connectFully_concat` | CFD | DM | a | frontier output receipt, stated at `connectFully` |
+| A19 | `reachedState_concat` | CFD | DM | a | frontier state receipt, stated at the whole-face fold |
+| A20 | `mem_resolve_of_answer` | CFD | U | — | CR18 Def 3.9 output rule at `resolve`; no attachment |
+| A21 | `resolve_of_request` | CFD | U | — | CR18 Def 3.9 query rule at `resolve`; no attachment |
+| A22 | `mem_dom_of_resolve_dom` | CFD | U | — | a resolved round certifies the engine's move; about `resolve` |
+| A23 | `InnerTotal` | CFD | U† | — | predicate on the **engine alone**; survives verbatim as `attachAt`'s `i`-round class |
+| A24 | `AnswersWithinBudget` | CFD | U† | — | predicate on the engine alone; unchanged |
+| A25 | `AnswersWithinUniformBudget` | CFD | U† | — | predicate on the engine alone; unchanged |
+| A26 | `resolve_dom_of_mem_dom` | CFD | U | — | "a started round ends", about `resolve`; mentions A23/A24 but is face-agnostic |
+| A27 | `connectFully_refusal_first` | CFD | DM | a | stated at `dom (connectFully E R)`; `attachAt` needs it at `i`-queries plus a passthrough clause |
+| A28 | `mem_dom_connectFully_of_nil` | CFD | DM | a | first-query corollary of A27 |
+| A29 | `mem_dom_connectFully_of_nil_congr` | CFD | DM | a | the B4 criterion at the frontier, whole-face |
+| A30 | `idEngineFully` | CFD | DM | e | the whole-face relay identity |
+| A31 | `innerTotal_idEngineFully` | CFD | DM | e | A23 at A30 |
+| A32 | `answersWithinBudget_idEngineFully` | CFD | DM | e | A24 at A30 |
+| A33 | `mem_resolve_idEngineFully` | CFD | DM | e | one relay round of A30 |
+| A34 | `exists_reachedState_idEngineFully` | CFD | DM | e | A13 at A30 |
+| A35 | `connectFully_idEngineFully` | CFD | DM | e | `= R⊥`; under `attachAt` the unit is `attachAt ∅`, so this is the `i = univ` case |
+| A36 | `move` | CFD | U | — | engine move as a total function; general infrastructure |
+| A37 | `move_eq_some_iff` | CFD | U | — | characterization of A36 |
+| A38 | `roundReplay` | CFD | U | — | replays **one engine round** from the converter history; that round is unchanged at `i` |
+| A39 | `roundReplay_answer` | CFD | U | — | equation of A38 |
+| A40 | `roundReplay_stuck` | CFD | U | — | equation of A38 |
+| A41 | `roundReplay_request` | CFD | U | — | equation of A38 |
+| A42 | `fullyReplayStep` | CFD | RB | b | routes **every** outer move into the engine; this is where the `i`-dispatch must go |
+| A43 | `fullyNeed` | CFD | RB | b | same dispatch: outside `i` the needed inner query is the outer query itself |
+| A44 | `fullyReplayStep_stop` | CFD | RB | b | equation of A42 |
+| A45 | `fullyReplayStep_refuse` | CFD | RB | b | equation of A42; the refusal branch splits by `i` |
+| A46 | `fullyReplayStep_round` | CFD | RB | b | equation of A42 |
+| A47 | `fullyReplayStep_stall` | CFD | RB | b | equation of A42 |
+| A48 | `fullyNeed_round` | CFD | RB | b | equation of A43 |
+| A49 | `fullyReplay` | CFD | RB | b | iterate of A42 |
+| A50 | `fullyReplay_zero` | CFD | RB | b | equation of A49 |
+| A51 | `fullyReplay_succ` | CFD | RB | b | equation of A49 |
+| A52 | `fullyReplay_of_fixed` | CFD | RB | b | stability of A49; content generic, statement names A42/A49 |
+| A53 | `absorbFully` | CFD | RB | b | the absorbed environment, built from A43/A49 |
+| A54 | `answer_connectFully_refuse` | CFD | RB | b | `answer (connectFully E R)`; needs the new outside-`i` passthrough branch |
+| A55 | `answer_connectFully_round` | CFD | RB | b | `answer (connectFully E R)` at an accepted query |
+| A56 | `exists_roundReplay_absorb` | CFD | U | — | the inner induction; parametric in the environment, names no attachment — **reusable verbatim** |
+| A57 | `answeredQueries_concat_some` | CFD | U | — | list lemma on `answeredQueries` |
+| A58 | `answeredQueries_concat_none` | CFD | U | — | list lemma on `answeredQueries` |
+| A59 | `fullyReplay_invariant` | CFD | RB | b | the outer invariant; names `connectFully` + A13 + A53, and carries the dispatch |
+| A60 | `exists_absorb_connectFully` | CFD | RB | b | the keystone absorption receipt, whole-face |
+| A61 | `attachFully` | CFD | RB | c | the Σ generator; becomes `attachAt i`, with `attachFully = attachAt univ` as the demotion bridge |
+| A62 | `converterMonoidFully` | CFD | RB | c | generator family built from A61 |
+| A63 | `attachFully_mem_converterMonoidFully` | CFD | RB | c | membership over A62 |
+| A64 | `block_mem_converterMonoidFully` | CFD | RB | c | membership over A62 (generator itself unchanged) |
+| A65 | `parRight_mem_converterMonoidFully` | CFD | RB | c | membership over A62 |
+| A66 | `parLeft_mem_converterMonoidFully` | CFD | RB | c | membership over A62 |
+| A67 | `example : 1 ∈ converterMonoidFully` | CFD | RB | c | unit witness over A62 |
+| A68 | `attachFully_mem_nonexpandingConverters` | CFD | RB | c | nonexpansion of the whole-face attachment; must be proved for `attachAt i` |
+| A69 | `converterMonoidFullyBudgeted` | CFD | RB | c | **the metric-facing Σ**; its attachment family is the drift |
+| A70 | `attachFully_mem_converterMonoidFullyBudgeted` | CFD | RB | c | membership over A69 |
+| A71 | `block_mem_converterMonoidFullyBudgeted` | CFD | RB | c | membership over A69 |
+| A72 | `parRight_mem_converterMonoidFullyBudgeted` | CFD | RB | c | membership over A69 |
+| A73 | `parLeft_mem_converterMonoidFullyBudgeted` | CFD | RB | c | membership over A69 |
+| A74 | `converterMonoidFullyBudgeted_le_converterMonoidFully` | CFD | RB | c | the budget delta, over A62/A69 |
+| A75 | `converterMonoidFullyBudgeted_le_nonexpandingConverters` | CFD | RB | c | the closure step; its attachment generator is A68 |
+
+† **U†** = UNAFFECTED-with-note; see the InnerTotal/budget verdict below.
+
+### B — `MetricFullyDefined.lean` and `Absorb.lean`
+
+| # | name | file | class | leg | reason |
+|---|---|---|---|---|---|
+| B1 | `instance : PseudoEMetricSpace Phi` | MFD | U | — | `Adv⊥` symmetrization; no converter appears |
+| B2 | `edist_def` | MFD | U | — | definitional unfolding of B1 |
+| B3 | `edist_eq_advFullyDefined_of_weight_eq` | MFD | U | — | equal-weight collapse of B1 |
+| B4 | `nonexpandingConverters_le_nonexpandingEnd` | MFD | U | — | about `nonexpandingConverters`, defined by absorption, not by attachment |
+| B5 | `edist_apply_le_of_mem_nonexpandingConverters` | MFD | U | — | Def 2 at the *specification* family |
+| B6 | `instance IsNonexpandingSMul nonexpandingConverters Phi` | MFD | U | — | at the specification family |
+| B7 | `constructs_epsilonRelaxation_trans_phi` | MFD | U | — | at the specification family |
+| B8 | `instance IsNonexpandingSMul converterMonoidFullyBudgeted Phi` | MFD | RB | c | indexed by A69 |
+| B9 | `edist_apply_le_of_mem_converterMonoidFullyBudgeted` | MFD | RB | c | MR16 Def 2 over A69 (matrix row 35's RS-B home) |
+| B10 | `edist_mul_smul_le_of_edist_le_fully` | MFD | RB | c | **G12's RS endpoint**, over A69 |
+| B11 | `constructs_epsilonRelaxation_trans_fully` | MFD | RB | c | JM20 Cor 1.1 over A69 |
+| B12 | module docstring §Scope (l. 36–46) | MFD | RB | c | names `attachFully` / both `Fully` monoids as the scope of the receipts |
+| B13 | `exists_absorb_relay` docstring, l. 310 | ABS | RB | f | "Engines … need their own machinery (`exists_absorb_connectFully`)" — pointer |
+
+### C — non-code sites
+
+| # | site | file | class | leg | reason |
+|---|---|---|---|---|---|
+| C1 | carrier row `connectFully (A6)` | LED | DM | e | the whole-face receipt row; restated as the `i = univ` case |
+| C2 | carrier row `idEngineFully` | LED | DM | e | the whole-face identity row |
+| C3 | carrier row `attachFully` | LED | RB | f | the Σ generator row |
+| C4 | carrier row `converterMonoidFullyBudgeted` | LED | RB | f | the metric-facing Σ row |
+| C5 | carrier row `converterMonoidFully` | LED | RB | f | the documented-delta row |
+| C6 | carrier row `attach, block (Φ), … General.attachAtLaw` | LED | RB | f | says "the re-based Σ is `converterMonoidFully`"; also the `attachAt` name collision |
+| C7 | METRIC §"B4-RESUME additions" ¶ | LED | RB | f | lists A36–A53 as one block; A36/A38 stay, A42–A53 re-base |
+| C8 | PRIMITIVE §"A6 additions" ¶ | LED | DM | e | `ReachedState` demotes; `InnerTotal`/`AnswersWithin*` keep their rows verbatim |
+| C9 | matrix row 17 (§3.3 `Σ`, `αⁱ`) | LED | RB | d | **the headline**: the row claims `αⁱ` `D+I` while its RS-B home is whole-face |
+| C10 | matrix row 19 (§3.3 `id ∈ Σ`) | LED | DM | e | cites `idEngineFully`, `connectFully_idEngineFully` |
+| C11 | matrix row 20 (§3.3 `Σ∘Σ = Σ`) | LED | RB | f | cites both `Fully` monoids |
+| C12 | matrix row 22 (§3.3 commutation, G1) | LED | RB | d | the root gap; "no receipt at all for `attachFully` / `converterMonoidFullyBudgeted`" |
+| C13 | matrix row 27 (§3.4 blocking `⊣`) | LED | RB | f | cites `block_mem_converterMonoidFullyBudgeted` |
+| C14 | matrix row 35 (Def 2, both clauses) | LED | RB | f | cites `edist_apply_le_of_mem_converterMonoidFullyBudgeted` |
+| C15 | matrix row 36 (Lemma 2) | LED | RB | f | cites `constructs_epsilonRelaxation_trans_phi` / `_fully` |
+| C16 | matrix row 41 (§4.2 remark, G12) | LED | RB | f | cites `edist_mul_smul_le_of_edist_le_fully` at A69 |
+| C17 | matrix row 44 (§4.3 absorption) | LED | RB | f | cites `exists_absorb_connectFully` |
+| C18 | matrix tally (28 `D+I` of 48) | LED | RB | f | the count the BLOCKING RULE below suspends |
+| C19 | "The two RandomSystems carriers", RS-B bullet | LED | RB | c | defines RS-B's `Σ` as A69 |
+| C20 | "Definition 2, the β-side — verdict" ¶ | LED | RB | d | its premise is "a tag-addressed `attachFully` at RS-B" — exactly what `attachAt` supplies and whole-face does not |
+| C21 | G1 gap ¶1 (the gap statement) | LED | RB | d | restated against `attachAt`; the receipt owed is unchanged |
+| C22 | G1 "DESIGN FINDING" block (relay witnesses + `botToken` repair) | LED | RT | f | the refuted relay design; becomes the record-of-why, marked closed by supersession |
+| C23 | G2 / G3 / G4 "depends on G1" lines | LED | U | — | pointer only; verified none of rows 25/26/28/29/30/37/38/39/40/42/65 names the drifted family |
+| C24 | closing §"Interface-local attachment … (G1)", l. 1270–1332 | CFD | RT | f | the refutation note; **no `.lean` edit in this audit** — the repair retires it |
+| C25 | B4 ladder row (l. 335–344) | PHI | RB | f | "the migrated generator is `System.connectFully`" |
+| C26 | B5 ladder row (l. 357–364) | PHI | RB | f | the `converterMonoidFully(Budgeted)` closure record |
+| C27 | B7 ladder row (l. 397–402) | PHI | RB | f | unscoping record over A69 |
+| C28 | A6 audit + M1–M4 (l. 551–656) | PHI | DM | e | the whole-face design record; restated as the `i = univ` case |
+| C29 | B4-RESUME M1–M3 (l. 657–725) | PHI | RB | f | the absorption record, whole-face |
+| C30 | "THE METRIC-FACING Σ" (l. 780–792) | PHI | RB | f | defines Σ as A69 |
+| C31 | GAP CLOSURES, G12 ¶ (l. 920) | PHI | RB | f | cites `edist_mul_smul_le_of_edist_le_fully` over A69 |
+| C32 | GAP CLOSURES, G1 ¶ (l. 924–941) | PHI | RT | f | the `relayExcept`/`botToken` refutation prose; superseded |
+| C33 | narrative l. 444 ("THAT IS EXACTLY WHAT HAPPENED") | PHI | U | — | B4-history prose; no name from the family |
+| C34 | Σ line (l. 114–115) | THv2 | RB | f | "Σ: converterMonoidFullyBudgeted (InnerTotal + uniform Def 3.8 budget)" |
+
+**Tally.**  122 rows — 87 code (75 CFD + 12 MFD/ABS incl. two docstring sites),
+35 non-code.  **UNAFFECTED 36** (3 of them U†), **RE-BASE 61**, **DEMOTE 22**,
+**RETIRE 3**.  86 rows are non-UNAFFECTED and each is assigned exactly one leg.
+
+**Self-check.**  The grep that produced the closure —
+`connectFully`, `attachFully`, `attachFullyAt`, `converterMonoidFullyBudgeted`,
+`relayExcept`, `idEngineFully`, `exists_absorb_connectFully`, `InnerTotal`,
+`AnswersWithinBudget`, `AnswersWithinUniformBudget`, `botToken`, word-matched
+over every non-`.lake` `.lean` and `.md` file — was re-run against the finished
+table.  It reaches exactly three `.lean` files (CFD, MFD, ABS) and four
+documents (LED, PHI, THv2, and CFD's own note), all present above; block A
+lists the whole of CFD, so no CFD declaration can be missing.  `relayExcept`,
+`attachFullyAt` and `botToken` occur in **no** `.lean` code — only in prose
+(C22, C24, C32), which is why they are RETIRE and not RE-BASE.
+
+## The InnerTotal / budget verdict — SURVIVE, do not demote
+
+`InnerTotal E`, `AnswersWithinBudget E β` and `AnswersWithinUniformBudget E`
+are read off their statements as predicates on the **engine alone**: each
+quantifies over engine histories `l : List (U ⊕ Option Y)` and the engine's
+own `E.1`, and none mentions `connectFully`, a resource, a face or an interface
+set.  What they say — "once the engine has requested, it is defined at that
+history extended by any completion answer", and "a well-founded, uniformly
+bounded count of consecutive requests" — is exactly the class condition
+`attachAt`'s `i`-rounds need, because an `i`-round *is* the same engine round.
+So they are UNAFFECTED-with-note, not DEMOTE.  Two notes, both leg (a):
+
+1. a **new, separate** engine-side clause is owed, `RequestsWithin i E` (the
+   engine's requests carry addresses in `i`); it is not a weakening or
+   strengthening of the three, it is orthogonal to them, and nothing in the
+   tree states it;
+2. the budget's *arithmetic* role changes, not its statement: `m := n * K` in
+   `exists_absorb_connectFully` becomes a mixed count — an `i`-round still
+   costs at most `K` inner queries, a non-`i` query costs exactly one — so the
+   re-based receipt carries `m := n * max K 1`.  `AnswersWithinUniformBudget`
+   itself is untouched.
+
+Their carrier-ledger PRIMITIVE rows therefore stay verbatim (C8).
+
+## M3 — repair legs
+
+Dependency-ordered; each non-UNAFFECTED row appears in exactly one leg.
+
+**(a) `attachAt` definition + `i`-aware round receipts** — 11 rows: A12–A19,
+A27–A29.  Define `System.attachAt (i) (E) (R)` by ownership dispatch, the
+`i`-aware reached state, the frontier trio, refusal-first at `i`-queries, the
+verbatim-passthrough clause outside `i` (**new**, no current analogue), and
+`RequestsWithin i E` (**new**).  Close with the bridge
+`attachAt univ E R = connectFully E R`, which is what makes leg (e) cheap.
+Template: `System.attachEngine` / `liftAtRaw` on the completion instead of
+`connect`.
+
+**(b) absorption re-base** — 16 rows: A42–A55, A59, A60.  DONE (`8e4eed4`,
+`9aaeba2`, `c17c2df`).  The `i`-dispatch entered at `attachEngineFullyReplayStep`
+/ `attachEngineFullyNeed`; the outer invariant carries it, together with the
+mixed-history clause the dispatch forces; the receipt re-emerged as
+`exists_absorb_attachEngineFully` at the mixed count `m := n * max K 1`.
+A36–A41 and A56 were reused verbatim, the inner induction
+`exists_roundReplay_absorb` included.
+
+**(c) Σ re-base + S4 receipts** — 21 rows: A61–A75, B8–B12, C19.  `attachAt i`
+replaces `attachFully` as the Σ generator; the budgeted monoid, the membership
+lemmas, `attachFully_mem_nonexpandingConverters`, the `IsNonexpandingSMul`
+instance and the three MFD endpoints re-state over it.  Consumes (b).
+
+**(d) G1 commutation via the par-crux genre** — 4 rows: C9, C12, C20, C21.
+`attachAt i E ∘ attachAt j F = attachAt j F ∘ attachAt i E` for disjoint
+`i`, `j`, then `PairwiseOrderInvariant` / `OrderInvariant` at
+`attachedWithin`.  Template: `attachEngine_comm` (`Connect.lean:1573`) and
+`pairwiseOrderInvariant_attachEngineAt`.  Consumes (a); does **not** consume
+(b) or (c) — commutation is a carrier equation.
+
+**(e) whole-face demotion bridge** — 11 rows: A30–A35, C1, C2, C8, C10, C28.
+`idEngineFully` and its receipts become the `i = univ` instance; state whether
+the migrated unit is now `attachAt ∅ = id` rather than `R ↦ R⊥` (the dispatch
+makes it plausible — decide it, do not assume it).  Consumes (a).
+
+**(f) matrix reconciliation + retirement** — 23 rows: B13, C3–C7, C11,
+C13–C18, C22, C24–C27, C29–C32, C34.  Re-point every citation, retire the three
+RETIRE sites as record-of-why, re-tally the matrix.  Consumes (c), (d), (e).
+
+**BLOCKING RULE (binding).**  The MR16 matrix's "basics are done" claim is
+blocked until every RE-BASE, DEMOTE and RETIRE row in this section is closed;
+rows close only by commit references.  In particular matrix rows 17, 19, 20,
+22, 27, 35, 36, 41 and 44 may not be read as `D+I` for the interface-indexed
+`αⁱ` while their RS-B home is whole-face application.
+
+# LANZENBERGER OBLIGATION MATRIX + quarry-reuse map
+
+**LANE RULES (binding for every Lanzenberger-lane brief; Marc, 2026-08-17).**
+
+REUSE RULE.  Existing RS work is reused WHENEVER POSSIBLE, in this order:
+  (1) current-tree declarations as-is; (2) quarry proof ARCHITECTURE
+  (invariants, induction shapes, case splits — transplanted, cited by
+  file:line); (3) quarry statement shapes (restated on the current carrier,
+  never copied).  Building fresh what the quarry already proves is a
+  brief violation; the matrix's quarry column is the authority on what
+  exists.  The quarry is READ-ONLY, always.
+
+TRANSPLANT RULES (from the audit's nine pin-contradictions):
+  - Quarry `Δ(S, T)` notation means `maxAdvantage`, NOT `classDistance` —
+    verbatim copying silently changes theorems.  Restate everything.
+  - `maxAdvantage` / `maxEDist` are FORBIDDEN statement targets (pin 2);
+    quarry results stated against them are re-targeted to
+    `advFullyDefined`/`classDistance` or not transplanted.
+  - `adv_eq_maxAdvantage_swap`: the argument order SWAPS — the naive
+    pairing is documented refutable.
+  - Thm 2.31 forms carry the finiteness bundle (HasFixedDomain + QBounded +
+    finite alphabets) — attainment is FALSE without it
+    (AttainmentCounterexample.lean:766).
+  - Three live quarry sorries are never forwarded:
+    Legacy/FundamentalTheorem.lean:172, Legacy/Amplification.lean:119,
+    CBCStructureGraph.lean:1415.  Legacy `advantage` is non-adaptive — it
+    is NOT Def 2.26.
+  - Thesis errata (kernel-checked in the quarry): Def 2.27/2.28 inner inf
+    should be sup; Thm 2.29 min over pairs should be max.  State the
+    CORRECTED forms; cite the erratum in the docstring.
+
+SCOPE (Marc, 2026-08-18): PURE RANDOM-SYSTEMS MATERIAL ONLY until further
+ruling — L4 (games, rows 2.20-2.25/2.35-2.37) and L5 (amplification, §2.5)
+are DEFERRED; active queue: L2b (Thms 2.29/2.30, errata-corrected max
+forms), row 2.19 (#72 Behaviour quotient), U1 (single-query tuple reading),
+row 2.16 (Example 2.16 artifact).  No lane brief may open L4/L5 material.
+
+NAMING CONVENTIONS (three layers, all binding):
+  (1) PAPER NAMES FIRST: objects named by their names in the source papers
+      under the SOURCE HIERARCHY (MR16, Jost, Liu, Lanz primary; CR18
+      fallback-only — see the register at the top of this file):
+      equivalent/classDistance from Lanz Defs 2.17/2.28, Adv/statDist per
+      the papers; keptPrefix/fullyDefined keep their historical CR18 names.  A name not
+      from a paper is a COINAGE: flagged in the docstring AND its ledger
+      row.
+  (2) MATHLIB GRAMMAR: defs camelCase; theorem names snake-joined tokens
+      with def names verbatim (grep the def, find every theorem).
+  (3) RS HOUSE PATTERNS: established vocabulary is continued, never
+      re-invented (historyAt, keptPrefix, exists_absorb_*, *_concat
+      frontier receipts, *_congr transports, the replay/need/absorb
+      decomposition); suffix conventions follow the layer (_fully, _at).
+
+
+**Source.**  D. Lanzenberger, *A Theory of Random Systems, Games, and Hardness
+Amplification*, DISS ETH No. 29554.  Chapter 2 ("Theory of Random Systems and
+Games"), printed pp. 5–41 (PDF pp. 15–51), read visually in full, plus
+Appendix A.1 ("Extra Proofs for Chapter 2", printed pp. 87–89), which carries
+two numbered lemmas that Chapter 2 consumes.
+
+**Deliverable status.**  This is a scratch file produced by a READ-ONLY audit.
+The coordinator applies it to `LEDGER.md`; nothing in either repository was
+edited.
+
+---
+
+## The four pins (binding context for every row below)
+
+1. **Fixed `(X, Y)`.**  Every obligation is stated at a fixed pair of alphabets.
+   Nothing here asks for the universal carrier `Phi` or for cross-alphabet
+   statements; those belong to the MR16 track.
+2. **The distance is `PDS.advFullyDefined` / `PDS.trLawFullyDefined`**
+   (`RandomSystems/System/Environment.lean:636`, `:627`) — the *fully defined*
+   presentation, a supremum over `DDE.Total` environments and lengths `n` of
+   `statDist` of the two transcript laws.  It is **never**
+   `PDS.Adv` (`Environment.lean:251`), the strict-compatibility form indexed by
+   compatible stopping environments, and it is **never** `PDS.maxEDist`
+   (`ProbabilisticSystem.lean:274`), the Jost/strict-distinguisher form.
+   Lanzenberger's own Definition 2.26 is `Adv`; the tree's ruling R4 replaces it
+   by `advFullyDefined`, CONNECTED on the shared-domain slice as of L1 (`PDS.advFullyDefined_eq_Adv_of_dom_eq`; `Adv_le_advFullyDefined` unconditional) and IDENTIFIED WITH Δ on the finite slice as of L3 (`PDS.classDistance_eq_advFullyDefined_of_commonDomain_bounded`; Def-2.26 reading `classDistance_eq_Adv_of_commonDomain_bounded`).
+3. **Converter-free.**  Any item that needs a converter/protocol *attached* to a
+   system routes to the MR16 track (`attachEngineFully`, LEDGER DRIFT-REPAIR),
+   not here.  This bites §2.5 hardest: Definition 2.41's construction `C` and
+   Definition 2.42's combiner are exactly attachment-shaped.
+4. **Typed ↔ Φ transfer only through the `ofTyped` isometry receipts.**
+   *Correction to the brief:* the isometry is
+   `PDS.advFullyDefined_ofTyped` at **`RandomSystems/System/Absorb.lean:1062`**
+   (with `System.exists_absorb_ofTyped` `:939` and
+   `System.exists_absorb_ofTyped_typed` `:1009`), **not** in `ClassDistance.lean`
+   — `ClassDistance.lean` contains no `ofTyped` declaration at all.
+
+## The quarry rule
+
+`/Users/marcilunga/Documents/tob/research/random-systems` is READ-ONLY, always.
+Nothing there is imported, built, or edited.  A quarry verdict is a claim about
+what *transplants*, and every REUSE verdict carries a **transplant delta**
+saying what must change:
+
+| delta | meaning |
+|---|---|
+| `carrier` | the statement/proof rides a different system type (old `DDS`/`RandomSystem`/`PFunDDS`/`Legacy.PDS`) and must be re-based on `RandomSystems.PDS X Y = Distribution (System.DDS X Y)` |
+| `metric` | the statement is phrased with `maxEDist` / `maxAdvantage` / a CR18-`⊥` convention and must be re-phrased on `advFullyDefined` (pin 2) |
+| `both` | both of the above |
+| `none` | pure `Distribution`/combinatorial content, carrier- and metric-free |
+
+| verdict | meaning |
+|---|---|
+| `REUSE-ARCH` | the proof structure transplants; the row names the file:line and the invariant/technique |
+| `REUSE-STMT` | the statement shape transplants; the proof must be redone on the current carrier |
+| `REF-ONLY` | informs the work but does not transplant |
+| `NONE` | nothing in the quarry |
+
+## The five series legs
+
+* **L1** — equivalence + the non-adaptive reduction (Def 2.17 / Lemma 2.18).
+* **L2** — finite slice + multi-system Δ (Thm 2.29 / Lemma 2.30) + the
+  q-query `Fintype` subcarrier.
+* **L3** — attainment → Thm 2.31 / 2.32: Lemma 2.33, Notation 2.34's successor
+  systems, the δ-partition (Lemma 2.5), the coding map.
+* **L4** — games: Defs 2.20–2.25, winnability Thm 2.37 and related.
+* **L5** — applications §2.5: Thm 2.45, combiners, combinations of games.
+* **L0** — already-closed substrate (no obligation, or closed in-tree).
+
+---
+
+# M1 — Chapter 2 enumeration (visual read, complete)
+
+**57 items**: 49 numbered items `2.1`–`2.49`, 2 Appendix-A.1 lemmas
+(`A.1`, `A.2`) that Chapter 2's proofs consume, and 6 substantive *unnumbered*
+claims that carry real obligations (`U1`–`U6`).  Chapter 2 has no numbered item
+outside the run `2.1`–`2.49`; §2.4.2, §2.4.3 and §2.5 introduce load-bearing
+machinery inside proofs and inside prose paragraphs, which is where `U1`–`U6`
+come from.
+
+Item kinds: Def = Definition, Lem = Lemma, Thm = Theorem, Cor = Corollary,
+Not = Notation, Ex = Example, Rem = Remark, Unn = substantive unnumbered claim.
+
+---
+
+# M2 — the current tree: verified anchors
+
+Every declaration below was read on disk (not assumed).  `AC` = the
+abstract-crypto repository root.
+
+## Probability layer (Lanzenberger §2.2, verbatim)
+
+| thesis object | declaration | file:line |
+|---|---|---|
+| Def 2.1 distribution (finite support, **arbitrary weight**) | `Probability.Distribution A := A →₀ ℝ`, `.weight`, `.isProbDist` | `Probability/Distribution.lean:56,77,138` |
+| Def 2.2 marginal | `Distribution.marginal`, `marginalAt` | `Probability/Distribution.lean:658,667` |
+| Def 2.4 statistical distance (one-sided `Σ max(0, X−Y)`) | `Probability.statDist` | `Probability/StatisticalDistance.lean:142` |
+| Def 2.4's remark forms | `statDist_eq_weight_sub_sum_min`, `statDist_eq_half_sum_abs_of_weight_eq`, `statDist_symm_of_eq_weight` | `…/StatisticalDistance.lean:228,258,188` |
+| Lem 2.5 partition additivity | `statDist_partition` | `…/StatisticalDistance.lean:896` |
+| Def 2.6 f-transformation | `Distribution.fTransform` | `Probability/Distribution.lean:685` |
+| Lem 2.7 data processing | `statDist_fTransform_le` | `…/StatisticalDistance.lean:921` |
+| Lem 2.8(1) coupling bound | `Probability.statDist_le_offDiagonalMass` | `Probability/Coupling.lean:247` |
+| Lem 2.8(2) optimal coupling exists | `exists_coupling_offDiagonalMass_eq`, `optimalJoint`, `isCoupling_optimalJoint`, `offDiagonalMass_optimalJoint` | `Probability/Coupling.lean:326,126,179,208` |
+
+## System layer (§2.3)
+
+| thesis object | declaration | file:line |
+|---|---|---|
+| Def 2.9 DDS | `System.DDS X Y` (a `PFun (List X) Y` with `Valid`: non-empty, prefix-closed domain) | `RandomSystems/System/DiscreteSystem.lean:66,60` |
+| Def 2.9 finiteness clause | `QBounded`, `filterQueries` — predicates only, **no `Fintype` anywhere** | `…/DiscreteSystem.lean:37,403` |
+| Def 2.11 DDE | `System.DDE Y X` | `RandomSystems/System/Environment.lean:72` |
+| Def 2.12 transcript + compatibility | `System.trN`, `tr`, `Stops`, `Compatible` | `…/Environment.lean:114,155,150,170` |
+| Def 2.13 parallel composition | `System.parallel`, `parallelDom`, `PDS.parLaw` | `…/DiscreteSystem.lean:585,580`; `…/Parallel.lean:76` |
+| Def 2.14 PDS + common-domain clause | `RandomSystems.PDS X Y := Distribution (System.DDS X Y)`, `PDS.HasFixedDomain` | `…/ProbabilisticSystem.lean:73,85` |
+| Def 2.15 PDE | `PDE Y X` | `…/Environment.lean:217` |
+| Def 2.17 equivalence | `PDS.equivalent` (over `DDE.Total`, at every length) | `…/ClassDistance.lean:85` |
+| Def 2.26 `Adv` | `PDS.Adv` — **present but off-pin**; `PDS.advFullyDefined` is the pin-2 object | `…/Environment.lean:251`, `:636` |
+| Def 2.28 `Δ` | `PDS.classDistance` | `…/ClassDistance.lean:143` |
+
+## The pin-2 metric and its receipts
+
+`PDS.trLawFullyDefined e n S := fTransform (fun s => DDE.Total.transcript s e n) S`
+(`Environment.lean:627`) and
+`PDS.advFullyDefined S T := ⨆ e ⨆ n, ofReal (statDist (trLaw… S) (trLaw… T))`
+(`:636`).  Receipts already proved:
+
+* `advFullyDefined_self` `:645`, `advFullyDefined_triangle` `:682`,
+  `advFullyDefined_comm_of_weight_eq` `:672` — pseudometric laws.
+* `advFullyDefined_le_statDist` `:754` — the R4 bridge (Lem 2.7 at every index).
+* `advFullyDefined_le_offDiagonalMass` `:782` — the coupling method at Φ.
+* `advFullyDefined_sum_le` `:710` — mixtures.
+* `advFullyDefined_congr` `ClassDistance.lean:118`,
+  `classDistance_congr` `:185`, `classDistance_le_statDist_of_equivalent` `:154`,
+  `le_classDistance` `:162`.
+* `advFullyDefined_le_classDistance` `ClassDistance.lean:246` — **the easy half of
+  Thm 2.31** (`Adv⊥ ≤ Δ`), unconditional.
+* `classDistance_le_offDiagonalMass` `:262`,
+  `advFullyDefined_le_offDiagonalMass_of_equivalent` `:282` — prove-static /
+  consume-interactive.
+* `PDS.advFullyDefined_ofTyped` **`Absorb.lean:1062`** — the pin-4 isometry
+  (`=`, both directions), built from `System.exists_absorb_ofTyped` `:939` and
+  `System.exists_absorb_ofTyped_typed` `:1009`.
+
+## What the tree already says is missing (in-tree admission)
+
+`ClassDistance.lean:290–320` is a signed "Queued: the reverse inequality" note
+that itemizes the Theorem 2.31 gap exactly as this matrix does: (i) the finite
+slice — *"no `Fintype` on any system carrier, and none is possible on
+`System.DDS X Y` even at finite alphabets, since `List X` is infinite"*, with the
+`q`-query subtype named as the missing object; (ii) the attainment machinery —
+Lemma 2.33, Notation 2.34, Lemma 2.5's partition, the query induction with the
+adaptive step `sup_e = max_x ∑_y sup_{e'}`; (iii) which `Adv` — the coding map
+from Def 2.26's `PDS.Adv` to `advFullyDefined`.  I verified each of the three
+claims independently; all three hold.
+
+## Empty placeholders (confirmed by reading the files)
+
+`RandomSystems/Game/{Game,MonotoneCondition,Winnability}.lean` and
+`RandomSystems/Technique/{ConditionalEquivalence,DataProcessing,HCoefficient,
+Switching}.lean` are 10-line "Target module for the random-systems migration.
+Not yet populated." stubs.  **The whole of L4 has no home yet.**
+
+---
+
+# M4 — THE MATRIX
+
+Pages are **printed** thesis pages.  `AC:` = abstract-crypto path, `Q:` = quarry
+path (`RandomSystems/…` under
+`/Users/marcilunga/Documents/tob/research/random-systems`).
+
+## Quarry vocabulary trap (read before using any pointer below)
+
+The quarry and the current tree use **the same notation for different objects**:
+
+| symbol | quarry meaning | current-tree meaning |
+|---|---|---|
+| `Δ(S, T)` (with parens) | `maxAdvantage` — `sSup` over probability **distinguishers** `D` of the *signed* `verdictProb D T − verdictProb D S` (`Q: Distinguishing.lean:136,139`) | `PDS.classDistance` — Def 2.28's infimum over representatives (`AC: ClassDistance.lean:149`) |
+| `Δ S T` (no parens) | the class distance, Def 2.28 (`Q: RandomSystem.lean:8358`) | — |
+| `Adv S T` | `sup_e δ(tr(S,e), tr(T,e))`, Def 2.26 (`Q: RandomSystem.lean:901`) | `PDS.Adv` (`AC: Environment.lean:251`), **off-pin** |
+| — | — | `Adv⊥(S, T)` = `advFullyDefined`, the pin-2 object |
+
+Any transplant that copies a quarry statement verbatim will silently change
+which distance is being claimed.  Every `metric` delta below is this.
+
+---
+
+## L0 — substrate (closed, or no obligation)
+
+| item | p. | kind | content | current tree | quarry verdict |
+|---|---|---|---|---|---|
+| 2.1 | 11 | Def | distribution over `A`: `A → ℝ≥0` with finite support; weight `\|X\|`; **weight is not required to be 1** | **DONE** `Probability.Distribution := A →₀ ℝ`, `.weight`, `.isProbDist` (`AC: Probability/Distribution.lean:56,77,138`) | REF-ONLY — `Q: Dist.lean:55` is the identical `Dist A := A →₀ ℝ`; the current tree is a copy already. delta `none` |
+| 2.2 | 12 | Def | marginal `Xᵢ` of a distribution over a product | **DONE** `Distribution.marginal`, `marginalAt` (`AC: Distribution.lean:658,667`) | REF-ONLY — `Q: Dist.lean:617,626`. delta `none` |
+| 2.4 | 12 | Def | `δ(X,Y) := Σ max(0, X(a)−Y(a)) = \|X\| − Σ min(X,Y)`; asymmetric off equal weight | **DONE** `statDist` + `statDist_eq_weight_sub_sum_min`, `statDist_symm_of_eq_weight`, `statDist_eq_half_sum_abs_of_weight_eq` (`AC: StatisticalDistance.lean:142,228,188,258`) | REF-ONLY — `Q: StatDist.lean:142,200,170,230` is the same file one generation back. delta `none` |
+| 2.6 | 12 | Def | `f`-transformation `f(X) := X ∘ f⁻¹` | **DONE** `Distribution.fTransform` (`AC: Distribution.lean:685`) | REF-ONLY — `Q: Dist.lean:644`. delta `none` |
+| 2.7 | 13 | Lem | data processing: `δ(X,Y) ≥ δ(f(X), f(Y))` for total `f` | **DONE** `statDist_fTransform_le` (`AC: StatisticalDistance.lean:921`) | REF-ONLY — `Q: StatDist.lean:815`, plus the equality-under-injectivity companion `:914`. delta `none` |
+| 2.8 | 13 | Lem | Coupling Lemma (Aldous 3.6): (1) any joint gives `δ ≤ Pr(X≠Y)`; (2) a joint attaining equality exists | **DONE** (1) `statDist_le_offDiagonalMass` (`AC: Coupling.lean:247`); (2) `exists_coupling_offDiagonalMass_eq` `:326`, witness `optimalJoint` `:126` | REF-ONLY — `Q: Coupling.lean:149,378`, witness `optimalJoint` `:191`, header cites this as *"Lemma 4 of Lanzenberger–Maurer (TCC 2020)"*. Identical shape; the current tree already carries the improved `IsCoupling`/`offDiagonalMass` split. delta `none` |
+| 2.9 | 13 | Def | `(X,Y)`-DDS: partial `s : X⁺ → Y` with prefix-closed domain; *finite* if `X` finite and `dom(s) ⊆ ∪_{i≤n} Xⁱ`; `dom₁(s)` | **DONE** (object) `System.DDS`, `Valid` (`AC: DiscreteSystem.lean:66,60`); **PARTIAL** (finiteness clause) — see L2 | REF-ONLY — `Q: PFunDDS.lean:64` `{S : List X →. Y // Valid S}` is the same object. delta `carrier` (the quarry rides `PFunDDS`, the tree rides `PFun (List X) Y` with `Valid`; equivalent but not literally interchangeable) |
+| 2.10 | 14 | Ex | the four single-query `({0,1},{0,1})`-DDS `zero, one, id, flip` | **MISSING** — no worked instance; `functionEvaluator` (`AC: DiscreteSystem.lean:114`) covers the genus | REUSE-STMT — `Q: AttainmentCounterexample.lean:44–57` builds four concrete `Bool`-query atoms in exactly this style. delta `carrier` |
+| 2.11 | 14 | Def | DDE `e : Y* → X`, partial, prefix-closed domain | **DONE** `System.DDE` (`AC: Environment.lean:72`) | REF-ONLY — `Q: PFunDDS.DDE`. delta `carrier` |
+| 2.12 | 14 | Def | transcript `tr(s,e)`; compatibility ("`e` never queries outside `dom s`"); the environment may stop | **DONE** `trN`, `tr`, `Stops`, `Compatible` (`AC: Environment.lean:114,155,150,170`); the pin-2 line replaces compatibility+stopping by the total presentation `DDE.Total.transcript` `:356` | REF-ONLY — `Q` uses `transcriptDist S e n` throughout (`BoundedAttainment`, `TranscriptHybrid`), the same length-indexed shape. delta `carrier` |
+| 2.14 | 15 | Def | PDS = distribution over DDS, all support elements sharing one domain; always finite | **DONE** `PDS X Y := Distribution (System.DDS X Y)`, common-domain clause as `HasFixedDomain` (`AC: ProbabilisticSystem.lean:73,85`) | REF-ONLY — `Q: PDS.lean:68` `PFunPDS X Y := Dist (PFunDDS.DDS X Y)`, normalized subtype `PFunPDS.Prob` `:76`. delta `carrier` |
+| 2.15 | 15 | Def | PDE = distribution over DDE | **DONE** `PDE Y X` (`AC: Environment.lean:217`) | REF-ONLY. delta `carrier` |
+| 2.23 | 17 | Rem | an environment does not observe the MC; this matters in the probabilistic case | **PROSE** — no obligation | NONE |
+| 2.26 | 18 | Def | `Adv(S,T) := sup_e δ(tr(S,e), tr(T,e))`, same domain | **PARTIAL** — Def 2.26 verbatim is `PDS.Adv` (`AC: Environment.lean:251`), which pin 2 forbids; the pin-2 object `advFullyDefined` `:636` is Def 2.26 *over the CR18 total presentation*. **The coding map between them is not stated anywhere** (the tree's own `ClassDistance.lean:312` admits this) | REUSE-STMT — `Q: RandomSystem.lean:901` is Def 2.26 verbatim on the partial carrier; `Q: TranscriptAdvantage.lean:109` `maxAdvantage_eq_transcriptAdvantageOn_of_common_fTransform` is the **only** quarry statement of the shape "restricting the environment index set is lossless", which is the shape the missing coding map needs. delta `both` |
+
+**L0 tally: 14 items — 11 DONE, 1 PARTIAL (2.26), 1 MISSING (2.10), 1 PROSE (2.23); quarry 2 REUSE-STMT, 11 REF-ONLY, 1 NONE.**
+
+---
+
+## L1 — equivalence and the non-adaptive reduction
+
+| item | p. | kind | content | current tree | quarry verdict |
+|---|---|---|---|---|---|
+| 2.16 | 15 | Ex | `V := {(zero,¼),(one,¼),(id,¼),(flip,¼)}`, `V′`, and the family `V_α`; **`[V] = {V_α \| α ∈ [0,½]}`** — the equivalence class of a PDS is a nontrivial line | **MISSING** — no worked class in the tree at all | **REUSE-ARCH** — `Q: Example216.lean` is this example, complete and `sorry`-free: `singleQuery` `:129`, `V` `:310`, `isProbDist_V` `:356`, `classBehavior` `:367`, `observableBehavior_V` `:387`, `equivalent_V` `:439` (`α,β ≤ ½ → Equivalent (V α) (V β)`), `delta_V0_Vhalf` `:490` (`δ(V 0, V ½) = 1`). The invariant that transplants: **the whole class is pinned by one closed-form behavior function** (`classBehavior`), so `equivalent_V` is a `rfl`-after-`observableBehavior_V` argument rather than an environment induction. delta `carrier` (`PFunPDS Bool Bool` → `PDS Bool Bool`; `δ` → `statDist`, which are *equal* on non-negative laws, `Q: RandomSystem.lean:93`) |
+| 2.17 | 16 | Def | `S ≡ T` iff same domain **and** `tr(S,e) = tr(T,e)` for all compatible DDE `e`; `[S]` | **DONE** `PDS.equivalent` (`AC: ClassDistance.lean:85`), over `DDE.Total` at every length; the domain clause is documented as subsumed by the total presentation | **REUSE-STMT + a decisive bridge.** `Q: RandomSystem.lean:550` `Equivalent` is the same total-presentation definition. **The important find is `Q: ThesisModel.lean`**, which states Def 2.17 in the *thesis's own* shape — a partial environment `PartialDDE := {e : List Y →. X // prefix-closed}` `:88`, `Compatible` `:220`, `ThesisEquivalent` `:244` — and then proves **`equivalent_iff_thesisEquivalent` `:786`** under `HasFixedDomain S D`/`HasFixedDomain T D`. delta `carrier` |
+| 2.18 | 16 | Lem | `S ≡ T` ⟺ transcripts agree for all compatible **non-adaptive** DDE | **MISSING** — `AC: ClassDistance.lean:82` explicitly records it as "a *characterization* … not needed by anything below" | **REUSE-ARCH** — proved twice in the quarry: `Q: RandomSystem.lean:796` `transcript_equivalent_of_nonadaptive_transcript_equivalent` (with `NonAdaptive e := ∀ y y', y.length = y'.length → e y = e y'` `:622` and the replay environment `playQueries` `:767`), restated in thesis shape as `Q: LanzenbergerChain.lean:188` `lemma_2_18_nonadaptive_environments_suffice`. The transplantable invariant is the Appendix-A.1 device `Q: LanzenbergerChain.lean:160` `fixed_transcript_event_eq_fixed_query_event`: *a fixed transcript event is a fixed-query event*, which is exactly the replay step of the thesis proof. There is also a *legacy* proof on the total carrier, `Q: Legacy/Equiv.lean:895` `equivAdaptive_iff_nonadaptive`, whose machinery (`firstInputIndex`, position tapes, fiber counting) is a **different, much heavier** route — do not transplant that one. delta `carrier` |
+| 2.19 | 16 | Not | bold `S` = the equivalence class; `tr(S,e)` well defined on the class | **PARTIAL** — the tree works with representatives + `advFullyDefined_congr` (`AC: ClassDistance.lean:118`) and never forms the quotient | REUSE-STMT — `Q: RandomSystemQuotient.lean:99` builds the actual quotient `RandomSystem X Y` with `ofProb` `:150`, `of_prob_eq_of_prob_iff` `:154`, and a descended distance `maximalAdvantage` `:171`; `Q: RandomSystemMetric.lean:59` upgrades it to a genuine `MetricSpace` via `maximal_advantage_eq_zero_iff_equivalent` `:49`. **delta `metric`** — that `MetricSpace` instance is built on `maxAdvantage`, which pin 2 forbids; the quotient *construction* transplants, the metric instance does not |
+
+**L1 tally: 4 items — 1 DONE, 1 PARTIAL, 2 MISSING; quarry 2 REUSE-ARCH, 2 REUSE-STMT, 0 NONE.**
+**L1 is the cheapest leg in the whole matrix: every obligation has a finished quarry proof.**
+
+---
+
+## L2 — the finite slice and the multi-system distance
+
+| item | p. | kind | content | current tree | quarry verdict |
+|---|---|---|---|---|---|
+| 2.9 (fin) | 13 | Def | a DDS is *finite* when `X` is finite and `dom(s) ⊆ ∪_{i≤n} Xⁱ`; the thesis restricts to finite systems throughout | **MISSING** — the two ingredients exist as *predicates* (`QBounded` `AC: DiscreteSystem.lean:37`, `HasFixedDomain` `ProbabilisticSystem.lean:85`) but **`QBounded` has zero call sites** and there is **no `Fintype` on any system carrier anywhere in the tree** (verified by grep). `AC: ClassDistance.lean:301` states the obstruction: `List X` is infinite even at finite `X`, so the `Fintype` must come from a `q`-query *subtype* | **REUSE-STMT** — the quarry never builds a `Fintype` subcarrier either; it packages the three hypotheses instead: `Q: BoundedAttainment.lean:90` `PFunPDS.HaveCommonDomainAndBounded S T D q` = `[Fintype X]` + `HasFixedDomain … D` + `QBounded D q`, and every attainment theorem carries it. **This is the shape to copy**: the finite slice is a *hypothesis bundle*, not a subtype. delta `carrier` |
+| U5 | 38 | Unn | "On the Number of Queries": `q` is a property of the **system** (how many queries it answers), not of the distinguisher; a bound on the components induces a bound `q′` on the construction | **MISSING** as a ruling; `filterQueries` (`AC: DiscreteSystem.lean:403`) is the mechanism | REUSE-ARCH — the quarry adopts exactly this ruling and mechanizes it: `Q: PFunDDS.lean:395` `filterQueries`, `Q: MaxWinProb.lean` docstring ("impose the bound by the filter `[q]` on the *game*, not here"), and the normalization predicates `Q: GameOf.lean:1163` `DeltaFiniteQueryNormalization` / `:1176` `DeltaFilteredFiniteQueryNormalization` with the discharge `:1204` from `TotalOnNonempty`. delta `carrier` |
+| 2.27 | 18 | Def | `Δ(𝒮) := 1 − inf_{(S₁,…,Sₙ)} sup_ℰ Pr(S₁ = … = Sₙ)` for a finite set of random systems | **MISSING** | **REUSE-ARCH, with a source erratum.** `Q: MultiSystemCoupling.lean` builds the agreement side: `IsJointOf` `:215`, `agreementMass` `:243`, `supAgreement` `:248`, `overlapDist` `:374` (pointwise min), `agreementMass_le_weight_overlapDist` `:422`, existence `:477`, **attainment `supAgreement_eq_weight_overlapDist` `:550`**, and the `n=2` bridge `supAgreement_pair_eq_weight_sub_delta` `:615`. `Q: LanzenbergerChain.lean:350` `multiSystemDistance` packages Def 2.27 **with `inf` corrected to `sup`**, keeping the verbatim printed form as `printedMultiSystemDistance` `:366` and refuting it with `Q: Example216.lean:591` `definition_2_28_printed_displays_disagree` (`printedMultiSystemDistance (fun _ : Fin 2 => V 0) ≠ Δ (V 0) (V 0)`), while `:602` `corrected_display_agrees_at_V` confirms the corrected form. **Do not transplant the printed display.** delta `carrier` (the agreement machinery is on plain `Dist A` with no system content — delta `none` for `MultiSystemCoupling` itself) |
+| 2.29 | 19 | Thm | `min_{i≠j} Δ(Sᵢ,Sⱼ) ≤ Δ(𝒮) ≤ (min(n,ℓ)−1)·min_{i≠j} Δ(Sᵢ,Sⱼ)`, `ℓ = \|∪ᵢ∪_{Sᵢ} supp(Sᵢ)\|` | **MISSING** | **REUSE-ARCH, with a second source erratum.** `Q: MultiSystemCoupling.lean:774` `theorem_2_29_distribution_upper_bound` proves the upper bound in **attained `∃ i ≠ j` form**, and `:958` `printed_min_form_counterexample` is a **kernel-checked refutation of the printed `min` over pairs** (3 laws on `Fin 3`); the correct reading is `max`. `Q: LanzenbergerChain.lean:567,577,608` carries the lower bound, the refuted min-form, and the corrected upper bound as three named declarations. delta `none` for the distribution-level content, `carrier` for the system-level wrapper |
+| 2.30 | 19 | Lem | matrix lemma: `A ∈ ℝ₊^{n×m}`, every column has a zero, every row sums to `δ` ⟹ `min_{i,j} Σ_k min(A_ik, A_jk) ≤ (1 − 1/(min(m,n)−1))·δ` | **MISSING** | **REUSE-ARCH** — `Q: MultiSystemCoupling.lean:641` `lemma_2_30_zero_column_matrix_bound`, stated in `∃ i ≠ i'` form over `[Fintype row] [Fintype col]` with `2 ≤ card`. The one deviation worth copying: the thesis's "WLOG reorder the rows" is replaced by an explicit **zero-row selector** `z : column → row`, which is what makes the case split formalizable. delta `none` — this is pure real-matrix combinatorics, no carrier and no metric |
+
+**L2 tally: 4 items (2.27, 2.29, 2.30, U5) — all 4 MISSING; quarry 3 REUSE-ARCH, 1 REUSE-STMT.**  The first row above (`2.9 (fin)`) is an *annex*: it re-opens the finiteness clause of item 2.9, counted once in L0, and it is L2's entry obligation.
+**L2 carries the two source errata; both are kernel-checked in the quarry and must travel with the transplant.**
+
+---
+
+## L3 — attainment: Theorems 2.31 / 2.32
+
+| item | p. | kind | content | current tree | quarry verdict |
+|---|---|---|---|---|---|
+| 2.3 | 12 | Lem | `n` distributions of a common weight `p` admit a joint with those marginals (witness `p^{-(n-1)}∏ᵢXᵢ`) | **PARTIAL** — `Probability/FiberCoupling.lean:242` `exists_coupling_of_fTransform_eq` is the *2-ary conditional* gluing (equal pushforward along a shared projection); the `n`-ary equal-weight product is not there | REUSE-STMT — `Q: DistCoupling.lean:242` is the same 2-ary fiber statement (the current tree's file is a rename of it); the `n`-ary form appears only inside `Q: RandomSystem.lean`'s Lemma-2.33 apparatus (`jointProfileList` `:2835`, `crossJointOf` `:3586`). delta `none` |
+| 2.5 | 12 | Lem | `δ(X,Y) = Σᵢ δ(Xᵢ,Yᵢ)` for a partition with `supp(Xᵢ), supp(Yᵢ) ⊆ 𝒜ᵢ` | **DONE** at the distribution level (`AC: StatisticalDistance.lean:896`); **MISSING** in the form L3 actually consumes — additivity across *first-answer branches* of a transcript law | **REUSE-ARCH** — `Q: TranscriptBranchDistance.lean:35` is exactly the consumed form: `δ(Σ_{y∈ys} (x,y)::Sf y, Σ_{y∈ys} (x,y)::Tf y) = Σ_{y∈ys} δ(Sf y, Tf y)`, with the branch index an explicit `Finset (Option Y)` and disjointness *derived* from distinct first answers rather than assumed. Its one hypothesis (`Tf` branchwise `NonNeg`) is defended in-file as Lemma 2.5's own, not an artifact. delta `carrier` |
+| 2.28 | 18 | Def | `Δ(S,T) := inf_{S∈S,T∈T} δ(S,T)` | **DONE** `PDS.classDistance` (`AC: ClassDistance.lean:143`) with both eliminators (`le_classDistance` `:162`, `classDistance_le_statDist_of_equivalent` `:154`) | REF-ONLY — `Q: RandomSystem.lean:8358` `Δ` is the same `sInf`, but restricted to `NonNeg` representatives. **Worth importing that restriction as a design question**, not as code. delta `carrier` |
+| U1 | 20 | Unn | the single-query case: a single-query DDS is a tuple in `Y^{\|X\|}`, and `Adv(S,T) = max_i δ(Sᵢ,Tᵢ)` | **MISSING** | REUSE-ARCH — `Q: BoundedAttainment.lean:382` `optimal_advantage_eq_static_distance_of_finite_common_domain_and_bounded_zero` is the depth-0 base case (`Adv S T = δ S T`) and `:348` gives its closed form `max(\|S\|−\|T\|, 0)`; `Q: Example216.lean` supplies the single-query DDS-as-tuple representation on the partial carrier. delta `both` |
+| 2.33 | 21 | Lem | families `Xᵢ, Yᵢ` of common weights `p_X, p_Y` admit joints `X, Y` with those marginals and `δ(X,Y) = max_i δ(Xᵢ,Yᵢ)` | **MISSING** — `AC: ClassDistance.lean:307` names it as one of the three missing objects and correctly notes `exists_coupling_offDiagonalMass_eq` is "the two-law case, **not** this" | **REUSE-ARCH** — `Q: RandomSystem.lean:4113` `exists_finite_class_joint_witness_of_common_side_weights` (structure `FiniteClassJointWitness` at `:4075`) is Lemma 2.33 at finite first-query classes, built from `jointProfileList` `:2835`, `jointProfile` `:3048`, `classChoiceDist` `:3120`, `choiceOf` `:3275`, `trimOf` `:3349`, `crossJointOf` `:3586`. This is ~1300 lines of apparatus and is the single largest transplantable asset for L3. delta `carrier` |
+| 2.34 | 21 | Not | successor system `s^{↑x}`, successor environment `e^{↑y}`, and the PDS transform `S^{↑x↓y}` — **weight `\|S^{↑x↓y}\|` = Pr[S answers `y` to `x`], so it is *not* a probability distribution**; this is why Def 2.1 must allow arbitrary weight | **MISSING** | **REUSE-ARCH** — `Q` has it twice. Live carrier: `successorTransform` with `Q: RandomSystem.lean:2169` `weight_successorTransform` (`= S.mass fun s => output (fullyDefined s) [x] _ = y`) — exactly the thesis's weight identity — plus `Q: BoundedAttainment.lean:254` (successor pairs keep a common domain with bound `q−1`), `:539` (transcript law splits over the first-answer image), `:584` (reassembly: equal weight + rejection agreement off `D` + successorwise equivalence ⟹ `Equivalent`), `:1129` (per-answer δ identity). Legacy carrier: `Q: Legacy/Successor.lean:42` `firstQueryMass`, `:51` `successor_weight`, `:128` `successor_preserves_equiv` — same content, crushed by a two-level `Fintype` instance burden the file itself flags as its "defining friction". **Transplant the live one.** delta `carrier` |
+| U2 | 22 | Unn | eq. (2.1) and its induction: for all `q`-query PDS with the same domain, `∃ S′∈[S], T′∈[T]` with `δ(S′,T′) = sup_e δ(tr(S,e),tr(T,e))`; induction on `q` with the adaptive step `sup_e = max_x Σ_y sup_{e′}` and an initial-query prepend | **MISSING** — this *is* the missing induction | **REUSE-ARCH** — `Q: BoundedAttainment.lean:751` `exists_bounded_attainment_witness_of_finite_common_domain_and_bounded` **is this induction, finished**, returning `Nonempty (BoundedAttainmentWitness S T q)` (structure `:705` carrying the two representatives, their equivalences, their preserved weights, an attaining environment, and the δ = transcript-δ identity). delta `carrier` |
+| 2.31 | 20 | Thm | `Δ(S,T) = Adv(S,T)`, **with attainment** | **PARTIAL — one half only.** `AC: ClassDistance.lean:246` `advFullyDefined_le_classDistance` is `Adv⊥ ≤ Δ`, unconditional. The reverse is absent by design; `:290–320` itemizes what is missing | **REUSE-ARCH — the theorem is proved in the quarry.** `Q: BoundedAttainment.lean:1106` `class_distance_eq_optimal_advantage_of_finite_common_domain_and_bounded : Δ S T = Adv S T`, with the attainment form at `:1074`, restated in thesis shape as `Q: LanzenbergerChain.lean:208` `theorem_2_31_distance_eq_advantage_attained` (conjunction of the equality and the attaining pair). **Critical caveat: this is `Adv` (Def 2.26 on the quarry's partial carrier), not `Adv⊥`, and it carries `[Fintype X] + HaveCommonDomainAndBounded`.** delta `both` |
+| 2.32 | 20 | Thm | Coupling Theorem for Random Systems: `∃ S∈S, T∈T` with a joint s.t. `Adv(S,T) = Pr(S ≠ T)` | **PARTIAL** — the inequality direction is `AC: ClassDistance.lean:282` `advFullyDefined_le_offDiagonalMass_of_equivalent`, and Lemma 2.8's attainment half is `AC: Coupling.lean:326`; the *composition* (attained representatives ∘ optimal coupling) is missing because 2.31 is | **REUSE-ARCH** — `Q: RandomSystemCoupling.lean:112` `exists_equivalent_representatives_with_probability_coupling_disagreement_eq_optimal_advantage_of_finite_common_domain_and_bounded`, restated at `Q: LanzenbergerChain.lean:260`. The proof is literally three lines once 2.31 is available — attained pair, then `optimal_probability_coupling_exists` `:48`. delta `both` |
+| — | — | — | **the unrestricted strengthening is FALSE** (a project finding, not a thesis claim) | **not recorded in the tree** | **REUSE-ARCH (a refutation you must import).** `Q: AttainmentCounterexample.lean:766` `four_pattern_unrestricted_class_distance_ne_optimal_advantage`: at `PFunPDS Bool PUnit`, `Adv = ½` (`:643`) while **every** equivalent representative pair has `δ = 1` (`:718`), so `Δ = 1` (`:734`); the pair has no common support domain (`:252`). The mechanism is CR18 Def 3.3: a rejected query is *visibly* `⊥` and is deleted only from the DDS-side history, giving the environment a free domain probe. **The current tree's `advFullyDefined` runs on exactly that presentation (`DDE.Total.transcript` over `s⊥`), so this counterexample is expected to apply verbatim — Theorem 2.31 must be stated with `HasFixedDomain` + `QBounded` + finite `X`, never unrestricted.** delta `carrier` |
+| 2.26↔`Adv⊥` | 18 | Unn | the coding map: Def 2.26's compatible/stopping environments vs. the total presentation | **MISSING** — named as gap (iii) at `AC: ClassDistance.lean:312` | **REUSE-ARCH — this is the highest-leverage find in the whole survey.** `Q: ThesisModel.lean` builds the thesis's partial-environment model inside the CR18 carrier and closes both bridges: `PartialDDE.toDDE` `:296` (totalization), `transcript_toDDE_eq_someMap_thesisTranscript` `:339` (the coded environment reproduces the thesis transcript), `prunedPartialDDE` `:490` + `compatible_prunedPartialDDE` `:635` (the rejection-pruning replay, which is the hard direction), and the two endpoints **`equivalent_iff_thesisEquivalent` `:786`** and **`adv_eq_thesisAdv` `:847`** — both under `HasFixedDomain` on each side. delta `carrier` |
+
+**L3 tally: 9 items (2.3, 2.5, 2.28, 2.31, 2.32, 2.33, 2.34, U1, U2) — 1 DONE (2.28), 4 PARTIAL (2.3, 2.5, 2.31, 2.32), 4 MISSING (2.33, 2.34, U1, U2); quarry 7 REUSE-ARCH, 1 REUSE-STMT, 1 REF-ONLY.**  The last two rows above are *annexes*, not thesis items: the attainment counterexample (a project finding that constrains how 2.31 may be stated) and the `Adv`↔`Adv⊥` coding map (gap (iii) of the tree's own queued note).
+**Every L3 obligation has a finished quarry proof; not one of them is on the current carrier or the pin-2 metric.**
+
+---
+
+## L4 — games and winnability
+
+| item | p. | kind | content | current tree | quarry verdict |
+|---|---|---|---|---|---|
+| 2.20 | 17 | Def | monotone condition `A : X* → {0,1}` (monotone: `A(t)=1 → A(t\|t′)=1`); a DDG is the pair `s^A` | **MISSING** — `RandomSystems/Game/MonotoneCondition.lean` is a 10-line "Not yet populated" stub | **REUSE-ARCH** — carriers all exist: `Q: PDS.lean:3045` `IsMBO`, `:3060` `DDS.IsGame`, `:3066` `DDG`, `:3101` `MonotoneMBO`; transcript-level `Q: GameOf.lean:280` `MonotoneCond` and the constructor `Q: GameOf.lean:230` `gameOfDDS` with `Q: GameOf.lean:268` `ignoreMBO_gameOfDDS` (`Ŝ⁻ = s`). `Q: LanzenbergerChain.lean:63` records the reconciliation between the thesis's per-realization predicate `A_s : X* → {0,1}` and CR18's MBO-as-extra-output-bit. **Modeling delta to decide up front:** the quarry realizes a game as `PDS X (Y × Bool)` (bit adjoined to the answer), not as a pair `(s, A)`. delta `carrier` |
+| 2.21 | 17 | Def | transcript of a DDG: `tr(s^A, e) = (t, A(t′))` — the environment sees the answers and the **final** MC value, not the per-round bits | **MISSING** | **REUSE-ARCH** — `Q: GameWinnability.lean:144` `wonFlag`, `:177` `gameTranscriptView` (`t ↦ (t.map (·,·.map Prod.fst), wonFlag t)`), `:181` `gameTranscriptDist`. The docstring states the modeling point explicitly: per-round MC bits are **not** observable, which is Remark 2.23 made structural. delta `carrier` |
+| 2.22 | 17 | Def | PDG = distribution over DDG; two PDG are equivalent when domains agree and DDG-transcript laws agree in all environments | **MISSING** | **REUSE-ARCH** — `Q: GameWinnability.lean:194` `GameEquivalent` (`∀ winner n, gameTranscriptDist G winner n = gameTranscriptDist H winner n`). A *second, coarser* relation also exists — `Q: GameEquivalence.lean:64` `GameEquiv` (`≡ᵍ`, CR18 Def 4.16, equality of pre-winning behavior) — **which is not Def 2.22**; picking the wrong one silently weakens every downstream statement. delta `carrier` |
+| 2.24 | 17 | Rem | a random game `S^A` is an equivalence class of PDG, characterized by `p^{S^A}_{Y_i A_i \| X^i Y^{i-1} A_{i-1}}`; an MC can be *adjoined* to a random system | **MISSING** | REUSE-ARCH — adjunction is `Q: GameOf.lean:988` `gameOf S cond` with `:1018` `ignoreMBO_gameOf` (`Ŝ⁻ = S`, proved) and `:1031` `monotoneMBO_gameOf`; the class-level half is `Q: GameWinnability.lean:205` `gameEquivalent_of_equivalent`. delta `carrier` |
+| 2.25 | 18 | Def | `ν(S^A) := sup_e Pr(tr(S^A,e) ∈ 𝒯_w)`, `𝒯_w` = transcripts ending in `(·,1)`; deterministic environments suffice | **MISSING** | **REUSE-ARCH** — `Q: GameWinnability.lean:105` `WinningTranscript` (with `:111` monotonicity), `:124` `winningMass`, `:248` `supWinProb` (`ν`). The bridge to CR18's `Γ` is proved: `Q: GameWinnability.lean:885` `maxWinProb_eq_supWinProb`, so `Q: MaxWinProb.lean:170` `GamePerf.maxWinProb` (Def 4.17, fully generic in `Winner`/`Game`) and `Q: WinProb.lean:63` are usable as the same object. `Q: MaxWinProb.lean:156` `winProb_eq_expect_single` is the "deterministic winners suffice" step, hypothesis-free. delta `carrier` |
+| U3 | 23–24 | Unn | the games `G`, `G′` on two ε-biased coins: equivalent as games, yet `G′` is **unwinnable with probability ½−ε** over its own randomness while `G` is winnable with probability 1 — the motivating gap between `ν` and per-representative winnability | **MISSING** | **NONE** — no quarry file builds this pair. It is the game-side analogue of Example 2.16, and `Q: Example216.lean` is the template for how to build such a worked pair on this carrier, but the content is absent |
+| 2.35 | 24 | Def | a DDG `s^A` is **winnable** if `∃ x̂ ∈ dom(s)` with `A(x̂) = 1` | **MISSING** | **REUSE-ARCH** — `Q: GameWinnability.lean:281` `PFunDDS.Winnable` (`∃ l, ∃ hl : l ∈ dom g, (output g l hl).2 = true`). delta `carrier` |
+| 2.36 | 24 | Def | `ω(S^A) := inf_{S^A ∈ S^A} Pr^{S^A}(S^A is winnable)` | **MISSING** | **REUSE-ARCH** — `Q: GameWinnability.lean:294` `infWinnability`, taken over `{H \| H.NonNeg ∧ GameEquivalent H G}`. delta `carrier` |
+| 2.37 | 24 | Thm | **Winnability Theorem**: `ν(S^A) = ω(S^A)`, with an attaining representative | **MISSING** | **REUSE-ARCH — proved in the quarry.** `Q: GameWinnability.lean:778` `winnability_theorem_of_fixed_domain_and_bounded`: under `[Fintype X]`, `HasFixedDomain G D`, `QBounded D q`, `G.NonNeg`, concludes `supWinProb G = infWinnability G ∧ ∃ G', G'.NonNeg ∧ Equivalent G' G ∧ G'.mass Winnable = supWinProb G`. The trivial direction is `:338` `supWinProb_le_infWinnability`. Two **documented deviations from the thesis** that transplant with it: MC monotonicity is *never assumed* (the winning event's own monotonicity `:111` replaces it), and no probability-normalization hypothesis is used (`NonNeg` only — Def 2.1's arbitrary-weight generality). Restated in thesis shape at `Q: LanzenbergerChain.lean:300`. delta `carrier` |
+| U4 | 26 | Unn | the **alternative proof of 2.37 via Theorem 2.31**: build `T : (X, Y×{0,1})`-system emitting the monotone win bit and `V` the same system always emitting `0`; then `Adv(T,V) = ν(S^A)`, and Theorem 2.31's attainment makes `T` unwinnable with probability `1 − ν` | **MISSING** | **REUSE-ARCH** — the `V` half is exactly `Q: GameWinnability.lean:356` `PFunDDS.zeroMBO` / `:374` `zeroMBODist`, and the `Adv(T,V) ≤ ν` half is `:747` `adv_zeroMBODist_le_supWinProb`; `:737` `winningMass_eq_winningMass_blindize` supplies the "bit-adaptivity is useless" step the reduction needs. **This is the route that makes L4 a corollary of L3 rather than an independent induction** — worth choosing deliberately. delta `both` |
+
+**L4 tally: 10 items — 0 DONE, 0 PARTIAL, 10 MISSING; quarry 9 REUSE-ARCH, 0 REUSE-STMT, 1 NONE.**
+**L4 has no home in the current tree at all** (three empty `Game/` stubs), and the most complete quarry coverage of any leg: `GameWinnability.lean` is a direct, `sorry`-free formalization of thesis §2.3.3 + §2.4.3.
+
+---
+
+## L5 — applications (§2.5)
+
+| item | p. | kind | content | current tree | quarry verdict |
+|---|---|---|---|---|---|
+| 2.13 | 14 | Def | parallel composition `[s₁,…,sₙ]` as an `(X×[n], Y)`-DDS, by projecting the input list to each component | **DONE** `System.parallel`, `parallelDom` (`AC: DiscreteSystem.lean:585,580`), `restrict` `:479`; law level `PDS.parLaw` (`AC: Parallel.lean:76`) | REF-ONLY — `Q: PFunDDS.lean:577,572` is the same construction, annotated "Lanzenberger Def 2.13 = CR18 Def 3.4". delta `carrier` |
+| 2.38 | 28–29 | Ex | 20 permutations → 4, `64ε⁵` by MPR07 Thm 1 | **MISSING** (illustration) | REF-ONLY — `Q: Legacy/Applications/CascadePRP.lean:90` `URPfunCascade_eq_URPfun` proves the *perfect* case (composing two uniform permutations is uniform), which is the `(1,2)`-combiner core the example instantiates. No ε-version. delta `both` |
+| 2.39 | 29 | Ex | 15 permutations → 4, `320ε⁶` | **MISSING** (illustration) | **NONE** |
+| 2.40 | 30 | Ex | 10 random functions + a `4×10` MDS matrix → 4 functions, `7680ε⁷` | **MISSING** (illustration) | **NONE** — no MDS-matrix construction anywhere in the quarry (grep-checked) |
+| 2.41 | 30 | Def | an `n`-ary **construction** `C` is a probability distribution over functions `𝒮₁×…×𝒮ₙ → 𝒮_{n+1}` that respects `≡` in every slot | **MISSING** | REUSE-STMT — `Q: Legacy/Construction.lean:39` `structure Construction` (LM20 Def 13) has exactly the `respects_equiv` field, and `Q: Legacy/HConstruction.lean:35` generalizes to heterogeneous index types with a substitution operator `:160`. **But pin 3 bites here**: a construction wires calls to component systems, i.e. it is attachment. Under the converter-free pin this row **routes to the MR16 track** (`attachEngineFully`) rather than being built inside this matrix. delta `both` |
+| 2.42 | 31 | Def | for a **monotone** `𝒜 ⊆ {0,1}ⁿ`, `C` is an `𝒜`-combiner for `(F₁,I₁),…,(Fₙ,Iₙ)` iff `C(⟨F/I⟩_{bⁿ}) ≡ C(I₁,…,Iₙ)` for every `bⁿ ∈ 𝒜` | **MISSING** | REUSE-STMT **with a shape mismatch to fix.** `Q: Legacy/Combiner.lean:44` `IsCombiner` is LM20 Def 14 — "*ideal when **all** components are ideal*" — which is the `𝒜 = {1ⁿ}` special case, **not** the thesis's monotone-set-indexed definition. The `⟨F/I⟩_{bⁿ}` mixed-tuple notation has no quarry counterpart at all. delta `both` (+ statement generalization) |
+| 2.43 | 31 | Def | `(k,n)`-combiner: an `𝒜`-combiner with `{bⁿ \| Σbᵢ ≥ k} ⊆ 𝒜` | **MISSING** | REUSE-STMT — `Q: Legacy/Combiner.lean:61` `IsThresholdCombiner` is this, phrased over a `Finset (Fin n) J` with `k ≤ J.card`; `:75` `threshold_combiner_is_combiner`. Closest thesis match in the whole of L5. delta `both` |
+| 2.44 | 32 | Lem | the blinding lemma: `Adv(C(F),C(I)) ≤ B(0ⁿ)⁻¹ · Σ_{e∈{0,1}ⁿ} δ(blind(B,e), blind(B′,e))·Pr(E = e)`, for probability laws `B, B′` on `𝒜 ∪ {0ⁿ}` with `B(0ⁿ)>0`, `B′(0ⁿ)=0` | **MISSING** | **NONE** — no `blind` operation on multisets/tuples, and no quarry statement of this shape |
+| 2.45 | 34 | Thm | `(k,n)`-combiner amplification: `Adv ≤ Σ_{i=n−k+1}^{n} ζ_{i−(n−k),i}·Pr(Σ_{j} E_j = n−k+1)` with `ζ_{l,m} = ½(1 + Σ_{j=l}^{m} C(m,j)C(j−1,l−1))` | **MISSING** | **REF-ONLY, and a trap.** `Q: Legacy/Amplification.lean:57` `amplification_theorem` is LM20 **Theorem 3**, a *different* statement (`Adv ≤ C(n,k−1)·εᵏ`, no `ζ`, no Bernoulli sum), it takes the black-box reduction as an **explicit hypothesis**, and **its `k ≥ 2` branch is `sorry` at `:119`**. `Q: Legacy/Amplification.lean:127` `amplification_theorem_k1` (`≤ n·ε`) and `:165` `threshold_combiner_bound_1_2` (`≤ 2ε`) are independently proved but are plain hybrid bounds — **not amplification** (no exponent in ε). **Nothing here may be forwarded as evidence for Theorem 2.45.** |
+| 2.46 | 36 | Cor | (i) `2^{n−k}Σ_j C(j−1,n−k)Pr(ΣEᵢ=j)`; (ii) `½C(n,k−1)(2ε)^{n−k+1}`; (iii) `(2e·n/(n−k+1)·ε)^{n−k+1}` | **MISSING** | **NONE** for the bounds. The one reusable *fragment* is the binomial identity `Σ_{j≥m} C(j,m)C(n,j)εʲ(1−ε)^{n−j} = C(n,m)εᵐ` proved in the source by `E[C(X,m)]`; the current tree has `Distribution.expect` (`AC: Probability/Expectation.lean:65`) and `Distribution.prod`/`iidPow` (`Distribution.lean:1356,1422`), and the quarry has `Q: Counting.lean` for the surrounding inequalities, but the identity itself is nowhere |
+| U6 | 38 | Unn | a simple `(k,n)`-combiner for random functions: `C(x) := A·xᵀ` for an MDS matrix `A ∈ 𝔽^{k×n}`; hence `Adv((F′₁,…,F′ₖ), Rᵏ) ≤ ½C(n,k−1)(2ε)^{n−k+1}` | **MISSING** | REF-ONLY — the nearest quarry object is `Q: KWiseIndepPoly.lean:197` `kIndepRV_polyEval` (`k`-wise independence from polynomial evaluation over an arbitrary finite field, CR18 §6.1.2), which shares the "linear-algebraic combiner over a finite field" genre and the `k ≤ \|F\|` side condition — but a Vandermonde/Cauchy matrix is a *different* object from an MDS `k×n` matrix and no MDS predicate exists. delta `none` (pure algebra) |
+| 2.47 | 39 | Lem | quasigroup sharing construction: partition `n` systems into `m+1` sets, combine with `⊙`; `Adv(C(Q),Uⁿ) ≤ m(m+1)/4·(2ε)^{2n/(m+1)}` | **MISSING** | **NONE** — no quasigroup structure in the quarry |
+| 2.48 | 41 | Def | for a monotone `ψ : {0,1}ⁿ → {0,1}`, the MC `ψ_{A₁..ₙ}(x̂) := ψ(A₁(x̂\|₁),…,Aₙ(x̂\|ₙ))` and the ψ-parallel composition `[s₁,…,sₙ]^{ψ_{A₁..ₙ}}` | **MISSING** | REUSE-STMT — the two halves exist separately and have never been combined: parallel composition `Q: PFunDDS.lean:577` with its projection `restrict` `:471`, and the MBO carriers `Q: PDS.lean:3045,3101`. The composite MC is not defined anywhere. delta `carrier` |
+| 2.49 | 41 | Cor | `ω([S₁,…,Sₙ]^{ψ}) = Pr(ψ(B₁,…,Bₙ)=1)` with `Bᵢ` independent Bernoulli of parameter `ω(Sᵢ^{Aᵢ})` — the exact winnability of an arbitrary monotone combination of parallel games | **MISSING** | **NONE** for the statement, **REUSE-ARCH for its two inputs**: `ω` is `Q: GameWinnability.lean:294` and Theorem 2.37 is `:778`; the proof is `≤` by picking each sub-game's minimal representative and `≥` by playing independently, then Theorem 2.37. Independent-Bernoulli machinery: the current tree has `Distribution.prod`/`iidPow` but no Bernoulli vector; `Q` has none either. delta `carrier` |
+| A.1 | 88 | Lem | (cf. MPR07 Lemma 3) `Adv(⟨S/T⟩_B, T) = B(0)·Adv(S,T)` for a probability law `B` on `{0,1}` — the exact scaling of the advantage under a two-point mixture | **MISSING** — the tree has only the inequality direction, `advFullyDefined_sum_le` (`AC: Environment.lean:710`) | REF-ONLY — `Q: Distinguishing.lean:187` `advantage_eq_expect_single` and `Q: MaxWinProb.lean:156` `winProb_eq_expect_single` are the linearity facts A.1 is built from, both hypothesis-free; A.1's *equality* (which needs the `sSup` to commute with the scaling) is not stated. delta `both` |
+| A.2 | 88–89 | Lem | `ζ_{l,m} = 2ζ_{l,m−1} + ζ_{l−1,m−1} − 1`, and `2^{m−l}C(m−1,l−1) ∈ [ζ_{l,m}, 2ζ_{l,m}−1]` | **MISSING** | **NONE** — pure binomial recursion, nothing analogous in the quarry. delta `none` (would be written from scratch, carrier- and metric-free) |
+
+**L5 tally: 16 items — 1 DONE (2.13), 0 PARTIAL, 15 MISSING; quarry 1 REUSE-ARCH(partial, for 2.49's inputs), 4 REUSE-STMT, 4 REF-ONLY, 7 NONE.**
+**L5 is the only leg where the quarry is nearly empty**, and it is also the leg where **pin 3 disqualifies the core**: Definitions 2.41–2.43 and Theorem 2.45 are statements about a construction `C` wiring component systems, which is attachment and therefore MR16-track work.
+
+---
+
+# Aggregate tally
+
+| leg | items | DONE | PARTIAL | MISSING | PROSE | REUSE-ARCH | REUSE-STMT | REF-ONLY | NONE |
+|---|---|---|---|---|---|---|---|---|---|
+| L0 | 14 | 11 | 1 | 1 | 1 | 0 | 2 | 11 | 1 |
+| L1 | 4 | 1 | 2 | 1 | 0 | 2 | 2 | 0 | 0 |
+| L2 | 4 | 0 | 0 | 4 | 0 | 3 | 1 | 0 | 0 |
+| L3 | 9 | 1 | 4 | 4 | 0 | 7 | 1 | 1 | 0 |
+| L4 | 10 | 0 | 0 | 10 | 0 | 9 | 0 | 0 | 1 |
+| L5 | 16 | 1 | 0 | 15 | 0 | 1 | 4 | 4 | 7 |
+| **total** | **57** | **14** | **6** | **36** | **1** | **22** | **10** | **16** | **9** |
+
+Read the two halves together: **42 of 57 obligations are open** (MISSING or PARTIAL), and **31 of those 42 have a REUSE-ARCH or REUSE-STMT verdict** — the quarry already contains a finished proof or a usable statement shape for three quarters of the open work.  The residue with no quarry support is concentrated almost entirely in L5.
+
+---
+
+# Pin conflicts — what the quarry contains that must NOT be transplanted as-is
+
+Nine hazards, each verified in the quarry source.
+
+1. **`Δ(S, T)` means `maxAdvantage`, not `classDistance`.**  In the quarry, `Δ(·,·)` **with parentheses** is `sSup` over probability *distinguishers* of the signed `verdictProb D T − verdictProb D S` (`Q: Distinguishing.lean:136,139`), while the class distance is `Δ S T` **without** parentheses (`Q: RandomSystem.lean:8358`).  The current tree binds `Δ(S, T)` to `classDistance` (`AC: ClassDistance.lean:149`).  A verbatim copy silently changes the theorem.
+
+2. **`maxAdvantage` is forbidden by pin 2, and it is load-bearing across the quarry.**  `Q: CompatibleMetric.lean:1358` (eq. (4), non-expansion), `:1396` (eq. (3)), `:1421` (symmetry), `Q: RandomSystemMetric.lean:59` (the `MetricSpace` instance), `Q: AbsorbDPI.lean:991,2240` (converter DPI), `Q: SwitchingLemma.lean:1864`, `Q: CBCMAC.lean:1077,1103`, `Q: GameOf.lean:1431,1472` are all stated on it.  Each is a *statement-shape* asset only; the metric must be re-based on `advFullyDefined`.
+
+3. **`maxEDist` is forbidden by pin 2, and the quarry itself records that it is strictly weaker.**  `Q: StrictContext.lean:158` defines it; `Q: StrictContextAdvantage.lean:403` proves `maxEDist ≤ ofReal Δ(·,·)` **unconditionally**, with equality only on total laws (`Q: StrictContextTotal.lean:474`) or on the shared-domain subcarrier (`Q: StrictContextSharedDomain.lean:934`).  `Q: StrictParallel.lean`'s header states the consequence outright: *"the strict metric is only bounded by `Δ` (`AttainmentCounterexample` refutes the converse), so Maurer's eq. (3) for `Δ` transfers nothing to `maxEDist`."*  Do not import any `StrictContext*` or `StrictParallel` statement into this matrix's work.
+
+4. **The `Adv` ↔ `Δ(·,·)` orientation is forced and counter-intuitive.**  `Q: RandomSystem.lean:1830` `adv_eq_maxAdvantage_swap` proves `Adv S T = Δ(T, S)` — arguments **swapped** — and its docstring records that the naive pairing `Adv S T = Δ(S, T)` is *refutable* (at `S = 0`, `Adv 0 T = 0` while `Δ(0, T)` is `T`'s weight).  Any transplant that guesses the orientation gets a false statement.
+
+5. **Legacy `advantage` is NON-ADAPTIVE and is not Definition 2.26.**  `Q: Legacy/Advantage.lean:62` is a `Finset.sup` over *fixed input tuples*; the adaptive one is the separate `advantageAdaptive` `:84`, and `advantage_le_advantageAdaptive` `:229` is only `≤`.  Every `Legacy/` theorem naming `advantage` — including `Legacy/FundamentalTheorem.lean:216` `delta_eq_advantage` ("Theorem 1") — is therefore about the weaker quantity.
+
+6. **Three live `sorry`s.  None may be forwarded as evidence.**  `Q: Legacy/FundamentalTheorem.lean:172` (the successor branch of Theorem 1 — so `delta_le_advantage` `:189` and `delta_eq_advantage` `:216` are *not* proved); `Q: Legacy/Amplification.lean:119` (the `k ≥ 2` branch of Theorem 3 — so `amplification_theorem` `:57` is *not* proved); `Q: CBCStructureGraph.lean:1415` (`mass_cbcGraphBad_le`, whose own docstring flags that the stated constant is unreachable by the intended union bound).  The live-carrier attainment results (`BoundedAttainment`, `RandomSystemCoupling`, `GameWinnability`, `MultiSystemCoupling`, `Example216`, `ThesisModel`, `LanzenbergerChain`) are `sorry`-free at source level; note that **none of the four surveys ran `#print axioms`**, so "axiom-clean" is not established, only "no source-level `sorry`/`axiom`".
+
+7. **Pin 3 disqualifies the converter-attached quarry assets.**  `Q: AbsorbDPI.lean` (the whole DPI development), `Q: CompatibleMetric.lean:1358` eq. (4), `Q: CBCMAC.lean`, and — decisively — thesis Definitions 2.41–2.43 and Theorem 2.45 are statements about attaching a construction to component systems.  They belong to the MR16 attachment track (`attachEngineFully`), not here.
+
+8. **Two source errata must travel with the L2 transplant.**  (a) Definition 2.27/2.28's inner `inf` over representatives is wrong; the quarry keeps the verbatim display as `Q: LanzenbergerChain.lean:366` `printedMultiSystemDistance` and *refutes* it with `Q: Example216.lean:591` `definition_2_28_printed_displays_disagree`, using the corrected `sup` form `:350` everywhere else.  (b) Theorem 2.29's printed `min_{i≠j}` in the upper bound should be `max`; refuted by `Q: MultiSystemCoupling.lean:958` `printed_min_form_counterexample`.  Transplanting the printed forms imports two false statements.
+
+9. **Attainment is FALSE without the finiteness bundle, on exactly the presentation the current tree uses.**  `Q: AttainmentCounterexample.lean:766` refutes `Δ = Adv` unrestricted, and the mechanism is CR18 Def 3.3 — a rejected query is a *visible* `⊥` deleted only from the DDS-side history, giving the environment a free domain probe.  `PDS.advFullyDefined` is built on precisely that presentation (`DDE.Total.transcript` over `s⊥`).  **Theorem 2.31 must therefore be stated with `HasFixedDomain` + `QBounded` + finite `X`; an unrestricted statement should be expected to be false, not merely unproved.**
+
+**One further definitional decision the quarry forces into the open.**  The quarry's `Δ` (`Q: RandomSystem.lean:8358`) quantifies over **non-negative** representatives only; the current tree's `classDistance` (`AC: ClassDistance.lean:143`) is unrestricted.  On the signed carrier these are different infima.  Pick one before any L3 statement is written.
+
+---
+
+# RECOMMENDED ORDER
+
+**L1 → L2a → L3 → L4 → (L2b in parallel) → L5-residue.**
+
+**1. L1 (equivalence + non-adaptive reduction) — first, and cheap.**
+Four items, every one with a finished quarry proof, and the leg where the current tree is already closest (Def 2.17 is `DONE`).  Two of its assets are prerequisites for everything after it: `Q: ThesisModel.lean`'s `equivalent_iff_thesisEquivalent` `:786` / `adv_eq_thesisAdv` `:847` are the **`Adv` ↔ `Adv⊥` coding map**, which the tree's own queued note names as blocking gap (iii) of Theorem 2.31; and `Q: LanzenbergerChain.lean:160`'s "fixed transcript event = fixed query event" device is the replay step Lemma 2.18 needs.  Doing L1 first converts the pin-2 metric from an *unrelated* object into Definition 2.26 proper, which is what makes every later statement citable against the thesis.
+
+**2. L2a (the finite slice: 2.9's finiteness clause + U5's query ruling) — the gate.**
+Not a leg so much as an entry condition.  The current tree has `QBounded` with **zero call sites** and no `Fintype` on any system carrier.  The quarry's answer is decisive and cheap to copy: **do not build a subtype — bundle the hypotheses**, exactly as `Q: BoundedAttainment.lean:90` `HaveCommonDomainAndBounded` does (`[Fintype X]` + `HasFixedDomain … D` + `QBounded D q`).  Nothing in L3 or L4 can be *stated correctly* until this exists, because of pin conflict 9.
+
+**3. L3 (attainment) — the largest payoff, and it must come third.**
+Nine items, seven REUSE-ARCH, and the whole leg is finished in the quarry: Lemma 2.33's ~1300-line apparatus (`Q: RandomSystem.lean:4113`), Notation 2.34's successor calculus with the weight identity (`Q: RandomSystem.lean:2169` + `Q: BoundedAttainment.lean:254,539,584,1129`), the branch-additivity form of Lemma 2.5 (`Q: TranscriptBranchDistance.lean:35`), the query induction (`Q: BoundedAttainment.lean:751`), Theorem 2.31 (`:1106`) and Theorem 2.32 (`Q: RandomSystemCoupling.lean:112`).  It depends on L1 (the coding map) and L2a (the hypothesis bundle) and on nothing else.  Budget it as the long leg: every piece needs re-basing onto `PDS X Y = Distribution (System.DDS X Y)` and onto `advFullyDefined`.
+
+**4. L4 (games and winnability) — short *if* it comes after L3.**
+Ten items, nine REUSE-ARCH, no home in the current tree (three empty stubs).  The choice that determines its cost is which proof of Theorem 2.37 to take: the quarry's self-contained induction (`Q: GameWinnability.lean:778`) repeats L3's successor machinery, whereas the thesis's **alternative proof (U4)** derives 2.37 from Theorem 2.31 through the always-lose twin `V` — and the quarry already has both halves of that reduction (`Q: GameWinnability.lean:356,374,747,737`).  Sequenced after L3, L4 is a reduction; sequenced before it, L4 is a second induction.  Sequence it after.
+
+**5. L2b (multi-system Δ: 2.27, 2.29, 2.30) — parallelizable, low priority.**
+Genuinely independent: `Q: MultiSystemCoupling.lean` is on plain `Dist A` with no system content and no metric, so its transplant delta is `none` for the combinatorial core.  Nothing in L3, L4 or L5 consumes it.  Hand it to a separate worker at any time — but ship the two errata (pin conflict 8) with it, since the printed statements are false.
+
+**6. L5 (applications) — last, and mostly out of scope.**
+Sixteen items, seven with no quarry support at all, and **pin 3 removes its core**: Definitions 2.41–2.43 and Theorem 2.45 are attachment statements that belong to the MR16 track.  What genuinely remains inside this matrix is a short tail — Definition 2.48's composite MC, Corollary 2.49 (a two-line consequence of Theorem 2.37 once L4 exists), and Lemma A.2's binomial recursion (carrier-free, writable from scratch).  Everything else in L5 should be recorded as deferred rather than scheduled.
+
+**Dependency summary.**
+
+```
+L1 ──┬─────────────► L3 ──► L4 ──► (2.49 tail of L5)
+     │              ▲
+L2a ─┴──────────────┘
+
+L2b  (independent; no consumer)
+
+L5 core (2.41–2.43, 2.45)  ──► MR16 attachment track, not this matrix
+```
+
+# PROVENANCE FENCE (MR11-DEFERRED)
+
+**Rule (binding, 2026-08-17).**  The working discipline is **MR16-only** until
+an explicit MR11 reconciliation task.  Every module listed under `FENCED:`
+below holds MauRen11-specific constructs; **no MR16-track file may import a
+fenced module.**  Fenced → fenced is permitted, as is fenced → MR16-track.
+`scripts/ledgerAudit.sh` derives the fence from the `FENCED:` lines in this
+file and FAILS listing any MR16-track file that imports one, so the list here
+is the gate's only source of truth — add a module to it in the same commit
+that fences it.
+
+Nothing is deleted, deprecated, weakened, or `sorry`-ed by the fence.  Every
+declaration keeps its statement and its proof, and every fenced module stays
+compiled: the AbstractCryptography ones under the `AbstractCryptographyMR11`
+Lake target, the rest under the globbed `ConstructiveCryptography`,
+`RandomSystems` and `Applications` targets.  What the fence changes is only
+*who may import them*.
+
+The occasion (`PHI-SPEC.md`, MR16-ONLY DISCIPLINE CHECK): MauRen16 formalizes
+**no** distinguisher class — one informal sentence (§3.1) defers it — while the
+in-tree `DistinguisherClass` is MauRen11 Definition 15/16 provenance.  MR16's
+own interface is §4.1's metric on `Φ` plus Definition 2 (non-expanding, two
+sided) and Lemmas 1–4, and that is what the MR16 track keeps.
+
+## Classification (M1 audit, every file READ)
+
+| file | verdict | reason |
+|---|---|---|
+| `AbstractCryptography/Metric/Distinguisher.lean` | MR11-OBJECT | defines `DistinguisherClass` (MauRen11 Def 15/16) and `edistD` (§6.1); the file *is* that object |
+| `AbstractCryptography/Metric/Behaviour.lean` | MR11-OBJECT | the carrier taken up to the zero set of `edistD` — MauRen11 Def 14 read through the class |
+| `AbstractCryptography/Metric/ReductionRelaxation.lean` | MR11-OBJECT (new, split from `Metric/Epsilon.lean`) | Jost Def 2.2.9 / JM20 Def 3 at a budget indexed by `D.tests`, and the scalar↔indexed bridge |
+| `AbstractCryptography/Metric/Simulation.lean` | MR11-OBJECT | Jost Def 2.2.12 stated as `π•ℛ ⊆ D.reductionRelaxation ε (σ•𝒮)`; every declaration consumes `D` |
+| `AbstractCryptography/Specification/ChoiceSetting.lean` | MR11-OBJECT | MauRen11 §§4–5, 7 literal: choice settings, CFRs, Defs 1/4/8/9/10/11/18, Theorem 2.  No MauRen16 counterpart |
+| `AbstractCryptography/Specification/TwoParty.lean` | MR11-OBJECT (new, split from `Specification/Filtered.lean`) | MauRen11 App. C: Definition 20, eq. (5), Theorem 4 |
+| `AbstractCryptography/Refinement/StepwiseRefinement.lean` | MR11-OBJECT | MauRen11 App. A: Definition 19 and Theorem 3.  No MauRen16 counterpart |
+| `ConstructiveCryptography/Generalizations/ContextRestricted.lean` | MR11-OBJECT | states every §4.2 construction over `DistinguisherClass` + `reductionRelaxation` |
+| `ConstructiveCryptography/Multiparty/GameMetric.lean` | MR11-OBJECT (new, split from `Multiparty/Basic.lean`) | `gameSpec_of_edistD_le`, indexed by `D` |
+| `RandomSystems/System/DistinguisherClass.lean` | MR11-OBJECT (new, split from `System/ProbabilisticSystem.lean`) | `PDS.Resource.distinguishers` builds a `DistinguisherClass` |
+| `Applications/Frost/ConstructionEps.lean` | MR11-OBJECT (new, split from `Frost/Construction.lean`) | `frost_end_to_end_eps` takes a `DistinguisherClass` parameter |
+| `AbstractCryptography/Metric/Epsilon.lean` | MR16-CORE after the split | the scalar `ε`-ball, CR18 §5.2.1 / JM20 Thm 2–3 / Cor 1, over `PseudoEMetricSpace` + MauRen16 Def 2 non-expansion — exactly what `RandomSystems/System/MetricFullyDefined.lean` consumes |
+| `AbstractCryptography/Specification/Filtered.lean` | MR16-CORE after the split | `filteredAt` is choice-free and LiuMau20 §§2.4–2.5-grounded (explicitly *not* MauRen11 Def 18); its metric leg uses MauRen16 Def 2 |
+| `ConstructiveCryptography/Multiparty/Basic.lean` | MR16-CORE after the split | LiuMau20 §2.4/§2.5 `∗Z`-calculus, game specifications over plain `Set (Φ → ℝ≥0∞)` test families, adversary structures |
+| `RandomSystems/System/ProbabilisticSystem.lean` | MR16-CORE after the split | Lanzenberger Def 2.14 carrier, protocols, `Distinguisher`, `outputOne`, `maxEDist` (MauRen16 fn. 9).  Its `AbstractCryptography.Metric.Simulation` import — the only MauRen11 dependency in the whole `RandomSystems` tree — is gone |
+| `Applications/Frost/Construction.lean` | MR16-CORE after the split | the exact two-rung ladder and the threshold instance |
+| `AbstractCryptography/Metric/Nonexpansion.lean` | CITATION-ONLY | MauRen16 Definition 2 is the primary citation; MauRen11 Def 2/3 quoted as the interface-indexed twin |
+| `AbstractCryptography/Algebra/Attachment.lean` | CITATION-ONLY | the equality-level `Monoid`/`MulAction` rendering; MauRen16 §3.3 and CR18 ground it identically |
+| `AbstractCryptography/Algebra/Indexed.lean` | CITATION-ONLY | MMPRT18 Def 3.1 is the object; MauRen11 fn. 20 is cited for what it does *not* supply |
+| `AbstractCryptography/Algebra/Star.lean` | CITATION-ONLY | CR18 Def 5.9 and MauRen16 §3.4/§4.2; `Indifferentiable` is dual-grounded — MauRen11 Def 23 states it, MauRen16 Lemma 5 makes it a construction statement |
+| `AbstractCryptography/Specification/Basic.lean` | CITATION-ONLY | JM20 §2.2 / MauRen16 §3.3 |
+| `AbstractCryptography/Specification/Parallel.lean` | CITATION-ONLY | JM20 Theorem 1.2 |
+| `AbstractCryptography/Refinement/Basic.lean` | CITATION-ONLY | MauRen11 Defs 5–7, but the same composition laws are MauRen16 Lemma 1 and CR18 Lemma 5.1; it is the base every other module imports |
+| `AbstractCryptography/Tactics/ControlledNaturalLanguage.lean` | CITATION-ONLY | prose provenance for sentence wording; no MauRen11 object |
+| `AbstractCryptography/Tactics/ProofAutomation.lean` | CITATION-ONLY, one deferred rule | `ac_transfer_property` and its `ac_rules` row name `one_tsub_le_test_of_close`, a fenced lemma, inside syntax quotations.  Both references are built with `Lean.mkIdent` so the name resolves at the **use site**: the rule fires in a file importing `AbstractCryptography.MR11` and reports its ordinary failure message in one that does not.  The module itself imports nothing fenced |
+| `RandomSystems/Converter/Converter.lean` | CITATION-ONLY | one remark naming Def 15/16 as the layer a weakened finiteness clause would not survive |
+| `RandomSystems/Converter/Cascade.lean` | CITATION-ONLY | one remark: `apply_comp` is what Def 16's emulation closure needs |
+| `RandomSystems/System/Absorb.lean` | CITATION-ONLY | MauRen11 Def 2 eq. (4) = MauRen16 Def 2 |
+
+Test and demo modules are fenced because they *consume* the quarantined
+surface, not because they define it: `AbstractCryptography{SelectedSurface,
+IndexedRelaxation,ProofAutomation,ContextRestricted}Tests` and
+`ConstructiveCryptographyDemo{,Support}`.
+
+## The fence (machine-readable; the gate reads exactly these lines)
+
+FENCED: AbstractCryptography.MR11
+FENCED: AbstractCryptography.Metric.Distinguisher
+FENCED: AbstractCryptography.Metric.Behaviour
+FENCED: AbstractCryptography.Metric.ReductionRelaxation
+FENCED: AbstractCryptography.Metric.Simulation
+FENCED: AbstractCryptography.Specification.ChoiceSetting
+FENCED: AbstractCryptography.Specification.TwoParty
+FENCED: AbstractCryptography.Refinement.StepwiseRefinement
+FENCED: ConstructiveCryptography.Generalizations.ContextRestricted
+FENCED: ConstructiveCryptography.Multiparty.GameMetric
+FENCED: RandomSystems.System.DistinguisherClass
+FENCED: Applications.Frost.ConstructionEps
+FENCED: AbstractCryptographySelectedSurfaceTests
+FENCED: AbstractCryptographyIndexedRelaxationTests
+FENCED: AbstractCryptographyProofAutomationTests
+FENCED: AbstractCryptographyContextRestrictedTests
+FENCED: ConstructiveCryptographyDemoSupport
+FENCED: ConstructiveCryptographyDemo
+
+
+AUDIT RECORD (adversarial statement-content audit, 2026-08-18,
+/private/tmp/claimaudit/AUDIT.md): 10 of 12 claims HOLD with compiled
+evidence (canonicity non-vacuous; parF_self's weight-1 hypothesis proven
+NECESSARY; quotient-2.31 genuinely class-level, rfl fails; EMetricSpace
+separation real; Example 2.16 and Figure 2.1 match the printed pages).
+OVERSTATED, corrected above: D2 (edist_parF_left_le frame hypotheses),
+D3 (absorption reachable at empty faces), D5 (min-form counterexample
+refutes the proof display, not the theorem).  D4: row 2.16 prints [V] =
+{V_α}; the tree proves ⊆ only.  BROKEN + FIXED: D1 — duplicate
+`answeredQueries_concat_{some,none}` in both lanes made the subtrees
+mutually unimportable, hidden because `lake build`'s globs exclude the
+root; consolidated to Environment.lean (the definition's home), root
+elaborates, and ledgerAudit check 4 (rootAudit) now makes the blindness
+impossible.  C5 note: `contextInsensitive_par_left` is a conditional with
+NO inhabiting instance today (Par ↥converterMonoidAt unsynthesizable) —
+usable only after the G-6 class leg.

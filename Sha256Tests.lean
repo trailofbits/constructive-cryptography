@@ -1,0 +1,61 @@
+/-
+Copyright (c) 2026 Trail of Bits. All rights reserved.
+Authors: Marc Ilunga, Claude
+-/
+import Applications.Sha256
+
+/-!
+# SHA-256 known-answer tests (FIPS 180-4)
+
+All four vectors are discharged by `decide +kernel` — kernel-only
+reduction, so **no elaborator heartbeats** are spent and **no extra
+axiom** is trusted (unlike `native_decide`).  This works only because
+the spec is engineered to be kernel-reducible (structural recursion,
+`Nat.fold`, `UInt32`; see `AGENTS.md`); each one/two-block vector
+checks in about a second.  Expected digests are byte literals: the
+kernel cannot reduce `while`-loop hex parsing.
+
+Kept as a separate lake target (`lake build Sha256Tests`) purely to keep
+KAT churn out of the default build, not for axiom quarantine — if a
+future vector is too large for the kernel (e.g. NIST's million-`a`),
+prove it with `native_decide` and move it to a target of its own so the
+`Lean.ofReduceBool` axiom stays out of this one.
+-/
+
+namespace AbstractCryptography.Sha256.Tests
+
+open AbstractCryptography.Sha256
+
+-- FIPS 180-4: empty message
+theorem sha256_empty :
+    (sha256 ByteArray.empty).data =
+      #[0xe3, 0xb0, 0xc4, 0x42, 0x98, 0xfc, 0x1c, 0x14, 0x9a, 0xfb, 0xf4, 0xc8,
+        0x99, 0x6f, 0xb9, 0x24, 0x27, 0xae, 0x41, 0xe4, 0x64, 0x9b, 0x93, 0x4c,
+        0xa4, 0x95, 0x99, 0x1b, 0x78, 0x52, 0xb8, 0x55] := by
+  decide +kernel
+
+-- FIPS 180-4 B.1: one block, "abc"
+theorem sha256_abc :
+    (sha256 "abc".toUTF8).data =
+      #[0xba, 0x78, 0x16, 0xbf, 0x8f, 0x01, 0xcf, 0xea, 0x41, 0x41, 0x40, 0xde,
+        0x5d, 0xae, 0x22, 0x23, 0xb0, 0x03, 0x61, 0xa3, 0x96, 0x17, 0x7a, 0x9c,
+        0xb4, 0x10, 0xff, 0x61, 0xf2, 0x00, 0x15, 0xad] := by
+  decide +kernel
+
+-- FIPS 180-4 B.2: two blocks, 448-bit message
+theorem sha256_448bit :
+    (sha256 "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq".toUTF8).data =
+      #[0x24, 0x8d, 0x6a, 0x61, 0xd2, 0x06, 0x38, 0xb8, 0xe5, 0xc0, 0x26, 0x93,
+        0x0c, 0x3e, 0x60, 0x39, 0xa3, 0x3c, 0xe4, 0x59, 0x64, 0xff, 0x21, 0x67,
+        0xf6, 0xec, 0xed, 0xd4, 0x19, 0xdb, 0x06, 0xc1] := by
+  decide +kernel
+
+-- 896-bit message
+theorem sha256_896bit :
+    (sha256 "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu".toUTF8).data =
+      #[0xcf, 0x5b, 0x16, 0xa7, 0x78, 0xaf, 0x83, 0x80, 0x03, 0x6c, 0xe5, 0x9e,
+        0x7b, 0x04, 0x92, 0x37, 0x0b, 0x24, 0x9b, 0x11, 0xe8, 0xf0, 0x7a, 0x51,
+        0xaf, 0xac, 0x45, 0x03, 0x7a, 0xfe, 0xe9, 0xd1] := by
+  decide +kernel
+
+end AbstractCryptography.Sha256.Tests
