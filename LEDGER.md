@@ -1121,6 +1121,10 @@ rows close only by commit references.  In particular matrix rows 17, 19, 20,
 
 **LANE RULES (binding for every Lanzenberger-lane brief; Marc, 2026-08-17).**
 
+TERMINOLOGY (Marc, 2026-08-18): the read-only source tree at
+../random-systems is called THE REFERENCE REPOSITORY (older text says
+"quarry" — same object; Q: pointers abbreviate it).
+
 REUSE RULE.  Existing RS work is reused WHENEVER POSSIBLE, in this order:
   (1) current-tree declarations as-is; (2) quarry proof ARCHITECTURE
   (invariants, induction shapes, case splits — transplanted, cited by
