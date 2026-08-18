@@ -789,6 +789,108 @@ theorem hTechnique_expectation {A : Type*} [Fintype A]
         by_cases h : B a <;> simp [h]
     _ ≤ probBad ideal B + ideal.sum (fun a w => if ¬ B a then w * eps a else 0) := le_rfl
 
+/-! ### The partition refinement of the good/bad kernel
+
+Good/bad is not fundamental.  Partition the carrier into cells `cell : A → ι`,
+give each cell its own ratio defect `εᵢ`, and the distance is bounded by the
+`ideal`-average of the defects.  The good/bad lemma is the two-cell case
+(`hTechnique_ratio_via_partition`): the bad cell has defect `1`, the good cell
+has defect `ε`.
+
+Both statements are **derived here** from `hTechnique_expectation`, the
+layer-2 kernel already in this file — the partition shape is a refinement of
+that kernel, not a second proof of it.
+
+*Provenance, flagged.*  The quarry calls this shape "Layer D′, the
+Chen–Steinberger partition form" and cites `Chen–Steinberger` as a bare author
+name: no bibliography entry, year, or page exists anywhere in its
+`HTechnique/` tree, and no such paper is on disk.  The name is therefore
+recorded here as the quarry's attribution, **not** as a verified citation, and
+it sits outside the source hierarchy (MauRen16 / Jost / LiuMau20 /
+Lanzenberger) entirely.  Upgrading it to a page-verified citation is owed. -/
+
+/-- **The partition bound.**  With a per-cell ratio defect,
+
+  `(∀ a, (1 − ε_{cell a})·ideal a ≤ real a)  ⟹  δ(real, ideal) ≤ Σᵢ εᵢ·Pr_ideal[cell = i]`.
+
+The hypothesis is still a pointwise ratio, so it is still checked
+non-adaptively and cell by cell; what the refinement buys is that a cell whose
+ratio is nearly exact contributes nearly nothing, where the good/bad split
+would have had to charge it the full bad mass. -/
+theorem hTechnique_partition {A ι : Type*} [Fintype A] [Fintype ι] [DecidableEq ι]
+    (real ideal : Distribution A) (cell : A → ι) (eps : ι → NNReal)
+    (h_real_nonneg : real.NonNeg)
+    (h_ideal_nonneg : ideal.NonNeg)
+    (h_weight : real.weight = ideal.weight)
+    (h_ratio : ∀ a, (1 - eps (cell a)) * ideal a ≤ real a) :
+    statDist real ideal ≤ ∑ i, (eps i : ℝ) * probBad ideal (fun a => cell a = i) := by
+  classical
+  -- Expectation form at `Bad := ∅` and `ε(a) := ε_{cell a}`, then regroup the
+  -- `ideal`-expectation of `ε_{cell ·}` by cell.
+  have h := hTechnique_expectation real ideal (fun _ => False) (fun a => eps (cell a))
+    h_real_nonneg h_ideal_nonneg h_weight (fun a _ => h_ratio a)
+  refine le_trans h (le_of_eq ?_)
+  have hbad : probBad ideal (fun _ => False) = 0 :=
+    Distribution.mass_eq_zero_of_forall_not ideal (fun _ => id)
+  rw [hbad, zero_add]
+  have hright : ∑ i : ι, (eps i : ℝ) * probBad ideal (fun a => cell a = i)
+      = ∑ a : A, ideal a * (eps (cell a) : ℝ) := by
+    have hexp : ∀ i : ι, (eps i : ℝ) * probBad ideal (fun a => cell a = i)
+        = ∑ a : A, (if cell a = i then ideal a * (eps i : ℝ) else 0) := by
+      intro i
+      unfold probBad
+      rw [Distribution.mass_eq_sum, Finset.mul_sum]
+      exact Finset.sum_congr rfl fun a _ => by
+        by_cases h : cell a = i <;> simp [h, mul_comm]
+    rw [Finset.sum_congr rfl (fun i (_ : i ∈ Finset.univ) => hexp i), Finset.sum_comm]
+    refine Finset.sum_congr rfl fun a _ => ?_
+    rw [Finset.sum_ite_eq Finset.univ (cell a) (fun i => ideal a * (eps i : ℝ))]
+    simp
+  refine Eq.trans ?_ hright.symm
+  simp only [not_false_eq_true, if_true]
+  exact Finsupp.sum_of_support_subset ideal (Finset.subset_univ _) _ (fun a _ => by simp)
+
+/-- **Good/bad is the two-cell case** of `hTechnique_partition`: the bad cell
+carries defect `1` (no ratio is claimed there, and it is charged its full
+mass), the good cell carries defect `ε`, and
+`1·Pr[Bad] + ε·Pr[good] ≤ Pr[Bad] + ε` recovers `hTechnique_ratio`.
+
+This is a consistency statement about the refinement, not a new bound: it
+re-derives the kernel lemma from the partition form, so the two can never
+drift apart. -/
+theorem hTechnique_ratio_via_partition {A : Type*} [Fintype A]
+    (real ideal : Distribution A) (B : A → Prop) (eps : NNReal)
+    (h_real_nonneg : real.NonNeg)
+    (h_ideal_nonneg : ideal.NonNeg)
+    (h_weight : real.weight = ideal.weight)
+    (h_ideal_le : ideal.weight ≤ 1)
+    (h_ratio : ∀ a, ¬ B a → (1 - eps) * ideal a ≤ real a) :
+    statDist real ideal ≤ probBad ideal B + eps := by
+  classical
+  have h := hTechnique_partition real ideal
+    (fun a => if B a then (0 : Fin 2) else 1)
+    (fun i => if i = 0 then 1 else eps)
+    h_real_nonneg h_ideal_nonneg h_weight
+    (by
+      intro a
+      by_cases hB : B a
+      · simpa [hB] using h_real_nonneg a
+      · simpa [hB] using h_ratio a hB)
+  refine le_trans h ?_
+  rw [Fin.sum_univ_two]
+  simp only [reduceIte, NNReal.coe_one, one_mul]
+  have h0 : probBad ideal (fun a => (if B a then (0 : Fin 2) else 1) = 0) = probBad ideal B := by
+    unfold probBad
+    exact Distribution.mass_congr _ fun a => by by_cases hB : B a <;> simp [hB]
+  have h1 : (eps : ℝ) * probBad ideal (fun a => (if B a then (0 : Fin 2) else 1) = 1) ≤ eps := by
+    have hm : probBad ideal (fun a => (if B a then (0 : Fin 2) else 1) = 1) ≤ 1 :=
+      le_trans (Distribution.mass_le_weight h_ideal_nonneg _) h_ideal_le
+    have hnn : 0 ≤ probBad ideal (fun a => (if B a then (0 : Fin 2) else 1) = 1) :=
+      h_ideal_nonneg.mass_nonneg _
+    nlinarith [eps.coe_nonneg]
+  rw [h0]
+  exact add_le_add le_rfl h1
+
 /-- When real and ideal agree exactly on good points, statistical distance is
 bounded by the ideal bad probability. -/
 theorem hTechnique_eq_on_good {A : Type*} [Fintype A]
@@ -969,6 +1071,42 @@ theorem statDist_fTransform_le {A B : Type*}
   refine max_le ?_ (Finset.sum_nonneg fun a _ => le_max_right _ _)
   rw [← Finset.sum_sub_distrib]
   exact Finset.sum_le_sum fun a _ => le_max_left _ _
+
+/-! ### The extension refinement: run the ratio on a richer law
+
+An *extension* of a law `P` is any law `P'` on a richer carrier that pushes
+forward to `P`.  Data processing says a pushforward can only shrink the
+distance, so the distance between the coarse laws is bounded by the distance
+between any pair of extensions — and the ratio hypothesis may therefore be
+checked on the richer carrier, where it is typically exactly computable
+(reveal a key, a hash value, a fresh coordinate after the fact).
+
+`statDist_fTransform_le` above is the inequality; these two lemmas are the
+*shape* the technique uses it in, where the extensions are the data and the
+projection identities are hypotheses rather than definitions.  This is what
+makes them consumable by a technique layer that constructs its extensions
+per environment.  Nothing here needs a finite carrier. -/
+
+/-- **Extension along a common map.**  If `P` and `Q` are the pushforwards of
+`P'` and `Q'` along one map `f`, then `δ(P, Q) ≤ δ(P', Q')`. -/
+theorem statDist_le_of_fTransform_eq {A B : Type*}
+    (P Q : Distribution A) (P' Q' : Distribution B) (f : B → A)
+    (hP : Distribution.fTransform f P' = P) (hQ : Distribution.fTransform f Q' = Q) :
+    statDist P Q ≤ statDist P' Q' := by
+  rw [← hP, ← hQ]
+  exact statDist_fTransform_le P' Q' f
+
+/-- **Extension by side information** — the shape the H-technique uses:
+revealing extra data `Z` after the fact can only increase the distance, so a
+ratio proved on the extended laws bounds the distance between the originals.
+
+  `π₁⋆P' = P  ∧  π₁⋆Q' = Q  ⟹  δ(P, Q) ≤ δ(P', Q')`. -/
+theorem statDist_le_of_extension {A Z : Type*}
+    (P Q : Distribution A) (P' Q' : Distribution (A × Z))
+    (hP : Distribution.fTransform Prod.fst P' = P)
+    (hQ : Distribution.fTransform Prod.fst Q' = Q) :
+    statDist P Q ≤ statDist P' Q' :=
+  statDist_le_of_fTransform_eq P Q P' Q' Prod.fst hP hQ
 
 /-- Exact-on-good H-technique bounds are stable under common deterministic
 post-processing.
