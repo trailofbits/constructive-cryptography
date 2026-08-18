@@ -2771,8 +2771,12 @@ gates, adversarial audit before deltas apply):
      alternative proof (Thm 2.31 + one run-agreement induction); the plan's
      word 'architecture' for GameWinnability.lean:778 refers to that
      reduction, per its own header :58-77.
-  T3 conditional equivalence: definition + the CE bound against Adv⊥
-     (GATED on the pending source admission).
+  T3 conditional equivalence: definition + the CE bound against Adv⊥.
+     GATE RESOLVED 2026-08-18 (PHI-SPEC CE-sources line): no admission
+     needed — charter sources + trap list govern.  Contract = R11(a)+(b):
+     one new relation over the landed observables; the quarry's proven
+     CondEquiv/Theorem417 lemma DAG transported along the CE dictionary
+     (RECAST POLICY, CE rows).  DISPATCHABLE.
   T4 MPR07 Lemma 5 as constructor completeness (on the Behaviour
      quotient; MaPiRe07.pdf p. 140, visual).
   T5 H layer-3: the η·σ factorization + the environment-uniform
