@@ -62,6 +62,17 @@ Def 2.28's pair identity is an equality; Thms 2.31/2.32 hold on the finite
 shared-domain slice and at the Behaviour quotient (an `EMetricSpace`).
 
 ## Status
+Information theory (T6, 2026-08-18, audited): LANDED on Distribution —
+Shannon entropy, conditional entropy, mutual and conditional mutual
+information with all chain rules AND equality conditions; min-entropy /
+collision entropy with the MauRen16 chain rule; KL divergence with Gibbs
+and Pinsker.  Base conventions deliberate and documented: entropy layer =
+BITS (log₂, CR18's convention), klDiv = NATS (pins Pinsker's ½); no
+statement mixes them.  mathlib has no distribution-level entropy and no
+Pinsker — these are native; the mathlib alignments that exist are
+`entropy_eq_sum_negMulLog_div_log_two` and `Distribution.klDiv_toPMF`
+(kernel-checked on the isProbDist slice via Probability/
+DistributionMeasure.lean).  S-21/S-22 unblocked on the probability side.
 MR16 basics-done: **YES** — census 44/48 D+I counted from the matrix
 cells; residue by design (G10 fenced rows 13/48, §3.5 models row 32
 optional, prose row 31).  Lanzenberger pure-RS scope complete (L4 games +

@@ -38,6 +38,12 @@ cascade Def 3.11 — Def 3.11 itself IS in the tree as `System.cascade`
 REGISTER ASSESSMENT (2026-08-18); "free interface" (§5.3.1, a ROLE)
 collides with Algebra/Indexed.lean's exposed-index usage — disambiguate on
 any future use.
+Also (T6, 2026-08-18): §7.2.3 p_max / p_coll / d(X) + Lemmas 7.6, 7.7
+(Probability/Entropy.lean) and App. A.2 Defs A.7-A.9 / Thms A.1-A.3
+(Probability/ShannonEntropy.lean) enter under the R8 fallback, flagged in
+both module headers: no primary develops the collision calculus or the
+Shannon layer.  The min-entropy chain rule in the SAME file is PRIMARY
+(MauRen16 Appendix, eq. (11)) and is cited there, not under the fallback.
 
 **Rule (binding).** Every `def`/`abbrev`/`structure`/`instance` in
 `RandomSystems/System/` and `RandomSystems/Converter/` must appear in this
@@ -2249,7 +2255,7 @@ prefix type and no per-environment law indexed by a query vector"**.
 | T4.7 | Layer D′ partition (Chen–Steinberger) | `Q:Derivation.lean:53-55`, `:649` | `Q:Derivation.lean:664-671`, `:691-697`, `:732-740`; delta `none` for the `Dist` form | **PARTIAL** — AC has the partition *identity* `statDist_partition` (`:903`) and disjoint-cell mass sums (`Distribution.lean:405`, `:441`), but **not** the partition *bound* | **TRANSPLANT** (small, delta `none`) | CLOSED (T0 dbe169e: hTechnique_partition :820 + ratio_via_partition :861) |
 | T4.8 | Layer E extension lemma `π₁⋆P' = P ⟹ δ(P,Q) ≤ δ(P',Q')` | — | `Q:Derivation.lean:780-784`; delta `none` | **PARTIAL** — AC has `statDist_project_const_pair` (`:1100`) and `fTransform_fst_const_pair` (`Distribution.lean:2010`), not the general lemma | **TRANSPLANT** (small, delta `none`) | CLOSED (T0 dbe169e: statDist_le_of_extension :1104; general form :1092) |
 | T4.9 | Layers E′/E″ — reveal/`aug` extended transcripts | — | `Q:Derivation.lean:1076-1085`, `:1270-1285`; delta `carrier` | ABSENT | **BLOCKED-ON** T4.4 | M |
-| T4.10 | counting kernel (falling factorials, permutation-consistency mass, SoP fiber ratio, gate sums) | "Jha-Nandi Proposition 8.1" (`Q:Counting.lean:21`) | `Q:Counting.lean:42`; `Q:RandomSystems/Counting.lean`; `Q:Derivation.lean:4071-4600`, `:4886-5030`; delta `none` | **ABSENT** — AC has only generic uniform-mass atoms (`Distribution.lean:1571`, `:1588`, `:1732`) | **TRANSPLANT** (delta `none` — pure combinatorics, the cheapest large win) | CLOSED (T0 ce0eb22: Probability/Counting.lean, 34 declarations; residue available cheaply: two-sided birthday, sorted-pair sums, function fibers, block-major encoding, re-randomisation fibers) |
+| T4.10 | counting kernel (falling factorials, permutation-consistency mass, SoP fiber ratio, gate sums) | "Jha-Nandi Proposition 8.1" (`Q:Counting.lean:21`) | `Q:Counting.lean:42`; `Q:RandomSystems/Counting.lean`; `Q:Derivation.lean:4071-4600`, `:4886-5030`; delta `none` | **ABSENT** — AC has only generic uniform-mass atoms (`Distribution.lean:1571`, `:1588`, `:1732`) | **TRANSPLANT** (delta `none` — pure combinatorics, the cheapest large win) | CLOSED (T0 ce0eb22: Probability/Counting.lean, 34 declarations; residue CLOSED at T6 ee13035: Probability/CountingResidue.lean, 30 declarations, namespace Probability.Counting — merge into Counting.lean owed, see T6 RELOCATION DEBT) |
 | T4.11 | security-definition wrappers (`fixedQueryAdv`, `Adv`, `advPRF/PRP`, `filteredDelta_le_Adv`) | thesis Def 2.17/2.19/2.26 (`Q:SecurityDefs.lean:17-23`) | `Q:SecurityDefs.lean:51-234`; delta `both` | `System/Advantage.lean` is the reserved empty home; `Adv⊥`/`Adv`/`AdvD`/`Δ` all exist in `Environment.lean`/`ClassDistance.lean` | **TRANSPLANT** — but re-target: AC does **not** need a second advantage object, only the `q`-filtered *reading* of `Adv⊥` | M |
 | T4.12 | filtered advantage + pointless-query self-answer WLOG + environment/chooser duality | `Q:Derivation.lean:1804-1809` (the paper's §3.4 restriction, and the reference repository's note that it is **NOT** WLOG when the two worlds are not both permutations) | `Q:Derivation.lean:1802-2373`, `:2719-3594`, `:3730`; delta `both` | ABSENT | **TRANSPLANT** — and the "not WLOG" caveat must travel with it | L |
 | T4.13 | application kits (HCTR2, SoP, hash-then-PRF, switching, tweakable/strong PRP, projected birthday) | ePrint 2021/1441; Jha-Nandi §5.1; [HR03] | `Q:HTechnique/*` | AC has `Probability/UniversalHash.lean` (299 lines), the ε-AXU family hash-then-PRF consumes | **BLOCKED-ON** T4.4–T4.6 | L (out of first scope) |
@@ -2699,7 +2705,7 @@ touched; every new declaration under `RandomSystems/System/` must be classified 
 |---|---|---|---|---|
 | **P0.1** | **`condProb` toolkit**: the total conditional probability beside AC's `Part`-valued `cond`, the hypothesis-free multiplication rule, Bayes, total probability, and the two chain rules (incl. MPR07 eq. (1)) | T1.9, T2.4 | **M** | CLOSED (T0: chain rule Conditional.lean:386; eq.(3) min-form was already PRESENT — statDist_eq_one_sub_sum_min, StatisticalDistance.lean:251) |
 | **P0.2** | **H-technique refinements**: the Chen–Steinberger partition *bound* and the general extension lemma | T4.7, T4.8 | **S** | CLOSED (T0 dbe169e: statDist_le_of_extension :1104; general form :1092) |
-| **P0.3** | **counting kernel**: falling factorials, permutation-consistency mass, gate sums, the SoP fiber ratio | T4.10 | **M** | CLOSED (T0 ce0eb22: Probability/Counting.lean, 34 declarations; residue available cheaply: two-sided birthday, sorted-pair sums, function fibers, block-major encoding, re-randomisation fibers) |
+| **P0.3** | **counting kernel**: falling factorials, permutation-consistency mass, gate sums, the SoP fiber ratio | T4.10 | **M** | CLOSED (T0 ce0eb22: Probability/Counting.lean, 34 declarations; residue CLOSED at T6 ee13035: Probability/CountingResidue.lean, 30 declarations, namespace Probability.Counting — merge into Counting.lean owed, see T6 RELOCATION DEBT) |
 
 Phase 0 is ≈ **S+M+M** and touches only `Probability/`, so it cannot conflict with
 any carrier ruling and can start immediately.
@@ -2821,12 +2827,49 @@ gates, adversarial audit before deltas apply):
      quotient; MaPiRe07.pdf p. 140, visual).
   T5 H layer-3: the η·σ factorization + the environment-uniform
      corollary; then the counting layer for applications.
-  T6 (Marc 2026-08-18: integrate even without consumers): the reference
-     repository's remaining probability material — the information-theory
-     layer (Divergence.lean, DistExpect.lean: divergences, entropy,
-     expectation extras) and the counting residue listed at the T4.10
-     closure — through the established toPMF bridge on the honest
-     subcarrier; statements restated on Distribution.
+  T6 CLOSED (9806d4e/37df52b/ee13035 + audit fix-up d6ff8e2; adversarially
+     audited, /private/tmp/t6-audit/AUDIT.md: mathematics SURVIVED in full —
+     Boneh–Shoup constants, MauRen16 eq. (11), Pinsker's ½ — five
+     citation-layer refutations, all repaired in d6ff8e2).  151 declarations
+     (136 pre-addendum), all axiom-clean, no sorry; gates green.
+     Probability/{Entropy,ShannonEntropy,Divergence,CountingResidue,
+     DistributionMeasure}.lean.  Bits/nats split deliberate and documented
+     (entropy layer log₂ per CR18; klDiv nats, pinning Pinsker's constant).
+     Equality conditions of Thms A.1–A.3 LANDED (new content — absent in the
+     reference too); the condMutualInfo_eq_zero_iff clause is stated on the
+     support, disclosed in-code.  THREE PLAN-LINE CORRECTIONS found in the
+     tree, recorded here:
+     (a) DistExpect.lean was ALREADY transported (Probability/Expectation.lean
+         has an identical declaration set); "expectation extras" = the staged
+         L0/L1 facts — see the RELOCATION DEBT line below.
+     (b) the plan's toPMF-bridge premise was FALSE (no such bridge existed).
+         Resolution at d6ff8e2: Probability/DistributionMeasure.lean lands
+         `toPMF` from pure mathlib, and `Distribution.klDiv_toPMF`
+         KERNEL-CHECKS native klDiv = mathlib's InformationTheory.klDiv —
+         scoped to the isProbDist slice modulo ENNReal.ofReal (mathlib
+         carries a weight-correction term the native sum does not, which is
+         also why the weight-general Pinsker has no mathlib counterpart).
+     (c) the Shannon layer lives in a THIRD reference file the plan never
+         named (reference ShannonEntropy.lean, 1069 lines) — transported in
+         full.
+  T6 UPSTREAM NOTE (D7): the three CR18 App. A.2 mis-citations the audit
+     caught (Def A.8/A.9 swap, chain-rule/Thm A.3 confusion), the stale
+     sq_sum_le_card_mul_sum_sq UPSTREAM-CANDIDATE note, and the false
+     Maclaurin justification all ORIGINATE in the reference repository's
+     ShannonEntropy.lean (:735,:854,:856,:955-957) — read-only to us; any
+     future transport must NOT re-import them (trap: CR18's appendix restarts
+     its own page numbering — the 2-up formula does not apply there).
+  T6 RELOCATION DEBT (owed, mechanical, no proof churn): (i) append
+     Probability/CountingResidue.lean verbatim to Probability/Counting.lean
+     and delete it (same namespace; separate only for lane ownership);
+     (ii) the staged L0/L1 facts in Entropy.lean §0 / ShannonEntropy.lean §0b
+     carry in-code relocation markers → Distribution.lean (bddAbove_range,
+     apply_le_weight, exists_pos_of_isProbDist, marginal_apply,
+     marginal_isProbDist, mass_graph_eq_sum, sum_le_weight,
+     sum_apply_eq_marginalSnd, marginalSnd) and → Expectation.lean
+     (expect_fTransform, expect_congr_of_support, expect_add_right');
+     Probability/Lift.lean:240's inline copy of apply_le_weight should then
+     consume the relocated lemma.
   SEQUENCING (Marc 2026-08-18): T4, T5, T6 are MUTUALLY INDEPENDENT —
      T4 consumes T1–T3, T5 consumes T0 layers 1–2, T6 only the toPMF
      bridge; all three are parallel-eligible.
