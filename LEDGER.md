@@ -1803,6 +1803,7 @@ The paper's own framing is "**Lemma 5 is tight**" and the *converse* of Lemma 4.
 And `[p. 141]`: "(4) only determines the interrelation between the system's output `Yᵢ` and the value `Aᵢ` of the MBO **at the same step**, but it does **not specify the dependency on previous values `A^{i−1}`**.  In fact, there are various degrees of freedom in the definition of `Ŝ`…"  (the free `r_{xⁱ,yⁱ}` parameters, constrained by eq. (5)).
 Maurer09c `[printed p. 45]` restates this informally, verbatim the same sentence with `F,G` for `S,T` — **it is a restatement, not independent evidence**, and it drops MPR07's `δ`-vs-`Δ` qualification.
 **This confirms the prior repository note's caveat, and sharpens it**: the freedom is not merely "some equivalent representative" but (a) the joint law of `(Yⁱ, Aⁱ)` — *new data not present in `S` at all* — and (b) the `r`-parameters.  Since a random system *is* its behaviour (MPR07 Def 2/3), `Ŝ⁻ ≡ S` is as strong as equality **at the level of random systems**; the representative freedom is entirely in the adjoined data.  In AC this lands exactly on the `Behaviour` quotient (`AC:Behaviour.lean:151`) — the statement is naturally `∀ B C : Behaviour X Y, ∃ …`, and the non-uniqueness is *expected*, not a defect.
+**F3 ANNOTATION, carried to the AC carrier (T4 audit, 2026-08-18 — the clause above is true in MPR07's setting where a system IS its behaviour; this is what it becomes on the finer AC carrier):** in AC the freedom is NOT confined to the adjoined data.  A `PDS` is a law over deterministic atoms and is strictly finer than its behaviour.  For SOME pairs `S`,`T` (worked example in the T4 report §5.1, pen-and-paper, resting on the kernel-checked `PDG.mass_notWon_add_mass_notWon_le_notWonMass`) no game whose `forget` is the GIVEN presentation of `S` is tight at every interaction: the tight game's underlying law must be a different presentation — one whose atoms answer a query differently depending on which queries preceded it.  Thesis printed p. 23 fn. 8 / p. 25 license exactly that re-decomposition, and AC has it landed (`System.DDS.glue`, Lemma 2.33).
 
 ### Cross-source traps (must be in any transplant brief)
 
@@ -2823,8 +2824,43 @@ gates, adversarial audit before deltas apply):
      reading: NO — two DIFFERENT paper relations (strict implication
      proven, both consumed), not two renderings of one concept; awaiting
      Marc's word.
-  T4 MPR07 Lemma 5 as constructor completeness (on the Behaviour
-     quotient; MaPiRe07.pdf p. 140, visual).
+  T4 PARTIAL (505fd36; adversarially audited, /private/tmp/t4-audit/
+     AUDIT.md: code SURVIVES — 22 decls re-verified; COMPLETION ROUND IN
+     FLIGHT).  Landed: MPR07 eq. (3) min form, eq. (4) as uniqueness
+     characterization + construction (`PDS.notWonPart`, every sub-law is
+     a not-won law of a game), Lemma 5 per-distinguisher, Lemma 5(iv) +
+     fn. 16 at the Definition-2.17 class, the equal-behaviour corner.
+     BRIEF CORRECTION (the plan line and survey rows were already right;
+     the implementing BRIEF's `CondEquiv Ĝ T` direction is refuted, kernel
+     receipt in-module; Lemma 5 completes Lemma 4's RESTRICTED
+     equivalence, settled on rendered p. 140-141).
+     SIZE OF THE RESIDUE (audited): **L, with landed architecture** — NOT
+     research-grade, and "Lemma 5 may be false on this carrier" is
+     STRUCK.  MPR07 p. 141 itself prints the construction (the
+     alive-conditional recursion `m_{xⁱ,yⁱ}/m_{xⁱ⁻¹,yⁱ⁻¹}`, fn. 17
+     `m_{x⁰,y⁰}=1`); the thesis licenses the atom re-decomposition it
+     needs (printed p. 23 fn. 8; p. 25 "an ARBITRARY joint distribution …
+     defines a (unique) PDS" — in the Thm 2.37 proof); AC has the
+     machinery landed for Thm 2.31 (`System.DDS.glue`, Lemma 2.33,
+     `successorTransform`/`prependTransform`).  Route = the landed
+     Thm-2.31 induction with `min` in place of the coupling.  Finite
+     support suffices (cuts only where the consistent subset of supp S or
+     supp T strictly shrinks).  The one real obligation: exact on
+     fully-defined presentations; on refusing atoms the alive set must be
+     checked against the deletion-pruned `answeredQueries` list.
+     OBSTRUCTION RE-SCOPED: it binds a FIXED PRESENTATION (with S's own
+     atoms, two environments sharing a prefix draw surviving mass from
+     one branch point), dissolved by a Definition-2.17-equivalent
+     re-decomposition — not a carrier fact.
+     WITNESS PROPERTY (both landed witnesses): discarded mass gets `⊤`,
+     already won at the empty history — outside p. 138's "initially set
+     to 0" reading and the `hnil` clause; sound for every statement made,
+     and why a two-valued condition can never carry Lemma 5(iv).
+     COUPLING-BAN RE-SCOPED (audit §6.6): the standing "do not derive
+     from coupling attainment" is a citation/interpretation rule, not a
+     route ban — at ATTAINED representatives the atom-level min
+     (`optimalJoint`'s diagonal `⊓`, Coupling.lean:144) is exactly the
+     right engine; at arbitrary presentations it over-counts.
   T5 CLOSED (d6886f1 + audit fix-up eeb0550; adversarially audited,
      /private/tmp/t5-audit/AUDIT.md: the Lean SURVIVED every probe —
      exactness, η/σ separation, slot order; two high refutations in the

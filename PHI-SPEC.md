@@ -94,8 +94,15 @@ micro-questions: see LEDGER.md.
   (1) per-atom monotonicity; (2) the forgetting law — dropping the bit
   returns the original BEHAVIOUR (stated against the equivalence class;
   representative choice is how one discharges it, not a modeling wrinkle).
-  MPR07 Lemma 5 = COMPLETENESS of the constructor (an adjunction attaining
-  the distance exists on equivalent systems; non-unique; δ-shaped).
+  MPR07 Lemma 5 = COMPLETENESS of the GAME LAYER (T4 audit correction,
+  2026-08-18).  At a FIXED presentation `adjoin` cannot carry the witness —
+  its not-won mass is a sum of whole atom masses (`winningMass_adjoin`),
+  while eq. (4) needs the fraction `min(p^S,p^T)/p^S` — and Definition
+  2.22's law over pairs supplies the split natively
+  (`PDS.exists_gamesFor_notWonLaw_eq_trLawFullyDefined`).  At the class
+  the constructor question is open and not load-bearing: the witness may
+  equally be an `adjoin` of a re-decomposed presentation.  Attains the
+  distance on equivalent systems; non-unique; δ-shaped.
 - **H-coefficient, three layers**: (1) partition bound (in tree:
   statDist_sum_of_disjoint_support family); (2) good/bad corollary (in
   tree: the hTechnique kernel); (3) transcript instantiation — the ONLY
