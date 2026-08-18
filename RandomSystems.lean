@@ -30,6 +30,7 @@ import RandomSystems.System.StarFullyDefined
 import RandomSystems.System.ParFace
 import RandomSystems.System.Connect
 import RandomSystems.System.Game
+import RandomSystems.System.Winnability
 import RandomSystems.Converter.ConverterImpl
 import RandomSystems.Converter.Sigma
 

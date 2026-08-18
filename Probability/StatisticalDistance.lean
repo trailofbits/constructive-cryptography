@@ -384,24 +384,73 @@ theorem statDist_le_weight {A : Type*}
 
 /-- **Support lemma forced by the CR18/thesis advantage bridge; candidate for upstream.**
 For any event, the one-sided gap between its masses is bounded by statistical distance. -/
-theorem mass_tsub_mass_le_statDist {A : Type*} [Fintype A]
+theorem mass_tsub_mass_le_statDist {A : Type*}
     (X Y : Distribution A) (P : A → Prop) :
     X.mass P - Y.mass P ≤ statDist X Y := by
   classical
-  rw [Distribution.mass_eq_sum, Distribution.mass_eq_sum, statDist_eq_sum_univ, ← Finset.sum_sub_distrib]
-  apply Finset.sum_le_sum
-  intro a _
-  by_cases hp : P a
-  · simpa [hp] using le_max_left (X a - Y a) 0
-  · simpa [hp] using le_max_right (X a - Y a) 0
+  set s : Finset A := X.support ∪ Y.support ∪ (X - Y).support with hs
+  have hsub : (X - Y).support ⊆ s := Finset.subset_union_right
+  rw [Distribution.mass_eq_sum_of_support_subset X
+        (Finset.Subset.trans Finset.subset_union_left Finset.subset_union_left) P,
+    Distribution.mass_eq_sum_of_support_subset Y
+        (Finset.Subset.trans Finset.subset_union_right Finset.subset_union_left) P,
+    statDist_eq_sum_of_support_subset X Y hsub, ← Finset.sum_sub_distrib]
+  have hfilter : ∑ a ∈ s.filter P, (X a - Y a) ≤ ∑ a ∈ s.filter P, max (X a - Y a) 0 :=
+    Finset.sum_le_sum fun a _ => le_max_left _ _
+  exact hfilter.trans (Finset.sum_le_sum_of_subset_of_nonneg (Finset.filter_subset _ _)
+    fun a _ _ => le_max_right _ _)
 
 /-- **Support lemma forced by the CR18/thesis advantage bridge; candidate for upstream.**
 Real-valued form of `mass_tsub_mass_le_statDist`, convenient for signed CR18 advantages.
 (Over the `ℝ` carrier the two coincide; kept for call-site compatibility.) -/
-theorem mass_sub_mass_le_statDist {A : Type*} [Fintype A]
+theorem mass_sub_mass_le_statDist {A : Type*}
     (X Y : Distribution A) (P : A → Prop) :
     ((X.mass P : ℝ) - (Y.mass P : ℝ)) ≤ (statDist X Y : ℝ) :=
   mass_tsub_mass_le_statDist X Y P
+
+/-- **Two pushforwards of one law that agree off a bad event are within its
+mass.**  If `F` and `G` differ only on `P`, then the laws they induce from a
+common non-negative `μ` are at statistical distance at most `μ(P)`.
+
+This is the "identical-until-bad" step in its distributional form: the coupling
+is the shared source `μ`, and the bound is the probability that the two
+readings of one sampled atom part company.  Both sides are pushforwards of the
+*same* `μ` — that is what makes it an equality of couplings rather than a
+triangle inequality, and it is why no weight or `Fintype` hypothesis appears.
+
+UPSTREAM-CANDIDATE (Definition 3 toolkit; the game-playing lemma's kernel). -/
+theorem statDist_fTransform_le_mass_of_eq_off {A B : Type*} {μ : Distribution A}
+    (hμ : μ.NonNeg) (F G : A → B) (P : A → Prop)
+    (hoff : ∀ a ∈ μ.support, ¬ P a → F a = G a) :
+    statDist (Distribution.fTransform F μ) (Distribution.fTransform G μ)
+      ≤ μ.mass P := by
+  classical
+  set s : Finset B := (μ.support.image F) ∪ (μ.support.image G) ∪
+    (Distribution.fTransform F μ - Distribution.fTransform G μ).support with hs
+  have hsub : (Distribution.fTransform F μ - Distribution.fTransform G μ).support ⊆ s :=
+    Finset.subset_union_right
+  have hcover : ∀ a ∈ μ.support, F a ∈ s := fun a ha =>
+    Finset.mem_union_left _ (Finset.mem_union_left _ (Finset.mem_image_of_mem F ha))
+  have hterm : ∀ b ∈ s,
+      max (Distribution.fTransform F μ b - Distribution.fTransform G μ b) 0
+        ≤ μ.mass (fun a => P a ∧ F a = b) := by
+    intro b _
+    have hsplit : μ.mass (fun a => P a ∧ F a = b)
+        + μ.mass (fun a => ¬ P a ∧ F a = b) = μ.mass (fun a => F a = b) :=
+      Distribution.mass_and_add_mass_not_and μ P (fun a => F a = b)
+    have hle : μ.mass (fun a => ¬ P a ∧ F a = b) ≤ μ.mass (fun a => G a = b) :=
+      Distribution.mass_mono_on_support hμ fun a ha hcase => by
+        rw [← hoff a ha hcase.1]; exact hcase.2
+    refine max_le ?_ (hμ.mass_nonneg _)
+    rw [Distribution.fTransform_apply_eq_mass, Distribution.fTransform_apply_eq_mass,
+      ← hsplit]
+    linarith
+  calc statDist (Distribution.fTransform F μ) (Distribution.fTransform G μ)
+      = ∑ b ∈ s, max (Distribution.fTransform F μ b
+          - Distribution.fTransform G μ b) 0 :=
+        statDist_eq_sum_of_support_subset _ _ hsub
+    _ ≤ ∑ b ∈ s, μ.mass (fun a => P a ∧ F a = b) := Finset.sum_le_sum hterm
+    _ = μ.mass P := (Distribution.mass_eq_sum_mass_fiber μ P F s hcover).symm
 
 /-! ### The distance/expectation bridge
 

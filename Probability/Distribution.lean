@@ -305,6 +305,17 @@ theorem mass_add_compl {A : Type*} (X : Distribution A) (P : A → Prop) :
   rw [← Finset.sum_add_distrib]
   exact Finset.sum_congr rfl fun a _ => by by_cases h : P a <;> simp [h]
 
+/-- **Splitting one event by another**: `X(Q) = X(P ∧ Q) + X(¬P ∧ Q)`.  The
+relative form of `mass_add_compl`, which is the case `Q = True`.  Signed layer:
+the pointwise indicator identity, summed. -/
+theorem mass_and_add_mass_not_and {A : Type*} (X : Distribution A) (P Q : A → Prop) :
+    X.mass (fun a => P a ∧ Q a) + X.mass (fun a => ¬ P a ∧ Q a) = X.mass Q := by
+  classical
+  simp only [Distribution.mass, Finsupp.sum]
+  rw [← Finset.sum_add_distrib]
+  refine Finset.sum_congr rfl fun a _ => ?_
+  by_cases hp : P a <;> by_cases hq : Q a <;> simp [hp, hq]
+
 /-- The mass of an event never exceeds the total mass of a non-negative
 distribution: `X(P) ≤ |X|`. -/
 theorem mass_le_weight {A : Type*} {X : Distribution A} (hX : X.NonNeg) (P : A → Prop) :
@@ -326,6 +337,33 @@ theorem mass_mono {A : Type*} {X : Distribution A} (hX : X.NonNeg) {P Q : A → 
   by_cases hP : P a
   · simp [hP, h a hP]
   · by_cases hQ : Q a <;> simp [hP, hQ, hX a]
+
+/-- **A single atom is below the mass of any event it satisfies**: `X a ≤ X(P)`
+when `P a`.  Non-negativity is what makes the other summands harmless — the
+signed-carrier form of `Finset.single_le_sum` for `Distribution.mass`.
+
+UPSTREAM-CANDIDATE.  This is the step every *probing* argument takes: a support
+atom witnessing an event forces that event to carry positive mass, so an event
+of mass zero has no witness in the support. -/
+theorem apply_le_mass {A : Type*} {X : Distribution A} (hX : X.NonNeg)
+    {P : A → Prop} {a : A} (ha : P a) : X a ≤ X.mass P := by
+  classical
+  by_cases hsupport : a ∈ X.support
+  · unfold Distribution.mass Finsupp.sum
+    calc X a = (if P a then X a else 0) := (if_pos ha).symm
+      _ ≤ _ := Finset.single_le_sum
+          (f := fun a' => if P a' then X a' else 0)
+          (fun a' _ => by by_cases h : P a' <;> simp [h, hX a']) hsupport
+  · rw [Finsupp.notMem_support_iff.mp hsupport]
+    exact hX.mass_nonneg _
+
+/-- Contrapositive of `apply_le_mass`: an event of mass zero is not witnessed
+anywhere in the support. -/
+theorem not_of_mass_eq_zero_of_mem_support {A : Type*} {X : Distribution A}
+    (hX : X.NonNeg) {P : A → Prop} (hmass : X.mass P = 0) {a : A}
+    (ha : a ∈ X.support) : ¬ P a := fun hPa =>
+  Finsupp.mem_support_iff.mp ha
+    (le_antisymm (hmass ▸ apply_le_mass hX hPa) (hX a))
 
 /-- `mass_mono` with the implication required only on the support — mass is
 a support sum, so off-support behavior of the events is irrelevant. -/
