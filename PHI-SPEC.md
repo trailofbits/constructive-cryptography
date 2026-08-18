@@ -95,6 +95,21 @@ micro-questions: see LEDGER.md.
   "σ/η factorization", "good/bad", "deficiency".  FORBIDDEN: "blinder" as
   an object (none exists in any source); the bit-output form as primitive;
   any environment that observes the condition (Rem 2.23).
+- **R11 — concept recast, never parallel modeling (Marc, 2026-08-18,
+  binding on every migration leg):** "CR18 migration" means taking THE
+  CONCEPT and reimplementing it ON TOP of the landed infrastructure — we
+  already have PDS, games, conditions, transcript laws, conditioning.  A
+  source concept enters ONLY as definitions/theorems over the existing
+  objects (`Phi`/`PDS`, `PDG`, `MonotoneCondition`, `gameTrLaw`,
+  `supWinProb`, `Adv⊥`, the T0 conditional layer).  FORBIDDEN: a second
+  notion of system/game/equivalence/conditioning; new object stacks or
+  operators copied from a source's own presentation (`S⁻`/`S⊣` as
+  operators, Γ/Γᵇ, blinded-system objects); indiscriminate transcription.
+  If a concept genuinely seems to need a NEW object, that is a fork to
+  Marc, not a build.  Worked instance: CE (T3) = ONE new relation on the
+  not-won slice of `gameTrLaw` vs `trLawFullyDefined`, division-free via
+  T0's cross-multiplied lemma; everything else in its theory is already
+  landed (see LEDGER CR18 RECAST POLICY, CE rows).
 - CE sources (RESOLVED 2026-08-18, Marc: "already accounted for in the
   CR18 migration"): NO separate admission — the T3 charter (LEDGER
   SOURCE-IDENTITY CORRECTION) already assigns the presentations: thesis

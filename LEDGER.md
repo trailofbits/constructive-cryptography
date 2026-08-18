@@ -2804,21 +2804,43 @@ behaviour (membership = the forgetting law), and adjoin = the fiber's
 constructor.  Obligation 1 lives in the MC subtype, obligation 2 in the
 fiber membership — no ad-hoc structure fields.
 
-CR18 RECAST POLICY (Marc, 2026-08-18): future CR18 material — multigames,
-game reductions — is RECAST ON TOP of the thesis layer, never a parallel
-lane.  The dictionary: multigame = system + FAMILY of conditions (the
+CR18 RECAST POLICY (Marc, 2026-08-18; GENERALIZED 2026-08-18 = PHI-SPEC
+R11): ALL CR18/Maurer-school material — multigames, game reductions,
+conditional equivalence, everything after — is the CONCEPT recast ON TOP
+of the landed infrastructure, never a parallel lane and never a parallel
+modeling.  We already have PDS, games (`PDG` pairs), conditions
+(`MonotoneCondition`), transcript observables (`gameTrLaw`,
+`trLawFullyDefined`), conditioning (T0 `Probability/Conditional.lean`):
+a source concept enters as definitions/theorems OVER these, and a concept
+that seems to need a new object stack is a fork to Marc, not a build.
+The dictionary: multigame = system + FAMILY of conditions (the
 lattice gives or/and/frontier games); same-system reduction = the
 upper-set order; cross-system reduction = converter + comap + absorption;
 S⁻ (Def 4.18) = forget; game equivalence (§4.10.1) = equivalent on the
-bit view; k-bit presentation = derived view at a product of bits.  All of
-it enters under the R8 fallback register, flagged.
+bit view; k-bit presentation = derived view at a product of bits.  CE rows
+(T3, thought through 2026-08-18): conditional law `p_{Yⁱ|Xⁱ, A=0}` = the
+not-won slice of `gameTrLaw (playQueries l)` with conditioning from T0's
+`condDist`/cross-multiplied lemma (never re-rolled); CE `Ŝ ⊨ T` = ONE new
+Prop, division-free (slice `= (1 − winningMass) • trLawFullyDefined`),
+quantified over query lists = Maurer13b Def 13's fixed-`Xⁱ`; `ν` =
+`supWinProb`, stated once — NO `Γ`/`Γᵇ`, no blinded-system objects, no
+`S⁻`/`S⊣` operators (the T2 `⊥`-twin at `toBitLaw` is the only twin);
+endpoint `CondEquiv G T → Adv⊥(forget G, T) ≤ ofReal (supWinProb G)` with
+the coupling core generalizing T2's `statDist_fTransform_le_mass_of_eq_off`
+route via T0's chain rules; everything on the `Adv⊥` ⊥-total carrier (F-2
+— CR18 §4.10's no-refusal simplification is rejected); quarry
+`CondEquiv.lean` = statement-shape reference, re-derive never transcribe.
+All of it enters under the R8 fallback register, flagged.
 
 DRIFT TRIPWIRES for every T-brief: the R10 vocabulary rules (LEDGER +
 PHI-SPEC); games are PAIRS (bit view derived); conditions are per-atom
 input predicates (internal randomness via the joint distribution);
 environments never observe the condition; no "blinder" objects; the
 forgetting law is stated against equivalence classes; H-layer-3 is the
-only H build item (layers 1-2 exist — do not re-prove).
+only H build item (layers 1-2 exist — do not re-prove); R11 concept
+recast — no parallel object stacks, CE/any-new-concept consumes the
+landed observables + T0 conditioning, a seemingly-needed new object is a
+fork to Marc not a build.
 
 # CR18 full-sweep register — stretch goals for abstract-crypto
 
