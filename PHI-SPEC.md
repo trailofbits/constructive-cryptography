@@ -12,6 +12,11 @@ CR18 is fallback-only (register in LEDGER.md top); MauRen11 is behind the
 provenance fence pending an explicit reconciliation.
 
 ## Carrier (R1–R3)
+*(Scope limit, recorded 2026-08-18: objects with no underlying PDS —
+CR18's variable-input-length URF, Ex 3.7/Def 6.1, uncountable sample
+space — are outside this carrier BY CONSTRUCTION; Behaviour quotients
+PDS.  A limit, not a defect; any VIL work needs a carrier extension
+ruling first.)*
 - **R1** Φ := `PDS Uni Uni`, `Uni := Σ X : Type u, X`; the official
   interaction carrier is the FULLY DEFINED slice (CR18 Def 3.3's completion
   promoted to object); partial systems enter via `s⊥`; deletion is the

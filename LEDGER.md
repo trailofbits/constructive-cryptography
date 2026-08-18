@@ -28,6 +28,14 @@ review against Jost's formal system layer before extension):
     PARTIAL-ONLY).
 Existing NAMES citing CR18 definitions stay (renames are churn); their
 docstring citations are historical provenance, not authority.
+REGISTER ADDITIONS (CR18 sweep, 2026-08-18 — already in-tree, cited by
+number): Def 4.9 iidPow / Def 4.10 clonePow (Distribution.lean), Def 6.2
+δ-AUH + Def 7.2 2-universal (UniversalHash.lean), Exercise 4.4
+(StatisticalDistance.lean), Def 5.9 (Algebra/Star.lean, CITATION-ONLY).
+Also: Converter/Cascade.lean is converter SERIAL composition, NOT system
+cascade Def 3.11 (stretch S-02); "free interface" (§5.3.1, a ROLE)
+collides with Algebra/Indexed.lean's exposed-index usage — disambiguate on
+any future use.
 
 **Rule (binding).** Every `def`/`abbrev`/`structure`/`instance` in
 `RandomSystems/System/` and `RandomSystems/Converter/` must appear in this
@@ -1148,6 +1156,13 @@ rows close only by commit references.  In particular matrix rows 17, 19, 20,
 `αⁱ` while their RS-B home is whole-face application.
 
 # LANZENBERGER OBLIGATION MATRIX + quarry-reuse map
+
+**SCOPE NOTE (CR18 sweep F-5, 2026-08-18): this matrix enumerates thesis
+CHAPTER 2 ONLY.  Chapter 3 (Theory of Amplification, printed pp. 43-84 —
+hardness amplification for games §3.3 and predicates §3.5) is UNMAPPED and
+is a PRIMARY source for the ground CR18 §4.9 / half of §4.4 covers: the
+stretch items S-04/S-12/S-13 must be recast from Lanz Ch. 3, not built
+from CR18.  A Ch. 3 matrix extension is owed when amplification opens.**
 
 **LANE RULES (binding for every Lanzenberger-lane brief; Marc, 2026-08-17).**
 
@@ -2769,6 +2784,642 @@ input predicates (internal randomness via the joint distribution);
 environments never observe the condition; no "blinder" objects; the
 forgetting law is stated against equivalence classes; H-layer-3 is the
 only H build item (layers 1-2 exist — do not re-prove).
+
+# CR18 full-sweep register — stretch goals for abstract-crypto
+
+**Source**: `/Users/marcilunga/Documents/tob/research/random-systems/papers/CR18_LN.pdf`
+(Cachin–Renner–(Maurer) lecture notes; 85 PDF pages, 2-up: PDF page *N* holds
+printed *2N−13* / *2N−12*; printed *P* → PDF ⌊(P+13)/2⌋).
+
+**Read discipline**: visual only, ≤6 PDF pages per chunk, chapter by chapter.
+**Both repos READ-ONLY.**
+
+**Classification**
+- `COVERED` — exists in abstract-crypto, or sits on an existing plan line (named).
+- `RECAST-PLANNED` — inside the LEDGER CR18 RECAST POLICY dictionary or a T-leg (T0–T6).
+- `STRETCH` — not planned anywhere. Each carries: chapter/printed page · one-line
+  content · nearest primary source (MauRen16 / Jost / LiuMau20 / Lanzenberger) with
+  the recast route, or `CR18-ONLY` · size guess S/M/L.
+
+---
+
+## Reading log
+
+(filled per chunk)
+
+---
+
+## Register
+
+(filled per chunk)
+
+### Chunk A — PDF 1–6 (front matter, full TOC, preface)
+
+Identified: **Ueli Maurer, "Cryptography Foundations", ETH Zürich, Spring 2018.**
+(Single author — the repo shorthand "CR18" is retained here for continuity.)
+
+Full chapter map (printed pages → PDF page = ⌊(P+13)/2⌋):
+
+| ch | title | printed | PDF |
+|---|---|---|---|
+| 1 | Introduction | 1–11 | 7–12 |
+| 2 | Some Cryptographic Schemes, Protocols, and Security Definitions | 12–54 | 12–33 |
+| 3 | Discrete Systems | 55–71 | 34–42 |
+| 4 | Computational Problems and Reductions | 72–111 | 42–62 |
+| 5 | Constructive Cryptography | 112–122 | 62–67 |
+| 6 | Randomness Expansion | 123–131 | 68–72 |
+| 7 | Constructing Shared Secret Keys | 132–142 | 72–77 |
+| A | Appendix (probability / information theory / number theory) | A1–A13 | 78–85 |
+
+Section skeleton worth flagging up front (detail verified chunk by chunk below):
+- **3.1–3.7** reactive systems, DDS, parallel composition, interfaces/resources,
+  environments+transcripts, converters (filters, cascading, output-combining,
+  interface connection), probabilistic systems, behavior (channels-in-IT view,
+  equivalence, cumulative description, transcript-distribution computation),
+  **3.7 discrete computational problems (discrete games, discrete distinguishers)**.
+- **4.1–4.11** decision/search problems, beyond-worst-case, two worked
+  number-theoretic examples, **4.4 abstract computational problems, solvers,
+  performance, the reduction concept, composition of reductions, generalized
+  reductions, worst-case problems**, 4.5 games/multi-games/distinction/bit-guessing,
+  4.6 discrete computational problems, **4.7 basic reduction types**,
+  **4.8 reduction statements for games (repetition amplification, cloning, random
+  self-reduction)**, **4.9 hardness amplification for games**, 4.10 relating games
+  and distinction problems, 4.11 proving indistinguishability (CE, switching lemma).
+- **5.1–5.5** construction paradigm, resource specifications/constructions/
+  relaxations, **5.3.4–5.3.9 ε-relaxation, reduction-based relaxations,
+  ∗-relaxations, a new look at the simulation paradigm, game-relaxation,
+  substitution relaxation**, 5.4 authentication amplification,
+  **5.5 parameterized resources and constructions**.
+- **6.1–6.2** randomness expansion; k-wise independence; URF domain extension
+  (VIL-URF, CBC-MAC as randomness expander, collision-game compression function,
+  CRHF, δ-AUH).
+- **7.1–7.3** key agreement; IT key agreement (impossibility, possibility, privacy
+  amplification); ROM key agreement; impossibility of implementing a random oracle.
+
+### Chunk B — PDF 7–24 (Ch. 1 complete; Ch. 2 printed 12–36)
+
+**Ch. 1 (printed 1–11)** — pure prose: mission of crypto, paradoxes, terminology
+(scheme/protocol; correctness/security/practicality), attack-based vs ideal-world
+definitions, adversary as a hypothetical entity, IT vs computational security,
+modularity/composability, role of assumptions, §1.5 informal hardness implications
+and the reduction idea (formalized in Ch. 4), §1.6 research categories.
+**No formal content. Nothing registrable.**  (§1.3.3 "function vs algorithm" is the
+paper's stated reason for *not* carrying an efficiency predicate — relevant to the
+complexity question below, as the paper's own position.)
+
+**Ch. 2, printed 12–36** — classical schemes as motivation:
+Def 2.1 symmetric cryptosystem; §2.2.2 IND-CPA game (Def 2.2); OTP (Prop 2.1 perfect
+secrecy); §2.2.5 the two "security problems" of OTP; §2.2.6 additive stream cipher;
+Def 2.3 PRG (informal); Def 2.4 block cipher; PRF via a distinction problem;
+§2.3 **three problem types**: Def 2.5 game winning probability `Γ^W(G) := Pr^{WG}(A=1)`,
+Def 2.6 **signed** distinguishing advantage `Δ^D(S,T) := Pr^{DT}(Z=1) − Pr^{DS}(Z=1)`,
+Def 2.7 `Δ^𝒟` = sup over a distinguisher class, `Δ` = sup over all,
+Def 2.8 statistical distance, Lemma 2.1 (best distinguisher = statistical distance),
+Lemma 2.2 (hybrid/telescoping), Def 2.9 **bit-guessing advantage**
+`Λ^D((S,B)) := 2(Pr(Z=B) − ½)`, Lemma 2.3 `Λ^D((S_U,U)) = Δ^D(S_0,S_1)`,
+Lemma 2.4 `Δ^D((S,B),(S,U)) = ½Λ^{D'}((S,B))`;
+§2.4 CC first example (real/ideal, converters, simulator, eq. (2.2)
+`otp-dec^B otp-enc^A [KEY,AUT] ≡ sim^E SEC`, computational variant `≈`, composability);
+§2.5 MACs (Def 2.10, Def 2.11 forgery game, CBC-MAC, Encrypt-then-MAC);
+§2.6 Diffie–Hellman.
+
+Classification for this chunk:
+- Def 2.5 / 2.6 / 2.7 / 2.8, Lemmas 2.1, 2.2 — **COVERED** (metric layer:
+  `PDS.advFullyDefined`, `edist`, statDist family; Def 2.7's class-indexed sup is the
+  fenced `Metric/Distinguisher.lean` `edistD` — LEDGER gap G10, already a known gap).
+- Def 2.2 IND-CPA / Def 2.11 MAC game / Def 2.3 PRG / Def 2.4 block cipher /
+  §2.5.3 CBC-MAC — **out of scope** (LEDGER "APPLICATION rows" discipline).
+- §2.4 (real/ideal, converter, simulator, composability) — **COVERED** (MR16 rows 1,
+  33, 39–43).
+- **Def 2.9 + Lemmas 2.3/2.4: bit-guessing problems as a first-class problem type,
+  and the two-way dictionary to distinction problems.** → see STRETCH S-01.
+
+### Chunk C — PDF 25–36 (Ch. 2 printed 37–54; Ch. 3 printed 55–60)
+
+**Ch. 2 tail (printed 37–54)** — DH key agreement, §2.6.4 extractors (informal),
+Def 2.12/2.13/2.14 DL / CDH / DDH (explicitly typed: "the first two are *games*, the
+last is a *distinction problem*"), PKE (Def 2.15), Def 2.16/2.17 IND-CCA/IND-CPA games,
+TOWP (Def 2.18, Def 2.19 inversion game), RSA (Thm 2.5, Def 2.20), digital signatures
+(Def 2.21, Def 2.22 forgery game), hash functions (Def 2.23), Def 2.24 collision-finding
+game, Def 2.25 collision resistance of a *family*, §2.8.5 hash-then-sign, §2.9 the
+protocol wrap-up. **All APPLICATION / out of scope** by the LEDGER discipline. The one
+transferable remark: §2.8.4's insistence that a fixed instance cannot be hard — only a
+problem with a large instance set — which is the paper's motivation for the §4.4
+performance/solver apparatus (see S-04).
+
+**Ch. 3 opening (printed 55–60)** — verified against the tree:
+- §3.1.1 reactive `(𝒳,𝒴)`-system; Ex 3.1 function system; **Def 3.1 `𝒴`-source**
+  (unary/trigger input alphabet; memoryless or with memory; Ex 3.2 beacon `B_n`,
+  Ex 3.3 `U_n` one-shot); Ex 3.4 the three descriptions of a URF (on-the-fly vs
+  once-and-for-all function table) — §3.1.2 **descriptions vs mathematical types**
+  (prose, but it is the paper's stated reason for the behavior layer of §3.6).
+- **Def 3.2** DDS = partial `s : 𝒳*\{ε} → 𝒴` with prefix-closed domain; "finite"
+  = `dom(s) ⊆ 𝒳^n` — **COVERED** (`System/DiscreteSystem.lean`; R1).
+- **Def 3.3** `s⊥` completion with deletion of the undefined queries — **COVERED**
+  (CR18-FALLBACK register line 1; `fullyDefined`/`keptPrefix`).
+- **Def 3.4** parallel composition `[s₁,…,sₙ]`, with `[s₁,…,sₙ]⊥ = [s₁⊥,…,sₙ⊥]` —
+  **COVERED** (`System.parallel`, `parallel_fullyDefined`).
+- §3.2.3 interfaces as a partition of `𝒳`; **Def 3.5** deterministic resource with
+  interface set `𝓘` as an `(𝓘×𝒳, 𝒴)`-DDS — **COVERED** (R3 exogenous addressing;
+  RS-A `Φ := PDS (P × X) Y`).
+- **Def 3.6** DDE `e : (𝒴∪{⊥})* → 𝒳∪{⊣}` with an explicit **stop symbol `⊣`**;
+  **Def 3.7** transcript `tr(s,e)` — **COVERED** (`DDE.Total`, `Environment.lean`).
+
+### Chunk D — PDF 37–42 (Ch. 3 printed 61–71; Ch. 4 opens printed 72)
+
+Ch. 3 core, item by item:
+- **Def 3.8** DDC with the finite bound on consecutive `(in,x)` outputs — **COVERED**
+  (`Converter.AnswersWithinBudget`; CR18-FALLBACK register line 2).
+- **Def 3.9** converter application `αs` (paper itself declines to prove `αs` is a
+  `(𝒰,𝒱)`-DDS: *"we do not give a completely formal definition"*) — **COVERED**
+  (`DDC.apply`/`connectFully`; MR16 §3.3 is the authority).
+- **§3.4.3 filters** `φ` with `dom(φs) ⊆ dom(s)`, `(φs)(x^k) = s(x^k)`; **Def 3.10**
+  the query filter `[q]` — **COVERED-PENDING** (LEDGER RECEIPT row
+  `filterDom, filterQueries | PENDING (CR18 Def 3.10 filters; O8/Budget) | A8`).
+- **Def 3.11 cascade `s ▷ t`** of an `(𝒳,𝒴)`-DDS with a `(𝒴,𝒵)`-DDS, plus the
+  converter form `casc[s,t] = s ▷ t` on parallel access → **STRETCH S-02**.
+- **Def 3.12 output combination `s ⋆ t`** for an operation `⋆` on `𝒴`, plus its
+  converter form `comb^⋆[s,t]` → **STRETCH S-03**.
+- **Def 3.13** `α^i s` (converter at interface `i`) — **COVERED** (`attachAt i E`, R7″).
+- **Lemma 3.1** `α^i β^j s = β^j α^i s` for `i ≠ j` — **COVERED** (MR16 row 22:
+  `attachAt_comm`, `pairwiseOrderInvariant_attachAt`).
+- **Def 3.14** PDS = random variable over DDS — **COVERED**.
+- **Def 3.15** `(𝒳,𝒴)`-random function / `𝒳`-random permutation as a random variable
+  over *functions*; Ex 3.5 URF `R_{m,n}` / URP `P_m` → see STRETCH S-05 (the
+  function-valued-random-variable presentation and URF/URP as named objects).
+- **Def 3.16** PDE, `tr(S,E)` as a random variable — **COVERED**.
+- **Def 3.17 probabilistic discrete converter (PDC)** = random variable over DDC,
+  composition `(α,s) ↦ αs` lifted → **STRETCH S-06**.
+- **§3.6.1 channels**: `p^C_{Y|X}`, behavior of a channel, `C₁ ≡ C₂`, channel cascade
+  `p^{C▷D}_{Z|X} = Σ_y p^C_{Y|X} p^D_{Z|Y}` — the equivalence-class reading of a
+  conditional distribution is **COVERED** in spirit (`Behaviour.lean` quotient); the
+  channel layer itself is part of S-02/S-07.
+- **Def 3.18 behavior** `b(S) = (p^S_{Y_i|X^i Y^{i-1}})_{i≥1}`; **Def 3.19** `S ≡ T`
+  iff `b(S) = b(T)` — **COVERED** (`equivalent`, `Behaviour.lean`).
+- **Ex 3.7 VIL-URF `V_n`**: a *behavior with no underlying PDS* (uncountable sample
+  space) — the paper explicitly allows behaviors that no PDS realizes → **FLAG F-1**
+  (see Contradictions).
+- **§3.6.4 Def 3.20 cumulative description** `p^S_{Y^i|X^i}`, eq. (3.2) the product
+  form, the inverse (division) formula, and *"the behavior of a system answering at
+  most `q` queries is completely specified by `p^S_{Y^q|X^q}`"* —
+  **RECAST-PLANNED** (T4.4 fixed-query transcript carrier, T5).
+- **§3.6.5 Def 3.21** behavior of an environment; **Lemma 3.2**
+  `p^{ES}_{X^k Y^k} = ∏_i (p^E_{X_i|X^{i-1}Y^{i-1}} · p^S_{Y_i|X^i Y^{i-1}})
+   = p^E_{X^k|Y^{k-1}} · p^S_{Y^k|X^k}` — **RECAST-PLANNED** (this is exactly the
+  η·σ factorization; PHI-SPEC R10 H-layer-3 / LEDGER T4.5 / T5).
+- **eq. (3.3) + its negation**: `p^{ES}_{Y_i|X^i Y^{i-1}} = p^S_{Y_i|X^i Y^{i-1}}`
+  holds, but `p^{ES}_{Y^i|X^i} ≠ p^S_{Y^i|X^i}` in general → **TRAP T-1** worth pinning
+  in the T5 brief (the environment's presence changes the *cumulative* law even though
+  it does not change the one-step law).
+- **§3.7.1 Def 3.22** MBO / DDG; **Def 3.23** winner = DDE; `tr(g,w)` carries `a_i`;
+  the notes flag **multi-games** (several MBOs; hiding the bits then matters) —
+  **RECAST-PLANNED** (CR18 RECAST POLICY: multigame = system + FAMILY of conditions).
+- **§3.7.2 Def 3.24 discrete distinguisher (DDD)** = an environment with **two stop
+  symbols `⊣₀`, `⊣₁`**, output = index of the stop symbol, `0` if it never stops →
+  **STRETCH S-08** (the output-by-stop-symbol convention; AC's environments carry one
+  stop and read the verdict elsewhere).
+
+### Chunk E — PDF 43–54 (Ch. 4 printed 73–96)
+
+**§4.1–4.3 (printed 73–84)** — problem taxonomy and two worked number-theoretic
+reductions:
+- **Def 4.1 search problem** = 4-tuple `(𝒳, 𝒲, Q, P_X)` — instance set, witness set,
+  predicate, **instance distribution** → part of STRETCH S-04.
+- §4.1.3 worst-case vs average-case, "almost-everywhere hardness"; §4.1.4 the three
+  crypto problem types (game / distinction / bit-guessing).
+- §4.2 Thm 4.1 + Lemma 4.2 (RSA LSB), §4.3 the DL-LSB reduction chain (Thm 4.3,
+  Cor 4.4, ideas 1–5: instance shifting, worst→average, initial segment, **performance
+  amplification by majority vote**, instance-distribution change; Ex 4.4 "changing the
+  instance distribution by `d` in statistical distance changes performance by ≤ `2d`",
+  Ex 4.5). **Application/pedagogy**, but they are the paper's motivation for §4.4.
+
+**§4.4 Abstract Computational Problems and Reductions (printed 84–89)** — the paper's
+own abstract theory of problems and reductions. **None of this is in abstract-crypto
+and none of it is in the RECAST dictionary or the T-legs.** → STRETCH S-04 (with
+sub-items):
+- **Def 4.2 problem** `p = (Σ_p solvers, (Ω_p,≤) performance poset, p̄ : Σ_p → Ω_p)`;
+  `a`-solver. Performance sets are `[0,1]` for games, `[−1,1]` for distinction problems.
+- §4.4.4 upper bounds `p̄ ≤ ε` as the shape of an information-theoretic statement.
+- **§4.4.5 Def 4.3 the reduction**: reduction function `ρ : Σ_p → Σ_q`, performance
+  translation `τ : Ω_p → Ω_q` (≤-respecting), **eq. (4.1) `τ p̄ ≤ q̄ ρ`**; `ρ` is a
+  `τ`-reduction of `q` to `p`.
+- §4.4.6 the two quality axes (complexity blow-up of `ρ`, performance loss of `τ`);
+  the dual form via `λ` with `id ≤ λτ` (eq. 4.2) giving **eq. (4.3) `p̄ ≤ λ q̄ ρ`**.
+- **§4.4.7 complexity-theoretic interpretation** — the *only* complexity layer in the
+  notes: `Σ_c := {s | γ(s) ≤ c}`, derived problem `p̄'(c) = sup{p̄(s) : s ∈ Σ_c}`,
+  derived reduction `ρ'(c) = sup{γ(ρ(s)) : s ∈ Σ_c}`; the paper deliberately stops
+  short of a computational model. → STRETCH S-09.
+- **§4.4.8 Lemma 4.5 / Lemma 4.6 — composition of reductions** (both forms).
+- **§4.4.9 generalized reductions** — a reduction from a *list* of problems:
+  eq. (4.4) `τ(p̄₁(s₁),…,p̄ₙ(sₙ)) ≤ q̄ ρ(s₁,…,sₙ)`, eq. (4.5) `p̄ ≤ λ q̄ ρ` with
+  `λ` typically `sum`.
+- **§4.4.10 Def 4.4 worst-case problem** `𝒫̄(s) := inf_{p∈𝒫} p̄(s)`.
+
+**§4.5 Basic types as instantiations (printed 90–92)**:
+- **Def 4.5 game** = `(𝒢, 𝒲, ω : 𝒲×𝒢 → {0,1})`, `Ḡ(W) := Pr^{WG}(ω(W,G)=1)`,
+  `Ω = [0,1]` — **RECAST-PLANNED** (T1/T2 game layer), but note the paper's abstract
+  form takes `𝒢`, `𝒲` as *arbitrary sets*, not discrete systems (§4.6 does the
+  discrete instantiation separately).
+- **Multi-games** `ω₁,…,ω_k`; **Def 4.6 `g^∨` / `g^∧`**; Ex 4.10 hash-then-sign as a
+  3-condition multi-game with `ω₃ → (ω₁ ∨ ω₂)` ⟹ `Ḡ₃ ≤ Ḡ₁ + Ḡ₂` —
+  **RECAST-PLANNED** (dictionary: multigame = system + FAMILY of conditions; the
+  lattice gives or/and/frontier games).
+- **Def 4.7 distinction problem** `⟨S₀|S₁⟩` with performance `Δ^D` (signed), Def 2.7
+  class advantage, `Δ^𝒟 = sup_{D∈𝒟} |Δ^D|` when `𝒟` is closed under complementing the
+  output bit; **Lemma 4.7: closure under output-complementation ⟹ `Δ^{𝒟'}` is a
+  pseudo-metric**; eq. (4.6) the hybrid lemma restated as
+  `⟨S₀|S_k⟩ ≤ sum(⟨S₀|S₁⟩,…,⟨S_{k−1}|S_k⟩)` — the metric is **COVERED**
+  (`PseudoEMetricSpace Phi`), but *Lemma 4.7 as a criterion on a distinguisher class*
+  is not (→ S-10).
+- **Def 4.8 bit-guessing problem** `[S;B]` with performance `Λ^D`; eq. (4.7)
+  `[S_U;U] = ⟨S₀|S₁⟩`; eq. (4.8) `(S,B) = 2·⟨(S,B)|(S,U)⟩ρ` → STRETCH S-01.
+
+**§4.7 Basic reduction types (printed 93–94)** → STRETCH S-11:
+- **Def 4.9** `X^q` = `q` **independent** copies, `⟨X⟩` = countably many independent
+  copies; **Def 4.10** `X^{[q]}` = `q` **clones** (`X₁ = … = X_q`). Applied to systems,
+  environments and converters: `S^q`, `S^{[q]}`, `C^q S^q = (CS)^q`, `E^q`.
+- §4.7.2 **reduction by a converter**: `ω(wc, g) = ω(w, cg)` (eq. 4.9),
+  `ρ^C : W ↦ WC`, **eq. (4.10) `CG = Ḡ ρ^C`** (converter application on a game *is* a
+  reduction function) — partially in the RECAST dictionary (cross-system reduction),
+  but the *equation between a composed game and a composed performance function* is not.
+- §4.7.3 **reduction by multiple instantiation** `σ^q : W ↦ W^q`.
+
+**§4.8 Reduction statements for games (printed 94–97)** → STRETCH S-12:
+- **Def 4.11** `ψ_q(x) := 1−(1−x)^q`, `χ_q := ψ_q^{-1}`, eq. (4.11)
+  `χ_q(x) ≤ −ln(1−x)/q`; **Lemma 4.8 `ψ_q Ḡ ≤ Ḡ^{q∨} σ^q`** — performance
+  amplification for games by repetition.
+- **Def 4.12 `q`-clonability by a converter `K`**: `KG ≡ G^{[q]∨}`; eq. (4.14)
+  `Ḡ^{[q]∨} = Ḡ ρ^K`.
+- **Def 4.13 random self-reducibility by a converter `R`**: `∀g ∈ 𝒢, Rg ≡ G`
+  (a fixed instance is converted into a *random* one).
+- §4.8.4 combining clonability and random self-reduction (worst-case ← average-case).
+
+### Chunk F — PDF 55–60 (Ch. 4 printed 97–108)
+
+- **§4.8.3–4.8.4** Lemma 4.9 (`Ḡ = 𝒢̄ ρ^R` for random self-reducible `G`, turning a
+  worst-case performance into an average-case one), **Theorem 4.10**
+  (`ψ_q Ḡ = Ḡ ρ^K σ^q ρ^R` — random self-reducibility + clonability ⟹ strong
+  amplification), Ex 4.12 (DL is random self-reducible), Ex 4.7 (CDH) → STRETCH S-12.
+- **§4.9 Hardness Amplification for Games (printed 98–104)** → **STRETCH S-13**:
+  §4.9.1 `[G₁,…,G_k]^∧`; §4.9.2 the goal
+  `hard(G,β) ∧ hard(H,γ) ⟹ hard([G,H]^∧, βγ)` stated *constructively*;
+  **§4.9.3 Lemma 4.11** (a general lemma on `μ : 𝒮×𝒯 → [0,1]`:
+  `E_ST[μ] ≤ Pr^S(μ₁(S)≥ε)·Pr^T(μ₂(T)≥ε′) + ε + ε′`) and its `k`-ary
+  **Lemma 4.13**; **§4.9.4 Def 4.14** the emulating converters `H̲`, `G̲` and
+  **Theorem 4.12** (`G`,`H` clonable ⟹ generalized reduction
+  `[G,H]^∧ ≤ λ(Ḡ,H̄)[ρ₁,ρ₂]`, `λ(x,y) = (1+δ)xy + δ′`, with the explicit
+  `q ≈ 2ln(2/δ)/δ′` calibration); **§4.9.5 Theorem 4.14**
+  `Ḡ^{k∧} ≤ λ Ḡ ρ`, `λ(x) = (1+δ)x^k + δ′`, implying
+  `hard(G,β) ⟹ hard(G^{k∧}, β^k)`.  (Provenance: the notes cite Maurer–Pietrzak–Renner,
+  *Indistinguishability amplification*, CRYPTO 2007.)
+- **§4.10 (printed 104–108)** — the standing `q`-query/dummy-padding simplification
+  (already pinned in the LEDGER SOURCE LEDGER); **Def 4.15 pre-winning behavior**,
+  **Def 4.16 `G ≡ᵍ H`**, **Lemma 4.15** (`G ≡ᵍ H ⟹ Ḡ = H̄`), **Def 4.17
+  `Γ(G) := sup_W Ḡ(W)`**, **Def 4.18 `S⁻`**, **Lemma 4.16 `⟨S⁻|T⁻⟩ ≤ S̄`** —
+  all **RECAST-PLANNED** (T1/T2; LEDGER T1.2, T3.x, and the RECAST dictionary line
+  "`S⁻` (Def 4.18) = forget; game equivalence (§4.10.1) = equivalent on the bit view").
+- **§4.10.2 eq. for `p^{DS}_{X^q Y^q Z}` = `p^D_{X^q|Y^{q−1}} · p^S_{Y^q|X^q} ·
+  p^D_{Z|X^q Y^q}`** — the **three-factor** decomposition (η · σ · *verdict*), a
+  refinement of Lemma 3.2 that T5's brief should carry: the distinguisher's output bit
+  is a third factor, not part of `η`.  → **TRAP T-2** (T5 scope note, not a stretch item).
+- **§4.11.1 Def 4.19 conditional equivalence `S ⊫ T`** + eq. (4.38) — **RECAST-PLANNED**
+  (T3, gated on the pending Maurer02/Maurer13b source admission).
+
+### Chunk G — PDF 61–66 (Ch. 4 printed 109–111; Ch. 5 printed 112–120)
+
+Ch. 4 close:
+- **Def 4.20 `bS`** (blocking converter: transparent for queries `X_i`, blocks replies
+  `Y_i`) and `Γ(bS)` = the non-adaptive winning probability; **Def 4.21 `T̃`**
+  (copies queries to a second system, ignores its replies); **Theorem 4.17**
+  `⟨S|T⟩ ≤ b̄Ŝ ∘ ρ^T̃`, in particular `Δ(S,T) ≤ Γ(bŜ)`, with the (4.39)/(4.40)
+  enhancement proof — **RECAST-PLANNED** (T1/T3; already pinned verbatim in the
+  LEDGER SOURCE LEDGER).
+- **§4.11.3 the switching lemma**: Def 4.22 `p_coll(t,q)`, Lemma 4.18
+  `p_coll(t,q) ≤ ½q²/t`, **Lemma 4.19 `Δ([q]R_{n,n}, [q]P_n) ≤ ½q²2^{−n}`**, proved via
+  Ex 4.15's distinctness MBO. Application-genre; the *technique* is planned (T1/T3),
+  the URP/URF instance is an application. Note the statement is phrased with the
+  **`[q]` filter**, i.e. it consumes Def 3.10 (LEDGER A8 PENDING row).
+
+**Ch. 5, printed 112–120**:
+- §5.1.1 modular construction / step-wise refinement (prose).
+- **Def 5.1 construction** = a *relation* `⊆ Ω × Γ × Ω`; **Def 5.2 composable**
+  construction (eq. 5.1) — **COVERED** (`Constructs`, `IsSeriallyComposable`, and the
+  paper's point that composability is a property to be *proved*, which is exactly the
+  AC class-based treatment).  eq. (5.2) `∘_i` (plugging a constructor into the `i`-th
+  argument) and **eq. (5.3) `⋀_i (R_i →^{a_i} S_i) ⟹ [R₁,…,R_k] →^{[a₁,…,a_k]}
+  [S₁,…,S_k]`** — the paper explicitly *declines to discuss* these; AC has the
+  one-slot form (row 6, `constructs_parF_left`) but not the simultaneous `k`-ary form
+  → minor, folded into S-14.
+- **Def 5.3 resource specification**, "at least as specific as", abstraction —
+  **COVERED** (row 7).
+- **Def 5.4 `𝓡 →^γ 𝓢 :⟺ γ(𝓡) ⊆ 𝓢`**, **Lemma 5.1** composability — **COVERED**
+  (rows 33, 34).
+- **Def 5.5 relaxation** `ρ : 𝒫(Φ) → 𝒫(Φ)` with `𝓡 ⊆ ρ(𝓡)`, pointwise-induced form,
+  ε-relaxation — **COVERED** (`Relaxation` with its `le_toFun` field; rows 8, 9).
+- **Def 5.6 compatibility of a relaxation with a construction set** + non-expanding
+  `γ` + "all `γ` non-expanding ⟹ ε-relaxation is compatible" — **COVERED**
+  (rows 35, 36; `IsNonexpandingSMul`, `epsilonRelaxation_compatible`).
+- **Def 5.7 compatibility of a relaxation with parallel composition**
+  `[R₁,…,ρ(R_i),…,R_n] ⊆ ρ([R₁,…,R_n])`, and eq. (5.4) "pulling relaxations to the
+  outside" → **STRETCH S-14**.
+- **§5.3.1 three interface types: party / adversary / FREE** (the free interface models
+  the *environment's* access, e.g. the forwarding trigger of an authenticated channel)
+  → **STRETCH S-15**.
+- **Def 5.8 protocol** `π = (π₁,…,π_n)`, construction function
+  `𝓡 ↦ π₁^{P₁}⋯π_n^{P_n}𝓡` — **COVERED** (rows 62, 63; `patternAttach`).
+- **§5.3.3 resources vs converters** — three choices for the converter class
+  (all systems / **trivial, connect-only** / efficiently implementable); the notes
+  adopt the *trivial-converter* stance and reify a converter as a parallel resource:
+  **`αR = π[R, α̃]`** → **STRETCH S-16** (nearest planned neighbour: MR16 row 32
+  "Σ as a parameter, models 1–4", status `PARTIAL`, gap G9).
+- §5.3.4 ε-relaxation `𝓡^ε` — **COVERED**.
+- **§5.3.5 reduction-based relaxations**: `f = λ(p̄₁,…,p̄ₙ)[ρ₁,…,ρₙ]` a performance
+  function, **eq. (5.5) `𝓡^f := {R′ | ∃R ∈ 𝓡 : ⟨R|R′⟩ ≤ f}`** — computational
+  closeness as a relaxation indexed by a *reduction*, plus the remark that
+  compatibility for this type is "a bit subtle" and is **not discussed** →
+  **STRETCH S-18** (recast route: `Metric/ReductionRelaxation.lean` = Jost Def 2.2.9 /
+  JM20 Def 3 exists but is **behind the MR11 PROVENANCE FENCE**, so it is planned-but-
+  blocked, not available).
+- **§5.3.6 Def 5.9 ∗-relaxation** `𝓡^{*E} := {α^E R | α ∈ Σ, R ∈ 𝓡}` — **COVERED**
+  (rows 25, 26; `Relaxation.star`).
+- **§5.3.7 a new look at the simulation paradigm**: `U ≡ σ^E V ⟹ ∀α ∃β : α^E U =
+  β^E V` (`β = ασ`), and `U ≡ σ^E V ⟹ U* ⊆ [V, σ̃_E]*` — **COVERED** (MR16 rows 39–43
+  and especially **row 45** `constructs_star_par_of_smul_eq`, which is this
+  reification).
+- **§5.3.8 Def 5.10 game-relaxation `T̂^⊥`**: the set of PDS that behave as `T` while
+  the MBO is 0 and **arbitrarily** once it is 1 → **STRETCH S-17** (a
+  relaxation *built from a game* — this is the game layer meeting the specification
+  layer, and it is NOT in the CR18 RECAST dictionary).
+
+### Chunk H — PDF 67–72 (Ch. 5 printed 121–122; Ch. 6 printed 123–131; Ch. 7 opens 132)
+
+Ch. 5 close:
+- **Lemma 5.2** (`S ≡ᵍ T̂ ⟹ S ⊆ T̂^⊥`) and **Lemma 5.3** (`Ŝ ⊫ T ⟹ S ⊆ T̂^⊥`) —
+  the bridges from game equivalence / conditional equivalence into the game-relaxation;
+  both stated **without proof**; plus the claim that game-relaxation is compatible per
+  Defs 5.6 and 5.7 → part of **STRETCH S-17**.
+- **§5.3.9 substitution relaxation** — named and then *explicitly not discussed*
+  ("Substitution relaxations will not be discussed in this course"). A name with no
+  content in this source → **NOT registrable from CR18** (noted so no future brief
+  chases it here).
+- **§5.4 Theorem 5.4 (authentication amplification)**:
+  `hsh[AUT_k, INS_n, H_A, H_B] chk ⊆ [AUT_n, γ_coll H_E]^{*⊥}` — a construction
+  statement whose ideal specification is a **∗- and game-relaxed** resource carrying a
+  **collision game at the adversary interface**, deliberately avoiding both asymptotics
+  and a collision-resistance assumption. Application-genre, but it is the *worked
+  example* of S-17 and is the paper's answer to "how to state hash-based security
+  without asymptotic families".
+- **§5.5 Def 5.11 parameterized resources and constructions**: a family
+  `{φ_r R}_{r∈𝒵}` of finite resources cut out of a (generally infinite) `R` by a family
+  of **filter converters**; Ex 5.2 `[r]R_{n,n}`; **eq. (5.6)**
+  `φ_r R →^{ψ_r α} ψ_r S^{f_r} ⟺ ψ_r α φ_r R ⊆ ψ_r S^{f_r}` with `α` independent of
+  `r` and `ψ_r α φ_r = ψ_r α` → **STRETCH S-19**.
+
+**Ch. 6 Randomness Expansion (printed 123–131)** — a constructions chapter; every
+statement is of the parameterized/filtered shape (5.6):
+- §6.1.1 randomness expansion as a construction; IT vs computational split.
+- §6.1.2 `k`-wise independence from a degree-`(k−1)` polynomial over `GF(2^m)`:
+  `U_{km} →^{[k]α} [k]R_{m,m}`.
+- **§6.2.2 Def 6.1 VIL-URF `V_n`** — defined as a **behavior**, with the explicit
+  remark that *"because the input alphabet is infinite, `V_n` can not be described as a
+  probabilistic discrete system"* → reinforces **FLAG F-1**.
+- **§6.2.3 Theorem 6.1 (CBC-MAC as a randomness expander)**: with the restriction
+  converter `θ_r`, eq. (6.1) `θ_r CBC = θ_r CBC[r]`, and
+  `[r]R_{n,n} →^{θ_r CBC} (θ_r V_n)^{ε_r}`, `ε_r = ½r²2^{−n}`; proof = MBO + Thm 4.17
+  + Lemma 4.18.
+- **§6.2.4 Theorem 6.2 (construction from a collision game)**:
+  `[S, [r]R_{m,n}] →^{[r]casc} ([r]V_n)^{f_r}` with
+  `f_r = b[r]S̃ ∘ [r]Ṽ_n ≤ Γ(b[r]Ŝ)` — a construction whose **relaxation is indexed by
+  a game-winning performance function**; consumes `casc` (Def 3.11) as a converter.
+- §6.2.5 the CRHF discussion — "a reduction statement for which there exists **no**
+  corresponding hardness statement", since a single fixed hash function has a trivial
+  collision finder. A methodological pin worth keeping (it is the same point as
+  §2.8.4 and the motivation for §5.4).
+- **§6.2.6 Def 6.2 `δ`-almost universal hash function** with a **length-dependent**
+  `δ : ℕ → ℝ⁺` (`Pr(H_K(y) = H_K(y′)) ≤ δ(max(|y|,|y′|))`, explicitly more general than
+  the usual definition); **Lemma 6.3** the polynomial `δ`-AUH with `δ(ℓ) = 2^{−m}ℓ/m`.
+- **§6.2.7 Corollary 6.4** URF domain extension from a `δ`-AUH:
+  `[U_k, [r]R_{m,n}] →^{τ_{r,ℓ}α} (τ_{r,ℓ}V_n)^{ε_{r,ℓ}}`, `ε_{r,ℓ} = ½r²δ(ℓ)`.
+→ **STRETCH S-20** (the whole chapter as a construction *genre*: filtered/parameterized
+randomness-expansion statements, with S-17/S-18/S-19 as its machinery).
+
+### Chunk I — PDF 73–78 (Ch. 7 printed 133–144)
+
+- **Def 7.1 key agreement** typed as a construction with a **performance-function
+  relaxation**: `[•→•, •←•] →^π (σ^E •≡≡•)^f`; **Theorem 7.1** DH achieves it with
+  `f = DDH ρ` (a §5.3.5 reduction-based relaxation instantiated by a distinction
+  problem) — a clean worked instance of S-18.
+- **§7.2.1 Theorem 7.2 (impossibility of IT key agreement)**: no `π`, `σ` with
+  `ε ≤ ¼`, even with arbitrarily many rounds; eq. (7.1) the generalized statement with
+  an initial correlation `[P_XYZ]`. Modeling device worth noting: **`Φ_E`, the
+  specification of an *arbitrary* resource at `E`**, used to say "we do not care what
+  the constructed resource gives Eve, including an arbitrarily powerful computer" →
+  folded into **STRETCH S-15** (interface typing) / S-16.
+  AC does have the impossibility *shape* (`Unconstructible`, MR16 rows 3 and 11).
+- **Theorem 7.3** `I(K_A;ZC) + H(K_A|K_B) ≥ H(K_A) − I(X;Y|Z)`, proved by showing
+  `I(X';Y'|Z')` cannot increase under any of the four protocol operations (local
+  randomness, local computation, sending a message, deletion of information);
+  **Corollary 7.4** `H(K) ≤ min(I(X;Y), I(X;Y|Z))`; Fact 7.1 (basic entropy facts) →
+  **STRETCH S-21**.
+- §7.2.2 possibility: the **satellite model** (Thm 7.5), the **bounded-storage model**,
+  quantum key distribution — named resource genres, application-level.
+- **§7.2.3 privacy amplification**: `d(X)`, `p_max(X)`, `p_coll(X)`, **min-entropy
+  `H_∞`**, **Rényi entropy `R(X)`**; Lemma 7.6 `1/|𝒳| ≤ p_coll ≤ p_max`;
+  **Lemma 7.7 `d(X) ≤ ½√(|𝒳|·p_coll(X) − 1)`**; **Def 7.2 2-universal class of hash
+  functions**; Lemma 7.8 (the `GF(2^n)`-multiply-and-truncate class is universal);
+  **Theorem 7.9 (leftover hash / privacy amplification)
+  `d((G,G(W))) ≤ ½√(2^r p_coll(W))`** → **STRETCH S-22**.
+- **§7.3 Def 7.3 random oracle model**: `PO_k`, a uniform random function
+  `{0,1}* → {0,1}^k` **as a resource accessible to all parties**; §7.3.2 TOWP-based KA
+  in the ROM; **§7.3.3 Theorem 7.10** (Canetti–Goldreich–Halevi: schemes secure in the
+  ROM but insecure under *every* concrete instantiation), with a proof sketch →
+  **STRETCH S-23**.
+
+### Chunk J — PDF 79–85 (Appendix A)
+
+- **A.1 probability basics** (Defs A.1–A.6: probability space, independence, conditional
+  probability, random variable, conditional distribution as a *partial* function,
+  statistical independence), **A.1.3 expectation and variance** — Mathlib / the tree's
+  `Probability/Distribution.lean` + `Expectation.lean` territory. **COVERED**.
+- **A.2 information theory basics**: Def A.7 entropy `H(X)`, Thm A.1 `0 ≤ H ≤ log|𝒳|`,
+  Thm A.2, **Def A.8 conditional entropy + mutual information**, the chain rule,
+  **Def A.9 conditional mutual information `I(X;Y|Z)`**, Thm A.3 `I(X;Y|Z) ≥ 0`,
+  and the entropy-diagram remark that `R(X;Y;Z)` can be negative → the toolkit
+  Theorem 7.3 consumes; see **STRETCH S-21**.
+- **A.3 number theory and algebra** (Euclid, modular inverses, CRT, groups, Lagrange,
+  Euler/Fermat, fast exponentiation) — Mathlib territory, **out of scope**.
+
+---
+
+## Verification pass against the abstract-crypto tree (read-only)
+
+97 library files (`AbstractCryptography`, `ConstructiveCryptography`, `RandomSystems`,
+`Probability`, `Applications`). Findings that changed a classification:
+
+| probe | result |
+|---|---|
+| `Probability/Distribution.lean:1487,1528` | **CR18 Def 4.9 `iidPow` and Def 4.10 `clonePow` are already in the tree**, cited by number (with Example 4.11) — at the *distribution* level only |
+| `Probability/UniversalHash.lean:92,99,115` | **CR18 Def 6.2 `δ`-AUH is already in the tree** (`IsAlmostUniversalFor`/`IsAlmostUniversal`, length-dependent `δ`, cited by number), and Def 7.2's 2-universal as `Is2Universal` |
+| `Probability/StatisticalDistance.lean:405–500` | **CR18 Exercise 4.4 is formalized** (`abs_expect_sub_expect_le_mul_statDist`), including footnote 12's game-vs-bit-guessing constant; `avgSuccessProb` + the Bayes-error identity `bayesRisk = ½ − ½δ(X,Y)` is the *distribution-level* bit-guessing↔distinction dictionary |
+| `RandomSystems/Converter/Cascade.lean` | is **converter serial composition** (Def 3.9, `apply_comp`, `(αβ)ⁱR`), **not** Def 3.11's system cascade `s ▷ t` |
+| `RandomSystems/System/Game.lean` (1017 lines) | the T1 game layer is landing: `MonotoneCondition` upper-set lattice, `comap`, `DDG`, the `Y × Bool` view with a proven round trip, `winningMass` (Def 2.25) |
+| `RandomSystems/{Game,Technique}/*.lean` | all six are 10-line reserved-home stubs |
+| grep: URF, URP, random function/permutation, source, beacon | **no hits anywhere** |
+| grep: probabilistic converter / distribution over converters | **no hits** |
+| grep: solver, performance, worst-case, problem, self-reduction, multi-game, clone (at system level) | **no hits** |
+| grep: min-entropy, Rényi, privacy amplification | only a *pointer* in `StatisticalDistance.lean:529` to `RandomSystems/Entropy.lean` in the **reference** repo |
+| `AbstractCryptography/Metric/ReductionRelaxation.lean` | exists, and is **FENCED** (`FENCED: AbstractCryptography.Metric.ReductionRelaxation`, MR11-DEFERRED) |
+| `AbstractCryptography/Algebra/Indexed.lean` | its "free interface" means the *exposed index type* (MMPRT18 Def 3.1) — a different concept from CR18 §5.3.1's free interface |
+| `AbstractCryptography/Algebra/Star.lean` | classified "CITATION-ONLY | **CR18 Def 5.9** and MauRen16 §3.4/§4.2" — the ∗-relaxation is covered |
+
+**Accuracy note for the CR18-FALLBACK register (LEDGER lines 17–28).** It lists five
+load-bearing CR18 items (⊥-completion, converter budget, converter application, filters,
+memoryless attachment). At least **four more CR18 definitions are already load-bearing
+in the tree and cited by number**: Def 4.9, Def 4.10, Def 6.2, Exercise 4.4 — plus
+Def 5.9 in `Algebra/Star.lean`. The register understates the CR18 dependency.
+
+**Primary-source finding (affects the recast routes below).** The LEDGER's
+LANZENBERGER OBLIGATION MATRIX enumerates **Chapter 2 only** ("M1 — Chapter 2
+enumeration (visual read, complete)"; L5 = §2.5). The thesis's table of contents
+(visual read, `papers/thesis (1).pdf`, PDF p. 9–10) shows **Chapter 3, "Theory of
+Amplification", printed pp. 43–84**: §3.2 Preliminaries, §3.3 *Hardness Amplification
+for Games* (3.3.1 the setting, 3.3.2 monotonic `ψ`, 3.3.3 monotonic and concave `ψ`,
+3.3.4 "the square is not (always) optimal", 3.3.5 general predicates), §3.4 Applying the
+Amplification Theorem, §3.5 *Hardness Amplification for Predicates* (Levin's reduction,
+Chernoff–Hoeffding, a tighter bound for Levin's reduction, an alternative reduction),
+plus §2.5.2 *Combinations of Games*. **A primary source covers the ground of CR18 §4.9
+and part of §4.4, and no matrix in the LEDGER enumerates it.**
+
+---
+
+# THE STRETCH REGISTER
+
+22 items. `route` = the primary source that touches the same ground under the R8
+hierarchy (MauRen16 > Jost > LiuMau20 > Lanzenberger); `CR18-ONLY` = none does.
+Size is a build guess, not a priority.
+
+| # | ch / printed p. | content (one line) | route | size |
+|---|---|---|---|---|
+| **S-01** | 2 p.26; 4 p.92 | **bit-guessing problems** as a first-class type: Def 2.9 `Λ^D((S,B)) := 2(Pr(Z=B)−½)`, Def 4.8 `[S;B]`, and the two-way dictionary to distinction problems (Lemma 2.3 / eq. 4.7 `[S_U;U] = ⟨S₀|S₁⟩`; Lemma 2.4 / eq. 4.8) | **CR18-ONLY**. The *distribution-level* twin already exists (`Probability/StatisticalDistance.lean` `avgSuccessProb`, Bayes-error identity); missing is the system-level pair and the dictionary | S |
+| **S-02** | 3 p.63 | **system cascade `s ▷ t`** (Def 3.11) of an `(𝒳,𝒴)`-DDS with a `(𝒴,𝒵)`-DDS, and its converter form `casc[s,t] = s ▷ t` on parallel access | **CR18-ONLY**. `Converter/Cascade.lean` is converter *serial composition*, a different object. Load-bearing in the source (Thm 6.2, Cor 6.4) | S |
+| **S-03** | 3 p.63 | **output combination `s ⋆ t`** (Def 3.12) for an operation `⋆` on `𝒴`, and its converter form `comb^⋆[s,t]` | **CR18-ONLY** | S |
+| **S-04** | 4 pp.73, 85–89 | **abstract problems, solvers, performance, and the reduction calculus**: Def 4.1 search problem (with an *instance distribution*), Def 4.2 problem `(Σ_p, (Ω_p,≤), p̄)`, Def 4.3 + eq. (4.1) `τ p̄ ≤ q̄ρ`, the dual eq. (4.3) `p̄ ≤ λ q̄ρ`, Lemmas 4.5/4.6 composition, §4.4.9 generalized (list-indexed) reductions eqs. (4.4)/(4.5), Def 4.4 worst-case problem `𝒫̄(s) := inf_p p̄(s)` | **Lanzenberger Ch. 3** (§3.2/§3.3.1/§3.5) is the un-enumerated primary; recast route = enumerate Lanz Ch. 3 first, then state CR18's frame as its abstraction | L |
+| **S-05** | 3 pp.55–57, 64 | **named random-object layer**: Def 3.1 `𝒴`-source (memoryless / with memory), Ex 3.2 beacon `B_n`, Ex 3.3 `U_n`, **Def 3.15 `(𝒳,𝒴)`-random function / `𝒳`-random permutation as function-valued random variables**, Ex 3.5 `R_{m,n}` / `P_m` | MauRen16 §3.2 has the URF, but only as **APPLICATION rows 14–16 (declared out of scope)**; no primary makes the function-valued-RV presentation a definition | S–M |
+| **S-06** | 3 p.64 | **probabilistic discrete converter (PDC)**, Def 3.17: a random variable over DDCs, with the lifted composition `(α,s) ↦ αs`; "equivalence of converters is defined" (used at CR18 eq. 6.1) | **CR18-ONLY**. AC's `Σ`/`converterMonoidAt` is a monoid of *deterministic* converters; there is no distribution over converters anywhere | M |
+| **S-07** | 3 pp.65–66 | **the channel layer**: a channel as a single-input PDS, `p^C_{Y\|X}`, channel equivalence `C₁ ≡ C₂` and the reading of a conditional distribution as *the equivalence class* of PDS, and the channel cascade `p^{C▷D}_{Z\|X} = Σ_y p^C p^D` | **CR18-ONLY**. `Behaviour.lean` has the general quotient but not the single-round channel nor its composition law | S |
+| **S-09** | 4 pp.87–88 | **the complexity layer** (§4.4.7): `Σ_c := {s \| γ(s) ≤ c}`, the derived problem `p̄'(c) = sup{p̄(s) : s ∈ Σ_c}` and derived reduction `ρ'(c) = sup{γ(ρ(s))}`, with the paper's *explicit refusal* to fix a computational model. **This is the only complexity/asymptotic apparatus in the whole of CR18** (§1.3.3 argues against carrying efficiency in definitions) | **CR18-ONLY**. MR16 row 32's "models 2–4" (`PARTIAL`, gap G9) is the *converter-class* version, a different axis | M |
+| **S-10** | 4 p.91 | **Lemma 4.7**: a distinguisher class closed under complementing the output bit makes `Δ^𝒟` a **pseudo-metric**, and collapses `sup Δ^D` to `sup \|Δ^D\|` — the criterion, on a class, rather than an instance | **CR18-ONLY within the hierarchy**; the class object (`edistD`) is MauRen11 Def 15/16 and is **FENCED** | S |
+| **S-11** | 4 p.93 | **`q`-fold instantiation vs cloning lifted to systems**: `S^q`, `S^{[q]}`, `E^q`, `C^q`, the interchange `C^q S^q = (CS)^q`, and `⟨X⟩` (countably many independent copies) | **CR18-ONLY**. Defs 4.9/4.10 already exist at the *distribution* level (`Distribution.lean:1487,1528`); the system/converter/environment lift and the interchange law do not | M |
+| **S-12** | 4 pp.93–97 | **reductions on games**: `ρ^C : W ↦ WC` with `ω(wc,g) = ω(w,cg)` and **eq. (4.10) `CG = Ḡ ρ^C`**; `σ^q : W ↦ W^q`; Def 4.11 `ψ_q(x)=1−(1−x)^q`, `χ_q`, eq. (4.11); Lemma 4.8 repetition amplification; **Def 4.12 `q`-clonability by a converter** (`KG ≡ G^{[q]∨}`); **Def 4.13 random self-reducibility** (`∀g, Rg ≡ G`); Lemma 4.9; Theorem 4.10 (`ψ_q Ḡ = Ḡ ρ^K σ^q ρ^R`) | **Lanzenberger Ch. 3** for the amplification half; clonability and random self-reducibility are **CR18-ONLY** | L |
+| **S-13** | 4 pp.98–104 | **hardness amplification for games** (§4.9 entire): `[G₁,…,G_k]^∧`; Lemma 4.11 and its `k`-ary Lemma 4.13 (a general `[0,1]`-valued two-argument lemma); Def 4.14 the emulating converters `H̲`,`G̲`; **Theorem 4.12** (`[G,H]^∧ ≤ λ(Ḡ,H̄)[ρ₁,ρ₂]`, `λ(x,y)=(1+δ)xy+δ′`, with the `q ≈ 2ln(2/δ)/δ′` calibration); **Theorem 4.14** (`Ḡ^{k∧} ≤ λ Ḡ ρ`, `λ(x)=(1+δ)x^k+δ′`) ⟹ `hard(G,β) ⟹ hard(G^{k∧}, β^k)` | **Lanzenberger Ch. 3 §3.3 is a direct primary home** (and its abstract claims a *simpler, more general and stronger* theorem of this type). Recast: enumerate Lanz §3.3, state CR18 §4.9 as its special case; do **not** build from CR18 | L |
+| **S-14** | 5 pp.114, 116 | **relaxation ∥ parallel composition**: Def 5.7 `[R₁,…,ρ(R_i),…,Rₙ] ⊆ ρ([R₁,…,Rₙ])` and eq. (5.4) "pulling relaxations to the outside"; plus the simultaneous `k`-ary construction composition eq. (5.3) that the notes decline to discuss | **JosMau20** (`Specification/Parallel.lean` is JM20 Theorem 1.2) — recast there, not from CR18 | S |
+| **S-15** | 5 p.117; 7 p.133 | **interface typing**: party / adversary / **free** interfaces (the free interface models the *environment's* access, e.g. an authenticated channel's forwarding trigger `F`); and §7.2.1's `Φ_E` device — the specification of an *arbitrary* resource at `E` ("we do not care what Eve gets") | MR16 §3.1/§7 has honest-vs-dishonest grouping (rows 12, 64) but no third role; the **free interface is CR18-ONLY**, and the name collides with `Algebra/Indexed.lean`'s unrelated use — see FLAG F-4 | S–M |
+| **S-16** | 5 p.117 | **the converter/resource boundary**: the three choices for what a converter may compute (all systems / **trivial, connect-only** / efficiently implementable), the notes' adoption of the trivial-converter stance, and the reification **`αR = π[R, α̃]`** (a converter re-read as a parallel resource plugged by a connect-only converter) | MR16 §3.5 row 32 (`PARTIAL`, gap G9) is the planned home for "Σ as a parameter, models 1–4"; this is that gap's content, named. §5.3.7's `U* ⊆ [V,σ̃_E]*` half is already **COVERED** by MR16 row 45 | M |
+| **S-17** | 5 pp.120–122 | **game-relaxation** Def 5.10: `T̂^⊥` = the PDS that behave as `T` while the MBO is 0 and **arbitrarily** once it is 1; Lemma 5.2 (`S ≡ᵍ T̂ ⟹ S ⊆ T̂^⊥`), Lemma 5.3 (`Ŝ ⊫ T ⟹ S ⊆ T̂^⊥`), its compatibility per Defs 5.6/5.7, and Theorem 5.4 (authentication amplification: `hsh[AUT_k,INS_n,H_A,H_B] chk ⊆ [AUT_n, γ_coll H_E]^{*⊥}`) as the worked example — a hash-based security statement with **no asymptotics and no collision-resistance assumption** | **LiuMau20 §2.4/§2.5** game specifications over test families (`ConstructiveCryptography/Multiparty/Basic.lean`) is the recast route. **NOT in the CR18 RECAST dictionary** — the dictionary covers multigames, game reductions, `S⁻`, game equivalence, the `k`-bit view, and stops there | M |
+| **S-18** | 5 p.119; 6 p.128; 7 p.132 | **reduction-based relaxations**: `f = λ(p̄₁,…,p̄ₙ)[ρ₁,…,ρₙ]` and **eq. (5.5) `𝓡^f := {R′ \| ∃R ∈ 𝓡 : ⟨R\|R′⟩ ≤ f}`** — computational closeness as a relaxation indexed by a reduction; instantiated at Thm 7.1 (`f = DDH ρ`) and Thm 6.2 (`f = Γ(b[r]Ŝ)`). The notes flag compatibility for this type as "a bit subtle" and skip it | **Jost Def 2.2.9 / JM20 Def 3** — `Metric/ReductionRelaxation.lean` exists **but is behind the MR11 PROVENANCE FENCE**. Planned-but-blocked, not absent | M |
+| **S-19** | 5 p.122 | **parameterized resources and constructions** Def 5.11: a family `{φ_r R}_{r∈𝒵}` of *finite* resources cut from a (generally infinite) `R` by a family of filter converters, and **eq. (5.6)** `φ_r R →^{ψ_r α} ψ_r S^{f_r}` with `α` **independent of `r`** and the coherence `ψ_r α φ_r = ψ_r α` | **CR18-ONLY**. Depends on the filter row (LEDGER `filterDom/filterQueries`, PENDING, A8) | M |
+| **S-20** | 6 pp.123–131 | **the randomness-expansion construction genre**: `k`-wise independence from a `GF(2^m)` polynomial (`U_{km} →^{[k]α} [k]R_{m,m}`); Def 6.1 **VIL-URF `V_n`**; Theorem 6.1 CBC-MAC as a randomness expander (`[r]R_{n,n} →^{θ_r CBC} (θ_r V_n)^{½r²2^{−n}}`); Theorem 6.2 construction from a **collision game** (`[S,[r]R_{m,n}] →^{[r]casc} ([r]V_n)^{f_r}`, `f_r ≤ Γ(b[r]Ŝ)`); Cor 6.4 `δ`-AUH domain extension | **CR18-ONLY**. Partly pre-empted: **Def 6.2 `δ`-AUH is already in the tree** (`Probability/UniversalHash.lean`, cited by number). Missing = the objects (URF/VIL-URF, see S-05) and the four construction theorems | L |
+| **S-21** | 7 pp.134–136; App. A.2 | **the IT key-agreement bound**: Theorem 7.3 `I(K_A;ZC) + H(K_A\|K_B) ≥ H(K_A) − I(X;Y\|Z)`, proved by showing `I(X';Y'\|Z')` is non-increasing under each of the four protocol operations (local randomness, local computation, sending a message, deleting information); Cor 7.4 `H(K) ≤ min(I(X;Y), I(X;Y\|Z))`; and the App. A.2 toolkit (`H`, `H(Y\|X)`, `I(X;Y)`, `I(X;Y\|Z)`, chain rule, Thms A.1–A.3) | MauRen16's appendix has `H_min(X\|Y)` + chain rule (**APPLICATION rows 66–69, out of scope**). The **toolkit** is on the plan as **T6** ("the information-theory layer … Divergence.lean, DistExpect.lean"); the **four-operation monotonicity argument and the KA bound are not** | M |
+| **S-22** | 7 pp.138–141 | **privacy amplification**: `d(X)`, `p_max(X)`, `p_coll(X)`, **min-entropy `H_∞`**, **Rényi entropy `R(X)`**, Lemma 7.6 `1/\|𝒳\| ≤ p_coll ≤ p_max`, Lemma 7.7 `d(X) ≤ ½√(\|𝒳\|p_coll(X) − 1)`, Lemma 7.8 (the `GF(2^n)`-multiply-and-truncate universal class), **Theorem 7.9 `d((G,G(W))) ≤ ½√(2^r p_coll(W))`** | **CR18-ONLY**. Def 7.2 (2-universal) is already covered (`Is2Universal`); min-entropy exists only in the **reference** repo (`RandomSystems/Entropy.lean`), pointed at from `StatisticalDistance.lean:529` | M |
+| **S-23** | 7 pp.141–143 | **the random oracle as a resource**: Def 7.3 `PO_k`, a uniform random function `{0,1}* → {0,1}^k` **accessible to all parties**; the ROM key-agreement construction; and **Theorem 7.10** (Canetti–Goldreich–Halevi: schemes secure in the ROM, insecure under *every* concrete instantiation) | **CR18-ONLY**. `Applications/Sponge.lean` / `Algebra/Star.lean` use random oracles only in the indifferentiability sense; there is no `PO_k` resource and no uninstantiability statement. Note Thm 7.10 is a **proof sketch** in the source | M |
+
+## CR18-ONLY sublist (no primary in the R8 hierarchy touches the same ground)
+
+**S-01** bit-guessing problems · **S-02** system cascade `s ▷ t` · **S-03** output
+combination `s ⋆ t` · **S-06** probabilistic converters (PDC) · **S-07** the channel
+layer · **S-09** the complexity layer §4.4.7 · **S-10** Lemma 4.7's pseudo-metric
+criterion · **S-11** `q`-fold/cloning at the system level · **S-19** parameterized
+resources and constructions · **S-20** the randomness-expansion genre · **S-22**
+privacy amplification · **S-23** the random oracle as a resource.
+
+Partly CR18-only: **S-12** (clonability and random self-reducibility have no primary;
+the amplification half routes to Lanz Ch. 3) · **S-15** (the *free* interface role) ·
+**S-21** (the four-operation monotonicity argument and the KA bound).
+
+## Items with a primary recast route (do NOT build these from CR18)
+
+| item | recast route |
+|---|---|
+| S-04, S-12 (amplification half), **S-13** | **Lanzenberger thesis Chapter 3, "Theory of Amplification"** (printed 43–84) — §3.3 Hardness Amplification for Games, §3.4, §3.5 Hardness Amplification for Predicates. Currently **un-enumerated** in the LEDGER (see FLAG F-5) |
+| S-14 | JosMau20 Theorem 1.2 (`Specification/Parallel.lean`) |
+| S-17 | LiuMau20 §2.4/§2.5 game specifications (`Multiparty/Basic.lean`) |
+| S-18 | Jost Def 2.2.9 / JM20 Def 3 — the file exists and is **FENCED** |
+| S-16 | MauRen16 §3.5 row 32 / gap G9 |
+| S-05 | MauRen16 §3.2 (application rows 14–16, currently declared out of scope) |
+
+---
+
+# FLAGS — where the paper contradicts, or outruns, what we built
+
+**F-1 (carrier scope). Behaviors with no underlying PDS.**  Ex 3.7 (printed p. 68) and
+Def 6.1 (p. 125) say it twice and explicitly: the **VIL-URF `V_n`** over `𝒳 = {0,1}*`
+"does not correspond to a PDS as defined here since the sample space would be
+uncountable … we can consider the behavior without an underlying probabilistic system."
+PHI-SPEC R1 makes the AC carrier `Φ := PDS Uni Uni` — a distribution over DDS — and
+`Behaviour` is defined as a **quotient of PDS**.  So every variable-input-length object
+(VIL-URF, the arbitrary-input-length random oracle of MR16 §3.2, CR18's `PO_k`) is
+outside the AC carrier by construction, and the behavior-first escape the source uses is
+not available in the tree.  **Not a broken theorem — a scope limit the source states in
+the negative and no AC document records.**  Flagging, not solving.
+
+**F-2 (fallback hygiene).**  §4.10's standing simplification (p. 105) has **no `⊥`, no
+refusal, no partial domain**: environments stop after `q` queries and short runs are
+padded with dummies.  Already pinned in the LEDGER SOURCE LEDGER; restated because six
+of the register's items (S-01, S-10, S-11, S-12, S-13, and the T1/T3 recasts) live in
+that section and every one of them must be re-derived on the `Adv⊥` carrier.  PHI-SPEC
+R2's observable, non-fatal refusal has **no counterpart in this source at all**.
+
+**F-3 (metric convention).**  Def 2.6 defines `Δ^D` **signed**; `Δ^𝒟 = sup |Δ^D|` is a
+*theorem* (Lemma 4.7) conditional on the class being closed under complementing the
+output bit.  AC reaches the same place by ⊔-symmetrizing `advFullyDefined`.  No
+contradiction — but the criterion, not the conclusion, is what S-10 asks for.
+
+**F-4 (vocabulary collision).** "**Free interface**" means two different things:
+CR18 §5.3.1 = a third interface *role* (the environment's access, e.g. a channel's
+forwarding trigger); `AbstractCryptography/Algebra/Indexed.lean:11,59,73` = the
+*exposed interface index type* of a resource (MMPRT18 Def 3.1).  Any S-15 brief must
+rename one of them.
+
+**F-5 (coverage gap in a primary matrix — highest value).**  The LEDGER's LANZENBERGER
+OBLIGATION MATRIX enumerates **Chapter 2 only** and presents itself as complete ("M1 —
+Chapter 2 enumeration (visual read, complete)"; the aggregate tally is 57 items over
+L0–L5 = §2.1–§2.5).  The thesis has a **Chapter 3, "Theory of Amplification" (printed
+43–84)**, whose §3.3 is *Hardness Amplification for Games* and §3.5 *Hardness
+Amplification for Predicates*.  That is a **primary** source for the ground CR18 §4.9
+and part of §4.4 cover, and it is unmapped.  Consequence for this register: S-13 (and
+half of S-04/S-12) must **not** be built from CR18 — the correct next step is an
+enumeration pass over Lanz Ch. 3.
+
+**F-6 (dead pointers in the source).**  Two of CR18's own relaxation types come with no
+content: §5.3.9 *substitution relaxation* is named and then "will not be discussed", and
+§5.3.5 says compatibility of reduction-based relaxations "is a bit subtle" and skips it.
+Recorded so no future brief chases either here.
+
+**F-7 (T5 scope traps, not stretch items).**
+- eq. (3.3) + its negation (p. 70): the **one-step** law survives embedding in an
+  environment (`p^{ES}_{Y_i|X^i Y^{i−1}} = p^S_{Y_i|X^i Y^{i−1}}`) but the **cumulative**
+  law does **not** (`p^{ES}_{Y^i|X^i} ≠ p^S_{Y^i|X^i}`).
+- §4.10.2 (p. 106): against a *distinguisher* the transcript law is a **three**-factor
+  product `p^D_{X^q|Y^{q−1}} · p^S_{Y^q|X^q} · p^D_{Z|X^q Y^q}` — the verdict bit is a
+  third factor, not part of `η`.  Lemma 3.2's two-factor form is the *winner* case.
+
+---
+
+# COUNTS
+
+| class | count | notes |
+|---|---|---|
+| **COVERED** | 34 | Ch. 3 carrier (Defs 3.2–3.9, 3.13, 3.14, 3.16, 3.18–3.21, Lemma 3.1), Ch. 5 specification calculus (Defs 5.1–5.6, 5.8, 5.9, Lemma 5.1, §5.3.4, §5.3.7), the metric (Defs 2.6–2.8, Lemmas 2.1, 2.2), and four CR18 items already in-tree and cited by number (Defs 4.9, 4.10, 6.2, Ex 4.4) + Def 7.2 |
+| **COVERED-PENDING** | 2 | §3.4.3 filters + Def 3.10 `[q]` (LEDGER A8 `PENDING`); MR16 row 32 / gap G9 (the S-16 residue) |
+| **RECAST-PLANNED** | 14 | Def 3.20 cumulative law + Lemma 3.2 (T4.4/T5); Def 3.22 MBO/DDG, Def 3.23 winner, Def 4.5 game, multi-games + Def 4.6 `g^∨`/`g^∧`, Defs 4.15–4.18, Lemmas 4.15/4.16, Def 4.19 CE + eq. (4.38), Defs 4.20/4.21 + Thm 4.17 (T1/T2/T3 + the CR18 RECAST dictionary) |
+| **STRETCH** | **22** | the register above |
+| out of scope (application rows) | ~45 | Ch. 2 entire, §4.2/§4.3, §4.11.3, §5.4, §7.2.2 — by the LEDGER's own APPLICATION discipline |
+| no content in the source | 2 | §5.3.9 substitution relaxation; §5.3.5 compatibility |
+| flags | 7 | F-1 … F-7 |
+
+Of the 22 STRETCH items: **12 CR18-ONLY**, **6 with a primary recast route**,
+**3 partly CR18-only**, **1 (S-18) planned-but-fenced**.
+Sizes: **4 L** (S-04, S-12, S-13, S-20), **11 M**, **7 S/S–M**.
 
 # PROVENANCE FENCE (MR11-DEFERRED)
 
