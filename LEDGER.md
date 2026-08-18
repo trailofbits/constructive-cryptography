@@ -2780,9 +2780,16 @@ gates, adversarial audit before deltas apply):
      t3-audit/AUDIT.md): conditional equivalence.  Definition = Maurer13b
      Def 13's OWN printed division-free product form (p. 3153) — audit:
      bilinear, hence faithful at every weight; Def 11 `EquivalentAsGames`
-     landed alongside (currently quantifies ALL query lists incl. [], so
-     STRICTLY-STRONGER-than-Def-11 pending the follow-up below), buying
-     Maurer13b Lemma 2 (fundamental lemma of game playing).  Endpoint =
+     landed alongside — RESOLVED paper-exact at follow-up 90caa7f: the
+     definition is RESTRICTED to `l ≠ []` (Def 11's `i ≥ 1` on the nose);
+     the `[]` instance is NOT implied (kernel separation
+     `exists_equivalentAsGames_notWonLaw_nil_ne`, via the new
+     `MonotoneCondition.nonNil`, any alphabet), and Lemma 2 (fundamental
+     lemma of game playing) consequently GAINS `‖G‖ = ‖H‖` — load-bearing,
+     not bookkeeping: at `n = 0` the statement reads
+     `max(‖G‖−‖H‖,0) ≤ ν(G)`, false for heavy `G` vs light `H`; Maurer13b
+     has the hypothesis standing (probability systems), so landed = paper
+     at equal weight.  Endpoint =
      Maurer02 Thm 1(i) adaptive ν in four forms (forget/adjoin/GamesFor/
      ω-via-2.37); audited hypothesis bundle = NonNeg×2 + equal weight —
      no query bound, no Fintype, no totality (both suprema over the
@@ -2794,8 +2801,22 @@ gates, adversarial audit before deltas apply):
      obstruction text was REFUTED in part; the DESIGN NOTE at the T3.9
      block remains the standing record).  39 decls axiom-clean, home
      Technique/ConditionalEquivalence.lean; nothing under System/ or
-     Converter/.  Follow-up punch list dispatched: Def-11 [] question,
-     interior-witness receipts landed in-tree, two docstring slips.
+     Converter/.  Follow-up CLOSED (90caa7f, 56 decls, gates + build
+     green, spot axioms re-verified by coordinator): Def-11 [] resolved
+     as above; interior witness landed as `condEquivInterp` + nine lemmas
+     (audit check2 cited as origin; its condition fires at [] so it does
+     NOT discharge the ω endpoint's `hnil` — the exact repair (`nonNil`
+     for `⊤`, plus a totality clause on `S₀`) is recorded in-code, not
+     built; the ⊥ pole does satisfy `hnil`); ⊥-pole comment now honest
+     (faithfulness rests on bilinearity + the interior witness, the pole
+     is blind to scalar placement); both docstring slips fixed (Maurer13b
+     Def 12 added for `S⁻`).  PENDING-MARC (classification, flagged by
+     the implementing agent itself): does `EquivalentAsGames` (Maurer13b
+     Def 11, a SECOND Prop beside `PDG.gameEquivalent` = thesis Def 2.22)
+     fall under R11(a)'s "second notion of equivalence"?  Coordinator
+     reading: NO — two DIFFERENT paper relations (strict implication
+     proven, both consumed), not two renderings of one concept; awaiting
+     Marc's word.
   T4 MPR07 Lemma 5 as constructor completeness (on the Behaviour
      quotient; MaPiRe07.pdf p. 140, visual).
   T5 H layer-3: the η·σ factorization + the environment-uniform
