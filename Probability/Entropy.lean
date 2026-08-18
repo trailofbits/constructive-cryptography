@@ -5,6 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Probability.StatisticalDistance
 import Probability.FiberCoupling
 import Mathlib.Analysis.SpecialFunctions.Log.Base
+import Mathlib.Algebra.Order.Chebyshev
 
 /-!
 # Min-entropy, collision entropy and distance from uniform (tower level L2)
@@ -38,8 +39,8 @@ and the two lemmas CR18 leaves as exercises,
   `Distribution.distFromUniform_le_half_sqrt_card_mul_collProb_sub_one`:
   `d(X) ≤ ½√(|𝒳|·p_coll(X) − 1)`.
 
-Both are Cauchy-Schwarz against the constant function, i.e. the `NonNeg`-layer
-`Distribution.expect_mul_sq_le_sq_mul_sq` evaluated on `Distribution.uniform`.
+Both are Cauchy-Schwarz against the constant function, i.e. mathlib's
+`sq_sum_le_card_mul_sum_sq` at `s = univ`.
 
 *Maurer-Renner, "From Indifferentiability to Constructive Cryptography (and
 Back)" (MauRen16), Appendix, "Min-entropy sampling" — a **primary** source.*
@@ -109,9 +110,8 @@ absorbed into a blanket hypothesis.
 
 `bddAbove_range`, `marginal_apply`, `marginal_isProbDist`,
 `exists_pos_of_isProbDist`, `apply_le_weight` and `mass_graph_eq_sum` are facts
-about `Distribution` itself and belong in `Probability.Distribution`;
-`expect_uniform_eq_sum_div` belongs in `Probability.Expectation`.  They are kept
-here so that adding this module does not force a rebuild of the tree's base
+about `Distribution` itself and belong in `Probability.Distribution`.  They are
+kept here so that adding this module does not force a rebuild of the tree's base
 modules while other work is in flight; §0 marks them for relocation.
 -/
 
@@ -299,39 +299,10 @@ theorem distFromUniform_eq_statDist_uniform [Fintype A] [Nonempty A] {X : Distri
 /-! ## 4. CR18 Lemmas 7.6 and 7.7
 
 Both are left as exercises in the source (printed p. 139) and both are the same
-step: **Cauchy–Schwarz against the constant function `1`**, which is
-`Distribution.expect_mul_sq_le_sq_mul_sq` evaluated on `Distribution.uniform A`.  The uniform
-distribution is where the `NonNeg` hypothesis of Cauchy–Schwarz is discharged,
-which is why neither lemma needs `X` itself to be nonnegative. -/
-
-/-- Expectation against the uniform distribution is the average.  Local to the
-Cauchy–Schwarz step below; the general statement belongs at L1 in
-`Probability.Expectation`. -/
-theorem expect_uniform_eq_sum_div [Fintype A] [Nonempty A] (f : A → ℝ) :
-    (uniform A).expect f = (∑ a : A, f a) / (Fintype.card A : ℝ) := by
-  rw [expect_eq_sum, Finset.sum_div]
-  exact Finset.sum_congr rfl fun a _ => by rw [uniform_apply]; ring
-
-/-- **Cauchy–Schwarz against the constant function**:
-`(∑ f)² ≤ |𝒳| · ∑ f²`.  Proved by evaluating the `NonNeg`-layer
-`Distribution.expect_mul_sq_le_sq_mul_sq` on `Distribution.uniform`, which is where the
-nonnegative weights come from; `f` itself is arbitrary.
-
-Stated at the root of `RandomSystems` rather than in the `Distribution` namespace: the
-conclusion is about a `Finset` sum of an arbitrary real function, and mentions
-no distribution.
-
-UPSTREAM-CANDIDATE: mathlib has the general `Finset.sum_mul_sq_le_sq_mul_sq`
-but no named specialization to the constant second factor. -/
-theorem _root_.Probability.sq_sum_le_card_mul_sum_sq [Fintype A] [Nonempty A] (f : A → ℝ) :
-    (∑ a : A, f a) ^ 2 ≤ (Fintype.card A : ℝ) * ∑ a : A, f a ^ 2 := by
-  have hm : (0 : ℝ) < (Fintype.card A : ℝ) := by exact_mod_cast Fintype.card_pos
-  have hcs := expect_mul_sq_le_sq_mul_sq (X := uniform A) uniform_nonNeg f fun _ => (1 : ℝ)
-  simp only [mul_one, one_pow] at hcs
-  rw [expect_uniform_eq_sum_div, expect_uniform_eq_sum_div, expect_uniform_eq_sum_div,
-    Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_one, div_self hm.ne',
-    mul_one, div_pow, div_le_div_iff₀ (by positivity) hm] at hcs
-  nlinarith [hcs, hm]
+step: **Cauchy–Schwarz against the constant function `1`**, i.e. mathlib's
+`sq_sum_le_card_mul_sum_sq` (`Mathlib/Algebra/Order/Chebyshev.lean`,
+`(∑ f)² ≤ #s · ∑ f²`) at `s = univ`.  mathlib's form carries no sign
+hypothesis, which is why neither lemma needs `X` itself to be nonnegative. -/
 
 /-- **CR18 Lemma 7.6, lower bound** (printed p. 139, left as an exercise):
 `1/|𝒳| ≤ p_coll(X)`.  Uniform minimises the collision probability.
@@ -343,7 +314,9 @@ theorem one_div_card_le_collProb [Fintype A] [Nonempty A] {X : Distribution A}
     1 / (Fintype.card A : ℝ) ≤ X.collProb := by
   have hm : (0 : ℝ) < (Fintype.card A : ℝ) := by exact_mod_cast Fintype.card_pos
   have hsum : ∑ a : A, X a = 1 := (weight_eq_sum X).symm.trans hw
-  have h := sq_sum_le_card_mul_sum_sq (A := A) fun a => X a
+  have h : (∑ a : A, X a) ^ 2 ≤ (Fintype.card A : ℝ) * ∑ a : A, X a ^ 2 := by
+    simpa [Finset.card_univ] using
+      _root_.sq_sum_le_card_mul_sum_sq (s := (Finset.univ : Finset A)) (f := (X : A → ℝ))
   rw [hsum, one_pow, ← collProb_eq_sum] at h
   rw [div_le_iff₀ hm]
   linarith [h]
@@ -391,7 +364,11 @@ theorem distFromUniform_le_half_sqrt_card_mul_collProb_sub_one [Fintype A] [None
     field_simp
     ring
   -- Cauchy–Schwarz on `|P(x) − 1/m|`.
-  have hcs := sq_sum_le_card_mul_sum_sq (A := A) fun a => |X a - 1 / (Fintype.card A : ℝ)|
+  have hcs : (∑ a : A, |X a - 1 / (Fintype.card A : ℝ)|) ^ 2
+      ≤ (Fintype.card A : ℝ) * ∑ a : A, |X a - 1 / (Fintype.card A : ℝ)| ^ 2 := by
+    simpa [Finset.card_univ] using
+      _root_.sq_sum_le_card_mul_sum_sq (s := (Finset.univ : Finset A))
+        (f := fun a : A => |X a - 1 / (Fintype.card A : ℝ)|)
   rw [hexp] at hcs
   have hkey : (∑ a : A, |X a - 1 / (Fintype.card A : ℝ)|) ^ 2
       ≤ (Fintype.card A : ℝ) * X.collProb - 1 := by
