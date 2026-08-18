@@ -917,6 +917,154 @@ theorem exists_unwinnable_representative [Fintype X] {G : PDG X Y}
 
 end PDG
 
+/-! ## The quotient reading: Remark 2.24's random game
+
+Lanzenberger **Remark 2.24** (printed p. 17) reads a random game as an
+equivalence class, exactly as Notation 2.19 does for a random system, and
+`Behaviour.lean` forms that quotient for Definition 2.17.  Definition 2.22 is
+the game-level relation, so the same construction runs here — and this is where
+`ν` stops being a function of a presentation and becomes a function of the
+game.
+
+**What descends and what cannot.**  `ν` (Definition 2.25) and `ω` (Definition
+2.36) descend, and so does the weight and the forgetful map to
+`PDS.Behaviour`.  The *winnable mass* `G.mass Winnable` does **not** — that is
+the observation Definition 2.36 exists for, stated in the thesis immediately
+before it (printed p. 24): "for different distributions `S^A` and `S'^A` of the
+same equivalence class `𝐒^A`, the probability that the (deterministic) game is
+winnable may differ".  Theorem 2.37 says the infimum of that non-invariant over
+the fibre is the invariant `ν`, and is attained inside the fibre.
+
+**The forgetful projection and `GamesFor`.**  `GameBehaviour.forget` is the
+descent of `PDG.forget`, and the fibre of it over `𝐒` is exactly the type
+`PDS.GamesFor S` of `Game.lean` (`mem_fibre_forget_iff`): "conditions on `S`" is
+the fibre of the forgetful projection over `S`'s behaviour, and membership is
+the forgetting law.  That is the R10 integration pattern, read at the level it
+was stated. -/
+
+namespace PDG
+
+/-- Definition 2.22 as a `Setoid`.  Deliberately a `def` and not an `instance`,
+for the reason `PDS.equivalentSetoid` gives: `PDG X Y` is an `abbrev` for a
+`Finsupp`, and a global instance would be found by every `Quotient`
+elaboration in the tree. -/
+def gameEquivalentSetoid (X : Type u) (Y : Type v) : Setoid (PDG X Y) where
+  r := gameEquivalent
+  iseqv := ⟨gameEquivalent_refl, fun h => gameEquivalent_symm h,
+    fun h h' => gameEquivalent_trans h h'⟩
+
+/-- Lanzenberger **Remark 2.24**: a *random game* `𝐒^A` is an equivalence class
+of PDG.  COINAGE for the name, flagged, exactly as `PDS.Behaviour` is: the
+thesis writes only the bold `𝐒^A`. -/
+def GameBehaviour (X : Type u) (Y : Type v) : Type (max u v) :=
+  Quotient (gameEquivalentSetoid X Y)
+
+/-- The random game a PDG presents. -/
+def toGameBehaviour (G : PDG X Y) : GameBehaviour X Y :=
+  Quotient.mk (gameEquivalentSetoid X Y) G
+
+@[simp] theorem toGameBehaviour_eq_iff {G H : PDG X Y} :
+    toGameBehaviour G = toGameBehaviour H ↔ gameEquivalent G H := by
+  show Quotient.mk (gameEquivalentSetoid X Y) G
+    = Quotient.mk (gameEquivalentSetoid X Y) H ↔ _
+  exact ⟨Quotient.exact, Quotient.sound (s := gameEquivalentSetoid X Y)⟩
+
+@[elab_as_elim] theorem GameBehaviour.ind {motive : GameBehaviour X Y → Prop}
+    (h : ∀ G, motive (toGameBehaviour G)) : ∀ B, motive B := Quotient.ind h
+
+/-- `ω` is a class invariant: Definition 2.36's index set is the class itself,
+cut down to the honest points. -/
+theorem infWinnability_congr_gameEquivalent {G H : PDG X Y}
+    (h : gameEquivalent G H) : infWinnability G = infWinnability H := by
+  have hset : {K : PDG X Y | K.NonNeg ∧ gameEquivalent K G}
+      = {K : PDG X Y | K.NonNeg ∧ gameEquivalent K H} := by
+    ext K
+    exact and_congr_right fun _ =>
+      ⟨fun hK => gameEquivalent_trans hK h,
+        fun hK => gameEquivalent_trans hK (gameEquivalent_symm h)⟩
+  rw [infWinnability, infWinnability, hset]
+
+/-- **Definition 2.22 refines Definition 2.17 on the forgotten systems.**  The
+underlying transcript law is the first marginal of the game-transcript law, so
+game-equivalent games have equivalent behaviours — which is what makes the
+forgetful map descend. -/
+theorem equivalent_forget_of_gameEquivalent {G H : PDG X Y}
+    (h : gameEquivalent G H) : PDS.equivalent (forget G) (forget H) := by
+  intro e n
+  have key : ∀ K : PDG X Y, PDS.trLawFullyDefined e n (forget K)
+      = Distribution.fTransform Prod.fst (gameTrLaw e n K) := by
+    intro K
+    rw [PDS.trLawFullyDefined, forget, Distribution.fTransform_fTransform,
+      gameTrLaw, Distribution.fTransform_fTransform]
+    rfl
+  rw [key G, key H, h e n]
+
+/-- The weight of a random game. -/
+def GameBehaviour.weight : GameBehaviour X Y → ℝ :=
+  Quotient.lift Distribution.weight fun _ _ h => weight_eq_of_gameEquivalent h
+
+@[simp] theorem GameBehaviour.weight_toGameBehaviour (G : PDG X Y) :
+    GameBehaviour.weight (toGameBehaviour G) = G.weight := rfl
+
+/-- **Definition 2.25 on random games.**  `ν` is a function of the class, not
+of the presentation — the game-level counterpart of
+`PDS.Behaviour.advFullyDefined`, and the reason Definition 2.25 may be written
+`ν(𝐒^A)`. -/
+def GameBehaviour.supWinProb : GameBehaviour X Y → ℝ :=
+  Quotient.lift PDG.supWinProb fun _ _ h => supWinProb_congr_gameEquivalent h
+
+@[simp] theorem GameBehaviour.supWinProb_toGameBehaviour (G : PDG X Y) :
+    GameBehaviour.supWinProb (toGameBehaviour G) = PDG.supWinProb G := rfl
+
+/-- **Definition 2.36 on random games.**  Definition 2.36 already quantifies
+over the class, so on the quotient it is a function of the point rather than a
+congruence. -/
+def GameBehaviour.infWinnability : GameBehaviour X Y → ℝ :=
+  Quotient.lift PDG.infWinnability fun _ _ h => infWinnability_congr_gameEquivalent h
+
+@[simp] theorem GameBehaviour.infWinnability_toGameBehaviour (G : PDG X Y) :
+    GameBehaviour.infWinnability (toGameBehaviour G) = PDG.infWinnability G := rfl
+
+/-- **The forgetful projection at the classes**: Remark 2.24's `𝐒^A ↦ 𝐒`.  Its
+fibres are the `GamesFor` of `Game.lean`. -/
+def GameBehaviour.forget : GameBehaviour X Y → PDS.Behaviour X Y :=
+  Quotient.lift (fun G => PDS.toBehaviour (PDG.forget G)) fun _ _ h =>
+    PDS.toBehaviour_eq_iff.mpr (equivalent_forget_of_gameEquivalent h)
+
+@[simp] theorem GameBehaviour.forget_toGameBehaviour (G : PDG X Y) :
+    GameBehaviour.forget (toGameBehaviour G) = PDS.toBehaviour (PDG.forget G) := rfl
+
+/-- **The fibre of the forgetful projection is `PDS.GamesFor`.**  "A monotone
+condition *for* an `(𝒳,𝒴)`-DDS `s`" (Definition 2.20's preposition) is
+membership in this fibre, and the membership condition is the forgetting law
+stated against the class — which is `Game.lean`'s `PDS.GamesFor` verbatim. -/
+theorem mem_fibre_forget_iff (S : PDS X Y) (G : PDG X Y) :
+    GameBehaviour.forget (toGameBehaviour G) = PDS.toBehaviour S ↔
+      PDS.equivalent (PDG.forget G) S :=
+  PDS.toBehaviour_eq_iff
+
+/-- **Theorem 2.37 at the quotient.**  On a random game presented by an honest
+game over the finite shared-domain slice, `ν(B) = ω(B)` — an identity between
+two functions of the *class* — and the infimum is attained by a point of the
+fibre.
+
+The hypotheses stay at a presentation because they are properties of one: `ν`
+and `ω` are invariants, but honesty and the domain bundle are not.  The
+statement is therefore "some honest presentation lies on the slice", which is
+the strongest honest form the T1 layer supports. -/
+theorem GameBehaviour.supWinProb_eq_infWinnability [Fintype X]
+    {B : GameBehaviour X Y} {D : Set (List X)} {q : ℕ}
+    (h : ∃ G : PDG X Y, toGameBehaviour G = B ∧ G.NonNeg ∧
+      (∀ g ∈ G.support, [] ∉ g.2.1) ∧ PDG.HasDomain G D ∧ QBounded D q) :
+    GameBehaviour.supWinProb B = GameBehaviour.infWinnability B ∧
+      ∃ G' : PDG X Y, G'.NonNeg ∧ toGameBehaviour G' = B ∧
+        G'.mass System.Winnable = GameBehaviour.supWinProb B := by
+  obtain ⟨G, rfl, hG, hnil, hdom, hq⟩ := h
+  obtain ⟨heq, G', hG'nn, hG'eq, hG'mass, -⟩ := PDG.winnability_theorem hG hnil hdom hq
+  exact ⟨heq, G', hG'nn, toGameBehaviour_eq_iff.mpr hG'eq, hG'mass⟩
+
+end PDG
+
 end
 
 end RandomSystems
