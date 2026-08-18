@@ -13,8 +13,9 @@ provenance fence pending an explicit reconciliation.
 
 ## Carrier (R1–R3)
 *(Scope note, corrected 2026-08-18 — Marc: variable-input-length SYSTEMS
-are ordinary PDS (the alphabet may be List Bool; CBC = finite-support
-mixture over its keys, in Φ).  The limit concerns only infinite-domain
+are ordinary PDS at their own message alphabets (CBC = finite-support
+mixture over its keys, in Φ; its theorems exist in the reference
+repository and are not re-proven).  The limit concerns only infinite-domain
 IDEAL objects — the uniform random function over {0,1}*, CR18 Ex 3.7 —
 which need uncountable randomness: no finite-support PDS realizes or is
 behaviorally equal to one.  They enter as families of bounded slices
