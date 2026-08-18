@@ -22,10 +22,12 @@ extension `t|t'` of `t`".
 The carrier is the *upper set*: `MonotoneCondition X` is an upward-closed set
 of histories in the prefix order.  Monotonicity is then not a side condition
 carried alongside a predicate but the closure property of the object itself,
-which is what makes the algebra work — conditions form a lattice (`⊔` is the
-union, the **bad-event union** every technique takes), and they pull back
-along prefix-monotone maps on histories (`comap`), which is how a condition on
-a sub-history becomes a condition on the whole.
+which is what makes the algebra work — conditions form a **complete lattice**
+(`⊔` is the union, the bad-event union every technique takes; `⨆ i, A i` is
+the union over a family, which is what a `q`-query union bound sums and what a
+CR18 multigame carries), and they pull back along prefix-monotone maps on
+histories (`comap`), which is how a condition on a sub-history becomes a
+condition on the whole.
 
 The thesis's own `{0,1}`-predicate form is kept as a **certified view**:
 `boolEquiv : MonotoneCondition X ≃ BoolCondition X` is an equivalence, not an
@@ -144,18 +146,32 @@ theorem IsPrefixUpperSet.inter {s t : Set (List X)} (hs : IsPrefixUpperSet s)
     (ht : IsPrefixUpperSet t) : IsPrefixUpperSet (s ∩ t) :=
   fun _ _ hpre h => ⟨hs hpre h.1, ht hpre h.2⟩
 
+/-- Conditions are closed under arbitrary unions: the bad event "one of these
+happened", over a family of any size. -/
+theorem IsPrefixUpperSet.sUnion {S : Set (Set (List X))}
+    (hS : ∀ s ∈ S, IsPrefixUpperSet s) : IsPrefixUpperSet (⋃₀ S) := by
+  rintro t t' hpre ⟨s, hs, hts⟩
+  exact ⟨s, hs, hS s hs hpre hts⟩
+
+/-- Conditions are closed under arbitrary intersections. -/
+theorem IsPrefixUpperSet.sInter {S : Set (Set (List X))}
+    (hS : ∀ s ∈ S, IsPrefixUpperSet s) : IsPrefixUpperSet (⋂₀ S) :=
+  fun _ _ hpre h s hs => hS s hs hpre (h s hs)
+
 namespace MonotoneCondition
 
 theorem upward (A : MonotoneCondition X) {t t' : List X} (h : t <+: t')
     (ht : t ∈ A.1) : t' ∈ A.1 :=
   A.2 h ht
 
-/-! ### The lattice of conditions
+/-! ### The complete lattice of conditions
 
-Conditions are closed under union and intersection, so they inherit `Set`'s
-order — **inclusion** — through `Subtype.lattice`.  The join is the union: the
-disjunction of two bad events, which is the operation every union bound and
-every bad-event decomposition uses. -/
+Conditions are closed under arbitrary unions and intersections, so they
+inherit `Set`'s order — **inclusion** — as a complete lattice.  The join is
+the union: the disjunction of bad events, which is the operation every union
+bound and every bad-event decomposition uses, and the indexed form `⨆ i, A i`
+is the union over a family — a `q`-query union bound, or the family of
+conditions a CR18 multigame carries. -/
 
 instance : Lattice (MonotoneCondition X) :=
   Subtype.lattice (fun ⦃_ _⦄ hs ht => hs.union ht) fun ⦃_ _⦄ hs ht => hs.inter ht
@@ -186,6 +202,56 @@ instance : OrderTop (MonotoneCondition X) where
 
 @[simp] theorem coe_top :
     (⊤ : MonotoneCondition X).1 = (Set.univ : Set (List X)) := rfl
+
+/-- The complete lattice: arbitrary joins are unions and arbitrary meets are
+intersections, extending the finite operations above rather than replacing
+them (`coe_sup`, `coe_inf`, `coe_bot`, `coe_top` are still `rfl`). -/
+instance : CompleteLattice (MonotoneCondition X) where
+  __ := (inferInstance : Lattice (MonotoneCondition X))
+  __ := (inferInstance : OrderBot (MonotoneCondition X))
+  __ := (inferInstance : OrderTop (MonotoneCondition X))
+  sSup S := ⟨⋃₀ (Subtype.val '' S),
+    IsPrefixUpperSet.sUnion (by rintro s ⟨A, -, rfl⟩; exact A.2)⟩
+  sInf S := ⟨⋂₀ (Subtype.val '' S),
+    IsPrefixUpperSet.sInter (by rintro s ⟨A, -, rfl⟩; exact A.2)⟩
+  isLUB_sSup S := by
+    constructor
+    · intro A hA l hl
+      exact ⟨A.1, ⟨A, hA, rfl⟩, hl⟩
+    · rintro B hB l ⟨s, ⟨A, hA, rfl⟩, hl⟩
+      exact hB hA hl
+  isGLB_sInf S := by
+    constructor
+    · intro A hA l hl
+      exact hl A.1 ⟨A, hA, rfl⟩
+    · rintro B hB l hl s ⟨A, hA, rfl⟩
+      exact hB hA hl
+
+@[simp] theorem mem_sSup {S : Set (MonotoneCondition X)} {l : List X} :
+    l ∈ (sSup S).1 ↔ ∃ A ∈ S, l ∈ A.1 := by
+  constructor
+  · rintro ⟨s, ⟨A, hA, rfl⟩, hl⟩
+    exact ⟨A, hA, hl⟩
+  · rintro ⟨A, hA, hl⟩
+    exact ⟨A.1, ⟨A, hA, rfl⟩, hl⟩
+
+@[simp] theorem mem_sInf {S : Set (MonotoneCondition X)} {l : List X} :
+    l ∈ (sInf S).1 ↔ ∀ A ∈ S, l ∈ A.1 := by
+  constructor
+  · exact fun hl A hA => hl A.1 ⟨A, hA, rfl⟩
+  · rintro hl s ⟨A, hA, rfl⟩
+    exact hl A hA
+
+/-- The bad-event union over a family, which is what a union bound sums. -/
+@[simp] theorem mem_iSup {ι : Sort*} {A : ι → MonotoneCondition X}
+    {l : List X} : l ∈ (⨆ i, A i).1 ↔ ∃ i, l ∈ (A i).1 := by
+  rw [iSup, mem_sSup]
+  simp
+
+@[simp] theorem mem_iInf {ι : Sort*} {A : ι → MonotoneCondition X}
+    {l : List X} : l ∈ (⨅ i, A i).1 ↔ ∀ i, l ∈ (A i).1 := by
+  rw [iInf, mem_sInf]
+  simp
 
 /-! ### The thesis's `{0,1}`-predicate view, certified -/
 
