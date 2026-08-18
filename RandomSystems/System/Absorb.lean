@@ -286,6 +286,17 @@ theorem DDE.Total.transcript_prefix (s : DDS X Y) (e : DDE.Total Y X)
   | base => exact List.prefix_rfl
   | succ m _ ih => exact ih.trans (DDE.Total.transcript_prefix_succ s e m)
 
+/-- The *answered* query history is monotone in the interaction length too:
+CR18's deletion pass is monotone (`keptPrefix_mono`), so a longer interaction
+extends the history the system actually processed.  This is the receipt a
+monotone condition consumes (`System.Won.mono`). -/
+theorem DDE.Total.answeredQueries_prefix (s : DDS X Y) (e : DDE.Total Y X)
+    {n m : ℕ} (h : n ≤ m) :
+    answeredQueries (transcript s e n) <+:
+      answeredQueries (transcript s e m) := by
+  rw [DDE.Total.answeredQueries_transcript, DDE.Total.answeredQueries_transcript]
+  exact keptPrefix_mono s ((DDE.Total.transcript_prefix s e h).map Prod.fst)
+
 end Block
 
 /-! ## Relays absorb into the environment
