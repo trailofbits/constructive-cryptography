@@ -106,10 +106,23 @@ micro-questions: see LEDGER.md.
   operators copied from a source's own presentation (`S⁻`/`S⊣` as
   operators, Γ/Γᵇ, blinded-system objects); indiscriminate transcription.
   If a concept genuinely seems to need a NEW object, that is a fork to
-  Marc, not a build.  Worked instance: CE (T3) = ONE new relation on the
-  not-won slice of `gameTrLaw` vs `trLawFullyDefined`, division-free via
-  T0's cross-multiplied lemma; everything else in its theory is already
-  landed (see LEDGER CR18 RECAST POLICY, CE rows).
+  Marc, not a build.
+  **Clause (b) — minimal migration, no wheel-reinvention (Marc, same
+  ruling):** the dual guard.  When the concept is already available AND
+  PROVEN — in the source theory or in the reference repository's
+  kernel-checked development — ADAPT that artifact: keep its statement
+  shapes, lemma decomposition, and proof architecture, and change only
+  what clause (a)'s recast dictionary forces (carrier/observable
+  substitution).  Deriving a fresh route where a proven one adapts is the
+  proof-side twin of parallel modeling: two developments of one theory.
+  (No blind transcription either — carriers differ, so every node is
+  re-elaborated on our objects; "adapt" means the DAG transports, not the
+  text.)  Worked instance: CE (T3) = ONE new relation on the not-won
+  slice of `gameTrLaw` vs `trLawFullyDefined`, division-free via T0's
+  cross-multiplied lemma, with the reference repository's proven
+  CondEquiv/Theorem417 lemma DAG transported along the dictionary;
+  everything else in its theory is already landed (see LEDGER CR18 RECAST
+  POLICY, CE rows).
 - CE sources (RESOLVED 2026-08-18, Marc: "already accounted for in the
   CR18 migration"): NO separate admission — the T3 charter (LEDGER
   SOURCE-IDENTITY CORRECTION) already assigns the presentations: thesis

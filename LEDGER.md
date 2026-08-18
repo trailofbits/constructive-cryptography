@@ -2828,8 +2828,11 @@ quantified over query lists = Maurer13b Def 13's fixed-`Xⁱ`; `ν` =
 endpoint `CondEquiv G T → Adv⊥(forget G, T) ≤ ofReal (supWinProb G)` with
 the coupling core generalizing T2's `statDist_fTransform_le_mass_of_eq_off`
 route via T0's chain rules; everything on the `Adv⊥` ⊥-total carrier (F-2
-— CR18 §4.10's no-refusal simplification is rejected); quarry
-`CondEquiv.lean` = statement-shape reference, re-derive never transcribe.
+— CR18 §4.10's no-refusal simplification is rejected).  R11(b) minimal
+migration: the quarry's PROVEN `CondEquiv.lean`/`Theorem417.lean` lemma
+DAG is the route — transport it along this dictionary, re-elaborating
+each node on our observables; change only what the recast forces; do NOT
+invent a fresh proof route, and do NOT transcribe text across carriers.
 All of it enters under the R8 fallback register, flagged.
 
 DRIFT TRIPWIRES for every T-brief: the R10 vocabulary rules (LEDGER +
@@ -2840,7 +2843,10 @@ forgetting law is stated against equivalence classes; H-layer-3 is the
 only H build item (layers 1-2 exist — do not re-prove); R11 concept
 recast — no parallel object stacks, CE/any-new-concept consumes the
 landed observables + T0 conditioning, a seemingly-needed new object is a
-fork to Marc not a build.
+fork to Marc not a build; R11(b) minimal migration — where a proven
+development exists (source theory or reference repo), adapt its lemma
+DAG along the recast dictionary with the minimal forced delta, never
+reinvent the route, never transcribe across carriers.
 
 # CR18 full-sweep register — stretch goals for abstract-crypto
 
