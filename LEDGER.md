@@ -2824,127 +2824,43 @@ gates, adversarial audit before deltas apply):
      reading: NO — two DIFFERENT paper relations (strict implication
      proven, both consumed), not two renderings of one concept; awaiting
      Marc's word.
-  T4 PARTIAL (505fd36; adversarially audited, /private/tmp/t4-audit/
-     AUDIT.md: code SURVIVES — 22 decls re-verified; COMPLETION ROUND IN
-     FLIGHT).  Landed: MPR07 eq. (3) min form, eq. (4) as uniqueness
-     characterization + construction (`PDS.notWonPart`, every sub-law is
-     a not-won law of a game), Lemma 5 per-distinguisher, Lemma 5(iv) +
-     fn. 16 at the Definition-2.17 class, the equal-behaviour corner.
-     BRIEF CORRECTION (the plan line and survey rows were already right;
-     the implementing BRIEF's `CondEquiv Ĝ T` direction is refuted, kernel
-     receipt in-module; Lemma 5 completes Lemma 4's RESTRICTED
-     equivalence, settled on rendered p. 140-141).
-     SIZE OF THE RESIDUE (audited): **L, with landed architecture** — NOT
-     research-grade, and "Lemma 5 may be false on this carrier" is
-     STRUCK.  MPR07 p. 141 itself prints the construction (the
-     alive-conditional recursion `m_{xⁱ,yⁱ}/m_{xⁱ⁻¹,yⁱ⁻¹}`, fn. 17
-     `m_{x⁰,y⁰}=1`); the thesis licenses the atom re-decomposition it
-     needs (printed p. 23 fn. 8; p. 25 "an ARBITRARY joint distribution …
-     defines a (unique) PDS" — in the Thm 2.37 proof); AC has the
-     machinery landed for Thm 2.31 (`System.DDS.glue`, Lemma 2.33,
-     `successorTransform`/`prependTransform`).  Route = the landed
-     Thm-2.31 induction with `min` in place of the coupling.  Finite
-     support suffices (cuts only where the consistent subset of supp S or
-     supp T strictly shrinks).  The one real obligation: exact on
-     fully-defined presentations; on refusing atoms the alive set must be
-     checked against the deletion-pruned `answeredQueries` list.
-     OBSTRUCTION RE-SCOPED: it binds a FIXED PRESENTATION (with S's own
-     atoms, two environments sharing a prefix draw surviving mass from
-     one branch point), dissolved by a Definition-2.17-equivalent
-     re-decomposition — not a carrier fact.
-     WITNESS PROPERTY (both landed witnesses): discarded mass gets `⊤`,
-     already won at the empty history — outside p. 138's "initially set
-     to 0" reading and the `hnil` clause; sound for every statement made,
-     and why a two-valued condition can never carry Lemma 5(iv).
-     COUPLING-BAN RE-SCOPED (audit §6.6): the standing "do not derive
-     from coupling attainment" is a citation/interpretation rule, not a
-     route ban — at ATTAINED representatives the atom-level min
-     (`optimalJoint`'s diagonal `⊓`, Coupling.lean:144) is exactly the
-     right engine; at arbitrary presentations it over-counts.
-  T5 CLOSED (d6886f1 + audit fix-up eeb0550; adversarially audited,
-     /private/tmp/t5-audit/AUDIT.md: the Lean SURVIVED every probe —
-     exactness, η/σ separation, slot order; two high refutations in the
-     SOURCING layer + one contentless receipt, all repaired at eeb0550).
-     RandomSystems/Technique/HCoefficient.lean, 25 declarations (21 thms +
-     4 defs), axiom-clean, no sorry.  Content: the factorization
-     `tr(S,e,n)(t) = η(e,n,t)·σ(S,t)` as an EXACT equality (both directions
-     of transcript_eq_iff), `h_coefficient_theorem` (σ-ratio on good +
-     ideal bad mass ⇒ Adv⊥ ≤ ↑(δb+ε), uniform over environments AND
-     lengths — adaptivity free because η cancels), length-indexed
-     switching receipt at ε = q(q−1)/2N with an in-code non-triviality
-     check (the audit's D6′ repair; the constant-σ trap is recorded
-     in-code as bad_nil_of_transcriptSystemFactor_const).
-     SOURCE (corrected by the audit): Lanzenberger thesis App. A.1,
-     printed pp. 87–88 — states AND PROVES the split — is PRIMARY; CR18
-     Lemma 3.2 (printed p. 70, stated without proof) is secondary
-     provenance + the η/σ naming; NO R8 fallback exception claimed.
-     The reference repository DOES have the deterministic variable-length
-     analogue (RandomSystem.lean:634/688/750, LanzenbergerChain.lean:160,
-     Lemma415.lean:113) — the module header carries a 13-row R11(b)
-     migration map; the one real delta: their round-indexed vs our
-     prefix-indexed quantifier (same content, matched to the landed snoc
-     recurrence).  SURVEY CORRECTION: the survey's q-indexed transcript
-     prefix type (its row "T4.4", listed MODEL-NEW) is NOT needed on this
-     carrier — deterministic environments make η an indicator;
-     System/Transcript.lean stays an empty reserved home.
-     DEV-1 (pending, joint with T4 closure): layer-2's hTechnique_ratio
-     carries a self-inflicted [Fintype A] (T0 statement-shape artifact) —
-     T5 proved the instance-free form in its own file
-     (statDist_le_probBad_add_of_ratio_on_good); T4 independently landed a
-     DIFFERENT Fintype-free companion (statDist_eq_weight_sub_sum_min_of_
-     support_subset).  Coordinator consolidation owed: move both into
-     Probability/StatisticalDistance.lean under namespace Probability,
-     KEEP hTechnique_ratio as a one-line corollary (two in-file callers —
-     never delete), re-point both legs.
-  T6 CLOSED (9806d4e/37df52b/ee13035 + audit fix-up d6ff8e2; adversarially
-     audited, /private/tmp/t6-audit/AUDIT.md: mathematics SURVIVED in full —
-     Boneh–Shoup constants, MauRen16 eq. (11), Pinsker's ½ — five
-     citation-layer refutations, all repaired in d6ff8e2).  151 declarations
-     (136 pre-addendum), all axiom-clean, no sorry; gates green.
-     Probability/{Entropy,ShannonEntropy,Divergence,CountingResidue,
-     DistributionMeasure}.lean.  Bits/nats split deliberate and documented
-     (entropy layer log₂ per CR18; klDiv nats, pinning Pinsker's constant).
-     Equality conditions of Thms A.1–A.3 LANDED (new content — absent in the
-     reference too); the condMutualInfo_eq_zero_iff clause is stated on the
-     support, disclosed in-code.  THREE PLAN-LINE CORRECTIONS found in the
-     tree, recorded here:
-     (a) DistExpect.lean was ALREADY transported (Probability/Expectation.lean
-         has an identical declaration set); "expectation extras" = the staged
-         L0/L1 facts — see the RELOCATION DEBT line below.
-     (b) the plan's toPMF-bridge premise was FALSE (no such bridge existed).
-         Resolution at d6ff8e2: Probability/DistributionMeasure.lean lands
-         `toPMF` from pure mathlib, and `Distribution.klDiv_toPMF`
-         KERNEL-CHECKS native klDiv = mathlib's InformationTheory.klDiv —
-         scoped to the isProbDist slice modulo ENNReal.ofReal (mathlib
-         carries a weight-correction term the native sum does not, which is
-         also why the weight-general Pinsker has no mathlib counterpart).
-     (c) the Shannon layer lives in a THIRD reference file the plan never
-         named (reference ShannonEntropy.lean, 1069 lines) — transported in
-         full.
-  T6 UPSTREAM NOTE (D7): the three CR18 App. A.2 mis-citations the audit
-     caught (Def A.8/A.9 swap, chain-rule/Thm A.3 confusion), the stale
-     sq_sum_le_card_mul_sum_sq UPSTREAM-CANDIDATE note, and the false
-     Maclaurin justification all ORIGINATE in the reference repository's
-     ShannonEntropy.lean (:735,:854,:856,:955-957) — read-only to us; any
-     future transport must NOT re-import them (trap: CR18's appendix restarts
-     its own page numbering — the 2-up formula does not apply there).
-  T6 RELOCATION DEBT (owed, mechanical, no proof churn): (i) append
-     Probability/CountingResidue.lean verbatim to Probability/Counting.lean
-     and delete it (same namespace; separate only for lane ownership);
-     (ii) the staged L0/L1 facts in Entropy.lean §0 / ShannonEntropy.lean §0b
-     carry in-code relocation markers → Distribution.lean (bddAbove_range,
-     apply_le_weight, exists_pos_of_isProbDist, marginal_apply,
-     marginal_isProbDist, mass_graph_eq_sum, sum_le_weight,
-     sum_apply_eq_marginalSnd, marginalSnd) and → Expectation.lean
-     (expect_fTransform, expect_congr_of_support, expect_add_right');
-     Probability/Lift.lean:240's inline copy of apply_le_weight should then
-     consume the relocated lemma.
-  SEQUENCING (Marc 2026-08-18): T4, T5, T6 are MUTUALLY INDEPENDENT —
-     T4 consumes T1–T3, T5 consumes T0 layers 1–2, T6 only the toPMF
-     bridge; all three are parallel-eligible.
-  AUTOMATION ITEM (Marc 2026-08-18, automation-first rule; sequenced
-     immediately AFTER T4 phase 2 lands, extracting the signature from
-     that fresh instance): package the presentation-change induction as
+  T4 CLOSED (505fd36 + completion e08762b/dc8441f; adversarially audited
+     + coordinator-verified kernel receipts; 35 declarations axiom-clean,
+     no sorry; all gates + both builds green).  Landed: MPR07 eq. (3)/(4)
+     machinery; Lemma 5 PER-DISTINGUISHER; `PDS.winning_probability_
+     attainment_theorem` = FOOTNOTE 16 AT THE SUPREMUM, pair PRODUCED
+     (hypotheses [Fintype X], NonNeg×2, S.weight = T.weight,
+     HaveCommonDomainAndBounded; witness gives discarded mass ⊤ — won at
+     [], outside p. 138's "initially set to 0" and outside hnil; the n=0
+     argument shows no two-valued condition is per-D tight); the fiber
+     transfer (eq. (4) at fixed Xⁱ = eq. (4) at every (e,n), discharging
+     the owed EquivalentAsGames bridge as notWonLaw_eq_of_
+     equivalentAsGames); `PDS.tight_of_playQueries_witness` = LEMMA 5
+     REDUCED TO ITS CONSTRUCTION (clauses (iii)+(iv) per distinguisher
+     and per k from an eq.-(4) pair at fixed query lists — no Fintype, no
+     domain, no query bound); hypothesis-free CondEquiv receipt.
+     DISCOVERY (kernel receipt `PDS.not_exists_gamesFor_winningMass_eq_
+     statDist_emptySystem` :1140, statement coordinator-verified —
+     quantifies over ALL games on ANY equivalent presentation):
+     **MPR07 Lemma 5(iv) is FALSE as stated on the ⊥-total carrier.**
+     Conditions read the refusal-deleted history (answeredQueries) while
+     total environments observe each refusal (R2): for the nowhere-
+     defined system every game's winning mass is the constant Pr[[] ∈ A]
+     while the transcript distance is 0 before the first query and
+     nonzero after.  Scope of per-D completeness on this carrier = the
+     FULLY-DEFINED slice — exactly the papers' own no-refusal setting
+     (F-2).  A new, kernel-checked boundary of the technique, not a
+     defect.  RESIDUE (precise): the eq.-(4) witness construction for
+     arbitrary fully-defined pairs = the Thm-2.31-scale token-refinement
+     recursion — MERGED into the AUTOMATION ITEM below (same induction,
+     one work item).  CONSOLIDATIONS CLOSED here: DEV-1 (both Fintype-
+     free forms now in Probability/StatisticalDistance.lean :246/:780,
+     [Fintype] originals kept as one-term corollaries, both technique
+     files re-pointed) and the T6 relocation debt (i) (CountingResidue
+     merged into Counting.lean, staging file deleted).
+  AUTOMATION ITEM + LEMMA-5 CONSTRUCTION (merged 2026-08-18 — the same
+     Thm-2.31-scale induction; T4's phase-2 boundary report is the
+     signature source): package the presentation-change induction as
      a recursion principle — `PDS.branchRebuild` (branch policy in:
      per-(x,y) continuations of matching weight, equivalent per branch;
      out: the re-glued presentation + `equivalent` proven once) + an

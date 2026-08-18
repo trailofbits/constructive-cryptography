@@ -102,7 +102,13 @@ micro-questions: see LEDGER.md.
   (`PDS.exists_gamesFor_notWonLaw_eq_trLawFullyDefined`).  At the class
   the constructor question is open and not load-bearing: the witness may
   equally be an `adjoin` of a re-decomposed presentation.  Attains the
-  distance on equivalent systems; non-unique; δ-shaped.
+  distance on equivalent systems; non-unique; δ-shaped.  SCOPE (T4
+  discovery, kernel receipt, 2026-08-18): per-distinguisher tightness
+  (Lemma 5(iv)) holds on the FULLY-DEFINED slice only — on the ⊥-total
+  carrier it is REFUTED (conditions read answeredQueries, refusal-deleted;
+  total environments observe refusals; the nowhere-defined system is a
+  counterexample against every game on every equivalent presentation).
+  The supremum-level form (fn. 16) is unaffected.
 - **H-coefficient, three layers**: (1) partition bound (in tree:
   statDist_sum_of_disjoint_support family); (2) good/bad corollary (in
   tree: the hTechnique kernel); (3) transcript instantiation — the ONLY
