@@ -80,6 +80,37 @@ Classifications:
 
 ## METRIC layer (migrated by construction)
 
+T2 winnability additions (`RandomSystems/System/Winnability.lean`; Lanz
+§2.4.3 Defs 2.35/2.36 + Thm 2.37, printed pp. 23-26 read visually; all
+axiom-clean): `System.Winnable` (Def 2.35 verbatim on the pair),
+`PDG.gameEquivalent` (Def 2.22 — the T3.3 open half, coarser than
+PDS.equivalent per Rem 2.23), `PDG.infWinnability` (ω, Def 2.36, honest
+reps per R9; = 0 off the honest carrier, empty sInf in ℝ),
+`System.SawBit` (COINAGE — 𝒯_w on the derived view; sawBit_iff = the
+run-structure identity), `System.gameView` (COINAGE — Def 2.21's
+observable as one map), `PDG.HasDomain` (COINAGE — Def 2.14 at the game;
+ONE clause, the twin derived), `PDG.gameEquivalentSetoid`/`GameBehaviour`/
+`toGameBehaviour` (Rem 2.24's random game) with descended
+`GameBehaviour.weight`, `GameBehaviour.supWinProb`,
+`GameBehaviour.infWinnability`, `GameBehaviour.forget` (forget's fibre =
+PDS.GamesFor — the R10 pattern at its stated level).  ENDPOINTS:
+`supWinProb_le_infWinnability` (trivial direction),
+**`PDG.winnability_theorem`** (ν = ω, via the thesis p. 26 alternative
+proof reducing to Thm 2.31 — NOT the p. 25 induction, which rebuilds the
+successor calculus; matches T3.8's REUSE-ARCH note),
+`exists_unwinnable_representative` (the p. 24 operational reading),
+`GameBehaviour.supWinProb_eq_infWinnability` (at the quotient).
+NECESSITY RECEIPT: the empty-history clause (∀ g ∈ support, [] ∉ g.2.1)
+is PROVED necessary — supWinProb_ne_infWinnability_single_emptySystem_top
+(ν = 1, ω = 0 at ⊤ over emptySystem); any T3/T4 statement over games must
+carry or discharge it (DomainSupported implies it).  RETIRED from the
+reference repository: zeroMBO (= adjoin ⊥), blindize/IsBlind (~1400 lines
+— blinding = DDE.Total.relabelOut (·,false)); playQueries reused.
+Probability additions: apply_le_mass, not_of_mass_eq_zero_of_mem_support,
+mass_and_add_mass_not_and, statDist_fTransform_le_mass_of_eq_off
+(identical-until-bad, distributional); [Fintype] dropped from
+mass_{tsub,sub}_mass_le_statDist (unused).
+
 T1 game-layer additions (`RandomSystems/System/Game.lean`; Lanz §2.3.3
 Defs 2.20-2.25, printed pp. 16-17 read visually; all axiom-clean):
 `IsPrefixUpperSet` (COINAGE — Def 2.20 fn. 7 as closure), `MonotoneCondition`
@@ -2047,12 +2078,12 @@ own bridge argues for `Y × Bool` with the pair recovered as a special case.
 |---|---|---|---|---|---|---|
 | T3.1 | game object + MC/MBO | thesis Def 2.20 (printed p.16) = pair `(s, A)`, `A : X* → {0,1}` monotone, **input-only**; Maurer13b Def 9 = `Y × {0,1}` | `Q:PDS.lean:3045/3060/3066/3101` + bridge `Q:GameWinnability.lean:16-40`; delta `carrier` | `AC:RandomSystems/Game/Game.lean` + `Game/MonotoneCondition.lean` — **10-line placeholders** | **MODEL-NEW**, decision pre-surveyed by the quarry | CLOSED (T1 c6f460e/7949cf6: Game.lean; the empty Game/ placeholders superseded — games live under System/ where the gate covers them) |
 | T3.2 | game transcript + observable; `Γ`, `Γᵇ`, `ν` | thesis Def 2.21, Rem 2.23 (bit-blind), Def 2.25 | `Q:GameWinnability.lean:156/177/184/248`; `Q:WinProb.lean:32/38/63`; `Q:BlindConverter.lean:51/67/108`; delta `carrier` | none | **MODEL-NEW + TRANSPLANT** | PARTIAL (T1: gameTranscript/gameTrLaw/supWinProb landed; Γ/Γᵇ deliberately NOT built — T3.9, hierarchy prefers ν stated once) |
-| T3.3 | game equivalence (Def 2.22) and class-invariance of `ν` | thesis Def 2.22 | `Q:GameWinnability.lean:194/198/205/234`; delta `carrier` | AC has Def-2.17 `equivalent` (`ClassDistance.lean:1322`) and the `Behaviour` quotient (`Behaviour.lean:151`) — the **coarser** game quotient is missing | **MODEL-NEW** (a second, coarser quotient beside `Behaviour`) | PARTIAL (T1: PDG carrier landed; the game equivalence relation + coarser quotient remain MODEL-NEW) |
-| T3.4 | `Winnable` (Def 2.35), `ω` (Def 2.36) | thesis Def 2.35, 2.36 (printed pp. 23-27) | `Q:GameWinnability.lean:281`, `:294`; delta `none` for the defs | none | **MODEL-NEW** — and R9-aligned already (the `NonNeg` conjunct is exactly R9's honest-representative discipline) | S |
-| T3.5 | `ν ≤ ω` | thesis Thm 2.37, easy half | `Q:GameWinnability.lean:310`, `:338`; delta `carrier` | none | **TRANSPLANT** (REUSE-ARCH) | S |
+| T3.3 | game equivalence (Def 2.22) and class-invariance of `ν` | thesis Def 2.22 | `Q:GameWinnability.lean:194/198/205/234`; delta `carrier` | AC has Def-2.17 `equivalent` (`ClassDistance.lean:1322`) and the `Behaviour` quotient (`Behaviour.lean:151`) — the **coarser** game quotient is missing | **MODEL-NEW** (a second, coarser quotient beside `Behaviour`) | CLOSED (T2 9a5dccc/a9d9546: gameEquivalent + GameBehaviour; ν and ω descend) |
+| T3.4 | `Winnable` (Def 2.35), `ω` (Def 2.36) | thesis Def 2.35, 2.36 (printed pp. 23-27) | `Q:GameWinnability.lean:281`, `:294`; delta `none` for the defs | none | **MODEL-NEW** — and R9-aligned already (the `NonNeg` conjunct is exactly R9's honest-representative discipline) | CLOSED (T2 9a5dccc: Winnable, infWinnability; R9-aligned) |
+| T3.5 | `ν ≤ ω` | thesis Thm 2.37, easy half | `Q:GameWinnability.lean:310`, `:338`; delta `carrier` | none | **TRANSPLANT** (REUSE-ARCH) | CLOSED (T2: supWinProb_le_infWinnability; carries the necessary empty-history clause) |
 | T3.6 | the never-won twin `V` and its no-winnable-representative lemma | thesis p. 26 (unnamed `V`) | `Q:GameWinnability.lean:356/374/535`; delta `carrier` | none | **TRANSPLANT**; **rename** — `zeroMBO` is a coinage | CLOSED by construction (⊥ in the condition lattice; supWinProb_adjoin_bot = 0; zeroMBO retired) |
 | T3.7 | bit-adaptivity is useless (`blindize`) | thesis Rem 2.23 (the *reason*), formalized as a theorem | `Q:GameWinnability.lean:658/690/737`; delta `carrier` | none | **TRANSPLANT** — this is the honest formal content of "blinder" | SUBSUMED (pair carrier: no bit-adaptive environment exists by type; contentful residue proved for the derived view — winningMass_eq_mass_lastBit_toBitLaw; BlindConverter/BlindAbsorption not needed) |
-| T3.8 | **Winnability Theorem `ν = ω` + attainment** | thesis Thm 2.37 + its alternative proof, printed p. 26 | `Q:GameWinnability.lean:778`; delta `both` (step 6 only) | **substrate PRESENT**: Thm 2.31/2.32 at `AC:Attainment.lean` + `AC:BehaviourAttainment.lean:149-258`; the finiteness bundle is `PDS.HaveCommonDomainAndBounded` (`AC:Attainment.lean:481`), `PDS.HasDomain` (`AC:Environment.lean:284`), `QBounded` (`AC:DiscreteSystem.lean:37`) — **trap**: AC's `PDS.HasFixedDomain` (`AC:ProbabilisticSystem.lean:85`) is the one-system *existential* class, documented as NOT usable for two-system statements (`AC:Environment.lean:280`, `AC:Attainment.lean:456`), whereas the quarry's `PFunPDS.HasFixedDomain G D` is a two-argument relation — the transplant must re-target it to `HasDomain` | **TRANSPLANT** (REUSE-ARCH, the p.26 alternative proof) — highest-confidence row in the program | L |
+| T3.8 | **Winnability Theorem `ν = ω` + attainment** | thesis Thm 2.37 + its alternative proof, printed p. 26 | `Q:GameWinnability.lean:778`; delta `both` (step 6 only) | **substrate PRESENT**: Thm 2.31/2.32 at `AC:Attainment.lean` + `AC:BehaviourAttainment.lean:149-258`; the finiteness bundle is `PDS.HaveCommonDomainAndBounded` (`AC:Attainment.lean:481`), `PDS.HasDomain` (`AC:Environment.lean:284`), `QBounded` (`AC:DiscreteSystem.lean:37`) — **trap**: AC's `PDS.HasFixedDomain` (`AC:ProbabilisticSystem.lean:85`) is the one-system *existential* class, documented as NOT usable for two-system statements (`AC:Environment.lean:280`, `AC:Attainment.lean:456`), whereas the quarry's `PFunPDS.HasFixedDomain G D` is a two-argument relation — the transplant must re-target it to `HasDomain` | **TRANSPLANT** (REUSE-ARCH, the p.26 alternative proof) — highest-confidence row in the program | CLOSED (T2 e221d9e/65a87f2: winnability_theorem via the p.26 alternative proof; HasFixedDomain trap avoided — one PDG.HasDomain clause; all three reference strengthenings kept) |
 | T3.9 | `Γ = ν` (CR18 layer states the thesis definition) | reconciliation, not a paper claim | `Q:GameWinnability.lean:829+`, endpoint `maxWinProb_eq_supWinProb`; delta `carrier` | none | **TRANSPLANT** — only needed if both presentations are kept; under the SOURCE HIERARCHY, prefer stating `ν` once and deriving | S |
 
 ### DESIGN NOTE — the three renderings of "blind", and why AC gets the paper's one
@@ -2682,8 +2713,8 @@ raises, and both must be closed before T1/T3 code is written.
 
 | # | leg | rows | size | depends on | payoff |
 |---|---|---|---|---|---|
-| **L-1** | **Game objects**: game carrier, `S⁻`, `MonotoneMBO`, game transcript/observable, game equivalence (the coarser quotient beside `Behaviour`), `ν`, `Winnable`, `ω` | T1.1, T1.2, T3.1–T3.4 | **M–L** | R-A | CLOSED (T1 c6f460e/7949cf6: Game.lean; the empty Game/ placeholders superseded — games live under System/ where the gate covers them) |
-| **L-2** | **The Winnability Theorem** `ν = ω` + attainment, via the thesis p. 26 alternative proof reducing to Thm 2.31 | T3.5–T3.8 | **L** | L-1 | **the highest-confidence large theorem in the program** — AC's Thm 2.31/2.32 substrate is landed at both presentation and quotient level (`AC:Attainment.lean`, `AC:BehaviourAttainment.lean:149-258`); populates `Game/Winnability.lean` |
+| **L-1** | **Game objects**: game carrier, `S⁻`, `MonotoneMBO`, game transcript/observable, game equivalence (the coarser quotient beside `Behaviour`), `ν`, `Winnable`, `ω` | T1.1, T1.2, T3.1–T3.4 | **M–L** | R-A | CLOSED (T2 9a5dccc: Winnable, infWinnability; R9-aligned) |
+| **L-2** | **The Winnability Theorem** `ν = ω` + attainment, via the thesis p. 26 alternative proof reducing to Thm 2.31 | T3.5–T3.8 | **L** | L-1 | CLOSED (T2 e221d9e/65a87f2: winnability_theorem via the p.26 alternative proof; HasFixedDomain trap avoided — one PDG.HasDomain clause; all three reference strengthenings kept) |
 | **L-3** | **CE definition + filtration algebra + seed kit + `gameEnhance`** | T1.3–T1.6 | **M–L** | L-1, R-B, P0.1 | populates `Technique/ConditionalEquivalence.lean` |
 | **L-4** | **CE ⟹ indistinguishability**: `Adv⊥(S,T) ≤ Γ(Ŝ)` then the blind headline `Adv⊥(S,T) ≤ Γ(bŜ)` | T1.7, T1.8 | **L** | L-2, L-3, R-D | the payoff theorem; with R-D resolved it is stated **CR18 Def 4.20 verbatim** and ≈1400 lines of quarry blind-winner machinery are *not needed* |
 | **L-5** | **H-technique system half**: `q`-indexed transcript prefix + query-vector-indexed law, then the σ·η factorization, then the adaptive endpoint on `Adv⊥` | T4.4–T4.6, T4.11 | **L** | P0.2, P0.3 (helpful, not blocking) | **runs in parallel with L-1…L-4 — no shared files beyond `Probability/`** |
@@ -2734,8 +2765,10 @@ gates, adversarial audit before deltas apply):
      (monotone per atom; forgetting law against the class), blindness =
      blocking converter (Rem 2.23 via blockSet — the ~1400-line IsBlind
      machinery is NOT transplanted).
-  T2 winnability: thesis Thm 2.37 (quarry GameWinnability.lean:778 is the
-     architecture; consumes our Thm 2.31).
+  T2 CLOSED (9a5dccc/e221d9e/65a87f2/a9d9546): route = the thesis p.26
+     alternative proof (Thm 2.31 + one run-agreement induction); the plan's
+     word 'architecture' for GameWinnability.lean:778 refers to that
+     reduction, per its own header :58-77.
   T3 conditional equivalence: definition + the CE bound against Adv⊥
      (GATED on the pending source admission).
   T4 MPR07 Lemma 5 as constructor completeness (on the Behaviour
