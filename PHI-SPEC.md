@@ -1,6 +1,7 @@
 # PHI-SPEC — the rulings register
 
-The working spec of the MR16/CC formalization.  Validation state lives in
+The working spec of the MR16/CC formalization.  (Ruling labels R1-R9 are
+historical names, not an enumeration — R5/R6 were never assigned.)  Validation state lives in
 `LEDGER.md` (four-gate `scripts/ledgerAudit.sh`); the full design
 archaeology (contracts, pipelines, refutations, closeouts) lives in the git
 history on branch `archive/pre-squash-2026-08-18`.
