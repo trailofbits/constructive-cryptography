@@ -11,9 +11,11 @@ import AbstractCryptography.Specification.Parallel
 import AbstractCryptography.Specification.Relaxation
 import AbstractCryptography.Specification.Outbound
 import AbstractCryptography.Specification.ConstructorClass
+import AbstractCryptography.Specification.CostBounded
 import AbstractCryptography.Specification.Interfaces
 import AbstractCryptography.Metric.Epsilon
 import AbstractCryptography.Specification.Filtered
+import AbstractCryptography.Specification.Parameterized
 import AbstractCryptography.Tactics.ProofAutomation
 import AbstractCryptography.Tactics.ControlledNaturalLanguage
 
@@ -69,8 +71,17 @@ sit outside the mathematics tree, under `AbstractCryptography.Tactics`:
   there as instantiations of that parameter, and the module keeps the
   constructor class `Γ` separate from the class `H` that carries the `∗`- and
   `ε`-relaxations, which is the distinction §3.5 closes on.
+* `AbstractCryptography.Specification.CostBounded` — MauRen16 §3.5's
+  efficiency-bounded model as the one family of instantiations of that
+  constructor-class parameter, `costBounded γ c`, with the construction-hardness
+  chain the budget carries.  The cost function stays a parameter: CR18 §4.4.7
+  declines to fix a computational model, and no performance function is built.
 * `AbstractCryptography.Specification.Filtered` — choice-free endpoint-pattern/star
   specifications and local-simulator construction analogues motivated by §7.
+* `AbstractCryptography.Specification.Parameterized` — CR18 §5.5's parameterized
+  resources and constructions: Definition 5.11's family `{φ_r R}` and equation
+  (5.6) with a single quantified protocol, together with the coherence equation
+  `ψ_r α φ_r = ψ_r α` that collapses the family.
 * `AbstractCryptography.Tactics.ProofAutomation` — a finite proof-language layer over
   the semantic modules: scoped paper notation, curated normalization, named leaf
   rules,
