@@ -2710,10 +2710,15 @@ gates, adversarial audit before deltas apply):
      ADMISSIBILITY CONDITIONS.  Drafted by an agent, applied by the
      coordinator, only once the technique layer is in the tree.
 
-R10 REFINEMENT (Marc 2026-08-18): a monotone condition is DEFINED as the
-thesis writes it — a monotone predicate (the subtype {A : List X → Bool //
-monotone in the prefix order}); the upper-set correspondence is a LEMMA,
-not the definition.  The GAME is the linking: the pair carrier, with
+R10 REFINEMENT (Marc 2026-08-18, second ruling supersedes the first): the
+monotone-condition CARRIER is the upper-set form (UpperSet of the prefix
+order) — chosen for long-term algebra: the complete lattice (joins of bad
+events), comap along the tree's prefix-monotone maps (historyAt/keptPrefix
+— condition transport across par/attachment/blocking), the firing
+frontier.  FAITHFULNESS CERTIFIED: the definition carries an adjacent
+proven equivalence to the thesis's literal form
+{A : List X → Bool // Monotone A} (Def 2.20 quoted in the docstring), and
+the Bool-predicate view is the derived presentation with a round trip.  The GAME is the linking: the pair carrier, with
 "conditions on S" = the fiber of the forgetful projection over S's
 behaviour (membership = the forgetting law), and adjoin = the fiber's
 constructor.  Obligation 1 lives in the MC subtype, obligation 2 in the
