@@ -90,24 +90,48 @@ From them:
   two-valued, hence won at the empty history and **not** per-`D` tight — the
   theorem's docstring proves why no two-valued condition can be.
 
-**Not proved: the quantifier order.**  Lemma 5's content is
-`∀ S,T ∃ Ŝ,T̂ ∀ D ∀ k` — *one* pair of games serving every distinguisher — and
-the games built above depend on `(e, n)`.  What blocks the uniform statement is
-**a fixed presentation**, not the carrier: with the atoms of `S` themselves, two
-environments sharing a prefix draw their surviving mass from the same branch
-point (`PDG.mass_notWon_add_mass_notWon_le_notWonMass`), while equation (4)
-prescribes each branch's surviving mass independently.  It is dissolved by a
-Definition-2.17-equivalent **re-decomposition** of `S`, which Lanzenberger
-licenses on the page (printed p. 23 fn. 8: a DDS defined for first inputs
-`{x₁,…,x_q}` "can be represented equivalently as a tuple `(s_{x₁},…,s_{x_q})`";
-printed p. 25, in the proof of Theorem 2.37: "an *arbitrary* joint distribution
-of such PDS … defines a (unique) PDS") and for which AC has the machinery landed
-(`System.DDS.glue`, `PDS.exists_finiteClassJointWitness_of_common_side_weights`
-= Lemma 2.33, `PDS.successorTransform`/`PDS.prependTransform`).  The route is
-MPR07 p. 141's own alive-conditional recursion
-`p^Ŝ_{Y_i A_i | Xⁱ Yⁱ⁻¹ Aⁱ⁻¹}(y_i, 0, …) = m_{xⁱ,yⁱ} / m_{xⁱ⁻¹,yⁱ⁻¹}`
-(footnote 17: `m_{x⁰,y⁰} = 1`) run by the landed Theorem-2.31 induction with
-`min` in place of the coupling.
+* `PDG.notWonLaw_eq_min_of_forall_playQueries` and
+  `PDG.notWonLaw_eq_of_equivalentAsGames` — the fiber transfer: what a
+  construction has to meet at MPR07's fixed query lists `Xⁱ` it meets at every
+  environment and interaction length.  The second is the bridge Maurer13b
+  Definition 11 was missing, from its `i ≥ 1` family to MPR07 Definition 10's
+  restricted equivalence.
+* `PDS.tight_of_playQueries_witness` — **Lemma 5 reduced to its construction**:
+  from a pair of games meeting equation (4) at the fixed query lists it returns
+  clauses (iii) and (iv) *per distinguisher and per `k`*, and footnote 16.  The
+  whole residue of Lemma 5 is that theorem's two hypotheses.
+
+**The quantifier order: what is left, and what is impossible.**  Lemma 5's
+content is `∀ S,T ∃ Ŝ,T̂ ∀ D ∀ k`.  Two different things stand between this file
+and it, and only one of them is work.
+
+* *Work.*  Building the pair — the hypotheses of
+  `PDS.tight_of_playQueries_witness`.  MPR07 p. 141 prints the recipe (the
+  alive-conditional recursion
+  `p^Ŝ_{Y_i A_i|Xⁱ Yⁱ⁻¹ Aⁱ⁻¹}(y_i,0,…) = m_{xⁱ,yⁱ}/m_{xⁱ⁻¹,yⁱ⁻¹}`, footnote 17
+  `m_{x⁰,y⁰} = 1`); Lanzenberger licenses the atom re-decomposition it needs
+  (printed p. 23 fn. 8: a DDS for first inputs `{x₁,…,x_q}` "can be represented
+  equivalently as a tuple `(s_{x₁},…,s_{x_q})`"; printed p. 25, in the
+  Theorem 2.37 proof: "an *arbitrary* joint distribution of such PDS … defines a
+  (unique) PDS"); and `System/Attainment.lean` has the machinery
+  (`System.DDS.glue`, `PDS.exists_finiteClassJointWitness_of_common_side_weights`
+  = Lemma 2.33, `PDS.successorTransform`/`PDS.prependTransform`).  What that
+  build must dissolve is a **fixed presentation**, not the carrier: with the
+  atoms of `S` themselves, two environments sharing a prefix draw their
+  surviving mass from the same branch point
+  (`PDG.mass_notWon_add_mass_notWon_le_notWonMass`) while equation (4)
+  prescribes each branch independently.
+* *Impossible.*  Clause (iv) is **false as stated on this carrier**, and the
+  reason is Ruling R2.  A monotone condition is a predicate on `𝒳*` read at
+  `System.answeredQueries` — the query list with **refusals deleted** — while a
+  total environment observes each refusal as it happens.  For the
+  nowhere-defined system, every game's winning mass is therefore constant while
+  the transcript distance is not
+  (`PDS.not_exists_gamesFor_winningMass_eq_statDist_emptySystem`).  So the
+  construction above can only be sought on the **fully-defined slice**, where
+  the answered history is the whole query list; that is a scope correction to
+  Lemma 5, not a gap in the route.  Nothing else in this file is affected:
+  footnote 16 at the supremum never asks for a per-interaction equality.
 
 `PDG.notWonMass_eq_zero_of_condEquiv` records the other
 half of the charter's correction: the relation MPR07 Lemma 5 completes is
@@ -319,6 +343,172 @@ theorem advFullyDefined_forget_eq_supWinProb_of_notWonLaw_eq_min {G H : PDG X Y}
       rw [htight e n]
       exact le_iSup_of_le e (le_iSup_of_le n le_rfl)
 
+
+end PDG
+
+
+/-! ## From the fixed query lists to every interaction
+
+`PDG.notWonLaw` and `PDS.trLawFullyDefined` at a value `t` read only the fixed
+query list `t↓ₓ`: the adaptive environment's fiber over `t` is the fiber of
+`playQueries t↓ₓ` at `t`'s own length
+(`System.transcript_eq_iff_playQueries`), and the winning event reads the run
+rather than the environment (`System.won_congr_transcript`).  Off the values an
+interaction can produce both laws vanish.
+
+This is the exchange step already used inside
+`ConditionalEquivalence.lean`'s `statDist_trLawFullyDefined_forget_le_winningMass`,
+isolated so that a construction only has to meet MPR07 equation (4) at the
+non-adaptive environments — which is where the paper states it, `Xⁱ` being
+fixed.  UPSTREAM-CANDIDATES for `System/ClassDistance.lean` (the two
+`trLawFullyDefined` lemmas) and `Technique/ConditionalEquivalence.lean` (the
+`notWonLaw` one). -/
+
+namespace PDS
+
+/-- The transcript law at a value the interaction can produce is the
+non-adaptive transcript law at that value's own query list. -/
+theorem trLawFullyDefined_eq_playQueries (S : PDS X Y)
+    {e : System.DDE.Total Y X} {n : ℕ} {t : List (X × Option Y)}
+    (hq : ∀ k, (hk : k < t.length) →
+      e (System.transcriptOutputs (t.take k)) = some t[k].1)
+    (hlen : t.length = n ∨
+      (t.length < n ∧ e (System.transcriptOutputs t) = none)) :
+    trLawFullyDefined e n S t
+      = trLawFullyDefined
+          (System.DDE.Total.playQueries (System.transcriptInputs t)) t.length S t := by
+  rw [trLawFullyDefined, trLawFullyDefined,
+    Distribution.fTransform_apply_eq_mass, Distribution.fTransform_apply_eq_mass]
+  exact Distribution.mass_congr S fun u =>
+    System.transcript_eq_iff_playQueries hq hlen u
+
+/-- Off the values the interaction can produce, the transcript law vanishes:
+every realization's own transcript satisfies both consistency clauses
+(`System.DDE.Total.transcript_consistent`). -/
+theorem trLawFullyDefined_eq_zero_of_not_consistent (S : PDS X Y)
+    {e : System.DDE.Total Y X} {n : ℕ} {t : List (X × Option Y)}
+    (h : ¬ ((∀ k, (hk : k < t.length) →
+        e (System.transcriptOutputs (t.take k)) = some t[k].1) ∧
+      (t.length = n ∨
+        (t.length < n ∧ e (System.transcriptOutputs t) = none)))) :
+    trLawFullyDefined e n S t = 0 := by
+  rw [trLawFullyDefined, Distribution.fTransform_apply_eq_mass]
+  refine Distribution.mass_eq_zero_of_forall_not S fun s hcontra => ?_
+  subst hcontra
+  exact h ⟨(System.DDE.Total.transcript_consistent s e n).1.1,
+    (System.DDE.Total.transcript_consistent s e n).1.2⟩
+
+end PDS
+
+namespace PDG
+
+/-- The not-won law at a value the interaction can produce is the non-adaptive
+not-won law at that value's own query list — the winning event travels with the
+run (`System.won_congr_transcript`), which is where the environment's
+adaptivity is spent. -/
+theorem notWonLaw_eq_playQueries {G : PDG X Y}
+    {e : System.DDE.Total Y X} {n : ℕ} {t : List (X × Option Y)}
+    (hq : ∀ k, (hk : k < t.length) →
+      e (System.transcriptOutputs (t.take k)) = some t[k].1)
+    (hlen : t.length = n ∨
+      (t.length < n ∧ e (System.transcriptOutputs t) = none)) :
+    notWonLaw e n G t
+      = notWonLaw (System.DDE.Total.playQueries (System.transcriptInputs t))
+          t.length G t := by
+  rw [notWonLaw_apply, notWonLaw_apply]
+  refine Distribution.mass_congr G fun g => ?_
+  have hfib := System.transcript_eq_iff_playQueries hq hlen g.1
+  constructor
+  · rintro ⟨hw, ht⟩
+    have ht' := hfib.mp ht
+    exact ⟨fun hc => hw ((System.won_congr_transcript ht ht').mpr hc), ht'⟩
+  · rintro ⟨hw, ht'⟩
+    have ht := hfib.mpr ht'
+    exact ⟨fun hc => hw ((System.won_congr_transcript ht ht').mp hc), ht⟩
+
+/-- **Equation (4) at the fixed query lists is equation (4) everywhere.**  A
+game whose not-won law is the pointwise minimum at every non-adaptive
+environment has it at every environment and interaction length — so a
+construction need only meet MPR07's `Xⁱ`-indexed prescription, and the adaptive
+statement follows.
+
+Off the reachable values all three laws vanish: every transcript law does
+(`PDS.trLawFullyDefined_eq_zero_of_not_consistent`), and honesty puts the
+not-won law below `PDG.forget G`'s.  No relation between `G` and `S` is needed
+for that — which is what lets the same lemma serve the `T̂` side. -/
+theorem notWonLaw_eq_min_of_forall_playQueries {G : PDG X Y} {S T : PDS X Y}
+    (hG : G.NonNeg)
+    (h : ∀ (l : List X) (t : List (X × Option Y)),
+      notWonLaw (System.DDE.Total.playQueries l) l.length G t
+        = min (PDS.trLawFullyDefined (System.DDE.Total.playQueries l) l.length S t)
+            (PDS.trLawFullyDefined (System.DDE.Total.playQueries l) l.length T t))
+    (e : System.DDE.Total Y X) (n : ℕ) (t : List (X × Option Y)) :
+    notWonLaw e n G t
+      = min (PDS.trLawFullyDefined e n S t) (PDS.trLawFullyDefined e n T t) := by
+  classical
+  by_cases hE : (∀ k, (hk : k < t.length) →
+        e (System.transcriptOutputs (t.take k)) = some t[k].1) ∧
+      (t.length = n ∨
+        (t.length < n ∧ e (System.transcriptOutputs t) = none))
+  · rw [notWonLaw_eq_playQueries hE.1 hE.2,
+      PDS.trLawFullyDefined_eq_playQueries S hE.1 hE.2,
+      PDS.trLawFullyDefined_eq_playQueries T hE.1 hE.2]
+    have hkey := h (System.transcriptInputs t) t
+    simpa using hkey
+  · have hzS := PDS.trLawFullyDefined_eq_zero_of_not_consistent S hE
+    have hzT := PDS.trLawFullyDefined_eq_zero_of_not_consistent T hE
+    have hzG : notWonLaw e n G t = 0 := by
+      refine le_antisymm ?_ (nonNeg_notWonLaw hG e n t)
+      have h1 := notWonLaw_le_trLawFullyDefined_forget hG e n t
+      rwa [PDS.trLawFullyDefined_eq_zero_of_not_consistent (forget G) hE] at h1
+    rw [hzG, hzS, hzT, min_self]
+
+/-- **The bridge Maurer13b Definition 11 was missing.**  `EquivalentAsGames`
+constrains the not-won laws only at the *nonempty* fixed query lists (the
+paper's `i ≥ 1`); this upgrades it to MPR07 **Definition 10**'s restricted
+equivalence, equality of the not-won laws at *every* environment and interaction
+length, which is the hypothesis every endpoint above takes.
+
+Two clauses pay for the two indices Definition 11 omits: equal weight, and
+MPR07 p. 138's "this bit … is initially set to 0" — no realization is already
+won at the empty history.  At the empty transcript nothing has been answered, so
+under `hnil` both not-won laws are the systems' weights concentrated at `[]`
+(`trLawFullyDefined_zero_apply_nil`). -/
+theorem notWonLaw_eq_of_equivalentAsGames {G H : PDG X Y} (hG : G.NonNeg)
+    (hH : H.NonNeg) (hw : G.weight = H.weight)
+    (hnilG : ∀ g ∈ G.support, [] ∉ g.2.1) (hnilH : ∀ g ∈ H.support, [] ∉ g.2.1)
+    (hGH : EquivalentAsGames G H) (e : System.DDE.Total Y X) (n : ℕ) :
+    notWonLaw e n G = notWonLaw e n H := by
+  classical
+  refine Finsupp.ext fun t => ?_
+  by_cases hE : (∀ k, (hk : k < t.length) →
+        e (System.transcriptOutputs (t.take k)) = some t[k].1) ∧
+      (t.length = n ∨
+        (t.length < n ∧ e (System.transcriptOutputs t) = none))
+  · rw [notWonLaw_eq_playQueries (G := G) hE.1 hE.2,
+      notWonLaw_eq_playQueries (G := H) hE.1 hE.2]
+    rcases eq_or_ne t ([] : List (X × Option Y)) with rfl | ht
+    · have hnil : ∀ {K : PDG X Y}, (∀ g ∈ K.support, [] ∉ g.2.1) →
+          notWonLaw (System.DDE.Total.playQueries
+              (System.transcriptInputs ([] : List (X × Option Y))))
+            ([] : List (X × Option Y)).length K ([] : List (X × Option Y))
+            = K.weight := by
+        intro K hK
+        rw [notWonLaw_apply, ← Distribution.mass_true K]
+        refine Distribution.mass_congr_of_support K fun g hg => ?_
+        exact iff_of_true ⟨fun hc => hK g hg hc, rfl⟩ trivial
+      rw [hnil hnilG, hnil hnilH, hw]
+    · have hnilx : System.transcriptInputs t ≠ [] := by
+        simpa [System.transcriptInputs] using ht
+      have hEq := hGH (System.transcriptInputs t) hnilx
+      have := congrArg (fun d : Distribution (List (X × Option Y)) => d t) hEq
+      simpa using this
+  · have hz : ∀ {K : PDG X Y}, K.NonNeg → notWonLaw e n K t = 0 := by
+      intro K hK
+      refine le_antisymm ?_ (nonNeg_notWonLaw hK e n t)
+      have h1 := notWonLaw_le_trLawFullyDefined_forget hK e n t
+      rwa [PDS.trLawFullyDefined_eq_zero_of_not_consistent (forget K) hE] at h1
+    rw [hz hG, hz hH]
 
 end PDG
 
@@ -603,6 +793,78 @@ theorem advFullyDefined_eq_supWinProb_of_notWonLaw_eq_min {S T : PDS X Y}
     (PDG.supWinProb_eq_supWinProb_of_notWonLaw_eq
       (by rw [GamesFor.weight_eq G, GamesFor.weight_eq H]; exact hw) h)
 
+/-! ## MPR07 Lemma 5, reduced to its construction
+
+Everything in Lemma 5 except the *building* of `Ŝ` and `T̂` is now available.
+The theorem below takes exactly the object MPR07's proof produces — a game for
+`S` and a game for `T` whose not-won laws are equation (4)'s minimum **at the
+fixed query lists `Xⁱ`**, which is where the paper states it — and returns
+clauses (iii), (iv) for every distinguisher and every `k`, and footnote 16.
+
+So the residue of this leg is a single construction obligation, stated in the
+hypotheses `hGmin`/`hHmin` below.  MPR07 p. 141 gives its recipe (the
+alive-conditional recursion `m_{xⁱ,yⁱ}/m_{xⁱ⁻¹,yⁱ⁻¹}`), Lanzenberger licenses
+the atom re-decomposition it needs (printed p. 23 fn. 8; p. 25, in the
+Theorem 2.37 proof), and `System/Attainment.lean` has the machinery
+(`System.DDS.glue`, Lemma 2.33, the prepend/successor transforms). -/
+
+/-- **MPR07 Lemma 5 (iii), (iv) and footnote 16, from a non-adaptive witness.**
+Given a game for `S` and a game for `T` whose not-won laws are both the
+pointwise minimum of the two transcript laws at every fixed query list:
+
+* they are restricted equivalent (MPR07 **Definition 10**, printed p. 138) at
+  every environment and interaction length — clause (iii);
+* `δ_k^D(S,T) = ν_k^D(Ŝ) = ν_k^D(T̂)` at every environment and interaction
+  length — clause (iv), **per distinguisher**, which no witness in this file
+  built so far;
+* `Adv⊥(S,T) = ν(Ŝ) = ν(T̂)` — footnote 16.
+
+Clauses (i)/(ii) are `PDS.GamesFor` membership, carried by the two arguments.
+No `Fintype`, no domain and no query bound: the reduction is the fiber
+factorization, not the attainment theorem. -/
+theorem tight_of_playQueries_witness {S T : PDS X Y}
+    (hw : S.weight = T.weight) (G : GamesFor S) (H : GamesFor T)
+    (hGnn : G.1.NonNeg) (hHnn : H.1.NonNeg)
+    (hGmin : ∀ (l : List X) (t : List (X × Option Y)),
+      PDG.notWonLaw (System.DDE.Total.playQueries l) l.length G.1 t
+        = min (trLawFullyDefined (System.DDE.Total.playQueries l) l.length S t)
+            (trLawFullyDefined (System.DDE.Total.playQueries l) l.length T t))
+    (hHmin : ∀ (l : List X) (t : List (X × Option Y)),
+      PDG.notWonLaw (System.DDE.Total.playQueries l) l.length H.1 t
+        = min (trLawFullyDefined (System.DDE.Total.playQueries l) l.length S t)
+            (trLawFullyDefined (System.DDE.Total.playQueries l) l.length T t)) :
+    (∀ (e : System.DDE.Total Y X) (n : ℕ),
+        PDG.notWonLaw e n G.1 = PDG.notWonLaw e n H.1) ∧
+      (∀ (e : System.DDE.Total Y X) (n : ℕ),
+        PDG.winningMass e n G.1
+            = statDist (trLawFullyDefined e n S) (trLawFullyDefined e n T) ∧
+          PDG.winningMass e n H.1
+            = statDist (trLawFullyDefined e n S) (trLawFullyDefined e n T)) ∧
+      advFullyDefined S T = ν[G.1] ∧ advFullyDefined S T = ν[H.1] := by
+  have hGall := PDG.notWonLaw_eq_min_of_forall_playQueries (S := S) (T := T) hGnn hGmin
+  have hHall := PDG.notWonLaw_eq_min_of_forall_playQueries (S := S) (T := T) hHnn hHmin
+  have heq : ∀ (e : System.DDE.Total Y X) (n : ℕ),
+      PDG.notWonLaw e n G.1 = PDG.notWonLaw e n H.1 := fun e n =>
+    Finsupp.ext fun t => (hGall e n t).trans (hHall e n t).symm
+  have hGw : G.1.weight = H.1.weight := by
+    rw [GamesFor.weight_eq G, GamesFor.weight_eq H]; exact hw
+  have hforget : ∀ (e : System.DDE.Total Y X) (n : ℕ) (t : List (X × Option Y)),
+      PDG.notWonLaw e n G.1 t
+        = min (trLawFullyDefined e n (PDG.forget G.1) t)
+            (trLawFullyDefined e n (PDG.forget H.1) t) := fun e n t => by
+    rw [G.2 e n, H.2 e n]; exact hGall e n t
+  refine ⟨heq, fun e n => ⟨?_, ?_⟩,
+    advFullyDefined_eq_supWinProb_of_notWonLaw_eq_min hw G H hGnn hHnn heq hGall⟩
+  · have := (PDG.winningMass_eq_statDist_iff_notWonLaw_eq_min hGnn hHnn
+      (heq e n)).mpr (hforget e n)
+    rwa [G.2 e n, H.2 e n] at this
+  · have hG := (PDG.winningMass_eq_statDist_iff_notWonLaw_eq_min hGnn hHnn
+      (heq e n)).mpr (hforget e n)
+    rw [G.2 e n, H.2 e n] at hG
+    rw [← hG]
+    exact (PDG.winningMass_eq_winningMass_of_notWonLaw_eq hGw (heq e n)).symm
+
+
 /-! ### Receipt: the equivalent corner, uniformly in the distinguisher
 
 Where `S ≡ T` the whole of Lemma 5 holds on this carrier with Lanzenberger
@@ -740,6 +1002,195 @@ theorem winning_probability_attainment_theorem [Fintype X] {S T : PDS X Y}
 
 
 end PDS
+
+/-! ## The refusal boundary: Lemma 5(iv) fails on the `⊥`-total carrier
+
+MPR07 works on systems that always answer.  Ruling R2 does not: refusal is an
+*observable* answer, and `Adv⊥` sees it — a total environment reads a `⊥` in
+real time.  A monotone condition, however, is a predicate on `𝒳*`
+(Lanzenberger **Definition 2.20**), read by Definition 2.25 at
+`System.answeredQueries` — the query list with the refused queries **deleted**.
+So the condition cannot see a refusal, while the distinguisher can.
+
+That gap is fatal to clause (iv), and the cheapest witness is the extreme case.
+Take `S` concentrated on the nowhere-defined system: every realization of every
+game for `S` answers nothing at every interaction, so its answered history is
+always `[]` and its winning event is the single event `[] ∈ A` — the winning
+mass is **constant**.  Against any system that does answer, `δ_k^D` is `0` at
+`k = 0` and nonzero after one query.  No game can match both.
+
+Consequences, stated plainly.
+
+* MPR07 Lemma 5(iv) is **false as stated** on this carrier.  Its correct scope
+  is the fully-defined slice, where `answeredQueries` is the whole query list;
+  the audit's construction obligation ("check the alive set is measurable
+  w.r.t. the deletion-pruned list") does not merely need care — it **fails**.
+* It is a statement about clause (iv) only.  Footnote 16 at the supremum
+  (`winning_probability_attainment_theorem`) is untouched: it never asks for a
+  per-interaction equality, and its own hypothesis bundle
+  (`HaveCommonDomainAndBounded`) already fixes one common domain.
+* `tight_of_playQueries_witness` is likewise untouched — it is a reduction, and
+  what this section shows is that its hypothesis is unsatisfiable for some
+  honest pairs. -/
+
+namespace PDG
+
+/-- Every realization's own transcript carries mass in the game's transcript
+law: a support point of an honest law has positive mass, and its transcript's
+fiber contains it. -/
+theorem trLawFullyDefined_forget_ne_zero_of_mem_support {G : PDG X Y}
+    (hG : G.NonNeg) {g : System.DDG X Y} (hg : g ∈ G.support)
+    (e : System.DDE.Total Y X) (n : ℕ) :
+    PDS.trLawFullyDefined e n (forget G)
+      (System.DDE.Total.transcript g.1 e n) ≠ 0 := by
+  have hfib : PDS.trLawFullyDefined e n (forget G)
+      (System.DDE.Total.transcript g.1 e n)
+      = G.mass fun g' =>
+          System.DDE.Total.transcript g'.1 e n
+            = System.DDE.Total.transcript g.1 e n := by
+    rw [PDS.trLawFullyDefined, forget, Distribution.fTransform_fTransform,
+      Distribution.fTransform_apply_eq_mass]
+    rfl
+  have hpos : 0 < G g :=
+    lt_of_le_of_ne (hG g) (Ne.symm (Finsupp.mem_support_iff.mp hg))
+  rw [hfib]
+  exact ne_of_gt (lt_of_lt_of_le hpos (Distribution.apply_le_mass hG rfl))
+
+end PDG
+
+namespace System
+
+/-- The nowhere-defined system answers `⊥` at every history. -/
+theorem output_fullyDefined_emptySystem (l : List X)
+    (h : l ∈ dom (fullyDefined (emptySystem : DDS X Y))) :
+    output (fullyDefined emptySystem) l h = none := by
+  rw [output_fullyDefined]
+  simp only [dif_neg (show keptPrefix emptySystem l.dropLast ++ [l.getLast h]
+    ∉ dom (emptySystem : DDS X Y) from by
+      rw [dom_emptySystem]; exact Set.notMem_empty _)]
+
+/-- Consequently every entry of its transcript is a refusal. -/
+theorem snd_eq_none_of_mem_transcript_emptySystem (e : DDE.Total Y X) (n : ℕ) :
+    ∀ p ∈ DDE.Total.transcript (emptySystem : DDS X Y) e n, p.2 = none := by
+  induction n with
+  | zero => intro p hp; simp [DDE.Total.transcript] at hp
+  | succ n ih =>
+      rcases hx : e (transcriptOutputs
+        (DDE.Total.transcript (emptySystem : DDS X Y) e n)) with _ | x
+      · simpa [DDE.Total.transcript, hx] using ih
+      · intro p hp
+        rw [DDE.Total.transcript, hx] at hp
+        simp only [List.mem_append, List.mem_singleton] at hp
+        rcases hp with h | h
+        · exact ih p h
+        · rw [h]; exact output_fullyDefined_emptySystem _ _
+
+/-- A transcript of pure refusals has an empty answered history. -/
+theorem answeredQueries_eq_nil_of_forall_snd_eq_none (t : List (X × Option Y))
+    (h : ∀ p ∈ t, p.2 = none) : answeredQueries t = [] := by
+  induction t with
+  | nil => rfl
+  | cons a t ih =>
+      have ha : a.2 = none := h a (by simp)
+      rw [answeredQueries, List.filterMap_cons, ha]
+      simpa [answeredQueries] using ih (fun p hp => h p (by simp [hp]))
+
+/-- **The condition is blind to refusal.**  Nothing is ever answered, so
+Definition 2.25's test is always read at the empty history. -/
+theorem answeredQueries_transcript_emptySystem (e : DDE.Total Y X) (n : ℕ) :
+    answeredQueries (DDE.Total.transcript (emptySystem : DDS X Y) e n) = [] :=
+  answeredQueries_eq_nil_of_forall_snd_eq_none _
+    (snd_eq_none_of_mem_transcript_emptySystem e n)
+
+end System
+
+namespace PDS
+
+/-- The transcript law of a one-atom system is the point mass at that atom's
+transcript. -/
+theorem trLawFullyDefined_ofDDS (u : System.DDS X Y)
+    (e : System.DDE.Total Y X) (n : ℕ) :
+    trLawFullyDefined e n (ofDDS u)
+      = Finsupp.single (System.DDE.Total.transcript u e n) 1 := by
+  simp [trLawFullyDefined, ofDDS, Distribution.fTransform]
+
+/-- **MPR07 Lemma 5(iv) is false on the `⊥`-total carrier.**  Take `S` to be the
+nowhere-defined system (Ruling R2's extreme: it refuses every query, and a total
+environment sees every refusal).  Then for **every** honest weight-one `T` that
+`S` can be told apart from at all, **no** game for `S` satisfies clause (iv),
+whatever Definition-2.17-equivalent presentation it is carried by.
+
+The winning mass of any game for `S` is the constant `Pr[[] ∈ A]`: `S` answers
+nothing, so every realization of every equivalent presentation answers nothing
+(`PDG.trLawFullyDefined_forget_ne_zero_of_mem_support`), and Definition 2.25's
+test is therefore always read at the empty history
+(`System.answeredQueries_transcript_emptySystem`).  The transcript distance is
+not constant — it is `0` before the first query
+(`PDS.trLawFullyDefined_zero_eq_single_weight` at equal weights) and, by
+hypothesis, nonzero somewhere.
+
+This is the precise boundary of the completion route.  MPR07's construction is
+exact on fully-defined presentations; on refusing ones the alive set is not
+measurable with respect to the deletion-pruned answered history, because the
+condition cannot fire on a refusal that the environment nevertheless sees.  It
+touches clause (iv) only: `winning_probability_attainment_theorem` (footnote 16
+at the supremum) never asks for a per-interaction equality, and
+`tight_of_playQueries_witness` is a reduction — what fails is the
+satisfiability of its hypothesis for some honest pairs. -/
+theorem not_exists_gamesFor_winningMass_eq_statDist_emptySystem {T : PDS X Y}
+    (hTw : T.weight = 1)
+    (hnequiv : ¬ equivalent (ofDDS (System.emptySystem : System.DDS X Y)) T) :
+    ¬ ∃ G : GamesFor (ofDDS (System.emptySystem : System.DDS X Y)),
+        G.1.NonNeg ∧
+        ∀ (e : System.DDE.Total Y X) (n : ℕ),
+          PDG.winningMass e n G.1
+            = statDist (trLawFullyDefined e n
+                  (ofDDS (System.emptySystem : System.DDS X Y)))
+                (trLawFullyDefined e n T) := by
+  classical
+  rintro ⟨G, hGnn, htight⟩
+  have hSw : (ofDDS (System.emptySystem : System.DDS X Y)).weight = 1 := by
+    rw [ofDDS, Distribution.weight_eq_finsupp_sum]
+    simp
+  -- the winning event is the single event `[] ∈ A`, at every interaction
+  have hconst : ∀ (e : System.DDE.Total Y X) (n : ℕ),
+      PDG.winningMass e n G.1 = G.1.mass fun g => ([] : List X) ∈ g.2.1 := by
+    intro e n
+    refine Distribution.mass_congr_of_support G.1 fun g hg => ?_
+    have hne := PDG.trLawFullyDefined_forget_ne_zero_of_mem_support hGnn hg e n
+    rw [G.2 e n, trLawFullyDefined_ofDDS] at hne
+    have hEq : System.DDE.Total.transcript g.1 e n
+        = System.DDE.Total.transcript (System.emptySystem : System.DDS X Y) e n := by
+      by_contra hc
+      exact hne (Finsupp.single_eq_of_ne hc)
+    show System.answeredQueries (System.DDE.Total.transcript g.1 e n) ∈ g.2.1 ↔ _
+    rw [hEq, System.answeredQueries_transcript_emptySystem]
+  -- before the first query the two laws coincide, so the constant is zero
+  have hzero : G.1.mass (fun g => ([] : List X) ∈ g.2.1) = 0 := by
+    have h0 := htight (System.DDE.Total.playQueries ([] : List X)) 0
+    rw [hconst, trLawFullyDefined_zero_eq_single_weight,
+      trLawFullyDefined_zero_eq_single_weight, hSw, hTw,
+      Probability.statDist_self] at h0
+    exact h0
+  -- inequivalence hands back an interaction where the distance is nonzero
+  have hadv : advFullyDefined (ofDDS (System.emptySystem : System.DDS X Y)) T ≠ 0 := by
+    intro hcon
+    exact hnequiv (equivalent_iff_advFullyDefined_eq_zero.mpr
+      ⟨hcon, by
+        rwa [advFullyDefined_comm_of_weight_eq T
+          (ofDDS (System.emptySystem : System.DDS X Y)) (by rw [hSw, hTw])]⟩)
+  obtain ⟨e₀, n₀, hne⟩ : ∃ (e : System.DDE.Total Y X) (n : ℕ),
+      statDist (trLawFullyDefined e n
+          (ofDDS (System.emptySystem : System.DDS X Y)))
+        (trLawFullyDefined e n T) ≠ 0 := by
+    by_contra hcon
+    refine hadv (le_antisymm (iSup_le fun e => iSup_le fun n => ?_) (zero_le _))
+    simp only [not_exists, not_not] at hcon
+    rw [hcon e n, ENNReal.ofReal_zero]
+  exact hne (((hconst e₀ n₀).symm.trans (htight e₀ n₀)).symm.trans hzero)
+
+end PDS
+
 
 namespace PDG
 
