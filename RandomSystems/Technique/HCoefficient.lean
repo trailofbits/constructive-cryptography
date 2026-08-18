@@ -8,36 +8,96 @@ import Probability.Counting
 /-!
 # The H-coefficient technique, layer 3: the transcript factorization
 
-Maurer, *Cryptography Foundations* (ETH Zürich, Spring 2018 — the tree's
-`CR18`), §3.6.5 *Computing the Transcript Distribution*, **Lemma 3.2, printed
-page 70**, read on the rendered page:
+**Primary source.**  David Lanzenberger, *Coupling Techniques for Cryptographic
+Proofs* (the thesis; `papers/thesis (1).pdf` in the reference repository),
+**Appendix A.1, printed pp. 87–88** (PDF leaves 97–98), read on the rendered
+page.  §A.1 is headed *"Extra Proofs for Chapter 2"*; printed p. 87 opens
+*"Proof (of Theorem 2.18)"* — the result that transcript equivalence under all
+compatible **non-adaptive** deterministic environments already gives it under
+*"all compatible (𝒴,𝒳)-DDE e (even adaptive ones)"*.  Printed p. 88 carries the
+step this file formalizes, verbatim:
+
+> "Observe moreover that for any (𝒳,𝒴)-DDS `s` and any compatible (𝒴,𝒳)-DDE
+> `ē`, the transcript `tr(s, ē)` is `t̂` **if and only if** `s(x̂ⁱ) = ŷᵢ` **and**
+> `ē(ŷ^{i−1}) = x̂ᵢ` for all `i ∈ [l]`."
+
+and, immediately after, the system factor itself:
+
+> `tr(S, e′)(t̂) = S({s | s ∈ dom(S), ∀i ∈ [l] : s(x̂ⁱ) = ŷᵢ}) = tr(S, e)(t̂)`.
+
+The *iff* is `System.DDE.Total.transcript_eq_iff`; the `S`-mass on its
+right-hand side is `PDS.transcriptSystemFactor`; and the fact that the two
+environments `e`, `e′` give the *same* value is the environment factor
+cancelling.  Lanzenberger is **primary** under PHI-SPEC R8, and the thesis both
+states and proves this, so no fallback is invoked for the mathematics.
+
+**Secondary provenance.**  Maurer, *Cryptography Foundations* (ETH Zürich,
+Spring 2018 — the tree's `CR18`), §3.6.5 *Computing the Transcript
+Distribution*, **Lemma 3.2, printed page 70**, read on the rendered page:
 
 > For a PDS `S` and a PDE `E` we have
 > `p^{ES}_{X^k Y^k}(x^k, y^k) = p^E_{X^k|Y^{k-1}}(x^k, y^{k-1}) · p^S_{Y^k|X^k}(y^k, x^k)`.
+
+CR18 generalizes the thesis step to *probabilistic* environments and names the
+two factors; it states the lemma **without proof** ("We omit the proof of the
+following lemma").  It is recorded here as provenance and as the source of the
+`η`/`σ` naming — not as the governing source, and no R8 fallback exception is
+claimed: a primary addresses this concept.  (CR18 is separately, and
+legitimately, this tree's cited source for the *objects*: `System.DDE.Total` is
+CR18 Definition 3.6 and `PDS.trLawFullyDefined` is CR18 Definition 3.7, per
+`RandomSystems/System/Environment.lean`.)
 
 A transcript's probability is an **environment factor** times a **system
 factor**.  That single identity is the whole of the H-coefficient technique's
 system-facing half: the environment factor does not mention the system, so it
 cancels from any *ratio* of two transcript laws taken at the same transcript,
 and a hypothesis about the ratio may therefore be checked with the adversary
-deleted — non-adaptively, transcript by transcript.
+deleted — non-adaptively, transcript by transcript.  That is precisely the use
+Appendix A.1 makes of it.
 
-*Source flag (PHI-SPEC R8).*  CR18 is **fallback-only** under the source
-hierarchy (MauRen16 / Jost / LiuMau20 / Lanzenberger); it is used here because
-it is also the source this tree already cites for the objects the statement is
-about — `System.DDE.Total` is CR18 Definition 3.6 and `PDS.trLawFullyDefined`
-is CR18 Definition 3.7 (`RandomSystems/System/Environment.lean`).  The
-reference repository additionally cites an unpublished-to-this-tree "thesis
-App. A.1" for the same identity; that page is not on disk and is **not**
-claimed here.
+*Attribution flag.*  The *technique* built on top of the identity is attributed
+in the literature to Patarin ("coefficients H"), and its partition refinement to
+Chen–Steinberger.  Following the T0 precedent
+(`Probability/StatisticalDistance.lean`), those names are **recorded, not
+verified**: no bibliography entry, year or page for either exists in the
+reference repository, no such paper is on disk, and neither sits in the source
+hierarchy.  Upgrading them to page-verified citations is owed.  (This flag
+concerns layer 2's `δb + ε` shape only; the factorization below is
+primary-sourced.)
 
-*Attribution flag.*  The technique itself is attributed in the literature to
-Patarin ("coefficients H"), and its partition refinement to Chen–Steinberger.
-Following the T0 precedent (`Probability/StatisticalDistance.lean`), those
-names are **recorded, not verified**: no bibliography entry, year or page for
-either exists in the reference repository, no such paper is on disk, and
-neither sits in the source hierarchy.  Upgrading them to page-verified
-citations is owed.
+## Minimal-migration map (PHI-SPEC R11(b))
+
+The reference repository carries this development **twice**: once for
+probabilistic environments over fixed-length transcripts
+(`RandomSystems/PDS.lean`, `HTechnique/Derivation.lean`), and once for
+*deterministic* environments over exactly this carrier — variable-length
+`List (X × Option Y)`, `⊥`-total — which is the family that matches here.  The
+node-by-node correspondence, so the adaptation is auditable:
+
+| here | reference repository (READ-ONLY) |
+|---|---|
+| `System.TranscriptEnvironmentEvent` | the `hq` + `hlen` hypotheses of `RandomSystem.lean:750` `transcript_eq_iff_of_consistent` (`hlen` written as a disjunction; here as `≤ n ∧ (< n → halt)`) |
+| `System.TranscriptSystemEvent` | that theorem's right-hand side; second conjunct of `RandomSystem.lean:634` `transcript_consistent` |
+| `transcriptEnvironmentEvent_transcript` + `transcriptSystemEvent_transcript` | `RandomSystem.lean:634` `transcript_consistent` (both halves in one statement) |
+| `transcript_length_eq_self` | `RandomSystem.lean:688` `transcript_eq_of_consistent` |
+| `transcript_eq_iff` | `RandomSystem.lean:750` `transcript_eq_iff_of_consistent`; thesis-named alias `LanzenbergerChain.lean:160` `fixed_transcript_event_eq_fixed_query_event` |
+| `length_transcript_le` | `Lemma415.lean:113` `transcript_length_le` |
+| `transcript_add_eq_of_halted` | `RandomSystem.lean:1270` `transcript_stall_of_length_lt'` and its `transcript_succ_stall` neighbourhood |
+| `transcriptSystemFactor` (`σ`) | `Derivation.lean:588` `sysFactor` / `PDS.lean:2390` `transcriptSystemFactor` |
+| `transcriptEnvironmentFactor` (`η`) | `Derivation.lean:573` `envFactor` / `PDS.lean:2396` |
+| `trLawFullyDefined_apply` | `PDS.lean:2668` `transcriptLaw_eq_systemFactor_mul_environmentFactor`, `Derivation.lean:602` |
+| `statDist_trLawFullyDefined_eq_sum` | `Derivation.lean:634` (the (★) identity) |
+| `trLawFullyDefined_ratio_of_transcriptSystemFactor_ratio` | `Derivation.lean:212` `transcriptLaw_ratio_of_fixedQuery_ratio_of_good` |
+| `h_coefficient_theorem` | `Derivation.lean:398` `adv_le_of_fixedQuery_ratio_of_good` |
+
+The only presentational delta is how a *round* of `t` is addressed: the
+reference states its conjuncts index-wise (`∀ k < t.length`, with `t.take k` and
+`t[k]`); here they are stated prefix-wise (`∀ u x y, u ++ [(x,y)] <+: t`).  The
+two are the same quantifier — each `k < t.length` is the unique decomposition
+with `u = t.take k` — and the prefix form was chosen because it matches the
+`snoc` shape of the landed `transcript` recurrence, so the inductions are
+`List.reverseRecOn` rather than index arithmetic.  Nothing else differs, and no
+node here is without a counterpart there.
 
 ## The three layers (PHI-SPEC R10)
 
@@ -56,8 +116,8 @@ over the landed carrier — `System.DDS`, `System.DDE.Total`,
 `PDS.advFullyDefined`.
 
 * `System.TranscriptSystemEvent` / `System.TranscriptEnvironmentEvent` — CR18
-  Lemma 3.2's two rectangle events, split so that each mentions only one of
-  the two parties.  `System.transcript_eq_iff` is the split itself: a run
+  the thesis's two conjuncts (App. A.1, printed p. 88), each mentioning only
+  one of the two parties; CR18 Lemma 3.2 names the corresponding factors.  `System.transcript_eq_iff` is the split itself: a run
   produces the transcript `t` exactly when the environment asks `t`'s queries
   and halts on schedule **and** the system gives `t`'s answers.
 * `System.transcriptEnvironmentFactor` (`η`) — the environment factor.  On
@@ -92,15 +152,21 @@ variable {X : Type u} {Y : Type v}
 
 namespace System
 
-/-! ### CR18 Lemma 3.2's two rectangle events
+/-! ### The thesis's two conjuncts
 
-Lemma 3.2 factors the transcript probability because the run condition
-`tr(s,e,n) = t` is a *conjunction* of a condition on `e` alone and a condition
-on `s` alone.  The two definitions below are those conjuncts.  Each is phrased
-over the rounds of `t` — a round is a prefix of `t` ending in one entry — so no
-index arithmetic enters the statements. -/
+The transcript probability factors because the run condition `tr(s,e,n) = t` is
+a *conjunction* of a condition on `e` alone and a condition on `s` alone — the
+thesis's "`tr(s, ē)` is `t̂` if and only if `s(x̂ⁱ) = ŷᵢ` and `ē(ŷ^{i−1}) = x̂ᵢ`"
+(App. A.1, printed p. 88).  The two definitions below are those conjuncts;
+CR18 Lemma 3.2 is the same split read as a product of two *factors*, one per
+party.  Each is phrased over the rounds of `t` — a round is a prefix of `t`
+ending in one entry — so no index arithmetic enters the statements; the
+reference repository states the same two conjuncts index-wise
+(`RandomSystem.lean:750`), which is the same quantifier. -/
 
-/-- **CR18 Lemma 3.2, system conjunct.**  The deterministic system `s` produces
+/-- **The thesis's system conjunct** (App. A.1, printed p. 88: `s(x̂ⁱ) = ŷᵢ`
+for all `i ∈ [l]`); CR18 Lemma 3.2's system factor is its mass.  The
+deterministic system `s` produces
 exactly the answers recorded in `t`: at every round, `s⊥` maps the input
 history of that round to the answer the round records.  `none` is a genuine
 answer (a refusal), so this is a condition on `s⊥`, not on `s`, and it never
@@ -109,14 +175,20 @@ def TranscriptSystemEvent (s : DDS X Y) (t : List (X × Option Y)) : Prop :=
   ∀ u : List (X × Option Y), ∀ x : X, ∀ y : Option Y, u ++ [(x, y)] <+: t →
     output s⊥ (u↓ₓ ++ [x]) (by simp [fullyDefined, dom]) = y
 
-/-- **CR18 Lemma 3.2, environment conjunct**, at horizon `n`.  The environment
+/-- **The thesis's environment conjunct** (App. A.1, printed p. 88:
+`ē(ŷ^{i−1}) = x̂ᵢ` for all `i ∈ [l]`), at horizon `n`.  The environment
 `e` asks exactly the queries recorded in `t`, having seen exactly the answers
 recorded before them, and its halting is on schedule for `n` moves: `t` is not
 longer than `n`, and if it is shorter then `e` has stopped at `t`.
 
 The horizon is an environment-side index — `PDS.trLawFullyDefined` is indexed
 by the number of environment moves — so it belongs to this conjunct.  What
-matters for Lemma 3.2 is that nothing here mentions the system. -/
+matters for the factorization is that nothing here mentions the system.
+
+The halting clause is **not** a novelty of this tree: the reference repository
+carries it on this same carrier as the `hlen` hypothesis of
+`RandomSystem.lean:750` `transcript_eq_iff_of_consistent`, written as the
+disjunction `|t| = n ∨ (|t| < n ∧ e t↓ᵧ = none)`. -/
 def TranscriptEnvironmentEvent (e : DDE.Total Y X) (n : ℕ)
     (t : List (X × Option Y)) : Prop :=
   (∀ u : List (X × Option Y), ∀ x : X, ∀ y : Option Y, u ++ [(x, y)] <+: t →
@@ -125,7 +197,8 @@ def TranscriptEnvironmentEvent (e : DDE.Total Y X) (n : ℕ)
 
 namespace DDE.Total
 
-/-- A run of `n` environment moves records at most `n` rounds. -/
+/-- A run of `n` environment moves records at most `n` rounds.
+Reference-repository counterpart: `Lemma415.lean:113` `transcript_length_le`. -/
 theorem length_transcript_le (s : DDS X Y) (e : DDE.Total Y X) (n : ℕ) :
     (transcript s e n).length ≤ n := by
   induction n with
@@ -137,7 +210,10 @@ theorem length_transcript_le (s : DDS X Y) (e : DDE.Total Y X) (n : ℕ) :
       · simp only [transcript, hx, List.length_append, List.length_singleton]
         exact Nat.succ_le_succ ih
 
-/-- Once the environment has stopped, the transcript no longer grows. -/
+/-- Once the environment has stopped, the transcript no longer grows.
+Reference-repository neighbourhood: `RandomSystem.lean:1270`
+`transcript_stall_of_length_lt'` (the converse reading) and
+`transcript_succ_stall`. -/
 theorem transcript_add_eq_of_halted {s : DDS X Y} {e : DDE.Total Y X} {m : ℕ}
     (h : e (transcript s e m)↓ᵧ = none) (k : ℕ) :
     transcript s e (m + k) = transcript s e m := by
@@ -149,7 +225,9 @@ theorem transcript_add_eq_of_halted {s : DDS X Y} {e : DDE.Total Y X} {m : ℕ}
       simp only [transcript, hx]
       exact ih
 
-/-- A run of `n` moves satisfies the environment conjunct at horizon `n`. -/
+/-- A run of `n` moves satisfies the environment conjunct at horizon `n`.
+This and the next theorem are the two halves of the reference repository's
+`RandomSystem.lean:634` `transcript_consistent`. -/
 theorem transcriptEnvironmentEvent_transcript (s : DDS X Y) (e : DDE.Total Y X)
     (n : ℕ) : TranscriptEnvironmentEvent e n (transcript s e n) := by
   induction n with
@@ -219,7 +297,9 @@ theorem transcriptSystemEvent_transcript (s : DDS X Y) (e : DDE.Total Y X)
           exact hy1.symm
         · exact ih u x' y hpre
 
-/-- Reading the two conjuncts back: a transcript satisfying both is the run. -/
+/-- Reading the two conjuncts back: a transcript satisfying both is the run.
+Reference-repository counterpart: `RandomSystem.lean:688`
+`transcript_eq_of_consistent`. -/
 theorem transcript_length_eq_self {s : DDS X Y} {e : DDE.Total Y X}
     {t : List (X × Option Y)}
     (hE : ∀ u : List (X × Option Y), ∀ x : X, ∀ y : Option Y, u ++ [(x, y)] <+: t →
@@ -244,7 +324,8 @@ theorem transcript_length_eq_self {s : DDS X Y} {e : DDE.Total Y X}
       simp only [transcript, iht, hx]
       rw [hy]
 
-/-- **CR18 Lemma 3.2, the split.**  A run of `n` environment moves produces the
+/-- **The thesis's split** (App. A.1, printed p. 88, quoted at the head of this
+file), read on this carrier.  A run of `n` environment moves produces the
 transcript `t` exactly when `e` asks `t`'s queries and halts on schedule, and
 `s` gives `t`'s answers.  The right-hand side is a conjunction of one condition
 on `e` and one condition on `s`, which is what makes the transcript law
@@ -277,7 +358,8 @@ conjunct.  Its only two properties used below are that it is non-negative and
 that it does not mention the system. -/
 
 open Classical in
-/-- CR18 Lemma 3.2's environment factor `p^E_{X^k|Y^{k-1}}` on this carrier:
+/-- The environment factor — CR18 Lemma 3.2's `p^E_{X^k|Y^{k-1}}` — on this
+carrier:
 the `0/1` indicator that `t` is a run of `e` at horizon `n`.  It is the whole
 of the environment's contribution to a transcript's probability — and it
 carries no system. -/
@@ -309,7 +391,9 @@ namespace PDS
 
 /-! ### The system factor `σ` -/
 
-/-- CR18 Lemma 3.2's system factor `p^S_{Y^k|X^k}`: the mass the law `S` puts
+/-- The system factor: the thesis's `S({s | ∀ i ∈ [l] : s(x̂ⁱ) = ŷᵢ})`
+(App. A.1, printed p. 88), CR18 Lemma 3.2's `p^S_{Y^k|X^k}` — the mass the law
+`S` puts
 on the deterministic systems that answer `t`.  It mentions no environment and
 no horizon — that is the content of "the adversary factors out". -/
 def transcriptSystemFactor (S : PDS X Y) (t : List (X × Option Y)) : ℝ :=
@@ -319,7 +403,9 @@ theorem transcriptSystemFactor_nonneg {S : PDS X Y} (hS : S.NonNeg)
     (t : List (X × Option Y)) : 0 ≤ transcriptSystemFactor S t :=
   hS.mass_nonneg _
 
-/-- **CR18 Lemma 3.2 on this carrier.**  The transcript law of `S` against the
+/-- **The factorization** — the thesis's App. A.1 identity (printed p. 88),
+which CR18 Lemma 3.2 (printed p. 70) states for probabilistic environments with
+the two factors named.  The transcript law of `S` against the
 deterministic environment `e` after `n` moves factorizes at every transcript:
 
   `tr(S, e, n)(t) = η(e, n, t) · σ(S, t)`
@@ -448,7 +534,7 @@ namespace PDS
 
 /-! ### The endpoint -/
 
-/-- **The H-coefficient theorem** (CR18 Lemma 3.2 composed with the layer-2
+/-- **The H-coefficient theorem** (the factorization composed with the layer-2
 kernel).
 
   a ratio on the **system factors** over the good transcripts,
@@ -515,42 +601,131 @@ theorem h_coefficient_theorem_of_forall {S T : PDS X Y} {eps : ℝ≥0}
       exact le_of_eq (Distribution.mass_eq_zero_of_forall_not _ fun _ h => h))
   simpa using h
 
+/-! ### `σ` at the empty transcript, and why a receipt must be length-indexed
+
+The system conjunct is vacuous at `t = []`, so `σ(S, [])` is the whole weight of
+`S`.  That single fact decides the shape any counting receipt may take, and it
+is why the first version of the receipt below (constant `σ` on both sides) was
+**degenerate**: it was true and axiom-clean, but its hypotheses were jointly
+satisfiable only where its own `ε` was `0` or where they already forced
+`δb ≥ ‖T‖`, in which case the conclusion follows from `statDist_le_weight`
+alone and no counting is consumed.  Found by the T5 adversarial audit; the two
+lemmas below record the obstruction and its repair so it cannot recur. -/
+
+/-- `σ` at the empty transcript is the law's weight: no round has happened, so
+the system conjunct constrains nothing. -/
+theorem transcriptSystemFactor_nil (S : PDS X Y) :
+    transcriptSystemFactor S ([] : List (X × Option Y)) = S.weight := by
+  have hall : ∀ s : System.DDS X Y,
+      System.TranscriptSystemEvent s ([] : List (X × Option Y)) := by
+    intro s u x y hu
+    exact absurd (List.eq_nil_of_prefix_nil hu) (by simp)
+  rw [transcriptSystemFactor,
+    Distribution.mass_congr S
+      (P := fun s => System.TranscriptSystemEvent s ([] : List (X × Option Y)))
+      (Q := fun _ => True) (fun s => iff_of_true (hall s) trivial),
+    Distribution.mass_true]
+
+/-- **Constant `σ`-hypotheses force the empty transcript to be bad.**  If a
+would-be receipt pins `σ(S, ·)` and `σ(T, ·)` off `Bad` to two *constants*, then
+— because `σ` at `[]` is the weight and the endpoint already demands
+`‖S‖ = ‖T‖` — the two constants must agree wherever `[]` is good.  So as soon
+as they differ (the uniform-permutation and uniform-function masses differ at
+every `q ≥ 2`), `Bad []` is forced, and then `h_bad` at horizon `0` charges the
+whole of `‖T‖` to `δb`, which alone implies the endpoint's conclusion.
+
+This is the precise reason the receipt below indexes its two masses by
+`t.length` instead. -/
+theorem bad_nil_of_transcriptSystemFactor_const {S T : PDS X Y}
+    {Bad : List (X × Option Y) → Prop} {cS cT : ℝ}
+    (hw : S.weight = T.weight)
+    (h_ideal : ∀ t, ¬ Bad t → transcriptSystemFactor T t = cT)
+    (h_real : ∀ t, ¬ Bad t → transcriptSystemFactor S t = cS)
+    (hne : cS ≠ cT) :
+    Bad ([] : List (X × Option Y)) := by
+  by_contra hgood
+  refine hne ?_
+  rw [← h_real [] hgood, ← h_ideal [] hgood, transcriptSystemFactor_nil,
+    transcriptSystemFactor_nil, hw]
+
 /-! ### Receipt: the counting layer feeds `ε`
 
 Not an application — no concrete `S`, `T` or alphabet appears.  The receipt
 records the *shape* in which `Probability/Counting.lean` is consumed: the
-counting layer produces exactly a pointwise inequality between two per-
-transcript masses, which is what the ratio hypothesis of the endpoint asks
-for, with the birthday defect landing in `ε`. -/
+counting layer produces exactly a pointwise inequality between two per-round
+masses, which is what the ratio hypothesis of the endpoint asks for, with the
+birthday defect landing in `ε`.
 
-/-- **The switching ratio slots into `ε`.**  If, off the bad set, the ideal
-system factor is the uniform-permutation mass `(N−q)!/N!` and the real one is
-the uniform-function mass `1/N^q`, then `Probability.Counting.switching_ratio_le`
-discharges the endpoint's ratio hypothesis with `ε = q(q−1)/2N`, and the
-technique returns
+On a variable-length carrier those masses are functions of `t.length`, so the
+hypotheses are indexed by it and the query bound enters as "every good
+transcript is short" (`h_len`).  `Probability.Counting.switching_ratio_le` then
+fires at each good length `k = |t| ≤ q`, and monotonicity of `k(k−1)` in `k`
+pulls every one of those defects under the single `ε = q(q−1)/2N`. -/
+
+/-- **The switching ratio slots into `ε`.**  Off the bad set, let the ideal
+system factor be the uniform-permutation mass `(N−|t|)!/N!` and the real one the
+uniform-function mass `1/N^{|t|}`, with every good transcript of length at most
+`q`.  Then `Probability.Counting.switching_ratio_le` discharges the endpoint's
+ratio hypothesis with `ε = q(q−1)/2N`, and the technique returns
 
   `Adv⊥(S, T) ≤ δ_b + q(q−1)/2N`.
 
-The two mass hypotheses are exactly what a counting argument delivers; nothing
-else about the systems is used. -/
+The two mass hypotheses are exactly what a counting argument delivers, and they
+are **consistent at `[]`** for probability laws
+(`transcriptSystemFactor_nil_switching_ratio`), so nothing here forces the
+degenerate regime of `bad_nil_of_transcriptSystemFactor_const`.  Nothing else
+about the systems is used. -/
 theorem h_coefficient_theorem_switching_ratio {S T : PDS X Y}
     {Bad : List (X × Option Y) → Prop} {δb : ℝ≥0} {N q : ℕ}
     (hS : S.NonNeg) (hT : T.NonNeg) (hw : S.weight = T.weight) (hT1 : T.weight ≤ 1)
     (hqN : q ≤ N) (hN : 0 < N)
     (h_eps : ((q * (q - 1) : ℕ) : ℝ≥0) / ((2 * N : ℕ) : ℝ≥0) ≤ 1)
+    (h_len : ∀ t, ¬ Bad t → t.length ≤ q)
     (h_ideal : ∀ t, ¬ Bad t → transcriptSystemFactor T t =
-      ((((N - q).factorial : ℝ≥0) / ((N.factorial : ℝ≥0))) : ℝ))
+      (((N - t.length).factorial : ℝ) / (N.factorial : ℝ)))
     (h_real : ∀ t, ¬ Bad t → transcriptSystemFactor S t =
-      ((1 / (N : ℝ≥0) ^ q : ℝ≥0) : ℝ))
+      1 / (N : ℝ) ^ t.length)
     (h_bad : ∀ (e : System.DDE.Total Y X) (n : ℕ),
       probBad (trLawFullyDefined e n T) Bad ≤ δb) :
     advFullyDefined S T ≤
       (δb + ((q * (q - 1) : ℕ) : ℝ≥0) / ((2 * N : ℕ) : ℝ≥0) : ℝ≥0) := by
   refine h_coefficient_theorem hS hT hw hT1 (fun t ht => ?_) h_bad
-  have h := NNReal.coe_le_coe.mpr (Probability.Counting.switching_ratio_le hqN hN h_eps)
-  rw [NNReal.coe_mul, NNReal.coe_sub h_eps, NNReal.coe_one] at h
+  have hk : t.length ≤ q := h_len t ht
+  have hmono : ((t.length * (t.length - 1) : ℕ) : ℝ≥0) / ((2 * N : ℕ) : ℝ≥0) ≤
+      ((q * (q - 1) : ℕ) : ℝ≥0) / ((2 * N : ℕ) : ℝ≥0) := by
+    gcongr
+  have hle1 := hmono.trans h_eps
+  have hcoe := NNReal.coe_le_coe.mpr
+    (Probability.Counting.switching_ratio_le (hk.trans hqN) hN hle1)
+  rw [NNReal.coe_mul, NNReal.coe_sub hle1] at hcoe
+  have hmonoR := NNReal.coe_le_coe.mpr hmono
+  simp only [NNReal.coe_div, NNReal.coe_natCast, NNReal.coe_pow, NNReal.coe_one] at hcoe hmonoR
   rw [h_ideal t ht, h_real t ht]
-  exact h
+  simp only [NNReal.coe_div, NNReal.coe_natCast]
+  refine le_trans (mul_le_mul_of_nonneg_right ?_ (by positivity)) hcoe
+  linarith
+
+/-- **Non-triviality of the receipt.**  At the empty transcript the receipt's
+two length-indexed hypotheses read `‖T‖ = 1` and `‖S‖ = 1` — they are satisfied
+by any pair of probability laws, so `[]` may be good and the receipt does not
+collapse into `bad_nil_of_transcriptSystemFactor_const`'s degenerate regime.
+(The constant-`σ` version this replaces could not clear the same test: it
+demanded `(N−q)!/N! = 1/N^q`, false for every `q ≥ 2`.) -/
+theorem transcriptSystemFactor_nil_switching_ratio {S T : PDS X Y} {N : ℕ}
+    (hS1 : S.weight = 1) (hT1 : T.weight = 1) :
+    transcriptSystemFactor T ([] : List (X × Option Y)) =
+        (((N - ([] : List (X × Option Y)).length).factorial : ℝ) /
+          (N.factorial : ℝ)) ∧
+      transcriptSystemFactor S ([] : List (X × Option Y)) =
+        1 / (N : ℝ) ^ ([] : List (X × Option Y)).length := by
+  have hfac : (N.factorial : ℝ) ≠ 0 := by
+    exact_mod_cast Nat.factorial_ne_zero N
+  refine ⟨?_, ?_⟩
+  · rw [transcriptSystemFactor_nil, hT1]
+    simp only [List.length_nil, Nat.sub_zero]
+    exact (div_self hfac).symm
+  · rw [transcriptSystemFactor_nil, hS1]
+    simp
 
 end PDS
 
