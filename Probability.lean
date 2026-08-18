@@ -10,12 +10,13 @@ import Probability.Coupling
 import Probability.MultiCoupling
 import Probability.FiberCoupling
 import Probability.StatisticalDistance
+import Probability.Counting
 import Probability.UniversalHash
 
 /-!
 # Probability
 
 Finitely supported distributions, expectation, conditional probability,
-statistical distance, couplings, and universal hashing.  Independent of any
-system model.
+statistical distance, couplings, universal hashing, and the counting kernel
+concrete bounds bottom out in.  Independent of any system model.
 -/
