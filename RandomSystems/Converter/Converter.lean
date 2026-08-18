@@ -1375,8 +1375,9 @@ scoped notation "cascᶜ[" S "," T "]" => cascadeViaConverter S T
 
 NOTE: this is `rfl` only because `cascadeViaConverter` is *defined* as the
 native cascade.  The honest converter equation — Def 3.9 application of the
-actual Def 3.8 object — is `apply_cascadeStep` (`CascadeRealization.lean`):
-`DDC.apply (ofStep cascadeStep) (cascadeAccess S T) = S ⊲ₚ T`. -/
+actual Def 3.8 object — is `apply_toDDC_cascadeFn` (`CascadeRealization.lean`):
+`DDC.apply (toDDC cascadeFn) (cascadeAccess S T) = S ⊲ₚ T`, with the
+transcript-equation form `apply_cascadeFn` behind it. -/
 theorem cascadeViaConverter_eq_cascade
     (S : System.DDS X Y) (T : System.DDS Y Z) :
     cascadeViaConverter S T = System.cascade S T := by
@@ -1740,9 +1741,10 @@ scoped notation "comb⋆ᶜ[" op "][" S "," T "]" => combineViaConverter op S T
 `comb⋆[S,T] = S ⋆ T`.
 
 NOTE: this is `rfl` only because `combineViaConverter` is *defined* as the
-native combine.  The honest converter equation is `apply_combineStep`
+native combine.  The honest converter equation is `apply_toDDC_combineFn`
 (`CombineRealization.lean`):
-`DDC.apply (ofStep (combineStep op)) [Combine.pair S T]ₚ = S ⋆ₚ[op] T`. -/
+`DDC.apply (toDDC (combineFn op)) [Combine.pair S T]ₚ = S ⋆ₚ[op] T`, with the
+transcript-equation form `apply_combineFn` behind it. -/
 theorem combineViaConverter_eq_combine
     (op : Y → Y → Y) (S T : System.DDS X Y) :
     combineViaConverter op S T = System.combine op S T := by
@@ -2664,8 +2666,11 @@ history-function**, with no state carrier and no machine:
 rounds), the converter's next move is an inner query `inl x` or an outer
 answer `inr v`."  The converter's own past outputs are recomputable, so
 nothing else is data; round boundaries are derived from ν itself.  Memory
-classes (memoryless, outer-memoryless = `ofStep`, round counters, general)
-are invariance *predicates* on ν, never part of the type.
+classes (memoryless, outer-memoryless, round counters, general) are invariance
+*predicates* on ν, never part of the type.  (The outer-memoryless class is the
+one the read-only reference repository carves out as a separate `ofStep`
+converter type; there is no `ofStep` in this tree, by design — the class is a
+predicate here, not a constructor.)
 
 This module implements the **identity discipline** of DESIGN §10.5:
 
@@ -3644,7 +3649,8 @@ theorem restrictionFn_inr_mem (P : List X → Prop) [DecidablePred P]
   exact Part.mem_some _
 
 /-- The `[q]` query filter as a protocol function — a **round counter**, the
-first converter genuinely outside the outer-memoryless (`ofStep`) class:
+first converter genuinely outside the outer-memoryless class (the reference
+repository's `ofStep` converters; no such type exists here):
 its move depends on the *lengths* of the history, i.e. on the round number.
 (The budget check on the answer branch keeps the never-consulted answered
 pairs beyond round `q` silent — without it they would carry junk; the tree

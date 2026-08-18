@@ -29,6 +29,19 @@ Per Definition 3.9 the inner queries are answered by the Definition 3.3
 completion `(cascadeAccess S T)⊥`, so a refusal of the paired-access system
 arrives as `none` and stalls the converter: `cascadeFn` has no move on an
 improper answer, which is exactly where the native cascade is undefined.
+
+## Transport record, against the read-only reference repository
+
+The reference's proven cascade DAG transports **node for node**, with one
+forced route delta: this tree has no `CausalApply`, no `DDC.ofStep` and no
+`apply_ofStep`, so the converter enters as a `ProtocolFn` and the realization
+runs through the ν-level `apply_toDDC` (`Converter/Cascade.lean`).  That
+driver answers inner queries with the Definition 3.3 completion and threads a
+*cumulative* answer history, so the round boundary `ofStep` read off a reset
+inner history is read here off the two history lengths.  Nothing on the cascade
+side is dropped or gained by the recast; the combine side's five-node saving
+(`CombineRealization.lean`) is proof engineering and is **not** a carrier
+consequence — see that header.
 -/
 
 namespace RandomSystems

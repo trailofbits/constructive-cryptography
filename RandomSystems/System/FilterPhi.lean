@@ -283,12 +283,50 @@ theorem filterQueries_actCommute (q q' : ℕ) :
 
 /-- The empty budget is the total block, at Φ: `[0]` is the `⊣` of MauRen16
 §3.4 at the whole query set, hence a generator of the metric-facing Σ
-(`block_mem_converterMonoidAt`).  This is the only budget for which the family
-meets the landed generator set — for `q ≥ 1` the filter inherits the resource's
-refusals at the very first query, which an interface-indexed attachment cannot
-do (`attachEngineFully_refusal_first`: at an owned query the composite's domain
-is the *engine's*, and the resource enters only through the answers the engine
-has already seen). -/
+(`block_mem_converterMonoidAt`).  This is the only budget the register's
+routed precedent covers.
+
+**What is argued below, and what is not.**  The route the register proposed for
+`q ≥ 1` — "membership in `converterMonoidAt`, with the `block Q` generator as
+the precedent" — does not go through at the generator level, and the argument
+against it is this prose, not a theorem in this file.
+
+*Argued* — the **attachment family at an owned query**.  Take `q ≥ 1` and an
+attachment `attachAt i E` with the family's own side conditions
+(`InnerTotal E`, `AnswersWithinUniformBudget E`).  At the empty history
+(`reachedAt_nil`) and for `q ∈ i`, `attachEngineFully_refusal_first` reads the
+composite's first-query domain as `[Sum.inl q] ∈ dom E`: **free of the
+resource**, so the composite answers or refuses by the engine alone.  The
+filter does the opposite — `answer_filterQueries` at `l = []` and `q ≥ 1` gives
+`answer ([q]S) [] x = answer S [] x`, i.e. it inherits the resource's own
+refusal at the very first query.  Point masses separate the two
+Φ-endomorphisms, so no owned attachment is `[q]`.
+
+*Not argued anywhere in this tree* — the other three generator families of
+`converterMonoidAt` (`AttachEngineFully.lean`): `block Q` (which refuses by the
+*query*, not by a count), `fun RL => par c RL TL` and its mirror, and the
+attachment at `i = ∅` (every query foreign, where the governing lemma is
+`attachEngineFully_transparent`, not `_refusal_first`).  Each looks
+straightforwardly excluded; none is excluded here.
+
+*Status* — **closure-level membership is OPEN**: `converterMonoidAt` is a
+`Submonoid.closure`, and nothing above or below speaks about products of
+generators.  Neither membership nor non-membership of `filterQueries q`,
+`q ≥ 1`, is claimed.
+
+**Why the open residue is not cosmetic.**  The landed nonexpansion
+(`filterQueries_mem_nonexpandingConverters`) puts every `[q]` in
+`nonexpandingConverters`, which carries `IsNonexpandingSMul` and contains
+`converterMonoidAt`, so the ε-relaxation calculus (CR18 Definition 5.11 /
+eq. (5.6)) is statable with `φ_r := [r]` at that Σ.  It does **not** restore
+the construction and interface layers: `converterMonoidWithin` is a
+`Submonoid ↥converterMonoidAt` (`StarFullyDefined.lean`), and `Relaxation.star`,
+`Φ_E`, MauRen16 Lemma 3, `Constructs`, `blockConverterAt`,
+`Par ↥converterMonoidAt` and the interface-role algebra (`Interface.lean`) are
+typed at `↥converterMonoidAt` and at nothing else.  A filter outside that
+monoid cannot be a `π` in any of them.  Since CR18 §5.5's `ψ_r` is exactly a
+filter restricting a *distinguisher's* access, the residue is live, and
+nonexpansion alone does not close it. -/
 theorem filterQueries_zero : filterQueries.{u} 0 = block.{u} Set.univ := by
   funext R
   exact congrFun (congrArg _ (funext fun S => System.filterQueries_zero S)) R

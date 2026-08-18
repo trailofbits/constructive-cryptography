@@ -38,8 +38,9 @@ causal solution of
 `x̂ⱼ = α(active outer prefix, ŷ^{j−1})`,  `ŷⱼ = S⊥(x̂^j)`,
 
 realized function-natively as a finite unrolling (`drive`, fuel = the
-unrolling counter, hidden by `eventual`) — the ν-level generalization of
-`CausalApply.applyG`, with the converter now seeing the *full* history
+unrolling counter, hidden by `eventual`) — the ν-level generalization of the
+read-only reference repository's `CausalApply.applyG` (which has no counterpart
+in this tree), with the converter now seeing the *full* history
 (cross-round memory: `[q]`, blind `b`, copying `T̃`, CTR all live here).
 Per CR18 Def 3.9 the queries are answered by the Def 3.3 completion `S⊥`
 (`Y ∪ {⊥}`), so the drive never stalls on the system: partiality comes from
@@ -50,9 +51,11 @@ The **realization theorem** `apply_toDDC`:
 `DDC.apply (toDDC α) S = apply α S`
 
 — CR18 Def 3.9 applied to the canonical Def 3.8 object of α *is* the
-transcript-equation solution.  Same two simulations as `apply_ofStep`
-(StepConverter.lean), with the round state `(u, ys)` of the outer-memoryless
-case replaced by the parse `ParsesTo α l (us, ys)` of the full history; both
+transcript-equation solution.  Same two simulations as the reference
+repository's `apply_ofStep` (a declaration of *that* tree, not of this one:
+neither it nor its `StepConverter.lean` home exists here), with the round state
+`(u, ys)` of the outer-memoryless case replaced by the parse
+`ParsesTo α l (us, ys)` of the full history; both
 sides thread the *same* `S⊥`-answers, so the answer histories coincide on
 the nose and no liveness invariant is needed.
 
@@ -277,8 +280,9 @@ theorem driveOuter_append (α : ProtocolFn U V X Y) (S : System.DDS X Y)
         List.cons_append, List.append_assoc, List.nil_append]
 
 /-- **The transcript-equation application** (fuel-free): the ν-level
-generalization of `CausalApply.applyG` — a valid `DDS U V`, partial exactly
-where the equations do not solve. -/
+generalization of the reference repository's `CausalApply.applyG` (no such
+declaration in this tree) — a valid `DDS U V`, partial exactly where the
+equations do not solve. -/
 noncomputable def apply (α : ProtocolFn U V X Y) (S : System.DDS X Y) :
     System.DDS U V :=
   ⟨applyRaw α S, by
@@ -744,8 +748,10 @@ theorem driveOuter_of_driveFrom_toDDC (α : ProtocolFn U V X Y)
 /-- **The ν-level realization theorem** (DESIGN §10.5): CR18 Def 3.9 applied
 to the canonical Def 3.8 object of a protocol function *is* the
 transcript-equation solution — for arbitrary converters, cross-round memory
-included.  Subsumes `apply_ofStep` conceptually (the outer-memoryless case)
-and turns converter equations into `drive` computations. -/
+included.  Conceptually subsumes the reference repository's `apply_ofStep`
+(the outer-memoryless case; that route does not exist in this tree, so every
+realization here runs through this theorem) and turns converter equations into
+`drive` computations. -/
 theorem apply_toDDC (α : ProtocolFn U V X Y) (S : System.DDS X Y) :
     DDC.apply (toDDC α) S = apply α S := by
   apply Subtype.ext
@@ -1037,7 +1043,7 @@ end RestrictionInstance
 
 /-! ### The `[q]` instance: the first cross-round converter, computed
 
-`queryLimitFn q` (a round counter — outside every `ofStep` class) applied by
+`queryLimitFn q` (a round counter — outside the outer-memoryless class) applied by
 the transcript equations *is* the canonical CR18 Def 3.10 restriction
 `filterQueries q`.  Combined with the pre-existing operational theorem, the
 old `[q]ᶠ` DDC and `toDDC (queryLimitFn q)` are apply-equal representatives

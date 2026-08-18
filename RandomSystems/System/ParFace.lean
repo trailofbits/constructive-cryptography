@@ -935,14 +935,17 @@ theorem epsilonRelaxation_parF_left_subset (ε : ℝ≥0∞) (𝓡 𝒯 : Specif
       (edist_parF_left_le (h0 T hT) (h1 T hT) y r).trans hyr⟩
 
 /-- **Definition 5.7, first clause, at `parF`, on the face-bounded part of the
-ball** — the form a consumer can actually discharge.
+ball** — the **usable primitive** of this pair, and the form a consumer can
+actually discharge.
 
 `parF · T` moves its own splitting with its argument, so beyond sub-probability
 of the partner the right slot needs one splitting `c` that carries *both*
 points compared, and one of them is an arbitrary member of the `ε`-ball rather
 than a law of `𝓡`.  Restricting the ball to its `c`-faced part is the honest
-way to say that, and it demands nothing of the laws it drops.  The unrestricted
-clause is `epsilonRelaxation_parF_right_subset`, one hypothesis away. -/
+way to say that, and it demands nothing of the laws it drops.  Every consumer
+in the tree goes through this form (`Game/GameRelaxation.lean`'s right-slot
+clause included); the whole-ball statement
+`epsilonRelaxation_parF_right_subset` is its corollary, one hypothesis away. -/
 theorem epsilonRelaxation_parF_right_subset_of_support {c : Set Uni.{u}} (ε : ℝ≥0∞)
     (𝓡 𝒯 : Specification Phi.{u})
     (h0 : ∀ T ∈ 𝒯, ∀ t, 0 ≤ ofPhi T t) (h1 : ∀ T ∈ 𝒯, (ofPhi T).weight ≤ 1)
@@ -966,10 +969,19 @@ it — and misses the partner's face.  That is `edist_parF_right_le`'s price, an
 it cannot be dropped: `parF_absorb` is what a partner inside the splitting
 does instead.
 
-The clause over the whole ball is the printed form; the version that asks
-nothing of the laws it drops is
-`epsilonRelaxation_parF_right_subset_of_support`, of which this is the
-corollary at a face-bounded ball. -/
+**This is the printed *shape*, not the printed statement.**  Definition 5.7 as
+printed (p. 116) carries *no* hypotheses at all; this clause carries four
+(sub-probability of the partner, `hT`, `h𝓡`, `hball`), so what is recovered
+here is the unquantified silhouette of the source's inclusion.  The usable
+primitive is `epsilonRelaxation_parF_right_subset_of_support`, which asks
+nothing of the laws it drops; this statement is its corollary at a face-bounded
+ball, obtained by feeding `hball`.
+
+`hball` — every member of the `ε`-ball is `c`-faced — is, for `ε > 0`, a strong
+*global* condition on the ball, and its necessity is **believed, not checked**:
+the argument that it is close to automatic was never proved, and the audit of
+2026-08-19 graded it that way.  Nothing in the tree depends on it, because
+every consumer takes the `_of_support` form instead. -/
 theorem epsilonRelaxation_parF_right_subset {c : Set Uni.{u}} (ε : ℝ≥0∞)
     (𝓡 𝒯 : Specification Phi.{u})
     (h0 : ∀ T ∈ 𝒯, ∀ t, 0 ≤ ofPhi T t) (h1 : ∀ T ∈ 𝒯, (ofPhi T).weight ≤ 1)

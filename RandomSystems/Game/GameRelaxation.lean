@@ -25,11 +25,26 @@ of the two game transcript laws — `PDG.notWonLaw`, the restriction of
 the complementary slice, which is exactly what Definition 11 leaves free.
 
 So a system lies in `T̂^⊥` when it can be enhanced with an MBO of its own so
-that the resulting game agrees with `T̂` before `T̂`'s MBO fires.  With that
-reading CR18's **Lemma 5.2** (printed p. 121) — "If `Ŝ` is game-equivalent to a
-game `T̂`, then `S` is contained in the game-relaxation of `T̂`" — is the
-introduction rule of the definition, which is why the source states it without
-proof.
+that the resulting game agrees with `T̂` before `T̂`'s MBO fires.  The `∃` over
+MBOs is **forced**, not a strengthening: a member of `T̂^⊥` is a plain PDS, and
+"behaves as `T` as long as the MBO is `0`" cannot be read off it without an MBO
+on it.
+
+**The reading is a choice, and it has a price.**  With it, CR18's **Lemma 5.2**
+(printed p. 121) — "If `Ŝ` is game-equivalent to a game `T̂`, then `S` is
+contained in the game-relaxation of `T̂`" — becomes a *definitional unfolding*:
+`forget_mem_gameRelaxation_of_equivalentAsGames` is literally `⟨H, hH, hw, h, rfl⟩`.
+The source states 5.2 as a **lemma** ("we state two lemmas without proofs"),
+which is weak evidence that the intended `T̂^⊥` is *larger* than the
+`≡ᵍ`-image of games under `forget` — i.e. that the landed set may be smaller
+than the source's.  Recorded, not decided: footnote 7 leaves the definition
+open, and the strength of the agreement relation is the dial.  The stronger
+alternative (Lanzenberger Definition 2.22's `gameEquivalent`, which gives a
+*smaller* relaxation) is reachable without touching any containment below, via
+`gameRelaxation_subset_of_equivalentAsGames` and
+`equivalentAsGames_of_gameEquivalent`.  The `NonNeg` and equal-weight clauses
+are signed-carrier artifacts (Ruling R9) and should be dropped if an honest
+sub-carrier is ever installed.
 
 ## What this module claims, and what it does not
 
@@ -39,16 +54,23 @@ proof.
   every fixed query sequence.  The relaxation is therefore *defined* off the
   condition and only *compared* to a ball; defining it as a ball would lose the
   conditional content the source's Lemma 5.2 and §5.4 rely on.
-* CR18's **Lemma 5.3** as printed is **not** available here, and the reason is
-  recorded rather than worked around.  It reads "`Ŝ |≡ T ⟹ S ⊆ T̂^⊥`, where …
-  the inputs to `T` are also given to `bŜ` and the MBO (of `T`) is the MBO of
-  `Ŝ`, i.e. the MBO is defined independently of `T`" — that is, `T̂` is built by
-  running `Ŝ`'s condition *alongside* `T` on the same inputs.  That construction
-  is the blinding machinery, which Ruling R11(a) does not admit and which
-  `conditional_equivalence_theorem_infWinnability`'s docstring already records
-  as out of reach on this carrier.  What is landed instead is the composition
-  the lemma is used for: Definition 2.36's static `ω` as the radius, through
-  Lanzenberger Theorem 2.37's `ν ≤ ω` (`PDG.supWinProb_le_infWinnability`).
+* CR18's **Lemma 5.3** as printed is **not built here** — FLAG F-8, an
+  escalation on the record rather than a workaround.  It reads
+  "`Ŝ |≡ T ⟹ S ⊆ T̂^⊥`, where … the inputs to `T` are also given to `bŜ` and
+  the MBO (of `T`) is the MBO of `Ŝ`, i.e. the MBO is defined independently of
+  `T`" — that is, `T̂` is built by running `Ŝ`'s condition *alongside* `T` on the
+  same inputs.  That construction needs the blinded system `bŜ`, and
+  "blinded-system objects" is a class Ruling R11(a) names as forbidden; the same
+  bar is already recorded in
+  `conditional_equivalence_theorem_infWinnability`'s docstring.  **R11(a)'s own
+  remedy clause is "a fork to Marc, not a build"**, so the status of Lemma 5.3
+  is *blocked pending a ruling on a blinded-system object*, **not** impossible:
+  what is barred is landing the object unilaterally, and the route out is the
+  escalation, not a workaround.  Lemma 5.2 is unaffected — it needs only `≡ᵍ`,
+  which is landed.  Recorded so that no future brief plans Lemma 5.3 as cheap.
+  What *is* landed here is the composition the lemma is used for: Definition
+  2.36's static `ω` as the radius, through Lanzenberger Theorem 2.37's `ν ≤ ω`
+  (`PDG.supWinProb_le_infWinnability`).
 * **Theorem 5.4** (authentication amplification, printed p. 122) is out of
   scope: an application rider, per the LEDGER's APPLICATION discipline.
 * Compatibility (CR18 Definitions 5.6/5.7, "we point out that game-relaxation
@@ -111,7 +133,11 @@ def gameRelaxation (G : PDG Uni.{u} Uni.{u}) :
 `T̂`, then `S` is contained in the game-relaxation of `T̂`: `Ŝ ≡ᵍ T̂ ⟹ S ⊆ T̂^⊥`."
 
 The source states it without proof, and on this reading of Definition 5.10 it
-is the introduction rule: the witness is `Ŝ` itself. -/
+is the introduction rule: the witness is `Ŝ` itself, and the proof is the
+anonymous constructor.  That the printed *lemma* degrades here to a
+*definitional unfolding* is the price of the reading, and is weak evidence
+that the intended `T̂^⊥` is larger than the `≡ᵍ`-image — see the module
+docstring's hedge. -/
 theorem forget_mem_gameRelaxation_of_equivalentAsGames {H G : PDG Uni.{u} Uni.{u}}
     (hH : H.NonNeg) (hw : H.weight = G.weight) (h : EquivalentAsGames H G) :
     forget H ∈ gameRelaxation G :=
@@ -175,8 +201,10 @@ This is the composition CR18's Lemma 5.3 is used for — "one can view `S` as if
 it were `T`, as long as the game is not won", with a right-hand side that
 mentions no environment.  It is **not** Lemma 5.3 as printed: that lemma's
 hypothesis is conditional equivalence together with an MBO "defined
-independently of `T`", i.e. the blinded product game, which Ruling R11(a) does
-not admit (module docstring).
+independently of `T`", i.e. the blinded product game.  Ruling R11(a) does not
+admit a blinded-system object and routes one to Marc rather than to a build, so
+that lemma is **blocked pending a ruling** (FLAG F-8, module docstring), not
+impossible.
 
 Theorem 2.37 is an equality on the finite slice, so this is not a weaker bound
 — it is the same number written without a supremum over strategies. -/

@@ -32,11 +32,16 @@ realizes them (PHI-SPEC R1; LEDGER FLAG F-1).  They enter downstream as
 *families of bounded slices*, which is how every quantitative statement uses
 them anyway, and the slicing operation is `System.filterQueries`.
 
-## The beacon is a slice, and its queries are its rounds
+## Two presentation deltas from the printed source
+
+Both are recorded here rather than downstream, and neither is assumed by any
+consumer.
+
+### Delta #1 — the beacon is a round-indexed slice
 
 `beacon` is the one object whose printed form is not a function-valued random
 variable.  CR18 Definition 3.1's `𝒴`-source has a *unary* input alphabet and
-Example 3.2's beacon `B_n` answers each trigger with fresh randomness, so an
+Example 3.2's beacon answers each trigger with fresh randomness, so an
 unbounded beacon needs unboundedly much randomness and is outside the carrier
 for the same reason `V_n` is.  The bounded slice is `beacon Y n`, and it is
 presented with the **round as the query**: `Fin n` is the trigger alphabet,
@@ -48,6 +53,29 @@ an answer to a question the beacon does not pose: a *repeated* round index is
 answered consistently rather than freshly.  Consumers that need the printed
 one-trigger interface should say so explicitly; nothing downstream of this
 file assumes it.
+
+The **index does not transfer**.  Example 3.2 writes `B_n` for the beacon whose
+domain is `{0,1}^n`: the source's subscript is the **bit-width of the output
+alphabet**, and the trigger count is unbounded.  Here the alphabet is the
+separate parameter `Y` and `n` counts *rounds*.  So `beacon Y n` is the
+`n`-round slice of the beacon **over `Y`** — for `Y = {0,1}^m` it is an
+`n`-round slice of the source's `B_m` — and *not* "`B_n` at `n` rounds".
+Anyone matching notation against the printed page must apply that
+substitution.
+
+### Delta #2 — `unif` answers every query; printed `U_n` answers one
+
+Example 3.3 reads: "The system that outputs a uniform random `n`-bit string
+(**once**, upon a trigger input) is usually denoted by `U_n`.  (This is a
+`{0,1}^n`-source restricted to one query.)"  The landed `unif` **drops the
+one-query restriction**: it samples once and answers *every* query with the
+sampled value, which is what makes it a random variable made available as a
+system.  The printed object is the one-query slice of the landed one —
+`System.filterQueries 1` under the pushforward, `RandomSystems.filterQueries 1`
+once it sits at `Φ` (`System/FilterPhi.lean`) — which is also the register's
+own FLAG F-1 recipe: unbounded objects enter as families of bounded slices cut
+by `[q]`.  As with the beacon, nothing downstream of this file assumes the
+printed interface; a consumer that needs it must write the `[1]` itself.
 
 ## These live at their own alphabets
 
@@ -95,19 +123,33 @@ def urp (X : Type u) [Fintype X] [DecidableEq X] : PDS X X :=
   Distribution.fTransform (fun π : Equiv.Perm X => System.functionEvaluator (π : X → X))
     (Distribution.uniform (Equiv.Perm X))
 
-/-- **CR18 Example 3.3's one-shot uniform source `U_n`**: one uniform value of
-`𝒴`, delivered on every query.  The sampled object is the value; the system is
-the constant function at it, so repeated queries see the *same* value — which
-is what makes `U_n` a random *variable* made available as a system, and not a
-beacon. -/
+/-- **CR18 Example 3.3's uniform source `U_n`, minus its one-query
+restriction**: one uniform value of `𝒴`, delivered on every query.  The sampled
+object is the value; the system is the constant function at it, so repeated
+queries see the *same* value — which is what makes `U_n` a random *variable*
+made available as a system, and not a beacon.
+
+**Modelling delta #2** (module header): the printed `U_n` outputs its string
+**once**, upon a trigger — Example 3.3 calls it "a `{0,1}^n`-source restricted
+to one query" — while this object answers every query.  The restriction is not
+silently assumed anywhere: the printed object is the one-query slice of this
+one (`System.filterQueries 1` under the pushforward, `RandomSystems.filterQueries 1`
+at `Φ`), which is the register's own FLAG F-1 recipe, and a consumer that
+needs the printed interface writes the `[1]`. -/
 def unif (X : Type u) (Y : Type v) [Fintype Y] [Nonempty Y] : PDS X Y :=
   Distribution.fTransform (fun y : Y => System.functionEvaluator (fun _ : X => y))
     (Distribution.uniform Y)
 
-/-- **CR18 Example 3.2's beacon `B_n`, at `n` rounds**: fresh uniform
+/-- **CR18 Example 3.2's beacon over `Y`, sliced at `n` rounds**: fresh uniform
 randomness per round, presented with the round as the query (see the module
 header — the unbounded beacon is outside the carrier by FLAG F-1, and this is
 the bounded slice).
+
+**The subscript is not the source's** (modelling delta #1).  Example 3.2 writes
+`B_n` for the beacon over `{0,1}^n`, so there `n` is the **bit-width of the
+output domain** and the trigger count is unbounded.  Here the domain is the
+separate parameter `Y` and `n` is the number of *rounds*, so this is the
+`n`-round slice of the beacon over `Y`, not "`B_n` at `n` rounds".
 
 Definitionally the uniform random function on the round alphabet; the identity
 is `beacon_eq_urf`, and it is a definitional unfolding rather than a theorem

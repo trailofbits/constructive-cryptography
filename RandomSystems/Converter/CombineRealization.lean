@@ -26,6 +26,24 @@ Per Definition 3.9 the inner queries are answered by the Definition 3.3
 completion, so a refusal of either component arrives as `none` and stalls the
 converter: `combineFn` has no move on an improper answer, which is exactly
 where the native combine is undefined.
+
+## Transport record, against the read-only reference repository
+
+The reference's proven combine DAG transports **node for node**, with the same
+forced route delta as the cascade side: no `CausalApply`/`DDC.ofStep`/
+`apply_ofStep` exists here, so the converter is a `ProtocolFn` and the
+realization runs through the ν-level `apply_toDDC`, with the round boundary
+read off the two history lengths.
+
+**Five** reference nodes are unnecessary here — `output_congr_system` and the
+four `pairAccess_{eval,mem_elim}_{left,right}` wrappers — because
+`Combine.pair_zero`/`pair_one` close by `rfl` and the component projections can
+be rewritten in place.  **That saving is proof engineering, not a carrier
+delta.**  `Combine.pair` is `fun i => if i = (0 : Fin 2) then S else T` in both
+repositories, so the `rfl` is a property of the *definition*, not of this
+carrier: the same collapse was available in the reference, which merely closes
+the two statements by `simp [Combine.pair]` instead.  It must not be credited
+to the ν recast, and the count is five, not three.
 -/
 
 namespace RandomSystems

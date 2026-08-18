@@ -21,6 +21,17 @@ first.
 The support lemmas are the `PDS.faceT` idiom (`System/ParFace.lean`): the
 face of a composite law is bounded by the faces of its components, because
 each deterministic composite accepts only histories its components accept.
+
+## Transport record, against the read-only reference repository
+
+Nothing collapses at this level: the two laws are the `parLaw` pushforward
+shape and transport with no carrier delta.  The S-02/S-03 route delta (no
+`CausalApply`/`ofStep` here, so the realization runs through the ν-level
+`apply_toDDC`) is recorded in `CascadeRealization.lean`, and the **five**
+reference nodes the combine side does without are recorded in
+`CombineRealization.lean` — where they are attributed correctly, to
+`Combine.pair` being the same definition in both repositories rather than to
+this carrier.
 -/
 
 namespace RandomSystems
