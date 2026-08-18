@@ -2693,14 +2693,12 @@ gates, adversarial audit before deltas apply):
      quotient; MaPiRe07.pdf p. 140, visual).
   T5 H layer-3: the η·σ factorization + the environment-uniform
      corollary; then the counting layer for applications.
-  SKILL: the abstract-crypto proving skill — METHOD from
-     random-systems-proofs (seven stages + the routing question), contents
-     re-targeted (LEDGER as reuse index; Adv⊥/classDistance as statement
-     targets; R1-R10 modeling rules), plus per-technique ADMISSIBILITY
-     CONDITIONS (coupling exactness REQUIRES the finiteness bundle —
-     kernel-checked counterexample; CE requires the adjoin obligations;
-     H requires the factorization's hypotheses).  Drafted by an agent,
-     applied by the coordinator.
+  SKILL (SEQUENCED LAST — after T1-T5 land, so it cites real endpoint
+     names; Marc 2026-08-18: premature before the techniques exist): the
+     abstract-crypto proving skill — METHOD from random-systems-proofs
+     (seven stages + routing), contents re-targeted, plus per-technique
+     ADMISSIBILITY CONDITIONS.  Drafted by an agent, applied by the
+     coordinator, only once the technique layer is in the tree.
 
 DRIFT TRIPWIRES for every T-brief: the R10 vocabulary rules (LEDGER +
 PHI-SPEC); games are PAIRS (bit view derived); conditions are per-atom
