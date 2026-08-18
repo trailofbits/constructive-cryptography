@@ -2902,7 +2902,13 @@ established tree conventions ONLY — no coined geometric/categorical
 vocabulary (fiber, slice, blinder, aux, helper as identifier components);
 match the nearest landed neighbour's naming pattern; prose may describe,
 identifiers may not coin; agents list any non-canonical EXISTING name
-they consume for coordinator rename triage.
+they consume for coordinator rename triage; HEADLINE ENDPOINTS get
+PAPER-IDENTITY names (Marc 2026-08-18: `winnability_theorem`,
+`fundamental_lemma_of_game_playing`, `conditional_equivalence_theorem` —
+statement-shaped names are for the internal chain only); METRIC-SIDE
+COERCION NOISE is hidden behind paper-symbol scoped notation
+(`ν[G]`/`ω[G]` = ENNReal.ofReal of supWinProb/infWinnability) — never
+repeat `ENNReal.ofReal` across endpoint statements.
 
 # CR18 full-sweep register — stretch goals for abstract-crypto
 
