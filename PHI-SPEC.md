@@ -57,3 +57,33 @@ cells; residue by design (G10 fenced rows 13/48, §3.5 models row 32
 optional, prose row 31).  Lanzenberger pure-RS scope complete (L4 games +
 L5 amplification deferred by scope ruling).  Deferred queues and open
 micro-questions: see LEDGER.md.
+
+## Technique program (R10, 2026-08-18)
+- **Game** := the thesis's pair — a system with a monotone condition
+  `A : X⁺ → Bool` per deterministic atom (Def 2.20); probabilistic game =
+  joint distribution over pairs (Def 2.22).  The bit-output presentation
+  (Maurer13b Def 9 / CR18) is a DERIVED VIEW with a proven round trip; the
+  two are equivalent at both levels (per-atom, inputs determine the whole
+  interaction, so input predicates lose no generality; internal randomness
+  enters through the joint distribution — CBC: the condition is A_k,
+  key-indexed).  No fork exists.
+- **Integration pattern** (binding): modeling = CONSTRUCTORS WITH NAMED
+  OBLIGATIONS; technique = theorems over the valid class.  The game
+  constructor is `adjoin` (Rem 2.24's word) with two obligations:
+  (1) per-atom monotonicity; (2) the forgetting law — dropping the bit
+  returns the original BEHAVIOUR (stated against the equivalence class;
+  representative choice is how one discharges it, not a modeling wrinkle).
+  MPR07 Lemma 5 = COMPLETENESS of the constructor (an adjunction attaining
+  the distance exists on equivalent systems; non-unique; δ-shaped).
+- **H-coefficient, three layers**: (1) partition bound (in tree:
+  statDist_sum_of_disjoint_support family); (2) good/bad corollary (in
+  tree: the hTechnique kernel); (3) transcript instantiation — the ONLY
+  build item: the factorization Pr[τ] = η(e,τ)·σ(S,τ) and its corollary
+  (ratio on σ over good + ideal bad mass ⇒ environment-uniform Adv⊥
+  bound; adaptivity free because η cancels).
+- **Vocabulary** (binding): "monotone condition (MC)", "game", "adjoin",
+  "σ/η factorization", "good/bad", "deficiency".  FORBIDDEN: "blinder" as
+  an object (none exists in any source); the bit-output form as primitive;
+  any environment that observes the condition (Rem 2.23).
+- PENDING (Marc): admitting Maurer02 + Maurer13b as governing sources for
+  conditional equivalence (no primary defines it; R8 fallback clause).

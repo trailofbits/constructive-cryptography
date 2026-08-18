@@ -119,6 +119,13 @@ theorem coe_finset_sup_le {ι : Type*} (s : Finset ι) (f : ι → NNReal) {a : 
     exact NNReal.coe_le_coe.mp (h i hi)
   exact NNReal.coe_le_coe.mp hNN
 
+/-! ### H-coefficient kernel — three-layer architecture (PHI-SPEC R10)
+Layer 1 (here): partition bounds (`statDist_sum_of_disjoint_support` family).
+Layer 2 (here): the good/bad ratio kernel (`hTechnique_*`).
+Layer 3 (system level, `RandomSystems/`): the transcript factorization
+`Pr[τ] = η(e,τ)·σ(S,τ)` and its environment-uniform corollary — the only
+part of the method that mentions systems.  Do not re-prove layers 1-2. -/
+
 /-- Statistical distance between two distributions.
 
 Paper Definition 3:

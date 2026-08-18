@@ -2673,6 +2673,42 @@ R9's honesty clause, and it is the result that makes every `Γ` on the right-han
 side of a CE bound computable.  It is the highest ratio of theorem-weight to
 carrier risk in the program.
 
+# TECHNIQUE-PROGRAM PLAN (binding; PHI-SPEC R10 carries the design)
+
+LEGS (each: comprehensive brief, code + proposed doc deltas, all four
+gates, adversarial audit before deltas apply):
+  T0 (READY, ruling-free): conditional-probability toolkit, the two
+     H-technique refinements, the counting kernel — carrier-delta-free
+     rows of the matrix above.
+  T1 games: Def 2.20-2.25 objects (pair primitive), the bit-output view +
+     round trip, the `adjoin` constructor with its TWO OBLIGATIONS
+     (monotone per atom; forgetting law against the class), blindness =
+     blocking converter (Rem 2.23 via blockSet — the ~1400-line IsBlind
+     machinery is NOT transplanted).
+  T2 winnability: thesis Thm 2.37 (quarry GameWinnability.lean:778 is the
+     architecture; consumes our Thm 2.31).
+  T3 conditional equivalence: definition + the CE bound against Adv⊥
+     (GATED on the pending source admission).
+  T4 MPR07 Lemma 5 as constructor completeness (on the Behaviour
+     quotient; MaPiRe07.pdf p. 140, visual).
+  T5 H layer-3: the η·σ factorization + the environment-uniform
+     corollary; then the counting layer for applications.
+  SKILL: the abstract-crypto proving skill — METHOD from
+     random-systems-proofs (seven stages + the routing question), contents
+     re-targeted (LEDGER as reuse index; Adv⊥/classDistance as statement
+     targets; R1-R10 modeling rules), plus per-technique ADMISSIBILITY
+     CONDITIONS (coupling exactness REQUIRES the finiteness bundle —
+     kernel-checked counterexample; CE requires the adjoin obligations;
+     H requires the factorization's hypotheses).  Drafted by an agent,
+     applied by the coordinator.
+
+DRIFT TRIPWIRES for every T-brief: the R10 vocabulary rules (LEDGER +
+PHI-SPEC); games are PAIRS (bit view derived); conditions are per-atom
+input predicates (internal randomness via the joint distribution);
+environments never observe the condition; no "blinder" objects; the
+forgetting law is stated against equivalence classes; H-layer-3 is the
+only H build item (layers 1-2 exist — do not re-prove).
+
 # PROVENANCE FENCE (MR11-DEFERRED)
 
 **Rule (binding, 2026-08-17).**  The working discipline is **MR16-only** until
