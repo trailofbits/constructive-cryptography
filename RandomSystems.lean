@@ -41,6 +41,9 @@ import RandomSystems.System.RandomObjects
 import RandomSystems.Interface.Interface
 import RandomSystems.System.ProbabilisticConverter
 import RandomSystems.Game.GameRelaxation
+import RandomSystems.Converter.CascadeRealization
+import RandomSystems.Converter.CombineRealization
+import RandomSystems.Converter.CascadeLaw
 
 /-!
 # Random systems

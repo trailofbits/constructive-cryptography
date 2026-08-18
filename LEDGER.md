@@ -363,8 +363,10 @@ strict-test relation.
 
 liftAt, liftAtRaw, attachEngine, attachEngineAt, tagAt, AttachState, eProj,
 eProjStep, lastTag, idEngine, cascade, cascadeAccess, cascadeAccessStep,
-cascadeConverter, cascadeLeftHistory, cascadeMiddle, cascadeRightHistory,
-cascadeViaConverter, combine, combineConverter, combineViaConverter, comp,
+cascadeConverter, cascadeFn, cascadeLeftHistory, cascadeMiddle,
+cascadeRightHistory,
+cascadeViaConverter, combine, combineConverter, combineFn,
+combineViaConverter, comp,
 compAt, compGo, connStep, attachAt, attachDefined, attachDrive, attachEntry,
 attachEntryD, attachEntryStep, attachFamily, attachHistory, attachOutput,
 attachRaw, attachResolve, attachStep, relabelAt, blockAt, monoid, act,
