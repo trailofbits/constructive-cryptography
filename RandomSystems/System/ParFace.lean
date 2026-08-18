@@ -832,6 +832,10 @@ section Metric
 
 open scoped ENNReal
 
+open AbstractCryptography (Specification Relaxation)
+
+open scoped AbstractCryptography
+
 /-- **The frame on the LEFT costs nothing new.**  `parF T ·` is
 `par (support T) T ·`, a fixed-splitting map, so this is
 `parLeft_mem_nonexpandingConverters` verbatim — unconditional in the varying
@@ -897,6 +901,62 @@ theorem edist_parF_parF_le {c : Set Uni.{u}} {a a' b b' : Phi.{u}}
   (edist_triangle (parF a b) (parF a' b) (parF a' b')).trans
     (add_le_add (edist_parF_right_le hb0 hb1 ha ha' hb)
       (edist_parF_left_le ha'0 ha'1 b b'))
+
+/-! ### CR18 Definition 5.7 at `parF` — the two clauses, hypothesised
+
+`Relaxation.ParCompatible` *is* Definition 5.7, and
+`Relaxation.epsilonRelaxation_parCompatible` proves it for the `ε`-ball — but
+it takes `[IsNonexpandingPar Φ]`, which is **not obtainable at this carrier**
+(`edist_parF_parF_le`'s docstring; spike G6.f), and the registry gate
+`scripts/ledgerAudit.sh` check 5 keeps it uninstantiated.  What the carrier
+supports is the two containments of Definition 5.7 one clause at a time, each
+with the hypotheses its slot forces — and the asymmetry is the table above:
+the frame on the left costs sub-probability only, the frame on the right also
+costs a common separating splitting for the two points compared.
+
+The partner is a whole specification, as Definition 5.7's own "this definition
+naturally extends to specifications" asks; the hypotheses are quantified over
+its laws. -/
+
+/-- **Definition 5.7, second clause, at `parF`** — the frame on the LEFT:
+`[𝒯, 𝓡ᵋ] ⊆ [𝒯, 𝓡]ᵋ`.
+
+`parF T ·` is a fixed-splitting map for each partner law `T`, so the
+containment costs exactly what `parF_left_mem_nonexpandingConverters` costs —
+sub-probability of the partner — and nothing about faces. -/
+theorem epsilonRelaxation_parF_left_subset (ε : ℝ≥0∞) (𝓡 𝒯 : Specification Phi.{u})
+    (h0 : ∀ T ∈ 𝒯, ∀ t, 0 ≤ ofPhi T t) (h1 : ∀ T ∈ 𝒯, (ofPhi T).weight ≤ 1) :
+    𝒯 ∥ Relaxation.epsilonRelaxation ε 𝓡 ⊆
+      Relaxation.epsilonRelaxation ε (𝒯 ∥ 𝓡) := by
+  rintro x ⟨T, hT, y, hy, rfl⟩
+  obtain ⟨r, hr, hyr⟩ := Relaxation.mem_epsilonRelaxation_iff.mp hy
+  exact Relaxation.mem_epsilonRelaxation_iff.mpr
+    ⟨T ∥ r, AbstractCryptography.par_mem_par hT hr,
+      (edist_parF_left_le (h0 T hT) (h1 T hT) y r).trans hyr⟩
+
+/-- **Definition 5.7, first clause, at `parF`** — the frame on the RIGHT:
+`[𝓡ᵋ, 𝒯] ⊆ [𝓡, 𝒯]ᵋ`.
+
+Here `parF · T` moves its own splitting with its argument, so beyond
+sub-probability of the partner the clause needs one splitting `c` that carries
+both points compared — every law of `𝓡` *and* every law of the `ε`-ball around
+it — and misses the partner's face.  That is `edist_parF_right_le`'s price, and
+it cannot be dropped: `parF_absorb` is what a partner inside the splitting
+does instead. -/
+theorem epsilonRelaxation_parF_right_subset {c : Set Uni.{u}} (ε : ℝ≥0∞)
+    (𝓡 𝒯 : Specification Phi.{u})
+    (h0 : ∀ T ∈ 𝒯, ∀ t, 0 ≤ ofPhi T t) (h1 : ∀ T ∈ 𝒯, (ofPhi T).weight ≤ 1)
+    (hT : ∀ T ∈ 𝒯, Disjoint (RandomSystems.support T) c)
+    (h𝓡 : ∀ R ∈ 𝓡, RandomSystems.support R ⊆ c)
+    (hball : ∀ L ∈ Relaxation.epsilonRelaxation ε 𝓡, RandomSystems.support L ⊆ c) :
+    Relaxation.epsilonRelaxation ε 𝓡 ∥ 𝒯 ⊆
+      Relaxation.epsilonRelaxation ε (𝓡 ∥ 𝒯) := by
+  rintro x ⟨y, hy, T, hT', rfl⟩
+  obtain ⟨r, hr, hyr⟩ := Relaxation.mem_epsilonRelaxation_iff.mp hy
+  exact Relaxation.mem_epsilonRelaxation_iff.mpr
+    ⟨r ∥ T, AbstractCryptography.par_mem_par hr hT',
+      (edist_parF_right_le (h0 T hT') (h1 T hT') (hball y hy) (h𝓡 r hr)
+        (hT T hT')).trans hyr⟩
 
 end Metric
 

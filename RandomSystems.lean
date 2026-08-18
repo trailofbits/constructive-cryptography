@@ -36,6 +36,8 @@ import RandomSystems.Converter.Sigma
 import RandomSystems.Technique.ConditionalEquivalence
 import RandomSystems.Technique.Completeness
 import RandomSystems.Technique.HCoefficient
+import RandomSystems.System.RandomObjects
+import RandomSystems.Interface.Interface
 
 /-!
 # Random systems
