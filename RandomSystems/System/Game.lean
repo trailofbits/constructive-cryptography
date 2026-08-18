@@ -9,31 +9,57 @@ import RandomSystems.System.Relabel
 # Random games (Lanzenberger §2.3.3, Definitions 2.20–2.25)
 
 Lanzenberger, *A Theory of Random Systems, Games, and Hardness Amplification*
-(Diss. ETH 29554), §2.3.3, printed pp. 16–17.  The definitions are quoted in
-the docstrings and were checked against the printed pages.
+(Diss. ETH 29554), §2.3.3, printed pp. 16–17.  Every definition is quoted in
+the docstring that renders it and was checked against the printed page.
 
-## The carrier: the pair is primitive
+## The condition: an upper set of histories
 
 **Definition 2.20** (printed p. 17): "A *monotone condition* (or MC) for an
-`(𝒳,𝒴)`-DDS `s` is a monotone predicate `A : 𝒳* → {0,1}`. A *deterministic
-discrete `(𝒳,𝒴)`-game* (or an `(𝒳,𝒴)`-DDG) is a pair `(s, A)`, denoted by
-`s^A`."  **Definition 2.22**: "A *probabilistic discrete `(𝒳,𝒴)`-game* (or an
-`(𝒳,𝒴)`-PDG) is a distribution over `(𝒳,𝒴)`-DDG."
+`(𝒳,𝒴)`-DDS `s` is a monotone predicate `A : 𝒳* → {0,1}`", where footnote 7
+reads "by *monotone* we mean that if `A(t) = 1` then `A(t|t') = 1` for any
+extension `t|t'` of `t`".
+
+The carrier is the *upper set*: `MonotoneCondition X` is an upward-closed set
+of histories in the prefix order.  Monotonicity is then not a side condition
+carried alongside a predicate but the closure property of the object itself,
+which is what makes the algebra work — conditions form a lattice (`⊔` is the
+union, the **bad-event union** every technique takes), and they pull back
+along prefix-monotone maps on histories (`comap`), which is how a condition on
+a sub-history becomes a condition on the whole.
+
+The thesis's own `{0,1}`-predicate form is kept as a **certified view**:
+`boolEquiv : MonotoneCondition X ≃ BoolCondition X` is an equivalence, not an
+analogy, and `toPred`/`ofPred` with their round trips are its two halves.
+
+Mathlib's `UpperSet` is not used: it needs a `Preorder (List X)` instance, and
+the prefix order is *not* one in mathlib — `Mathlib/Data/List/Infix.lean:184`
+registers only `IsPartialOrder (List α) (· <+: ·)`, a relation-level instance,
+while the `LE (List α)` slot is taken by the lexicographic order
+(`Mathlib/Data/List/Lex.lean:147`).  Registering a prefix `Preorder` on
+`List X` would collide there, so the carrier is the subtype
+`{s : Set (List X) // IsPrefixUpperSet s}` — FLAGGED as the fallback rendering
+(PHI-SPEC R10 refinement).  Its order is *inclusion* (`Subtype.partialOrder`
+over `Set`), so `⊔` is the union; mathlib's `UpperSet` reverses the inclusion
+order, and this file deliberately does not.
+
+## The game: the pair is primitive
+
+**Definition 2.20**: "A deterministic discrete `(𝒳,𝒴)`-game (or an
+`(𝒳,𝒴)`-DDG) is a pair `(s, A)`, denoted by `s^A`."  **Definition 2.22**: "A
+probabilistic discrete `(𝒳,𝒴)`-game (or an `(𝒳,𝒴)`-PDG) is a distribution over
+`(𝒳,𝒴)`-DDG."
 
 So `DDG X Y = DDS X Y × MonotoneCondition X` and `PDG X Y = Distribution (DDG
-X Y)`: the probabilistic game is a *joint* law over (system, condition) pairs,
-which is what makes Remark 2.24's adjoining expressible — the condition
-sampled with a deterministic system may depend on that system, and that
-dependence is the whole content of `p^A_{Aᵢ|XⁱYⁱAᵢ₋₁}` conditioning on the
-outputs.  A law over pairs is *not* the same object as a pair of laws, and it
-is not the same object as a system at a paired output alphabet.
+X Y)`: the probabilistic game is a *joint* law over (system, condition) pairs.
+That is what makes Remark 2.24's adjoining expressible — the condition sampled
+with a deterministic system may depend on that system, which is the content of
+`p^A_{Aᵢ|XⁱYⁱAᵢ₋₁}` conditioning on the outputs.  A law over pairs is not a
+pair of laws, and it is not a law of systems at a paired output alphabet.
 
 The `(𝒳, 𝒴 × {0,1})` presentation (Maurer13b Definition 9; the form CR18 and
-the quarry use) is a **derived view**, built here as `toBitSystem` with an
-inverse on monotone-bit systems and both round-trip equalities.  The view is
-faithful exactly on the conditions the domain supports (`DomainSupported`),
-and the round trip records the one thing it cannot express: a condition
-already satisfied at the empty history.
+the quarry take as primitive) is a **derived view**, built here as
+`toBitSystem` with an inverse on monotone-bit systems and both round-trip
+equalities.
 
 ## Remark 2.23 holds by construction
 
@@ -44,14 +70,14 @@ would not be observable just from the system's outputs."
 
 An environment here is `System.DDE.Total Y X = List (Option Y) → Option X`
 (CR18 Definitions 3.6/3.7, the tree's total presentation).  Its argument type
-mentions `Y` only: there is no term of the environment's type that could read
-a condition, and the winning probability `supWinProb` quantifies over exactly
-that type.  Blindness is therefore not a hypothesis, a converter, or a
-predicate on environments — it is the type of the environment.  §6 below
-proves the corresponding statement for the *derived* bit view, where the bit
-is a real output and blindness has content: the environment sees the bit view
-through `System.relabel id Prod.fst`, an existing generator of the converter
-monoid, and its whole interaction record erases to the plain one.
+mentions the output alphabet only: no term of the environment's type can read
+a condition, and Definition 2.25's supremum quantifies over exactly that type.
+Blindness is not a hypothesis, a converter, or a predicate on environments —
+it is the type of the environment.  §6 proves the corresponding statement for
+the *derived* bit view, where the bit is a real output and blindness has
+content: the environment meets the bit view through
+`System.relabel id Prod.fst`, an existing generator of the trivial-converter
+monoid, and its entire interaction record erases to the plain one.
 
 ## Definition 2.21 on the total presentation (the one carrier delta)
 
@@ -61,13 +87,15 @@ monoid, and its whole interaction record erases to the plain one.
 
 The thesis interacts through *compatible* environments, which never query
 outside the domain, so `t` projected to the inputs is the input history the
-system processed.  This carrier interacts through the `⊥`-completion (Ruling
+system processed.  This carrier interacts through the `⊥`-completion (Rulings
 R1/R2): a query outside the domain is answered `none` and deleted from the
 system-side history (CR18 Definition 3.3).  The condition is therefore
 evaluated at `answeredQueries t = keptPrefix s (t↓ₓ)`
 (`System.DDE.Total.answeredQueries_transcript`) — the input history the system
 actually processed, which is the thesis's `t'` whenever no query is refused.
-The quarry makes the same reading (`Q:RandomSystems/GameWinnability.lean:31`).
+`keptPrefix` is itself prefix-monotone (`MonotoneCondition.prefixMonotoneMap_keptPrefix`), so this is a
+`comap` of the condition and not an ad-hoc evaluation rule.  The quarry makes
+the same reading (`Q:RandomSystems/GameWinnability.lean:31`).
 -/
 
 namespace RandomSystems
@@ -78,29 +106,206 @@ noncomputable section
 
 open Classical
 
-universe u v
+universe u u' v
 
-variable {X : Type u} {Y : Type v}
+variable {X : Type u} {X' : Type u'} {Y : Type v}
 
-/-! ## Definition 2.20: monotone conditions and deterministic games -/
+/-! ## Definition 2.20: monotone conditions -/
 
-/-- Lanzenberger **Definition 2.20**, footnote 7: "by *monotone* we mean that
-if `A(t) = 1` then `A(t|t') = 1` for any extension `t|t'` of `t`".
-
-COINAGE (the name only): the thesis says "monotone", and the tree already
-spells the dual clause `PrefixClosed` this way, so the prefix order is written
-out rather than routed through an order instance on `List X`. -/
-def PrefixMonotone (A : List X → Bool) : Prop :=
-  ∀ ⦃t t' : List X⦄, t <+: t' → A t = true → A t' = true
+/-- Lanzenberger **Definition 2.20**, footnote 7, as a closure property of a
+set of histories: "if `A(t) = 1` then `A(t|t') = 1` for any extension `t|t'`
+of `t`" — the set of satisfying histories is upward closed in the prefix
+order. -/
+def IsPrefixUpperSet (s : Set (List X)) : Prop :=
+  ∀ ⦃t t' : List X⦄, t <+: t' → t ∈ s → t' ∈ s
 
 /-- Lanzenberger **Definition 2.20**: "A *monotone condition* (or MC) for an
 `(𝒳,𝒴)`-DDS `s` is a monotone predicate `A : 𝒳* → {0,1}`."
 
-The condition is an *input* predicate — it reads the query history and
-nothing else — and it is attached to a system only by Definition 2.20's pair,
-never bundled into it. -/
+Rendered as the upper set of histories at which the condition holds.  The
+condition is an *input* object — it reads the query history and nothing else —
+and it is attached to a system only by Definition 2.20's pair, never bundled
+into it.  See the module docstring for why this is the subtype and not
+mathlib's `UpperSet` (FLAGGED fallback). -/
 abbrev MonotoneCondition (X : Type u) : Type u :=
+  {s : Set (List X) // IsPrefixUpperSet s}
+
+/-- Conditions are closed under union: the disjunction of two bad events is a
+bad event. -/
+theorem IsPrefixUpperSet.union {s t : Set (List X)} (hs : IsPrefixUpperSet s)
+    (ht : IsPrefixUpperSet t) : IsPrefixUpperSet (s ∪ t) := by
+  rintro l l' hpre (h | h)
+  · exact Or.inl (hs hpre h)
+  · exact Or.inr (ht hpre h)
+
+/-- Conditions are closed under intersection. -/
+theorem IsPrefixUpperSet.inter {s t : Set (List X)} (hs : IsPrefixUpperSet s)
+    (ht : IsPrefixUpperSet t) : IsPrefixUpperSet (s ∩ t) :=
+  fun _ _ hpre h => ⟨hs hpre h.1, ht hpre h.2⟩
+
+namespace MonotoneCondition
+
+theorem upward (A : MonotoneCondition X) {t t' : List X} (h : t <+: t')
+    (ht : t ∈ A.1) : t' ∈ A.1 :=
+  A.2 h ht
+
+/-! ### The lattice of conditions
+
+Conditions are closed under union and intersection, so they inherit `Set`'s
+order — **inclusion** — through `Subtype.lattice`.  The join is the union: the
+disjunction of two bad events, which is the operation every union bound and
+every bad-event decomposition uses. -/
+
+instance : Lattice (MonotoneCondition X) :=
+  Subtype.lattice (fun ⦃_ _⦄ hs ht => hs.union ht) fun ⦃_ _⦄ hs ht => hs.inter ht
+
+@[simp] theorem coe_sup (A B : MonotoneCondition X) :
+    (A ⊔ B).1 = A.1 ∪ B.1 := rfl
+
+@[simp] theorem coe_inf (A B : MonotoneCondition X) :
+    (A ⊓ B).1 = A.1 ∩ B.1 := rfl
+
+/-- The never-won condition — the thesis's unnamed always-losing system `V` in
+the alternative proof of Theorem 2.37 (printed p. 26), which the quarry coins
+`zeroMBO` (`Q:RandomSystems/GameWinnability.lean:356`).  Here it is simply the
+bottom of the lattice. -/
+instance : OrderBot (MonotoneCondition X) where
+  bot := ⟨∅, fun _ _ _ h => absurd h (Set.notMem_empty _)⟩
+  bot_le _ := Set.empty_subset _
+
+/-- The condition already satisfied at the empty history: won before the
+interaction begins.  Definition 2.20 admits it — `A` is a predicate on all of
+`𝒳*` and monotonicity permits `A([]) = 1` — and §4 records that the bit-output
+view cannot express it. -/
+instance : OrderTop (MonotoneCondition X) where
+  top := ⟨Set.univ, fun _ _ _ _ => trivial⟩
+  le_top _ := Set.subset_univ _
+
+@[simp] theorem coe_bot : (⊥ : MonotoneCondition X).1 = (∅ : Set (List X)) := rfl
+
+@[simp] theorem coe_top :
+    (⊤ : MonotoneCondition X).1 = (Set.univ : Set (List X)) := rfl
+
+/-! ### The thesis's `{0,1}`-predicate view, certified -/
+
+/-- Lanzenberger **Definition 2.20**'s monotonicity clause on a `{0,1}`-valued
+predicate: "if `A(t) = 1` then `A(t|t') = 1` for any extension `t|t'` of
+`t`". -/
+def PrefixMonotone (A : List X → Bool) : Prop :=
+  ∀ ⦃t t' : List X⦄, t <+: t' → A t = true → A t' = true
+
+/-- Lanzenberger **Definition 2.20** verbatim: the monotone predicate
+`A : 𝒳* → {0,1}`.  `boolEquiv` certifies that this is the same object as the
+upper-set carrier. -/
+abbrev BoolCondition (X : Type u) : Type u :=
   {A : List X → Bool // PrefixMonotone A}
+
+/-- The `{0,1}`-predicate view of a condition (classical: membership in an
+arbitrary upper set is not decidable). -/
+def toPred (A : MonotoneCondition X) : List X → Bool :=
+  fun l => decide (l ∈ A.1)
+
+@[simp] theorem toPred_eq_true {A : MonotoneCondition X} {l : List X} :
+    toPred A l = true ↔ l ∈ A.1 :=
+  decide_eq_true_iff
+
+/-- The condition presented by a monotone `{0,1}`-predicate. -/
+def ofPred (A : List X → Bool) (hA : PrefixMonotone A) : MonotoneCondition X :=
+  ⟨{l | A l = true}, fun _ _ hpre h => hA hpre h⟩
+
+@[simp] theorem mem_ofPred {A : List X → Bool} {hA : PrefixMonotone A}
+    {l : List X} : l ∈ (ofPred A hA).1 ↔ A l = true :=
+  Iff.rfl
+
+theorem prefixMonotone_toPred (A : MonotoneCondition X) :
+    PrefixMonotone (toPred A) := by
+  intro t t' hpre ht
+  rw [toPred_eq_true] at ht ⊢
+  exact A.upward hpre ht
+
+/-- Round trip, one way: reading a condition as a predicate and back is the
+identity. -/
+@[simp] theorem ofPred_toPred (A : MonotoneCondition X) :
+    ofPred (toPred A) (prefixMonotone_toPred A) = A := by
+  refine Subtype.ext (Set.ext fun l => ?_)
+  simp
+
+/-- Round trip, the other way: presenting a monotone predicate as a condition
+and reading it back is the identity. -/
+@[simp] theorem toPred_ofPred (A : List X → Bool) (hA : PrefixMonotone A) :
+    toPred (ofPred A hA) = A := by
+  funext l
+  by_cases h : A l = true <;> simp [toPred, ofPred, h]
+
+/-- **The certified thesis equivalence.**  Definition 2.20's monotone
+predicate `A : 𝒳* → {0,1}` and the upper set of histories satisfying it are
+the same object; the upper set is the carrier, the predicate is the view. -/
+def boolEquiv : MonotoneCondition X ≃ BoolCondition X where
+  toFun A := ⟨toPred A, prefixMonotone_toPred A⟩
+  invFun A := ofPred A.1 A.2
+  left_inv A := ofPred_toPred A
+  right_inv A := Subtype.ext (toPred_ofPred A.1 A.2)
+
+/-! ### Pulling a condition back along a history map
+
+A condition on one history alphabet becomes a condition on another by
+substitution, provided the substitution preserves the prefix order.  This is
+the composability the upper-set carrier was chosen for: the two maps the tree
+already uses to relate histories — the interface projection `historyAt` and
+CR18's deletion pass `keptPrefix` — both qualify. -/
+
+/-- A history map preserves the prefix order. -/
+def PrefixMonotoneMap (f : List X → List X') : Prop :=
+  ∀ ⦃t t' : List X⦄, t <+: t' → f t <+: f t'
+
+/-- Substitution of histories, pulling a condition back.  `comap f hf A` is
+"`A` holds of the substituted history". -/
+def comap (f : List X → List X') (hf : PrefixMonotoneMap f)
+    (A : MonotoneCondition X') : MonotoneCondition X :=
+  ⟨f ⁻¹' A.1, fun _ _ hpre h => A.upward (hf hpre) h⟩
+
+@[simp] theorem mem_comap {f : List X → List X'} {hf : PrefixMonotoneMap f}
+    {A : MonotoneCondition X'} {l : List X} :
+    l ∈ (comap f hf A).1 ↔ f l ∈ A.1 :=
+  Iff.rfl
+
+/-- Pulling back is a lattice homomorphism: it commutes with the bad-event
+union … -/
+@[simp] theorem comap_sup (f : List X → List X') (hf : PrefixMonotoneMap f)
+    (A B : MonotoneCondition X') :
+    comap f hf (A ⊔ B) = comap f hf A ⊔ comap f hf B :=
+  Subtype.ext (Set.preimage_union)
+
+/-- … and with the intersection. -/
+@[simp] theorem comap_inf (f : List X → List X') (hf : PrefixMonotoneMap f)
+    (A B : MonotoneCondition X') :
+    comap f hf (A ⊓ B) = comap f hf A ⊓ comap f hf B :=
+  Subtype.ext (Set.preimage_inter)
+
+theorem comap_mono (f : List X → List X') (hf : PrefixMonotoneMap f)
+    {A B : MonotoneCondition X'} (hAB : A ≤ B) :
+    comap f hf A ≤ comap f hf B :=
+  fun _ h => hAB h
+
+/-- **Receipt**: the interface projection qualifies.  A component owning the
+queries in `c` sees `historyAt c`, and `historyAt_append` makes it
+prefix-monotone, so any condition on a component's own history is a condition
+on the whole history. -/
+theorem prefixMonotoneMap_historyAt (c : Set X) :
+    PrefixMonotoneMap (historyAt c) := by
+  rintro t _ ⟨w, rfl⟩
+  exact ⟨historyAt c w, (historyAt_append c t w).symm⟩
+
+/-- **Receipt**: CR18 Definition 3.3's deletion pass qualifies
+(`keptPrefix_mono`).  This is the map Definition 2.21 evaluates the condition
+along on this carrier (module docstring), so that evaluation is a `comap`. -/
+theorem prefixMonotoneMap_keptPrefix (S : DDS X Y) :
+    PrefixMonotoneMap (keptPrefix S) :=
+  fun _ _ hpre => keptPrefix_mono S hpre
+
+end MonotoneCondition
+
+/-! ## Definition 2.20: deterministic games -/
 
 /-- Lanzenberger **Definition 2.20**: "A *deterministic discrete
 `(𝒳,𝒴)`-game* (or an `(𝒳,𝒴)`-DDG) is a pair `(s, A)`, denoted by `s^A`."
@@ -110,31 +315,6 @@ the derived view of §4. -/
 abbrev DDG (X : Type u) (Y : Type v) : Type (max u v) :=
   DDS X Y × MonotoneCondition X
 
-/-- The upper-set reading of Definition 2.20, as a lemma and not as the
-definition (PHI-SPEC R10 refinement): a condition is monotone exactly when the
-histories satisfying it are closed under extension — footnote 7's `A(t|t')`
-with the extension written out. -/
-theorem prefixMonotone_iff_append {A : List X → Bool} :
-    PrefixMonotone A ↔ ∀ t t' : List X, A t = true → A (t ++ t') = true :=
-  ⟨fun h t t' => h ⟨t', rfl⟩, fun h _ _ ⟨_, hpre⟩ ht => hpre ▸ h _ _ ht⟩
-
-/-- The constantly false condition is monotone.  With it, Definition 2.20's
-pair is the *never-won* game — the thesis's unnamed always-losing system `V`
-in the alternative proof of Theorem 2.37 (printed p. 26), which the quarry
-coins `zeroMBO` (`Q:RandomSystems/GameWinnability.lean:356`). -/
-theorem prefixMonotone_const_false :
-    PrefixMonotone (fun _ : List X => false) := by
-  intro _ _ _ h
-  simp at h
-
-/-- The constantly true condition is monotone: the game already won at the
-empty history.  It is the witness that Definition 2.20's pair says strictly
-more than the bit-output view of §4 can (`domainSupported_ofBitSystem`). -/
-theorem prefixMonotone_const_true :
-    PrefixMonotone (fun _ : List X => true) := by
-  intro _ _ _ _
-  rfl
-
 /-! ## Definition 2.21: the transcript of a game -/
 
 /-- Lanzenberger **Definition 2.21**: "The transcript of an `(𝒳,𝒴)`-DDG `s^A`
@@ -142,45 +322,206 @@ under `(𝒴,𝒳)`-DDE `e`, denoted by `tr(s^A, e)`, is the pair `(t, A(t'))`,
 where `t = tr(s,e)` is the transcript of `s` under `e` … and `t' ∈ 𝒳*` is `t`
 projected to the inputs."
 
-Stated over the tree's total presentation, at interaction length `n`: `t` is
+Stated over the tree's total presentation at interaction length `n`: `t` is
 `System.DDE.Total.transcript`, and `t'` is `answeredQueries t`, the input
-history the system processed (see the module docstring). -/
+history the system processed (module docstring).  The second component is the
+thesis's `{0,1}` value, i.e. the condition read through `toPred`. -/
 def gameTranscript (g : DDG X Y) (e : DDE.Total Y X) (n : ℕ) :
     List (X × Option Y) × Bool :=
   (DDE.Total.transcript g.1 e n,
-    g.2.1 (answeredQueries (DDE.Total.transcript g.1 e n)))
+    MonotoneCondition.toPred g.2 (answeredQueries (DDE.Total.transcript g.1 e n)))
 
 @[simp] theorem gameTranscript_fst (g : DDG X Y) (e : DDE.Total Y X) (n : ℕ) :
     (gameTranscript g e n).1 = DDE.Total.transcript g.1 e n := rfl
 
-@[simp] theorem gameTranscript_snd (g : DDG X Y) (e : DDE.Total Y X) (n : ℕ) :
-    (gameTranscript g e n).2 =
-      g.2.1 (answeredQueries (DDE.Total.transcript g.1 e n)) := rfl
-
 /-- Lanzenberger **Definition 2.25**'s winning transcripts `𝒯_w`: "the
 transcripts ending with `(·, 1)`" — the Definition 2.21 pair whose second
-component is `1`.  A *winner* wins the game when the condition occurs during
-the interaction (printed p. 17). -/
+component is `1`.  A winner wins the game when the condition occurs during the
+interaction (printed p. 17). -/
 def Won (g : DDG X Y) (e : DDE.Total Y X) (n : ℕ) : Prop :=
-  (gameTranscript g e n).2 = true
+  answeredQueries (DDE.Total.transcript g.1 e n) ∈ g.2.1
 
-theorem won_iff (g : DDG X Y) (e : DDE.Total Y X) (n : ℕ) :
-    Won g e n ↔ g.2.1 (answeredQueries (DDE.Total.transcript g.1 e n)) = true :=
-  Iff.rfl
+theorem won_iff_gameTranscript (g : DDG X Y) (e : DDE.Total Y X) (n : ℕ) :
+    Won g e n ↔ (gameTranscript g e n).2 = true :=
+  MonotoneCondition.toPred_eq_true.symm
 
-/-- Winning is monotone along the interaction: Definition 2.20's monotonicity
-of the condition, transported by `DDE.Total.answeredQueries_prefix`.  This is why
+/-- Winning is monotone along the interaction: Definition 2.20's upward
+closure, transported by `DDE.Total.answeredQueries_prefix`.  This is why
 Definition 2.25's "ends with `(·,1)`" and the `∃`-form "some prefix of the
 interaction satisfies the condition" describe the same event
-(`exists_won_iff`) — the reading the quarry had to choose explicitly
+(`exists_won_iff`) — the reading the quarry had to choose by hand
 (`Q:RandomSystems/GameWinnability.lean:105`). -/
 theorem Won.mono {g : DDG X Y} {e : DDE.Total Y X} {m n : ℕ} (hmn : m ≤ n)
     (h : Won g e m) : Won g e n :=
-  g.2.2 (DDE.Total.answeredQueries_prefix g.1 e hmn) h
+  g.2.upward (DDE.Total.answeredQueries_prefix g.1 e hmn) h
 
 theorem exists_won_iff (g : DDG X Y) (e : DDE.Total Y X) (n : ℕ) :
     (∃ m ≤ n, Won g e m) ↔ Won g e n :=
   ⟨fun ⟨_, hmn, h⟩ => h.mono hmn, fun h => ⟨n, le_rfl, h⟩⟩
+
+@[simp] theorem not_won_bot (s : DDS X Y) (e : DDE.Total Y X) (n : ℕ) :
+    ¬ Won (s, ⊥) e n :=
+  Set.notMem_empty _
+
+@[simp] theorem won_top (s : DDS X Y) (e : DDE.Total Y X) (n : ℕ) :
+    Won (s, ⊤) e n :=
+  trivial
+
+/-! ## The derived bit-output view (Maurer13b Definition 9)
+
+Maurer13b Definition 9 — the form CR18 and the quarry take as primitive
+(`Q:RandomSystems/PDS.lean:3045`) — presents a game as a system at the output
+alphabet `𝒴 × {0,1}` whose bit is monotone.  Here that is a *view* of
+Definition 2.20's pair, with an inverse and both round-trip equalities.
+
+The view is faithful exactly on `DomainSupported` conditions, and the round
+trip shows why: a bit is shown only where the system answers, so a condition
+already satisfied at the empty history — legitimate under Definition 2.20, and
+the lattice's `⊤` — has no bit to be read off.  That is the exact
+expressiveness gap between the pair and the bit form. -/
+
+/-- Maurer13b Definition 9, derived from Definition 2.20's pair: the same
+system, answering `(y, A(l))` where it answered `y`.  Domains are untouched. -/
+def toBitSystem (g : DDG X Y) : DDS X (Y × Bool) :=
+  ⟨fun l => (g.1.1 l).map fun y => (y, MonotoneCondition.toPred g.2 l),
+    ⟨fun h => g.1.2.1 h, fun hpre hne hdom => g.1.2.2 hpre hne hdom⟩⟩
+
+@[simp] theorem dom_toBitSystem (g : DDG X Y) : dom (toBitSystem g) = dom g.1 :=
+  rfl
+
+@[simp] theorem output_toBitSystem (g : DDG X Y) (l : List X)
+    (h : l ∈ dom (toBitSystem g)) :
+    output (toBitSystem g) l h =
+      (output g.1 l h, MonotoneCondition.toPred g.2 l) :=
+  rfl
+
+@[simp] theorem keptPrefix_toBitSystem (g : DDG X Y) :
+    keptPrefix (toBitSystem g) = keptPrefix g.1 :=
+  rfl
+
+/-- Maurer13b Definition 9's monotonicity clause on one deterministic system:
+the bit, once shown as `1`, is shown as `1` on every extension the system
+answers.  (The quarry imposes the same clause support-wise and calls it
+`MonotoneMBO`, `Q:RandomSystems/PDS.lean:3101`.) -/
+def MonotoneBit (t : DDS X (Y × Bool)) : Prop :=
+  ∀ ⦃l₁ l₂ : List X⦄, l₁ <+: l₂ → ∀ (h₁ : l₁ ∈ dom t) (h₂ : l₂ ∈ dom t),
+    (output t l₁ h₁).2 = true → (output t l₂ h₂).2 = true
+
+/-- The bit view of a Definition 2.20 game has a monotone bit: Definition
+2.20's upward closure, read at the histories the system answers. -/
+theorem monotoneBit_toBitSystem (g : DDG X Y) : MonotoneBit (toBitSystem g) := by
+  intro l₁ l₂ hpre _ _ hbit
+  rw [output_toBitSystem, MonotoneCondition.toPred_eq_true] at hbit ⊢
+  exact g.2.upward hpre hbit
+
+/-- The inverse of the bit view: the system is the bit-hiding relabelling
+(`relabel id Prod.fst`, an existing generator of the trivial-converter
+monoid), and the condition is "some answered prefix has already shown the bit
+`1`". -/
+def ofBitSystem (t : DDS X (Y × Bool)) : DDG X Y :=
+  (relabel id Prod.fst t,
+    ⟨{l | ∃ l' : List X, l' <+: l ∧ ∃ h : l' ∈ dom t, (output t l' h).2 = true},
+      by
+        rintro l₁ l₂ hpre ⟨l', hl', hmem⟩
+        exact ⟨l', hl'.trans hpre, hmem⟩⟩)
+
+@[simp] theorem ofBitSystem_fst (t : DDS X (Y × Bool)) :
+    (ofBitSystem t).1 = relabel id Prod.fst t := rfl
+
+@[simp] theorem mem_ofBitSystem_snd (t : DDS X (Y × Bool)) (l : List X) :
+    l ∈ (ofBitSystem t).2.1 ↔
+      ∃ l' : List X, l' <+: l ∧ ∃ h : l' ∈ dom t, (output t l' h).2 = true :=
+  Iff.rfl
+
+@[simp] theorem dom_relabel_fst (t : DDS X (Y × Bool)) :
+    dom (relabel id Prod.fst t) = dom t := by
+  ext l
+  rw [mem_dom_relabel, List.map_id]
+
+theorem raw_relabel_fst (t : DDS X (Y × Bool)) (l : List X) :
+    (relabel id Prod.fst t).1 l = (t.1 l).map Prod.fst := by
+  show (t.1 (l.map id)).map Prod.fst = _
+  rw [List.map_id]
+
+/-- The bit-hiding relabelling undoes the bit view on the nose: this is the
+deterministic half of the forgetting law of §5, through an existing generator
+of the converter monoid rather than a new primitive. -/
+@[simp] theorem relabel_fst_toBitSystem (g : DDG X Y) :
+    relabel id Prod.fst (toBitSystem g) = g.1 := by
+  refine Subtype.ext (funext fun l => ?_)
+  rw [raw_relabel_fst]
+  show ((g.1.1 l).map fun y => (y, MonotoneCondition.toPred g.2 l)).map Prod.fst
+    = g.1.1 l
+  rw [Part.map_map]
+  exact Part.ext' Iff.rfl fun _ _ => rfl
+
+/-- COINAGE, flagged: the condition is *supported by the domain* when every
+history satisfying it has a prefix that the system answers and that already
+satisfies it.  This is exactly the class on which the bit view is faithful
+(`ofBitSystem_toBitSystem`), and `domainSupported_ofBitSystem` shows the
+reconstruction always lands in it. -/
+def DomainSupported (g : DDG X Y) : Prop :=
+  ∀ l ∈ g.2.1, ∃ l' : List X, l' <+: l ∧ l' ∈ dom g.1 ∧ l' ∈ g.2.1
+
+/-- What the bit view cannot express: a domain-supported condition is false at
+the empty history, because the empty history is in no DDS domain (Definition
+2.9).  A Definition 2.20 game whose condition holds at `[]` — `⊤`, say:
+already won before the interaction starts — is outside the image of the bit
+view. -/
+theorem not_mem_nil_of_domainSupported {g : DDG X Y} (h : DomainSupported g) :
+    [] ∉ g.2.1 := by
+  intro hnil
+  obtain ⟨l', hl', hmem, -⟩ := h [] hnil
+  exact empty_not_mem g.1 (by rwa [List.prefix_nil.mp hl'] at hmem)
+
+theorem domainSupported_ofBitSystem (t : DDS X (Y × Bool)) :
+    DomainSupported (ofBitSystem t) := by
+  intro l hl
+  obtain ⟨l', hl', hmem, hbit⟩ := (mem_ofBitSystem_snd t l).mp hl
+  exact ⟨l', hl', by rw [ofBitSystem_fst, dom_relabel_fst]; exact hmem,
+    (mem_ofBitSystem_snd t l').mpr ⟨l', List.prefix_rfl, hmem, hbit⟩⟩
+
+/-- **Round trip, one way**: on a monotone-bit system the view is inverted
+exactly.  Monotonicity is what makes "some answered prefix showed `1`" the bit
+shown here. -/
+theorem toBitSystem_ofBitSystem {t : DDS X (Y × Bool)} (ht : MonotoneBit t) :
+    toBitSystem (ofBitSystem t) = t := by
+  refine Subtype.ext (funext fun l => ?_)
+  show ((ofBitSystem t).1.1 l).map
+      (fun y => (y, MonotoneCondition.toPred (ofBitSystem t).2 l)) = t.1 l
+  rw [ofBitSystem_fst, raw_relabel_fst, Part.map_map]
+  refine Part.ext' Iff.rfl fun _ h₂ => ?_
+  have hmem : l ∈ dom t := h₂
+  have hbit : l ∈ (ofBitSystem t).2.1 ↔ ((t.1 l).get h₂).2 = true :=
+    ⟨fun ⟨_, hl', hl'mem, hl'bit⟩ => ht hl' hl'mem hmem hl'bit,
+      fun h => ⟨l, List.prefix_rfl, hmem, h⟩⟩
+  show ((t.1 l).get h₂ |>.1, MonotoneCondition.toPred (ofBitSystem t).2 l)
+    = (t.1 l).get h₂
+  rcases hcase : ((t.1 l).get h₂).2 with _ | _
+  · have : MonotoneCondition.toPred (ofBitSystem t).2 l = false := by
+      simp only [MonotoneCondition.toPred, decide_eq_false_iff_not]
+      exact fun h => by simp [hbit.mp h] at hcase
+    rw [this, ← hcase]
+  · have : MonotoneCondition.toPred (ofBitSystem t).2 l = true := by
+      rw [MonotoneCondition.toPred_eq_true]
+      exact hbit.mpr hcase
+    rw [this, ← hcase]
+
+/-- **Round trip, the other way**: on a domain-supported condition the pair is
+recovered exactly.  `DomainSupported` is not decoration — without it the
+reconstructed condition is the upward closure of the bits actually shown,
+which differs from the original precisely off the domain. -/
+theorem ofBitSystem_toBitSystem {g : DDG X Y} (hg : DomainSupported g) :
+    ofBitSystem (toBitSystem g) = g := by
+  refine Prod.ext (relabel_fst_toBitSystem g) (Subtype.ext (Set.ext fun l => ?_))
+  rw [mem_ofBitSystem_snd]
+  refine ⟨fun ⟨l', hl', hl'mem, hl'bit⟩ => g.2.upward hl' ?_, fun h => ?_⟩
+  · rw [output_toBitSystem, MonotoneCondition.toPred_eq_true] at hl'bit
+    exact hl'bit
+  · obtain ⟨l', hl', hl'mem, hl'bit⟩ := hg l h
+    refine ⟨l', hl', hl'mem, ?_⟩
+    rw [output_toBitSystem, MonotoneCondition.toPred_eq_true]
+    exact hl'bit
 
 end
 
@@ -210,9 +551,8 @@ abbrev PDG (X : Type u) (Y : Type v) : Type (max u v) :=
 namespace PDG
 
 /-- The Definition 2.21 observable at the law level: the distribution of the
-game transcript `tr(S^A, e)` after `n` environment moves.  Definition 2.22's
-equivalence of games, and Definition 2.25's `ν`, are functions of this law
-alone (`winningMass_eq_mass_gameTrLaw`). -/
+game transcript `tr(S^A, e)` after `n` environment moves.  Definition 2.25's
+`ν` is a function of this law alone (`winningMass_eq_mass_gameTrLaw`). -/
 def gameTrLaw (e : System.DDE.Total Y X) (n : ℕ) (G : PDG X Y) :
     Distribution (List (X × Option Y) × Bool) :=
   Distribution.fTransform (fun g => System.gameTranscript g e n) G
@@ -228,7 +568,7 @@ theorem winningMass_eq_mass_gameTrLaw (e : System.DDE.Total Y X) (n : ℕ)
     (G : PDG X Y) :
     winningMass e n G = (gameTrLaw e n G).mass fun t => t.2 = true := by
   rw [gameTrLaw, Distribution.mass_fTransform]
-  rfl
+  exact Distribution.mass_congr _ fun g => System.won_iff_gameTranscript g e n
 
 /-- Lanzenberger **Definition 2.25**: "For a random `(𝒳,𝒴)`-game `S^A`, we
 define the supremum winning probability of `S^A` by
@@ -262,8 +602,8 @@ theorem winningMass_le_weight {G : PDG X Y} (hG : G.NonNeg)
 /-- The winning masses are bounded above by the weight, so Definition 2.25's
 supremum is a genuine least upper bound.  Non-negativity is the hypothesis
 that makes it one: on the signed carrier a supremum of masses need not be
-bounded, which is the same phenomenon the thesis's `ω` guards against with its
-own `NonNeg` conjunct. -/
+bounded, the same phenomenon the thesis's `ω` guards against with its own
+`NonNeg` conjunct. -/
 theorem bddAbove_range_winningMass {G : PDG X Y} (hG : G.NonNeg) :
     BddAbove (Set.range fun p : System.DDE.Total Y X × ℕ =>
       winningMass p.1 p.2 G) := by
@@ -289,6 +629,42 @@ theorem supWinProb_nonneg {G : PDG X Y} (hG : G.NonNeg) : 0 ≤ supWinProb G :=
 theorem supWinProb_le_weight {G : PDG X Y} (hG : G.NonNeg) :
     supWinProb G ≤ G.weight :=
   supWinProb_le_of_forall fun e n => winningMass_le_weight hG e n
+
+/-! ## The bit view at the law level -/
+
+/-- The Maurer13b Definition 9 view of a probabilistic game: the pushforward
+of the law along `toBitSystem`. -/
+def toBitLaw (G : PDG X Y) : PDS X (Y × Bool) :=
+  Distribution.fTransform System.toBitSystem G
+
+/-- The inverse view at the law level. -/
+def ofBitLaw (T : PDS X (Y × Bool)) : PDG X Y :=
+  Distribution.fTransform System.ofBitSystem T
+
+/-- The bit view of a game law lands in the monotone-bit class. -/
+theorem monotoneBit_of_mem_support_toBitLaw (G : PDG X Y)
+    {t : System.DDS X (Y × Bool)} (ht : t ∈ (toBitLaw G).support) :
+    System.MonotoneBit t := by
+  obtain ⟨g, -, rfl⟩ := Distribution.mem_support_fTransform _ G ht
+  exact System.monotoneBit_toBitSystem g
+
+/-- **Round trip at the law level**, one way. -/
+theorem ofBitLaw_toBitLaw {G : PDG X Y}
+    (hG : ∀ g ∈ G.support, System.DomainSupported g) :
+    ofBitLaw (toBitLaw G) = G := by
+  rw [ofBitLaw, toBitLaw, Distribution.fTransform_fTransform]
+  refine (Distribution.fTransform_congr (g := id) G ?_).trans
+    (Distribution.fTransform_id G)
+  exact fun g hg => System.ofBitSystem_toBitSystem (hG g hg)
+
+/-- **Round trip at the law level**, the other way. -/
+theorem toBitLaw_ofBitLaw {T : PDS X (Y × Bool)}
+    (hT : ∀ t ∈ T.support, System.MonotoneBit t) :
+    toBitLaw (ofBitLaw T) = T := by
+  rw [toBitLaw, ofBitLaw, Distribution.fTransform_fTransform]
+  refine (Distribution.fTransform_congr (g := id) T ?_).trans
+    (Distribution.fTransform_id T)
+  exact fun t ht => System.toBitSystem_ofBitSystem (hT t ht)
 
 end PDG
 
