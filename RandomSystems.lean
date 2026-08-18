@@ -38,6 +38,8 @@ import RandomSystems.Technique.Completeness
 import RandomSystems.Technique.HCoefficient
 import RandomSystems.System.RandomObjects
 import RandomSystems.Interface.Interface
+import RandomSystems.System.ProbabilisticConverter
+import RandomSystems.Game.GameRelaxation
 
 /-!
 # Random systems
