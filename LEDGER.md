@@ -1765,7 +1765,7 @@ preprint**, self-numbered 1–23 — *not* the LNCS 2332 pp. 110–132 paginatio
 | the object | `F^𝒜` (system + MES) | `(𝒳,𝒴×{0,1})`-system | `(𝒳,𝒴×{0,1})`-system | `(X, Y×{0,1})`-DDS | **pair** `s^A = (s, A)` |
 | stripped | — | `S⁻` (Def 9(i)) | `S⁻` (Def 12, p. 3153) | `S⁻` (**Def 4.18, p. 107**) | — |
 | masked | — | `S⊣` (Def 9(ii)) | — | — | — |
-| "same until won" | `F^𝒜 ≡ G^ℬ` (Def 5, p. 7) — *stronger* | **restricted equivalence** `S⊣ ≡ T⊣` (Def 10, p. 138) | `≡ᵍ` (Def 11, p. 3153) | **pre-winning behaviour** (Def 4.15) + `≡ᵍ` (**Def 4.16, p. 105**) | game equivalence (Def 2.22) |
+| "same until won" | `F^𝒜 ≡ G^ℬ` (Def 5, p. 7) — *stronger* | **restricted equivalence** `S⊣ ≡ T⊣` (Def 10, p. 138) | `≡ᵍ` (Def 11, p. 3153) | **pre-winning behaviour** (Def 4.15) + `≡ᵍ` (**Def 4.16, p. 105**) | game equivalence (Def 2.22) — STRONGER than Def 11: full transcript law (one way: `equivalentAsGames_of_gameEquivalent`; strictness: T3 audit 3.3 witness) |
 | **CE** | `F\|𝒜 ≡ G` (**Def 6, p. 8**), one-step `p_{Yᵢ\|Xⁱ Y^{i−1} Aᵢ}` | — | `S\|𝒜 ≡ T` (**Def 13, p. 3153**), joint `p_{Yⁱ\|Xⁱ, Aᵢ=0}` | `S ⊫ T` (**Def 4.19, p. 108**), joint `p_{Yⁱ\|Xⁱ, Aᵢ=0}`, eq. (4.38) product form | — |
 | winning prob | `ν` adaptive, `μ` non-adaptive (Def 11, p. 11) | `ν_k^D`, `ν_k^𝒟`, `ν_k^NA` (Def 11, p. 139) | `Γ_q^W`, `Γ^𝒲` (Def 10, p. 3152) | `Ḡ(W)` eq. (4.37); **`Γ(G) := sup_W Ḡ(W)`** (Def 4.17, p. 106) | `ν` (Def 2.25), `ω` (Def 2.36) |
 | **how blindness is rendered** | a *separate* quantity `μ` = max over `x^k` | superscript `NA` on the class | the **operator `⟦DT⟧`** (p. 3152): D runs against `T`, its queries echoed, replies ignored | a **BLOCKING CONVERTER `b`** (**Def 4.20, p. 109**): `Γ(bŜ)`; plus `T̃` (Def 4.21) | Rem 2.23: the environment *never sees* the bit — blind **by definition** |
@@ -1885,12 +1885,12 @@ constructors, and two paper-facing endpoints, with real applications hanging off
 |---|---|---|---|---|---|---|
 | T1.1 | MBO / monotone condition as a first-class object | Maurer02 §4; Maurer13b Def 9; thesis Def 2.20 (input-only MC) | `Q:PDS.lean:3045` `IsMBO`, `:3060` `IsGame`, `:3066` `DDG`, `:3101` `MonotoneMBO`; delta `carrier` | `AC:RandomSystems/Game/MonotoneCondition.lean` is a **10-line placeholder** | **MODEL-NEW** — needs the carrier decision first (T3 "carrier shape" fork) | S |
 | T1.2 | `S⁻` (strip the MBO) | CR18 Def 4.18 (CR18-fallback: check whether a primary states it) | `Q:SystemMBO.lean:29,45` (50 lines total); delta `carrier` | none | **TRANSPLANT** — trivial once T1.1 lands; the `stripMBO_dom` definitional-domain trick transplants verbatim | S |
-| T1.3 | conditional equivalence `Ŝ \|≡ T` | Maurer02 Def 6; Maurer13b Def 13; CR18 Def 4.19 eq. (4.38) | `Q:CondEquiv.lean:118`; delta `carrier` | none | **MODEL-NEW** (definition) — but the *cross-multiplied division-free form* is the design and it transplants as-is | S |
+| T1.3 | conditional equivalence `Ŝ \|≡ T` | Maurer02 Def 6; Maurer13b Def 13; CR18 Def 4.19 eq. (4.38) | `Q:CondEquiv.lean:118`; delta `carrier` | none | CLOSED (T3 b82f449: `PDG.CondEquiv` ConditionalEquivalence.lean:346 = Maurer13b Def 13's product form, both normalizers cleared, guard-free; guarded conditional form `condEquiv_iff_condProb` :690 via T0. AUDIT NOTE 1.b′: on partial atoms the conditioning event reads the refusal-deleted `answeredQueries` history — Def 13 THROUGH the R2 carrier, disclosed here). Was: **MODEL-NEW** (definition) — but the *cross-multiplied division-free form* is the design and it transplants as-is | S |
 | T1.4 | CE is preserved by query/domain filtering | not in the papers (formalization-forced) | `Q:CondEquiv.lean:203`, `:237` (+4 mass lemmas); delta `carrier` | AC has `filterQueries` at `AC:RandomSystems/System/DiscreteSystem.lean:403` | **TRANSPLANT** (REUSE-ARCH: the proofs are mass-level rewrites) | S |
 | T1.5 | seed-indexed MBO constructor kit | none (formalization-forced) | `Q:CondEquiv.lean:256-347`; delta `carrier` | AC has `historyEvaluator` at `DiscreteSystem.lean:157` | **TRANSPLANT** | M |
 | T1.6 | `gameEnhance` / eq. (4.39): `Ŝ \|≡ T ⟹ Ŝ ≡ᵍ T̂` with `T̂⁻ = T` | CR18 eq. (4.39) | `Q:Theorem417.lean:33` + `Q:GameOf.lean:1497`; delta `carrier` | none | **TRANSPLANT** (REUSE-ARCH — the independent-product construction is the whole proof) | M |
-| T1.7 | **CE ⟹ indistinguishability, adaptive** `Adv ≤ Γ(Ŝ)` | Maurer02 Thm 1; CR18 Thm 4.17 | `Q:Theorem417.lean:764` (and `:724`); delta `both` | none; target distance `Adv⊥` exists (`Environment.lean:751`) | **TRANSPLANT** — restate on `Adv⊥`; the hypothesis bundle re-derives (see C2/C3) | L |
-| T1.8 | **CE ⟹ indistinguishability, blind** `Δ ≤ Γ(bŜ)` (the headline) | **Maurer13b Thm 3, printed p. 3154** (via `⟦DT⟧`); **CR18 Thm 4.17, printed p. 110** (via the blocking converter `b`, Def 4.20 p. 109) — both VERIFIED, both NON-ADAPTIVE RHS unconditionally | `Q:GameOf.lean:1472`, `:1431`; delta `both` | none | **TRANSPLANT** — the strictly stronger endpoint; needs T3.2.  **See the `b`-as-converter note below: AC can state this paper-faithfully where the reference repository could not** | PARTIAL (T1: gameTranscript/gameTrLaw/supWinProb landed; Γ/Γᵇ deliberately NOT built — T3.9, hierarchy prefers ν stated once) |
+| T1.7 | **CE ⟹ indistinguishability, adaptive** `Adv ≤ Γ(Ŝ)` | Maurer02 Thm 1; CR18 Thm 4.17 | `Q:Theorem417.lean:764` (and `:724`); delta `both` | none; target distance `Adv⊥` exists (`Environment.lean:751`) | CLOSED (T3 b82f449: `advFullyDefined_forget_le_supWinProb_of_condEquiv` :636 + adjoin/GamesFor/ω forms; audited bundle NonNeg×2 + equal weight only — quarry nodes T1.4/T1.6/monotone-bridge collapse on this carrier, audit 2.3 confirms no silent weakening). Was: **TRANSPLANT** — restate on `Adv⊥`; the hypothesis bundle re-derives (see C2/C3) | L |
+| T1.8 | **CE ⟹ indistinguishability, blind** `Δ ≤ Γ(bŜ)` (the headline) | **Maurer13b Thm 3, printed p. 3154** (via `⟦DT⟧`); **CR18 Thm 4.17, printed p. 110** (via the blocking converter `b`, Def 4.20 p. 109) — both VERIFIED, both NON-ADAPTIVE RHS unconditionally | `Q:GameOf.lean:1472`, `:1431`; delta `both` | none | **TRANSPLANT** — the strictly stronger endpoint; needs T3.2.  **See the `b`-as-converter note below: AC can state this paper-faithfully where the reference repository could not** | PARTIAL — adaptive half CLOSED at T3 (:636); BLIND half OPEN, corrected record (T3 audit §5, supersedes the implementing report's obstruction text): (1) `Γ^NA` IS statable today — `supWinProb` restricted to the landed `NonAdaptive` index subset, no forbidden object; (2) the `Γ(b•Ŝ)` rendering is governed by the standing DESIGN NOTE below (T3.9 block) with its two caveats still open (pin-3 reading; `b` is reply-side vs `blockSet` query-side); (3) the `T̂` proof route needs a COMMON-DOMAIN clause (`HasDomain`, already carried by the landed ω endpoint :661) — NOT totality, kernel receipt `won_playQueries_congr_of_dom_eq` (audit check3); (4) the genuinely new carrier question (audit §5.3): on the ⊥-total carrier blocking replies does NOT blind — refusal is observable, the environment reads the domain in real time — so the two renderings of blind may differ; THAT is the fork for Marc, not (1)-(3). |
 | T1.7b | Maurer02's adaptive route + its non-adaptive side condition | **Maurer02 Thm 1, preprint p. 12** (adaptive `ν`); **Thm 2, p. 13** (`ν = μ` under `p^F_{Aᵢ\|Xⁱ Y^{i−1} A_{i−1}} = p^F_{Aᵢ\|Xⁱ A_{i−1}}`) | not formalized in the reference repository | none | **REF-ONLY** — record as the historical route; the CR18/Maurer13b blinding argument supersedes it and needs no side condition | — |
 | T1.9 | conditional-probability toolkit the CE proofs stand on | MPR07 eq. (1) chain rule | `Q:RandomSystems/DistCond.lean` (592 lines): `condProb` `:88`, multiplication rule `:134`, Bayes `:145`/`:155`, total probability `:168-192`, chain rules `:213`/`:244`/`:287`; delta `none` (pure `Dist`) | `AC:Probability/Distribution.lean:476` `cond` (Part-valued), `condPMF`, a chain rule at `:1138` | **PARTIAL / TRANSPLANT** — AC has the `Part`-valued `cond` but **not** the total `condProb` nor the hypothesis-free multiplication/chain rules; delta `none` makes this the cheapest, highest-leverage row | CLOSED (T0 cee67d7: Conditional.lean — condProb :106, mult :169/:178, Bayes :190/:200, cross-mult :216, total prob :266-290, chain rules :312/:343/:386; independence half out-of-row, not transplanted) |
 | T1.10 | CE application kits (CBC-MAC, SoP, switching, history-condition) | — | `Q:CBCMAC.lean:932`, `Q:SumOfPermutations.lean:196`, `Q:SwitchingLemma.lean:563`, `Q:HistoryConditionC.lean:211` | none | **BLOCKED-ON** T1.7/T1.8 + the converter layer | L (out of first scope) |
@@ -2776,12 +2776,26 @@ gates, adversarial audit before deltas apply):
      alternative proof (Thm 2.31 + one run-agreement induction); the plan's
      word 'architecture' for GameWinnability.lean:778 refers to that
      reduction, per its own header :58-77.
-  T3 conditional equivalence: definition + the CE bound against Adv⊥.
-     GATE RESOLVED 2026-08-18 (PHI-SPEC CE-sources line): no admission
-     needed — charter sources + trap list govern.  Contract = R11(a)+(b):
-     one new relation over the landed observables; the reference repository's proven
-     CondEquiv/Theorem417 lemma DAG transported along the CE dictionary
-     (RECAST POLICY, CE rows).  DISPATCHABLE.
+  T3 CLOSED (b82f449 + 8283b57; adversarially audited, /private/tmp/
+     t3-audit/AUDIT.md): conditional equivalence.  Definition = Maurer13b
+     Def 13's OWN printed division-free product form (p. 3153) — audit:
+     bilinear, hence faithful at every weight; Def 11 `EquivalentAsGames`
+     landed alongside (currently quantifies ALL query lists incl. [], so
+     STRICTLY-STRONGER-than-Def-11 pending the follow-up below), buying
+     Maurer13b Lemma 2 (fundamental lemma of game playing).  Endpoint =
+     Maurer02 Thm 1(i) adaptive ν in four forms (forget/adjoin/GamesFor/
+     ω-via-2.37); audited hypothesis bundle = NonNeg×2 + equal weight —
+     no query bound, no Fintype, no totality (both suprema over the
+     IDENTICAL index set, kernel-confirmed).  Non-vacuity: audit built a
+     kernel-checked mix-family witness (CondEquiv G T, forget G ≠ T,
+     0 < ν < ‖G‖, bound tight on the family) — CR18 p.108's "T is
+     actually S⁻" is WRONG, refuted by Maurer13b Examples 7/8 (p. 3153).
+     Blind RHS not delivered — see the corrected T1.8 row (the report's
+     obstruction text was REFUTED in part; the DESIGN NOTE at the T3.9
+     block remains the standing record).  39 decls axiom-clean, home
+     Technique/ConditionalEquivalence.lean; nothing under System/ or
+     Converter/.  Follow-up punch list dispatched: Def-11 [] question,
+     interior-witness receipts landed in-tree, two docstring slips.
   T4 MPR07 Lemma 5 as constructor completeness (on the Behaviour
      quotient; MaPiRe07.pdf p. 140, visual).
   T5 H layer-3: the η·σ factorization + the environment-uniform
@@ -2837,7 +2851,13 @@ quantified over query lists = Maurer13b Def 13's fixed-`Xⁱ`; `ν` =
 endpoint `CondEquiv G T → Adv⊥(forget G, T) ≤ ofReal (supWinProb G)` with
 the coupling core generalizing T2's `statDist_fTransform_le_mass_of_eq_off`
 route via T0's chain rules; everything on the `Adv⊥` ⊥-total carrier (F-2
-— CR18 §4.10's no-refusal simplification is rejected).  R11(b) minimal
+— CR18 §4.10's no-refusal simplification is rejected).  ATTRIBUTION (T3 outcome, audited): the
+division-free identity is Maurer13b Def 13's OWN printed form (p. 3153)
+— attribute there, CR18 eq. (4.38) is provenance only.  SOURCE DEFECT
+(audit 2.2, kernel-backed): CR18 printed p. 108 asserts "T is actually
+the system S⁻", which would trivialize the endpoint — CR18 is WRONG;
+Maurer13b Examples 7/8 (p. 3153) are counterexamples; never inherit that
+sentence.  R11(b) minimal
 migration: the reference repository's PROVEN `CondEquiv.lean`/`Theorem417.lean` lemma
 DAG is the route — transport it along this dictionary, re-elaborating
 each node on our observables; change only what the recast forces; do NOT

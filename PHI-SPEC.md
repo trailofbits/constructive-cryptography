@@ -117,12 +117,14 @@ micro-questions: see LEDGER.md.
   proof-side twin of parallel modeling: two developments of one theory.
   (No blind transcription either — carriers differ, so every node is
   re-elaborated on our objects; "adapt" means the DAG transports, not the
-  text.)  Worked instance: CE (T3) = ONE new relation on the not-won
-  slice of `gameTrLaw` vs `trLawFullyDefined`, division-free via T0's
-  cross-multiplied lemma, with the reference repository's proven
-  CondEquiv/Theorem417 lemma DAG transported along the dictionary;
-  everything else in its theory is already landed (see LEDGER CR18 RECAST
-  POLICY, CE rows).
+  text.)  Worked instance, LANDED at T3 (b82f449, adversarially audited):
+  CE = TWO new Props over landed objects (`CondEquiv` and
+  `EquivalentAsGames` — the audit corrected the predicted "one relation")
+  on the not-won restriction of `gameTrLaw` vs `trLawFullyDefined`, in
+  Maurer13b Def 13's OWN printed division-free product form (p. 3153);
+  the reference repository's proven DAG transported with three nodes
+  collapsing on this carrier (monotone bridge, totality, gameEnhance);
+  see LEDGER CR18 RECAST POLICY CE rows + the audited T1.8 record.
 - CE sources (RESOLVED 2026-08-18, Marc: "already accounted for in the
   CR18 migration"): NO separate admission — the T3 charter (LEDGER
   SOURCE-IDENTITY CORRECTION) already assigns the presentations: thesis
