@@ -2825,8 +2825,41 @@ gates, adversarial audit before deltas apply):
      Marc's word.
   T4 MPR07 Lemma 5 as constructor completeness (on the Behaviour
      quotient; MaPiRe07.pdf p. 140, visual).
-  T5 H layer-3: the η·σ factorization + the environment-uniform
-     corollary; then the counting layer for applications.
+  T5 CLOSED (d6886f1 + audit fix-up eeb0550; adversarially audited,
+     /private/tmp/t5-audit/AUDIT.md: the Lean SURVIVED every probe —
+     exactness, η/σ separation, slot order; two high refutations in the
+     SOURCING layer + one contentless receipt, all repaired at eeb0550).
+     RandomSystems/Technique/HCoefficient.lean, 25 declarations (21 thms +
+     4 defs), axiom-clean, no sorry.  Content: the factorization
+     `tr(S,e,n)(t) = η(e,n,t)·σ(S,t)` as an EXACT equality (both directions
+     of transcript_eq_iff), `h_coefficient_theorem` (σ-ratio on good +
+     ideal bad mass ⇒ Adv⊥ ≤ ↑(δb+ε), uniform over environments AND
+     lengths — adaptivity free because η cancels), length-indexed
+     switching receipt at ε = q(q−1)/2N with an in-code non-triviality
+     check (the audit's D6′ repair; the constant-σ trap is recorded
+     in-code as bad_nil_of_transcriptSystemFactor_const).
+     SOURCE (corrected by the audit): Lanzenberger thesis App. A.1,
+     printed pp. 87–88 — states AND PROVES the split — is PRIMARY; CR18
+     Lemma 3.2 (printed p. 70, stated without proof) is secondary
+     provenance + the η/σ naming; NO R8 fallback exception claimed.
+     The reference repository DOES have the deterministic variable-length
+     analogue (RandomSystem.lean:634/688/750, LanzenbergerChain.lean:160,
+     Lemma415.lean:113) — the module header carries a 13-row R11(b)
+     migration map; the one real delta: their round-indexed vs our
+     prefix-indexed quantifier (same content, matched to the landed snoc
+     recurrence).  SURVEY CORRECTION: the survey's q-indexed transcript
+     prefix type (its row "T4.4", listed MODEL-NEW) is NOT needed on this
+     carrier — deterministic environments make η an indicator;
+     System/Transcript.lean stays an empty reserved home.
+     DEV-1 (pending, joint with T4 closure): layer-2's hTechnique_ratio
+     carries a self-inflicted [Fintype A] (T0 statement-shape artifact) —
+     T5 proved the instance-free form in its own file
+     (statDist_le_probBad_add_of_ratio_on_good); T4 independently landed a
+     DIFFERENT Fintype-free companion (statDist_eq_weight_sub_sum_min_of_
+     support_subset).  Coordinator consolidation owed: move both into
+     Probability/StatisticalDistance.lean under namespace Probability,
+     KEEP hTechnique_ratio as a one-line corollary (two in-file callers —
+     never delete), re-point both legs.
   T6 CLOSED (9806d4e/37df52b/ee13035 + audit fix-up d6ff8e2; adversarially
      audited, /private/tmp/t6-audit/AUDIT.md: mathematics SURVIVED in full —
      Boneh–Shoup constants, MauRen16 eq. (11), Pinsker's ½ — five
