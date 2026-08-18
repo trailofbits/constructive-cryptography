@@ -34,6 +34,7 @@ import RandomSystems.System.Winnability
 import RandomSystems.Converter.ConverterImpl
 import RandomSystems.Converter.Sigma
 import RandomSystems.Technique.ConditionalEquivalence
+import RandomSystems.Technique.HCoefficient
 
 /-!
 # Random systems
