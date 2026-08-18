@@ -33,6 +33,7 @@ import RandomSystems.System.Game
 import RandomSystems.System.Winnability
 import RandomSystems.Converter.ConverterImpl
 import RandomSystems.Converter.Sigma
+import RandomSystems.Technique.ConditionalEquivalence
 
 /-!
 # Random systems
