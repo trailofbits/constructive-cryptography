@@ -917,6 +917,67 @@ theorem exists_unwinnable_representative [Fintype X] {G : PDG X Y}
 
 end PDG
 
+/-! ### The empty-history clause is necessary, not defensive
+
+The witness is the smallest one: the system that answers nothing, carrying the
+condition `⊤` — already satisfied at the empty history, which Definition 2.20
+admits.  Every interaction with it is *won* (the condition holds at the history
+it processed, which is `[]`), and no interaction is *winnable* in Definition
+2.35's sense (`dom` is empty, and `[] ∉ dom s` on this carrier).  So `ν = 1`
+while `ω = 0`, and Theorem 2.37 fails without the clause it carries. -/
+
+namespace PDG
+
+/-- The already-won game over the system that answers nothing is won in every
+interaction. -/
+theorem supWinProb_single_emptySystem_top :
+    supWinProb (Finsupp.single (System.emptySystem,
+      (⊤ : System.MonotoneCondition X)) (1 : ℝ) : PDG X Y) = 1 := by
+  have hmass : ∀ (e : System.DDE.Total Y X) (n : ℕ),
+      winningMass e n (Finsupp.single (System.emptySystem,
+        (⊤ : System.MonotoneCondition X)) (1 : ℝ) : PDG X Y) = 1 := by
+    intro e n
+    rw [winningMass, Distribution.mass, Finsupp.sum_single_index (by simp)]
+    simp [System.Won]
+  calc supWinProb (Finsupp.single (System.emptySystem,
+        (⊤ : System.MonotoneCondition X)) (1 : ℝ) : PDG X Y)
+      = ⨆ _ : System.DDE.Total Y X × ℕ, (1 : ℝ) := iSup_congr fun p => hmass p.1 p.2
+    _ = 1 := ciSup_const
+
+/-- … and it is not winnable at all. -/
+theorem infWinnability_single_emptySystem_top :
+    infWinnability (Finsupp.single (System.emptySystem,
+      (⊤ : System.MonotoneCondition X)) (1 : ℝ) : PDG X Y) = 0 := by
+  have hnn : Distribution.NonNeg (Finsupp.single (System.emptySystem,
+      (⊤ : System.MonotoneCondition X)) (1 : ℝ) : PDG X Y) := by
+    intro g
+    rw [Finsupp.single_apply]
+    split <;> norm_num
+  refine le_antisymm ?_ (infWinnability_nonneg hnn)
+  refine (infWinnability_le_mass_winnable hnn (gameEquivalent_refl _)).trans
+    (le_of_eq ?_)
+  rw [Distribution.mass, Finsupp.sum_single_index (by simp)]
+  refine if_neg ?_
+  rintro ⟨l, hl, -⟩
+  rw [System.dom_emptySystem] at hl
+  exact hl
+
+/-- **Theorem 2.37 needs its empty-history clause.**  Definition 2.20 admits a
+condition satisfied before the interaction starts; Definition 2.35 does not
+count it as winnable, because `[] ∉ dom s` (Definition 2.9 as rendered here).
+The two numbers then differ by the whole weight.  This is a *carrier* delta, not
+a thesis error: it is the same `[] ∉ dom` convention that makes `Game.lean`'s
+`DomainSupported` the class on which the bit view is faithful. -/
+theorem supWinProb_ne_infWinnability_single_emptySystem_top :
+    supWinProb (Finsupp.single (System.emptySystem,
+        (⊤ : System.MonotoneCondition X)) (1 : ℝ) : PDG X Y)
+      ≠ infWinnability (Finsupp.single (System.emptySystem,
+        (⊤ : System.MonotoneCondition X)) (1 : ℝ) : PDG X Y) := by
+  rw [supWinProb_single_emptySystem_top, infWinnability_single_emptySystem_top]
+  norm_num
+
+end PDG
+
 /-! ## The quotient reading: Remark 2.24's random game
 
 Lanzenberger **Remark 2.24** (printed p. 17) reads a random game as an
