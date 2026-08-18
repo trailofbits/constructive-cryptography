@@ -3547,7 +3547,83 @@ convention: `Specification/`, `Metric/`, `Algebra/` resolve under
 `AbstractCryptography/`; `Multiparty/` under `ConstructiveCryptography/`;
 `System/`, `Converter/` under `RandomSystems/`.
 
-Revised sizes: **XS 4 · S 7 · S–M 5 · M 3 · L 4** (23 rows) — the register's
+Revised sizes: **XS 4 · S 7 · S–M 5 · M 3 · L 4** (23 rows)
+
+## TIER-0 CLOSURE (2026-08-19; consolidated adversarial audit /private/tmp/
+tier0-audit/AUDIT.md: NOTHING REFUTED, 48 independent axiom checks; fix-up
+0fa139c applied its prose corrections; lane commits 86e5973/fcb9b55/3fb6cdf/
+e66c0b1/f5dd373/1294252)
+
+Nine rows CLOSED, each with the audit's amendment:
+- **S-02/S-03 LANDED** (1294252, one commit): realization equations
+  `apply_toDDC_cascadeFn`/`apply_toDDC_combineFn` + Φ lifts `cascadeLaw`/
+  `combineLaw` + face lemmas.  Carrier-delta finding: this tree has no
+  `CausalApply`/`ofStep` — realization runs on the ν-level `apply_toDDC`
+  (stale pointers swept, eight sites).  Five reference nodes collapse (proof
+  engineering, NOT a carrier delta — `Combine.pair` is byte-identical).
+  **B10 stays live**: no metric claim may consume cascade/combine before an
+  A6-style migration.
+- **S-05 LANDED** (86e5973): `urf`/`urp`/`unif`/`beacon` + HasDomain/
+  isProbDist receipts + the exact URP consistency mass.  TWO disclosed
+  presentation deltas (beacon = n-round slice, the printed Bₙ indexes
+  domain bit-width; unif drops Ex 3.3's one-query restriction, recovered as
+  the `filterQueries 1` slice).
+- **S-06 LANDED** (3fb6cdf): `PDC` (CR18's own name, Def 3.17 p. 64 visual),
+  `attachLawAt`, NEW submonoid `converterMonoidAtProb` + own
+  IsNonexpandingSMul instance (mixture lemma adapted, one forced
+  `fTransform_swap_prod` delta), containment of the deterministic monoid.
+  B2 held — `converterMonoidAt` byte-identical, pin green.
+- **S-09a LANDED** (e66c0b1, converter half only): `costBounded` + monotone
+  chains + MR16 fn. 6 closure-submonoid; γ never specialized.  Performance
+  half stays folded into S-04.
+- **S-14 LANDED** (86e5973/fcb9b55): CR18 Def 5.7's two clauses at `parF`,
+  support-restricted form = the usable primitive (sole consumer:
+  GameRelaxation), whole-ball form = the printed shape (its `hball`
+  necessity believed-not-checked).  B6 held (no IsNonexpandingPar Phi).
+- **S-15 LANDED** (86e5973): `InterfaceRoles`/`admittedConverters`/`PhiAt`
+  in the reserved Interface/ home (kept — no relocation).  REGISTER
+  CORRECTION (kernel-sharpened by the audit): the assessment row's
+  "admissible Σ = converterMonoidWithin (iF)ᶜ" does not merely fail to
+  compose with Lemma 3 — the required disjointness FORCES
+  `adversaryInterface = ∅`; the composable endpoint takes its protocol
+  from `converterMonoidWithin partyInterface`, as the file does.
+- **S-17 LANDED** (3fb6cdf): `gameRelaxation` via the landed
+  `EquivalentAsGames` (no new object), ⊆-only into the ε-ball at ν[·]
+  (fundamental lemma as engine), Lemma 5.3-composition, Def 5.6/5.7
+  compatibility descended (S-14 clauses carried unweakened).  Def 5.10
+  reading disclosed as a choice (under it printed Lemma 5.2 is a
+  definitional unfolding); cheap to re-rule while nothing consumes it.
+- **S-19 LANDED with a ROUTE CORRECTION** (e66c0b1 + f5dd373):
+  `ParameterizedConstruction` (eq. (5.6), single quantified π, coherence
+  collapse) + `FilterPhi` ([q] at Φ, commuting family, absorption at the
+  same length, `filterQueries_mem_nonexpandingConverters` — discharges the
+  A8 receipt).  The assessment's `converterMonoidAt`-membership route does
+  NOT close for q ≥ 1: argued for the attachment generator family
+  (attachEngineFully_refusal_first — refusal inheritance would be the
+  refuted relay); the other three generator families and closure-level
+  status are OPEN, recorded in-code.  CONSEQUENCE (audit): interfaces
+  typed at ↥converterMonoidAt (converterMonoidWithin/Φ_E/Constructs/Par —
+  incl. S-15's role algebra) do NOT accept the filter; nonexpansion alone
+  restores only the ε-calculus.
+
+FLAG **F-8** (escalation, folded into the standing blind-form call to
+Marc): CR18 Lemma 5.3 AS PRINTED constructs its MBO "independently of T"
+— the blinded product game, an object R11(a) routes to a fork, not a
+build.  The landed ⊆-containment is the honest replacement pending the
+ruling.
+
+NAMING TRIAGE (all KEEP + flagged; Marc's call with the `fiber` rename):
+`refuseAfter`, `InterfaceRoles`, `admittedConverters` (over-promises —
+audit suggests `attachableConverters`), `PhiAt`, `cascadeFn`, `combineFn`.
+
+DEBTS: (i) `Rendering/CCWidget.lean` dispatch table keys ~16 names that
+exist only in the reference repository — declare it a reference-tree
+renderer or re-point (coordinator decision pending); (ii) the root
+`RandomSystems.olean` target goes stale after green builds (scratch files
+`import RandomSystems` see old constants) — build-target quirk worth a
+lakefile look.
+
+ — the register's
 build guesses were 7 S/S–M · 11 M · 4 L.  `⚠Bn` = breakage row below.
 
 ## Per-item: really missing / route on existing infra
