@@ -253,6 +253,12 @@ def infWinnability (G : PDG X Y) : ℝ :=
 /-- Lanzenberger Definition 2.36 notation. -/
 scoped notation "ω(" G ")" => infWinnability G
 
+/-- Definition 2.36's `ω` read at the metric's carrier, the companion of
+`ν[·]` (`Game.lean`): `Adv⊥` is `ℝ≥0∞`-valued (Ruling R4) and `ω` is a real, so
+a bound against Definition 2.36 is a bound against
+`ENNReal.ofReal (ω(G))`.  Display only; the underlying `ω` is unchanged. -/
+scoped notation "ω[" G "]" => ENNReal.ofReal (RandomSystems.PDG.infWinnability G)
+
 /-- The `ω`-set is bounded below by `0`: every representative is honest, so its
 winnable mass is non-negative. -/
 theorem bddBelow_image_mass_winnable (G : PDG X Y) :
@@ -715,7 +721,7 @@ theorem advFullyDefined_toBitLaw_le_supWinProb {G : PDG X Y} (hG : G.NonNeg) :
     PDS.advFullyDefined (toBitLaw G)
         (toBitLaw (PDS.adjoin (PDG.forget G)
           fun _ => (⊥ : System.MonotoneCondition X)).1)
-      ≤ ENNReal.ofReal (supWinProb G) := by
+      ≤ ν[G] := by
   refine iSup_le fun e => iSup_le fun n => ENNReal.ofReal_le_ofReal ?_
   rw [trLawFullyDefined_toBitLaw, trLawFullyDefined_toBitLaw_adjoin_bot]
   refine le_trans (Probability.statDist_fTransform_le_mass_of_eq_off hG _ _

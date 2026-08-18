@@ -824,6 +824,13 @@ def supWinProb (G : PDG X Y) : ℝ :=
 probability. -/
 scoped notation "ν(" G ")" => supWinProb G
 
+/-- Definition 2.25's `ν` read at the metric's carrier.  `Adv⊥` is
+`ℝ≥0∞`-valued (Ruling R4) while `ν` is a real, so every bound against
+Definition 2.25 is a bound against `ENNReal.ofReal (ν(G))`; this writes that
+composite once.  CR18 Definition 4.17 (printed p. 106) calls the same quantity
+`Γ(G)`.  The underlying `ν` is unchanged — this is display, not a carrier. -/
+scoped notation "ν[" G "]" => ENNReal.ofReal (RandomSystems.PDG.supWinProb G)
+
 theorem winningMass_nonneg {G : PDG X Y} (hG : G.NonNeg)
     (e : System.DDE.Total Y X) (n : ℕ) : 0 ≤ winningMass e n G :=
   hG.mass_nonneg _

@@ -72,22 +72,32 @@ fiber identity because environments are deterministic.
 
 ## The endpoints
 
-* `PDG.advFullyDefined_forget_le_supWinProb_of_equivalentAsGames` —
+Every bound is stated against `Adv⊥` (Ruling R4) with the right-hand side
+written `ν[G]` — the `ℝ≥0∞` reading of Definition 2.25 declared beside
+`PDG.supWinProb` in `System/Game.lean`, and `ω[G]` its Definition 2.36
+companion in `System/Winnability.lean`.  The notation is display only: it
+unfolds to `ENNReal.ofReal (ν(G))`, and the underlying real-valued `ν`/`ω` are
+untouched.
+
+* `PDG.fundamental_lemma_of_game_playing` —
   **Maurer13b Lemma 2, printed p. 3153**: "If `S ≡ᵍ T`, then, for any
   distinguisher `D` and any `q`, `Δ^D_q(S⁻,T⁻) ≤ Γ^D_q(S)`", the statement the
   paper says "implies the so-called fundamental lemma of game playing".
   (CR18 Lemma 4.16, printed p. 107.)  It carries `‖G‖ = ‖H‖`, which Maurer13b
   has standing (its objects are systems, hence probability distributions) and
   which Definition 11's `i ≥ 1` makes necessary — see the theorem's docstring.
-* `PDG.advFullyDefined_forget_le_supWinProb_of_condEquiv` — **Maurer02
+* `PDG.conditional_equivalence_theorem` — **Maurer02
   Theorem 1(i), preprint p. 12**: "If `F^𝒜 ≡ G^ℬ` or `F|𝒜 ≡ G`, then
   `Δₖ(F,G) ≤ ν(F, Āₖ)`", the **adaptive** right-hand side; equivalently the
   first half of Maurer13b Theorem 3 (printed p. 3154) and of CR18 Theorem 4.17
   (printed p. 110) before their blinding step.
-* `PDS.advFullyDefined_le_supWinProb_adjoin_of_condEquiv` — the same bound
+* `PDS.conditional_equivalence_theorem_adjoin` — the same bound
   taking the *base* system and the condition, with the game constructed in the
   statement by `PDS.adjoin`.
-* `PDG.advFullyDefined_forget_le_infWinnability_of_condEquiv` — the
+* `PDS.conditional_equivalence_theorem_gamesFor` — the same bound for an
+  arbitrary game *for* `S` (`PDS.GamesFor`), where the forgetting law holds
+  only up to Lanzenberger Definition 2.17.
+* `PDG.conditional_equivalence_theorem_infWinnability` — the
   right-hand side replaced, through Lanzenberger Theorem 2.37
   (`Winnability.lean`), by `ω`: the *static* infimum winnability, in which no
   environment occurs at all.  Theorem 2.37 says `ω = ν`, so this is **not** a
@@ -169,6 +179,11 @@ open Classical
 open Probability (Distribution statDist)
 
 open scoped ENNReal
+
+-- `ν[·]` and `ω[·]` (`System/Game.lean`, `System/Winnability.lean`) are the
+-- `ℝ≥0∞` readings of Definitions 2.25 and 2.36 that every bound against `Adv⊥`
+-- is stated in; they are scoped to `PDG` and used here from `PDS` too.
+open scoped RandomSystems.PDG
 
 universe u v
 
@@ -625,7 +640,7 @@ theorem advFullyDefined_forget_le_supWinProb_of_notWonLaw_le {G : PDG X Y} {T : 
         ≤ PDS.trLawFullyDefined
             (System.DDE.Total.playQueries (System.transcriptInputs t))
             t.length T t) :
-    PDS.advFullyDefined (forget G) T ≤ ENNReal.ofReal (supWinProb G) := by
+    PDS.advFullyDefined (forget G) T ≤ ν[G] := by
   refine iSup_le fun e => iSup_le fun n => ENNReal.ofReal_le_ofReal ?_
   exact (statDist_trLawFullyDefined_forget_le_winningMass hG hT hle e n).trans
     (winningMass_le_supWinProb hG e n)
@@ -655,11 +670,11 @@ Maurer13b states Lemma 2 for *systems*, i.e. probability distributions, so
 `‖G‖ = ‖H‖` is its own standing hypothesis; it is also the bundle `Adv⊥`'s
 symmetry needs (`advFullyDefined_comm_of_weight_eq`) and the one the Definition
 13 endpoint already carries. -/
-theorem advFullyDefined_forget_le_supWinProb_of_equivalentAsGames
+theorem fundamental_lemma_of_game_playing
     {G H : PDG X Y} (hG : G.NonNeg) (hH : H.NonNeg) (hw : G.weight = H.weight)
     (h : EquivalentAsGames G H) :
     PDS.advFullyDefined (forget G) (forget H)
-      ≤ ENNReal.ofReal (supWinProb G) := by
+      ≤ ν[G] := by
   refine advFullyDefined_forget_le_supWinProb_of_notWonLaw_le hG (nonNeg_forget hH)
     fun t => ?_
   rcases eq_or_ne t ([] : List (X × Option Y)) with rfl | ht
@@ -728,10 +743,10 @@ Hypotheses: non-negativity of both laws and equal weight — the honest bundle
 and satisfied by any pair of probability laws.  No query bound, no `Fintype`,
 no totality clause: refusal is an observable answer (Ruling R2) and the
 condition's monotonicity is the carrier's (module docstring). -/
-theorem advFullyDefined_forget_le_supWinProb_of_condEquiv {G : PDG X Y}
+theorem conditional_equivalence_theorem {G : PDG X Y}
     {T : PDS X Y} (hG : G.NonNeg) (hT : T.NonNeg) (hw : G.weight = T.weight)
     (hCE : CondEquiv G T) :
-    PDS.advFullyDefined (forget G) T ≤ ENNReal.ofReal (supWinProb G) := by
+    PDS.advFullyDefined (forget G) T ≤ ν[G] := by
   refine advFullyDefined_forget_le_supWinProb_of_notWonLaw_le hG hT fun t => ?_
   have h := notWonLaw_le_trLawFullyDefined_of_condEquiv hG hT hw hCE
     (System.transcriptInputs t) t
@@ -753,14 +768,14 @@ in general; reaching them needs the blinding machinery R11(a) does not admit.
 
 The finiteness bundle is Theorem 2.37's own — one domain clause, a query
 bound, `[Fintype X]`, and the empty-history clause the pair carrier needs. -/
-theorem advFullyDefined_forget_le_infWinnability_of_condEquiv [Fintype X]
+theorem conditional_equivalence_theorem_infWinnability [Fintype X]
     {G : PDG X Y} {T : PDS X Y} {D : Set (List X)} {q : ℕ}
     (hG : G.NonNeg) (hT : T.NonNeg) (hw : G.weight = T.weight)
     (hnil : ∀ g ∈ G.support, [] ∉ g.2.1) (hdom : HasDomain G D)
     (hq : QBounded D q) (hCE : CondEquiv G T) :
-    PDS.advFullyDefined (forget G) T ≤ ENNReal.ofReal (infWinnability G) := by
+    PDS.advFullyDefined (forget G) T ≤ ω[G] := by
   rw [← (winnability_theorem hG hnil hdom hq).1]
-  exact advFullyDefined_forget_le_supWinProb_of_condEquiv hG hT hw hCE
+  exact conditional_equivalence_theorem hG hT hw hCE
 
 /-! ## Definition 13's first display, through the T0 conditioning layer -/
 
@@ -857,12 +872,12 @@ game built inside the statement by Remark 2.24's constructor `PDS.adjoin`.
 Nothing is assumed about the game: `adjoin` discharges the forgetting law on
 the nose (`forget_adjoin`) and monotonicity lives in `MonotoneCondition`, so
 the only hypothesis about the pair is the conditional equivalence itself. -/
-theorem advFullyDefined_le_supWinProb_adjoin_of_condEquiv {S T : PDS X Y}
+theorem conditional_equivalence_theorem_adjoin {S T : PDS X Y}
     (hS : S.NonNeg) (hT : T.NonNeg) (hw : S.weight = T.weight)
     (A : System.DDS X Y → System.MonotoneCondition X)
     (hCE : PDG.CondEquiv (adjoin S A).1 T) :
-    advFullyDefined S T ≤ ENNReal.ofReal (PDG.supWinProb (adjoin S A).1) := by
-  have h := PDG.advFullyDefined_forget_le_supWinProb_of_condEquiv
+    advFullyDefined S T ≤ ν[(adjoin S A).1] := by
+  have h := PDG.conditional_equivalence_theorem
     (nonNeg_adjoin hS A) hT (by rw [GamesFor.weight_eq (adjoin S A)]; exact hw) hCE
   rwa [forget_adjoin] at h
 
@@ -871,12 +886,12 @@ holds only up to Lanzenberger Definition 2.17 (`PDS.GamesFor` membership).
 `Adv⊥` transports along equivalence in both slots
 (`PDS.advFullyDefined_congr`), so which representative a construction happens
 to produce is not a modeling wrinkle. -/
-theorem advFullyDefined_le_supWinProb_gamesFor_of_condEquiv {S T : PDS X Y}
+theorem conditional_equivalence_theorem_gamesFor {S T : PDS X Y}
     (G : GamesFor S) (hG : G.1.NonNeg) (hT : T.NonNeg)
     (hw : G.1.weight = T.weight) (hCE : PDG.CondEquiv G.1 T) :
-    advFullyDefined S T ≤ ENNReal.ofReal (PDG.supWinProb G.1) := by
+    advFullyDefined S T ≤ ν[G.1] := by
   rw [advFullyDefined_congr (equivalent_symm G.2) (equivalent_refl T)]
-  exact PDG.advFullyDefined_forget_le_supWinProb_of_condEquiv hG hT hw hCE
+  exact PDG.conditional_equivalence_theorem hG hT hw hCE
 
 /-! ### Worked receipts: the two poles of the condition lattice
 
