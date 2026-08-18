@@ -2724,6 +2724,15 @@ behaviour (membership = the forgetting law), and adjoin = the fiber's
 constructor.  Obligation 1 lives in the MC subtype, obligation 2 in the
 fiber membership — no ad-hoc structure fields.
 
+CR18 RECAST POLICY (Marc, 2026-08-18): future CR18 material — multigames,
+game reductions — is RECAST ON TOP of the thesis layer, never a parallel
+lane.  The dictionary: multigame = system + FAMILY of conditions (the
+lattice gives or/and/frontier games); same-system reduction = the
+upper-set order; cross-system reduction = converter + comap + absorption;
+S⁻ (Def 4.18) = forget; game equivalence (§4.10.1) = equivalent on the
+bit view; k-bit presentation = derived view at a product of bits.  All of
+it enters under the R8 fallback register, flagged.
+
 DRIFT TRIPWIRES for every T-brief: the R10 vocabulary rules (LEDGER +
 PHI-SPEC); games are PAIRS (bit view derived); conditions are per-atom
 input predicates (internal randomness via the joint distribution);
