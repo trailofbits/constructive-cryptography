@@ -2850,7 +2850,13 @@ landed observables + T0 conditioning, a seemingly-needed new object is a
 fork to Marc not a build; R11(b) minimal migration — where a proven
 development exists (source theory or reference repo), adapt its lemma
 DAG along the recast dictionary with the minimal forced delta, never
-reinvent the route, never transcribe across carriers.
+reinvent the route, never transcribe across carriers; NAMING (Marc
+2026-08-18, ALWAYS in every brief): identifiers are paper-object names or
+established tree conventions ONLY — no coined geometric/categorical
+vocabulary (fiber, slice, blinder, aux, helper as identifier components);
+match the nearest landed neighbour's naming pattern; prose may describe,
+identifiers may not coin; agents list any non-canonical EXISTING name
+they consume for coordinator rename triage.
 
 # CR18 full-sweep register — stretch goals for abstract-crypto
 
