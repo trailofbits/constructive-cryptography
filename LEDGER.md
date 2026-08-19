@@ -2902,6 +2902,29 @@ behaviour (membership = the forgetting law), and adjoin = the fiber's
 constructor.  Obligation 1 lives in the MC subtype, obligation 2 in the
 fiber membership — no ad-hoc structure fields.
 
+FILTER WIDENING (Marc-approved 2026-08-19, cd8a662; PIN RE-RULED
+dca1e2e8… → fd0d3a82…, check-5 comment records it).  `converterMonoidAt`'s
+SECOND generator family is no longer `{π | ∃ Q, π = block Q}` but CR18
+Def 3.10's domain filters `{π | ∃ P hP, π = filterPhi P hP}` at ANY
+prefix-closed predicate.  `block Q` and `filterQueries q` are instances
+(`block_eq_filterPhi`, `filterQueries_eq_filterPhi`); `block_mem_
+converterMonoidAt` keeps its statement verbatim.  `converterMonoidAtWeak
+Budget` and `converterMonoidAtProb` carry the SAME family (forced by
+their landed containments); `converterMonoid(Fully(Budgeted))` untouched.
+RECEIPT CHAIN: `exists_absorb_filterDom` → `filterPhi_mem_nonexpanding
+Converters` → `filterPhi_mem_converterMonoidAt`.  FINDING (kernel-backed,
+supersedes the A8 row's expectation): there is NO absorbability side
+condition — every prefix-closed filter absorbs, because CR18 Def 3.3
+deletes refusals, so the filter's test reads the ANSWERED history, which
+a deterministic environment already determines; one absorbing environment
+serves all systems.  The two landed templates (`exists_absorb_blockSet`
+skip-style, `exists_absorb_filterQueries` forward-and-mask) each force a
+DIFFERENT, incomparable condition and neither subsumes the other — the
+widening uses a third mechanism (skip, decided on the answered prefix)
+that subsumes both; both old receipts kept, each sharper at its family.
+S-06's "converterMonoidAt byte-identical, pin green" is superseded as of
+this date.
+
 CR18 RECAST POLICY (Marc, 2026-08-18; GENERALIZED 2026-08-18 = PHI-SPEC
 R11): ALL CR18/Maurer-school material — multigames, game reductions,
 conditional equivalence, everything after — is the CONCEPT recast ON TOP
@@ -3598,14 +3621,14 @@ Nine rows CLOSED, each with the audit's amendment:
   `ParameterizedConstruction` (eq. (5.6), single quantified π, coherence
   collapse) + `FilterPhi` ([q] at Φ, commuting family, absorption at the
   same length, `filterQueries_mem_nonexpandingConverters` — discharges the
-  A8 receipt).  The assessment's `converterMonoidAt`-membership route does
-  NOT close for q ≥ 1: argued for the attachment generator family
-  (attachEngineFully_refusal_first — refusal inheritance would be the
-  refuted relay); the other three generator families and closure-level
-  status are OPEN, recorded in-code.  CONSEQUENCE (audit): interfaces
-  typed at ↥converterMonoidAt (converterMonoidWithin/Φ_E/Constructs/Par —
-  incl. S-15's role algebra) do NOT accept the filter; nonexpansion alone
-  restores only the ε-calculus.
+  A8 receipt).  SUPERSEDED 2026-08-19 (cd8a662, Marc-approved widening): the
+  membership route closes after all — not through the `block Q` generator
+  (correctly excluded then) but by widening that generator to CR18 Def
+  3.10's filter family.  `filterQueries q ∈ converterMonoidAt` at EVERY q
+  (`filterQueries_mem_converterMonoidAt`), so the earlier CONSEQUENCE
+  clause is VOID: interfaces typed at ↥converterMonoidAt
+  (converterMonoidWithin/Φ_E/Constructs/Par, incl. S-15's role algebra)
+  now accept the filter, and CR18 §5.5's ψ_r is a genuine π.
 
 FLAG **F-8** (escalation, folded into the standing blind-form call to
 Marc): CR18 Lemma 5.3 AS PRINTED constructs its MBO "independently of T"
@@ -3615,7 +3638,9 @@ ruling.
 
 NAMING TRIAGE (all KEEP + flagged; Marc's call with the `fiber` rename):
 `refuseAfter`, `InterfaceRoles`, `admittedConverters` (over-promises —
-audit suggests `attachableConverters`), `PhiAt`, `cascadeFn`, `combineFn`.
+audit suggests `attachableConverters`), `PhiAt`, `cascadeFn`, `combineFn`,
+`filterPhi` (Φ-level object whose neighbours `block`/`filterQueries` are
+named bare; the suffix disambiguates against `System.filterDom`).
 
 DEBTS: (i) `Rendering/CCWidget.lean` dispatch table keys ~16 names that
 exist only in the reference repository — declare it a reference-tree
