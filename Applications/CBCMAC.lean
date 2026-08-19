@@ -100,7 +100,7 @@ Proved:
 
 Not proved, and stated as the hypothesis `hcbc` of the endpoint: the
 distinguishing bound itself, which is CR18 Theorem 6.1's mathematics in full.
-**Three** of the six obligations listed at `cbc_mac_constructs` are open.
+**Two** of the six obligations listed at `cbc_mac_constructs` are open.
 -/
 
 namespace RandomSystems.CBCMAC
@@ -1839,16 +1839,18 @@ Theorem 6.1 having been proved.
 CR18's own proof structure is what `hcbc` stands for: the printed proof
 produces `⟨θ_r CBC [r]R_{n,n} | θ_r V_n⟩ ≤ Γ(b θ_r ĈBC R_{n,n}) ≤ ½ r² 2^{-n}`
 (printed p. 127) and reads the arrow off it.  In the printed order, `hcbc`
-decomposes into six obligations, of which **three are open — 2, 4, and the
+decomposes into six obligations, of which **two are open — 4 and the
 `θ_r` half of 3**:
 
 1. **LANDED.**  The realization equation — that `cbcConverter bf` applied to
    the on-ramped round function is the on-ramped system whose answer to `m` is
    `cbcState f (bf m)` — as `attachEngineFully_cbcRound_univ` at a
    deterministic round function and `cbcConverter_smul_Rnn` at Φ;
-2. **OPEN.**  Equation (6.2), printed p. 126, as `PDG.CondEquiv`: the mass
-   identity `notBad_implies_uniform_outputs` above, read through
-   `PDG.condEquiv_iff_condProb`;
+2. **LANDED.**  Equation (6.2), printed p. 126, as `PDG.CondEquiv`:
+   `cbc_condEquiv` — the mass identity `notBad_implies_uniform_outputs`
+   above, read through the conditional form.  (This entry read OPEN until
+   2026-08-19: the run that proved it was killed mid-flight and never
+   updated the list, and later passes copied the stale text forward.)
 3. **HALF OPEN.**  Equation (6.3), printed p. 127: the general transport is
    landed as `PDG.condEquiv_fTransform`
    (`Technique/ConditionalEquivalence.lean`), but its landed corollary
