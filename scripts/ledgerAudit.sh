@@ -84,21 +84,29 @@ echo "fenceAudit: OK ($(printf '%s\n' "$fenced" | wc -l | tr -d ' ') modules fen
 #      over a variable carrier is fine.
 #  (b) `converterMonoidAt` is the registry's metric-facing Σ; its generator set
 #      carries `IsNonexpandingSMul ↥converterMonoidAt Phi` and every leg-(c)/(d)
-#      receipt.  Widening it silently changes what the landed receipts mean —
-#      probabilistic converters etc. get a NEW submonoid instead (LEDGER
-#      PRIMITIVE REGISTRY).  Pin = hash of the definition block; a legitimate
-#      re-ruling updates the hash here AND the registry entry in the same commit.
+#      receipt.  Widening it silently changes what the landed receipts mean, so
+#      the definition block is pinned by hash; a legitimate re-ruling updates the
+#      hash here AND the registry entry in the same commit.
+#      RE-RULED 2026-08-19 (Marc, approved): the block family
+#      `{π | ∃ Q, π = block Q}` is widened to CR18 Definition 3.10's domain
+#      filters `{π | ∃ P hP, π = filterPhi P hP}` at any prefix-closed
+#      predicate — `block Q` and `filterQueries q` are both instances, and the
+#      nonexpansion receipt the widening owes is
+#      `filterPhi_mem_nonexpandingConverters` (`System/Absorb.lean`).  Pin
+#      recomputed in the same commit; the previous pin was
+#      dca1e2e8643141c0379a9ee44e3ae2e03566dd0a666ca6665a95cee2d350475e.
 if grep -rnE "^(noncomputable )?instance[^:]*:[[:space:]]*(RandomSystems\.)?IsNonexpandingPar[[:space:]]+(RandomSystems\.)?Phi" --include="*.lean" RandomSystems/ AbstractCryptography/ ConstructiveCryptography/ Applications/ 2>/dev/null; then
   echo "registryAudit: FAIL — IsNonexpandingPar instantiated at Phi (registry: not obtainable, spike G6.f)" >&2
   exit 1
 fi
-pin_expect="dca1e2e8643141c0379a9ee44e3ae2e03566dd0a666ca6665a95cee2d350475e"
+pin_expect="fd0d3a826fbd4cd2450a8fc4c6ffc6ec32a0c3cddbe5faafc652dbe2c95614f8"
 pin_actual=$(awk '/^def converterMonoidAt : Submonoid/{f=1} f{print} f&&/^$/{exit}' RandomSystems/System/AttachEngineFully.lean | shasum -a 256 | awk '{print $1}')
 if [ "$pin_actual" != "$pin_expect" ]; then
   echo "registryAudit: FAIL — converterMonoidAt definition changed (metric-facing Σ pin)." >&2
   echo "  It carries the IsNonexpandingSMul instance and the leg-(c)/(d) receipts;" >&2
   echo "  add a NEW submonoid instead of widening it (LEDGER PRIMITIVE REGISTRY)," >&2
-  echo "  or update the pin + registry entry together if Marc re-ruled." >&2
+  echo "  or update the pin + registry entry together if Marc re-ruled" >&2
+  echo "  (as on 2026-08-19 for the domain-filter generator family)." >&2
   exit 1
 fi
 echo "registryAudit: OK (IsNonexpandingPar uninstantiated at Phi; converterMonoidAt pinned)"

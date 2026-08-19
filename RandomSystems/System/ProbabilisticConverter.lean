@@ -167,14 +167,15 @@ theorem attachLawAt_mem_nonexpandingConverters {i : Set Uni.{u}} {EL : PDC.{u}}
 
 /-- **The interface-indexed converter monoid, with Definition 3.17's converters**
 — `converterMonoidAt` with its attachment family widened from deterministic
-programs to *laws over* programs, and the three non-attachment families
-(blocks, the two parallel frames at a sub-probability partner) spelled exactly
-as there.
+programs to *laws over* programs, and the three non-attachment families (CR18
+Definition 3.10's domain filters, the two parallel frames at a sub-probability
+partner) spelled exactly as there.
 
-This is a **new** submonoid, not a widening: `converterMonoidAt` carries the
-metric-facing `IsNonexpandingSMul` instance and every leg-(c)/(d) receipt, so
-changing its generator set would silently change what those receipts mean.  The
-relation between the two is `converterMonoidAt_le_converterMonoidAtProb`.
+This is a **separate** submonoid: `converterMonoidAt` carries the metric-facing
+`IsNonexpandingSMul` instance and every leg-(c)/(d) receipt, and the two are
+related by `converterMonoidAt_le_converterMonoidAtProb`.  The filter family is
+the one Marc re-ruled on 2026-08-19; it is spelled here exactly as there, which
+is what keeps that containment a generator-by-generator argument.
 
 The generator conditions are the mixture argument's: the converter is a
 sub-probability law and every program in its support is inner-total and
@@ -189,7 +190,8 @@ def converterMonoidAtProb : Submonoid (Function.End Phi.{u}) :=
         (∀ E ∈ EL.support,
           System.InnerTotal E ∧ System.AnswersWithinUniformBudget E) ∧
           π = attachLawAt i EL} ∪
-      {π | ∃ Q : Set Uni.{u}, π = block Q} ∪
+      {π | ∃ (P : List Uni.{u} → Prop) (hP : PrefixClosed P),
+        π = filterPhi P hP} ∪
       {π | ∃ (c : Set Uni.{u}) (TL : Phi.{u}), (∀ t, 0 ≤ ofPhi TL t) ∧
         (ofPhi TL).weight ≤ 1 ∧ π = fun RL => par c RL TL} ∪
       {π | ∃ (c : Set Uni.{u}) (TL : Phi.{u}), (∀ t, 0 ≤ ofPhi TL t) ∧
@@ -202,9 +204,13 @@ theorem attachLawAt_mem_converterMonoidAtProb (i : Set Uni.{u}) {EL : PDC.{u}}
     attachLawAt i EL ∈ converterMonoidAtProb.{u} :=
   Submonoid.subset_closure (Or.inl (Or.inl (Or.inl ⟨i, EL, h0, h1, hE, rfl⟩)))
 
+theorem filterPhi_mem_converterMonoidAtProb (P : List Uni.{u} → Prop)
+    (hP : PrefixClosed P) : filterPhi P hP ∈ converterMonoidAtProb.{u} :=
+  Submonoid.subset_closure (Or.inl (Or.inl (Or.inr ⟨P, hP, rfl⟩)))
+
 theorem block_mem_converterMonoidAtProb (Q : Set Uni.{u}) :
     block Q ∈ converterMonoidAtProb.{u} :=
-  Submonoid.subset_closure (Or.inl (Or.inl (Or.inr ⟨Q, rfl⟩)))
+  block_eq_filterPhi Q ▸ filterPhi_mem_converterMonoidAtProb _ _
 
 theorem parRight_mem_converterMonoidAtProb (c : Set Uni.{u})
     {TL : Phi.{u}} (h0 : ∀ t, 0 ≤ ofPhi TL t) (h1 : (ofPhi TL).weight ≤ 1) :
@@ -222,13 +228,14 @@ converter is Definition 3.17's degenerate random variable, the point mass
 same sets.  So every statement already proved over `converterMonoidAt` is a
 statement about a sub-family of this Σ, and nothing is re-derived to keep it.
 
-This is the B2 mitigation in one line: the pinned generator set of
-`converterMonoidAt` is untouched, and the containment is what relates the two. -/
+The containment is what relates the two Σ's; it stays a generator-by-generator
+argument because the filter family is spelled here exactly as in the pinned
+definition. -/
 theorem converterMonoidAt_le_converterMonoidAtProb :
     converterMonoidAt.{u} ≤ converterMonoidAtProb.{u} := by
   classical
   refine Submonoid.closure_le.mpr ?_
-  rintro π ((((⟨i, E, hIT, hβ, rfl⟩) | ⟨Q, rfl⟩) |
+  rintro π ((((⟨i, E, hIT, hβ, rfl⟩) | ⟨P, hP, rfl⟩) |
     ⟨c, TL, h0, h1, rfl⟩) | ⟨c, TL, h0, h1, rfl⟩)
   · refine (attachLawAt_ofDDS i E) ▸
       attachLawAt_mem_converterMonoidAtProb i (EL := PDS.ofDDS E) ?_ ?_ ?_
@@ -241,14 +248,14 @@ theorem converterMonoidAt_le_converterMonoidAtProb :
       have hFE : F = E :=
         Finset.mem_singleton.mp (Finsupp.support_single_subset hF)
       exact hFE ▸ ⟨hIT, hβ⟩
-  · exact block_mem_converterMonoidAtProb Q
+  · exact filterPhi_mem_converterMonoidAtProb P hP
   · exact parRight_mem_converterMonoidAtProb c h0 h1
   · exact parLeft_mem_converterMonoidAtProb c h0 h1
 
 /-- **The probabilistic Σ is non-expanding** — the closure step at Definition
 3.17's converters.  Every generator absorbs into the environment: probabilistic
-attachments by `attachLawAt_mem_nonexpandingConverters`, blocks by
-`exists_absorb_blockSet`, parallel frames by `exists_absorb_par` — and
+attachments by `attachLawAt_mem_nonexpandingConverters`, domain filters by
+`System.exists_absorb_filterDom`, parallel frames by `exists_absorb_par` — and
 `nonexpandingConverters` is a submonoid, so the whole closure does.
 
 The re-based counterpart of `converterMonoidAt_le_nonexpandingConverters`, and
@@ -257,10 +264,10 @@ probabilistic Σ. -/
 theorem converterMonoidAtProb_le_nonexpandingConverters :
     converterMonoidAtProb.{u} ≤ nonexpandingConverters.{u} := by
   refine Submonoid.closure_le.mpr ?_
-  rintro π ((((⟨i, EL, h0, h1, hE, rfl⟩) | ⟨Q, rfl⟩) |
+  rintro π ((((⟨i, EL, h0, h1, hE, rfl⟩) | ⟨P, hP, rfl⟩) |
     ⟨c, TL, h0, h1, rfl⟩) | ⟨c, TL, h0, h1, rfl⟩)
   · exact attachLawAt_mem_nonexpandingConverters h0 h1 hE
-  · exact block_mem_nonexpandingConverters Q
+  · exact filterPhi_mem_nonexpandingConverters P hP
   · exact parRight_mem_nonexpandingConverters h0 h1
   · exact parLeft_mem_nonexpandingConverters h0 h1
 

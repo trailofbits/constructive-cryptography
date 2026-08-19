@@ -42,6 +42,12 @@ theorem prefixClosed_length_le {X : Type u} (q : ℕ) :
     PrefixClosed (fun l : List X => l.length ≤ q) :=
   fun _ _ hpre hlen => le_trans hpre.length_le hlen
 
+/-- The query-avoiding history predicate is prefix-closed: a prefix of a
+history that avoids `Q` avoids `Q`. -/
+theorem prefixClosed_forall_not_mem {X : Type u} (Q : Set X) :
+    PrefixClosed (fun l : List X => ∀ q ∈ l, q ∉ Q) :=
+  fun _ _ hpre h q hq => h q (hpre.subset hq)
+
 namespace System
 
 noncomputable section

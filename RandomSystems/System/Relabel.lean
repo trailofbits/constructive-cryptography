@@ -137,11 +137,20 @@ theorem block_relabel (Z : Set P) (f : P × A → P × A)
     rwa [hf q] at h
 
 /-- MauRen16 §3.4's `⊣` at a query set: silence the queries in `Q`.  The
-tagged form `block` is the instance at `{p | p.1 ∈ Z}`. -/
+tagged form `block` is the instance at `{p | p.1 ∈ Z}`, and the whole
+operation is CR18 Definition 3.10's domain filter at the query-avoiding
+predicate (`prefixClosed_forall_not_mem`). -/
 def blockSet {X : Type u} {Y : Type v} (Q : Set X) (S : DDS X Y) :
     DDS X Y :=
-  filterDom (fun l => ∀ q ∈ l, q ∉ Q)
-    (fun _ _ hpre h q hq => h q (hpre.subset hq)) S
+  filterDom (fun l => ∀ q ∈ l, q ∉ Q) (prefixClosed_forall_not_mem Q) S
+
+/-- The block is the domain filter at the query-avoiding predicate — CR18
+Definition 3.10 read at MauRen16 §3.4's `⊣`. -/
+theorem blockSet_eq_filterDom {X : Type u} {Y : Type v} (Q : Set X)
+    (S : DDS X Y) :
+    blockSet Q S =
+      filterDom (fun l => ∀ q ∈ l, q ∉ Q) (prefixClosed_forall_not_mem Q) S :=
+  rfl
 
 @[simp]
 theorem mem_dom_blockSet {X : Type u} {Y : Type v} (Q : Set X)

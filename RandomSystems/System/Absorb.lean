@@ -702,6 +702,288 @@ theorem exists_absorb_block {P : Type w₁} {A : Type w₁} {B : Type w₂}
 
 end BlockAbsorb
 
+/-! ## Domain filters absorb into the environment
+
+CR18 Definition 3.10 restricts a system to the input histories a prefix-closed
+predicate admits.  `blockSet` is the instance at "avoid `Q`" and
+`filterQueries` the instance at "at most `q` queries"; the general filter is
+the same operation at an arbitrary predicate, and it absorbs for the same
+reason both instances do — the test reads the history the system has already
+*answered*, which CR18 Definition 3.3's deletion pass makes visible to the
+environment as its own stream of `some`s.
+
+This is the general receipt; `exists_absorb_blockSet` above and
+`System.exists_absorb_filterQueries` (`FilterPhi.lean`) keep their own,
+sharper reductions (a query-local relay and a budget post-processing
+respectively), which is why neither is re-derived here.
+-/
+section FilterAbsorb
+
+open Classical
+
+universe w₁ w₂
+
+variable {X : Type w₁} {Y : Type w₂}
+
+/-- The deletion pass through a domain filter, one round: the filtered system
+keeps a query exactly when the predicate admits the extended kept prefix and
+the system itself answers it.  The unfiltered history `M` enters only through
+its kept prefix, which the filtered pass reproduces. -/
+theorem keptPrefix_filterDom_concat (P : List X → Prop) (hP : PrefixClosed P)
+    (S : DDS X Y) (L M : List X) (x : X)
+    (hM : keptPrefix S M = keptPrefix (filterDom P hP S) L) :
+    keptPrefix (filterDom P hP S) (L ++ [x]) =
+      if P (keptPrefix (filterDom P hP S) L ++ [x]) then keptPrefix S (M ++ [x])
+      else keptPrefix (filterDom P hP S) L := by
+  rw [keptPrefix_append_singleton, keptPrefix_append_singleton, hM]
+  by_cases hPx : P (keptPrefix (filterDom P hP S) L ++ [x])
+  · rw [if_pos hPx]
+    by_cases hd : keptPrefix (filterDom P hP S) L ++ [x] ∈ dom S
+    · rw [if_pos (show keptPrefix (filterDom P hP S) L ++ [x] ∈ dom (filterDom P hP S)
+        from ⟨hd, hPx⟩), if_pos hd]
+    · rw [if_neg (fun hc => hd hc.1), if_neg hd]
+  · rw [if_neg hPx, if_neg (fun hc => hPx hc.2)]
+
+/-- **The filter's answer**: the filtered system answers as the system does
+while the predicate admits the query, and refuses otherwise.  The predicate is
+tested on the kept prefix — refused attempts are deleted and never enter it
+(CR18 Definition 3.3) — so the test reads only the answers already given. -/
+theorem answer_filterDom (P : List X → Prop) (hP : PrefixClosed P) (S : DDS X Y)
+    (L M : List X) (x : X)
+    (hM : keptPrefix S M = keptPrefix (filterDom P hP S) L) :
+    answer (filterDom P hP S) L x =
+      if P (keptPrefix (filterDom P hP S) L ++ [x]) then answer S M x else none := by
+  rw [answer_eq, answer_eq, hM]
+  by_cases hPx : P (keptPrefix (filterDom P hP S) L ++ [x])
+  · rw [if_pos hPx]
+    by_cases hd : keptPrefix (filterDom P hP S) L ++ [x] ∈ dom S
+    · rw [dif_pos (show keptPrefix (filterDom P hP S) L ++ [x] ∈ dom (filterDom P hP S)
+        from ⟨hd, hPx⟩), dif_pos hd]
+      rfl
+    · rw [dif_neg (fun hc => hd hc.1), dif_neg hd]
+  · rw [if_neg hPx, dif_neg (fun hc => hPx hc.2)]
+
+/-! ### The replay of a filtered interaction
+
+The environment behind a filter runs the filter itself: it knows which of its
+queries were answered — a `some` is kept, a `none` is deleted (CR18 Definition
+3.3) — so it knows the kept prefix, tests the predicate on it, and refuses on
+its own behalf when the test fails.  A refused round costs no inner query, so
+this is the module's replay/need/absorb decomposition with the relay decision
+taken on the answered prefix instead of on the query alone. -/
+
+/-- One round of the replay of a filtered interaction: the outer environment
+moves on the transcript built so far; a query the predicate rejects is refused
+on the spot, a query it admits consumes the next inner answer, and if there is
+none the replay stalls. -/
+def filterReplayStep (P : List X → Prop) (e : DDE.Total Y X)
+    (st : List (X × Option Y) × List (Option Y)) :
+    List (X × Option Y) × List (Option Y) :=
+  match e st.1↓ᵧ with
+  | none => st
+  | some x =>
+      if P (answeredQueries st.1 ++ [x]) then
+        match st.2 with
+        | [] => st
+        | y :: ys => (st.1 ++ [(x, y)], ys)
+      else (st.1 ++ [(x, none)], st.2)
+
+theorem filterReplayStep_stop (P : List X → Prop) (e : DDE.Total Y X)
+    {st : List (X × Option Y) × List (Option Y)} (h : e st.1↓ᵧ = none) :
+    filterReplayStep P e st = st := by
+  simp [filterReplayStep, h]
+
+theorem filterReplayStep_refuse (P : List X → Prop) (e : DDE.Total Y X)
+    {st : List (X × Option Y) × List (Option Y)} {x : X} (h : e st.1↓ᵧ = some x)
+    (hx : ¬ P (answeredQueries st.1 ++ [x])) :
+    filterReplayStep P e st = (st.1 ++ [(x, none)], st.2) := by
+  simp [filterReplayStep, h, hx]
+
+theorem filterReplayStep_stuck (P : List X → Prop) (e : DDE.Total Y X)
+    {st : List (X × Option Y) × List (Option Y)} {x : X} (h : e st.1↓ᵧ = some x)
+    (hx : P (answeredQueries st.1 ++ [x])) (hst : st.2 = []) :
+    filterReplayStep P e st = st := by
+  rcases st with ⟨o, ys⟩
+  simp only at hst
+  subst hst
+  simp [filterReplayStep, h, hx]
+
+theorem filterReplayStep_serve (P : List X → Prop) (e : DDE.Total Y X)
+    (o : List (X × Option Y)) (y : Option Y) (ys : List (Option Y)) {x : X}
+    (h : e o↓ᵧ = some x) (hx : P (answeredQueries o ++ [x])) :
+    filterReplayStep P e (o, y :: ys) = (o ++ [(x, y)], ys) := by
+  simp [filterReplayStep, h, hx]
+
+/-- The replay of the first `k` outer rounds against a given list of inner
+answers. -/
+def filterReplay (P : List X → Prop) (e : DDE.Total Y X) (ys : List (Option Y)) :
+    ℕ → List (X × Option Y) × List (Option Y)
+  | 0 => ([], ys)
+  | k + 1 => filterReplayStep P e (filterReplay P e ys k)
+
+@[simp]
+theorem filterReplay_zero (P : List X → Prop) (e : DDE.Total Y X)
+    (ys : List (Option Y)) : filterReplay P e ys 0 = ([], ys) :=
+  rfl
+
+theorem filterReplay_succ (P : List X → Prop) (e : DDE.Total Y X)
+    (ys : List (Option Y)) (k : ℕ) :
+    filterReplay P e ys (k + 1) = filterReplayStep P e (filterReplay P e ys k) :=
+  rfl
+
+/-- A stalled replay stays stalled. -/
+theorem filterReplay_of_fixed (P : List X → Prop) (e : DDE.Total Y X)
+    (ys : List (Option Y)) {k : ℕ}
+    (hfix : filterReplayStep P e (filterReplay P e ys k) = filterReplay P e ys k) :
+    ∀ i, k ≤ i → filterReplay P e ys i = filterReplay P e ys k := by
+  intro i hi
+  induction i, hi using Nat.le_induction with
+  | base => rfl
+  | succ i _ ih => rw [filterReplay_succ, ih, hfix]
+
+/-- The query the replay is waiting for: `some x` exactly when the outer
+environment's next move is admitted by the predicate and no inner answer is
+left.  A refused query never stalls — the filter answers it alone. -/
+def filterNeed (P : List X → Prop) (e : DDE.Total Y X)
+    (st : List (X × Option Y) × List (Option Y)) : Option X :=
+  match e st.1↓ᵧ with
+  | none => none
+  | some x =>
+      if P (answeredQueries st.1 ++ [x]) then
+        match st.2 with
+        | [] => some x
+        | _ :: _ => none
+      else none
+
+theorem filterNeed_stuck (P : List X → Prop) (e : DDE.Total Y X)
+    (o : List (X × Option Y)) {x : X} (h : e o↓ᵧ = some x)
+    (hx : P (answeredQueries o ++ [x])) :
+    filterNeed P e (o, ([] : List (Option Y))) = some x := by
+  simp [filterNeed, h, hx]
+
+/-- **The absorbed environment**: the inner environment that replays the outer
+interaction for `n` rounds and asks exactly the query the replay is waiting
+for.  It depends on the outer environment, the length and the predicate —
+never on the system, which is what makes the reduction a reduction. -/
+def absorbFilter (P : List X → Prop) (e : DDE.Total Y X) (n : ℕ) :
+    DDE.Total Y X :=
+  fun ys => filterNeed P e (filterReplay P e ys n)
+
+/-- **The replay invariant.**  After `k` outer rounds the replay has rebuilt
+the outer transcript exactly and consumed exactly the answers of the first `j`
+inner rounds, the `j` inner queries being the admitted outer queries in order;
+the two deletion passes then agree, which is what makes the predicate's test
+on the answered prefix the filter's own frontier test.  The quantifier over the
+unconsumed tail `zs` is what makes the invariant usable both at the truncated
+answer list and at the full one. -/
+theorem filterReplay_invariant (P : List X → Prop) (hP : PrefixClosed P)
+    (e : DDE.Total Y X) (n : ℕ) (s : DDS X Y) :
+    ∀ k ≤ n, ∃ j ≤ k,
+      keptPrefix s (DDE.Total.transcript s (absorbFilter P e n) j)↓ₓ =
+          keptPrefix (filterDom P hP s)
+            (DDE.Total.transcript (filterDom P hP s) e k)↓ₓ ∧
+      ∀ zs : List (Option Y),
+        filterReplay P e
+            ((DDE.Total.transcript s (absorbFilter P e n) j)↓ᵧ ++ zs) k =
+          (DDE.Total.transcript (filterDom P hP s) e k, zs) := by
+  intro k
+  induction k with
+  | zero => exact fun _ => ⟨0, le_rfl, rfl, fun _ => rfl⟩
+  | succ k ih =>
+      intro hk
+      obtain ⟨j, hjk, hkept, hreplay⟩ := ih (Nat.le_of_succ_le hk)
+      obtain ⟨o, ho⟩ : ∃ o, DDE.Total.transcript (filterDom P hP s) e k = o := ⟨_, rfl⟩
+      obtain ⟨T, hT⟩ :
+          ∃ T, DDE.Total.transcript s (absorbFilter P e n) j = T := ⟨_, rfl⟩
+      rw [ho] at hkept hreplay
+      rw [hT] at hkept hreplay
+      have hans : answeredQueries o = keptPrefix (filterDom P hP s) o↓ₓ := by
+        rw [← ho, DDE.Total.answeredQueries_transcript]
+      rcases hx : e o↓ᵧ with _ | x
+      · -- the outer environment stops: nothing moves on either side
+        have houter : DDE.Total.transcript (filterDom P hP s) e (k + 1) = o := by
+          rw [DDE.Total.transcript_succ_of_stop (filterDom P hP s) e (n := k)
+            (by rw [ho]; exact hx), ho]
+        exact ⟨j, hjk.trans (Nat.le_succ k), by rw [hT, houter]; exact hkept,
+          fun zs => by
+            rw [hT, filterReplay_succ, hreplay zs,
+              filterReplayStep_stop P e (st := (o, zs)) hx, houter]⟩
+      · by_cases hPx : P (keptPrefix (filterDom P hP s) o↓ₓ ++ [x])
+        · -- an admitted query: one inner round answers it
+          have hstuck : filterReplay P e T↓ᵧ n = (o, []) := by
+            have hk0 : filterReplay P e T↓ᵧ k = (o, []) := by
+              have := hreplay []
+              rwa [List.append_nil] at this
+            have hfix : filterReplayStep P e (filterReplay P e T↓ᵧ k) =
+                filterReplay P e T↓ᵧ k := by
+              rw [hk0]
+              exact filterReplayStep_stuck P e (st := (o, [])) hx
+                (by rw [hans]; exact hPx) rfl
+            rw [filterReplay_of_fixed P e T↓ᵧ hfix n
+              (le_trans (Nat.le_succ k) hk), hk0]
+          have hneed : absorbFilter P e n T↓ᵧ = some x := by
+            show filterNeed P e (filterReplay P e T↓ᵧ n) = some x
+            rw [hstuck]
+            exact filterNeed_stuck P e o hx (by rw [hans]; exact hPx)
+          have hinner : DDE.Total.transcript s (absorbFilter P e n) (j + 1) =
+              T ++ [(x, answer s T↓ₓ x)] := by
+            rw [DDE.Total.transcript_succ_of_query s (absorbFilter P e n)
+              (n := j) (x := x) (by rw [hT]; exact hneed), hT]
+          have houter : DDE.Total.transcript (filterDom P hP s) e (k + 1) =
+              o ++ [(x, answer s T↓ₓ x)] := by
+            rw [DDE.Total.transcript_succ_of_query (filterDom P hP s) e (n := k)
+              (x := x) (by rw [ho]; exact hx), ho,
+              answer_filterDom P hP s o↓ₓ T↓ₓ x hkept, if_pos hPx]
+          refine ⟨j + 1, Nat.succ_le_succ hjk, ?_, fun zs => ?_⟩
+          · rw [hinner, houter, transcriptInputs_concat, transcriptInputs_concat,
+              keptPrefix_filterDom_concat P hP s o↓ₓ T↓ₓ x hkept, if_pos hPx]
+          · rw [hinner, transcriptOutputs_concat, List.append_assoc,
+              List.singleton_append, filterReplay_succ, hreplay _,
+              filterReplayStep_serve P e o _ zs hx (by rw [hans]; exact hPx),
+              houter]
+        · -- a refused query: the filter answers it, with no inner traffic
+          have houter : DDE.Total.transcript (filterDom P hP s) e (k + 1) =
+              o ++ [(x, none)] := by
+            rw [DDE.Total.transcript_succ_of_query (filterDom P hP s) e (n := k)
+              (x := x) (by rw [ho]; exact hx), ho,
+              answer_filterDom P hP s o↓ₓ T↓ₓ x hkept, if_neg hPx]
+          refine ⟨j, hjk.trans (Nat.le_succ k), ?_, fun zs => ?_⟩
+          · rw [hT, houter, transcriptInputs_concat,
+              keptPrefix_filterDom_concat P hP s o↓ₓ T↓ₓ x hkept, if_neg hPx]
+            exact hkept
+          · rw [hT, filterReplay_succ, hreplay zs,
+              filterReplayStep_refuse P e (st := (o, zs)) hx
+                (by rw [hans]; exact hPx), houter]
+
+/-- **Domain filters absorb**: every interaction with a filtered system is a
+fixed post-processing of an interaction with the bare system, uniformly in the
+system.  This is the receipt CR18 Definition 3.10's filter row owed at a
+general prefix-closed predicate.
+
+The filter refuses *before* any inner traffic — its test reads the answers
+already given, never the system's next answer — which is the criterion the B4
+counterexample turns on, and it is why the receipt exists at all. -/
+theorem exists_absorb_filterDom (P : List X → Prop) (hP : PrefixClosed P)
+    (e : DDE.Total Y X) (n : ℕ) :
+    ∃ (e' : DDE.Total Y X) (m : ℕ)
+      (p : List (X × Option Y) → List (X × Option Y)),
+      ∀ s : DDS X Y,
+        DDE.Total.transcript (filterDom P hP s) e n =
+          p (DDE.Total.transcript s e' m) := by
+  refine ⟨absorbFilter P e n, n, fun T => (filterReplay P e T↓ᵧ n).1, fun s => ?_⟩
+  obtain ⟨j, hjn, -, hreplay⟩ := filterReplay_invariant P hP e n s n le_rfl
+  obtain ⟨zs, hzs⟩ :
+      ∃ zs, (DDE.Total.transcript s (absorbFilter P e n) j)↓ᵧ ++ zs =
+        (DDE.Total.transcript s (absorbFilter P e n) n)↓ᵧ := by
+    obtain ⟨w, hw⟩ := DDE.Total.transcript_prefix s (absorbFilter P e n) hjn
+    exact ⟨w↓ᵧ, by simp only [transcriptOutputs, ← List.map_append, hw]⟩
+  show DDE.Total.transcript (filterDom P hP s) e n =
+    (filterReplay P e (DDE.Total.transcript s (absorbFilter P e n) n)↓ᵧ n).1
+  rw [← hzs, hreplay zs]
+
+end FilterAbsorb
+
+
 /-! ## The parallel partner absorbs into the environment
 
 `par c s t` offers the inner system `s` on the queries in `c` and the fixed
@@ -1054,6 +1336,22 @@ theorem block_mem_nonexpandingConverters (Q : Set Uni.{u}) :
     block Q ∈ nonexpandingConverters.{u} := fun RL SL =>
   PDS.advFullyDefined_fTransform_le (System.blockSet Q) RL SL
     fun e n => System.exists_absorb_blockSet Q e n
+
+/-- **CR18 Definition 3.10's filter never helps a distinguisher.**  Whatever an
+environment learns from a filtered resource it learns from the resource itself
+by running the filter: it tests the predicate on the queries it has already had
+answered and refuses on its own behalf (`System.exists_absorb_filterDom`),
+through the pushforward reduction.
+
+This is the receipt the filter row of the ledger owed at a general prefix-closed
+predicate; `block_mem_nonexpandingConverters` is its query-avoiding instance
+(`block_eq_filterPhi`) and `filterQueries_mem_nonexpandingConverters`
+(`FilterPhi.lean`) its budget instance. -/
+theorem filterPhi_mem_nonexpandingConverters (P : List Uni.{u} → Prop)
+    (hP : PrefixClosed P) : filterPhi P hP ∈ nonexpandingConverters.{u} :=
+  fun RL SL =>
+    PDS.advFullyDefined_fTransform_le (System.filterDom P hP) RL SL
+      fun e n => System.exists_absorb_filterDom P hP e n
 
 /-! ## The typed inclusion is an isometry
 

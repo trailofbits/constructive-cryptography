@@ -1931,11 +1931,15 @@ The Φ-level re-basing.  `attachFully` takes the whole face because
 MauRen16 §3.3's `αⁱ` — and whole-face application is recovered as
 `i = Set.univ` (`attachAt_univ`).
 
-The three non-attachment families are **the same sets**, spelled exactly as in
-`converterMonoidFully` / `converterMonoidFullyBudgeted`: blocks, and the two
-parallel frames at a subprobability partner.  Nothing about them changes, so
-their membership proofs and their absorption receipts transfer verbatim; the
-attachment family is the whole of the delta.
+The two parallel frames at a subprobability partner are **the same sets**,
+spelled exactly as in `converterMonoidFully` / `converterMonoidFullyBudgeted`.
+The block family is **widened** (Marc, 2026-08-19) to CR18 Definition 3.10's
+domain filters at an arbitrary prefix-closed predicate: `block Q` is the
+instance at "avoid `Q`" (`block_eq_filterPhi`) and `filterQueries q` the
+instance at "at most `q` answered queries", so every statement proved over the
+old family stands and the query limit is now a converter of the Σ rather than
+merely a nonexpanding endomorphism.  The receipt the widening costs is
+`filterPhi_mem_nonexpandingConverters` (`Absorb.lean`).
 
 The old monoids are **superseded, not deleted**.  They keep their statements,
 their proofs and their receipts, and the demotion bridge places them inside the
@@ -1986,8 +1990,8 @@ theorem attachAt_mem_nonexpandingConverters {i : Set Uni.{u}}
 
 /-- **The interface-indexed converter monoid at A6's budget** — the re-based
 counterpart of `converterMonoidFully`: interface-indexed attachments of engines
-that are inner-total and budgeted *history by history*, blocks, and the
-parallel frames at a subprobability partner.
+that are inner-total and budgeted *history by history*, CR18 Definition 3.10's
+domain filters, and the parallel frames at a subprobability partner.
 
 As with `converterMonoidFully`, no nonexpansion is claimed here: absorption
 needs CR18 Definition 3.8's request bound uniformly over converter histories,
@@ -2000,7 +2004,8 @@ def converterMonoidAtWeakBudget : Submonoid (Function.End Phi.{u}) :=
         (E : System.DDS (Uni.{u} ⊕ Option Uni.{u}) (Uni.{u} ⊕ Uni.{u})),
         System.InnerTotal E ∧ (∃ β, System.AnswersWithinBudget E β) ∧
           π = attachAt i E} ∪
-      {π | ∃ Q : Set Uni.{u}, π = block Q} ∪
+      {π | ∃ (P : List Uni.{u} → Prop) (hP : PrefixClosed P),
+        π = filterPhi P hP} ∪
       {π | ∃ (c : Set Uni.{u}) (TL : Phi.{u}), (∀ t, 0 ≤ ofPhi TL t) ∧
         (ofPhi TL).weight ≤ 1 ∧ π = fun RL => par c RL TL} ∪
       {π | ∃ (c : Set Uni.{u}) (TL : Phi.{u}), (∀ t, 0 ≤ ofPhi TL t) ∧
@@ -2012,9 +2017,13 @@ theorem attachAt_mem_converterMonoidAtWeakBudget (i : Set Uni.{u})
     attachAt i E ∈ converterMonoidAtWeakBudget.{u} :=
   Submonoid.subset_closure (Or.inl (Or.inl (Or.inl ⟨i, E, hIT, hβ, rfl⟩)))
 
+theorem filterPhi_mem_converterMonoidAtWeakBudget (P : List Uni.{u} → Prop)
+    (hP : PrefixClosed P) : filterPhi P hP ∈ converterMonoidAtWeakBudget.{u} :=
+  Submonoid.subset_closure (Or.inl (Or.inl (Or.inr ⟨P, hP, rfl⟩)))
+
 theorem block_mem_converterMonoidAtWeakBudget (Q : Set Uni.{u}) :
     block Q ∈ converterMonoidAtWeakBudget.{u} :=
-  Submonoid.subset_closure (Or.inl (Or.inl (Or.inr ⟨Q, rfl⟩)))
+  block_eq_filterPhi Q ▸ filterPhi_mem_converterMonoidAtWeakBudget _ _
 
 theorem parRight_mem_converterMonoidAtWeakBudget (c : Set Uni.{u})
     {TL : Phi.{u}} (h0 : ∀ t, 0 ≤ ofPhi TL t) (h1 : (ofPhi TL).weight ≤ 1) :
@@ -2032,9 +2041,11 @@ example : (1 : Function.End Phi.{u}) ∈ converterMonoidAtWeakBudget.{u} :=
   one_mem _
 
 /-- **The metric-facing Σ, interface-indexed** — the re-based counterpart of
-`converterMonoidFullyBudgeted`: the same three non-attachment families,
-with the attachment family carrying MauRen16 §3.3's interface index *and* CR18
-Definition 3.8's *uniform* request bound.  This is the Σ over which the fully
+`converterMonoidFullyBudgeted`: the parallel frames unchanged, the block
+family widened to CR18 Definition 3.10's domain filters at a prefix-closed
+predicate (Marc's re-ruling, 2026-08-19 — `block Q` and `filterQueries q` are
+both instances), and the attachment family carrying MauRen16 §3.3's interface
+index *and* CR18 Definition 3.8's *uniform* request bound.  This is the Σ over which the fully
 defined metric layer's Definition 2 and Lemma 1∘2 receipts hold
 (`MetricFullyDefined.lean`).
 
@@ -2048,7 +2059,8 @@ def converterMonoidAt : Submonoid (Function.End Phi.{u}) :=
         (E : System.DDS (Uni.{u} ⊕ Option Uni.{u}) (Uni.{u} ⊕ Uni.{u})),
         System.InnerTotal E ∧ System.AnswersWithinUniformBudget E ∧
           π = attachAt i E} ∪
-      {π | ∃ Q : Set Uni.{u}, π = block Q} ∪
+      {π | ∃ (P : List Uni.{u} → Prop) (hP : PrefixClosed P),
+        π = filterPhi P hP} ∪
       {π | ∃ (c : Set Uni.{u}) (TL : Phi.{u}), (∀ t, 0 ≤ ofPhi TL t) ∧
         (ofPhi TL).weight ≤ 1 ∧ π = fun RL => par c RL TL} ∪
       {π | ∃ (c : Set Uni.{u}) (TL : Phi.{u}), (∀ t, 0 ≤ ofPhi TL t) ∧
@@ -2060,9 +2072,19 @@ theorem attachAt_mem_converterMonoidAt (i : Set Uni.{u})
     attachAt i E ∈ converterMonoidAt.{u} :=
   Submonoid.subset_closure (Or.inl (Or.inl (Or.inl ⟨i, E, hIT, hβ, rfl⟩)))
 
+/-- **CR18 Definition 3.10's filter is a generator of the metric-facing Σ.**
+The family is every domain filter at a prefix-closed predicate, which is what
+`block Q` and `filterQueries q` both are. -/
+theorem filterPhi_mem_converterMonoidAt (P : List Uni.{u} → Prop)
+    (hP : PrefixClosed P) : filterPhi P hP ∈ converterMonoidAt.{u} :=
+  Submonoid.subset_closure (Or.inl (Or.inl (Or.inr ⟨P, hP, rfl⟩)))
+
+/-- MauRen16 §3.4's `⊣` at the widened family: blocking is the filter at the
+query-avoiding predicate (`block_eq_filterPhi`).  The statement is unchanged —
+only its proof moved from a generator of its own to an instance of one. -/
 theorem block_mem_converterMonoidAt (Q : Set Uni.{u}) :
     block Q ∈ converterMonoidAt.{u} :=
-  Submonoid.subset_closure (Or.inl (Or.inl (Or.inr ⟨Q, rfl⟩)))
+  block_eq_filterPhi Q ▸ filterPhi_mem_converterMonoidAt _ _
 
 theorem parRight_mem_converterMonoidAt (c : Set Uni.{u})
     {TL : Phi.{u}} (h0 : ∀ t, 0 ≤ ofPhi TL t) (h1 : (ofPhi TL).weight ≤ 1) :
@@ -2085,18 +2107,20 @@ claimed, and `converterMonoidAtWeakBudget` carries no nonexpansion receipt. -/
 theorem converterMonoidAt_le_converterMonoidAtWeakBudget :
     converterMonoidAt.{u} ≤ converterMonoidAtWeakBudget.{u} := by
   refine Submonoid.closure_le.mpr ?_
-  rintro π ((((⟨i, E, hIT, ⟨β, _, hβ, _⟩, rfl⟩) | ⟨Q, rfl⟩) |
+  rintro π ((((⟨i, E, hIT, ⟨β, _, hβ, _⟩, rfl⟩) | ⟨P, hP, rfl⟩) |
     ⟨c, TL, h0, h1, rfl⟩) | ⟨c, TL, h0, h1, rfl⟩)
   · exact attachAt_mem_converterMonoidAtWeakBudget i hIT ⟨β, hβ⟩
-  · exact block_mem_converterMonoidAtWeakBudget Q
+  · exact filterPhi_mem_converterMonoidAtWeakBudget P hP
   · exact parRight_mem_converterMonoidAtWeakBudget c h0 h1
   · exact parLeft_mem_converterMonoidAtWeakBudget c h0 h1
 
 /-- **The interface-indexed converter monoid is nonexpanding** — the closure
 step, re-based.  Every generator absorbs into the environment: interface-indexed
 attachments by `System.exists_absorb_attachEngineFully` (through
-`attachAt_mem_nonexpandingConverters`), blocks by `exists_absorb_blockSet`,
-parallel frames by `exists_absorb_par` — and `nonexpandingConverters` is a
+`attachAt_mem_nonexpandingConverters`), domain filters by
+`System.exists_absorb_filterDom` (through
+`filterPhi_mem_nonexpandingConverters`), parallel frames by
+`exists_absorb_par` — and `nonexpandingConverters` is a
 submonoid, so the whole closure does.
 
 This is the re-based counterpart of
@@ -2107,18 +2131,19 @@ the S4 receipts hold at the interface-indexed Σ.  It is *not* available for
 theorem converterMonoidAt_le_nonexpandingConverters :
     converterMonoidAt.{u} ≤ nonexpandingConverters.{u} := by
   refine Submonoid.closure_le.mpr ?_
-  rintro π ((((⟨i, E, hIT, ⟨β, K, hβ, hK⟩, rfl⟩) | ⟨Q, rfl⟩) |
+  rintro π ((((⟨i, E, hIT, ⟨β, K, hβ, hK⟩, rfl⟩) | ⟨P, hP, rfl⟩) |
     ⟨c, TL, h0, h1, rfl⟩) | ⟨c, TL, h0, h1, rfl⟩)
   · exact attachAt_mem_nonexpandingConverters hIT hβ hK
-  · exact block_mem_nonexpandingConverters Q
+  · exact filterPhi_mem_nonexpandingConverters P hP
   · exact parRight_mem_nonexpandingConverters h0 h1
   · exact parLeft_mem_nonexpandingConverters h0 h1
 
 /-! ### Supersession, not deletion
 
 The whole-face monoids are contained in the interface-indexed ones, generator
-by generator: the three non-attachment families are literally the same sets,
-and a whole-face attachment is `attachAt Set.univ` by the demotion bridge.  So
+by generator: the parallel frames are literally the same sets, the old block
+generator is the filter at the query-avoiding predicate, and a whole-face
+attachment is `attachAt Set.univ` by the demotion bridge.  So
 every statement already proved over `converterMonoidFully(Budgeted)` is a
 statement about a sub-family of the re-based Σ, and nothing has to be
 re-derived to keep it. -/
