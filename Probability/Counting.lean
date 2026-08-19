@@ -1713,6 +1713,378 @@ theorem uniform_mass_eval_eq {X Y ι : Type*} [Fintype X] [DecidableEq X]
   push_cast
   ring
 
+/-! ## Lazy sampling along a walk on a uniform random function
+
+Unlike the rest of this file, this section is **not** a transplant: it is new
+here.  It is still carrier-free counting — `Distribution.uniform` on a function
+type and on a tuple type, and nothing else — and every declaration is an
+**UPSTREAM-CANDIDATE**.
+
+The object is a *walk*: a finite set `ι` of **sites**, each site `t` carrying a
+parent `par t` (`none` for a site that starts from the public initial state
+`x₀`) and a step `g t`, and a family `inp` of site inputs satisfying the walk
+recursion
+
+`inp f t = g t (x₀ or f (inp f (parent t)))`
+
+against a function `f`.  This is exactly a chaining mode: the input consumed at
+a site is an injective function of the value the function returned at the
+parent site.
+
+The content is the classical **lazy-sampling** reading of such a walk: as long
+as no two sites have collided at their inputs, the values the function returns
+along the walk are distributed as independent uniform draws, so the probability
+that two sites *do* collide is the birthday bound for `|ι|` uniform draws,
+`|ι|(|ι|−1)/2|𝒳|` — `Probability.Counting.birthday_bound`'s right-hand side at
+`q := |ι|`.  (The route below is the union bound, not the falling factorial:
+the two agree at this value, and the union bound needs neither `q ≤ N` nor a
+`(N)_q` count.)
+
+The "until the first repeat" qualifier is not decoration.  The push-forward of
+the uniform law on `𝒳 → 𝒳` along the walk's evaluations is *not* the uniform
+law on tuples: a tuple whose replayed walk repeats a site input may be
+unreachable.  `uniform_mass_walk_eval_eq` is therefore stated at a repeat-free
+tuple, and `uniform_mass_walk_injective_eq` transports only the repeat-free
+region — which is all the birthday argument reads, since the complement is
+taken afterwards.
+
+Two hypotheses carry the whole case analysis, and they are the two halves of
+"the step is injective in both arguments":
+
+* `hg` — each `g t` is injective, so a uniform state gives a uniform input.
+  This is what a *continuation* step consumes.
+* `hsib` — two distinct sites sharing a parent have steps that differ at every
+  state.  This is what makes a collision between two sites reading the *same*
+  state (in particular two sites starting from `x₀`, whose inputs are
+  deterministic) impossible rather than merely unlikely.
+-/
+
+/-- The input consumed at site `t` when the walk is replayed in the **lazy
+world**: against a tuple `y` of recorded outputs rather than against a
+function.  `par t = none` marks a site that starts from the public initial
+state `x₀`. -/
+def walkSite {ι X : Type*} (par : ι → Option ι) (g : ι → X → X) (x₀ : X)
+    (y : ι → X) (t : ι) : X :=
+  g t ((par t).elim x₀ y)
+
+/-- UPSTREAM-CANDIDATE.  **A walk always replays itself.**  Run the lazy walk
+on the very outputs `f` produced, and it reproduces `f`'s own site inputs.
+This needs no hypothesis on the walk at all — it is the recursion read
+outwards. -/
+theorem walkSite_of_eval {ι X : Type*}
+    (par : ι → Option ι) (g : ι → X → X) (x₀ : X)
+    (inp : (X → X) → ι → X)
+    (hinp : ∀ f t, inp f t = g t ((par t).elim x₀ (fun h => f (inp f h))))
+    (f : X → X) :
+    inp f = walkSite par g x₀ (fun t => f (inp f t)) := by
+  funext t
+  rw [hinp f t]
+  rfl
+
+/-- UPSTREAM-CANDIDATE.  **A walk is pinned by a consistent tuple**: if `f`
+answers `y t` at every lazily replayed site input, then `f`'s own site inputs
+*are* the replayed ones.  The converse direction of `walkSite_of_eval`, and the
+one that needs the parent relation to be well-founded — supplied here as a
+`rank` that strictly decreases towards the parent. -/
+theorem eq_walkSite_of_eval_eq {ι X : Type*}
+    (par : ι → Option ι) (g : ι → X → X) (x₀ : X) (rank : ι → ℕ)
+    (hrank : ∀ t h, par t = some h → rank h < rank t)
+    (inp : (X → X) → ι → X)
+    (hinp : ∀ f t, inp f t = g t ((par t).elim x₀ (fun h => f (inp f h))))
+    {f : X → X} {y : ι → X}
+    (hf : ∀ t, f (walkSite par g x₀ y t) = y t) :
+    inp f = walkSite par g x₀ y := by
+  have key : ∀ n : ℕ, ∀ t : ι, rank t ≤ n → inp f t = walkSite par g x₀ y t := by
+    intro n
+    induction n with
+    | zero =>
+      intro t ht
+      rw [hinp f t]
+      rcases hp : par t with _ | h
+      · simp [walkSite, hp]
+      · exact absurd (hrank t h hp) (by omega)
+    | succ n ih =>
+      intro t ht
+      rw [hinp f t]
+      rcases hp : par t with _ | h
+      · simp [walkSite, hp]
+      · have hh : rank h ≤ n := by have := hrank t h hp; omega
+        simp only [hp, Option.elim, walkSite]
+        rw [ih h hh, hf h]
+  exact funext fun t => key (rank t) t le_rfl
+
+/-- UPSTREAM-CANDIDATE.  **The law of the walk's evaluations, until the first
+repeat.**  At a tuple `y` whose replayed walk visits pairwise distinct site
+inputs, the uniform random function returns exactly `y` with probability
+`(1/|𝒳|)^{|ι|}` — the law of `|ι|` independent uniform draws.
+
+This is the lazy-sampling statement.  It is false without the repeat-freeness
+hypothesis: at a tuple whose replay repeats an input the two directions of
+`walkSite_of_eval` still pin the fiber, but the fiber is the one of a *smaller*
+set of distinct evaluation points, so its mass is larger (or zero). -/
+theorem uniform_mass_walk_eval_eq {ι X : Type*} [Fintype ι] [DecidableEq ι]
+    [Fintype X] [DecidableEq X] [Nonempty X]
+    (par : ι → Option ι) (g : ι → X → X) (x₀ : X) (rank : ι → ℕ)
+    (hrank : ∀ t h, par t = some h → rank h < rank t)
+    (inp : (X → X) → ι → X)
+    (hinp : ∀ f t, inp f t = g t ((par t).elim x₀ (fun h => f (inp f h))))
+    {y : ι → X} (hy : Function.Injective (walkSite par g x₀ y)) :
+    (Distribution.uniform (X → X)).mass (fun f => (fun t => f (inp f t)) = y)
+      = (1 / (Fintype.card X : ℝ)) ^ Fintype.card ι := by
+  have hev : ∀ f : X → X,
+      ((fun t => f (inp f t)) = y) ↔ ((fun t => f (walkSite par g x₀ y t)) = y) := by
+    intro f
+    constructor
+    · intro h
+      have hw : inp f = walkSite par g x₀ y := by
+        rw [walkSite_of_eval par g x₀ inp hinp f, h]
+      rw [← hw]; exact h
+    · intro h
+      have hw : inp f = walkSite par g x₀ y :=
+        eq_walkSite_of_eval_eq par g x₀ rank hrank inp hinp (congrFun h)
+      rw [hw]; exact h
+  rw [Distribution.mass_congr _ hev]
+  exact uniform_mass_eval_eq (walkSite par g x₀ y) hy y
+
+/-- UPSTREAM-CANDIDATE.  **The repeat-free region has the same mass in both
+worlds.**  The probability that a uniform random function drives the walk
+without a repeat equals the probability that `|ι|` independent uniform draws
+replay it without a repeat.  Only the repeat-free region transports — which is
+enough, because the birthday argument takes the complement afterwards. -/
+theorem uniform_mass_walk_injective_eq {ι X : Type*} [Fintype ι] [DecidableEq ι]
+    [Fintype X] [DecidableEq X] [Nonempty X]
+    (par : ι → Option ι) (g : ι → X → X) (x₀ : X) (rank : ι → ℕ)
+    (hrank : ∀ t h, par t = some h → rank h < rank t)
+    (inp : (X → X) → ι → X)
+    (hinp : ∀ f t, inp f t = g t ((par t).elim x₀ (fun h => f (inp f h)))) :
+    (Distribution.uniform (X → X)).mass (fun f => Function.Injective (inp f))
+      = (Distribution.uniform (ι → X)).mass
+          (fun y => Function.Injective (walkSite par g x₀ y)) := by
+  classical
+  have h1 : (Distribution.uniform (X → X)).mass (fun f => Function.Injective (inp f))
+      = (Distribution.fTransform (fun f : X → X => fun t => f (inp f t))
+          (Distribution.uniform (X → X))).mass
+          (fun y => Function.Injective (walkSite par g x₀ y)) := by
+    rw [Distribution.mass_fTransform]
+    refine Distribution.mass_congr _ fun f => ?_
+    rw [← walkSite_of_eval par g x₀ inp hinp f]
+  rw [h1,
+    Distribution.mass_eq_sum_of_support_subset _ (Finset.subset_univ _),
+    Distribution.mass_eq_sum_of_support_subset _ (Finset.subset_univ _)]
+  refine Finset.sum_congr rfl fun y hy => ?_
+  have hinj : Function.Injective (walkSite par g x₀ y) := (Finset.mem_filter.mp hy).2
+  rw [Distribution.fTransform_apply_eq_mass, Distribution.uniform_apply,
+    uniform_mass_walk_eval_eq par g x₀ rank hrank inp hinp hinj,
+    Fintype.card_fun, div_pow, one_pow]
+  push_cast
+  ring
+
+/-- UPSTREAM-CANDIDATE.  **One coordinate determined is one factor lost.**  If
+an event on uniform tuples pins the value at coordinate `c` — through an
+injective `u` — against a quantity `v` that never reads coordinate `c`, its
+probability is at most `1/|𝒳|`.
+
+This is the elementary counting behind every step of a birthday argument, in
+the form the walk consumes: `u` is the step at the site being added and `v` is
+the input already sitting at the site it might hit. -/
+theorem uniform_mass_coord_determined_le {ι X : Type*} [Fintype ι] [DecidableEq ι]
+    [Fintype X] [DecidableEq X] [Nonempty X]
+    (c : ι) (u : X → X) (hu : Function.Injective u) (v : (ι → X) → X)
+    (hv : ∀ y z : ι → X, (∀ i, i ≠ c → y i = z i) → v y = v z) :
+    (Distribution.uniform (ι → X)).mass (fun y => u (y c) = v y)
+      ≤ 1 / (Fintype.card X : ℝ) := by
+  classical
+  have hXpos : (0 : ℝ) < (Fintype.card X : ℝ) := by exact_mod_cast Fintype.card_pos
+  have hcpos : 0 < Fintype.card ι := Fintype.card_pos_iff.mpr ⟨c⟩
+  have hsub : Fintype.card {i : ι // i ≠ c} = Fintype.card ι - 1 := by
+    rw [Fintype.card_subtype_compl (p := fun i : ι => i = c), Fintype.card_subtype_eq]
+  have hcard : ((Finset.univ : Finset (ι → X)).filter (fun y => u (y c) = v y)).card
+      ≤ Fintype.card X ^ (Fintype.card ι - 1) := by
+    have hle := Finset.card_le_card_of_injOn
+      (f := fun (y : ι → X) => fun i : {i : ι // i ≠ c} => y i.1)
+      (s := (Finset.univ : Finset (ι → X)).filter (fun y => u (y c) = v y))
+      (t := (Finset.univ : Finset ({i : ι // i ≠ c} → X)))
+      (fun y _ => Finset.mem_univ _) ?_
+    · rw [Finset.card_univ, Fintype.card_fun, hsub] at hle
+      exact hle
+    · intro y hy z hz hyz
+      simp only [Finset.coe_filter, Set.mem_setOf_eq] at hy hz
+      have hoff : ∀ i, i ≠ c → y i = z i := fun i hi => congrFun hyz ⟨i, hi⟩
+      have hc : y c = z c := hu (by rw [hy.2, hv y z hoff, ← hz.2])
+      funext i
+      by_cases hi : i = c
+      · subst hi; exact hc
+      · exact hoff i hi
+  rw [Distribution.uniform_mass_eq_card_filter, Fintype.card_fun]
+  push_cast
+  rw [div_le_div_iff₀ (by positivity) hXpos]
+  have hpow : (Fintype.card X : ℝ) ^ Fintype.card ι
+      = (Fintype.card X : ℝ) ^ (Fintype.card ι - 1) * (Fintype.card X : ℝ) := by
+    rw [← pow_succ]
+    congr 1
+    omega
+  rw [one_mul, hpow]
+  have hcast : (((Finset.univ : Finset (ι → X)).filter (fun y => u (y c) = v y)).card : ℝ)
+      ≤ (Fintype.card X : ℝ) ^ (Fintype.card ι - 1) := by
+    exact_mod_cast hcard
+  exact mul_le_mul_of_nonneg_right hcast hXpos.le
+
+/-- UPSTREAM-CANDIDATE.  **One step of the birthday argument.**  In the lazy
+world two distinct sites collide with probability at most `1/|𝒳|`.
+
+The case analysis is the whole point, and both branches are genuinely
+different.  If the two sites share a parent they read the *same* state, and
+`hsib` makes the collision outright impossible — this is the branch that covers
+two sites starting from the fixed `x₀`, whose inputs carry no randomness at
+all.  Otherwise one of the two reads a state that the other does not, and
+`uniform_mass_coord_determined_le` charges the step `1/|𝒳|`; note this runs in
+*either* direction, so a deterministic site colliding with a randomized one is
+charged just as a continuation step is. -/
+theorem uniform_mass_walkSite_eq_le {ι X : Type*} [Fintype ι] [DecidableEq ι]
+    [Fintype X] [DecidableEq X] [Nonempty X]
+    (par : ι → Option ι) (g : ι → X → X) (x₀ : X)
+    (hg : ∀ t, Function.Injective (g t))
+    (hsib : ∀ t t', t ≠ t' → par t = par t' → ∀ x : X, g t x ≠ g t' x)
+    {t t' : ι} (htt : t ≠ t') :
+    (Distribution.uniform (ι → X)).mass
+        (fun y => walkSite par g x₀ y t = walkSite par g x₀ y t')
+      ≤ 1 / (Fintype.card X : ℝ) := by
+  classical
+  have hXpos : (0 : ℝ) < (Fintype.card X : ℝ) := by exact_mod_cast Fintype.card_pos
+  by_cases hpar : par t = par t'
+  · have hz : (Distribution.uniform (ι → X)).mass
+        (fun y => walkSite par g x₀ y t = walkSite par g x₀ y t') = 0 :=
+      Distribution.mass_eq_zero_of_forall_not _ fun y hy =>
+        hsib t t' htt hpar ((par t').elim x₀ y)
+          (by simpa only [walkSite, hpar] using hy)
+    rw [hz]
+    positivity
+  · rcases hp : par t with _ | c
+    · rcases hp' : par t' with _ | c'
+      · exact absurd (by rw [hp, hp']) hpar
+      · refine le_of_le_of_eq ?_ rfl
+        have hdet := uniform_mass_coord_determined_le (ι := ι) (X := X) c' (g t')
+          (hg t') (fun y => walkSite par g x₀ y t) ?_
+        · refine le_trans (le_of_eq ?_) hdet
+          refine Distribution.mass_congr _ fun y => ?_
+          simp [walkSite, hp, hp', eq_comm]
+        · intro y z hyz
+          simp [walkSite, hp]
+    · have hdet := uniform_mass_coord_determined_le (ι := ι) (X := X) c (g t)
+        (hg t) (fun y => walkSite par g x₀ y t') ?_
+      · refine le_trans (le_of_eq ?_) hdet
+        refine Distribution.mass_congr _ fun y => ?_
+        simp [walkSite, hp]
+      · intro y z hyz
+        rcases hp' : par t' with _ | c'
+        · simp [walkSite, hp']
+        · have hne : c' ≠ c := by
+            intro h
+            exact hpar (by rw [hp, hp', h])
+          simp [walkSite, hp', hyz c' hne]
+
+/-- UPSTREAM-CANDIDATE.  **The birthday bound for a walk, on a set of sites.**
+The union bound run one site at a time: adding a site to `s` either repeats a
+collision already inside `s`, or hits one of its `|s|` inputs, and the second
+costs `|s|/|𝒳|`.
+
+The induction is on the *set of sites*, not on a global statement, because
+"repeat-free so far" is what makes the next step's charge legitimate; the
+telescoping `∑_{k<|s|} k/|𝒳|` is the birthday bound's arithmetic. -/
+theorem uniform_mass_walkSite_not_injOn_le {ι X : Type*} [Fintype ι] [DecidableEq ι]
+    [Fintype X] [DecidableEq X] [Nonempty X]
+    (par : ι → Option ι) (g : ι → X → X) (x₀ : X)
+    (hg : ∀ t, Function.Injective (g t))
+    (hsib : ∀ t t', t ≠ t' → par t = par t' → ∀ x : X, g t x ≠ g t' x)
+    (s : Finset ι) :
+    (Distribution.uniform (ι → X)).mass
+        (fun y => ¬ Set.InjOn (walkSite par g x₀ y) ↑s)
+      ≤ (s.card : ℝ) * ((s.card : ℝ) - 1) / (2 * Fintype.card X) := by
+  classical
+  have hXpos : (0 : ℝ) < (Fintype.card X : ℝ) := by exact_mod_cast Fintype.card_pos
+  induction s using Finset.induction_on with
+  | empty =>
+    have hz : (Distribution.uniform (ι → X)).mass
+        (fun y => ¬ Set.InjOn (walkSite par g x₀ y) ↑(∅ : Finset ι)) = 0 :=
+      Distribution.mass_eq_zero_of_forall_not _ (by simp)
+    rw [hz]
+    simp
+  | insert a s ha ih =>
+    have hstep : ∀ y : ι → X,
+        (¬ Set.InjOn (walkSite par g x₀ y) ↑(insert a s)) →
+          ((¬ Set.InjOn (walkSite par g x₀ y) ↑s) ∨
+            ∃ t ∈ s, walkSite par g x₀ y t = walkSite par g x₀ y a) := by
+      intro y hy
+      by_contra hcon
+      push Not at hcon
+      obtain ⟨h1, h2⟩ := hcon
+      refine hy fun u hu v hv huv => ?_
+      simp only [Finset.coe_insert, Set.mem_insert_iff, Finset.mem_coe] at hu hv
+      rcases hu with rfl | hu
+      · rcases hv with rfl | hv
+        · rfl
+        · exact absurd huv.symm (h2 v hv)
+      · rcases hv with rfl | hv
+        · exact absurd huv (h2 u hu)
+        · exact h1 (by simpa using hu) (by simpa using hv) huv
+    have hsum : (Distribution.uniform (ι → X)).mass
+        (fun y => ∃ t ∈ s, walkSite par g x₀ y t = walkSite par g x₀ y a)
+          ≤ (s.card : ℝ) / (Fintype.card X : ℝ) := by
+      refine le_trans (Distribution.mass_exists_le Distribution.uniform_nonNeg s _) ?_
+      refine le_trans (Finset.sum_le_sum (fun t ht =>
+        uniform_mass_walkSite_eq_le par g x₀ hg hsib
+          (fun h => ha (h ▸ ht)))) ?_
+      rw [Finset.sum_const, nsmul_eq_mul, mul_one_div]
+    have hcards : ((insert a s).card : ℝ) = (s.card : ℝ) + 1 := by
+      rw [Finset.card_insert_of_notMem ha]
+      push_cast
+      ring
+    refine le_trans (le_trans (Distribution.mass_mono Distribution.uniform_nonNeg hstep)
+      (Distribution.mass_or_le Distribution.uniform_nonNeg _ _)) ?_
+    rw [hcards]
+    refine le_trans (add_le_add ih hsum) (le_of_eq ?_)
+    field_simp
+    ring
+
+/-- UPSTREAM-CANDIDATE.  **The lazy-sampling birthday bound for a walk.**  A
+uniform random function drives the walk into a repeated site input with
+probability at most `|ι|(|ι|−1)/2|𝒳|` — the birthday bound for `|ι|` uniform
+draws from `𝒳` (`birthday_bound`'s right-hand side at `q := |ι|`).
+
+The two hypotheses on the walk are the two halves of injectivity of the step:
+`hg` says a uniform state gives a uniform input, and `hsib` says two distinct
+sites reading the same state cannot agree.  `hrank` says the parent relation is
+well-founded, which is what lets a tuple of outputs replay the walk. -/
+theorem uniform_mass_walk_repeat_le {ι X : Type*} [Fintype ι] [DecidableEq ι]
+    [Fintype X] [DecidableEq X] [Nonempty X]
+    (par : ι → Option ι) (g : ι → X → X) (x₀ : X) (rank : ι → ℕ)
+    (hrank : ∀ t h, par t = some h → rank h < rank t)
+    (hg : ∀ t, Function.Injective (g t))
+    (hsib : ∀ t t', t ≠ t' → par t = par t' → ∀ x : X, g t x ≠ g t' x)
+    (inp : (X → X) → ι → X)
+    (hinp : ∀ f t, inp f t = g t ((par t).elim x₀ (fun h => f (inp f h)))) :
+    (Distribution.uniform (X → X)).mass (fun f => ¬ Function.Injective (inp f))
+      ≤ (Fintype.card ι : ℝ) * ((Fintype.card ι : ℝ) - 1)
+          / (2 * Fintype.card X) := by
+  classical
+  have hcompl := Distribution.mass_add_compl (Distribution.uniform (X → X))
+    (fun f => Function.Injective (inp f))
+  have hcompl' := Distribution.mass_add_compl (Distribution.uniform (ι → X))
+    (fun y => Function.Injective (walkSite par g x₀ y))
+  rw [Distribution.weight_uniform] at hcompl hcompl'
+  have hkey := uniform_mass_walk_injective_eq par g x₀ rank hrank inp hinp
+  have heq : (Distribution.uniform (X → X)).mass (fun f => ¬ Function.Injective (inp f))
+      = (Distribution.uniform (ι → X)).mass
+        (fun y => ¬ Function.Injective (walkSite par g x₀ y)) := by
+    rw [hkey] at hcompl
+    linarith
+  rw [heq]
+  have hB := uniform_mass_walkSite_not_injOn_le par g x₀ hg hsib (Finset.univ : Finset ι)
+  rw [Finset.card_univ] at hB
+  refine le_trans (le_of_eq ?_) hB
+  refine Distribution.mass_congr _ fun y => ?_
+  rw [Finset.coe_univ, Set.injOn_univ]
+
 /-! ## Block-major pair encoding
 
 Coordinates `(i, j)` with `i < q`, `j < L` encoded block-major into `Fin (q·L)` as `j·q + i` —

@@ -88,6 +88,11 @@ Proved:
   function *is* the on-ramped CBC chain (`attachEngineFully_cbcRound_univ`, and
   at Φ `cbcConverter_smul_Rnn`), which is what ties the `Σ` element to the
   function `cbcState f ∘ bf` at all;
+* CR18's collision count, printed p. 127 — the blind winning probability of
+  the restricted collision game is at most `½ r² 2^{-n}`
+  (`blindSupWinProb_cbcGameLaw_theta_le_sq`), through the lazy-sampling
+  birthday bound `Probability.Counting.uniform_mass_walk_repeat_le` at CBC's
+  step function;
 * the crossing from the distance bound to Theorem 6.1's construction
   statement.  That crossing is **notation, not content** — `cbc_mac_constructs`
   is a scaffold, see its docstring — and the one consequence actually
@@ -95,7 +100,7 @@ Proved:
 
 Not proved, and stated as the hypothesis `hcbc` of the endpoint: the
 distinguishing bound itself, which is CR18 Theorem 6.1's mathematics in full.
-**Four** of the six obligations listed at `cbc_mac_constructs` are open.
+**Three** of the six obligations listed at `cbc_mac_constructs` are open.
 -/
 
 namespace RandomSystems.CBCMAC
@@ -1420,6 +1425,251 @@ theorem filterAdmit_sat (P : List A → Prop) [DecidablePred P] (h0 : P ([] : Li
 
 end Theta
 
+/-! ## CR18's collision count, printed p. 127
+
+"For the processing of any such list of messages, as long as the game is not
+won, the next value for which a collision should occur to win the game in the
+next step is uniformly random (as one can easily see).  The probability of a
+collision in such a sequence is the same as the probability of having a
+collision in a list [o]f `r` uniform `n`-bit strings, i.e., the upper bound of
+Lemma 4.18 can be applied and we have `Γ(bθ_r ĈBC R_{n,n}) ≤ ½ r² 2^{-n}`"
+(**printed p. 127**, read on the rendered page).
+
+That paragraph is a *lazy-sampling* argument and it is proved here as one:
+`Probability.Counting.uniform_mass_walk_repeat_le` at CBC's step function.  The
+walk's sites are the block prefixes below — each one is a computation the round
+function is asked about, its parent is the same computation one round earlier,
+and its step offsets the parent's chaining value by one block.  "As one can
+easily see" is `hg` and `hsib` of that theorem: `x ↦ x + b` is injective, so a
+uniform chaining value gives a uniform next input; and two distinct sites with
+the same parent carry different blocks, so they cannot collide at all.  The
+second is not decoration — it is what makes the *first* block of a message,
+whose input `0 + b` carries no randomness, harmless.
+
+Sites are *prefixes*, so the shared prefix of two messages is one site, not
+two.  That is CR18's `A_i`, which excludes equal block prefixes as trivial
+(`cbcBad`), and it is also what makes the site count `≤ θ_r`'s block budget
+`r` rather than a sum with repetitions.
+-/
+
+/-- The block prefixes designating the CBC call sites reached by a query
+history: `p` is a site when some queried message begins with exactly the block
+sequence `p`.  Distinct messages sharing a prefix designate the *same* site,
+which is CR18's reading of `A_i` (printed p. 126) and what keeps the count at
+the block budget. -/
+def cbcSites (bf : M → List X) (l : List M) : Finset (List X) :=
+  (l.flatMap fun m =>
+    (List.range (bf m).length).map fun j => (bf m).take (j + 1)).toFinset
+
+/-- The block consumed at the call site designated by a block prefix: its last
+block. -/
+def cbcSiteBlock (p : List X) : X := p.getD (p.length - 1) 0
+
+/-- The round-function input at the call site designated by a block prefix.
+`cbcLastInput f bf m` is its value at a whole encoded message. -/
+def cbcSiteInput (f : X → X) (p : List X) : X := cbcInput f p (p.length - 1)
+
+/-- A block prefix is a call site exactly when some queried message begins with
+it. -/
+theorem mem_cbcSites {bf : M → List X} {l : List M} {p : List X} :
+    p ∈ cbcSites bf l ↔ ∃ m ∈ l, ∃ j < (bf m).length, p = (bf m).take (j + 1) := by
+  simp only [cbcSites, List.mem_toFinset, List.mem_flatMap, List.mem_map,
+    List.mem_range]
+  constructor
+  · rintro ⟨m, hm, j, hj, rfl⟩
+    exact ⟨m, hm, j, hj, rfl⟩
+  · rintro ⟨m, hm, j, hj, rfl⟩
+    exact ⟨m, hm, j, hj, rfl⟩
+
+/-- Every call site consumes at least one block. -/
+theorem cbcSites_ne_nil {bf : M → List X} {l : List M} {p : List X}
+    (hp : p ∈ cbcSites bf l) : p ≠ [] := by
+  obtain ⟨m, hm, j, hj, rfl⟩ := mem_cbcSites.mp hp
+  intro h
+  have hl2 : ((bf m).take (j + 1)).length = 0 := by rw [h]; rfl
+  rw [List.length_take] at hl2
+  omega
+
+/-- The call sites are closed under dropping the last block: the round before a
+round is a round. -/
+theorem dropLast_mem_cbcSites {bf : M → List X} {l : List M} {p : List X}
+    (hp : p ∈ cbcSites bf l) (hne : p.dropLast ≠ []) :
+    p.dropLast ∈ cbcSites bf l := by
+  obtain ⟨m, hm, j, hj, rfl⟩ := mem_cbcSites.mp hp
+  have hlen : ((bf m).take (j + 1)).length = j + 1 := by
+    rw [List.length_take]; omega
+  have hdl : ((bf m).take (j + 1)).dropLast = (bf m).take j := by
+    rw [List.dropLast_eq_take, hlen, List.take_take]
+    congr 1
+    omega
+  rw [hdl] at hne ⊢
+  have hj0 : j ≠ 0 := by
+    intro h; exact hne (by simp [h])
+  refine mem_cbcSites.mpr ⟨m, hm, j - 1, by omega, ?_⟩
+  congr 1
+  omega
+
+/-- **Shared prefixes are counted once**: the number of call sites is at most
+the number of blocks emitted, which is what `θ_r` bounds. -/
+theorem card_cbcSites_le (bf : M → List X) (l : List M) :
+    (cbcSites bf l).card ≤ totalBlocks bf l := by
+  refine le_trans (List.toFinset_card_le _) (le_of_eq ?_)
+  simp [totalBlocks, List.length_flatMap]
+
+/-- The site designated by a message's first `j+1` blocks carries that
+message's round-`j` input. -/
+theorem cbcSiteInput_take (f : X → X) (bs : List X) {j : ℕ} (hj : j < bs.length) :
+    cbcSiteInput f (bs.take (j + 1)) = cbcInput f bs j := by
+  have hlen : (bs.take (j + 1)).length = j + 1 := by
+    rw [List.length_take]; omega
+  unfold cbcSiteInput cbcInput
+  rw [hlen]
+  have h1 : (bs.take (j + 1)).take (j + 1 - 1) = bs.take j := by
+    rw [List.take_take]
+    congr 1
+    omega
+  have h2 : (bs.take (j + 1)).getD (j + 1 - 1) 0 = bs.getD j 0 := by
+    simp only [Nat.add_sub_cancel]
+    rw [List.getD_eq_getElem?_getD, List.getD_eq_getElem?_getD, List.getElem?_take]
+    simp
+  rw [h1, h2]
+
+/-- A site's input is its parent's chaining value offset by its own block —
+the walk's step, at CBC. -/
+theorem cbcSiteInput_eq (f : X → X) (p : List X) :
+    cbcSiteInput f p = cbcState f p.dropLast + cbcSiteBlock p := by
+  rw [cbcSiteInput, cbcInput, cbcSiteBlock, List.dropLast_eq_take]
+
+/-- **Two distinct sites with the same parent carry different blocks.**  This
+is the walk's sibling hypothesis at CBC, and it is what rules out a collision
+between two *first* blocks — inputs that are deterministic, so no counting
+argument could bound them. -/
+theorem cbcSiteBlock_ne {p q : List X} (hp : p ≠ []) (hq : q ≠ [])
+    (hne : p ≠ q) (hd : p.dropLast = q.dropLast) :
+    cbcSiteBlock p ≠ cbcSiteBlock q := by
+  have hlast : ∀ (t : List X) (ht : t ≠ []), t.dropLast ++ [cbcSiteBlock t] = t := by
+    intro t ht
+    have hpos : 0 < t.length := List.length_pos_of_ne_nil ht
+    have hb : cbcSiteBlock t = t.getLast ht := by
+      rw [cbcSiteBlock, List.getLast_eq_getElem, List.getD_eq_getElem]
+    rw [hb]
+    exact List.dropLast_append_getLast ht
+  intro heq
+  exact hne (by rw [← hlast p hp, ← hlast q hq, hd, heq])
+
+/-- The parent call site of a block prefix: the same computation one round
+earlier, when that is itself a call site of the history.  A site consuming a
+single block has no parent — its input is `0 + b`, read off the public initial
+chaining value. -/
+def cbcParent (bf : M → List X) (l : List M) (p : ↥(cbcSites bf l)) :
+    Option ↥(cbcSites bf l) :=
+  if h : p.val.dropLast ∈ cbcSites bf l then some ⟨p.val.dropLast, h⟩ else none
+
+/-- **CR18's collision count** (printed p. 127): a uniform round function makes
+two nontrivially distinct CBC call sites collide with probability at most
+`r(r−1)/2|𝒳|`, on any query history `θ_r` admits — "the same as the probability
+of having a collision in a list [o]f `r` uniform `n`-bit strings".
+
+This is `Probability.Counting.uniform_mass_walk_repeat_le` at CBC's walk: sites
+are the block prefixes, the parent is `dropLast`, the step is `x ↦ x + b`, and
+the public initial chaining value is `0`.  The bound is CR18's own
+`½ r² 2^{-n}` with the falling factor kept. -/
+theorem mass_cbcBad_le (bf : M → List X) (r : ℕ) (l : List M)
+    (hl : totalBlocks bf l ≤ r) :
+    (Distribution.uniform (X → X)).mass (fun f => cbcBad f bf l)
+      ≤ (r : ℝ) * ((r : ℝ) - 1) / (2 * Fintype.card X) := by
+  classical
+  have hne : ∀ p : ↥(cbcSites bf l), p.val ≠ [] := fun p => cbcSites_ne_nil p.2
+  have hsome : ∀ p q : ↥(cbcSites bf l), cbcParent bf l p = some q →
+      q.val = p.val.dropLast := by
+    intro p q hq
+    unfold cbcParent at hq
+    split_ifs at hq with h
+    exact congrArg Subtype.val (Option.some.inj hq).symm
+  have hdrop : ∀ p : ↥(cbcSites bf l), cbcParent bf l p = none →
+      p.val.dropLast = [] := by
+    intro p hp
+    unfold cbcParent at hp
+    split_ifs at hp with h
+    by_contra hcon
+    exact h (dropLast_mem_cbcSites p.2 hcon)
+  have hpareq : ∀ p q : ↥(cbcSites bf l), cbcParent bf l p = cbcParent bf l q →
+      p.val.dropLast = q.val.dropLast := by
+    intro p q h
+    rcases hp : cbcParent bf l p with _ | a
+    · rw [hp] at h
+      rw [hdrop p hp, hdrop q h.symm]
+    · rw [hp] at h
+      rw [← hsome p a hp, hsome q a h.symm]
+  have hrank : ∀ t q : ↥(cbcSites bf l), cbcParent bf l t = some q →
+      q.val.length < t.val.length := by
+    intro t q hq
+    rw [hsome t q hq, List.length_dropLast]
+    have := List.length_pos_of_ne_nil (hne t)
+    omega
+  have hginj : ∀ p : ↥(cbcSites bf l),
+      Function.Injective (fun x : X => x + cbcSiteBlock p.val) :=
+    fun p => add_left_injective _
+  have hsib : ∀ p q : ↥(cbcSites bf l), p ≠ q → cbcParent bf l p = cbcParent bf l q →
+      ∀ x : X, x + cbcSiteBlock p.val ≠ x + cbcSiteBlock q.val := by
+    intro p q hpq hpar x
+    have hb : cbcSiteBlock p.val ≠ cbcSiteBlock q.val :=
+      cbcSiteBlock_ne (hne p) (hne q) (fun h => hpq (Subtype.ext h)) (hpareq p q hpar)
+    exact fun h => hb (add_left_cancel h)
+  have hinpeq : ∀ (f : X → X) (p : ↥(cbcSites bf l)),
+      cbcSiteInput f p.val
+        = ((cbcParent bf l p).elim 0 (fun q => f (cbcSiteInput f q.val)))
+            + cbcSiteBlock p.val := by
+    intro f p
+    rw [cbcSiteInput_eq]
+    congr 1
+    rcases hp : cbcParent bf l p with _ | q
+    · simp only [Option.elim]
+      rw [hdrop p hp]
+      simp [cbcState]
+    · simp only [Option.elim]
+      have hq := hsome p q hp
+      have hqn : q.val ≠ [] := hne q
+      rw [← hq]
+      exact cbcState_eq_f_lastInput f q.val hqn
+  have key := Probability.Counting.uniform_mass_walk_repeat_le
+      (cbcParent bf l) (fun p => fun x : X => x + cbcSiteBlock p.val) (0 : X)
+      (fun p => p.val.length) hrank hginj hsib
+      (fun f p => cbcSiteInput f p.val) hinpeq
+  have hbad : ∀ f : X → X, cbcBad f bf l →
+      ¬ Function.Injective (fun p : ↥(cbcSites bf l) => cbcSiteInput f p.val) := by
+    rintro f ⟨m, hm, m', hm', j, hj, j', hj', hkey, hval⟩ hinjf
+    have hp : (bf m).take (j + 1) ∈ cbcSites bf l :=
+      mem_cbcSites.mpr ⟨m, hm, j, hj, rfl⟩
+    have hp' : (bf m').take (j' + 1) ∈ cbcSites bf l :=
+      mem_cbcSites.mpr ⟨m', hm', j', hj', rfl⟩
+    have hEq : (⟨_, hp⟩ : ↥(cbcSites bf l)) = ⟨_, hp'⟩ := by
+      refine hinjf ?_
+      show cbcSiteInput f ((bf m).take (j + 1)) = cbcSiteInput f ((bf m').take (j' + 1))
+      rw [cbcSiteInput_take f (bf m) hj, cbcSiteInput_take f (bf m') hj']
+      exact hval
+    exact hkey (congrArg Subtype.val hEq)
+  refine le_trans (Distribution.mass_mono Distribution.uniform_nonNeg hbad) ?_
+  obtain ⟨k, hkdef⟩ : ∃ k, Fintype.card ↥(cbcSites bf l) = k := ⟨_, rfl⟩
+  rw [hkdef] at key
+  refine le_trans key ?_
+  have hk : k ≤ r := by
+    rw [← hkdef, Fintype.card_coe]
+    exact le_trans (card_cbcSites_le bf l) hl
+  have hkr : (k : ℝ) ≤ (r : ℝ) := by exact_mod_cast hk
+  have hprod : (k : ℝ) * ((k : ℝ) - 1) ≤ (r : ℝ) * ((r : ℝ) - 1) := by
+    have h1 : (0 : ℝ) ≤ (r : ℝ) - (k : ℝ) := by linarith
+    rcases Nat.eq_zero_or_pos r with hr0 | hrpos
+    · have hk0 : k = 0 := by omega
+      rw [hk0, hr0]
+    · have h2 : (1 : ℝ) ≤ (r : ℝ) := by exact_mod_cast hrpos
+      have h3 : (0 : ℝ) ≤ (k : ℝ) := by positivity
+      nlinarith [mul_nonneg h1 (by linarith : (0 : ℝ) ≤ (r : ℝ) + (k : ℝ) - 1)]
+  have hXpos : (0 : ℝ) < 2 * (Fintype.card X : ℝ) := by
+    have : (0 : ℝ) < (Fintype.card X : ℝ) := by exact_mod_cast Fintype.card_pos
+    linarith
+  gcongr
+
 /-! ## CR18 Lemma 4.18's step, printed p. 127: the blind winning probability
 
 "It remains to analyze `Γ(bθ_r ĈBC R_{n,n})`.  To win the game
@@ -1492,6 +1742,46 @@ theorem blindSupWinProb_cbcGameLaw_theta_le [Nontrivial M] (bf : M → List X) (
   rw [hwin]
   exact hc _ (filterAdmit_sat P (by simp [hP, totalBlocks]) L)
 
+/-- **CR18 Lemma 4.18's step, printed p. 127** — obligation 6 of
+`cbc_mac_constructs`, discharged: `Γ(b θ_r ĈBC R_{n,n}) ≤ ½ r² 2^{-n}`.
+
+`blindSupWinProb_cbcGameLaw_theta_le`'s hypothesis is CR18's own sentence
+"the probability of a collision in such a sequence is the same as the
+probability of having a collision in a list [o]f `r` uniform `n`-bit strings"
+(printed p. 127), and `mass_cbcBad_le` is that sentence proved.  The bound here
+keeps the falling factor, `r(r−1)/2|𝒳|`; `blindSupWinProb_cbcGameLaw_theta_le_sq`
+is the printed `½ r² 2^{-n}`. -/
+theorem blindSupWinProb_cbcGameLaw_theta_le_birthday [Nontrivial M]
+    (bf : M → List X) (r : ℕ) :
+    PDG.blindSupWinProb
+        (Distribution.fTransform
+          (fun γ : System.DDG M X =>
+            ((System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
+                (prefixClosed_totalBlocks_le bf r) γ.1, γ.2) : System.DDG M X))
+          (cbcGameLaw bf))
+      ≤ (r : ℝ) * ((r : ℝ) - 1) / (2 * Fintype.card X) :=
+  blindSupWinProb_cbcGameLaw_theta_le bf r (fun l hl => mass_cbcBad_le bf r l hl)
+
+/-- **CR18's printed error term** (printed p. 127): `Γ(b θ_r ĈBC R_{n,n}) ≤
+½ r² 2^{-n}`, written at `|𝒳|` in place of `2^n`.  The birthday bound of
+`blindSupWinProb_cbcGameLaw_theta_le_birthday` weakened to the page's `r²`. -/
+theorem blindSupWinProb_cbcGameLaw_theta_le_sq [Nontrivial M]
+    (bf : M → List X) (r : ℕ) :
+    PDG.blindSupWinProb
+        (Distribution.fTransform
+          (fun γ : System.DDG M X =>
+            ((System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
+                (prefixClosed_totalBlocks_le bf r) γ.1, γ.2) : System.DDG M X))
+          (cbcGameLaw bf))
+      ≤ (r : ℝ) ^ 2 / (2 * Fintype.card X) := by
+  refine le_trans (blindSupWinProb_cbcGameLaw_theta_le_birthday bf r) ?_
+  have hXpos : (0 : ℝ) < 2 * (Fintype.card X : ℝ) := by
+    have : (0 : ℝ) < (Fintype.card X : ℝ) := by exact_mod_cast Fintype.card_pos
+    linarith
+  have hr : (0 : ℝ) ≤ (r : ℝ) := by positivity
+  gcongr
+  nlinarith
+
 end Blind
 
 /-! ## CR18 Theorem 6.1 as a construction statement
@@ -1549,8 +1839,8 @@ Theorem 6.1 having been proved.
 CR18's own proof structure is what `hcbc` stands for: the printed proof
 produces `⟨θ_r CBC [r]R_{n,n} | θ_r V_n⟩ ≤ Γ(b θ_r ĈBC R_{n,n}) ≤ ½ r² 2^{-n}`
 (printed p. 127) and reads the arrow off it.  In the printed order, `hcbc`
-decomposes into six obligations, of which **four are open — 2, 4, 6, and
-the `θ_r` half of 3**:
+decomposes into six obligations, of which **three are open — 2, 4, and the
+`θ_r` half of 3**:
 
 1. **LANDED.**  The realization equation — that `cbcConverter bf` applied to
    the on-ramped round function is the on-ramped system whose answer to `m` is
@@ -1574,8 +1864,12 @@ the `θ_r` half of 3**:
 5. **LANDED.**  Theorem 4.17's step, printed p. 127, as
    `PDG.advFullyDefined_forget_le_blindSupWinProb_of_condEquiv`
    (`Technique/BlindWinning.lean`);
-6. **OPEN.**  Lemma 4.18's step, printed p. 127: the blind winning probability
-   of the collision game is at most `½ r² 2^{-n}`.
+6. **LANDED.**  Lemma 4.18's step, printed p. 127: the blind winning
+   probability of the collision game is at most `½ r² 2^{-n}`, as
+   `blindSupWinProb_cbcGameLaw_theta_le_sq` — the reduction
+   `blindSupWinProb_cbcGameLaw_theta_le` fed the collision count `mass_cbcBad_le`,
+   which is `Probability.Counting.uniform_mass_walk_repeat_le` (lazy sampling
+   along a walk) at CBC's step function.
 
 The prefix-freeness hypothesis is carried because it is Theorem 6.1's own, and
 because obligation 2's proved half (`notBad_implies_distinct_lastInputs`)
