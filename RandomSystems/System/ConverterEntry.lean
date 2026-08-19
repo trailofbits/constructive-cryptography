@@ -36,20 +36,35 @@ read back through the crossing:
 * `ProtocolRequestsBounded ν K` — Definition 3.8's finite-bound clause,
   printed p. 62, at the round: at most `K` inner queries per outer query.  It
   is *not* bookkeeping.  Absorption needs the bound to be uniform over
-  converter histories, so a converter whose round length grows without bound —
-  a variable-input-length hashing converter over an unbounded message
-  alphabet — is not a member of this `Σ` at all.  A bounded message space is
-  what buys the constant.
+  converter histories, so a converter whose round length grows without bound
+  fails this condition, and with it the *sufficient* condition
+  `attachAt_mem_converterMonoidAt` that the entry point below runs through.
+  That is the whole of it: `converterMonoidAt` is a `Submonoid.closure`, and
+  failing one sufficient condition is not non-membership — denying that would
+  need a separating invariant on the closure, and this tree has none.  What a
+  bounded round length buys is the constant `K`.
 
 ## The round-local reading of the history function
 
 The two lists are the outer queries *of the whole interaction* and the inner
-answers *of the current round*.  Round-local is what makes the request bound
-statable: `Converter.ProtocolFn`'s cumulative second component cannot express
-"per outer query" at all, and a total bound is false for every converter that
-is used more than once.  The round boundary is read off the engine history by
-`roundAnswers`, which resets at each outer query — the same boundary CR18
-Definition 3.9 draws (printed p. 62).
+answers *of the current round*.  Round-local is a **convenience, not a
+necessity**.  `Converter.ProtocolFn U V X Y` is an `abbrev` for the very type
+spelled out here, so both readings apply to one and the same object, and the
+landed `Converter.AnswersWithin` already states Definition 3.8's clause
+verbatim — "a finite upper bound on the number of consecutive outputs of the
+form `(in, x)`", printed p. 62 — on that cumulative presentation: a bound on
+query streaks, stated at cumulative answers.  What round-local buys is only
+that the bound reads `ys.length < K`, which is `AnswersWithinUniformBudget`'s
+`β` with no streak reasoning at all.
+
+The two readings are therefore related, and related here rather than left to
+coexist: `ProtocolRequestsBounded.answersWithin` shows the round-local
+condition implies the cumulative one (at `K + 1`, and the offset is sharp),
+and `exists_answersWithin_not_protocolRequestsBounded` shows the converse
+fails, so the streak reading may never be cited for the round-local one.  The
+round boundary itself is read off the engine history by `roundAnswers`, which
+resets at each outer query — the same boundary CR18 Definition 3.9 draws
+(printed p. 62).
 
 ## What the engine does with a query it cannot read
 
@@ -122,6 +137,67 @@ def ProtocolRequestsBounded (ν : List U × List (Option Y) →. X ⊕ V) (K : �
     Prop :=
   ∀ (us : List U) (ys : List (Option Y)) (x : X), Sum.inl x ∈ ν (us, ys) →
     ys.length < K
+
+/-! ### The two readings of Definition 3.8's bound, related
+
+`ProtocolRequestsBounded` and the landed `Converter.AnswersWithin` are two
+readings of one clause on one type (`Converter.ProtocolFn` is an `abbrev` for
+the type used here).  Leaving them unbridged would let a future application
+prove one and cite the other, so both directions are settled here.
+-/
+
+/-- **The round-local bound implies Definition 3.8's streak bound** (printed
+p. 62), at every pair — reachability is not used.  If a query is only ever
+issued at fewer than `K` answers, then no `K + 1` consecutive queries open
+anywhere: the `K`-th extension already carries `K` answers. -/
+theorem ProtocolRequestsBounded.answersWithinAt
+    {ν : List U × List (Option Y) →. X ⊕ V} {K : ℕ}
+    (hK : ProtocolRequestsBounded ν K) (p : List U × List (Option Y)) :
+    Converter.AnswersWithinAt ν p (K + 1) := by
+  intro ext hlen hall
+  obtain ⟨x, hx⟩ := hall K (by omega)
+  have := hK p.1 _ x hx
+  rw [List.length_append, List.length_take] at this
+  omega
+
+/-- **The bridge**: the entry point's round-local receipt discharges the
+landed converter surface's uniform reading of CR18 Definition 3.8's clause
+(printed p. 62), at `K + 1`.
+
+The offset is sharp, not slack: `ProtocolRequestsBounded ν K` admits a round
+of exactly `K` queries — issued at `0, …, K-1` answers — and `([u], [])` is
+reachable, so `Converter.AnswersWithin ν K` genuinely fails for such a `ν`.
+(That sharpness is argued, not landed: no witness for it is in the tree.  The
+non-interchangeability below *is* landed.) -/
+theorem ProtocolRequestsBounded.answersWithin
+    {ν : List U × List (Option Y) →. X ⊕ V} {K : ℕ}
+    (hK : ProtocolRequestsBounded ν K) : Converter.AnswersWithin ν (K + 1) :=
+  fun p _ => hK.answersWithinAt p
+
+/-- **The converse fails, so the two readings are not interchangeable.**  The
+streak bound constrains how many queries run *back to back*; the round-local
+bound constrains *where in the answer list* a query may be issued at all.  A
+history function that queries exactly once, but only after five answers, has
+no streak of two and no round-local bound below six. -/
+theorem exists_answersWithin_not_protocolRequestsBounded :
+    ∃ ν : List Unit × List (Option Unit) →. Unit ⊕ Unit,
+      Converter.AnswersWithin ν 2 ∧ ¬ ProtocolRequestsBounded ν 2 := by
+  refine ⟨fun p => Part.some (if p.2.length = 5 then Sum.inl () else Sum.inr ()), ?_, ?_⟩
+  · intro p _ ext hlen hall
+    obtain ⟨x, hx⟩ := hall 0 (by omega)
+    obtain ⟨x', hx'⟩ := hall 1 (by omega)
+    simp only [Part.mem_some_iff, List.take_zero, List.append_nil] at hx
+    simp only [Part.mem_some_iff, List.length_append, List.length_take] at hx'
+    have h5 : p.2.length = 5 := by
+      by_contra h
+      rw [if_neg h] at hx
+      exact absurd hx (by simp)
+    rw [h5] at hx'
+    rw [if_neg (by omega)] at hx'
+    exact absurd hx' (by simp)
+  · intro h
+    have := h [()] [none, none, none, none, none] () (by simp)
+    simp at this
 
 /-! ## The engine -/
 
@@ -266,9 +342,13 @@ primitive, no widening; the whole content is that the two conditions on the
 history function *are* `System.InnerTotal` and
 `System.AnswersWithinUniformBudget` read through the crossing.
 
-This is the only converter notion an application names.  The history function
-is how the application writes its protocol down; it does not appear in any
-statement. -/
+This is the only converter notion an application *reasons with*: the element
+of `Σ` is what every endpoint speaks about.  The history function is how the
+application writes its protocol down, and it is named in statements only by
+the receipts this entry point consumes — in the CBC-MAC lane exactly
+`cbcRound_innerTotal`, `cbcRound_requestsBounded_of_length_le` and
+`cbcRound_requestsBounded`, with the engine named once more in
+`cbcProtocol_requestsWithin`.  No endpoint mentions either. -/
 theorem protocolEngine_mem_converterMonoidAt {U V X Y : Type u}
     (i : Set Uni.{u}) (ν : List U × List (Option Y) →. X ⊕ V) {K : ℕ}
     (hIT : System.ProtocolInnerTotal ν)

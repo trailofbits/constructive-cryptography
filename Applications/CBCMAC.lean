@@ -47,12 +47,28 @@ same content for every distinguisher this carrier can express, since a
 finite-horizon environment only ever touches a bounded slice.  It does not
 prove the unbounded statement, and no carrier extension is claimed.
 
-The bound is not bookkeeping.  CR18 Definition 3.8's finite request bound
-(printed p. 62) is what makes a converter a member of the metric-facing `Σ`,
-and `cbcRequestsBounded` discharges it with the largest block count the block
-former ever emits — a number that exists because `M` is finite.  Over an
-unbounded message alphabet the CBC converter is not a member of this `Σ` at
-all.
+The bound is not bookkeeping, but it must be recorded for what it is.  CR18
+Definition 3.8's finite request bound (printed p. 62) is what the entry point
+`protocolEngine_mem_converterMonoidAt` consumes to place a converter in the
+metric-facing `Σ`, and the **operative hypothesis is a bound on encoding
+length**, not finiteness of the message type:
+`cbcRound_requestsBounded_of_length_le` derives the request bound from
+`∀ m, (bf m).length ≤ B` and from nothing else.  Finiteness of `M` enters only
+as the cheapest way to produce such a `B` — `blockBound`, a sup over a
+`Fintype` — and it is itself a *consequence* of the theorem's other
+hypotheses rather than an independent one: prefix-freeness makes `bf`
+injective (`PrefixFree.injective`), and an injective encoding into the
+length-`≤ B` block sequences over a finite block alphabet has a finite domain
+(`finite_of_prefixFree_of_length_le`).
+
+What fails without a length bound is therefore our *sufficient* condition for
+membership, not membership.  `converterMonoidAt` is a `Submonoid.closure`, so
+"over an unbounded message alphabet the CBC converter is not a member of this
+`Σ`" is **not proved here and does not follow** from failing
+`attachAt_mem_converterMonoidAt`: the same endomorphism could enter the
+closure through a different engine or a product of generators.  Denying
+membership needs a separating invariant on the closure, and this tree has
+none.
 
 ## What is proved here, and what is not
 
@@ -67,13 +83,14 @@ Proved:
   on no non-trivial collision the CBC outputs have exactly the law of a uniform
   random function (`notBad_implies_uniform_outputs`), through the
   re-randomization of the terminal call sites;
-* the crossing from the distance to Theorem 6.1's construction statement, and
-  the composition and parameterization corollaries that follow from the
-  abstract layer with no further proof.
+* the crossing from the distance bound to Theorem 6.1's construction
+  statement.  That crossing is **notation, not content** — `cbc_mac_constructs`
+  is a scaffold, see its docstring — and the one consequence actually
+  demonstrated on it is `cbc_mac_trans`.
 
 Not proved, and stated as the hypothesis `hcbc` of the endpoint: the
-distinguishing bound itself.  Its remaining obligations are listed at
-`cbc_mac_constructs`.
+distinguishing bound itself, which is CR18 Theorem 6.1's mathematics in full.
+**Five** of the six obligations listed at `cbc_mac_constructs` are open.
 -/
 
 namespace RandomSystems.CBCMAC
@@ -124,6 +141,37 @@ theorem PrefixFree.ne_nil [Nontrivial M] {bf : M → List X}
   obtain ⟨m', hm'⟩ := exists_ne m
   exact h m m' hm'.symm (by rw [hnil]; exact List.nil_prefix)
 
+omit [Fintype X] [DecidableEq X] [Nonempty X] [AddCommGroup X] [Fintype M]
+  [DecidableEq M] in
+/-- Prefix-freeness is an injectivity statement about the block former: two
+distinct messages whose encodings agreed would have each encoding a prefix of
+the other.  (CR18 states prefix-freeness as the encoding condition, printed
+p. 126; this is the part of it the counting arguments use.) -/
+theorem PrefixFree.injective {bf : M → List X} (h : PrefixFree bf) :
+    Function.Injective bf := by
+  intro a b hab
+  by_contra hne
+  exact h a b hne (hab ▸ List.prefix_refl (bf a))
+
+/-- **Finiteness of the message space is a consequence, not an extra
+hypothesis.**  A prefix-free block former of bounded length is an injection of
+the message space into the block sequences of length at most `B` over the
+block alphabet, and there are finitely many of those when the block alphabet
+is finite.  So Theorem 6.1's own hypotheses (printed p. 126) — prefix-freeness,
+and the bounded encoding length the request bound needs — already force the
+F-1 ruling's finite `M`. -/
+theorem finite_of_prefixFree_of_length_le {X' M' : Type u} [Fintype X']
+    {bf : M' → List X'} {B : ℕ} (hbf : PrefixFree bf)
+    (hB : ∀ m, (bf m).length ≤ B) : Finite M' := by
+  have hi : Function.Injective (fun m => fun i : Fin B => (bf m)[(i : ℕ)]?) := by
+    intro a b h
+    refine hbf.injective (List.ext_getElem? fun n => ?_)
+    by_cases hn : n < B
+    · exact congrFun h ⟨n, hn⟩
+    · rw [List.getElem?_eq_none (le_trans (hB a) (by omega)),
+        List.getElem?_eq_none (le_trans (hB b) (by omega))]
+  exact Finite.of_injective _ hi
+
 /-- The accumulated number of blocks the block former has emitted. -/
 def totalBlocks (bf : M → List X) (messages : List M) : ℕ :=
   (messages.map fun m => (bf m).length).sum
@@ -144,7 +192,11 @@ def cbcState (f : X → X) (bs : List X) : X :=
 The converter is written as a history function — the current message and the
 round-function answers of the round so far — and enters `Σ` through the
 library's one crossing, `RandomSystems.protocolEngine_mem_converterMonoidAt`.
-No `ProtocolFn` and no `DDC` appears in any statement below.
+No `ProtocolFn` and no `DDC` appears in any statement below.  The history
+function `cbcRound` itself is named only in the receipts that crossing
+consumes (`cbcRound_innerTotal`, `cbcRound_requestsBounded_of_length_le`,
+`cbcRound_requestsBounded`) and the engine only in `cbcProtocol_requestsWithin`;
+every endpoint of this file speaks about the `Σ` element alone.
 -/
 
 /-- **One CBC round** (printed p. 125): "`CBC` applies a block former to the
@@ -182,9 +234,11 @@ theorem cbcRound_innerTotal (bf : M → List X) :
   dsimp only
   split <;> exact ⟨⟩
 
-/-- The largest number of blocks the block former ever emits.  It exists
-because `M` is finite — this is where the F-1 ruling's bounded message space is
-spent. -/
+/-- The largest number of blocks the block former ever emits.  It is the
+cheapest witness for the *length bound* the request receipt actually needs
+(`cbcRound_requestsBounded_of_length_le`), and it is where the F-1 ruling's
+finite message space is spent — as a producer of that constant, not as the
+operative hypothesis. -/
 noncomputable def blockBound (bf : M → List X) : ℕ :=
   Finset.univ.sup fun m => (bf m).length
 
@@ -192,14 +246,14 @@ theorem length_le_blockBound (bf : M → List X) (m : M) :
     (bf m).length ≤ blockBound bf :=
   Finset.le_sup (f := fun m => (bf m).length) (Finset.mem_univ m)
 
-/-- **CR18 Definition 3.8's finite request bound for CBC** (printed p. 62): a
-round asks the round function at most `blockBound bf` questions, one per block.
-
-Over an infinite message alphabet no such constant exists and CBC is not a
-member of this `Σ`; the bounded message space of the F-1 ruling is exactly what
-supplies it. -/
-theorem cbcRound_requestsBounded (bf : M → List X) :
-    System.ProtocolRequestsBounded (cbcRound bf) (blockBound bf) := by
+/-- **CR18 Definition 3.8's finite request bound for CBC** (printed p. 62),
+from the hypothesis that actually carries it: a round asks the round function
+one question per block of the current message, so any bound on the encoding
+length bounds the round.  Neither finiteness of `M` nor `blockBound` is used —
+this is the sharp statement of what the bound costs. -/
+theorem cbcRound_requestsBounded_of_length_le (bf : M → List X) {B : ℕ}
+    (hB : ∀ m, (bf m).length ≤ B) :
+    System.ProtocolRequestsBounded (cbcRound bf) B := by
   intro us ys x hx
   have hne : us ≠ [] := by
     by_contra hnil
@@ -210,9 +264,17 @@ theorem cbcRound_requestsBounded (bf : M → List X) :
   by_cases hlt : (ys.map fun o => o.getD 0).length < (bf (us.getLast hne)).length
   · rw [if_pos hlt] at hx
     rw [List.length_map] at hlt
-    exact lt_of_lt_of_le hlt (length_le_blockBound bf _)
+    exact lt_of_lt_of_le hlt (hB _)
   · rw [if_neg hlt] at hx
     exact absurd hx (by simp)
+
+/-- The request bound at the constant this file carries, `blockBound bf`
+(printed p. 62 for the clause).  A specialization of
+`cbcRound_requestsBounded_of_length_le`; what fails without *some* such
+constant is this sufficient condition for `Σ`-membership, not membership. -/
+theorem cbcRound_requestsBounded (bf : M → List X) :
+    System.ProtocolRequestsBounded (cbcRound bf) (blockBound bf) :=
+  cbcRound_requestsBounded_of_length_le bf (length_le_blockBound bf)
 
 /-- **The CBC converter, as the one converter notion an application names**:
 the element of `↥converterMonoidAt` that attaches CBC at the round function's
@@ -721,37 +783,60 @@ the metric-facing `Σ`. -/
 noncomputable def cbcRestricted (bf : M → List X) (r : ℕ) : ↥converterMonoidAt.{u} :=
   theta bf r * cbcProtocol bf
 
-/-- **CR18 Theorem 6.1** (printed p. 126): "For `θ_r` defined as above, if the
-block-former of the `CBC`-converter is prefix-free, we have (for any `r`)
-`[r]R_{n,n} --θ_r CBC--> (θ_r V_n)^{ε_r}` for `ε_r = ½ r² 2^{-n}`."
+/-- **The abstract-layer shape of CR18 Theorem 6.1** (printed p. 126): "For
+`θ_r` defined as above, if the block-former of the `CBC`-converter is
+prefix-free, we have (for any `r`) `[r]R_{n,n} --θ_r CBC--> (θ_r V_n)^{ε_r}`
+for `ε_r = ½ r² 2^{-n}`."
 
-**Status.**  The construction statement is derived here from the distance
-bound `hcbc`, which is CR18's own proof structure: the printed proof produces
-`⟨θ_r CBC [r]R_{n,n} | θ_r V_n⟩ ≤ Γ(b θ_r ĈBC R_{n,n}) ≤ ½ r² 2^{-n}`
-(printed p. 127) and reads the arrow off it.  What is *not* discharged in this
-file is `hcbc`.  Its remaining obligations, in the printed order, are:
+**Status: this is a SCAFFOLD, not the theorem.**  Theorem 6.1's mathematics is
+assumed here in full, as the hypothesis `hcbc`; what the declaration supplies
+is the abstract-layer *shape* of the printed statement — the construction
+arrow with its `ε`-superscript, `AbstractCryptography.ApproximatelyConstructs`
+over `Phi` at `Σ := ↥converterMonoidAt` — and nothing beyond it.  The proof is
+a single application of `constructs_singleton_epsilonRelaxation_iff`, which is
+an `Iff`: hypothesis and conclusion are interderivable in one step, so the
+statement is a change of notation applied to its own hypothesis.  No CBC lemma
+of this file is invoked, and `_hbf` is unused.
 
-1. the realization equation — that `cbcProtocol bf` applied to the on-ramped
-   round function is the on-ramped system whose answer to `m` is
-   `cbcState f (bf m)`.  This is a drive computation for
-   `System.attachEngineFully` and is the one obligation with no landed
-   counterpart;
-2. equation (6.2), printed p. 126, as `PDG.CondEquiv`: the mass identity
-   `notBad_implies_uniform_outputs` above, read through
+The shape is still worth landing — it is what the abstract layer's composition
+calculus consumes, and `cbc_mac_trans` is that receipt — but it is not
+evidence about CBC-MAC, and it must not be read or recorded as CR18
+Theorem 6.1 having been proved.
+
+CR18's own proof structure is what `hcbc` stands for: the printed proof
+produces `⟨θ_r CBC [r]R_{n,n} | θ_r V_n⟩ ≤ Γ(b θ_r ĈBC R_{n,n}) ≤ ½ r² 2^{-n}`
+(printed p. 127) and reads the arrow off it.  In the printed order, `hcbc`
+decomposes into six obligations, of which **five are open — 1, 2, 4, 6, and
+the `θ_r` half of 3**:
+
+1. **OPEN, no landed counterpart.**  The realization equation — that
+   `cbcProtocol bf` applied to the on-ramped round function is the on-ramped
+   system whose answer to `m` is `cbcState f (bf m)`.  This is a drive
+   computation for `System.attachEngineFully`;
+2. **OPEN.**  Equation (6.2), printed p. 126, as `PDG.CondEquiv`: the mass
+   identity `notBad_implies_uniform_outputs` above, read through
    `PDG.condEquiv_iff_condProb`;
-3. equation (6.3), printed p. 127 — landed as
-   `PDG.condEquiv_fTransform` (`Technique/ConditionalEquivalence.lean`), whose
-   `θ_r` instance needs the filter's admitted schedule;
-4. equation (6.1), printed p. 126, `θ_r CBC = θ_r CBC[r]`;
-5. Theorem 4.17's step, printed p. 127 — landed as
+3. **HALF OPEN.**  Equation (6.3), printed p. 127: the general transport is
+   landed as `PDG.condEquiv_fTransform`
+   (`Technique/ConditionalEquivalence.lean`), but its landed corollary
+   `PDG.condEquiv_filterQueries` is the `[r]` instance of printed p. 128
+   (Theorem 6.2's step), *not* this `θ_r` instance.  The `θ_r` instance — a
+   domain filter at a block-count predicate, needing the filter's admitted
+   schedule — is open;
+4. **OPEN.**  Equation (6.1), printed p. 126, which the page writes hatted,
+   `θ_r ĈBC = θ_r ĈBC[r]` — the MBO-augmented converter, and printed p. 127
+   applies it to the augmented system.  It is also CR18 §5.5's coherence
+   equation (printed p. 122), and therefore the hypothesis
+   `cbc_mac_parameterized_of_coherence` has to assume;
+5. **LANDED.**  Theorem 4.17's step, printed p. 127, as
    `PDG.advFullyDefined_forget_le_blindSupWinProb_of_condEquiv`
    (`Technique/BlindWinning.lean`);
-6. Lemma 4.18's step, printed p. 127: the blind winning probability of the
-   collision game is at most `½ r² 2^{-n}`.
+6. **OPEN.**  Lemma 4.18's step, printed p. 127: the blind winning probability
+   of the collision game is at most `½ r² 2^{-n}`.
 
 The prefix-freeness hypothesis is carried because it is Theorem 6.1's own, and
 because obligation 2's proved half (`notBad_implies_distinct_lastInputs`)
-consumes it. -/
+consumes it; it is unused by this declaration's own proof. -/
 theorem cbc_mac_constructs [Nontrivial M] (bf : M → List X) (r : ℕ)
     (_hbf : PrefixFree bf)
     (hcbc : edist (cbcRestricted bf r • assumedResource X r)
@@ -761,42 +846,80 @@ theorem cbc_mac_constructs [Nontrivial M] (bf : M → List X) (r : ℕ)
         ({constructedResource bf r} : Specification Phi.{u}) :=
   constructs_singleton_epsilonRelaxation_iff.mpr hcbc
 
-/-! ## What the abstract layer then gives for free
+/-! ## What the abstract layer gives, and at what price
 
-Neither corollary proves anything about CBC-MAC: each is a landed abstract
-theorem applied to `cbc_mac_constructs`.  That is the point of stating the
-theorem as a construction. -/
+The INSTANTIATION RULE asks an application to carry at least one consequence
+derived by a LANDED ABSTRACT THEOREM, as the receipt that the instantiation is
+real.  `cbc_mac_trans` is that receipt, and it is the only one: it takes
+`cbc_mac_constructs` as its input and closes by
+`AbstractCryptography.Constructs.epsilonRelaxation_trans`.
 
-/-- **Composition, for free**: whatever is constructed from `θ_r V_n` is
-constructed from `[r]R_{n,n}` by the composite protocol, with the budgets
-added.  Proved by `AbstractCryptography.Constructs.epsilonRelaxation_trans` and
-nothing else — the landed statement carries its own attribution and page — and
-the instance it consumes is `IsNonexpandingSMul ↥converterMonoidAt Phi`
-(`RandomSystems/System/MetricFullyDefined.lean`). -/
+Nothing here is *free* in the sense of costing nothing beyond the endpoint.
+Both corollaries inherit `hcbc` — Theorem 6.1's whole mathematics — through
+`cbc_mac_constructs`, and `cbc_mac_parameterized_of_coherence` inherits
+obligation 4 on top of it.  An earlier version of this file carried a
+`cbc_mac_parameterized` whose proof term was its own hypothesis:
+`ParameterizedConstruction` unfolds definitionally to the family of
+construction judgments, so that statement closed by `Iff.rfl`, applied no
+abstract theorem, and was a renaming.  It is deleted.  Nothing about CR18 §5.5
+(printed p. 122) follows from the endpoint's shape alone; what makes the
+parameterized reading a theorem is the coherence equation, and that equation is
+open. -/
+
+/-- **Composition**: whatever is constructed from `θ_r V_n` is constructed from
+`[r]R_{n,n}` by the composite protocol, with the budgets added.  Derived by
+`AbstractCryptography.Constructs.epsilonRelaxation_trans` applied to
+`cbc_mac_constructs` — the landed statement carries its own attribution and
+page — and the instance it consumes is `IsNonexpandingSMul ↥converterMonoidAt
+Phi` (`RandomSystems/System/MetricFullyDefined.lean`).
+
+The distance bound `hcbc` is inherited, so this is a consequence of the
+endpoint and not of anything cheaper.  (`constructs_epsilonRelaxation_trans_phi`
+in that same file is the same abstract theorem read at the larger submonoid
+`nonexpandingConverters`; using it here would mean pushing both protocols
+across `converterMonoidAt_le_nonexpandingConverters` and pulling the result
+back, so the abstract statement is invoked directly instead.) -/
 theorem cbc_mac_trans [Nontrivial M] {bf : M → List X} {r : ℕ}
     {π' : ↥converterMonoidAt.{u}} {ε' : ℝ≥0∞} {T : Specification Phi.{u}}
-    (h : ({assumedResource X r} : Specification Phi.{u})
-      —[cbcRestricted bf r; cbcEpsilon X r]→
-        ({constructedResource bf r} : Specification Phi.{u}))
+    (hbf : PrefixFree bf)
+    (hcbc : edist (cbcRestricted bf r • assumedResource X r)
+      (constructedResource bf r) ≤ cbcEpsilon X r)
     (h' : ({constructedResource bf r} : Specification Phi.{u}) —[π'; ε']→ T) :
     ({assumedResource X r} : Specification Phi.{u})
       —[π' * cbcRestricted bf r; cbcEpsilon X r + ε']→ T :=
-  Constructs.epsilonRelaxation_trans h h'
+  Constructs.epsilonRelaxation_trans (cbc_mac_constructs bf r hbf hcbc) h'
 
-/-- **CR18 §5.5's parameterized construction, for free** — equation (5.6),
-printed p. 122: `φ_r R --ψ_r α--> (ψ_r S)^{f_r}` with the constructing
-converter `α` quantified once, outside the family ("the constructing converter
-`α` does not depend on `r`").  Theorem 6.1 is printed in exactly that shape,
-with `φ_r = [r]`, `ψ_r = θ_r` and `α = CBC`, and this is that reading: the
-statement is `AbstractCryptography.ParameterizedConstruction` at our three
-families, with no CBC-specific step. -/
-theorem cbc_mac_parameterized [Nontrivial M] (bf : M → List X) (f : ℕ → ℝ≥0∞)
-    (h : ∀ r : ℕ, ({assumedResource X r} : Specification Phi.{u})
-      —[cbcRestricted bf r; f r]→
-        ({constructedResource bf r} : Specification Phi.{u})) :
-    ParameterizedConstruction (fun r : ℕ => queryLimit.{u} r)
-      (fun r : ℕ => theta (X := X) bf r) (cbcProtocol bf) f
-      (ofTyped (Rnn X) : Phi.{u}) (ofTyped (Vn M X) : Phi.{u}) :=
-  h
+/-- **CR18 §5.5's parameterized reading, under its own coherence equation** —
+equation (5.6), printed p. 122: `φ_r R --ψ_r α--> (ψ_r S)^{f_r}` with the
+constructing converter `α` quantified once, outside the family ("the
+constructing converter `α` does not depend on `r`").  Theorem 6.1 is printed in
+exactly that shape, with `φ_r = [r]`, `ψ_r = θ_r` and `α = CBC`.
+
+What §5.5 buys is the *collapse*: under `ψ_r α φ_r = ψ_r α` the filter on the
+assumed resource drops out, and the family becomes a statement about the
+**unrestricted** `R_{n,n}`.  That is the content here, and it is
+`AbstractCryptography.parameterizedConstruction_iff_of_coherence` applied to
+the family of `cbc_mac_constructs` instances.
+
+`coherence` is CR18's equation (6.1), printed p. 126, read at the unaugmented
+converter; the page writes it hatted, `θ_r ĈBC = θ_r ĈBC[r]`, because the proof
+works on the MBO-augmented converter.  It is **open** (obligation 4 at
+`cbc_mac_constructs`) and is assumed here, as is `hcbc`.  This corollary is
+therefore a statement about what the abstract layer would yield, not a landed
+consequence of anything proved in this file. -/
+theorem cbc_mac_parameterized_of_coherence [Nontrivial M] (bf : M → List X)
+    (hbf : PrefixFree bf)
+    (coherence : ∀ r : ℕ, theta (X := X) bf r * cbcProtocol bf * queryLimit.{u} r
+      = theta (X := X) bf r * cbcProtocol bf)
+    (hcbc : ∀ r : ℕ, edist (cbcRestricted bf r • assumedResource X r)
+      (constructedResource bf r) ≤ cbcEpsilon X r) :
+    ∀ r : ℕ, ({(ofTyped (Rnn X) : Phi.{u})} : Specification Phi.{u})
+      —[cbcRestricted bf r; cbcEpsilon X r]→
+        ({constructedResource bf r} : Specification Phi.{u}) :=
+  (parameterizedConstruction_iff_of_coherence
+    (φ := fun r : ℕ => queryLimit.{u} r) (ψ := fun r : ℕ => theta (X := X) bf r)
+    (π := cbcProtocol bf) (f := fun r : ℕ => cbcEpsilon X r)
+    (R := (ofTyped (Rnn X) : Phi.{u})) (S := (ofTyped (Vn M X) : Phi.{u}))
+    coherence).mp (fun r => cbc_mac_constructs bf r hbf (hcbc r))
 
 end RandomSystems.CBCMAC

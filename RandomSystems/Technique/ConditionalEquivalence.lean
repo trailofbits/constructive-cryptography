@@ -984,9 +984,16 @@ the Definition 2.21 pairs; the witness `habs` supplies, for each outer query
 list `l'`, an inner query list `l` and a post-processing `p` of the inner
 transcript, together with the two facts that make the two slices correspond:
 the outer interaction is won exactly when the inner one is, and the outer
-transcript is `p` of the inner one.  Both are required only on the supports,
-which is what lets a converter's behaviour depend on the systems actually in
-play (a filter's admitted schedule does).
+transcript is `p` of the inner one.
+
+**Scope of the witness.**  Only the two *equations* are support-local; the
+schedule is not.  `l` and `p` are chosen before either support is quantified,
+so the inner query list is one fixed list — the schedule is **non-adaptive**,
+and it is the **same list for every system** in `G.support` and in
+`T.support`.  A converter whose inner queries depend on the inner answers, or
+whose admitted schedule genuinely differs between two systems of the support,
+has no witness here and is outside this lemma.  What support-locality buys is
+only that the two equations may fail off the supports.
 
 The architecture is `PDS.advFullyDefined_fTransform_le`'s
 (`System/Absorb.lean`): a witness that is uniform in the deterministic system,
@@ -1308,13 +1315,25 @@ end Plumbing
 course still true when the systems are restricted by `[r]`, i.e.,
 `[r]casc[Ŝ,R_{m,n}] ⊨ [r]V_n`."
 
+**Scope.**  This is the step in the proof of CR18 **Theorem 6.2**, printed
+p. 128, at the query-count filter `[r]`.  It is **not** Theorem 6.1's `θ_r`
+instance (equation (6.3), printed p. 127), which restricts by a block-count
+predicate: that is `filterPhi` at a different prefix-closed predicate — a
+block count, not a query count — and is not landed.
+
 Definition 3.10's filter (printed p. 62) applied to both sides of a
 conditional equivalence, with the monotone condition carried over unchanged.
-The side condition is that the systems in play never refuse — the fully defined
-slice of Ruling R1, which is where the sources work (CR18 §4.10's standing
-simplification, printed p. 105, has no refusal at all) and where the admitted
-schedule `l'.take q` does not depend on the system.  Without it the filter's
-budget test reads the system's own refusals and no uniform witness exists. -/
+
+**The side condition — that the systems in play never refuse — is a design
+hypothesis of this development, and carries no page claim.**  Ruling R1 makes
+the official interaction carrier the fully defined slice, and that is the
+slice on which the filter's admitted schedule `l'.take q` is a function of
+`l'` alone.  It is not padding: `System.refuseAfter` (`System/FilterPhi.lean`)
+does not consume budget on a refusal, so against a refusing system the queries
+that actually reach the system are a function of the system's own refusal
+pattern, the uniform witness `l = l'.take q` fails, and `condEquiv_fTransform`
+demands one list good for both supports at once.  No counterexample is landed,
+so that necessity is argued structurally, not proved. -/
 theorem condEquiv_filterQueries (q : ℕ) {G : PDG X Y} {T : PDS X Y}
     (hG : ∀ γ ∈ G.support, ∀ (l : List X) (x : X), System.answer γ.1 l x ≠ none)
     (hT : ∀ s ∈ T.support, ∀ (l : List X) (x : X), System.answer s l x ≠ none)
