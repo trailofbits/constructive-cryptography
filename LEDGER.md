@@ -3026,9 +3026,19 @@ gates, adversarial audit before deltas apply):
      (from A2) and hence `IsNonexpandingSMul` and every ε-transport;
      disjoint-interface commutation (from A1); filter absorption and eq.
      (6.1) (from A3+A4); pullback restrictions, making θ_r-style adequacy
-     DEFINITIONAL; CondEquiv transport (A2's corollary).  INSTANCES, each
-     field a landed receipt: engine attachment, domain filters, parallel
-     frames, relabel/on-ramp, CBC.  RETIRES: widening as a category of work
+     DEFINITIONAL; CondEquiv transport (A2's corollary).  INSTANCES BELONG TO
+     CONSTRUCTORS, NEVER TO APPLICATIONS (Marc, correcting my first draft,
+     which listed CBC as an instance row — that defeats the design): the
+     list is engine attachment, domain filter, parallel frame, relabel,
+     typed on-ramp, each proved ONCE with hypotheses that are elementary
+     conditions on the constructor's DATA, never conditions in
+     converter-theory vocabulary.  An application supplies its data plus
+     those elementary facts and obtains `IsConverterAt` BY APPLICATION.
+     ACCEPTANCE TEST for the design: CBC must obtain the class in ONE LINE
+     from the engine-attachment theorem, proving only that its round
+     function always answers and that its request count is bounded — both
+     facts about its own function.  If CBC must prove anything in
+     converter-theory vocabulary, the class is not right yet.  RETIRES: widening as a category of work
      (the generator list and its hash pin stop being load-bearing), per
      -application membership bridges, per-application locality inductions.
      DEPENDENCY INVERSION (intended): the generated monoid exists so that
