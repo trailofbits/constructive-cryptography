@@ -79,9 +79,9 @@ Classifications:
 | ofTyped, ofTypedRaw | PROVEN (A7), and as an ISOMETRY | crux `keptPrefix_ofTyped` (an undecodable query is refused by a condition on the HISTORY, so refusal precedes all traffic — `not_mem_dom_ofTyped_of_decodeOption_none`), `answer_ofTyped_none`/`_some`, `exists_absorb_ofTyped` (outwards, the relay at `decodeOption`) and `exists_absorb_ofTyped_typed` (inwards, the encoding environment `encodeEnv`, no replay needed); metric endpoint `PDS.advFullyDefined_ofTyped : Adv⊥(ofTyped RL, ofTyped SL) = Adv⊥(RL, SL)` |
 | relabel | PROVEN (A7) | crux `keptPrefix_relabel` (pointwise, no window), `answer_relabel`, `exists_absorb_relabel`; metric: `PDS.advFullyDefined_relabelLaw_le` at arbitrary alphabets and `relabelLaw_mem_nonexpandingConverters` at `Uni`, where `relabelLaw` IS an endomorphism of Φ |
 | block (Resource-level, Set P) | PROVEN (A7) | `fullyDefined_block` (the `s⊥` receipt) and `exists_absorb_block` (the absorption receipt), both the `blockSet` row read at the tag cylinder through `block_eq_blockSet` |
-| filterDom | PENDING (CR18 Def 3.10 filters at a general prefix-closed predicate; O8/Budget) | A8 — the query-limit instance is PROVEN in the row below; a general predicate needs its own absorbing environment, i.e. the filter's test must be computable from the answer stream the environment has already seen |
+| filterDom | **CLOSED 2026-08-19** (cd8a662; superseded by the `filterPhi` row below) | A8 discharged in the STRONGEST form: `exists_absorb_filterDom` holds at EVERY prefix-closed predicate with NO side condition — the anticipated "computable from the answer stream" criterion turned out automatic (CR18 §3.4.3's refusal deletion makes the test read the answered history, which a deterministic environment already determines).  The receipt strictly SUBSUMES the two older ones: `blockSet Q S` and `filterQueries q S` are definitionally `filterDom _ _ S`, so both old statements are literal instances (audit-verified by `exact`) |
 | filterPhi, filterReplayStep, filterReplay, filterNeed, absorbFilter | PROVEN (2026-08-19, filter-widening lane — check-1-forced row for the lane's own names; SUPERSEDES the `filterDom` PENDING row above, consolidation is the coordinator's) | `filterPhi P hP` (`ConnectPhi.lean`) is the Φ-level lift of `System.filterDom`; the receipt is `System.exists_absorb_filterDom` (`Absorb.lean`) off the replay/need/absorb decomposition `filterReplayStep`/`filterReplay`/`filterNeed`/`absorbFilter` — the environment reconstructs the answered prefix from its own stream of `some`s (CR18 Def 3.3 deletes the rest), tests the predicate on it and refuses on its own behalf, so a refused round costs no inner query.  Cruxes `answer_filterDom` and `keptPrefix_filterDom_concat` (both at an arbitrary unfiltered history with the same kept prefix).  NO side condition beyond `PrefixClosed`.  Metric endpoint `filterPhi_mem_nonexpandingConverters`; Σ endpoint `filterPhi_mem_converterMonoidAt` (the widened second generator family of `converterMonoidAt`, `converterMonoidAtWeakBudget` and `converterMonoidAtProb`), whence `block_mem_converterMonoidAt` (instance at `prefixClosed_forall_not_mem`) and `filterQueries_mem_converterMonoidAt` at EVERY budget |
-| filterQueries (System and Φ), refuseAfter | PROVEN (S-19a, 2026-08-19) | crux `keptPrefix_filterQueries` (`keptPrefix ([q]S) l = (keptPrefix S l).take q` — the budget truncates the deletion pass, so refusals do not consume it); `answer_filterQueries` (the budget test reads the answers already given, so refusal precedes inner traffic — the B4 criterion); absorption `exists_absorb_filterQueries` off `transcript_filterQueries` at the SAME interaction length, the absorbing environment being `e` fed its own filtered view, `fun ys => e (refuseAfter q ys)`; metric endpoint `filterQueries_mem_nonexpandingConverters`.  `refuseAfter q` is the answer stream seen through `[q]` — the post-processing the reduction transports.  Algebra: `filterQueries_filterQueries` (limits merge into the `min`, at both levels) and `filterQueries_actCommute`.  Membership in `converterMonoidAt` is claimed ONLY at the degenerate budget — `filterQueries_zero : [0] = block Set.univ`, hence `filterQueries_zero_mem_converterMonoidAt`; for `q ≥ 1` it is NOT claimed and the assessment's route does not close (see the S-19a note in the STRETCH REGISTER ASSESSMENT) |
+| filterQueries (System and Φ), refuseAfter | PROVEN (S-19a, 2026-08-19) | crux `keptPrefix_filterQueries` (`keptPrefix ([q]S) l = (keptPrefix S l).take q` — the budget truncates the deletion pass, so refusals do not consume it); `answer_filterQueries` (the budget test reads the answers already given, so refusal precedes inner traffic — the B4 criterion); absorption `exists_absorb_filterQueries` off `transcript_filterQueries` at the SAME interaction length, the absorbing environment being `e` fed its own filtered view, `fun ys => e (refuseAfter q ys)`; metric endpoint `filterQueries_mem_nonexpandingConverters`.  `refuseAfter q` is the answer stream seen through `[q]` — the post-processing the reduction transports.  Algebra: `filterQueries_filterQueries` (limits merge into the `min`, at both levels) and `filterQueries_actCommute`.  MEMBERSHIP UPDATE 2026-08-19 (cd8a662): `filterQueries_mem_converterMonoidAt` holds at EVERY `q` — the earlier "claimed only at the degenerate budget" note is superseded by the generator widening.  |
 | connectFully (A6) | PROVEN (B4-RESUME, 2026-08-17) | refusal-first: `connectFully_refusal_first` under `InnerTotal` + `AnswersWithinBudget`; absorption: `exists_absorb_connectFully` under `InnerTotal` + `AnswersWithinBudget` + a **uniform** bound on the budget (CR18 Def 3.8's own "finite upper bound on consecutive requests"; the uniformity is load-bearing — see the def's docstring for why a merely well-founded budget admits no single inner length) |
 | attachEngineFully (DRIFT-REPAIR legs a+b) | PROVEN (leg b, 2026-08-17) | refusal-first at the owned face `attachEngineFully_refusal_first` (InnerTotal + AnswersWithinBudget); transparency at the foreign face `attachEngineFully_transparent` — one equation of partial values (domain, answer, refusal all pass through; neither G1 relay witness applies); frontier receipts off `attachEngineFully_concat_round`; demotion bridge `attachEngineFully_univ`; **absorption `exists_absorb_attachEngineFully`** (InnerTotal + AnswersWithinBudget + uniform bound) at the mixed count `m := n * max K 1` — an owned round costs ≤ K, a foreign round exactly one, and `n * K` is wrong at `K = 0`; resource histories agree up to CR18 Def 3.3 deletion, invisible to rounds (`exists_mem_resolve_of_keptPrefix_eq`).  Metric endpoint `attachEngineFully_mem_nonexpandingConverters` (no `RequestsWithin` — absorption does not consume it) |
 | idEngineFully | PROVEN | `connectFully_idEngineFully : connectFully idEngineFully R = R⊥` — the migrated identity IS the completion; not a Φ endomorphism (outer answers land in `Option Uni`) |
@@ -2902,11 +2902,21 @@ behaviour (membership = the forgetting law), and adjoin = the fiber's
 constructor.  Obligation 1 lives in the MC subtype, obligation 2 in the
 fiber membership — no ad-hoc structure fields.
 
-FILTER WIDENING (Marc-approved 2026-08-19, cd8a662; PIN RE-RULED
+FILTER WIDENING [CITATION CORRECTION owed in code — see below] (Marc-approved 2026-08-19, cd8a662; PIN RE-RULED
 dca1e2e8… → fd0d3a82…, check-5 comment records it).  `converterMonoidAt`'s
 SECOND generator family is no longer `{π | ∃ Q, π = block Q}` but CR18
-Def 3.10's domain filters `{π | ∃ P hP, π = filterPhi P hP}` at ANY
-prefix-closed predicate.  `block Q` and `filterQueries q` are instances
+§3.4.3's domain filters `{π | ∃ P hP, π = filterPhi P hP}` at ANY
+prefix-closed predicate.  CITATION CORRECTED BY AUDIT (rendered PDF p. 37
+= printed p. 62): the general filter is CR18 **§3.4.3, unnumbered prose**
+("restricts dom(s) to a subset … again closed under taking prefixes");
+**Definition 3.10 is ONLY the `[q]` notation**.  The family is faithful to
+§3.4.3 in both directions, and CR18 itself calls filters converters, which
+supports the widening's substance — but the wrong label is currently baked
+into the pinned Σ docstring and the `ledgerAudit.sh` check-5 comment.
+**OWED (code, queued behind the in-flight blind-winning lane to avoid a
+merge conflict): repo-wide citation fix, and extend the pin to `filterPhi`
+— the pinned text now delegates the family's meaning to an unpinned
+definition.**  `block Q` and `filterQueries q` are instances
 (`block_eq_filterPhi`, `filterQueries_eq_filterPhi`); `block_mem_
 converterMonoidAt` keeps its statement verbatim.  `converterMonoidAtWeak
 Budget` and `converterMonoidAtProb` carry the SAME family (forced by
@@ -2918,10 +2928,25 @@ condition — every prefix-closed filter absorbs, because CR18 Def 3.3
 deletes refusals, so the filter's test reads the ANSWERED history, which
 a deterministic environment already determines; one absorbing environment
 serves all systems.  The two landed templates (`exists_absorb_blockSet`
-skip-style, `exists_absorb_filterQueries` forward-and-mask) each force a
-DIFFERENT, incomparable condition and neither subsumes the other — the
-widening uses a third mechanism (skip, decided on the answered prefix)
-that subsumes both; both old receipts kept, each sharper at its family.
+skip-style, `exists_absorb_filterQueries` forward-and-mask) force DIFFERENT,
+incomparable conditions and neither subsumes the OTHER (that half stands);
+the widening uses a third mechanism (skip, decided on the answered prefix).
+CORRECTED BY AUDIT (2026-08-19): the claim that each old receipt stays
+"sharper at its family" is **REFUTED** — `blockSet Q S` and
+`filterQueries q S` are DEFINITIONALLY `filterDom _ _ S`, so both old
+statements are literal instances of `exists_absorb_filterDom` and the new
+receipt strictly SUBSUMES them (auditor discharged both by `exact`); they
+are kept as convenience, not as strength.  AUDIT RECEIPT that the
+absorption shape is not vacuous: the auditor built a non-absorbing system
+(every query answered as if it were the first) and kernel-proved the
+`∃ e' m p, ∀ s` statement FALSE for it — `e'`, `m`, `p` are bound before
+`∀ s`, so unbounded `m` and arbitrary `p` cannot rescue a non-absorber
+(witness in /private/tmp/widen-audit/S2.lean, NOT landed — candidate to
+transplant as a negative receipt; the tree's B4 refutation is prose only).
+RECORDED CONSEQUENCE (audit, not a defect): widening Σ WEAKENS every
+Σ-MEMBERSHIP statement — `block_mem_converterMonoidAt` is character-
+identical but now asserts less; statements quantifying over Σ were
+re-proved at the new generator and are correspondingly stronger.
 S-06's "converterMonoidAt byte-identical, pin green" is superseded as of
 this date.
 
@@ -3625,10 +3650,17 @@ Nine rows CLOSED, each with the audit's amendment:
   membership route closes after all — not through the `block Q` generator
   (correctly excluded then) but by widening that generator to CR18 Def
   3.10's filter family.  `filterQueries q ∈ converterMonoidAt` at EVERY q
-  (`filterQueries_mem_converterMonoidAt`), so the earlier CONSEQUENCE
-  clause is VOID: interfaces typed at ↥converterMonoidAt
-  (converterMonoidWithin/Φ_E/Constructs/Par, incl. S-15's role algebra)
-  now accept the filter, and CR18 §5.5's ψ_r is a genuine π.
+  (`filterQueries_mem_converterMonoidAt`), CORRECTED BY AUDIT — the earlier
+  CONSEQUENCE clause is VOID only IN PART, and the split matters:
+  **TRUE now** for `Constructs`, `Par ↥converterMonoidAt` and
+  `ParameterizedConstruction` (their protocol slots are Sigma-valued), so
+  CR18 §5.5's ψ_r IS a genuine π there.  **STILL FALSE** for
+  `converterMonoidWithin A`, `PhiAt`/`Φ_E`, `constructs_PhiAt` and
+  Interface.lean's role commutations: those require membership in
+  `converterMonoidWithin`, a closure generated by ATTACHMENTS ONLY (its
+  own docstring: "blocks are deliberately not generators"), and nothing
+  places a filter there.  Widening `converterMonoidWithin` is a separate,
+  unruled question.
 
 FLAG **F-8** (escalation, folded into the standing blind-form call to
 Marc): CR18 Lemma 5.3 AS PRINTED constructs its MBO "independently of T"
@@ -3639,8 +3671,9 @@ ruling.
 NAMING TRIAGE (all KEEP + flagged; Marc's call with the `fiber` rename):
 `refuseAfter`, `InterfaceRoles`, `admittedConverters` (over-promises —
 audit suggests `attachableConverters`), `PhiAt`, `cascadeFn`, `combineFn`,
-`filterPhi` (Φ-level object whose neighbours `block`/`filterQueries` are
-named bare; the suffix disambiguates against `System.filterDom`).
+`filterPhi` — the recorded reason was AUDIT-REFUTED (`filterQueries` is
+bare at BOTH levels, distinguished by namespace, so the `Phi` suffix is
+inconsistent with its own neighbours rather than disambiguating).
 
 DEBTS: (i) `Rendering/CCWidget.lean` dispatch table keys ~16 names that
 exist only in the reference repository — declare it a reference-tree
