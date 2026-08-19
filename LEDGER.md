@@ -932,8 +932,23 @@ statement is no longer only inline inside `Relaxation.star_construct_eps` and
     DISCLOSED DEVIATION: the route telescopes a union bound per step and does
     NOT invoke `birthday_bound` — same value, and it needs neither `q ≤ N`
     nor a falling-factorial count.
-    CBC STATUS: 1, 3 (`[r]` half), 5, 6 LANDED; OPEN = 2 (eq. (6.2) as
-    `CondEquiv`), 4 (eq. (6.1) coherence), and the θ_r half of 3.
+    CBC STATUS 2026-08-20 (29cd765): **ALL SIX OBLIGATIONS LANDED.**  4 closed
+    by `cbc_coherence` — eq. (6.1) hypothesis-free at CBC's own per-round
+    budget `cbcRoundBudget` (blocks of the current message minus answers
+    already received this round; `hpay` holds with EQUALITY).  Note why a
+    uniform budget could not work here: the landed `converterBudget K` at
+    `K = blockBound` would force `blockBound ≤ (bf m).length`, false for any
+    short message — a block-counting θ_r cannot pay a length bound, which is
+    the concrete form of the coarseness that dissolved F4.  3's θ_r half was
+    ALREADY LANDED at 81a95ea (`cbc_condEquiv_theta`) and the list had simply
+    never caught up — the second stale-list incident in this lane.
+    REMAINING, and it is NOT an obligation: `hcbc` is the ASSEMBLY of 1–6
+    into the single distance bound of printed p. 127, which no declaration
+    performs — six landed obligations are not a landed chain.  Also owed: the
+    typed-carrier transport of `CondEquiv` (complicated by F2 — the on-ramp
+    is not a converter, so it cannot ride the class).  UNVERIFIED CLAIM,
+    flagged: that the six assemble without further mathematics; nobody has
+    attempted it.
   SUPERSEDED — never the primitive again:
     `attachFully` / `converterMonoidFully` / `converterMonoidFullyBudgeted`
       (whole-face Φ level) -> superseded by `attachAt` /
