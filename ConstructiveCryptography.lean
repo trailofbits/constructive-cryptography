@@ -4,7 +4,6 @@ Authors: Marc Ilunga, Claude
 -/
 import AbstractCryptography
 import AbstractCryptography.SemanticRegistry
-import ConstructiveCryptography.Generalizations.ContextRestricted
 import ConstructiveCryptography.Multiparty.Basic
 
 /-!
@@ -15,13 +14,18 @@ public Abstract Cryptography API. This module is both the public import root
 and the root of the modules under `ConstructiveCryptography/`; it contains the
 implementation itself.
 
-Two modules live under the directory root:
+Modules under the directory root:
 
-* `ConstructiveCryptography.Generalizations.ContextRestricted` — Jost's thesis
-  §4.2, context-restricted constructions.
 * `ConstructiveCryptography.Multiparty.Basic` — the multiparty layer owned by
   the `ConstructiveCryptographyMultipartyComputation` Lake target and imported
   by `ConstructiveCryptography.MultipartyComputation`.
+* `ConstructiveCryptography.Generalizations.ContextRestricted` — Jost's thesis
+  §4.2, context-restricted constructions.  **Not imported here**: it states
+  every one of its constructions over an `AbstractCryptography.Distinguisher`
+  class (MauRen11 Definition 15/16) and its indexed relaxation, so it is behind
+  the provenance fence.  Same for
+  `ConstructiveCryptography.Multiparty.GameMetric`.  Both stay compiled under
+  this tree's Lake target; see `LEDGER.md` PROVENANCE FENCE.
 
 ## History
 

@@ -16,12 +16,12 @@ JM20 Definition 1 / CR18 Definition 5.4:
 `Constructs π R S :⇔ π • R ⊆ S`.
 
 The resource carrier has already absorbed behavioral equivalence, so target
-membership is exact.  This is the `HasReduction (Set Φ) M` instance.
+membership is exact.  This is the `HasReduction (Specification Φ) Sigma` instance.
 
-It instantiates `Refinement.Basic` with `Ω := Set Φ` and `Γ :=` a monoid
+It instantiates `Refinement.Basic` with `Ω := Specification Φ` and `Γ :=` a monoid
 acting on `Φ` (CR18 §5.2 takes `Γ` to be the functions `Φ → Φ`).
 
-* A **specification** is a set `ℛ : Set Φ` of resources.  CR18 §5.2.1,
+* A **specification** is a set `ℛ : Specification Φ` of resources.  CR18 §5.2.1,
   **Definition 5.3**: "A resource specification is a subset of `Φ`.  If
   `R ∈ Φ` satisfies `R ∈ ℛ` we say that `R` satisfies specification `ℛ`.
   For two specifications `ℛ` and `𝒮`, if `ℛ ⊆ 𝒮` we say that `ℛ` is (at
@@ -69,11 +69,14 @@ universe u v w
 
 open Pointwise
 
-variable {M Φ : Type*}
+/-- MR16 §2.3: a **specification** is a set of resources, `𝓡 ⊆ Φ`. -/
+abbrev Specification (Φ : Type*) := Set Φ
+
+variable {Sigma Φ : Type*}
 
 section Constructs
 
-variable [Monoid M] [MulAction M Φ]
+variable [Monoid Sigma] [MulAction Sigma Φ]
 
 /-- JM20 §2.2, **Definition 1**: "Let `ℛ` and `𝒮` be specifications, and
 let `π` be a protocol for `ℛ`.  Then, we say that `π` constructs `𝒮` from
@@ -90,23 +93,23 @@ specification, respectively."
 `πℛ` is the pointwise image — CR18 §5.2.2: "Such functions naturally
 extend to specifications: For `γ ∈ Γ` we have `γ(ℛ) = {γ(R) | R ∈ ℛ}`." -/
 @[crypto_rule "ac.constructs" ac_spec_construction abstract_crypto]
-def Constructs (π : M) (R S : Set Φ) : Prop := π • R ⊆ S
+def Constructs (π : Sigma) (R S : Specification Φ) : Prop := π • R ⊆ S
 
 /-- Specifications with pointwise protocol application form a reduction in
 the sense of MauRen11 Definition 6. -/
-instance : HasReduction (Set Φ) M where
-  Red R π S := Constructs π R S
+instance : HasReduction (Specification Φ) Sigma where
+  Red π R S := Constructs π R S
 
-theorem constructs_iff {π : M} {R S : Set Φ} : R —[π]→ S ↔ π • R ⊆ S := Iff.rfl
+theorem constructs_iff {π : Sigma} {R S : Specification Φ} : R —[π]→ S ↔ π • R ⊆ S := Iff.rfl
 
 /-- Transport a construction across an equality of protocols. -/
-theorem constructs_congr_protocol {π π' : M} {R S : Set Φ}
+theorem constructs_congr_protocol {π π' : Sigma} {R S : Specification Φ}
     (same : π = π') :
     (R —[π]→ S) ↔ R —[π']→ S := by
   subst π'
   rfl
 
-theorem Constructs.mono {π : M} {R R' S S' : Set Φ} (hR : R' ⊆ R) (hS : S ⊆ S')
+theorem Constructs.mono {π : Sigma} {R R' S S' : Specification Φ} (hR : R' ⊆ R) (hS : S ⊆ S')
     (h : R —[π]→ S) : R' —[π]→ S' :=
   fun _ hx => hS (h (Set.smul_set_mono hR hx))
 
@@ -114,7 +117,7 @@ theorem Constructs.mono {π : M} {R R' S S' : Set Φ} (hR : R' ⊆ R) (hS : S �
 construction `id ∈ Γ` we have
 
   `ℛ ⊆ 𝒮 ⟹ ℛ —id→ 𝒮`." -/
-theorem constructs_one_of_subset {R S : Set Φ} (h : R ⊆ S) : R —[(1 : M)]→ S := by
+theorem constructs_one_of_subset {R S : Specification Φ} (h : R ⊆ S) : R —[(1 : Sigma)]→ S := by
   rw [constructs_iff, one_smul]
   exact h
 
@@ -126,8 +129,8 @@ scoped[AbstractCryptography] notation:max "⟪" resource "⟫" => Set.singleton 
 /-- JM20 §2.2, Definition 1's closing sentence: "In slight abuse of
 notation, we write `R —π→ S` in lieu of `{R} —π→ {S}` for singleton
 specifications." -/
-theorem constructs_singleton_iff {π : M} {R S : Φ} :
-    ({R} : Set Φ) —[π]→ ({S} : Set Φ) ↔ π • R = S := by
+theorem constructs_singleton_iff {π : Sigma} {R S : Φ} :
+    ({R} : Specification Φ) —[π]→ ({S} : Specification Φ) ↔ π • R = S := by
   simp [constructs_iff, Set.smul_set_singleton]
 
 /-- JM20 §2.2, **Theorem 1.1**: "Let `ℛ`, `𝒮`, and `𝒯` be arbitrary
@@ -143,7 +146,7 @@ CR18 §5.2.2, **Lemma 5.1**, the same: "The construction notion of
 Definition 5.4 is composable: `ℛ —γ→ 𝒮 ∧ 𝒮 —γ′→ 𝒯 ⟹ ℛ —γ′∘γ→ 𝒯`."
 (Also MauRen16 §4.1 Lemma 1.)  `red_one` is CR18's identity
 construction. -/
-instance : IsSeriallyComposable (Set Φ) M where
+instance : IsSeriallyComposable (Specification Φ) Sigma where
   red_mul {R S T π π'} h h' := by
     rw [constructs_iff, mul_smul]
     exact (Set.smul_set_mono h).trans h'
@@ -153,15 +156,47 @@ instance : IsSeriallyComposable (Set Φ) M where
 construction statements compose serially. The right factor acts first, so a
 construction by `π` followed by one by `π'` is labelled `π' * π`. -/
 @[crypto_rule "ac.constructs.serial" ac_spec_construction abstract_crypto]
-theorem Constructs.trans {π π' : M} {R S T : Set Φ}
+theorem Constructs.trans {π π' : Sigma} {R S T : Specification Φ}
     (h : R —[π]→ S) (h' : S —[π']→ T) :
     R —[π' * π]→ T :=
   red_mul h h'
+
 end Constructs
+
+section ActCommute
+
+variable [Monoid Sigma] [MulAction Sigma Φ]
+
+/-- Composition order invariance for one pair, as commuting **actions** —
+the form that survives free converter monoids, where distinct words never
+commute as monoid elements. -/
+def ActCommute (Φ : Type*) (a b : Sigma) [MulAction Sigma Φ] : Prop :=
+  ∀ R : Φ, a • b • R = b • a • R
+
+theorem ActCommute.symm {a b : Sigma} (h : ActCommute Φ a b) : ActCommute Φ b a :=
+  fun R => (h R).symm
+
+/-- Monoid-level commutation gives action-level commutation (never
+conversely). -/
+theorem _root_.Commute.actCommute {a b : Sigma} (h : Commute a b) :
+    ActCommute Φ a b :=
+  fun R => by rw [← mul_smul, h.eq, mul_smul]
+
+/-- The pointwise equation, at specification level. -/
+theorem ActCommute.smul_set {a b : Sigma} (h : ActCommute Φ a b)
+    (S : Specification Φ) : a • b • S = b • a • S := by
+  ext x
+  constructor
+  · rintro ⟨_, ⟨z, hz, rfl⟩, rfl⟩
+    exact ⟨a • z, ⟨z, hz, rfl⟩, (h z).symm⟩
+  · rintro ⟨_, ⟨z, hz, rfl⟩, rfl⟩
+    exact ⟨b • z, ⟨z, hz, rfl⟩, h z⟩
+
+end ActCommute
 
 section Simulator
 
-variable [Monoid M] [MulAction M Φ]
+variable [Monoid Sigma] [MulAction Sigma Φ]
 
 /-- JM20 §2.2, **Proposition 2.1**: "Let `ℛ`, `𝒮`, and `𝒯` be
 specifications, and let `π` and `π′` be protocols for `ℛ` and `𝒮`,
@@ -175,14 +210,15 @@ the ones controlled by the protocols, we have
 implying `𝒮 —π′→ σ′𝒯 ⟹ σ𝒮 —π′→ σσ′𝒯`.  The first property then follows
 directly from combining this with Theorem 1."
 
-The paper's disjoint-interface premise enters only as `Commute π' σ`, which
-is all the proof consumes. -/
-theorem Constructs.simulator_trans {π π' σ σ' : M} {R S T : Set Φ}
-    (h : R —[π]→ σ • S) (h' : S —[π']→ σ' • T) (hc : Commute π' σ) :
+The paper's disjoint-interface premise enters only as `ActCommute Φ π' σ` —
+action-level, which the free converter monoid can satisfy — and that is all
+the proof consumes. -/
+theorem Constructs.simulator_trans {π π' σ σ' : Sigma} {R S T : Specification Φ}
+    (h : R —[π]→ σ • S) (h' : S —[π']→ σ' • T) (hc : ActCommute Φ π' σ) :
     R —[π' * π]→ (σ * σ') • T := by
   rw [constructs_iff, mul_smul]
   calc π' • π • R ⊆ π' • σ • S := Set.smul_set_mono h
-    _ = σ • π' • S := by rw [← mul_smul, hc.eq, mul_smul]
+    _ = σ • π' • S := hc.smul_set S
     _ ⊆ σ • σ' • T := Set.smul_set_mono h'
     _ = (σ * σ') • T := (mul_smul ..).symm
 

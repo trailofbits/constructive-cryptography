@@ -273,16 +273,27 @@ macro_rules
 
 /-- Transfer one defining property test across an explicit distinguisher-class
 distance bound.  All semantic choices remain visible: the class, admitted-test
-inclusion, ideal property witness, distance bound, and defining test. -/
+inclusion, ideal property witness, distance bound, and defining test.
+
+**MR11-DEFERRED rule.**  Its leaf, `one_tsub_le_test_of_close`, lives in
+`AbstractCryptography.Metric.Distinguisher` — MauRen11 Definition 15/16
+provenance — which is behind the provenance fence, and which this MR16-track
+automation module therefore does not import.  The rule name is consequently
+built with `Lean.mkIdent` and resolved at the **use site**: the tactic fires in
+a file that imports `AbstractCryptography.MR11`, and reports its ordinary
+failure message in one that does not.  Nothing is deleted; see `LEDGER.md`
+PROVENANCE FENCE. -/
 syntax (name := acTransferProperty)
   "ac_transfer_property " term " using " term "," term "," term "," term : tactic
 
 macro_rules
   | `(tactic| ac_transfer_property $distinguisherClass using
-        $admittedTests, $idealProperty, $distance, $definingTest) =>
+        $admittedTests, $idealProperty, $distance, $definingTest) => do
+      let transferRule :=
+        Lean.mkIdent `AbstractCryptography.one_tsub_le_test_of_close
       `(tactic|
         first
-          | exact AbstractCryptography.one_tsub_le_test_of_close
+          | exact $transferRule
               $distinguisherClass $admittedTests $idealProperty $distance
               $definingTest
           | fail "ac_transfer_property expected a quantitative property-test goal and the matching explicit hypotheses")
@@ -517,8 +528,9 @@ elab "ac?" : tactic => withMainContext do
     `(tactic| apply AbstractCryptography.commute_patternAttach_of_disjoint)
   let supportedCommutation ←
     `(tactic| apply AbstractCryptography.commute_patternAttach_supportedOn)
+  -- MR11-DEFERRED leaf, resolved at the use site; see `acTransferProperty`.
   let propertyTransfer ←
-    `(tactic| apply AbstractCryptography.one_tsub_le_test_of_close)
+    `(tactic| apply $(mkIdent `AbstractCryptography.one_tsub_le_test_of_close))
   let candidates := #[
     ("ac_construct — constructs_singleton_iff", exactSingleton),
     ("ac_construct — constructs_singleton_epsilonRelaxation_iff", metricSingleton),

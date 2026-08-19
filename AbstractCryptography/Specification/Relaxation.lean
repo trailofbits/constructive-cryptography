@@ -109,7 +109,7 @@ universe u v w
 open Pointwise
 open scoped ENNReal
 
-variable {M Φ : Type*}
+variable {Sigma Φ : Type*}
 
 /-- CR18 §5.2.3, **Definition 5.5**: "A relaxation `ρ` is a function
 `P(Φ) → P(Φ)` such that `ℛ ⊆ ρ(ℛ)`."
@@ -119,19 +119,19 @@ every JM20 union lift has (Prop 3.2).  Idempotence is *not* required — the
 ε-relaxation is not idempotent — so this is not a `ClosureOperator`. -/
 structure Relaxation (Φ : Type*) where
   /-- The underlying map on specifications. -/
-  toFun : Set Φ → Set Φ
+  toFun : Specification Φ → Specification Φ
   /-- JM20 Prop 3.1: "`ℛ ⊆ ℛ^φ`" — which is CR18 Def 5.5's own
   requirement, `ℛ ⊆ ρ(ℛ)`. -/
-  le_toFun (R : Set Φ) : R ⊆ toFun R
+  le_toFun (R : Specification Φ) : R ⊆ toFun R
   /-- JM20 Prop 3.2: "`ℛ ⊆ 𝒮 ⟹ ℛ^φ ⊆ 𝒮^φ`". -/
   mono : Monotone toFun
 
 namespace Relaxation
 
-instance : CoeFun (Relaxation Φ) fun _ => Set Φ → Set Φ := ⟨toFun⟩
+instance : CoeFun (Relaxation Φ) fun _ => Specification Φ → Specification Φ := ⟨toFun⟩
 
 /-- Paper-order application of a relaxation; definitionally `ρ R`. -/
-@[reducible] def relaxedBy (R : Set Φ) (ρ : Relaxation Φ) : Set Φ :=
+@[reducible] def relaxedBy (R : Specification Φ) (ρ : Relaxation Φ) : Specification Φ :=
   ρ R
 
 /-- `R ^ᵣ[ρ]` is the scoped notation for `Relaxation.relaxedBy R ρ`. -/
@@ -147,18 +147,18 @@ shorthand notation."
 This is narrower than the monotone `Relaxation` structure above: it is
 exactly CR18's "typical" pointwise case.  `ofPointwise_union` is JM20
 Prop 3.4's stronger equality. -/
-def ofPointwise (φ : Φ → Set Φ) (self_mem : ∀ R, R ∈ φ R) : Relaxation Φ where
+def ofPointwise (φ : Φ → Specification Φ) (self_mem : ∀ R, R ∈ φ R) : Relaxation Φ where
   toFun R := ⋃ r ∈ R, φ r
   le_toFun _ x hx := Set.mem_biUnion hx (self_mem x)
   mono _ _ h := Set.biUnion_mono h fun _ _ => le_rfl
 
-@[simp] theorem mem_ofPointwise_iff {φ : Φ → Set Φ} {h : ∀ R, R ∈ φ R} {R : Set Φ} {x : Φ} :
+@[simp] theorem mem_ofPointwise_iff {φ : Φ → Specification Φ} {h : ∀ R, R ∈ φ R} {R : Specification Φ} {x : Φ} :
     x ∈ ofPointwise φ h R ↔ ∃ r ∈ R, x ∈ φ r := by
   simp [ofPointwise]
 
 /-- JM20 Prop 3.3: "`(ℛ ∩ 𝒮)^φ ⊆ ℛ^φ ∩ 𝒮^φ`".  An inclusion in the paper
 too; monotonicity is all it needs. -/
-theorem inter_subset (φ : Relaxation Φ) (R S : Set Φ) : φ (R ∩ S) ⊆ φ R ∩ φ S :=
+theorem inter_subset (φ : Relaxation Φ) (R S : Specification Φ) : φ (R ∩ S) ⊆ φ R ∩ φ S :=
   Set.subset_inter (φ.mono Set.inter_subset_left) (φ.mono Set.inter_subset_right)
 
 /-- The `⊇` half of JM20 Prop 3.4 — *not* the paper's statement.
@@ -167,13 +167,13 @@ JM20 Prop 3.4 reads "`(ℛ ∪ 𝒮)^φ = ℛ^φ ∪ 𝒮^φ`", an **equality**,
 JM20 Def 2 (pointwise) relaxation; that is `ofPointwise_union`.  For a
 merely monotone relaxation the equality can fail and only this inclusion
 follows. -/
-theorem union_subset (φ : Relaxation Φ) (R S : Set Φ) : φ R ∪ φ S ⊆ φ (R ∪ S) :=
+theorem union_subset (φ : Relaxation Φ) (R S : Specification Φ) : φ R ∪ φ S ⊆ φ (R ∪ S) :=
   Set.union_subset (φ.mono Set.subset_union_left) (φ.mono Set.subset_union_right)
 
 /-- JM20 Prop 3.4, the paper's statement: "`(ℛ ∪ 𝒮)^φ = ℛ^φ ∪ 𝒮^φ`" — an
 equality, available because `φ` is a JM20 Def 2 pointwise relaxation.
 Compare `union_subset`. -/
-theorem ofPointwise_union {φ : Φ → Set Φ} {h : ∀ R, R ∈ φ R} (R S : Set Φ) :
+theorem ofPointwise_union {φ : Φ → Specification Φ} {h : ∀ R, R ∈ φ R} (R S : Specification Φ) :
     ofPointwise φ h (R ∪ S) = ofPointwise φ h R ∪ ofPointwise φ h S := by
   simp only [ofPointwise, Set.biUnion_union]
 
@@ -185,7 +185,7 @@ def comp (φ ψ : Relaxation Φ) : Relaxation Φ where
   le_toFun R := (ψ.le_toFun R).trans (φ.le_toFun _)
   mono _ _ h := φ.mono (ψ.mono h)
 
-@[simp] theorem comp_apply (φ ψ : Relaxation Φ) (R : Set Φ) :
+@[simp] theorem comp_apply (φ ψ : Relaxation Φ) (R : Specification Φ) :
     φ.comp ψ R = φ (ψ R) := rfl
 
 /-- Pull-through form of CR18 Definition 5.6: applying a protocol after
@@ -194,16 +194,16 @@ below identifies it with the paper's construction-preservation phrasing.
 
 JM20 Theorem 3 transports the error parameter, `π(ℛ^ε) ⊆ (πℛ)^{ε_π}`; this
 predicate keeps `φ` fixed. -/
-def Compatible (M : Type*) [SMul M Φ] (φ : Relaxation Φ) : Prop :=
-  ∀ (π : M) (R : Set Φ), π • φ R ⊆ φ (π • R)
+def Compatible (Sigma : Type*) [SMul Sigma Φ] (φ : Relaxation Φ) : Prop :=
+  ∀ (π : Sigma) (R : Specification Φ), π • φ R ⊆ φ (π • R)
 
 /-- Compatibility is closed under composition; this is the mechanism behind
 JM20 Theorem 12, once Theorem 10 has rewritten the combined from-until
 relaxation as an alternating nesting.  JM20 Theorem 14 additionally
 transports `ε` to `ε_π`, so it is not an instance of this. -/
-theorem Compatible.comp [SMul M Φ] {φ ψ : Relaxation Φ}
-    (hφ : φ.Compatible M) (hψ : ψ.Compatible M) :
-    (φ.comp ψ).Compatible M :=
+theorem Compatible.comp [SMul Sigma Φ] {φ ψ : Relaxation Φ}
+    (hφ : φ.Compatible Sigma) (hψ : ψ.Compatible Sigma) :
+    (φ.comp ψ).Compatible Sigma :=
   fun π R => (hφ π (ψ R)).trans (φ.mono (hψ π R))
 
 /-- CR18 §5.2.3, **Definition 5.6** as stated: "A relaxation `ρ` is
@@ -212,8 +212,8 @@ holds also if the assumed and the constructed resource specification is
 relaxed by `ρ`, i.e., if
 
   `ℛ —γ→ 𝒮 ⟹ ρ(ℛ) —γ→ ρ(𝒮)`." -/
-theorem compatible_iff [Monoid M] [MulAction M Φ] (φ : Relaxation Φ) :
-    φ.Compatible M ↔ ∀ (π : M) (R S : Set Φ), R —[π]→ S → φ R —[π]→ φ S := by
+theorem compatible_iff [Monoid Sigma] [MulAction Sigma Φ] (φ : Relaxation Φ) :
+    φ.Compatible Sigma ↔ ∀ (π : Sigma) (R S : Specification Φ), R —[π]→ S → φ R —[π]→ φ S := by
   constructor
   · exact fun hc π R S h => (hc π R).trans (φ.mono h)
   · exact fun h π R => h π R (π • R) (constructs_iff.mpr Set.Subset.rfl)
@@ -227,13 +227,13 @@ This definition naturally extends to specifications `ℛ₁, …, ℛₙ`."
 
 Stated here in the binary form (`n = 2`, either side). -/
 def ParCompatible [Par Φ] (φ : Relaxation Φ) : Prop :=
-  ∀ R T : Set Φ, (φ R ∥ T ⊆ φ (R ∥ T)) ∧ (T ∥ φ R ⊆ φ (T ∥ R))
+  ∀ R T : Specification Φ, (φ R ∥ T ⊆ φ (R ∥ T)) ∧ (T ∥ φ R ⊆ φ (T ∥ R))
 
 end Relaxation
 
 section RelaxedComposition
 
-variable [Monoid M] [MulAction M Φ]
+variable [Monoid Sigma] [MulAction Sigma Φ]
 
 /-- CR18 §5.2.3: "These two compatibility properties allow us to compose
 construction statements that contain relaxations on the right (the
@@ -244,8 +244,8 @@ we have
 
 because `ρ(𝒮) —γ′→ ρ(𝒯)` and hence Lemma 5.1 can be applied to obtain
 (5.4)." -/
-theorem Constructs.relax_trans {π π' : M} {R S T : Set Φ} {φ : Relaxation Φ}
-    (h : R —[π]→ φ S) (h' : S —[π']→ T) (hφ : φ.Compatible M) :
+theorem Constructs.relax_trans {π π' : Sigma} {R S T : Specification Φ} {φ : Relaxation Φ}
+    (h : R —[π]→ φ S) (h' : S —[π']→ T) (hφ : φ.Compatible Sigma) :
     R —[π' * π]→ φ T := by
   rw [constructs_iff, mul_smul]
   calc π' • π • R ⊆ π' • φ S := Set.smul_set_mono h
@@ -253,18 +253,18 @@ theorem Constructs.relax_trans {π π' : M} {R S T : Set Φ} {φ : Relaxation Φ
     _ ⊆ φ T := φ.mono h'
 
 /-- Parallel analogue of `Constructs.relax_trans` via CR18 Def 5.7. -/
-theorem Constructs.relax_par [Par Φ] [Par M] [SMulParClass M Φ]
-    {π : M} {R S : Set Φ} {φ : Relaxation Φ}
-    (h : R —[π]→ φ S) (T : Set Φ) (hφ : φ.ParCompatible) :
+theorem Constructs.relax_par [Par Φ] [Par Sigma] [SMulParClass Sigma Φ]
+    {π : Sigma} {R S : Specification Φ} {φ : Relaxation Φ}
+    (h : R —[π]→ φ S) (T : Specification Φ) (hφ : φ.ParCompatible) :
     R ∥ T —[π ∥ 1]→ φ (S ∥ T) :=
   fun _ hx => (hφ S T).1 (Constructs.par_left T h hx)
 
 /-- Binary right-slot counterpart of `Constructs.relax_par`, using the second
 clause of CR18 Definition 5.7's specification-level specialization. -/
-theorem Constructs.relax_par_right [Par Φ] [Par M] [SMulParClass M Φ]
-    {π : M} {R S : Set Φ} {φ : Relaxation Φ}
-    (h : R —[π]→ φ S) (T : Set Φ) (hφ : φ.ParCompatible) :
-    T ∥ R —[(1 : M) ∥ π]→ φ (T ∥ S) :=
+theorem Constructs.relax_par_right [Par Φ] [Par Sigma] [SMulParClass Sigma Φ]
+    {π : Sigma} {R S : Specification Φ} {φ : Relaxation Φ}
+    (h : R —[π]→ φ S) (T : Specification Φ) (hφ : φ.ParCompatible) :
+    T ∥ R —[(1 : Sigma) ∥ π]→ φ (T ∥ S) :=
   fun _ hx => (hφ S T).2 (red_one_par T h hx)
 
 end RelaxedComposition
@@ -272,7 +272,7 @@ namespace Relaxation
 
 /-- A relaxation is determined by its underlying map on specifications. -/
 theorem toFun_injective :
-    Function.Injective (Relaxation.toFun : Relaxation Φ → Set Φ → Set Φ) := by
+    Function.Injective (Relaxation.toFun : Relaxation Φ → Specification Φ → Specification Φ) := by
   rintro ⟨f, _, _⟩ ⟨g, _, _⟩ h
   cases h
   rfl

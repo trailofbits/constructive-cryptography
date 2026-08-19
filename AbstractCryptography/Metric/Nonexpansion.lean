@@ -28,7 +28,7 @@ namespace AbstractCryptography
 
 open scoped ENNReal
 
-variable {M Φ : Type*}
+variable {Sigma Φ : Type*}
 
 /-- The inequality `edist R S ≤ ε`.  In a pseudo-emetric, radius zero need
 not imply equality without an explicit point-separation hypothesis. -/
@@ -39,16 +39,78 @@ not imply equality without an explicit point-separation hypothesis. -/
 /-- Scalar closeness, backed by `WithinEDistance`. -/
 scoped notation:50 R " ≈[" ε "] " S:51 => WithinEDistance ε R S
 
-/-- MauRen16 Definition 2, the converter half: "A metric `d` on `Φ` is called
+/-- The triangle inequality in ball form — the metric half of the budget
+addition MauRen16 §4.1 Corollary 1.1 performs at the specification level.
+Stated separately from the construction relation because it is the step a
+simulator argument takes inside a single resource, with no protocol attached
+(MauRen16 §4.2's chain `πR ≈ᵋ Sσ`, then `Sσ ≈ᵋ' T`). -/
+theorem WithinEDistance.trans [PseudoEMetricSpace Φ] {ε ε' : ℝ≥0∞} {R S T : Φ}
+    (h : R ≈[ε] S) (h' : S ≈[ε'] T) : R ≈[ε + ε'] T :=
+  (edist_triangle R S T).trans (add_le_add h h')
+
+/-- `WithinEDistance.trans` as a `calc` step: a hybrid argument is written
+
+```
+calc R ≈[ε] S := first
+  _ ≈[ε'] T := second
+```
+
+with the budget added by the instance.  The radii are pinned by the two
+source relations, so the `outParam` target is determined. -/
+instance instTransWithinEDistance [PseudoEMetricSpace Φ] {ε ε' : ℝ≥0∞} :
+    Trans (WithinEDistance (Φ := Φ) ε) (WithinEDistance ε') (WithinEDistance (ε + ε')) where
+  trans := WithinEDistance.trans
+
+/-- MauRen16 Definition 2, the converter clauses: "A metric `d` on `Φ` is called
 **non-expanding** if `d(αR, αS) ≤ d(R, S)` for all `α`" — equivalently
 Maurer11 Definition 2 eq. (4), "`d(αⁱR, αⁱS) ≤ d(R, S)` for all `i ∈ I`,
-`R, S ∈ Φ` and `α ∈ Σ`".  Here: every `c : M` acts as a `1`-Lipschitz map. -/
-class IsNonexpandingSMul (M Φ : Type*) [PseudoEMetricSpace Φ] [SMul M Φ] : Prop where
-  lipschitz_smul (c : M) : LipschitzWith 1 (fun x : Φ => c • x)
+`R, S ∈ Φ` and `α ∈ Σ`".  Here: every `c : Sigma` acts as a `1`-Lipschitz map.
 
-theorem edist_smul_le [PseudoEMetricSpace Φ] [SMul M Φ] [IsNonexpandingSMul M Φ]
-    (c : M) (x y : Φ) : edist (c • x) (c • y) ≤ edist x y := by
+**Both of Definition 2's clauses, not one.**  MauRen16 states it two-sidedly —
+`d(αR, αS) ≤ d(R, S)` for all `α` *and* `d(Rβ, Sβ) ≤ d(R, S)` for all `β` —
+because it pictures a two-interface resource with Alice left and Eve right.
+This class quantifies over *every* `c : Sigma`, and in the interface-indexed
+model both `αR` and `Rβ` are actions of elements of the one monoid `Sigma`
+(`Pi.mulSingle` at a left- resp. right-face interface), so the β-clause is the
+same universally quantified statement, not a second axiom.  A carrier that
+keeps left and right attachment in *distinct* monoids (the `eL`/`eR` pair of
+`Specification.Outbound`) owes the β-clause separately; no such statement is
+made in this file. -/
+class IsNonexpandingSMul (Sigma Φ : Type*) [PseudoEMetricSpace Φ] [SMul Sigma Φ] : Prop where
+  lipschitz_smul (c : Sigma) : LipschitzWith 1 (fun x : Φ => c • x)
+
+theorem edist_smul_le [PseudoEMetricSpace Φ] [SMul Sigma Φ] [IsNonexpandingSMul Sigma Φ]
+    (c : Sigma) (x y : Φ) : edist (c • x) (c • y) ≤ edist x y := by
   simpa using (IsNonexpandingSMul.lipschitz_smul (Φ := Φ) c).edist_le_mul x y
+
+/-- **MauRen16 §4.2, the remark following Lemma 5** — used there, never stated:
+"Note that `πRβ ≈ᵋ Sσβ` due to the non-expanding property of the
+pseudo-metric."  Equation (3)'s closeness `πR ≈ᵋ Sσ` survives attaching a
+further converter `β` to both sides, so a statement proved with a simulator is
+not destroyed by whatever the environment does afterwards.  This is the one
+place §4.2 actually spends Definition 2, and until now it appeared only
+inline, as `edist_smul_le σ` inside `Relaxation.star_construct_eps` and
+`Indifferentiable.trans`.
+
+**Why one monoid suffices.**  The paper writes the appended converter on the
+right (`Rβ`) because it pictures a two-interface resource with Alice on the
+left and Eve on the right.  In the homogeneous, interface-addressed rendering
+used here, `αR` and `Rβ` are both actions of elements of the *same* converter
+monoid — the interface is a component of the element, not a side of the
+juxtaposition — so appending `β` to the composite `πR` is the action of
+`β * π`, and Definition 2's β-clause is its α-clause instantiated at that
+element rather than a second axiom (see the class docstring above).  Hence
+`IsNonexpandingSMul`, which quantifies over every `c : Sigma`, is the whole
+hypothesis.  The one carrier where left and right attachment are genuinely
+distinct monoids is `Specification.Outbound`'s `eL`/`eR` pair, which imports
+no metric; that residue is the one recorded above. -/
+theorem edist_mul_smul_le_of_edist_le [Monoid Sigma] [MulAction Sigma Φ]
+    [PseudoEMetricSpace Φ] [IsNonexpandingSMul Sigma Φ]
+    {π σ : Sigma} {R S : Φ} {ε : ℝ≥0∞} (h : edist (π • R) (σ • S) ≤ ε)
+    (β : Sigma) :
+    edist ((β * π) • R) ((β * σ) • S) ≤ ε := by
+  rw [mul_smul, mul_smul]
+  exact (edist_smul_le β _ _).trans h
 
 /-- MauRen11 Definition 3: "A pseudo-metric `δ` for a set `Ω` with operation
 `‖` is called **`‖`-non-expanding** if `δ(a‖a′, b‖b′) ≤ δ(a, b) + δ(a′, b′)`

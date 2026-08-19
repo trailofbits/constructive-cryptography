@@ -5,7 +5,6 @@ Authors: Marc Ilunga, Claude
 import Mathlib.Data.Set.Card
 import Mathlib.Algebra.Group.Submonoid.Membership
 import AbstractCryptography.Specification.Filtered
-import AbstractCryptography.Metric.Distinguisher
 import AbstractCryptography.SemanticRegistry
 
 /-!
@@ -70,6 +69,14 @@ theorem ConstructsForAll.trans {π π' : ∀ i, Γ i} {R S T : Set I → Set Φ}
   rw [patternAttach_mul]
   exact Constructs.trans (h Z) (h' Z)
 
+/-- §2.2's composability as a `calc` step: the per-`Z` family chains as one
+relation, so a two-stage multiparty protocol is written as a single
+calculation with the composite `π' * π` supplied by the instance. -/
+instance instTransConstructsForAll {π π' : ∀ i, Γ i} :
+    Trans (ConstructsForAll (Φ := Φ) π) (ConstructsForAll π')
+      (ConstructsForAll (π' * π)) where
+  trans := ConstructsForAll.trans
+
 open Classical in
 /-- §2.4: "if `Z` is not in the adversary structure, then the resource is
 only known to satisfy the trivial specification `Φ`" — and every protocol
@@ -96,18 +103,18 @@ theorem ConstructsForAll.filteredAt_of_local_simulators {H : ∀ i, Submonoid (�
 `∗Z` is the `∗`-relaxation (`Relaxation.star`, MauRen11 Def 17 / CR18
 §5.3) at the joint dishonest converter class.
 
-Following MauRen11 Def 14, the converters act through a single monoid `M`
+Following MauRen11 Def 14, the converters act through a single monoid `Sigma`
 (`= ∀ i, Γ i` in the tuple-protocol rendering); `γ i` is the converter
 class at interface `i`, the paper's `Σ` restricted to interface `i`. -/
 
 section StarZ
-variable {M Φ : Type*} [Monoid M] [MulAction M Φ] (γ : I → Submonoid M)
+variable {Sigma Φ : Type*} [Monoid Sigma] [MulAction Sigma Φ] (γ : I → Submonoid Sigma)
 
 /-- LiuMau20 §2.5: the joint dishonest converter class.  "If we consider
 a set `Z` of potentially dishonest parties, we can consider the set of
 interfaces in `Z` as being merged to a single interface with several
 sub-interfaces."  Here: the join of the interface classes over `Z`. -/
-def zSub (Z : Set I) : Submonoid M :=
+def zSub (Z : Set I) : Submonoid Sigma :=
   ⨆ i : Z, γ (i : I)
 
 theorem mem_γ_le_zSub {Z : Set I} {i : I} (hi : i ∈ Z) : γ i ≤ zSub γ Z :=
@@ -118,7 +125,7 @@ theorem zSub_mono {Z Z' : Set I} (h : Z ⊆ Z') : zSub γ Z ≤ zSub γ Z' :=
 
 /-- MauRen11 Def 14(i): a converter commuting with each dishonest
 interface class commutes with the whole merged class. -/
-theorem commute_zSub {Z : Set I} {g h : M}
+theorem commute_zSub {Z : Set I} {g h : Sigma}
     (hcomm : ∀ j ∈ Z, ∀ b ∈ γ j, Commute g b) (hh : h ∈ zSub γ Z) :
     Commute g h := by
   refine Submonoid.iSup_induction (motive := fun h => Commute g h) _ hh
@@ -145,9 +152,9 @@ theorem zStar_mono {Z Z' : Set I} (h : Z ⊆ Z') (R : Set Φ) :
 
 /-- A converter commuting with the dishonest class pulls through `∗Z`:
 `π(S∗Z) ⊆ (πS)∗Z`. -/
-theorem smul_zStar_subset {Z : Set I} {g : M} (hg : ∀ h ∈ zSub γ Z, Commute g h)
+theorem smul_zStar_subset {Z : Set I} {g : Sigma} (hg : ∀ h ∈ zSub γ Z, Commute g h)
     (R : Set Φ) : g • zStar γ Z R ⊆ zStar γ Z (g • R) :=
-  Relaxation.smul_star_subset hg R
+  Relaxation.smul_star_subset (fun σ hσ => (hg σ hσ).actCommute) R
 
 /-- LiuMau20 §2.5's proof recipe: "If one wants to prove that a given
 specification `U` is contained in `S∗Z`, one can exhibit for every `U ∈ U`
@@ -155,11 +162,11 @@ a converter `α` such that `U = αᶻS` … the same `α` … is a (joint)
 simulator for the interfaces in `Z`."  The honest attachment `g` (which
 commutes with the dishonest class) sends every real resource, up to a
 dishonest `s ∈ zSub γ Z`, to the ideal. -/
-theorem zStar_construct_of_simulators {Z : Set I} {g : M}
+theorem zStar_construct_of_simulators {Z : Set I} {g : Sigma}
     (hg : ∀ h ∈ zSub γ Z, Commute g h) {real : Set Φ} {ideal : Φ}
     (hsim : ∀ R ∈ real, ∃ s ∈ zSub γ Z, g • R = s • ideal) :
     g • zStar γ Z real ⊆ zStar γ Z {ideal} :=
-  Relaxation.star_construct hg hsim
+  Relaxation.star_construct (fun σ hσ => (hg σ hσ).actCommute) hsim
 
 end StarZ
 
@@ -200,11 +207,11 @@ end GameSpec
 /-! ### Game bounds under the `∗Z`-relaxation
 
 How the ideal's game guarantee survives the `∗Z`-relaxation, over the same
-abstract `γ : I → Submonoid M` as `∗Z` itself. -/
+abstract `γ : I → Submonoid Sigma` as `∗Z` itself. -/
 
 section StarGame
 open scoped ENNReal
-variable {M Φ : Type*} [Monoid M] [MulAction M Φ] (γ : I → Submonoid M)
+variable {Sigma Φ : Type*} [Monoid Sigma] [MulAction Sigma Φ] (γ : I → Submonoid Sigma)
 
 /-- A test family closed under dishonest-side emulation at `Z` — MauRen11
 Def 16's closure `𝒟Σⁱ ⊆ 𝒟` restricted to the dishonest monoid. -/
@@ -266,25 +273,15 @@ theorem GateHierarchy.transfer (G : GateHierarchy Φ) {i j : ℕ} (h : i ≤ j)
 
 end StarGame
 
-section GameMetric
-open scoped ENNReal
-variable {M Φ : Type*} [SMul M Φ]
+/-! ### The game bound under a distinguisher-class distance
 
-/-- A resource within class-distance `εs` of one that meets the game bound
-`εg` meets it up to `εg + εs`: the forger's advantage on the real system is
-its advantage on the ideal plus the simulation distance. -/
-theorem gameSpec_of_edistD_le (D : DistinguisherClass M Φ)
-    {Ts : Set (Φ → ℝ≥0∞)} (hTs : Ts ⊆ D.tests) {q q' : Φ}
-    {εg εs : ℝ≥0∞} (hq' : q' ∈ gameSpec Ts εg) (hd : D.edistD q q' ≤ εs) :
-    q ∈ gameSpec Ts (εg + εs) := by
-  intro t ht
-  have hadv : t q - t q' ≤ εs :=
-    D.test_left_tsub_right_le_of_edistD_le (hTs ht) hd
-  calc t q ≤ (t q - t q') + t q' := le_tsub_add
-    _ ≤ εs + εg := add_le_add hadv (hq' t ht)
-    _ = εg + εs := add_comm ..
-
-end GameMetric
+`gameSpec_of_edistD_le` — a resource within class-distance `εs` of one meeting
+the game bound `εg` meets it up to `εg + εs` — is stated over
+`AbstractCryptography.DistinguisherClass`, MauRen11 Definition 15/16
+provenance, and therefore moved to
+`ConstructiveCryptography.Multiparty.GameMetric` behind the provenance fence
+on 2026-08-17.  Everything above is `Set (Φ → ℝ≥0∞)` test families and needs
+no class.  See `LEDGER.md` PROVENANCE FENCE. -/
 
 end AbstractCryptography
 
@@ -317,7 +314,7 @@ Two departures:
   the threshold case and uses `t < n/3` in its broadcast protocols, but
   states neither the threshold structure nor the implication.
 
-LiuMau20's [16] is: Martin Hirt and Ueli M. Maurer, *Player simulation
+LiuMau20's [16] is: Martin Hirt and Ueli Sigma. Maurer, *Player simulation
 and general adversary structures in perfect multiparty computation*,
 Journal of Cryptology 13(1):31–60, January 2000.
 -/
@@ -413,6 +410,16 @@ theorem ConstructsForAdversaryStructure.trans {I : Type*} {Γ : I → Type*}
   · simp only [if_neg hZ]
     exact fun x _ => Set.mem_univ x
 
+/-- §2.4's composability as a `calc` step, the structured counterpart of
+`instTransConstructsForAll`. -/
+instance instTransConstructsForAdversaryStructure {I : Type*} {Γ : I → Type*}
+    {Φ : Type*} [∀ i, Monoid (Γ i)] [MulAction (∀ i, Γ i) Φ]
+    {𝒵 : AdversaryStructure I} {π π' : ∀ i, Γ i} :
+    Trans (ConstructsForAdversaryStructure (Φ := Φ) 𝒵 π)
+      (ConstructsForAdversaryStructure 𝒵 π')
+      (ConstructsForAdversaryStructure 𝒵 (π' * π)) where
+  trans := ConstructsForAdversaryStructure.trans
+
 /-! ### The tuple rendering of the `∗Z` calculus (LiuMau20 §2.4)
 
 The multi-party protocol monoid is the tuple monoid `∀ i, Γ i` (Def 14's
@@ -443,7 +450,7 @@ def tupleGamma (i : I) : @Submonoid (∀ j, Γ j) Monoid.toMulOneClass where
 /-- Every element of the merged dishonest class `zSub tupleGamma Z` is the
 identity off `Z` — the joint interface `Z` acts only within `Z`. -/
 theorem zSub_tupleGamma_apply {Z : Set I} {h : ∀ j, Γ j}
-    (hh : h ∈ zSub (M := ∀ j, Γ j) tupleGamma Z) {k : I} (hk : k ∉ Z) :
+    (hh : h ∈ zSub (Sigma := ∀ j, Γ j) tupleGamma Z) {k : I} (hk : k ∉ Z) :
     h k = 1 := by
   induction hh using Submonoid.iSup_induction' with
   | mem i x hx => exact hx k (fun hik => hk (hik ▸ i.2))
@@ -452,7 +459,7 @@ theorem zSub_tupleGamma_apply {Z : Set I} {h : ∀ j, Γ j}
 
 /-- The generated dishonest converter class is supported on `Z`. -/
 theorem zSub_tupleGamma_le_supportedOn (Z : Set I) :
-    zSub (M := ∀ j, Γ j) tupleGamma Z ≤ supportedOn Z (fun _ => ⊤) := by
+    zSub (Sigma := ∀ j, Γ j) tupleGamma Z ≤ supportedOn Z (fun _ => ⊤) := by
   intro h hh
   exact mem_supportedOn.mpr
     ⟨fun _ _ => Submonoid.mem_top _,
@@ -468,7 +475,7 @@ the `Z`-supported tuples.  This does *not* claim a single machine with state
 shared across the interfaces of `Z`, which the tuple monoid cannot
 express. -/
 theorem supportedOn_le_zSub_tupleGamma {Z : Set I} (hZ : Z.Finite) :
-    supportedOn Z (fun _ => ⊤) ≤ zSub (M := ∀ j, Γ j) tupleGamma Z := by
+    supportedOn Z (fun _ => ⊤) ≤ zSub (Sigma := ∀ j, Γ j) tupleGamma Z := by
   classical
   induction Z, hZ using Set.Finite.induction_on with
   | empty =>
@@ -500,7 +507,7 @@ theorem supportedOn_le_zSub_tupleGamma {Z : Set I} (hZ : Z.Finite) :
 /-- The two inclusions together: for a finite dishonest set the generated
 class *is* the `Z`-supported tuples. -/
 theorem zSub_tupleGamma_eq_supportedOn {Z : Set I} (hZ : Z.Finite) :
-    zSub (M := ∀ j, Γ j) tupleGamma Z = supportedOn Z (fun _ => ⊤) :=
+    zSub (Sigma := ∀ j, Γ j) tupleGamma Z = supportedOn Z (fun _ => ⊤) :=
   le_antisymm (zSub_tupleGamma_le_supportedOn Z) (supportedOn_le_zSub_tupleGamma hZ)
 
 /-- A pattern-attached tuple at a finite pattern lies in the generated
@@ -508,7 +515,7 @@ dishonest class — the bridge from MauRen11-style simulator tuples to
 LiuMau20-style joint simulators. -/
 theorem patternAttach_mem_zSub_tupleGamma {Z : Set I} (hZ : Z.Finite)
     (σ : ∀ i, Γ i) :
-    patternAttach Z σ ∈ zSub (M := ∀ j, Γ j) tupleGamma Z :=
+    patternAttach Z σ ∈ zSub (Sigma := ∀ j, Γ j) tupleGamma Z :=
   supportedOn_le_zSub_tupleGamma hZ
     (patternAttach_mem_supportedOn fun _ _ => Submonoid.mem_top _)
 
@@ -517,7 +524,7 @@ theorem patternAttach_mem_zSub_tupleGamma {Z : Set I} (hZ : Z.Finite)
 dishonest class (identity off `Z`), because at each interface one of the
 two is the identity. -/
 theorem commute_patternAttach_zSub {Z : Set I} (π : ∀ i, Γ i)
-    {h : ∀ i, Γ i} (hh : h ∈ zSub (M := ∀ j, Γ j) tupleGamma Z) :
+    {h : ∀ i, Γ i} (hh : h ∈ zSub (Sigma := ∀ j, Γ j) tupleGamma Z) :
     Commute (patternAttach Zᶜ π) h := by
   apply commute_patternAttach_supportedOn (P := Zᶜ) (H := fun _ => ⊤)
   simpa only [compl_compl] using zSub_tupleGamma_le_supportedOn Z hh
@@ -528,10 +535,10 @@ applied to the ideal, then it constructs the `∗Z`-relaxed ideal from the
 `∗Z`-relaxed assumed specification. -/
 theorem constructs_zStar_of_leaf {Z : Set I} (π : ∀ i, Γ i)
     {assumed : Set Φ} {ideal : Φ}
-    (hleaf : ∀ R ∈ assumed, ∃ s ∈ zSub (M := ∀ j, Γ j) tupleGamma Z,
+    (hleaf : ∀ R ∈ assumed, ∃ s ∈ zSub (Sigma := ∀ j, Γ j) tupleGamma Z,
       patternAttach Zᶜ π • R = s • ideal) :
-    zStar (M := ∀ j, Γ j) tupleGamma Z assumed —[patternAttach Zᶜ π]→
-      zStar (M := ∀ j, Γ j) tupleGamma Z {ideal} :=
+    zStar (Sigma := ∀ j, Γ j) tupleGamma Z assumed —[patternAttach Zᶜ π]→
+      zStar (Sigma := ∀ j, Γ j) tupleGamma Z {ideal} :=
   zStar_construct_of_simulators tupleGamma
     (fun _ hh => commute_patternAttach_zSub π hh) hleaf
 
@@ -545,12 +552,12 @@ only under zero-distance separation. -/
 theorem constructs_zStar_eps_of_leaf [PseudoEMetricSpace Φ]
     [IsNonexpandingSMul (∀ j, Γ j) Φ] {Z : Set I} (π : ∀ i, Γ i)
     {assumed : Set Φ} {ideal : Φ} {ε : ℝ≥0∞}
-    (hleaf : ∀ R ∈ assumed, ∃ s ∈ zSub (M := ∀ j, Γ j) tupleGamma Z,
+    (hleaf : ∀ R ∈ assumed, ∃ s ∈ zSub (Sigma := ∀ j, Γ j) tupleGamma Z,
       edist (patternAttach Zᶜ π • R) (s • ideal) ≤ ε) :
-    patternAttach Zᶜ π • zStar (M := ∀ j, Γ j) tupleGamma Z assumed ⊆
-      Relaxation.epsilonRelaxation ε (zStar (M := ∀ j, Γ j) tupleGamma Z {ideal}) :=
+    patternAttach Zᶜ π • zStar (Sigma := ∀ j, Γ j) tupleGamma Z assumed ⊆
+      Relaxation.epsilonRelaxation ε (zStar (Sigma := ∀ j, Γ j) tupleGamma Z {ideal}) :=
   Relaxation.star_construct_eps
-    (fun _ hh => commute_patternAttach_zSub π hh) hleaf
+    (fun _ hh => (commute_patternAttach_zSub π hh).actCommute) hleaf
 
 /-- **Theorem 1's shape** (LiuMau20 §7): over an adversary structure,
 per-`Z` simulator leaves for the tolerated sets give the structured
@@ -558,11 +565,11 @@ construction of the `∗Z`-relaxed ideal from the assumed specification. -/
 theorem mpc_step (𝒵 : AdversaryStructure I) (π : ∀ i, Γ i)
     (assumed : Set I → Set Φ) (ideal : Φ)
     (hzrel : ∀ Z ∈ 𝒵.sets,
-      assumed Z ⊆ zStar (M := ∀ j, Γ j) tupleGamma Z (assumed Z))
+      assumed Z ⊆ zStar (Sigma := ∀ j, Γ j) tupleGamma Z (assumed Z))
     (hleaf : ∀ Z ∈ 𝒵.sets, ∀ R ∈ assumed Z,
-      ∃ s ∈ zSub (M := ∀ j, Γ j) tupleGamma Z, patternAttach Zᶜ π • R = s • ideal) :
+      ∃ s ∈ zSub (Sigma := ∀ j, Γ j) tupleGamma Z, patternAttach Zᶜ π • R = s • ideal) :
     ConstructsForAdversaryStructure 𝒵 π assumed
-      (fun Z => zStar (M := ∀ j, Γ j) tupleGamma Z {ideal}) := by
+      (fun Z => zStar (Sigma := ∀ j, Γ j) tupleGamma Z {ideal}) := by
   intro Z
   by_cases hZ : Z ∈ 𝒵.sets
   · simp only [if_pos hZ]
@@ -598,7 +605,7 @@ theorem leaf_of_shared_simulator {𝒵 : AdversaryStructure I} {π σ : ∀ i, �
     (hshared : ∀ Z ∈ 𝒵.sets, ∀ R ∈ spec Z,
       patternAttach Zᶜ π • R = patternAttach Z σ • ideal) :
     ∀ Z ∈ 𝒵.sets, ∀ R ∈ spec Z,
-      ∃ s ∈ zSub (M := ∀ j, Γ j) tupleGamma Z,
+      ∃ s ∈ zSub (Sigma := ∀ j, Γ j) tupleGamma Z,
         patternAttach Zᶜ π • R = s • ideal :=
   fun Z hZ R hR =>
     ⟨patternAttach Z σ, patternAttach_mem_zSub_tupleGamma (hfin Z hZ) σ,
@@ -621,9 +628,9 @@ example :
     -- the two per-pattern simulators are legitimate: each is `Z`-supported …
     ((Pi.mulSingle false (Multiplicative.ofAdd 1) :
         ∀ _ : Bool, Multiplicative (ZMod 2)) ∈
-      zSub (M := ∀ _ : Bool, Multiplicative (ZMod 2)) tupleGamma {false}
+      zSub (Sigma := ∀ _ : Bool, Multiplicative (ZMod 2)) tupleGamma {false}
     ∧ (1 : ∀ _ : Bool, Multiplicative (ZMod 2)) ∈
-      zSub (M := ∀ _ : Bool, Multiplicative (ZMod 2)) tupleGamma Set.univ)
+      zSub (Sigma := ∀ _ : Bool, Multiplicative (ZMod 2)) tupleGamma Set.univ)
     -- … but no shared tuple yields both as its pattern attachments
     ∧ ¬ ∃ σ : ∀ _ : Bool, Multiplicative (ZMod 2),
         Pi.mulSingle false (Multiplicative.ofAdd 1) = patternAttach {false} σ

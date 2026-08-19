@@ -3,17 +3,19 @@ Copyright (c) 2026 Trail of Bits. All rights reserved.
 Authors: Marc Ilunga, Claude
 -/
 import AbstractCryptography.Refinement.Basic
-import AbstractCryptography.Refinement.StepwiseRefinement
 import AbstractCryptography.Algebra.Attachment
 import AbstractCryptography.Algebra.Indexed
 import AbstractCryptography.Algebra.Star
 import AbstractCryptography.Specification.Basic
 import AbstractCryptography.Specification.Parallel
 import AbstractCryptography.Specification.Relaxation
+import AbstractCryptography.Specification.Outbound
+import AbstractCryptography.Specification.ConstructorClass
+import AbstractCryptography.Specification.CostBounded
+import AbstractCryptography.Specification.Interfaces
 import AbstractCryptography.Metric.Epsilon
-import AbstractCryptography.Metric.Distinguisher
 import AbstractCryptography.Specification.Filtered
-import AbstractCryptography.Specification.ChoiceSetting
+import AbstractCryptography.Specification.Parameterized
 import AbstractCryptography.Tactics.ProofAutomation
 import AbstractCryptography.Tactics.ControlledNaturalLanguage
 
@@ -44,13 +46,9 @@ sit outside the mathematics tree, under `AbstractCryptography.Tactics`:
 
 * `AbstractCryptography.Refinement.Basic` — §3: Definition 5 (component and
   constructor sets), Definition 6 (reductions `R —α→ S`), Definition 7
-  (serially composable, context-insensitive, generally composable).
-* `AbstractCryptography.Refinement.StepwiseRefinement` — App. A's Definition 19 and
-  Theorem 3 via the law-free derived-chain forward
-  theorem `soundForDerivedChainStepwiseRefinement_of_isGenerallyComposable`
-  and, under the two serial unit laws, the exact repaired child-parallel
-  characterization
-  `isGenerallyComposable_and_red_par_par_iff_soundForChildParallelStepwiseRefinement`.
+  (serially composable, context-insensitive, generally composable).  (MauRen11
+  citation; MR16-grounded — the same composition laws are MauRen16 Lemma 1 and
+  CR18 Lemma 5.1.)
 * `AbstractCryptography.Algebra.Attachment` — §6's selected equality-level
   `Monoid`/`MulAction` rendering of converter composition and attachment,
   together with independent parallel and pseudo-emetric non-expansion mixins.
@@ -65,17 +63,25 @@ sit outside the mathematics tree, under `AbstractCryptography.Tactics`:
 * `AbstractCryptography.Specification.Relaxation`, `AbstractCryptography.Metric.Epsilon`, and
   `AbstractCryptography.Algebra.Star` — CR18/JM20 relaxations, pseudo-emetric balls,
   star relaxation, simulator construction, and indifferentiability.
-* `AbstractCryptography.Metric.Distinguisher` — selected distinguisher classes and the
-  induced pseudo-emetric/non-expanding action.
+* `AbstractCryptography.Specification.ConstructorClass` — MauRen16 §2.1's admitted
+  constructor set `Γ` on the *possibility* side, `Constructible`, so that
+  constructibility and the pre-existing `Unconstructible` quantify over one and
+  the same class.  §3.5's four converter-set models (information-theoretic,
+  memory-explicit, computation-as-resource, efficiency-bounded) are documented
+  there as instantiations of that parameter, and the module keeps the
+  constructor class `Γ` separate from the class `H` that carries the `∗`- and
+  `ε`-relaxations, which is the distinction §3.5 closes on.
+* `AbstractCryptography.Specification.CostBounded` — MauRen16 §3.5's
+  efficiency-bounded model as the one family of instantiations of that
+  constructor-class parameter, `costBounded γ c`, with the construction-hardness
+  chain the budget carries.  The cost function stays a parameter: CR18 §4.4.7
+  declines to fix a computational model, and no performance function is built.
 * `AbstractCryptography.Specification.Filtered` — choice-free endpoint-pattern/star
   specifications and local-simulator construction analogues motivated by §7.
-  This module also contains App. C's two-party case.
-* `AbstractCryptography.Specification.ChoiceSetting` — MauRen11's literal
-  choice-setting layer
-  (§§4–5, 7): Definitions 8–11 and 18 in the §7.1 converter specialization,
-  and Theorem 2 (`filteredAbstraction_of_local_simulators`) — local ongoing
-  simulation proves the choice-domain/CFR abstraction `R_φ ⊑^π S_ψ` — on the
-  same selected `Monoid`/`MulAction` contract as the rest of the surface.
+* `AbstractCryptography.Specification.Parameterized` — CR18 §5.5's parameterized
+  resources and constructions: Definition 5.11's family `{φ_r R}` and equation
+  (5.6) with a single quantified protocol, together with the coherence equation
+  `ψ_r α φ_r = ψ_r α` that collapses the family.
 * `AbstractCryptography.Tactics.ProofAutomation` — a finite proof-language layer over
   the semantic modules: scoped paper notation, curated normalization, named leaf
   rules,
@@ -104,6 +110,17 @@ Controlled-language sentences are opt-in even through the public root:
 ```lean
 open scoped CryptoControlledNaturalLanguage
 ```
+
+## The MauRen11 provenance fence
+
+This root is **MR16-track**: it imports no MauRen11-specific module.  The
+distinguisher class (MauRen11 Definitions 15–16) and its metric, the carrier
+taken up to that metric, the distinguisher-indexed relaxation and the
+simulation-construction notion stated over it, the choice-setting layer
+(§§4–5, 7), the two-party case (App. C), and step-wise refinement (App. A) are
+collected behind `AbstractCryptography.MR11`, which is the module to import
+when the MauRen11 surface is what is wanted.  Nothing was deleted; see
+`LEDGER.md` PROVENANCE FENCE for the rule, the classification, and the gate.
 
 The `ConstructiveCryptography` module is the next layer and the public root of
 its own tree. `ConstructiveCryptography.Multiparty.Basic` is owned by the

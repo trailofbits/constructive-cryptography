@@ -3,9 +3,15 @@ Copyright (c) 2026 Trail of Bits. All rights reserved.
 Authors: Marc Ilunga, Claude
 -/
 import AbstractCryptography.Algebra.Attachment
+import AbstractCryptography.Specification.Basic
 
 /-!
 # Distinguisher classes and the derived pseudo-metric (MauRen11 §4.4, §6.1)
+
+**MR11-DEFERRED (provenance fence, 2026-08-17): MauRen11 constructs
+quarantined pending the MR11 reconciliation task.  No MR16-track file may
+import this module — enforced by `scripts/ledgerAudit.sh`.  See `LEDGER.md`
+PROVENANCE FENCE.**
 
 MauRen11 **Definition 15**: a test `D : R ↦ DR` read as the probability
 its output bit is `1` — here any `[0, 1]`-valued observable on the
@@ -22,9 +28,9 @@ pseudo-emetric (MauRen11 §2.2's axioms become theorems), and MauRen11
 
 MauRen11 indexes tests by an interface signature.  This development is
 homogeneous (MauRen11 Def 14): the carrier is a single `Φ` and converters
-a monoid `M` acting on it, so the signature indexing vanishes and Def 16's
-closure is under the whole converter monoid (`test_attach` over `c : M`).
-Def 17's restricted feasible classes are represented by the choice of `M`,
+a monoid `Sigma` acting on it, so the signature indexing vanishes and Def 16's
+closure is under the whole converter monoid (`test_attach` over `c : Sigma`).
+Def 17's restricted feasible classes are represented by the choice of `Sigma`,
 `Φ`, and `𝒟` themselves.
 -/
 
@@ -32,13 +38,13 @@ open scoped ENNReal
 
 namespace AbstractCryptography
 
-variable {M Φ : Type*}
+variable {Sigma Φ : Type*}
 
 /-- MauRen11 **Definition 16**: "a distinguisher class `𝒟`", homogeneous
 form.  A set of `[0, 1]`-valued tests on the carrier `Φ`, closed under
 emulation of a converter — Def 16's `𝒟Σⁱ ⊆ 𝒟`, here `𝒟Σ ⊆ 𝒟` over the
-whole converter monoid `M`. -/
-structure DistinguisherClass (M Φ : Type*) [SMul M Φ] where
+whole converter monoid `Sigma`. -/
+structure DistinguisherClass (Sigma Φ : Type*) [SMul Sigma Φ] where
   /-- MauRen11 Def 15's `D : R ↦ DR`, read as the probability of the
   output bit.  Def 16's "if `R ≈ S` then `DR = DS`" is built in: a test is
   a function on `Φ`. -/
@@ -47,8 +53,8 @@ structure DistinguisherClass (M Φ : Type*) [SMul M Φ] where
   test_le_one : ∀ {t}, t ∈ tests → ∀ q, t q ≤ 1
   /-- MauRen11 Def 16: "`𝒟Σⁱ ⊆ 𝒟` for `i ∈ I`, i.e. `𝒟` is closed under
   emulation of a converter in `Σ`" — where `(Dαⁱ) : R ↦ D(αⁱR)`.  Over the
-  homogeneous monoid: closed under `t ↦ t(c • ·)` for every `c : M`. -/
-  test_attach : ∀ (c : M) {t}, t ∈ tests → (fun q => t (c • q)) ∈ tests
+  homogeneous monoid: closed under `t ↦ t(c • ·)` for every `c : Sigma`. -/
+  test_attach : ∀ (c : Sigma) {t}, t ∈ tests → (fun q => t (c • q)) ∈ tests
 
 /-- The two ordered parallel-resource emulation closures used by MauRen11
 Lemma 1 to derive full parallel non-expansion of the distinguisher metric:
@@ -56,8 +62,8 @@ Definition 16's `𝒟[· ∥ Φ] ⊆ 𝒟` and Lemma 1's `𝒟[Φ ∥ ·] ⊆ �
 
 Parallel composition is not assumed commutative or associative, so neither
 ordered field follows from the other. -/
-class DistinguisherClass.IsClosedUnderPar [SMul M Φ] [Par Φ]
-    (D : DistinguisherClass M Φ) : Prop where
+class DistinguisherClass.IsClosedUnderPar [SMul Sigma Φ] [Par Φ]
+    (D : DistinguisherClass Sigma Φ) : Prop where
   /-- Closure under emulating a fixed resource in the right parallel slot. -/
   test_par_right : ∀ (r : Φ) {t}, t ∈ D.tests →
     (fun q => t (q ∥ r)) ∈ D.tests
@@ -67,7 +73,7 @@ class DistinguisherClass.IsClosedUnderPar [SMul M Φ] [Par Φ]
 
 namespace DistinguisherClass
 
-variable [SMul M Φ] (D : DistinguisherClass M Φ)
+variable [SMul Sigma Φ] (D : DistinguisherClass Sigma Φ)
 
 /-- MauRen11 §6.1: "`Δ^D(R, S)` is the advantage of `D` in distinguishing
 `R` and `S`, i.e., the statistical distance of the binary random variables
@@ -156,7 +162,7 @@ theorem edistD_triangle (q q' q'' : Φ) :
 
 /-- MauRen11 §4.4 Def 2, eq. (4) — `d(αⁱR, αⁱS) ≤ d(R, S)` — for `Δ^𝒟`,
 by Def 16's closure `𝒟Σ ⊆ 𝒟`. -/
-theorem edistD_attach_le (c : M) (q q' : Φ) :
+theorem edistD_attach_le (c : Sigma) (q q' : Φ) :
     D.edistD (c • q) (c • q') ≤ D.edistD q q' := by
   refine iSup₂_le fun t ht => ?_
   exact le_iSup₂ (f := fun t _ => adv t q q')
@@ -201,7 +207,7 @@ MauRen11 §2.2's axioms. -/
 /-- MauRen11 §4.4 Def 2 eq. (4) as an `IsNonexpandingSMul` instance for the
 class's own metric. -/
 theorem isNonexpandingSMul :
-    letI := D.toPseudoEMetricSpace; IsNonexpandingSMul M Φ :=
+    letI := D.toPseudoEMetricSpace; IsNonexpandingSMul Sigma Φ :=
   letI := D.toPseudoEMetricSpace
   ⟨fun c x y => by
     simp only [ENNReal.coe_one, one_mul]
@@ -222,7 +228,7 @@ end DistinguisherClass
 every defining test passes with certainty.  "Traditional security properties
 like consistency and validity can naturally be understood as specifications"
 (LiuMau20, abstract). -/
-def propSpec (Ts : Set (Φ → ℝ≥0∞)) : Set Φ := {q | ∀ t ∈ Ts, t q = 1}
+def propSpec (Ts : Set (Φ → ℝ≥0∞)) : Specification Φ := {q | ∀ t ∈ Ts, t q = 1}
 
 /-- More defining tests is a stronger property specification. -/
 theorem propSpec_antitone {Ts Ts' : Set (Φ → ℝ≥0∞)} (h : Ts ⊆ Ts') :
@@ -231,7 +237,7 @@ theorem propSpec_antitone {Ts Ts' : Set (Φ → ℝ≥0∞)} (h : Ts ⊆ Ts') :
 
 /-- Property-spec membership is behavioral: within zero class-distance of a
 resource satisfying the properties, they hold too. -/
-theorem mem_propSpec_of_edistD_eq_zero [SMul M Φ] (D : DistinguisherClass M Φ)
+theorem mem_propSpec_of_edistD_eq_zero [SMul Sigma Φ] (D : DistinguisherClass Sigma Φ)
     {Ts : Set (Φ → ℝ≥0∞)} (hTs : Ts ⊆ D.tests) {q q' : Φ}
     (hq' : q' ∈ propSpec Ts) (h0 : D.edistD q q' = 0) :
     q ∈ propSpec Ts := by
@@ -247,7 +253,7 @@ theorem mem_propSpec_of_edistD_eq_zero [SMul M Φ] (D : DistinguisherClass M Φ)
 
 /-- A resource within class-distance `ε` of a property specification
 satisfies each defining test up to `ε`. -/
-theorem one_tsub_le_test_of_close [SMul M Φ] (D : DistinguisherClass M Φ)
+theorem one_tsub_le_test_of_close [SMul Sigma Φ] (D : DistinguisherClass Sigma Φ)
     {Ts : Set (Φ → ℝ≥0∞)} (hTs : Ts ⊆ D.tests) {q q' : Φ}
     (hq' : q' ∈ propSpec Ts) {ε : ℝ≥0∞} (hd : D.edistD q q' ≤ ε)
     {t : Φ → ℝ≥0∞} (ht : t ∈ Ts) :

@@ -7,6 +7,11 @@ import AbstractCryptography.Refinement.Basic
 /-!
 # Soundness of step-wise refinement (MauRen11 App. A)
 
+**MR11-DEFERRED (provenance fence, 2026-08-17): MauRen11 constructs
+quarantined pending the MR11 reconciliation task.  No MR16-track file may
+import this module — enforced by `scripts/ledgerAudit.sh`.  See `LEDGER.md`
+PROVENANCE FENCE.**
+
 "Here we formalize the claim that general composability (cf. Definition 7) is
 sufficient for the step-wise refinement paradigm to work."
 

@@ -7,6 +7,11 @@ import AbstractCryptography.Algebra.Attachment
 /-!
 # Choice settings and abstraction of filtered specifications (MauRen11 §§4–5, 7)
 
+**MR11-DEFERRED (provenance fence, 2026-08-17): MauRen11 constructs
+quarantined pending the MR11 reconciliation task.  No MR16-track file may
+import this module — enforced by `scripts/ledgerAudit.sh`.  See `LEDGER.md`
+PROVENANCE FENCE.**
+
 The choice-setting / complete-factorizable-relation layer of MauRen11 and its
 central theorem: local ongoing simulation proves filtered-specification
 abstraction, `R_φ ⊑^π S_ψ` (§7.4, Theorem 2, p. 15, proof pp. 15–16).

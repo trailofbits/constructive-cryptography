@@ -2,10 +2,15 @@
 Copyright (c) 2026 Trail of Bits. All rights reserved.
 Authors: Marc Ilunga, Claude
 -/
-import AbstractCryptography.Metric.Epsilon
+import AbstractCryptography.Metric.ReductionRelaxation
 
 /-!
 # Context-restricted constructions (Jost, *Thesis*, §4.2)
+
+**MR11-DEFERRED (provenance fence, 2026-08-17): MauRen11 constructs
+quarantined pending the MR11 reconciliation task.  No MR16-track file may
+import this module — enforced by `scripts/ledgerAudit.sh`.  See `LEDGER.md`
+PROVENANCE FENCE.**
 
 Chapter 4 (printed pp. 47–53) replaces the universally quantified environment
 of the ordinary construction notion by a declared set of admissible contexts.
@@ -63,7 +68,7 @@ namespace AbstractCryptography
 open Pointwise
 open scoped ENNReal
 
-variable {M Φ : Type*}
+variable {Sigma Φ : Type*}
 
 /-! ## Parallel-composition laws used by Chapter 4 -/
 
@@ -128,7 +133,7 @@ theorem par_singleton_neutral_right {u : Φ} (hu : ∀ R : Φ, R ∥ u = R) (A :
 
 /-- The specification-level form of `SMulParClass`: a parallel converter pair
 acts slotwise on a parallel specification pair. -/
-theorem smul_set_par [SMul M Φ] [Par M] [SMulParClass M Φ] (α β : M) (A B : Set Φ) :
+theorem smul_set_par [SMul Sigma Φ] [Par Sigma] [SMulParClass Sigma Φ] (α β : Sigma) (A B : Set Φ) :
     (α ∥ β) • (A ∥ B) = (α • A) ∥ (β • B) := by
   ext x
   constructor
@@ -146,8 +151,8 @@ theorem smul_set_par [SMul M Φ] [Par M] [SMulParClass M Φ] (α β : M) (A B : 
 /-- The one-sided specialization used throughout §4.2: a protocol extended by
 the neutral converter acts on the left slot only.  JM20 Theorem 1.2's `π ∥ 1`,
 at the specification level. -/
-theorem smul_set_par_one [Monoid M] [MulAction M Φ] [Par M] [SMulParClass M Φ]
-    (α : M) (A B : Set Φ) : (α ∥ (1 : M)) • (A ∥ B) = (α • A) ∥ B := by
+theorem smul_set_par_one [Monoid Sigma] [MulAction Sigma Φ] [Par Sigma] [SMulParClass Sigma Φ]
+    (α : Sigma) (A B : Set Φ) : (α ∥ (1 : Sigma)) • (A ∥ B) = (α • A) ∥ B := by
   rw [smul_set_par, one_smul]
 
 end ParHelpers
@@ -162,27 +167,27 @@ restrict the access to the resource `S`."
 
 **Definition 4.2.1**: "A context set `𝒞` is a subset of `Σ × Θ`, where `Σ`
 denotes the set of all protocols for the honest parties and `Θ` denotes the set
-of all resources."  Here `Σ` is the converter monoid `M` and `Θ` the resource
+of all resources."  Here `Σ` is the converter monoid `Sigma` and `Θ` the resource
 carrier `Φ`. -/
-structure Context (M Φ : Type*) where
+structure Context (Sigma Φ : Type*) where
   /-- The filter converter applied by the honest party. -/
-  filter : M
+  filter : Sigma
   /-- The auxiliary parallel resource. -/
   aux : Φ
 
 /-- Definition 4.2.1's `𝒞 ⊆ Σ × Θ`. -/
-abbrev ContextSet (M Φ : Type*) : Type _ := Set (Context M Φ)
+abbrev ContextSet (Sigma Φ : Type*) : Type _ := Set (Context Sigma Φ)
 
 namespace Context
 
 section Systems
 
-variable [Monoid M] [MulAction M Φ] [Par Φ]
+variable [Monoid Sigma] [MulAction Sigma Φ] [Par Φ]
 
 /-- Figure 4.3, left: the real system `f[πℛ, P]` of Definition 4.2.2.  The
 protocol acts on the assumed specification only; the filter acts on the whole
 composite. -/
-def real (c : Context M Φ) (π : M) (R : Set Φ) : Set Φ :=
+def real (c : Context Sigma Φ) (π : Sigma) (R : Set Φ) : Set Φ :=
   c.filter • ((π • R) ∥ ({c.aux} : Set Φ))
 
 /-- Figure 4.3, right: the ideal system `f[𝒮, P]σ` of Definition 4.2.2.  Per
@@ -190,7 +195,7 @@ def real (c : Context M Φ) (π : M) (R : Set Φ) : Set Φ :=
 understood to be connected to Alice's interfaces, and whenever a simulator `σ`
 is considered, it is understood to be connected to Eve's interfaces", so the
 simulator wraps the whole composite `[𝒮, P]` from the other side. -/
-def ideal (c : Context M Φ) (σ : M) (S : Set Φ) : Set Φ :=
+def ideal (c : Context Sigma Φ) (σ : Sigma) (S : Set Φ) : Set Φ :=
   c.filter • (σ • (S ∥ ({c.aux} : Set Φ)))
 
 end Systems
@@ -213,7 +218,7 @@ exactly `attachBudget_mem` and `parRightBudget_mem`; `add_mem` is Theorem
 
 An information-theoretic reading takes the class of budgets bounded by a fixed
 constant; a computational reading takes the negligible families. -/
-structure BudgetClass [SMul M Φ] [Par Φ] (D : DistinguisherClass M Φ)
+structure BudgetClass [SMul Sigma Φ] [Par Φ] (D : DistinguisherClass Sigma Φ)
     [D.IsClosedUnderPar] where
   /-- The admitted distinguisher-indexed budgets. -/
   carrier : Set (D.tests → ℝ≥0∞)
@@ -224,7 +229,7 @@ structure BudgetClass [SMul M Φ] [Par Φ] (D : DistinguisherClass M Φ)
     ε₁ + ε₂ ∈ carrier
   /-- Corollary 2.2.16: `⟨(ε_λ)_{π_λ}⟩` stays admitted (Theorem 2.2.11's
   protocol transform). -/
-  attachBudget_mem : ∀ (c : M) {ε : D.tests → ℝ≥0∞}, ε ∈ carrier →
+  attachBudget_mem : ∀ (c : Sigma) {ε : D.tests → ℝ≥0∞}, ε ∈ carrier →
     D.attachBudget c ε ∈ carrier
   /-- Corollary 2.2.16: `⟨(ε_λ)_𝒯⟩` stays admitted (Theorem 2.2.11's parallel
   transform). -/
@@ -235,8 +240,8 @@ structure BudgetClass [SMul M Φ] [Par Φ] (D : DistinguisherClass M Φ)
 
 section Notions
 
-variable [Monoid M] [MulAction M Φ] [Par Φ]
-  {D : DistinguisherClass M Φ} [D.IsClosedUnderPar]
+variable [Monoid Sigma] [MulAction Sigma Φ] [Par Φ]
+  {D : DistinguisherClass Sigma Φ} [D.IsClosedUnderPar]
 
 /-- Jost, *Thesis*, **Definition 4.2.2**: "Let `𝒞 ⊆ Σ × Θ` be a given set of
 contexts, let `ℛ` and `𝒮` be two specifications, and let `π` be an arbitrary
@@ -251,9 +256,9 @@ and say that the protocol `π` `𝒞`-restricted constructs `𝒮` from `ℛ`."
 The relaxation is Definition 2.2.9's reduction relaxation — the paper's `ε_C`
 maps *distinguishers* to `[0,1]`, so this is `reductionRelaxation`, not a
 scalar ball. -/
-def ConstructsRestricted (D : DistinguisherClass M Φ) [D.IsClosedUnderPar]
-    (π : M) (C : ContextSet M Φ) (σ : Context M Φ → M)
-    (ε : Context M Φ → D.tests → ℝ≥0∞) (R S : Set Φ) : Prop :=
+def ConstructsRestricted (D : DistinguisherClass Sigma Φ) [D.IsClosedUnderPar]
+    (π : Sigma) (C : ContextSet Sigma Φ) (σ : Context Sigma Φ → Sigma)
+    (ε : Context Sigma Φ → D.tests → ℝ≥0∞) (R S : Set Φ) : Prop :=
   ∀ c ∈ C, c.real π R ⊆ D.reductionRelaxation (ε c) (c.ideal (σ c) S)
 
 /-- Jost, *Thesis*, **Definition 2.2.15**, with negligibility abstracted to a
@@ -264,14 +269,14 @@ protocol `π` asymptotically constructs `𝒮` from `ℛ`."
 
 The simulator is drawn from a submonoid `H` — Definition 2.2.14's efficient
 converter families. -/
-def ConstructsAsym (D : DistinguisherClass M Φ) [D.IsClosedUnderPar]
-    (H : Submonoid M) (E : BudgetClass D) (π : M) (R S : Set Φ) : Prop :=
+def ConstructsAsym (D : DistinguisherClass Sigma Φ) [D.IsClosedUnderPar]
+    (H : Submonoid Sigma) (E : BudgetClass D) (π : Sigma) (R S : Set Φ) : Prop :=
   ∃ σ ∈ H, ∃ ε ∈ E.carrier, R —[π]→ D.reductionRelaxation ε (σ • S)
 
 /-- Definition 4.2.3 at a single context: `f[πℛ,P] ⊆ (f[𝒮,P]σ)^ε` for some
 admitted simulator and budget. -/
-def Context.ConstructsAsym (c : Context M Φ) (D : DistinguisherClass M Φ)
-    [D.IsClosedUnderPar] (H : Submonoid M) (E : BudgetClass D) (π : M)
+def Context.ConstructsAsym (c : Context Sigma Φ) (D : DistinguisherClass Sigma Φ)
+    [D.IsClosedUnderPar] (H : Submonoid Sigma) (E : BudgetClass D) (π : Sigma)
     (R S : Set Φ) : Prop :=
   ∃ σ ∈ H, ∃ ε ∈ E.carrier, c.real π R ⊆ D.reductionRelaxation ε (c.ideal σ S)
 
@@ -287,18 +292,18 @@ from `ℛ`."
 Definition 4.2.2's simulator and budget *families* become the per-context
 existentials; `constructsRestrictedAsym_of_constructsRestricted` is the
 bridge. -/
-def ConstructsRestrictedAsym (D : DistinguisherClass M Φ) [D.IsClosedUnderPar]
-    (H : Submonoid M) (E : BudgetClass D) (π : M) (C : ContextSet M Φ)
+def ConstructsRestrictedAsym (D : DistinguisherClass Sigma Φ) [D.IsClosedUnderPar]
+    (H : Submonoid Sigma) (E : BudgetClass D) (π : Sigma) (C : ContextSet Sigma Φ)
     (R S : Set Φ) : Prop :=
   ∀ c ∈ C, c.ConstructsAsym D H E π R S
 
-variable {H : Submonoid M} {E : BudgetClass D} {π : M} {C : ContextSet M Φ}
+variable {H : Submonoid Sigma} {E : BudgetClass D} {π : Sigma} {C : ContextSet Sigma Φ}
   {R S : Set Φ}
 
 /-- Definition 4.2.2 refines Definition 4.2.3: exhibited simulator and budget
 families that stay inside the admitted classes give the existential notion. -/
 theorem constructsRestrictedAsym_of_constructsRestricted
-    {σ : Context M Φ → M} {ε : Context M Φ → D.tests → ℝ≥0∞}
+    {σ : Context Sigma Φ → Sigma} {ε : Context Sigma Φ → D.tests → ℝ≥0∞}
     (hσ : ∀ c ∈ C, σ c ∈ H) (hε : ∀ c ∈ C, ε c ∈ E.carrier)
     (h : ConstructsRestricted D π C σ ε R S) :
     ConstructsRestrictedAsym D H E π C R S :=
@@ -306,7 +311,7 @@ theorem constructsRestrictedAsym_of_constructsRestricted
 
 /-- The notion is antitone in the context set: demanding more contexts is a
 stronger statement. -/
-theorem ConstructsRestrictedAsym.mono {C' : ContextSet M Φ} (hC : C ⊆ C')
+theorem ConstructsRestrictedAsym.mono {C' : ContextSet Sigma Φ} (hC : C ⊆ C')
     (h : ConstructsRestrictedAsym D H E π C' R S) :
     ConstructsRestrictedAsym D H E π C R S :=
   fun c hc => h c (hC hc)
@@ -319,7 +324,7 @@ namespace ContextSet
 
 section Closure
 
-variable [Monoid M] [Par M] [Par Φ]
+variable [Monoid Sigma] [Par Sigma] [Par Φ]
 
 /-- Jost, *Thesis*, **Definition 4.2.4**: "Let `𝒞 ⊆ Σ × Θ` be a given set of
 contexts.  We denote by `𝒞̄ ⊆ Σ × Θ` the following set of contexts:
@@ -335,35 +340,35 @@ Rendered as the set generated by the clause's two moves (header delta 3):
 in an algebra where `α ∥ 1 ≠ α` (MauRen11 fn. 23) the printed one-clause set
 does not contain `𝒞`.  `mem_closure_paperForm` recovers Definition 4.2.4's
 displayed shape. -/
-inductive Closure (C : ContextSet M Φ) : Context M Φ → Prop
+inductive Closure (C : ContextSet Sigma Φ) : Context Sigma Φ → Prop
   /-- Every declared context is admissible. -/
-  | base {c : Context M Φ} (hc : c ∈ C) : Closure C c
+  | base {c : Context Sigma Φ} (hc : c ∈ C) : Closure C c
   /-- Definition 4.2.4's outer filter: `h ∘ g`. -/
-  | outerFilter {c : Context M Φ} (h : M) (hc : Closure C c) :
+  | outerFilter {c : Context Sigma Φ} (h : Sigma) (hc : Closure C c) :
       Closure C ⟨h * c.filter, c.aux⟩
   /-- Definition 4.2.4's extra parallel resource: `[Q,U]`.  The filter carries
   the neutral-converter extension to the new slot. -/
-  | parallelResource {c : Context M Φ} (Z : Φ) (hc : Closure C c) :
-      Closure C ⟨c.filter ∥ (1 : M), c.aux ∥ Z⟩
+  | parallelResource {c : Context Sigma Φ} (Z : Φ) (hc : Closure C c) :
+      Closure C ⟨c.filter ∥ (1 : Sigma), c.aux ∥ Z⟩
 
 /-- Definition 4.2.4's `𝒞̄`, as a set of contexts. -/
-def closure (C : ContextSet M Φ) : ContextSet M Φ := {c | Closure C c}
+def closure (C : ContextSet Sigma Φ) : ContextSet Sigma Φ := {c | Closure C c}
 
-@[simp] theorem mem_closure_iff {C : ContextSet M Φ} {c : Context M Φ} :
+@[simp] theorem mem_closure_iff {C : ContextSet Sigma Φ} {c : Context Sigma Φ} :
     c ∈ closure C ↔ Closure C c := Iff.rfl
 
 /-- Proposition 4.2.5's "the implication `⟸` is trivial, since `𝒞 ⊆ 𝒞̄`". -/
-theorem subset_closure (C : ContextSet M Φ) : C ⊆ closure C :=
+theorem subset_closure (C : ContextSet Sigma Φ) : C ⊆ closure C :=
   fun _ hc => Closure.base hc
 
 /-- Definition 4.2.4's displayed one-step shape: an outer filter `h` composed
 with the neutral-slot extension of `g`, and an extra parallel resource `U`. -/
-theorem mem_closure_paperForm {C : ContextSet M Φ} {d : Context M Φ}
-    (hd : d ∈ C) (h : M) (U : Φ) :
-    (⟨h * (d.filter ∥ (1 : M)), d.aux ∥ U⟩ : Context M Φ) ∈ closure C :=
+theorem mem_closure_paperForm {C : ContextSet Sigma Φ} {d : Context Sigma Φ}
+    (hd : d ∈ C) (h : Sigma) (U : Φ) :
+    (⟨h * (d.filter ∥ (1 : Sigma)), d.aux ∥ U⟩ : Context Sigma Φ) ∈ closure C :=
   Closure.outerFilter h (Closure.parallelResource U (Closure.base hd))
 
-theorem closure_mono {C C' : ContextSet M Φ} (h : C ⊆ C') :
+theorem closure_mono {C C' : ContextSet Sigma Φ} (h : C ⊆ C') :
     closure C ⊆ closure C' := by
   intro c hc
   induction hc with
@@ -373,7 +378,7 @@ theorem closure_mono {C C' : ContextSet M Φ} (h : C ⊆ C') :
 
 /-- The closure operator is idempotent — the set-level statement underlying
 Proposition 4.2.5's idempotence of the notion. -/
-theorem closure_closure (C : ContextSet M Φ) : closure (closure C) = closure C := by
+theorem closure_closure (C : ContextSet Sigma Φ) : closure (closure C) = closure C := by
   refine Set.Subset.antisymm (fun c hc => ?_) (subset_closure _)
   induction hc with
   | base hd => exact hd
@@ -388,17 +393,17 @@ end ContextSet
 
 section Idempotence
 
-variable [Monoid M] [MulAction M Φ] [Par Φ] [Par M] [SMulParClass M Φ]
-  [IsAssociativePar Φ] {D : DistinguisherClass M Φ} [D.IsClosedUnderPar]
-  {H : Submonoid M} {E : BudgetClass D} {π : M} {C : ContextSet M Φ}
+variable [Monoid Sigma] [MulAction Sigma Φ] [Par Φ] [Par Sigma] [SMulParClass Sigma Φ]
+  [IsAssociativePar Φ] {D : DistinguisherClass Sigma Φ} [D.IsClosedUnderPar]
+  {H : Submonoid Sigma} {E : BudgetClass D} {π : Sigma} {C : ContextSet Sigma Φ}
   {R S : Set Φ}
 
-omit [Par M] [SMulParClass M Φ] [IsAssociativePar Φ] in
+omit [Par Sigma] [SMulParClass Sigma Φ] [IsAssociativePar Φ] in
 /-- The single-context content of Proposition 4.2.5: a statement in a context
 survives an outer filter, at the reduction-transported budget `ε_h`. -/
-theorem Context.ConstructsAsym.outerFilter {c : Context M Φ} (h : M)
+theorem Context.ConstructsAsym.outerFilter {c : Context Sigma Φ} (h : Sigma)
     (hc : c.ConstructsAsym D H E π R S) :
-    (⟨h * c.filter, c.aux⟩ : Context M Φ).ConstructsAsym D H E π R S := by
+    (⟨h * c.filter, c.aux⟩ : Context Sigma Φ).ConstructsAsym D H E π R S := by
   obtain ⟨σ, hσ, ε, hε, hsub⟩ := hc
   refine ⟨σ, hσ, D.attachBudget h ε, E.attachBudget_mem h hε, ?_⟩
   show (h * c.filter) • ((π • R) ∥ ({c.aux} : Set Φ)) ⊆ _
@@ -408,23 +413,23 @@ theorem Context.ConstructsAsym.outerFilter {c : Context M Φ} (h : M)
     _ ⊆ D.reductionRelaxation (D.attachBudget h ε) (h • c.ideal σ S) :=
         D.smul_reductionRelaxation_subset h ε _
     _ = D.reductionRelaxation (D.attachBudget h ε)
-          ((⟨h * c.filter, c.aux⟩ : Context M Φ).ideal σ S) := by
+          ((⟨h * c.filter, c.aux⟩ : Context Sigma Φ).ideal σ S) := by
         rw [Context.ideal, Context.ideal, mul_smul]
 
 /-- The single-context content of Proposition 4.2.5: a statement in a context
 survives an extra parallel resource, at the reduction-transported budget
 `ε_{[Z]}` and the neutral-slot extension of the simulator. -/
-theorem Context.ConstructsAsym.parallelResource {c : Context M Φ} (Z : Φ)
-    (hH : ∀ σ ∈ H, σ ∥ (1 : M) ∈ H) (hc : c.ConstructsAsym D H E π R S) :
-    (⟨c.filter ∥ (1 : M), c.aux ∥ Z⟩ : Context M Φ).ConstructsAsym D H E π R S := by
+theorem Context.ConstructsAsym.parallelResource {c : Context Sigma Φ} (Z : Φ)
+    (hH : ∀ σ ∈ H, σ ∥ (1 : Sigma) ∈ H) (hc : c.ConstructsAsym D H E π R S) :
+    (⟨c.filter ∥ (1 : Sigma), c.aux ∥ Z⟩ : Context Sigma Φ).ConstructsAsym D H E π R S := by
   obtain ⟨σ, hσ, ε, hε, hsub⟩ := hc
-  refine ⟨σ ∥ (1 : M), hH σ hσ, D.parRightBudget ({Z} : Set Φ) ε,
+  refine ⟨σ ∥ (1 : Sigma), hH σ hσ, D.parRightBudget ({Z} : Set Φ) ε,
     E.parRightBudget_mem _ hε, ?_⟩
-  have hreal : (⟨c.filter ∥ (1 : M), c.aux ∥ Z⟩ : Context M Φ).real π R
+  have hreal : (⟨c.filter ∥ (1 : Sigma), c.aux ∥ Z⟩ : Context Sigma Φ).real π R
       = (c.real π R) ∥ ({Z} : Set Φ) := by
     rw [Context.real, Context.real, ← singleton_par_singleton, ← par_assoc_set,
       smul_set_par_one]
-  have hideal : (⟨c.filter ∥ (1 : M), c.aux ∥ Z⟩ : Context M Φ).ideal (σ ∥ (1 : M)) S
+  have hideal : (⟨c.filter ∥ (1 : Sigma), c.aux ∥ Z⟩ : Context Sigma Φ).ideal (σ ∥ (1 : Sigma)) S
       = (c.ideal σ S) ∥ ({Z} : Set Φ) := by
     rw [Context.ideal, Context.ideal, ← singleton_par_singleton, ← par_assoc_set,
       smul_set_par_one, smul_set_par_one]
@@ -449,7 +454,7 @@ The budget bookkeeping the paper leaves to "accounted for in the reduction" is
 Theorem 2.2.11's two transforms, `attachBudget` and `parRightBudget`; `hH` is
 the closure of the simulator class under the neutral-slot extension. -/
 theorem constructsRestrictedAsym_closure
-    (hH : ∀ σ ∈ H, σ ∥ (1 : M) ∈ H)
+    (hH : ∀ σ ∈ H, σ ∥ (1 : Sigma) ∈ H)
     (h : ConstructsRestrictedAsym D H E π C R S) :
     ConstructsRestrictedAsym D H E π (ContextSet.closure C) R S := by
   intro c hc
@@ -461,7 +466,7 @@ theorem constructsRestrictedAsym_closure
 /-- Jost, *Thesis*, **Proposition 4.2.5**: "The context-restricted construction
 notion is idempotent under the closure of the context set … `ℛ ⊢[π,𝒞]→_cr-asym 𝒮
 ⟺ ℛ ⊢[π,𝒞̄]→_cr-asym 𝒮`." -/
-theorem constructsRestrictedAsym_closure_iff (hH : ∀ σ ∈ H, σ ∥ (1 : M) ∈ H) :
+theorem constructsRestrictedAsym_closure_iff (hH : ∀ σ ∈ H, σ ∥ (1 : Sigma) ∈ H) :
     ConstructsRestrictedAsym D H E π C R S ↔
       ConstructsRestrictedAsym D H E π (ContextSet.closure C) R S :=
   ⟨constructsRestrictedAsym_closure hH,
@@ -475,23 +480,23 @@ namespace ContextSet
 
 section Domination
 
-variable [Monoid M] [MulAction M Φ] [Par Φ] [Par M] [SMulParClass M Φ]
-  [IsAssociativePar Φ] {D : DistinguisherClass M Φ} [D.IsClosedUnderPar]
-  {H : Submonoid M} {E : BudgetClass D} {π : M}
+variable [Monoid Sigma] [MulAction Sigma Φ] [Par Φ] [Par Sigma] [SMulParClass Sigma Φ]
+  [IsAssociativePar Φ] {D : DistinguisherClass Sigma Φ} [D.IsClosedUnderPar]
+  {H : Submonoid Sigma} {E : BudgetClass D} {π : Sigma}
 
 /-- `c` is *dominated* by `𝒞` at `π` when every `𝒞`-restricted construction
 statement with protocol `π` also holds in the single context `c` — the semantic
 content that Definition 4.2.4's syntactic closure is meant to compute. -/
-def Dominates (C : ContextSet M Φ) (D : DistinguisherClass M Φ)
-    [D.IsClosedUnderPar] (H : Submonoid M) (E : BudgetClass D) (π : M)
-    (c : Context M Φ) : Prop :=
+def Dominates (C : ContextSet Sigma Φ) (D : DistinguisherClass Sigma Φ)
+    [D.IsClosedUnderPar] (H : Submonoid Sigma) (E : BudgetClass D) (π : Sigma)
+    (c : Context Sigma Φ) : Prop :=
   ∀ R S : Set Φ, ConstructsRestrictedAsym D H E π C R S →
     c.ConstructsAsym D H E π R S
 
 /-- Proposition 4.2.5, read semantically: the closure only ever adds dominated
 contexts.  This direction is unconditional. -/
-theorem dominates_of_mem_closure {C : ContextSet M Φ}
-    (hH : ∀ σ ∈ H, σ ∥ (1 : M) ∈ H) {c : Context M Φ} (hc : c ∈ closure C) :
+theorem dominates_of_mem_closure {C : ContextSet Sigma Φ}
+    (hH : ∀ σ ∈ H, σ ∥ (1 : Sigma) ∈ H) {c : Context Sigma Φ} (hc : c ∈ closure C) :
     Dominates C D H E π c :=
   fun _ _ h => constructsRestrictedAsym_closure hH h c hc
 
@@ -503,15 +508,15 @@ half additionally needs it complete, and the thesis does not prove that (see
 this module's header).  A necessity proof must produce a separating pair of
 specifications for every context outside `𝒞̄₁`, a richness property of the
 carrier and the context set. -/
-def ClosureComplete (C : ContextSet M Φ) (D : DistinguisherClass M Φ)
-    [D.IsClosedUnderPar] (H : Submonoid M) (E : BudgetClass D) (π : M) : Prop :=
-  ∀ c : Context M Φ, Dominates C D H E π c → c ∈ closure C
+def ClosureComplete (C : ContextSet Sigma Φ) (D : DistinguisherClass Sigma Φ)
+    [D.IsClosedUnderPar] (H : Submonoid Sigma) (E : BudgetClass D) (π : Sigma) : Prop :=
+  ∀ c : Context Sigma Φ, Dominates C D H E π c → c ∈ closure C
 
 /-- Under closure-completeness, membership in Definition 4.2.4's `𝒞̄` *is*
 semantic domination. -/
-theorem mem_closure_iff_dominates {C : ContextSet M Φ}
-    (hH : ∀ σ ∈ H, σ ∥ (1 : M) ∈ H) (hcomplete : ClosureComplete C D H E π)
-    {c : Context M Φ} :
+theorem mem_closure_iff_dominates {C : ContextSet Sigma Φ}
+    (hH : ∀ σ ∈ H, σ ∥ (1 : Sigma) ∈ H) (hcomplete : ClosureComplete C D H E π)
+    {c : Context Sigma Φ} :
     c ∈ closure C ↔ Dominates C D H E π c :=
   ⟨dominates_of_mem_closure hH, hcomplete c⟩
 
@@ -523,16 +528,16 @@ end ContextSet
 
 section Composition
 
-variable [Monoid M] [MulAction M Φ] [Par Φ] [Par M] [SMulParClass M Φ]
-  [IsAssociativePar Φ] {D : DistinguisherClass M Φ} [D.IsClosedUnderPar]
-  {H : Submonoid M} {E : BudgetClass D}
+variable [Monoid Sigma] [MulAction Sigma Φ] [Par Φ] [Par Sigma] [SMulParClass Sigma Φ]
+  [IsAssociativePar Φ] {D : DistinguisherClass Sigma Φ} [D.IsClosedUnderPar]
+  {H : Submonoid Sigma} {E : BudgetClass D}
 
 /-! ### The trivial construction statements used to instantiate the rules -/
 
-omit [Par M] [SMulParClass M Φ] [IsAssociativePar Φ] in
+omit [Par Sigma] [SMulParClass Sigma Φ] [IsAssociativePar Φ] in
 /-- A protocol always `𝒞`-restricted constructs its own image, exactly and with
 the neutral simulator. -/
-theorem constructsRestrictedAsym_smul_self (π : M) (C : ContextSet M Φ)
+theorem constructsRestrictedAsym_smul_self (π : Sigma) (C : ContextSet Sigma Φ)
     (R : Set Φ) : ConstructsRestrictedAsym D H E π C R (π • R) := by
   refine fun c _ => ⟨1, one_mem H, 0, E.zero_mem, ?_⟩
   have : c.ideal 1 (π • R) = c.real π R := by
@@ -544,7 +549,7 @@ theorem constructsRestrictedAsym_smul_self (π : M) (C : ContextSet M Φ)
 
 section Sequential
 
-variable {π₁ π₂ : M} {C₁ C₂ : ContextSet M Φ}
+variable {π₁ π₂ : Sigma} {C₁ C₂ : ContextSet Sigma Φ}
 
 /-- Theorem 4.2.6's sequential rule, the direction the source proves: the side
 condition is sufficient.
@@ -555,10 +560,10 @@ whenever a simulator `σ` is considered, it is understood to be connected to
 Eve's interfaces"), abstracted to: a simulator commutes with every converter.
 The resulting budget is Corollary 2.2.13.1's `ε'_σ + ε_{π'}`. -/
 theorem constructsRestrictedAsym_seq
-    (hcentral : ∀ (m : M), ∀ σ ∈ H, Commute m σ)
-    (hH : ∀ σ ∈ H, σ ∥ (1 : M) ∈ H)
+    (hcentral : ∀ (m : Sigma), ∀ σ ∈ H, Commute m σ)
+    (hH : ∀ σ ∈ H, σ ∥ (1 : Sigma) ∈ H)
     (hcond : ∀ c ∈ C₂,
-      (⟨c.filter * (π₂ ∥ (1 : M)), c.aux⟩ : Context M Φ) ∈ ContextSet.closure C₁)
+      (⟨c.filter * (π₂ ∥ (1 : Sigma)), c.aux⟩ : Context Sigma Φ) ∈ ContextSet.closure C₁)
     {R S T : Set Φ}
     (h₁ : ConstructsRestrictedAsym D H E π₁ C₁ R S)
     (h₂ : ConstructsRestrictedAsym D H E π₂ C₂ S T) :
@@ -570,21 +575,21 @@ theorem constructsRestrictedAsym_seq
   refine ⟨σ₁ * σ₂, mul_mem hσ₁ hσ₂, D.attachBudget σ₁ ε₂ + ε₁,
     E.add_mem (E.attachBudget_mem σ₁ hε₂) hε₁, ?_⟩
   -- §4.1.3's interface separation, in the form the algebra consumes.
-  have hcomm : ∀ (m : M) (X : Set Φ), m • (σ₁ • X) = σ₁ • (m • X) := by
+  have hcomm : ∀ (m : Sigma) (X : Set Φ), m • (σ₁ • X) = σ₁ • (m • X) := by
     intro m X
     rw [← mul_smul, (hcentral m σ₁ hσ₁).eq, mul_smul]
   -- The real system of the composed statement is the real system of the
   -- extended context `(f ∘ (π₂ ∥ 1), P)`.
   have hreal : c.real (π₂ * π₁) R
-      = (⟨c.filter * (π₂ ∥ (1 : M)), c.aux⟩ : Context M Φ).real π₁ R := by
+      = (⟨c.filter * (π₂ ∥ (1 : Sigma)), c.aux⟩ : Context Sigma Φ).real π₁ R := by
     show c.filter • (((π₂ * π₁) • R) ∥ ({c.aux} : Set Φ))
-        = (c.filter * (π₂ ∥ (1 : M))) • ((π₁ • R) ∥ ({c.aux} : Set Φ))
+        = (c.filter * (π₂ ∥ (1 : Sigma))) • ((π₁ • R) ∥ ({c.aux} : Set Φ))
     rw [mul_smul, mul_smul, smul_set_par_one]
   -- The ideal system of the extended context is the real system of the second
   -- leg, wrapped in the first leg's simulator.
-  have hmid : (⟨c.filter * (π₂ ∥ (1 : M)), c.aux⟩ : Context M Φ).ideal σ₁ S
+  have hmid : (⟨c.filter * (π₂ ∥ (1 : Sigma)), c.aux⟩ : Context Sigma Φ).ideal σ₁ S
       = σ₁ • c.real π₂ S := by
-    show (c.filter * (π₂ ∥ (1 : M))) • (σ₁ • (S ∥ ({c.aux} : Set Φ)))
+    show (c.filter * (π₂ ∥ (1 : Sigma))) • (σ₁ • (S ∥ ({c.aux} : Set Φ)))
         = σ₁ • (c.filter • ((π₂ • S) ∥ ({c.aux} : Set Φ)))
     rw [mul_smul, hcomm, smul_set_par_one, hcomm]
   have hfinal : σ₁ • c.ideal σ₂ T = c.ideal (σ₁ * σ₂) T := by
@@ -622,15 +627,15 @@ Explicit here, where the source leaves it implicit:
   not mention them.
 * The necessity half consumes `ContextSet.ClosureComplete`. -/
 theorem constructsRestrictedAsym_seq_iff
-    (hcentral : ∀ (m : M), ∀ σ ∈ H, Commute m σ)
-    (hH : ∀ σ ∈ H, σ ∥ (1 : M) ∈ H)
+    (hcentral : ∀ (m : Sigma), ∀ σ ∈ H, Commute m σ)
+    (hH : ∀ σ ∈ H, σ ∥ (1 : Sigma) ∈ H)
     (hcomplete : ContextSet.ClosureComplete C₁ D H E π₁) :
     (∀ R S T : Set Φ,
         ConstructsRestrictedAsym D H E π₁ C₁ R S →
         ConstructsRestrictedAsym D H E π₂ C₂ S T →
         ConstructsRestrictedAsym D H E (π₂ * π₁) C₂ R T) ↔
       ∀ c ∈ C₂,
-        (⟨c.filter * (π₂ ∥ (1 : M)), c.aux⟩ : Context M Φ) ∈
+        (⟨c.filter * (π₂ ∥ (1 : Sigma)), c.aux⟩ : Context Sigma Φ) ∈
           ContextSet.closure C₁ := by
   constructor
   · intro hrule c hc
@@ -638,19 +643,19 @@ theorem constructsRestrictedAsym_seq_iff
     obtain ⟨σ, hσ, ε, hε, hsub⟩ :=
       hrule R S (π₂ • S) h₁ (constructsRestrictedAsym_smul_self π₂ C₂ S) c hc
     refine ⟨σ, hσ, ε, hε, ?_⟩
-    have hcomm : ∀ (m : M) (X : Set Φ), m • (σ • X) = σ • (m • X) := by
+    have hcomm : ∀ (m : Sigma) (X : Set Φ), m • (σ • X) = σ • (m • X) := by
       intro m X
       rw [← mul_smul, (hcentral m σ hσ).eq, mul_smul]
     have hreal : c.real (π₂ * π₁) R
-        = (⟨c.filter * (π₂ ∥ (1 : M)), c.aux⟩ : Context M Φ).real π₁ R := by
+        = (⟨c.filter * (π₂ ∥ (1 : Sigma)), c.aux⟩ : Context Sigma Φ).real π₁ R := by
       show c.filter • (((π₂ * π₁) • R) ∥ ({c.aux} : Set Φ))
-          = (c.filter * (π₂ ∥ (1 : M))) • ((π₁ • R) ∥ ({c.aux} : Set Φ))
+          = (c.filter * (π₂ ∥ (1 : Sigma))) • ((π₁ • R) ∥ ({c.aux} : Set Φ))
       rw [mul_smul, mul_smul, smul_set_par_one]
     have hideal : c.ideal σ (π₂ • S)
-        = (⟨c.filter * (π₂ ∥ (1 : M)), c.aux⟩ : Context M Φ).ideal σ S := by
+        = (⟨c.filter * (π₂ ∥ (1 : Sigma)), c.aux⟩ : Context Sigma Φ).ideal σ S := by
       show c.filter • (σ • ((π₂ • S) ∥ ({c.aux} : Set Φ)))
-          = (c.filter * (π₂ ∥ (1 : M))) • (σ • (S ∥ ({c.aux} : Set Φ)))
-      rw [mul_smul, hcomm (π₂ ∥ (1 : M)), smul_set_par_one]
+          = (c.filter * (π₂ ∥ (1 : Sigma))) • (σ • (S ∥ ({c.aux} : Set Φ)))
+      rw [mul_smul, hcomm (π₂ ∥ (1 : Sigma)), smul_set_par_one]
     rw [← hreal, ← hideal]
     exact hsub
   · intro hcond R S T h₁ h₂
@@ -662,7 +667,7 @@ end Sequential
 
 section Parallel
 
-variable {π₁ : M} {C₁ C₂ : ContextSet M Φ}
+variable {π₁ : Sigma} {C₁ C₂ : ContextSet Sigma Φ}
 
 /-- Theorem 4.2.6's parallel rule, the direction the source proves.
 
@@ -671,21 +676,21 @@ resource `U` can be seen as both part of the context … or part of the real and
 ideal resources." -/
 theorem constructsRestrictedAsym_par (U : Φ)
     (hcond : ∀ c ∈ C₂,
-      (⟨c.filter, U ∥ c.aux⟩ : Context M Φ) ∈ ContextSet.closure C₁)
-    (hH : ∀ σ ∈ H, σ ∥ (1 : M) ∈ H) {R S : Set Φ}
+      (⟨c.filter, U ∥ c.aux⟩ : Context Sigma Φ) ∈ ContextSet.closure C₁)
+    (hH : ∀ σ ∈ H, σ ∥ (1 : Sigma) ∈ H) {R S : Set Φ}
     (h : ConstructsRestrictedAsym D H E π₁ C₁ R S) :
-    ConstructsRestrictedAsym D H E (π₁ ∥ (1 : M)) C₂
+    ConstructsRestrictedAsym D H E (π₁ ∥ (1 : Sigma)) C₂
       (R ∥ ({U} : Set Φ)) (S ∥ ({U} : Set Φ)) := by
   intro c hc
   obtain ⟨σ, hσ, ε, hε, hsub⟩ :=
     constructsRestrictedAsym_closure hH h _ (hcond c hc)
   refine ⟨σ, hσ, ε, hε, ?_⟩
-  have hreal : c.real (π₁ ∥ (1 : M)) (R ∥ ({U} : Set Φ))
-      = (⟨c.filter, U ∥ c.aux⟩ : Context M Φ).real π₁ R := by
+  have hreal : c.real (π₁ ∥ (1 : Sigma)) (R ∥ ({U} : Set Φ))
+      = (⟨c.filter, U ∥ c.aux⟩ : Context Sigma Φ).real π₁ R := by
     rw [Context.real, Context.real, smul_set_par_one, ← singleton_par_singleton,
       par_assoc_set]
   have hideal : c.ideal σ (S ∥ ({U} : Set Φ))
-      = (⟨c.filter, U ∥ c.aux⟩ : Context M Φ).ideal σ S := by
+      = (⟨c.filter, U ∥ c.aux⟩ : Context Sigma Φ).ideal σ S := by
     rw [Context.ideal, Context.ideal, ← singleton_par_singleton, par_assoc_set]
   rw [hreal, hideal]
   exact hsub
@@ -709,25 +714,25 @@ Explicit here, where the source leaves it implicit:
 * The necessity half consumes `ContextSet.ClosureComplete`, as in the
   sequential rule. -/
 theorem constructsRestrictedAsym_par_iff (U : Φ)
-    (hH : ∀ σ ∈ H, σ ∥ (1 : M) ∈ H)
+    (hH : ∀ σ ∈ H, σ ∥ (1 : Sigma) ∈ H)
     (hcomplete : ContextSet.ClosureComplete C₁ D H E π₁) :
     (∀ R S : Set Φ,
         ConstructsRestrictedAsym D H E π₁ C₁ R S →
-        ConstructsRestrictedAsym D H E (π₁ ∥ (1 : M)) C₂
+        ConstructsRestrictedAsym D H E (π₁ ∥ (1 : Sigma)) C₂
           (R ∥ ({U} : Set Φ)) (S ∥ ({U} : Set Φ))) ↔
       ∀ c ∈ C₂,
-        (⟨c.filter, U ∥ c.aux⟩ : Context M Φ) ∈ ContextSet.closure C₁ := by
+        (⟨c.filter, U ∥ c.aux⟩ : Context Sigma Φ) ∈ ContextSet.closure C₁ := by
   constructor
   · intro hrule c hc
     refine hcomplete _ (fun R S h => ?_)
     obtain ⟨σ, hσ, ε, hε, hsub⟩ := hrule R S h c hc
     refine ⟨σ, hσ, ε, hε, ?_⟩
-    have hreal : c.real (π₁ ∥ (1 : M)) (R ∥ ({U} : Set Φ))
-        = (⟨c.filter, U ∥ c.aux⟩ : Context M Φ).real π₁ R := by
+    have hreal : c.real (π₁ ∥ (1 : Sigma)) (R ∥ ({U} : Set Φ))
+        = (⟨c.filter, U ∥ c.aux⟩ : Context Sigma Φ).real π₁ R := by
       rw [Context.real, Context.real, smul_set_par_one, ← singleton_par_singleton,
         par_assoc_set]
     have hideal : c.ideal σ (S ∥ ({U} : Set Φ))
-        = (⟨c.filter, U ∥ c.aux⟩ : Context M Φ).ideal σ S := by
+        = (⟨c.filter, U ∥ c.aux⟩ : Context Sigma Φ).ideal σ S := by
       rw [Context.ideal, Context.ideal, ← singleton_par_singleton, par_assoc_set]
     rw [← hreal, ← hideal]
     exact hsub
@@ -742,27 +747,27 @@ end Composition
 
 section Regular
 
-variable [Monoid M] [MulAction M Φ] [Par Φ] [Par M] [SMulParClass M Φ]
-  {D : DistinguisherClass M Φ} [D.IsClosedUnderPar]
-  {H : Submonoid M} {E : BudgetClass D}
+variable [Monoid Sigma] [MulAction Sigma Φ] [Par Φ] [Par Sigma] [SMulParClass Sigma Φ]
+  {D : DistinguisherClass Sigma Φ} [D.IsClosedUnderPar]
+  {H : Submonoid Sigma} {E : BudgetClass D}
 
 /-- Jost, *Thesis*, §4.2.3: "`𝒞_id := {(id, □)}`", where "`id` denotes the
 identity protocol for which we have `id R = R`, and … `□` denotes the neutral
 resource for which we have `[R,□] = R`". -/
-def contextId (u : Φ) : ContextSet M Φ := {⟨1, u⟩}
+def contextId (u : Φ) : ContextSet Sigma Φ := {⟨1, u⟩}
 
-omit [MulAction M Φ] [SMulParClass M Φ] in
+omit [MulAction Sigma Φ] [SMulParClass Sigma Φ] in
 /-- Jost, *Thesis*, §4.2.3: "`𝒞̄_id = Σ × Θ`, i.e., the closure equals the set
 of all resources and converters."
 
 `hone` is the neutral-element dressing `1 ∥ 1 = 1`, far weaker than the
 `α ∥ 1 = α` that MauRen11 fn. 23 denies.  `hleft` is the left half of `□`'s
 neutrality, which the paper's `[Q,U] = P` instance at `Q = □` uses. -/
-theorem closure_contextId_eq_univ {u : Φ} (hone : ((1 : M) ∥ (1 : M)) = 1)
+theorem closure_contextId_eq_univ {u : Φ} (hone : ((1 : Sigma) ∥ (1 : Sigma)) = 1)
     (hleft : ∀ R : Φ, u ∥ R = R) :
-    ContextSet.closure (contextId (M := M) u) = Set.univ := by
+    ContextSet.closure (contextId (Sigma := Sigma) u) = Set.univ := by
   refine Set.eq_univ_of_forall (fun c => ?_)
-  have hbase : ContextSet.Closure (contextId (M := M) u) ⟨1, u⟩ :=
+  have hbase : ContextSet.Closure (contextId (Sigma := Sigma) u) ⟨1, u⟩ :=
     ContextSet.Closure.base rfl
   have hstep := ContextSet.Closure.parallelResource c.aux hbase
   rw [hone, hleft] at hstep
@@ -770,7 +775,7 @@ theorem closure_contextId_eq_univ {u : Φ} (hone : ((1 : M) ∥ (1 : M)) = 1)
   rw [mul_one] at hstep2
   exact hstep2
 
-omit [Par M] [SMulParClass M Φ] in
+omit [Par Sigma] [SMulParClass Sigma Φ] in
 /-- Jost, *Thesis*, **Proposition 4.2.7**, first equivalence: "`ℛ ⊢[π]→_asympt 𝒮
 ⟺ ℛ ⊢[π,𝒞_id]→_cr-asym 𝒮`" — the ordinary simulation-based notion is the
 special case of the context-restricted one at `𝒞_id = {(id,□)}`.
@@ -778,17 +783,17 @@ special case of the context-restricted one at `𝒞_id = {(id,□)}`.
 "This follows directly from Definitions 2.2.15 and 4.2.3, and the definitions
 of the identity protocol `id` and the neutral resource `□`, respectively." -/
 theorem constructsAsym_iff_constructsRestrictedAsym_contextId {u : Φ}
-    (hright : ∀ R : Φ, R ∥ u = R) {π : M} {R S : Set Φ} :
+    (hright : ∀ R : Φ, R ∥ u = R) {π : Sigma} {R S : Set Φ} :
     ConstructsAsym D H E π R S ↔
-      ConstructsRestrictedAsym D H E π (contextId (M := M) u) R S := by
-  have hreal : (⟨1, u⟩ : Context M Φ).real π R = π • R := by
+      ConstructsRestrictedAsym D H E π (contextId (Sigma := Sigma) u) R S := by
+  have hreal : (⟨1, u⟩ : Context Sigma Φ).real π R = π • R := by
     rw [Context.real, one_smul, par_singleton_neutral_right hright]
-  have hideal : ∀ σ : M, (⟨1, u⟩ : Context M Φ).ideal σ S = σ • S := by
+  have hideal : ∀ σ : Sigma, (⟨1, u⟩ : Context Sigma Φ).ideal σ S = σ • S := by
     intro σ
     rw [Context.ideal, one_smul, par_singleton_neutral_right hright]
   constructor
   · rintro ⟨σ, hσ, ε, hε, hsub⟩ c hc
-    have hc' : c = (⟨1, u⟩ : Context M Φ) := hc
+    have hc' : c = (⟨1, u⟩ : Context Sigma Φ) := hc
     subst hc'
     exact ⟨σ, hσ, ε, hε, by rw [hreal, hideal]; exact hsub⟩
   · intro h
@@ -805,13 +810,13 @@ The protocol of the folded statement is `f ∘ (π ∥ 1)`: `π` still applies t
 assumed specification only.  `hcentral` is §4.1.3's interface separation, used
 to move the simulator across the filter. -/
 theorem constructsRestrictedAsym_iff_forall_constructsAsym
-    (hcentral : ∀ (m : M), ∀ σ ∈ H, Commute m σ)
-    {π : M} {C : ContextSet M Φ} {R S : Set Φ} :
+    (hcentral : ∀ (m : Sigma), ∀ σ ∈ H, Commute m σ)
+    {π : Sigma} {C : ContextSet Sigma Φ} {R S : Set Φ} :
     ConstructsRestrictedAsym D H E π C R S ↔
-      ∀ c ∈ C, ConstructsAsym D H E (c.filter * (π ∥ (1 : M)))
+      ∀ c ∈ C, ConstructsAsym D H E (c.filter * (π ∥ (1 : Sigma)))
         (R ∥ ({c.aux} : Set Φ)) (c.filter • (S ∥ ({c.aux} : Set Φ))) := by
-  have key : ∀ (c : Context M Φ) (σ : M), σ ∈ H →
-      (c.filter * (π ∥ (1 : M))) • (R ∥ ({c.aux} : Set Φ)) = c.real π R ∧
+  have key : ∀ (c : Context Sigma Φ) (σ : Sigma), σ ∈ H →
+      (c.filter * (π ∥ (1 : Sigma))) • (R ∥ ({c.aux} : Set Φ)) = c.real π R ∧
       σ • (c.filter • (S ∥ ({c.aux} : Set Φ))) = c.ideal σ S := by
     intro c σ hσ
     refine ⟨?_, ?_⟩
