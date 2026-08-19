@@ -824,15 +824,15 @@ statement is no longer only inline inside `Relaxation.star_construct_eps` and
     UNCHANGED (hash-pinned) and no generator family is widened.  Names:
     `outerQueries` / `roundAnswers` (the two lists an engine history carries —
     all outer queries, and the inner answers of the CURRENT round, the round
-    boundary of CR18 Def 3.9), `ProtocolInnerTotal` / `ProtocolRequestsBounded`
+    boundary of CR18 Def 3.9), `ConverterInnerTotal` / `ConverterRequestsBounded`
     (the two conditions on the history function — Ruling R2's inner totality
     and CR18 Def 3.8's finite request bound at K per round, printed p. 62),
-    `protocolAddress` (a move's alphabet tag), `protocolMove` (the engine's
-    move), `protocolEngine` (the engine, `validate`d as `ofTyped` is),
-    `protocolBudget` (the measure K − round answers, uniformly ≤ K).
-    `innerTotal_protocolEngine` / `answersWithinUniformBudget_protocolEngine`
-    give `protocolEngine_mem_converterMonoidAt` straight from
-    `attachAt_mem_converterMonoidAt` (`requestsWithin_protocolEngine` is
+    `converterAddress` (a move's alphabet tag), `converterMove` (the engine's
+    move), `converterEngine` (the engine, `validate`d as `ofTyped` is),
+    `converterBudget` (the measure K − round answers, uniformly ≤ K).
+    `innerTotal_converterEngine` / `answersWithinUniformBudget_converterEngine`
+    give `converterEngine_mem_converterMonoidAt` straight from
+    `attachAt_mem_converterMonoidAt` (`requestsWithin_converterEngine` is
     landed but consumed by nothing — audit finding, kept, not deleted
     unasked).
     THREE CLAIMS IN THE ORIGINAL ROW WERE AUDIT-CORRECTED (2026-08-19,
@@ -844,7 +844,7 @@ statement is no longer only inline inside `Relaxation.star_construct_eps` and
     the cumulative presentation (rendered printed p. 62).  Round-local is a
     CONVENIENCE (it makes the bound `ys.length < K`, matching
     `AnswersWithinUniformBudget`'s β).  The duality this created is now
-    BRIDGED: `ProtocolRequestsBounded.answersWithin` (K ⇒ K+1), with
+    BRIDGED: `ConverterRequestsBounded.answersWithin` (K ⇒ K+1), with
     `exists_answersWithin_not_protocolRequestsBounded` showing the converse
     FAILS — so the streak reading may never be cited for the round-local one.
     (ii) "a converter over an infinite message alphabet is NOT a member of
@@ -859,6 +859,21 @@ statement is no longer only inline inside `Relaxation.star_construct_eps` and
     CONSEQUENCE, now kernel-checked (`PrefixFree.injective`,
     `finite_of_prefixFree_of_length_le`).  Marc's bounded-message ruling
     stands; its sharp form is BOUNDED LENGTH.
+    RENAMED 2026-08-19 (Marc, vocabulary): `protocol*`->`converter*` in
+    ConverterEntry.lean and Applications/CBCMAC.lean; `Converter.ProtocolFn`
+    itself untouched (still on NAMING TRIAGE, a wider pass).
+    OBLIGATION 1 CLOSED (8f227a3): `attachEngineFully_converterEngine_univ`
+    (library) + `attachEngineFully_cbcRound_univ` / `cbcConverter_smul_Rnn`
+    (CBC), with the reusable round relation `ConverterRunsTo` and
+    `mem_resolve_converterEngine` (CR18 Def 3.9, printed p. 62) landed in the
+    LIBRARY so the next application does not re-pay.  LOAD-BEARING BUG FOUND
+    AND FIXED IN THE SAME PASS: the converter had been attached at the round
+    function's own address, so `attachEngineFully` handed every message PAST
+    the converter to the round function, which refuses it — the composite was
+    the EMPTY system and the realization equation was FALSE at that interface,
+    hence the scaffold's `hcbc` was unsatisfiable as then stated.  Now
+    `Set.univ`, CR18 Def 3.9's whole-face application (rendered pp. 125-126);
+    where the engine REACHES stays the separate `RequestsWithin` clause at X.
   SUPERSEDED — never the primitive again:
     `attachFully` / `converterMonoidFully` / `converterMonoidFullyBudgeted`
       (whole-face Φ level) -> superseded by `attachAt` /
