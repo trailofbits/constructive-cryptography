@@ -101,7 +101,9 @@ Proved:
 
 Not proved, and stated as the hypothesis `hcbc` of the endpoint: the
 distinguishing bound itself, which is CR18 Theorem 6.1's mathematics in full.
-**Two** of the six obligations listed at `cbc_mac_constructs` are open.
+**None** of the six obligations listed at `cbc_mac_constructs` is open; what is
+not landed is their *assembly* into `hcbc` — the printed chain of printed
+p. 127 — which no declaration in this file performs.
 -/
 
 namespace RandomSystems.CBCMAC
@@ -190,6 +192,12 @@ def totalBlocks (bf : M → List X) (messages : List M) : ℕ :=
 theorem totalBlocks_mono (bf : M → List X) {l₁ l₂ : List M} (h : l₁ <+: l₂) :
     totalBlocks bf l₁ ≤ totalBlocks bf l₂ := by
   obtain ⟨t, rfl⟩ := h
+  simp [totalBlocks, List.map_append]
+
+/-- The block total is additive: a further stretch of messages adds its own
+blocks and nothing else.  `totalBlocks_mono` is the inequality this sharpens. -/
+theorem totalBlocks_append (bf : M → List X) (l₁ l₂ : List M) :
+    totalBlocks bf (l₁ ++ l₂) = totalBlocks bf l₁ + totalBlocks bf l₂ := by
   simp [totalBlocks, List.map_append]
 
 /-- Digest a block sequence with a round function.  The public initial state is
@@ -1840,8 +1848,13 @@ Theorem 6.1 having been proved.
 CR18's own proof structure is what `hcbc` stands for: the printed proof
 produces `⟨θ_r CBC [r]R_{n,n} | θ_r V_n⟩ ≤ Γ(b θ_r ĈBC R_{n,n}) ≤ ½ r² 2^{-n}`
 (printed p. 127) and reads the arrow off it.  In the printed order, `hcbc`
-decomposes into six obligations, of which **two are open — 4 and the
-`θ_r` half of 3**:
+decomposes into six obligations, of which **none is open**.  What `hcbc` still
+stands for is the *assembly*: the printed chain that runs 1–6 together into a
+single distance bound is performed by no declaration in this file, and the six
+being landed is not the same as the chain being landed.
+
+The list, with the audit date each entry was last checked against the tree
+(**2026-08-20** for all six):
 
 1. **LANDED.**  The realization equation — that `cbcConverter bf` applied to
    the on-ramped round function is the on-ramped system whose answer to `m` is
@@ -1852,18 +1865,28 @@ decomposes into six obligations, of which **two are open — 4 and the
    above, read through the conditional form.  (This entry read OPEN until
    2026-08-19: the run that proved it was killed mid-flight and never
    updated the list, and later passes copied the stale text forward.)
-3. **HALF OPEN.**  Equation (6.3), printed p. 127: the general transport is
-   landed as `PDG.condEquiv_fTransform`
-   (`Technique/ConditionalEquivalence.lean`), but its landed corollary
-   `PDG.condEquiv_filterQueries` is the `[r]` instance of printed p. 128
-   (Theorem 6.2's step), *not* this `θ_r` instance.  The `θ_r` instance — a
-   domain filter at a block-count predicate, needing the filter's admitted
-   schedule — is open;
-4. **OPEN.**  Equation (6.1), printed p. 126, which the page writes hatted,
+3. **LANDED.**  Equation (6.3), printed p. 127: the general transport is
+   `PDG.condEquiv_fTransform` (`Technique/ConditionalEquivalence.lean`), and
+   the `θ_r` instance is `cbc_condEquiv_theta` above — the domain filter at
+   the block-count predicate, at the schedule the filter itself supplies
+   (`filterAdmit`, with `filterWeave` re-inserting the refusals).  That
+   schedule is non-adaptive and uniform in the system, which is what the
+   general lemma demands; it holds because every atom of either side is a
+   function evaluator and so refuses nothing.  (Not to be confused with
+   `PDG.condEquiv_filterQueries`, which is the `[r]` instance of printed
+   p. 128 — Theorem 6.2's step, a query count rather than a block count.
+   This entry read HALF OPEN until 2026-08-20, long after
+   `cbc_condEquiv_theta` landed: check the list against the tree, never
+   against the previous copy of the list.);
+4. **LANDED.**  Equation (6.1), printed p. 126, which the page writes hatted,
    `θ_r ĈBC = θ_r ĈBC[r]` — the MBO-augmented converter, and printed p. 127
    applies it to the augmented system.  It is also CR18 §5.5's coherence
-   equation (printed p. 122), and therefore the hypothesis
-   `cbc_mac_parameterized_of_coherence` has to assume;
+   equation (printed p. 122), which is why
+   `cbc_mac_parameterized_of_coherence` takes it as a hypothesis;
+   `cbc_coherence` at the end of this file discharges that hypothesis.  The
+   unfolding is `cbc_filter_redundant` — the converter class supplies all of
+   the converter theory — fed CBC's own two elementary facts,
+   `cbcRound_answersWithinBudget` and `cbcRoundBudget_add_totalBlocks`;
 5. **LANDED.**  Theorem 4.17's step, printed p. 127, as
    `PDG.advFullyDefined_forget_le_blindSupWinProb_of_condEquiv`
    (`Technique/BlindWinning.lean`);
@@ -1943,10 +1966,13 @@ the family of `cbc_mac_constructs` instances.
 
 `coherence` is CR18's equation (6.1), printed p. 126, read at the unaugmented
 converter; the page writes it hatted, `θ_r ĈBC = θ_r ĈBC[r]`, because the proof
-works on the MBO-augmented converter.  It is **open** (obligation 4 at
-`cbc_mac_constructs`) and is assumed here, as is `hcbc`.  This corollary is
-therefore a statement about what the abstract layer would yield, not a landed
-consequence of anything proved in this file. -/
+works on the MBO-augmented converter.  It is **landed** (obligation 4 at
+`cbc_mac_constructs`) as `cbc_coherence`, at the end of this file, and a caller
+discharges the hypothesis with `fun r => cbc_coherence bf r`; it is kept as a
+hypothesis here only because §5.5 states the collapse conditionally and
+`cbc_coherence` is stated after the abstract-layer section.  `hcbc` is still
+assumed, so this corollary remains a statement about what the abstract layer
+yields from Theorem 6.1's mathematics, not a landed consequence of it. -/
 theorem cbc_mac_parameterized_of_coherence [Nontrivial M] (bf : M → List X)
     (hbf : PrefixFree bf)
     (coherence : ∀ r : ℕ, theta (X := X) bf r * cbcConverter bf * queryLimit.{u} r
@@ -1988,7 +2014,10 @@ that at most `r` queries are made to `R_{n,n}`".
 The hypotheses are CBC's own counting fact and nothing else: a per-round budget
 `β` for the engine, and `hpay` — that opening a round for one more message buys
 that message's blocks.  The class supplies the rest, and `thetaPred`'s condition
-is *literally* the admission the class asks for. -/
+is *literally* the admission the class asks for.
+
+Both hypotheses are discharged below, at `cbcRoundBudget`; `cbc_coherence` is
+this statement with nothing left to assume. -/
 theorem cbc_filter_redundant (bf : M → List X) (r : ℕ)
     {β : List (Uni.{u} ⊕ Option Uni.{u}) → ℕ}
     (hβ : System.AnswersWithinBudget (System.converterEngine X X (cbcRound bf)) β)
@@ -2008,5 +2037,117 @@ theorem cbc_filter_redundant (bf : M → List X) (r : ℕ)
     (fun l hl => le_trans
       (System.queryCount_le
         (System.reachesWithin_attachEngineFully_of_cost hβ hpay l)) hl)
+
+/-- **CBC's per-round budget**: the blocks of the current message not yet asked
+about.  CR18 printed p. 125 — "for each (new) message, `CBC` applies a block
+former to the message and then digests the obtained block sequence block by
+block, each time invoking the system at its right interface" — so a round on
+`m` has `(bf m).length` requests to make and has made `roundAnswers`-many of
+them.
+
+The current message is the last outer query of the engine history, decoded at
+`M`, and a last query that does not decode buys nothing — the honest reading,
+since a history that does not decode leaves `converterEngine` undefined, so no
+request is issued and the round never opens.
+
+Two things are deliberately *not* here: no uniform constant, so nothing is
+over-estimated on a short message, and no dependence on the resource's answers,
+so the budget is a function of the history alone. -/
+noncomputable def cbcRoundBudget (bf : M → List X)
+    (l : List (Uni.{u} ⊕ Option Uni.{u})) : ℕ :=
+  (((System.outerQueries l).getLast?.bind (System.decodeOption (X := M))).elim 0
+      fun m => (bf m).length) - (System.roundAnswers l).length
+
+/-- **The budget is a budget** — CR18 Definition 3.8's finite-bound clause in
+the well-founded form the round induction consumes (printed p. 62): every
+request the engine issues strictly spends it.  The content is `cbcRound`'s own
+guard, `ys.length < (bf m).length`: a request is issued only while blocks
+remain, and the answer that follows consumes one. -/
+theorem cbcRound_answersWithinBudget (bf : M → List X) :
+    System.AnswersWithinBudget (System.converterEngine X X (cbcRound bf))
+      (cbcRoundBudget bf) := by
+  intro l x hx o
+  obtain ⟨us, hus, n, hn, hm⟩ :=
+    System.exists_mem_of_mem_converterMove
+      (System.mem_converterMove_of_mem_converterEngine hx)
+  have hreq : ∃ x' : X, n = Sum.inl x' := by
+    rcases n with x' | v
+    · exact ⟨x', rfl⟩
+    · exact absurd hm (by simp)
+  obtain ⟨x', rfl⟩ := hreq
+  have hne : us ≠ [] := by
+    by_contra hnil
+    rw [cbcRound, dif_neg (by simpa using hnil)] at hn
+    exact absurd hn (by simp)
+  rw [cbcRound, dif_pos hne] at hn
+  dsimp only at hn
+  have hlt : (System.roundAnswers l).length < (bf (us.getLast hne)).length := by
+    by_cases hlt : (((System.roundAnswers l).map
+        fun o => o.bind (System.decodeOption (X := X))).map
+          fun o => o.getD 0).length < (bf (us.getLast hne)).length
+    · simpa using hlt
+    · rw [if_neg hlt] at hn
+      exact absurd hn (by simp)
+  have hlast : (System.outerQueries l).getLast?.bind (System.decodeOption (X := M))
+      = some (us.getLast hne) := by
+    rw [System.decodeList_mem_eq hus, List.getLast?_map,
+      List.getLast?_eq_some_getLast hne]
+    simp
+  simp only [cbcRoundBudget, System.outerQueries_concat_inr,
+    System.roundAnswers_concat_inr, hlast, List.length_append,
+    List.length_singleton, Option.elim]
+  omega
+
+/-- One more query adds its own message's blocks to the running total — or,
+if it is not a message at all, nothing.  CR18 printed p. 126: `θ_r` "keeps
+track of the total number of such blocks resulting for all messages seen so
+far". -/
+theorem totalBlocks_filterMap_concat (bf : M → List X) (done : List Uni.{u})
+    (q : Uni.{u}) :
+    totalBlocks bf ((done ++ [q]).filterMap (System.decodeOption (X := M)))
+      = totalBlocks bf (done.filterMap (System.decodeOption (X := M)))
+        + ((System.decodeOption (X := M) q).elim 0 fun m => (bf m).length) := by
+  rw [List.filterMap_append, totalBlocks_append]
+  rcases hq : System.decodeOption (X := M) q with _ | m <;> simp [hq, totalBlocks]
+
+/-- **Opening a round for one more message costs exactly that message's
+blocks** — `cbc_filter_redundant`'s payment condition, with **equality**.  A
+round is opened by an outer query, so the round's budget is read at a history
+whose last entry is that query and whose answer list is empty; that is
+`(bf m).length`, and `totalBlocks` grows by the same amount.  Nothing is
+rounded up, which is why a block-counting `θ_r` — and not a length bound —
+is what pays for it. -/
+theorem cbcRoundBudget_add_totalBlocks (bf : M → List X) (done : List Uni.{u})
+    (q : Uni.{u}) (c : List (Converter.DDC.CIn Uni.{u} Uni.{u})) :
+    cbcRoundBudget bf
+        ((c ++ [Sum.inl (Converter.InLabel.outside, q)]).map Converter.DDC.unlabel)
+      + totalBlocks bf (done.filterMap (System.decodeOption (X := M)))
+      = totalBlocks bf ((done ++ [q]).filterMap (System.decodeOption (X := M))) := by
+  rw [totalBlocks_filterMap_concat]
+  simp only [List.map_append, List.map_singleton, Converter.DDC.unlabel_query,
+    cbcRoundBudget, System.outerQueries_concat_inl, System.roundAnswers_concat_inl,
+    List.getLast?_concat, List.length_nil, Nat.sub_zero]
+  exact Nat.add_comm _ _
+
+/-- **CR18 equation (6.1), with nothing assumed** (printed p. 126):
+`θ_r ĈBC = θ_r ĈBC[r]`, "i.e., the filter `[r]` is irrelevant because the
+restriction implied by `θ_r` guarantees that at most `r` queries are made to
+`R_{n,n}`".
+
+This is `cbc_filter_redundant` at CBC's own budget, and both of its hypotheses
+are discharged by the two elementary facts above: `cbcRound_answersWithinBudget`
+(a round spends its message's blocks) and `cbcRoundBudget_add_totalBlocks` (the
+running block total pays for it, exactly).  Obligation 4 of `cbc_mac_constructs`.
+
+**Scope.**  The page writes the equation hatted, at the MBO-augmented converter,
+because the proof of Theorem 6.1 applies it to the augmented system (printed
+p. 127); what is proved here is the equation at the unaugmented converter, which
+is the form CR18 §5.5's coherence condition (printed p. 122) asks for and the
+form `cbc_mac_parameterized_of_coherence` consumes. -/
+theorem cbc_coherence (bf : M → List X) (r : ℕ) :
+    theta (X := X) bf r * cbcConverter bf * queryLimit.{u} r
+      = theta (X := X) bf r * cbcConverter bf :=
+  cbc_filter_redundant bf r (cbcRound_answersWithinBudget bf)
+    fun done q c => le_of_eq (cbcRoundBudget_add_totalBlocks bf done q c)
 
 end RandomSystems.CBCMAC

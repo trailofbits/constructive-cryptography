@@ -1318,8 +1318,10 @@ course still true when the systems are restricted by `[r]`, i.e.,
 **Scope.**  This is the step in the proof of CR18 **Theorem 6.2**, printed
 p. 128, at the query-count filter `[r]`.  It is **not** Theorem 6.1's `θ_r`
 instance (equation (6.3), printed p. 127), which restricts by a block-count
-predicate: that is `filterPhi` at a different prefix-closed predicate — a
-block count, not a query count — and is not landed.
+predicate — a domain filter at a different prefix-closed predicate, and hence
+a different admitted schedule.  That instance is landed separately, as
+`RandomSystems.CBCMAC.cbc_condEquiv_theta`; neither may be cited for the
+other.
 
 Definition 3.10's filter (printed p. 62) applied to both sides of a
 conditional equivalence, with the monotone condition carried over unchanged.
