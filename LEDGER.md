@@ -3813,6 +3813,20 @@ outside the AC carrier by construction, and the behavior-first escape the source
 not available in the tree.  **Not a broken theorem — a scope limit the source states in
 the negative and no AC document records.**  Flagging, not solving.
 
+**F-1 RULING FOR CBC-MAC (Marc, 2026-08-19).**  CR18 Def 6.1 fn. 2 (printed
+p. 125) states outright that the variable-input-length ideal object `V_n`
+"can **not** be described as a probabilistic discrete system, i.e., as a
+probability distribution over deterministic systems", because its input
+alphabet is infinite.  RULING: **assume a bound on the message space** — the
+message alphabet `M` is finite, declared as an explicit hypothesis, never
+silently swapped in (which is what the untracked `cbc-mac/CBCMAC.lean` did).
+For a bitstring instantiation this reads `{0,1}^≤max` (messages of at most
+`max` blocks).  Consequence for the statement: our Theorem 6.1 is CR18's
+theorem at a bounded message space, which is the same content for every
+distinguisher this carrier can express (a finite-horizon environment only
+ever touches a bounded slice) — the docstring must say so rather than imply
+the unbounded object.  No carrier extension; F-1 stands.
+
 **F-2 (fallback hygiene).**  §4.10's standing simplification (p. 105) has **no `⊥`, no
 refusal, no partial domain**: environments stop after `q` queries and short runs are
 padded with dummies.  Already pinned in the LEDGER SOURCE LEDGER; restated because six
