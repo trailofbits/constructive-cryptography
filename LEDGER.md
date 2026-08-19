@@ -3052,6 +3052,43 @@ gates, adversarial audit before deltas apply):
      language cannot express, with its own instance; it is the fallback, not
      the normal route.  BUILD ORDER: class + theory (with computing
      composition laws) first; the combinator layer next; applications last.
+     BUILD 1 LANDED (6bc25b4 + predecessor, `System/ConverterClass.lean`,
+     ~900 lines, 40 decls axiom-clean).  Names for check 1: `SystemMap`,
+     `ActsWithin`, `Absorbs`, `LocalWithin`, `RequestsAtMost`,
+     `IsConverterMapAt`, `converterClass`, `pullbackLimit`,
+     `pullbackRestriction`.  A4 is DERIVED from A3, so instances discharge
+     three fields.  Algebra computes: identity (∅,1), composition
+     (i ∪ i', K*K') — MULTIPLICATION, since K counts resource queries per
+     outer query including pass-through.  Over-the-class theorems 1-4 landed
+     (nonexpansion + the SMul instance from A2; commutation from A1; filter
+     absorption; pullback restriction with adequacy by `le_rfl`).  ACCEPTANCE
+     TEST PASSED in scratch: CBC's converter obtains the class in ONE
+     application fed only `cbcRound_innerTotal` and `cbcRound_requestsBounded`
+     — zero converter-theory vocabulary.
+     FOUR FINDINGS THAT DECIDE THE DESIGN:
+     (F1) PARALLEL FRAMES CANNOT INSTANCE THE CLASS, structurally: at a
+     law-valued partner `fun RL => par c RL TL` sends a point mass to a
+     MIXTURE, so it is not the pushforward of any deterministic map and no A2
+     quantified over `DDS` can hold.  The predicted third member is confirmed
+     with a sharper reason than "introduces a resource"; its home is the
+     mixture layer.
+     (F2) The typed on-ramp is NOT a converter at all — `ofTyped` bumps the
+     universe, so it is never a `Function.End Phi`.
+     (F3) `answersWithinUniformBudget_converterEngine` quantifies its constant
+     existentially, so a program's own `K` cannot propagate; a one-line
+     receipt restatement at a named `K` is owed.
+     (F4) **THE OPEN DESIGN QUESTION**: a uniform per-query `K` is too coarse
+     for CBC's θ_r, whose predicate is a BLOCK COUNT, not a length bound — so
+     eq. (6.1) does NOT unfold for CBC under this class.  Making it unfold
+     needs the reach as a HISTORY-COST datum; but a content-dependent cost
+     does NOT compose (`cost_{g∘h}` is not computable from the parts).  Sharp
+     reach and a computing composition law are in tension.  MARC'S CALL.
+     CondEquiv transport NOT delivered: A2 gives an arbitrary ADAPTIVE
+     absorbing schedule and says nothing about conditions, while the landed
+     `condEquiv_fTransform` needs a non-adaptive schedule plus a winning
+     clause — so it needs a fifth axiom or a restatement, an axiom-list
+     decision.  Generated monoid, pin and consumers UNTOUCHED (re-pointing
+     needs the mixture layer first).
      ACCEPTANCE TEST for the design: CBC must obtain the class in ONE LINE
      from the engine-attachment theorem, proving only that its round
      function always answers and that its request count is bounded — both
