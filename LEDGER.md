@@ -874,6 +874,39 @@ statement is no longer only inline inside `Relaxation.star_construct_eps` and
     hence the scaffold's `hcbc` was unsatisfiable as then stated.  Now
     `Set.univ`, CR18 Def 3.9's whole-face application (rendered pp. 125-126);
     where the engine REACHES stays the separate `RequestsWithin` clause at X.
+    CBC OBLIGATIONS (376f45b/81a95ea/02034b4, all axiom-clean, gates green):
+    1 LANDED (realization equation).  2 CLOSED — `cbc_condEquiv`: the CBC
+    chain jointly distributed with ITS OWN round function's collision MBO is
+    conditionally equivalent to the ideal object; note a `PDS.adjoin` cannot
+    express that game, since the condition reads `f` and the chain does not
+    determine `f`.  3 CLOSED at the MESSAGE alphabet (`cbc_condEquiv_theta`,
+    schedule = the admitted subsequence, post-processing re-inserts refusals);
+    the Φ-level `ofTyped` transport of `CondEquiv` is NOT landed — same
+    alphabet-generic witness shape, owed.  5 LANDED.  6 HALF: the blind
+    reduction is closed (`blindSupWinProb_cbcGameLaw_theta_le`) and is where
+    BLINDNESS pays — a non-adaptive environment asks one fixed list, so
+    winning is the collision event at that list (CR18 printed p. 127); the
+    counting core `∀ l, totalBlocks ≤ r → mass(cbcBad) ≤ r(r−1)/2|X|` is OPEN.
+    4 OPEN (eq. (6.1)).  `hcbc` therefore NOT discharged; the scaffold stays
+    conditional.
+    URF BLOCK LANDED, all UPSTREAM-CANDIDATE (mathlib has `PMF.uniformOfFintype`
+    but NO Pi-type marginal/independence lemma, so nothing to bridge to):
+    `Probability/Counting.lean` — `fTransform_apply_uniform_eq_uniform`,
+    `fTransform_eval_uniform_eq_uniform`, `uniform_mass_eval_eq`,
+    `card_filter_and_eqOn`, `uniform_mass_and_eqOn`, `card_function_fiber_index`;
+    `System/RandomObjects.lean` — `mass_urf_answer_eq`,
+    `trLawFullyDefined_urf_playQueries_apply`.
+    FINDING (library-level, the reason obligation 6's core is not a marginal
+    fact): conditional uniformity is statable on this carrier only in the
+    FIXED-SET form — condition on the function's values at a KNOWN set, the
+    value at a point outside it is uniform.  CBC needs the F-DEPENDENT-SITE
+    form: `¬cbcBad f bf l` reads `f` at the chain's call sites, and WHICH
+    points those are is itself a function of `f`.  That is a lazy-sampling
+    step, not a marginal.  The landed bridge for obligation 2 decomposes over
+    the terminal-input tuple, legitimised by `cbcInput_ne_lastInput`
+    (prefix-freeness: a proper-prefix call site is never a queried message's
+    terminal input).  The general f-dependent-site lemma is the next library
+    target and would close obligation 6's core.
   SUPERSEDED — never the primitive again:
     `attachFully` / `converterMonoidFully` / `converterMonoidFullyBudgeted`
       (whole-face Φ level) -> superseded by `attachAt` /
