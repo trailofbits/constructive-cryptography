@@ -913,8 +913,27 @@ statement is no longer only inline inside `Relaxation.star_construct_eps` and
     step, not a marginal.  The landed bridge for obligation 2 decomposes over
     the terminal-input tuple, legitimised by `cbcInput_ne_lastInput`
     (prefix-freeness: a proper-prefix call site is never a queried message's
-    terminal input).  The general f-dependent-site lemma is the next library
-    target and would close obligation 6's core.
+    terminal input).  RESOLVED 5f8b7b2 by LAZY SAMPLING, the standard
+    answer to exactly this gap: `Probability.Counting.uniform_mass_walk_
+    repeat_le` (UPSTREAM-CANDIDATE) — for a walk on a finite site tree whose
+    next input is an injective step applied to the parent's ANSWER, the
+    probability that two sites collide is ≤ |ι|(|ι|−1)/2|X|; its law is
+    `uniform_mass_walk_eval_eq` (until the first repeat the answers are
+    uniform on tuples).  The pivot: `inp f = walkSite … (fun t => f (inp f t))`
+    holds UNCONDITIONALLY — a walk always replays itself — which moves the
+    problem to uniform TUPLES where each site reads at most one coordinate,
+    dissolving the f-dependence.  Its two side conditions are exactly the
+    model's two facts: each step injective, and SIBLINGS DIFFER (`hsib`) —
+    the formal content of "a shared prefix is trivial, not a collision".
+    OBLIGATION 6 CLOSED OUTRIGHT: `mass_cbcBad_le`,
+    `blindSupWinProb_cbcGameLaw_theta_le_birthday` and `..._le_sq` (the
+    latter CR18's printed ½r²2^{-n}); deduplication is structural
+    (`cbcSites` = block prefixes, so a shared prefix is ONE site).
+    DISCLOSED DEVIATION: the route telescopes a union bound per step and does
+    NOT invoke `birthday_bound` — same value, and it needs neither `q ≤ N`
+    nor a falling-factorial count.
+    CBC STATUS: 1, 3 (`[r]` half), 5, 6 LANDED; OPEN = 2 (eq. (6.2) as
+    `CondEquiv`), 4 (eq. (6.1) coherence), and the θ_r half of 3.
   SUPERSEDED — never the primitive again:
     `attachFully` / `converterMonoidFully` / `converterMonoidFullyBudgeted`
       (whole-face Φ level) -> superseded by `attachAt` /
