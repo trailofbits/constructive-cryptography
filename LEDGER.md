@@ -3052,7 +3052,12 @@ no git record and the original text is unrecoverable from the repository —
 the substance survived only because it was transported into the new file).
 Rule: any brief that moves, rewrites or deletes untracked work must first
 require `git add` + commit of the ORIGINAL, as its own commit, so the
-starting point is in history; TOP-LEVEL CONVERTER SURFACE (Marc, 2026-08-19):
+starting point is in history.  **HANDS OFF `informalization/` (Marc,
+2026-08-19): it is untracked, it is NOT ours, and no agent may add, move,
+stage, delete or edit it or anything inside it — every brief carries this
+exclusion, and no cleanup, aggregation or "move to a built home" instruction
+reaches it.**  Same for any other untracked directory that is not the brief's
+own subject; TOP-LEVEL CONVERTER SURFACE (Marc, 2026-08-19):
 an application may name exactly ONE converter notion — the Σ member (an
 element of `↥converterMonoidAt` acting on `Phi`).  The typed history function
 (`ProtocolFn`, itself misnamed — see NAMING TRIAGE) and the Def-3.8 object
