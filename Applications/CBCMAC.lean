@@ -49,7 +49,7 @@ prove the unbounded statement, and no carrier extension is claimed.
 
 The bound is not bookkeeping, but it must be recorded for what it is.  CR18
 Definition 3.8's finite request bound (printed p. 62) is what the entry point
-`protocolEngine_mem_converterMonoidAt` consumes to place a converter in the
+`converterEngine_mem_converterMonoidAt` consumes to place a converter in the
 metric-facing `Σ`, and the **operative hypothesis is a bound on encoding
 length**, not finiteness of the message type:
 `cbcRound_requestsBounded_of_length_le` derives the request bound from
@@ -74,7 +74,7 @@ none.
 
 Proved:
 
-* the CBC converter is a member of `↥converterMonoidAt` (`cbcProtocol`), and so
+* the CBC converter is a member of `↥converterMonoidAt` (`cbcConverter`), and so
   are CR18's two restrictions `θ_r` (`theta`) and `[r]` (`queryLimit`);
 * CR18's first proof sentence, printed p. 126 — prefix-freeness plus "no
   non-trivial collision" makes the terminal round-function inputs of distinct
@@ -83,6 +83,10 @@ Proved:
   on no non-trivial collision the CBC outputs have exactly the law of a uniform
   random function (`notBad_implies_uniform_outputs`), through the
   re-randomization of the terminal call sites;
+* the realization equation — `cbcConverter bf` applied to the on-ramped round
+  function *is* the on-ramped CBC chain (`attachEngineFully_cbcRound_univ`, and
+  at Φ `cbcConverter_smul_Rnn`), which is what ties the `Σ` element to the
+  function `cbcState f ∘ bf` at all;
 * the crossing from the distance bound to Theorem 6.1's construction
   statement.  That crossing is **notation, not content** — `cbc_mac_constructs`
   is a scaffold, see its docstring — and the one consequence actually
@@ -90,7 +94,7 @@ Proved:
 
 Not proved, and stated as the hypothesis `hcbc` of the endpoint: the
 distinguishing bound itself, which is CR18 Theorem 6.1's mathematics in full.
-**Five** of the six obligations listed at `cbc_mac_constructs` are open.
+**Four** of the six obligations listed at `cbc_mac_constructs` are open.
 -/
 
 namespace RandomSystems.CBCMAC
@@ -187,15 +191,24 @@ p. 125, "the initial value of the state is a fixed and known parameter". -/
 def cbcState (f : X → X) (bs : List X) : X :=
   bs.foldl (fun y b => f (y + b)) 0
 
+/-- Appending one block performs one more round-function call. -/
+theorem cbcState_concat (f : X -> X) (bs : List X) (b : X) :
+    cbcState f (bs ++ [b]) = f (cbcState f bs + b) := by
+  simp only [cbcState, List.foldl_concat]
+
+/-- The input supplied to the round function at block position `j`. -/
+def cbcInput (f : X -> X) (bs : List X) (j : Nat) : X :=
+  cbcState f (bs.take j) + bs.getD j 0
+
 /-! ## The CBC converter as a member of the metric-facing `Σ`
 
 The converter is written as a history function — the current message and the
 round-function answers of the round so far — and enters `Σ` through the
-library's one crossing, `RandomSystems.protocolEngine_mem_converterMonoidAt`.
+library's one crossing, `RandomSystems.converterEngine_mem_converterMonoidAt`.
 No `ProtocolFn` and no `DDC` appears in any statement below.  The history
 function `cbcRound` itself is named only in the receipts that crossing
 consumes (`cbcRound_innerTotal`, `cbcRound_requestsBounded_of_length_le`,
-`cbcRound_requestsBounded`) and the engine only in `cbcProtocol_requestsWithin`;
+`cbcRound_requestsBounded`) and the engine only in `cbcConverter_requestsWithin`;
 every endpoint of this file speaks about the `Σ` element alone.
 -/
 
@@ -224,7 +237,7 @@ noncomputable def cbcRound (bf : M → List X) :
 /-- **Ruling R2's inner-facing totality for CBC**: having asked, CBC reacts to
 whatever the round function returns. -/
 theorem cbcRound_innerTotal (bf : M → List X) :
-    System.ProtocolInnerTotal (cbcRound bf) := by
+    System.ConverterInnerTotal (cbcRound bf) := by
   intro us ys x hx o
   have hne : us ≠ [] := by
     by_contra hnil
@@ -253,7 +266,7 @@ length bounds the round.  Neither finiteness of `M` nor `blockBound` is used —
 this is the sharp statement of what the bound costs. -/
 theorem cbcRound_requestsBounded_of_length_le (bf : M → List X) {B : ℕ}
     (hB : ∀ m, (bf m).length ≤ B) :
-    System.ProtocolRequestsBounded (cbcRound bf) B := by
+    System.ConverterRequestsBounded (cbcRound bf) B := by
   intro us ys x hx
   have hne : us ≠ [] := by
     by_contra hnil
@@ -273,22 +286,223 @@ theorem cbcRound_requestsBounded_of_length_le (bf : M → List X) {B : ℕ}
 `cbcRound_requestsBounded_of_length_le`; what fails without *some* such
 constant is this sufficient condition for `Σ`-membership, not membership. -/
 theorem cbcRound_requestsBounded (bf : M → List X) :
-    System.ProtocolRequestsBounded (cbcRound bf) (blockBound bf) :=
+    System.ConverterRequestsBounded (cbcRound bf) (blockBound bf) :=
   cbcRound_requestsBounded_of_length_le bf (length_le_blockBound bf)
 
 /-- **The CBC converter, as the one converter notion an application names**:
-the element of `↥converterMonoidAt` that attaches CBC at the round function's
-interface. -/
-noncomputable def cbcProtocol (bf : M → List X) : ↥converterMonoidAt.{u} :=
-  ⟨attachAt {q : Uni.{u} | q.1 = X} (System.protocolEngine X X (cbcRound bf)),
-    protocolEngine_mem_converterMonoidAt _ _ (cbcRound_innerTotal bf)
+the element of `↥converterMonoidAt` that applies CBC to the whole face of the
+round function.  That is CR18 §6.2.3's own object (printed pp. 125–126):
+`CBC` is applied to the system `R_{n,n}` — it "makes calls to the system … at
+the inside (right interface)" and answers messages outside — not to one
+interface of a larger resource, and
+`attachAt Set.univ` is exactly CR18 Definition 3.9's application (printed p. 62)
+through the demotion bridge `attachAt_univ`.
+
+**The whole face is forced, not a default.**  `attachEngineFully` dispatches
+*outer* queries on the interface: a query outside it is handed to the resource
+verbatim (`System.attachEngineFullyRound_not_mem`).  CBC converts an
+`(X,X)`-system into an `(M,X)`-system, so the queries it must own are addressed
+at `M` while the requests it emits are addressed at `X`.  An interface holding
+only the round function's address would therefore route every *message* past
+the converter to the round function, which refuses it, and the composite would
+answer nothing at all — the realization equation below would be false.  Where
+the engine *reaches* is the separate clause `System.RequestsWithin`, and it is
+stated at the round function's address in `cbcConverter_requestsWithin`. -/
+noncomputable def cbcConverter (bf : M → List X) : ↥converterMonoidAt.{u} :=
+  ⟨attachAt (Set.univ : Set Uni.{u}) (System.converterEngine X X (cbcRound bf)),
+    converterEngine_mem_converterMonoidAt _ _ (cbcRound_innerTotal bf)
       (cbcRound_requestsBounded bf)⟩
 
 /-- The CBC converter reaches only into the round function's interface. -/
-theorem cbcProtocol_requestsWithin (bf : M → List X) :
+theorem cbcConverter_requestsWithin (bf : M → List X) :
     System.RequestsWithin {q : Uni.{u} | q.1 = X}
-      (System.protocolEngine X X (cbcRound bf)) :=
-  System.requestsWithin_protocolEngine _ fun _ => rfl
+      (System.converterEngine X X (cbcRound bf)) :=
+  System.requestsWithin_converterEngine _ fun _ => rfl
+
+/-! ## The realization equation: the converter computes the CBC chain
+
+The receipts above place `cbcConverter` in `Σ`; they say nothing about what it
+*answers*.  This section closes that gap — the first of the six obligations
+listed at `cbc_mac_constructs`: applied to the on-ramped round function, the
+CBC converter **is** the on-ramped system that answers `cbcState f (bf m)` to
+the message `m`.  Nothing downstream — the collision game, the conditional
+equivalence, the counting — connects to CBC at all until this holds, because
+without it nothing ties the `Σ` element to the function `cbcState f ∘ bf`.
+
+The work is done by the library's one round lemma,
+`System.attachEngineFully_converterEngine_univ`: an application supplies a
+`System.ConverterRunsTo` for its own history function and gets the equation.
+What is CBC's own is `cbcRound_runsTo` — the chain induction, one step per
+block — and `answer_ofTyped_functionEvaluator`, which says the round function
+answers `f x` to `x` whatever it has been asked before.
+-/
+
+section Realization
+
+open System
+
+/-- **An on-ramped function answers its own value**, whatever the history: the
+completion of `ofTyped (functionEvaluator f)` returns `f a` to `a`, never `⊥`.
+The evaluator is defined on every nonempty history, so CR18 Definition 3.3's
+deletion pass (printed p. 58) removes nothing and the answer does not depend on
+the history at all. -/
+theorem answer_ofTyped_functionEvaluator {A B : Type u} (f : A → B)
+    (xs : List Uni.{u}) (a : A) :
+    answer (System.ofTyped (functionEvaluator f)) xs (encode A a)
+      = some (encode B (f a)) := by
+  set l₀ : List A := xs.filterMap decodeOption with hl₀
+  have hkept : keptPrefix (System.ofTyped (functionEvaluator f)) xs = l₀.map (encode A) := by
+    rw [keptPrefix_ofTyped]
+    congr 1
+    refine keptPrefix_eq_self_of_mem_or_empty _ ?_
+    rcases eq_or_ne l₀ [] with h | h
+    · exact Or.inr h
+    · exact Or.inl (by rw [dom_functionEvaluator]; exact h)
+  have hne : l₀ ++ [a] ≠ [] := by simp
+  have hdom : (l₀ ++ [a]).map (encode A) ∈ dom (System.ofTyped (functionEvaluator f)) :=
+    (mem_dom_ofTyped_encode hne).mpr (by rw [dom_functionEvaluator]; exact hne)
+  rw [answer_eq, hkept]
+  have hcat : l₀.map (encode A) ++ [encode A a] = (l₀ ++ [a]).map (encode A) := by simp
+  rw [hcat, dif_pos hdom]
+  congr 1
+  have hS : l₀ ++ [a] ∈ dom (functionEvaluator f) := by
+    rw [dom_functionEvaluator]; exact hne
+  rw [output_ofTyped_encode hS hdom, output_functionEvaluator]
+  simp
+
+/-- The round-function answers CBC holds after digesting `k` blocks: the
+chaining values of the block prefixes. -/
+def cbcRoundAnswers (f : X → X) (bs : List X) (k : ℕ) : List (Option X) :=
+  (List.range k).map fun i => some (cbcState f (bs.take (i + 1)))
+
+@[simp] theorem cbcRoundAnswers_zero (f : X → X) (bs : List X) :
+    cbcRoundAnswers f bs 0 = [] := rfl
+
+theorem cbcRoundAnswers_length (f : X → X) (bs : List X) (k : ℕ) :
+    (cbcRoundAnswers f bs k).length = k := by simp [cbcRoundAnswers]
+
+theorem cbcRoundAnswers_succ (f : X → X) (bs : List X) (k : ℕ) :
+    cbcRoundAnswers f bs (k + 1)
+      = cbcRoundAnswers f bs k ++ [some (cbcState f (bs.take (k + 1)))] := by
+  simp [cbcRoundAnswers, List.range_succ]
+
+/-- The chaining value CBC carries into the next block is the last answer it
+received — and the public initial value `0` when it has received none. -/
+theorem cbcRoundAnswers_getLastD (f : X → X) (bs : List X) (k : ℕ) :
+    ((cbcRoundAnswers f bs k).map fun o => o.getD 0).getLastD 0
+      = cbcState f (bs.take k) := by
+  cases k with
+  | zero => simp [cbcState]
+  | succ n => rw [cbcRoundAnswers_succ]; simp
+
+/-- One more block advances the chain by one round-function call at that
+block's call-site input. -/
+theorem cbcState_take_succ (f : X → X) (bs : List X) {k : ℕ} (hk : k < bs.length) :
+    cbcState f (bs.take (k + 1)) = f (cbcInput f bs k) := by
+  rw [List.take_add_one, List.getElem?_eq_getElem hk]
+  simp only [Option.toList_some]
+  rw [cbcState_concat]
+  congr 2
+  rw [List.getD_eq_getElem _ _ hk]
+
+/-- **The chain induction**: against a resource that answers `f x` to `x`, one
+CBC round digests the current message's blocks one at a time and ends at
+`cbcState f bs`.  The induction runs on the blocks still to be digested, and
+carries the chain state in the round's own answer list — which is what makes
+the statement independent of the resource history the round starts from, and so
+usable at every round of the outer interaction. -/
+theorem cbcRound_runsTo (f : X → X) (bf : M → List X) (R : DDS Uni.{u} Uni.{u})
+    (hR : ∀ (xs : List Uni.{u}) (x : X),
+      answer R xs (encode X x) = some (encode X (f x)))
+    (us : List M) (hne : us ≠ []) (bs : List X) (hbs : bf (us.getLast hne) = bs) :
+    ∀ (d k : ℕ), k + d = bs.length →
+      ∀ xs : List Uni.{u},
+        ConverterRunsTo (cbcRound bf) R us (cbcRoundAnswers f bs k) xs
+          (cbcState f bs) := by
+  intro d
+  induction d with
+  | zero =>
+      intro k hk xs
+      refine ConverterRunsTo.stop ?_
+      rw [cbcRound, dif_pos hne]
+      dsimp only
+      rw [hbs, if_neg (by
+        rw [List.length_map, cbcRoundAnswers_length]
+        omega)]
+      rw [Part.mem_some_iff]
+      congr 1
+      rw [cbcRoundAnswers_getLastD, show k = bs.length by omega, List.take_length]
+  | succ d ih =>
+      intro k hk xs
+      have hklt : k < bs.length := by omega
+      refine ConverterRunsTo.ask (x := cbcInput f bs k) ?_ ?_
+      · rw [cbcRound, dif_pos hne]
+        dsimp only
+        rw [hbs, if_pos (by
+          rw [List.length_map, cbcRoundAnswers_length]
+          exact hklt)]
+        rw [Part.mem_some_iff]
+        congr 1
+        rw [List.length_map, cbcRoundAnswers_length, cbcRoundAnswers_getLastD]
+        rfl
+      · rw [hR xs (cbcInput f bs k)]
+        simp only [Option.bind_some, decodeOption_encode]
+        rw [← cbcState_take_succ f bs hklt, ← cbcRoundAnswers_succ]
+        exact ih (k + 1) (by omega) _
+
+/-- **The realization equation, at a deterministic round function** — the first
+of the six obligations at `cbc_mac_constructs`, discharged.
+
+The CBC engine applied to the on-ramped round function `f` is the on-ramped
+system `m ↦ cbcState f (bf m)`: CR18's own description of the converter
+(printed p. 125) — "`CBC` applies a block former to the message and then
+digests the obtained block sequence block by block, each time invoking the
+system at its right interface" — as an equation between systems, and not a
+description.
+
+Both faces of the equation are computed, not assumed: the composite answers a
+message exactly where the on-ramped chain does, and refuses everything else,
+because the engine must decode the outer history at `M` before it can move. -/
+theorem attachEngineFully_cbcRound_univ (f : X → X) (bf : M → List X) :
+    attachEngineFully (Set.univ : Set Uni.{u}) (converterEngine X X (cbcRound bf))
+        (System.ofTyped (functionEvaluator f))
+      = System.ofTyped (functionEvaluator fun m : M => cbcState f (bf m)) := by
+  refine attachEngineFully_converterEngine_univ (g := fun m : M => cbcState f (bf m)) ?_
+  intro us m xs
+  have hne : us ++ [m] ≠ [] := by simp
+  have hlast : (us ++ [m]).getLast hne = m := by simp
+  have hrun := cbcRound_runsTo f bf (System.ofTyped (functionEvaluator f))
+    (answer_ofTyped_functionEvaluator f) (us ++ [m]) hne (bf m) (by rw [hlast])
+    (bf m).length 0 (by simp) xs
+  simpa using hrun
+
+/-- The law of the CBC function: the block former digested by a uniform round
+function.  The image of CR18's `R_{n,n}` (printed p. 125) under the CBC
+construction, as a probabilistic discrete system on the bounded message space
+of the F-1 ruling. -/
+noncomputable def cbcFunctionLaw (bf : M → List X) : PDS M X :=
+  Distribution.fTransform
+    (fun f : X → X => functionEvaluator fun m : M => cbcState f (bf m))
+    (Distribution.uniform (X → X))
+
+/-- **The realization equation at Φ** — the form every endpoint of this file
+speaks in: the `Σ` element `cbcConverter bf` applied to the on-ramped uniform
+round function is the on-ramped CBC function law.  The pushforward of
+`attachEngineFully_cbcRound_univ` along the atoms of `R_{n,n}` (printed
+p. 125), which are function evaluators by construction. -/
+theorem cbcConverter_smul_Rnn (bf : M → List X) :
+    cbcConverter bf • (RandomSystems.ofTyped (Rnn X) : Phi.{u})
+      = RandomSystems.ofTyped (cbcFunctionLaw bf) := by
+  show Distribution.fTransform
+      (attachEngineFully (Set.univ : Set Uni.{u}) (converterEngine X X (cbcRound bf))) _ = _
+  rw [RandomSystems.ofTyped, RandomSystems.ofTyped, Rnn, PDS.urf, cbcFunctionLaw,
+    Distribution.fTransform_fTransform, Distribution.fTransform_fTransform,
+    Distribution.fTransform_fTransform]
+  congr 1
+  funext f
+  exact attachEngineFully_cbcRound_univ f bf
+
+end Realization
 
 /-! ## §6.2.3's two restrictions, as members of the same `Σ` -/
 
@@ -336,10 +550,6 @@ pp. 126–127, "Conditioned on this event … all outputs are uniformly random,
 except of course that for identical inputs the outputs are also identical").
 -/
 
-/-- The input supplied to the round function at block position `j`. -/
-def cbcInput (f : X -> X) (bs : List X) (j : Nat) : X :=
-  cbcState f (bs.take j) + bs.getD j 0
-
 /-- Maurer's monotone condition `A_i`: some two nontrivially distinct CBC
 call sites encountered up to the current message have collided at the input
 to `R_{n,n}`.  Equal block prefixes designate the same computation and are
@@ -369,11 +579,6 @@ def cbcCondition (f : X -> X) (bf : M -> List X) :
   ⟨{l | cbcBad f bf l}, by
     intro l1 l2 hpre hbad
     exact cbcBad_monotone f bf hpre hbad⟩
-/-- Appending one block performs one more round-function call. -/
-theorem cbcState_concat (f : X -> X) (bs : List X) (b : X) :
-    cbcState f (bs ++ [b]) = f (cbcState f bs + b) := by
-  simp only [cbcState, List.foldl_concat]
-
 /-- Before the appended block, CBC's round inputs are unchanged. -/
 theorem cbcInput_append_of_lt (f : X -> X) (bs : List X) (b : X)
     {j : Nat} (hj : j < bs.length) :
@@ -756,7 +961,7 @@ theorem notBad_implies_uniform_outputs [Nontrivial M]
 The printed statement is an arrow with a superscript, `[r]R_{n,n} --θ_r CBC-->
 (θ_r V_n)^{ε_r}` (printed p. 126): CR18 Definition 5.4's construction relation
 into §5.2.3's `ε`-relaxation.  On this carrier that is
-`AbstractCryptography.ApproximatelyConstructs` over `Phi`, with the protocol
+`AbstractCryptography.ApproximatelyConstructs` over `Phi`, with the converter
 the composite `Σ`-element `θ_r · CBC` and the two endpoints the on-ramped
 typed resources.  Everything the abstract layer needs is an instance here:
 `Monoid ↥converterMonoidAt`, `MulAction ↥converterMonoidAt Phi`,
@@ -781,7 +986,7 @@ noncomputable def constructedResource (bf : M → List X) (r : ℕ) : Phi.{u} :=
 /-- CR18's constructing converter `θ_r CBC` (printed p. 126), as one element of
 the metric-facing `Σ`. -/
 noncomputable def cbcRestricted (bf : M → List X) (r : ℕ) : ↥converterMonoidAt.{u} :=
-  theta bf r * cbcProtocol bf
+  theta bf r * cbcConverter bf
 
 /-- **The abstract-layer shape of CR18 Theorem 6.1** (printed p. 126): "For
 `θ_r` defined as above, if the block-former of the `CBC`-converter is
@@ -806,13 +1011,13 @@ Theorem 6.1 having been proved.
 CR18's own proof structure is what `hcbc` stands for: the printed proof
 produces `⟨θ_r CBC [r]R_{n,n} | θ_r V_n⟩ ≤ Γ(b θ_r ĈBC R_{n,n}) ≤ ½ r² 2^{-n}`
 (printed p. 127) and reads the arrow off it.  In the printed order, `hcbc`
-decomposes into six obligations, of which **five are open — 1, 2, 4, 6, and
+decomposes into six obligations, of which **four are open — 2, 4, 6, and
 the `θ_r` half of 3**:
 
-1. **OPEN, no landed counterpart.**  The realization equation — that
-   `cbcProtocol bf` applied to the on-ramped round function is the on-ramped
-   system whose answer to `m` is `cbcState f (bf m)`.  This is a drive
-   computation for `System.attachEngineFully`;
+1. **LANDED.**  The realization equation — that `cbcConverter bf` applied to
+   the on-ramped round function is the on-ramped system whose answer to `m` is
+   `cbcState f (bf m)` — as `attachEngineFully_cbcRound_univ` at a
+   deterministic round function and `cbcConverter_smul_Rnn` at Φ;
 2. **OPEN.**  Equation (6.2), printed p. 126, as `PDG.CondEquiv`: the mass
    identity `notBad_implies_uniform_outputs` above, read through
    `PDG.condEquiv_iff_condProb`;
@@ -867,7 +1072,7 @@ parameterized reading a theorem is the coherence equation, and that equation is
 open. -/
 
 /-- **Composition**: whatever is constructed from `θ_r V_n` is constructed from
-`[r]R_{n,n}` by the composite protocol, with the budgets added.  Derived by
+`[r]R_{n,n}` by the composite converter, with the budgets added.  Derived by
 `AbstractCryptography.Constructs.epsilonRelaxation_trans` applied to
 `cbc_mac_constructs` — the landed statement carries its own attribution and
 page — and the instance it consumes is `IsNonexpandingSMul ↥converterMonoidAt
@@ -876,7 +1081,7 @@ Phi` (`RandomSystems/System/MetricFullyDefined.lean`).
 The distance bound `hcbc` is inherited, so this is a consequence of the
 endpoint and not of anything cheaper.  (`constructs_epsilonRelaxation_trans_phi`
 in that same file is the same abstract theorem read at the larger submonoid
-`nonexpandingConverters`; using it here would mean pushing both protocols
+`nonexpandingConverters`; using it here would mean pushing both converters
 across `converterMonoidAt_le_nonexpandingConverters` and pulling the result
 back, so the abstract statement is invoked directly instead.) -/
 theorem cbc_mac_trans [Nontrivial M] {bf : M → List X} {r : ℕ}
@@ -909,8 +1114,8 @@ therefore a statement about what the abstract layer would yield, not a landed
 consequence of anything proved in this file. -/
 theorem cbc_mac_parameterized_of_coherence [Nontrivial M] (bf : M → List X)
     (hbf : PrefixFree bf)
-    (coherence : ∀ r : ℕ, theta (X := X) bf r * cbcProtocol bf * queryLimit.{u} r
-      = theta (X := X) bf r * cbcProtocol bf)
+    (coherence : ∀ r : ℕ, theta (X := X) bf r * cbcConverter bf * queryLimit.{u} r
+      = theta (X := X) bf r * cbcConverter bf)
     (hcbc : ∀ r : ℕ, edist (cbcRestricted bf r • assumedResource X r)
       (constructedResource bf r) ≤ cbcEpsilon X r) :
     ∀ r : ℕ, ({(ofTyped (Rnn X) : Phi.{u})} : Specification Phi.{u})
@@ -918,7 +1123,7 @@ theorem cbc_mac_parameterized_of_coherence [Nontrivial M] (bf : M → List X)
         ({constructedResource bf r} : Specification Phi.{u}) :=
   (parameterizedConstruction_iff_of_coherence
     (φ := fun r : ℕ => queryLimit.{u} r) (ψ := fun r : ℕ => theta (X := X) bf r)
-    (π := cbcProtocol bf) (f := fun r : ℕ => cbcEpsilon X r)
+    (π := cbcConverter bf) (f := fun r : ℕ => cbcEpsilon X r)
     (R := (ofTyped (Rnn X) : Phi.{u})) (S := (ofTyped (Vn M X) : Phi.{u}))
     coherence).mp (fun r => cbc_mac_constructs bf r hbf (hcbc r))
 
