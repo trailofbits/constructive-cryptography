@@ -896,6 +896,14 @@ statement is no longer only inline inside `Relaxation.star_construct_eps` and
     `card_filter_and_eqOn`, `uniform_mass_and_eqOn`, `card_function_fiber_index`;
     `System/RandomObjects.lean` — `mass_urf_answer_eq`,
     `trLawFullyDefined_urf_playQueries_apply`.
+    FRAMING CORRECTION (Marc, 2026-08-19; my earlier "the paper asserts these
+    steps without proof" was WRONG — I relayed it from a report without
+    reading the page): CR18 printed pp. 126-127 ARGUES (6.2) and closes with
+    "Hence we have proved (6.2)"; it cites the uniform random function's
+    behaviour, which §3 already defines, rather than repeating it, and that is
+    complete.  The cost fell on US because our library lacked that URF fact as
+    a lemma — hence the UPSTREAM-CANDIDATE block.  The gap is ours, not the
+    source's.
     FINDING (library-level, the reason obligation 6's core is not a marginal
     fact): conditional uniformity is statable on this carrier only in the
     FIXED-SET form — condition on the function's values at a KNOWN set, the

@@ -534,7 +534,7 @@ noncomputable def queryLimit (r : ℕ) : ↥converterMonoidAt.{u} :=
   ⟨filterQueries r, filterQueries_mem_converterMonoidAt r⟩
 
 
-/-! ## CR18 Theorem 6.1's proof, the two steps the paper only asserts
+/-! ## CR18 Theorem 6.1's proof: the two steps that are definitional in the source
 
 The monotone condition of the proof (printed p. 126): "`A_i = 1` if and only
 if, up to the evaluation of the `i`-th message (the `i`-th input to `CBC`), a
@@ -965,7 +965,13 @@ augmented object is the joint law of the CBC chain and its own collision
 condition; the relation is Maurer13b Definition 13 (printed p. 3153), landed as
 `PDG.CondEquiv`.
 
-The two steps CR18 asserts are already proved above —
+The two steps CR18 cites rather than repeats are already proved above (the
+source is complete: it defines the uniform random function and its behaviour
+in §3, so "distinct inputs give uniform outputs" is definitional there, and
+printed p. 126-127 argues (6.2) in prose and says "Hence we have proved
+(6.2)".  What cost work HERE is that our library lacked that URF fact as a
+lemma — see the UPSTREAM-CANDIDATE block in Probability/Counting.lean and
+System/RandomObjects.lean, and the f-dependent-site form still owed) —
 `notBad_implies_distinct_lastInputs` (its first proof sentence) and
 `notBad_implies_uniform_outputs` (its second, in mass form).  What is left is
 the reading: at a fixed message list the interaction of a function evaluator is
