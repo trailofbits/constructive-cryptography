@@ -830,16 +830,35 @@ statement is no longer only inline inside `Relaxation.star_construct_eps` and
     `protocolAddress` (a move's alphabet tag), `protocolMove` (the engine's
     move), `protocolEngine` (the engine, `validate`d as `ofTyped` is),
     `protocolBudget` (the measure K − round answers, uniformly ≤ K).
-    Receipts `requestsWithin_protocolEngine` / `innerTotal_protocolEngine` /
-    `answersWithinUniformBudget_protocolEngine` give
-    `protocolEngine_mem_converterMonoidAt` straight from
-    `attachAt_mem_converterMonoidAt`.  ROUND-LOCAL, deliberately:
-    `Converter.ProtocolFn`'s cumulative second component cannot state a
-    per-round bound, and a TOTAL request bound is false for every converter
-    used more than once.  CONSEQUENCE (load-bearing, F-1): a converter whose
-    round length is unbounded — variable-input-length hashing over an infinite
-    message alphabet — is NOT a member of this Σ; `Applications/CBCMAC.lean`'s
-    `cbcRound_requestsBounded` spends the bounded message space to get K.
+    `innerTotal_protocolEngine` / `answersWithinUniformBudget_protocolEngine`
+    give `protocolEngine_mem_converterMonoidAt` straight from
+    `attachAt_mem_converterMonoidAt` (`requestsWithin_protocolEngine` is
+    landed but consumed by nothing — audit finding, kept, not deleted
+    unasked).
+    THREE CLAIMS IN THE ORIGINAL ROW WERE AUDIT-CORRECTED (2026-08-19,
+    /private/tmp/cbc-audit/AUDIT.md; repairs at 8833b6c):
+    (i) "`Converter.ProtocolFn`'s cumulative component cannot state a
+    per-round bound" — **REFUTED**: `ProtocolFn` is an `abbrev` for the very
+    type `ConverterEntry` spells out (`rfl`), and `Converter.AnswersWithin`
+    (`Converter.lean:2802`) already states CR18 Def 3.8's clause verbatim on
+    the cumulative presentation (rendered printed p. 62).  Round-local is a
+    CONVENIENCE (it makes the bound `ys.length < K`, matching
+    `AnswersWithinUniformBudget`'s β).  The duality this created is now
+    BRIDGED: `ProtocolRequestsBounded.answersWithin` (K ⇒ K+1), with
+    `exists_answersWithin_not_protocolRequestsBounded` showing the converse
+    FAILS — so the streak reading may never be cited for the round-local one.
+    (ii) "a converter over an infinite message alphabet is NOT a member of
+    this Σ" — **NOT PROVED and does not follow**: `converterMonoidAt` is a
+    `Submonoid.closure`, so failing `attachAt_mem_converterMonoidAt` denies a
+    SUFFICIENT condition only; non-membership needs a separating invariant
+    nobody has.
+    (iii) the operative hypothesis is MISIDENTIFIED: the request bound follows
+    from a bound on ENCODING LENGTH alone (`cbcRound_requestsBounded_of_
+    length_le`, which uses neither `Fintype M` nor the block bound — Lean's
+    linter reported the finiteness unused).  Finiteness of `M` is a
+    CONSEQUENCE, now kernel-checked (`PrefixFree.injective`,
+    `finite_of_prefixFree_of_length_le`).  Marc's bounded-message ruling
+    stands; its sharp form is BOUNDED LENGTH.
   SUPERSEDED — never the primitive again:
     `attachFully` / `converterMonoidFully` / `converterMonoidFullyBudgeted`
       (whole-face Φ level) -> superseded by `attachAt` /
