@@ -315,6 +315,27 @@ theorem mem_dom_of_resolve_dom (E : DDS (U ⊕ Option Y) (V ⊕ X)) (R : DDS X Y
   obtain ⟨v, hv⟩ := Part.dom_iff_mem.mp h
   exact (Part.bind_dom.mp (PFun.dom_of_mem_fix hv)).fst
 
+/-- **The output rule, as an equation**: a round that the engine closes with an
+outer answer *is* that answer, histories unchanged (CR18 Definition 3.9,
+printed p. 62).  `mem_resolve_of_answer` gives the membership; a `Part` has at
+most one value, so the membership is the equation, and the equation is what a
+case analysis over the engine's move needs. -/
+theorem resolve_eq_of_answer {E : DDS (U ⊕ Option Y) (V ⊕ X)} {R : DDS X Y}
+    {c : List (CIn U Y)} {xs : List X} {v : V}
+    (h : Sum.inl v ∈ E.1 (c.map unlabel)) :
+    resolve (ofEngine E) R (c, xs) = Part.some (v, (c, xs)) :=
+  Part.eq_some_iff.mpr (mem_resolve_of_answer h)
+
+/-- **A round the engine will not open does not resolve** (CR18 Definition 3.9,
+printed p. 62): where the engine has no move the inner resolution is undefined,
+whatever the resource.  The third branch of the same case analysis, and the one
+where the resource plays no part at all. -/
+theorem resolve_eq_none_of_not_dom {E : DDS (U ⊕ Option Y) (V ⊕ X)} {R : DDS X Y}
+    {c : List (CIn U Y)} {xs : List X}
+    (h : ¬ (E.1 (c.map unlabel)).Dom) :
+    resolve (ofEngine E) R (c, xs) = Part.none :=
+  Part.eq_none_iff'.mpr fun hdom => h (mem_dom_of_resolve_dom E R c xs hdom)
+
 /-! ## Refusal precedes inner traffic
 
 The criterion that killed B4, now a theorem.  Two hypotheses on the engine,
@@ -393,6 +414,110 @@ theorem resolve_dom_of_mem_dom {E : DDS (U ⊕ Option Y) (V ⊕ X)}
             (lt_of_lt_of_le (hβ _ x hreq (answer R xs x)) hle)
         · rw [hmap]
           exact hIT _ x hreq (answer R xs x)
+
+/-- **A round asks at most its budget** (CR18 Definition 3.8's finite-bound
+clause, printed p. 62: "There is a finite upper bound on the number of
+consecutive outputs of the form `(in, x)`"): the resource history a resolved
+round leaves is longer than the one it started from by at most `β` of the
+converter history it started at.
+
+The measure `β` of `AnswersWithinBudget` is the *remaining* requests and drops
+strictly at each one, so the count of a round is read off it directly; the
+induction is the bounded one of `resolve_dom_of_mem_dom`, not a fixed-point
+induction.  This is the half of CR18 equation (6.1)'s argument (printed p. 126)
+that says the requests of an interaction are counted by the converter's own
+budget, and it is stated for any engine because nothing about the counting is
+`CBC`'s. -/
+theorem length_le_of_mem_resolve {E : DDS (U ⊕ Option Y) (V ⊕ X)}
+    {β : List (U ⊕ Option Y) → ℕ} (hβ : AnswersWithinBudget E β) (R : DDS X Y) :
+    ∀ (n : ℕ) (c : List (CIn U Y)) (xs : List X), β (c.map unlabel) ≤ n →
+      ∀ {v : V} {c' : List (CIn U Y)} {xs' : List X},
+        (v, (c', xs')) ∈ resolve (ofEngine E) R (c, xs) →
+          xs'.length ≤ xs.length + β (c.map unlabel) := by
+  intro n
+  induction n with
+  | zero =>
+      intro c xs hle v c' xs' hmem
+      by_cases hdom : (E.1 (c.map unlabel)).Dom
+      · rcases hout : (E.1 (c.map unlabel)).get hdom with w | x
+        · have hm : Sum.inl w ∈ E.1 (c.map unlabel) := hout ▸ Part.get_mem hdom
+          rw [resolve_eq_of_answer hm, Part.mem_some_iff] at hmem
+          obtain ⟨-, -, rfl⟩ : v = w ∧ c' = c ∧ xs' = xs := by simpa using hmem
+          exact Nat.le_add_right _ _
+        · have hm : Sum.inr x ∈ E.1 (c.map unlabel) := hout ▸ Part.get_mem hdom
+          exact absurd (lt_of_lt_of_le (hβ _ x hm (answer R xs x)) hle) (Nat.not_lt_zero _)
+      · rw [resolve_eq_none_of_not_dom hdom] at hmem
+        exact absurd hmem (by simp)
+  | succ n ih =>
+      intro c xs hle v c' xs' hmem
+      by_cases hdom : (E.1 (c.map unlabel)).Dom
+      · rcases hout : (E.1 (c.map unlabel)).get hdom with w | x
+        · have hm : Sum.inl w ∈ E.1 (c.map unlabel) := hout ▸ Part.get_mem hdom
+          rw [resolve_eq_of_answer hm, Part.mem_some_iff] at hmem
+          obtain ⟨-, -, rfl⟩ : v = w ∧ c' = c ∧ xs' = xs := by simpa using hmem
+          exact Nat.le_add_right _ _
+        · have hm : Sum.inr x ∈ E.1 (c.map unlabel) := hout ▸ Part.get_mem hdom
+          have hmap : (c ++ [Sum.inr (InLabel.inside, answer R xs x)]).map unlabel =
+              c.map unlabel ++ [Sum.inr (answer R xs x)] := by simp
+          have hdrop : β (c.map unlabel ++ [Sum.inr (answer R xs x)]) < β (c.map unlabel) :=
+            hβ _ x hm (answer R xs x)
+          rw [resolve_of_request hm] at hmem
+          have := ih (c ++ [Sum.inr (InLabel.inside, answer R xs x)]) (xs ++ [x])
+            (by rw [hmap]; omega) hmem
+          rw [hmap] at this
+          simp only [List.length_append, List.length_singleton] at this ⊢
+          omega
+      · rw [resolve_eq_none_of_not_dom hdom] at hmem
+        exact absurd hmem (by simp)
+
+/-- **A round is local in the resource** (CR18 Definition 3.9, printed p. 62).
+The resource enters the inner resolution only through `answer`, at the request
+history the round has itself built, so two resources that answer alike after
+every history shorter than `xs.length + β` resolve the round alike.  The bound
+is sharp for a round: `β` is the requests it has left, so `xs.length + β` is
+the longest request history it can build.
+
+This is the locality invariant of CR18 Definition 3.9, and the reason the
+statement is about `answer` rather than about `dom` and `output` separately is
+that `answer` is exactly the currency `connStep` spends
+(`mem_connStep_iff`). -/
+theorem resolve_congr_of_answer_eq {E : DDS (U ⊕ Option Y) (V ⊕ X)}
+    {β : List (U ⊕ Option Y) → ℕ} (hβ : AnswersWithinBudget E β) {R R' : DDS X Y} :
+    ∀ (n : ℕ) (c : List (CIn U Y)) (xs : List X), β (c.map unlabel) ≤ n →
+      (∀ (zs : List X) (x : X), zs.length < xs.length + β (c.map unlabel) →
+          answer R zs x = answer R' zs x) →
+        resolve (ofEngine E) R (c, xs) = resolve (ofEngine E) R' (c, xs) := by
+  intro n
+  induction n with
+  | zero =>
+      intro c xs hle _
+      by_cases hdom : (E.1 (c.map unlabel)).Dom
+      · rcases hout : (E.1 (c.map unlabel)).get hdom with w | x
+        · have hm : Sum.inl w ∈ E.1 (c.map unlabel) := hout ▸ Part.get_mem hdom
+          rw [resolve_eq_of_answer hm, resolve_eq_of_answer hm]
+        · have hm : Sum.inr x ∈ E.1 (c.map unlabel) := hout ▸ Part.get_mem hdom
+          exact absurd (lt_of_lt_of_le (hβ _ x hm none) hle) (Nat.not_lt_zero _)
+      · rw [resolve_eq_none_of_not_dom hdom, resolve_eq_none_of_not_dom hdom]
+  | succ n ih =>
+      intro c xs hle hagree
+      by_cases hdom : (E.1 (c.map unlabel)).Dom
+      · rcases hout : (E.1 (c.map unlabel)).get hdom with w | x
+        · have hm : Sum.inl w ∈ E.1 (c.map unlabel) := hout ▸ Part.get_mem hdom
+          rw [resolve_eq_of_answer hm, resolve_eq_of_answer hm]
+        · have hm : Sum.inr x ∈ E.1 (c.map unlabel) := hout ▸ Part.get_mem hdom
+          have hdrop : β (c.map unlabel ++ [Sum.inr (answer R xs x)]) < β (c.map unlabel) :=
+            hβ _ x hm (answer R xs x)
+          have hans : answer R xs x = answer R' xs x := hagree xs x (by omega)
+          have hmap : (c ++ [Sum.inr (InLabel.inside, answer R xs x)]).map unlabel =
+              c.map unlabel ++ [Sum.inr (answer R xs x)] := by simp
+          rw [resolve_of_request (R := R) hm, resolve_of_request (R := R') hm, ← hans]
+          refine ih (c ++ [Sum.inr (InLabel.inside, answer R xs x)]) (xs ++ [x])
+            (by rw [hmap]; omega) ?_
+          intro zs y hzs
+          rw [hmap] at hzs
+          simp only [List.length_append, List.length_singleton] at hzs
+          exact hagree zs y (by omega)
+      · rw [resolve_eq_none_of_not_dom hdom, resolve_eq_none_of_not_dom hdom]
 
 /-- **Refusal precedes inner traffic** — by construction.  The migrated
 composite accepts an outer query exactly when the *engine* accepts it at the

@@ -88,6 +88,19 @@ theorem answer_filterQueries (q : ℕ) (S : DDS X Y) (l : List X) (x : X) :
       simp only [List.length_append, List.length_cons, List.length_nil, hlen] at this
       omega)]
 
+/-- **The filter is invisible below its budget**: while fewer than `q` queries
+have been asked at all, `[q]s` answers as `s` does.  CR18 Definition 3.10's
+budget is spent on the *answered* queries (printed p. 62), and the deletion
+pass never lengthens a history (`keptPrefix_length_le`), so a bound on the
+queries asked is a bound on the queries counted.
+
+This is the whole of the filter's side of CR18 equation (6.1) (printed
+p. 126): the rest of that equation is locality of attachment, which knows
+nothing about filters. -/
+theorem answer_filterQueries_of_lt (q : ℕ) (S : DDS X Y) (l : List X) (x : X)
+    (h : l.length < q) : answer (filterQueries q S) l x = answer S l x := by
+  rw [answer_filterQueries, if_pos (lt_of_le_of_lt (keptPrefix_length_le S l) h)]
+
 /-! ## The answers seen through the filter -/
 
 /-- The answer stream of a query-limited interaction: the first `q` answers
@@ -240,6 +253,41 @@ theorem filterQueries_filterQueries (q q' : ℕ) (S : DDS X Y) :
   · rintro ⟨hdom, h⟩
     exact ⟨⟨hdom, h.trans (min_le_right q q')⟩, h.trans (min_le_left q q')⟩
 
+/-! ## CR18 equation (6.1): the query limit under an outer restriction
+
+"the filter `[r]` is irrelevant because the restriction implied by `θ_r`
+guarantees that at most `r` queries are made to `R_{n,n}`" (printed p. 126).
+Locality of attachment (`filterDom_attachEngineFully_congr_of_answer_eq`) is
+the mathematics; the filter contributes only `answer_filterQueries_of_lt`.
+-/
+
+section QueryLimitRedundant
+
+open Converter (InLabel)
+open Converter.DDC (CIn unlabel)
+
+variable {E : DDS (Uni.{u} ⊕ Option Uni.{u}) (Uni.{u} ⊕ Uni.{u})}
+  {β : List (Uni.{u} ⊕ Option Uni.{u}) → ℕ} {cost : List Uni.{u} → ℕ}
+
+/-- **CR18 equation (6.1) at the system level** (printed p. 126): under an
+outer domain filter that admits only histories whose total request cost is at
+most `r`, the inner query limit `[r]` is irrelevant — `φ α [r]s = φ α s` at
+every resource `s`.
+
+One application of locality: `[r]s` and `s` answer alike after every history
+shorter than `r`, and the filter's admission caps the reach at `r`. -/
+theorem filterDom_attachEngineFully_filterQueries (hβ : AnswersWithinBudget E β)
+    (R : DDS Uni.{u} Uni.{u}) (r : ℕ)
+    (hpay : ∀ (done : List Uni.{u}) (q : Uni.{u}) (c : List (CIn Uni.{u} Uni.{u})),
+      β ((c ++ [Sum.inl (InLabel.outside, q)]).map unlabel) + cost done ≤ cost (done ++ [q]))
+    (P : List Uni.{u} → Prop) (hP : PrefixClosed P) (hadm : ∀ l, P l → cost l ≤ r) :
+    filterDom P hP (attachEngineFully (Set.univ : Set Uni.{u}) E (filterQueries r R))
+      = filterDom P hP (attachEngineFully (Set.univ : Set Uni.{u}) E R) :=
+  filterDom_attachEngineFully_congr_of_answer_eq hβ hpay P hP r hadm
+    fun zs x hzs => answer_filterQueries_of_lt r R zs x hzs
+
+end QueryLimitRedundant
+
 end
 
 end System
@@ -324,6 +372,40 @@ theorem filterQueries_mem_converterMonoidAt (q : ℕ) :
 theorem filterQueries_zero_mem_converterMonoidAt :
     filterQueries.{u} 0 ∈ converterMonoidAt.{u} :=
   filterQueries_mem_converterMonoidAt 0
+
+/-- **CR18 equation (6.1) at Φ** (printed p. 126): "`θ_r ĈBC = θ_r ĈBC[r]`,
+i.e., the filter `[r]` is irrelevant because the restriction implied by `θ_r`
+guarantees that at most `r` queries are made to `R_{n,n}`".
+
+At Φ that sentence is an equation between three elements of the metric-facing
+Σ — an outer domain filter, an attachment at the whole face, and the query
+limit — and it holds whenever the filter admits only outer histories whose
+total request cost is at most `r` (`hadm`) and the engine's per-round budget is
+paid by that cost (`hpay`).  Nothing about `CBC` enters: the content is
+`System.filterDom_attachEngineFully_congr_of_answer_eq`, that attachment is
+local in the resource, pushed forward along the distribution. -/
+theorem filterPhi_attachAt_filterQueries
+    {E : System.DDS (Uni.{u} ⊕ Option Uni.{u}) (Uni.{u} ⊕ Uni.{u})}
+    {β : List (Uni.{u} ⊕ Option Uni.{u}) → ℕ} {cost : List Uni.{u} → ℕ}
+    (hβ : System.AnswersWithinBudget E β) (r : ℕ)
+    (hpay : ∀ (done : List Uni.{u}) (q : Uni.{u})
+        (c : List (Converter.DDC.CIn Uni.{u} Uni.{u})),
+      β ((c ++ [Sum.inl (Converter.InLabel.outside, q)]).map Converter.DDC.unlabel)
+        + cost done ≤ cost (done ++ [q]))
+    (P : List Uni.{u} → Prop) (hP : PrefixClosed P) (hadm : ∀ l, P l → cost l ≤ r) :
+    filterPhi.{u} P hP * attachAt Set.univ E * filterQueries.{u} r
+      = filterPhi.{u} P hP * attachAt Set.univ E := by
+  funext L
+  show Probability.Distribution.fTransform (System.filterDom P hP)
+      (Probability.Distribution.fTransform (System.attachEngineFully Set.univ E)
+        (Probability.Distribution.fTransform (System.filterQueries r) L))
+    = Probability.Distribution.fTransform (System.filterDom P hP)
+        (Probability.Distribution.fTransform (System.attachEngineFully Set.univ E) L)
+  rw [Probability.Distribution.fTransform_fTransform,
+    Probability.Distribution.fTransform_fTransform,
+    Probability.Distribution.fTransform_fTransform]
+  exact congrFun (congrArg Probability.Distribution.fTransform (funext fun S =>
+    System.filterDom_attachEngineFully_filterQueries hβ S r hpay P hP hadm)) L
 
 /-- **The filter never helps a distinguisher.**  Whatever an environment learns
 from a query-limited resource it learns from the resource itself: it runs the

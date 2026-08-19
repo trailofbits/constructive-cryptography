@@ -1887,6 +1887,152 @@ theorem blockSet_attachEngineFully_of_subset {A j : Set Uni.{u}} (hjA : j ⊆ A)
         hus fun q hq => ((mem_dom_blockSet A S _).mp hc).2 q hq
     rw [h₁, h₂]
 
+
+/-! ## Attachment is local in the resource
+
+UPSTREAM-CANDIDATE (the attachment surface itself; every construction whose
+argument is "what the resource does outside the region the protocol queries is
+irrelevant" needs this and nothing weaker).
+
+MauRen16 §3.3's `αⁱ` reads the resource only through the requests its own
+engine emits, so the composite depends on the resource only at the request
+histories those requests build.  Two resources that answer alike there give
+*equal* composites — not merely indistinguishable ones.
+
+**The reach is a sum, not a bound.**  CR18 Definition 3.8's clause (printed
+p. 62) bounds the requests of *one round*; an interaction has as many rounds as
+it has outer queries, so the request history an interaction can build is the
+running total of the rounds' budgets and nothing smaller.  The accounting is
+therefore carried by a function `cost` on outer histories, with the single
+hypothesis `hpay` that opening a round for one more outer query buys at least
+that round's budget.  A statement with `β` in place of `cost` — "the composite
+depends on the resource only at histories of length `≤ β`" — is **false** for
+every engine that answers more than one outer query.
+
+The interface is `Set.univ`: a query outside `i` reaches the resource verbatim
+(`attachEngineFully_transparent`) and is not accounted for by the engine's
+budget, so the interface-local statement would need `cost` to pay for foreign
+queries as well.  Nothing below needs it and it is not claimed.
+-/
+
+section Locality
+
+variable {β : List (Uni.{u} ⊕ Option Uni.{u}) → ℕ} {cost : List Uni.{u} → ℕ}
+  {R' : DDS Uni.{u} Uni.{u}}
+
+/-- A cost that pays for every round only grows: the budget it must cover is a
+natural number, so extending the outer history cannot lower the total.  This is
+what lets the accounting be discharged once, at the end of the outer history,
+instead of at every prefix. -/
+theorem cost_le_append_of_budget
+    (hpay : ∀ (done : List Uni.{u}) (q : Uni.{u}) (c : List (CIn Uni.{u} Uni.{u})),
+      β ((c ++ [Sum.inl (InLabel.outside, q)]).map unlabel) + cost done ≤ cost (done ++ [q]))
+    (a b : List Uni.{u}) : cost a ≤ cost (a ++ b) := by
+  induction b using List.reverseRecOn with
+  | nil => simp
+  | append_singleton b q ih =>
+      have := hpay (a ++ b) q []
+      rw [← List.append_assoc]
+      omega
+
+/-- **The driven interaction is local in the resource**: over an outer history
+of total cost `cost (done ++ rest)`, the drive consults the resource only after
+request histories shorter than that, so two resources agreeing there drive
+alike.
+
+The invariant is that the request history reached is no longer than the cost of
+the outer queries already driven; it is maintained by
+`length_le_of_mem_resolve`, which bounds one round's requests by that round's
+budget, while `hpay` says the new outer query's cost covers that budget. -/
+theorem attachEngineFullyDrive_congr_of_answer_eq (hβ : AnswersWithinBudget E β)
+    (hpay : ∀ (done : List Uni.{u}) (q : Uni.{u}) (c : List (CIn Uni.{u} Uni.{u})),
+      β ((c ++ [Sum.inl (InLabel.outside, q)]).map unlabel) + cost done ≤ cost (done ++ [q])) :
+    ∀ (rest done : List Uni.{u}) (st : List (CIn Uni.{u} Uni.{u}) × List Uni.{u}),
+      (∀ (zs : List Uni.{u}) (x : Uni.{u}), zs.length < cost (done ++ rest) →
+        answer R zs x = answer R' zs x) →
+      st.2.length ≤ cost done →
+        attachEngineFullyDrive (Set.univ : Set Uni.{u}) E R st rest
+          = attachEngineFullyDrive (Set.univ : Set Uni.{u}) E R' st rest := by
+  intro rest
+  induction rest with
+  | nil => intro done st _ _; rfl
+  | cons q rest ih =>
+      intro done st hagree hlen
+      have hcons : done ++ q :: rest = (done ++ [q]) ++ rest := by simp
+      have hmono : cost (done ++ [q]) ≤ cost (done ++ q :: rest) := by
+        rw [hcons]; exact cost_le_append_of_budget hpay _ _
+      have hstep := hpay done q st.1
+      have hrd : attachEngineFullyRound (Set.univ : Set Uni.{u}) E R st q
+          = attachEngineFullyRound (Set.univ : Set Uni.{u}) E R' st q := by
+        rw [attachEngineFullyRound_mem _ _ _ (Set.mem_univ q),
+          attachEngineFullyRound_mem _ _ _ (Set.mem_univ q)]
+        refine resolve_congr_of_answer_eq hβ
+          (β ((st.1 ++ [Sum.inl (InLabel.outside, q)]).map unlabel)) _ st.2 le_rfl ?_
+        intro zs x hzs
+        exact hagree zs x (by omega)
+      show (attachEngineFullyRound (Set.univ : Set Uni.{u}) E R st q).bind _
+        = (attachEngineFullyRound (Set.univ : Set Uni.{u}) E R' st q).bind _
+      rw [hrd]
+      refine Part.ext fun z => ?_
+      simp only [Part.mem_bind_iff]
+      refine exists_congr fun a => and_congr_right fun ha => ?_
+      obtain ⟨v, c₂, xs₂⟩ := a
+      have hmem : (v, (c₂, xs₂)) ∈ resolve (ofEngine E) R'
+          (st.1 ++ [Sum.inl (InLabel.outside, q)], st.2) := by
+        rw [attachEngineFullyRound_mem _ _ _ (Set.mem_univ q)] at ha
+        exact ha
+      have hA := length_le_of_mem_resolve hβ R'
+        (β ((st.1 ++ [Sum.inl (InLabel.outside, q)]).map unlabel)) _ st.2 le_rfl hmem
+      rw [ih (done ++ [q]) (c₂, xs₂) (by rw [← hcons]; exact hagree)
+        (by simpa using (by omega : xs₂.length ≤ cost (done ++ [q])))]
+
+/-- **Attachment is local in the resource**, at one outer history: the
+composite's answer to `l` is determined by the resource's answers after request
+histories shorter than `cost l`. -/
+theorem attachEngineFully_congr_of_answer_eq (hβ : AnswersWithinBudget E β)
+    (hpay : ∀ (done : List Uni.{u}) (q : Uni.{u}) (c : List (CIn Uni.{u} Uni.{u})),
+      β ((c ++ [Sum.inl (InLabel.outside, q)]).map unlabel) + cost done ≤ cost (done ++ [q]))
+    (l : List Uni.{u})
+    (hagree : ∀ (zs : List Uni.{u}) (x : Uni.{u}), zs.length < cost l →
+      answer R zs x = answer R' zs x) :
+    (attachEngineFully (Set.univ : Set Uni.{u}) E R).1 l
+      = (attachEngineFully (Set.univ : Set Uni.{u}) E R').1 l := by
+  simp only [attachEngineFully_toPFun, attachEngineFullyRaw]
+  rw [attachEngineFullyDrive_congr_of_answer_eq hβ hpay l [] ([], [])
+    (by simpa using hagree) (by simp)]
+
+/-- **Attachment under a domain filter is local in the resource**: if CR18
+§3.4.3's filter (unnumbered prose, printed p. 62) admits only outer histories
+of cost at most `N`, the filtered composite is determined by the resource's
+answers after request histories shorter than `N`, and two such resources give
+equal filtered composites.
+
+This is the form an application uses: the outer restriction is what caps the
+reach, so the resource is pinned down only on a bounded region. -/
+theorem filterDom_attachEngineFully_congr_of_answer_eq (hβ : AnswersWithinBudget E β)
+    (hpay : ∀ (done : List Uni.{u}) (q : Uni.{u}) (c : List (CIn Uni.{u} Uni.{u})),
+      β ((c ++ [Sum.inl (InLabel.outside, q)]).map unlabel) + cost done ≤ cost (done ++ [q]))
+    (P : List Uni.{u} → Prop) (hP : PrefixClosed P) (N : ℕ) (hadm : ∀ l, P l → cost l ≤ N)
+    (hagree : ∀ (zs : List Uni.{u}) (x : Uni.{u}), zs.length < N →
+      answer R zs x = answer R' zs x) :
+    filterDom P hP (attachEngineFully (Set.univ : Set Uni.{u}) E R)
+      = filterDom P hP (attachEngineFully (Set.univ : Set Uni.{u}) E R') := by
+  apply Subtype.ext
+  funext l
+  have hmem : ∀ (S : DDS Uni.{u} Uni.{u}) (v : Uni.{u}),
+      v ∈ (filterDom P hP S).1 l ↔ (v ∈ S.1 l ∧ P l) := by
+    intro S v
+    constructor
+    · rintro ⟨⟨hd, hp⟩, hv⟩; exact ⟨⟨hd, hv⟩, hp⟩
+    · rintro ⟨⟨hd, hv⟩, hp⟩; exact ⟨⟨hd, hp⟩, hv⟩
+  refine Part.ext fun v => ?_
+  by_cases hPl : P l
+  · rw [hmem, hmem, attachEngineFully_congr_of_answer_eq hβ hpay l
+      (fun zs x hzs => hagree zs x (lt_of_lt_of_le hzs (hadm l hPl)))]
+  · rw [hmem, hmem]
+    simp [hPl]
+
+end Locality
 end
 
 end System

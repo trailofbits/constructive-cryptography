@@ -346,6 +346,20 @@ theorem keptPrefix_append_singleton (system : DDS X Y)
       else keptPrefix system history := by
   simp [keptPrefix, List.foldl_append]
 
+/-- **The deletion pass never lengthens the history** (CR18 Definition 3.3,
+printed p. 62 for the filter clause it feeds): the pass keeps a sub-list of
+what it scanned, so the kept prefix is at most as long.  This is the counting
+side of the pass, and it is what turns a bound on the queries a converter
+*asks* into a bound on the queries CR18 Definition 3.10's filter `[q]`
+*counts*. -/
+theorem keptPrefix_length_le (S : DDS X Y) (l : List X) :
+    (keptPrefix S l).length ≤ l.length := by
+  induction l using List.reverseRecOn with
+  | nil => simp [keptPrefix]
+  | append_singleton l x ih =>
+      rw [keptPrefix_append_singleton]
+      split <;> simp <;> omega
+
 theorem output_fullyDefined_append_of_mem (S : DDS X Y) (l : List X) (x : X)
     (hl : l ∈ dom S ∨ l = []) (hnext : l ++ [x] ∈ dom S) :
     output S⊥ (l ++ [x]) (by
