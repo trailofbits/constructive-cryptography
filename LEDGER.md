@@ -3020,7 +3020,19 @@ forgetting law is stated against equivalence classes; H-layer-3 is the
 only H build item (layers 1-2 exist — do not re-prove); R11 concept
 recast — no parallel object stacks, CE/any-new-concept consumes the
 landed observables + T0 conditioning, a seemingly-needed new object is a
-fork to Marc not a build; INSTANTIATION RULE (Marc, 2026-08-19 — the
+fork to Marc not a build; TOP-LEVEL CONVERTER SURFACE (Marc, 2026-08-19):
+an application may name exactly ONE converter notion — the Σ member (an
+element of `↥converterMonoidAt` acting on `Phi`).  The typed history function
+(`ProtocolFn`, itself misnamed — see NAMING TRIAGE) and the Def-3.8 object
+(`DDC`) are IMPLEMENTATION DETAILS for constructing Σ members, and must be
+reached through ONE canonical entry point: a typed converter that always
+answers and has a uniform per-outer-query inner budget embeds, at a given
+interface, as a Σ member together with its receipts.  Applications import
+that entry point and nothing below it; the presentation layers stay landed
+but are documented as plumbing (no renames or deletions of proven surface).
+OWED: build the entry point once — the CBC-MAC lane is its first consumer,
+and a hand-rolled crossing there is to be generalized into the library, never
+left in the application file.  INSTANTIATION RULE (Marc, 2026-08-19 — the
 project's purpose, and a live failure found in the untracked CBC-MAC file,
 which imported nothing from AbstractCryptography and mentioned `Constructs`
 zero times): an application's HEADLINE is a statement OF THE ABSTRACT THEORY
