@@ -128,7 +128,13 @@ micro-questions: see LEDGER.md.
   `supWinProb`, `Adv⊥`, the T0 conditional layer).  FORBIDDEN: a second
   notion of system/game/equivalence/conditioning; new object stacks or
   operators copied from a source's own presentation (`S⁻`/`S⊣` as
-  operators, Γ/Γᵇ, blinded-system objects); indiscriminate transcription.
+  operators, Γ/Γᵇ, blinded-system objects); indiscriminate transcription.  NARROW CLARIFICATION
+  (2026-08-19, earned by the blind-winning layer): CR18 Def 4.20's `b` is NOT
+  a blinded-system object — it is an ordinary attachment engine (forward the
+  query, answer a constant, refusals included), so building it breaks nothing.
+  This settles `b` ONLY; whether a PDG assembled from landed pieces (product
+  law + `comap`-transported condition, e.g. `enhance`) is admissible is
+  recorded as a coordinator ruling at LEDGER's F-8 entry, pending Marc.
   If a concept genuinely seems to need a NEW object, that is a fork to
   Marc, not a build.
   **Clause (b) — minimal migration, no wheel-reinvention (Marc, same
