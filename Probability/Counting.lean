@@ -1520,6 +1520,199 @@ theorem card_function_injOn_finset {X Y : Type*} [Fintype X] [DecidableEq X]
   rw [Fintype.card_congr e, Fintype.card_prod, Fintype.card_embedding_eq, Fintype.card_coe]
   rw [Fintype.card_fun, Fintype.card_coe, Finset.card_compl]
 
+/-! ## The uniform random function: marginals, joint marginals, and freshness
+
+Everything in this section is about `Distribution.uniform` on a *function*
+type, and nothing in it mentions a system, a game or a converter.  Mathlib
+carries `PMF.uniformOfFintype` but no marginal or independence statement for a
+uniform law on a Pi type, so there is nothing to bridge to
+(`Probability/DistributionMeasure.lean` would be the bridge if there were);
+every declaration here is therefore an **UPSTREAM-CANDIDATE**.
+
+The three statements are one fact at increasing strength: a uniform random
+function has uniform values at a point, jointly uniform values at *distinct*
+points, and — the one an indistinguishability proof actually consumes —
+uniform values at a set of points *conditioned on any event that does not read
+that set*.  The third is what turns "the inputs seen so far are all distinct"
+into "the next output is uniform", with no independence notion beyond the
+counting the `Distribution` layer already has.
+-/
+
+/-- UPSTREAM-CANDIDATE.  **The fiber of a uniform random function over a
+prescribed value tuple at distinct points**, at an arbitrary finite index type:
+`card_function_fiber_multipoint` transported along `Fintype.equivFin`. -/
+theorem card_function_fiber_index {X Y ι : Type*} [Fintype X] [DecidableEq X]
+    [Fintype Y] [DecidableEq Y] [Fintype ι] (xs : ι → X) (ys : ι → Y)
+    (hxs : Function.Injective xs) :
+    ((Finset.univ : Finset (X → Y)).filter
+        (fun f : X → Y => (fun i => f (xs i)) = ys)).card
+      = Fintype.card Y ^ (Fintype.card X - Fintype.card ι) := by
+  classical
+  set e := Fintype.equivFin ι with he
+  have hxs' : Function.Injective (fun k => xs (e.symm k)) :=
+    hxs.comp e.symm.injective
+  have hpred : ∀ f : X → Y,
+      ((fun i => f (xs i)) = ys)
+        ↔ ((fun k => f (xs (e.symm k))) = fun k => ys (e.symm k)) := by
+    intro f
+    constructor
+    · intro h; funext k; exact congrFun h (e.symm k)
+    · intro h; funext i
+      have := congrFun h (e i)
+      simpa using this
+  rw [Finset.filter_congr (fun f _ => by rw [hpred f]),
+    card_function_fiber_multipoint (fun k => xs (e.symm k))
+      (fun k => ys (e.symm k)) hxs']
+
+/-- UPSTREAM-CANDIDATE.  **Joint marginals of a uniform random function at
+distinct points are uniform.**  Pushing the uniform law on `𝒳 → 𝒴` forward
+along evaluation at an injective family of points is the uniform law on value
+tuples: this is independence of the values at distinct points, in the form this
+carrier can state it. -/
+theorem fTransform_eval_uniform_eq_uniform {X Y ι : Type*} [Fintype X] [DecidableEq X]
+    [Fintype Y] [DecidableEq Y] [Nonempty Y] [Fintype ι] [DecidableEq ι]
+    (xs : ι → X) (hxs : Function.Injective xs) :
+    Distribution.fTransform (fun f : X → Y => fun i => f (xs i))
+        (Distribution.uniform (X → Y))
+      = Distribution.uniform (ι → Y) := by
+  classical
+  refine Distribution.fTransform_uniform_eq_uniform_of_card_fiber_mul _ fun ys => ?_
+  have hcard : Fintype.card ι ≤ Fintype.card X := Fintype.card_le_of_injective xs hxs
+  rw [card_function_fiber_index xs ys hxs, Fintype.card_fun, Fintype.card_fun,
+    ← pow_add]
+  congr 1
+  omega
+
+/-- UPSTREAM-CANDIDATE.  **The marginal of a uniform random function at one
+point is uniform.**  The `ι = PUnit` instance of
+`fTransform_eval_uniform_eq_uniform`, stated at the value rather than at a
+one-element tuple. -/
+theorem fTransform_apply_uniform_eq_uniform {X Y : Type*} [Fintype X] [DecidableEq X]
+    [Nonempty X] [Fintype Y] [DecidableEq Y] [Nonempty Y] (x : X) :
+    Distribution.fTransform (fun f : X → Y => f x) (Distribution.uniform (X → Y))
+      = Distribution.uniform Y := by
+  classical
+  refine Distribution.fTransform_uniform_eq_uniform_of_card_fiber_mul _ fun y => ?_
+  have hfib : ((Finset.univ : Finset (X → Y)).filter (fun f : X → Y => f x = y)).card
+      = Fintype.card Y ^ (Fintype.card X - 1) := by
+    have h := card_function_fiber_index (X := X) (Y := Y) (ι := Unit)
+      (fun _ => x) (fun _ => y) (fun a b _ => Subsingleton.elim a b)
+    rw [Fintype.card_unit] at h
+    rw [← h]
+    congr 1
+    ext f
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and, funext_iff]
+    exact ⟨fun hf _ => hf, fun hf => hf ()⟩
+  have hXpos : 1 ≤ Fintype.card X := Fintype.card_pos
+  rw [hfib, Fintype.card_fun]
+  rw [show Fintype.card Y ^ (Fintype.card X - 1) * Fintype.card Y
+      = Fintype.card Y ^ (Fintype.card X - 1 + 1) from (pow_succ _ _).symm]
+  congr 1
+  omega
+
+/-- UPSTREAM-CANDIDATE.  **Freshness given history, as a fiber count.**  If an
+event `E` never reads the values of the function on `T`, then prescribing those
+values cuts `E` by exactly `|𝒴|^{|T|}`: the values on `T` are uniform and
+independent *conditioned on `E`*, however `E` depends on the rest of the
+function.
+
+This is the counting behind "conditioned on the interaction so far, the answer
+at a query that has not been asked is uniform".  The hypothesis is the honest
+one — `E` is invariant under changing the function on `T` — and it is what a
+bad-event analysis establishes when it shows the fresh points are outside the
+history. -/
+theorem card_filter_and_eqOn {X Y : Type*} [Fintype X] [DecidableEq X]
+    [Fintype Y] [DecidableEq Y] (T : Finset X) (E : (X → Y) → Prop)
+    [DecidablePred E] (hE : ∀ f g : X → Y, (∀ x, x ∉ T → f x = g x) → (E f ↔ E g))
+    (a : X → Y) :
+    ((Finset.univ : Finset (X → Y)).filter
+        (fun f => E f ∧ ∀ t ∈ T, f t = a t)).card * Fintype.card Y ^ T.card
+      = ((Finset.univ : Finset (X → Y)).filter E).card := by
+  classical
+  have hswap : ∀ b : ↥T → Y,
+      ((Finset.univ : Finset (X → Y)).filter
+          (fun f => E f ∧ (fun t : ↥T => f t.1) = b)).card
+        = ((Finset.univ : Finset (X → Y)).filter
+          (fun f => E f ∧ ∀ t ∈ T, f t = a t)).card := by
+    intro b
+    set bx : X → Y := fun x => if h : x ∈ T then b ⟨x, h⟩ else a x with hbx
+    have hbxT : ∀ x (hx : x ∈ T), bx x = b ⟨x, hx⟩ := fun x hx => dif_pos hx
+    refine Finset.card_bij' (fun f _ => T.piecewise a f) (fun g _ => T.piecewise bx g)
+      ?_ ?_ ?_ ?_
+    · intro f hf
+      rw [Finset.mem_filter] at hf ⊢
+      dsimp only
+      refine ⟨Finset.mem_univ _, ?_,
+        fun t ht => T.piecewise_eq_of_mem a f ht⟩
+      exact (hE f _ fun x hx => (T.piecewise_eq_of_notMem a f hx).symm).mp hf.2.1
+    · intro g hg
+      rw [Finset.mem_filter] at hg ⊢
+      dsimp only
+      refine ⟨Finset.mem_univ _, ?_, ?_⟩
+      · exact (hE g _ fun x hx => (T.piecewise_eq_of_notMem bx g hx).symm).mp hg.2.1
+      · funext t
+        rw [T.piecewise_eq_of_mem bx g t.2, hbxT t.1 t.2]
+    · intro f hf
+      rw [Finset.mem_filter] at hf
+      dsimp only
+      funext x
+      by_cases hx : x ∈ T
+      · rw [T.piecewise_eq_of_mem bx _ hx, hbxT x hx, ← hf.2.2]
+      · rw [T.piecewise_eq_of_notMem bx _ hx, T.piecewise_eq_of_notMem a f hx]
+    · intro g hg
+      rw [Finset.mem_filter] at hg
+      dsimp only
+      funext x
+      by_cases hx : x ∈ T
+      · rw [T.piecewise_eq_of_mem a _ hx, hg.2.2 x hx]
+      · rw [T.piecewise_eq_of_notMem a _ hx, T.piecewise_eq_of_notMem bx g hx]
+  have hsum : ((Finset.univ : Finset (X → Y)).filter E).card
+      = ∑ _b : ↥T → Y, ((Finset.univ : Finset (X → Y)).filter
+          (fun f => E f ∧ ∀ t ∈ T, f t = a t)).card := by
+    rw [Finset.card_eq_sum_card_fiberwise
+      (f := fun f : X → Y => fun t : ↥T => f t.1) (t := (Finset.univ : Finset (↥T → Y)))
+      (fun f _ => Finset.mem_univ _)]
+    refine Finset.sum_congr rfl fun b _ => ?_
+    rw [Finset.filter_filter]
+    exact hswap b
+  rw [hsum, Finset.sum_const, Finset.card_univ, smul_eq_mul, Fintype.card_fun,
+    Fintype.card_coe, mul_comm]
+
+/-- UPSTREAM-CANDIDATE.  **Freshness given history, at the mass.**  The
+distribution-level reading of `card_filter_and_eqOn`: conditioned on an event
+that does not read the function on `T`, the values on `T` are uniform. -/
+theorem uniform_mass_and_eqOn {X Y : Type*} [Fintype X] [DecidableEq X]
+    [Fintype Y] [DecidableEq Y] [Nonempty Y] (T : Finset X) (E : (X → Y) → Prop)
+    [DecidablePred E] (hE : ∀ f g : X → Y, (∀ x, x ∉ T → f x = g x) → (E f ↔ E g))
+    (a : X → Y) :
+    (Distribution.uniform (X → Y)).mass (fun f => E f ∧ ∀ t ∈ T, f t = a t)
+      = (Distribution.uniform (X → Y)).mass E * (1 / (Fintype.card Y : ℝ)) ^ T.card := by
+  classical
+  have hY : (0 : ℝ) < (Fintype.card Y : ℝ) := by exact_mod_cast Fintype.card_pos
+  have hcard := card_filter_and_eqOn T E hE a
+  rw [Distribution.uniform_mass_eq_card_filter, Distribution.uniform_mass_eq_card_filter,
+    ← hcard]
+  push_cast
+  rw [div_pow, one_pow]
+  field_simp
+
+
+/-- UPSTREAM-CANDIDATE.  **The mass of a prescribed value tuple at distinct
+points**: `(1/|𝒴|)^{|ι|}`, whatever the tuple.  The mass reading of
+`fTransform_eval_uniform_eq_uniform`, and the form a transcript-law computation
+consumes. -/
+theorem uniform_mass_eval_eq {X Y ι : Type*} [Fintype X] [DecidableEq X]
+    [Fintype Y] [DecidableEq Y] [Nonempty Y] [Fintype ι] [DecidableEq ι]
+    (xs : ι → X) (hxs : Function.Injective xs) (ys : ι → Y) :
+    (Distribution.uniform (X → Y)).mass (fun f => (fun i => f (xs i)) = ys)
+      = (1 / (Fintype.card Y : ℝ)) ^ Fintype.card ι := by
+  have h := congrArg (fun d : Distribution (ι → Y) => d ys)
+    (fTransform_eval_uniform_eq_uniform (X := X) (Y := Y) xs hxs)
+  simp only [Distribution.fTransform_apply_eq_mass, Distribution.uniform_apply] at h
+  rw [h, Fintype.card_fun, div_pow, one_pow]
+  push_cast
+  ring
+
 /-! ## Block-major pair encoding
 
 Coordinates `(i, j)` with `i < q`, `j < L` encoded block-major into `Fin (q·L)` as `j·q + i` —

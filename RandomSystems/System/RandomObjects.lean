@@ -3,6 +3,7 @@ Copyright (c) 2026 Trail of Bits. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import RandomSystems.System.Absorb
+import RandomSystems.System.ClassDistance
 import RandomSystems.System.Environment
 import Probability.Counting
 
@@ -253,6 +254,108 @@ theorem mass_urp_answer_eq {X : Type u} [Fintype X] [DecidableEq X] {q : ℕ}
     ← Probability.Counting.uniform_perm_consistent_mass_eq xs hx ys hy h_le]
   refine Distribution.mass_congr _ fun π => ?_
   simp only [answer_functionEvaluator, Option.some.injEq]
+
+end PDS
+
+/-! ## The URF at a repetition-free query list
+
+The system-level reading of `Probability.Counting`'s uniform-random-function
+block: a URF interrogated at *distinct* queries answers a uniform tuple.  Every
+declaration below is an **UPSTREAM-CANDIDATE**; none of them mentions a game, a
+condition or a converter, and any construction built over `PDS.urf` can consume
+them as the ideal side of its transcript computation.
+-/
+
+namespace System
+
+/-- UPSTREAM-CANDIDATE.  **The interaction of a function evaluator with a fixed
+query list.**  A function evaluator answers every query
+(`PDS.answer_functionEvaluator`), so its interaction with
+`System.DDE.Total.playQueries l` is the list of query/answer pairs of `l`, and
+it carries exactly the values of the sampled function on `l`. -/
+theorem transcript_functionEvaluator_playQueries {A B : Type*} (h : A → B) (l : List A) :
+    ∀ n, n ≤ l.length →
+      DDE.Total.transcript (functionEvaluator h) (DDE.Total.playQueries l) n
+        = (l.take n).map (fun m => (m, some (h m))) := by
+  intro n
+  induction n with
+  | zero => intro _; rfl
+  | succ n ih =>
+      intro hn
+      have hlt : n < l.length := hn
+      have hik := ih (Nat.le_of_succ_le hn)
+      have hlen :
+          (DDE.Total.transcript (functionEvaluator h) (DDE.Total.playQueries l) n).length = n := by
+        rw [hik, List.length_map, List.length_take]
+        omega
+      have hq : DDE.Total.playQueries (Y := B) l
+          (DDE.Total.transcript (functionEvaluator h) (DDE.Total.playQueries l) n)↓ᵧ
+          = some l[n] := by
+        show l[_]? = _
+        simp only [transcriptOutputs, List.length_map, hlen]
+        exact List.getElem?_eq_getElem hlt
+      rw [DDE.Total.transcript_succ_of_query _ _ hq, hik, PDS.answer_functionEvaluator,
+        List.take_add_one, List.getElem?_eq_getElem hlt]
+      simp only [Option.toList_some, List.map_append, List.map_cons, List.map_nil]
+
+@[simp] theorem transcript_functionEvaluator_playQueries_length {A B : Type*}
+    (h : A → B) (l : List A) :
+    DDE.Total.transcript (functionEvaluator h) (DDE.Total.playQueries l) l.length
+      = l.map (fun m => (m, some (h m))) := by
+  rw [transcript_functionEvaluator_playQueries h l l.length le_rfl, List.take_length]
+
+end System
+
+namespace PDS
+
+/-- UPSTREAM-CANDIDATE.  **The URF's answer mass at distinct queries**: every
+prescribed answer tuple has mass `(1/|𝒴|)^q`.  The URF companion of
+`mass_urp_answer_eq`, and the system-level form of
+`Probability.Counting.uniform_mass_eval_eq`. -/
+theorem mass_urf_answer_eq {X Y : Type u} [Fintype X] [DecidableEq X] [Fintype Y]
+    [DecidableEq Y] [Nonempty Y] {q : ℕ} (xs : Fin q → X)
+    (hxs : Function.Injective xs) (ys : Fin q → Y) :
+    (urf X Y).mass (fun s => ∀ i, System.answer s [] (xs i) = some (ys i))
+      = (1 / (Fintype.card Y : ℝ)) ^ q := by
+  classical
+  rw [urf, Distribution.mass_fTransform,
+    Distribution.mass_congr _ (Q := fun f : X → Y => (fun i => f (xs i)) = ys)
+      (fun f => by
+        simp only [answer_functionEvaluator, Option.some.injEq, funext_iff]),
+    Probability.Counting.uniform_mass_eval_eq xs hxs ys, Fintype.card_fin]
+
+/-- UPSTREAM-CANDIDATE.  **The URF's transcript law at a repetition-free query
+list is the uniform law on answer tuples.**  Every realizable interaction has
+the same mass `(1/|𝒴|)^{|l|}`, which is exactly "a fresh uniform answer per new
+query": the ideal variable-input-length object's defining property, read off
+`urf` itself. -/
+theorem trLawFullyDefined_urf_playQueries_apply {X Y : Type u} [Fintype X] [DecidableEq X]
+    [Fintype Y] [DecidableEq Y] [Nonempty Y] (l : List X) (hl : l.Nodup) (g : X → Y) :
+    trLawFullyDefined (System.DDE.Total.playQueries l) l.length (urf X Y)
+        (l.map (fun x => (x, some (g x)))) = (1 / (Fintype.card Y : ℝ)) ^ l.length := by
+  classical
+  have hxs : Function.Injective (fun i : Fin l.length => l[(i : ℕ)]) := by
+    intro i j hij
+    have hget : l.get i = l.get j := by simpa using hij
+    exact List.nodup_iff_injective_get.mp hl hget
+  rw [trLawFullyDefined, urf, Distribution.fTransform_fTransform,
+    Distribution.fTransform_apply_eq_mass,
+    Distribution.mass_congr _
+      (Q := fun f : X → Y => (fun i : Fin l.length => f l[(i : ℕ)])
+        = fun i : Fin l.length => g l[(i : ℕ)])
+      (fun f => by
+        rw [Function.comp_apply, System.transcript_functionEvaluator_playQueries_length,
+          List.map_inj_left]
+        constructor
+        · intro hm
+          funext i
+          have := hm l[(i : ℕ)] (List.getElem_mem _)
+          simpa using this
+        · intro hm x hx
+          obtain ⟨i, hi, rfl⟩ := List.getElem_of_mem hx
+          have := congrFun hm ⟨i, hi⟩
+          simpa using this),
+    Probability.Counting.uniform_mass_eval_eq _ hxs _, Fintype.card_fin]
 
 end PDS
 

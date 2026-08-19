@@ -977,42 +977,6 @@ section CondEquiv
 
 open System
 
-/-- **The interaction of a function evaluator with a fixed query list.**  A
-function evaluator answers every query (`PDS.answer_functionEvaluator`), so the
-CR18 Definition 3.7 interaction with `playQueries l` (Lanzenberger fn. 6) is
-the list of query/answer pairs of `l`, and it carries exactly the values of the
-sampled function on `l`. -/
-theorem transcript_functionEvaluator_playQueries {A B : Type u} (h : A → B) (l : List A) :
-    ∀ n, n ≤ l.length →
-      DDE.Total.transcript (functionEvaluator h) (DDE.Total.playQueries l) n
-        = (l.take n).map (fun m => (m, some (h m))) := by
-  intro n
-  induction n with
-  | zero => intro _; rfl
-  | succ n ih =>
-      intro hn
-      have hlt : n < l.length := hn
-      have hik := ih (Nat.le_of_succ_le hn)
-      have hlen :
-          (DDE.Total.transcript (functionEvaluator h) (DDE.Total.playQueries l) n).length = n := by
-        rw [hik, List.length_map, List.length_take]
-        omega
-      have hq : DDE.Total.playQueries (Y := B) l
-          (DDE.Total.transcript (functionEvaluator h) (DDE.Total.playQueries l) n)↓ᵧ
-          = some l[n] := by
-        show l[_]? = _
-        simp only [transcriptOutputs, List.length_map, hlen]
-        exact List.getElem?_eq_getElem hlt
-      rw [DDE.Total.transcript_succ_of_query _ _ hq, hik, PDS.answer_functionEvaluator,
-        List.take_add_one, List.getElem?_eq_getElem hlt]
-      simp only [Option.toList_some, List.map_append, List.map_cons, List.map_nil]
-
-@[simp] theorem transcript_functionEvaluator_playQueries_length {A B : Type u}
-    (h : A → B) (l : List A) :
-    DDE.Total.transcript (functionEvaluator h) (DDE.Total.playQueries l) l.length
-      = l.map (fun m => (m, some (h m))) := by
-  rw [transcript_functionEvaluator_playQueries h l l.length le_rfl, List.take_length]
-
 /-- **The interaction determines the sampled function on the queried
 messages, and nothing else.**  Two evaluators produce the same fixed-query-list
 interaction exactly when they agree on the messages of the list, so the fiber
@@ -1057,15 +1021,16 @@ theorem nonNeg_cbcGameLaw (bf : M → List X) : (cbcGameLaw bf).NonNeg :=
 /-- **The forgetting law**: dropping CR18's MBO from `ĈBC R_{n,n}` returns
 `CBC R_{n,n}`, the law the realization equation identifies
 (`cbcConverter_smul_Rnn`).  This is what ties the augmented object of equation
-(6.2) to the converter of Theorem 6.1. -/
+(6.2) to the converter of Theorem 6.1, **printed p. 126**. -/
 @[simp] theorem forget_cbcGameLaw (bf : M → List X) :
     PDG.forget (cbcGameLaw bf) = cbcFunctionLaw bf := by
   rw [cbcGameLaw, cbcFunctionLaw, PDG.forget, Distribution.fTransform_fTransform]
   rfl
 
-/-- Winning CR18's collision game at a fixed message list is exactly the
-collision event of the sampled round function on that list: a function
-evaluator refuses nothing, so the answered history is the whole list. -/
+/-- Winning CR18's collision game (**printed p. 126**) at a fixed message list
+is exactly the collision event of the sampled round function on that list: a
+function evaluator refuses nothing, so the answered history is the whole
+list. -/
 theorem won_cbcGameLaw_atom (f : X → X) (bf : M → List X) (l : List M) :
     System.Won
         ((System.functionEvaluator fun m : M => cbcState f (bf m), cbcCondition f bf) :
@@ -1076,8 +1041,8 @@ theorem won_cbcGameLaw_atom (f : X → X) (bf : M → List X) (l : List M) :
     keptPrefix_functionEvaluator]
   exact Iff.rfl
 
-/-- The not-won slice of CR18's collision game at a fixed message list, as a
-mass over round functions. -/
+/-- The not-won slice of CR18's collision game (**printed p. 126**) at a fixed
+message list, as a mass over round functions. -/
 theorem notWonLaw_cbcGameLaw_apply (bf : M → List X) (l : List M)
     (t : List (M × Option X)) :
     PDG.notWonLaw (System.DDE.Total.playQueries l) l.length (cbcGameLaw bf) t
@@ -1104,6 +1069,16 @@ theorem trLawFullyDefined_Vn_apply (l : List M) (t : List (M × Option X)) :
     Distribution.fTransform_apply_eq_mass]
   refine Distribution.mass_congr _ fun g => ?_
   rw [Function.comp_apply, transcript_functionEvaluator_playQueries_length]
+
+/-- **`V_n`'s transcript law is the uniform answer law** — the direct instance
+of `PDS.trLawFullyDefined_urf_playQueries_apply` at the bounded message space:
+at a repetition-free message list every realizable interaction has mass
+`(1/|𝒳|)^{|l|}`, which is CR18 Definition 6.1's "for each new input outputs a
+fresh uniformly random value" (printed p. 125) as a number. -/
+theorem trLawFullyDefined_Vn_uniform (l : List M) (hl : l.Nodup) (g : M → X) :
+    PDS.trLawFullyDefined (System.DDE.Total.playQueries l) l.length (Vn M X)
+        (l.map (fun m => (m, some (g m)))) = (1 / (Fintype.card X : ℝ)) ^ l.length :=
+  PDS.trLawFullyDefined_urf_playQueries_apply l hl g
 
 @[simp] theorem weight_Vn : (Vn M X).weight = 1 := by
   rw [Vn, PDS.urf, Distribution.weight_fTransform, Distribution.weight_uniform]
@@ -1364,8 +1339,7 @@ theorem transcript_filterDom_functionEvaluator_playQueries_length (P : List A �
 /-- The queries the filtered interaction actually answered: the admitted
 schedule, which is also what the interaction with that schedule answers.  This
 is the winning clause of `PDG.condEquiv_fTransform_of_answeredQueries` —
-Lanzenberger Definition 2.25's test reads `answeredQueries` and nothing
-else. -/
+`System.Won` reads `answeredQueries` and nothing else. -/
 theorem answeredQueries_filterDom_functionEvaluator (P : List A → Prop)
     [DecidablePred P] (hP : PrefixClosed P) (h : A → B) (l' : List A) :
     answeredQueries (DDE.Total.transcript (filterDom P hP (functionEvaluator h))
@@ -1426,7 +1400,93 @@ theorem cbc_condEquiv_theta [Nontrivial M] (bf : M → List X) (r : ℕ)
       Distribution.exists_mem_support_of_mem_support_fTransform _ _ hs
     exact transcript_filterDom_functionEvaluator_playQueries_length _ _ _ l'
 
+/-- The admitted schedule satisfies the predicate: it is built by admitted
+extensions only, starting from the empty history. -/
+theorem filterAdmit_sat (P : List A → Prop) [DecidablePred P] (h0 : P ([] : List A))
+    (l : List A) : P (filterAdmit P l) := by
+  induction l using List.reverseRecOn with
+  | nil => exact h0
+  | append_singleton l x ih =>
+      rw [filterAdmit_concat]
+      split
+      · assumption
+      · exact ih
+
 end Theta
+
+/-! ## CR18 Lemma 4.18's step, printed p. 127: the blind winning probability
+
+"It remains to analyze `Γ(bθ_r ĈBC R_{n,n})`.  To win the game
+`bθ_r ĈBC R_{n,n}` means to win the game `θ_r ĈBC R_{n,n}` *non-adaptively*,
+i.e., it means to choose a fixed list of input messages to `ĈBC` (of lengths
+allowed by filter `θ_r`)" (printed p. 127).
+
+That sentence is the reduction below, and it is what the *blind* right-hand
+side buys: an adaptive winner would choose its messages after seeing MACs, and
+the winning mass would not be a mass over round functions at a fixed list.  A
+blind environment asks the same queries of every system
+(`System.transcriptInputs_congr_of_nonAdaptive`), so its answered history is
+one list, the same for every round function; the filter turns it into the
+admitted schedule, which the block-count predicate admits by construction; and
+winning is then exactly the collision event of the sampled round function on
+that list.
+-/
+
+section Blind
+
+open System
+
+/-- **CR18's reduction of the blind winning probability to a collision mass**
+(printed p. 127): whatever bounds the probability that a uniform round function
+collides on a message list `θ_r` admits, bounds the blind winning probability
+of the restricted collision game.
+
+This is `PDG.blindSupWinProb` — the supremum winning probability with its index
+set cut down to the `System.DDE.Total.NonAdaptive` environments — and the cut is
+what makes the statement true: the hypothesis quantifies over *fixed* message
+lists, which is CR18's "it means to choose a fixed list of input messages",
+**printed p. 127**. -/
+theorem blindSupWinProb_cbcGameLaw_theta_le [Nontrivial M] (bf : M → List X) (r : ℕ)
+    {c : ℝ}
+    (hc : ∀ l : List M, totalBlocks bf l ≤ r →
+      (Distribution.uniform (X → X)).mass (fun f => cbcBad f bf l) ≤ c) :
+    PDG.blindSupWinProb
+        (Distribution.fTransform
+          (fun γ : System.DDG M X =>
+            ((System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
+                (prefixClosed_totalBlocks_le bf r) γ.1, γ.2) : System.DDG M X))
+          (cbcGameLaw bf))
+      ≤ c := by
+  refine PDG.blindSupWinProb_le_of_forall fun e he n => ?_
+  set P : List M → Prop := fun l => totalBlocks bf l ≤ r with hP
+  set hPc := prefixClosed_totalBlocks_le bf r with hPcdef
+  -- a blind environment asks the same queries of every system, so its answered
+  -- history is one list, chosen here at an arbitrary reference atom
+  set L : List M :=
+    (DDE.Total.transcript
+      (filterDom P hPc (functionEvaluator fun _ : M => Classical.arbitrary X)) e n)↓ₓ with hL
+  have hwin : PDG.winningMass e n
+      (Distribution.fTransform
+        (fun γ : System.DDG M X => ((filterDom P hPc γ.1, γ.2) : System.DDG M X))
+        (cbcGameLaw bf))
+      = (Distribution.uniform (X → X)).mass (fun f => cbcBad f bf (filterAdmit P L)) := by
+    rw [PDG.winningMass, cbcGameLaw, Distribution.fTransform_fTransform,
+      Distribution.mass_fTransform]
+    refine Distribution.mass_congr _ fun f => ?_
+    show System.answeredQueries _ ∈ _ ↔ _
+    rw [DDE.Total.answeredQueries_transcript]
+    show keptPrefix (filterDom P hPc (functionEvaluator fun m : M => cbcState f (bf m)))
+        (DDE.Total.transcript
+          (filterDom P hPc (functionEvaluator fun m : M => cbcState f (bf m))) e n)↓ₓ
+      ∈ _ ↔ _
+    rw [transcriptInputs_congr_of_nonAdaptive he _
+        (filterDom P hPc (functionEvaluator fun _ : M => Classical.arbitrary X)) n,
+      ← hL, keptPrefix_filterDom_functionEvaluator]
+    exact Iff.rfl
+  rw [hwin]
+  exact hc _ (filterAdmit_sat P (by simp [hP, totalBlocks]) L)
+
+end Blind
 
 /-! ## CR18 Theorem 6.1 as a construction statement
 
