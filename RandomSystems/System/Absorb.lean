@@ -704,8 +704,9 @@ end BlockAbsorb
 
 /-! ## Domain filters absorb into the environment
 
-CR18 Definition 3.10 restricts a system to the input histories a prefix-closed
-predicate admits.  `blockSet` is the instance at "avoid `Q`" and
+CR18 §3.4.3 (unnumbered prose, printed p. 62) restricts a system to the input
+histories a prefix-closed predicate admits; Definition 3.10 is only the `[q]`
+notation.  `blockSet` is the instance at "avoid `Q`" and
 `filterQueries` the instance at "at most `q` queries"; the general filter is
 the same operation at an arbitrary predicate, and it absorbs for the same
 reason both instances do — the test reads the history the system has already
@@ -957,8 +958,8 @@ theorem filterReplay_invariant (P : List X → Prop) (hP : PrefixClosed P)
 
 /-- **Domain filters absorb**: every interaction with a filtered system is a
 fixed post-processing of an interaction with the bare system, uniformly in the
-system.  This is the receipt CR18 Definition 3.10's filter row owed at a
-general prefix-closed predicate.
+system.  This is the receipt CR18 §3.4.3's filter row (unnumbered prose,
+printed p. 62) owed at a general prefix-closed predicate.
 
 The filter refuses *before* any inner traffic — its test reads the answers
 already given, never the system's next answer — which is the criterion the B4
@@ -1337,7 +1338,8 @@ theorem block_mem_nonexpandingConverters (Q : Set Uni.{u}) :
   PDS.advFullyDefined_fTransform_le (System.blockSet Q) RL SL
     fun e n => System.exists_absorb_blockSet Q e n
 
-/-- **CR18 Definition 3.10's filter never helps a distinguisher.**  Whatever an
+/-- **CR18 §3.4.3's filter never helps a distinguisher** (unnumbered prose,
+printed p. 62).  Whatever an
 environment learns from a filtered resource it learns from the resource itself
 by running the filter: it tests the predicate on the queries it has already had
 answered and refuses on its own behalf (`System.exists_absorb_filterDom`),

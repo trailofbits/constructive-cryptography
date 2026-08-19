@@ -164,7 +164,8 @@ carrier and are therefore absent:
 * its `TotalOnNonempty` hypotheses — refusal is an observable answer here
   (Ruling R2), so a partial system needs no totality clause to have a
   transcript law;
-* its `gameEnhance` (CR18 eq. (4.39)'s `T̂`) and the `verdictProb` chain —
+* its `gameEnhance` (the `T̂` of the unnumbered enhancement display in the
+  proof of CR18 Theorem 4.17, printed p. 110) and the `verdictProb` chain —
   the statement-facing metric `Adv⊥` is already a `δ`-shaped supremum of
   statistical distances of transcript laws, so the enhancement's only job,
   turning a two-game comparison into a system comparison, is not needed:
@@ -210,7 +211,7 @@ their only consumer so far.  UPSTREAM-CANDIDATES for
 
 /-- **The winning event reads the run, not the environment.**  Two interactions
 of one deterministic game that produce the same transcript are won together:
-Lanzenberger Definition 2.25's test (printed p. 17) reads `answeredQueries` of
+Lanzenberger Definition 2.25's test (printed p. 18) reads `answeredQueries` of
 the transcript
 and nothing else. -/
 theorem won_congr_transcript {g : DDG X Y} {e e' : DDE.Total Y X} {n n' : ℕ}
@@ -245,8 +246,9 @@ theorem transcript_eq_iff_playQueries {e : DDE.Total Y X} {n : ℕ}
     (transcriptInputs t).length = t.length := by
   simp [transcriptInputs]
 
-/-- The complement of Lanzenberger Definition 2.25's winning test, on the
-Definition 2.21 pair (both printed p. 17): the not-won slice is the transcripts ending with `(·,0)`.
+/-- The complement of Lanzenberger Definition 2.25's winning test (printed
+p. 18), on the Definition 2.21 pair (printed p. 17): the not-won slice is the
+transcripts ending with `(·,0)`.
 `Bool`-level companion of `won_iff_gameTranscript`. -/
 theorem not_won_iff_gameTranscript (g : DDG X Y) (e : DDE.Total Y X) (n : ℕ) :
     ¬ Won g e n ↔ (gameTranscript g e n).2 = false := by
@@ -256,9 +258,9 @@ theorem not_won_iff_gameTranscript (g : DDG X Y) (e : DDE.Total Y X) (n : ℕ) :
 /-- The condition that fires as soon as one query has been answered: the upper
 set of nonempty histories.  Upward closure is immediate — an extension of a
 nonempty history is nonempty.  Unlike the lattice's `⊥` and `⊤` (Lanzenberger
-Definition 2.20's two poles, `Game.lean`) this one fires *during* the
-interaction, which is what makes it a separating witness for Maurer13b
-Definition 11's `i ≥ 1` clause
+Definition 2.20's two poles, printed p. 17, `Game.lean`) this one fires
+*during* the interaction, which is what makes it a separating witness for
+Maurer13b Definition 11's `i ≥ 1` clause (printed p. 3153)
 (`PDS.exists_equivalentAsGames_notWonLaw_nil_ne`). -/
 def MonotoneCondition.nonNil : MonotoneCondition X :=
   ⟨{l : List X | l ≠ []}, fun _ _ hpre ht hnil => ht (List.prefix_nil.mp (hnil ▸ hpre))⟩
@@ -325,7 +327,7 @@ theorem nonNeg_notWonLaw {G : PDG X Y} (hG : G.NonNeg)
     (e : System.DDE.Total Y X) (n : ℕ) : (notWonLaw e n G).NonNeg :=
   ((hG.fTransform _).restrict _).fTransform _
 
-/-- Lanzenberger Definition 2.25's winning mass (printed p. 17) and the not-won
+/-- Lanzenberger Definition 2.25's winning mass (printed p. 18) and the not-won
 mass partition the game's weight. -/
 theorem winningMass_add_notWonMass (e : System.DDE.Total Y X) (n : ℕ)
     (G : PDG X Y) :
@@ -385,11 +387,13 @@ The fixed input sequence `Xⁱ` is the non-adaptive environment
 query lists only.  That is not cosmetic — the `[]` instance would additionally
 demand that the two games have the same *already-won* mass at the empty
 history, which Definition 11 does not ask and which the `i ≥ 1` family does not
-imply (`PDS.exists_equivalentAsGames_notWonLaw_nil_ne`).  Definition 13 is the
-opposite case: there the `[]` instance is an unconditional identity
-(`smul_notWonLaw_nil`), which is why `CondEquiv` quantifies over every `l`.
+imply (`PDS.exists_equivalentAsGames_notWonLaw_nil_ne`).  Definition 13
+(printed p. 3153) is the opposite case: there the `[]` instance is an
+unconditional identity (`smul_notWonLaw_nil`), which is why `CondEquiv`
+quantifies over every `l`.
 
-This is *weaker* than Lanzenberger Definition 2.22 (`PDG.gameEquivalent`),
+This is *weaker* than Lanzenberger Definition 2.22 (printed p. 17,
+`PDG.gameEquivalent`),
 which compares the whole game transcript law: the two games may differ freely
 after the condition has fired (`equivalentAsGames_of_gameEquivalent`). -/
 def EquivalentAsGames (G H : PDG X Y) : Prop :=
@@ -421,7 +425,7 @@ theorem equivalentAsGames_of_gameEquivalent {G H : PDG X Y}
 /-- **Maurer13b Definition 13** (printed p. 3153), in the paper's own
 division-free product form: `S|𝒜 ≡ T` iff
 `p^S_{Yⁱ,Aᵢ=0|Xⁱ} = p^S_{Aᵢ=0|Xⁱ} · p^T_{Yⁱ|Xⁱ}` for `i ≥ 1`.  (CR18
-eq. (4.38), printed p. 108.)
+eq. (4.38), printed p. 108.)  Maurer13b Definition 13 is on printed p. 3153.
 
 `p^T_{Yⁱ|Xⁱ}` is a *normalized* conditional law in the papers, while
 `PDS.trLawFullyDefined` carries `T`'s weight; the definition therefore clears
@@ -430,7 +434,8 @@ anywhere.  On the intended objects (`T.weight = 1`) the left factor is `1`.
 
 `condEquiv_iff_condProb` is the guarded quotient form — Definition 13's first
 display read through the T0 conditioning layer, with Maurer13b footnote 9's
-"equal for all arguments for which they are both defined" as the two guards. -/
+"equal for all arguments for which they are both defined" (printed p. 3153) as
+the two guards. -/
 def CondEquiv (G : PDG X Y) (T : PDS X Y) : Prop :=
   ∀ l : List X,
     T.weight • notWonLaw (System.DDE.Total.playQueries l) l.length G
@@ -450,8 +455,9 @@ mass at the empty history times `T`'s weight, concentrated at `[]`.  The two
 quantifications therefore define the same relation.
 
 The reason this works is that Definition 13's `[]` instance compares `G` with
-*itself* — `notWonMass` occurs on both sides.  Definition 11 compares two
-different games, and there the `[]` instance is a real constraint, which is why
+*itself* — `notWonMass` occurs on both sides.  Definition 11 (printed p. 3153)
+compares two different games, and there the `[]` instance is a real constraint,
+which is why
 `EquivalentAsGames` carries `l ≠ []`
 (`PDS.exists_equivalentAsGames_notWonLaw_nil_ne`). -/
 theorem smul_notWonLaw_nil (G : PDG X Y) (T : PDS X Y) :
@@ -490,8 +496,8 @@ theorem smul_notWonLaw_nil (G : PDG X Y) (T : PDS X Y) :
         (fun _ hs => h hs),
       mul_zero, mul_zero]
 
-/-- The definition read at one output transcript: Maurer13b's product form,
-pointwise. -/
+/-- The definition read at one output transcript: Maurer13b Definition 13's
+product form (printed p. 3153), pointwise. -/
 theorem condEquiv_apply {G : PDG X Y} {T : PDS X Y} (h : CondEquiv G T)
     (l : List X) (t : List (X × Option Y)) :
     T.weight * notWonLaw (System.DDE.Total.playQueries l) l.length G t
@@ -501,10 +507,11 @@ theorem condEquiv_apply {G : PDG X Y} {T : PDS X Y} (h : CondEquiv G T)
   simpa using this
 
 /-- Conditional equivalence to `T` is a statement about the not-won slice
-alone, so it transports along Definition 11.  Maurer13b uses exactly this move
-inside Theorem 3 (printed p. 3154, "`Γ^D_q(Ŝ) = Γ^D_q(T̂)` by Lemma 1").  The
-`i = 0` index Definition 11 omits costs nothing: there the product form is an
-identity for *every* game (`smul_notWonLaw_nil`). -/
+alone, so it transports along Maurer13b Definition 11 (printed p. 3153).
+Maurer13b uses exactly this move inside Theorem 3 (printed p. 3154,
+"`Γ^D_q(Ŝ) = Γ^D_q(T̂)` by Lemma 1", printed p. 3153).  The `i = 0` index
+Definition 11 omits costs nothing: there the product form is an identity for
+*every* game (`smul_notWonLaw_nil`). -/
 theorem CondEquiv.congr_equivalentAsGames {G H : PDG X Y} {T : PDS X Y}
     (h : CondEquiv G T) (hGH : EquivalentAsGames G H) : CondEquiv H T := by
   intro l
@@ -523,7 +530,8 @@ end PDG
 One inequality carries both endpoints: if at every fixed query list the game's
 not-won law is pointwise dominated by `T`'s transcript law, then the *adaptive*
 `Adv⊥` is at most Definition 2.25's `ν`.  The reference repository reaches the
-same place through CR18 eq. (4.39)'s enhanced game `T̂` and a verdict-probability
+same place through the enhanced game `T̂` of CR18 Theorem 4.17's proof (the
+unnumbered display above eq. (4.39), printed p. 110) and a verdict-probability
 chain; on this carrier `Adv⊥` is already a supremum of statistical distances of
 transcript laws, so the comparison is direct (module docstring, carrier
 deltas). -/
@@ -645,7 +653,7 @@ theorem statDist_trLawFullyDefined_forget_le_winningMass {G : PDG X Y}
 
 /-- **The coupling core at the metric.**  Pointwise domination of the not-won
 law at every fixed query list bounds the *adaptive* `Adv⊥` by Lanzenberger
-Definition 2.25's `ν` (printed p. 17). -/
+Definition 2.25's `ν` (printed p. 18). -/
 theorem advFullyDefined_forget_le_supWinProb_of_notWonLaw_le {G : PDG X Y} {T : PDS X Y}
     (hG : G.NonNeg) (hT : T.NonNeg)
     (hle : ∀ t : List (X × Option Y),
@@ -673,17 +681,19 @@ Here `S⁻` is `PDG.forget` — Maurer13b **Definition 12** (printed p. 3153):
 (CR18 Definition 4.18, printed p. 107, is the same, as provenance).  PHI-SPEC
 R11(a) bars `S⁻` as an operator; the landed `forget = fTransform Prod.fst` is
 exactly Definition 12's marginal.  The advantage is Ruling R4's `Adv⊥`, and
-`Γ^D_q` is Definition 2.25's `ν` — one number rather than a per-distinguisher
-family, since `Adv⊥` already takes the supremum.
+`Γ^D_q` is Lanzenberger Definition 2.25's `ν` (printed p. 18) — one number
+rather than a per-distinguisher family, since `Adv⊥` already takes the
+supremum.
 
-**The weight hypothesis is not decoration.**  Definition 11 constrains only
+**The weight hypothesis is not decoration.**  Definition 11 (printed p. 3153)
+constrains only
 `i ≥ 1`, so it says nothing at the empty history, where the two transcript laws
 are `‖G‖·δ_[]` and `‖H‖·δ_[]`: at `n = 0` the statement reads
 `max(‖G‖ − ‖H‖, 0) ≤ ν(G)` and is false for a heavy `G` against a light `H`.
 Maurer13b states Lemma 2 for *systems*, i.e. probability distributions, so
 `‖G‖ = ‖H‖` is its own standing hypothesis; it is also the bundle `Adv⊥`'s
-symmetry needs (`advFullyDefined_comm_of_weight_eq`) and the one the Definition
-13 endpoint already carries. -/
+symmetry needs (`advFullyDefined_comm_of_weight_eq`) and the one the
+Definition 13 endpoint (printed p. 3153) already carries. -/
 theorem fundamental_lemma_of_game_playing
     {G H : PDG X Y} (hG : G.NonNeg) (hH : H.NonNeg) (hw : G.weight = H.weight)
     (h : EquivalentAsGames G H) :
@@ -746,7 +756,8 @@ for an `(𝒳,𝒴)`-system `S` one can define an MBO `A₀,A₁,…` such that
 Theorem 4.17** (printed p. 110), before either takes its blinding step.
 
 Reading the statement: `S = Ŝ⁻` is `PDG.forget G`, `Δ` is Ruling R4's `Adv⊥`,
-and `ν(F, Āₖ)` is Definition 2.25's `ν` after the Maurer02 polarity flip (his
+and `ν(F, Āₖ)` is Lanzenberger Definition 2.25's `ν` (printed p. 18) after the
+Maurer02 polarity flip (his
 `Aᵢ = 1` is the condition *satisfied*; the condition firing is winning here).
 The right-hand side is a supremum over *all* total environments, hence
 adaptive; the papers' non-adaptive `Γ^{NA}`/`Γ(bŜ)` is the separate endpoint
@@ -769,19 +780,21 @@ theorem conditional_equivalence_theorem {G : PDG X Y}
 
 /-- **The right-hand side with no strategy in it.**  Lanzenberger Theorem 2.37
 (`Winnability.lean`, printed p. 24) identifies Definition 2.25's adversarial
-`ν` with Definition 2.36's *static* `ω` — the infimum, over the game's own
-equivalence class, of the mass of realizations that are winnable at all.
+`ν` (printed p. 18) with Definition 2.36's *static* `ω` (printed p. 24) — the
+infimum, over the game's own equivalence class, of the mass of realizations
+that are winnable at all.
 Composing it with the endpoint replaces the supremum over environments by a
 counting quantity: no environment, adaptive or blind, occurs on the right.
 
 **This is not a smaller bound.**  Theorem 2.37 is an equality, so `ω` is the
 *adaptive* number written differently — which is the whole point (a winning
 probability becomes a counting problem), but it must not be read as the papers'
-non-adaptive right-hand side.  Maurer13b Theorem 3's `Γ^{NA}_q(Ŝ)` and CR18
-Theorem 4.17's `Γ(bŜ)` satisfy `Γ^{NA} ≤ Γ = ν = ω` and are strictly smaller
+non-adaptive right-hand side.  Maurer13b Theorem 3's `Γ^{NA}_q(Ŝ)` (printed
+p. 3154) and CR18 Theorem 4.17's `Γ(bŜ)` (printed p. 110) satisfy
+`Γ^{NA} ≤ Γ = ν = ω` and are strictly smaller
 in general; they are reached by `PDG.conditional_equivalence_theorem_blind`
 (`Technique/BlindWinning.lean`), at the price of a normalized `T` and one
-shared Definition 2.14 domain.
+shared Lanzenberger Definition 2.14 domain (printed p. 15).
 
 The finiteness bundle is Theorem 2.37's own — one domain clause, a query
 bound, `[Fintype X]`, and the empty-history clause the pair carrier needs. -/
@@ -796,8 +809,9 @@ theorem conditional_equivalence_theorem_infWinnability [Fintype X]
 
 /-! ## Definition 13's first display, through the T0 conditioning layer -/
 
-/-- **Maurer13b Definition 13 as printed, with its footnote.**  Definition 13's
-first display is the equality of two *conditional* laws,
+/-- **Maurer13b Definition 13 as printed, with its footnote** (printed
+p. 3153).  Definition 13's first display is the equality of two *conditional*
+laws,
 `p^S_{Yⁱ|Xⁱ,Aᵢ=0} = p^T_{Yⁱ|Xⁱ}`, and footnote 9 (printed p. 3153) reads: "Two
 conditional probability distributions are considered to be equal if they are
 equal for all arguments for which they are both defined.  (Here one considers
@@ -884,8 +898,9 @@ end PDG
 namespace PDS
 
 /-- **The endpoint at the constructor.**  Maurer02 Theorem 1(i) (preprint p. 12)
-/ Maurer13b Theorem 3 (printed p. 3154) taking the *base* system `S` and a per-atom condition `A`, with the
-game built inside the statement by Remark 2.24's constructor `PDS.adjoin`.
+/ Maurer13b Theorem 3 (printed p. 3154) taking the *base* system `S` and a
+per-atom condition `A`, with the game built inside the statement by
+Lanzenberger Remark 2.24's constructor `PDS.adjoin` (printed p. 17).
 Nothing is assumed about the game: `adjoin` discharges the forgetting law on
 the nose (`forget_adjoin`) and monotonicity lives in `MonotoneCondition`, so
 the only hypothesis about the pair is the conditional equivalence itself. -/
@@ -899,8 +914,10 @@ theorem conditional_equivalence_theorem_adjoin {S T : PDS X Y}
   rwa [forget_adjoin] at h
 
 /-- The same endpoint for an arbitrary game *for* `S`, where the forgetting law
-holds only up to system equivalence (`PDS.equivalent`, `PDS.GamesFor`
-membership).
+holds only up to **Lanzenberger Definition 2.17**'s system equivalence (printed
+p. 16: "Two `(𝒳,𝒴)`-PDS `S` and `T` are equivalent, denoted by `S ≡ T`, if they
+have the same domain and `tr(S,e) = tr(T,e)` for all compatible `(𝒴,𝒳)`-DDE
+`e`") — here `PDS.equivalent`, via `PDS.GamesFor` membership.
 `Adv⊥` transports along equivalence in both slots
 (`PDS.advFullyDefined_congr`), so which representative a construction happens
 to produce is not a modeling wrinkle. -/
@@ -976,8 +993,8 @@ theorem condEquiv_adjoin_bot (T : PDS X Y) :
     hs.1 (System.won_top s e n)).trans rfl
 
 /-- The already-won game over `S` is conditionally equivalent to *every*
-system: the not-won slice is empty, so Maurer13b's product form holds with
-both sides `0`.  The endpoint then returns `ν = |S|`, the trivial bound — the
+system: the not-won slice is empty, so Maurer13b Definition 13's product form
+(printed p. 3153) holds with both sides `0`.  The endpoint then returns `ν = |S|`, the trivial bound — the
 technique's degenerate corner, not a soundness hole. -/
 theorem condEquiv_adjoin_top (S T : PDS X Y) :
     PDG.CondEquiv (adjoin S fun _ => (⊤ : System.MonotoneCondition X)).1 T :=
@@ -1017,8 +1034,8 @@ disagree at the empty one (nothing has fired yet in the first, everything has
 in the second).
 
 So quantifying `EquivalentAsGames` over `[]` as well would be strictly stronger
-than Maurer13b Definition 11, and the corresponding Lemma 2 correspondingly
-weaker.  This is why the definition carries `l ≠ []` and Lemma 2 carries the
+than Maurer13b Definition 11, and the corresponding Lemma 2 (printed p. 3153)
+correspondingly weaker.  This is why the definition carries `l ≠ []` and Lemma 2 carries the
 weight hypothesis instead. -/
 theorem exists_equivalentAsGames_notWonLaw_nil_ne [Nonempty Y] :
     ∃ G H : PDG X Y, G.NonNeg ∧ H.NonNeg ∧ PDG.EquivalentAsGames G H ∧

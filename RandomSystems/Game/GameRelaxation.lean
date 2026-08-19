@@ -9,10 +9,14 @@ import RandomSystems.System.ParFace
 # The game-relaxation (CR18 Definition 5.10)
 
 CR18 **Definition 5.10** (printed p. 120): "For a system `T`, enhanced with an
-MBO to a game `T̂`, the *game-relaxation* of `T̂`, denoted `T̂^⊥`, is the set of
+MBO to a game `T̂`, the *game-relaxation* of `T̂`, denoted `T̂^⊢`, is the set of
 PDS that behave as `T` as long as the MBO is `0` and behave arbitrarily once
 the MBO is `1`."  Its footnote 7: "It is not difficult to make this definition
 mathematically rigorous."
+
+The superscript is a **right turnstile `⊢`**, read off the rendered page
+(2026-08-19 audit); it is not the `⊥` of `Adv⊥`, and every quotation of
+Definition 5.10 and of Lemma 5.3 below writes the printed glyph.
 
 This module takes the source up on that footnote, and does it with the landed
 observables rather than a second stack (Ruling R11).  "Behaves as `T` as long
@@ -24,9 +28,9 @@ of the two game transcript laws — `PDG.notWonLaw`, the restriction of
 "behaves arbitrarily once the MBO is `1`" is the *absence* of any constraint on
 the complementary slice, which is exactly what Definition 11 leaves free.
 
-So a system lies in `T̂^⊥` when it can be enhanced with an MBO of its own so
+So a system lies in `T̂^⊢` when it can be enhanced with an MBO of its own so
 that the resulting game agrees with `T̂` before `T̂`'s MBO fires.  The `∃` over
-MBOs is **forced**, not a strengthening: a member of `T̂^⊥` is a plain PDS, and
+MBOs is **forced**, not a strengthening: a member of `T̂^⊢` is a plain PDS, and
 "behaves as `T` as long as the MBO is `0`" cannot be read off it without an MBO
 on it.
 
@@ -35,7 +39,7 @@ on it.
 contained in the game-relaxation of `T̂`" — becomes a *definitional unfolding*:
 `forget_mem_gameRelaxation_of_equivalentAsGames` is literally `⟨H, hH, hw, h, rfl⟩`.
 The source states 5.2 as a **lemma** ("we state two lemmas without proofs"),
-which is weak evidence that the intended `T̂^⊥` is *larger* than the
+which is weak evidence that the intended `T̂^⊢` is *larger* than the
 `≡ᵍ`-image of games under `forget` — i.e. that the landed set may be smaller
 than the source's.  Recorded, not decided: footnote 7 leaves the definition
 open, and the strength of the agreement relation is the dial.  The stronger
@@ -50,19 +54,21 @@ sub-carrier is ever installed.
 
 * `gameRelaxation ⊆ epsilonRelaxation ν[T̂] {forget T̂}` is a **containment,
   not an equality**.  The `ε`-ball is strictly larger: it constrains only the
-  distance, while membership in `T̂^⊥` constrains the whole not-won slice at
+  distance, while membership in `T̂^⊢` constrains the whole not-won slice at
   every fixed query sequence.  The relaxation is therefore *defined* off the
   condition and only *compared* to a ball; defining it as a ball would lose the
   conditional content the source's Lemma 5.2 and §5.4 rely on.
 * CR18's **Lemma 5.3** (printed p. 121) **is** built here, as
   `forget_mem_gameRelaxation_of_condEquiv`.  It reads
-  "`Ŝ |≡ T ⟹ S ⊆ T̂^⊥`, where … the inputs to `T` are also given to `bŜ` and
+  "`Ŝ |≡ T ⟹ S ⊆ T̂^⊢`, where … the inputs to `T` are also given to `bŜ` and
   the MBO (of `T̂`) is the MBO of `Ŝ`, i.e. the MBO is defined independently of
   `T`" — that is, `T̂` is built by running `Ŝ`'s condition *alongside* `T` on
-  the same inputs, which is exactly the enhanced game of CR18 eq. (4.39),
-  landed as `PDG.enhance` (`Technique/BlindWinning.lean`).  Given that game,
-  Lemma 5.3 is Lemma 5.2 applied to eq. (4.39) — the same chaining the source's
-  own proof of Theorem 4.17 performs.
+  the same inputs, which is exactly the enhanced game of the **unnumbered**
+  display in the proof of CR18 Theorem 4.17 (printed p. 110), landed as
+  `PDG.enhance` (`Technique/BlindWinning.lean`).  Given that game, Lemma 5.3
+  (printed p. 121) is Lemma 5.2 (printed p. 121) applied to eq. (4.39) — which
+  is that proof's *conclusion* `Ŝ ≡ᵍ T̂`, not its construction — the same
+  chaining the source's own proof of Theorem 4.17 performs.
   **This supersedes FLAG F-8**, which had recorded Lemma 5.3 as blocked pending
   a ruling on a "blinded-system object".  The escalation rested on a
   misidentification of `b`: CR18 Definition 4.20 (printed p. 109) makes it
@@ -115,7 +121,7 @@ consumer of Definition 5.10 — the `ε`-ball comparison, Definitions 5.6/5.7 �
 is a statement about specifications of `Φ`. -/
 
 /-- **CR18 Definition 5.10** (printed p. 120), made rigorous the way the
-source's footnote 7 invites: `T̂^⊥` is the set of systems that admit an MBO of
+source's footnote 7 invites: `T̂^⊢` is the set of systems that admit an MBO of
 their own under which they agree with `T̂` **before `T̂`'s condition fires** —
 Definition 4.16's `≡ᵍ` (`EquivalentAsGames`), i.e. equality of the not-won
 slices `PDG.notWonLaw` of the two Definition 2.21 transcript laws — and are
@@ -136,13 +142,13 @@ def gameRelaxation (G : PDG Uni.{u} Uni.{u}) :
     H.NonNeg ∧ H.weight = G.weight ∧ EquivalentAsGames H G ∧ forget H = S}
 
 /-- **CR18 Lemma 5.2** (printed p. 121): "If `Ŝ` is game-equivalent to a game
-`T̂`, then `S` is contained in the game-relaxation of `T̂`: `Ŝ ≡ᵍ T̂ ⟹ S ⊆ T̂^⊥`."
+`T̂`, then `S` is contained in the game-relaxation of `T̂`: `Ŝ ≡ᵍ T̂ ⟹ S ⊆ T̂^⊢`."
 
 The source states it without proof, and on this reading of Definition 5.10 it
 is the introduction rule: the witness is `Ŝ` itself, and the proof is the
 anonymous constructor.  That the printed *lemma* degrades here to a
 *definitional unfolding* is the price of the reading, and is weak evidence
-that the intended `T̂^⊥` is larger than the `≡ᵍ`-image — see the module
+that the intended `T̂^⊢` is larger than the `≡ᵍ`-image — see the module
 docstring's hedge. -/
 theorem forget_mem_gameRelaxation_of_equivalentAsGames {H G : PDG Uni.{u} Uni.{u}}
     (hH : H.NonNeg) (hw : H.weight = G.weight) (h : EquivalentAsGames H G) :
@@ -183,7 +189,7 @@ weight `edist` is `Adv⊥` in either order
 center in the first slot.
 
 **Containment, not equality — deliberately.**  The ball is strictly larger: it
-records one number, while `T̂^⊥` records agreement of the entire not-won law at
+records one number, while `T̂^⊢` records agreement of the entire not-won law at
 every fixed query sequence.  Defining the game-relaxation as a ball would
 discard exactly the conditional content CR18 §5.4 uses. -/
 theorem gameRelaxation_subset_epsilonRelaxation {G : PDG Uni.{u} Uni.{u}}
@@ -227,14 +233,16 @@ theorem gameRelaxation_subset_epsilonRelaxation_infWinnability
 /-! ## CR18 Lemma 5.3 -/
 
 /-- **CR18 Lemma 5.3** (printed p. 121): "Consider a game `Ŝ` and a system `T`.
-We have `Ŝ ⊨ T ⟹ S ⊆ T̂^⊥`, where the MBO for `T` (to result in game `T̂`) is
+We have `Ŝ ⊨ T ⟹ S ⊆ T̂^⊢`, where the MBO for `T` (to result in game `T̂`) is
 as described in the proof of Theorem 4.17, i.e., the inputs to `T` are also
 given to `bŜ` and the MBO (of `T̂`) is the MBO of `Ŝ`, i.e., the MBO is defined
 independently of `T`."
 
-The game `T̂` the statement names is `PDG.enhance G T` — CR18 eq. (4.39) /
-Maurer13b Theorem 3's display, landed in `Technique/BlindWinning.lean` — and
-with it the lemma is **Lemma 5.2 applied to eq. (4.39)**: conditional
+The game `T̂` the statement names is `PDG.enhance G T` — the unnumbered
+enhancement display in the proof of CR18 Theorem 4.17 (printed p. 110) /
+Maurer13b Theorem 3's display (printed p. 3154), landed in
+`Technique/BlindWinning.lean` — and with it the lemma is **Lemma 5.2 applied to
+eq. (4.39)**, eq. (4.39) being that proof's conclusion `Ŝ ≡ᵍ T̂`: conditional
 equivalence gives `Ŝ ≡ᵍ T̂` (`PDG.equivalentAsGames_enhance`), and Lemma 5.2
 turns a `≡ᵍ` into a membership.  That is the source's own chaining; the proof
 of Theorem 4.17 (printed p. 110) performs the same two steps.
@@ -290,7 +298,7 @@ theorem gameRelaxation_enhance_subset_epsilonRelaxation_blind
 p. 121: "We point out that game-relaxation is compatible according to
 Definitions 5.6 and 5.7").
 
-Descended, not re-proved: the containment above places `T̂^⊥` inside a
+Descended, not re-proved: the containment above places `T̂^⊢` inside a
 `ν`-ball, and `Relaxation.epsilonRelaxation_compatible` — CR18 §5.2.3's
 criterion, "if all `γ ∈ Γ` are non-expanding for `d`, then the `ǫ`-relaxation
 is compatible with `Γ`" — moves a converter across the ball.  Composing the two
@@ -321,7 +329,7 @@ theorem smul_gameRelaxation_subset_epsilonRelaxation {Sigma : Type*}
 
 open scoped AbstractCryptography in
 /-- **CR18 Definition 5.7 for the game-relaxation, second clause** — the frame
-on the LEFT: `[𝒯, T̂^⊥] ⊆ [𝒯, T]^{ν[T̂]}`.
+on the LEFT: `[𝒯, T̂^⊢] ⊆ [𝒯, T]^{ν[T̂]}`.
 
 Descended, not re-proved: the containment in the `ν`-ball, then
 `epsilonRelaxation_parF_left_subset` (`ParFace.lean`, S-14).  The hypotheses
@@ -346,7 +354,7 @@ theorem par_gameRelaxation_subset_epsilonRelaxation
 
 open scoped AbstractCryptography in
 /-- **CR18 Definition 5.7 for the game-relaxation, first clause** — the frame
-on the RIGHT: `[T̂^⊥, 𝒯] ⊆ [T, 𝒯]^{ν[T̂]}`.
+on the RIGHT: `[T̂^⊢, 𝒯] ⊆ [T, 𝒯]^{ν[T̂]}`.
 
 Descended from `epsilonRelaxation_parF_right_subset_of_support` (`ParFace.lean`,
 S-14), whose price this clause inherits in full: `parF · T` moves its own

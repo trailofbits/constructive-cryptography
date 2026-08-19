@@ -168,8 +168,8 @@ theorem attachLawAt_mem_nonexpandingConverters {i : Set Uni.{u}} {EL : PDC.{u}}
 /-- **The interface-indexed converter monoid, with Definition 3.17's converters**
 — `converterMonoidAt` with its attachment family widened from deterministic
 programs to *laws over* programs, and the three non-attachment families (CR18
-Definition 3.10's domain filters, the two parallel frames at a sub-probability
-partner) spelled exactly as there.
+§3.4.3's domain filters, unnumbered prose, printed p. 62; the two parallel
+frames at a sub-probability partner) spelled exactly as there.
 
 This is a **separate** submonoid: `converterMonoidAt` carries the metric-facing
 `IsNonexpandingSMul` instance and every leg-(c)/(d) receipt, and the two are

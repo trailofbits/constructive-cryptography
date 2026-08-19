@@ -1019,14 +1019,15 @@ theorem block_actCommute (Q₁ Q₂ : Set Uni.{u}) :
   show (block Q₁ * block Q₂) S = (block Q₂ * block Q₁) S
   rw [block_block, block_block, Set.union_comm]
 
-/-! ### CR18 Definition 3.10's filter on Φ
+/-! ### CR18 §3.4.3's filter on Φ (unnumbered prose, printed p. 62)
 
 `⊣` silences a query set; the general filter silences a query set that may
 depend on the history already answered.  Both are the same DDS operation
 (`System.filterDom`) at different prefix-closed predicates, and the Φ-level
 lift is the same pushforward. -/
 
-/-- **CR18 Definition 3.10's filter at Φ**: the resource restricted to the
+/-- **CR18 §3.4.3's filter at Φ** (unnumbered prose, printed p. 62;
+Definition 3.10 is only the `[q]` notation): the resource restricted to the
 histories the predicate admits, pushed forward along the distribution.  The
 Φ-level counterpart of `System.filterDom`, exactly as `block` is the Φ-level
 counterpart of `System.blockSet`.

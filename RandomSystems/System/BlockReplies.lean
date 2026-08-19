@@ -18,8 +18,9 @@ replies `Yᵢ`."
 ## `b` is reply-side; the landed `block`/`filterPhi` family is query-side
 
 The two are different converters and neither is the other.  A *domain filter*
-(`filterPhi`, CR18 Definition 3.10 — the widened generator family of
-`converterMonoidAt`) decides on the query: a filtered query never reaches the
+(`filterPhi`, CR18 **§3.4.3, unnumbered prose, printed p. 62** — the widened
+generator family of `converterMonoidAt`; Definition 3.10 is only the `[q]`
+notation) decides on the query: a filtered query never reaches the
 resource, and the composite refuses.  Definition 4.20's `b` forwards **every**
 query verbatim — it is "transparent for the queries" — and interferes only on
 the way back, where it discards whatever the resource returned and answers a
@@ -54,9 +55,23 @@ win game `S` blindly, without seeing the outputs" (printed p. 109), and it is
 what `Technique/BlindWinning.lean` turns into the identification of the two
 renderings of "blind".
 
-The interface-local statement `attachEngineFully_blockReplies_mem` is the same
+The interface-local statement `attachEngineFullyRound_blockReplies` is the same
 round equation at a general `i`, kept because `attachAt i` is the primitive and
 `Set.univ` is a case of it (PRIMITIVE REGISTRY, ATTACHMENT).
+
+## SCOPE: the erasure is a whole-face fact
+
+Everything above is stated at `i = Set.univ`, and that is where it holds.  At a
+**proper** interface `i` the composite is *not* the constant system: a query
+outside `i` never reaches the engine at all — it is passed to the resource
+verbatim (`attachEngineFullyRound_not_mem`), refusal included — so outside `i`
+the resource's domain, and with it its refusal pattern, remains observable to
+the environment.  What `attachEngineFully_blockReplies_univ` says is that
+erasure at the **whole face** leaves nothing; it does not say that attaching
+`b` at some sub-interface blinds an environment.  CR18 Definition 4.20's `bS`
+is the whole-game object, so the whole-face statement is the one the source
+needs, but any downstream reading of "blocking replies blinds" must carry the
+`Set.univ` scope with it.
 -/
 
 namespace RandomSystems
@@ -73,7 +88,8 @@ universe u
 
 /-! ## The engine -/
 
-/-- The move CR18 Definition 4.20's `b` makes at a converter history: forward
+/-- The move CR18 Definition 4.20's `b` (printed p. 109) makes at a converter
+history: forward
 an outer query of the interface inward, and answer the constant outward to
 anything else — in particular to *any* inner reply, `⊥` included, which is
 "blocks the replies `Yᵢ`".
@@ -157,7 +173,7 @@ theorem innerTotal_blockReplies (i : Set Uni.{u}) (c : Uni.{u}) :
 
 /-- The budget: at most one request stands between the engine and its outer
 answer, uniformly over converter histories — CR18 Definition 3.8's finite-bound
-clause at `K = 1`. -/
+clause (printed p. 62) at `K = 1`. -/
 def blockRepliesBudget (l : List (Uni.{u} ⊕ Option Uni.{u})) : ℕ :=
   match l.getLast? with
   | some (Sum.inl _) => 1
@@ -287,9 +303,10 @@ open Probability (Distribution)
 
 universe u
 
-/-- **CR18 Definition 4.20's `b` is a member of the metric-facing `Σ`.**  It is
-an attachment of an inner-total engine with CR18 Definition 3.8's *uniform*
-request bound (printed p. 62), which is exactly the first generator family of
+/-- **CR18 Definition 4.20's `b` is a member of the metric-facing `Σ`**
+(printed p. 109).  It is an attachment of an inner-total engine with CR18
+Definition 3.8's *uniform* request bound (printed p. 62), which is exactly the
+first generator family of
 `converterMonoidAt` (PRIMITIVE REGISTRY, ATTACHMENT).  Nothing had to be
 widened, and no new primitive enters: the reply-eraser is an ordinary
 converter, and the F-8 escalation rested on reading it as a query-side block. -/

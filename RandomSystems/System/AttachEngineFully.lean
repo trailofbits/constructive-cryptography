@@ -1933,8 +1933,9 @@ MauRen16 §3.3's `αⁱ` — and whole-face application is recovered as
 
 The two parallel frames at a subprobability partner are **the same sets**,
 spelled exactly as in `converterMonoidFully` / `converterMonoidFullyBudgeted`.
-The block family is **widened** (Marc, 2026-08-19) to CR18 Definition 3.10's
-domain filters at an arbitrary prefix-closed predicate: `block Q` is the
+The block family is **widened** (Marc, 2026-08-19) to CR18 §3.4.3's domain
+filters (unnumbered prose, printed p. 62 — Definition 3.10 is only the `[q]`
+notation) at an arbitrary prefix-closed predicate: `block Q` is the
 instance at "avoid `Q`" (`block_eq_filterPhi`) and `filterQueries q` the
 instance at "at most `q` answered queries", so every statement proved over the
 old family stands and the query limit is now a converter of the Σ rather than
@@ -1990,8 +1991,9 @@ theorem attachAt_mem_nonexpandingConverters {i : Set Uni.{u}}
 
 /-- **The interface-indexed converter monoid at A6's budget** — the re-based
 counterpart of `converterMonoidFully`: interface-indexed attachments of engines
-that are inner-total and budgeted *history by history*, CR18 Definition 3.10's
-domain filters, and the parallel frames at a subprobability partner.
+that are inner-total and budgeted *history by history*, CR18 §3.4.3's domain
+filters (unnumbered prose, printed p. 62), and the parallel frames at a
+subprobability partner.
 
 As with `converterMonoidFully`, no nonexpansion is claimed here: absorption
 needs CR18 Definition 3.8's request bound uniformly over converter histories,
@@ -2042,9 +2044,10 @@ example : (1 : Function.End Phi.{u}) ∈ converterMonoidAtWeakBudget.{u} :=
 
 /-- **The metric-facing Σ, interface-indexed** — the re-based counterpart of
 `converterMonoidFullyBudgeted`: the parallel frames unchanged, the block
-family widened to CR18 Definition 3.10's domain filters at a prefix-closed
-predicate (Marc's re-ruling, 2026-08-19 — `block Q` and `filterQueries q` are
-both instances), and the attachment family carrying MauRen16 §3.3's interface
+family widened to CR18 §3.4.3's domain filters (unnumbered prose, printed
+p. 62) at a prefix-closed predicate (Marc's re-ruling, 2026-08-19 — `block Q`
+and `filterQueries q` are both instances of it, and Definition 3.10 is only the
+`[q]` notation), and the attachment family carrying MauRen16 §3.3's interface
 index *and* CR18 Definition 3.8's *uniform* request bound.  This is the Σ over which the fully
 defined metric layer's Definition 2 and Lemma 1∘2 receipts hold
 (`MetricFullyDefined.lean`).
@@ -2072,9 +2075,9 @@ theorem attachAt_mem_converterMonoidAt (i : Set Uni.{u})
     attachAt i E ∈ converterMonoidAt.{u} :=
   Submonoid.subset_closure (Or.inl (Or.inl (Or.inl ⟨i, E, hIT, hβ, rfl⟩)))
 
-/-- **CR18 Definition 3.10's filter is a generator of the metric-facing Σ.**
-The family is every domain filter at a prefix-closed predicate, which is what
-`block Q` and `filterQueries q` both are. -/
+/-- **CR18 §3.4.3's filter is a generator of the metric-facing Σ** (unnumbered
+prose, printed p. 62).  The family is every domain filter at a prefix-closed
+predicate, which is what `block Q` and `filterQueries q` both are. -/
 theorem filterPhi_mem_converterMonoidAt (P : List Uni.{u} → Prop)
     (hP : PrefixClosed P) : filterPhi P hP ∈ converterMonoidAt.{u} :=
   Submonoid.subset_closure (Or.inl (Or.inl (Or.inr ⟨P, hP, rfl⟩)))

@@ -293,9 +293,10 @@ theorem filterQueries_zero : filterQueries.{u} 0 = block.{u} Set.univ := by
   funext R
   exact congrFun (congrArg _ (funext fun S => System.filterQueries_zero S)) R
 
-/-- **The query limit is a domain filter**: `[q]` is CR18 Definition 3.10 at the
-length predicate, at Φ as at the system level (`System.filterQueries`), which is
-how it enters the metric-facing Σ. -/
+/-- **The query limit is a domain filter**: `[q]` — CR18 Definition 3.10's
+notation, printed p. 62 — is CR18 §3.4.3's domain filter (unnumbered prose,
+same page) at the length predicate, at Φ as at the system level
+(`System.filterQueries`), which is how it enters the metric-facing Σ. -/
 theorem filterQueries_eq_filterPhi (q : ℕ) :
     filterQueries.{u} q =
       filterPhi.{u} (fun l => l.length ≤ q) (prefixClosed_length_le q) :=

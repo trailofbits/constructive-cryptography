@@ -52,13 +52,15 @@ probability.  It is strictly stronger than the landed
 `conditional_equivalence_theorem`, whose right-hand side is the adaptive `ν`
 (and than `conditional_equivalence_theorem_infWinnability`, which is the same
 number as `ν` by Theorem 2.37) — `νᴺᴬ ≤ ν = ω`, with the inequality strict in
-general (CR18 p. 109: "generally lower").
+general (CR18 p. 109: "generally lower").  *Strict* is a theorem here, not a
+belief: `exists_blindSupWinProb_lt_supWinProb` exhibits a normalized two-query
+game over `Bool` with `νᴺᴬ ≤ 1/2 < 1 ≤ ν`.
 
 The proof is the printed proof, three steps, each one named lemma:
 
-1. `PDG.equivalentAsGames_enhance` — Theorem 3's display / CR18 eq. (4.39):
-   enhance `T` with `Ŝ`'s MBO, independently of `T`, and the result is
-   game-equivalent to `Ŝ`;
+1. `PDG.equivalentAsGames_enhance` — Theorem 3's display (printed p. 3154) /
+   CR18 eq. (4.39) (printed p. 110): enhance `T` with `Ŝ`'s MBO, independently
+   of `T`, and the result is game-equivalent to `Ŝ`;
 2. `PDG.fundamental_lemma_of_game_playing` (landed, Maurer13b Lemma 2) applied
    to that pair — this is the printed proof's "according to Lemma 2 … and
    Lemma 1, `Γ^D_q(Ŝ) = Γ^D_q(T̂)`, it suffices to analyze `Γ^D_q(T̂)`", which
@@ -71,6 +73,18 @@ The proof is the printed proof, three steps, each one named lemma:
    `T` produces, of `Ŝ`'s winning masses at fixed query sequences, and an
    average is at most a supremum.
 
+### CITATION CORRECTION (2026-08-19 audit) — eq. (4.39) is *not* `enhance`
+
+On CR18 printed p. 110 the enhancement construction
+`p^T̂_{Yⁱ,Aᵢ|Xⁱ} = p^T_{Yⁱ|Xⁱ} · p^Ŝ_{Aᵢ|Xⁱ}` is an **unnumbered** display
+inside the proof of Theorem 4.17; **eq. (4.39) is the conclusion drawn from it,
+`Ŝ ≡ᵍ T̂`**.  So the number belongs to `PDG.equivalentAsGames_enhance` (step 1
+above) and **not** to `PDG.enhance`, which is cited as "the unnumbered display
+above eq. (4.39), printed p. 110".  Commit `aeb685f`'s message says "the
+enhanced game of CR18 eq. (4.39)"; a commit message cannot be amended, so the
+discrepancy is recorded here — the code, not the message, carries the correct
+label.
+
 CR18's eq. (4.40) `T̂ = T̃bŜ` and its Definition 4.21 converter `T̃` do not
 appear: they are the source's way of *reading* the enhanced game as a composite
 of converters, and step 3 above states what that reading is for — the winner
@@ -78,6 +92,12 @@ is blind — directly about the game.  Nothing is lost, and no `Γ`/`Γᵇ` oper
 and no blinded-system object stack enters (PHI-SPEC R11(a)).
 
 ## The hypothesis bundle, and what is *not* in it
+
+**None of it is needed for the BOUND.**  `advFullyDefined_forget_le_blind
+SupWinProb_of_condEquiv` reaches the same conclusion from the landed adaptive
+endpoint's bundle alone, and `conditional_equivalence_theorem_blind_subsumed`
+discharges the headline's entire bundle by it.  What follows is what the
+*printed route* costs, because it constructs `enhance`; read it that way.
 
 Beyond the landed endpoint's `NonNeg`/equal-weight bundle, two clauses:
 
@@ -199,7 +219,8 @@ theorem answeredQueries_transcript_playQueries_keptPrefix (s : DDS X Y)
   rw [DDE.Total.answeredQueries_transcript, transcriptInputs_transcript_playQueries_length]
 
 /-- **A blind environment asks the same queries of every system.**  Lanzenberger
-fn. 6's non-adaptivity says the query at step `k` depends only on `k`, so the
+fn. 6's non-adaptivity (printed p. 16) says the query at step `k` depends only
+on `k`, so the
 input projection of the run does not mention the system at all.  This is the
 formal content of CR18 Definition 4.20's "the inputs `x₁,…,x_q` can be
 interpreted as being chosen in advance, before seeing any outputs" (printed
@@ -229,8 +250,9 @@ theorem transcriptInputs_congr_of_nonAdaptive {e : DDE.Total Y X}
         exact congrArg (fun t => t ++ [x]) ih
 
 /-- The blind environments are a nonempty class — `playQueries []` is one.
-Registered so that the restricted Definition 2.25 supremum below has the
-`ciSup` API (`ciSup_le`) available without a hypothesis. -/
+Registered so that the restricted Lanzenberger Definition 2.25 supremum
+(printed p. 18) below has the `ciSup` API (`ciSup_le`) available without a
+hypothesis. -/
 instance : Nonempty {e : DDE.Total Y X // DDE.Total.NonAdaptive e} :=
   ⟨⟨DDE.Total.playQueries [], DDE.Total.nonAdaptive_playQueries []⟩⟩
 
@@ -310,9 +332,10 @@ theorem blindSupWinProb_nonneg {G : PDG X Y} (hG : G.NonNeg) :
 
 /-- **CR18 printed p. 109**: "The best probability in winning a game `S`
 non-adaptively (i.e. `Γ(bS)`) is generally lower than the best probability in
-winning it adaptively (i.e. `Γ(S)`)."  The comparison holds always; that it is
-*strict* in general is the source's word "generally", and no separating witness
-is claimed here. -/
+winning it adaptively (i.e. `Γ(S)`)."  The comparison holds always, and the
+source's word "generally" is earned: `exists_blindSupWinProb_lt_supWinProb`
+below exhibits a normalized game at which it is **strict**, so blind winning is
+a genuinely weaker notion and not a re-description of `ν`. -/
 theorem blindSupWinProb_le_supWinProb {G : PDG X Y} (hG : G.NonNeg) :
     blindSupWinProb G ≤ supWinProb G :=
   blindSupWinProb_le_of_forall fun e _ n => winningMass_le_supWinProb hG e n
@@ -320,6 +343,179 @@ theorem blindSupWinProb_le_supWinProb {G : PDG X Y} (hG : G.NonNeg) :
 theorem blindSupWinProb_le_weight {G : PDG X Y} (hG : G.NonNeg) :
     blindSupWinProb G ≤ G.weight :=
   blindSupWinProb_le_of_forall fun e _ n => winningMass_le_weight hG e n
+
+/-! ## The separation is strict: a two-query game over `Bool`
+
+CR18 printed p. 109 says the non-adaptive optimum is "generally lower" than the
+adaptive one.  `blindSupWinProb_le_supWinProb` is the inequality; this section
+is the witness that makes "generally" a theorem rather than a belief, and it is
+the reason the two endpoints of this module are worth having separately.
+
+The game is a fair coin `b`, a system that answers `b` to every query, and the
+condition "the **second** query equals `b`".  An adaptive environment asks
+anything, reads `b` off the answer and asks it back, winning in *both*
+realizations.  A blind environment must fix its second query in advance
+(`System.transcriptInputs_congr_of_nonAdaptive` forces one query list across
+the two realizations), so it wins at most one of them: `νᴺᴬ ≤ 1/2 < 1 ≤ ν`. -/
+
+/-- The condition of the separating witness: "the second query is `b`".
+Monotone because a longer history keeps its second entry. -/
+def secretBitCondition (b : Bool) : System.MonotoneCondition Bool :=
+  ⟨{l : List Bool | l[1]? = some b}, by
+    rintro t t' ⟨u, rfl⟩ ht
+    simp only [Set.mem_setOf_eq] at ht ⊢
+    have h1 : 1 < t.length := by
+      by_contra h
+      push Not at h
+      rw [List.getElem?_eq_none (by omega)] at ht
+      exact absurd ht (by simp)
+    rwa [List.getElem?_append_left h1]⟩
+
+/-- One realization of the separating witness: the system that answers the
+secret bit `b` to every query, carrying the condition that fires when the
+second query *is* `b`. -/
+def secretBitGame (b : Bool) : System.DDG Bool Bool :=
+  (System.functionEvaluator fun _ => b, secretBitCondition b)
+
+/-- **The separating witness**: a fair coin over the two realizations of
+`secretBitGame`.  A normalized game (`weight_secretBitPDG`). -/
+def secretBitPDG : PDG Bool Bool :=
+  Finsupp.single (secretBitGame false) (1 / 2) + Finsupp.single (secretBitGame true) (1 / 2)
+
+theorem won_secretBitGame_iff (b : Bool) (e : System.DDE.Total Bool Bool) (n : ℕ) :
+    System.Won (secretBitGame b) e n ↔
+      (System.transcriptInputs
+        (System.DDE.Total.transcript (System.functionEvaluator fun _ => b) e n))[1]?
+        = some b := by
+  show System.answeredQueries (System.DDE.Total.transcript
+      (System.functionEvaluator fun _ => b) e n) ∈ (secretBitCondition b).1 ↔ _
+  rw [System.DDE.Total.answeredQueries_transcript]
+  show System.keptPrefix (System.functionEvaluator fun _ => b) _ ∈ _ ↔ _
+  rw [System.keptPrefix_functionEvaluator]
+  rfl
+
+theorem winningMass_secretBitPDG (e : System.DDE.Total Bool Bool) (n : ℕ) :
+    winningMass e n secretBitPDG
+      = (if System.Won (secretBitGame false) e n then (1 : ℝ) / 2 else 0)
+        + (if System.Won (secretBitGame true) e n then (1 : ℝ) / 2 else 0) := by
+  classical
+  have hsingle : ∀ (g : System.DDG Bool Bool) (c : ℝ),
+      Distribution.mass (Finsupp.single g c) (fun h => System.Won h e n)
+        = if System.Won g e n then c else 0 := by
+    intro g c
+    show Finsupp.sum _ _ = _
+    exact Finsupp.sum_single_index (by simp only [ite_self])
+  rw [winningMass, secretBitPDG, Distribution.mass_add, hsingle, hsingle]
+
+theorem nonNeg_secretBitPDG : secretBitPDG.NonNeg := by
+  intro a
+  rw [secretBitPDG]
+  have h1 : (0 : ℝ) ≤ (Finsupp.single (secretBitGame false) ((1 : ℝ) / 2)) a := by
+    rw [Finsupp.single_apply]; split <;> norm_num
+  have h2 : (0 : ℝ) ≤ (Finsupp.single (secretBitGame true) ((1 : ℝ) / 2)) a := by
+    rw [Finsupp.single_apply]; split <;> norm_num
+  simpa using add_nonneg h1 h2
+
+@[simp] theorem weight_secretBitPDG : secretBitPDG.weight = 1 := by
+  rw [secretBitPDG, Distribution.weight_add, Distribution.weight_single,
+    Distribution.weight_single]
+  norm_num
+
+/-- **A blind winner cannot beat the coin.**  Non-adaptivity forces one query
+list across the two realizations (`System.transcriptInputs_congr_of_nonAdaptive`),
+and one list cannot have its second entry equal to both bits, so at most one of
+the two realizations is won. -/
+theorem blindSupWinProb_secretBitPDG_le : blindSupWinProb secretBitPDG ≤ 1 / 2 := by
+  refine blindSupWinProb_le_of_forall fun e he n => ?_
+  rw [winningMass_secretBitPDG]
+  have hcongr : System.transcriptInputs (System.DDE.Total.transcript
+        (System.functionEvaluator fun _ : Bool => false) e n)
+      = System.transcriptInputs (System.DDE.Total.transcript
+        (System.functionEvaluator fun _ : Bool => true) e n) :=
+    System.transcriptInputs_congr_of_nonAdaptive he _ _ n
+  have e0 := won_secretBitGame_iff false e n
+  have e1 := won_secretBitGame_iff true e n
+  rw [hcongr] at e0
+  by_cases h0 : System.Won (secretBitGame false) e n
+  · have h1 : ¬ System.Won (secretBitGame true) e n := by
+      intro hc
+      have := (e0.mp h0).symm.trans (e1.mp hc)
+      exact absurd this (by simp)
+    rw [if_pos h0, if_neg h1]; norm_num
+  · rw [if_neg h0]
+    split <;> norm_num
+
+/-- The adaptive winner: ask `false`, read the secret bit off the answer, ask
+it back.  CR18 printed p. 109's "seeing the outputs", used. -/
+def secretBitReader : System.DDE.Total Bool Bool := fun l =>
+  match l with
+  | [] => some false
+  | [some y] => some y
+  | _ => none
+
+/-- What a function evaluator answers, at any history.  (The same fact is
+landed as `PDS.answer_functionEvaluator` in `System/RandomObjects.lean`, which
+this module does not import; it is restated here rather than pulling
+`Probability.Counting` into the technique layer for one line.) -/
+theorem answer_functionEvaluator (f : Bool → Bool) (l : List Bool) (x : Bool) :
+    System.answer (System.functionEvaluator f) l x = some (f x) := by
+  have h : System.keptPrefix (System.functionEvaluator f) l ++ [x]
+      ∈ System.dom (System.functionEvaluator f) := by
+    rw [System.dom_functionEvaluator]; simp
+  rw [System.answer_eq, dif_pos h, System.functionEvaluator_output]
+
+theorem transcript_secretBitReader_one (b : Bool) :
+    System.DDE.Total.transcript (System.functionEvaluator fun _ => b) secretBitReader 1
+      = [(false, some b)] := by
+  have h : secretBitReader (System.transcriptOutputs (System.DDE.Total.transcript
+      (System.functionEvaluator fun _ => b) secretBitReader 0)) = some false := rfl
+  rw [show (1 : ℕ) = 0 + 1 from rfl, System.DDE.Total.transcript_succ_of_query _ _ h]
+  show [] ++ [(false, System.answer (System.functionEvaluator fun _ : Bool => b) [] false)] = _
+  rw [answer_functionEvaluator]
+  rfl
+
+theorem transcript_secretBitReader_two (b : Bool) :
+    System.DDE.Total.transcript (System.functionEvaluator fun _ => b) secretBitReader 2
+      = [(false, some b), (b, some b)] := by
+  have h : secretBitReader (System.transcriptOutputs (System.DDE.Total.transcript
+      (System.functionEvaluator fun _ => b) secretBitReader 1)) = some b := by
+    rw [transcript_secretBitReader_one]; rfl
+  rw [show (2 : ℕ) = 1 + 1 from rfl, System.DDE.Total.transcript_succ_of_query _ _ h,
+    transcript_secretBitReader_one]
+  show [(false, some b)]
+      ++ [(b, System.answer (System.functionEvaluator fun _ : Bool => b) [false] b)] = _
+  rw [answer_functionEvaluator]
+  rfl
+
+theorem won_secretBitGame_secretBitReader (b : Bool) :
+    System.Won (secretBitGame b) secretBitReader 2 := by
+  rw [won_secretBitGame_iff, transcript_secretBitReader_two]
+  rfl
+
+/-- The adaptive winner wins **both** realizations, so it wins with the whole
+weight. -/
+theorem one_le_supWinProb_secretBitPDG : (1 : ℝ) ≤ supWinProb secretBitPDG := by
+  have h : winningMass secretBitReader 2 secretBitPDG = 1 := by
+    rw [winningMass_secretBitPDG, if_pos (won_secretBitGame_secretBitReader false),
+      if_pos (won_secretBitGame_secretBitReader true)]
+    norm_num
+  exact h ▸ winningMass_le_supWinProb nonNeg_secretBitPDG secretBitReader 2
+
+/-- **Blind winning is strictly weaker at this game**: `νᴺᴬ ≤ 1/2 < 1 ≤ ν`. -/
+theorem blindSupWinProb_secretBitPDG_lt_supWinProb :
+    blindSupWinProb secretBitPDG < supWinProb secretBitPDG :=
+  lt_of_le_of_lt blindSupWinProb_secretBitPDG_le
+    (by have := one_le_supWinProb_secretBitPDG; linarith)
+
+/-- **CR18 printed p. 109's "generally lower" is strict.**  There is a
+normalized, non-negative game whose blind optimum is strictly below its
+adaptive one, so `blindSupWinProb_le_supWinProb` is not an equality in disguise
+and `conditional_equivalence_theorem_blind` is a genuine sharpening of
+`conditional_equivalence_theorem`. -/
+theorem exists_blindSupWinProb_lt_supWinProb :
+    ∃ G : PDG Bool Bool, G.NonNeg ∧ G.weight = 1 ∧ blindSupWinProb G < supWinProb G :=
+  ⟨secretBitPDG, nonNeg_secretBitPDG, weight_secretBitPDG,
+    blindSupWinProb_secretBitPDG_lt_supWinProb⟩
 
 /-- Winning at a fixed query list, spelled as a counting statement about the
 game's realizations: the list is asked in full, and the condition is tested
@@ -338,12 +534,18 @@ theorem notWonMass_playQueries_eq_mass {G : PDG X Y} (l : List X) :
   refine Distribution.mass_congr G fun g => ?_
   rw [System.Won, System.answeredQueries_transcript_playQueries_keptPrefix]
 
-/-! ## CR18 eq. (4.39): `T` enhanced with the game's own MBO -/
+/-! ## `T` enhanced with the game's own MBO — the unnumbered display in the
+proof of CR18 Theorem 4.17 (printed p. 110) -/
 
-/-- **Maurer13b Theorem 3's construction** (printed p. 3154) / **CR18
-eq. (4.39)** (printed p. 110): "One can enhance `T` with an MBO `A₀,A₁,A₂…` to
+/-- **Maurer13b Theorem 3's construction** (printed p. 3154) / **the
+unnumbered display above CR18 eq. (4.39), in the proof of CR18 Theorem 4.17**
+(printed p. 110): "One can enhance `T` with an MBO `A₀,A₁,A₂…` to
 a game `T̂`, as follows: `p^T̂_{Yⁱ,Aᵢ|Xⁱ} = p^T_{Yⁱ|Xⁱ} · p^Ŝ_{Aᵢ|Xⁱ}`" — the
 outputs come from `T`, the MBO from `Ŝ`, **independently given the inputs**.
+
+The construction display is **unnumbered** on the printed page; CR18's
+eq. (4.39) (printed p. 110) is the *conclusion* `Ŝ ≡ᵍ T̂` drawn from it, and
+that number belongs to `equivalentAsGames_enhance`, not to this definition.
 CR18 Lemma 5.3 (printed p. 121) names the same object in words: "the inputs to
 `T` are also given to `bŜ` and the MBO (of `T̂`) is the MBO of `Ŝ`, i.e. the
 MBO is defined independently of `T`."
@@ -352,8 +554,8 @@ On this carrier "independent given the inputs" is the independent product of
 the two laws (`Probability.Distribution.prod`), and "the MBO of `Ŝ`, read on
 the history `Ŝ` processed" is the landed substitution
 `System.MonotoneCondition.comap` along `Ŝ`'s own deletion pass — Definition
-2.21 evaluates every condition along exactly that map (`System/Game.lean`,
-`prefixMonotoneMap_keptPrefix`).  So `enhance` is a definition **over** landed
+2.21 (printed p. 17) evaluates every condition along exactly that map
+(`System/Game.lean`, `prefixMonotoneMap_keptPrefix`).  So `enhance` is a definition **over** landed
 objects: a product of landed laws pushed through a map assembled from landed
 constructors, no second object stack (PHI-SPEC R11(a)).
 
@@ -389,9 +591,9 @@ answered history is already deleted, so the test lands on the history `T`
 answered — which is what an environment interacting with `T̂` sees.
 
 This is the exact point at which the carrier charges for the source's "the
-inputs to `T` are also given to `bŜ`": in CR18 the two systems receive the same
-inputs and there are no refusals, here they receive the same inputs and delete
-the same ones. -/
+inputs to `T` are also given to `bŜ`" (CR18 Lemma 5.3, printed p. 121): in CR18
+the two systems receive the same inputs and there are no refusals, here they
+receive the same inputs and delete the same ones. -/
 theorem won_enhance_atom_iff {G : PDG X Y} {T : PDS X Y} {D : Set (List X)}
     (hdomG : HasDomain G D) (hdomT : PDS.HasDomain T D)
     {p : System.DDS X Y × System.DDG X Y}
@@ -409,8 +611,8 @@ theorem won_enhance_atom_iff {G : PDG X Y} {T : PDS X Y} {D : Set (List X)}
     System.DDE.Total.answeredQueries_transcript, System.keptPrefix_keptPrefix,
     ← System.DDE.Total.answeredQueries_transcript]
 
-/-- The enhanced game's Definition 2.25 winning mass (printed p. 17): the condition is `Ŝ`'s,
-tested against what `T` answered. -/
+/-- The enhanced game's Lanzenberger Definition 2.25 winning mass (printed
+p. 18): the condition is `Ŝ`'s, tested against what `T` answered. -/
 theorem winningMass_enhance {G : PDG X Y} {T : PDS X Y} {D : Set (List X)}
     (hdomG : HasDomain G D) (hdomT : PDS.HasDomain T D)
     (e : System.DDE.Total Y X) (n : ℕ) :
@@ -564,13 +766,22 @@ converter rendering `Γ(bŜ)` proper is `supWinProb_blockRepliesGame`.
 **This is strictly stronger than `conditional_equivalence_theorem`**, whose
 right-hand side is the adaptive `ν` (CR18 printed p. 109: the non-adaptive
 optimum "is generally lower than" the adaptive one), and than
-`conditional_equivalence_theorem_infWinnability`, which by Theorem 2.37 is the
-same number as `ν`.
+`conditional_equivalence_theorem_infWinnability`, which by Lanzenberger
+Theorem 2.37 (printed p. 24) is the same number as `ν`.
 
 Hypotheses: the landed endpoint's bundle (`NonNeg` twice, equal weight), plus
 the two clauses the printed route costs on this carrier — `T` normalized, and
-one shared Definition 2.14 domain.  See the module docstring for why each is
-there and why neither is totality. -/
+one shared Lanzenberger Definition 2.14 domain (printed p. 15).  See the module
+docstring for why each is there and why neither is totality.
+
+**Those two extra clauses are not needed for the BOUND**, and the tree proves
+it: `conditional_equivalence_theorem_blind_subsumed` discharges exactly this
+statement from `advFullyDefined_forget_le_blindSupWinProb_of_condEquiv`, whose
+bundle is the landed adaptive endpoint's.  They are needed by *this* proof,
+because it goes through `enhance`, and `enhance`'s game-equivalence step
+(`equivalentAsGames_enhance`) uses both.  `enhance` is the node CR18 Lemma 5.3
+(printed p. 121) consumes, which is why this route is kept — a reader must not
+conclude from the hypothesis list that the inequality needs them. -/
 theorem conditional_equivalence_theorem_blind {G : PDG X Y} {T : PDS X Y}
     {D : Set (List X)} (hG : G.NonNeg) (hT : T.NonNeg) (hw : G.weight = T.weight)
     (hT1 : T.weight = 1) (hdomG : HasDomain G D) (hdomT : PDS.HasDomain T D)
@@ -740,16 +951,48 @@ core** (printed p. 3154): the same blind bound as
 clause **nor** the normalization of `T` — the hypothesis bundle is exactly the
 landed adaptive endpoint's.
 
-Both statements are kept deliberately.  This one is the sharper theorem; the
-paper-route one is the one whose intermediate node (`enhance`, CR18 eq. (4.39),
-printed p. 110) CR18 Lemma 5.3 consumes, and whose proof reads as the printed
-proof.  Where a caller only wants the bound, this is the one to use. -/
+**This endpoint carries the bound.**  `conditional_equivalence_theorem_blind`'s
+extra hypotheses are provably unnecessary for the inequality — the derivation
+is `conditional_equivalence_theorem_blind_subsumed`, which discharges the
+headline's whole bundle by this theorem and never touches the normalization or
+either domain clause.  The headline keeps them because its *proof* builds
+`enhance`, not because the bound needs them: `equivalentAsGames_enhance` needs
+`T.weight = 1` (the enhanced game is a product law) and the shared domain (the
+MBO of `Ŝ` is read along `Ŝ`'s deletion pass while the enhanced game's
+transcript exposes `T`'s), and that intermediate node is what CR18 Lemma 5.3
+(printed p. 121) consumes in `Game/GameRelaxation.lean`.
+
+So: this one for the bound, the paper-route one for the object it constructs
+and for a proof that reads as the printed proof. -/
 theorem advFullyDefined_forget_le_blindSupWinProb_of_condEquiv {G : PDG X Y}
     {T : PDS X Y} (hG : G.NonNeg) (hT : T.NonNeg) (hw : G.weight = T.weight)
     (hCE : CondEquiv G T) :
     PDS.advFullyDefined (forget G) T ≤ νᴺᴬ[G] :=
   iSup_le fun e => iSup_le fun n => ENNReal.ofReal_le_ofReal
     (statDist_trLawFullyDefined_forget_le_blindSupWinProb hG hT hw hCE e n)
+
+/-- **The paper-route endpoint is a strict instance of the one above** (audit
+receipt, 2026-08-19).  This is `conditional_equivalence_theorem_blind`'s exact
+hypothesis bundle — the normalization `T.weight = 1` and the two shared-domain
+clauses included — discharged by `advFullyDefined_forget_le_blindSupWinProb_of_
+condEquiv`, which uses none of them.  The three underscored binders are
+therefore *provably* unnecessary **for the bound**.
+
+They are not decoration in the headline either, and the two docstrings say why:
+the headline's proof goes through `enhance`, whose game-equivalence step
+(`equivalentAsGames_enhance`) genuinely needs a normalized `T` — the enhanced
+game is a product law — and a shared domain, because the MBO of `Ŝ` is read
+along `Ŝ`'s deletion pass while the enhanced game's transcript exposes `T`'s.
+That intermediate node is what `Game/GameRelaxation.lean` consumes (CR18 Lemma
+5.3, printed p. 121), so the paper route is kept for the object it builds, not
+for the number it reaches.  A caller who only wants the bound should use the
+general endpoint. -/
+theorem conditional_equivalence_theorem_blind_subsumed {G : PDG X Y} {T : PDS X Y}
+    {D : Set (List X)} (hG : G.NonNeg) (hT : T.NonNeg) (hw : G.weight = T.weight)
+    (_hT1 : T.weight = 1) (_hdomG : HasDomain G D) (_hdomT : PDS.HasDomain T D)
+    (hCE : CondEquiv G T) :
+    PDS.advFullyDefined (forget G) T ≤ νᴺᴬ[G] :=
+  advFullyDefined_forget_le_blindSupWinProb_of_condEquiv hG hT hw hCE
 
 /-! ## The two renderings of "blind" agree
 
@@ -767,13 +1010,34 @@ for the queries", the inner system receives exactly the outer queries, and its
 own answered history is what its MBO tests.
 
 This is a definition **over** landed objects, in the same shape as `enhance`;
-no blinded-system object stack enters (PHI-SPEC R11(a)). -/
+no blinded-system object stack enters (PHI-SPEC R11(a)).  Its system component
+is literally the `Σ`-member applied to the game's system — `forget_
+blockRepliesGame` below, one unfolding. -/
 def blockRepliesGame (c : Uni.{u}) (G : PDG Uni.{u} Uni.{u}) : PDG Uni.{u} Uni.{u} :=
   Distribution.fTransform
     (fun g : System.DDG Uni.{u} Uni.{u} =>
       (System.attachEngineFully Set.univ (System.blockReplies Set.univ c) g.1,
         System.MonotoneCondition.comap (System.keptPrefix g.1)
           (System.MonotoneCondition.prefixMonotoneMap_keptPrefix g.1) g.2)) G
+
+/-- **`blockRepliesGame`'s system IS the landed `Σ`-member `b` applied to the
+game's system.**  The identification "the game whose system is `bŜ`" — CR18
+Definition 4.20, printed p. 109 — is a one-line unfolding, and this records it
+rather than leaving it to prose: `blockRepliesGame c G` and `attachAt Set.univ
+(blockReplies Set.univ c)` push the *same* map forward, so nothing about the
+definition's system component is new.  Only its condition component (the
+original game's, read along the original system's deletion pass) is chosen, and
+that choice is what `won_blockRepliesGame_atom_iff` computes. -/
+theorem forget_blockRepliesGame (c : Uni.{u}) (G : PDG Uni.{u} Uni.{u}) :
+    forget (blockRepliesGame c G)
+      = attachAt Set.univ (System.blockReplies Set.univ c) (forget G) := by
+  show Distribution.fTransform Prod.fst (blockRepliesGame c G)
+      = Distribution.fTransform
+          (System.attachEngineFully Set.univ (System.blockReplies Set.univ c))
+          (Distribution.fTransform Prod.fst G)
+  rw [blockRepliesGame, Distribution.fTransform_fTransform,
+    Distribution.fTransform_fTransform]
+  rfl
 
 /-- **The inputs chosen in advance** (CR18 printed p. 109: "the inputs
 `x₁,…,x_q` can be interpreted as being chosen in advance, before seeing any
