@@ -6,6 +6,7 @@ import RandomSystems.System.ConverterEntry
 import RandomSystems.System.MetricFullyDefined
 import RandomSystems.System.RandomObjects
 import RandomSystems.System.FilterPhi
+import RandomSystems.Technique.BlindWinning
 import RandomSystems.Technique.ConditionalEquivalence
 import AbstractCryptography.Metric.Epsilon
 import AbstractCryptography.Specification.Parameterized
@@ -955,6 +956,199 @@ theorem notBad_implies_uniform_outputs [Nontrivial M]
       (Fintype.card M - l.toFinset.card) + l.toFinset.card from
         (Nat.sub_add_cancel hcard).symm, pow_add]
   ac_rfl
+
+/-! ## CR18 equation (6.2), printed p. 126: the conditional equivalence
+
+"One can define an MBO `A_i` on the system `CBC R_{n,n}` … resulting in the
+system `ĈBC R_{n,n}`, such that `(ĈBC R_{n,n}) ⊨ V_n`" (printed p. 126).  The
+augmented object is the joint law of the CBC chain and its own collision
+condition; the relation is Maurer13b Definition 13 (printed p. 3153), landed as
+`PDG.CondEquiv`.
+
+The two steps CR18 asserts are already proved above —
+`notBad_implies_distinct_lastInputs` (its first proof sentence) and
+`notBad_implies_uniform_outputs` (its second, in mass form).  What is left is
+the reading: at a fixed message list the interaction of a function evaluator is
+its list of query/answer pairs, so both sides of Definition 13's product form
+are masses of *evaluation* events, and the mass identity is the product form.
+-/
+
+section CondEquiv
+
+open System
+
+/-- **The interaction of a function evaluator with a fixed query list.**  A
+function evaluator answers every query (`PDS.answer_functionEvaluator`), so the
+CR18 Definition 3.7 interaction with `playQueries l` (Lanzenberger fn. 6) is
+the list of query/answer pairs of `l`, and it carries exactly the values of the
+sampled function on `l`. -/
+theorem transcript_functionEvaluator_playQueries {A B : Type u} (h : A → B) (l : List A) :
+    ∀ n, n ≤ l.length →
+      DDE.Total.transcript (functionEvaluator h) (DDE.Total.playQueries l) n
+        = (l.take n).map (fun m => (m, some (h m))) := by
+  intro n
+  induction n with
+  | zero => intro _; rfl
+  | succ n ih =>
+      intro hn
+      have hlt : n < l.length := hn
+      have hik := ih (Nat.le_of_succ_le hn)
+      have hlen :
+          (DDE.Total.transcript (functionEvaluator h) (DDE.Total.playQueries l) n).length = n := by
+        rw [hik, List.length_map, List.length_take]
+        omega
+      have hq : DDE.Total.playQueries (Y := B) l
+          (DDE.Total.transcript (functionEvaluator h) (DDE.Total.playQueries l) n)↓ᵧ
+          = some l[n] := by
+        show l[_]? = _
+        simp only [transcriptOutputs, List.length_map, hlen]
+        exact List.getElem?_eq_getElem hlt
+      rw [DDE.Total.transcript_succ_of_query _ _ hq, hik, PDS.answer_functionEvaluator,
+        List.take_add_one, List.getElem?_eq_getElem hlt]
+      simp only [Option.toList_some, List.map_append, List.map_cons, List.map_nil]
+
+@[simp] theorem transcript_functionEvaluator_playQueries_length {A B : Type u}
+    (h : A → B) (l : List A) :
+    DDE.Total.transcript (functionEvaluator h) (DDE.Total.playQueries l) l.length
+      = l.map (fun m => (m, some (h m))) := by
+  rw [transcript_functionEvaluator_playQueries h l l.length le_rfl, List.take_length]
+
+/-- **The interaction determines the sampled function on the queried
+messages, and nothing else.**  Two evaluators produce the same fixed-query-list
+interaction exactly when they agree on the messages of the list, so the fiber
+of the interaction is an evaluation event of the shape
+`notBad_implies_uniform_outputs` speaks about. -/
+theorem map_pair_eq_iff_forall_toFinset {A B : Type u} [DecidableEq A]
+    (h h₀ : A → B) (l : List A) :
+    l.map (fun m => (m, some (h m))) = l.map (fun m => (m, some (h₀ m)))
+      ↔ ∀ s : ↑l.toFinset, h s.1 = h₀ s.1 := by
+  rw [List.map_inj_left]
+  constructor
+  · intro hm s
+    have := hm s.1 (List.mem_toFinset.mp s.2)
+    simpa using this
+  · intro hm m hml
+    have := hm ⟨m, List.mem_toFinset.mpr hml⟩
+    simpa using this
+
+/-- **CR18's augmented real system `ĈBC R_{n,n}`** (printed p. 126): "One can
+define an MBO `A_i` on the system `CBC R_{n,n}` … resulting in the system
+`ĈBC R_{n,n}`."  The joint law of Lanzenberger Definition 2.20's pair — the CBC
+chain built from the sampled round function, together with *that* round
+function's collision condition — so the system and the condition are correlated
+exactly as CR18's `A_i` prescribes.
+
+It is a pushforward of the uniform round function and not a `PDS.adjoin`,
+because the condition reads the round function, which the CBC chain does not
+determine. -/
+noncomputable def cbcGameLaw (bf : M → List X) : PDG M X :=
+  Distribution.fTransform
+    (fun f : X → X =>
+      ((System.functionEvaluator fun m : M => cbcState f (bf m), cbcCondition f bf) :
+        System.DDG M X))
+    (Distribution.uniform (X → X))
+
+theorem nonNeg_cbcGameLaw (bf : M → List X) : (cbcGameLaw bf).NonNeg :=
+  Probability.Distribution.uniform_nonNeg.fTransform _
+
+@[simp] theorem weight_cbcGameLaw (bf : M → List X) : (cbcGameLaw bf).weight = 1 := by
+  rw [cbcGameLaw, Distribution.weight_fTransform, Distribution.weight_uniform]
+
+/-- **The forgetting law**: dropping CR18's MBO from `ĈBC R_{n,n}` returns
+`CBC R_{n,n}`, the law the realization equation identifies
+(`cbcConverter_smul_Rnn`).  This is what ties the augmented object of equation
+(6.2) to the converter of Theorem 6.1. -/
+@[simp] theorem forget_cbcGameLaw (bf : M → List X) :
+    PDG.forget (cbcGameLaw bf) = cbcFunctionLaw bf := by
+  rw [cbcGameLaw, cbcFunctionLaw, PDG.forget, Distribution.fTransform_fTransform]
+  rfl
+
+/-- Winning CR18's collision game at a fixed message list is exactly the
+collision event of the sampled round function on that list: a function
+evaluator refuses nothing, so the answered history is the whole list. -/
+theorem won_cbcGameLaw_atom (f : X → X) (bf : M → List X) (l : List M) :
+    System.Won
+        ((System.functionEvaluator fun m : M => cbcState f (bf m), cbcCondition f bf) :
+          System.DDG M X)
+        (System.DDE.Total.playQueries l) l.length ↔ cbcBad f bf l := by
+  show System.answeredQueries _ ∈ _ ↔ _
+  rw [answeredQueries_transcript_playQueries_keptPrefix,
+    keptPrefix_functionEvaluator]
+  exact Iff.rfl
+
+/-- The not-won slice of CR18's collision game at a fixed message list, as a
+mass over round functions. -/
+theorem notWonLaw_cbcGameLaw_apply (bf : M → List X) (l : List M)
+    (t : List (M × Option X)) :
+    PDG.notWonLaw (System.DDE.Total.playQueries l) l.length (cbcGameLaw bf) t
+      = (Distribution.uniform (X → X)).mass (fun f =>
+          ¬ cbcBad f bf l ∧ l.map (fun m => (m, some (cbcState f (bf m)))) = t) := by
+  rw [PDG.notWonLaw_apply, cbcGameLaw, Distribution.mass_fTransform]
+  refine Distribution.mass_congr _ fun f => ?_
+  rw [won_cbcGameLaw_atom, transcript_functionEvaluator_playQueries_length]
+
+theorem notWonMass_cbcGameLaw (bf : M → List X) (l : List M) :
+    PDG.notWonMass (System.DDE.Total.playQueries l) l.length (cbcGameLaw bf)
+      = (Distribution.uniform (X → X)).mass (fun f => ¬ cbcBad f bf l) := by
+  rw [PDG.notWonMass_eq_mass_not_won, cbcGameLaw, Distribution.mass_fTransform]
+  exact Distribution.mass_congr _ fun f => not_congr (won_cbcGameLaw_atom f bf l)
+
+/-- The ideal object's transcript law at a fixed message list, as a mass over
+functions: `V_n` answers a fresh uniform value per new message, so its
+interaction is an evaluation event of the sampled function. -/
+theorem trLawFullyDefined_Vn_apply (l : List M) (t : List (M × Option X)) :
+    PDS.trLawFullyDefined (System.DDE.Total.playQueries l) l.length (Vn M X) t
+      = (Distribution.uniform (M → X)).mass (fun g =>
+          l.map (fun m => (m, some (g m))) = t) := by
+  rw [PDS.trLawFullyDefined, Vn, PDS.urf, Distribution.fTransform_fTransform,
+    Distribution.fTransform_apply_eq_mass]
+  refine Distribution.mass_congr _ fun g => ?_
+  rw [Function.comp_apply, transcript_functionEvaluator_playQueries_length]
+
+@[simp] theorem weight_Vn : (Vn M X).weight = 1 := by
+  rw [Vn, PDS.urf, Distribution.weight_fTransform, Distribution.weight_uniform]
+
+/-- **CR18 equation (6.2), printed p. 126** — the second of the six obligations
+at `cbc_mac_constructs`, discharged: `(ĈBC R_{n,n}) ⊨ V_n`.
+
+CR18's proof is two sentences, and both are proved above: prefix-freeness plus
+`A_i = 0` makes the terminal round-function inputs distinct
+(`notBad_implies_distinct_lastInputs`), and conditioned on `A_i = 0` the
+outputs are uniform (`notBad_implies_uniform_outputs`).  What this declaration
+adds is the reading of Maurer13b Definition 13's product form (printed p. 3153)
+at a fixed message list: a function evaluator refuses nothing, so both sides of
+the product form are masses of *evaluation* events on `l.toFinset`, and the
+identity is exactly the mass identity already proved.
+
+The case split is on whether the transcript `t` is realizable at all: if it is
+not, both sides of the product form vanish, and if it is, its realizations are
+the functions agreeing with one witness on the queried messages. -/
+theorem cbc_condEquiv [Nontrivial M] (bf : M → List X) (hbf : PrefixFree bf) :
+    PDG.CondEquiv (cbcGameLaw bf) (Vn M X) := by
+  classical
+  intro l
+  ext t
+  rw [Finsupp.smul_apply, Finsupp.smul_apply, smul_eq_mul, smul_eq_mul, weight_Vn,
+    one_mul, notWonLaw_cbcGameLaw_apply, notWonMass_cbcGameLaw,
+    trLawFullyDefined_Vn_apply]
+  by_cases hreal : ∃ h₀ : M → X, l.map (fun m => (m, some (h₀ m))) = t
+  · obtain ⟨h₀, rfl⟩ := hreal
+    rw [Distribution.mass_congr _ (Q := fun f =>
+        (∀ s : ↑l.toFinset, cbcState f (bf s.1) = h₀ s.1) ∧ ¬ cbcBad f bf l)
+      (fun f => by
+        rw [and_comm]
+        exact and_congr
+          (map_pair_eq_iff_forall_toFinset (fun m => cbcState f (bf m)) h₀ l) Iff.rfl),
+      Distribution.mass_congr (Distribution.uniform (M → X))
+        (Q := fun g => ∀ s : ↑l.toFinset, g s.1 = h₀ s.1)
+        (fun g => map_pair_eq_iff_forall_toFinset g h₀ l),
+      notBad_implies_uniform_outputs bf hbf l (fun s => h₀ s.1), mul_comm]
+  · push Not at hreal
+    rw [Distribution.mass_eq_zero_of_forall_not _ (fun f hf => hreal _ hf.2),
+      Distribution.mass_eq_zero_of_forall_not (Distribution.uniform (M → X))
+        (fun g hg => hreal g hg), mul_zero]
+
+end CondEquiv
 
 /-! ## CR18 Theorem 6.1 as a construction statement
 

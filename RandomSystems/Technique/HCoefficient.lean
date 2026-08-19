@@ -657,20 +657,9 @@ theorem h_coefficient_theorem_switching_ratio {S T : PDS X Y}
     advFullyDefined S T ≤
       (δb + ((q * (q - 1) : ℕ) : ℝ≥0) / ((2 * N : ℕ) : ℝ≥0) : ℝ≥0) := by
   refine h_coefficient_theorem hS hT hw hT1 (fun t ht => ?_) h_bad
-  have hk : t.length ≤ q := h_len t ht
-  have hmono : ((t.length * (t.length - 1) : ℕ) : ℝ≥0) / ((2 * N : ℕ) : ℝ≥0) ≤
-      ((q * (q - 1) : ℕ) : ℝ≥0) / ((2 * N : ℕ) : ℝ≥0) := by
-    gcongr
-  have hle1 := hmono.trans h_eps
-  have hcoe := NNReal.coe_le_coe.mpr
-    (Probability.Counting.switching_ratio_le (hk.trans hqN) hN hle1)
-  rw [NNReal.coe_mul, NNReal.coe_sub hle1] at hcoe
-  have hmonoR := NNReal.coe_le_coe.mpr hmono
-  simp only [NNReal.coe_div, NNReal.coe_natCast, NNReal.coe_pow, NNReal.coe_one] at hcoe hmonoR
   rw [h_ideal t ht, h_real t ht]
-  simp only [NNReal.coe_div, NNReal.coe_natCast]
-  refine le_trans (mul_le_mul_of_nonneg_right ?_ (by positivity)) hcoe
-  linarith
+  exact Probability.Counting.switching_ratio_le_of_query_bound
+    (h_len t ht) hqN hN h_eps
 
 /-- **Non-triviality of the receipt.**  At the empty transcript the receipt's
 two length-indexed hypotheses read `‖T‖ = 1` and `‖S‖ = 1` — they are satisfied

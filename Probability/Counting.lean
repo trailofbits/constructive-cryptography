@@ -232,6 +232,31 @@ theorem switching_ratio_le {N q : ℕ} (h_le : q ≤ N) (h_pos : 0 < N)
   have hfall := falling_factorial_lower_bound h_le h_pos
   nlinarith [hfall]
 
+/-- **The switching ratio under a query cap.**  If a transcript contains
+`k ≤ q` relevant queries, the `k`-query switching ratio is bounded using the
+single birthday defect at the public cap `q`.  This is the monotone form used
+by transcript arguments: the paper proof states one bound in terms of the
+query budget rather than introducing a separate error parameter for every
+possible transcript length. -/
+theorem switching_ratio_le_of_query_bound {N k q : ℕ}
+    (hkq : k ≤ q) (hqN : q ≤ N) (hN : 0 < N)
+    (h_eps : ((q * (q - 1) : ℕ) : NNReal) / ((2 * N : ℕ) : NNReal) ≤ 1) :
+    ((1 - (((q * (q - 1) : ℕ) : NNReal) / ((2 * N : ℕ) : NNReal) : ℝ)) *
+        (((N - k).factorial : ℝ) / (N.factorial : ℝ))) ≤
+      1 / (N : ℝ) ^ k := by
+  have hmono : ((k * (k - 1) : ℕ) : NNReal) / ((2 * N : ℕ) : NNReal) ≤
+      ((q * (q - 1) : ℕ) : NNReal) / ((2 * N : ℕ) : NNReal) := by
+    gcongr
+  have hle1 := hmono.trans h_eps
+  have hcoe := NNReal.coe_le_coe.mpr
+    (switching_ratio_le (hkq.trans hqN) hN hle1)
+  rw [NNReal.coe_mul, NNReal.coe_sub hle1] at hcoe
+  have hmonoR := NNReal.coe_le_coe.mpr hmono
+  simp only [NNReal.coe_div, NNReal.coe_natCast, NNReal.coe_pow, NNReal.coe_one] at hcoe hmonoR
+  simp only [NNReal.coe_natCast]
+  refine le_trans (mul_le_mul_of_nonneg_right ?_ (by positivity)) hcoe
+  linarith
+
 /-! ## Permutation fibers and the permutation-consistency mass -/
 
 /-- The number of permutations extending a prescribed injective finite
