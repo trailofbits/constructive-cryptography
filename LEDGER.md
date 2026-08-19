@@ -3054,9 +3054,9 @@ gates, adversarial audit before deltas apply):
      composition laws) first; the combinator layer next; applications last.
      BUILD 1 LANDED (6bc25b4 + predecessor, `System/ConverterClass.lean`,
      ~900 lines, 40 decls axiom-clean).  Names for check 1: `SystemMap`,
-     `ActsWithin`, `Absorbs`, `LocalWithin`, `RequestsAtMost`,
-     `IsConverterMapAt`, `converterClass`, `pullbackLimit`,
-     `pullbackRestriction`.  A4 is DERIVED from A3, so instances discharge
+     `ActsWithin`, `Absorbs`, `ReachesWithin`, `IsLocal`, `queryCount`,
+     `HasFiniteRounds`, `ofSystemMap`, `IsConverterMapAt`, `converterClass`,
+     `pullbackLimit`, `pullbackRestriction`.  A4 is DERIVED from A3, so instances discharge
      three fields.  Algebra computes: identity (∅,1), composition
      (i ∪ i', K*K') — MULTIPLICATION, since K counts resource queries per
      outer query including pass-through.  Over-the-class theorems 1-4 landed
@@ -3077,7 +3077,21 @@ gates, adversarial audit before deltas apply):
      (F3) `answersWithinUniformBudget_converterEngine` quantifies its constant
      existentially, so a program's own `K` cannot propagate; a one-line
      receipt restatement at a named `K` is owed.
-     (F4) **THE OPEN DESIGN QUESTION**: a uniform per-query `K` is too coarse
+     (F4) **DISSOLVED, not decided (Marc, c9c344a).** It was an artefact of
+     promoting CR18 Def 3.8's well-definedness clause into a number and then
+     REASONING with it.  Correction: the class is indexed by the INTERFACE
+     ONLY; `HasFiniteRounds` is existential and does well-definedness alone;
+     the query count is a DERIVED function (`queryCount g l := sInf {N |
+     ReachesWithin N l g}`), never a field.  Absorption/pullback now take the
+     sharp hypothesis "on admitted histories the count is ≤ r" — CR18's own
+     sentence — so nothing is over-estimated and no class law quantifies over
+     the count, which is why composition needs no cost algebra.  **CBC's eq.
+     (6.1) UNFOLDS** (`cbc_filter_redundant`): the admission is discharged by
+     θ_r's own definition, since `thetaPred` IS the block-count bound.  The
+     one CBC-side residue is arithmetic about `cbcRound`'s per-round spend,
+     not converter theory.  F3 is harmless for the same reason — the
+     existential receipt is exactly A4's strength.  ORIGINAL (superseded):
+     a uniform per-query `K` is too coarse
      for CBC's θ_r, whose predicate is a BLOCK COUNT, not a length bound — so
      eq. (6.1) does NOT unfold for CBC under this class.  Making it unfold
      needs the reach as a HISTORY-COST datum; but a content-dependent cost
