@@ -69,6 +69,14 @@ theorem ConstructsForAll.trans {π π' : ∀ i, Γ i} {R S T : Set I → Set Φ}
   rw [patternAttach_mul]
   exact Constructs.trans (h Z) (h' Z)
 
+/-- §2.2's composability as a `calc` step: the per-`Z` family chains as one
+relation, so a two-stage multiparty protocol is written as a single
+calculation with the composite `π' * π` supplied by the instance. -/
+instance instTransConstructsForAll {π π' : ∀ i, Γ i} :
+    Trans (ConstructsForAll (Φ := Φ) π) (ConstructsForAll π')
+      (ConstructsForAll (π' * π)) where
+  trans := ConstructsForAll.trans
+
 open Classical in
 /-- §2.4: "if `Z` is not in the adversary structure, then the resource is
 only known to satisfy the trivial specification `Φ`" — and every protocol
@@ -401,6 +409,16 @@ theorem ConstructsForAdversaryStructure.trans {I : Type*} {Γ : I → Type*}
     rwa [← patternAttach_mul] at hcomp
   · simp only [if_neg hZ]
     exact fun x _ => Set.mem_univ x
+
+/-- §2.4's composability as a `calc` step, the structured counterpart of
+`instTransConstructsForAll`. -/
+instance instTransConstructsForAdversaryStructure {I : Type*} {Γ : I → Type*}
+    {Φ : Type*} [∀ i, Monoid (Γ i)] [MulAction (∀ i, Γ i) Φ]
+    {𝒵 : AdversaryStructure I} {π π' : ∀ i, Γ i} :
+    Trans (ConstructsForAdversaryStructure (Φ := Φ) 𝒵 π)
+      (ConstructsForAdversaryStructure 𝒵 π')
+      (ConstructsForAdversaryStructure 𝒵 (π' * π)) where
+  trans := ConstructsForAdversaryStructure.trans
 
 /-! ### The tuple rendering of the `∗Z` calculus (LiuMau20 §2.4)
 

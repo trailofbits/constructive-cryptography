@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import RandomSystems.System.Behaviour
 import RandomSystems.System.Relabel
+import Probability.SimpAttr
 
 /-!
 # Random games (Lanzenberger §2.3.3, Definitions 2.20–2.25)
@@ -790,6 +791,13 @@ def gameTrLaw (e : System.DDE.Total Y X) (n : ℕ) (G : PDG X Y) :
     Distribution (List (X × Option Y) × Bool) :=
   Distribution.fTransform (fun g => System.gameTranscript g e n) G
 
+/-- The Definition 2.21 observable has the weight of the game law: it is a
+pushforward.  The companion of `PDS.weight_trLawFullyDefined` one layer up, and
+in `dist_simp` for the same reason. -/
+@[dist_simp] theorem weight_gameTrLaw (e : System.DDE.Total Y X) (n : ℕ)
+    (G : PDG X Y) : (gameTrLaw e n G).weight = G.weight :=
+  Distribution.weight_fTransform _ G
+
 /-- The mass of Definition 2.25's winning transcripts in one environment at
 one interaction length: `Pr^{tr(S^A)}(tr(S^A,e) ∈ 𝒯_w)`. -/
 def winningMass (e : System.DDE.Total Y X) (n : ℕ) (G : PDG X Y) : ℝ :=
@@ -944,7 +952,7 @@ forgetful map whose sections `adjoin` builds. -/
 def forget (G : PDG X Y) : PDS X Y :=
   Distribution.fTransform Prod.fst G
 
-@[simp] theorem weight_forget (G : PDG X Y) : (forget G).weight = G.weight :=
+@[simp, dist_simp] theorem weight_forget (G : PDG X Y) : (forget G).weight = G.weight :=
   Distribution.weight_fTransform _ G
 
 theorem nonNeg_forget {G : PDG X Y} (hG : G.NonNeg) : (forget G).NonNeg :=

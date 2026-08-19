@@ -98,7 +98,7 @@ def Constructs (π : Sigma) (R S : Specification Φ) : Prop := π • R ⊆ S
 /-- Specifications with pointwise protocol application form a reduction in
 the sense of MauRen11 Definition 6. -/
 instance : HasReduction (Specification Φ) Sigma where
-  Red R π S := Constructs π R S
+  Red π R S := Constructs π R S
 
 theorem constructs_iff {π : Sigma} {R S : Specification Φ} : R —[π]→ S ↔ π • R ⊆ S := Iff.rfl
 
@@ -160,6 +160,7 @@ theorem Constructs.trans {π π' : Sigma} {R S T : Specification Φ}
     (h : R —[π]→ S) (h' : S —[π']→ T) :
     R —[π' * π]→ T :=
   red_mul h h'
+
 end Constructs
 
 section ActCommute

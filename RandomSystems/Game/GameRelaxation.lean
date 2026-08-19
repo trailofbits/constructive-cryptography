@@ -2,7 +2,7 @@
 Copyright (c) 2026 Trail of Bits. All rights reserved.
 Authors: Marc Ilunga, Claude
 -/
-import RandomSystems.Technique.ConditionalEquivalence
+import RandomSystems.Technique.BlindWinning
 import RandomSystems.System.ParFace
 
 /-!
@@ -54,23 +54,29 @@ sub-carrier is ever installed.
   every fixed query sequence.  The relaxation is therefore *defined* off the
   condition and only *compared* to a ball; defining it as a ball would lose the
   conditional content the source's Lemma 5.2 and §5.4 rely on.
-* CR18's **Lemma 5.3** as printed is **not built here** — FLAG F-8, an
-  escalation on the record rather than a workaround.  It reads
+* CR18's **Lemma 5.3** (printed p. 121) **is** built here, as
+  `forget_mem_gameRelaxation_of_condEquiv`.  It reads
   "`Ŝ |≡ T ⟹ S ⊆ T̂^⊥`, where … the inputs to `T` are also given to `bŜ` and
-  the MBO (of `T`) is the MBO of `Ŝ`, i.e. the MBO is defined independently of
-  `T`" — that is, `T̂` is built by running `Ŝ`'s condition *alongside* `T` on the
-  same inputs.  That construction needs the blinded system `bŜ`, and
-  "blinded-system objects" is a class Ruling R11(a) names as forbidden; the same
-  bar is already recorded in
-  `conditional_equivalence_theorem_infWinnability`'s docstring.  **R11(a)'s own
-  remedy clause is "a fork to Marc, not a build"**, so the status of Lemma 5.3
-  is *blocked pending a ruling on a blinded-system object*, **not** impossible:
-  what is barred is landing the object unilaterally, and the route out is the
-  escalation, not a workaround.  Lemma 5.2 is unaffected — it needs only `≡ᵍ`,
-  which is landed.  Recorded so that no future brief plans Lemma 5.3 as cheap.
-  What *is* landed here is the composition the lemma is used for: Definition
-  2.36's static `ω` as the radius, through Lanzenberger Theorem 2.37's `ν ≤ ω`
-  (`PDG.supWinProb_le_infWinnability`).
+  the MBO (of `T̂`) is the MBO of `Ŝ`, i.e. the MBO is defined independently of
+  `T`" — that is, `T̂` is built by running `Ŝ`'s condition *alongside* `T` on
+  the same inputs, which is exactly the enhanced game of CR18 eq. (4.39),
+  landed as `PDG.enhance` (`Technique/BlindWinning.lean`).  Given that game,
+  Lemma 5.3 is Lemma 5.2 applied to eq. (4.39) — the same chaining the source's
+  own proof of Theorem 4.17 performs.
+  **This supersedes FLAG F-8**, which had recorded Lemma 5.3 as blocked pending
+  a ruling on a "blinded-system object".  The escalation rested on a
+  misidentification of `b`: CR18 Definition 4.20 (printed p. 109) makes it
+  **reply-side** — "transparent for the queries `Xᵢ` but blocks the replies
+  `Yᵢ`" — while the landed `block`/`filterPhi` family is **query-side**, a
+  domain filter.  The reply-eraser is an ordinary attachment engine, inner-total
+  and uniformly budgeted, hence a member of the metric-facing `Σ`
+  (`System/BlockReplies.lean`, `blockReplies_mem_converterMonoidAt`); no new
+  object stack was ever required, and Ruling R11(a) never barred one.
+  What is also landed is the composition the lemma is used for, now at both
+  radii: Definition 2.36's static `ω` through Lanzenberger Theorem 2.37's
+  `ν ≤ ω` (`PDG.supWinProb_le_infWinnability`), and CR18 Theorem 4.17's
+  *non-adaptive* `Γ(bŜ)` through `PDG.supWinProb_enhance_le_blindSupWinProb`
+  (`gameRelaxation_enhance_subset_epsilonRelaxation_blind`).
 * **Theorem 5.4** (authentication amplification, printed p. 122) is out of
   scope: an application rider, per the LEDGER's APPLICATION discipline.
 * Compatibility (CR18 Definitions 5.6/5.7, "we point out that game-relaxation
@@ -197,14 +203,12 @@ theorem gameRelaxation_subset_epsilonRelaxation {G : PDG Uni.{u} Uni.{u}}
 `ν`, by Lanzenberger Theorem 2.37's trivial direction
 (`supWinProb_le_infWinnability`) composed with the containment above.
 
-This is the composition CR18's Lemma 5.3 is used for — "one can view `S` as if
-it were `T`, as long as the game is not won", with a right-hand side that
-mentions no environment.  It is **not** Lemma 5.3 as printed: that lemma's
-hypothesis is conditional equivalence together with an MBO "defined
-independently of `T`", i.e. the blinded product game.  Ruling R11(a) does not
-admit a blinded-system object and routes one to Marc rather than to a build, so
-that lemma is **blocked pending a ruling** (FLAG F-8, module docstring), not
-impossible.
+This is one of the two compositions CR18's Lemma 5.3 is used for — "one can
+view `S` as if it were `T`, as long as the game is not won", with a right-hand
+side that mentions no environment.  Lemma 5.3 itself is
+`forget_mem_gameRelaxation_of_condEquiv` below, and the *non-adaptive* radius
+CR18 Theorem 4.17 reaches is
+`gameRelaxation_enhance_subset_epsilonRelaxation_blind`.
 
 Theorem 2.37 is an equality on the finite slice, so this is not a weaker bound
 — it is the same number written without a supremum over strategies. -/
@@ -219,6 +223,66 @@ theorem gameRelaxation_subset_epsilonRelaxation_infWinnability
       (gameRelaxation_subset_epsilonRelaxation hG hS)
   exact AbstractCryptography.Relaxation.mem_epsilonRelaxation_iff.mpr ⟨R, hR,
     hSR.trans (ENNReal.ofReal_le_ofReal (supWinProb_le_infWinnability hG hnil))⟩
+
+/-! ## CR18 Lemma 5.3 -/
+
+/-- **CR18 Lemma 5.3** (printed p. 121): "Consider a game `Ŝ` and a system `T`.
+We have `Ŝ ⊨ T ⟹ S ⊆ T̂^⊥`, where the MBO for `T` (to result in game `T̂`) is
+as described in the proof of Theorem 4.17, i.e., the inputs to `T` are also
+given to `bŜ` and the MBO (of `T̂`) is the MBO of `Ŝ`, i.e., the MBO is defined
+independently of `T`."
+
+The game `T̂` the statement names is `PDG.enhance G T` — CR18 eq. (4.39) /
+Maurer13b Theorem 3's display, landed in `Technique/BlindWinning.lean` — and
+with it the lemma is **Lemma 5.2 applied to eq. (4.39)**: conditional
+equivalence gives `Ŝ ≡ᵍ T̂` (`PDG.equivalentAsGames_enhance`), and Lemma 5.2
+turns a `≡ᵍ` into a membership.  That is the source's own chaining; the proof
+of Theorem 4.17 (printed p. 110) performs the same two steps.
+
+The hypothesis bundle is eq. (4.39)'s: `T` normalized (a product law's weight
+is a product) and one shared Definition 2.14 domain (the MBO of `Ŝ` reads the
+history `Ŝ` answered, and `T̂`'s transcript exposes the history `T` answered).
+See `Technique/BlindWinning.lean`'s module docstring for why neither is
+totality.
+
+This retires FLAG F-8: nothing here is a blinded-system *object*.  `bŜ` is the
+landed attachment `attachEngineFully Set.univ (blockReplies Set.univ c)`
+(`System/BlockReplies.lean`), and it does not even occur in the statement —
+CR18 mentions it only to say where the MBO's inputs come from, and on this
+carrier that is the second factor of a product law. -/
+theorem forget_mem_gameRelaxation_of_condEquiv {G : PDG Uni.{u} Uni.{u}}
+    {T : PDS Uni.{u} Uni.{u}} {D : Set (List Uni.{u})} (hG : G.NonNeg)
+    (hT1 : T.weight = 1) (hdomG : HasDomain G D) (hdomT : PDS.HasDomain T D)
+    (hCE : CondEquiv G T) :
+    forget G ∈ gameRelaxation (enhance G T) :=
+  forget_mem_gameRelaxation_of_equivalentAsGames hG
+    (by rw [weight_enhance, hT1, one_mul])
+    (equivalentAsGames_enhance hT1 hdomG hdomT hCE)
+
+open AbstractCryptography in
+/-- **The non-adaptive radius**: CR18 Theorem 4.17's `Γ(bŜ)` in place of
+Definition 2.25's `ν`, obtained by composing the `ν`-ball containment with
+`PDG.supWinProb_enhance_le_blindSupWinProb` — Maurer13b Theorem 3's last step,
+"`⟦DT⟧ ∈ NA` for any `D`".
+
+This is the second composition Lemma 5.3 is used for, and the sharper of the
+two: `νᴺᴬ ≤ ν = ω`, generally strictly (CR18 printed p. 109).  Note where the
+radius is measured — it is the *original* game's blind winning probability, not
+the enhanced game's `ν`, which is the whole content of the step. -/
+theorem gameRelaxation_enhance_subset_epsilonRelaxation_blind
+    {G : PDG Uni.{u} Uni.{u}} {T : PDS Uni.{u} Uni.{u}} {D : Set (List Uni.{u})}
+    (hG : G.NonNeg) (hT : T.NonNeg) (hT1 : T.weight = 1)
+    (hdomG : HasDomain G D) (hdomT : PDS.HasDomain T D) :
+    gameRelaxation (enhance G T) ⊆
+      AbstractCryptography.Relaxation.epsilonRelaxation νᴺᴬ[G]
+        {forget (enhance G T)} := by
+  intro S hS
+  obtain ⟨R, hR, hSR⟩ :=
+    AbstractCryptography.Relaxation.mem_epsilonRelaxation_iff.mp
+      (gameRelaxation_subset_epsilonRelaxation (nonNeg_enhance hG hT) hS)
+  exact AbstractCryptography.Relaxation.mem_epsilonRelaxation_iff.mpr ⟨R, hR,
+    hSR.trans (ENNReal.ofReal_le_ofReal
+      (supWinProb_enhance_le_blindSupWinProb hG hT hT1 hdomG hdomT))⟩
 
 /-! ## Compatibility (CR18 Definitions 5.6 and 5.7) -/
 

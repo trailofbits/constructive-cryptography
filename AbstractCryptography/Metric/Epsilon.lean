@@ -163,7 +163,7 @@ so it accepts the same converters as the exact form. -/
 @[reducible] def ApproximatelyConstructs [HasReduction (Specification Φ) Sigma]
     (π : Sigma) (ε : ℝ≥0∞)
     (R S : Specification Φ) : Prop :=
-  HasReduction.Red R π (Relaxation.epsilonRelaxation ε S)
+  HasReduction.Red π R (Relaxation.epsilonRelaxation ε S)
 
 /-- `R —[π; ε]→ S` is `ApproximatelyConstructs π ε R S`. -/
 scoped notation:50 R " —[" π "; " ε "]→ " S:51 =>
@@ -204,6 +204,26 @@ theorem Constructs.epsilonRelaxation_trans [IsNonexpandingSMul Sigma Φ] {π π'
   exact fun x hx =>
     Relaxation.epsilonRelaxation_epsilonRelaxation_subset T
       (Constructs.relax_trans h h' (Relaxation.epsilonRelaxation_compatible ε) hx)
+
+/-- Corollary 1.1 item 1 as a `calc` step, so that an approximate chain is
+written the way the paper adds its budgets,
+
+```
+calc R —[π; ε]→ S := first
+  _ —[π'; ε']→ T := second
+```
+
+and the composite `π' * π` with budget `ε + ε'` is produced by the instance.
+The two source relations pin both protocols and both radii, so the `outParam`
+target is determined; `IsNonexpandingSMul` is a class, so `calc` can carry it.
+This is the one composition on this file's list that `calc` *can* carry:
+`Constructs.relax_trans` at a general relaxation `φ` needs the selected proof
+`φ.Compatible Sigma`, which is a term, not an instance. -/
+instance instTransApproximatelyConstructs [IsNonexpandingSMul Sigma Φ]
+    {π π' : Sigma} {ε ε' : ℝ≥0∞} :
+    Trans (ApproximatelyConstructs (Φ := Φ) π ε) (ApproximatelyConstructs π' ε')
+      (ApproximatelyConstructs (π' * π) (ε + ε')) where
+  trans := Constructs.epsilonRelaxation_trans
 
 /-- JM20 §2.3, **Corollary 1**, item 2:
 `ℛ —π→ 𝒮^ε ⟹ [ℛ, 𝒯] —π→ [𝒮, 𝒯]^{ε_𝒯}`, where Theorem 3 defines

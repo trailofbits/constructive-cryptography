@@ -110,3 +110,80 @@ if [ "$pin_actual" != "$pin_expect" ]; then
   exit 1
 fi
 echo "registryAudit: OK (IsNonexpandingPar uninstantiated at Phi; converterMonoidAt pinned)"
+# ---------------------------------------------------------------- check 6
+# Opt-in citation gate.  A file whose header (first 40 lines) carries the
+# literal marker PAPER-FAITHFUL declares that its statements are the printed
+# source's statements, so inside it **a numbered source result may not be
+# cited without its printed page**: any top-level `theorem` whose doc-comment
+# names a `Definition/Theorem/Lemma/Example/Corollary/Remark/Proposition N`
+# or an `eq. (N)` must also name the page — `printed p. 3153`,
+# `printed pp. 121–122`, `preprint p. 12` (both `-` and `–` are used).
+#
+# SCOPE RULING (2026-08-19).  The gate deliberately does NOT demand a citation
+# of every theorem.  Every technique module is a chain of internal bookkeeping
+# lemmas (`weight_enhance`, `nonNeg_adjoin`, `dom_blockReplies`) that state
+# nothing any paper states; requiring a page on those would manufacture false
+# attributions, which is the exact drift the LEDGER charter's trap list bars
+# ("cite paper + printed page, never bare numbers").  What the charter forbids
+# is a BARE NUMBER, and that is what this gate catches.  Measured on the tree
+# at the time of writing: the every-theorem reading would have flagged 45 of
+# `Technique/ConditionalEquivalence.lean`'s 50 theorems; this reading flags
+# the citations that were genuinely missing a page, and they were fixed.
+#
+# Purely grep-level — no Lean elaboration — and green on an unmarked tree, so
+# marking a file is the whole opt-in.
+marked=0
+uncited=0
+while IFS= read -r file; do
+  header=$(head -n 40 "$file")
+  case "$header" in
+    *PAPER-FAITHFUL*) ;;
+    *) continue ;;
+  esac
+  marked=$((marked + 1))
+  offenders=$(awk '
+    BEGIN { inblk = 0; isdoc = 0; doctext = "" }
+    {
+      if (inblk) {
+        if (isdoc) doctext = doctext " " $0
+        if ($0 ~ /-\//) { inblk = 0 }
+        next
+      }
+      if ($0 ~ /^\/-/) {
+        inblk = 1
+        isdoc = ($0 ~ /^\/--/)
+        if (isdoc) doctext = $0
+        if ($0 ~ /-\/[[:space:]]*$/) { inblk = 0 }
+        next
+      }
+      if ($0 ~ /^(@\[[^]]*\][[:space:]]*)*(nonrec[[:space:]]+)?theorem[[:space:]]/) {
+        cites = (doctext ~ /(Definition|Theorem|Lemma|Example|Corollary|Remark|Proposition)[[:space:]]+[0-9]/) ||
+                (doctext ~ /eq\.[[:space:]]*\([0-9]/)
+        if (cites &&
+            doctext !~ /[Pp]rinted[[:space:]]+pp?\.[[:space:]]*[0-9]/ &&
+            doctext !~ /[Pp]reprint[[:space:]]+pp?\.[[:space:]]*[0-9]/)
+          printf "  %s:%d: %s\n", FILENAME, NR, $0
+        doctext = ""
+        next
+      }
+      if ($0 ~ /^[[:space:]]*$/) { doctext = ""; next }
+      if ($0 ~ /^(@\[|open |omit |noncomputable|attribute )/) next
+      doctext = ""
+    }' "$file")
+  if [ -n "$offenders" ]; then
+    printf '%s\n' "$offenders"
+    uncited=$((uncited + 1))
+  fi
+done < <(find . -name '*.lean' -not -path './.lake/*' | sort)
+
+if [ "$uncited" -ne 0 ]; then
+  echo "citationAudit: FAIL — the theorems above are in a PAPER-FAITHFUL file" >&2
+  echo "  and cite a NUMBERED source result with no page.  The rule: in a file" >&2
+  echo "  whose header is marked PAPER-FAITHFUL, a doc-comment that names a" >&2
+  echo "  Definition/Theorem/Lemma/eq. (N) must also name the printed page —" >&2
+  echo "  'printed p. 3153', 'printed pp. 121–122', 'preprint p. 12'." >&2
+  echo "  Either add the page, refer to the landed declaration instead of the" >&2
+  echo "  bare number, or drop the marker from the file header." >&2
+  exit 1
+fi
+echo "citationAudit: OK ($marked file(s) marked PAPER-FAITHFUL, every numbered citation paged)"

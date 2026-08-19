@@ -8,6 +8,8 @@ import Probability.Conditional
 /-!
 # Conditional equivalence
 
+PAPER-FAITHFUL
+
 Maurer, *Indistinguishability of Random Systems* (EUROCRYPT 2002; ETH
 preprint, self-numbered pages), §4; Maurer, *Conditional Equivalence of Random
 Systems and Indistinguishability Proofs* (ISIT 2013), printed pp. 3152–3154;
@@ -30,8 +32,11 @@ Everything is a definition over the landed observables — the game pair
 Definition 2.25's `ν` (`PDG.supWinProb`), the transcript law
 (`PDS.trLawFullyDefined`) and Ruling R4's metric (`PDS.advFullyDefined`), and
 the T0 conditioning layer (`Probability.Distribution.condProb`).  No system,
-game, condition or conditioning notion is introduced here, and no `S⁻`, `Γ`,
-`Γᵇ` or blinded-system operator exists (PHI-SPEC R11(a)).
+game, condition or conditioning notion is introduced here, and no `S⁻`, `Γ` or
+`Γᵇ` operator exists (PHI-SPEC R11(a)).  The *blind* right-hand side of
+Maurer13b Theorem 3 / CR18 Theorem 4.17 lives in `Technique/BlindWinning.lean`
+and also introduces no operator: it is this same `ν` with its index set cut
+down to the landed `NonAdaptive` environments.
 
 * `PDG.notWonMass e n G` — Maurer13b's `p^S_{Aᵢ=0|Xⁱ}` (printed p. 3153): the
   mass of the not-won slice of `gameTrLaw`.
@@ -103,8 +108,11 @@ untouched.
   environment occurs at all.  Theorem 2.37 says `ω = ν`, so this is **not** a
   smaller bound — it is the same number presented as a counting quantity
   rather than as a supremum over strategies.  The papers' non-adaptive
-  `Γ^{NA}(Ŝ)` / `Γ(bŜ)` **is** strictly smaller in general and is **not**
-  obtained here (see the adaptivity note below).
+  `Γ^{NA}(Ŝ)` / `Γ(bŜ)` **is** strictly smaller in general, and is **not**
+  obtained here: it is
+  `PDG.conditional_equivalence_theorem_blind` (`Technique/BlindWinning.lean`),
+  which carries two clauses this endpoint does not (see the adaptivity note
+  below).
 
 ## The receipts, and what they are evidence of
 
@@ -134,10 +142,12 @@ lemma, CBC-MAC, sum of permutations) is discharged in this module.
   `ν` — a supremum over *all* total environments, hence adaptive, and hence
   Maurer02 Theorem 1's right-hand side.  Maurer13b Theorem 3 and CR18
   Theorem 4.17 reach the strictly stronger non-adaptive right-hand side
-  through a blinding operator (`⟦DT⟧`, printed p. 3152) or a blocking
-  converter (`b`, CR18 Definition 4.20, printed p. 109); neither is built
-  here, and citing Maurer02 for a blind right-hand side would be a false
-  citation.
+  through the non-adaptive distinguisher `⟦DT⟧` (printed p. 3152) or the
+  reply-blocking converter `b` (CR18 Definition 4.20, printed p. 109).
+  **Both are built** — in `Technique/BlindWinning.lean` and
+  `System/BlockReplies.lean` respectively, and proved to agree
+  (`PDG.supWinProb_blockRepliesGame`) — but not in this module, and citing
+  Maurer02 for a blind right-hand side would still be a false citation.
 * **Definition numbers collide across the papers**, so every citation above
   carries paper *and* printed page.
 
@@ -200,7 +210,8 @@ their only consumer so far.  UPSTREAM-CANDIDATES for
 
 /-- **The winning event reads the run, not the environment.**  Two interactions
 of one deterministic game that produce the same transcript are won together:
-Lanzenberger Definition 2.25's test reads `answeredQueries` of the transcript
+Lanzenberger Definition 2.25's test (printed p. 17) reads `answeredQueries` of
+the transcript
 and nothing else. -/
 theorem won_congr_transcript {g : DDG X Y} {e e' : DDE.Total Y X} {n n' : ℕ}
     {t : List (X × Option Y)}
@@ -235,7 +246,7 @@ theorem transcript_eq_iff_playQueries {e : DDE.Total Y X} {n : ℕ}
   simp [transcriptInputs]
 
 /-- The complement of Lanzenberger Definition 2.25's winning test, on the
-Definition 2.21 pair: the not-won slice is the transcripts ending with `(·,0)`.
+Definition 2.21 pair (both printed p. 17): the not-won slice is the transcripts ending with `(·,0)`.
 `Bool`-level companion of `won_iff_gameTranscript`. -/
 theorem not_won_iff_gameTranscript (g : DDG X Y) (e : DDE.Total Y X) (n : ℕ) :
     ¬ Won g e n ↔ (gameTranscript g e n).2 = false := by
@@ -297,8 +308,8 @@ theorem notWonLaw_apply (e : System.DDE.Total Y X) (n : ℕ) (G : PDG X Y)
   rw [System.not_won_iff_gameTranscript g e n]
   exact ⟨fun h => ⟨h.2, h.1⟩, fun h => ⟨h.2, h.1⟩⟩
 
-/-- The same, kept in `gameTrLaw` form: the numerator of Definition 13's first
-display, before any normalizer is cleared. -/
+/-- The same, kept in `gameTrLaw` form: the numerator of Maurer13b Definition
+13's first display (printed p. 3153), before any normalizer is cleared. -/
 theorem notWonLaw_apply_eq_mass_gameTrLaw (e : System.DDE.Total Y X) (n : ℕ)
     (G : PDG X Y) (t : List (X × Option Y)) :
     notWonLaw e n G t
@@ -314,8 +325,8 @@ theorem nonNeg_notWonLaw {G : PDG X Y} (hG : G.NonNeg)
     (e : System.DDE.Total Y X) (n : ℕ) : (notWonLaw e n G).NonNeg :=
   ((hG.fTransform _).restrict _).fTransform _
 
-/-- Definition 2.25's winning mass and the not-won mass partition the game's
-weight. -/
+/-- Lanzenberger Definition 2.25's winning mass (printed p. 17) and the not-won
+mass partition the game's weight. -/
 theorem winningMass_add_notWonMass (e : System.DDE.Total Y X) (n : ℕ)
     (G : PDG X Y) :
     winningMass e n G + notWonMass e n G = G.weight := by
@@ -348,7 +359,8 @@ theorem notWonLaw_le_weight {G : PDG X Y} (hG : G.NonNeg)
 
 /-- Before the first move every realization has produced the empty transcript,
 so the length-`0` transcript law is `S`'s weight concentrated at `[]`.  This is
-the index at which Definition 11's `i ≥ 1` clause bites (`EquivalentAsGames`
+the index at which Maurer13b Definition 11's `i ≥ 1` clause (printed p. 3153)
+bites (`EquivalentAsGames`
 says nothing there, and the honest weight hypothesis carries the step
 instead). -/
 theorem trLawFullyDefined_zero_apply_nil (e : System.DDE.Total Y X)
@@ -398,7 +410,8 @@ theorem EquivalentAsGames.trans {G H K : PDG X Y} (h : EquivalentAsGames G H)
     (h' : EquivalentAsGames H K) : EquivalentAsGames G K :=
   fun l hl => (h l hl).trans (h' l hl)
 
-/-- Lanzenberger Definition 2.22 refines Maurer13b Definition 11: agreeing on
+/-- Lanzenberger Definition 2.22 (printed p. 17) refines Maurer13b Definition 11
+(printed p. 3153): agreeing on
 the *whole* game transcript law in every environment implies agreeing on the
 not-won slice at the fixed query lists. -/
 theorem equivalentAsGames_of_gameEquivalent {G H : PDG X Y}
@@ -428,7 +441,8 @@ def CondEquiv (G : PDG X Y) (T : PDS X Y) : Prop :=
 scoped notation:50 G " |≡ " T => CondEquiv G T
 
 /-- **The index the papers exclude carries no information — for Definition 13.**
-Maurer13b Definition 13 and CR18 Definition 4.19 both quantify over `i ≥ 1`,
+Maurer13b Definition 13 (printed p. 3153) and CR18 Definition 4.19 (printed
+p. 108) both quantify over `i ≥ 1`,
 while `CondEquiv` quantifies over every query list, `[]` included.  Nothing is
 strengthened: at the empty query list the interaction is the empty transcript in
 every realization, so both sides of the product form are the **not-yet-won**
@@ -630,8 +644,8 @@ theorem statDist_trLawFullyDefined_forget_le_winningMass {G : PDG X Y}
     _ = winningMass e n G := rfl
 
 /-- **The coupling core at the metric.**  Pointwise domination of the not-won
-law at every fixed query list bounds the *adaptive* `Adv⊥` by Definition 2.25's
-`ν`. -/
+law at every fixed query list bounds the *adaptive* `Adv⊥` by Lanzenberger
+Definition 2.25's `ν` (printed p. 17). -/
 theorem advFullyDefined_forget_le_supWinProb_of_notWonLaw_le {G : PDG X Y} {T : PDS X Y}
     (hG : G.NonNeg) (hT : T.NonNeg)
     (hle : ∀ t : List (X × Option Y),
@@ -735,8 +749,9 @@ Reading the statement: `S = Ŝ⁻` is `PDG.forget G`, `Δ` is Ruling R4's `Adv�
 and `ν(F, Āₖ)` is Definition 2.25's `ν` after the Maurer02 polarity flip (his
 `Aᵢ = 1` is the condition *satisfied*; the condition firing is winning here).
 The right-hand side is a supremum over *all* total environments, hence
-adaptive; the papers' non-adaptive `Γ^{NA}`/`Γ(bŜ)` needs the blinding
-machinery and is not claimed.
+adaptive; the papers' non-adaptive `Γ^{NA}`/`Γ(bŜ)` is the separate endpoint
+`PDG.conditional_equivalence_theorem_blind` (`Technique/BlindWinning.lean`),
+which is strictly stronger and pays two further clauses for it.
 
 Hypotheses: non-negativity of both laws and equal weight — the honest bundle
 `Adv⊥`'s own symmetry statement carries (`advFullyDefined_comm_of_weight_eq`),
@@ -764,7 +779,9 @@ counting quantity: no environment, adaptive or blind, occurs on the right.
 probability becomes a counting problem), but it must not be read as the papers'
 non-adaptive right-hand side.  Maurer13b Theorem 3's `Γ^{NA}_q(Ŝ)` and CR18
 Theorem 4.17's `Γ(bŜ)` satisfy `Γ^{NA} ≤ Γ = ν = ω` and are strictly smaller
-in general; reaching them needs the blinding machinery R11(a) does not admit.
+in general; they are reached by `PDG.conditional_equivalence_theorem_blind`
+(`Technique/BlindWinning.lean`), at the price of a normalized `T` and one
+shared Definition 2.14 domain.
 
 The finiteness bundle is Theorem 2.37's own — one domain clause, a query
 bound, `[Fintype X]`, and the empty-history clause the pair carrier needs. -/
@@ -866,8 +883,8 @@ end PDG
 
 namespace PDS
 
-/-- **The endpoint at the constructor.**  Maurer02 Theorem 1(i) / Maurer13b
-Theorem 3 taking the *base* system `S` and a per-atom condition `A`, with the
+/-- **The endpoint at the constructor.**  Maurer02 Theorem 1(i) (preprint p. 12)
+/ Maurer13b Theorem 3 (printed p. 3154) taking the *base* system `S` and a per-atom condition `A`, with the
 game built inside the statement by Remark 2.24's constructor `PDS.adjoin`.
 Nothing is assumed about the game: `adjoin` discharges the forgetting law on
 the nose (`forget_adjoin`) and monotonicity lives in `MonotoneCondition`, so
@@ -882,7 +899,8 @@ theorem conditional_equivalence_theorem_adjoin {S T : PDS X Y}
   rwa [forget_adjoin] at h
 
 /-- The same endpoint for an arbitrary game *for* `S`, where the forgetting law
-holds only up to Lanzenberger Definition 2.17 (`PDS.GamesFor` membership).
+holds only up to system equivalence (`PDS.equivalent`, `PDS.GamesFor`
+membership).
 `Adv⊥` transports along equivalence in both slots
 (`PDS.advFullyDefined_congr`), so which representative a construction happens
 to produce is not a modeling wrinkle. -/
@@ -990,7 +1008,8 @@ theorem nonNeg_ofDDS (s : System.DDS X Y) : (ofDDS s).NonNeg := by
   rw [ofDDS, Finsupp.single_apply]
   split <;> norm_num
 
-/-- **Definition 11's `i ≥ 1` clause is not cosmetic.**  Two games over one
+/-- **Maurer13b Definition 11's `i ≥ 1` clause is not cosmetic** (printed
+p. 3153).  Two games over one
 system — the same total system, carrying the condition "some query has been
 answered" and the already-won condition `⊤` — agree on the not-won slice at
 every nonempty query list (both slices are empty: the condition has fired) and

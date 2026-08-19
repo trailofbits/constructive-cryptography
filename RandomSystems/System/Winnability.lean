@@ -190,13 +190,7 @@ theorem gameEquivalent_trans {G H K : PDG X Y} (h : gameEquivalent G H)
 pushforward. -/
 theorem weight_eq_of_gameEquivalent {G H : PDG X Y} (h : gameEquivalent G H) :
     G.weight = H.weight := by
-  have h0 := h (fun _ => none) 0
-  have hG := Distribution.weight_fTransform
-    (fun g => System.gameTranscript g (fun _ => none) 0) G
-  have hH := Distribution.weight_fTransform
-    (fun g => System.gameTranscript g (fun _ => none) 0) H
-  rw [← hG, ← hH]
-  exact congrArg Distribution.weight h0
+  simpa [dist_simp] using congrArg Distribution.weight (h (fun _ => none) 0)
 
 /-- Definition 2.25's winning mass is a Definition 2.22 invariant: it reads
 only the game-transcript law (`winningMass_eq_mass_gameTrLaw`). -/

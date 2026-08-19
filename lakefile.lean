@@ -94,6 +94,12 @@ automation.  It remains outside the public root and concrete carriers. -/
 lean_lib AbstractCryptographyProofAutomationTests where
   globs := #[.one `AbstractCryptographyProofAutomationTests]
 
+/-- Non-default firing evidence for the construction layer's `Trans`
+instances: every paper composition that `calc` can carry, written as a single
+calculation.  Carrier-agnostic, so it stays out of the public root. -/
+lean_lib AbstractCryptographyCalcChainTests where
+  globs := #[.one `AbstractCryptographyCalcChainTests]
+
 /-- Non-default usability gate for Jost's §4.2 context-restricted
 constructions: the collapse to the ordinary notion at `𝒞_id`, the closure of a
 context set, and both composition rules firing on the smallest non-trivial

@@ -72,11 +72,20 @@ equivalently, that `S` can be *realized* (or *constructed*) *from* `R` by
 equivalently be interpreted as a collection `{—α→}_{α∈Γ}` of relations on
 `Ω`, indexed by elements of `Γ`." -/
 class HasReduction (Ω : Type*) (Γ : Type*) where
-  /-- The reduction relation: `Red R α S` means `S` is constructed from `R`
-  by `α`. -/
-  Red : Ω → Γ → Ω → Prop
+  /-- The reduction relation: `Red α R S` means `S` is constructed from `R`
+  by `α`.
 
-@[inherit_doc] scoped notation:50 R " —[" α "]→ " S:51 => HasReduction.Red R α S
+  The paper's triple is `(R, α, S)`, but the field takes the constructor
+  first, so that `Red α` is the paper's own second reading — "a collection
+  `{—α→}_{α∈Γ}` of relations on `Ω`, indexed by elements of `Γ`" — as a Lean
+  binary relation, with `R` and `S` its last two arguments.  That is what
+  `Trans`, and hence `calc`, requires, and it is the argument order already
+  used by every relation built on this one (`Constructs π`,
+  `Constructible Γ`, `ApproximatelyConstructs π ε`).  The arrow notation
+  restores the printed order. -/
+  Red : Γ → Ω → Ω → Prop
+
+@[inherit_doc] scoped notation:50 R " —[" α "]→ " S:51 => HasReduction.Red α R S
 
 export HasReduction (Red)
 
@@ -103,6 +112,25 @@ class IsSeriallyComposable (Ω Γ : Type*) [Mul Γ] [One Γ] [HasReduction Ω Γ
   red_one (R : Ω) : R —[(1 : Γ)]→ R
 
 export IsSeriallyComposable (red_mul red_one)
+
+/-- Definition 7(i) as a `calc` step.  A serially composable reduction is a
+transitive family, so the paper's chain
+
+```
+calc R —[α]→ S := first
+  _ —[β]→ T := second
+```
+
+elaborates, with the composite label `β * α` supplied by the instance.  The
+two source relations pin `α` and `β`, so the `outParam` target is determined.
+This is the one `Trans` instance the whole reduction layer needs: `Constructs`
+and every other `HasReduction` carrier inherit it through their
+`IsSeriallyComposable` instance. -/
+instance instTransRed {Ω Γ : Type*} [Mul Γ] [One Γ] [HasReduction Ω Γ]
+    [IsSeriallyComposable Ω Γ] {α β : Γ} :
+    Trans (HasReduction.Red (Ω := Ω) α) (HasReduction.Red β)
+      (HasReduction.Red (β * α)) where
+  trans := red_mul
 
 /-- Definition 7: "Furthermore, `Γ` is called **context-insensitive** if
 
@@ -140,6 +168,12 @@ theorem Reduces.trans {R S T : Ω} (h : Reduces Γ R S) (h' : Reduces Γ S T) :
   obtain ⟨α, hα⟩ := h
   obtain ⟨β, hβ⟩ := h'
   exact ⟨β * α, red_mul hα hβ⟩
+
+/-- The unlabelled reduction of Definition 6 as a `calc` step: "property (i)
+implies transitivity of the relation `—→`", so `R —[∃ Γ]→ S` chains without
+the reader having to name the composite constructor. -/
+instance instTransReduces : Trans (Reduces (Ω := Ω) Γ) (Reduces Γ) (Reduces Γ) where
+  trans := Reduces.trans
 
 end Serial
 

@@ -27,6 +27,7 @@ import RandomSystems.System.FilterPhi
 import RandomSystems.System.MetricFullyDefined
 import RandomSystems.System.ConnectFullyDefined
 import RandomSystems.System.AttachEngineFully
+import RandomSystems.System.BlockReplies
 import RandomSystems.System.StarFullyDefined
 import RandomSystems.System.ParFace
 import RandomSystems.System.Connect
@@ -35,6 +36,8 @@ import RandomSystems.System.Winnability
 import RandomSystems.Converter.ConverterImpl
 import RandomSystems.Converter.Sigma
 import RandomSystems.Technique.ConditionalEquivalence
+import RandomSystems.Technique.BlindWinning
+import RandomSystems.Notation
 import RandomSystems.Technique.Completeness
 import RandomSystems.Technique.HCoefficient
 import RandomSystems.System.RandomObjects

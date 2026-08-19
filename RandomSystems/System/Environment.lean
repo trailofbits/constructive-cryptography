@@ -5,6 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import RandomSystems.System.ProbabilisticSystem
 import Probability.StatisticalDistance
 import Probability.Coupling
+import Probability.SimpAttr
 import Mathlib.Data.ENNReal.BigOperators
 
 /-!
@@ -774,8 +775,12 @@ objects (probability laws all have weight one); it is the honest hypothesis
 for the signed carrier, where `δ` genuinely is not symmetric. -/
 
 /-- The transcript law has the weight of the system law: pushing forward moves
-mass without creating or destroying it. -/
-theorem weight_trLawFullyDefined (e : System.DDE.Total Y X) (n : ℕ)
+mass without creating or destroying it.
+
+In `dist_simp` (`Probability/SimpAttr.lean`): the weight of a derived law is
+bookkeeping no source states, and a proof that has to name it is spending a
+line on the pushforward rather than on the argument. -/
+@[dist_simp] theorem weight_trLawFullyDefined (e : System.DDE.Total Y X) (n : ℕ)
     (S : PDS X Y) :
     (trLawFullyDefined e n S).weight = S.weight :=
   Distribution.weight_fTransform _ S

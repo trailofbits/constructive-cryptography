@@ -168,6 +168,21 @@ theorem Constructible.trans {Γ : Submonoid Sigma} {𝓡 𝒮 𝒯 : Specificati
   obtain ⟨π', hπ', hc'⟩ := h'
   exact ⟨π' * π, Γ.mul_mem hπ' hπ, hc.trans hc'⟩
 
+/-- Lemma 1 within `Γ` as a `calc` step: because the label is forgotten, the
+chain
+
+```
+calc 𝓡 —[∈ (Γ : Set Sigma)]→ 𝒮 := first
+  _ —[∈ (Γ : Set Sigma)]→ 𝒯 := second
+```
+
+stays inside one relation, and footnote 6's closure of the admitted set is
+supplied by the `Submonoid` rather than restated at each step. -/
+instance instTransConstructible {Γ : Submonoid Sigma} :
+    Trans (Constructible (Φ := Φ) (Γ : Set Sigma)) (Constructible (Γ : Set Sigma))
+      (Constructible (Γ : Set Sigma)) where
+  trans := Constructible.trans
+
 /-- MauRen16 §3.3's "`id ∈ Σ`" transported to the constructor class: with the
 identity admitted, CR18 §5.2.2's "`ℛ ⊆ 𝒮 ⟹ ℛ —id→ 𝒮`" is already a
 construction within `Γ`. -/

@@ -795,6 +795,26 @@ statement is no longer only inline inside `Relaxation.star_construct_eps` and
       note marked retired-as-record; matrix re-score: row 22 D+I, G1
       closed, D+I tally 28 -> 29, PARTIAL 9 -> 8.
       DRIFT-REPAIR COMPLETE — all 86 non-UNAFFECTED rows closed.
+  REPLY-BLOCKING CONVERTER (2026-08-19; check-1-forced row, added by the
+    implementing agent under the standing agent exception — review at closure).
+    CR18 Def 4.20's `b` is **reply-side** ("transparent for the queries `Xᵢ`
+    but blocks the replies `Yᵢ`", printed p. 109) and is therefore NOT a member
+    of the query-side `block`/`filterPhi` generator family: it enters as an
+    ORDINARY engine of the ATTACHMENT family above, with no widening of
+    anything.  Home `RandomSystems/System/BlockReplies.lean`; names:
+    `blockRepliesMove` (the engine's move at a converter history),
+    `blockReplies i c` (the engine), `blockRepliesBudget` (CR18 Def 3.8's
+    uniform request bound at K = 1, printed p. 62).  Receipts
+    `requestsWithin_blockReplies` / `innerTotal_blockReplies` /
+    `answersWithinUniformBudget_blockReplies` give
+    `blockReplies_mem_converterMonoidAt` straight from
+    `attachAt_mem_converterMonoidAt`; `converterMonoidAt` is BYTE-IDENTICAL and
+    the check-5 pin is unchanged.  KERNEL FACT (`attachEngineFully_blockReplies_
+    univ`): `attachEngineFully Set.univ (blockReplies Set.univ c) R =
+    functionEvaluator (fun _ => c)` for EVERY `R` — the reply-eraser erases the
+    resource, refusal pattern included, so Ruling R2's observable `⊥` costs
+    nothing here.  This SUPERSEDES the premise of FLAG F-8 (below); the
+    retirement of that flag is proposed to the coordinator, not applied here.
   SUPERSEDED — never the primitive again:
     `attachFully` / `converterMonoidFully` / `converterMonoidFullyBudgeted`
       (whole-face Φ level) -> superseded by `attachAt` /

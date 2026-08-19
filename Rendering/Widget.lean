@@ -10,7 +10,7 @@ the theory-free renderer.  Indices count arguments from the end. -/
 cc_diagram_attachment ConstructiveCryptography.CCAlgebra.apply 2 1 0
 cc_diagram_parallel AbstractCryptography.Par.par 1 0
 cc_diagram_distance ConstructiveCryptography.CCAlgebra.dist 1 0 "d"
-cc_diagram_construction AbstractCryptography.HasReduction.Red 2 1 0
+cc_diagram_construction AbstractCryptography.HasReduction.Red 1 2 0
 cc_diagram_construction AbstractCryptography.Constructs 1 2 0
 #cc_diagram_rule_check ConstructiveCryptography.CCAlgebra.apply
 #cc_diagram_rule_check AbstractCryptography.Par.par

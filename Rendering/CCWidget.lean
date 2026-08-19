@@ -1011,9 +1011,10 @@ partial def parseJudgment? (e : Expr) (p : SubExpr.Pos := .root)
   -- advantage-expression comparisons: `d … ≤ ε`, `Δ(…) ≤ Δ(…) + …`
   if let some args := matchApp? e ``LE.le 4 then
     return ← mkAdvComparison args[2]! (argPos p 4 2) args[3]! (argPos p 4 3) "≤" sel
-  -- constructions: `R —[π]→ S`
+  -- constructions: `R —[π]→ S`, whose head takes the constructor first
+  -- (`Red π R S`, so the arrow's endpoints are the last two arguments)
   if let some args := matchApp? e nRed 6 then
-    return ← mkConstruction args[3]! (argPos p 6 3) args[4]! (argPos p 6 4)
+    return ← mkConstruction args[4]! (argPos p 6 4) args[3]! (argPos p 6 3)
       args[5]! (argPos p 6 5) sel
   if e.isAppOf nConstructs then
     let args := e.getAppArgs

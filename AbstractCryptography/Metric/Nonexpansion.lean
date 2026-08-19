@@ -39,6 +39,28 @@ not imply equality without an explicit point-separation hypothesis. -/
 /-- Scalar closeness, backed by `WithinEDistance`. -/
 scoped notation:50 R " ≈[" ε "] " S:51 => WithinEDistance ε R S
 
+/-- The triangle inequality in ball form — the metric half of the budget
+addition MauRen16 §4.1 Corollary 1.1 performs at the specification level.
+Stated separately from the construction relation because it is the step a
+simulator argument takes inside a single resource, with no protocol attached
+(MauRen16 §4.2's chain `πR ≈ᵋ Sσ`, then `Sσ ≈ᵋ' T`). -/
+theorem WithinEDistance.trans [PseudoEMetricSpace Φ] {ε ε' : ℝ≥0∞} {R S T : Φ}
+    (h : R ≈[ε] S) (h' : S ≈[ε'] T) : R ≈[ε + ε'] T :=
+  (edist_triangle R S T).trans (add_le_add h h')
+
+/-- `WithinEDistance.trans` as a `calc` step: a hybrid argument is written
+
+```
+calc R ≈[ε] S := first
+  _ ≈[ε'] T := second
+```
+
+with the budget added by the instance.  The radii are pinned by the two
+source relations, so the `outParam` target is determined. -/
+instance instTransWithinEDistance [PseudoEMetricSpace Φ] {ε ε' : ℝ≥0∞} :
+    Trans (WithinEDistance (Φ := Φ) ε) (WithinEDistance ε') (WithinEDistance (ε + ε')) where
+  trans := WithinEDistance.trans
+
 /-- MauRen16 Definition 2, the converter clauses: "A metric `d` on `Φ` is called
 **non-expanding** if `d(αR, αS) ≤ d(R, S)` for all `α`" — equivalently
 Maurer11 Definition 2 eq. (4), "`d(αⁱR, αⁱS) ≤ d(R, S)` for all `i ∈ I`,

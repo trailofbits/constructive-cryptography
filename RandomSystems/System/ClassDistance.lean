@@ -1344,9 +1344,7 @@ This is the cheapest receipt for the hypothesis of `statDist`'s symmetry, which
 is why the class distance is symmetric exactly where `Adv⊥` is. -/
 theorem weight_eq_of_equivalent {S T : PDS X Y} (h : equivalent S T) :
     S.weight = T.weight := by
-  have h0 := h (fun _ => none) 0
-  rw [← weight_trLawFullyDefined (fun _ => none) 0 S, h0,
-    weight_trLawFullyDefined]
+  simpa [dist_simp] using congrArg Distribution.weight (h (fun _ => none) 0)
 
 open System in
 /-- **Lanzenberger Lemma 2.18: non-adaptive environments suffice.**  Two
