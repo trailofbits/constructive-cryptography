@@ -3020,7 +3020,21 @@ forgetting law is stated against equivalence classes; H-layer-3 is the
 only H build item (layers 1-2 exist — do not re-prove); R11 concept
 recast — no parallel object stacks, CE/any-new-concept consumes the
 landed observables + T0 conditioning, a seemingly-needed new object is a
-fork to Marc not a build; CITATION GATE (check 6, rebuilt e543b5f after the
+fork to Marc not a build; INSTANTIATION RULE (Marc, 2026-08-19 — the
+project's purpose, and a live failure found in the untracked CBC-MAC file,
+which imported nothing from AbstractCryptography and mentioned `Constructs`
+zero times): an application's HEADLINE is a statement OF THE ABSTRACT THEORY
+over `Phi` — `Constructs`/`ApproximatelyConstructs`, i.e. the paper's own
+construction arrow with its ε-superscript — and its content is that our
+objects DISCHARGE that theory's hypotheses, so composition and the rest
+follow for free.  A local `advFullyDefined ≤ ε` bound is an INTERMEDIATE
+lemma, never the endpoint.  Every application brief must (a) name the
+abstract statement it lands, (b) verify the seam explicitly (protocol ∈ Σ;
+the instances at `Phi`), and (c) carry at least one corollary derived by a
+LANDED ABSTRACT THEOREM rather than by hand, as the receipt that the
+instantiation is real.  An abstract hypothesis that cannot be discharged is
+the finding — it is never to be routed around by proving locally.
+CITATION GATE (check 6, rebuilt e543b5f after the
 audit found six bypasses and 5-of-13 wrong pages): a green run certifies that
 every numbered citation in a PAPER-FAITHFUL file CARRIES a printed page — it
 does NOT certify the page is right, and it prints the certified count per file
