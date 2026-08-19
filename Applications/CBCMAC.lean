@@ -6,6 +6,7 @@ import RandomSystems.System.ConverterEntry
 import RandomSystems.System.MetricFullyDefined
 import RandomSystems.System.RandomObjects
 import RandomSystems.System.FilterPhi
+import RandomSystems.System.ConverterClass
 import RandomSystems.Technique.BlindWinning
 import RandomSystems.Technique.ConditionalEquivalence
 import AbstractCryptography.Metric.Epsilon
@@ -1960,5 +1961,52 @@ theorem cbc_mac_parameterized_of_coherence [Nontrivial M] (bf : M → List X)
     (π := cbcConverter bf) (f := fun r : ℕ => cbcEpsilon X r)
     (R := (ofTyped (Rnn X) : Phi.{u})) (S := (ofTyped (Vn M X) : Phi.{u}))
     coherence).mp (fun r => cbc_mac_constructs bf r hbf (hcbc r))
+
+/-! ## CR18 equation (6.1), unfolded over the converter class
+
+The class (`RandomSystems/System/ConverterClass.lean`) proves once, for every
+converter, that an inner query limit `[r]` is invisible under an outer
+restriction that admits only histories on which the converter issues at most `r`
+resource queries.  CBC contributes exactly one fact of its own — a per-round
+budget that spends the current message's blocks — and `θ_r`'s domain condition
+*is* the admission hypothesis, so equation (6.1) is an unfolding.
+-/
+
+/-- **CBC's converter is a converter** (CR18 Definition 3.8, printed p. 62): one
+application of the class's program constructor, fed only `cbcRound`'s own two
+elementary conditions.  No converter-theory obligation is discharged here. -/
+theorem cbcConverter_isConverterAt (bf : M → List X) :
+    IsConverterAt (Set.univ : Set Uni.{u}) (cbcConverter bf).val :=
+  isConverterAt_attachAt_univ
+    (System.innerTotal_converterEngine (cbcRound_innerTotal bf))
+    (System.answersWithinUniformBudget_converterEngine (cbcRound_requestsBounded bf))
+
+/-- **CR18 equation (6.1)** (printed p. 126): "`θ_r ĈBC = θ_r ĈBC[r]`, i.e., the
+filter `[r]` is irrelevant because the restriction implied by `θ_r` guarantees
+that at most `r` queries are made to `R_{n,n}`".
+
+The hypotheses are CBC's own counting fact and nothing else: a per-round budget
+`β` for the engine, and `hpay` — that opening a round for one more message buys
+that message's blocks.  The class supplies the rest, and `thetaPred`'s condition
+is *literally* the admission the class asks for. -/
+theorem cbc_filter_redundant (bf : M → List X) (r : ℕ)
+    {β : List (Uni.{u} ⊕ Option Uni.{u}) → ℕ}
+    (hβ : System.AnswersWithinBudget (System.converterEngine X X (cbcRound bf)) β)
+    (hpay : ∀ (done : List Uni.{u}) (q : Uni.{u})
+        (c : List (Converter.DDC.CIn Uni.{u} Uni.{u})),
+      β ((c ++ [Sum.inl (Converter.InLabel.outside, q)]).map Converter.DDC.unlabel)
+        + totalBlocks bf (done.filterMap (System.decodeOption (X := M)))
+        ≤ totalBlocks bf ((done ++ [q]).filterMap (System.decodeOption (X := M)))) :
+    theta (X := X) bf r * cbcConverter bf * queryLimit.{u} r
+      = theta (X := X) bf r * cbcConverter bf := by
+  apply Subtype.ext
+  exact filterPhi_mul_filterQueries_of_isLocal
+    (System.hasFiniteRounds_attachEngineFully
+      (System.answersWithinUniformBudget_converterEngine
+        (cbcRound_requestsBounded bf))).isLocal
+    _ (prefixClosed_thetaPred bf r) r
+    (fun l hl => le_trans
+      (System.queryCount_le
+        (System.reachesWithin_attachEngineFully_of_cost hβ hpay l)) hl)
 
 end RandomSystems.CBCMAC

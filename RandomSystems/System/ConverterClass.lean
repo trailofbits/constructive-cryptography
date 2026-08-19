@@ -175,109 +175,135 @@ theorem Absorbs.comp {g h : SystemMap.{u}} (hg : Absorbs g) (hh : Absorbs h) :
     show DDE.Total.transcript (g (h s)) e n = p₁ (p₂ _)
     rw [hp₁ (h s), hp₂ s]⟩
 
-/-! ## A3 — locality -/
+/-! ## A3 — locality, and the query count it derives
 
-/-- **A3: `g R` depends on `R` only where `g` consults it.**  After an outer
-history `l` the converter can have built a resource history no longer than
-`K * l.length`, so two resources that agree on every history of that length
-give composites that agree at `l`.
+CR18 Definition 3.8's finite-request clause is a **well-definedness** condition:
+it says the converter must eventually answer, not that its interactions are to
+be *counted* by it.  Promoting it to a global per-query constant and then
+reasoning with that constant over-estimates every interaction — a converter
+that asks one question per block of the current message does not ask the
+maximum block count on every message.  So the class carries no budget datum.
+What the theorems consume is the **derived** query count below, and a bound on
+it is a hypothesis at the point of use, supplied by whatever restriction is in
+play. -/
+
+/-- **The reach**: asked about the outer history `l`, `g` consults the resource
+only within histories of length `N`.
 
 The agreement region is determined by the *outer* history alone.  That is
-forced: the region the composite actually reads is
-`keptPrefix R xs ++ [q]`, which depends on `R`, so an agreement indexed by the
-consulted points is not a usable hypothesis. -/
-def LocalWithin (K : ℕ) (g : SystemMap.{u}) : Prop :=
-  ∀ (R R' : DDS Uni.{u} Uni.{u}) (l : List Uni.{u}),
-    (∀ zs : List Uni.{u}, zs.length ≤ K * l.length → R.1 zs = R'.1 zs) →
+forced: the region the composite actually reads is `keptPrefix R xs ++ [q]`,
+which depends on `R` — the pruning itself reads the resource — so an agreement
+indexed by the consulted points is not a usable hypothesis. -/
+def ReachesWithin (N : ℕ) (l : List Uni.{u}) (g : SystemMap.{u}) : Prop :=
+  ∀ R R' : DDS Uni.{u} Uni.{u},
+    (∀ zs : List Uni.{u}, zs.length ≤ N → R.1 zs = R'.1 zs) →
       (g R).1 l = (g R').1 l
 
-/-- A3 is monotone in the budget: a wider reach is a weaker hypothesis to
-supply and so a weaker statement. -/
-theorem LocalWithin.mono {K K' : ℕ} (hKK : K ≤ K') {g : SystemMap.{u}}
-    (hg : LocalWithin K g) : LocalWithin K' g :=
-  fun R R' l hagree => hg R R' l fun zs hzs =>
-    hagree zs (hzs.trans (Nat.mul_le_mul_right _ hKK))
+/-- A wider reach is a weaker statement: more agreement is assumed. -/
+theorem ReachesWithin.mono {N N' : ℕ} {l : List Uni.{u}} {g : SystemMap.{u}}
+    (h : ReachesWithin N l g) (hN : N ≤ N') : ReachesWithin N' l g :=
+  fun R R' hagree => h R R' fun zs hzs => hagree zs (hzs.trans hN)
 
-/-- The identity consults the resource exactly at the history it is asked
-about: budget `1`. -/
-theorem localWithin_id : LocalWithin 1 (id : SystemMap.{u}) :=
-  fun _ _ l hagree => hagree l (by simp)
+/-- **A3: `g R` depends on `R` only where `g` consults it** — the reach is
+finite at every outer history.  No constant is named: this is locality, not a
+budget. -/
+def IsLocal (g : SystemMap.{u}) : Prop :=
+  ∀ l : List Uni.{u}, ∃ N : ℕ, ReachesWithin N l g
 
-/-- **A3 composes, and the budgets multiply.**  An outer query costs `g` at
-most `K` queries to `h`, each of which costs `h` at most `K'` queries to the
-resource. -/
-theorem LocalWithin.comp {K K' : ℕ} {g h : SystemMap.{u}}
-    (hg : LocalWithin K g) (hh : LocalWithin K' h) :
-    LocalWithin (K * K') (g ∘ h) := by
-  intro R R' l hagree
-  refine hg (h R) (h R') l fun zs hzs => hh R R' zs fun ws hws => hagree ws ?_
+/-- **The query count, derived** (never an axiom): the number of resource
+queries `g` can have issued by the time it answers `l`, read off as the least
+reach.  CR18 Definition 3.10's `[r]` counts exactly this, which is why the
+filter theorems below take a bound on it as their hypothesis. -/
+noncomputable def queryCount (g : SystemMap.{u}) (l : List Uni.{u}) : ℕ :=
+  sInf {N | ReachesWithin N l g}
+
+/-- The derived count is a reach: a local converter really does consult the
+resource only within `queryCount g l`. -/
+theorem reachesWithin_queryCount {g : SystemMap.{u}} (hg : IsLocal g)
+    (l : List Uni.{u}) : ReachesWithin (queryCount g l) l g :=
+  Nat.sInf_mem (hg l)
+
+/-- Any reach bounds the derived count — the way an application supplies one:
+prove the converter's own counting fact, and the count follows. -/
+theorem queryCount_le {g : SystemMap.{u}} {N : ℕ} {l : List Uni.{u}}
+    (h : ReachesWithin N l g) : queryCount g l ≤ N :=
+  Nat.sInf_le h
+
+/-! ## A4 — CR18 Definition 3.8's finiteness clause
+
+"There is a finite upper bound on the number of consecutive requests" (printed
+p. 62).  It is here for **well-definedness only** — that a converter always
+gets back to answering, and hence that its reach is finite — and it is stated
+existentially, which is the right strength for that job.  Nothing downstream
+reasons with the constant: A3's derived count does the counting. -/
+
+/-- **A4: the converter's rounds are finite.**  Existential by design: the
+constant is never used to estimate an interaction, only to know that the reach
+exists uniformly, which is what makes composition free. -/
+def HasFiniteRounds (g : SystemMap.{u}) : Prop :=
+  ∃ K : ℕ, ∀ l : List Uni.{u}, ReachesWithin (K * l.length) l g
+
+/-- **A4 gives A3**, so an instance proves the finiteness clause and never the
+locality axiom separately. -/
+theorem HasFiniteRounds.isLocal {g : SystemMap.{u}} (h : HasFiniteRounds g) :
+    IsLocal g :=
+  fun l => let ⟨K, hK⟩ := h; ⟨K * l.length, hK l⟩
+
+/-- The identity has finite rounds: it forwards one query. -/
+theorem hasFiniteRounds_id : HasFiniteRounds (id : SystemMap.{u}) :=
+  ⟨1, fun l _ _ hagree => hagree l (by simp)⟩
+
+/-- **A4 composes** — and this is the only place a constant is multiplied.  It
+is the well-definedness clause travelling, not an estimate: the sharp count of
+a composite is still its own derived `queryCount`. -/
+theorem HasFiniteRounds.comp {g h : SystemMap.{u}} (hg : HasFiniteRounds g)
+    (hh : HasFiniteRounds h) : HasFiniteRounds (g ∘ h) := by
+  obtain ⟨K, hK⟩ := hg
+  obtain ⟨K', hK'⟩ := hh
+  refine ⟨K * K', fun l R R' hagree => ?_⟩
+  refine hK l (h R) (h R') fun zs hzs => hK' zs R R' fun ws hws => hagree ws ?_
   calc ws.length ≤ K' * zs.length := hws
     _ ≤ K' * (K * l.length) := Nat.mul_le_mul_left _ hzs
     _ = K * K' * l.length := by ring
 
-/-! ## A4 — the request budget, as CR18 Definition 3.10's query limit -/
-
-/-- **A4: `g` puts at most `K` queries to the resource per outer query.**  On a
-black-box map the count is not observable directly; what is observable is its
-consequence, and it is the one CR18 uses: while the reach stays inside `r`, the
-filter `[r]` is invisible to the converter (CR18 Definition 3.10, printed
-p. 62). -/
-def RequestsAtMost (K : ℕ) (g : SystemMap.{u}) : Prop :=
-  ∀ (R : DDS Uni.{u} Uni.{u}) (r : ℕ) (l : List Uni.{u}), K * l.length ≤ r →
-    (g (filterQueries r R)).1 l = (g R).1 l
-
-/-- **A4 follows from A3 on this carrier**: `[r]R` and `R` agree at every
-history of length at most `r` by unfolding, and A3's reach is inside `r`.  The
-axiom is kept as a field because it is what consumers cite, but no instance
-ever proves it — the smart constructor `IsConverterMapAt.of_local` supplies
-it. -/
-theorem LocalWithin.requestsAtMost {K : ℕ} {g : SystemMap.{u}}
-    (hg : LocalWithin K g) : RequestsAtMost K g := by
-  intro R r l hle
-  refine hg _ _ l fun zs hzs => ?_
-  have hlen : zs.length ≤ r := hzs.trans hle
-  exact Part.ext' ⟨fun h => h.1, fun h => ⟨h, hlen⟩⟩ fun _ _ => rfl
-
 /-! ## The class -/
 
-/-- **The converter class at the deterministic level**: interface `i`, request
-budget `K`, and the four axioms.  Both indices are data, so the composition
-laws compute them. -/
-structure IsConverterMapAt (i : Set Uni.{u}) (K : ℕ) (g : SystemMap.{u}) : Prop where
+/-- **The converter class at the deterministic level**: the interface `i` is the
+only index, and the four axioms.  There is no budget datum — CR18's finiteness
+clause is a field, not a parameter, and the counting is derived. -/
+structure IsConverterMapAt (i : Set Uni.{u}) (g : SystemMap.{u}) : Prop where
   /-- **A1**: `g` acts only at `i`. -/
   interface : ActsWithin i g
   /-- **A2**: the environment absorbs `g`. -/
   absorbs : Absorbs g
   /-- **A3**: `g R` depends on `R` only where `g` consults it. -/
-  locality : LocalWithin K g
-  /-- **A4**: `g` asks at most `K` questions per outer query. -/
-  budget : RequestsAtMost K g
+  locality : IsLocal g
+  /-- **A4**: CR18 Definition 3.8's finiteness clause (printed p. 62). -/
+  finiteRounds : HasFiniteRounds g
 
-/-- **The smart constructor**: A4 is derived, so an instance discharges three
-axioms, never four. -/
-theorem IsConverterMapAt.of_local {i : Set Uni.{u}} {K : ℕ} {g : SystemMap.{u}}
-    (h1 : ActsWithin i g) (h2 : Absorbs g) (h3 : LocalWithin K g) :
-    IsConverterMapAt i K g :=
-  ⟨h1, h2, h3, h3.requestsAtMost⟩
+/-- **The smart constructor**: A3 is derived from A4, so an instance discharges
+three axioms, never four. -/
+theorem IsConverterMapAt.of_finiteRounds {i : Set Uni.{u}} {g : SystemMap.{u}}
+    (h1 : ActsWithin i g) (h2 : Absorbs g) (h4 : HasFiniteRounds g) :
+    IsConverterMapAt i g :=
+  ⟨h1, h2, h4.isLocal, h4⟩
 
-theorem IsConverterMapAt.mono {i i' : Set Uni.{u}} {K K' : ℕ} {g : SystemMap.{u}}
-    (h : IsConverterMapAt i K g) (hi : i ⊆ i') (hK : K ≤ K') :
-    IsConverterMapAt i' K' g :=
-  .of_local (h.interface.mono hi) h.absorbs (h.locality.mono hK)
+theorem IsConverterMapAt.mono {i i' : Set Uni.{u}} {g : SystemMap.{u}}
+    (h : IsConverterMapAt i g) (hi : i ⊆ i') : IsConverterMapAt i' g :=
+  .of_finiteRounds (h.interface.mono hi) h.absorbs h.finiteRounds
 
-/-- **The identity is a converter**, at the empty interface and budget `1`. -/
+/-- **The identity is a converter**, at the empty interface. -/
 theorem isConverterMapAt_id :
-    IsConverterMapAt (∅ : Set Uni.{u}) 1 (id : SystemMap.{u}) :=
-  .of_local actsWithin_id absorbs_id localWithin_id
+    IsConverterMapAt (∅ : Set Uni.{u}) (id : SystemMap.{u}) :=
+  .of_finiteRounds actsWithin_id absorbs_id hasFiniteRounds_id
 
-/-- **Converters compose, and the class computes**: interfaces union, budgets
-multiply.  This is the law the combinator layer needs — no composite ever
-re-proves an axiom. -/
-theorem IsConverterMapAt.comp {i i' : Set Uni.{u}} {K K' : ℕ} {g h : SystemMap.{u}}
-    (hg : IsConverterMapAt i K g) (hh : IsConverterMapAt i' K' h) :
-    IsConverterMapAt (i ∪ i') (K * K') (g ∘ h) :=
-  .of_local (hg.interface.comp hh.interface) (hg.absorbs.comp hh.absorbs)
-    (hg.locality.comp hh.locality)
+/-- **Converters compose, and the interface computes**: nothing else has to.  A
+composite re-proves no axiom, and carries no estimate. -/
+theorem IsConverterMapAt.comp {i i' : Set Uni.{u}} {g h : SystemMap.{u}}
+    (hg : IsConverterMapAt i g) (hh : IsConverterMapAt i' h) :
+    IsConverterMapAt (i ∪ i') (g ∘ h) :=
+  .of_finiteRounds (hg.interface.comp hh.interface) (hg.absorbs.comp hh.absorbs)
+    (hg.finiteRounds.comp hh.finiteRounds)
 
 end
 
@@ -301,33 +327,42 @@ A converter acts on laws by the pushforward of its deterministic action — CR18
 Definition 3.17's layering, where a *probabilistic* converter is a law over
 deterministic ones and its action is the mixture. -/
 
-/-- **The converter class at Φ**: `π` is a converter at interface `i` with
-request budget `K` when it is the pushforward of a deterministic converter map
-satisfying A1–A4 at `(i, K)`.
+/-- **A deterministic converter map, acting on laws**: the pushforward.  Named
+so that the `Function.End Φ` structure is available syntactically — `Phi` and
+`Distribution (DDS Uni Uni)` are definitionally equal but not syntactically, and
+the monoid instances are found by syntax. -/
+def ofSystemMap (g : System.SystemMap.{u}) : Function.End Phi.{u} :=
+  fun L => Distribution.fTransform g L
 
-Both indices are data.  `IsConverterAt` is what an application should *have*;
-it is never what an application should *prove* — the constructors below prove
-it once each, and composition computes the indices. -/
-def IsConverterAt (i : Set Uni.{u}) (K : ℕ) (π : Function.End Phi.{u}) : Prop :=
-  ∃ g : System.SystemMap.{u}, System.IsConverterMapAt i K g ∧
-    π = fun L => Distribution.fTransform g L
+@[simp] theorem ofSystemMap_apply (g : System.SystemMap.{u}) (L : Phi.{u}) :
+    ofSystemMap g L = Distribution.fTransform g L := rfl
 
-theorem IsConverterAt.mono {i i' : Set Uni.{u}} {K K' : ℕ} {π : Function.End Phi.{u}}
-    (h : IsConverterAt i K π) (hi : i ⊆ i') (hK : K ≤ K') : IsConverterAt i' K' π :=
-  let ⟨g, hg, hπ⟩ := h; ⟨g, hg.mono hi hK, hπ⟩
+/-- **The converter class at Φ**: `π` is a converter at interface `i` when it is
+the pushforward of a deterministic converter map satisfying A1–A4 at `i`.
 
-/-- **The identity is a converter**, at the empty interface and budget `1`. -/
+The interface is the only index.  Query counts are derived per converter and per
+history (`System.queryCount`), and a bound on one is a hypothesis where it is
+needed — never a parameter of the class. -/
+def IsConverterAt (i : Set Uni.{u}) (π : Function.End Phi.{u}) : Prop :=
+  ∃ g : System.SystemMap.{u}, System.IsConverterMapAt i g ∧
+    π = ofSystemMap g
+
+theorem IsConverterAt.mono {i i' : Set Uni.{u}} {π : Function.End Phi.{u}}
+    (h : IsConverterAt i π) (hi : i ⊆ i') : IsConverterAt i' π :=
+  let ⟨g, hg, hπ⟩ := h; ⟨g, hg.mono hi, hπ⟩
+
+/-- **The identity is a converter**, at the empty interface. -/
 theorem isConverterAt_one :
-    IsConverterAt (∅ : Set Uni.{u}) 1 (1 : Function.End Phi.{u}) :=
+    IsConverterAt (∅ : Set Uni.{u}) (1 : Function.End Phi.{u}) :=
   ⟨id, System.isConverterMapAt_id, by
     funext L
     exact (Finsupp.mapDomain_id (v := L)).symm⟩
 
-/-- **Converters compose and the class computes**: interfaces union, budgets
-multiply.  Nothing is re-proved at a composite. -/
-theorem IsConverterAt.mul {i i' : Set Uni.{u}} {K K' : ℕ} {π ρ : Function.End Phi.{u}}
-    (hπ : IsConverterAt i K π) (hρ : IsConverterAt i' K' ρ) :
-    IsConverterAt (i ∪ i') (K * K') (π * ρ) := by
+/-- **Converters compose and the interface computes**: nothing is re-proved at a
+composite, and no estimate is carried. -/
+theorem IsConverterAt.mul {i i' : Set Uni.{u}} {π ρ : Function.End Phi.{u}}
+    (hπ : IsConverterAt i π) (hρ : IsConverterAt i' ρ) :
+    IsConverterAt (i ∪ i') (π * ρ) := by
   obtain ⟨g, hg, rfl⟩ := hπ
   obtain ⟨h, hh, rfl⟩ := hρ
   refine ⟨g ∘ h, hg.comp hh, ?_⟩
@@ -341,17 +376,17 @@ subtype, and it carries `Monoid` and `MulAction Φ` by the ambient instances.
 Named `converterClass` and not `Sigma`: `Sigma` is Lean core's dependent pair,
 and shadowing it inside this namespace is a trap. -/
 def converterClass : Submonoid (Function.End Phi.{u}) where
-  carrier := {π | ∃ (i : Set Uni.{u}) (K : ℕ), IsConverterAt i K π}
-  one_mem' := ⟨∅, 1, isConverterAt_one⟩
-  mul_mem' := fun ⟨i, K, hπ⟩ ⟨i', K', hρ⟩ => ⟨i ∪ i', K * K', hπ.mul hρ⟩
+  carrier := {π | ∃ i : Set Uni.{u}, IsConverterAt i π}
+  one_mem' := ⟨∅, isConverterAt_one⟩
+  mul_mem' := fun ⟨i, hπ⟩ ⟨i', hρ⟩ => ⟨i ∪ i', hπ.mul hρ⟩
 
 @[simp] theorem mem_converterClass {π : Function.End Phi.{u}} :
-    π ∈ converterClass.{u} ↔ ∃ (i : Set Uni.{u}) (K : ℕ), IsConverterAt i K π :=
+    π ∈ converterClass.{u} ↔ ∃ i : Set Uni.{u}, IsConverterAt i π :=
   Iff.rfl
 
-theorem IsConverterAt.mem_converterClass {i : Set Uni.{u}} {K : ℕ}
-    {π : Function.End Phi.{u}} (h : IsConverterAt i K π) : π ∈ converterClass.{u} :=
-  ⟨i, K, h⟩
+theorem IsConverterAt.mem_converterClass {i : Set Uni.{u}}
+    {π : Function.End Phi.{u}} (h : IsConverterAt i π) : π ∈ converterClass.{u} :=
+  ⟨i, h⟩
 
 /-! ## Theorem 1 — nonexpansion, from A2 alone
 
@@ -362,8 +397,8 @@ here it is derived from the axiom the sources assume. -/
 
 /-- **A converter never helps a distinguisher** — from A2, in one step.  The
 whole of `PDS.advFullyDefined_fTransform_le`'s hypothesis *is* A2. -/
-theorem IsConverterAt.mem_nonexpandingConverters {i : Set Uni.{u}} {K : ℕ}
-    {π : Function.End Phi.{u}} (h : IsConverterAt i K π) :
+theorem IsConverterAt.mem_nonexpandingConverters {i : Set Uni.{u}}
+    {π : Function.End Phi.{u}} (h : IsConverterAt i π) :
     π ∈ nonexpandingConverters.{u} := by
   obtain ⟨g, hg, rfl⟩ := h
   exact fun RL SL => PDS.advFullyDefined_fTransform_le g RL SL hg.absorbs
@@ -373,7 +408,7 @@ theorem IsConverterAt.mem_nonexpandingConverters {i : Set Uni.{u}} {K : ℕ}
 re-prove. -/
 theorem converterClass_le_nonexpandingConverters :
     converterClass.{u} ≤ nonexpandingConverters.{u} :=
-  fun _ ⟨_, _, h⟩ => h.mem_nonexpandingConverters
+  fun _ ⟨_, h⟩ => h.mem_nonexpandingConverters
 
 /-- The class acts non-expandingly — the typeclass the abstract `ε`-relaxation
 calculus consumes (`Relaxation.epsilonRelaxation_compatible`,
@@ -384,8 +419,8 @@ instance : AbstractCryptography.IsNonexpandingSMul (converterClass.{u}) Phi.{u} 
 
 /-- **MauRen16 Definition 2 over the class**: applying a converter to both
 sides never increases the distance. -/
-theorem edist_apply_le_of_isConverterAt {i : Set Uni.{u}} {K : ℕ}
-    {π : Function.End Phi.{u}} (h : IsConverterAt i K π) (L M : Phi.{u}) :
+theorem edist_apply_le_of_isConverterAt {i : Set Uni.{u}}
+    {π : Function.End Phi.{u}} (h : IsConverterAt i π) (L M : Phi.{u}) :
     edist (π L) (π M) ≤ edist L M :=
   edist_apply_le_of_mem_nonexpandingConverters h.mem_nonexpandingConverters L M
 
@@ -407,8 +442,8 @@ another attachment. -/
 /-- **MauRen16 §3.3's `(αR)β = α(Rβ)` over the class**: a converter at `i`
 commutes with an attachment at a disjoint interface.  This is A1 pushed forward
 along the distribution — the whole content is the axiom. -/
-theorem IsConverterAt.commute_attachAt {i : Set Uni.{u}} {K : ℕ}
-    {π : Function.End Phi.{u}} (h : IsConverterAt i K π)
+theorem IsConverterAt.commute_attachAt {i : Set Uni.{u}}
+    {π : Function.End Phi.{u}} (h : IsConverterAt i π)
     {j : Set Uni.{u}} (hij : Disjoint i j)
     {F : System.DDS (Uni.{u} ⊕ Option Uni.{u}) (Uni.{u} ⊕ Uni.{u})}
     (hF : System.RequestsWithin j F) :
@@ -425,8 +460,8 @@ theorem IsConverterAt.commute_attachAt {i : Set Uni.{u}} {K : ℕ}
 
 /-- The `ActCommute` receipt over the class — the form the abstract grouping
 layer consumes. -/
-theorem IsConverterAt.actCommute_attachAt {i : Set Uni.{u}} {K : ℕ}
-    {π : Function.End Phi.{u}} (h : IsConverterAt i K π)
+theorem IsConverterAt.actCommute_attachAt {i : Set Uni.{u}}
+    {π : Function.End Phi.{u}} (h : IsConverterAt i π)
     {j : Set Uni.{u}} (hij : Disjoint i j)
     {F : System.DDS (Uni.{u} ⊕ Option Uni.{u}) (Uni.{u} ⊕ Uni.{u})}
     (hF : System.RequestsWithin j F) :
@@ -434,18 +469,19 @@ theorem IsConverterAt.actCommute_attachAt {i : Set Uni.{u}} {K : ℕ}
   show (π * attachAt j F) L = (attachAt j F * π) L
   rw [h.commute_attachAt hij hF]
 
-/-! ## Theorem 3 — filter absorption, from A3 and A4
+/-! ## Theorem 3 — filter absorption, at the derived count
 
-CR18 Definition 3.10's `[r]` is invisible to a converter whose reach stays
-inside `r`.  Stated at Φ, and once. -/
+CR18 Definition 3.10's `[r]` counts the queries put to the resource.  The
+hypothesis is therefore a bound on the converter's own count on the admitted
+histories, and it is sharp: nothing is estimated by a per-query constant. -/
 
-/-- **The query limit is invisible below the reach**, at one outer history.
-A4 pushed to Φ is not available pointwise (a law is not a history), so the
-statement that travels is the system-level one; this is it, and it is the
-ingredient the outer restriction consumes. -/
-theorem System.filterDom_comp_filterQueries {K : ℕ} {g : System.SystemMap.{u}}
-    (hg : System.RequestsAtMost K g) (P : List Uni.{u} → Prop) (hP : PrefixClosed P)
-    (r : ℕ) (hadm : ∀ l, P l → K * l.length ≤ r) (S : System.DDS Uni.{u} Uni.{u}) :
+/-- **The query limit is invisible below the count**, at the system level.  If
+on every history the outer restriction admits the converter issues at most `r`
+resource queries, then it cannot tell `[r]s` from `s`. -/
+theorem System.filterDom_comp_filterQueries {g : System.SystemMap.{u}}
+    (hg : System.IsLocal g) (P : List Uni.{u} → Prop) (hP : PrefixClosed P)
+    (r : ℕ) (hadm : ∀ l, P l → System.queryCount g l ≤ r)
+    (S : System.DDS Uni.{u} Uni.{u}) :
     System.filterDom P hP (g (System.filterQueries r S)) =
       System.filterDom P hP (g S) := by
   apply Subtype.ext
@@ -458,25 +494,29 @@ theorem System.filterDom_comp_filterQueries {K : ℕ} {g : System.SystemMap.{u}}
     · rintro ⟨⟨hd, hv⟩, hp⟩; exact ⟨⟨hd, hp⟩, hv⟩
   refine Part.ext fun v => ?_
   by_cases hPl : P l
-  · rw [hmem, hmem, hg S r l (hadm l hPl)]
+  · have hreach : System.ReachesWithin r l g :=
+      (System.reachesWithin_queryCount hg l).mono (hadm l hPl)
+    have hbelow : ∀ zs : List Uni.{u}, zs.length ≤ r →
+        (System.filterQueries r S).1 zs = S.1 zs := fun zs hzs =>
+      Part.ext' ⟨fun h => h.1, fun h => ⟨h, hzs⟩⟩ fun _ _ => rfl
+    rw [hmem, hmem, hreach _ S hbelow]
   · rw [hmem, hmem]
     simp [hPl]
 
-/-- **CR18 equation (6.1), over the class** (printed p. 126): "the filter `[r]`
-is irrelevant because the restriction implied by `θ_r` guarantees that at most
-`r` queries are made".
+/-- **CR18 equation (6.1)** (printed p. 126): "the filter `[r]` is irrelevant
+because the restriction implied by `θ_r` guarantees that at most `r` queries are
+made".
 
-Nothing about any particular converter enters: the hypothesis is that the outer
-restriction admits only histories whose induced request count — `K` per query,
-the converter's own budget datum — stays inside `r`.  With the *pullback*
-restriction of the next declaration that hypothesis is `le_rfl`, which is the
-sense in which equation (6.1) becomes an unfolding rather than a theorem. -/
-theorem IsConverterAt.filterPhi_mul_filterQueries {i : Set Uni.{u}} {K : ℕ}
-    {π : Function.End Phi.{u}} (h : IsConverterAt i K π)
-    (P : List Uni.{u} → Prop) (hP : PrefixClosed P) (r : ℕ)
-    (hadm : ∀ l, P l → K * l.length ≤ r) :
-    filterPhi P hP * π * filterQueries.{u} r = filterPhi P hP * π := by
-  obtain ⟨g, hg, rfl⟩ := h
+The hypothesis is that sentence and nothing more: on every history the outer
+restriction admits, the converter's own query count is at most `r`.  No budget
+constant appears, so nothing is over-estimated — a converter that asks one
+question per block has the block sum as its count, which is exactly what a
+block-counting `θ_r` admits. -/
+theorem filterPhi_mul_filterQueries_of_isLocal {g : System.SystemMap.{u}}
+    (hg : System.IsLocal g) (P : List Uni.{u} → Prop) (hP : PrefixClosed P)
+    (r : ℕ) (hadm : ∀ l, P l → System.queryCount g l ≤ r) :
+    filterPhi P hP * ofSystemMap g * filterQueries.{u} r
+      = filterPhi P hP * ofSystemMap g := by
   funext L
   show Distribution.fTransform (System.filterDom P hP)
       (Distribution.fTransform g
@@ -486,42 +526,42 @@ theorem IsConverterAt.filterPhi_mul_filterQueries {i : Set Uni.{u}} {K : ℕ}
   rw [Distribution.fTransform_fTransform, Distribution.fTransform_fTransform,
     Distribution.fTransform_fTransform]
   exact congrFun (congrArg Distribution.fTransform (funext fun S =>
-    System.filterDom_comp_filterQueries hg.budget P hP r hadm S)) L
+    System.filterDom_comp_filterQueries hg P hP r hadm S)) L
 
 /-! ## Theorem 4 — the pullback restriction
 
 CR18's `θ_r` is *defined* here rather than characterized: the outer restriction
-that tracks a resource-side bound of `r` through a converter of budget `K` is
-the domain filter at "the induced count is within `r`".  Adequacy is
-`le_rfl`. -/
+that tracks a resource-side bound of `r` is the domain filter at "my own query
+count has stayed within `r`".  Adequacy is `List.prefix_refl`. -/
 
 /-- **The pullback of a resource-side query bound along a converter**: the outer
-histories whose induced request count stays inside `r`.  For a converter of
-budget `K` the induced count after `l` is at most `K * l.length`, so this is
-that predicate and nothing else. -/
-def pullbackLimit (K r : ℕ) : List Uni.{u} → Prop :=
-  fun l => K * l.length ≤ r
+histories on which — and on every prefix of which — the converter has issued at
+most `r` resource queries.  Quantifying over prefixes is what makes it
+prefix-closed; no monotonicity of the count has to be assumed. -/
+def pullbackLimit (g : System.SystemMap.{u}) (r : ℕ) : List Uni.{u} → Prop :=
+  fun l => ∀ l' : List Uni.{u}, l' <+: l → System.queryCount g l' ≤ r
 
-theorem prefixClosed_pullbackLimit (K r : ℕ) :
-    PrefixClosed (pullbackLimit.{u} K r) :=
-  fun _ _ hpre hle =>
-    le_trans (Nat.mul_le_mul_left _ hpre.length_le) hle
+theorem prefixClosed_pullbackLimit (g : System.SystemMap.{u}) (r : ℕ) :
+    PrefixClosed (pullbackLimit.{u} g r) :=
+  fun _ _ hpre h l' hl' => h l' (hl'.trans hpre)
 
-/-- **CR18's `θ_r`, at a converter of budget `K`** (printed p. 126): the outer
-domain filter that tracks the resource-side bound `r`. -/
-def pullbackRestriction (K r : ℕ) : Function.End Phi.{u} :=
-  filterPhi (pullbackLimit.{u} K r) (prefixClosed_pullbackLimit K r)
+/-- **CR18's `θ_r`, at a converter** (printed p. 126): the outer domain filter
+that tracks the resource-side bound `r`. -/
+noncomputable def pullbackRestriction (g : System.SystemMap.{u}) (r : ℕ) :
+    Function.End Phi.{u} :=
+  filterPhi (pullbackLimit.{u} g r) (prefixClosed_pullbackLimit g r)
 
-/-- **Adequacy by construction**: under the pullback restriction the inner
-query limit is redundant.  CR18 equation (6.1) with no side condition left to
-check — the admission hypothesis of the previous theorem is `le_rfl` at this
-filter, which is precisely what "the restriction implied by `θ_r` guarantees
-that at most `r` queries are made" means. -/
-theorem IsConverterAt.pullbackRestriction_mul_filterQueries {i : Set Uni.{u}}
-    {K : ℕ} {π : Function.End Phi.{u}} (h : IsConverterAt i K π) (r : ℕ) :
-    pullbackRestriction.{u} K r * π * filterQueries.{u} r =
-      pullbackRestriction.{u} K r * π :=
-  h.filterPhi_mul_filterQueries _ _ r fun _ hl => hl
+/-- **Adequacy by construction**: under the pullback restriction the inner query
+limit is redundant.  CR18 equation (6.1) with no side condition left to check —
+the admission hypothesis is discharged by the filter's own definition, which is
+precisely what "the restriction implied by `θ_r` guarantees that at most `r`
+queries are made" means. -/
+theorem pullbackRestriction_mul_filterQueries {g : System.SystemMap.{u}}
+    (hg : System.IsLocal g) (r : ℕ) :
+    pullbackRestriction.{u} g r * ofSystemMap g * filterQueries.{u} r
+      = pullbackRestriction.{u} g r * ofSystemMap g :=
+  filterPhi_mul_filterQueries_of_isLocal hg _ _ r
+    fun l (hl : pullbackLimit.{u} g r l) => hl l (List.prefix_refl l)
 
 end
 
@@ -770,38 +810,71 @@ needs — it never states an axiom of its own, only the two elementary condition
 on its own program (it always reacts, and its rounds are bounded) that
 `ConverterEntry.lean`'s crossing already asks for. -/
 
+/-- **The finiteness clause of an attached engine** (A4): CR18 Definition 3.8's
+bound is enough for the *uniform* reach the well-definedness axiom asks for.
+The `max` reconciles the two genres exactly as
+`exists_absorb_attachEngineFully`'s does, since a foreign query costs one
+resource query whatever the engine's budget is.
+
+Nothing downstream reads `K`: the sharp counting is `queryCount`'s, and an
+application supplies a bound on that by exhibiting its own reach. -/
+theorem hasFiniteRounds_attachEngineFully {i : Set Uni.{u}}
+    {E : DDS (Uni.{u} ⊕ Option Uni.{u}) (Uni.{u} ⊕ Uni.{u})}
+    (hβ : AnswersWithinUniformBudget E) :
+    HasFiniteRounds (attachEngineFully i E) := by
+  obtain ⟨β, K, hβ, hK⟩ := hβ
+  exact ⟨max K 1, fun l _ _ hagree =>
+    attachEngineFully_congr_of_apply_eq hβ (fun l => (hK l).trans (le_max_left _ _))
+      (le_max_right _ _) l hagree⟩
+
 /-- **The program constructor satisfies the axioms.**  `RequestsWithin` gives
 A1 (through the landed commutation), the engine class gives A2 (through the
-landed absorption), and the uniform bound gives A3 with reach `max K 1` — the
-`max` reconciles the two genres exactly as `exists_absorb_attachEngineFully`'s
-does, since a foreign query costs one resource query whatever the engine's
-budget is. -/
+landed absorption), and CR18's finiteness clause gives A4 — hence A3.  An
+application discharges no converter-theory obligation of its own. -/
 theorem isConverterMapAt_attachEngineFully {i : Set Uni.{u}}
     {E : DDS (Uni.{u} ⊕ Option Uni.{u}) (Uni.{u} ⊕ Uni.{u})}
-    {β : List (Uni.{u} ⊕ Option Uni.{u}) → ℕ} {K : ℕ}
     (hReq : RequestsWithin i E) (hIT : InnerTotal E)
-    (hβ : AnswersWithinBudget E β) (hK : ∀ l, β l ≤ K) :
-    IsConverterMapAt i (max K 1) (attachEngineFully i E) :=
-  .of_local
+    (hβ : AnswersWithinUniformBudget E) :
+    IsConverterMapAt i (attachEngineFully i E) :=
+  .of_finiteRounds
     (fun _ hij _ hF R => attachEngineFully_comm hij hReq hF R)
-    (fun e n => exists_absorb_attachEngineFully hIT hβ hK e n)
-    (fun _ _ l hagree =>
-      attachEngineFully_congr_of_apply_eq hβ (fun l => (hK l).trans (le_max_left _ _))
-        (le_max_right _ _) l hagree)
+    (fun e n => by
+      obtain ⟨β, K, hβ', hK⟩ := hβ
+      exact exists_absorb_attachEngineFully hIT hβ' hK e n)
+    (hasFiniteRounds_attachEngineFully hβ)
 
 /-- **The program constructor with no interface claimed.**  A1 is free at the
 full interface (`actsWithin_univ`), so an engine whose requests are not confined
 still enters the class — it just cannot be commuted past anything. -/
 theorem isConverterMapAt_attachEngineFully_univ {i : Set Uni.{u}}
     {E : DDS (Uni.{u} ⊕ Option Uni.{u}) (Uni.{u} ⊕ Uni.{u})}
-    {β : List (Uni.{u} ⊕ Option Uni.{u}) → ℕ} {K : ℕ}
-    (hIT : InnerTotal E) (hβ : AnswersWithinBudget E β) (hK : ∀ l, β l ≤ K) :
-    IsConverterMapAt (Set.univ : Set Uni.{u}) (max K 1) (attachEngineFully i E) :=
-  .of_local (actsWithin_univ _)
-    (fun e n => exists_absorb_attachEngineFully hIT hβ hK e n)
-    (fun _ _ l hagree =>
-      attachEngineFully_congr_of_apply_eq hβ (fun l => (hK l).trans (le_max_left _ _))
-        (le_max_right _ _) l hagree)
+    (hIT : InnerTotal E) (hβ : AnswersWithinUniformBudget E) :
+    IsConverterMapAt (Set.univ : Set Uni.{u}) (attachEngineFully i E) :=
+  .of_finiteRounds (actsWithin_univ _)
+    (fun e n => by
+      obtain ⟨β, K, hβ', hK⟩ := hβ
+      exact exists_absorb_attachEngineFully hIT hβ' hK e n)
+    (hasFiniteRounds_attachEngineFully hβ)
+
+/-- **The sharp reach of an attached engine, from a cost function** — the shape
+an application uses to bound its own `queryCount`.  `cost` is the application's
+own accounting (for a converter that asks one question per block, the block
+sum); `hpay` is the only thing asked of it: opening a round for one more outer
+query buys that round's requests.  This is the landed whole-face locality read
+into the class's `ReachesWithin`. -/
+theorem reachesWithin_attachEngineFully_of_cost
+    {E : DDS (Uni.{u} ⊕ Option Uni.{u}) (Uni.{u} ⊕ Uni.{u})}
+    {β : List (Uni.{u} ⊕ Option Uni.{u}) → ℕ} {cost : List Uni.{u} → ℕ}
+    (hβ : AnswersWithinBudget E β)
+    (hpay : ∀ (done : List Uni.{u}) (q : Uni.{u})
+        (c : List (Converter.DDC.CIn Uni.{u} Uni.{u})),
+      β ((c ++ [Sum.inl (Converter.InLabel.outside, q)]).map Converter.DDC.unlabel)
+        + cost done ≤ cost (done ++ [q]))
+    (l : List Uni.{u}) :
+    ReachesWithin (cost l) l (attachEngineFully (Set.univ : Set Uni.{u}) E) :=
+  fun R R' hagree =>
+    attachEngineFully_congr_of_answer_eq hβ hpay l fun zs x hzs =>
+      answer_congr_of_apply_eq hagree zs x hzs
 
 /-! ## Introduction form (1), partial: the function-pair converters
 
@@ -825,21 +898,21 @@ theorem mem_filterDom_iff {X : Type u} {Y : Type u} (P : List X → Prop)
 p. 62): a declining function pair.  Interface `Set.univ` — it inspects every
 query — and budget `1`: it relays at most the query it was given. -/
 theorem isConverterMapAt_filterDom (P : List Uni.{u} → Prop) (hP : PrefixClosed P) :
-    IsConverterMapAt (Set.univ : Set Uni.{u}) 1 (filterDom P hP) :=
-  .of_local (actsWithin_univ _) (fun e n => exists_absorb_filterDom P hP e n)
-    (fun R R' l hagree => by
+    IsConverterMapAt (Set.univ : Set Uni.{u}) (filterDom P hP) :=
+  .of_finiteRounds (actsWithin_univ _) (fun e n => exists_absorb_filterDom P hP e n)
+    ⟨1, fun l R R' hagree => by
       have h := hagree l (by simp)
       refine Part.ext fun v => ?_
-      rw [mem_filterDom_iff, mem_filterDom_iff, h])
+      rw [mem_filterDom_iff, mem_filterDom_iff, h]⟩
 
 /-- **Relabelling is a converter**: a total function pair.  Interface
 `Set.univ`, budget `1` — one renamed query out per query in. -/
 theorem isConverterMapAt_relabel (f g : Uni.{u} → Uni.{u}) :
-    IsConverterMapAt (Set.univ : Set Uni.{u}) 1 (relabel f g) :=
-  .of_local (actsWithin_univ _) (fun e n => exists_absorb_relabel f g e n)
-    (fun R R' l hagree => by
+    IsConverterMapAt (Set.univ : Set Uni.{u}) (relabel f g) :=
+  .of_finiteRounds (actsWithin_univ _) (fun e n => exists_absorb_relabel f g e n)
+    ⟨1, fun l R R' hagree => by
       show (R.1 (l.map f)).map g = (R'.1 (l.map f)).map g
-      rw [hagree (l.map f) (by simp)])
+      rw [hagree (l.map f) (by simp)]⟩
 
 end
 
@@ -857,43 +930,40 @@ universe u
 is a fact about its own program; no converter-theory obligation is left over. -/
 theorem isConverterAt_attachAt {i : Set Uni.{u}}
     {E : System.DDS (Uni.{u} ⊕ Option Uni.{u}) (Uni.{u} ⊕ Uni.{u})}
-    {β : List (Uni.{u} ⊕ Option Uni.{u}) → ℕ} {K : ℕ}
     (hReq : System.RequestsWithin i E) (hIT : System.InnerTotal E)
-    (hβ : System.AnswersWithinBudget E β) (hK : ∀ l, β l ≤ K) :
-    IsConverterAt i (max K 1) (attachAt i E) :=
+    (hβ : System.AnswersWithinUniformBudget E) :
+    IsConverterAt i (attachAt i E) :=
   ⟨System.attachEngineFully i E,
-    System.isConverterMapAt_attachEngineFully hReq hIT hβ hK, rfl⟩
+    System.isConverterMapAt_attachEngineFully hReq hIT hβ, rfl⟩
 
-/-- The same at CR18 Definition 3.8's packaged bound, and with no interface
-claimed: `AnswersWithinUniformBudget` is the existential form, so the budget it
-yields is existential too. -/
-theorem exists_isConverterAt_attachAt {i : Set Uni.{u}}
+/-- The same with no interface claimed: A1 is free at the full interface, so an
+engine whose requests are not confined still enters the class. -/
+theorem isConverterAt_attachAt_univ {i : Set Uni.{u}}
     {E : System.DDS (Uni.{u} ⊕ Option Uni.{u}) (Uni.{u} ⊕ Uni.{u})}
     (hIT : System.InnerTotal E) (hβ : System.AnswersWithinUniformBudget E) :
-    ∃ K : ℕ, IsConverterAt (Set.univ : Set Uni.{u}) K (attachAt i E) := by
-  obtain ⟨β, K, hβ, hK⟩ := hβ
-  exact ⟨max K 1, ⟨System.attachEngineFully i E,
-    System.isConverterMapAt_attachEngineFully_univ hIT hβ hK, rfl⟩⟩
+    IsConverterAt (Set.univ : Set Uni.{u}) (attachAt i E) :=
+  ⟨System.attachEngineFully i E,
+    System.isConverterMapAt_attachEngineFully_univ hIT hβ, rfl⟩
 
 /-- **CR18 §3.4.3's filter, at Φ.** -/
 theorem isConverterAt_filterPhi (P : List Uni.{u} → Prop) (hP : PrefixClosed P) :
-    IsConverterAt (Set.univ : Set Uni.{u}) 1 (filterPhi P hP) :=
+    IsConverterAt (Set.univ : Set Uni.{u}) (filterPhi P hP) :=
   ⟨System.filterDom P hP, System.isConverterMapAt_filterDom P hP, rfl⟩
 
 /-- MauRen16 §3.4's `⊣` is the filter at the query-avoiding predicate. -/
 theorem isConverterAt_block (Q : Set Uni.{u}) :
-    IsConverterAt (Set.univ : Set Uni.{u}) 1 (block Q) :=
+    IsConverterAt (Set.univ : Set Uni.{u}) (block Q) :=
   block_eq_filterPhi Q ▸ isConverterAt_filterPhi _ _
 
 /-- CR18 Definition 3.10's query limit is the filter at the length predicate. -/
 theorem isConverterAt_filterQueries (q : ℕ) :
-    IsConverterAt (Set.univ : Set Uni.{u}) 1 (filterQueries.{u} q) :=
+    IsConverterAt (Set.univ : Set Uni.{u}) (filterQueries.{u} q) :=
   ⟨System.filterQueries q,
     System.isConverterMapAt_filterDom _ (prefixClosed_length_le q), rfl⟩
 
 /-- **Relabelling, at Φ.** -/
 theorem isConverterAt_relabelLaw (f g : Uni.{u} → Uni.{u}) :
-    IsConverterAt (Set.univ : Set Uni.{u}) 1
+    IsConverterAt (Set.univ : Set Uni.{u})
       (PDS.relabelLaw f g : Function.End Phi.{u}) :=
   ⟨System.relabel f g, System.isConverterMapAt_relabel f g, rfl⟩
 
@@ -918,8 +988,7 @@ theorem attachAt_mem_converterClass {i : Set Uni.{u}}
     {E : System.DDS (Uni.{u} ⊕ Option Uni.{u}) (Uni.{u} ⊕ Uni.{u})}
     (hIT : System.InnerTotal E) (hβ : System.AnswersWithinUniformBudget E) :
     attachAt i E ∈ converterClass.{u} :=
-  let ⟨_, h⟩ := exists_isConverterAt_attachAt hIT hβ
-  h.mem_converterClass
+  (isConverterAt_attachAt_univ hIT hβ).mem_converterClass
 
 theorem filterPhi_mem_converterClass (P : List Uni.{u} → Prop) (hP : PrefixClosed P) :
     filterPhi P hP ∈ converterClass.{u} :=
