@@ -3006,6 +3006,41 @@ gates, adversarial audit before deltas apply):
      [Fintype] originals kept as one-term corollaries, both technique
      files re-pointed) and the T6 relocation debt (i) (CountingResidue
      merged into Counting.lean, staging file deleted).
+  CONVERTER-AS-SPECIFIED-CLASS (Marc, 2026-08-19, BINDING — supersedes the
+     generated-monoid design of task #74; "less than that is not
+     acceptable").  DIAGNOSIS: CR18's objects are defined BY the property
+     that makes the theorem true; ours are built from primitives, so the
+     property becomes a proof obligation.  Every hard step of the CBC lane is
+     that inversion — θ_r as a block-count predicate instead of the pullback
+     of the inner limit (eq. (6.1) becomes a theorem instead of an
+     unfolding); Σ as a generator closure instead of a class (membership
+     needs a proof, a new converter needs a WIDENING); systems as machines
+     rather than behaviours (composite equalities need fixpoint inductions).
+     DESIGN: one global class `IsConverterAt i π` over `Function.End Phi`
+     with four axiom fields — A1 interface discipline (`RequestsWithin`),
+     A2 absorption (the shape every landed `exists_absorb_*` already proves),
+     A3 LOCALITY (π R depends on R only where π consults it — the ONLY
+     genuinely new field), A4 uniform request budget.  `Sigma` becomes the
+     subtype; the four fields are closed under composition and hold of the
+     identity.  PROVED ONCE OVER THE CLASS, never per instance: nonexpansion
+     (from A2) and hence `IsNonexpandingSMul` and every ε-transport;
+     disjoint-interface commutation (from A1); filter absorption and eq.
+     (6.1) (from A3+A4); pullback restrictions, making θ_r-style adequacy
+     DEFINITIONAL; CondEquiv transport (A2's corollary).  INSTANCES, each
+     field a landed receipt: engine attachment, domain filters, parallel
+     frames, relabel/on-ramp, CBC.  RETIRES: widening as a category of work
+     (the generator list and its hash pin stop being load-bearing), per
+     -application membership bridges, per-application locality inductions.
+     DEPENDENCY INVERSION (intended): the generated monoid exists so that
+     nonexpansion could be PROVED by generator induction; under this design
+     nonexpansion is DERIVED from A2, which is what the sources assume — so
+     the current Σ becomes a theorem ("every generator is an instance"),
+     kept as a compatibility lemma until its consumers move.
+     ORDER: (1) class + Sigma subtype + closure/identity; (2) the five
+     over-the-class theorems; (3) instances, A3 first since it is the new
+     field; (4) re-point consumers; (5) demote the generated monoid; (6) then
+     CBC's remaining obligations — eq. (6.1) as an unfolding and the θ_r
+     transport instance — fall out rather than being proved.
   AUTOMATION ITEM + LEMMA-5 CONSTRUCTION (merged 2026-08-18 — the same
      Thm-2.31-scale induction; T4's phase-2 boundary report is the
      signature source): package the presentation-change induction as
