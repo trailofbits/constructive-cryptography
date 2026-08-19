@@ -29,6 +29,7 @@ import RandomSystems.System.ConnectFullyDefined
 import RandomSystems.System.AttachEngineFully
 import RandomSystems.System.BlockReplies
 import RandomSystems.System.StarFullyDefined
+import RandomSystems.System.ConverterClass
 import RandomSystems.System.ParFace
 import RandomSystems.System.Connect
 import RandomSystems.System.Game

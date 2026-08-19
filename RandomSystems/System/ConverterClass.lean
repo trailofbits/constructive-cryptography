@@ -526,3 +526,412 @@ theorem IsConverterAt.pullbackRestriction_mul_filterQueries {i : Set Uni.{u}}
 end
 
 end RandomSystems
+
+namespace RandomSystems
+
+namespace System
+
+noncomputable section
+
+open Classical
+open Converter (InLabel)
+open Converter.DDC (CIn ofEngine unlabel resolve)
+
+universe u v w
+
+/-! ## Reading the class's `S.1` agreement as the tree's `answer` agreement
+
+A3 quantifies over agreement of the raw partial function below a length; the
+landed interpreter lemmas quantify over agreement of `System.answer`.  The two
+are one step apart, and the step is the deletion pass: a kept prefix is no
+longer than what it scanned, so `S.1`-agreement below `N` gives `answer`
+agreement one query short of `N`. -/
+
+section Bridge
+
+variable {X : Type v} {Y : Type w}
+
+
+theorem answer_eq_toOption (S : DDS X Y) (l : List X) (x : X) :
+    answer S l x = (S.1 (keptPrefix S l ++ [x])).toOption := by
+  rw [answer_eq]; rfl
+
+theorem keptPrefix_congr_of_apply_eq {R R' : DDS X Y} {N : ℕ}
+    (h : ∀ zs : List X, zs.length ≤ N → R.1 zs = R'.1 zs) :
+    ∀ l : List X, l.length ≤ N → keptPrefix R l = keptPrefix R' l := by
+  intro l
+  induction l using List.reverseRecOn with
+  | nil => intro _; rfl
+  | append_singleton l x ih =>
+      intro hlen
+      simp only [List.length_append, List.length_singleton] at hlen
+      rw [keptPrefix_append_singleton, keptPrefix_append_singleton, ih (by omega)]
+      have hdom : keptPrefix R' l ++ [x] ∈ dom R ↔ keptPrefix R' l ++ [x] ∈ dom R' := by
+        have hk : (keptPrefix R' l ++ [x]).length ≤ N := by
+          have := keptPrefix_length_le R' l
+          simp only [List.length_append, List.length_singleton]; omega
+        show (R.1 _).Dom ↔ (R'.1 _).Dom
+        rw [h _ hk]
+      by_cases hd : keptPrefix R' l ++ [x] ∈ dom R'
+      · rw [if_pos (hdom.mpr hd), if_pos hd]
+      · rw [if_neg (fun hc => hd (hdom.mp hc)), if_neg hd]
+
+theorem answer_congr_of_apply_eq {R R' : DDS X Y} {N : ℕ}
+    (h : ∀ zs : List X, zs.length ≤ N → R.1 zs = R'.1 zs) (l : List X) (x : X)
+    (hl : l.length + 1 ≤ N) : answer R l x = answer R' l x := by
+  have hk := keptPrefix_congr_of_apply_eq h l (by omega)
+  rw [answer_eq_toOption, answer_eq_toOption, hk,
+    h (keptPrefix R' l ++ [x]) (by
+      have := keptPrefix_length_le R' l
+      simp only [List.length_append, List.length_singleton]; omega)]
+
+variable {i : Set Uni.{u}} {E : DDS (Uni.{u} ⊕ Option Uni.{u}) (Uni.{u} ⊕ Uni.{u})}
+  {β : List (Uni.{u} ⊕ Option Uni.{u}) → ℕ} {K : ℕ} {R R' : DDS Uni.{u} Uni.{u}}
+
+theorem attachEngineFullyDrive_congr_of_apply_eq
+    (hβ : AnswersWithinBudget E β) (hK : ∀ l, β l ≤ K) (hK1 : 1 ≤ K) :
+    ∀ (rest done : List Uni.{u}) (st : List (CIn Uni.{u} Uni.{u}) × List Uni.{u}),
+      (∀ zs : List Uni.{u}, zs.length ≤ K * (done ++ rest).length → R.1 zs = R'.1 zs) →
+      st.2.length ≤ K * done.length →
+        attachEngineFullyDrive i E R st rest = attachEngineFullyDrive i E R' st rest := by
+  intro rest
+  induction rest with
+  | nil => intro done st _ _; rfl
+  | cons q rest ih =>
+      intro done st hagree hlen
+      have hcons : done ++ q :: rest = (done ++ [q]) ++ rest := by simp
+      have hstep : K * (done ++ [q]).length = K * done.length + K := by
+        simp only [List.length_append, List.length_singleton]; ring
+      have hmono : K * (done ++ [q]).length ≤ K * (done ++ q :: rest).length := by
+        rw [hcons]
+        exact Nat.mul_le_mul_left _ (by simp)
+      have hbelow : ∀ zs : List Uni.{u}, zs.length ≤ K * (done ++ [q]).length →
+          R.1 zs = R'.1 zs := fun zs hzs => hagree zs (hzs.trans hmono)
+      have hrd : attachEngineFullyRound i E R st q = attachEngineFullyRound i E R' st q := by
+        by_cases hq : q ∈ i
+        · rw [attachEngineFullyRound_mem E R st hq, attachEngineFullyRound_mem E R' st hq]
+          refine resolve_congr_of_answer_eq hβ
+            (β ((st.1 ++ [Sum.inl (InLabel.outside, q)]).map unlabel)) _ st.2 le_rfl ?_
+          intro zs x hzs
+          have hb := hK ((st.1 ++ [Sum.inl (InLabel.outside, q)]).map unlabel)
+          exact answer_congr_of_apply_eq hbelow zs x (by rw [hstep]; omega)
+        · rw [attachEngineFullyRound_not_mem E R st hq,
+            attachEngineFullyRound_not_mem E R' st hq,
+            keptPrefix_congr_of_apply_eq hbelow st.2 (by rw [hstep]; omega),
+            hbelow (keptPrefix R' st.2 ++ [q]) (by
+              have hkl := keptPrefix_length_le R' st.2
+              have hmul : K * (done.length + 1) = K * done.length + K := by ring
+              simp only [List.length_append, List.length_singleton]
+              omega)]
+      show (attachEngineFullyRound i E R st q).bind _ = (attachEngineFullyRound i E R' st q).bind _
+      rw [hrd]
+      refine Part.ext fun z => ?_
+      simp only [Part.mem_bind_iff]
+      refine exists_congr fun a => and_congr_right fun ha => ?_
+      obtain ⟨v, c₂, xs₂⟩ := a
+      have hlen2 : xs₂.length ≤ K * (done ++ [q]).length := by
+        by_cases hq : q ∈ i
+        · rw [attachEngineFullyRound_mem E R' st hq] at ha
+          have := length_le_of_mem_resolve hβ R' K _ st.2
+            (hK ((st.1 ++ [Sum.inl (InLabel.outside, q)]).map unlabel)) ha
+          have hb := hK ((st.1 ++ [Sum.inl (InLabel.outside, q)]).map unlabel)
+          rw [hstep]; omega
+        · rw [attachEngineFullyRound_not_mem E R' st hq, Part.mem_map_iff] at ha
+          obtain ⟨y, -, hy⟩ := ha
+          have hx2 : xs₂ = st.2 ++ [q] := by
+            have := congrArg (fun r => r.2.2) hy
+            simpa using this.symm
+          rw [hx2, hstep]
+          simp only [List.length_append, List.length_singleton]
+          omega
+      rw [ih (done ++ [q]) (c₂, xs₂) (by rw [← hcons]; exact hagree) hlen2]
+
+theorem attachEngineFully_congr_of_apply_eq
+    (hβ : AnswersWithinBudget E β) (hK : ∀ l, β l ≤ K) (hK1 : 1 ≤ K)
+    (l : List Uni.{u})
+    (hagree : ∀ zs : List Uni.{u}, zs.length ≤ K * l.length → R.1 zs = R'.1 zs) :
+    (attachEngineFully i E R).1 l = (attachEngineFully i E R').1 l := by
+  simp only [attachEngineFully_toPFun, attachEngineFullyRaw]
+  rw [attachEngineFullyDrive_congr_of_apply_eq hβ hK hK1 l [] ([], [])
+    (by simpa using hagree) (by simp)]
+
+
+end Bridge
+
+/-! ## The empty interface is the identity
+
+`attachEngineFully ∅ F` never consults the engine — every query is foreign — and
+a foreign round is the resource's own step, so the composite *is* the resource.
+This is the receipt that makes A1 free at the full interface: `Disjoint univ j`
+forces `j = ∅`, and there is then nothing to commute with. -/
+
+
+theorem mem_dom_of_reachedAt
+    {F : DDS (Uni.{u} ⊕ Option Uni.{u}) (Uni.{u} ⊕ Uni.{u})} {R : DDS Uni.{u} Uni.{u}}
+    {us : List Uni.{u}} (hne : us ≠ [])
+    {st : List (Converter.DDC.CIn Uni.{u} Uni.{u}) × List Uni.{u}}
+    (h : ReachedAt (∅ : Set Uni.{u}) F R us st) : us ∈ dom (attachEngineFully ∅ F R) := by
+  obtain ⟨vs, hvs⟩ := h
+  have hlen : vs.length = us.length := attachEngineFullyDrive_length ([], []) us hvs
+  have hvne : vs ≠ [] := by
+    intro hnil
+    exact hne (List.eq_nil_of_length_eq_zero (by rw [← hlen, hnil, List.length_nil]))
+  refine Part.dom_iff_mem.mpr ⟨vs.getLast hvne, ?_⟩
+  rw [attachEngineFully_toPFun, mem_attachEngineFullyRaw_iff]
+  exact ⟨(vs, st), hvs, List.getLast?_eq_some_getLast hvne⟩
+
+theorem attachEngineFully_empty_aux (F : DDS (Uni.{u} ⊕ Option Uni.{u}) (Uni.{u} ⊕ Uni.{u}))
+    (R : DDS Uni.{u} Uni.{u}) : ∀ us : List Uni.{u},
+    ((us = [] ∨ us ∈ dom R) → ReachedAt (∅ : Set Uni.{u}) F R us ([], us)) ∧
+      (attachEngineFully ∅ F R).1 us = R.1 us := by
+  intro us
+  induction us using List.reverseRecOn with
+  | nil =>
+      refine ⟨fun _ => reachedAt_nil _ F R, ?_⟩
+      rw [Part.eq_none_iff'.mpr (empty_not_mem (attachEngineFully ∅ F R)),
+        Part.eq_none_iff'.mpr (empty_not_mem R)]
+  | append_singleton us q ih =>
+      obtain ⟨ihr, iha⟩ := ih
+      by_cases hus : us = [] ∨ us ∈ dom R
+      · have hkept : keptPrefix R us = us :=
+          keptPrefix_eq_self_of_mem_or_empty R hus.symm
+        have hst := ihr hus
+        refine ⟨fun hmem => ?_, ?_⟩
+        · have hR : keptPrefix R us ++ [q] ∈ dom R := by
+            rw [hkept]
+            rcases hmem with h | h
+            · exact absurd h (by simp)
+            · exact h
+          exact attachEngineFully_reached_concat_not_mem hst (by simp) hR
+        · rw [attachEngineFully_transparent hst (by simp), hkept]
+      · rw [not_or] at hus
+        obtain ⟨hne, hnd⟩ := hus
+        have hRnone : R.1 (us ++ [q]) = Part.none := by
+          refine Part.eq_none_iff.mpr fun v hv => hnd ?_
+          exact prefix_closed R ⟨[q], rfl⟩ hne (Part.dom_iff_mem.mpr ⟨v, hv⟩)
+        have hnodom : us ∉ dom (attachEngineFully ∅ F R) := by
+          intro hc
+          refine hnd ?_
+          show (R.1 us).Dom
+          rw [← iha]
+          exact hc
+        refine ⟨fun hmem => ?_, ?_⟩
+        · exfalso
+          rcases hmem with h | h
+          · exact absurd h (by simp)
+          · exact hnd (prefix_closed R ⟨[q], rfl⟩ hne h)
+        · rw [hRnone, attachEngineFully_concat_eq_none
+            (fun hex => hnodom (mem_dom_of_reachedAt hne hex.choose_spec)) q]
+
+theorem attachEngineFully_empty (F : DDS (Uni.{u} ⊕ Option Uni.{u}) (Uni.{u} ⊕ Uni.{u}))
+    (R : DDS Uni.{u} Uni.{u}) : attachEngineFully (∅ : Set Uni.{u}) F R = R :=
+  Subtype.ext (funext fun us => (attachEngineFully_empty_aux F R us).2)
+
+theorem actsWithin_univ (g : SystemMap.{u}) : ActsWithin (Set.univ : Set Uni.{u}) g := by
+  intro j hj F _ R
+  have hj0 : j = ∅ := Set.univ_disjoint.mp hj
+  subst hj0
+  rw [attachEngineFully_empty, attachEngineFully_empty]
+
+
+/-! ## The interface-local locality of attachment
+
+The landed `attachEngineFullyDrive_congr_of_answer_eq` is stated at
+`i = Set.univ` and at a general cost function, with the docstring's own
+observation that the interface-local statement "would need `cost` to pay for
+foreign queries as well".  A3's uniform budget pays for them: a foreign round
+is one query, and `K ≥ 1`.  So the interface-local statement is available, and
+this is it. -/
+
+
+end
+
+end System
+
+end RandomSystems
+
+namespace RandomSystems
+
+namespace System
+
+noncomputable section
+
+open Classical
+
+universe u
+
+/-! ## Introduction form (2): the interactive converter — a program with its
+discipline
+
+CR18 Definition 3.8's converter *is* a system at the converter alphabets: "given
+what I have seen, my next move".  `attachEngineFully i E` is that program
+applied, and the class membership below is the whole of what an application
+needs — it never states an axiom of its own, only the two elementary conditions
+on its own program (it always reacts, and its rounds are bounded) that
+`ConverterEntry.lean`'s crossing already asks for. -/
+
+/-- **The program constructor satisfies the axioms.**  `RequestsWithin` gives
+A1 (through the landed commutation), the engine class gives A2 (through the
+landed absorption), and the uniform bound gives A3 with reach `max K 1` — the
+`max` reconciles the two genres exactly as `exists_absorb_attachEngineFully`'s
+does, since a foreign query costs one resource query whatever the engine's
+budget is. -/
+theorem isConverterMapAt_attachEngineFully {i : Set Uni.{u}}
+    {E : DDS (Uni.{u} ⊕ Option Uni.{u}) (Uni.{u} ⊕ Uni.{u})}
+    {β : List (Uni.{u} ⊕ Option Uni.{u}) → ℕ} {K : ℕ}
+    (hReq : RequestsWithin i E) (hIT : InnerTotal E)
+    (hβ : AnswersWithinBudget E β) (hK : ∀ l, β l ≤ K) :
+    IsConverterMapAt i (max K 1) (attachEngineFully i E) :=
+  .of_local
+    (fun _ hij _ hF R => attachEngineFully_comm hij hReq hF R)
+    (fun e n => exists_absorb_attachEngineFully hIT hβ hK e n)
+    (fun _ _ l hagree =>
+      attachEngineFully_congr_of_apply_eq hβ (fun l => (hK l).trans (le_max_left _ _))
+        (le_max_right _ _) l hagree)
+
+/-- **The program constructor with no interface claimed.**  A1 is free at the
+full interface (`actsWithin_univ`), so an engine whose requests are not confined
+still enters the class — it just cannot be commuted past anything. -/
+theorem isConverterMapAt_attachEngineFully_univ {i : Set Uni.{u}}
+    {E : DDS (Uni.{u} ⊕ Option Uni.{u}) (Uni.{u} ⊕ Uni.{u})}
+    {β : List (Uni.{u} ⊕ Option Uni.{u}) → ℕ} {K : ℕ}
+    (hIT : InnerTotal E) (hβ : AnswersWithinBudget E β) (hK : ∀ l, β l ≤ K) :
+    IsConverterMapAt (Set.univ : Set Uni.{u}) (max K 1) (attachEngineFully i E) :=
+  .of_local (actsWithin_univ _)
+    (fun e n => exists_absorb_attachEngineFully hIT hβ hK e n)
+    (fun _ _ l hagree =>
+      attachEngineFully_congr_of_apply_eq hβ (fun l => (hK l).trans (le_max_left _ _))
+        (le_max_right _ _) l hagree)
+
+/-! ## Introduction form (1), partial: the function-pair converters
+
+A converter that neither keeps state across the resource nor asks twice is a
+*function pair*: a pre-map on the outgoing query and a post-map on the incoming
+answer, the pre-map allowed to decline.  The two landed members of that family
+are the domain filter (a pre-map that declines on the history) and the
+relabelling (a pre-map and a post-map that rename).  Both are proved here
+directly; the general `funPair` combinator that subsumes them is the next
+dispatch's, and nothing below depends on which of the two shapes it is written
+in. -/
+
+theorem mem_filterDom_iff {X : Type u} {Y : Type u} (P : List X → Prop)
+    (hP : PrefixClosed P) (S : DDS X Y) (l : List X) (v : Y) :
+    v ∈ (filterDom P hP S).1 l ↔ (v ∈ S.1 l ∧ P l) := by
+  constructor
+  · rintro ⟨⟨hd, hp⟩, hv⟩; exact ⟨⟨hd, hv⟩, hp⟩
+  · rintro ⟨⟨hd, hv⟩, hp⟩; exact ⟨⟨hd, hp⟩, hv⟩
+
+/-- **CR18 §3.4.3's domain filter is a converter** (unnumbered prose, printed
+p. 62): a declining function pair.  Interface `Set.univ` — it inspects every
+query — and budget `1`: it relays at most the query it was given. -/
+theorem isConverterMapAt_filterDom (P : List Uni.{u} → Prop) (hP : PrefixClosed P) :
+    IsConverterMapAt (Set.univ : Set Uni.{u}) 1 (filterDom P hP) :=
+  .of_local (actsWithin_univ _) (fun e n => exists_absorb_filterDom P hP e n)
+    (fun R R' l hagree => by
+      have h := hagree l (by simp)
+      refine Part.ext fun v => ?_
+      rw [mem_filterDom_iff, mem_filterDom_iff, h])
+
+/-- **Relabelling is a converter**: a total function pair.  Interface
+`Set.univ`, budget `1` — one renamed query out per query in. -/
+theorem isConverterMapAt_relabel (f g : Uni.{u} → Uni.{u}) :
+    IsConverterMapAt (Set.univ : Set Uni.{u}) 1 (relabel f g) :=
+  .of_local (actsWithin_univ _) (fun e n => exists_absorb_relabel f g e n)
+    (fun R R' l hagree => by
+      show (R.1 (l.map f)).map g = (R'.1 (l.map f)).map g
+      rw [hagree (l.map f) (by simp)])
+
+end
+
+end System
+
+/-! ## The instances at Φ, and the demotion of the generated monoid -/
+
+noncomputable section
+
+open Probability (Distribution)
+
+universe u
+
+/-- **The program constructor, at Φ.**  Everything an application has to supply
+is a fact about its own program; no converter-theory obligation is left over. -/
+theorem isConverterAt_attachAt {i : Set Uni.{u}}
+    {E : System.DDS (Uni.{u} ⊕ Option Uni.{u}) (Uni.{u} ⊕ Uni.{u})}
+    {β : List (Uni.{u} ⊕ Option Uni.{u}) → ℕ} {K : ℕ}
+    (hReq : System.RequestsWithin i E) (hIT : System.InnerTotal E)
+    (hβ : System.AnswersWithinBudget E β) (hK : ∀ l, β l ≤ K) :
+    IsConverterAt i (max K 1) (attachAt i E) :=
+  ⟨System.attachEngineFully i E,
+    System.isConverterMapAt_attachEngineFully hReq hIT hβ hK, rfl⟩
+
+/-- The same at CR18 Definition 3.8's packaged bound, and with no interface
+claimed: `AnswersWithinUniformBudget` is the existential form, so the budget it
+yields is existential too. -/
+theorem exists_isConverterAt_attachAt {i : Set Uni.{u}}
+    {E : System.DDS (Uni.{u} ⊕ Option Uni.{u}) (Uni.{u} ⊕ Uni.{u})}
+    (hIT : System.InnerTotal E) (hβ : System.AnswersWithinUniformBudget E) :
+    ∃ K : ℕ, IsConverterAt (Set.univ : Set Uni.{u}) K (attachAt i E) := by
+  obtain ⟨β, K, hβ, hK⟩ := hβ
+  exact ⟨max K 1, ⟨System.attachEngineFully i E,
+    System.isConverterMapAt_attachEngineFully_univ hIT hβ hK, rfl⟩⟩
+
+/-- **CR18 §3.4.3's filter, at Φ.** -/
+theorem isConverterAt_filterPhi (P : List Uni.{u} → Prop) (hP : PrefixClosed P) :
+    IsConverterAt (Set.univ : Set Uni.{u}) 1 (filterPhi P hP) :=
+  ⟨System.filterDom P hP, System.isConverterMapAt_filterDom P hP, rfl⟩
+
+/-- MauRen16 §3.4's `⊣` is the filter at the query-avoiding predicate. -/
+theorem isConverterAt_block (Q : Set Uni.{u}) :
+    IsConverterAt (Set.univ : Set Uni.{u}) 1 (block Q) :=
+  block_eq_filterPhi Q ▸ isConverterAt_filterPhi _ _
+
+/-- CR18 Definition 3.10's query limit is the filter at the length predicate. -/
+theorem isConverterAt_filterQueries (q : ℕ) :
+    IsConverterAt (Set.univ : Set Uni.{u}) 1 (filterQueries.{u} q) :=
+  ⟨System.filterQueries q,
+    System.isConverterMapAt_filterDom _ (prefixClosed_length_le q), rfl⟩
+
+/-- **Relabelling, at Φ.** -/
+theorem isConverterAt_relabelLaw (f g : Uni.{u} → Uni.{u}) :
+    IsConverterAt (Set.univ : Set Uni.{u}) 1
+      (PDS.relabelLaw f g : Function.End Phi.{u}) :=
+  ⟨System.relabel f g, System.isConverterMapAt_relabel f g, rfl⟩
+
+/-! ### The generated monoid, demoted
+
+The generated `converterMonoidAt` is kept — nothing that consumes it breaks —
+but it is no longer the definition of a converter.  Its attachment family and
+its domain-filter family are *instances* of the class, which is the
+"every generator is an instance" half of the demotion.
+
+Its two **parallel-frame** families are not, and the reason is structural
+rather than a missing proof: `fun RL => par c RL TL` at a law-valued partner
+`TL` is not the pushforward of any deterministic system map — it sends a point
+mass to a *mixture* — so it cannot satisfy an A2 that quantifies over
+deterministic systems.  A parallel frame introduces a resource rather than
+transforming one, and the law-valued partner is where that shows.  Its home is
+the mixture layer above this class (CR18 Definition 3.17;
+`attachLawAt_apply_eq_sum` is the landed decomposition and
+`mem_nonexpandingConverters_of_sum` the landed averaging step). -/
+
+theorem attachAt_mem_converterClass {i : Set Uni.{u}}
+    {E : System.DDS (Uni.{u} ⊕ Option Uni.{u}) (Uni.{u} ⊕ Uni.{u})}
+    (hIT : System.InnerTotal E) (hβ : System.AnswersWithinUniformBudget E) :
+    attachAt i E ∈ converterClass.{u} :=
+  let ⟨_, h⟩ := exists_isConverterAt_attachAt hIT hβ
+  h.mem_converterClass
+
+theorem filterPhi_mem_converterClass (P : List Uni.{u} → Prop) (hP : PrefixClosed P) :
+    filterPhi P hP ∈ converterClass.{u} :=
+  (isConverterAt_filterPhi P hP).mem_converterClass
+
+theorem block_mem_converterClass (Q : Set Uni.{u}) : block Q ∈ converterClass.{u} :=
+  (isConverterAt_block Q).mem_converterClass
+
+theorem filterQueries_mem_converterClass (q : ℕ) :
+    filterQueries.{u} q ∈ converterClass.{u} :=
+  (isConverterAt_filterQueries q).mem_converterClass
+
+end
+
+end RandomSystems
