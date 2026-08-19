@@ -3721,7 +3721,10 @@ object).  `b` is none of those.
 NAMING TRIAGE (all KEEP + flagged; Marc's call with the `fiber` rename):
 `refuseAfter`, `InterfaceRoles`, `admittedConverters` (over-promises —
 audit suggests `attachableConverters`), `PhiAt`, `cascadeFn`, `combineFn`,
-`blockRepliesMove` (no `*Move` precedent anywhere in the tree),
+`ProtocolFn` (`Converter/Converter.lean:2738`) — MISNAMED by the vocabulary
+ruling: it is one CONVERTER's history function (`List U × List (Option Y) →.
+(X ⊕ V)`), not a protocol (the tuple the honest parties apply); candidate
+`ConverterFn`.  `blockRepliesMove` (no `*Move` precedent anywhere in the tree),
 `filterPhi` — the recorded reason was AUDIT-REFUTED (`filterQueries` is
 bare at BOTH levels, distinguished by namespace, so the `Phi` suffix is
 inconsistent with its own neighbours rather than disambiguating).
