@@ -1150,6 +1150,284 @@ theorem cbc_condEquiv [Nontrivial M] (bf : M → List X) (hbf : PrefixFree bf) :
 
 end CondEquiv
 
+/-! ## CR18 equation (6.3), printed p. 127: the restriction by `θ_r`
+
+"Hence we have proved (6.2), which is of course still true when both systems
+are restricted by `θ_r`" (printed p. 127).  The general transport is
+`PDG.condEquiv_fTransform` (`Technique/ConditionalEquivalence.lean`); what it
+asks for at each outer query list is a **non-adaptive uniform schedule** — one
+inner query list, the same for every system in either support, together with a
+post-processing of the inner interaction.
+
+For a domain filter that schedule is the *admitted subsequence* of the outer
+list: a refused query is deleted (CR18 Definition 3.3) and never enters the
+kept prefix, so it costs no inner query and a later query can still be
+admitted.  That the subsequence is a function of the outer list alone — and not
+of the system — is what the fully-answering slice buys, exactly as in the `[r]`
+instance `PDG.condEquiv_filterQueries` (printed p. 128); against a refusing
+system the kept prefix depends on the system's own refusals and there is no
+uniform witness.
+-/
+
+section Theta
+
+open System
+
+variable {A : Type u} {B : Type u}
+
+/-- **The schedule a domain filter admits from a fixed query list**: scan the
+list, extending the kept prefix by a query exactly when the predicate admits
+the extension, and dropping the query otherwise.  This is CR18 Definition 3.3's
+deletion pass run against CR18 §3.4.3's filter (printed p. 62), computed from
+the query list alone. -/
+def filterAdmit (P : List A → Prop) [DecidablePred P] (l : List A) : List A :=
+  l.foldl (fun K x => if P (K ++ [x]) then K ++ [x] else K) []
+
+@[simp] theorem filterAdmit_nil (P : List A → Prop) [DecidablePred P] :
+    filterAdmit P ([] : List A) = [] := rfl
+
+theorem filterAdmit_concat (P : List A → Prop) [DecidablePred P] (l : List A) (x : A) :
+    filterAdmit P (l ++ [x])
+      = if P (filterAdmit P l ++ [x]) then filterAdmit P l ++ [x] else filterAdmit P l := by
+  simp only [filterAdmit, List.foldl_concat]
+
+/-- The admitted schedule grows with the query list: a longer list admits an
+extension of what its prefix admitted. -/
+theorem filterAdmit_prefix (P : List A → Prop) [DecidablePred P] {l₁ l₂ : List A}
+    (h : l₁ <+: l₂) : filterAdmit P l₁ <+: filterAdmit P l₂ := by
+  obtain ⟨t, rfl⟩ := h
+  induction t using List.reverseRecOn with
+  | nil => simp
+  | append_singleton t x ih =>
+      rw [← List.append_assoc, filterAdmit_concat]
+      split
+      · exact ih.trans (List.prefix_append _ _)
+      · exact ih
+
+/-- **The deletion pass of a filtered evaluator is the admitted schedule.**  A
+function evaluator answers every nonempty history, so the only queries the
+filtered system deletes are the ones its own predicate rejects. -/
+theorem keptPrefix_filterDom_functionEvaluator (P : List A → Prop) [DecidablePred P]
+    (hP : PrefixClosed P) (h : A → B) (l : List A) :
+    keptPrefix (filterDom P hP (functionEvaluator h)) l = filterAdmit P l := by
+  induction l using List.reverseRecOn with
+  | nil => rfl
+  | append_singleton l x ih =>
+      rw [keptPrefix_append_singleton, ih, filterAdmit_concat]
+      have hdom : (filterAdmit P l ++ [x] ∈ dom (filterDom P hP (functionEvaluator h)))
+          ↔ P (filterAdmit P l ++ [x]) := by
+        rw [mem_dom_filterDom, dom_functionEvaluator]
+        exact and_iff_right (by simp)
+      by_cases hPx : P (filterAdmit P l ++ [x])
+      · rw [if_pos (hdom.mpr hPx), if_pos hPx]
+      · rw [if_neg (fun hc => hPx (hdom.mp hc)), if_neg hPx]
+
+/-- **The post-processing that re-inserts the refusals**: replay the outer
+query list against the predicate, taking the next entry of the inner
+interaction whenever the predicate admits and answering `⊥` on the filter's own
+behalf whenever it does not.  It reads the outer list and the predicate only —
+never the system — which is what makes the witness of
+`PDG.condEquiv_fTransform` uniform in the system. -/
+def filterWeaveState (P : List A → Prop) [DecidablePred P]
+    (T : List (A × Option B)) (l : List A) : List A × List (A × Option B) :=
+  l.foldl (fun st x =>
+      if P (st.1 ++ [x]) then (st.1 ++ [x], st.2 ++ [(x, (T[st.1.length]?).bind Prod.snd)])
+      else (st.1, st.2 ++ [(x, none)]))
+    ([], [])
+
+@[inherit_doc filterWeaveState]
+def filterWeave (P : List A → Prop) [DecidablePred P]
+    (T : List (A × Option B)) (l : List A) : List (A × Option B) :=
+  (filterWeaveState P T l).2
+
+theorem filterWeaveState_concat (P : List A → Prop) [DecidablePred P]
+    (T : List (A × Option B)) (l : List A) (x : A) :
+    filterWeaveState P T (l ++ [x])
+      = (if P ((filterWeaveState P T l).1 ++ [x])
+          then ((filterWeaveState P T l).1 ++ [x],
+            (filterWeaveState P T l).2
+              ++ [(x, (T[(filterWeaveState P T l).1.length]?).bind Prod.snd)])
+          else ((filterWeaveState P T l).1, (filterWeaveState P T l).2 ++ [(x, none)])) := by
+  simp only [filterWeaveState, List.foldl_concat]
+
+/-- The replay tracks the admitted schedule in its first component. -/
+theorem filterWeaveState_fst (P : List A → Prop) [DecidablePred P]
+    (T : List (A × Option B)) (l : List A) :
+    (filterWeaveState P T l).1 = filterAdmit P l := by
+  induction l using List.reverseRecOn with
+  | nil => rfl
+  | append_singleton l x ih =>
+      rw [filterWeaveState_concat, filterAdmit_concat, ih]
+      split <;> rfl
+
+theorem filterWeave_concat (P : List A → Prop) [DecidablePred P]
+    (T : List (A × Option B)) (l : List A) (x : A) :
+    filterWeave P T (l ++ [x])
+      = filterWeave P T l
+        ++ [if P (filterAdmit P l ++ [x])
+            then (x, (T[(filterAdmit P l).length]?).bind Prod.snd) else (x, none)] := by
+  rw [filterWeave, filterWeaveState_concat, filterWeaveState_fst]
+  by_cases hPx : P (filterAdmit P l ++ [x])
+  · rw [if_pos hPx, if_pos hPx]
+    rfl
+  · rw [if_neg hPx, if_neg hPx]
+    rfl
+
+@[simp] theorem filterWeave_length (P : List A → Prop) [DecidablePred P]
+    (T : List (A × Option B)) (l : List A) : (filterWeave P T l).length = l.length := by
+  induction l using List.reverseRecOn with
+  | nil => rfl
+  | append_singleton l x ih =>
+      rw [filterWeave_concat, List.length_append, ih]
+      simp
+
+/-- **The filtered interaction at a fixed query list, computed.**  Against a
+function evaluator — the atoms of every object in this file — the domain filter
+of CR18 §3.4.3 (printed p. 62) answers the admitted queries exactly as the
+evaluator does and refuses the rest, so the interaction is the *replay* of the
+outer list over the interaction with the admitted schedule.
+
+This is the absorption witness `PDG.condEquiv_fTransform` asks for, with the
+inner query list `filterAdmit P l'` and the post-processing `filterWeave P · l'`;
+it is the `θ_r` counterpart of `PDG.Plumbing.transcript_filterQueries_playQueries`
+(the `[r]` instance, printed p. 128). -/
+theorem transcript_filterDom_functionEvaluator_playQueries (P : List A → Prop)
+    [DecidablePred P] (hP : PrefixClosed P) (h : A → B) (l' : List A) :
+    ∀ n, n ≤ l'.length →
+      DDE.Total.transcript (filterDom P hP (functionEvaluator h))
+          (DDE.Total.playQueries l') n
+        = filterWeave P ((filterAdmit P l').map (fun x => (x, some (h x)))) (l'.take n) := by
+  intro n
+  induction n with
+  | zero => intro _; rfl
+  | succ n ih =>
+      intro hn
+      have hlt : n < l'.length := hn
+      have hik := ih (Nat.le_of_succ_le hn)
+      have hlen : (DDE.Total.transcript (filterDom P hP (functionEvaluator h))
+          (DDE.Total.playQueries l') n).length = n := by
+        rw [hik, filterWeave_length, List.length_take]
+        omega
+      have hq : DDE.Total.playQueries (Y := B) l'
+          (DDE.Total.transcript (filterDom P hP (functionEvaluator h))
+            (DDE.Total.playQueries l') n)↓ᵧ = some l'[n] := by
+        show l'[_]? = _
+        simp only [transcriptOutputs, List.length_map, hlen]
+        exact List.getElem?_eq_getElem hlt
+      have hinp : (DDE.Total.transcript (filterDom P hP (functionEvaluator h))
+          (DDE.Total.playQueries l') n)↓ₓ = l'.take n :=
+        transcriptInputs_transcript_playQueries _ l' n (Nat.le_of_succ_le hn)
+      have hkeptM : keptPrefix (functionEvaluator h) (filterAdmit P (l'.take n))
+          = keptPrefix (filterDom P hP (functionEvaluator h)) (l'.take n) := by
+        rw [keptPrefix_functionEvaluator, keptPrefix_filterDom_functionEvaluator]
+      have hans : answer (filterDom P hP (functionEvaluator h)) (l'.take n) l'[n]
+          = if P (filterAdmit P (l'.take n) ++ [l'[n]]) then some (h l'[n]) else none := by
+        rw [answer_filterDom P hP (functionEvaluator h) (l'.take n)
+          (filterAdmit P (l'.take n)) l'[n] hkeptM,
+          keptPrefix_filterDom_functionEvaluator, PDS.answer_functionEvaluator]
+        by_cases hPx : P (filterAdmit P (l'.take n) ++ [l'[n]]) <;> simp [hPx]
+      rw [DDE.Total.transcript_succ_of_query _ _ hq, hinp, hans, hik,
+        List.take_add_one, List.getElem?_eq_getElem hlt]
+      simp only [Option.toList_some, filterWeave_concat]
+      congr 1
+      by_cases hPx : P (filterAdmit P (l'.take n) ++ [l'[n]])
+      · rw [if_pos hPx, if_pos hPx]
+        have hpre : filterAdmit P (l'.take n) ++ [l'[n]] <+: filterAdmit P l' := by
+          have htk : l'.take (n + 1) = l'.take n ++ [l'[n]] := by
+            rw [List.take_add_one, List.getElem?_eq_getElem hlt]
+            rfl
+          have hstep : filterAdmit P (l'.take (n + 1))
+              = filterAdmit P (l'.take n) ++ [l'[n]] := by
+            rw [htk, filterAdmit_concat, if_pos hPx]
+          exact hstep ▸ filterAdmit_prefix P (List.take_prefix (n + 1) l')
+        have hget : (filterAdmit P l')[(filterAdmit P (l'.take n)).length]? = some l'[n] := by
+          obtain ⟨w, hw⟩ := hpre
+          rw [← hw, List.append_assoc, List.getElem?_append_right (le_refl _)]
+          simp
+        rw [List.getElem?_map, hget]
+        rfl
+      · rw [if_neg hPx, if_neg hPx]
+
+/-- The filtered interaction at the outer list's own length, in the shape the
+transport consumes: a post-processing of the interaction with the admitted
+schedule. -/
+theorem transcript_filterDom_functionEvaluator_playQueries_length (P : List A → Prop)
+    [DecidablePred P] (hP : PrefixClosed P) (h : A → B) (l' : List A) :
+    DDE.Total.transcript (filterDom P hP (functionEvaluator h))
+        (DDE.Total.playQueries l') l'.length
+      = filterWeave P (DDE.Total.transcript (functionEvaluator h)
+          (DDE.Total.playQueries (filterAdmit P l')) (filterAdmit P l').length) l' := by
+  rw [transcript_functionEvaluator_playQueries_length,
+    transcript_filterDom_functionEvaluator_playQueries P hP h l' l'.length le_rfl,
+    List.take_length]
+
+/-- The queries the filtered interaction actually answered: the admitted
+schedule, which is also what the interaction with that schedule answers.  This
+is the winning clause of `PDG.condEquiv_fTransform_of_answeredQueries` —
+Lanzenberger Definition 2.25's test reads `answeredQueries` and nothing
+else. -/
+theorem answeredQueries_filterDom_functionEvaluator (P : List A → Prop)
+    [DecidablePred P] (hP : PrefixClosed P) (h : A → B) (l' : List A) :
+    answeredQueries (DDE.Total.transcript (filterDom P hP (functionEvaluator h))
+        (DDE.Total.playQueries l') l'.length)
+      = answeredQueries (DDE.Total.transcript (functionEvaluator h)
+          (DDE.Total.playQueries (filterAdmit P l')) (filterAdmit P l').length) := by
+  rw [answeredQueries_transcript_playQueries_keptPrefix,
+    answeredQueries_transcript_playQueries_keptPrefix,
+    keptPrefix_filterDom_functionEvaluator, keptPrefix_functionEvaluator]
+
+/-- CR18's block count is prefix-closed: extending the message list can only
+add blocks (printed p. 126, "keeps track of the total number of such blocks
+resulting for all messages seen so far").  This is `prefixClosed_thetaPred`
+read at the message alphabet, where `θ_r` actually restricts. -/
+theorem prefixClosed_totalBlocks_le (bf : M → List X) (r : ℕ) :
+    PrefixClosed (fun l : List M => totalBlocks bf l ≤ r) :=
+  fun _ _ hpre hl => le_trans (totalBlocks_mono bf hpre) hl
+
+/-- **CR18 equation (6.3), printed p. 127** — the third of the six obligations
+at `cbc_mac_constructs`, discharged: `(θ_r ĈBC R_{n,n}) ⊨ θ_r V_n`, "of course
+still true when both systems are restricted by `θ_r`".
+
+`θ_r` is CR18's block-count restriction (printed p. 126), here the domain
+filter at the block-count predicate on the *message* alphabet — the interface
+`θ_r` restricts.  The proof is the general transport
+`PDG.condEquiv_fTransform_of_answeredQueries` at the schedule this file
+supplies: the inner query list is `filterAdmit` — the admitted subsequence of
+the outer list, a function of the list and the predicate alone — and the
+post-processing is `filterWeave`, which re-inserts the filter's own refusals.
+The uniformity the general lemma demands holds because every atom of either
+side is a function evaluator, which refuses nothing, so the admitted
+subsequence does not depend on the system. -/
+theorem cbc_condEquiv_theta [Nontrivial M] (bf : M → List X) (r : ℕ)
+    (hbf : PrefixFree bf) :
+    PDG.CondEquiv
+      (Distribution.fTransform
+        (fun γ : System.DDG M X =>
+          ((System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
+              (prefixClosed_totalBlocks_le bf r) γ.1, γ.2) : System.DDG M X))
+        (cbcGameLaw bf))
+      (Distribution.fTransform
+        (System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
+          (prefixClosed_totalBlocks_le bf r))
+        (Vn M X)) := by
+  refine PDG.condEquiv_fTransform_of_answeredQueries _
+    (fun l' => ⟨filterAdmit (fun l : List M => totalBlocks bf l ≤ r) l',
+      fun T => filterWeave (fun l : List M => totalBlocks bf l ≤ r) T l', ?_, ?_⟩)
+    (cbc_condEquiv bf hbf)
+  · intro γ hγ
+    obtain ⟨f, -, rfl⟩ :=
+      Distribution.exists_mem_support_of_mem_support_fTransform _ _ hγ
+    dsimp only
+    exact ⟨answeredQueries_filterDom_functionEvaluator _ _ _ l',
+      transcript_filterDom_functionEvaluator_playQueries_length _ _ _ l'⟩
+  · intro s hs
+    rw [Vn, PDS.urf] at hs
+    obtain ⟨g, -, rfl⟩ :=
+      Distribution.exists_mem_support_of_mem_support_fTransform _ _ hs
+    exact transcript_filterDom_functionEvaluator_playQueries_length _ _ _ l'
+
+end Theta
+
 /-! ## CR18 Theorem 6.1 as a construction statement
 
 The printed statement is an arrow with a superscript, `[r]R_{n,n} --θ_r CBC-->
