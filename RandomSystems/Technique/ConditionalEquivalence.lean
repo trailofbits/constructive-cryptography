@@ -3,6 +3,7 @@ Copyright (c) 2024-2026 Trail of Bits. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import RandomSystems.System.Winnability
+import RandomSystems.System.FilterPhi
 import Probability.Conditional
 
 /-!
@@ -892,6 +893,445 @@ theorem condEquiv_iff_condProb {G : PDG X Y} {T : PDS X Y} (hG : G.NonNeg)
         rw [hS, hzero, mul_zero, zero_mul]
       · have := (hiff l hR hS t).mp (h l hR hS t)
         linarith
+
+end PDG
+
+/-! ## Transport through a converter
+
+CR18 proves conditional equivalence for a pair of systems and then *applies a
+converter to both sides* without further comment: "Hence we have proved (6.2),
+which is of course still true when both systems are restricted by `θ_r`"
+(**printed p. 127**, equation (6.3)), and again in the proof of Theorem 6.2,
+"This is of course still true when the systems are restricted by `[r]`, i.e.,
+`[r]casc[Ŝ,R_{m,n}] ⊨ [r]V_n`" (**printed p. 128**).
+
+The step is free in the source because its systems *are* conditional
+distributions, so restricting the input alphabet restricts the family.  Here a
+converter is a map on deterministic systems and `CondEquiv` (Maurer13b
+Definition 13, printed p. 3153) is a statement about the *not-won slice* of the
+Definition 2.21 transcript law at each fixed query list.  Applying a converter
+changes which queries reach the system, so the relation has to be carried
+through the converter's **absorption witness** — the same data
+`PDS.advFullyDefined_fTransform_le` (`System/Absorb.lean`) consumes, and this
+proof is that one's architecture with the metric replaced by the two laws.
+
+The witness must say two things at each *outer* query list `l'`, uniformly in
+the deterministic system: which *inner* query list `l` the converter produces,
+and how the outer transcript is read off the inner one (`p`).  With those, both
+sides of Definition 13's product form are pushforwards along the same `p`, and
+pushforward is `ℝ`-linear, so the identity transports verbatim.  Nothing else
+is needed: no positivity, no weight condition, no hypothesis on the
+condition. -/
+
+namespace PDG
+
+namespace Plumbing
+
+/-- Restriction reads its predicate on the support only. -/
+theorem restrict_congr {A : Type*} (D : Distribution A) {P Q : A → Prop}
+    (h : ∀ a ∈ D.support, P a ↔ Q a) : D.restrict P = D.restrict Q := by
+  ext a
+  rw [Distribution.restrict_apply, Distribution.restrict_apply]
+  by_cases ha : a ∈ D.support
+  · by_cases hP : P a
+    · rw [if_pos hP, if_pos ((h a ha).mp hP)]
+    · rw [if_neg hP, if_neg (fun hQ => hP ((h a ha).mpr hQ))]
+  · have hzero : D a = 0 := by simpa using ha
+    rw [hzero]
+    simp
+
+/-- Restricting a pushforward is the pushforward of the pulled-back
+restriction. -/
+theorem restrict_fTransform {A B : Type*} (f : A → B) (D : Distribution A)
+    (P : B → Prop) :
+    (Distribution.fTransform f D).restrict P
+      = Distribution.fTransform f (D.restrict fun a => P (f a)) := by
+  ext b
+  rw [Distribution.restrict_apply, Distribution.fTransform_apply_eq_mass,
+    Distribution.fTransform_apply_eq_mass, Distribution.mass_restrict]
+  by_cases hb : P b
+  · rw [if_pos hb]
+    exact (Distribution.mass_congr (P := fun a => f a = b ∧ P (f a))
+      (Q := fun a => f a = b) D fun a => ⟨fun h => h.1, fun h => ⟨h, h ▸ hb⟩⟩).symm
+  · rw [if_neg hb]
+    exact (Distribution.mass_eq_zero_of_forall_not (P := fun a => f a = b ∧ P (f a)) D
+      fun a ha => hb (ha.1 ▸ ha.2)).symm
+
+end Plumbing
+
+/-- **The not-won law as a pushforward of a restricted game law.**  Maurer13b's
+`p^S_{Yⁱ,Aᵢ=0|Xⁱ}` (printed p. 3153) read on the realizations rather than on
+`gameTrLaw`: restrict the game law to the realizations that have not won, then
+push forward along the transcript.  This is the form every transport argument
+uses, because both operations commute with a further pushforward. -/
+theorem notWonLaw_eq_fTransform_restrict (e : System.DDE.Total Y X) (n : ℕ)
+    (G : PDG X Y) :
+    notWonLaw e n G
+      = Distribution.fTransform (fun γ => System.DDE.Total.transcript γ.1 e n)
+          (G.restrict fun γ => ¬ System.Won γ e n) := by
+  rw [notWonLaw, gameTrLaw, Plumbing.restrict_fTransform,
+    Distribution.fTransform_fTransform]
+  refine congrArg (Distribution.fTransform _) ?_
+  refine Plumbing.restrict_congr _ fun γ _ => ?_
+  exact (System.not_won_iff_gameTranscript γ e n).symm
+
+/-- **Conditional equivalence survives a converter applied to both sides** —
+CR18 equation (6.3), printed p. 127 ("of course still true when both systems
+are restricted by `θ_r`"), as a theorem about the absorption witness.
+
+`g` is the converter's action on deterministic systems and `gG` its action on
+the Definition 2.21 pairs; the witness `habs` supplies, for each outer query
+list `l'`, an inner query list `l` and a post-processing `p` of the inner
+transcript, together with the two facts that make the two slices correspond:
+the outer interaction is won exactly when the inner one is, and the outer
+transcript is `p` of the inner one.  Both are required only on the supports,
+which is what lets a converter's behaviour depend on the systems actually in
+play (a filter's admitted schedule does).
+
+The architecture is `PDS.advFullyDefined_fTransform_le`'s
+(`System/Absorb.lean`): a witness that is uniform in the deterministic system,
+then one pushforward identity per side.  What replaces the data-processing
+inequality is linearity of pushforward — the two scalars of Maurer13b
+Definition 13's product form (printed p. 3153) travel through `p` untouched. -/
+theorem condEquiv_fTransform {X' : Type*} {Y' : Type*}
+    (g : System.DDS X Y → System.DDS X' Y')
+    (gG : System.DDG X Y → System.DDG X' Y')
+    {G : PDG X Y} {T : PDS X Y}
+    (habs : ∀ l' : List X', ∃ (l : List X)
+      (p : List (X × Option Y) → List (X' × Option Y')),
+        (∀ γ ∈ G.support,
+          (System.Won (gG γ) (System.DDE.Total.playQueries l') l'.length ↔
+              System.Won γ (System.DDE.Total.playQueries l) l.length) ∧
+            System.DDE.Total.transcript (gG γ).1
+                (System.DDE.Total.playQueries l') l'.length =
+              p (System.DDE.Total.transcript γ.1
+                (System.DDE.Total.playQueries l) l.length)) ∧
+        ∀ s ∈ T.support,
+          System.DDE.Total.transcript (g s)
+              (System.DDE.Total.playQueries l') l'.length =
+            p (System.DDE.Total.transcript s
+              (System.DDE.Total.playQueries l) l.length))
+    (h : CondEquiv G T) :
+    CondEquiv (Distribution.fTransform gG G) (Distribution.fTransform g T) := by
+  intro l'
+  obtain ⟨l, p, hgame, hsys⟩ := habs l'
+  have hlaw :
+      notWonLaw (System.DDE.Total.playQueries l') l'.length
+          (Distribution.fTransform gG G)
+        = Distribution.fTransform p
+            (notWonLaw (System.DDE.Total.playQueries l) l.length G) := by
+    rw [notWonLaw_eq_fTransform_restrict, notWonLaw_eq_fTransform_restrict,
+      Plumbing.restrict_fTransform, Distribution.fTransform_fTransform,
+      Distribution.fTransform_fTransform,
+      Plumbing.restrict_congr G (Q := fun γ =>
+        ¬ System.Won γ (System.DDE.Total.playQueries l) l.length)
+        (fun γ hγ => not_congr (hgame γ hγ).1)]
+    refine Distribution.fTransform_congr _ fun γ hγ => ?_
+    have hγG : γ ∈ G.support := by
+      have hne := Finsupp.mem_support_iff.mp hγ
+      refine Finsupp.mem_support_iff.mpr fun h0 => hne ?_
+      rw [Distribution.restrict_apply, h0]
+      exact ite_self 0
+    exact (hgame γ hγG).2
+  have hmass :
+      notWonMass (System.DDE.Total.playQueries l') l'.length
+          (Distribution.fTransform gG G)
+        = notWonMass (System.DDE.Total.playQueries l) l.length G := by
+    rw [← weight_notWonLaw, ← weight_notWonLaw, hlaw, Distribution.weight_fTransform]
+  have htr :
+      PDS.trLawFullyDefined (System.DDE.Total.playQueries l') l'.length
+          (Distribution.fTransform g T)
+        = Distribution.fTransform p
+            (PDS.trLawFullyDefined (System.DDE.Total.playQueries l) l.length T) := by
+    rw [PDS.trLawFullyDefined, PDS.trLawFullyDefined,
+      Distribution.fTransform_fTransform, Distribution.fTransform_fTransform]
+    exact Distribution.fTransform_congr _ hsys
+  rw [hlaw, hmass, htr, Distribution.weight_fTransform,
+    ← Distribution.fTransform_smul, ← Distribution.fTransform_smul, h l]
+
+/-- **The transport at an unchanged condition.**  When the converter leaves the
+query alphabet alone and the monotone condition is carried over unchanged — the
+shape CR18 uses, where `θ_r Ŝ` is the augmented system behind the restriction
+converter — the winning clause of `condEquiv_fTransform` is exactly the
+statement that the two interactions answer the *same* queries: Lanzenberger
+Definition 2.25's test (printed p. 18) reads `answeredQueries` and nothing
+else. -/
+theorem condEquiv_fTransform_of_answeredQueries {Y' : Type*}
+    (g : System.DDS X Y → System.DDS X Y')
+    {G : PDG X Y} {T : PDS X Y}
+    (habs : ∀ l' : List X, ∃ (l : List X)
+      (p : List (X × Option Y) → List (X × Option Y')),
+        (∀ γ ∈ G.support,
+          System.answeredQueries (System.DDE.Total.transcript (g γ.1)
+              (System.DDE.Total.playQueries l') l'.length)
+            = System.answeredQueries (System.DDE.Total.transcript γ.1
+              (System.DDE.Total.playQueries l) l.length) ∧
+          System.DDE.Total.transcript (g γ.1)
+              (System.DDE.Total.playQueries l') l'.length =
+            p (System.DDE.Total.transcript γ.1
+              (System.DDE.Total.playQueries l) l.length)) ∧
+        ∀ s ∈ T.support,
+          System.DDE.Total.transcript (g s)
+              (System.DDE.Total.playQueries l') l'.length =
+            p (System.DDE.Total.transcript s
+              (System.DDE.Total.playQueries l) l.length))
+    (h : CondEquiv G T) :
+    CondEquiv
+      (Distribution.fTransform
+        (fun γ : System.DDG X Y => ((g γ.1, γ.2) : System.DDG X Y')) G)
+      (Distribution.fTransform g T) := by
+  refine condEquiv_fTransform g _ (fun l' => ?_) h
+  obtain ⟨l, p, hgame, hsys⟩ := habs l'
+  refine ⟨l, p, fun γ hγ => ⟨?_, (hgame γ hγ).2⟩, hsys⟩
+  show System.answeredQueries _ ∈ γ.2.1 ↔ System.answeredQueries _ ∈ γ.2.1
+  rw [(hgame γ hγ).1]
+
+namespace Plumbing
+
+open System
+
+/-- A transcript never has more entries than the interaction had rounds. -/
+theorem length_transcript_le (s : System.DDS X Y) (e : System.DDE.Total Y X) (n : ℕ) :
+    (System.DDE.Total.transcript s e n).length ≤ n := by
+  induction n with
+  | zero => simp [System.DDE.Total.transcript]
+  | succ n ih =>
+      rcases hx : e (System.DDE.Total.transcript s e n)↓ᵧ with _ | x
+      · rw [System.DDE.Total.transcript_succ_of_stop s e hx]
+        omega
+      · rw [System.DDE.Total.transcript_succ_of_query s e hx, List.length_append]
+        simpa using ih
+
+/-- Two fixed query lists that agree below the interaction length give the same
+interaction: `playQueries` reads its list by position. -/
+theorem transcript_playQueries_congr (s : System.DDS X Y) (L L' : List X) :
+    ∀ n : ℕ, (∀ k < n, L[k]? = L'[k]?) →
+      System.DDE.Total.transcript s (System.DDE.Total.playQueries L) n
+        = System.DDE.Total.transcript s (System.DDE.Total.playQueries L') n := by
+  intro n
+  induction n with
+  | zero => intro _; rfl
+  | succ n ih =>
+      intro h
+      have ihn := ih fun k hk => h k (Nat.lt_succ_of_lt hk)
+      have hstep : System.DDE.Total.playQueries (Y := Y) L
+            (System.DDE.Total.transcript s (System.DDE.Total.playQueries L) n)↓ᵧ
+          = System.DDE.Total.playQueries (Y := Y) L'
+            (System.DDE.Total.transcript s (System.DDE.Total.playQueries L') n)↓ᵧ := by
+        show L[_]? = L'[_]?
+        simp only [System.transcriptOutputs, List.length_map, ihn]
+        exact h _ (Nat.lt_succ_of_le (length_transcript_le s _ n))
+      rcases hx : System.DDE.Total.playQueries (Y := Y) L'
+          (System.DDE.Total.transcript s (System.DDE.Total.playQueries L') n)↓ᵧ with
+        _ | x
+      · rw [System.DDE.Total.transcript_succ_of_stop s _ (hstep.trans hx),
+          System.DDE.Total.transcript_succ_of_stop s _ hx, ihn]
+      · rw [System.DDE.Total.transcript_succ_of_query s _ (hstep.trans hx),
+          System.DDE.Total.transcript_succ_of_query s _ hx, ihn]
+
+/-- An interaction whose answers are all defined answers exactly its input
+list. -/
+theorem answeredQueries_of_isSome {t : List (X × Option Y)}
+    (h : ∀ p ∈ t, p.2 ≠ none) : System.answeredQueries t = t↓ₓ := by
+  induction t with
+  | nil => rfl
+  | cons p t ih =>
+      rcases hp : p.2 with _ | y
+      · exact absurd hp (h p (by simp))
+      · have hpair : p = (p.1, some y) := by
+          rcases p with ⟨a, b⟩; simp at hp; simp [hp]
+        rw [hpair]
+        simpa [System.answeredQueries, System.transcriptInputs] using
+          ih fun q hq => h q (by simp [hq])
+
+/-- A system whose completion never refuses runs the whole fixed query list:
+after `n ≤ L.length` rounds the transcript has `n` entries, its inputs are
+`L.take n`, and every answer is defined. -/
+theorem transcript_playQueries_total {s : System.DDS X Y}
+    (hs : ∀ (l : List X) (x : X), System.answer s l x ≠ none) (L : List X) :
+    ∀ n, n ≤ L.length →
+      (System.DDE.Total.transcript s (System.DDE.Total.playQueries L) n).length = n ∧
+        (System.DDE.Total.transcript s (System.DDE.Total.playQueries L) n)↓ₓ
+          = L.take n ∧
+        ∀ p ∈ System.DDE.Total.transcript s (System.DDE.Total.playQueries L) n,
+          p.2 ≠ none := by
+  intro n
+  induction n with
+  | zero => intro _; exact ⟨rfl, rfl, by simp [System.DDE.Total.transcript]⟩
+  | succ n ih =>
+      intro hn
+      obtain ⟨hlen, hinp, hsome⟩ := ih (Nat.le_of_succ_le hn)
+      have hlt : n < L.length := Nat.lt_of_lt_of_le (Nat.lt_succ_self n) hn
+      have hq : System.DDE.Total.playQueries (Y := Y) L
+          (System.DDE.Total.transcript s (System.DDE.Total.playQueries L) n)↓ᵧ
+          = some L[n] := by
+        show L[_]? = _
+        simp only [System.transcriptOutputs, List.length_map, hlen]
+        exact List.getElem?_eq_getElem hlt
+      rw [System.DDE.Total.transcript_succ_of_query s _ hq]
+      refine ⟨by simp [hlen], ?_, ?_⟩
+      · rw [System.transcriptInputs_concat, hinp, List.take_add_one,
+          List.getElem?_eq_getElem hlt]
+        rfl
+      · intro p hp
+        rcases List.mem_append.mp hp with hp' | hp'
+        · exact hsome p hp'
+        · rw [List.mem_singleton.mp hp']
+          exact hs _ _
+
+/-- The refusal pass of CR18 Definition 3.10's filter (printed p. 62), on an
+answer stream with no refusals in it: the first `q` answers pass and the rest
+are refused. -/
+theorem refuseAfter_of_isSome (q : ℕ) :
+    ∀ ys : List (Option Y), (∀ o ∈ ys, o ≠ none) →
+      System.refuseAfter q ys
+        = ys.take q ++ List.replicate (ys.length - q) none := by
+  intro ys
+  induction ys generalizing q with
+  | nil => intro _; simp
+  | cons o t ih =>
+      intro h
+      rcases o with _ | y
+      · exact absurd rfl (h none (by simp))
+      · cases q with
+        | zero =>
+            show none :: System.refuseAfter 0 t = _
+            rw [ih 0 fun o ho => h o (by simp [ho])]
+            simp [List.replicate_succ]
+        | succ q =>
+            show some y :: System.refuseAfter q t = _
+            rw [ih q fun o ho => h o (by simp [ho])]
+            simp
+
+/-- Appending refused entries changes no answered query. -/
+theorem answeredQueries_append_none (t : List (X × Option Y)) (xs : List X) :
+    System.answeredQueries (t ++ xs.map (fun x => (x, (none : Option Y))))
+      = System.answeredQueries t := by
+  show (t ++ _).filterMap _ = t.filterMap _
+  rw [List.filterMap_append]
+  have hnil : ∀ ys : List X,
+      (ys.map (fun x => (x, (none : Option Y)))).filterMap
+        (fun entry : X × Option Y => entry.2.map fun _ => entry.1) = [] := by
+    intro ys
+    induction ys with
+    | nil => rfl
+    | cons x ys ih => simp [ih]
+  rw [hnil, List.append_nil]
+
+theorem zip_replicate_none (xs : List X) :
+    xs.zip (List.replicate xs.length (none : Option Y))
+      = xs.map (fun x => (x, (none : Option Y))) := by
+  induction xs with
+  | nil => rfl
+  | cons x t ih => simpa [List.replicate_succ] using ih
+
+/-- **The query-limited interaction at a fixed query list, computed.**  CR18
+Definition 3.10's `[q]` (printed p. 62) run against a system that never
+refuses: the first `q` queries are the interaction with the truncated list, and
+every later query is refused.  This is the absorption witness of
+`condEquiv_fTransform` for the filter, with the inner query list `L.take q`
+and the post-processing "append the refusals". -/
+theorem transcript_filterQueries_playQueries {s : System.DDS X Y}
+    (hs : ∀ (l : List X) (x : X), System.answer s l x ≠ none) (q : ℕ) (l' : List X) :
+    System.DDE.Total.transcript (System.filterQueries q s)
+        (System.DDE.Total.playQueries l') l'.length
+      = System.DDE.Total.transcript s
+            (System.DDE.Total.playQueries (l'.take q)) (l'.take q).length
+          ++ (l'.drop q).map (fun x => (x, (none : Option Y))) := by
+  classical
+  set T := System.DDE.Total.transcript s (System.DDE.Total.playQueries l') l'.length
+    with hT
+  obtain ⟨hTlen, hTinp, hTsome⟩ :=
+    transcript_playQueries_total hs l' l'.length le_rfl
+  rw [List.take_length] at hTinp
+  have houter : System.DDE.Total.transcript (System.filterQueries q s)
+      (System.DDE.Total.playQueries l') l'.length
+      = List.zip T↓ₓ (System.refuseAfter q T↓ᵧ) :=
+    System.transcript_filterQueries q s (System.DDE.Total.playQueries l')
+      (System.DDE.Total.playQueries l')
+      (fun ys => by
+        show l'[ys.length]? = l'[_]?
+        rw [System.refuseAfter_length]) l'.length
+  have hos : ∀ o ∈ T↓ᵧ, o ≠ none := by
+    intro o ho
+    obtain ⟨pr, hpr, rfl⟩ := List.mem_map.mp ho
+    exact hTsome pr hpr
+  have hylen : (T↓ᵧ).length = l'.length := by
+    simp only [System.transcriptOutputs, List.length_map]; exact hTlen
+  rw [houter, refuseAfter_of_isSome q _ hos, hTinp, hylen]
+  have hq' : (l'.take q).length = min q l'.length := by simp
+  set m := l'.length - q with hm
+  have hlen1 : (l'.take q).length = ((T↓ᵧ).take q).length := by
+    rw [List.length_take, List.length_take, hylen]
+  have hzip : List.zip l' ((T↓ᵧ).take q ++ List.replicate m (none : Option Y))
+      = List.zip (l'.take q) ((T↓ᵧ).take q)
+        ++ List.zip (l'.drop q) (List.replicate m (none : Option Y)) := by
+    conv_lhs => rw [← List.take_append_drop q l']
+    exact List.zip_append hlen1
+  rw [hzip]
+  have hdroplen : (l'.drop q).length = m := by simp [hm]
+  have hsecond : List.zip (l'.drop q) (List.replicate m (none : Option Y))
+      = (l'.drop q).map (fun x => (x, (none : Option Y))) := by
+    rw [← hdroplen]; exact zip_replicate_none _
+  have hfirst : List.zip (l'.take q) ((T↓ᵧ).take q)
+      = System.DDE.Total.transcript s
+          (System.DDE.Total.playQueries (l'.take q)) (l'.take q).length := by
+    have hzt : List.zip (l'.take q) ((T↓ᵧ).take q) = T.take q := by
+      rw [← hTinp]
+      exact (List.zip_of_prod List.map_take List.map_take).symm
+    have hpre : System.DDE.Total.transcript s (System.DDE.Total.playQueries l')
+        (min q l'.length) <+: T :=
+      System.DDE.Total.transcript_prefix s _ (min_le_right q l'.length)
+    obtain ⟨hlen2, -, -⟩ :=
+      transcript_playQueries_total hs l' (min q l'.length) (min_le_right q l'.length)
+    have hmin : T.take q = T.take (min q l'.length) := by
+      rcases le_or_gt q l'.length with hle | hgt
+      · rw [min_eq_left hle]
+      · rw [min_eq_right (le_of_lt hgt),
+          List.take_of_length_le (by rw [hTlen]; omega),
+          List.take_of_length_le (by rw [hTlen])]
+    have hcut : T.take (min q l'.length)
+        = System.DDE.Total.transcript s (System.DDE.Total.playQueries l')
+            (min q l'.length) := by
+      have hpt := (List.prefix_iff_eq_take).mp hpre
+      rw [hlen2] at hpt
+      exact hpt.symm
+    rw [hzt, hmin, hcut, hq']
+    refine transcript_playQueries_congr s l' (l'.take q) (min q l'.length) ?_
+    intro k hk
+    rw [List.getElem?_take_of_lt (by omega)]
+  rw [hfirst, hsecond]
+
+end Plumbing
+
+/-- **CR18's `[r]` instance of the transport** (printed p. 128): "This is of
+course still true when the systems are restricted by `[r]`, i.e.,
+`[r]casc[Ŝ,R_{m,n}] ⊨ [r]V_n`."
+
+Definition 3.10's filter (printed p. 62) applied to both sides of a
+conditional equivalence, with the monotone condition carried over unchanged.
+The side condition is that the systems in play never refuse — the fully defined
+slice of Ruling R1, which is where the sources work (CR18 §4.10's standing
+simplification, printed p. 105, has no refusal at all) and where the admitted
+schedule `l'.take q` does not depend on the system.  Without it the filter's
+budget test reads the system's own refusals and no uniform witness exists. -/
+theorem condEquiv_filterQueries (q : ℕ) {G : PDG X Y} {T : PDS X Y}
+    (hG : ∀ γ ∈ G.support, ∀ (l : List X) (x : X), System.answer γ.1 l x ≠ none)
+    (hT : ∀ s ∈ T.support, ∀ (l : List X) (x : X), System.answer s l x ≠ none)
+    (h : CondEquiv G T) :
+    CondEquiv
+      (Distribution.fTransform
+        (fun γ : System.DDG X Y =>
+          ((System.filterQueries q γ.1, γ.2) : System.DDG X Y)) G)
+      (Distribution.fTransform (System.filterQueries q) T) := by
+  refine condEquiv_fTransform_of_answeredQueries (System.filterQueries q)
+    (fun l' => ⟨l'.take q,
+      fun t => t ++ (l'.drop q).map (fun x => (x, (none : Option Y))), ?_, ?_⟩) h
+  · intro γ hγ
+    have hcomp := Plumbing.transcript_filterQueries_playQueries (hG γ hγ) q l'
+    exact ⟨by rw [hcomp, Plumbing.answeredQueries_append_none], hcomp⟩
+  · intro s hsmem
+    exact Plumbing.transcript_filterQueries_playQueries (hT s hsmem) q l'
 
 end PDG
 

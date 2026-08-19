@@ -815,6 +815,31 @@ statement is no longer only inline inside `Relaxation.star_construct_eps` and
     resource, refusal pattern included, so Ruling R2's observable `⊥` costs
     nothing here.  This SUPERSEDES the premise of FLAG F-8 (below); the
     retirement of that flag is proposed to the coordinator, not applied here.
+  CONVERTER ENTRY POINT (2026-08-19; check-1-forced row, added by the
+    implementing agent under the standing agent exception — review at closure).
+    TOP-LEVEL CONVERTER SURFACE ruling: an application names exactly ONE
+    converter notion, the element of `converterMonoidAt`.  The crossing from a
+    typed history function to that element is done ONCE in the library, home
+    `RandomSystems/System/ConverterEntry.lean`; `converterMonoidAt` is
+    UNCHANGED (hash-pinned) and no generator family is widened.  Names:
+    `outerQueries` / `roundAnswers` (the two lists an engine history carries —
+    all outer queries, and the inner answers of the CURRENT round, the round
+    boundary of CR18 Def 3.9), `ProtocolInnerTotal` / `ProtocolRequestsBounded`
+    (the two conditions on the history function — Ruling R2's inner totality
+    and CR18 Def 3.8's finite request bound at K per round, printed p. 62),
+    `protocolAddress` (a move's alphabet tag), `protocolMove` (the engine's
+    move), `protocolEngine` (the engine, `validate`d as `ofTyped` is),
+    `protocolBudget` (the measure K − round answers, uniformly ≤ K).
+    Receipts `requestsWithin_protocolEngine` / `innerTotal_protocolEngine` /
+    `answersWithinUniformBudget_protocolEngine` give
+    `protocolEngine_mem_converterMonoidAt` straight from
+    `attachAt_mem_converterMonoidAt`.  ROUND-LOCAL, deliberately:
+    `Converter.ProtocolFn`'s cumulative second component cannot state a
+    per-round bound, and a TOTAL request bound is false for every converter
+    used more than once.  CONSEQUENCE (load-bearing, F-1): a converter whose
+    round length is unbounded — variable-input-length hashing over an infinite
+    message alphabet — is NOT a member of this Σ; `Applications/CBCMAC.lean`'s
+    `cbcRound_requestsBounded` spends the bounded message space to get K.
   SUPERSEDED — never the primitive again:
     `attachFully` / `converterMonoidFully` / `converterMonoidFullyBudgeted`
       (whole-face Φ level) -> superseded by `attachAt` /
