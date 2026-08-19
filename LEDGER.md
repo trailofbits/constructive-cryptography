@@ -3034,6 +3034,24 @@ gates, adversarial audit before deltas apply):
      conditions on the constructor's DATA, never conditions in
      converter-theory vocabulary.  An application supplies its data plus
      those elementary facts and obtains `IsConverterAt` BY APPLICATION.
+     TARGET ARCHITECTURE (Marc, 2026-08-19): complex converters are DEFINED
+     BY COMPOSING BASIC ONES.  An application writes an expression in a small
+     converter LANGUAGE — `query`, `map`/relabel, sequence, fold/iterate,
+     conditional, parallel frame — each primitive carrying its instance and
+     its bound law, and inherits membership, interface and budget with ZERO
+     converter-theory proofs.  CBC-MAC should read as "fold over the block
+     list of (xor with the block, then query)", so even its request bound is
+     the FOLD LAW at its expression, not a CBC lemma.  BINDING CONSEQUENCE
+     for the class: the interface and the request bound are DATA carried (or
+     indexed) by the class, NEVER existentially quantified — an existential
+     bound makes composition non-computing and forces every composite to
+     re-prove it, which is the failure being eliminated.  Composition laws
+     must COMPUTE: sequencing adds bounds, fold multiplies by the iteration
+     count, parallel frames union interfaces, identity is (∅, 0).  The raw
+     history-function constructor stays as the ESCAPE HATCH for what the
+     language cannot express, with its own instance; it is the fallback, not
+     the normal route.  BUILD ORDER: class + theory (with computing
+     composition laws) first; the combinator layer next; applications last.
      ACCEPTANCE TEST for the design: CBC must obtain the class in ONE LINE
      from the engine-attachment theorem, proving only that its round
      function always answers and that its request count is bounded — both
