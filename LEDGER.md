@@ -3045,7 +3045,14 @@ forgetting law is stated against equivalence classes; H-layer-3 is the
 only H build item (layers 1-2 exist — do not re-prove); R11 concept
 recast — no parallel object stacks, CE/any-new-concept consumes the
 landed observables + T0 conditioning, a seemingly-needed new object is a
-fork to Marc not a build; TOP-LEVEL CONVERTER SURFACE (Marc, 2026-08-19):
+fork to Marc not a build; UNTRACKED WORK IS COMMITTED BEFORE IT IS MOVED
+(2026-08-19, learned the hard way: an agent brief said "move `cbc-mac/
+CBCMAC.lean` to a built home"; the file was UNTRACKED, so its deletion left
+no git record and the original text is unrecoverable from the repository —
+the substance survived only because it was transported into the new file).
+Rule: any brief that moves, rewrites or deletes untracked work must first
+require `git add` + commit of the ORIGINAL, as its own commit, so the
+starting point is in history; TOP-LEVEL CONVERTER SURFACE (Marc, 2026-08-19):
 an application may name exactly ONE converter notion — the Σ member (an
 element of `↥converterMonoidAt` acting on `Phi`).  The typed history function
 (`ProtocolFn`, itself misnamed — see NAMING TRIAGE) and the Def-3.8 object
