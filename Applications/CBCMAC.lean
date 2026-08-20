@@ -128,6 +128,52 @@ universe u
 variable {X : Type u} [Fintype X] [DecidableEq X] [Nonempty X] [AddCommGroup X]
 variable {M : Type u} [Fintype M] [DecidableEq M]
 
+/-! ## Review TODO
+
+Potential cleanup and improvement items identified during the proof review:
+
+* Put the foundational `Rnn` and `Vn` declarations in a dedicated `section`
+  with their shared ambient variables, so their repeated type and typeclass
+  binders can be removed while preserving the same public API.
+* Reorder the foundational material so all base objects and converters are
+  defined together after `Rnn` and `Vn`, before proving properties such as
+  prefix-freeness and the later CBC facts.
+* Add local paper-facing notation for the main objects and converter
+  expressions—such as `R_{n,n}`, `V_n`, and `θ_r`—so theorem statements mirror
+  CR18 more closely while retaining the existing Lean declaration names.
+* Add the canonical heterogeneous converter action
+  `HSMul (↥converterMonoidAt) (PDS M X) Phi`, implemented through the existing
+  typed inclusion, so paper-level expressions such as
+  `theta bf r • Vn M X` elaborate without exposing `ofTyped` or a `Phi` cast.
+  See the [typed-PDS/Phi inclusion and heterogeneous-action
+  experiment](../review-scratch/CBCMAC/phi_inheritance_model/REPORT.md).
+* Add a reduction theorem (and appropriate simplification support) stating
+  that this heterogeneous action is exactly the existing homogeneous action
+  on `ofTyped S`; then clean up explicit `ofTyped`/`Phi` notation at all
+  converter-application sites in this file. See the [reduction-lemma
+  experiment](../review-scratch/CBCMAC/phi_inheritance_model/REPORT.md).
+* Reconcile and document the intended universal-carrier model: `Phi := PDS Uni
+  Uni` is the full universal behavior space, whereas `typed : Set Phi` is the
+  untagged union of the canonical images of all `PDS M X`.  Confirm that the
+  larger carrier is intended, and keep signature preservation obligations
+  explicit where an argument needs to remain inside `typed`. See the
+  [universal-carrier experiment](../review-scratch/CBCMAC/phi_inheritance_model/REPORT.md).
+* Simplify the public converter signatures by letting Lean infer universe
+  parameters instead of spelling `.{u}` at ordinary use sites, and consider a
+  concise paper-facing alias for `↥converterMonoidAt` so CBC-MAC declarations
+  do not expose subtype and universe bookkeeping.
+* Redesign the Random Systems instantiation so its concrete resource and
+  converter objects—DDS/PDS and DDC/PDC—directly instantiate the abstract
+  `Phi`/converter interface.  Define the interpretation of DDC/PDC application
+  as an abstract resource action once at that model boundary, rather than
+  making application files manually turn a DDC into an `attachAt` endomorphism
+  and prove membership in `converterMonoidAt`.  After that redesign, expose the
+  CBC object as a DDC and allow expressions such as `cbcDDC bf • Rnn X`
+  directly, with the semantic action and admissibility bookkeeping internal to
+  the Random Systems instance. See the [DDC/PDC model-instance and direct
+  converter-action experiment](../review-scratch/CBCMAC/random_systems_instance/REPORT.md).
+-/
+
 /-! ## §6.2.2's two objects, at the bounded message space -/
 
 /-- CR18's fixed-input-length uniform random function `R_{n,n}` (printed
