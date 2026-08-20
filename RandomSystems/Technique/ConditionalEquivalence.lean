@@ -270,6 +270,56 @@ def MonotoneCondition.nonNil : MonotoneCondition X :=
     l ∈ (MonotoneCondition.nonNil : MonotoneCondition X).1 ↔ l ≠ [] :=
   Iff.rfl
 
+
+/-- **The fixed-query environment asks exactly its list**, at its own length —
+the input side of `answeredQueries_transcript_playQueries`, which additionally
+assumes the list is in the domain and concludes about the *answered* history.
+Here nothing is assumed: refused queries still count as asked. -/
+theorem transcriptInputs_transcript_playQueries (s : DDS X Y) (l : List X) :
+    ∀ n, n ≤ l.length →
+      (DDE.Total.transcript s (DDE.Total.playQueries l) n)↓ₓ = l.take n := by
+  intro n
+  induction n with
+  | zero => intro _; rfl
+  | succ n ih =>
+      intro hn
+      have hik := ih (Nat.le_of_succ_le hn)
+      have hlen : (DDE.Total.transcript s (DDE.Total.playQueries l) n).length = n := by
+        have h2 : (DDE.Total.transcript s (DDE.Total.playQueries l) n).length
+            = ((DDE.Total.transcript s (DDE.Total.playQueries l) n)↓ₓ).length := by
+          simp [transcriptInputs]
+        rw [h2, hik, List.length_take]
+        omega
+      have hlt : n < l.length := hn
+      have hq : DDE.Total.playQueries l
+          ((DDE.Total.transcript s (DDE.Total.playQueries l) n)↓ᵧ) = some l[n] := by
+        show l[((DDE.Total.transcript s (DDE.Total.playQueries l) n)↓ᵧ).length]? = _
+        rw [show ((DDE.Total.transcript s (DDE.Total.playQueries l) n)↓ᵧ).length = n by
+            simpa [transcriptOutputs] using hlen,
+          List.getElem?_eq_getElem hlt]
+      rw [DDE.Total.transcript]
+      simp only [hq, transcriptInputs, List.map_append, List.map_cons, List.map_nil]
+      have hik' : List.map Prod.fst (DDE.Total.transcript s (DDE.Total.playQueries l) n)
+          = List.take n l := hik
+      rw [hik', List.take_add_one, List.getElem?_eq_getElem hlt]
+      rfl
+
+@[simp] theorem transcriptInputs_transcript_playQueries_length (s : DDS X Y)
+    (l : List X) :
+    (DDE.Total.transcript s (DDE.Total.playQueries l) l.length)↓ₓ = l := by
+  rw [transcriptInputs_transcript_playQueries s l l.length le_rfl, List.take_length]
+
+/-- **A probing run answers the kept prefix of its list.**  Combining the
+previous receipt with `DDE.Total.answeredQueries_transcript`: what the system
+processed during `playQueries l` is `keptPrefix s l`, whether or not `l` is in
+its domain. -/
+theorem answeredQueries_transcript_playQueries_keptPrefix (s : DDS X Y)
+    (l : List X) :
+    answeredQueries (DDE.Total.transcript s (DDE.Total.playQueries l) l.length)
+      = keptPrefix s l := by
+  rw [DDE.Total.answeredQueries_transcript, transcriptInputs_transcript_playQueries_length]
+
+
 end System
 
 namespace PDG
@@ -1309,6 +1359,284 @@ theorem transcript_filterQueries_playQueries {s : System.DDS X Y}
     rw [List.getElem?_take_of_lt (by omega)]
   rw [hfirst, hsecond]
 
+
+/-! ### CR18 §3.4.3's domain filter, printed p. 62
+
+The `[q]` development above at a *domain* filter: `filterDom P hP` refuses a
+query when the predicate rejects the extended history, and a refused query is
+deleted (CR18 Definition 3.3), so it costs no inner query and a later query can
+still be admitted.  Against a system that never refuses, the queries that do
+reach it are therefore a function of the outer list alone — the uniform witness
+`condEquiv_fTransform` demands.
+-/
+
+/-- The subsequence of a query list a domain filter admits, computed from the
+list and the predicate alone. -/
+def filterAdmit {A : Type*} (P : List A → Prop) [DecidablePred P] (l : List A) : List A :=
+  l.foldl (fun K x => if P (K ++ [x]) then K ++ [x] else K) []
+
+theorem filterAdmit_concat {A : Type*} (P : List A → Prop) [DecidablePred P]
+    (l : List A) (x : A) :
+    filterAdmit P (l ++ [x])
+      = if P (filterAdmit P l ++ [x]) then filterAdmit P l ++ [x] else filterAdmit P l := by
+  simp only [filterAdmit, List.foldl_concat]
+
+/-- A longer list admits an extension of what its prefix admitted. -/
+theorem filterAdmit_prefix {A : Type*} (P : List A → Prop) [DecidablePred P]
+    {l₁ l₂ : List A} (h : l₁ <+: l₂) : filterAdmit P l₁ <+: filterAdmit P l₂ := by
+  obtain ⟨t, rfl⟩ := h
+  induction t using List.reverseRecOn with
+  | nil => simp
+  -- each further query either extends the schedule or leaves it alone
+  | append_singleton t x ih =>
+      rw [← List.append_assoc, filterAdmit_concat]
+      split
+      · exact ih.trans (List.prefix_append _ _)
+      · exact ih
+
+/-- The admitted schedule satisfies the predicate: it is built by admitted
+extensions only, from the empty history. -/
+theorem filterAdmit_sat {A : Type*} (P : List A → Prop) [DecidablePred P]
+    (h0 : P ([] : List A)) (l : List A) : P (filterAdmit P l) := by
+  induction l using List.reverseRecOn with
+  | nil => exact h0
+  | append_singleton l x ih =>
+      rw [filterAdmit_concat]
+      split
+      · assumption
+      · exact ih
+
+/-- A system whose completion never refuses is defined on every nonempty
+history. -/
+theorem mem_dom_of_never_refuses {A B : Type*} {S : System.DDS A B}
+    (hs : ∀ (l : List A) (x : A), System.answer S l x ≠ none) :
+    ∀ l : List A, l ≠ [] → l ∈ System.dom S := by
+  intro l hl
+  induction l using List.reverseRecOn with
+  | nil => exact absurd rfl hl
+  | append_singleton t x ih =>
+      have h := hs t x
+      rw [System.answer_eq] at h
+      split_ifs at h with hd
+      · have hk : System.keptPrefix S t = t := by
+          rcases eq_or_ne t [] with rfl | hne
+          · simp [System.keptPrefix]
+          · exact System.keptPrefix_eq_self_of_mem S (ih hne)
+        rwa [hk] at hd
+      · exact absurd rfl h
+
+/-- The deletion pass of a filtered never-refusing system is the admitted
+schedule: the only queries it deletes are the ones its predicate rejects. -/
+theorem keptPrefix_filterDom {A B : Type*} (P : List A → Prop) [DecidablePred P]
+    (hP : PrefixClosed P) {S : System.DDS A B}
+    (hs : ∀ (l : List A) (x : A), System.answer S l x ≠ none) (l : List A) :
+    System.keptPrefix (System.filterDom P hP S) l = filterAdmit P l := by
+  induction l using List.reverseRecOn with
+  | nil => rfl
+  | append_singleton l x ih =>
+      rw [System.keptPrefix_append_singleton, ih, filterAdmit_concat]
+      have hdom : (filterAdmit P l ++ [x] ∈ System.dom (System.filterDom P hP S))
+          ↔ P (filterAdmit P l ++ [x]) := by
+        rw [System.mem_dom_filterDom]
+        exact and_iff_right (mem_dom_of_never_refuses hs _ (by simp))
+      by_cases hPx : P (filterAdmit P l ++ [x])
+      · rw [if_pos (hdom.mpr hPx), if_pos hPx]
+      · rw [if_neg (fun hc => hPx (hdom.mp hc)), if_neg hPx]
+
+/-- The `k`-th entry of a never-refusing system's fixed-list interaction is the
+`k`-th query with the answer it has after `k` rounds. -/
+theorem transcript_playQueries_getElem {A B : Type*} {S : System.DDS A B}
+    (hs : ∀ (l : List A) (x : A), System.answer S l x ≠ none) (L : List A) :
+    ∀ n, n ≤ L.length → ∀ k, k < n → ∀ _ : k < L.length,
+      (System.DDE.Total.transcript S (System.DDE.Total.playQueries L) n)[k]?
+        = some (L[k], System.answer S (L.take k) L[k]) := by
+  intro n
+  induction n with
+  | zero => intro _ k hk; omega
+  | succ n ih =>
+      intro hn k hk hkL
+      obtain ⟨hlen, hinp, -⟩ := transcript_playQueries_total hs L n (Nat.le_of_succ_le hn)
+      have hlt : n < L.length := hn
+      have hq : System.DDE.Total.playQueries (Y := B) L
+          (System.DDE.Total.transcript S (System.DDE.Total.playQueries L) n)↓ᵧ
+          = some L[n] := by
+        show L[_]? = _
+        simp only [System.transcriptOutputs, List.length_map, hlen]
+        exact List.getElem?_eq_getElem hlt
+      rw [System.DDE.Total.transcript_succ_of_query _ _ hq, hinp]
+      rcases Nat.lt_or_ge k n with hkn | hkn
+      · rw [List.getElem?_append_left (by omega)]
+        exact ih (Nat.le_of_succ_le hn) k hkn hkL
+      · have hkn' : k = n := by omega
+        subst hkn'
+        rw [List.getElem?_append_right (by omega), hlen]
+        simp
+
+/-- The replay that re-inserts a domain filter's refusals: run the outer list
+against the predicate, taking the next inner entry where it admits and
+answering `⊥` where it does not.  It reads the list and the predicate only,
+never the system, which is what makes the witness uniform. -/
+def filterWeaveState {A B : Type*} (P : List A → Prop) [DecidablePred P]
+    (T : List (A × Option B)) (l : List A) : List A × List (A × Option B) :=
+  l.foldl (fun st x =>
+      if P (st.1 ++ [x]) then (st.1 ++ [x], st.2 ++ [(x, (T[st.1.length]?).bind Prod.snd)])
+      else (st.1, st.2 ++ [(x, none)]))
+    ([], [])
+
+@[inherit_doc filterWeaveState]
+def filterWeave {A B : Type*} (P : List A → Prop) [DecidablePred P]
+    (T : List (A × Option B)) (l : List A) : List (A × Option B) :=
+  (filterWeaveState P T l).2
+
+theorem filterWeaveState_concat {A B : Type*} (P : List A → Prop) [DecidablePred P]
+    (T : List (A × Option B)) (l : List A) (x : A) :
+    filterWeaveState P T (l ++ [x])
+      = (if P ((filterWeaveState P T l).1 ++ [x])
+          then ((filterWeaveState P T l).1 ++ [x],
+            (filterWeaveState P T l).2
+              ++ [(x, (T[(filterWeaveState P T l).1.length]?).bind Prod.snd)])
+          else ((filterWeaveState P T l).1, (filterWeaveState P T l).2 ++ [(x, none)])) := by
+  simp only [filterWeaveState, List.foldl_concat]
+
+/-- The replay tracks the admitted schedule in its first component. -/
+theorem filterWeaveState_fst {A B : Type*} (P : List A → Prop) [DecidablePred P]
+    (T : List (A × Option B)) (l : List A) :
+    (filterWeaveState P T l).1 = filterAdmit P l := by
+  induction l using List.reverseRecOn with
+  | nil => rfl
+  | append_singleton l x ih =>
+      rw [filterWeaveState_concat, filterAdmit_concat, ih]
+      split <;> rfl
+
+theorem filterWeave_concat {A B : Type*} (P : List A → Prop) [DecidablePred P]
+    (T : List (A × Option B)) (l : List A) (x : A) :
+    filterWeave P T (l ++ [x])
+      = filterWeave P T l
+        ++ [if P (filterAdmit P l ++ [x])
+            then (x, (T[(filterAdmit P l).length]?).bind Prod.snd) else (x, none)] := by
+  rw [filterWeave, filterWeaveState_concat, filterWeaveState_fst]
+  by_cases hPx : P (filterAdmit P l ++ [x])
+  · rw [if_pos hPx, if_pos hPx]; rfl
+  · rw [if_neg hPx, if_neg hPx]; rfl
+
+@[simp] theorem filterWeave_length {A B : Type*} (P : List A → Prop) [DecidablePred P]
+    (T : List (A × Option B)) (l : List A) :
+    (filterWeave P T l).length = l.length := by
+  induction l using List.reverseRecOn with
+  | nil => rfl
+  | append_singleton l x ih => rw [filterWeave_concat, List.length_append, ih]; simp
+
+/-- **The filtered interaction at a fixed query list, computed**: the replay of
+the outer list over the interaction with the admitted schedule.  This is the
+absorption witness `condEquiv_fTransform` asks for, and the domain-filter
+counterpart of `transcript_filterQueries_playQueries`. -/
+theorem transcript_filterDom_playQueries {A B : Type*} (P : List A → Prop)
+    [DecidablePred P] (hP : PrefixClosed P) {S : System.DDS A B}
+    (hs : ∀ (l : List A) (x : A), System.answer S l x ≠ none) (l' : List A) :
+    ∀ n, n ≤ l'.length →
+      System.DDE.Total.transcript (System.filterDom P hP S)
+          (System.DDE.Total.playQueries l') n
+        = filterWeave P (System.DDE.Total.transcript S
+            (System.DDE.Total.playQueries (filterAdmit P l')) (filterAdmit P l').length)
+            (l'.take n) := by
+  set TS := System.DDE.Total.transcript S
+    (System.DDE.Total.playQueries (filterAdmit P l')) (filterAdmit P l').length with hTS
+  intro n
+  induction n with
+  | zero => intro _; rfl
+  | succ n ih =>
+      intro hn
+      have hlt : n < l'.length := hn
+      have hik := ih (Nat.le_of_succ_le hn)
+      have hlen : (System.DDE.Total.transcript (System.filterDom P hP S)
+          (System.DDE.Total.playQueries l') n).length = n := by
+        rw [hik, filterWeave_length, List.length_take]; omega
+      -- at step `n` the environment plays `l'[n]` regardless of the answers
+      have hq : System.DDE.Total.playQueries (Y := B) l'
+          (System.DDE.Total.transcript (System.filterDom P hP S)
+            (System.DDE.Total.playQueries l') n)↓ᵧ = some l'[n] := by
+        show l'[_]? = _
+        simp only [System.transcriptOutputs, List.length_map, hlen]
+        exact List.getElem?_eq_getElem hlt
+      have hinp : (System.DDE.Total.transcript (System.filterDom P hP S)
+          (System.DDE.Total.playQueries l') n)↓ₓ = l'.take n :=
+        System.transcriptInputs_transcript_playQueries _ l' n (Nat.le_of_succ_le hn)
+      have hkeptM : System.keptPrefix S (filterAdmit P (l'.take n))
+          = System.keptPrefix (System.filterDom P hP S) (l'.take n) := by
+        rw [keptPrefix_filterDom P hP hs]
+        rcases eq_or_ne (filterAdmit P (l'.take n)) [] with h0 | h0
+        · rw [h0]; simp [System.keptPrefix]
+        · exact System.keptPrefix_eq_self_of_mem S (mem_dom_of_never_refuses hs _ h0)
+      -- which the filtered system answers when the predicate admits the extension
+      -- of the schedule so far, and refuses otherwise
+      have hans : System.answer (System.filterDom P hP S) (l'.take n) l'[n]
+          = if P (filterAdmit P (l'.take n) ++ [l'[n]])
+            then System.answer S (filterAdmit P (l'.take n)) l'[n] else none := by
+        rw [System.answer_filterDom P hP S (l'.take n) (filterAdmit P (l'.take n)) l'[n] hkeptM,
+          keptPrefix_filterDom P hP hs]
+        by_cases hPx : P (filterAdmit P (l'.take n) ++ [l'[n]]) <;> simp [hPx]
+      rw [System.DDE.Total.transcript_succ_of_query _ _ hq, hinp, hans, hik,
+        List.take_add_one, List.getElem?_eq_getElem hlt]
+      simp only [Option.toList_some, filterWeave_concat]
+      congr 1
+      by_cases hPx : P (filterAdmit P (l'.take n) ++ [l'[n]])
+      -- admitted: the schedule grew by `l'[n]`, so the entry the replay reads off
+      -- the inner interaction is that query's own answer
+      · rw [if_pos hPx, if_pos hPx]
+        have hpre : filterAdmit P (l'.take n) ++ [l'[n]] <+: filterAdmit P l' := by
+          have htk : l'.take (n + 1) = l'.take n ++ [l'[n]] := by
+            rw [List.take_add_one, List.getElem?_eq_getElem hlt]; rfl
+          have hstep : filterAdmit P (l'.take (n + 1))
+              = filterAdmit P (l'.take n) ++ [l'[n]] := by
+            rw [htk, filterAdmit_concat, if_pos hPx]
+          exact hstep ▸ filterAdmit_prefix P (List.take_prefix (n + 1) l')
+        obtain ⟨w, hw⟩ := hpre
+        have hklt : (filterAdmit P (l'.take n)).length < (filterAdmit P l').length := by
+          rw [← hw]; simp
+        have hget? : (filterAdmit P l')[(filterAdmit P (l'.take n)).length]? = some l'[n] := by
+          rw [← hw, List.append_assoc, List.getElem?_append_right (le_refl _)]
+          simp
+        have hgetL : (filterAdmit P l')[(filterAdmit P (l'.take n)).length]'hklt = l'[n] := by
+          have hx := List.getElem?_eq_getElem hklt
+          rw [hget?] at hx
+          exact (Option.some.inj hx).symm
+        have htake : (filterAdmit P l').take (filterAdmit P (l'.take n)).length
+            = filterAdmit P (l'.take n) := by
+          rw [← hw, List.append_assoc, List.take_left]
+        rw [hTS, transcript_playQueries_getElem hs _ _ le_rfl _ hklt hklt, hgetL, htake]
+        rfl
+      · rw [if_neg hPx, if_neg hPx]
+
+/-- The filtered interaction at the outer list's own length, in the shape the
+transport consumes. -/
+theorem transcript_filterDom_playQueries_length {A B : Type*} (P : List A → Prop)
+    [DecidablePred P] (hP : PrefixClosed P) {S : System.DDS A B}
+    (hs : ∀ (l : List A) (x : A), System.answer S l x ≠ none) (l' : List A) :
+    System.DDE.Total.transcript (System.filterDom P hP S)
+        (System.DDE.Total.playQueries l') l'.length
+      = filterWeave P (System.DDE.Total.transcript S
+          (System.DDE.Total.playQueries (filterAdmit P l')) (filterAdmit P l').length) l' := by
+  rw [transcript_filterDom_playQueries P hP hs l' l'.length le_rfl, List.take_length]
+
+/-- The queries the filtered interaction actually answered: the admitted
+schedule.  This is the winning clause — `System.Won` reads `answeredQueries`
+and nothing else. -/
+theorem answeredQueries_filterDom {A B : Type*} (P : List A → Prop) [DecidablePred P]
+    (hP : PrefixClosed P) {S : System.DDS A B}
+    (hs : ∀ (l : List A) (x : A), System.answer S l x ≠ none) (l' : List A) :
+    System.answeredQueries (System.DDE.Total.transcript (System.filterDom P hP S)
+        (System.DDE.Total.playQueries l') l'.length)
+      = System.answeredQueries (System.DDE.Total.transcript S
+          (System.DDE.Total.playQueries (filterAdmit P l')) (filterAdmit P l').length) := by
+  -- both sides delete exactly the queries the predicate rejects
+  rw [System.answeredQueries_transcript_playQueries_keptPrefix,
+    System.answeredQueries_transcript_playQueries_keptPrefix,
+    keptPrefix_filterDom P hP hs,
+    System.keptPrefix_eq_self_of_mem_or_empty S
+      (by rcases eq_or_ne (filterAdmit P l') [] with h | h
+          · exact Or.inr h
+          · exact Or.inl (mem_dom_of_never_refuses hs _ h))]
+
 end Plumbing
 
 /-- **CR18's `[r]` instance of the transport** (printed p. 128): "This is of
@@ -1353,6 +1681,34 @@ theorem condEquiv_filterQueries (q : ℕ) {G : PDG X Y} {T : PDS X Y}
     exact ⟨by rw [hcomp, Plumbing.answeredQueries_append_none], hcomp⟩
   · intro s hsmem
     exact Plumbing.transcript_filterQueries_playQueries (hT s hsmem) q l'
+
+
+/-- **CR18 §3.4.3's domain filter transports a conditional equivalence**
+(printed p. 62), the twin of `condEquiv_filterQueries`: restricting both sides
+by the same prefix-closed predicate preserves `⊨`.
+
+The hypotheses are the same as there, and for the same reason — Ruling R1's
+fully defined slice is where the admitted schedule `filterAdmit P l'` is a
+function of `l'` alone.  Against a refusing system the queries that reach it
+depend on its own refusals, and `condEquiv_fTransform` demands one inner list
+good for both supports at once. -/
+theorem condEquiv_filterDom {A : Type u} {B : Type v} (P : List A → Prop)
+    [DecidablePred P] (hP : PrefixClosed P) {G : PDG A B} {T : PDS A B}
+    (hG : ∀ γ ∈ G.support, ∀ (l : List A) (x : A), System.answer γ.1 l x ≠ none)
+    (hT : ∀ s ∈ T.support, ∀ (l : List A) (x : A), System.answer s l x ≠ none)
+    (h : CondEquiv G T) :
+    CondEquiv
+      (Distribution.fTransform
+        (fun γ : System.DDG A B => ((System.filterDom P hP γ.1, γ.2) : System.DDG A B)) G)
+      (Distribution.fTransform (System.filterDom P hP) T) := by
+  refine condEquiv_fTransform_of_answeredQueries (System.filterDom P hP)
+    (fun l' => ⟨Plumbing.filterAdmit P l',
+      fun t => Plumbing.filterWeave P t l', ?_, ?_⟩) h
+  · intro γ hγ
+    exact ⟨Plumbing.answeredQueries_filterDom P hP (hG γ hγ) l',
+      Plumbing.transcript_filterDom_playQueries_length P hP (hG γ hγ) l'⟩
+  · intro s hs
+    exact Plumbing.transcript_filterDom_playQueries_length P hP (hT s hs) l'
 
 end PDG
 

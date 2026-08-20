@@ -170,54 +170,6 @@ theorem keptPrefix_keptPrefix (S : DDS X Y) (l : List X) :
     keptPrefix S (keptPrefix S l) = keptPrefix S l :=
   keptPrefix_eq_self_of_mem_or_empty S (keptPrefix_mem_or S l)
 
-/-- **The fixed-query environment asks exactly its list**, at its own length —
-the input side of `answeredQueries_transcript_playQueries`, which additionally
-assumes the list is in the domain and concludes about the *answered* history.
-Here nothing is assumed: refused queries still count as asked. -/
-theorem transcriptInputs_transcript_playQueries (s : DDS X Y) (l : List X) :
-    ∀ n, n ≤ l.length →
-      (DDE.Total.transcript s (DDE.Total.playQueries l) n)↓ₓ = l.take n := by
-  intro n
-  induction n with
-  | zero => intro _; rfl
-  | succ n ih =>
-      intro hn
-      have hik := ih (Nat.le_of_succ_le hn)
-      have hlen : (DDE.Total.transcript s (DDE.Total.playQueries l) n).length = n := by
-        have h2 : (DDE.Total.transcript s (DDE.Total.playQueries l) n).length
-            = ((DDE.Total.transcript s (DDE.Total.playQueries l) n)↓ₓ).length := by
-          simp [transcriptInputs]
-        rw [h2, hik, List.length_take]
-        omega
-      have hlt : n < l.length := hn
-      have hq : DDE.Total.playQueries l
-          ((DDE.Total.transcript s (DDE.Total.playQueries l) n)↓ᵧ) = some l[n] := by
-        show l[((DDE.Total.transcript s (DDE.Total.playQueries l) n)↓ᵧ).length]? = _
-        rw [show ((DDE.Total.transcript s (DDE.Total.playQueries l) n)↓ᵧ).length = n by
-            simpa [transcriptOutputs] using hlen,
-          List.getElem?_eq_getElem hlt]
-      rw [DDE.Total.transcript]
-      simp only [hq, transcriptInputs, List.map_append, List.map_cons, List.map_nil]
-      have hik' : List.map Prod.fst (DDE.Total.transcript s (DDE.Total.playQueries l) n)
-          = List.take n l := hik
-      rw [hik', List.take_add_one, List.getElem?_eq_getElem hlt]
-      rfl
-
-@[simp] theorem transcriptInputs_transcript_playQueries_length (s : DDS X Y)
-    (l : List X) :
-    (DDE.Total.transcript s (DDE.Total.playQueries l) l.length)↓ₓ = l := by
-  rw [transcriptInputs_transcript_playQueries s l l.length le_rfl, List.take_length]
-
-/-- **A probing run answers the kept prefix of its list.**  Combining the
-previous receipt with `DDE.Total.answeredQueries_transcript`: what the system
-processed during `playQueries l` is `keptPrefix s l`, whether or not `l` is in
-its domain. -/
-theorem answeredQueries_transcript_playQueries_keptPrefix (s : DDS X Y)
-    (l : List X) :
-    answeredQueries (DDE.Total.transcript s (DDE.Total.playQueries l) l.length)
-      = keptPrefix s l := by
-  rw [DDE.Total.answeredQueries_transcript, transcriptInputs_transcript_playQueries_length]
-
 /-- **A blind environment asks the same queries of every system.**  Lanzenberger
 fn. 6's non-adaptivity (printed p. 16) says the query at step `k` depends only
 on `k`, so the
