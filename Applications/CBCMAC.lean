@@ -5,6 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import RandomSystems.System.ConverterEntry
 import RandomSystems.System.MetricFullyDefined
 import RandomSystems.System.RandomObjects
+import RandomSystems.System.Attainment
 import RandomSystems.System.FilterPhi
 import RandomSystems.System.ConverterClass
 import RandomSystems.Technique.BlindWinning
@@ -128,6 +129,63 @@ universe u
 variable {X : Type u} [Fintype X] [DecidableEq X] [Nonempty X] [AddCommGroup X]
 variable {M : Type u} [Fintype M] [DecidableEq M]
 
+/-! ## Review TODO
+
+Potential cleanup and improvement items identified during the proof review:
+
+* Perform a whole-file editorial and structural pass: remove duplicated or
+  obsolete commentary, compress long comments that merely restate nearby Lean,
+  and retain only source citations, modeling decisions, non-obvious invariants,
+  and proof rationale needed for review.  Reorganize the declarations into a
+  clear dependency order—base objects, block-former definitions, converters,
+  elementary properties, Random Systems security theorem, instantiation
+  bridge, and finally the abstract construction theorem—without changing the
+  proved content.
+* Put the foundational `Rnn` and `Vn` declarations in a dedicated `section`
+  with their shared ambient variables, so their repeated type and typeclass
+  binders can be removed while preserving the same public API.
+* Reorder the foundational material so all base objects and converters are
+  defined together after `Rnn` and `Vn`, before proving properties such as
+  prefix-freeness and the later CBC facts.
+* Add local paper-facing notation for the main objects and converter
+  expressions—such as `R_{n,n}`, `V_n`, and `θ_r`—so theorem statements mirror
+  CR18 more closely while retaining the existing Lean declaration names.
+* Add the canonical heterogeneous converter action
+  `HSMul (↥converterMonoidAt) (PDS M X) Phi`, implemented through the existing
+  typed inclusion, so paper-level expressions such as
+  `theta bf r • Vn M X` elaborate without exposing `ofTyped` or a `Phi` cast.
+* Add a reduction theorem (and appropriate simplification support) stating
+  that this heterogeneous action is exactly the existing homogeneous action
+  on `ofTyped S`; then clean up explicit `ofTyped`/`Phi` notation at all
+  converter-application sites in this file.
+* Reconcile and document the intended universal-carrier model: `Phi := PDS Uni
+  Uni` is the full universal behavior space, whereas `typed : Set Phi` is the
+  untagged union of the canonical images of all `PDS M X`.  Confirm that the
+  larger carrier is intended, and keep signature preservation obligations
+  explicit where an argument needs to remain inside `typed`.
+* Simplify the public converter signatures by letting Lean infer universe
+  parameters instead of spelling `.{u}` at ordinary use sites, and consider a
+  concise paper-facing alias for `↥converterMonoidAt` so CBC-MAC declarations
+  do not expose subtype and universe bookkeeping.
+* Redesign the Random Systems instantiation so its concrete resource and
+  converter objects—DDS/PDS and DDC/PDC—directly instantiate the abstract
+  `Phi`/converter interface.  Define the interpretation of DDC/PDC application
+  as an abstract resource action once at that model boundary, rather than
+  making application files manually turn a DDC into an `attachAt` endomorphism
+  and prove membership in `converterMonoidAt`.  After that redesign, expose the
+  CBC object as a DDC and allow expressions such as `cbcDDC bf • Rnn X`
+  directly, with the semantic action and admissibility bookkeeping internal to
+  the Random Systems instance.
+* Move the application-local bridge now isolated as
+  `cbc_mac_distance_of_classDistance` into the Random Systems instantiation as
+  a generic theorem: the abstract distance between two embedded typed systems
+  should be controlled directly by their native class distance `Δ`.  The new
+  `cbc_mac_classDistance` theorem already states and proves the CBC-MAC bound at
+  the typed PDS layer; the remaining modeling cleanup is to make the passage
+  from that theorem to the construction layer an instance-level operation,
+  rather than CBC-specific `ofTyped`, weight, and advantage plumbing.
+-/
+
 /-! ## §6.2.2's two objects, at the bounded message space -/
 
 /-- CR18's fixed-input-length uniform random function `R_{n,n}` (printed
@@ -153,6 +211,41 @@ sequence (at the output of the block former) for `m₁` is a prefix of the block
 sequence for `m₂`." -/
 def PrefixFree (bf : M → List X) : Prop :=
   ∀ m m', m ≠ m' → ¬ (bf m <+: bf m')
+
+
+/-! ## The CBC converter as a member of the metric-facing `Σ`
+
+The converter is written as a history function — the current message and the
+round-function answers of the round so far — and enters `Σ` through the
+library's one crossing, `RandomSystems.converterEngine_mem_converterMonoidAt`.
+No `ProtocolFn` and no `DDC` appears in any statement below.  The history
+function `cbcRound` itself is named only in the receipts that crossing
+consumes (`cbcRound_innerTotal`, `cbcRound_requestsBounded_of_length_le`,
+`cbcRound_requestsBounded`) and the engine only in `cbcConverter_requestsWithin`;
+every endpoint of this file speaks about the `Σ` element alone.
+-/
+
+/-- **One CBC round** (printed p. 125): "`CBC` applies a block former to the
+message and then digests the obtained block sequence block by block, each time
+invoking the system at its right interface."  While blocks remain, ask the
+round function for the next chaining value; after the last answer, return it.
+
+A refusal from the inner system is read as the initial chaining value: Ruling
+R2 makes refusal observable and non-fatal, and a converter that stalled instead
+would violate CR18 Definition 3.8's request bound.  Against a fully defined
+inner resource — every resource this theorem is about — the branch is never
+taken. -/
+noncomputable def cbcRound (bf : M → List X) :
+    List M × List (Option X) →. X ⊕ X := fun p =>
+  if h : p.1 ≠ [] then
+    let m := p.1.getLast h
+    let ys := p.2.map fun o => o.getD 0
+    if ys.length < (bf m).length then
+      Part.some (Sum.inl (ys.getLastD 0 + (bf m).getD ys.length 0))
+    else
+      Part.some (Sum.inr (ys.getLastD 0))
+  else
+    Part.none
 
 /-- Prefix-freeness forces every encoding to be nonempty as soon as the message
 alphabet is nontrivial. -/
@@ -223,39 +316,6 @@ theorem cbcState_concat (f : X -> X) (bs : List X) (b : X) :
 def cbcInput (f : X -> X) (bs : List X) (j : Nat) : X :=
   cbcState f (bs.take j) + bs.getD j 0
 
-/-! ## The CBC converter as a member of the metric-facing `Σ`
-
-The converter is written as a history function — the current message and the
-round-function answers of the round so far — and enters `Σ` through the
-library's one crossing, `RandomSystems.converterEngine_mem_converterMonoidAt`.
-No `ProtocolFn` and no `DDC` appears in any statement below.  The history
-function `cbcRound` itself is named only in the receipts that crossing
-consumes (`cbcRound_innerTotal`, `cbcRound_requestsBounded_of_length_le`,
-`cbcRound_requestsBounded`) and the engine only in `cbcConverter_requestsWithin`;
-every endpoint of this file speaks about the `Σ` element alone.
--/
-
-/-- **One CBC round** (printed p. 125): "`CBC` applies a block former to the
-message and then digests the obtained block sequence block by block, each time
-invoking the system at its right interface."  While blocks remain, ask the
-round function for the next chaining value; after the last answer, return it.
-
-A refusal from the inner system is read as the initial chaining value: Ruling
-R2 makes refusal observable and non-fatal, and a converter that stalled instead
-would violate CR18 Definition 3.8's request bound.  Against a fully defined
-inner resource — every resource this theorem is about — the branch is never
-taken. -/
-noncomputable def cbcRound (bf : M → List X) :
-    List M × List (Option X) →. X ⊕ X := fun p =>
-  if h : p.1 ≠ [] then
-    let m := p.1.getLast h
-    let ys := p.2.map fun o => o.getD 0
-    if ys.length < (bf m).length then
-      Part.some (Sum.inl (ys.getLastD 0 + (bf m).getD ys.length 0))
-    else
-      Part.some (Sum.inr (ys.getLastD 0))
-  else
-    Part.none
 
 /-- **Ruling R2's inner-facing totality for CBC**: having asked, CBC reacts to
 whatever the round function returns. -/
@@ -2140,6 +2200,155 @@ theorem nonNeg_Vn : (Vn M X).NonNeg := by
   rw [Vn, PDS.urf]
   exact Distribution.uniform_nonNeg.fTransform _
 
+/-- The direct CBC function law is a probability law, hence nonnegative. -/
+theorem nonNeg_cbcFunctionLaw (bf : M → List X) : (cbcFunctionLaw bf).NonNeg := by
+  rw [cbcFunctionLaw]
+  exact Distribution.uniform_nonNeg.fTransform _
+
+/-- Filtering a law whose atoms all have the total nonempty-history domain by
+the CBC block budget gives the displayed common domain. -/
+theorem hasDomain_blockFiltered_of_hasDomain_total (bf : M → List X) (r : ℕ)
+    (S : PDS M X) (hS : PDS.HasDomain S {l : List M | l ≠ []}) :
+    PDS.HasDomain
+      (Distribution.fTransform
+        (System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
+          (prefixClosed_totalBlocks_le bf r)) S)
+      {l : List M | l ≠ [] ∧ totalBlocks bf l ≤ r} := by
+  intro s hs
+  obtain ⟨t, ht, rfl⟩ :=
+    Distribution.exists_mem_support_of_mem_support_fTransform _ _ hs
+  ext l
+  rw [System.mem_dom_filterDom, hS t ht]
+  rfl
+
+/-- A prefix-free block former emits at least one block per message, so the
+block-budget domain is also bounded by `r` external queries. -/
+theorem qBounded_blockBudget [Nontrivial M] (bf : M → List X) (r : ℕ)
+    (hbf : PrefixFree bf) :
+    QBounded {l : List M | l ≠ [] ∧ totalBlocks bf l ≤ r} r := by
+  intro l hl
+  have hlen : ∀ messages : List M, messages.length ≤ totalBlocks bf messages := by
+    intro messages
+    induction messages with
+    | nil => simp [totalBlocks]
+    | cons m messages ih =>
+        have hm : 1 ≤ (bf m).length :=
+          List.length_pos_of_ne_nil (hbf.ne_nil m)
+        have ih' : messages.length ≤
+            (messages.map fun m => (bf m).length).sum := by
+          simpa [totalBlocks] using ih
+        simp only [List.length_cons, totalBlocks, List.map_cons, List.sum_cons]
+        omega
+  exact (hlen l).trans hl.2
+
+/-- **CBC-MAC at the Random Systems layer.**  This is the native typed form of
+the security bound: both systems are `PDS M X`, and their distance is
+Lanzenberger Definition 2.28's class distance `Δ`.  No universal-alphabet
+embedding, `Phi` action, or ambient `edist` occurs in the statement. -/
+theorem cbc_mac_classDistance [Nontrivial M] (bf : M → List X) (r : ℕ)
+    (hbf : PrefixFree bf) :
+    PDS.classDistance
+        (Distribution.fTransform
+          (System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
+            (prefixClosed_totalBlocks_le bf r)) (cbcFunctionLaw bf))
+        (Distribution.fTransform
+          (System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
+            (prefixClosed_totalBlocks_le bf r)) (Vn M X))
+      ≤ cbcEpsilon X r := by
+  classical
+  let D : Set (List M) :=
+    {l : List M | l ≠ [] ∧ totalBlocks bf l ≤ r}
+  have hrealDom : PDS.HasDomain
+      (Distribution.fTransform
+        (System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
+          (prefixClosed_totalBlocks_le bf r)) (cbcFunctionLaw bf)) D := by
+    apply hasDomain_blockFiltered_of_hasDomain_total bf r
+    exact PDS.hasDomain_fTransform_functionEvaluator _ _
+  have hidealDom : PDS.HasDomain
+      (Distribution.fTransform
+        (System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
+          (prefixClosed_totalBlocks_le bf r)) (Vn M X)) D := by
+    apply hasDomain_blockFiltered_of_hasDomain_total bf r
+    exact PDS.hasDomain_urf M X
+  have hbounded : QBounded D r := qBounded_blockBudget bf r hbf
+  rw [PDS.classDistance_eq_advFullyDefined_of_commonDomain_bounded
+    ((nonNeg_cbcFunctionLaw bf).fTransform _) (nonNeg_Vn.fTransform _)
+    ⟨hrealDom, hidealDom, hbounded⟩]
+  have hBw : (Distribution.fTransform
+      (System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
+        (prefixClosed_totalBlocks_le bf r)) (Vn M X)).weight = 1 := by
+    rw [Distribution.weight_fTransform, weight_Vn]
+  calc PDS.advFullyDefined
+        (Distribution.fTransform
+          (System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
+            (prefixClosed_totalBlocks_le bf r)) (cbcFunctionLaw bf))
+        (Distribution.fTransform
+          (System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
+            (prefixClosed_totalBlocks_le bf r)) (Vn M X))
+      = PDS.advFullyDefined
+          (PDG.forget (Distribution.fTransform
+            (fun γ : System.DDG M X =>
+              ((System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
+                (prefixClosed_totalBlocks_le bf r) γ.1, γ.2) : System.DDG M X))
+            (cbcGameLaw bf)))
+          (Distribution.fTransform
+            (System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
+              (prefixClosed_totalBlocks_le bf r)) (Vn M X)) := by
+        rw [forget_theta_cbcGameLaw]
+    _ ≤ ENNReal.ofReal (PDG.blindSupWinProb (Distribution.fTransform
+            (fun γ : System.DDG M X =>
+              ((System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
+                (prefixClosed_totalBlocks_le bf r) γ.1, γ.2) : System.DDG M X))
+            (cbcGameLaw bf))) :=
+        PDG.advFullyDefined_forget_le_blindSupWinProb_of_condEquiv
+          ((nonNeg_cbcGameLaw bf).fTransform _) (nonNeg_Vn.fTransform _)
+          (by rw [Distribution.weight_fTransform, weight_cbcGameLaw, hBw])
+          (cbc_condEquiv_theta bf r hbf)
+    _ ≤ cbcEpsilon X r :=
+        ENNReal.ofReal_le_ofReal (blindSupWinProb_cbcGameLaw_theta_le_sq bf r)
+
+/-- Instantiation boundary for CBC-MAC: realization and alphabet embedding turn
+the typed class-distance bound into the ambient construction metric bound.
+Keeping this bridge separate prevents the construction theorem from exposing
+PDS weight and advantage bookkeeping. -/
+theorem cbc_mac_distance_of_classDistance (bf : M → List X) (r : ℕ)
+    (hDelta : PDS.classDistance
+        (Distribution.fTransform
+          (System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
+            (prefixClosed_totalBlocks_le bf r)) (cbcFunctionLaw bf))
+        (Distribution.fTransform
+          (System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
+            (prefixClosed_totalBlocks_le bf r)) (Vn M X))
+      ≤ cbcEpsilon X r) :
+    edist (cbcRestricted bf r • assumedResource X r)
+      (constructedResource bf r) ≤ cbcEpsilon X r := by
+  classical
+  have hleft : cbcRestricted bf r • assumedResource X r
+      = (RandomSystems.ofTyped (Distribution.fTransform
+          (System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
+            (prefixClosed_totalBlocks_le bf r)) (cbcFunctionLaw bf)) : Phi.{u}) := by
+    rw [cbcRestricted, assumedResource, smul_smul, cbc_coherence, mul_smul,
+      cbcConverter_smul_Rnn, theta_smul_ofTyped]
+  have hright : constructedResource bf r
+      = (RandomSystems.ofTyped (Distribution.fTransform
+          (System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
+            (prefixClosed_totalBlocks_le bf r)) (Vn M X)) : Phi.{u}) := by
+    rw [constructedResource, theta_smul_ofTyped]
+  have hAw : (Distribution.fTransform
+      (System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
+        (prefixClosed_totalBlocks_le bf r)) (cbcFunctionLaw bf)).weight = 1 := by
+    rw [Distribution.weight_fTransform, cbcFunctionLaw,
+      Distribution.weight_fTransform, Distribution.weight_uniform]
+  have hBw : (Distribution.fTransform
+      (System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
+        (prefixClosed_totalBlocks_le bf r)) (Vn M X)).weight = 1 := by
+    rw [Distribution.weight_fTransform, weight_Vn]
+  rw [hleft, hright,
+    edist_eq_advFullyDefined_of_weight_eq
+      (by rw [weight_ofPhi_ofTyped, weight_ofPhi_ofTyped, hAw, hBw]),
+    PDS.advFullyDefined_ofTyped]
+  exact (PDS.advFullyDefined_le_classDistance _ _).trans hDelta
+
 /-- **CR18 Theorem 6.1's distance bound** (printed p. 127):
 `⟨θ_r CBC [r]R_{n,n} | θ_r V_n⟩ ≤ Γ(b θ_r ĈBC R_{n,n}) ≤ ½ r² 2^{-n}`, on `Phi`
 at Ruling R4's `Adv⊥`, which is what `edist` is (`edist_def`).
@@ -2170,65 +2379,8 @@ theorem cbc_mac_distance [Nontrivial M] (bf : M → List X) (r : ℕ)
     (hbf : PrefixFree bf) :
     edist (cbcRestricted bf r • assumedResource X r)
       (constructedResource bf r) ≤ cbcEpsilon X r := by
-  classical
-  -- printed p. 127, "From (6.1) we have `θ_r ĈBC R_{n,n} ≡ θ_r ĈBC[r]R_{n,n}`",
-  -- then the realization equation, then the alphabet crossing
-  have hleft : cbcRestricted bf r • assumedResource X r
-      = (RandomSystems.ofTyped (Distribution.fTransform
-          (System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
-            (prefixClosed_totalBlocks_le bf r)) (cbcFunctionLaw bf)) : Phi.{u}) := by
-    rw [cbcRestricted, assumedResource, smul_smul, cbc_coherence, mul_smul,
-      cbcConverter_smul_Rnn, theta_smul_ofTyped]
-  have hright : constructedResource bf r
-      = (RandomSystems.ofTyped (Distribution.fTransform
-          (System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
-            (prefixClosed_totalBlocks_le bf r)) (Vn M X)) : Phi.{u}) := by
-    rw [constructedResource, theta_smul_ofTyped]
-  -- both endpoints are probability laws, so the metric is `Adv⊥` unsymmetrized
-  have hAw : (Distribution.fTransform
-      (System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
-        (prefixClosed_totalBlocks_le bf r)) (cbcFunctionLaw bf)).weight = 1 := by
-    rw [Distribution.weight_fTransform, cbcFunctionLaw,
-      Distribution.weight_fTransform, Distribution.weight_uniform]
-  have hBw : (Distribution.fTransform
-      (System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
-        (prefixClosed_totalBlocks_le bf r)) (Vn M X)).weight = 1 := by
-    rw [Distribution.weight_fTransform, weight_Vn]
-  rw [hleft, hright,
-    edist_eq_advFullyDefined_of_weight_eq
-      (by rw [weight_ofPhi_ofTyped, weight_ofPhi_ofTyped, hAw, hBw]),
-    PDS.advFullyDefined_ofTyped]
-  calc PDS.advFullyDefined
-        (Distribution.fTransform
-          (System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
-            (prefixClosed_totalBlocks_le bf r)) (cbcFunctionLaw bf))
-        (Distribution.fTransform
-          (System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
-            (prefixClosed_totalBlocks_le bf r)) (Vn M X))
-      = PDS.advFullyDefined
-          (PDG.forget (Distribution.fTransform
-            (fun γ : System.DDG M X =>
-              ((System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
-                (prefixClosed_totalBlocks_le bf r) γ.1, γ.2) : System.DDG M X))
-            (cbcGameLaw bf)))
-          (Distribution.fTransform
-            (System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
-              (prefixClosed_totalBlocks_le bf r)) (Vn M X)) := by
-        rw [forget_theta_cbcGameLaw]
-      -- printed p. 127: "Therefore we can apply Theorem 4.17 to obtain
-      -- `⟨θ_r CBC [r]R_{n,n} | θ_r V_n⟩ ≤ Γ(b θ_r ĈBC R_{n,n})`"
-    _ ≤ ENNReal.ofReal (PDG.blindSupWinProb (Distribution.fTransform
-            (fun γ : System.DDG M X =>
-              ((System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
-                (prefixClosed_totalBlocks_le bf r) γ.1, γ.2) : System.DDG M X))
-            (cbcGameLaw bf))) :=
-        PDG.advFullyDefined_forget_le_blindSupWinProb_of_condEquiv
-          ((nonNeg_cbcGameLaw bf).fTransform _) (nonNeg_Vn.fTransform _)
-          (by rw [Distribution.weight_fTransform, weight_cbcGameLaw, hBw])
-          (cbc_condEquiv_theta bf r hbf)
-      -- printed p. 127: "and we have `Γ(b θ_r ĈBC R_{n,n}) ≤ ½ r² 2^{-n}`"
-    _ ≤ cbcEpsilon X r :=
-        ENNReal.ofReal_le_ofReal (blindSupWinProb_cbcGameLaw_theta_le_sq bf r)
+  exact cbc_mac_distance_of_classDistance bf r
+    (cbc_mac_classDistance bf r hbf)
 
 end Chain
 
