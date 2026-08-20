@@ -245,6 +245,36 @@ def toTypedRaw (X Y : Type u) (R : DDS Uni.{u} Uni.{u}) : Raw X Y :=
 def toTyped (X Y : Type u) (R : DDS Uni.{u} Uni.{u}) : DDS X Y :=
   validate (toTypedRaw X Y R)
 
+/-- The general form of `blockSet_ofTyped`: a domain filter
+commutes with the typed on-ramp, at the predicate read back through the
+inclusion. -/
+theorem filterDom_ofTyped {A B : Type u} (P : List Uni.{u} → Prop)
+    (hP : PrefixClosed P) (S : DDS A B) :
+    filterDom P hP (ofTyped S)
+      = ofTyped (filterDom (fun la : List A => P (la.map (encode A)))
+          (fun _ _ hpre hl => hP (hpre.map _) hl) S) := by
+  apply Subtype.ext
+  funext l
+  refine Part.ext' ?_ (fun _ _ => rfl)
+  constructor
+  -- filtering then on-ramping: a decodable history is an included history, so
+  -- the universal predicate on it is the pulled-back predicate on its decoding
+  · rintro ⟨⟨hne, hall⟩, hPl⟩
+    refine ⟨hne, fun l' hl' hne' => ?_⟩
+    obtain ⟨hdec, hS⟩ := hall l' hl' hne'
+    refine ⟨hdec, hS, ?_⟩
+    show P (((decodeList A l').get hdec).map (encode A))
+    rw [← decodeList_mem_eq (Part.get_mem hdec)]
+    exact hP hl' hPl
+  -- and back, with the on-ramp's own domain condition untouched
+  · rintro ⟨hne, hall⟩
+    obtain ⟨hdec, hS, hPd⟩ := hall l (List.prefix_refl _) hne
+    refine ⟨⟨hne, fun l' hl' hne' => ?_⟩, ?_⟩
+    · obtain ⟨hdec', hS', -⟩ := hall l' hl' hne'
+      exact ⟨hdec', hS'⟩
+    · rw [decodeList_mem_eq (Part.get_mem hdec)]
+      exact hPd
+
 /-- Blocking commutes with the inclusion: silencing queries of an
 included resource is including it with the decoded queries silenced. -/
 theorem blockSet_ofTyped {X Y : Type u} (Q : Set Uni.{u}) (S : DDS X Y) :

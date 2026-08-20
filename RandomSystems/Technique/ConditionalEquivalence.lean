@@ -1360,6 +1360,22 @@ theorem transcript_filterQueries_playQueries {s : System.DDS X Y}
   rw [hfirst, hsecond]
 
 
+/-- The interaction determines the sampled function on the queried messages and
+nothing else, so the fiber of a fixed-query-list interaction is an evaluation
+event of the shape `notBad_implies_uniform_outputs` speaks about. -/
+theorem map_pair_eq_iff_forall_toFinset {A B : Type u} [DecidableEq A]
+    (h h₀ : A → B) (l : List A) :
+    l.map (fun m => (m, some (h m))) = l.map (fun m => (m, some (h₀ m)))
+      ↔ ∀ s : ↑l.toFinset, h s.1 = h₀ s.1 := by
+  rw [List.map_inj_left]
+  constructor
+  · intro hm s
+    have := hm s.1 (List.mem_toFinset.mp s.2)
+    simpa using this
+  · intro hm m hml
+    have := hm ⟨m, List.mem_toFinset.mpr hml⟩
+    simpa using this
+
 /-! ### CR18 §3.4.3's domain filter, printed p. 62
 
 The `[q]` development above at a *domain* filter: `filterDom P hP` refuses a

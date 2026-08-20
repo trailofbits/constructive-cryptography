@@ -18,9 +18,6 @@ import Mathlib.Data.List.GetD
 /-!
 # CR18 §6.2.3: CBC-MAC as a randomness expander
 
-Cachin–Renner(–Maurer), *Lecture Notes on Cryptography*, §6.2.2–§6.2.3,
-printed pp. 125–127.
-
 Theorem 6.1, printed p. 126: "For `θ_r` defined as above, if the block-former
 of the `CBC`-converter is prefix-free, we have (for any `r`)
 `[r]R_{n,n} --θ_r CBC--> (θ_r V_n)^{ε_r}` for `ε_r = ½ r² 2^{-n}`."
@@ -267,34 +264,14 @@ section Realization
 
 open System
 
-/-- An on-ramped function answers its own value, whatever the history. -/
+/-- An on-ramped function answers its own value, whatever the history:
+`answer_ofTyped_some` at a function evaluator, which is defined everywhere. -/
 theorem answer_ofTyped_functionEvaluator {A B : Type u} (f : A → B)
     (xs : List Uni.{u}) (a : A) :
     answer (System.ofTyped (functionEvaluator f)) xs (encode A a)
       = some (encode B (f a)) := by
-  set l₀ : List A := xs.filterMap decodeOption with hl₀
-  -- the evaluator is defined on every nonempty history, so Definition 3.3's
-  -- deletion pass (printed p. 58) keeps the whole decodable part of `xs`
-  have hkept : keptPrefix (System.ofTyped (functionEvaluator f)) xs = l₀.map (encode A) := by
-    rw [keptPrefix_ofTyped]
-    congr 1
-    refine keptPrefix_eq_self_of_mem_or_empty _ ?_
-    rcases eq_or_ne l₀ [] with h | h
-    · exact Or.inr h
-    · exact Or.inl (by rw [dom_functionEvaluator]; exact h)
-  have hne : l₀ ++ [a] ≠ [] := by simp
-  -- extending it by `a` stays in the domain
-  have hdom : (l₀ ++ [a]).map (encode A) ∈ dom (System.ofTyped (functionEvaluator f)) :=
-    (mem_dom_ofTyped_encode hne).mpr (by rw [dom_functionEvaluator]; exact hne)
-  -- so the answer is the evaluator's output there, which is `f a` whatever
-  -- the history was
-  rw [answer_eq, hkept]
-  have hcat : l₀.map (encode A) ++ [encode A a] = (l₀ ++ [a]).map (encode A) := by simp
-  rw [hcat, dif_pos hdom]
-  congr 1
-  have hS : l₀ ++ [a] ∈ dom (functionEvaluator f) := by
-    rw [dom_functionEvaluator]; exact hne
-  rw [output_ofTyped_encode hS hdom, output_functionEvaluator]
+  rw [answer_ofTyped_some _ _ (decodeOption_encode (X := A) a),
+    PDS.answer_functionEvaluator]
   simp
 
 /-- The round-function answers CBC holds after digesting `k` blocks: the
@@ -854,22 +831,6 @@ section CondEquiv
 
 open System
 
-/-- The interaction determines the sampled function on the queried messages and
-nothing else, so the fiber of a fixed-query-list interaction is an evaluation
-event of the shape `notBad_implies_uniform_outputs` speaks about. -/
-theorem map_pair_eq_iff_forall_toFinset {A B : Type u} [DecidableEq A]
-    (h h₀ : A → B) (l : List A) :
-    l.map (fun m => (m, some (h m))) = l.map (fun m => (m, some (h₀ m)))
-      ↔ ∀ s : ↑l.toFinset, h s.1 = h₀ s.1 := by
-  rw [List.map_inj_left]
-  constructor
-  · intro hm s
-    have := hm s.1 (List.mem_toFinset.mp s.2)
-    simpa using this
-  · intro hm m hml
-    have := hm ⟨m, List.mem_toFinset.mpr hml⟩
-    simpa using this
-
 /-- `ĈBC R_{n,n}` (printed p. 126): the joint law of the CBC chain and *that*
 round function's collision condition.  A pushforward and not a `PDS.adjoin`,
 because the condition reads the round function, which the chain does not
@@ -968,10 +929,10 @@ theorem cbc_condEquiv [Nontrivial M] (bf : M → List X) (hbf : PrefixFree bf) :
       (fun f => by
         rw [and_comm]
         exact and_congr
-          (map_pair_eq_iff_forall_toFinset (fun m => cbcState f (bf m)) h₀ l) Iff.rfl),
+          (PDG.Plumbing.map_pair_eq_iff_forall_toFinset (fun m => cbcState f (bf m)) h₀ l) Iff.rfl),
       Distribution.mass_congr (Distribution.uniform (M → X))
         (Q := fun g => ∀ s : ↑l.toFinset, g s.1 = h₀ s.1)
-        (fun g => map_pair_eq_iff_forall_toFinset g h₀ l),
+        (fun g => PDG.Plumbing.map_pair_eq_iff_forall_toFinset g h₀ l),
       notBad_implies_uniform_outputs bf hbf l (fun s => h₀ s.1), mul_comm]
   -- unrealizable: no atom on either side produces `t`, so both sides vanish
   · push Not at hreal
@@ -1540,53 +1501,6 @@ the metric.
 section Chain
 
 open System
-
-/-- UPSTREAM-CANDIDATE (`RandomSystems/System/Phi.lean`, beside
-`System.blockSet_ofTyped`, of which this is the general form): a domain filter
-commutes with the typed on-ramp, at the predicate read back through the
-inclusion. -/
-theorem filterDom_ofTyped {A B : Type u} (P : List Uni.{u} → Prop)
-    (hP : PrefixClosed P) (S : DDS A B) :
-    filterDom P hP (System.ofTyped S)
-      = System.ofTyped (filterDom (fun la : List A => P (la.map (encode A)))
-          (fun _ _ hpre hl => hP (hpre.map _) hl) S) := by
-  apply Subtype.ext
-  funext l
-  refine Part.ext' ?_ (fun _ _ => rfl)
-  constructor
-  -- filtering then on-ramping: a decodable history is an included history, so
-  -- the universal predicate on it is the pulled-back predicate on its decoding
-  · rintro ⟨⟨hne, hall⟩, hPl⟩
-    refine ⟨hne, fun l' hl' hne' => ?_⟩
-    obtain ⟨hdec, hS⟩ := hall l' hl' hne'
-    refine ⟨hdec, hS, ?_⟩
-    show P (((decodeList A l').get hdec).map (encode A))
-    rw [← decodeList_mem_eq (Part.get_mem hdec)]
-    exact hP hl' hPl
-  -- and back, with the on-ramp's own domain condition untouched
-  · rintro ⟨hne, hall⟩
-    obtain ⟨hdec, hS, hPd⟩ := hall l (List.prefix_refl _) hne
-    refine ⟨⟨hne, fun l' hl' hne' => ?_⟩, ?_⟩
-    · obtain ⟨hdec', hS', -⟩ := hall l' hl' hne'
-      exact ⟨hdec', hS'⟩
-    · rw [decodeList_mem_eq (Part.get_mem hdec)]
-      exact hPd
-
-/-- UPSTREAM-CANDIDATE (`RandomSystems/System/DiscreteSystem.lean`): the
-filter reads only the predicate's extension, so the pulled-back predicate may
-be replaced by the message-level one the game-side statements use. -/
-theorem filterDom_congr {A B : Type u} {P Q : List A → Prop}
-    (hP : PrefixClosed P) (hQ : PrefixClosed Q) (h : ∀ l, P l ↔ Q l)
-    (S : DDS A B) : filterDom P hP S = filterDom Q hQ S := by
-  have hPQ : P = Q := funext fun l => propext (h l)
-  subst hPQ
-  rfl
-
-/-- UPSTREAM-CANDIDATE (`RandomSystems/System/Absorb.lean`): the typed
-on-ramp is a pushforward, so it preserves total weight. -/
-theorem weight_ofPhi_ofTyped {A B : Type u} (SL : PDS A B) :
-    (ofPhi (RandomSystems.ofTyped SL : Phi.{u})).weight = SL.weight :=
-  Distribution.weight_fTransform _ _
 
 /-- `θ_r`'s universal predicate (printed p. 126) read back at the message
 alphabet: on an included history the filter-map decoding is the identity. -/

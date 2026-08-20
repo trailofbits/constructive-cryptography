@@ -1409,6 +1409,11 @@ search; this is the one-line re-typing that lets a mixture be written down.
 (Coinage.) -/
 def ofPhi (L : Phi.{u}) : PDS Uni.{u} Uni.{u} := L
 
+/-- The typed on-ramp is a pushforward, so it preserves total weight. -/
+theorem weight_ofPhi_ofTyped {A B : Type u} (SL : PDS A B) :
+    (ofPhi (RandomSystems.ofTyped SL : Phi.{u})).weight = SL.weight :=
+  Distribution.weight_fTransform _ _
+
 /-- **Mixtures of nonexpanding converters are nonexpanding**, at
 subprobability weights.
 

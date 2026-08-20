@@ -402,6 +402,16 @@ predicate. The output is unchanged wherever the restricted system is defined. -/
     intro l₁ l₂ hpre hne hdom
     exact ⟨prefix_closed S hpre hne hdom.1, hP hpre hdom.2⟩⟩
 
+/-- The
+filter reads only the predicate's extension, so the pulled-back predicate may
+be replaced by the message-level one the game-side statements use. -/
+theorem filterDom_congr {A B : Type u} {P Q : List A → Prop}
+    (hP : PrefixClosed P) (hQ : PrefixClosed Q) (h : ∀ l, P l ↔ Q l)
+    (S : DDS A B) : filterDom P hP S = filterDom Q hQ S := by
+  have hPQ : P = Q := funext fun l => propext (h l)
+  subst hPQ
+  rfl
+
 @[simp] theorem mem_dom_filterDom (P : List X → Prop) (hP : PrefixClosed P)
     (S : DDS X Y) (l : List X) :
     l ∈ dom (filterDom P hP S) ↔ l ∈ dom S ∧ P l := Iff.rfl
