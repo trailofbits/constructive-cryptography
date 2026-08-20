@@ -942,13 +942,26 @@ statement is no longer only inline inside `Relaxation.star_construct_eps` and
     the concrete form of the coarseness that dissolved F4.  3's θ_r half was
     ALREADY LANDED at 81a95ea (`cbc_condEquiv_theta`) and the list had simply
     never caught up — the second stale-list incident in this lane.
-    REMAINING, and it is NOT an obligation: `hcbc` is the ASSEMBLY of 1–6
-    into the single distance bound of printed p. 127, which no declaration
-    performs — six landed obligations are not a landed chain.  Also owed: the
-    typed-carrier transport of `CondEquiv` (complicated by F2 — the on-ramp
-    is not a converter, so it cannot ride the class).  UNVERIFIED CLAIM,
-    flagged: that the six assemble without further mathematics; nobody has
-    attempted it.
+    **CR18 THEOREM 6.1 IS UNCONDITIONAL (023582b, 2026-08-20).**  The
+    assembly is written: `cbc_mac_distance` is the printed p. 127 chain in
+    three `calc` steps — eq. (6.1) via `cbc_coherence`, the realization
+    equation, eq. (6.3) fed to Theorem 4.17's step, then Lemma 4.18's bound —
+    and `cbc_mac_constructs` has LOST `hcbc`, as have `cbc_mac_trans` and
+    (bar its own §5.5 coherence hypothesis) `cbc_mac_parameterized_of_
+    coherence`.  Coordinator-verified: both endpoints axiom-clean, gates six
+    green, both builds green.  THE ALPHABET CROSSING was transported by hand,
+    one lemma per operation, since F2 stands (`ofTyped` bumps the universe,
+    so it is not a `Function.End Phi` and cannot ride the converter class):
+    `filterDom_ofTyped` (UPSTREAM-CANDIDATE, the general form of the landed
+    `blockSet_ofTyped`), `filterDom_congr`, `weight_ofPhi_ofTyped`,
+    `thetaPred_map_encode`, `theta_smul_ofTyped`.  THE METRIC BRIDGE needed
+    NO new theory: `edist_eq_advFullyDefined_of_weight_eq` at probability
+    weights, then the ALREADY-LANDED isometry `PDS.advFullyDefined_ofTyped`
+    (`System/Absorb.lean:1372`), so the bound descends to the message
+    alphabet unchanged.  The headline's on-ramped objects ARE the
+    obligations' objects — no mismatch, the risk I flagged did not
+    materialize.  BELIEVED, not re-checked this pass: the printed-p.-126
+    citations in docstrings are inherited from earlier file text.
   SUPERSEDED — never the primitive again:
     `attachFully` / `converterMonoidFully` / `converterMonoidFullyBudgeted`
       (whole-face Φ level) -> superseded by `attachAt` /
