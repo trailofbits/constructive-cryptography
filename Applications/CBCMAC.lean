@@ -1956,7 +1956,7 @@ running block total pays for it, exactly).  Obligation 4 of `cbc_mac_constructs`
 because the proof of Theorem 6.1 applies it to the augmented system (printed
 p. 127); what is proved here is the equation at the unaugmented converter, which
 is the form CR18 §5.5's coherence condition (printed p. 122) asks for and the
-form `cbc_mac_parameterized_of_coherence` consumes. -/
+form `cbc_mac_parameterized` consumes. -/
 theorem cbc_coherence (bf : M → List X) (r : ℕ) :
     theta (X := X) bf r * cbcConverter bf * queryLimit.{u} r
       = theta (X := X) bf r * cbcConverter bf :=
@@ -2281,7 +2281,7 @@ Its six ingredients, in the printed order, all landed:
    `θ_r ĈBC = θ_r ĈBC[r]` — the MBO-augmented converter, and printed p. 127
    applies it to the augmented system.  It is also CR18 §5.5's coherence
    equation (printed p. 122), which is why
-   `cbc_mac_parameterized_of_coherence` takes it as a hypothesis;
+   `cbc_mac_parameterized` takes it as a hypothesis;
    `cbc_coherence` above discharges that hypothesis.  The unfolding is
    `cbc_filter_redundant` — the converter class supplies all of the converter
    theory — fed CBC's own two elementary facts,
@@ -2320,7 +2320,7 @@ real.  `cbc_mac_trans` is that receipt, and it is the only one: it takes
 
 Both corollaries inherit Theorem 6.1's whole mathematics through
 `cbc_mac_constructs`, which is now unconditional, and
-`cbc_mac_parameterized_of_coherence` carries obligation 4 on top of it as an
+`cbc_mac_parameterized` carries obligation 4 on top of it as an
 explicit hypothesis because §5.5 states the collapse conditionally.  An earlier
 version of this file carried a `cbc_mac_parameterized` whose proof term was its
 own hypothesis: `ParameterizedConstruction` unfolds definitionally to the family
@@ -2367,10 +2367,8 @@ works on the MBO-augmented converter.  It is **landed** (obligation 4 at
 `cbc_mac_constructs`) as `cbc_coherence` above, and a caller discharges the
 hypothesis with `fun r => cbc_coherence bf r`; it is kept as a hypothesis here
 because §5.5 states the collapse conditionally. -/
-theorem cbc_mac_parameterized_of_coherence [Nontrivial M] (bf : M → List X)
-    (hbf : PrefixFree bf)
-    (coherence : ∀ r : ℕ, theta (X := X) bf r * cbcConverter bf * queryLimit.{u} r
-      = theta (X := X) bf r * cbcConverter bf) :
+theorem cbc_mac_parameterized [Nontrivial M] (bf : M → List X)
+    (hbf : PrefixFree bf) :
     ∀ r : ℕ, ({(ofTyped (Rnn X) : Phi.{u})} : Specification Phi.{u})
       —[cbcRestricted bf r; cbcEpsilon X r]→
         ({constructedResource bf r} : Specification Phi.{u}) :=
@@ -2378,6 +2376,6 @@ theorem cbc_mac_parameterized_of_coherence [Nontrivial M] (bf : M → List X)
     (φ := fun r : ℕ => queryLimit.{u} r) (ψ := fun r : ℕ => theta (X := X) bf r)
     (π := cbcConverter bf) (f := fun r : ℕ => cbcEpsilon X r)
     (R := (ofTyped (Rnn X) : Phi.{u})) (S := (ofTyped (Vn M X) : Phi.{u}))
-    coherence).mp (fun r => cbc_mac_constructs bf r hbf)
+    (fun r => cbc_coherence bf r)).mp (fun r => cbc_mac_constructs bf r hbf)
 
 end RandomSystems.CBCMAC
