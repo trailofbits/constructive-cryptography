@@ -27,92 +27,39 @@ printed pp. 125–127** (every page cited below was read on the rendered page).
 block-former of the `CBC`-converter is prefix-free, we have (for any `r`)
 `[r]R_{n,n} --θ_r CBC--> (θ_r V_n)^{ε_r}` for `ε_r = ½ r² 2^{-n}`."
 
-The arrow is CR18 Definition 5.4's construction relation and the superscript is
-§5.2.3's `ε`-relaxation, so the endpoint of this file is an
+The arrow is CR18 Definition 5.4's construction relation into §5.2.3's
+`ε`-relaxation, so the endpoint is `cbc_mac_constructs`, an
 `AbstractCryptography.ApproximatelyConstructs` judgment over `Phi` at
-`Σ := ↥converterMonoidAt` — not a bare distance inequality.  The distance is an
-intermediate, exactly as on the printed page.
+`Σ := ↥converterMonoidAt`; the distance `cbc_mac_distance` is an intermediate,
+exactly as on the printed page.  Nothing is assumed beyond prefix-freeness.
 
 ## The bounded message space (F-1 ruling, Marc, 2026-08-19)
 
-Definition 6.1's footnote 2, **printed p. 125**, reads: "Note that because the
-input alphabet is infinite, `V_n` can not be described as a probabilistic
-discrete system, i.e., as a probability distribution over deterministic
-systems."  PHI-SPEC Ruling R1 makes the carrier `Φ := PDS Uni Uni`, a
-distribution over deterministic systems, so the variable-input-length ideal
-object is outside it by construction.
+Definition 6.1's footnote 2, **printed p. 125**: "Note that because the input
+alphabet is infinite, `V_n` can not be described as a probabilistic discrete
+system, i.e., as a probability distribution over deterministic systems."
+Ruling R1 makes the carrier exactly such a distribution, so `M` is finite here
+and what is proved is Theorem 6.1 at a bounded message space.
 
-The ruling is therefore: **the message alphabet `M` is finite, declared as an
-explicit hypothesis and never silently swapped in**.  For a bitstring
-instantiation this reads `{0,1}^≤max` — messages of at most `max` blocks.  What
-this file proves is CR18's theorem at a bounded message space, which is the
-same content for every distinguisher this carrier can express, since a
-finite-horizon environment only ever touches a bounded slice.  It does not
-prove the unbounded statement, and no carrier extension is claimed.
+The operative hypothesis is a bound on *encoding length*, not finiteness:
+`cbcRound_requestsBounded_of_length_le` derives CR18 Definition 3.8's request
+bound (printed p. 62) from `∀ m, (bf m).length ≤ B` alone, and finiteness of
+`M` follows from it (`finite_of_prefixFree_of_length_le`).  Without such a
+bound what fails is this *sufficient* condition for `Σ`-membership, not
+membership: `converterMonoidAt` is a `Submonoid.closure`, and denying
+membership would need a separating invariant this tree does not have.
 
-The bound is not bookkeeping, but it must be recorded for what it is.  CR18
-Definition 3.8's finite request bound (printed p. 62) is what the entry point
-`converterEngine_mem_converterMonoidAt` consumes to place a converter in the
-metric-facing `Σ`, and the **operative hypothesis is a bound on encoding
-length**, not finiteness of the message type:
-`cbcRound_requestsBounded_of_length_le` derives the request bound from
-`∀ m, (bf m).length ≤ B` and from nothing else.  Finiteness of `M` enters only
-as the cheapest way to produce such a `B` — `blockBound`, a sup over a
-`Fintype` — and it is itself a *consequence* of the theorem's other
-hypotheses rather than an independent one: prefix-freeness makes `bf`
-injective (`PrefixFree.injective`), and an injective encoding into the
-length-`≤ B` block sequences over a finite block alphabet has a finite domain
-(`finite_of_prefixFree_of_length_le`).
+## Proof map
 
-What fails without a length bound is therefore our *sufficient* condition for
-membership, not membership.  `converterMonoidAt` is a `Submonoid.closure`, so
-"over an unbounded message alphabet the CBC converter is not a member of this
-`Σ`" is **not proved here and does not follow** from failing
-`attachAt_mem_converterMonoidAt`: the same endomorphism could enter the
-closure through a different engine or a product of generators.  Denying
-membership needs a separating invariant on the closure, and this tree has
-none.
-
-## What is proved here
-
-CR18 Theorem 6.1 (printed p. 126), with nothing assumed.  The endpoint is
-`cbc_mac_constructs`; the distance bound its arrow is read off is
-`cbc_mac_distance`, which is the printed proof of p. 127 assembled.  Along the
-way:
-
-* the CBC converter is a member of `↥converterMonoidAt` (`cbcConverter`), and so
-  are CR18's two restrictions `θ_r` (`theta`) and `[r]` (`queryLimit`);
-* CR18's first proof sentence, printed p. 126 — prefix-freeness plus "no
-  non-trivial collision" makes the terminal round-function inputs of distinct
-  queried messages distinct (`notBad_implies_distinct_lastInputs`);
-* CR18's second proof sentence, printed pp. 126–127, in mass form — conditioned
-  on no non-trivial collision the CBC outputs have exactly the law of a uniform
-  random function (`notBad_implies_uniform_outputs`), through the
-  re-randomization of the terminal call sites;
-* the realization equation — `cbcConverter bf` applied to the on-ramped round
-  function *is* the on-ramped CBC chain (`attachEngineFully_cbcRound_univ`, and
-  at Φ `cbcConverter_smul_Rnn`), which is what ties the `Σ` element to the
-  function `cbcState f ∘ bf` at all;
-* equation (6.2), printed p. 126, as a conditional equivalence
-  (`cbc_condEquiv`), and equation (6.3), printed p. 127, as its restriction by
-  `θ_r` (`cbc_condEquiv_theta`);
-* equation (6.1), printed p. 126 — the inner filter `[r]` is redundant under
-  `θ_r` (`cbc_coherence`), through the converter class;
-* CR18's collision count, printed p. 127 — the blind winning probability of
-  the restricted collision game is at most `½ r² 2^{-n}`
-  (`blindSupWinProb_cbcGameLaw_theta_le_sq`), through the lazy-sampling
-  birthday bound `Probability.Counting.uniform_mass_walk_repeat_le` at CBC's
-  step function;
-* the two crossings the printed page does not write because it has no universal
-  alphabet — the alphabet crossing `theta_smul_ofTyped` (built on the general
-  `filterDom_ofTyped`) and the metric bridge
-  `edist_eq_advFullyDefined_of_weight_eq` together with
-  `PDS.advFullyDefined_ofTyped` — and the chain that runs all of it into the
-  single distance bound, `cbc_mac_distance`;
-* the crossing from the distance bound to Theorem 6.1's construction
-  statement.  That crossing is **notation, not content** —
-  `constructs_singleton_epsilonRelaxation_iff` is an `Iff` — and the one
-  consequence actually demonstrated on the endpoint is `cbc_mac_trans`.
+CR18's printed proof, p. 127, is four steps, assembled in `cbc_mac_distance`:
+equation (6.1) (`cbc_coherence`), the realization equation
+(`cbcConverter_smul_Rnn`), equation (6.3) (`cbc_condEquiv_theta`) fed to
+Theorem 4.17's step, and Lemma 4.18's step
+(`blindSupWinProb_cbcGameLaw_theta_le_sq`).  Steps 1–2 move on `Phi` and steps
+3–4 at the message alphabet; the page writes no crossing between them because
+it has no universal alphabet, so `theta_smul_ofTyped` crosses the objects and
+`edist_eq_advFullyDefined_of_weight_eq` with `PDS.advFullyDefined_ofTyped`
+crosses the metric.
 -/
 
 namespace RandomSystems.CBCMAC
@@ -131,59 +78,40 @@ variable {M : Type u} [Fintype M] [DecidableEq M]
 
 /-! ## Review TODO
 
-Potential cleanup and improvement items identified during the proof review:
+Cleanup identified during review; the comment pass of the first item is done.
 
-* Perform a whole-file editorial and structural pass: remove duplicated or
-  obsolete commentary, compress long comments that merely restate nearby Lean,
-  and retain only source citations, modeling decisions, non-obvious invariants,
-  and proof rationale needed for review.  Reorganize the declarations into a
-  clear dependency order—base objects, block-former definitions, converters,
-  elementary properties, Random Systems security theorem, instantiation
-  bridge, and finally the abstract construction theorem—without changing the
-  proved content.
-* Put the foundational `Rnn` and `Vn` declarations in a dedicated `section`
-  with their shared ambient variables, so their repeated type and typeclass
-  binders can be removed while preserving the same public API.
-* Reorder the foundational material so all base objects and converters are
-  defined together after `Rnn` and `Vn`, before proving properties such as
-  prefix-freeness and the later CBC facts.
-* Add local paper-facing notation for the main objects and converter
-  expressions—such as `R_{n,n}`, `V_n`, and `θ_r`—so theorem statements mirror
-  CR18 more closely while retaining the existing Lean declaration names.
-* Add the canonical heterogeneous converter action
-  `HSMul (↥converterMonoidAt) (PDS M X) Phi`, implemented through the existing
-  typed inclusion, so paper-level expressions such as
-  `theta bf r • Vn M X` elaborate without exposing `ofTyped` or a `Phi` cast.
-* Add a reduction theorem (and appropriate simplification support) stating
-  that this heterogeneous action is exactly the existing homogeneous action
-  on `ofTyped S`; then clean up explicit `ofTyped`/`Phi` notation at all
-  converter-application sites in this file.
-* Reconcile and document the intended universal-carrier model: `Phi := PDS Uni
-  Uni` is the full universal behavior space, whereas `typed : Set Phi` is the
-  untagged union of the canonical images of all `PDS M X`.  Confirm that the
-  larger carrier is intended, and keep signature preservation obligations
-  explicit where an argument needs to remain inside `typed`.
-* Simplify the public converter signatures by letting Lean infer universe
-  parameters instead of spelling `.{u}` at ordinary use sites, and consider a
-  concise paper-facing alias for `↥converterMonoidAt` so CBC-MAC declarations
-  do not expose subtype and universe bookkeeping.
-* Redesign the Random Systems instantiation so its concrete resource and
-  converter objects—DDS/PDS and DDC/PDC—directly instantiate the abstract
-  `Phi`/converter interface.  Define the interpretation of DDC/PDC application
-  as an abstract resource action once at that model boundary, rather than
-  making application files manually turn a DDC into an `attachAt` endomorphism
-  and prove membership in `converterMonoidAt`.  After that redesign, expose the
-  CBC object as a DDC and allow expressions such as `cbcDDC bf • Rnn X`
-  directly, with the semantic action and admissibility bookkeeping internal to
-  the Random Systems instance.
-* Move the application-local bridge now isolated as
-  `cbc_mac_distance_of_classDistance` into the Random Systems instantiation as
-  a generic theorem: the abstract distance between two embedded typed systems
-  should be controlled directly by their native class distance `Δ`.  The new
-  `cbc_mac_classDistance` theorem already states and proves the CBC-MAC bound at
-  the typed PDS layer; the remaining modeling cleanup is to make the passage
-  from that theorem to the construction layer an instance-level operation,
-  rather than CBC-specific `ofTyped`, weight, and advantage plumbing.
+* Reorganize the declarations into dependency order — base objects, block
+  former, converters, elementary properties, the Random Systems security
+  theorem, the instantiation bridge, the abstract construction theorem —
+  without changing the proved content.
+* Put `Rnn` and `Vn` in a `section` with their shared ambient variables, so
+  their repeated type and typeclass binders can go.
+* Define all base objects and converters together after `Rnn` and `Vn`, before
+  proving anything about them.
+* Add paper-facing local notation for `R_{n,n}`, `V_n` and `θ_r`.
+* Add the heterogeneous action `HSMul (↥converterMonoidAt) (PDS M X) Phi`
+  through the typed inclusion, so `theta bf r • Vn M X` elaborates without
+  exposing `ofTyped` or a `Phi` cast, plus the reduction theorem saying it is
+  the homogeneous action on `ofTyped S`; then drop the explicit casts at every
+  converter-application site here.
+* Confirm and document the intended carrier: `Phi := PDS Uni Uni` is the full
+  universal behaviour space, `typed : Set Phi` the untagged union of the images
+  of each `PDS M X`.  Keep signature-preservation obligations explicit where an
+  argument must stay inside `typed`.
+* Let Lean infer universes instead of spelling `.{u}` at ordinary use sites,
+  and alias `↥converterMonoidAt` so declarations stop exposing subtype and
+  universe bookkeeping.
+* Redesign the Random Systems instantiation so DDS/PDS resources and DDC/PDC
+  converters instantiate the abstract carrier/converter interface directly,
+  with the action and the admissibility bookkeeping internal to the instance —
+  instead of an application turning a DDC into an `attachAt` endomorphism and
+  proving `converterMonoidAt` membership by hand.  Then `cbcDDC bf • Rnn X`
+  should elaborate.
+* Promote `cbc_mac_distance_of_classDistance` into that instantiation as a
+  generic theorem: the abstract distance between two embedded typed systems is
+  controlled by their native class distance `Δ`.  `cbc_mac_classDistance`
+  already states the typed-layer bound; what remains is making the step up to
+  the construction layer an instance-level operation.
 -/
 
 /-! ## §6.2.2's two objects, at the bounded message space -/
@@ -195,10 +123,7 @@ noncomputable def Rnn (X : Type u) [Fintype X] [DecidableEq X] [Nonempty X] :
   PDS.urf X X
 
 /-- **CR18 Definition 6.1's VIL-URF `V_n`** (printed p. 125) at the bounded
-message space of the F-1 ruling: the system that answers each new message with
-a fresh uniform value and repeats consistently.  Over a *finite* `M` that is a
-probabilistic discrete system — footnote 2 (printed p. 125) says it is not one
-over `{0,1}*`. -/
+message space: a fresh uniform value per new message, repeated consistently. -/
 noncomputable def Vn (M X : Type u) [Fintype M] [DecidableEq M] [Fintype X]
     [DecidableEq X] [Nonempty X] : PDS M X :=
   PDS.urf M X
@@ -215,30 +140,22 @@ def PrefixFree (bf : M → List X) : Prop :=
 
 /-! ## The CBC converter as a member of the metric-facing `Σ`
 
-The converter is written as a history function — the current message and the
+The converter is a history function — the current message and the
 round-function answers of the round so far — and enters `Σ` through the
 library's one crossing, `RandomSystems.converterEngine_mem_converterMonoidAt`.
-No `ProtocolFn` and no `DDC` appears in any statement below.  The history
-function `cbcRound` itself is named only in the receipts that crossing
-consumes (`cbcRound_innerTotal`, `cbcRound_requestsBounded_of_length_le`,
-`cbcRound_requestsBounded`) and the engine only in `cbcConverter_requestsWithin`;
-every endpoint of this file speaks about the `Σ` element alone.
+`cbcRound` itself is named only in the receipts that crossing consumes; every
+endpoint of this file speaks about the `Σ` element alone.
 -/
 
 /-- **One CBC round** (printed p. 125): "`CBC` applies a block former to the
 message and then digests the obtained block sequence block by block, each time
-invoking the system at its right interface."  While blocks remain, ask the
-round function for the next chaining value; after the last answer, return it.
-
-A refusal from the inner system is read as the initial chaining value: Ruling
-R2 makes refusal observable and non-fatal, and a converter that stalled instead
-would violate CR18 Definition 3.8's request bound.  Against a fully defined
-inner resource — every resource this theorem is about — the branch is never
-taken. -/
+invoking the system at its right interface." -/
 noncomputable def cbcRound (bf : M → List X) :
     List M × List (Option X) →. X ⊕ X := fun p =>
   if h : p.1 ≠ [] then
     let m := p.1.getLast h
+    -- Ruling R2 reads a refusal as the initial chaining value; stalling
+    -- instead would violate CR18 Definition 3.8's request bound.
     let ys := p.2.map fun o => o.getD 0
     if ys.length < (bf m).length then
       Part.some (Sum.inl (ys.getLastD 0 + (bf m).getD ys.length 0))
@@ -258,9 +175,8 @@ theorem PrefixFree.ne_nil [Nontrivial M] {bf : M → List X}
 omit [Fintype X] [DecidableEq X] [Nonempty X] [AddCommGroup X] [Fintype M]
   [DecidableEq M] in
 /-- Prefix-freeness is an injectivity statement about the block former: two
-distinct messages whose encodings agreed would have each encoding a prefix of
-the other.  (CR18 states prefix-freeness as the encoding condition, printed
-p. 126; this is the part of it the counting arguments use.) -/
+distinct messages with equal encodings would have each encoding a prefix of the
+other. -/
 theorem PrefixFree.injective {bf : M → List X} (h : PrefixFree bf) :
     Function.Injective bf := by
   intro a b hab
@@ -268,12 +184,8 @@ theorem PrefixFree.injective {bf : M → List X} (h : PrefixFree bf) :
   exact h a b hne (hab ▸ List.prefix_refl (bf a))
 
 /-- **Finiteness of the message space is a consequence, not an extra
-hypothesis.**  A prefix-free block former of bounded length is an injection of
-the message space into the block sequences of length at most `B` over the
-block alphabet, and there are finitely many of those when the block alphabet
-is finite.  So Theorem 6.1's own hypotheses (printed p. 126) — prefix-freeness,
-and the bounded encoding length the request bound needs — already force the
-F-1 ruling's finite `M`. -/
+hypothesis**: a prefix-free block former of bounded length injects `M` into the
+block sequences of length at most `B` over a finite block alphabet. -/
 theorem finite_of_prefixFree_of_length_le {X' M' : Type u} [Fintype X']
     {bf : M' → List X'} {B : ℕ} (hbf : PrefixFree bf)
     (hB : ∀ m, (bf m).length ≤ B) : Finite M' := by
@@ -330,11 +242,9 @@ theorem cbcRound_innerTotal (bf : M → List X) :
   dsimp only
   split <;> exact ⟨⟩
 
-/-- The largest number of blocks the block former ever emits.  It is the
-cheapest witness for the *length bound* the request receipt actually needs
-(`cbcRound_requestsBounded_of_length_le`), and it is where the F-1 ruling's
-finite message space is spent — as a producer of that constant, not as the
-operative hypothesis. -/
+/-- The largest number of blocks the block former ever emits: the cheapest
+witness for the length bound `cbcRound_requestsBounded_of_length_le` needs, and
+the only place the F-1 ruling's finite message space is spent. -/
 noncomputable def blockBound (bf : M → List X) : ℕ :=
   Finset.univ.sup fun m => (bf m).length
 
@@ -342,11 +252,10 @@ theorem length_le_blockBound (bf : M → List X) (m : M) :
     (bf m).length ≤ blockBound bf :=
   Finset.le_sup (f := fun m => (bf m).length) (Finset.mem_univ m)
 
-/-- **CR18 Definition 3.8's finite request bound for CBC** (printed p. 62),
-from the hypothesis that actually carries it: a round asks the round function
-one question per block of the current message, so any bound on the encoding
-length bounds the round.  Neither finiteness of `M` nor `blockBound` is used —
-this is the sharp statement of what the bound costs. -/
+/-- **CR18 Definition 3.8's finite request bound for CBC** (printed p. 62), from
+the hypothesis that actually carries it: a round asks the round function one
+question per block of the current message, so any bound on the encoding length
+bounds the round. -/
 theorem cbcRound_requestsBounded_of_length_le (bf : M → List X) {B : ℕ}
     (hB : ∀ m, (bf m).length ≤ B) :
     System.ConverterRequestsBounded (cbcRound bf) B := by
@@ -364,34 +273,21 @@ theorem cbcRound_requestsBounded_of_length_le (bf : M → List X) {B : ℕ}
   · rw [if_neg hlt] at hx
     exact absurd hx (by simp)
 
-/-- The request bound at the constant this file carries, `blockBound bf`
-(printed p. 62 for the clause).  A specialization of
-`cbcRound_requestsBounded_of_length_le`; what fails without *some* such
-constant is this sufficient condition for `Σ`-membership, not membership. -/
+/-- The request bound at the constant this file carries, `blockBound bf`. -/
 theorem cbcRound_requestsBounded (bf : M → List X) :
     System.ConverterRequestsBounded (cbcRound bf) (blockBound bf) :=
   cbcRound_requestsBounded_of_length_le bf (length_le_blockBound bf)
 
-/-- **The CBC converter, as the one converter notion an application names**:
-the element of `↥converterMonoidAt` that applies CBC to the whole face of the
-round function.  That is CR18 §6.2.3's own object (printed pp. 125–126):
-`CBC` is applied to the system `R_{n,n}` — it "makes calls to the system … at
-the inside (right interface)" and answers messages outside — not to one
-interface of a larger resource, and
-`attachAt Set.univ` is exactly CR18 Definition 3.9's application (printed p. 62)
-through the demotion bridge `attachAt_univ`.
-
-**The whole face is forced, not a default.**  `attachEngineFully` dispatches
-*outer* queries on the interface: a query outside it is handed to the resource
-verbatim (`System.attachEngineFullyRound_not_mem`).  CBC converts an
-`(X,X)`-system into an `(M,X)`-system, so the queries it must own are addressed
-at `M` while the requests it emits are addressed at `X`.  An interface holding
-only the round function's address would therefore route every *message* past
-the converter to the round function, which refuses it, and the composite would
-answer nothing at all — the realization equation below would be false.  Where
-the engine *reaches* is the separate clause `System.RequestsWithin`, and it is
-stated at the round function's address in `cbcConverter_requestsWithin`. -/
+/-- **CR18 §6.2.3's converter** (printed pp. 125–126), as an element of
+`↥converterMonoidAt`: `CBC` is applied to the system `R_{n,n}` as a whole, which
+is CR18 Definition 3.9's application (printed p. 62) through `attachAt_univ`. -/
 noncomputable def cbcConverter (bf : M → List X) : ↥converterMonoidAt.{u} :=
+  -- The whole face is forced, not a default: `attachEngineFully` hands a query
+  -- outside the interface to the resource verbatim, and CBC owns queries
+  -- addressed at `M` while its requests are addressed at `X`.  An interface
+  -- holding only the round function's address would route every message past
+  -- the converter, which refuses it, and the realization equation would fail.
+  -- Where the engine *reaches* is the separate `cbcConverter_requestsWithin`.
   ⟨attachAt (Set.univ : Set Uni.{u}) (System.converterEngine X X (cbcRound bf)),
     converterEngine_mem_converterMonoidAt _ _ (cbcRound_innerTotal bf)
       (cbcRound_requestsBounded bf)⟩
@@ -404,20 +300,10 @@ theorem cbcConverter_requestsWithin (bf : M → List X) :
 
 /-! ## The realization equation: the converter computes the CBC chain
 
-The receipts above place `cbcConverter` in `Σ`; they say nothing about what it
-*answers*.  This section closes that gap — the first of the six obligations
-listed at `cbc_mac_constructs`: applied to the on-ramped round function, the
-CBC converter **is** the on-ramped system that answers `cbcState f (bf m)` to
-the message `m`.  Nothing downstream — the collision game, the conditional
-equivalence, the counting — connects to CBC at all until this holds, because
-without it nothing ties the `Σ` element to the function `cbcState f ∘ bf`.
-
-The work is done by the library's one round lemma,
-`System.attachEngineFully_converterEngine_univ`: an application supplies a
-`System.ConverterRunsTo` for its own history function and gets the equation.
-What is CBC's own is `cbcRound_runsTo` — the chain induction, one step per
-block — and `answer_ofTyped_functionEvaluator`, which says the round function
-answers `f x` to `x` whatever it has been asked before.
+The receipts above place `cbcConverter` in `Σ` and say nothing about what it
+*answers*; obligation 1 of `cbc_mac_constructs` closes that gap, and nothing
+downstream connects to CBC until it does.  The work is
+`System.attachEngineFully_converterEngine_univ`, fed CBC's own chain induction.
 -/
 
 section Realization
@@ -425,10 +311,8 @@ section Realization
 open System
 
 /-- **An on-ramped function answers its own value**, whatever the history: the
-completion of `ofTyped (functionEvaluator f)` returns `f a` to `a`, never `⊥`.
-The evaluator is defined on every nonempty history, so CR18 Definition 3.3's
-deletion pass (printed p. 58) removes nothing and the answer does not depend on
-the history at all. -/
+evaluator is defined on every nonempty history, so CR18 Definition 3.3's
+deletion pass (printed p. 58) removes nothing. -/
 theorem answer_ofTyped_functionEvaluator {A B : Type u} (f : A → B)
     (xs : List Uni.{u}) (a : A) :
     answer (System.ofTyped (functionEvaluator f)) xs (encode A a)
@@ -490,10 +374,7 @@ theorem cbcState_take_succ (f : X → X) (bs : List X) {k : ℕ} (hk : k < bs.le
 
 /-- **The chain induction**: against a resource that answers `f x` to `x`, one
 CBC round digests the current message's blocks one at a time and ends at
-`cbcState f bs`.  The induction runs on the blocks still to be digested, and
-carries the chain state in the round's own answer list — which is what makes
-the statement independent of the resource history the round starts from, and so
-usable at every round of the outer interaction. -/
+`cbcState f bs`. -/
 theorem cbcRound_runsTo (f : X → X) (bf : M → List X) (R : DDS Uni.{u} Uni.{u})
     (hR : ∀ (xs : List Uni.{u}) (x : X),
       answer R xs (encode X x) = some (encode X (f x)))
@@ -502,6 +383,9 @@ theorem cbcRound_runsTo (f : X → X) (bf : M → List X) (R : DDS Uni.{u} Uni.{
       ∀ xs : List Uni.{u},
         ConverterRunsTo (cbcRound bf) R us (cbcRoundAnswers f bs k) xs
           (cbcState f bs) := by
+  -- the induction runs on the blocks still to digest and carries the chain
+  -- state in the round's own answer list, which is what makes the statement
+  -- independent of the resource history the round starts from
   intro d
   induction d with
   | zero =>
@@ -533,19 +417,9 @@ theorem cbcRound_runsTo (f : X → X) (bf : M → List X) (R : DDS Uni.{u} Uni.{
         rw [← cbcState_take_succ f bs hklt, ← cbcRoundAnswers_succ]
         exact ih (k + 1) (by omega) _
 
-/-- **The realization equation, at a deterministic round function** — the first
-of the six obligations at `cbc_mac_constructs`, discharged.
-
-The CBC engine applied to the on-ramped round function `f` is the on-ramped
-system `m ↦ cbcState f (bf m)`: CR18's own description of the converter
-(printed p. 125) — "`CBC` applies a block former to the message and then
-digests the obtained block sequence block by block, each time invoking the
-system at its right interface" — as an equation between systems, and not a
-description.
-
-Both faces of the equation are computed, not assumed: the composite answers a
-message exactly where the on-ramped chain does, and refuses everything else,
-because the engine must decode the outer history at `M` before it can move. -/
+/-- **The realization equation at a deterministic round function** — obligation
+1 of `cbc_mac_constructs`: the CBC engine applied to the on-ramped `f` is the
+on-ramped `m ↦ cbcState f (bf m)`.  Both faces are computed, not assumed. -/
 theorem attachEngineFully_cbcRound_univ (f : X → X) (bf : M → List X) :
     attachEngineFully (Set.univ : Set Uni.{u}) (converterEngine X X (cbcRound bf))
         (System.ofTyped (functionEvaluator f))
@@ -560,19 +434,15 @@ theorem attachEngineFully_cbcRound_univ (f : X → X) (bf : M → List X) :
   simpa using hrun
 
 /-- The law of the CBC function: the block former digested by a uniform round
-function.  The image of CR18's `R_{n,n}` (printed p. 125) under the CBC
-construction, as a probabilistic discrete system on the bounded message space
-of the F-1 ruling. -/
+function, i.e. the image of `R_{n,n}` (printed p. 125) under CBC. -/
 noncomputable def cbcFunctionLaw (bf : M → List X) : PDS M X :=
   Distribution.fTransform
     (fun f : X → X => functionEvaluator fun m : M => cbcState f (bf m))
     (Distribution.uniform (X → X))
 
-/-- **The realization equation at Φ** — the form every endpoint of this file
-speaks in: the `Σ` element `cbcConverter bf` applied to the on-ramped uniform
-round function is the on-ramped CBC function law.  The pushforward of
-`attachEngineFully_cbcRound_univ` along the atoms of `R_{n,n}` (printed
-p. 125), which are function evaluators by construction. -/
+/-- **The realization equation at Φ**, the form every endpoint of this file
+speaks in: the pushforward of `attachEngineFully_cbcRound_univ` along the atoms
+of `R_{n,n}`, which are function evaluators by construction. -/
 theorem cbcConverter_smul_Rnn (bf : M → List X) :
     cbcConverter bf • (RandomSystems.ofTyped (Rnn X) : Phi.{u})
       = RandomSystems.ofTyped (cbcFunctionLaw bf) := by
@@ -618,25 +488,20 @@ noncomputable def queryLimit (r : ℕ) : ↥converterMonoidAt.{u} :=
 
 /-! ## CR18 Theorem 6.1's proof: the two steps that are definitional in the source
 
-The monotone condition of the proof (printed p. 126): "`A_i = 1` if and only
-if, up to the evaluation of the `i`-th message (the `i`-th input to `CBC`), a
-non-trivial collision has occurred at the input to `R_{n,n}`.  By non-trivial we
-mean that collisions do not count if they hold because two messages have the
-same prefix."
+The monotone condition (printed p. 126): "`A_i = 1` if and only if, up to the
+evaluation of the `i`-th message (the `i`-th input to `CBC`), a non-trivial
+collision has occurred at the input to `R_{n,n}`.  By non-trivial we mean that
+collisions do not count if they hold because two messages have the same
+prefix."
 
-Everything below is stated on the round function `f` rather than on a system:
-these are the counting facts, and the two sentences CR18 states without proof
-are `notBad_implies_distinct_lastInputs` (printed p. 126, "Since the encoding is
-prefix-free, `A_i = 0` implies in particular that all the last-block inputs to
-`R_{n,n}` … are distinct") and `notBad_implies_uniform_outputs` (printed
-pp. 126–127, "Conditioned on this event … all outputs are uniformly random,
-except of course that for identical inputs the outputs are also identical").
+The two sentences CR18 states without proof are
+`notBad_implies_distinct_lastInputs` and `notBad_implies_uniform_outputs`;
+everything below is stated on the round function `f`, not on a system.
 -/
 
-/-- Maurer's monotone condition `A_i`: some two nontrivially distinct CBC
-call sites encountered up to the current message have collided at the input
-to `R_{n,n}`.  Equal block prefixes designate the same computation and are
-therefore excluded. -/
+/-- Maurer's monotone condition `A_i`: two nontrivially distinct call sites
+reached up to the current message collide at the input to `R_{n,n}`.  Equal
+block prefixes designate the same computation and are excluded. -/
 def cbcBad (f : X -> X) (bf : M -> List X) (l : List M) : Prop :=
   ∃ m ∈ l, ∃ m' ∈ l,
     ∃ j < (bf m).length, ∃ j' < (bf m').length,
@@ -703,10 +568,9 @@ theorem not_cbcBad_inputs_ne (f : X -> X) (bf : M -> List X)
 
 /-! ### Internal proof of the fresh-URF step
 
-CR18 treats the implication "fresh terminal inputs give fresh uniform
-outputs" as immediate.  Until that causal-URF fact is available as a general
-library theorem, the declarations below are private implementation machinery
-for precisely that implication.  They are not stages of the CBC proof.
+CR18 treats "fresh terminal inputs give fresh uniform outputs" as immediate.
+Until that is a general library theorem, the declarations below are machinery
+for exactly that implication, not stages of the CBC proof.
 -/
 
 /-- Functions agreeing at every CBC call-site input produce the same final
@@ -1047,29 +911,19 @@ augmented object is the joint law of the CBC chain and its own collision
 condition; the relation is Maurer13b Definition 13 (printed p. 3153), landed as
 `PDG.CondEquiv`.
 
-The two steps CR18 cites rather than repeats are already proved above (the
-source is complete: it defines the uniform random function and its behaviour
-in §3, so "distinct inputs give uniform outputs" is definitional there, and
-printed p. 126-127 argues (6.2) in prose and says "Hence we have proved
-(6.2)".  What cost work HERE is that our library lacked that URF fact as a
-lemma — see the UPSTREAM-CANDIDATE block in Probability/Counting.lean and
-System/RandomObjects.lean, and the f-dependent-site form still owed) —
-`notBad_implies_distinct_lastInputs` (its first proof sentence) and
-`notBad_implies_uniform_outputs` (its second, in mass form).  What is left is
-the reading: at a fixed message list the interaction of a function evaluator is
-its list of query/answer pairs, so both sides of Definition 13's product form
-are masses of *evaluation* events, and the mass identity is the product form.
+CR18 argues (6.2) in prose on pp. 126–127 and concludes "Hence we have proved
+(6.2)"; both of its sentences are proved above.  What cost work here is that
+our library lacked the URF fact as a lemma — see the UPSTREAM-CANDIDATE block
+in `Probability/Counting.lean`.
 -/
 
 section CondEquiv
 
 open System
 
-/-- **The interaction determines the sampled function on the queried
-messages, and nothing else.**  Two evaluators produce the same fixed-query-list
-interaction exactly when they agree on the messages of the list, so the fiber
-of the interaction is an evaluation event of the shape
-`notBad_implies_uniform_outputs` speaks about. -/
+/-- **The interaction determines the sampled function on the queried messages
+and nothing else**, so the fiber of a fixed-query-list interaction is an
+evaluation event of the shape `notBad_implies_uniform_outputs` speaks about. -/
 theorem map_pair_eq_iff_forall_toFinset {A B : Type u} [DecidableEq A]
     (h h₀ : A → B) (l : List A) :
     l.map (fun m => (m, some (h m))) = l.map (fun m => (m, some (h₀ m)))
@@ -1083,16 +937,11 @@ theorem map_pair_eq_iff_forall_toFinset {A B : Type u} [DecidableEq A]
     have := hm ⟨m, List.mem_toFinset.mpr hml⟩
     simpa using this
 
-/-- **CR18's augmented real system `ĈBC R_{n,n}`** (printed p. 126): "One can
-define an MBO `A_i` on the system `CBC R_{n,n}` … resulting in the system
-`ĈBC R_{n,n}`."  The joint law of Lanzenberger Definition 2.20's pair — the CBC
-chain built from the sampled round function, together with *that* round
-function's collision condition — so the system and the condition are correlated
-exactly as CR18's `A_i` prescribes.
-
-It is a pushforward of the uniform round function and not a `PDS.adjoin`,
-because the condition reads the round function, which the CBC chain does not
-determine. -/
+/-- **CR18's augmented real system `ĈBC R_{n,n}`** (printed p. 126): the joint
+law of the CBC chain built from the sampled round function and *that*
+function's collision condition, so system and condition are correlated exactly
+as `A_i` prescribes.  It is a pushforward and not a `PDS.adjoin` because the
+condition reads the round function, which the chain does not determine. -/
 noncomputable def cbcGameLaw (bf : M → List X) : PDG M X :=
   Distribution.fTransform
     (fun f : X → X =>
@@ -1106,19 +955,17 @@ theorem nonNeg_cbcGameLaw (bf : M → List X) : (cbcGameLaw bf).NonNeg :=
 @[simp] theorem weight_cbcGameLaw (bf : M → List X) : (cbcGameLaw bf).weight = 1 := by
   rw [cbcGameLaw, Distribution.weight_fTransform, Distribution.weight_uniform]
 
-/-- **The forgetting law**: dropping CR18's MBO from `ĈBC R_{n,n}` returns
-`CBC R_{n,n}`, the law the realization equation identifies
-(`cbcConverter_smul_Rnn`).  This is what ties the augmented object of equation
-(6.2) to the converter of Theorem 6.1, **printed p. 126**. -/
+/-- **The forgetting law**: dropping the MBO from `ĈBC R_{n,n}` returns
+`CBC R_{n,n}`, which is what ties equation (6.2) to Theorem 6.1's converter
+(**printed p. 126**). -/
 @[simp] theorem forget_cbcGameLaw (bf : M → List X) :
     PDG.forget (cbcGameLaw bf) = cbcFunctionLaw bf := by
   rw [cbcGameLaw, cbcFunctionLaw, PDG.forget, Distribution.fTransform_fTransform]
   rfl
 
-/-- Winning CR18's collision game (**printed p. 126**) at a fixed message list
-is exactly the collision event of the sampled round function on that list: a
-function evaluator refuses nothing, so the answered history is the whole
-list. -/
+/-- Winning the collision game (**printed p. 126**) at a fixed message list is
+the collision event of the sampled round function on that list: a function
+evaluator refuses nothing, so the answered history is the whole list. -/
 theorem won_cbcGameLaw_atom (f : X → X) (bf : M → List X) (l : List M) :
     System.Won
         ((System.functionEvaluator fun m : M => cbcState f (bf m), cbcCondition f bf) :
@@ -1158,11 +1005,10 @@ theorem trLawFullyDefined_Vn_apply (l : List M) (t : List (M × Option X)) :
   refine Distribution.mass_congr _ fun g => ?_
   rw [Function.comp_apply, transcript_functionEvaluator_playQueries_length]
 
-/-- **`V_n`'s transcript law is the uniform answer law** — the direct instance
-of `PDS.trLawFullyDefined_urf_playQueries_apply` at the bounded message space:
-at a repetition-free message list every realizable interaction has mass
-`(1/|𝒳|)^{|l|}`, which is CR18 Definition 6.1's "for each new input outputs a
-fresh uniformly random value" (printed p. 125) as a number. -/
+/-- **`V_n`'s transcript law is the uniform answer law**: at a repetition-free
+message list every realizable interaction has mass `(1/|𝒳|)^{|l|}`, which is
+CR18 Definition 6.1's "for each new input outputs a fresh uniformly random
+value" (printed p. 125) as a number. -/
 theorem trLawFullyDefined_Vn_uniform (l : List M) (hl : l.Nodup) (g : M → X) :
     PDS.trLawFullyDefined (System.DDE.Total.playQueries l) l.length (Vn M X)
         (l.map (fun m => (m, some (g m)))) = (1 / (Fintype.card X : ℝ)) ^ l.length :=
@@ -1171,21 +1017,12 @@ theorem trLawFullyDefined_Vn_uniform (l : List M) (hl : l.Nodup) (g : M → X) :
 @[simp] theorem weight_Vn : (Vn M X).weight = 1 := by
   rw [Vn, PDS.urf, Distribution.weight_fTransform, Distribution.weight_uniform]
 
-/-- **CR18 equation (6.2), printed p. 126** — the second of the six obligations
-at `cbc_mac_constructs`, discharged: `(ĈBC R_{n,n}) ⊨ V_n`.
+/-- **CR18 equation (6.2), printed p. 126** — obligation 2 of
+`cbc_mac_constructs`: `(ĈBC R_{n,n}) ⊨ V_n`.
 
-CR18's proof is two sentences, and both are proved above: prefix-freeness plus
-`A_i = 0` makes the terminal round-function inputs distinct
-(`notBad_implies_distinct_lastInputs`), and conditioned on `A_i = 0` the
-outputs are uniform (`notBad_implies_uniform_outputs`).  What this declaration
-adds is the reading of Maurer13b Definition 13's product form (printed p. 3153)
-at a fixed message list: a function evaluator refuses nothing, so both sides of
-the product form are masses of *evaluation* events on `l.toFinset`, and the
-identity is exactly the mass identity already proved.
-
-The case split is on whether the transcript `t` is realizable at all: if it is
-not, both sides of the product form vanish, and if it is, its realizations are
-the functions agreeing with one witness on the queried messages. -/
+Both of CR18's proof sentences are proved above; what this adds is the reading
+of Maurer13b Definition 13's product form (printed p. 3153) at a fixed message
+list, where both sides are masses of *evaluation* events on `l.toFinset`. -/
 theorem cbc_condEquiv [Nontrivial M] (bf : M → List X) (hbf : PrefixFree bf) :
     PDG.CondEquiv (cbcGameLaw bf) (Vn M X) := by
   classical
@@ -1194,6 +1031,8 @@ theorem cbc_condEquiv [Nontrivial M] (bf : M → List X) (hbf : PrefixFree bf) :
   rw [Finsupp.smul_apply, Finsupp.smul_apply, smul_eq_mul, smul_eq_mul, weight_Vn,
     one_mul, notWonLaw_cbcGameLaw_apply, notWonMass_cbcGameLaw,
     trLawFullyDefined_Vn_apply]
+  -- split on realizability: an unrealizable `t` kills both sides of the product
+  -- form, a realizable one has the functions agreeing with a witness as fibers
   by_cases hreal : ∃ h₀ : M → X, l.map (fun m => (m, some (h₀ m))) = t
   · obtain ⟨h₀, rfl⟩ := hreal
     rw [Distribution.mass_congr _ (Q := fun f =>
@@ -1216,20 +1055,16 @@ end CondEquiv
 /-! ## CR18 equation (6.3), printed p. 127: the restriction by `θ_r`
 
 "Hence we have proved (6.2), which is of course still true when both systems
-are restricted by `θ_r`" (printed p. 127).  The general transport is
-`PDG.condEquiv_fTransform` (`Technique/ConditionalEquivalence.lean`); what it
-asks for at each outer query list is a **non-adaptive uniform schedule** — one
+are restricted by `θ_r`" (printed p. 127).  The general transport
+`PDG.condEquiv_fTransform` asks for a **non-adaptive uniform schedule**: one
 inner query list, the same for every system in either support, together with a
 post-processing of the inner interaction.
 
 For a domain filter that schedule is the *admitted subsequence* of the outer
-list: a refused query is deleted (CR18 Definition 3.3) and never enters the
-kept prefix, so it costs no inner query and a later query can still be
-admitted.  That the subsequence is a function of the outer list alone — and not
-of the system — is what the fully-answering slice buys, exactly as in the `[r]`
-instance `PDG.condEquiv_filterQueries` (printed p. 128); against a refusing
-system the kept prefix depends on the system's own refusals and there is no
-uniform witness.
+list — a refused query is deleted (CR18 Definition 3.3) and costs no inner
+query.  That it is a function of the outer list alone is what the
+fully-answering slice buys; against a refusing system the kept prefix depends
+on the system's own refusals and there is no uniform witness.
 -/
 
 section Theta
@@ -1238,11 +1073,9 @@ open System
 
 variable {A : Type u} {B : Type u}
 
-/-- **The schedule a domain filter admits from a fixed query list**: scan the
-list, extending the kept prefix by a query exactly when the predicate admits
-the extension, and dropping the query otherwise.  This is CR18 Definition 3.3's
-deletion pass run against CR18 §3.4.3's filter (printed p. 62), computed from
-the query list alone. -/
+/-- **The schedule a domain filter admits from a fixed query list**: CR18
+Definition 3.3's deletion pass run against CR18 §3.4.3's filter (printed
+p. 62), computed from the query list alone. -/
 def filterAdmit (P : List A → Prop) [DecidablePred P] (l : List A) : List A :=
   l.foldl (fun K x => if P (K ++ [x]) then K ++ [x] else K) []
 
@@ -1285,12 +1118,10 @@ theorem keptPrefix_filterDom_functionEvaluator (P : List A → Prop) [DecidableP
       · rw [if_pos (hdom.mpr hPx), if_pos hPx]
       · rw [if_neg (fun hc => hPx (hdom.mp hc)), if_neg hPx]
 
-/-- **The post-processing that re-inserts the refusals**: replay the outer
-query list against the predicate, taking the next entry of the inner
-interaction whenever the predicate admits and answering `⊥` on the filter's own
-behalf whenever it does not.  It reads the outer list and the predicate only —
-never the system — which is what makes the witness of
-`PDG.condEquiv_fTransform` uniform in the system. -/
+/-- **The post-processing that re-inserts the refusals**: replay the outer list
+against the predicate, taking the next inner entry where it admits and
+answering `⊥` where it does not.  It reads the list and the predicate only,
+never the system, which is what makes the witness uniform. -/
 def filterWeaveState (P : List A → Prop) [DecidablePred P]
     (T : List (A × Option B)) (l : List A) : List A × List (A × Option B) :=
   l.foldl (fun st x =>
@@ -1344,16 +1175,12 @@ theorem filterWeave_concat (P : List A → Prop) [DecidablePred P]
       rw [filterWeave_concat, List.length_append, ih]
       simp
 
-/-- **The filtered interaction at a fixed query list, computed.**  Against a
-function evaluator — the atoms of every object in this file — the domain filter
-of CR18 §3.4.3 (printed p. 62) answers the admitted queries exactly as the
-evaluator does and refuses the rest, so the interaction is the *replay* of the
-outer list over the interaction with the admitted schedule.
-
-This is the absorption witness `PDG.condEquiv_fTransform` asks for, with the
-inner query list `filterAdmit P l'` and the post-processing `filterWeave P · l'`;
-it is the `θ_r` counterpart of `PDG.Plumbing.transcript_filterQueries_playQueries`
-(the `[r]` instance, printed p. 128). -/
+/-- **The filtered interaction at a fixed query list, computed**: against a
+function evaluator the domain filter of CR18 §3.4.3 (printed p. 62) answers the
+admitted queries as the evaluator does and refuses the rest, so the interaction
+is the replay of the outer list over the interaction with the admitted
+schedule.  This is the absorption witness `PDG.condEquiv_fTransform` asks
+for. -/
 theorem transcript_filterDom_functionEvaluator_playQueries (P : List A → Prop)
     [DecidablePred P] (hP : PrefixClosed P) (h : A → B) (l' : List A) :
     ∀ n, n ≤ l'.length →
@@ -1425,9 +1252,8 @@ theorem transcript_filterDom_functionEvaluator_playQueries_length (P : List A �
     List.take_length]
 
 /-- The queries the filtered interaction actually answered: the admitted
-schedule, which is also what the interaction with that schedule answers.  This
-is the winning clause of `PDG.condEquiv_fTransform_of_answeredQueries` —
-`System.Won` reads `answeredQueries` and nothing else. -/
+schedule.  This is the winning clause — `System.Won` reads `answeredQueries`
+and nothing else. -/
 theorem answeredQueries_filterDom_functionEvaluator (P : List A → Prop)
     [DecidablePred P] (hP : PrefixClosed P) (h : A → B) (l' : List A) :
     answeredQueries (DDE.Total.transcript (filterDom P hP (functionEvaluator h))
@@ -1438,28 +1264,20 @@ theorem answeredQueries_filterDom_functionEvaluator (P : List A → Prop)
     answeredQueries_transcript_playQueries_keptPrefix,
     keptPrefix_filterDom_functionEvaluator, keptPrefix_functionEvaluator]
 
-/-- CR18's block count is prefix-closed: extending the message list can only
-add blocks (printed p. 126, "keeps track of the total number of such blocks
-resulting for all messages seen so far").  This is `prefixClosed_thetaPred`
-read at the message alphabet, where `θ_r` actually restricts. -/
+/-- CR18's block count is prefix-closed (printed p. 126, "keeps track of the
+total number of such blocks resulting for all messages seen so far"), read at
+the message alphabet where `θ_r` actually restricts. -/
 theorem prefixClosed_totalBlocks_le (bf : M → List X) (r : ℕ) :
     PrefixClosed (fun l : List M => totalBlocks bf l ≤ r) :=
   fun _ _ hpre hl => le_trans (totalBlocks_mono bf hpre) hl
 
-/-- **CR18 equation (6.3), printed p. 127** — the third of the six obligations
-at `cbc_mac_constructs`, discharged: `(θ_r ĈBC R_{n,n}) ⊨ θ_r V_n`, "of course
-still true when both systems are restricted by `θ_r`".
+/-- **CR18 equation (6.3), printed p. 127** — obligation 3 of
+`cbc_mac_constructs`: `(θ_r ĈBC R_{n,n}) ⊨ θ_r V_n`, "of course still true when
+both systems are restricted by `θ_r`".
 
-`θ_r` is CR18's block-count restriction (printed p. 126), here the domain
-filter at the block-count predicate on the *message* alphabet — the interface
-`θ_r` restricts.  The proof is the general transport
-`PDG.condEquiv_fTransform_of_answeredQueries` at the schedule this file
-supplies: the inner query list is `filterAdmit` — the admitted subsequence of
-the outer list, a function of the list and the predicate alone — and the
-post-processing is `filterWeave`, which re-inserts the filter's own refusals.
-The uniformity the general lemma demands holds because every atom of either
-side is a function evaluator, which refuses nothing, so the admitted
-subsequence does not depend on the system. -/
+The general transport at this file's schedule: inner query list `filterAdmit`,
+post-processing `filterWeave`.  The uniformity it demands holds because every
+atom of either side is a function evaluator and so refuses nothing. -/
 theorem cbc_condEquiv_theta [Nontrivial M] (bf : M → List X) (r : ℕ)
     (hbf : PrefixFree bf) :
     PDG.CondEquiv
@@ -1512,28 +1330,16 @@ collision in a list [o]f `r` uniform `n`-bit strings, i.e., the upper bound of
 Lemma 4.18 can be applied and we have `Γ(bθ_r ĈBC R_{n,n}) ≤ ½ r² 2^{-n}`"
 (**printed p. 127**, read on the rendered page).
 
-That paragraph is a *lazy-sampling* argument and it is proved here as one:
-`Probability.Counting.uniform_mass_walk_repeat_le` at CBC's step function.  The
-walk's sites are the block prefixes below — each one is a computation the round
-function is asked about, its parent is the same computation one round earlier,
-and its step offsets the parent's chaining value by one block.  "As one can
-easily see" is `hg` and `hsib` of that theorem: `x ↦ x + b` is injective, so a
-uniform chaining value gives a uniform next input; and two distinct sites with
-the same parent carry different blocks, so they cannot collide at all.  The
-second is not decoration — it is what makes the *first* block of a message,
-whose input `0 + b` carries no randomness, harmless.
-
-Sites are *prefixes*, so the shared prefix of two messages is one site, not
-two.  That is CR18's `A_i`, which excludes equal block prefixes as trivial
-(`cbcBad`), and it is also what makes the site count `≤ θ_r`'s block budget
-`r` rather than a sum with repetitions.
+That paragraph is a *lazy-sampling* argument and is proved here as one:
+`Probability.Counting.uniform_mass_walk_repeat_le` at CBC's step function.
+"As one can easily see" is that theorem's `hg` and `hsib`.  Sites are block
+*prefixes*, so the shared prefix of two messages is one site — which is CR18's
+`A_i` excluding equal prefixes as trivial, and what keeps the site count at
+`θ_r`'s block budget `r` rather than a sum with repetitions.
 -/
 
 /-- The block prefixes designating the CBC call sites reached by a query
-history: `p` is a site when some queried message begins with exactly the block
-sequence `p`.  Distinct messages sharing a prefix designate the *same* site,
-which is CR18's reading of `A_i` (printed p. 126) and what keeps the count at
-the block budget. -/
+history.  Distinct messages sharing a prefix designate the *same* site. -/
 def cbcSites (bf : M → List X) (l : List M) : Finset (List X) :=
   (l.flatMap fun m =>
     (List.range (bf m).length).map fun j => (bf m).take (j + 1)).toFinset
@@ -1617,10 +1423,9 @@ theorem cbcSiteInput_eq (f : X → X) (p : List X) :
     cbcSiteInput f p = cbcState f p.dropLast + cbcSiteBlock p := by
   rw [cbcSiteInput, cbcInput, cbcSiteBlock, List.dropLast_eq_take]
 
-/-- **Two distinct sites with the same parent carry different blocks.**  This
-is the walk's sibling hypothesis at CBC, and it is what rules out a collision
-between two *first* blocks — inputs that are deterministic, so no counting
-argument could bound them. -/
+/-- **Two distinct sites with the same parent carry different blocks** — the
+walk's sibling hypothesis at CBC, and what rules out a collision between two
+*first* blocks, whose inputs are deterministic. -/
 theorem cbcSiteBlock_ne {p q : List X} (hp : p ≠ []) (hq : q ≠ [])
     (hne : p ≠ q) (hd : p.dropLast = q.dropLast) :
     cbcSiteBlock p ≠ cbcSiteBlock q := by
@@ -1634,23 +1439,17 @@ theorem cbcSiteBlock_ne {p q : List X} (hp : p ≠ []) (hq : q ≠ [])
   intro heq
   exact hne (by rw [← hlast p hp, ← hlast q hq, hd, heq])
 
-/-- The parent call site of a block prefix: the same computation one round
-earlier, when that is itself a call site of the history.  A site consuming a
-single block has no parent — its input is `0 + b`, read off the public initial
-chaining value. -/
+/-- The parent call site: the same computation one round earlier, when that is
+itself a call site of the history.  A single-block site has no parent — its
+input is `0 + b`, read off the public initial chaining value. -/
 def cbcParent (bf : M → List X) (l : List M) (p : ↥(cbcSites bf l)) :
     Option ↥(cbcSites bf l) :=
   if h : p.val.dropLast ∈ cbcSites bf l then some ⟨p.val.dropLast, h⟩ else none
 
 /-- **CR18's collision count** (printed p. 127): a uniform round function makes
 two nontrivially distinct CBC call sites collide with probability at most
-`r(r−1)/2|𝒳|`, on any query history `θ_r` admits — "the same as the probability
-of having a collision in a list [o]f `r` uniform `n`-bit strings".
-
-This is `Probability.Counting.uniform_mass_walk_repeat_le` at CBC's walk: sites
-are the block prefixes, the parent is `dropLast`, the step is `x ↦ x + b`, and
-the public initial chaining value is `0`.  The bound is CR18's own
-`½ r² 2^{-n}` with the falling factor kept. -/
+`r(r−1)/2|𝒳|` on any query history `θ_r` admits — "the same as the probability
+of having a collision in a list [o]f `r` uniform `n`-bit strings". -/
 theorem mass_cbcBad_le (bf : M → List X) (r : ℕ) (l : List M)
     (hl : totalBlocks bf l ≤ r) :
     (Distribution.uniform (X → X)).mass (fun f => cbcBad f bf l)
@@ -1709,6 +1508,8 @@ theorem mass_cbcBad_le (bf : M → List X) (r : ℕ) (l : List M)
       have hqn : q.val ≠ [] := hne q
       rw [← hq]
       exact cbcState_eq_f_lastInput f q.val hqn
+  -- the walk at CBC: sites are block prefixes, parent is `dropLast`, step is
+  -- `x ↦ x + b`, and the public initial chaining value is `0`
   have key := Probability.Counting.uniform_mass_walk_repeat_le
       (cbcParent bf l) (fun p => fun x : X => x + cbcSiteBlock p.val) (0 : X)
       (fun p => p.val.length) hrank hginj hsib
@@ -1756,13 +1557,7 @@ allowed by filter `θ_r`)" (printed p. 127).
 
 That sentence is the reduction below, and it is what the *blind* right-hand
 side buys: an adaptive winner would choose its messages after seeing MACs, and
-the winning mass would not be a mass over round functions at a fixed list.  A
-blind environment asks the same queries of every system
-(`System.transcriptInputs_congr_of_nonAdaptive`), so its answered history is
-one list, the same for every round function; the filter turns it into the
-admitted schedule, which the block-count predicate admits by construction; and
-winning is then exactly the collision event of the sampled round function on
-that list.
+the winning mass would not be a mass over round functions at a fixed list.
 -/
 
 section Blind
@@ -1770,15 +1565,11 @@ section Blind
 open System
 
 /-- **CR18's reduction of the blind winning probability to a collision mass**
-(printed p. 127): whatever bounds the probability that a uniform round function
-collides on a message list `θ_r` admits, bounds the blind winning probability
-of the restricted collision game.
-
-This is `PDG.blindSupWinProb` — the supremum winning probability with its index
-set cut down to the `System.DDE.Total.NonAdaptive` environments — and the cut is
-what makes the statement true: the hypothesis quantifies over *fixed* message
-lists, which is CR18's "it means to choose a fixed list of input messages",
-**printed p. 127**. -/
+(printed p. 127): whatever bounds the collision probability of a uniform round
+function on a message list `θ_r` admits, bounds the blind winning probability
+of the restricted collision game.  The cut of the index set to
+`System.DDE.Total.NonAdaptive` environments is what makes it true — the
+hypothesis quantifies over *fixed* message lists. -/
 theorem blindSupWinProb_cbcGameLaw_theta_le [Nontrivial M] (bf : M → List X) (r : ℕ)
     {c : ℝ}
     (hc : ∀ l : List M, totalBlocks bf l ≤ r →
@@ -1820,14 +1611,9 @@ theorem blindSupWinProb_cbcGameLaw_theta_le [Nontrivial M] (bf : M → List X) (
   exact hc _ (filterAdmit_sat P (by simp [hP, totalBlocks]) L)
 
 /-- **CR18 Lemma 4.18's step, printed p. 127** — obligation 6 of
-`cbc_mac_constructs`, discharged: `Γ(b θ_r ĈBC R_{n,n}) ≤ ½ r² 2^{-n}`.
-
-`blindSupWinProb_cbcGameLaw_theta_le`'s hypothesis is CR18's own sentence
-"the probability of a collision in such a sequence is the same as the
-probability of having a collision in a list [o]f `r` uniform `n`-bit strings"
-(printed p. 127), and `mass_cbcBad_le` is that sentence proved.  The bound here
-keeps the falling factor, `r(r−1)/2|𝒳|`; `blindSupWinProb_cbcGameLaw_theta_le_sq`
-is the printed `½ r² 2^{-n}`. -/
+`cbc_mac_constructs`: `Γ(b θ_r ĈBC R_{n,n}) ≤ ½ r² 2^{-n}`, here with the
+falling factor kept.  `blindSupWinProb_cbcGameLaw_theta_le_sq` is the printed
+form. -/
 theorem blindSupWinProb_cbcGameLaw_theta_le_birthday [Nontrivial M]
     (bf : M → List X) (r : ℕ) :
     PDG.blindSupWinProb
@@ -1865,10 +1651,9 @@ end Blind
 
 The class (`RandomSystems/System/ConverterClass.lean`) proves once, for every
 converter, that an inner query limit `[r]` is invisible under an outer
-restriction that admits only histories on which the converter issues at most `r`
-resource queries.  CBC contributes exactly one fact of its own — a per-round
-budget that spends the current message's blocks — and `θ_r`'s domain condition
-*is* the admission hypothesis, so equation (6.1) is an unfolding.
+restriction admitting only histories on which the converter issues at most `r`
+resource queries.  CBC contributes one fact of its own — a per-round budget —
+and `θ_r`'s domain condition *is* the admission hypothesis.
 -/
 
 /-- **CBC's converter is a converter** (CR18 Definition 3.8, printed p. 62): one
@@ -1884,13 +1669,9 @@ theorem cbcConverter_isConverterAt (bf : M → List X) :
 filter `[r]` is irrelevant because the restriction implied by `θ_r` guarantees
 that at most `r` queries are made to `R_{n,n}`".
 
-The hypotheses are CBC's own counting fact and nothing else: a per-round budget
-`β` for the engine, and `hpay` — that opening a round for one more message buys
-that message's blocks.  The class supplies the rest, and `thetaPred`'s condition
-is *literally* the admission the class asks for.
-
-Both hypotheses are discharged below, at `cbcRoundBudget`; `cbc_coherence` is
-this statement with nothing left to assume. -/
+The hypotheses are CBC's own counting facts and nothing else: a per-round
+budget for the engine, and that opening a round buys that message's blocks.
+Both are discharged at `cbc_coherence`. -/
 theorem cbc_filter_redundant (bf : M → List X) (r : ℕ)
     {β : List (Uni.{u} ⊕ Option Uni.{u}) → ℕ}
     (hβ : System.AnswersWithinBudget (System.converterEngine X X (cbcRound bf)) β)
@@ -1912,30 +1693,21 @@ theorem cbc_filter_redundant (bf : M → List X) (r : ℕ)
         (System.reachesWithin_attachEngineFully_of_cost hβ hpay l)) hl)
 
 /-- **CBC's per-round budget**: the blocks of the current message not yet asked
-about.  CR18 printed p. 125 — "for each (new) message, `CBC` applies a block
-former to the message and then digests the obtained block sequence block by
-block, each time invoking the system at its right interface" — so a round on
-`m` has `(bf m).length` requests to make and has made `roundAnswers`-many of
-them.
+about, the current message being the last outer query of the engine history
+decoded at `M`.  A last query that does not decode buys nothing — the history
+then leaves `converterEngine` undefined, so no request is issued and the round
+never opens.
 
-The current message is the last outer query of the engine history, decoded at
-`M`, and a last query that does not decode buys nothing — the honest reading,
-since a history that does not decode leaves `converterEngine` undefined, so no
-request is issued and the round never opens.
-
-Two things are deliberately *not* here: no uniform constant, so nothing is
-over-estimated on a short message, and no dependence on the resource's answers,
-so the budget is a function of the history alone. -/
+Deliberately absent: any uniform constant, so nothing is over-estimated on a
+short message, and any dependence on the resource's answers. -/
 noncomputable def cbcRoundBudget (bf : M → List X)
     (l : List (Uni.{u} ⊕ Option Uni.{u})) : ℕ :=
   (((System.outerQueries l).getLast?.bind (System.decodeOption (X := M))).elim 0
       fun m => (bf m).length) - (System.roundAnswers l).length
 
 /-- **The budget is a budget** — CR18 Definition 3.8's finite-bound clause in
-the well-founded form the round induction consumes (printed p. 62): every
-request the engine issues strictly spends it.  The content is `cbcRound`'s own
-guard, `ys.length < (bf m).length`: a request is issued only while blocks
-remain, and the answer that follows consumes one. -/
+the well-founded form the round induction consumes (printed p. 62).  The
+content is `cbcRound`'s own guard `ys.length < (bf m).length`. -/
 theorem cbcRound_answersWithinBudget (bf : M → List X) :
     System.AnswersWithinBudget (System.converterEngine X X (cbcRound bf))
       (cbcRoundBudget bf) := by
@@ -1971,10 +1743,8 @@ theorem cbcRound_answersWithinBudget (bf : M → List X) :
     List.length_singleton, Option.elim]
   omega
 
-/-- One more query adds its own message's blocks to the running total — or,
-if it is not a message at all, nothing.  CR18 printed p. 126: `θ_r` "keeps
-track of the total number of such blocks resulting for all messages seen so
-far". -/
+/-- One more query adds its own message's blocks to the running total — or, if
+it is not a message at all, nothing. -/
 theorem totalBlocks_filterMap_concat (bf : M → List X) (done : List Uni.{u})
     (q : Uni.{u}) :
     totalBlocks bf ((done ++ [q]).filterMap (System.decodeOption (X := M)))
@@ -1984,12 +1754,8 @@ theorem totalBlocks_filterMap_concat (bf : M → List X) (done : List Uni.{u})
   rcases hq : System.decodeOption (X := M) q with _ | m <;> simp [hq, totalBlocks]
 
 /-- **Opening a round for one more message costs exactly that message's
-blocks** — `cbc_filter_redundant`'s payment condition, with **equality**.  A
-round is opened by an outer query, so the round's budget is read at a history
-whose last entry is that query and whose answer list is empty; that is
-`(bf m).length`, and `totalBlocks` grows by the same amount.  Nothing is
-rounded up, which is why a block-counting `θ_r` — and not a length bound —
-is what pays for it. -/
+blocks**, with **equality**: nothing is rounded up, which is why a
+block-counting `θ_r` and not a length bound is what pays for it. -/
 theorem cbcRoundBudget_add_totalBlocks (bf : M → List X) (done : List Uni.{u})
     (q : Uni.{u}) (c : List (Converter.DDC.CIn Uni.{u} Uni.{u})) :
     cbcRoundBudget bf
@@ -2002,21 +1768,15 @@ theorem cbcRoundBudget_add_totalBlocks (bf : M → List X) (done : List Uni.{u})
     List.getLast?_concat, List.length_nil, Nat.sub_zero]
   exact Nat.add_comm _ _
 
-/-- **CR18 equation (6.1), with nothing assumed** (printed p. 126):
-`θ_r ĈBC = θ_r ĈBC[r]`, "i.e., the filter `[r]` is irrelevant because the
-restriction implied by `θ_r` guarantees that at most `r` queries are made to
-`R_{n,n}`".
+/-- **CR18 equation (6.1), with nothing assumed** (printed p. 126) — obligation
+4 of `cbc_mac_constructs`: `cbc_filter_redundant` at CBC's own budget, both
+hypotheses discharged by `cbcRound_answersWithinBudget` and
+`cbcRoundBudget_add_totalBlocks`.
 
-This is `cbc_filter_redundant` at CBC's own budget, and both of its hypotheses
-are discharged by the two elementary facts above: `cbcRound_answersWithinBudget`
-(a round spends its message's blocks) and `cbcRoundBudget_add_totalBlocks` (the
-running block total pays for it, exactly).  Obligation 4 of `cbc_mac_constructs`.
-
-**Scope.**  The page writes the equation hatted, at the MBO-augmented converter,
-because the proof of Theorem 6.1 applies it to the augmented system (printed
-p. 127); what is proved here is the equation at the unaugmented converter, which
-is the form CR18 §5.5's coherence condition (printed p. 122) asks for and the
-form `cbc_mac_parameterized` consumes. -/
+The page writes the equation hatted, because Theorem 6.1's proof applies it to
+the MBO-augmented system (printed p. 127); proved here at the unaugmented
+converter, which is the form CR18 §5.5's coherence condition (printed p. 122)
+asks for and `cbc_mac_parameterized` consumes. -/
 theorem cbc_coherence (bf : M → List X) (r : ℕ) :
     theta (X := X) bf r * cbcConverter bf * queryLimit.{u} r
       = theta (X := X) bf r * cbcConverter bf :=
@@ -2026,8 +1786,7 @@ theorem cbc_coherence (bf : M → List X) (r : ℕ) :
 /-! ## Theorem 6.1's objects on Φ (printed p. 126)
 
 The error term, the two endpoints, and the constructing converter, named before
-the proof chain that relates them.  Both endpoints are on-ramped typed
-resources; the converter is the composite `Σ`-element `θ_r · CBC`.
+the proof chain that relates them.
 -/
 
 /-- **CR18 Theorem 6.1's error term** (printed p. 126): `ε_r = ½ r² 2^{-n}`,
@@ -2051,8 +1810,6 @@ noncomputable def cbcRestricted (bf : M → List X) (r : ℕ) : ↥converterMono
 
 /-! ## CR18 Theorem 6.1's proof chain, printed p. 127
 
-The printed proof, read off the rendered page, is four steps:
-
 > "Hence we have proved (6.2), which is of course still true when both systems
 > are restricted by `θ_r`: `(θ_r ĈBC R_{n,n}) ⊨ θ_r V_n` (6.3).  From (6.1) we
 > have `θ_r ĈBC R_{n,n} ≡ θ_r ĈBC[r] R_{n,n}`, hence
@@ -2060,29 +1817,16 @@ The printed proof, read off the rendered page, is four steps:
 > obtain `⟨θ_r CBC [r]R_{n,n} | θ_r V_n⟩ ≤ Γ(b θ_r ĈBC R_{n,n})`. … and we have
 > `Γ(b θ_r ĈBC R_{n,n}) ≤ ½ r² 2^{-n}`."
 
-so: equation (6.1) (`cbc_coherence`), then the realization equation
-(`cbcConverter_smul_Rnn`), then equation (6.3) (`cbc_condEquiv_theta`) fed to
-Theorem 4.17's step (`PDG.advFullyDefined_forget_le_blindSupWinProb_of_condEquiv`),
-then Lemma 4.18's step (`blindSupWinProb_cbcGameLaw_theta_le_sq`).
-
-Two crossings are needed that the page does not write, because the page does
-not carry a universal alphabet.
-
-**The alphabet crossing.**  Equations (6.2)/(6.3) and the collision game live at
-the message alphabet, `PDG M X` and `PDS M X`; the headline lives on `Phi`, at
-the on-ramped objects.  The on-ramp `RandomSystems.ofTyped` is *not* a converter
-— it raises the universe, so it is not a `Function.End Phi` and cannot ride
-`↥converterMonoidAt` — so the crossing is made by hand, one lemma per operation:
-`filterDom_ofTyped` says a domain filter commutes with the on-ramp, and
-`theta_smul_ofTyped` is that lemma at `θ_r`, whose universal predicate reads back
-at `M` through `thetaPred_map_encode`.
-
-**The metric bridge.**  The headline's `edist` is the symmetrized `Adv⊥`
-(`edist_def`), the obligations bound `PDS.advFullyDefined`.  The symmetrization
-is invisible at equal weight (`edist_eq_advFullyDefined_of_weight_eq`), and both
-endpoints here are probability laws; the on-ramp is then an isometry for `Adv⊥`
-(`PDS.advFullyDefined_ofTyped`), which carries the bound down to the message
-alphabet where the obligations live.
+Two crossings are needed that the page does not write, because it carries no
+universal alphabet.  The **alphabet crossing**: (6.2)/(6.3) and the collision
+game live at `PDG M X` and `PDS M X`, the headline on `Phi`; the on-ramp
+`RandomSystems.ofTyped` raises the universe, so it is not a `Function.End Phi`,
+cannot ride `↥converterMonoidAt`, and the crossing is made by hand
+(`filterDom_ofTyped`, then `theta_smul_ofTyped`).  The **metric bridge**:
+`edist` is the symmetrized `Adv⊥` (`edist_def`) while the obligations bound
+`PDS.advFullyDefined`; symmetrization is invisible at equal weight
+(`edist_eq_advFullyDefined_of_weight_eq`) and the on-ramp is an isometry for
+`Adv⊥` (`PDS.advFullyDefined_ofTyped`).
 -/
 
 section Chain
@@ -2092,14 +1836,8 @@ open System
 /-- **UPSTREAM-CANDIDATE** (`RandomSystems/System/Phi.lean`, beside
 `System.blockSet_ofTyped`, of which this is the general form): a domain filter
 commutes with the typed on-ramp, at the predicate read back through the
-inclusion.  Nothing about the filter or the system is used beyond
-prefix-closedness: a decodable history *is* an included history
-(`System.decodeList_mem_eq`), so testing the universal predicate on it is testing
-the pulled-back predicate on its decoding, and the on-ramp's own domain
-condition is untouched.
-
-`System.blockSet_ofTyped` is this statement at the query-avoiding predicate,
-where the pullback along `System.encode` is written as a preimage. -/
+inclusion.  Nothing is used beyond prefix-closedness, since a decodable history
+*is* an included history (`System.decodeList_mem_eq`). -/
 theorem filterDom_ofTyped {A B : Type u} (P : List Uni.{u} → Prop)
     (hP : PrefixClosed P) (S : DDS A B) :
     filterDom P hP (System.ofTyped S)
@@ -2125,10 +1863,8 @@ theorem filterDom_ofTyped {A B : Type u} (P : List Uni.{u} → Prop)
       exact hPd
 
 /-- **UPSTREAM-CANDIDATE** (`RandomSystems/System/DiscreteSystem.lean`): the
-filter reads only the predicate's extension, and its prefix-closure witness is
-irrelevant.  What it buys here is that the predicate `filterDom_ofTyped`
-produces — the universal one, pulled back — may be replaced by the message-level
-predicate the obligations are stated at. -/
+filter reads only the predicate's extension, so the pulled-back predicate may
+be replaced by the message-level one the obligations are stated at. -/
 theorem filterDom_congr {A B : Type u} {P Q : List A → Prop}
     (hP : PrefixClosed P) (hQ : PrefixClosed Q) (h : ∀ l, P l ↔ Q l)
     (S : DDS A B) : filterDom P hP S = filterDom Q hQ S := by
@@ -2138,29 +1874,22 @@ theorem filterDom_congr {A B : Type u} {P Q : List A → Prop}
 
 /-- **UPSTREAM-CANDIDATE** (`RandomSystems/System/Absorb.lean`, beside
 `PDS.advFullyDefined_ofTyped`): the typed on-ramp is a pushforward, so it
-preserves total weight.  This is the equal-weight side condition of the metric
-bridge, spelled through `ofPhi` because `Phi` is a `def`. -/
+preserves total weight — the equal-weight side condition of the metric
+bridge. -/
 theorem weight_ofPhi_ofTyped {A B : Type u} (SL : PDS A B) :
     (ofPhi (RandomSystems.ofTyped SL : Phi.{u})).weight = SL.weight :=
   Distribution.weight_fTransform _ _
 
-/-- `θ_r`'s universal predicate (printed p. 126), read back at the message
-alphabet: on an included history the filter-map decoding is the identity
-(`System.filterMap_decodeOption_map_encode`), so the universal block count is the
-message-level block count. -/
+/-- `θ_r`'s universal predicate (printed p. 126) read back at the message
+alphabet: on an included history the filter-map decoding is the identity. -/
 theorem thetaPred_map_encode (bf : M → List X) (r : ℕ) (lm : List M) :
     thetaPred (X := X) bf r (lm.map (encode M)) ↔ totalBlocks bf lm ≤ r := by
   rw [thetaPred, filterMap_decodeOption_map_encode]
 
 /-- **The alphabet crossing at `θ_r`**: the `Σ`-element `θ_r` applied to an
 on-ramped typed resource is the on-ramp of that resource filtered at the
-message-level block-count predicate — the predicate `cbc_condEquiv_theta`
-(printed p. 127) and `blindSupWinProb_cbcGameLaw_theta_le_sq` are stated at.
-
-Both `θ_r` at `Phi` and the message-level filter are the same pushforward
-(`filterPhi`, `Probability.Distribution.fTransform` of `System.filterDom`), so the
-statement is `filterDom_ofTyped` under the pushforward, with `filterDom_congr`
-replacing the pulled-back predicate by the message-level one. -/
+message-level block-count predicate — the predicate `cbc_condEquiv_theta` and
+`blindSupWinProb_cbcGameLaw_theta_le_sq` are stated at. -/
 theorem theta_smul_ofTyped (bf : M → List X) (r : ℕ) (SL : PDS M X) :
     theta (X := X) bf r • (RandomSystems.ofTyped SL : Phi.{u})
       = RandomSystems.ofTyped (Distribution.fTransform
@@ -2176,11 +1905,8 @@ theorem theta_smul_ofTyped (bf : M → List X) (r : ℕ) (SL : PDS M X) :
   congr 1
   exact filterDom_congr _ _ (fun l => thetaPred_map_encode bf r l) S
 
-/-- **Dropping the MBO commutes with `θ_r`**: forgetting CR18's collision
-condition from the restricted game `θ_r ĈBC R_{n,n}` returns the restricted
-system `θ_r CBC R_{n,n}` — printed p. 127's `Γ(b θ_r ĈBC R_{n,n})` bounding a
-distance between the *unhatted* systems.  Both operations are pushforwards, so
-this is the commutation of the two functions, at `forget_cbcGameLaw`. -/
+/-- **Dropping the MBO commutes with `θ_r`**: printed p. 127's
+`Γ(b θ_r ĈBC R_{n,n})` bounds a distance between the *unhatted* systems. -/
 theorem forget_theta_cbcGameLaw (bf : M → List X) (r : ℕ) :
     PDG.forget (Distribution.fTransform
         (fun γ : System.DDG M X =>
@@ -2241,10 +1967,9 @@ theorem qBounded_blockBudget [Nontrivial M] (bf : M → List X) (r : ℕ)
         omega
   exact (hlen l).trans hl.2
 
-/-- **CBC-MAC at the Random Systems layer.**  This is the native typed form of
-the security bound: both systems are `PDS M X`, and their distance is
-Lanzenberger Definition 2.28's class distance `Δ`.  No universal-alphabet
-embedding, `Phi` action, or ambient `edist` occurs in the statement. -/
+/-- **CBC-MAC at the Random Systems layer**: both systems are `PDS M X` and
+their distance is the class distance `Δ` (`PDS.classDistance`).  No
+universal-alphabet embedding, `Phi` action, or ambient `edist` occurs here. -/
 theorem cbc_mac_classDistance [Nontrivial M] (bf : M → List X) (r : ℕ)
     (hbf : PrefixFree bf) :
     PDS.classDistance
@@ -2295,6 +2020,7 @@ theorem cbc_mac_classDistance [Nontrivial M] (bf : M → List X) (r : ℕ)
             (System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
               (prefixClosed_totalBlocks_le bf r)) (Vn M X)) := by
         rw [forget_theta_cbcGameLaw]
+    -- Theorem 4.17's step, printed p. 127, fed equation (6.3)
     _ ≤ ENNReal.ofReal (PDG.blindSupWinProb (Distribution.fTransform
             (fun γ : System.DDG M X =>
               ((System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
@@ -2304,13 +2030,13 @@ theorem cbc_mac_classDistance [Nontrivial M] (bf : M → List X) (r : ℕ)
           ((nonNeg_cbcGameLaw bf).fTransform _) (nonNeg_Vn.fTransform _)
           (by rw [Distribution.weight_fTransform, weight_cbcGameLaw, hBw])
           (cbc_condEquiv_theta bf r hbf)
+    -- Lemma 4.18's step, printed p. 127
     _ ≤ cbcEpsilon X r :=
         ENNReal.ofReal_le_ofReal (blindSupWinProb_cbcGameLaw_theta_le_sq bf r)
 
-/-- Instantiation boundary for CBC-MAC: realization and alphabet embedding turn
-the typed class-distance bound into the ambient construction metric bound.
-Keeping this bridge separate prevents the construction theorem from exposing
-PDS weight and advantage bookkeeping. -/
+/-- Instantiation boundary for CBC-MAC: realization and the alphabet crossing
+turn the typed class-distance bound into the ambient construction metric
+bound. -/
 theorem cbc_mac_distance_of_classDistance (bf : M → List X) (r : ℕ)
     (hDelta : PDS.classDistance
         (Distribution.fTransform
@@ -2323,6 +2049,8 @@ theorem cbc_mac_distance_of_classDistance (bf : M → List X) (r : ℕ)
     edist (cbcRestricted bf r • assumedResource X r)
       (constructedResource bf r) ≤ cbcEpsilon X r := by
   classical
+  -- equation (6.1) then the realization equation move the left endpoint to an
+  -- on-ramped typed law; `theta_smul_ofTyped` is the alphabet crossing
   have hleft : cbcRestricted bf r • assumedResource X r
       = (RandomSystems.ofTyped (Distribution.fTransform
           (System.filterDom (fun l : List M => totalBlocks bf l ≤ r)
@@ -2351,30 +2079,8 @@ theorem cbc_mac_distance_of_classDistance (bf : M → List X) (r : ℕ)
 
 /-- **CR18 Theorem 6.1's distance bound** (printed p. 127):
 `⟨θ_r CBC [r]R_{n,n} | θ_r V_n⟩ ≤ Γ(b θ_r ĈBC R_{n,n}) ≤ ½ r² 2^{-n}`, on `Phi`
-at Ruling R4's `Adv⊥`, which is what `edist` is (`edist_def`).
-
-This is the printed chain, assembled — the content of CR18 Theorem 6.1, with
-nothing assumed.  In printed order:
-
-1. **equation (6.1)**, printed p. 126, `cbc_coherence`: the inner filter `[r]`
-   drops out under `θ_r`, which is the page's `θ_r ĈBC R_{n,n} ≡
-   θ_r ĈBC[r] R_{n,n}` read at the unaugmented converter;
-2. **the realization equation**, `cbcConverter_smul_Rnn`: `CBC` applied to the
-   on-ramped round function is the on-ramped CBC function law;
-3. **equation (6.3)**, printed p. 127, `cbc_condEquiv_theta`, fed to **Theorem
-   4.17's step**, printed p. 127, as
-   `PDG.advFullyDefined_forget_le_blindSupWinProb_of_condEquiv`: the conditional
-   equivalence bounds the advantage by the blind winning probability;
-4. **Lemma 4.18's step**, printed p. 127,
-   `blindSupWinProb_cbcGameLaw_theta_le_sq`: that probability is at most
-   `½ r² 2^{-n}`.
-
-Steps 1–2 move on `Phi`; steps 3–4 live at the message alphabet, and the two
-crossings of this section carry the relation between them — `theta_smul_ofTyped`
-for the objects, `edist_eq_advFullyDefined_of_weight_eq` together with
-`PDS.advFullyDefined_ofTyped` for the metric.  The equal-weight side condition
-is discharged from the two laws being probability laws, which is what
-`Distribution.weight_uniform` and `weight_Vn` say. -/
+at Ruling R4's `Adv⊥`, which is what `edist` is (`edist_def`).  The printed
+chain, assembled, with nothing assumed. -/
 theorem cbc_mac_distance [Nontrivial M] (bf : M → List X) (r : ℕ)
     (hbf : PrefixFree bf) :
     edist (cbcRestricted bf r • assumedResource X r)
@@ -2386,113 +2092,52 @@ end Chain
 
 /-! ## CR18 Theorem 6.1 as a construction statement
 
-The printed statement is an arrow with a superscript, `[r]R_{n,n} --θ_r CBC-->
-(θ_r V_n)^{ε_r}` (printed p. 126): CR18 Definition 5.4's construction relation
-into §5.2.3's `ε`-relaxation.  On this carrier that is
-`AbstractCryptography.ApproximatelyConstructs` over `Phi`, with the converter
-the composite `Σ`-element `θ_r · CBC` and the two endpoints the on-ramped
-typed resources.  Everything the abstract layer needs is an instance here:
-`Monoid ↥converterMonoidAt`, `MulAction ↥converterMonoidAt Phi`,
-`PseudoEMetricSpace Phi` (`MetricFullyDefined.lean`) and
-`IsNonexpandingSMul ↥converterMonoidAt Phi` (same file).
+The printed statement is an arrow with a superscript (printed p. 126) — CR18
+Definition 5.4's construction relation into §5.2.3's `ε`-relaxation, which on
+this carrier is `AbstractCryptography.ApproximatelyConstructs` over `Phi`.
+Everything the abstract layer needs is an instance here: `Monoid`, `MulAction`,
+`PseudoEMetricSpace Phi` and `IsNonexpandingSMul` (`MetricFullyDefined.lean`).
 -/
 
 
 /-- **CR18 Theorem 6.1** (printed p. 126): "For `θ_r` defined as above, if the
 block-former of the `CBC`-converter is prefix-free, we have (for any `r`)
 `[r]R_{n,n} --θ_r CBC--> (θ_r V_n)^{ε_r}` for `ε_r = ½ r² 2^{-n}`."
+**Nothing is assumed** beyond that prefix-freeness.
 
-The arrow is CR18 Definition 5.4's construction relation into §5.2.3's
-`ε`-relaxation, which on this carrier is
-`AbstractCryptography.ApproximatelyConstructs` over `Phi` at
-`Σ := ↥converterMonoidAt`; `constructs_singleton_epsilonRelaxation_iff` is the
-`Iff` that reads that arrow off a distance, and the distance is
-`cbc_mac_distance` — Theorem 6.1's own proof, printed p. 127, assembled.
-**Nothing is assumed.**
-
-Its six ingredients, in the printed order, all landed:
-
-1. The realization equation — that `cbcConverter bf` applied to the on-ramped
-   round function is the on-ramped system whose answer to `m` is
-   `cbcState f (bf m)` — as `attachEngineFully_cbcRound_univ` at a
-   deterministic round function and `cbcConverter_smul_Rnn` at Φ;
-2. Equation (6.2), printed p. 126, as `PDG.CondEquiv`: `cbc_condEquiv` — the
-   mass identity `notBad_implies_uniform_outputs` above, read through the
-   conditional form;
-3. Equation (6.3), printed p. 127: the general transport is
-   `PDG.condEquiv_fTransform` (`Technique/ConditionalEquivalence.lean`), and
-   the `θ_r` instance is `cbc_condEquiv_theta` above — the domain filter at
-   the block-count predicate, at the schedule the filter itself supplies
-   (`filterAdmit`, with `filterWeave` re-inserting the refusals).  That
-   schedule is non-adaptive and uniform in the system, which is what the
-   general lemma demands; it holds because every atom of either side is a
-   function evaluator and so refuses nothing.  (Not to be confused with
-   `PDG.condEquiv_filterQueries`, which is the `[r]` instance of printed
-   p. 128 — Theorem 6.2's step, a query count rather than a block count.);
-4. Equation (6.1), printed p. 126, which the page writes hatted,
-   `θ_r ĈBC = θ_r ĈBC[r]` — the MBO-augmented converter, and printed p. 127
-   applies it to the augmented system.  It is also CR18 §5.5's coherence
-   equation (printed p. 122), which is why
-   `cbc_mac_parameterized` takes it as a hypothesis;
-   `cbc_coherence` above discharges that hypothesis.  The unfolding is
-   `cbc_filter_redundant` — the converter class supplies all of the converter
-   theory — fed CBC's own two elementary facts,
-   `cbcRound_answersWithinBudget` and `cbcRoundBudget_add_totalBlocks`;
-5. Theorem 4.17's step, printed p. 127, as
-   `PDG.advFullyDefined_forget_le_blindSupWinProb_of_condEquiv`
-   (`Technique/BlindWinning.lean`);
-6. Lemma 4.18's step, printed p. 127: the blind winning probability of the
-   collision game is at most `½ r² 2^{-n}`, as
-   `blindSupWinProb_cbcGameLaw_theta_le_sq` — the reduction
-   `blindSupWinProb_cbcGameLaw_theta_le` fed the collision count
-   `mass_cbcBad_le`, which is
-   `Probability.Counting.uniform_mass_walk_repeat_le` (lazy sampling along a
-   walk) at CBC's step function.
-
-What runs 1–6 together into the single distance bound the arrow is read off is
-`cbc_mac_distance`, together with that section's two crossings — the alphabet
-crossing `theta_smul_ofTyped` and the metric bridge
-`edist_eq_advFullyDefined_of_weight_eq` / `PDS.advFullyDefined_ofTyped`.
-
-The prefix-freeness hypothesis is Theorem 6.1's own; it reaches the proof
-through obligations 2 and 3. -/
+`constructs_singleton_epsilonRelaxation_iff` is the `Iff` that reads the arrow
+off a distance, and the distance is `cbc_mac_distance`.  Its six ingredients,
+in the printed order, all landed: the realization equation
+(`attachEngineFully_cbcRound_univ`, `cbcConverter_smul_Rnn`); equation (6.2)
+(`cbc_condEquiv`); equation (6.3) (`cbc_condEquiv_theta` — not to be confused
+with `PDG.condEquiv_filterQueries`, the `[r]` instance of printed p. 128, a
+query count rather than a block count); equation (6.1) (`cbc_coherence`);
+Theorem 4.17's step, printed
+p. 127 (`PDG.advFullyDefined_forget_le_blindSupWinProb_of_condEquiv`); and
+Lemma 4.18's step, printed p. 127
+(`blindSupWinProb_cbcGameLaw_theta_le_sq`). -/
 theorem cbc_mac_constructs [Nontrivial M] (bf : M → List X) (r : ℕ)
     (hbf : PrefixFree bf) :
     ({assumedResource X r} : Specification Phi.{u})
       —[cbcRestricted bf r; cbcEpsilon X r]→
         ({constructedResource bf r} : Specification Phi.{u}) :=
   constructs_singleton_epsilonRelaxation_iff.mpr (cbc_mac_distance bf r hbf)
-/-! ## What the abstract layer gives, and at what price
+
+/-! ## What the abstract layer gives
 
 The INSTANTIATION RULE asks an application to carry at least one consequence
-derived by a LANDED ABSTRACT THEOREM, as the receipt that the instantiation is
-real.  `cbc_mac_trans` is that receipt, and it is the only one: it takes
-`cbc_mac_constructs` as its input and closes by
-`AbstractCryptography.Constructs.epsilonRelaxation_trans`.
-
-Both corollaries inherit Theorem 6.1's whole mathematics through
-`cbc_mac_constructs`, which is now unconditional, and
-`cbc_mac_parameterized` carries obligation 4 on top of it as an
-explicit hypothesis because §5.5 states the collapse conditionally.  An earlier
-version of this file carried a `cbc_mac_parameterized` whose proof term was its
-own hypothesis: `ParameterizedConstruction` unfolds definitionally to the family
-of construction judgments, so that statement closed by `Iff.rfl`, applied no
-abstract theorem, and was a renaming.  It is deleted.  Nothing about CR18 §5.5
-(printed p. 122) follows from the endpoint's shape alone; what makes the
-parameterized reading a theorem is the coherence equation. -/
+derived by a LANDED ABSTRACT THEOREM.  `cbc_mac_trans` and
+`cbc_mac_parameterized` are those receipts: both take the unconditional
+`cbc_mac_constructs` as input and close by an abstract theorem.  (An earlier
+`cbc_mac_parameterized` had its own hypothesis as its proof term, closing by
+`Iff.rfl` and applying no abstract theorem; it is deleted.)
+-/
 
 /-- **Composition**: whatever is constructed from `θ_r V_n` is constructed from
 `[r]R_{n,n}` by the composite converter, with the budgets added.  Derived by
-`AbstractCryptography.Constructs.epsilonRelaxation_trans` applied to
-`cbc_mac_constructs` — the landed statement carries its own attribution and
-page — and the instance it consumes is `IsNonexpandingSMul ↥converterMonoidAt
-Phi` (`RandomSystems/System/MetricFullyDefined.lean`).
-
-(`constructs_epsilonRelaxation_trans_phi` in that same file is the same abstract
-theorem read at the larger submonoid `nonexpandingConverters`; using it here
-would mean pushing both converters across
-`converterMonoidAt_le_nonexpandingConverters` and pulling the result back, so
-the abstract statement is invoked directly instead.) -/
+`AbstractCryptography.Constructs.epsilonRelaxation_trans`, whose instance
+`IsNonexpandingSMul ↥converterMonoidAt Phi` lives in
+`RandomSystems/System/MetricFullyDefined.lean`. -/
 theorem cbc_mac_trans [Nontrivial M] {bf : M → List X} {r : ℕ}
     {π' : ↥converterMonoidAt.{u}} {ε' : ℝ≥0∞} {T : Specification Phi.{u}}
     (hbf : PrefixFree bf)
@@ -2501,24 +2146,16 @@ theorem cbc_mac_trans [Nontrivial M] {bf : M → List X} {r : ℕ}
       —[π' * cbcRestricted bf r; cbcEpsilon X r + ε']→ T :=
   Constructs.epsilonRelaxation_trans (cbc_mac_constructs bf r hbf) h'
 
-/-- **CR18 §5.5's parameterized reading, under its own coherence equation** —
-equation (5.6), printed p. 122: `φ_r R --ψ_r α--> (ψ_r S)^{f_r}` with the
-constructing converter `α` quantified once, outside the family ("the
-constructing converter `α` does not depend on `r`").  Theorem 6.1 is printed in
-exactly that shape, with `φ_r = [r]`, `ψ_r = θ_r` and `α = CBC`.
+/-- **CR18 §5.5's parameterized reading** — equation (5.6), printed p. 122:
+`φ_r R --ψ_r α--> (ψ_r S)^{f_r}`, with the constructing converter `α`
+quantified once outside the family ("the constructing converter `α` does not
+depend on `r`").  Theorem 6.1 is printed in exactly that shape, with
+`φ_r = [r]`, `ψ_r = θ_r` and `α = CBC`.
 
 What §5.5 buys is the *collapse*: under `ψ_r α φ_r = ψ_r α` the filter on the
-assumed resource drops out, and the family becomes a statement about the
-**unrestricted** `R_{n,n}`.  That is the content here, and it is
-`AbstractCryptography.parameterizedConstruction_iff_of_coherence` applied to
-the family of `cbc_mac_constructs` instances.
-
-`coherence` is CR18's equation (6.1), printed p. 126, read at the unaugmented
-converter; the page writes it hatted, `θ_r ĈBC = θ_r ĈBC[r]`, because the proof
-works on the MBO-augmented converter.  It is **landed** (obligation 4 at
-`cbc_mac_constructs`) as `cbc_coherence` above, and a caller discharges the
-hypothesis with `fun r => cbc_coherence bf r`; it is kept as a hypothesis here
-because §5.5 states the collapse conditionally. -/
+assumed resource drops out and the family becomes a statement about the
+**unrestricted** `R_{n,n}`.  That coherence equation is CR18's (6.1), landed as
+`cbc_coherence`, so nothing is assumed here either. -/
 theorem cbc_mac_parameterized [Nontrivial M] (bf : M → List X)
     (hbf : PrefixFree bf) :
     ∀ r : ℕ, ({(ofTyped (Rnn X) : Phi.{u})} : Specification Phi.{u})
