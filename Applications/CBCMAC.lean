@@ -644,39 +644,6 @@ theorem cbcState_take_succ_eq (f : X -> X) (bs : List X)
     omega
   rw [hlen, cbcInput_take_of_lt f bs (Nat.lt_succ_self t)]
 
-/-- Recurrence for consecutive CBC call-site inputs. -/
-theorem cbcInput_succ (f : X -> X) (bs : List X)
-    {t : Nat} (ht : t < bs.length) :
-    cbcInput f bs (t + 1) =
-      f (cbcInput f bs t) + bs.getD (t + 1) 0 := by
-  show cbcState f (bs.take (t + 1)) + bs.getD (t + 1) 0 = _
-  rw [cbcState_take_succ_eq f bs ht]
-
-/-- Translate `f` by `delta` at one point. -/
-def pointShift (f : X -> X) (w delta : X) : X -> X :=
-  fun x => if x = w then f x + delta else f x
-
-theorem pointShift_apply_self (f : X -> X) (w delta : X) :
-    pointShift f w delta w = f w + delta :=
-  if_pos rfl
-
-theorem pointShift_apply_ne (f : X -> X) (w delta : X)
-    {x : X} (h : x ≠ w) : pointShift f w delta x = f x :=
-  if_neg h
-
-theorem pointShift_pointShift (f : X -> X) (w delta delta' : X) :
-    pointShift (pointShift f w delta) w delta' =
-      pointShift f w (delta + delta') := by
-  funext x
-  unfold pointShift
-  grind
-
-theorem pointShift_zero (f : X -> X) (w : X) :
-    pointShift f w 0 = f := by
-  funext x
-  unfold pointShift
-  grind
-
 /-- A proper-prefix input cannot be a queried message's terminal input. -/
 theorem cbcInput_ne_lastInput (f : X -> X) (bf : M -> List X)
     {l : List M} (hbf_pf : PrefixFree bf) (hfresh : cbcFresh f bf l)
@@ -1035,9 +1002,6 @@ variable {A : Type u} {B : Type u}
 the query list alone. -/
 def filterAdmit (P : List A → Prop) [DecidablePred P] (l : List A) : List A :=
   l.foldl (fun K x => if P (K ++ [x]) then K ++ [x] else K) []
-
-@[simp] theorem filterAdmit_nil (P : List A → Prop) [DecidablePred P] :
-    filterAdmit P ([] : List A) = [] := rfl
 
 theorem filterAdmit_concat (P : List A → Prop) [DecidablePred P] (l : List A) (x : A) :
     filterAdmit P (l ++ [x])
