@@ -51,8 +51,8 @@ Fully proved (no leaves):
 What is *not* here, by design, is the concrete security content: the per-`Z`
 simulator leaves and the carrier reduction establishing the ideal
 unforgeability game bound. Their carrier-free contracts and composition are
-stated later in this file (`frost_end_to_end`, `frost_end_to_end_eps`); a
-concrete carrier must supply the leaves.
+stated in `Applications.Frost.Construction`; a concrete carrier must supply
+the leaves.
 -/
 
 open Polynomial Finset

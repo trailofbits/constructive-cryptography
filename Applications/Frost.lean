@@ -22,8 +22,9 @@ modeling boundaries.
   FROST(secp256k1, SHA-256) ciphersuite validated by the RFC test vectors
   (`FrostRfc9591Tests`).
 * `Applications.Frost.Construction` — the carrier-free two-stage CC
-  construction statements (`frost_end_to_end`, `frost_end_to_end_eps`,
-  `frost_threshold`, `frost_threshold_unforgeability`; M4).
+  construction statements in the `AbstractCryptography.Frost` namespace,
+  including `constructs_and_gameSpec_of_simulators`,
+  `threshold_constructs_and_gameSpec`, and `threshold_unforgeability`.
 
 Everything that *instantiates* these layers — the concrete group
 (`FrostGroup`, secp256k1), the typed random-systems carrier bridge, and

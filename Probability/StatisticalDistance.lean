@@ -19,7 +19,7 @@ Lanzenberger-Maurer (TCC 2020).
   `g` at telling `X` from `Y` under equal prior ½.  Deciding *which of two
   distributions* produced a sample; the different task of guessing an unknown
   *value* from correlated side information is `Distribution.condGuessProb`
-  (`RandomSystems/Entropy.lean`)
+  (`Probability/Entropy.lean`)
 
 ## Main Results
 
@@ -121,12 +121,11 @@ theorem coe_finset_sup_le {ι : Type*} (s : Finset ι) (f : ι → NNReal) {a : 
     exact NNReal.coe_le_coe.mp (h i hi)
   exact NNReal.coe_le_coe.mp hNN
 
-/-! ### H-coefficient kernel — three-layer architecture (PHI-SPEC R10)
-Layer 1 (here): partition bounds (`statDist_sum_of_disjoint_support` family).
-Layer 2 (here): the good/bad ratio kernel (`hTechnique_*`).
-Layer 3 (system level, `RandomSystems/`): the transcript factorization
-`Pr[τ] = η(e,τ)·σ(S,τ)` and its environment-uniform corollary — the only
-part of the method that mentions systems.  Do not re-prove layers 1-2. -/
+/-! ### H-coefficient bounds
+
+This module contains the distribution-level partition and good/bad ratio
+bounds. `RandomSystems.Technique.HCoefficient` supplies the
+system-level transcript factorization and its DDE-uniform consequence. -/
 
 /-- Statistical distance between two distributions.
 
@@ -151,8 +150,7 @@ generalities, both one-sided. -/
 noncomputable def statDist {A : Type*} (X Y : Distribution A) : ℝ :=
   ∑ a ∈ (X - Y).support, max (X a - Y a) 0
 
-/-- On a `Fintype` carrier, `statDist` is the sum over everything — the old definition,
-kept as the unfolding lemma for proofs that reason over `Finset.univ`. -/
+/-- On a `Fintype` carrier, `statDist` is the sum over all points. -/
 theorem statDist_eq_sum_univ {A : Type*} [Fintype A] (X Y : Distribution A) :
     statDist X Y = ∑ a : A, max (X a - Y a) 0 := by
   classical
@@ -180,7 +178,7 @@ theorem statDist_eq_sum_of_support_subset {A : Type*} (X Y : Distribution A)
 /-- Each summand of `statDist` is nonnegative, so the whole sum is. -/
 theorem statDist_nonneg {A : Type*} (X Y : Distribution A) :
     0 ≤ statDist X Y :=
-  Finset.sum_nonneg fun a _ => le_max_right _ _
+  Finset.sum_nonneg fun _ _ => le_max_right _ _
 
 /-- `δ(X, X) = 0`. -/
 theorem statDist_self {A : Type*} (X : Distribution A) :
@@ -221,7 +219,7 @@ theorem statDist_symm_of_eq_weight {A : Type*}
 
 /-! ### Alternative forms of statistical distance
 
-LanMau20 Definition 3 (= FOUNDATIONS.md Definition 2.4) presents `δ` in two
+LanMau20 Definition 3 presents `δ` in two
 forms, `δ(X, Y) = ∑_a max(0, X(a) - Y(a)) = |X| - ∑_a min(X(a), Y(a))`, and
 notes the half-`L1` form `δ(X, Y) = ½ ∑_a |X(a) - Y(a)|` for equal weight.
 `statDist` is the max form; the other two are derived here. -/
@@ -406,7 +404,7 @@ theorem statDist_le_weight {A : Type*}
   intro a _
   exact max_le (sub_le_self _ (hY a)) (hX a)
 
-/-- **Support lemma forced by the CR18/thesis advantage bridge; candidate for upstream.**
+/-- **Event-mass bound by statistical distance.**
 For any event, the one-sided gap between its masses is bounded by statistical distance. -/
 theorem mass_tsub_mass_le_statDist {A : Type*}
     (X Y : Distribution A) (P : A → Prop) :
@@ -424,9 +422,8 @@ theorem mass_tsub_mass_le_statDist {A : Type*}
   exact hfilter.trans (Finset.sum_le_sum_of_subset_of_nonneg (Finset.filter_subset _ _)
     fun a _ _ => le_max_right _ _)
 
-/-- **Support lemma forced by the CR18/thesis advantage bridge; candidate for upstream.**
-Real-valued form of `mass_tsub_mass_le_statDist`, convenient for signed CR18 advantages.
-(Over the `ℝ` carrier the two coincide; kept for call-site compatibility.) -/
+/-- **Real-valued event-mass bound by statistical distance.**
+This is the real-valued form of `mass_tsub_mass_le_statDist`. -/
 theorem mass_sub_mass_le_statDist {A : Type*}
     (X Y : Distribution A) (P : A → Prop) :
     ((X.mass P : ℝ) - (Y.mass P : ℝ)) ≤ (statDist X Y : ℝ) :=
@@ -440,9 +437,7 @@ This is the "identical-until-bad" step in its distributional form: the coupling
 is the shared source `μ`, and the bound is the probability that the two
 readings of one sampled atom part company.  Both sides are pushforwards of the
 *same* `μ` — that is what makes it an equality of couplings rather than a
-triangle inequality, and it is why no weight or `Fintype` hypothesis appears.
-
-UPSTREAM-CANDIDATE (Definition 3 toolkit; the game-playing lemma's kernel). -/
+triangle inequality, and it is why no weight or `Fintype` hypothesis appears. -/
 theorem statDist_fTransform_le_mass_of_eq_off {A B : Type*} {μ : Distribution A}
     (hμ : μ.NonNeg) (F G : A → B) (P : A → Prop)
     (hoff : ∀ a ∈ μ.support, ¬ P a → F a = G a) :
@@ -504,8 +499,8 @@ event replaced by an arbitrary `[0, 1]`-valued observable, and like it, it needs
 no weight hypothesis — the one-sided distance already charges the excess of `X`
 over `Y`.  Signed layer, and no `Fintype`.
 
-UPSTREAM-CANDIDATE: the duality between the half-`L¹` distance of two finitely
-supported signed measures and `[0, 1]`-valued test functions. -/
+This is the duality between the half-`L¹` distance of two finitely supported
+signed measures and `[0, 1]`-valued test functions. -/
 theorem expect_sub_expect_le_statDist {A : Type*} (X Y : Distribution A) (f : A → ℝ)
     (h0 : ∀ a, 0 ≤ f a) (h1 : ∀ a, f a ≤ 1) :
     X.expect f - Y.expect f ≤ statDist X Y := by
@@ -562,8 +557,8 @@ theorem abs_expect_sub_expect_le_mul_statDist {A : Type*} [Fintype A]
   exact expect_sub_expect_le_mul_statDist Y X f hw.symm hm hM
 
 /-- Statistical distance is exactly the one-sided mass gap on the points where
-the first distribution is heavier.  This is the canonical statistical test
-used to turn a transcript distance into a signed CR18 distinguisher advantage. -/
+the first distribution is heavier. This is the canonical binary hypothesis
+test induced by the two laws. -/
 theorem statDist_eq_mass_sub_mass_pos {A : Type*} [Fintype A]
     (X Y : Distribution A) :
     (statDist X Y : ℝ) =
@@ -596,10 +591,10 @@ answers `true`, with probability ½ it is drawn from `Y` and the answer is
 correct iff `g` answers `false`.  Meaningful as a probability when `X` and `Y`
 are probability distributions; defined for arbitrary signed distributions.
 
-**Named for the task, not for "guessing" — and `avg`, not `bayes`.**  This
+This is hypothesis testing rather than value guessing: it
 decides *which of two hypotheses* produced the sample; the different task of
 recovering an unknown *value* from correlated side information is
-`Distribution.guessProb` / `Distribution.condGuessProb` (`RandomSystems/Entropy.lean`), the
+`Distribution.guessProb` / `Distribution.condGuessProb` (`Probability/Entropy.lean`), the
 quantities paired with min-entropy.  In mathlib's decision-theory vocabulary
 (`Mathlib/Probability/Decision/Risk/Defs.lean`) the quantity here is
 `1 - avgRisk` at 0-1 loss under the uniform prior — prior-averaged over a
@@ -733,7 +728,7 @@ noncomputable def probBad {A : Type*}
     ℝ :=
   D.mass B
 
-/-- UPSTREAM-CANDIDATE: adding deterministic terminal side information does
+/-- Adding deterministic terminal side information does
 not change the mass of a bad event that ignores that terminal component. -/
 @[simp]
 theorem probBad_const_pair {A U : Type*}
@@ -744,13 +739,13 @@ theorem probBad_const_pair {A U : Type*}
   unfold probBad
   rw [Distribution.mass_fTransform]
 
-/-- UPSTREAM-CANDIDATE: `probBad` is the finite-carrier predicate mass. -/
+/-- `probBad` is the finite-carrier predicate mass. -/
 theorem probBad_eq_evalPred {A : Type*} [Fintype A] (D : Distribution A) (B : A → Prop) :
     probBad D B = D.evalPred B := by
   unfold probBad Distribution.evalPred
   rw [Distribution.mass_eq_sum, Finset.sum_filter]
 
-/-- UPSTREAM-CANDIDATE: finite union bound for `probBad` events decomposed into
+/-- Finite union bound for `probBad` events decomposed into
 per-index predicates. -/
 theorem probBad_iUnion_le {A ι : Type*} [Fintype A] [Fintype ι]
     {D : Distribution A} (hD : D.NonNeg) (B : A → Prop) (P : ι → A → Prop)
@@ -832,8 +827,13 @@ theorem hTechnique_ratio {A : Type*} [Fintype A]
   statDist_le_probBad_add_of_ratio_on_good real ideal B eps h_real_nonneg
     h_ideal_nonneg h_weight h_ideal_le h_ratio
 
-/-- Expectation-method H-technique bound with a point-dependent error term. -/
-theorem hTechnique_expectation {A : Type*} [Fintype A]
+/-- Finite-support expectation form of the H-technique on an arbitrary
+carrier.  `Distribution A` is finitely supported, so the proof sums over the
+two laws' supports and requires no `Fintype A` instance.
+
+For a bad event `B` and a point-dependent ratio defect `eps`, the distance is
+bounded by the ideal bad mass plus the ideal-weighted defect on good points. -/
+theorem hTechnique_expectation_finiteSupport {A : Type*}
     (real ideal : Distribution A)
     (B : A → Prop) [DecidablePred B]
     (eps : A → NNReal)
@@ -841,12 +841,13 @@ theorem hTechnique_expectation {A : Type*} [Fintype A]
     (h_ideal_nonneg : ideal.NonNeg)
     (h_weight : real.weight = ideal.weight)
     (h_ratio : ∀ a, ¬ B a → (1 - eps a) * ideal a ≤ real a) :
-    statDist real ideal ≤ probBad ideal B +
+    statDist real ideal ≤ ideal.mass B +
       ideal.sum (fun a w => if ¬ B a then w * eps a else 0) := by
   classical
   rw [statDist_symm_of_eq_weight real ideal h_weight]
   let charge : A → ℝ :=
-    fun a => (if B a then ideal a else 0) + if ¬ B a then ideal a * eps a else 0
+    fun a => (if B a then ideal a else 0) +
+      if ¬ B a then ideal a * eps a else 0
   have h_charge_nonneg : ∀ a, 0 ≤ charge a := by
     intro a
     refine add_nonneg ?_ ?_
@@ -860,27 +861,135 @@ theorem hTechnique_expectation {A : Type*} [Fintype A]
       have := h_real_nonneg a
       linarith
     · simp only [charge, h_bad, if_false, not_false_eq_true, if_true, zero_add]
-      calc ideal a - real a ≤ (eps a : ℝ) * ideal a :=
-            sub_le_mul_of_one_sub_mul_le (h_ratio a h_bad)
+      calc
+        ideal a - real a ≤ (eps a : ℝ) * ideal a :=
+          sub_le_mul_of_one_sub_mul_le (h_ratio a h_bad)
         _ = ideal a * eps a := mul_comm _ _
-  refine le_trans
-    (statDist_le_sum_of_forall_tsub_le ideal real charge h_charge_nonneg h_term_bound) ?_
-  have hsum :
-      ideal.sum (fun a w => if ¬ B a then w * (eps a : ℝ) else 0) =
-        ∑ a, if ¬ B a then ideal a * eps a else 0 := by
-    exact Finsupp.sum_fintype _ _ (fun a => by by_cases h : B a <;> simp [h])
-  calc ∑ a, charge a
-    _ = (∑ a, if B a then ideal a else 0) +
-          ∑ a, if ¬ B a then ideal a * (eps a : ℝ) else 0 := by
-        simp only [charge]
-        rw [Finset.sum_add_distrib]
-    _ = probBad ideal B + ideal.sum (fun a w => if ¬ B a then w * eps a else 0) := by
-        rw [probBad, Distribution.mass_eq_sum, hsum]
-        congr 1
-        apply Finset.sum_congr rfl
-        intro a _ha
-        by_cases h : B a <;> simp [h]
-    _ ≤ probBad ideal B + ideal.sum (fun a w => if ¬ B a then w * eps a else 0) := le_rfl
+  let s : Finset A := (ideal - real).support ∪ ideal.support
+  have hdiff : (ideal - real).support ⊆ s := Finset.subset_union_left
+  have hideal : ideal.support ⊆ s := Finset.subset_union_right
+  rw [statDist_eq_sum_of_support_subset ideal real hdiff]
+  calc
+    ∑ a ∈ s, max (ideal a - real a) 0
+        ≤ ∑ a ∈ s, charge a := by
+          exact Finset.sum_le_sum fun a _ =>
+            max_le (h_term_bound a) (h_charge_nonneg a)
+    _ = (∑ a ∈ s.filter B, ideal a) +
+          ∑ a ∈ s, (if ¬ B a then ideal a * (eps a : ℝ) else 0) := by
+          simp only [charge]
+          rw [Finset.sum_add_distrib, Finset.sum_filter]
+    _ = ideal.mass B +
+          ideal.sum (fun a w => if ¬ B a then w * eps a else 0) := by
+          rw [Distribution.mass_eq_sum_of_support_subset ideal hideal]
+          congr 1
+          symm
+          exact Finsupp.sum_of_support_subset ideal hideal _
+            (fun a _ => by simp)
+
+/-- Finite-cell partition form of the H-technique on an arbitrary carrier.
+Only the cell index is finite: the transcript or sample carrier need not be. -/
+theorem hTechnique_partition_finiteSupport {A ι : Type*}
+    [Fintype ι] [DecidableEq ι]
+    (real ideal : Distribution A) (cell : A → ι) (eps : ι → NNReal)
+    (h_real_nonneg : real.NonNeg)
+    (h_ideal_nonneg : ideal.NonNeg)
+    (h_weight : real.weight = ideal.weight)
+    (h_ratio : ∀ a, (1 - eps (cell a)) * ideal a ≤ real a) :
+    statDist real ideal ≤
+      ∑ i, (eps i : ℝ) * ideal.mass (fun a => cell a = i) := by
+  classical
+  have h := hTechnique_expectation_finiteSupport real ideal
+    (fun _ => False) (fun a => eps (cell a))
+    h_real_nonneg h_ideal_nonneg h_weight (fun a _ => h_ratio a)
+  refine le_trans h (le_of_eq ?_)
+  have hbad : ideal.mass (fun _ => False) = 0 :=
+    Distribution.mass_eq_zero_of_forall_not ideal (fun _ => id)
+  rw [hbad, zero_add]
+  have hright :
+      ∑ i : ι, (eps i : ℝ) * ideal.mass (fun a => cell a = i) =
+        ∑ a ∈ ideal.support, ideal a * (eps (cell a) : ℝ) := by
+    have hexp : ∀ i : ι,
+        (eps i : ℝ) * ideal.mass (fun a => cell a = i) =
+          ∑ a ∈ ideal.support,
+            (if cell a = i then ideal a * (eps i : ℝ) else 0) := by
+      intro i
+      rw [Distribution.mass_eq_sum_of_support_subset ideal (by rfl),
+        Finset.mul_sum, Finset.sum_filter]
+      exact Finset.sum_congr rfl fun a _ => by
+        by_cases h : cell a = i <;> simp [h, mul_comm]
+    rw [Finset.sum_congr rfl (fun i (_ : i ∈ Finset.univ) => hexp i),
+      Finset.sum_comm]
+    refine Finset.sum_congr rfl fun a _ => ?_
+    rw [Finset.sum_ite_eq Finset.univ (cell a)
+      (fun i => ideal a * (eps i : ℝ))]
+    simp
+  rw [hright]
+  simpa using (Finsupp.sum_of_support_subset ideal (by rfl)
+    (fun a w => if ¬ (fun _ : A => False) a then
+      w * (fun a => eps (cell a)) a else 0) (fun a _ => by simp))
+
+/-- The ordinary good/bad H bound is the two-cell corollary of the
+finite-support partition bound, without a finiteness assumption on the
+carrier. -/
+theorem hTechnique_ratio_via_partition_finiteSupport {A : Type*}
+    (real ideal : Distribution A) (B : A → Prop) (eps : NNReal)
+    (h_real_nonneg : real.NonNeg)
+    (h_ideal_nonneg : ideal.NonNeg)
+    (h_weight : real.weight = ideal.weight)
+    (h_ideal_le : ideal.weight ≤ 1)
+    (h_ratio : ∀ a, ¬ B a → (1 - eps) * ideal a ≤ real a) :
+    statDist real ideal ≤ probBad ideal B + eps := by
+  classical
+  have h := hTechnique_partition_finiteSupport real ideal
+    (fun a => if B a then (0 : Fin 2) else 1)
+    (fun i => if i = 0 then 1 else eps)
+    h_real_nonneg h_ideal_nonneg h_weight
+    (by
+      intro a
+      by_cases hB : B a
+      · simpa [hB] using h_real_nonneg a
+      · simpa [hB] using h_ratio a hB)
+  refine le_trans h ?_
+  change
+    (∑ i : Fin 2, ((if i = 0 then 1 else eps : NNReal) : ℝ) *
+      ideal.mass (fun a => (if B a then (0 : Fin 2) else 1) = i)) ≤
+      probBad ideal B + eps
+  rw [Fin.sum_univ_two]
+  simp only [reduceIte, NNReal.coe_one, one_mul]
+  have h0 :
+      ideal.mass (fun a => (if B a then (0 : Fin 2) else 1) = 0) =
+        probBad ideal B := by
+    unfold probBad
+    exact Distribution.mass_congr _ fun a => by
+      by_cases hB : B a <;> simp [hB]
+  have h1 :
+      (eps : ℝ) *
+          ideal.mass (fun a => (if B a then (0 : Fin 2) else 1) = 1) ≤
+        eps := by
+    have hm :
+        ideal.mass (fun a => (if B a then (0 : Fin 2) else 1) = 1) ≤ 1 :=
+      le_trans (Distribution.mass_le_weight h_ideal_nonneg _) h_ideal_le
+    have hnn : 0 ≤
+        ideal.mass (fun a => (if B a then (0 : Fin 2) else 1) = 1) :=
+      h_ideal_nonneg.mass_nonneg _
+    nlinarith [eps.coe_nonneg]
+  rw [h0]
+  exact add_le_add le_rfl h1
+
+/-- Expectation-method H-technique bound with a point-dependent error term. -/
+theorem hTechnique_expectation {A : Type*} [Fintype A]
+    (real ideal : Distribution A)
+    (B : A → Prop) [DecidablePred B]
+    (eps : A → NNReal)
+    (h_real_nonneg : real.NonNeg)
+    (h_ideal_nonneg : ideal.NonNeg)
+    (h_weight : real.weight = ideal.weight)
+    (h_ratio : ∀ a, ¬ B a → (1 - eps a) * ideal a ≤ real a) :
+    statDist real ideal ≤ probBad ideal B +
+      ideal.sum (fun a w => if ¬ B a then w * eps a else 0) := by
+  simpa only [probBad] using
+    hTechnique_expectation_finiteSupport real ideal B eps h_real_nonneg
+      h_ideal_nonneg h_weight h_ratio
 
 /-! ### The partition refinement of the good/bad kernel
 
@@ -894,13 +1003,7 @@ Both statements are **derived here** from `hTechnique_expectation`, the
 layer-2 kernel already in this file — the partition shape is a refinement of
 that kernel, not a second proof of it.
 
-*Provenance, flagged.*  The quarry calls this shape "Layer D′, the
-Chen–Steinberger partition form" and cites `Chen–Steinberger` as a bare author
-name: no bibliography entry, year, or page exists anywhere in its
-`HTechnique/` tree, and no such paper is on disk.  The name is therefore
-recorded here as the quarry's attribution, **not** as a verified citation, and
-it sits outside the source hierarchy (MauRen16 / Jost / LiuMau20 /
-Lanzenberger) entirely.  Upgrading it to a page-verified citation is owed. -/
+-/
 
 /-- **The partition bound.**  With a per-cell ratio defect,
 
@@ -917,31 +1020,9 @@ theorem hTechnique_partition {A ι : Type*} [Fintype A] [Fintype ι] [DecidableE
     (h_weight : real.weight = ideal.weight)
     (h_ratio : ∀ a, (1 - eps (cell a)) * ideal a ≤ real a) :
     statDist real ideal ≤ ∑ i, (eps i : ℝ) * probBad ideal (fun a => cell a = i) := by
-  classical
-  -- Expectation form at `Bad := ∅` and `ε(a) := ε_{cell a}`, then regroup the
-  -- `ideal`-expectation of `ε_{cell ·}` by cell.
-  have h := hTechnique_expectation real ideal (fun _ => False) (fun a => eps (cell a))
-    h_real_nonneg h_ideal_nonneg h_weight (fun a _ => h_ratio a)
-  refine le_trans h (le_of_eq ?_)
-  have hbad : probBad ideal (fun _ => False) = 0 :=
-    Distribution.mass_eq_zero_of_forall_not ideal (fun _ => id)
-  rw [hbad, zero_add]
-  have hright : ∑ i : ι, (eps i : ℝ) * probBad ideal (fun a => cell a = i)
-      = ∑ a : A, ideal a * (eps (cell a) : ℝ) := by
-    have hexp : ∀ i : ι, (eps i : ℝ) * probBad ideal (fun a => cell a = i)
-        = ∑ a : A, (if cell a = i then ideal a * (eps i : ℝ) else 0) := by
-      intro i
-      unfold probBad
-      rw [Distribution.mass_eq_sum, Finset.mul_sum]
-      exact Finset.sum_congr rfl fun a _ => by
-        by_cases h : cell a = i <;> simp [h, mul_comm]
-    rw [Finset.sum_congr rfl (fun i (_ : i ∈ Finset.univ) => hexp i), Finset.sum_comm]
-    refine Finset.sum_congr rfl fun a _ => ?_
-    rw [Finset.sum_ite_eq Finset.univ (cell a) (fun i => ideal a * (eps i : ℝ))]
-    simp
-  refine Eq.trans ?_ hright.symm
-  simp only [not_false_eq_true, if_true]
-  exact Finsupp.sum_of_support_subset ideal (Finset.subset_univ _) _ (fun a _ => by simp)
+  simpa only [probBad] using
+    hTechnique_partition_finiteSupport real ideal cell eps h_real_nonneg
+      h_ideal_nonneg h_weight h_ratio
 
 /-- **Good/bad is the two-cell case** of `hTechnique_partition`: the bad cell
 carries defect `1` (no ratio is claimed there, and it is charged its full
@@ -959,30 +1040,8 @@ theorem hTechnique_ratio_via_partition {A : Type*} [Fintype A]
     (h_ideal_le : ideal.weight ≤ 1)
     (h_ratio : ∀ a, ¬ B a → (1 - eps) * ideal a ≤ real a) :
     statDist real ideal ≤ probBad ideal B + eps := by
-  classical
-  have h := hTechnique_partition real ideal
-    (fun a => if B a then (0 : Fin 2) else 1)
-    (fun i => if i = 0 then 1 else eps)
-    h_real_nonneg h_ideal_nonneg h_weight
-    (by
-      intro a
-      by_cases hB : B a
-      · simpa [hB] using h_real_nonneg a
-      · simpa [hB] using h_ratio a hB)
-  refine le_trans h ?_
-  rw [Fin.sum_univ_two]
-  simp only [reduceIte, NNReal.coe_one, one_mul]
-  have h0 : probBad ideal (fun a => (if B a then (0 : Fin 2) else 1) = 0) = probBad ideal B := by
-    unfold probBad
-    exact Distribution.mass_congr _ fun a => by by_cases hB : B a <;> simp [hB]
-  have h1 : (eps : ℝ) * probBad ideal (fun a => (if B a then (0 : Fin 2) else 1) = 1) ≤ eps := by
-    have hm : probBad ideal (fun a => (if B a then (0 : Fin 2) else 1) = 1) ≤ 1 :=
-      le_trans (Distribution.mass_le_weight h_ideal_nonneg _) h_ideal_le
-    have hnn : 0 ≤ probBad ideal (fun a => (if B a then (0 : Fin 2) else 1) = 1) :=
-      h_ideal_nonneg.mass_nonneg _
-    nlinarith [eps.coe_nonneg]
-  rw [h0]
-  exact add_le_add le_rfl h1
+  exact hTechnique_ratio_via_partition_finiteSupport real ideal B eps
+    h_real_nonneg h_ideal_nonneg h_weight h_ideal_le h_ratio
 
 /-- When real and ideal agree exactly on good points, statistical distance is
 bounded by the ideal bad probability. -/
@@ -1270,15 +1329,6 @@ theorem statDist_eq_mass_on_zero_support {A : Type*} [Fintype A] [DecidableEq A]
     exact max_eq_right (sub_nonpos.mpr (h_le a (Finset.mem_compl.mp ha)))
   rw [h_on_S, h_on_Sc, add_zero]
 
-/-- Compatibility alias: the owner is `Distribution.fTransform_injective_apply` in
-`Probability.Distribution`.  Kept because several legacy application files reference
-the unqualified `RandomSystems`-level name; retire with the legacy tree
-cleanup. -/
-theorem fTransform_injective_apply {A B : Type*} [Fintype A] [DecidableEq B]
-    (X : Distribution A) (f : A → B) (hf : Function.Injective f) (a : A) :
-    (Distribution.fTransform f X) (f a) = X a :=
-  Distribution.fTransform_injective_apply X f hf a
-
 /-- Lemma 3+ (Data processing equality for injective functions).
 
 For any injective function f : A → B:
@@ -1291,8 +1341,8 @@ was a spurious restriction.  The `≤` half is the data processing inequality,
 which never needed them; the `≥` half re-indexes the source sum along `f`,
 which is a `Finset.sum_image` on the *support* of the difference and lands
 inside any finite superset of the image law's own difference support.  The
-generality is what lets the lemma reach the carriers this repository actually
-uses — transcript spaces `List (X × Option Y)`, system laws
+generality lets the lemma apply to infinite carriers such as transcript spaces
+`List (X × Option Y)` and system laws
 `Distribution (System.DDS X Y)` — where no `Fintype` exists. -/
 theorem statDist_fTransform_injective {A B : Type*}
     (X Y : Distribution A) (f : A → B) (hf : Function.Injective f) :
@@ -1313,7 +1363,7 @@ theorem statDist_fTransform_injective {A B : Type*}
   exact Finset.sum_le_sum_of_subset_of_nonneg Finset.subset_union_right
     fun b _ _ => le_max_right _ _
 
-/-- UPSTREAM-CANDIDATE: adding a deterministic terminal component preserves
+/-- Adding a deterministic terminal component preserves
 statistical distance exactly.
 
 This is the conservative-extension test for terminal side-information
@@ -1329,7 +1379,7 @@ theorem statDist_fTransform_const_pair {A U : Type*} [Fintype A] [Fintype U]
   exact statDist_fTransform_injective X Y (fun a : A => (a, u))
     (fun _ _ h => congrArg Prod.fst h)
 
-/-- UPSTREAM-CANDIDATE: adding deterministic terminal side information and
+/-- Adding deterministic terminal side information and
 then projecting it away recovers the original statistical distance.
 
 This is the conservative-extension regression for extended H-technique
@@ -1377,7 +1427,7 @@ explicit fibering map.  The form the attainment induction consumes is the
 supported inside its own cell of a pairwise disjoint system, and the distance
 of the sums is the sum of the distances.
 
-Unlike the quarry's `δ`-level statement, no non-negativity hypothesis appears:
+No non-negativity hypothesis appears:
 `statDist` indexes its sum by `(X − Y).support` rather than by `X.support`, so
 a cell where the first law vanishes and the second is negative contributes
 nothing on either side, which is exactly the failure the `δ` form had to

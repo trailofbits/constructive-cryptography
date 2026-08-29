@@ -1,55 +1,91 @@
 /-
 Copyright (c) 2026 Trail of Bits. All rights reserved.
-Authors: Marc Ilunga
+Released under Apache 2.0 license as described in the file LICENSE.
 -/
-import AbstractCryptography
-import AbstractCryptography.MR11
+import AbstractCryptography.Categorical.ResourceAlgebra.Filtered
 
 /-!
-# Selected abstract-cryptography surface smoke test
+# Selected Abstract Cryptography surface
 
-**MR11-DEFERRED (provenance fence, 2026-08-17): MauRen11 constructs
-quarantined pending the MR11 reconciliation task.  No MR16-track file may
-import this module — enforced by `scripts/ledgerAudit.sh`.  See `LEDGER.md`
-PROVENANCE FENCE.**
-
-This non-default test checks that the public root alone composes an exact
-filtered-pattern construction with its scalar metric relaxation.  The carrier
-and interface type remain abstract; in particular, the test performs no finite
-interface enumeration.
+This non-default target checks the carrier-independent typed surface directly:
+attachment, distance, exact and approximate construction, ordered parallel,
+and filtered endpoints. It installs no concrete resource carrier and assumes
+no symmetry.
 -/
 
 namespace AbstractCryptography.SelectedSurface.Tests
 
+open CategoryTheory
+open CategoryTheory.MonoidalCategory
+open AbstractCryptography.Categorical
+open AbstractCryptography.Categorical.ResourceAlgebra
+open AbstractCryptography.Categorical.ResourceAlgebra.Specification
+
 universe u v w
 
-variable {I : Type u} {Γ : I → Type v} {Φ : Type w}
-variable [∀ i, Monoid (Γ i)] [MulAction (∀ i, Γ i) Φ]
-variable [PseudoEMetricSpace Φ] [IsNonexpandingSMul (∀ i, Γ i) Φ]
+variable {C : Type u} [Category.{v} C] [MonoidalCategory C]
+variable {Phi : Opposite C ⥤ Type w} [ResourceAlgebra C Phi]
 
-example {pi : ∀ i, Γ i} {real ideal : Set Φ} {eps : ENNReal}
-    (h : ∀ R ∈ real, ∃ S ∈ ideal, edist (pi • R) S ≤ eps) :
-    real —[pi]→ Relaxation.epsilonRelaxation eps ideal :=
-  constructs_epsilonRelaxation_iff.mpr h
+/-- A singleton scalar-error construction is exactly its resource-distance
+bound. -/
+example {A B : C} {converter : A ⟶ B}
+    {real : Resource Phi B} {ideal : Resource Phi A} {error : ENNReal}
+    (close : distance (Phi := Phi) (attach (Phi := Phi) converter real)
+      ideal ≤ error) :
+    Constructs (Phi := Phi) converter
+      ({real} : ResourceAlgebra.Specification Phi B)
+      (epsilonRelaxation (Phi := Phi) error
+        ({ideal} : ResourceAlgebra.Specification Phi A)) :=
+  constructs_singleton_epsilonRelaxation_iff.mpr close
 
-example (D : DistinguisherClass (∀ i, Γ i) Φ) {t : Φ → ENNReal}
-    (ht : t ∈ D.tests) (R S : Φ) :
-    DistinguisherClass.adv t R S ≤ D.edistD R S :=
-  D.adv_le_edistD ht R S
+/-- Attachment is non-expanding in the selected fibre distances. -/
+example {A B : C} (converter : A ⟶ B)
+    (left right : Resource Phi B) :
+    distance (Phi := Phi) (attach (Phi := Phi) converter left)
+        (attach (Phi := Phi) converter right) ≤
+      distance (Phi := Phi) left right :=
+  distance_attach_le converter left right
 
-example {P : Set I} {H : ∀ i, Submonoid (Γ i)}
-    {pi1 pi2 phi psi chi sigma1 sigma2 : ∀ i, Γ i} {R S T : Φ} {eps : ENNReal}
-    (hsigma1 : ∀ i ∈ Pᶜ, sigma1 i ∈ H i)
-    (h1 : patternAttach P pi1 • patternAttach P phi • R =
-      patternAttach Pᶜ sigma1 • patternAttach P psi • S)
-    (hsigma2 : ∀ i ∈ Pᶜ, sigma2 i ∈ H i)
-    (h2 : edist (patternAttach P pi2 • patternAttach P psi • S)
-      (patternAttach Pᶜ sigma2 • patternAttach P chi • T) ≤ eps) :
-    filteredAt P H phi R
-      —[patternAttach P pi2 * patternAttach P pi1]→
-        Relaxation.epsilonRelaxation eps (filteredAt P H chi T) := by
-  exact Constructs.trans
-    (filteredAt_constructs_of_eq hsigma1 h1)
-    (filteredAt_constructs_epsilonRelaxation_of_edist_le hsigma2 h2)
+/-- Exact constructions compose componentwise in ordered parallel. -/
+example {A A' B B' : C}
+    {leftConverter : A ⟶ A'} {rightConverter : B ⟶ B'}
+    {leftSource : ResourceAlgebra.Specification Phi A'}
+    {leftTarget : ResourceAlgebra.Specification Phi A}
+    {rightSource : ResourceAlgebra.Specification Phi B'}
+    {rightTarget : ResourceAlgebra.Specification Phi B}
+    (leftConstruction : Constructs (Phi := Phi) leftConverter
+      leftSource leftTarget)
+    (rightConstruction : Constructs (Phi := Phi) rightConverter
+      rightSource rightTarget) :
+    Constructs (Phi := Phi) (leftConverter ⊗ₘ rightConverter)
+      (Specification.parallel (Phi := Phi) leftSource rightSource)
+      (Specification.parallel (Phi := Phi) leftTarget rightTarget) :=
+  leftConstruction.parallel rightConstruction
+
+/-- A simulator distance bound gives the corresponding construction between
+filtered endpoints. -/
+example {A : C}
+    {converters : EndoFamily (Opposite.op A)}
+    {converter sourceFilter targetFilter simulator : CategoryTheory.End A}
+    {real ideal : Resource Phi A} {error : ENNReal}
+    (commutes : ∀ classConverter : CategoryTheory.End A,
+      classConverter.op ∈ converters →
+        ∀ resource : Resource Phi A,
+          attach (Phi := Phi) converter
+              (attach (Phi := Phi) classConverter resource) =
+            attach (Phi := Phi) classConverter
+              (attach (Phi := Phi) converter resource))
+    (simulatorAdmitted : simulator.op ∈ converters)
+    (close : distance (Phi := Phi)
+      (attach (Phi := Phi) converter
+        (attach (Phi := Phi) sourceFilter real))
+      (attach (Phi := Phi) simulator
+        (attach (Phi := Phi) targetFilter ideal)) ≤ error) :
+    Constructs (Phi := Phi) converter
+      (filteredAt (Phi := Phi) converters sourceFilter real)
+      (epsilonRelaxation (Phi := Phi) error
+        (filteredAt (Phi := Phi) converters targetFilter ideal)) :=
+  filteredAt_constructs_epsilonRelaxation_of_distance_le
+    commutes simulatorAdmitted close
 
 end AbstractCryptography.SelectedSurface.Tests

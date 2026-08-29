@@ -2,7 +2,7 @@
 Copyright (c) 2026 Trail of Bits. All rights reserved.
 Authors: Marc Ilunga, Claude
 -/
-import AbstractCryptography.Algebra.Star
+import ConstructiveCryptography
 
 /-!
 # The algebraic sponge: indifferentiability from a random oracle
@@ -14,25 +14,17 @@ advantage `≈ N²/|F|^c` (`N` primitive queries, capacity `c`).  The binary spo
 is `F = 𝔽₂`.  Only `F`'s `+` is needed here — absorption adds message blocks into
 the rate `F^r`; the intended instantiations take `F` a finite field.
 
-Ported to the Gen-B homogeneous algebra (`AbstractCryptography`): the interface typing
-that the retired `ResourceTheory` version carried in a `Signature` lives, in this
-rendering, inside the carrier `Φ`, so no `Signature` appears here.
-
-* The **statement** is *not* sponge-specific: it is the generic construction from
-  an indifferentiability datum, `AbstractCryptography.Indifferentiable.construct`
-  (MauRen11 App. D Def 23 / MauRen16 §4.2 Lemma 5), instantiated with the public
-  permutation `RPerm` as the assumed resource and the random oracle `RO` as the
-  ideal.  Publicness — the distinguisher holds the permutation interface directly
-  — is what forces a *simulator* (the BDPV simulator) rather than mere
-  indistinguishability.  `sponge_indifferentiable` names that instantiation.
+* The **statement** applies Maurer--Renner 2016, Lemma 5, in the typed
+  `ResourceAlgebra`: an explicit sponge converter and an admitted simulator
+  turn their distance bound into construction of the relaxed ideal. Jost's
+  construction relation has the same direct-image form; simulation remains a
+  proof route rather than part of construction semantics.
 * The **functional core** is the deterministic map the construction converter
   realizes — pure `F`-algebra over the state `F^r × F^c`, in the spirit of
   `Applications/Sha256.lean`.
 
-Deferred to instantiation (`random-systems`, as PDS): `RPerm`/`RO` as resources,
-the sponge and BDPV simulator as reactive converters (memoryful carrier), and the
-`N²/|F|^c` bad-event bound (capacity collisions over `F^c`), lifted through the
-metric bridge (`edistD = maxAdvantage`).
+Deferred to the random-system instantiation are `RPerm` and `RO`, the sponge
+and BDPV simulator as DDCs, and the `N²/|F|^c` capacity-collision bound.
 -/
 
 open scoped ENNReal
@@ -107,21 +99,35 @@ def hash (hr : 0 < p.rate) (m : List F) : F ^ᵗ p.output :=
 
 end FunctionalCore
 
-/-! ### The indifferentiability statement — the generic construction, instantiated -/
+/-! ### The indifferentiability construction -/
 
-open AbstractCryptography
+open CategoryTheory
+open AbstractCryptography.Categorical
+open AbstractCryptography.Categorical.ResourceAlgebra
 
-/-- **The sponge's indifferentiability**, as an instance of the generic
-`Indifferentiable.construct` (MauRen16 §4.2 Lemma 5): from the indifferentiability
-datum — the BDPV simulator `σ ∈ H` with `edist (π • RPerm) (σ • RO) ≤ ε`, supplied
-by the carrier — the public permutation constructs the random oracle,
-`{RPerm} —[π]→ ((RO)^{∗H})^ε`.  Nothing sponge-specific is proved here; the
-concrete `RPerm`/`RO`, the sponge protocol/simulator converters, and the
-`N²/|F|^c` bound are the instantiation layer's obligation. -/
-theorem sponge_indifferentiable {M Φ : Type*} [Monoid M] [MulAction M Φ]
-    [PseudoEMetricSpace Φ] {H : Submonoid M} {ε : ℝ≥0∞} {RPerm RO : Φ}
-    (h : Indifferentiable H ε RPerm RO) :
-    ∃ π : M, ({RPerm} : Set Φ) —[π]→ Relaxation.epsilonRelaxation ε (Relaxation.star H {RO}) :=
-  h.construct
+universe u v w
+
+/-- An explicit sponge converter and admitted simulator establish the typed
+indifferentiability construction once the concrete carrier supplies their
+distance bound. Nothing sponge-specific is hidden in this theorem; the BDPV
+simulator and capacity-collision argument are the instantiation obligations. -/
+theorem sponge_indifferentiable
+    {C : Type u} [Category.{v} C] [MonoidalCategory C]
+    {Phi : Opposite C ⥤ Type w} [ResourceAlgebra C Phi]
+    {A B : C} {converters : EndoFamily (Opposite.op A)}
+    {error : ENNReal} {RPerm : Resource Phi B} {RO : Resource Phi A}
+    (converter : A ⟶ B) (simulator : CategoryTheory.End A)
+    (simulatorAdmitted : simulator.op ∈ converters)
+    (close : distance (Phi := Phi)
+      (attach (Phi := Phi) converter RPerm)
+      (attach (Phi := Phi) simulator RO) ≤ error) :
+    ResourceAlgebra.Specification.Constructs (Phi := Phi) converter
+      ({RPerm} : ResourceAlgebra.Specification Phi B)
+      (ResourceAlgebra.Specification.epsilonRelaxation
+        (Phi := Phi) error
+        (ResourceAlgebra.Specification.star (Phi := Phi) converters
+          ({RO} : ResourceAlgebra.Specification Phi A))) :=
+  ResourceAlgebra.Specification.constructs_of_simulator
+    simulator simulatorAdmitted close
 
 end Sponge

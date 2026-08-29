@@ -12,7 +12,7 @@ import ProofWidgets.Component.MakeEditLink
 
 A ProofWidgets panel that renders the current goal as a Maurer-style
 system diagram.  **Systems are boxes with a variable number of
-interfaces**: a random system (`PFunPDS`) has one interface (queries in,
+interfaces**: a fixed-interface random system has one interface (queries in,
 answers out); a channel has three (`A`, `B`, `E`); MPC shapes have `n`.
 Converters attach *at* an interface and compose serially along its wire;
 composite systems (definitions) open into their connected parts inside a
@@ -24,15 +24,12 @@ term** — re-rendered after every tactic step, with no widget state.
 imports `Rendering.CCWidget` displays the panel automatically, and the panel
 renders nothing when there is nothing to draw.
 
-**Theory-free.**  Imports only ProofWidgets; goal heads are matched by
-(unchecked) name, serving both the abstract CC surface and the
-random-systems H-technique surface: `edist/dist ≤ ε`, `—[π]→` /
-`Constructs` / `π • R ⊆ S` (with `epsilonRelaxation`/`star`/`zStar` relaxations),
-`Δ(S,T) ≤ ε`,
-`statDist`, `Ŝ |≡ T`, one-sided `Γ`/`Γᵇ` bounds, event masses, sums of
-advantages (calculation steps render as card bridges), `∃ σ, …`
-security shapes, `↑`-coercion stripping, `⌈q⌉` query filters as
-converters.  **Unknown terms never fail** — they degrade to term chips.
+**Theory-free.** Imports only ProofWidgets. It recognizes a small set of
+theory-neutral heads, including `edist`, `dist`, `statDist`, and distribution
+mass. Semantic adapter modules register the declarations that denote
+resources, converters, attachment, parallel composition, constructions, and
+relations. Calculation steps render as card bridges. **Unknown terms never
+fail**—they degrade to term chips.
 
 **Interactive**: box labels and bounds are the infoview's own
 interactive code (hover for types, click to inspect); docstrings appear
@@ -120,39 +117,17 @@ def CalcStepper : Component CalcStepperProps where
 
 /-! ## Recognized head constants
 
-Unchecked name literals: this module depends on neither surface, so the
-constants below need not exist in scope — a head that never occurs in a
-goal simply never matches. -/
+The theory-free renderer recognizes only stable Mathlib and probability
+operations directly.  Semantic AC, CC, and RS declarations are registered by
+their owning adapters through `DeclRole`. -/
 
--- the abstract constructive-cryptography surface
-private def nZStar : Name := `AbstractCryptography.zStar
-private def nCCApply : Name := `ConstructiveCryptography.CCAlgebra.apply
-private def nCCDist : Name := `ConstructiveCryptography.CCAlgebra.dist
-private def nACPar : Name := `AbstractCryptography.Par.par
-private def nRed : Name := `AbstractCryptography.HasReduction.Red
-private def nConstructs : Name := `AbstractCryptography.Constructs
 private def nRelaxFun : Name := `AbstractCryptography.Relaxation.toFun
-private def nEpsilonRelaxation : Name := `AbstractCryptography.Relaxation.epsilonRelaxation
-private def nStar : Name := `AbstractCryptography.Relaxation.star
+private def nEpsilonRelaxation : Name :=
+  `AbstractCryptography.Categorical.ResourceAlgebra.Specification.epsilonRelaxation
 
--- the random-systems H-technique surface
-private def nMaxAdvantage : Name := `RandomSystems.CR18.maxAdvantage
-private def nStatDist : Name := `RandomSystems.statDist
-private def nMaxWinProb : Name := `RandomSystems.CR18.maxWinProb
-private def nBlindMaxWinProb : Name := `RandomSystems.CR18.blindMaxWinProb
-private def nCondEquiv : Name := `RandomSystems.CR18.CondEquiv.CondEquiv
-private def nCondEquiv' : Name := `RandomSystems.CR18.CondEquiv
-private def nFilterQueriesP : Name := `RandomSystems.CR18.PFunPDS.filterQueries
-private def nFilterQueriesD : Name := `RandomSystems.CR18.PFunDDS.filterQueries
-private def nMass : Name := `RandomSystems.Dist.mass
-private def nPFunPDS : Name := `RandomSystems.CR18.PFunPDS
-private def nFTransform : Name := `RandomSystems.Dist.fTransform
-private def nOfFunDist : Name := `RandomSystems.CR18.PFunPDS.ofFunDist
-private def nApplyG : Name := `RandomSystems.CR18.CausalApply.applyG
-private def nGameOf : Name := `RandomSystems.CR18.gameOf
-private def nApplyDDC : Name := `RandomSystems.CR18.PFunPDS.applyDDC
-private def nOfStep : Name := `RandomSystems.CR18.PFunConverter.DDC.ofStep
-private def nIgnoreMBO : Name := `RandomSystems.CR18.PFunPDS.ignoreMBO
+private def nStatDist : Name := `Probability.statDist
+private def nMass : Name := `Probability.Distribution.mass
+private def nFTransform : Name := `Probability.Distribution.fTransform
 
 -- mathlib
 private def nMathlibEdist : Name := `EDist.edist
@@ -186,7 +161,7 @@ inductive DeclRole where
   | distance (leftFromEnd rightFromEnd : Nat) (symbol : String)
   | winning (systemFromEnd : Nat) (symbol : String)
   | conditional (leftFromEnd rightFromEnd : Nat)
-  | construction (realFromEnd protocolFromEnd idealFromEnd : Nat)
+  | construction (realFromEnd converterFromEnd idealFromEnd : Nat)
   deriving Repr, Inhabited
 
 structure DeclRule where
@@ -306,7 +281,7 @@ elab "cc_diagram_labels " items:ccDiagramLabelItem,+ : command => do
 inductive BoxKind where
   /-- A resource: plain box, letterspaced serif label. -/
   | res
-  /-- A converter attached by the protocol: blue accent. -/
+  /-- An attached converter: blue accent. -/
   | conv
   /-- A simulator (or `∗`-relaxation slot): amber accent. -/
   | sim
@@ -322,7 +297,7 @@ structure Elem where
   kind : BoxKind
   /-- `SubExpr.Pos` of the originating subterm, as a path. -/
   pos : Array Nat := #[]
-  /-- A game (`PFunPDS _ (_ × Bool)`): drawn with a labelled MBO output. -/
+  /-- A registered game: drawn with a labelled MBO output. -/
   mbo : Bool := false
   /-- First sentence of the head constant's docstring — the tooltip. -/
   descr : Option String := none
@@ -459,36 +434,6 @@ private def descrFor (e : Expr) : MetaM (Option String) := do
   let s := s.trimAscii.toString
   return if s.isEmpty then none else some s
 
-/-- Is `ty` the type of a game — `PFunPDS _ (_ × Bool)`? -/
-private def isGameType (ty : Expr) : Bool :=
-  if ty.isAppOf nPFunPDS then
-    let args := ty.getAppArgs
-    if args.size ≥ 1 then
-      let out := args[args.size - 1]!
-      out.isAppOfArity ``Prod 2 && out.appArg!.isConstOf ``Bool
-    else false
-  else false
-
-/-- Query/answer alphabets when `e : PFunPDS M X`. -/
-private def wireTypes (e : Expr) : MetaM (Option String × Option String) := do
-  try
-    let ty ← inferType e
-    if ty.isAppOf nPFunPDS then
-      let args := ty.getAppArgs
-      if args.size ≥ 2 then
-        let out := args[args.size - 1]!
-        -- A game exposes the ordinary response on the answer lane and its
-        -- monotone bit on the separate MBO output drawn by the component.
-        -- Printing `Y × Bool` on the lane duplicates the MBO and contradicts
-        -- the paper's system-plus-event picture.
-        let visibleOut :=
-          if out.isAppOfArity ``Prod 2 && out.appArg!.isConstOf ``Bool then
-            out.appFn!.appArg!
-          else out
-        return (some (← ppShort args[args.size - 2]!), some (← ppShort visibleOut))
-    return (none, none)
-  catch _ => return (none, none)
-
 /-! ## The goal parser -/
 
 private structure ConvApp where
@@ -519,26 +464,21 @@ private partial def convsOfMonoidElem (π : Expr) (p : SubExpr.Pos) :
 /-- Peel converter attachments off a resource term, outermost first. -/
 private partial def peelConvs (e : Expr) (p : SubExpr.Pos) :
     MetaM (Array ConvApp × Expr × SubExpr.Pos) := do
-  -- Extensible semantic rules take precedence over legacy built-ins.
+  -- Semantic rules are supplied by the owning adapter.
   if let some role ← declRole? e then
     let args := e.getAppArgs
     match role with
     | .application cf rf =>
       if let some (ci, cexp) := argFromEnd? args cf then
         if let some (ri, resource) := argFromEnd? args rf then
-          let cp := argPos p args.size ci
-          let (cval, cpos) :=
-            if cexp.isAppOf nOfStep then
-              let ca := cexp.getAppArgs
-              (ca[ca.size-1]!, argPos cp ca.size (ca.size-1))
-            else (cexp, cp)
-          let (label, chip) ← labelFor cval
+          let cpos := argPos p args.size ci
+          let (label, chip) ← labelFor cexp
           let c : ConvApp :=
             { iface := ""
               label := label
               chip := chip
               pos := cpos.toArray
-              descr := ← descrFor cval }
+              descr := ← descrFor cexp }
           let (cs, core, corePos) ← peelConvs resource (argPos p args.size ri)
           return (#[c] ++ cs, core, corePos)
     | .attachment inf cf rf =>
@@ -559,47 +499,6 @@ private partial def peelConvs (e : Expr) (p : SubExpr.Pos) :
       if let some (ti, target) := argFromEnd? args tf then
         return ← peelConvs target (argPos p args.size ti)
     | _ => pure ()
-  -- CCAlgebra.apply : (I) A i c R — 5 args, `c` an `Attached` subtype
-  if let some args := matchApp? e nCCApply 5 then
-    let i ← ppIface args[2]!
-    let cval := if let some sargs := matchApp? args[3]! ``Subtype.mk 4 then
-      sargs[2]! else args[3]!
-    let (l, chip) ← labelFor cval
-    let c : ConvApp := { iface := i, label := l, pos := (argPos p 5 3).toArray, chip := chip
-                         descr := ← descrFor cval }
-    let (cs, core, cp) ← peelConvs args[4]! (argPos p 5 4)
-    return (#[c] ++ cs, core, cp)
-  -- applyDDC α S : a deterministic converter applied to a system —
-  -- casc[α, S]; `DDC.ofStep step` unwraps to the step function's label
-  if let some (args, n) := matchLast2? e nApplyDDC then
-    let cexp := args[n-2]!
-    let cpos := argPos p n (n-2)
-    let (cval, cvalPos) :=
-      if cexp.isAppOf nOfStep then
-        let ca := cexp.getAppArgs
-        (ca[ca.size-1]!, argPos cpos ca.size (ca.size-1))
-      else (cexp, cpos)
-    let (l, chip) ← labelFor cval
-    let c : ConvApp := { iface := "", label := l, pos := cvalPos.toArray, chip := chip
-                         descr := ← descrFor cval }
-    let (cs, core, cp) ← peelConvs args[n-1]! (argPos p n (n-1))
-    return (#[c] ++ cs, core, cp)
-  -- applyG step S : a converter (step function) driving a raw system
-  if let some (args, n) := matchLast2? e nApplyG then
-    let (l, chip) ← labelFor args[n-2]!
-    let c : ConvApp := { iface := "", label := l, pos := #[], chip := chip
-                         descr := ← descrFor args[n-2]! }
-    let (cs, core, cp) ← peelConvs args[n-1]! (argPos p n (n-1))
-    return (#[c] ++ cs, core, cp)
-  -- ⌈q⌉ G : query-budget filters, drawn as converters
-  for nm in [nFilterQueriesP, nFilterQueriesD] do
-    if let some (args, n) := matchLast2? e nm then
-      let q ← ppShort args[n-2]!
-      let c : ConvApp :=
-        { iface := "", label := s!"⌈{q}⌉", pos := (argPos p n (n-2)).toArray
-          chip := false, filter := true }
-      let (cs, core, cp) ← peelConvs args[n-1]! (argPos p n (n-1))
-      return (#[c] ++ cs, core, cp)
   -- π • R : monoid element acting on a resource or specification
   let smul? :=
     if let some args := matchApp? e ``HSMul.hSMul 6 then
@@ -639,13 +538,6 @@ private partial def parseCenter (e : Expr) (p : SubExpr.Pos) : MetaM (Array Elem
       if let some (ti, target) := argFromEnd? args tf then
         return ← parseCenter target (argPos p args.size ti)
     | _ => pure ()
-  if let some args := matchApp? e nACPar 4 then
-    return (← parseCenter args[2]! (argPos p 4 2))
-      ++ (← parseCenter args[3]! (argPos p 4 3))
-  -- ofFunDist: a system that is a distribution over deterministic systems
-  if let some (args, n) := matchLast2? e nOfFunDist then
-    if n ≥ 1 then
-      return ← parseCenter args[n-1]! (argPos p n (n-1))
   -- fTransform f seed : a sampled family is one observable system, not a
   -- parallel composition of the family and its distribution.  The seed is
   -- implementation/probability structure and has no external interface.
@@ -657,18 +549,10 @@ private partial def parseCenter (e : Expr) (p : SubExpr.Pos) : MetaM (Array Elem
     let (fl, _) ← labelFor famKey
     let fEl : Elem := { label := fl, kind := .chip, descr := ← descrFor famKey }
     return #[fEl]
-  -- gameOf S cond : the system plus its bad-event observer
-  if let some (args, n) := matchLast2? e nGameOf then
-    let sys ← parseCenter args[n-2]! (argPos p n (n-2))
-    let (cl, _) ← labelFor args[n-1]!
-    let flag : Elem := { label := s!"Aᵢ: {cl}", kind := .sim
-                         descr := ← descrFor args[n-1]! }
-    return sys ++ #[flag]
   let e' := stripVal e
   let (l, chip) ← labelFor e'
-  let mbo ← try pure (isGameType (← inferType e')) catch _ => pure false
   return #[{ label := l, kind := if chip then .chip else .res, pos := p.toArray
-             mbo, descr := ← descrFor e' }]
+             descr := ← descrFor e' }]
 
 /-- Relaxations peeled off a specification term. -/
 private structure Relaxed where
@@ -676,8 +560,8 @@ private structure Relaxed where
   /-- `∗`-slots: interface label (`""` when unknown) and position. -/
   stars : Array (String × Array Nat) := #[]
 
-/-- Strip `Singleton.singleton` and applied `Relaxation`s
-(`epsilonRelaxation`/`star`/`zStar`) off a specification-level term. -/
+/-- Strip `Singleton.singleton` and applied scalar relaxations off a
+specification-level term. -/
 private partial def peelSpec (e : Expr) (p : SubExpr.Pos) (acc : Relaxed) :
     MetaM (Expr × SubExpr.Pos × Relaxed) := do
   if let some args := matchApp? e ``Singleton.singleton 4 then
@@ -690,13 +574,6 @@ private partial def peelSpec (e : Expr) (p : SubExpr.Pos) (acc : Relaxed) :
     if let some rargs := matchApp? relax nEpsilonRelaxation 3 then
       let ε ← ppShort rargs[2]!
       return ← peelSpec inner innerPos { acc with eps := acc.eps.push ε }
-    if relax.isAppOf nStar then
-      return ← peelSpec inner innerPos
-        { acc with stars := acc.stars.push ("", relaxPos.toArray) }
-    if let some rargs := matchApp? relax nZStar 7 then
-      let z ← ppIface rargs[6]!
-      return ← peelSpec inner innerPos
-        { acc with stars := acc.stars.push (z, relaxPos.toArray) }
     -- unknown relaxation: keep it visible as a `∗`-slot named after it
     let (l, _) ← labelFor relax
     return ← peelSpec inner innerPos
@@ -779,7 +656,7 @@ private def mirrorIfaces (sys other : SystemView) : SystemView := Id.run do
   return sys
 
 /-- A converter occurring at the same interface on both sides of a distance is
-the common protocol context, not an ideal-world simulator.  `simFirst` is a
+the common converter context, not an ideal-world simulator.  `simFirst` is a
 useful fallback for genuinely unmatched ideal-side converters, but without
 this reconciliation it incorrectly turns examples such as
 `CBC 𝕋` versus `CBC 𝔽` into a vertical simulator attachment. -/
@@ -809,19 +686,10 @@ private def parseSide (e : Expr) (p : SubExpr.Pos) (simFirst : Bool)
   let (convs, core, corePos) ← peelConvs e p
   let (core, corePos, relaxed') ← peelSpec core corePos relaxed
   let (convs', core, corePos) ← peelConvs core corePos
-  -- ignoreMBO: the same system with its flag dropped
   let mut core := core
   let mut corePos := corePos
-  let mut flagDropped := false
-  while core.isAppOf nIgnoreMBO && core.getAppArgs.size ≥ 1 do
-    let args := core.getAppArgs
-    corePos := argPos corePos args.size (args.size - 1)
-    core := args[args.size - 1]!
-    flagDropped := true
-  let (inTy, outTy) ← wireTypes core
   let (origLabel, _) ← labelFor core
   let origDescr? ← descrFor core
-  let origGame ← try pure (isGameType (← inferType core)) catch _ => pure false
   -- systems are connections: expose the composite's structure by default
   let mut unfolded? : Option String := none
   let mut frameLabel? : Option String := none
@@ -841,22 +709,12 @@ private def parseSide (e : Expr) (p : SubExpr.Pos) (simFirst : Bool)
       innerConvs := cs.map fun c => { c with inner := true }
       core := u'
       corePos := up
-  if flagDropped then
-    unfolded? := some ((unfolded?.getD origLabel) ++ "  ·  MBO flag dropped (ignoreMBO)")
   let center ← parseCenter core corePos
   let outerConvs := convs ++ convs'
   let allConvs := outerConvs ++ innerConvs
   let mut ifaces := groupIfaces allConvs relaxed'.stars advIfaces simFirst
-  -- a single-interface system with alphabets and no named interfaces:
-  -- make the anonymous interface explicit so its arrows always draw
-  if ifaces.all (·.label.isEmpty) && inTy.isSome then
-    if ifaces.isEmpty then
-      ifaces := #[({ inType := inTy, outType := outTy } : Iface)]
-    else
-      ifaces := ifaces.modify 0 fun f => ({ f with inType := inTy, outType := outTy } : Iface)
   return ({ center, ifaces, unfolded?
             frameLabel?
-            frameMbo := frameLabel?.isSome && origGame && !flagDropped
             frameDescr? := if frameLabel?.isSome then origDescr? else none }, relaxed')
 
 /-- Construction judgments `R —[π]→ S` / `Constructs π R S`. -/
@@ -924,10 +782,6 @@ private partial def parseAdv (e : Expr) (p : SubExpr.Pos)
   let dist? : Option (String × Expr × SubExpr.Pos × Expr × SubExpr.Pos) :=
     if let some da := matchApp? e nMathlibEdist 4 then
       some ("d", da[2]!, argPos p 4 2, da[3]!, argPos p 4 3)
-    else if let some da := matchApp? e nCCDist 4 then
-      some ("d", da[2]!, argPos p 4 2, da[3]!, argPos p 4 3)
-    else if let some (da, n) := matchLast2? e nMaxAdvantage then
-      some ("Δ", da[n-2]!, argPos p n (n-2), da[n-1]!, argPos p n (n-1))
     else if let some (da, n) := matchLast2? e nStatDist then
       some ("δ", da[n-2]!, argPos p n (n-2), da[n-1]!, argPos p n (n-1))
     else none
@@ -937,13 +791,6 @@ private partial def parseAdv (e : Expr) (p : SubExpr.Pos)
     let (real, _) ← parseSide l lp (simFirst := false) advIfaces (sel := sel)
     let (real, ideal) := reconcileSharedConverters real ideal
     return #[.dist sym (mirrorIfaces real ideal) (mirrorIfaces ideal real)]
-  for (nm, sym) in [(nBlindMaxWinProb, "Γᵇ"), (nMaxWinProb, "Γ")] do
-    if e.isAppOf nm then
-      let da := e.getAppArgs
-      if da.size ≥ 1 then
-        let n := da.size
-        let (sys, _) ← parseSide da[n-1]! (argPos p n (n-1)) (simFirst := false) (sel := sel)
-        return #[.win sym sys]
   if let some (da, n) := matchLast2? e nMass then
     let (d, _) ← parseSide da[n-2]! (argPos p n (n-2)) (simFirst := false) (sel := sel)
     let ev ← ppShort da[n-1]!
@@ -998,10 +845,10 @@ partial def parseJudgment? (e : Expr) (p : SubExpr.Pos := .root)
     match role with
     | .construction rf pf inf =>
       if let some (ri, real) := argFromEnd? args rf then
-        if let some (pi, protocol) := argFromEnd? args pf then
+        if let some (pi, converter) := argFromEnd? args pf then
           if let some (ii, ideal) := argFromEnd? args inf then
             return ← mkConstruction real (argPos p args.size ri)
-              protocol (argPos p args.size pi) ideal (argPos p args.size ii) sel
+              converter (argPos p args.size pi) ideal (argPos p args.size ii) sel
     | .conditional lf rf =>
       if let some (li, left) := argFromEnd? args lf then
         if let some (ri, right) := argFromEnd? args rf then
@@ -1011,18 +858,6 @@ partial def parseJudgment? (e : Expr) (p : SubExpr.Pos := .root)
   -- advantage-expression comparisons: `d … ≤ ε`, `Δ(…) ≤ Δ(…) + …`
   if let some args := matchApp? e ``LE.le 4 then
     return ← mkAdvComparison args[2]! (argPos p 4 2) args[3]! (argPos p 4 3) "≤" sel
-  -- constructions: `R —[π]→ S`, whose head takes the constructor first
-  -- (`Red π R S`, so the arrow's endpoints are the last two arguments)
-  if let some args := matchApp? e nRed 6 then
-    return ← mkConstruction args[4]! (argPos p 6 4) args[3]! (argPos p 6 3)
-      args[5]! (argPos p 6 5) sel
-  if e.isAppOf nConstructs then
-    let args := e.getAppArgs
-    let n := args.size
-    if n ≥ 3 then
-      return ← mkConstruction args[n-2]! (argPos p n (n-2)) args[n-3]! (argPos p n (n-3))
-        args[n-1]! (argPos p n (n-1)) sel
-    return none
   -- unfolded form: `π • R ⊆ S`
   if let some args := matchApp? e ``HasSubset.Subset 4 then
     let (real, rrel) ← parseSide args[2]! (argPos p 4 2) (simFirst := false) (sel := sel)
@@ -1035,11 +870,6 @@ partial def parseJudgment? (e : Expr) (p : SubExpr.Pos := .root)
     return some
       { real := mirrorIfaces real ideal, ideal? := some (mirrorIfaces ideal real)
         rel := "⊆", eps? := if eps.isEmpty then none else some (" + ".intercalate eps.toList) }
-  -- conditional equivalence: `Ŝ |≡ T`
-  for nm in [nCondEquiv, nCondEquiv'] do
-    if let some (args, n) := matchLast2? e nm then
-      return ← mkDistance args[n-2]! (argPos p n (n-2)) args[n-1]! (argPos p n (n-1))
-        "|≡" none (some "conditionally equivalent given no MBO win") sel
   -- equalities: advantage expressions first, then resource terms
   if let some args := matchApp? e ``Eq 3 then
     if let some jv ← mkAdvComparison args[1]! (argPos p 3 1) args[2]! (argPos p 3 2) "=" sel then
@@ -1204,7 +1034,7 @@ private def sysSvg (sys : SystemView) (sel : Array (Array Nat)) (codes : Codes)
   let wOf (el : Elem) (isCore : Bool) : Float :=
     -- Italic math labels have wider side bearings than monospace estimates;
     -- 44px keeps short names such as `CBC` off the box stroke while the
-    -- content-based width handles longer protocol and simulator names.
+    -- Content-based width handles longer converter and simulator names.
     let base := Float.ofNat el.label.length * 7.2 + 16
     if isCore then min 240 (max 64 base) else min 136 (max 44 base)
   let center := if sys.center.isEmpty then
@@ -1224,7 +1054,7 @@ private def sysSvg (sys : SystemView) (sel : Array (Array Nat)) (codes : Codes)
   let mut kids : Array Html := #[]
   let mut frameX0 : Option Float := none
   let mut x : Float := 6
-  -- left interface: a typed anonymous PFun port has query/answer arrows;
+  -- A typed anonymous system interface has query/answer arrows;
   -- abstract named or untyped ports are undirected wires.
   match left? with
   | some f =>
@@ -1379,8 +1209,8 @@ The user-facing renderer is DOM-first: resources, converters, labels, ports,
 frames, and expressions are ordinary HTML components whose dimensions come
 from their rendered content.  CSS connector primitives draw the straight
 blackboard wires.  SVG remains available through `renderSystem` only for
-specialized exports and future non-rectilinear feedback overlays; it no longer
-owns text or box geometry in the proof panel. -/
+specialized exports and non-rectilinear feedback overlays; proof-panel text
+and box geometry are DOM-rendered. -/
 
 private def domLabel (el : Elem) (codes : Codes) : Html :=
   match codeFor? codes el.pos with
@@ -1734,7 +1564,7 @@ private def rendererSelfCheck : Except String Unit := do
   let gameSvg := sysSvg
     { center := #[{ core with mbo := true }], ifaces := #[typed] } #[] #[]
   unless htmlCountText "Aᵢ" gameSvg == 1 && htmlCountTag "polygon" gameSvg == 3 do
-    throw "games must expose one labelled MBO output in addition to the two protocol lanes"
+    throw "games must expose one labelled MBO output in addition to the two resource lanes"
 
   let component := renderSystemComponent
     { center := #[core], ifaces := #[typed] } #[] #[]
@@ -1754,7 +1584,7 @@ private def rendererSelfCheck : Except String Unit := do
   let sharedComponent := renderSystemComponent idealShared #[] #[]
   unless htmlCountClass "bottom-iface" sharedComponent == 0 &&
       htmlCountClass "cvt" sharedComponent == 1 && htmlCountClass "c-sim" sharedComponent == 0 do
-    throw "a converter shared by both sides must remain a horizontal protocol converter"
+    throw "a converter shared by both sides must remain a horizontal converter"
 
   if stylesheet.contains "text-overflow" || stylesheet.contains "overflow:hidden" then
     throw "diagram text must never be clipped or replaced by an ellipsis"

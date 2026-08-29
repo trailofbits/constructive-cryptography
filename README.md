@@ -1,74 +1,103 @@
 # Constructive Cryptography
 
-A Lean 4 formalization of the Maurer-school Constructive Cryptography framework:
-the abstract specification calculus, the resource algebra, and the constructive
-layer built on them.
+A Lean 4 formalization of Maurer-style Abstract and Constructive Cryptography,
+with a fixed-interface Random Systems library and a query-indexed random-system
+instantiation of the abstract construction calculus.
 
-## The layers
+## Dependency structure
 
+```text
+Applications
+    -> ConstructiveCryptography
+    -> AbstractCryptography
+
+Applications.CBCMAC
+    -> RandomSystemsCC -> AbstractCryptography
+                       -> RandomSystems.Converter -> RandomSystems
 ```
-Specification calculus        specifications are sets; a construction is an inclusion
-      MauRen16 §2             𝓡 ─π→ 𝓢  :⟺  π𝓡 ⊆ 𝓢
 
-Resource algebra              interfaces, converters, parallel composition,
-      MauRen11 §6 Def. 14     and a non-expanding pseudo-metric
+`RandomSystems` has no dependency on the abstract AC/CC layers. It can be
+imported alone for fixed-interface random-system proofs. Converter attachment is
+an optional extension, and the concrete AC/CC adapters live above both layers.
 
-Constructive Cryptography     protocols, relaxations, multi-party constructions
-      Jost §2.2 · LiuZhang Ch. 3–4
-```
+## Public roots
 
-`THEORY.md` states the whole thing formally — every definition, axiom and law,
-with its source. It is implementation-independent.
-
-## Layout
-
-| directory | contents |
+| Import | Purpose |
 |---|---|
-| `AbstractCryptography/Refinement/` | components, constructors, reduction, step-wise refinement |
-| `AbstractCryptography/Specification/` | the construction relation and its laws |
-| `AbstractCryptography/Metric/` | pseudo-metric, distinguishers, non-expansion, ε-relaxation |
-| `AbstractCryptography/Algebra/` | converter attachment, the interface-indexed algebra, `∗`-relaxation |
-| `ConstructiveCryptography/` | multi-party constructions, context-restricted constructions |
-| `AbstractCryptography/MR11.lean` | the fenced MauRen11 surface — see below |
+| `AbstractCryptography` | Carrier-independent specifications, constructions, resource algebra, metrics, and relaxations |
+| `ConstructiveCryptography` | MR16-track exact and approximate construction notation and composition |
+| `RandomSystems` | Fixed-interface DDS, DDE, PDS, observation, equivalence, distance, ordered parallel composition, and partial H-coefficient bounds |
+| `RandomSystems.Converter` | Branch-finite DDCs, attachment, serial and ordered parallel composition, observation factorization, probability action, and common-domain bridges |
+| `RandomSystemsCC` | The single `ResourceAlgebra` instance for query-indexed interfaces, DDCs, and normalized random systems, plus common-domain non-expansion |
+| `Applications.CBCMAC` | CBC-MAC resources, converters, attachment equations, probability bound, and CC construction |
 
-### The MauRen11 provenance fence (MR11-DEFERRED)
+## Module ownership
 
-The working discipline is **MR16-only** until an explicit MR11 reconciliation
-task, so the `AbstractCryptography` and `ConstructiveCryptography` roots import
-no MauRen11-specific module. The distinguisher class and its metric, the
-carrier taken up to that metric, the distinguisher-indexed relaxation and the
-simulation notion stated over it, the choice-setting layer, the two-party case
-and step-wise refinement are collected behind `AbstractCryptography.MR11` and
-built by the `AbstractCryptographyMR11` target. Nothing is deleted or weakened;
-`scripts/ledgerAudit.sh` fails any MR16-track import of a fenced module. The
-rule, the classification and the machine-readable list are in `LEDGER.md`
-"PROVENANCE FENCE (MR11-DEFERRED)".
+- `AbstractCryptography/Categorical.lean` owns the carrier-independent
+  interface-indexed functor, fibre distance, and basic construction relation.
+  `AbstractCryptography/Categorical/ResourceAlgebra.lean` adds the selected
+  ordered resource parallel and its non-expansion laws.
+- The `RandomSystems` root owns only fixed-interface Random Systems
+  mathematics. It does not import converters, AC, CC, or applications.
+- `RandomSystems/Converter.lean` is the optional query-indexed DDC root. Its
+  imported modules under `RandomSystems/Converter/` own the concrete
+  interface category, DDCs, attachment, and induced random-system functor,
+  but no construction judgment.
+- `RandomSystemsCC/` owns the abstract-layer instances. Focused concrete
+  consequences, such as multiparty converter decompositions, are imported
+  directly rather than re-exported by the root.
+- `RandomSystemsCC/ResourceAlgebra.lean` installs the only concrete ambient
+  `ResourceAlgebra`. `RandomSystemsCC/CommonDomain.lean` supplies
+  non-expansion for the normalized specialization of Lanzenberger's
+  common-domain subcarrier; it does not install a second parallel algebra.
+- `Applications/CBCMAC/` owns the scheme-specific definitions and proof. No
+  CBC object is part of the generic RS or RSCC layers.
 
-Converters form a `Monoid`, attachment is a `MulAction`, and distance is
-Mathlib's `PseudoEMetricSpace`. Only what Mathlib lacks is declared here.
+The categorical layer does not postulate an untyped universal resource. An
+interface records a query type and the answer type selected by each query;
+each interface has its own resource fibre. The query-indexed DDC category
+supplies the sole ambient `ResourceAlgebra`. The categorical common-domain
+bridge uses Lanzenberger's normalized specialization; its arrows preserve that
+embedded image.
 
 ## Building
 
-```
-lake exe cache get     # if a Mathlib cache is available
+```sh
+lake exe cache get
 lake build
+lake build RandomSystems RandomSystemsConverter RandomSystemsCC
+lake build RandomSystemsCCInstantiationTests Applications.CBCMAC
+scripts/publicDependencyAudit.sh
+git diff --check
 ```
 
-Requires the Lean toolchain pinned in `lean-toolchain`.
+The Lean toolchain is pinned in `lean-toolchain`.
 
 ## Reading order
 
-Start at `AbstractCryptography/Specification/Basic.lean` for the construction
-relation, then `AbstractCryptography/Algebra/Attachment.lean` for the algebra.
-`THEORY.md` maps every numbered law to the source it comes from.
+1. Read `THEORY.md` for the mathematical objects, operations, laws, and layer
+   boundaries.
+2. Read `AbstractCryptography/Categorical.lean` for the abstract
+   interface-indexed construction calculus.
+3. Import `RandomSystems` and follow `DDS.lean`, `DDE.lean`, `PDS.lean`,
+   `Observation.lean`, `RandomSystem.lean`, and `Distance.lean` for the
+   fixed-interface theory.
+4. Read `RandomSystems/Converter/DDC.lean` and
+   `RandomSystems/Converter/ApplySystem.lean` before the serial, parallel, and
+   probability-action modules.
+5. Read `RandomSystemsCC/ResourceAlgebra.lean` for the ambient CC
+   instantiation and `RandomSystemsCC/CommonDomain.lean` for the restricted
+   common-domain adapter, then `Applications/CBCMAC.lean` for a complete
+   application.
+6. Use `CC_BY_HAND.md` to reconstruct the development in dependency order.
 
-## References
+## Primary references
 
-- Maurer, Renner. *Abstract Cryptography.* ICS 2011.
-- Maurer, Renner. *From Indifferentiability to Constructive Cryptography.* TCC 2016.
-- Jost, Maurer. *Overcoming Impossibility Results in Composable Security using
-  Interval-Wise Guarantees.* CRYPTO 2020.
-- Jost. *Towards Practical and Sound Cryptography from Composable Security.*
-  PhD thesis, ETH Zurich, 2020.
-- Liu-Zhang. *Multi-Party Computation: Definitions, Enhanced Security Guarantees
-  and Efficiency.* PhD thesis, ETH Zurich, 2021.
+- Ueli Maurer and Renato Renner, *From Indifferentiability to Constructive
+  Cryptography (and Back)*, TCC 2016.
+- Daniel Jost, *On Generalizations of Composable Security*, ETH Zurich, 2020.
+- Chen-Da Liu-Zhang, *Multi-Party Computation: Definitions, Enhanced Security
+  Guarantees and Efficiency*, ETH Zurich, 2021.
+- David Lanzenberger, *A Theory of Random Systems, Games, and Hardness
+  Amplification*, ETH Zurich, 2023.
+- Ueli Maurer, *Indistinguishability of Random Systems*, EUROCRYPT 2002.

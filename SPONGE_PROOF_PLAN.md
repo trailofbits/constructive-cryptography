@@ -1,7 +1,8 @@
 # Sponge indifferentiability: active concrete proof
 
 This file contains only unresolved work. General AC proof guidance is in
-`LIBRARY_GUIDE.md`; operational rules are in `AGENTS.md`.
+`THEORY.md` and owning source documentation; operational rules are in
+`AGENTS.md`.
 
 ## Target
 
@@ -9,14 +10,17 @@ Instantiate `Applications.Sponge.sponge_indifferentiable` for the BDPV
 algebraic sponge: construct a random oracle from a public random permutation
 with a capacity-collision bound of order `N² / |F|^c`.
 
-The live abstract endpoint is deliberately generic:
+The live abstract endpoint is the generic `ResourceAlgebra` distance leaf:
 
 ```lean
-Indifferentiable H error RPerm RO
+distance (attach converter RPerm) (attach simulator RO) ≤ error
 ```
 
-The concrete random permutation, random oracle, sponge converter, BDPV
-simulator, query budget, and distance proof belong in `RandomSystemsCC`.
+`Applications.Sponge.sponge_indifferentiable` turns that leaf, an explicit
+simulator, and its membership in the selected endomorphism family into exact
+construction of the scalar relaxation of the simulator closure. The concrete
+random permutation, random oracle, sponge converter, BDPV simulator, query
+budget, and distance proof belong in the Random Systems instantiation.
 
 Primary authority: Bertoni–Daemen–Peeters–Van Assche, EUROCRYPT 2008, together
 with MauRen16's indifferentiability-to-construction endpoint. Re-read the exact
@@ -29,20 +33,20 @@ simulator and bound before fixing Lean definitions.
 - The ideal resource is a random oracle.
 - The ideal converter is the probabilistic BDPV simulator; its capacity coins
   are internal simulator randomness, not an extra public resource.
-- Public permutation access remains visible to the distinguisher in both
+- Public permutation access remains visible to the environment in both
   worlds.
-- The final AC statement is obtained through the generic
-  `Indifferentiable.construct`; do not introduce a sponge-specific duplicate
-  construction predicate.
+- The final AC statement is obtained through
+  `Applications.Sponge.sponge_indifferentiable`; do not introduce another
+  construction predicate or an `Indifferentiable` wrapper.
 
-These choices must be rechecked against the current fixed-signature RS API
-before implementation. Historical typed-resource prototypes are not evidence.
+These choices must be instantiated over the current query-indexed DDC and
+ambient random-system APIs; earlier prototypes are not evidence.
 
 ## Open work
 
-### 1. Freeze signatures and query accounting
+### 1. Fix interfaces and query accounting
 
-Define fixed signatures for:
+Define interfaces for:
 
 - the public forward/inverse permutation interface;
 - the sponge hash interface;
@@ -50,8 +54,8 @@ Define fixed signatures for:
 - the simulator's access to the ideal oracle.
 
 State exactly what `N` counts: permutation queries, oracle queries, total
-converter steps, or a proved transformation among them. Prove applicability
-and output-signature preservation for every converter.
+converter queries, or a proved transformation among them. Prove that every
+converter has the stated source and target interfaces.
 
 ### 2. Define the concrete worlds
 
@@ -85,7 +89,7 @@ slightly different versions across transition lemmas.
    corollary.
 6. Connect the transcript statement to the selected RS distinguishing metric.
 
-Use the standard section order from `LIBRARY_GUIDE.md`:
+Use the standard section order from `AGENTS.md`:
 
 ```text
 Model
@@ -104,10 +108,10 @@ distance/construction shell should be automated.
 ### 5. Assemble the AC theorem
 
 1. Package the simulator in the selected simulator submonoid.
-2. Prove `edist (sponge • RPerm) (simulator • RO) ≤ error`.
-3. build `Indifferentiable H error RPerm RO`;
-4. apply `Applications.Sponge.sponge_indifferentiable`;
-5. expose both the exact product bound and the simpler quadratic corollary.
+2. Prove the `ResourceAlgebra.distance` bound between the attached real and
+   ideal resources.
+3. Apply `Applications.Sponge.sponge_indifferentiable`.
+4. Expose both the exact product bound and the simpler quadratic corollary.
 
 ## Reuse rules
 
@@ -117,9 +121,8 @@ distance data processing, transcript factorization, permutation fiber counts,
 falling-factorial/product identities, and union bounds. Upstream a helper only
 when it is representation-independent and has at least two consumers.
 
-Do not revive deleted `ResourceTheory`, `ProtocolIndifferentiable`, or old
-`RandomSystemsCC.Sponge` APIs. Build against the live fixed-signature quotient
-and converter action.
+Use the live ambient quotient and DDC action. Do not add a second construction
+predicate, carrier, or adapter for this application.
 
 ## Completion criteria
 
@@ -131,9 +134,9 @@ The concrete proof is complete only when:
 - simulator invariants and the capacity-collision bound contain no `sorry`;
 - the distance theorem is connected to the AC metric without a global
   instance diamond;
-- the final construction uses the generic AC indifferentiability endpoint;
+- the final construction uses the existing `ResourceAlgebra` endpoint;
 - focused RS, AC application, and downstream builds pass under ordinary
   heartbeat limits.
 
 Delete this file when those conditions hold. Move reusable proof guidance to
-`LIBRARY_GUIDE.md` or `AGENTS.md`, not to a completion log.
+`THEORY.md`, source documentation, or `AGENTS.md`, not to a completion log.

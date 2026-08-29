@@ -4,6 +4,7 @@ Authors: Marc Ilunga, Claude
 -/
 import ConstructiveCryptography
 import ConstructiveCryptography.Multiparty.Basic
+import ConstructiveCryptography.Multiparty.Game
 
 /-!
 # Multi-Party Constructive Cryptography

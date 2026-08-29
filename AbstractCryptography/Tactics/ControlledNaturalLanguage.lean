@@ -55,13 +55,13 @@ The source corpus consistently uses direct mathematical assertions:
   justify an inference.
 
 The controlled sentences below follow that usage.  They name mathematical
-objects such as a construction, equality, protocol, bound, or simulator.  They
+objects such as a construction, equality, converter, bound, or simulator.  They
 do not rename a proof as a generic `certificate`, and they do not describe
 equality replacement as `transport`.  Those words have different domain
 meanings in cryptographic papers.
 
 Serial composition is written in the order in which its two construction
-proofs are listed.  The goal still displays the resulting converter product,
+proofs are listed.  The goal still displays the resulting serial converter,
 so Lean checks the paper's function-composition convention rather than hiding
 it in prose.
 
@@ -137,7 +137,7 @@ elab_rules : tactic
       evalTactic backend
       trace[CryptoControlledNaturalLanguage.sentence] "{label.getString}"
 
-/-- Close a construction or protocol-action equality from one explicitly
+/-- Close a construction or converter-attachment equality from one explicitly
 named fact.  The noun selects the corresponding deterministic AC rule; no
 library search is performed. -/
 scoped macro (name := cnlFollowsFrom)
@@ -158,23 +158,21 @@ scoped macro (name := cnlFollowsFrom)
       Macro.throwErrorAt subject
         "expected `construction` or `equality` in this controlled-language sentence"
 
-/-- Replace the protocol label in one supplied exact or approximate
-construction using one supplied protocol equality.  This follows the wording
-"Replacing ... using ..." and "we obtain ..." used in MauRen11's composition
-proofs. -/
-scoped macro (name := cnlReplaceProtocol)
-    "Replacing" "the" protocolWord:ident "in"
+/-- Replace the converter in one supplied exact or approximate construction
+using one supplied converter equality. -/
+scoped macro (name := cnlReplaceConverter)
+    "Replacing" "the" converterWord:ident "in"
       construction:cryptoCnlReference "using"
       equation:cryptoCnlReference "," "we"
       "obtain" "the" requiredWord:ident
       constructionWord:ident : tactic => do
-  expectWord protocolWord "protocol"
+  expectWord converterWord "converter"
   expectWord requiredWord "required"
   expectWord constructionWord "construction"
   let construction ← referenceTerm construction
   let equation ← referenceTerm equation
   `(tactic|
-    crypto_cnl_sentence "ac.construction.replace_protocol" =>
+    crypto_cnl_sentence "ac.construction.replace_converter" =>
       ac_transport $construction using $equation)
 
 /-- Apply exact or scalar-metric serial composition to two supplied
@@ -217,10 +215,12 @@ scoped macro (name := cnlHaveFactFrom)
       have $name : $statement := $proof)
 
 /-- Introduce one explicitly named simulator for a star-relaxed ideal
-specification.  The wording follows MaRuTa12's recurring sentence "We use the
-following simulator ... to prove ..."; the shorter controlled form avoids
-pretending that Lean will infer which simulator the proof needs.  Admission in
-the simulator class and the distance estimate remain as visible goals. -/
+specification.
+
+Maurer--Renner 2016, Section 4.2 (printed p. 12): “the converter σ is usually
+called a simulator” and “the simulator does not appear in the definition of a
+construction.”  The simulator, its class membership, and the distance estimate
+therefore remain explicit. -/
 scoped macro (name := cnlUseSimulator)
     "We" useWord:ident simulator:cryptoCnlReference "to" proveWord:ident
       "the" constructionWord:ident : tactic => do
@@ -232,11 +232,14 @@ scoped macro (name := cnlUseSimulator)
     crypto_cnl_sentence "ac.construction.from_simulator" =>
       ac_simulator $simulator)
 
-/-- Extend one supplied construction by a fixed parallel resource.  The side
-word describes where the resource context appears: a right context gives the
-converter `protocol ∥ 1`, while a left context gives `1 ∥ protocol`.
-MauRen11 describes exactly these resource constructions as making a system
-available "in parallel (on the right side)" or analogously on the left. -/
+/-- Extend one supplied construction by a fixed ordered parallel resource
+specification.  The side word describes where the context appears; the
+converter is tensored with the identity in the other position.
+
+Jost, Theorem 2.2.5 (printed p. 19):
+“`R —π→ S ⟹ [R,T] —π→ [S,T]`.”  The left-position counterpart is the
+same ordered theorem with the construction supplied in the second position;
+neither form assumes symmetry. -/
 scoped macro (name := cnlParallelContext)
     "With" context:cryptoCnlReference "as" "the" sideWord:ident
       parallelWord:ident contextWord:ident "," "the"

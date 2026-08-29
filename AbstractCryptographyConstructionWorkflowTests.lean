@@ -5,183 +5,192 @@ Authors: Marc Ilunga
 import AbstractCryptography.Tactics.ProofAutomation
 
 /-!
-# Typed AC construction-workflow experiment
+# Typed construction-proof packaging test
 
-This non-default module compares an ordinary certificate value with a locally
-indexed certificate typeclass for one deliberately narrow workflow: two
-scalar-metric construction steps.  Every non-canonical choice used by that
-workflow is a field of `ConstructionProblem`; neither presentation may infer
-the protocols, intermediate specification, or errors.
-
-This is an experiment, not a second construction semantics.  Both result
-theorems close directly with `ac_compose`, hence ultimately with
-`AbstractCryptography.Constructs.epsilonRelaxation_trans`.
+This non-default module compares an ordinary proof structure with a local
+proof-bearing class for one two-leg scalar-error construction.  Every choice
+is a field of the indexed problem.  Both presentations delegate to the same
+`ResourceAlgebra` serial theorem and introduce no second construction
+semantics or ambient instance.
 -/
 
-open AbstractCryptography
-open scoped AbstractCryptography
+open CategoryTheory
+open AbstractCryptography.Categorical
+open AbstractCryptography.Categorical.ResourceAlgebra
+open AbstractCryptography.Categorical.ResourceAlgebra.Specification
 
-namespace AbstractCryptography.ConstructionWorkflow.Tests
+namespace AbstractCryptography.Categorical.ResourceAlgebra.ConstructionWorkflow.Tests
 
-universe u v
+universe u v w
 
-/-- All choices for the tested two-step scalar construction workflow. -/
-structure ConstructionProblem (M : Type u) (Phi : Type v) where
-  real : Set Phi
-  intermediate : Set Phi
-  ideal : Set Phi
-  firstProtocol : M
-  secondProtocol : M
-  firstError : ENNReal
-  secondError : ENNReal
+variable {C : Type u} [Category.{v} C] [MonoidalCategory C]
+variable {Phi : Opposite C ⥤ Type w} [ResourceAlgebra C Phi]
 
-section Certificates
+/-- All explicit data of one two-leg scalar-error construction problem. -/
+structure ConstructionProblem (Phi : Opposite C ⥤ Type w)
+    (A B D : C) where
+  source : Specification Phi D
+  middle : Specification Phi B
+  target : Specification Phi A
+  innerConverter : B ⟶ D
+  outerConverter : A ⟶ B
+  innerError : ENNReal
+  outerError : ENNReal
 
-variable {M : Type u} {Phi : Type v}
-variable [Monoid M] [MulAction M Phi] [PseudoEMetricSpace Phi]
-variable [IsNonexpandingSMul M Phi]
+/-- Ordinary structure containing the two construction proofs. -/
+structure ConstructionProof {A B D : C}
+    (problem : ConstructionProblem Phi A B D) : Prop where
+  inner : Constructs (Phi := Phi) problem.innerConverter problem.source
+    (epsilonRelaxation (Phi := Phi) problem.innerError problem.middle)
+  outer : Constructs (Phi := Phi) problem.outerConverter problem.middle
+    (epsilonRelaxation (Phi := Phi) problem.outerError problem.target)
 
-/-- Ordinary-value presentation of the two named construction obligations. -/
-structure ConstructionCertificateValue (problem : ConstructionProblem M Phi) : Prop where
-  first : problem.real —[problem.firstProtocol; problem.firstError]→
-    problem.intermediate
-  second : problem.intermediate —[problem.secondProtocol; problem.secondError]→
-    problem.ideal
+/-- The two proof fields imply the serial scalar-error construction.
 
-/-- The ordinary certificate is only packaging around the public AC theorem. -/
-theorem ConstructionCertificateValue.constructs
-    {problem : ConstructionProblem M Phi}
-    (certificate : ConstructionCertificateValue problem) :
-    problem.real —[problem.secondProtocol * problem.firstProtocol;
-      problem.firstError + problem.secondError]→ problem.ideal := by
-  ac_compose certificate.first, certificate.second
+Maurer--Renner 2016, Lemma 1 (printed p. 11): “This construction notion is
+composable.”  Jost--Maurer 2020, Theorem 2 (printed p. 11): “First, the errors
+just add up.” -/
+theorem ConstructionProof.constructs {A B D : C}
+    {problem : ConstructionProblem Phi A B D}
+    (proof : ConstructionProof problem) :
+    Constructs (Phi := Phi)
+      (problem.outerConverter ≫ problem.innerConverter) problem.source
+      (epsilonRelaxation (Phi := Phi)
+        (problem.innerError + problem.outerError) problem.target) := by
+  ac_compose proof.inner, proof.outer
 
-/-- Indexed-class presentation with exactly the same proof fields.  Intended
-only as a local instance attached to an explicit `problem`. -/
-class ConstructionCertificate (problem : ConstructionProblem M Phi) : Prop where
-  first : problem.real —[problem.firstProtocol; problem.firstError]→
-    problem.intermediate
-  second : problem.intermediate —[problem.secondProtocol; problem.secondError]→
-    problem.ideal
+/-- Local typeclass presentation with the same two explicit proof fields. -/
+class ConstructionProofClass {A B D : C}
+    (problem : ConstructionProblem Phi A B D) : Prop where
+  inner : Constructs (Phi := Phi) problem.innerConverter problem.source
+    (epsilonRelaxation (Phi := Phi) problem.innerError problem.middle)
+  outer : Constructs (Phi := Phi) problem.outerConverter problem.middle
+    (epsilonRelaxation (Phi := Phi) problem.outerError problem.target)
 
-/-- The indexed class also delegates directly to the public AC theorem.  The
-problem argument is explicit because its intermediate field is intentionally
-not reconstructible from the conclusion. -/
-theorem ConstructionCertificate.constructs
-    (problem : ConstructionProblem M Phi)
-    [certificate : ConstructionCertificate problem] :
-    problem.real —[problem.secondProtocol * problem.firstProtocol;
-      problem.firstError + problem.secondError]→ problem.ideal := by
-  ac_compose certificate.first, certificate.second
-
-end Certificates
+/-- A locally installed construction proof class uses the same serial theorem. -/
+theorem ConstructionProofClass.constructs {A B D : C}
+    (problem : ConstructionProblem Phi A B D)
+    [proof : ConstructionProofClass problem] :
+    Constructs (Phi := Phi)
+      (problem.outerConverter ≫ problem.innerConverter) problem.source
+      (epsilonRelaxation (Phi := Phi)
+        (problem.innerError + problem.outerError) problem.target) := by
+  ac_compose proof.inner, proof.outer
 
 section Coexistence
 
-variable {M : Type u} {Phi : Type v}
-variable [Monoid M] [MulAction M Phi] [PseudoEMetricSpace Phi]
-variable [IsNonexpandingSMul M Phi]
+variable {A B D : C}
+variable (source : Specification Phi D)
+variable (middleOne middleTwo : Specification Phi B)
+variable (target : Specification Phi A)
+variable (innerConverterOne innerConverterTwo : B ⟶ D)
+variable (outerConverterOne outerConverterTwo : A ⟶ B)
+variable (innerErrorOne outerErrorOne innerErrorTwo outerErrorTwo : ENNReal)
 
-variable (real middleA middleB ideal : Set Phi)
-variable (firstProtocolA secondProtocolA firstProtocolB secondProtocolB : M)
-variable (firstErrorA secondErrorA firstErrorB secondErrorB : ENNReal)
+private def problemOne : ConstructionProblem Phi A B D where
+  source := source
+  middle := middleOne
+  target := target
+  innerConverter := innerConverterOne
+  outerConverter := outerConverterOne
+  innerError := innerErrorOne
+  outerError := outerErrorOne
 
-private def problemA : ConstructionProblem M Phi where
-  real := real
-  intermediate := middleA
-  ideal := ideal
-  firstProtocol := firstProtocolA
-  secondProtocol := secondProtocolA
-  firstError := firstErrorA
-  secondError := secondErrorA
-
-private def problemB : ConstructionProblem M Phi where
-  real := real
-  intermediate := middleB
-  ideal := ideal
-  firstProtocol := firstProtocolB
-  secondProtocol := secondProtocolB
-  firstError := firstErrorB
-  secondError := secondErrorB
+private def problemTwo : ConstructionProblem Phi A B D where
+  source := source
+  middle := middleTwo
+  target := target
+  innerConverter := innerConverterTwo
+  outerConverter := outerConverterTwo
+  innerError := innerErrorTwo
+  outerError := outerErrorTwo
 
 variable
-  (firstA : real —[firstProtocolA; firstErrorA]→ middleA)
-  (secondA : middleA —[secondProtocolA; secondErrorA]→ ideal)
-  (firstB : real —[firstProtocolB; firstErrorB]→ middleB)
-  (secondB : middleB —[secondProtocolB; secondErrorB]→ ideal)
+  (innerOne : Constructs (Phi := Phi) innerConverterOne source
+    (epsilonRelaxation (Phi := Phi) innerErrorOne middleOne))
+  (outerOne : Constructs (Phi := Phi) outerConverterOne middleOne
+    (epsilonRelaxation (Phi := Phi) outerErrorOne target))
+  (innerTwo : Constructs (Phi := Phi) innerConverterTwo source
+    (epsilonRelaxation (Phi := Phi) innerErrorTwo middleTwo))
+  (outerTwo : Constructs (Phi := Phi) outerConverterTwo middleTwo
+    (epsilonRelaxation (Phi := Phi) outerErrorTwo target))
 
-private def valueCertificateA : ConstructionCertificateValue
-    (problemA real middleA ideal firstProtocolA secondProtocolA
-      firstErrorA secondErrorA) where
-  first := firstA
-  second := secondA
+private def proofOne : ConstructionProof
+    (problemOne source middleOne target innerConverterOne outerConverterOne
+      innerErrorOne outerErrorOne) where
+  inner := innerOne
+  outer := outerOne
 
-private def valueCertificateB : ConstructionCertificateValue
-    (problemB real middleB ideal firstProtocolB secondProtocolB
-      firstErrorB secondErrorB) where
-  first := firstB
-  second := secondB
-
-example :
-    real —[secondProtocolA * firstProtocolA;
-      firstErrorA + secondErrorA]→ ideal :=
-  (valueCertificateA real middleA ideal firstProtocolA secondProtocolA
-    firstErrorA secondErrorA firstA secondA).constructs
+private def proofTwo : ConstructionProof
+    (problemTwo source middleTwo target innerConverterTwo outerConverterTwo
+      innerErrorTwo outerErrorTwo) where
+  inner := innerTwo
+  outer := outerTwo
 
 example :
-    real —[secondProtocolB * firstProtocolB;
-      firstErrorB + secondErrorB]→ ideal :=
-  (valueCertificateB real middleB ideal firstProtocolB secondProtocolB
-    firstErrorB secondErrorB firstB secondB).constructs
+    Constructs (Phi := Phi) (outerConverterOne ≫ innerConverterOne) source
+      (epsilonRelaxation (Phi := Phi) (innerErrorOne + outerErrorOne)
+        target) :=
+  (proofOne source middleOne target innerConverterOne outerConverterOne
+    innerErrorOne outerErrorOne innerOne outerOne).constructs
 
 example :
-    (real —[secondProtocolA * firstProtocolA;
-      firstErrorA + secondErrorA]→ ideal) ∧
-    (real —[secondProtocolB * firstProtocolB;
-      firstErrorB + secondErrorB]→ ideal) := by
-  letI : ConstructionCertificate
-      (problemA real middleA ideal firstProtocolA secondProtocolA
-        firstErrorA secondErrorA) := {
-    first := firstA
-    second := secondA
+    Constructs (Phi := Phi) (outerConverterTwo ≫ innerConverterTwo) source
+      (epsilonRelaxation (Phi := Phi) (innerErrorTwo + outerErrorTwo)
+        target) :=
+  (proofTwo source middleTwo target innerConverterTwo outerConverterTwo
+    innerErrorTwo outerErrorTwo innerTwo outerTwo).constructs
+
+example :
+    (Constructs (Phi := Phi) (outerConverterOne ≫ innerConverterOne) source
+      (epsilonRelaxation (Phi := Phi) (innerErrorOne + outerErrorOne)
+        target)) ∧
+    (Constructs (Phi := Phi) (outerConverterTwo ≫ innerConverterTwo) source
+      (epsilonRelaxation (Phi := Phi) (innerErrorTwo + outerErrorTwo)
+        target)) := by
+  letI : ConstructionProofClass
+      (problemOne source middleOne target innerConverterOne outerConverterOne
+        innerErrorOne outerErrorOne) := {
+    inner := innerOne
+    outer := outerOne
   }
-  letI : ConstructionCertificate
-      (problemB real middleB ideal firstProtocolB secondProtocolB
-        firstErrorB secondErrorB) := {
-    first := firstB
-    second := secondB
+  letI : ConstructionProofClass
+      (problemTwo source middleTwo target innerConverterTwo outerConverterTwo
+        innerErrorTwo outerErrorTwo) := {
+    inner := innerTwo
+    outer := outerTwo
   }
   constructor
-  · exact ConstructionCertificate.constructs
-      (problemA real middleA ideal firstProtocolA secondProtocolA
-        firstErrorA secondErrorA)
-  · exact ConstructionCertificate.constructs
-      (problemB real middleB ideal firstProtocolB secondProtocolB
-        firstErrorB secondErrorB)
+  · exact ConstructionProofClass.constructs
+      (problemOne source middleOne target innerConverterOne outerConverterOne
+        innerErrorOne outerErrorOne)
+  · exact ConstructionProofClass.constructs
+      (problemTwo source middleTwo target innerConverterTwo outerConverterTwo
+        innerErrorTwo outerErrorTwo)
 
-/-- error: Fields missing: `second` -/
+/-- error: Fields missing: `outer` -/
 #guard_msgs (substring := true) in
-private def incompleteValueCertificate : ConstructionCertificateValue
-    (problemA real middleA ideal firstProtocolA secondProtocolA
-      firstErrorA secondErrorA) where
-  first := firstA
+private def incompleteProof : ConstructionProof
+    (problemOne source middleOne target innerConverterOne outerConverterOne
+      innerErrorOne outerErrorOne) where
+  inner := innerOne
 
 end Coexistence
 
 section MissingInstance
 
-variable {M : Type u} {Phi : Type v}
-variable [Monoid M] [MulAction M Phi] [PseudoEMetricSpace Phi]
-variable [IsNonexpandingSMul M Phi]
+variable {A B D : C}
 
 /-- error: failed to synthesize instance of type class
-  ConstructionCertificate problem -/
+  ConstructionProofClass problem -/
 #guard_msgs (substring := true) in
-example (problem : ConstructionProblem M Phi) :
-    problem.real —[problem.secondProtocol * problem.firstProtocol;
-      problem.firstError + problem.secondError]→ problem.ideal :=
-  ConstructionCertificate.constructs problem
+example (problem : ConstructionProblem Phi A B D) :
+    Constructs (Phi := Phi)
+      (problem.outerConverter ≫ problem.innerConverter) problem.source
+      (epsilonRelaxation (Phi := Phi)
+        (problem.innerError + problem.outerError) problem.target) :=
+  ConstructionProofClass.constructs problem
 
 end MissingInstance
 
-end AbstractCryptography.ConstructionWorkflow.Tests
+end AbstractCryptography.Categorical.ResourceAlgebra.ConstructionWorkflow.Tests

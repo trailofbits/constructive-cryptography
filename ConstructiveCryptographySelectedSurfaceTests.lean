@@ -2,38 +2,49 @@
 Copyright (c) 2026 Trail of Bits. All rights reserved.
 Authors: Marc Ilunga
 -/
-import AbstractCryptography
+import ConstructiveCryptography
+import AbstractCryptography.Tactics.ProofAutomation
 
 /-!
-# Constructive-cryptography use of the selected AC surface
+# Constructive Cryptography selected-surface test
 
-This non-default smoke test expresses Maurer11 Definition 3's availability and
-security inequalities as two selected construction judgments.  The four tuple
-converters are already assembled, so the test checks the AC/CC boundary without
-enumerating or hard-coding an interface type.
+The two explicit bounds below become typed scalar-error construction
+judgments over the sole `ResourceAlgebra` surface.  The test assembles no
+interface carrier and installs no action or parallel instance.
 -/
 
-open AbstractCryptography
-open scoped AbstractCryptography
+open CategoryTheory
+open AbstractCryptography.Categorical
+open AbstractCryptography.Categorical.ResourceAlgebra
+open AbstractCryptography.Categorical.ResourceAlgebra.Specification
 
 namespace ConstructiveCryptography.SelectedSurface.Tests
 
 universe u v w
 
-variable {I : Type u} {Γ : I → Type v} {Φ : Type w}
-variable [∀ i, Monoid (Γ i)] [MulAction (∀ i, Γ i) Φ]
-variable [PseudoEMetricSpace Φ]
+variable {C : Type u} [Category.{v} C] [MonoidalCategory C]
+variable {Phi : Opposite C ⥤ Type w} [ResourceAlgebra C Phi]
 
-example {availableReal adversarialReal idealBottom simulator : ∀ i, Γ i}
-    {R S : Φ} {eps : ENNReal}
-    (havailable : edist (availableReal • R) (idealBottom • S) ≤ eps)
-    (hsecurity : edist (adversarialReal • R) (simulator • S) ≤ eps) :
-    (({R} : Set Φ) —[availableReal]→
-        Relaxation.epsilonRelaxation eps ({idealBottom • S} : Set Φ)) ∧
-      (({R} : Set Φ) —[adversarialReal]→
-        Relaxation.epsilonRelaxation eps ({simulator • S} : Set Φ)) := by
+example {A B : C}
+    {availableConverter adversarialConverter : A ⟶ B}
+    {filter simulator : A ⟶ A}
+    {real : Resource Phi B} {ideal : Resource Phi A} {error : ENNReal}
+    (availability : distance (Phi := Phi)
+      (attach (Phi := Phi) availableConverter real)
+      (attach (Phi := Phi) filter ideal) ≤ error)
+    (security : distance (Phi := Phi)
+      (attach (Phi := Phi) adversarialConverter real)
+      (attach (Phi := Phi) simulator ideal) ≤ error) :
+    (Constructs (Phi := Phi) availableConverter
+      ({real} : Specification Phi B)
+      (epsilonRelaxation (Phi := Phi) error
+        ({attach (Phi := Phi) filter ideal} : Specification Phi A))) ∧
+    (Constructs (Phi := Phi) adversarialConverter
+      ({real} : Specification Phi B)
+      (epsilonRelaxation (Phi := Phi) error
+        ({attach (Phi := Phi) simulator ideal} : Specification Phi A))) := by
   constructor
-  · ac_construct using havailable
-  · ac_construct using hsecurity
+  · ac_construct using availability
+  · ac_construct using security
 
 end ConstructiveCryptography.SelectedSurface.Tests
