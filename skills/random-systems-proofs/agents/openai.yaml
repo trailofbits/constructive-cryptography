@@ -1,0 +1,4 @@
+interface:
+  display_name: "Random Systems Proofs"
+  short_description: "Plan and audit Random Systems proofs"
+  default_prompt: "Use $random-systems-proofs to start from the exact distance between the specified systems, compose sound proof certificates, and formalize the result against current Lean declarations and rendered primary sources."

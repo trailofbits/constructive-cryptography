@@ -1,0 +1,4 @@
+interface:
+  display_name: "Constructive Cryptography Proof Engineering"
+  short_description: "Build CC proofs without speculative proof debris"
+  default_prompt: "Use $constructive-cryptography-proof-engineering to model this CC construction, select its composition or simulation route and RS leaves, implement only root-path obligations, and prune dead helpers."
