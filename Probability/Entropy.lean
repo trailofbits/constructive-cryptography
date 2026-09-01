@@ -79,10 +79,10 @@ invented adjectives:
   rather than `bayesRisk`, since `bayes` there names the *optimum*; the optimum
   is `sSup_avgSuccessProb_eq_half_add_half_statDist`.
 
-## Hypothesis discipline (PHI-SPEC R1/R9)
+## Hypothesis discipline
 
-The carrier is signed (`Distribution A = A →₀ ℝ`, R1) and the honest slice is
-cut out by `Distribution.NonNeg` plus a weight hypothesis (R9).  Each statement
+The carrier is signed (`Distribution A = A →₀ ℝ`) and the nonnegative slice is
+cut out by `Distribution.NonNeg` plus a weight hypothesis. Each statement
 below carries the **weakest** of signed / `NonNeg` / `isProbDist` at which it is
 true — entropy of a signed object is not a thing, but several of these
 quantities are honest one layer below `isProbDist`:
@@ -108,13 +108,11 @@ facts (`guessProb_pos`, `collProb_pos`, `condGuessProb_pos`) are therefore prove
 here and discharged explicitly at each logarithmic statement, rather than being
 absorbed into a blanket hypothesis.
 
-## Facts staged in this file that belong one layer down
+## Auxiliary distribution facts
 
 `bddAbove_range`, `marginal_apply`, `marginal_isProbDist`,
 `exists_pos_of_isProbDist`, `apply_le_weight` and `mass_graph_eq_sum` are facts
-about `Distribution` itself and belong in `Probability.Distribution`.  They are
-kept here so that adding this module does not force a rebuild of the tree's base
-modules while other work is in flight; §0 marks them for relocation.
+about `Distribution` itself and support the entropy results below.
 -/
 
 noncomputable section
@@ -127,14 +125,14 @@ namespace Distribution
 
 variable {A : Type*} {α γ : Type*}
 
-/-! ## 0. `Distribution` facts this module needs — staged here, belong in `Probability.Distribution` -/
+/-! ## 0. `Distribution` facts used by this module -/
 
 /-- A finitely supported function takes finitely many values, so its range is
 bounded above.  This is what makes `⨆ a, X a` an honest maximum rather than a
 junk value.  Signed layer.
 
-UPSTREAM-CANDIDATE (`Finsupp`): the range of a `Finsupp` into a
-conditionally complete lattice is bounded. -/
+More generally, the range of a `Finsupp` into a conditionally complete lattice
+is bounded. -/
 theorem bddAbove_range (X : Distribution A) : BddAbove (Set.range (X : A → ℝ)) := by
   classical
   have hsub : Set.range (X : A → ℝ) ⊆ insert 0 ((X : A → ℝ) '' (X.support : Set A)) := by
@@ -392,8 +390,7 @@ positives, so each statement below discharges its own positivity side
 condition rather than assuming one globally. -/
 
 /-- **Min-entropy** `H_∞(X) = −log₂ p_max(X)` (CR18 §7.2.3, printed p. 139;
-MauRen16 Appendix).  This is the tree's canonical min-entropy: the `PMF`-carrier
-copy that used to sit in `RandomSystemsCC/MauRen16Impossibility.lean` is gone. -/
+MauRen16 Appendix). -/
 def minEntropy (X : Distribution A) : ℝ := -Real.logb 2 X.guessProb
 
 /-- **Collision entropy** `R(X) = −log₂ p_coll(X)` (CR18 §7.2.3, printed
@@ -437,8 +434,8 @@ MauRen16, Appendix "Min-entropy sampling":
 > functions `f` from the alphabet `𝒴` of `Y` to the alphabet `𝒳` of `X`.  …
 > Among them is a chain rule, which implies `H_min(X|Y) ≥ H_min(X) − log₂|𝒴|`.
 
-Promoted here off mathlib `PMF (α × γ)`/`ℝ≥0∞`, where it used to live inside
-the impossibility proof that first needed it (`DESIGN.md` §12 point 1). -/
+This formulation is stated directly on `Distribution (α × γ)` rather than on
+mathlib's `PMF (α × γ)`/`ℝ≥0∞`. -/
 
 /-- **Conditional guessing probability** `2^{−H_∞(X|Y)} = max_f Pr[X = f(Y)]`
 (MauRen16 Appendix): the best chance of guessing the first component of a joint

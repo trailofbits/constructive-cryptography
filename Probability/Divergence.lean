@@ -37,14 +37,8 @@ The agreement is **scoped**, and both qualifications are load-bearing:
    the two are genuinely different functions, not two renderings of one.  This is
    exactly why the weight-general Pinsker below — the form used *before* a law
    has been renormalized — has no mathlib counterpart to agree with.
-2. **Modulo `ENNReal.ofReal`.**  mathlib's is `ℝ≥0∞`-valued; the receipt reads
+2. **Modulo `ENNReal.ofReal`.**  mathlib's is `ℝ≥0∞`-valued; the equality is
    `klDiv μ ν = ENNReal.ofReal (klDiv X Y)`, not a real equality.
-
-*Historical note (T6 follow-up).*  This receipt was initially recorded as blocked
-on an absent `PMF`/`Measure` bridge.  That was a mispricing, corrected by
-adversarial audit: the bridge is five declarations of pure mathlib and now lives
-in `Probability/DistributionMeasure.lean`, and the reference development's proof
-transported against it unchanged.  Nothing external was ever needed.
 
 ## Base: nats, not bits
 
@@ -55,10 +49,10 @@ each is the one its own textbook statement is stated in, and mixing them would
 put a stray `log 2` in either Pinsker or the entropy ladder.  Convert with
 `Real.logb` = `Real.log · / Real.log 2`.
 
-## Layers (PHI-SPEC R1/R9)
+## Hypothesis discipline
 
-The carrier is signed (R1); the honest slice is `NonNeg` plus a weight
-hypothesis (R9).  Each statement carries the weakest layer at which it is true:
+The carrier is signed; the nonnegative slice is `NonNeg` plus a weight
+hypothesis. Each statement carries the weakest layer at which it is true:
 
 * `klDiv_self`, `klDiv_zero_left` — signed.
 * `klDiv_nonneg` (Gibbs), and the squared form
@@ -92,14 +86,25 @@ theorem hasDerivAt_klf {x : ℝ} (hx : 0 < x) : HasDerivAt klf (klf' x) x := by
   have hne : (2 : ℝ) * (x + 2) ≠ 0 := by positivity
   have hu : HasDerivAt (fun y : ℝ => 3 * (y - 1) ^ 2) (6 * (x - 1)) x := by
     have h : HasDerivAt (fun y : ℝ => (y - 1) ^ 2) (2 * (x - 1)) x := by
-      simpa using ((hasDerivAt_id x).sub_const 1).pow 2
-    have := h.const_mul (3 : ℝ)
-    convert this using 1
-    ring
+      change @HasDerivAt ℝ _ ℝ Real.normedCommRing.toCommRing.toAddCommGroup
+        (NormedAlgebra.toNormedSpace ℝ).toModule _ _
+        (fun y : ℝ => (y - 1) ^ 2) (2 * (x - 1)) x
+      convert ((hasDerivAt_id x).sub_const 1).pow 2 using 1
+      · funext y
+        rfl
+      · norm_num [id_eq]
+    change @HasDerivAt ℝ _ ℝ Real.normedCommRing.toCommRing.toAddCommGroup
+      (NormedAlgebra.toNormedSpace ℝ).toModule _ _
+      (fun y : ℝ => 3 * (y - 1) ^ 2) (6 * (x - 1)) x
+    convert h.const_mul (3 : ℝ) using 1; ring
   have hv : HasDerivAt (fun y : ℝ => 2 * (y + 2)) 2 x := by
-    have := ((hasDerivAt_id x).add_const 2).const_mul (2 : ℝ)
-    convert this using 1
-    ring
+    change @HasDerivAt ℝ _ ℝ Real.normedCommRing.toCommRing.toAddCommGroup
+      (NormedAlgebra.toNormedSpace ℝ).toModule _ _
+      (fun y : ℝ => 2 * (y + 2)) 2 x
+    convert ((hasDerivAt_id x).add_const 2).const_mul (2 : ℝ) using 1
+    · funext y
+      rfl
+    · ring
   have hml : HasDerivAt (fun y : ℝ => y * Real.log y) (Real.log x + 1) x :=
     Real.hasDerivAt_mul_log hx.ne'
   have hmain : HasDerivAt (fun y : ℝ => y * Real.log y - y + 1) (Real.log x + 1 - 1) x := by
@@ -107,38 +112,65 @@ theorem hasDerivAt_klf {x : ℝ} (hx : 0 < x) : HasDerivAt klf (klf' x) x := by
   have hall := hmain.sub (hu.div hv hne)
   show HasDerivAt (fun y : ℝ => y * Real.log y - y + 1 - 3 * (y - 1) ^ 2 / (2 * (y + 2)))
     (klf' x) x
+  change @HasDerivAt ℝ _ ℝ Real.normedAddCommGroup.toAddCommGroup
+    (RCLike.toInnerProductSpaceReal : InnerProductSpace ℝ ℝ).toModule _ _
+    (fun y : ℝ => y * Real.log y - y + 1 - 3 * (y - 1) ^ 2 / (2 * (y + 2)))
+    (klf' x) x
   convert hall using 1
-  rw [klf']
-  have hx2 : x + 2 ≠ 0 := by positivity
-  field_simp
-  ring
+  · funext y
+    rfl
+  · unfold klf'
+    have hx2 : x + 2 ≠ 0 := by positivity
+    field_simp
+    ring
 
 theorem hasDerivAt_klf' {x : ℝ} (hx : 0 < x) : HasDerivAt klf' (klf'' x) x := by
   have hx2 : (0 : ℝ) < x + 2 := by linarith
   have hne : (2 : ℝ) * (x + 2) ^ 2 ≠ 0 := by positivity
   have hu : HasDerivAt (fun y : ℝ => 3 * (y - 1) * (y + 5)) (6 * (x + 2)) x := by
     have h1 : HasDerivAt (fun y : ℝ => 3 * (y - 1)) 3 x := by
-      have := ((hasDerivAt_id x).sub_const 1).const_mul (3 : ℝ)
-      convert this using 1
+      change @HasDerivAt ℝ _ ℝ Real.normedCommRing.toCommRing.toAddCommGroup
+        (NormedAlgebra.toNormedSpace ℝ).toModule _ _
+        (fun y : ℝ => 3 * (y - 1)) 3 x
+      convert ((hasDerivAt_id x).sub_const 1).const_mul (3 : ℝ) using 1
+      · funext y
+        rfl
+      · ring
+    change @HasDerivAt ℝ _ ℝ Real.normedCommRing.toCommRing.toAddCommGroup
+      (NormedAlgebra.toNormedSpace ℝ).toModule _ _
+      (fun y : ℝ => 3 * (y - 1) * (y + 5)) (6 * (x + 2)) x
+    convert h1.mul ((hasDerivAt_id x).add_const 5) using 1
+    · funext y
+      rfl
+    · norm_num [id_eq]
       ring
-    have := h1.mul ((hasDerivAt_id x).add_const 5)
-    convert this using 1
-    simp only [id_eq]
-    ring
   have hv : HasDerivAt (fun y : ℝ => 2 * (y + 2) ^ 2) (4 * (x + 2)) x := by
     have h1 : HasDerivAt (fun y : ℝ => (y + 2) ^ 2) (2 * (x + 2)) x := by
-      simpa using ((hasDerivAt_id x).add_const 2).pow 2
-    have := h1.const_mul (2 : ℝ)
-    convert this using 1
-    ring
+      change @HasDerivAt ℝ _ ℝ Real.normedCommRing.toCommRing.toAddCommGroup
+        (NormedAlgebra.toNormedSpace ℝ).toModule _ _
+        (fun y : ℝ => (y + 2) ^ 2) (2 * (x + 2)) x
+      convert ((hasDerivAt_id x).add_const 2).pow 2 using 1
+      · funext y
+        rfl
+      · norm_num [id_eq]
+    change @HasDerivAt ℝ _ ℝ Real.normedCommRing.toCommRing.toAddCommGroup
+      (NormedAlgebra.toNormedSpace ℝ).toModule _ _
+      (fun y : ℝ => 2 * (y + 2) ^ 2) (4 * (x + 2)) x
+    convert h1.const_mul (2 : ℝ) using 1; ring
   have hlog : HasDerivAt Real.log x⁻¹ x := Real.hasDerivAt_log hx.ne'
   have hall := hlog.sub (hu.div hv hne)
   show HasDerivAt (fun y : ℝ => Real.log y - 3 * (y - 1) * (y + 5) / (2 * (y + 2) ^ 2))
     (klf'' x) x
+  change @HasDerivAt ℝ _ ℝ Real.normedAddCommGroup.toAddCommGroup
+    (RCLike.toInnerProductSpaceReal : InnerProductSpace ℝ ℝ).toModule _ _
+    (fun y : ℝ => Real.log y - 3 * (y - 1) * (y + 5) / (2 * (y + 2) ^ 2))
+    (klf'' x) x
   convert hall using 1
-  rw [klf'']
-  field_simp
-  ring
+  · funext y
+    rfl
+  · unfold klf''
+    field_simp
+    ring
 
 theorem convexOn_klf : ConvexOn ℝ (Set.Ici 0) klf := by
   have hI : interior (Set.Ici (0 : ℝ)) = Set.Ioi 0 := interior_Ici
@@ -181,8 +213,7 @@ Proof: `f x = klFun x − 3(x−1)²/(2(x+2))` has `f''(x) = 1/x − 27/(x+2)³`
 `(x+2)³ − 27x = (x−1)²(x+8) ≥ 0`, so `f` is convex on `[0, ∞)`; `f'(1) = 0`
 puts its minimum at `x = 1`, where `f 1 = 0`.
 
-UPSTREAM-CANDIDATE (`Mathlib/InformationTheory/KullbackLeibler/KLFun.lean`):
-mathlib has `klFun` and its convexity but no quantitative lower bound. -/
+Mathlib has `klFun` and its convexity but no quantitative lower bound. -/
 theorem sq_sub_one_div_le_mul_log_sub_add_one {x : ℝ} (hx : 0 ≤ x) :
     3 * (x - 1) ^ 2 / (2 * (x + 2)) ≤ x * Real.log x - x + 1 := by
   have hmem : (1 : ℝ) ∈ interior (Set.Ici (0 : ℝ)) := by
@@ -350,7 +381,6 @@ theorem sq_statDist_le_weight_mul_klDiv_div_two {A : Type*} {X Y : Distribution 
     ring
   have hEngel := Finset.sq_sum_div_le_sum_sq_div (g := fun a => X a + 2 * Y a)
     Y.support (fun a => |X a - Y a|) hgpos
-  simp only at hEngel
   rw [habs, hgsum] at hEngel
   have hbound : ∑ a ∈ Y.support, |X a - Y a| ^ 2 / (X a + 2 * Y a)
       ≤ 2 / 3 * Distribution.klDiv X Y := by
@@ -399,7 +429,7 @@ turns its `|X|·D/2` into `D/2`.  The remaining hypothesis
 dropped, since `Real.log (x / 0) = 0` would otherwise report `D = 0` for
 `X = δ₀`, `Y = δ₁`, where `δ(X, Y) = 1`.
 
-UPSTREAM-CANDIDATE: mathlib has `InformationTheory.klDiv` but no Pinsker
+Mathlib has `InformationTheory.klDiv` but no Pinsker
 inequality in any form (checked against the pinned revision). -/
 theorem statDist_le_sqrt_klDiv_div_two {A : Type*} {X Y : Distribution A}
     (hX : X.isProbDist) (hY : Y.isProbDist) (hac : X.support ⊆ Y.support) :
@@ -412,8 +442,8 @@ theorem statDist_le_sqrt_klDiv_div_two {A : Type*} {X Y : Distribution A}
 
 /-! ## 4. Agreement with mathlib's `klDiv` under the transport
 
-The receipt that `Distribution.klDiv` is not an ad hoc convention: on a `Fintype`
-carrier it is exactly mathlib's `InformationTheory.klDiv` of the transported
+On a `Fintype` carrier, `Distribution.klDiv` is exactly mathlib's
+`InformationTheory.klDiv` of the transported
 measures.  This is the one statement in the file whose conclusion is a
 measure-theory object, so — per the instance discipline of
 `Probability/DistributionMeasure.lean` — it is also the only one carrying
@@ -451,8 +481,7 @@ theorem toPMF_toMeasure_eq_withDensity (X Y : Distribution A) (hX : X.isProbDist
 
 /-- **`Distribution.klDiv` is mathlib's `klDiv`**: the Kullback–Leibler divergence of
 the transported measures is `ENNReal.ofReal` of the discrete formula, under
-absolute continuity.  (Ported from the measured probe
-`scratch/IndepProbe.lean`, Q3.) -/
+absolute continuity. -/
 theorem klDiv_toPMF (X Y : Distribution A) (hX : X.isProbDist) (hY : Y.isProbDist)
     (hac : X.support ⊆ Y.support) :
     InformationTheory.klDiv (toPMF X hX).toMeasure (toPMF Y hY).toMeasure

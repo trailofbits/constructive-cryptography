@@ -8,9 +8,9 @@ import Mathlib.Analysis.SpecialFunctions.Log.NegMulLog
 /-!
 # Shannon entropy, conditional entropy and mutual information (tower level L2)
 
-The second information-theory module, and the one `Probability.Entropy`
-deferred: *Maurer, "Cryptography Foundations" lecture notes (CR18)* Appendix
-A.2, Definitions A.7-A.9 and Theorems A.1-A.3.  CR18 is the **R8 fallback**
+The Shannon-entropy companion to `Probability.Entropy`, formalizing *Maurer,
+"Cryptography Foundations" lecture notes (CR18)* Appendix A.2, Definitions
+A.7-A.9 and Theorems A.1-A.3.  CR18 is the **R8 fallback**
 source here and is flagged as such: no primary (MauRen16, Jost, LiuMau20,
 Lanzenberger) develops the Shannon calculus — an assessment of the transporter,
 not a verified negative over those four sources.
@@ -23,12 +23,12 @@ below give the appendix page.  Landmarks: Def. A.7 and Thm A.1 on app. pp. 4-5;
 Thm A.2, Def. A.8, the unnumbered chain-rule display and Def. A.9 on app. p. 6;
 Thm A.3 on app. p. 7.
 
-**Completeness of the transport.**  All three theorems land with **both** of
-their printed clauses, equality conditions included.  Two of those equality
-clauses are absent in the reference development and are added here:
-Thm A.2's *first* clause (`entropy_marginalSnd_le_entropy`, equality via
+All three theorems are formalized with **both** printed clauses, including the
+equality conditions.  Thm A.2's first clause is
+`entropy_marginalSnd_le_entropy`, with equality characterized by
 `entropy_eq_entropy_marginalSnd_iff_condEntropy_eq_zero` +
-`condEntropy_eq_zero_iff`) and Thm A.3's (`condMutualInfo_eq_zero_iff`).  Everything is stated on the
+`condEntropy_eq_zero_iff`; Thm A.3's equality clause is
+`condMutualInfo_eq_zero_iff`.  Everything is stated on the
 library's own `Distribution A = A →₀ ℝ` and built only out of
 `Probability.Distribution` and `Probability.Expectation`.
 
@@ -90,10 +90,10 @@ already there, and `entropy_le_logb_card` is the Shannon companion of
 `collisionEntropy_le_logb_card`.  Both new links are the same log-sum inequality
 that powers sub-additivity, evaluated at a different comparison law.
 
-## Hypothesis discipline (PHI-SPEC R1/R9)
+## Hypothesis discipline
 
-The carrier is signed (R1) and the honest slice is `NonNeg` plus a weight
-hypothesis (R9).  Each statement carries the *weakest* of signed / `NonNeg` /
+The carrier is signed and the nonnegative slice is `NonNeg` plus a weight
+hypothesis. Each statement carries the *weakest* of signed / `NonNeg` /
 `isProbDist` at which it is true.  The three layers are genuinely separated
 here, and the separating examples are one line each:
 
@@ -126,13 +126,11 @@ is false without an absolute-continuity hypothesis**: on `𝒳 = {a,b}` with
 Every comparison statement therefore carries `hac : ∀ a, X a ≠ 0 → Y a ≠ 0`,
 and each caller discharges it from a pointwise mass bound rather than assuming it.
 
-## Facts staged in this file that belong one layer down
+## Auxiliary expectation and distribution facts
 
-`expect_fTransform`, `expect_congr_of_support` and `expect_add_right'` belong in
-`Probability.Expectation`; `sum_le_weight`, `sum_apply_eq_marginalSnd` and the
-`marginalSnd` abbreviation belong in `Probability.Distribution`.  They are
-collected in §0b and marked for relocation.  The pushforward mass bound the file
-needs is **not** restated here: it is the landed
+`expect_fTransform`, `expect_congr_of_support`, `expect_add_right'`,
+`sum_le_weight`, `sum_apply_eq_marginalSnd`, and `marginalSnd` support the
+entropy results below.  The pushforward mass bound the file needs is
 `Distribution.apply_le_fTransform_apply` (`Probability/FiberCoupling.lean`),
 consumed directly at `Prod.fst`/`Prod.snd`.
 -/
@@ -160,9 +158,7 @@ caller has in hand — the `Distribution`-level Gibbs inequality
 
 At `p = 0` both `log (q/0) = log 0 = 0` and the left side vanish, so no
 support-restriction convention is needed; at `p > 0` this is
-`Real.log_le_sub_one_of_pos` applied to `q/p`, which is why `q` must not vanish.
-
-UPSTREAM-CANDIDATE. -/
+`Real.log_le_sub_one_of_pos` applied to `q/p`, which is why `q` must not vanish. -/
 theorem mul_log_div_le_sub {p q : ℝ} (hp : 0 ≤ p) (hq : 0 ≤ q)
     (hac : p ≠ 0 → q ≠ 0) :
     p * Real.log (q / p) ≤ q - p := by
@@ -175,9 +171,7 @@ theorem mul_log_div_le_sub {p q : ℝ} (hp : 0 ≤ p) (hq : 0 ≤ q)
       _ = q - p := by field_simp
 
 /-- Equality in `mul_log_div_le_sub` holds exactly at `q = p`; this is
-`Real.log_lt_sub_one_of_pos`, i.e. strict concavity of `log` at `1`.
-
-UPSTREAM-CANDIDATE. -/
+`Real.log_lt_sub_one_of_pos`, i.e. strict concavity of `log` at `1`. -/
 theorem mul_log_div_eq_sub_iff {p q : ℝ} (hp : 0 ≤ p) (hq : 0 ≤ q)
     (hac : p ≠ 0 → q ≠ 0) :
     p * Real.log (q / p) = q - p ↔ q = p := by
@@ -206,8 +200,8 @@ theorem mul_log_div_eq_sub_iff {p q : ℝ} (hp : 0 ≤ p) (hq : 0 ≤ q)
 removable: `Real.log 0 = 0` is junk, so a `q` that vanishes where `p` does not
 would make the left side spuriously large.
 
-UPSTREAM-CANDIDATE: the finite-sum Gibbs inequality, with no measure theory and
-no normalization — only `∑ q ≤ ∑ p`. -/
+This is the finite-sum Gibbs inequality, with no measure theory and no
+normalization — only `∑ q ≤ ∑ p`. -/
 theorem sum_mul_log_div_nonpos {ι : Type*} {s : Finset ι} {p q : ι → ℝ}
     (hp : ∀ i ∈ s, 0 ≤ p i) (hq : ∀ i ∈ s, 0 ≤ q i)
     (hac : ∀ i ∈ s, p i ≠ 0 → q i ≠ 0)
@@ -224,9 +218,7 @@ agrees with `p` on the whole index set.
 
 This is the single source of every equality condition in this file — uniformity
 of the entropy maximiser, independence at equality in sub-additivity, and
-`I(X;Y) = 0 ↔` independence.
-
-UPSTREAM-CANDIDATE. -/
+`I(X;Y) = 0 ↔` independence. -/
 theorem sum_mul_log_div_eq_zero_iff {ι : Type*} {s : Finset ι} {p q : ι → ℝ}
     (hp : ∀ i ∈ s, 0 ≤ p i) (hq : ∀ i ∈ s, 0 ≤ q i)
     (hac : ∀ i ∈ s, p i ≠ 0 → q i ≠ 0)
@@ -292,11 +284,7 @@ namespace Distribution
 
 variable {A B : Type*} {α γ ζ : Type*}
 
-/-! ## 0b. `Distribution` / `Distribution.expect` facts staged here
-
-Each of these belongs one layer down and is marked for relocation.  They are
-kept here so that adding this module does not force a rebuild of the tree's
-base modules while other work is in flight. -/
+/-! ## 0b. Auxiliary `Distribution` and `Distribution.expect` facts -/
 
 /-- Expectation transports along a pushforward: `𝔼_{f_*X}[g] = 𝔼_X[g ∘ f]`.
 Signed layer.
@@ -349,10 +337,7 @@ theorem sum_le_weight {X : Distribution A} (hX : X.NonNeg) (s : Finset A) :
 this is the `Prod.snd` companion, which the conditional quantities of this file
 need on every line.
 
-Deliberately an `abbrev`, i.e. *reducible*: it introduces no new API, every
-`fTransform` lemma applies to it unchanged, and when `Probability.Distribution`
-acquires a real second marginal next to `marginal` this line is deleted with no
-proof churn. -/
+An `abbrev`, hence reducible: every `fTransform` lemma applies to it unchanged. -/
 abbrev marginalSnd (X : Distribution (α × γ)) : Distribution γ := fTransform Prod.snd X
 
 /-! ## 1. Shannon entropy — CR18 Def. A.7 (app. p. 4)
@@ -915,8 +900,8 @@ theorem condEntropy_le_entropy_marginal {X : Distribution (α × γ)} (hX : X.No
 
 CR18 App. A.2, **Def. A.8** (app. p. 6) — the same numbered definition as
 conditional entropy, and printed there in the symmetric form
-`I(X;Y) := H(X) + H(Y) − H(XY)`.  (Def. A.9 is the *conditional* mutual
-information; citing A.9 here, as the reference development does, is a slip.)
+`I(X;Y) := H(X) + H(Y) − H(XY)`.  Def. A.9 is the *conditional* mutual
+information.
 The symmetric form is
 `mutualInfo_eq_entropy_marginal_add_entropy_marginalSnd_sub_entropy`, and
 symmetry itself is `mutualInfo_fTransform_swap`. -/
@@ -1154,9 +1139,7 @@ theorem comparison_nonneg [Fintype α] [Fintype γ] [Fintype ζ]
 `H(XYZ) + H(Z) ≤ H(XZ) + H(YZ)`.  This is the inequality half of CR18 App. A.2
 **Theorem A.3** (app. p. 7) — *"We have `I(X;Y|Z) ≥ 0` with equality if and only
 if X and Y are statistically independent when given Z"*; the equality half is
-`condMutualInfo_eq_zero_iff` below.  (The reference development cites this as
-"Thm A.2 in its conditional form", which is a slip — Thm A.2 is the
-unconditional sub-additivity pair of §6.)
+`condMutualInfo_eq_zero_iff` below.
 
 The log-sum inequality at `Q(x,y,z) = P_{XZ}(x,z)·P_{YZ}(y,z)/P_Z(z)`.
 `isProbDist` plus finiteness of all three alphabets. -/

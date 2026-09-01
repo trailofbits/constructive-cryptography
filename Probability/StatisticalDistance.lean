@@ -1447,7 +1447,7 @@ theorem statDist_sum_of_disjoint_support {A ι : Type*} [DecidableEq A]
       (∀ j, (Zf j).support ⊆ (Xf j).support ∪ (Yf j).support) →
       ∀ i ∈ t, ∀ a ∈ (Xf i).support ∪ (Yf i).support, (∑ j ∈ t, Zf j) a = Zf i a := by
     intro Zf hZ i hi a ha
-    rw [Finsupp.finset_sum_apply]
+    rw [Finsupp.finsetSum_apply]
     refine Finset.sum_eq_single_of_mem i hi fun j hj hne => ?_
     refine Finsupp.notMem_support_iff.mp fun hmem => ?_
     exact Finset.disjoint_left.mp
@@ -1458,10 +1458,10 @@ theorem statDist_sum_of_disjoint_support {A ι : Type*} [DecidableEq A]
     intro a ha
     rcases Finset.mem_union.mp (Finsupp.support_sub ha) with h | h
     · obtain ⟨i, hi, hia⟩ := Finset.mem_biUnion.mp
-        (Finsupp.support_finset_sum h)
+        (Finsupp.support_finsetSum h)
       exact Finset.mem_biUnion.mpr ⟨i, hi, Finset.mem_union_left _ hia⟩
     · obtain ⟨i, hi, hia⟩ := Finset.mem_biUnion.mp
-        (Finsupp.support_finset_sum h)
+        (Finsupp.support_finsetSum h)
       exact Finset.mem_biUnion.mpr ⟨i, hi, Finset.mem_union_right _ hia⟩
   rw [statDist_eq_sum_of_support_subset _ _ hsub, Finset.sum_biUnion hdisj]
   refine Finset.sum_congr rfl fun i hi => ?_

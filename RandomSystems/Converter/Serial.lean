@@ -3,6 +3,7 @@ Copyright (c) 2026 Trail of Bits. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import RandomSystems.Converter.ApplySystem
+import Mathlib.CategoryTheory.Category.Basic
 import Mathlib.Data.List.Basic
 import Mathlib.Tactic
 
@@ -38,119 +39,7 @@ abbrev InnerReply (A : Interface.{u, v}) := DDC.History.InnerReply A
 abbrev ReceivedInput (A : Interface.{u, v}) (B : Interface.{w, z}) :=
   DDC.History.Input A B
 
-/-- The history ending in `query`, used to evaluate a DDS as a function. -/
-def innerHistory {A : Interface.{u, v}}
-    (prior : List A.query) (query : A.query) : _root_.RandomSystems.Ambient.History A where
-  queries := prior ++ [query]
-  nonempty := by simp
-
-@[simp]
-theorem last_innerHistory {A : Interface.{u, v}}
-    (prior : List A.query) (query : A.query) :
-    (innerHistory prior query).last = query := by
-  simp [innerHistory, _root_.RandomSystems.Ambient.History.last]
-
-def innerReplyAt {A : Interface.{u, v}} (system : DDS A)
-    (prior : List A.query) (query : A.query) : Option (A.answer query) :=
-  cast (congrArg (fun selected => Option (A.answer selected))
-    (last_innerHistory prior query)) (system (innerHistory prior query))
-
 end DDC.Internal
-
-namespace DDC
-
-private theorem lastOuter_eq_of_lastInput_outer
-    {A : Interface.{u, v}} {B : Interface.{w, z}}
-    {raw : DDC.Raw A B} {history : DDC.History A B}
-    (admissible : DDC.Raw.Admissible raw history) {query : A.query}
-    (lastInput : history.lastInput = Sum.inl query) :
-    history.lastOuter = query := by
-  induction admissible with
-  | start outerQuery => simpa using Sum.inl.inj lastInput
-  | afterInner prior responds reply inductionHypothesis => simp at lastInput
-  | afterOuter prior responds outerQuery inductionHypothesis =>
-      have equal : (Sum.inl outerQuery : DDC.History.Input A B) =
-          Sum.inl query := by simpa using lastInput
-      simpa using Sum.inl.inj equal
-
-private noncomputable def rawForwarding (A : Interface.{u, v}) : DDC.Raw A A := by
-  classical
-  exact fun history =>
-    match history.lastInput with
-    | Sum.inl query => Part.some (Sum.inl query)
-    | Sum.inr ⟨query, reply⟩ =>
-        if equal : query = history.lastOuter then
-          Part.some (Sum.inr (equal ▸ reply))
-        else Part.none
-
-private theorem mem_rawForwarding_table_iff
-    {A : Interface.{u, v}} (history : DDC.History A A)
-    (response : DDC.Response history) :
-    response ∈ rawForwarding A history ↔
-      match history.lastInput with
-      | Sum.inl query => response = Sum.inl query
-      | Sum.inr ⟨query, reply⟩ =>
-          ∃ equal : query = history.lastOuter,
-            response = Sum.inr (equal ▸ reply) := by
-  classical
-  unfold rawForwarding
-  split
-  · rename_i query inputEqual
-    simp
-  · rename_i query reply inputEqual
-    by_cases equal : query = history.lastOuter
-    · simp [equal]
-    · simp [equal]
-
-private theorem admissible_rawForwarding_iff
-    {A : Interface.{u, v}} (history : DDC.History A A) :
-    DDC.Raw.Admissible (rawForwarding A) history ↔
-      DDC.Raw.Admissible (DDC.forwarding A).toFun history := by
-  constructor
-  · intro admissible
-    induction admissible with
-    | start query => exact .start query
-    | @afterInner prior query earlier responds reply inductionHypothesis =>
-        apply DDC.Raw.Admissible.afterInner inductionHypothesis
-        · exact (DDC.mem_forwarding_iff A prior _).mpr
-            ⟨inductionHypothesis,
-              (mem_rawForwarding_table_iff prior _).mp responds⟩
-    | @afterOuter prior earlier reply responds query inductionHypothesis =>
-        apply DDC.Raw.Admissible.afterOuter inductionHypothesis
-        · exact (DDC.mem_forwarding_iff A prior _).mpr
-            ⟨inductionHypothesis,
-              (mem_rawForwarding_table_iff prior _).mp responds⟩
-  · intro admissible
-    induction admissible with
-    | start query => exact .start query
-    | @afterInner prior query earlier responds reply inductionHypothesis =>
-        apply DDC.Raw.Admissible.afterInner inductionHypothesis
-        · exact (mem_rawForwarding_table_iff prior _).mpr
-            ((DDC.mem_forwarding_iff A prior _).mp responds).2
-    | @afterOuter prior earlier reply responds query inductionHypothesis =>
-        apply DDC.Raw.Admissible.afterOuter inductionHypothesis
-        · exact (mem_rawForwarding_table_iff prior _).mpr
-            ((DDC.mem_forwarding_iff A prior _).mp responds).2
-
-private theorem mem_forwarding_canonical_iff (A : Interface.{u, v})
-    (history : DDC.History A A) (response : DDC.Response history) :
-    response ∈ forwarding A history ↔
-      DDC.Raw.Admissible (rawForwarding A) history ∧
-        match history.lastInput with
-        | Sum.inl query => response = Sum.inl query
-        | Sum.inr ⟨query, reply⟩ =>
-            ∃ equal : query = history.lastOuter,
-              response = Sum.inr (equal ▸ reply) := by
-  rw [RandomSystems.Ambient.DDC.mem_forwarding_iff]
-  constructor
-  · rintro ⟨admissible, responseEqual⟩
-    exact ⟨(admissible_rawForwarding_iff history).mpr admissible,
-      responseEqual⟩
-  · rintro ⟨admissible, responseEqual⟩
-    exact ⟨(admissible_rawForwarding_iff history).mp admissible,
-      responseEqual⟩
-
-end DDC
 
 namespace DDC
 
@@ -358,7 +247,7 @@ theorem InnerPrefixFactorization.unique
           cases Sum.inr.inj equal
           exact inductionHypothesis rightTail
 
-private def OuterResult
+def OuterResult
     {A B C : Interface.{u, v}} (outer : DDC A B) (inner : DDC B C)
     (outerHistory : DDC.History A B)
     (innerHistory : Option (DDC.History B C)) : Prop :=
@@ -366,7 +255,7 @@ private def OuterResult
     OuterPrefixFactorization outer inner outerHistory innerHistory
       response finalOuter finalInner
 
-private def InnerResult
+def InnerResult
     {A B C : Interface.{u, v}} (outer : DDC A B) (inner : DDC B C)
     (outerHistory : DDC.History A B)
     (innerHistory : DDC.History B C) : Prop :=
@@ -660,7 +549,7 @@ def packResponse {A C : Interface.{u, v}}
   | Sum.inl query => Sum.inl query
   | Sum.inr reply => Sum.inr ⟨history.lastOuter, reply⟩
 
-private theorem packResponse_injective {A C : Interface.{u, v}}
+theorem packResponse_injective {A C : Interface.{u, v}}
     (history : DDC.History A C) :
     Function.Injective (packResponse history) := by
   intro left right equal
@@ -686,18 +575,18 @@ inductive AttemptedHistory (A C : Interface.{u, v}) where
 
 namespace AttemptedHistory
 
-private def inputs {A C : Interface.{u, v}} :
+def inputs {A C : Interface.{u, v}} :
     AttemptedHistory A C → List (ReceivedInput A C)
   | .start query => [Sum.inl query]
   | .afterInner prior query reply =>
       inputs prior ++ [Sum.inr ⟨query, reply⟩]
   | .afterOuter prior query => inputs prior ++ [Sum.inl query]
 
-private theorem inputs_ne_nil {A C : Interface.{u, v}}
+theorem inputs_ne_nil {A C : Interface.{u, v}}
     (history : AttemptedHistory A C) : history.inputs ≠ [] := by
   cases history <;> simp [inputs]
 
-private theorem inputs_injective {A C : Interface.{u, v}} :
+theorem inputs_injective {A C : Interface.{u, v}} :
     Function.Injective (@inputs A C) := by
   intro left
   induction left with
@@ -763,7 +652,7 @@ def toReceived {A C : Interface.{u, v}} :
   | .afterInner prior query reply => prior.toReceived.snocInner query reply
   | .afterOuter prior query => prior.toReceived.snocOuter query
 
-private theorem inputs_toReceived {A C : Interface.{u, v}}
+theorem inputs_toReceived {A C : Interface.{u, v}}
     (history : AttemptedHistory A C) : history.toReceived.inputs.1 =
       history.inputs := by
   induction history with
@@ -780,24 +669,6 @@ theorem toReceived_injective {A C : Interface.{u, v}} :
   intro left right equal
   apply inputs_injective
   rw [← inputs_toReceived left, ← inputs_toReceived right, equal]
-
-@[simp]
-private theorem lastOuter_start {A C : Interface.{u, v}}
-    (query : A.query) :
-    (AttemptedHistory.start (C := C) query).toReceived.lastOuter = query := rfl
-
-@[simp]
-private theorem lastOuter_afterInner {A C : Interface.{u, v}}
-    (prior : AttemptedHistory A C) (query : C.query)
-    (reply : Option (C.answer query)) :
-    (AttemptedHistory.afterInner prior query reply).toReceived.lastOuter =
-      prior.toReceived.lastOuter := rfl
-
-@[simp]
-private theorem lastOuter_afterOuter {A C : Interface.{u, v}}
-    (prior : AttemptedHistory A C) (query : A.query) :
-    (AttemptedHistory.afterOuter prior query).toReceived.lastOuter = query := by
-  simp [toReceived]
 
 end AttemptedHistory
 
@@ -894,12 +765,14 @@ theorem SerialFactorization.outerLast_eq
     outerHistory.lastOuter = history.toReceived.lastOuter := by
   induction factorization with
   | start middleFactorization valid =>
-      simpa using middleFactorization.lastOuter_eq
+      simpa [AttemptedHistory.toReceived] using
+        middleFactorization.lastOuter_eq
   | afterInner previous middleFactorization valid inductionHypothesis =>
       exact middleFactorization.lastOuter_eq.trans
-        (by simpa using inductionHypothesis)
+        (by simpa [AttemptedHistory.toReceived] using inductionHypothesis)
   | afterOuter previous middleFactorization valid inductionHypothesis =>
-      simpa using middleFactorization.lastOuter_eq
+      simpa [AttemptedHistory.toReceived] using
+        middleFactorization.lastOuter_eq
 
 theorem SerialFactorization.realizeResponse
     {A B C : Interface.{u, v}} {outer : DDC A B} {inner : DDC B C}
@@ -921,7 +794,7 @@ theorem SerialFactorization.realizeResponse
       subst query
       exact ⟨Sum.inr reply, rfl⟩
 
-private def SerialWitness
+def SerialWitness
     {A B C : Interface.{u, v}} (outer : DDC A B) (inner : DDC B C)
     (history : DDC.History A C) (response : DDC.Response history) :
     Prop :=
@@ -938,7 +811,7 @@ noncomputable def serialRaw
     { Dom := ∃ response, SerialWitness outer inner history response
       get := fun defined => Classical.choose defined }
 
-private theorem serialWitness_unique
+theorem serialWitness_unique
     {A B C : Interface.{u, v}} {outer : DDC A B} {inner : DDC B C}
     {history : DDC.History A C}
     {left right : DDC.Response history}
@@ -971,7 +844,7 @@ theorem mem_serialRaw_iff
     refine ⟨defined, ?_⟩
     exact serialWitness_unique (Classical.choose_spec defined) witness
 
-private theorem SerialFactorization.serialRaw_admissible
+theorem SerialFactorization.serialRaw_admissible
     {A B C : Interface.{u, v}} {outer : DDC A B} {inner : DDC B C}
     {history : AttemptedHistory A C} {response : PackedResponse A C}
     {outerHistory : DDC.History A B}
@@ -998,7 +871,7 @@ private theorem SerialFactorization.serialRaw_admissible
         exact ⟨prior, rfl, currentOuter, currentInner, previous⟩
       exact .afterOuter inductionHypothesis responds outerQuery
 
-private theorem serialWitness_admissible
+theorem serialWitness_admissible
     {A B C : Interface.{u, v}} {outer : DDC A B} {inner : DDC B C}
     {history : DDC.History A C} {response : DDC.Response history}
     (witness : SerialWitness outer inner history response) :
@@ -1008,7 +881,7 @@ private theorem serialWitness_admissible
   subst history
   exact factorization.serialRaw_admissible
 
-private theorem serialRaw_complete
+theorem serialRaw_complete
     {A B C : Interface.{u, v}} (outer : DDC A B) (inner : DDC B C) :
     DDC.Raw.Complete (serialRaw outer inner) := by
   intro history admissible
@@ -1119,7 +992,7 @@ private theorem serialRaw_complete
 
 mutual
 
-private theorem OuterPrefixFactorization.outer_reflTransGen
+theorem OuterPrefixFactorization.outer_reflTransGen
     {A B C : Interface.{u, v}} {outer : DDC A B} {inner : DDC B C}
     {outerHistory : DDC.History A B}
     {innerHistory : Option (DDC.History B C)}
@@ -1140,7 +1013,7 @@ private theorem OuterPrefixFactorization.outer_reflTransGen
   | innerReply linked _ _ inductionHypothesis =>
       exact .tail inductionHypothesis ⟨_, _, linked, rfl⟩
 
-private theorem InnerPrefixFactorization.outer_reflTransGen
+theorem InnerPrefixFactorization.outer_reflTransGen
     {A B C : Interface.{u, v}} {outer : DDC A B} {inner : DDC B C}
     {outerHistory : DDC.History A B}
     {innerHistory : DDC.History B C}
@@ -1163,7 +1036,7 @@ private theorem InnerPrefixFactorization.outer_reflTransGen
 
 end
 
-private theorem InnerPrefixFactorization.same_outer
+theorem InnerPrefixFactorization.same_outer
     {A B C : Interface.{u, v}} {outer : DDC A B} {inner : DDC B C}
     {outerHistory finalOuter : DDC.History A B}
     {innerHistory : DDC.History B C}
@@ -1189,14 +1062,14 @@ private theorem InnerPrefixFactorization.same_outer
           (outer.branchFinite.apply history))
       exact (transitiveWellFounded.irrefl.irrefl outerHistory cycle).elim
 
-private theorem branchFinite_transGen
+theorem branchFinite_transGen
     {A B : Interface.{u, v}} (converter : DDC A B) :
     WellFounded (Relation.TransGen
       (DDC.Raw.InnerContinuation converter.toFun)) :=
   WellFounded.intro fun history =>
     acc_transGen_iff.mpr (converter.branchFinite.apply history)
 
-private theorem serialRaw_accessible_of_factorization
+theorem serialRaw_accessible_of_factorization
     {A B C : Interface.{u, v}} (outer : DDC A B) (inner : DDC B C)
     {history : AttemptedHistory A C} {response : PackedResponse A C}
     {outerHistory : DDC.History A B}
@@ -1319,7 +1192,7 @@ private theorem serialRaw_accessible_of_factorization
               currentFactorization
   exact outerAll outerHistory history response innerHistory factorization
 
-private theorem serialRaw_branchFinite
+theorem serialRaw_branchFinite
     {A B C : Interface.{u, v}} (outer : DDC A B) (inner : DDC B C) :
     DDC.Raw.BranchFinite (serialRaw outer inner) := by
   apply WellFounded.intro
@@ -1378,7 +1251,7 @@ theorem mem_serial_iff
 
 namespace Internal
 
-private theorem InnerPrefixFactorization.identity_outer
+theorem InnerPrefixFactorization.identity_outer
     {B C : Interface.{u, v}} {inner : DDC B C}
     {outerHistory : DDC.History B B}
     {innerHistory : DDC.History B C}
@@ -1397,7 +1270,7 @@ private theorem InnerPrefixFactorization.identity_outer
       exact ⟨rfl, Sum.inl _, rfl, responds⟩
   | innerReply linked responds middleFactorization =>
       rename_i reply
-      have linkedInfo := (mem_forwarding_canonical_iff B outerHistory _).mp linked
+      have linkedInfo := (DDC.mem_forwarding_iff B outerHistory _).mp linked
       have linkedRaw := linkedInfo.2
       have linkedInput : outerHistory.lastInput =
           Sum.inl innerHistory.lastOuter := by
@@ -1413,10 +1286,11 @@ private theorem InnerPrefixFactorization.identity_outer
             rcases linkedRaw with ⟨same, impossible⟩
             cases impossible
       have linkedEqual : innerHistory.lastOuter = outerHistory.lastOuter := by
-        exact (lastOuter_eq_of_lastInput_outer linkedInfo.1 linkedInput).symm
+        exact (DDC.Raw.Admissible.lastOuter_eq_of_lastInput_outer
+          linkedInfo.1 linkedInput).symm
       cases middleFactorization with
       | outerReply outerResponds =>
-          have outerRaw := (mem_forwarding_canonical_iff B _ _).mp outerResponds |>.2
+          have outerRaw := (DDC.mem_forwarding_iff B _ _).mp outerResponds |>.2
           simp [linkedEqual] at outerRaw
           have replyEqual := outerRaw
           cases Sum.inr.inj replyEqual
@@ -1427,10 +1301,10 @@ private theorem InnerPrefixFactorization.identity_outer
             (eqRec_heq (φ := fun query => Option (B.answer query))
               linkedEqual reply)
       | outerQueryNext closed outerResponds tail =>
-          have outerRaw := (mem_forwarding_canonical_iff B _ _).mp outerResponds |>.2
+          have outerRaw := (DDC.mem_forwarding_iff B _ _).mp outerResponds |>.2
           simp [linkedEqual] at outerRaw
 
-private theorem OuterPrefixFactorization.identity_outer_none
+theorem OuterPrefixFactorization.identity_outer_none
     {B C : Interface.{u, v}} {inner : DDC B C}
     {outerHistory : DDC.History B B} {input : B.query}
     {response : PackedResponse B C}
@@ -1447,18 +1321,18 @@ private theorem OuterPrefixFactorization.identity_outer_none
         actual ∈ inner (DDC.History.singleton (B := C) input) := by
   cases factorization with
   | outerReply responds =>
-      have raw := (mem_forwarding_canonical_iff B outerHistory _).mp responds |>.2
+      have raw := (DDC.mem_forwarding_iff B outerHistory _).mp responds |>.2
       rw [lastInput] at raw
       simp at raw
   | outerQueryFirst responds tail =>
       rename_i query
-      have raw := (mem_forwarding_canonical_iff B outerHistory _).mp responds |>.2
+      have raw := (DDC.mem_forwarding_iff B outerHistory _).mp responds |>.2
       rw [lastInput] at raw
       have queryEqual : query = input := by simpa using raw
       subst query
       exact tail.identity_outer
 
-private theorem OuterPrefixFactorization.identity_outer_some
+theorem OuterPrefixFactorization.identity_outer_some
     {B C : Interface.{u, v}} {inner : DDC B C}
     {outerHistory : DDC.History B B} {input : B.query}
     {previousInner : DDC.History B C}
@@ -1474,18 +1348,18 @@ private theorem OuterPrefixFactorization.identity_outer_some
           actual ∈ inner (previousInner.snocOuter input) := by
   cases factorization with
   | outerReply responds =>
-      have raw := (mem_forwarding_canonical_iff B outerHistory _).mp responds |>.2
+      have raw := (DDC.mem_forwarding_iff B outerHistory _).mp responds |>.2
       rw [lastInput] at raw
       simp at raw
   | outerQueryNext closed responds tail =>
       rename_i query
-      have raw := (mem_forwarding_canonical_iff B outerHistory _).mp responds |>.2
+      have raw := (DDC.mem_forwarding_iff B outerHistory _).mp responds |>.2
       rw [lastInput] at raw
       have queryEqual : query = input := by simpa using raw
       subst query
       exact tail.identity_outer
 
-private theorem SerialFactorization.identity_outer
+theorem SerialFactorization.identity_outer
     {B C : Interface.{u, v}} {inner : DDC B C}
     {history : AttemptedHistory B C} {response : PackedResponse B C}
     {outerHistory : DDC.History B B}
@@ -1498,8 +1372,7 @@ private theorem SerialFactorization.identity_outer
           actual ∈ inner history.toReceived := by
   induction factorization with
   | start middleFactorization valid =>
-      simpa only [AttemptedHistory.toReceived] using
-        middleFactorization.identity_outer_none rfl
+      exact middleFactorization.identity_outer_none rfl
   | afterInner previous middleFactorization valid inductionHypothesis =>
       rename_i prior query currentOuter currentInner reply response
         finalOuter finalInner
@@ -1511,8 +1384,7 @@ private theorem SerialFactorization.identity_outer
           have queryEqual : query = actualQuery :=
             Sum.inl.inj previousEqual
           subst actualQuery
-          simpa only [AttemptedHistory.toReceived] using
-            middleFactorization.identity_outer
+          exact middleFactorization.identity_outer
       | inr previousReply => cases previousEqual
   | afterOuter previous middleFactorization valid inductionHypothesis =>
       rename_i prior previousReply currentOuter currentInner outerQuery
@@ -1523,11 +1395,9 @@ private theorem SerialFactorization.identity_outer
       | inl query => cases previousEqual
       | inr actualReply =>
           rw [innerEqual] at middleFactorization
-          simpa only [AttemptedHistory.toReceived] using
-            middleFactorization.identity_outer_some
-              (by simp)
+          exact middleFactorization.identity_outer_some (by simp)
 
-private theorem identity_outer_serialRaw_mem_of_admissible
+theorem identity_outer_serialRaw_mem_of_admissible
     {B C : Interface.{u, v}} (inner : DDC B C)
     (history : DDC.History B C)
     (serialAdmissible : DDC.Raw.Admissible
@@ -1551,7 +1421,7 @@ private theorem identity_outer_serialRaw_mem_of_admissible
     Part.mem_unique innerResponds responds
   exact (actualEqual.trans targetEqual) ▸ actualResponds
 
-private theorem identity_outer_serialRaw_admissible
+theorem identity_outer_serialRaw_admissible
     {B C : Interface.{u, v}} (inner : DDC B C)
     {history : DDC.History B C}
     (admissible : DDC.Raw.Admissible inner.toFun history) :
@@ -1604,7 +1474,7 @@ theorem forwarding_serial_eq
 
 namespace Internal
 
-private theorem InnerPrefixFactorization.identity_inner_query
+theorem InnerPrefixFactorization.identity_inner_query
     {A B : Interface.{u, v}} {outer : DDC A B}
     {outerHistory : DDC.History A B}
     {innerHistory : DDC.History B B}
@@ -1621,17 +1491,17 @@ private theorem InnerPrefixFactorization.identity_inner_query
   cases factorization with
   | innerQuery linked responds =>
       rename_i query
-      have raw := (mem_forwarding_canonical_iff B innerHistory _).mp responds |>.2
+      have raw := (DDC.mem_forwarding_iff B innerHistory _).mp responds |>.2
       rw [lastInput] at raw
       have queryEqual : query = innerHistory.lastOuter := by simpa using raw
       subst query
       exact ⟨rfl, Sum.inl _, rfl, linked⟩
   | innerReply linked responds middleFactorization =>
-      have raw := (mem_forwarding_canonical_iff B innerHistory _).mp responds |>.2
+      have raw := (DDC.mem_forwarding_iff B innerHistory _).mp responds |>.2
       rw [lastInput] at raw
       simp at raw
 
-private theorem OuterPrefixFactorization.identity_inner
+theorem OuterPrefixFactorization.identity_inner
     {A B : Interface.{u, v}} {outer : DDC A B}
     {outerHistory : DDC.History A B}
     {innerHistory : Option (DDC.History B B)}
@@ -1651,7 +1521,7 @@ private theorem OuterPrefixFactorization.identity_inner
   | outerQueryNext closed responds tail =>
       exact tail.identity_inner_query (by simp)
 
-private theorem InnerPrefixFactorization.identity_inner_reply
+theorem InnerPrefixFactorization.identity_inner_reply
     {A B : Interface.{u, v}} {outer : DDC A B}
     {outerHistory : DDC.History A B}
     {previousInner : DDC.History B B} {query : B.query}
@@ -1667,7 +1537,7 @@ private theorem InnerPrefixFactorization.identity_inner_reply
           actual ∈ outer (outerHistory.snocInner query reply) := by
   cases factorization with
   | innerQuery linked responds =>
-      have raw := (mem_forwarding_canonical_iff B _ _).mp responds |>.2
+      have raw := (DDC.mem_forwarding_iff B _ _).mp responds |>.2
       have queryEqual : query = previousInner.lastOuter := by
         by_contra different
         simp [different] at raw
@@ -1675,7 +1545,7 @@ private theorem InnerPrefixFactorization.identity_inner_reply
       simp at raw
   | innerReply linked responds middleFactorization =>
       rename_i actualReply
-      have raw := (mem_forwarding_canonical_iff B _ _).mp responds |>.2
+      have raw := (DDC.mem_forwarding_iff B _ _).mp responds |>.2
       have queryEqual : query = previousInner.lastOuter := by
         by_contra different
         simp [different] at raw
@@ -1685,7 +1555,7 @@ private theorem InnerPrefixFactorization.identity_inner_reply
       cases replyEqual
       exact middleFactorization.identity_inner
 
-private theorem SerialFactorization.identity_inner
+theorem SerialFactorization.identity_inner
     {A B : Interface.{u, v}} {outer : DDC A B}
     {history : AttemptedHistory A B} {response : PackedResponse A B}
     {outerHistory : DDC.History A B}
@@ -1698,8 +1568,7 @@ private theorem SerialFactorization.identity_inner
           actual ∈ outer history.toReceived := by
   induction factorization with
   | start middleFactorization valid =>
-      simpa only [AttemptedHistory.toReceived] using
-        middleFactorization.identity_inner
+      exact middleFactorization.identity_inner
   | afterInner previous middleFactorization valid inductionHypothesis =>
       rename_i prior query currentOuter currentInner reply response
         finalOuter finalInner
@@ -1710,8 +1579,7 @@ private theorem SerialFactorization.identity_inner
           have queryEqual : query = actualQuery := Sum.inl.inj previousEqual
           subst actualQuery
           subst currentOuter
-          simpa only [AttemptedHistory.toReceived] using
-            middleFactorization.identity_inner_reply
+          exact middleFactorization.identity_inner_reply
       | inr previousReply => cases previousEqual
   | afterOuter previous middleFactorization valid inductionHypothesis =>
       rename_i prior previousReply currentOuter currentInner outerQuery
@@ -1722,10 +1590,9 @@ private theorem SerialFactorization.identity_inner
       | inl query => cases previousEqual
       | inr actualReply =>
           subst currentOuter
-          simpa only [AttemptedHistory.toReceived] using
-            middleFactorization.identity_inner
+          exact middleFactorization.identity_inner
 
-private theorem identity_inner_serialRaw_mem_of_admissible
+theorem identity_inner_serialRaw_mem_of_admissible
     {A B : Interface.{u, v}} (outer : DDC A B)
     (history : DDC.History A B)
     (serialAdmissible : DDC.Raw.Admissible
@@ -1749,7 +1616,7 @@ private theorem identity_inner_serialRaw_mem_of_admissible
     Part.mem_unique outerResponds responds
   exact (actualEqual.trans targetEqual) ▸ actualResponds
 
-private theorem identity_inner_serialRaw_admissible
+theorem identity_inner_serialRaw_admissible
     {A B : Interface.{u, v}} (outer : DDC A B)
     {history : DDC.History A B}
     (admissible : DDC.Raw.Admissible outer.toFun history) :
@@ -1802,7 +1669,7 @@ theorem serial_forwarding_eq
 
 namespace Internal
 
-private def closedHistory {A : Interface.{u, v}} (history : _root_.RandomSystems.Ambient.History A) :
+def closedHistory {A : Interface.{u, v}} (history : _root_.RandomSystems.Ambient.History A) :
     DDC.History A Interface.empty.{u, v} where
   inputs :=
     ⟨history.1.map (fun query =>
@@ -1812,16 +1679,7 @@ private def closedHistory {A : Interface.{u, v}} (history : _root_.RandomSystems
   outer := history
   projects := by simp
 
-@[simp]
-private theorem closedHistory_outer {A : Interface} (history : _root_.RandomSystems.Ambient.History A) :
-    (closedHistory history).outer = history := rfl
-
-private theorem closedHistory_injective {A : Interface.{u, v}} :
-    Function.Injective (@closedHistory A) := by
-  intro left right equal
-  exact congrArg DDC.History.outer equal
-
-private theorem receivedHistory_ext
+theorem receivedHistory_ext
     {A B : Interface.{u, v}} {left right : DDC.History A B}
     (inputsEqual : left.inputs = right.inputs)
     (outerEqual : left.outer = right.outer) : left = right := by
@@ -1830,7 +1688,7 @@ private theorem receivedHistory_ext
   simp_all
 
 @[simp]
-private theorem closedHistory_snoc {A : Interface} (history : _root_.RandomSystems.Ambient.History A)
+theorem closedHistory_snoc {A : Interface} (history : _root_.RandomSystems.Ambient.History A)
     (query : A.query) :
     closedHistory (_root_.RandomSystems.Ambient.History.snoc history query) =
       (closedHistory history).snocOuter query := by
@@ -1840,16 +1698,16 @@ private theorem closedHistory_snoc {A : Interface} (history : _root_.RandomSyste
       DDC.History.snocOuter]
   · rfl
 
-private def rawClosedSystem {A : Interface.{u, v}} (system : DDS A) :
+def rawClosedSystem {A : Interface.{u, v}} (system : DDS A) :
     DDC.Raw A Interface.empty.{u, v} :=
   fun history => Part.some (Sum.inr (system history.outer))
 
-private theorem rawClosedSystem_complete {A : Interface} (system : DDS A) :
+theorem rawClosedSystem_complete {A : Interface} (system : DDS A) :
     DDC.Raw.Complete (rawClosedSystem system) := by
   intro history admissible
   simp [rawClosedSystem]
 
-private theorem rawClosedSystem_branchFinite {A : Interface}
+theorem rawClosedSystem_branchFinite {A : Interface}
     (system : DDS A) :
     DDC.Raw.BranchFinite (rawClosedSystem system) := by
   apply WellFounded.intro
@@ -1866,7 +1724,7 @@ def ofDDS {A : Interface.{u, v}} (system : DDS A) :
   DDC.ofRaw (rawClosedSystem system) (rawClosedSystem_complete system)
     (rawClosedSystem_branchFinite system)
 
-private theorem mem_ofDDS_iff {A : Interface} (system : DDS A)
+theorem mem_ofDDS_iff {A : Interface} (system : DDS A)
     (history : DDC.History A Interface.empty.{u, v})
     (response : DDC.Response history) :
     response ∈ ofDDS system history ↔
@@ -1883,7 +1741,7 @@ private theorem mem_ofDDS_iff {A : Interface} (system : DDS A)
   · rintro ⟨admissible, rfl⟩
     exact ⟨admissible, ⟨trivial, rfl⟩⟩
 
-private theorem admissible_closedHistory_cons {A : Interface}
+theorem admissible_closedHistory_cons {A : Interface}
     (system : DDS A) (first : A.query) : ∀ rest : List A.query,
       DDC.Raw.Admissible (rawClosedSystem system)
         (closedHistory ⟨first :: rest, List.cons_ne_nil first rest⟩) := by
@@ -1908,7 +1766,7 @@ private theorem admissible_closedHistory_cons {A : Interface}
       rw [closedHistory_snoc] at encodedEqual
       exact encodedEqual ▸ next
 
-private theorem admissible_closedHistory {A : Interface} (system : DDS A) :
+theorem admissible_closedHistory {A : Interface} (system : DDS A) :
     ∀ history : _root_.RandomSystems.Ambient.History A,
       DDC.Raw.Admissible (rawClosedSystem system) (closedHistory history) := by
   rintro ⟨inputs, nonempty⟩
@@ -1916,7 +1774,7 @@ private theorem admissible_closedHistory {A : Interface} (system : DDS A) :
   | nil => exact False.elim (nonempty rfl)
   | cons first rest => exact admissible_closedHistory_cons system first rest
 
-private theorem ofDDS_responds {A : Interface} (system : DDS A)
+theorem ofDDS_responds {A : Interface} (system : DDS A)
     (history : _root_.RandomSystems.Ambient.History A) :
     Sum.inr (system history) ∈ ofDDS system (closedHistory history) := by
   change Sum.inr (system (closedHistory history).outer) ∈
@@ -1927,29 +1785,25 @@ private theorem ofDDS_responds {A : Interface} (system : DDS A)
     (closedHistory history) _).mpr
   exact ⟨admissible_closedHistory system history, ⟨trivial, rfl⟩⟩
 
-private def closedState {A : Interface.{u, v}} :
+def closedState {A : Interface.{u, v}} :
     List A.query → Option (DDC.History A Interface.empty.{u, v})
   | [] => none
   | first :: rest => some (closedHistory
       ⟨first :: rest, List.cons_ne_nil first rest⟩)
 
-@[simp]
-private theorem closedState_nil {A : Interface} :
-    closedState ([] : List A.query) = none := rfl
-
-private theorem closedState_append {A : Interface} (prior : List A.query)
+theorem closedState_append {A : Interface} (prior : List A.query)
     (query : A.query) :
     closedState (prior ++ [query]) =
-      some (closedHistory (innerHistory prior query)) := by
+      some (closedHistory (Attachment.innerHistory prior query)) := by
   cases prior with
   | nil => rfl
   | cons first rest =>
       change some (closedHistory
         ⟨first :: rest ++ [query], by simp⟩) =
-        some (closedHistory (innerHistory (first :: rest) query))
+        some (closedHistory (Attachment.innerHistory (first :: rest) query))
       rfl
 
-private theorem closedState_admissible {A : Interface} (system : DDS A)
+theorem closedState_admissible {A : Interface} (system : DDS A)
     (prior : List A.query)
     (history : DDC.History A Interface.empty.{u, v})
     (equal : closedState prior = some history) :
@@ -1962,7 +1816,7 @@ private theorem closedState_admissible {A : Interface} (system : DDS A)
       cases Option.some.inj equal
       exact admissible_closedHistory system _
 
-private theorem closedState_closed {A : Interface} (system : DDS A)
+theorem closedState_closed {A : Interface} (system : DDS A)
     (prior : List A.query) : InnerClosed (ofDDS system)
       (closedState prior) := by
   cases prior with
@@ -1971,23 +1825,23 @@ private theorem closedState_closed {A : Interface} (system : DDS A)
       refine ⟨system ⟨first :: rest, by simp⟩, ?_⟩
       exact ofDDS_responds system _
 
-private theorem closedInner_last {A : Interface.{u, v}} (prior : List A.query)
+theorem closedInner_last {A : Interface.{u, v}} (prior : List A.query)
     (query : A.query) :
-    (closedHistory (innerHistory prior query) :
+    (closedHistory (Attachment.innerHistory prior query) :
       DDC.History A Interface.empty.{u, v}).lastOuter = query := by
-  change (innerHistory prior query).last = query
-  exact last_innerHistory prior query
+  change (Attachment.innerHistory prior query).last = query
+  exact Attachment.last_innerHistory prior query
 
-private theorem snocInner_closedInner_eq {A B : Interface.{u, v}} (system : DDS B)
+theorem snocInner_closedInner_eq {A B : Interface.{u, v}} (system : DDS B)
     (history : DDC.History A B) (prior : List B.query)
     (query : B.query) :
     history.snocInner
-        (closedHistory (innerHistory prior query) :
+        (closedHistory (Attachment.innerHistory prior query) :
           DDC.History B Interface.empty.{u, v}).lastOuter
-        (system (innerHistory prior query)) =
-      history.snocInner query (innerReplyAt system prior query) := by
+        (system (Attachment.innerHistory prior query)) =
+      history.snocInner query (Attachment.innerReplyAt system prior query) := by
   have lastEqual :
-      (closedHistory (innerHistory prior query) :
+      (closedHistory (Attachment.innerHistory prior query) :
         DDC.History B Interface.empty.{u, v}).lastOuter = query :=
     closedInner_last prior query
   apply receivedHistory_ext
@@ -1998,21 +1852,21 @@ private theorem snocInner_closedInner_eq {A B : Interface.{u, v}} (system : DDS 
       (show List (DDC.History.Input A B) from history.inputs.queries) ++
         [(Sum.inr input : DDC.History.Input A B)])
     apply Sigma.ext lastEqual
-    unfold innerReplyAt
+    unfold Attachment.innerReplyAt
     exact (cast_heq _ _).symm
   · rfl
 
-private def appendOuterAttempts {A : Interface.{u, v}} :
+def appendOuterAttempts {A : Interface.{u, v}} :
     AttemptedHistory A Interface.empty.{u, v} → List A.query →
       AttemptedHistory A Interface.empty.{u, v} :=
   List.foldl AttemptedHistory.afterOuter
 
-private def closedAttempted {A : Interface.{u, v}} (history : _root_.RandomSystems.Ambient.History A) :
+def closedAttempted {A : Interface.{u, v}} (history : _root_.RandomSystems.Ambient.History A) :
     AttemptedHistory A Interface.empty.{u, v} :=
   appendOuterAttempts (.start (_root_.RandomSystems.Ambient.History.head history))
     (_root_.RandomSystems.Ambient.History.tail history)
 
-private theorem appendOuterAttempts_toReceived {A : Interface}
+theorem appendOuterAttempts_toReceived {A : Interface}
     (attempted : AttemptedHistory A Interface.empty.{u, v})
     (queries : List A.query) :
     (appendOuterAttempts attempted queries).toReceived =
@@ -2020,10 +1874,14 @@ private theorem appendOuterAttempts_toReceived {A : Interface}
   induction queries generalizing attempted with
   | nil => rfl
   | cons query rest inductionHypothesis =>
-      simpa [appendOuterAttempts, List.foldl_cons] using
-        inductionHypothesis (.afterOuter attempted query)
+      change
+        (appendOuterAttempts
+            (AttemptedHistory.afterOuter attempted query) rest).toReceived =
+          List.foldl DDC.History.snocOuter
+            (AttemptedHistory.afterOuter attempted query).toReceived rest
+      exact inductionHypothesis (AttemptedHistory.afterOuter attempted query)
 
-private theorem closedAttempted_toReceived {A : Interface} (history : _root_.RandomSystems.Ambient.History A) :
+theorem closedAttempted_toReceived {A : Interface} (history : _root_.RandomSystems.Ambient.History A) :
     (closedAttempted history).toReceived = closedHistory history := by
   rcases history with ⟨inputs, nonempty⟩
   cases inputs with
@@ -2043,15 +1901,7 @@ private theorem closedAttempted_toReceived {A : Interface} (history : _root_.Ran
           apply _root_.RandomSystems.Ambient.History.ext
           simp [_root_.RandomSystems.Ambient.History.snoc]
 
-private theorem selectReply_eq_of_packed_eq
-    {A : Interface.{u, v}} {query : A.query}
-    (reply : Option (A.answer query)) (packed : InnerReply A)
-    (equal : (⟨query, reply⟩ : InnerReply A) = packed) :
-    Attachment.selectReply query packed = reply := by
-  cases equal
-  simp [Attachment.selectReply]
-
-private theorem pack_selectReply_eq
+theorem pack_selectReply_eq
     {A : Interface.{u, v}} (query : A.query) (packed : InnerReply A)
     (equal : packed.1 = query) :
     (⟨query, Attachment.selectReply query packed⟩ : InnerReply A) = packed := by
@@ -2059,7 +1909,7 @@ private theorem pack_selectReply_eq
   cases equal
   simp [Attachment.selectReply]
 
-private theorem InnerPrefixFactorization.of_inner_eq
+theorem InnerPrefixFactorization.of_inner_eq
     {A B C : Interface.{u, v}} {outer : DDC A B} {inner : DDC B C}
     {outerHistory : DDC.History A B}
     {left right : DDC.History B C} {response : PackedResponse A C}
@@ -2073,7 +1923,7 @@ private theorem InnerPrefixFactorization.of_inner_eq
   cases equal
   exact factorization
 
-private theorem OuterPrefixFactorization.of_inner_eq
+theorem OuterPrefixFactorization.of_inner_eq
     {A B C : Interface.{u, v}} {outer : DDC A B} {inner : DDC B C}
     {outerHistory : DDC.History A B}
     {left right : Option (DDC.History B C)}
@@ -2087,7 +1937,7 @@ private theorem OuterPrefixFactorization.of_inner_eq
   cases equal
   exact factorization
 
-private theorem OuterPrefixFactorization.of_outer_eq
+theorem OuterPrefixFactorization.of_outer_eq
     {A B C : Interface.{u, v}} {outer : DDC A B} {inner : DDC B C}
     {left right : DDC.History A B}
     {innerHistory : Option (DDC.History B C)}
@@ -2101,7 +1951,7 @@ private theorem OuterPrefixFactorization.of_outer_eq
   cases equal
   exact factorization
 
-private theorem SerialFactorization.of_response_eq
+theorem SerialFactorization.of_response_eq
     {A B C : Interface.{u, v}} {outer : DDC A B} {inner : DDC B C}
     {history : AttemptedHistory A C} {left right : PackedResponse A C}
     {finalOuter : DDC.History A B}
@@ -2113,7 +1963,7 @@ private theorem SerialFactorization.of_response_eq
   cases equal
   exact factorization
 
-private theorem prependCompatibleInnerQuery
+theorem prependCompatibleInnerQuery
     {A B : Interface.{u, v}} (converter : DDC A B) (system : DDS B)
     (history : DDC.History A B) (prior : List B.query)
     (query : B.query) {response : PackedResponse A Interface.empty}
@@ -2121,36 +1971,36 @@ private theorem prependCompatibleInnerQuery
     {finalInner : Option (DDC.History B Interface.empty)}
     (responds : Sum.inl query ∈ converter history)
     (tail : OuterPrefixFactorization converter (ofDDS system)
-      (history.snocInner query (innerReplyAt system prior query))
+      (history.snocInner query (Attachment.innerReplyAt system prior query))
       (closedState (prior ++ [query])) response finalOuter finalInner) :
     OuterPrefixFactorization converter (ofDDS system) history
       (closedState prior) response finalOuter finalInner := by
   cases prior with
   | nil =>
       let inner : DDC.History B Interface.empty :=
-        closedHistory (_root_.RandomSystems.Ambient.DDC.Internal.innerHistory [] query)
+        closedHistory (_root_.RandomSystems.Ambient.Attachment.innerHistory [] query)
       have stateEqual : closedState ([] ++ [query]) = some inner := by
         simpa [inner] using closedState_append ([] : List B.query) query
       have stateTail : OuterPrefixFactorization converter
           (ofDDS system)
-          (history.snocInner query (innerReplyAt system [] query))
+          (history.snocInner query (Attachment.innerReplyAt system [] query))
           (some inner) response finalOuter finalInner :=
         OuterPrefixFactorization.of_inner_eq stateEqual tail
       have outerEqual :
           history.snocInner inner.lastOuter
-              (system (_root_.RandomSystems.Ambient.DDC.Internal.innerHistory [] query)) =
-            history.snocInner query (innerReplyAt system [] query) :=
+              (system (_root_.RandomSystems.Ambient.Attachment.innerHistory [] query)) =
+            history.snocInner query (Attachment.innerReplyAt system [] query) :=
         snocInner_closedInner_eq system history [] query
       have adjustedTail : OuterPrefixFactorization converter
           (ofDDS system)
           (history.snocInner inner.lastOuter
-            (system (_root_.RandomSystems.Ambient.DDC.Internal.innerHistory [] query)))
+            (system (_root_.RandomSystems.Ambient.Attachment.innerHistory [] query)))
           (some inner) response finalOuter finalInner :=
         OuterPrefixFactorization.of_outer_eq outerEqual stateTail
       have linked : Sum.inl inner.lastOuter ∈ converter history := by
         simpa [inner, closedInner_last] using responds
       have systemResponds :
-          Sum.inr (system (_root_.RandomSystems.Ambient.DDC.Internal.innerHistory [] query)) ∈
+          Sum.inr (system (_root_.RandomSystems.Ambient.Attachment.innerHistory [] query)) ∈
             ofDDS system inner := ofDDS_responds system _
       have innerPrefix : InnerPrefixFactorization converter
           (ofDDS system) history inner response finalOuter finalInner :=
@@ -2175,34 +2025,34 @@ private theorem prependCompatibleInnerQuery
         ⟨first :: rest, List.cons_ne_nil first rest⟩
       let inner : DDC.History B Interface.empty :=
         closedHistory
-          (_root_.RandomSystems.Ambient.DDC.Internal.innerHistory (first :: rest) query)
+          (_root_.RandomSystems.Ambient.Attachment.innerHistory (first :: rest) query)
       have stateEqual : closedState ((first :: rest) ++ [query]) =
           some inner := by
         simpa [inner] using closedState_append (first :: rest) query
       have stateTail : OuterPrefixFactorization converter
           (ofDDS system)
           (history.snocInner query
-            (innerReplyAt system (first :: rest) query))
+            (Attachment.innerReplyAt system (first :: rest) query))
           (some inner) response finalOuter finalInner :=
         OuterPrefixFactorization.of_inner_eq stateEqual tail
       have outerEqual :
           history.snocInner inner.lastOuter
-              (system (_root_.RandomSystems.Ambient.DDC.Internal.innerHistory
+              (system (_root_.RandomSystems.Ambient.Attachment.innerHistory
                 (first :: rest) query)) =
             history.snocInner query
-              (innerReplyAt system (first :: rest) query) :=
+              (Attachment.innerReplyAt system (first :: rest) query) :=
         snocInner_closedInner_eq system history (first :: rest) query
       have adjustedTail : OuterPrefixFactorization converter
           (ofDDS system)
           (history.snocInner inner.lastOuter
-            (system (_root_.RandomSystems.Ambient.DDC.Internal.innerHistory
+            (system (_root_.RandomSystems.Ambient.Attachment.innerHistory
               (first :: rest) query)))
           (some inner) response finalOuter finalInner :=
         OuterPrefixFactorization.of_outer_eq outerEqual stateTail
       have linked : Sum.inl inner.lastOuter ∈ converter history := by
         simpa [inner, closedInner_last] using responds
       have systemResponds :
-          Sum.inr (system (_root_.RandomSystems.Ambient.DDC.Internal.innerHistory
+          Sum.inr (system (_root_.RandomSystems.Ambient.Attachment.innerHistory
             (first :: rest) query)) ∈ ofDDS system inner :=
         ofDDS_responds system _
       have innerPrefix : InnerPrefixFactorization converter
@@ -2213,7 +2063,7 @@ private theorem prependCompatibleInnerQuery
         rw [← closedHistory_snoc]
         apply congrArg closedHistory
         apply _root_.RandomSystems.Ambient.History.ext
-        simp [priorHistory, _root_.RandomSystems.Ambient.DDC.Internal.innerHistory,
+        simp [priorHistory, _root_.RandomSystems.Ambient.Attachment.innerHistory,
           _root_.RandomSystems.Ambient.History.snoc]
       have priorPrefix : InnerPrefixFactorization converter
           (ofDDS system) history
@@ -2232,7 +2082,7 @@ private theorem prependCompatibleInnerQuery
         (some (closedHistory priorHistory)) response finalOuter finalInner
       exact factorization
 
-private theorem compatibleFrom_serialFactorization
+theorem compatibleFrom_serialFactorization
     {A B : Interface.{u, v}} (converter : DDC A B) (system : DDS B)
     {history : DDC.History A B} {innerPrior : List B.query}
     {remainingOuter : List A.query}
@@ -2259,7 +2109,7 @@ private theorem compatibleFrom_serialFactorization
       tailResponses final responds tail inductionHypothesis =>
       have nextAdmissible : DDC.Raw.Admissible converter.toFun
           (history.snocInner query
-            (innerReplyAt system innerPrior query)) :=
+            (Attachment.innerReplyAt system innerPrior query)) :=
         .afterInner outerAdmissible responds _
       apply inductionHypothesis nextAdmissible attempted lastEqual
       intro response finalOuter finalInner tailPrefix tailValid
@@ -2311,11 +2161,12 @@ private theorem compatibleFrom_serialFactorization
           (history.snocOuter nextOuter) :=
         .afterOuter outerAdmissible responds nextOuter
       apply inductionHypothesis nextAdmissible
-        (.afterOuter attempted nextOuter) (by simp)
+        (.afterOuter attempted nextOuter) (by
+          simp [AttemptedHistory.toReceived])
       intro response finalOuter finalInner nextPrefix nextValid
       exact .afterOuter adjustedPrevious nextPrefix nextValid
 
-private theorem compatible_serialFactorization
+theorem compatible_serialFactorization
     {A B : Interface.{u, v}} (converter : DDC A B) (system : DDS B)
     (outerHistory : _root_.RandomSystems.Ambient.History A)
     (transcript : Attachment.Transcript A B)
@@ -2335,7 +2186,7 @@ private theorem compatible_serialFactorization
     (fun middle valid => SerialFactorization.start middle valid)
   simpa [closedAttempted] using factorized
 
-private theorem serial_ofDDS_responds
+theorem serial_ofDDS_responds
     {A B : Interface.{u, v}} (converter : DDC A B) (system : DDS B)
     (outerHistory : _root_.RandomSystems.Ambient.History A) :
     Sum.inr (applySystem converter system outerHistory) ∈
@@ -2381,7 +2232,7 @@ private theorem serial_ofDDS_responds
     finalInner, ?_⟩
   exact SerialFactorization.of_response_eq packedEqual factorization
 
-private theorem exists_closedHistory_of_admissible
+theorem exists_closedHistory_of_admissible
     {A : Interface.{u, v}}
     (converter : DDC A Interface.empty.{u, v})
     {history : DDC.History A Interface.empty.{u, v}}
@@ -2398,7 +2249,10 @@ private theorem exists_closedHistory_of_admissible
       exact ⟨_root_.RandomSystems.Ambient.History.snoc outerHistory query,
         closedHistory_snoc outerHistory query⟩
 
-private theorem serial_ofDDS_eq
+/-- Serial attachment to the DDC induced by a DDS is the DDC induced by the
+attached DDS. This identifies the converter and DDS presentations of the same
+complete-history function. -/
+theorem serial_ofDDS_eq
     {A B : Interface.{u, v}} (converter : DDC A B) (system : DDS B) :
     serial converter (ofDDS system) =
       ofDDS (applySystem converter system) := by
@@ -2434,7 +2288,9 @@ private theorem serial_ofDDS_eq
     exact responseEqual ▸
       serial_ofDDS_responds converter system outerHistory
 
-private theorem ofDDS_injective {A : Interface.{u, v}} :
+/-- The DDC presentation of a DDS is injective: equality of the resulting
+complete-history functions implies equality of the underlying DDSs. -/
+theorem ofDDS_injective {A : Interface.{u, v}} :
     Function.Injective (@ofDDS A) := by
   intro left right equal
   funext history
@@ -2443,68 +2299,68 @@ private theorem ofDDS_injective {A : Interface.{u, v}} :
   have rightResponds := ofDDS_responds right history
   exact Sum.inr.inj (Part.mem_unique leftResponds rightResponds)
 
-private structure ThreeHistories
+structure ThreeHistories
     (A B C D : Interface.{u, v}) where
   outer : Option (DDC.History A B)
   middle : Option (DDC.History B C)
   inner : Option (DDC.History C D)
 
-private def ThreeHistories.empty
+def ThreeHistories.empty
     {A B C D : Interface.{u, v}} : ThreeHistories A B C D :=
   ⟨none, none, none⟩
 
-private def receiveOuter
+def receiveOuter
     {A B : Interface.{u, v}} :
     Option (DDC.History A B) → A.query → DDC.History A B
   | none, query => .singleton query
   | some history, query => history.snocOuter query
 
-private def receiveInner
+def receiveInner
     {A B : Interface.{u, v}}
     (history : DDC.History A B) (reply : InnerReply B) :
     DDC.History A B :=
   history.snocInner reply.1 reply.2
 
-private def ThreeHistories.receiveOuterAtOuter
+def ThreeHistories.receiveOuterAtOuter
     {A B C D : Interface.{u, v}} (histories : ThreeHistories A B C D)
     (query : A.query) : ThreeHistories A B C D :=
   { histories with outer := some (receiveOuter histories.outer query) }
 
-private def ThreeHistories.receiveInnerAtOuter
+def ThreeHistories.receiveInnerAtOuter
     {A B C D : Interface.{u, v}} (histories : ThreeHistories A B C D)
     (reply : InnerReply B) (history : DDC.History A B) :
     ThreeHistories A B C D :=
   { histories with outer := some (receiveInner history reply) }
 
-private def ThreeHistories.receiveOuterAtMiddle
+def ThreeHistories.receiveOuterAtMiddle
     {A B C D : Interface.{u, v}} (histories : ThreeHistories A B C D)
     (query : B.query) : ThreeHistories A B C D :=
   { histories with middle := some (receiveOuter histories.middle query) }
 
-private def ThreeHistories.receiveInnerAtMiddle
+def ThreeHistories.receiveInnerAtMiddle
     {A B C D : Interface.{u, v}} (histories : ThreeHistories A B C D)
     (reply : InnerReply C) (history : DDC.History B C) :
     ThreeHistories A B C D :=
   { histories with middle := some (receiveInner history reply) }
 
-private def ThreeHistories.receiveOuterAtInner
+def ThreeHistories.receiveOuterAtInner
     {A B C D : Interface.{u, v}} (histories : ThreeHistories A B C D)
     (query : C.query) : ThreeHistories A B C D :=
   { histories with inner := some (receiveOuter histories.inner query) }
 
-private def ThreeHistories.receiveInnerAtInner
+def ThreeHistories.receiveInnerAtInner
     {A B C D : Interface.{u, v}} (histories : ThreeHistories A B C D)
     (reply : InnerReply D) (history : DDC.History C D) :
     ThreeHistories A B C D :=
   { histories with inner := some (receiveInner history reply) }
 
-private def ThreeHistories.withFront
+def ThreeHistories.withFront
     {A B C D : Interface.{u, v}} (histories : ThreeHistories A B C D)
     (outer : DDC.History A B)
     (middle : Option (DDC.History B C)) : ThreeHistories A B C D :=
   { histories with outer := some outer, middle := middle }
 
-private def ThreeHistories.withBack
+def ThreeHistories.withBack
     {A B C D : Interface.{u, v}} (histories : ThreeHistories A B C D)
     (middle : DDC.History B C)
     (inner : Option (DDC.History C D)) : ThreeHistories A B C D :=
@@ -2512,7 +2368,7 @@ private def ThreeHistories.withBack
 
 mutual
 
-private inductive ThreeOuterFactorization
+inductive ThreeOuterFactorization
     {A B C D : Interface.{u, v}}
     (outer : DDC A B) (middle : DDC B C) (inner : DDC C D) :
     ThreeHistories A B C D → DDC.History A B →
@@ -2530,7 +2386,7 @@ private inductive ThreeOuterFactorization
         (receiveOuter before.middle query) after response) :
       ThreeOuterFactorization outer middle inner before current after response
 
-private inductive ThreeMiddleFactorization
+inductive ThreeMiddleFactorization
     {A B C D : Interface.{u, v}}
     (outer : DDC A B) (middle : DDC B C) (inner : DDC C D) :
     ThreeHistories A B C D → DDC.History B C →
@@ -2552,7 +2408,7 @@ private inductive ThreeMiddleFactorization
         (receiveOuter before.inner query) after response) :
       ThreeMiddleFactorization outer middle inner before current after response
 
-private inductive ThreeInnerFactorization
+inductive ThreeInnerFactorization
     {A B C D : Interface.{u, v}}
     (outer : DDC A B) (middle : DDC B C) (inner : DDC C D) :
     ThreeHistories A B C D → DDC.History C D →
@@ -2574,7 +2430,7 @@ private inductive ThreeInnerFactorization
 
 end
 
-private theorem OuterPrefixFactorization.toThreeReply
+theorem OuterPrefixFactorization.toThreeReply
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {outerHistory : DDC.History A B}
@@ -2649,7 +2505,7 @@ private theorem OuterPrefixFactorization.toThreeReply
         · rfl
         · assumption
 
-private theorem InnerPrefixFactorization.toThreeReply
+theorem InnerPrefixFactorization.toThreeReply
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {outerHistory : DDC.History A B}
@@ -2674,7 +2530,7 @@ private theorem InnerPrefixFactorization.toThreeReply
       · rfl
       · exact middleStored
 
-private theorem OuterPrefixFactorization.toThreeQuery
+theorem OuterPrefixFactorization.toThreeQuery
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {outerHistory : DDC.History A B}
@@ -2760,7 +2616,7 @@ private theorem OuterPrefixFactorization.toThreeQuery
             ThreeHistories.withFront,
             ThreeHistories.receiveOuterAtInner]
 
-private theorem InnerPrefixFactorization.toThreeQuery
+theorem InnerPrefixFactorization.toThreeQuery
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {outerHistory : DDC.History A B}
@@ -2795,7 +2651,7 @@ private theorem InnerPrefixFactorization.toThreeQuery
           ThreeHistories.withFront,
           ThreeHistories.receiveOuterAtInner, outerStored, middleStored] using tail
 
-private theorem OuterPrefixFactorization.toThreeInside
+theorem OuterPrefixFactorization.toThreeInside
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {middleHistory : DDC.History B C}
@@ -2872,7 +2728,7 @@ private theorem OuterPrefixFactorization.toThreeInside
         · rfl
         · assumption
 
-private theorem InnerPrefixFactorization.toThreeInside
+theorem InnerPrefixFactorization.toThreeInside
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {middleHistory : DDC.History B C}
@@ -2904,7 +2760,7 @@ private theorem InnerPrefixFactorization.toThreeInside
       · rfl
       · exact innerStored
 
-private theorem OuterPrefixFactorization.toThreeOutside
+theorem OuterPrefixFactorization.toThreeOutside
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {middleHistory : DDC.History B C}
@@ -3002,7 +2858,7 @@ private theorem OuterPrefixFactorization.toThreeOutside
             ThreeHistories.withBack,
             ThreeHistories.receiveInnerAtOuter]
 
-private theorem InnerPrefixFactorization.toThreeOutside
+theorem InnerPrefixFactorization.toThreeOutside
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {middleHistory : DDC.History B C}
@@ -3038,7 +2894,7 @@ private theorem InnerPrefixFactorization.toThreeOutside
 
 mutual
 
-private theorem ThreeOuterFactorization.unique
+theorem ThreeOuterFactorization.unique
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {before : ThreeHistories A B C D}
@@ -3119,7 +2975,7 @@ private theorem ThreeOuterFactorization.unique
           cases Sum.inl.inj equal
           exact ⟨rfl, rfl⟩
 
-private theorem ThreeMiddleFactorization.unique
+theorem ThreeMiddleFactorization.unique
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {before : ThreeHistories A B C D}
@@ -3200,7 +3056,7 @@ private theorem ThreeMiddleFactorization.unique
           cases Sum.inl.inj equal
           exact ⟨rfl, rfl⟩
 
-private theorem ThreeInnerFactorization.unique
+theorem ThreeInnerFactorization.unique
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {before : ThreeHistories A B C D}
@@ -3283,7 +3139,7 @@ private theorem ThreeInnerFactorization.unique
 
 end
 
-private inductive ThreeHistoryFactorization
+inductive ThreeHistoryFactorization
     {A B C D : Interface.{u, v}}
     (outer : DDC A B) (middle : DDC B C) (inner : DDC C D) :
     AttemptedHistory A D → ThreeHistories A B C D →
@@ -3312,7 +3168,7 @@ private inductive ThreeHistoryFactorization
       ThreeHistoryFactorization outer middle inner
         (.afterOuter history query) after response
 
-private theorem ThreeHistoryFactorization.unique
+theorem ThreeHistoryFactorization.unique
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {history : AttemptedHistory A D}
@@ -3350,7 +3206,7 @@ private theorem ThreeHistoryFactorization.unique
           cases currentEqual
           exact leftSegment.unique rightSegment
 
-private theorem SerialFactorization.start_prefix
+theorem SerialFactorization.start_prefix
     {A B C : Interface.{u, v}} {outer : DDC A B} {inner : DDC B C}
     {query : A.query} {response : PackedResponse A C}
     {finalOuter : DDC.History A B}
@@ -3362,7 +3218,7 @@ private theorem SerialFactorization.start_prefix
   cases factorization
   assumption
 
-private theorem SerialFactorization.afterInner_prefix
+theorem SerialFactorization.afterInner_prefix
     {A B C : Interface.{u, v}} {outer : DDC A B} {inner : DDC B C}
     {history : AttemptedHistory A C}
     {beforeOuter : DDC.History A B}
@@ -3385,7 +3241,7 @@ private theorem SerialFactorization.afterInner_prefix
   cases Option.some.inj innerEqual
   assumption
 
-private theorem SerialFactorization.afterOuter_prefix
+theorem SerialFactorization.afterOuter_prefix
     {A B C : Interface.{u, v}} {outer : DDC A B} {inner : DDC B C}
     {history : AttemptedHistory A C}
     {beforeOuter : DDC.History A B}
@@ -3411,7 +3267,7 @@ private theorem SerialFactorization.afterOuter_prefix
   cases innerEqual
   assumption
 
-private def ThreeGlobalGraph
+def ThreeGlobalGraph
     {A B C D : Interface.{u, v}}
     (outer : DDC A B) (middle : DDC B C) (inner : DDC C D)
     (history : DDC.History A D) (response : DDC.Response history) :
@@ -3420,7 +3276,7 @@ private def ThreeGlobalGraph
     ∃ after, ThreeHistoryFactorization outer middle inner attempted after
       (packResponse history response)
 
-private theorem ThreeGlobalGraph.unique
+theorem ThreeGlobalGraph.unique
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {history : DDC.History A D}
@@ -3440,7 +3296,7 @@ private theorem ThreeGlobalGraph.unique
     (ThreeHistoryFactorization.unique leftFactorization rightFactorization).2
   exact packResponse_injective history packedEqual
 
-private theorem ThreeHistoryFactorization.mem_of_graph
+theorem ThreeHistoryFactorization.mem_of_graph
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     (candidate : DDC A D)
@@ -3489,7 +3345,7 @@ private theorem ThreeHistoryFactorization.mem_of_graph
         have packedEqual' :
             packResponse (prior.toReceived.snocInner query reply) actual =
               response := by
-          simpa using packedEqual
+          exact packedEqual
         rw [packedEqual']
         exact .afterInner previous stored segment
       have actualEqual := ThreeGlobalGraph.unique chosenGraph currentGraph
@@ -3512,7 +3368,7 @@ private theorem ThreeHistoryFactorization.mem_of_graph
         have packedEqual' :
             packResponse (prior.toReceived.snocOuter query) actual =
               response := by
-          simpa using packedEqual
+          exact packedEqual
         rw [packedEqual']
         exact .afterOuter previous stored segment
       have actualEqual := ThreeGlobalGraph.unique chosenGraph currentGraph
@@ -3522,7 +3378,7 @@ private theorem ThreeHistoryFactorization.mem_of_graph
 translate a parenthesized serial factorization into the parenthesis-free
 three-history graph.  They are proof relations, not additional semantics. -/
 
-private inductive ThreeFrontFactorization
+inductive ThreeFrontFactorization
     {A B C D : Interface.{u, v}}
     (outer : DDC A B) (middle : DDC B C) (inner : DDC C D)
     (before : ThreeHistories A B C D) :
@@ -3536,7 +3392,7 @@ private inductive ThreeFrontFactorization
         current after response) :
       ThreeFrontFactorization outer middle inner before true after response
 
-private inductive ThreeBackFactorization
+inductive ThreeBackFactorization
     {A B C D : Interface.{u, v}}
     (outer : DDC A B) (middle : DDC B C) (inner : DDC C D)
     (before : ThreeHistories A B C D) :
@@ -3550,7 +3406,7 @@ private inductive ThreeBackFactorization
         current after response) :
       ThreeBackFactorization outer middle inner before true after response
 
-private theorem ThreeMiddleFactorization.current_eq
+theorem ThreeMiddleFactorization.current_eq
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {before after : ThreeHistories A B C D}
@@ -3565,7 +3421,7 @@ private theorem ThreeMiddleFactorization.current_eq
   | middleQuery stored responds tail =>
       exact Option.some.inj (stored.symm.trans expectedStored)
 
-private theorem ThreeOuterFactorization.current_eq
+theorem ThreeOuterFactorization.current_eq
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {before after : ThreeHistories A B C D}
@@ -3580,7 +3436,7 @@ private theorem ThreeOuterFactorization.current_eq
   | outerQuery stored responds tail =>
       exact Option.some.inj (stored.symm.trans expectedStored)
 
-private theorem ThreeInnerFactorization.current_eq
+theorem ThreeInnerFactorization.current_eq
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {before after : ThreeHistories A B C D}
@@ -3594,7 +3450,7 @@ private theorem ThreeInnerFactorization.current_eq
       exact Option.some.inj (stored.symm.trans expectedStored)
   | innerQuery stored responds =>
       exact Option.some.inj (stored.symm.trans expectedStored)
-private inductive LeftSourceCase
+inductive LeftSourceCase
     {A B C D : Interface.{u, v}}
     (outer : DDC A B) (middle : DDC B C) (inner : DDC C D)
     (before : ThreeHistories A B C D) :
@@ -3621,7 +3477,7 @@ private inductive LeftSourceCase
       (middleStored : before.middle = some sourceMiddle) :
       LeftSourceCase outer middle inner before history response true
 
-private inductive LeftEndpoint
+inductive LeftEndpoint
     {A B C D : Interface.{u, v}}
     (outer : DDC A B) (middle : DDC B C) (inner : DDC C D) :
     (history : DDC.History A C) → PackedResponse A D →
@@ -3644,7 +3500,7 @@ private inductive LeftEndpoint
         (Sum.inr ⟨history.lastOuter, reply⟩) thirdHistory
           ⟨some sourceOuter, sourceMiddle, thirdHistory⟩
 
-private theorem LeftEndpoint.outside_data
+theorem LeftEndpoint.outside_data
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {history : DDC.History A C} {response : PackedResponse A D}
@@ -3663,7 +3519,7 @@ private theorem LeftEndpoint.outside_data
   | outside source historyEqual =>
       exact ⟨_, _, _, _, source, historyEqual, rfl⟩
 
-private theorem LeftSourceCase.toReply
+theorem LeftSourceCase.toReply
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {before : ThreeHistories A B C D}
@@ -3695,7 +3551,7 @@ private theorem LeftSourceCase.toReply
       · simpa [ThreeHistories.withFront] using
           LeftEndpoint.outside (inner := inner) source historyEqual
 
-private theorem LeftSourceCase.toQuery
+theorem LeftSourceCase.toQuery
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {before : ThreeHistories A B C D}
@@ -3748,7 +3604,7 @@ private theorem LeftSourceCase.toQuery
       exact sourceFactorization.toThreeQuery rfl outerStored middleStored
         innerFactorization
 
-private theorem OuterPrefixFactorization.leftFactorization
+theorem OuterPrefixFactorization.leftFactorization
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {aggregateHistory : DDC.History A C}
@@ -3895,7 +3751,7 @@ private theorem OuterPrefixFactorization.leftFactorization
               responds middleFactorization,
             endpoint⟩
 
-private theorem InnerPrefixFactorization.leftFactorization
+theorem InnerPrefixFactorization.leftFactorization
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {aggregateHistory : DDC.History A C}
@@ -3991,7 +3847,7 @@ private theorem InnerPrefixFactorization.leftFactorization
               responds middleFactorization,
             endpoint⟩
 
-private theorem SerialFactorization.leftFactorization
+theorem SerialFactorization.leftFactorization
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {history : AttemptedHistory A D}
@@ -4060,7 +3916,7 @@ private theorem SerialFactorization.leftFactorization
                 receiveInner])
           exact ⟨after,
             .afterInner front rfl
-              (by simpa [nextBefore] using localExtension),
+              (by simpa [nextBefore, receiveInner] using localExtension),
             nextEndpoint⟩
   | afterOuter previous localFactorization endpointValid
       inductionHypothesis =>
@@ -4109,7 +3965,7 @@ private theorem SerialFactorization.leftFactorization
               (by simpa [nextBefore] using outerFactorization),
             nextEndpoint⟩
 
-private inductive RightState
+inductive RightState
     {A B C D : Interface.{u, v}}
     (middle : DDC B C) (inner : DDC C D) :
     ThreeHistories A B C D → Option (DDC.History B D) → Prop
@@ -4125,7 +3981,7 @@ private inductive RightState
       (innerStored : before.inner = finalInner) :
       RightState middle inner before (some aggregateHistory)
 
-private theorem RightState.receiveOuterAtOuter
+theorem RightState.receiveOuterAtOuter
     {A B C D : Interface.{u, v}}
     {middle : DDC B C} {inner : DDC C D}
     {before : ThreeHistories A B C D}
@@ -4144,7 +4000,7 @@ private theorem RightState.receiveOuterAtOuter
         (by simpa [ThreeHistories.receiveOuterAtOuter] using middleStored)
         (by simpa [ThreeHistories.receiveOuterAtOuter] using innerStored)
 
-private inductive RightSourceCase
+inductive RightSourceCase
     {A B C D : Interface.{u, v}}
     (outer : DDC A B) (middle : DDC B C) (inner : DDC C D)
     (before : ThreeHistories A B C D) :
@@ -4173,7 +4029,7 @@ private inductive RightSourceCase
       (innerStored : before.inner = some sourceInner) :
       RightSourceCase outer middle inner before history response true
 
-private inductive RightEndpoint
+inductive RightEndpoint
     {A B C D : Interface.{u, v}}
     (outer : DDC A B) (middle : DDC B C) (inner : DDC C D) :
     PackedResponse A D → DDC.History A B →
@@ -4195,7 +4051,7 @@ private inductive RightEndpoint
         (Sum.inr ⟨outerHistory.lastOuter, reply⟩) outerHistory
           aggregateHistory before
 
-private theorem RightEndpoint.outside_data
+theorem RightEndpoint.outside_data
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {response : PackedResponse A D} {outerHistory : DDC.History A B}
@@ -4210,7 +4066,7 @@ private theorem RightEndpoint.outside_data
   | inside source historyEqual => cases responseEqual
   | outside outerStored state => exact ⟨outerStored, state⟩
 
-private theorem RightSourceCase.toInside
+theorem RightSourceCase.toInside
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {before : ThreeHistories A B C D}
@@ -4249,7 +4105,7 @@ private theorem RightSourceCase.toInside
       · simpa [ThreeHistories.withBack, outerStored] using
           RightEndpoint.inside (outer := outer) source historyEqual
 
-private theorem RightSourceCase.toOutside
+theorem RightSourceCase.toOutside
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {before : ThreeHistories A B C D}
@@ -4297,7 +4153,7 @@ private theorem RightSourceCase.toOutside
       exact sourceFactorization.toThreeOutside rfl middleStored innerStored
         outerStored outerFactorization
 
-private theorem OuterPrefixFactorization.rightFactorization
+theorem OuterPrefixFactorization.rightFactorization
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {outerHistory : DDC.History A B}
@@ -4440,10 +4296,10 @@ private theorem OuterPrefixFactorization.rightFactorization
             ThreeHistories.withBack])
           (by simp [nextBefore, ThreeHistories.receiveInnerAtOuter,
             ThreeHistories.withBack]))
-      exact ⟨after, by simpa [nextBefore, outerStored] using
+      exact ⟨after, by simpa [nextBefore, outerStored, receiveInner] using
         outerFactorization, endpoint⟩
 
-private theorem InnerPrefixFactorization.rightFactorization
+theorem InnerPrefixFactorization.rightFactorization
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {outerHistory : DDC.History A B}
@@ -4482,10 +4338,10 @@ private theorem InnerPrefixFactorization.rightFactorization
               ThreeHistories.withBack])
             (by simp [nextBefore, ThreeHistories.receiveInnerAtOuter,
               ThreeHistories.withBack]))
-      exact ⟨after, by simpa [nextBefore, outerStored] using
+      exact ⟨after, by simpa [nextBefore, outerStored, receiveInner] using
         outerFactorization, endpoint⟩
 
-private theorem SerialFactorization.rightFactorization
+theorem SerialFactorization.rightFactorization
     {A B C D : Interface.{u, v}}
     {outer : DDC A B} {middle : DDC B C} {inner : DDC C D}
     {history : AttemptedHistory A D}
@@ -4566,7 +4422,7 @@ private theorem SerialFactorization.rightFactorization
               cases currentEqual
               exact ⟨after,
                 .afterInner front rfl
-                  (by simpa [nextBefore] using innerFactorization),
+                  (by simpa [nextBefore, receiveInner] using innerFactorization),
                 nextEndpoint⟩
   | afterOuter previous localFactorization endpointValid
       inductionHypothesis =>
@@ -4591,7 +4447,7 @@ private theorem SerialFactorization.rightFactorization
           (by simpa [nextBefore] using outerFactorization),
         nextEndpoint⟩
 
-private theorem mem_left_serial_imp_threeGlobalGraph
+theorem mem_left_serial_imp_threeGlobalGraph
     {A B C D : Interface.{u, v}}
     (outer : DDC A B) (middle : DDC B C) (inner : DDC C D)
     (history : DDC.History A D) (response : DDC.Response history)
@@ -4604,7 +4460,7 @@ private theorem mem_left_serial_imp_threeGlobalGraph
     factorization.leftFactorization
   exact ⟨attempted, historyEqual, after, threeFactorization⟩
 
-private theorem mem_right_serial_imp_threeGlobalGraph
+theorem mem_right_serial_imp_threeGlobalGraph
     {A B C D : Interface.{u, v}}
     (outer : DDC A B) (middle : DDC B C) (inner : DDC C D)
     (history : DDC.History A D) (response : DDC.Response history)
@@ -4672,7 +4528,7 @@ theorem applySystem_serial_eq
     ← serial_ofDDS_eq inner system,
     serial_assoc]
 
-private theorem ofDDS_empty_eq_forwarding :
+theorem ofDDS_empty_eq_forwarding :
     Internal.ofDDS (DDS.empty : DDS Interface.empty.{u, v}) =
       forwarding Interface.empty.{u, v} := by
   apply DDC.ext
@@ -4690,6 +4546,37 @@ theorem applySystem_ofDDS_eq
   apply ofDDS_injective
   rw [← serial_ofDDS_eq, ofDDS_empty_eq_forwarding,
     serial_forwarding_eq]
+
+end DDC
+
+namespace Interface
+
+/-- The deterministic converter category. It is selected locally when DDCs,
+rather than the ambient PDCs, are the converter model in use. -/
+@[reducible] noncomputable def ddcCategory :
+    CategoryTheory.LargeCategory Interface.{u, v} where
+  Hom outer inner := DDC outer inner
+  id boundary := DDC.forwarding boundary
+  comp outer inner := DDC.serial outer inner
+  id_comp converter := DDC.forwarding_serial_eq converter
+  comp_id converter := DDC.serial_forwarding_eq converter
+  assoc outer middle inner := DDC.serial_assoc outer middle inner
+
+end Interface
+
+namespace DDC
+
+open CategoryTheory
+
+/-- Opt-in categorical structure for deterministic converters. This is scoped
+because the same interface objects also carry the public PDC category. -/
+noncomputable scoped instance category : LargeCategory Interface.{u, v} :=
+  Interface.ddcCategory
+
+/-- Regard a deterministic converter as a morphism in the DDC category. -/
+noncomputable def asHom {A B : Interface.{u, v}} (converter : DDC A B) :
+    A ⟶ B :=
+  converter
 
 end DDC
 

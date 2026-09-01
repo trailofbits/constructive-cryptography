@@ -7,14 +7,12 @@ import Mathlib.Data.Finsupp.Order
 import Mathlib.Algebra.Order.Group.PosPart
 
 /-!
-# Lifting between the three distribution layers (tower level L0/L1, `DESIGN.md` §12)
+# Lifting between the three distribution layers
 
-`DESIGN.md` §12 fixes *where* a probabilistic fact may live — each statement
-carries the weakest of the three distribution layers (signed `Distribution`,
-`Distribution.NonNeg`, `Distribution.isProbDist`) at which it is true.  That is a
-classification and nothing more: it says where a statement holds, and gives no
-way to *use* an `isProbDist`-only fact while holding a signed distribution.
-This module supplies the two missing moves.
+Each probabilistic statement carries the weakest layer at which it is true:
+signed `Distribution`, `Distribution.NonNeg`, or
+`Distribution.isProbDist`. This module relates those layers through the Jordan
+split and normalization.
 
 ## The two lifts
 
@@ -24,10 +22,10 @@ This module supplies the two missing moves.
   `ℝ`-valued `Finsupp`) *already are* the operator, with `X⁺ - X⁻ = X`
   (`posPart_sub_negPart`) and `X⁺ ⊓ X⁻ = 0`
   (`posPart_inf_negPart_eq_zero`) supplied upstream.  No `Distribution.posPart` is
-  introduced: re-deriving it here would leave two, which `DESIGN.md` §12
-  point 4 forbids.  What is added is the `Distribution`-vocabulary face — the pointwise
-  formula, `NonNeg`ness of both parts, support disjointness, and the transport
-  of `Distribution.expect`, `Distribution.weight` and `Distribution.mass` across the split.
+  introduced. What is added is the `Distribution`-vocabulary face: the pointwise
+  formula, nonnegativity of both parts, support disjointness, and transport of
+  `Distribution.expect`, `Distribution.weight`, and `Distribution.mass` across
+  the split.
 * **`NonNeg` → `isProbDist`, by normalization.**  `Distribution.normalize X = |X|⁻¹ • X`
   is a probability distribution as soon as `X` is nonnegative of nonzero
   weight, and `expect`/`mass` transport across it with an explicit factor of
@@ -37,11 +35,10 @@ This module supplies the two missing moves.
 
 Lifting transports **proofs, not truth**.  The facts that fail one layer down
 still fail: monotonicity of expectation, Markov and Cauchy–Schwarz are false on
-signed distributions (`expect_mono_fails_signed`, `dist_markov_fails_signed`,
-`dist_cauchy_schwarz_fails_signed` in `scratch/TransportProbe.lean`), and Jensen
-and the `𝔼[f²] - 𝔼[f]²` variance identity are false at sub-probability weight
-(`dist_jensen_fails_subprob`, `variance_sub_form_fails_at_weight_two`).  A
-lifted corollary is therefore always a *different proposition*: it is about the
+signed distributions. Jensen fails on a one-point law of mass `1/2` with the
+constant concave function `-1`, and the unnormalized variance identity fails
+on a one-point law of mass `2` with `f = 1`. A lifted corollary is therefore
+always a *different proposition*: it is about the
 parts (`mass_ge_le_expect_posPart_div` bounds a signed event mass by the
 expectation under `X⁺`, never under `X`), or it carries the weight factor the
 normalization introduces (`ConcaveOn.le_map_expect_of_nonNeg`,
@@ -72,18 +69,14 @@ used at both of the levels this file works with (the scalars `ℝ`, and `Distrib
 itself).  Both are stated in the generality in which they are proved. -/
 
 /-- `a⁺ * a⁻ = 0`: at most one of the two parts of a real number is nonzero.
-
-UPSTREAM-CANDIDATE: the multiplicative face of `posPart_inf_negPart_eq_zero`
-for a linearly ordered ring; mathlib has the lattice face only. -/
+This is the multiplicative face of `posPart_inf_negPart_eq_zero`. -/
 theorem posPart_mul_negPart (a : ℝ) : a⁺ * a⁻ = 0 := by
   rcases le_total a 0 with h | h
   · rw [posPart_eq_zero.mpr h, zero_mul]
   · rw [negPart_eq_zero.mpr h, mul_zero]
 
 /-- `a - a ⊓ b = (a - b)⁺` in a lattice-ordered additive group: the amount by
-which `a` exceeds `b` is exactly what the meet discards.
-
-UPSTREAM-CANDIDATE: the `posPart` companion of `inf_add_sup`. -/
+which `a` exceeds `b` is exactly what the meet discards. -/
 theorem sub_inf_eq_posPart_sub {α : Type*} [Lattice α] [AddCommGroup α]
     [AddLeftMono α] (a b : α) : a - a ⊓ b = (a - b)⁺ := by
   rw [posPart_def, sub_eq_add_neg, neg_inf, add_sup, add_neg_cancel,
@@ -91,9 +84,7 @@ theorem sub_inf_eq_posPart_sub {α : Type*} [Lattice α] [AddCommGroup α]
 
 /-- `a ⊓ b + (a - b)⁺ = a`: the meet plus the one-sided excess rebuilds `a`.
 This is the identity behind the diagonal of an optimal coupling, where the
-meet is the shared mass and the excess is what must be transported.
-
-UPSTREAM-CANDIDATE, with `sub_inf_eq_posPart_sub`. -/
+meet is the shared mass and the excess is what must be transported. -/
 theorem inf_add_posPart_sub {α : Type*} [Lattice α] [AddCommGroup α]
     [AddLeftMono α] (a b : α) : a ⊓ b + (a - b)⁺ = a := by
   rw [← sub_inf_eq_posPart_sub, add_sub_cancel]
@@ -163,10 +154,9 @@ theorem negPart_eq_zero_of_nonNeg {X : Distribution A} (hX : X.NonNeg) : X⁻ = 
 
 /-! ### Transport across the split
 
-`expect`, `weight` and `mass` are all *linear in the distribution* (the signed
-layer, `DESIGN.md` §12), so each decomposes across `X = X⁺ - X⁻`.  These are the
-laws that make the lift usable: they turn a claim about signed `X` into the
-difference of two claims about nonnegative distributions. -/
+`expect`, `weight` and `mass` are all linear in a signed distribution, so each
+decomposes across `X = X⁺ - X⁻`. These laws turn a claim about signed `X` into
+the difference of two claims about nonnegative distributions. -/
 
 /-- Expectation decomposes across the Jordan split:
 `𝔼_{X⁺}[f] - 𝔼_{X⁻}[f] = 𝔼_X[f]`.  Signed layer: no hypothesis. -/
@@ -206,8 +196,7 @@ theorem mass_le_mass_posPart (X : Distribution A) (P : A → Prop) :
 total weight of the positive part of `X - Y`. -/
 
 /-- **`statDist` is the weight of a positive part**: `δ(X, Y) = |(X - Y)⁺|`.
-No layer hypothesis, no `Fintype`.  The measure-side counterpart is
-`statDist_eq_toReal_posPart_univ` in `RandomSystems.DistMeasure`. -/
+No layer hypothesis and no `Fintype` assumption are required. -/
 theorem statDist_eq_weight_posPart (X Y : Distribution A) :
     statDist X Y = ((X - Y)⁺).weight := by
   classical
@@ -224,14 +213,7 @@ theorem statDist_eq_weight_posPart (X Y : Distribution A) :
   · rw [Finsupp.notMem_support_iff, hfun a] at ha
     exact ha
 
-/-- A nonnegative distribution of zero total weight is the zero distribution.
-
-NOTE (`DESIGN.md` §12 point 4): two downstream copies of this fact exist —
-`Probability.Distribution.eq_zero_of_weight_eq_zero` (`RandomSystems/RandomSystem.lean`)
-and `RandomSystems.distribution_eq_zero_of_weight_eq_zero`
-(`RandomSystems/BoundedAttainment.lean`).  Both sit below this module in the
-import graph and should be deleted in favour of this one; the deletion is
-blocked only by call sites in files under other ownership. -/
+/-- A nonnegative distribution of zero total weight is the zero distribution. -/
 theorem eq_zero_of_nonNeg_of_weight_eq_zero {X : Distribution A} (hX : X.NonNeg)
     (hw : X.weight = 0) : X = 0 := by
   refine Finsupp.ext fun a => ?_
@@ -337,19 +319,17 @@ theorem mass_eq_weight_mul_mass_normalize {X : Distribution A} (hw : X.weight �
 
 /-! ## Lifted corollaries
 
-Each of these is a statement the hypothesis discipline of `DESIGN.md` §12 puts
-out of reach at the layer it is stated at, obtained by running an
+Each statement is obtained by running an
 `isProbDist`- or `NonNeg`-layer fact through one of the two lifts.  None of
 them says the original inequality survives one layer down. -/
 
 /-- **Jensen at the `NonNeg` layer**, concave case:
 `𝔼_X[φ∘f] ≤ |X| · φ(𝔼_X[f]/|X|)`.
 
-Jensen itself is an `isProbDist`-layer fact and *stays* one:
-`dist_jensen_fails_subprob` (`scratch/TransportProbe.lean`) exhibits a
-nonnegative `X` of weight `1/2` with `𝔼_X[φ∘f] > φ(𝔼_X[f])`.  What the
-normalization lift buys is the corrected statement, with the weight factor the
-counterexample is measuring; at `|X| = 1` it collapses back to
+Jensen itself remains an `isProbDist`-layer fact: on a one-point law of weight
+`1/2`, the constant concave function `-1` gives `-1/2 > -1`. The normalization
+lift gives the corrected statement with the required weight factor; at
+`|X| = 1` it collapses back to
 `ConcaveOn.le_map_expect`. -/
 theorem _root_.ConcaveOn.le_map_expect_of_nonNeg {φ : ℝ → ℝ}
     (hφ : ConcaveOn ℝ Set.univ φ) {X : Distribution A} (hX : X.NonNeg)
@@ -378,10 +358,9 @@ theorem _root_.ConvexOn.map_expect_le_of_nonNeg {φ : ℝ → ℝ}
 `Var_{X̂} f = 𝔼_X[f²]/|X| - (𝔼_X[f]/|X|)²`.
 
 `variance_eq_expect_sq_sub_sq_expect` needs `weight = 1` and the need is real —
-`variance_sub_form_fails_at_weight_two` (`scratch/TransportProbe.lean`) shows
-the subtracted form going negative at weight 2.  The normalization lift is what
-makes the identity available anyway, at the cost of naming the variance of `X̂`
-rather than of `X`.  Signed layer in `X`: only `|X| ≠ 0` is used. -/
+on a one-point law of mass `2` with `f = 1`, the subtracted form is
+`2 - 2² = -2`. The normalization lift makes the identity available for `X̂`
+rather than `X`. Signed layer in `X`: only `|X| ≠ 0` is used. -/
 theorem variance_normalize_eq_expect_sq_sub_sq_expect {X : Distribution A}
     (hw : X.weight ≠ 0) (f : A → ℝ) :
     X.normalize.variance f
@@ -423,12 +402,11 @@ theorem sq_expect_le_weight_mul_expect_sq {X : Distribution A} (hX : X.NonNeg)
 /-- **Markov's inequality for a signed distribution**, through the positive
 part: `X{a | c ≤ f a} ≤ 𝔼_{X⁺}[f]/c`.
 
-This is *not* Markov for `X`: `dist_markov_fails_signed`
-(`scratch/TransportProbe.lean`) shows `X{c ≤ f} ≤ 𝔼_X[f]/c` is false on the
-signed layer, and it stays false.  The expectation on the right is taken under
-the positive part `X⁺`, which is exactly the correction the counterexample
-demands, and the statement collapses to `mass_ge_le_expect_div` when `X` is
-already nonnegative (`posPart_eq_self_of_nonNeg`). -/
+This is not Markov for `X`: with masses `1,-1`, values `1,2`, and threshold
+`1`, the event has mass `0` while the expectation is `-1`. The expectation on
+the right is therefore taken under `X⁺`. The statement collapses to
+`mass_ge_le_expect_div` when `X` is already nonnegative
+(`posPart_eq_self_of_nonNeg`). -/
 theorem mass_ge_le_expect_posPart_div (X : Distribution A) {f : A → ℝ}
     (hf : ∀ a, 0 ≤ f a) {c : ℝ} (hc : 0 < c) :
     X.mass (fun a => c ≤ f a) ≤ (X⁺).expect f / c :=
@@ -440,14 +418,8 @@ Lemma 2.3 splits a law against another into the part they **share** and the
 part by which the first **exceeds** the second.  Both are already here: the
 shared part is the lattice meet `X ⊓ Y` and the excess is the positive part
 `(X - Y)⁺`, and `inf_add_posPart_sub` is Lemma 2.3's split.  What follows is
-the `weight`/`statDist` face of that split, which the attainment construction
-in `RandomSystems.System.Attainment` runs on — it builds a joint whose shared
-component has exactly the weight of the meet.
-
-`DESIGN.md` §12 point 4: no `commonPart`/`excess` definitions are introduced.
-The quarry (`RandomSystems/RandomSystem.lean:2633,2692`) carries a private pair
-of them, flagged there for upstreaming; on this tree they are the lattice
-operations and nothing is added but their weight arithmetic. -/
+the `weight`/`statDist` face of that split. The shared and excess parts are the
+existing lattice operations; only their weight arithmetic is added. -/
 
 /-- Pointwise formula for the meet: `(X ⊓ Y)(a) = min(X(a), Y(a))`. -/
 @[simp]
@@ -520,7 +492,7 @@ theorem weight_inf [DecidableEq A] (X Y : Distribution A) :
     rw [Finsupp.mem_support_iff, inf_apply] at ha
     by_contra hc
     rw [Finset.mem_union] at hc
-    push_neg at hc
+    push Not at hc
     rw [Finsupp.notMem_support_iff.mp hc.1, Finsupp.notMem_support_iff.mp hc.2] at ha
     exact ha (min_self 0)
   rw [weight_eq_sum_of_support_subset (X ⊓ Y) hsub]
@@ -543,9 +515,8 @@ theorem statDist_add_add_left (X Y Z : Distribution A) :
   rw [statDist_eq_weight_posPart, statDist_eq_weight_posPart,
     add_sub_add_left_eq_sub]
 
-/-- Removing a common part from both laws leaves the distance alone.  The
-quarry's `δ`-level companion carries an honesty hypothesis on the part;
-`statDist` needs none, because the difference is unchanged outright. -/
+/-- Removing a common part from both laws leaves the distance unchanged. No
+nonnegativity hypothesis is needed because the difference is unchanged. -/
 theorem statDist_sub_sub (X Y E : Distribution A) :
     statDist (X - E) (Y - E) = statDist X Y := by
   rw [statDist_eq_weight_posPart, statDist_eq_weight_posPart,

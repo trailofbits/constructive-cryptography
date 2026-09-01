@@ -16,8 +16,8 @@ definitions in `ConstructiveCryptography.Multiparty.Basic`.
 namespace ConstructiveCryptography.Multiparty
 
 open CategoryTheory
-open AbstractCryptography.Categorical
-open AbstractCryptography.Categorical.ResourceAlgebra
+open ConstructiveCryptography.Categorical
+open ConstructiveCryptography.Categorical.ResourceAlgebra
 open scoped ENNReal
 
 universe u v w
@@ -29,7 +29,7 @@ variable [ResourceAlgebra C Phi]
 /-- Resources on which every admitted test is bounded by `error`. This is a
 repository-level specification constructor, not a Liu--Maurer definition. -/
 def gameSpec {A : C} (tests : Set (Resource Phi A → ENNReal))
-    (error : ENNReal) : Specification Phi A :=
+    (error : ENNReal) : ResourceAlgebra.Specification Phi A :=
   {resource | ∀ test ∈ tests, test resource ≤ error}
 
 omit [MonoidalCategory C] [ResourceAlgebra C Phi] in
@@ -68,7 +68,7 @@ theorem zStar_subset_gameSpec {I : Type*} {A : C}
       (converters dishonest) tests)
     (idealAdmitted : ideal ∈ gameSpec (Phi := Phi) tests error) :
     zStar (Phi := Phi) converters dishonest
-        ({ideal} : Specification Phi A) ⊆
+        ({ideal} : ResourceAlgebra.Specification Phi A) ⊆
       gameSpec (Phi := Phi) tests error := by
   intro resource relaxed
   -- Decompose membership in the joint-converter closure.

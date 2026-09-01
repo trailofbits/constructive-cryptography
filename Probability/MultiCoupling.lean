@@ -14,8 +14,7 @@ Random Systems, Games, and Hardness Amplification*, DISS ETH No. 29554.
 
 Nothing here mentions systems: Definition 2.27 consumes these objects at
 `A = System.DDS X Y`, but every statement below is about a finite family of
-finitely supported laws on an arbitrary carrier.  The system-level reading is
-`RandomSystems/System/MultiDistance.lean`.
+finitely supported laws on an arbitrary carrier.
 
 ## What the layer contains
 
@@ -38,7 +37,7 @@ finitely supported laws on an arbitrary carrier.  The system-level reading is
   real-matrix combinatorics.
 * `exists_pair_one_sub_supAgreement_le` — the distribution-level step of
   Theorem 2.29's proof, **errata-corrected**, and
-  `printed_min_form_counterexample`, the kernel-checked refutation of the
+  `not_supAgreement_disagreement_le_every_pair`, the kernel-checked refutation of the
   printed form.
 
 ## Source errata (both travel with every statement below)
@@ -50,31 +49,18 @@ The thesis's Theorem 2.29 proof (printed p. 19, bottom display) reads
 and the `min` over pairs is an erratum for `max`.  Lemma 2.30 bounds the
 *smallest* pairwise overlap `Σ_k min(A_ik, A_jk)`, i.e. it controls the
 multi-law disagreement by the *largest* pairwise distance.  The printed form
-is false, and `printed_min_form_counterexample` is the kernel-checked witness
+is false, and `not_supAgreement_disagreement_le_every_pair` is the kernel-checked witness
 (`X₁ = δ₀`, `X₂ = ¾δ₀ + ¼δ₁`, `X₃ = δ₂` over `Fin 3`: the left side is `1`
 while the closest pair contributes only `¼`).  The corrected bound is stated
 in attained `∃ i ≠ j` form, which is exactly the `max_{i≠j}` form since the
 pair set is finite.
 
 The companion erratum — Definition 2.27/2.28's `inf` over representatives is a
-`sup` — is a *system-level* statement and is recorded in
-`RandomSystems/System/MultiDistance.lean`, where the representatives live.
+`sup` — is system-level and is not formalized in this module.
 
-## Provenance
-
-Proof architecture transplanted from the read-only quarry
-(`/Users/marcilunga/Documents/tob/research/random-systems`,
-`RandomSystems/MultiSystemCoupling.lean`): `IsJointOf` `:215`,
-`agreementMass` `:243`, `supAgreement` `:248`, `overlapDist` `:374`,
-`agreementMass_le_weight_overlapDist` `:422`, the maximal coupling `:477`,
-attainment `:550`, the pair bridge `:615`, Lemma 2.30 `:641`, the corrected
-Theorem 2.29 step `:774`, and the counterexample `:958`.  The quarry rides
-`Dist A` with its own `δ`; every statement here is restated on
-`Probability.Distribution` and `Probability.statDist`.  The invariant that
-transplants in Lemma 2.30 is the quarry's replacement of the thesis's "WLOG
-reorder the rows" by an explicit **zero-row selector** `z : column → row`
-whose fibers are the partition cells — that is what makes the case split
-formalizable.
+The proof of Lemma 2.30 replaces the thesis's "WLOG reorder the rows" by an
+explicit **zero-row selector** `z : column → row` whose fibers are the
+partition cells.
 -/
 
 namespace Probability
@@ -205,8 +191,7 @@ carrier `A →₀ ℝ` it has to be carried explicitly (the same discipline as
 is unbounded — add `+M` on the diagonal and `−M` off it and every marginal is
 unchanged.
 
-Coinage (quarry-continuation of `MultiSystemCoupling.lean:215`); the thesis
-names the object only by the display `Pr^ℰ`. -/
+The thesis names the object only by the display `Pr^ℰ`. -/
 def IsJointOf (joint : Distribution (Fin n → A)) (laws : Fin n → Distribution A) :
     Prop :=
   joint.NonNeg ∧ ∀ i, Distribution.marginalAt joint i = laws i
@@ -237,13 +222,12 @@ theorem weight_eq_of_isJointOf {joint : Distribution (Fin n → A)}
   exact (Distribution.weight_fTransform (fun f => f i) joint).symm
 
 /-- Lanzenberger **Definition 2.27**'s agreement event `S₁ = S₂ = ⋯ = Sₙ`, as
-a mass.  Coinage (quarry-continuation of `MultiSystemCoupling.lean:243`). -/
+a mass. -/
 noncomputable def agreementMass (joint : Distribution (Fin n → A)) : ℝ :=
   joint.mass fun tuple => ∀ i j, tuple i = tuple j
 
 /-- Lanzenberger **Definition 2.27**'s inner supremum
-`sup_ℰ Pr^ℰ(S₁ = ⋯ = Sₙ)`, at one representative tuple.  Coinage
-(quarry-continuation of `MultiSystemCoupling.lean:248`). -/
+`sup_ℰ Pr^ℰ(S₁ = ⋯ = Sₙ)`, at one representative tuple. -/
 noncomputable def supAgreement (laws : Fin n → Distribution A) : ℝ :=
   sSup {b : ℝ | ∃ joint, IsJointOf joint laws ∧ b = agreementMass joint}
 
@@ -289,7 +273,7 @@ theorem supAgreement_eq_zero_of_not_nonNeg {laws : Fin n → Distribution A}
   have hempty : {b : ℝ | ∃ joint, IsJointOf joint laws ∧
       b = agreementMass joint} = ∅ := by
     ext b
-    simp only [Set.mem_setOf_eq, Set.mem_empty_iff_false, iff_false, not_exists]
+    simp only [Set.mem_ofPred_eq, Set.mem_empty_iff_false, iff_false, not_exists]
     rintro joint ⟨hjoint, -⟩
     exact hi (IsJointOf.nonNeg_law hjoint i)
   unfold supAgreement
@@ -298,8 +282,7 @@ theorem supAgreement_eq_zero_of_not_nonNeg {laws : Fin n → Distribution A}
 /-- The two-coordinate selector projecting an `n`-tuple to the pair of its
 `i`-th and `j`-th entries.  Spelled with `Fin 2` literals and `if` rather than
 the `![·,·]` vector notation, whose `Nat.succ`-shaped length forces a
-numeral-form defeq check at every later `sSup`/`sInf` unification.  Coinage
-(quarry-continuation of `MultiSystemCoupling.lean:283`). -/
+numeral-form defeq check at every later `sSup`/`sInf` unification. -/
 def selectPair {B : Type*} (i j : Fin n) (f : Fin n → B) : Fin 2 → B :=
   fun k => if k = 0 then f i else f j
 
@@ -374,8 +357,7 @@ variable {A : Type*} {n : ℕ}
 
 open Classical in
 /-- The union of the supports of a tuple of laws.  Its cardinality is
-Theorem 2.29's `ℓ` at one representative tuple.  Coinage
-(quarry-continuation of `MultiSystemCoupling.lean:360`). -/
+Theorem 2.29's `ℓ` at one representative tuple. -/
 noncomputable def supportUnion (laws : Fin n → Distribution A) : Finset A :=
   Finset.univ.biUnion fun i => (laws i).support
 
@@ -388,8 +370,7 @@ theorem support_subset_supportUnion (laws : Fin n → Distribution A) (i : Fin n
 
 /-- The pointwise minimum `a ↦ minᵢ lawsᵢ(a)` of a nonempty tuple of laws.
 Its weight is the classical `Σ_a minᵢ lawsᵢ(a)`, the largest diagonal mass any
-joint distribution of the tuple can achieve.  Coinage (quarry-continuation of
-`MultiSystemCoupling.lean:374`). -/
+joint distribution of the tuple can achieve. -/
 noncomputable def overlapDist [NeZero n] (laws : Fin n → Distribution A) :
     Distribution A :=
   Finsupp.onFinset (supportUnion laws)
@@ -596,11 +577,9 @@ statistical distance: `Σ_a min(μ(a), ν(a)) = |μ| − δ(μ, ν)`, at
 sub-distribution generality — the classical overlap formula behind Definition
 2.28's second display.
 
-Hypothesis-free on the signed carrier, which is a *gain* over the quarry's
-form (`MultiSystemCoupling.lean:589`, which assumes `(P 1).NonNeg`): the
-quarry's `δ` sums over the first law's support alone and therefore misses the
-points where only the second law is charged, whereas `statDist` sums over the
-support of the *difference* and needs no side condition to see them. -/
+Hypothesis-free on the signed carrier: `statDist` sums over the support of the
+*difference* and needs no side condition to see points where only the second
+law is charged. -/
 theorem weight_overlapDist_pair (P : Fin 2 → Distribution A) :
     (overlapDist P).weight = (P 0).weight - statDist (P 0) (P 1) := by
   classical
@@ -772,7 +751,7 @@ corrected: for probability laws `X₁, …, Xₙ` (`n ≥ 2`) over any carrier, 
 Since the pair set is finite this is exactly the bound by
 `(min(n,ℓ) − 1) · max_{i≠j} (…)`.  The thesis display writes `min_{i,j}` over
 the pairs instead; that form is **false**
-(`printed_min_form_counterexample`) — Lemma 2.30 bounds the smallest pairwise
+(`not_supAgreement_disagreement_le_every_pair`) — Lemma 2.30 bounds the smallest pairwise
 overlap, which corresponds to the largest pairwise distance.
 
 Proof: apply Lemma 2.30 to the residual matrix `A_{i,a} = Xᵢ(a) − minₖ Xₖ(a)`
@@ -951,7 +930,7 @@ open Classical in
 /-- **Thesis erratum, kernel-checked**: the printed `min_{i,j}` form of the
 distribution-level display in Theorem 2.29's proof is false.  (The corrected
 `max` form is `exists_pair_one_sub_supAgreement_le`.) -/
-theorem printed_min_form_counterexample :
+theorem not_supAgreement_disagreement_le_every_pair :
     ¬ ∀ (laws : Fin 3 → Distribution (Fin 3)),
         (∀ i, (laws i).isProbDist) →
         ∀ i j : Fin 3, i ≠ j →

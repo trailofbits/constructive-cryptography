@@ -2,17 +2,21 @@
 Copyright (c) 2024-2026 Trail of Bits. All rights reserved.
 Authors: Marc Ilunga, Claude
 -/
-import AbstractCryptography.Categorical.ResourceAlgebra.ConstructorClass
-import AbstractCryptography.Categorical.ResourceAlgebra.ConverterTuple
-import AbstractCryptography.Categorical.ResourceAlgebra.CostBounded
-import AbstractCryptography.Categorical.ResourceAlgebra.Filtered
-import AbstractCryptography.Categorical.ResourceAlgebra.Outbound
+import ConstructiveCryptography.Categorical.ResourceAlgebra.ConstructorClass
+import ConstructiveCryptography.Categorical.ResourceAlgebra.ConverterTuple
+import ConstructiveCryptography.Categorical.ResourceAlgebra.CostBounded
+import ConstructiveCryptography.Categorical.ResourceAlgebra.Endomorphism
+import ConstructiveCryptography.Categorical.ResourceAlgebra.Filtered
+import ConstructiveCryptography.Categorical.ResourceAlgebra.Outbound
+import ConstructiveCryptography.Tactics.ProofAutomation
+import ConstructiveCryptography.Presentation.ControlledNaturalLanguage
 
 /-!
 # Constructive Cryptography
 
-This is the public carrier-independent Constructive Cryptography root over the
-single typed `ResourceAlgebra` presentation.
+This is the MR16/Jost/Liu Constructive Cryptography theory before selecting a
+concrete system model. It exports one interface-indexed presentation centered on
+`ConstructiveCryptography.Categorical.ResourceAlgebra`.
 
 Resources at an interface `A` are the objects of the fibre `Phi.obj (op A)`;
 typed converters `A ⟶ B` act by the contravariant resource functor;
@@ -23,15 +27,40 @@ corresponding imported theorem families.  A protocol in the multiparty sense
 is an explicit partial converter tuple from `ConverterTuple`; it is not a
 second action or resource carrier.
 
+For a category `C` of interfaces and converters and a contravariant functor
+`Phi : Cᵒᵖ ⥤ Type` of resources, `ResourceAlgebra C Phi` supplies ordered
+parallel composition, attachment as `Phi.map`, a pseudo-emetric on every
+resource fibre, and non-expansion of attachment and parallel composition.
+
 Maurer--Renner 2016 supplies the construction and relaxation calculus.  Jost's
 typed attachment and ordered parallel presentation requires no symmetric
 parallel axiom.  Liu--Maurer multiparty constructions are layered in
 `ConstructiveCryptography.MultipartyComputation`, which depends on this root.
+
+`RandomSystems` owns fixed-interface DDS, DDE, and PDS mathematics.
+`RandomSystems.Converter` owns the concrete PDC category, with DDCs as its
+deterministic specialization, and `RandomSystemsCC` installs the selected
+`ResourceAlgebra` instance. None of those concrete modules is imported here.
+
+The systematic public setup is:
+
+```lean
+import ConstructiveCryptography
+open ConstructiveCryptography
+open scoped ConstructiveCryptography
+```
+
+This makes the scoped notation and the `cc_*` proof commands available.
+Controlled-language sentences additionally require:
+
+```lean
+open scoped CryptoControlledNaturalLanguage
+```
 -/
 
 set_option autoImplicit false
 
-namespace AbstractCryptography.Categorical.ResourceAlgebra.Specification
+namespace ConstructiveCryptography.Categorical.ResourceAlgebra.Specification
 
 open CategoryTheory
 
@@ -68,18 +97,18 @@ instance instTransApproximatelyConstructs [ResourceAlgebra C Phi]
         (innerError + outerError)) where
   trans := Constructs.serial_epsilonRelaxation
 
-end AbstractCryptography.Categorical.ResourceAlgebra.Specification
+end ConstructiveCryptography.Categorical.ResourceAlgebra.Specification
 
 namespace ConstructiveCryptography
 
 /-- Paper notation for exact typed construction. -/
 scoped notation:50 source " —[" converter "]→ " target:51 =>
-  AbstractCryptography.Categorical.ResourceAlgebra.Specification.Constructs
+  ConstructiveCryptography.Categorical.ResourceAlgebra.Specification.Constructs
     converter source target
 
 /-- Paper notation for scalar approximate typed construction. -/
 scoped notation:50 source " —[" converter "; " error "]→ " target:51 =>
-  AbstractCryptography.Categorical.ResourceAlgebra.Specification.ApproximatelyConstructs
+  ConstructiveCryptography.Categorical.ResourceAlgebra.Specification.ApproximatelyConstructs
     converter error source target
 
 end ConstructiveCryptography

@@ -35,22 +35,9 @@ Four groups, in the order later layers consume them:
 * **the sum-of-permutations fiber ratio** — the normalized fiber lower bound
   under the cubic query condition `q³ ≤ N²`.
 
-## Provenance
-
-The arithmetic is standard.  The one statement with a named source is the
-fiber-ratio bound `sop_ratio_counting_bound`, which the quarry attributes to
-"Jha–Nandi Proposition 8.1" as a bare author name — no bibliography entry,
-year, or page exists there, and no such paper is on disk.  That attribution is
-**recorded, not verified**, and it sits outside the source hierarchy
-(MauRen16 / Jost / LiuMau20 / Lanzenberger).  The birthday bound's two-sided
-form is Boneh–Shoup, *A Graduate Course in Applied Cryptography*, Theorem B.1;
-only the one-sided half is needed here and is proved outright.
-
-Every declaration below is an architecture transplant from the quarry
-(READ-ONLY): `RandomSystems/Counting.lean` and
-`RandomSystems/HTechnique/{Counting,Derivation}.lean`.  Statements are
-restated on this tree's objects (`Probability.Distribution`, not the quarry's
-`Dist`); none of them mentions a distance, so no metric re-basing arises.
+The arithmetic is standard.  The birthday bound's two-sided form is
+Boneh–Shoup, *A Graduate Course in Applied Cryptography*, Theorem B.1; only the
+one-sided half is needed here and is proved outright.
 -/
 
 noncomputable section
@@ -73,7 +60,7 @@ arbitrary `Finset`, whenever every `f i` lies in `[0, 1]`.
 Both hypotheses are needed: `f ≡ 4` on a three-element set has `1 − ∑ f = −11`
 and `∏ (1 − f) = −27`, so `f i ≤ 1` cannot be dropped.
 
-**UPSTREAM-CANDIDATE.**  mathlib has the exact expansion
+Mathlib has the exact expansion
 `Finset.prod_one_sub_ordered` but not this inequality, and that expansion needs
 a `LinearOrder` on the index which this proof does not. -/
 theorem one_sub_sum_le_prod_one_sub {ι : Type*} (s : Finset ι) (f : ι → ℝ)
@@ -109,7 +96,7 @@ theorem nnreal_one_sub_sum_le_prod {ι : Type*} (s : Finset ι) (a : ι → NNRe
   classical
   rcases le_or_gt (∑ i ∈ s, a i) 1 with hsum | hsum
   · have hle : ∀ i ∈ s, a i ≤ 1 := fun i hi =>
-      le_trans (Finset.single_le_sum (f := a) (fun j _ => zero_le (a j)) hi) hsum
+      le_trans (Finset.single_le_sum (f := a) (fun _ _ => by positivity) hi) hsum
     rw [← NNReal.coe_le_coe, NNReal.coe_sub hsum, NNReal.coe_prod, NNReal.coe_sum]
     refine le_trans (one_sub_sum_le_prod_one_sub s (fun i => (a i : ℝ))
       (fun i _ => (a i).coe_nonneg) (fun i hi => by exact_mod_cast hle i hi))
@@ -686,25 +673,58 @@ theorem sum_fin_gate_sorted {K m : ℕ} {M : Type*} [AddCommMonoid M]
       simp
     · rw [card_filter_fin_val_eq_zero (lt_of_lt_of_le hm hmK), one_mul]
   · -- tail–tail fiber: `1 ≤ p.1 < p.2 < m` — count `C(m−1, 2)`
-    rw [show Finset.univ.filter (fun p : Fin K × Fin K =>
-          p.1.val ≠ 0 ∧ p.1.val < p.2.val ∧ p.2.val < m)
-        = Finset.map ⟨fun p : Fin (m - 1) × Fin (m - 1) =>
-            ((⟨p.1.val + 1, by omega⟩ : Fin K), (⟨p.2.val + 1, by omega⟩ : Fin K)),
-            by
-              intro p p' h
-              simp only [Prod.ext_iff, Fin.ext_iff] at h ⊢
-              omega⟩
-          (Finset.univ.filter (fun p : Fin (m - 1) × Fin (m - 1) => p.1 < p.2))
-        from ?_, Finset.card_map, card_filter_fin_lt]
-    ext p
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_map,
-      Function.Embedding.coeFn_mk, Prod.ext_iff, Fin.ext_iff, Fin.lt_def]
-    constructor
-    · rintro ⟨h0, hij, hm'⟩
-      exact ⟨(⟨p.1.val - 1, by omega⟩, ⟨p.2.val - 1, by omega⟩),
-        by dsimp only; omega, by dsimp only; omega⟩
-    · rintro ⟨p', hp', h1, h2⟩
-      omega
+    let shift : Fin (m - 1) × Fin (m - 1) ↪ Fin K × Fin K :=
+      ⟨fun p =>
+          ((⟨p.1.val + 1, by omega⟩ : Fin K), (⟨p.2.val + 1, by omega⟩ : Fin K)),
+        by
+          intro p p' h
+          apply Prod.ext
+          · apply Fin.ext
+            have hfirst := congrArg (fun q : Fin K × Fin K => q.1.val) h
+            change p.1.val + 1 = p'.1.val + 1 at hfirst
+            omega
+          · apply Fin.ext
+            have hsecond := congrArg (fun q : Fin K × Fin K => q.2.val) h
+            change p.2.val + 1 = p'.2.val + 1 at hsecond
+            omega⟩
+    have hsets :
+        Finset.univ.filter (fun p : Fin K × Fin K =>
+          p.1.val ≠ 0 ∧ p.1.val < p.2.val ∧ p.2.val < m) =
+        (Finset.univ.filter
+          (fun p : Fin (m - 1) × Fin (m - 1) => p.1 < p.2)).map shift := by
+      ext p
+      constructor
+      · intro hp
+        obtain ⟨_, h0, hij, hm'⟩ := Finset.mem_filter.mp hp
+        let pre : Fin (m - 1) × Fin (m - 1) :=
+          (⟨p.1.val - 1, by omega⟩, ⟨p.2.val - 1, by omega⟩)
+        apply Finset.mem_map.mpr
+        refine ⟨pre, ?_, ?_⟩
+        · apply Finset.mem_filter.mpr
+          refine ⟨Finset.mem_univ _, ?_⟩
+          change pre.1.val < pre.2.val
+          dsimp [pre]
+          omega
+        · apply Prod.ext
+          · apply Fin.ext
+            change pre.1.val + 1 = p.1.val
+            dsimp [pre]
+            omega
+          · apply Fin.ext
+            change pre.2.val + 1 = p.2.val
+            dsimp [pre]
+            omega
+      · intro hp
+        obtain ⟨pre, hpre, hshift⟩ := Finset.mem_map.mp hp
+        have hlt : pre.1.val < pre.2.val := (Finset.mem_filter.mp hpre).2
+        have hfirst := congrArg (fun q : Fin K × Fin K => q.1.val) hshift
+        have hsecond := congrArg (fun q : Fin K × Fin K => q.2.val) hshift
+        change pre.1.val + 1 = p.1.val at hfirst
+        change pre.2.val + 1 = p.2.val at hsecond
+        apply Finset.mem_filter.mpr
+        refine ⟨Finset.mem_univ _, ?_⟩
+        omega
+    rw [hsets, Finset.card_map, card_filter_fin_lt]
 
 /-! ## Cubic query-bound arithmetic
 
@@ -806,11 +826,7 @@ theorem gap_sq_bound_of_five_mul {size k : ℕ} (h : 5 * k ≤ 2 * size) :
   `(1 − q³/N²)·(1/N^q) ≤ ((N−q)!²·∏_{k<q}(N − 2k)) / (N!)²`.
 
 This is the counting core a good-transcript ratio hypothesis is discharged
-by; the `(1 − ·)` factor is the ratio defect the H-technique charges.
-
-*Provenance, flagged*: the quarry attributes this to "Jha–Nandi Proposition
-8.1" as a bare author name — no bibliography entry, year, or page, and no such
-paper on disk.  Recorded, not verified; outside the source hierarchy. -/
+by; the `(1 − ·)` factor is the ratio defect the H-technique charges. -/
 theorem sop_ratio_counting_bound {size q : ℕ} (h_pos : 0 < size)
     (h_cube : q ^ 3 ≤ size ^ 2) :
     (1 - (q : NNReal) ^ 3 / ((size : NNReal)) ^ 2) * (1 / (size : NNReal) ^ q) ≤
@@ -1015,11 +1031,9 @@ theorem sop_ratio_counting_bound {size q : ℕ} (h_pos : 0 < size)
 
 /-! ## The counting kernel, part two
 
-Five groups, matching the reference development's own section order: the
+Five groups: the
 two-sided birthday bound, sorted-pair sum identities, function fibers,
-block-major pair encoding, and re-randomisation fibers.  They landed as a
-separate staging module while this file was under another leg's ownership and
-were appended here unchanged; no declaration was renamed and no proof changed.
+block-major pair encoding, and re-randomisation fibers.
 
 ## Provenance
 
@@ -1028,15 +1042,9 @@ The arithmetic is standard; the one named source is Boneh-Shoup,
 Page numbers are **book** pages (the PDF on disk is offset by 14) and were
 checked against the rendered pages on 2026-08-18: Thm B.1 and Cor B.2 are both
 stated on p. 1101, Figure B.1 is p. 1102, and Cor B.2's proof is p. 1103.
-Every declaration is transported from the reference repository's
-`RandomSystems/Counting.lean` (READ-ONLY), restated on this tree's namespace.
-None of them mentions a distribution, a distance or a system, so no carrier or
-metric re-basing arises — the transport is a namespace change.
-
-`inv_card_le_sum_sq` is the one exception to "verbatim": the reference proves
-it from a local Cauchy-Schwarz-against-the-constant lemma, which is mathlib's
+`inv_card_le_sum_sq` follows from mathlib's
 `sq_sum_le_card_mul_sum_sq` (`Mathlib/Algebra/Order/Chebyshev.lean`) under
-another name.  mathlib's is consumed directly here. -/
+another name. -/
 
 /-! ## The birthday bound, two-sided (Boneh–Shoup Appendix B)
 
@@ -1050,18 +1058,15 @@ collide,
 
 Boneh and Shoup derive both from `1 - x ≤ e^{-x} ≤ 1 - x/2` on `[0,1]`: the left
 half is mathlib's `Real.add_one_le_exp`, the right half is
-`exp_neg_le_one_sub_half` below.  They are stated here on the falling-factorial
-ratio `(N)_q / N^q = Pr[¬C]`; no consumer in this tree transports them onto a
-collision probability yet.
+`exp_neg_le_one_sub_half` below.  They are stated on the falling-factorial
+ratio `(N)_q / N^q = Pr[¬C]`.
 
 A collision *upper* bound proves security; the *lower* bound is what an attack
-argument needs, and is the direction the tree previously had nowhere. -/
+argument needs. -/
 
 /-- `e^{-x} ≤ 1 - x/2` for `x ∈ [0,1]` — the right half of Boneh–Shoup's
 `1 - x ≤ e^{-x} ≤ 1 - x/2` (Theorem B.1's proof, book p. 1101).  Proved without any analysis: `e^{-x} ≤ 1/(1+x)` is `1 + x ≤ e^x`
-divided through, and `1/(1+x) ≤ 1 - x/2` is `x(1-x) ≥ 0`.
-
-**UPSTREAM-CANDIDATE.** -/
+divided through, and `1/(1+x) ≤ 1 - x/2` is `x(1-x) ≥ 0`. -/
 theorem exp_neg_le_one_sub_half {x : ℝ} (h_nonneg : 0 ≤ x) (h_le_one : x ≤ 1) :
     Real.exp (-x) ≤ 1 - x / 2 := by
   have hx1 : (0 : ℝ) < 1 + x := by linarith
@@ -1075,9 +1080,7 @@ theorem exp_neg_le_one_sub_half {x : ℝ} (h_nonneg : 0 ≤ x) (h_le_one : x ≤
 
 /-- `min (x/2) 0.63 ≤ 1 - e^{-x}` for `x ≥ 0` — the second inequality of
 Boneh–Shoup Theorem B.1(i).  Below `x = 1` it is `exp_neg_le_one_sub_half`;
-above it, `1 - e^{-x} ≥ 1 - e^{-1} > 0.632`.
-
-**UPSTREAM-CANDIDATE.** -/
+above it, `1 - e^{-x} ≥ 1 - e^{-1} > 0.632`. -/
 theorem min_le_one_sub_exp_neg {x : ℝ} (h_nonneg : 0 ≤ x) :
     min (x / 2) 0.63 ≤ 1 - Real.exp (-x) := by
   rcases le_or_gt x 1 with h1 | h1
@@ -1185,17 +1188,9 @@ two.  What this *is* is the `k = 2` case of the **maximization claim inside that
 corollary's proof** (p. 1103: "We show that this sum is maximized when
 `p₁ = … = p_n = 1/n`"), which at `k = 2` says exactly `1 − ∑pᵢ² ≤ 1 − 1/n`.
 
-Verbatim the same content as CR18 Lemma 7.6's lower half, landed on the
-`Distribution` carrier as `Distribution.one_div_card_le_collProb`
-(`Probability/Entropy.lean`); this is its bare-`Finset` form, which is what the
-counting layer consumes.  Not an R11(a) duplicate — two carriers, one fact —
-but the pair should be cross-referenced, not re-derived, at the merge.
-
-The general-`k` corollary is not transported.  The reason is **not** a missing
-mathlib prerequisite: Boneh and Shoup prove it by an elementary ε-smoothing
-exchange (if some `pᵢ ≠ 1/n`, pick `p_j > 1/n`, shift `ε` from `j` to `i`, show
-the sum strictly increases, iterate at most `n` times).  It is simply an
-`n`-step induction with no consumer here yet. -/
+The same statement on the `Distribution` carrier is
+`Distribution.one_div_card_le_collProb` (`Probability/Entropy.lean`), the lower
+half of CR18 Lemma 7.6; this is its bare-`Finset` form. -/
 theorem inv_card_le_sum_sq {ι : Type*} (s : Finset ι) (p : ι → ℝ)
     (h_sum : ∑ i ∈ s, p i = 1) :
     1 / (s.card : ℝ) ≤ ∑ i ∈ s, (p i) ^ 2 := by
@@ -1509,7 +1504,11 @@ theorem card_function_injOn_finset {X Y : Type*} [Fintype X] [DecidableEq X]
         intro f
         apply Subtype.ext
         funext x
-        by_cases hx : x ∈ S <;> simp [hx]
+        by_cases hx : x ∈ S
+        · simp only [dif_pos hx]
+          change f.1 x = f.1 x
+          rfl
+        · simp only [dif_neg hx]
       right_inv := by
         intro p
         rcases p with ⟨emb, comp⟩
@@ -1525,9 +1524,7 @@ theorem card_function_injOn_finset {X Y : Type*} [Fintype X] [DecidableEq X]
 Everything in this section is about `Distribution.uniform` on a *function*
 type, and nothing in it mentions a system, a game or a converter.  Mathlib
 carries `PMF.uniformOfFintype` but no marginal or independence statement for a
-uniform law on a Pi type, so there is nothing to bridge to
-(`Probability/DistributionMeasure.lean` would be the bridge if there were);
-every declaration here is therefore an **UPSTREAM-CANDIDATE**.
+uniform law on a Pi type.
 
 The three statements are one fact at increasing strength: a uniform random
 function has uniform values at a point, jointly uniform values at *distinct*
@@ -1538,7 +1535,7 @@ into "the next output is uniform", with no independence notion beyond the
 counting the `Distribution` layer already has.
 -/
 
-/-- UPSTREAM-CANDIDATE.  **The fiber of a uniform random function over a
+/-- **The fiber of a uniform random function over a
 prescribed value tuple at distinct points**, at an arbitrary finite index type:
 `card_function_fiber_multipoint` transported along `Fintype.equivFin`. -/
 theorem card_function_fiber_index {X Y ι : Type*} [Fintype X] [DecidableEq X]
@@ -1564,7 +1561,7 @@ theorem card_function_fiber_index {X Y ι : Type*} [Fintype X] [DecidableEq X]
     card_function_fiber_multipoint (fun k => xs (e.symm k))
       (fun k => ys (e.symm k)) hxs']
 
-/-- UPSTREAM-CANDIDATE.  **Joint marginals of a uniform random function at
+/-- **Joint marginals of a uniform random function at
 distinct points are uniform.**  Pushing the uniform law on `𝒳 → 𝒴` forward
 along evaluation at an injective family of points is the uniform law on value
 tuples: this is independence of the values at distinct points, in the form this
@@ -1583,7 +1580,7 @@ theorem fTransform_eval_uniform_eq_uniform {X Y ι : Type*} [Fintype X] [Decidab
   congr 1
   omega
 
-/-- UPSTREAM-CANDIDATE.  **The marginal of a uniform random function at one
+/-- **The marginal of a uniform random function at one
 point is uniform.**  The `ι = PUnit` instance of
 `fTransform_eval_uniform_eq_uniform`, stated at the value rather than at a
 one-element tuple. -/
@@ -1610,7 +1607,7 @@ theorem fTransform_apply_uniform_eq_uniform {X Y : Type*} [Fintype X] [Decidable
   congr 1
   omega
 
-/-- UPSTREAM-CANDIDATE.  **Freshness given history, as a fiber count.**  If an
+/-- **Freshness given history, as a fiber count.**  If an
 event `E` never reads the values of the function on `T`, then prescribing those
 values cuts `E` by exactly `|𝒴|^{|T|}`: the values on `T` are uniform and
 independent *conditioned on `E`*, however `E` depends on the rest of the
@@ -1641,27 +1638,23 @@ theorem card_filter_and_eqOn {X Y : Type*} [Fintype X] [DecidableEq X]
       ?_ ?_ ?_ ?_
     · intro f hf
       rw [Finset.mem_filter] at hf ⊢
-      dsimp only
       refine ⟨Finset.mem_univ _, ?_,
         fun t ht => T.piecewise_eq_of_mem a f ht⟩
       exact (hE f _ fun x hx => (T.piecewise_eq_of_notMem a f hx).symm).mp hf.2.1
     · intro g hg
       rw [Finset.mem_filter] at hg ⊢
-      dsimp only
       refine ⟨Finset.mem_univ _, ?_, ?_⟩
       · exact (hE g _ fun x hx => (T.piecewise_eq_of_notMem bx g hx).symm).mp hg.2.1
       · funext t
         rw [T.piecewise_eq_of_mem bx g t.2, hbxT t.1 t.2]
     · intro f hf
       rw [Finset.mem_filter] at hf
-      dsimp only
       funext x
       by_cases hx : x ∈ T
       · rw [T.piecewise_eq_of_mem bx _ hx, hbxT x hx, ← hf.2.2]
       · rw [T.piecewise_eq_of_notMem bx _ hx, T.piecewise_eq_of_notMem a f hx]
     · intro g hg
       rw [Finset.mem_filter] at hg
-      dsimp only
       funext x
       by_cases hx : x ∈ T
       · rw [T.piecewise_eq_of_mem a _ hx, hg.2.2 x hx]
@@ -1678,7 +1671,7 @@ theorem card_filter_and_eqOn {X Y : Type*} [Fintype X] [DecidableEq X]
   rw [hsum, Finset.sum_const, Finset.card_univ, smul_eq_mul, Fintype.card_fun,
     Fintype.card_coe, mul_comm]
 
-/-- UPSTREAM-CANDIDATE.  **Freshness given history, at the mass.**  The
+/-- **Freshness given history, at the mass.**  The
 distribution-level reading of `card_filter_and_eqOn`: conditioned on an event
 that does not read the function on `T`, the values on `T` are uniform. -/
 theorem uniform_mass_and_eqOn {X Y : Type*} [Fintype X] [DecidableEq X]
@@ -1697,7 +1690,7 @@ theorem uniform_mass_and_eqOn {X Y : Type*} [Fintype X] [DecidableEq X]
   field_simp
 
 
-/-- UPSTREAM-CANDIDATE.  **The mass of a prescribed value tuple at distinct
+/-- **The mass of a prescribed value tuple at distinct
 points**: `(1/|𝒴|)^{|ι|}`, whatever the tuple.  The mass reading of
 `fTransform_eval_uniform_eq_uniform`, and the form a transcript-law computation
 consumes. -/
@@ -1715,10 +1708,8 @@ theorem uniform_mass_eval_eq {X Y ι : Type*} [Fintype X] [DecidableEq X]
 
 /-! ## Lazy sampling along a walk on a uniform random function
 
-Unlike the rest of this file, this section is **not** a transplant: it is new
-here.  It is still carrier-free counting — `Distribution.uniform` on a function
-type and on a tuple type, and nothing else — and every declaration is an
-**UPSTREAM-CANDIDATE**.
+This section is carrier-free counting: `Distribution.uniform` on a function
+type and on a tuple type, and nothing else.
 
 The object is a *walk*: a finite set `ι` of **sites**, each site `t` carrying a
 parent `par t` (`none` for a site that starts from the public initial state
@@ -1767,7 +1758,7 @@ def walkSite {ι X : Type*} (par : ι → Option ι) (g : ι → X → X) (x₀ 
     (y : ι → X) (t : ι) : X :=
   g t ((par t).elim x₀ y)
 
-/-- UPSTREAM-CANDIDATE.  **A walk always replays itself.**  Run the lazy walk
+/-- **A walk always replays itself.**  Run the lazy walk
 on the very outputs `f` produced, and it reproduces `f`'s own site inputs.
 This needs no hypothesis on the walk at all — it is the recursion read
 outwards. -/
@@ -1781,7 +1772,7 @@ theorem walkSite_of_eval {ι X : Type*}
   rw [hinp f t]
   rfl
 
-/-- UPSTREAM-CANDIDATE.  **A walk is pinned by a consistent tuple**: if `f`
+/-- **A walk is pinned by a consistent tuple**: if `f`
 answers `y t` at every lazily replayed site input, then `f`'s own site inputs
 *are* the replayed ones.  The converse direction of `walkSite_of_eval`, and the
 one that needs the parent relation to be well-founded — supplied here as a
@@ -1813,7 +1804,7 @@ theorem eq_walkSite_of_eval_eq {ι X : Type*}
         rw [ih h hh, hf h]
   exact funext fun t => key (rank t) t le_rfl
 
-/-- UPSTREAM-CANDIDATE.  **The law of the walk's evaluations, until the first
+/-- **The law of the walk's evaluations, until the first
 repeat.**  At a tuple `y` whose replayed walk visits pairwise distinct site
 inputs, the uniform random function returns exactly `y` with probability
 `(1/|𝒳|)^{|ι|}` — the law of `|ι|` independent uniform draws.
@@ -1846,7 +1837,7 @@ theorem uniform_mass_walk_eval_eq {ι X : Type*} [Fintype ι] [DecidableEq ι]
   rw [Distribution.mass_congr _ hev]
   exact uniform_mass_eval_eq (walkSite par g x₀ y) hy y
 
-/-- UPSTREAM-CANDIDATE.  **The repeat-free region has the same mass in both
+/-- **The repeat-free region has the same mass in both
 worlds.**  The probability that a uniform random function drives the walk
 without a repeat equals the probability that `|ι|` independent uniform draws
 replay it without a repeat.  Only the repeat-free region transports — which is
@@ -1879,7 +1870,7 @@ theorem uniform_mass_walk_injective_eq {ι X : Type*} [Fintype ι] [DecidableEq 
   push_cast
   ring
 
-/-- UPSTREAM-CANDIDATE.  **One coordinate determined is one factor lost.**  If
+/-- **One coordinate determined is one factor lost.**  If
 an event on uniform tuples pins the value at coordinate `c` — through an
 injective `u` — against a quantity `v` that never reads coordinate `c`, its
 probability is at most `1/|𝒳|`.
@@ -1908,7 +1899,7 @@ theorem uniform_mass_coord_determined_le {ι X : Type*} [Fintype ι] [DecidableE
     · rw [Finset.card_univ, Fintype.card_fun, hsub] at hle
       exact hle
     · intro y hy z hz hyz
-      simp only [Finset.coe_filter, Set.mem_setOf_eq] at hy hz
+      simp only [Finset.coe_filter, Set.mem_ofPred_eq] at hy hz
       have hoff : ∀ i, i ≠ c → y i = z i := fun i hi => congrFun hyz ⟨i, hi⟩
       have hc : y c = z c := hu (by rw [hy.2, hv y z hoff, ← hz.2])
       funext i
@@ -1929,7 +1920,7 @@ theorem uniform_mass_coord_determined_le {ι X : Type*} [Fintype ι] [DecidableE
     exact_mod_cast hcard
   exact mul_le_mul_of_nonneg_right hcast hXpos.le
 
-/-- UPSTREAM-CANDIDATE.  **One step of the birthday argument.**  In the lazy
+/-- **One step of the birthday argument.**  In the lazy
 world two distinct sites collide with probability at most `1/|𝒳|`.
 
 The case analysis is the whole point, and both branches are genuinely
@@ -1983,7 +1974,7 @@ theorem uniform_mass_walkSite_eq_le {ι X : Type*} [Fintype ι] [DecidableEq ι]
             exact hpar (by rw [hp, hp', h])
           simp [walkSite, hp', hyz c' hne]
 
-/-- UPSTREAM-CANDIDATE.  **The birthday bound for a walk, on a set of sites.**
+/-- **The birthday bound for a walk, on a set of sites.**
 The union bound run one site at a time: adding a site to `s` either repeats a
 collision already inside `s`, or hits one of its `|s|` inputs, and the second
 costs `|s|/|𝒳|`.
@@ -2046,7 +2037,7 @@ theorem uniform_mass_walkSite_not_injOn_le {ι X : Type*} [Fintype ι] [Decidabl
     field_simp
     ring
 
-/-- UPSTREAM-CANDIDATE.  **The lazy-sampling birthday bound for a walk.**  A
+/-- **The lazy-sampling birthday bound for a walk.**  A
 uniform random function drives the walk into a repeated site input with
 probability at most `|ι|(|ι|−1)/2|𝒳|` — the birthday bound for `|ι|` uniform
 draws from `𝒳` (`birthday_bound`'s right-hand side at `q := |ι|`).

@@ -28,23 +28,66 @@ variable {X : Type u} {Y : Type v}
 
 namespace System
 
-private def EnvConsistent (environment : DDE Y X) (transcript : Transcript X Y) : Prop :=
+def EnvConsistent (environment : DDE Y X) (transcript : Transcript X Y) : Prop :=
   ∀ k, (hk : k < transcript.length) →
     ∃ hdom : (transcript.take k).map Prod.snd ∈ environment.1.Dom,
       (environment.1 ((transcript.take k).map Prod.snd)).get hdom = transcript[k].1
 
-private def SystemConsistent (system : DDS X Y) (transcript : Transcript X Y) : Prop :=
+def SystemConsistent (system : DDS X Y) (transcript : Transcript X Y) : Prop :=
   ∀ k, (hk : k < transcript.length) →
     ∃ hdom : (transcript.take k).map Prod.fst ++ [transcript[k].1] ∈ dom system,
       output system ((transcript.take k).map Prod.fst ++ [transcript[k].1]) hdom =
         transcript[k].2
 
-private def FinalAt (environment : DDE Y X) (rounds : Nat)
+/-- Consistency of a transcript ending in one additional query-answer pair. -/
+lemma systemConsistent_snoc_iff (system : DDS X Y)
+    (prior : Transcript X Y) (entry : X × Y) :
+    SystemConsistent system (prior ++ [entry]) ↔
+      SystemConsistent system prior ∧
+        ∃ admitted : prior.map Prod.fst ++ [entry.1] ∈ dom system,
+          output system (prior.map Prod.fst ++ [entry.1]) admitted = entry.2 := by
+  constructor
+  · intro consistent
+    constructor
+    · intro k hk
+      have row := consistent k (by simp; omega)
+      simpa only [List.take_append_of_le_length (Nat.le_of_lt hk),
+        List.getElem_append_left hk] using row
+    · have row := consistent prior.length (by simp)
+      simpa only [List.take_append_of_le_length le_rfl, List.take_length,
+        List.getElem_append_right le_rfl, Nat.sub_self,
+        List.getElem_cons_zero] using row
+  · rintro ⟨consistent, last⟩ k hk
+    rw [List.length_append, List.length_singleton] at hk
+    rcases Nat.lt_or_ge k prior.length with earlier | atLast
+    · have row := consistent k earlier
+      simpa only [List.take_append_of_le_length (Nat.le_of_lt earlier),
+        List.getElem_append_left earlier] using row
+    · have equal : k = prior.length := by omega
+      subst equal
+      simpa only [List.take_append_of_le_length le_rfl, List.take_length,
+        List.getElem_append_right le_rfl, Nat.sub_self,
+        List.getElem_cons_zero] using last
+
+/-- A system-consistent transcript is empty or its complete query history is
+in the system domain. -/
+lemma systemConsistent_queries_admitted (system : DDS X Y)
+    (transcript : Transcript X Y) (consistent : SystemConsistent system transcript) :
+    transcript.map Prod.fst = [] ∨ transcript.map Prod.fst ∈ dom system := by
+  induction transcript using List.reverseRecOn with
+  | nil => exact Or.inl rfl
+  | append_singleton prior entry =>
+      right
+      have final := consistent prior.length (by simp)
+      convert final.choose using 1
+      all_goals simp
+
+def FinalAt (environment : DDE Y X) (rounds : Nat)
     (transcript : Transcript X Y) : Prop :=
   transcript.length = rounds ∨
     (transcript.length < rounds ∧ transcript.map Prod.snd ∉ environment.1.Dom)
 
-private theorem trN_consistent_of_compatible (system : DDS X Y) (environment : DDE Y X)
+theorem trN_consistent_of_compatible (system : DDS X Y) (environment : DDE Y X)
     (compatible : Compatible environment system) (rounds : Nat) :
     EnvConsistent environment (trN environment system rounds) ∧
       FinalAt environment rounds (trN environment system rounds) ∧
@@ -101,7 +144,7 @@ private theorem trN_consistent_of_compatible (system : DDS X Y) (environment : D
           systemConsistent⟩
         rcases finalAt with lengthEqual | ⟨lengthLess, _⟩ <;> omega
 
-private theorem trN_eq_of_consistent (system : DDS X Y) (environment : DDE Y X) :
+theorem trN_eq_of_consistent (system : DDS X Y) (environment : DDE Y X) :
     ∀ (rounds : Nat) (transcript : Transcript X Y),
       EnvConsistent environment transcript →
       FinalAt environment rounds transcript →
@@ -182,7 +225,7 @@ private theorem trN_eq_of_consistent (system : DDS X Y) (environment : DDE Y X) 
           · exact systemConsistent
         rw [trN_succ_of_stop (by rwa [prefixEqual]), prefixEqual]
 
-private def fixedQueries (queries : List X) : DDE Y X :=
+def fixedQueries (queries : List X) : DDE Y X :=
   ⟨(fun answers : List Y =>
       (⟨answers.length < queries.length,
         fun h => queries[answers.length]⟩ : Part X)),
@@ -191,17 +234,17 @@ private def fixedQueries (queries : List X) : DDE Y X :=
       exact lt_of_le_of_lt hprefix.length_le secondDomain⟩
 
 @[simp]
-private theorem fixedQueries_dom (queries : List X) (answers : List Y) :
+theorem fixedQueries_dom (queries : List X) (answers : List Y) :
     answers ∈ (fixedQueries (Y := Y) queries).1.Dom ↔
       answers.length < queries.length :=
   Iff.rfl
 
-private theorem fixedQueries_get (queries : List X) (answers : List Y)
+theorem fixedQueries_get (queries : List X) (answers : List Y)
     (domain : answers ∈ (fixedQueries (Y := Y) queries).1.Dom) :
     ((fixedQueries (Y := Y) queries).1 answers).get domain = queries[answers.length] :=
   rfl
 
-private theorem trN_fixedQueries (system : DDS X Y) (queries : List X)
+theorem trN_fixedQueries (system : DDS X Y) (queries : List X)
     (admitted : queries = [] ∨ queries ∈ dom system) :
     ∀ rounds,
       (trN (fixedQueries (Y := Y) queries) system rounds).length =
@@ -271,7 +314,7 @@ private theorem trN_fixedQueries (system : DDS X Y) (queries : List X)
         · rw [inputsEqual, List.take_of_length_le atEnd,
             List.take_of_length_le (atEnd.trans (Nat.le_succ _))]
 
-private theorem fixedQueries_compatible (system : DDS X Y) (queries : List X)
+theorem fixedQueries_compatible (system : DDS X Y) (queries : List X)
     (admitted : queries = [] ∨ queries ∈ dom system) :
     Compatible (fixedQueries (Y := Y) queries) system := by
   intro rounds query queryMem
@@ -315,7 +358,7 @@ private theorem fixedQueries_compatible (system : DDS X Y) (queries : List X)
         List.getElem?_eq_getElem (indexEqual ▸ beforeEnd), Option.toList_some]
     exact takeEqual ▸ nextPrefix
 
-private theorem fixedQueries_stops (system : DDS X Y) (queries : List X)
+theorem fixedQueries_stops (system : DDS X Y) (queries : List X)
     (admitted : queries = [] ∨ queries ∈ dom system) :
     Stops (fixedQueries (Y := Y) queries) system := by
   refine ⟨queries.length, trN_succ_of_stop ?_⟩
@@ -323,7 +366,7 @@ private theorem fixedQueries_stops (system : DDS X Y) (queries : List X)
   have invariant := (trN_fixedQueries system queries admitted queries.length).1
   omega
 
-private theorem stopped_consistent_of_toOption_eq_some {environment : DDE Y X}
+theorem stopped_consistent_of_toOption_eq_some {environment : DDE Y X}
     {system : DDS X Y} (compatible : Compatible environment system)
     {transcript : Transcript X Y}
     (equal : (tr environment system).toOption = some transcript) :
@@ -340,7 +383,7 @@ private theorem stopped_consistent_of_toOption_eq_some {environment : DDE Y X}
   have stopped := (trN_succ_eq_iff_of_compatible compatible (Nat.find stops)).1 stable
   rwa [transcriptEqual] at stopped
 
-private theorem toOption_eq_some_iff_systemConsistent {environment : DDE Y X}
+theorem toOption_eq_some_iff_systemConsistent {environment : DDE Y X}
     {system : DDS X Y} (compatible : Compatible environment system)
     {transcript : Transcript X Y}
     (environmentConsistent : EnvConsistent environment transcript)
@@ -363,7 +406,7 @@ private theorem toOption_eq_some_iff_systemConsistent {environment : DDE Y X}
     let stops : Stops environment system := ⟨transcript.length, stable⟩
     exact ⟨stops, (tr_get_eq_trN stops stable).trans transcriptAtLength⟩
 
-private theorem fixedQueries_envConsistent (transcript : Transcript X Y) :
+theorem fixedQueries_envConsistent (transcript : Transcript X Y) :
     EnvConsistent (fixedQueries (Y := Y) (transcript.map Prod.fst)) transcript := by
   intro k hk
   have domain : (transcript.take k).map Prod.snd ∈
@@ -382,13 +425,13 @@ private theorem fixedQueries_envConsistent (transcript : Transcript X Y) :
           simp only [fixedQueries_get, indexEqual]
     _ = transcript[k].1 := by simp
 
-private theorem fixedQueries_terminal (transcript : Transcript X Y) :
+theorem fixedQueries_terminal (transcript : Transcript X Y) :
     transcript.map Prod.snd ∉
       (fixedQueries (Y := Y) (transcript.map Prod.fst)).1.Dom := by
   rw [fixedQueries_dom, List.length_map, List.length_map]
   exact Nat.not_lt_of_ge le_rfl
 
-private theorem transcript_fiber_eq_fixedQueries {environment : DDE Y X}
+theorem transcript_fiber_eq_fixedQueries {environment : DDE Y X}
     {system : DDS X Y} (environmentCompatible : Compatible environment system)
     {transcript : Transcript X Y}
     (environmentConsistent : EnvConsistent environment transcript)
@@ -468,7 +511,7 @@ theorem equivalent_symm {left right : Presentation X Y}
   ⟨equivalent.1.symm, fun environment admissible =>
     (equivalent.2 environment ⟨admissible.2, admissible.1⟩).symm⟩
 
-private theorem transcriptLaw_none (system : Presentation X Y)
+theorem transcriptLaw_none (system : Presentation X Y)
     (environment : System.DDE Y X) (stops : PDS.Stops environment system.law) :
     transcriptLaw environment system none = 0 := by
   rw [transcriptLaw, PDS.trLaw, Distribution.fTransform_apply_eq_mass]
@@ -485,7 +528,7 @@ private theorem transcriptLaw_none (system : Presentation X Y)
         exact false.elim
     _ = 0 := Distribution.mass_eq_zero_of_forall_not _ (fun _ => id)
 
-private theorem queries_admitted_of_observed (system : Presentation X Y)
+theorem queries_admitted_of_observed (system : Presentation X Y)
     (environment : System.DDE Y X) {deterministic : System.DDS X Y}
     (inSupport : deterministic ∈ system.law.support)
     {transcript : System.Transcript X Y}
@@ -506,7 +549,7 @@ private theorem queries_admitted_of_observed (system : Presentation X Y)
     rw [← system.hasDomain deterministic inSupport]
     rwa [transcriptEqual] at admitted
 
-private theorem queries_admitted_on_support (system : Presentation X Y)
+theorem queries_admitted_on_support (system : Presentation X Y)
     {queries : List X} (admitted : queries = [] ∨ queries ∈ system.domain)
     {deterministic : System.DDS X Y} (inSupport : deterministic ∈ system.law.support) :
     queries = [] ∨ queries ∈ System.dom deterministic := by
@@ -514,7 +557,7 @@ private theorem queries_admitted_on_support (system : Presentation X Y)
   · exact Or.inl empty
   · exact Or.inr (by rwa [system.hasDomain deterministic inSupport])
 
-private theorem fixedQueries_admissible (system : Presentation X Y) {queries : List X}
+theorem fixedQueries_admissible (system : Presentation X Y) {queries : List X}
     (admitted : queries = [] ∨ queries ∈ system.domain) :
     PDS.Compatible (System.fixedQueries (Y := Y) queries) system.law ∧
       PDS.Stops (System.fixedQueries (Y := Y) queries) system.law := by
@@ -526,7 +569,7 @@ private theorem fixedQueries_admissible (system : Presentation X Y) {queries : L
     exact System.fixedQueries_stops deterministic queries
       (queries_admitted_on_support system admitted inSupport)
 
-private theorem transcriptLaw_apply_eq_fixedQueries (system : Presentation X Y)
+theorem transcriptLaw_apply_eq_fixedQueries (system : Presentation X Y)
     (environment : System.DDE Y X)
     (compatible : PDS.Compatible environment system.law)
     {transcript : System.Transcript X Y}
@@ -546,7 +589,7 @@ private theorem transcriptLaw_apply_eq_fixedQueries (system : Presentation X Y)
     (compatible deterministic inSupport) environmentConsistent terminal
     (queries_admitted_on_support system admitted inSupport)
 
-private theorem transcriptLaw_apply_eq_zero_of_no_support (system : Presentation X Y)
+theorem transcriptLaw_apply_eq_zero_of_no_support (system : Presentation X Y)
     (environment : System.DDE Y X) {transcript : System.Transcript X Y}
     (noneObserved : ∀ deterministic ∈ system.law.support,
       (System.tr environment deterministic).toOption ≠ some transcript) :

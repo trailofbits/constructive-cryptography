@@ -3,23 +3,23 @@ Copyright (c) 2026 Trail of Bits. All rights reserved.
 Authors: Marc Ilunga, Claude
 -/
 import Rendering.CCWidget
-import AbstractCryptography.Categorical.ResourceAlgebra
+import ConstructiveCryptography.Categorical.ResourceAlgebra
 
-/-! Semantic diagram roles for the typed Abstract Cryptography surface.  They
+/-! Semantic diagram roles for the typed Constructive Cryptography surface. They
 are registered in this adapter rather than hardcoded into the theory-free
 renderer.  Indices count arguments from the end. -/
-cc_diagram_application AbstractCryptography.Categorical.ResourceAlgebra.attach 1 0
-cc_diagram_parallel AbstractCryptography.Categorical.ResourceAlgebra.parallel 1 0
-cc_diagram_distance AbstractCryptography.Categorical.ResourceAlgebra.distance 1 0 "d"
+cc_diagram_application ConstructiveCryptography.Categorical.ResourceAlgebra.attach 1 0
+cc_diagram_parallel ConstructiveCryptography.Categorical.ResourceAlgebra.parallel 1 0
+cc_diagram_distance ConstructiveCryptography.Categorical.ResourceAlgebra.distance 1 0 "d"
 cc_diagram_construction
-  AbstractCryptography.Categorical.ResourceAlgebra.Specification.Constructs 1 2 0
-#cc_diagram_rule_check AbstractCryptography.Categorical.ResourceAlgebra.attach
-#cc_diagram_rule_check AbstractCryptography.Categorical.ResourceAlgebra.parallel
+  ConstructiveCryptography.Categorical.ResourceAlgebra.Specification.Constructs 1 2 0
+#cc_diagram_rule_check ConstructiveCryptography.Categorical.ResourceAlgebra.attach
+#cc_diagram_rule_check ConstructiveCryptography.Categorical.ResourceAlgebra.parallel
 #cc_diagram_rule_check
-  AbstractCryptography.Categorical.ResourceAlgebra.Specification.Constructs
+  ConstructiveCryptography.Categorical.ResourceAlgebra.Specification.Constructs
 
 /-!
-# Abstract Cryptography adapter for the `CCDiagram` proof widget
+# Constructive Cryptography adapter for the `CCDiagram` proof widget
 
 The widget engine lives in the theory-free `Rendering.CCWidget` module.  This
 adapter registers the typed `ResourceAlgebra` declaration roles and re-exports

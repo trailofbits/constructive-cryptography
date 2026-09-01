@@ -61,6 +61,7 @@ def empty : Interface.{u, v} where
 Ordered parallel of interfaces.  The query tag selects both the component and
 its answer family.
 -/
+@[reducible]
 def parallel (left right : Interface.{u, v}) : Interface.{u, v} where
   query := left.query ⊕ right.query
   answer
@@ -245,7 +246,7 @@ theorem replies_trans
   rintro ⟨query, answer⟩
   rfl
 
-private theorem answers_inverse_transport
+theorem answers_inverse_transport
     {A B : Interface.{u, v}} (equivalence : A.Equiv B)
     {left right : A.query} (queryEqual : left = right)
     (mappedEqual : equivalence.queries left = equivalence.queries right)
@@ -335,6 +336,68 @@ theorem refl_trans
     rfl
   · intro query
     rfl
+
+/-- Symmetry preserves the reflexive interface equivalence. -/
+theorem symm_refl_eq (A : Interface.{u, v}) :
+    (Interface.Equiv.refl A).symm = .refl A := by
+  apply Interface.Equiv.ext_queries_replies
+  · rfl
+  · rw [Interface.Equiv.replies_symm]
+    rfl
+
+/-- Applying symmetry twice recovers the original interface equivalence. -/
+theorem symm_symm_eq
+    {A B : Interface.{u, v}} (equivalence : A.Equiv B) :
+    equivalence.symm.symm = equivalence := by
+  apply Interface.Equiv.ext_queries_replies
+  · exact _root_.Equiv.symm_symm _
+  · rw [Interface.Equiv.replies_symm, Interface.Equiv.replies_symm]
+    exact _root_.Equiv.symm_symm _
+
+/-- Symmetry reverses transitivity of interface equivalences. -/
+theorem trans_symm_reverse_eq
+    {A B C : Interface.{u, v}}
+    (first : A.Equiv B) (second : B.Equiv C) :
+    (first.trans second).symm = second.symm.trans first.symm := by
+  apply Interface.Equiv.ext_queries_replies
+  · rfl
+  · rw [Interface.Equiv.replies_symm, Interface.Equiv.replies_trans,
+      Interface.Equiv.replies_trans, Interface.Equiv.replies_symm,
+      Interface.Equiv.replies_symm]
+    rfl
+
+/-- Transitivity of interface equivalences is associative. -/
+theorem trans_assoc_eq
+    {A B C D : Interface.{u, v}}
+    (first : A.Equiv B) (second : B.Equiv C) (third : C.Equiv D) :
+    (first.trans second).trans third = first.trans (second.trans third) := by
+  apply Interface.Equiv.ext_queries_replies
+  · rfl
+  · rw [Interface.Equiv.replies_trans, Interface.Equiv.replies_trans,
+      Interface.Equiv.replies_trans, Interface.Equiv.replies_trans]
+    rfl
+
+/-- Ordered parallel preserves reflexive interface equivalences. -/
+theorem parallel_refl_eq (left right : Interface.{u, v}) :
+    Interface.Equiv.parallel (.refl left) (.refl right) =
+      .refl (Interface.parallel left right) := by
+  apply Interface.Equiv.ext_apply
+  · intro query
+    cases query <;> rfl
+  · intro query
+    cases query <;> rfl
+
+/-- Symmetry acts componentwise on ordered parallel interface equivalences. -/
+theorem parallel_symm_eq
+    {A B C D : Interface.{u, v}}
+    (left : A.Equiv C) (right : B.Equiv D) :
+    (Interface.Equiv.parallel left right).symm =
+      Interface.Equiv.parallel left.symm right.symm := by
+  apply Interface.Equiv.ext_apply
+  · intro query
+    cases query <;> rfl
+  · intro query
+    cases query <;> rfl
 
 /-- The concrete ordered-parallel associator satisfies the object-level pentagon. -/
 theorem parallelAssoc_pentagon (A B C D : Interface.{u, v}) :

@@ -3,34 +3,31 @@ Copyright (c) 2024-2026 Trail of Bits. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Probability.Distribution
-import Mathlib.Data.Real.Sqrt
+import Mathlib.Analysis.Real.Sqrt
 import Mathlib.Analysis.Convex.Jensen
 
 /-!
-# Expectation over finite signed distributions (tower level L1, `DESIGN.md` §12)
+# Expectation over finite signed distributions
 
-`Distribution.expect X f = ∑_a X(a)·f(a)` — the pen-and-paper `𝔼_X[f]` of
-`FOUNDATIONS.md` — together with the moment calculus that lives at this level:
+`Distribution.expect X f = ∑_a X(a)·f(a)`, together with the moment calculus:
 bilinearity in the pair `(X, f)`, monotonicity, Markov, Cauchy–Schwarz, Jensen,
 the indicator/mass identity, and `Distribution.variance`.
 
-This module is deliberately free of measure theory.  The one-way transport into
-mathlib's `PMF`/`Measure`/`SignedMeasure` stack — and every fact imported
-through it, e.g. Chebyshev — lives in `RandomSystems.DistMeasure`, so callers
-of the bare expectation calculus do not pay mathlib's measure-theory build
-cost.
+This module is deliberately free of measure theory. The one-way transport of
+normalized finite distributions into mathlib's `PMF` and `Measure` stack lives
+in `Probability.DistributionMeasure`, so callers of the bare expectation
+calculus do not pay mathlib's measure-theory build cost.
 
-Like `Distribution.mass` and `Distribution.weight` (and unlike the old inline spelling
+Like `Distribution.mass` and `Distribution.weight` (and unlike the inline spelling
 `∑ a, X a * f a`), `expect` sums over the finite support carried by
 `Distribution A = A →₀ ℝ`, so no `Fintype` hypothesis is needed; `expect_eq_sum` is
 the `Finset.univ` unfolding for finite carriers.
 
-## Hypothesis discipline (`DESIGN.md` §12)
+## Hypothesis discipline
 
 Each statement carries the *weakest* of the three distribution layers at which
-it is true — signed (no hypothesis), `Distribution.NonNeg`, or `Distribution.isProbDist` — as
-measured, with a proved counterexample one layer down for each, in
-`scratch/TransportProbe.lean`:
+it is true: signed (no hypothesis), `Distribution.NonNeg`, or
+`Distribution.isProbDist`.
 
 * **signed**: bilinearity (`expect_add_left`/`expect_smul_left`,
   `expect_add_right`/`expect_const_mul`, …), the indicator/mass identity
@@ -61,7 +58,7 @@ For arbitrary signed `X` this is the bilinear pairing of `X` and `f`; it is an
 honest expectation when `X.isProbDist`.  Weakest-layer facts about it are
 collected in this file; the transport identifying it with the Bochner integral
 against `Distribution.toPMF` is `integral_toPMF_eq_expect` in
-`RandomSystems.DistMeasure`. -/
+`Probability.DistributionMeasure`. -/
 def expect (X : Distribution A) (f : A → ℝ) : ℝ :=
   X.sum fun a w => w * f a
 
@@ -194,9 +191,12 @@ theorem expect_indicator (X : Distribution A) (P : A → Prop) [DecidablePred P]
 
 /-! ### Order facts — `NonNeg` layer
 
-Each fails on the signed layer; the counterexamples are
-`expect_mono_fails_signed`, `dist_markov_fails_signed` and
-`dist_cauchy_schwarz_fails_signed` in `scratch/TransportProbe.lean`. -/
+Each fails on the signed layer. For monotonicity, a one-point law of mass `-1`
+reverses the inequality between the constant functions `0` and `1`. For
+Markov, masses `1,-1` and function values `1,2` at threshold `1` give event
+mass `0` and expectation `-1`. For Cauchy--Schwarz, weights `1,-1` and the two
+coordinate indicators give a right-hand side of `-1` and a left-hand side of
+`0`. -/
 
 /-- Expectation of a nonnegative function under a nonnegative distribution is
 nonnegative.  `NonNeg` layer. -/
@@ -225,10 +225,7 @@ theorem expect_le_mul_weight {X : Distribution A} (hX : X.NonNeg) {f : A → ℝ
 /-- **Markov's inequality**: `X{a | c ≤ f a} ≤ 𝔼_X[f]/c` for nonnegative `f`
 and `c > 0`.  `NonNeg` layer — total weight plays no role, so this holds for
 arbitrary nonnegative (sub- or super-normalized) distributions; fails signed
-(off-event negative mass pulls the expectation below the event mass).
-
-UPSTREAM-CANDIDATE: the finitely-supported weighted-sum form of Markov,
-independent of everything in this library except the `Distribution` carrier. -/
+(negative mass can pull the expectation below the event mass). -/
 theorem mass_ge_le_expect_div {X : Distribution A} (hX : X.NonNeg) {f : A → ℝ}
     (hf : ∀ a, 0 ≤ f a) {c : ℝ} (hc : 0 < c) :
     X.mass (fun a => c ≤ f a) ≤ X.expect f / c := by
@@ -244,10 +241,7 @@ theorem mass_ge_le_expect_div {X : Distribution A} (hX : X.NonNeg) {f : A → �
 /-- **Discrete Cauchy–Schwarz**: `𝔼_X[uv]² ≤ 𝔼_X[u²]·𝔼_X[v²]`.  `NonNeg`
 layer — this is positive semidefiniteness of the pairing, not normalization,
 so any nonnegative weight works; fails signed (the pairing becomes
-indefinite).  Name mirrors mathlib's `Finset.sum_mul_sq_le_sq_mul_sq`.
-
-UPSTREAM-CANDIDATE: the weighted Cauchy–Schwarz for finitely supported
-nonnegative weights. -/
+indefinite). Name mirrors mathlib's `Finset.sum_mul_sq_le_sq_mul_sq`. -/
 theorem expect_mul_sq_le_sq_mul_sq {X : Distribution A} (hX : X.NonNeg) (u v : A → ℝ) :
     (X.expect fun a => u a * v a) ^ 2
       ≤ (X.expect fun a => u a ^ 2) * X.expect fun a => v a ^ 2 := by
@@ -267,8 +261,8 @@ theorem expect_mul_sq_le_sq_mul_sq {X : Distribution A} (hX : X.NonNeg) (u v : A
 definition because its nonnegativity already holds at the `NonNeg` layer
 (`variance_nonneg`); the subtracted form `𝔼[f²] - 𝔼[f]²` agrees with it only
 at `weight = 1` (`variance_eq_expect_sq_sub_sq_expect`), and goes negative at
-weight 2 (`variance_sub_form_fails_at_weight_two` in
-`scratch/TransportProbe.lean`). -/
+weight `2`: on a one-point law of mass `2` with `f = 1`, the subtracted form is
+`2 - 2² = -2`. -/
 def variance (X : Distribution A) (f : A → ℝ) : ℝ :=
   X.expect fun a => (f a - X.expect f) ^ 2
 
@@ -307,8 +301,7 @@ theorem variance_eq_expect_sq_sub_sq_expect {X : Distribution A} (hw : X.weight 
 /-- Nonnegativity of the subtracted form: `𝔼[f]² ≤ 𝔼[f²]`.  `isProbDist`
 layer — this genuinely needs both conjuncts: `NonNeg` for the sign of the
 `𝔼[(f-c)²]` form and `weight = 1` to equate the two forms
-(`variance_sub_form_fails_at_weight_two` in `scratch/TransportProbe.lean`
-shows failure at `NonNeg` weight 2). -/
+(the one-point law of mass `2` with `f = 1` gives `2 < 2²`). -/
 theorem expect_sq_sub_sq_expect_nonneg {X : Distribution A} (hX : X.isProbDist)
     (f : A → ℝ) :
     0 ≤ (X.expect fun a => f a ^ 2) - X.expect f ^ 2 := by
@@ -317,14 +310,13 @@ theorem expect_sq_sub_sq_expect_nonneg {X : Distribution A} (hX : X.isProbDist)
 
 /-! ### Jensen — `isProbDist` layer
 
-Fails at `NonNeg` even for subprobability weight (`dist_jensen_fails_subprob`
-in `scratch/TransportProbe.lean`): total weight one is load-bearing. -/
+Jensen fails for a merely nonnegative subprobability law: on one point of mass
+`1/2`, the constant concave function `-1` gives `-1/2 ≤ -1`, which is false.
+Thus total weight one is load-bearing. -/
 
 /-- **Jensen's inequality**, concave case: `𝔼_X[φ∘f] ≤ φ(𝔼_X[f])` for a
 probability distribution `X`.  `isProbDist` layer.  Name mirrors mathlib's
-`ConcaveOn.le_map_sum`.
-
-UPSTREAM-CANDIDATE: finitely-supported-weights Jensen. -/
+`ConcaveOn.le_map_sum`. -/
 theorem _root_.ConcaveOn.le_map_expect {φ : ℝ → ℝ}
     (hφ : ConcaveOn ℝ Set.univ φ) {X : Distribution A} (hX : X.isProbDist)
     (f : A → ℝ) :
@@ -335,9 +327,7 @@ theorem _root_.ConcaveOn.le_map_expect {φ : ℝ → ℝ}
 
 /-- **Jensen's inequality**, convex case: `φ(𝔼_X[f]) ≤ 𝔼_X[φ∘f]` for a
 probability distribution `X`.  `isProbDist` layer.  Name mirrors mathlib's
-`ConvexOn.map_sum_le`.
-
-UPSTREAM-CANDIDATE: finitely-supported-weights Jensen. -/
+`ConvexOn.map_sum_le`. -/
 theorem _root_.ConvexOn.map_expect_le {φ : ℝ → ℝ}
     (hφ : ConvexOn ℝ Set.univ φ) {X : Distribution A} (hX : X.isProbDist)
     (f : A → ℝ) :

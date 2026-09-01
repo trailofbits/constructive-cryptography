@@ -16,15 +16,15 @@ import Probability.Entropy
 import Probability.ShannonEntropy
 import Probability.Divergence
 import Probability.DistributionMeasure
+import Probability.Simp
 
 /-!
 # Probability
 
 Finitely supported distributions, expectation, conditional probability,
-statistical distance, couplings, universal hashing, the counting kernel
-concrete bounds bottom out in (`Counting`), and the information theory stated on
-that carrier — min-entropy and the collision calculus, the Shannon layer, and
-Kullback-Leibler divergence with Pinsker's inequality, together with the
-one-way `isProbDist → PMF` transport (`DistributionMeasure`) that lets the
-divergence be checked against mathlib's.  Independent of any system model.
+statistical distance, couplings, universal hashing, and finite counting
+bounds. The same carrier supports min-entropy, collision entropy, Shannon
+entropy, Kullback--Leibler divergence, and Pinsker's inequality. The one-way
+`isProbDist → PMF` bridge in `DistributionMeasure` connects these definitions
+to Mathlib. This root is independent of every system model.
 -/

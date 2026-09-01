@@ -350,9 +350,9 @@ theorem exists_coupling_offDiagonalMass_eq {A : Type*} {X Y : Distribution A}
 
 /-! ## The bundled presentation
 
-Lemma 2.8 packaged as a structure on a finite carrier, which is the form the
-older application files use.  Both theorems are the general ones above read
-through `prDisagree_eq_offDiagonalMass`; there is no second proof. -/
+Lemma 2.8 packaged as a structure on a finite carrier. Both theorems are the
+general ones above read through `prDisagree_eq_offDiagonalMass`; there is no
+second proof. -/
 
 variable {A : Type*} [Fintype A] [DecidableEq A]
 
@@ -480,13 +480,9 @@ weight stays `u` throughout.
 `d` is the inert profile value taken outside the coupled classes; the support
 lemmas record that the joint never moves it.
 
-This is the family joint Lanzenberger **Lemma 2.33** runs on: the attainment
-construction in `RandomSystems.System.Attainment` applies it twice — to a
-shared component and to a residual component — and glues the resulting
-profiles into one deterministic system per sample.
-
-Quarry architecture: `RandomSystems/RandomSystem.lean:3052` (`jointProfileList`),
-`:3121` (`jointProfile`), `:3672` (the support lemma).
+This is the family joint used when each law is split into a shared component
+and a residual component: apply it to each family of components, then combine
+the resulting profiles pointwise.
 
 Not stated through `IsCoupling`: that predicate is the two-marginal condition
 on `A × B`, whereas the marginals here are the coordinate pushforwards

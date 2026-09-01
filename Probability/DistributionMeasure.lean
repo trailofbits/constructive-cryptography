@@ -12,21 +12,14 @@ The bridge from the library's signed, unnormalized `Distribution A = A →₀ �
 a `Fintype` carrier into mathlib's `PMF`/`Measure` stack, at the **bottom layer
 only**: `isProbDist → PMF`.
 
-The T6 plan line assumed this bridge was "established" in this tree.  It was
-not — `Distribution.toPMF` did not exist, and the only occurrence of the name
-was a cross-repository docstring pointer in `Probability/Expectation.lean`.
-This module supplies exactly what the `Probability.Divergence` agreement receipt
-needs and nothing more, so the gap is closed at its real size rather than
-recorded as a blocked dependency: five declarations of pure mathlib.
+This module supplies the finite-carrier bridge used by
+`Probability.Divergence`.
 
 ## What is deliberately NOT here
 
-The reference development's transport carries two further layers — arbitrary
-`NonNeg → Measure` and signed `→ SignedMeasure` with an explicit Jordan
-decomposition, plus everything imported through them (Chebyshev, the
-`statDist`-as-Jordan-positive-part characterization).  None of that has a
-consumer in this tree yet.  When one appears, it appends here; the module is
-sized to its one current customer, not to the reference's file.
+The bridge deliberately stops at `isProbDist → PMF`; it does not define maps
+from arbitrary nonnegative distributions to measures or from signed
+distributions to signed measures.
 
 ## Instance discipline
 

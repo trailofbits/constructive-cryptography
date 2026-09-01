@@ -29,10 +29,10 @@ another, pushing `joint` forward along `fun p => glue p.1 p.2` inherits both
 marginals, because `fTransform` only sees the map on the support
 (`fTransform_congr`).
 
-The section also records the three general `Distribution` facts the construction needs
-and the file did not have: `mass_eq_sum_support`,
-`fTransform_apply_eq_sum_support` (support-sum forms, with the decidability of
-the event an explicit binder as `DESIGN.md` §4 requires) and
+The section also records the three general `Distribution` facts used by the
+construction: `mass_eq_sum_support`,
+`fTransform_apply_eq_sum_support` (support-sum forms with the event's
+decidability as an explicit binder) and
 `apply_le_fTransform_apply` (a point never outweighs its fiber).
 -/
 

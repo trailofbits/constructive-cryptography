@@ -2,7 +2,8 @@
 Copyright (c) 2026 Trail of Bits. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
-import RandomSystems.Converter.CommonDomain.Embedding
+import RandomSystems.Converter.CommonDomainEmbedding
+import RandomSystems.Converter.RandomSystemAction
 
 set_option autoImplicit false
 
@@ -42,7 +43,7 @@ structure DDC (U : Type u) (V : Type v) (X : Type u) (Y : Type v) where
   preserves : ∀ system : ProbabilityRandomSystem X Y,
     ∃ output : ProbabilityRandomSystem U V,
       ProbabilityRandomSystem.toAmbient output =
-        Ambient.RandomSystem.apply ddc
+        Ambient.RandomSystem.applyDDC ddc
           (ProbabilityRandomSystem.toAmbient system)
 
 namespace DDC
@@ -63,7 +64,7 @@ def forwarding (X : Type u) (Y : Type v) : DDC X Y X Y where
     -- The input common-domain resource itself is the output witness.
     refine ⟨system, ?_⟩
     -- Ambient forwarding attachment is the identity.
-    rw [Ambient.RandomSystem.apply_forwarding_eq]
+    rw [Ambient.RandomSystem.applyDDC_forwarding_eq]
 
 /-- Serial composition of common-domain-preserving DDCs. -/
 def serial (outer : DDC U V A B) (inner : DDC A B X Y) : DDC U V X Y where
@@ -76,7 +77,7 @@ def serial (outer : DDC U V A B) (inner : DDC A B X Y) : DDC U V X Y where
     refine ⟨output, ?_⟩
     -- Ambient serial attachment composes the two actions.
     rw [outputEqual, middleEqual,
-      Ambient.RandomSystem.apply_serial_eq]
+      Ambient.RandomSystem.applyDDC_serial_eq]
 
 @[simp]
 theorem forwarding_serial_eq (converter : DDC U V X Y) :
@@ -116,7 +117,7 @@ noncomputable def apply (converter : DDC U V X Y)
 theorem toAmbient_apply (converter : DDC U V X Y)
     (system : ProbabilityRandomSystem X Y) :
     toAmbient (apply converter system) =
-      Ambient.RandomSystem.apply converter.ddc (toAmbient system) :=
+      Ambient.RandomSystem.applyDDC converter.ddc (toAmbient system) :=
   Classical.choose_spec (converter.preserves system)
 
 theorem apply_eq_iff (converter : DDC U V X Y)
@@ -124,7 +125,7 @@ theorem apply_eq_iff (converter : DDC U V X Y)
     (output : ProbabilityRandomSystem U V) :
     apply converter system = output ↔
       toAmbient output =
-        Ambient.RandomSystem.apply converter.ddc (toAmbient system) := by
+        Ambient.RandomSystem.applyDDC converter.ddc (toAmbient system) := by
   constructor
   -- The chosen preimage satisfies the ambient attachment equation.
   · rintro rfl
@@ -143,10 +144,10 @@ theorem apply_forwarding_eq (system : ProbabilityRandomSystem X Y) :
   apply toAmbient_injective
   -- Reduce to ambient forwarding attachment.
   rw [toAmbient_apply]
-  change Ambient.RandomSystem.apply
+  change Ambient.RandomSystem.applyDDC
       (Ambient.DDC.forwarding (Ambient.Interface.single X Y))
       (toAmbient system) = toAmbient system
-  exact Ambient.RandomSystem.apply_forwarding_eq _
+  exact Ambient.RandomSystem.applyDDC_forwarding_eq _
 
 /-- Maurer--Renner 2016, Section 3.3 (printed p. 7), states
 “`(β ◦ α)ⁱR = βⁱ(αⁱR)`.” -/
@@ -158,13 +159,13 @@ theorem apply_serial_eq (outer : DDC U V A B) (inner : DDC A B X Y)
   apply toAmbient_injective
   -- Expose the three ambient attachment terms.
   rw [toAmbient_apply, toAmbient_apply, toAmbient_apply]
-  change Ambient.RandomSystem.apply
+  change Ambient.RandomSystem.applyDDC
       (Ambient.DDC.serial outer.ddc inner.ddc)
         (toAmbient system) =
-    Ambient.RandomSystem.apply outer.ddc
-      (Ambient.RandomSystem.apply inner.ddc (toAmbient system))
+    Ambient.RandomSystem.applyDDC outer.ddc
+      (Ambient.RandomSystem.applyDDC inner.ddc (toAmbient system))
   -- Apply ambient serial attachment.
-  exact Ambient.RandomSystem.apply_serial_eq
+  exact Ambient.RandomSystem.applyDDC_serial_eq
     outer.ddc inner.ddc (toAmbient system)
 
 /-- Maurer--Renner 2016, Definition 2 (printed p. 11), calls a metric
@@ -177,7 +178,7 @@ theorem edist_apply_le (converter : DDC U V X Y)
   rw [edist_eq_edist_toAmbient, edist_eq_edist_toAmbient,
     toAmbient_apply, toAmbient_apply]
   -- Apply ambient DDC non-expansion.
-  exact Ambient.RandomSystem.edist_apply_le
+  exact Ambient.RandomSystem.edist_applyDDC_le
     converter.ddc (toAmbient left) (toAmbient right)
 
 end ProbabilityRandomSystem

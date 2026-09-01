@@ -34,29 +34,31 @@ open RandomSystems.System
 variable {X₁ : Type u₁} {Y₁ : Type v₁}
 variable {X₂ : Type u₂} {Y₂ : Type v₂}
 
-private def leftQueries : List (X₁ ⊕ X₂) → List X₁ :=
+namespace System
+
+def leftQueries : List (X₁ ⊕ X₂) → List X₁ :=
   List.filterMap fun
     | Sum.inl query => some query
     | Sum.inr _ => none
 
-private def rightQueries : List (X₁ ⊕ X₂) → List X₂ :=
+def rightQueries : List (X₁ ⊕ X₂) → List X₂ :=
   List.filterMap fun
     | Sum.inl _ => none
     | Sum.inr query => some query
 
-private theorem leftQueries_prefix {first second : List (X₁ ⊕ X₂)}
+theorem leftQueries_prefix {first second : List (X₁ ⊕ X₂)}
     (hprefix : first <+: second) :
     leftQueries first <+: leftQueries second := by
   obtain ⟨tail, rfl⟩ := hprefix
   exact ⟨leftQueries tail, by simp [leftQueries, List.filterMap_append]⟩
 
-private theorem rightQueries_prefix {first second : List (X₁ ⊕ X₂)}
+theorem rightQueries_prefix {first second : List (X₁ ⊕ X₂)}
     (hprefix : first <+: second) :
     rightQueries first <+: rightQueries second := by
   obtain ⟨tail, rfl⟩ := hprefix
   exact ⟨rightQueries tail, by simp [rightQueries, List.filterMap_append]⟩
 
-private theorem leftQueries_nonempty_of_getLast?_inl
+theorem leftQueries_nonempty_of_getLast?_inl
     (history : List (X₁ ⊕ X₂)) (query : X₁)
     (lastEqual : history.getLast? = some (Sum.inl query)) :
     leftQueries history ≠ [] := by
@@ -67,7 +69,7 @@ private theorem leftQueries_nonempty_of_getLast?_inl
     exact ⟨Sum.inl query, by simp, rfl⟩
   simp [empty] at member
 
-private theorem rightQueries_nonempty_of_getLast?_inr
+theorem rightQueries_nonempty_of_getLast?_inr
     (history : List (X₁ ⊕ X₂)) (query : X₂)
     (lastEqual : history.getLast? = some (Sum.inr query)) :
     rightQueries history ≠ [] := by
@@ -78,7 +80,7 @@ private theorem rightQueries_nonempty_of_getLast?_inr
     exact ⟨Sum.inr query, by simp, rfl⟩
   simp [empty] at member
 
-private theorem leftQueries_nonempty_of_mem_inl
+theorem leftQueries_nonempty_of_mem_inl
     (history : List (X₁ ⊕ X₂)) (query : X₁)
     (member : Sum.inl query ∈ history) :
     leftQueries history ≠ [] := by
@@ -88,7 +90,7 @@ private theorem leftQueries_nonempty_of_mem_inl
     exact ⟨Sum.inl query, member, rfl⟩
   simp [empty] at kept
 
-private theorem rightQueries_nonempty_of_mem_inr
+theorem rightQueries_nonempty_of_mem_inr
     (history : List (X₁ ⊕ X₂)) (query : X₂)
     (member : Sum.inr query ∈ history) :
     rightQueries history ≠ [] := by
@@ -98,7 +100,7 @@ private theorem rightQueries_nonempty_of_mem_inr
     exact ⟨Sum.inr query, member, rfl⟩
   simp [empty] at kept
 
-private def parallelOutput (left : RandomSystems.System.DDS X₁ Y₁)
+def parallelOutput (left : RandomSystems.System.DDS X₁ Y₁)
     (right : RandomSystems.System.DDS X₂ Y₂)
     (history : List (X₁ ⊕ X₂))
     (defined : history ≠ [] ∧
@@ -121,7 +123,7 @@ private def parallelOutput (left : RandomSystems.System.DDS X₁ Y₁)
             (rightQueries_nonempty_of_mem_inr history query lastMem empty)
         · exact admitted))
 
-private theorem parallelOutput_congr_last
+theorem parallelOutput_congr_last
     (left : RandomSystems.System.DDS X₁ Y₁)
     (right : RandomSystems.System.DDS X₂ Y₂)
     (history : List (X₁ ⊕ X₂))
@@ -137,7 +139,7 @@ private theorem parallelOutput_congr_last
   subst second
   rfl
 
-private def parallelRaw (left : RandomSystems.System.DDS X₁ Y₁)
+def parallelRaw (left : RandomSystems.System.DDS X₁ Y₁)
     (right : RandomSystems.System.DDS X₂ Y₂) :
     RandomSystems.System.Raw (X₁ ⊕ X₂) (Y₁ ⊕ Y₂) :=
   fun history =>
@@ -150,7 +152,7 @@ private def parallelRaw (left : RandomSystems.System.DDS X₁ Y₁)
         parallelOutput left right history defined
           (history.getLast defined.1) (List.getLast_mem defined.1) }
 
-private def parallel (left : RandomSystems.System.DDS X₁ Y₁)
+def parallel (left : RandomSystems.System.DDS X₁ Y₁)
     (right : RandomSystems.System.DDS X₂ Y₂) :
     RandomSystems.System.DDS (X₁ ⊕ X₂) (Y₁ ⊕ Y₂) :=
   ⟨parallelRaw left right, by
@@ -178,7 +180,7 @@ private def parallel (left : RandomSystems.System.DDS X₁ Y₁)
               firstEmpty admitted)⟩
 
 @[simp]
-private theorem dom_parallel (left : RandomSystems.System.DDS X₁ Y₁)
+theorem dom_parallel (left : RandomSystems.System.DDS X₁ Y₁)
     (right : RandomSystems.System.DDS X₂ Y₂) :
     RandomSystems.System.dom (parallel left right) =
       {history | history ≠ [] ∧
@@ -189,26 +191,26 @@ private theorem dom_parallel (left : RandomSystems.System.DDS X₁ Y₁)
   rfl
 
 @[simp]
-private theorem leftQueries_append_inl (history : List (X₁ ⊕ X₂)) (query : X₁) :
+theorem leftQueries_append_inl (history : List (X₁ ⊕ X₂)) (query : X₁) :
     leftQueries (history ++ [Sum.inl query]) = leftQueries history ++ [query] := by
   simp [leftQueries, List.filterMap_append]
 
 @[simp]
-private theorem leftQueries_append_inr (history : List (X₁ ⊕ X₂)) (query : X₂) :
+theorem leftQueries_append_inr (history : List (X₁ ⊕ X₂)) (query : X₂) :
     leftQueries (history ++ [Sum.inr query]) = leftQueries history := by
   simp [leftQueries, List.filterMap_append]
 
 @[simp]
-private theorem rightQueries_append_inl (history : List (X₁ ⊕ X₂)) (query : X₁) :
+theorem rightQueries_append_inl (history : List (X₁ ⊕ X₂)) (query : X₁) :
     rightQueries (history ++ [Sum.inl query]) = rightQueries history := by
   simp [rightQueries, List.filterMap_append]
 
 @[simp]
-private theorem rightQueries_append_inr (history : List (X₁ ⊕ X₂)) (query : X₂) :
+theorem rightQueries_append_inr (history : List (X₁ ⊕ X₂)) (query : X₂) :
     rightQueries (history ++ [Sum.inr query]) = rightQueries history ++ [query] := by
   simp [rightQueries, List.filterMap_append]
 
-private theorem output_parallel_left (left : RandomSystems.System.DDS X₁ Y₁)
+theorem output_parallel_left (left : RandomSystems.System.DDS X₁ Y₁)
     (right : RandomSystems.System.DDS X₂ Y₂) (history : List (X₁ ⊕ X₂))
     (query : X₁)
     (defined : history ++ [Sum.inl query] ∈
@@ -231,7 +233,7 @@ private theorem output_parallel_left (left : RandomSystems.System.DDS X₁ Y₁)
             (List.getLast_append_singleton history) _ _
     _ = _ := by simp [parallelOutput]
 
-private theorem output_parallel_right (left : RandomSystems.System.DDS X₁ Y₁)
+theorem output_parallel_right (left : RandomSystems.System.DDS X₁ Y₁)
     (right : RandomSystems.System.DDS X₂ Y₂) (history : List (X₁ ⊕ X₂))
     (query : X₂)
     (defined : history ++ [Sum.inr query] ∈
@@ -254,80 +256,36 @@ private theorem output_parallel_right (left : RandomSystems.System.DDS X₁ Y₁
             (List.getLast_append_singleton history) _ _
     _ = _ := by simp [parallelOutput]
 
-private def EnvConsistent {X : Type*} {Y : Type*}
-    (environment : DDE Y X) (transcript : Transcript X Y) : Prop :=
-  ∀ k, (hk : k < transcript.length) →
-    ∃ hdom : (transcript.take k).map Prod.snd ∈ environment.1.Dom,
-      (environment.1 ((transcript.take k).map Prod.snd)).get hdom = transcript[k].1
+end System
 
-private def SystemConsistent {X : Type*} {Y : Type*}
-    (system : DDS X Y) (transcript : Transcript X Y) : Prop :=
-  ∀ k, (hk : k < transcript.length) →
-    ∃ hdom : (transcript.take k).map Prod.fst ++ [transcript[k].1] ∈ dom system,
-      output system ((transcript.take k).map Prod.fst ++ [transcript[k].1]) hdom =
-        transcript[k].2
+namespace Internal.Parallel
 
-private def FinalAt {X : Type*} {Y : Type*}
-    (environment : DDE Y X) (rounds : Nat) (transcript : Transcript X Y) : Prop :=
-  transcript.length = rounds ∨
-    (transcript.length < rounds ∧ transcript.map Prod.snd ∉ environment.1.Dom)
-
-private theorem systemConsistent_snoc_iff {X : Type*} {Y : Type*}
-    (system : DDS X Y) (transcript : Transcript X Y) (event : X × Y) :
-    SystemConsistent system (transcript ++ [event]) ↔
-      SystemConsistent system transcript ∧
-        ∃ hdom : transcript.map Prod.fst ++ [event.1] ∈ dom system,
-          output system (transcript.map Prod.fst ++ [event.1]) hdom = event.2 := by
-  constructor
-  · intro consistent
-    constructor
-    · intro k hk
-      have hk' : k < (transcript ++ [event]).length := by simp; omega
-      have row := consistent k hk'
-      simpa only [List.take_append_of_le_length (Nat.le_of_lt hk),
-        List.getElem_append_left hk] using row
-    · have row := consistent transcript.length (by simp)
-      simpa only [List.take_append_of_le_length le_rfl, List.take_length,
-        List.getElem_append_right le_rfl, Nat.sub_self,
-        List.getElem_cons_zero] using row
-  · rintro ⟨prior, last⟩ k hk
-    rw [List.length_append, List.length_singleton] at hk
-    rcases Nat.lt_or_ge k transcript.length with earlier | atLast
-    · have row := prior k earlier
-      simpa only [List.take_append_of_le_length (Nat.le_of_lt earlier),
-        List.getElem_append_left earlier] using row
-    · have equal : k = transcript.length := by omega
-      subst equal
-      simpa only [List.take_append_of_le_length le_rfl, List.take_length,
-        List.getElem_append_right le_rfl, Nat.sub_self,
-        List.getElem_cons_zero] using last
-
-private abbrev Dialogue (X₁ : Type u₁) (Y₁ : Type v₁)
+abbrev Dialogue (X₁ : Type u₁) (Y₁ : Type v₁)
     (X₂ : Type u₂) (Y₂ : Type v₂) :=
   List ((X₁ × Y₁) ⊕ (X₂ × Y₂))
 
-private def taggedPair : ((X₁ × Y₁) ⊕ (X₂ × Y₂)) →
+def taggedPair : ((X₁ × Y₁) ⊕ (X₂ × Y₂)) →
     (X₁ ⊕ X₂) × (Y₁ ⊕ Y₂)
   | Sum.inl pair => (Sum.inl pair.1, Sum.inl pair.2)
   | Sum.inr pair => (Sum.inr pair.1, Sum.inr pair.2)
 
-private def dialogueTranscript (dialogue : Dialogue X₁ Y₁ X₂ Y₂) :
+def dialogueTranscript (dialogue : Dialogue X₁ Y₁ X₂ Y₂) :
     RandomSystems.System.Transcript (X₁ ⊕ X₂) (Y₁ ⊕ Y₂) :=
   dialogue.map taggedPair
 
-private def leftTranscript (dialogue : Dialogue X₁ Y₁ X₂ Y₂) :
+def leftTranscript (dialogue : Dialogue X₁ Y₁ X₂ Y₂) :
     RandomSystems.System.Transcript X₁ Y₁ :=
   dialogue.filterMap fun
     | Sum.inl pair => some pair
     | Sum.inr _ => none
 
-private def rightTranscript (dialogue : Dialogue X₁ Y₁ X₂ Y₂) :
+def rightTranscript (dialogue : Dialogue X₁ Y₁ X₂ Y₂) :
     RandomSystems.System.Transcript X₂ Y₂ :=
   dialogue.filterMap fun
     | Sum.inl _ => none
     | Sum.inr pair => some pair
 
-private def LeftRealizes (left : RandomSystems.System.DDS X₁ Y₁)
+def LeftRealizes (left : RandomSystems.System.DDS X₁ Y₁)
     (dialogue : Dialogue X₁ Y₁ X₂ Y₂) : Prop :=
   ∀ k, (hk : k < dialogue.length) →
     match dialogue[k] with
@@ -339,7 +297,7 @@ private def LeftRealizes (left : RandomSystems.System.DDS X₁ Y₁)
               [pair.1]) hdom = pair.2
     | Sum.inr _ => True
 
-private def RightRealizes (right : RandomSystems.System.DDS X₂ Y₂)
+def RightRealizes (right : RandomSystems.System.DDS X₂ Y₂)
     (dialogue : Dialogue X₁ Y₁ X₂ Y₂) : Prop :=
   ∀ k, (hk : k < dialogue.length) →
     match dialogue[k] with
@@ -351,7 +309,7 @@ private def RightRealizes (right : RandomSystems.System.DDS X₂ Y₂)
             (rightQueries ((dialogue.take k).map (taggedPair · |>.1)) ++
               [pair.1]) hdom = pair.2
 
-private theorem leftRealizes_take_early
+theorem leftRealizes_take_early
     (left : RandomSystems.System.DDS X₁ Y₁)
     {dialogue : Dialogue X₁ Y₁ X₂ Y₂}
     (realizes : LeftRealizes left dialogue) (n : Nat) :
@@ -366,7 +324,7 @@ private theorem leftRealizes_take_early
     omega
   simpa only [List.getElem_take, List.take_take, min_eq_left kLe] using base
 
-private theorem rightRealizes_take_early
+theorem rightRealizes_take_early
     (right : RandomSystems.System.DDS X₂ Y₂)
     {dialogue : Dialogue X₁ Y₁ X₂ Y₂}
     (realizes : RightRealizes right dialogue) (n : Nat) :
@@ -381,7 +339,7 @@ private theorem rightRealizes_take_early
     omega
   simpa only [List.getElem_take, List.take_take, min_eq_left kLe] using base
 
-private theorem leftTranscript_inputs (dialogue : Dialogue X₁ Y₁ X₂ Y₂) :
+theorem leftTranscript_inputs (dialogue : Dialogue X₁ Y₁ X₂ Y₂) :
     (leftTranscript dialogue).map Prod.fst =
       leftQueries (dialogue.map (taggedPair · |>.1)) := by
   rw [leftTranscript, leftQueries, List.map_filterMap, List.filterMap_map]
@@ -389,7 +347,7 @@ private theorem leftTranscript_inputs (dialogue : Dialogue X₁ Y₁ X₂ Y₂) 
   intro event _
   cases event <;> rfl
 
-private theorem rightTranscript_inputs (dialogue : Dialogue X₁ Y₁ X₂ Y₂) :
+theorem rightTranscript_inputs (dialogue : Dialogue X₁ Y₁ X₂ Y₂) :
     (rightTranscript dialogue).map Prod.fst =
       rightQueries (dialogue.map (taggedPair · |>.1)) := by
   rw [rightTranscript, rightQueries, List.map_filterMap, List.filterMap_map]
@@ -397,7 +355,7 @@ private theorem rightTranscript_inputs (dialogue : Dialogue X₁ Y₁ X₂ Y₂)
   intro event _
   cases event <;> rfl
 
-private theorem leftRealizes_snoc_inl_iff
+theorem leftRealizes_snoc_inl_iff
     (left : RandomSystems.System.DDS X₁ Y₁)
     (dialogue : Dialogue X₁ Y₁ X₂ Y₂) (pair : X₁ × Y₁) :
     LeftRealizes left (dialogue ++ [Sum.inl pair]) ↔
@@ -428,7 +386,7 @@ private theorem leftRealizes_snoc_inl_iff
         List.getElem_append_right le_rfl, Nat.sub_self,
         List.getElem_cons_zero] using last
 
-private theorem leftRealizes_snoc_inr_iff
+theorem leftRealizes_snoc_inr_iff
     (left : RandomSystems.System.DDS X₁ Y₁)
     (dialogue : Dialogue X₁ Y₁ X₂ Y₂) (pair : X₂ × Y₂) :
     LeftRealizes left (dialogue ++ [Sum.inr pair]) ↔
@@ -447,7 +405,7 @@ private theorem leftRealizes_snoc_inr_iff
       subst equal
       simp
 
-private theorem rightRealizes_snoc_inl_iff
+theorem rightRealizes_snoc_inl_iff
     (right : RandomSystems.System.DDS X₂ Y₂)
     (dialogue : Dialogue X₁ Y₁ X₂ Y₂) (pair : X₁ × Y₁) :
     RightRealizes right (dialogue ++ [Sum.inl pair]) ↔
@@ -466,7 +424,7 @@ private theorem rightRealizes_snoc_inl_iff
       subst equal
       simp
 
-private theorem rightRealizes_snoc_inr_iff
+theorem rightRealizes_snoc_inr_iff
     (right : RandomSystems.System.DDS X₂ Y₂)
     (dialogue : Dialogue X₁ Y₁ X₂ Y₂) (pair : X₂ × Y₂) :
     RightRealizes right (dialogue ++ [Sum.inr pair]) ↔
@@ -497,7 +455,7 @@ private theorem rightRealizes_snoc_inr_iff
         List.getElem_append_right le_rfl, Nat.sub_self,
         List.getElem_cons_zero] using last
 
-private theorem leftRealizes_iff_systemConsistent
+theorem leftRealizes_iff_systemConsistent
     (left : RandomSystems.System.DDS X₁ Y₁) :
     ∀ dialogue : Dialogue X₁ Y₁ X₂ Y₂,
       LeftRealizes left dialogue ↔
@@ -512,7 +470,7 @@ private theorem leftRealizes_iff_systemConsistent
             show leftTranscript (prior ++ [Sum.inl pair]) =
                 leftTranscript prior ++ [pair] by
               simp [leftTranscript, List.filterMap_append],
-            systemConsistent_snoc_iff, inductionHypothesis,
+            System.systemConsistent_snoc_iff, inductionHypothesis,
             leftTranscript_inputs]
       | inr pair =>
           rw [leftRealizes_snoc_inr_iff,
@@ -521,7 +479,7 @@ private theorem leftRealizes_iff_systemConsistent
               simp [leftTranscript, List.filterMap_append],
             inductionHypothesis]
 
-private theorem rightRealizes_iff_systemConsistent
+theorem rightRealizes_iff_systemConsistent
     (right : RandomSystems.System.DDS X₂ Y₂) :
     ∀ dialogue : Dialogue X₁ Y₁ X₂ Y₂,
       RightRealizes right dialogue ↔
@@ -542,10 +500,10 @@ private theorem rightRealizes_iff_systemConsistent
             show rightTranscript (prior ++ [Sum.inr pair]) =
                 rightTranscript prior ++ [pair] by
               simp [rightTranscript, List.filterMap_append],
-            systemConsistent_snoc_iff, inductionHypothesis,
+            System.systemConsistent_snoc_iff, inductionHypothesis,
             rightTranscript_inputs]
 
-private theorem leftRealizes_take (left : RandomSystems.System.DDS X₁ Y₁)
+theorem leftRealizes_take (left : RandomSystems.System.DDS X₁ Y₁)
     {dialogue : Dialogue X₁ Y₁ X₂ Y₂}
     (realizes : LeftRealizes left dialogue) (n : Nat) :
     LeftRealizes left (dialogue.take n) := by
@@ -559,7 +517,7 @@ private theorem leftRealizes_take (left : RandomSystems.System.DDS X₁ Y₁)
     omega
   simpa only [List.getElem_take, List.take_take, min_eq_left kLe] using base
 
-private theorem rightRealizes_take (right : RandomSystems.System.DDS X₂ Y₂)
+theorem rightRealizes_take (right : RandomSystems.System.DDS X₂ Y₂)
     {dialogue : Dialogue X₁ Y₁ X₂ Y₂}
     (realizes : RightRealizes right dialogue) (n : Nat) :
     RightRealizes right (dialogue.take n) := by
@@ -573,7 +531,7 @@ private theorem rightRealizes_take (right : RandomSystems.System.DDS X₂ Y₂)
     omega
   simpa only [List.getElem_take, List.take_take, min_eq_left kLe] using base
 
-private theorem leftRealizes_domain (left : RandomSystems.System.DDS X₁ Y₁) :
+theorem leftRealizes_domain (left : RandomSystems.System.DDS X₁ Y₁) :
     ∀ {dialogue : Dialogue X₁ Y₁ X₂ Y₂}, LeftRealizes left dialogue →
       leftQueries (dialogue.map (taggedPair · |>.1)) = [] ∨
         leftQueries (dialogue.map (taggedPair · |>.1)) ∈
@@ -604,7 +562,7 @@ private theorem leftRealizes_domain (left : RandomSystems.System.DDS X₁ Y₁) 
           simpa only [List.map_append, List.map_singleton, taggedPair,
             leftQueries_append_inr] using inductionHypothesis priorRealizes
 
-private theorem rightRealizes_domain (right : RandomSystems.System.DDS X₂ Y₂) :
+theorem rightRealizes_domain (right : RandomSystems.System.DDS X₂ Y₂) :
     ∀ {dialogue : Dialogue X₁ Y₁ X₂ Y₂}, RightRealizes right dialogue →
       rightQueries (dialogue.map (taggedPair · |>.1)) = [] ∨
         rightQueries (dialogue.map (taggedPair · |>.1)) ∈
@@ -635,7 +593,7 @@ private theorem rightRealizes_domain (right : RandomSystems.System.DDS X₂ Y₂
           simpa only [List.map_append, List.map_singleton, taggedPair,
             rightQueries_append_inr] using last'.choose
 
-private theorem systemConsistent_parallel_iff
+theorem systemConsistent_parallel_iff
     (left : RandomSystems.System.DDS X₁ Y₁)
     (right : RandomSystems.System.DDS X₂ Y₂)
     (dialogue : Dialogue X₁ Y₁ X₂ Y₂) :
@@ -821,389 +779,7 @@ private theorem systemConsistent_parallel_iff
           _ = (dialogueTranscript dialogue)[k].2 := by
             simp [dialogueTranscript, eventEqual, taggedPair]
 
-private theorem trN_consistent_of_compatible {X : Type*} {Y : Type*}
-    (system : DDS X Y) (environment : DDE Y X)
-    (compatible : Compatible environment system) (rounds : Nat) :
-    EnvConsistent environment (trN environment system rounds) ∧
-      FinalAt environment rounds (trN environment system rounds) ∧
-      SystemConsistent system (trN environment system rounds) := by
-  induction rounds with
-  | zero =>
-      refine ⟨fun k hk => (by simp [trN] at hk), Or.inl rfl,
-        fun k hk => (by simp [trN] at hk)⟩
-  | succ rounds inductionHypothesis =>
-      obtain ⟨environmentConsistent, finalAt, systemConsistent⟩ :=
-        inductionHypothesis
-      by_cases environmentDomain :
-          (trN environment system rounds).map Prod.snd ∈ environment.1.Dom
-      · have queryMem := Part.get_mem environmentDomain
-        have systemDomain := compatible rounds _ queryMem
-        rw [trN_succ_of_query environmentDomain systemDomain]
-        refine ⟨?_, Or.inl (by
-          rcases finalAt with lengthEqual | ⟨_, stopped⟩
-          · simp [lengthEqual]
-          · exact absurd environmentDomain stopped), ?_⟩
-        · intro k hk
-          rw [List.length_append, List.length_singleton] at hk
-          rcases Nat.lt_or_ge k (trN environment system rounds).length with
-            earlier | last
-          · rw [List.take_append_of_le_length (le_of_lt earlier),
-              List.getElem_append_left earlier]
-            exact environmentConsistent k earlier
-          · have kEqual : k = (trN environment system rounds).length := by omega
-            subst kEqual
-            rw [List.take_append_of_le_length le_rfl, List.take_length,
-              List.getElem_append_right le_rfl]
-            exact ⟨environmentDomain, by simp⟩
-        · intro k hk
-          rw [List.length_append, List.length_singleton] at hk
-          rcases Nat.lt_or_ge k (trN environment system rounds).length with
-            earlier | last
-          · rw [List.take_append_of_le_length (le_of_lt earlier),
-              List.getElem_append_left earlier]
-            exact systemConsistent k earlier
-          · have kEqual : k = (trN environment system rounds).length := by omega
-            subst kEqual
-            rw [List.take_append_of_le_length le_rfl, List.take_length,
-              List.getElem_append_right le_rfl]
-            simpa only [Nat.sub_self, List.getElem_cons_zero] using
-              (show ∃ hdom, output system
-                  ((trN environment system rounds).map Prod.fst ++
-                    [(environment.1
-                      ((trN environment system rounds).map Prod.snd)).get
-                        environmentDomain]) hdom =
-                    output system
-                      ((trN environment system rounds).map Prod.fst ++
-                        [(environment.1
-                          ((trN environment system rounds).map Prod.snd)).get
-                            environmentDomain]) systemDomain from
-                ⟨systemDomain, rfl⟩)
-      · rw [trN_succ_of_stop environmentDomain]
-        refine ⟨environmentConsistent, Or.inr ⟨?_, environmentDomain⟩,
-          systemConsistent⟩
-        rcases finalAt with lengthEqual | ⟨lengthLess, _⟩ <;> omega
-
-private theorem trN_eq_of_consistent {X : Type*} {Y : Type*}
-    (system : DDS X Y) (environment : DDE Y X) :
-    ∀ (rounds : Nat) (transcript : Transcript X Y),
-      EnvConsistent environment transcript →
-      FinalAt environment rounds transcript →
-      SystemConsistent system transcript →
-      trN environment system rounds = transcript := by
-  intro rounds
-  induction rounds with
-  | zero =>
-      intro transcript _ finalAt _
-      rcases finalAt with lengthEqual | ⟨lengthLess, _⟩
-      · simpa [trN] using (List.eq_nil_of_length_eq_zero lengthEqual).symm
-      · omega
-  | succ rounds inductionHypothesis =>
-      intro transcript environmentConsistent finalAt systemConsistent
-      rcases finalAt with lengthEqual | ⟨lengthLess, stopped⟩
-      · have roundsLess : rounds < transcript.length := by omega
-        have prefixEqual : trN environment system rounds = transcript.take rounds := by
-          apply inductionHypothesis
-          · intro k hk
-            rw [List.length_take] at hk
-            have kLess : k < transcript.length := by omega
-            have kRounds : k ≤ rounds :=
-              Nat.le_of_lt (lt_of_lt_of_le hk (min_le_left _ _))
-            simpa only [List.take_take, min_eq_left kRounds,
-              List.getElem_take] using environmentConsistent k kLess
-          · exact Or.inl (by
-              simp [List.length_take, show rounds ≤ transcript.length by omega])
-          · intro k hk
-            rw [List.length_take] at hk
-            have kLess : k < transcript.length := by omega
-            have kRounds : k ≤ rounds :=
-              Nat.le_of_lt (lt_of_lt_of_le hk (min_le_left _ _))
-            simpa only [List.take_take, min_eq_left kRounds,
-              List.getElem_take] using systemConsistent k kLess
-        obtain ⟨environmentDomain, queryEqual⟩ :=
-          environmentConsistent rounds roundsLess
-        obtain ⟨systemDomain, answerEqual⟩ := systemConsistent rounds roundsLess
-        have environmentDomain' :
-            (trN environment system rounds).map Prod.snd ∈ environment.1.Dom := by
-          rwa [prefixEqual]
-        have queryEqual' :
-            (environment.1 ((trN environment system rounds).map Prod.snd)).get
-                environmentDomain' = transcript[rounds].1 := by
-          apply Part.get_eq_of_mem
-          rw [prefixEqual]
-          exact queryEqual ▸ Part.get_mem environmentDomain
-        have systemDomain' :
-            (trN environment system rounds).map Prod.fst ++
-              [(environment.1 ((trN environment system rounds).map Prod.snd)).get
-                environmentDomain'] ∈ dom system := by
-          rw [queryEqual']
-          simpa only [prefixEqual] using systemDomain
-        have answerEqual' :
-            output system ((trN environment system rounds).map Prod.fst ++
-              [(environment.1 ((trN environment system rounds).map Prod.snd)).get
-                environmentDomain']) systemDomain' = transcript[rounds].2 := by
-          calc
-            _ = output system ((transcript.take rounds).map Prod.fst ++
-                [transcript[rounds].1]) systemDomain :=
-              output_congr system (by rw [queryEqual', prefixEqual]) _ _
-            _ = transcript[rounds].2 := answerEqual
-        have pairEqual :
-            ((environment.1 ((trN environment system rounds).map Prod.snd)).get
-                environmentDomain',
-              output system ((trN environment system rounds).map Prod.fst ++
-                [(environment.1 ((trN environment system rounds).map Prod.snd)).get
-                  environmentDomain']) systemDomain') = transcript[rounds] := by
-          apply Prod.ext
-          · exact queryEqual'
-          · exact answerEqual'
-        rw [trN_succ_of_query environmentDomain' systemDomain', pairEqual, prefixEqual]
-        conv_rhs => rw [← List.take_length (l := transcript), lengthEqual]
-        rw [List.take_add_one, List.getElem?_eq_getElem roundsLess]
-        simp
-      · have prefixEqual : trN environment system rounds = transcript := by
-          apply inductionHypothesis transcript environmentConsistent
-          · rcases Nat.lt_or_ge transcript.length rounds with less | greater
-            · exact Or.inr ⟨less, stopped⟩
-            · exact Or.inl (by omega)
-          · exact systemConsistent
-        rw [trN_succ_of_stop (by rwa [prefixEqual]), prefixEqual]
-
-private theorem stopped_consistent_of_toOption_eq_some {X : Type*} {Y : Type*}
-    {environment : DDE Y X} {system : DDS X Y}
-    (compatible : Compatible environment system)
-    {transcript : Transcript X Y}
-    (equal : (tr environment system).toOption = some transcript) :
-    EnvConsistent environment transcript ∧
-      transcript.map Prod.snd ∉ environment.1.Dom ∧
-      SystemConsistent system transcript := by
-  rw [Part.toOption_eq_some_iff] at equal
-  obtain ⟨stops, valueEqual⟩ := equal
-  have stable := Nat.find_spec stops
-  have transcriptEqual : trN environment system (Nat.find stops) = transcript := by
-    rw [← tr_get_eq_trN stops stable, valueEqual]
-  have consistent := trN_consistent_of_compatible system environment compatible
-    (Nat.find stops)
-  refine ⟨transcriptEqual ▸ consistent.1, ?_, transcriptEqual ▸ consistent.2.2⟩
-  have stopped := (trN_succ_eq_iff_of_compatible compatible (Nat.find stops)).1 stable
-  rwa [transcriptEqual] at stopped
-
-private theorem toOption_eq_some_iff_systemConsistent {X : Type*} {Y : Type*}
-    {environment : DDE Y X} {system : DDS X Y}
-    (compatible : Compatible environment system)
-    {transcript : Transcript X Y}
-    (environmentConsistent : EnvConsistent environment transcript)
-    (terminal : transcript.map Prod.snd ∉ environment.1.Dom) :
-    (tr environment system).toOption = some transcript ↔
-      SystemConsistent system transcript := by
-  constructor
-  · intro equal
-    exact (stopped_consistent_of_toOption_eq_some compatible equal).2.2
-  · intro systemConsistent
-    have transcriptAtLength :
-        trN environment system transcript.length = transcript :=
-      trN_eq_of_consistent system environment transcript.length transcript
-        environmentConsistent (Or.inl rfl) systemConsistent
-    have stable : trN environment system (transcript.length + 1) =
-        trN environment system transcript.length := by
-      apply trN_succ_of_stop
-      rwa [transcriptAtLength]
-    rw [Part.toOption_eq_some_iff]
-    let stops : Stops environment system := ⟨transcript.length, stable⟩
-    exact ⟨stops, (tr_get_eq_trN stops stable).trans transcriptAtLength⟩
-
-private def fixedQueries {X : Type*} {Y : Type*}
-    (queries : List X) : DDE Y X :=
-  ⟨(fun answers : List Y =>
-      (⟨answers.length < queries.length,
-        fun h => queries[answers.length]⟩ : Part X)),
-    by
-      intro first second hprefix secondDomain
-      exact lt_of_le_of_lt hprefix.length_le secondDomain⟩
-
-@[simp]
-private theorem fixedQueries_dom {X : Type*} {Y : Type*}
-    (queries : List X) (answers : List Y) :
-    answers ∈ (fixedQueries (Y := Y) queries).1.Dom ↔
-      answers.length < queries.length :=
-  Iff.rfl
-
-private theorem fixedQueries_get {X : Type*} {Y : Type*}
-    (queries : List X) (answers : List Y)
-    (domain : answers ∈ (fixedQueries (Y := Y) queries).1.Dom) :
-    ((fixedQueries (Y := Y) queries).1 answers).get domain =
-      queries[answers.length] :=
-  rfl
-
-private theorem trN_fixedQueries {X : Type*} {Y : Type*}
-    (system : DDS X Y) (queries : List X)
-    (admitted : queries = [] ∨ queries ∈ dom system) :
-    ∀ rounds,
-      (trN (fixedQueries (Y := Y) queries) system rounds).length =
-          min rounds queries.length ∧
-        (trN (fixedQueries (Y := Y) queries) system rounds).map Prod.fst =
-          queries.take rounds := by
-  intro rounds
-  induction rounds with
-  | zero => simp [trN]
-  | succ rounds inductionHypothesis =>
-      obtain ⟨lengthEqual, inputsEqual⟩ := inductionHypothesis
-      by_cases beforeEnd : rounds < queries.length
-      · have environmentDomain :
-            (trN (fixedQueries (Y := Y) queries) system rounds).map Prod.snd ∈
-              (fixedQueries (Y := Y) queries).1.Dom := by
-          exact (fixedQueries_dom queries _).2 (by
-            simpa [lengthEqual] using beforeEnd)
-        have queryEqual :
-            ((fixedQueries (Y := Y) queries).1
-              ((trN (fixedQueries (Y := Y) queries) system rounds).map Prod.snd)).get
-                environmentDomain = queries[rounds] := by
-          have answerLengthEqual :
-              ((trN (fixedQueries (Y := Y) queries) system rounds).map Prod.snd).length =
-                rounds := by
-            rw [List.length_map, lengthEqual,
-              min_eq_left (Nat.le_of_lt beforeEnd)]
-          simp only [fixedQueries_get, answerLengthEqual]
-        have nextPrefix : queries.take (rounds + 1) ∈ dom system := by
-          rcases admitted with empty | fullDomain
-          · subst queries
-            simp at beforeEnd
-          · apply prefix_closed system (List.take_prefix _ _) (by
-              intro empty
-              have positive : 0 < (queries.take (rounds + 1)).length := by
-                rw [List.length_take]
-                omega
-              rw [empty] at positive
-              simp at positive)
-              fullDomain
-        have systemDomain :
-            (trN (fixedQueries (Y := Y) queries) system rounds).map Prod.fst ++
-                [((fixedQueries (Y := Y) queries).1
-                  ((trN (fixedQueries (Y := Y) queries) system rounds).map Prod.snd)).get
-                    environmentDomain] ∈ dom system := by
-          rw [inputsEqual, queryEqual]
-          have takeEqual : queries.take (rounds + 1) =
-              queries.take rounds ++ [queries[rounds]] := by
-            rw [List.take_add_one, List.getElem?_eq_getElem beforeEnd,
-              Option.toList_some]
-          exact takeEqual ▸ nextPrefix
-        rw [trN_succ_of_query environmentDomain systemDomain]
-        constructor
-        · simp only [List.length_append, List.length_singleton, lengthEqual]
-          omega
-        · simp only [List.map_append, inputsEqual, queryEqual, List.map_singleton]
-          rw [List.take_add_one, List.getElem?_eq_getElem beforeEnd,
-            Option.toList_some]
-      · have atEnd : queries.length ≤ rounds := Nat.le_of_not_gt beforeEnd
-        have environmentStopped :
-            (trN (fixedQueries (Y := Y) queries) system rounds).map Prod.snd ∉
-              (fixedQueries (Y := Y) queries).1.Dom := by
-          rw [fixedQueries_dom, List.length_map, lengthEqual,
-            min_eq_right atEnd]
-          omega
-        rw [trN_succ_of_stop environmentStopped]
-        constructor
-        · rw [lengthEqual]
-          omega
-        · rw [inputsEqual, List.take_of_length_le atEnd,
-            List.take_of_length_le (atEnd.trans (Nat.le_succ _))]
-
-private theorem fixedQueries_compatible {X : Type*} {Y : Type*}
-    (system : DDS X Y) (queries : List X)
-    (admitted : queries = [] ∨ queries ∈ dom system) :
-    Compatible (fixedQueries (Y := Y) queries) system := by
-  intro rounds query queryMem
-  have invariant := trN_fixedQueries system queries admitted rounds
-  have environmentDomain :
-      (trN (fixedQueries (Y := Y) queries) system rounds).map Prod.snd ∈
-        (fixedQueries (Y := Y) queries).1.Dom :=
-    Part.dom_iff_mem.mpr ⟨query, queryMem⟩
-  have beforeEnd :
-      (trN (fixedQueries (Y := Y) queries) system rounds).length < queries.length := by
-    simpa only [List.length_map] using
-      (fixedQueries_dom queries
-        ((trN (fixedQueries (Y := Y) queries) system rounds).map Prod.snd)).1
-          environmentDomain
-  have indexEqual :
-      (trN (fixedQueries (Y := Y) queries) system rounds).length = rounds := by
-    rw [invariant.1]
-    omega
-  have queryEqual : query = queries[rounds] := by
-    have getIsQuery := Part.get_eq_of_mem queryMem environmentDomain
-    have getIsFixed :
-        ((fixedQueries (Y := Y) queries).1
-          ((trN (fixedQueries (Y := Y) queries) system rounds).map Prod.snd)).get
-            environmentDomain = queries[rounds] := by
-      simp only [fixedQueries_get, List.length_map, indexEqual]
-    exact getIsQuery.symm.trans getIsFixed
-  rw [invariant.2, queryEqual]
-  rcases admitted with empty | fullDomain
-  · subst queries
-    simp at beforeEnd
-  · have nextPrefix := prefix_closed system
-      (List.take_prefix (rounds + 1) queries) (by
-        intro empty
-        have positive : 0 < (queries.take (rounds + 1)).length := by
-          rw [List.length_take]
-          omega
-        rw [empty] at positive
-        simp at positive) fullDomain
-    have takeEqual : queries.take (rounds + 1) =
-        queries.take rounds ++ [queries[rounds]] := by
-      rw [List.take_add_one,
-        List.getElem?_eq_getElem (indexEqual ▸ beforeEnd), Option.toList_some]
-    exact takeEqual ▸ nextPrefix
-
-private theorem fixedQueries_halts {X : Type*} {Y : Type*}
-    (queries : List X) : DDE.Halts (fixedQueries (Y := Y) queries) := by
-  refine ⟨queries.length, ?_⟩
-  intro answers lengthAtLeast domain
-  exact Nat.not_lt_of_ge lengthAtLeast
-    ((fixedQueries_dom queries answers).1 domain)
-
-private theorem fixedQueries_stops {X : Type*} {Y : Type*}
-    (system : DDS X Y) (queries : List X) :
-    Stops (fixedQueries (Y := Y) queries) system :=
-  stops_of_halts (fixedQueries_halts (Y := Y) queries) system
-
-private theorem fixedQueries_envConsistent {X : Type*} {Y : Type*}
-    (transcript : Transcript X Y) :
-    EnvConsistent (fixedQueries (Y := Y) (transcript.map Prod.fst))
-      transcript := by
-  intro k hk
-  have domain : (transcript.take k).map Prod.snd ∈
-      (fixedQueries (Y := Y) (transcript.map Prod.fst)).1.Dom := by
-    rw [fixedQueries_dom, List.length_map, List.length_take,
-      List.length_map]
-    omega
-  refine ⟨domain, ?_⟩
-  have indexEqual : ((transcript.take k).map Prod.snd).length = k := by
-    rw [List.length_map, List.length_take, min_eq_left (Nat.le_of_lt hk)]
-  have hkMap : k < (transcript.map Prod.fst).length := by simpa using hk
-  calc
-    ((fixedQueries (Y := Y) (transcript.map Prod.fst)).1
-        ((transcript.take k).map Prod.snd)).get domain =
-        (transcript.map Prod.fst)[k]'hkMap := by
-          simp only [fixedQueries_get, indexEqual]
-    _ = transcript[k].1 := by simp
-
-private theorem fixedQueries_terminal {X : Type*} {Y : Type*}
-    (transcript : Transcript X Y) :
-    transcript.map Prod.snd ∉
-      (fixedQueries (Y := Y) (transcript.map Prod.fst)).1.Dom := by
-  rw [fixedQueries_dom, List.length_map, List.length_map]
-  exact Nat.not_lt_of_ge le_rfl
-
-private theorem systemConsistent_queries_admitted {X : Type*} {Y : Type*}
-    (system : DDS X Y) (transcript : Transcript X Y)
-    (consistent : SystemConsistent system transcript) :
-    transcript.map Prod.fst = [] ∨ transcript.map Prod.fst ∈ dom system := by
-  induction transcript using List.reverseRecOn with
-  | nil => exact Or.inl rfl
-  | append_singleton prior event =>
-      right
-      have last := (systemConsistent_snoc_iff system prior event).1 consistent |>.2
-      simpa only [List.map_append, List.map_singleton] using last.choose
-
-private theorem mass_systemConsistent_eq_of_equivalent {X : Type*} {Y : Type*}
+theorem mass_systemConsistent_eq_of_equivalent {X : Type*} {Y : Type*}
     (left right : CommonDomain.ProbabilityPresentation X Y)
     (equivalent : CommonDomain.ProbabilityPresentation.Equivalent left right)
     (transcript : Transcript X Y) :
@@ -1213,31 +789,15 @@ private theorem mass_systemConsistent_eq_of_equivalent {X : Type*} {Y : Type*}
   by_cases admitted : queries = [] ∨ queries ∈ left.domain
   · have admittedRight : queries = [] ∨ queries ∈ right.domain := by
       rwa [← equivalent.1]
-    let environment := fixedQueries (Y := Y) queries
+    let environment := System.fixedQueries (Y := Y) queries
     have leftAdmissible : PDS.Compatible environment left.law.1 ∧
         PDS.Stops environment left.law.1 := by
-      constructor
-      · intro system supported
-        apply fixedQueries_compatible system queries
-        rcases admitted with empty | inDomain
-        · exact Or.inl empty
-        · exact Or.inr (by
-            rw [left.hasDomain system supported]
-            exact inDomain)
-      · intro system _
-        exact fixedQueries_stops system queries
+      exact CommonDomain.Presentation.fixedQueries_admissible
+        left.toPresentation admitted
     have rightAdmissible : PDS.Compatible environment right.law.1 ∧
         PDS.Stops environment right.law.1 := by
-      constructor
-      · intro system supported
-        apply fixedQueries_compatible system queries
-        rcases admittedRight with empty | inDomain
-        · exact Or.inl empty
-        · exact Or.inr (by
-            rw [right.hasDomain system supported]
-            exact inDomain)
-      · intro system _
-        exact fixedQueries_stops system queries
+      exact CommonDomain.Presentation.fixedQueries_admissible
+        right.toPresentation admittedRight
     have lawEqual := equivalent.2 environment
       ⟨leftAdmissible, rightAdmissible⟩
     have coefficientEqual := congrArg (fun law => law (some transcript)) lawEqual
@@ -1252,19 +812,19 @@ private theorem mass_systemConsistent_eq_of_equivalent {X : Type*} {Y : Type*}
             (tr environment system).toOption = some transcript) := by
         apply Distribution.mass_congr_of_support
         intro system supported
-        exact (toOption_eq_some_iff_systemConsistent
+        exact (System.toOption_eq_some_iff_systemConsistent
           (leftAdmissible.1 system supported)
-          (fixedQueries_envConsistent transcript)
-          (fixedQueries_terminal transcript)).symm
+          (System.fixedQueries_envConsistent transcript)
+          (System.fixedQueries_terminal transcript)).symm
       _ = right.law.1.mass (fun system =>
             (tr environment system).toOption = some transcript) := coefficientEqual
       _ = right.law.1.mass (fun system => SystemConsistent system transcript) := by
         apply Distribution.mass_congr_of_support
         intro system supported
-        exact toOption_eq_some_iff_systemConsistent
+        exact System.toOption_eq_some_iff_systemConsistent
           (rightAdmissible.1 system supported)
-          (fixedQueries_envConsistent transcript)
-          (fixedQueries_terminal transcript)
+          (System.fixedQueries_envConsistent transcript)
+          (System.fixedQueries_terminal transcript)
   · have admittedRight : ¬ (queries = [] ∨ queries ∈ right.domain) := by
       simpa only [equivalent.1] using admitted
     have leftZero :
@@ -1297,18 +857,18 @@ private theorem mass_systemConsistent_eq_of_equivalent {X : Type*} {Y : Type*}
         _ = 0 := Distribution.mass_eq_zero_of_forall_not _ (fun _ => id)
     exact leftZero.trans rightZero.symm
 
-private def MatchingEvent
+def MatchingEvent
     (event : (X₁ ⊕ X₂) × (Y₁ ⊕ Y₂)) : Prop :=
   match event with
   | (Sum.inl _, Sum.inl _) => True
   | (Sum.inr _, Sum.inr _) => True
   | _ => False
 
-private def Matching
+def Matching
     (transcript : Transcript (X₁ ⊕ X₂) (Y₁ ⊕ Y₂)) : Prop :=
   ∀ event ∈ transcript, MatchingEvent event
 
-private theorem systemConsistent_parallel_matching
+theorem systemConsistent_parallel_matching
     (left : DDS X₁ Y₁) (right : DDS X₂ Y₂) :
     ∀ transcript : Transcript (X₁ ⊕ X₂) (Y₁ ⊕ Y₂),
       SystemConsistent (parallel left right) transcript → Matching transcript := by
@@ -1317,7 +877,8 @@ private theorem systemConsistent_parallel_matching
   | nil => intro event member; simp at member
   | append_singleton prior event inductionHypothesis =>
       have split :=
-        (systemConsistent_snoc_iff (parallel left right) prior event).1 consistent
+        (System.systemConsistent_snoc_iff
+          (parallel left right) prior event).1 consistent
       have priorMatching := inductionHypothesis split.1
       have eventMatching : MatchingEvent event := by
         rcases event with ⟨query, answer⟩
@@ -1343,7 +904,7 @@ private theorem systemConsistent_parallel_matching
         subst candidate
         exact eventMatching
 
-private theorem matching_exists_dialogue
+theorem matching_exists_dialogue
     (transcript : Transcript (X₁ ⊕ X₂) (Y₁ ⊕ Y₂))
     (matching : Matching transcript) :
     ∃ dialogue : Dialogue X₁ Y₁ X₂ Y₂,
@@ -1369,13 +930,13 @@ private theorem matching_exists_dialogue
           change (Sum.inr query, Sum.inr answer) :: dialogueTranscript dialogue = _
           rw [dialogueEqual]⟩
 
-private noncomputable def parallelLaw
+noncomputable def parallelLaw
     (left : PDS X₁ Y₁) (right : PDS X₂ Y₂) :
     PDS (X₁ ⊕ X₂) (Y₁ ⊕ Y₂) :=
   Distribution.fTransform (fun systems => parallel systems.1 systems.2)
     (Distribution.prod left right)
 
-private theorem mass_parallelLaw_systemConsistent
+theorem mass_parallelLaw_systemConsistent
     (left : PDS X₁ Y₁) (right : PDS X₂ Y₂)
     (dialogue : Dialogue X₁ Y₁ X₂ Y₂) :
     (parallelLaw left right).mass (fun system =>
@@ -1400,7 +961,7 @@ private theorem mass_parallelLaw_systemConsistent
       (fun system => SystemConsistent system (leftTranscript dialogue))
       (fun system => SystemConsistent system (rightTranscript dialogue))
 
-private theorem mass_parallelLaw_systemConsistent_eq
+theorem mass_parallelLaw_systemConsistent_eq
     (left left' : CommonDomain.ProbabilityPresentation X₁ Y₁)
     (right right' : CommonDomain.ProbabilityPresentation X₂ Y₂)
     (leftEquivalent :
@@ -1440,7 +1001,7 @@ private theorem mass_parallelLaw_systemConsistent_eq
         (systemConsistent_parallel_matching systems.1 systems.2 transcript consistent)
     exact leftZero.trans rightZero.symm
 
-private theorem trLaw_none {X : Type*} {Y : Type*}
+theorem trLaw_none {X : Type*} {Y : Type*}
     (law : PDS X Y) (environment : DDE Y X)
     (stops : PDS.Stops environment law) :
     PDS.trLaw environment law none = 0 := by
@@ -1457,7 +1018,7 @@ private theorem trLaw_none {X : Type*} {Y : Type*}
         exact false.elim
     _ = 0 := Distribution.mass_eq_zero_of_forall_not _ (fun _ => id)
 
-private theorem trLaw_eq_of_systemConsistent_mass_eq {X : Type*} {Y : Type*}
+theorem trLaw_eq_of_systemConsistent_mass_eq {X : Type*} {Y : Type*}
     (first second : PDS X Y) (environment : DDE Y X)
     (admissible :
       (PDS.Compatible environment first ∧ PDS.Stops environment first) ∧
@@ -1539,13 +1100,13 @@ private theorem trLaw_eq_of_systemConsistent_mass_eq {X : Type*} {Y : Type*}
             _ = 0 := Distribution.mass_eq_zero_of_forall_not _ (fun _ => id)
         exact firstZero.trans secondZero.symm
 
-private def parallelDomain (left : Set (List X₁)) (right : Set (List X₂)) :
+def parallelDomain (left : Set (List X₁)) (right : Set (List X₂)) :
     Set (List (X₁ ⊕ X₂)) :=
   {history | history ≠ [] ∧
     (leftQueries history = [] ∨ leftQueries history ∈ left) ∧
     (rightQueries history = [] ∨ rightQueries history ∈ right)}
 
-private theorem parallelLaw_hasDomain
+theorem parallelLaw_hasDomain
     (left : CommonDomain.ProbabilityPresentation X₁ Y₁)
     (right : CommonDomain.ProbabilityPresentation X₂ Y₂) :
     PDS.HasDomain (parallelLaw left.law.1 right.law.1)
@@ -1564,7 +1125,7 @@ private theorem parallelLaw_hasDomain
     right.hasDomain systems.2 rightSupported]
   rfl
 
-private noncomputable def parallelPresentation
+noncomputable def parallelPresentation
     (left : CommonDomain.ProbabilityPresentation X₁ Y₁)
     (right : CommonDomain.ProbabilityPresentation X₂ Y₂) :
     CommonDomain.ProbabilityPresentation (X₁ ⊕ X₂) (Y₁ ⊕ Y₂) where
@@ -1575,7 +1136,7 @@ private noncomputable def parallelPresentation
   fixedDomain := ⟨parallelDomain left.domain right.domain,
     parallelLaw_hasDomain left right⟩
 
-private theorem probDist_support_nonempty {A : Type*}
+theorem probDist_support_nonempty {A : Type*}
     (law : Distribution.ProbDist A) : ∃ a, a ∈ law.1.support := by
   apply Finsupp.support_nonempty_iff.mpr
   intro equalZero
@@ -1583,7 +1144,7 @@ private theorem probDist_support_nonempty {A : Type*}
   rw [law.2.weight_eq] at weightZero
   norm_num at weightZero
 
-private theorem parallelPresentation_domain
+theorem parallelPresentation_domain
     (left : CommonDomain.ProbabilityPresentation X₁ Y₁)
     (right : CommonDomain.ProbabilityPresentation X₂ Y₂) :
     (parallelPresentation left right).domain =
@@ -1593,7 +1154,7 @@ private theorem parallelPresentation_domain
   exact ((parallelPresentation left right).hasDomain system supported).symm.trans
     (parallelLaw_hasDomain left right system supported)
 
-private theorem parallelPresentation_equivalent
+theorem parallelPresentation_equivalent
     {left left' : CommonDomain.ProbabilityPresentation X₁ Y₁}
     {right right' : CommonDomain.ProbabilityPresentation X₂ Y₂}
     (leftEquivalent :
@@ -1614,7 +1175,7 @@ private theorem parallelPresentation_equivalent
       (mass_parallelLaw_systemConsistent_eq left left' right right'
         leftEquivalent rightEquivalent)
 
-private noncomputable def parallelRandomSystem :
+noncomputable def parallelRandomSystem :
     CommonDomain.ProbabilityRandomSystem X₁ Y₁ →
       CommonDomain.ProbabilityRandomSystem X₂ Y₂ →
       CommonDomain.ProbabilityRandomSystem (X₁ ⊕ X₂) (Y₁ ⊕ Y₂) :=
@@ -1627,7 +1188,7 @@ private noncomputable def parallelRandomSystem :
         (parallelPresentation_equivalent leftEquivalent rightEquivalent))
 
 @[simp]
-private theorem parallelRandomSystem_ofPresentation
+theorem parallelRandomSystem_ofPresentation
     (left : CommonDomain.ProbabilityPresentation X₁ Y₁)
     (right : CommonDomain.ProbabilityPresentation X₂ Y₂) :
     parallelRandomSystem
@@ -1637,7 +1198,7 @@ private theorem parallelRandomSystem_ofPresentation
         (parallelPresentation left right) :=
   rfl
 
-private theorem advantageOnDomain_congr
+theorem advantageOnDomain_congr
     {X : Type*} {Y : Type*} {D : Set (List X)}
     {left left' right right' :
       CommonDomain.ProbabilityPresentation X Y}
@@ -1680,14 +1241,16 @@ private theorem advantageOnDomain_congr
         exact rightDomain' ▸ right'.hasDomain
       · exact PDS.stops_of_halts environment.2.2 right'.law.1
   unfold PDS.advantageOnDomain
-  apply congrArg iSup
+  simp only [Set.image_univ]
+  apply congrArg sSup
+  apply congrArg Set.range
   funext environment
   rw [observedLeft environment, observedRight environment]
 
 /- The component observer is defined only from functions.  For a supplied
 left-answer history, `overrideDDS` gives those answers to the first left
 queries and then falls back to one fixed system with the required domain. -/
-private def overrideDDS (base : DDS X₁ Y₁) (answers : List Y₁) : DDS X₁ Y₁ :=
+def overrideDDS (base : DDS X₁ Y₁) (answers : List Y₁) : DDS X₁ Y₁ :=
   ⟨(fun history =>
       (⟨history ∈ dom base, fun admitted =>
         if before : history.length - 1 < answers.length then
@@ -1698,19 +1261,21 @@ private def overrideDDS (base : DDS X₁ Y₁) (answers : List Y₁) : DDS X₁ 
       exact prefix_closed base hprefix firstNonempty secondDomain⟩⟩
 
 @[simp]
-private theorem dom_overrideDDS (base : DDS X₁ Y₁) (answers : List Y₁) :
+theorem dom_overrideDDS (base : DDS X₁ Y₁) (answers : List Y₁) :
     dom (overrideDDS base answers) = dom base :=
   rfl
 
-private theorem output_overrideDDS_of_lt
+theorem output_overrideDDS_of_lt
     (base : DDS X₁ Y₁) (answers : List Y₁) (history : List X₁)
     (admitted : history ∈ dom (overrideDDS base answers))
     (before : history.length - 1 < answers.length) :
     output (overrideDDS base answers) history admitted =
       answers[history.length - 1] := by
-  simp [output, overrideDDS, before]
+  change (if before' : history.length - 1 < answers.length then
+      answers[history.length - 1] else output base history _) = _
+  rw [dif_pos before]
 
-private theorem systemConsistent_override
+theorem systemConsistent_override
     (base source : DDS X₁ Y₁) (answers : List Y₁)
     (transcript : Transcript X₁ Y₁)
     (sameDomain : dom base = dom source)
@@ -1749,7 +1314,7 @@ private theorem systemConsistent_override
       (answerPrefix.getElem projectedIndex).symm
     _ = transcript[k].2 := by simp
 
-private theorem trN_prefix_of_le {X : Type*} {Y : Type*}
+theorem trN_prefix_of_le {X : Type*} {Y : Type*}
     (environment : DDE Y X) (system : DDS X Y) {first second : Nat}
     (le : first ≤ second) :
     trN environment system first <+: trN environment system second := by
@@ -1767,7 +1332,7 @@ private theorem trN_prefix_of_le {X : Type*} {Y : Type*}
       · rw [appended]
         exact List.prefix_append _ _
 
-private theorem envConsistent_take {X : Type*} {Y : Type*}
+theorem envConsistent_take {X : Type*} {Y : Type*}
     (environment : DDE Y X) (transcript : Transcript X Y)
     (consistent : EnvConsistent environment transcript) (rounds : Nat) :
     EnvConsistent environment (transcript.take rounds) := by
@@ -1782,7 +1347,7 @@ private theorem envConsistent_take {X : Type*} {Y : Type*}
   simpa only [List.take_take, min_eq_left kRounds,
     List.getElem_take] using row
 
-private theorem systemConsistent_take {X : Type*} {Y : Type*}
+theorem systemConsistent_take {X : Type*} {Y : Type*}
     (system : DDS X Y) (transcript : Transcript X Y)
     (consistent : SystemConsistent system transcript) (rounds : Nat) :
     SystemConsistent system (transcript.take rounds) := by
@@ -1797,7 +1362,7 @@ private theorem systemConsistent_take {X : Type*} {Y : Type*}
   simpa only [List.take_take, min_eq_left kRounds,
     List.getElem_take] using row
 
-private theorem compatible_of_consistent_complete {X : Type*} {Y : Type*}
+theorem compatible_of_consistent_complete {X : Type*} {Y : Type*}
     (system : DDS X Y) (environment : DDE Y X) (rounds : Nat)
     (transcript : Transcript X Y)
     (environmentConsistent : EnvConsistent environment transcript)
@@ -1872,20 +1437,20 @@ private theorem compatible_of_consistent_complete {X : Type*} {Y : Type*}
     rw [transcriptAtN] at queryMember
     exact (stopped queryMember.choose).elim
 
-private def leftPairs
+def leftPairs
     (transcript : Transcript (X₁ ⊕ X₂) (Y₁ ⊕ Y₂)) :
     Transcript X₁ Y₁ :=
   transcript.filterMap fun
     | (Sum.inl query, Sum.inl answer) => some (query, answer)
     | _ => none
 
-private theorem leftPairs_length_le
+theorem leftPairs_length_le
     (transcript : Transcript (X₁ ⊕ X₂) (Y₁ ⊕ Y₂)) :
     (leftPairs transcript).length ≤ transcript.length := by
   exact List.length_filterMap_le _ _
 
 @[simp]
-private theorem leftPairs_dialogueTranscript
+theorem leftPairs_dialogueTranscript
     (dialogue : Dialogue X₁ Y₁ X₂ Y₂) :
     leftPairs (dialogueTranscript dialogue) = leftTranscript dialogue := by
   rw [leftPairs, dialogueTranscript, leftTranscript, List.filterMap_map]
@@ -1895,11 +1460,11 @@ private theorem leftPairs_dialogueTranscript
   | inl pair => cases pair; rfl
   | inr pair => cases pair; rfl
 
-private def leftAnswers (dialogue : Dialogue X₁ Y₁ X₂ Y₂) :
+def leftAnswers (dialogue : Dialogue X₁ Y₁ X₂ Y₂) :
     List Y₁ :=
   (leftTranscript dialogue).map Prod.snd
 
-private theorem exists_next_left_event
+theorem exists_next_left_event
     (dialogue : Dialogue X₁ Y₁ X₂ Y₂)
     (answers : List Y₁) (answerPrefix : answers <+: leftAnswers dialogue)
     (strict : answers.length < (leftTranscript dialogue).length) :
@@ -1945,7 +1510,7 @@ private theorem exists_next_left_event
 /- At a left-answer history `answers`, probe the outer DDE with a DDS that
 replays those answers.  Requiring the probe to expose a next left query at
 every prefix makes prefix closure part of the function table itself. -/
-private def inducedLeftBounded
+def inducedLeftBounded
     (base : DDS X₁ Y₁) (right : DDS X₂ Y₂)
     (environment : DDE (Y₁ ⊕ Y₂) (X₁ ⊕ X₂)) (rounds : Nat) :
     DDE Y₁ X₁ :=
@@ -1962,7 +1527,7 @@ private def inducedLeftBounded
       intro first second firstPrefix secondAdmitted candidate candidatePrefix
       exact secondAdmitted candidate (candidatePrefix.trans firstPrefix)⟩
 
-private theorem nextLeftProbe
+theorem next_left_query_of_override
     (base left : DDS X₁ Y₁) (right : DDS X₂ Y₂)
     (sameDomain : dom base = dom left)
     (environment : DDE (Y₁ ⊕ Y₂) (X₁ ⊕ X₂)) (rounds : Nat)
@@ -2226,7 +1791,7 @@ private theorem nextLeftProbe
   simp only [Option.map_some]
   rw [finalQuery, targetQuery]
 
-private theorem inducedLeftBounded_accepts
+theorem inducedLeftBounded_accepts
     (base left : DDS X₁ Y₁) (right : DDS X₂ Y₂)
     (sameDomain : dom base = dom left)
     (environment : DDE (Y₁ ⊕ Y₂) (X₁ ⊕ X₂)) (rounds : Nat)
@@ -2250,7 +1815,7 @@ private theorem inducedLeftBounded_accepts
     have candidateStrict :
         candidate.length < (leftTranscript dialogue).length :=
       lt_of_le_of_lt candidatePrefix.length_le strict
-    exact (nextLeftProbe base left right sameDomain environment rounds dialogue
+    exact (next_left_query_of_override base left right sameDomain environment rounds dialogue
       environmentConsistent systemConsistent roundBound candidate candidateFull
       candidateStrict).1
   refine ⟨admitted, ?_⟩
@@ -2261,13 +1826,13 @@ private theorem inducedLeftBounded_accepts
   change ((leftPairs (trN environment
       (parallel (overrideDDS base answers) right) rounds))[answers.length]'current).1 = _
   obtain ⟨nextIndex, nextEqual⟩ :=
-    (nextLeftProbe base left right sameDomain environment rounds dialogue
+    (next_left_query_of_override base left right sameDomain environment rounds dialogue
     environmentConsistent systemConsistent roundBound answers answerPrefix strict)
   rw [List.getElem?_eq_getElem nextIndex,
     List.getElem?_eq_getElem strict] at nextEqual
   simpa only [Option.map_some, Option.some.injEq] using nextEqual
 
-private theorem fullLeftProbe_eq
+theorem trN_override_left_answers_eq
     (base left : DDS X₁ Y₁) (right : DDS X₂ Y₂)
     (sameDomain : dom base = dom left)
     (environment : DDE (Y₁ ⊕ Y₂) (X₁ ⊕ X₂)) (rounds : Nat)
@@ -2303,7 +1868,7 @@ private theorem fullLeftProbe_eq
     environment rounds (dialogueTranscript dialogue)
     environmentConsistent finalAt probeConsistent
 
-private theorem inducedLeftBounded_follows
+theorem inducedLeftBounded_follows
     (base left : DDS X₁ Y₁) (right : DDS X₂ Y₂)
     (sameDomain : dom base = dom left)
     (environment : DDE (Y₁ ⊕ Y₂) (X₁ ⊕ X₂)) (rounds : Nat)
@@ -2352,13 +1917,13 @@ private theorem inducedLeftBounded_follows
       intro admitted
       have exposesAnother := admitted (leftAnswers dialogue)
         (List.prefix_refl _)
-      have probeEqual := fullLeftProbe_eq base left right sameDomain
+      have probeEqual := trN_override_left_answers_eq base left right sameDomain
         environment rounds dialogue environmentConsistent finalAt systemConsistent
       rw [probeEqual, leftPairs_dialogueTranscript] at exposesAnother
       simp [leftAnswers] at exposesAnother
   exact ⟨inducedConsistent, inducedFinal, leftSystem⟩
 
-private theorem inducedLeftBounded_factorization
+theorem inducedLeftBounded_factorization
     (leftDomain : Set (List X₁)) (rightDomain : Set (List X₂))
     (base left : DDS X₁ Y₁) (right : DDS X₂ Y₂)
     (baseHasDomain : dom base = leftDomain)
@@ -2430,7 +1995,7 @@ private theorem inducedLeftBounded_factorization
       _ = leftPairs (trN environment (parallel left right) rounds) := by
         rw [dialogueEqual]
 
-private theorem stoppedTranscriptAt {X : Type*} {Y : Type*}
+theorem stoppedTranscriptAt {X : Type*} {Y : Type*}
     (environment : DDE Y X) (system : DDS X Y) (rounds : Nat)
     (haltsAt : ∀ answers : List Y, rounds ≤ answers.length →
       answers ∉ environment.1.Dom) :
@@ -2440,7 +2005,7 @@ private theorem stoppedTranscriptAt {X : Type*} {Y : Type*}
   rw [Part.toOption_eq_some_iff]
   exact ⟨stops, tr_get_eq_trN stops stable⟩
 
-private def reconstructLeft
+def reconstructLeft
     (base : DDS X₁ Y₁) (right : DDS X₂ Y₂)
     (environment : DDE (Y₁ ⊕ Y₂) (X₁ ⊕ X₂)) (rounds : Nat) :
     Option (Transcript X₁ Y₁) →
@@ -2449,7 +2014,7 @@ private def reconstructLeft
   | some transcript => some (trN environment
       (parallel (overrideDDS base (transcript.map Prod.snd)) right) rounds)
 
-private theorem fullLeftProbe_of_trN
+theorem trN_override_left_projection_eq
     (leftDomain : Set (List X₁)) (rightDomain : Set (List X₂))
     (base left : DDS X₁ Y₁) (right : DDS X₂ Y₂)
     (baseHasDomain : dom base = leftDomain)
@@ -2476,7 +2041,7 @@ private theorem fullLeftProbe_of_trN
     (trN environment (parallel left right) rounds)
     (systemConsistent_parallel_matching left right _ systemConsistent)
   have sameDomain : dom base = dom left := baseHasDomain.trans leftHasDomain.symm
-  have probeEqual := fullLeftProbe_eq base left right sameDomain environment rounds
+  have probeEqual := trN_override_left_answers_eq base left right sameDomain environment rounds
     dialogue (by simpa [dialogueEqual] using environmentConsistent)
     (by simpa [dialogueEqual] using finalAt)
     (by simpa [dialogueEqual] using systemConsistent)
@@ -2487,7 +2052,7 @@ private theorem fullLeftProbe_of_trN
     rfl
   rw [← answerEqual, probeEqual, dialogueEqual]
 
-private theorem reconstructLeft_transcript
+theorem reconstructLeft_transcript
     (leftDomain : Set (List X₁)) (rightDomain : Set (List X₂))
     (base left : DDS X₁ Y₁) (right : DDS X₂ Y₂)
     (baseHasDomain : dom base = leftDomain)
@@ -2520,16 +2085,16 @@ private theorem reconstructLeft_transcript
     base left right baseHasDomain leftHasDomain rightHasDomain environment
     environmentCompatible rounds
   rw [factor.2]
-  exact congrArg some (fullLeftProbe_of_trN leftDomain rightDomain
+  exact congrArg some (trN_override_left_projection_eq leftDomain rightDomain
     base left right baseHasDomain leftHasDomain rightHasDomain environment
     environmentCompatible rounds)
 
-private noncomputable def fixedRightLaw
+noncomputable def fixedRightLaw
     (left : PDS X₁ Y₁) (right : DDS X₂ Y₂) :
     PDS (X₁ ⊕ X₂) (Y₁ ⊕ Y₂) :=
   Distribution.fTransform (fun system => parallel system right) left
 
-private theorem trLaw_fixedRightLaw
+theorem trLaw_fixedRightLaw
     (leftDomain : Set (List X₁)) (rightDomain : Set (List X₂))
     (base : DDS X₁ Y₁) (left : PDS X₁ Y₁) (right : DDS X₂ Y₂)
     (baseHasDomain : dom base = leftDomain)
@@ -2553,7 +2118,7 @@ private theorem trLaw_fixedRightLaw
     baseHasDomain (leftHasDomain system supported) rightHasDomain environment
     environmentCompatible environmentHalts).symm
 
-private theorem fixedRight_observation_le_advantageOnDomain
+theorem fixedRight_observation_le_advantageOnDomain
     (leftDomain : Set (List X₁)) (rightDomain : Set (List X₂))
     (base : DDS X₁ Y₁) (left left' : PDS X₁ Y₁)
     (right : DDS X₂ Y₂)
@@ -2565,9 +2130,9 @@ private theorem fixedRight_observation_le_advantageOnDomain
     (environmentCompatible : CompatibleD environment
       (parallelDomain leftDomain rightDomain))
     (environmentHalts : DDE.Halts environment) :
-    ENNReal.ofReal (Probability.statDist
+    Probability.statDist
       (PDS.trLaw environment (fixedRightLaw left right))
-      (PDS.trLaw environment (fixedRightLaw left' right))) ≤
+      (PDS.trLaw environment (fixedRightLaw left' right)) ≤
       PDS.advantageOnDomain leftDomain left left' := by
   rw [trLaw_fixedRightLaw leftDomain rightDomain base left right
       baseHasDomain leftHasDomain rightHasDomain environment
@@ -2593,24 +2158,24 @@ private theorem fixedRight_observation_le_advantageOnDomain
       base system right baseHasDomain systemDomain rightHasDomain environment
       environmentCompatible environmentHalts.choose).1
   calc
-    ENNReal.ofReal (Probability.statDist
+    Probability.statDist
         (Distribution.fTransform
           (reconstructLeft base right environment environmentHalts.choose)
           (PDS.trLaw componentEnvironment left))
         (Distribution.fTransform
           (reconstructLeft base right environment environmentHalts.choose)
-          (PDS.trLaw componentEnvironment left'))) ≤
-      ENNReal.ofReal (Probability.statDist
+          (PDS.trLaw componentEnvironment left')) ≤
+      Probability.statDist
         (PDS.trLaw componentEnvironment left)
-        (PDS.trLaw componentEnvironment left')) :=
-      ENNReal.ofReal_le_ofReal (Probability.statDist_fTransform_le _ _ _)
+        (PDS.trLaw componentEnvironment left') :=
+      Probability.statDist_fTransform_le _ _ _
     _ ≤ PDS.advantageOnDomain leftDomain left left' :=
-      le_iSup_of_le
-        (⟨componentEnvironment, componentCompatible, componentHalts⟩ :
-          {e : DDE Y₁ X₁ // CompatibleD e leftDomain ∧ DDE.Halts e})
-        le_rfl
+      le_csSup (PDS.bddAbove_advantageOnDomain leftDomain left left')
+        ⟨(⟨componentEnvironment, componentCompatible, componentHalts⟩ :
+          {e : DDE Y₁ X₁ // CompatibleD e leftDomain ∧ DDE.Halts e}),
+          Set.mem_univ _, rfl⟩
 
-private theorem parallelLaw_eq_sum_right
+theorem parallelLaw_eq_sum_right
     (left : PDS X₁ Y₁) (right : PDS X₂ Y₂) :
     parallelLaw left right =
       ∑ system ∈ right.support, right system • fixedRightLaw left system := by
@@ -2625,7 +2190,7 @@ private theorem parallelLaw_eq_sum_right
   intro deterministic _
   rfl
 
-private theorem support_nonempty_of_probability
+theorem support_nonempty_of_probability
     (system : CommonDomain.ProbabilityPresentation X₁ Y₁) :
     system.law.1.support.Nonempty := by
   rw [Finsupp.support_nonempty_iff]
@@ -2634,7 +2199,7 @@ private theorem support_nonempty_of_probability
   rw [lawZero] at normalized
   simp [Distribution.weight] at normalized
 
-private theorem parallel_left_observation_le_advantageOnDomain
+theorem parallel_left_observation_le_advantageOnDomain
     (left left' : CommonDomain.ProbabilityPresentation X₁ Y₁)
     (right : CommonDomain.ProbabilityPresentation X₂ Y₂)
     (sameDomain : left'.domain = left.domain)
@@ -2642,9 +2207,9 @@ private theorem parallel_left_observation_le_advantageOnDomain
     (environmentCompatible : CompatibleD environment
       (parallelDomain left.domain right.domain))
     (environmentHalts : DDE.Halts environment) :
-    ENNReal.ofReal (Probability.statDist
+    Probability.statDist
       (PDS.trLaw environment (parallelLaw left.law.1 right.law.1))
-      (PDS.trLaw environment (parallelLaw left'.law.1 right.law.1))) ≤
+      (PDS.trLaw environment (parallelLaw left'.law.1 right.law.1)) ≤
       PDS.advantageOnDomain left.domain left.law.1 left'.law.1 := by
   obtain ⟨base, baseSupported⟩ := support_nonempty_of_probability left
   have baseDomain := left.hasDomain base baseSupported
@@ -2653,18 +2218,12 @@ private theorem parallel_left_observation_le_advantageOnDomain
     Distribution.fTransform_sum, Distribution.fTransform_sum]
   simp_rw [Distribution.fTransform_smul]
   have weightSum :
-      ∑ system ∈ right.law.1.support,
-          ENNReal.ofReal (right.law.1 system) = 1 := by
-    rw [← ENNReal.ofReal_sum_of_nonneg
-      (fun system supported => right.law.2.nonNeg system)]
-    have normalized :
-        ∑ system ∈ right.law.1.support, right.law.1 system = 1 := by
-      rw [← Distribution.weight_eq_sum_of_support_subset right.law.1
-        Finset.Subset.rfl]
-      exact right.law.2.weight_eq
-    rw [normalized, ENNReal.ofReal_one]
+      ∑ system ∈ right.law.1.support, right.law.1 system = 1 := by
+    rw [← Distribution.weight_eq_sum_of_support_subset right.law.1
+      Finset.Subset.rfl]
+    exact right.law.2.weight_eq
   calc
-    ENNReal.ofReal (Probability.statDist
+    Probability.statDist
         (∑ system ∈ right.law.1.support, right.law.1 system •
           Distribution.fTransform (fun deterministic =>
             (tr environment deterministic).toOption)
@@ -2672,35 +2231,27 @@ private theorem parallel_left_observation_le_advantageOnDomain
         (∑ system ∈ right.law.1.support, right.law.1 system •
           Distribution.fTransform (fun deterministic =>
             (tr environment deterministic).toOption)
-            (fixedRightLaw left'.law.1 system))) ≤
-      ENNReal.ofReal (∑ system ∈ right.law.1.support,
+            (fixedRightLaw left'.law.1 system)) ≤
+      ∑ system ∈ right.law.1.support,
         right.law.1 system * Probability.statDist
           (PDS.trLaw environment (fixedRightLaw left.law.1 system))
-          (PDS.trLaw environment (fixedRightLaw left'.law.1 system))) :=
-      ENNReal.ofReal_le_ofReal
-        (Probability.statDist_sum_le right.law.1.support right.law.1 _ _
-          (fun system _ => right.law.2.nonNeg system))
-    _ = ∑ system ∈ right.law.1.support,
-        ENNReal.ofReal (right.law.1 system * Probability.statDist
-          (PDS.trLaw environment (fixedRightLaw left.law.1 system))
-          (PDS.trLaw environment (fixedRightLaw left'.law.1 system))) :=
-      ENNReal.ofReal_sum_of_nonneg fun system supported =>
-        mul_nonneg (right.law.2.nonNeg system)
-          (Probability.statDist_nonneg _ _)
+          (PDS.trLaw environment (fixedRightLaw left'.law.1 system)) :=
+      Probability.statDist_sum_le right.law.1.support right.law.1 _ _
+        (fun system _ => right.law.2.nonNeg system)
     _ ≤ ∑ system ∈ right.law.1.support,
-        ENNReal.ofReal (right.law.1 system) *
+        right.law.1 system *
           PDS.advantageOnDomain left.domain left.law.1 left'.law.1 := by
       refine Finset.sum_le_sum fun system supported => ?_
-      rw [ENNReal.ofReal_mul (right.law.2.nonNeg system)]
-      exact mul_le_mul' le_rfl
+      exact mul_le_mul_of_nonneg_left
         (fixedRight_observation_le_advantageOnDomain left.domain right.domain base
           left.law.1 left'.law.1 system baseDomain left.hasDomain
           (sameDomain.symm ▸ left'.hasDomain) (right.hasDomain system supported)
           environment environmentCompatible environmentHalts)
+        (right.law.2.nonNeg system)
     _ = PDS.advantageOnDomain left.domain left.law.1 left'.law.1 := by
       rw [← Finset.sum_mul, weightSum, one_mul]
 
-private theorem advantageOnDomain_parallel_left_le
+theorem advantageOnDomain_parallel_left_le
     (left left' : CommonDomain.ProbabilityPresentation X₁ Y₁)
     (right : CommonDomain.ProbabilityPresentation X₂ Y₂)
     (sameDomain : left'.domain = left.domain) :
@@ -2709,16 +2260,21 @@ private theorem advantageOnDomain_parallel_left_le
         (parallelLaw left'.law.1 right.law.1) ≤
       PDS.advantageOnDomain left.domain left.law.1 left'.law.1 := by
   -- Bound each compatible parallel observation by its induced left observation.
-  refine iSup_le fun environment => ?_
-  exact parallel_left_observation_le_advantageOnDomain left left' right sameDomain
-    environment.1 environment.2.1 environment.2.2
+  unfold PDS.advantageOnDomain
+  apply Real.sSup_le
+  · rintro value ⟨environment, _, rfl⟩
+    exact parallel_left_observation_le_advantageOnDomain
+      left left' right sameDomain
+      environment.1 environment.2.1 environment.2.2
+  · exact PDS.advantageOnDomain_nonneg
+      left.domain left.law.1 left'.law.1
 
-private def swapTranscript
+def swapTranscript
     (transcript : Transcript (X₁ ⊕ X₂) (Y₁ ⊕ Y₂)) :
     Transcript (X₂ ⊕ X₁) (Y₂ ⊕ Y₁) :=
   transcript.map fun pair => (Sum.swap pair.1, Sum.swap pair.2)
 
-private def swapDDS (system : DDS (X₁ ⊕ X₂) (Y₁ ⊕ Y₂)) :
+def swapDDS (system : DDS (X₁ ⊕ X₂) (Y₁ ⊕ Y₂)) :
     DDS (X₂ ⊕ X₁) (Y₂ ⊕ Y₁) :=
   ⟨fun history => (system.1 (history.map Sum.swap)).map Sum.swap, by
     constructor
@@ -2728,7 +2284,7 @@ private def swapDDS (system : DDS (X₁ ⊕ X₂) (Y₁ ⊕ Y₂)) :
         (fun mappedEmpty => firstNonempty (List.map_eq_nil_iff.mp mappedEmpty))
         secondDefined⟩
 
-private def swapDDE
+def swapDDE
     (environment : DDE (Y₁ ⊕ Y₂) (X₁ ⊕ X₂)) :
     DDE (Y₂ ⊕ Y₁) (X₂ ⊕ X₁) :=
   ⟨fun history => (environment.1 (history.map Sum.swap)).map Sum.swap, by
@@ -2736,12 +2292,12 @@ private def swapDDE
     exact environment.2 (hprefix.map Sum.swap) secondDefined⟩
 
 @[simp]
-private theorem swapTranscript_nil :
+theorem swapTranscript_nil :
     swapTranscript ([] : Transcript (X₁ ⊕ X₂) (Y₁ ⊕ Y₂)) = [] :=
   rfl
 
 @[simp]
-private theorem swapTranscript_append
+theorem swapTranscript_append
     (transcript : Transcript (X₁ ⊕ X₂) (Y₁ ⊕ Y₂))
     (query : X₁ ⊕ X₂) (answer : Y₁ ⊕ Y₂) :
     swapTranscript (transcript ++ [(query, answer)]) =
@@ -2749,28 +2305,28 @@ private theorem swapTranscript_append
   simp [swapTranscript]
 
 @[simp]
-private theorem swapTranscript_map_fst
+theorem swapTranscript_map_fst
     (transcript : Transcript (X₁ ⊕ X₂) (Y₁ ⊕ Y₂)) :
     (swapTranscript transcript).map Prod.fst =
       (transcript.map Prod.fst).map Sum.swap := by
   simp [swapTranscript, List.map_map]
 
 @[simp]
-private theorem swapTranscript_map_snd
+theorem swapTranscript_map_snd
     (transcript : Transcript (X₁ ⊕ X₂) (Y₁ ⊕ Y₂)) :
     (swapTranscript transcript).map Prod.snd =
       (transcript.map Prod.snd).map Sum.swap := by
   simp [swapTranscript, List.map_map]
 
 @[simp]
-private theorem dom_swapDDS
+theorem dom_swapDDS
     (system : DDS (X₁ ⊕ X₂) (Y₁ ⊕ Y₂))
     (history : List (X₂ ⊕ X₁)) :
     history ∈ dom (swapDDS system) ↔ history.map Sum.swap ∈ dom system :=
   Iff.rfl
 
 @[simp]
-private theorem output_swapDDS
+theorem output_swapDDS
     (system : DDS (X₁ ⊕ X₂) (Y₁ ⊕ Y₂))
     (history : List (X₂ ⊕ X₁))
     (defined : history ∈ dom (swapDDS system)) :
@@ -2779,7 +2335,7 @@ private theorem output_swapDDS
   rfl
 
 @[simp]
-private theorem swapDDE_dom
+theorem swapDDE_dom
     (environment : DDE (Y₁ ⊕ Y₂) (X₁ ⊕ X₂))
     (history : List (Y₂ ⊕ Y₁)) :
     history ∈ (swapDDE environment).1.Dom ↔
@@ -2787,7 +2343,7 @@ private theorem swapDDE_dom
   Iff.rfl
 
 @[simp]
-private theorem swapDDE_get
+theorem swapDDE_get
     (environment : DDE (Y₁ ⊕ Y₂) (X₁ ⊕ X₂))
     (history : List (Y₂ ⊕ Y₁))
     (defined : history ∈ (swapDDE environment).1.Dom) :
@@ -2796,11 +2352,11 @@ private theorem swapDDE_get
   rfl
 
 @[simp]
-private theorem map_swap_swap (history : List (X₁ ⊕ X₂)) :
+theorem map_swap_swap (history : List (X₁ ⊕ X₂)) :
     (history.map Sum.swap).map Sum.swap = history := by
   simp [List.map_map]
 
-private theorem trN_swap
+theorem trN_swap
     (environment : DDE (Y₁ ⊕ Y₂) (X₁ ⊕ X₂))
     (system : DDS (X₁ ⊕ X₂) (Y₁ ⊕ Y₂)) (rounds : Nat) :
     trN (swapDDE environment) (swapDDS system) rounds =
@@ -2809,26 +2365,105 @@ private theorem trN_swap
   | zero => rfl
   | succ rounds inductionHypothesis =>
       rw [trN, trN, inductionHypothesis]
-      unfold trExtend
-      simp only [swapTranscript_map_snd, swapDDE_dom, swapDDE_get,
-        swapTranscript_map_fst, List.map_append, List.map_singleton,
-        dom_swapDDS, map_swap_swap]
-      by_cases environmentDefined :
-          (trN environment system rounds).map Prod.snd ∈ environment.1.Dom
-      · rw [dif_pos environmentDefined, dif_pos environmentDefined]
-        simp only [Sum.swap_swap]
-        by_cases systemDefined :
-            (trN environment system rounds).map Prod.fst ++
-                [(environment.1
-                  ((trN environment system rounds).map Prod.snd)).get
-                    environmentDefined] ∈ dom system
-        · rw [dif_pos systemDefined, dif_pos systemDefined]
-          simp [swapTranscript, List.map_map, Function.comp_def]
-        · rw [dif_neg systemDefined, dif_neg systemDefined]
-      · rw [dif_neg environmentDefined, dif_neg environmentDefined]
+      let transcript := trN environment system rounds
+      change trExtend (swapDDE environment) (swapDDS system)
+          (swapTranscript transcript) =
+        swapTranscript (trExtend environment system transcript)
+      by_cases environmentDefined : transcript.map Prod.snd ∈ environment.1.Dom
+      · have swappedEnvironmentDefined :
+            (swapTranscript transcript).map Prod.snd ∈
+              (swapDDE environment).1.Dom := by
+          rw [swapTranscript_map_snd, swapDDE_dom, map_swap_swap]
+          exact environmentDefined
+        have answerHistoryEqual :
+            ((swapTranscript transcript).map Prod.snd).map Sum.swap =
+              transcript.map Prod.snd := by
+          rw [swapTranscript_map_snd, map_swap_swap]
+        have queryEqual :
+            ((swapDDE environment).1
+                ((swapTranscript transcript).map Prod.snd)).get
+                  swappedEnvironmentDefined =
+              Sum.swap ((environment.1 (transcript.map Prod.snd)).get
+                environmentDefined) := by
+          rw [swapDDE_get]
+          apply congrArg Sum.swap
+          have leftDefined :
+              (environment.1
+                (((swapTranscript transcript).map Prod.snd).map Sum.swap)).Dom := by
+            exact swappedEnvironmentDefined
+          exact Part.get_eq_get_of_eq
+            (environment.1
+              (((swapTranscript transcript).map Prod.snd).map Sum.swap))
+            leftDefined (congrArg environment.1 answerHistoryEqual)
+        let query :=
+          (environment.1 (transcript.map Prod.snd)).get environmentDefined
+        let swappedHistory :=
+          (swapTranscript transcript).map Prod.fst ++ [Sum.swap query]
+        let directHistory := transcript.map Prod.fst ++ [query]
+        have mappedHistory : swappedHistory.map Sum.swap = directHistory := by
+          dsimp [swappedHistory, directHistory]
+          simp only [swapTranscript_map_fst, List.map_append,
+            List.map_singleton, map_swap_swap, Sum.swap_swap]
+        by_cases systemDefined : directHistory ∈ dom system
+        · have swappedSystemDefined : swappedHistory ∈ dom (swapDDS system) :=
+            (dom_swapDDS system swappedHistory).mpr (mappedHistory ▸ systemDefined)
+          have outputEqual :
+              output (swapDDS system) swappedHistory swappedSystemDefined =
+                Sum.swap (output system directHistory systemDefined) := by
+            rw [output_swapDDS]
+            exact congrArg Sum.swap
+              (output_congr system mappedHistory _ _)
+          unfold trExtend
+          rw [dif_pos swappedEnvironmentDefined, dif_pos environmentDefined]
+          dsimp only
+          rw [queryEqual]
+          have swappedSystemDefined' :
+              (swapTranscript transcript).map Prod.fst ++
+                  [Sum.swap ((environment.1 (transcript.map Prod.snd)).get
+                    environmentDefined)] ∈ dom (swapDDS system) := by
+            simpa only [swappedHistory, query] using swappedSystemDefined
+          have systemDefined' :
+              transcript.map Prod.fst ++
+                  [(environment.1 (transcript.map Prod.snd)).get
+                    environmentDefined] ∈ dom system := by
+            simpa only [directHistory, query] using systemDefined
+          rw [dif_pos swappedSystemDefined', dif_pos systemDefined',
+            swapTranscript_append]
+          apply congrArg (fun answer =>
+            swapTranscript transcript ++
+              [(Sum.swap ((environment.1 (transcript.map Prod.snd)).get
+                environmentDefined), answer)])
+          simpa only [swappedHistory, directHistory, query] using outputEqual
+        · have swappedSystemUndefined : swappedHistory ∉ dom (swapDDS system) := by
+            intro admitted
+            exact systemDefined (mappedHistory ▸ (dom_swapDDS system swappedHistory).mp admitted)
+          unfold trExtend
+          rw [dif_pos swappedEnvironmentDefined, dif_pos environmentDefined]
+          dsimp only
+          rw [queryEqual]
+          have swappedSystemUndefined' :
+              (swapTranscript transcript).map Prod.fst ++
+                  [Sum.swap ((environment.1 (transcript.map Prod.snd)).get
+                    environmentDefined)] ∉ dom (swapDDS system) := by
+            simpa only [swappedHistory, query] using swappedSystemUndefined
+          have systemUndefined' :
+              transcript.map Prod.fst ++
+                  [(environment.1 (transcript.map Prod.snd)).get
+                    environmentDefined] ∉ dom system := by
+            simpa only [directHistory, query] using systemDefined
+          rw [dif_neg swappedSystemUndefined', dif_neg systemUndefined']
+      · have swappedEnvironmentUndefined :
+            (swapTranscript transcript).map Prod.snd ∉
+              (swapDDE environment).1.Dom := by
+          intro admitted
+          apply environmentDefined
+          rw [swapTranscript_map_snd, swapDDE_dom, map_swap_swap] at admitted
+          exact admitted
+        unfold trExtend
+        rw [dif_neg swappedEnvironmentUndefined, dif_neg environmentDefined]
 
 @[simp]
-private theorem leftQueries_map_swap (history : List (X₂ ⊕ X₁)) :
+theorem leftQueries_map_swap (history : List (X₂ ⊕ X₁)) :
     leftQueries (history.map Sum.swap) = rightQueries history := by
   unfold leftQueries rightQueries
   rw [List.filterMap_map]
@@ -2837,7 +2472,7 @@ private theorem leftQueries_map_swap (history : List (X₂ ⊕ X₁)) :
   cases query <;> rfl
 
 @[simp]
-private theorem rightQueries_map_swap (history : List (X₂ ⊕ X₁)) :
+theorem rightQueries_map_swap (history : List (X₂ ⊕ X₁)) :
     rightQueries (history.map Sum.swap) = leftQueries history := by
   unfold leftQueries rightQueries
   rw [List.filterMap_map]
@@ -2845,7 +2480,7 @@ private theorem rightQueries_map_swap (history : List (X₂ ⊕ X₁)) :
   funext query
   cases query <;> rfl
 
-private theorem swapDDS_parallel (left : DDS X₁ Y₁) (right : DDS X₂ Y₂) :
+theorem swapDDS_parallel (left : DDS X₁ Y₁) (right : DDS X₂ Y₂) :
     swapDDS (parallel left right) = parallel right left := by
   apply Subtype.ext
   funext history
@@ -2869,10 +2504,16 @@ private theorem swapDDS_parallel (left : DDS X₁ Y₁) (right : DDS X₂ Y₂) 
           defined.1 (List.map_eq_nil_iff.mp mappedEmpty),
         defined.2.2, defined.2.1⟩
   · intro swappedDefined directDefined
+    have swappedMember : history ∈ dom (swapDDS (parallel left right)) := by
+      change ((swapDDS (parallel left right)).1 history).Dom
+      exact swappedDefined
+    have directMember : history ∈ dom (parallel right left) := by
+      change ((parallel right left).1 history).Dom
+      exact directDefined
     have historyNonempty : history ≠ [] := by
       exact directDefined.1
-    change output (swapDDS (parallel left right)) history swappedDefined =
-      output (parallel right left) history directDefined
+    change output (swapDDS (parallel left right)) history swappedMember =
+      output (parallel right left) history directMember
     rw [output_swapDDS]
     change Sum.swap (parallelOutput left right (history.map Sum.swap)
         swappedDefined ((history.map Sum.swap).getLast _) _) =
@@ -2907,7 +2548,7 @@ private theorem swapDDS_parallel (left : DDS X₁ Y₁) (right : DDS X₂ Y₂) 
           (history.getLast historyNonempty) _ :=
         parallelOutput_congr_last right left _ _ (by rfl) _ _
 
-private theorem inducedLeftBounded_halts
+theorem inducedLeftBounded_halts
     (base : DDS X₁ Y₁) (right : DDS X₂ Y₂)
     (environment : DDE (Y₁ ⊕ Y₂) (X₁ ⊕ X₂)) (rounds : Nat) :
     DDE.Halts (inducedLeftBounded base right environment rounds) := by
@@ -2920,18 +2561,18 @@ private theorem inducedLeftBounded_halts
     (parallel (overrideDDS base answers) right) rounds
   omega
 
-private def swapDomain
+def swapDomain
     (domain : Set (List (X₁ ⊕ X₂))) : Set (List (X₂ ⊕ X₁)) :=
   {history | history.map Sum.swap ∈ domain}
 
 @[simp]
-private theorem swapTranscript_involution
+theorem swapTranscript_involution
     (transcript : Transcript (X₁ ⊕ X₂) (Y₁ ⊕ Y₂)) :
     swapTranscript (swapTranscript transcript) = transcript := by
   simp [swapTranscript, List.map_map, Function.comp_def]
 
 @[simp]
-private theorem swapDDS_involution
+theorem swapDDS_involution
     (system : DDS (X₁ ⊕ X₂) (Y₁ ⊕ Y₂)) :
     swapDDS (swapDDS system) = system := by
   apply Subtype.ext
@@ -2947,7 +2588,7 @@ private theorem swapDDS_involution
       using output_congr system (by simp) _ _
 
 @[simp]
-private theorem swapDDE_involution
+theorem swapDDE_involution
     (environment : DDE (Y₁ ⊕ Y₂) (X₁ ⊕ X₂)) :
     swapDDE (swapDDE environment) = environment := by
   apply Subtype.ext
@@ -2969,7 +2610,7 @@ private theorem swapDDE_involution
   exact Part.map_id' (fun value : X₁ ⊕ X₂ => rfl)
     (environment.1 history)
 
-private theorem compatible_swap
+theorem compatible_swap
     (environment : DDE (Y₁ ⊕ Y₂) (X₁ ⊕ X₂))
     (system : DDS (X₁ ⊕ X₂) (Y₁ ⊕ Y₂))
     (compatible : Compatible environment system) :
@@ -2987,7 +2628,7 @@ private theorem compatible_swap
     List.map_singleton, Sum.swap_swap, dom_swapDDS,
     map_swap_swap] using oldAdmitted
 
-private theorem compatibleD_swap
+theorem compatibleD_swap
     (environment : DDE (Y₁ ⊕ Y₂) (X₁ ⊕ X₂))
     (domain : Set (List (X₁ ⊕ X₂)))
     (compatible : CompatibleD environment domain) :
@@ -3004,7 +2645,7 @@ private theorem compatibleD_swap
     originalCompatible
   simpa only [swapDDS_involution] using swappedCompatible
 
-private theorem halts_swap
+theorem halts_swap
     (environment : DDE (Y₁ ⊕ Y₂) (X₁ ⊕ X₂))
     (halts : DDE.Halts environment) :
     DDE.Halts (swapDDE environment) := by
@@ -3013,7 +2654,7 @@ private theorem halts_swap
   intro answers lengthAtLeast admitted
   exact bound (answers.map Sum.swap) (by simpa using lengthAtLeast) admitted
 
-private theorem tr_toOption_swap
+theorem tr_toOption_swap
     (environment : DDE (Y₁ ⊕ Y₂) (X₁ ⊕ X₂))
     (system : DDS (X₁ ⊕ X₂) (Y₁ ⊕ Y₂))
     (halts : DDE.Halts environment) :
@@ -3034,20 +2675,20 @@ private theorem tr_toOption_swap
   rfl
 
 @[simp]
-private theorem swapDomain_involution
+theorem swapDomain_involution
     (domain : Set (List (X₁ ⊕ X₂))) :
     swapDomain (swapDomain domain) = domain := by
   ext history
   change (history.map Sum.swap).map Sum.swap ∈ domain ↔ history ∈ domain
   simp [List.map_map, Function.comp_def]
 
-private noncomputable def swapLaw
+noncomputable def swapLaw
     (law : PDS (X₁ ⊕ X₂) (Y₁ ⊕ Y₂)) :
     PDS (X₂ ⊕ X₁) (Y₂ ⊕ Y₁) :=
   Distribution.fTransform swapDDS law
 
 @[simp]
-private theorem swapLaw_involution
+theorem swapLaw_involution
     (law : PDS (X₁ ⊕ X₂) (Y₁ ⊕ Y₂)) :
     swapLaw (swapLaw law) = law := by
   rw [swapLaw, swapLaw, Distribution.fTransform_fTransform]
@@ -3059,7 +2700,7 @@ private theorem swapLaw_involution
       exact swapDDS_involution system
     _ = law := Distribution.fTransform_id law
 
-private theorem trLaw_swap
+theorem trLaw_swap
     (environment : DDE (Y₁ ⊕ Y₂) (X₁ ⊕ X₂))
     (law : PDS (X₁ ⊕ X₂) (Y₁ ⊕ Y₂))
     (halts : DDE.Halts environment) :
@@ -3073,7 +2714,7 @@ private theorem trLaw_swap
   intro system _
   exact tr_toOption_swap environment system halts
 
-private theorem option_swapTranscript_injective :
+theorem option_swapTranscript_injective :
     Function.Injective
       (Option.map swapTranscript :
         Option (Transcript (X₁ ⊕ X₂) (Y₁ ⊕ Y₂)) →
@@ -3083,14 +2724,14 @@ private theorem option_swapTranscript_injective :
   have mapped := congrArg swapTranscript equal
   simpa only [swapTranscript_involution] using mapped
 
-private theorem swapDomain_parallelDomain
+theorem swapDomain_parallelDomain
     (left : Set (List X₁)) (right : Set (List X₂)) :
     swapDomain (parallelDomain left right) = parallelDomain right left := by
   ext history
   simp [swapDomain, parallelDomain, leftQueries_map_swap,
     rightQueries_map_swap, and_comm]
 
-private theorem swapLaw_parallelLaw
+theorem swapLaw_parallelLaw
     (left : PDS X₁ Y₁) (right : PDS X₂ Y₂) :
     swapLaw (parallelLaw left right) = parallelLaw right left := by
   unfold swapLaw parallelLaw
@@ -3101,45 +2742,49 @@ private theorem swapLaw_parallelLaw
   intro systems _
   exact swapDDS_parallel systems.1 systems.2
 
-private theorem advantageOnDomain_swap_le
+theorem advantageOnDomain_swap_le
     (domain : Set (List (X₁ ⊕ X₂)))
     (left right : PDS (X₁ ⊕ X₂) (Y₁ ⊕ Y₂)) :
     PDS.advantageOnDomain (swapDomain domain) (swapLaw left) (swapLaw right) ≤
       PDS.advantageOnDomain domain left right := by
-  refine iSup_le fun environment => ?_
-  have swappedHalts : DDE.Halts (swapDDE environment.1) :=
-    halts_swap environment.1 environment.2.2
-  have swappedCompatible : CompatibleD (swapDDE environment.1) domain := by
-    have twice := compatibleD_swap environment.1 (swapDomain domain)
-      environment.2.1
-    simpa only [swapDomain_involution] using twice
-  have leftLaw := trLaw_swap (swapDDE environment.1) left swappedHalts
-  have rightLaw := trLaw_swap (swapDDE environment.1) right swappedHalts
-  simp only [swapDDE_involution] at leftLaw rightLaw
-  calc
-    ENNReal.ofReal (Probability.statDist
-        (PDS.trLaw environment.1 (swapLaw left))
-        (PDS.trLaw environment.1 (swapLaw right))) =
-      ENNReal.ofReal (Probability.statDist
-        (Distribution.fTransform (Option.map swapTranscript)
-          (PDS.trLaw (swapDDE environment.1) left))
-        (Distribution.fTransform (Option.map swapTranscript)
-          (PDS.trLaw (swapDDE environment.1) right))) := by
-      rw [leftLaw, rightLaw]
-    _ = ENNReal.ofReal (Probability.statDist
-        (PDS.trLaw (swapDDE environment.1) left)
-        (PDS.trLaw (swapDDE environment.1) right)) := by
-      congr 1
-      exact Probability.statDist_fTransform_injective _ _ _
-        option_swapTranscript_injective
-    _ ≤ PDS.advantageOnDomain domain left right :=
-      le_iSup_of_le
-        (⟨swapDDE environment.1, swappedCompatible, swappedHalts⟩ :
+  unfold PDS.advantageOnDomain
+  apply Real.sSup_le
+  · rintro value ⟨environment, _, rfl⟩
+    have swappedHalts : DDE.Halts (swapDDE environment.1) :=
+      halts_swap environment.1 environment.2.2
+    have swappedCompatible : CompatibleD (swapDDE environment.1) domain := by
+      have twice := compatibleD_swap environment.1 (swapDomain domain)
+        environment.2.1
+      simpa only [swapDomain_involution] using twice
+    have leftLaw := trLaw_swap (swapDDE environment.1) left swappedHalts
+    have rightLaw := trLaw_swap (swapDDE environment.1) right swappedHalts
+    simp only [swapDDE_involution] at leftLaw rightLaw
+    calc
+      Probability.statDist
+          (PDS.trLaw environment.1 (swapLaw left))
+          (PDS.trLaw environment.1 (swapLaw right)) =
+        Probability.statDist
+          (Distribution.fTransform (Option.map swapTranscript)
+            (PDS.trLaw (swapDDE environment.1) left))
+          (Distribution.fTransform (Option.map swapTranscript)
+            (PDS.trLaw (swapDDE environment.1) right)) := by
+        rw [leftLaw, rightLaw]
+      _ = Probability.statDist
+          (PDS.trLaw (swapDDE environment.1) left)
+          (PDS.trLaw (swapDDE environment.1) right) :=
+        Probability.statDist_fTransform_injective _ _ _
+          option_swapTranscript_injective
+      _ ≤ sSup ((fun e :
           {e : DDE (Y₁ ⊕ Y₂) (X₁ ⊕ X₂) //
-            CompatibleD e domain ∧ DDE.Halts e})
-        le_rfl
+            CompatibleD e domain ∧ DDE.Halts e} =>
+          Probability.statDist (PDS.trLaw e.1 left)
+            (PDS.trLaw e.1 right)) '' Set.univ) :=
+        le_csSup (PDS.bddAbove_advantageOnDomain domain left right)
+          ⟨⟨swapDDE environment.1, swappedCompatible, swappedHalts⟩,
+            Set.mem_univ _, rfl⟩
+  · exact PDS.advantageOnDomain_nonneg domain left right
 
-private theorem advantageOnDomain_swap_eq
+theorem advantageOnDomain_swap_eq
     (domain : Set (List (X₁ ⊕ X₂)))
     (left right : PDS (X₁ ⊕ X₂) (Y₁ ⊕ Y₂)) :
     PDS.advantageOnDomain (swapDomain domain) (swapLaw left) (swapLaw right) =
@@ -3150,7 +2795,7 @@ private theorem advantageOnDomain_swap_eq
       (swapLaw left) (swapLaw right)
     simpa only [swapDomain_involution, swapLaw_involution] using reverse
 
-private theorem advantageOnDomain_parallel_right_le
+theorem advantageOnDomain_parallel_right_le
     (left : CommonDomain.ProbabilityPresentation X₁ Y₁)
     (right right' : CommonDomain.ProbabilityPresentation X₂ Y₂)
     (sameDomain : right'.domain = right.domain) :
@@ -3177,7 +2822,7 @@ private theorem advantageOnDomain_parallel_right_le
     _ ≤ PDS.advantageOnDomain right.domain right.law.1 right'.law.1 :=
       advantageOnDomain_parallel_left_le right right' left sameDomain
 
-private theorem advantageOnDomain_parallel_le
+theorem advantageOnDomain_parallel_le
     (left left' : CommonDomain.ProbabilityPresentation X₁ Y₁)
     (right right' : CommonDomain.ProbabilityPresentation X₂ Y₂)
     (leftDomain : left'.domain = left.domain)
@@ -3205,22 +2850,24 @@ private theorem advantageOnDomain_parallel_le
       (parallelLaw left'.law.1 right'.law.1)).trans
       (add_le_add leftBound rightBound)
 
+end Internal.Parallel
+
 namespace CommonDomain
 
 /-- Left-component projection of a tagged query history. -/
 def leftQueries (history : List (X₁ ⊕ X₂)) : List X₁ :=
-  RandomSystems.leftQueries history
+  System.leftQueries history
 
 /-- Right-component projection of a tagged query history. -/
 def rightQueries (history : List (X₁ ⊕ X₂)) : List X₂ :=
-  RandomSystems.rightQueries history
+  System.rightQueries history
 
 /-- Lanzenberger, Definition 2.13 (printed p. 14): “The parallel composition of
 a family of `(Xᵢ, Yᵢ)`-systems.”  Binary ordered sums implement the source's
 component tags. -/
 def parallelDDS (left : System.DDS X₁ Y₁) (right : System.DDS X₂ Y₂) :
     System.DDS (X₁ ⊕ X₂) (Y₁ ⊕ Y₂) :=
-  parallel left right
+  System.parallel left right
 
 @[simp]
 theorem dom_parallelDDS (left : System.DDS X₁ Y₁)
@@ -3230,7 +2877,7 @@ theorem dom_parallelDDS (left : System.DDS X₁ Y₁)
         (leftQueries history = [] ∨ leftQueries history ∈ System.dom left) ∧
         (rightQueries history = [] ∨
           rightQueries history ∈ System.dom right)} :=
-  dom_parallel left right
+  System.dom_parallel left right
 
 /-- Exact left-component evaluation of binary ordered parallel. -/
 theorem output_parallelDDS_left (left : System.DDS X₁ Y₁)
@@ -3245,7 +2892,7 @@ theorem output_parallelDDS_left (left : System.DDS X₁ Y₁)
         rcases component with empty | admitted
         · simp [leftQueries] at empty
         · simpa [leftQueries] using admitted)) :=
-  output_parallel_left left right history query defined
+  System.output_parallel_left left right history query defined
 
 /-- Exact right-component evaluation of binary ordered parallel. -/
 theorem output_parallelDDS_right (left : System.DDS X₁ Y₁)
@@ -3260,7 +2907,7 @@ theorem output_parallelDDS_right (left : System.DDS X₁ Y₁)
         rcases component with empty | admitted
         · simp [rightQueries] at empty
         · simpa [rightQueries] using admitted)) :=
-  output_parallel_right left right history query defined
+  System.output_parallel_right left right history query defined
 
 /-- Binary ordered parallel depends only on the two component domains. -/
 theorem parallelDDS_dom_congr
@@ -3270,7 +2917,7 @@ theorem parallelDDS_dom_congr
     (rightDomain : System.dom right = System.dom right') :
     System.dom (parallelDDS left right) =
       System.dom (parallelDDS left' right') := by
-  rw [parallelDDS, parallelDDS, dom_parallel, dom_parallel,
+  rw [parallelDDS, parallelDDS, System.dom_parallel, System.dom_parallel,
     leftDomain, rightDomain]
 
 end CommonDomain
@@ -3283,13 +2930,14 @@ noncomputable def parallel
     (left : ProbabilityPresentation X₁ Y₁)
     (right : ProbabilityPresentation X₂ Y₂) :
     ProbabilityPresentation (X₁ ⊕ X₂) (Y₁ ⊕ Y₂) :=
-  parallelPresentation left right
+  Internal.Parallel.parallelPresentation left right
 
 @[simp]
 theorem parallel_law
     (left : ProbabilityPresentation X₁ Y₁)
     (right : ProbabilityPresentation X₂ Y₂) :
-    (parallel left right).law.1 = parallelLaw left.law.1 right.law.1 :=
+    (parallel left right).law.1 =
+      Internal.Parallel.parallelLaw left.law.1 right.law.1 :=
   rfl
 
 @[simp]
@@ -3297,8 +2945,8 @@ theorem parallel_domain
     (left : ProbabilityPresentation X₁ Y₁)
     (right : ProbabilityPresentation X₂ Y₂) :
     (parallel left right).domain =
-      parallelDomain left.domain right.domain :=
-  parallelPresentation_domain left right
+      Internal.Parallel.parallelDomain left.domain right.domain :=
+  Internal.Parallel.parallelPresentation_domain left right
 
 /-- Ordered parallel is independent of the selected normalized
 presentatives. -/
@@ -3308,7 +2956,8 @@ theorem equivalent_parallel
     (leftEquivalent : Equivalent left left')
     (rightEquivalent : Equivalent right right') :
     Equivalent (parallel left right) (parallel left' right') :=
-  parallelPresentation_equivalent leftEquivalent rightEquivalent
+  Internal.Parallel.parallelPresentation_equivalent
+    leftEquivalent rightEquivalent
 
 /-- Changing only the left component is nonexpanding within its common-domain
 fibre. -/
@@ -3320,7 +2969,8 @@ theorem advantageOnDomain_parallel_left_le
         (parallel left right).law.1 (parallel left' right).law.1 ≤
       PDS.advantageOnDomain left.domain left.law.1 left'.law.1 := by
   rw [parallel_domain]
-  exact RandomSystems.advantageOnDomain_parallel_left_le left left' right sameDomain
+  exact Internal.Parallel.advantageOnDomain_parallel_left_le
+    left left' right sameDomain
 
 /-- Changing only the right component is nonexpanding within its common-domain
 fibre. -/
@@ -3332,7 +2982,8 @@ theorem advantageOnDomain_parallel_right_le
         (parallel left right).law.1 (parallel left right').law.1 ≤
       PDS.advantageOnDomain right.domain right.law.1 right'.law.1 := by
   rw [parallel_domain]
-  exact RandomSystems.advantageOnDomain_parallel_right_le left right right' sameDomain
+  exact Internal.Parallel.advantageOnDomain_parallel_right_le
+    left right right' sameDomain
 
 /-- Independent ordered parallel is jointly nonexpanding within the two fixed
 common-domain fibres. -/
@@ -3346,8 +2997,8 @@ theorem advantageOnDomain_parallel_le
       PDS.advantageOnDomain left.domain left.law.1 left'.law.1 +
         PDS.advantageOnDomain right.domain right.law.1 right'.law.1 := by
   rw [parallel_domain]
-  exact RandomSystems.advantageOnDomain_parallel_le left left' right right'
-    leftDomain rightDomain
+  exact Internal.Parallel.advantageOnDomain_parallel_le
+    left left' right right' leftDomain rightDomain
 
 end CommonDomain.ProbabilityPresentation
 
@@ -3357,7 +3008,7 @@ namespace CommonDomain.ProbabilityRandomSystem
 noncomputable def parallel :
     ProbabilityRandomSystem X₁ Y₁ → ProbabilityRandomSystem X₂ Y₂ →
       ProbabilityRandomSystem (X₁ ⊕ X₂) (Y₁ ⊕ Y₂) :=
-  parallelRandomSystem
+  Internal.Parallel.parallelRandomSystem
 
 @[simp]
 theorem parallel_ofPresentation
@@ -3365,7 +3016,7 @@ theorem parallel_ofPresentation
     (right : ProbabilityPresentation X₂ Y₂) :
     parallel (ofPresentation left) (ofPresentation right) =
       ofPresentation (ProbabilityPresentation.parallel left right) :=
-  parallelRandomSystem_ofPresentation left right
+  Internal.Parallel.parallelRandomSystem_ofPresentation left right
 
 end CommonDomain.ProbabilityRandomSystem
 

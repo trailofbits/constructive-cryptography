@@ -4,7 +4,7 @@ Authors: Marc Ilunga, Claude
 -/
 import Mathlib.Data.Set.Card
 import ConstructiveCryptography
-import AbstractCryptography.SemanticRegistry
+import ConstructiveCryptography.SemanticRegistry
 
 set_option autoImplicit false
 
@@ -35,8 +35,8 @@ specialization and does not require symmetry of parallel composition.
 namespace ConstructiveCryptography.Multiparty
 
 open CategoryTheory
-open AbstractCryptography.Categorical
-open AbstractCryptography.Categorical.ResourceAlgebra
+open ConstructiveCryptography.Categorical
+open ConstructiveCryptography.Categorical.ResourceAlgebra
 
 universe u v w
 
@@ -57,9 +57,9 @@ Liu--Maurer 2020, Definition 1 (printed p. 7): “The protocol
 noncomputable def ConstructsForAll {n : Nat} {interfaces : Fin n → C}
     (tuple : Finite.ConverterTuple interfaces)
     (source target : Set (Fin n) →
-      Specification Phi (Finite.interface n interfaces)) : Prop :=
+      ResourceAlgebra.Specification Phi (Finite.interface n interfaces)) : Prop :=
   ∀ dishonest : Set (Fin n),
-    Specification.Constructs (Phi := Phi)
+    ResourceAlgebra.Specification.Constructs (Phi := Phi)
       (Finite.ConverterTuple.honestConverter tuple dishonest)
       (source dishonest) (target dishonest)
 
@@ -69,7 +69,7 @@ omit [ResourceAlgebra C Phi] in
 theorem ConstructsForAll.serial {n : Nat} {interfaces : Fin n → C}
     {innerTuple outerTuple : Finite.ConverterTuple interfaces}
     {source middle target : Set (Fin n) →
-      Specification Phi (Finite.interface n interfaces)}
+      ResourceAlgebra.Specification Phi (Finite.interface n interfaces)}
     (inner : ConstructsForAll (Phi := Phi) innerTuple source middle)
     (outer : ConstructsForAll (Phi := Phi) outerTuple middle target) :
     ConstructsForAll (Phi := Phi)
@@ -95,7 +95,7 @@ omit [ResourceAlgebra C Phi] in
 theorem constructsForAll_univ {n : Nat} {interfaces : Fin n → C}
     (tuple : Finite.ConverterTuple interfaces)
     (source : Set (Fin n) →
-      Specification Phi (Finite.interface n interfaces)) :
+      ResourceAlgebra.Specification Phi (Finite.interface n interfaces)) :
     ConstructsForAll (Phi := Phi) tuple source (fun _ => Set.univ) := by
   intro dishonest
   -- The target admits every attached resource.
@@ -139,15 +139,15 @@ theorem ConstructsForAll.filteredAt_of_simulators
             (Finite.ConverterTuple.honestConverter targetFilter dishonest)
             ideal)) :
     ConstructsForAll (Phi := Phi) tuple
-      (fun dishonest => Specification.filteredAt (Phi := Phi)
+      (fun dishonest => ResourceAlgebra.Specification.filteredAt (Phi := Phi)
         (converters dishonest)
         (Finite.ConverterTuple.honestConverter sourceFilter dishonest) real)
-      (fun dishonest => Specification.filteredAt (Phi := Phi)
+      (fun dishonest => ResourceAlgebra.Specification.filteredAt (Phi := Phi)
         (converters dishonest)
         (Finite.ConverterTuple.honestConverter targetFilter dishonest) ideal) := by
   intro dishonest
   -- Apply the generic filtered-endpoint theorem at this dishonest set.
-  exact Specification.filteredAt_constructs_of_eq
+  exact ResourceAlgebra.Specification.filteredAt_constructs_of_eq
     (commutes dishonest) (simulatorAdmitted dishonest) (equation dishonest)
 
 /-! ## The `*Z` relaxation -/
@@ -165,19 +165,19 @@ merged `Z` interface. An arbitrary endomorphism family on the assembled
 interface does not establish that support property by typing alone. -/
 noncomputable def zStar {I : Type*} {A : C}
     (converters : Set I → EndoFamily (Opposite.op A))
-    (dishonest : Set I) (source : Specification Phi A) :
-    Specification Phi A :=
-  Specification.star (Phi := Phi) (converters dishonest) source
+    (dishonest : Set I) (source : ResourceAlgebra.Specification Phi A) :
+    ResourceAlgebra.Specification Phi A :=
+  ResourceAlgebra.Specification.star (Phi := Phi) (converters dishonest) source
 
 omit [MonoidalCategory C] [ResourceAlgebra C Phi] in
 /-- Joint-converter closure at one dishonest set is idempotent. -/
 theorem zStar_idem {I : Type*} {A : C}
     (converters : Set I → EndoFamily (Opposite.op A))
-    (dishonest : Set I) (source : Specification Phi A) :
+    (dishonest : Set I) (source : ResourceAlgebra.Specification Phi A) :
     zStar (Phi := Phi) converters dishonest
         (zStar (Phi := Phi) converters dishonest source) =
       zStar (Phi := Phi) converters dishonest source :=
-  Specification.star_idem (Phi := Phi) (converters dishonest) source
+  ResourceAlgebra.Specification.star_idem (Phi := Phi) (converters dishonest) source
 
 omit [MonoidalCategory C] [ResourceAlgebra C Phi] in
 /-- Inclusion of joint converter classes gives inclusion of their closures. -/
@@ -185,10 +185,10 @@ theorem zStar_mono {I : Type*} {A : C}
     {converters : Set I → EndoFamily (Opposite.op A)}
     {dishonest dishonest' : Set I}
     (included : converters dishonest ≤ converters dishonest')
-    (source : Specification Phi A) :
+    (source : ResourceAlgebra.Specification Phi A) :
     zStar (Phi := Phi) converters dishonest source ⊆
       zStar (Phi := Phi) converters dishonest' source :=
-  Specification.star_mono (Phi := Phi) included source
+  ResourceAlgebra.Specification.star_mono (Phi := Phi) included source
 
 omit [MonoidalCategory C] [ResourceAlgebra C Phi] in
 /-- Functional composition-order independence moves a converter through a
@@ -203,12 +203,12 @@ theorem attach_zStar_subset {I : Type*} {A : C}
               (attach (Phi := Phi) classConverter resource) =
             attach (Phi := Phi) classConverter
               (attach (Phi := Phi) converter resource))
-    (source : Specification Phi A) :
-    Specification.map (Phi := Phi) converter
+    (source : ResourceAlgebra.Specification Phi A) :
+    ResourceAlgebra.Specification.map (Phi := Phi) converter
         (zStar (Phi := Phi) converters dishonest source) ⊆
       zStar (Phi := Phi) converters dishonest
-        (Specification.map (Phi := Phi) converter source) :=
-  Specification.map_star_subset (Phi := Phi) commutes source
+        (ResourceAlgebra.Specification.map (Phi := Phi) converter source) :=
+  ResourceAlgebra.Specification.map_star_subset (Phi := Phi) commutes source
 
 omit [MonoidalCategory C] [ResourceAlgebra C Phi] in
 /-- Exact simulator equations lift a construction through `*Z` on both
@@ -216,7 +216,7 @@ endpoint specifications. -/
 theorem constructs_zStar_of_simulators {I : Type*} {A : C}
     (converters : Set I → EndoFamily (Opposite.op A))
     {dishonest : Set I} {converter : CategoryTheory.End A}
-    {source : Specification Phi A} {ideal : Resource Phi A}
+    {source : ResourceAlgebra.Specification Phi A} {ideal : Resource Phi A}
     (commutes : ∀ classConverter : CategoryTheory.End A,
       classConverter.op ∈ converters dishonest →
         ∀ resource : Resource Phi A,
@@ -229,16 +229,16 @@ theorem constructs_zStar_of_simulators {I : Type*} {A : C}
         simulator.op ∈ converters dishonest ∧
           attach (Phi := Phi) converter resource =
             attach (Phi := Phi) simulator ideal) :
-    Specification.Constructs (Phi := Phi) converter
+    ResourceAlgebra.Specification.Constructs (Phi := Phi) converter
       (zStar (Phi := Phi) converters dishonest source)
       (zStar (Phi := Phi) converters dishonest
-        ({ideal} : Specification Phi A)) := by
+        ({ideal} : ResourceAlgebra.Specification Phi A)) := by
   -- Simulator equations construct the star-relaxed ideal from the base source.
-  have base := Specification.constructs_star_of_simulators
+  have base := ResourceAlgebra.Specification.constructs_star_of_simulators
     (Phi := Phi) simulates
   -- Functional order independence star-relaxes the source as well.
   simpa only [zStar,
-    AbstractCryptography.Categorical.ResourceAlgebra.Specification.star_idem]
+    ConstructiveCryptography.Categorical.ResourceAlgebra.Specification.star_idem]
     using base.star commutes
 
 /-- Approximate simulator equations lift a construction through `*Z` on both
@@ -246,7 +246,7 @@ endpoint specifications. -/
 theorem constructsWithin_zStar_of_simulators {I : Type*} {A : C}
     (converters : Set I → EndoFamily (Opposite.op A))
     {dishonest : Set I} {converter : CategoryTheory.End A}
-    {source : Specification Phi A} {ideal : Resource Phi A}
+    {source : ResourceAlgebra.Specification Phi A} {ideal : Resource Phi A}
     {error : ENNReal}
     (commutes : ∀ classConverter : CategoryTheory.End A,
       classConverter.op ∈ converters dishonest →
@@ -260,16 +260,16 @@ theorem constructsWithin_zStar_of_simulators {I : Type*} {A : C}
         simulator.op ∈ converters dishonest ∧
           distance (Phi := Phi) (attach (Phi := Phi) converter resource)
             (attach (Phi := Phi) simulator ideal) ≤ error) :
-    Specification.ConstructsWithin (Phi := Phi) converter
+    ResourceAlgebra.Specification.ConstructsWithin (Phi := Phi) converter
       (zStar (Phi := Phi) converters dishonest source)
       (zStar (Phi := Phi) converters dishonest
-        ({ideal} : Specification Phi A)) error := by
+        ({ideal} : ResourceAlgebra.Specification Phi A)) error := by
   -- Distance-bounded simulators construct within error from the base source.
-  have base := Specification.constructsWithin_star_of_simulators
+  have base := ResourceAlgebra.Specification.constructsWithin_star_of_simulators
     (Phi := Phi) simulates
   -- Functional order independence star-relaxes the source as well.
   simpa only [zStar,
-    AbstractCryptography.Categorical.ResourceAlgebra.Specification.star_idem]
+    ConstructiveCryptography.Categorical.ResourceAlgebra.Specification.star_idem]
     using base.star commutes
 
 /-- Approximate simulator equations give exact construction into the scalar
@@ -278,7 +278,7 @@ theorem constructs_zStar_epsilonRelaxation_of_simulators
     {I : Type*} {A : C}
     (converters : Set I → EndoFamily (Opposite.op A))
     {dishonest : Set I} {converter : CategoryTheory.End A}
-    {source : Specification Phi A} {ideal : Resource Phi A}
+    {source : ResourceAlgebra.Specification Phi A} {ideal : Resource Phi A}
     {error : ENNReal}
     (commutes : ∀ classConverter : CategoryTheory.End A,
       classConverter.op ∈ converters dishonest →
@@ -292,13 +292,13 @@ theorem constructs_zStar_epsilonRelaxation_of_simulators
         simulator.op ∈ converters dishonest ∧
           distance (Phi := Phi) (attach (Phi := Phi) converter resource)
             (attach (Phi := Phi) simulator ideal) ≤ error) :
-    Specification.Constructs (Phi := Phi) converter
+    ResourceAlgebra.Specification.Constructs (Phi := Phi) converter
       (zStar (Phi := Phi) converters dishonest source)
-      (Specification.epsilonRelaxation (Phi := Phi) error
+      (ResourceAlgebra.Specification.epsilonRelaxation (Phi := Phi) error
         (zStar (Phi := Phi) converters dishonest
-          ({ideal} : Specification Phi A))) := by
+          ({ideal} : ResourceAlgebra.Specification Phi A))) := by
   -- Scalar relaxation is the exact presentation of approximate construction.
-  rw [Specification.constructs_epsilonRelaxation_iff]
+  rw [ResourceAlgebra.Specification.constructs_epsilonRelaxation_iff]
   exact constructsWithin_zStar_of_simulators converters commutes simulates
 
 /-! ## Adversary structures -/
@@ -389,7 +389,7 @@ noncomputable def ConstructsForAdversaryStructure
     (adversaryStructure : AdversaryStructure (Fin n))
     (tuple : Finite.ConverterTuple interfaces)
     (source target : Set (Fin n) →
-      Specification Phi (Finite.interface n interfaces)) : Prop := by
+      ResourceAlgebra.Specification Phi (Finite.interface n interfaces)) : Prop := by
   classical
   exact ConstructsForAll (Phi := Phi) tuple source
     (fun dishonest =>
@@ -405,7 +405,7 @@ theorem ConstructsForAdversaryStructure.serial
     {adversaryStructure : AdversaryStructure (Fin n)}
     {innerTuple outerTuple : Finite.ConverterTuple interfaces}
     {source middle target : Set (Fin n) →
-      Specification Phi (Finite.interface n interfaces)}
+      ResourceAlgebra.Specification Phi (Finite.interface n interfaces)}
     (inner : ConstructsForAdversaryStructure (Phi := Phi)
       adversaryStructure innerTuple source middle)
     (outer : ConstructsForAdversaryStructure (Phi := Phi)
@@ -457,7 +457,7 @@ theorem ConstructsForAdversaryStructure.zStar_of_simulators
     (converters : Set (Fin n) →
       EndoFamily (Opposite.op (Finite.interface n interfaces)))
     (source : Set (Fin n) →
-      Specification Phi (Finite.interface n interfaces))
+      ResourceAlgebra.Specification Phi (Finite.interface n interfaces))
     (ideal : Resource Phi (Finite.interface n interfaces))
     (simulates : ∀ dishonest ∈ adversaryStructure.sets,
       ∀ resource ∈ source dishonest,
@@ -469,14 +469,14 @@ theorem ConstructsForAdversaryStructure.zStar_of_simulators
               attach (Phi := Phi) simulator ideal) :
     ConstructsForAdversaryStructure (Phi := Phi) adversaryStructure tuple source
       (fun dishonest => zStar (Phi := Phi) converters dishonest
-        ({ideal} : Specification Phi (Finite.interface n interfaces))) := by
+        ({ideal} : ResourceAlgebra.Specification Phi (Finite.interface n interfaces))) := by
   classical
   simp only [ConstructsForAdversaryStructure, ConstructsForAll]
   intro dishonest
   by_cases admitted : dishonest ∈ adversaryStructure.sets
   · -- The supplied joint simulator witnesses target-star membership.
     simp only [if_pos admitted]
-    exact Specification.constructs_star_of_simulators
+    exact ResourceAlgebra.Specification.constructs_star_of_simulators
       (Phi := Phi) (simulates dishonest admitted)
   · -- Outside the structure, construction into the trivial target is automatic.
     simp only [if_neg admitted]

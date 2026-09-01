@@ -72,6 +72,8 @@ variable {X : Type u} {Y : Type v}
 def toPFun (S : DDS X Y) : Raw X Y :=
   S.1
 
+/-- Allow a DDS to be used where its underlying partial function is expected.
+This coercion is notation only; the DDS retains its validity proof. -/
 instance : Coe (DDS X Y) (Raw X Y) where
   coe := toPFun
 
@@ -147,7 +149,8 @@ theorem functionEvaluator_injective :
 theorem functionEvaluator_output (f : X → Y) (l : List X) (x : X)
     (h : l ++ [x] ∈ dom (functionEvaluator f)) :
     output (functionEvaluator f) (l ++ [x]) h = f x := by
-  simp [output, functionEvaluator]
+  rw [output_functionEvaluator]
+  exact congrArg f (List.getLast_concat (l := l))
 
 /-- A system defined directly as a function of every nonempty input history. -/
 def historyEvaluator (g : (l : List X) → l ≠ [] → Y) : DDS X Y :=

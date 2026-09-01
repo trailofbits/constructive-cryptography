@@ -38,7 +38,7 @@ of diagrams whose rungs navigate on click; shift-clicking a subterm
 highlights and force-expands its box.
 
 Labels: one line at the top of a file —
-`cc_diagram_labels cbcReal "CBC 𝖱", Vn "Vₙ"` (names may be defined
+`cc_diagram_labels realResource "R", idealResource "S"` (names may be defined
 later; suffix-matched) — or `@[cc_diagram "KEY"]` on declarations.
 `#cc_diagram_check` / `#cc_diagram_view` are build-time guards.
 -/
@@ -118,22 +118,22 @@ def CalcStepper : Component CalcStepperProps where
 /-! ## Recognized head constants
 
 The theory-free renderer recognizes only stable Mathlib and probability
-operations directly.  Semantic AC, CC, and RS declarations are registered by
-their owning adapters through `DeclRole`. -/
+operations directly. Constructive Cryptography and Random Systems declarations
+are registered by their owning adapters through `DeclRole`. -/
 
-private def nRelaxFun : Name := `AbstractCryptography.Relaxation.toFun
-private def nEpsilonRelaxation : Name :=
-  `AbstractCryptography.Categorical.ResourceAlgebra.Specification.epsilonRelaxation
+def nRelaxFun : Name := `ConstructiveCryptography.Relaxation.toFun
+def nEpsilonRelaxation : Name :=
+  `ConstructiveCryptography.Categorical.ResourceAlgebra.Specification.epsilonRelaxation
 
-private def nStatDist : Name := `Probability.statDist
-private def nMass : Name := `Probability.Distribution.mass
-private def nFTransform : Name := `Probability.Distribution.fTransform
+def nStatDist : Name := `Probability.statDist
+def nMass : Name := `Probability.Distribution.mass
+def nFTransform : Name := `Probability.Distribution.fTransform
 
 -- mathlib
-private def nMathlibEdist : Name := `EDist.edist
-private def nSMul : Name := `SMul.smul
-private def nNNRealToReal : Name := `NNReal.toReal
-private def nENNRealToReal : Name := `ENNReal.toReal
+def nMathlibEdist : Name := `EDist.edist
+def nSMul : Name := `SMul.smul
+def nNNRealToReal : Name := `NNReal.toReal
+def nENNRealToReal : Name := `ENNReal.toReal
 
 /-! ## Label registration -/
 
@@ -175,7 +175,7 @@ initialize ccDiagramRules : SimpleScopedEnvExtension DeclRule (NameMap DeclRole)
     initial := {}
   }
 
-private def natOfSyntax (stx : Syntax) : Nat := stx.isNatLit?.getD 0
+def natOfSyntax (stx : Syntax) : Nat := stx.isNatLit?.getD 0
 
 syntax (name := ccDiagramApplicationCmd)
   "cc_diagram_application " ident ppSpace num ppSpace num : command
@@ -234,11 +234,11 @@ elab_rules : command
       unless present do
         throwError "cc_diagram: no semantic rule registered for {n.getId}"
 
-private def declRole? (e : Expr) : CoreM (Option DeclRole) := do
+def declRole? (e : Expr) : CoreM (Option DeclRole) := do
   let .const head _ := e.getAppFn | return none
   return (ccDiagramRules.getState (← getEnv)).find? head
 
-private def argFromEnd? (args : Array Expr) (n : Nat) : Option (Nat × Expr) :=
+def argFromEnd? (args : Array Expr) (n : Nat) : Option (Nat × Expr) :=
   if n < args.size then
     let i := args.size - 1 - n
     some (i, args[i]!)
@@ -263,7 +263,7 @@ initialize registerBuiltinAttribute {
 /-- One item of a `cc_diagram_labels` command. -/
 syntax ccDiagramLabelItem := ident ppSpace str
 
-/-- `cc_diagram_labels cbcReal "CBC 𝖱", Vn "Vₙ", …` — register display
+/-- `cc_diagram_labels realResource "R", idealResource "S", …` — register display
 labels for the `CCDiagram` widget in one line.  Unlike the
 `@[cc_diagram]` attribute, the named constants need not exist yet
 (matching is by name suffix), so the command can sit at the top of the
@@ -364,22 +364,22 @@ structure JudgmentView where
 /-! ## Expression recognizers -/
 
 /-- Arguments of `e` if it is `n` applied to exactly `arity` arguments. -/
-private def matchApp? (e : Expr) (n : Name) (arity : Nat) : Option (Array Expr) :=
+def matchApp? (e : Expr) (n : Name) (arity : Nat) : Option (Array Expr) :=
   if e.isAppOfArity n arity then some e.getAppArgs else none
 
 /-- The last two arguments of `e` if its head is `n` — for heads whose
 instance-argument count we do not pin down. -/
-private def matchLast2? (e : Expr) (n : Name) : Option (Array Expr × Nat) :=
+def matchLast2? (e : Expr) (n : Name) : Option (Array Expr × Nat) :=
   if e.isAppOf n then
     let args := e.getAppArgs
     if args.size ≥ 2 then some (args, args.size) else none
   else none
 
 /-- Position of argument `i` (0-based) of an `arity`-ary application at `p`. -/
-private def argPos (p : SubExpr.Pos) (arity i : Nat) : SubExpr.Pos :=
+def argPos (p : SubExpr.Pos) (arity i : Nat) : SubExpr.Pos :=
   ((arity - 1 - i).fold (fun _ _ q => q.pushAppFn) p).pushAppArg
 
-private def ppShort (e : Expr) : MetaM String := do
+def ppShort (e : Expr) : MetaM String := do
   if e.hasLooseBVars then
     -- never print open terms (`#0`); fall back to the head constant
     if let .const c _ := e.getAppFn then
@@ -390,7 +390,7 @@ private def ppShort (e : Expr) : MetaM String := do
 
 /-- Display label for an interface value: the last name component when the
 form is a dotless constructor path (`ABE.A` ↦ `A`, `0` ↦ `0`). -/
-private def ppIface (e : Expr) : MetaM String := do
+def ppIface (e : Expr) : MetaM String := do
   let s ← ppShort e
   if s.contains ' ' then return s
   match s.splitOn "." with
@@ -398,14 +398,14 @@ private def ppIface (e : Expr) : MetaM String := do
   | parts => return parts.getLast!
 
 /-- See through `Subtype.val` coercions (`↑π` for bundled converters). -/
-private partial def stripVal (e : Expr) : Expr :=
+partial def stripVal (e : Expr) : Expr :=
   if e.isAppOfArity ``Subtype.val 3 then stripVal e.appArg! else e
 
 /-- Label for a resource/converter term: the `@[cc_diagram]` /
 `cc_diagram_labels` label of the head constant when registered,
 otherwise its pretty-printed form.  The second component is `true` when
 the term should degrade to a chip. -/
-private def labelFor (e : Expr) : MetaM (String × Bool) := do
+def labelFor (e : Expr) : MetaM (String × Bool) := do
   let e := stripVal e
   if let .const c _ := e.getAppFn then
     let m := ccDiagramLabels.getState (← getEnv)
@@ -424,7 +424,7 @@ private def labelFor (e : Expr) : MetaM (String × Bool) := do
 
 /-- First sentence of the head constant's docstring, markdown-stripped —
 the narration attached to a box as its tooltip. -/
-private def descrFor (e : Expr) : MetaM (Option String) := do
+def descrFor (e : Expr) : MetaM (Option String) := do
   let .const c _ := (stripVal e).getAppFn | return none
   let some doc ← findDocString? (← getEnv) c | return none
   let doc := doc.replace "**" "" |>.replace "*" "" |>.replace "`" "" |>.replace "\n" " "
@@ -436,7 +436,7 @@ private def descrFor (e : Expr) : MetaM (Option String) := do
 
 /-! ## The goal parser -/
 
-private structure ConvApp where
+structure ConvApp where
   iface : String
   label : String
   pos : Array Nat
@@ -451,7 +451,7 @@ private structure ConvApp where
 /-- Split a working-monoid element into converters: products factor
 (`π * π'`); anything else is one
 converter chip. -/
-private partial def convsOfMonoidElem (π : Expr) (p : SubExpr.Pos) :
+partial def convsOfMonoidElem (π : Expr) (p : SubExpr.Pos) :
     MetaM (Array ConvApp) := do
   if let some args := matchApp? π ``HMul.hMul 6 then
     let l ← convsOfMonoidElem args[4]! (argPos p 6 4)
@@ -462,7 +462,7 @@ private partial def convsOfMonoidElem (π : Expr) (p : SubExpr.Pos) :
              descr := ← descrFor π }]
 
 /-- Peel converter attachments off a resource term, outermost first. -/
-private partial def peelConvs (e : Expr) (p : SubExpr.Pos) :
+partial def peelConvs (e : Expr) (p : SubExpr.Pos) :
     MetaM (Array ConvApp × Expr × SubExpr.Pos) := do
   -- Semantic rules are supplied by the owning adapter.
   if let some role ← declRole? e then
@@ -514,7 +514,7 @@ private partial def peelConvs (e : Expr) (p : SubExpr.Pos) :
 
 /-- Flatten a resource core into the center column: parallel compositions
 stack, everything else is one element (chip when unrecognized). -/
-private partial def parseCenter (e : Expr) (p : SubExpr.Pos) : MetaM (Array Elem) := do
+partial def parseCenter (e : Expr) (p : SubExpr.Pos) : MetaM (Array Elem) := do
   if let some role ← declRole? e then
     let args := e.getAppArgs
     match role with
@@ -555,14 +555,14 @@ private partial def parseCenter (e : Expr) (p : SubExpr.Pos) : MetaM (Array Elem
              descr := ← descrFor e' }]
 
 /-- Relaxations peeled off a specification term. -/
-private structure Relaxed where
+structure Relaxed where
   eps : Array String := #[]
   /-- `∗`-slots: interface label (`""` when unknown) and position. -/
   stars : Array (String × Array Nat) := #[]
 
 /-- Strip `Singleton.singleton` and applied scalar relaxations off a
 specification-level term. -/
-private partial def peelSpec (e : Expr) (p : SubExpr.Pos) (acc : Relaxed) :
+partial def peelSpec (e : Expr) (p : SubExpr.Pos) (acc : Relaxed) :
     MetaM (Expr × SubExpr.Pos × Relaxed) := do
   if let some args := matchApp? e ``Singleton.singleton 4 then
     return ← peelSpec args[3]! (argPos p 4 3) acc
@@ -584,7 +584,7 @@ private partial def peelSpec (e : Expr) (p : SubExpr.Pos) (acc : Relaxed) :
 connection structure — converter applications peel off, and the core
 keeps unfolding while doing so exposes further structure.  Stops at
 atoms (unfoldings with no converters and a single-part center). -/
-private partial def autoPeel (e : Expr) (p : SubExpr.Pos) (fuel : Nat := 3) :
+partial def autoPeel (e : Expr) (p : SubExpr.Pos) (fuel : Nat := 3) :
     MetaM (Array ConvApp × Expr × SubExpr.Pos × Bool) := do
   if fuel == 0 then return (#[], e, p, false)
   unless e.getAppFn.isConst do return (#[], e, p, false)
@@ -601,7 +601,7 @@ private partial def autoPeel (e : Expr) (p : SubExpr.Pos) (fuel : Nat := 3) :
 
 /-- Positions (goal paths) the user has shift-click selected — leaves at
 these positions are drawn expanded (definition unfolded one level). -/
-private def posSelected (sel : Array (Array Nat)) (p : SubExpr.Pos) : Bool :=
+def posSelected (sel : Array (Array Nat)) (p : SubExpr.Pos) : Bool :=
   let pa := p.toArray
   sel.any fun s =>
     s == pa || (s.size > pa.size && (List.range pa.size).all fun i => s[i]! == pa[i]!)
@@ -610,7 +610,7 @@ private def posSelected (sel : Array (Array Nat)) (p : SubExpr.Pos) : Bool :=
 interface's wire, distinguisher side first).  With `simFirst` (ideal
 side of a distance judgment), a single non-filter converter is the
 simulator; `∗`-slots become adversarial simulator interfaces. -/
-private def groupIfaces (convs : Array ConvApp)
+def groupIfaces (convs : Array ConvApp)
     (stars : Array (String × Array Nat)) (advIfaces : Array String)
     (simFirst : Bool) : Array Iface := Id.run do
   let simIdx? : Option Nat :=
@@ -642,10 +642,10 @@ private def groupIfaces (convs : Array ConvApp)
   return ifaces
 
 /-- Both sides of a judgment display the same external port set.  Named ports
-are mirrored by name.  A sole anonymous AC port is mirrored positionally; this
+are mirrored by name. A sole anonymous CC port is mirrored positionally; this
 is distinct from inventing a second port and keeps one-interface construction
 judgments aligned even when their abstract alphabets are unavailable. -/
-private def mirrorIfaces (sys other : SystemView) : SystemView := Id.run do
+def mirrorIfaces (sys other : SystemView) : SystemView := Id.run do
   let mut sys := sys
   if sys.ifaces.isEmpty && other.ifaces.size == 1 && other.ifaces[0]!.label.isEmpty then
     let f := other.ifaces[0]!
@@ -659,8 +659,8 @@ private def mirrorIfaces (sys other : SystemView) : SystemView := Id.run do
 the common converter context, not an ideal-world simulator.  `simFirst` is a
 useful fallback for genuinely unmatched ideal-side converters, but without
 this reconciliation it incorrectly turns examples such as
-`CBC 𝕋` versus `CBC 𝔽` into a vertical simulator attachment. -/
-private def reconcileSharedConverters (real ideal : SystemView) : SystemView × SystemView := Id.run do
+`α R` versus `α S` into a vertical simulator attachment. -/
+def reconcileSharedConverters (real ideal : SystemView) : SystemView × SystemView := Id.run do
   let sharedAt (f : Iface) : Array String :=
     match real.ifaces.find? (fun g => g.label == f.label) with
     | some g => f.chain.filterMap fun e =>
@@ -679,7 +679,7 @@ private def reconcileSharedConverters (real ideal : SystemView) : SystemView × 
 /-- Parse one side of a judgment into a `SystemView` plus relaxation
 data.  Composite cores auto-expand into their connection structure;
 shift-clicked leaves force one more definitional level. -/
-private def parseSide (e : Expr) (p : SubExpr.Pos) (simFirst : Bool)
+def parseSide (e : Expr) (p : SubExpr.Pos) (simFirst : Bool)
     (advIfaces : Array String := #[]) (sel : Array (Array Nat) := #[]) :
     MetaM (SystemView × Relaxed) := do
   let (e, p, relaxed) ← peelSpec e p {}
@@ -718,7 +718,7 @@ private def parseSide (e : Expr) (p : SubExpr.Pos) (simFirst : Bool)
             frameDescr? := if frameLabel?.isSome then origDescr? else none }, relaxed')
 
 /-- Construction judgments `R —[π]→ S` / `Constructs π R S`. -/
-private def mkConstruction (r : Expr) (rp : SubExpr.Pos) (π : Expr) (πp : SubExpr.Pos)
+def mkConstruction (r : Expr) (rp : SubExpr.Pos) (π : Expr) (πp : SubExpr.Pos)
     (s : Expr) (sp : SubExpr.Pos) (sel : Array (Array Nat) := #[]) :
     MetaM (Option JudgmentView) := do
   let (rSpec, rPos, rrel) ← peelSpec r rp {}
@@ -734,7 +734,7 @@ private def mkConstruction (r : Expr) (rp : SubExpr.Pos) (π : Expr) (πp : SubE
       rel := "⊑", eps? := if eps.isEmpty then none else some (" + ".intercalate eps.toList) }
 
 /-- A symmetric two-sided distance-style judgment. -/
-private def mkDistance (l : Expr) (lp : SubExpr.Pos) (r : Expr) (rp : SubExpr.Pos)
+def mkDistance (l : Expr) (lp : SubExpr.Pos) (r : Expr) (rp : SubExpr.Pos)
     (rel : String) (ε? : Option String) (note? : Option String := none)
     (sel : Array (Array Nat) := #[]) : MetaM (Option JudgmentView) := do
   let (ideal, irel) ← parseSide r rp (simFirst := true) (sel := sel)
@@ -747,7 +747,7 @@ private def mkDistance (l : Expr) (lp : SubExpr.Pos) (r : Expr) (rp : SubExpr.Po
       rel, eps? := if eps.isEmpty then none else some (" + ".intercalate eps.toList), note? }
 
 /-- Strip outer `↑`-coercions (`NNReal.toReal`, `ENNReal.toReal`). -/
-private partial def stripCoe (e : Expr) (p : SubExpr.Pos) : Expr × SubExpr.Pos :=
+partial def stripCoe (e : Expr) (p : SubExpr.Pos) : Expr × SubExpr.Pos :=
   if e.isAppOfArity nNNRealToReal 1 || e.isAppOfArity nENNRealToReal 1 then
     stripCoe e.appArg! p.pushAppArg
   else (e, p)
@@ -755,7 +755,7 @@ private partial def stripCoe (e : Expr) (p : SubExpr.Pos) : Expr × SubExpr.Pos 
 /-- Parse an advantage expression into cards: sums of two-sided
 distances, one-sided win probabilities, event masses, and numeric
 summands — the vocabulary of calculation-proof steps. -/
-private partial def parseAdv (e : Expr) (p : SubExpr.Pos)
+partial def parseAdv (e : Expr) (p : SubExpr.Pos)
     (sel : Array (Array Nat) := #[]) : MetaM (Array AdvCard) := do
   let (e, p) := stripCoe e p
   if let some args := matchApp? e ``HAdd.hAdd 6 then
@@ -797,14 +797,14 @@ private partial def parseAdv (e : Expr) (p : SubExpr.Pos)
     return #[.mass d ev]
   return #[.num (← ppShort e) p.toArray]
 
-private def AdvCard.isNum : AdvCard → Bool
+def AdvCard.isNum : AdvCard → Bool
   | .num _ _ => true
   | _ => false
 
 /-- `lhs ⟨rel⟩ rhs` between advantage expressions: full-size rendering
 when a single card is bounded by a numeric expression, the card-bridge
 row otherwise (`Δ(…) ≤ Δ(…) + Δ(…)` calculation steps). -/
-private def mkAdvComparison (l : Expr) (lp : SubExpr.Pos) (r : Expr) (rp : SubExpr.Pos)
+def mkAdvComparison (l : Expr) (lp : SubExpr.Pos) (r : Expr) (rp : SubExpr.Pos)
     (rel : String) (sel : Array (Array Nat) := #[]) : MetaM (Option JudgmentView) := do
   let L ← parseAdv l lp sel
   let R ← parseAdv r rp sel
@@ -892,11 +892,11 @@ components (hover for types, click to inspect). -/
 /-- Position-indexed interactive code, built by the RPC per proof state. -/
 abbrev Codes := Array (Array Nat × Html)
 
-private def codeFor? (codes : Codes) (pos : Array Nat) : Option Html :=
+def codeFor? (codes : Codes) (pos : Array Nat) : Option Html :=
   if pos.isEmpty then none else (codes.find? (·.1 == pos)).map (·.2)
 
 /-- All goal positions a judgment draws. -/
-private def collectPositions (jv : JudgmentView) : Array (Array Nat) := Id.run do
+def collectPositions (jv : JudgmentView) : Array (Array Nat) := Id.run do
   let ofSys (s : SystemView) : Array (Array Nat) := Id.run do
     let mut ps := s.center.map (·.pos)
     for f in s.ifaces do
@@ -940,7 +940,7 @@ arrows at the left, converters in series, then the core); 2 → left and
 right; adversarial and further interfaces hang below.  Natural-pixel
 sizing; labels are interactive code in `foreignObject`s when available. -/
 
-private def fmtF (f : Float) : String :=
+def fmtF (f : Float) : String :=
   let neg := f < 0
   let a := if neg then -f else f
   let t := (a * 2).round / 2
@@ -948,24 +948,24 @@ private def fmtF (f : Float) : String :=
   let body := if t == Float.ofNat n then toString n else s!"{n}.5"
   if neg then "-" ++ body else body
 
-private def sattr (k v : String) : String × Json := (k, Json.str v)
+def sattr (k v : String) : String × Json := (k, Json.str v)
 
-private def svgLine (x1 y1 x2 y2 : Float) : Html :=
+def svgLine (x1 y1 x2 y2 : Float) : Html :=
   .element "line" #[sattr "x1" (fmtF x1), sattr "y1" (fmtF y1),
     sattr "x2" (fmtF x2), sattr "y2" (fmtF y2), sattr "className" "wire"] #[]
 
-private def svgRect (x y w h : Float) (cls : String) : Html :=
+def svgRect (x y w h : Float) (cls : String) : Html :=
   .element "rect" #[sattr "x" (fmtF x), sattr "y" (fmtF y),
     sattr "width" (fmtF w), sattr "height" (fmtF h), sattr "rx" "3",
     sattr "className" cls] #[]
 
-private def svgText (x y : Float) (cls s : String) (fs : String)
+def svgText (x y : Float) (cls s : String) (fs : String)
     (anchor : String := "middle") : Html :=
   .element "text" #[sattr "x" (fmtF x), sattr "y" (fmtF y),
     sattr "className" cls, sattr "textAnchor" anchor,
     ("style", Json.mkObj [("fontSize", Json.str fs)])] #[.text s]
 
-private def svgArrowHead (x y : Float) (toRight : Bool) : Html :=
+def svgArrowHead (x y : Float) (toRight : Bool) : Html :=
   let d : Float := if toRight then -6 else 6
   .element "polygon"
     #[sattr "points" (fmtF (x + d) ++ "," ++ fmtF (y - 3.5) ++ " " ++
@@ -974,27 +974,27 @@ private def svgArrowHead (x y : Float) (toRight : Bool) : Html :=
 
 /-- A monotone-bad-event is an observable output, not decoration: draw a
 dedicated right-going lane labelled `Aᵢ`, as in Maurer's game diagrams. -/
-private def svgMboOutput (x y : Float) : Array Html :=
+def svgMboOutput (x y : Float) : Array Html :=
   #[svgLine x y (x + 34) y,
     svgArrowHead (x + 34) y true,
     svgText (x + 17) (y - 7) "mboout" "Aᵢ" "11px"]
 
 /-- Box + label classes for an element's kind. -/
-private def boxCls (kind : BoxKind) : String × String :=
+def boxCls (kind : BoxKind) : String × String :=
   match kind with
   | .res => ("res", "rlb")
   | .conv => ("cvt c-cvt", "t-cvt lblx")
   | .sim => ("cvt c-sim", "t-sim lblx")
   | .chip => ("chip", "chiptx")
 
-private def selected (sel : Array (Array Nat)) (pos : Array Nat) : Bool :=
+def selected (sel : Array (Array Nat)) (pos : Array Nat) : Bool :=
   !pos.isEmpty && sel.any fun s =>
     let n := min pos.size s.size
     n > 0 && (List.range n).all fun i => pos[i]! == s[i]!
 
 /-- A drawable box: geometry computed, content rendered as interactive
 code when available. -/
-private def drawBox (el : Elem) (x y w h : Float) (sel : Array (Array Nat))
+def drawBox (el : Elem) (x y w h : Float) (sel : Array (Array Nat))
     (codes : Codes) (fs : String) : Html := Id.run do
   let (bc, tc) := boxCls el.kind
   let mut g : Array Html := #[]
@@ -1025,7 +1025,7 @@ private def drawBox (el : Elem) (x y w h : Float) (sel : Array (Array Nat))
 
 /-- Render one system.  Interfaces: first honest → left, second → right,
 the rest and all adversarial ones → below. -/
-private def sysSvg (sys : SystemView) (sel : Array (Array Nat)) (codes : Codes)
+def sysSvg (sys : SystemView) (sel : Array (Array Nat)) (codes : Codes)
     (compact : Bool := false) : Html := Id.run do
   let bh : Float := if compact then 26 else 34         -- converter box height
   let coreH : Float := if compact then 28 else 36      -- core row height
@@ -1033,7 +1033,7 @@ private def sysSvg (sys : SystemView) (sel : Array (Array Nat)) (codes : Codes)
   let fs := if compact then "10px" else "11.5px"
   let wOf (el : Elem) (isCore : Bool) : Float :=
     -- Italic math labels have wider side bearings than monospace estimates;
-    -- 44px keeps short names such as `CBC` off the box stroke while the
+    -- 44px keeps short converter names off the box stroke while the
     -- Content-based width handles longer converter and simulator names.
     let base := Float.ofNat el.label.length * 7.2 + 16
     if isCore then min 240 (max 64 base) else min 136 (max 44 base)
@@ -1212,12 +1212,12 @@ blackboard wires.  SVG remains available through `renderSystem` only for
 specialized exports and non-rectilinear feedback overlays; proof-panel text
 and box geometry are DOM-rendered. -/
 
-private def domLabel (el : Elem) (codes : Codes) : Html :=
+def domLabel (el : Elem) (codes : Codes) : Html :=
   match codeFor? codes el.pos with
   | some code => .element "span" #[sattr "className" "node-code"] #[code]
   | none => .element "span" #[sattr "className" "node-text"] #[.text el.label]
 
-private def domBox (el : Elem) (sel : Array (Array Nat)) (codes : Codes) : Html :=
+def domBox (el : Elem) (sel : Array (Array Nat)) (codes : Codes) : Html :=
   let (bc, _) := boxCls el.kind
   let tip := match el.descr with
     | some d => el.label ++ "\n\n" ++ d
@@ -1228,10 +1228,10 @@ private def domBox (el : Elem) (sel : Array (Array Nat)) (codes : Codes) : Html 
       sattr "title" tip]
     #[domLabel el codes]
 
-private def hwire : Html := .element "span" #[sattr "className" "hwire"] #[]
-private def vwire : Html := .element "span" #[sattr "className" "vwire"] #[]
+def hwire : Html := .element "span" #[sattr "className" "hwire"] #[]
+def vwire : Html := .element "span" #[sattr "className" "vwire"] #[]
 
-private def domChain (els : Array Elem) (sel : Array (Array Nat)) (codes : Codes)
+def domChain (els : Array Elem) (sel : Array (Array Nat)) (codes : Codes)
     (reverse : Bool := false) : Array Html := Id.run do
   let els := if reverse then els.reverse else els
   let mut out : Array Html := #[]
@@ -1239,7 +1239,7 @@ private def domChain (els : Array Elem) (sel : Array (Array Nat)) (codes : Codes
     out := out.push hwire |>.push (domBox el sel codes)
   return out
 
-private def domPort (f : Iface) (side : String) : Html :=
+def domPort (f : Iface) (side : String) : Html :=
   if f.label.isEmpty && (f.inType.isSome || f.outType.isSome) then
     .element "div" #[sattr "className" ("typed-port " ++ side)]
       #[.element "div" #[sattr "className" "typed-lane lane-in"]
@@ -1253,13 +1253,13 @@ private def domPort (f : Iface) (side : String) : Html :=
       (if f.label.isEmpty then #[hwire]
        else #[.element "span" #[sattr "className" "port-name"] #[.text f.label], hwire])
 
-private def domCores (center : Array Elem) (sel : Array (Array Nat)) (codes : Codes) : Html :=
+def domCores (center : Array Elem) (sel : Array (Array Nat)) (codes : Codes) : Html :=
   let center := if center.isEmpty then #[({ label := "?", kind := .chip } : Elem)] else center
   .element "div"
     #[sattr "className" ("core-stack" ++ if center.size > 1 then " parallel" else "")]
     (center.map (fun el => domBox el sel codes))
 
-private def domBottomIface (f : Iface) (sel : Array (Array Nat)) (codes : Codes) : Html := Id.run do
+def domBottomIface (f : Iface) (sel : Array (Array Nat)) (codes : Codes) : Html := Id.run do
   let mut kids : Array Html := #[vwire]
   for el in f.chain do
     kids := kids.push (domBox el sel codes) |>.push vwire
@@ -1452,10 +1452,10 @@ body.vscode-light .ccw .calc-step-controls button{background:#fff;color:#1c1c1c;
 body.vscode-light .ccw .calc-step-controls button:hover:not(:disabled){border-color:oklch(0.5 0.11 250);background:oklch(0.97 0.015 250)}
 "
 
-private def sect (t : String) : Html :=
+def sect (t : String) : Html :=
   .element "div" #[sattr "className" "sect"] #[.text t]
 
-private def divider (rel : String) (epsHtml? : Option Html) : Html :=
+def divider (rel : String) (epsHtml? : Option Html) : Html :=
   .element "div" #[sattr "className" "dv"]
     #[.element "div" #[sattr "className" "rl"] #[],
       .element "span" #[sattr "className" "ap"]
@@ -1464,16 +1464,16 @@ private def divider (rel : String) (epsHtml? : Option Html) : Html :=
           | none => #[])),
       .element "div" #[sattr "className" "rl"] #[]]
 
-private def epsHtmlOf (jv : JudgmentView) (codes : Codes) : Option Html :=
+def epsHtmlOf (jv : JudgmentView) (codes : Codes) : Option Html :=
   match jv.epsPos?.bind (codeFor? codes) with
   | some h => some h
   | none => jv.eps?.map Html.text
 
-private def paren (t : String) : Html :=
+def paren (t : String) : Html :=
   .element "span" #[sattr "className" "paren"] #[.text t]
 
 /-- One compact advantage card: `Δ( ⟨sys⟩ , ⟨sys⟩ )`. -/
-private def renderCard (sel : Array (Array Nat)) (codes : Codes) : AdvCard → Html
+def renderCard (sel : Array (Array Nat)) (codes : Codes) : AdvCard → Html
   | .dist sym l r =>
     .element "div" #[sattr "className" "card"]
       #[.element "span" #[sattr "className" "badge"] #[.text sym],
@@ -1499,7 +1499,7 @@ private def renderCard (sel : Array (Array Nat)) (codes : Codes) : AdvCard → H
       #[(codeFor? codes pos).getD (.text label)]
 
 /-- A row of cards joined by `+`. -/
-private def renderCards (cs : Array AdvCard) (sel : Array (Array Nat))
+def renderCards (cs : Array AdvCard) (sel : Array (Array Nat))
     (codes : Codes) : Html := Id.run do
   let mut kids : Array Html := #[]
   for i in [0:cs.size] do
@@ -1514,18 +1514,18 @@ These use synthetic view models rather than theorem parsing, so a geometry or
 fallback regression fails while building the theory-free widget itself.  The
 theorem demos separately guard parser coverage. -/
 
-private partial def htmlCountTag (wanted : String) : Html → Nat
+partial def htmlCountTag (wanted : String) : Html → Nat
   | .element tag _ kids =>
       (if tag == wanted then 1 else 0) + kids.foldl (fun n h => n + htmlCountTag wanted h) 0
   | .component _ _ _ kids => kids.foldl (fun n h => n + htmlCountTag wanted h) 0
   | .text _ => 0
 
-private partial def htmlCountText (wanted : String) : Html → Nat
+partial def htmlCountText (wanted : String) : Html → Nat
   | .element _ _ kids | .component _ _ _ kids =>
       kids.foldl (fun n h => n + htmlCountText wanted h) 0
   | .text s => if s == wanted then 1 else 0
 
-private partial def htmlCountClass (wanted : String) : Html → Nat
+partial def htmlCountClass (wanted : String) : Html → Nat
   | .element _ attrs kids =>
       let here := attrs.foldl (init := 0) fun n kv =>
         match kv with
@@ -1535,7 +1535,7 @@ private partial def htmlCountClass (wanted : String) : Html → Nat
   | .component _ _ _ kids => kids.foldl (fun n h => n + htmlCountClass wanted h) 0
   | .text _ => 0
 
-private partial def htmlAttr? (tag key : String) : Html → Option String
+partial def htmlAttr? (tag key : String) : Html → Option String
   | .element t attrs kids =>
       if t == tag then
         match attrs.findSome? fun
@@ -1547,7 +1547,7 @@ private partial def htmlAttr? (tag key : String) : Html → Option String
   | .component _ _ _ kids => kids.findSome? (htmlAttr? tag key)
   | .text _ => none
 
-private def rendererSelfCheck : Except String Unit := do
+def rendererSelfCheck : Except String Unit := do
   let core : Elem := { label := "R", kind := .res, pos := #[1] }
   let typed : Iface := { inType := some "X", outType := some "Y" }
   let typedSvg := sysSvg { center := #[core], ifaces := #[typed] } #[] #[]
@@ -1574,7 +1574,7 @@ private def rendererSelfCheck : Except String Unit := do
   unless (htmlAttr? "div" "title" component).isSome do
     throw "semantic DOM nodes must expose native hover information"
 
-  let shared : Elem := { label := "CBC", kind := .conv }
+  let shared : Elem := { label := "α", kind := .conv }
   let realShared : SystemView :=
     { center := #[core], ifaces := #[{ chain := #[shared] }] }
   let idealShared : SystemView :=
@@ -1631,7 +1631,7 @@ run_cmd
   | .ok () => pure ()
   | .error msg => throwError "CCWidget renderer self-check failed: {msg}"
 
-private def noteRows (jv : JudgmentView) : Array Html := Id.run do
+def noteRows (jv : JudgmentView) : Array Html := Id.run do
   let mut rows : Array Html := #[]
   if let some s := jv.note? then
     rows := rows.push <| .element "div" #[sattr "className" "note"] #[.text s]
@@ -1690,10 +1690,10 @@ def renderInline (jv : JudgmentView) (sel : Array (Array Nat))
 
 /-- Invisible: rendered when there is nothing to draw, so the always-on
 panel adds nothing to unrelated proofs. -/
-private def invisible : Html :=
+def invisible : Html :=
   .element "span" #[("style", Json.mkObj [("display", Json.str "none")])] #[]
 
-private def panel (inner : Html) : Html :=
+def panel (inner : Html) : Html :=
   .element "details" #[("open", Json.bool true), sattr "className" "ccw"]
     #[.element "summary" #[] #[.text "constructive cryptography"],
       .element "style" #[] #[.text stylesheet],
@@ -1706,13 +1706,13 @@ snapshot: the enclosing `calc` block becomes the lecture's hybrid
 ladder — every step a rung drawn as diagrams, justification names
 between rungs, click a rung's number to move the cursor there. -/
 
-private def rangeContains (stx : Syntax) (pos : String.Pos.Raw) : Bool :=
+def rangeContains (stx : Syntax) (pos : String.Pos.Raw) : Bool :=
   match stx.getRange? with
   | some r => r.start ≤ pos && pos ≤ r.stop
   | none => false
 
 /-- Smallest `calcSteps` node containing `pos`. -/
-private partial def findCalcSteps? (stx : Syntax) (pos : String.Pos.Raw) : Option Syntax :=
+partial def findCalcSteps? (stx : Syntax) (pos : String.Pos.Raw) : Option Syntax :=
   if !rangeContains stx pos then none
   else
     let deeper := stx.getArgs.findSome? (findCalcSteps? · pos)
@@ -1723,7 +1723,7 @@ private partial def findCalcSteps? (stx : Syntax) (pos : String.Pos.Raw) : Optio
 /-- The elaborated `Expr` (and its elaboration context) recorded for a
 syntax range — how the ladder recovers each step's statement with the
 `calc` `_` placeholders resolved. -/
-private def termInfoFor? (tree : Elab.InfoTree) (target : Syntax) :
+def termInfoFor? (tree : Elab.InfoTree) (target : Syntax) :
     Option (Elab.ContextInfo × Elab.TermInfo) := Id.run do
   let some r := target.getRange? | return none
   let results := tree.foldInfo (init := #[]) fun ci i acc =>
@@ -1735,7 +1735,7 @@ private def termInfoFor? (tree : Elab.InfoTree) (target : Syntax) :
     | _ => acc
   return results[0]?
 
-private structure Rung where
+structure Rung where
   jv? : Option JudgmentView
   codes : Codes
   /-- Interactive mathematical term (fallback when the step does not draw). -/
@@ -1748,7 +1748,7 @@ private structure Rung where
   deriving Inhabited
 
 /-- Extract the ladder from the calc block containing `pos`. -/
-private def calcLadder? (snap : Snapshots.Snapshot) (text : FileMap)
+def calcLadder? (snap : Snapshots.Snapshot) (text : FileMap)
     (pos : String.Pos.Raw) (sel : Array (Array Nat)) :
     RequestM (Option (Array Rung)) := do
   let some steps := findCalcSteps? snap.stx pos | return none
@@ -1793,7 +1793,7 @@ private def calcLadder? (snap : Snapshots.Snapshot) (text : FileMap)
 
 /-- The enclosing theorem's own statement: shown dimmed when the current
 goal is bookkeeping inside a CC proof. -/
-private def enclosingJudgment? (snap : Snapshots.Snapshot) :
+def enclosingJudgment? (snap : Snapshots.Snapshot) :
     RequestM (Option (JudgmentView × Codes)) := do
   let outer := snap.infoTree.foldInfo
       (init := (none : Option (Elab.ContextInfo × Elab.TacticInfo))) fun ci i acc =>
@@ -1818,7 +1818,7 @@ private def enclosingJudgment? (snap : Snapshots.Snapshot) :
         | none => pure none
       catch _ => pure none
 
-private def renderRungs (rungs : Array Rung) (sel : Array (Array Nat))
+def renderRungs (rungs : Array Rung) (sel : Array (Array Nat))
     (dm : Lean.Server.DocumentMeta) : Html := Id.run do
   let mut steps : Array Html := #[]
   for i in [0:rungs.size] do
@@ -1915,7 +1915,7 @@ def CCDiagram : Component PanelWidgetProps :=
 /-- Elaborate `t` to the statement it denotes: a `Prop` stays itself, a
 proof term (e.g. a theorem name) contributes its type; leading `∀`
 binders are stripped. -/
-private def elabStatement (t : Syntax.Term) : Elab.TermElabM (Option JudgmentView) := do
+def elabStatement (t : Syntax.Term) : Elab.TermElabM (Option JudgmentView) := do
   -- a bare global constant contributes its type, with no metavariables
   if let some n ← observing? (Elab.realizeGlobalConstNoOverloadWithInfo t) then
     let stmt := (← getConstInfo n).type

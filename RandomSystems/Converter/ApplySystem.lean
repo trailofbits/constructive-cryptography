@@ -91,13 +91,13 @@ theorem ext
 
 end Transcript
 
-private def innerHistory {B : Interface.{w, z}}
+def innerHistory {B : Interface.{w, z}}
     (prior : List B.query) (query : B.query) : History B where
   queries := prior ++ [query]
   nonempty := by simp
 
 @[simp]
-private theorem last_innerHistory {B : Interface.{w, z}}
+theorem last_innerHistory {B : Interface.{w, z}}
     (prior : List B.query) (query : B.query) :
     (innerHistory prior query).last = query := by
   simp [innerHistory, History.last]
@@ -107,6 +107,18 @@ def innerReplyAt {B : Interface.{w, z}} (system : DDS B)
     (prior : List B.query) (query : B.query) : Option (B.answer query) :=
   cast (congrArg (fun selected => Option (B.answer selected))
     (last_innerHistory prior query)) (system (innerHistory prior query))
+
+/-- Packing the answer computed at the final query recovers the corresponding
+DDS evaluation on the complete inner history. -/
+theorem packed_innerReplyAt
+    {B : Interface.{w, z}} (system : DDS B)
+    (prior : List B.query) (query : B.query) :
+    (⟨query, innerReplyAt system prior query⟩ : DDC.History.InnerReply B) =
+      ⟨(innerHistory prior query).last,
+        system (innerHistory prior query)⟩ := by
+  apply Sigma.ext (last_innerHistory prior query).symm
+  unfold innerReplyAt
+  exact cast_heq _ _
 
 /--
 The finite functional interaction witnessing attachment from a fixed converter
@@ -261,13 +273,6 @@ theorem CompatibleFrom.unique
             inductionHypothesis rightTail
           simp_all
 
-private def firstQuery {A : Interface.{u, v}} (history : History A) : A.query :=
-  history.queries.head history.nonempty
-
-private def remainingQueries {A : Interface.{u, v}}
-    (history : History A) : List A.query :=
-  history.queries.tail
-
 /--
 A complete transcript is compatible when each converter response is selected
 by its received history and each inner reply is the attached DDS value on the
@@ -278,25 +283,11 @@ def Compatible
     (converter : DDC A B) (system : DDS B) (outerHistory : History A)
     (transcript : Transcript A B) : Prop :=
   CompatibleFrom converter system
-    (DDC.History.singleton (B := B) (firstQuery outerHistory)) []
-    (remainingQueries outerHistory) transcript.inputs transcript.responses
+    (DDC.History.singleton (B := B) (History.head outerHistory)) []
+    (History.tail outerHistory) transcript.inputs transcript.responses
     transcript.final
 
-private noncomputable def response
-    {A : Interface.{u, v}} {B : Interface.{w, z}}
-    (converter : DDC A B) (history : DDC.History A B)
-    (admissible : DDC.Raw.Admissible converter.toFun history) :
-    DDC.Response history :=
-  (converter.exists_unique_response history admissible).choose
-
-private theorem response_mem
-    {A : Interface.{u, v}} {B : Interface.{w, z}}
-    (converter : DDC A B) (history : DDC.History A B)
-    (admissible : DDC.Raw.Admissible converter.toFun history) :
-    response converter history admissible ∈ converter history :=
-  (converter.exists_unique_response history admissible).choose_spec.1
-
-private theorem exists_compatibleFrom
+theorem exists_compatibleFrom
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     (converter : DDC A B) (system : DDS B) :
     ∀ (remainingOuter : List A.query) (history : DDC.History A B)
@@ -316,12 +307,12 @@ private theorem exists_compatibleFrom
             CompatibleFrom converter system history innerPrior []
               inputs responses final) history ?_
       intro history innerInduction innerPrior admissible
-      cases responseEqual : response converter history admissible with
+      cases responseEqual : DDC.response converter history admissible with
       | inl query =>
           let reply := innerReplyAt system innerPrior query
           let nextHistory := history.snocInner query reply
           have responds : Sum.inl query ∈ converter history :=
-            responseEqual ▸ response_mem converter history admissible
+            responseEqual ▸ DDC.response_mem converter history admissible
           have nextAdmissible :
               DDC.Raw.Admissible converter.toFun nextHistory :=
             .afterInner admissible responds reply
@@ -334,7 +325,7 @@ private theorem exists_compatibleFrom
             final, CompatibleFrom.innerQuery responds tail⟩
       | inr reply =>
           have responds : Sum.inr reply ∈ converter history :=
-            responseEqual ▸ response_mem converter history admissible
+            responseEqual ▸ DDC.response_mem converter history admissible
           exact ⟨[history.lastInput],
             [Sum.inr ⟨history.lastOuter, reply⟩],
             ⟨history.lastOuter, reply⟩,
@@ -349,12 +340,12 @@ private theorem exists_compatibleFrom
               (nextOuter :: remainingOuter) inputs responses final)
         history ?_
       intro history innerInduction innerPrior admissible
-      cases responseEqual : response converter history admissible with
+      cases responseEqual : DDC.response converter history admissible with
       | inl query =>
           let reply := innerReplyAt system innerPrior query
           let nextHistory := history.snocInner query reply
           have responds : Sum.inl query ∈ converter history :=
-            responseEqual ▸ response_mem converter history admissible
+            responseEqual ▸ DDC.response_mem converter history admissible
           have nextAdmissible :
               DDC.Raw.Admissible converter.toFun nextHistory :=
             .afterInner admissible responds reply
@@ -367,7 +358,7 @@ private theorem exists_compatibleFrom
             final, CompatibleFrom.innerQuery responds tail⟩
       | inr reply =>
           have responds : Sum.inr reply ∈ converter history :=
-            responseEqual ▸ response_mem converter history admissible
+            responseEqual ▸ DDC.response_mem converter history admissible
           let nextHistory := history.snocOuter nextOuter
           have nextAdmissible :
               DDC.Raw.Admissible converter.toFun nextHistory :=
@@ -383,11 +374,11 @@ theorem exists_compatible
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     (converter : DDC A B) (system : DDS B) (outerHistory : History A) :
     ∃ transcript, Compatible converter system outerHistory transcript := by
-  let start := DDC.History.singleton (B := B) (firstQuery outerHistory)
+  let start := DDC.History.singleton (B := B) (History.head outerHistory)
   have startAdmissible : DDC.Raw.Admissible converter.toFun start :=
-    .start (firstQuery outerHistory)
+    .start (History.head outerHistory)
   obtain ⟨inputs, responses, final, compatible⟩ :=
-    exists_compatibleFrom converter system (remainingQueries outerHistory)
+    exists_compatibleFrom converter system (History.tail outerHistory)
       start [] startAdmissible
   exact ⟨⟨inputs, responses, final⟩, compatible⟩
 
@@ -413,26 +404,26 @@ theorem exists_unique_compatible
   exact ⟨transcript, compatible, fun other otherCompatible =>
     compatible_unique converter system outerHistory otherCompatible compatible⟩
 
-private noncomputable def compatibleTranscript
+noncomputable def compatibleTranscript
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     (converter : DDC A B) (system : DDS B) (outerHistory : History A) :
     Transcript A B :=
   (exists_unique_compatible converter system outerHistory).choose
 
-private theorem compatibleTranscript_compatible
+theorem compatibleTranscript_compatible
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     (converter : DDC A B) (system : DDS B) (outerHistory : History A) :
     Compatible converter system outerHistory
       (compatibleTranscript converter system outerHistory) :=
   (exists_unique_compatible converter system outerHistory).choose_spec.1
 
-private def outerContinuation
+def outerContinuation
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     (history : DDC.History A B) (remaining : List A.query) : History A where
   queries := history.outer.queries ++ remaining
   nonempty := List.append_ne_nil_of_left_ne_nil history.outer.nonempty remaining
 
-private theorem CompatibleFrom.final_query_eq
+theorem CompatibleFrom.final_query_eq
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     {converter : DDC A B} {system : DDS B}
     {history : DDC.History A B} {innerPrior : List B.query}
@@ -471,10 +462,10 @@ theorem Compatible.final_query_eq_last
     transcript.final.1 = outerHistory.last := by
   have equal := CompatibleFrom.final_query_eq compatible
   have historyEqual : outerContinuation
-      (DDC.History.singleton (B := B) (firstQuery outerHistory))
-      (remainingQueries outerHistory) = outerHistory := by
+      (DDC.History.singleton (B := B) (History.head outerHistory))
+      (History.tail outerHistory) = outerHistory := by
     apply History.ext
-    change firstQuery outerHistory :: remainingQueries outerHistory =
+    change History.head outerHistory :: History.tail outerHistory =
       outerHistory.queries
     exact List.cons_head_tail outerHistory.nonempty
   exact equal.trans (congrArg History.last historyEqual)
@@ -496,7 +487,7 @@ theorem selectReply_heq_second
     exact eqRec_heq (φ := fun query => Option (A.answer query)) selected reply.2
   next rejected => exact (rejected equal).elim
 
-private def forwardingFinal
+def forwardingFinal
     {A : Interface.{u, v}} (system : DDS A)
     (innerPrior : List A.query) (current : A.query) :
     List A.query → DDC.History.InnerReply A
@@ -504,7 +495,7 @@ private def forwardingFinal
   | next :: remaining =>
       forwardingFinal system (innerPrior ++ [current]) next remaining
 
-private theorem compatibleFrom_forwarding
+theorem compatibleFrom_forwarding
     {A : Interface.{u, v}} (system : DDS A)
     (history : DDC.History A A) (innerPrior : List A.query)
     (current : A.query)
@@ -534,6 +525,7 @@ private theorem compatibleFrom_forwarding
         apply (DDC.mem_forwarding_iff A after _).mpr
         refine ⟨afterAdmissible, ?_⟩
         simp [after]
+        rfl
       refine ⟨[history.lastInput, after.lastInput],
         [Sum.inl history.lastOuter,
           Sum.inr ⟨after.lastOuter, answer⟩], ?_⟩
@@ -556,6 +548,7 @@ private theorem compatibleFrom_forwarding
         apply (DDC.mem_forwarding_iff A after _).mpr
         refine ⟨afterAdmissible, ?_⟩
         simp [after]
+        rfl
       let nextHistory := after.snocOuter next
       have nextAdmissible :
           DDC.Raw.Admissible (DDC.forwarding A).toFun nextHistory :=
@@ -571,13 +564,13 @@ private theorem compatibleFrom_forwarding
       apply CompatibleFrom.outerNext replyResponds
       simpa [forwardingFinal, answer, nextHistory] using tail
 
-private def appendHistory
+def appendHistory
     {A : Interface.{u, v}} (prior : List A.query) (current : A.query)
     (remaining : List A.query) : History A where
   queries := prior ++ current :: remaining
   nonempty := by simp
 
-private theorem forwardingFinal_eq
+theorem forwardingFinal_eq
     {A : Interface.{u, v}} (system : DDS A)
     (prior : List A.query) (current : A.query)
     (remaining : List A.query) :
@@ -685,32 +678,32 @@ theorem applySystem_forwarding_eq
   intro outerHistory
   rw [applySystem_eq_iff]
   let start := DDC.History.singleton (B := A)
-    (Attachment.firstQuery outerHistory)
+    (History.head outerHistory)
   have admissible :
       DDC.Raw.Admissible (DDC.forwarding A).toFun start :=
-    .start (Attachment.firstQuery outerHistory)
+    .start (History.head outerHistory)
   obtain ⟨inputs, responses, compatible⟩ :=
     Attachment.compatibleFrom_forwarding system start []
-      (Attachment.firstQuery outerHistory) (by simp [start])
-      (by simp [start]) admissible (Attachment.remainingQueries outerHistory)
+      (History.head outerHistory) (by simp [start])
+      (by simp [start]) admissible (History.tail outerHistory)
   let transcript : Attachment.Transcript A A :=
     { inputs := inputs
       responses := responses
       final := Attachment.forwardingFinal system []
-        (Attachment.firstQuery outerHistory)
-        (Attachment.remainingQueries outerHistory) }
+        (History.head outerHistory)
+        (History.tail outerHistory) }
   refine ⟨transcript, compatible, ?_⟩
   have historyEqual : Attachment.appendHistory []
-      (Attachment.firstQuery outerHistory)
-      (Attachment.remainingQueries outerHistory) = outerHistory := by
+      (History.head outerHistory)
+      (History.tail outerHistory) = outerHistory := by
     apply History.ext
-    change Attachment.firstQuery outerHistory ::
-      Attachment.remainingQueries outerHistory = outerHistory.queries
+    change History.head outerHistory ::
+      History.tail outerHistory = outerHistory.queries
     exact List.cons_head_tail outerHistory.nonempty
   change HEq
     (Attachment.forwardingFinal system []
-      (Attachment.firstQuery outerHistory)
-      (Attachment.remainingQueries outerHistory)).2
+      (History.head outerHistory)
+      (History.tail outerHistory)).2
     (system outerHistory)
   rw [Attachment.forwardingFinal_eq, historyEqual]
 

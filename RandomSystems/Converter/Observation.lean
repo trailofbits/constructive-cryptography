@@ -46,21 +46,6 @@ transcript; prefix closure is not bundled into this function type. -/
 abbrev DDE (A : Interface.{u, v}) : Type (max u v) :=
   Transcript A → Option A.query
 
-private def innerHistory {A : Interface.{u, v}}
-    (prior : List A.query) (query : A.query) : History A where
-  queries := prior ++ [query]
-  nonempty := by simp
-
-@[simp]
-private theorem last_innerHistory {A : Interface.{u, v}}
-    (prior : List A.query) (query : A.query) :
-    (innerHistory prior query).last = query := by
-  simp [innerHistory, History.last]
-
-private abbrev innerReplyAt {A : Interface.{u, v}} (system : DDS A)
-    (prior : List A.query) (query : A.query) : Option (A.answer query) :=
-  Attachment.innerReplyAt system prior query
-
 /-- The attempted queries contained in a complete observation history. -/
 def transcriptInputs {A : Interface.{u, v}}
     (observations : Transcript A) : List A.query :=
@@ -76,7 +61,7 @@ def transcript {A : Interface.{u, v}}
       match environment current with
       | none => current
       | some query => current ++
-          [⟨query, innerReplyAt system (transcriptInputs current) query⟩]
+          [⟨query, Attachment.innerReplyAt system (transcriptInputs current) query⟩]
 
 @[simp]
 theorem transcript_zero {A : Interface.{u, v}}
@@ -90,7 +75,7 @@ theorem transcript_succ {A : Interface.{u, v}}
       match environment (transcript system environment rounds) with
       | none => transcript system environment rounds
       | some query => transcript system environment rounds ++
-          [⟨query, innerReplyAt system
+          [⟨query, Attachment.innerReplyAt system
             (transcriptInputs (transcript system environment rounds)) query⟩] :=
   rfl
 
@@ -102,16 +87,16 @@ theorem transcript_succ_eq_of_stops {A : Interface.{u, v}}
       transcript system environment rounds := by
   rw [transcript_succ, stops]
 
-private def extendTranscript {A : Interface.{u, v}}
+def extendTranscript {A : Interface.{u, v}}
     (system : DDS A) (environment : DDE A)
     (current : Transcript A) : Transcript A :=
   match environment current with
   | none => current
   | some query =>
       current ++ [⟨query,
-        innerReplyAt system (transcriptInputs current) query⟩]
+        Attachment.innerReplyAt system (transcriptInputs current) query⟩]
 
-private def continueTranscript {A : Interface.{u, v}}
+def continueTranscript {A : Interface.{u, v}}
     (system : DDS A) (environment : DDE A) :
     Nat → Transcript A → Transcript A
   | 0, current => current
@@ -119,7 +104,7 @@ private def continueTranscript {A : Interface.{u, v}}
       extendTranscript system environment
         (continueTranscript system environment rounds current)
 
-private theorem continueTranscript_succ_first {A : Interface.{u, v}}
+theorem continueTranscript_succ_first {A : Interface.{u, v}}
     (system : DDS A) (environment : DDE A) (rounds : Nat)
     (current : Transcript A) :
     continueTranscript system environment (rounds + 1) current =
@@ -131,7 +116,7 @@ private theorem continueTranscript_succ_first {A : Interface.{u, v}}
       rw [continueTranscript, inductionHypothesis]
       rfl
 
-private theorem transcript_eq_continue {A : Interface.{u, v}}
+theorem transcript_eq_continue {A : Interface.{u, v}}
     (system : DDS A) (environment : DDE A) (rounds : Nat) :
     transcript system environment rounds =
       continueTranscript system environment rounds [] := by
@@ -141,7 +126,7 @@ private theorem transcript_eq_continue {A : Interface.{u, v}}
       rw [transcript_succ, inductionHypothesis]
       rfl
 
-private theorem continueTranscript_eq_of_fixed {A : Interface.{u, v}}
+theorem continueTranscript_eq_of_fixed {A : Interface.{u, v}}
     (system : DDS A) (environment : DDE A)
     (current : Transcript A)
     (fixed : extendTranscript system environment current = current) :
@@ -165,7 +150,7 @@ theorem transcriptInputs_succ_of_query {A : Interface.{u, v}}
 
 /-- A finite-path, possibly infinitely branching mathematical observation
 tree.  Each branch is selected by the answer in the queried fibre. -/
-private inductive ObservationTree (A : Interface.{u, v}) (R : Type w)
+inductive ObservationTree (A : Interface.{u, v}) (R : Type w)
   | leaf (value : R)
   | query (input : A.query)
       (after : Option (A.answer input) → ObservationTree A R)
@@ -175,19 +160,19 @@ namespace ObservationTree
 variable {A : Interface.{u, v}} {R : Type w}
 
 /-- Evaluate one observation tree against a DDS, starting after `prior`. -/
-private noncomputable def evaluate (tree : ObservationTree A R) (system : DDS A)
+noncomputable def evaluate (tree : ObservationTree A R) (system : DDS A)
     (prior : List A.query) : R :=
   ObservationTree.rec
     (motive := fun _ => DDS A → List A.query → R)
     (fun value _ _ => value)
     (fun query _ evaluateAfter system prior =>
-      let reply := innerReplyAt system prior query
+      let reply := Attachment.innerReplyAt system prior query
       evaluateAfter reply system (prior ++ [query]))
     tree system prior
 
 /-- Read the next query selected by a complete tagged answer history.  A
 history with a mismatched query tag lies off the represented tree and stops. -/
-private noncomputable def toDDE (tree : ObservationTree A R) : DDE A := by
+noncomputable def toDDE (tree : ObservationTree A R) : DDE A := by
   classical
   exact ObservationTree.rec
     (motive := fun _ => DDE A)
@@ -202,18 +187,18 @@ private noncomputable def toDDE (tree : ObservationTree A R) : DDE A := by
     tree
 
 /-- The unique linear branch selected by one concrete DDS. -/
-private noncomputable def branchTranscript (tree : ObservationTree A R) (system : DDS A)
+noncomputable def branchTranscript (tree : ObservationTree A R) (system : DDS A)
     (prior : List A.query) : Transcript A :=
   ObservationTree.rec
     (motive := fun _ => DDS A → List A.query → Transcript A)
     (fun _ _ _ => [])
     (fun query _ evaluateAfter system prior =>
-      let reply := innerReplyAt system prior query
+      let reply := Attachment.innerReplyAt system prior query
       ⟨query, reply⟩ :: evaluateAfter reply system (prior ++ [query]))
     tree system prior
 
 /-- Read the leaf reached by a complete tagged answer history. -/
-private noncomputable def resultFromTranscript (tree : ObservationTree A R) :
+noncomputable def resultFromTranscript (tree : ObservationTree A R) :
     Transcript A → Option R := by
   classical
   exact ObservationTree.rec
@@ -229,29 +214,29 @@ private noncomputable def resultFromTranscript (tree : ObservationTree A R) :
     tree
 
 @[simp]
-private theorem branchTranscript_leaf (value : R) (system : DDS A)
+theorem branchTranscript_leaf (value : R) (system : DDS A)
     (prior : List A.query) :
     branchTranscript (.leaf value) system prior = [] :=
   rfl
 
 @[simp]
-private theorem branchTranscript_query (query : A.query)
+theorem branchTranscript_query (query : A.query)
     (after : Option (A.answer query) → ObservationTree A R)
     (system : DDS A) (prior : List A.query) :
     branchTranscript (.query query after) system prior =
-      let reply := innerReplyAt system prior query
+      let reply := Attachment.innerReplyAt system prior query
       ⟨query, reply⟩ ::
         branchTranscript (after reply) system (prior ++ [query]) :=
   rfl
 
 @[simp]
-private theorem toDDE_nil_query (query : A.query)
+theorem toDDE_nil_query (query : A.query)
     (after : Option (A.answer query) → ObservationTree A R) :
     toDDE (.query query after) [] = some query := by
   simp [toDDE]
 
 @[simp]
-private theorem toDDE_cons_query (query : A.query)
+theorem toDDE_cons_query (query : A.query)
     (after : Option (A.answer query) → ObservationTree A R)
     (reply : Option (A.answer query)) (remaining : Transcript A) :
     toDDE (.query query after) (⟨query, reply⟩ :: remaining) =
@@ -260,7 +245,7 @@ private theorem toDDE_cons_query (query : A.query)
   simp [toDDE]
 
 @[simp]
-private theorem resultFromTranscript_cons_query (query : A.query)
+theorem resultFromTranscript_cons_query (query : A.query)
     (after : Option (A.answer query) → ObservationTree A R)
     (reply : Option (A.answer query)) (remaining : Transcript A) :
     resultFromTranscript (.query query after)
@@ -270,25 +255,25 @@ private theorem resultFromTranscript_cons_query (query : A.query)
   simp [resultFromTranscript]
 
 @[simp]
-private theorem evaluate_query (query : A.query)
+theorem evaluate_query (query : A.query)
     (after : Option (A.answer query) → ObservationTree A R)
     (system : DDS A) (prior : List A.query) :
     evaluate (.query query after) system prior =
-      let reply := innerReplyAt system prior query
+      let reply := Attachment.innerReplyAt system prior query
       evaluate (after reply) system (prior ++ [query]) :=
   rfl
 
-private theorem toDDE_branchTranscript (tree : ObservationTree A R)
+theorem toDDE_branchTranscript (tree : ObservationTree A R)
     (system : DDS A) (prior : List A.query) :
     toDDE tree (branchTranscript tree system prior) = none := by
   induction tree generalizing prior with
   | leaf value => rfl
   | query query after inductionHypothesis =>
-      let reply := innerReplyAt system prior query
+      let reply := Attachment.innerReplyAt system prior query
       rw [branchTranscript_query, toDDE_cons_query]
       exact inductionHypothesis reply (prior ++ [query])
 
-private theorem toDDE_branchTranscript_take
+theorem toDDE_branchTranscript_take
     (tree : ObservationTree A R) (system : DDS A)
     (prior : List A.query) (round : Nat)
     (within : round < (branchTranscript tree system prior).length) :
@@ -297,7 +282,7 @@ private theorem toDDE_branchTranscript_take
   induction tree generalizing prior round with
   | leaf value => simp at within
   | query query after inductionHypothesis =>
-      let reply := innerReplyAt system prior query
+      let reply := Attachment.innerReplyAt system prior query
       cases round with
       | zero => rfl
       | succ round =>
@@ -310,23 +295,30 @@ private theorem toDDE_branchTranscript_take
             toDDE_cons_query, List.getElem_cons_succ]
           exact inductionHypothesis reply (prior ++ [query]) round tailWithin
 
-private theorem branchTranscript_get_reply
+theorem branchTranscript_get_reply
     (tree : ObservationTree A R) (system : DDS A)
     (prior : List A.query) (round : Nat)
     (within : round < (branchTranscript tree system prior).length) :
     (branchTranscript tree system prior)[round].2 =
-      innerReplyAt system
+      Attachment.innerReplyAt system
         (prior ++ transcriptInputs
           ((branchTranscript tree system prior).take round))
         ((branchTranscript tree system prior)[round].1) := by
   induction tree generalizing prior round with
   | leaf value => simp at within
   | query query after inductionHypothesis =>
-      let reply := innerReplyAt system prior query
+      let reply := Attachment.innerReplyAt system prior query
       cases round with
       | zero =>
-          simp only [branchTranscript_query, List.getElem_cons_zero,
-            List.take_zero, transcriptInputs, List.map_nil, List.append_nil]
+          have first :
+              (branchTranscript (.query query after) system prior)[0] =
+                ⟨query, reply⟩ := by
+            simp only [branchTranscript_query, List.getElem_cons_zero]
+            rfl
+          rw [first]
+          simp only [List.take_zero, transcriptInputs, List.map_nil,
+            List.append_nil]
+          rfl
       | succ round =>
           have tailWithin : round <
               (branchTranscript (after reply) system
@@ -335,11 +327,19 @@ private theorem branchTranscript_get_reply
               Nat.succ_lt_succ_iff] using within
           have tailEqual := inductionHypothesis reply (prior ++ [query])
             round tailWithin
+          have current :
+              (branchTranscript (.query query after) system prior)[round + 1] =
+                (branchTranscript (after reply) system
+                  (prior ++ [query]))[round] := by
+            simp only [branchTranscript_query, List.getElem_cons_succ]
+            rfl
+          rw [current]
+          dsimp only [reply] at tailEqual
           simpa only [branchTranscript_query, List.take_succ_cons,
             transcriptInputs, List.map_cons, List.map_take,
-            List.getElem_cons_succ, List.append_assoc] using tailEqual
+            List.append_assoc, List.singleton_append] using tailEqual
 
-private theorem resultFromTranscript_branchTranscript
+theorem resultFromTranscript_branchTranscript
     (tree : ObservationTree A R) (system : DDS A)
     (prior : List A.query) :
     resultFromTranscript tree (branchTranscript tree system prior) =
@@ -347,12 +347,12 @@ private theorem resultFromTranscript_branchTranscript
   induction tree generalizing prior with
   | leaf value => rfl
   | query query after inductionHypothesis =>
-      let reply := innerReplyAt system prior query
+      let reply := Attachment.innerReplyAt system prior query
       rw [branchTranscript_query, resultFromTranscript_cons_query,
         evaluate_query]
       exact inductionHypothesis reply (prior ++ [query])
 
-private theorem transcript_toDDE_eq_take
+theorem transcript_toDDE_eq_take
     (tree : ObservationTree A R) (system : DDS A) (rounds : Nat) :
     transcript system tree.toDDE rounds =
       (branchTranscript tree system []).take rounds := by
@@ -379,9 +379,11 @@ private theorem transcript_toDDE_eq_take
 
 end ObservationTree
 
+namespace Internal
+
 /-- Transport the converter's outer reply to the query selected by the outer
 history represented at the same observation node. -/
-private def alignedOuterReply
+def alignedOuterReply
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     {outerHistory : History A} {history : DDC.History A B}
     (aligned : history.lastOuter = outerHistory.last)
@@ -391,7 +393,7 @@ private def alignedOuterReply
 
 /-- One finite outer observation represented as an inner observation tree.
 This relation is purely between complete functions and finite histories. -/
-private inductive RepresentsObservation
+inductive RepresentsObservation
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     (converter : DDC A B) (environment : DDE A) :
     Nat → History A → DDC.History A B → List B.query →
@@ -440,7 +442,7 @@ private inductive RepresentsObservation
       RepresentsObservation converter environment (remaining + 2)
         outerHistory history innerPrior outerTranscript tree
 
-private theorem exists_representsObservationFrom
+theorem exists_representsObservationFrom
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     (converter : DDC A B) (environment : DDE A) :
     ∀ (remaining : Nat) (outerHistory : History A)
@@ -520,17 +522,17 @@ private theorem exists_representsObservationFrom
                             RepresentsObservation.outerNext aligned responds
                               continuesEqual tail⟩
 
-private def appendOuterHistory {A : Interface.{u, v}}
+def appendOuterHistory {A : Interface.{u, v}}
     (history : History A) (remaining : List A.query) : History A :=
   ⟨history.1 ++ remaining, by simp [history.2]⟩
 
 @[simp]
-private theorem appendOuterHistory_nil {A : Interface.{u, v}}
+theorem appendOuterHistory_nil {A : Interface.{u, v}}
     (history : History A) : appendOuterHistory history [] = history := by
   apply History.ext
   simp [appendOuterHistory]
 
-private theorem appendOuterHistory_cons {A : Interface.{u, v}}
+theorem appendOuterHistory_cons {A : Interface.{u, v}}
     (history : History A) (next : A.query) (remaining : List A.query) :
     appendOuterHistory history (next :: remaining) =
       appendOuterHistory (History.snoc history next) remaining := by
@@ -539,7 +541,7 @@ private theorem appendOuterHistory_cons {A : Interface.{u, v}}
 
 /-- Every compatible suffix at the current histories closes to a compatible
 full transcript at the corresponding extended outer history. -/
-private def PrefixContext {A : Interface.{u, v}} {B : Interface.{w, z}}
+def PrefixContext {A : Interface.{u, v}} {B : Interface.{w, z}}
     (converter : DDC A B) (system : DDS B)
     (outerHistory : History A) (history : DDC.History A B)
     (innerPrior : List B.query) : Prop :=
@@ -551,7 +553,7 @@ private def PrefixContext {A : Interface.{u, v}} {B : Interface.{w, z}}
         Attachment.Compatible converter system (appendOuterHistory outerHistory remaining)
           full ∧ full.final = final
 
-private theorem PrefixContext.start
+theorem PrefixContext.start
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     (converter : DDC A B) (system : DDS B) (firstOuter : A.query) :
     PrefixContext converter system (History.singleton firstOuter)
@@ -569,10 +571,10 @@ private theorem PrefixContext.start
     (History.tail
       (appendOuterHistory (History.singleton firstOuter) remaining))
     inputs responses final
-  simpa [appendOuterHistory, History.head,
+  simpa [appendOuterHistory, History.singleton, History.head,
     History.tail] using compatible
 
-private theorem PrefixContext.afterInner
+theorem PrefixContext.afterInner
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     {converter : DDC A B} {system : DDS B}
     {outerHistory : History A} {history : DDC.History A B}
@@ -580,14 +582,14 @@ private theorem PrefixContext.afterInner
     (context : PrefixContext converter system outerHistory history innerPrior)
     {query : B.query} (responds : Sum.inl query ∈ converter history) :
     PrefixContext converter system outerHistory
-      (history.snocInner query (innerReplyAt system innerPrior query))
+      (history.snocInner query (Attachment.innerReplyAt system innerPrior query))
       (innerPrior ++ [query]) := by
   intro remaining inputs responses final compatible
   exact context remaining (history.lastInput :: inputs)
     (Sum.inl query :: responses) final
     (Attachment.CompatibleFrom.innerQuery responds compatible)
 
-private theorem PrefixContext.afterOuter
+theorem PrefixContext.afterOuter
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     {converter : DDC A B} {system : DDS B}
     {outerHistory : History A} {history : DDC.History A B}
@@ -608,42 +610,20 @@ private theorem PrefixContext.afterOuter
   rw [appendOuterHistory_cons] at fullCompatible
   exact fullCompatible
 
-private theorem packed_innerReplyAt
-    {A : Interface.{u, v}} (system : DDS A)
-    (prior : List A.query) (query : A.query) :
-    (⟨query, innerReplyAt system prior query⟩ : DDC.History.InnerReply A) =
-      ⟨(innerHistory prior query).last,
-        system (innerHistory prior query)⟩ := by
-  apply Sigma.ext (last_innerHistory prior query).symm
-  change innerReplyAt system prior query ≍
-    system (innerHistory prior query)
-  exact cast_heq
-    (congrArg (fun selected => Option (A.answer selected))
-      (last_innerHistory prior query))
-    (system (innerHistory prior query))
-
-private theorem reply_eq_of_packed_eq
-    {A : Interface.{u, v}} {query : A.query}
-    {left right : Option (A.answer query)}
-    (equal : (⟨query, left⟩ : DDC.History.InnerReply A) = ⟨query, right⟩) :
-    left = right := by
-  cases equal
-  rfl
-
-private theorem innerReplyAt_eq_of_history
+theorem innerReplyAt_eq_of_history
     {A : Interface.{u, v}} (system : DDS A)
     (prior : List A.query) (history : History A)
-    (equal : innerHistory prior history.last = history) :
-    innerReplyAt system prior history.last = system history := by
-  apply reply_eq_of_packed_eq
+    (equal : Attachment.innerHistory prior history.last = history) :
+    Attachment.innerReplyAt system prior history.last = system history := by
+  apply DDC.History.reply_eq_of_packed_eq
   calc
-    (⟨history.last, innerReplyAt system prior history.last⟩ : DDC.History.InnerReply A) =
-        ⟨(innerHistory prior history.last).last,
-          system (innerHistory prior history.last)⟩ :=
-      packed_innerReplyAt system prior history.last
+    (⟨history.last, Attachment.innerReplyAt system prior history.last⟩ : DDC.History.InnerReply A) =
+        ⟨(Attachment.innerHistory prior history.last).last,
+          system (Attachment.innerHistory prior history.last)⟩ :=
+      Attachment.packed_innerReplyAt system prior history.last
     _ = ⟨history.last, system history⟩ := by rw [equal]
 
-private theorem transport_option_eq_cast
+theorem transport_option_eq_cast
     {Q : Type u} (answer : Q → Type v) {left right : Q}
     (equal : left = right) (reply : Option (answer left)) :
     equal ▸ reply =
@@ -651,7 +631,7 @@ private theorem transport_option_eq_cast
   cases equal
   rfl
 
-private theorem PrefixContext.finish
+theorem PrefixContext.finish
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     {converter : DDC A B} {system : DDS B}
     {outerHistory : History A} {history : DDC.History A B}
@@ -684,7 +664,7 @@ private theorem PrefixContext.finish
   exact ((applySystem_eq_iff converter system outerHistory _).mpr
     ⟨full, compatible, finalEqual⟩).symm
 
-private theorem RepresentsObservation.evaluate_eq_continue
+theorem RepresentsObservation.evaluate_eq_continue
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     {converter : DDC A B} {environment : DDE A}
     {remaining : Nat} {outerHistory : History A}
@@ -705,7 +685,7 @@ private theorem RepresentsObservation.evaluate_eq_continue
   | noRounds => rfl
   | @innerQuery remaining outerHistory history innerPrior outerTranscript
       query after responds branches inductionHypothesis =>
-      let reply := innerReplyAt system innerPrior query
+      let reply := Attachment.innerReplyAt system innerPrior query
       rw [ObservationTree.evaluate_query]
       exact inductionHypothesis reply
         (PrefixContext.afterInner context responds) inputsEqual nextOuter
@@ -719,17 +699,14 @@ private theorem RepresentsObservation.evaluate_eq_continue
           applySystem converter system outerHistory :=
         PrefixContext.finish context aligned responds
       have historyEqual :
-          innerHistory (transcriptInputs outerTranscript) outerHistory.last =
+          Attachment.innerHistory (transcriptInputs outerTranscript) outerHistory.last =
             outerHistory :=
         History.ext inputsEqual
       have systemReplyEqual :
-          innerReplyAt (applySystem converter system)
+          Attachment.innerReplyAt (applySystem converter system)
               (transcriptInputs outerTranscript) outerHistory.last =
-            outerReply.2 := by
-        calc
-          _ = applySystem converter system outerHistory :=
-            innerReplyAt_eq_of_history _ _ _ historyEqual
-          _ = outerReply.2 := replyEqual.symm
+            outerReply.2 :=
+        (innerReplyAt_eq_of_history _ _ _ historyEqual).trans replyEqual.symm
       change outerTranscript ++ [outerReply] =
         extendTranscript (applySystem converter system) environment
           outerTranscript
@@ -745,17 +722,14 @@ private theorem RepresentsObservation.evaluate_eq_continue
           applySystem converter system outerHistory :=
         PrefixContext.finish context aligned responds
       have historyEqual :
-          innerHistory (transcriptInputs outerTranscript) outerHistory.last =
+          Attachment.innerHistory (transcriptInputs outerTranscript) outerHistory.last =
             outerHistory :=
         History.ext inputsEqual
       have systemReplyEqual :
-          innerReplyAt (applySystem converter system)
+          Attachment.innerReplyAt (applySystem converter system)
               (transcriptInputs outerTranscript) outerHistory.last =
-            outerReply.2 := by
-        calc
-          _ = applySystem converter system outerHistory :=
-            innerReplyAt_eq_of_history _ _ _ historyEqual
-          _ = outerReply.2 := replyEqual.symm
+            outerReply.2 :=
+        (innerReplyAt_eq_of_history _ _ _ historyEqual).trans replyEqual.symm
       let extended := outerTranscript ++ [outerReply]
       have firstExtension :
           extendTranscript (applySystem converter system) environment
@@ -781,17 +755,14 @@ private theorem RepresentsObservation.evaluate_eq_continue
           applySystem converter system outerHistory :=
         PrefixContext.finish context aligned responds
       have historyEqual :
-          innerHistory (transcriptInputs outerTranscript) outerHistory.last =
+          Attachment.innerHistory (transcriptInputs outerTranscript) outerHistory.last =
             outerHistory :=
         History.ext inputsEqual
       have systemReplyEqual :
-          innerReplyAt (applySystem converter system)
+          Attachment.innerReplyAt (applySystem converter system)
               (transcriptInputs outerTranscript) outerHistory.last =
-            outerReply.2 := by
-        calc
-          _ = applySystem converter system outerHistory :=
-            innerReplyAt_eq_of_history _ _ _ historyEqual
-          _ = outerReply.2 := replyEqual.symm
+            outerReply.2 :=
+        (innerReplyAt_eq_of_history _ _ _ historyEqual).trans replyEqual.symm
       let extended := outerTranscript ++ [outerReply]
       have firstExtension :
           extendTranscript (applySystem converter system) environment
@@ -818,7 +789,7 @@ private theorem RepresentsObservation.evaluate_eq_continue
         continueTranscript_succ_first, firstExtension]
       exact tailEqual
 
-private theorem transcript_eq_nil_of_initial_stop
+theorem transcript_eq_nil_of_initial_stop
     {A : Interface.{u, v}} (system : DDS A) (environment : DDE A)
     (stops : environment [] = none) :
     ∀ rounds, transcript system environment rounds = [] := by
@@ -829,7 +800,9 @@ private theorem transcript_eq_nil_of_initial_stop
       rw [transcript_succ, inductionHypothesis]
       simp [stops]
 
-private structure ObservationFactorization
+end Internal
+
+structure ObservationFactorization
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     (converter : DDC A B) (environment : DDE A) (outerRounds : Nat) where
   tree : ObservationTree B (Transcript A)
@@ -837,7 +810,7 @@ private structure ObservationFactorization
     tree.evaluate system [] =
       transcript (applySystem converter system) environment outerRounds
 
-private noncomputable def observationFactorization
+noncomputable def observationFactorization
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     (converter : DDC A B) (environment : DDE A) (outerRounds : Nat) :
     ObservationFactorization converter environment outerRounds := by
@@ -853,7 +826,7 @@ private noncomputable def observationFactorization
           exact
             { tree := .leaf []
               correct := fun system =>
-                (transcript_eq_nil_of_initial_stop
+                (Internal.transcript_eq_nil_of_initial_stop
                   (applySystem converter system) environment nextOuter
                   (remaining + 1)).symm }
       | some firstOuter =>
@@ -861,7 +834,7 @@ private noncomputable def observationFactorization
           let history := DDC.History.singleton (B := B) firstOuter
           have startAdmissible : DDC.Raw.Admissible converter.toFun history :=
             .start firstOuter
-          let existence := exists_representsObservationFrom converter environment
+          let existence := Internal.exists_representsObservationFrom converter environment
             (remaining + 1) outerHistory history [] [] (by rfl)
               startAdmissible
           let tree := existence.choose
@@ -870,11 +843,13 @@ private noncomputable def observationFactorization
             { tree := tree
               correct := ?_ }
           intro system
-          have evaluates := RepresentsObservation.evaluate_eq_continue
+          have evaluates := Internal.RepresentsObservation.evaluate_eq_continue
             represents system
-            (PrefixContext.start converter system firstOuter)
+            (Internal.PrefixContext.start converter system firstOuter)
             (by rfl)
-            (by simpa using nextOuter)
+            (by
+              change environment [] = some firstOuter
+              exact nextOuter)
           exact evaluates.trans
             (transcript_eq_continue (applySystem converter system)
               environment (remaining + 1)).symm

@@ -33,6 +33,16 @@ answer fibre. -/
 abbrev DDC.History.InnerReply (B : Interface.{w, z}) :=
   Σ query : B.query, Option (B.answer query)
 
+/-- Equality of packed replies at the same query is equality in its answer
+fibre. -/
+theorem DDC.History.reply_eq_of_packed_eq
+    {A : Interface.{u, v}} {query : A.query}
+    {left right : Option (A.answer query)}
+    (equal : (⟨query, left⟩ : DDC.History.InnerReply A) = ⟨query, right⟩) :
+    left = right := by
+  cases equal
+  rfl
+
 namespace Interface.Equiv
 
 /-- Relabel a possibly rejected answer while retaining the query that selects
@@ -243,7 +253,7 @@ def relabel {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     rw [mapFilter]
     exact congrArg (List.map outer.queries) history.projects
 
-private def unrelabel {A C : Interface.{u, v}} {B D : Interface.{w, z}}
+def unrelabel {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D)
     (history : DDC.History C D) : DDC.History A B where
   inputs := _root_.RandomSystems.Ambient.History.map (relabelInput outer inner).symm history.inputs
@@ -361,7 +371,7 @@ theorem lastInput_relabel {A C : Interface.{u, v}} {B D : Interface.{w, z}}
       relabelInput outer inner history.lastInput := by
   simp [relabel, DDC.History.lastInput]
 
-private theorem unrelabel_relabel {A C : Interface.{u, v}} {B D : Interface.{w, z}}
+theorem unrelabel_relabel {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D)
     (history : DDC.History A B) :
     unrelabel outer inner (relabel outer inner history) = history := by
@@ -372,7 +382,7 @@ private theorem unrelabel_relabel {A C : Interface.{u, v}} {B D : Interface.{w, 
     history.inputs.queries
   simp
 
-private theorem relabel_unrelabel {A C : Interface.{u, v}} {B D : Interface.{w, z}}
+theorem relabel_unrelabel {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D)
     (history : DDC.History C D) :
     relabel outer inner (unrelabel outer inner history) = history := by
@@ -469,7 +479,7 @@ inductive Admissible {A : Interface.{u, v}} {B : Interface.{w, z}}
       (query : A.query) :
       Admissible raw (history.snocOuter query)
 
-private theorem Admissible.lastOuter_eq_of_lastInput_outer
+theorem Admissible.lastOuter_eq_of_lastInput_outer
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     {raw : DDC.Raw A B} {history : DDC.History A B}
     (admissible : Admissible raw history) {query : A.query}
@@ -702,7 +712,7 @@ noncomputable def Internal.forwardingRaw (A : Interface.{u, v}) : DDC.Raw A A :=
           Part.none
 
 @[simp]
-private theorem rawForwarding_singleton (A : Interface.{u, v})
+theorem Internal.rawForwarding_singleton (A : Interface.{u, v})
     (query : A.query) :
     Internal.forwardingRaw A (DDC.History.singleton query) =
       Part.some (Sum.inl query) := by
@@ -710,14 +720,14 @@ private theorem rawForwarding_singleton (A : Interface.{u, v})
   rw [DDC.History.lastInput_singleton]
 
 @[simp]
-private theorem rawForwarding_snocOuter (A : Interface.{u, v})
+theorem Internal.rawForwarding_snocOuter (A : Interface.{u, v})
     (history : DDC.History A A) (query : A.query) :
     Internal.forwardingRaw A (history.snocOuter query) =
       Part.some (Sum.inl query) := by
   unfold Internal.forwardingRaw
   rw [DDC.History.lastInput_snocOuter]
 
-private theorem rawForwarding_snocInner_of_eq (A : Interface.{u, v})
+theorem Internal.rawForwarding_snocInner_of_eq (A : Interface.{u, v})
     (history : DDC.History A A) (query : A.query)
     (reply : Option (A.answer query))
     (equal : query = history.lastOuter) :
@@ -730,7 +740,7 @@ private theorem rawForwarding_snocInner_of_eq (A : Interface.{u, v})
   simp
   rfl
 
-private theorem rawForwarding_snocInner_of_ne (A : Interface.{u, v})
+theorem Internal.rawForwarding_snocInner_of_ne (A : Interface.{u, v})
     (history : DDC.History A A) (query : A.query)
     (reply : Option (A.answer query))
     (different : query ≠ history.lastOuter) :
@@ -740,7 +750,7 @@ private theorem rawForwarding_snocInner_of_ne (A : Interface.{u, v})
   rw [DDC.History.lastInput_snocInner]
   simp [different]
 
-private theorem not_mem_rawForwarding_of_lastInput_inner
+theorem Internal.not_mem_rawForwarding_of_lastInput_inner
     (A : Interface.{u, v}) (history : DDC.History A A)
     (inner : DDC.History.InnerReply A) (equal : history.lastInput = Sum.inr inner)
     (query : A.query) :
@@ -759,7 +769,7 @@ private theorem not_mem_rawForwarding_of_lastInput_inner
   · simp [same]
   · simp [same]
 
-private theorem rawForwarding_complete (A : Interface.{u, v}) :
+theorem Internal.rawForwarding_complete (A : Interface.{u, v}) :
     DDC.Raw.Complete (Internal.forwardingRaw A) := by
   classical
   intro history admissible
@@ -770,47 +780,51 @@ private theorem rawForwarding_complete (A : Interface.{u, v}) :
       | start outerQuery =>
           have equal : query = outerQuery := by
             simpa using responds
-          rw [rawForwarding_snocInner_of_eq A _ _ _ equal]
+          rw [Internal.rawForwarding_snocInner_of_eq A _ _ _ equal]
           simp
       | @afterInner previous previousQuery previousPrior previousResponds
           previousReply =>
           exact False.elim
-            ((not_mem_rawForwarding_of_lastInput_inner A _
+            ((Internal.not_mem_rawForwarding_of_lastInput_inner A _
               ⟨previousQuery, previousReply⟩ (by simp) query) responds)
       | @afterOuter previous previousPrior previousReply previousResponds
           outerQuery =>
           have equal : query = outerQuery := by
             simpa using responds
-          rw [rawForwarding_snocInner_of_eq A _ _ _ (by simpa using equal)]
+          rw [Internal.rawForwarding_snocInner_of_eq A _ _ _ (by simpa using equal)]
           simp
   | afterOuter prior responds query inductionHypothesis =>
       simp
 
-private def forwardingRank {A : Interface.{u, v}}
-    (history : DDC.History A A) : Nat :=
+/-- Rank witnessing that a converter which issues at most one inner query has
+no infinite inner continuation. -/
+def Internal.oneQueryRank
+    {A : Interface.{u, v}} {B : Interface.{w, z}}
+    (history : DDC.History A B) : Nat :=
   match history.lastInput with
   | Sum.inl _ => 1
   | Sum.inr _ => 0
 
-private theorem rawForwarding_branchFinite (A : Interface.{u, v}) :
+theorem Internal.rawForwarding_branchFinite (A : Interface.{u, v}) :
     DDC.Raw.BranchFinite (Internal.forwardingRaw A) := by
   classical
-  refine Subrelation.wf ?_ (measure forwardingRank).wf
+  refine Subrelation.wf ?_ (measure Internal.oneQueryRank).wf
   intro after before continuation
   rcases continuation with ⟨query, reply, responds, rfl⟩
-  change forwardingRank (before.snocInner query reply) < forwardingRank before
+  change Internal.oneQueryRank (before.snocInner query reply) <
+    Internal.oneQueryRank before
   cases input : before.lastInput with
   | inl outerQuery =>
-      simp [forwardingRank, DDC.History.lastInput_snocInner, input]
+      simp [Internal.oneQueryRank, DDC.History.lastInput_snocInner, input]
   | inr innerReply =>
       exact False.elim
-        ((not_mem_rawForwarding_of_lastInput_inner A before innerReply
+        ((Internal.not_mem_rawForwarding_of_lastInput_inner A before innerReply
           input query) responds)
 
 /-- Forwarding realizes the identity DDC at an interface. -/
 noncomputable def forwarding (A : Interface.{u, v}) : DDC A A :=
-  ofRaw (Internal.forwardingRaw A) (rawForwarding_complete A)
-    (rawForwarding_branchFinite A)
+  ofRaw (Internal.forwardingRaw A) (Internal.rawForwarding_complete A)
+    (Internal.rawForwarding_branchFinite A)
 
 /-- The proof-only raw forwarding tree and the canonical forwarding DDC have
 the same admissible histories. -/

@@ -1,10 +1,20 @@
 # The theory
 
 This document describes the stable mathematical architecture of the library:
-the carrier-independent construction calculus, fixed-interface Random Systems,
-the optional query-indexed DDC layer, and the concrete random-system
-instantiations of AC/CC. Event algebras, computational feasibility, and the
+the construction calculus before a concrete system model is selected,
+fixed-interface Random Systems,
+and the optional query-indexed deterministic-converter layer. The
+probabilistic-converter category and concrete random-system instantiation of
+Constructive Cryptography are deferred. Event algebras, computational
+feasibility, and the
 deferred MauRen11 theory are outside this architecture.
+
+Maurer--Renner 2016, Section 1 (printed p. 3), records that both names had
+been used for the theory, but says that Constructive Cryptography “seems more
+natural and captures the goal of the theory better.” This library follows that
+recommendation: `ConstructiveCryptography` is the sole public root for
+the MR16/Jost/Liu foundation. The name `AbstractCryptography` is reserved for
+a future explicit MauRen11 reconciliation and is not a compatibility surface.
 
 ## 1. Interface-indexed resource algebra
 
@@ -88,7 +98,7 @@ $$
 Identity has error zero, bounds may be weakened, and serial composition adds
 errors by one triangle inequality and attachment non-expansion.
 
-`AbstractCryptography/Categorical.lean` proves these direct-image and metric
+`ConstructiveCryptography/Categorical.lean` proves these direct-image and metric
 lemmas for an arbitrary covariant functor $F:\mathbf D\to\mathbf{Type}$.
 `ResourceAlgebra` applies that theorem library with
 $\mathbf D=\mathbf C^{\mathrm{op}}$ and $F=\Phi$; it is not a second resource
@@ -190,12 +200,13 @@ $\mathcal R^* := \mathcal R\Sigma
 represents $\Sigma$ by a submonoid of endomorphisms and forms this direct-image
 closure. A simulator is an explicit witness used to establish membership in
 the closure. It is not part of the definition of construction. This material
-is owned by `AbstractCryptography/Categorical/Star.lean`.
+is owned by `ConstructiveCryptography/Categorical/Star.lean`.
 
 ## 2. Fixed-interface Random Systems
 
-The root `RandomSystems` is independent of converters and AC/CC. Every object
-in this layer has fixed query and answer alphabets $(X,Y)$.
+The root `RandomSystems` is independent of converters and Constructive
+Cryptography. Every object in this layer has fixed query and answer alphabets
+$(X,Y)$.
 
 ### Deterministic systems and environments
 
@@ -271,8 +282,8 @@ clause by taking two presentations in one fixed-domain fibre. The broader
 condition is packaged. `PDS.advantageOnDomain` is a separate auxiliary restricted to
 DDEs that are compatible with a named domain and globally halting; it is not
 Definition 2.26. The normalized quotient metric is added after the
-common-domain presentation has been embedded into the ambient observational
-quotient.
+common-domain presentation has been embedded into the ambient cumulative
+random-system carrier.
 
 ### Parallel composition and H-coefficient bounds
 
@@ -283,17 +294,21 @@ and answer projections determine component behavior. Reassociation,
 commutation, and units require the explicit relabelings proved by the library;
 they are not definitional equalities.
 
-`RandomSystems/Technique/HCoefficient.lean` owns finite-support
-H-coefficient bounds for partial, compatible, stopping DDEs. The transcript
-cells, system factor, cellwise ratio, and cell-mass bound remain explicit.
-These theorems are fixed-interface RS results and require no converter or CC
-import.
+`RandomSystems/TranscriptFactor.lean` owns the exact factorization of a fixed
+transcript into its environment and system conditions, including evaluation
+of the system factor for prefix-closed domain-filtered function evaluators.
+`RandomSystems/Technique/HCoefficient.lean` consumes that neutral semantic
+surface and owns the finite-support ratio and partition bounds for partial,
+compatible, stopping DDEs. The transcript cells, cellwise ratio, and cell-mass
+bound remain explicit. These theorems are fixed-interface RS results and
+require no converter or CC import.
 
-## 3. Query-indexed DDC extension
+## 3. Query-indexed converter extension
 
-Import `RandomSystems.Converter` for query-indexed DDSs, DDCs, attachment, and
-their normalized random-system quotient. The fixed-interface layer remains an
-independent import; the common-domain embedding below relates the two carriers.
+Import `RandomSystems.Converter` for query-indexed DDSs, branch-finite DDCs,
+deterministic attachment, and the ambient cumulative random-system carrier.
+The fixed-interface layer remains an independent import; the common-domain
+embedding below relates the two carriers.
 
 ### Ambient attempted-history carrier
 
@@ -332,8 +347,7 @@ This is an explicit generalization of Jost's bounded presentation, not a claim
 that Jost states branch-finiteness.
 
 `DDC` contains only the canonical function and its branch-finiteness proof.
-Attachment, serial composition, and parallel composition are external
-operations on that carrier.
+Attachment and serial composition are external operations on that carrier.
 
 ### Attachment and algebraic laws
 
@@ -367,9 +381,8 @@ $$
 $$
 
 Forwarding is the identity. Serial composition is associative on canonical DDC
-graphs. Ordered binary and finite indexed parallel composition use tagged
-alphabets and satisfy the exported relabeling and attachment equations. No
-unproved symmetric-monoidal laws are inferred from those equations.
+graphs. Routed parallel and probabilistic-converter structure are outside this
+release boundary.
 
 `DDS.ofFunction`, `DDC.ofInnerQueryBound`, `DDC.ofBoundedInnerQueries`, and
 `DDC.filter` provide pure-function constructors. A user may define a
@@ -379,24 +392,25 @@ mutable-state semantics.
 
 ### Observation and random-system action
 
-`RandomSystems/Converter/Observation.lean` factors an outer DDE observation
-through a DDC into an inner DDE observation followed by a deterministic
-transcript map. The statistical-distance data-processing inequality then gives
-non-expansion.
+`Ambient.RandomSystem(A)` is the cumulative mass function on finite attempted
+query-and-reply histories at $A$. Its flow law is the probability law of the
+next optional reply. A normalized finite-support law over ambient DDSs is one
+presentation of this carrier, not a second resource type.
 
-`Ambient.PDS(A)` is a normalized finite-support law over ambient DDSs at $A$.
-Attachment is ordinary distribution pushforward by
-$S \mapsto \operatorname{applySystem}(C,S)$. Equality of every finite
-total-DDE transcript law defines `Ambient.RandomSystem(A)`, and attachment
-descends to this quotient. Every branch-finite DDC acts on this ambient quotient
-without a per-converter absorption witness.
+`RandomSystems/Converter/RandomSystemAction.lean` compiles every finite outer
+observation through a branch-finite DDC and defines
+`RandomSystem.applyDDC`. Finite DDE observation factorization and
+statistical-distance data processing prove that this action is non-expanding.
+The forwarding and serial theorems are the identity and composition laws for
+the action, while `applyDDC_ofPDS_eq` states that finite PDS interpretation
+commutes with attachment. The scoped categorical action makes
+`converter.asHom • system` notation for the same function.
 
 ### Common-domain bridge
 
-`RandomSystems/Converter/CommonDomain/Embedding.lean` embeds normalized
-common-domain partial systems into the query-indexed attempted-history
-quotient. `embedDDS` is a coding map; it does not replace partial DDS
-semantics.
+`RandomSystems/Converter/CommonDomainEmbedding.lean` embeds normalized
+common-domain partial systems into the cumulative query-indexed carrier.
+`embedDDS` is a coding map; it does not replace partial DDS semantics.
 
 `RandomSystems.CommonDomain.DDC` is an ambient DDC together with the statement
 that its action preserves the embedded image. Attachment in the common-domain
@@ -404,15 +418,15 @@ carrier is the unique preimage under the injective embedding:
 
 $$
 \operatorname{toAmbient}(C * R)
-= \operatorname{Ambient.RandomSystem.apply}
+= \operatorname{Ambient.RandomSystem.applyDDC}
     (C,\operatorname{toAmbient}(R)).
 $$
 
-Identity, serial closure, equality, and non-expansion follow by commuting this
-equation with the ambient laws and using injectivity. No total-completion
-absorption predicate is part of this restriction.
+Identity, serial closure, equality, and non-expansion follow from this
+commuting equation and injectivity. This fixed-interface presentation installs
+neither a converter category nor a second `ResourceAlgebra`.
 
-## 4. Random Systems instantiation of the resource algebra
+## 4. Scoped deterministic category boundary
 
 `RandomSystems.Ambient.Interface` is a query type together with the answer type
 selected by each query. For interfaces $A$ and $B$,
@@ -424,76 +438,23 @@ $$
 $$
 
 Forwarding, serial identity, and serial associativity make these interfaces a
-category. Because a converter with outer interface $A$ consumes a resource at
-$B$ and provides one at $A$, normalized random systems form the contravariant
-functor
+category. `Interface.ddcCategory` and `DDC.category` own the scoped instance;
+`DDC.asHom` is the explicit readable boundary from a concrete DDC to a
+categorical morphism. `DDC.homAction` supplies the matching scoped action on
+cumulative random systems. Opening `RandomSystems.Ambient.DDC` therefore makes
+ordinary `𝟙`, `≫`, and `•` notation available without installing a global
+category or a duplicate global scalar instance.
 
-$$
-\operatorname{randomSystems} :
-\mathbf{Interface}^{\mathrm{op}} \longrightarrow \mathbf{Type},
-\qquad
-A \longmapsto \operatorname{Ambient.RandomSystem}(A).
-$$
+No monoidal converter category or concrete `ResourceAlgebra` instance is
+exported by this release boundary.
 
-`RandomSystemsCC/ResourceAlgebra.lean` installs the sole concrete
-`ResourceAlgebra` instance. Its ordered tensor is routed parallel, its resource
-operation is independent parallel of normalized random systems, and its fibre
-distance is the observational pseudo-metric. The generic class then supplies
-exact and approximate serial construction, parallel construction,
-context-insensitivity, finite ordered parallel, and star closure. No symmetry
-is asserted.
-
-`RandomSystems/Converter/CommonDomain/Category.lean` gives the separate
-fixed-interface category whose arrows are `RandomSystems.CommonDomain.DDC`s and
-whose fibres are `ProbabilityRandomSystem`.
-`RandomSystemsCC/CommonDomain.lean` proves that its resource functor is
-non-expanding. It does not install a second `ResourceAlgebra`: the
-fixed-interface tagged-sum operation permits independent query and answer
-tags, whereas the ambient tensor routes each answer type from its query tag.
-Closure of the common-domain subcarrier under the ambient tensor would require
-an additional preservation theorem, not a coercion or a duplicate parallel
-instance.
-
-## 5. CBC-MAC application
-
-Maurer 2002, Figure 6 (printed p. 17), defines CBC-MAC by “applying the CBC
-feedback construction” and “taking the last output.” The four owners are:
-
-- `Applications/CBCMAC/Objects.lean`: round-function and ideal PDSs, CBC,
-  theta, and query-limit DDCs;
-- `Applications/CBCMAC/Attachment.lean`: complete-history attachment equations;
-- `Applications/CBCMAC/Probability.lean`: the fixed-interface transcript ratio,
-  common-domain bridge, and collision bound;
-- `Applications/CBCMAC/Construction.lean`: random-system distance and the
-  heterogeneous construction statement.
-
-The proof of Maurer 2002, Theorem 6 (printed p. 17), conditions on “all inputs
-to $F$ are distinct”; printed p. 18 gives the collision term
-$n^2 2^{-(l+1)}$. The Lean proof evaluates the fixed-interface PDS factor of
-each transcript, applies the good-transcript ratio and bad-mass bound, and
-obtains `CommonDomain.Presentation.Adv` on the shared restricted domain. It
-then uses the common-domain embedding and non-expansion under `theta`. The
-probability and distance endpoints are `cbcPDS_advantage_le`,
-`realPDS_advantage_le`, and `cbc_distance_le`.
-
-The separate construction endpoint `cbc_constructs_within` formalizes the
-registered CR18 fallback at Theorem 6.1 (printed p. 126): attachment of
-`θ_r CBC` to `[r]R` constructs `θ_r V`.  It uses the Maurer 2002 distance
-bound as its probabilistic leaf; it is not attributed to Maurer 2002.
-
-The attachment layer proves the generic function equations. The CBC module
-proves only that its concrete functions satisfy those equations and that its
-bad-event probability has the stated bound.
-
-## 6. Ownership summary
+## 5. Ownership summary
 
 | Layer | Objects | Operations and laws | Owner |
 |---|---|---|---|
-| Abstract AC/CC | interface category, contravariant resource functor, specifications | exact/approximate construction, serial and ordered parallel composition, context-insensitivity, finite parallel, star closure | `AbstractCryptography/Categorical*` |
+| Constructive Cryptography | interface category, contravariant resource functor, specifications | exact/approximate construction, serial and ordered parallel composition, context-insensitivity, finite parallel, star closure | `ConstructiveCryptography.Categorical`, `ConstructiveCryptography.Categorical.ResourceAlgebra` |
 | Fixed-interface RS | partial DDS/DDE, PDS, common-domain quotients | transcript, equivalence, distance, parallel, H-coefficient | `RandomSystems` |
-| DDC extension | query-indexed DDS, branch-finite DDC, normalized ambient quotient | attachment, forwarding, serial, relabeling, parallel, observation factorization, DPI | `RandomSystems.Converter` |
-| RS-to-CC adapters | query-indexed resource functor and common-domain restricted functor | the sole ambient `ResourceAlgebra` instance and common-domain non-expansion | `RandomSystemsCC` |
-| Application | CBC and theta objects | attachment equations, collision bound, construction | `Applications.CBCMAC` |
+| Converter extension | query-indexed DDS, branch-finite DDC, cumulative ambient random system | attachment, forwarding, serial composition, observation factorization, DPI, scoped categorical action | `RandomSystems.Converter` |
 
 All public semantic statements are equations or relations between functions,
 graphs, distributions, observations, quotients, distances, and specification

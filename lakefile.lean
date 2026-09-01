@@ -1,7 +1,7 @@
 import Lake
 open Lake DSL
 
-package AbstractCryptography where
+package ConstructiveCryptography where
   buildDir := (get_config? verificationBuildDir).getD ".lake/build"
   leanOptions := #[
     ⟨`autoImplicit, false⟩,
@@ -9,7 +9,7 @@ package AbstractCryptography where
   ]
 
 require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git" @ "v4.29.0"
+  "https://github.com/leanprover-community/mathlib4.git" @ "v4.33.1"
 
 /-- Presentation layer: the `CCDiagram` proof-widget engine
 (`Rendering.CCWidget`) and its semantic-role bindings for the abstract
@@ -22,15 +22,6 @@ diagram-enabled with zero per-proof ceremony.  No mathematics lives here. -/
 lean_lib Rendering where
   globs := #[.submodules `Rendering]
 
-/-- The carrier-independent MR16-track theory.  Its public root exports the
-single typed `ResourceAlgebra` presentation, specifications, exact and
-approximate constructions, ordered parallel composition, relaxations, and
-deterministic proof-language frontends.  It imports no concrete Random Systems
-carrier; that instantiation belongs to `RandomSystemsCC`. -/
-@[default_target]
-lean_lib AbstractCryptography where
-  globs := #[.one `AbstractCryptography]
-
 /-- Public `ConstructiveCryptography.MultipartyComputation` layer: its root and
 multiparty implementation module. The Lake target name omits the module-name
 separator. -/
@@ -40,86 +31,39 @@ lean_lib ConstructiveCryptographyMultipartyComputation where
     .one `ConstructiveCryptography.Multiparty.Basic
   ]
 
-/-- GegMau26's orthogonal EventAlgebra axis, exposed as a separate default
-target. -/
-@[default_target]
-lean_lib EventAlgebra where
-  globs := #[.one `AbstractCryptography.EventAlgebra]
+/-- Tests for the Constructive Cryptography resource algebra, construction
+calculus, proof language, and multiparty surfaces. -/
+lean_lib ConstructiveCryptographyTests where
+  globs := #[
+    .one `Tests.ConstructiveCryptography.ResourceAlgebra,
+    .one `Tests.ConstructiveCryptography.ConstructionWorkflow,
+    .one `Tests.ConstructiveCryptography.Tactics.ProofAutomation,
+    .one `Tests.ConstructiveCryptography.Presentation.ControlledNaturalLanguage,
+    .one `Tests.ConstructiveCryptography.Composition,
+    .one `Tests.ConstructiveCryptography.SelectedSurface,
+    .one `Tests.ConstructiveCryptography.MultipartyComputation
+  ]
 
-/-- The standards, implemented: FIPS 180-4 (SHA-256), SEC 1 / SEC 2
-(secp256k1), and RFC 9591 (FROST), together with FROST's Shamir/Lagrange
-algebra and functional core.
-
-Applications *of* the stack: the deterministic cores stand alone, but the
-FROST layer additionally imports
-`ConstructiveCryptography.MultipartyComputation` to state FROST as a two-stage
-construction (`Applications.Frost.Construction`).
-`AbstractCryptography` does not import this library — the dependency is one-way,
-applications on top of the abstraction. -/
-@[default_target]
-lean_lib Applications where
-  globs := #[.andSubmodules `Applications]
-
-/-- Abstract, choice-free public-surface smoke test. Non-default and kept out
-of the library root; its sole example imports only `AbstractCryptography` and uses no
-concrete or finite interface carrier. -/
-lean_lib AbstractCryptographySelectedSurfaceTests where
-  globs := #[.one `AbstractCryptographySelectedSurfaceTests]
-
-/-- Non-default checked examples for the scoped AC paper notation and proof
-automation.  It remains outside the public root and concrete carriers. -/
-lean_lib AbstractCryptographyProofAutomationTests where
-  globs := #[.one `AbstractCryptographyProofAutomationTests]
-
-/-- Non-default firing evidence for the construction layer's `Trans`
-instances: every paper composition that `calc` can carry, written as a single
-calculation.  Carrier-agnostic, so it stays out of the public root. -/
-lean_lib AbstractCryptographyCalcChainTests where
-  globs := #[.one `AbstractCryptographyCalcChainTests]
-
-/-- Non-default positive, negative, and trace tests for the scoped controlled
-natural-language frontend over the deterministic AC proof commands. -/
-lean_lib AbstractCryptographyControlledNaturalLanguageTests where
-  globs := #[.one `AbstractCryptographyControlledNaturalLanguageTests]
-
-/-- Non-default regression tests for ordinary-value and indexed-local-class
-forms of a typed two-stage AC construction. -/
-lean_lib AbstractCryptographyConstructionWorkflowTests where
-  globs := #[.one `AbstractCryptographyConstructionWorkflowTests]
-
-/-- CC-shaped downstream smoke for the selected public AC root. Non-default;
-the sole example imports `AbstractCryptography`, not the bundled CC implementation. -/
-lean_lib ConstructiveCryptographySelectedSurfaceTests where
-  globs := #[.one `ConstructiveCryptographySelectedSurfaceTests]
-
-/-- SHA-256 known-answer tests. Non-default to keep executable KAT churn out
-of the library build; the current vectors use axiom-free `decide +kernel`
-(see `AGENTS.md`, "Performance and computability"). Build with
-`lake build Sha256Tests`. -/
-lean_lib Sha256Tests where
-  globs := #[.one `Sha256Tests]
-
-/-- RFC 9591 Appendix E.5 known-answer tests for FROST(secp256k1,
-SHA-256).  Non-default like `Sha256Tests`; the point-arithmetic KATs
-use `native_decide`.  Build with `lake build FrostRfc9591Tests`. -/
-lean_lib FrostRfc9591Tests where
-  globs := #[.one `FrostRfc9591Tests]
-
-/-- The Constructive Cryptography module tree over the single
-`ResourceAlgebra` presentation. -/
+/-- The MR16/Jost/Liu Constructive Cryptography theory before selecting a
+concrete system model.
+Its public root exports the single typed `ResourceAlgebra`, specifications,
+construction judgments, ordered parallel composition, relaxations, and the
+deterministic proof language. It imports no concrete Random Systems carrier;
+that instantiation belongs at the deferred adapter boundary. -/
 @[default_target]
 lean_lib ConstructiveCryptography where
   globs := #[.andSubmodules `ConstructiveCryptography]
 
 /-- Finitely supported distributions, expectation, statistical distance,
-couplings and universal hashing.  Independent of any system model. -/
+couplings and universal hashing. Independent of any system model. -/
 @[default_target]
 lean_lib Probability where
   globs := #[.andSubmodules `Probability]
 
 /-- The fixed-interface Random Systems library. Its public root contains DDS,
-DDE, PDS, observation, distance, ordered parallel composition, and the partial
-H-coefficient bounds. It depends on `Probability`, not on AC or CC. -/
+DDE, PDS, observation, distance, ordered parallel composition, exact
+transcript factorization, and the partial H-coefficient bounds. It depends on
+`Probability`, not on Constructive Cryptography. -/
 @[default_target]
 lean_lib RandomSystems where
   roots :=
@@ -129,46 +73,27 @@ lean_lib RandomSystems where
     if get_config? disableRandomSystems = some "true" then #[]
     else #[.one `RandomSystems]
 
-/-- Optional functional DDC extension of the fixed-interface Random Systems
-library. -/
+/-- Optional query-indexed deterministic-converter extension of the
+fixed-interface Random Systems library. -/
 lean_lib RandomSystemsConverter where
   roots :=
     if get_config? disableRandomSystems = some "true" then #[]
-    else #[
-      `RandomSystems.Converter,
-      `RandomSystems.Converter.Checks
-    ]
+    else #[`RandomSystems.Converter]
   globs :=
     if get_config? disableRandomSystems = some "true" then #[]
-    else #[
-      .one `RandomSystems.Converter,
-      .one `RandomSystems.Converter.Checks
-    ]
+    else #[.one `RandomSystems.Converter]
 
-/-- Abstract-Cryptography adapter for the selected query-indexed random-system
-carrier. -/
-lean_lib RandomSystemsCC where
+/-- Tests for standalone Random Systems and its optional converter extension. -/
+lean_lib RandomSystemsTests where
   roots :=
     if get_config? disableRandomSystems = some "true" then #[]
     else #[
-      `RandomSystemsCC,
-      `RandomSystemsCC.Checks
+      `Tests.RandomSystems.SelectedSurface,
+      `Tests.RandomSystems.Converter.SelectedSurface
     ]
   globs :=
     if get_config? disableRandomSystems = some "true" then #[]
     else #[
-      .one `RandomSystemsCC,
-      .one `RandomSystemsCC.Checks,
-      .one `RandomSystemsCC.ResourceAlgebra
+      .one `Tests.RandomSystems.SelectedSurface,
+      .one `Tests.RandomSystems.Converter.SelectedSurface
     ]
-
-/-- Cross-layer tests that instantiate Maurer-style abstract declarations on
-one concrete Random Systems carrier. -/
-@[default_target]
-lean_lib RandomSystemsCCInstantiationTests where
-  roots :=
-    if get_config? disableRandomSystems = some "true" then #[]
-    else #[`RandomSystemsCC.InstantiationTests]
-  globs :=
-    if get_config? disableRandomSystems = some "true" then #[]
-    else #[.one `RandomSystemsCC.InstantiationTests]

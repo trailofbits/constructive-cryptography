@@ -7,9 +7,8 @@ import Probability.Distribution
 /-!
 # Almost-universal hashing
 
-The one universality notion for keyed hash families, at the L2 level of the
-probability tower (`DESIGN.md` §12): a bound on the probability that two
-*distinct* messages are related in the output, over a random key.
+The one universality notion for keyed hash families: a bound on the probability
+that two *distinct* messages are related in the output, over a random key.
 
 ## The definition, and why this shape
 
@@ -17,9 +16,8 @@ probability tower (`DESIGN.md` §12): a bound on the probability that two
 
   `∀ m ≠ m',  Pr_{k ← keyDist} [ Φ (H k m) (H k m') ] ≤ δ (max (len m) (len m'))`.
 
-Three parameters carry the generality that the specialized notions in this
-tree each dropped, and each is forced by a caller that could not be stated
-without it:
+Three parameters separate length dependence, the relation on digests, and the
+key law:
 
 * **`δ` depends on the input length.**  This is Maurer's `δ`-almost universal
   hash (CR18 lecture notes Definition 6.2, printed p. 129): `δ : ℕ → ℝ⁺` and
@@ -35,8 +33,8 @@ without it:
   provides and what a Carter–Wegman-style analysis consumes.  Only the pair
   event changes between the two, so only it is a parameter.
 * **`keyDist` is an arbitrary key law.**  The sources say "uniformly selected
-  key", which is `Distribution.uniform K`; nothing in the union bound needs it, and
-  the seeded condition-C games in this tree carry an arbitrary seed law.
+  key", which is `Distribution.uniform K`; the union bound itself does not
+  require uniformity.
 
 `len` is a length function on the message type rather than a literal bit
 length: the source's domain is `𝒴 ⊆ {0,1}*`, i.e. an arbitrary sub-domain
@@ -57,14 +55,13 @@ CR18 Definition 7.2 is introduced there as "a special case of the concept of
 
 ## The union bound
 
-`mass_exists_ne_le_choose_two_mul` is the one collision-probability estimate
-every caller wants: on `n ≤ q` queries whose lengths are capped by `ℓ`, some
+`mass_exists_ne_le_choose_two_mul` is the collision-probability estimate: on
+`n ≤ q` queries whose lengths are capped by `ℓ`, some
 pair of *distinct* queried messages collides with probability at most
 `C(q,2)·δ(ℓ)`.  `mass_exists_mem_list_le_choose_two_mul` is its `List` form,
 which is the shape an adaptive condition-C game's fixed-schedule leaf hands
 you.
 
-UPSTREAM-CANDIDATE: mathlib has no universal-hashing notion.
 -/
 
 open scoped BigOperators NNReal
@@ -118,7 +115,7 @@ abbrev Is2Universal [Fintype X] (H : K → M → X) (keyDist : Distribution K) :
 /-- **`δ`-almost-XOR-universal hash family** (HCTR2 §3.2, Property 2 of
 `H_h̄`): for distinct messages the digest *difference* hits every fixed target
 `g` with probability at most `δ`, not merely the target `0`.  Over a field of
-characteristic two — the setting of every AXU hash in this tree — `x - y` is
+characteristic two, `x - y` is
 `x + y`, so this is the paper's `Pr[H(m₁) ⊕ H(m₂) = g] ≤ δ`. -/
 abbrev IsAlmostXorUniversal [AddGroup X] (H : K → M → X) (keyDist : Distribution K)
     (len : M → ℕ) (δ : ℕ → NNReal) : Prop :=
@@ -196,7 +193,7 @@ theorem mass_exists_mem_le_card_mul (hAU : IsAlmostUniversalFor H keyDist Φ len
 
 /-- Ordered index pairs of `Fin n` number `C(n,2)`.
 
-UPSTREAM-CANDIDATE: the strict lower triangle of a square index set. -/
+This is the strict lower triangle of a square index set. -/
 theorem card_filter_lt_eq_choose_two (n : ℕ) :
     ((Finset.univ : Finset (Fin n × Fin n)).filter
       (fun p => p.1.val < p.2.val)).card = Nat.choose n 2 := by
@@ -274,9 +271,8 @@ theorem mass_exists_ne_le_choose_two_mul
 length at most `q`, each of length at most `ℓ`, collide with probability at
 most `C(q,2)·δ(ℓ)`.
 
-The event is literally the one an adaptive condition-C game's fixed-schedule
-leaf presents (`RandomSystems.CR18.seededHashCollision`, stated on a `List`),
-so this discharges such a leaf by `exact`. -/
+The list form is suitable when a transcript argument has already fixed the
+sequence of queried messages. -/
 theorem mass_exists_mem_list_le_choose_two_mul
     (hAU : IsAlmostUniversal H keyDist len δ) (hkey : keyDist.NonNeg)
     (hδ : Monotone δ) (l : List M) {ℓ q : ℕ} (hlen : ∀ m ∈ l, len m ≤ ℓ)

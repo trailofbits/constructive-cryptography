@@ -28,26 +28,26 @@ namespace DDC
 variable {U : Type u} {V : Type v} {X : Type w} {Y : Type z}
 
 /-- Outer queries in a complete received DDC history. -/
-private def outerQueries
+def outerQueries
     (history : DDC.History
       (Interface.single U V) (Interface.single X Y)) : List U :=
   history.outer.queries
 
 @[simp]
-private theorem outerQueries_singleton (query : U) :
+theorem outerQueries_singleton (query : U) :
     outerQueries (V := V) (X := X) (Y := Y)
       (DDC.History.singleton query) = [query] :=
   rfl
 
 @[simp]
-private theorem outerQueries_snocOuter
+theorem outerQueries_snocOuter
     (history : DDC.History
       (Interface.single U V) (Interface.single X Y)) (query : U) :
     outerQueries (history.snocOuter query) = outerQueries history ++ [query] :=
   rfl
 
 @[simp]
-private theorem outerQueries_snocInner
+theorem outerQueries_snocInner
     (history : DDC.History
       (Interface.single U V) (Interface.single X Y))
     (query : X) (reply : Option Y) :
@@ -55,7 +55,7 @@ private theorem outerQueries_snocInner
   rfl
 
 /-- The complete-history response function of a filter. -/
-private def filterResponse (accept : List U → Prop) [DecidablePred accept]
+def filterResponse (accept : List U → Prop) [DecidablePred accept]
     (query : U → X) (reply : U → Option Y → Option V)
     (history : DDC.History
       (Interface.single U V) (Interface.single X Y)) :
@@ -90,7 +90,7 @@ noncomputable def filter (accept : List U → Prop) [DecidablePred accept]
 
 /-- The canonical filter graph is its complete-history response function on
 every admissible history. -/
-private theorem mem_filter_iff (accept : List U → Prop) [DecidablePred accept]
+theorem mem_filter_iff (accept : List U → Prop) [DecidablePred accept]
     (query : U → X) (reply : U → Option Y → Option V)
     (history : DDC.History
       (Interface.single U V) (Interface.single X Y))
@@ -101,7 +101,7 @@ private theorem mem_filter_iff (accept : List U → Prop) [DecidablePred accept]
   rw [filter, mem_ofInnerQueryBound_iff]
   rfl
 
-private theorem filter_mem_query (accept : List U → Prop) [DecidablePred accept]
+theorem filter_mem_query (accept : List U → Prop) [DecidablePred accept]
     (query : U → X) (reply : U → Option Y → Option V)
     (history : DDC.History
       (Interface.single U V) (Interface.single X Y))
@@ -117,7 +117,7 @@ private theorem filter_mem_query (accept : List U → Prop) [DecidablePred accep
   refine ⟨admissible, ?_⟩
   simp [filterResponse, responseWithInnerQueryBound, noReplies, accepted]
 
-private theorem filter_mem_reject (accept : List U → Prop) [DecidablePred accept]
+theorem filter_mem_reject (accept : List U → Prop) [DecidablePred accept]
     (query : U → X) (reply : U → Option Y → Option V)
     (history : DDC.History
       (Interface.single U V) (Interface.single X Y))
@@ -131,7 +131,7 @@ private theorem filter_mem_reject (accept : List U → Prop) [DecidablePred acce
   refine ⟨admissible, ?_⟩
   simp [filterResponse, responseWithInnerQueryBound, noReplies, rejected]
 
-private theorem filter_mem_reply (accept : List U → Prop) [DecidablePred accept]
+theorem filter_mem_reply (accept : List U → Prop) [DecidablePred accept]
     (query : U → X) (reply : U → Option Y → Option V)
     (history : DDC.History
       (Interface.single U V) (Interface.single X Y))
@@ -154,7 +154,7 @@ private theorem filter_mem_reply (accept : List U → Prop) [DecidablePred accep
   · simp [filterResponse, responseWithInnerQueryBound, noReplies]
 
 /-- Queries forwarded by a filter while extending one outer prefix. -/
-private def acceptedQueriesFrom (accept : List U → Prop) [DecidablePred accept]
+def acceptedQueriesFrom (accept : List U → Prop) [DecidablePred accept]
     (query : U → X) (prior : List U) : List U → List X
   | [] => []
   | input :: remaining =>
@@ -164,7 +164,7 @@ private def acceptedQueriesFrom (accept : List U → Prop) [DecidablePred accept
       else
         acceptedQueriesFrom accept query (prior ++ [input]) remaining
 
-private theorem acceptedQueriesFrom_append (accept : List U → Prop)
+theorem acceptedQueriesFrom_append (accept : List U → Prop)
     [DecidablePred accept]
     (query : U → X) (prior left right : List U) :
     acceptedQueriesFrom accept query prior (left ++ right) =
@@ -179,13 +179,13 @@ private theorem acceptedQueriesFrom_append (accept : List U → Prop)
           List.nil_append, inductionHypothesis]
 
 /-- All inner queries forwarded from one complete outer history. -/
-private def acceptedQueries (accept : List U → Prop) [DecidablePred accept]
+def acceptedQueries (accept : List U → Prop) [DecidablePred accept]
     (query : U → X)
     (history : _root_.RandomSystems.Ambient.History
       (Interface.single U V)) : List X :=
   acceptedQueriesFrom accept query [] history.queries
 
-private theorem acceptedQueriesFrom_nonempty_of_last_accept
+theorem acceptedQueriesFrom_nonempty_of_last_accept
     (accept : List U → Prop) [DecidablePred accept] (query : U → X)
     (prior inputs : List U) (nonempty : inputs ≠ [])
     (accepted : accept (prior ++ inputs)) :
@@ -206,7 +206,7 @@ private theorem acceptedQueriesFrom_nonempty_of_last_accept
 
 /-- The nonempty inner-query history forwarded from an accepted outer
 history. -/
-private def acceptedQueryHistory (accept : List U → Prop) [DecidablePred accept]
+def acceptedQueryHistory (accept : List U → Prop) [DecidablePred accept]
     (query : U → X)
     (history : _root_.RandomSystems.Ambient.History
       (Interface.single U V))
@@ -216,12 +216,7 @@ private def acceptedQueryHistory (accept : List U → Prop) [DecidablePred accep
     acceptedQueriesFrom_nonempty_of_last_accept accept query []
       history.queries history.nonempty (by simpa using accepted)⟩
 
-private def queryHistory (prior : List X) (query : X) :
-    _root_.RandomSystems.Ambient.History (Interface.single X Y) :=
-  ⟨prior ++ [query],
-    List.append_ne_nil_of_right_ne_nil prior (List.cons_ne_nil query [])⟩
-
-private theorem last_append_singleton (prior : List U) (query : U)
+theorem last_append_singleton (prior : List U) (query : U)
     (nonempty : prior ++ [query] ≠ []) :
     (_root_.RandomSystems.Ambient.History.mk
       (A := Interface.single U V) (prior ++ [query]) nonempty).last = query := by
@@ -232,17 +227,17 @@ private theorem last_append_singleton (prior : List U) (query : U)
   subst nonempty
   exact List.getLast_append_singleton prior
 
-private theorem innerReplyAt_eq
+theorem innerReplyAt_eq
     (system : DDS (Interface.single X Y)) (prior : List X) (query : X) :
     Attachment.innerReplyAt system prior query =
-      system (queryHistory (Y := Y) prior query) := by
+      system (Attachment.innerHistory prior query) := by
   unfold Attachment.innerReplyAt
-  change cast _ (system (queryHistory (Y := Y) prior query)) = _
+  change cast _ (system (Attachment.innerHistory prior query)) = _
   generalize_proofs equal
   rw [show equal = Eq.refl (Option Y) from Subsingleton.elim _ _]
   rfl
 
-private theorem acceptedQueryHistory_append_current
+theorem acceptedQueryHistory_append_current
     (accept : List U → Prop) [DecidablePred accept]
     (query : U → X) (prior : List U) (input : U)
     (accepted : accept (prior ++ [input])) :
@@ -250,14 +245,14 @@ private theorem acceptedQueryHistory_append_current
         ⟨prior ++ [input],
           List.append_ne_nil_of_right_ne_nil prior
             (List.cons_ne_nil input [])⟩ accepted =
-      queryHistory (Y := Y)
+      Attachment.innerHistory
         (acceptedQueriesFrom accept query [] prior) (query input) := by
   apply _root_.RandomSystems.Ambient.History.ext
   change acceptedQueriesFrom accept query [] (prior ++ [input]) = _
   rw [acceptedQueriesFrom_append]
-  simp [acceptedQueriesFrom, accepted, queryHistory]
+  simp [acceptedQueriesFrom, accepted, Attachment.innerHistory]
 
-private def filterValue (accept : List U → Prop) [DecidablePred accept]
+def filterValue (accept : List U → Prop) [DecidablePred accept]
     (query : U → X) (reply : U → Option Y → Option V)
     (system : DDS (Interface.single X Y))
     (history : _root_.RandomSystems.Ambient.History
@@ -268,7 +263,7 @@ private def filterValue (accept : List U → Prop) [DecidablePred accept]
   else
     none
 
-private theorem filter_compatibleFrom
+theorem filter_compatibleFrom
     (accept : List U → Prop) [DecidablePred accept]
     (query : U → X) (reply : U → Option Y → Option V)
     (system : DDS (Interface.single X Y))
@@ -439,7 +434,7 @@ private theorem filter_compatibleFrom
           simpa [nextHistory] using
             (Attachment.CompatibleFrom.outerNext rejectResponds tail)⟩
 
-private theorem applySystem_filter_eq
+theorem applySystem_filter_eq
     (accept : List U → Prop) [DecidablePred accept]
     (query : U → X) (reply : U → Option Y → Option V)
     (system : DDS (Interface.single X Y)) :
@@ -471,7 +466,7 @@ private theorem applySystem_filter_eq
       ⟨whole.last, filterValue accept query reply system whole⟩⟩
   exact ⟨transcript, compatible, HEq.rfl⟩
 
-private theorem acceptedQueriesFrom_eq_map
+theorem acceptedQueriesFrom_eq_map
     (accept : List U → Prop) [DecidablePred accept]
     (prefixClosed : ∀ {priorPrefix wholeHistory : List U},
       priorPrefix <+: wholeHistory → accept wholeHistory → accept priorPrefix)
@@ -492,7 +487,7 @@ private theorem acceptedQueriesFrom_eq_map
       apply inductionHypothesis (prior ++ [input])
       simpa [List.append_assoc] using accepted
 
-private theorem acceptedQueryHistory_eq_map
+theorem acceptedQueryHistory_eq_map
     (accept : List U → Prop) [DecidablePred accept]
     (prefixClosed : ∀ {priorPrefix wholeHistory : List U},
       priorPrefix <+: wholeHistory → accept wholeHistory → accept priorPrefix)

@@ -2,7 +2,7 @@
 Copyright (c) 2026 Trail of Bits. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
-import RandomSystems.DDS
+import RandomSystems.RandomSystem
 
 set_option autoImplicit false
 
@@ -68,6 +68,48 @@ theorem output_filterDom (P : List X → Prop) (hP : PrefixClosed P)
       output system history admitted.1 :=
   rfl
 
+/-- On a nonempty transcript, consistency with a restricted system is
+consistency with the original system together with admission of the complete
+query history. -/
+lemma systemConsistent_filterDom_iff (P : List X → Prop)
+    (hP : PrefixClosed P) (system : DDS X Y)
+    (transcript : Transcript X Y) (nonempty : transcript ≠ []) :
+    SystemConsistent (filterDom P hP system) transcript ↔
+      SystemConsistent system transcript ∧ P (transcript.map Prod.fst) := by
+  have queryHistoryPrefix (k : Nat) (hk : k < transcript.length) :
+      List.IsPrefix
+        ((transcript.take k).map Prod.fst ++ [transcript[k].1])
+        (transcript.map Prod.fst) := by
+    have takeEqual : transcript.take k ++ [transcript[k]] =
+        transcript.take (k + 1) := by
+      rw [List.take_add_one, List.getElem?_eq_getElem hk]
+      simp only [Option.toList_some]
+    have historyPrefix :
+        List.IsPrefix (transcript.take k ++ [transcript[k]]) transcript :=
+      takeEqual ▸ List.take_prefix (k + 1) transcript
+    simpa only [List.map_append, List.map_singleton] using
+      historyPrefix.map (fun entry : X × Y => entry.1)
+  constructor
+  · intro consistent
+    have completeAdmitted :
+        transcript.map Prod.fst ∈ dom (filterDom P hP system) := by
+      rcases systemConsistent_queries_admitted
+          (filterDom P hP system) transcript consistent with
+        empty | admitted
+      · exact (nonempty (List.map_eq_nil_iff.mp empty)).elim
+      · exact admitted
+    refine ⟨?_, (mem_dom_filterDom P hP system _).mp completeAdmitted |>.2⟩
+    intro k hk
+    obtain ⟨admitted, outputEqual⟩ := consistent k hk
+    refine ⟨(mem_dom_filterDom P hP system _).mp admitted |>.1, ?_⟩
+    exact outputEqual
+  · rintro ⟨consistent, completeAdmitted⟩ k hk
+    obtain ⟨admitted, outputEqual⟩ := consistent k hk
+    have prefixAdmitted :
+        P ((transcript.take k).map Prod.fst ++ [transcript[k].1]) :=
+      hP (queryHistoryPrefix k hk) completeAdmitted
+    exact ⟨⟨admitted, prefixAdmitted⟩, outputEqual⟩
+
 /-- CR18, Definition 3.10 (printed p. 62): restrict a DDS to at most `q`
 queries. -/
 def filterQueries (q : ℕ) (system : DDS X Y) : DDS X Y :=
@@ -100,3 +142,51 @@ theorem output_filterQueries (q : ℕ) (system : DDS X Y)
   rfl
 
 end RandomSystems.System
+
+namespace RandomSystems.PDS
+
+open Probability
+
+universe u v
+
+variable {X : Type u} {Y : Type v}
+
+/-- Restrict every deterministic system in a PDS by one prefix-closed
+history predicate. -/
+noncomputable def filterDom (P : List X → Prop) (hP : PrefixClosed P)
+    (system : PDS X Y) : PDS X Y :=
+  Distribution.fTransform (System.filterDom P hP) system
+
+/-- Restrict every deterministic system in a PDS to at most `q` queries. -/
+noncomputable def filterQueries (q : ℕ) (system : PDS X Y) : PDS X Y :=
+  filterDom (fun history => history.length ≤ q)
+    (prefixClosed_length_le q) system
+
+lemma filterQueries_eq_filterDom (q : ℕ) (system : PDS X Y) :
+    filterQueries q system =
+      filterDom (fun history => history.length ≤ q)
+        (prefixClosed_length_le q) system :=
+  rfl
+
+/-- Restriction preserves a probability law. -/
+lemma isProbDist_filterDom (P : List X → Prop) (hP : PrefixClosed P)
+    {system : PDS X Y} (probability : system.isProbDist) :
+    (filterDom P hP system).isProbDist :=
+  Distribution.fTransform_isProbDist _ probability
+
+/-- Restriction intersects a common system domain with its admission
+predicate. -/
+lemma hasDomain_filterDom (P : List X → Prop) (hP : PrefixClosed P)
+    (system : PDS X Y) (domain : Set (List X))
+    (hasDomain : HasDomain system domain) :
+    HasDomain (filterDom P hP system)
+      {history | history ∈ domain ∧ P history} := by
+  intro restricted supported
+  obtain ⟨original, originalSupported, rfl⟩ :=
+    Distribution.exists_mem_support_of_mem_support_fTransform
+      (System.filterDom P hP) system supported
+  ext history
+  rw [System.mem_dom_filterDom, hasDomain original originalSupported]
+  rfl
+
+end RandomSystems.PDS

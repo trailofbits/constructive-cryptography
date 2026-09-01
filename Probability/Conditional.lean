@@ -54,7 +54,7 @@ dividing: `X(P ∧ R)·Y(S) = Y(Q ∧ S)·X(R)`.
 shape the conditional-equivalence layer is expected to state its definition
 in (the two nonvanishing normalizers are exactly its guards).
 
-## Hypothesis discipline (`DESIGN.md` §12 layering)
+## Hypothesis discipline
 
 Each statement carries the weakest of signed / `Distribution.NonNeg` /
 `Distribution.isProbDist` at which it is true:

@@ -7,17 +7,25 @@ import RandomSystems.DDE
 import RandomSystems.PDS
 import RandomSystems.Observation
 import RandomSystems.RandomSystem
+import RandomSystems.Uniform
 import RandomSystems.Distance
 import RandomSystems.Parallel
+import RandomSystems.TranscriptFactor
 import RandomSystems.Technique.HCoefficient
+import RandomSystems.Technique.ConditionalEquivalence.Advantage
+import RandomSystems.Technique.ConditionalEquivalence.Blind
+import RandomSystems.Technique.ConditionalEquivalence.Filter
+import RandomSystems.Technique.ConditionalEquivalence.FunctionEvaluator
+import RandomSystems.Tactics.ProofAutomation
 
 /-!
 # Random systems
 
 Lanzenberger's fixed-interface random-systems layer: deterministic discrete systems
 and environments, probabilistic systems, observation, random-system
-equivalence and quotients, distance, parallel composition, and the
-finite-support H-coefficient bounds over partial observations.
+equivalence and quotients, standard finite uniform objects, distance, parallel
+composition, exact transcript factorization, H-coefficient bounds, and
+conditional equivalence with its deterministic proof automation.
 
 Converters and their attachment machinery form an optional extension and are
 not imported by this root.

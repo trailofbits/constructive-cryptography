@@ -1,9 +1,11 @@
 # CC by hand
 
 This guide gives a dependency-ordered route for reconstructing the
-interface-indexed AC/CC and Random Systems development by hand. It is a study
-plan: the final library supplies the statements and an answer key, while the
-new implementation is written from the mathematical interfaces upward.
+interface-indexed Constructive Cryptography and Random Systems development by
+hand. It is a study
+plan. The current release boundary supplies Stages 0--10 and the embedding
+part of Stage 11; the later probabilistic-converter and adapter stages remain
+the target architecture rather than exported modules.
 
 The goal is understanding and ownership, not fewer lines. Pure functions,
 pattern matching, inductive types, and structural or well-founded recursion are
@@ -25,9 +27,9 @@ For each stage, use two passes.
    notation, and intended module imports. Bodies may be temporarily omitted in
    personal exercises, but the complete types must be fixed before consulting
    a proof.
-2. **Proof pass.** Prove the statements in dependency order. Keep auxiliary
-   recursion and induction private unless they express a reusable mathematical
-   fact.
+2. **Proof pass.** Prove the statements in dependency order. Put auxiliary
+   recursion and induction in a public `Internal` namespace unless they express
+   a reusable mathematical fact.
 
 For each declaration:
 
@@ -51,11 +53,11 @@ summary; Lean-only bookkeeping needs no commentary.
 
 ## Rules that remain fixed
 
-- `RandomSystems` is fixed-interface RS and imports no converter or AC/CC
-  layer.
+- `RandomSystems` is fixed-interface RS and imports no converter or
+  Constructive Cryptography layer.
 - `RandomSystems.Converter` is optional and owns DDC attachment.
-- `RandomSystemsCC` alone owns the concrete categorical adapters and
-  construction judgments.
+- `RandomSystemsCC` will own the concrete categorical adapters and
+  construction judgments once that deferred boundary is exported.
 - A DDS or DDC is a mathematical function on complete histories. A public
   `run`, `exec`, mutable state, scheduler, reset, rollback, or fuel object is
   not part of the model.
@@ -71,32 +73,31 @@ summary; Lean-only bookkeeping needs no commentary.
 - Parallel composition is ordered and tagged. Use only the explicit
   relabeling, reassociation, and empty laws already proved.
 - Do not introduce a universal `DDS(*,*)`, manual interface coercions, or a
-  global monoidal instance.
+  second monoidal structure.
 - Use Maurer terminology: resource, converter, DDS, DDC, PDS, DDE, PDC, PDE,
   attachment, serial, parallel, observation, equivalence, and distance.
 
 ## Stage 0: record the target surface
 
-Use the public roots and final owners, not old paths or private helpers:
+Use the public roots and final owners, not superseded paths or implementation
+details:
 
 ```sh
-lake env lean --src-deps AbstractCryptography/Categorical.lean
+lake env lean --src-deps ConstructiveCryptography/Categorical.lean
 lake env lean --src-deps RandomSystems.lean
 lake env lean --src-deps RandomSystems/Converter.lean
-lake env lean --src-deps RandomSystemsCC.lean
-lake env lean --src-deps Applications/CBCMAC.lean
 ```
 
 Record the public declarations in each owning module. Classify them as object,
-operation, law, or application theorem. Private factorization relations and
-induction lemmas are reconstructed only if your proof needs them.
+operation, or law. Auxiliary factorization relations and induction lemmas are
+reconstructed only if your proof needs them.
 
 Gate: every public declaration has one owner, and no stage depends on a later
 owner.
 
 ## Stage 1: abstract specifications
 
-Owner: `AbstractCryptography/Categorical.lean`.
+Owner: `ConstructiveCryptography/Categorical.lean`.
 
 Start with an arbitrary category $\mathbf C$ and functor
 $F : \mathbf C \to \mathbf{Type}$.
@@ -125,7 +126,7 @@ triangle inequality, and non-expansion.
 
 ## Stage 2: endomorphism-family closure
 
-Owner: `AbstractCryptography/Categorical/Star.lean`.
+Owner: `ConstructiveCryptography/Categorical/Star.lean`.
 
 At one object $A$, define a selected submonoid of `End A`, its action through
 $F$, and the direct-image closure of a specification. Prove membership,
@@ -292,10 +293,9 @@ Gate: the public characterization of attachment is an equality of function
 values. The one-query stateless case reduces to ordinary function composition
 without a separate definition.
 
-## Stage 9: converter algebra
+## Stage 9: deterministic converter algebra
 
-Owners: `Relabel.lean`, `Serial.lean`, `Parallel.lean`, and `Category.lean`
-under `RandomSystems/Converter/`.
+Owner: `Serial.lean` under `RandomSystems/Converter/`.
 
 Write forwarding and prove that it acts identically. Define serial composition
 by canonical graph factorization and prove:
@@ -306,17 +306,14 @@ $$
 
 both forwarding identities, and associativity.
 
-Then implement tagged binary parallel, explicit relabeling, and the empty DDC.
-Derive finite indexed parallel later by recursion from the abstract binary
-operation. Prove only the ordered equations present in the reference surface.
-
 Gate: arbitrary serial chains use associativity; no theorem is specialized to
-three converters. Parallel reassociation and commutation name their relabeling.
+three converters. Routed parallel and relabeling are deferred with the selected
+probabilistic category.
 
-## Stage 10: observation and probability action
+## Stage 10: cumulative random systems and deterministic action
 
 Owners: `RandomSystems/Converter/Observation.lean`, `RandomSystem.lean`,
-`RandomSystem/Parallel.lean`, and `RandomSystem/Category.lean`.
+and `RandomSystemAction.lean`.
 
 Factor every finite outer observation through:
 
@@ -324,18 +321,23 @@ Factor every finite outer observation through:
 2. a finite inner transcript;
 3. a deterministic transcript projection.
 
-Use that theorem and statistical-distance data processing to prove
-non-expansion. Next define normalized ambient PDS pushforward, universal
-finite-DDE equivalence, the ambient random-system quotient, and quotient
-attachment.
+Define the ambient random system directly as a normalized cumulative mass
+function on finite attempted histories, with the one-query extension law.
+Define its finite observations and observational distance. Map a normalized
+finite-support PDS into this carrier without identifying the ambient carrier
+with a quotient of presentations.
 
-Gate: every branch-finite DDC acts on the ambient quotient without an
+Compile every finite outer observation through a DDC into an inner observation.
+Use this factorization and statistical-distance data processing to define
+`applyDDC` and prove deterministic attachment is non-expanding.
+
+Gate: every branch-finite DDC acts on the cumulative carrier without an
 absorption field or representative-specific witness.
 
-## Stage 11: common-domain bridge
+## Stage 11: common-domain bridge (partly deferred)
 
-Owners: `RandomSystems/Converter/CommonDomain/Embedding.lean`,
-`CommonDomain.lean`, and `CommonDomain/Category.lean`.
+Owners: `RandomSystems/Converter/CommonDomainEmbedding.lean`,
+`CommonDomain.lean`, and `CommonDomainParallel.lean`.
 
 Define the completion embedding of partial DDSs, lift it to normalized
 presentations, and prove observation, equivalence, distance, and injectivity
@@ -350,39 +352,39 @@ $$
 
 Package `RandomSystems.CommonDomain.DDC` as an ambient DDC plus this property.
 Define its attachment by the unique preimage and prove the commuting equation,
-non-expansion, identity, and serial closure.
+non-expansion, identity, serial closure, and the ordered-parallel bridge. Keep
+this as a fixed-interface presentation; do not install another category.
 
 Gate: no stronger DDE-absorption condition has entered the restricted DDC.
 
-## Stage 12: concrete RS categories and CC judgments
+## Stage 12: the sole converter category and CC judgments (deferred)
 
-Owners: `RandomSystems/Converter/Category.lean`,
-`RandomSystems/Converter/RandomSystem/Category.lean`,
-`RandomSystems/Converter/CommonDomain/Category.lean`,
-`RandomSystemsCC/ResourceAlgebra.lean`, and `RandomSystemsCC/CommonDomain.lean`.
+Owners: `RandomSystems/Converter/PDC/Category.lean`,
+`RandomSystems/Converter/PDC/RandomSystemFunctor.lean`, and
+`RandomSystemsCC/ResourceAlgebra.lean`.
 
-Define `Interface` from query and answer alphabets. Use branch-finite DDCs as
+Define `Interface` from query-indexed answer alphabets. Use cumulative PDCs as
 arrows, forwarding as identity, and serial composition as categorical
-composition. Then define
+composition; embed DDCs as the deterministic specialization. Then define
 
 $$
 \operatorname{randomSystems} :
 \mathbf{Interface}^{\mathrm{op}} \to \mathbf{Type}
 $$
 
-from quotient attachment. Instantiate the sole ambient `ResourceAlgebra`,
+from cumulative PDC attachment. Instantiate the sole ambient `ResourceAlgebra`,
 including specifications, exact and approximate construction, non-expansion,
 and ordered parallel.
 
-Build the common-domain category using only image-preserving DDCs, and install
-its non-expanding resource functor without claiming a second parallel algebra.
+Retain common-domain image-preserving DDCs only as a presentation bridge into
+this carrier.
 
-Gate: the ambient and common-domain categories are distinct, and neither
-requires a universal resource carrier.
+Gate: there is exactly one interface category, one ordered parallel, and one
+ambient `ResourceAlgebra` instance.
 
 ## Stage 13: resource algebra, finite parallel, and star
 
-Owners: `AbstractCryptography/Categorical/ResourceAlgebra.lean`,
+Owners: `ConstructiveCryptography/Categorical/ResourceAlgebra.lean`,
 `ResourceAlgebra/Finite.lean`, `Star.lean`, and
 `RandomSystemsCC/ResourceAlgebra.lean`.
 
@@ -395,63 +397,34 @@ Gate: the ambient interface category supplies the one proved ordered
 `MonoidalCategory`; no symmetry is assumed and no second parallel class is
 declared.
 
-## Stage 14: CBC-MAC
-
-Owners, in order:
-
-1. `Applications/CBCMAC/Objects.lean`;
-2. `Applications/CBCMAC/Attachment.lean`;
-3. `Applications/CBCMAC/Probability.lean`;
-4. `Applications/CBCMAC/Construction.lean`.
-
-Maurer 2002, Figure 6 (printed p. 17), specifies “applying the CBC feedback
-construction” and “taking the last output.” Define CBC, theta, the query-limit
-converter, the real and ideal PDSs, and the block-count restriction as pure
-functions and finite-dialogue DDCs.
-
-Prove their generic attachment equations before any probability argument.
-Then follow Theorem 6: its proof (printed p. 17) conditions on “all inputs to
-$F$ are distinct”; printed p. 18 gives $n^2 2^{-(l+1)}$. Finish in this order:
-
-```text
-cbcPDS_advantage_le
-realPDS_advantage_le
-cbc_distance_le
-cbc_constructs_within
-```
-
-Gate: the application proof uses the generic attachment and CC layers; it does
-not duplicate them.
-
 ## Final verification
 
 Run focused builds while reconstructing. At the end run:
 
 ```sh
-lake build AbstractCryptography
+lake build ConstructiveCryptography
 lake build ConstructiveCryptography
 lake build RandomSystems
 lake build RandomSystemsConverter
-lake build RandomSystemsCC RandomSystemsCCInstantiationTests
-lake build Applications.CBCMAC
-scripts/publicDependencyAudit.sh
+lake build ConstructiveCryptographyTests
+lake build RandomSystemsTests
 rg -n '\bsorry\b|\badmit\b|^\s*axiom\b' \
-  AbstractCryptography RandomSystems RandomSystemsCC Applications/CBCMAC
+  ConstructiveCryptography RandomSystems
 rg -n 'maxHeartbeats|maxRecDepth|native_decide' \
-  AbstractCryptography RandomSystems RandomSystemsCC Applications/CBCMAC
+  ConstructiveCryptography RandomSystems
 git diff --check
 ```
 
 Check axioms for at least:
 
-- abstract exact and approximate serial construction;
+- exact and approximate serial construction;
 - DDC serial associativity and serial attachment;
 - ambient and common-domain non-expansion;
 - the concrete category functor laws;
-- parallel exact and approximate construction;
-- `cbc_constructs_within`.
+- parallel exact and approximate construction.
 
 The accepted envelope is no larger than `propext`, `Classical.choice`, and
 `Quot.sound`. Also inspect root dependencies: `RandomSystems` must remain free
-of Converter and AC/CC imports, and CBC must depend on the generic layers only
-through their final owners.
+of Converter and Constructive Cryptography imports, and no production theory
+module may import a
+test module.

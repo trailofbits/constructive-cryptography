@@ -2,7 +2,7 @@
 Copyright (c) 2026 Trail of Bits. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
-import RandomSystems.Converter.Relabel
+import RandomSystems.Converter.Serial
 import Mathlib.Tactic
 
 set_option autoImplicit false
@@ -15,7 +15,7 @@ converter is “allowed to make a bounded number of queries to the inside
 interfaces.”  The constructors here turn ordinary Lean functions into
 query-indexed DDCs and prove their attachment equations.  They do not define a
 second converter semantics: every constructor returns the same canonical DDC
-carrier used by serial composition and relabeling.
+carrier used by serial composition.
 -/
 
 namespace RandomSystems.Ambient
@@ -46,7 +46,7 @@ noncomputable def rawOneQuery
         else Part.none
 
 @[simp]
-private theorem rawOneQuery_singleton
+theorem rawOneQuery_singleton
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     (query : A.query → B.query)
     (reply : ∀ outer, Option (B.answer (query outer)) →
@@ -57,7 +57,7 @@ private theorem rawOneQuery_singleton
   rw [DDC.History.lastInput_singleton]
 
 @[simp]
-private theorem rawOneQuery_snocOuter
+theorem rawOneQuery_snocOuter
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     (query : A.query → B.query)
     (reply : ∀ outer, Option (B.answer (query outer)) →
@@ -68,7 +68,7 @@ private theorem rawOneQuery_snocOuter
   unfold rawOneQuery
   rw [DDC.History.lastInput_snocOuter]
 
-private theorem rawOneQuery_snocInner_of_eq
+theorem rawOneQuery_snocInner_of_eq
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     (query : A.query → B.query)
     (reply : ∀ outer, Option (B.answer (query outer)) →
@@ -84,7 +84,7 @@ private theorem rawOneQuery_snocInner_of_eq
   simp [equal]
   rfl
 
-private theorem not_mem_rawOneQuery_of_lastInput_inner
+theorem not_mem_rawOneQuery_of_lastInput_inner
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     (query : A.query → B.query)
     (reply : ∀ outer, Option (B.answer (query outer)) →
@@ -106,7 +106,7 @@ private theorem not_mem_rawOneQuery_of_lastInput_inner
   · simp [same]
   · simp [same]
 
-private theorem rawOneQuery_complete
+theorem rawOneQuery_complete
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     (query : A.query → B.query)
     (reply : ∀ outer, Option (B.answer (query outer)) →
@@ -135,14 +135,7 @@ private theorem rawOneQuery_complete
           simp
   | afterOuter prior responds outer inductionHypothesis => simp
 
-private def oneQueryRank
-    {A : Interface.{u, v}} {B : Interface.{w, z}}
-    (history : DDC.History A B) : Nat :=
-  match history.lastInput with
-  | Sum.inl _ => 1
-  | Sum.inr _ => 0
-
-private theorem rawOneQuery_branchFinite
+theorem rawOneQuery_branchFinite
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     (query : A.query → B.query)
     (reply : ∀ outer, Option (B.answer (query outer)) →
@@ -189,7 +182,7 @@ theorem mem_oneQuery_iff
         (rawOneQuery query reply) history ↔ _
     exact DDC.Raw.mem_canonicalize_iff _ _ _
 
-private theorem rawOneQuery_of_lastInput_outer
+theorem rawOneQuery_of_lastInput_outer
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     (query : A.query → B.query)
     (reply : ∀ outer, Option (B.answer (query outer)) →
@@ -208,12 +201,12 @@ def oneQueryFinal
       Option (A.answer outer)) (system : DDS B)
     (innerPrior : List B.query) (current : A.query) :
     List A.query → DDC.History.InnerReply A
-  | [] => ⟨current, reply current (innerReplyAt system innerPrior (query current))⟩
+  | [] => ⟨current, reply current (Attachment.innerReplyAt system innerPrior (query current))⟩
   | next :: remaining =>
       oneQueryFinal query reply system (innerPrior ++ [query current])
         next remaining
 
-private theorem compatibleFrom_oneQuery
+theorem compatibleFrom_oneQuery
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     (query : A.query → B.query)
     (reply : ∀ outer, Option (B.answer (query outer)) →
@@ -239,7 +232,7 @@ private theorem compatibleFrom_oneQuery
         rw [rawOneQuery_of_lastInput_outer query reply history
           history.lastOuter lastInput]
         simp
-      let answer := innerReplyAt system innerPrior (query history.lastOuter)
+      let answer := Attachment.innerReplyAt system innerPrior (query history.lastOuter)
       let after := history.snocInner (query history.lastOuter) answer
       have afterAdmissible :
           DDC.Raw.Admissible (rawOneQuery query reply) after :=
@@ -265,7 +258,7 @@ private theorem compatibleFrom_oneQuery
         [Sum.inl (query history.lastOuter),
           Sum.inr ⟨after.lastOuter, reply history.lastOuter answer⟩], ?_⟩
       apply Attachment.CompatibleFrom.innerQuery queryResponds
-      simpa [oneQueryFinal, answer] using
+      simpa [oneQueryFinal, answer, after] using
         (Attachment.CompatibleFrom.outerLast replyResponds)
   | cons next remaining inductionHypothesis =>
       subst current
@@ -276,7 +269,7 @@ private theorem compatibleFrom_oneQuery
         rw [rawOneQuery_of_lastInput_outer query reply history
           history.lastOuter lastInput]
         simp
-      let answer := innerReplyAt system innerPrior (query history.lastOuter)
+      let answer := Attachment.innerReplyAt system innerPrior (query history.lastOuter)
       let after := history.snocInner (query history.lastOuter) answer
       have afterAdmissible :
           DDC.Raw.Admissible (rawOneQuery query reply) after :=
@@ -425,7 +418,7 @@ def responseWithInnerQueryBound (bound : Nat)
 
 namespace Internal
 
-private def rawWithInnerQueryBound (bound : Nat)
+def rawWithInnerQueryBound (bound : Nat)
     (openResponse : (history : DDC.History
       (Interface.single U V) (Interface.single X Y)) →
       (latestReplies history).length < bound →
@@ -437,7 +430,7 @@ private def rawWithInnerQueryBound (bound : Nat)
   fun history => Part.some
     (responseWithInnerQueryBound bound openResponse closeResponse history)
 
-private theorem rawWithInnerQueryBound_complete (bound : Nat)
+theorem rawWithInnerQueryBound_complete (bound : Nat)
     (openResponse : (history : DDC.History
       (Interface.single U V) (Interface.single X Y)) →
       (latestReplies history).length < bound →
@@ -450,12 +443,12 @@ private theorem rawWithInnerQueryBound_complete (bound : Nat)
   intro history admissible
   simp [rawWithInnerQueryBound]
 
-private def remainingInnerQueries (bound : Nat)
+def remainingInnerQueries (bound : Nat)
     (history : DDC.History
       (Interface.single U V) (Interface.single X Y)) : Nat :=
   bound - (latestReplies history).length
 
-private theorem rawWithInnerQueryBound_branchFinite (bound : Nat)
+theorem rawWithInnerQueryBound_branchFinite (bound : Nat)
     (openResponse : (history : DDC.History
       (Interface.single U V) (Interface.single X Y)) →
       (latestReplies history).length < bound →
@@ -623,7 +616,7 @@ def innerQueriesWithinBoundContinuation (bound : Nat)
         innerQueriesWithinBoundContinuation bound openResponse answer
           next [] remaining
 
-private def boundedInnerQueryContinuation (bound : Nat)
+def boundedInnerQueryContinuation (bound : Nat)
     (openResponse : U → List (Option Y) → Fin bound → X ⊕ Option V)
     (closeResponse : U → List (Option Y) → Option V)
     (answer : X → Option Y) :
@@ -634,7 +627,7 @@ private def boundedInnerQueryContinuation (bound : Nat)
       boundedInnerQueryContinuation bound openResponse closeResponse answer
         next [] remaining
 
-private theorem innerReplyAt_function
+theorem innerReplyAt_function
     (function : X → Y) (prior : List X) (query : X) :
     Attachment.innerReplyAt
         (show DDS (Interface.single X Y) from
@@ -649,7 +642,7 @@ private theorem innerReplyAt_function
   rw [show proof = Eq.refl (Option Y) from Subsingleton.elim _ _]
   rfl
 
-private theorem innerQueriesWithinBound_eq_nil_of_outer
+theorem innerQueriesWithinBound_eq_nil_of_outer
     (bound : Nat)
     (openResponse : U → List (Option Y) → Fin bound → X ⊕ Option V)
     (closeResponse : U → List (Option Y) → Option V)
@@ -674,7 +667,7 @@ private theorem innerQueriesWithinBound_eq_nil_of_outer
     rw [innerQueriesWithinBound, dif_pos below, openEqual]
   · rw [innerQueriesWithinBound, dif_neg below]
 
-private theorem CompatibleFrom.boundedInnerQueries_innerQueries
+theorem CompatibleFrom.boundedInnerQueries_innerQueries
     (bound : Nat)
     (openResponse : U → List (Option Y) → Fin bound → X ⊕ Option V)
     (closeResponse : U → List (Option Y) → Option V)
@@ -744,7 +737,8 @@ private theorem CompatibleFrom.boundedInnerQueries_innerQueries
       have tailQueries := inductionHypothesis next (by simp)
       simp only [latestReplies_snoc_outer] at tailQueries
       rw [innerQueriesWithinBoundContinuation, noQueries, List.nil_append]
-      simpa only [Attachment.innerQueries_cons_outer] using tailQueries
+      change Attachment.innerQueries tailResponses = _
+      exact tailQueries
 
 /-- The inner queries in a compatible bounded-inner-query attachment are
 exactly the queries of its ordinary recursive function. -/
@@ -767,7 +761,7 @@ theorem innerQueries_ofBoundedInnerQueries_eq (bound : Nat)
   exact CompatibleFrom.boundedInnerQueries_innerQueries bound openResponse
     closeResponse function compatible outerHistory.head rfl
 
-private theorem CompatibleFrom.boundedInnerQueries_final
+theorem CompatibleFrom.boundedInnerQueries_final
     (bound : Nat)
     (openResponse : U → List (Option Y) → Fin bound → X ⊕ Option V)
     (closeResponse : U → List (Option Y) → Option V)
@@ -856,7 +850,7 @@ private theorem CompatibleFrom.boundedInnerQueries_final
       -- Compatibility starts the following outer round with no inner replies.
       simpa [boundedInnerQueryContinuation] using tailFinal
 
-private theorem boundedInnerQueryContinuation_eq_last (bound : Nat)
+theorem boundedInnerQueryContinuation_eq_last (bound : Nat)
     (openResponse : U → List (Option Y) → Fin bound → X ⊕ Option V)
     (closeResponse : U → List (Option Y) → Option V)
     (answer : X → Option Y) (current : U) (remaining : List U) :

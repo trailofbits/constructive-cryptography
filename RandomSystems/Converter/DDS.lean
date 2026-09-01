@@ -150,14 +150,14 @@ theorem ofFunction_apply {A : Interface.{u, v}}
     ofFunction function history = some (function history.last) :=
   rfl
 
-private abbrev PackedAnswer (A : Interface.{u, v}) :=
+abbrev PackedAnswer (A : Interface.{u, v}) :=
   Σ query, Option (A.answer query)
 
-private def pack {A : Interface.{u, v}} (system : DDS A)
+def pack {A : Interface.{u, v}} (system : DDS A)
     (history : History A) : PackedAnswer A :=
   ⟨history.last, system history⟩
 
-private theorem pack_injective {A : Interface.{u, v}}
+theorem pack_injective {A : Interface.{u, v}}
     (history : History A) :
     Function.Injective (fun answer =>
       (⟨history.last, answer⟩ : PackedAnswer A)) := by
@@ -165,19 +165,19 @@ private theorem pack_injective {A : Interface.{u, v}}
   cases equal
   rfl
 
-private def mapPackedAnswer {A B : Interface.{u, v}}
+def mapPackedAnswer {A B : Interface.{u, v}}
     (equivalence : A.Equiv B) : PackedAnswer A → PackedAnswer B
   | ⟨query, answer⟩ =>
       ⟨equivalence.queries query, answer.map (equivalence.answers query)⟩
 
 @[simp]
-private theorem mapPackedAnswer_refl {A : Interface.{u, v}}
+theorem mapPackedAnswer_refl {A : Interface.{u, v}}
     (answer : PackedAnswer A) :
     mapPackedAnswer (.refl A) answer = answer := by
   rcases answer with ⟨query, answer⟩
   cases answer <;> rfl
 
-private theorem mapPackedAnswer_trans {A B C : Interface.{u, v}}
+theorem mapPackedAnswer_trans {A B C : Interface.{u, v}}
     (first : A.Equiv B) (second : B.Equiv C)
     (answer : PackedAnswer A) :
     mapPackedAnswer second (mapPackedAnswer first answer) =
@@ -197,7 +197,7 @@ noncomputable def relabel {A B : Interface.{u, v}}
     simp [source]
   exact cast (congrArg (fun query => Option (B.answer query)) selected) mapped
 
-private theorem pack_relabel {A B : Interface.{u, v}}
+theorem pack_relabel {A B : Interface.{u, v}}
     (equivalence : A.Equiv B) (system : DDS A) (history : History B) :
     pack (relabel equivalence system) history =
       mapPackedAnswer equivalence
@@ -268,19 +268,19 @@ theorem relabel_trans {A B C : Interface.{u, v}}
     _ = pack (relabel (first.trans second) system) history :=
       (pack_relabel (first.trans second) system history).symm
 
-private def leftQueries {A B : Interface.{u, v}}
+def leftQueries {A B : Interface.{u, v}}
     (queries : List (Interface.parallel A B).query) : List A.query :=
   queries.filterMap fun
     | Sum.inl query => some query
     | Sum.inr _ => none
 
-private def rightQueries {A B : Interface.{u, v}}
+def rightQueries {A B : Interface.{u, v}}
     (queries : List (Interface.parallel A B).query) : List B.query :=
   queries.filterMap fun
     | Sum.inl _ => none
     | Sum.inr query => some query
 
-private theorem leftQueries_append_inl {A B : Interface.{u, v}}
+theorem leftQueries_append_inl {A B : Interface.{u, v}}
     (queries : List (A.query ⊕ B.query)) (query : A.query) :
     leftQueries (queries ++ [Sum.inl query]) =
       leftQueries queries ++ [query] := by
@@ -297,7 +297,7 @@ private theorem leftQueries_append_inl {A B : Interface.{u, v}}
             leftQueries remaining ++ [query]
           exact inductionHypothesis
 
-private theorem rightQueries_append_inr {A B : Interface.{u, v}}
+theorem rightQueries_append_inr {A B : Interface.{u, v}}
     (queries : List (A.query ⊕ B.query)) (query : B.query) :
     rightQueries (queries ++ [Sum.inr query]) =
       rightQueries queries ++ [query] := by
@@ -314,7 +314,7 @@ private theorem rightQueries_append_inr {A B : Interface.{u, v}}
             current :: (rightQueries remaining ++ [query])
           exact congrArg (List.cons current) inductionHypothesis
 
-private theorem leftQueries_nonempty_of_last {A B : Interface.{u, v}}
+theorem leftQueries_nonempty_of_last {A B : Interface.{u, v}}
     (history : History (Interface.parallel A B)) (query : A.query)
     (lastEqual : history.last = Sum.inl query) :
     leftQueries history.queries ≠ [] := by
@@ -326,7 +326,7 @@ private theorem leftQueries_nonempty_of_last {A B : Interface.{u, v}}
   rw [empty] at member
   simp at member
 
-private theorem rightQueries_nonempty_of_last {A B : Interface.{u, v}}
+theorem rightQueries_nonempty_of_last {A B : Interface.{u, v}}
     (history : History (Interface.parallel A B)) (query : B.query)
     (lastEqual : history.last = Sum.inr query) :
     rightQueries history.queries ≠ [] := by
@@ -407,7 +407,7 @@ theorem last_rightHistory {A B : Interface.{u, v}}
   simp [History.last, expected]
 
 /-- Evaluate the left component in the fibre selected by the final query. -/
-private def leftAnswer {A B : Interface.{u, v}} (system : DDS A)
+def leftAnswer {A B : Interface.{u, v}} (system : DDS A)
     (history : History (Interface.parallel A B)) (query : A.query)
     (lastEqual : history.last = Sum.inl query) : Option (A.answer query) :=
   cast (congrArg (fun selected => Option (A.answer selected))
@@ -415,7 +415,7 @@ private def leftAnswer {A B : Interface.{u, v}} (system : DDS A)
     (system (leftHistory history query lastEqual))
 
 /-- Evaluate the right component in the fibre selected by the final query. -/
-private def rightAnswer {A B : Interface.{u, v}} (system : DDS B)
+def rightAnswer {A B : Interface.{u, v}} (system : DDS B)
     (history : History (Interface.parallel A B)) (query : B.query)
     (lastEqual : history.last = Sum.inr query) : Option (B.answer query) :=
   cast (congrArg (fun selected => Option (B.answer selected))
@@ -432,7 +432,7 @@ def parallel {A B : Interface.{u, v}} (left : DDS A) (right : DDS B) :
     | Sum.inr query =>
         rightAnswer right history query lastEqual
 
-private theorem cast_dependent_sum_left {A B : Interface.{u, v}}
+theorem cast_dependent_sum_left {A B : Interface.{u, v}}
     {P : (Interface.parallel A B).query → Sort*}
     (selected : (Interface.parallel A B).query)
     (left : ∀ query, selected = Sum.inl query → P (Sum.inl query))
@@ -446,7 +446,7 @@ private theorem cast_dependent_sum_left {A B : Interface.{u, v}}
     (motive := P) query left right
   rw [reduction, cast_eq]
 
-private theorem cast_dependent_sum_right {A B : Interface.{u, v}}
+theorem cast_dependent_sum_right {A B : Interface.{u, v}}
     {P : (Interface.parallel A B).query → Sort*}
     (selected : (Interface.parallel A B).query)
     (left : ∀ query, selected = Sum.inl query → P (Sum.inl query))
@@ -494,7 +494,7 @@ theorem parallel_apply_right {A B : Interface.{u, v}}
     (fun query equal => rightAnswer right history query equal)
     query lastEqual
 
-private theorem pack_parallel_left {A B : Interface.{u, v}}
+theorem pack_parallel_left {A B : Interface.{u, v}}
     (left : DDS A) (right : DDS B)
     (history : History (Interface.parallel A B)) (query : A.query)
     (lastEqual : history.last = Sum.inl query) :
@@ -507,7 +507,7 @@ private theorem pack_parallel_left {A B : Interface.{u, v}}
       (parallel left right history)).symm.trans
     (heq_of_eq (parallel_apply_left left right history query lastEqual))
 
-private theorem pack_parallel_right {A B : Interface.{u, v}}
+theorem pack_parallel_right {A B : Interface.{u, v}}
     (left : DDS A) (right : DDS B)
     (history : History (Interface.parallel A B)) (query : B.query)
     (lastEqual : history.last = Sum.inr query) :
@@ -520,7 +520,7 @@ private theorem pack_parallel_right {A B : Interface.{u, v}}
       (parallel left right history)).symm.trans
     (heq_of_eq (parallel_apply_right left right history query lastEqual))
 
-private theorem leftQueries_map_inl {A B : Interface.{u, v}}
+theorem leftQueries_map_inl {A B : Interface.{u, v}}
     (queries : List A.query) :
     leftQueries
         (queries.map (Sum.inl : A.query → A.query ⊕ B.query)) =
@@ -533,7 +533,7 @@ private theorem leftQueries_map_inl {A B : Interface.{u, v}}
         query :: remaining
       exact congrArg (List.cons query) inductionHypothesis
 
-private theorem rightQueries_map_inr {A B : Interface.{u, v}}
+theorem rightQueries_map_inr {A B : Interface.{u, v}}
     (queries : List B.query) :
     rightQueries
         (queries.map (Sum.inr : B.query → A.query ⊕ B.query)) =
@@ -546,44 +546,52 @@ private theorem rightQueries_map_inr {A B : Interface.{u, v}}
         query :: remaining
       exact congrArg (List.cons query) inductionHypothesis
 
-private theorem leftHistory_map_inl {A B : Interface.{u, v}}
+theorem leftHistory_map_inl {A B : Interface.{u, v}}
     (history : History A) :
     leftHistory
-        (History.map (Sum.inl : A.query → A.query ⊕ B.query) history)
-        history.last (by simp) = history := by
+        (History.map (B := Interface.parallel A B) Sum.inl history)
+        history.last
+        (History.last_map (B := Interface.parallel A B) Sum.inl history) =
+      history := by
   apply History.ext
   exact leftQueries_map_inl history.queries
 
-private theorem rightHistory_map_inr {A B : Interface.{u, v}}
+theorem rightHistory_map_inr {A B : Interface.{u, v}}
     (history : History B) :
     rightHistory
-        (History.map (Sum.inr : B.query → A.query ⊕ B.query) history)
-        history.last (by simp) = history := by
+        (History.map (B := Interface.parallel A B) Sum.inr history)
+        history.last
+        (History.last_map (B := Interface.parallel A B) Sum.inr history) =
+      history := by
   apply History.ext
   exact rightQueries_map_inr history.queries
 
-private theorem apply_heq_of_history_eq {A : Interface.{u, v}}
+theorem apply_heq_of_history_eq {A : Interface.{u, v}}
     (system : DDS A) {left right : History A} (equal : left = right) :
     system left ≍ system right := by
   subst right
   rfl
 
-private theorem leftAnswer_map_inl {A B : Interface.{u, v}}
+theorem leftAnswer_map_inl {A B : Interface.{u, v}}
     (system : DDS A) (history : History A) :
     leftAnswer system
-        (History.map (Sum.inl : A.query → A.query ⊕ B.query) history)
-        history.last (by simp) = system history := by
+        (History.map (B := Interface.parallel A B) Sum.inl history)
+        history.last
+        (History.last_map (B := Interface.parallel A B) Sum.inl history) =
+      system history := by
   unfold leftAnswer
   apply eq_of_heq
   exact (cast_heq _ _).trans
     (apply_heq_of_history_eq system
       (leftHistory_map_inl (B := B) history))
 
-private theorem rightAnswer_map_inr {A B : Interface.{u, v}}
+theorem rightAnswer_map_inr {A B : Interface.{u, v}}
     (system : DDS B) (history : History B) :
     rightAnswer system
-        (History.map (Sum.inr : B.query → A.query ⊕ B.query) history)
-        history.last (by simp) = system history := by
+        (History.map (B := Interface.parallel A B) Sum.inr history)
+        history.last
+        (History.last_map (B := Interface.parallel A B) Sum.inr history) =
+      system history := by
   unfold rightAnswer
   apply eq_of_heq
   exact (cast_heq _ _).trans
@@ -606,12 +614,13 @@ theorem relabel_parallel_empty_left {A : Interface.{u, v}}
   let source := History.map
     (Interface.Equiv.parallelEmptyLeft A).queries.symm history
   have sourceEqual : source =
-      History.map
-        (Sum.inr : A.query → Interface.empty.query ⊕ A.query) history := by
+      History.map (B := Interface.parallel Interface.empty A)
+        Sum.inr history := by
     rfl
   have sourceLast : source.last = Sum.inr history.last := by
-    rw [sourceEqual]
-    simp
+    exact congrArg History.last sourceEqual |>.trans
+      (History.last_map (B := Interface.parallel Interface.empty A)
+        Sum.inr history)
   calc
     pack (relabel (Interface.Equiv.parallelEmptyLeft A)
         (parallel empty system)) history =
@@ -645,12 +654,13 @@ theorem relabel_parallel_empty_right {A : Interface.{u, v}}
   let source := History.map
     (Interface.Equiv.parallelEmptyRight A).queries.symm history
   have sourceEqual : source =
-      History.map
-        (Sum.inl : A.query → A.query ⊕ Interface.empty.query) history := by
+      History.map (B := Interface.parallel A Interface.empty)
+        Sum.inl history := by
     rfl
   have sourceLast : source.last = Sum.inl history.last := by
-    rw [sourceEqual]
-    simp
+    exact congrArg History.last sourceEqual |>.trans
+      (History.last_map (B := Interface.parallel A Interface.empty)
+        Sum.inl history)
   calc
     pack (relabel (Interface.Equiv.parallelEmptyRight A)
         (parallel system empty)) history =
@@ -672,7 +682,7 @@ theorem relabel_parallel_empty_right {A : Interface.{u, v}}
       unfold mapPackedAnswer pack
       cases system history <;> rfl
 
-private theorem assoc_left_left_queries {A B C : Interface.{u, v}}
+theorem assoc_left_left_queries {A B C : Interface.{u, v}}
     (queries : List (A.query ⊕ (B.query ⊕ C.query))) :
     leftQueries (A := A) (B := B)
         (leftQueries (A := Interface.parallel A B) (B := C)
@@ -694,7 +704,7 @@ private theorem assoc_left_left_queries {A B C : Interface.{u, v}}
         · exact inductionHypothesis
         · exact inductionHypothesis
 
-private theorem assoc_left_right_queries {A B C : Interface.{u, v}}
+theorem assoc_left_right_queries {A B C : Interface.{u, v}}
     (queries : List (A.query ⊕ (B.query ⊕ C.query))) :
     rightQueries (A := A) (B := B)
         (leftQueries (A := Interface.parallel A B) (B := C)
@@ -718,7 +728,7 @@ private theorem assoc_left_right_queries {A B C : Interface.{u, v}}
           exact congrArg (List.cons query) inductionHypothesis
         · exact inductionHypothesis
 
-private theorem assoc_right_queries {A B C : Interface.{u, v}}
+theorem assoc_right_queries {A B C : Interface.{u, v}}
     (queries : List (A.query ⊕ (B.query ⊕ C.query))) :
     rightQueries (A := Interface.parallel A B) (B := C)
         (queries.map
@@ -738,7 +748,7 @@ private theorem assoc_right_queries {A B C : Interface.{u, v}}
             query :: rightQueries (rightQueries remaining)
           exact congrArg (List.cons query) inductionHypothesis
 
-private theorem nested_left_left {A B C : Interface.{u, v}}
+theorem nested_left_left {A B C : Interface.{u, v}}
     (first : DDS A) (second : DDS B)
     (history : History (Interface.parallel (Interface.parallel A B) C))
     (query : A.query) (lastEqual : history.last = Sum.inl (Sum.inl query)) :
@@ -756,7 +766,7 @@ private theorem nested_left_left {A B C : Interface.{u, v}}
   unfold leftAnswer
   exact cast_heq _ _
 
-private theorem nested_left_right {A B C : Interface.{u, v}}
+theorem nested_left_right {A B C : Interface.{u, v}}
     (first : DDS A) (second : DDS B)
     (history : History (Interface.parallel (Interface.parallel A B) C))
     (query : B.query) (lastEqual : history.last = Sum.inl (Sum.inr query)) :
@@ -774,7 +784,7 @@ private theorem nested_left_right {A B C : Interface.{u, v}}
   unfold rightAnswer
   exact cast_heq _ _
 
-private theorem nested_right_left {A B C : Interface.{u, v}}
+theorem nested_right_left {A B C : Interface.{u, v}}
     (second : DDS B) (third : DDS C)
     (history : History (Interface.parallel A (Interface.parallel B C)))
     (query : B.query) (lastEqual : history.last = Sum.inr (Sum.inl query)) :
@@ -792,7 +802,7 @@ private theorem nested_right_left {A B C : Interface.{u, v}}
   unfold leftAnswer
   exact cast_heq _ _
 
-private theorem nested_right_right {A B C : Interface.{u, v}}
+theorem nested_right_right {A B C : Interface.{u, v}}
     (second : DDS B) (third : DDS C)
     (history : History (Interface.parallel A (Interface.parallel B C)))
     (query : C.query) (lastEqual : history.last = Sum.inr (Sum.inr query)) :
@@ -810,7 +820,7 @@ private theorem nested_right_right {A B C : Interface.{u, v}}
   unfold rightAnswer
   exact cast_heq _ _
 
-private theorem map_assoc_left {A B C : Interface.{u, v}}
+theorem map_assoc_left {A B C : Interface.{u, v}}
     (query : A.query)
     (left : Option (A.answer query)) (right : Option (A.answer query))
     (equal : left ≍ right) :
@@ -822,7 +832,7 @@ private theorem map_assoc_left {A B C : Interface.{u, v}}
   subst right
   cases left <;> rfl
 
-private theorem map_assoc_middle {A B C : Interface.{u, v}}
+theorem map_assoc_middle {A B C : Interface.{u, v}}
     (query : B.query)
     (left : Option (B.answer query)) (right : Option (B.answer query))
     (equal : left ≍ right) :
@@ -834,7 +844,7 @@ private theorem map_assoc_middle {A B C : Interface.{u, v}}
   subst right
   cases left <;> rfl
 
-private theorem map_assoc_right {A B C : Interface.{u, v}}
+theorem map_assoc_right {A B C : Interface.{u, v}}
     (query : C.query)
     (left : Option (C.answer query)) (right : Option (C.answer query))
     (equal : left ≍ right) :
@@ -865,11 +875,8 @@ theorem relabel_parallel_assoc {A B C : Interface.{u, v}}
   cases lastEqual : history.last with
   | inl query =>
       have sourceLast : source.last = Sum.inl (Sum.inl query) := by
-        calc
-          source.last =
-              (Interface.Equiv.parallelAssoc A B C).queries.symm
-                history.last := by simp [source]
-          _ = Sum.inl (Sum.inl query) := by rw [lastEqual]; rfl
+        simp only [source, History.last_map, lastEqual]
+        rfl
       have outerPacked := pack_parallel_left
         (parallel first second) third source (Sum.inl query) sourceLast
       have targetPacked := pack_parallel_left
@@ -907,11 +914,8 @@ theorem relabel_parallel_assoc {A B C : Interface.{u, v}}
       cases tagged with
       | inl query =>
           have sourceLast : source.last = Sum.inl (Sum.inr query) := by
-            calc
-              source.last =
-                  (Interface.Equiv.parallelAssoc A B C).queries.symm
-                    history.last := by simp [source]
-              _ = Sum.inl (Sum.inr query) := by rw [lastEqual]; rfl
+            simp only [source, History.last_map, lastEqual]
+            rfl
           have outerPacked := pack_parallel_left
             (parallel first second) third source (Sum.inr query) sourceLast
           have targetPacked := pack_parallel_right
@@ -954,11 +958,8 @@ theorem relabel_parallel_assoc {A B C : Interface.{u, v}}
 
       | inr query =>
           have sourceLast : source.last = Sum.inr query := by
-            calc
-              source.last =
-                  (Interface.Equiv.parallelAssoc A B C).queries.symm
-                    history.last := by simp [source]
-              _ = Sum.inr query := by rw [lastEqual]; rfl
+            simp only [source, History.last_map, lastEqual]
+            rfl
           have outerPacked := pack_parallel_right
             (parallel first second) third source query sourceLast
           have targetPacked := pack_parallel_right
