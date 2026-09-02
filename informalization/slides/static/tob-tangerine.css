@@ -1,0 +1,388 @@
+/* Trail of Bits presentation layer, adapted from
+   /Users/marcilunga/Documents/tob/tangerine/presentation/tob-slides.css.
+
+   Tangerine is authored for 1280 × 720.  This deck keeps the same geometry
+   and rhythm on a 1600 × 900 logical canvas by scaling the fixed measurements
+   by 1.25.  CBC- and informalization-specific geometry remains in custom.css
+   and draft-talk.css. */
+
+@font-face {
+  font-family: "FH Lecturis";
+  src: url("static/fonts/FHLecturis-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist";
+  src: url("static/fonts/Geist-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist Mono";
+  src: url("static/fonts/GeistMono-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --tob-slide-width: 1600px;
+  --tob-slide-height: 900px;
+  --tob-slide-gutter: 80px;
+  --tob-slide-pad-top: 65px;
+  --tob-slide-pad-bottom: 60px;
+  --tob-canvas: #fafafa;
+  --tob-surface: #ffffff;
+  --tob-muted: #f2f2f2;
+  --tob-ink: #181717;
+  --tob-ink-muted: #4a4b4d;
+  --tob-line: #dbdbdb;
+  --tob-accent: #d00000;
+  --tob-accent-strong: #a20000;
+  --tob-dark: #0f1011;
+  --tob-dark-surface: #1d1f23;
+  --tob-chalk: #fafafa;
+
+  /* Compatibility aliases used by the existing CBC visual layer. */
+  --tob-red: var(--tob-accent);
+  --tob-red-strong: var(--tob-accent-strong);
+  --lean-teal: var(--tob-accent);
+  --lean-blue: var(--tob-ink);
+  --text-dark: var(--tob-ink);
+  --text-muted: #64748b;
+  --bg-code: #f8fafc;
+  --border-code: #e2e8f0;
+
+  --r-background-color: var(--tob-canvas);
+  --r-main-font: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --r-main-font-size: 31px;
+  --r-main-color: var(--tob-ink);
+  --r-heading-font: "FH Lecturis", "Geist", sans-serif;
+  --r-heading-color: var(--tob-ink);
+  --r-heading-font-weight: 400;
+  --r-heading-text-transform: none;
+  --r-heading-letter-spacing: -0.025em;
+  --r-heading-line-height: 1.02;
+  --r-link-color: var(--tob-accent-strong);
+  --r-link-color-hover: var(--tob-accent);
+  --r-selection-background-color: var(--tob-accent);
+}
+
+html,
+body,
+.reveal-viewport {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  background: var(--tob-canvas);
+}
+
+.reveal-viewport { overflow: hidden; }
+
+.reveal {
+  width: 100%;
+  height: 100%;
+  color: var(--tob-ink);
+  font-family: var(--r-main-font);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+  font-size: var(--r-main-font-size);
+  font-weight: 400;
+}
+
+.reveal .slides { text-align: left; }
+
+:is(.reveal .slides > section, .reveal .slides > .pdf-page > section) {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--tob-slide-height);
+  padding: var(--tob-slide-pad-top) var(--tob-slide-gutter) var(--tob-slide-pad-bottom);
+  text-align: left;
+}
+
+:is(.reveal .slides > section, .reveal .slides > .pdf-page > section)::before {
+  position: absolute;
+  top: 31px;
+  left: var(--tob-slide-gutter);
+  width: 58px;
+  height: 4px;
+  content: "";
+  background: var(--tob-accent);
+}
+
+:is(.reveal .slides > section, .reveal .slides > .pdf-page > section)::after {
+  position: absolute;
+  right: 175px;
+  bottom: 34px;
+  width: 76px;
+  height: 46px;
+  content: "";
+  background: url("static/images/brand/tob-primary.svg") center / contain no-repeat;
+  filter: brightness(0);
+  opacity: 0.9;
+}
+
+.reveal h2 {
+  max-width: 1360px;
+  margin: 0 0 30px;
+  padding: 0;
+  border: 0;
+  color: var(--tob-ink);
+  font-family: var(--r-heading-font);
+  font-size: 61px;
+  font-weight: 400;
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+/* custom.css previously drew a full-width rule under every heading.  The
+   Tangerine system uses the short registration mark above instead. */
+.reveal .slides section > h2,
+.reveal .slides section:not([data-background-color]) > h2 {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.reveal h3 {
+  margin: 0 0 24px;
+  color: var(--tob-ink-muted);
+  font-family: var(--r-main-font);
+  font-size: 30px;
+  font-weight: 450;
+  line-height: 1.15;
+}
+
+.reveal p {
+  margin: 0 0 0.55em;
+  font-size: 1em;
+  font-weight: 400;
+  line-height: 1.28;
+}
+
+.reveal p,
+.reveal li,
+.reveal th,
+.reveal td { overflow-wrap: break-word; }
+
+.reveal strong { color: inherit; font-weight: 700; }
+.reveal em { color: inherit; }
+
+.reveal ul,
+.reveal ol {
+  display: block;
+  margin: 0.3em 0 0.55em 1.05em;
+}
+
+.reveal li {
+  margin: 0 0 0.28em;
+  padding-left: 0.16em;
+  line-height: 1.23;
+}
+
+.reveal li::marker { color: var(--tob-accent); }
+
+.reveal a {
+  color: var(--tob-accent-strong);
+  font-weight: 600;
+}
+
+.reveal code {
+  border-radius: 2px;
+  background: var(--tob-muted);
+  color: var(--tob-ink);
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 0.88em;
+}
+
+.reveal code.math.inline {
+  padding: 0;
+  background: transparent;
+  font-size: 1em;
+}
+
+.reveal pre {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0.45em 0 0.65em;
+  padding: 23px 28px;
+  border: 1px solid var(--tob-line);
+  border-left: 6px solid var(--tob-accent);
+  border-radius: 0;
+  background: var(--tob-surface);
+  box-shadow: none;
+  color: var(--tob-ink);
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 25px;
+  line-height: 1.32;
+}
+
+.reveal pre code { background: transparent; }
+
+.reveal .fragment {
+  transition:
+    opacity 420ms ease,
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 260ms ease,
+    background-color 260ms ease;
+}
+
+.reveal .fragment:not(.visible) { transform: translateY(15px); }
+.reveal .fragment.fade-out:not(.visible) { transform: none; }
+
+.reveal .progress {
+  height: 4px;
+  color: var(--tob-accent);
+}
+
+.reveal .slide-number {
+  right: auto;
+  bottom: 34px;
+  left: var(--tob-slide-gutter);
+  min-width: 2ch;
+  padding: 0;
+  background: transparent;
+  color: var(--tob-ink-muted);
+  font-family: "Geist Mono", monospace;
+  font-size: 16px;
+  text-align: left;
+}
+
+.reveal > .controls { color: var(--tob-accent); }
+
+/* The CBC animation carries a custom in-canvas title because every animation
+   frame shares one absolute coordinate system.  Make it typographically
+   identical to an ordinary Tangerine heading. */
+.reveal .cbc-animation-title {
+  padding: 0;
+  border: 0;
+  color: var(--tob-ink);
+  font-family: var(--r-heading-font);
+  font-size: 61px;
+  font-weight: 400;
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+}
+
+.reveal .cbc-construction-animation {
+  width: 100%;
+  margin-right: 0;
+  margin-left: 0;
+}
+
+/* Dark opening: the geometry and restrained diagonal are inherited from the
+   Tangerine title slide rather than the older centered section-break style. */
+.reveal .slides section[data-state="title"] {
+  padding: 131px 108px 73px;
+  background:
+    linear-gradient(115deg, transparent 0 62%, rgba(255, 75, 64, 0.13) 62% 62.35%, transparent 62.35%),
+    var(--tob-dark);
+  color: var(--tob-chalk);
+}
+
+.reveal .slides section[data-state="title"]::before {
+  top: 78px;
+  left: 108px;
+  width: 78px;
+  background: #ff4b40;
+}
+
+.reveal .slides section[data-state="title"]::after {
+  display: block;
+  right: 108px;
+  bottom: 73px;
+  width: 108px;
+  height: 65px;
+  filter: none;
+  opacity: 0.95;
+}
+
+.reveal .slides section[data-state="title"] h2 {
+  width: 1060px;
+  margin: 0 0 28px;
+  color: var(--tob-chalk);
+  font-size: 90px;
+  line-height: 0.98;
+}
+
+.reveal .slides section[data-state="title"] h3 {
+  width: 1020px;
+  margin: 0 0 42px;
+  color: #cbced3;
+  font-size: 35px;
+  font-weight: 400;
+}
+
+.reveal .slides section[data-state="title"] p {
+  width: 1020px;
+  color: #b4b6bb;
+  font-size: 25px;
+}
+
+/* Closing slide keeps Tangerine's dark sign-off but adapts to this talk's
+   three-line closing composition. */
+.reveal .slides section[data-state="close"] {
+  padding: 109px 108px 73px;
+  background: var(--tob-dark);
+  color: var(--tob-chalk);
+}
+
+.reveal .slides section[data-state="close"]::before {
+  top: 69px;
+  left: 108px;
+  width: 78px;
+  background: #ff4b40;
+}
+
+.reveal .slides section[data-state="close"]::after {
+  right: 190px;
+  bottom: 73px;
+  width: 108px;
+  height: 65px;
+  filter: none;
+}
+
+.reveal .slides section[data-state="close"] h2 {
+  margin-bottom: 24px;
+  color: var(--tob-chalk);
+  font-size: 73px;
+}
+
+.reveal .slides section[data-state="close"] h3 {
+  margin-bottom: 45px;
+  color: #ff4b40;
+  font-family: "FH Lecturis", serif;
+  font-size: 45px;
+  font-weight: 400;
+}
+
+.reveal .slides section[data-state="close"] > p {
+  color: #cbced3;
+  font-size: 25px;
+}
+
+.reveal:has(.slides section[data-state="title"].present) .slide-number,
+.reveal:has(.slides section[data-state="close"].present) .slide-number {
+  color: #9a9da3;
+}
+
+html.reveal-print .reveal .slides > .pdf-page {
+  background: var(--tob-canvas) !important;
+}
+
+html.reveal-print .reveal .slides > .pdf-page:has(> section[data-state="title"]),
+html.reveal-print .reveal .slides > .pdf-page:has(> section[data-state="close"]) {
+  background: var(--tob-dark) !important;
+}
+
+@media screen and (max-width: 700px), screen and (max-height: 500px) {
+  .reveal > .controls { display: none !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal .fragment { transition-duration: 1ms; }
+}

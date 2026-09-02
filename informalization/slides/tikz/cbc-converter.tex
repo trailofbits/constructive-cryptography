@@ -1,0 +1,55 @@
+\begin{tikzpicture}[x=1cm,y=1cm,>=latex]
+  \path[use as bounding box] (-7,-2.25) rectangle (7,2.25);
+
+  % CBC is the converter. The random function remains outside and attaches
+  % through the converter's inner query/reply interface.
+  \draw[dashed,line width=.55pt] (-4.85,1.05) rectangle (-.85,-1.22);
+  \node[anchor=south west] at (-4.85,1.13) {$\mathrm{CBC}[B]$};
+
+  \node[
+    circle,
+    draw,
+    line width=.6pt,
+    minimum size=1.02cm
+  ] (blockFormer) at (-3.55,.35) {$B$};
+  \node[
+    circle,
+    draw,
+    line width=.6pt,
+    minimum size=.72cm,
+    inner sep=0pt,
+    font=\huge
+  ] (xor) at (-2.05,.35) {$+$};
+  \node[
+    draw,
+    line width=.6pt,
+    minimum width=2.15cm,
+    minimum height=1.15cm
+  ] (randomFunction) at (.35,0) {$\mathrm{URF}[X]$};
+
+  % External message/tag interface, both on the converter's left.
+  \node (message) at (-6.25,.35) {$m\in M$};
+  \node (tag) at (-6.25,-.98) {$t\in X$};
+  \draw[->,line width=.6pt] (message.east) -- (blockFormer.west);
+  \draw[->,line width=.6pt] (blockFormer.east) -- (xor.west);
+
+  % Inner query to the attached random function.
+  \draw[->,line width=.6pt] (xor.east) -- (-.85,.35)
+    -- ([yshift=3.5mm]randomFunction.west);
+
+  % The active selector route is one unbroken diagonal from the resource
+  % reply to the contact directly below XOR.  The other two legs are strictly
+  % vertical and horizontal, so the three routes read as a clean triangle.
+  \node[
+    circle,draw=black,fill=black,inner sep=0pt,minimum size=3.2pt
+  ] (feedbackContact) at (-2.05,-.80) {};
+  \node[
+    circle,draw=black,fill=black,inner sep=0pt,minimum size=3.2pt
+  ] (outputContact) at (-2.05,-.98) {};
+  \draw[->,line width=.6pt] ([yshift=-4.5mm]randomFunction.west)
+    -- node[
+      pos=.73,circle,draw=black,fill=black,inner sep=0pt,minimum size=3.2pt
+    ] (switchCommon) {} (feedbackContact.east);
+  \draw[->,line width=.6pt] (feedbackContact.north) -- (xor.south);
+  \draw[->,line width=.6pt] (outputContact.west) -- (tag.east);
+\end{tikzpicture}

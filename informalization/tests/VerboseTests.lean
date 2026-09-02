@@ -1,0 +1,13 @@
+import VerboseTests.Structural
+import VerboseTests.Statements
+import VerboseTests.AbstractCryptography
+import VerboseTests.RandomSystems
+import VerboseTests.Events
+import VerboseTests.Switching
+import VerboseTests.Rendering
+import VerboseTests.Grammar
+import VerboseTests.Notation
+import VerboseTests.HCoefficient
+import VerboseTests.ProofSpine
+import VerboseTests.Routine
+import VerboseTests.SpecConformance

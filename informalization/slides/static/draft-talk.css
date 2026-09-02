@@ -1,0 +1,260 @@
+/* The proof reader is a native Verso block. The slide title and deck chrome
+   yield the full canvas to that interactive document. */
+.reveal .slides section[data-state="informalization-reader"] > h2,
+.reveal .slides section[data-state="informalization-reader"]::before,
+.reveal .slides section[data-state="informalization-reader"]::after,
+.reveal:has(.slides section[data-state="informalization-reader"].present) .progress,
+.reveal:has(.slides section[data-state="informalization-reader"].present) .slide-number {
+  display: none !important;
+}
+
+/* Definition sketch: two directions on the same horizontal geometry. */
+.reveal .draft-definition-visual {
+  width: 88%;
+  margin: 2.1em auto 0;
+}
+
+.reveal .draft-direction-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px 230px;
+  align-items: center;
+  min-height: 150px;
+  border-bottom: 1px solid #dedede;
+}
+
+.reveal .draft-direction-row:first-child {
+  border-top: 1px solid #dedede;
+}
+
+.reveal .draft-direction-object {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.84em;
+}
+
+.reveal .draft-direction-object.proof {
+  text-align: center;
+  font-weight: 700;
+}
+
+.reveal .draft-direction-track {
+  position: relative;
+  height: 0;
+  margin: 0 34px;
+  border-top: 2px solid #64686d;
+}
+
+.reveal .draft-direction-track::before,
+.reveal .draft-direction-track::after {
+  position: absolute;
+  top: -7px;
+  width: 11px;
+  height: 11px;
+  content: "";
+  transform: rotate(45deg);
+}
+
+.reveal .draft-direction-track.points-right::after {
+  right: 0;
+  border-top: 2px solid #64686d;
+  border-right: 2px solid #64686d;
+}
+
+.reveal .draft-direction-track.points-left {
+  border-top-color: var(--tob-red-strong);
+}
+
+.reveal .draft-direction-track.points-left::before {
+  left: 0;
+  border-bottom: 2px solid var(--tob-red-strong);
+  border-left: 2px solid var(--tob-red-strong);
+}
+
+.reveal .draft-direction-label {
+  position: absolute;
+  top: -33px;
+  left: 50%;
+  padding: 0 12px;
+  background: var(--tob-canvas);
+  color: #64686d;
+  font-size: 0.54em;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  transform: translateX(-50%);
+}
+
+.reveal .points-left .draft-direction-label {
+  color: var(--tob-red-strong);
+}
+
+/* Certainty/intuition sketch. */
+.reveal .draft-spectrum {
+  position: relative;
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr) 250px;
+  align-items: center;
+  width: 82%;
+  margin: 2.2em auto 1.7em;
+}
+
+.reveal .draft-spectrum-label {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.82em;
+}
+
+.reveal .draft-spectrum-label.certainty { text-align: right; }
+
+.reveal .draft-spectrum-line {
+  position: relative;
+  height: 4px;
+  margin: 0 0.7em;
+  background: linear-gradient(90deg, #1d1d1d 0%, #9a9a9a 48%, var(--tob-red-strong) 100%);
+}
+
+.reveal .draft-spectrum-line::before,
+.reveal .draft-spectrum-line::after {
+  position: absolute;
+  top: -6px;
+  width: 0;
+  height: 0;
+  content: "";
+}
+
+.reveal .draft-spectrum-line::before {
+  left: -1px;
+  border-top: 8px solid transparent;
+  border-right: 12px solid #1d1d1d;
+  border-bottom: 8px solid transparent;
+}
+
+.reveal .draft-spectrum-line::after {
+  right: -1px;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-left: 12px solid var(--tob-red-strong);
+}
+
+.reveal .draft-spectrum-marker {
+  position: absolute;
+  top: 50%;
+  left: 54%;
+  width: 15px;
+  height: 15px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #6d6d6d;
+  box-shadow: 0 0 0 1px #6d6d6d;
+  transform: translate(-50%, -50%);
+}
+
+.reveal .draft-spectrum-caption {
+  position: absolute;
+  top: 1.7em;
+  left: 50%;
+  color: var(--text-muted);
+  font-size: 0.52em;
+  transform: translateX(-50%);
+}
+
+/* Checked semantics and language design jointly determine the explanation. */
+.reveal .draft-provenance {
+  display: grid;
+  grid-template-columns: 310px 90px 360px 90px 330px;
+  grid-template-rows: 125px 125px;
+  align-items: center;
+  width: 1180px;
+  margin: 1.55em auto 1.15em;
+}
+
+.reveal .draft-provenance-source {
+  padding: 0.5em 0;
+  border-top: 2px solid #202020;
+  border-bottom: 1px solid #d7d7d7;
+  text-align: center;
+}
+
+.reveal .draft-provenance-source.formal { grid-column: 1; grid-row: 1; }
+
+.reveal .draft-provenance-source.authored {
+  grid-column: 1;
+  grid-row: 2;
+  border-top-color: var(--tob-red-strong);
+}
+
+.reveal .draft-provenance-generated {
+  grid-column: 3;
+  grid-row: 1;
+  padding: 0.5em 0;
+  border-top: 2px solid #202020;
+  border-bottom: 1px solid #d7d7d7;
+  text-align: center;
+}
+
+.reveal .draft-provenance-name,
+.reveal .draft-provenance-sub {
+  display: block;
+}
+
+.reveal .draft-provenance-name {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.78em;
+}
+
+.reveal .draft-provenance-sub {
+  margin-top: 0.35em;
+  color: var(--text-muted);
+  font-size: 0.46em;
+}
+
+.reveal .draft-provenance-wire {
+  position: relative;
+  height: 0;
+  border-top: 2px solid #777d82;
+}
+
+.reveal .draft-provenance-wire::after {
+  position: absolute;
+  top: -6px;
+  right: 0;
+  width: 9px;
+  height: 9px;
+  border-top: 2px solid #777d82;
+  border-right: 2px solid #777d82;
+  content: "";
+  transform: rotate(45deg);
+}
+
+.reveal .draft-provenance-wire.formal-to-generated { grid-column: 2; grid-row: 1; }
+.reveal .draft-provenance-wire.generated-to-result { grid-column: 4; grid-row: 1; }
+
+.reveal .draft-provenance-wire.authored-to-result {
+  grid-column: 2 / 5;
+  grid-row: 2;
+  border-top-color: var(--tob-red-strong);
+}
+
+.reveal .draft-provenance-wire.authored-to-result::after {
+  border-top-color: var(--tob-red-strong);
+  border-right-color: var(--tob-red-strong);
+}
+
+.reveal .draft-provenance-result {
+  grid-column: 5;
+  grid-row: 1 / 3;
+  align-self: center;
+  justify-self: stretch;
+  padding: 0.52em 0.8em;
+  border-bottom: 3px solid var(--tob-red-strong);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.86em;
+  text-align: center;
+}
+
+/* Keep the final two prose claims on the motivation/provenance slides quiet. */
+.reveal section:has(.draft-spectrum) > p,
+.reveal section:has(.draft-provenance) > p {
+  max-width: 1180px;
+  margin-right: auto;
+  margin-left: auto;
+  font-size: 0.72em;
+  line-height: 1.45;
+}

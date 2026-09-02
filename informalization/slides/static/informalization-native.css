@@ -1,0 +1,61 @@
+/* Native Verso host geometry. The reader's canonical stylesheet is inserted
+   into the scoped region at build time, so the slide and standalone page use
+   the same typography and interaction rules without leaking them into the
+   rest of the deck. */
+.reveal .slides section[data-state="informalization-reader"] {
+  height: 100%;
+  padding: 0 !important;
+  text-align: left;
+}
+
+html:has(.reveal .slides section[data-state="informalization-reader"].present),
+body:has(.reveal .slides section[data-state="informalization-reader"].present),
+.reveal:has(.slides section[data-state="informalization-reader"].present) {
+  background: #fff !important;
+}
+
+.reveal .informalization-native-host {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+  color: #171717;
+  background: #fff;
+  font-family: "Times New Roman", Times, serif;
+  font-size: 24px;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.reveal .informalization-native-host .informalization-mount {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+.reveal .informalization-native-host .document {
+  max-width: 1000px;
+  margin: 1.4rem 2rem;
+}
+
+.informalization-tooltip-portal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  width: 0;
+  height: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.informalization-tooltip-portal .floating-tooltip {
+  pointer-events: auto;
+}
+
+@scope (.informalization-native-host) {
+/* @@MASSOT_MILLER_CSS@@ */
+}

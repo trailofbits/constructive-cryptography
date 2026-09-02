@@ -1,0 +1,11 @@
+\begin{tikzpicture}[x=1cm,y=1cm,>=latex]
+  \path[use as bounding box] (-5,-2.25) rectangle (5,2.25);
+
+  \node (real) at (-3,0) {$[r]\,R_{n\mathchar"002C{}n}$};
+  \node (ideal) at (3,0) {$\theta_r V_n$};
+  \draw[->,line width=.6pt]
+    (real.east) --
+    node[above] {$\theta_r\,\mathrm{CBC}$}
+    node[below] {$\varepsilon_r$}
+    (ideal.west);
+\end{tikzpicture}
