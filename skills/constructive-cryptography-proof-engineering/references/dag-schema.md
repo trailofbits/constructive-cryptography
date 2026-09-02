@@ -1,7 +1,8 @@
 # Temporary proof-obligation DAG
 
-Use this schema only for a nontrivial formalization. Keep it under the
-repository's ignored scratch directory or in another disposable location.
+Use this schema only for a nontrivial formalization. Keep the DAG NOTES under
+the repository's ignored scratch directory; the PROOF itself is written in the
+target module from the start.
 
 Write the functional contract above the graph. The graph itself is rooted at
 the exact formal Lean deliverable selected by the current model. If a modeling
@@ -55,8 +56,11 @@ Allowed origins:
 Allowed fates:
 
 - `INLINE`: discharge inside its consumer.
-- `SCRATCH`: exploratory statement or failed-route probe; never imported by
-  production.
+- `SCRATCH`: a MINIMAL diagnostic probe for one elaboration failure (a namespace,
+  coercion, instance, or implicit-argument question). It is deleted once the
+  question is answered. A scratch node must never accumulate the deliverable:
+  if a probe has grown into a working proof, that is a process error — the work
+  belonged in the target module.
 - `PRODUCTION`: a stable named declaration that passes the admission gate.
 
 ## Expansion rule
@@ -97,3 +101,45 @@ For each declaration added or materially generalized by the diff, answer:
 
 Any task-created declaration without satisfactory answers is cleanup work, not
 a delivered API.
+
+## Write in the target, not in scratch
+
+Author every production declaration directly in the module that will own it.
+A scratch probe answers ONE narrow elaboration question and is deleted
+immediately. Developing the deliverable in a probe and then re-deriving it in
+the target duplicates the entire proof effort and is never acceptable.
+
+Stating this as a preference is not enough: an out-of-tree evaluator is the
+cheapest available iteration loop, so it wins unless the in-target loop is made
+equally cheap. The procedure below is what makes it cheap. Follow it literally.
+
+### Skeleton first
+
+Before proving anything, create the target module containing the FULL statement
+of every DAG node you intend to deliver, each proved by `sorry`, plus the
+imports and the `RandomSystems.lean`-style export line. Do not create the file
+as empty or as a placeholder to be filled later — a placeholder is scratch
+authoring with extra steps.
+
+This costs one elaboration and buys three things: the statements are type-checked
+before any proof effort is spent, `sorry` count becomes the progress metric, and
+every subsequent step is a local edit rather than a file rewrite.
+
+### One sorry at a time
+
+Iterate by replacing exactly ONE `sorry` with its proof, then elaborating the
+target file. Never regenerate the file, and never rewrite a block that already
+elaborates. A rewrite discards checked work and re-incurs its elaboration cost.
+
+If a replacement fails, the failure is local: fix that block, or restate the
+node and leave the rest of the file untouched. Partial progress is the point —
+a target file at three sorries is strictly better than a scratch file at zero,
+because the three are already integrated and the zero is not.
+
+### What a probe may contain
+
+A probe may name a lemma, an instance, a coercion, or a namespace. It may not
+contain a statement that appears in the DAG. If you are about to paste a
+deliverable statement into an out-of-tree evaluator, that is the signal you have
+left the procedure: put it in the target with `sorry` instead and elaborate
+there.

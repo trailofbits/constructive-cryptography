@@ -150,8 +150,8 @@ remaining goal, and inferred instances before changing the model.
 
 1. Read `AGENTS.md`, `README.md`, `THEORY.md`, the owning module documentation,
    and the cited primary source required by repository policy.
-2. Inspect the live endpoint and apply it in the target or an ignored scratch
-   probe.
+2. Inspect the live endpoint and apply it DIRECTLY IN THE TARGET MODULE. Do not
+   develop the result in a scratch file and re-derive it afterwards.
 3. Search exact declarations before adding a helper.
 4. Keep the displayed equality/inequality chain aligned with the paper
    argument; isolate normalization and coercion plumbing.

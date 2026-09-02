@@ -85,8 +85,15 @@ normalization, or search problem.
   proof routing.
 - If the goal requires an unjustified equality, completion, finiteness
   assumption, or global instance, return to modeling.
-- If elaboration alone fails, reduce to a focused probe and fix the exact
-  namespace, coercion, implicit parameter, or instance issue.
+- If elaboration alone fails, reduce to a focused probe, fix the exact
+  namespace, coercion, implicit parameter, or instance issue, then apply the fix
+  in the target and delete the probe. Never grow the probe into the deliverable.
+  A probe carrying a statement from the DAG is not a probe; put that statement
+  in the target under `sorry` and elaborate there instead.
+- If a block fails to elaborate, fix that block only. Do not regenerate the
+  file or rewrite blocks that already elaborate: a rewrite discards checked
+  work and pays its elaboration cost again. Target files are advanced one
+  `sorry` at a time, and a partially proved target beats a finished scratch.
 - If a chosen route is abandoned, stop extending its helpers and mark its
   task-created production nodes for pruning.
 
