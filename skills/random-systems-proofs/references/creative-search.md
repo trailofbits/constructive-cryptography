@@ -37,8 +37,9 @@ Give every scout the same mathematical statement and evidence set:
 - allowed techniques and excluded assumptions; and
 - required output format.
 
-All scouts must retain this one comparison as their common spine. H, CE,
-coupling, representative, winnability, and signed routes are competing or
+All scouts must retain this one comparison as their common spine. Exact or
+hybrid bounds, transcript factorization, H-coefficient, CE, coupling, games,
+observation restriction, and direct-environment routes are competing or
 composable certificates for the same fixed distance, not permission to change
 the security objective. Require every proposal to display the bridge from the
 original distance through its auxiliary objects to the final bound.
@@ -53,21 +54,28 @@ source change during review; audit a later rewrite as a separate delta.
 
 Possible angles include:
 
+- exact transcript-law computation, data processing, or a named hybrid;
+- transcript-system-factor equality or likelihood analysis;
 - exact likelihood or fiber counting;
-- H equality/ratio/expectation analysis;
+- H ratio or finite-cell analysis;
 - strict conditional-equivalence monitor and simulator design;
 - honest sequential or maximal coupling;
-- representative-level reformulation with an explicit equivalence proof;
-- signed algebraic expansion with a separately justified norm bound;
+- game/blind-winning reformulation with an explicit bridge;
+- bounded common-domain observation restriction;
 - attack/lower-bound construction; and
 - small-instance computation used only to test conjectures.
 
 These categories can overlap. State each scout's distinctive question and ask
 it to report when the route collapses into another one.
 
-Changing an MBO, simulator, coupling, or representative creates the proof
-obligations of that exact object. A ready-made predicate or construction is a
-candidate, not evidence that the desired identity or rate follows.
+Changing a game condition, target, simulator, cell partition, coupling, hybrid,
+or observer creates the proof obligations of that exact object. A ready-made
+predicate or construction is a candidate, not evidence that the desired
+identity or rate follows.
+
+Treat representative attainment, abstract winnability, and signed virtual
+joints as research proposals unless a current production endpoint, focused
+build, and axiom receipt are supplied.
 
 ## Preserve independence
 

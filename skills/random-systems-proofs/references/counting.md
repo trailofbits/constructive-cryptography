@@ -1,138 +1,56 @@
-# Counting and event-mass obligations
+# Counting and event-mass leaves
 
-Use this reference after a security reduction has produced a concrete mass,
-probability, fiber-cardinality, or finite-sum goal. Counting is a downstream
-layer, not a proof-family label for the whole security argument.
+Use this route only after an H, CE, coupling, identical-until-bad, or direct
+argument has produced a concrete mass, fiber-cardinality, disagreement, or
+finite-sum obligation.
 
-## Contents
+## Fix the probability statement
 
-- [Inspect the exact probability law](#inspect-the-exact-probability-law)
-- [Finite union bounds](#finite-union-bounds)
-- [Schedule scope](#schedule-scope)
-- [Choose the least lossy calculation](#choose-the-least-lossy-calculation)
-- [Verification](#verification)
+Record the distribution, its nonnegativity or probability proof, the exact
+event, decidability requirements, fixed versus quantified variables, and the
+bound required by the consuming theorem.
 
-## Inspect the exact probability law
-
-Before decomposing an event, write down:
-
-- the carrier and distribution;
-- its nonnegativity or probability proof;
-- the event and its decidability requirements;
-- which variables are fixed and which are universally quantified; and
-- the finite bound required by the calling security theorem.
-
-Do not assume every counting leaf is a probability of a bad event. It may be a
-raw `Dist.mass`, a likelihood-ratio defect, a disagreement mass under a joint
-law, or an exact cardinality identity.
-
-## Finite union bounds
-
-The current finite-index probability union theorem is:
+For a finite family of events, the live generic union endpoint is
+`Probability.probBad_iUnion_le` in `Probability.StatisticalDistance`:
 
 ```lean
-theorem probBad_iUnion_le {A ι : Type*} [Fintype A] [Fintype ι]
-    {D : Dist A} (hD : D.NonNeg) (B : A → Prop) (P : ι → A → Prop)
-    [∀ p, DecidablePred (P p)]
+theorem probBad_iUnion_le
+    {D : Distribution A} (hD : D.NonNeg)
+    (B : A → Prop) (P : ι → A → Prop)
     (hB : ∀ a, B a → ∃ p, P p a) :
     probBad D B ≤ ∑ p, D.evalPred (P p)
 ```
 
-A correct application supplies the nonnegativity proof first:
+Supply the event cover separately from each individual mass estimate. Do not
+cite the removed `RandomSystems.CR18.mass_biUnion_le` or
+`SwitchingLemma.lean` API.
 
-```lean
-refine le_trans
-  (RandomSystems.probBad_iUnion_le hD Bad pieces ?cover)
-  ?sum_bound
-```
+## Respect the caller's quantifiers
 
-For a finite `Finset` of indices, inspect
-`RandomSystems.CR18.mass_biUnion_le` in
-`RandomSystems/SwitchingLemma.lean`. Its current signature requires a finite,
-nonempty carrier and `X.NonNeg`:
+- An H weighted-cell endpoint requires an ideal cell-mass bound for every
+  pair-admissible environment.
+- Conditional equivalence requires one bound on the supremum winning
+  probability of the blind game; `PDG.supWinProb_le` reduces this to every
+  winner.
+- A coupling leaf uses the chosen joint law and its disagreement event.
+- Identical-until-bad uses the source law shared by the two pushforwards.
 
-```lean
-theorem mass_biUnion_le {A ι : Type*} [Fintype A] [Nonempty A]
-    (X : Dist A) (hX : X.NonNeg) (s : Finset ι)
-    (E : ι → A → Prop) :
-    X.mass (fun a => ∃ i ∈ s, E i a)
-      ≤ ∑ i ∈ s, X.mass (E i)
-```
-
-The event cover and the individual mass estimates are separate obligations.
-Choose descriptors that make both statements true and tractable. A cover can
-overlap; the resulting sum may be loose.
-
-`probBad_le_of_ratio` is a different tool. It derives a bad-mass bound from a
-pointwise one-sided ratio when both laws are normalized/nonnegative and the
-comparison law assigns zero mass to the bad event. Inspect all hypotheses in
-`RandomSystems/HTechnique/Derivation.lean` before using it.
-
-## Schedule scope
-
-Read the caller's quantifiers before proving a count.
-
-- The packaged seeded CE endpoint asks for a bound on
-  `D.mass (fun a => bad a (blindQueryList w q))` for every blind winner `w`.
-  For each `w`, the list is fixed, but the theorem is uniform in `w`.
-- The ordinary adaptive H endpoints ask for a bad-mass bound for every
-  `QQueryEnvironment` under the ideal transcript law.
-- A coupling leaf is governed by the chosen joint law and may retain adaptive
-  state.
-
-Do not replace one of these scopes with another without an explicit reduction.
-In particular, exact compression of repeated queries is construction-specific.
+Do not exchange these scopes without a proved bridge.
 
 ## Choose the least lossy calculation
 
-Use a union bound only when it matches the intended strength. Alternatives
-include:
-
-- exact fiber cardinalities;
-- disjoint partitions;
-- sequential conditional products;
-- pointwise likelihood ratios;
-- expectation of a transcript-dependent defect;
-- orbit or symmetry counting; and
-- direct disagreement mass under an honest coupling.
-
-For standard pair-collision counting, the library contains
-`pairCollisionUnionBound_le_birthday`, which bounds its particular
-`pairCollisionUnionBound X r` expression by
-
-```text
-(1/2) * r^2 / card(X).
-```
-
-This theorem does not prove that an arbitrary construction's bad event equals
-or is covered by that expression. Supply the construction-specific cover.
-
-When using an exact cardinality argument, keep these layers explicit:
+Before a union bound, consider exact fibers, disjoint partitions, sequential
+conditional products, system-factor ratios, expectation of a transcript
+defect, symmetry/orbit counting, or direct disagreement mass. Keep the chain
+visible:
 
 ```text
 event membership
-→ descriptor or fiber statement
-→ cardinality identity/inequality
-→ mass under the specified law
-→ numerical simplification
+-> cover or fiber statement
+-> cardinality/mass identity
+-> numerical inequality
+-> consuming RS certificate
 ```
 
-## Verification
-
-- Check every nonnegativity and normalization premise rather than relying on
-  a probability-looking notation.
-- Use `classical` or decidability instances only where the selected theorem
-  needs them.
-- Inspect casts between `Nat`, `NNReal`, and `Real`; do not hide a changed
-  inequality behind automation.
-- Prefer focused algebra tactics after the probabilistic statement is fixed.
-- Verify the final security theorem with `#print axioms`, not only the local
-  counting lemma.
-
-Rechecked 2026-08-06 in the working tree used by the post-rewrite audit,
-`CBCStructureGraph.lean` contains an admitted central mass bound and its
-focused source path is not clean. Do not cite it as a completed
-beyond-birthday route. This status is snapshot-sensitive: before using it,
-consult the current `STATUS.md`, run `lake env lean
-RandomSystems/CBCStructureGraph.lean`, and obtain a clean `#print axioms`
-receipt after the file elaborates.
+Check casts among `Nat`, `NNReal`, and `Real`, and verify the final RS root's
+axioms rather than only the counting lemma.

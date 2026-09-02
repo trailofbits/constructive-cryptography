@@ -63,9 +63,9 @@ Display the sequence of equalities and inequalities. For each hop, state:
 - whether the hop is exact.
 
 The first displayed quantity must be the original system distance. If a route
-introduces representatives, a monitor, a game, a coupling, a transcript
-predicate, or a signed law, show the theorem that connects it to the preceding
-quantity.
+introduces a monitor, game, coupling, transcript factor, cell partition,
+hybrid, bounded observer, or explicit attack environment, show the theorem
+that connects it to the preceding quantity.
 
 ### 4. Competing routes
 
@@ -133,10 +133,13 @@ Typical principal obligations—not complete signatures—include:
 
 | Route | Principal mathematical obligations |
 | --- | --- |
-| H equality-on-good | fixed-query equality; uniform adaptive ideal bad mass |
-| H ratio | pointwise one-sided ratio; uniform adaptive ideal bad mass |
-| Strict CE | monotonicity; conditioned-law equality; uniform blind winning bound |
+| Transcript factorization | compatibility; stopping; system-factor formula |
+| H ratio | system-factor ratio; nonnegativity; equal weights |
+| H weighted cells | system-factor ratio; uniform cell masses for every admissible DDE |
+| Strict CE | common domain; initially-false conditioned identity; blind sup-winning bound |
 | Honest coupling | joint law; two marginals; disagreement estimate |
+| Observation restriction | reference domain; compatibility; stopping and round bound |
+| Explicit lower bound | admissible DDE; transcript event or exact law; supremum insertion |
 | Finite union | event cover; individual masses; sum estimate |
 
 Prefer leaves-first implementation once the interfaces are stable. Top-down
@@ -147,7 +150,8 @@ wrong.
 
 For each node:
 
-1. inspect `CHEATSHEET.md` and current route/status notes;
+1. inspect `README.md`, `THEORY.md`, the owning module documentation, and
+   current repository instructions;
 2. use `rg` for the mathematical concept and likely declaration fragments;
 3. inspect exact declarations with Lean-LSP;
 4. use local/goal-state search;
