@@ -12,6 +12,7 @@ import RandomSystems.Distance
 import RandomSystems.Parallel
 import RandomSystems.TranscriptFactor
 import RandomSystems.Technique.HCoefficient
+import RandomSystems.PermutationSum
 import RandomSystems.Technique.ConditionalEquivalence.Advantage
 import RandomSystems.Technique.ConditionalEquivalence.Blind
 import RandomSystems.Technique.ConditionalEquivalence.Filter
