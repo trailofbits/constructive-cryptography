@@ -34,3 +34,8 @@ game `PDG.blind`, and the blind-winner comparison.
 Conditional equivalence uses game enhancement, game equivalence, absorption,
 and blindness internally. Read [conditional-equivalence.md](conditional-equivalence.md)
 for that complete route instead of applying these pieces by analogy.
+
+MPR07's converse direction constructs two new games whose common pre-winning
+part realizes the exact transcript distance. Read
+[mpr07-symmetric-common-part.md](mpr07-symmetric-common-part.md); the current
+generic game API does not itself construct that pair.

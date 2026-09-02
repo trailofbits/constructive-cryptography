@@ -1,15 +1,15 @@
 ---
 name: random-systems-proofs
-description: "Formalize, repair, or review fixed-interface Random Systems advantage and distance proofs in Lean 4. Route a specified comparison through live exact/hybrid bounds, transcript factorization, H-coefficient estimates, strict conditional equivalence, honest coupling, games and blind winning, bounded observation restriction, counting, or an explicit lower-bound environment. Use for standalone RS results and RS leaves inside CC proofs; do not use as the sole workflow for CC composition or resource lifting."
+description: "Formalize, repair, or review fixed-interface Random Systems advantage and distance proofs in Lean 4. Route a specified comparison through live exact/hybrid bounds, transcript factorization, H-coefficient estimates, strict conditional equivalence, MPR07 symmetric common-part games, honest coupling, games and blind winning, bounded observation restriction, counting, or an explicit lower-bound environment. Use for standalone RS results and RS leaves inside CC proofs; do not use as the sole workflow for CC composition or resource lifting."
 ---
 
 # Random Systems proof techniques
 
 Start from one exact comparison between two observable systems and select only
-techniques with a checked path to that comparison. This package routes current
-production APIs; it is not mathematical authority. Verify source claims on
-rendered primary pages and Lean claims against live signatures, focused builds,
-and axiom receipts.
+techniques with a checked mathematical path and explicit production status.
+This package routes current APIs and source-backed formalization work; it is
+not mathematical authority. Verify source claims on rendered primary pages and
+Lean claims against live signatures, focused builds, and axiom receipts.
 
 ## Fix the comparison before choosing a technique
 
@@ -28,7 +28,7 @@ Keep this comparison as the root. A transcript factor, bad event, game,
 monitor, coupling, cell partition, or explicit environment is a certificate
 object only after a named theorem connects it to the root.
 
-## Route through the live technique surface
+## Route through checked technique surfaces
 
 Read only the references used by the selected proof spine:
 
@@ -38,6 +38,7 @@ Read only the references used by the selected proof spine:
 | Transcript factorization | A transcript-law comparison should cancel the common environment factor | [transcript-factorization.md](references/transcript-factorization.md) |
 | H-coefficient | System transcript factors satisfy a ratio or finite-cell defect bound | [h-coefficient.md](references/h-coefficient.md) |
 | Strict conditional equivalence | A probabilistic game conditioned on not winning matches a target PDS | [conditional-equivalence.md](references/conditional-equivalence.md) |
+| MPR07 symmetric common-part games | Exact per-observer distance should be realized as the winning probability of two enhanced systems | [mpr07-symmetric-common-part.md](references/mpr07-symmetric-common-part.md) |
 | Honest coupling | A nonnegative joint law with proved marginals makes disagreement tractable | [coupling.md](references/coupling.md) |
 | Games and blind winning | The proof uses a `PDG`, winning probability, blindness, or game equivalence | [games-and-winning.md](references/games-and-winning.md) |
 | Bounded observation restriction | A literal common-domain comparison needs a finite compatible stopping observer | [observation-restriction.md](references/observation-restriction.md) |
@@ -47,6 +48,12 @@ Read only the references used by the selected proof spine:
 Use [sketch-and-plan.md](references/sketch-and-plan.md) when the route creates
 several obligations. Use [creative-search.md](references/creative-search.md)
 only when the mathematical route or finite bound is genuinely unknown.
+
+The MPR07 row is a primary-source-backed formalization route, not yet a single
+live constructor theorem. Its forward game-equivalence bound has production
+support, but the recursive common-part construction and exact-attainment
+endpoint remain explicit obligations. Do not report that route as formalized
+until those declarations compile and pass their axiom checks.
 
 Techniques compose only through explicit bridges. Typical spines include:
 
@@ -60,6 +67,12 @@ Adv(S,T)
 Adv(game.underlying,target)
   <= supWinProb(blind game)
   <= epsilon
+```
+
+```text
+statDist(trLaw D S,trLaw D T)
+  = winProb D leftHat
+  = winProb D rightHat
 ```
 
 ```text
@@ -77,6 +90,10 @@ or virtual joint are not current default production routes merely because an
 older proof plan mentioned them. Use one only after locating its live import,
 checking the exact endpoint, compiling it, and obtaining an acceptable axiom
 receipt. A signed witness is never an honest `Probability.Coupling`.
+
+The MPR07 construction is likewise not permission to assume an attaining pair
+of games. Follow its reference as an implementation DAG until the symmetric
+constructor and exact equalities exist in the current library.
 
 Likewise, do not cite obsolete `RandomSystems/HTechnique/*`,
 `RandomSystems/CondEquiv.lean`, `RandomSystems/SwitchingLemma.lean`, or the old
@@ -108,6 +125,8 @@ Keep these objects distinct:
   and carries an initially-false condition.
 - `EquivalentAsGames` compares pre-winning behavior; it is not conditional
   equivalence and not ordinary system equality.
+- MPR07 Lemma 5 constructs two MBO-enhanced systems with a common pre-winning
+  part; it is not completeness of the one-sided `game |≡ target` relation.
 - A coupling is a nonnegative joint distribution with proved marginals.
 - `PDG.supWinProb` is a supremum over winners; it is not abstract winnability.
 - Counting discharges a leaf produced by another certificate and does not

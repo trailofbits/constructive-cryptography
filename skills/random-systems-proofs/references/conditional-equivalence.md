@@ -79,3 +79,8 @@ from the blind winning bound, not from conditional equivalence itself.
   bound.
 - Check the exact common-domain and probability hypotheses; do not recover an
   old seeded `PFunPDS` wrapper by compatibility aliases.
+
+MPR07 Lemma 5 is a different symmetric construction: it enhances both systems
+and realizes transcript distance by two winning probabilities. Read
+[mpr07-symmetric-common-part.md](mpr07-symmetric-common-part.md) when that
+exact-attainment route is intended; do not call it completeness of `|≡`.

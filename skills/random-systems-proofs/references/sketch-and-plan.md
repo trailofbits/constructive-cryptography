@@ -137,6 +137,7 @@ Typical principal obligations—not complete signatures—include:
 | H ratio | system-factor ratio; nonnegativity; equal weights |
 | H weighted cells | system-factor ratio; uniform cell masses for every admissible DDE |
 | Strict CE | common domain; initially-false conditioned identity; blind sup-winning bound |
+| MPR07 common part | two enhanced systems; marginal recovery; equal pre-winning mass; exact per-observer winning identities |
 | Honest coupling | joint law; two marginals; disagreement estimate |
 | Observation restriction | reference domain; compatibility; stopping and round bound |
 | Explicit lower bound | admissible DDE; transcript event or exact law; supremum insertion |

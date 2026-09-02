@@ -59,6 +59,7 @@ Possible angles include:
 - exact likelihood or fiber counting;
 - H ratio or finite-cell analysis;
 - strict conditional-equivalence monitor and simulator design;
+- MPR07 symmetric common-part allocation and enhanced-system construction;
 - honest sequential or maximal coupling;
 - game/blind-winning reformulation with an explicit bridge;
 - bounded common-domain observation restriction;
