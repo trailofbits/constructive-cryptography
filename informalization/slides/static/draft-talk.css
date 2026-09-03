@@ -1,0 +1,376 @@
+/* The proof reader is a native Verso block. The slide title and deck chrome
+   yield the full canvas to that interactive document. */
+.reveal .slides section[data-state="informalization-reader"] > h2,
+.reveal .slides section[data-state="informalization-reader"]::before,
+.reveal .slides section[data-state="informalization-reader"]::after,
+.reveal:has(.slides section[data-state="informalization-reader"].present) .progress,
+.reveal:has(.slides section[data-state="informalization-reader"].present) .slide-number {
+  display: none !important;
+}
+
+/* Definition sketch: two directions on the same horizontal geometry. */
+.reveal .draft-definition-visual {
+  width: 88%;
+  margin: 2.1em auto 0;
+}
+
+.reveal .draft-direction-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px 230px;
+  align-items: center;
+  min-height: 150px;
+  border-bottom: 1px solid #dedede;
+}
+
+.reveal .draft-direction-row:first-child {
+  border-top: 1px solid #dedede;
+}
+
+.reveal .draft-direction-object {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.84em;
+}
+
+.reveal .draft-direction-object.proof {
+  text-align: center;
+  font-weight: 700;
+}
+
+.reveal .draft-direction-track {
+  position: relative;
+  height: 0;
+  margin: 0 34px;
+  border-top: 2px solid #64686d;
+}
+
+.reveal .draft-direction-track::before,
+.reveal .draft-direction-track::after {
+  position: absolute;
+  top: -7px;
+  width: 11px;
+  height: 11px;
+  content: "";
+  transform: rotate(45deg);
+}
+
+.reveal .draft-direction-track.points-right::after {
+  right: 0;
+  border-top: 2px solid #64686d;
+  border-right: 2px solid #64686d;
+}
+
+.reveal .draft-direction-track.points-left {
+  border-top-color: var(--tob-red-strong);
+}
+
+.reveal .draft-direction-track.points-left::before {
+  left: 0;
+  border-bottom: 2px solid var(--tob-red-strong);
+  border-left: 2px solid var(--tob-red-strong);
+}
+
+.reveal .draft-direction-label {
+  position: absolute;
+  top: -33px;
+  left: 50%;
+  padding: 0 12px;
+  background: var(--tob-canvas);
+  color: #64686d;
+  font-size: 0.54em;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  transform: translateX(-50%);
+}
+
+.reveal .points-left .draft-direction-label {
+  color: var(--tob-red-strong);
+}
+
+/* Certainty/intuition sketch: a red headline asks the question, the bar
+   below answers it. */
+.reveal .draft-spectrum-block {
+  margin: 1.9em auto 0;
+}
+
+.reveal .draft-spectrum-headline {
+  margin: 0;
+  color: var(--tob-red-strong);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.92em;
+  font-weight: 700;
+  text-align: center;
+}
+
+.reveal .draft-spectrum {
+  position: relative;
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr) 250px;
+  align-items: center;
+  width: 82%;
+  margin: 1.15em auto 1.7em;
+}
+
+.reveal .draft-spectrum-label {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.82em;
+}
+
+.reveal .draft-spectrum-label.certainty { text-align: right; }
+
+.reveal .draft-spectrum-line {
+  position: relative;
+  height: 4px;
+  margin: 0 0.7em;
+  background: linear-gradient(90deg, #1d1d1d 0%, #9a9a9a 48%, var(--tob-red-strong) 100%);
+}
+
+.reveal .draft-spectrum-line::before,
+.reveal .draft-spectrum-line::after {
+  position: absolute;
+  top: -6px;
+  width: 0;
+  height: 0;
+  content: "";
+}
+
+.reveal .draft-spectrum-line::before {
+  left: -1px;
+  border-top: 8px solid transparent;
+  border-right: 12px solid #1d1d1d;
+  border-bottom: 8px solid transparent;
+}
+
+.reveal .draft-spectrum-line::after {
+  right: -1px;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-left: 12px solid var(--tob-red-strong);
+}
+
+.reveal .draft-spectrum-marker {
+  position: absolute;
+  top: 50%;
+  left: 54%;
+  width: 15px;
+  height: 15px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #6d6d6d;
+  box-shadow: 0 0 0 1px #6d6d6d;
+  transform: translate(-50%, -50%);
+}
+
+.reveal .draft-spectrum-caption {
+  position: absolute;
+  top: 1.7em;
+  left: 50%;
+  color: var(--text-muted);
+  font-size: 0.52em;
+  transform: translateX(-50%);
+}
+
+/* Informalization flow: four derived stages left to right, with the authored
+   language design entering the semantic plan and the rendering from below. */
+.reveal .draft-flow {
+  display: grid;
+  grid-template-columns: 1fr 52px 1fr 52px 1fr 52px 1fr;
+  grid-template-rows: auto 46px auto;
+  align-items: start;
+  width: 1400px;
+  margin: 2.4em auto 0;
+}
+
+.reveal .draft-flow-stage,
+.reveal .draft-flow-input {
+  padding: 0.45em 0.5em 0.5em;
+  border-top: 2px solid #202020;
+  border-bottom: 1px solid #d7d7d7;
+  text-align: center;
+}
+
+.reveal .draft-flow-stage { grid-row: 1; }
+
+.reveal .draft-flow-input {
+  grid-column: 5 / 8;
+  grid-row: 3;
+  border-top-color: var(--tob-red-strong);
+}
+
+.reveal .draft-flow-name {
+  display: block;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.78em;
+  font-weight: 700;
+}
+
+.reveal .draft-flow-parts {
+  display: block;
+  margin-top: 0.4em;
+}
+
+.reveal .draft-flow-part {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.5em;
+  line-height: 1.6;
+}
+
+/* Arrows are flex containers: the shaft and the triangular head are both
+   centered on the cross axis, so they stay aligned without manual offsets. */
+.reveal .draft-flow-wire {
+  display: flex;
+  grid-row: 1;
+  align-self: center;
+  align-items: center;
+  margin: 0 6px;
+}
+
+.reveal .draft-flow-wire::before {
+  flex: 1 1 auto;
+  height: 2px;
+  background: #777d82;
+  content: "";
+}
+
+.reveal .draft-flow-wire::after {
+  width: 0;
+  height: 0;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 11px solid #777d82;
+  content: "";
+}
+
+/* Language design rising into a stage. */
+.reveal .draft-flow-rise {
+  display: flex;
+  flex-direction: column;
+  grid-row: 2;
+  align-self: stretch;
+  justify-self: center;
+  align-items: center;
+}
+
+.reveal .draft-flow-rise::before {
+  width: 0;
+  height: 0;
+  border-right: 6px solid transparent;
+  border-bottom: 11px solid var(--tob-red-strong);
+  border-left: 6px solid transparent;
+  content: "";
+}
+
+.reveal .draft-flow-rise::after {
+  flex: 1 1 auto;
+  width: 2px;
+  background: var(--tob-red-strong);
+  content: "";
+}
+
+.reveal .draft-flow-rise.into-plan { grid-column: 5; }
+.reveal .draft-flow-rise.into-rendering { grid-column: 7; }
+
+/* Reference footnotes pinned to the slide foot. */
+.reveal .draft-footnotes {
+  position: absolute;
+  bottom: 64px;
+  left: var(--tob-slide-gutter);
+  width: 1180px;
+  margin: 0;
+  text-align: left;
+}
+
+.reveal .draft-footnotes p {
+  margin: 0 0 0.3em;
+  color: var(--text-muted);
+  font-size: 0.46em;
+  line-height: 1.4;
+}
+
+.reveal .draft-footnotes a {
+  color: inherit;
+  font-weight: 400;
+  text-decoration: underline;
+}
+
+/* Closing slide: a marker-free list, flush with the title, one label and
+   link per line; paths never break at a hyphen. */
+.reveal ul.draft-links {
+  margin-left: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.reveal ul.draft-links a {
+  white-space: nowrap;
+}
+
+/* Footnote reference markers, in the running text and in the footer. */
+.reveal .draft-footnote-ref {
+  vertical-align: super;
+  font-size: 0.62em;
+  line-height: 0;
+}
+
+/* Keep the prose on the spectrum and pipeline slides quiet. */
+.reveal section:has(.draft-spectrum) > p,
+.reveal section:has(.draft-flow) > p {
+  max-width: 1180px;
+  margin-right: auto;
+  margin-left: auto;
+  font-size: 0.72em;
+  line-height: 1.45;
+}
+
+/* Correctness vs presentation: a borderless two-column comparison. */
+.reveal table.slide-table.draft-tension {
+  --slide-table-cell-padding: 0.55em 1.1em;
+  width: 88%;
+  margin: 2.1em auto 0;
+  table-layout: fixed;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.84em;
+}
+
+.reveal table.slide-table.draft-tension th,
+.reveal table.slide-table.draft-tension td {
+  vertical-align: middle;
+}
+
+.reveal table.slide-table.draft-tension th {
+  font-weight: 700;
+}
+
+
+.reveal table.slide-table.draft-tension thead th {
+  padding-bottom: 0.9em;
+}
+
+.reveal table.slide-table.draft-tension p {
+  margin: 0 0 0.35em;
+  font-weight: inherit;
+}
+
+.reveal table.slide-table.draft-tension th,
+.reveal table.slide-table.draft-tension td,
+.reveal table.slide-table.draft-tension tr:nth-child(even) td {
+  border: none;
+  background: transparent;
+  color: inherit;
+}
+
+/* Title slide: the deck title stays on one line, sized so it ends before the
+   theme's diagonal instead of wrapping inside the Tangerine 1060px column. */
+.reveal .slides section[data-state="title"] > h2 {
+  width: auto;
+  font-size: 66px;
+  white-space: nowrap;
+}
+
+/* Title slide: the byline sits low on the slide, clear of the title. */
+.reveal .slides section[data-state="title"] > p {
+  position: absolute;
+  bottom: 160px;
+  left: 108px;
+  margin: 0;
+}

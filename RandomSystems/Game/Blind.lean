@@ -291,4 +291,11 @@ lemma winProb_le_supWinProb_blind {game : PDG X Y}
 
 end PDG
 
+namespace ConditionalEquivalence
+
+/-- CR18 notation for blocking a game's replies. -/
+scoped prefix:max "b " => PDG.blind
+
+end ConditionalEquivalence
+
 end RandomSystems

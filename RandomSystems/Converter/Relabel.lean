@@ -72,7 +72,7 @@ theorem relabelResponse_outer {A C : Interface.{u, v}} {B D : Interface.{w, z}}
   rfl
 
 /-- The response equivalence at an arbitrary target history. -/
-private def relabelResponseAt {A C : Interface.{u, v}} {B D : Interface.{w, z}}
+def relabelResponseAt {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D)
     (targetHistory : DDC.History C D) :
     DDC.Response
@@ -84,7 +84,7 @@ private def relabelResponseAt {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (_root_.Equiv.cast (congrArg (fun history => DDC.Response history)
       (histories.apply_symm_apply targetHistory)))
 
-private theorem cast_converterResponse_inner
+theorem cast_converterResponse_inner
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     {left right : DDC.History A B} (equal : left = right)
     (query : B.query) :
@@ -94,7 +94,7 @@ private theorem cast_converterResponse_inner
   cases equal
   rfl
 
-private theorem cast_converterResponse_outer
+theorem cast_converterResponse_outer
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     {left right : DDC.History A B} (equal : left = right)
     (reply : Option (A.answer left.lastOuter)) :
@@ -105,7 +105,20 @@ private theorem cast_converterResponse_outer
   cases equal
   rfl
 
-private def relabelRaw {A C : Interface.{u, v}} {B D : Interface.{w, z}}
+@[simp]
+theorem cast_option_none {X Y : Type w} (equal : X = Y) :
+    cast (congrArg Option equal) (none : Option X) = (none : Option Y) := by
+  cases equal
+  rfl
+
+@[simp]
+theorem cast_option_some {X Y : Type w} (equal : X = Y) (value : X) :
+    cast (congrArg Option equal) (some value) =
+      (some (cast equal value) : Option Y) := by
+  cases equal
+  rfl
+
+def relabelRaw {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D)
     (converter : DDC A B) : DDC.Raw C D :=
   fun targetHistory =>
@@ -114,7 +127,7 @@ private def relabelRaw {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     Part.map (relabelResponseAt outer inner targetHistory)
       (converter sourceHistory)
 
-private theorem mem_relabelRaw_iff {A C : Interface.{u, v}} {B D : Interface.{w, z}}
+theorem mem_relabelRaw_iff {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D)
     (converter : DDC A B) (targetHistory : DDC.History C D)
     (targetResponse : DDC.Response targetHistory) :
@@ -125,7 +138,7 @@ private theorem mem_relabelRaw_iff {A C : Interface.{u, v}} {B D : Interface.{w,
           targetResponse := by
   rw [relabelRaw, Part.mem_map_iff]
 
-private theorem mem_relabelRaw_iff_symm {A C : Interface.{u, v}} {B D : Interface.{w, z}}
+theorem mem_relabelRaw_iff_symm {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D)
     (converter : DDC A B) (targetHistory : DDC.History C D)
     (targetResponse : DDC.Response targetHistory) :
@@ -148,7 +161,7 @@ private theorem mem_relabelRaw_iff_symm {A C : Interface.{u, v}} {B D : Interfac
         targetResponse⟩
 
 @[simp]
-private theorem relabelResponseAt_symm_inner
+theorem relabelResponseAt_symm_inner
     {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D)
     (targetHistory : DDC.History C D) (query : D.query) :
@@ -168,7 +181,7 @@ private theorem relabelResponseAt_symm_inner
       targetHistory) query).symm
 
 @[simp]
-private theorem relabelResponseAt_inner
+theorem relabelResponseAt_inner
     {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D)
     (targetHistory : DDC.History C D) (query : B.query) :
@@ -183,7 +196,7 @@ private theorem relabelResponseAt_inner
     ((DDC.History.relabelEquiv outer inner).apply_symm_apply
       targetHistory) (inner.queries query)
 
-private theorem exists_relabelResponseAt_outer
+theorem exists_relabelResponseAt_outer
     {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D)
     (targetHistory : DDC.History C D)
@@ -203,7 +216,7 @@ private theorem exists_relabelResponseAt_outer
       cases inverseEqual
   | inr targetReply => exact ⟨targetReply, rfl⟩
 
-private theorem exists_relabelResponseAt_symm_outer
+theorem exists_relabelResponseAt_symm_outer
     {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D)
     (targetHistory : DDC.History C D)
@@ -223,7 +236,7 @@ private theorem exists_relabelResponseAt_symm_outer
       cases forwardEqual
   | inr sourceReply => exact ⟨sourceReply, rfl⟩
 
-private theorem relabelEquiv_symm_singleton
+theorem relabelEquiv_symm_singleton
     {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D) (query : C.query) :
     (DDC.History.relabelEquiv outer inner).symm
@@ -237,7 +250,7 @@ private theorem relabelEquiv_symm_singleton
   rw [DDC.History.relabel_singleton]
   rw [outer.queries.apply_symm_apply]
 
-private theorem relabelEquiv_symm_snocOuter
+theorem relabelEquiv_symm_snocOuter
     {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D)
     (history : DDC.History C D) (query : C.query) :
@@ -259,7 +272,7 @@ private theorem relabelEquiv_symm_snocOuter
     at historyEqual
   rw [historyEqual, outer.queries.apply_symm_apply]
 
-private theorem relabelEquiv_symm_snocInner
+theorem relabelEquiv_symm_snocInner
     {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D)
     (history : DDC.History C D) (reply : InnerReply D) :
@@ -291,7 +304,7 @@ private theorem relabelEquiv_symm_snocInner
     (fun packed : InnerReply D =>
       history.snocInner packed.1 packed.2) replyEqual).symm
 
-private theorem converter_mem_transport
+theorem converter_mem_transport
     {A : Interface.{u, v}} {B : Interface.{w, z}} (converter : DDC A B)
     {left right : DDC.History A B} (equal : left = right)
     {response : DDC.Response right} (responds : response ∈ converter right) :
@@ -300,7 +313,7 @@ private theorem converter_mem_transport
   cases equal
   exact responds
 
-private theorem exists_cast_converterResponse_outer
+theorem exists_cast_converterResponse_outer
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     {left right : DDC.History A B} (equal : left = right)
     (reply : Option (A.answer right.lastOuter)) :
@@ -311,7 +324,7 @@ private theorem exists_cast_converterResponse_outer
   cases equal
   exact ⟨reply, rfl⟩
 
-private theorem admissible_relabel_of_admissible
+theorem admissible_relabel_of_admissible
     {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D) (converter : DDC A B)
     {history : DDC.History A B}
@@ -373,7 +386,7 @@ private theorem admissible_relabel_of_admissible
       exact .afterOuter inductionHypothesis targetResponds
         (outer.queries query)
 
-private theorem admissible_of_admissible_relabel
+theorem admissible_of_admissible_relabel
     {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D) (converter : DDC A B)
     {history : DDC.History C D}
@@ -415,7 +428,7 @@ private theorem admissible_of_admissible_relabel
       exact .afterOuter inductionHypothesis sourceResponds
         (outer.queries.symm query)
 
-private theorem admissible_relabelRaw_iff
+theorem admissible_relabelRaw_iff
     {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D) (converter : DDC A B)
     (history : DDC.History C D) :
@@ -430,7 +443,7 @@ private theorem admissible_relabelRaw_iff
     exact (DDC.History.relabelEquiv outer inner).apply_symm_apply history ▸
       mapped
 
-private theorem innerContinuation_relabelRaw
+theorem innerContinuation_relabelRaw
     {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D) (converter : DDC A B)
     {after before : DDC.History C D}
@@ -447,12 +460,27 @@ private theorem innerContinuation_relabelRaw
         ((DDC.History.relabelEquiv outer inner).symm before) := by
     have mapped := (mem_relabelRaw_iff_symm outer inner converter before
       (Sum.inl query)).mp responds
-    simpa [sourceReply] using mapped
+    have mappedQuery : Sum.inl (inner.queries.symm query) ∈
+        converter
+          ((DDC.History.relabelEquiv outer inner).symm before) := by
+      simpa using mapped
+    have sourceMappedQuery : inner.queries sourceReply.1 = query := by
+      have equal := congrArg Sigma.fst
+        (inner.innerReply.apply_symm_apply
+          (⟨query, reply⟩ : InnerReply D))
+      change inner.queries sourceReply.1 = query at equal
+      exact equal
+    have sourceQuery : sourceReply.1 = inner.queries.symm query := by
+      apply inner.queries.injective
+      exact sourceMappedQuery.trans
+        (inner.queries.apply_symm_apply query).symm
+    rw [sourceQuery]
+    exact mappedQuery
   exact ⟨sourceReply.1, sourceReply.2, sourceResponds,
     relabelEquiv_symm_snocInner outer inner before
       (⟨query, reply⟩ : InnerReply D)⟩
 
-private theorem relabelRaw_complete
+theorem relabelRaw_complete
     {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D) (converter : DDC A B) :
     DDC.Raw.Complete (relabelRaw outer inner converter) := by
@@ -463,7 +491,7 @@ private theorem relabelRaw_complete
   exact (admissible_relabelRaw_iff outer inner converter history).mp
     admissible
 
-private theorem relabelRaw_branchFinite
+theorem relabelRaw_branchFinite
     {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D) (converter : DDC A B) :
     DDC.Raw.BranchFinite (relabelRaw outer inner converter) := by
@@ -505,21 +533,19 @@ theorem mem_relabel_iff_symm
         ((converter.exactDomain _).mp responds.1),
       responds⟩
 
-end Internal
-
 /-- One complete history together with its dependent converter response. -/
-private abbrev BehaviorPoint (A : Interface.{u, v}) (B : Interface.{w, z}) :=
+abbrev BehaviorPoint (A : Interface.{u, v}) (B : Interface.{w, z}) :=
   Σ history : DDC.History A B, DDC.Response history
 
 /-- Relabeling as one equivalence on complete history/response points. -/
-private def relabelPoint
+def relabelPoint
     {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D) :
     BehaviorPoint A B ≃ BehaviorPoint C D :=
   _root_.Equiv.sigmaCongr (DDC.History.relabelEquiv outer inner)
     (relabelResponse outer inner)
 
-private theorem cast_relabelResponse_refl
+theorem cast_relabelResponse_refl
     {A : Interface.{u, v}} {B : Interface.{w, z}} (history : DDC.History A B)
     (response : DDC.Response history) :
     cast (congrArg (fun selected => DDC.Response selected)
@@ -531,14 +557,23 @@ private theorem cast_relabelResponse_refl
         (DDC.History.relabel_refl history) query
   | inr reply =>
       let historyEqual := DDC.History.relabel_refl history
-      rw [relabelResponse_outer, cast_converterResponse_outer]
+      rw [relabelResponse_outer,
+        cast_converterResponse_outer historyEqual]
+      apply congrArg Sum.inr
+      apply eq_of_heq
+      refine (cast_heq
+        (congrArg (fun selected => Option (A.answer selected.lastOuter))
+          historyEqual) _).trans ?_
       unfold relabelOuterReply
-      change Sum.inr (cast _ (cast _ (Option.map id reply))) = Sum.inr reply
-      rw [Option.map_id, cast_cast, cast_eq]
-      · rfl
-      · exact historyEqual
+      simp only [_root_.Equiv.trans_apply, _root_.Equiv.optionCongr_apply,
+        _root_.Equiv.cast_apply]
+      refine (cast_heq
+        (congrArg (fun query => Option (A.answer query))
+          (DDC.History.lastOuter_relabel (.refl A) (.refl B) history).symm)
+        _).trans ?_
+      exact heq_of_eq (congrFun Option.map_id reply)
 
-private theorem pack_relabelOuterReply
+theorem pack_relabelOuterReply
     {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D)
     (history : DDC.History A B)
@@ -557,7 +592,7 @@ private theorem pack_relabelOuterReply
       (DDC.History.lastOuter_relabel outer inner history).symm)
     (reply.map (outer.answers history.lastOuter))
 
-private theorem innerReply_trans
+theorem innerReply_trans
     {A C E : Interface.{u, v}}
     (first : A.Equiv C) (second : C.Equiv E)
     (reply : InnerReply A) :
@@ -566,7 +601,7 @@ private theorem innerReply_trans
   rcases reply with ⟨query, reply⟩
   cases reply <;> rfl
 
-private theorem pack_cast_outerReply
+theorem pack_cast_outerReply
     {A : Interface.{u, v}} {B : Interface.{w, z}}
     {left right : DDC.History A B} (equal : left = right)
     (reply : Option (A.answer left.lastOuter)) :
@@ -577,16 +612,8 @@ private theorem pack_cast_outerReply
   cases equal
   rfl
 
-private theorem reply_eq_of_packed_eq
-    {A : Interface.{u, v}} {query : A.query}
-    {left right : Option (A.answer query)}
-    (equal : (⟨query, left⟩ : InnerReply A) = ⟨query, right⟩) :
-    left = right := by
-  cases equal
-  rfl
-
 @[simp]
-private theorem relabelPoint_apply
+theorem relabelPoint_apply
     {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D)
     (history : DDC.History A B) (response : DDC.Response history) :
@@ -596,7 +623,7 @@ private theorem relabelPoint_apply
   rfl
 
 @[simp]
-private theorem relabelPoint_refl
+theorem relabelPoint_refl
     {A : Interface.{u, v}} {B : Interface.{w, z}} (point : BehaviorPoint A B) :
     relabelPoint (.refl A) (.refl B) point = point := by
   rcases point with ⟨history, response⟩
@@ -609,7 +636,7 @@ private theorem relabelPoint_refl
   rw [cast_relabelResponse_refl] at transported
   exact transported.symm
 
-private theorem cast_relabelResponse_trans
+theorem cast_relabelResponse_trans
     {A C E : Interface.{u, v}} {B D F : Interface.{w, z}}
     (firstOuter : A.Equiv C) (firstInner : B.Equiv D)
     (secondOuter : C.Equiv E) (secondInner : D.Equiv F)
@@ -671,9 +698,9 @@ private theorem cast_relabelResponse_trans
           _ = (⟨composedHistory.lastOuter, composedReply⟩ : InnerReply E) :=
             (pack_relabelOuterReply (firstOuter.trans secondOuter)
               (firstInner.trans secondInner) history reply).symm
-      exact congrArg Sum.inr (reply_eq_of_packed_eq packedEqual)
+      exact congrArg Sum.inr (DDC.History.reply_eq_of_packed_eq packedEqual)
 
-private theorem relabelPoint_trans
+theorem relabelPoint_trans
     {A C E : Interface.{u, v}} {B D F : Interface.{w, z}}
     (firstOuter : A.Equiv C) (firstInner : B.Equiv D)
     (secondOuter : C.Equiv E) (secondInner : D.Equiv F)
@@ -700,11 +727,11 @@ private theorem relabelPoint_trans
   rw [cast_relabelResponse_trans] at transported
   exact transported.symm
 
-private abbrev HasResponse {A : Interface.{u, v}} {B : Interface.{w, z}}
+abbrev HasResponse {A : Interface.{u, v}} {B : Interface.{w, z}}
     (converter : DDC A B) (point : BehaviorPoint A B) : Prop :=
   point.2 ∈ converter point.1
 
-private theorem relabelPoint_symm_apply
+theorem relabelPoint_symm_apply
     {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D)
     (history : DDC.History C D)
@@ -735,7 +762,7 @@ private theorem relabelPoint_symm_apply
   rw [responseEqual] at transported
   exact transported
 
-private theorem mem_relabel_iff_point
+theorem mem_relabel_iff_point
     {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D) (converter : DDC A B)
     (history : DDC.History C D)
@@ -746,7 +773,7 @@ private theorem mem_relabel_iff_point
   rw [mem_relabel_iff_symm outer inner converter history response]
   rw [relabelPoint_symm_apply]
 
-private theorem hasResponse_relabel_iff_point
+theorem hasResponse_relabel_iff_point
     {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D) (converter : DDC A B)
     (point : BehaviorPoint C D) :
@@ -755,13 +782,13 @@ private theorem hasResponse_relabel_iff_point
   rcases point with ⟨history, response⟩
   exact mem_relabel_iff_point outer inner converter history response
 
-private theorem relabelPoint_refl_eq
+theorem relabelPoint_refl_eq
     {A : Interface.{u, v}} {B : Interface.{w, z}} :
     relabelPoint (.refl A) (.refl B) = _root_.Equiv.refl _ := by
   apply _root_.Equiv.ext
   exact relabelPoint_refl
 
-private theorem relabelPoint_trans_eq
+theorem relabelPoint_trans_eq
     {A C E : Interface.{u, v}} {B D F : Interface.{w, z}}
     (firstOuter : A.Equiv C) (firstInner : B.Equiv D)
     (secondOuter : C.Equiv E) (secondInner : D.Equiv F) :
@@ -772,6 +799,8 @@ private theorem relabelPoint_trans_eq
   apply _root_.Equiv.ext
   exact relabelPoint_trans firstOuter firstInner secondOuter secondInner
 
+end Internal
+
 @[simp]
 theorem relabel_refl
     {A : Interface.{u, v}} {B : Interface.{w, z}} (converter : DDC A B) :
@@ -780,8 +809,8 @@ theorem relabel_refl
   apply DDC.ext
   intro history response
   -- Pull membership back through the identity relabeling.
-  rw [mem_relabel_iff_point]
-  rw [relabelPoint_refl_eq]
+  rw [Internal.mem_relabel_iff_point]
+  rw [Internal.relabelPoint_refl_eq]
   rfl
 
 theorem relabel_trans
@@ -797,17 +826,21 @@ theorem relabel_trans
   apply DDC.ext
   intro history response
   -- Pull nested relabeling and composed relabeling back to source coordinates.
-  rw [mem_relabel_iff_point]
-  rw [hasResponse_relabel_iff_point, mem_relabel_iff_point]
+  rw [Internal.mem_relabel_iff_point]
+  rw [Internal.hasResponse_relabel_iff_point,
+    Internal.mem_relabel_iff_point]
   -- Composition of the point equivalences identifies the two source points.
   have pointEqual := congrArg
-    (fun equivalence : BehaviorPoint A B ≃ BehaviorPoint E F =>
+    (fun equivalence : Internal.BehaviorPoint A B ≃
+        Internal.BehaviorPoint E F =>
       equivalence.symm ⟨history, response⟩)
-    (relabelPoint_trans_eq firstOuter firstInner secondOuter secondInner)
+    (Internal.relabelPoint_trans_eq firstOuter firstInner
+      secondOuter secondInner)
   have nestedEqual :
-      (relabelPoint firstOuter firstInner).symm
-          ((relabelPoint secondOuter secondInner).symm ⟨history, response⟩) =
-        (relabelPoint (firstOuter.trans secondOuter)
+      (Internal.relabelPoint firstOuter firstInner).symm
+          ((Internal.relabelPoint secondOuter secondInner).symm
+            ⟨history, response⟩) =
+        (Internal.relabelPoint (firstOuter.trans secondOuter)
           (firstInner.trans secondInner)).symm ⟨history, response⟩ :=
     pointEqual
   rw [nestedEqual]
@@ -816,7 +849,7 @@ end DDC
 
 namespace DDS
 
-private theorem packed_relabel
+theorem packed_relabel
     {A B : Interface.{u, v}} (equivalence : A.Equiv B)
     (system : DDS A) (history : _root_.RandomSystems.Ambient.History B) :
     (⟨history.last,
@@ -835,17 +868,7 @@ private theorem packed_relabel
     simp
   · exact cast_heq _ _
 
-private theorem packed_innerReplyAt
-    {A : Interface.{u, v}} (system : DDS A)
-    (prior : List A.query) (query : A.query) :
-    (⟨query, Attachment.innerReplyAt system prior query⟩ : InnerReply A) =
-      ⟨(innerHistory prior query).last,
-        system (innerHistory prior query)⟩ := by
-  apply Sigma.ext (last_innerHistory prior query).symm
-  unfold Attachment.innerReplyAt
-  exact cast_heq _ _
-
-private theorem innerReplyAt_relabel
+theorem innerReplyAt_relabel
     {A B : Interface.{u, v}} (equivalence : A.Equiv B)
     (system : DDS A) (prior : List A.query) (query : A.query) :
     Attachment.innerReplyAt
@@ -854,12 +877,12 @@ private theorem innerReplyAt_relabel
       (Attachment.innerReplyAt system prior query).map
         (equivalence.answers query) := by
   classical
-  let targetHistory := innerHistory (prior.map equivalence.queries)
+  let targetHistory := Attachment.innerHistory (prior.map equivalence.queries)
     (equivalence.queries query)
   let sourceHistory := _root_.RandomSystems.Ambient.History.map equivalence.queries.symm targetHistory
-  have sourceEqual : sourceHistory = innerHistory prior query := by
+  have sourceEqual : sourceHistory = Attachment.innerHistory prior query := by
     apply _root_.RandomSystems.Ambient.History.ext
-    simp [sourceHistory, targetHistory, innerHistory,
+    simp [sourceHistory, targetHistory, Attachment.innerHistory,
       _root_.RandomSystems.Ambient.History.map, List.map_append]
   have packedEqual :
       (⟨equivalence.queries query,
@@ -874,20 +897,20 @@ private theorem innerReplyAt_relabel
       _ = (⟨targetHistory.last,
           RandomSystems.Ambient.DDS.relabel equivalence system
             targetHistory⟩ : InnerReply B) :=
-        packed_innerReplyAt
+        Attachment.packed_innerReplyAt
           (RandomSystems.Ambient.DDS.relabel equivalence system)
           (prior.map equivalence.queries) (equivalence.queries query)
       _ = equivalence.innerReply
           ⟨sourceHistory.last, system sourceHistory⟩ :=
         packed_relabel equivalence system targetHistory
       _ = equivalence.innerReply
-          ⟨(innerHistory prior query).last,
-            system (innerHistory prior query)⟩ := by rw [sourceEqual]
+          ⟨(Attachment.innerHistory prior query).last,
+            system (Attachment.innerHistory prior query)⟩ := by rw [sourceEqual]
       _ = equivalence.innerReply
           ⟨query, Attachment.innerReplyAt system prior query⟩ := by
-        rw [packed_innerReplyAt system prior query]
+        rw [Attachment.packed_innerReplyAt system prior query]
       _ = _ := by rw [Interface.Equiv.innerReply_apply]
-  exact DDC.reply_eq_of_packed_eq packedEqual
+  exact DDC.History.reply_eq_of_packed_eq packedEqual
 
 end DDS
 
@@ -895,7 +918,7 @@ namespace DDC
 
 namespace Internal
 
-private theorem packed_selectReply_relabel
+theorem packed_selectReply_relabel
     {A C : Interface.{u, v}} (outer : A.Equiv C)
     (query : A.query) (reply : InnerReply A) :
     (⟨outer.queries query,
@@ -915,13 +938,13 @@ private theorem packed_selectReply_relabel
       Interface.Equiv.innerReply_apply]
     simp [Attachment.selectReply, equal, mappedDifferent]
 
-private theorem history_head_map
+theorem history_head_map
     {X Y : Interface.{u, v}} (function : X.query → Y.query)
     (history : _root_.RandomSystems.Ambient.History X) :
     (_root_.RandomSystems.Ambient.History.map function history).head = function history.head := by
   simp [_root_.RandomSystems.Ambient.History.head, _root_.RandomSystems.Ambient.History.map]
 
-private theorem history_tail_map
+theorem history_tail_map
     {X Y : Interface.{u, v}} (function : X.query → Y.query)
     (history : _root_.RandomSystems.Ambient.History X) :
     (_root_.RandomSystems.Ambient.History.map function history).tail = history.tail.map function := by
@@ -932,7 +955,7 @@ end Internal
 end DDC
 
 /-- Relabel a packed converter response without erasing its selected query. -/
-private def relabelPackedResponse
+def relabelPackedResponse
     {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D) :
     Attachment.Response A B ≃ Attachment.Response C D :=
@@ -958,7 +981,7 @@ theorem mem_relabel_of_mem
   rw [(relabelPoint outer inner).symm_apply_apply]
   exact responds
 
-private theorem compatibleFrom_relabel
+theorem compatibleFrom_relabel
     {A C : Interface.{u, v}} {B D : Interface.{w, z}}
     (outer : A.Equiv C) (inner : B.Equiv D)
     (converter : DDC A B) (system : DDS B)
@@ -999,7 +1022,7 @@ private theorem compatibleFrom_relabel
       have result := Attachment.CompatibleFrom.innerQuery mappedResponds mappedTail
       simpa only [List.map_cons,
         DDC.History.lastInput_relabel, relabelPackedResponse,
-        _root_.Equiv.sumCongr_apply] using result
+        _root_.Equiv.sumCongr_apply, Sum.map_inl] using result
   | @outerLast history innerPrior reply responds =>
       have mappedResponds :
           relabelResponse outer inner history (Sum.inr reply) ∈
@@ -1015,7 +1038,7 @@ private theorem compatibleFrom_relabel
       simpa only [List.map_cons, List.map_nil,
         DDC.History.lastInput_relabel, relabelPackedResponse,
         relabelResponse_outer, _root_.Equiv.sumCongr_apply,
-        pack_relabelOuterReply] using result
+        Sum.map_inr, pack_relabelOuterReply] using result
   | @outerNext history innerPrior reply nextOuter remainingOuter tailInputs
       tailResponses final responds tail inductionHypothesis =>
       have mappedResponds :
@@ -1038,7 +1061,7 @@ private theorem compatibleFrom_relabel
       simpa only [List.map_cons, List.map_nil,
         DDC.History.lastInput_relabel, relabelPackedResponse,
         relabelResponse_outer, _root_.Equiv.sumCongr_apply,
-        pack_relabelOuterReply] using result
+        Sum.map_inr, pack_relabelOuterReply] using result
 
 end Internal
 
@@ -1081,11 +1104,6 @@ theorem applySystem_relabel_eq
       (relabel outer inner converter) (DDS.relabel inner system)
       targetHistory mappedTranscript := by
     unfold Attachment.Compatible
-    change Attachment.CompatibleFrom (relabel outer inner converter)
-      (DDS.relabel inner system)
-      (DDC.History.singleton (B := D) targetHistory.head) []
-      targetHistory.tail mappedTranscript.inputs mappedTranscript.responses
-      mappedTranscript.final
     rw [← startEqual, ← remainingEqual]
     exact mappedFrom
   -- Characterize the source attachment by its compatible transcript.
@@ -1130,7 +1148,7 @@ theorem applySystem_relabel_eq
   have selectedEqual :
       Attachment.selectReply targetHistory.last mappedTranscript.final =
         DDS.relabel outer (applySystem converter system) targetHistory :=
-    reply_eq_of_packed_eq packedEqual
+    DDC.History.reply_eq_of_packed_eq packedEqual
   have targetFinalQuery : mappedTranscript.final.1 = targetHistory.last :=
     Attachment.Compatible.final_query_eq_last mappedCompatible
   -- The mapped compatible transcript therefore characterizes the target attachment.
@@ -1188,7 +1206,7 @@ namespace AttemptedHistory
 
 /-- Relabel every query and every reply in its query-selected answer fibre in
 a canonical attempted history. -/
-private def relabel
+def relabel
     {A B C D : Interface.{u, v}}
     (outer : A.Equiv C) (inner : B.Equiv D) :
     AttemptedHistory A B → AttemptedHistory C D
@@ -1199,7 +1217,7 @@ private def relabel
   | .afterOuter prior query =>
       .afterOuter (relabel outer inner prior) (outer.queries query)
 
-private theorem toReceived_relabel
+theorem toReceived_relabel
     {A B C D : Interface.{u, v}}
     (outer : A.Equiv C) (inner : B.Equiv D)
     (history : AttemptedHistory A B) :
@@ -1222,7 +1240,7 @@ end AttemptedHistory
 namespace PackedResponse
 
 /-- Relabel a serial response without erasing the selected query. -/
-private def relabel
+def relabel
     {A B C D : Interface.{u, v}}
     (outer : A.Equiv C) (inner : B.Equiv D) :
     PackedResponse A B → PackedResponse C D :=
@@ -1230,26 +1248,7 @@ private def relabel
 
 end PackedResponse
 
-theorem packed_outer_relabel
-    {A B C D : Interface.{u, v}}
-    (outer : A.Equiv C) (inner : B.Equiv D)
-    (history : DDC.History A B)
-    (reply : Option (A.answer history.lastOuter)) :
-    (⟨(DDC.History.relabel outer inner history).lastOuter,
-        relabelOuterReply outer inner history reply⟩ : InnerReply C) =
-      outer.innerReply ⟨history.lastOuter, reply⟩ := by
-  apply Sigma.ext (DDC.History.lastOuter_relabel outer inner history)
-  unfold relabelOuterReply Interface.Equiv.innerReply
-  simp only [_root_.Equiv.trans_apply, _root_.Equiv.optionCongr_apply,
-    _root_.Equiv.cast_apply]
-  change cast _ (reply.map (outer.answers history.lastOuter)) ≍
-    reply.map (outer.answers history.lastOuter)
-  exact cast_heq
-    (congrArg (fun query => Option (C.answer query))
-      (DDC.History.lastOuter_relabel outer inner history).symm)
-    (reply.map (outer.answers history.lastOuter))
-
-private theorem innerClosed_relabel
+theorem innerClosed_relabel
     {A B C D : Interface.{u, v}}
     (outer : A.Equiv C) (inner : B.Equiv D)
     (converter : DDC A B)
@@ -1265,7 +1264,7 @@ private theorem innerClosed_relabel
         DDC.Internal.mem_relabel_of_mem outer inner converter history
           (Sum.inr reply) responds⟩
 
-private theorem admissible_relabel
+theorem admissible_relabel
     {A B C D : Interface.{u, v}}
     (outer : A.Equiv C) (inner : B.Equiv D)
     (converter : DDC A B) (history : DDC.History A B)
@@ -1278,7 +1277,7 @@ private theorem admissible_relabel
   exact ((DDC.relabel outer inner converter).exactDomain _).mp
     targetResponds.1
 
-private theorem PrefixEndpointValid.relabel
+theorem PrefixEndpointValid.relabel
     {A B C A' B' C' : Interface.{u, v}}
     {outerConverter : DDC A B} {innerConverter : DDC B C}
     (outer : A.Equiv A') (middle : B.Equiv B') (inner : C.Equiv C')
@@ -1383,7 +1382,7 @@ private theorem PrefixEndpointValid.relabel
               InnerReply A') =
               ⟨(DDC.History.relabel outer middle
                   outerHistory).lastOuter, targetReply⟩ :=
-          (packed_outer_relabel outer middle outerHistory sourceReply).trans
+          (pack_relabelOuterReply outer middle outerHistory sourceReply).trans
             (Sum.inr.inj responseEqual)
         have replyEqual :
             relabelOuterReply outer middle outerHistory sourceReply =
@@ -1399,7 +1398,7 @@ private theorem PrefixEndpointValid.relabel
           innerClosed_relabel middle inner innerConverter innerHistory
             sourceClosed⟩
 
-private theorem OuterPrefixFactorization.relabel
+theorem OuterPrefixFactorization.relabel
     {A B C A' B' C' : Interface.{u, v}}
     {outerConverter : DDC A B} {innerConverter : DDC B C}
     (outer : A.Equiv A') (middle : B.Equiv B') (inner : C.Equiv C')
@@ -1438,7 +1437,8 @@ private theorem OuterPrefixFactorization.relabel
         (innerHistory := currentInner.map
           (DDC.History.relabel middle inner)) mappedResponds
       simpa only [Option.map, PackedResponse.relabel,
-        _root_.Equiv.sumCongr_apply, packed_outer_relabel] using mapped
+        _root_.Equiv.sumCongr_apply, Sum.map_inr,
+        pack_relabelOuterReply] using mapped
   | outerQueryFirst responds tail inductionHypothesis =>
       have mappedResponds := DDC.Internal.mem_relabel_of_mem outer middle
         outerConverter _ _ responds
@@ -1486,7 +1486,7 @@ private theorem OuterPrefixFactorization.relabel
       have mapped := InnerPrefixFactorization.innerQuery linkedAtMappedLast
         mappedResponds
       simpa only [Option.map, PackedResponse.relabel,
-        _root_.Equiv.sumCongr_apply,
+        _root_.Equiv.sumCongr_apply, Sum.map_inl,
         DDC.History.lastOuter_relabel] using mapped
   | innerReply linked responds tail inductionHypothesis =>
       rename_i currentOuter currentInner reply response finalOuter finalInner
@@ -1522,7 +1522,7 @@ private theorem OuterPrefixFactorization.relabel
         let appendReply := fun packed : InnerReply B' =>
           (DDC.History.relabel outer middle currentOuter).snocInner
             packed.1 packed.2
-        have packedEqual := packed_outer_relabel middle inner currentInner reply
+        have packedEqual := pack_relabelOuterReply middle inner currentInner reply
         change appendReply
             (middle.innerReply ⟨currentInner.lastOuter, reply⟩) =
           appendReply ⟨(DDC.History.relabel middle inner
@@ -1537,7 +1537,7 @@ private theorem OuterPrefixFactorization.relabel
         DDC.History.lastOuter_relabel,
         DDC.History.relabel_snocInner] using mapped
 
-private theorem InnerPrefixFactorization.relabel
+theorem InnerPrefixFactorization.relabel
     {A B C A' B' C' : Interface.{u, v}}
     {outerConverter : DDC A B} {innerConverter : DDC B C}
     (outer : A.Equiv A') (middle : B.Equiv B') (inner : C.Equiv C')
@@ -1576,7 +1576,8 @@ private theorem InnerPrefixFactorization.relabel
         (innerHistory := currentInner.map
           (DDC.History.relabel middle inner)) mappedResponds
       simpa only [Option.map, PackedResponse.relabel,
-        _root_.Equiv.sumCongr_apply, packed_outer_relabel] using mapped
+        _root_.Equiv.sumCongr_apply, Sum.map_inr,
+        pack_relabelOuterReply] using mapped
   | outerQueryFirst responds tail inductionHypothesis =>
       have mappedResponds := DDC.Internal.mem_relabel_of_mem outer middle
         outerConverter _ _ responds
@@ -1624,7 +1625,7 @@ private theorem InnerPrefixFactorization.relabel
       have mapped := InnerPrefixFactorization.innerQuery linkedAtMappedLast
         mappedResponds
       simpa only [Option.map, PackedResponse.relabel,
-        _root_.Equiv.sumCongr_apply,
+        _root_.Equiv.sumCongr_apply, Sum.map_inl,
         DDC.History.lastOuter_relabel] using mapped
   | innerReply linked responds tail inductionHypothesis =>
       rename_i currentOuter currentInner reply response finalOuter finalInner
@@ -1660,7 +1661,7 @@ private theorem InnerPrefixFactorization.relabel
         let appendReply := fun packed : InnerReply B' =>
           (DDC.History.relabel outer middle currentOuter).snocInner
             packed.1 packed.2
-        have packedEqual := packed_outer_relabel middle inner currentInner reply
+        have packedEqual := pack_relabelOuterReply middle inner currentInner reply
         change appendReply
             (middle.innerReply ⟨currentInner.lastOuter, reply⟩) =
           appendReply ⟨(DDC.History.relabel middle inner
@@ -1675,7 +1676,7 @@ private theorem InnerPrefixFactorization.relabel
         DDC.History.lastOuter_relabel,
         DDC.History.relabel_snocInner] using mapped
 
-private theorem SerialFactorization.relabel
+theorem SerialFactorization.relabel
     {A B C A' B' C' : Interface.{u, v}}
     {outerConverter : DDC A B} {innerConverter : DDC B C}
     (outer : A.Equiv A') (middle : B.Equiv B') (inner : C.Equiv C')
@@ -1727,7 +1728,7 @@ private theorem SerialFactorization.relabel
               ⟨(DDC.History.relabel outer inner
                     sourceReceived).lastOuter,
                 relabelOuterReply outer inner sourceReceived previousReply⟩ :=
-            (packed_outer_relabel outer inner sourceReceived
+            (pack_relabelOuterReply outer inner sourceReceived
               previousReply).symm
           _ = ⟨targetReceived.lastOuter,
                 cast (congrArg
@@ -1754,7 +1755,7 @@ private theorem SerialFactorization.relabel
         mappedMiddle
         (valid.relabel outer middle inner)
 
-private theorem packResponse_relabel
+theorem packResponse_relabel
     {A B C D : Interface.{u, v}}
     (outer : A.Equiv C) (inner : B.Equiv D)
     (history : DDC.History A B)
@@ -1766,9 +1767,9 @@ private theorem packResponse_relabel
   | inl query => rfl
   | inr reply =>
       apply congrArg Sum.inr
-      exact (packed_outer_relabel outer inner history reply).symm
+      exact (pack_relabelOuterReply outer inner history reply).symm
 
-private theorem mem_serial_relabel_of_mem
+theorem mem_serial_relabel_of_mem
     {A B C A' B' C' : Interface.{u, v}}
     (outer : A.Equiv A') (middle : B.Equiv B') (inner : C.Equiv C')
     (outerConverter : DDC A B) (innerConverter : DDC B C)
@@ -1789,7 +1790,7 @@ private theorem mem_serial_relabel_of_mem
     finalInner.map (DDC.History.relabel middle inner), mapped⟩
   exact AttemptedHistory.toReceived_relabel outer inner attempted
 
-private theorem eq_of_graph_subset
+theorem eq_of_graph_subset
     {A B : Interface.{u, v}} (left right : DDC A B)
     (subset : ∀ history response,
       response ∈ right history → response ∈ left history) :
@@ -1828,7 +1829,7 @@ private theorem eq_of_graph_subset
     exact responseEqual ▸ rightResponds
   · exact subset history response
 
-private theorem transport_mem
+theorem transport_mem
     {A B : Interface.{u, v}} (converter : DDC A B)
     {left right : DDC.History A B} (equal : left = right)
     (response : DDC.Response left)
@@ -1915,6 +1916,100 @@ theorem toDDC_serial_symm_eq
   rw [toDDC_trans]
   -- The inverse followed by the equivalence is the identity.
   rw [Interface.Equiv.symm_trans, toDDC_refl]
+
+/-! ## Relabeling as composition with interface equivalences -/
+
+/-- Precomposing by the DDC induced by an interface equivalence is outer
+interface relabeling. -/
+theorem toDDC_serial_eq_relabel
+    {A A' B : Interface.{u, v}} (outer : A.Equiv A')
+    (converter : DDC A B) :
+    serial outer.toDDC converter =
+      relabel outer (.refl B) converter := by
+  have natural := relabel_serial_eq outer (.refl A) (.refl B)
+    (forwarding A) converter
+  simpa only [Interface.Equiv.toDDC, relabel_refl,
+    forwarding_serial_eq] using natural
+
+theorem serial_cancel_right
+    {A B C : Interface.{u, v}}
+    (left right : DDC A B) (forward : DDC B C) (back : DDC C B)
+    (inverse : serial forward back = forwarding B)
+    (equal : serial left forward = serial right forward) :
+    left = right := by
+  calc
+    left = serial left (forwarding B) := (serial_forwarding_eq left).symm
+    _ = serial left (serial forward back) := congrArg (serial left) inverse.symm
+    _ = serial (serial left forward) back :=
+      (serial_assoc left forward back).symm
+    _ = serial (serial right forward) back :=
+      congrArg (fun converter => serial converter back) equal
+    _ = serial right (serial forward back) := serial_assoc right forward back
+    _ = serial right (forwarding B) := congrArg (serial right) inverse
+    _ = right := serial_forwarding_eq right
+
+theorem serial_cancel_left
+    {A B C : Interface.{u, v}}
+    (left right : DDC B C) (forward : DDC A B) (back : DDC B A)
+    (inverse : serial back forward = forwarding B)
+    (equal : serial forward left = serial forward right) :
+    left = right := by
+  calc
+    left = serial (forwarding B) left := (forwarding_serial_eq left).symm
+    _ = serial (serial back forward) left :=
+      congrArg (fun converter => serial converter left) inverse.symm
+    _ = serial back (serial forward left) := serial_assoc back forward left
+    _ = serial back (serial forward right) :=
+      congrArg (serial back) equal
+    _ = serial (serial back forward) right :=
+      (serial_assoc back forward right).symm
+    _ = serial (forwarding B) right :=
+      congrArg (fun converter => serial converter right) inverse
+    _ = right := forwarding_serial_eq right
+
+/-- Postcomposing by the inverse interface-equivalence DDC is inner
+interface relabeling. -/
+theorem serial_toDDC_symm_eq_relabel
+    {A B B' : Interface.{u, v}} (inner : B.Equiv B')
+    (converter : DDC A B) :
+    serial converter inner.symm.toDDC =
+      relabel (.refl A) inner converter := by
+  apply serial_cancel_right _ _ inner.toDDC inner.symm.toDDC
+    (toDDC_serial_symm_eq inner)
+  have leftEqual :
+      serial (serial converter inner.symm.toDDC) inner.toDDC = converter := by
+    rw [serial_assoc, toDDC_symm_serial_eq, serial_forwarding_eq]
+  have natural := relabel_serial_eq (.refl A) inner (.refl B)
+    converter (forwarding B)
+  have rightEqual :
+      serial (relabel (.refl A) inner converter) inner.toDDC =
+        converter := by
+    simpa only [Interface.Equiv.toDDC, relabel_refl,
+      serial_forwarding_eq] using natural
+  exact leftEqual.trans rightEqual.symm
+
+/-- Simultaneous relabeling gives the commuting square determined by the two
+interface equivalences. -/
+theorem relabel_naturality
+    {A B A' B' : Interface.{u, v}}
+    (outer : A.Equiv A') (inner : B.Equiv B')
+    (converter : DDC A B) :
+    serial outer.symm.toDDC (relabel outer inner converter) =
+      serial converter inner.symm.toDDC := by
+  rw [toDDC_serial_eq_relabel, relabel_trans,
+    Interface.Equiv.trans_symm, Interface.Equiv.trans_refl,
+    serial_toDDC_symm_eq_relabel]
+
+/-- Simultaneously relabeling both sides of forwarding gives forwarding at
+the relabeled interface. -/
+@[simp]
+theorem relabel_forwarding_eq
+    {A B : Interface.{u, v}} (equivalence : A.Equiv B) :
+    relabel equivalence equivalence (forwarding A) = forwarding B := by
+  apply serial_cancel_left _ _ equivalence.symm.toDDC equivalence.toDDC
+    (toDDC_serial_symm_eq equivalence)
+  rw [relabel_naturality]
+  simp only [forwarding_serial_eq, serial_forwarding_eq]
 
 end DDC
 

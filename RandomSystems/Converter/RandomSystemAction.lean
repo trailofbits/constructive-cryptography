@@ -3,6 +3,9 @@ Copyright (c) 2026 Trail of Bits. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import RandomSystems.Converter.RandomSystem
+import RandomSystems.Converter.Relabel
+import RandomSystems.Converter.Filter
+import RandomSystems.Tactics.ProofAutomationAttributes
 
 set_option autoImplicit false
 
@@ -16,8 +19,8 @@ compile each finite outer observation to a finite inner observation. Jost's
 uniform inside-query bound is therefore a sufficient specialization, not an
 extra hypothesis on this deterministic lower action.
 
-This module exposes the deterministic action as `RandomSystem.applyDDC` and
-registers it only at the scoped DDC categorical boundary.
+The selected probabilistic-converter action is `RandomSystem.applyPDC`. This
+module exposes its canonical deterministic specialization as `applyDDC`.
 -/
 
 namespace RandomSystems.Ambient
@@ -831,6 +834,52 @@ open RandomSystem.Internal
 
 variable {A B : Interface.{u, v}}
 
+namespace Internal.Router
+
+/-- Relabel every query and query-selected optional reply in a transcript. -/
+def mapTranscript (equivalence : A.Equiv B)
+    (transcript : RandomSystem.Internal.Core.Transcript A) : RandomSystem.Internal.Core.Transcript B :=
+  transcript.map equivalence.innerReply
+
+/-- The graph of relabeling a cumulative random system along an interface
+equivalence. -/
+def Relabeled (equivalence : A.Equiv B)
+    (source : RandomSystem A) (target : RandomSystem B) : Prop :=
+  ∀ transcript, target.mass (mapTranscript equivalence transcript) =
+    source.mass transcript
+
+@[simp]
+theorem mapTranscript_innerReply_symm (equivalence : A.Equiv B)
+    (transcript : RandomSystem.Internal.Core.Transcript B) :
+    mapTranscript equivalence
+        (transcript.map equivalence.innerReply.symm) = transcript := by
+  unfold mapTranscript
+  rw [List.map_map]
+  have inverse : equivalence.innerReply ∘ equivalence.innerReply.symm = id := by
+    funext reply
+    exact equivalence.innerReply.apply_symm_apply reply
+  rw [inverse, List.map_id]
+
+namespace Relabeled
+
+/-- Relabeling along an interface equivalence has a unique target. -/
+theorem target_eq (equivalence : A.Equiv B) (source : RandomSystem A)
+    {left right : RandomSystem B}
+    (leftRelabeled : Relabeled equivalence source left)
+    (rightRelabeled : Relabeled equivalence source right) :
+    left = right := by
+  apply RandomSystem.ext
+  intro transcript
+  let sourceTranscript := transcript.map equivalence.innerReply.symm
+  have leftMass := leftRelabeled sourceTranscript
+  have rightMass := rightRelabeled sourceTranscript
+  rw [mapTranscript_innerReply_symm] at leftMass rightMass
+  exact leftMass.trans rightMass.symm
+
+end Relabeled
+
+end Internal.Router
+
 variable {C : Interface.{w, z}}
 
 /-- Maurer--Renner 2016, Section 3.3 (printed p. 7), says: “A converter α,
@@ -911,6 +960,19 @@ noncomputable def applyDDC (converter : RandomSystems.Ambient.DDC A C)
         exact DDC.distributionFrom_compileFrom_afterTranscript_const_true
           behavior converter transcript (Observation.replyObservation query)
           none []
+
+/-- A DDC acts on a cumulative random system by converter attachment. -/
+noncomputable instance instHSMulDDCRandomSystem :
+    HSMul (RandomSystems.Ambient.DDC A C)
+      (RandomSystem C) (RandomSystem A) where
+  hSMul := applyDDC
+
+@[simp]
+theorem smul_eq_applyDDC
+    (converter : RandomSystems.Ambient.DDC A C)
+    (behavior : RandomSystem C) :
+    converter • behavior = applyDDC converter behavior :=
+  rfl
 
 @[simp]
 theorem applyDDC_mass (converter : RandomSystems.Ambient.DDC A C)
@@ -1004,6 +1066,56 @@ theorem distribution_applyDDC
     _ = distribution behavior (DDC.compile converter observation) := by
       rw [map_result_enumerate]
 
+/-- Exact functional relabeling of a transcript matcher. -/
+theorem evaluateFrom_accepts_mapTranscript
+    {C D : Interface.{u, v}} (equivalence : C.Equiv D)
+    (system : DDS C) (prior : List C.query)
+    (target : RandomSystem.Internal.Core.Transcript C) :
+    evaluateFrom
+        (accepts (RandomSystem.Internal.Router.mapTranscript equivalence target))
+        (RandomSystems.Ambient.DDS.relabel equivalence system)
+        (prior.map equivalence.queries) =
+      evaluateFrom (accepts target) system prior := by
+  classical
+  induction target generalizing prior with
+  | nil => rfl
+  | cons first remaining inductionHypothesis =>
+      rcases first with ⟨query, expected⟩
+      rw [RandomSystem.Internal.Router.mapTranscript]
+      simp only [List.map_cons, Interface.Equiv.innerReply_apply]
+      rw [accepts, afterTranscript_cons, evaluateFrom_query,
+        RandomSystems.Ambient.DDS.innerReplyAt_relabel]
+      rw [accepts, afterTranscript_cons, evaluateFrom_query]
+      by_cases equal : Attachment.innerReplyAt system prior query = expected
+      · rw [if_pos equal]
+        have mappedEqual :
+            (Attachment.innerReplyAt system prior query).map
+                (equivalence.answers query) =
+              expected.map (equivalence.answers query) := by rw [equal]
+        rw [if_pos mappedEqual]
+        simpa [accepts, RandomSystem.Internal.Router.mapTranscript,
+          List.map_append] using
+          inductionHypothesis (prior ++ [query])
+      · rw [if_neg equal]
+        have mappedDifferent :
+            (Attachment.innerReplyAt system prior query).map
+                (equivalence.answers query) ≠
+              expected.map (equivalence.answers query) := by
+          intro mappedEqual
+          exact equal (Option.map_injective
+            (equivalence.answers query).injective
+            mappedEqual)
+        rw [if_neg mappedDifferent]
+        rfl
+
+theorem evaluate_accepts_mapTranscript
+    {C D : Interface.{u, v}} (equivalence : C.Equiv D)
+    (system : DDS C) (target : RandomSystem.Internal.Core.Transcript C) :
+    evaluate (accepts (RandomSystem.Internal.Router.mapTranscript equivalence target))
+        (RandomSystems.Ambient.DDS.relabel equivalence system) =
+      evaluate (accepts target) system :=
+  evaluateFrom_accepts_mapTranscript equivalence system [] target
+
 end
 
 end RandomSystem.Internal.Observation
@@ -1074,6 +1186,48 @@ theorem applyDDC_serial_eq (outer : RandomSystems.Ambient.DDC A B)
           (Observation.accepts transcript)) true := by
       rw [Observation.distribution_applyDDC]
     _ = (applyDDC outer (applyDDC inner behavior)).mass transcript := rfl
+
+/-- The action of the DDC induced by an interface equivalence is exactly
+relabeling of cumulative transcript masses. -/
+theorem Internal.Router.applyDDC_toDDC_relabels (equivalence : A.Equiv B)
+    (behavior : RandomSystem A) :
+    Internal.Router.Relabeled equivalence behavior
+      (applyDDC equivalence.toDDC behavior) := by
+  intro transcript
+  rw [applyDDC_mass]
+  calc
+    Observation.distribution behavior
+        (RandomSystem.Internal.DDC.compile equivalence.toDDC
+          (Observation.accepts
+            (Internal.Router.mapTranscript equivalence transcript))) true =
+        Observation.distribution behavior
+          (Observation.accepts transcript) true := by
+      exact congrArg (fun law => law true)
+        (Observation.distribution_eq_of_evaluate_eq behavior _ _
+          (fun system => by
+            calc
+              Observation.evaluate
+                  (RandomSystem.Internal.DDC.compile equivalence.toDDC
+                    (Observation.accepts
+                      (Internal.Router.mapTranscript equivalence transcript))) system =
+                  Observation.evaluate
+                    (Observation.accepts
+                      (Internal.Router.mapTranscript equivalence transcript))
+                    (RandomSystems.Ambient.applySystem
+                      equivalence.toDDC system) :=
+                RandomSystem.Internal.DDC.Correctness.evaluate_compile
+                  equivalence.toDDC _ system
+              _ = Observation.evaluate
+                    (Observation.accepts
+                      (Internal.Router.mapTranscript equivalence transcript))
+                    (RandomSystems.Ambient.DDS.relabel equivalence system) := by
+                rw [RandomSystems.Ambient.DDC.applySystem_toDDC_eq]
+              _ = Observation.evaluate (Observation.accepts transcript)
+                    system :=
+                Observation.evaluate_accepts_mapTranscript
+                  equivalence system transcript))
+    _ = behavior.mass transcript :=
+      Observation.distribution_accepts_true behavior transcript
 
 end
 
@@ -1176,8 +1330,77 @@ noncomputable scoped instance homAction
     HSMul (A ⟶ B) (RandomSystem B) (RandomSystem A) where
   hSMul converter system := RandomSystem.applyDDC converter system
 
+/-- Categorical DDC morphisms act on normalized PDSs by attachment. -/
+noncomputable scoped instance homActionPDS
+    {A B : Interface.{u, v}} :
+    HSMul (A ⟶ B) (PDS B) (PDS A) where
+  hSMul converter system := PDS.apply converter system
+
+/-- The categorical action of a bundled DDC is its PDS attachment. -/
+theorem asHom_smul_pds_eq_apply
+    {A B : Interface.{u, v}}
+    (converter : DDC A B) (system : PDS B) :
+    (DDC.asHom converter • system : PDS A) =
+      PDS.apply converter system :=
+  rfl
+
+/-- Serial composition acts on normalized PDSs by successive attachment. -/
+theorem comp_smul_pds
+    {A B C : Interface.{u, v}}
+    (outer : A ⟶ B) (inner : B ⟶ C) (system : PDS C) :
+    ((outer ≫ inner) • system : PDS A) =
+      outer • (inner • system) :=
+  PDS.apply_serial_eq outer inner system
+
+/-- Cumulative interpretation commutes with the categorical PDS action. -/
+theorem smul_toRandomSystem_pds
+    {A B : Interface.{u, v}}
+    (converter : A ⟶ B) (system : PDS B) :
+    converter • PDS.toRandomSystem system =
+      PDS.toRandomSystem (converter • system) :=
+  RandomSystem.applyDDC_ofPDS_eq converter system
+
+/-- Serial composition acts by successive converter attachment. -/
+@[simp]
+theorem comp_smul
+    {A B C : Interface.{u, v}}
+    (outer : A ⟶ B) (inner : B ⟶ C) (system : RandomSystem C) :
+    ((outer ≫ inner) • system : RandomSystem A) =
+      outer • (inner • system) := by
+  exact RandomSystem.applyDDC_serial_eq outer inner system
+
 end DDC
 
 end
 
 end RandomSystems.Ambient
+
+namespace RandomSystems.DomainFilter
+
+open Ambient
+open scoped Ambient.DDC
+
+universe u v
+
+/-- A domain filter acts on a cumulative random system through its canonical
+deterministic converter. -/
+noncomputable instance instHSMulRandomSystem
+    {X : Type u} {Y : Type v} :
+    HSMul (DomainFilter X)
+      (RandomSystem (Interface.single X Y))
+      (RandomSystem (Interface.single X Y)) where
+  hSMul restriction system :=
+    RandomSystem.applyDDC (restriction.toDDC (Y := Y)) system
+
+/-- Domain-filter attachment normalizes to the action of its canonical
+deterministic converter morphism. -/
+@[rs_normalization]
+theorem smul_randomSystem_eq
+    {X : Type u} {Y : Type v}
+    (restriction : DomainFilter X)
+    (system : RandomSystem (Interface.single X Y)) :
+    restriction • system =
+      DDC.asHom (restriction.toDDC (Y := Y)) • system :=
+  rfl
+
+end RandomSystems.DomainFilter

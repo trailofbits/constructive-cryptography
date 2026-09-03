@@ -670,6 +670,24 @@ theorem toReceived_injective {A C : Interface.{u, v}} :
   apply inputs_injective
   rw [← inputs_toReceived left, ← inputs_toReceived right, equal]
 
+@[simp]
+theorem lastOuter_start {A C : Interface.{u, v}}
+    (query : A.query) :
+    (AttemptedHistory.start (C := C) query).toReceived.lastOuter = query := rfl
+
+@[simp]
+theorem lastOuter_afterInner {A C : Interface.{u, v}}
+    (prior : AttemptedHistory A C) (query : C.query)
+    (reply : Option (C.answer query)) :
+    (AttemptedHistory.afterInner prior query reply).toReceived.lastOuter =
+      prior.toReceived.lastOuter := rfl
+
+@[simp]
+theorem lastOuter_afterOuter {A C : Interface.{u, v}}
+    (prior : AttemptedHistory A C) (query : A.query) :
+    (AttemptedHistory.afterOuter prior query).toReceived.lastOuter = query := by
+  simp [toReceived]
+
 end AttemptedHistory
 
 /-- Complete factorization indexed by the canonical constructor presentation
@@ -765,14 +783,12 @@ theorem SerialFactorization.outerLast_eq
     outerHistory.lastOuter = history.toReceived.lastOuter := by
   induction factorization with
   | start middleFactorization valid =>
-      simpa [AttemptedHistory.toReceived] using
-        middleFactorization.lastOuter_eq
+      simpa using middleFactorization.lastOuter_eq
   | afterInner previous middleFactorization valid inductionHypothesis =>
       exact middleFactorization.lastOuter_eq.trans
-        (by simpa [AttemptedHistory.toReceived] using inductionHypothesis)
+        (by simpa using inductionHypothesis)
   | afterOuter previous middleFactorization valid inductionHypothesis =>
-      simpa [AttemptedHistory.toReceived] using
-        middleFactorization.lastOuter_eq
+      simpa using middleFactorization.lastOuter_eq
 
 theorem SerialFactorization.realizeResponse
     {A B C : Interface.{u, v}} {outer : DDC A B} {inner : DDC B C}
@@ -1679,6 +1695,15 @@ def closedHistory {A : Interface.{u, v}} (history : _root_.RandomSystems.Ambient
   outer := history
   projects := by simp
 
+@[simp]
+theorem closedHistory_outer {A : Interface} (history : _root_.RandomSystems.Ambient.History A) :
+    (closedHistory history).outer = history := rfl
+
+theorem closedHistory_injective {A : Interface.{u, v}} :
+    Function.Injective (@closedHistory A) := by
+  intro left right equal
+  exact congrArg DDC.History.outer equal
+
 theorem receivedHistory_ext
     {A B : Interface.{u, v}} {left right : DDC.History A B}
     (inputsEqual : left.inputs = right.inputs)
@@ -1791,6 +1816,10 @@ def closedState {A : Interface.{u, v}} :
   | first :: rest => some (closedHistory
       ⟨first :: rest, List.cons_ne_nil first rest⟩)
 
+@[simp]
+theorem closedState_nil {A : Interface} :
+    closedState ([] : List A.query) = none := rfl
+
 theorem closedState_append {A : Interface} (prior : List A.query)
     (query : A.query) :
     closedState (prior ++ [query]) =
@@ -1900,6 +1929,14 @@ theorem closedAttempted_toReceived {A : Interface} (history : _root_.RandomSyste
           apply congrArg closedHistory
           apply _root_.RandomSystems.Ambient.History.ext
           simp [_root_.RandomSystems.Ambient.History.snoc]
+
+theorem selectReply_eq_of_packed_eq
+    {A : Interface.{u, v}} {query : A.query}
+    (reply : Option (A.answer query)) (packed : InnerReply A)
+    (equal : (⟨query, reply⟩ : InnerReply A) = packed) :
+    Attachment.selectReply query packed = reply := by
+  cases equal
+  simp [Attachment.selectReply]
 
 theorem pack_selectReply_eq
     {A : Interface.{u, v}} (query : A.query) (packed : InnerReply A)
@@ -2161,8 +2198,7 @@ theorem compatibleFrom_serialFactorization
           (history.snocOuter nextOuter) :=
         .afterOuter outerAdmissible responds nextOuter
       apply inductionHypothesis nextAdmissible
-        (.afterOuter attempted nextOuter) (by
-          simp [AttemptedHistory.toReceived])
+        (.afterOuter attempted nextOuter) (by simp)
       intro response finalOuter finalInner nextPrefix nextValid
       exact .afterOuter adjustedPrevious nextPrefix nextValid
 

@@ -2,7 +2,7 @@
 Copyright (c) 2026 Trail of Bits. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
-import RandomSystems.Converter.Serial
+import RandomSystems.Converter.Relabel
 import Mathlib.Tactic
 
 set_option autoImplicit false
@@ -15,7 +15,7 @@ converter is “allowed to make a bounded number of queries to the inside
 interfaces.”  The constructors here turn ordinary Lean functions into
 query-indexed DDCs and prove their attachment equations.  They do not define a
 second converter semantics: every constructor returns the same canonical DDC
-carrier used by serial composition.
+carrier used by serial composition and relabeling.
 -/
 
 namespace RandomSystems.Ambient

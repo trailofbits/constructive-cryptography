@@ -44,6 +44,21 @@ def filterDom (P : List X → Prop) (hP : PrefixClosed P)
     (game : PDG X Y) : PDG X Y :=
   Distribution.fTransform (System.DDG.filterDom P hP) game
 
+/-- A bundled domain filter acts on a probabilistic game by restricting its
+visible system and retaining its condition. -/
+noncomputable instance : HSMul (DomainFilter X) (PDG X Y) (PDG X Y) where
+  hSMul restriction game :=
+    filterDom restriction.predicate restriction.prefixClosed game
+
+/-- A bundled domain filter preserves normalized probabilistic games. -/
+noncomputable instance :
+    HSMul (DomainFilter X)
+      (Distribution.ProbDist (System.DDG X Y))
+      (Distribution.ProbDist (System.DDG X Y)) where
+  hSMul restriction game :=
+    ⟨filterDom restriction.predicate restriction.prefixClosed game.1,
+      Distribution.fTransform_isProbDist _ game.2⟩
+
 /-- Forgetting the condition commutes with a common domain restriction. -/
 lemma underlying_filterDom (P : List X → Prop) (hP : PrefixClosed P)
     (game : PDG X Y) :

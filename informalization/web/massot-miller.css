@@ -1,0 +1,431 @@
+:root {
+  color: #171717;
+  background: #fff;
+  font-family: "Times New Roman", Times, serif;
+  line-height: 1.5;
+}
+
+html, body, #main {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+button, input { font: inherit; }
+
+.main-div {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.main-doc, .main-goal {
+  min-width: 0;
+  height: 100%;
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+.gutter-horizontal {
+  width: 7px;
+  flex: 0 0 7px;
+  cursor: col-resize;
+  box-shadow: 1px 0 5px #ccc inset;
+  background: #f4f4f4;
+}
+
+.document {
+  max-width: 700px;
+  margin: 1rem;
+  padding-bottom: 4rem;
+}
+
+.main-div-no-goals .document {
+  max-width: 780px;
+  margin: 2rem auto;
+  padding: 0 2rem 4rem;
+}
+
+.proof-controls {
+  display: flex;
+  width: fit-content;
+  margin: 1.75em 0 0 auto;
+  gap: 0.3em;
+  padding: 0.25em;
+  border: 1px solid #d5d5d5;
+  border-radius: 0.35em;
+  background: rgb(255 255 255 / 92%);
+  box-shadow: 0 1px 5px #0002;
+}
+
+.proof-controls input {
+  padding: 0.18em 0.45em;
+  border: 1px solid #c4c4c4;
+  border-radius: 0.25em;
+  color: #555;
+  background: #fafafa;
+  font-size: 0.76em;
+  cursor: pointer;
+}
+
+.theorem-statement {
+  clear: both;
+  margin: 1.5em 0 0.5em;
+  white-space: pre-line;
+}
+
+.theorem-heading { margin: 0 0 0.55em; }
+.theorem-statement-content { margin: 0; }
+.theorem-statement-content + .theorem-statement-content { margin-top: 0.45em; }
+.theorem-name { font-weight: bold; }
+.proof { margin: 0.5em 0; }
+.proof p { margin: 0; }
+.proof p + p { margin-top: 0.5em; }
+.proof-text { font-style: italic; }
+.qed { float: right; margin-left: 1em; }
+.human { font-style: italic; }
+
+.concrete-proof-button {
+  float: right;
+  min-width: 1.2em;
+  margin: 0 0 0.2em 0.65em;
+  padding: 0;
+  border: 0;
+  color: #aaa;
+  background: transparent;
+  font: inherit;
+  font-size: 0.82em;
+  line-height: 1;
+  text-align: center;
+  cursor: pointer;
+}
+
+.concrete-proof-button:hover,
+.concrete-proof-button:focus-visible,
+.concrete-proof-button[aria-expanded="true"] {
+  color: #236ba8;
+  outline: none;
+}
+
+.explanation-refinement-button,
+.goal-button {
+  display: inline-block;
+  padding: 0 0.12em;
+  border: 0;
+  color: #aaa;
+  background: transparent;
+  cursor: pointer;
+  user-select: none;
+}
+
+.explanation-refinement-button {
+  float: none;
+  min-width: 1.15em;
+  margin: 0 0.18em 0 0;
+  color: #747b82;
+  font-size: 0.9em;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  vertical-align: 0.08em;
+}
+
+.goal-button {
+  position: relative;
+  color: #ccc;
+}
+
+/* Miller's marker is an empty lozenge at rest and fills on hover/selection.
+   It stays a zero-text proof annotation rather than becoming a prose label. */
+.goal-button:hover::before,
+.goal-button:focus-visible::before,
+.goal-button-active::before {
+  position: absolute;
+  top: 0;
+  left: 0.12em;
+  content: '⬬';
+}
+
+.explanation-refinement-button:hover,
+.explanation-refinement-button:focus-visible,
+.goal-button:hover,
+.goal-button:focus-visible { color: #236ba8; outline: none; }
+.goal-button-active { color: #aaf; }
+.goal-button-active:hover,
+.goal-button-active:focus-visible { color: #236ba8; }
+
+.explanation-trailer {
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid #bbb;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.lean-evidence-button {
+  float: right;
+  margin: 0.05em 0 0 0.5em;
+  padding: 0;
+  border: 0;
+  color: #777;
+  background: transparent;
+  font: inherit;
+  font-size: 0.68em;
+  font-style: normal;
+  line-height: inherit;
+  opacity: 0.62;
+  cursor: pointer;
+}
+
+.lean-evidence-button:hover,
+.lean-evidence-button:focus-visible,
+.lean-evidence-button[aria-expanded="true"] {
+  color: #236ba8;
+  opacity: 1;
+  outline: none;
+}
+
+.lean-evidence-panel {
+  clear: both;
+  margin: 0.35em 0 0.8em 1.2em;
+  padding: 0.1em 0 0.1em 0.8em;
+  border-left: 1px solid #c1c5c9;
+  color: #3d4247;
+  background: transparent;
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 0.78em;
+  line-height: 1.42;
+  overflow: visible;
+}
+
+.lean-evidence-goal {
+  margin-bottom: 0.85em;
+  padding-bottom: 0;
+  border: 0;
+  font-family: "Times New Roman", Times, serif;
+  font-size: 1.15em;
+}
+
+.lean-evidence-section-title,
+.lean-evidence-field-label {
+  margin-bottom: 0.2em;
+  color: #555d65;
+  font-weight: 600;
+}
+
+.lean-evidence-entry + .lean-evidence-entry { margin-top: 0.55em; }
+.lean-evidence-summary {
+  color: #454b51;
+}
+.lean-evidence-declaration { overflow-wrap: anywhere; }
+.lean-evidence-source {
+  margin: 0.3em 0 0.45em;
+  color: #737b83;
+  font-style: italic;
+}
+.lean-evidence-field { margin-top: 0.5em; }
+.lean-evidence-proof { margin-top: 0.45em; }
+.lean-evidence-proof-summary {
+  color: #737b83;
+  cursor: pointer;
+  font-style: italic;
+}
+.lean-evidence-code {
+  max-width: 100%;
+  margin: 0;
+  padding: 0.1em 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.highlightable { transition: background-color 0.6s; }
+.highlightable.highlight { background: #9fcdf2; transition: background-color 0.08s; }
+
+.explanation-indent {
+  margin: 0.5em 0 0.5em 0.3em;
+  padding-left: 0.3em;
+  border-left: 3px solid #ccc;
+}
+
+.explanation-list { margin: 0.5em 0; }
+
+.explanation-computation {
+  margin: 0.6em 0;
+  border-collapse: separate;
+  border-spacing: 0.5em 0.2em;
+}
+
+.computation-rel { text-align: center; }
+.computation-explanation { padding-left: 2rem; }
+
+.with-tooltip {
+  position: relative;
+  border-bottom: 1px dotted #b8b8b8;
+  cursor: help;
+}
+
+.with-tooltip:hover,
+.with-tooltip:focus-visible {
+  border-bottom-color: #666;
+  outline: none;
+}
+
+.tooltip-content {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1000;
+  display: none;
+  width: max-content;
+  max-width: min(46rem, calc(100vw - 1.5rem));
+  padding: 0.45em 0.65em;
+  border: 1px solid #aaa;
+  border-radius: 0.25em;
+  color: #111;
+  background: #fff;
+  box-shadow: 0 3px 14px #0002;
+  font-style: normal;
+}
+
+.tooltip-content.tooltip-visible { display: block; }
+.tooltip-content.tooltip-measuring { visibility: hidden; }
+
+.goal-view { margin: 1rem; }
+.goal-header { margin-bottom: 0.5em; font-style: italic; }
+.goal-context-case { font-weight: bold; }
+.goal-context-item {
+  display: block;
+  margin-top: 0.2em;
+}
+.goal-context-item-text {
+  max-width: 100%;
+  padding-left: 2em;
+  text-indent: -2em;
+  overflow-wrap: anywhere;
+}
+.goal-context-item-aux-decl,
+.goal-context-item-implementation-detail { display: none; }
+.goal-context-item-unused { color: #555; }
+.goal-context-target {
+  margin-top: 0.4em;
+  padding-top: 0.4em;
+  padding-left: 2em;
+  border-top: 2px solid #888;
+  text-indent: -2em;
+}
+
+.goal-paragraph-form { margin-top: 0.7em; }
+
+.math-display {
+  display: block;
+  margin: 0.65em 0;
+  overflow-x: auto;
+  text-align: center;
+}
+
+/* KaTeX defaults to roughly 1.21em, which overwhelms the surrounding paper
+   prose.  Keep display mathematics only slightly larger than body text and
+   inline mathematics at the body scale. */
+.math-inline > .katex { font-size: 1em; }
+.math-display > .katex-display > .katex { font-size: 1.04em; }
+
+.lean-reference { outline: none; }
+.lean-reference:focus-visible { border-bottom-color: #236ba8; }
+
+.lean-hover-content {
+  min-width: 16rem;
+  max-height: none;
+  overflow: visible;
+  color: #171717;
+  font-family: "Times New Roman", Times, serif;
+  font-size: 0.95rem;
+  font-weight: normal;
+  line-height: 1.35;
+  text-align: left;
+  white-space: normal;
+}
+
+.lean-hover-description,
+.lean-hover-signature,
+.lean-hover-explicit,
+.lean-hover-documentation { display: block; }
+
+.lean-hover-description { margin-bottom: 0.45em; }
+.lean-hover-explicit,
+.lean-hover-documentation {
+  margin-top: 0.45em;
+  padding-top: 0.4em;
+  border-top: 1px solid #ddd;
+}
+
+.lean-hover-signature code,
+.lean-hover-explicit code {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 0.82em;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.lean-hover-documentation { white-space: pre-wrap; }
+
+.lean-fallback {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 0.88em;
+  overflow-wrap: anywhere;
+}
+
+.lean-fallback-label {
+  font-family: "Times New Roman", Times, serif;
+  font-style: italic;
+}
+
+.lean-fallback-code,
+.math-source-fallback {
+  font: inherit;
+  white-space: normal;
+}
+
+.math-source-fallback {
+  color: #8a241f;
+  overflow-wrap: anywhere;
+}
+
+.mixed-source-math {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.math-display.mixed-source-math { text-align: left; }
+
+.inert-source-fragment {
+  color: #4a4f55;
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 0.82em;
+  font-style: normal;
+  font-weight: normal;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  html, body, #main { overflow: auto; height: auto; min-height: 100%; }
+  .main-div { display: block; height: auto; overflow: visible; }
+  .main-doc, .main-goal { width: 100%; height: auto; overflow: visible; }
+  .gutter-horizontal { display: none; }
+  .main-goal { border-top: 1px solid #ccc; }
+  .main-div-no-goals .document { margin: 1rem auto; padding: 0 1rem 4rem; }
+  .proof-controls { width: fit-content; }
+}
+
+@media print {
+  html, body, #main, .main-div, .main-doc { height: auto; overflow: visible; }
+  .main-goal, .gutter, .proof-controls, .explanation-refinement-button, .goal-button { display: none; }
+  .document { max-width: none; margin: 0; padding: 0; }
+}

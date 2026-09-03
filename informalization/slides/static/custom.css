@@ -1,0 +1,1622 @@
+/* ── Slides — Leonardo de Moura's ETAPS structure, blended with the Trail of
+   Bits brand (Geist type, brand red, ink). Lean code syntax colors are kept
+   semantic (de Moura's). Everything below the "Informalization additions"
+   banner is ours. */
+
+/* Geist + Geist Mono — Trail of Bits' typefaces (self-hosted on the TOB site;
+   loaded here from Google Fonts). */
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+
+:root {
+  /* Trail of Bits brand tokens (from trailofbits/new-website src/styles/global.css) */
+  --tob-red: #d00000;          /* decorative brand mark */
+  --tob-red-strong: #a20000;   /* AAA red for text/links/fills */
+  --tob-ink: #181717;          /* near-black brand ink */
+  --tob-ink-muted: #4a4b4d;
+
+  /* Chrome accent is now TOB red; dark/title band is TOB ink. (These vars are
+     reused throughout de Moura's rules, so the blend propagates in one place.
+     Lean *syntax* colors are defined separately below and stay unchanged.) */
+  --lean-teal: var(--tob-red);
+  --lean-blue: var(--tob-ink);
+  --text-dark: var(--tob-ink);
+  --text-muted: #64748b;
+  --bg-code: #f8fafc;
+  --border-code: #e2e8f0;
+}
+
+/* ── Base typography ── */
+.reveal {
+  font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 300;
+  font-size: 34px;
+  color: var(--text-dark);
+}
+
+.reveal h1, .reveal h2, .reveal h3, .reveal h4, .reveal h5, .reveal h6 {
+  text-transform: none;
+  font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+.reveal .slides section {
+  text-align: left;
+  padding: 34px 54px;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Content slides ── */
+.reveal h2 {
+  font-size: 1.3em;
+  font-weight: 600;
+  margin: 0 0 0.5em 0;
+  color: var(--text-dark);
+}
+/* teal accent UNDER the slide title (replaces de Moura's logo+line header,
+   which we have no logo for) — content slides only, not the dark title slide */
+.reveal .slides section:not([data-background-color]) h2 {
+  border-bottom: 2px solid var(--lean-teal);
+  padding-bottom: 0.2em;
+}
+
+.reveal ul {
+  font-size: 0.9em;
+  font-weight: 300;
+  line-height: 1.7;
+  margin: 0;
+  padding-left: 1.2em;
+}
+.reveal ul ul {
+  font-size: 1em;
+}
+.reveal ul li {
+  margin-bottom: 0.25em;
+}
+
+.reveal p {
+  font-size: 0.9em;
+  font-weight: 300;
+  line-height: 1.6;
+  margin: 0.4em 0;
+}
+
+.reveal strong {
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.reveal a {
+  color: var(--tob-red-strong);
+  font-weight: 600;
+}
+
+/* ── Code blocks (non-Lean) ── */
+.reveal pre {
+  font-size: 0.68em;
+  width: 100%;
+  margin: 0.4em 0;
+  box-shadow: none;
+  border: 1px solid var(--border-code);
+  border-radius: 6px;
+  background: var(--bg-code);
+}
+.reveal pre code {
+  padding: 0.8em 1em;
+  max-height: 70vh;
+  background: var(--bg-code);
+}
+
+/* ── Inline code ── */
+.reveal code {
+  font-size: 0.9em;
+  background: #f1f5f9;
+  padding: 0.1em 0.3em;
+  border-radius: 3px;
+}
+.reveal pre code {
+  background: var(--bg-code);
+  padding: 0.8em 1em;
+}
+
+/* ── Accent ── */
+.accent {
+  color: var(--lean-teal);
+  font-weight: 600;
+}
+/* KaTeX names its accent atoms `.accent` (e.g. `\widehat`, `\hat`); the rule
+   above would otherwise paint every wide-hat brand-red. Re-inherit inside math
+   so accents take the surrounding text color. */
+.reveal .katex .accent { color: inherit; font-weight: inherit; }
+
+/* ── Key-value highlight boxes ── */
+.key-box {
+  background: #fafafa;
+  border: 1px solid #ebebeb;
+  border-left: 4px solid var(--lean-teal);
+  border-radius: 0 8px 8px 0;
+  padding: 0.6em 1em;
+  margin: 0.4em 0;
+  font-size: 0.85em;
+}
+.key-box strong {
+  color: var(--text-dark);
+}
+
+/* ── Dark background slides (title, section breaks) ── */
+.reveal section[data-background-color="#181717"] {
+  display: flex !important;
+  flex-direction: column;
+  justify-content: center;
+}
+.reveal section[data-background-color="#181717"] h1,
+.reveal section[data-background-color="#181717"] h2 {
+  color: #ffffff !important;
+  font-size: 2em;
+  font-weight: 300;
+}
+.reveal section[data-background-color="#181717"] p,
+.reveal section[data-background-color="#181717"] li {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.1em;
+}
+.reveal section[data-background-color="#181717"] em {
+  color: #ff4b40; /* TOB dark-mode accent red */
+}
+.reveal section[data-background-color="#181717"] strong {
+  color: #ffffff;
+}
+.reveal section[data-background-color="#181717"] code {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+/* Title slide: the white stacked TRAIL OF BITS wordmark as a brand sign-off,
+   bottom-left, restrained. (The general `section img` rule centers + caps at
+   45vh; pin the title wordmark instead.) */
+.reveal section[data-background-color="#181717"] img {
+  max-height: 12vh;
+  max-width: 28%;
+  margin: 1.2em 0 0 0;
+  object-fit: contain;
+  opacity: 0.95;
+}
+
+/* ── Two-column layout ── */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5em;
+  align-items: start;
+}
+
+/* ── Blockquotes ── */
+.reveal blockquote {
+  font-size: 0.85em;
+  border-left: 4px solid var(--lean-teal);
+  padding: 0.3em 0.8em;
+  margin: 0.5em 0;
+  background: #fafafa;
+  border-radius: 0 6px 6px 0;
+}
+
+/* ═══════════════════════════════════════════════
+   Lean code: Stanford-style syntax colors
+   ═══════════════════════════════════════════════ */
+
+.reveal,
+.reveal section {
+  --verso-code-keyword-color: #cf222e;
+  --verso-code-const-color: #0550ae;
+  --verso-code-var-color: #1e293b;
+  --verso-code-color: #1e293b;
+  --verso-code-font-family: 'Geist Mono', 'SF Mono', 'Menlo', 'Monaco', monospace;
+  --verso-info-indicator-color: var(--lean-teal);
+  --verso-code-keyword-weight: 700;
+}
+
+/* ── Lean code block appearance ── */
+.reveal code.hl.lean.block {
+  background: var(--bg-code);
+  border: 1px solid var(--border-code);
+  border-radius: 6px;
+  box-shadow: none;
+  padding: 0.8em 1em;
+  font-size: 0.5em;
+  line-height: 1.55;
+  width: 95%;
+  max-width: 95%;
+  text-align: left;
+}
+
+/* ── Code panel: Verso info panel alongside code ── */
+.code-with-panel {
+  border: 1px solid var(--border-code);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: none;
+}
+.code-with-panel > code.hl.lean.block {
+  border: none;
+  border-radius: 6px 0 0 6px;
+  background: var(--bg-code);
+}
+.code-with-panel > .panel-cell {
+  background: #f8fafc;
+  border-left: 1px solid var(--border-code);
+}
+.code-with-panel > .info-panel,
+.code-with-panel .info-panel {
+  font-size: 0.45em;
+  color: var(--text-dark);
+}
+
+/* ── Inline Lean code ── */
+.reveal code.hl.lean.inline {
+  background: #f1f5f9;
+  border-radius: 3px;
+  padding: 0.1em 0.3em;
+  font-size: 0.85em;
+}
+
+/* ── #eval output ── */
+.command-output.information {
+  background: #ecfeff;
+  border-color: var(--lean-teal);
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+/* ── Soften wavy underlines on info diagnostics ── */
+.reveal .hl.lean .has-info.information .token:not(.tactic-state):not(.tactic-state *),
+.reveal .hl.lean .has-info.information .inter-text:not(.tactic-state):not(.tactic-state *) {
+  text-decoration-color: rgba(8, 145, 178, 0.35);
+}
+
+/* ── Keyword: bold and colored ── */
+.hl.lean .keyword {
+  font-weight: 700 !important;
+}
+
+/* ── Variable: no italic ── */
+.hl.lean .var {
+  font-style: normal !important;
+}
+
+/* ── Re-enable Verso hover popups ── */
+.hl.lean .hover-container {
+  display: block;
+}
+
+/* ── Images: scale to fit slide ── */
+.reveal section img {
+  max-width: 70%;
+  max-height: 45vh;
+  object-fit: contain;
+}
+
+/* ── hstack layout ── */
+.reveal .r-hstack {
+  display: flex !important;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 1.5em;
+}
+.reveal .r-hstack > ul { flex: 1; }
+.reveal .r-hstack > p { flex: 1; }
+.reveal .r-hstack > hr,
+.reveal .r-hstack > p:empty { display: none; }
+
+/* ── Table styling ── */
+.reveal table {
+  font-size: 0.75em;
+  border-collapse: collapse;
+  margin: 0.5em 0;
+  width: 100%;
+}
+.reveal table th {
+  background: var(--tob-ink); /* ink fill, not a full-bleed red bar */
+  color: white;
+  font-weight: 600;
+  padding: 0.4em 0.8em;
+  text-align: left;
+}
+.reveal table td {
+  padding: 0.3em 0.8em;
+  border-bottom: 1px solid var(--border-code);
+}
+.reveal table tr:nth-child(even) td { background: #f8fafc; }
+
+/* ═══════════════════════════════════════════════
+   Informalization additions (ours — not de Moura)
+   ═══════════════════════════════════════════════ */
+
+/* inline math ($`…`$ → <code class="math inline">) must NOT get the grey
+   inline-code box — that was the ugly grey. */
+.reveal code.math { background: none !important; padding: 0; border-radius: 0; font-size: 1em; }
+
+/* in-place ⊕ expander: unfolds hidden proof steps in place (standalone-HTML
+   show-hidden-detail), independent of slide navigation */
+.reveal .inf-toggle {
+  cursor: pointer; color: var(--lean-teal); font-weight: 700; user-select: none;
+  padding: 0 0.15em;
+}
+.reveal .inf-toggle:hover { color: var(--tob-red-strong); }
+.reveal .inf-hidden { display: none; margin-top: 0.4em; }
+.reveal .inf-hidden.inf-show { display: block; }
+
+/* hover-to-see-goal-state on a prose phrase: dashed phrase whose proof state
+   appears in a tippy tooltip; the source block is hidden and harvested by JS */
+.reveal .inf-hover { border-bottom: 1px dashed var(--lean-teal); cursor: help; }
+.reveal .inf-goal { display: none; }
+
+/* ── CBC informalization: generated CR18 prose hosted as Verso blocks ── */
+.reveal .cbc-paper {
+  max-width: 1460px;
+  color: var(--tob-ink);
+}
+
+.reveal .cbc-paper p {
+  font-size: 0.69em;
+  line-height: 1.38;
+  margin: 0.5em 0;
+}
+
+.reveal .cbc-statement p {
+  font-size: 0.88em;
+  line-height: 1.48;
+  margin: 0.65em 0;
+}
+
+.reveal .cbc-paper code.math.display {
+  margin: 0.35em 0;
+}
+
+.reveal .cbc-paper .katex-display {
+  margin: 0.45em 0;
+}
+
+/* One-slide source view: typography should feel like a mathematical paper,
+   not an application UI. The exact CR18 prose remains the dominant object. */
+.reveal .cr18-source-slide {
+  max-width: 1420px;
+  margin: 0 auto;
+  font-family: Georgia, 'Times New Roman', serif;
+  color: #171717;
+}
+
+.reveal p.cr18-source-slide {
+  margin: 0.45em 0 0.12em;
+  font-size: 0.72em;
+  line-height: 1.3;
+}
+
+.reveal .cbc-paper.cr18-source-slide {
+  max-width: none;
+}
+
+.reveal .cbc-paper.cr18-source-slide p,
+.reveal .cbc-statement.cr18-source-slide p {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.61em;
+  line-height: 1.31;
+  margin: 0.38em 0;
+}
+
+.reveal .cbc-statement.cr18-source-slide p:first-child {
+  font-size: 0.66em;
+}
+
+.reveal .cr18-source-slide .katex,
+.reveal .cr18-source-slide.katex {
+  font-size: 1em;
+}
+
+/* The CR18 theorem should read as a theorem in a paper, not as a slide title.
+   The hidden h2 remains in the document solely to delimit the Reveal slide. */
+.reveal .slides section > h2:has(+ p.cr18-theorem-slide) {
+  display: none;
+}
+
+.reveal .slides section > h2:has(+ p.cr18-theorem-slide) ~ .cr18-theorem-slide {
+  position: relative;
+}
+
+.reveal .slides section:has(> h2 + p.cr18-theorem-slide) {
+  padding-top: 76px;
+}
+
+.reveal .slides section > h2 + p.cr18-theorem-slide {
+  display: inline;
+  margin: 0 0.22em 0 0;
+  font-size: 0.67em;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.reveal .slides section > h2 + p.cr18-theorem-slide + .cbc-statement {
+  display: inline;
+}
+
+.reveal .slides section > h2 + p.cr18-theorem-slide + .cbc-statement > p:first-child {
+  display: inline;
+}
+
+.reveal .slides section > .cbc-statement + p.cr18-theorem-slide {
+  margin-top: 1.1em;
+  font-weight: 700;
+  font-style: normal;
+}
+
+/* CR18 notation slide: a flat mathematical diagram, with boxes used only for
+   actual messages/functions rather than as UI-style cards. */
+.reveal .cbc-construction-visual {
+  position: relative;
+  width: 91%;
+  margin: 0.65em auto 0;
+  color: var(--tob-ink);
+  font-size: 0.82em;
+}
+
+.reveal .cbc-filter-band {
+  display: grid;
+  grid-template-columns: 3.2em minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.85em;
+  max-width: 1220px;
+  margin: 0 auto;
+}
+
+.reveal .cbc-filter-symbol {
+  display: grid;
+  place-items: center;
+  width: 2.55em;
+  height: 2.55em;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--tob-ink);
+  font-size: 1.08em;
+}
+
+.reveal .cbc-query-sequence,
+.reveal .cbc-chain {
+  display: flex;
+  align-items: center;
+}
+
+.reveal .cbc-query-sequence { gap: 0.32em; }
+.reveal .cbc-sequence-comma { margin-left: -0.15em; }
+.reveal .cbc-sequence-dots { padding: 0 0.25em; letter-spacing: 0.12em; }
+
+.reveal .cbc-filter-condition {
+  padding-left: 1.2em;
+  border-left: 2px solid #d9d9d9;
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+
+.reveal .cbc-filter-caption {
+  max-width: 1220px;
+  margin: 0.22em auto 0;
+  padding-left: 4.45em;
+  color: var(--text-muted);
+  font-size: 0.56em;
+  letter-spacing: 0.02em;
+}
+
+.reveal .cbc-construction-rule {
+  max-width: 1220px;
+  height: 1px;
+  margin: 0.8em auto 0.58em;
+  background: #dedede;
+}
+
+.reveal .cbc-chain-label {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7em;
+  max-width: 1220px;
+  margin: 0 auto 0.45em;
+  font-size: 0.68em;
+}
+
+.reveal .cbc-chain-name {
+  color: var(--tob-red-strong);
+  font-size: 0.78em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reveal .cbc-chain {
+  justify-content: center;
+  gap: 0.28em;
+  min-height: 3.7em;
+}
+
+.reveal .cbc-diagram-node {
+  display: inline-grid;
+  place-items: center;
+  box-sizing: border-box;
+}
+
+.reveal .cbc-diagram-node.message {
+  min-width: 3.25em;
+  min-height: 2.1em;
+  padding: 0.3em 0.55em;
+  border: 1.5px solid #9ca1a7;
+  background: #fff;
+}
+
+.reveal .cbc-diagram-node.primitive {
+  min-width: 4.5em;
+  min-height: 2.75em;
+  padding: 0.45em 0.65em;
+  border: 2px solid var(--tob-ink);
+  border-radius: 0.15em;
+  background: #f7f7f7;
+  font-weight: 600;
+}
+
+.reveal .cbc-diagram-node.state,
+.reveal .cbc-diagram-node.tag {
+  width: 2.5em;
+  height: 2.5em;
+  border: 1.5px solid var(--tob-ink);
+  border-radius: 50%;
+  background: #fff;
+}
+
+.reveal .cbc-diagram-node.initial {
+  border-color: #b5b5b5;
+  color: var(--text-muted);
+}
+
+.reveal .cbc-diagram-node.tag {
+  color: #fff;
+  border-color: var(--tob-red-strong);
+  background: var(--tob-red-strong);
+}
+
+.reveal .cbc-diagram-node.xor {
+  width: 1.55em;
+  height: 1.55em;
+  margin-left: -0.4em;
+  border-radius: 50%;
+  background: #fff;
+  font-size: 0.9em;
+}
+
+.reveal .cbc-diagram-arrow {
+  color: #6d7175;
+  font-size: 1.1em;
+}
+
+.reveal .cbc-chain-dots {
+  padding: 0 0.15em;
+  letter-spacing: 0.12em;
+}
+
+.reveal .cbc-chain-budget {
+  position: relative;
+  width: 54%;
+  margin: 0.18em auto 0;
+  padding-top: 0.7em;
+  text-align: center;
+}
+
+.reveal .cbc-budget-bracket {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 0.42em;
+  border-right: 1.5px solid #8c9094;
+  border-bottom: 1.5px solid #8c9094;
+  border-left: 1.5px solid #8c9094;
+}
+
+.reveal .cbc-budget-copy {
+  color: var(--text-muted);
+  font-size: 0.58em;
+}
+
+.reveal .cbc-real-ideal {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 2.2em minmax(0, 1fr);
+  align-items: center;
+  gap: 0.8em;
+  max-width: 980px;
+  margin: 0.95em auto 0;
+}
+
+.reveal .cbc-system-side {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75em;
+  padding: 0.48em 0.65em;
+  border-top: 3px solid var(--tob-ink);
+  border-bottom: 1px solid #d4d4d4;
+  font-size: 0.88em;
+}
+
+.reveal .cbc-system-side.ideal { border-top-color: var(--tob-red-strong); }
+
+.reveal .cbc-side-label {
+  color: var(--text-muted);
+  font-size: 0.56em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.reveal .cbc-compare-mark {
+  color: var(--tob-red-strong);
+  text-align: center;
+  font-size: 1.35em;
+  font-weight: 500;
+}
+
+.reveal .cbc-ideal-caption {
+  margin: 0.32em auto 0;
+  color: var(--text-muted);
+  text-align: center;
+  font-size: 0.53em;
+}
+
+/* Sparse animated replacement for the earlier notation inventory. Each frame
+   occupies the same canvas: R, then CBC[R], then CBC[R] ≈ V, then the paper
+   statement alone. */
+.reveal .cbc-construction-animation {
+  position: relative;
+  width: 94%;
+  height: 760px;
+  margin: -0.1em auto 0;
+}
+
+.reveal .slides section > h2:has(+ .cbc-construction-animation) {
+  display: none;
+}
+
+.reveal .cbc-animation-title {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 4;
+  padding: 0 0 0.2em;
+  border-bottom: 2px solid var(--tob-red);
+  color: var(--tob-ink);
+  font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.3em;
+  font-weight: 600;
+}
+
+.reveal .cbc-animation-frame {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.reveal .cbc-single-primitive {
+  display: grid;
+  place-items: center;
+  width: 210px;
+  height: 108px;
+  border: 3px solid var(--tob-ink);
+  background: #fff;
+  font-size: 1.12em;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+
+.reveal .cbc-single-primitive.hero {
+  width: 285px;
+  height: 148px;
+  font-size: 1.5em;
+}
+
+.reveal .cbc-converter {
+  position: relative;
+  width: 880px;
+  height: 260px;
+  box-sizing: border-box;
+}
+
+.reveal .cbc-converter-name {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  color: var(--tob-red-strong);
+  font-size: 0.92em;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+.reveal .cbc-converter-flow {
+  position: absolute;
+  inset: 0;
+}
+
+.reveal .cbc-endpoint {
+  position: absolute;
+  top: 78px;
+  display: grid;
+  width: 70px;
+  height: 44px;
+  place-items: center;
+  font-size: 1.12em;
+  font-weight: 600;
+}
+
+.reveal .cbc-endpoint.input { left: 55px; }
+.reveal .cbc-endpoint.output { left: 760px; }
+.reveal .cbc-endpoint.output { color: var(--tob-ink); }
+
+.reveal .cbc-block-former {
+  position: absolute;
+  top: 68px;
+  left: 190px;
+  display: grid;
+  place-items: center;
+  width: 100px;
+  height: 64px;
+  font-size: 1.05em;
+  box-sizing: border-box;
+}
+
+.reveal .cbc-xor-node {
+  position: absolute;
+  top: 78px;
+  left: 370px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 44px;
+  font-size: 1.12em;
+  box-sizing: border-box;
+}
+
+.reveal .cbc-single-primitive.cbc-ac-resource {
+  position: absolute;
+  top: 46px;
+  left: 470px;
+}
+
+.reveal .cbc-ac-wire {
+  position: absolute;
+  display: block;
+  z-index: -1;
+  background: #8e9398;
+}
+
+.reveal .cbc-ac-wire.horizontal { height: 1.5px; }
+.reveal .cbc-ac-wire.vertical { width: 1.5px; }
+
+.reveal .cbc-ac-wire.forward::after {
+  position: absolute;
+  top: -4px;
+  right: -1px;
+  width: 0;
+  height: 0;
+  border-top: 4.5px solid transparent;
+  border-bottom: 4.5px solid transparent;
+  border-left: 8px solid #8e9398;
+  content: "";
+}
+
+.reveal .wire-input { top: 100px; left: 115px; width: 75px; }
+.reveal .wire-bf-xor { top: 100px; left: 290px; width: 80px; }
+.reveal .wire-xor-r { top: 100px; left: 410px; width: 60px; }
+.reveal .wire-r-output { top: 100px; left: 680px; width: 80px; }
+
+/* Feedback track: x=575 is the exact centre of R; x=390 is the exact centre
+   of the XOR glyph. Each bend is one orthogonal segment. */
+.reveal .feedback-from-r { top: 154px; left: 574.25px; height: 56px; }
+.reveal .feedback-across { top: 209.25px; left: 390px; width: 185px; }
+.reveal .feedback-to-xor { top: 118px; left: 389.25px; height: 92px; }
+
+.reveal .feedback-to-xor::after {
+  position: absolute;
+  top: -1px;
+  left: -4px;
+  width: 0;
+  height: 0;
+  border-right: 4.5px solid transparent;
+  border-bottom: 8px solid #8e9398;
+  border-left: 4.5px solid transparent;
+  content: "";
+}
+
+.reveal .cbc-comparison-layout {
+  display: grid;
+  grid-template-columns: 880px 80px 120px;
+  align-items: center;
+  gap: 18px;
+}
+
+.reveal .cbc-converter.compact {
+  width: 880px;
+  height: 260px;
+}
+
+.reveal .cbc-converter.compact .cbc-converter-flow {
+  inset: 0;
+}
+
+.reveal .cbc-converter.compact .cbc-single-primitive {
+  width: 210px;
+  height: 108px;
+}
+
+.reveal .cbc-converter.compact .cbc-block-former {
+  width: 100px;
+  height: 64px;
+}
+
+.reveal .cbc-converter.compact .cbc-converter-name {
+  left: 50%;
+  bottom: 8px;
+  font-size: 0.92em;
+}
+
+.reveal .cbc-comparison-mark {
+  color: var(--tob-red-strong);
+  text-align: center;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.8em;
+  font-weight: 600;
+  transform: translateY(-28px);
+}
+
+.reveal .cbc-ideal-system {
+  display: grid;
+  place-items: center;
+  width: 120px;
+  height: 108px;
+  font-size: 1.55em;
+  font-weight: 600;
+  box-sizing: border-box;
+  transform: translateY(-28px);
+}
+
+.reveal .cbc-construction-statement {
+  width: 100%;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.55em;
+  text-align: center;
+}
+
+.reveal .cbc-construction-statement code.math.display,
+.reveal .cbc-construction-statement .katex-display {
+  margin: 0;
+}
+
+/* CBC construction v2 — fixed algebraic geometry derived from the annotated
+   talk backend.  Every canvas is sized in the 1600×900 logical coordinate
+   system, so node axes and wire endpoints do not depend on the viewport. */
+.reveal .cbc-chain-wrap {
+  width: 1360px;
+  height: 455px;
+}
+
+.reveal .cbc-chain-message {
+  height: 70px;
+  text-align: center;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.06em;
+}
+
+.reveal .cbc-chain-canvas {
+  position: relative;
+  width: 1360px;
+  height: 360px;
+}
+
+.reveal .cbc-primitive-instance {
+  height: 400px;
+}
+
+.reveal .cbc-chain-wire,
+.reveal .cbc-system-wire,
+.reveal .cbc-ideal-wire {
+  position: absolute;
+  z-index: 1;
+  display: block;
+  background: #7d8287;
+}
+
+.reveal :is(.cbc-chain-wire, .cbc-system-wire, .cbc-ideal-wire).horizontal {
+  height: 2px;
+}
+
+.reveal :is(.cbc-chain-wire, .cbc-system-wire, .cbc-ideal-wire).vertical {
+  width: 2px;
+}
+
+.reveal :is(.cbc-chain-wire, .cbc-system-wire, .cbc-ideal-wire).forward::after {
+  position: absolute;
+  top: -5px;
+  right: -1px;
+  width: 0;
+  height: 0;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 10px solid #7d8287;
+  content: "";
+}
+
+.reveal :is(.cbc-chain-wire, .cbc-system-wire).down::after {
+  position: absolute;
+  right: -5px;
+  bottom: -1px;
+  width: 0;
+  height: 0;
+  border-top: 10px solid #7d8287;
+  border-right: 6px solid transparent;
+  border-left: 6px solid transparent;
+  content: "";
+}
+
+.reveal .cbc-system-wire.up::after {
+  position: absolute;
+  top: -1px;
+  left: -5px;
+  width: 0;
+  height: 0;
+  border-right: 6px solid transparent;
+  border-bottom: 10px solid #7d8287;
+  border-left: 6px solid transparent;
+  content: "";
+}
+
+.reveal .cbc-chain-r,
+.reveal .cbc-system-r,
+.reveal .cbc-ideal-box {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  border: 2.5px solid var(--tob-ink);
+  background: var(--tob-surface);
+  font-size: 1.16em;
+}
+
+.reveal .cbc-chain-r {
+  width: 170px;
+  height: 110px;
+}
+
+.reveal .cbc-chain-xor,
+.reveal .cbc-system-xor {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  font-size: 1.15em;
+}
+
+.reveal .cbc-chain-label,
+.reveal .cbc-system-endpoint,
+.reveal .cbc-ideal-endpoint {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  font-size: 1.02em;
+}
+
+/* One primitive call, placed on the exact axis used by the chain frame. */
+.reveal .primitive-in { top: 200px; left: 80px; width: 60px; }
+.reveal .primitive-out { top: 200px; left: 310px; width: 115px; }
+.reveal .primitive-m1 { top: 175px; left: 10px; width: 70px; height: 50px; }
+.reveal .primitive-r1 { top: 145px; left: 140px; }
+.reveal .primitive-y1 { top: 175px; left: 425px; width: 70px; height: 50px; }
+
+/* CBC chain.  The first stage is m₁ → R; only later stages contain XOR. */
+.reveal .chain-m1-r1 { top: 210px; left: 90px; width: 50px; }
+.reveal .chain-r1-xor2 { top: 210px; left: 310px; width: 170px; }
+.reveal .chain-m2-xor2 { top: 80px; left: 499px; height: 110px; }
+.reveal .chain-xor2-r2 { top: 210px; left: 520px; width: 70px; }
+.reveal .chain-r2-dots { top: 210px; left: 760px; width: 82px; }
+.reveal .chain-dots-xorl { top: 210px; left: 900px; width: 110px; }
+.reveal .chain-ml-xorl { top: 80px; left: 1029px; height: 110px; }
+.reveal .chain-xorl-rl { top: 210px; left: 1050px; width: 70px; }
+.reveal .chain-rl-t { top: 210px; left: 1290px; width: 55px; }
+
+.reveal .chain-m1 { top: 185px; left: 20px; width: 70px; height: 50px; }
+.reveal .chain-m2 { top: 30px; left: 465px; width: 70px; height: 50px; }
+.reveal .chain-ml { top: 30px; left: 995px; width: 70px; height: 50px; }
+.reveal .chain-y1 { top: 160px; left: 365px; width: 70px; height: 40px; }
+.reveal .chain-y2 { top: 160px; left: 775px; width: 70px; height: 40px; }
+.reveal .chain-r1 { top: 155px; left: 140px; }
+.reveal .chain-xor2 { top: 190px; left: 480px; }
+.reveal .chain-r2 { top: 155px; left: 590px; }
+.reveal .cbc-chain-dots { position: absolute; top: 177px; left: 842px; z-index: 2; padding: 0; font-size: 1.5em; }
+.reveal .chain-xorl { top: 190px; left: 1010px; }
+.reveal .chain-rl { top: 155px; left: 1120px; }
+.reveal .chain-t { top: 185px; left: 1340px; width: 40px; height: 50px; }
+
+/* Converter abstraction: CBC(bf) is the dashed system boundary. */
+.reveal .cbc-system-diagram {
+  position: relative;
+  width: 1160px;
+  height: 430px;
+}
+
+.reveal .cbc-system-boundary {
+  position: absolute;
+  top: 90px;
+  left: 140px;
+  z-index: 0;
+  box-sizing: border-box;
+  width: 880px;
+  height: 250px;
+  border: 2px dashed #9a9ea2;
+  border-radius: 130px;
+}
+
+.reveal .cbc-system-name {
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  padding: 0 14px;
+  background: var(--tob-canvas);
+  color: var(--tob-red-strong);
+  font-size: 0.84em;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.reveal .cbc-system-bf {
+  position: absolute;
+  top: 175px;
+  left: 220px;
+  z-index: 2;
+  display: grid;
+  width: 80px;
+  height: 80px;
+  place-items: center;
+  box-sizing: border-box;
+  border: 2px solid var(--tob-ink);
+  border-radius: 50%;
+  background: var(--tob-surface);
+  font-size: 0.95em;
+}
+
+.reveal .cbc-system-r {
+  top: 160px;
+  left: 600px;
+  width: 220px;
+  height: 110px;
+}
+
+.reveal .cbc-system-xor { top: 195px; left: 430px; }
+.reveal .cbc-system-endpoint { top: 190px; width: 70px; height: 50px; }
+.reveal .cbc-system-endpoint.input { left: 10px; }
+.reveal .cbc-system-endpoint.output { left: 1070px; }
+.reveal .system-input { top: 215px; left: 80px; width: 140px; }
+.reveal .system-bf-xor { top: 215px; left: 300px; width: 130px; }
+.reveal .system-xor-r { top: 215px; left: 470px; width: 130px; }
+.reveal .system-r-output { top: 215px; left: 820px; width: 250px; }
+.reveal .system-feedback-down { top: 270px; left: 709px; height: 60px; }
+.reveal .system-feedback-across { top: 329px; left: 450px; width: 260px; }
+.reveal .system-feedback-up { top: 235px; left: 449px; height: 95px; }
+
+/* The real/ideal frame uses the same semantic axes in a compact canvas. */
+.reveal .cbc-comparison-layout-v2 {
+  display: grid;
+  grid-template-columns: 820px 90px 300px;
+  gap: 22px;
+  align-items: center;
+  width: 1254px;
+  height: 430px;
+}
+
+.reveal .cbc-system-diagram.compact {
+  width: 820px;
+  height: 360px;
+}
+
+.reveal .cbc-system-diagram.compact .cbc-system-boundary {
+  top: 70px;
+  left: 100px;
+  width: 600px;
+  height: 220px;
+  border-radius: 115px;
+}
+
+.reveal .cbc-system-diagram.compact .cbc-system-name { top: -22px; }
+.reveal .cbc-system-diagram.compact .cbc-system-endpoint { top: 175px; width: 60px; height: 50px; }
+.reveal .cbc-system-diagram.compact .cbc-system-endpoint.input { left: 0; }
+.reveal .cbc-system-diagram.compact .cbc-system-endpoint.output { left: 760px; }
+.reveal .cbc-system-diagram.compact .cbc-system-bf { top: 160px; left: 150px; width: 70px; height: 70px; }
+.reveal .cbc-system-diagram.compact .cbc-system-xor { top: 175px; left: 320px; }
+.reveal .cbc-system-diagram.compact .cbc-system-r { top: 145px; left: 450px; width: 170px; height: 100px; }
+.reveal .cbc-system-diagram.compact .system-input { top: 200px; left: 60px; width: 90px; }
+.reveal .cbc-system-diagram.compact .system-bf-xor { top: 200px; left: 220px; width: 100px; }
+.reveal .cbc-system-diagram.compact .system-xor-r { top: 200px; left: 360px; width: 90px; }
+.reveal .cbc-system-diagram.compact .system-r-output { top: 200px; left: 620px; width: 140px; }
+.reveal .cbc-system-diagram.compact .system-feedback-down { top: 245px; left: 534px; height: 48px; }
+.reveal .cbc-system-diagram.compact .system-feedback-across { top: 292px; left: 340px; width: 195px; }
+.reveal .cbc-system-diagram.compact .system-feedback-up { top: 215px; left: 339px; height: 78px; }
+
+.reveal .cbc-comparison-equals {
+  color: var(--tob-red-strong);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 2.4em;
+  font-weight: 700;
+  text-align: center;
+}
+
+.reveal .cbc-ideal-diagram {
+  position: relative;
+  width: 300px;
+  height: 360px;
+}
+
+.reveal .cbc-ideal-box {
+  top: 145px;
+  left: 85px;
+  width: 140px;
+  height: 100px;
+  border-color: var(--tob-red-strong);
+  font-size: 1.42em;
+}
+
+.reveal .cbc-ideal-endpoint { top: 175px; width: 50px; height: 50px; }
+.reveal .cbc-ideal-endpoint.input { left: 0; }
+.reveal .cbc-ideal-endpoint.output { left: 250px; }
+.reveal .ideal-input { top: 200px; left: 50px; width: 35px; }
+.reveal .ideal-output { top: 200px; left: 225px; width: 25px; }
+
+/* The source-faithful paper proof starts visibly collapsed. Each row opens the
+   exact authored layer on the right; a nested disclosure keeps the generated
+   Lean target available without making it the default reading experience. */
+.reveal .cbc-proof-explorer {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 43fr) minmax(0, 57fr);
+  gap: 26px;
+  height: calc(100% - 4.25em);
+  min-height: 0;
+  margin-top: 0.35em;
+  font-size: 0.84em;
+}
+
+.reveal .cbc-paper-outline {
+  grid-column: 1;
+  min-width: 0;
+}
+
+.reveal .cbc-explorer-intro {
+  margin-bottom: 0.55em;
+  color: var(--text-muted);
+  font-size: 0.75em;
+}
+
+.reveal .cbc-paper-step { margin: 0 0 0.48em; }
+
+.reveal .cbc-paper-summary {
+  display: grid;
+  grid-template-columns: 2.15em minmax(0, 1fr) auto;
+  gap: 0.65em;
+  align-items: center;
+  min-height: 3.65em;
+  padding: 0.48em 0.62em;
+  border: 1px solid #d8dde4;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  list-style: none;
+  box-sizing: border-box;
+}
+
+.reveal .cbc-paper-summary::-webkit-details-marker { display: none; }
+
+.reveal .cbc-paper-summary:hover,
+.reveal .cbc-paper-summary:focus-visible {
+  border-color: var(--tob-red-strong);
+  box-shadow: 0 4px 18px rgba(24, 23, 23, 0.09);
+  outline: none;
+}
+
+.reveal .cbc-paper-step[open] > .cbc-paper-summary {
+  border-color: var(--tob-red-strong);
+  background: #fff8f7;
+  box-shadow: inset 4px 0 0 var(--tob-red-strong);
+}
+
+.reveal .cbc-paper-summary-copy { display: block; min-width: 0; }
+
+.reveal .cbc-paper-summary-copy strong {
+  display: block;
+  margin-bottom: 0.1em;
+  font-size: 0.8em;
+  line-height: 1.2;
+}
+
+.reveal .cbc-paper-summary-copy > span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.62em;
+}
+
+.reveal .cbc-disclosure-action {
+  color: var(--tob-red-strong);
+  font-size: 0.58em;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.reveal .cbc-paper-step[open] .cbc-disclosure-action {
+  font-size: 0;
+}
+
+.reveal .cbc-paper-step[open] .cbc-disclosure-action::after {
+  content: "close −";
+  font-size: 19px;
+}
+
+.reveal .cbc-explorer-empty {
+  grid-column: 2;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.35em;
+  min-width: 0;
+  padding: 2em;
+  border: 1px dashed #c8cdd4;
+  border-radius: 12px;
+  color: var(--text-muted);
+  background: #fafafa;
+  text-align: center;
+  font-size: 0.72em;
+  box-sizing: border-box;
+}
+
+.reveal .cbc-explorer-empty strong { color: var(--tob-ink); }
+.reveal .cbc-proof-explorer:has(.cbc-paper-step[open]) > .cbc-explorer-empty {
+  visibility: hidden;
+}
+
+.reveal .cbc-paper-step-panel {
+  display: none;
+  position: absolute;
+  z-index: 8;
+  inset: 0 0 0 calc(43% + 15px);
+  min-width: 0;
+  overflow: auto;
+  padding: 0.8em 0.95em;
+  border: 1px solid #cfd4db;
+  border-top: 4px solid var(--tob-red-strong);
+  border-radius: 12px;
+  color: var(--tob-ink);
+  background: #fff;
+  box-shadow: 0 10px 32px rgba(24, 23, 23, 0.13);
+  box-sizing: border-box;
+}
+
+.reveal .cbc-paper-step[open] > .cbc-paper-step-panel { display: block; }
+
+.reveal .cbc-paper-step-panel .cbc-paper p {
+  font-size: 0.66em;
+  line-height: 1.38;
+  margin: 0 0 0.58em;
+}
+
+.reveal .cbc-paper-checkpoint {
+  margin-top: 0.75em;
+  padding: 0.6em 0.7em;
+  border-left: 3px solid var(--tob-red-strong);
+  color: var(--text-muted);
+  background: #f7f8f9;
+  font-size: 0.61em;
+  line-height: 1.35;
+}
+
+.reveal .cbc-paper-checkpoint strong { color: var(--tob-ink); }
+
+/* Two explicit lanes on the provenance slide. */
+.reveal .r-hstack > .r-vstack {
+  flex: 1 1 0;
+  align-items: stretch;
+  justify-content: flex-start;
+  align-self: stretch;
+  padding: 0.7em 0.85em;
+  border: 1px solid #e1e4e8;
+  border-top: 4px solid var(--tob-red-strong);
+  border-radius: 10px;
+  background: #fafafa;
+  box-sizing: border-box;
+}
+
+/* The formal calculation uses native <details>: no generated-page mutation,
+   no global buttons that can be present without anything to disclose. */
+.reveal .cbc-proof-demo {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 56fr) minmax(0, 44fr);
+  gap: 28px;
+  height: calc(100% - 3.2em);
+  min-height: 0;
+  font-size: 0.86em;
+}
+
+.reveal .cbc-calc-column {
+  grid-column: 1;
+  min-width: 0;
+}
+
+.reveal .cbc-calc-intro {
+  margin: 0 0 0.65em;
+  color: var(--text-muted);
+  font-size: 0.82em;
+}
+
+.reveal .cbc-calc-step {
+  margin: 0 0 0.55em;
+}
+
+.reveal .cbc-calc-summary {
+  display: grid;
+  grid-template-columns: 2.15em minmax(0, 1fr) auto;
+  gap: 0.65em;
+  align-items: center;
+  min-height: 4.25em;
+  padding: 0.55em 0.65em;
+  border: 1px solid #d8dde4;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  list-style: none;
+  box-sizing: border-box;
+  transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
+}
+
+.reveal .cbc-calc-summary::-webkit-details-marker { display: none; }
+
+.reveal .cbc-calc-summary:hover,
+.reveal .cbc-calc-summary:focus-visible {
+  border-color: var(--tob-red-strong);
+  box-shadow: 0 4px 18px rgba(24, 23, 23, 0.09);
+  outline: none;
+}
+
+.reveal .cbc-calc-step[open] > .cbc-calc-summary {
+  border-color: var(--tob-red-strong);
+  background: #fff8f7;
+  box-shadow: inset 4px 0 0 var(--tob-red-strong);
+}
+
+.reveal .cbc-step-number {
+  display: grid;
+  place-items: center;
+  width: 1.85em;
+  height: 1.85em;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--tob-ink);
+  font-weight: 650;
+}
+
+.reveal .cbc-calc-step[open] .cbc-step-number {
+  background: var(--tob-red-strong);
+}
+
+.reveal .cbc-step-copy {
+  display: block;
+  min-width: 0;
+}
+
+.reveal .cbc-step-copy strong {
+  display: block;
+  margin-bottom: 0.12em;
+  font-size: 0.87em;
+}
+
+.reveal .cbc-step-copy code.math.display,
+.reveal .cbc-step-copy .katex-display {
+  margin: 0;
+  overflow-x: auto;
+  text-align: left;
+}
+
+.reveal .cbc-step-copy .katex-display > .katex {
+  text-align: left;
+  font-size: 0.78em;
+}
+
+.reveal .cbc-step-action {
+  color: var(--tob-red-strong);
+  font-size: 0.62em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.reveal .cbc-calc-close {
+  margin-top: 0.75em;
+  padding-left: 0.8em;
+  border-left: 3px solid var(--tob-red-strong);
+  font-size: 0.72em;
+  line-height: 1.4;
+}
+
+.reveal .cbc-stage-empty {
+  grid-column: 2;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.35em;
+  min-width: 0;
+  padding: 2em;
+  border: 1px dashed #c8cdd4;
+  border-radius: 12px;
+  color: var(--text-muted);
+  background: #fafafa;
+  text-align: center;
+  font-size: 0.74em;
+  box-sizing: border-box;
+}
+
+.reveal .cbc-stage-empty strong { color: var(--tob-ink); }
+.reveal .cbc-stage-icon { color: var(--tob-red-strong); font-size: 2.2em; }
+.reveal .cbc-proof-demo:has(.cbc-calc-step[open]) > .cbc-stage-empty { visibility: hidden; }
+
+.reveal .cbc-step-panel {
+  display: none;
+  position: absolute;
+  z-index: 8;
+  inset: 0 0 0 calc(56% + 16px);
+  min-width: 0;
+}
+
+.reveal .cbc-calc-step[open] > .cbc-step-panel { display: block; }
+
+.reveal .cbc-goal-card {
+  height: 100%;
+  overflow: auto;
+  padding: 1em 1.05em;
+  border: 1px solid #cfd4db;
+  border-top: 4px solid var(--tob-red-strong);
+  border-radius: 12px;
+  color: var(--tob-ink);
+  background: #fff;
+  box-shadow: 0 10px 32px rgba(24, 23, 23, 0.13);
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.reveal .cbc-goal-eyebrow {
+  color: var(--tob-red-strong);
+  font-size: 0.58em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reveal .cbc-goal-title {
+  margin: 0.2em 0 0.6em;
+  font-size: 0.9em;
+  line-height: 1.25;
+}
+
+.reveal .cbc-context {
+  margin: 0;
+  font-size: 0.63em;
+}
+
+.reveal .cbc-context-row {
+  display: grid;
+  grid-template-columns: minmax(8.5em, auto) minmax(0, 1fr);
+  gap: 0.75em;
+  padding: 0.22em 0;
+  border-bottom: 1px solid #eef0f2;
+}
+
+.reveal .cbc-context-symbol,
+.reveal .cbc-context-description { margin: 0; min-width: 0; }
+.reveal .cbc-context-symbol { font-weight: 500; }
+.reveal .cbc-context-description { color: var(--text-muted); }
+
+.reveal .cbc-goal-target {
+  margin-top: 0.75em;
+  padding: 0.65em 0.75em;
+  border-radius: 8px;
+  background: #f6f7f8;
+}
+
+.reveal .cbc-goal-turnstile {
+  display: block;
+  margin-bottom: 0.2em;
+  color: var(--tob-red-strong);
+  font-size: 0.56em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reveal .cbc-goal-target code.math.display,
+.reveal .cbc-goal-target .katex-display {
+  margin: 0;
+  overflow-x: auto;
+  text-align: left;
+}
+
+.reveal .cbc-goal-target .katex-display > .katex {
+  text-align: left;
+  font-size: 0.78em;
+}
+
+.reveal .cbc-goal-source {
+  margin-top: 0.65em;
+  font-size: 0.55em;
+  overflow-wrap: anywhere;
+}
+
+.reveal .cbc-exact-target {
+  margin-top: 0.55em;
+  font-size: 0.52em;
+}
+
+.reveal .cbc-exact-target summary {
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.reveal .cbc-lean-target {
+  display: block;
+  margin-top: 0.4em;
+  padding: 0.55em;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  border-radius: 5px;
+  background: #f1f3f5;
+  font-family: 'Geist Mono', monospace;
+  line-height: 1.35;
+}
+
+/* ── Fullscreen: fill the whole screen, no letterbox/side/top bars ── */
+html, body { margin: 0; padding: 0; height: 100%; width: 100%; background: #fff; }
+.reveal-viewport, .reveal { width: 100%; height: 100%; }
+.reveal:fullscreen, .reveal:-webkit-full-screen { width: 100vw; height: 100vh; }
+:fullscreen .reveal .slides > section,
+:-webkit-full-screen .reveal .slides > section { width: 100%; height: 100%; }
+/* fullscreen toggle button */
+#fsbtn {
+  position: fixed; bottom: 12px; left: 12px; z-index: 60; border: none;
+  background: rgba(30,41,59,0.12); color: #1e293b; border-radius: 6px;
+  cursor: pointer; font-size: 18px; line-height: 1; padding: 4px 9px;
+  font-family: -apple-system, system-ui, sans-serif;
+}
+#fsbtn:hover { background: rgba(30,41,59,0.25); }
+
+/* ═══════════════════════════════════════════════
+   Trail of Bits brand mark — small logo top + bottom of every page
+   ═══════════════════════════════════════════════
+   The vendored tob-logo.svg is drawn with a CSS mask (alpha shape only), so a
+   single asset recolors itself: brand red on light content slides, white on the
+   dark (ink) title/section slides. Fixed to the viewport → present on every
+   slide, above the deck but below tooltips. */
+.tob-mark {
+  position: fixed;
+  z-index: 55;
+  /* the icon mark is ~76×45 — keep that aspect ratio */
+  aspect-ratio: 76 / 45;
+  /* solid-recolored SVG as a background image (a CSS mask rendered nothing on
+     file://; a plain background-image paints reliably). Red on light slides. */
+  background: url("tob-logo-red.svg") no-repeat center / contain;
+  pointer-events: none;
+  opacity: 0.92;
+}
+.tob-mark-top    { top: 14px;    right: 18px; height: 3.4vh; }
+
+/* On dark (ink) slides the red mark reads muddy against near-black → swap to the
+   white-fill copy. reveal tags the active ink slide; Main.lean toggles this
+   class on the body from the slide's data-background-color. */
+body.tob-dark-slide .tob-mark { background-image: url("tob-logo-white.svg"); }
+/* The title (dark) slide carries the prominent stacked wordmark, so the small
+   corner mark is redundant there — hide it. */
+body.tob-dark-slide .tob-mark-top { display: none; }

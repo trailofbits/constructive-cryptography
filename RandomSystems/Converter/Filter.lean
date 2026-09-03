@@ -3,6 +3,7 @@ Copyright (c) 2026 Trail of Bits. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import RandomSystems.Converter.BoundedInnerQueries
+import RandomSystems.Filter
 
 set_option autoImplicit false
 
@@ -532,3 +533,38 @@ theorem applySystem_filter_of_prefix_closed
 end DDC
 
 end RandomSystems.Ambient
+
+namespace RandomSystems.DomainFilter
+
+open Ambient
+
+universe u v
+
+/-- Interpret a prefix-closed domain restriction as an answer-polymorphic
+identity filter. -/
+noncomputable def toDDC {X : Type u} {Y : Type v}
+    (restriction : DomainFilter X) :
+    DDC (Interface.single X Y) (Interface.single X Y) := by
+  classical
+  exact DDC.filter restriction.predicate id (fun _ answer => answer)
+
+end RandomSystems.DomainFilter
+
+namespace RandomSystems.Ambient.DDC
+
+open CategoryTheory
+
+universe u v
+
+noncomputable local instance : LargeCategory Interface.{u, v} :=
+  Interface.ddcCategory
+
+/-- A domain filter is canonically a deterministic converter morphism at
+every answer type. -/
+noncomputable scoped instance domainFilterCoeHom
+    {X : Type u} {Y : Type v} :
+    Coe (RandomSystems.DomainFilter X)
+      ((Interface.single X Y) ⟶ (Interface.single X Y)) where
+  coe restriction := asHom (restriction.toDDC (Y := Y))
+
+end RandomSystems.Ambient.DDC

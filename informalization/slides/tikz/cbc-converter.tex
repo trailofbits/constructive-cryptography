@@ -1,0 +1,79 @@
+\begin{tikzpicture}[x=1cm,y=1cm,>=latex]
+  \path[use as bounding box] (-7,-2.25) rectangle (7,2.25);
+
+  % Semantic spacing parameters.  All switch coordinates below are derived
+  % from named node anchors and projections rather than independent points.
+  \def\cbcSwitchHalfGap{2.5mm}
+
+  % CBC is the converter. The random function remains outside and attaches
+  % through the converter's inner query/reply interface.
+  \draw[dashed,line width=.55pt] (-4.85,1.05) rectangle (-.85,-1.22);
+  \node[anchor=south west] at (-4.85,1.13) {$\mathrm{CBC}[B]$};
+
+  \node[
+    circle,
+    draw,
+    line width=.6pt,
+    minimum size=1.02cm
+  ] (blockFormer) at (-3.55,.35) {$B$};
+  \node[
+    circle,
+    draw,
+    line width=.6pt,
+    minimum size=.72cm,
+    inner sep=0pt,
+    font=\huge
+  ] (xor) at (-2.05,.35) {$+$};
+  \node[
+    draw,
+    line width=.6pt,
+    minimum width=2.15cm,
+    minimum height=1.15cm
+  ] (randomFunction) at (.35,0) {$\mathrm{URF}[X]$};
+
+  % External message interface on the converter's left.  The tag is placed
+  % below after the output terminal has established its exact horizontal axis.
+  \node (message) at (-6.25,.35) {$m\in M$};
+  \draw[->,line width=.6pt] (message.east) -- (blockFormer.west);
+  \draw[->,line width=.6pt] (blockFormer.east) -- (xor.west);
+
+  % Inner query to the attached random function.
+  \coordinate (innerQueryPort) at (randomFunction.west |- xor.east);
+  \draw[->,line width=.6pt] (xor.east) -- (innerQueryPort);
+
+  % The selector is defined by projections from the resource and XOR anchors:
+  % the common terminal shares the reply port's horizontal axis, while both
+  % destinations share the XOR's vertical axis.
+  \path (randomFunction.west) -- (randomFunction.south west)
+    coordinate[midway] (lowerWestMidpoint);
+  \path (lowerWestMidpoint) -- (randomFunction.south west)
+    coordinate[midway] (innerReplyPort);
+  \coordinate (switchAxisAtReply) at
+    (xor.south |- innerReplyPort);
+  \node[
+    circle,draw=black,fill=black,inner sep=0pt,minimum size=3.2pt
+  ] (feedbackContact) at
+    ([yshift=\cbcSwitchHalfGap]switchAxisAtReply) {};
+  \node[
+    circle,draw=black,fill=black,inner sep=0pt,minimum size=3.2pt
+  ] (outputContact) at
+    ([yshift=-\cbcSwitchHalfGap]switchAxisAtReply) {};
+  \path (switchAxisAtReply) -- (innerReplyPort)
+    coordinate[midway] (switchSpanMidpoint);
+  \path (switchAxisAtReply) -- (switchSpanMidpoint)
+    coordinate[midway] (switchCommonCenter);
+  \node[
+    circle,draw=black,fill=black,inner sep=0pt,minimum size=3.2pt
+  ] (switchCommon) at
+    (switchCommonCenter) {};
+
+  % The reply terminates at the switch pivot.  The blade is shown in the
+  % feedback position; the output contact stays visibly open as the alternate
+  % throw.  Every visible wire remains a single straight segment.
+  \draw[->,line width=.6pt] (innerReplyPort) -- (switchCommon.east);
+  \draw[line width=.6pt] (switchCommon.west) -- (feedbackContact.east);
+  \draw[->,line width=.6pt] (feedbackContact.north) -- (xor.south);
+
+  \node (tag) at (message.center |- outputContact.center) {$t\in X$};
+  \draw[->,line width=.6pt] (outputContact.west) -- (tag.east);
+\end{tikzpicture}

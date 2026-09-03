@@ -1,0 +1,62 @@
+@import url("https://tikzjax.com/v1/fonts.css");
+
+/* Verso controls only whole-picture placement and scaling. All internal
+   geometry lives in the TikZ source and is portable to Beamer. */
+.reveal .tikz-cbc-stage {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 520px;
+  margin: 0.35em auto 0;
+}
+
+.reveal .tikz-cbc-frame {
+  grid-area: 1 / 1;
+  display: grid;
+  place-items: center;
+  /* The slide canvas is 1600 units wide. A fixed 1540-unit diagram may extend
+     beyond the prose column while remaining safely inside that canvas. Reveal
+     scales the whole slide for the actual viewport. */
+  width: 1540px;
+  max-width: none;
+  min-height: 500px;
+  position: relative;
+  left: -50px;
+}
+
+.reveal .tikz-cbc-frame.fragment.fade-in-then-out.visible:not(.current-fragment) {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* TikZJax inserts a page wrapper whose SVG is absolutely positioned. Let the
+   generated SVG participate in the frame's centering and intrinsic scaling. */
+.reveal .tikz-cbc-frame > div {
+  display: grid !important;
+  place-items: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100%;
+}
+
+.reveal .tikz-cbc-frame > div > .page {
+  display: contents;
+}
+
+.reveal .tikz-cbc-frame svg {
+  display: block;
+  position: static !important;
+  top: auto !important;
+  left: auto !important;
+  width: 100% !important;
+  max-width: 1540px;
+  height: auto !important;
+  max-height: 500px;
+  shape-rendering: geometricPrecision;
+  text-rendering: geometricPrecision;
+}
+
+.reveal .tikz-cbc-frame svg text {
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+}

@@ -16,9 +16,20 @@ query.”  `filterQueries` is that registered fallback.  The more general
 `filterDom` is its repository generalization to an arbitrary prefix-closed
 history predicate.
 
-The operation changes only the partial function domain; it introduces no DDC
-or attachment operation.
+The operation changes only the partial function domain; its interpretation as
+a DDC belongs to the optional converter extension.
 -/
+
+namespace RandomSystems
+
+universe u
+
+/-- A prefix-closed restriction on query histories. -/
+structure DomainFilter (X : Type u) where
+  predicate : List X → Prop
+  prefixClosed : PrefixClosed predicate
+
+end RandomSystems
 
 namespace RandomSystems.System
 
@@ -156,6 +167,11 @@ history predicate. -/
 noncomputable def filterDom (P : List X → Prop) (hP : PrefixClosed P)
     (system : PDS X Y) : PDS X Y :=
   Distribution.fTransform (System.filterDom P hP) system
+
+/-- A bundled domain filter acts on a probabilistic system by restriction. -/
+noncomputable instance : HSMul (DomainFilter X) (PDS X Y) (PDS X Y) where
+  hSMul restriction system :=
+    filterDom restriction.predicate restriction.prefixClosed system
 
 /-- Restrict every deterministic system in a PDS to at most `q` queries. -/
 noncomputable def filterQueries (q : ℕ) (system : PDS X Y) : PDS X Y :=

@@ -1,0 +1,49 @@
+set_option cryptoVerbose.applicationProfile "switching" in
+Theorem urf_urp_switching "URF–URP switching"
+  Given:
+    a finite nonempty alphabet X
+    Let q ∈ ℕ
+  Conclusion:
+    Adv⊥([q] URF(X), [q] URP(X)) ≤
+      ENNReal.ofReal
+        ((q : ℝ) * ((q : ℝ) - 1) / (2 * (Fintype.card X : ℝ)))
+  Proof:
+  classical
+  Let restrictedURF be the system [q] URF(X)
+
+  Let collisionMBO be the MBO given by
+    (Switching.collisionCondition (X := X)), which is set on a query history
+    exactly when two distinct queries in that history receive the same answer,
+    as shown by
+    (Switching.collisionCondition_functionEvaluator_mem_iff (X := X))
+
+  let collisionGame : PDG X X := (PDS.adjoin URF(X) collisionMBO).1
+  let restrictedCollisionGame := Switching.limitGame q collisionGame
+  Let restrictedURP be the system [q] URP(X)
+
+  Fact conditionalLaw: The game restrictedCollisionGame is conditionally
+    equivalent to restrictedURP by
+    (Switching.limit_urf_collision_condEquiv_limit_urp X q)
+
+  Fact forgettingIdentity: Ignoring the MBO of restrictedCollisionGame yields
+    restrictedURF by
+    (Switching.forget_limitGame_adjoin q (PDS.urf X X) collisionMBO)
+
+  calc
+    Adv⊥(restrictedURF, restrictedURP) =
+        Adv⊥(forget(restrictedCollisionGame), restrictedURP) := by
+      Replacing forget(restrictedCollisionGame) by restrictedURF using
+        forgettingIdentity yields Adv⊥(restrictedURF, restrictedURP)
+    _ ≤ νᴺᴬ[restrictedCollisionGame] := by
+      The conditional equivalence in conditionalLaw gives
+        Adv⊥(forget(restrictedCollisionGame), restrictedURP) ≤
+          νᴺᴬ[restrictedCollisionGame]
+    _ ≤ ENNReal.ofReal
+        ((q : ℝ) * ((q : ℝ) - 1) / (2 * (Fintype.card X : ℝ))) := by
+      The supremum of the winning probabilities achievable by non-adaptive
+        strategies against restrictedCollisionGame is at most
+          (ENNReal.ofReal
+            ((q : ℝ) * ((q : ℝ) - 1) /
+              (2 * (Fintype.card X : ℝ)))) by
+            (Switching.blindSupWinProb_limit_urf_collision_le X q)
+  QED

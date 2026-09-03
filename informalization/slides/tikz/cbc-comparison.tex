@@ -1,0 +1,36 @@
+\begin{tikzpicture}[x=1cm,y=1cm,>=latex]
+  % Transparent overlay on cbc-converter.tex.
+  \path[use as bounding box] (-7,-2.25) rectangle (7,2.25);
+
+  \node at (1.8,0) {$\approx$};
+  \node[
+    draw,
+    line width=.6pt,
+    minimum width=2.15cm,
+    minimum height=1.15cm
+  ] (idealFunction) at (5.65,0) {$V[M\mathpunct{\mbox{,}}X]$};
+
+  % Match the CBC-facing interface: labels first, then spacious horizontal
+  % upper-query and lower-reply arrows.
+  \node (idealMessage) at (2.65,.38) {$m\in M$};
+  \node (idealTag) at (2.65,-.38) {$t\in X$};
+  \draw[->,line width=.6pt] (idealMessage.east)
+    -- ([yshift=3.8mm]idealFunction.west);
+  \draw[->,line width=.6pt] ([yshift=-3.8mm]idealFunction.west)
+    -- (idealTag.east);
+
+  \node[anchor=north east] (idealFunctionBehavior) at
+    ([yshift=-5mm]idealFunction.south east)
+    {$\begin{aligned}
+      m_i\ \mathrm{fresh}
+        &\;\to\;
+        \Pr[T_i=t]
+        =\frac{1}{
+          \mathord{\rule{.45pt}{1.45ex}}X
+          \mathord{\rule{.45pt}{1.45ex}}}
+        \\[.45em]
+      m_i=m_j\ (j<i)
+        &\;\to\;
+        t_i=t_j
+    \end{aligned}$};
+\end{tikzpicture}

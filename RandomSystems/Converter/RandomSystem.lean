@@ -1843,6 +1843,11 @@ theorem afterTranscript_cons (query : A.query)
   rfl
 
 @[simp]
+theorem replyAfter_nil (query : A.query) :
+    replyAfter [] query = .query query (fun reply => .value (some reply)) :=
+  rfl
+
+@[simp]
 theorem replyAfter_cons (prefixQuery : A.query)
     (expected : Option (A.answer prefixQuery))
     (remaining : RandomSystem.Internal.Core.Transcript A) (query : A.query) :

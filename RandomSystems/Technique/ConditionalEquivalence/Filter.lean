@@ -123,6 +123,14 @@ lemma ConditionallyEquivalent.filterDom
       exact admitted notWon.1.2
     exact (gameNotWon massAfalseZero).elim
 
+/-- Applying one bundled domain restriction to a game and its target preserves
+conditional equivalence. -/
+lemma ConditionallyEquivalent.domain_filter
+    {game : PDG X Y} {target : PDS X Y}
+    (equivalent : game |≡ target) (restriction : DomainFilter X) :
+    restriction • game |≡ restriction • target :=
+  equivalent.filterDom restriction.predicate restriction.prefixClosed
+
 end ConditionalEquivalence
 
 end RandomSystems

@@ -3,6 +3,7 @@ Copyright (c) 2026 Trail of Bits. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Probability.Simp
+import RandomSystems.Converter.RandomSystemAction
 import RandomSystems.Game.Filter
 import RandomSystems.Tactics.ProofAutomationAttributes
 import RandomSystems.Technique.ConditionalEquivalence.Advantage
@@ -65,9 +66,12 @@ macro_rules
         set_option trace.Meta.Tactic.simp.rewrite true in
           rs_normalize $[at $location]?)
 
-/-- Close a structural Random Systems obligation using only assumptions,
-reflexivity, and the curated normalization and side-condition registries. -/
+/-- Close a structural Random Systems obligation without lowering converter
+attachment to its `PDS.apply` implementation. -/
 syntax (name := rsRoutine) "rs_routine" : tactic
+
+/-- Close a routine structural consequence of the supplied equality. -/
+syntax (name := rsRoutineUsing) "rs_routine" "using" term : tactic
 
 macro_rules
   | `(tactic| rs_routine) =>
@@ -76,9 +80,18 @@ macro_rules
           | (solve
               | assumption
               | rfl
-              | simp_all only [dist_simp, rs_normalization,
-                  rs_side_condition])
+              | simp_all only [dist_simp, rs_side_condition,
+                  ← RandomSystems.Ambient.DDC.comp_smul,
+                  CategoryTheory.Category.assoc])
           | fail "rs_routine could not close the goal with assumptions or the curated Random Systems registries")
+
+  | `(tactic| rs_routine using $fact) =>
+      `(tactic|
+        first
+          | exact $fact
+          | (simp only [RandomSystems.Ambient.DDC.hom_smul_randomFunction_eq]
+             rw [← RandomSystems.Ambient.DDC.comp_smul, ← $fact])
+          | fail "rs_routine could not derive the goal from the supplied fact using Random Systems action laws")
 
 /-- Apply the conditional-equivalence advantage bound with an explicit common
 domain, conditional-equivalence proof, and blind winning bound.  Only the

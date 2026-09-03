@@ -1,0 +1,32 @@
+\begin{tikzpicture}[x=1cm,y=1cm,>=latex]
+  % Shared canvas and resource coordinate across all three fragments.
+  \path[use as bounding box] (-7,-2.25) rectangle (7,2.25);
+
+  \node[
+    draw,
+    line width=.6pt,
+    minimum width=2.15cm,
+    minimum height=1.15cm
+  ] (randomFunction) at (.2,0) {$\mathrm{URF}[X]$};
+
+  \node (query) at (-2.8,.38) {$x\in X$};
+  \node (reply) at (-2.8,-.38) {$y\in X$};
+  \draw[->,line width=.6pt] (query.east)
+    -- ([yshift=3.8mm]randomFunction.west);
+  \draw[->,line width=.6pt] ([yshift=-3.8mm]randomFunction.west)
+    -- (reply.east);
+
+  \node[anchor=north] (randomFunctionBehavior) at (.2,-1.05)
+    {$\begin{aligned}
+      x_i\ \mathrm{fresh}
+        &\;\to\;
+        \Pr[Y_i=y]
+        =\frac{1}{
+          \mathord{\rule{.45pt}{1.45ex}}X
+          \mathord{\rule{.45pt}{1.45ex}}}
+        \\[.45em]
+      x_i=x_j\ (j<i)
+        &\;\to\;
+        y_i=y_j
+    \end{aligned}$};
+\end{tikzpicture}
