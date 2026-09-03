@@ -5,6 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import RandomSystems.Converter.Filter
 import RandomSystems.Converter.BoundedInnerQueries
 import RandomSystems.Converter.RandomSystemAction
+import RandomSystems.Technique.Coupling
 import RandomSystems.Converter.CommonDomain
 
 /-!

@@ -7,6 +7,7 @@ import Probability.Expectation
 import Probability.Lift
 import Probability.Conditional
 import Probability.Coupling
+import Probability.SignedCoupling
 import Probability.MultiCoupling
 import Probability.FiberCoupling
 import Probability.StatisticalDistance
