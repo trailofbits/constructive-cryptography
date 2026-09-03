@@ -311,7 +311,7 @@ One can work out that this is at most the value shown.
 Gluing everything together gives the intended result.
 :::
 
-# Correctness  vs Presentation
+# Correctness vs Presentation
 
 :::::class "draft-tension"
 :::table +colHeaders
@@ -323,7 +323,7 @@ Gluing everything together gives the intended result.
   * Formalization in a proof assistant
 *
   * Can be slightly incorrect, usually readable
-  * Machine checked, mostly unreadable
+  * Machine-checked, mostly unreadable
 :::
 :::::
 
@@ -363,7 +363,7 @@ You can hover over an element to see its definition, inspect the current goal, e
 
 - Adaptation of the Lean informalization[^1] by Patrick Massot and Kyle Miller.
 - Own formalization of Random Systems[^2] in Lean.
-- LLM driven implementation, variable level of manual scrutiny.
+- LLM-driven implementation, variable level of manual scrutiny.
 
 :::::fragment fadeUp
 :::draftPipeline
