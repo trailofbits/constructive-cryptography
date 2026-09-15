@@ -410,9 +410,9 @@ Besides AI, there are various consumers of cryptographic literature: some advanc
 # Informal or Fully Correct? Why not both.
 
 :::::class "draft-links"
-- Random Systems in Lean: [github.com/trailofbits/constructive-cryptography/RandomSystems](https://github.com/trailofbits/constructive-cryptography/tree/categorical/RandomSystems)
+- Random Systems in Lean: [github.com/trailofbits/constructive-cryptography/RandomSystems](https://github.com/trailofbits/constructive-cryptography/tree/swiss-cryptoday-2026/RandomSystems)
 - CBC-MAC proof: [github.com/trailofbits/cbc-mac-cc](https://github.com/trailofbits/cbc-mac-cc)
-- CBC-MAC informalization: [github.com/trailofbits/constructive-cryptography/informalization](https://github.com/trailofbits/constructive-cryptography/tree/categorical/informalization)
+- CBC-MAC informalization: [github.com/trailofbits/constructive-cryptography/informalization](https://github.com/trailofbits/constructive-cryptography/tree/swiss-cryptoday-2026/informalization)
 - Informal Lean (Massot & Miller): [kmill.github.io/informalization/ContinuousFrom.html](https://kmill.github.io/informalization/ContinuousFrom.html)
 - Get in touch: [marc.ilunga@trailofbits.com](mailto:marc.ilunga@trailofbits.com)
 :::::
