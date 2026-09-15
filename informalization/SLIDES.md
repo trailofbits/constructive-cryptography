@@ -34,8 +34,10 @@ with hand-authored slide content when the source proof is incomplete.
 ## Publish on GitHub Pages
 
 The `Publish talk to GitHub Pages` workflow builds the checked CBC
-informalization and the Verso deck, then publishes only
-`informalization/slides/_draft_talk/`. Generated files stay out of Git.
+informalization and the Verso deck, then publishes the contents of
+`informalization/slides/_draft_talk/` under `cbc-mac-informalization/`.
+Generated files stay out of Git. The repository's Pages root redirects to
+the talk and preserves the query string and slide fragment in existing links.
 
 Pushes to `swiss-cryptoday-2026` publish automatically. Pushes to `main` or
 any other branch do not publish. For a manual deployment, open the repository's
@@ -62,7 +64,7 @@ talk branch. Pages must use **GitHub Actions** as its publishing source.
 The `github-pages` environment must allow the manual workflow to deploy.
 
 The published URL is
-<https://trailofbits.github.io/constructive-cryptography/>.
+<https://trailofbits.github.io/constructive-cryptography/cbc-mac-informalization/>.
 After publishing, check a cold load, CBC fragments, proof expansion and
 definition popups, then navigate away from the proof and back again.
 

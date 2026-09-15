@@ -74,10 +74,32 @@ jobs:
           test -s informalization/slides/_draft_talk/index.html
           git diff --exit-code -- '**/lake-manifest.json' '**/lean-toolchain'
 
+      - name: Stage the talk at its public subpath
+        run: |
+          node <<'NODE'
+          const { cpSync, mkdirSync, writeFileSync } = require('node:fs');
+          const { join } = require('node:path');
+          const site = join(process.env.RUNNER_TEMP, 'talk-pages');
+          mkdirSync(site, { recursive: true });
+          cpSync('informalization/slides/_draft_talk',
+            join(site, 'cbc-mac-informalization'), { recursive: true });
+          // Preserve existing links, including their slide fragment and query.
+          writeFileSync(join(site, 'index.html'), [
+            '<!doctype html>',
+            '<html lang="en"><head><meta charset="utf-8">',
+            '<title>CBC-MAC informalization</title>',
+            '<script>location.replace("./cbc-mac-informalization/" + location.search + location.hash);</script>',
+            '<noscript><meta http-equiv="refresh" content="0;url=./cbc-mac-informalization/"></noscript>',
+            '</head><body>',
+            '<a href="./cbc-mac-informalization/">Open the CBC-MAC informalization talk</a>',
+            '</body></html>'
+          ].join('\n'));
+          NODE
+
       - name: Upload only the generated website
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
         with:
-          path: informalization/slides/_draft_talk
+          path: ${{ runner.temp }}/talk-pages
 
   deploy:
     needs: build
@@ -88,7 +110,7 @@ jobs:
       id-token: write
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url }}cbc-mac-informalization/
     steps:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
