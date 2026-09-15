@@ -31,6 +31,44 @@ the deck:
 The complete build is fail-closed: it does not replace checked proof evidence
 with hand-authored slide content when the source proof is incomplete.
 
+## Publish on GitHub Pages
+
+The `Publish talk to GitHub Pages` workflow builds the checked CBC
+informalization and the Verso deck, then publishes only
+`informalization/slides/_draft_talk/`. Generated files stay out of Git.
+
+Pushes to `codex/informalization` publish automatically. Pushes to `main` or
+any other branch do not publish. For a manual deployment, open the repository's
+**Actions → Publish talk to GitHub Pages → Run workflow**, leave the workflow
+branch on `main`, and enter the source branch in **Branch to publish**.
+That branch must contain the complete informalization and slide sources.
+
+The equivalent command is:
+
+```sh
+gh workflow run talk-pages.yml \
+  --repo trailofbits/constructive-cryptography \
+  --ref main -f branch=codex/informalization
+```
+
+Replace the final branch value to deploy another branch. Manual deployments
+replace the same live site; they do not create separate branch previews.
+The next successful automatic talk deployment replaces that manual version.
+A failed build leaves the published site unchanged.
+
+The workflow must also exist on `main` so GitHub exposes the manual-run
+button. Only the workflow belongs there; the talk sources can remain on the
+talk branch. Pages must use **GitHub Actions** as its publishing source.
+The `github-pages` environment must allow the manual workflow to deploy.
+
+The published URL is
+<https://trailofbits.github.io/constructive-cryptography/>.
+After publishing, check a cold load, CBC fragments, proof expansion and
+definition popups, then navigate away from the proof and back again.
+
+The current TikZ figures require access to `tikzjax.com` at page load.
+All generated proof-reader content is embedded in the deck.
+
 ## Which files to edit
 
 | Purpose | File or directory |
