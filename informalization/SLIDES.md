@@ -37,7 +37,7 @@ The `Publish talk to GitHub Pages` workflow builds the checked CBC
 informalization and the Verso deck, then publishes only
 `informalization/slides/_draft_talk/`. Generated files stay out of Git.
 
-Pushes to `codex/informalization` publish automatically. Pushes to `main` or
+Pushes to `swiss-cryptoday-2026` publish automatically. Pushes to `main` or
 any other branch do not publish. For a manual deployment, open the repository's
 **Actions → Publish talk to GitHub Pages → Run workflow**, leave the workflow
 branch on `main`, and enter the source branch in **Branch to publish**.
@@ -48,7 +48,7 @@ The equivalent command is:
 ```sh
 gh workflow run talk-pages.yml \
   --repo trailofbits/constructive-cryptography \
-  --ref main -f branch=codex/informalization
+  --ref main -f branch=swiss-cryptoday-2026
 ```
 
 Replace the final branch value to deploy another branch. Manual deployments

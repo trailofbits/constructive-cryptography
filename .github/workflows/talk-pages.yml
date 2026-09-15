@@ -4,13 +4,13 @@ run-name: Publish talk (${{ inputs.branch || github.ref_name }})
 
 on:
   push:
-    branches: [codex/informalization]
+    branches: [swiss-cryptoday-2026]
   workflow_dispatch:
     inputs:
       branch:
         description: Branch to publish (replaces the live talk)
         required: true
-        default: codex/informalization
+        default: swiss-cryptoday-2026
         type: string
 
 permissions:
@@ -26,7 +26,7 @@ jobs:
   build:
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/codex/informalization')
+      (github.event_name == 'push' && github.ref == 'refs/heads/swiss-cryptoday-2026')
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
