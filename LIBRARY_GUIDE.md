@@ -107,13 +107,9 @@ transcript factorization and its endpoint).
 **`Notation`, `PartialFunction`** — goal-state display for the landed notations,
 and the two `PFun` facts the converter layer rests on.
 
-Ten modules are empty placeholders: `Interface/Alphabet`, `Game/Game`,
-`Game/Winnability`, `Game/MonotoneCondition`, `System/Advantage`,
-`System/Coupling`, `System/Distinguisher`, `System/Transcript`,
-`Technique/DataProcessing`, `Technique/Switching`. The content their names
-suggest lives elsewhere — games in `System/Game.lean` and
+Where to look for what a name suggests: games are in `System/Game.lean` and
 `System/Winnability.lean`, the advantage in `System/Environment.lean`, couplings
-in `Probability/`, data processing in `Probability/StatisticalDistance.lean`.
+in `Probability/`, and data processing in `Probability/StatisticalDistance.lean`.
 
 ### `AbstractCryptography/`
 
