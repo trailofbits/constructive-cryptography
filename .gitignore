@@ -1,0 +1,10 @@
+/.lake/
+tmp/
+.DS_Store
+*.olean
+*.ilean
+*.trace
+*.hash
+__pycache__/
+Scratch/
+.codex/
