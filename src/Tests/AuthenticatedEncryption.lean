@@ -37,7 +37,7 @@ theorem oneTimePad_usage (q : AE.Port → ℕ) :
 
 /-- The implication applies to the one-time pad for any admitted distinguishers. -/
 example (q : AE.Port → ℕ) [AdmissibleDistinguishers]
-    (εptxt εcca : (AE.perPort Bool Bool q).inputDomain.Distinguisher → ENNReal)
+    (εptxt εcca : (AE.perPort Bool Bool q).inputDomain.DistinguisherBehavior → ENNReal)
     (ptxt : AE.INTPTXT oneTimePad εptxt) (cca : AE.INDCCA oneTimePad εcca) :
     ∃ error, AE.Secure oneTimePad (q := q) error :=
   ⟨_, ae_of_ind_cca_int_ptxt oneTimePad q εptxt εcca ptxt cca⟩

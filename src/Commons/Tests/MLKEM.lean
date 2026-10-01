@@ -53,7 +53,8 @@ def parseCT (p : Params) (bytes : ByteArray) : KPKE.Ciphertext p (concreteEncodi
 example [Interface.AdmissibleDistinguishers]
     {q : Commons.Encapsulation.Port → ℕ}
     (error : (Commons.Encapsulation.perPort (EncapsulationKey mlkem768 mlkem768Encoding)
-      (Ciphertext mlkem768 mlkem768Encoding) SharedSecret q).inputDomain.Distinguisher → ENNReal) :
+      (Ciphertext mlkem768 mlkem768Encoding) SharedSecret q).inputDomain.DistinguisherBehavior →
+        ENNReal) :
     Prop :=
   Commons.KEM.INDCCA (toKEM concreteNTTRingOps mlkem768Encoding mlkem768Primitives) error
 

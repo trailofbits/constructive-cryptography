@@ -41,7 +41,7 @@ def PRG.Secure.systems (G : S → R) (q : ℕ) :
 /-- **PRG security** within `error`: against the admitted distinguishers, `G` on a uniform seed
 substitutes for a uniform element of `R`. -/
 def PRG.Secure [Interface.AdmissibleDistinguishers] (G : S → R)
-    {q : ℕ} (error : (Evaluation Unit R q).inputDomain.Distinguisher → ENNReal) : Prop :=
+    {q : ℕ} (error : (Evaluation Unit R q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
   (PRG.Secure.systems G q).1 ≃[error] (PRG.Secure.systems G q).2
 
 end

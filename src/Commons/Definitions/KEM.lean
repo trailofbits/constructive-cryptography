@@ -115,7 +115,7 @@ for the one with uniform keys. -/
 def KEM.INDCCA [Interface.AdmissibleDistinguishers]
     [DecidableEq PK] [DecidableEq C] [Nonempty K] (kem : KEM PK SK C K)
     {q : Encapsulation.Port → ℕ}
-    (error : (Encapsulation.perPort PK C K q).inputDomain.Distinguisher → ENNReal) : Prop :=
+    (error : (Encapsulation.perPort PK C K q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
   (KEM.INDCCA.systems kem q).1 ≃[error] (KEM.INDCCA.systems kem q).2
 
 /-- **The systems of IND-CPA**: those of IND-CCA without decapsulation queries, at the budget `q`
@@ -131,8 +131,9 @@ decapsulation queries substitutes for the one with uniform keys. -/
 def KEM.INDCPA [Interface.AdmissibleDistinguishers]
     [DecidableEq PK] [DecidableEq C] [Nonempty K] (kem : KEM PK SK C K)
     {q : Encapsulation.Port → ℕ}
-    (error : (Encapsulation.perPort PK C K (Function.update q .decaps 0)).inputDomain.Distinguisher →
-      ENNReal) : Prop :=
+    (error :
+      (Encapsulation.perPort PK C K (Function.update q .decaps 0)).inputDomain.DistinguisherBehavior →
+        ENNReal) : Prop :=
   (KEM.INDCPA.systems kem q).1 ≃[error] (KEM.INDCPA.systems kem q).2
 
 end

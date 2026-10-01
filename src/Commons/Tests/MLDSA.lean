@@ -58,8 +58,8 @@ def zero : String := "0000000000000000000000000000000000000000000000000000000000
 example [Interface.AdmissibleDistinguishers] (L : ℕ)
     {q : Commons.Signing.Port → ℕ}
     (error : (Commons.Signing.perPort (PublicKey mldsa65 (concretePrimitives mldsa65)) (Message L)
-      (Option (FIPSSignature mldsa65 (concretePrimitives mldsa65))) q).inputDomain.Distinguisher →
-        ENNReal) :
+      (Option (FIPSSignature mldsa65 (concretePrimitives mldsa65))) q).inputDomain.DistinguisherBehavior
+        → ENNReal) :
     Prop :=
   Commons.SignatureScheme.EUFCMA
       (toSignatureScheme mldsa65 (concretePrimitives mldsa65) attempts L) error ∧
