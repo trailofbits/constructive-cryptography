@@ -32,6 +32,7 @@ import RandomSystems.Distance.Absorption
 import RandomSystems.Distance.Decision
 import RandomSystems.Distance.Distinguisher
 import RandomSystems.Distance.ParallelObservation
+import RandomSystems.Distance.Restriction
 import RandomSystems.Distance.Transcript
 import RandomSystems.Game.FunctionGame
 import RandomSystems.Game.Game

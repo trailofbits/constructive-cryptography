@@ -124,6 +124,13 @@ $\Pr[(P \circ \alpha)(R) = 1] = \Pr[P(\alpha R) = 1]$; on deterministic distingu
 [gives a distinguisher][Domain.Distinguisher.exists_absorbAll], and so does absorbing
 [a system run beside][Domain.Distinguisher.exists_absorbRight].
 
+**Restriction**: the [restriction][RandomSystem.restrict] $R \restriction D'$ of a random system on $D$
+to a smaller domain $D' \subseteq D$ keeps the masses of the transcripts $D'$ admits and is zero
+elsewhere. Restrictions [compose][RandomSystem.restrict_restrict], and an environment compatible
+with $D'$ [sees the transcript law of the system itself][RandomSystem.sLaw_restrict], so restriction
+[does not increase the distance][RandomSystem.transcriptDistance_restrict_le],
+$\Delta(R \restriction D', S \restriction D') \le \Delta(R, S)$.
+
 ### 1.5 Games
 
 A [**game**][PDG] is a distribution over [deterministic games][DDG], pairs of a DDS and a
@@ -177,7 +184,10 @@ are the independent parallel compositions.
 ### 2.2 Concrete resources and converters
 
 The [**filter**][Interface.filter] admitting $D$ forwards the queries of admitted histories; it is
-a converter $(A \restriction D) \to A$ from the [restricted interface][Interface.restrict]. A
+a converter $(A \restriction D) \to A$ from the [restricted interface][Interface.restrict].
+[Attached to a resource][Interface.filter_smul], it is the [restriction][RandomSystem.restrict] of the
+resource's random system to the restricted domain, and
+[two filters in series][Interface.filter_comp_filter_smul] act as the filter of both conditions. A
 [**constant**][Interface.constant] converter ignores its inside resource and exposes a fixed one,
 and the fixed [right][Interface.rightContext] and [left][Interface.leftContext] **contexts** run a
 resource beside: [attaching][Interface.attach_rightContext] $\mathrm{rightContext}\ A\ S$ to $R$
@@ -722,6 +732,10 @@ agreeing with a map on a finite set $S$: there are $\lvert Y \rvert^{\lvert X \r
 [Domain.Distinguisher.exists_absorbAll]: src/RandomSystems/Distance/Distinguisher.lean#L189
 [Domain.Distinguisher.exists_absorbRight]: src/RandomSystems/Distance/Distinguisher.lean#L245
 [absorbAll]: src/RandomSystems/Distance/Absorption.lean#L42
+[RandomSystem.restrict]: src/RandomSystems/Distance/Restriction.lean#L59
+[RandomSystem.restrict_restrict]: src/RandomSystems/Distance/Restriction.lean#L67
+[RandomSystem.sLaw_restrict]: src/RandomSystems/Distance/Restriction.lean#L98
+[RandomSystem.transcriptDistance_restrict_le]: src/RandomSystems/Distance/Restriction.lean#L129
 [MC]: src/RandomSystems/Game/Game.lean#L41
 [DDG]: src/RandomSystems/Game/Game.lean#L45
 [DDG.Wins]: src/RandomSystems/Game/Game.lean#L57
@@ -750,8 +764,10 @@ agreeing with a map on a finite set $S$: there are $\lvert Y \rvert^{\lvert X \r
 [Interface.tensor]: src/ConstructiveCryptography/InterfaceParallel.lean#L85
 [Interface.parallel]: src/ConstructiveCryptography/InterfaceParallel.lean#L147
 [Interface.parallelConverter]: src/ConstructiveCryptography/InterfaceParallel.lean#L202
-[Interface.restrict]: src/ConstructiveCryptography/InterfaceFilter.lean#L20
-[Interface.filter]: src/ConstructiveCryptography/InterfaceFilter.lean#L33
+[Interface.restrict]: src/ConstructiveCryptography/InterfaceFilter.lean#L30
+[Interface.filter]: src/ConstructiveCryptography/InterfaceFilter.lean#L43
+[Interface.filter_smul]: src/ConstructiveCryptography/InterfaceFilter.lean#L54
+[Interface.filter_comp_filter_smul]: src/ConstructiveCryptography/InterfaceFilter.lean#L88
 [Interface.constant]: src/ConstructiveCryptography/Context.lean#L78
 [Interface.rightContext]: src/ConstructiveCryptography/Context.lean#L102
 [Interface.leftContext]: src/ConstructiveCryptography/Context.lean#L107

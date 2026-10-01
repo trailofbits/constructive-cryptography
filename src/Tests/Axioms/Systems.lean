@@ -147,6 +147,12 @@ parallel composition, distance and games, and the counterexamples, depend only o
 #print axioms SystemAlgebra.Domain.DecisionCompatible.absorbRight
 #print axioms SystemAlgebra.RandomSystem.decisionProbability_parallel
 
+-- RandomSystems.Distance.Restriction
+#print axioms SystemAlgebra.admitted_ofInputs_iff
+#print axioms SystemAlgebra.RandomSystem.restrict_restrict
+#print axioms SystemAlgebra.RandomSystem.sLaw_restrict
+#print axioms SystemAlgebra.RandomSystem.transcriptDistance_restrict_le
+
 -- RandomSystems.Distance.Transcript
 #print axioms SystemAlgebra.IsDDD.relabel
 #print axioms SystemAlgebra.eRun_fst

@@ -67,6 +67,8 @@ classes, and the abstract results of those classes depend only on `propext`,
 -- ConstructiveCryptography.InterfaceFilter
 #print axioms SystemAlgebra.Interface.filter
 #print axioms SystemAlgebra.Interface.restrict
+#print axioms SystemAlgebra.Interface.filter_smul
+#print axioms SystemAlgebra.Interface.filter_comp_filter_smul
 
 -- ConstructiveCryptography.InterfaceMonoidal
 #print axioms SystemAlgebra.Interface.monoidal
