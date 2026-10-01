@@ -137,7 +137,9 @@ parallel composition, distance and games, and the counterexamples, depend only o
 #print axioms SystemAlgebra.RandomSystem.transcriptDistance_eq_iSup
 #print axioms SystemAlgebra.Domain.Distinguisher.advantage_triangle
 #print axioms SystemAlgebra.Domain.Distinguisher.advantage_le_transcriptDistance
-#print axioms SystemAlgebra.Domain.Distinguisher.probability_absorb
+#print axioms SystemAlgebra.RandomSystem.transcriptDistance_eq_iSup_behavior
+#print axioms SystemAlgebra.Domain.DistinguisherBehavior.absorb
+#print axioms SystemAlgebra.Domain.DistinguisherBehavior.absorb_comp
 #print axioms SystemAlgebra.Domain.DecisionCompatible.absorbAll
 #print axioms SystemAlgebra.RandomSystem.decisionProbability_attach
 #print axioms SystemAlgebra.Domain.Distinguisher.exists_absorbAll

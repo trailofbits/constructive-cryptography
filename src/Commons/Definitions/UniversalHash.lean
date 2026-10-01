@@ -75,7 +75,7 @@ def UniversalHash.UHF.systems [DecidableEq M] [DecidableEq T] (H : K → M → T
 substitute for the equalities of messages. -/
 def UniversalHash.UHF [Interface.AdmissibleDistinguishers]
     [DecidableEq M] [DecidableEq T] (H : K → M → T) {q : ℕ}
-    (error : (Collision M q).inputDomain.Distinguisher → ENNReal) : Prop :=
+    (error : (Collision M q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
   (UniversalHash.UHF.systems H q).1 ≃[error] (UniversalHash.UHF.systems H q).2
 
 /-- **The systems of a DUF**: the digest differences of `H(k, ·)` for `k ← K`, and the trivial
@@ -89,7 +89,7 @@ def UniversalHash.DUF.systems [DecidableEq M] [Fintype T] [DecidableEq T] [AddCo
 `H(k, ·)` substitute for the trivial differences. -/
 def UniversalHash.DUF [Interface.AdmissibleDistinguishers]
     [DecidableEq M] [Fintype T] [DecidableEq T] [AddCommGroup T] (H : K → M → T) {q : ℕ}
-    (error : (Difference M T q).inputDomain.Distinguisher → ENNReal) : Prop :=
+    (error : (Difference M T q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
   (UniversalHash.DUF.systems H q).1 ≃[error] (UniversalHash.DUF.systems H q).2
 
 end

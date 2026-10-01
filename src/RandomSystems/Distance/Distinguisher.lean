@@ -12,12 +12,20 @@ transcript distance. Absorbing a PDC from `E` to `F` into a distinguisher compat
 `F` gives a distinguisher compatible with `E`; so does absorbing a resource with domain `F`
 run beside a distinguisher compatible with the parallel domain of `E` and `F`.
 
+The behavior of a probabilistic distinguisher is its probability of outputting `1` on each
+random system, as the behavior of a PDC is its random system. Absorbing a PDC into a behavior
+decides on a random system as the behavior decides on the PDC attached to it, so absorbing a
+serial composition is absorbing its PDCs in turn.
+
 ## Main definitions
 
 * `Domain.Distinguisher 𝒟`: probabilistic distinguishers compatible with `𝒟`
 * `Domain.Distinguisher.probability`: the probability of outputting `1`
 * `Domain.Distinguisher.advantage`: the difference of these probabilities on two systems
-* `Domain.Distinguisher.absorb`: the distinguisher with a PDC absorbed
+* `Domain.DistinguisherBehavior 𝒟`: the behaviors of probabilistic distinguishers compatible
+  with `𝒟`, and `Domain.Distinguisher.behavior`
+* `Domain.DistinguisherBehavior.advantage`: the difference of their probabilities on two systems
+* `Domain.DistinguisherBehavior.absorb`: the distinguisher with a PDC absorbed
 
 ## Main results
 
@@ -30,6 +38,9 @@ run beside a distinguisher compatible with the parallel domain of `E` and `F`.
   the transcript distance is the largest advantage of a probabilistic distinguisher
 * `Domain.Distinguisher.exists_absorbAll`, `Domain.Distinguisher.exists_absorbRight`:
   absorbing a PDC, or a resource run beside, gives a probabilistic distinguisher
+* `RandomSystem.transcriptDistance_eq_iSup_behavior`: the same for distinguisher behaviors
+* `Domain.DistinguisherBehavior.absorb_comp`: absorbing a serial composition absorbs its PDCs
+  in turn
 -/
 
 namespace SystemAlgebra
@@ -175,6 +186,57 @@ theorem Domain.Distinguisher.advantage_le_transcriptDistance {𝒟 : Domain (Σ 
   rw [RandomSystem.transcriptDistance_eq_iSup hR hS]
   exact le_iSup (fun P : 𝒟.Distinguisher => P.advantage R S) P
 
+/-- **The behavior of a probabilistic distinguisher** compatible with `𝒟`: its probability of
+outputting `1` on each random system over `𝒟` replying at the queried interface, for some
+probabilistic distinguisher. Probabilistic distinguishers with the same probabilities have the
+same behavior. -/
+abbrev Domain.DistinguisherBehavior (𝒟 : Domain (Σ i, X i) (Σ i, Y i)) :=
+  {d : {R : RandomSystem (Σ i, X i) (Σ i, Y i) 𝒟 // R.RepliesAtQueriedInterface} → ℝ //
+    ∃ P : 𝒟.Distinguisher, ∀ R, d R = P.probability R.1}
+
+/-- The behavior of a probabilistic distinguisher. -/
+noncomputable def Domain.Distinguisher.behavior {𝒟 : Domain (Σ i, X i) (Σ i, Y i)}
+    (P : 𝒟.Distinguisher) : 𝒟.DistinguisherBehavior :=
+  ⟨fun R => P.probability R.1, P, fun _ => rfl⟩
+
+/-- The advantage of a distinguisher behavior between two random systems: the difference of its
+probabilities of outputting `1`. -/
+noncomputable def Domain.DistinguisherBehavior.advantage {𝒟 : Domain (Σ i, X i) (Σ i, Y i)}
+    (d : 𝒟.DistinguisherBehavior)
+    (R S : {R : RandomSystem (Σ i, X i) (Σ i, Y i) 𝒟 // R.RepliesAtQueriedInterface}) : ENNReal :=
+  ENNReal.ofReal |d.1 R - d.1 S|
+
+namespace Domain.DistinguisherBehavior
+
+variable {𝒟 : Domain (Σ i, X i) (Σ i, Y i)} (d : 𝒟.DistinguisherBehavior)
+  (R S T : {R : RandomSystem (Σ i, X i) (Σ i, Y i) 𝒟 // R.RepliesAtQueriedInterface})
+
+@[simp] theorem advantage_self : d.advantage R R = 0 := by simp [advantage]
+
+theorem advantage_symm : d.advantage R S = d.advantage S R := by
+  rw [advantage, advantage, abs_sub_comm]
+
+theorem advantage_triangle : d.advantage R T ≤ d.advantage R S + d.advantage S T := by
+  rw [advantage, advantage, advantage, ← ENNReal.ofReal_add (abs_nonneg _) (abs_nonneg _)]
+  exact ENNReal.ofReal_le_ofReal (abs_sub_le _ _ _)
+
+/-- The advantage of a distinguisher behavior is at most the transcript distance. -/
+theorem advantage_le_transcriptDistance : d.advantage R S ≤ R.1.transcriptDistance S.1 := by
+  obtain ⟨P, hP⟩ := d.2
+  rw [advantage, hP, hP]
+  exact P.advantage_le_transcriptDistance R.2 S.2
+
+end Domain.DistinguisherBehavior
+
+/-- **The transcript distance is the largest advantage of a distinguisher behavior.** -/
+theorem RandomSystem.transcriptDistance_eq_iSup_behavior {𝒟 : Domain (Σ i, X i) (Σ i, Y i)}
+    (R S : {R : RandomSystem (Σ i, X i) (Σ i, Y i) 𝒟 // R.RepliesAtQueriedInterface}) :
+    R.1.transcriptDistance S.1 = ⨆ d : 𝒟.DistinguisherBehavior, d.advantage R S := by
+  apply le_antisymm
+  · rw [RandomSystem.transcriptDistance_eq_iSup R.2 S.2]
+    exact iSup_le fun P => le_iSup_of_le P.behavior le_rfl
+  · exact iSup_le fun d => d.advantage_le_transcriptDistance R S
+
 end Distinguisher
 
 section Closure
@@ -210,25 +272,34 @@ theorem Domain.Distinguisher.exists_absorbAll
   rw [RandomSystem.decisionProbability_attach hE' hF' D.1 D.2.1 α Pα hPα R hR]
   rfl
 
-/-- **The distinguisher `P ∘ α`**: `P` with the PDC `α` absorbed. -/
-noncomputable def Domain.Distinguisher.absorb
+/-- **The distinguisher `d ∘ α`**: `d` with the PDC `α` absorbed, deciding on a random system as
+`d` decides on `α` attached to it. -/
+noncomputable def Domain.DistinguisherBehavior.absorb
     (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
     (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
     (α : PDCBehavior O J U V X Y E m hE F n hF)
-    (P : (Domain.ofInputs F n hF : Domain (Σ o, U o) (Σ o, V o)).Distinguisher) :
-    (Domain.ofInputs E m hE : Domain (Σ j, X j) (Σ j, Y j)).Distinguisher :=
-  (Domain.Distinguisher.exists_absorbAll hE' hF' α P).choose
+    (d : (Domain.ofInputs F n hF : Domain (Σ o, U o) (Σ o, V o)).DistinguisherBehavior) :
+    (Domain.ofInputs E m hE : Domain (Σ j, X j) (Σ j, Y j)).DistinguisherBehavior :=
+  ⟨fun R => d.1 ⟨PDCBehavior.attach hE' hF' α R.1 R.2,
+      PDCBehavior.attach_repliesAtQueriedInterface hE' hF' α R.1 R.2⟩, by
+    obtain ⟨P, hP⟩ := d.2
+    obtain ⟨Q, hQ⟩ := Domain.Distinguisher.exists_absorbAll hE' hF' α P
+    exact ⟨Q, fun R => (hP _).trans (hQ R.1 R.2).symm⟩⟩
 
-/-- `P ∘ α` decides `1` on `R` with the probability that `P` decides `1` on `α` attached to `R`. -/
-theorem Domain.Distinguisher.probability_absorb
+/-- **Absorbing a serial composition** absorbs its PDCs in turn: `d ∘ (β ∘ α) = (d ∘ β) ∘ α`. -/
+theorem Domain.DistinguisherBehavior.absorb_comp {M : Type} [Fintype M] {Xm Ym : M → Type}
+    [∀ k, Fintype (Xm k)] [∀ k, Fintype (Ym k)] {F'' : List (Σ k, Xm k) → Prop} {n'' : ℕ}
+    {hF'' : ∀ h, F'' h → h.length ≤ n''}
     (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
     (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
-    (α : PDCBehavior O J U V X Y E m hE F n hF)
-    (P : (Domain.ofInputs F n hF : Domain (Σ o, U o) (Σ o, V o)).Distinguisher)
-    (R : RandomSystem (Σ j, X j) (Σ j, Y j) (Domain.ofInputs E m hE))
-    (hR : R.RepliesAtQueriedInterface) :
-    (P.absorb hE' hF' α).probability R = P.probability (PDCBehavior.attach hE' hF' α R hR) :=
-  (Domain.Distinguisher.exists_absorbAll hE' hF' α P).choose_spec R hR
+    (hF''' : ¬ F'' [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F'' h → F'' p)
+    (β : PDCBehavior O M U V Xm Ym F'' n'' hF'' F n hF)
+    (α : PDCBehavior M J Xm Ym X Y E m hE F'' n'' hF'')
+    (d : (Domain.ofInputs F n hF : Domain (Σ o, U o) (Σ o, V o)).DistinguisherBehavior) :
+    d.absorb hE' hF' (PDCBehavior.comp β α) = (d.absorb hF''' hF' β).absorb hE' hF''' α := by
+  apply Subtype.ext
+  funext R
+  exact congrArg d.1 (Subtype.ext (PDCBehavior.attach_comp hE' hF' hF''' β α R.1 R.2))
 
 end Closure
 

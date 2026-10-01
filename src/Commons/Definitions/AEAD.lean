@@ -22,7 +22,7 @@ Planned: nonces and associated data.
 * `AE M C`: the encryption and decryption interface
 * `AE.Real scheme`: `⟦E_k, D_k⟧` for `k ← Gen`
 * `AE.CCA`, `AE.PTXT`, `AE.CTXT`, `AE.Ideal`: the transformations `ρ^cca`, `ρ^ptxt`, `ρ^ctxt`
-  and `ρ^ae`
+  and `ρ^ae`, written so with `open Commons`
 * `AE.INDCCA.systems`, `AE.INTPTXT.systems`, `AE.INTCTXT.systems`, `AE.Secure.systems`: the
   systems of ind-cca, int-ptxt, int-ctxt and ae
 * `AE.INDCCA`, `AE.INTPTXT`, `AE.INTCTXT`, `AE.Secure`: these notions for the distinguisher
@@ -120,6 +120,18 @@ converter AE.Ideal(M C : Type) [Fintype M] [Fintype C] [DecidableEq C] [Nonempty
   on dec(ciphertext : C) → Option M
     return AE.replay table ciphertext
 
+/-- `ρ^cca`, as Banfi writes it. -/
+scoped notation "ρ^cca" => AE.CCA.perPort _ _
+
+/-- `ρ^ptxt`, as Banfi writes it. -/
+scoped notation "ρ^ptxt" => AE.PTXT.perPort _ _
+
+/-- `ρ^ctxt`, as Banfi writes it. -/
+scoped notation "ρ^ctxt" => AE.CTXT.perPort _ _
+
+/-- `ρ^ae`, as Banfi writes it. -/
+scoped notation "ρ^ae" => AE.Ideal.perPort _ _
+
 /-- **The systems of ind-cca** (Banfi, Definition 2.3.5): `⟦E_k, D_k⟧` and `ρ^cca(⟦E_k, D_k⟧)`,
 for `k ← Gen`, at the budget `q` per port. -/
 def AE.INDCCA.systems [DecidableEq K] [DecidableEq M] [DecidableEq C] [Nonempty M]
@@ -153,21 +165,22 @@ for `ρ^cca(⟦E_k, D_k⟧)`. -/
 def AE.INDCCA [Interface.AdmissibleDistinguishers]
     [DecidableEq K] [DecidableEq M] [DecidableEq C] [Nonempty M]
     (scheme : SymmetricEncryption K M C) {q : AE.Port → ℕ}
-    (error : (AE.perPort M C q).inputDomain.Distinguisher → ENNReal) : Prop :=
+    (error : (AE.perPort M C q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
   (AE.INDCCA.systems scheme q).1 ≃[error] (AE.INDCCA.systems scheme q).2
 
 /-- **int-ptxt** within `error`: against the admitted distinguishers, `⟦E_k, D_k⟧` substitutes
 for `ρ^ptxt(⟦E_k, D_k⟧)`. -/
 def AE.INTPTXT [Interface.AdmissibleDistinguishers]
     [DecidableEq K] [DecidableEq M] (scheme : SymmetricEncryption K M C) {q : AE.Port → ℕ}
-    (error : (AE.perPort M C q).inputDomain.Distinguisher → ENNReal) : Prop :=
+    (error : (AE.perPort M C q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
   (AE.INTPTXT.systems scheme q).1 ≃[error] (AE.INTPTXT.systems scheme q).2
 
 /-- **int-ctxt** within `error`: against the admitted distinguishers, `⟦E_k, D_k⟧` substitutes
 for `ρ^ctxt(E_k)`. -/
 def AE.INTCTXT [Interface.AdmissibleDistinguishers]
     [DecidableEq K] [DecidableEq M] [DecidableEq C] (scheme : SymmetricEncryption K M C)
-    {q : AE.Port → ℕ} (error : (AE.perPort M C q).inputDomain.Distinguisher → ENNReal) : Prop :=
+    {q : AE.Port → ℕ} (error : (AE.perPort M C q).inputDomain.DistinguisherBehavior → ENNReal) :
+    Prop :=
   (AE.INTCTXT.systems scheme q).1 ≃[error] (AE.INTCTXT.systems scheme q).2
 
 /-- **ae** within `error`: against the admitted distinguishers, `⟦E_k, D_k⟧` substitutes for
@@ -175,7 +188,7 @@ def AE.INTCTXT [Interface.AdmissibleDistinguishers]
 def AE.Secure [Interface.AdmissibleDistinguishers]
     [DecidableEq K] [DecidableEq M] [DecidableEq C] [Nonempty M]
     (scheme : SymmetricEncryption K M C) {q : AE.Port → ℕ}
-    (error : (AE.perPort M C q).inputDomain.Distinguisher → ENNReal) : Prop :=
+    (error : (AE.perPort M C q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
   (AE.Secure.systems scheme q).1 ≃[error] (AE.Secure.systems scheme q).2
 
 end
