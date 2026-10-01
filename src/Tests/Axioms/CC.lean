@@ -24,6 +24,9 @@ classes, and the abstract results of those classes depend only on `propext`,
 -- ConstructiveCryptography.CryptographicAlgebra.Distinguisher
 #print axioms ConstructiveCryptography.CompatibleDistinguisherClass.ofClosure
 
+-- ConstructiveCryptography.CryptographicAlgebra.Game
+#print axioms ConstructiveCryptography.CompatibleSolverClass.absorb_comp
+
 -- ConstructiveCryptography.CryptographicAlgebra.PseudoMetric
 #print axioms ConstructiveCryptography.CryptographicAlgebra.distance_attach_le
 #print axioms ConstructiveCryptography.CryptographicAlgebra.distance_parallel_le
@@ -71,6 +74,11 @@ classes, and the abstract results of those classes depend only on `propext`,
 #print axioms SystemAlgebra.Interface.restrict
 #print axioms SystemAlgebra.Interface.filter_smul
 #print axioms SystemAlgebra.Interface.filter_comp_filter_smul
+
+-- ConstructiveCryptography.InterfaceGame
+#print axioms SystemAlgebra.Interface.gameTheory
+#print axioms SystemAlgebra.Interface.compatibleSolverClass
+#print axioms SystemAlgebra.Interface.win_le
 
 -- ConstructiveCryptography.InterfaceMonoidal
 #print axioms SystemAlgebra.Interface.monoidal

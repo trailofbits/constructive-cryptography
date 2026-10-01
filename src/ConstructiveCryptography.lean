@@ -5,6 +5,7 @@ import ConstructiveCryptography.Automaton
 import ConstructiveCryptography.CryptographicAlgebra.Basic
 import ConstructiveCryptography.CryptographicAlgebra.Distinguisher
 import ConstructiveCryptography.CryptographicAlgebra.Epsilon
+import ConstructiveCryptography.CryptographicAlgebra.Game
 import ConstructiveCryptography.CryptographicAlgebra.PseudoMetric
 import ConstructiveCryptography.CryptographicAlgebra.Relaxation
 import ConstructiveCryptography.CryptographicAlgebra.Star
@@ -15,6 +16,7 @@ import ConstructiveCryptography.Interface
 import ConstructiveCryptography.InterfaceAlgebra
 import ConstructiveCryptography.InterfaceCoherence
 import ConstructiveCryptography.InterfaceFilter
+import ConstructiveCryptography.InterfaceGame
 import ConstructiveCryptography.InterfaceMonoidal
 import ConstructiveCryptography.InterfaceParallel
 import ConstructiveCryptography.InterfaceRelabel

@@ -1,11 +1,13 @@
 import Examples.AuthenticatedEncryption.Security
+import Examples.Games
 
 /-!
 # Authenticated encryption: checks and axioms
 
-The one-time pad on bits instantiates the scheme, the collision step and the implication; the
-plaintext filter and the ideal transformation reject a ciphertext before any encryption. The
-development depends only on `propext`, `Classical.choice` and `Quot.sound`.
+The one-time pad on bits instantiates the scheme, the collision step, also through the games
+layer, and the implication; the plaintext filter and the ideal transformation reject a ciphertext
+before any encryption. The development depends only on `propext`, `Classical.choice` and
+`Quot.sound`.
 -/
 
 open SystemAlgebra SystemAlgebra.Interface Probability
@@ -28,6 +30,15 @@ theorem oneTimePad_hybrid_ideal (q : AE.Port → ℕ) :
         Encryption.Real.perPort oneTimePad : Interface.Resource (AE.perPort Bool Bool q)) ≤
       ENNReal.ofReal ((q .enc : ℝ) ^ 2 / 2) := by
   simpa using hybrid_ideal_distance_le oneTimePad q
+
+/-- The collision step on the one-time pad, through the games layer: every solver's advantage is
+within `q_e² / 2`. -/
+theorem oneTimePad_hybrid_ideal_advantage (q : AE.Port → ℕ) {s}
+    (hs : s ∈ CompatibleSolverClass.solvers (AE.perPort Bool Bool q)) :
+    |s.1 (Hybrid oneTimePad q) - s.1 (AE.Ideal.perPort Bool Bool (budget := q) •
+        Encryption.Real.perPort oneTimePad : Interface.Resource (AE.perPort Bool Bool q))| ≤
+      (q .enc : ℝ) ^ 2 / 2 := by
+  simpa using GameExamples.hybrid_ideal_advantage_le oneTimePad q hs
 
 /-- The corrected chain on the one-time pad uses each assumption twice. -/
 theorem oneTimePad_usage (q : AE.Port → ℕ) :
@@ -76,7 +87,22 @@ end AuthenticatedEncryptionTests
 #print axioms AuthenticatedEncryption.ideal_truncate
 #print axioms AuthenticatedEncryption.ideal_mass_hybridTables
 #print axioms AuthenticatedEncryption.collisionGame_equivalent
+#print axioms AuthenticatedEncryption.collisionGame_badProbability_le
 #print axioms AuthenticatedEncryption.hybrid_ideal_distance_le
+
+-- The collision step through the games layer.
+#print axioms GameExamples.collision
+#print axioms GameExamples.collision_visible
+#print axioms GameExamples.collision_conditionallyEquivalent
+#print axioms GameExamples.collision_win_le
+#print axioms GameExamples.hybrid_ideal_advantage_le
+#print axioms GameExamples.attach_hybrid_ideal_advantage_le
+
+-- Reductions in any compatible solver class.
+#print axioms GameExamples.advantage_attach_le_win
+#print axioms GameExamples.advantage_attach_le
+#print axioms GameExamples.win_attach_comp_le
+#print axioms GameExamples.win_le_of_reduction
 
 -- The implication.
 #print axioms AuthenticatedEncryption.correctedChain
@@ -87,6 +113,7 @@ end AuthenticatedEncryptionTests
 
 -- Checks.
 #print axioms AuthenticatedEncryptionTests.oneTimePad_hybrid_ideal
+#print axioms AuthenticatedEncryptionTests.oneTimePad_hybrid_ideal_advantage
 #print axioms AuthenticatedEncryptionTests.oneTimePad_usage
 #print axioms AuthenticatedEncryptionTests.ptxtDecrypt_initial
 #print axioms AuthenticatedEncryptionTests.idealDecrypt_initial
