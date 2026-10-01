@@ -116,14 +116,14 @@ def MAC.SUFCMA.systems [DecidableEq K] [DecidableEq M] [DecidableEq T] (mac : MA
 for the one that accepts only tags on tagged messages. -/
 def MAC.EUFCMA [Interface.AdmissibleDistinguishers]
     [DecidableEq K] [DecidableEq M] (mac : MAC K M T) {q : Tagging.Port → ℕ}
-    (error : (Tagging.perPort M T q).inputDomain.Distinguisher → ENNReal) : Prop :=
+    (error : (Tagging.perPort M T q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
   (MAC.EUFCMA.systems mac q).1 ≃[error] (MAC.EUFCMA.systems mac q).2
 
 /-- **SUF-CMA** within `error`: against the admitted distinguishers, the real system substitutes
 for the one that accepts only tagged pairs. -/
 def MAC.SUFCMA [Interface.AdmissibleDistinguishers]
     [DecidableEq K] [DecidableEq M] [DecidableEq T] (mac : MAC K M T) {q : Tagging.Port → ℕ}
-    (error : (Tagging.perPort M T q).inputDomain.Distinguisher → ENNReal) : Prop :=
+    (error : (Tagging.perPort M T q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
   (MAC.SUFCMA.systems mac q).1 ≃[error] (MAC.SUFCMA.systems mac q).2
 
 end
