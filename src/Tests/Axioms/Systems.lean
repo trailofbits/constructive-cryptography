@@ -161,6 +161,13 @@ parallel composition, distance and games, and the counterexamples, depend only o
 #print axioms SystemAlgebra.envProbe_isDDD
 #print axioms SystemAlgebra.ddeOf_bounded
 
+-- RandomSystems.Game.DiscreteMBO
+#print axioms SystemAlgebra.PDG.visible_behavior
+#print axioms SystemAlgebra.PDG.monotoneMBO_behavior
+#print axioms SystemAlgebra.PDG.unsetProbability_behavior
+#print axioms SystemAlgebra.GameEquivalent.conditionallyEquivalent
+#print axioms SystemAlgebra.GameEquivalent.winProbability_behavior_le
+
 -- RandomSystems.Game.FunctionGame
 #print axioms SystemAlgebra.PDG.ofFunction_gameEquivalent
 #print axioms SystemAlgebra.PDG.ofFunction_blind_le
@@ -172,6 +179,21 @@ parallel composition, distance and games, and the counterexamples, depend only o
 
 -- RandomSystems.Game.GameEquivalence
 #print axioms SystemAlgebra.GameEquivalent.statDist_le_blind
+
+-- RandomSystems.Game.MBO
+#print axioms SystemAlgebra.RandomSystem.visible
+#print axioms SystemAlgebra.RandomSystem.abs_decisionProbability_sub_le_winProbability
+#print axioms SystemAlgebra.Domain.Distinguisher.advantage_le_winProbability
+#print axioms SystemAlgebra.Domain.Distinguisher.winProbability_le_of_unsetProbability
+
+-- RandomSystems.Game.MBOAttachment
+#print axioms SystemAlgebra.PDCBehavior.liftMBO_id
+#print axioms SystemAlgebra.PDCBehavior.liftMBO_comp
+#print axioms SystemAlgebra.RandomSystem.visible_attach_liftMBO
+#print axioms SystemAlgebra.RandomSystem.MonotoneMBO.attach_liftMBO
+#print axioms SystemAlgebra.RandomSystem.winProbability_attach_liftMBO
+#print axioms SystemAlgebra.Domain.Distinguisher.exists_absorbAll_winProbability
+#print axioms SystemAlgebra.Domain.SolverBehavior.absorb
 
 -- RandomSystems.PDS.Function
 #print axioms SystemAlgebra.DDS.ofFunction
