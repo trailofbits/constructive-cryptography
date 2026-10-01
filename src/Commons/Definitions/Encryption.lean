@@ -25,7 +25,7 @@ encrypts `m_L` in one system and `m_R` in the other, both transformations of `E_
 * `SymmetricEncryption K M C`: a symmetric-key encryption scheme `Π = (Gen, Enc, Dec)`
 * `Encryption M C`: the encryption interface
 * `Encryption.Real scheme`: `E_k` for `k ← Gen`
-* `Encryption.CPA`: the transformation `ρ^cpa`
+* `Encryption.CPA`: the transformation `ρ^cpa`, written so with `open Commons`
 * `Encryption.INDCPA.systems scheme q`: the systems `(E_k, ρ^cpa(E_k))` of ind-cpa
 * `Encryption.INDCPA scheme error`: ind-cpa for the admitted distinguishers,
   within `error`
@@ -83,6 +83,9 @@ converter Encryption.CPA(M C : Type) [Fintype M] [Fintype C] [Nonempty M] : Encr
     ciphertext ← encryption.enc(replacement)
     return ciphertext
 
+/-- `ρ^cpa`, as Banfi writes it. -/
+scoped notation "ρ^cpa" => Encryption.CPA.perPort _ _
+
 /-- **The systems of ind-cpa** (Banfi, Definition 2.3.4): `E_k` and `ρ^cpa(E_k)`, for `k ← Gen`,
 at the budget `q` per port. -/
 def Encryption.INDCPA.systems [DecidableEq K] [DecidableEq M] [Nonempty M]
@@ -94,7 +97,8 @@ def Encryption.INDCPA.systems [DecidableEq K] [DecidableEq M] [Nonempty M]
 `ρ^cpa(E_k)`. -/
 def Encryption.INDCPA [Interface.AdmissibleDistinguishers]
     [DecidableEq K] [DecidableEq M] [Nonempty M] (scheme : SymmetricEncryption K M C)
-    {q : Encryption.Port → ℕ} (error : (Encryption.perPort M C q).inputDomain.Distinguisher → ENNReal) :
+    {q : Encryption.Port → ℕ}
+    (error : (Encryption.perPort M C q).inputDomain.DistinguisherBehavior → ENNReal) :
     Prop :=
   (Encryption.INDCPA.systems scheme q).1 ≃[error] (Encryption.INDCPA.systems scheme q).2
 
@@ -122,7 +126,7 @@ def Encryption.LORCPA.systems [DecidableEq K] [DecidableEq M] (scheme : Symmetri
 messages substitutes for encrypting the right ones. -/
 def Encryption.LORCPA [Interface.AdmissibleDistinguishers]
     [DecidableEq K] [DecidableEq M] (scheme : SymmetricEncryption K M C) {q : ℕ}
-    (error : (LeftRight M C q).inputDomain.Distinguisher → ENNReal) : Prop :=
+    (error : (LeftRight M C q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
   (Encryption.LORCPA.systems scheme q).1 ≃[error] (Encryption.LORCPA.systems scheme q).2
 
 end

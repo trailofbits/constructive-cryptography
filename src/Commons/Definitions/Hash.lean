@@ -63,7 +63,7 @@ def Hash.CR.systems [DecidableEq M] [DecidableEq T] (H : K → M → T) (q : ℕ
 of `H(k, ·)` for a published key substitute for the equalities of messages. -/
 def Hash.CR [Interface.AdmissibleDistinguishers] [DecidableEq M]
     [DecidableEq T] (H : K → M → T) {q : ℕ}
-    (error : (KeyedCollision K M q).inputDomain.Distinguisher → ENNReal) : Prop :=
+    (error : (KeyedCollision K M q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
   (Hash.CR.systems H q).1 ≃[error] (Hash.CR.systems H q).2
 
 end

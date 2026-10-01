@@ -11,12 +11,13 @@ message. The correction uses `ind-cca` a second time, then compares the doubly r
 with the ideal, with a collision bound over every pair of an original and a replacement message
 (`hybrid_ideal_distance_le`).
 
-The chain is counted (`correctedChain`: two uses of each assumption) and quantitative
-(`ae_of_ind_cca_int_ptxt`): each assumption use loses its advantage at the distinguisher
-reduced through the transformations before it, and the statistical step loses `q_e² / |M|`, at
-the budget `q` per port. In distance form (`real_ideal_distance_le`), the real system is within
-`2 Δ(⟦E_k, D_k⟧, ρ^ptxt ⟦E_k, D_k⟧) + 2 Δ(⟦E_k, D_k⟧, ρ^cca ⟦E_k, D_k⟧) + q_e² / |M|` of the
-ideal.
+The proof is Banfi's sequence of steps (§2.3.1): each step substitutes one assumption inside its
+context `ρ`, losing the assumption's error at the distinguisher with `ρ` absorbed, `ε(D ∘ ρ)`
+(§2.3.3), and the statistical step loses `q_e² / |M|` at the budget `q` per port. The chain is
+also counted (`correctedChain`: two uses of each assumption). In distance form
+(`real_ideal_distance_le`), `⟦E_k, D_k⟧` is within
+`2 Δ(⟦E_k, D_k⟧, ρ^ptxt(⟦E_k, D_k⟧)) + 2 Δ(⟦E_k, D_k⟧, ρ^cca(⟦E_k, D_k⟧)) + q_e² / |M|` of
+`ρ^ae(E_k)`.
 
 ## Main definitions
 
@@ -25,9 +26,9 @@ ideal.
 
 ## Main results
 
+* `ae_of_ind_cca_int_ptxt`: `(ind-cca, int-ptxt) → ae` for the admitted distinguishers, for the
+  notions `AE.INDCCA`, `AE.INTPTXT` and `AE.Secure` of `Commons.Definitions.AEAD`
 * `correctedChain_cca`, `correctedChain_ptxt`: two uses of each assumption
-* `ae_of_ind_cca_int_ptxt`: `(ind-cca, int-ptxt) → ae` for the admitted distinguishers, for the notions `AE.INDCCA`, `AE.INTPTXT` and `AE.Secure` of
-  `Commons.Definitions.AEAD`
 * `real_ideal_distance_le`: the distance form
 -/
 
@@ -41,6 +42,37 @@ namespace AuthenticatedEncryption
 
 variable {K M C : Type} [Fintype K] [Fintype M] [Fintype C] [DecidableEq K] [DecidableEq M]
   [DecidableEq C] [Nonempty M] (scheme : SymmetricEncryption K M C) (q : AE.Port → ℕ)
+
+/-- `⟦E_k, D_k⟧` for `k ← Gen`, at the budget `q` per port. -/
+local notation "⟦" "E_k" "," "D_k" "⟧" => AE.Real.perPort scheme (budget := q)
+
+/-- `⟦E$_k, D^⊥⟧ = ρ^ae(E_k)` for `k ← Gen`, at the budget `q` per port. -/
+local notation "⟦" "E$_k" "," "D^⊥" "⟧" =>
+  (AE.Ideal.perPort M C • Encryption.Real.perPort scheme : Interface.Resource (AE.perPort M C q))
+
+/-- **`(ind-cca, int-ptxt) → ae`, corrected** (Banfi, Theorem 2.3.10(4)). For the admitted
+distinguishers, which are closed under absorbing converters, `int-ptxt` within `εptxt` and
+`ind-cca` within `εcca` give `ae`, losing each assumption's error at the distinguisher with the
+context of its use absorbed, and `q_e² / |M|` for the collision step. -/
+theorem ae_of_ind_cca_int_ptxt [AdmissibleDistinguishers]
+    (εptxt εcca : (AE.perPort M C q).inputDomain.DistinguisherBehavior → ENNReal)
+    (ptxt : AE.INTPTXT scheme εptxt) (cca : AE.INDCCA scheme εcca) :
+    AE.Secure scheme fun D =>
+      εptxt D + εcca (absorb ρ^ptxt D) + εptxt (absorb (ρ^ptxt ≫ ρ^cca) D) +
+        εcca (absorb (ρ^ptxt ≫ ρ^cca ≫ ρ^ptxt) D) +
+        ENNReal.ofReal ((q .enc : ℝ) ^ 2 / Fintype.card M) := by
+  cc_calc mixed (distinguisherAdvantage AdmissibleDistinguishers.admissible) using
+      (fun D _ R S => distinguisherAdvantage_le_distance _ D R S)
+    ⟦E_k, D_k⟧ ≃[εptxt] ρ^ptxt • ⟦E_k, D_k⟧ := ptxt
+    _ ≃[εcca ∘ absorb ρ^ptxt] ρ^ptxt • ρ^cca • ⟦E_k, D_k⟧ :=
+      AdmissibleDistinguishers.substitutesWithin_context ρ^ptxt cca
+    _ ≃[εptxt ∘ absorb (ρ^ptxt ≫ ρ^cca)] ρ^ptxt • ρ^cca • ρ^ptxt • ⟦E_k, D_k⟧ :=
+      AdmissibleDistinguishers.substitutesWithin_context (ρ^ptxt ≫ ρ^cca) ptxt
+    _ ≃[εcca ∘ absorb (ρ^ptxt ≫ ρ^cca ≫ ρ^ptxt)]
+        ρ^ptxt • ρ^cca • ρ^ptxt • ρ^cca • ⟦E_k, D_k⟧ :=
+      AdmissibleDistinguishers.substitutesWithin_context (ρ^ptxt ≫ ρ^cca ≫ ρ^ptxt) cca
+    _ ≈[ENNReal.ofReal ((q .enc : ℝ) ^ 2 / Fintype.card M)] ⟦E$_k, D^⊥⟧ :=
+      hybrid_ideal_distance_le scheme q
 
 /-- The two assumptions of the implication. -/
 inductive Assumption
@@ -56,27 +88,23 @@ noncomputable def assumptionSystems (i : Assumption) (b : Bool) : Resource (AE.p
     | .ptxt => AE.INTPTXT.systems scheme q
   bif b then X.2 else X.1
 
-/-- **The corrected chain** `int-ptxt, ind-cca, int-ptxt, ind-cca` from the real system to the
+/-- **The corrected chain** `int-ptxt, ind-cca, int-ptxt, ind-cca` from `⟦E_k, D_k⟧` to the
 hybrid `ρ^ptxt ∘ ρ^cca ∘ ρ^ptxt ∘ ρ^cca(⟦E_k, D_k⟧)`. -/
 noncomputable def correctedChain :
     SubstitutionRelation.Implication (fun _ : Assumption => AE.perPort M C q)
       (assumptionSystems scheme q) (AE.perPort M C q) 3 := by
   cc_calc counted (assumptionSystems scheme q)
-    AE.Real.perPort scheme = 𝟙 _ • assumptionSystems scheme q .ptxt false :=
-      (identity_attach _).symm
+    ⟦E_k, D_k⟧ = 𝟙 _ • assumptionSystems scheme q .ptxt false := (identity_attach _).symm
     _ ≃ 𝟙 _ • assumptionSystems scheme q .ptxt true := Assumption.ptxt
-    _ = AE.PTXT.perPort M C • assumptionSystems scheme q .cca false := by
+    _ = ρ^ptxt • assumptionSystems scheme q .cca false := by
       rw [identity_attach]; rfl
-    _ ≃ AE.PTXT.perPort M C • assumptionSystems scheme q .cca true := Assumption.cca
-    _ = (AE.PTXT.perPort M C ≫ AE.CCA.perPort M C) • assumptionSystems scheme q .ptxt false := by
+    _ ≃ ρ^ptxt • assumptionSystems scheme q .cca true := Assumption.cca
+    _ = (ρ^ptxt ≫ ρ^cca) • assumptionSystems scheme q .ptxt false := by
       rw [comp_smul]; rfl
-    _ ≃ (AE.PTXT.perPort M C ≫ AE.CCA.perPort M C) • assumptionSystems scheme q .ptxt true :=
-      Assumption.ptxt
-    _ = ((AE.PTXT.perPort M C ≫ AE.CCA.perPort M C) ≫ AE.PTXT.perPort M C) •
-        assumptionSystems scheme q .cca false := by
+    _ ≃ (ρ^ptxt ≫ ρ^cca) • assumptionSystems scheme q .ptxt true := Assumption.ptxt
+    _ = (ρ^ptxt ≫ ρ^cca ≫ ρ^ptxt) • assumptionSystems scheme q .cca false := by
       rw [comp_smul, comp_smul, comp_smul]; rfl
-    _ ≃ ((AE.PTXT.perPort M C ≫ AE.CCA.perPort M C) ≫ AE.PTXT.perPort M C) •
-        assumptionSystems scheme q .cca true := Assumption.cca
+    _ ≃ (ρ^ptxt ≫ ρ^cca ≫ ρ^ptxt) • assumptionSystems scheme q .cca true := Assumption.cca
     _ = Hybrid scheme q := by
       rw [comp_smul, comp_smul]; rfl
 
@@ -90,66 +118,23 @@ theorem correctedChain_ptxt : (correctedChain scheme q).usageCount .ptxt = 2 := 
   cc_usage
   rfl
 
-/-- **`(ind-cca, int-ptxt) → ae`, corrected** (Banfi, Theorem 2.3.10(4)). For the admitted
-distinguishers, which are closed under reduction, `int-ptxt` with loss `ε_ptxt` and `ind-cca`
-with loss `ε_cca` give `ae` with the losses of the four uses at the reduced distinguishers,
-plus `q_e² / |M|` for the collision step. -/
-theorem ae_of_ind_cca_int_ptxt [AdmissibleDistinguishers]
-    (εptxt εcca : (AE.perPort M C q).inputDomain.Distinguisher → ENNReal)
-    (ptxt : AE.INTPTXT scheme εptxt) (cca : AE.INDCCA scheme εcca) :
-    AE.Secure scheme fun D =>
-      εptxt D + εcca (reduction (AE.PTXT.perPort M C) D) +
-        εptxt (reduction (AE.CCA.perPort M C) (reduction (AE.PTXT.perPort M C) D)) +
-        εcca (reduction (AE.PTXT.perPort M C) (reduction (AE.CCA.perPort M C)
-          (reduction (AE.PTXT.perPort M C) D))) +
-        ENNReal.ofReal ((q .enc : ℝ) ^ 2 / Fintype.card M) := by
-  cc_calc mixed (distinguisherAdvantage AdmissibleDistinguishers.admissible) using
-      (fun D _ R S => distinguisherAdvantage_le_distance _ D R S)
-    AE.Real.perPort scheme ≃[εptxt] AE.PTXT.perPort M C • AE.Real.perPort scheme := ptxt
-    _ ≃[fun D => εcca (reduction (AE.PTXT.perPort M C) D)]
-        AE.PTXT.perPort M C • (AE.CCA.perPort M C • AE.Real.perPort scheme) :=
-      AdmissibleDistinguishers.substitutesWithin_attach _ cca
-    _ ≃[fun D => εptxt (reduction (AE.CCA.perPort M C) (reduction (AE.PTXT.perPort M C) D))]
-        AE.PTXT.perPort M C • (AE.CCA.perPort M C • (AE.PTXT.perPort M C • AE.Real.perPort scheme)) :=
-      AdmissibleDistinguishers.substitutesWithin_attach _ (AdmissibleDistinguishers.substitutesWithin_attach _ ptxt)
-    _ ≃[fun D => εcca (reduction (AE.PTXT.perPort M C) (reduction (AE.CCA.perPort M C)
-          (reduction (AE.PTXT.perPort M C) D)))]
-        AE.PTXT.perPort M C • (AE.CCA.perPort M C • (AE.PTXT.perPort M C •
-          (AE.CCA.perPort M C • AE.Real.perPort scheme))) :=
-      AdmissibleDistinguishers.substitutesWithin_attach _ (AdmissibleDistinguishers.substitutesWithin_attach _
-        (AdmissibleDistinguishers.substitutesWithin_attach _ cca))
-    _ ≈[ENNReal.ofReal ((q .enc : ℝ) ^ 2 / Fintype.card M)]
-        (AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme :
-          Interface.Resource (AE.perPort M C q)) :=
-      hybrid_ideal_distance_le scheme q
-
-/-- **The distance form**: the real system is within twice its `int-ptxt` distance, twice its
-`ind-cca` distance, and `q_e² / |M|` of the ideal. -/
+/-- **The distance form**: `⟦E_k, D_k⟧` is within twice its `int-ptxt` distance, twice its
+`ind-cca` distance, and `q_e² / |M|` of `ρ^ae(E_k)`. -/
 theorem real_ideal_distance_le :
-    Δ (AE.Real.perPort scheme (budget := q))
-        ((AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme :
-          Interface.Resource (AE.perPort M C q))) ≤
-      Δ (AE.Real.perPort scheme (budget := q)) (AE.PTXT.perPort M C • AE.Real.perPort scheme) +
-        Δ (AE.Real.perPort scheme (budget := q)) (AE.CCA.perPort M C • AE.Real.perPort scheme) +
-        Δ (AE.Real.perPort scheme (budget := q)) (AE.PTXT.perPort M C • AE.Real.perPort scheme) +
-        Δ (AE.Real.perPort scheme (budget := q)) (AE.CCA.perPort M C • AE.Real.perPort scheme) +
+    Δ ⟦E_k, D_k⟧ ⟦E$_k, D^⊥⟧ ≤
+      Δ ⟦E_k, D_k⟧ (ρ^ptxt • ⟦E_k, D_k⟧) + Δ ⟦E_k, D_k⟧ (ρ^cca • ⟦E_k, D_k⟧) +
+        Δ ⟦E_k, D_k⟧ (ρ^ptxt • ⟦E_k, D_k⟧) + Δ ⟦E_k, D_k⟧ (ρ^cca • ⟦E_k, D_k⟧) +
         ENNReal.ofReal ((q .enc : ℝ) ^ 2 / Fintype.card M) := by
   cc_calc statistical
-    AE.Real.perPort scheme ≈[Δ (AE.Real.perPort scheme) (AE.PTXT.perPort M C • AE.Real.perPort scheme)]
-        AE.PTXT.perPort M C • AE.Real.perPort scheme := le_rfl
-    _ ≈[Δ (AE.Real.perPort scheme) (AE.CCA.perPort M C • AE.Real.perPort scheme)]
-        AE.PTXT.perPort M C • (AE.CCA.perPort M C • AE.Real.perPort scheme) := le_rfl
-    _ ≈[Δ (AE.Real.perPort scheme) (AE.PTXT.perPort M C • AE.Real.perPort scheme)]
-        AE.PTXT.perPort M C • (AE.CCA.perPort M C • (AE.PTXT.perPort M C • AE.Real.perPort scheme)) :=
+    ⟦E_k, D_k⟧ ≈[Δ ⟦E_k, D_k⟧ (ρ^ptxt • ⟦E_k, D_k⟧)] ρ^ptxt • ⟦E_k, D_k⟧ := le_rfl
+    _ ≈[Δ ⟦E_k, D_k⟧ (ρ^cca • ⟦E_k, D_k⟧)] ρ^ptxt • ρ^cca • ⟦E_k, D_k⟧ :=
+      distance_attach_le _ _ _
+    _ ≈[Δ ⟦E_k, D_k⟧ (ρ^ptxt • ⟦E_k, D_k⟧)] ρ^ptxt • ρ^cca • ρ^ptxt • ⟦E_k, D_k⟧ :=
       (distance_attach_le _ _ _).trans (distance_attach_le _ _ _)
-    _ ≈[Δ (AE.Real.perPort scheme) (AE.CCA.perPort M C • AE.Real.perPort scheme)]
-        AE.PTXT.perPort M C • (AE.CCA.perPort M C • (AE.PTXT.perPort M C •
-          (AE.CCA.perPort M C • AE.Real.perPort scheme))) :=
+    _ ≈[Δ ⟦E_k, D_k⟧ (ρ^cca • ⟦E_k, D_k⟧)] ρ^ptxt • ρ^cca • ρ^ptxt • ρ^cca • ⟦E_k, D_k⟧ :=
       ((distance_attach_le _ _ _).trans (distance_attach_le _ _ _)).trans
         (distance_attach_le _ _ _)
-    _ ≈[ENNReal.ofReal ((q .enc : ℝ) ^ 2 / Fintype.card M)]
-        (AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme :
-          Interface.Resource (AE.perPort M C q)) :=
+    _ ≈[ENNReal.ofReal ((q .enc : ℝ) ^ 2 / Fintype.card M)] ⟦E$_k, D^⊥⟧ :=
       hybrid_ideal_distance_le scheme q
 
 end AuthenticatedEncryption

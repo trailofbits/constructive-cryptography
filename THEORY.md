@@ -117,11 +117,18 @@ pseudo-distance: it is [zero on equal systems][advantage_self], [symmetric][adva
 $\Delta(R, S) = \sup_P \mathrm{Adv}_P(R, S)$, so
 [every advantage is at most the distance][advantage_le_transcriptDistance].
 
-**Absorption**: [absorbing][Domain.Distinguisher.absorb] a PDC $\alpha$ into $P$ gives
-$P \circ \alpha$, with [the same probability of outputting 1][probability_absorb],
-$\Pr[(P \circ \alpha)(R) = 1] = \Pr[P(\alpha R) = 1]$; on deterministic distinguishers it
-[connects the distinguisher to the converter's outside][absorbAll]. Absorbing a converter
-[gives a distinguisher][Domain.Distinguisher.exists_absorbAll], and so does absorbing
+The [**behavior**][Domain.DistinguisherBehavior] of a probabilistic distinguisher is its
+probability of outputting 1 on each system, as the behavior of a PDC is its random system; the
+transcript distance [is also the largest advantage of a behavior][RandomSystem.transcriptDistance_eq_iSup_behavior].
+
+**Absorption**: [absorbing][DistinguisherBehavior.absorb] a PDC $\alpha$ into a behavior $d$ gives
+$d \circ \alpha$, which decides on a system as $d$ decides on $\alpha$ attached to it,
+$\Pr[(d \circ \alpha)(R) = 1] = \Pr[d(\alpha R) = 1]$. Absorbing a serial composition
+[absorbs its PDCs in turn][DistinguisherBehavior.absorb_comp],
+$d \circ (\beta \circ \alpha) = (d \circ \beta) \circ \alpha$. On deterministic distinguishers
+absorption [connects the distinguisher to the converter's outside][absorbAll]; absorbing a
+converter into a probabilistic distinguisher [gives a probabilistic distinguisher][Domain.Distinguisher.exists_absorbAll],
+so $d \circ \alpha$ is a behavior, and so does absorbing
 [a system run beside][Domain.Distinguisher.exists_absorbRight].
 
 **Restriction**: the [restriction][RandomSystem.restrict] $R \restriction D'$ of a random system on $D$
@@ -334,10 +341,10 @@ $$
 Interfaces are an instance of `CompatibleDistinguisherClass`
 ([`Interface.compatibleDistinguisherClass`][Interface.compatibleDistinguisherClass], built by
 `ofClosure`): its field `distinguishers A` is the [set of maps][Interface.distinguishers]
-$R \mapsto \Pr[P(R) = 1]$ for the systems-level [probabilistic distinguishers][Domain.Distinguisher]
-$P$ compatible with $A$'s domain. Its axiom `closed_attach` is discharged by
+$R \mapsto \Pr[d(R) = 1]$ for the systems-level [distinguisher behaviors][Domain.DistinguisherBehavior]
+$d$ compatible with $A$'s domain. Its axiom `closed_attach` is discharged by
 [closure under attachment][Interface.distinguishers_attach], from
-[absorbing a converter][Domain.Distinguisher.exists_absorbAll]; `closed_parallel_left` by
+[absorbing a converter][DistinguisherBehavior.absorb]; `closed_parallel_left` by
 [closure under a resource on the right][Interface.distinguishers_parallel_left], from
 [absorbing a system run beside][Domain.Distinguisher.exists_absorbRight]; and
 `closed_parallel_right` by
@@ -450,20 +457,25 @@ transports substitutions [through one converter][SubstitutesWithin.attach] and
 
 **On interfaces.** [`DistinguisherAdvantage`][DistinguisherAdvantage] is a structure, and for every class of admitted
 distinguishers [`Interface.distinguisherAdvantage`][Interface.distinguisherAdvantage] is one: its
+distinguishers are the systems-level [distinguisher behaviors][Domain.DistinguisherBehavior], its
 field `admissible` is that class, its field `advantage` is the systems-level
-[advantage][Domain.Distinguisher.advantage], and its laws `advantage_self`, `advantage_symm` and
-`advantage_triangle` are the systems-level [zero][advantage_self], [symmetry][advantage_symm] and
-[triangle][advantage_triangle] laws.
+[advantage][DistinguisherBehavior.advantage], and its laws `advantage_self`, `advantage_symm` and
+`advantage_triangle` are the systems-level [zero][DistinguisherBehavior.advantage_self],
+[symmetry][DistinguisherBehavior.advantage_symm] and
+[triangle][DistinguisherBehavior.advantage_triangle] laws.
 
-The [reduction][Interface.reduction] through $\alpha$ is [absorption][Domain.Distinguisher.absorb],
-$P \circ \alpha$. Hence an advantage between attachments
-[is the advantage of the reduction][Interface.distinguisherAdvantage_attach],
-$\mathrm{Adv}_P(\alpha R, \alpha S) = \mathrm{Adv}_{P \circ \alpha}(R, S)$, by
-[absorption][probability_absorb]; every advantage
-[is at most the distance][Interface.distinguisherAdvantage_le_distance], $\mathrm{Adv}_P \le \Delta$,
-by the [systems-level bound][advantage_le_transcriptDistance]; and substitutions
-[transport through converters][Interface.substitutesWithin_attach] when the class is closed under
-reduction. The class [`Interface.AdmissibleDistinguishers`][Interface.AdmissibleDistinguishers]
+A converter $\alpha$ absorbed into a distinguisher is the reduction of a security proof [3]:
+[absorbing it][Interface.absorb] gives $D \circ \alpha$, the systems-level
+[absorption][DistinguisherBehavior.absorb], and absorbing a serial composition
+[absorbs its converters in turn][Interface.absorb_comp], $D \circ (\alpha \gg \beta) =
+(D \circ \alpha) \circ \beta$. Hence an advantage between attachments
+[is the advantage with the converter absorbed][Interface.distinguisherAdvantage_attach],
+$\mathrm{Adv}_D(\alpha R, \alpha S) = \mathrm{Adv}_{D \circ \alpha}(R, S)$; every advantage
+[is at most the distance][Interface.distinguisherAdvantage_le_distance], $\mathrm{Adv}_D \le \Delta$,
+by the [systems-level bound][DistinguisherBehavior.advantage_le_transcriptDistance]; and
+substitutions [transport through converters][Interface.substitutesWithin_attach] when the class is
+closed under absorbing converters. The class
+[`Interface.AdmissibleDistinguishers`][Interface.AdmissibleDistinguishers]
 bundles the admitted distinguishers with that closure; for its instance in scope,
 $R \simeq_\varepsilon S$ is written [`R ≃[ε] S`][notation-substitutes] (scoped in
 `SystemAlgebra`), substitutions
@@ -719,18 +731,25 @@ agreeing with a map on a finite set $S$: there are $\lvert Y \rvert^{\lvert X \r
 [Domain.DecisionCompatible]: src/RandomSystems/Distance/Decision.lean#L168
 [IsDDD]: src/RandomSystems/System/InterfaceSystem.lean#L968
 [RandomSystem.decisionProbability]: src/RandomSystems/Distance/Decision.lean#L247
-[Domain.Distinguisher]: src/RandomSystems/Distance/Distinguisher.lean#L110
-[Domain.Distinguisher.probability]: src/RandomSystems/Distance/Distinguisher.lean#L114
-[Domain.Distinguisher.advantage]: src/RandomSystems/Distance/Distinguisher.lean#L120
-[advantage_self]: src/RandomSystems/Distance/Distinguisher.lean#L129
-[advantage_symm]: src/RandomSystems/Distance/Distinguisher.lean#L131
-[advantage_triangle]: src/RandomSystems/Distance/Distinguisher.lean#L134
-[RandomSystem.transcriptDistance_eq_iSup]: src/RandomSystems/Distance/Distinguisher.lean#L142
-[advantage_le_transcriptDistance]: src/RandomSystems/Distance/Distinguisher.lean#L171
-[Domain.Distinguisher.absorb]: src/RandomSystems/Distance/Distinguisher.lean#L214
-[probability_absorb]: src/RandomSystems/Distance/Distinguisher.lean#L223
-[Domain.Distinguisher.exists_absorbAll]: src/RandomSystems/Distance/Distinguisher.lean#L189
-[Domain.Distinguisher.exists_absorbRight]: src/RandomSystems/Distance/Distinguisher.lean#L245
+[Domain.Distinguisher]: src/RandomSystems/Distance/Distinguisher.lean#L121
+[Domain.Distinguisher.probability]: src/RandomSystems/Distance/Distinguisher.lean#L125
+[Domain.Distinguisher.advantage]: src/RandomSystems/Distance/Distinguisher.lean#L131
+[advantage_self]: src/RandomSystems/Distance/Distinguisher.lean#L140
+[advantage_symm]: src/RandomSystems/Distance/Distinguisher.lean#L142
+[advantage_triangle]: src/RandomSystems/Distance/Distinguisher.lean#L145
+[RandomSystem.transcriptDistance_eq_iSup]: src/RandomSystems/Distance/Distinguisher.lean#L153
+[advantage_le_transcriptDistance]: src/RandomSystems/Distance/Distinguisher.lean#L182
+[Domain.DistinguisherBehavior]: src/RandomSystems/Distance/Distinguisher.lean#L193
+[DistinguisherBehavior.advantage]: src/RandomSystems/Distance/Distinguisher.lean#L204
+[DistinguisherBehavior.advantage_self]: src/RandomSystems/Distance/Distinguisher.lean#L214
+[DistinguisherBehavior.advantage_symm]: src/RandomSystems/Distance/Distinguisher.lean#L216
+[DistinguisherBehavior.advantage_triangle]: src/RandomSystems/Distance/Distinguisher.lean#L219
+[DistinguisherBehavior.advantage_le_transcriptDistance]: src/RandomSystems/Distance/Distinguisher.lean#L224
+[RandomSystem.transcriptDistance_eq_iSup_behavior]: src/RandomSystems/Distance/Distinguisher.lean#L232
+[DistinguisherBehavior.absorb]: src/RandomSystems/Distance/Distinguisher.lean#L277
+[DistinguisherBehavior.absorb_comp]: src/RandomSystems/Distance/Distinguisher.lean#L290
+[Domain.Distinguisher.exists_absorbAll]: src/RandomSystems/Distance/Distinguisher.lean#L251
+[Domain.Distinguisher.exists_absorbRight]: src/RandomSystems/Distance/Distinguisher.lean#L316
 [absorbAll]: src/RandomSystems/Distance/Absorption.lean#L42
 [RandomSystem.restrict]: src/RandomSystems/Distance/Restriction.lean#L59
 [RandomSystem.restrict_restrict]: src/RandomSystems/Distance/Restriction.lean#L67
@@ -816,17 +835,17 @@ agreeing with a map on a finite set $S$: there are $\lvert Y \rvert^{\lvert X \r
 [CA.parallel_assoc]: src/ConstructiveCryptography/CryptographicAlgebra/Basic.lean#L182
 [CA.parallel_dummy_left]: src/ConstructiveCryptography/CryptographicAlgebra/Basic.lean#L196
 [CA.parallel_dummy_right]: src/ConstructiveCryptography/CryptographicAlgebra/Basic.lean#L211
-[Interface.resourceTheory]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L63
-[Interface.resourcesLaxMonoidal]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L69
-[Interface.cryptographicAlgebra]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L94
-[Interface.distinguishers]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L100
-[Interface.distinguishers_attach]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L104
-[Interface.distinguishers_parallel_left]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L112
-[Interface.distinguishers_parallel_right]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L126
-[Interface.compatibleDistinguisherClass]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L134
-[Interface.cc_parallel_eq]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L141
-[Interface.cc_dummy_eq]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L145
-[Interface.cc_distance_eq]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L149
+[Interface.resourceTheory]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L68
+[Interface.resourcesLaxMonoidal]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L74
+[Interface.cryptographicAlgebra]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L99
+[Interface.distinguishers]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L105
+[Interface.distinguishers_attach]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L122
+[Interface.distinguishers_parallel_left]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L128
+[Interface.distinguishers_parallel_right]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L143
+[Interface.compatibleDistinguisherClass]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L151
+[Interface.cc_parallel_eq]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L158
+[Interface.cc_dummy_eq]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L162
+[Interface.cc_distance_eq]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L166
 [Interface.dummy]: src/ConstructiveCryptography/ResourceCoherence.lean#L102
 [Interface.parallel_assoc]: src/ConstructiveCryptography/ResourceCoherence.lean#L91
 [Interface.parallel_dummy_left]: src/ConstructiveCryptography/ResourceCoherence.lean#L158
@@ -892,13 +911,14 @@ agreeing with a map on a finite set $S$: there are $\lvert Y \rvert^{\lvert X \r
 [SubstitutesWithin.attach_serial]: src/ConstructiveCryptography/Substitution/Reduction.lean#L175
 [Implication.substitutesWithin]: src/ConstructiveCryptography/Substitution/Quantitative.lean#L49
 [Implication.substitutesWithin_of_mixed]: src/ConstructiveCryptography/Substitution/Quantitative.lean#L105
-[Interface.distinguisherAdvantage]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L161
-[Interface.reduction]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L172
-[Interface.distinguisherAdvantage_attach]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L177
-[Interface.distinguisherAdvantage_le_distance]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L222
-[Interface.substitutesWithin_attach]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L190
-[Interface.AdmissibleDistinguishers]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L204
-[AdmissibleDistinguishers.substitutesWithin_attach]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L213
+[Interface.distinguisherAdvantage]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L178
+[Interface.absorb]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L111
+[Interface.absorb_comp]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L117
+[Interface.distinguisherAdvantage_attach]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L190
+[Interface.distinguisherAdvantage_le_distance]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L248
+[Interface.substitutesWithin_attach]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L200
+[Interface.AdmissibleDistinguishers]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L214
+[AdmissibleDistinguishers.substitutesWithin_attach]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L223
 [substitutionImage]: src/ConstructiveCryptography/Substitution/Relaxation.lean#L45
 [singleSubstitutionRelaxation]: src/ConstructiveCryptography/Substitution/Relaxation.lean#L59
 [substitutionRelaxation]: src/ConstructiveCryptography/Substitution/Relaxation.lean#L164
@@ -942,10 +962,10 @@ agreeing with a map on a finite set $S$: there are $\lvert Y \rvert^{\lvert X \r
 [AE.PTXT]: src/Commons/Definitions/AEAD.lean#L84
 [AE.CTXT]: src/Commons/Definitions/AEAD.lean#L98
 [AE.Ideal]: src/Commons/Definitions/AEAD.lean#L111
-[AE.INDCCA]: src/Commons/Definitions/AEAD.lean#L153
-[AE.INTPTXT]: src/Commons/Definitions/AEAD.lean#L161
-[AE.INTCTXT]: src/Commons/Definitions/AEAD.lean#L168
-[AE.Secure]: src/Commons/Definitions/AEAD.lean#L175
+[AE.INDCCA]: src/Commons/Definitions/AEAD.lean#L165
+[AE.INTPTXT]: src/Commons/Definitions/AEAD.lean#L173
+[AE.INTCTXT]: src/Commons/Definitions/AEAD.lean#L180
+[AE.Secure]: src/Commons/Definitions/AEAD.lean#L188
 [Encryption.Real]: src/Commons/Definitions/Encryption.lean#L71
 [SymmetricEncryption.encryptions]: src/Commons/Definitions/Encryption.lean#L65
 [BlockCipher]: src/Commons/Definitions/Cipher.lean#L29
@@ -960,11 +980,11 @@ agreeing with a map on a finite set $S$: there are $\lvert Y \rvert^{\lvert X \r
 [encryptionReal_bisim]: src/Examples/AuthenticatedEncryption/Oracle.lean#L369
 [collision_mass_le]: src/Examples/AuthenticatedEncryption/Collision.lean#L50
 [hybrid_ideal_distance_le]: src/Examples/AuthenticatedEncryption/Collision.lean#L361
-[correctedChain]: src/Examples/AuthenticatedEncryption/Security.lean#L61
-[correctedChain_cca]: src/Examples/AuthenticatedEncryption/Security.lean#L84
-[correctedChain_ptxt]: src/Examples/AuthenticatedEncryption/Security.lean#L89
-[ae_of_ind_cca_int_ptxt]: src/Examples/AuthenticatedEncryption/Security.lean#L97
-[real_ideal_distance_le]: src/Examples/AuthenticatedEncryption/Security.lean#L128
+[correctedChain]: src/Examples/AuthenticatedEncryption/Security.lean#L93
+[correctedChain_cca]: src/Examples/AuthenticatedEncryption/Security.lean#L112
+[correctedChain_ptxt]: src/Examples/AuthenticatedEncryption/Security.lean#L117
+[ae_of_ind_cca_int_ptxt]: src/Examples/AuthenticatedEncryption/Security.lean#L57
+[real_ideal_distance_le]: src/Examples/AuthenticatedEncryption/Security.lean#L123
 [construction_with_right_context]: src/Examples/Substitution.lean#L43
 [construction_with_left_context]: src/Examples/Substitution.lean#L70
 [constructsWithin_of_two_substitutions]: src/Examples/Substitution.lean#L120

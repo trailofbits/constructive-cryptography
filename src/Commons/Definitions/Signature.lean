@@ -137,7 +137,7 @@ for the one that accepts only signatures on signed messages. -/
 def SignatureScheme.EUFCMA [Interface.AdmissibleDistinguishers]
     [DecidableEq SK] [DecidableEq M] (scheme : SignatureScheme PK SK M Sig)
     {q : Signing.Port → ℕ}
-    (error : (Signing.perPort PK M Sig q).inputDomain.Distinguisher → ENNReal) : Prop :=
+    (error : (Signing.perPort PK M Sig q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
   (SignatureScheme.EUFCMA.systems scheme q).1 ≃[error] (SignatureScheme.EUFCMA.systems scheme q).2
 
 /-- **SUF-CMA** within `error`: against the admitted distinguishers, the real system substitutes
@@ -145,7 +145,7 @@ for the one that accepts only signed pairs. -/
 def SignatureScheme.SUFCMA [Interface.AdmissibleDistinguishers]
     [DecidableEq SK] [DecidableEq M] [DecidableEq Sig] (scheme : SignatureScheme PK SK M Sig)
     {q : Signing.Port → ℕ}
-    (error : (Signing.perPort PK M Sig q).inputDomain.Distinguisher → ENNReal) : Prop :=
+    (error : (Signing.perPort PK M Sig q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
   (SignatureScheme.SUFCMA.systems scheme q).1 ≃[error] (SignatureScheme.SUFCMA.systems scheme q).2
 
 end

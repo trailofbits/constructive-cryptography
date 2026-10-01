@@ -109,7 +109,7 @@ for its random-message transformation. -/
 def PKE.INDCCA [Interface.AdmissibleDistinguishers]
     [DecidableEq PK] [DecidableEq M] [DecidableEq C] [Nonempty M]
     (scheme : PublicKeyEncryption PK SK M C) {q : PKE.Port → ℕ}
-    (error : (PKE.perPort PK M C q).inputDomain.Distinguisher → ENNReal) : Prop :=
+    (error : (PKE.perPort PK M C q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
   (PKE.INDCCA.systems scheme q).1 ≃[error] (PKE.INDCCA.systems scheme q).2
 
 /-- **The systems of IND-CPA** (Boneh–Shoup, Attack Game 11.2, in real-or-random form): those of
@@ -125,7 +125,8 @@ decryption queries substitutes for its random-message transformation. -/
 def PKE.INDCPA [Interface.AdmissibleDistinguishers]
     [DecidableEq PK] [DecidableEq M] [DecidableEq C] [Nonempty M]
     (scheme : PublicKeyEncryption PK SK M C) {q : PKE.Port → ℕ}
-    (error : (PKE.perPort PK M C (Function.update q .dec 0)).inputDomain.Distinguisher → ENNReal) :
+    (error : (PKE.perPort PK M C (Function.update q .dec 0)).inputDomain.DistinguisherBehavior →
+      ENNReal) :
     Prop :=
   (PKE.INDCPA.systems scheme q).1 ≃[error] (PKE.INDCPA.systems scheme q).2
 

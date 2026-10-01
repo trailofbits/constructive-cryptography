@@ -62,6 +62,8 @@ classes, and the abstract results of those classes depend only on `propext`,
 #print axioms SystemAlgebra.Interface.distinguisherAdvantage_attach
 #print axioms SystemAlgebra.Interface.substitutesWithin_attach
 #print axioms SystemAlgebra.Interface.AdmissibleDistinguishers.substitutesWithin_attach
+#print axioms SystemAlgebra.Interface.AdmissibleDistinguishers.substitutesWithin_context
+#print axioms SystemAlgebra.Interface.absorb_comp
 #print axioms SystemAlgebra.Interface.distinguisherAdvantage_le_distance
 
 -- ConstructiveCryptography.InterfaceFilter

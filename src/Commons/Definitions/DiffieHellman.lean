@@ -61,7 +61,7 @@ noncomputable def CDH.Assumption.systems (q : ℕ) [NeZero q] (g : G) [Decidable
 substitutes for the ideal one. -/
 def CDH.Assumption [Interface.AdmissibleDistinguishers] (q : ℕ)
     [NeZero q] (g : G) [DecidableEq G] {budget : ℕ}
-    (error : (CDH G budget).inputDomain.Distinguisher → ENNReal) : Prop :=
+    (error : (CDH G budget).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
   (CDH.Assumption.systems q g budget).1 ≃[error] (CDH.Assumption.systems q g budget).2
 
 end Commons
