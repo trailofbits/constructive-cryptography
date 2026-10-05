@@ -129,8 +129,7 @@ theorem collision_conditionallyEquivalent :
       (collisionGame_isProbDist scheme q)).ConditionallyEquivalent
     (AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme :
       Interface.Resource (AE.perPort M C q)).1
-  exact (collisionGame_equivalent scheme q).conditionallyEquivalent _
-    (AE.perPort M C q).nonempty_prefix
+  exact collisionGame_conditionallyEquivalent scheme q
 
 /-- **Every solver wins the collision game with probability at most `q_e² / |M|`.** -/
 theorem collision_win_le {s} (hs : s ∈ CompatibleSolverClass.solvers (AE.perPort M C q)) :
@@ -138,11 +137,13 @@ theorem collision_win_le {s} (hs : s ∈ CompatibleSolverClass.solvers (AE.perPo
   refine Interface.win_le (fun P => ?_) hs
   change P.winProbability
     ((collisionGame scheme q).behavior (collisionGame_isProbDist scheme q)) ≤ _
-  exact (collisionGame_equivalent scheme q).winProbability_behavior_le _
-    (AE.perPort M C q).nonempty_prefix (collisionGame_repliesAtQueriedInterface scheme q)
+  exact P.winProbability_le_of_unsetProbability
+    (PDG.repliesAtQueriedInterface_behavior _ (collisionGame_repliesAtQueriedInterface scheme q))
     (AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme :
-      Interface.Resource (AE.perPort M C q)).2 (by positivity)
-    (fun xs hxs => collisionGame_badProbability_le scheme q xs (Or.inr hxs)) P
+      Interface.Resource (AE.perPort M C q)).2 (PDG.monotoneMBO_behavior _)
+    (collisionGame_conditionallyEquivalent scheme q)
+    (PDG.one_sub_le_unsetProbability_behavior _ (AE.perPort M C q).nonempty_prefix
+      (collisionGame_badProbability_le scheme q))
 
 /-- **The collision step through the games layer**: every solver's advantage between the hybrid
 and the ideal is at most `q_e² / |M|`. -/
