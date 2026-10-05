@@ -26,6 +26,7 @@ classes, and the abstract results of those classes depend only on `propext`,
 
 -- ConstructiveCryptography.CryptographicAlgebra.Game
 #print axioms ConstructiveCryptography.Games.absorb_comp
+#print axioms ConstructiveCryptography.DistinctionGames.absorb_mem
 
 -- ConstructiveCryptography.CryptographicAlgebra.PseudoMetric
 #print axioms ConstructiveCryptography.CryptographicAlgebra.distance_attach_le
