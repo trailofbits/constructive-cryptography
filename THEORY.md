@@ -179,30 +179,37 @@ solver behavior.
 pairs of a DDS and a [monotone condition][MC], on a domain [2, Definitions 2.20–2.22]. An
 environment [wins][DDG.Wins] when it stops where the condition holds, and
 $\nu(G) = \sup_e \Pr[e \text{ wins } G]$ is the [largest winning probability][PDG.supWinProbability].
-[**Blinding**][PDG.blind] replaces every reply by $()$. [**Game equivalence**][GameEquivalent]
-bounds distinguishing by blind winning [5, Definition 13 and Theorem 3]:
+[**Blinding**][PDG.blind] replaces every reply by $()$. Blind winning is the largest probability
+of the condition on an admitted query sequence: it [is at least][PDG.badProbability_le_blind]
+each such probability and [at most][PDG.supWinProbability_blind_le] any common bound on them.
+
+A discrete game $G$ is [**game-equivalent**][GameEquivalent] to a random system $S$ when the
+replies with the condition unset factor through $S$:
 
 $$
-\Pr_G[\,y^n,\ \lnot\mathrm{bad} \mid x^n\,] = \big(1 - \Pr_G[\mathrm{bad} \mid x^n]\big)\, S(x^n, y^n)
-\quad \Longrightarrow \quad
-\delta\big(\mathrm{tr}(G, E, n),\ \mathrm{tr}(S, E, n)\big) \le \nu(G^{\mathrm b}) .
+\Pr_G[\,y^n,\ \lnot\mathrm{bad} \mid x^n\,] = \big(1 - \Pr_G[\mathrm{bad} \mid x^n]\big)\, S(x^n, y^n) .
 $$
 
-Blind winning is the largest probability of the condition on an admitted query sequence: it
-[is at least][PDG.badProbability_le_blind] each such probability and
-[at most][PDG.supWinProbability_blind_le] any common bound on them. The implication above is the
-[game-equivalence bound][GameEquivalent.statDist_le_blind]. A
-[sampled function with a hidden condition][PDG.ofFunction] is a discrete game,
+A [sampled function with a hidden condition][PDG.ofFunction] is a discrete game,
 [game-equivalent to the ideal function][PDG.ofFunction_gameEquivalent] once, on every fixed query
 sequence, the answers jointly with the unset condition factor through the ideal answers.
 
 A discrete game [is a game][PDG.behavior]: each reply of a deterministic game
-[carries the condition on the queries so far][DDG.withMBO] as its MBO. Its visible system
-[is the behavior of its visible systems][PDG.visible_behavior], on an admitted query sequence the
-MBO [is unset with the probability that the condition does not hold][PDG.unsetProbability_behavior],
-and game equivalence [is conditional equivalence][GameEquivalent.conditionallyEquivalent]. A bound
-on the condition at every admitted query sequence therefore
-[bounds the winning probability][GameEquivalent.winProbability_behavior_le].
+[carries the condition on the queries so far][DDG.withMBO] as its MBO. Its visible system $G^-$
+[is the behavior of its visible systems][PDG.visible_behavior], and on an admitted query sequence
+the MBO [is unset with the probability that the condition does not hold][PDG.unsetProbability_behavior].
+Game equivalence is therefore [conditional equivalence][GameEquivalent.conditionallyEquivalent]
+[3, Definition 4.19], [5, Definition 13], and a bound on the condition at every admitted query
+sequence [bounds the winning probability][GameEquivalent.winProbability_behavior_le]. The
+advantage bound above [3, Lemma 4.16] and the transcript distance as the largest advantage (§1.4)
+give the [**game-equivalence bound**][GameEquivalent.transcriptDistance_le_blind]
+[3, Theorem 4.17], [5, Theorem 3], for $G^-$ and $S$ replying at the queried label:
+
+$$
+G \text{ game-equivalent to } S
+\quad \Longrightarrow \quad
+\Delta(G^-, S) \le \nu(G^{\mathrm b}) .
+$$
 
 ---
 
@@ -870,12 +877,12 @@ agreeing with a map on a finite set $S$: there are $\lvert Y \rvert^{\lvert X \r
 [DDG]: src/RandomSystems/Game/Game.lean#L45
 [DDG.Wins]: src/RandomSystems/Game/Game.lean#L57
 [PDG]: src/RandomSystems/Game/Game.lean#L49
-[PDG.supWinProbability]: src/RandomSystems/Game/Game.lean#L105
-[PDG.blind]: src/RandomSystems/Game/Game.lean#L123
-[PDG.badProbability_le_blind]: src/RandomSystems/Game/Game.lean#L189
-[PDG.supWinProbability_blind_le]: src/RandomSystems/Game/Game.lean#L201
-[GameEquivalent]: src/RandomSystems/Game/GameEquivalence.lean#L55
-[GameEquivalent.statDist_le_blind]: src/RandomSystems/Game/GameEquivalence.lean#L88
+[PDG.supWinProbability]: src/RandomSystems/Game/Game.lean#L100
+[PDG.blind]: src/RandomSystems/Game/Game.lean#L118
+[PDG.badProbability_le_blind]: src/RandomSystems/Game/Game.lean#L184
+[PDG.supWinProbability_blind_le]: src/RandomSystems/Game/Game.lean#L196
+[GameEquivalent]: src/RandomSystems/Game/GameEquivalence.lean#L35
+[GameEquivalent.transcriptDistance_le_blind]: src/RandomSystems/Game/GameEquivalence.lean#L104
 [PDG.ofFunction]: src/RandomSystems/Game/FunctionGame.lean#L33
 [PDG.ofFunction_gameEquivalent]: src/RandomSystems/Game/FunctionGame.lean#L66
 [RandomSystem.MonotoneMBO]: src/RandomSystems/Game/MBO.lean#L244
@@ -893,12 +900,12 @@ agreeing with a map on a finite set $S$: there are $\lvert Y \rvert^{\lvert X \r
 [RandomSystem.winProbability_attach_liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L1563
 [Domain.SolverBehavior]: src/RandomSystems/Game/MBOAttachment.lean#L1631
 [Domain.SolverBehavior.absorb]: src/RandomSystems/Game/MBOAttachment.lean#L1653
-[DDG.withMBO]: src/RandomSystems/Game/DiscreteMBO.lean#L52
-[PDG.behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L141
-[PDG.visible_behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L156
-[PDG.unsetProbability_behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L207
-[GameEquivalent.conditionallyEquivalent]: src/RandomSystems/Game/DiscreteMBO.lean#L269
-[GameEquivalent.winProbability_behavior_le]: src/RandomSystems/Game/DiscreteMBO.lean#L300
+[DDG.withMBO]: src/RandomSystems/Game/DiscreteMBO.lean#L47
+[PDG.behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L136
+[PDG.visible_behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L151
+[PDG.unsetProbability_behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L202
+[GameEquivalent.conditionallyEquivalent]: src/RandomSystems/Game/GameEquivalence.lean#L50
+[GameEquivalent.winProbability_behavior_le]: src/RandomSystems/Game/GameEquivalence.lean#L81
 
 <!-- Declarations: §2 -->
 
@@ -934,8 +941,8 @@ agreeing with a map on a finite set $S$: there are $\lvert Y \rvert^{\lvert X \r
 [Interface.Game]: src/ConstructiveCryptography/InterfaceGame.lean#L46
 [Interface.liftMBO]: src/ConstructiveCryptography/InterfaceGame.lean#L49
 [Interface.Game.visible]: src/ConstructiveCryptography/InterfaceGame.lean#L58
-[GameEquivalent.game_dist_le]: src/ConstructiveCryptography/GameBound.lean#L89
-[PDG.ofSingleFunction_gameEquivalent]: src/ConstructiveCryptography/GameBound.lean#L40
+[GameEquivalent.game_dist_le]: src/ConstructiveCryptography/GameBound.lean#L90
+[PDG.ofSingleFunction_gameEquivalent]: src/ConstructiveCryptography/GameBound.lean#L41
 [Interface.swap]: src/ConstructiveCryptography/ResourceCoherence.lean#L177
 [Interface.parallel_swap]: src/ConstructiveCryptography/ResourceCoherence.lean#L211
 [notation-distance]: src/ConstructiveCryptography/Notation.lean#L22

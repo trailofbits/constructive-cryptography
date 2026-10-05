@@ -1,4 +1,4 @@
-import RandomSystems.Game.GameEquivalence
+import RandomSystems.Game.Game
 import RandomSystems.Game.MBO
 
 /-!
@@ -8,9 +8,7 @@ A deterministic discrete game, a DDS with a hidden monotone condition, is a DDS 
 carry the MBO: each reply carries the condition on the queries so far. A probabilistic discrete
 game is then a game, the behavior of its deterministic games with the MBO. Its visible system
 is the behavior of its visible systems. On a fixed admitted sequence of queries, the MBO stays
-unset with the probability that the condition does not hold, and game equivalence to a random
-system is conditional equivalence. The blind bound on the condition then bounds the winning
-probability of every winner.
+unset with the probability that the condition does not hold.
 
 ## Main definitions
 
@@ -23,9 +21,6 @@ probability of every winner.
 * `PDG.monotoneMBO_behavior`: the MBO, once set, stays set
 * `PDG.unsetProbability_behavior`: the MBO is unset on admitted fixed queries with the
   probability that the condition does not hold
-* `GameEquivalent.conditionallyEquivalent`: game equivalence is conditional equivalence
-* `GameEquivalent.winProbability_behavior_le`: a bound on the condition at every admitted
-  query sequence bounds the winning probability
 -/
 
 namespace SystemAlgebra
@@ -262,60 +257,6 @@ theorem unsetProbability_behavior {xs : List (Σ i, X i)} (hxs : E xs) :
       change ys[k].2.2 = false
       rw [((DDG.replies_withMBO_iff g.1 xs ys).mp tr.replies).2 k hk', decide_eq_false_iff_not]
       exact fun hb' => hb (g.1.2.2 (List.take_prefix _ _) hb')
-
-include hE' in
-/-- **Game equivalence is conditional equivalence**: the game of a probabilistic discrete game
-equivalent to a random system is conditionally equivalent to it. -/
-theorem _root_.SystemAlgebra.GameEquivalent.conditionallyEquivalent
-    {S : RandomSystem (Σ i, X i) (Σ i, Y i) (Domain.ofInputs E m hE)}
-    (equiv : GameEquivalent G S) : (G.behavior hG).ConditionallyEquivalent S := by
-  intro h
-  rcases List.eq_nil_or_concat h with rfl | ⟨p, z, rfl⟩
-  · simp only [unsetMBOs, List.map_nil, RandomSystem.mass_nil, RandomSystem.unsetProbability_nil,
-      mul_one]
-  · simp only [List.concat_eq_append]
-    have hfst : (unsetMBOs (p ++ [z])).map Prod.fst = (p ++ [z]).map Prod.fst := by
-      simp [unsetMBOs, Function.comp_def]
-    by_cases hadm : E ((p ++ [z]).map Prod.fst)
-    · rw [unsetProbability_behavior hG hE' hadm, ← equiv, behavior_apply, goodProbability]
-      apply Distribution.mass_congr
-      intro g
-      have hsnd : (unsetMBOs (p ++ [z])).map Prod.snd =
-          ((p ++ [z]).map Prod.snd).map (tagMBO false) := by
-        simp [unsetMBOs, Function.comp_def]
-      rw [hfst, hsnd]
-      exact DDG.replies_withMBO_unset_iff g.1 (by simp) _
-    · have hS : S (p ++ [z]) = 0 :=
-        S.mass_eq_zero_of_not_admitted (by simpa using hadm) z.2
-      have hG0 : G.behavior hG (unsetMBOs (p ++ [z])) = 0 := by
-        rw [unsetMBOs, List.map_append, List.map_singleton]
-        exact (G.behavior hG).mass_eq_zero_of_not_admitted
-          (by simpa [Function.comp_def] using hadm) _
-      rw [hS, hG0, mul_zero]
-
-include hE' in
-/-- **A bound on the condition bounds winning**: for a probabilistic discrete game equivalent to
-a random system, a bound on the condition at every admitted query sequence bounds the winning
-probability of every distinguisher for its game. -/
-theorem _root_.SystemAlgebra.GameEquivalent.winProbability_behavior_le
-    {S : RandomSystem (Σ i, X i) (Σ i, Y i) (Domain.ofInputs E m hE)}
-    (equiv : GameEquivalent G S)
-    (hU : (PDS.behavior G.underlying (underlying_probability hG)).RepliesAtQueriedInterface)
-    (hS : S.RepliesAtQueriedInterface) {ε : ℝ} (hε : 0 ≤ ε)
-    (hbad : ∀ xs, E xs → G.badProbability xs ≤ ε)
-    (P : (Domain.ofInputs E m hE : Domain (Σ i, X i) (Σ i, Y i)).Distinguisher) :
-    P.winProbability (G.behavior hG) ≤ ε := by
-  refine P.winProbability_le_of_unsetProbability (repliesAtQueriedInterface_behavior hG hU) hS
-    (monotoneMBO_behavior hG) (equiv.conditionallyEquivalent hG hE') fun h hh => ?_
-  rcases List.eq_nil_or_concat h with rfl | ⟨p, z, rfl⟩
-  · rw [List.map_nil, RandomSystem.unsetProbability_nil]
-    linarith
-  · simp only [List.concat_eq_append] at hh ⊢
-    have hadm : E ((p ++ [z]).map Prod.fst) := by
-      by_contra hd
-      exact hh (S.mass_eq_zero_of_not_admitted (by simpa using hd) z.2)
-    rw [unsetProbability_behavior hG hE' hadm]
-    linarith [hbad _ hadm]
 
 end PDG
 
