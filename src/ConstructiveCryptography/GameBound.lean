@@ -5,9 +5,10 @@ import ConstructiveCryptography.Notation
 /-!
 # Game equivalence bounds the resource distance
 
-Maurer's game-equivalence bound on random systems (`GameEquivalent.statDist_le_blind`)
-gives a bound on the distance of resources: a resource presented by the visible systems of
-a game is at most the game's blind winning probability away from an equivalent resource.
+The game-equivalence bound on random systems (`GameEquivalent.transcriptDistance_le_blind`,
+CR18 Theorem 4.17) gives a bound on the distance of resources: a resource presented by the
+visible systems of a game is at most the game's blind winning probability away from an
+equivalent resource.
 
 ## Main results
 
@@ -91,13 +92,8 @@ theorem game_dist_le {A : Interface}
     (equiv : GameEquivalent G S.1) (hG : G.isProbDist)
     (visible : R.1 = PDS.behavior G.underlying (PDG.underlying_probability hG)) :
     Δ R S ≤ ENNReal.ofReal (G.blind A.nonempty_prefix).supWinProbability := by
-  rw [Interface.cc_distance_eq]
-  refine iSup_le fun E => iSup_le fun n => iSup_le fun _ => iSup_le fun hE => ?_
-  apply ENNReal.ofReal_le_ofReal
-  have hr := hE R.1 R.2
-  rw [visible] at hr
-  rw [visible]
-  exact equiv.statDist_le_blind A.nonempty_prefix hG E.1 n hr (hE S.1 S.2)
+  rw [Interface.cc_distance_eq, visible]
+  exact equiv.transcriptDistance_le_blind hG A.nonempty_prefix (visible ▸ R.2) S.2
 
 /-- A sampled-function game is compared directly with its visible resource. -/
 theorem game_dist_ofSingleFunction_le {I K X Y : Type} [Unique I] [Fintype X]
