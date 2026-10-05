@@ -161,17 +161,31 @@ parallel composition, distance and games, and the counterexamples, depend only o
 #print axioms SystemAlgebra.envProbe_isDDD
 #print axioms SystemAlgebra.ddeOf_bounded
 
+-- RandomSystems.Game.DiscreteMBO
+#print axioms SystemAlgebra.PDG.visible_behavior
+#print axioms SystemAlgebra.PDG.monotoneMBO_behavior
+#print axioms SystemAlgebra.PDG.unsetProbability_behavior
+#print axioms SystemAlgebra.PDG.one_sub_le_unsetProbability_behavior
+#print axioms SystemAlgebra.PDG.conditionallyEquivalent_behavior
+
 -- RandomSystems.Game.FunctionGame
-#print axioms SystemAlgebra.PDG.ofFunction_gameEquivalent
-#print axioms SystemAlgebra.PDG.ofFunction_blind_le
+#print axioms SystemAlgebra.PDG.ofFunction_conditionallyEquivalent
 
--- RandomSystems.Game.Game
-#print axioms SystemAlgebra.PDG.winProbability_ofQueries_blind
-#print axioms SystemAlgebra.PDG.badProbability_le_blind
-#print axioms SystemAlgebra.PDG.supWinProbability_blind_le
+-- RandomSystems.Game.MBO
+#print axioms SystemAlgebra.RandomSystem.visible
+#print axioms SystemAlgebra.RandomSystem.abs_decisionProbability_sub_le_winProbability
+#print axioms SystemAlgebra.Domain.Distinguisher.advantage_le_winProbability
+#print axioms SystemAlgebra.Domain.Distinguisher.winProbability_le_of_unsetProbability
+#print axioms SystemAlgebra.RandomSystem.transcriptDistance_visible_le_of_unsetProbability
 
--- RandomSystems.Game.GameEquivalence
-#print axioms SystemAlgebra.GameEquivalent.statDist_le_blind
+-- RandomSystems.Game.MBOAttachment
+#print axioms SystemAlgebra.PDCBehavior.liftMBO_id
+#print axioms SystemAlgebra.PDCBehavior.liftMBO_comp
+#print axioms SystemAlgebra.RandomSystem.visible_attach_liftMBO
+#print axioms SystemAlgebra.RandomSystem.MonotoneMBO.attach_liftMBO
+#print axioms SystemAlgebra.RandomSystem.winProbability_attach_liftMBO
+#print axioms SystemAlgebra.Domain.Distinguisher.exists_absorbAll_winProbability
+#print axioms SystemAlgebra.Domain.SolverBehavior.absorb
 
 -- RandomSystems.PDS.Function
 #print axioms SystemAlgebra.DDS.ofFunction

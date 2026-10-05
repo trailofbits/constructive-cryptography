@@ -6,11 +6,11 @@ import ConstructiveCryptography.GameBound
 
 The corrected statistical step of Banfi's §2.3.4 (printed pp. 24–25). The hybrid oracle answers
 as the ideal oracle unless an original message equals one of the outer replacement messages.
-The outer replacement table is independent of the ideal system's tables, so the hybrid is
-game-equivalent to the ideal (Maurer's conditional equivalence), and the distance is at most the
-collision probability, `q_e² / |M|` for `q_e` encryption queries. Unlike the printed argument,
-the collision event covers every pair of an original message and a replacement message, in
-either order.
+The outer replacement table is independent of the ideal system's tables, so the collision game,
+the hybrid with the collision as its condition, is conditionally equivalent to the ideal, and the
+distance is at most the collision probability, `q_e² / |M|` for `q_e` encryption queries.
+Unlike the printed argument, the collision event covers every pair of an original message and a
+replacement message, in either order.
 
 ## Main definitions
 
@@ -22,6 +22,9 @@ either order.
 * `hybridDecrypt_eq`: without a collision, the hybrid decrypts as the ideal
 * `ideal_mass_hybridTables`: the ideal oracle reads only the first entries of the real system's
   tables, so it has the same mass on the hybrid's tables as on the ideal's smaller ones
+* `collisionGame_conditionallyEquivalent`: the collision game is conditionally equivalent to
+  the ideal
+* `collisionGame_badProbability_le`: the collision probability on admitted queries
 * `hybrid_ideal_distance_le`: the hybrid is within `q_e² / |M|` of the ideal
 -/
 
@@ -329,13 +332,15 @@ theorem collisionGame_badProbability (xs : List (Σ i, (AE.perPort M C q).X i)) 
   rw [Distribution.mass_true, (Distribution.prod_isProbDist _ _ (Distribution.prod_isProbDist _ _
     (tableLaw_isProbDist _ _) (tableLaw_isProbDist _ _)) (tableLaw_isProbDist _ _)).2, one_mul]
 
-/-- **The collision game is equivalent to the ideal**: the replies with no collision are the
-ideal replies, independently of the outer replacement table. -/
-theorem collisionGame_equivalent :
-    GameEquivalent (collisionGame scheme q)
+/-- **The collision game is conditionally equivalent to the ideal**: the replies with no
+collision are the ideal replies, independently of the outer replacement table. -/
+theorem collisionGame_conditionallyEquivalent :
+    Interface.Game.ofPDG (collisionGame scheme q) (collisionGame_isProbDist scheme q)
+        (hybrid_visible scheme q) |≡
       (AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme :
-        Interface.Resource (AE.perPort M C q)).1 := by
-  intro h
+        Interface.Resource (AE.perPort M C q)) := by
+  refine (Interface.Game.conditionallyEquivalent_ofPDG_iff _ _ _ _).mpr
+    (PDG.conditionallyEquivalent_behavior _ (AE.perPort M C q).nonempty_prefix fun h => ?_)
   rw [collisionGame_badProbability, ideal_mass, PDG.goodProbability, collisionGame,
     Distribution.mass_fTransform]
   have hcompl := Distribution.mass_add_compl
@@ -357,16 +362,11 @@ theorem collisionGame_equivalent :
     (fun t => ¬ Collision (AE.CCA.law1 M C) (messages (h.map Prod.fst)) t)).trans ?_
   rw [mul_comm, ideal_mass_hybridTables]
 
-/-- **The collision step**: the hybrid is within `q_e² / |M|` of the ideal. -/
-theorem hybrid_ideal_distance_le :
-    Δ (Hybrid scheme q) (AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme :
-      Interface.Resource (AE.perPort M C q)) ≤
-      ENNReal.ofReal ((q .enc : ℝ) ^ 2 / Fintype.card M) := by
-  refine (GameEquivalent.game_dist_le (collisionGame_equivalent scheme q)
-    (collisionGame_isProbDist scheme q) (hybrid_visible scheme q)).trans
-    (ENNReal.ofReal_le_ofReal ?_)
-  refine PDG.supWinProbability_blind_le _ (collisionGame_isProbDist scheme q).1 (by positivity)
-    fun xs hxs => ?_
+/-- **The collision bound**: on each admitted query sequence, the condition holds with
+probability at most `q_e² / |M|`. -/
+theorem collisionGame_badProbability_le (xs : List (Σ i, (AE.perPort M C q).X i))
+    (hxs : xs = [] ∨ (AE.perPort M C q).domain xs) :
+    (collisionGame scheme q).badProbability xs ≤ (q .enc : ℝ) ^ 2 / Fintype.card M := by
   have hn : (messages xs).length ≤ q .enc := by
     rcases hxs with rfl | hxs
     · simp
@@ -380,6 +380,14 @@ theorem hybrid_ideal_distance_le :
   rw [collisionGame_badProbability]
   refine (collision_mass_le (messages xs) hk).trans ?_
   gcongr
+
+/-- **The collision step**: the hybrid is within `q_e² / |M|` of the ideal. -/
+theorem hybrid_ideal_distance_le :
+    Δ (Hybrid scheme q) (AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme :
+      Interface.Resource (AE.perPort M C q)) ≤
+      ENNReal.ofReal ((q .enc : ℝ) ^ 2 / Fintype.card M) :=
+  game_dist_le (hybrid_visible scheme q) (collisionGame_conditionallyEquivalent scheme q)
+    (collisionGame_badProbability_le scheme q)
 
 end Game
 
