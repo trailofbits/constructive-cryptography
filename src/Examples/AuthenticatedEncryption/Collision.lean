@@ -335,10 +335,12 @@ theorem collisionGame_badProbability (xs : List (Σ i, (AE.perPort M C q).X i)) 
 /-- **The collision game is conditionally equivalent to the ideal**: the replies with no
 collision are the ideal replies, independently of the outer replacement table. -/
 theorem collisionGame_conditionallyEquivalent :
-    (collisionGame scheme q).behavior (collisionGame_isProbDist scheme q) |≡
+    Interface.Game.ofPDG (collisionGame scheme q) (collisionGame_isProbDist scheme q)
+        (hybrid_visible scheme q) |≡
       (AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme :
         Interface.Resource (AE.perPort M C q)) := by
-  refine PDG.conditionallyEquivalent_behavior _ (AE.perPort M C q).nonempty_prefix fun h => ?_
+  refine (Interface.Game.conditionallyEquivalent_ofPDG_iff _ _ _ _).mpr
+    (PDG.conditionallyEquivalent_behavior _ (AE.perPort M C q).nonempty_prefix fun h => ?_)
   rw [collisionGame_badProbability, ideal_mass, PDG.goodProbability, collisionGame,
     Distribution.mass_fTransform]
   have hcompl := Distribution.mass_add_compl
@@ -384,7 +386,7 @@ theorem hybrid_ideal_distance_le :
     Δ (Hybrid scheme q) (AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme :
       Interface.Resource (AE.perPort M C q)) ≤
       ENNReal.ofReal ((q .enc : ℝ) ^ 2 / Fintype.card M) :=
-  game_dist_le (collisionGame_conditionallyEquivalent scheme q) (hybrid_visible scheme q)
+  game_dist_le (hybrid_visible scheme q) (collisionGame_conditionallyEquivalent scheme q)
     (collisionGame_badProbability_le scheme q)
 
 end Game
