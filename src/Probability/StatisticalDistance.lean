@@ -540,11 +540,8 @@ real/ideal density ratio is at least `1 - eps` on good points then
 
 `Distribution` is `A →₀ ℝ`: the sums run over
 `(ideal - real).support ∪ ideal.support`, so no finiteness of the carrier is
-used, and `hTechnique_ratio` below is the `[Fintype]` instance.  The carrier
-that forces the general form is the transcript space
-`List (X × Option Y)`, which is infinite even for finite alphabets — see
-`RandomSystems/Technique/HCoefficient.lean`, whose endpoints all consume this
-form. -/
+used. Transcript laws live on lists of query–reply pairs, a carrier that is
+infinite even for finite alphabets. -/
 theorem statDist_le_probBad_add_of_ratio_on_good {A : Type*}
     (real ideal : Distribution A) (Bad : A → Prop) (eps : ℝ≥0)
     (h_real_nonneg : real.NonNeg) (h_ideal_nonneg : ideal.NonNeg)
