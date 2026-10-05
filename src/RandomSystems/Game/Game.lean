@@ -96,11 +96,6 @@ noncomputable def goodProbability (G : PDG X Y D) (h : List (X × Y)) : ℝ :=
 theorem underlying_probability {G : PDG X Y D} (hG : G.isProbDist) :
     G.underlying.isProbDist := Distribution.fTransform_isProbDist _ hG
 
-theorem goodProbability_le {G : PDG X Y D} (hG : G.NonNeg) (h : List (X × Y)) :
-    G.goodProbability h ≤ behaviorMass G.underlying (h.map Prod.fst) (h.map Prod.snd) := by
-  rw [behaviorMass, underlying, Distribution.mass_fTransform]
-  exact Distribution.mass_mono hG (fun _ hg => hg.1)
-
 /-- Maximal winning probability over deterministic environments. -/
 noncomputable def supWinProbability (G : PDG X Y D) : ℝ :=
   sSup (Set.range (fun e : DDE X Y => winProbability e G))

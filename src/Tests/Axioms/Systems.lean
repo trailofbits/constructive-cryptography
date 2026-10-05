@@ -165,8 +165,6 @@ parallel composition, distance and games, and the counterexamples, depend only o
 #print axioms SystemAlgebra.PDG.visible_behavior
 #print axioms SystemAlgebra.PDG.monotoneMBO_behavior
 #print axioms SystemAlgebra.PDG.unsetProbability_behavior
-#print axioms SystemAlgebra.GameEquivalent.conditionallyEquivalent
-#print axioms SystemAlgebra.GameEquivalent.winProbability_behavior_le
 
 -- RandomSystems.Game.FunctionGame
 #print axioms SystemAlgebra.PDG.ofFunction_gameEquivalent
@@ -178,7 +176,9 @@ parallel composition, distance and games, and the counterexamples, depend only o
 #print axioms SystemAlgebra.PDG.supWinProbability_blind_le
 
 -- RandomSystems.Game.GameEquivalence
-#print axioms SystemAlgebra.GameEquivalent.statDist_le_blind
+#print axioms SystemAlgebra.GameEquivalent.conditionallyEquivalent
+#print axioms SystemAlgebra.GameEquivalent.winProbability_behavior_le
+#print axioms SystemAlgebra.GameEquivalent.transcriptDistance_le_blind
 
 -- RandomSystems.Game.MBO
 #print axioms SystemAlgebra.RandomSystem.visible
