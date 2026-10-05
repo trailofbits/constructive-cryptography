@@ -6,23 +6,27 @@ set_option autoImplicit false
 /-!
 # Games
 
-A game is a system with an additional monotone binary output, the MBO, which indicates
-whether the game has been won. Converters attach to games as they attach to resources,
-contravariantly in serial composition, and the visible resource of a game ignores its MBO;
-attaching a converter to a game attaches it to the visible resource.
+The abstraction of games of CR18, Chapter 4: a game is a problem whose performance is a
+winning probability (Definition 4.5). The classes introduce games and solvers only as fields and
+axioms, and know nothing about systems.
 
-Distinguishers and winners are both systems connected to a resource or to a game. A solver
-is given by its two performances: the probability that it outputs `1` on each resource, and
-its winning probability for each game. The solvers on each interface are closed under
-absorbing a converter, which acts on resources and on games by attachment: a solver with a
-converter absorbed wins a game as the solver wins the game with the converter attached. A
-game conditionally equivalent to a resource bounds each solver's advantage between its
-visible resource and the resource by the solver's winning probability.
+`GameTheory` assumes games on each interface, an attachment of converters to games,
+contravariant in serial composition, and the visible resource of each game, with which
+attachment commutes. `CompatibleSolverClass` assumes solvers, each given by its two
+performances: its probability of outputting `1` on each resource (Definition 4.7) and its
+winning probability for each game (Definition 4.5). The solvers on each interface are closed
+under absorbing a converter: a solver with a converter absorbed wins a game as the solver wins
+the game with the converter attached. It also assumes a conditional equivalence of games to
+resources, under which each solver's advantage between the visible resource of a game and the
+resource is at most its winning probability.
 
-Sources: CR18, §3.7.1 (games), §4.5.1 (Definition 4.5, the winning probability), §4.8.3
-(attachment, as used in Definition 4.13 and the proof of Lemma 4.9, `g(W R) = (R g)(W)`),
-§4.10.3 (Definition 4.18, the visible system `S⁻`; Lemma 4.16) and §4.11.1 (Definition 4.19,
-conditional equivalence; Theorem 4.17).
+CR18 instantiates games as systems with a monotone binary output (§3.7.1); so does the instance
+on interfaces, `ConstructiveCryptography.InterfaceGame`.
+
+Sources: CR18, §4.5.1 (Definition 4.5, games and the winning probability), §4.5.2
+(Definition 4.7, distinction problems), §4.8.3 (attachment, as used in Definition 4.13 and the
+proof of Lemma 4.9, `g(W R) = (R g)(W)`), §4.10.3 (Definition 4.18, the visible system `S⁻`;
+Lemma 4.16) and §4.11.1 (Definition 4.19, conditional equivalence; Theorem 4.17).
 
 ## Main definitions
 
@@ -44,7 +48,7 @@ open CategoryTheory
 
 universe u v w x
 
-/-- **Games over a resource theory** (CR18, §3.7.1 and Definition 4.18): the games on
+/-- **Games over a resource theory** (CR18, §4.5.1 and Definition 4.18): the games on
 each interface, attachment of converters, contravariant in serial composition, and the visible
 resource of a game, with which attachment commutes. -/
 class GameTheory (C : Type u) [Category.{v} C] (Phi : outParam (C → Type w))
@@ -56,7 +60,7 @@ class GameTheory (C : Type u) [Category.{v} C] (Phi : outParam (C → Type w))
   /-- Serial converter attachment is nested attachment. -/
   attachGame_serial : ∀ {A B D : C} (first : A ⟶ B) (second : B ⟶ D) (game : Game D),
     attachGame (first ≫ second) game = attachGame first (attachGame second game)
-  /-- The visible resource `S⁻` of a game, which ignores its MBO (CR18, Definition 4.18). -/
+  /-- The visible resource `S⁻` of a game (CR18, Definition 4.18). -/
   visible : ∀ {A : C}, Game A → Phi A
   /-- Attaching a converter to a game attaches it to the visible resource. -/
   visible_attachGame : ∀ {A B : C} (converter : A ⟶ B) (game : Game B),
@@ -82,7 +86,7 @@ end GameTheory
 each given by its probability of outputting `1` on every resource and its winning probability
 for every game, closed under absorbing a converter; and conditional equivalence of a game to
 a resource, under which each solver's advantage between the visible resource and the resource
-is at most its winning probability (CR18, Lemma 4.16 and Theorem 4.17). -/
+is at most its winning probability (CR18, Lemma 4.16 and the proof of Theorem 4.17). -/
 class CompatibleSolverClass (C : Type u) [Category.{v} C] (Phi : outParam (C → Type w))
     [ResourceTheory C Phi] (Game : outParam (C → Type x)) [GameTheory C Phi Game] where
   /-- The solvers at each interface: a decision probability on resources and a winning
@@ -97,8 +101,8 @@ class CompatibleSolverClass (C : Type u) [Category.{v} C] (Phi : outParam (C →
         fun game => solver.2 (GameTheory.attachGame converter game)) ∈ solvers B
   /-- Conditional equivalence `S |≡ T` of a game to a resource (CR18, Definition 4.19). -/
   ConditionallyEquivalent : ∀ {A : C}, Game A → Phi A → Prop
-  /-- **Conditional equivalence bounds distinguishing by winning** (CR18, Lemma 4.16 and
-  Theorem 4.17). -/
+  /-- **Conditional equivalence bounds distinguishing by winning** (CR18, Lemma 4.16 and the
+  proof of Theorem 4.17). -/
   advantage_le_win : ∀ {A : C} {game : Game A} {T : Phi A}
     {solver : (Phi A → ℝ) × (Game A → ℝ)}, ConditionallyEquivalent game T →
       solver ∈ solvers A → |solver.1 (GameTheory.visible game) - solver.1 T| ≤ solver.2 game
