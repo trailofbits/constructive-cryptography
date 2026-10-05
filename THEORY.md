@@ -147,9 +147,9 @@ used as a winner [does not see the MBO][DDE.blindMBO], and its
 [**winning probability**][RandomSystem.winProbability] is the probability that the MBO is set when
 it stops [3, Definition 4.5]. A game is [**conditionally equivalent**][RandomSystem.ConditionallyEquivalent]
 to a random system $T$, $G \mathrel{|\!\equiv} T$, when it replies as $T$ as long as the MBO is
-unset [3, Definition 4.19]. The advantage between the visible system and $T$ is then
-[at most the winning probability][Domain.Distinguisher.advantage_le_winProbability]
-[3, Lemma 4.16 and Theorem 4.17]:
+unset [3, Definition 4.19], [5, Definition 13]. The advantage between the visible system and $T$
+is then [at most the winning probability][Domain.Distinguisher.advantage_le_winProbability]
+[3, Lemma 4.16]:
 
 $$
 G\big(x^n, (y, 0)^n\big) = \Pr_G[\text{MBO unset} \mid x^n]\ T(x^n, y^n)
@@ -160,10 +160,21 @@ $$
 Before the MBO is set, the winner sees the replies of $T$, which carry no information about the
 MBO. If the MBO is set with probability at most $\varepsilon$ on every fixed query sequence,
 [every winner wins with probability at most $\varepsilon$][Domain.Distinguisher.winProbability_le_of_unsetProbability].
+The transcript distance is the largest advantage (§1.4), so the visible system is then
+[within $\varepsilon$ of $T$][RandomSystem.transcriptDistance_visible_le_of_unsetProbability]
+[3, Theorem 4.17], [5, Theorem 3], for $G$ and $T$ replying at the queried label:
 
-**Attachment**: a PDC $\alpha$ attaches to a game through its
-[MBO-forwarding lift][PDCBehavior.liftMBO] $\hat\alpha$, which runs $\alpha$ and gives each outside
-reply the MBO of the latest inside reply [3, Definition 4.13]. The lift is functorial,
+$$
+G \mathrel{|\!\equiv} T, \quad \Pr_G[\text{MBO set} \mid x^n] \le \varepsilon \ \text{ for every fixed } x^n
+\quad \Longrightarrow \quad
+\Delta(G^-, T) \le \varepsilon .
+$$
+
+**Attachment**: the library defines the action of a PDC $\alpha$ on a game by its
+[MBO-forwarding lift][PDCBehavior.liftMBO] $\hat\alpha$: the lift runs $\alpha$, which does not see
+the inside MBOs, and gives each outside reply the MBO of the latest inside reply. CR18 uses this
+action without defining it, in Definition 4.13 ($R g$) and in the proof of Lemma 4.9
+($g(W R) = (R g)(W)$) [3]. The lift is functorial,
 [$\hat{\mathrm{id}} = \mathrm{id}$][PDCBehavior.liftMBO_id] and
 [$\widehat{\alpha \beta} = \hat\alpha \hat\beta$][PDCBehavior.liftMBO_comp]. It
 [keeps games games][RandomSystem.MonotoneMBO.attach_liftMBO] and
@@ -175,41 +186,26 @@ distinguisher's probability of outputting 1 on each random system with its winni
 for each game, and [absorbing a PDC][Domain.SolverBehavior.absorb] into a solver behavior gives a
 solver behavior.
 
-**Discrete games.** A [discrete game][PDG] is a distribution over [deterministic games][DDG],
-pairs of a DDS and a [monotone condition][MC], on a domain [2, Definitions 2.20–2.22]. An
-environment [wins][DDG.Wins] when it stops where the condition holds, and
-$\nu(G) = \sup_e \Pr[e \text{ wins } G]$ is the [largest winning probability][PDG.supWinProbability].
-[**Blinding**][PDG.blind] replaces every reply by $()$. Blind winning is the largest probability
-of the condition on an admitted query sequence: it [is at least][PDG.badProbability_le_blind]
-each such probability and [at most][PDG.supWinProbability_blind_le] any common bound on them.
-
-A discrete game $G$ is [**game-equivalent**][GameEquivalent] to a random system $S$ when the
-replies with the condition unset factor through $S$:
+**Discrete games** present games, as PDSs present random systems. A [discrete game][PDG] is a
+distribution over [deterministic discrete games][DDG], pairs of a DDS and a hidden
+[monotone condition][MC] on the queries, on a domain [2, Definitions 2.20–2.22]. Each reply of a
+deterministic discrete game [carries the condition on the queries so far][DDG.withMBO] as its MBO,
+and a discrete game [presents the game][PDG.behavior] of these systems. Its visible system
+[is the behavior of the visible systems][PDG.visible_behavior], and on an admitted query sequence
+the MBO [is unset with the probability that the condition does not hold][PDG.unsetProbability_behavior],
+so a bound on the condition at the empty and every admitted query sequence
+[bounds the probability that the MBO is set][PDG.one_sub_le_unsetProbability_behavior]. The game
+is [conditionally equivalent][PDG.conditionallyEquivalent_behavior] to a random system $S$ when
+the replies with the condition unset factor through $S$:
 
 $$
 \Pr_G[\,y^n,\ \lnot\mathrm{bad} \mid x^n\,] = \big(1 - \Pr_G[\mathrm{bad} \mid x^n]\big)\, S(x^n, y^n) .
 $$
 
-A [sampled function with a hidden condition][PDG.ofFunction] is a discrete game,
-[game-equivalent to the ideal function][PDG.ofFunction_gameEquivalent] once, on every fixed query
-sequence, the answers jointly with the unset condition factor through the ideal answers.
-
-A discrete game [is a game][PDG.behavior]: each reply of a deterministic game
-[carries the condition on the queries so far][DDG.withMBO] as its MBO. Its visible system $G^-$
-[is the behavior of its visible systems][PDG.visible_behavior], and on an admitted query sequence
-the MBO [is unset with the probability that the condition does not hold][PDG.unsetProbability_behavior].
-Game equivalence is therefore [conditional equivalence][GameEquivalent.conditionallyEquivalent]
-[3, Definition 4.19], [5, Definition 13], and a bound on the condition at every admitted query
-sequence [bounds the winning probability][GameEquivalent.winProbability_behavior_le]. The
-advantage bound above [3, Lemma 4.16] and the transcript distance as the largest advantage (§1.4)
-give the [**game-equivalence bound**][GameEquivalent.transcriptDistance_le_blind]
-[3, Theorem 4.17], [5, Theorem 3], for $G^-$ and $S$ replying at the queried label:
-
-$$
-G \text{ game-equivalent to } S
-\quad \Longrightarrow \quad
-\Delta(G^-, S) \le \nu(G^{\mathrm b}) .
-$$
+A [sampled function with a hidden condition][PDG.ofFunction] is a discrete game, and the game it
+presents is [conditionally equivalent to the ideal function][PDG.ofFunction_conditionallyEquivalent]
+once, on every fixed query sequence, the answers jointly with the unset condition factor through
+the ideal answers.
 
 ---
 
@@ -264,11 +260,13 @@ A [**game**][Interface.Game] on $A$ is a resource on the
 sense of §1.5. A converter attaches to it through its [lift][Interface.liftMBO], and its
 [visible resource][Interface.Game.visible] is its visible system.
 
-For a discrete game $G$ presenting $R$ and game-equivalent to $S$,
-[the distance is at most blind winning][GameEquivalent.game_dist_le],
-$\Delta(R, S) \le \nu(G^{\mathrm b})$, and a
-[single-label sampled-function game is game-equivalent][PDG.ofSingleFunction_gameEquivalent] to
-the resource sampling the ideal function. Parallel composition is commutative: $R \parallel S$ and
+For a discrete game $G$ presenting $R$, whose game is conditionally equivalent to $S$, and whose
+condition holds with probability at most $\varepsilon$ on the empty and every admitted query
+sequence,
+[the distance is at most $\varepsilon$][RandomSystem.ConditionallyEquivalent.game_dist_le],
+$\Delta(R, S) \le \varepsilon$; the game of a
+[single-label sampled-function game is conditionally equivalent][PDG.ofSingleFunction_conditionallyEquivalent]
+to the resource sampling the ideal function. Parallel composition is commutative: $R \parallel S$ and
 $S \parallel R$ [agree][Interface.parallel_swap] through the [swap][Interface.swap] of the two
 interfaces.
 
@@ -419,7 +417,8 @@ $$
 
 The class [`GameTheory`][GameTheory] has games $\mathrm{Game}\,A$ on each object, attachment
 $\alpha \cdot G$ of converters to games, contravariant in serial composition, and the visible
-resource $G^-$ of a game, with which attachment commutes [3, §3.7.1, Definitions 4.13 and 4.18]:
+resource $G^-$ of a game, with which attachment commutes [3, §3.7.1, Definition 4.18; attachment
+as used in Definition 4.13 and the proof of Lemma 4.9]:
 
 $$
 \mathrm{id} \cdot G = G, \qquad (\alpha \beta) \cdot G = \alpha \cdot (\beta \cdot G), \qquad
@@ -873,39 +872,33 @@ agreeing with a map on a finite set $S$: there are $\lvert Y \rvert^{\lvert X \r
 [RandomSystem.restrict_restrict]: src/RandomSystems/Distance/Restriction.lean#L67
 [RandomSystem.sLaw_restrict]: src/RandomSystems/Distance/Restriction.lean#L98
 [RandomSystem.transcriptDistance_restrict_le]: src/RandomSystems/Distance/Restriction.lean#L129
-[MC]: src/RandomSystems/Game/Game.lean#L41
-[DDG]: src/RandomSystems/Game/Game.lean#L45
-[DDG.Wins]: src/RandomSystems/Game/Game.lean#L57
-[PDG]: src/RandomSystems/Game/Game.lean#L49
-[PDG.supWinProbability]: src/RandomSystems/Game/Game.lean#L100
-[PDG.blind]: src/RandomSystems/Game/Game.lean#L118
-[PDG.badProbability_le_blind]: src/RandomSystems/Game/Game.lean#L184
-[PDG.supWinProbability_blind_le]: src/RandomSystems/Game/Game.lean#L196
-[GameEquivalent]: src/RandomSystems/Game/GameEquivalence.lean#L35
-[GameEquivalent.transcriptDistance_le_blind]: src/RandomSystems/Game/GameEquivalence.lean#L104
-[PDG.ofFunction]: src/RandomSystems/Game/FunctionGame.lean#L33
-[PDG.ofFunction_gameEquivalent]: src/RandomSystems/Game/FunctionGame.lean#L66
-[RandomSystem.MonotoneMBO]: src/RandomSystems/Game/MBO.lean#L244
-[RandomSystem.visible]: src/RandomSystems/Game/MBO.lean#L252
-[DDE.blindMBO]: src/RandomSystems/Game/MBO.lean#L320
-[RandomSystem.winProbability]: src/RandomSystems/Game/MBO.lean#L377
-[RandomSystem.ConditionallyEquivalent]: src/RandomSystems/Game/MBO.lean#L415
-[Domain.Distinguisher.advantage_le_winProbability]: src/RandomSystems/Game/MBO.lean#L582
-[Domain.Distinguisher.winProbability_le_of_unsetProbability]: src/RandomSystems/Game/MBO.lean#L632
-[PDCBehavior.liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L354
-[PDCBehavior.liftMBO_id]: src/RandomSystems/Game/MBOAttachment.lean#L386
-[PDCBehavior.liftMBO_comp]: src/RandomSystems/Game/MBOAttachment.lean#L1134
-[RandomSystem.MonotoneMBO.attach_liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L719
-[RandomSystem.visible_attach_liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L479
-[RandomSystem.winProbability_attach_liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L1563
-[Domain.SolverBehavior]: src/RandomSystems/Game/MBOAttachment.lean#L1631
-[Domain.SolverBehavior.absorb]: src/RandomSystems/Game/MBOAttachment.lean#L1653
-[DDG.withMBO]: src/RandomSystems/Game/DiscreteMBO.lean#L47
-[PDG.behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L136
-[PDG.visible_behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L151
-[PDG.unsetProbability_behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L202
-[GameEquivalent.conditionallyEquivalent]: src/RandomSystems/Game/GameEquivalence.lean#L50
-[GameEquivalent.winProbability_behavior_le]: src/RandomSystems/Game/GameEquivalence.lean#L81
+[MC]: src/RandomSystems/Game/DiscreteMBO.lean#L46
+[DDG]: src/RandomSystems/Game/DiscreteMBO.lean#L50
+[PDG]: src/RandomSystems/Game/DiscreteMBO.lean#L54
+[PDG.ofFunction]: src/RandomSystems/Game/FunctionGame.lean#L37
+[RandomSystem.MonotoneMBO]: src/RandomSystems/Game/MBO.lean#L247
+[RandomSystem.visible]: src/RandomSystems/Game/MBO.lean#L255
+[DDE.blindMBO]: src/RandomSystems/Game/MBO.lean#L323
+[RandomSystem.winProbability]: src/RandomSystems/Game/MBO.lean#L380
+[RandomSystem.ConditionallyEquivalent]: src/RandomSystems/Game/MBO.lean#L418
+[Domain.Distinguisher.advantage_le_winProbability]: src/RandomSystems/Game/MBO.lean#L585
+[Domain.Distinguisher.winProbability_le_of_unsetProbability]: src/RandomSystems/Game/MBO.lean#L635
+[RandomSystem.transcriptDistance_visible_le_of_unsetProbability]: src/RandomSystems/Game/MBO.lean#L657
+[PDCBehavior.liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L356
+[PDCBehavior.liftMBO_id]: src/RandomSystems/Game/MBOAttachment.lean#L388
+[PDCBehavior.liftMBO_comp]: src/RandomSystems/Game/MBOAttachment.lean#L1136
+[RandomSystem.MonotoneMBO.attach_liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L721
+[RandomSystem.visible_attach_liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L481
+[RandomSystem.winProbability_attach_liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L1565
+[Domain.SolverBehavior]: src/RandomSystems/Game/MBOAttachment.lean#L1633
+[Domain.SolverBehavior.absorb]: src/RandomSystems/Game/MBOAttachment.lean#L1655
+[DDG.withMBO]: src/RandomSystems/Game/DiscreteMBO.lean#L98
+[PDG.behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L187
+[PDG.visible_behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L202
+[PDG.unsetProbability_behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L253
+[PDG.one_sub_le_unsetProbability_behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L317
+[PDG.conditionallyEquivalent_behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L337
+[PDG.ofFunction_conditionallyEquivalent]: src/RandomSystems/Game/FunctionGame.lean#L67
 
 <!-- Declarations: §2 -->
 
@@ -941,8 +934,8 @@ agreeing with a map on a finite set $S$: there are $\lvert Y \rvert^{\lvert X \r
 [Interface.Game]: src/ConstructiveCryptography/InterfaceGame.lean#L46
 [Interface.liftMBO]: src/ConstructiveCryptography/InterfaceGame.lean#L49
 [Interface.Game.visible]: src/ConstructiveCryptography/InterfaceGame.lean#L58
-[GameEquivalent.game_dist_le]: src/ConstructiveCryptography/GameBound.lean#L90
-[PDG.ofSingleFunction_gameEquivalent]: src/ConstructiveCryptography/GameBound.lean#L41
+[RandomSystem.ConditionallyEquivalent.game_dist_le]: src/ConstructiveCryptography/GameBound.lean#L91
+[PDG.ofSingleFunction_conditionallyEquivalent]: src/ConstructiveCryptography/GameBound.lean#L44
 [Interface.swap]: src/ConstructiveCryptography/ResourceCoherence.lean#L177
 [Interface.parallel_swap]: src/ConstructiveCryptography/ResourceCoherence.lean#L211
 [notation-distance]: src/ConstructiveCryptography/Notation.lean#L22
@@ -1130,8 +1123,8 @@ agreeing with a map on a finite set $S$: there are $\lvert Y \rvert^{\lvert X \r
 [cca_bisim]: src/Examples/AuthenticatedEncryption/Oracle.lean#L187
 [aeIdeal_bisim]: src/Examples/AuthenticatedEncryption/Oracle.lean#L240
 [encryptionReal_bisim]: src/Examples/AuthenticatedEncryption/Oracle.lean#L369
-[collision_mass_le]: src/Examples/AuthenticatedEncryption/Collision.lean#L51
-[hybrid_ideal_distance_le]: src/Examples/AuthenticatedEncryption/Collision.lean#L381
+[collision_mass_le]: src/Examples/AuthenticatedEncryption/Collision.lean#L53
+[hybrid_ideal_distance_le]: src/Examples/AuthenticatedEncryption/Collision.lean#L383
 [advantage_attach_le_win]: src/Examples/Games.lean#L54
 [win_attach_le]: src/Examples/Games.lean#L62
 [win_attach_comp_le]: src/Examples/Games.lean#L77
@@ -1139,9 +1132,9 @@ agreeing with a map on a finite set $S$: there are $\lvert Y \rvert^{\lvert X \r
 [collision]: src/Examples/Games.lean#L111
 [collision_visible]: src/Examples/Games.lean#L118
 [collision_conditionallyEquivalent]: src/Examples/Games.lean#L124
-[collision_win_le]: src/Examples/Games.lean#L136
-[hybrid_ideal_advantage_le]: src/Examples/Games.lean#L149
-[attach_hybrid_ideal_advantage_le]: src/Examples/Games.lean#L159
+[collision_win_le]: src/Examples/Games.lean#L135
+[hybrid_ideal_advantage_le]: src/Examples/Games.lean#L150
+[attach_hybrid_ideal_advantage_le]: src/Examples/Games.lean#L160
 [correctedChain]: src/Examples/AuthenticatedEncryption/Security.lean#L93
 [correctedChain_cca]: src/Examples/AuthenticatedEncryption/Security.lean#L112
 [correctedChain_ptxt]: src/Examples/AuthenticatedEncryption/Security.lean#L117
@@ -1170,7 +1163,7 @@ agreeing with a map on a finite set $S$: there are $\lvert Y \rvert^{\lvert X \r
 [uniform]: src/Probability/Distribution.lean#L481
 [statDist]: src/Probability/StatisticalDistance.lean#L88
 [statDist_triangle]: src/Probability/StatisticalDistance.lean#L243
-[statDist_fTransform_le]: src/Probability/StatisticalDistance.lean#L619
+[statDist_fTransform_le]: src/Probability/StatisticalDistance.lean#L616
 [IsCoupling]: src/Probability/Coupling.lean#L46
 [statDist_le_offDiagonalMass]: src/Probability/Coupling.lean#L241
 [exists_coupling_offDiagonalMass_eq]: src/Probability/Coupling.lean#L320

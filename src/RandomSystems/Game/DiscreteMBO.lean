@@ -1,19 +1,28 @@
-import RandomSystems.Game.Game
 import RandomSystems.Game.MBO
 
 /-!
-# Discrete games as games with an MBO
+# Discrete games: presentations of games
 
-A deterministic discrete game, a DDS with a hidden monotone condition, is a DDS whose replies
-carry the MBO: each reply carries the condition on the queries so far. A probabilistic discrete
-game is then a game, the behavior of its deterministic games with the MBO. Its visible system
-is the behavior of its visible systems. On a fixed admitted sequence of queries, the MBO stays
-unset with the probability that the condition does not hold.
+A deterministic discrete game is a DDS paired with a hidden monotone condition on query
+sequences; a probabilistic discrete game on a domain is a finite distribution over
+deterministic discrete games whose systems have that domain (Lanzenberger, Definitions
+2.20–2.22, printed p. 17; with the common domain of Lanzenberger–Maurer, Definition 8). A
+probabilistic discrete game presents a game, as a PDS presents a random system: each reply of a
+deterministic discrete game carries the condition on the queries so far as its MBO, and the game
+is the behavior of these systems. Its visible system is the behavior of the visible systems, and
+on a fixed admitted sequence of queries its MBO stays unset with the probability that the
+condition does not hold. The game is conditionally equivalent to a random system `S` when the
+replies with the condition unset factor through `S`.
 
 ## Main definitions
 
-* `DDG.withMBO`: a deterministic game, with the condition as the MBO of its replies
-* `PDG.withMBO`, `PDG.behavior`: a probabilistic game with the MBO, and its behavior
+* `MC X`, `DDG X Y`, `PDG X Y D`: monotone conditions, deterministic discrete games, and
+  probabilistic discrete games on the domain `D`
+* `PDG.underlying`, `PDG.badProbability`, `PDG.goodProbability`: the PDS of the visible systems,
+  the condition on a query sequence, and the replies jointly with the condition unset
+* `DDG.withMBO`: a deterministic discrete game, with the condition as the MBO of its replies
+* `PDG.withMBO`, `PDG.behavior`: a probabilistic discrete game with the MBO, and the game it
+  presents
 
 ## Main results
 
@@ -21,11 +30,53 @@ unset with the probability that the condition does not hold.
 * `PDG.monotoneMBO_behavior`: the MBO, once set, stays set
 * `PDG.unsetProbability_behavior`: the MBO is unset on admitted fixed queries with the
   probability that the condition does not hold
+* `PDG.one_sub_le_unsetProbability_behavior`: a bound on the condition at every admitted query
+  sequence bounds the probability that the MBO is set
+* `PDG.conditionallyEquivalent_behavior`: conditional equivalence from the factorization of the
+  replies with the condition unset
 -/
 
 namespace SystemAlgebra
 
 open Classical Probability
+
+section Discrete
+
+/-- A hidden predicate which remains true under extension of the query list. -/
+abbrev MC (X : Type) :=
+  {bad : List X → Prop // ∀ ⦃h k⦄, h <+: k → bad h → bad k}
+
+/-- A deterministic discrete game: its visible DDS and hidden monotone condition. -/
+abbrev DDG (X Y : Type) := DDS X Y × MC X
+
+/-- A probabilistic discrete game on the domain `D`: a finite distribution over
+deterministic games whose systems have domain `D`. -/
+abbrev PDG (X Y : Type) [Fintype X] [Fintype Y] (D : Domain X Y) :=
+  Distribution {g : DDG X Y // HasDomain D g.1.1}
+
+namespace PDG
+
+variable {X Y : Type} [Fintype X] [Fintype Y] {D : Domain X Y}
+
+/-- The PDS of the visible systems. -/
+noncomputable def underlying (G : PDG X Y D) : PDS X Y D :=
+  Distribution.fTransform (fun g => ⟨g.1.1.1, g.1.1.2, g.2⟩) G
+
+/-- The probability that the condition holds on a query sequence. -/
+noncomputable def badProbability (G : PDG X Y D) (xs : List X) : ℝ :=
+  G.mass (fun g => g.1.2.1 xs)
+
+/-- Joint probability of the visible replies and an unset condition. -/
+noncomputable def goodProbability (G : PDG X Y D) (h : List (X × Y)) : ℝ :=
+  G.mass (fun g => Replies g.1.1.1 (h.map Prod.fst) (h.map Prod.snd) ∧
+    ¬ g.1.2.1 (h.map Prod.fst))
+
+theorem underlying_probability {G : PDG X Y D} (hG : G.isProbDist) :
+    G.underlying.isProbDist := Distribution.fTransform_isProbDist _ hG
+
+end PDG
+
+end Discrete
 
 variable {I : Type} {X Y : I → Type}
 
@@ -131,8 +182,8 @@ theorem withMBO_isProbDist {G : PDG (Σ i, X i) (Σ i, Y i) (Domain.ofInputs E m
     (hG : G.isProbDist) : G.withMBO.isProbDist :=
   Distribution.fTransform_isProbDist _ hG
 
-/-- **The game of a probabilistic discrete game**: the behavior of its deterministic games
-with the MBO. -/
+/-- **The game a probabilistic discrete game presents**: the behavior of its deterministic
+games with the MBO. -/
 noncomputable def behavior (G : PDG (Σ i, X i) (Σ i, Y i) (Domain.ofInputs E m hE))
     (hG : G.isProbDist) :
     RandomSystem (Σ i, X i) (Σ i, SystemAlgebra.withMBO Y i) (Domain.ofInputs E m hE) :=
@@ -257,6 +308,59 @@ theorem unsetProbability_behavior {xs : List (Σ i, X i)} (hxs : E xs) :
       change ys[k].2.2 = false
       rw [((DDG.replies_withMBO_iff g.1 xs ys).mp tr.replies).2 k hk', decide_eq_false_iff_not]
       exact fun hb' => hb (g.1.2.2 (List.take_prefix _ _) hb')
+
+
+include hE' in
+/-- **A bound on the condition bounds the set MBO**: if the condition holds with probability at
+most `ε` on the empty and on every admitted query sequence, the MBO stays unset with probability
+at least `1 - ε` on the queries of each possible transcript of a random system on the domain. -/
+theorem one_sub_le_unsetProbability_behavior
+    {S : RandomSystem (Σ i, X i) (Σ i, Y i) (Domain.ofInputs E m hE)} {ε : ℝ}
+    (hbad : ∀ xs, xs = [] ∨ E xs → G.badProbability xs ≤ ε) (h : List ((Σ i, X i) × Σ i, Y i))
+    (hh : S h ≠ 0) : 1 - ε ≤ (G.behavior hG).unsetProbability (h.map Prod.fst) := by
+  rcases List.eq_nil_or_concat h with rfl | ⟨p, z, rfl⟩
+  · rw [List.map_nil, RandomSystem.unsetProbability_nil]
+    linarith [(hG.1.mass_nonneg _).trans (hbad [] (Or.inl rfl))]
+  · simp only [List.concat_eq_append] at hh ⊢
+    have hadm : E ((p ++ [z]).map Prod.fst) := by
+      by_contra hd
+      exact hh (S.mass_eq_zero_of_not_admitted (by simpa using hd) z.2)
+    rw [unsetProbability_behavior hG hE' hadm]
+    linarith [hbad _ (Or.inr hadm)]
+
+include hE' in
+/-- **Conditional equivalence from the factorization of the unset replies**: the game a
+probabilistic discrete game presents is conditionally equivalent to a random system `S` when,
+on each transcript, the probability of the replies with the condition unset is the probability
+that the condition does not hold on the queries times the probability of the transcript under
+`S`. -/
+theorem conditionallyEquivalent_behavior
+    {S : RandomSystem (Σ i, X i) (Σ i, Y i) (Domain.ofInputs E m hE)}
+    (factor : ∀ h, G.goodProbability h = (1 - G.badProbability (h.map Prod.fst)) * S h) :
+    (G.behavior hG).ConditionallyEquivalent S := by
+  intro h
+  rcases List.eq_nil_or_concat h with rfl | ⟨p, z, rfl⟩
+  · simp only [unsetMBOs, List.map_nil, RandomSystem.mass_nil, RandomSystem.unsetProbability_nil,
+      mul_one]
+  · simp only [List.concat_eq_append]
+    have hfst : (unsetMBOs (p ++ [z])).map Prod.fst = (p ++ [z]).map Prod.fst := by
+      simp [unsetMBOs, Function.comp_def]
+    by_cases hadm : E ((p ++ [z]).map Prod.fst)
+    · rw [unsetProbability_behavior hG hE' hadm, ← factor, behavior_apply, goodProbability]
+      apply Distribution.mass_congr
+      intro g
+      have hsnd : (unsetMBOs (p ++ [z])).map Prod.snd =
+          ((p ++ [z]).map Prod.snd).map (tagMBO false) := by
+        simp [unsetMBOs, Function.comp_def]
+      rw [hfst, hsnd]
+      exact DDG.replies_withMBO_unset_iff g.1 (by simp) _
+    · have hS : S (p ++ [z]) = 0 :=
+        S.mass_eq_zero_of_not_admitted (by simpa using hadm) z.2
+      have hG0 : G.behavior hG (unsetMBOs (p ++ [z])) = 0 := by
+        rw [unsetMBOs, List.map_append, List.map_singleton]
+        exact (G.behavior hG).mass_eq_zero_of_not_admitted
+          (by simpa [Function.comp_def] using hadm) _
+      rw [hS, hG0, mul_zero]
 
 end PDG
 

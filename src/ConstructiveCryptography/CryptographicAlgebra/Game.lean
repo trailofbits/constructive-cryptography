@@ -20,9 +20,9 @@ game conditionally equivalent to a resource bounds each solver's advantage betwe
 visible resource and the resource by the solver's winning probability.
 
 Sources: CR18, §3.7.1 (games), §4.5.1 (Definition 4.5, the winning probability), §4.8.3
-(Definition 4.13 and the proof of Lemma 4.9, `g(W R) = (R g)(W)`), §4.10.3 (Definition 4.18,
-the visible system `S⁻`; Lemma 4.16) and §4.11.1 (Definition 4.19, conditional equivalence;
-Theorem 4.17).
+(attachment, as used in Definition 4.13 and the proof of Lemma 4.9, `g(W R) = (R g)(W)`),
+§4.10.3 (Definition 4.18, the visible system `S⁻`; Lemma 4.16) and §4.11.1 (Definition 4.19,
+conditional equivalence; Theorem 4.17).
 
 ## Main definitions
 
@@ -44,12 +44,12 @@ open CategoryTheory
 
 universe u v w x
 
-/-- **Games over a resource theory** (CR18, §3.7.1 and Definitions 4.13, 4.18): the games on
+/-- **Games over a resource theory** (CR18, §3.7.1 and Definition 4.18): the games on
 each interface, attachment of converters, contravariant in serial composition, and the visible
 resource of a game, with which attachment commutes. -/
 class GameTheory (C : Type u) [Category.{v} C] (Phi : outParam (C → Type w))
     [ResourceTheory C Phi] (Game : outParam (C → Type x)) where
-  /-- Attaching a converter to a game: `R g` (CR18, Definition 4.13). -/
+  /-- Attaching a converter to a game, written `R g` where CR18 uses it (Definition 4.13). -/
   attachGame : ∀ {A B : C}, (A ⟶ B) → Game B → Game A
   /-- Attaching the identity converter leaves a game unchanged. -/
   attachGame_identity : ∀ {A : C} (game : Game A), attachGame (𝟙 A) game = game

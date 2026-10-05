@@ -86,7 +86,7 @@ end AuthenticatedEncryptionTests
 #print axioms AuthenticatedEncryption.hybridDecrypt_eq
 #print axioms AuthenticatedEncryption.ideal_truncate
 #print axioms AuthenticatedEncryption.ideal_mass_hybridTables
-#print axioms AuthenticatedEncryption.collisionGame_equivalent
+#print axioms AuthenticatedEncryption.collisionGame_conditionallyEquivalent
 #print axioms AuthenticatedEncryption.collisionGame_badProbability_le
 #print axioms AuthenticatedEncryption.hybrid_ideal_distance_le
 

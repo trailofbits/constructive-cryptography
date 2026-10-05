@@ -36,8 +36,6 @@ import RandomSystems.Distance.Restriction
 import RandomSystems.Distance.Transcript
 import RandomSystems.Game.DiscreteMBO
 import RandomSystems.Game.FunctionGame
-import RandomSystems.Game.Game
-import RandomSystems.Game.GameEquivalence
 import RandomSystems.Game.MBO
 import RandomSystems.Game.MBOAttachment
 import RandomSystems.PDS.Conditional

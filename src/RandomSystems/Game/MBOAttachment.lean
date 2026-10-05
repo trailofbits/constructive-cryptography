@@ -4,16 +4,18 @@ import RandomSystems.Converter.ConverterRelabel
 /-!
 # Converters attached to games
 
-A converter attaches to a game through its MBO-forwarding lift: the lift runs the converter on
-the inside replies without their MBO and tags each outside reply with the MBO of the latest
-inside reply. The lift of a DDC from `E` to `F` is a DDC from `E` to `F`, the lift of a PDC is
-the PDC of the lifts of a presentation, and the lift is functorial. Attaching a lift commutes
+A converter attaches to a game through its MBO-forwarding lift, this library's definition of a
+converter acting on a game: the lift runs the converter on the inside replies without their MBO
+and tags each outside reply with the MBO of the latest inside reply. The lift of a DDC from `E`
+to `F` is a DDC from `E` to `F`, the lift of a PDC is the PDC of the lifts of a presentation,
+and the lift is functorial. Attaching a lift commutes
 with the visible system, and attaching it to a game gives a game. A probabilistic
 distinguisher with a PDC absorbed wins a game as the distinguisher wins the lift of the PDC
 attached to it; so the solver behaviors, the decision probabilities on random systems and the
 winning probabilities for games of one distinguisher, are closed under absorbing a PDC.
 
-Sources: CR18, Definition 4.13 (`R g`) and the proof of Lemma 4.9 (`g(W R) = (R g)(W)`).
+Sources: CR18 uses the action of a converter on a game without defining it, in Definition 4.13
+(`R g`) and in the proof of Lemma 4.9 (`g(W R) = (R g)(W)`).
 
 ## Main definitions
 
