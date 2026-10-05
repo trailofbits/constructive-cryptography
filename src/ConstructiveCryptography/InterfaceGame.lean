@@ -5,29 +5,37 @@ import RandomSystems.Game.MBOAttachment
 /-!
 # Games on interfaces
 
-Interfaces are an instance of `GameTheory` and of `CompatibleSolverClass`, the abstraction of
-games of CR18, Chapter 4; the instance is where that abstraction meets random systems. Its games
-are MBO random systems, as CR18 instantiates games (§3.7.1): a game on `A` is a resource on the
-interface of `A` with the MBO whose MBO, once set, stays set (`RandomSystem.MonotoneMBO`).
+Interfaces are an instance of `Games`, the abstraction of CR18, §§4.4–4.5 and §4.7.2, and of
+`DistinctionGames`, the abstraction of CR18, §§4.10–4.11; the instance is where these
+abstractions meet random systems. Its games are MBO random systems, as CR18 instantiates games
+(§3.7.1): a game on `A` is a resource on the interface of `A` with the MBO whose MBO, once set,
+stays set (`RandomSystem.MonotoneMBO`).
 
-Each field is a systems-level object: `attachGame` attaches the MBO-forwarding lift
-`PDCBehavior.liftMBO`, `visible` is the visible system `RandomSystem.visible`, `solvers` are the
-solver behaviors `Domain.SolverBehavior`, and `ConditionallyEquivalent` is
-`RandomSystem.ConditionallyEquivalent`. Each axiom is discharged by a systems-level theorem:
-`attachGame_identity` by `PDCBehavior.liftMBO_id`, `attachGame_serial` by
-`PDCBehavior.liftMBO_comp`, `visible_attachGame` by `RandomSystem.visible_attach_liftMBO`,
-`closed_attach` by `Domain.SolverBehavior.absorb`, and `advantage_le_win` by
-`Domain.Distinguisher.advantage_le_winProbability`.
+For `Games`, the field `attachGame` is the attachment of the MBO-forwarding lift
+`PDCBehavior.liftMBO`, and `solvers` are the solver behaviors `Domain.SolverBehavior`. The axiom
+`attachGame_identity` is discharged by `PDCBehavior.liftMBO_id`, `attachGame_serial` by
+`PDCBehavior.liftMBO_comp`, and `closed_attach` by `Domain.SolverBehavior.absorb`.
+
+For `DistinctionGames`, the field `visible` is the visible system `RandomSystem.visible`, and
+`ConditionallyEquivalent` is `RandomSystem.ConditionallyEquivalent`. The axiom
+`visible_attachGame` is discharged by `RandomSystem.visible_attach_liftMBO`, and
+`advantage_le_win` by `Domain.Distinguisher.advantage_le_winProbability`.
+
+Conditional equivalence then bounds the distance of the visible resource of a game by the
+probability that its MBO is set on fixed queries (CR18, Theorem 4.17), through
+`RandomSystem.transcriptDistance_visible_le_of_unsetProbability`.
 
 ## Main definitions
 
 * `Interface.withMBO A`: the interface of `A` with the MBO
 * `Interface.Game A`: games on `A`
-* `Interface.gameTheory`, `Interface.compatibleSolverClass`: the instances
+* `Interface.games`, `Interface.distinctionGames`: the instances
 
 ## Main results
 
 * `Interface.win_le`: a bound on winning by every distinguisher bounds winning by every solver
+* `Interface.dist_visible_le`: conditional equivalence bounds the distance of the visible
+  resource
 -/
 
 namespace SystemAlgebra.Interface
@@ -61,9 +69,14 @@ noncomputable def attachGame {A B : Interface} (α : A ⟶ B) (G : Game B) : Gam
 noncomputable def Game.visible {A : Interface} (G : Game A) : Resource A :=
   ⟨G.1.1.visible, G.1.2.visible⟩
 
-/-- **Interfaces are an instance of `GameTheory`**: attachment is the attachment of the lift,
-and the visible resource is the visible system. -/
-noncomputable instance gameTheory : GameTheory Interface Resource Game where
+/-- The solvers on `A`: the solver behaviors on the input domain of `A`. -/
+def solvers (A : Interface) : Set ((Resource A → ℝ) × (Game A → ℝ)) :=
+  Set.range fun s : Domain.SolverBehavior (Y := A.Y) A.domain A.bound A.length_le =>
+    (fun R => s.1.1 R, fun G => s.1.2 ⟨G.1.1, G.1.2, G.2⟩)
+
+/-- **Interfaces are an instance of `Games`**: attachment is the attachment of the lift, and the
+solvers are the solver behaviors. -/
+noncomputable instance games : Games Interface Resource Game where
   attachGame := attachGame
   attachGame_identity G := by
     apply Subtype.ext
@@ -75,23 +88,19 @@ noncomputable instance gameTheory : GameTheory Interface Resource Game where
     change liftMBO (α ≫ β) • G.1 = liftMBO α • (liftMBO β • G.1)
     rw [show liftMBO (α ≫ β) = liftMBO α ≫ liftMBO β from PDCBehavior.liftMBO_comp α β]
     exact comp_smul _ _ G.1
-  visible := Game.visible
-  visible_attachGame {A B} α G :=
-    Subtype.ext (RandomSystem.visible_attach_liftMBO B.nonempty_prefix A.nonempty_prefix α G.1.1
-      G.1.2)
-
-/-- The solvers on `A`: the solver behaviors on the input domain of `A`. -/
-def solvers (A : Interface) : Set ((Resource A → ℝ) × (Game A → ℝ)) :=
-  Set.range fun s : Domain.SolverBehavior (Y := A.Y) A.domain A.bound A.length_le =>
-    (fun R => s.1.1 R, fun G => s.1.2 ⟨G.1.1, G.1.2, G.2⟩)
-
-/-- **Interfaces are an instance of `CompatibleSolverClass`**: the solvers are the solver
-behaviors, and conditional equivalence is that of the game and the resource. -/
-noncomputable instance compatibleSolverClass : CompatibleSolverClass Interface Resource Game where
   solvers := solvers
   closed_attach {A B} α := by
     rintro _ ⟨s, rfl⟩
     exact ⟨Domain.SolverBehavior.absorb B.nonempty_prefix A.nonempty_prefix α s, rfl⟩
+
+/-- **Interfaces are an instance of `DistinctionGames`**: the visible resource is the visible
+system, and conditional equivalence is that of the game's random system and the resource. -/
+noncomputable instance distinctionGames : DistinctionGames Interface Resource Game where
+  toGames := games
+  visible := Game.visible
+  visible_attachGame {A B} α G :=
+    Subtype.ext (RandomSystem.visible_attach_liftMBO B.nonempty_prefix A.nonempty_prefix α G.1.1
+      G.1.2)
   ConditionallyEquivalent G T := G.1.1.ConditionallyEquivalent T.1
   advantage_le_win := by
     rintro A G T _ hc ⟨s, rfl⟩
@@ -105,12 +114,23 @@ probability of every distinguisher for the game's system bounds the winning prob
 every solver. -/
 theorem win_le {A : Interface} {G : Game A} {ε : ℝ}
     (hW : ∀ P : A.inputDomain.Distinguisher, P.winProbability G.1.1 ≤ ε)
-    {solver : (Resource A → ℝ) × (Game A → ℝ)} (hs : solver ∈ CompatibleSolverClass.solvers A) :
+    {solver : (Resource A → ℝ) × (Game A → ℝ)} (hs : solver ∈ Games.solvers A) :
     solver.2 G ≤ ε := by
   obtain ⟨s, rfl⟩ := hs
   obtain ⟨P, -, hP⟩ := s.2
   change s.1.2 ⟨G.1.1, G.1.2, G.2⟩ ≤ ε
   rw [hP]
   exact hW P
+
+/-- **Conditional equivalence bounds the distance of the visible resource** (CR18,
+Theorem 4.17): a game on an interface conditionally equivalent to a resource `T`, whose MBO stays
+unset with probability at least `1 - ε` on the queries of each transcript of `T`, has its
+visible resource within `ε` of `T`. -/
+theorem dist_visible_le {A : Interface} {G : Game A} {T : Resource A}
+    (hc : DistinctionGames.ConditionallyEquivalent G T) {ε : ℝ}
+    (hε : ∀ h, T.1 h ≠ 0 → 1 - ε ≤ G.1.1.unsetProbability (h.map Prod.fst)) :
+    CryptographicAlgebra.distance (DistinctionGames.visible G) T ≤ ENNReal.ofReal ε := by
+  rw [cc_distance_eq]
+  exact RandomSystem.transcriptDistance_visible_le_of_unsetProbability G.1.2 T.2 G.2 hc hε
 
 end SystemAlgebra.Interface
