@@ -5,15 +5,18 @@ import RandomSystems.Game.MBOAttachment
 /-!
 # Games on interfaces
 
-Interfaces are an instance of `GameTheory` and of `CompatibleSolverClass`. A game on `A` is a
-resource on the interface of `A` with the MBO whose MBO, once set, stays set
-(`RandomSystem.MonotoneMBO`). A converter attaches to a game through its MBO-forwarding lift
-`PDCBehavior.liftMBO`; the attachment laws are the functoriality of the lift,
-`PDCBehavior.liftMBO_id` and `PDCBehavior.liftMBO_comp`. The visible resource of a game is its
-visible system `RandomSystem.visible`, with which attachment commutes by
-`RandomSystem.visible_attach_liftMBO`. The solvers are the solver behaviors
-`Domain.SolverBehavior`, closed under absorbing a converter by `Domain.SolverBehavior.absorb`;
-conditional equivalence is `RandomSystem.ConditionallyEquivalent`, and its bound is
+Interfaces are an instance of `GameTheory` and of `CompatibleSolverClass`, the abstraction of
+games of CR18, Chapter 4; the instance is where that abstraction meets random systems. Its games
+are MBO random systems, as CR18 instantiates games (§3.7.1): a game on `A` is a resource on the
+interface of `A` with the MBO whose MBO, once set, stays set (`RandomSystem.MonotoneMBO`).
+
+Each field is a systems-level object: `attachGame` attaches the MBO-forwarding lift
+`PDCBehavior.liftMBO`, `visible` is the visible system `RandomSystem.visible`, `solvers` are the
+solver behaviors `Domain.SolverBehavior`, and `ConditionallyEquivalent` is
+`RandomSystem.ConditionallyEquivalent`. Each axiom is discharged by a systems-level theorem:
+`attachGame_identity` by `PDCBehavior.liftMBO_id`, `attachGame_serial` by
+`PDCBehavior.liftMBO_comp`, `visible_attachGame` by `RandomSystem.visible_attach_liftMBO`,
+`closed_attach` by `Domain.SolverBehavior.absorb`, and `advantage_le_win` by
 `Domain.Distinguisher.advantage_le_winProbability`.
 
 ## Main definitions

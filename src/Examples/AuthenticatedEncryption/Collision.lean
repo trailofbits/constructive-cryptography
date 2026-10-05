@@ -384,7 +384,7 @@ theorem hybrid_ideal_distance_le :
     Δ (Hybrid scheme q) (AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme :
       Interface.Resource (AE.perPort M C q)) ≤
       ENNReal.ofReal ((q .enc : ℝ) ^ 2 / Fintype.card M) :=
-  (collisionGame_conditionallyEquivalent scheme q).game_dist_le (hybrid_visible scheme q)
+  game_dist_le (collisionGame_conditionallyEquivalent scheme q) (hybrid_visible scheme q)
     (collisionGame_badProbability_le scheme q)
 
 end Game

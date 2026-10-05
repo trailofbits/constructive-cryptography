@@ -149,7 +149,7 @@ it stops [3, Definition 4.5]. A game is [**conditionally equivalent**][RandomSys
 to a random system $T$, $G \mathrel{|\!\equiv} T$, when it replies as $T$ as long as the MBO is
 unset [3, Definition 4.19], [5, Definition 13]. The advantage between the visible system and $T$
 is then [at most the winning probability][Domain.Distinguisher.advantage_le_winProbability]
-[3, Lemma 4.16]:
+[3, Lemma 4.16 and the proof of Theorem 4.17]:
 
 $$
 G\big(x^n, (y, 0)^n\big) = \Pr_G[\text{MBO unset} \mid x^n]\ T(x^n, y^n)
@@ -263,9 +263,9 @@ sense of §1.5. A converter attaches to it through its [lift][Interface.liftMBO]
 For a discrete game $G$ presenting $R$, whose game is conditionally equivalent to $S$, and whose
 condition holds with probability at most $\varepsilon$ on the empty and every admitted query
 sequence,
-[the distance is at most $\varepsilon$][RandomSystem.ConditionallyEquivalent.game_dist_le],
+[the distance is at most $\varepsilon$][Interface.game_dist_le],
 $\Delta(R, S) \le \varepsilon$; the game of a
-[single-label sampled-function game is conditionally equivalent][PDG.ofSingleFunction_conditionallyEquivalent]
+[single-label sampled-function game is conditionally equivalent][Interface.ofSingleFunction_conditionallyEquivalent]
 to the resource sampling the ideal function. Parallel composition is commutative: $R \parallel S$ and
 $S \parallel R$ [agree][Interface.parallel_swap] through the [swap][Interface.swap] of the two
 interfaces.
@@ -415,10 +415,12 @@ $$
 
 ### 3.6 `GameTheory C Φ Game` and `CompatibleSolverClass C Φ Game`: games and solvers
 
-The class [`GameTheory`][GameTheory] has games $\mathrm{Game}\,A$ on each object, attachment
+`GameTheory` and `CompatibleSolverClass` are the abstraction of games of [3, Chapter 4]: a game
+is a problem whose performance is a winning probability [3, §4.5.1, Definition 4.5]. The class
+[`GameTheory`][GameTheory] has games $\mathrm{Game}\,A$ on each object, attachment
 $\alpha \cdot G$ of converters to games, contravariant in serial composition, and the visible
-resource $G^-$ of a game, with which attachment commutes [3, §3.7.1, Definition 4.18; attachment
-as used in Definition 4.13 and the proof of Lemma 4.9]:
+resource $G^-$ of a game, with which attachment commutes [3, Definition 4.18; attachment as used
+in Definition 4.13 and the proof of Lemma 4.9]:
 
 $$
 \mathrm{id} \cdot G = G, \qquad (\alpha \beta) \cdot G = \alpha \cdot (\beta \cdot G), \qquad
@@ -430,7 +432,7 @@ each a pair $(D, W)$ of a decision probability $D : \Phi A \to \mathbb R$ and a 
 probability $W : \mathrm{Game}\,A \to \mathbb R$, closed under
 [absorbing][CompatibleSolverClass.absorb] a converter, and a conditional equivalence
 $G \mathrel{|\!\equiv} T$ of games to resources, under which each solver's advantage is at most
-its winning probability [3, proof of Lemma 4.9, Lemma 4.16 and Theorem 4.17]:
+its winning probability [3, proof of Lemma 4.9, Lemma 4.16 and the proof of Theorem 4.17]:
 
 $$
 (D, W) \in \mathcal S_A \;\Longrightarrow\; \big(D(\alpha\,\cdot\,),\ W(\alpha \cdot\,\cdot\,)\big) \in \mathcal S_B,
@@ -440,6 +442,8 @@ $$
 
 Absorbing a serial composition [absorbs its converters in turn][CompatibleSolverClass.absorb_comp].
 
+Interfaces are an instance of both classes, and the instance is the only place where they meet
+random systems: its games are the MBO random systems of §1.5, as [3, §3.7.1] instantiates games.
 Interfaces are an instance of `GameTheory` ([`Interface.gameTheory`][Interface.gameTheory]): its
 field `Game A` is the set of [games][Interface.Game] on $A$, the resources on the interface of
 $A$ with the MBO whose MBO, once set, stays set ([`RandomSystem.MonotoneMBO`][RandomSystem.MonotoneMBO]);
@@ -455,8 +459,9 @@ the [set of pairs][Interface.solvers] of the systems-level
 [solver behaviors][Domain.SolverBehavior] on $A$'s domain, and `ConditionallyEquivalent` is the
 systems-level [conditional equivalence][RandomSystem.ConditionallyEquivalent]. Its axiom
 `closed_attach` is discharged by [absorbing a PDC into a solver behavior][Domain.SolverBehavior.absorb],
-and `advantage_le_win` by [Lemma 4.16][Domain.Distinguisher.advantage_le_winProbability]. A bound
-on the winning probability of every distinguisher
+and `advantage_le_win` by
+[`Domain.Distinguisher.advantage_le_winProbability`][Domain.Distinguisher.advantage_le_winProbability].
+A bound on the winning probability of every distinguisher
 [bounds the winning probability of every solver][Interface.win_le].
 
 ---
@@ -930,12 +935,12 @@ agreeing with a map on a finite set $S$: there are $\lvert Y \rvert^{\lvert X \r
 [Interface.Resource.ofFunction]: src/ConstructiveCryptography/Functional.lean#L56
 [Interface.Resource.ofConditional]: src/ConstructiveCryptography/Functional.lean#L38
 [Interface.Resource.sample]: src/ConstructiveCryptography/Functional.lean#L176
-[Interface.withMBO]: src/ConstructiveCryptography/InterfaceGame.lean#L35
-[Interface.Game]: src/ConstructiveCryptography/InterfaceGame.lean#L46
-[Interface.liftMBO]: src/ConstructiveCryptography/InterfaceGame.lean#L49
-[Interface.Game.visible]: src/ConstructiveCryptography/InterfaceGame.lean#L58
-[RandomSystem.ConditionallyEquivalent.game_dist_le]: src/ConstructiveCryptography/GameBound.lean#L91
-[PDG.ofSingleFunction_conditionallyEquivalent]: src/ConstructiveCryptography/GameBound.lean#L44
+[Interface.withMBO]: src/ConstructiveCryptography/InterfaceGame.lean#L38
+[Interface.Game]: src/ConstructiveCryptography/InterfaceGame.lean#L49
+[Interface.liftMBO]: src/ConstructiveCryptography/InterfaceGame.lean#L52
+[Interface.Game.visible]: src/ConstructiveCryptography/InterfaceGame.lean#L61
+[Interface.game_dist_le]: src/ConstructiveCryptography/GameBound.lean#L90
+[Interface.ofSingleFunction_conditionallyEquivalent]: src/ConstructiveCryptography/GameBound.lean#L45
 [Interface.swap]: src/ConstructiveCryptography/ResourceCoherence.lean#L177
 [Interface.parallel_swap]: src/ConstructiveCryptography/ResourceCoherence.lean#L211
 [notation-distance]: src/ConstructiveCryptography/Notation.lean#L22
@@ -995,14 +1000,14 @@ agreeing with a map on a finite set $S$: there are $\lvert Y \rvert^{\lvert X \r
 [CompatibleDistinguisherClass]: src/ConstructiveCryptography/CryptographicAlgebra/Distinguisher.lean#L77
 [CompatibleDistinguisherClass.ofClosure]: src/ConstructiveCryptography/CryptographicAlgebra/Distinguisher.lean#L102
 
-[GameTheory]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L50
-[CompatibleSolverClass]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L86
-[CompatibleSolverClass.absorb]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L115
-[CompatibleSolverClass.absorb_comp]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L126
-[Interface.gameTheory]: src/ConstructiveCryptography/InterfaceGame.lean#L63
-[Interface.compatibleSolverClass]: src/ConstructiveCryptography/InterfaceGame.lean#L87
-[Interface.solvers]: src/ConstructiveCryptography/InterfaceGame.lean#L81
-[Interface.win_le]: src/ConstructiveCryptography/InterfaceGame.lean#L103
+[GameTheory]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L54
+[CompatibleSolverClass]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L90
+[CompatibleSolverClass.absorb]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L119
+[CompatibleSolverClass.absorb_comp]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L130
+[Interface.gameTheory]: src/ConstructiveCryptography/InterfaceGame.lean#L66
+[Interface.compatibleSolverClass]: src/ConstructiveCryptography/InterfaceGame.lean#L90
+[Interface.solvers]: src/ConstructiveCryptography/InterfaceGame.lean#L84
+[Interface.win_le]: src/ConstructiveCryptography/InterfaceGame.lean#L106
 
 <!-- Declarations: §4 -->
 

@@ -40,9 +40,9 @@ classes, and the abstract results of those classes depend only on `propext`,
 
 
 -- ConstructiveCryptography.GameBound
-#print axioms SystemAlgebra.PDG.ofSingleFunction_conditionallyEquivalent
-#print axioms SystemAlgebra.RandomSystem.ConditionallyEquivalent.game_dist_le
-#print axioms SystemAlgebra.RandomSystem.ConditionallyEquivalent.game_dist_ofSingleFunction_le
+#print axioms SystemAlgebra.Interface.ofSingleFunction_conditionallyEquivalent
+#print axioms SystemAlgebra.Interface.game_dist_le
+#print axioms SystemAlgebra.Interface.game_dist_ofSingleFunction_le
 
 -- ConstructiveCryptography.Interface
 #print axioms SystemAlgebra.Interface.category
