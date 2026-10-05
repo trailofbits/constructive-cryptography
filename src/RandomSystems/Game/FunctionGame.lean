@@ -1,13 +1,13 @@
-import RandomSystems.Game.GameEquivalence
+import RandomSystems.Game.DiscreteMBO
 import RandomSystems.PDS.Function
 
 /-!
 # Sampled-function games
 
-A sampled function with a hidden monotone condition is a game on a domain of input
-histories; its visible systems are the sampled function. The game is equivalent to an
-ideal sampled function once, on every fixed query sequence, the answers jointly with the
-unset condition factor through the ideal answers.
+A sampled function with a hidden monotone condition is a probabilistic discrete game on a domain
+of input histories; its visible systems are the sampled function. The game it presents is
+conditionally equivalent to an ideal sampled function once, on every fixed query sequence, the
+answers jointly with the unset condition factor through the ideal answers.
 
 ## Main definitions
 
@@ -17,13 +17,17 @@ unset condition factor through the ideal answers.
 ## Main results
 
 * `PDG.ofFunction_underlying`: the visible systems are the sampled function
-* `PDG.ofFunction_blind_le`: blind winning is bounded on fixed admitted queries
-* `PDG.ofFunction_gameEquivalent`: game equivalence from the fixed-query factorization
+* `PDG.ofFunction_badProbability`: the condition holds with the probability of the sampled
+  conditions
+* `PDG.ofFunction_conditionallyEquivalent`: conditional equivalence from the fixed-query
+  factorization
 -/
 
 namespace SystemAlgebra.PDG
 
 open Classical Probability
+
+section Presentation
 
 variable {K X Y : Type} [Fintype X] [Fintype Y] (D : List X → Prop)
     (hD : ¬ D [] ∧ ∀ {p h}, p <+: h → p ≠ [] → D h → D p) (bound : ℕ)
@@ -50,41 +54,40 @@ theorem ofFunction_badProbability (P : Distribution K) (f : K → X → Y)
     (ofFunction D hD bound hb P f bad).badProbability xs = P.mass (fun k => (bad k).1 xs) := by
   rw [badProbability, ofFunction, Distribution.mass_fTransform]
 
-variable {D hD bound hb} in
-/-- Blind winning for a sampled function is bounded on fixed admitted queries. -/
-theorem ofFunction_blind_le {P : Distribution K} [Distribution.IsProbability P]
-    {f : K → X → Y} {bad : K → MC X} {ε : ℝ} (hε : 0 ≤ ε)
-    (hbad : ∀ xs, xs = [] ∨ D xs → P.mass (fun k => (bad k).1 xs) ≤ ε) :
-    ((ofFunction D hD bound hb P f bad).blind hD).supWinProbability ≤ ε :=
-  supWinProbability_blind_le hD
-    (ofFunction_isProbDist D hD bound hb (Distribution.IsProbability.isProbDist P) f bad).1 hε
-    (by simpa only [ofFunction_badProbability] using hbad)
+end Presentation
 
-/-- Fixed-query factorization suffices for the game-equivalence witness.
-Repeated queries are handled by function consistency, without choosing new
+variable {K I : Type} [Fintype I] {X Y : I → Type} [∀ i, Fintype (X i)] [∀ i, Fintype (Y i)]
+    (D : List (Σ i, X i) → Prop) (hD : ¬ D [] ∧ ∀ {p h}, p <+: h → p ≠ [] → D h → D p)
+    (bound : ℕ) (hb : ∀ h, D h → h.length ≤ bound)
+
+/-- **A sampled-function game is conditionally equivalent to the ideal sampled function** once,
+on every fixed query sequence, the answers jointly with the unset condition factor through the
+ideal answers. Repeated queries are handled by function consistency, without choosing new
 replies or assuming the queries are distinct. -/
-theorem ofFunction_gameEquivalent
-    (P : Distribution K) (f : K → X → Y) (bad : K → MC X)
-    (Q : Distribution (X → Y)) (hQ : Q.isProbDist)
-    (factor : ∀ xs (answers : X → Y),
+theorem ofFunction_conditionallyEquivalent
+    (P : Distribution K) (f : K → (Σ i, X i) → Σ i, Y i) (bad : K → MC (Σ i, X i))
+    {hG : (ofFunction D hD bound hb P f bad).isProbDist}
+    (Q : Distribution ((Σ i, X i) → Σ i, Y i)) (hQ : Q.isProbDist)
+    (factor : ∀ xs (answers : (Σ i, X i) → Σ i, Y i),
       P.mass (fun k => (∀ x ∈ xs, f k x = answers x) ∧ ¬ (bad k).1 xs) =
         (1 - P.mass (fun k => (bad k).1 xs)) *
           Q.mass (fun g => ∀ x ∈ xs, g x = answers x)) :
-    GameEquivalent (ofFunction D hD bound hb P f bad)
+    ((ofFunction D hD bound hb P f bad).behavior hG).ConditionallyEquivalent
       (PDS.behavior (PDS.ofFunction D hD bound hb id Q)
         (Distribution.fTransform_isProbDist _ hQ)) := by
-  intro h
+  refine conditionallyEquivalent_behavior hG hD fun h => ?_
   rw [ofFunction_badProbability, goodProbability, ofFunction, Distribution.mass_fTransform]
   change _ = (1 - _) * behaviorMass _ _ _
   rw [behaviorMass, PDS.ofFunction, Distribution.mass_fTransform]
   simp only [DDS.replies_ofFunction_iff, id_eq]
   by_cases admitted : h.map Prod.fst = [] ∨ D (h.map Prod.fst)
   · simp only [admitted, true_and]
-    by_cases consistent : ∃ answers : X → Y, h.map Prod.snd = (h.map Prod.fst).map answers
+    by_cases consistent :
+        ∃ answers : (Σ i, X i) → Σ i, Y i, h.map Prod.snd = (h.map Prod.fst).map answers
     · obtain ⟨answers, he⟩ := consistent
       rw [he]
       simpa only [List.map_eq_map_iff, eq_comm] using factor (h.map Prod.fst) answers
-    · have impossible (g : X → Y) : h.map Prod.snd ≠ (h.map Prod.fst).map g :=
+    · have impossible (g : (Σ i, X i) → Σ i, Y i) : h.map Prod.snd ≠ (h.map Prod.fst).map g :=
         fun he => consistent ⟨g, he⟩
       rw [Distribution.mass_eq_zero_of_forall_not P (fun k hk => impossible (f k) hk.1),
         Distribution.mass_eq_zero_of_forall_not Q impossible, mul_zero]

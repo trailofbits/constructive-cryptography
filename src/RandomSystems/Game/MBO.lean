@@ -15,7 +15,8 @@ the MBO is unset after its queries times the probability of the transcript under
 distinguisher's advantage between the visible system and `T` is then at most its winning
 probability. Its replies before the MBO is set are those of `T`, so the winner learns nothing
 about the MBO: if the MBO is set with probability at most `ε` on every fixed sequence of
-queries, every winner wins with probability at most `ε`.
+queries, every winner wins with probability at most `ε`, and the visible system is within `ε`
+of `T`.
 
 Sources: CR18, §3.7.1 (games), Definition 4.5 (the winning probability), Definition 4.18 (the
 visible system `S⁻`), Definition 4.19 (conditional equivalence), Lemma 4.16 and Theorem 4.17.
@@ -38,6 +39,8 @@ visible system `S⁻`), Definition 4.19 (conditional equivalence), Lemma 4.16 an
 * `RandomSystem.winProbability_le_of_unsetProbability`,
   `Domain.Distinguisher.winProbability_le_of_unsetProbability`: under conditional equivalence,
   the probability that the MBO is set on fixed queries bounds the winning probability
+* `RandomSystem.transcriptDistance_visible_le_of_unsetProbability`: it then bounds the
+  transcript distance between the visible system and the random system
 -/
 
 namespace SystemAlgebra
@@ -645,6 +648,25 @@ theorem Domain.Distinguisher.winProbability_le_of_unsetProbability
     _ = ε := by
         simp only [Finsupp.sum, ← Finset.sum_mul]
         rw [show (∑ D ∈ P.1.support, P.1 D) = 1 from P.2.2, one_mul]
+
+/-- **Conditional equivalence bounds the distance by non-adaptive winning** (CR18,
+Theorem 4.17, printed p. 109: "If for an (X, Y)-system S one can define an MBO such that
+Ŝ |≡ T, then [...] ∆(S, T) ≤ Γ(bŜ)"): a game conditionally equivalent to a random system,
+whose MBO stays unset with probability at least `1 - ε` on the queries of each transcript of
+the random system, has its visible system within `ε` of the random system. -/
+theorem RandomSystem.transcriptDistance_visible_le_of_unsetProbability
+    {G : RandomSystem (Σ i, X i) (Σ i, withMBO Y i) (Domain.ofInputs E m hE)}
+    {T : RandomSystem (Σ i, X i) (Σ i, Y i) (Domain.ofInputs E m hE)}
+    (hG : G.RepliesAtQueriedInterface) (hT : T.RepliesAtQueriedInterface)
+    (hm : G.MonotoneMBO) (hc : G.ConditionallyEquivalent T) {ε : ℝ}
+    (hε : ∀ h, T h ≠ 0 → 1 - ε ≤ G.unsetProbability (h.map Prod.fst)) :
+    G.visible.transcriptDistance T ≤ ENNReal.ofReal ε := by
+  -- The transcript distance is the largest advantage of a probabilistic distinguisher.
+  rw [RandomSystem.transcriptDistance_eq_iSup hG.visible hT]
+  -- Lemma 4.16 bounds each advantage by winning, which the unset MBO bounds.
+  exact iSup_le fun P => ENNReal.ofReal_le_ofReal
+    ((P.advantage_le_winProbability hG hT hm hc).trans
+      (P.winProbability_le_of_unsetProbability hG hT hm hc hε))
 
 end Winning
 
