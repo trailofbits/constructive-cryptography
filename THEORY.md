@@ -288,8 +288,8 @@ $\mathcal R \xrightarrow{\pi,\ \varepsilon} \mathcal S$.
 ## 3. The abstract layers and their instances
 
 *Each layer is a class of assumptions: it introduces its notions (attachment, parallel
-composition, distance, distinguishers, games, solvers) only as fields and axioms, and knows
-nothing about systems [3, §§3.7, 4.5, 4.8–4.11], [6, §3], [7, §2.2], [8]. Interfaces are an
+composition, distance, distinguishers, games, winners, solvers) only as fields and axioms, and
+knows nothing about systems [3, §§3.7, 4.5, 4.8–4.11], [6, §3], [7, §2.2], [8]. Interfaces are an
 instance of each class: every field is a systems-level object of §1–2, and every axiom is a
 theorem about it.*
 
@@ -421,55 +421,64 @@ $$
 d(R, S) = \Delta(R, S) = \sup_P \mathrm{Adv}_P(R, S) .
 $$
 
-### 3.6 `Games C Φ Game` and `DistinctionGames C Φ Game`: games, and games related to distinguishing
+### 3.6 `Games C Game` and `DistinctionGames C Φ Game`: games, and games related to distinguishing
 
-The class [`Games`][Games] is the abstraction of [3, §§4.4–4.5 and §4.7.2]: a game is a problem
-whose performance is a winning probability [3, Definition 4.5], and converters act on games and
-on their solvers. It has games $\mathrm{Game}\,A$ on each object, attachment $\alpha \cdot G$ of
-converters to games, contravariant in serial composition, and a class $\mathcal S_A$ of solvers,
-each a pair $(D, W)$ of a decision probability $D : \Phi A \to \mathbb R$ [3, Definition 4.7] and a
-winning probability $W : \mathrm{Game}\,A \to \mathbb R$, closed under
-[absorbing][Games.absorb] a converter, $\omega(w c, g) = \omega(w, c g)$ [3, §4.7.2, proof of
-Lemma 4.9]:
+The class [`Games`][Games] is the abstraction of [3, §4.4.3, §4.5.1 and §4.7.2]. A problem is a
+set of solvers with a performance function [3, Definition 4.2]; for a game the solvers are
+winners and the performance is the winning probability [3, Definition 4.5], so a winner is given
+by its winning probability $W : \mathrm{Game}\,A \to \mathbb R$ for each game. The class has games
+$\mathrm{Game}\,A$ on each object, attachment $\alpha \cdot G$ of converters to games,
+contravariant in serial composition, and a set $\mathcal W_A$ of winners closed under
+[absorbing][Games.absorb] a converter, $\omega(w c, g) = \omega(w, c g)$ [3, §4.7.2,
+equation (4.9)]. Games and winners do not involve resources:
 
 $$
 \mathrm{id} \cdot G = G, \qquad (\alpha \beta) \cdot G = \alpha \cdot (\beta \cdot G), \qquad
-(D, W) \in \mathcal S_A \;\Longrightarrow\; \big(D(\alpha\,\cdot\,),\ W(\alpha \cdot\,\cdot\,)\big) \in \mathcal S_B .
+W \in \mathcal W_A \;\Longrightarrow\; W(\alpha \cdot\,\cdot\,) \in \mathcal W_B .
 $$
 
 Absorbing a serial composition [absorbs its converters in turn][Games.absorb_comp].
 
 The class [`DistinctionGames`][DistinctionGames], extending `Games`, is the abstraction of
-[3, §§4.10–4.11], relating games and distinction problems. It has the visible resource $G^-$ of a
-game, with which attachment commutes [3, Definition 4.18], and a conditional equivalence
-$G \mathrel{|\!\equiv} T$ of games to resources [3, Definition 4.19], under which each solver's
-advantage is at most its winning probability [3, Lemma 4.16 and the proof of Theorem 4.17]:
+[3, §§4.10–4.11], relating games and distinction problems. Its solvers are the objects that are
+both a distinguisher and a winner, as $D$ in [3, Lemma 4.16]: a set $\mathcal S_A$ of pairs
+$(D, W)$ of a decision probability $D : \Phi A \to \mathbb R$ and a winning probability $W$, which
+is a winner, closed under [absorbing][DistinctionGames.absorb] a converter [3, §4.7.2, proof of
+Lemma 4.9]. It has the visible resource $G^-$ of a game, with which attachment commutes
+[3, Definition 4.18], and a conditional equivalence $G \mathrel{|\!\equiv} T$ of games to
+resources [3, Definition 4.19], under which each solver's advantage is at most its winning
+probability [3, Lemma 4.16 and the proof of Theorem 4.17]:
 
 $$
+(D, W) \in \mathcal S_A \;\Longrightarrow\; W \in \mathcal W_A, \qquad
 (\alpha \cdot G)^- = \alpha\, G^-, \qquad
 G \mathrel{|\!\equiv} T,\ (D, W) \in \mathcal S_A \;\Longrightarrow\; \lvert D(G^-) - D(T) \rvert \le W(G) .
 $$
 
 Interfaces are an instance of both classes, and the instance is the only place where they meet
-random systems: its games are the MBO random systems of §1.5, as [3, §3.7.1] instantiates games.
+random systems: its games are the MBO random systems of §1.5, as [3, §3.7.1] instantiates games,
+and its winners and solvers are probabilistic distinguishers, through their
+[solver behaviors][Domain.SolverBehavior].
 
 Interfaces are an instance of `Games` ([`Interface.games`][Interface.games]): its field `Game A`
 is the set of [games][Interface.Game] on $A$, the resources on the interface of $A$ with the MBO
 whose MBO, once set, stays set ([`RandomSystem.MonotoneMBO`][RandomSystem.MonotoneMBO]);
 `attachGame` attaches the systems-level [lift][PDCBehavior.liftMBO] of the converter; and
-`solvers A` is the [set of pairs][Interface.solvers] of the systems-level
-[solver behaviors][Domain.SolverBehavior] on $A$'s domain. Its axiom `attachGame_identity` is
-discharged by [`PDCBehavior.liftMBO_id`][PDCBehavior.liftMBO_id], `attachGame_serial` by
+`winners A` is the set of [winning probabilities][Interface.winners] of the systems-level solver
+behaviors on $A$'s domain. Its axiom `attachGame_identity` is discharged by
+[`PDCBehavior.liftMBO_id`][PDCBehavior.liftMBO_id], `attachGame_serial` by
 [`PDCBehavior.liftMBO_comp`][PDCBehavior.liftMBO_comp], and `closed_attach` by
 [absorbing a PDC into a solver behavior][Domain.SolverBehavior.absorb]. A bound on the winning
 probability of every distinguisher
-[bounds the winning probability of every solver][Interface.win_le].
+[bounds the winning probability of every winner][Interface.win_le].
 
 Interfaces are an instance of `DistinctionGames`
-([`Interface.distinctionGames`][Interface.distinctionGames]): its field `visible` is the
+([`Interface.distinctionGames`][Interface.distinctionGames]): its field `solvers A` is the
+[set of pairs][Interface.solvers] of the solver behaviors on $A$'s domain, `visible` is the
 systems-level [visible system][RandomSystem.visible], and `ConditionallyEquivalent` is the
 systems-level [conditional equivalence][RandomSystem.ConditionallyEquivalent]. Its axiom
-`visible_attachGame` is discharged by
+`solvers_winner` holds by the definition of the winners, `solvers_closed_attach` is discharged by
+[`Domain.SolverBehavior.absorb`][Domain.SolverBehavior.absorb], `visible_attachGame` by
 [`RandomSystem.visible_attach_liftMBO`][RandomSystem.visible_attach_liftMBO], and
 `advantage_le_win` by
 [`Domain.Distinguisher.advantage_le_winProbability`][Domain.Distinguisher.advantage_le_winProbability].
@@ -711,7 +720,7 @@ $X \simeq_{\sum_j \varepsilon_j} Y$ from `≃[loss]` and `≈[ε]` steps.
   On interfaces, the collision game of authenticated encryption
   [is the game the collision discrete game presents][collision], with
   [visible resource the hybrid][collision_visible] and
-  [conditionally equivalent to the ideal][collision_conditionallyEquivalent]; every solver
+  [conditionally equivalent to the ideal][collision_conditionallyEquivalent]; every winner
   [wins it with probability at most $q_e^2 / \lvert \mathcal M \rvert$][collision_win_le], so
   every solver's advantage between the hybrid and the ideal
   [is at most $q_e^2 / \lvert \mathcal M \rvert$][hybrid_ideal_advantage_le], also
@@ -948,10 +957,10 @@ agreeing with a map on a finite set $S$: there are $\lvert Y \rvert^{\lvert X \r
 [Interface.Resource.ofFunction]: src/ConstructiveCryptography/Functional.lean#L56
 [Interface.Resource.ofConditional]: src/ConstructiveCryptography/Functional.lean#L38
 [Interface.Resource.sample]: src/ConstructiveCryptography/Functional.lean#L176
-[Interface.withMBO]: src/ConstructiveCryptography/InterfaceGame.lean#L46
-[Interface.Game]: src/ConstructiveCryptography/InterfaceGame.lean#L57
-[Interface.liftMBO]: src/ConstructiveCryptography/InterfaceGame.lean#L60
-[Interface.Game.visible]: src/ConstructiveCryptography/InterfaceGame.lean#L69
+[Interface.withMBO]: src/ConstructiveCryptography/InterfaceGame.lean#L50
+[Interface.Game]: src/ConstructiveCryptography/InterfaceGame.lean#L61
+[Interface.liftMBO]: src/ConstructiveCryptography/InterfaceGame.lean#L64
+[Interface.Game.visible]: src/ConstructiveCryptography/InterfaceGame.lean#L73
 [Interface.Game.ofPDG]: src/ConstructiveCryptography/GameBound.lean#L60
 [Interface.Game.visible_ofPDG]: src/ConstructiveCryptography/GameBound.lean#L68
 [Interface.Game.conditionallyEquivalent_ofPDG_iff]: src/ConstructiveCryptography/GameBound.lean#L76
@@ -1017,15 +1026,17 @@ agreeing with a map on a finite set $S$: there are $\lvert Y \rvert^{\lvert X \r
 [CompatibleDistinguisherClass]: src/ConstructiveCryptography/CryptographicAlgebra/Distinguisher.lean#L77
 [CompatibleDistinguisherClass.ofClosure]: src/ConstructiveCryptography/CryptographicAlgebra/Distinguisher.lean#L102
 
-[Games]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L59
-[DistinctionGames]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L116
-[Games.absorb]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L95
-[Games.absorb_comp]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L105
-[Interface.games]: src/ConstructiveCryptography/InterfaceGame.lean#L79
-[Interface.distinctionGames]: src/ConstructiveCryptography/InterfaceGame.lean#L98
-[Interface.dist_visible_le]: src/ConstructiveCryptography/InterfaceGame.lean#L129
-[Interface.solvers]: src/ConstructiveCryptography/InterfaceGame.lean#L73
-[Interface.win_le]: src/ConstructiveCryptography/InterfaceGame.lean#L115
+[Games]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L61
+[DistinctionGames]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L111
+[Games.absorb]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L92
+[DistinctionGames.absorb]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L147
+[Games.absorb_comp]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L100
+[Interface.games]: src/ConstructiveCryptography/InterfaceGame.lean#L89
+[Interface.distinctionGames]: src/ConstructiveCryptography/InterfaceGame.lean#L109
+[Interface.dist_visible_le]: src/ConstructiveCryptography/InterfaceGame.lean#L146
+[Interface.winners]: src/ConstructiveCryptography/InterfaceGame.lean#L78
+[Interface.solvers]: src/ConstructiveCryptography/InterfaceGame.lean#L83
+[Interface.win_le]: src/ConstructiveCryptography/InterfaceGame.lean#L133
 
 <!-- Declarations: §4 -->
 
@@ -1148,16 +1159,16 @@ agreeing with a map on a finite set $S$: there are $\lvert Y \rvert^{\lvert X \r
 [encryptionReal_bisim]: src/Examples/AuthenticatedEncryption/Oracle.lean#L369
 [collision_mass_le]: src/Examples/AuthenticatedEncryption/Collision.lean#L53
 [hybrid_ideal_distance_le]: src/Examples/AuthenticatedEncryption/Collision.lean#L385
-[advantage_attach_le_win]: src/Examples/Games.lean#L90
-[win_attach_le]: src/Examples/Games.lean#L55
-[win_attach_comp_le]: src/Examples/Games.lean#L62
-[win_le_of_reduction]: src/Examples/Games.lean#L72
-[collision]: src/Examples/Games.lean#L118
-[collision_visible]: src/Examples/Games.lean#L123
-[collision_conditionallyEquivalent]: src/Examples/Games.lean#L127
-[collision_win_le]: src/Examples/Games.lean#L134
-[hybrid_ideal_advantage_le]: src/Examples/Games.lean#L150
-[attach_hybrid_ideal_advantage_le]: src/Examples/Games.lean#L160
+[advantage_attach_le_win]: src/Examples/Games.lean#L88
+[win_attach_le]: src/Examples/Games.lean#L54
+[win_attach_comp_le]: src/Examples/Games.lean#L60
+[win_le_of_reduction]: src/Examples/Games.lean#L70
+[collision]: src/Examples/Games.lean#L117
+[collision_visible]: src/Examples/Games.lean#L122
+[collision_conditionallyEquivalent]: src/Examples/Games.lean#L126
+[collision_win_le]: src/Examples/Games.lean#L133
+[hybrid_ideal_advantage_le]: src/Examples/Games.lean#L149
+[attach_hybrid_ideal_advantage_le]: src/Examples/Games.lean#L159
 [correctedChain]: src/Examples/AuthenticatedEncryption/Security.lean#L93
 [correctedChain_cca]: src/Examples/AuthenticatedEncryption/Security.lean#L112
 [correctedChain_ptxt]: src/Examples/AuthenticatedEncryption/Security.lean#L117

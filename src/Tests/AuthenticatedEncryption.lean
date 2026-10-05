@@ -34,7 +34,7 @@ theorem oneTimePad_hybrid_ideal (q : AE.Port → ℕ) :
 /-- The collision step on the one-time pad, through the games layer: every solver's advantage is
 within `q_e² / 2`. -/
 theorem oneTimePad_hybrid_ideal_advantage (q : AE.Port → ℕ) {s}
-    (hs : s ∈ Games.solvers (AE.perPort Bool Bool q)) :
+    (hs : s ∈ DistinctionGames.solvers (AE.perPort Bool Bool q)) :
     |s.1 (Hybrid oneTimePad q) - s.1 (AE.Ideal.perPort Bool Bool (budget := q) •
         Encryption.Real.perPort oneTimePad : Interface.Resource (AE.perPort Bool Bool q))| ≤
       (q .enc : ℝ) ^ 2 / 2 := by
