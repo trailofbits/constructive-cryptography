@@ -761,9 +761,9 @@ $$
 A [**distribution**][Distribution] is a finitely supported function to $\mathbb R$, and a
 [**probability distribution**][ProbDist] one that is [nonnegative with weight one][isProbDist].
 Distributions have [masses][mass] of events, [pushforwards][fTransform], [products][prod] of two
-laws and of [families][pi], and [uniform][uniform] laws. A [**kernel**][bindK] $`f`$ mixed over a
-law $`\mu`$ gives $`\sum_a \mu(a)\, f(a)`$, the composition of conditional distributions
-[3, §3.6.1]: [mixtures compose][bindK_bindK], a pushforward
+laws and of [families][pi], and [uniform][uniform] laws. A [**kernel**][bindK] $`f`$ is a conditional
+distribution [3, §3.6.1]; mixed over a law $`\mu`$ it gives $`\sum_a \mu(a)\, f(a)`$:
+[mixtures compose][bindK_bindK], a pushforward
 [is the point kernel of its function][bindK_single_comp], and an independent product
 [disintegrates][pi_eq_bindK_update] at a coordinate. Probability laws have
 [pushforwards][ProbDist.map] and [sequential compositions][ProbDist.bind]. The

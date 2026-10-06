@@ -7,4 +7,5 @@ import Probability.Lift
 import Probability.MultiCoupling
 import Probability.StatisticalDistance
 
-/-! Finitely supported distributions, kernels, statistical distance, couplings, expectation and counting. -/
+/-! Finitely supported distributions, kernels, statistical distance, couplings, expectation and
+counting. -/
