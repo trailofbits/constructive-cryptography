@@ -20,6 +20,7 @@ import ConstructiveCryptography.InterfaceMonoidal
 import ConstructiveCryptography.InterfaceParallel
 import ConstructiveCryptography.InterfaceRelabel
 import ConstructiveCryptography.InterfaceTensorRename
+import ConstructiveCryptography.Memoryless
 import ConstructiveCryptography.Notation
 import ConstructiveCryptography.PresentedGame
 import ConstructiveCryptography.DSL
@@ -64,7 +65,7 @@ import ConstructiveCryptography.Tactics.ProofAutomationAttributes
 
 /-!
 Constructive Cryptography: interfaces and domains, arrows, resources and the action, parallel
-composition, the resource distance, specifications of resources, filters, budgets, functional
-constructors, games presented by discrete games; the categorical packaging; and the extensions
-(substitution, the DSL).
+composition, the resource distance, memoryless resources, specifications of resources, filters,
+budgets, functional constructors, games presented by discrete games; the categorical packaging;
+and the extensions (substitution, the DSL).
 -/
