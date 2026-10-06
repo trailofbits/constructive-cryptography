@@ -4,10 +4,10 @@ import Tests.Counterexamples
 /-!
 # Axioms of the systems layer
 
-The laws of random systems, deterministic and probabilistic converters, attachment,
-parallel composition, distance and games, and the counterexamples, depend only on
-`propext`, `Classical.choice` and `Quot.sound`. Comments name the laws of
-`papers/SYSTEM_ALGEBRA_SPEC.md`.
+The laws of random systems, deterministic and probabilistic converters, attachment, parallel
+composition, probabilistic automata, memoryless systems, distance and games, and the
+counterexamples, depend only on `propext`, `Classical.choice` and `Quot.sound`. Comments name the
+laws of `papers/SYSTEM_ALGEBRA_SPEC.md`.
 -/
 
 -- RandomSystems.Converter.ConverterAttachment
@@ -46,6 +46,15 @@ parallel composition, distance and games, and the counterexamples, depend only o
 -- RandomSystems.Converter.PartialIdentity
 #print axioms SystemAlgebra.IsDDC.trim_serialM_id
 #print axioms SystemAlgebra.IsDDC.trim_id_serialM
+
+-- RandomSystems.Converter.ProbProgramAttachment
+#print axioms SystemAlgebra.Program.ofDeterministic_combine
+#print axioms SystemAlgebra.Program.simulatesAt_probCombine
+#print axioms SystemAlgebra.RandomSystem.ofProbAutomaton_probCombine_eq_of_simulation
+#print axioms SystemAlgebra.ProbStep.simulatesAt_drawStep
+#print axioms SystemAlgebra.RandomSystem.ofProbAutomaton_eq_drawStep
+#print axioms SystemAlgebra.PDCBehavior.attach_ofDDC_ofProgramOn_ofDeterministic
+#print axioms SystemAlgebra.PDCBehavior.attach_ofDDC_ofProgramOn_ofProbAutomaton
 
 -- RandomSystems.Converter.ResourceAttachment
 #print axioms SystemAlgebra.MapsDomain.comp
@@ -234,12 +243,26 @@ parallel composition, distance and games, and the counterexamples, depend only o
 #print axioms SystemAlgebra.close_pair  -- E2, only `D` terminating
 #print axioms SystemAlgebra.partialClose_isDDD  -- `S` arbitrary
 
+-- RandomSystems.System.Memoryless
+#print axioms SystemAlgebra.RandomSystem.memoryless
+#print axioms SystemAlgebra.RandomSystem.eq_memoryless_of_snoc
+#print axioms SystemAlgebra.RandomSystem.ofProbAutomaton_eq_memoryless
+#print axioms SystemAlgebra.Program.memoryless_probCombine
+#print axioms SystemAlgebra.PDCBehavior.attach_ofDDC_ofProgramOn_memoryless
+
 -- RandomSystems.System.Observation
 #print axioms SystemAlgebra.close_decision
 #print axioms SystemAlgebra.close_dom_iff_compatible
 #print axioms SystemAlgebra.behEq_iff_decision
 #print axioms SystemAlgebra.behEq_iff_transcript_DDD
 #print axioms SystemAlgebra.dde_blind_beyond_resources
+
+-- RandomSystems.System.ProbAutomaton
+#print axioms SystemAlgebra.RandomSystem.ofProbAutomaton
+#print axioms SystemAlgebra.RandomSystem.ofProbAutomaton_repliesAtQueriedInterface
+#print axioms SystemAlgebra.ProbStep.belief_simulation
+#print axioms SystemAlgebra.RandomSystem.ofProbAutomaton_eq_of_simulation
+#print axioms SystemAlgebra.RandomSystem.ofProbAutomaton_ofDeterministic_apply
 
 -- RandomSystems.System.Replies
 #print axioms SystemAlgebra.replies_trim_iff
