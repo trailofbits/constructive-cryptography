@@ -59,6 +59,31 @@ environment, and on a domain of input histories
 systems on one domain form [mixtures][RandomSystem.mix], and two random systems run
 [independently in parallel][RandomSystem.parallel] form one on the combined alphabets.
 
+A [**probabilistic automaton**][RandomSystem.ofProbAutomaton] answers a query from its state with a
+law on the next state and the reply, a [probabilistic step][ProbStep]; its random system follows
+the [sub-law of the states][ProbStep.belief] reached with the replies of a transcript, whose weight
+is the probability of the transcript. Two probabilistic automata
+[have the same random system][RandomSystem.ofProbAutomaton_eq_of_simulation] along a
+[simulation][ProbStep.SimulatesAt], a kernel between their states through which their steps
+commute. A deterministic automaton with a random initial state
+[is the probabilistic automaton of its point steps][RandomSystem.ofProbAutomaton_ofDeterministic_apply],
+and a probabilistic automaton
+[is a deterministic automaton reading pre-sampled draws][RandomSystem.ofProbAutomaton_eq_drawStep],
+sampled once with the initial state: a random automaton [4, Definition 2].
+
+A random system is [**memoryless**][RandomSystem.memoryless] when the law of its reply depends only
+on the current query, never on the history: a source "can be memoryless or have memory"
+[3, Definition 3.1], and a single-input system given by a conditional distribution is a "discrete
+memoryless channel" [3, §3.6.1]. With the reply law $`\nu`$, its probabilities obey the chain rule
+
+```math
+p\big(h \cdot (x, y)\big) = p(h)\, \nu_x(y) \qquad \text{for every query } x \text{ admitted after } h,
+```
+
+and [a random system obeying it is the memoryless system][RandomSystem.eq_memoryless_of_snoc].
+A probabilistic automaton whose step [replies with the law $`\nu`$ from every
+state][ProbStep.Memoryless] [is the memoryless system of $`\nu`$][RandomSystem.ofProbAutomaton_eq_memoryless].
+
 ### 1.3 Converters
 
 A [**DDC**][IsDDC] is a system on the converter alphabets (outside queries and inside replies in;
@@ -93,6 +118,22 @@ $o$. On an outside domain, a bounded program
 Attached to an automaton, a program is [inlined][Program.inline] [4, §3.3]: the result is the
 [combined automaton][Program.combine] on pairs of states, also
 [on domains][Program.trim_apply_ofProgramOn_automaton].
+
+Run against a probabilistic automaton, a program is the probabilistic automaton
+[on pairs of states][Program.probCombine] whose step runs one invocation, the automaton answering
+the inside queries with fresh steps; it [respects simulations][RandomSystem.ofProbAutomaton_probCombine_eq_of_simulation].
+[**Attaching the program's converter to a probabilistic automaton is the program run against
+it**][PDCBehavior.attach_ofDDC_ofProgramOn_ofProbAutomaton], the combined system $`C(F)`$ of a
+system $`C(\cdot)`$ invoking $`F`$ [4, §3.3]; for point steps it is the
+[combined automaton][PDCBehavior.attach_ofDDC_ofProgramOn_ofDeterministic]. Against memoryless
+replies of the laws $`\nu`$, a program [replies memorylessly][Program.memoryless_probCombine], with
+its [reply law][Program.replyLaw] $`\kappa`$: the law of one invocation whose inside queries are
+answered by fresh samples of $`\nu`$. So [the composition law][PDCBehavior.attach_ofDDC_ofProgramOn_memoryless]
+holds, whatever the number of the program's inside queries:
+
+```math
+\alpha_P\, \mathrm{mem}(\nu) = \mathrm{mem}(\kappa).
+```
 
 ### 1.4 Distance and distinguishers
 
@@ -250,7 +291,13 @@ $\mathrm{leftContext}\ R\ B$ to $S$.
 A [**source**][Interface.Resource.source] answers with fresh independent samples of a law
 [4, Definition 1]. An [**automaton**][Interface.Resource.ofAutomaton] is a transition function with
 a sampled initial state [4, Definition 2], and [parallel automata][Interface.parallel_ofAutomaton]
-are the automaton running both side by side. **Functional resources** are given by
+are the automaton running both side by side. A source [is memoryless][Interface.source_eq_memoryless],
+memoryless resources [side by side are memoryless][Interface.parallel_eq_memoryless], and the
+converter of a program [maps a memoryless resource to the memoryless resource of its reply
+law][Interface.Converter.ofProgram_smul_memoryless], also
+[for port-preserving programs][Interface.Converter.ofPreservingProgram_smul_memoryless] and
+[with its own sources beside its inside interface][Interface.Converter.ofPreservingProgram_comp_rightContext_smul_memoryless]:
+the composition law of §1.3 on the random systems of the resources. **Functional resources** are given by
 [reply functions][Interface.Resource.ofFunction], by
 [conditional reply laws][Interface.Resource.ofConditional], or by
 [sampling once][Interface.Resource.sample] and keeping the sample.
@@ -664,7 +711,11 @@ A [`filter F : I domain h ↦ P`][elabFilter] generates `F : (I q).restrict P �
 A compiled component is an automaton with a sampled initial state. Attaching a program to an
 automaton [gives the combined automaton][Interface.Converter.ofProgram_smul_ofAutomaton], also
 [for port-preserving programs][Interface.Converter.ofPreservingProgram_smul_ofAutomaton], so
-compiled systems are compared by [bisimulation][automatonSystem_eq_of_bisim].
+compiled systems are compared by [bisimulation][automatonSystem_eq_of_bisim]. The
+[memoryless source][MemorylessSource] `y ←$ ν; return y`
+[is the memoryless system of `ν`][MemorylessSource.memoryless_eq], so systems built from programs
+and memoryless sources are compared by the laws of one reply, through the composition laws of §2.2:
+each hop of [PRG length extension][ExPRG] is one rewrite.
 
 ---
 
@@ -814,6 +865,7 @@ agreeing with a map on a finite set $S$: there are $\lvert Y \rvert^{\lvert X \r
 [ExAES]: src/Examples/DSL/AES.lean
 [ExAEAD]: src/Examples/DSL/AEAD.lean
 [ExUse]: src/Examples/Usability.lean
+[ExPRG]: src/Examples/PRGLengthExtension.lean
 
 <!-- Declarations: §1 -->
 
@@ -869,13 +921,31 @@ agreeing with a map on a finite set $S$: there are $\lvert Y \rvert^{\lvert X \r
 [PDCBehavior.tensor_id]: src/RandomSystems/Converter/ConverterTensor.lean#L705
 [Program]: src/RandomSystems/Converter/Program.lean#L45
 [Program.Bounded]: src/RandomSystems/Converter/Program.lean#L70
-[Program.Costs]: src/RandomSystems/Converter/Program.lean#L88
-[Program.PortPreserving]: src/RandomSystems/Converter/Program.lean#L99
-[DDC.insideQueries_restrict_length_le]: src/RandomSystems/Converter/Program.lean#L513
-[DDC.ofProgramOn_isDDCFrom]: src/RandomSystems/Converter/Program.lean#L610
+[Program.Costs]: src/RandomSystems/Converter/Program.lean#L106
+[Program.PortPreserving]: src/RandomSystems/Converter/Program.lean#L117
+[DDC.insideQueries_restrict_length_le]: src/RandomSystems/Converter/Program.lean#L531
+[DDC.ofProgramOn_isDDCFrom]: src/RandomSystems/Converter/Program.lean#L628
 [Program.inline]: src/RandomSystems/Converter/ProgramAttachment.lean#L258
 [Program.combine]: src/RandomSystems/Converter/ProgramAttachment.lean#L429
 [Program.trim_apply_ofProgramOn_automaton]: src/RandomSystems/Converter/ProgramAttachment.lean#L609
+[RandomSystem.ofProbAutomaton]: src/RandomSystems/System/ProbAutomaton.lean#L182
+[ProbStep]: src/RandomSystems/System/ProbAutomaton.lean#L57
+[ProbStep.belief]: src/RandomSystems/System/ProbAutomaton.lean#L152
+[ProbStep.SimulatesAt]: src/RandomSystems/System/ProbAutomaton.lean#L241
+[RandomSystem.ofProbAutomaton_eq_of_simulation]: src/RandomSystems/System/ProbAutomaton.lean#L332
+[RandomSystem.ofProbAutomaton_ofDeterministic_apply]: src/RandomSystems/System/ProbAutomaton.lean#L432
+[RandomSystem.ofProbAutomaton_eq_drawStep]: src/RandomSystems/Converter/ProbProgramAttachment.lean#L734
+[RandomSystem.memoryless]: src/RandomSystems/System/Memoryless.lean#L61
+[RandomSystem.eq_memoryless_of_snoc]: src/RandomSystems/System/Memoryless.lean#L79
+[ProbStep.Memoryless]: src/RandomSystems/System/Memoryless.lean#L137
+[RandomSystem.ofProbAutomaton_eq_memoryless]: src/RandomSystems/System/Memoryless.lean#L172
+[Program.probCombine]: src/RandomSystems/Converter/ProbProgramAttachment.lean#L165
+[RandomSystem.ofProbAutomaton_probCombine_eq_of_simulation]: src/RandomSystems/Converter/ProbProgramAttachment.lean#L414
+[PDCBehavior.attach_ofDDC_ofProgramOn_ofProbAutomaton]: src/RandomSystems/Converter/ProbProgramAttachment.lean#L853
+[PDCBehavior.attach_ofDDC_ofProgramOn_ofDeterministic]: src/RandomSystems/Converter/ProbProgramAttachment.lean#L792
+[Program.memoryless_probCombine]: src/RandomSystems/System/Memoryless.lean#L267
+[Program.replyLaw]: src/RandomSystems/System/Memoryless.lean#L201
+[PDCBehavior.attach_ofDDC_ofProgramOn_memoryless]: src/RandomSystems/System/Memoryless.lean#L298
 [RandomSystem.transcriptDistance]: src/RandomSystems/Distance/Decision.lean#L225
 [Domain.Compatible]: src/RandomSystems/Distance/Decision.lean#L162
 [Domain.DecisionCompatible]: src/RandomSystems/Distance/Decision.lean#L168
@@ -960,6 +1030,11 @@ agreeing with a map on a finite set $S$: there are $\lvert Y \rvert^{\lvert X \r
 [Interface.Resource.source]: src/ConstructiveCryptography/Source.lean#L49
 [Interface.Resource.ofAutomaton]: src/ConstructiveCryptography/Automaton.lean#L42
 [Interface.parallel_ofAutomaton]: src/ConstructiveCryptography/Automaton.lean#L57
+[Interface.source_eq_memoryless]: src/ConstructiveCryptography/Memoryless.lean#L45
+[Interface.parallel_eq_memoryless]: src/ConstructiveCryptography/Memoryless.lean#L100
+[Interface.Converter.ofProgram_smul_memoryless]: src/ConstructiveCryptography/Memoryless.lean#L198
+[Interface.Converter.ofPreservingProgram_smul_memoryless]: src/ConstructiveCryptography/Memoryless.lean#L208
+[Interface.Converter.ofPreservingProgram_comp_rightContext_smul_memoryless]: src/ConstructiveCryptography/Memoryless.lean#L223
 [Interface.Resource.ofFunction]: src/ConstructiveCryptography/Functional.lean#L56
 [Interface.Resource.ofConditional]: src/ConstructiveCryptography/Functional.lean#L38
 [Interface.Resource.sample]: src/ConstructiveCryptography/Functional.lean#L176
@@ -1127,6 +1202,8 @@ agreeing with a map on a finite set $S$: there are $\lvert Y \rvert^{\lvert X \r
 [Interface.Converter.ofPreservingProgram]: src/ConstructiveCryptography/DSL/Converters.lean#L67
 [Interface.Converter.ofProgram_smul_ofAutomaton]: src/ConstructiveCryptography/DSL/Converters.lean#L142
 [Interface.Converter.ofPreservingProgram_smul_ofAutomaton]: src/ConstructiveCryptography/DSL/Converters.lean#L152
+[MemorylessSource]: src/Commons/Definitions/Ideal.lean#L95
+[MemorylessSource.memoryless_eq]: src/Commons/Definitions/Ideal.lean#L103
 [cc_normalize]: src/ConstructiveCryptography/Tactics/Basic.lean#L30
 [cc_nonexpand]: src/ConstructiveCryptography/Tactics/Categorical.lean#L166
 [cc_nonexpand-interfaces]: src/ConstructiveCryptography/Notation.lean#L98

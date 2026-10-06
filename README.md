@@ -15,15 +15,15 @@ summarizes the theory layer by layer, with links to the Lean declarations.
 | Library | Content |
 |---|---|
 | `Probability` | finitely supported distributions, kernels, statistical distance, couplings, expectation, counting |
-| `RandomSystems` | systems and automata; deterministic converters and programs; distributions over deterministic systems; random systems given by their cumulative probabilities; probabilistic converters, attachment and parallel composition; transcript distance and distinguishers; games |
+| `RandomSystems` | systems and automata; deterministic converters and programs; distributions over deterministic systems; random systems given by their cumulative probabilities; probabilistic automata and memoryless systems; probabilistic converters, attachment and parallel composition; transcript distance and distinguishers; games |
 | `ConstructiveCryptography.Specification`, `.Construction` | specifications, constructions and relaxations over any carrier |
 | `ConstructiveCryptography.CryptographicAlgebra` | the classes of cryptographic algebras: resource theories, parallel composition, compatible pseudo-metrics and distinguisher classes, relaxations |
-| `ConstructiveCryptography` (top level) | interfaces, resources and converters on random systems, and their instances of the classes; filters, contexts, sources, automata, functional resources, game bounds; notation |
+| `ConstructiveCryptography` (top level) | interfaces, resources and converters on random systems, and their instances of the classes; filters, contexts, sources, automata, memoryless resources, functional resources, game bounds; notation |
 | `ConstructiveCryptography.Substitution` | the substitution calculus for constructions [6] |
 | `ConstructiveCryptography.DSL` | a compiler from component declarations to resources and converters |
 | `ConstructiveCryptography.Tactics` | proof commands, including the substitution calculations `cc_calc` |
-| `Commons` | common ideal systems (URF, URP and their strong and tweakable forms), the CDH assumption as a pair of systems, the security notions as pairs of systems [6]: symmetric encryption (real-or-random and left-or-right CPA) and authenticated encryption (ind-cca, int-ptxt, int-ctxt, ae), public-key encryption and KEMs (IND-CPA, IND-CCA), MACs and signatures (EUF-CMA, SUF-CMA), PRGs, universal hashing (UHF, DUF) and collision resistance, and the schemes SHA-256, SHA-3, SHAKE, Keccak-256, ML-KEM [9] and ML-DSA [10] (the last two adapted from VCVio [11]) with known-answer tests, in the order of [8] |
-| `Examples` | authenticated encryption, AES, AEAD, substitutions on interfaces, the proof commands |
+| `Commons` | common ideal systems (URF, URP and their strong and tweakable forms, memoryless sources), the CDH assumption as a pair of systems, the security notions as pairs of systems [6]: symmetric encryption (real-or-random and left-or-right CPA) and authenticated encryption (ind-cca, int-ptxt, int-ctxt, ae), public-key encryption and KEMs (IND-CPA, IND-CCA), MACs and signatures (EUF-CMA, SUF-CMA), PRGs, universal hashing (UHF, DUF) and collision resistance, and the schemes SHA-256, SHA-3, SHAKE, Keccak-256, ML-KEM [9] and ML-DSA [10] (the last two adapted from VCVio [11]) with known-answer tests, in the order of [8] |
+| `Examples` | authenticated encryption, AES, AEAD, PRG length extension, substitutions on interfaces, the proof commands |
 | `Tests` | axiom audits, counterexamples, DSL diagnostics and semantics, tests of the substitution calculus |
 
 Module docstrings cite the source of each definition and theorem, with the

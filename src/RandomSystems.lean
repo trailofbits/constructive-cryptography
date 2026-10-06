@@ -9,6 +9,7 @@ import RandomSystems.Converter.PartialConverter
 import RandomSystems.Converter.PartialIdentity
 import RandomSystems.Converter.Program
 import RandomSystems.Converter.ProgramAttachment
+import RandomSystems.Converter.ProbProgramAttachment
 import RandomSystems.Converter.ParallelPDS
 import RandomSystems.Converter.PDCBehavior
 import RandomSystems.Converter.ResourceAttachment
@@ -45,7 +46,9 @@ import RandomSystems.PDS.PDS
 import RandomSystems.System.Basic
 import RandomSystems.System.DDE
 import RandomSystems.System.InterfaceSystem
+import RandomSystems.System.Memoryless
 import RandomSystems.System.Observation
+import RandomSystems.System.ProbAutomaton
 import RandomSystems.System.Replies
 
-/-! Random systems: raw systems and connection, deterministic converters, PDSs, cumulative random systems, converters and attachment, parallel composition, distance and games. -/
+/-! Random systems: raw systems and connection, deterministic converters, PDSs, cumulative random systems, probabilistic automata and memoryless systems, converters and attachment, parallel composition, distance and games. -/

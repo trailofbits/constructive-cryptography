@@ -1,4 +1,5 @@
 import Examples.DSL.AEADTests
+import Examples.PRGLengthExtension
 import Tests.DSL.Diagnostics
 import Tests.DSL.Semantics
 
@@ -78,6 +79,10 @@ checks depend only on `propext`, `Classical.choice` and `Quot.sound`.
 #print axioms DSLExamples.Cipher.cbc_nonexpanding
 #print axioms DSLExamples.Authenticated.AuthenticatedEncryption
 #print axioms DSLExamples.Authenticated.authenticatedEncryption_eq
+#print axioms Examples.PRGLengthExtension.prgReal_H_eq
+#print axioms Examples.PRGLengthExtension.𝓡₁_smul_prgRand
+#print axioms Examples.PRGLengthExtension.𝓡₂_smul_prgRand
+#print axioms Examples.PRGLengthExtension.prg_length_extension
 
 -- Checks.
 #print axioms DSLTests.Semantics.freshBits_independent
