@@ -20,7 +20,7 @@ Probability ─▶ Random systems ─▶ Interfaces, resources, converters ═�
 ## 1. Random systems
 
 *Systems over finite alphabets, answering exactly on a bounded domain [1], [2, Chapter 2],
-[3, Chapter 3]. Laws are finitely supported distributions and $\delta$ is the statistical
+[3, Chapter 3]. Laws are finitely supported distributions and $`\delta`$ is the statistical
 distance (Appendix A).*
 
 ### 1.1 Deterministic systems
@@ -384,7 +384,7 @@ $\mathcal R \xrightarrow{\pi} \mathcal S^\varepsilon \iff \mathcal R \xrightarro
 and its errors [add under serial composition][Constructs.serial_epsilonRelaxation].
 
 The [**star relaxation**][CA.star] [6, §3.4, Lemma 3]
-$\mathcal R^{*} = \lbrace \sigma R \mid \sigma \in \Sigma,\ R \in \mathcal R \rbrace$ is
+$`\mathcal R^{*} = \lbrace \sigma R \mid \sigma \in \Sigma,\ R \in \mathcal R \rbrace`$ is
 [idempotent][star_idem], a [closure operator][starClosure], and
 [exact construction survives star-relaxing both ends][Constructs.star] for a converter commuting
 with the class. A [**simulator**][constructs_of_simulator] [6, Lemma 5] $\sigma \in \Sigma$ with
