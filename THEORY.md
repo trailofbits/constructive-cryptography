@@ -26,10 +26,10 @@ distance (Appendix A).*
 ### 1.1 Deterministic systems
 
 A [**deterministic system**][IsDDS] (DDS) is a [partial function][System] from input histories to
-the next output, $s : \mathcal X^{*} \rightharpoonup \mathcal Y$, [silent at the empty
+the next output, $`s : \mathcal X^{*} \rightharpoonup \mathcal Y`$, [silent at the empty
 history][SilentAtEmpty], whose domain is [closed under nonempty prefixes][PrefixClosed]. Systems
 are [wired together][interconnect], each output leaving the wiring or returning as an input. A
-system [replies][Replies] $y_1 \dots y_n$ to $x_1 \dots x_n$ when it answers each prefix with the
+system [replies][Replies] $`y_1 \dots y_n`$ to $`x_1 \dots x_n`$ when it answers each prefix with the
 next output, and a DDS [is determined by its completed replies][IsDDS.eq_of_replies_iff]. An
 [automaton][automatonSystem] is a transition function started in a state, and
 [bisimilar][IsBisim] automata [have the same system][automatonSystem_eq_of_bisim]. An
@@ -37,16 +37,16 @@ next output, and a DDS [is determined by its completed replies][IsDDS.eq_of_repl
 
 ### 1.2 Probabilistic systems
 
-A [**domain**][Domain] $\mathcal D$ admits next queries after each transcript, with a bound on the
+A [**domain**][Domain] $`\mathcal D`$ admits next queries after each transcript, with a bound on the
 length. A [**PDS**][PDS] is a finite distribution over DDSs [with domain][HasDomain]
-$\mathcal D$ [1, Definition 8]. A [**random system**][RandomSystem] is given by its cumulative
-probabilities $p$ on transcripts [1, after Lemma 5], [normalized][IsRandomSystem] on the domain:
+$`\mathcal D`$ [1, Definition 8]. A [**random system**][RandomSystem] is given by its cumulative
+probabilities $`p`$ on transcripts [1, after Lemma 5], [normalized][IsRandomSystem] on the domain:
 
-$$
+```math
 p(\varepsilon) = 1, \qquad p \ge 0, \qquad
 \sum_{y} p\big(h \cdot (x, y)\big) =
 \begin{cases} p(h) & \text{if } x \text{ is admitted after } h, \\ 0 & \text{otherwise.} \end{cases}
-$$
+```
 
 A PDS [has a random system][PDS.behavior], and [equivalent][Equivalent] PDSs
 [have the same one][PDS.behavior_eq_iff]. Every random system
@@ -62,15 +62,15 @@ systems on one domain form [mixtures][RandomSystem.mix], and two random systems 
 ### 1.3 Converters
 
 A [**DDC**][IsDDC] is a system on the converter alphabets (outside queries and inside replies in;
-inside queries and outside replies out) with at most $b$ consecutive inside queries
-[3, Definition 3.8]. A **DDC from $E$ to $F$** ([`IsDDCFrom`][IsDDCFrom]) answers exactly the
-[converter domain][converterDomain] and queries only in $E$; attached to a system with domain $E$
-it [gives one with domain][IsDDCFrom.mapsDomain] $F$. A [**PDC**][PDCBehavior.ofPDC] is a distribution over DDCs, and
+inside queries and outside replies out) with at most $`b`$ consecutive inside queries
+[3, Definition 3.8]. A **DDC from $`E`$ to $`F`$** ([`IsDDCFrom`][IsDDCFrom]) answers exactly the
+[converter domain][converterDomain] and queries only in $`E`$; attached to a system with domain $`E`$
+it [gives one with domain][IsDDCFrom.mapsDomain] $`F`$. A [**PDC**][PDCBehavior.ofPDC] is a distribution over DDCs, and
 its [**behavior**][PDCBehavior] is a random system over the converter domain
 [3, Definitions 3.17–3.18].
 
-[Serial composition][serialM] $\beta \odot \alpha$ connects the inside of $\beta$ to the outside
-of $\alpha$, and [DDCs compose][IsDDC.comp] with the product of their bounds. PDC behaviors have a
+[Serial composition][serialM] $`\beta \odot \alpha`$ connects the inside of $`\beta`$ to the outside
+of $`\alpha`$, and [DDCs compose][IsDDC.comp] with the product of their bounds. PDC behaviors have a
 [composition][PDCBehavior.comp] and an [identity][PDCBehavior.id], with
 [associativity][PDCBehavior.comp_assoc] and the [left][PDCBehavior.id_comp] and
 [right][PDCBehavior.comp_id] identity laws. [Attachment][PDCBehavior.attach] samples the PDC, then
@@ -83,12 +83,12 @@ serial composition.
 
 A [**program**][Program] is a deterministic oracle body: from its state, the outside query and the
 inside exchanges of the current invocation, it computes the reply or the next inside query. A
-program can be [bounded][Program.Bounded] (at most $b$ inside queries per invocation), have
+program can be [bounded][Program.Bounded] (at most $`b`$ inside queries per invocation), have
 [exact costs][Program.Costs], or [preserve a partial port map][Program.PortPreserving]
-$\iota : O \to \mathrm{Option}\ J$: an invocation at $o$ queries the labels in the image of
-$\iota$ only at $\iota(o)$, at most once, and none of them when $\iota(o)$ is none, so it
-queries $\iota(o)$ [at most as often as it is queried at][DDC.insideQueries_restrict_length_le]
-$o$. On an outside domain, a bounded program
+$`\iota : O \to \mathrm{Option}\ J`$: an invocation at $`o`$ queries the labels in the image of
+$`\iota`$ only at $`\iota(o)`$, at most once, and none of them when $`\iota(o)`$ is none, so it
+queries $`\iota(o)`$ [at most as often as it is queried at][DDC.insideQueries_restrict_length_le]
+$`o`$. On an outside domain, a bounded program
 [is a DDC from every inside domain containing its inside queries][DDC.ofProgramOn_isDDCFrom].
 Attached to an automaton, a program is [inlined][Program.inline] [4, §3.3]: the result is the
 [combined automaton][Program.combine] on pairs of states, also
@@ -97,54 +97,54 @@ Attached to an automaton, a program is [inlined][Program.inline] [4, §3.3]: the
 ### 1.4 Distance and distinguishers
 
 The [**transcript distance**][RandomSystem.transcriptDistance] takes the supremum over environments
-$E$ [compatible with the domain][Domain.Compatible] and [bounded][QueryBounded] to $n$ queries; a
-[**probabilistic distinguisher**][Domain.Distinguisher] $P$ [1, Definition 9] has an
+$`E`$ [compatible with the domain][Domain.Compatible] and [bounded][QueryBounded] to $`n`$ queries; a
+[**probabilistic distinguisher**][Domain.Distinguisher] $`P`$ [1, Definition 9] has an
 [advantage][Domain.Distinguisher.advantage]:
 
-$$
+```math
 \Delta(R, S) = \sup_{E,\, n}\ \delta\big(\mathrm{tr}(R, E, n),\ \mathrm{tr}(S, E, n)\big),
 \qquad
 \mathrm{Adv}_P(R, S) = \big\lvert \Pr[P(R) = 1] - \Pr[P(S) = 1] \big\rvert .
-$$
+```
 
 A probabilistic distinguisher is a distribution over
 [deterministic distinguishers][IsDDD] [compatible with the domain][Domain.DecisionCompatible], and its
 [probability of outputting 1][Domain.Distinguisher.probability] averages their
-[decision probabilities][RandomSystem.decisionProbability]. For each $P$, $\mathrm{Adv}_P$ is a
+[decision probabilities][RandomSystem.decisionProbability]. For each $`P`$, $`\mathrm{Adv}_P`$ is a
 pseudo-distance: it is [zero on equal systems][advantage_self], [symmetric][advantage_symm], and
 [satisfies the triangle inequality][advantage_triangle]. The transcript distance
 [is the largest advantage][RandomSystem.transcriptDistance_eq_iSup],
-$\Delta(R, S) = \sup_P \mathrm{Adv}_P(R, S)$, so
+$`\Delta(R, S) = \sup_P \mathrm{Adv}_P(R, S)`$, so
 [every advantage is at most the distance][advantage_le_transcriptDistance].
 
-**Absorption**: [absorbing][Domain.Distinguisher.absorb] a PDC $\alpha$ into $P$ gives
-$P \circ \alpha$, with [the same probability of outputting 1][probability_absorb],
-$\Pr[(P \circ \alpha)(R) = 1] = \Pr[P(\alpha R) = 1]$; on deterministic distinguishers it
+**Absorption**: [absorbing][Domain.Distinguisher.absorb] a PDC $`\alpha`$ into $`P`$ gives
+$`P \circ \alpha`$, with [the same probability of outputting 1][probability_absorb],
+$`\Pr[(P \circ \alpha)(R) = 1] = \Pr[P(\alpha R) = 1]`$; on deterministic distinguishers it
 [connects the distinguisher to the converter's outside][absorbAll]. Absorbing a converter
 [gives a distinguisher][Domain.Distinguisher.exists_absorbAll], and so does absorbing
 [a system run beside][Domain.Distinguisher.exists_absorbRight].
 
-**Restriction**: the [restriction][RandomSystem.restrict] $R \restriction D'$ of a random system on $D$
-to a smaller domain $D' \subseteq D$ keeps the masses of the transcripts $D'$ admits and is zero
+**Restriction**: the [restriction][RandomSystem.restrict] $`R \restriction D'`$ of a random system on $`D`$
+to a smaller domain $`D' \subseteq D`$ keeps the masses of the transcripts $`D'`$ admits and is zero
 elsewhere. Restrictions [compose][RandomSystem.restrict_restrict], and an environment compatible
-with $D'$ [sees the transcript law of the system itself][RandomSystem.sLaw_restrict], so restriction
+with $`D'`$ [sees the transcript law of the system itself][RandomSystem.sLaw_restrict], so restriction
 [does not increase the distance][RandomSystem.transcriptDistance_restrict_le],
-$\Delta(R \restriction D', S \restriction D') \le \Delta(R, S)$.
+$`\Delta(R \restriction D', S \restriction D') \le \Delta(R, S)`$.
 
 ### 1.5 Games
 
 A [**game**][PDG] is a distribution over [deterministic games][DDG], pairs of a DDS and a
 [monotone condition][MC], on a domain [2, Definitions 2.20–2.22]. An environment
 [wins][DDG.Wins] when it stops where the condition holds, and
-$\nu(G) = \sup_e \Pr[e \text{ wins } G]$ is the [largest winning probability][PDG.supWinProbability].
-[**Blinding**][PDG.blind] replaces every reply by $()$. [**Game equivalence**][GameEquivalent]
+$`\nu(G) = \sup_e \Pr[e \text{ wins } G]`$ is the [largest winning probability][PDG.supWinProbability].
+[**Blinding**][PDG.blind] replaces every reply by $`()`$. [**Game equivalence**][GameEquivalent]
 bounds distinguishing by blind winning [5, Definition 13 and Theorem 3]:
 
-$$
+```math
 \Pr_G[\,y^n,\ \lnot\mathrm{bad} \mid x^n\,] = \big(1 - \Pr_G[\mathrm{bad} \mid x^n]\big)\, S(x^n, y^n)
 \quad \Longrightarrow \quad
 \delta\big(\mathrm{tr}(G, E, n),\ \mathrm{tr}(S, E, n)\big) \le \nu(G^{\mathrm b}) .
-$$
+```
 
 Blind winning is the largest probability of the condition on an admitted query sequence: it
 [is at least][PDG.badProbability_le_blind] each such probability and
@@ -163,36 +163,36 @@ sequence, the answers jointly with the unset condition factor through the ideal 
 
 ### 2.1 The objects
 
-An [**interface**][Interface] $A = (I, X, Y, D)$ has finitely many labels, finite alphabets
-$X_i, Y_i$, and a domain $D$ of input histories, prefix-closed, without the empty history, of
+An [**interface**][Interface] $`A = (I, X, Y, D)`$ has finitely many labels, finite alphabets
+$`X_i, Y_i`$, and a domain $`D`$ of input histories, prefix-closed, without the empty history, of
 bounded length. Two domains recur: the [**query budget**][Interface.queryBudget]
-$D = \lbrace h \ne \varepsilon \mid \lvert h \rvert \le q \rbrace$ and the
+$`D = \lbrace h \ne \varepsilon \mid \lvert h \rvert \le q \rbrace`$ and the
 [**per-port budget**][Interface.portBudget]
-$D = \lbrace h \ne \varepsilon \mid \forall i.\ \lvert h \restriction i \rvert \le q_i \rbrace$,
-where $h \restriction i$ [keeps the inputs at the label][restrict] $i$.
+$`D = \lbrace h \ne \varepsilon \mid \forall i.\ \lvert h \restriction i \rvert \le q_i \rbrace`$,
+where $`h \restriction i`$ [keeps the inputs at the label][restrict] $`i`$.
 
-A [**resource**][Interface.Resource] on $A$ is a random system on
-$(\Sigma_i X_i, \Sigma_i Y_i)$ over $D$,
+A [**resource**][Interface.Resource] on $`A`$ is a random system on
+$`(\Sigma_i X_i, \Sigma_i Y_i)`$ over $`D`$,
 [replying at the queried label][RandomSystem.RepliesAtQueriedInterface]. A
-[**converter**][Interface.Converter] $A \to B$ is a PDC behavior from $B$'s domain (inside) to
-$A$'s domain (outside), and a DDC between the two domains [is one][Interface.ofDDC].
-[**Attachment**][Interface.attach] $\alpha R$ is the attachment of the PDC behavior.
+[**converter**][Interface.Converter] $`A \to B`$ is a PDC behavior from $`B`$'s domain (inside) to
+$`A`$'s domain (outside), and a DDC between the two domains [is one][Interface.ofDDC].
+[**Attachment**][Interface.attach] $`\alpha R`$ is the attachment of the PDC behavior.
 [**Parallel interfaces**][Interface.tensor] put the label sets side by side, and
 [parallel resources][Interface.parallel] and [parallel converters][Interface.parallelConverter]
 are the independent parallel compositions.
 
 ### 2.2 Concrete resources and converters
 
-The [**filter**][Interface.filter] admitting $D$ forwards the queries of admitted histories; it is
-a converter $(A \restriction D) \to A$ from the [restricted interface][Interface.restrict].
+The [**filter**][Interface.filter] admitting $`D`$ forwards the queries of admitted histories; it is
+a converter $`(A \restriction D) \to A`$ from the [restricted interface][Interface.restrict].
 [Attached to a resource][Interface.filter_smul], it is the [restriction][RandomSystem.restrict] of the
 resource's random system to the restricted domain, and
 [two filters in series][Interface.filter_comp_filter_smul] act as the filter of both conditions. A
 [**constant**][Interface.constant] converter ignores its inside resource and exposes a fixed one,
 and the fixed [right][Interface.rightContext] and [left][Interface.leftContext] **contexts** run a
-resource beside: [attaching][Interface.attach_rightContext] $\mathrm{rightContext}\ A\ S$ to $R$
-gives $R \parallel S$, and so does [attaching][Interface.attach_leftContext]
-$\mathrm{leftContext}\ R\ B$ to $S$.
+resource beside: [attaching][Interface.attach_rightContext] $`\mathrm{rightContext}\ A\ S`$ to $`R`$
+gives $`R \parallel S`$, and so does [attaching][Interface.attach_leftContext]
+$`\mathrm{leftContext}\ R\ B`$ to $`S`$.
 
 A [**source**][Interface.Resource.source] answers with fresh independent samples of a law
 [4, Definition 1]. An [**automaton**][Interface.Resource.ofAutomaton] is a transition function with
@@ -202,18 +202,18 @@ are the automaton running both side by side. **Functional resources** are given 
 [conditional reply laws][Interface.Resource.ofConditional], or by
 [sampling once][Interface.Resource.sample] and keeping the sample.
 
-For a game $G$ presenting $R$ and game-equivalent to $S$,
+For a game $`G`$ presenting $`R`$ and game-equivalent to $`S`$,
 [the distance is at most blind winning][GameEquivalent.game_dist_le],
-$\Delta(R, S) \le \nu(G^{\mathrm b})$, and a
+$`\Delta(R, S) \le \nu(G^{\mathrm b})`$, and a
 [single-label sampled-function game is game-equivalent][PDG.ofSingleFunction_gameEquivalent] to
-the resource sampling the ideal function. Parallel composition is commutative: $R \parallel S$ and
-$S \parallel R$ [agree][Interface.parallel_swap] through the [swap][Interface.swap] of the two
+the resource sampling the ideal function. Parallel composition is commutative: $`R \parallel S`$ and
+$`S \parallel R`$ [agree][Interface.parallel_swap] through the [swap][Interface.swap] of the two
 interfaces.
 
 **Notation** (`open scoped SystemAlgebra`): [`Δ R S`][notation-distance],
 [`R ∥ S`][notation-parallel], [`𝓡 —[π]→ 𝒮`][notation-constructs] for
-$\mathcal R \xrightarrow{\pi} \mathcal S$ and [`𝓡 —[π; ε]→ 𝒮`][notation-constructsWithin] for
-$\mathcal R \xrightarrow{\pi,\ \varepsilon} \mathcal S$.
+$`\mathcal R \xrightarrow{\pi} \mathcal S`$ and [`𝓡 —[π; ε]→ 𝒮`][notation-constructsWithin] for
+$`\mathcal R \xrightarrow{\pi,\ \varepsilon} \mathcal S`$.
 
 ---
 
@@ -261,15 +261,15 @@ regroupings of arbitrary converters; and the [pentagon][Interface.pentagon] and
 
 ### 3.2 `ResourceTheory C Φ`: attachment
 
-In the class [`ResourceTheory`][ResourceTheory], converters $\alpha : A \to B$ act on resources
-$R \in \Phi B$:
+In the class [`ResourceTheory`][ResourceTheory], converters $`\alpha : A \to B`$ act on resources
+$`R \in \Phi B`$:
 
-$$
+```math
 \alpha R \in \Phi A, \qquad \mathrm{id}_A\, R = R, \qquad (\alpha \gg \beta)\, R = \alpha\,(\beta\, R) .
-$$
+```
 
 Attachment is the [contravariant functor][ResourceTheory.functor]
-$\Phi : C^{\mathrm{op}} \to \mathrm{Type}$.
+$`\Phi : C^{\mathrm{op}} \to \mathrm{Type}`$.
 
 Interfaces are an instance of `ResourceTheory`
 ([`Interface.resourceTheory`][Interface.resourceTheory]): its field `attach` is the
@@ -281,13 +281,13 @@ Interfaces are an instance of `ResourceTheory`
 
 ### 3.3 `CryptographicAlgebra C Φ`: parallel composition
 
-The class [`CryptographicAlgebra`][CryptographicAlgebra] is a lax monoidal structure on $\Phi$:
+The class [`CryptographicAlgebra`][CryptographicAlgebra] is a lax monoidal structure on $`\Phi`$:
 resources [compose in parallel][CA.parallel], with the [dummy resource][CA.dummy] as unit.
 
-$$
+```math
 R \parallel S \in \Phi(A \otimes B), \qquad \mathbf 1 \in \Phi(\mathbb I), \qquad
 (\alpha \otimes \beta)(R \parallel S) = \alpha R \parallel \beta S .
-$$
+```
 
 Derived: [locality][CA.attach_parallel], [associativity][CA.parallel_assoc], and the
 [left][CA.parallel_dummy_left] and [right][CA.parallel_dummy_right] unit laws.
@@ -305,13 +305,13 @@ parallel resources. The abstract [parallel composition][Interface.cc_parallel_eq
 
 ### 3.4 `CompatiblePseudoMetric C Φ`: distance
 
-The class [`CompatiblePseudoMetric`][CompatiblePseudoMetric] adds a pseudo-metric $d$, the
-[distance][CA.distance], on each $\Phi A$ [6, Definition 2], [8, Definition 2]:
+The class [`CompatiblePseudoMetric`][CompatiblePseudoMetric] adds a pseudo-metric $`d`$, the
+[distance][CA.distance], on each $`\Phi A`$ [6, Definition 2], [8, Definition 2]:
 
-$$
+```math
 d(\alpha R, \alpha S) \le d(R, S), \qquad
 d(R \parallel R',\ S \parallel S') \le d(R, S) + d(R', S') .
-$$
+```
 
 Derived: [attachment is non-expanding][distance_attach_le] and
 [parallel composition adds distances][distance_parallel_le]. For interfaces the metric comes from
@@ -320,13 +320,13 @@ the distinguisher class below.
 ### 3.5 `CompatibleDistinguisherClass C Φ`: distinguishers
 
 The class [`CompatibleDistinguisherClass`][CompatibleDistinguisherClass] has a class
-$\mathcal D_A$ of maps $\Phi A \to \mathbb R$, closed under absorbing a converter and under running
+$`\mathcal D_A`$ of maps $`\Phi A \to \mathbb R`$, closed under absorbing a converter and under running
 a fixed resource beside, whose [advantage distance][advantageDistance] is the metric [8, §4.5]:
 
-$$
+```math
 d(R, S) = \sup_{D \in \mathcal D_A} \lvert D(R) - D(S) \rvert, \qquad
 D \in \mathcal D_A \;\Longrightarrow\; D(\alpha\,\cdot\,) \in \mathcal D_B,\ \ D(\,\cdot \parallel T),\ D(T \parallel \cdot\,) \in \mathcal D .
-$$
+```
 
 **Closure gives compatibility** [8, Lemma 1]: the advantage distance of a closed class
 [is a compatible pseudo-metric][CompatibleDistinguisherClass.ofClosure].
@@ -334,8 +334,8 @@ $$
 Interfaces are an instance of `CompatibleDistinguisherClass`
 ([`Interface.compatibleDistinguisherClass`][Interface.compatibleDistinguisherClass], built by
 `ofClosure`): its field `distinguishers A` is the [set of maps][Interface.distinguishers]
-$R \mapsto \Pr[P(R) = 1]$ for the systems-level [probabilistic distinguishers][Domain.Distinguisher]
-$P$ compatible with $A$'s domain. Its axiom `closed_attach` is discharged by
+$`R \mapsto \Pr[P(R) = 1]`$ for the systems-level [probabilistic distinguishers][Domain.Distinguisher]
+$`P`$ compatible with $`A`$'s domain. Its axiom `closed_attach` is discharged by
 [closure under attachment][Interface.distinguishers_attach], from
 [absorbing a converter][Domain.Distinguisher.exists_absorbAll]; `closed_parallel_left` by
 [closure under a resource on the right][Interface.distinguishers_parallel_left], from
@@ -345,9 +345,9 @@ $P$ compatible with $A$'s domain. Its axiom `closed_attach` is discharged by
 two through the [swap][Interface.parallel_swap]. Its metric
 [is the transcript distance][Interface.cc_distance_eq] of §1.4:
 
-$$
+```math
 d(R, S) = \Delta(R, S) = \sup_P \mathrm{Adv}_P(R, S) .
-$$
+```
 
 ---
 
@@ -356,40 +356,40 @@ $$
 *A specification is a set of resources; a converter constructs one specification from another
 [6, §§2–4]. The carrier-free notions hold for any map; the others are stated on the classes of §3.*
 
-$$
+```math
 \mathcal R \xrightarrow{\ \pi\ } \mathcal S \;:\iff\; \pi\mathcal R \subseteq \mathcal S,
 \qquad
 \mathcal R \xrightarrow{\ \pi,\ \varepsilon\ } \mathcal S \;:\iff\;
 \forall R \in \mathcal R\ \exists S \in \mathcal S.\ d(\pi R, S) \le \varepsilon .
-$$
+```
 
 A [**specification**][Specification] is a set; [exact][Specification.Constructs] and
 [approximate][Specification.ConstructsWithin] construction are as above, for any map. On a
 cryptographic algebra the map is attachment, giving [exact][CA.Specification.Constructs] and
 [approximate][CA.Specification.ConstructsWithin] construction by a converter. Constructions
 compose serially [6, Lemma 1],
-$\mathcal R \xrightarrow{\pi_2} \mathcal S \xrightarrow{\pi_1} \mathcal T \Rightarrow \mathcal R \xrightarrow{\pi_1 \gg \pi_2} \mathcal T$,
+$`\mathcal R \xrightarrow{\pi_2} \mathcal S \xrightarrow{\pi_1} \mathcal T \Rightarrow \mathcal R \xrightarrow{\pi_1 \gg \pi_2} \mathcal T`$,
 [exactly][Constructs.serial] and [approximately][ConstructsWithin.serial] with added errors, and in
-parallel, $\mathcal R \parallel \mathcal R' \xrightarrow{\pi \otimes \pi'} \mathcal S \parallel \mathcal S'$,
+parallel, $`\mathcal R \parallel \mathcal R' \xrightarrow{\pi \otimes \pi'} \mathcal S \parallel \mathcal S'`$,
 [exactly][Constructs.parallel] and [approximately][ConstructsWithin.parallel].
 
-A [**relaxation**][Relaxation] maps each $R$ to a set $\mathcal R' \ni R$, lifted to
+A [**relaxation**][Relaxation] maps each $`R`$ to a set $`\mathcal R' \ni R`$, lifted to
 specifications by union. A relaxation is [compatible][Relaxation.Compatible] when
 [it preserves construction][Relaxation.compatible_iff], and compatible relaxations
 [pass through serial constructions][Constructs.relax_serial]. The
 [**ε-relaxation**][epsilonRelaxation]
-$\mathcal R^\varepsilon = \lbrace R' \mid \exists R \in \mathcal R.\ d(R, R') \le \varepsilon \rbrace$
+$`\mathcal R^\varepsilon = \lbrace R' \mid \exists R \in \mathcal R.\ d(R, R') \le \varepsilon \rbrace`$
 [turns approximate construction into exact construction][constructs_epsilonRelaxation_iff],
-$\mathcal R \xrightarrow{\pi} \mathcal S^\varepsilon \iff \mathcal R \xrightarrow{\pi,\ \varepsilon} \mathcal S$,
+$`\mathcal R \xrightarrow{\pi} \mathcal S^\varepsilon \iff \mathcal R \xrightarrow{\pi,\ \varepsilon} \mathcal S`$,
 and its errors [add under serial composition][Constructs.serial_epsilonRelaxation].
 
 The [**star relaxation**][CA.star] [6, §3.4, Lemma 3]
 $`\mathcal R^{*} = \lbrace \sigma R \mid \sigma \in \Sigma,\ R \in \mathcal R \rbrace`$ is
 [idempotent][star_idem], a [closure operator][starClosure], and
 [exact construction survives star-relaxing both ends][Constructs.star] for a converter commuting
-with the class. A [**simulator**][constructs_of_simulator] [6, Lemma 5] $\sigma \in \Sigma$ with
-$d(\pi R, \sigma S) \le \varepsilon$ gives
-$\lbrace R \rbrace \xrightarrow{\pi} (\lbrace S \rbrace^{*})^{\varepsilon}$. Other relaxations and
+with the class. A [**simulator**][constructs_of_simulator] [6, Lemma 5] $`\sigma \in \Sigma`$ with
+$`d(\pi R, \sigma S) \le \varepsilon`$ gives
+$`\lbrace R \rbrace \xrightarrow{\pi} (\lbrace S \rbrace^{*})^{\varepsilon}`$. Other relaxations and
 judgments are the [kernel relaxation][kernel] of a map, [test-bounded specifications][gameSpec],
 and [constructibility][Constructible] by a class of constructors.
 
@@ -402,20 +402,20 @@ and [constructibility][Constructible] by a class of constructors.
 
 ### 5.1 Substitution relations and implication witnesses
 
-A [**substitution relation**][SubstitutionRelation] $\simeq$ relates resources on one
+A [**substitution relation**][SubstitutionRelation] $`\simeq`$ relates resources on one
 interface [9, Definition 2.3.1]:
 
-$$
+```math
 S \simeq T \Rightarrow T \simeq S, \qquad S \simeq T \simeq U \Rightarrow S \simeq U, \qquad
 S \simeq T \Rightarrow \rho S \simeq \rho T .
-$$
+```
 
-An [**implication witness**][Implication] from assumptions $S_i \simeq T_i$ to a target
-$X \simeq Y$ is a chain [9, §2.3.1]:
+An [**implication witness**][Implication] from assumptions $`S_i \simeq T_i`$ to a target
+$`X \simeq Y`$ is a chain [9, §2.3.1]:
 
-$$
+```math
 X = \rho_0 S_{i_0}^{b_0} \simeq \rho_0 S_{i_0}^{\lnot b_0} = \rho_1 S_{i_1}^{b_1} \simeq \cdots \simeq \rho_k S_{i_k}^{\lnot b_k} = Y .
-$$
+```
 
 A witness [counts the uses][Implication.usageCount] of each assumption. The hybrid argument
 [9, Lemma 2.3.2] holds [for a substitution relation][substitutes_of_hybrid] and
@@ -429,20 +429,20 @@ derivable targets form the [generated relation][generatedRelation], and they
 ### 5.2 Distinguisher-indexed substitution
 
 A [**distinguisher advantage**][DistinguisherAdvantage] gives admitted distinguishers
-$\mathcal D_A$ and an advantage $\Delta_D$, a pseudo-distance for each $D$.
+$`\mathcal D_A`$ and an advantage $`\Delta_D`$, a pseudo-distance for each $`D`$.
 [Substitution within an error *function*][SubstitutesWithin] [9, §2.3.3]:
 
-$$
+```math
 S \simeq_{\varepsilon} T \;:\iff\; \forall D \in \mathcal D_A.\ \Delta_D(S, T) \le \varepsilon(D) .
-$$
+```
 
 Substitution is [symmetric][SubstitutesWithin.symm], and [errors add][SubstitutesWithin.trans]:
-$S \simeq_\varepsilon T \simeq_{\varepsilon'} U \Rightarrow S \simeq_{\varepsilon + \varepsilon'} U$.
+$`S \simeq_\varepsilon T \simeq_{\varepsilon'} U \Rightarrow S \simeq_{\varepsilon + \varepsilon'} U`$.
 A statistical step gives a substitution within a constant error,
-[from a distance bound][SubstitutesWithin.of_distance] $d(S, T) \le \varepsilon$ when
-$\Delta_D \le d$, and more generally
+[from a distance bound][SubstitutesWithin.of_distance] $`d(S, T) \le \varepsilon`$ when
+$`\Delta_D \le d`$, and more generally
 [from any statistical bound dominating the advantage][SubstitutesWithin.of_statistical]. Reduction [9, p. 16],
-$S \simeq_\varepsilon T \Rightarrow \rho S \simeq_{\varepsilon(\cdot \circ \rho)} \rho T$,
+$`S \simeq_\varepsilon T \Rightarrow \rho S \simeq_{\varepsilon(\cdot \circ \rho)} \rho T`$,
 transports substitutions [through one converter][SubstitutesWithin.attach] and
 [through a serial composition][SubstitutesWithin.attach_serial]. In mixed chains
 [7, Theorem 2.2.10], the [assumption uses][Implication.substitutesWithin] and the
@@ -455,17 +455,17 @@ field `admissible` is that class, its field `advantage` is the systems-level
 `advantage_triangle` are the systems-level [zero][advantage_self], [symmetry][advantage_symm] and
 [triangle][advantage_triangle] laws.
 
-The [reduction][Interface.reduction] through $\alpha$ is [absorption][Domain.Distinguisher.absorb],
-$P \circ \alpha$. Hence an advantage between attachments
+The [reduction][Interface.reduction] through $`\alpha`$ is [absorption][Domain.Distinguisher.absorb],
+$`P \circ \alpha`$. Hence an advantage between attachments
 [is the advantage of the reduction][Interface.distinguisherAdvantage_attach],
-$\mathrm{Adv}_P(\alpha R, \alpha S) = \mathrm{Adv}_{P \circ \alpha}(R, S)$, by
+$`\mathrm{Adv}_P(\alpha R, \alpha S) = \mathrm{Adv}_{P \circ \alpha}(R, S)`$, by
 [absorption][probability_absorb]; every advantage
-[is at most the distance][Interface.distinguisherAdvantage_le_distance], $\mathrm{Adv}_P \le \Delta$,
+[is at most the distance][Interface.distinguisherAdvantage_le_distance], $`\mathrm{Adv}_P \le \Delta`$,
 by the [systems-level bound][advantage_le_transcriptDistance]; and substitutions
 [transport through converters][Interface.substitutesWithin_attach] when the class is closed under
 reduction. The class [`Interface.AdmissibleDistinguishers`][Interface.AdmissibleDistinguishers]
 bundles the admitted distinguishers with that closure; for its instance in scope,
-$R \simeq_\varepsilon S$ is written [`R ≃[ε] S`][notation-substitutes] (scoped in
+$`R \simeq_\varepsilon S`$ is written [`R ≃[ε] S`][notation-substitutes] (scoped in
 `SystemAlgebra`), substitutions
 [transport through every converter][AdmissibleDistinguishers.substitutesWithin_attach], and every
 security notion of Commons is stated this way.
@@ -488,7 +488,7 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 *`interface`, `system`, `converter` and `filter` declarations compile to the objects of §2 at every
 budget ([DSL][DSL], [GRAMMAR][Grammar]).* A component compiles to a deterministic
 [program][Program] and **sources**: every sampling `x ←$ P` [becomes a call][desugarSampling] to
-a [source][Interface.Resource.source] of fresh samples of the closed law $P$, and initialization
+a [source][Interface.Resource.source] of fresh samples of the closed law $`P`$, and initialization
 runs in the first invocation.
 
 An [`interface I`][elabInterface] declaration generates `I q := Interface.queryBudget … q`, the
@@ -512,7 +512,7 @@ each procedure calls its own port, at most once, it is
 procedure calls at most once, it is `C.perPort : I.perPort q ⟶ J.perPort (C.insideBudget q)`: an
 inside label has the budget of the procedure calling it, and a procedure calling nothing maps to
 `none` and needs no inside budget, as in the [write-through cache][WriteThrough] and in
-$\rho^{ctxt}$ and $\rho^{ae}$ of §8. When the converter samples nothing and its number of inside
+$`\rho^{ctxt}`$ and $`\rho^{ae}`$ of §8. When the converter samples nothing and its number of inside
 calls is a function of the input, the elaborator [also generates][elabExactDecls]
 `C.exact : (I n).restrict (fun h => (h.map C.cost).sum ≤ q) ⟶ J q`, the
 [converter of the costed program][Interface.Converter.ofCostedProgram].
@@ -533,38 +533,38 @@ compiled systems are compared by [bisimulation][automatonSystem_eq_of_bisim].
 [`cc_nonexpand`][cc_nonexpand] applies the compatibility laws, on interfaces also
 [with the concrete parallel composition][cc_nonexpand-interfaces], [`cc_triangle`][cc_triangle]
 takes a hybrid step, and [`cc_construct`][cc_construct] reduces a construction to its equality or
-distance obligation. [`cc_calc relation`][cc_calc] proves $X \simeq Y$ from `=` and `≃` steps,
+distance obligation. [`cc_calc relation`][cc_calc] proves $`X \simeq Y`$ from `=` and `≃` steps,
 and [`cc_calc counted systems`][cc_calc-counted] builds an implication witness, whose uses
 [`cc_usage`][cc_usage] counts. [`cc_calc statistical`][cc_calc-statistical] proves
-$d(X, Y) \le \sum_j \varepsilon_j$ from `≈[ε]` steps, and
+$`d(X, Y) \le \sum_j \varepsilon_j`$ from `≈[ε]` steps, and
 [`cc_calc mixed model using domination`][cc_calc-mixed] proves
-$X \simeq_{\sum_j \varepsilon_j} Y$ from `≃[loss]` and `≈[ε]` steps.
+$`X \simeq_{\sum_j \varepsilon_j} Y`$ from `≃[loss]` and `≈[ε]` steps.
 
 ---
 
 ## 8. Examples
 
-- **Authenticated encryption** ([9, Theorem 2.3.10(4)], corrected; [Security][AESec]). Let $R$ be
-  the real system [`AE.Real`][AE.Real], $E$ the encryption oracle
-  [`Encryption.Real`][Encryption.Real], and $I = \rho^{ae} E$ the ideal system
+- **Authenticated encryption** ([9, Theorem 2.3.10(4)], corrected; [Security][AESec]). Let $`R`$ be
+  the real system [`AE.Real`][AE.Real], $`E`$ the encryption oracle
+  [`Encryption.Real`][Encryption.Real], and $`I = \rho^{ae} E`$ the ideal system
   (`AE.Ideal • Encryption.Real`): [`AE.Ideal`][AE.Ideal], like [`AE.CTXT`][AE.CTXT]
-  ($\rho^{ctxt}$), is a converter from [`AE M C`][AE] to [`Encryption M C`][Encryption]. Let $P$ and $C$ be the
+  ($`\rho^{ctxt}`$), is a converter from [`AE M C`][AE] to [`Encryption M C`][Encryption]. Let $`P`$ and $`C`$ be the
   [plaintext filter][AE.PTXT] `AE.PTXT` and the [random-message transformation][AE.CCA] `AE.CCA`,
-  and $q = (q_e, q_d)$ the budgets per port. The corrected chain uses each assumption twice:
+  and $`q = (q_e, q_d)`$ the budgets per port. The corrected chain uses each assumption twice:
 
-  $$
-  R \;\simeq_{\mathrm{ptxt}}\; P R \;\simeq_{\mathrm{cca}}\; P C R \;\simeq_{\mathrm{ptxt}}\; P C P R \;\simeq_{\mathrm{cca}}\; P C P C R \;\approx_{q_e^2 / \lvert \mathcal M \rvert}\; I .
-  $$
+```math
+R \;\simeq_{\mathrm{ptxt}}\; P R \;\simeq_{\mathrm{cca}}\; P C R \;\simeq_{\mathrm{ptxt}}\; P C P R \;\simeq_{\mathrm{cca}}\; P C P C R \;\approx_{q_e^2 / \lvert \mathcal M \rvert}\; I .
+```
 
   The last step is the [collision bound][hybrid_ideal_distance_le], which compares the hybrid
   with `AE.Ideal.perPort • Encryption.Real.perPort` ([Collision][AECol]). The results are the
   [counted witness][correctedChain], with [two uses of ind-cca][correctedChain_cca] and
   [two of int-ptxt][correctedChain_ptxt], the [advantage form][ae_of_ind_cca_int_ptxt], and the
   [distance form][real_ideal_distance_le]
-  $\Delta(R, I) \le 2\,\Delta(R, P R) + 2\,\Delta(R, C R) + q_e^2 / \lvert \mathcal M \rvert$.
+  $`\Delta(R, I) \le 2\,\Delta(R, P R) + 2\,\Delta(R, C R) + q_e^2 / \lvert \mathcal M \rvert`$.
   The systems and the notions [`AE.INDCCA`][AE.INDCCA], [`AE.INTPTXT`][AE.INTPTXT],
   [`AE.INTCTXT`][AE.INTCTXT] and [`AE.Secure`][AE.Secure] are Commons definitions
-  ([AEAD][AEDefs]); int-ctxt and ae read $R \simeq \rho^{ctxt} E$ and $R \simeq \rho^{ae} E$.
+  ([AEAD][AEDefs]); int-ctxt and ae read $`R \simeq \rho^{ctxt} E`$ and $`R \simeq \rho^{ae} E`$.
   The systems are compared as [oracle automata][oracleStep] ([Oracle][AEOracle],
   [Hybrid][AEHybrid]), each by a bisimulation of its compiled automaton: the
   [real system][real_bisim], the [encryption oracle][encryptionReal_bisim], and the images under
@@ -573,7 +573,7 @@ $X \simeq_{\sum_j \varepsilon_j} Y$ from `≃[loss]` and `≈[ε]` steps.
 - **Substitutions on interfaces** ([Substitution][ExSub]): single substitutions with a context
   [on the right][construction_with_right_context] or [on the left][construction_with_left_context],
   and [two statistical substitutions][constructsWithin_of_two_substitutions] giving
-  $\lbrace R \rbrace \xrightarrow{\pi,\ \varepsilon_1 + \varepsilon_2} \lbrace \sigma S \rbrace$.
+  $`\lbrace R \rbrace \xrightarrow{\pi,\ \varepsilon_1 + \varepsilon_2} \lbrace \sigma S \rbrace`$.
 - **DSL components** ([Components][ExComp]): counters, fresh and persistent randomness, a
   [padding converter][Padding] with an inferred cost, the [write-through cache][WriteThrough]
   typed by a partial port map, and a [filter][FirstRequests].
@@ -598,30 +598,30 @@ $X \simeq_{\sum_j \varepsilon_j} Y$ from `≃[loss]` and `≈[ε]` steps.
 
 *Finitely supported laws [1, Definitions 1–4]:*
 
-$$
+```math
 \mathrm{Distribution}(A) = A \to_0 \mathbb R, \qquad
 \delta(X, Y) = \sum_a \max\big(X(a) - Y(a),\ 0\big) .
-$$
+```
 
-A [**distribution**][Distribution] is a finitely supported function to $\mathbb R$, and a
+A [**distribution**][Distribution] is a finitely supported function to $`\mathbb R`$, and a
 [**probability distribution**][ProbDist] one that is [nonnegative with weight one][isProbDist].
 Distributions have [masses][mass] of events, [pushforwards][fTransform], [products][prod] of two
 laws and of [families][pi], and [uniform][uniform] laws. The [**statistical distance**][statDist]
 satisfies the [triangle inequality][statDist_triangle] and [data processing][statDist_fTransform_le],
-$\delta(fX, fY) \le \delta(X, Y)$; with [positive parts][statDist_eq_weight_posPart] it is
-$\delta(X, Y) = \lvert (X - Y)^{+} \rvert$, and with [overlaps][statDist_eq_weight_sub_weight_inf]
-$\delta(X, Y) = \lvert X \rvert - \lvert X \wedge Y \rvert$.
+$`\delta(fX, fY) \le \delta(X, Y)`$; with [positive parts][statDist_eq_weight_posPart] it is
+$`\delta(X, Y) = \lvert (X - Y)^{+} \rvert`$, and with [overlaps][statDist_eq_weight_sub_weight_inf]
+$`\delta(X, Y) = \lvert X \rvert - \lvert X \wedge Y \rvert`$.
 
-For a [coupling][IsCoupling] of $X$ and $Y$,
+For a [coupling][IsCoupling] of $`X`$ and $`Y`$,
 [the distance is at most the off-diagonal mass][statDist_le_offDiagonalMass],
-$\delta(X, Y) \le \Pr[X \ne Y]$, and [some coupling attains it][exists_coupling_offDiagonalMass_eq].
-For the $n$-ary maximal coupling [2, Theorem 2.29], the [largest agreement][supAgreement] of $n$
+$`\delta(X, Y) \le \Pr[X \ne Y]`$, and [some coupling attains it][exists_coupling_offDiagonalMass_eq].
+For the $`n`$-ary maximal coupling [2, Theorem 2.29], the [largest agreement][supAgreement] of $`n`$
 laws of one weight [is the weight of their overlap][supAgreement_eq_weight_overlapDist].
 [**Expectation**][expect] is linear [in the distribution][expect_add_left] and
 [in the function][expect_add_right], with [Markov's][mass_ge_le_expect_div],
 the [Cauchy–Schwarz][expect_mul_sq_le_sq_mul_sq] and [Jensen's][ConvexOn.map_expect_le]
-inequalities. Collision bounds [count][card_function_fiber_finset] the functions $X \to Y$
-agreeing with a map on a finite set $S$: there are $\lvert Y \rvert^{\lvert X \rvert - \lvert S \rvert}$.
+inequalities. Collision bounds [count][card_function_fiber_finset] the functions $`X \to Y`$
+agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X \rvert - \lvert S \rvert}`$.
 
 ---
 
