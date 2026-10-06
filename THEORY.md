@@ -288,16 +288,17 @@ resource beside: [attaching][Interface.attach_rightContext] $\mathrm{rightContex
 gives $R \parallel S$, and so does [attaching][Interface.attach_leftContext]
 $\mathrm{leftContext}\ R\ B$ to $S$.
 
-A [**source**][Interface.Resource.source] answers with fresh independent samples of a law
-[4, Definition 1]. An [**automaton**][Interface.Resource.ofAutomaton] is a transition function with
+A [**source**][Interface.Resource.source] answers with fresh independent samples of a law: a
+memoryless source [3, Definition 3.1] (the sources of [4, Definition 1] may have memory). An [**automaton**][Interface.Resource.ofAutomaton] is a transition function with
 a sampled initial state [4, Definition 2], and [parallel automata][Interface.parallel_ofAutomaton]
 are the automaton running both side by side. A source [is memoryless][Interface.source_eq_memoryless],
-memoryless resources [side by side are memoryless][Interface.parallel_eq_memoryless], and the
-converter of a program [maps a memoryless resource to the memoryless resource of its reply
+memoryless systems [side by side are memoryless][Interface.parallel_eq_memoryless], and the
+converter of a program [maps a memoryless system to the memoryless system of its reply
 law][Interface.Converter.ofProgram_smul_memoryless], also
 [for port-preserving programs][Interface.Converter.ofPreservingProgram_smul_memoryless] and
 [with its own sources beside its inside interface][Interface.Converter.ofPreservingProgram_comp_rightContext_smul_memoryless]:
-the composition law of §1.3 on the random systems of the resources. **Functional resources** are given by
+the composition law of §1.3 on their random systems.
+**Functional resources** are given by
 [reply functions][Interface.Resource.ofFunction], by
 [conditional reply laws][Interface.Resource.ofConditional], or by
 [sampling once][Interface.Resource.sample] and keeping the sample.

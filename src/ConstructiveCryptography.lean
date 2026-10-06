@@ -63,4 +63,7 @@ import ConstructiveCryptography.Tactics.Categorical
 import ConstructiveCryptography.Tactics.Substitution
 import ConstructiveCryptography.Tactics.ProofAutomationAttributes
 
-/-! Constructive Cryptography: interfaces and domains, arrows, resources and the action, parallel composition, the resource distance, memoryless resources, specifications of resources, filters, budgets, functional constructors, game bounds; the categorical packaging; and the extensions (substitution, the DSL). -/
+/-! Constructive Cryptography: interfaces and domains, arrows, resources and the action, parallel
+composition, the resource distance, memoryless resources, specifications of resources, filters,
+budgets, functional constructors, game bounds; the categorical packaging; and the extensions
+(substitution, the DSL). -/

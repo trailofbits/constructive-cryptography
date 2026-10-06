@@ -4,10 +4,10 @@ import Tests.Counterexamples
 /-!
 # Axioms of the systems layer
 
-The laws of random systems, deterministic and probabilistic converters, attachment,
-parallel composition, probabilistic automata, memoryless systems, distance and games, and the
-counterexamples, depend only on `propext`, `Classical.choice` and `Quot.sound`. Comments name the laws of
-`papers/SYSTEM_ALGEBRA_SPEC.md`.
+The laws of random systems, deterministic and probabilistic converters, attachment, parallel
+composition, probabilistic automata, memoryless systems, distance and games, and the
+counterexamples, depend only on `propext`, `Classical.choice` and `Quot.sound`. Comments name the
+laws of `papers/SYSTEM_ALGEBRA_SPEC.md`.
 -/
 
 -- RandomSystems.Converter.ConverterAttachment

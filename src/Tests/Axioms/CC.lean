@@ -96,7 +96,8 @@ classes, and the abstract results of those classes depend only on `propext`,
 #print axioms SystemAlgebra.Interface.parallel_eq_memoryless
 #print axioms SystemAlgebra.Interface.Converter.ofProgram_smul_memoryless
 #print axioms SystemAlgebra.Interface.Converter.ofPreservingProgram_smul_memoryless
-#print axioms SystemAlgebra.Interface.Converter.ofPreservingProgram_comp_rightContext_smul_memoryless
+#print axioms
+  SystemAlgebra.Interface.Converter.ofPreservingProgram_comp_rightContext_smul_memoryless
 
 -- ConstructiveCryptography.Notation
 #print axioms SystemAlgebra.Interface.distance_triangle

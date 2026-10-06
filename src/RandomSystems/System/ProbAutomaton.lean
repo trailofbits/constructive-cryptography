@@ -70,17 +70,17 @@ noncomputable def outcome (s : S) (x : Σ i, X i) : Distribution (S × Σ i, Y i
   fTransform (tagged x) (step s x.1 x.2).1
 
 /-- An outcome is a nonnegative law: the tagged step. -/
-theorem outcome_nonNeg (s : S) (x : Σ i, X i) : (step.outcome s x).NonNeg :=
+lemma outcome_nonNeg (s : S) (x : Σ i, X i) : (step.outcome s x).NonNeg :=
   (step s x.1 x.2).2.1.fTransform _
 
 /-- An outcome has weight one: the step is a probability law. -/
-theorem weight_outcome (s : S) (x : Σ i, X i) : (step.outcome s x).weight = 1 := by
+lemma weight_outcome (s : S) (x : Σ i, X i) : (step.outcome s x).weight = 1 := by
   -- Tagging the reply moves mass without changing it, and the step is a probability law.
   rw [outcome, weight_fTransform]
   exact (step s x.1 x.2).2.2
 
 /-- The replies of an outcome are at the queried port. -/
-theorem mem_support_outcome {s : S} {x : Σ i, X i} {p : S × Σ i, Y i}
+lemma mem_support_outcome {s : S} {x : Σ i, X i} {p : S × Σ i, Y i}
     (hp : p ∈ (step.outcome s x).support) : ∃ y : Y x.1, p.2 = ⟨x.1, y⟩ := by
   -- A possible outcome is the tag of a possible step `(s', y)`, whose reply is at `x.1`.
   obtain ⟨a, -, rfl⟩ := mem_support_fTransform _ _ hp
@@ -97,7 +97,7 @@ noncomputable def replyLaw (β : Distribution S) (x : Σ i, X i) : Distribution 
   bindK β fun s => fTransform Prod.snd (step.outcome s x)
 
 /-- The weight of a transition: the probability, under the state law, of replying `y`. -/
-theorem weight_transition (β : Distribution S) (x : Σ i, X i) (y : Σ i, Y i) :
+lemma weight_transition (β : Distribution S) (x : Σ i, X i) (y : Σ i, Y i) :
     (step.transition β x y).weight = β.sum fun s w => w * (step.outcome s x).mass (·.2 = y) := by
   -- The weight of a mixture weighs each law of the kernel; forgetting the reply keeps the
   -- weight, and the weight of a restriction is the mass of its event.
@@ -105,25 +105,25 @@ theorem weight_transition (β : Distribution S) (x : Σ i, X i) (y : Σ i, Y i) 
   simp only [weight_fTransform, weight_restrict]
 
 /-- The reply law at `y` is the weight of the transition with the reply `y`. -/
-theorem replyLaw_apply (β : Distribution S) (x : Σ i, X i) (y : Σ i, Y i) :
+lemma replyLaw_apply (β : Distribution S) (x : Σ i, X i) (y : Σ i, Y i) :
     step.replyLaw β x y = (step.transition β x y).weight := by
   -- Both sides are `∑ₛ β s · Pr[step s x replies y]`.
   rw [weight_transition, replyLaw, bindK_apply]
   simp only [fTransform_apply_eq_mass]
 
 /-- The reply law has the weight of the state law. -/
-theorem weight_replyLaw (β : Distribution S) (x : Σ i, X i) :
+lemma weight_replyLaw (β : Distribution S) (x : Σ i, X i) :
     (step.replyLaw β x).weight = β.weight := by
   -- Each outcome is a probability law, so its reply law has weight one.
   rw [replyLaw, weight_bindK_of_weight fun s _ => by rw [weight_fTransform, weight_outcome]]
 
 /-- A transition of a nonnegative state law is nonnegative. -/
-theorem transition_nonNeg {β : Distribution S} (hβ : β.NonNeg) (x : Σ i, X i) (y : Σ i, Y i) :
+lemma transition_nonNeg {β : Distribution S} (hβ : β.NonNeg) (x : Σ i, X i) (y : Σ i, Y i) :
     (step.transition β x y).NonNeg :=
   bindK_nonNeg hβ fun s => ((step.outcome_nonNeg s x).restrict _).fTransform _
 
 /-- A reply at another port than the queried one is impossible. -/
-theorem transition_eq_zero {β : Distribution S} {x : Σ i, X i} {y : Σ i, Y i} (hy : y.1 ≠ x.1) :
+lemma transition_eq_zero {β : Distribution S} {x : Σ i, X i} {y : Σ i, Y i} (hy : y.1 ≠ x.1) :
     step.transition β x y = 0 := by
   -- No outcome of `x` has its reply at `y.1`, so every restriction to the reply `y` is empty.
   have hr : ∀ s, (step.outcome s x).restrict (fun sy => sy.2 = y) = 0 := by
@@ -152,17 +152,17 @@ replies of `h`, started from `init`; zero once a query is outside the domain. -/
 noncomputable def belief (h : List ((Σ i, X i) × (Σ i, Y i))) : Distribution S :=
   step.beliefRev D init h.reverse
 
-@[simp] theorem belief_nil : step.belief D init [] = init := rfl
+@[simp] lemma belief_nil : step.belief D init [] = init := rfl
 
 /-- One more exchange: the transition of the state law, if the domain admits the query. -/
-theorem belief_snoc (h : List ((Σ i, X i) × (Σ i, Y i))) (x : Σ i, X i) (y : Σ i, Y i) :
+lemma belief_snoc (h : List ((Σ i, X i) × (Σ i, Y i))) (x : Σ i, X i) (y : Σ i, Y i) :
     step.belief D init (h ++ [(x, y)]) =
       if D h x then step.transition (step.belief D init h) x y else 0 := by
   -- Reversed, the exchange `(x, y)` comes first: one step of `beliefRev`.
   simp [belief, beliefRev, List.reverse_append]
 
 /-- The state laws of a nonnegative initial law are nonnegative. -/
-theorem belief_nonNeg (hinit : init.NonNeg) (h : List ((Σ i, X i) × (Σ i, Y i))) :
+lemma belief_nonNeg (hinit : init.NonNeg) (h : List ((Σ i, X i) × (Σ i, Y i))) :
     (step.belief D init h).NonNeg := by
   -- Induction on the transcript: each exchange is a transition of a nonnegative law, or zero.
   induction h using List.reverseRecOn with
@@ -201,13 +201,13 @@ noncomputable def RandomSystem.ofProbAutomaton (D : Domain (Σ i, X i) (Σ i, Y 
       · simp [weight]⟩⟩
 
 /-- The probability of a transcript is the weight of the state law after it. -/
-theorem RandomSystem.ofProbAutomaton_apply (D : Domain (Σ i, X i) (Σ i, Y i))
+lemma RandomSystem.ofProbAutomaton_apply (D : Domain (Σ i, X i) (Σ i, Y i))
     (step : ProbStep S I X Y) (init : Distribution.ProbDist S)
     (h : List ((Σ i, X i) × (Σ i, Y i))) :
     RandomSystem.ofProbAutomaton D step init h = (step.belief D init.1 h).weight := rfl
 
 /-- **A probabilistic automaton replies at the queried port.** -/
-theorem RandomSystem.ofProbAutomaton_repliesAtQueriedInterface (D : Domain (Σ i, X i) (Σ i, Y i))
+lemma RandomSystem.ofProbAutomaton_repliesAtQueriedInterface (D : Domain (Σ i, X i) (Σ i, Y i))
     (step : ProbStep S I X Y) (init : Distribution.ProbDist S) :
     (RandomSystem.ofProbAutomaton D step init).RepliesAtQueriedInterface := by
   intro h x y hy
@@ -244,7 +244,7 @@ def SimulatesAt (K : S₁ → Distribution.ProbDist S₂) (s : S₁) (x : Σ i, 
 
 omit [Fintype (Σ i, X i)] [Fintype (Σ i, Y i)] in
 /-- The states of a pushforward into pairs `(a, c)` with second component `y`. -/
-theorem fTransform_fst_restrict_pair {A C : Type} (ν : Distribution A) (c y : C) :
+lemma fTransform_fst_restrict_pair {A C : Type} (ν : Distribution A) (c y : C) :
     fTransform Prod.fst ((fTransform (fun a => (a, c)) ν).restrict fun p => p.2 = y) =
       if c = y then ν else 0 := by
   -- Restricting the pairs to the second component `y` keeps everything if `c = y` and nothing
@@ -260,7 +260,7 @@ theorem fTransform_fst_restrict_pair {A C : Type} (ν : Distribution A) (c y : C
 omit [Fintype (Σ i, X i)] [Fintype (Σ i, Y i)] in
 /-- **Transitions along simulation steps**: the transition of the kernel image is the kernel
 image of the transition. -/
-theorem transition_bindK {K : S₁ → Distribution.ProbDist S₂} {β : Distribution S₁}
+lemma transition_bindK {K : S₁ → Distribution.ProbDist S₂} {β : Distribution S₁}
     {x : Σ i, X i} (hsim : ∀ s ∈ β.support, SimulatesAt step₁ step₂ K s x) (y : Σ i, Y i) :
     step₂.transition (bindK β fun s => (K s).1) x y =
       bindK (step₁.transition β x y) fun s => (K s).1 := by
@@ -290,7 +290,7 @@ omit [Fintype (Σ i, X i)] [Fintype (Σ i, Y i)] in
 satisfying an invariant of the inputs so far, at every query the domain admits, then after each
 transcript the invariant holds on the states of `step₁`, and the state law of `step₂` is the
 kernel image of that of `step₁`. -/
-theorem belief_simulation (E : List (Σ i, X i) → Prop) (bound : ℕ)
+lemma belief_simulation (E : List (Σ i, X i) → Prop) (bound : ℕ)
     (hE : ∀ h, E h → h.length ≤ bound) (K : S₁ → Distribution.ProbDist S₂)
     (inv : List (Σ i, X i) → S₁ → Prop)
     (hpres : ∀ xs s x, inv xs s → E (xs ++ [x]) →
@@ -329,7 +329,7 @@ end ProbStep
 states satisfying an invariant of the inputs so far, at every query the domain admits, the
 probabilistic automata are the same random system, `step₂` started from the kernel image of the
 initial law of `step₁`. -/
-theorem RandomSystem.ofProbAutomaton_eq_of_simulation {E : List (Σ i, X i) → Prop} {bound : ℕ}
+lemma RandomSystem.ofProbAutomaton_eq_of_simulation {E : List (Σ i, X i) → Prop} {bound : ℕ}
     {hE : ∀ h, E h → h.length ≤ bound} {S₁ S₂ : Type} (step₁ : ProbStep S₁ I X Y)
     (step₂ : ProbStep S₂ I X Y) (K : S₁ → Distribution.ProbDist S₂)
     (inv : List (Σ i, X i) → S₁ → Prop)
@@ -359,7 +359,7 @@ noncomputable def ofDeterministic (step : S → (i : I) → X i → S × Y i) : 
 
 omit [Fintype (Σ i, X i)] [Fintype (Σ i, Y i)] in
 /-- The outcome of a point step: the point mass at the step's next state and tagged reply. -/
-theorem outcome_ofDeterministic (step : S → (i : I) → X i → S × Y i) (s : S) (x : Σ i, X i) :
+lemma outcome_ofDeterministic (step : S → (i : I) → X i → S × Y i) (s : S) (x : Σ i, X i) :
     (ofDeterministic step).outcome s x =
       Finsupp.single ((step s x.1 x.2).1, (⟨x.1, (step s x.1 x.2).2⟩ : Σ i, Y i)) 1 := by
   -- The point law of the step, with its reply tagged by the port.
@@ -367,7 +367,7 @@ theorem outcome_ofDeterministic (step : S → (i : I) → X i → S × Y i) (s :
 
 omit [Fintype (Σ i, X i)] [Fintype (Σ i, Y i)] in
 /-- The transition of a deterministic step moves the states that reply `y` to their next state. -/
-theorem transition_ofDeterministic (step : S → (i : I) → X i → S × Y i) (β : Distribution S)
+lemma transition_ofDeterministic (step : S → (i : I) → X i → S × Y i) (β : Distribution S)
     (x : Σ i, X i) (y : Σ i, Y i) :
     (ofDeterministic step).transition β x y = fTransform (fun s => (step s x.1 x.2).1)
       (β.restrict fun s => (⟨x.1, (step s x.1 x.2).2⟩ : Σ i, Y i) = y) := by
@@ -382,7 +382,7 @@ theorem transition_ofDeterministic (step : S → (i : I) → X i → S × Y i) (
 omit [Fintype (Σ i, X i)] [Fintype (Σ i, Y i)] in
 /-- **The state law of a deterministic automaton** on an input domain: the initial states from
 which the automaton gives the transcript, moved to the state they reach. -/
-theorem belief_ofDeterministic (step : S → (i : I) → X i → S × Y i) (E : List (Σ i, X i) → Prop)
+lemma belief_ofDeterministic (step : S → (i : I) → X i → S × Y i) (E : List (Σ i, X i) → Prop)
     (bound : ℕ) (hE : ∀ h, E h → h.length ≤ bound) (init : Distribution S)
     (h : List ((Σ i, X i) × (Σ i, Y i))) :
     (ofDeterministic step).belief (Domain.ofInputs E bound hE) init h =

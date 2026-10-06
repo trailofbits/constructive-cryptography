@@ -86,21 +86,21 @@ noncomputable def probInvoke (s : S) (o : O) (u : U o) :
 variable {P stepR}
 
 /-- When the body replies, the invocation is the point law of its reply. -/
-theorem probInvoke_inl {s : S} {o : O} {u : U o} {h : List ((Σ j, X j) × (Σ j, Y j))}
+lemma probInvoke_inl {s : S} {o : O} {u : U o} {h : List ((Σ j, X j) × (Σ j, Y j))}
     {a : S × V o} (ha : P s o u h = .inl a) (n : ℕ) (r : R) :
     P.probInvoke stepR s o u n r h = Finsupp.single ((a.1, r), a.2) 1 := by
   -- Whatever the number of queries left, the first case of the definition.
   cases n <;> simp [probInvoke, ha]
 
 /-- When the body asks with no query left, the invocation has no mass. -/
-theorem probInvoke_zero_inr {s : S} {o : O} {u : U o} {h : List ((Σ j, X j) × (Σ j, Y j))}
+lemma probInvoke_zero_inr {s : S} {o : O} {u : U o} {h : List ((Σ j, X j) × (Σ j, Y j))}
     {q : Σ j, X j} (hq : P s o u h = .inr q) (r : R) :
     P.probInvoke stepR s o u 0 r h = 0 := by
   -- The second case of the definition with no query left.
   simp [probInvoke, hq]
 
 /-- When the body asks `q`, the invocation draws a step and continues. -/
-theorem probInvoke_succ_inr {s : S} {o : O} {u : U o} {h : List ((Σ j, X j) × (Σ j, Y j))}
+lemma probInvoke_succ_inr {s : S} {o : O} {u : U o} {h : List ((Σ j, X j) × (Σ j, Y j))}
     {q : Σ j, X j} (hq : P s o u h = .inr q) (n : ℕ) (r : R) :
     P.probInvoke stepR s o u (n + 1) r h =
       bindK (stepR.outcome r q) fun p => P.probInvoke stepR s o u n p.1 (h ++ [(q, p.2)]) := by
@@ -108,7 +108,7 @@ theorem probInvoke_succ_inr {s : S} {o : O} {u : U o} {h : List ((Σ j, X j) × 
   simp [probInvoke, hq]
 
 /-- An invocation is a nonnegative law. -/
-theorem probInvoke_nonNeg (s : S) (o : O) (u : U o) :
+lemma probInvoke_nonNeg (s : S) (o : O) (u : U o) :
     ∀ n r h, (P.probInvoke stepR s o u n r h).NonNeg := by
   -- Induction on the number of queries left: point laws, zero, or mixtures of nonnegative laws.
   intro n
@@ -127,7 +127,7 @@ theorem probInvoke_nonNeg (s : S) (o : O) (u : U o) :
       exact bindK_nonNeg (stepR.outcome_nonNeg r q) fun _ => ih _ _
 
 /-- **A bounded program completes each invocation** against a probabilistic step. -/
-theorem probInvoke_weight {b : ℕ} (hP : P.Bounded b) (s : S) (o : O) (u : U o) :
+lemma probInvoke_weight {b : ℕ} (hP : P.Bounded b) (s : S) (o : O) (u : U o) :
     ∀ n r h, P.Consistent s o u h → b ≤ n + h.length →
       (P.probInvoke stepR s o u n r h).weight = 1 := by
   intro n
@@ -168,11 +168,11 @@ noncomputable def probCombine {b : ℕ} (hP : P.Bounded b) : ProbStep (S × R) O
     probInvoke_weight hP sr.1 o u b sr.2 [] (consistent_nil P _ _ _) (by simp)⟩
 
 /-- The law of a combined step is the invocation from the empty exchanges. -/
-theorem probCombine_val {b : ℕ} (hP : P.Bounded b) (sr : S × R) (o : O) (u : U o) :
+lemma probCombine_val {b : ℕ} (hP : P.Bounded b) (sr : S × R) (o : O) (u : U o) :
     (P.probCombine stepR hP sr o u).1 = P.probInvoke stepR sr.1 o u b sr.2 [] := rfl
 
 /-- Against a deterministic automaton, an invocation is the point law of its completion. -/
-theorem probInvoke_ofDeterministic (stepD : R → (j : J) → X j → R × Y j) (s : S) (o : O)
+lemma probInvoke_ofDeterministic (stepD : R → (j : J) → X j → R × Y j) (s : S) (o : O)
     (u : U o) : ∀ n r h v, P.invoke stepD s o u n r h = some v →
       P.probInvoke (ProbStep.ofDeterministic stepD) s o u n r h = Finsupp.single v 1 := by
   intro n
@@ -205,7 +205,7 @@ theorem probInvoke_ofDeterministic (stepD : R → (j : J) → X j → R × Y j) 
 
 /-- **A program against a deterministic automaton**: the program run against its point steps is
 the point step of the combined automaton. -/
-theorem ofDeterministic_combine (stepD : R → (j : J) → X j → R × Y j) {b : ℕ}
+lemma ofDeterministic_combine (stepD : R → (j : J) → X j → R × Y j) {b : ℕ}
     (hP : P.Bounded b) :
     ProbStep.ofDeterministic (P.combine stepD hP) =
       P.probCombine (ProbStep.ofDeterministic stepD) hP := by
@@ -234,7 +234,7 @@ def AdmitsInvocation (E : List (Σ j, X j) → Prop) (s : S) (o : O) (u : U o)
 
 /-- **An invocation along simulation steps** of the inside automata: from the kernel image of `r`,
 the invocation against `stepR₂` is the invocation against `stepR₁` followed by the kernel. -/
-theorem probInvoke_simulation
+lemma probInvoke_simulation
     (hsim : ∀ τ r q, invR τ r → E (τ ++ [q]) → ProbStep.SimulatesAt stepR₁ stepR₂ K r q)
     (hpres : ∀ τ r q, invR τ r → E (τ ++ [q]) →
       ∀ p ∈ (stepR₁.outcome r q).support, invR (τ ++ [q]) p.1)
@@ -300,7 +300,7 @@ theorem probInvoke_simulation
 
 /-- **The end of an invocation**: each outcome of an invocation is the reply of the body on its
 own exchanges extending `h`, with the invariant on the inside queries made. -/
-theorem probInvoke_support
+lemma probInvoke_support
     (hpres : ∀ τ r q, invR τ r → E (τ ++ [q]) →
       ∀ p ∈ (stepR₁.outcome r q).support, invR (τ ++ [q]) p.1)
     (s : S) (o : O) (u : U o) (τ : List (Σ j, X j)) (hgood : P.AdmitsInvocation E s o u τ) :
@@ -350,7 +350,7 @@ variable (P) in
 /-- **A program respects simulations**: when the inside queries of an invocation are admitted
 and simulated, the program run against `stepR₂` simulates the program run against `stepR₁` along
 the kernel on the inside state. -/
-theorem simulatesAt_probCombine {b : ℕ} (hP : P.Bounded b)
+lemma simulatesAt_probCombine {b : ℕ} (hP : P.Bounded b)
     (hsim : ∀ τ r q, invR τ r → E (τ ++ [q]) → ProbStep.SimulatesAt stepR₁ stepR₂ K r q)
     (hpres : ∀ τ r q, invR τ r → E (τ ++ [q]) →
       ∀ p ∈ (stepR₁.outcome r q).support, invR (τ ++ [q]) p.1)
@@ -379,7 +379,7 @@ theorem simulatesAt_probCombine {b : ℕ} (hP : P.Bounded b)
 variable (P) in
 /-- The outcomes of the program run against `stepR₁` come from the body's own exchanges, with the
 invariant on the inside queries made. -/
-theorem probCombine_support {b : ℕ} (hP : P.Bounded b)
+lemma probCombine_support {b : ℕ} (hP : P.Bounded b)
     (hpres : ∀ τ r q, invR τ r → E (τ ++ [q]) →
       ∀ p ∈ (stepR₁.outcome r q).support, invR (τ ++ [q]) p.1)
     {s : S} {r : R₁} {τ : List (Σ j, X j)} (hr : invR τ r) {x : Σ o, U o}
@@ -411,7 +411,7 @@ the same random system on the outside domain `F`, of at most `n` queries.
   P run against stepR₁ from (s, r)   =   P run against stepR₂ from (s, K r)
 ```
 -/
-theorem RandomSystem.ofProbAutomaton_probCombine_eq_of_simulation {F : List (Σ o, U o) → Prop}
+lemma RandomSystem.ofProbAutomaton_probCombine_eq_of_simulation {F : List (Σ o, U o) → Prop}
     {n : ℕ} {hF : ∀ h, F h → h.length ≤ n} (P : Program S O J U V X Y) {b : ℕ}
     (hP : P.Bounded b) {R₁ R₂ : Type} (stepR₁ : ProbStep R₁ J X Y) (stepR₂ : ProbStep R₂ J X Y)
     (K : R₁ → Distribution.ProbDist R₂) (invR : List (Σ j, X j) → R₁ → Prop)
@@ -493,7 +493,7 @@ noncomputable def recording : ProbStep (R × List (Draw R J X Y)) J X Y :=
     ((o.1, rd.2 ++ [((rd.1, ⟨j, x⟩), tagged ⟨j, x⟩ o)]), o.2)
 
 /-- The outcome of the recording step: a draw of `step`, appended to the record. -/
-theorem outcome_recording (rd : R × List (Draw R J X Y)) (x : Σ j, X j) :
+lemma outcome_recording (rd : R × List (Draw R J X Y)) (x : Σ j, X j) :
     step.recording.outcome rd x =
       fTransform (fun o => ((o.1, rd.2 ++ [((rd.1, x), o)]), o.2)) (step.outcome rd.1 x) := by
   -- Both are the step's law, pushed forward along the same map.
@@ -501,7 +501,7 @@ theorem outcome_recording (rd : R × List (Draw R J X Y)) (x : Σ j, X j) :
   rfl
 
 /-- **Forgetting the record** is a simulation. -/
-theorem simulatesAt_forget (rd : R × List (Draw R J X Y)) (x : Σ j, X j) :
+lemma simulatesAt_forget (rd : R × List (Draw R J X Y)) (x : Σ j, X j) :
     SimulatesAt step.recording step (fun rd => Distribution.ProbDist.single rd.1) rd x := by
   unfold SimulatesAt
   -- From the recorded state, `step` steps as the recording step, forgetting the record.
@@ -513,12 +513,12 @@ theorem simulatesAt_forget (rd : R × List (Draw R J X Y)) (x : Σ j, X j) :
 noncomputable def untag (x : Σ j, X j) (o : R × Σ j, Y j) (d : R × Y x.1) : R × Y x.1 :=
   if h : o.2.1 = x.1 then (o.1, h ▸ o.2.2) else d
 
-@[simp] theorem untag_tagged (x : Σ j, X j) (o : R × Y x.1) (d : R × Y x.1) :
+@[simp] lemma untag_tagged (x : Σ j, X j) (o : R × Y x.1) (d : R × Y x.1) :
     untag x (tagged x o) d = o := by
   simp [untag, tagged]
 
 /-- The initial law with an empty record, forgetting the record, is the initial law. -/
-theorem bind_forget (init : Distribution.ProbDist R) :
+lemma bind_forget (init : Distribution.ProbDist R) :
     ((init.map fun r => (r, ([] : List (Draw R J X Y)))).bind
       fun rd => Distribution.ProbDist.single rd.1) = init := by
   apply Subtype.ext
@@ -536,7 +536,7 @@ noncomputable def reachable : ℕ → Finset R
       Finset.univ.biUnion fun x => (step.outcome r x).support.image Prod.fst
 
 /-- More steps reach more states. -/
-theorem reachable_mono {k k' : ℕ} (h : k ≤ k') :
+lemma reachable_mono {k k' : ℕ} (h : k ≤ k') :
     step.reachable init k ⊆ step.reachable init k' := by
   -- Each step adds states to the reachable ones.
   induction h with
@@ -544,7 +544,7 @@ theorem reachable_mono {k k' : ℕ} (h : k ≤ k') :
   | step _ ih => exact ih.trans Finset.subset_union_left
 
 /-- A possible next state from a state reachable in `k` steps is reachable in `k + 1`. -/
-theorem mem_reachable_succ {k : ℕ} {r : R} (hr : r ∈ step.reachable init k) {x : Σ j, X j}
+lemma mem_reachable_succ {k : ℕ} {r : R} (hr : r ∈ step.reachable init k) {x : Σ j, X j}
     {p : R × Σ j, Y j} (hp : p ∈ (step.outcome r x).support) :
     p.1 ∈ step.reachable init (k + 1) :=
   Finset.mem_union_right _ (Finset.mem_biUnion.mpr ⟨r, hr, Finset.mem_biUnion.mpr
@@ -552,7 +552,7 @@ theorem mem_reachable_succ {k : ℕ} {r : R} (hr : r ∈ step.reachable init k) 
 
 /-- **The record after `k` draws**: `k` draws, from a state reachable in `k` steps; one more draw
 keeps this. -/
-theorem recording_reachable {k : ℕ} {rd : R × List (Draw R J X Y)} (hl : rd.2.length = k)
+lemma recording_reachable {k : ℕ} {rd : R × List (Draw R J X Y)} (hl : rd.2.length = k)
     (hr : rd.1 ∈ step.reachable init k) (x : Σ j, X j)
     {p : (R × List (Draw R J X Y)) × Σ j, Y j} (hp : p ∈ (step.recording.outcome rd x).support) :
     p.1.2.length = k + 1 ∧ p.1.1 ∈ step.reachable init (k + 1) := by
@@ -594,7 +594,7 @@ noncomputable def drawLaw (rec : List (Draw R J X Y)) (c : step.Cell init L) :
   else step.outcome c.2.1.val c.2.2
 
 /-- The law of a cell is a probability law: a point mass or a step. -/
-theorem drawLaw_isProbDist (rec : List (Draw R J X Y)) (c : step.Cell init L) :
+lemma drawLaw_isProbDist (rec : List (Draw R J X Y)) (c : step.Cell init L) :
     (step.drawLaw init L rec c).isProbDist := by
   unfold drawLaw
   split_ifs
@@ -610,7 +610,7 @@ noncomputable def drawKernel (rd : R × List (Draw R J X Y)) :
     ⟨pi (step.drawLaw init L rd.2), pi_isProbDist fun c => step.drawLaw_isProbDist init L rd.2 c⟩
 
 /-- Recording a draw in a cell fixes that cell. -/
-theorem update_drawLaw (rec : List (Draw R J X Y)) (r : R) (x : Σ j, X j) (o : R × Σ j, Y j)
+lemma update_drawLaw (rec : List (Draw R J X Y)) (r : R) (x : Σ j, X j) (o : R × Σ j, Y j)
     (hk : rec.length < L) (hr : r ∈ step.reachable init L) :
     Function.update (step.drawLaw init L rec) (⟨rec.length, hk⟩, ⟨r, hr⟩, x) (Finsupp.single o 1) =
       step.drawLaw init L (rec ++ [((r, x), o)]) := by
@@ -654,7 +654,7 @@ along the law of the table given the record.
   (r, k, t) ──── drawStep, x ────► ((r', k + 1, t), y)      t(k, r, x) = (r', y)
 ```
 -/
-theorem simulatesAt_drawStep (rd : R × List (Draw R J X Y)) (hk : rd.2.length < L)
+lemma simulatesAt_drawStep (rd : R × List (Draw R J X Y)) (hk : rd.2.length < L)
     (hr : rd.1 ∈ step.reachable init L) (x : Σ j, X j) :
     SimulatesAt step.recording (ofDeterministic (step.drawStep init L)) (step.drawKernel init L)
       rd x := by
@@ -789,7 +789,7 @@ variable [Fintype O] [Fintype J] [∀ o, Fintype (U o)] [∀ o, Fintype (V o)] [
 
 /-- **Attaching a program to a deterministic automaton** with a random initial state: the
 combined automaton, its initial state paired with the program's. -/
-theorem attach_ofDDC_ofProgramOn_ofDeterministic (s : S) (P : Program S O J U V X Y) {b : ℕ}
+lemma attach_ofDDC_ofProgramOn_ofDeterministic (s : S) (P : Program S O J U V X Y) {b : ℕ}
     (hb : P.Bounded b) (hα : IsDDCFrom E F b (DDC.ofProgramOn s P F))
     (stepR : R → (j : J) → X j → R × Y j) (init : Distribution.ProbDist R) :
     attach hE' hF' (ofDDC (DDC.ofProgramOn s P F) hα)
