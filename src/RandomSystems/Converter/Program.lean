@@ -84,6 +84,24 @@ theorem Consistent.snoc {P : Program S O J U V X Y} {s : S} {o : O} {u : U o}
   · rw [List.take_left' rfl, List.getElem_append_right (le_refl _)]
     simpa using hq
 
+/-- **A bounded program's own exchanges** in one invocation number at most its bound. -/
+theorem Consistent.length_le {P : Program S O J U V X Y} {b : ℕ} (hP : P.Bounded b) {s : S} {o : O}
+    {u : U o} {h : List ((Σ j, X j) × (Σ j, Y j))} (hc : P.Consistent s o u h) : h.length ≤ b := by
+  rcases List.eq_nil_or_concat h with rfl | ⟨h', z, rfl⟩
+  · exact Nat.zero_le _
+  · rw [List.concat_eq_append] at hc ⊢
+    -- The last exchange answers a query the body made after the exchanges `h'` ...
+    have hz := hc h'.length (by simp)
+    rw [List.take_left' rfl, List.getElem_append_right (le_refl _)] at hz
+    -- ... which are its own exchanges too ...
+    have hc' : P.Consistent s o u h' := fun i hi => by
+      have := hc i (by simp; omega)
+      rwa [List.take_append_of_le_length hi.le, List.getElem_append_left hi] at this
+    -- ... so `h'` is shorter than the bound, and `h' · z` is within it.
+    have := hP s o u h' _ hc' (by simpa using hz.1)
+    simp only [List.length_append, List.length_singleton]
+    omega
+
 /-- Each invocation on the outside query `⟨o, u⟩` makes exactly `cost ⟨o, u⟩` inside queries. -/
 def Costs (cost : (Σ o, U o) → ℕ) (P : Program S O J U V X Y) : Prop :=
   ∀ s o u, CallCost (cost ⟨o, u⟩) (P s o u)

@@ -15,6 +15,7 @@ ML-DSA depend only on `propext`, `Classical.choice` and `Quot.sound`.
 #print axioms Commons.StrongURP
 #print axioms Commons.TweakableURP
 #print axioms Commons.TweakableStrongURP
+#print axioms Commons.MemorylessSource.memoryless_eq
 
 -- Commons.Definitions.Cipher
 #print axioms Commons.BlockCipher.perm
