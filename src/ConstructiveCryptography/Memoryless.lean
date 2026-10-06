@@ -3,12 +3,12 @@ import ConstructiveCryptography.Context
 import RandomSystems.System.Memoryless
 
 /-!
-# Memoryless resources
+# Memoryless systems on interfaces
 
-A resource whose random system is memoryless [1, Definition 3.1, §3.6.1] replies to each query
-with a fresh sample of a law of that query. A source of independent samples is memoryless, two
-memoryless resources side by side are memoryless, and the converter of a program maps memoryless
-resources to memoryless resources, with the reply law of the program
+A system on an interface whose random system is memoryless [1, Definition 3.1, §3.6.1] replies to
+each query with a fresh sample of a law of that query. A source of independent samples is
+memoryless, two memoryless systems side by side are memoryless, and the converter of a program maps
+memoryless systems to memoryless systems, with the reply law of the program
 (`PDCBehavior.attach_ofDDC_ofProgramOn_memoryless`), also when the converter has its own sources
 beside its inside interface:
 
@@ -25,7 +25,7 @@ Statements about typed systems are equalities of their random systems (`.1`).
 ## Main results
 
 * `Interface.source_eq_memoryless`: a source of independent samples of `law` is memoryless
-* `Interface.parallel_eq_memoryless`: memoryless resources side by side are memoryless
+* `Interface.parallel_eq_memoryless`: memoryless systems side by side are memoryless
 * `Interface.Converter.ofProgram_smul_memoryless`,
   `Interface.Converter.ofPreservingProgram_smul_memoryless`,
   `Interface.Converter.ofPreservingProgram_comp_rightContext_smul_memoryless`: the composition law
@@ -95,16 +95,16 @@ theorem source_eq_memoryless {Z : Type} [Fintype Z] (law : ProbDist Z) (q : ℕ)
   -- The reply law of the source at its port is `law`.
   rw [portLaw_apply_mk]
 
-/-- **Memoryless resources side by side are memoryless**: a query at a left port has the reply
-law of the left resource, one at a right port the reply law of the right resource. -/
-theorem parallel_eq_memoryless {A B : Interface} {R : Resource A} {T : Resource B}
+/-- **Memoryless systems side by side are memoryless**: a query at a left port has the reply
+law of the left system, one at a right port the reply law of the right system. -/
+lemma parallel_eq_memoryless {A B : Interface} {R : Resource A} {T : Resource B}
     {ν₁ : ∀ i, A.X i → ProbDist (A.Y i)} {ν₂ : ∀ j, B.X j → ProbDist (B.Y j)}
     (hR : R.1 = memoryless A.inputDomain (portLaw ν₁))
     (hT : T.1 = memoryless B.inputDomain (portLaw ν₂)) :
     (parallel R T).1 = memoryless (tensor A B).inputDomain (portLaw (parallelLaw ν₁ ν₂)) := by
   -- The chain rule of the side-by-side law, at each admitted exchange `(x, y)`.
   refine eq_memoryless_of_snoc fun h x y hd => ?_
-  -- The parallel resource is the product of its two components on the projected transcripts.
+  -- The parallel system is the product of its two components on the projected transcripts.
   let e := (sumAlphabet (Sum.rec A.X B.X)).symm.prodCongr (sumAlphabet (Sum.rec A.Y B.Y)).symm
   change RandomSystem.parallel R.1 T.1 ((h ++ [(x, y)]).map e) =
     RandomSystem.parallel R.1 T.1 (h.map e) * (portLaw (parallelLaw ν₁ ν₂) x).1 y
@@ -192,10 +192,10 @@ namespace Converter
 
 variable {A B : Interface} {S : Type}
 
-/-- **The composition law** for the converter of a program: on a memoryless resource with the
+/-- **The composition law** for the converter of a program: on a memoryless system with the
 reply law `ν`, the converter of a program whose reply law against `ν` is `κ` in every state gives
-the memoryless resource with the reply law `κ`. -/
-theorem ofProgram_smul_memoryless (s : S) (P : Program S A.I B.I A.X A.Y B.X B.Y) {b : ℕ}
+the memoryless system with the reply law `κ`. -/
+lemma ofProgram_smul_memoryless (s : S) (P : Program S A.I B.I A.X A.Y B.X B.Y) {b : ℕ}
     (hb : P.Bounded b) (hB : ∀ xs, xs ≠ [] → xs.length ≤ b * A.bound → B.domain xs)
     {R : Resource B} {ν : ∀ j, B.X j → ProbDist (B.Y j)} {κ : ∀ o, A.X o → ProbDist (A.Y o)}
     (hR : R.1 = memoryless B.inputDomain (portLaw ν))
@@ -205,7 +205,7 @@ theorem ofProgram_smul_memoryless (s : S) (P : Program S A.I B.I A.X A.Y B.X B.Y
     R.2
 
 /-- **The composition law** for the converter of a port-preserving program. -/
-theorem ofPreservingProgram_smul_memoryless (s : S) (P : Program S A.I B.I A.X A.Y B.X B.Y)
+lemma ofPreservingProgram_smul_memoryless (s : S) (P : Program S A.I B.I A.X A.Y B.X B.Y)
     {b : ℕ} (hb : P.Bounded b) (ι : A.I → Option B.I) (hι : P.PortPreserving ι) (q : A.I → ℕ)
     (hA : ∀ xs, A.domain xs → ∀ o, (SystemAlgebra.restrict o xs).length ≤ q o)
     (hB : ∀ ys, ys ≠ [] → ys.length ≤ b * A.bound →
@@ -218,9 +218,9 @@ theorem ofPreservingProgram_smul_memoryless (s : S) (P : Program S A.I B.I A.X A
     R.2
 
 /-- **The composition law** for the converter of a port-preserving program with a memoryless
-resource `T` beside its inside interface (its own randomness, `≫ rightContext B T`): the program
+system `T` beside its inside interface (its own randomness, `≫ rightContext B T`): the program
 is run against the side-by-side reply laws of `R` and `T`. -/
-theorem ofPreservingProgram_comp_rightContext_smul_memoryless {C : Interface} (s : S)
+lemma ofPreservingProgram_comp_rightContext_smul_memoryless {C : Interface} (s : S)
     (P : Program S A.I (tensor B C).I A.X A.Y (tensor B C).X (tensor B C).Y) {b : ℕ}
     (hb : P.Bounded b) (ι : A.I → Option (tensor B C).I) (hι : P.PortPreserving ι)
     (q : A.I → ℕ) (hA : ∀ xs, A.domain xs → ∀ o, (SystemAlgebra.restrict o xs).length ≤ q o)
@@ -235,7 +235,7 @@ theorem ofPreservingProgram_comp_rightContext_smul_memoryless {C : Interface} (s
       memoryless A.inputDomain (portLaw κ) := by
   -- Attaching `rightContext B T` places `T` beside `R` ...
   rw [Interface.comp_smul, attach_rightContext]
-  -- ... a memoryless resource with the side-by-side law, to which the program is attached.
+  -- ... a memoryless system with the side-by-side law, to which the program is attached.
   exact ofPreservingProgram_smul_memoryless s P hb ι hι q hA hB (parallel_eq_memoryless hR hT) hκ
 
 end Converter
