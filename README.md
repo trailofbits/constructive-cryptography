@@ -14,7 +14,7 @@ summarizes the theory layer by layer, with links to the Lean declarations.
 
 | Library | Content |
 |---|---|
-| `Probability` | finitely supported distributions, statistical distance, couplings, expectation, counting |
+| `Probability` | finitely supported distributions, kernels, statistical distance, couplings, expectation, counting |
 | `RandomSystems` | systems and automata; deterministic converters and programs; distributions over deterministic systems; random systems given by their cumulative probabilities; probabilistic converters, attachment and parallel composition; transcript distance and distinguishers; games |
 | `ConstructiveCryptography.Specification`, `.Construction` | specifications, constructions and relaxations over any carrier |
 | `ConstructiveCryptography.CryptographicAlgebra` | the classes of cryptographic algebras: resource theories, parallel composition, compatible pseudo-metrics and distinguisher classes, relaxations |

@@ -761,7 +761,13 @@ $$
 A [**distribution**][Distribution] is a finitely supported function to $\mathbb R$, and a
 [**probability distribution**][ProbDist] one that is [nonnegative with weight one][isProbDist].
 Distributions have [masses][mass] of events, [pushforwards][fTransform], [products][prod] of two
-laws and of [families][pi], and [uniform][uniform] laws. The [**statistical distance**][statDist]
+laws and of [families][pi], and [uniform][uniform] laws. A [**kernel**][bindK] $`f`$ mixed over a
+law $`\mu`$ gives $`\sum_a \mu(a)\, f(a)`$, the composition of conditional distributions
+[3, §3.6.1]: [mixtures compose][bindK_bindK], a pushforward
+[is the point kernel of its function][bindK_single_comp], and an independent product
+[disintegrates][pi_eq_bindK_update] at a coordinate. Probability laws have
+[pushforwards][ProbDist.map] and [sequential compositions][ProbDist.bind]. The
+[**statistical distance**][statDist]
 satisfies the [triangle inequality][statDist_triangle] and [data processing][statDist_fTransform_le],
 $\delta(fX, fY) \le \delta(X, Y)$; with [positive parts][statDist_eq_weight_posPart] it is
 $\delta(X, Y) = \lvert (X - Y)^{+} \rvert$, and with [overlaps][statDist_eq_weight_sub_weight_inf]
@@ -1194,6 +1200,12 @@ agreeing with a map on a finite set $S$: there are $\lvert Y \rvert^{\lvert X \r
 [fTransform]: src/Probability/Distribution.lean#L547
 [prod]: src/Probability/Distribution.lean#L902
 [pi]: src/Probability/Distribution.lean#L1543
+[bindK]: src/Probability/Kernel.lean#L110
+[bindK_bindK]: src/Probability/Kernel.lean#L156
+[bindK_single_comp]: src/Probability/Kernel.lean#L173
+[pi_eq_bindK_update]: src/Probability/Kernel.lean#L309
+[ProbDist.map]: src/Probability/Kernel.lean#L347
+[ProbDist.bind]: src/Probability/Kernel.lean#L359
 [uniform]: src/Probability/Distribution.lean#L481
 [statDist]: src/Probability/StatisticalDistance.lean#L88
 [statDist_triangle]: src/Probability/StatisticalDistance.lean#L243
