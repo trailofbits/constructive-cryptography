@@ -92,7 +92,7 @@ variable {q : Evaluation.Port → ℕ}
 /-! ### The systems of the proof are memoryless sources -/
 
 /-- **`prg-real^G` is the memoryless source of `G(s)` for a uniform seed `s`.** -/
-theorem prgReal_eq_source [Nonempty S] (G : S → R) :
+lemma prgReal_eq_source [Nonempty S] (G : S → R) :
     PRGReal.perPort G (budget := q) = MemorylessSource.perPort R (ProbDist.map G 𝒰[S]) := by
   -- Equal systems: compare their random systems.
   apply Subtype.ext
@@ -116,7 +116,7 @@ theorem prgReal_eq_source [Nonempty S] (G : S → R) :
   rw [real, MemorylessSource.memoryless_eq]
 
 /-- **`𝓡₁` on the memoryless source** of `(A, B)` is the memoryless source of `(A, G(B))`. -/
-theorem 𝓡₁_smul_source (G : S → S × S) (ν : ProbDist (S × S)) :
+lemma 𝓡₁_smul_source (G : S → S × S) (ν : ProbDist (S × S)) :
     𝓡₁.perPort G (budget := q) • MemorylessSource.perPort (S × S) ν =
       MemorylessSource.perPort (S × S × S) (ProbDist.map (fun AB => (AB.1, G AB.2)) ν) := by
   apply Subtype.ext
@@ -140,7 +140,7 @@ theorem 𝓡₁_smul_source (G : S → S × S) (ν : ProbDist (S × S)) :
 
 /-- **`𝓡₂` on the memoryless source** of `(C, D)` is the memoryless source of `(A, C, D)` for a
 uniform `A`. -/
-theorem 𝓡₂_smul_source [Nonempty S] (ν : ProbDist (S × S)) :
+lemma 𝓡₂_smul_source [Nonempty S] (ν : ProbDist (S × S)) :
     𝓡₂.perPort S (budget := q) • MemorylessSource.perPort (S × S) ν =
       MemorylessSource.perPort (S × S × S) (prodProbDist 𝒰[S] ν) := by
   apply Subtype.ext
@@ -171,7 +171,7 @@ theorem 𝓡₂_smul_source [Nonempty S] (ν : ProbDist (S × S)) :
 variable [Nonempty S]
 
 /-- `(A, G(B))` for a uniform `(A, B)` is a uniform `A` beside `G(s)` for a uniform `s`. -/
-theorem map_uniform_eq_prod (G : S → S × S) :
+lemma map_uniform_eq_prod (G : S → S × S) :
     ProbDist.map (fun AB => (AB.1, G AB.2)) 𝒰[S × S] =
       prodProbDist 𝒰[S] (ProbDist.map G 𝒰[S]) := by
   apply Subtype.ext
@@ -187,7 +187,7 @@ theorem map_uniform_eq_prod (G : S → S × S) :
 
 /-- **The first hop**, factoring out the first call of `G`: `prg-real^H` is `𝓡₁` on
 `prg-real^G`. -/
-theorem prgReal_H_eq (G : S → S × S) (q : Evaluation.Port → ℕ) :
+lemma prgReal_H_eq (G : S → S × S) (q : Evaluation.Port → ℕ) :
     PRGReal.perPort (H G) (budget := q) =
       𝓡₁.perPort G • PRGReal.perPort G (budget := 𝓡₁.insideBudget G q) := by
   -- Left:   prg-real^H        = source of H_* U
@@ -199,7 +199,7 @@ theorem prgReal_H_eq (G : S → S × S) (q : Evaluation.Port → ℕ) :
 
 /-- **The middle hop**: `𝓡₁` on `prg-rand` is `𝓡₂` on `prg-real^G`, a uniform `A` beside `G(s)`
 for a uniform `s` either way. -/
-theorem 𝓡₁_smul_prgRand (G : S → S × S) (q : Evaluation.Port → ℕ) :
+lemma 𝓡₁_smul_prgRand (G : S → S × S) (q : Evaluation.Port → ℕ) :
     𝓡₁.perPort G (budget := q) •
         MemorylessSource.perPort (S × S) 𝒰[S × S] (budget := 𝓡₁.insideBudget G q) =
       𝓡₂.perPort S • PRGReal.perPort G (budget := 𝓡₂.insideBudget S q) := by
@@ -212,7 +212,7 @@ theorem 𝓡₁_smul_prgRand (G : S → S × S) (q : Evaluation.Port → ℕ) :
 
 /-- **The last hop**: `𝓡₂` on `prg-rand` is `prg-rand` on `S × S × S`, a uniform `A` beside a
 uniform `(C, D)`. -/
-theorem 𝓡₂_smul_prgRand (q : Evaluation.Port → ℕ) :
+lemma 𝓡₂_smul_prgRand (q : Evaluation.Port → ℕ) :
     𝓡₂.perPort S (budget := q) •
         MemorylessSource.perPort (S × S) 𝒰[S × S] (budget := 𝓡₂.insideBudget S q) =
       MemorylessSource.perPort (S × S × S) 𝒰[S × S × S] (budget := q) := by

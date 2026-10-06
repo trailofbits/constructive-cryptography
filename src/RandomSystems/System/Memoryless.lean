@@ -65,7 +65,7 @@ noncomputable def memoryless (D : Domain A B) (ν : A → ProbDist B) : RandomSy
 
 /-- **The chain rule**: one more exchange multiplies the probability of a transcript by the
 reply law, when the domain admits the query. -/
-theorem memoryless_snoc (D : Domain A B) (ν : A → ProbDist B) (h : List (A × B)) (x : A)
+lemma memoryless_snoc (D : Domain A B) (ν : A → ProbDist B) (h : List (A × B)) (x : A)
     (y : B) :
     memoryless D ν (h ++ [(x, y)]) = if D h x then memoryless D ν h * (ν x).1 y else 0 := by
   -- `ofConditional_snoc` is the chain rule of any system given by conditional laws ...
@@ -76,7 +76,7 @@ theorem memoryless_snoc (D : Domain A B) (ν : A → ProbDist B) (h : List (A ×
 
 /-- **A random system obeying the chain rule of `ν` is the memoryless system** of `ν`: when each
 admitted exchange multiplies the probability by the reply law `ν`. -/
-theorem eq_memoryless_of_snoc {D : Domain A B} {ν : A → ProbDist B} {R : RandomSystem A B D}
+lemma eq_memoryless_of_snoc {D : Domain A B} {ν : A → ProbDist B} {R : RandomSystem A B D}
     (hR : ∀ h x y, D h x → R (h ++ [(x, y)]) = R h * (ν x).1 y) : R = memoryless D ν := by
   -- Compare the probabilities of every transcript, by induction, one exchange at a time.
   ext t
@@ -103,13 +103,13 @@ noncomputable def portLaw (ν : ∀ i, X i → ProbDist (Y i)) (x : Σ i, X i) :
   ProbDist.map (Sigma.mk x.1) (ν x.1 x.2)
 
 /-- The reply law at the queried port, at a reply at that port. -/
-theorem portLaw_apply_mk (ν : ∀ i, X i → ProbDist (Y i)) (i : I) (x : X i) (y : Y i) :
+lemma portLaw_apply_mk (ν : ∀ i, X i → ProbDist (Y i)) (i : I) (x : X i) (y : Y i) :
     (portLaw ν ⟨i, x⟩).1 ⟨i, y⟩ = (ν i x).1 y :=
   -- Tagging by the port is injective.
   fTransform_injective_apply _ _ sigma_mk_injective y
 
 /-- The reply law at the queried port gives no mass to replies at another port. -/
-theorem portLaw_apply_of_ne (ν : ∀ i, X i → ProbDist (Y i)) {x : Σ i, X i} {y : Σ i, Y i}
+lemma portLaw_apply_of_ne (ν : ∀ i, X i → ProbDist (Y i)) {x : Σ i, X i} {y : Σ i, Y i}
     (h : y.1 ≠ x.1) : (portLaw ν x).1 y = 0 :=
   -- Every tagged reply is at the port `x.1`.
   fTransform_apply_of_forall_ne _ _ _ fun _ ha => h (ha ▸ rfl)
@@ -139,7 +139,7 @@ def Memoryless (step : ProbStep S I X Y) (ν : ∀ i, X i → ProbDist (Y i)) : 
   ∀ s i x, fTransform Prod.snd (step s i x).1 = (ν i x).1
 
 /-- From any state, a memoryless step replies `y` with the probability its reply law gives `y`. -/
-theorem Memoryless.mass_outcome {step : ProbStep S I X Y} {ν : ∀ i, X i → ProbDist (Y i)}
+lemma Memoryless.mass_outcome {step : ProbStep S I X Y} {ν : ∀ i, X i → ProbDist (Y i)}
     (hν : step.Memoryless ν) (s : S) (x : Σ i, X i) (y : Σ i, Y i) :
     (step.outcome s x).mass (·.2 = y) = (RandomSystem.portLaw ν x).1 y := by
   -- The probability that the reply is `y` is the pushforward to the reply, evaluated at `y`.
@@ -159,7 +159,7 @@ noncomputable def fresh (ν : ∀ i, X i → ProbDist (Y i)) : ProbStep Unit I X
   fun _ i x => (ν i x).map fun y => ((), y)
 
 /-- **Fresh samples are memoryless.** -/
-theorem memoryless_fresh (ν : ∀ i, X i → ProbDist (Y i)) : (fresh ν).Memoryless ν := by
+lemma memoryless_fresh (ν : ∀ i, X i → ProbDist (Y i)) : (fresh ν).Memoryless ν := by
   intro _ i x
   -- The step pairs a sample of `ν i x` with the trivial state; keeping the reply undoes this.
   simp only [fresh, ProbDist.map_val, fTransform_fTransform]
@@ -169,7 +169,7 @@ end ProbStep
 
 /-- **A probabilistic automaton with a memoryless step is the memoryless system** of its reply
 law. -/
-theorem RandomSystem.ofProbAutomaton_eq_memoryless {S I : Type} {X Y : I → Type}
+lemma RandomSystem.ofProbAutomaton_eq_memoryless {S I : Type} {X Y : I → Type}
     [Fintype (Σ i, X i)] [Fintype (Σ i, Y i)] (D : Domain (Σ i, X i) (Σ i, Y i))
     {step : ProbStep S I X Y} {ν : ∀ i, X i → ProbDist (Y i)} (hν : step.Memoryless ν)
     (init : ProbDist S) :
@@ -212,14 +212,14 @@ noncomputable def replyLaw (ν : ∀ j, X j → ProbDist (Y j)) (s : S) (o : O) 
 variable {P}
 
 /-- When the body replies, the reply law is the point law on its reply. -/
-theorem replyLaw_inl {ν : ∀ j, X j → ProbDist (Y j)} {s : S} {o : O} {u : U o}
+lemma replyLaw_inl {ν : ∀ j, X j → ProbDist (Y j)} {s : S} {o : O} {u : U o}
     {h : List ((Σ j, X j) × (Σ j, Y j))} {a : S × V o} (ha : P s o u h = .inl a) (n : ℕ) :
     P.replyLaw ν s o u n h = Finsupp.single a.2 1 := by
   -- Whatever the number of queries left, the first case of the definition.
   cases n <;> simp [replyLaw, ha]
 
 /-- When the body asks `q`, the reply law samples the answer `y ← ν q` and continues. -/
-theorem replyLaw_succ_inr {ν : ∀ j, X j → ProbDist (Y j)} {s : S} {o : O} {u : U o}
+lemma replyLaw_succ_inr {ν : ∀ j, X j → ProbDist (Y j)} {s : S} {o : O} {u : U o}
     {h : List ((Σ j, X j) × (Σ j, Y j))} {q : Σ j, X j} (hq : P s o u h = .inr q) (n : ℕ) :
     P.replyLaw ν s o u (n + 1) h =
       bindK (ν q.1 q.2).1 fun y => P.replyLaw ν s o u n (h ++ [(q, ⟨q.1, y⟩)]) := by
@@ -228,7 +228,7 @@ theorem replyLaw_succ_inr {ν : ∀ j, X j → ProbDist (Y j)} {s : S} {o : O} {
 
 /-- **An invocation against a memoryless step** replies with the reply law of the program,
 whatever the state of the step. -/
-theorem fTransform_snd_probInvoke {stepR : ProbStep R J X Y} {ν : ∀ j, X j → ProbDist (Y j)}
+lemma fTransform_snd_probInvoke {stepR : ProbStep R J X Y} {ν : ∀ j, X j → ProbDist (Y j)}
     (hν : stepR.Memoryless ν) (s : S) (o : O) (u : U o) :
     ∀ n r h, fTransform Prod.snd (P.probInvoke stepR s o u n r h) = P.replyLaw ν s o u n h := by
   -- `probInvoke` runs the body against the step, tracking (next states, reply). Looking only at
@@ -264,7 +264,7 @@ theorem fTransform_snd_probInvoke {stepR : ProbStep R J X Y} {ν : ∀ j, X j �
 
 /-- **A program run against a memoryless step is memoryless**, when its reply law against `ν` is
 the same `κ` in every state of the program. -/
-theorem memoryless_probCombine {stepR : ProbStep R J X Y} {ν : ∀ j, X j → ProbDist (Y j)}
+lemma memoryless_probCombine {stepR : ProbStep R J X Y} {ν : ∀ j, X j → ProbDist (Y j)}
     (hν : stepR.Memoryless ν) {b : ℕ} (hb : P.Bounded b) {κ : ∀ o, U o → ProbDist (V o)}
     (hκ : ∀ s o u, P.replyLaw ν s o u b [] = (κ o u).1) :
     (P.probCombine stepR hb).Memoryless κ := by
