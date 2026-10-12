@@ -309,6 +309,32 @@ def RandomSystem.MonotoneMBO {D : Domain A (Σ j, withMBO Y j)}
 variable {E : List A → Prop} {m : ℕ} {hE : ∀ h, E h → h.length ≤ m}
 
 open scoped Classical in
+/-- **The replies with both MBOs** to a query after a transcript `k` weigh `k` if the query is
+admitted, and nothing otherwise. -/
+theorem RandomSystem.sum_tagMBO (G : RandomSystem A (Σ j, withMBO Y j) (Domain.ofInputs E m hE))
+    (k : List (A × Σ j, withMBO Y j)) (x : A) :
+    ∑ y : Σ j, Y j, (G (k ++ [(x, tagMBO false y)]) + G (k ++ [(x, tagMBO true y)])) =
+      if E (k.map Prod.fst ++ [x]) then G k else 0 := by
+  -- This is the weight of G's extension law at k and x.
+  have hw := G.extensionLaw_weight k x
+  rw [Distribution.weight, Finsupp.sum_fintype _ _ (fun _ => rfl)] at hw
+  simp only [extensionLaw_apply, Domain.ofInputs_apply] at hw
+  -- Reindex the replies with MBOs as pairs (reply, MBO).
+  have hsum : ∑ y : Σ j, Y j,
+      (G (k ++ [(x, tagMBO false y)]) + G (k ++ [(x, tagMBO true y)])) =
+        ∑ y : Σ j, withMBO Y j, G (k ++ [(x, y)]) := by
+    let e : (Σ j, Y j) × Bool ≃ Σ j, withMBO Y j :=
+      { toFun := fun p => tagMBO p.2 p.1
+        invFun := fun y => (forgetMBO y, y.2.2)
+        left_inv := fun _ => rfl
+        right_inv := fun _ => rfl }
+    rw [Finset.sum_add_distrib, ← e.sum_comp, Fintype.sum_prod_type_right]
+    simp only [Fintype.sum_bool]
+    exact add_comm _ _
+  rw [hsum, hw]
+  congr
+
+open scoped Classical in
 /-- **The visible system** `S⁻` of a game, which ignores the MBO (CR18, Definition 4.18): the
 probability of a transcript, whatever the MBOs. -/
 noncomputable def RandomSystem.visible
@@ -323,39 +349,16 @@ noncomputable def RandomSystem.visible
     -- The weights of the replies y to x after h: y ↦ G⁻ (h ++ [(x, y)]).
     refine ⟨Finsupp.equivFunOnFinite.symm fun y => sumMBO G (h ++ [(x, y)]),
       fun y => rfl, ?_⟩
-    -- In G, the replies to x after k, with both MBOs, weigh G k if x is admitted, else 0.
-    have reply : ∀ k : List (A × Σ j, withMBO Y j),
-        ∑ y : Σ j, Y j, (G (k ++ [(x, tagMBO false y)]) + G (k ++ [(x, tagMBO true y)])) =
-          if E (k.map Prod.fst ++ [x]) then G k else 0 := by
-      intro k
-      -- This is the weight of G's extension law at k and x.
-      have hw := G.extensionLaw_weight k x
-      rw [Distribution.weight, Finsupp.sum_fintype _ _ (fun _ => rfl)] at hw
-      simp only [extensionLaw_apply, Domain.ofInputs_apply] at hw
-      -- Reindex the replies with MBOs as pairs (reply, MBO).
-      have hsum : ∑ y : Σ j, Y j,
-          (G (k ++ [(x, tagMBO false y)]) + G (k ++ [(x, tagMBO true y)])) =
-            ∑ y : Σ j, withMBO Y j, G (k ++ [(x, y)]) := by
-        let e : (Σ j, Y j) × Bool ≃ Σ j, withMBO Y j :=
-          { toFun := fun p => tagMBO p.2 p.1
-            invFun := fun y => (forgetMBO y, y.2.2)
-            left_inv := fun _ => rfl
-            right_inv := fun _ => rfl }
-        rw [Finset.sum_add_distrib, ← e.sum_comp, Fintype.sum_prod_type_right]
-        simp only [Fintype.sum_bool]
-        exact add_comm _ _
-      rw [hsum, hw]
-      congr
     -- Write (y, b) for the reply y with MBO b and [φ] for the indicator of φ. Then
     --   Σ_y G⁻ (h ++ [(x, y)])
     --     = Σ_y sumMBO (k ↦ G (k ++ [(x, (y, 0))]) + G (k ++ [(x, (y, 1))])) h  (sumMBO_snoc)
     --     = sumMBO (k ↦ Σ_y (G (k ++ [(x, (y, 0))]) + G (k ++ [(x, (y, 1))]))) h (sumMBO_sum)
-    --     = sumMBO (k ↦ [E (queries of k ++ [x])] · G k) h                      (reply)
+    --     = sumMBO (k ↦ [E (queries of k ++ [x])] · G k) h                      (sum_tagMBO)
     --     = [E (queries of h ++ [x])] · sumMBO G h                              (sumMBO_ite)
     rw [Distribution.weight, Finsupp.sum_fintype _ _ (fun _ => rfl)]
     simp only [Finsupp.coe_equivFunOnFinite_symm, sumMBO_snoc]
     rw [← sumMBO_sum]
-    simp only [reply, Domain.ofInputs_apply]
+    simp only [G.sum_tagMBO, Domain.ofInputs_apply]
     exact sumMBO_ite (fun xs => E (xs ++ [x])) G h⟩
 
 theorem RandomSystem.visible_apply

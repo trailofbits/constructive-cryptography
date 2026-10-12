@@ -30,7 +30,8 @@ Lanzenberger–Maurer, *Coupling of Random Systems*, Definitions 1, 2 and 4.
 ## Main results
 
 * the mass calculus: additivity, complements, monotonicity, `mass_le_weight`;
-  `abs_mass_sub_le_of_le`: laws above a common part differ by at most the rest
+  `mass_sub_mass_le_of_le`, `abs_mass_sub_le_of_le`: laws above a common part differ by at most
+  the rest
 * pushforward: `mass_fTransform`, `weight_fTransform`, `fTransform_comp`,
   `fTransform_prod`, `fTransform_equiv_uniform`
 * products: `prod_apply`, `weight_prod`, `mass_prod_fst`, `mass_prod_snd`,
@@ -342,44 +343,43 @@ theorem mass_mono {A : Type*} {X : Distribution A} (hX : X.NonNeg) {P Q : A → 
   · simp [hP, h a hP]
   · by_cases hQ : Q a <;> simp [hP, hQ, hX a]
 
-/-- **A common part bounds the difference of masses**: two laws of weight one that both lie
-above `ν` differ on every event by at most the weight they do not share with `ν`,
-`|μ₁(P) − μ₂(P)| ≤ 1 − |ν|`. -/
-theorem abs_mass_sub_le_of_le {A : Type*} {μ₁ μ₂ ν : Distribution A} (h₁ : μ₁.weight = 1)
-    (h₂ : μ₂.weight = 1) (hν₁ : ∀ a, ν a ≤ μ₁ a) (hν₂ : ∀ a, ν a ≤ μ₂ a) (P : A → Prop) :
-    |μ₁.mass P - μ₂.mass P| ≤ 1 - ν.weight := by
-  -- Plan. Each μ splits as ν + (μ − ν), with μ − ν ≥ 0 of weight 1 − |ν|. So
-  -- μ(P) − ν(P) = (μ − ν)(P) lies in [0, 1 − |ν|] for μ = μ₁ and μ = μ₂, and
-  --   |μ₁(P) − μ₂(P)| = |(μ₁(P) − ν(P)) − (μ₂(P) − ν(P))| ≤ 1 − |ν|.
+/-- **A common part bounds the difference of masses**, one side: if `μ₁` has weight one and both
+`μ₁` and `μ₂` lie above `ν`, then `μ₁` exceeds `μ₂` on every event by at most the weight `μ₁` does
+not share with `ν`, `μ₁(P) − μ₂(P) ≤ 1 − |ν|`. -/
+theorem mass_sub_mass_le_of_le {A : Type*} {μ₁ μ₂ ν : Distribution A} (h₁ : μ₁.weight = 1)
+    (hν₁ : ∀ a, ν a ≤ μ₁ a) (hν₂ : ∀ a, ν a ≤ μ₂ a) (P : A → Prop) :
+    μ₁.mass P - μ₂.mass P ≤ 1 - ν.weight := by
+  -- Plan. Each μ above ν splits as ν + (μ − ν), with μ − ν ≥ 0. So
+  --   μ₁(P) − μ₂(P) = (μ₁ − ν)(P) − (μ₂ − ν)(P) ≤ (μ₁ − ν)(P) ≤ |μ₁ − ν| = 1 − |ν|.
   -- Mass is additive, ν + (μ − ν) = μ: so (μ − ν)(P) = μ(P) − ν(P).
   have hsub : ∀ μ : Distribution A, (μ - ν).mass P = μ.mass P - ν.mass P := by
     intro μ
     have := mass_add ν (μ - ν) P
     rw [add_sub_cancel] at this
     linarith
-  -- For μ of weight 1 above ν: 0 ≤ μ(P) − ν(P) ≤ 1 − |ν|.
-  have hbound : ∀ μ : Distribution A, μ.weight = 1 → (∀ a, ν a ≤ μ a) →
-      0 ≤ μ.mass P - ν.mass P ∧ μ.mass P - ν.mass P ≤ 1 - ν.weight := by
-    intro μ hw hle
-    -- μ − ν ≥ 0 pointwise.
-    have hnn : (μ - ν).NonNeg := fun a => by
-      simp only [Finsupp.coe_sub, Pi.sub_apply, sub_nonneg]
-      exact hle a
-    rw [← hsub]
-    refine ⟨hnn.mass_nonneg P, ?_⟩
-    -- |μ − ν| = |μ| − |ν| = 1 − |ν|: additivity on the sure event.
-    have hwt : (μ - ν).weight = 1 - ν.weight := by
-      have := mass_add ν (μ - ν) (fun _ => True)
-      rw [add_sub_cancel, mass_true, mass_true, mass_true, hw] at this
-      linarith
-    -- A mass of the nonnegative μ − ν is at most its weight.
-    rw [← hwt]
-    exact mass_le_weight hnn P
-  -- Both differences lie in [0, 1 − |ν|], so theirs is at most 1 − |ν| in absolute value.
-  obtain ⟨hlo₁, hhi₁⟩ := hbound μ₁ h₁ hν₁
-  obtain ⟨hlo₂, hhi₂⟩ := hbound μ₂ h₂ hν₂
-  rw [abs_le]
-  constructor <;> linarith
+  -- μ − ν ≥ 0 pointwise, for μ above ν.
+  have hnn : ∀ μ : Distribution A, (∀ a, ν a ≤ μ a) → (μ - ν).NonNeg := fun μ hle a => by
+    simp only [Finsupp.coe_sub, Pi.sub_apply, sub_nonneg]
+    exact hle a
+  -- |μ₁ − ν| = |μ₁| − |ν| = 1 − |ν|: additivity on the sure event.
+  have hwt : (μ₁ - ν).weight = 1 - ν.weight := by
+    have := mass_add ν (μ₁ - ν) (fun _ => True)
+    rw [add_sub_cancel, mass_true, mass_true, mass_true, h₁] at this
+    linarith
+  -- (μ₂ − ν)(P) ≥ 0, and a mass of the nonnegative μ₁ − ν is at most its weight.
+  have hlo := (hnn μ₂ hν₂).mass_nonneg P
+  have hhi := mass_le_weight (hnn μ₁ hν₁) P
+  rw [hsub] at hlo hhi
+  linarith
+
+/-- **A common part bounds the difference of masses**: two laws of weight one that both lie
+above `ν` differ on every event by at most the weight they do not share with `ν`,
+`|μ₁(P) − μ₂(P)| ≤ 1 − |ν|`. -/
+theorem abs_mass_sub_le_of_le {A : Type*} {μ₁ μ₂ ν : Distribution A} (h₁ : μ₁.weight = 1)
+    (h₂ : μ₂.weight = 1) (hν₁ : ∀ a, ν a ≤ μ₁ a) (hν₂ : ∀ a, ν a ≤ μ₂ a) (P : A → Prop) :
+    |μ₁.mass P - μ₂.mass P| ≤ 1 - ν.weight :=
+  -- The one-sided bound, for μ₁ over μ₂ and for μ₂ over μ₁.
+  abs_sub_le_iff.mpr ⟨mass_sub_mass_le_of_le h₁ hν₁ hν₂ P, mass_sub_mass_le_of_le h₂ hν₂ hν₁ P⟩
 
 /-- **A single atom is below the mass of any event it satisfies**: `X a ≤ X(P)`
 when `P a`.  Non-negativity is what makes the other summands harmless — the
