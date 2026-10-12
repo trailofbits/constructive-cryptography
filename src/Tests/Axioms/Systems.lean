@@ -129,6 +129,11 @@ parallel composition, distance and games, and the counterexamples, depend only o
 #print axioms SystemAlgebra.close_apply
 #print axioms SystemAlgebra.absorbAll_isDDD
 
+-- RandomSystems.Distance.Coupling
+#print axioms SystemAlgebra.PDS.sLaw_behavior_eq_fTransform
+#print axioms SystemAlgebra.PDS.statDist_sLaw_behavior_le_of_isCoupling
+#print axioms SystemAlgebra.PDS.transcriptDistance_behavior_le_of_isCoupling
+
 -- RandomSystems.Distance.Decision
 #print axioms SystemAlgebra.RandomSystem.statDist_le_transcriptDistance
 #print axioms SystemAlgebra.Domain.decisionCompatible_iff_deterministic
@@ -157,7 +162,6 @@ parallel composition, distance and games, and the counterexamples, depend only o
 
 -- RandomSystems.Distance.Transcript
 #print axioms SystemAlgebra.IsDDD.relabel
-#print axioms SystemAlgebra.eRun_fst
 #print axioms SystemAlgebra.envProbe_isDDD
 #print axioms SystemAlgebra.ddeOf_bounded
 
