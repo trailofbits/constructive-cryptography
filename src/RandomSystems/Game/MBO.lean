@@ -18,8 +18,15 @@ about the MBO: if the MBO is set with probability at most `ε` on every fixed se
 queries, every winner wins with probability at most `ε`, and the visible system is within `ε`
 of `T`.
 
-Sources: CR18, §3.7.1 (games), Definition 4.5 (the winning probability), Definition 4.18 (the
-visible system `S⁻`), Definition 4.19 (conditional equivalence), Lemma 4.16 and Theorem 4.17.
+Two games are equivalent as games when they behave alike as long as the game is not won: they
+give every transcript with every MBO unset the same probability. A distinguisher then wins both
+alike, and its advantage between their visible systems is at most its winning probability: to
+tell them apart it must set the MBO (the fundamental lemma).
+
+Sources: CR18, §3.7.1 (games), Definition 4.5 (the winning probability), Definition 4.16
+(equivalence as games `G ≡g H`), Lemmas 4.15 and 4.16, Definition 4.18 (the visible system
+`S⁻`), Definition 4.19 (conditional equivalence), Theorem 4.17; Maurer 2002, Definition 5
+(`F^A ≡ G^C`), Lemma 6 (ii), Lemma 7 and Theorem 1 (i).
 
 ## Main definitions
 
@@ -29,6 +36,7 @@ visible system `S⁻`), Definition 4.19 (conditional equivalence), Lemma 4.16 an
 * `DDE.blindMBO`, `finalMBO`, `RandomSystem.winProbability`,
   `Domain.Distinguisher.winProbability`: winning
 * `RandomSystem.unsetProbability`, `RandomSystem.ConditionallyEquivalent`
+* `RandomSystem.GameEquivalent`: equivalence as games
 
 ## Main results
 
@@ -36,6 +44,13 @@ visible system `S⁻`), Definition 4.19 (conditional equivalence), Lemma 4.16 an
 * `RandomSystem.abs_decisionProbability_sub_le_winProbability`,
   `Domain.Distinguisher.advantage_le_winProbability`: conditional equivalence bounds the
   advantage by the winning probability
+* `RandomSystem.GameEquivalent.winProbability_eq`,
+  `Domain.Distinguisher.winProbability_eq_of_gameEquivalent`: games equivalent as games are won
+  alike
+* `RandomSystem.GameEquivalent.abs_decisionProbability_sub_le`,
+  `Domain.Distinguisher.advantage_le_winProbability_of_gameEquivalent`: the fundamental lemma,
+  the advantage between the visible systems of games equivalent as games is at most the winning
+  probability
 * `RandomSystem.winProbability_le_of_unsetProbability`,
   `Domain.Distinguisher.winProbability_le_of_unsetProbability`: under conditional equivalence,
   the probability that the MBO is set on fixed queries bounds the winning probability
@@ -508,6 +523,19 @@ def RandomSystem.ConditionallyEquivalent {𝒟 : Domain (Σ i, X i) (Σ i, Y i)}
     (T : RandomSystem (Σ i, X i) (Σ i, Y i) 𝒟) : Prop :=
   ∀ h, G (unsetMBOs h) = G.unsetProbability (h.map Prod.fst) * T h
 
+/-- **Equivalence as games** `G ≡g H` (CR18, Definition 4.16, printed p. 105: "Two
+(probabilistic) games G and H are equivalent as games, denoted G ≡g H, if their pre-winning
+behavior is identical"): the two games give every transcript with every MBO unset the same
+probability. This is the equivalent cumulative condition CR18 states on the same page,
+`p^G_{Yⁱ,Aᵢ=0|Xⁱ} = p^H_{Yⁱ,Aᵢ=0|Xⁱ}` for `i ≥ 1`, where on a game `Aᵢ = 0` means that every
+MBO so far is unset (the product (4.36) of the pre-winning behavior). Maurer 2002,
+Definition 5 (`F^A ≡ G^C`), is the same notion, with the event that a monotone condition holds
+in place of the unset MBO. -/
+def RandomSystem.GameEquivalent {D₁ D₂ : Domain (Σ i, X i) (Σ i, withMBO Y i)}
+    (G : RandomSystem (Σ i, X i) (Σ i, withMBO Y i) D₁)
+    (H : RandomSystem (Σ i, X i) (Σ i, withMBO Y i) D₂) : Prop :=
+  ∀ h, G (unsetMBOs h) = H (unsetMBOs h)
+
 variable {E : List (Σ i, X i) → Prop} {m : ℕ} {hE : ∀ h, E h → h.length ≤ m}
 
 /-- A random system on the input domain admits the fixed queries of a possible transcript of
@@ -665,11 +693,10 @@ theorem RandomSystem.abs_decisionProbability_sub_le_winProbability
   -- Step 2. ν ≤ μV: G (h with every MBO 0) is one term of G⁻ h, the sum over the MBOs.
   -- Step 3. ν ≤ μT: by conditional equivalence, G (h with every MBO 0)
   --         = Pr[MBO stays 0 on h's queries] · T h ≤ T h.
-  -- Step 4. If μ₁ has weight 1 and ν ≤ μ₁, then 0 ≤ μ₁(P) − ν(P) ≤ 1 − weight ν.
-  -- Step 5. The chain:
+  -- Step 4. The chain, as μV and μT have weight 1 and lie above ν (Steps 2 and 3):
   --   |p_D(G⁻) − p_D(T)|
-  --     = |(μV(P) − ν(P)) − (μT(P) − ν(P))|    (subtract and add ν(P))
-  --     ≤ 1 − weight ν                         (Steps 2–4: both lie in [0, 1 − weight ν])
+  --     = |μV(P) − μT(P)|
+  --     ≤ 1 − weight ν                         (Distribution.abs_mass_sub_le_of_le)
   --     = Γ_D(G)                               (Step 1)
   set e := ddeOf hD
   set n := hD.2.1.choose
@@ -714,44 +741,11 @@ theorem RandomSystem.abs_decisionProbability_sub_le_winProbability
   -- Both transcript laws have weight 1.
   have hμV := G.visible.sLaw_isProbDist hV n
   have hμT := T.sLaw_isProbDist hTc n
-  -- Step 4. Bound the part of μV and μT beyond ν.
-  -- Masses of the differences.
-  have hsub : ∀ (μ₁ : Distribution (List ((Σ i, X i) × Σ i, Y i)))
-      (P : List ((Σ i, X i) × Σ i, Y i) → Prop),
-      (μ₁ - ν).mass P = μ₁.mass P - ν.mass P := by
-    intro μ₁ P
-    -- Mass is additive: ν + (μ₁ − ν) = μ₁.
-    have := Distribution.mass_add ν (μ₁ - ν) P
-    rw [add_sub_cancel] at this
-    linarith
-  -- If μ₁ has weight 1 and ν ≤ μ₁, then μ₁ − ν is nonnegative with weight 1 − weight ν, so
-  -- each of its masses lies in [0, 1 − weight ν].
-  have hbound : ∀ μ₁ : Distribution (List ((Σ i, X i) × Σ i, Y i)), μ₁.weight = 1 →
-      (∀ h, ν h ≤ μ₁ h) → ∀ P, 0 ≤ μ₁.mass P - ν.mass P ∧
-        μ₁.mass P - ν.mass P ≤ 1 - ν.weight := by
-    intro μ₁ hw hle P
-    -- μ₁ − ν ≥ 0 pointwise.
-    have hnn : (μ₁ - ν).NonNeg := fun h => by
-      simp only [Finsupp.coe_sub, Pi.sub_apply, sub_nonneg]
-      exact hle h
-    rw [← hsub]
-    refine ⟨hnn.mass_nonneg P, ?_⟩
-    -- weight (μ₁ − ν) = weight μ₁ − weight ν = 1 − weight ν.
-    have hwt : (μ₁ - ν).weight = 1 - ν.weight := by
-      rw [← Distribution.mass_true, hsub, Distribution.mass_true, Distribution.mass_true, hw]
-    rw [← hwt]
-    exact Distribution.mass_le_weight hnn P
-  -- Step 5. Step 4 for μV and for μT, with P = "D decides 1".
-  obtain ⟨h1, h2⟩ := hbound μV hμV.2 hνV
+  -- Step 4. Γ_D(G) = 1 − weight ν; the decision probabilities are, by definition, μV(P) and
+  -- μT(P) with P = "D decides 1", which lie above the common part ν.
+  rw [hwin]
+  exact Distribution.abs_mass_sub_le_of_le hμV.2 hμT.2 hνV hνT
     (fun h => ⟨.dec, true⟩ ∈ (trim D) (dHist (h.map Prod.snd)))
-  obtain ⟨h3, h4⟩ := hbound μT hμT.2 hνT
-    (fun h => ⟨.dec, true⟩ ∈ (trim D) (dHist (h.map Prod.snd)))
-  -- Γ_D(G) = 1 − weight ν; |a| ≤ c is −c ≤ a ∧ a ≤ c.
-  rw [hwin, abs_le]
-  -- The decision probabilities are μV(P) and μT(P) by definition.
-  change -(1 - ν.weight) ≤ μV.mass _ - μT.mass _ ∧ μV.mass _ - μT.mass _ ≤ 1 - ν.weight
-  -- Both inequalities follow from Step 4 by linear arithmetic.
-  constructor <;> linarith
 
 /-- **Conditional equivalence bounds distinguishing by winning** (CR18, Lemma 4.16 and
 Theorem 4.17): a distinguisher's advantage between the visible system of a game and a random
@@ -780,6 +774,122 @@ theorem Domain.Distinguisher.advantage_le_winProbability
   -- The deterministic case, scaled by P(D) ≥ 0.
   exact mul_le_mul_of_nonneg_left
     (RandomSystem.abs_decisionProbability_sub_le_winProbability hG hT hm hc D.1 D.2.1 D.2.2)
+    (P.2.1 D)
+
+/-- **Games equivalent as games are won alike**, by a deterministic distinguisher (CR18,
+Lemma 4.15, printed p. 106: "If G ≡g H then, for any winner W for (X, Y)-games, we have
+Ḡ = H̄"; Maurer 2002, Lemma 7: "P^{DF}(Āₖ) = P^{DG}(B̄ₖ)"). -/
+theorem RandomSystem.GameEquivalent.winProbability_eq
+    {G H : RandomSystem (Σ i, X i) (Σ i, withMBO Y i) (Domain.ofInputs E m hE)}
+    (hG : G.RepliesAtQueriedInterface) (hH : H.RepliesAtQueriedInterface)
+    (hmG : G.MonotoneMBO) (hmH : H.MonotoneMBO) (he : G.GameEquivalent H)
+    (D : DDD I X Y) (hD : IsDDD D)
+    (hdc : (Domain.ofInputs E m hE : Domain (Σ i, X i) (Σ i, Y i)).DecisionCompatible D) :
+    G.winProbability D hD = H.winProbability D hD := by
+  -- Γ_D(K) = 1 − weight ν_K for K = G, H, where ν_K h = K (h with every MBO 0) on the
+  -- transcripts h complete for D's environment (exists_unset_winProbability). Equivalence as
+  -- games makes ν_G = ν_H, so Γ_D(G) = Γ_D(H).
+  obtain ⟨ν, hν, hwin⟩ := G.exists_unset_winProbability hG hmG D hD hdc
+  obtain ⟨ν', hν', hwin'⟩ := H.exists_unset_winProbability hH hmH D hD hdc
+  -- ν_G = ν_H pointwise: G and H agree on every transcript with every MBO 0.
+  have hνν : ν = ν' := Finsupp.ext fun h => by rw [hν, hν', he h]
+  rw [hwin, hwin', hνν]
+
+open scoped Classical in
+/-- **The fundamental lemma**, for a deterministic distinguisher (CR18, Lemma 4.16, printed
+p. 107: "if S ≡g T, then the distinguishing advantage of any distinguisher D in distinguishing
+S⁻ and T⁻ is upper bounded by D's winning probability for game S"; Maurer 2002, Lemma 7). -/
+theorem RandomSystem.GameEquivalent.abs_decisionProbability_sub_le
+    {G H : RandomSystem (Σ i, X i) (Σ i, withMBO Y i) (Domain.ofInputs E m hE)}
+    (hG : G.RepliesAtQueriedInterface) (hH : H.RepliesAtQueriedInterface)
+    (hmG : G.MonotoneMBO) (he : G.GameEquivalent H)
+    (D : DDD I X Y) (hD : IsDDD D)
+    (hdc : (Domain.ofInputs E m hE : Domain (Σ i, X i) (Σ i, Y i)).DecisionCompatible D) :
+    |G.visible.decisionProbability D hD - H.visible.decisionProbability D hD| ≤
+      G.winProbability D hD := by
+  -- Plan. D plays the visible systems G⁻ and H⁻ through its environment e for n rounds:
+  --
+  --   ┌───┐ ──x──▶ ┌───┐                    ┌───┐ ──x──▶ ┌───┐
+  --   │ D │        │ G │ ──▶ a (dropped)    │ D │        │ H │ ──▶ a (dropped)
+  --   └───┘ ◀──y── └───┘                    └───┘ ◀──y── └───┘
+  --
+  -- The transcript laws of G⁻ and H⁻ with e have weight 1; P is the event "D decides 1", so
+  -- that the decision probabilities are their masses of P.
+  -- Step 1. ν h = G (h with every MBO 0) on the h complete for e, and D's winning
+  --         probability is Γ_D(G) = 1 − weight ν.
+  -- Step 2. By equivalence as games, ν h = H (h with every MBO 0) as well.
+  -- Step 3. ν lies below both transcript laws: K (h with every MBO 0) is one term of K⁻ h,
+  --         the sum over the MBOs, for K = G and K = H.
+  -- Step 4. The chain:
+  --   |p_D(G⁻) − p_D(H⁻)| ≤ 1 − weight ν    (Distribution.abs_mass_sub_le_of_le)
+  --                       = Γ_D(G)          (Step 1)
+  set e := ddeOf hD
+  set n := hD.2.1.choose
+  -- G⁻ and H⁻ are compatible with e, as D is compatible with the input domain.
+  have henv := hdc.environment hD
+  -- Step 1. ν, with Γ_D(G) = 1 − weight ν.
+  obtain ⟨ν, hν, hwin⟩ := G.exists_unset_winProbability hG hmG D hD hdc
+  -- Step 3, for any game K that ν describes: ν ≤ the transcript law of K⁻ with e.
+  have below : ∀ K : RandomSystem (Σ i, X i) (Σ i, withMBO Y i) (Domain.ofInputs E m hE),
+      (∀ h, ν h = if Good e.1 n h then K (unsetMBOs h) else 0) →
+        ∀ h, ν h ≤ K.visible.sLaw e.1 n h := by
+    intro K hK h
+    rw [hK, sLaw_apply]
+    -- Split on whether h is complete for e; if not, both sides are 0.
+    split_ifs
+    -- le_sumMBO: K (h with every MBO 0) ≤ sumMBO K h = K⁻ h.
+    · have := le_sumMBO K.mass_nonneg (unsetMBOs h)
+      rwa [forgetMBOs_unsetMBOs, ← RandomSystem.visible_apply] at this
+    · exact le_rfl
+  -- Step 2. ν describes H too: G and H agree on every transcript with every MBO 0.
+  have hνH : ∀ h, ν h = if Good e.1 n h then H (unsetMBOs h) else 0 := fun h => by
+    rw [hν, he h]
+  -- Step 4. Γ_D(G) = 1 − weight ν; both transcript laws have weight 1 and lie above ν.
+  rw [hwin]
+  exact Distribution.abs_mass_sub_le_of_le
+    (G.visible.sLaw_isProbDist (henv _ hG.visible) n).2
+    (H.visible.sLaw_isProbDist (henv _ hH.visible) n).2 (below G hν) (below H hνH)
+    (fun h => ⟨.dec, true⟩ ∈ (trim D) (dHist (h.map Prod.snd)))
+
+/-- **Games equivalent as games are won alike** (CR18, Lemma 4.15; Maurer 2002, Lemma 7, and
+Lemma 6 (ii) for the best winner): each distinguisher, used as a winner, wins two games
+equivalent as games with the same probability. -/
+theorem Domain.Distinguisher.winProbability_eq_of_gameEquivalent
+    (P : (Domain.ofInputs E m hE : Domain (Σ i, X i) (Σ i, Y i)).Distinguisher)
+    {G H : RandomSystem (Σ i, X i) (Σ i, withMBO Y i) (Domain.ofInputs E m hE)}
+    (hG : G.RepliesAtQueriedInterface) (hH : H.RepliesAtQueriedInterface)
+    (hmG : G.MonotoneMBO) (hmH : H.MonotoneMBO) (he : G.GameEquivalent H) :
+    P.winProbability G = P.winProbability H := by
+  -- Γ_P(K) = Σ_D P(D)·Γ_D(K), and Γ_D(G) = Γ_D(H) for each deterministic D.
+  simp only [Domain.Distinguisher.winProbability]
+  exact Finsupp.sum_congr fun D _ => by
+    rw [he.winProbability_eq hG hH hmG hmH D.1 D.2.1 D.2.2]
+
+/-- **The fundamental lemma** (CR18, Lemma 4.16; Maurer 2002, Lemma 7, and Theorem 1 (i) for
+the best distinguisher): a distinguisher's advantage between the visible systems of two games
+equivalent as games is at most its winning probability for the first. -/
+theorem Domain.Distinguisher.advantage_le_winProbability_of_gameEquivalent
+    (P : (Domain.ofInputs E m hE : Domain (Σ i, X i) (Σ i, Y i)).Distinguisher)
+    {G H : RandomSystem (Σ i, X i) (Σ i, withMBO Y i) (Domain.ofInputs E m hE)}
+    (hG : G.RepliesAtQueriedInterface) (hH : H.RepliesAtQueriedInterface)
+    (hmG : G.MonotoneMBO) (he : G.GameEquivalent H) :
+    |P.probability G.visible - P.probability H.visible| ≤ P.winProbability G := by
+  -- P is a distribution over deterministic distinguishers D, with weights P(D) ≥ 0:
+  --   |Σ_D P(D)·p_D(G⁻) − Σ_D P(D)·p_D(H⁻)|
+  --     = |Σ_D P(D)·(p_D(G⁻) − p_D(H⁻))|
+  --     ≤ Σ_D P(D)·|p_D(G⁻) − p_D(H⁻)|    (triangle inequality, P(D) ≥ 0)
+  --     ≤ Σ_D P(D)·Γ_D(G)                  (the deterministic case)
+  --     = Γ_P(G)
+  simp only [Domain.Distinguisher.probability, Domain.Distinguisher.winProbability,
+    Finsupp.sum]
+  -- The difference of the sums is the sum of the differences.
+  rw [← Finset.sum_sub_distrib]
+  -- Triangle inequality, then compare termwise.
+  refine (Finset.abs_sum_le_sum_abs _ _).trans (Finset.sum_le_sum fun D _ => ?_)
+  -- |P(D)·a − P(D)·b| = P(D)·|a − b|, as P(D) ≥ 0.
+  rw [← mul_sub, abs_mul, abs_of_nonneg (P.2.1 D)]
+  -- The deterministic case, scaled by P(D) ≥ 0.
+  exact mul_le_mul_of_nonneg_left (he.abs_decisionProbability_sub_le hG hH hmG D.1 D.2.1 D.2.2)
     (P.2.1 D)
 
 open scoped Classical in

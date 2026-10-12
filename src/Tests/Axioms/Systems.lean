@@ -182,6 +182,10 @@ parallel composition, distance and games, and the counterexamples, depend only o
 #print axioms SystemAlgebra.RandomSystem.visible
 #print axioms SystemAlgebra.RandomSystem.abs_decisionProbability_sub_le_winProbability
 #print axioms SystemAlgebra.Domain.Distinguisher.advantage_le_winProbability
+#print axioms SystemAlgebra.RandomSystem.GameEquivalent.winProbability_eq
+#print axioms SystemAlgebra.RandomSystem.GameEquivalent.abs_decisionProbability_sub_le
+#print axioms SystemAlgebra.Domain.Distinguisher.winProbability_eq_of_gameEquivalent
+#print axioms SystemAlgebra.Domain.Distinguisher.advantage_le_winProbability_of_gameEquivalent
 #print axioms SystemAlgebra.Domain.Distinguisher.winProbability_le_of_unsetProbability
 #print axioms SystemAlgebra.RandomSystem.transcriptDistance_visible_le_of_unsetProbability
 
