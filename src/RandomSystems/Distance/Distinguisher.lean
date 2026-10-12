@@ -46,6 +46,7 @@ serial composition is absorbing its PDCs in turn.
 namespace SystemAlgebra
 
 open Classical Probability
+open scoped NNReal
 
 section Attachment
 
@@ -177,6 +178,19 @@ theorem RandomSystem.transcriptDistance_eq_iSup {𝒟 : Domain (Σ i, X i) (Σ i
         ≤ ENNReal.ofReal (R.transcriptDistance S).toReal := ENNReal.ofReal_le_ofReal hb
       _ = R.transcriptDistance S := ENNReal.ofReal_toReal
           (ne_top_of_le_ne_top ENNReal.one_ne_top (transcriptDistance_le_one hR hS))
+
+/-- **A bound on every advantage bounds the transcript distance**: if every probabilistic
+distinguisher's advantage is at most `b`, the transcript distance is at most `b`. -/
+theorem RandomSystem.transcriptDistance_le_of_advantage_le {𝒟 : Domain (Σ i, X i) (Σ i, Y i)}
+    {R S : RandomSystem (Σ i, X i) (Σ i, Y i) 𝒟}
+    (hR : R.RepliesAtQueriedInterface) (hS : S.RepliesAtQueriedInterface) {b : ℝ≥0}
+    (h : ∀ P : 𝒟.Distinguisher, |P.probability R - P.probability S| ≤ b) :
+    R.transcriptDistance S ≤ b := by
+  -- The transcript distance is the largest advantage; each is at most `b`.
+  rw [RandomSystem.transcriptDistance_eq_iSup hR hS]
+  refine iSup_le fun P => ?_
+  rw [Domain.Distinguisher.advantage, ← ENNReal.ofReal_coe_nnreal]
+  exact ENNReal.ofReal_le_ofReal (h P)
 
 /-- The advantage of a probabilistic distinguisher is at most the transcript distance. -/
 theorem Domain.Distinguisher.advantage_le_transcriptDistance {𝒟 : Domain (Σ i, X i) (Σ i, Y i)}

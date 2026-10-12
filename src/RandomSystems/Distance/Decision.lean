@@ -23,6 +23,8 @@ a sample.
 
 ## Main results
 
+* `RandomSystem.transcriptDistance_le`: a bound in `ℝ≥0` on the transcript laws under every
+  environment bounds the transcript distance
 * `RandomSystem.decisionProbability_envProbe`: an environment followed by an event test
   decides `1` with the probability of the event
 * `RandomSystem.decisionProbability_gap_le`: decision gaps are at most the transcript
@@ -36,6 +38,7 @@ a sample.
 namespace SystemAlgebra
 
 open Classical Probability
+open scoped NNReal
 
 theorem Cons.queries_eq {A B : Type} {e : List B →. A} {h : List (A × B)}
     (hc : Cons e h) : h.map Prod.fst = qsOf e (h.map Prod.snd) := by
@@ -232,11 +235,23 @@ theorem statDist_le_transcriptDistance {E : DDE (Σ i, X i) (Σ i, Y i)} {n : �
     ENNReal.ofReal (statDist (R.sLaw E.1 n) (S.sLaw E.1 n)) ≤ R.transcriptDistance S :=
   le_iSup_of_le E (le_iSup_of_le n (le_iSup_of_le hn (le_iSup_of_le hc le_rfl)))
 
+/-- **A bound on the transcript laws bounds the transcript distance**: if under every compatible
+query-bounded environment the statistical distance of the transcript laws is at most `b`, the
+transcript distance is at most `b`. -/
+theorem transcriptDistance_le {R S : RandomSystem (Σ i, X i) (Σ i, Y i) 𝒟} {b : ℝ≥0}
+    (h : ∀ (E : DDE (Σ i, X i) (Σ i, Y i)) (n : ℕ), QueryBounded n E → 𝒟.Compatible E →
+      statDist (R.sLaw E.1 n) (S.sLaw E.1 n) ≤ b) :
+    R.transcriptDistance S ≤ b :=
+  iSup_le fun E => iSup_le fun n => iSup_le fun hn => iSup_le fun hc => by
+    -- The real bound `b` read in `ℝ≥0∞` is `b` itself.
+    rw [← ENNReal.ofReal_coe_nnreal]
+    exact ENNReal.ofReal_le_ofReal (h E n hn hc)
+
 theorem transcriptDistance_le_one {R S : RandomSystem (Σ i, X i) (Σ i, Y i) 𝒟}
     (hR : R.RepliesAtQueriedInterface) (hS : S.RepliesAtQueriedInterface) :
     R.transcriptDistance S ≤ 1 := by
-  refine iSup_le fun E => iSup_le fun n => iSup_le fun _ => iSup_le fun hc => ?_
-  apply ENNReal.ofReal_le_one.mpr
+  rw [← ENNReal.coe_one]
+  refine transcriptDistance_le fun E n _ hc => ?_
   have hr := R.sLaw_isProbDist (hc R hR) n
   have hs := S.sLaw_isProbDist (hc S hS) n
   exact (statDist_le_weight hr.1 hs.1).trans_eq hr.2

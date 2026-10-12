@@ -40,7 +40,7 @@ the ideal answers.
 namespace SystemAlgebra
 
 open Probability ConstructiveCryptography
-open scoped SystemAlgebra
+open scoped SystemAlgebra NNReal
 
 namespace Interface
 
@@ -88,9 +88,9 @@ every admitted query sequence, then `R` and `S` are at most `ε` apart. -/
 theorem game_dist_le {A : Interface}
     {G : PDG (Σ i, A.X i) (Σ i, A.Y i) A.inputDomain} {hG : G.isProbDist} {R S : Resource A}
     (visible : R.1 = PDS.behavior G.underlying (PDG.underlying_probability hG))
-    (equiv : Game.ofPDG G hG visible |≡ S) {ε : ℝ}
+    (equiv : Game.ofPDG G hG visible |≡ S) {ε : ℝ≥0}
     (hbad : ∀ xs, xs = [] ∨ A.domain xs → G.badProbability xs ≤ ε) :
-    Δ R S ≤ ENNReal.ofReal ε := by
+    Δ R S ≤ ε := by
   --   Δ(R, S) = Δ((ofPDG G)⁻, S)   (`R` is the visible resource of the presented game)
   --           ≤ ε                 (`ofPDG G |≡ S`, MBO unset with probability ≥ 1 - ε)
   --
@@ -220,9 +220,9 @@ theorem game_dist_ofSingleFunction_le {I K X Y : Type}
     {P : Distribution K} [Distribution.IsProbability P] {f : K → X → Y} {bad : K → MC X}
     {R S : Resource ⟨I, fun _ => X, fun _ => Y, D, hD, bound, hb⟩}
     (equiv : Game.ofSingleFunction D hD bound hb P f bad |≡ S)
-    (visible : R = Resource.sample P (fun k => Resource.ofFunction (fun _ => f k))) {ε : ℝ}
+    (visible : R = Resource.sample P (fun k => Resource.ofFunction (fun _ => f k))) {ε : ℝ≥0}
     (hbad : ∀ xs, xs = [] ∨ D xs → P.mass (fun k => (bad k).1 (xs.map Sigma.snd)) ≤ ε) :
-    Δ R S ≤ ENNReal.ofReal ε := by
+    Δ R S ≤ ε := by
   -- `R` is the resource sampling the function.
   subst visible
   -- The distance bound for a presented game: `R` is presented by the visible systems of the
