@@ -904,28 +904,28 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [DDG]: src/RandomSystems/Game/DiscreteMBO.lean#L50
 [PDG]: src/RandomSystems/Game/DiscreteMBO.lean#L54
 [PDG.ofFunction]: src/RandomSystems/Game/FunctionGame.lean#L37
-[RandomSystem.MonotoneMBO]: src/RandomSystems/Game/MBO.lean#L300
-[RandomSystem.visible]: src/RandomSystems/Game/MBO.lean#L309
-[DDE.blindMBO]: src/RandomSystems/Game/MBO.lean#L402
-[RandomSystem.winProbability]: src/RandomSystems/Game/MBO.lean#L472
-[RandomSystem.ConditionallyEquivalent]: src/RandomSystems/Game/MBO.lean#L515
-[Domain.Distinguisher.advantage_le_winProbability]: src/RandomSystems/Game/MBO.lean#L769
-[Domain.Distinguisher.winProbability_le_of_unsetProbability]: src/RandomSystems/Game/MBO.lean#L848
-[RandomSystem.transcriptDistance_visible_le_of_unsetProbability]: src/RandomSystems/Game/MBO.lean#L873
+[RandomSystem.MonotoneMBO]: src/RandomSystems/Game/MBO.lean#L289
+[RandomSystem.visible]: src/RandomSystems/Game/MBO.lean#L298
+[DDE.blindMBO]: src/RandomSystems/Game/MBO.lean#L391
+[RandomSystem.winProbability]: src/RandomSystems/Game/MBO.lean#L461
+[RandomSystem.ConditionallyEquivalent]: src/RandomSystems/Game/MBO.lean#L504
+[Domain.Distinguisher.advantage_le_winProbability]: src/RandomSystems/Game/MBO.lean#L758
+[Domain.Distinguisher.winProbability_le_of_unsetProbability]: src/RandomSystems/Game/MBO.lean#L837
+[RandomSystem.transcriptDistance_visible_le_of_unsetProbability]: src/RandomSystems/Game/MBO.lean#L862
 [PDCBehavior.liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L455
 [PDCBehavior.liftMBO_id]: src/RandomSystems/Game/MBOAttachment.lean#L495
 [PDCBehavior.liftMBO_comp]: src/RandomSystems/Game/MBOAttachment.lean#L1515
 [RandomSystem.MonotoneMBO.attach_liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L965
 [RandomSystem.visible_attach_liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L619
-[RandomSystem.winProbability_attach_liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L2077
-[Domain.SolverBehavior]: src/RandomSystems/Game/MBOAttachment.lean#L2167
-[Domain.SolverBehavior.absorb]: src/RandomSystems/Game/MBOAttachment.lean#L2189
+[RandomSystem.winProbability_attach_liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L2079
+[Domain.SolverBehavior]: src/RandomSystems/Game/MBOAttachment.lean#L2169
+[Domain.SolverBehavior.absorb]: src/RandomSystems/Game/MBOAttachment.lean#L2191
 [DDG.withMBO]: src/RandomSystems/Game/DiscreteMBO.lean#L103
 [PDG.behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L235
 [PDG.visible_behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L253
 [PDG.unsetProbability_behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L331
-[PDG.one_sub_le_unsetProbability_behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L435
-[PDG.conditionallyEquivalent_behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L461
+[PDG.one_sub_le_unsetProbability_behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L434
+[PDG.conditionallyEquivalent_behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L460
 [PDG.ofFunction_conditionallyEquivalent]: src/RandomSystems/Game/FunctionGame.lean#L73
 
 <!-- Declarations: §2 -->
@@ -958,10 +958,10 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [Interface.Resource.ofFunction]: src/ConstructiveCryptography/Functional.lean#L56
 [Interface.Resource.ofConditional]: src/ConstructiveCryptography/Functional.lean#L38
 [Interface.Resource.sample]: src/ConstructiveCryptography/Functional.lean#L176
-[Interface.withMBO]: src/ConstructiveCryptography/InterfaceGame.lean#L50
-[Interface.Game]: src/ConstructiveCryptography/InterfaceGame.lean#L61
-[Interface.liftMBO]: src/ConstructiveCryptography/InterfaceGame.lean#L64
-[Interface.Game.visible]: src/ConstructiveCryptography/InterfaceGame.lean#L82
+[Interface.withMBO]: src/ConstructiveCryptography/InterfaceGame.lean#L51
+[Interface.Game]: src/ConstructiveCryptography/InterfaceGame.lean#L62
+[Interface.liftMBO]: src/ConstructiveCryptography/InterfaceGame.lean#L65
+[Interface.Game.visible]: src/ConstructiveCryptography/InterfaceGame.lean#L83
 [Interface.Game.ofPDG]: src/ConstructiveCryptography/PresentedGame.lean#L54
 [Interface.Game.visible_ofPDG]: src/ConstructiveCryptography/PresentedGame.lean#L64
 [Interface.Game.conditionallyEquivalent_ofPDG_iff]: src/ConstructiveCryptography/PresentedGame.lean#L74
@@ -1033,12 +1033,12 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [Games.absorb]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L93
 [DistinctionGames.absorb]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L148
 [Games.absorb_comp]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L101
-[Interface.games]: src/ConstructiveCryptography/InterfaceGame.lean#L98
-[Interface.distinctionGames]: src/ConstructiveCryptography/InterfaceGame.lean#L148
-[Interface.dist_visible_le]: src/ConstructiveCryptography/InterfaceGame.lean#L209
-[Interface.winners]: src/ConstructiveCryptography/InterfaceGame.lean#L87
-[Interface.solvers]: src/ConstructiveCryptography/InterfaceGame.lean#L92
-[Interface.win_le]: src/ConstructiveCryptography/InterfaceGame.lean#L193
+[Interface.games]: src/ConstructiveCryptography/InterfaceGame.lean#L99
+[Interface.distinctionGames]: src/ConstructiveCryptography/InterfaceGame.lean#L149
+[Interface.dist_visible_le]: src/ConstructiveCryptography/InterfaceGame.lean#L210
+[Interface.winners]: src/ConstructiveCryptography/InterfaceGame.lean#L88
+[Interface.solvers]: src/ConstructiveCryptography/InterfaceGame.lean#L93
+[Interface.win_le]: src/ConstructiveCryptography/InterfaceGame.lean#L194
 
 <!-- Declarations: §4 -->
 
@@ -1160,7 +1160,7 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [aeIdeal_bisim]: src/Examples/AuthenticatedEncryption/Oracle.lean#L240
 [encryptionReal_bisim]: src/Examples/AuthenticatedEncryption/Oracle.lean#L369
 [collision_mass_le]: src/Examples/AuthenticatedEncryption/Collision.lean#L54
-[hybrid_ideal_distance_le]: src/Examples/AuthenticatedEncryption/Collision.lean#L537
+[hybrid_ideal_distance_le]: src/Examples/AuthenticatedEncryption/Collision.lean#L538
 [advantage_attach_le_win]: src/Examples/Games.lean#L107
 [win_attach_le]: src/Examples/Games.lean#L54
 [win_attach_comp_le]: src/Examples/Games.lean#L68

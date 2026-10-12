@@ -124,9 +124,10 @@ theorem replay_mem {l : List M} {l' : List C} {c : C} {m : M}
   -- That entry lies in `l.zip l'`, so its message lies in `l`.
   exact (List.of_mem_zip (List.mem_of_find?_eq_some he)).1
 
-/-- **Without a collision, the hybrid decrypts as the ideal**: a replay passes both plaintext
-filters, and a fresh ciphertext survives both only if its message is an original and a
-replacement message. -/
+/-- **Without a collision, the hybrid decrypts as the ideal**: a replay is answered from the
+outer table and passes the outer plaintext filter, its message being an original one, and a
+fresh ciphertext survives both filters only if its message is an original and a replacement
+message. -/
 theorem hybridDecrypt_eq {k k' : ℕ}
     (ω : (((Fin k → K) × (Fin k → (K × M → C))) × (Fin k' → M)) × (Fin k' → M))
     (known : List M) (c : C) (hgood : ¬ Collision (AE.CCA.law1 M C) known ω.2) :
@@ -269,7 +270,7 @@ theorem lt_idealTableSize {i : ℕ} (hi : i < q .enc) : i < idealTableSize schem
   have : ∑ i, AE.Ideal.insideBudget M C q i = q .enc := by
     rw [Fintype.sum_eq_single Encryption.Port.enc (fun j hj => absurd (by cases j; rfl) hj)]
     rfl
-  -- The ideal's tables have `2 · q enc` entries, and `i < q enc ≤ 2 · q enc`.
+  -- The ideal's tables have `Encryption.Real.bound · q enc ≥ q enc` entries, so `i` fits.
   simp only [idealTableSize, this, Encryption.Real.bound]
   omega
 
@@ -507,8 +508,8 @@ theorem collisionGame_conditionallyEquivalent :
   -- it has on the ideal's own tables (`ideal_mass_hybridTables`).
   rw [mul_comm, ideal_mass_hybridTables]
 
-/-- **The collision bound**: on each admitted query sequence, the condition holds with
-probability at most `q_e² / |M|`. -/
+/-- **The collision bound**: on the empty and on each admitted query sequence, the condition
+holds with probability at most `q_e² / |M|`. -/
 theorem collisionGame_badProbability_le (xs : List (Σ i, (AE.perPort M C q).X i))
     (hxs : xs = [] ∨ (AE.perPort M C q).domain xs) :
     (collisionGame scheme q).badProbability xs ≤ (q .enc : ℝ) ^ 2 / Fintype.card M := by
@@ -520,7 +521,7 @@ theorem collisionGame_badProbability_le (xs : List (Σ i, (AE.perPort M C q).X i
     · rw [length_messages]
       exact hxs.2 .enc
   -- Step 2: the outer table holds the first `n` replacement messages:
-  -- `n ≤ q enc ≤ Σ_i q i ≤ 2 · Σ_i q i`, its length.
+  -- `n ≤ q enc ≤ Σ_i q i ≤ AE.CCA.bound · Σ_i q i`, its length.
   have hk : (messages xs).length ≤ AE.CCA.bound M C * ∑ i, q i := by
     refine hn.trans ((Finset.single_le_sum (fun i _ => Nat.zero_le (q i))
       (Finset.mem_univ AE.Port.enc)).trans ?_)

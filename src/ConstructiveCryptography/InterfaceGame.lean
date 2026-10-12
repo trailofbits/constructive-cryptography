@@ -15,8 +15,9 @@ through their behaviors `Domain.SolverBehavior`: a winner does not see the MBO
 
 For `Games`, the field `attachGame` is the attachment of the MBO-forwarding lift
 `PDCBehavior.liftMBO`, and `winners` are the winning probabilities of the solver behaviors.
-The axiom `attachGame_identity` is discharged by `PDCBehavior.liftMBO_id`, `attachGame_serial`
-by `PDCBehavior.liftMBO_comp`, and `closed_attach` by `Domain.SolverBehavior.absorb`.
+The axiom `attachGame_identity` is discharged by `PDCBehavior.liftMBO_id` and
+`PDCBehavior.attach_id`, `attachGame_serial` by `PDCBehavior.liftMBO_comp` and
+`PDCBehavior.attach_comp`, and `closed_attach` by `Domain.SolverBehavior.absorb`.
 
 For `DistinctionGames`, the field `solvers` is the pairs of the solver behaviors, `visible` is the
 visible system `RandomSystem.visible`, and `ConditionallyEquivalent` is

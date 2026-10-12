@@ -96,17 +96,6 @@ theorem sumMBO_snoc (f : List (A × Σ j, withMBO Y j) → ℝ) (h : List (A × 
     -- The induction hypothesis, for each of the two shifted summands.
     rw [ih, ih]
 
-theorem sumMBO_add (f g : List (A × Σ j, withMBO Y j) → ℝ) (h : List (A × Σ j, Y j)) :
-    sumMBO (fun k => f k + g k) h = sumMBO f h + sumMBO g h := by
-  -- sumMBO f h sums f over the 2^|h| ways to give h's replies MBOs; induction on h.
-  induction h generalizing f g with
-  | nil => rfl
-  | cons z t ih =>
-    -- One step of sumMBO, the induction hypothesis on both branches, then rearrange.
-    simp only [sumMBO]
-    rw [ih, ih]
-    ring
-
 theorem sumMBO_sum {ι : Type} (s : Finset ι) (f : ι → List (A × Σ j, withMBO Y j) → ℝ)
     (h : List (A × Σ j, Y j)) :
     sumMBO (fun k => ∑ i ∈ s, f i k) h = ∑ i ∈ s, sumMBO (f i) h := by
@@ -434,11 +423,11 @@ MBO is. -/
 theorem finalMBO_eq_true_iff {A : Type} {h : List (A × Σ i, withMBO Y i)}
     (hp : (h.map fun z => z.2.2.2).Pairwise (· ≤ ·)) :
     finalMBO h = true ↔ ¬ ∀ z ∈ h, z.2.2.2 = false := by
-  -- Induction from the right; only the last entry z matters.
-  induction h using List.reverseRecOn with
+  -- Only the last entry z matters: h is empty or ends with z.
+  rcases List.eq_nil_or_concat h with rfl | ⟨h, z, rfl⟩
   -- h = []: the final MBO is unset by definition, and there is no MBO.
-  | nil => simp [finalMBO]
-  | append_singleton h z ih =>
+  · simp [finalMBO]
+  · rw [List.concat_eq_append] at hp ⊢
     -- Monotonicity of h ++ [z]: every MBO in h is ≤ the MBO of z.
     simp only [List.map_append, List.map_singleton, List.pairwise_append, List.pairwise_singleton,
       List.mem_singleton, forall_eq, List.mem_map] at hp
@@ -555,7 +544,7 @@ theorem RandomSystem.compatible_fixedQueries {B : Type} [Fintype B]
   exact hp
 
 open scoped Classical in
-/-- **Winning leaves the MBO unset on the rest**: the winning probability of a deterministic
+/-- **Winning is one minus the unset mass**: the winning probability of a deterministic
 distinguisher is one minus the mass of its transcripts on which the MBO stays unset, which on
 each transcript it may produce is the mass of the game with the MBO unset. -/
 theorem RandomSystem.exists_unset_winProbability

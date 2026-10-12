@@ -427,7 +427,6 @@ theorem unsetProbability_behavior {xs : List (Σ i, X i)} (hxs : E xs) :
       rw [((DDG.replies_withMBO_iff g.1 xs ys).mp tr.replies).2 k hk', decide_eq_false_iff_not]
       exact fun hb' => hb (g.1.2.2 (List.take_prefix _ _) hb')
 
-
 include hE' in
 /-- **A bound on the condition bounds the set MBO**: if the condition holds with probability at
 most `ε` on the empty and on every admitted query sequence, the MBO stays unset with probability
