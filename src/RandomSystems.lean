@@ -32,6 +32,7 @@ import RandomSystems.Distance.Absorption
 import RandomSystems.Distance.Coupling
 import RandomSystems.Distance.Decision
 import RandomSystems.Distance.Distinguisher
+import RandomSystems.Distance.HCoefficient
 import RandomSystems.Distance.ParallelObservation
 import RandomSystems.Distance.Restriction
 import RandomSystems.Distance.Transcript

@@ -158,6 +158,21 @@ with $`D'`$ [sees the transcript law of the system itself][RandomSystem.sLaw_res
 [does not increase the distance][RandomSystem.transcriptDistance_restrict_le],
 $`\Delta(R \restriction D', S \restriction D') \le \Delta(R, S)`$.
 
+**H-coefficient bound**: under an environment $`E`$, the transcript law of $`R`$ gives each
+transcript $`h`$ that $`E`$ produces the probability $`R(h)`$, and the others zero; the restriction
+is the same for $`S`$, so a ratio of the two systems' probabilities on the good transcripts is a
+ratio of their transcript laws. For $`R`$ and $`S`$ replying at the queried label, Patarin's
+H-coefficient technique then
+[bounds the distance][RandomSystem.transcriptDistance_le_add_of_ratio_on_good] by the error
+$`\varepsilon_1`$ of the ratio and the bound $`\varepsilon_2`$ on the bad transcripts under $`S`$:
+
+```math
+(1 - \varepsilon_1)\, S(h) \le R(h) \ \text{ for } h \notin \mathrm{Bad}, \quad
+\Pr_{\mathrm{tr}(S, E, n)}[\mathrm{Bad}] \le \varepsilon_2 \ \text{ for all } E, n
+\quad \Longrightarrow \quad
+\Delta(R, S) \le \varepsilon_1 + \varepsilon_2 .
+```
+
 ### 1.5 Games
 
 A [**game**][RandomSystem.MonotoneMBO] is a random system whose replies carry a bit, the MBO,
@@ -924,6 +939,7 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [RandomSystem.restrict_restrict]: src/RandomSystems/Distance/Restriction.lean#L67
 [RandomSystem.sLaw_restrict]: src/RandomSystems/Distance/Restriction.lean#L98
 [RandomSystem.transcriptDistance_restrict_le]: src/RandomSystems/Distance/Restriction.lean#L129
+[RandomSystem.transcriptDistance_le_add_of_ratio_on_good]: src/RandomSystems/Distance/HCoefficient.lean#L40
 [MC]: src/RandomSystems/Game/DiscreteMBO.lean#L46
 [DDG]: src/RandomSystems/Game/DiscreteMBO.lean#L50
 [PDG]: src/RandomSystems/Game/DiscreteMBO.lean#L54
