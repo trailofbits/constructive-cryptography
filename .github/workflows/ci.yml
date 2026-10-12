@@ -8,9 +8,10 @@ on:
 
 permissions: {}
 
+# A new push to a pull request cancels its running check; runs on main always finish.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
@@ -28,13 +29,42 @@ jobs:
       - name: Check the sources
         run: scripts/check-sources.sh
 
-      - name: Build, failing on any warning
-        uses: leanprover/lean-action@f061402b660e0c34644504b324e830f2991d4865 # v1.6.1
-        with:
-          auto-config: "false"
-          build: "true"
-          build-args: "--wfail"
-          use-mathlib-cache: "true"
+      # A pinned release, checked against its published SHA-256.
+      - name: Install elan
+        env:
+          ELAN_VERSION: v4.2.4
+          ELAN_SHA256: 42b94d4244e8353142c456ec0e4ca6528fd898a6c604d4059f494e706e431f63
+        run: |
+          curl -sSfL -o elan.tar.gz \
+            "https://github.com/leanprover/elan/releases/download/${ELAN_VERSION}/elan-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${ELAN_SHA256}  elan.tar.gz" | sha256sum --check
+          tar -xzf elan.tar.gz
+          ./elan-init -y --default-toolchain none
+          rm elan.tar.gz elan-init
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
 
-      - name: Audit the axioms of the endpoints
+      # Runs restore the newest build of main; only pushes to main save one, so pull requests do
+      # not evict it.
+      - name: Restore the build
+        id: restore
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lake
+          key: lake-${{ runner.os }}-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}-${{ github.sha }}
+          restore-keys: lake-${{ runner.os }}-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}-
+
+      - name: Get the Mathlib cache
+        run: lake exe cache get
+
+      - name: Build, failing on any warning
+        run: lake build --wfail
+
+      - name: Save the build
+        if: github.event_name == 'push'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lake
+          key: ${{ steps.restore.outputs.cache-primary-key }}
+
+      - name: Audit the axioms of every declaration
         run: scripts/check-axioms.sh
