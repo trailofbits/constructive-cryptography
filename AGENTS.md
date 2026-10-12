@@ -233,6 +233,17 @@ globally; use `letI` or a wrapper carrier.
 - Keep executable cryptographic code and security proofs in separate layers;
   do not unfold a complete cipher or hash implementation in a security theorem.
 
+## Style
+
+- Follow Mathlib's [style guide](https://leanprover-community.github.io/contribute/style.html)
+  and [naming conventions](https://leanprover-community.github.io/contribute/naming.html),
+  except where this file says otherwise: no copyright headers, the sources' terminology for
+  public names, the documentation policy below.
+- Lines have at most 100 characters.
+- New and changed code passes Mathlib's standard linter set:
+  `lake env lean -Dweak.linter.mathlibStandardSet=true <file>` reports nothing. The set is not
+  yet enabled in the lakefile, because older code does not pass it.
+
 ## Naming and ownership
 
 - Do not mark a declaration `private` unless that exact exception was approved.
@@ -275,16 +286,19 @@ its library root.
 ## Verification
 
 ```bash
-lake build
-rg -n '\bsorry\b|\badmit\b|^\s*axiom\b' src
-rg -n 'maxHeartbeats|maxRecDepth|native_decide|bv_decide|decide \+native' src
+scripts/check-sources.sh
+lake build --wfail
+scripts/check-axioms.sh
 git diff --check
 ```
 
-The audit files `src/Tests/Axioms/Systems.lean`, `src/Tests/Axioms/CC.lean`,
-`src/Tests/Axioms/Commons.lean`, `src/Tests/DSL/Axioms.lean`,
-`src/Tests/Substitution/Axioms.lean` and `src/Tests/AuthenticatedEncryption.lean` print the
-axioms of the important endpoints (`lake env lean <file>`). The accepted envelope is `propext`,
-`Classical.choice` and `Quot.sound`; any other axiom, including `sorryAx`, is a
-failure. For changes to public declarations used downstream, also build
-`chachapoly-cc`.
+`scripts/check-sources.sh` rejects axiom declarations, native evaluation (`native_decide`,
+`bv_decide`), `implemented_by`/`extern` bindings and heartbeat or recursion-depth overrides.
+`lake build --wfail` fails on any warning, including `declaration uses 'sorry'`.
+`scripts/check-axioms.sh` runs every file under `src/Tests` that prints axioms
+(`#print axioms`) and checks the envelope: `propext`, `Classical.choice` and `Quot.sound`;
+any other axiom, including `sorryAx`, is a failure. CI (`.github/workflows/ci.yml`) runs these
+three on every pull request and on `main`, and `.github/workflows/zizmor.yml` audits the
+workflows with zizmor. Actions are pinned to commit hashes, which Dependabot updates.
+
+For changes to public declarations used downstream, also build `chachapoly-cc`.
