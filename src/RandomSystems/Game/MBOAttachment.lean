@@ -819,7 +819,7 @@ theorem attach_tags_invariant {c : InsideOutsideSystem O J U (withMBO V) X (with
             (y := ⟨some (), ⟨j, r⟩⟩) (x := ⟨none, ⟨⟨some (), j⟩, r⟩⟩) rfl hd') ▸ hx
           exact ⟨ys', j, r, rfl, Part.mem_some_iff.mp hx'⟩
     -- Step 3, for a new input `cx` whose MBO, if any, is ≥ all MBOs received by `c`.
-    -- The latest inside MBO never decreases.
+    -- On such an input the latest inside MBO does not decrease.
     have hlatest : ∀ cx, (∀ b, inputMBO cx = some b →
         ((restrict none xs).filterMap inputMBO ++ [b]).Pairwise (· ≤ ·)) →
         latestMBO (restrict none xs) ≤ latestMBO (restrict none xs ++ [cx]) := by
@@ -2063,6 +2063,8 @@ variable {O J : Type} [Fintype O] [Fintype J] {U V : O → Type} {X Y : J → Ty
   (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
 
 omit [Fintype J] [∀ j, Fintype (X j)] [∀ j, Fintype (Y j)] in
+/-- Equal distinguishers have equal decision probabilities, whatever the proofs that they are
+distinguishers. -/
 theorem RandomSystem.decisionProbability_congr {I : Type} [Fintype I] {X' Y' : I → Type}
     [∀ i, Fintype (X' i)] [∀ i, Fintype (Y' i)] {𝒟 : Domain (Σ i, X' i) (Σ i, Y' i)}
     (R : RandomSystem (Σ i, X' i) (Σ i, Y' i) 𝒟) {D₁ D₂ : DDD I X' Y'} (he : D₁ = D₂)
