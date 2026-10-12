@@ -150,6 +150,9 @@ parallel composition, distance and games, and the counterexamples, depend only o
 #print axioms SystemAlgebra.Domain.Distinguisher.exists_absorbAll
 #print axioms SystemAlgebra.Domain.Distinguisher.exists_absorbRight
 
+-- RandomSystems.Distance.HCoefficient
+#print axioms SystemAlgebra.RandomSystem.transcriptDistance_le_add_of_ratio_on_good
+
 -- RandomSystems.Distance.ParallelObservation
 #print axioms SystemAlgebra.Domain.DecisionCompatible.absorbRight
 #print axioms SystemAlgebra.RandomSystem.decisionProbability_parallel
