@@ -223,50 +223,81 @@ theorem tSupp_possible : ∀ {m h}, h ∈ tSupp R σ m → R h ≠ 0 := by
     · have he : h = p := Finset.mem_singleton.mp hh
       exact he ▸ ih hp
 
-theorem sum_tSupp (hC : Compatible R σ) : ∀ m, ∑ h ∈ tSupp R σ m, (if Good σ m h then R h else 0) = 1 := by
+/-- **One more round**: a sum over the transcripts of `σ` within `m + 1` rounds is the sum, over
+the transcripts within `m` rounds, of the sum over their extensions by the possible replies to
+the next query of `σ`, or of the transcript itself when `σ` has stopped. -/
+theorem sum_tSupp_succ (f : List (A × B) → ℝ) (m : ℕ) :
+    ∑ h ∈ tSupp R σ (m + 1), f h = ∑ h ∈ tSupp R σ m,
+      if hd : (σ (h.map Prod.snd)).Dom then
+        ∑ y ∈ (R.extensionLaw h ((σ (h.map Prod.snd)).get hd)).support,
+          f (h ++ [((σ (h.map Prod.snd)).get hd, y)])
+      else f h := by
+  -- The transcripts within m + 1 rounds are the union, over the transcripts h within m rounds,
+  -- of the extensions of h by one round, or of h itself; the union is disjoint.
+  rw [tSupp, Finset.sum_biUnion]
+  · refine Finset.sum_congr rfl fun h _ => ?_
+    split_ifs with hd
+    -- Distinct replies give distinct extensions.
+    · exact Finset.sum_image fun y _ y' _ e => by simpa using e
+    · exact Finset.sum_singleton _ _
+  -- Disjointness. A transcript within m rounds has at most m rounds, and exactly m when σ asks
+  -- a further query; so an extension by one round has m + 1 rounds and a kept transcript at most
+  -- m, and a transcript is determined by any extension of it by one round.
+  · intro h hh h' hh' hne
+    rw [Function.onFun, Finset.disjoint_left]
+    intro g hg hg'
+    have hlen : ∀ p ∈ tSupp R σ m,
+        p.length ≤ m ∧ ((σ (p.map Prod.snd)).Dom → p.length = m) := by
+      intro p hp
+      rcases (tSupp_good hp).2 with hl | ⟨hl, hs⟩
+      · exact ⟨hl.le, fun _ => hl⟩
+      · exact ⟨hl.le, fun hd => absurd hd hs⟩
+    split_ifs at hg hg' with e1 e2 e2
+    -- Both extended: the extensions agree, so do the transcripts.
+    · obtain ⟨y, -, rfl⟩ := Finset.mem_image.mp hg
+      obtain ⟨y', -, e⟩ := Finset.mem_image.mp hg'
+      exact hne (List.append_inj' e rfl).1.symm
+    -- One extended, one kept: m + 1 rounds against at most m.
+    · obtain ⟨y, -, rfl⟩ := Finset.mem_image.mp hg
+      have hl := congrArg List.length (Finset.mem_singleton.mp hg')
+      simp only [List.length_append, List.length_singleton] at hl
+      have := (hlen h hh).2 e1
+      have := (hlen h' hh').1
+      omega
+    · obtain ⟨y', -, e⟩ := Finset.mem_image.mp hg'
+      have hl := congrArg List.length (e.trans (Finset.mem_singleton.mp hg))
+      simp only [List.length_append, List.length_singleton] at hl
+      have := (hlen h' hh').2 e2
+      have := (hlen h hh).1
+      omega
+    -- Both kept: both are the transcript g.
+    · exact hne ((Finset.mem_singleton.mp hg).symm.trans (Finset.mem_singleton.mp hg'))
+
+theorem sum_tSupp (hC : Compatible R σ) :
+    ∀ m, ∑ h ∈ tSupp R σ m, (if Good σ m h then R h else 0) = 1 := by
   intro m
   induction m with
   | zero => simp [tSupp, Good, Done, cons_nil, R.mass_nil]
   | succ m ih =>
-    rw [tSupp, Finset.sum_biUnion]
-    · rw [← ih]
-      refine Finset.sum_congr rfl fun h hh => ?_
-      obtain ⟨hc, hd'⟩ := tSupp_good hh
-      rw [if_pos ⟨hc, hd'⟩]
-      split_ifs with hd
-      · rw [Finset.sum_image (fun y _ y' _ e => by simpa using e)]
-        rw [← sum_extension R h ((σ (h.map Prod.snd)).get hd)
-          (hC h _ hc (tSupp_possible hh) (Part.get_mem hd))]
-        refine Finset.sum_congr rfl fun y _ => ?_
-        have hl : h.length = m := by
-          rcases hd' with h | ⟨_, h⟩
-          · exact h
-          · exact absurd hd h
-        rw [if_pos ⟨cons_snoc.mpr ⟨hc, Part.get_mem hd⟩, Or.inl (by simp [hl])⟩]
-      · rw [Finset.sum_singleton,
-          if_pos ⟨hc, Or.inr ⟨by rcases hd' with h | ⟨h, _⟩ <;> omega, hd⟩⟩]
-    · intro h hh h' hh' hne
-      simp only [Function.onFun]
-      rw [Finset.disjoint_left]
-      intro g hg hg'
-      obtain ⟨hc, hd⟩ := tSupp_good (m := m) hh
-      obtain ⟨hc', hd'⟩ := tSupp_good (m := m) hh'
-      split_ifs at hg hg' with e1 e2 e2
-      · obtain ⟨y, -, rfl⟩ := Finset.mem_image.mp hg
-        obtain ⟨y', -, e⟩ := Finset.mem_image.mp hg'
-        exact hne (List.append_inj' e rfl).1.symm
-      · obtain ⟨y, -, rfl⟩ := Finset.mem_image.mp hg
-        rw [Finset.mem_singleton] at hg'
-        have hl : h.length = m := by rcases hd with h | ⟨_, h⟩; exact h; exact absurd e1 h
-        have := congrArg List.length hg'
-        rcases hd' with h | ⟨h, _⟩ <;> simp at this <;> omega
-      · obtain ⟨y', -, e⟩ := Finset.mem_image.mp hg'
-        rw [Finset.mem_singleton] at hg
-        have hl : h'.length = m := by rcases hd' with h | ⟨_, h⟩; exact h; exact absurd e2 h
-        have := congrArg List.length (e.trans hg)
-        rcases hd with h | ⟨h, _⟩ <;> simp at this <;> omega
-      · rw [Finset.mem_singleton] at hg hg'
-        exact hne (hg.symm.trans hg')
+    -- One more round: each transcript h within m rounds keeps its probability, spread over its
+    -- extensions when σ asks a further query.
+    rw [sum_tSupp_succ, ← ih]
+    refine Finset.sum_congr rfl fun h hh => ?_
+    obtain ⟨hc, hd'⟩ := tSupp_good hh
+    rw [if_pos (show Good σ m h from ⟨hc, hd'⟩)]
+    by_cases hd : (σ (h.map Prod.snd)).Dom
+    -- σ asks x after h, admitted by compatibility: the possible replies to x weigh R h, and each
+    -- extension of h has m + 1 rounds.
+    · rw [dif_pos hd, ← sum_extension R h ((σ (h.map Prod.snd)).get hd)
+        (hC h _ hc (tSupp_possible hh) (Part.get_mem hd))]
+      have hl : h.length = m := by
+        rcases hd' with hl | ⟨_, hs⟩
+        · exact hl
+        · exact absurd hd hs
+      refine Finset.sum_congr rfl fun y _ => ?_
+      rw [if_pos ⟨cons_snoc.mpr ⟨hc, Part.get_mem hd⟩, Or.inl (by simp [hl])⟩]
+    -- σ has stopped: h is complete within m + 1 rounds too.
+    · rw [dif_neg hd, if_pos ⟨hc, Or.inr ⟨by rcases hd' with hl | ⟨hl, _⟩ <;> omega, hd⟩⟩]
 
 /-- **The transcript law is a probability distribution.** -/
 theorem sLaw_isProbDist (hC : Compatible R σ) (n : ℕ) : (sLaw R σ n).isProbDist := by

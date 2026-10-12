@@ -220,6 +220,36 @@ G\big(x^n, (y, 0)^n\big) = H\big(x^n, (y, 0)^n\big)
 \mathrm{Adv}_P(G^-, H^-) \le \Pr[P \text{ wins } G] = \Pr[P \text{ wins } H] .
 ```
 
+**Identical until bad** is proved in two layers. At the systems level, two random systems $`R_1`$
+and $`R_2`$ have transcript probabilities that both lie above a common part $`g`$ with
+$`g([]) = 1`$. A step from a possible transcript $`h`$ by an admitted query $`x`$ loses
+$`g(h) - \sum_y g(h, x, y)`$ of the common part. If each step loses at most
+$`\beta(h, x)\, R_1(h)`$, and the [cost][transcriptCost] of each possible transcript, the sum of
+$`\beta`$ over its steps, is at most $`\varepsilon`$, then by the union bound over the steps every
+compatible environment [stays in the common part][RandomSystem.one_sub_le_sum_tSupp] with
+probability at least $`1 - \varepsilon`$, and the two systems are
+[within][RandomSystem.transcriptDistance_le_of_transcriptCost_le] $`\varepsilon`$ of each other:
+
+```math
+g(h) - \sum_y g(h, x, y) \le \beta(h, x)\, R_1(h), \qquad
+\sum_{k < |h|} \beta(h_1 \cdots h_k,\ x_{k+1}) \le \varepsilon
+\quad \Longrightarrow \quad
+\Delta(R_1, R_2) \le \varepsilon .
+```
+
+Games are on top of this. On a game $`G`$, the part with every MBO unset lies below the visible
+system, and a step loses from it the probability that $`G`$ sets the MBO at that step. Suppose
+that, from every transcript with every MBO unset, $`G`$ sets the MBO at the next query $`x`$ with
+probability at most $`\beta(h, x)`$ times the probability of the transcript. The mass missing from
+the unset part along the transcripts of a winner is the winning probability, so every winner
+[wins with probability at most][Domain.Distinguisher.winProbability_le_of_transcriptCost_le]
+$`\varepsilon`$. Two games equivalent as games have the same unset part, which is therefore a
+common part of their visible systems, and the per-step costs bound its missing mass: the visible
+systems are [within][RandomSystem.GameEquivalent.transcriptDistance_visible_le] $`\varepsilon`$ of
+each other. Two discrete games are equivalent as games when they are
+[coupled][PDG.gameEquivalent_behavior_of_isCoupling]: a joint law of the two [1, Theorem 2] whose
+pairs have one condition and systems that answer alike while the condition does not hold.
+
 **Attachment**: the library defines the action of a PDC $`\alpha`$ on a game by its
 [MBO-forwarding lift][PDCBehavior.liftMBO] $`\hat\alpha`$: the lift runs $`\alpha`$, which does not see
 the inside MBOs, and gives each outside reply the MBO of the latest inside reply. CR18 states this
@@ -888,8 +918,8 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [RandomSystem.ofPDSClass_bijective]: src/RandomSystems/Cumulative/Presentation.lean#L312
 [RandomSystem.sLaw]: src/RandomSystems/Cumulative/CumulativeObservation.lean#L179
 [RandomSystem.Compatible]: src/RandomSystems/Cumulative/CumulativeObservation.lean#L197
-[RandomSystem.eq_iff_sLaw]: src/RandomSystems/Cumulative/CumulativeObservation.lean#L503
-[RandomSystem.eq_iff_sLaw_fixedQueries]: src/RandomSystems/Cumulative/CumulativeObservation.lean#L517
+[RandomSystem.eq_iff_sLaw]: src/RandomSystems/Cumulative/CumulativeObservation.lean#L534
+[RandomSystem.eq_iff_sLaw_fixedQueries]: src/RandomSystems/Cumulative/CumulativeObservation.lean#L548
 [RandomSystem.mix]: src/RandomSystems/Cumulative/CumulativeOperations.lean#L45
 [RandomSystem.parallel]: src/RandomSystems/Cumulative/CumulativeOperations.lean#L130
 [IsDDC]: src/RandomSystems/DDC/DDC.lean#L127
@@ -960,16 +990,22 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [PDG]: src/RandomSystems/Game/DiscreteMBO.lean#L54
 [PDG.ofFunction]: src/RandomSystems/Game/FunctionGame.lean#L37
 [RandomSystem.MonotoneMBO]: src/RandomSystems/Game/MBO.lean#L305
-[RandomSystem.visible]: src/RandomSystems/Game/MBO.lean#L314
-[DDE.blindMBO]: src/RandomSystems/Game/MBO.lean#L407
-[RandomSystem.winProbability]: src/RandomSystems/Game/MBO.lean#L477
-[RandomSystem.ConditionallyEquivalent]: src/RandomSystems/Game/MBO.lean#L520
-[Domain.Distinguisher.advantage_le_winProbability]: src/RandomSystems/Game/MBO.lean#L753
-[Domain.Distinguisher.winProbability_le_of_unsetProbability]: src/RandomSystems/Game/MBO.lean#L948
-[RandomSystem.transcriptDistance_visible_le_of_unsetProbability]: src/RandomSystems/Game/MBO.lean#L973
-[RandomSystem.GameEquivalent]: src/RandomSystems/Game/MBO.lean#L534
-[Domain.Distinguisher.winProbability_eq_of_gameEquivalent]: src/RandomSystems/Game/MBO.lean#L857
-[Domain.Distinguisher.advantage_le_winProbability_of_gameEquivalent]: src/RandomSystems/Game/MBO.lean#L871
+[RandomSystem.visible]: src/RandomSystems/Game/MBO.lean#L340
+[DDE.blindMBO]: src/RandomSystems/Game/MBO.lean#L410
+[RandomSystem.winProbability]: src/RandomSystems/Game/MBO.lean#L480
+[RandomSystem.ConditionallyEquivalent]: src/RandomSystems/Game/MBO.lean#L523
+[Domain.Distinguisher.advantage_le_winProbability]: src/RandomSystems/Game/MBO.lean#L756
+[Domain.Distinguisher.winProbability_le_of_unsetProbability]: src/RandomSystems/Game/MBO.lean#L951
+[RandomSystem.transcriptDistance_visible_le_of_unsetProbability]: src/RandomSystems/Game/MBO.lean#L976
+[RandomSystem.GameEquivalent]: src/RandomSystems/Game/MBO.lean#L537
+[Domain.Distinguisher.winProbability_eq_of_gameEquivalent]: src/RandomSystems/Game/MBO.lean#L860
+[Domain.Distinguisher.advantage_le_winProbability_of_gameEquivalent]: src/RandomSystems/Game/MBO.lean#L874
+[transcriptCost]: src/RandomSystems/Distance/UntilBad.lean#L38
+[RandomSystem.one_sub_le_sum_tSupp]: src/RandomSystems/Distance/UntilBad.lean#L65
+[RandomSystem.transcriptDistance_le_of_transcriptCost_le]: src/RandomSystems/Distance/UntilBad.lean#L146
+[Domain.Distinguisher.winProbability_le_of_transcriptCost_le]: src/RandomSystems/Game/UntilBad.lean#L148
+[RandomSystem.GameEquivalent.transcriptDistance_visible_le]: src/RandomSystems/Game/UntilBad.lean#L177
+[PDG.gameEquivalent_behavior_of_isCoupling]: src/RandomSystems/Game/UntilBad.lean#L209
 [PDCBehavior.liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L455
 [PDCBehavior.liftMBO_id]: src/RandomSystems/Game/MBOAttachment.lean#L495
 [PDCBehavior.liftMBO_comp]: src/RandomSystems/Game/MBOAttachment.lean#L1515
@@ -1247,10 +1283,10 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [not_supAgreement_disagreement_le_every_pair]: src/Probability/MultiCoupling.lean#L778
 [supAgreement]: src/Probability/MultiCoupling.lean#L87
 [supAgreement_eq_weight_overlapDist]: src/Probability/MultiCoupling.lean#L397
-[Distribution]: src/Probability/Distribution.lean#L55
-[ProbDist]: src/Probability/Distribution.lean#L148
-[isProbDist]: src/Probability/Distribution.lean#L127
-[mass]: src/Probability/Distribution.lean#L216
+[Distribution]: src/Probability/Distribution.lean#L56
+[ProbDist]: src/Probability/Distribution.lean#L149
+[isProbDist]: src/Probability/Distribution.lean#L128
+[mass]: src/Probability/Distribution.lean#L217
 [fTransform]: src/Probability/Distribution.lean#L587
 [prod]: src/Probability/Distribution.lean#L942
 [pi]: src/Probability/Distribution.lean#L1583

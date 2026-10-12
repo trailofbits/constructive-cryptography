@@ -168,6 +168,10 @@ parallel composition, distance and games, and the counterexamples, depend only o
 #print axioms SystemAlgebra.envProbe_isDDD
 #print axioms SystemAlgebra.ddeOf_bounded
 
+-- RandomSystems.Distance.UntilBad
+#print axioms SystemAlgebra.RandomSystem.one_sub_le_sum_tSupp
+#print axioms SystemAlgebra.RandomSystem.transcriptDistance_le_of_transcriptCost_le
+
 -- RandomSystems.Game.DiscreteMBO
 #print axioms SystemAlgebra.PDG.visible_behavior
 #print axioms SystemAlgebra.PDG.monotoneMBO_behavior
@@ -197,6 +201,11 @@ parallel composition, distance and games, and the counterexamples, depend only o
 #print axioms SystemAlgebra.RandomSystem.winProbability_attach_liftMBO
 #print axioms SystemAlgebra.Domain.Distinguisher.exists_absorbAll_winProbability
 #print axioms SystemAlgebra.Domain.SolverBehavior.absorb
+
+-- RandomSystems.Game.UntilBad
+#print axioms SystemAlgebra.Domain.Distinguisher.winProbability_le_of_transcriptCost_le
+#print axioms SystemAlgebra.RandomSystem.GameEquivalent.transcriptDistance_visible_le
+#print axioms SystemAlgebra.PDG.gameEquivalent_behavior_of_isCoupling
 
 -- RandomSystems.PDS.Function
 #print axioms SystemAlgebra.DDS.ofFunction
