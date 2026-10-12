@@ -54,6 +54,8 @@ of `R`. -/
 noncomputable def ofPDG (G : PDG (Σ i, A.X i) (Σ i, A.Y i) A.inputDomain) (hG : G.isProbDist)
     {R : Resource A} (visible : R.1 = PDS.behavior G.underlying (PDG.underlying_probability hG)) :
     Game A :=
+  -- The random system is the behavior of `G` with the MBO. It replies at the queried interface
+  -- because its visible system, `R`, does, and its MBO once set stays set.
   ⟨⟨G.behavior hG, PDG.repliesAtQueriedInterface_behavior hG (visible ▸ R.2)⟩,
     PDG.monotoneMBO_behavior hG⟩
 
@@ -62,6 +64,8 @@ visible systems present. -/
 theorem visible_ofPDG (G : PDG (Σ i, A.X i) (Σ i, A.Y i) A.inputDomain) (hG : G.isProbDist)
     {R : Resource A} (visible : R.1 = PDS.behavior G.underlying (PDG.underlying_probability hG)) :
     DistinctionGames.visible (ofPDG G hG visible) = R :=
+  -- The visible system of the behavior of `G` is the behavior of its visible systems
+  -- (`PDG.visible_behavior`), which is `R`.
   Subtype.ext ((PDG.visible_behavior hG).trans visible.symm)
 
 /-- The game a probabilistic discrete game presents is conditionally equivalent to a resource
@@ -71,6 +75,8 @@ theorem conditionallyEquivalent_ofPDG_iff (G : PDG (Σ i, A.X i) (Σ i, A.Y i) A
     (hG : G.isProbDist) {R : Resource A}
     (visible : R.1 = PDS.behavior G.underlying (PDG.underlying_probability hG)) (S : Resource A) :
     ofPDG G hG visible |≡ S ↔ (G.behavior hG).ConditionallyEquivalent S.1 :=
+  -- The field `ConditionallyEquivalent` of `DistinctionGames` on interfaces is the
+  -- systems-level `RandomSystem.ConditionallyEquivalent`, so both sides agree by definition.
   Iff.rfl
 
 end Game
@@ -85,8 +91,15 @@ theorem game_dist_le {A : Interface}
     (equiv : Game.ofPDG G hG visible |≡ S) {ε : ℝ}
     (hbad : ∀ xs, xs = [] ∨ A.domain xs → G.badProbability xs ≤ ε) :
     Δ R S ≤ ENNReal.ofReal ε := by
+  --   Δ(R, S) = Δ((ofPDG G)⁻, S)   (`R` is the visible resource of the presented game)
+  --           ≤ ε                 (`ofPDG G |≡ S`, MBO unset with probability ≥ 1 - ε)
+  --
+  -- The bound on the condition gives the bound on the unset MBO on the queries of each
+  -- transcript of `S` (`PDG.one_sub_le_unsetProbability_behavior`); `dist_visible_le` then
+  -- bounds the distance of the visible resource.
   have bound := dist_visible_le equiv
     (PDG.one_sub_le_unsetProbability_behavior hG A.nonempty_prefix hbad)
+  -- The visible resource of the presented game is `R`.
   rwa [Game.visible_ofPDG] at bound
 
 /-- **The resource sampling a single-label function** is the behavior of the visible systems of
@@ -101,11 +114,17 @@ theorem Resource.sample_ofFunction_eq_behavior {I K X Y : Type} [Unique I] [Fint
       PDS.behavior (PDG.ofSingleFunction D hD bound hb P f bad).underlying
         (PDG.underlying_probability (PDG.ofFunction_isProbDist D hD bound hb
           (Distribution.IsProbability.isProbDist P) _ _)) := by
+  -- Compare the two random systems transcript by transcript.
   apply RandomSystem.ext
   intro h
+  -- The resource sampling the function gives `h` the probability that the DDS answering with
+  -- the sampled function replies with `h`.
   rw [Resource.sample_ofFunction_mass]
   change _ = behaviorMass _ _ _
+  -- The visible systems of the sampled-function game are the sampled function
+  -- (`PDG.ofFunction_underlying`), with its answers tagged with the single label.
   rw [PDG.ofSingleFunction, PDG.ofFunction_underlying]
+  -- Both sides are the probability, over `k ∼ P`, that the DDS of `f k` replies with `h`.
   simp only [behaviorMass, PDS.ofFunction, Distribution.mass_fTransform]
 
 /-- **The game of a single-label sampled function** with a hidden condition: the game it presents
@@ -137,33 +156,56 @@ theorem ofSingleFunction_conditionallyEquivalent {I K X Y : Type} [Unique I] [Fi
     Game.ofSingleFunction D hD bound hb P f bad |≡
       Resource.sample (A := ⟨I, fun _ => X, fun _ => Y, D, hD, bound, hb⟩)
         Q (fun g => Resource.ofFunction (fun _ => g)) := by
+  -- Plan:
+  --   1. Reduce to conditional equivalence of the game on random systems.
+  --   2. Apply the systems-level `PDG.ofFunction_conditionallyEquivalent` with the ideal law
+  --      `taggedLaw` (`Q`, its answers tagged with the single label); its factorization
+  --      hypothesis follows from `factor`.
+  --   3. Identify the ideal random system of step 2 with the resource sampling `Q`.
+  --
+  -- Step 1: the field `ConditionallyEquivalent` is that of the game's random system.
   refine (Game.conditionallyEquivalent_ofPDG_iff _ _
     (Resource.sample_ofFunction_eq_behavior D hD bound hb P f bad) _).mpr ?_
   unfold PDG.ofSingleFunction
+  -- Step 2: a function `X → Y` as a function on the single interface, and the ideal law.
   let tagged := fun g : X → Y => fun x : Σ _ : I, X => (⟨x.1, g x.2⟩ : Σ _ : I, Y)
   let taggedLaw := Distribution.fTransform tagged Q
   have hQ := Distribution.IsProbability.isProbDist taggedLaw
   have hP := Distribution.IsProbability.isProbDist P
+  -- The sampled-function game, its condition read on the values of the queries, is
+  -- conditionally equivalent to the function sampled from `taggedLaw`.
   have equiv := PDG.ofFunction_conditionallyEquivalent D hD bound hb P (fun k => tagged (f k))
     (fun k => ⟨fun xs => (bad k).1 (xs.map Sigma.snd),
       fun {_ _} hp => (bad k).2 (hp.map Sigma.snd)⟩)
     (hG := by exact PDG.ofFunction_isProbDist D hD bound hb hP _ _) taggedLaw hQ (by
+      -- The factorization on a fixed query sequence `xs`, with `xs' = xs.map Sigma.snd`:
+      --
+      --   P[f k = answers on xs' ∧ ¬ bad k xs']
+      --     = Q[g = answers on xs'] · P[¬ bad k xs']           (`factor`)
+      --     = (1 - P[bad k xs']) · Q[g = answers on xs']       (complement, commute)
       intro xs answers
+      -- The mass of `taggedLaw` is the `Q`-mass of the tagged event.
       dsimp only [taggedLaw]
       rw [Distribution.mass_fTransform]
+      -- At the single label, a tagged reply equals an answer exactly when its value does.
       simp only [tagged, single_interface_answers_iff]
       have he := factor (xs.map Sigma.snd) (fun x => (answers ⟨default, x⟩).2)
+      -- P[bad] + P[¬ bad] = 1, since `P` is a probability distribution.
       have complement := Distribution.mass_add_compl P
         (fun k => (bad k).1 (xs.map Sigma.snd))
       rw [Distribution.IsProbability.weight_eq_one (X := P)] at complement
       have good : P.mass (fun k => ¬ (bad k).1 (xs.map Sigma.snd)) =
           1 - P.mass (fun k => (bad k).1 (xs.map Sigma.snd)) := by linarith
+      -- Rewrite `factor` into the required form.
       rw [good, mul_comm] at he
       exact he)
+  -- Step 3: on each transcript `h`, the game sides agree by definition; it remains to show
+  -- that the resource sampling `Q` is the behavior of the PDS sampling from `taggedLaw`.
   intro h
   convert equiv h using 2
   rw [Resource.sample_ofFunction_mass]
   change _ = behaviorMass _ _ _
+  -- Both are the `Q`-probability that the DDS of the tagged function replies with `h`.
   simp only [behaviorMass, PDS.ofFunction, taggedLaw, Distribution.mass_fTransform]
   rfl
 
@@ -181,9 +223,14 @@ theorem game_dist_ofSingleFunction_le {I K X Y : Type}
     (visible : R = Resource.sample P (fun k => Resource.ofFunction (fun _ => f k))) {ε : ℝ}
     (hbad : ∀ xs, xs = [] ∨ D xs → P.mass (fun k => (bad k).1 (xs.map Sigma.snd)) ≤ ε) :
     Δ R S ≤ ENNReal.ofReal ε := by
+  -- `R` is the resource sampling the function.
   subst visible
+  -- The distance bound for a presented game: `R` is presented by the visible systems of the
+  -- sampled-function game, which is conditionally equivalent to `S`.
   refine game_dist_le (Resource.sample_ofFunction_eq_behavior D hD bound hb P f bad) equiv
     fun xs hxs => ?_
+  -- The condition holds on `xs` with the `P`-probability of a key whose condition holds on
+  -- the values of `xs`, which `hbad` bounds by `ε`.
   rw [PDG.ofSingleFunction, PDG.ofFunction_badProbability]
   exact hbad xs hxs
 
