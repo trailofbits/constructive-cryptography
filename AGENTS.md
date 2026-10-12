@@ -292,13 +292,18 @@ scripts/check-axioms.sh
 git diff --check
 ```
 
-`scripts/check-sources.sh` rejects axiom declarations, native evaluation (`native_decide`,
-`bv_decide`), `implemented_by`/`extern` bindings and heartbeat or recursion-depth overrides.
-`lake build --wfail` fails on any warning, including `declaration uses 'sorry'`.
-`scripts/check-axioms.sh` runs every file under `src/Tests` that prints axioms
-(`#print axioms`) and checks the envelope: `propext`, `Classical.choice` and `Quot.sound`;
-any other axiom, including `sorryAx`, is a failure. CI (`.github/workflows/ci.yml`) runs these
+`scripts/check-sources.sh` is a quick first check: it rejects axiom declarations, native
+evaluation (`native_decide`, `bv_decide`, `native := true`), `implemented_by`, `extern` and
+`csimp`, options that switch off kernel or `sorry` checks, and heartbeat or recursion-depth
+overrides, in code, comments and docstrings alike. `lake build --wfail` fails on any warning,
+including `declaration uses 'sorry'`. `scripts/check-axioms.sh` is the complete audit: it imports
+every module under `src` and checks that every declaration stays within `propext`,
+`Classical.choice` and `Quot.sound`, however a `sorry`, native evaluation or axiom is written.
+The only exemptions, listed in `scripts/AxiomAudit.lean`, are DSL diagnostics that check an
+elaboration error and so contain `sorryAx`. The `#print axioms` lines under `src/Tests` document
+the main results; the audit does not depend on them. CI (`.github/workflows/ci.yml`) runs these
 three on every pull request and on `main`, and `.github/workflows/zizmor.yml` audits the
-workflows with zizmor. Actions are pinned to commit hashes, which Dependabot updates.
+workflows with zizmor. Actions are pinned to commit hashes, which Dependabot updates; elan is
+pinned to a release and its SHA-256 in `ci.yml`, which is updated by hand.
 
 For changes to public declarations used downstream, also build `chachapoly-cc`.
