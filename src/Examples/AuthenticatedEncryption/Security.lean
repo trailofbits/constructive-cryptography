@@ -36,7 +36,7 @@ open CategoryTheory
 open Commons
 open ConstructiveCryptography ConstructiveCryptography.CryptographicAlgebra
 open SystemAlgebra SystemAlgebra.Interface
-open scoped SystemAlgebra
+open scoped SystemAlgebra NNReal
 
 namespace AuthenticatedEncryption
 
@@ -60,7 +60,7 @@ theorem ae_of_ind_cca_int_ptxt [AdmissibleDistinguishers]
     AE.Secure scheme fun D =>
       εptxt D + εcca (absorb ρ^ptxt D) + εptxt (absorb (ρ^ptxt ≫ ρ^cca) D) +
         εcca (absorb (ρ^ptxt ≫ ρ^cca ≫ ρ^ptxt) D) +
-        ENNReal.ofReal ((q .enc : ℝ) ^ 2 / Fintype.card M) := by
+        ((q .enc) ^ 2 / Fintype.card M : ℝ≥0) := by
   cc_calc mixed (distinguisherAdvantage AdmissibleDistinguishers.admissible) using
       (fun D _ R S => distinguisherAdvantage_le_distance _ D R S)
     ⟦E_k, D_k⟧ ≃[εptxt] ρ^ptxt • ⟦E_k, D_k⟧ := ptxt
@@ -71,7 +71,7 @@ theorem ae_of_ind_cca_int_ptxt [AdmissibleDistinguishers]
     _ ≃[εcca ∘ absorb (ρ^ptxt ≫ ρ^cca ≫ ρ^ptxt)]
         ρ^ptxt • ρ^cca • ρ^ptxt • ρ^cca • ⟦E_k, D_k⟧ :=
       AdmissibleDistinguishers.substitutesWithin_context (ρ^ptxt ≫ ρ^cca ≫ ρ^ptxt) cca
-    _ ≈[ENNReal.ofReal ((q .enc : ℝ) ^ 2 / Fintype.card M)] ⟦E$_k, D^⊥⟧ :=
+    _ ≈[((q .enc) ^ 2 / Fintype.card M : ℝ≥0)] ⟦E$_k, D^⊥⟧ :=
       hybrid_ideal_distance_le scheme q
 
 /-- The two assumptions of the implication. -/
@@ -124,7 +124,7 @@ theorem real_ideal_distance_le :
     Δ ⟦E_k, D_k⟧ ⟦E$_k, D^⊥⟧ ≤
       Δ ⟦E_k, D_k⟧ (ρ^ptxt • ⟦E_k, D_k⟧) + Δ ⟦E_k, D_k⟧ (ρ^cca • ⟦E_k, D_k⟧) +
         Δ ⟦E_k, D_k⟧ (ρ^ptxt • ⟦E_k, D_k⟧) + Δ ⟦E_k, D_k⟧ (ρ^cca • ⟦E_k, D_k⟧) +
-        ENNReal.ofReal ((q .enc : ℝ) ^ 2 / Fintype.card M) := by
+        ((q .enc) ^ 2 / Fintype.card M : ℝ≥0) := by
   cc_calc statistical
     ⟦E_k, D_k⟧ ≈[Δ ⟦E_k, D_k⟧ (ρ^ptxt • ⟦E_k, D_k⟧)] ρ^ptxt • ⟦E_k, D_k⟧ := le_rfl
     _ ≈[Δ ⟦E_k, D_k⟧ (ρ^cca • ⟦E_k, D_k⟧)] ρ^ptxt • ρ^cca • ⟦E_k, D_k⟧ :=
@@ -134,7 +134,7 @@ theorem real_ideal_distance_le :
     _ ≈[Δ ⟦E_k, D_k⟧ (ρ^cca • ⟦E_k, D_k⟧)] ρ^ptxt • ρ^cca • ρ^ptxt • ρ^cca • ⟦E_k, D_k⟧ :=
       ((distance_attach_le _ _ _).trans (distance_attach_le _ _ _)).trans
         (distance_attach_le _ _ _)
-    _ ≈[ENNReal.ofReal ((q .enc : ℝ) ^ 2 / Fintype.card M)] ⟦E$_k, D^⊥⟧ :=
+    _ ≈[((q .enc) ^ 2 / Fintype.card M : ℝ≥0)] ⟦E$_k, D^⊥⟧ :=
       hybrid_ideal_distance_le scheme q
 
 end AuthenticatedEncryption

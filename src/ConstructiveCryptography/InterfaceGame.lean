@@ -46,6 +46,7 @@ probability that its MBO is set on fixed queries (CR18, Theorem 4.17), through
 namespace SystemAlgebra.Interface
 
 open CategoryTheory ConstructiveCryptography
+open scoped NNReal
 
 /-- The interface of `A` with the MBO: its replies carry the MBO. -/
 abbrev withMBO (A : Interface) : Interface where
@@ -208,9 +209,9 @@ Theorem 4.17): a game on an interface conditionally equivalent to a resource `T`
 unset with probability at least `1 - ε` on the queries of each transcript of `T`, has its
 visible resource within `ε` of `T`. -/
 theorem dist_visible_le {A : Interface} {G : Game A} {T : Resource A}
-    (hc : DistinctionGames.ConditionallyEquivalent G T) {ε : ℝ}
+    (hc : DistinctionGames.ConditionallyEquivalent G T) {ε : ℝ≥0}
     (hε : ∀ h, T.1 h ≠ 0 → 1 - ε ≤ G.1.1.unsetProbability (h.map Prod.fst)) :
-    CryptographicAlgebra.distance (DistinctionGames.visible G) T ≤ ENNReal.ofReal ε := by
+    CryptographicAlgebra.distance (DistinctionGames.visible G) T ≤ ε := by
   -- The distance of `CompatiblePseudoMetric` (its field `fibreMetric`) on interfaces is the
   -- systems-level transcript distance of the random systems.
   rw [cc_distance_eq]

@@ -17,6 +17,7 @@ open ConstructiveCryptography ConstructiveCryptography.CryptographicAlgebra
 namespace AuthenticatedEncryptionTests
 
 open AuthenticatedEncryption
+open scoped NNReal
 
 /-- The one-time pad on bits: a uniform key, `Enc_k(m) = k ⊕ m` and `Dec_k(c) = k ⊕ c`. -/
 noncomputable def oneTimePad : SymmetricEncryption Bool Bool Bool where
@@ -28,7 +29,7 @@ noncomputable def oneTimePad : SymmetricEncryption Bool Bool Bool where
 theorem oneTimePad_hybrid_ideal (q : AE.Port → ℕ) :
     Δ (Hybrid oneTimePad q) (AE.Ideal.perPort Bool Bool (budget := q) •
         Encryption.Real.perPort oneTimePad : Interface.Resource (AE.perPort Bool Bool q)) ≤
-      ENNReal.ofReal ((q .enc : ℝ) ^ 2 / 2) := by
+      ((q .enc) ^ 2 / 2 : ℝ≥0) := by
   simpa using hybrid_ideal_distance_le oneTimePad q
 
 /-- The collision step on the one-time pad, through the games layer: every solver's advantage is

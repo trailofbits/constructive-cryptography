@@ -30,7 +30,7 @@ replacement message, in either order.
 
 open SystemAlgebra SystemAlgebra.DSL SystemAlgebra.Interface Probability
 open Commons
-open scoped SystemAlgebra
+open scoped SystemAlgebra NNReal
 
 namespace AuthenticatedEncryption
 
@@ -538,7 +538,7 @@ theorem collisionGame_badProbability_le (xs : List (Σ i, (AE.perPort M C q).X i
 theorem hybrid_ideal_distance_le :
     Δ (Hybrid scheme q) (AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme :
       Interface.Resource (AE.perPort M C q)) ≤
-      ENNReal.ofReal ((q .enc : ℝ) ^ 2 / Fintype.card M) :=
+      ((q .enc) ^ 2 / Fintype.card M : ℝ≥0) :=
   -- The distinguisher D on the left queries either system at the ports `enc` (sends `m`,
   -- receives `c`) and `dec` (sends `c`, receives `m` or ⊥), at most `q p` times at port `p`;
   -- replies return along the same wires.
@@ -561,7 +561,7 @@ theorem hybrid_ideal_distance_le :
   --   Δ(Hybrid, ρ^ae(E_k)) ≤ sup_xs Pr[collision on xs]   (game_dist_le; xs empty or admitted)
   --                        ≤ q_e² / |M|                   (collisionGame_badProbability_le)
   game_dist_le (hybrid_visible scheme q) (collisionGame_conditionallyEquivalent scheme q)
-    (collisionGame_badProbability_le scheme q)
+    fun xs hxs => by push_cast; exact collisionGame_badProbability_le scheme q xs hxs
 
 end Game
 

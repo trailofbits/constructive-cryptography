@@ -243,6 +243,11 @@ globally; use `letI` or a wrapper carrier.
 - New and changed code passes Mathlib's standard linter set:
   `lake env lean -Dweak.linter.mathlibStandardSet=true <file>` reports nothing. The set is not
   yet enabled in the lakefile, because older code does not pass it.
+- Security bounds are stated in `ℝ≥0`, as `Δ R S ≤ (b : ℝ≥0)`; the coercion to `ℝ≥0∞` is
+  additive and order-preserving, so `push_cast` moves it. `ENNReal.ofReal` appears only where
+  the distances are defined from real probabilities (`transcriptDistance`, the advantages,
+  `advantageDistance`) and in the lemmas that bridge to them (`transcriptDistance_le`,
+  `transcriptDistance_le_of_advantage_le`).
 
 ## Naming and ownership
 

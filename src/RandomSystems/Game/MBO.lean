@@ -46,6 +46,7 @@ visible system `S⁻`), Definition 4.19 (conditional equivalence), Lemma 4.16 an
 namespace SystemAlgebra
 
 open Probability
+open scoped NNReal
 
 /-! ## Replies with the MBO -/
 
@@ -863,20 +864,19 @@ theorem RandomSystem.transcriptDistance_visible_le_of_unsetProbability
     {G : RandomSystem (Σ i, X i) (Σ i, withMBO Y i) (Domain.ofInputs E m hE)}
     {T : RandomSystem (Σ i, X i) (Σ i, Y i) (Domain.ofInputs E m hE)}
     (hG : G.RepliesAtQueriedInterface) (hT : T.RepliesAtQueriedInterface)
-    (hm : G.MonotoneMBO) (hc : G.ConditionallyEquivalent T) {ε : ℝ}
+    (hm : G.MonotoneMBO) (hc : G.ConditionallyEquivalent T) {ε : ℝ≥0}
     (hε : ∀ h, T h ≠ 0 → 1 - ε ≤ G.unsetProbability (h.map Prod.fst)) :
-    G.visible.transcriptDistance T ≤ ENNReal.ofReal ε := by
+    G.visible.transcriptDistance T ≤ ε := by
   --   Δ(G⁻, T) = sup_P |p_P(G⁻) − p_P(T)|    (transcriptDistance_eq_iSup)
   --            ≤ sup_P Γ_P(G)                (advantage_le_winProbability)
   --            ≤ ε                           (winProbability_le_of_unsetProbability)
   -- The hypothesis bounds the MBO only on fixed query sequences, yet the bound holds for
   -- every adaptive distinguisher.
-  -- The transcript distance is the largest advantage of a probabilistic distinguisher.
-  rw [RandomSystem.transcriptDistance_eq_iSup hG.visible hT]
-  -- Lemma 4.16 bounds each advantage by winning, which the unset MBO bounds.
-  exact iSup_le fun P => ENNReal.ofReal_le_ofReal
-    ((P.advantage_le_winProbability hG hT hm hc).trans
-      (P.winProbability_le_of_unsetProbability hG hT hm hc hε))
+  -- The transcript distance is the largest advantage of a probabilistic distinguisher; Lemma
+  -- 4.16 bounds each advantage by winning, which the unset MBO bounds.
+  exact RandomSystem.transcriptDistance_le_of_advantage_le hG.visible hT fun P =>
+    (P.advantage_le_winProbability hG hT hm hc).trans
+      (P.winProbability_le_of_unsetProbability hG hT hm hc hε)
 
 end Winning
 
