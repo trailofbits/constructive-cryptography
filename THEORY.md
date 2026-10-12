@@ -205,6 +205,21 @@ G \mathrel{|\!\equiv} T, \quad \Pr_G[\text{MBO set} \mid x^n] \le \varepsilon \ 
 \Delta(G^-, T) \le \varepsilon .
 ```
 
+Two games are [**equivalent as games**][RandomSystem.GameEquivalent], $`G \overset{g}{\equiv} H`$,
+when they behave alike as long as the MBO is unset: they give every transcript with every MBO
+unset the same probability [3, Definition 4.16], [4, Definition 5]. A distinguisher then
+[wins both alike][Domain.Distinguisher.winProbability_eq_of_gameEquivalent] [3, Lemma 4.15], and
+by the fundamental lemma its advantage between their visible systems is
+[at most its winning probability][Domain.Distinguisher.advantage_le_winProbability_of_gameEquivalent]
+[3, Lemma 4.16], [4, Lemma 7 and Theorem 1 (i)]: to tell them apart, it must set the MBO. For
+games replying at the queried label:
+
+```math
+G\big(x^n, (y, 0)^n\big) = H\big(x^n, (y, 0)^n\big)
+\quad \Longrightarrow \quad
+\mathrm{Adv}_P(G^-, H^-) \le \Pr[P \text{ wins } G] = \Pr[P \text{ wins } H] .
+```
+
 **Attachment**: the library defines the action of a PDC $`\alpha`$ on a game by its
 [MBO-forwarding lift][PDCBehavior.liftMBO] $`\hat\alpha`$: the lift runs $`\alpha`$, which does not see
 the inside MBOs, and gives each outside reply the MBO of the latest inside reply. CR18 states this
@@ -944,14 +959,17 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [DDG]: src/RandomSystems/Game/DiscreteMBO.lean#L50
 [PDG]: src/RandomSystems/Game/DiscreteMBO.lean#L54
 [PDG.ofFunction]: src/RandomSystems/Game/FunctionGame.lean#L37
-[RandomSystem.MonotoneMBO]: src/RandomSystems/Game/MBO.lean#L290
-[RandomSystem.visible]: src/RandomSystems/Game/MBO.lean#L299
-[DDE.blindMBO]: src/RandomSystems/Game/MBO.lean#L392
-[RandomSystem.winProbability]: src/RandomSystems/Game/MBO.lean#L462
-[RandomSystem.ConditionallyEquivalent]: src/RandomSystems/Game/MBO.lean#L505
-[Domain.Distinguisher.advantage_le_winProbability]: src/RandomSystems/Game/MBO.lean#L759
-[Domain.Distinguisher.winProbability_le_of_unsetProbability]: src/RandomSystems/Game/MBO.lean#L838
-[RandomSystem.transcriptDistance_visible_le_of_unsetProbability]: src/RandomSystems/Game/MBO.lean#L863
+[RandomSystem.MonotoneMBO]: src/RandomSystems/Game/MBO.lean#L305
+[RandomSystem.visible]: src/RandomSystems/Game/MBO.lean#L314
+[DDE.blindMBO]: src/RandomSystems/Game/MBO.lean#L407
+[RandomSystem.winProbability]: src/RandomSystems/Game/MBO.lean#L477
+[RandomSystem.ConditionallyEquivalent]: src/RandomSystems/Game/MBO.lean#L520
+[Domain.Distinguisher.advantage_le_winProbability]: src/RandomSystems/Game/MBO.lean#L753
+[Domain.Distinguisher.winProbability_le_of_unsetProbability]: src/RandomSystems/Game/MBO.lean#L948
+[RandomSystem.transcriptDistance_visible_le_of_unsetProbability]: src/RandomSystems/Game/MBO.lean#L973
+[RandomSystem.GameEquivalent]: src/RandomSystems/Game/MBO.lean#L534
+[Domain.Distinguisher.winProbability_eq_of_gameEquivalent]: src/RandomSystems/Game/MBO.lean#L857
+[Domain.Distinguisher.advantage_le_winProbability_of_gameEquivalent]: src/RandomSystems/Game/MBO.lean#L871
 [PDCBehavior.liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L455
 [PDCBehavior.liftMBO_id]: src/RandomSystems/Game/MBOAttachment.lean#L495
 [PDCBehavior.liftMBO_comp]: src/RandomSystems/Game/MBOAttachment.lean#L1515
@@ -1229,14 +1247,14 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [not_supAgreement_disagreement_le_every_pair]: src/Probability/MultiCoupling.lean#L778
 [supAgreement]: src/Probability/MultiCoupling.lean#L87
 [supAgreement_eq_weight_overlapDist]: src/Probability/MultiCoupling.lean#L397
-[Distribution]: src/Probability/Distribution.lean#L54
-[ProbDist]: src/Probability/Distribution.lean#L147
-[isProbDist]: src/Probability/Distribution.lean#L126
-[mass]: src/Probability/Distribution.lean#L215
-[fTransform]: src/Probability/Distribution.lean#L547
-[prod]: src/Probability/Distribution.lean#L902
-[pi]: src/Probability/Distribution.lean#L1543
-[uniform]: src/Probability/Distribution.lean#L481
+[Distribution]: src/Probability/Distribution.lean#L55
+[ProbDist]: src/Probability/Distribution.lean#L148
+[isProbDist]: src/Probability/Distribution.lean#L127
+[mass]: src/Probability/Distribution.lean#L216
+[fTransform]: src/Probability/Distribution.lean#L587
+[prod]: src/Probability/Distribution.lean#L942
+[pi]: src/Probability/Distribution.lean#L1583
+[uniform]: src/Probability/Distribution.lean#L521
 [statDist]: src/Probability/StatisticalDistance.lean#L88
 [statDist_triangle]: src/Probability/StatisticalDistance.lean#L243
 [statDist_fTransform_le]: src/Probability/StatisticalDistance.lean#L615
