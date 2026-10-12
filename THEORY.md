@@ -159,9 +159,9 @@ G\big(x^n, (y, 0)^n\big) = \Pr_G[\text{MBO unset} \mid x^n]\ T(x^n, y^n)
 
 Before the MBO is set, the winner sees the replies of $`T`$, which carry no information about the
 MBO. If the MBO is set with probability at most $`\varepsilon`$ on every fixed query sequence,
-[every winner wins with probability at most $`\varepsilon`$][Domain.Distinguisher.winProbability_le_of_unsetProbability].
+every winner [wins with probability at most][Domain.Distinguisher.winProbability_le_of_unsetProbability] $`\varepsilon`$.
 The transcript distance is the largest advantage (§1.4), so the visible system is then
-[within $`\varepsilon`$ of $`T`$][RandomSystem.transcriptDistance_visible_le_of_unsetProbability]
+[within][RandomSystem.transcriptDistance_visible_le_of_unsetProbability] $`\varepsilon`$ of $`T`$
 [3, Theorem 4.17], [5, Theorem 3], for $`G`$ and $`T`$ replying at the queried label:
 
 ```math
@@ -174,13 +174,13 @@ G \mathrel{|\!\equiv} T, \quad \Pr_G[\text{MBO set} \mid x^n] \le \varepsilon \ 
 [MBO-forwarding lift][PDCBehavior.liftMBO] $`\hat\alpha`$: the lift runs $`\alpha`$, which does not see
 the inside MBOs, and gives each outside reply the MBO of the latest inside reply. CR18 uses this
 action without defining it, in Definition 4.13 ($`R g`$) and in the proof of Lemma 4.9
-($`g(W R) = (R g)(W)`$) [3]. The lift is functorial,
-[$`\hat{\mathrm{id}} = \mathrm{id}`$][PDCBehavior.liftMBO_id] and
-[$`\widehat{\alpha \beta} = \hat\alpha \hat\beta`$][PDCBehavior.liftMBO_comp]. It
+($`g(W R) = (R g)(W)`$) [3]. The lift is functorial: it
+[preserves identities][PDCBehavior.liftMBO_id], $`\hat{\mathrm{id}} = \mathrm{id}`$, and
+[composition][PDCBehavior.liftMBO_comp], $`\widehat{\alpha \beta} = \hat\alpha \hat\beta`$. It
 [keeps games games][RandomSystem.MonotoneMBO.attach_liftMBO] and
 [commutes with the visible system][RandomSystem.visible_attach_liftMBO],
 $`(\hat\alpha G)^- = \alpha\, G^-`$. A winner with $`\alpha`$ absorbed
-[wins $`G`$ as the winner wins $`\hat\alpha G`$][RandomSystem.winProbability_attach_liftMBO]
+wins $`G`$ [as the winner wins][RandomSystem.winProbability_attach_liftMBO] $`\hat\alpha G`$
 [3, proof of Lemma 4.9]. A [**solver behavior**][Domain.SolverBehavior] pairs a probabilistic
 distinguisher's probability of outputting 1 on each random system with its winning probability
 for each game, and [absorbing a PDC][Domain.SolverBehavior.absorb] into a solver behavior gives a
@@ -256,21 +256,21 @@ are the automaton running both side by side. **Functional resources** are given 
 [sampling once][Interface.Resource.sample] and keeping the sample.
 
 A [**game**][Interface.Game] on $`A`$ is a resource on the
-[interface of $`A`$ with the MBO][Interface.withMBO] whose MBO, once set, stays set, a game in the
+[interface][Interface.withMBO] of $`A`$ with the MBO whose MBO, once set, stays set, a game in the
 sense of §1.5. A converter attaches to it through its [lift][Interface.liftMBO], and its
 [visible resource][Interface.Game.visible] is its visible system. A game conditionally
 equivalent to a resource $`T`$, $`G \mathrel{|\!\equiv} T`$ (the conditional equivalence of §3.6),
 whose MBO stays unset with probability at least $`1 - \varepsilon`$ on fixed queries,
-[has its visible resource within $`\varepsilon`$ of $`T`$][Interface.dist_visible_le],
+[has its visible resource within][Interface.dist_visible_le] $`\varepsilon`$ of $`T`$,
 $`\Delta(G^-, T) \le \varepsilon`$ [3, Theorem 4.17].
 
 A discrete game whose visible systems present a resource $`R`$
 [presents a game][Interface.Game.ofPDG] on the interface of $`R`$, with
-[visible resource $`R`$][Interface.Game.visible_ofPDG]; it is conditionally equivalent to a
+[visible resource][Interface.Game.visible_ofPDG] $`R`$; it is conditionally equivalent to a
 resource [exactly when][Interface.Game.conditionallyEquivalent_ofPDG_iff] the game it presents on
 random systems is. If that game is conditionally equivalent to $`S`$ and the condition holds with
 probability at most $`\varepsilon`$ on the empty and every admitted query sequence,
-[the distance is at most $`\varepsilon`$][Interface.game_dist_le], $`\Delta(R, S) \le \varepsilon`$.
+[the distance is at most][Interface.game_dist_le] $`\varepsilon`$, $`\Delta(R, S) \le \varepsilon`$.
 A single-label sampled function with a hidden condition
 [presents a game][Interface.Game.ofSingleFunction],
 [conditionally equivalent][Interface.ofSingleFunction_conditionallyEquivalent] to the resource
@@ -721,9 +721,9 @@ R \;\simeq_{\mathrm{ptxt}}\; P R \;\simeq_{\mathrm{cca}}\; P C R \;\simeq_{\math
   [is the game the collision discrete game presents][collision], with
   [visible resource the hybrid][collision_visible] and
   [conditionally equivalent to the ideal][collision_conditionallyEquivalent]; every winner
-  [wins it with probability at most $`q_e^2 / \lvert \mathcal M \rvert`$][collision_win_le], so
+  [wins it with probability at most][collision_win_le] $`q_e^2 / \lvert \mathcal M \rvert`$, so
   every solver's advantage between the hybrid and the ideal
-  [is at most $`q_e^2 / \lvert \mathcal M \rvert`$][hybrid_ideal_advantage_le], also
+  [is at most][hybrid_ideal_advantage_le] $`q_e^2 / \lvert \mathcal M \rvert`$, also
   [inside any construction][attach_hybrid_ideal_advantage_le].
 - **Substitutions on interfaces** ([Substitution][ExSub]): single substitutions with a context
   [on the right][construction_with_right_context] or [on the left][construction_with_left_context],
