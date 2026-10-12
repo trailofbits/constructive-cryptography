@@ -53,6 +53,14 @@ variable {C : Type u} [Category.{v} C] {Game : C → Type x} [Games C Game]
 no winner wins it with a converter attached with probability more than `ε`. -/
 theorem win_attach_le {A B : C} (α : A ⟶ B) {G : Game B} {ε : ℝ}
     (hG : ∀ w ∈ winners B, w G ≤ ε) {w : Game A → ℝ} (hw : w ∈ winners A) : w (α • G) ≤ ε :=
+  -- `w` with the reduction `α` absorbed is a winner on `B` (axiom `closed_attach`), and it
+  -- wins `G` as `w` wins `α • G`:
+  --
+  --   ┌────────────────┐
+  --   │ ┌───┐ ── ┌───┐ │ ── ┌───┐
+  --   │ │ w │    │ α │ │    │ G │
+  --   │ └───┘ ── └───┘ │ ── └───┘
+  --   └────────────────┘
   hG _ (absorb_mem α hw)
 
 /-- **Hardness through two reductions**: the serial composition of two converters is absorbed
@@ -60,8 +68,17 @@ one converter after the other. -/
 theorem win_attach_comp_le {A B D : C} (α : A ⟶ B) (β : B ⟶ D) {G : Game D} {ε : ℝ}
     (hG : ∀ w ∈ winners D, w G ≤ ε) {w : Game A → ℝ} (hw : w ∈ winners A) :
     w ((α ≫ β) • G) ≤ ε := by
+  -- Absorb `α` into `w`, then `β`: a winner on `D`, so it wins `G` with probability ≤ ε.
+  --
+  --   ┌─────────────────────────┐
+  --   │ ┌───┐ ── ┌───┐ ── ┌───┐ │ ── ┌───┐
+  --   │ │ w │    │ α │    │ β │ │    │ G │
+  --   │ └───┘ ── └───┘ ── └───┘ │ ── └───┘
+  --   └─────────────────────────┘
   have h := hG _ (absorb_mem β (absorb_mem α hw))
+  -- Absorbing `α` then `β` is absorbing `α ≫ β` (`absorb_comp`, from `attachGame_serial`).
   rw [← absorb_comp] at h
+  -- `w` with `α ≫ β` absorbed wins `G` as `w` wins `(α ≫ β) • G`, by definition.
   exact h
 
 /-- **Hardness through a lossy reduction**: if every winner wins `G₁` with at most `k` times its
@@ -71,6 +88,8 @@ theorem win_le_of_reduction {A B : C} (α : A ⟶ B) {G₁ : Game A} {G₂ : Gam
     (hk : 0 ≤ k) (hred : ∀ w ∈ winners A, w G₁ ≤ k * w (α • G₂))
     (hG : ∀ w ∈ winners B, w G₂ ≤ ε) {w : Game A → ℝ} (hw : w ∈ winners A) :
     w G₁ ≤ k * ε :=
+  --   w G₁ ≤ k · w (α • G₂)   (the lossy reduction `hred`)
+  --        ≤ k · ε            (`win_attach_le`: `G₂` is hard, so is `α • G₂`; `k ≥ 0`)
   (hred w hw).trans (mul_le_mul_of_nonneg_left (win_attach_le α hG hw) hk)
 
 end Reductions
@@ -88,7 +107,15 @@ resource is at most its winning probability for the game with the construction a
 theorem advantage_attach_le_win {A B : C} (α : A ⟶ B) {G : Game B} {T : Phi B}
     (hc : ConditionallyEquivalent G T) {s : (Phi A → ℝ) × (Game A → ℝ)} (hs : s ∈ solvers A) :
     |s.1 (visible (α • G)) - s.1 (α • T)| ≤ s.2 (α • G) := by
+  -- The visible resource of `α • G` is `α` attached to `G⁻` (axiom `visible_attachGame`).
   rw [smul_eq_attachGame, visible_attachGame]
+  -- Absorb `α` into `s`: a solver on `B` (axiom `solvers_closed_attach`). Its advantage
+  -- between `G⁻` and `T` is `s`'s advantage between `α G⁻` and `α T`, and is at most its
+  -- winning probability for `G`, which is `s`'s for `α • G` (axiom `advantage_le_win`):
+  --
+  --   ┌───┐ ── ┌───┐ ── ┌────┐        ┌───┐ ── ┌───┐ ── ┌───┐
+  --   │ s │    │ α │    │ G⁻ │   vs   │ s │    │ α │    │ T │
+  --   └───┘ ── └───┘ ── └────┘        └───┘ ── └───┘ ── └───┘
   exact advantage_le_win hc (DistinctionGames.absorb_mem α hs)
 
 /-- **A game hop inside a construction, for a hard game**: the advantage is at most the bound on
@@ -97,6 +124,11 @@ theorem advantage_attach_le {A B : C} (α : A ⟶ B) {G : Game B} {T : Phi B}
     (hc : ConditionallyEquivalent G T) {ε : ℝ} (hG : ∀ s ∈ solvers B, s.2 G ≤ ε)
     {s : (Phi A → ℝ) × (Game A → ℝ)} (hs : s ∈ solvers A) :
     |s.1 (α • visible G) - s.1 (α • T)| ≤ ε :=
+  -- With `s'` the solver `s` with `α` absorbed, a solver on `B`:
+  --
+  --   |s(α G⁻) − s(α T)| = |s'(G⁻) − s'(T)|
+  --                      ≤ s' wins G           (`advantage_le_win`, as `G |≡ T`)
+  --                      ≤ ε                   (`hG`, as `s'` is a solver)
   (advantage_le_win hc (DistinctionGames.absorb_mem α hs)).trans
     (hG _ (DistinctionGames.absorb_mem α hs))
 
@@ -132,9 +164,18 @@ theorem collision_conditionallyEquivalent :
 /-- **Every winner wins the collision game with probability at most `q_e² / |M|`.** -/
 theorem collision_win_le {w} (hw : w ∈ Games.winners (AE.perPort M C q)) :
     w (collision scheme q) ≤ (q .enc : ℝ) ^ 2 / Fintype.card M := by
+  -- It suffices to bound the winning probability of every probabilistic distinguisher `P`
+  -- for the game's random system (`Interface.win_le`).
   refine Interface.win_le (fun P => ?_) hw
+  -- The game's random system is the behavior of the collision discrete game.
   change P.winProbability
     ((collisionGame scheme q).behavior (collisionGame_isProbDist scheme q)) ≤ _
+  -- The systems-level bound by the unset MBO: the game is conditionally equivalent to the
+  -- ideal system, and on the queries of each transcript of the ideal its MBO stays unset with
+  -- probability at least `1 - q_e² / |M|`. The arguments, in order: the game replies at the
+  -- queried interface (its visible systems present the hybrid, which does); so does the ideal;
+  -- the MBO once set stays set; the conditional equivalence; the collision bound on each
+  -- admitted query sequence, turned into the bound on the unset MBO.
   exact P.winProbability_le_of_unsetProbability
     (PDG.repliesAtQueriedInterface_behavior _ (hybrid_visible scheme q ▸ (Hybrid scheme q).2))
     (AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme :
@@ -150,7 +191,16 @@ theorem hybrid_ideal_advantage_le {s} (hs : s ∈ DistinctionGames.solvers (AE.p
     |s.1 (Hybrid scheme q) - s.1 (AE.Ideal.perPort M C (budget := q) •
         Encryption.Real.perPort scheme : Interface.Resource (AE.perPort M C q))| ≤
       (q .enc : ℝ) ^ 2 / Fintype.card M := by
+  -- The hybrid is the visible resource `G⁻` of the collision game `G`.
   rw [← collision_visible]
+  -- With `Ideal` the ideal system `AE.Ideal.perPort M C • Encryption.Real.perPort scheme`:
+  --
+  --   ┌───┐ ── ┌────┐        ┌───┐ ── ┌───────┐
+  --   │ s │    │ G⁻ │   vs   │ s │    │ Ideal │
+  --   └───┘ ── └────┘        └───┘ ── └───────┘
+  --
+  --   |s(G⁻) − s(Ideal)| ≤ s wins G         (`advantage_le_win`, as `G |≡ Ideal`)
+  --                      ≤ q_e² / |M|       (`collision_win_le`, `s` wins as a winner)
   exact (DistinctionGames.advantage_le_win (collision_conditionallyEquivalent scheme q)
     hs).trans (collision_win_le scheme q (DistinctionGames.solvers_winner hs))
 
@@ -161,7 +211,14 @@ theorem attach_hybrid_ideal_advantage_le {B : Interface} (α : B ⟶ AE.perPort 
     |s.1 (α • Hybrid scheme q) - s.1 (α • (AE.Ideal.perPort M C (budget := q) •
         Encryption.Real.perPort scheme : Interface.Resource (AE.perPort M C q)))| ≤
       (q .enc : ℝ) ^ 2 / Fintype.card M := by
+  -- The hybrid is the visible resource `G⁻` of the collision game `G`.
   rw [← collision_visible]
+  -- The game hop inside the construction `α` (`advantage_attach_le`), with the bound on
+  -- winning `G` by every solver on `AE.perPort M C q` (`collision_win_le`):
+  --
+  --   ┌───┐ ── ┌───┐ ── ┌────┐        ┌───┐ ── ┌───┐ ── ┌───────┐
+  --   │ s │    │ α │    │ G⁻ │   vs   │ s │    │ α │    │ Ideal │
+  --   └───┘ ── └───┘ ── └────┘        └───┘ ── └───┘ ── └───────┘
   exact advantage_attach_le α (collision_conditionallyEquivalent scheme q)
     (fun _ hs => collision_win_le scheme q (DistinctionGames.solvers_winner hs)) hs
 
