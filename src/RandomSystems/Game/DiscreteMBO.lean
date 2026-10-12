@@ -38,7 +38,7 @@ replies with the condition unset factor through `S`.
 
 namespace SystemAlgebra
 
-open Classical Probability
+open Probability
 
 section Discrete
 
@@ -93,6 +93,7 @@ theorem map_tagMBO_eq_some_iff {p : Part (Σ i, Y i)} {c : Bool} {v : Σ i, with
 
 namespace DDG
 
+open scoped Classical in
 /-- **A deterministic game with the MBO**: each reply of its DDS carries the condition on the
 queries so far. -/
 noncomputable def withMBO (g : DDG (Σ i, X i) (Σ i, Y i)) :
@@ -107,6 +108,7 @@ theorem relabel_withMBO (g : DDG (Σ i, X i) (Σ i, Y i)) :
   simp only [relabel, List.map_id, withMBO, Part.map_map]
   exact Part.map_id' (fun _ => rfl) _
 
+open scoped Classical in
 /-- The transcripts of a game with the MBO: the transcripts of its DDS, each reply with the
 condition on the queries so far. -/
 theorem replies_withMBO_iff (g : DDG (Σ i, X i) (Σ i, Y i)) (xs : List (Σ i, X i))
@@ -136,6 +138,7 @@ theorem pairwise_withMBO {g : DDG (Σ i, X i) (Σ i, Y i)} {xs : List (Σ i, X i
     simp [hb, hb']
   · simp [hb]
 
+open scoped Classical in
 /-- On a nonempty transcript, the MBO is unset throughout exactly when the condition does not
 hold on its queries. -/
 theorem replies_withMBO_unset_iff (g : DDG (Σ i, X i) (Σ i, Y i)) {xs : List (Σ i, X i)}
@@ -197,6 +200,7 @@ theorem behavior_apply (G : PDG (Σ i, X i) (Σ i, Y i) (Domain.ofInputs E m hE)
 
 variable {G : PDG (Σ i, X i) (Σ i, Y i) (Domain.ofInputs E m hE)} (hG : G.isProbDist)
 
+open scoped Classical in
 /-- **The visible system of the game of a probabilistic discrete game** is the behavior of its
 visible systems. -/
 theorem visible_behavior :

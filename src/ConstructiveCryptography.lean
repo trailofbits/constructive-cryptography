@@ -11,7 +11,6 @@ import ConstructiveCryptography.CryptographicAlgebra.Relaxation
 import ConstructiveCryptography.CryptographicAlgebra.Star
 import ConstructiveCryptography.DDCCoherence
 import ConstructiveCryptography.Functional
-import ConstructiveCryptography.GameBound
 import ConstructiveCryptography.Interface
 import ConstructiveCryptography.InterfaceAlgebra
 import ConstructiveCryptography.InterfaceCoherence
@@ -22,6 +21,7 @@ import ConstructiveCryptography.InterfaceParallel
 import ConstructiveCryptography.InterfaceRelabel
 import ConstructiveCryptography.InterfaceTensorRename
 import ConstructiveCryptography.Notation
+import ConstructiveCryptography.PresentedGame
 import ConstructiveCryptography.DSL
 import ConstructiveCryptography.DSL.Converters
 import ConstructiveCryptography.DSL.Elaborator
@@ -62,4 +62,9 @@ import ConstructiveCryptography.Tactics.Categorical
 import ConstructiveCryptography.Tactics.Substitution
 import ConstructiveCryptography.Tactics.ProofAutomationAttributes
 
-/-! Constructive Cryptography: interfaces and domains, arrows, resources and the action, parallel composition, the resource distance, specifications of resources, filters, budgets, functional constructors, game bounds; the categorical packaging; and the extensions (substitution, the DSL). -/
+/-!
+Constructive Cryptography: interfaces and domains, arrows, resources and the action, parallel
+composition, the resource distance, specifications of resources, filters, budgets, functional
+constructors, games presented by discrete games; the categorical packaging; and the extensions
+(substitution, the DSL).
+-/

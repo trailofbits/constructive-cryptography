@@ -48,4 +48,7 @@ import RandomSystems.System.InterfaceSystem
 import RandomSystems.System.Observation
 import RandomSystems.System.Replies
 
-/-! Random systems: raw systems and connection, deterministic converters, PDSs, cumulative random systems, converters and attachment, parallel composition, distance and games. -/
+/-!
+Random systems: raw systems and connection, deterministic converters, PDSs, cumulative random
+systems, converters and attachment, parallel composition, distance and games.
+-/

@@ -40,7 +40,7 @@ classes, and the abstract results of those classes depend only on `propext`,
 #print axioms ConstructiveCryptography.CryptographicAlgebra.Specification.Constructs.star
 
 
--- ConstructiveCryptography.GameBound
+-- ConstructiveCryptography.PresentedGame
 #print axioms SystemAlgebra.Interface.Game.visible_ofPDG
 #print axioms SystemAlgebra.Interface.Resource.sample_ofFunction_eq_behavior
 #print axioms SystemAlgebra.Interface.ofSingleFunction_conditionallyEquivalent

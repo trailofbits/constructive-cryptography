@@ -19,7 +19,6 @@ the ideal answers.
 
 ## Main definitions
 
-* `G |≡ T`: conditional equivalence of a game to a resource
 * `Interface.Game.ofPDG`: the game a probabilistic discrete game presents
 * `Interface.Game.ofSingleFunction`: the game of a single-label sampled function
 
@@ -42,11 +41,6 @@ namespace SystemAlgebra
 
 open Probability ConstructiveCryptography
 open scoped SystemAlgebra
-
-/-- Conditional equivalence `G |≡ T` of a game on an interface to a resource (CR18,
-Definition 4.19): the field of the instance of `DistinctionGames`. -/
-scoped notation:50 G:51 " |≡ " T:51 =>
-  ConstructiveCryptography.DistinctionGames.ConditionallyEquivalent G T
 
 namespace Interface
 

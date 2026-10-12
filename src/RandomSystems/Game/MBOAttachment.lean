@@ -14,8 +14,10 @@ distinguisher with a PDC absorbed wins a game as the distinguisher wins the lift
 attached to it; so the solver behaviors, the decision probabilities on random systems and the
 winning probabilities for games of one distinguisher, are closed under absorbing a PDC.
 
-Sources: CR18 uses the action of a converter on a game without defining it, in Definition 4.13
-(`R g`) and in the proof of Lemma 4.9 (`g(W R) = (R g)(W)`).
+Sources: CR18, §4.7.2 (printed p. 94), states this action informally: a converter turns a game
+`g` into a game `c g`, the MBO being neither seen nor affected by the converter, and a winner `w`
+into a winner `w c` with `ω(w c, g) = ω(w, c g)` (equation (4.9)). Definition 4.13 (`R g`) and
+the proof of Lemma 4.9 use it.
 
 ## Main definitions
 
@@ -35,7 +37,7 @@ Sources: CR18 uses the action of a converter on a game without defining it, in D
 
 namespace SystemAlgebra
 
-open Classical Probability
+open Probability
 
 /-! ## The lift of a DDC -/
 
@@ -270,6 +272,7 @@ theorem IsDDCFrom.liftMBO {b : ℕ} {a : InsideOutsideSystem O J U V X Y}
       simp [forgetConverterMBO, List.map_map, Function.comp_def]
     rwa [hin] at this
 
+open scoped Classical in
 /-- Lifting commutes with restricting to the outside inputs in a domain. -/
 theorem liftMBO_filterDom (P : List (Σ o, U o) → Prop) (a : InsideOutsideSystem O J U V X Y) :
     liftMBO (filterDom (fun h => P (outsideInputs h)) a) =
@@ -287,6 +290,7 @@ theorem admissible_liftMBO_iff (a : InsideOutsideSystem O J U V X Y) (h) :
       replyLabel_liftMBO, insideMap_forgetMBO_fst, liftMBO_dom]
     simp
 
+open scoped Classical in
 /-- Lifting commutes with restricting a converter to its admissible histories. -/
 theorem liftMBO_canon (a : InsideOutsideSystem O J U V X Y) :
     liftMBO (canon a) = canon (liftMBO a) := by
@@ -338,6 +342,7 @@ noncomputable def liftPresentation {b : ℕ}
 
 omit [Fintype O] [Fintype J] [∀ o, Fintype (U o)] [∀ o, Fintype (V o)] [∀ j, Fintype (X j)]
   [∀ j, Fintype (Y j)] in
+open scoped Classical in
 /-- On a converter transcript, the lifted presentation gives the mass of the transcript with the
 MBOs forgotten when its outside replies carry the latest inside MBO, and zero otherwise. -/
 theorem behaviorMass_liftPresentation {b : ℕ}
@@ -357,6 +362,7 @@ noncomputable def PDCBehavior.liftMBO (α : PDCBehavior O J U V X Y E m hE F n h
     PDCBehavior O J U (withMBO V) X (withMBO Y) E m hE F n hF :=
   PDCBehavior.ofPDC (liftPresentation α.2.choose_spec.choose)
 
+open scoped Classical in
 /-- **The transcripts of a lifted PDC**: the mass of a transcript with the MBOs forgotten, when
 its outside replies carry the latest inside MBO. -/
 theorem PDCBehavior.liftMBO_apply (α : PDCBehavior O J U V X Y E m hE F n hF)
@@ -373,6 +379,7 @@ theorem PDCBehavior.liftMBO_presents (α : PDCBehavior O J U V X Y E m hE F n hF
       (PDCBehavior.liftMBO α).1 h := by
   rw [behaviorMass_liftPresentation, hP, PDCBehavior.liftMBO_apply]
 
+open scoped Classical in
 /-- The lift of the behavior of a DDC is the behavior of its lift. -/
 theorem PDCBehavior.liftMBO_ofDDC (a : InsideOutsideSystem O J U V X Y) {b : ℕ}
     (ha : IsDDCFrom E F b a) :
@@ -456,6 +463,7 @@ noncomputable def visiblePresentation
     Distribution.fTransform_isProbDist _ Q.2⟩
 
 omit [Fintype O] [∀ o, Fintype (U o)] [∀ o, Fintype (V o)] in
+open scoped Classical in
 /-- The visible systems of a presentation of a game present its visible system. -/
 theorem behaviorMass_visiblePresentation
     (Q : Distribution.ProbDist {s : InterfaceSystem J X (withMBO Y) //
@@ -477,6 +485,7 @@ theorem behaviorMass_visiblePresentation
     Finsupp.sum]
   exact Finset.sum_congr rfl fun s _ => by split_ifs <;> simp
 
+open scoped Classical in
 /-- **Attaching a lift attaches to the visible system**: `(R g)⁻ = R g⁻`. -/
 theorem RandomSystem.visible_attach_liftMBO
     (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
@@ -1276,6 +1285,7 @@ theorem IsDDD.winner {D : DDD O U V} (hD : IsDDD D) : IsDDD D.winner := by
     exact hdec (h.map forgetEnvMBO) (forgetEnvMBO z)
       (by simpa only [List.map_append, List.map_singleton] using (D.reach_winner_iff _).mp hr)
 
+open scoped Classical in
 theorem DDD.trim_winner (D : DDD O U V) : trim D.winner = DDD.winner (trim D) := by
   funext h
   simp only [trim, DDD.winner, D.reach_winner_iff]
@@ -1561,7 +1571,7 @@ theorem RandomSystem.decisionProbability_congr {I : Type} [Fintype I] {X' Y' : I
   rfl
 
 /-- **Attaching a lift averages the absorbed winning probabilities** over a presentation of the
-PDC (CR18, proof of Lemma 4.9). -/
+PDC, the step towards CR18, equation (4.9), for a PDC. -/
 theorem RandomSystem.winProbability_attach_liftMBO (D : DDD O U V) (hD : IsDDD D)
     (hc : (Domain.ofInputs F n hF : Domain (Σ o, U o) (Σ o, V o)).DecisionCompatible D)
     (α : PDCBehavior O J U V X Y E m hE F n hF) {b : ℕ}
@@ -1586,7 +1596,7 @@ theorem RandomSystem.winProbability_attach_liftMBO (D : DDD O U V) (hD : IsDDD D
     RandomSystem.winProbability_eq_decisionProbability_winner _ _
       (hc.absorbAll hE' hF' hD a.2) hG]
 
-/-- **Absorbing a PDC into a winner** (CR18, proof of Lemma 4.9, `g(W R) = (R g)(W)`): the
+/-- **Absorbing a PDC into a winner** (CR18, §4.7.2, equation (4.9), `ω(w c, g) = ω(w, c g)`): the
 probabilistic distinguisher with a PDC absorbed decides on a random system as the
 distinguisher decides on the PDC attached to it, and wins a game as the distinguisher wins the
 lift of the PDC attached to it. -/

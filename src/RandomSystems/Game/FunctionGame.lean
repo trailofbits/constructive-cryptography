@@ -25,7 +25,7 @@ answers jointly with the unset condition factor through the ideal answers.
 
 namespace SystemAlgebra.PDG
 
-open Classical Probability
+open Probability
 
 section Presentation
 
@@ -99,7 +99,7 @@ end SystemAlgebra.PDG
 
 namespace SystemAlgebra
 
-open Classical Probability
+open Probability
 
 /-- At a single interface, a reply equality is just equality of its values. -/
 theorem single_interface_answers_iff {I X Y : Type} [Unique I]

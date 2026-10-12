@@ -45,7 +45,7 @@ visible system `S⁻`), Definition 4.19 (conditional equivalence), Lemma 4.16 an
 
 namespace SystemAlgebra
 
-open Classical Probability
+open Probability
 
 /-! ## Replies with the MBO -/
 
@@ -122,6 +122,7 @@ theorem sumMBO_zero (h : List (A × Σ j, Y j)) :
   | nil => rfl
   | cons z t ih => simp only [sumMBO, ih, add_zero]
 
+open scoped Classical in
 /-- A condition on the queries passes through the sum over MBOs. -/
 theorem sumMBO_ite (P : List A → Prop) (f : List (A × Σ j, withMBO Y j) → ℝ)
     (h : List (A × Σ j, Y j)) :
@@ -163,6 +164,7 @@ theorem eq_tagMBO_iff {v : Σ j, withMBO Y j} {c : Bool} {y : Σ j, Y j} :
   · rintro ⟨rfl, rfl⟩
     rfl
 
+open scoped Classical in
 /-- A reply forgets its MBO into `y` exactly when it is `y` with one of the two MBOs. -/
 theorem ite_tagMBO_add (p : Part (Σ j, withMBO Y j)) (y : Σ j, Y j) :
     ((if p = Part.some (tagMBO false y) then 1 else 0) +
@@ -176,6 +178,7 @@ theorem ite_tagMBO_add (p : Part (Σ j, withMBO Y j)) (y : Σ j, Y j) :
   · rw [Part.eq_none_iff'.mpr hd, Part.map_none]
     simp [Part.none_ne_some]
 
+open scoped Classical in
 /-- **The sum over MBOs of the transcripts of a system** is the indicator of the transcripts of
 the system with the MBO forgotten. -/
 theorem sumMBO_replies (t : System A (Σ j, withMBO Y j)) (h : List (A × Σ j, Y j)) :
@@ -250,6 +253,7 @@ def RandomSystem.MonotoneMBO {D : Domain A (Σ j, withMBO Y j)}
 
 variable {E : List A → Prop} {m : ℕ} {hE : ∀ h, E h → h.length ≤ m}
 
+open scoped Classical in
 /-- **The visible system** `S⁻` of a game, which ignores the MBO (CR18, Definition 4.18): the
 probability of a transcript, whatever the MBOs. -/
 noncomputable def RandomSystem.visible
@@ -447,6 +451,7 @@ theorem RandomSystem.compatible_fixedQueries {B : Type} [Fintype B]
   rw [hx'', ← List.map_take, List.length_map] at *
   exact hp
 
+open scoped Classical in
 /-- **Winning leaves the MBO unset on the rest**: the winning probability of a deterministic
 distinguisher is one minus the mass of its transcripts on which the MBO stays unset, which on
 each transcript it may produce is the mass of the game with the MBO unset. -/
@@ -509,6 +514,7 @@ theorem RandomSystem.exists_unset_winProbability
       Distribution.weight_restrict]
     linarith
 
+open scoped Classical in
 /-- **Conditional equivalence bounds distinguishing by winning**, for a deterministic
 distinguisher (CR18, Lemma 4.16 and Theorem 4.17). -/
 theorem RandomSystem.abs_decisionProbability_sub_le_winProbability
@@ -598,6 +604,7 @@ theorem Domain.Distinguisher.advantage_le_winProbability
     (RandomSystem.abs_decisionProbability_sub_le_winProbability hG hT hm hc D.1 D.2.1 D.2.2)
     (P.2.1 D)
 
+open scoped Classical in
 /-- **Winning on fixed queries bounds winning**, for a deterministic distinguisher: a game
 conditionally equivalent to a random system, whose MBO stays unset with probability at least
 `1 - ε` on the queries of each transcript of the random system, is won with probability at
@@ -650,7 +657,7 @@ theorem Domain.Distinguisher.winProbability_le_of_unsetProbability
         rw [show (∑ D ∈ P.1.support, P.1 D) = 1 from P.2.2, one_mul]
 
 /-- **Conditional equivalence bounds the distance by non-adaptive winning** (CR18,
-Theorem 4.17, printed p. 109: "If for an (X, Y)-system S one can define an MBO such that
+Theorem 4.17, printed p. 110: "If for an (X, Y)-system S one can define an MBO such that
 Ŝ |≡ T, then [...] ∆(S, T) ≤ Γ(bŜ)"): a game conditionally equivalent to a random system,
 whose MBO stays unset with probability at least `1 - ε` on the queries of each transcript of
 the random system, has its visible system within `ε` of the random system. -/
