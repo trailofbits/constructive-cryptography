@@ -13,7 +13,6 @@ environment. Source: Lanzenberger, Definitions 2.11–2.12 and 2.26 (printed pp.
 
 ## Main definitions
 
-* `eRun`, `tr E n s`: the run of an environment against a total system
 * `envProbe E A`: an environment with a transcript test, as a distinguisher
 * `ddeOf hD`: the queries of a distinguisher, as an environment
 * `DPort.map`, `trigMap`, `decMap`: relabeling a distinguisher
@@ -37,49 +36,6 @@ open Probability (Distribution statDist)
 
 variable {X Y K : Type}
 
-/-! ## The run of an environment against a total system -/
-
-section Run
-
-/-- Total resources on labels `K`: the samples of a probabilistic resource. -/
-abbrev TotRes (X Y K : Type) := {R : SingleAlphabetSystem X Y K // TotalResource R}
-
-/-- The reply of a total resource to a nonempty history. -/
-noncomputable def reply (s : TotRes X Y K) (h : List (Σ _ : K, X)) (hne : h ≠ []) : Σ _ : K, Y :=
-  (s.1 h).get ((s.2.1 h).mpr hne)
-
-variable (e : List (Σ _ : K, Y) →. Σ _ : K, X) (s : TotRes X Y K)
-
-/-- The first `n` rounds of the environment `e` against `s`: queries and replies. -/
-noncomputable def eRun : ℕ → List (Σ _ : K, X) × List (Σ _ : K, Y)
-  | 0 => ([], [])
-  | n + 1 =>
-    let p := eRun n
-    if hd : (e p.2).Dom then
-      (p.1 ++ [(e p.2).get hd],
-        p.2 ++ [reply s (p.1 ++ [(e p.2).get hd]) (by simp)])
-    else p
-
-theorem eRun_succ_of_dom (n : ℕ) (hd : (e (eRun e s n).2).Dom) :
-    eRun e s (n + 1) = ((eRun e s n).1 ++ [(e (eRun e s n).2).get hd],
-      (eRun e s n).2 ++ [reply s ((eRun e s n).1 ++ [(e (eRun e s n).2).get hd]) (by simp)]) := by
-  simp only [eRun, dif_pos hd]
-
-theorem eRun_succ_of_not_dom (n : ℕ) (hd : ¬ (e (eRun e s n).2).Dom) :
-    eRun e s (n + 1) = eRun e s n := by
-  simp only [eRun, dif_neg hd]
-
-theorem reply_mem (h : List (Σ _ : K, X)) (x : Σ _ : K, X) :
-    reply s (h ++ [x]) (by simp) ∈ s.1 (h ++ [x]) :=
-  Part.get_mem _
-
-end Run
-
-/-- The transcript of `s` with `E` after at most `n` rounds. -/
-noncomputable def tr (E : DDE (Σ _ : K, X) (Σ _ : K, Y)) (n : ℕ) (s : TotRes X Y K) :
-    List (Σ _ : K, X) × List (Σ _ : K, Y) :=
-  eRun E.1 s n
-
 /-! ## The queries of a transcript are a function of its replies -/
 
 section Queries
@@ -96,38 +52,6 @@ theorem qsOf_snoc {A B : Type} {e : List B →. A} {ys : List B} {x y}
   · refine List.filterMap_congr fun k hk => ?_
     rw [List.take_append_of_le_length (List.mem_range.mp hk).le]
   · simp [List.take_left', Part.toOption_eq_some_iff.mpr hx]
-
-theorem eRun_fst (e : List (Σ _ : K, Y) →. Σ _ : K, X) (s : TotRes X Y K) :
-    ∀ m, (eRun e s m).1 = qsOf e (eRun e s m).2 := by
-  intro m
-  induction m with
-  | zero => rfl
-  | succ m ih =>
-    by_cases hd : (e (eRun e s m).2).Dom
-    · rw [eRun_succ_of_dom e s m hd]
-      simp only
-      rw [qsOf_snoc (Part.get_mem hd), ih]
-    · rw [eRun_succ_of_not_dom e s m hd, ih]
-
-theorem tr_fst (E : DDE (Σ _ : K, X) (Σ _ : K, Y)) (n : ℕ) (s : TotRes X Y K) :
-    (tr E n s).1 = qsOf E.1 (tr E n s).2 :=
-  eRun_fst _ _ _
-
-/-- Runs of two environments that agree along the run coincide. -/
-theorem eRun_congr {e e' : List (Σ _ : K, Y) →. Σ _ : K, X} (s : TotRes X Y K)
-    (H : ∀ m, e' (eRun e s m).2 = e (eRun e s m).2) : ∀ m, eRun e' s m = eRun e s m := by
-  intro m
-  induction m with
-  | zero => rfl
-  | succ m ih =>
-    by_cases hd : (e (eRun e s m).2).Dom
-    · have hd' : (e' (eRun e' s m).2).Dom := by rw [ih, H m]; exact hd
-      rw [eRun_succ_of_dom e' s m hd', eRun_succ_of_dom e s m hd]
-      have hx : ∀ h, (e' (eRun e s m).2).get h = (e (eRun e s m).2).get hd := fun h =>
-        Part.get_eq_of_mem (by rw [H m]; exact Part.get_mem hd) h
-      simp only [ih, hx]
-    · have hd' : ¬ (e' (eRun e' s m).2).Dom := by rw [ih, H m]; exact hd
-      rw [eRun_succ_of_not_dom e' s m hd', eRun_succ_of_not_dom e s m hd, ih]
 
 end Queries
 
@@ -264,27 +188,6 @@ theorem envOf_envProbe {ys : List (Σ i, Yi i)} (hv : EFits E.1 ys) :
     exact (Part.eq_none_iff'.mpr hd).symm
 
 end EnvProbe
-
-section TotalEnvProbe
-
-variable {E : DDE (Σ _ : K, X) (Σ _ : K, Y)}
-  {A : List (Σ _ : K, X) × List (Σ _ : K, Y) → Prop} {n : ℕ}
-
-theorem eRun_fits (s : TotRes X Y K) : ∀ m, EFits E.1 (eRun E.1 s m).2 := by
-  intro m
-  induction m with
-  | zero => exact EFits.nil
-  | succ m ih =>
-    by_cases hd : (E.1 (eRun E.1 s m).2).Dom
-    · rw [eRun_succ_of_dom _ s m hd]
-      exact ih.snoc (Part.get_mem hd) (s.2.2 _ _ _ (reply_mem s _ _))
-    · rw [eRun_succ_of_not_dom _ s m hd]; exact ih
-
-theorem eRun_envProbe (s : TotRes X Y K) (m : ℕ) :
-    eRun (envOf (envProbe E A)) s m = eRun E.1 s m :=
-  eRun_congr s (fun m => envOf_envProbe (eRun_fits s m)) m
-
-end TotalEnvProbe
 
 /-! ## A distinguisher's bit is determined by its transcript -/
 

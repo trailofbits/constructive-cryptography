@@ -121,6 +121,26 @@ The [**behavior**][Domain.DistinguisherBehavior] of a probabilistic distinguishe
 probability of outputting 1 on each system, as the behavior of a PDC is its random system; the
 transcript distance [is also the largest advantage of a behavior][RandomSystem.transcriptDistance_eq_iSup_behavior].
 
+**Couplings**: the [transcript][System.tr] $`\mathrm{tr}(s, E, n)`$ of a deterministic system $`s`$
+with an environment $`E`$ within $`n`$ rounds is the sequence of their query–reply pairs
+[1, Definition 7]. For an environment compatible with the random system $`R`$ of a PDS $`P`$, the
+transcript law of $`R`$ [is the transformation][PDS.sLaw_behavior_eq_fTransform] of $`P`$ by
+$`\mathrm{tr}(\cdot, E, n)`$ [1, Definition 4 and footnote 9]. A [coupling][IsCoupling] $`J`$ of
+$`P`$ and a PDS $`Q`$ with random system $`S`$ therefore bounds the distance of the transcript laws
+by the [probability that the transcripts differ][PDS.statDist_sLaw_behavior_le_of_isCoupling], and
+the transcript distance by the
+[probability that the systems differ][PDS.transcriptDistance_behavior_le_of_isCoupling]:
+
+```math
+\delta\big(\mathrm{tr}(R, E, n),\ \mathrm{tr}(S, E, n)\big)
+\le \Pr_{(s, t) \sim J}\big[\mathrm{tr}(s, E, n) \ne \mathrm{tr}(t, E, n)\big],
+\qquad
+\Delta(R, S) \le \Pr_{(s, t) \sim J}[s \ne t] .
+```
+
+The second bound holds for every coupling; [1, Theorem 2] states in addition that some
+presentations of $`R`$ and $`S`$ have a coupling attaining it.
+
 **Absorption**: [absorbing][DistinguisherBehavior.absorb] a PDC $`\alpha`$ into a behavior $`d`$ gives
 $`d \circ \alpha`$, which decides on a system as $`d`$ decides on $`\alpha`$ attached to it,
 $`\Pr[(d \circ \alpha)(R) = 1] = \Pr[d(\alpha R) = 1]`$. Absorbing a serial composition
@@ -891,6 +911,10 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [DistinguisherBehavior.advantage_triangle]: src/RandomSystems/Distance/Distinguisher.lean#L233
 [DistinguisherBehavior.advantage_le_transcriptDistance]: src/RandomSystems/Distance/Distinguisher.lean#L238
 [RandomSystem.transcriptDistance_eq_iSup_behavior]: src/RandomSystems/Distance/Distinguisher.lean#L246
+[System.tr]: src/RandomSystems/Distance/Coupling.lean#L50
+[PDS.sLaw_behavior_eq_fTransform]: src/RandomSystems/Distance/Coupling.lean#L165
+[PDS.statDist_sLaw_behavior_le_of_isCoupling]: src/RandomSystems/Distance/Coupling.lean#L213
+[PDS.transcriptDistance_behavior_le_of_isCoupling]: src/RandomSystems/Distance/Coupling.lean#L241
 [DistinguisherBehavior.absorb]: src/RandomSystems/Distance/Distinguisher.lean#L291
 [DistinguisherBehavior.absorb_comp]: src/RandomSystems/Distance/Distinguisher.lean#L304
 [Domain.Distinguisher.exists_absorbAll]: src/RandomSystems/Distance/Distinguisher.lean#L265

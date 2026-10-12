@@ -29,6 +29,7 @@ import RandomSystems.DDC.Serial
 import RandomSystems.DDC.SingleAlphabet
 import RandomSystems.DDC.Tensor
 import RandomSystems.Distance.Absorption
+import RandomSystems.Distance.Coupling
 import RandomSystems.Distance.Decision
 import RandomSystems.Distance.Distinguisher
 import RandomSystems.Distance.ParallelObservation
