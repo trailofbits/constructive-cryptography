@@ -286,10 +286,10 @@ theorem mass_tsub_mass_le_statDist {A : Type*}
   classical
   set s : Finset A := X.support ∪ Y.support ∪ (X - Y).support with hs
   have hsub : (X - Y).support ⊆ s := Finset.subset_union_right
-  rw [Distribution.mass_eq_sum_of_support_subset X
-        (Finset.Subset.trans Finset.subset_union_left Finset.subset_union_left) P,
-    Distribution.mass_eq_sum_of_support_subset Y
-        (Finset.Subset.trans Finset.subset_union_right Finset.subset_union_left) P,
+  have hX : X.support ⊆ s := Finset.Subset.trans Finset.subset_union_left Finset.subset_union_left
+  have hY : Y.support ⊆ s := Finset.Subset.trans Finset.subset_union_right Finset.subset_union_left
+  rw [Distribution.mass_eq_sum_of_support_subset X hX P,
+    Distribution.mass_eq_sum_of_support_subset Y hY P,
     statDist_eq_sum_of_support_subset X Y hsub, ← Finset.sum_sub_distrib]
   have hfilter : ∑ a ∈ s.filter P, (X a - Y a) ≤ ∑ a ∈ s.filter P, max (X a - Y a) 0 :=
     Finset.sum_le_sum fun a _ => le_max_left _ _
@@ -358,7 +358,8 @@ theorem expect_sub_expect_le_mul_statDist {A : Type*} (X Y : Distribution A) (f 
     {m M : ℝ} (hw : X.weight = Y.weight) (hm : ∀ a, m ≤ f a) (hM : ∀ a, f a ≤ M) :
     X.expect f - Y.expect f ≤ (M - m) * statDist X Y := by
   have hconst : (X - Y).expect (fun _ => m) = 0 := by
-    rw [Distribution.expect_sub_left, Distribution.expect_const, Distribution.expect_const, hw, sub_self]
+    rw [Distribution.expect_sub_left, Distribution.expect_const, Distribution.expect_const, hw,
+      sub_self]
   rw [← Distribution.expect_sub_left, ← sub_zero ((X - Y).expect f), ← hconst, statDist,
     Finset.mul_sum, Distribution.expect, Distribution.expect, Finsupp.sum, Finsupp.sum,
     ← Finset.sum_sub_distrib]
@@ -378,10 +379,8 @@ formally": for distributions of equal weight, a functional taking values in
 
 At `[m, M] = [-1, 1]` — the calibration CR18_LN Definition 2.9 puts on a
 bit-guessing advantage — this is the printed constant `2d`; at `[m, M] = [0, 1]`
-it is footnote 12's `d`.  Signed layer plus `|X| = |Y|`.  `Fintype` enters only
-through `statDist_symm_of_eq_weight`, which is how the tree states symmetry of
-`δ`; the one-sided forms above are free of it. -/
-theorem abs_expect_sub_expect_le_mul_statDist {A : Type*} [Fintype A]
+it is footnote 12's `d`.  Signed layer plus `|X| = |Y|`; no `Fintype`. -/
+theorem abs_expect_sub_expect_le_mul_statDist {A : Type*}
     (X Y : Distribution A) (f : A → ℝ) {m M : ℝ} (hw : X.weight = Y.weight)
     (hm : ∀ a, m ≤ f a) (hM : ∀ a, f a ≤ M) :
     |X.expect f - Y.expect f| ≤ (M - m) * statDist X Y := by
@@ -455,7 +454,7 @@ theorem avgSuccessProb_eq_mass_sub_mass_add_weight_div_two {A : Type*}
 Theorem 8).  Only `|Y| = 1` is needed: the acceptance-set mass gap is bounded
 by `δ(X, Y)` for arbitrary signed `X`, `Y` (`mass_tsub_mass_le_statDist`),
 and the weight of `Y` is the only normalization the bound consumes. -/
-theorem avgSuccessProb_le_half_add_half_statDist {A : Type*} [Fintype A]
+theorem avgSuccessProb_le_half_add_half_statDist {A : Type*}
     (X Y : Distribution A) (hY : Y.weight = 1) (g : A → Bool) :
     avgSuccessProb X Y g ≤ 1 / 2 + statDist X Y / 2 := by
   rw [avgSuccessProb_eq_mass_sub_mass_add_weight_div_two, hY]
@@ -468,7 +467,7 @@ Bayes-optimal rule for equal prior ½ — succeeds with probability exactly
 `½ + ½ δ(X, Y)`.  The rule is taken as an abstract `g` with a specification
 hypothesis so the statement does not fix a `Decidable` instance. -/
 theorem avgSuccessProb_eq_half_add_half_statDist_of_forall_eq_true_iff_lt
-    {A : Type*} [Fintype A] (X Y : Distribution A) (hY : Y.weight = 1) (g : A → Bool)
+    {A : Type*} (X Y : Distribution A) (hY : Y.weight = 1) (g : A → Bool)
     (hg : ∀ a, g a = true ↔ Y a < X a) :
     avgSuccessProb X Y g = 1 / 2 + statDist X Y / 2 := by
   rw [avgSuccessProb_eq_mass_sub_mass_add_weight_div_two, hY,
@@ -487,7 +486,7 @@ Stated as a genuine supremum over all decision rules, in the library's
 bound for every rule and the Bayes rule attains it.  Only `|Y| = 1` is
 required, matching the min-form asymmetry of `δ`; for the intended reading
 both `X` and `Y` are probability distributions. -/
-theorem sSup_avgSuccessProb_eq_half_add_half_statDist {A : Type*} [Fintype A]
+theorem sSup_avgSuccessProb_eq_half_add_half_statDist {A : Type*}
     (X Y : Distribution A) (hY : Y.weight = 1) :
     sSup ((fun g : A → Bool => avgSuccessProb X Y g) '' Set.univ) =
       1 / 2 + statDist X Y / 2 := by

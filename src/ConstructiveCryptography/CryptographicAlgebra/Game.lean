@@ -18,21 +18,22 @@ the winner wins the game with the converter attached, `ω(w c, g) = ω(w, c g)` 
 Games and winners do not involve resources.
 
 `DistinctionGames` extends it to the abstraction of CR18, §§4.10–4.11, which relates games to
-distinction problems. Its solvers are the objects that are both a distinguisher and a winner, as
-`D` in Lemma 4.16: each is given by its probability of outputting `1` on each resource and its
-winning probability for each game, which is a winner of `Games`; they are closed under absorbing
-a converter. It assumes the visible resource of each game, with which attachment commutes
-(Definition 4.18), and a conditional equivalence of games to resources (Definition 4.19), under
-which each solver's advantage between the visible resource of a game and the resource is at most
-its winning probability (Lemma 4.16 and the proof of Theorem 4.17).
+distinction problems. Its solvers are the objects that are both a distinguisher and a winner, as `D`
+in Lemma 4.16: each is given by its probability of outputting `1` on each resource and its winning
+probability for each game, which is a winner of `Games`; they are closed under absorbing a
+converter. It assumes the visible resource of each game (Definition 4.18), with which attachment
+commutes since a converter neither sees nor affects the MBO (§4.7.2), and a conditional equivalence
+of games to resources (Definition 4.19), under which each solver's advantage between the visible
+resource of a game and the resource is at most its winning probability (Lemma 4.16 and the proof of
+Theorem 4.17).
 
 CR18 instantiates games as systems with a monotone binary output (§3.7.1); so does the instance
 on interfaces, `ConstructiveCryptography.InterfaceGame`.
 
-Sources: CR18, §4.4.3 (Definition 4.2, printed p. 85), §4.5.1 (Definition 4.5, p. 89), §4.7.2
-(reductions by a converter, equations (4.9) and (4.10), p. 93), §4.10.3 (Definition 4.18, the
-visible system `S⁻`; Lemma 4.16, p. 107) and §4.11.1 (Definition 4.19, conditional equivalence;
-Theorem 4.17, p. 109).
+Sources: CR18, §4.4.3 (Definition 4.2, printed p. 85), §4.5.1 (Definition 4.5, p. 90), §4.7.2
+(reductions by a converter, equations (4.9) and (4.10), p. 94), §4.10.3 (Definition 4.18, the
+visible system `S⁻`; Lemma 4.16, p. 107), §4.11.1 (Definition 4.19, conditional equivalence,
+p. 108) and §4.11.2 (Theorem 4.17, p. 110).
 
 ## Main definitions
 
@@ -119,7 +120,7 @@ class DistinctionGames (C : Type u) [Category.{v} C] (Phi : outParam (C → Type
     solver ∈ solvers A → solver.2 ∈ winners A
   /-- A solver with a converter absorbed is a solver: it decides on a resource as the solver
   decides on the converter attached to it, and wins a game as the solver wins the converter
-  attached to it (CR18, §4.7.2 and the proof of Lemma 4.9). -/
+  attached to it (CR18, §4.7.2, equation (4.9)). -/
   solvers_closed_attach : ∀ {A B : C} (converter : A ⟶ B)
     {solver : (Phi A → ℝ) × (Game A → ℝ)}, solver ∈ solvers A →
       (fun R => solver.1 (ResourceTheory.attach converter R),

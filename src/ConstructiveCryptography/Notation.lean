@@ -1,4 +1,5 @@
 import ConstructiveCryptography.InterfaceAlgebra
+import ConstructiveCryptography.CryptographicAlgebra.Game
 import ConstructiveCryptography.Tactics.Categorical
 
 /-!
@@ -6,8 +7,9 @@ import ConstructiveCryptography.Tactics.Categorical
 
 Scoped notation for the CC operations on interfaces: `Δ R S` for the distance, `R ∥ S` for
 parallel composition, `S —[α]→ T` and `S —[α; ε]→ T` for exact and approximate construction,
-and `R ≃[ε] S` for substitution within `ε` for the admitted distinguishers
-(`Interface.AdmissibleDistinguishers`). The compatibility laws of the distance are restated with `∥`, the concrete
+`R ≃[ε] S` for substitution within `ε` for the admitted distinguishers
+(`Interface.AdmissibleDistinguishers`), and `G |≡ T` for conditional equivalence of a game to a
+resource. The compatibility laws of the distance are restated with `∥`, the concrete
 parallel composition, for the `cc_nonexpand` tactic, and `cc_normalize` applies locality,
 `(α ⊗ₘ β) • (R ∥ S) = α • R ∥ β • S`, whether the interfaces are written with `⊗` or with
 `Interface.tensor`.
@@ -39,6 +41,11 @@ scoped notation:50 source " —[" converter "; " error "]→ " target:51 =>
 scoped notation:50 R:51 " ≃[" error "] " S:51 =>
   ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin
     (Interface.distinguisherAdvantage Interface.AdmissibleDistinguishers.admissible) error R S
+
+/-- Conditional equivalence `G |≡ T` of a game to a resource (CR18, Definition 4.19): the field
+of `DistinctionGames`. -/
+scoped notation:50 G:51 " |≡ " T:51 =>
+  ConstructiveCryptography.DistinctionGames.ConditionallyEquivalent G T
 
 namespace Interface
 

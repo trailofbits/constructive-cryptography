@@ -1,5 +1,5 @@
 import Examples.AuthenticatedEncryption.Hybrid
-import ConstructiveCryptography.GameBound
+import ConstructiveCryptography.PresentedGame
 
 /-!
 # Authenticated encryption: the collision step
@@ -94,8 +94,8 @@ variable [DecidableEq C] [Nonempty M] (scheme : SymmetricEncryption K M C)
 
 omit [Fintype K] [Fintype M] [Fintype C] [DecidableEq K] [DecidableEq M] [Nonempty M] in
 /-- A replayed message is one of the recorded messages. -/
-theorem replay_mem {l : List M} {l' : List C} {c : C} {m : M} (h : AE.replay (l.zip l') c = some m) :
-    m ∈ l := by
+theorem replay_mem {l : List M} {l' : List C} {c : C} {m : M}
+    (h : AE.replay (l.zip l') c = some m) : m ∈ l := by
   obtain ⟨e, he, rfl⟩ := Option.map_eq_some_iff.mp h
   exact (List.of_mem_zip (List.mem_of_find?_eq_some he)).1
 
@@ -111,8 +111,8 @@ theorem hybridDecrypt_eq {k k' : ℕ}
         (realEncrypt scheme)) ω.1 ω.2 known.length =
       replacedCiphertexts (AE.Ideal.law1 M C) (realEncrypt scheme) ω.1.1 ω.1.2 known.length := rfl
   simp only [hybridDecrypt, ptxtDecrypt, ccaDecrypt, idealDecrypt, hcs]
-  cases hr : AE.replay (known.zip
-      (replacedCiphertexts (AE.Ideal.law1 M C) (realEncrypt scheme) ω.1.1 ω.1.2 known.length)) c with
+  cases hr : AE.replay (known.zip (replacedCiphertexts (AE.Ideal.law1 M C) (realEncrypt scheme)
+      ω.1.1 ω.1.2 known.length)) c with
   | some m => simp [AE.retain, replay_mem hr]
   | none =>
     simp only [Option.orElse_none]
@@ -219,7 +219,8 @@ theorem ideal_truncate {k₂ : ℕ}
     filterDom (AE.perPort M C q).domain (automatonSystem (oracleStep (idealEncrypt scheme)
         (idealDecrypt (AE.Ideal.law1 M C) (realEncrypt scheme))) (ω, [])) =
       filterDom (AE.perPort M C q).domain (automatonSystem (oracleStep (idealEncrypt scheme)
-        (idealDecrypt (AE.Ideal.law1 M C) (realEncrypt scheme))) (truncateTables scheme q ω, [])) := by
+        (idealDecrypt (AE.Ideal.law1 M C) (realEncrypt scheme)))
+          (truncateTables scheme q ω, [])) := by
   have henc : ∀ i < q .enc, ∀ m, idealEncrypt scheme ω i m =
       idealEncrypt scheme (truncateTables scheme q ω) i m := by
     intro i hi m
@@ -230,7 +231,7 @@ theorem ideal_truncate {k₂ : ℕ}
   unfold filterDom
   split_ifs with hd
   · refine oracle_system_congr (n := q .enc) henc (fun known hk c => ?_) h ?_
-    · show AE.replay (known.zip (replacedCiphertexts (AE.Ideal.law1 M C) (realEncrypt scheme)
+    · change AE.replay (known.zip (replacedCiphertexts (AE.Ideal.law1 M C) (realEncrypt scheme)
             ω.1 ω.2 known.length)) c =
           AE.replay (known.zip (replacedCiphertexts (AE.Ideal.law1 M C) (realEncrypt scheme)
             (truncateTables scheme q ω).1 (truncateTables scheme q ω).2 known.length)) c

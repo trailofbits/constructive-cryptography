@@ -172,16 +172,16 @@ G \mathrel{|\!\equiv} T, \quad \Pr_G[\text{MBO set} \mid x^n] \le \varepsilon \ 
 
 **Attachment**: the library defines the action of a PDC $`\alpha`$ on a game by its
 [MBO-forwarding lift][PDCBehavior.liftMBO] $`\hat\alpha`$: the lift runs $`\alpha`$, which does not see
-the inside MBOs, and gives each outside reply the MBO of the latest inside reply. CR18 uses this
-action without defining it, in Definition 4.13 ($`R g`$) and in the proof of Lemma 4.9
-($`g(W R) = (R g)(W)`$) [3]. The lift is functorial: it
+the inside MBOs, and gives each outside reply the MBO of the latest inside reply. CR18 states this
+action informally: a converter turns a game into a game, the MBO being neither seen nor affected
+by the converter [3, §4.7.2]. The lift is functorial: it
 [preserves identities][PDCBehavior.liftMBO_id], $`\hat{\mathrm{id}} = \mathrm{id}`$, and
 [composition][PDCBehavior.liftMBO_comp], $`\widehat{\alpha \beta} = \hat\alpha \hat\beta`$. It
 [keeps games games][RandomSystem.MonotoneMBO.attach_liftMBO] and
 [commutes with the visible system][RandomSystem.visible_attach_liftMBO],
 $`(\hat\alpha G)^- = \alpha\, G^-`$. A winner with $`\alpha`$ absorbed
 wins $`G`$ [as the winner wins][RandomSystem.winProbability_attach_liftMBO] $`\hat\alpha G`$
-[3, proof of Lemma 4.9]. A [**solver behavior**][Domain.SolverBehavior] pairs a probabilistic
+[3, §4.7.2, equation (4.9)]. A [**solver behavior**][Domain.SolverBehavior] pairs a probabilistic
 distinguisher's probability of outputting 1 on each random system with its winning probability
 for each game, and [absorbing a PDC][Domain.SolverBehavior.absorb] into a solver behavior gives a
 solver behavior.
@@ -281,7 +281,8 @@ interfaces.
 **Notation** (`open scoped SystemAlgebra`): [`Δ R S`][notation-distance],
 [`R ∥ S`][notation-parallel], [`𝓡 —[π]→ 𝒮`][notation-constructs] for
 $`\mathcal R \xrightarrow{\pi} \mathcal S`$ and [`𝓡 —[π; ε]→ 𝒮`][notation-constructsWithin] for
-$`\mathcal R \xrightarrow{\pi,\ \varepsilon} \mathcal S`$.
+$`\mathcal R \xrightarrow{\pi,\ \varepsilon} \mathcal S`$, and
+[`G |≡ T`][notation-conditionallyEquivalent] for $`G \mathrel{|\!\equiv} T`$.
 
 ---
 
@@ -289,7 +290,7 @@ $`\mathcal R \xrightarrow{\pi,\ \varepsilon} \mathcal S`$.
 
 *Each layer is a class of assumptions: it introduces its notions (attachment, parallel
 composition, distance, distinguishers, games, winners, solvers) only as fields and axioms, and
-knows nothing about systems [3, §§3.7, 4.5, 4.8–4.11], [6, §3], [7, §2.2], [8]. Interfaces are an
+knows nothing about systems [3, §§4.4.3, 4.5.1, 4.7.2, 4.10–4.11], [6, §3], [7, §2.2], [8]. Interfaces are an
 instance of each class: every field is a systems-level object of §1–2, and every axiom is a
 theorem about it.*
 
@@ -443,10 +444,10 @@ The class [`DistinctionGames`][DistinctionGames], extending `Games`, is the abst
 [3, §§4.10–4.11], relating games and distinction problems. Its solvers are the objects that are
 both a distinguisher and a winner, as $`D`$ in [3, Lemma 4.16]: a set $`\mathcal S_A`$ of pairs
 $`(D, W)`$ of a decision probability $`D : \Phi A \to \mathbb R`$ and a winning probability $`W`$, which
-is a winner, closed under [absorbing][DistinctionGames.absorb] a converter [3, §4.7.2, proof of
-Lemma 4.9]. It has the visible resource $`G^-`$ of a game, with which attachment commutes
-[3, Definition 4.18], and a conditional equivalence $`G \mathrel{|\!\equiv} T`$ of games to
-resources [3, Definition 4.19], under which each solver's advantage is at most its winning
+is a winner, closed under [absorbing][DistinctionGames.absorb] a converter [3, §4.7.2]. It has the visible
+resource $`G^-`$ of a game [3, Definition 4.18], with which attachment commutes since a converter
+neither sees nor affects the MBO [3, §4.7.2], and a conditional equivalence
+$`G \mathrel{|\!\equiv} T`$ of games to resources [3, Definition 4.19], under which each solver's advantage is at most its winning
 probability [3, Lemma 4.16 and the proof of Theorem 4.17]:
 
 ```math
@@ -903,28 +904,28 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [DDG]: src/RandomSystems/Game/DiscreteMBO.lean#L50
 [PDG]: src/RandomSystems/Game/DiscreteMBO.lean#L54
 [PDG.ofFunction]: src/RandomSystems/Game/FunctionGame.lean#L37
-[RandomSystem.MonotoneMBO]: src/RandomSystems/Game/MBO.lean#L247
-[RandomSystem.visible]: src/RandomSystems/Game/MBO.lean#L255
-[DDE.blindMBO]: src/RandomSystems/Game/MBO.lean#L323
-[RandomSystem.winProbability]: src/RandomSystems/Game/MBO.lean#L380
-[RandomSystem.ConditionallyEquivalent]: src/RandomSystems/Game/MBO.lean#L418
-[Domain.Distinguisher.advantage_le_winProbability]: src/RandomSystems/Game/MBO.lean#L585
-[Domain.Distinguisher.winProbability_le_of_unsetProbability]: src/RandomSystems/Game/MBO.lean#L635
-[RandomSystem.transcriptDistance_visible_le_of_unsetProbability]: src/RandomSystems/Game/MBO.lean#L657
-[PDCBehavior.liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L356
-[PDCBehavior.liftMBO_id]: src/RandomSystems/Game/MBOAttachment.lean#L388
-[PDCBehavior.liftMBO_comp]: src/RandomSystems/Game/MBOAttachment.lean#L1136
-[RandomSystem.MonotoneMBO.attach_liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L721
-[RandomSystem.visible_attach_liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L481
-[RandomSystem.winProbability_attach_liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L1565
-[Domain.SolverBehavior]: src/RandomSystems/Game/MBOAttachment.lean#L1633
-[Domain.SolverBehavior.absorb]: src/RandomSystems/Game/MBOAttachment.lean#L1655
-[DDG.withMBO]: src/RandomSystems/Game/DiscreteMBO.lean#L98
-[PDG.behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L187
-[PDG.visible_behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L202
-[PDG.unsetProbability_behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L253
-[PDG.one_sub_le_unsetProbability_behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L317
-[PDG.conditionallyEquivalent_behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L337
+[RandomSystem.MonotoneMBO]: src/RandomSystems/Game/MBO.lean#L250
+[RandomSystem.visible]: src/RandomSystems/Game/MBO.lean#L259
+[DDE.blindMBO]: src/RandomSystems/Game/MBO.lean#L327
+[RandomSystem.winProbability]: src/RandomSystems/Game/MBO.lean#L384
+[RandomSystem.ConditionallyEquivalent]: src/RandomSystems/Game/MBO.lean#L422
+[Domain.Distinguisher.advantage_le_winProbability]: src/RandomSystems/Game/MBO.lean#L591
+[Domain.Distinguisher.winProbability_le_of_unsetProbability]: src/RandomSystems/Game/MBO.lean#L642
+[RandomSystem.transcriptDistance_visible_le_of_unsetProbability]: src/RandomSystems/Game/MBO.lean#L664
+[PDCBehavior.liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L361
+[PDCBehavior.liftMBO_id]: src/RandomSystems/Game/MBOAttachment.lean#L395
+[PDCBehavior.liftMBO_comp]: src/RandomSystems/Game/MBOAttachment.lean#L1145
+[RandomSystem.MonotoneMBO.attach_liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L730
+[RandomSystem.visible_attach_liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L490
+[RandomSystem.winProbability_attach_liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L1575
+[Domain.SolverBehavior]: src/RandomSystems/Game/MBOAttachment.lean#L1643
+[Domain.SolverBehavior.absorb]: src/RandomSystems/Game/MBOAttachment.lean#L1665
+[DDG.withMBO]: src/RandomSystems/Game/DiscreteMBO.lean#L99
+[PDG.behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L190
+[PDG.visible_behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L206
+[PDG.unsetProbability_behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L257
+[PDG.one_sub_le_unsetProbability_behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L321
+[PDG.conditionallyEquivalent_behavior]: src/RandomSystems/Game/DiscreteMBO.lean#L341
 [PDG.ofFunction_conditionallyEquivalent]: src/RandomSystems/Game/FunctionGame.lean#L67
 
 <!-- Declarations: §2 -->
@@ -961,19 +962,20 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [Interface.Game]: src/ConstructiveCryptography/InterfaceGame.lean#L61
 [Interface.liftMBO]: src/ConstructiveCryptography/InterfaceGame.lean#L64
 [Interface.Game.visible]: src/ConstructiveCryptography/InterfaceGame.lean#L73
-[Interface.Game.ofPDG]: src/ConstructiveCryptography/GameBound.lean#L60
-[Interface.Game.visible_ofPDG]: src/ConstructiveCryptography/GameBound.lean#L68
-[Interface.Game.conditionallyEquivalent_ofPDG_iff]: src/ConstructiveCryptography/GameBound.lean#L76
-[Interface.game_dist_le]: src/ConstructiveCryptography/GameBound.lean#L88
-[Interface.Game.ofSingleFunction]: src/ConstructiveCryptography/GameBound.lean#L119
-[Interface.ofSingleFunction_conditionallyEquivalent]: src/ConstructiveCryptography/GameBound.lean#L132
+[Interface.Game.ofPDG]: src/ConstructiveCryptography/PresentedGame.lean#L54
+[Interface.Game.visible_ofPDG]: src/ConstructiveCryptography/PresentedGame.lean#L62
+[Interface.Game.conditionallyEquivalent_ofPDG_iff]: src/ConstructiveCryptography/PresentedGame.lean#L70
+[Interface.game_dist_le]: src/ConstructiveCryptography/PresentedGame.lean#L82
+[Interface.Game.ofSingleFunction]: src/ConstructiveCryptography/PresentedGame.lean#L113
+[Interface.ofSingleFunction_conditionallyEquivalent]: src/ConstructiveCryptography/PresentedGame.lean#L126
 [Interface.swap]: src/ConstructiveCryptography/ResourceCoherence.lean#L177
 [Interface.parallel_swap]: src/ConstructiveCryptography/ResourceCoherence.lean#L211
-[notation-distance]: src/ConstructiveCryptography/Notation.lean#L22
-[notation-parallel]: src/ConstructiveCryptography/Notation.lean#L26
-[notation-constructs]: src/ConstructiveCryptography/Notation.lean#L29
-[notation-constructsWithin]: src/ConstructiveCryptography/Notation.lean#L33
-[notation-substitutes]: src/ConstructiveCryptography/Notation.lean#L39
+[notation-distance]: src/ConstructiveCryptography/Notation.lean#L24
+[notation-parallel]: src/ConstructiveCryptography/Notation.lean#L28
+[notation-constructs]: src/ConstructiveCryptography/Notation.lean#L31
+[notation-constructsWithin]: src/ConstructiveCryptography/Notation.lean#L35
+[notation-substitutes]: src/ConstructiveCryptography/Notation.lean#L41
+[notation-conditionallyEquivalent]: src/ConstructiveCryptography/Notation.lean#L47
 
 <!-- Declarations: §3 -->
 
@@ -1026,11 +1028,11 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [CompatibleDistinguisherClass]: src/ConstructiveCryptography/CryptographicAlgebra/Distinguisher.lean#L77
 [CompatibleDistinguisherClass.ofClosure]: src/ConstructiveCryptography/CryptographicAlgebra/Distinguisher.lean#L102
 
-[Games]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L61
-[DistinctionGames]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L111
-[Games.absorb]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L92
-[DistinctionGames.absorb]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L147
-[Games.absorb_comp]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L100
+[Games]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L62
+[DistinctionGames]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L112
+[Games.absorb]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L93
+[DistinctionGames.absorb]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L148
+[Games.absorb_comp]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L101
 [Interface.games]: src/ConstructiveCryptography/InterfaceGame.lean#L89
 [Interface.distinctionGames]: src/ConstructiveCryptography/InterfaceGame.lean#L109
 [Interface.dist_visible_le]: src/ConstructiveCryptography/InterfaceGame.lean#L146
@@ -1123,7 +1125,7 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [Interface.Converter.ofPreservingProgram_smul_ofAutomaton]: src/ConstructiveCryptography/DSL/Converters.lean#L152
 [cc_normalize]: src/ConstructiveCryptography/Tactics/Basic.lean#L30
 [cc_nonexpand]: src/ConstructiveCryptography/Tactics/Categorical.lean#L166
-[cc_nonexpand-interfaces]: src/ConstructiveCryptography/Notation.lean#L98
+[cc_nonexpand-interfaces]: src/ConstructiveCryptography/Notation.lean#L105
 [cc_triangle]: src/ConstructiveCryptography/Tactics/Categorical.lean#L155
 [cc_construct]: src/ConstructiveCryptography/Tactics/Categorical.lean#L42
 [cc_calc]: src/ConstructiveCryptography/Tactics/Substitution.lean#L88
@@ -1158,7 +1160,7 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [aeIdeal_bisim]: src/Examples/AuthenticatedEncryption/Oracle.lean#L240
 [encryptionReal_bisim]: src/Examples/AuthenticatedEncryption/Oracle.lean#L369
 [collision_mass_le]: src/Examples/AuthenticatedEncryption/Collision.lean#L53
-[hybrid_ideal_distance_le]: src/Examples/AuthenticatedEncryption/Collision.lean#L385
+[hybrid_ideal_distance_le]: src/Examples/AuthenticatedEncryption/Collision.lean#L386
 [advantage_attach_le_win]: src/Examples/Games.lean#L88
 [win_attach_le]: src/Examples/Games.lean#L54
 [win_attach_comp_le]: src/Examples/Games.lean#L60
@@ -1197,7 +1199,7 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [uniform]: src/Probability/Distribution.lean#L481
 [statDist]: src/Probability/StatisticalDistance.lean#L88
 [statDist_triangle]: src/Probability/StatisticalDistance.lean#L243
-[statDist_fTransform_le]: src/Probability/StatisticalDistance.lean#L616
+[statDist_fTransform_le]: src/Probability/StatisticalDistance.lean#L615
 [IsCoupling]: src/Probability/Coupling.lean#L46
 [statDist_le_offDiagonalMass]: src/Probability/Coupling.lean#L241
 [exists_coupling_offDiagonalMass_eq]: src/Probability/Coupling.lean#L320
