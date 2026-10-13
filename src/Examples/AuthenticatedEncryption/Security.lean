@@ -109,12 +109,12 @@ noncomputable def correctedChain :
       rw [comp_smul, comp_smul]; rfl
 
 /-- The corrected chain uses `ind-cca` twice. -/
-theorem correctedChain_cca : (correctedChain scheme q).usageCount .cca = 2 := by
+lemma correctedChain_cca : (correctedChain scheme q).usageCount .cca = 2 := by
   cc_usage
   rfl
 
 /-- The corrected chain uses `int-ptxt` twice. -/
-theorem correctedChain_ptxt : (correctedChain scheme q).usageCount .ptxt = 2 := by
+lemma correctedChain_ptxt : (correctedChain scheme q).usageCount .ptxt = 2 := by
   cc_usage
   rfl
 

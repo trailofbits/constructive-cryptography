@@ -71,7 +71,7 @@ noncomputable def goodProbability (G : PDG X Y D) (h : List (X × Y)) : ℝ :=
   G.mass (fun g => Replies g.1.1.1 (h.map Prod.fst) (h.map Prod.snd) ∧
     ¬ g.1.2.1 (h.map Prod.fst))
 
-theorem underlying_probability {G : PDG X Y D} (hG : G.isProbDist) :
+lemma underlying_probability {G : PDG X Y D} (hG : G.isProbDist) :
     G.underlying.isProbDist := Distribution.fTransform_isProbDist _ hG
 
 end PDG
@@ -82,7 +82,7 @@ variable {I : Type} {X Y : I → Type}
 
 /-- A reply with the MBO `c` is `v` exactly when the reply is `v` with its MBO forgotten and
 the MBO of `v` is `c`. -/
-theorem map_tagMBO_eq_some_iff {p : Part (Σ i, Y i)} {c : Bool} {v : Σ i, withMBO Y i} :
+lemma map_tagMBO_eq_some_iff {p : Part (Σ i, Y i)} {c : Bool} {v : Σ i, withMBO Y i} :
     p.map (tagMBO c) = Part.some v ↔ p = Part.some (forgetMBO v) ∧ v.2.2 = c := by
   -- Read both equations `_ = Part.some _` as membership, and unfold membership in a map.
   rw [Part.eq_some_iff, Part.eq_some_iff, Part.mem_map_iff]
@@ -119,7 +119,7 @@ noncomputable def withMBO (g : DDG (Σ i, X i) (Σ i, Y i)) :
     fun _ _ hp hn hd => g.1.2.2 hp hn hd⟩
 
 /-- Forgetting the MBO gives the DDS of the game. -/
-theorem relabel_withMBO (g : DDG (Σ i, X i) (Σ i, Y i)) :
+lemma relabel_withMBO (g : DDG (Σ i, X i) (Σ i, Y i)) :
     relabel (withMBO g).1 id forgetMBO = g.1.1 := by
   -- Compare the two systems at each query history `h`.
   funext h
@@ -131,7 +131,7 @@ theorem relabel_withMBO (g : DDG (Σ i, X i) (Σ i, Y i)) :
 open scoped Classical in
 /-- The transcripts of a game with the MBO: the transcripts of its DDS, each reply with the
 condition on the queries so far. -/
-theorem replies_withMBO_iff (g : DDG (Σ i, X i) (Σ i, Y i)) (xs : List (Σ i, X i))
+lemma replies_withMBO_iff (g : DDG (Σ i, X i) (Σ i, Y i)) (xs : List (Σ i, X i))
     (ys : List (Σ i, SystemAlgebra.withMBO Y i)) :
     Replies (withMBO g).1 xs ys ↔ Replies g.1.1 xs (ys.map forgetMBO) ∧
       ∀ k (hk : k < ys.length), ys[k].2.2 = decide (g.2.1 (xs.take (k + 1))) := by
@@ -150,7 +150,7 @@ theorem replies_withMBO_iff (g : DDG (Σ i, X i) (Σ i, Y i)) (xs : List (Σ i, 
     exact ⟨hl, fun k hk hk' => map_tagMBO_eq_some_iff.mpr ⟨h k hk hk', ht k hk'⟩⟩
 
 /-- Along a transcript of a game with the MBO, the MBO, once set, stays set. -/
-theorem pairwise_withMBO {g : DDG (Σ i, X i) (Σ i, Y i)} {xs : List (Σ i, X i)}
+lemma pairwise_withMBO {g : DDG (Σ i, X i) (Σ i, Y i)} {xs : List (Σ i, X i)}
     {ys : List (Σ i, SystemAlgebra.withMBO Y i)} (hr : Replies (withMBO g).1 xs ys) :
     (ys.map fun y => y.2.2).Pairwise (· ≤ ·) := by
   -- By `replies_withMBO_iff`, the k-th MBO is the condition on x₁ … x_{k+1}.
@@ -172,7 +172,7 @@ theorem pairwise_withMBO {g : DDG (Σ i, X i) (Σ i, Y i)} {xs : List (Σ i, X i
 open scoped Classical in
 /-- On a nonempty transcript, the MBO is unset throughout exactly when the condition does not
 hold on its queries. -/
-theorem replies_withMBO_unset_iff (g : DDG (Σ i, X i) (Σ i, Y i)) {xs : List (Σ i, X i)}
+lemma replies_withMBO_unset_iff (g : DDG (Σ i, X i) (Σ i, Y i)) {xs : List (Σ i, X i)}
     (hxs : xs ≠ []) (ys : List (Σ i, Y i)) :
     Replies (withMBO g).1 xs (ys.map (tagMBO false)) ↔ Replies g.1.1 xs ys ∧ ¬ g.2.1 xs := by
   -- By `replies_withMBO_iff`: the replies with the MBO forgotten are replies of `g.1`, and
@@ -226,7 +226,7 @@ noncomputable def withMBO (G : PDG (Σ i, X i) (Σ i, Y i) (Domain.ofInputs E m 
     rw [map_fst_forgetMBOs] at hd
     exact hd.trans (by simp only [Domain.ofInputs_apply, map_fst_forgetMBOs])⟩) G
 
-theorem withMBO_isProbDist {G : PDG (Σ i, X i) (Σ i, Y i) (Domain.ofInputs E m hE)}
+lemma withMBO_isProbDist {G : PDG (Σ i, X i) (Σ i, Y i) (Domain.ofInputs E m hE)}
     (hG : G.isProbDist) : G.withMBO.isProbDist :=
   Distribution.fTransform_isProbDist _ hG
 
@@ -237,7 +237,7 @@ noncomputable def behavior (G : PDG (Σ i, X i) (Σ i, Y i) (Domain.ofInputs E m
     RandomSystem (Σ i, X i) (Σ i, SystemAlgebra.withMBO Y i) (Domain.ofInputs E m hE) :=
   PDS.behavior G.withMBO (withMBO_isProbDist hG)
 
-theorem behavior_apply (G : PDG (Σ i, X i) (Σ i, Y i) (Domain.ofInputs E m hE))
+lemma behavior_apply (G : PDG (Σ i, X i) (Σ i, Y i) (Domain.ofInputs E m hE))
     (hG : G.isProbDist) (h : List ((Σ i, X i) × Σ i, SystemAlgebra.withMBO Y i)) :
     G.behavior hG h =
       G.mass fun g => Replies (DDG.withMBO g.1).1 (h.map Prod.fst) (h.map Prod.snd) := by
@@ -250,7 +250,7 @@ variable {G : PDG (Σ i, X i) (Σ i, Y i) (Domain.ofInputs E m hE)} (hG : G.isPr
 open scoped Classical in
 /-- **The visible system of the game of a probabilistic discrete game** is the behavior of its
 visible systems. -/
-theorem visible_behavior :
+lemma visible_behavior :
     (G.behavior hG).visible = PDS.behavior G.underlying (underlying_probability hG) := by
   -- Compare the two random systems transcript by transcript.
   apply RandomSystem.ext
@@ -283,7 +283,7 @@ theorem visible_behavior :
   rw [sumMBO_const_mul, sumMBO_replies, DDG.relabel_withMBO, mul_boole]
 
 /-- **The game of a probabilistic discrete game is a game**: its MBO, once set, stays set. -/
-theorem monotoneMBO_behavior : (G.behavior hG).MonotoneMBO := by
+lemma monotoneMBO_behavior : (G.behavior hG).MonotoneMBO := by
   -- Take a transcript `h` of positive probability.
   intro h hne
   -- Its probability is the mass of the games with the MBO that reply `h`.
@@ -299,7 +299,7 @@ theorem monotoneMBO_behavior : (G.behavior hG).MonotoneMBO := by
   simpa only [List.map_map, Function.comp_def] using DDG.pairwise_withMBO hr
 
 /-- The game replies at the queried interface when its visible systems do. -/
-theorem repliesAtQueriedInterface_behavior
+lemma repliesAtQueriedInterface_behavior
     (hU : (PDS.behavior G.underlying (underlying_probability hG)).RepliesAtQueriedInterface) :
     (G.behavior hG).RepliesAtQueriedInterface :=
   -- The game replies at the queried interface when its visible system does (`of_visible`),
@@ -311,7 +311,7 @@ variable (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
 omit [Fintype I] [∀ i, Fintype (X i)] [∀ i, Fintype (Y i)] in
 include hE' in
 /-- On an admitted query sequence, a deterministic game with the MBO answers every query. -/
-theorem exists_transcript_withMBO
+lemma exists_transcript_withMBO
     (g : {g : DDG (Σ i, X i) (Σ i, Y i) // HasDomain (Domain.ofInputs E m hE) g.1.1})
     {xs : List (Σ i, X i)} (hxs : E xs) :
     ∃ ys, Transcript (DDG.withMBO g.1).1 (fixedQueries xs) xs ys := by
@@ -328,7 +328,7 @@ theorem exists_transcript_withMBO
 include hE' in
 /-- **On an admitted query sequence, the MBO is unset with the probability that the condition
 does not hold.** -/
-theorem unsetProbability_behavior {xs : List (Σ i, X i)} (hxs : E xs) :
+lemma unsetProbability_behavior {xs : List (Σ i, X i)} (hxs : E xs) :
     (G.behavior hG).unsetProbability xs = 1 - G.badProbability xs := by
   -- Plan:
   --   1. With the fixed queries xs, every transcript of positive probability is complete; so
@@ -431,7 +431,7 @@ include hE' in
 /-- **A bound on the condition bounds the set MBO**: if the condition holds with probability at
 most `ε` on the empty and on every admitted query sequence, the MBO stays unset with probability
 at least `1 - ε` on the queries of each possible transcript of a random system on the domain. -/
-theorem one_sub_le_unsetProbability_behavior
+lemma one_sub_le_unsetProbability_behavior
     {S : RandomSystem (Σ i, X i) (Σ i, Y i) (Domain.ofInputs E m hE)} {ε : ℝ}
     (hbad : ∀ xs, xs = [] ∨ E xs → G.badProbability xs ≤ ε) (h : List ((Σ i, X i) × Σ i, Y i))
     (hh : S h ≠ 0) : 1 - ε ≤ (G.behavior hG).unsetProbability (h.map Prod.fst) := by

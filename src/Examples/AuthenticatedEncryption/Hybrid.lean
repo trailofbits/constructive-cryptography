@@ -35,12 +35,12 @@ noncomputable abbrev tableLaw {X : Type} (law : Distribution.ProbDist X) (k : �
   Distribution.pi fun _ => law.1
 
 omit [Fintype K] [Fintype M] [Fintype C] [DecidableEq K] [DecidableEq M] in
-theorem tableLaw_isProbDist {X : Type} (law : Distribution.ProbDist X) (k : ℕ) :
+lemma tableLaw_isProbDist {X : Type} (law : Distribution.ProbDist X) (k : ℕ) :
     (tableLaw law k).isProbDist :=
   Distribution.pi_isProbDist fun _ => law.2
 
 /-- **The real system is an automaton** on its key and encryption tables. -/
-theorem real_eq (scheme : SymmetricEncryption K M C) (q : AE.Port → ℕ) :
+lemma real_eq (scheme : SymmetricEncryption K M C) (q : AE.Port → ℕ) :
     AE.Real.perPort scheme (budget := q) = Resource.ofAutomaton (AE.perPort M C q)
       (realStep scheme (AE.Real.bound scheme * ∑ i, q i))
       ⟨Distribution.fTransform (fun ω => (none, ((ω.1, 0), (ω.2, 0))))
@@ -58,7 +58,7 @@ theorem real_eq (scheme : SymmetricEncryption K M C) (q : AE.Port → ℕ) :
   rfl
 
 /-- **The real encryption system is an automaton** on its key and encryption tables. -/
-theorem encryptionReal_eq (scheme : SymmetricEncryption K M C) (q : Encryption.Port → ℕ) :
+lemma encryptionReal_eq (scheme : SymmetricEncryption K M C) (q : Encryption.Port → ℕ) :
     Encryption.Real.perPort scheme (budget := q) = Resource.ofAutomaton (Encryption.perPort M C q)
       (encryptionRealStep scheme (Encryption.Real.bound scheme * ∑ i, q i))
       ⟨Distribution.fTransform (fun ω => (none, ((ω.1, 0), (ω.2, 0))))
@@ -82,7 +82,7 @@ noncomputable abbrev ptxtStep {S : Type}
   (AE.PTXT.body M C).combine step (AE.PTXT.bound_spec M C)
 
 /-- **The plaintext filter on an automaton** is its automaton on the same tables. -/
-theorem ptxt_smul {Ω S : Type} (q : AE.Port → ℕ)
+lemma ptxt_smul {Ω S : Type} (q : AE.Port → ℕ)
     (step : S → (p : AE.Port) → AE.Input M C p → S × AE.Output M C p) (L : Distribution Ω)
     (hL : L.isProbDist) (init : Ω → S) :
     AE.PTXT.perPort M C (budget := q) • Resource.ofAutomaton (AE.perPort M C q) step
@@ -111,7 +111,7 @@ noncomputable abbrev ccaStep {S : Type} (k : ℕ)
 omit [DecidableEq M] in
 /-- **The random-message transformation on an automaton** is its automaton on the tables beside a
 table of replacement messages. -/
-theorem cca_smul {Ω S : Type} (q : AE.Port → ℕ)
+lemma cca_smul {Ω S : Type} (q : AE.Port → ℕ)
     (step : S → (p : AE.Port) → AE.Input M C p → S × AE.Output M C p) (L : Distribution Ω)
     (hL : L.isProbDist) (init : Ω → S) :
     AE.CCA.perPort M C (budget := q) • Resource.ofAutomaton (AE.perPort M C q) step
@@ -139,7 +139,7 @@ noncomputable abbrev aeIdealStep {S : Type} (k : ℕ)
 omit [DecidableEq M] in
 /-- **The ideal transformation on an encryption automaton** is its automaton on the tables beside
 a table of replacement messages. -/
-theorem aeIdeal_smul {Ω S : Type} (q : AE.Port → ℕ)
+lemma aeIdeal_smul {Ω S : Type} (q : AE.Port → ℕ)
     (step : S → (p : Encryption.Port) → Encryption.Input M p → S × Encryption.Output C p)
     (L : Distribution Ω) (hL : L.isProbDist) (init : Ω → S) :
     AE.Ideal.perPort M C (budget := q) •
@@ -163,18 +163,18 @@ end Replacement
 
 /-! ## Each stage is an oracle -/
 
-theorem real_system (scheme : SymmetricEncryption K M C) {k : ℕ} (ω : (Fin k → K) × (Fin k → (K × M → C))) :
+lemma real_system (scheme : SymmetricEncryption K M C) {k : ℕ} (ω : (Fin k → K) × (Fin k → (K × M → C))) :
     automatonSystem (realStep scheme k) (none, ((ω.1, 0), (ω.2, 0))) =
       automatonSystem (oracleStep (realEncrypt scheme) (realDecrypt scheme)) (ω, []) :=
   automatonSystem_eq_of_bisim _ (real_bisim scheme) ⟨rfl, rfl, rfl, Or.inl ⟨rfl, rfl⟩⟩
 
-theorem encryptionReal_system (scheme : SymmetricEncryption K M C) {k : ℕ}
+lemma encryptionReal_system (scheme : SymmetricEncryption K M C) {k : ℕ}
     (ω : (Fin k → K) × (Fin k → (K × M → C))) :
     automatonSystem (encryptionRealStep scheme k) (none, ((ω.1, 0), (ω.2, 0))) =
       automatonSystem (encryptionStep (realEncrypt scheme)) (ω, []) :=
   automatonSystem_eq_of_bisim _ (encryptionReal_bisim scheme) ⟨rfl, rfl, rfl, Or.inl ⟨rfl, rfl⟩⟩
 
-theorem ptxt_system {Ω S : Type} {step : S → (p : AE.Port) → AE.Input M C p → S × AE.Output M C p}
+lemma ptxt_system {Ω S : Type} {step : S → (p : AE.Port) → AE.Input M C p → S × AE.Output M C p}
     {s : S} {encrypt : Ω → ℕ → M → C} {decrypt : Ω → List M → C → Option M} {ω : Ω}
     (h : automatonSystem step s = automatonSystem (oracleStep encrypt decrypt) (ω, [])) :
     automatonSystem (ptxtStep step) (none, s) =
@@ -187,7 +187,7 @@ section Replacement
 variable [DecidableEq C] [Nonempty M]
 
 omit [DecidableEq M] in
-theorem cca_system {Ω S : Type} {k : ℕ}
+lemma cca_system {Ω S : Type} {k : ℕ}
     {step : S → (p : AE.Port) → AE.Input M C p → S × AE.Output M C p} {s : S}
     {encrypt : Ω → ℕ → M → C} {decrypt : Ω → List M → C → Option M} {ω : Ω}
     (h : automatonSystem step s = automatonSystem (oracleStep encrypt decrypt) (ω, []))
@@ -200,7 +200,7 @@ theorem cca_system {Ω S : Type} {k : ℕ}
     (automatonSystem_eq_of_bisim _ (cca_bisim encrypt decrypt) ⟨rfl, rfl, rfl, rfl, rfl⟩)
 
 omit [DecidableEq M] in
-theorem aeIdeal_system {Ω S : Type} {k : ℕ}
+lemma aeIdeal_system {Ω S : Type} {k : ℕ}
     {step : S → (p : Encryption.Port) → Encryption.Input M p → S × Encryption.Output C p} {s : S}
     {encrypt : Ω → ℕ → M → C} {ω : Ω}
     (h : automatonSystem step s = automatonSystem (encryptionStep encrypt) (ω, []))
@@ -236,7 +236,7 @@ noncomputable abbrev hybridDecrypt {k k' : ℕ} :
 
 /-- **The hybrid is the hybrid oracle** on independent key, encryption and two replacement
 tables. -/
-theorem hybrid_mass (h : List ((Σ i, (AE.perPort M C q).X i) × (Σ i, (AE.perPort M C q).Y i))) :
+lemma hybrid_mass (h : List ((Σ i, (AE.perPort M C q).X i) × (Σ i, (AE.perPort M C q).Y i))) :
     (Hybrid scheme q).1 h =
       (Distribution.prod (Distribution.prod (Distribution.prod
           (tableLaw (AE.Real.law1 scheme) (AE.Real.bound scheme * ∑ i, q i))
@@ -263,7 +263,7 @@ abbrev idealTableSize : ℕ :=
   Encryption.Real.bound scheme * ∑ i, AE.Ideal.insideBudget M C q i
 
 /-- **The ideal is the ideal oracle** on independent key, encryption and replacement tables. -/
-theorem ideal_mass (h : List ((Σ i, (AE.perPort M C q).X i) × (Σ i, (AE.perPort M C q).Y i))) :
+lemma ideal_mass (h : List ((Σ i, (AE.perPort M C q).X i) × (Σ i, (AE.perPort M C q).Y i))) :
     (AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme :
         Interface.Resource (AE.perPort M C q)).1 h =
       (Distribution.prod (Distribution.prod

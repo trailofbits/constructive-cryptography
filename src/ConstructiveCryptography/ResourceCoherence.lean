@@ -24,7 +24,7 @@ namespace SystemAlgebra.Interface
 
 open Classical Probability CategoryTheory
 
-theorem parallel_mass_of_presentations_raw {A B : Interface} {ι κ : Type}
+lemma parallel_mass_of_presentations_raw {A B : Interface} {ι κ : Type}
     (R : Resource A) (S : Resource B) (P : Distribution ι) (Q : Distribution κ)
     (s : ι → InterfaceSystem A.I A.X A.Y) (t : κ → InterfaceSystem B.I B.X B.Y)
     (hR : ∀ h, R.1 h = P.mass (fun i => Replies (s i) (h.map Prod.fst) (h.map Prod.snd)))
@@ -37,7 +37,7 @@ theorem parallel_mass_of_presentations_raw {A B : Interface} {ι κ : Type}
   rw [parallel_mass_of_presentations R S P Q s t hR hS]
   exact Distribution.mass_congr _ (fun _ => by rw [replies_relabel_iff, replies_relabel_iff, replies_trim_iff])
 
-theorem parallel_system_assoc {A B C : Interface}
+lemma parallel_system_assoc {A B C : Interface}
     (a : InterfaceSystem A.I A.X A.Y) (b : InterfaceSystem B.I B.X B.Y) (c : InterfaceSystem C.I C.X C.Y) :
     relabel (pair (relabel (pair a b) (sumAlphabet (Sum.rec A.X B.X)).symm
       (sumAlphabet (Sum.rec A.Y B.Y))) c)
@@ -58,7 +58,7 @@ theorem parallel_system_assoc {A B C : Interface}
     · rfl
     · rcases z with ⟨(_ | ⟨⟨⟩⟩), z⟩ <;> rfl
 
-theorem parallel_assoc_mass_of_presentations {A B C : Interface} {ι κ ν : Type}
+lemma parallel_assoc_mass_of_presentations {A B C : Interface} {ι κ ν : Type}
     (R : Resource A) (S : Resource B) (T : Resource C)
     (P : Distribution ι) (Q : Distribution κ) (U : Distribution ν)
     (s : ι → InterfaceSystem A.I A.X A.Y) (t : κ → InterfaceSystem B.I B.X B.Y) (u : ν → InterfaceSystem C.I C.X C.Y)
@@ -78,7 +78,7 @@ theorem parallel_assoc_mass_of_presentations {A B C : Interface} {ι κ ν : Typ
   rw [parallel_system_assoc, replies_relabel_iff]
   rfl
 
-theorem parallel_assoc_mass {A B C : Interface} (R : Resource A) (S : Resource B) (T : Resource C)
+lemma parallel_assoc_mass {A B C : Interface} (R : Resource A) (S : Resource B) (T : Resource C)
     (h : List ((Σ i, (tensor (tensor A B) C).X i) × (Σ i, (tensor (tensor A B) C).Y i))) :
     (parallel (parallel R S) T).1 h = (parallel R (parallel S T)).1
       (h.map ((assocAlphabet A.X B.X C.X).prodCongr (assocAlphabet A.Y B.Y C.Y))) := by
@@ -88,7 +88,7 @@ theorem parallel_assoc_mass {A B C : Interface} (R : Resource A) (S : Resource B
   exact parallel_assoc_mass_of_presentations _ _ _ P.1 Q.1 U.1 Subtype.val Subtype.val Subtype.val
     (fun _ => rfl) (fun _ => rfl) (fun _ => rfl) h
 
-theorem parallel_assoc {A B C : Interface} (R : Resource A) (S : Resource B) (T : Resource C) :
+lemma parallel_assoc {A B C : Interface} (R : Resource A) (S : Resource B) (T : Resource C) :
     ((associator A B C).inv • parallel (parallel R S) T : Resource (tensor A (tensor B C))) =
       parallel R (parallel S T) := by
   apply Subtype.ext
@@ -105,7 +105,7 @@ noncomputable def dummy : Resource unit :=
     fun _ _ _ h => (Part.not_none_dom h.1).elim,
     fun _ => iff_of_false Part.not_none_dom id⟩
 
-theorem parallel_unit_left_mass {A : Interface} (R : Resource A)
+lemma parallel_unit_left_mass {A : Interface} (R : Resource A)
     (h : List ((Σ i, (tensor unit A).X i) × (Σ i, (tensor unit A).Y i))) :
     (parallel dummy R).1 h = R.1
       (h.map ((leftUnitAlphabet A.X).prodCongr (leftUnitAlphabet A.Y))) := by
@@ -130,7 +130,7 @@ theorem parallel_unit_left_mass {A : Interface} (R : Resource A)
   change RandomSystem.parallel dummy.1 R.1 k = _
   rw [RandomSystem.parallel_mass, if_pos hp.1, hp.2.1, hp.2.2, dummy.1.mass_nil, one_mul]
 
-theorem parallel_unit_right_mass {A : Interface} (R : Resource A)
+lemma parallel_unit_right_mass {A : Interface} (R : Resource A)
     (h : List ((Σ i, (tensor A unit).X i) × (Σ i, (tensor A unit).Y i))) :
     (parallel R dummy).1 h = R.1
       (h.map ((rightUnitAlphabet A.X).prodCongr (rightUnitAlphabet A.Y))) := by
@@ -155,7 +155,7 @@ theorem parallel_unit_right_mass {A : Interface} (R : Resource A)
   change RandomSystem.parallel R.1 dummy.1 k = _
   rw [RandomSystem.parallel_mass, if_pos hp.1, hp.2.1, hp.2.2, dummy.1.mass_nil, mul_one]
 
-theorem parallel_dummy_left {A : Interface} (R : Resource A) :
+lemma parallel_dummy_left {A : Interface} (R : Resource A) :
     ((leftUnitor A).inv • parallel dummy R : Resource A) = R := by
   apply Subtype.ext
   apply RandomSystem.ext
@@ -164,7 +164,7 @@ theorem parallel_dummy_left {A : Interface} (R : Resource A) :
   rw [rename_mass, parallel_unit_left_mass]
   simp only [← Equiv.prodCongr_symm, List.map_map, Equiv.self_comp_symm, List.map_id]
 
-theorem parallel_dummy_right {A : Interface} (R : Resource A) :
+lemma parallel_dummy_right {A : Interface} (R : Resource A) :
     ((rightUnitor A).inv • parallel R dummy : Resource A) = R := by
   apply Subtype.ext
   apply RandomSystem.ext
@@ -179,7 +179,7 @@ noncomputable def swap (A B : Interface) : tensor A B ≅ tensor B A :=
     (by rintro ⟨(i | j), x⟩ <;> rfl) (by rintro ⟨(i | j), y⟩ <;> rfl)
     (parallelDomain_swap A B)
 
-theorem parallel_swap_mass {A B : Interface} (R : Resource A) (S : Resource B)
+lemma parallel_swap_mass {A B : Interface} (R : Resource A) (S : Resource B)
     (h : List ((Σ i, (tensor A B).X i) × (Σ i, (tensor A B).Y i))) :
     (parallel S R).1 (h.map ((swapAlphabet A.X B.X).prodCongr (swapAlphabet A.Y B.Y))) =
       (parallel R S).1 h := by
@@ -208,7 +208,7 @@ theorem parallel_swap_mass {A B : Interface} (R : Resource A) (S : Resource B)
   · exact mul_comm _ _
   · rfl
 
-theorem parallel_swap {A B : Interface} (R : Resource A) (S : Resource B) :
+lemma parallel_swap {A B : Interface} (R : Resource A) (S : Resource B) :
     ((swap A B).hom • parallel S R : Resource (tensor A B)) = parallel R S := by
   apply Subtype.ext
   apply RandomSystem.ext

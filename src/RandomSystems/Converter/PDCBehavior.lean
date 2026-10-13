@@ -41,7 +41,7 @@ instance instFintypeTwoFam {I J : Type} {F : I → Type} {G : J → Type} [∀ i
   | ⟨some (), j⟩ => (inferInstance : Fintype (G j))
 
 /-- A reached history extends to a transcript. -/
-theorem Reach.exists_transcript {A B : Type} {s : System A B} {xs : List A} (hr : Reach s xs) :
+lemma Reach.exists_transcript {A B : Type} {s : System A B} {xs : List A} (hr : Reach s xs) :
     ∃ t : List (A × B), t.map Prod.fst = xs ∧ Replies s (t.map Prod.fst) (t.map Prod.snd) := by
   obtain ⟨ys, hy⟩ := hr.exists_replies
   have hx : (xs.zip ys).map Prod.fst = xs := List.map_fst_zip (by rw [hy.length])
@@ -75,7 +75,7 @@ variable {E : List (Σ j, X j) → Prop} {m : ℕ} {hE : ∀ h, E h → h.length
 
 /-- **Every realization of a possible choice of a PDC behavior is a DDC from `E` to `F`** with
 its bound: its transcripts are those of the samples of a presentation. -/
-theorem IsPDCBehavior.isDDCFrom_realization {b : ℕ}
+lemma IsPDCBehavior.isDDCFrom_realization {b : ℕ}
     {R : RandomSystem (Σ l, twoFam U Y l) (Σ l, twoFam V X l) (Domain.converter E m hE F n hF)}
     (hR : IsPDCBehavior O J U V X Y E m hE F n hF b R) {g}
     (hg : R.2.isSubprobabilistic.PossibleChoice g) :
@@ -121,7 +121,7 @@ theorem IsPDCBehavior.isDDCFrom_realization {b : ℕ}
 discipline is the behavior of a PDC from `E` to `F`**: at most `b` inside queries between
 outside replies, every outside reply at the last outside label, and the inside queries
 in `E`. The samples are the realizations of its possible choices. -/
-theorem isPDCBehavior_of_transcripts {b : ℕ}
+lemma isPDCBehavior_of_transcripts {b : ℕ}
     (R : RandomSystem (Σ l, twoFam U Y l) (Σ l, twoFam V X l) (Domain.converter E m hE F n hF))
     (hbound : ∀ p e, R (p ++ e) ≠ 0 → (∀ z ∈ e, IsInside z.2) → e.length ≤ b)
     (hreply : ∀ h x y (o : O), R (h ++ [(x, y)]) ≠ 0 → y.1 = ⟨none, o⟩ →
@@ -161,7 +161,7 @@ theorem isPDCBehavior_of_transcripts {b : ℕ}
 
 namespace PDCBehavior
 
-@[ext] theorem ext {α β : PDCBehavior O J U V X Y E m hE F n hF} (h : ∀ t, α.1 t = β.1 t) :
+@[ext] lemma ext {α β : PDCBehavior O J U V X Y E m hE F n hF} (h : ∀ t, α.1 t = β.1 t) :
     α = β :=
   Subtype.ext (RandomSystem.ext h)
 
@@ -177,7 +177,7 @@ noncomputable def ofDDC (a : InsideOutsideSystem O J U V X Y) {b : ℕ} (ha : Is
   ofPDC ⟨Finsupp.single ⟨a, ha⟩ 1, Distribution.isProbDist_single _⟩
 
 /-- **A DDC's behavior** gives probability one to its transcripts and zero to all others. -/
-theorem ofDDC_apply (a : InsideOutsideSystem O J U V X Y) {b : ℕ} (ha : IsDDCFrom E F b a)
+lemma ofDDC_apply (a : InsideOutsideSystem O J U V X Y) {b : ℕ} (ha : IsDDCFrom E F b a)
     (t : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))) :
     (ofDDC a ha : PDCBehavior O J U V X Y E m hE F n hF).1 t =
       if Replies a (t.map Prod.fst) (t.map Prod.snd) then 1 else 0 := by
@@ -185,7 +185,7 @@ theorem ofDDC_apply (a : InsideOutsideSystem O J U V X Y) {b : ℕ} (ha : IsDDCF
   simp only [behaviorMass, Distribution.mass_single]
 
 /-- **Two DDCs from `E` to `F` below one system have the same behavior.** -/
-theorem ofDDC_eq_of_le {a c W : InsideOutsideSystem O J U V X Y} {b b' : ℕ}
+lemma ofDDC_eq_of_le {a c W : InsideOutsideSystem O J U V X Y} {b b' : ℕ}
     (ha : IsDDCFrom E F b a) (hc : IsDDCFrom E F b' c)
     (haW : ∀ xs ys, Replies a xs ys → Replies W xs ys)
     (hcW : ∀ xs ys, Replies c xs ys → Replies W xs ys) :
@@ -216,7 +216,7 @@ noncomputable def compPDC {bβ bα : ℕ}
 
 omit [Fintype O] [Fintype J] [∀ o, Fintype (U o)] [∀ o, Fintype (V o)] [∀ j, Fintype (X j)]
   [∀ j, Fintype (Y j)] [Fintype M] [∀ k, Fintype (Xm k)] [∀ k, Fintype (Ym k)] in
-theorem behaviorMass_compPDC {bβ bα : ℕ}
+lemma behaviorMass_compPDC {bβ bα : ℕ}
     (P : Distribution.ProbDist {a : InsideOutsideSystem O M U V Xm Ym // IsDDCFrom F' G bβ a})
     (Q : Distribution.ProbDist {c : InsideOutsideSystem M J Xm Ym X Y // IsDDCFrom E F' bα c})
     (h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))) :
@@ -227,7 +227,7 @@ theorem behaviorMass_compPDC {bβ bα : ℕ}
 
 omit [Fintype O] [Fintype J] [∀ o, Fintype (U o)] [∀ o, Fintype (V o)] [∀ j, Fintype (X j)]
   [∀ j, Fintype (Y j)] [Fintype M] [∀ k, Fintype (Xm k)] [∀ k, Fintype (Ym k)] in
-theorem serial_bound {b : ℕ} {a : InsideOutsideSystem O M U V Xm Ym} (ha : IsDDC b a)
+lemma serial_bound {b : ℕ} {a : InsideOutsideSystem O M U V Xm Ym} (ha : IsDDC b a)
     (c : InsideOutsideSystem M J Xm Ym X Y) (us xs ys)
     (tr : Transcript (pair a c) (connectionQueries serialRouteM serialInjM us) xs ys)
     (hd : ¬ (connectionQueries serialRouteM serialInjM us ys).Dom) :
@@ -236,7 +236,7 @@ theorem serial_bound {b : ℕ} {a : InsideOutsideSystem O M U V Xm Ym} (ha : IsD
 
 /-- On presentations, the serial connection law is the behavior of the composed PDC, for any
 valid internal bound `c`. -/
-theorem serial_connectionLaw
+lemma serial_connectionLaw
     {R : RandomSystem (Σ l, twoFam U Ym l) (Σ l, twoFam V Xm l) (Domain.converter F' n' hF' G q hG)}
     {S : RandomSystem (Σ l, twoFam Xm Y l) (Σ l, twoFam Ym X l) (Domain.converter E m hE F' n' hF')}
     {bβ bα c : ℕ} (hc : IsPDCBehavior O M U V Xm Ym F' n' hF' G q hG c R)
@@ -286,7 +286,7 @@ noncomputable def comp (β : PDCBehavior O M U V Xm Ym F' n' hF' G q hG)
         α.2.choose_spec.choose_spec h).symm⟩
 
 /-- **The composition of presentations presents the composition.** -/
-theorem comp_presents (β : PDCBehavior O M U V Xm Ym F' n' hF' G q hG)
+lemma comp_presents (β : PDCBehavior O M U V Xm Ym F' n' hF' G q hG)
     (α : PDCBehavior M J Xm Ym X Y E m hE F' n' hF') {bβ bα : ℕ}
     (P : Distribution.ProbDist {a : InsideOutsideSystem O M U V Xm Ym // IsDDCFrom F' G bβ a})
     (Q : Distribution.ProbDist {c : InsideOutsideSystem M J Xm Ym X Y // IsDDCFrom E F' bα c})
@@ -297,7 +297,7 @@ theorem comp_presents (β : PDCBehavior O M U V Xm Ym F' n' hF' G q hG)
   serial_connectionLaw β.2.choose_spec P Q hP hQ h
 
 /-- The composition of two DDCs as behaviors is the behavior of their composition. -/
-theorem comp_ofDDC {a : InsideOutsideSystem O M U V Xm Ym} {c : InsideOutsideSystem M J Xm Ym X Y}
+lemma comp_ofDDC {a : InsideOutsideSystem O M U V Xm Ym} {c : InsideOutsideSystem M J Xm Ym X Y}
     {bβ bα : ℕ} (ha : IsDDCFrom F' G bβ a) (hc : IsDDCFrom E F' bα c) :
     comp (ofDDC a ha : PDCBehavior O M U V Xm Ym F' n' hF' G q hG)
         (ofDDC c hc : PDCBehavior M J Xm Ym X Y E m hE F' n' hF') =
@@ -311,7 +311,7 @@ theorem comp_ofDDC {a : InsideOutsideSystem O M U V Xm Ym} {c : InsideOutsideSys
   simp only [behaviorMass, Distribution.mass_single]
 
 /-- Composing after a DDC: the behavior is the mass of the composed samples. -/
-theorem ofDDC_comp_presents {a : InsideOutsideSystem O M U V Xm Ym} {bβ bα : ℕ}
+lemma ofDDC_comp_presents {a : InsideOutsideSystem O M U V Xm Ym} {bβ bα : ℕ}
     (ha : IsDDCFrom F' G bβ a) (α : PDCBehavior M J Xm Ym X Y E m hE F' n' hF')
     (Q : Distribution.ProbDist {c : InsideOutsideSystem M J Xm Ym X Y // IsDDCFrom E F' bα c})
     (hQ : ∀ h, behaviorMass Q.1 (h.map Prod.fst) (h.map Prod.snd) = α.1 h)
@@ -323,7 +323,7 @@ theorem ofDDC_comp_presents {a : InsideOutsideSystem O M U V Xm Ym} {bβ bα : �
     Distribution.mass_fTransform]
 
 /-- Composing before a DDC: the behavior is the mass of the composed samples. -/
-theorem comp_ofDDC_presents (β : PDCBehavior O M U V Xm Ym F' n' hF' G q hG) {bβ bα : ℕ}
+lemma comp_ofDDC_presents (β : PDCBehavior O M U V Xm Ym F' n' hF' G q hG) {bβ bα : ℕ}
     (P : Distribution.ProbDist {a : InsideOutsideSystem O M U V Xm Ym // IsDDCFrom F' G bβ a})
     (hP : ∀ h, behaviorMass P.1 (h.map Prod.fst) (h.map Prod.snd) = β.1 h)
     {c : InsideOutsideSystem M J Xm Ym X Y} (hc : IsDDCFrom E F' bα c)
@@ -335,7 +335,7 @@ theorem comp_ofDDC_presents (β : PDCBehavior O M U V Xm Ym F' n' hF' G q hG) {b
     Distribution.mass_fTransform]
 
 /-- Serial composition is associative. -/
-theorem comp_assoc {L : Type} [Fintype L] {XL YL : L → Type} [∀ k, Fintype (XL k)]
+lemma comp_assoc {L : Type} [Fintype L] {XL YL : L → Type} [∀ k, Fintype (XL k)]
     [∀ k, Fintype (YL k)] {F'' : List (Σ k, XL k) → Prop} {n'' : ℕ}
     {hF'' : ∀ h, F'' h → h.length ≤ n''}
     (γ : PDCBehavior O L U V XL YL F'' n'' hF'' G q hG) (β : PDCBehavior L M XL YL Xm Ym F' n' hF' F'' n'' hF'')
@@ -372,7 +372,7 @@ protected noncomputable def id (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [
 
 variable {M : Type} [Fintype M] {Xm Ym : M → Type} [∀ k, Fintype (Xm k)] [∀ k, Fintype (Ym k)]
 
-theorem comp_id (α : PDCBehavior O J U V X Y E m hE F n hF)
+lemma comp_id (α : PDCBehavior O J U V X Y E m hE F n hF)
     (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p) :
     comp α (PDCBehavior.id (m := m) (hE := hE) hE') = α := by
   obtain ⟨b, P, hP⟩ := α.2
@@ -382,7 +382,7 @@ theorem comp_id (α : PDCBehavior O J U V X Y E m hE F n hF)
     Distribution.prod_single_right, Distribution.mass_fTransform, ← hP]
   exact Distribution.mass_congr _ (fun s => s.2.replies_serialM_filter hE' h)
 
-theorem id_comp (α : PDCBehavior O J U V X Y E m hE F n hF)
+lemma id_comp (α : PDCBehavior O J U V X Y E m hE F n hF)
     (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p) :
     comp (PDCBehavior.id (m := n) (hE := hF) hF') α = α := by
   obtain ⟨b, P, hP⟩ := α.2

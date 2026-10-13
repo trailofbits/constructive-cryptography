@@ -42,12 +42,12 @@ transcript, a reply or no reply. -/
 noncomputable def realization (g : List (A × B) → A → Option B) : DDS A B :=
   DDS.ofConditional fun h x => (g h x : Part B)
 
-theorem realization_snoc (g : List (A × B) → A → Option B) {h : List (A × B)}
+lemma realization_snoc (g : List (A × B) → A → Option B) {h : List (A × B)}
     (hr : Replies (realization g).1 (h.map Prod.fst) (h.map Prod.snd)) (x : A) :
     (realization g).1 (h.map Prod.fst ++ [x]) = (g h x : Part B) :=
   DDS.ofConditional_snoc _ hr x
 
-theorem replies_realization_snoc (g : List (A × B) → A → Option B) (t : List (A × B))
+lemma replies_realization_snoc (g : List (A × B) → A → Option B) (t : List (A × B))
     (x : A) (y : B) :
     Replies (realization g).1 ((t ++ [(x, y)]).map Prod.fst) ((t ++ [(x, y)]).map Prod.snd) ↔
       Replies (realization g).1 (t.map Prod.fst) (t.map Prod.snd) ∧ g t x = some y := by
@@ -64,7 +64,7 @@ theorem replies_realization_snoc (g : List (A × B) → A → Option B) (t : Lis
     exact replies_snoc.mpr ⟨hr, by rw [realization_snoc g hr, hg]; rfl⟩
 
 /-- Reply events depend only on the choices at strictly shorter transcripts. -/
-theorem replies_realization_congr (t : List (A × B)) (g g' : List (A × B) → A → Option B)
+lemma replies_realization_congr (t : List (A × B)) (g g' : List (A × B) → A → Option B)
     (hg : ∀ h x, h.length < t.length → g h x = g' h x) :
     Replies (realization g).1 (t.map Prod.fst) (t.map Prod.snd) ↔
       Replies (realization g').1 (t.map Prod.fst) (t.map Prod.snd) := by
@@ -115,7 +115,7 @@ stopping is possible. -/
 def PossibleChoice (g : List (A × B) → A → Option B) : Prop :=
   ∀ h x, g h x ∈ (hp.replyChoice h x).support
 
-theorem replyChoice_none (h : List (A × B)) (x : A) :
+lemma replyChoice_none (h : List (A × B)) (x : A) :
     hp.replyChoice h x none = 1 - (hp.extensionLaw h x).weight / p h := by
   simp only [replyChoice, Finsupp.add_apply, Finsupp.single_apply, if_true]
   have h0 : Distribution.fTransform some
@@ -123,7 +123,7 @@ theorem replyChoice_none (h : List (A × B)) (x : A) :
     Finsupp.mapDomain_of_notMem_range _ _ (by rintro ⟨b, hb⟩; cases hb)
   rw [h0, zero_add, Distribution.weight_mapRange_div]
 
-theorem replyChoice_support_nonempty (h : List (A × B)) (x : A) :
+lemma replyChoice_support_nonempty (h : List (A × B)) (x : A) :
     (hp.replyChoice h x).support.Nonempty := by
   apply Finsupp.support_nonempty_iff.mpr
   intro hz
@@ -132,7 +132,7 @@ theorem replyChoice_support_nonempty (h : List (A × B)) (x : A) :
   norm_num [Distribution.weight] at hw
 
 /-- Realizations of possible choices produce only possible transcripts. -/
-theorem realization_possible (g : List (A × B) → A → Option B) (hg : hp.PossibleChoice g)
+lemma realization_possible (g : List (A × B) → A → Option B) (hg : hp.PossibleChoice g)
     {h : List (A × B)}
     (hr : Replies (realization g).1 (h.map Prod.fst) (h.map Prod.snd)) : p h ≠ 0 := by
   induction h using List.reverseRecOn with
@@ -150,7 +150,7 @@ variable [Fintype A] [Fintype B] (n : ℕ)
 noncomputable def choiceLaw : Distribution (Node A B n → Option B) :=
   pi fun j => hp.replyChoice j.1.1 j.2
 
-theorem choiceLaw_isProbDist : (hp.choiceLaw n).isProbDist :=
+lemma choiceLaw_isProbDist : (hp.choiceLaw n).isProbDist :=
   ⟨pi_nonNeg fun j => (hp.replyChoice_isProbDist j.1.1 j.2).1, by
     rw [choiceLaw, weight_pi]
     exact Finset.prod_eq_one fun j _ => (hp.replyChoice_isProbDist j.1.1 j.2).2⟩
@@ -159,7 +159,7 @@ variable {n}
 
 omit [Fintype A] in
 /-- Beyond the bound, no reply is the possible choice. -/
-theorem none_mem_support {h : List (A × B)} (x : A) (hn : ∀ h, n < h.length → p h = 0)
+lemma none_mem_support {h : List (A × B)} (x : A) (hn : ∀ h, n < h.length → p h = 0)
     (hl : ¬ h.length < n) : none ∈ (hp.replyChoice h x).support := by
   rw [Finsupp.mem_support_iff, hp.replyChoice_none]
   have hw : (hp.extensionLaw h x).weight = 0 := by
@@ -171,7 +171,7 @@ theorem none_mem_support {h : List (A × B)} (x : A) (hn : ∀ h, n < h.length �
   exact one_ne_zero
 
 /-- Supported node choices are possible choices everywhere. -/
-theorem choiceAt_supported (hn : ∀ h, n < h.length → p h = 0) {c : Node A B n → Option B}
+lemma choiceAt_supported (hn : ∀ h, n < h.length → p h = 0) {c : Node A B n → Option B}
     (hc : c ∈ (hp.choiceLaw n).support) : hp.PossibleChoice (choiceAt c) := by
   intro h x
   unfold choiceAt
@@ -183,7 +183,7 @@ theorem choiceAt_supported (hn : ∀ h, n < h.length → p h = 0) {c : Node A B 
   · exact hp.none_mem_support x hn hl
 
 /-- The chain rule: the reply masses of the realizations are the cumulative masses. -/
-theorem mass_replies (hn : ∀ h, n < h.length → p h = 0) (t : List (A × B)) :
+lemma mass_replies (hn : ∀ h, n < h.length → p h = 0) (t : List (A × B)) :
     (hp.choiceLaw n).mass (fun c =>
       Replies (realization (choiceAt c)).1 (t.map Prod.fst) (t.map Prod.snd)) = p t := by
   induction t using List.reverseRecOn with
@@ -254,7 +254,7 @@ theorem exists_presentation (hn : ∀ h, n < h.length → p h = 0) (P : System A
 
 /-- Every possible transcript is produced by a deterministic system with every
 property of the realizations of possible choices. -/
-theorem exists_replies (hn : ∀ h, n < h.length → p h = 0) (P : System A B → Prop)
+lemma exists_replies (hn : ∀ h, n < h.length → p h = 0) (P : System A B → Prop)
     (hP : ∀ g, hp.PossibleChoice g → P (realization g).1) {h : List (A × B)} (hm : p h ≠ 0) :
     ∃ s, P s ∧ Replies s (h.map Prod.fst) (h.map Prod.snd) := by
   obtain ⟨μ, hμ, -⟩ := hp.exists_presentation hn P hP
@@ -269,7 +269,7 @@ namespace RandomSystem
 variable [Fintype A] [Fintype B] {D : Domain A B}
 
 /-- On a random system, realizations of possible choices answer exactly on its domain. -/
-theorem hasDomain_realization (R : RandomSystem A B D) {g : List (A × B) → A → Option B}
+lemma hasDomain_realization (R : RandomSystem A B D) {g : List (A × B) → A → Option B}
     (hg : R.2.isSubprobabilistic.PossibleChoice g) :
     HasDomain D (realization g).1 := by
   have hp := R.2.isSubprobabilistic
@@ -309,7 +309,7 @@ theorem exists_presentation (R : RandomSystem A B D) :
   exact ⟨μ.1, μ.2, RandomSystem.ext fun t => hμ t⟩
 
 /-- Random systems are exactly the classes of equivalent finite PDSs. -/
-theorem ofPDSClass_bijective (D : Domain A B) :
+lemma ofPDSClass_bijective (D : Domain A B) :
     Function.Bijective (ofPDSClass (A := A) (B := B) D) := by
   refine ⟨ofPDSClass_injective, fun R => ?_⟩
   obtain ⟨P, hP, hR⟩ := exists_presentation R

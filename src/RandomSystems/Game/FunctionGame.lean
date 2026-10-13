@@ -42,19 +42,19 @@ noncomputable def ofFunction (P : Distribution K) (f : K → X → Y) (bad : K �
   Distribution.fTransform (fun k => ⟨(DDS.ofFunction D hD (f k), bad k),
     HasDomain.ofInputs (DDS.ofFunction_dom D hD (f k))⟩) P
 
-theorem ofFunction_isProbDist {P : Distribution K} (hP : P.isProbDist)
+lemma ofFunction_isProbDist {P : Distribution K} (hP : P.isProbDist)
     (f : K → X → Y) (bad : K → MC X) :
     (ofFunction D hD bound hb P f bad).isProbDist := Distribution.fTransform_isProbDist _ hP
 
 /-- The visible systems are the sampled function. -/
-theorem ofFunction_underlying (P : Distribution K) (f : K → X → Y) (bad : K → MC X) :
+lemma ofFunction_underlying (P : Distribution K) (f : K → X → Y) (bad : K → MC X) :
     (ofFunction D hD bound hb P f bad).underlying = PDS.ofFunction D hD bound hb f P := by
   -- Both sides push `P` forward; compose k ↦ game ↦ its DDS into one map.
   rw [underlying, ofFunction, Distribution.fTransform_comp]
   -- The composite map is the map of `PDS.ofFunction`: k ↦ the evaluator of `f k`.
   rfl
 
-theorem ofFunction_badProbability (P : Distribution K) (f : K → X → Y)
+lemma ofFunction_badProbability (P : Distribution K) (f : K → X → Y)
     (bad : K → MC X) (xs : List X) :
     (ofFunction D hD bound hb P f bad).badProbability xs = P.mass (fun k => (bad k).1 xs) := by
   -- The mass of an event under a push-forward of `P` is the `P`-mass of its preimage.
@@ -125,7 +125,7 @@ namespace SystemAlgebra
 open Probability
 
 /-- At a single interface, a reply equality is just equality of its values. -/
-theorem single_interface_answers_iff {I X Y : Type} [Unique I]
+lemma single_interface_answers_iff {I X Y : Type} [Unique I]
     (xs : List (Σ _ : I, X)) (answers : (Σ _ : I, X) → Σ _ : I, Y) (f : X → Y) :
     (∀ x ∈ xs, (⟨x.1, f x.2⟩ : Σ _ : I, Y) = answers x) ↔
       ∀ x ∈ xs.map Sigma.snd, f x = (answers ⟨default, x⟩).2 := by

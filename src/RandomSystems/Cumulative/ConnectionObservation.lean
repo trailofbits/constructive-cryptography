@@ -33,7 +33,7 @@ variable {A B X Y : Type}
 def exposedReplies (route : Y → B ⊕ X) (ys : List Y) : List B :=
   ys.filterMap fun y => (route y).getLeft?
 
-theorem exposedReplies_append (route : Y → B ⊕ X) (ys zs : List Y) :
+lemma exposedReplies_append (route : Y → B ⊕ X) (ys zs : List Y) :
     exposedReplies route (ys ++ zs) = exposedReplies route ys ++ exposedReplies route zs := by
   simp only [exposedReplies, List.filterMap_append]
 
@@ -45,10 +45,10 @@ def connectionQueries (route : Y → B ⊕ X) (inj : A → X) (us : List A) : Li
     | none => inj us[(exposedReplies route ys).length]
     | some y => (route y).elim (fun _ => inj us[(exposedReplies route ys).length]) id⟩
 
-theorem connectionQueries_dom (route : Y → B ⊕ X) (inj : A → X) (us : List A) (ys : List Y) :
+lemma connectionQueries_dom (route : Y → B ⊕ X) (inj : A → X) (us : List A) (ys : List Y) :
     (connectionQueries route inj us ys).Dom ↔ (exposedReplies route ys).length < us.length := Iff.rfl
 
-theorem connectionQueries_prefix (route : Y → B ⊕ X) (inj : A → X) (us : List A)
+lemma connectionQueries_prefix (route : Y → B ⊕ X) (inj : A → X) (us : List A)
     (ys : List Y) (y : Y) (hd : (connectionQueries route inj us (ys ++ [y])).Dom) :
     (connectionQueries route inj us ys).Dom := by
   change (exposedReplies route ys).length < us.length
@@ -56,21 +56,21 @@ theorem connectionQueries_prefix (route : Y → B ⊕ X) (inj : A → X) (us : L
   simp only [exposedReplies, List.filterMap_append, List.length_append] at hd ⊢
   omega
 
-theorem connectionQueries_nil (route : Y → B ⊕ X) (inj : A → X) (us : List A) :
+lemma connectionQueries_nil (route : Y → B ⊕ X) (inj : A → X) (us : List A) :
     connectionQueries route inj us [] = (us.head?.map inj : Part X) := by
   cases us with
   | nil => exact Part.ext fun _ => by simp [connectionQueries, exposedReplies]
   | cons a us => exact Part.ext fun _ => by simp [connectionQueries, exposedReplies, eq_comm]
 
-theorem exposedReplies_snoc_in (route : Y → B ⊕ X) (ys : List Y) {y : Y} {x : X}
+lemma exposedReplies_snoc_in (route : Y → B ⊕ X) (ys : List Y) {y : Y} {x : X}
     (hy : route y = .inr x) : exposedReplies route (ys ++ [y]) = exposedReplies route ys := by
   simp [exposedReplies, List.filterMap_append, hy]
 
-theorem exposedReplies_snoc_out (route : Y → B ⊕ X) (ys : List Y) {y : Y} {b : B}
+lemma exposedReplies_snoc_out (route : Y → B ⊕ X) (ys : List Y) {y : Y} {b : B}
     (hy : route y = .inl b) : exposedReplies route (ys ++ [y]) = exposedReplies route ys ++ [b] := by
   simp [exposedReplies, List.filterMap_append, hy]
 
-theorem connectionQueries_snoc_in (route : Y → B ⊕ X) (inj : A → X) (us : List A)
+lemma connectionQueries_snoc_in (route : Y → B ⊕ X) (inj : A → X) (us : List A)
     (ys : List Y) {y : Y} {x : X} (hy : route y = .inr x)
     (hd : (connectionQueries route inj us ys).Dom) :
     connectionQueries route inj us (ys ++ [y]) = Part.some x := by
@@ -80,7 +80,7 @@ theorem connectionQueries_snoc_in (route : Y → B ⊕ X) (inj : A → X) (us : 
     exact hd
   · simp [connectionQueries, List.getLast?_append, hy]
 
-theorem connectionQueries_snoc_out (route : Y → B ⊕ X) (inj : A → X) (us : List A)
+lemma connectionQueries_snoc_out (route : Y → B ⊕ X) (inj : A → X) (us : List A)
     (ys : List Y) {y : Y} {b : B} (hy : route y = .inl b) :
     connectionQueries route inj us (ys ++ [y]) =
       ((us[(exposedReplies route ys).length + 1]?).map inj : Part X) := by
@@ -93,7 +93,7 @@ theorem connectionQueries_snoc_out (route : Y → B ⊕ X) (inj : A → X) (us :
       hy, hl]
 
 /-- A routing environment never receives more exposed replies than requested. -/
-theorem Cons.exposedReplies_length_le {route : Y → B ⊕ X} {inj : A → X}
+lemma Cons.exposedReplies_length_le {route : Y → B ⊕ X} {inj : A → X}
     {us : List A} {h : List (X × Y)} (hc : Cons (connectionQueries route inj us) h) :
     (exposedReplies route (h.map Prod.snd)).length ≤ us.length := by
   rcases List.eq_nil_or_concat h with rfl | ⟨h, z, rfl⟩
@@ -108,7 +108,7 @@ theorem Cons.exposedReplies_length_le {route : Y → B ⊕ X} {inj : A → X}
 
 /-- Observing one existing internal exchange extends the source transcript and
 adds exactly its exposed reply. This applies to partial systems as well. -/
-theorem exchange_transcript_connection {s : System X Y} {route : Y → B ⊕ X}
+lemma exchange_transcript_connection {s : System X Y} {route : Y → B ⊕ X}
     (inj : A → X) (us : List A) {G o G'} (l : Exchange s route G o G') :
     ∀ H x ys b, G = H ++ [x] → o = some b →
       Transcript s (connectionQueries route inj us) H ys →
@@ -137,7 +137,7 @@ theorem exchange_transcript_connection {s : System X Y} {route : Y → B ⊕ X}
 /-- The exposed prefixes of a routed transcript are replies of the existing
 connection. The second clause extends the same internal history through the
 pending exchange; no incompatible histories are combined. -/
-theorem transcript_connection {s : System X Y} {route : Y → B ⊕ X}
+lemma transcript_connection {s : System X Y} {route : Y → B ⊕ X}
     {inj : A → X} {us : List A} {xs : List X} {ys : List Y}
     (tr : Transcript s (connectionQueries route inj us) xs ys) :
     Replies (interconnect s route inj) (us.take (exposedReplies route ys).length)
@@ -188,7 +188,7 @@ theorem transcript_connection {s : System X Y} {route : Y → B ⊕ X}
       subst x'
       exact ih.2 x hx o H (Exchange.feed _ y z o H hy he l)
 
-theorem replies_of_completed_connection {s : System X Y} {route : Y → B ⊕ X}
+lemma replies_of_completed_connection {s : System X Y} {route : Y → B ⊕ X}
     {inj : A → X} {us : List A} {xs : List X} {ys : List Y}
     (tr : Transcript s (connectionQueries route inj us) xs ys)
     (hd : ¬ (connectionQueries route inj us ys).Dom) :
@@ -199,7 +199,7 @@ theorem replies_of_completed_connection {s : System X Y} {route : Y → B ⊕ X}
 
 /-- Every completed connection prefix can be observed using the same source
 history. The next external query is the next element of the supplied sequence. -/
-theorem transcript_of_connection_replies {s : System X Y} {route : Y → B ⊕ X}
+lemma transcript_of_connection_replies {s : System X Y} {route : Y → B ⊕ X}
     {inj : A → X} {us u : List A} {v : List B}
     (hr : Replies (interconnect s route inj) u v) (hu : u <+: us) :
     ∃ H ys, Induces s route inj u v.getLast? H ∧
@@ -238,7 +238,7 @@ theorem transcript_of_connection_replies {s : System X Y} {route : Y → B ⊕ X
 
 /-- Completed transcripts characterize the replies of general system
 connection, before any probabilistic lifting. -/
-theorem replies_connection_iff {s : System X Y} {route : Y → B ⊕ X}
+lemma replies_connection_iff {s : System X Y} {route : Y → B ⊕ X}
     {inj : A → X} (us : List A) (vs : List B) :
     Replies (interconnect s route inj) us vs ↔
       ∃ xs ys, Transcript s (connectionQueries route inj us) xs ys ∧
@@ -253,7 +253,7 @@ theorem replies_connection_iff {s : System X Y} {route : Y → B ⊕ X}
 
 /-- A connection preserves inclusion of completed component behavior. Silent
 exchanges are irrelevant here: every observed prefix has a completed reply. -/
-theorem Replies.interconnect_mono {s t : System X Y}
+lemma Replies.interconnect_mono {s t : System X Y}
     (hst : ∀ h y, y ∈ s h → y ∈ t h) {route : Y → B ⊕ X} {inj : A → X}
     {us vs} (hr : Replies (interconnect s route inj) us vs) :
     Replies (interconnect t route inj) us vs := by
@@ -263,7 +263,7 @@ theorem Replies.interconnect_mono {s t : System X Y}
 
 /-- The bound on consecutive internal queries bounds the complete component
 transcript of each exposed history, even for partial components. -/
-theorem Transcript.connection_length_le
+lemma Transcript.connection_length_le
     {Xa Ya Xb Yb : Type} {a : System Xa Ya} {b : System Xb Yb} {P : Ya → Prop}
     {route : Two Ya Yb → B ⊕ Two Xa Xb} {inj : A → Two Xa Xb} {n : ℕ}
     (hc : CyclesThrough P route) (hb : ∀ h, (a h).Dom → run P a h ≤ n)
@@ -293,14 +293,14 @@ noncomputable def connectionLaw (R : RandomSystem X Y D) (route : Y → B ⊕ X)
     ((R.sLaw (connectionQueries route inj us) n).restrict
       fun h => ¬ (connectionQueries route inj us (h.map Prod.snd)).Dom)
 
-theorem connectionLaw_nonneg (R : RandomSystem X Y D) (route : Y → B ⊕ X)
+lemma connectionLaw_nonneg (R : RandomSystem X Y D) (route : Y → B ⊕ X)
     (inj : A → X) (us : List A) (n : ℕ) :
     (R.connectionLaw route inj us n).NonNeg :=
   ((sLaw_nonNeg n).restrict _).fTransform _
 
 /-- Every completed internal transcript contributes its probability to its
 exposed reply sequence. -/
-theorem mass_le_connectionLaw (R : RandomSystem X Y D) (route : Y → B ⊕ X)
+lemma mass_le_connectionLaw (R : RandomSystem X Y D) (route : Y → B ⊕ X)
     (inj : A → X) (us : List A) (n : ℕ) (h : List (X × Y))
     (hc : Cons (connectionQueries route inj us) h) (hn : h.length ≤ n)
     (hd : ¬ (connectionQueries route inj us (h.map Prod.snd)).Dom) :
@@ -316,7 +316,7 @@ theorem mass_le_connectionLaw (R : RandomSystem X Y D) (route : Y → B ⊕ X)
 
 /-- Connection preserves a finite probabilistic choice among behaviors on
 the same admitted domain. -/
-theorem connectionLaw_mix {ι : Type} (P : Distribution.ProbDist ι)
+lemma connectionLaw_mix {ι : Type} (P : Distribution.ProbDist ι)
     (R : ι → RandomSystem X Y D) (route : Y → B ⊕ X) (inj : A → X)
     (us : List A) (n : ℕ) :
     (mix P R).connectionLaw route inj us n =
@@ -337,7 +337,7 @@ theorem connectionLaw_mix {ι : Type} (P : Distribution.ProbDist ι)
   simp only [Distribution.fTransform_smul]
 
 /-- Every completed outcome contains exactly one reply to each exposed input. -/
-theorem connectionLaw_length (R : RandomSystem X Y D) (route : Y → B ⊕ X)
+lemma connectionLaw_length (R : RandomSystem X Y D) (route : Y → B ⊕ X)
     (inj : A → X) (us : List A) (n : ℕ) {vs : List B}
     (hv : vs ∈ (R.connectionLaw route inj us n).support) : vs.length = us.length := by
   obtain ⟨h, hh, rfl⟩ := Distribution.mem_support_fTransform _ _ hv
@@ -348,7 +348,7 @@ theorem connectionLaw_length (R : RandomSystem X Y D) (route : Y → B ⊕ X)
 
 /-- Compatible, completed observations yield probability distributions. Both
 hypotheses are explicit for partial resources. -/
-theorem connectionLaw_isProbDist (R : RandomSystem X Y D) (route : Y → B ⊕ X)
+lemma connectionLaw_isProbDist (R : RandomSystem X Y D) (route : Y → B ⊕ X)
     (inj : A → X) (us : List A) (n : ℕ)
     (hc : Compatible R (connectionQueries route inj us))
     (hs : ∀ h, Cons (connectionQueries route inj us) h → R h ≠ 0 → h.length = n →
@@ -374,7 +374,7 @@ theorem connectionLaw_isProbDist (R : RandomSystem X Y D) (route : Y → B ⊕ X
   exact Distribution.fTransform_isProbDist _ (sLaw_isProbDist hc n)
 
 /-- A sufficient internal bound is immaterial to the completed reply law. -/
-theorem connectionLaw_stable (R : RandomSystem X Y D) (route : Y → B ⊕ X)
+lemma connectionLaw_stable (R : RandomSystem X Y D) (route : Y → B ⊕ X)
     (inj : A → X) (us : List A) {n m : ℕ} (hn : n ≤ m)
     (hb : ∀ h, Cons (connectionQueries route inj us) h → R h ≠ 0 →
       ¬ (connectionQueries route inj us (h.map Prod.snd)).Dom → h.length ≤ n) :
@@ -383,7 +383,7 @@ theorem connectionLaw_stable (R : RandomSystem X Y D) (route : Y → B ⊕ X)
   rw [sLaw_completed_stable R _ hn hb]
 
 /-- Any two sufficient bounds give the same completed law. -/
-theorem connectionLaw_eq_of_bounds (R : RandomSystem X Y D) (route : Y → B ⊕ X)
+lemma connectionLaw_eq_of_bounds (R : RandomSystem X Y D) (route : Y → B ⊕ X)
     (inj : A → X) (us : List A) (n m : ℕ)
     (hn : ∀ h, Cons (connectionQueries route inj us) h → R h ≠ 0 →
       ¬ (connectionQueries route inj us (h.map Prod.snd)).Dom → h.length ≤ n)
@@ -397,7 +397,7 @@ theorem connectionLaw_eq_of_bounds (R : RandomSystem X Y D) (route : Y → B ⊕
 /-- On a finite presentation, completed connection probabilities agree with
 the existing deterministic connection. The bound concerns the completed
 internal transcripts, not the number of samples in the presentation. -/
-theorem connectionLaw_eq_mass {ι : Type} (R : RandomSystem X Y D)
+lemma connectionLaw_eq_mass {ι : Type} (R : RandomSystem X Y D)
     (P : Distribution ι) (hP : P.NonNeg) (systems : ι → System X Y)
     (hR : ∀ h, R h = P.mass (fun s => Replies (systems s) (h.map Prod.fst) (h.map Prod.snd)))
     (route : Y → B ⊕ X) (inj : A → X) (us : List A) (n : ℕ)
@@ -432,7 +432,7 @@ theorem connectionLaw_eq_mass {ι : Type} (R : RandomSystem X Y D)
 /-- The connection of two independent random systems is observed through one pair of
 independent finite presentations, whose samples have every property of the
 realizations of possible choices. -/
-theorem exists_parallel_connection_presentations
+lemma exists_parallel_connection_presentations
     {X' Y' : Type} [Fintype X'] [Fintype Y'] {D' : Domain X' Y'}
     (R : RandomSystem X Y D) (S : RandomSystem X' Y' D')
     (route : Two Y Y' → B ⊕ Two X X') (inj : A → Two X X') (bound : List A → ℕ)
@@ -461,7 +461,7 @@ theorem exists_parallel_connection_presentations
 
 /-- Deterministic component bounds bound every possible transcript of the
 parallel system. -/
-theorem parallel_connection_length_le
+lemma parallel_connection_length_le
     {X' Y' : Type} [Fintype X'] [Fintype Y'] {D' : Domain X' Y'}
     (R : RandomSystem X Y D) (S : RandomSystem X' Y' D')
     (route : Two Y Y' → B ⊕ Two X X') (inj : A → Two X X')

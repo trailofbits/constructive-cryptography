@@ -65,7 +65,7 @@ noncomputable abbrev star {A : C}
 omit [MonoidalCategory C] in
 /-- Membership in converter-class closure, expressed with ordinary base
 converters. -/
-theorem mem_star_iff {A : C}
+lemma mem_star_iff {A : C}
     {converters : EndoFamily A}
     {source : Specification (Phi A)} {resource : Phi A} :
     resource ∈ star converters source ↔
@@ -82,7 +82,7 @@ theorem mem_star_iff {A : C}
 
 omit [MonoidalCategory C] in
 /-- Every specification is contained in its converter-class closure. -/
-theorem subset_star {A : C}
+lemma subset_star {A : C}
     (converters : EndoFamily A)
     (source : Specification (Phi A)) :
     source ⊆ star converters source := by
@@ -91,7 +91,7 @@ theorem subset_star {A : C}
 
 omit [MonoidalCategory C] in
 /-- Converter-class closure is idempotent. -/
-theorem star_idem {A : C}
+lemma star_idem {A : C}
     (converters : EndoFamily A)
     (source : Specification (Phi A)) :
     star converters
@@ -102,7 +102,7 @@ theorem star_idem {A : C}
 
 omit [MonoidalCategory C] in
 /-- A larger admitted converter class gives a larger star relaxation. -/
-theorem star_mono {A : C}
+lemma star_mono {A : C}
     {converters converters' : EndoFamily A}
     (included : converters ≤ converters') (source : Specification (Phi A)) :
     star converters source ⊆
@@ -117,7 +117,7 @@ theorem star_mono {A : C}
 omit [MonoidalCategory C] in
 /-- Converter attachment carries a star-relaxed source into the star closure
 of its direct image when the converter commutes with the admitted class. -/
-theorem map_star_subset {A : C} {converter : CategoryTheory.End A}
+lemma map_star_subset {A : C} {converter : CategoryTheory.End A}
     {converters : EndoFamily A}
     (commutes : ∀ classConverter : CategoryTheory.End A,
       classConverter.op ∈ converters →
@@ -163,7 +163,7 @@ theorem Constructs.star {A : C} {converter : CategoryTheory.End A}
 
 /-- Approximate construction remains valid after star-relaxing both endpoints
 when the constructing converter commutes with the admitted class. -/
-theorem ConstructsWithin.star [CompatiblePseudoMetric C Phi] {A : C}
+lemma ConstructsWithin.star [CompatiblePseudoMetric C Phi] {A : C}
     {converter : CategoryTheory.End A}
     {converters : EndoFamily A}
     {source target : Specification (Phi A)} {error : ENNReal}
@@ -191,7 +191,7 @@ converter-class-relaxed ideal.
 
 Maurer--Renner 2016, Section 4.3 (printed p. 13): an equality of the form
 “`πR = Tσ`” is read as membership of `πR` in `TΣ = T*`. -/
-theorem constructs_star_of_simulator {A B : C}
+lemma constructs_star_of_simulator {A B : C}
     {converter : A ⟶ B} {converters : EndoFamily A}
     {real : Phi B} {ideal : Phi A}
     (simulator : CategoryTheory.End A) (admitted : simulator.op ∈ converters)
@@ -209,7 +209,7 @@ singleton ideal.
 
 Maurer--Renner 2016, Section 4.2 (printed p. 12): a simulator is exhibited to
 prove the required construction; it is not part of the construction notion. -/
-theorem constructs_star_of_simulators {A B : C}
+lemma constructs_star_of_simulators {A B : C}
     {converter : A ⟶ B} {converters : EndoFamily A}
     {real : Specification (Phi B)} {ideal : Phi A}
     (simulates : ∀ resource ∈ real,
@@ -227,7 +227,7 @@ theorem constructs_star_of_simulators {A B : C}
 
 /-- An explicit simulator distance bound proves approximate construction into
 the converter-class-relaxed ideal. -/
-theorem constructsWithin_star_of_simulator [CompatiblePseudoMetric C Phi] {A B : C}
+lemma constructsWithin_star_of_simulator [CompatiblePseudoMetric C Phi] {A B : C}
     {converter : A ⟶ B} {converters : EndoFamily A}
     {real : Phi B} {ideal : Phi A} {error : ENNReal}
     (simulator : CategoryTheory.End A) (admitted : simulator.op ∈ converters)
@@ -243,7 +243,7 @@ theorem constructsWithin_star_of_simulator [CompatiblePseudoMetric C Phi] {A B :
 
 /-- Pointwise simulator distance witnesses prove approximate construction into
 a star-relaxed singleton ideal. -/
-theorem constructsWithin_star_of_simulators [CompatiblePseudoMetric C Phi] {A B : C}
+lemma constructsWithin_star_of_simulators [CompatiblePseudoMetric C Phi] {A B : C}
     {converter : A ⟶ B} {converters : EndoFamily A}
     {real : Specification (Phi B)} {ideal : Phi A} {error : ENNReal}
     (simulates : ∀ resource ∈ real,

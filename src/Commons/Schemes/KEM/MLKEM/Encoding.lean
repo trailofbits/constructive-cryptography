@@ -66,7 +66,7 @@ def publicKeyCanonical [DecidableEq encoding.EncodedTHat]
     (tHatEncoded : encoding.EncodedTHat) : Bool :=
   encoding.byteEncode12Vec (encoding.byteDecode12Vec tHatEncoded) == tHatEncoded
 
-@[simp] theorem publicKeyCanonical_byteEncode12Vec_eq_true
+@[simp] lemma publicKeyCanonical_byteEncode12Vec_eq_true
     [DecidableEq encoding.EncodedTHat] (tHat : TqVec params.k) :
     encoding.publicKeyCanonical (encoding.byteEncode12Vec tHat) = true := by
   unfold Encoding.publicKeyCanonical

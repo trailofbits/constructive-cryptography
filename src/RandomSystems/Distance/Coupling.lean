@@ -62,7 +62,7 @@ noncomputable def tr (s : System A B) (σ : List B →. A) : ℕ → List (A × 
 variable {s : System A B} {σ : List B →. A}
 
 /-- The queries of the transcript follow `σ`. -/
-theorem cons_tr (n : ℕ) : Cons σ (s.tr σ n) := by
+lemma cons_tr (n : ℕ) : Cons σ (s.tr σ n) := by
   induction n with
   | zero => exact cons_nil
   | succ n ih =>
@@ -74,7 +74,7 @@ theorem cons_tr (n : ℕ) : Cons σ (s.tr σ n) := by
     all_goals exact ih
 
 /-- The system gives the replies of its transcript. -/
-theorem replies_tr (n : ℕ) :
+lemma replies_tr (n : ℕ) :
     Replies s ((s.tr σ n).map Prod.fst) ((s.tr σ n).map Prod.snd) := by
   induction n with
   | zero => exact replies_nil s
@@ -89,7 +89,7 @@ theorem replies_tr (n : ℕ) :
 
 /-- **The transcript is complete** within `n` rounds when `s` answers every query `σ` asks after
 it: it has `n` rounds, or the strategy has stopped. -/
-theorem good_tr {n : ℕ}
+lemma good_tr {n : ℕ}
     (hs : ∀ x ∈ σ ((s.tr σ n).map Prod.snd), (s ((s.tr σ n).map Prod.fst ++ [x])).Dom) :
     Good σ n (s.tr σ n) := by
   -- By induction: the transcript has `n` rounds, or it ended early and `s` does not answer
@@ -123,7 +123,7 @@ theorem good_tr {n : ℕ}
 /-- **The transcript is the only complete transcript the system replies**: when `s` answers
 every query `σ` asks after its transcript, a transcript of `σ` complete within `n` rounds is
 replied by `s` exactly when it is the transcript of `s`. -/
-theorem tr_eq_iff {n : ℕ}
+lemma tr_eq_iff {n : ℕ}
     (hs : ∀ x ∈ σ ((s.tr σ n).map Prod.snd), (s ((s.tr σ n).map Prod.fst ++ [x])).Dom)
     (h : List (A × B)) :
     s.tr σ n = h ↔ Good σ n h ∧ Replies s (h.map Prod.fst) (h.map Prod.snd) := by
@@ -210,7 +210,7 @@ that the two sampled systems give different transcripts:
 
 Both transcript laws are transformations of `J` (`sLaw_behavior_eq_fTransform`), which agree
 where the two transcripts agree. -/
-theorem statDist_sLaw_behavior_le_of_isCoupling {P Q : PDS A B D} (hP : P.isProbDist)
+lemma statDist_sLaw_behavior_le_of_isCoupling {P Q : PDS A B D} (hP : P.isProbDist)
     (hQ : Q.isProbDist)
     {J : Distribution ({s : System A B // IsDDS s ∧ HasDomain D s} ×
       {s : System A B // IsDDS s ∧ HasDomain D s})}

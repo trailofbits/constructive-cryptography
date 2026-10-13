@@ -101,7 +101,7 @@ noncomputable def Resource.ofPDS {A : Interface}
     RandomSystem.ofPDS_repliesAtQueriedInterface P⟩
 
 /-- Every resource is the behavior of a PDS of deterministic resources. -/
-theorem Resource.exists_ofPDS {A : Interface} (R : Resource A) :
+lemma Resource.exists_ofPDS {A : Interface} (R : Resource A) :
     ∃ Q : Probability.Distribution.ProbDist {s : InterfaceSystem A.I A.X A.Y //
       IsDDS s ∧ SystemAlgebra.RepliesAtQueriedInterface s ∧ ∀ h, (s h).Dom ↔ A.domain h},
       Resource.ofPDS Q = R := by
@@ -115,7 +115,7 @@ noncomputable def ofDeterministic {A : Interface} (s : InterfaceSystem A.I A.X A
   Resource.ofPDS ⟨Finsupp.single ⟨s, hs⟩ 1, Probability.Distribution.isProbDist_single _⟩
 
 open Classical in
-theorem ofDeterministic_mass {A : Interface} (s : InterfaceSystem A.I A.X A.Y)
+lemma ofDeterministic_mass {A : Interface} (s : InterfaceSystem A.I A.X A.Y)
     (hs : IsDDS s ∧ SystemAlgebra.RepliesAtQueriedInterface s ∧ ∀ h, (s h).Dom ↔ A.domain h)
     (h : List ((Σ i, A.X i) × (Σ i, A.Y i))) :
     (ofDeterministic s hs).1 h =
@@ -143,7 +143,7 @@ noncomputable def ofDDC {A B : Interface} (α : InsideOutsideSystem A.I B.I A.X 
   PDCBehavior.ofDDC α hα
 
 /-- The converter of a DDC gives probability one to its transcripts and zero to all others. -/
-theorem ofDDC_apply {A B : Interface} (α : InsideOutsideSystem A.I B.I A.X A.Y B.X B.Y)
+lemma ofDDC_apply {A B : Interface} (α : InsideOutsideSystem A.I B.I A.X A.Y B.X B.Y)
     {b : ℕ} (hα : IsDDCFrom B.domain A.domain b α)
     (t : List ((Σ l, twoFam A.X B.Y l) × (Σ l, twoFam A.Y B.X l))) :
     (ofDDC α hα).1 t = open Classical in
@@ -161,11 +161,11 @@ whose domains are still to be inferred takes them from the resource it acts on. 
 noncomputable instance {A B : Interface} : HSMul (A ⟶ B) (Resource B) (Resource A) :=
   ⟨attach⟩
 
-theorem smul_val {A B : Interface} (α : A ⟶ B) (R : Resource B) :
+lemma smul_val {A B : Interface} (α : A ⟶ B) (R : Resource B) :
     (α • R).1 = PDCBehavior.attach B.nonempty_prefix A.nonempty_prefix α R.1 R.2 := rfl
 
 /-- **Attaching the identity** leaves a resource unchanged. -/
-theorem identity_attach {A : Interface} (R : Resource A) : (𝟙 A • R : Resource A) = R :=
+lemma identity_attach {A : Interface} (R : Resource A) : (𝟙 A • R : Resource A) = R :=
   Subtype.ext (PDCBehavior.attach_id A.nonempty_prefix R.1 R.2)
 
 /-- **Serial attachment** (MR16 §3.3, printed p. 7: “(β ∘ α)ⁱR = βⁱ(αⁱR)”): attaching a
@@ -175,7 +175,7 @@ theorem comp_smul {A B C : Interface} (α : A ⟶ B) (β : B ⟶ C) (R : Resourc
   Subtype.ext (PDCBehavior.attach_comp C.nonempty_prefix A.nonempty_prefix B.nonempty_prefix
     α β R.1 R.2)
 
-theorem comp_eq {A B C : Interface} (α : A ⟶ B) (β : B ⟶ C) :
+lemma comp_eq {A B C : Interface} (α : A ⟶ B) (β : B ⟶ C) :
     α ≫ β = PDCBehavior.comp α β := rfl
 
 end Interface

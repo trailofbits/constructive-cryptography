@@ -30,7 +30,7 @@ variable {A B C D E F : Interface}
     {c : InsideOutsideSystem C.I F.I C.X C.Y F.X F.Y}
 
 /-- Regrouping changes only the two ways to label the same three constituents. -/
-theorem tensorRaw_assoc :
+lemma tensorRaw_assoc :
     relabel (tensorRaw (tensorRaw a b) c)
       (insideMap (assocAlphabet D.Y E.Y F.Y).symm)
       (insideMap (assocAlphabet D.X E.X F.X)) =
@@ -50,7 +50,7 @@ theorem tensorRaw_assoc :
     · rcases z with ⟨⟨(_ | ⟨⟨⟩⟩), i⟩, z⟩ <;> rfl
     · rcases z with ⟨(_ | ⟨⟨⟩⟩), ⟨⟨(_ | ⟨⟨⟩⟩), i⟩, z⟩⟩ <;> rfl
 
-theorem tensorRaw_unit_left (ha : SilentAtEmpty a) :
+lemma tensorRaw_unit_left (ha : SilentAtEmpty a) :
     relabel (tensorRaw (idConverter unit.I unit.X unit.Y) a)
       (insideMap (leftUnitAlphabet D.Y).symm) (insideMap (leftUnitAlphabet D.X)) =
       relabel a (outsideMap (leftUnitAlphabet A.X)) (outsideMap (leftUnitAlphabet A.Y).symm) := by
@@ -69,7 +69,7 @@ theorem tensorRaw_unit_left (ha : SilentAtEmpty a) :
   funext z
   rcases z with ⟨⟨(_ | ⟨⟨⟩⟩), i⟩, z⟩ <;> rfl
 
-theorem tensorRaw_unit_right (ha : SilentAtEmpty a) :
+lemma tensorRaw_unit_right (ha : SilentAtEmpty a) :
     relabel (tensorRaw a (idConverter unit.I unit.X unit.Y))
       (insideMap (rightUnitAlphabet D.Y).symm) (insideMap (rightUnitAlphabet D.X)) =
       relabel a (outsideMap (rightUnitAlphabet A.X)) (outsideMap (rightUnitAlphabet A.Y).symm) := by
@@ -96,7 +96,7 @@ variable {A B C D E F : Interface}
     {b : InsideOutsideSystem B.I E.I B.X B.Y E.X E.Y}
     {c : InsideOutsideSystem C.I F.I C.X C.Y F.X F.Y}
 
-theorem trim_serialM_leftUnitor_of_isDDC {ba : ℕ} (ha : IsDDC ba a) :
+lemma trim_serialM_leftUnitor_of_isDDC {ba : ℕ} (ha : IsDDC ba a) :
     trim (serialM (SystemAlgebra.tensorL (idConverter unit.I unit.X unit.Y) a)
       (renameConverter (leftUnitAlphabet D.X) (leftUnitAlphabet D.Y).symm)) =
     trim (serialM (renameConverter (leftUnitAlphabet A.X) (leftUnitAlphabet A.Y).symm) a) := by
@@ -130,7 +130,7 @@ theorem trim_serialM_leftUnitor_of_isDDC {ba : ℕ} (ha : IsDDC ba a) :
       serialM_relabel_forwardAll _ _ _ ha.dds.1]
   · rw [ha.canon_eq]; exact ha
 
-theorem trim_serialM_rightUnitor_of_isDDC {ba : ℕ} (ha : IsDDC ba a) :
+lemma trim_serialM_rightUnitor_of_isDDC {ba : ℕ} (ha : IsDDC ba a) :
     trim (serialM (SystemAlgebra.tensorL a (idConverter unit.I unit.X unit.Y))
       (renameConverter (rightUnitAlphabet D.X) (rightUnitAlphabet D.Y).symm)) =
     trim (serialM (renameConverter (rightUnitAlphabet A.X) (rightUnitAlphabet A.Y).symm) a) := by
@@ -175,7 +175,7 @@ variable {A B C D E F : Interface}
     {c : InsideOutsideSystem C.I F.I C.X C.Y F.X F.Y}
 
 /-- The associator is natural for partial converters. -/
-theorem trim_serialM_associator_of_isDDC {ba bb bc : ℕ}
+lemma trim_serialM_associator_of_isDDC {ba bb bc : ℕ}
     (ha : IsDDC ba a) (hb : IsDDC bb b) (hc : IsDDC bc c) :
     trim (serialM (SystemAlgebra.tensorL (SystemAlgebra.tensorL a b) c)
       (renameConverter (assocAlphabet D.X E.X F.X) (assocAlphabet D.Y E.Y F.Y).symm)) =

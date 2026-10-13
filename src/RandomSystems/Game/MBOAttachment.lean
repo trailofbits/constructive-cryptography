@@ -54,7 +54,7 @@ def inputMBO : (Σ l, twoFam U (withMBO Y) l) → Option Bool
 def latestMBO (h : List (Σ l, twoFam U (withMBO Y) l)) : Bool :=
   (h.reverse.findSome? inputMBO).getD false
 
-theorem latestMBO_snoc (h : List (Σ l, twoFam U (withMBO Y) l)) (z : Σ l, twoFam U (withMBO Y) l) :
+lemma latestMBO_snoc (h : List (Σ l, twoFam U (withMBO Y) l)) (z : Σ l, twoFam U (withMBO Y) l) :
     latestMBO (h ++ [z]) = (inputMBO z).getD (latestMBO h) := by
   -- The latest MBO is found by searching the reversed history, which starts with `z`: it is the
   -- MBO of `z` if `z` is an inside reply, and the latest MBO of `h` otherwise.
@@ -62,7 +62,7 @@ theorem latestMBO_snoc (h : List (Σ l, twoFam U (withMBO Y) l)) (z : Σ l, twoF
     List.singleton_append, List.findSome?_cons]
   cases inputMBO z <;> rfl
 
-@[simp] theorem latestMBO_nil : latestMBO ([] : List (Σ l, twoFam U (withMBO Y) l)) = false := rfl
+@[simp] lemma latestMBO_nil : latestMBO ([] : List (Σ l, twoFam U (withMBO Y) l)) = false := rfl
 
 /-- **The MBO-forwarding lift** of a converter: it runs the converter on the inside replies
 without their MBO, and tags each outside reply with the MBO of the latest inside reply. -/
@@ -83,27 +83,27 @@ def liftMBO (a : InsideOutsideSystem O J U V X Y) :
   --        outside                                         inside
   fun h => (a (h.map (insideMap forgetMBO))).map (outsideMap (tagMBO (latestMBO h)))
 
-theorem insideMap_forgetMBO_fst (z : Σ l, twoFam U (withMBO Y) l) :
+lemma insideMap_forgetMBO_fst (z : Σ l, twoFam U (withMBO Y) l) :
     (insideMap forgetMBO z).1 = z.1 := by
   -- Outside query or inside reply: forgetting the MBO keeps the label.
   rcases z with ⟨⟨_ | ⟨⟨⟩⟩, j⟩, y⟩ <;> rfl
 
-theorem outsideMap_tagMBO_fst (b : Bool) (y : Σ l, twoFam V X l) :
+lemma outsideMap_tagMBO_fst (b : Bool) (y : Σ l, twoFam V X l) :
     (outsideMap (tagMBO b) y).1 = y.1 := by
   -- Outside reply or inside query: tagging keeps the label.
   rcases y with ⟨⟨_ | ⟨⟨⟩⟩, j⟩, y⟩ <;> rfl
 
-theorem outsideMap_forgetMBO_fst (y : Σ l, twoFam (withMBO V) X l) :
+lemma outsideMap_forgetMBO_fst (y : Σ l, twoFam (withMBO V) X l) :
     (outsideMap forgetMBO y).1 = y.1 := by
   -- Outside reply or inside query: forgetting the MBO keeps the label.
   rcases y with ⟨⟨_ | ⟨⟨⟩⟩, j⟩, y⟩ <;> rfl
 
-@[simp] theorem outsideMap_forgetMBO_tagMBO (b : Bool) (y : Σ l, twoFam V X l) :
+@[simp] lemma outsideMap_forgetMBO_tagMBO (b : Bool) (y : Σ l, twoFam V X l) :
     outsideMap forgetMBO (outsideMap (tagMBO b) y) = y := by
   -- On an outside reply, forgetting the tag undoes it; an inside query is untouched.
   rcases y with ⟨⟨_ | ⟨⟨⟩⟩, j⟩, y⟩ <;> rfl
 
-theorem mem_liftMBO {a : InsideOutsideSystem O J U V X Y} {h} {y} :
+lemma mem_liftMBO {a : InsideOutsideSystem O J U V X Y} {h} {y} :
     y ∈ liftMBO a h ↔ outsideMap forgetMBO y ∈ a (h.map (insideMap forgetMBO)) ∧
       y = outsideMap (tagMBO (latestMBO h)) (outsideMap forgetMBO y) := by
   -- An output of the lift is the tag of an output `y₀` of `a` on the history without MBOs;
@@ -117,12 +117,12 @@ theorem mem_liftMBO {a : InsideOutsideSystem O J U V X Y} {h} {y} :
   · rintro ⟨hy, he⟩
     exact (Part.mem_map_iff _).mpr ⟨_, hy, he.symm⟩
 
-theorem liftMBO_dom (a : InsideOutsideSystem O J U V X Y) (h) :
+lemma liftMBO_dom (a : InsideOutsideSystem O J U V X Y) (h) :
     (liftMBO a h).Dom ↔ (a (h.map (insideMap forgetMBO))).Dom := Iff.rfl
 
 /-- **The lift without its outside MBOs** is the converter run on the inside replies without
 their MBO. -/
-theorem relabel_liftMBO (a : InsideOutsideSystem O J U V X Y) :
+lemma relabel_liftMBO (a : InsideOutsideSystem O J U V X Y) :
     relabel (liftMBO a) id (outsideMap forgetMBO) = relabel a (insideMap forgetMBO) id := by
   -- Cutting the MBO wire in the picture at `liftMBO`: on each history, both sides run `a` on the
   -- history without inside MBOs, and on the left the tag is added and forgotten again.
@@ -133,7 +133,7 @@ theorem relabel_liftMBO (a : InsideOutsideSystem O J U V X Y) :
   funext y
   simp
 
-theorem replyLabel_liftMBO (a : InsideOutsideSystem O J U V X Y) (h) :
+lemma replyLabel_liftMBO (a : InsideOutsideSystem O J U V X Y) (h) :
     replyLabel (liftMBO a) h = replyLabel a (h.map (insideMap forgetMBO)) := by
   -- The lift replies exactly when `a` does on the history without MBOs (`liftMBO_dom`), and
   -- tagging keeps the label of the reply.
@@ -145,7 +145,7 @@ theorem replyLabel_liftMBO (a : InsideOutsideSystem O J U V X Y) (h) :
   -- Neither replies.
   · rw [dif_neg hd, dif_neg (fun h' => hd ((liftMBO_dom a h).mp h'))]
 
-theorem lastOuter_insideMap_forgetMBO (h : List (Σ l, twoFam U (withMBO Y) l)) :
+lemma lastOuter_insideMap_forgetMBO (h : List (Σ l, twoFam U (withMBO Y) l)) :
     lastOuter (h.map (insideMap forgetMBO)) = lastOuter h := by
   -- Induction from the right: forgetting the MBO of an inside reply changes no label, and an
   -- outside query is kept as it is.
@@ -155,7 +155,7 @@ theorem lastOuter_insideMap_forgetMBO (h : List (Σ l, twoFam U (withMBO Y) l)) 
     rw [List.map_append, List.map_singleton, lastOuter_snoc, lastOuter_snoc, ih]
     rcases z with ⟨⟨_ | ⟨⟨⟩⟩, j⟩, y⟩ <;> rfl
 
-theorem insideRun_liftMBO (a : InsideOutsideSystem O J U V X Y) (h) :
+lemma insideRun_liftMBO (a : InsideOutsideSystem O J U V X Y) (h) :
     insideRun (liftMBO a) h = insideRun a (h.map (insideMap forgetMBO)) := by
   -- `insideRun` counts the consecutive inside queries at the end. Induction from the right: one
   -- more input adds one to the count exactly when the output after it is an inside query, and
@@ -183,7 +183,7 @@ theorem insideRun_liftMBO (a : InsideOutsideSystem O J U V X Y) (h) :
       exact hi
 
 /-- The lift of a DDC is a DDC with the same bound. -/
-theorem IsDDC.liftMBO {b : ℕ} {a : InsideOutsideSystem O J U V X Y} (ha : IsDDC b a) :
+lemma IsDDC.liftMBO {b : ℕ} {a : InsideOutsideSystem O J U V X Y} (ha : IsDDC b a) :
     IsDDC b (SystemAlgebra.liftMBO a) where
   -- Silent at the empty history and prefix closed: both are statements about domains, and the
   -- lift has the domain of `a` on the history without MBOs; prefixes map to prefixes.
@@ -218,7 +218,7 @@ def TaggedMBO
   ∀ p z t, h = p ++ z :: t →
     z.2 = outsideMap (tagMBO (latestMBO (p.map Prod.fst ++ [z.1]))) (outsideMap forgetMBO z.2)
 
-theorem taggedMBO_snoc
+lemma taggedMBO_snoc
     {h : List ((Σ l, twoFam U (withMBO Y) l) × (Σ l, twoFam (withMBO V) X l))} {z} :
     TaggedMBO (h ++ [z]) ↔ TaggedMBO h ∧
       z.2 = outsideMap (tagMBO (latestMBO (h.map Prod.fst ++ [z.1])))
@@ -245,7 +245,7 @@ theorem taggedMBO_snoc
 
 /-- **The transcripts of a lift** are the transcripts of the converter with the MBOs forgotten
 whose outside replies carry the latest inside MBO. -/
-theorem replies_liftMBO_iff (a : InsideOutsideSystem O J U V X Y)
+lemma replies_liftMBO_iff (a : InsideOutsideSystem O J U V X Y)
     (h : List ((Σ l, twoFam U (withMBO Y) l) × (Σ l, twoFam (withMBO V) X l))) :
     Replies (liftMBO a) (h.map Prod.fst) (h.map Prod.snd) ↔
       Replies a ((forgetConverterMBO h).map Prod.fst) ((forgetConverterMBO h).map Prod.snd) ∧
@@ -276,7 +276,7 @@ theorem replies_liftMBO_iff (a : InsideOutsideSystem O J U V X Y)
     tauto
 
 /-- Forgetting the MBOs keeps the labels of a converter transcript. -/
-theorem admitted_forgetConverterMBO
+lemma admitted_forgetConverterMBO
     (h : List ((Σ l, twoFam U (withMBO Y) l) × (Σ l, twoFam (withMBO V) X l))) :
     Admitted converterAdmits (forgetConverterMBO h) ↔ Admitted converterAdmits h :=
   -- Forgetting MBOs relabels inputs and outputs and keeps every label (the label map is the
@@ -285,7 +285,7 @@ theorem admitted_forgetConverterMBO
     (fun z => by rw [insideMap_forgetMBO_fst]; rcases z with ⟨⟨_ | ⟨⟨⟩⟩, j⟩, y⟩ <;> rfl)
     (fun z => by rw [outsideMap_forgetMBO_fst]; rcases z with ⟨⟨_ | ⟨⟨⟩⟩, j⟩, y⟩ <;> rfl) h
 
-theorem outsideInputs_insideMap_forgetMBO (xs : List (Σ l, twoFam U (withMBO Y) l)) :
+lemma outsideInputs_insideMap_forgetMBO (xs : List (Σ l, twoFam U (withMBO Y) l)) :
     outsideInputs (xs.map (insideMap forgetMBO)) = outsideInputs xs := by
   -- Induction from the right: an outside query is kept as it is, and an inside reply adds no
   -- outside input, with or without its MBO.
@@ -301,7 +301,7 @@ theorem outsideInputs_insideMap_forgetMBO (xs : List (Σ l, twoFam U (withMBO Y)
 variable {E : List (Σ j, X j) → Prop} {F : List (Σ o, U o) → Prop}
 
 /-- Forgetting the MBOs keeps the converter domain. -/
-theorem converterDomain_forgetConverterMBO
+lemma converterDomain_forgetConverterMBO
     (h : List ((Σ l, twoFam U (withMBO Y) l) × (Σ l, twoFam (withMBO V) X l)))
     (x : Σ l, twoFam U (withMBO Y) l) :
     converterDomain E F (forgetConverterMBO h) (insideMap forgetMBO x) ↔
@@ -327,7 +327,7 @@ theorem converterDomain_forgetConverterMBO
   simp only [converterDomain, admitted_forgetConverterMBO, hadm, hout, hin]
 
 /-- **The lift of a DDC from `E` to `F`** is a DDC from `E` to `F`. -/
-theorem IsDDCFrom.liftMBO {b : ℕ} {a : InsideOutsideSystem O J U V X Y}
+lemma IsDDCFrom.liftMBO {b : ℕ} {a : InsideOutsideSystem O J U V X Y}
     (ha : IsDDCFrom E F b a) : IsDDCFrom E F b (SystemAlgebra.liftMBO a) where
   -- The DDC conditions: `IsDDC.liftMBO`.
   isDDC := ha.isDDC.liftMBO
@@ -349,7 +349,7 @@ theorem IsDDCFrom.liftMBO {b : ℕ} {a : InsideOutsideSystem O J U V X Y}
 
 open scoped Classical in
 /-- Lifting commutes with restricting to the outside inputs in a domain. -/
-theorem liftMBO_filterDom (P : List (Σ o, U o) → Prop) (a : InsideOutsideSystem O J U V X Y) :
+lemma liftMBO_filterDom (P : List (Σ o, U o) → Prop) (a : InsideOutsideSystem O J U V X Y) :
     liftMBO (filterDom (fun h => P (outsideInputs h)) a) =
       filterDom (fun h => P (outsideInputs h)) (liftMBO a) := by
   -- The restriction tests the outside inputs, which forgetting the inside MBOs keeps; the tag
@@ -358,7 +358,7 @@ theorem liftMBO_filterDom (P : List (Σ o, U o) → Prop) (a : InsideOutsideSyst
   simp only [liftMBO, filterDom, outsideInputs_insideMap_forgetMBO]
   split_ifs <;> simp
 
-theorem admissible_liftMBO_iff (a : InsideOutsideSystem O J U V X Y) (h) :
+lemma admissible_liftMBO_iff (a : InsideOutsideSystem O J U V X Y) (h) :
     Admissible (liftMBO a) h ↔ Admissible a (h.map (insideMap forgetMBO)) := by
   -- Induction from the right: admissibility of one more input asks for a defined reply before it
   -- and for its admission; both are the same for the lift and for `a` without MBOs.
@@ -371,7 +371,7 @@ theorem admissible_liftMBO_iff (a : InsideOutsideSystem O J U V X Y) (h) :
 
 open scoped Classical in
 /-- Lifting commutes with restricting a converter to its admissible histories. -/
-theorem liftMBO_canon (a : InsideOutsideSystem O J U V X Y) :
+lemma liftMBO_canon (a : InsideOutsideSystem O J U V X Y) :
     liftMBO (canon a) = canon (liftMBO a) := by
   -- `canon` restricts to admissible histories, and the lift is admissible exactly where `a` is
   -- on the history without MBOs (`admissible_liftMBO_iff`).
@@ -381,7 +381,7 @@ theorem liftMBO_canon (a : InsideOutsideSystem O J U V X Y) :
 
 /-- **The lift of the forwarding converter** is the forwarding converter: an outside reply
 forwards the latest inside reply with its MBO. -/
-theorem liftMBO_forwardAll : liftMBO (forwardAll J X Y) = forwardAll J X (withMBO Y) := by
+lemma liftMBO_forwardAll : liftMBO (forwardAll J X Y) = forwardAll J X (withMBO Y) := by
   -- The forwarding converter forwards the last input. Case on the history.
   funext h
   rcases List.eq_nil_or_concat h with rfl | ⟨h, z, rfl⟩
@@ -403,7 +403,7 @@ theorem liftMBO_forwardAll : liftMBO (forwardAll J X Y) = forwardAll J X (withMB
       rfl
 
 /-- **The lift of a filter** is the filter on replies with the MBO. -/
-theorem liftMBO_filter (D : List (Σ j, X j) → Prop) (hD : ∀ {p h}, p <+: h → D h → D p) :
+lemma liftMBO_filter (D : List (Σ j, X j) → Prop) (hD : ∀ {p h}, p <+: h → D h → D p) :
     liftMBO (DDC.filter (Y := Y) D hD).1 = (DDC.filter (Y := withMBO Y) D hD).1 := by
   -- The filter is the forwarding converter made canonical and restricted on its outside inputs;
   -- the lift commutes with each of the three.
@@ -434,7 +434,7 @@ omit [Fintype O] [Fintype J] [∀ o, Fintype (U o)] [∀ o, Fintype (V o)] [∀ 
 open scoped Classical in
 /-- On a converter transcript, the lifted presentation gives the mass of the transcript with the
 MBOs forgotten when its outside replies carry the latest inside MBO, and zero otherwise. -/
-theorem behaviorMass_liftPresentation {b : ℕ}
+lemma behaviorMass_liftPresentation {b : ℕ}
     (P : Distribution.ProbDist {a : InsideOutsideSystem O J U V X Y // IsDDCFrom E F b a})
     (h : List ((Σ l, twoFam U (withMBO Y) l) × (Σ l, twoFam (withMBO V) X l))) :
     behaviorMass (liftPresentation P).1 (h.map Prod.fst) (h.map Prod.snd) =
@@ -459,7 +459,7 @@ noncomputable def PDCBehavior.liftMBO (α : PDCBehavior O J U V X Y E m hE F n h
 open scoped Classical in
 /-- **The transcripts of a lifted PDC**: the mass of a transcript with the MBOs forgotten, when
 its outside replies carry the latest inside MBO. -/
-theorem PDCBehavior.liftMBO_apply (α : PDCBehavior O J U V X Y E m hE F n hF)
+lemma PDCBehavior.liftMBO_apply (α : PDCBehavior O J U V X Y E m hE F n hF)
     (h : List ((Σ l, twoFam U (withMBO Y) l) × (Σ l, twoFam (withMBO V) X l))) :
     (PDCBehavior.liftMBO α).1 h = if TaggedMBO h then α.1 (forgetConverterMBO h) else 0 := by
   -- The lift is defined from a chosen presentation of `α`; compute on it
@@ -468,7 +468,7 @@ theorem PDCBehavior.liftMBO_apply (α : PDCBehavior O J U V X Y E m hE F n hF)
   rw [behaviorMass_liftPresentation, α.2.choose_spec.choose_spec]
 
 /-- Any presentation of a PDC lifts to a presentation of its lift. -/
-theorem PDCBehavior.liftMBO_presents (α : PDCBehavior O J U V X Y E m hE F n hF) {b : ℕ}
+lemma PDCBehavior.liftMBO_presents (α : PDCBehavior O J U V X Y E m hE F n hF) {b : ℕ}
     (P : Distribution.ProbDist {a : InsideOutsideSystem O J U V X Y // IsDDCFrom E F b a})
     (hP : ∀ h, behaviorMass P.1 (h.map Prod.fst) (h.map Prod.snd) = α.1 h) (h) :
     behaviorMass (liftPresentation P).1 (h.map Prod.fst) (h.map Prod.snd) =
@@ -478,7 +478,7 @@ theorem PDCBehavior.liftMBO_presents (α : PDCBehavior O J U V X Y E m hE F n hF
 
 open scoped Classical in
 /-- The lift of the behavior of a DDC is the behavior of its lift. -/
-theorem PDCBehavior.liftMBO_ofDDC (a : InsideOutsideSystem O J U V X Y) {b : ℕ}
+lemma PDCBehavior.liftMBO_ofDDC (a : InsideOutsideSystem O J U V X Y) {b : ℕ}
     (ha : IsDDCFrom E F b a) :
     PDCBehavior.liftMBO (PDCBehavior.ofDDC a ha : PDCBehavior O J U V X Y E m hE F n hF) =
       PDCBehavior.ofDDC (SystemAlgebra.liftMBO a) ha.liftMBO := by
@@ -492,7 +492,7 @@ theorem PDCBehavior.liftMBO_ofDDC (a : InsideOutsideSystem O J U V X Y) {b : ℕ
   by_cases ht : TaggedMBO h <;> simp [ht, forgetConverterMBO]
 
 /-- **The lift of the identity** is the identity. -/
-theorem PDCBehavior.liftMBO_id (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p) :
+lemma PDCBehavior.liftMBO_id (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p) :
     PDCBehavior.liftMBO (PDCBehavior.id (Y := Y) (m := m) (hE := hE) hE') =
       PDCBehavior.id (Y := withMBO Y) hE' := by
   -- The identity PDC is the behavior of the filter DDC on `h = [] ∨ E h`, and the lift of the
@@ -513,7 +513,7 @@ section Visible
 variable {O J : Type} {U V : O → Type} {X Y : J → Type}
 
 /-- Relabeling the outside replies of an attachment relabels those of the converter. -/
-theorem relabel_apply_outside {V' : O → Type} (c : InsideOutsideSystem O J U V' X Y)
+lemma relabel_apply_outside {V' : O → Type} (c : InsideOutsideSystem O J U V' X Y)
     (R : InterfaceSystem J X Y) (g : (Σ o, V' o) → (Σ o, V o)) :
     relabel (apply c R) id g = apply (relabel c id (outsideMap g)) R := by
   -- Write both attachments as interconnections of `[c, R]`; relabeling the outside replies of
@@ -529,7 +529,7 @@ theorem relabel_apply_outside {V' : O → Type} (c : InsideOutsideSystem O J U V
 
 /-- A converter relabeling its inside replies, attached to a resource, is the converter attached
 to the resource with its replies relabeled. -/
-theorem apply_relabel_inside {Y' : J → Type} (c : InsideOutsideSystem O J U V X Y)
+lemma apply_relabel_inside {Y' : J → Type} (c : InsideOutsideSystem O J U V X Y)
     (R : InterfaceSystem J X Y') (k : (Σ j, Y' j) → (Σ j, Y j)) :
     apply (relabel c (insideMap k) id) R = apply c (relabel R id k) := by
   -- Write both attachments as interconnections of `[c, R]`; relabeling the inputs of `c`, or the
@@ -545,7 +545,7 @@ theorem apply_relabel_inside {Y' : J → Type} (c : InsideOutsideSystem O J U V 
 
 /-- **Attaching a lift and forgetting the MBO** is attaching the converter to the system with the
 MBO forgotten. -/
-theorem relabel_trim_apply_liftMBO (a : InsideOutsideSystem O J U V X Y)
+lemma relabel_trim_apply_liftMBO (a : InsideOutsideSystem O J U V X Y)
     (s : InterfaceSystem J X (withMBO Y)) :
     relabel (trim (apply (liftMBO a) s)) id forgetMBO =
       trim (apply a (relabel s id forgetMBO)) := by
@@ -588,7 +588,7 @@ noncomputable def visiblePresentation
 omit [Fintype O] [∀ o, Fintype (U o)] [∀ o, Fintype (V o)] in
 open scoped Classical in
 /-- The visible systems of a presentation of a game present its visible system. -/
-theorem behaviorMass_visiblePresentation
+lemma behaviorMass_visiblePresentation
     (Q : Distribution.ProbDist {s : InterfaceSystem J X (withMBO Y) //
       IsDDS s ∧ RepliesAtQueriedInterface s ∧ ∀ h, (s h).Dom ↔ E h})
     {G : RandomSystem (Σ j, X j) (Σ j, withMBO Y j) (Domain.ofInputs E m hE)}
@@ -682,7 +682,7 @@ section Monotone
 
 variable {O J : Type} {U V : O → Type} {X Y : J → Type}
 
-theorem latestMBO_eq (l : List (Σ l, twoFam U (withMBO Y) l)) :
+lemma latestMBO_eq (l : List (Σ l, twoFam U (withMBO Y) l)) :
     latestMBO l = ((l.filterMap inputMBO).getLast?).getD false := by
   -- Induction from the right: one more input changes both sides exactly when it is an inside
   -- reply, and then both become its MBO.
@@ -692,7 +692,7 @@ theorem latestMBO_eq (l : List (Σ l, twoFam U (withMBO Y) l)) :
     rw [latestMBO_snoc, ih, List.filterMap_append]
     rcases z with ⟨⟨_ | ⟨⟨⟩⟩, j⟩, y⟩ <;> simp [inputMBO]
 
-theorem getLast?_getD_le {l : List Bool} {b : Bool} (hp : (l ++ [b]).Pairwise (· ≤ ·)) :
+lemma getLast?_getD_le {l : List Bool} {b : Bool} (hp : (l ++ [b]).Pairwise (· ≤ ·)) :
     (l.getLast?).getD false ≤ b := by
   -- `l` is empty, or ends with `c`.
   rcases List.eq_nil_or_concat l with rfl | ⟨l, c, rfl⟩
@@ -714,7 +714,7 @@ def pendingMBO (ys : List (Two (Σ l, twoFam (withMBO V) X l) (Σ j, withMBO Y j
 /-- **Along an attachment of a converter that tags its outside replies with the latest inside
 MBO**, the resource replies with monotone MBOs as the converter receives them, and the exposed
 MBOs are monotone and below the latest inside MBO. -/
-theorem attach_tags_invariant {c : InsideOutsideSystem O J U (withMBO V) X (withMBO Y)}
+lemma attach_tags_invariant {c : InsideOutsideSystem O J U (withMBO V) X (withMBO Y)}
     (hc : ∀ h (o : O) (v : withMBO V o), ⟨⟨none, o⟩, v⟩ ∈ c h → v.2 = latestMBO h)
     {R : InterfaceSystem J X (withMBO Y)}
     (hR : ∀ t : List ((Σ j, X j) × Σ j, withMBO Y j), Replies R (t.map Prod.fst) (t.map Prod.snd) →
@@ -935,7 +935,7 @@ theorem attach_tags_invariant {c : InsideOutsideSystem O J U (withMBO V) X (with
 
 /-- **Attaching a converter that tags its outside replies with the latest inside MBO** to a
 resource with monotone MBOs gives transcripts with monotone MBOs. -/
-theorem replies_apply_monotone {c : InsideOutsideSystem O J U (withMBO V) X (withMBO Y)}
+lemma replies_apply_monotone {c : InsideOutsideSystem O J U (withMBO V) X (withMBO Y)}
     (hc : ∀ h (o : O) (v : withMBO V o), ⟨⟨none, o⟩, v⟩ ∈ c h → v.2 = latestMBO h)
     {R : InterfaceSystem J X (withMBO Y)}
     (hR : ∀ t : List ((Σ j, X j) × Σ j, withMBO Y j), Replies R (t.map Prod.fst) (t.map Prod.snd) →
@@ -948,7 +948,7 @@ theorem replies_apply_monotone {c : InsideOutsideSystem O J U (withMBO V) X (wit
   exact (attach_tags_invariant hc hR tr).2.2.1
 
 /-- A lift tags its outside replies with the latest inside MBO. -/
-theorem liftMBO_tag (a : InsideOutsideSystem O J U V X Y) (h) (o : O) (v : withMBO V o)
+lemma liftMBO_tag (a : InsideOutsideSystem O J U V X Y) (h) (o : O) (v : withMBO V o)
     (hv : ⟨⟨none, o⟩, v⟩ ∈ liftMBO a h) : v.2 = latestMBO h := by
   -- In the picture at `liftMBO`, the MBO wire tags the outside reply with `latestMBO h`.
   have he := (mem_liftMBO.mp hv).2
@@ -1030,7 +1030,7 @@ section TagRouting
 def latestBy {Z : Type} (b : Z → Option Bool) (h : List Z) : Bool :=
   (h.reverse.findSome? b).getD false
 
-theorem latestBy_snoc {Z : Type} (b : Z → Option Bool) (h : List Z) (z : Z) :
+lemma latestBy_snoc {Z : Type} (b : Z → Option Bool) (h : List Z) (z : Z) :
     latestBy b (h ++ [z]) = (b z).getD (latestBy b h) := by
   -- The search runs over the reversed history, which starts with `z`: the bit of `z` if it has
   -- one, the latest bit of `h` otherwise.
@@ -1038,7 +1038,7 @@ theorem latestBy_snoc {Z : Type} (b : Z → Option Bool) (h : List Z) (z : Z) :
     List.singleton_append, List.findSome?_cons]
   cases b z <;> rfl
 
-theorem latestMBO_eq_latestBy {O J : Type} {U : O → Type} {Y : J → Type}
+lemma latestMBO_eq_latestBy {O J : Type} {U : O → Type} {Y : J → Type}
     (h : List (Σ l, twoFam U (withMBO Y) l)) : latestMBO h = latestBy inputMBO h := rfl
 
 variable {Xβ Yβ Xα Yα A B : Type}
@@ -1076,7 +1076,7 @@ def TagInvariant (bβ : Xβ → Option Bool) (bα : Xα → Option Bool) (bA : A
     (TagReady tα α (restrict (some ()) H) → (∀ H₀ z, H ≠ H₀ ++ [⟨some (), z⟩]) →
       latestBy bβ (restrict none H) = latestBy bα (restrict (some ()) H))
 
-theorem tagInvariant_feed (hr : TagRouting bβ bα bA tα α route inj) {u G y x}
+lemma tagInvariant_feed (hr : TagRouting bβ bα bA tα α route inj) {u G y x}
     (hy : y ∈ pair β α G) (hx : route y = .inr x)
     (hi : TagInvariant bβ bα bA tα α u G) : TagInvariant bβ bα bA tα α u (G ++ [x]) := by
   -- One feed step: the pair answered the internal history `G` with `y`, and the routing feeds `y`
@@ -1117,7 +1117,7 @@ theorem tagInvariant_feed (hr : TagRouting bβ bα bA tα α route inj) {u G y x
     -- Not to `α` (`α_to_α`).
     · exact absurd hx (hr.α_to_α yα x)
 
-theorem tagInvariant_exchange (hr : TagRouting bβ bα bA tα α route inj) {u G o G'}
+lemma tagInvariant_exchange (hr : TagRouting bβ bα bA tα α route inj) {u G o G'}
     (l : Exchange (pair β α) route G o G') (hi : TagInvariant bβ bα bA tα α u G) :
     TagInvariant bβ bα bA tα α u G' := by
   -- Induction on the exchange: silence and an exposed output end it, and each feed step keeps the
@@ -1128,7 +1128,7 @@ theorem tagInvariant_exchange (hr : TagRouting bβ bα bA tα α route inj) {u G
   | feed _ y x _ _ hy hx _ ih => exact ih (tagInvariant_feed hr hy hx hi)
 
 /-- At the end of an exchange the inner component is not waiting with a tagged reply. -/
-theorem tagInvariant_end (hr : TagRouting bβ bα bA tα α route inj) {u G o G'}
+lemma tagInvariant_end (hr : TagRouting bβ bα bA tα α route inj) {u G o G'}
     (l : Exchange (pair β α) route G o G') (hi : TagInvariant bβ bα bA tα α u G) :
     TagReady tα α (restrict (some ()) G') →
       latestBy bβ (restrict none G') = latestBy bα (restrict (some ()) G') := by
@@ -1169,7 +1169,7 @@ theorem tagInvariant_end (hr : TagRouting bβ bα bA tα α route inj) {u G o G'
     exact absurd hs (by simp)
 
 /-- **The tag invariant along an interconnection.** -/
-theorem tagInvariant_induces (hr : TagRouting bβ bα bA tα α route inj) {u o H}
+lemma tagInvariant_induces (hr : TagRouting bβ bα bA tα α route inj) {u o H}
     (ri : Induces (pair β α) route inj u o H) :
     TagInvariant bβ bα bA tα α u H ∧ (TagReady tα α (restrict (some ()) H) →
       latestBy bβ (restrict none H) = latestBy bα (restrict (some ()) H)) := by
@@ -1202,7 +1202,7 @@ theorem tagInvariant_induces (hr : TagRouting bβ bα bA tα α route inj) {u o 
     exact ⟨tagInvariant_exchange hr l hstart, tagInvariant_end hr l hstart⟩
 
 /-- The final exposed output of an exchange is an output of the pair. -/
-theorem Exchange.exists_out {S : Type} {s : System Xβ S} {route' : S → B ⊕ Xβ} {G b G'}
+lemma Exchange.exists_out {S : Type} {s : System Xβ S} {route' : S → B ⊕ Xβ} {G b G'}
     (l : Exchange s route' G (some b) G') : ∃ y ∈ s G', route' y = .inl b := by
   -- Induction on the exchange with its output fixed to `some b`: it ends with the exposed output
   -- `b` (`out`), and the feed steps carry it.
@@ -1215,7 +1215,7 @@ theorem Exchange.exists_out {S : Type} {s : System Xβ S} {route' : S → B ⊕ 
 /-- **An exposed output of the outer component carries the latest outside bit**, once the inner
 component has answered with a tagged reply: the outer component tags its exposed outputs with
 its latest bit. -/
-theorem tag_of_induces (hr : TagRouting bβ bα bA tα α route inj) (tB : B → Option Bool)
+lemma tag_of_induces (hr : TagRouting bβ bα bA tα α route inj) (tB : B → Option Bool)
     (hβ : ∀ h y b c, y ∈ β h → route ⟨none, y⟩ = .inl b → tB b = some c → c = latestBy bβ h)
     (hαB : ∀ y b, route ⟨some (), y⟩ = .inl b → tB b = none)
     {u b H} (ri : Induces (pair β α) route inj u (some b) H)
@@ -1267,7 +1267,7 @@ def outputMBO {O J : Type} {V : O → Type} {X : J → Type} :
   | ⟨⟨some (), _⟩, _⟩ => none
 
 /-- The MBO of an output of a lift is the latest inside MBO. -/
-theorem outputMBO_liftMBO {O J : Type} {U V : O → Type} {X Y : J → Type}
+lemma outputMBO_liftMBO {O J : Type} {U V : O → Type} {X Y : J → Type}
     (a : InsideOutsideSystem O J U V X Y) {h y c} (hy : y ∈ liftMBO a h)
     (hc : outputMBO y = some c) : c = latestMBO h := by
   -- An outside reply carries the latest inside MBO (`liftMBO_tag`); an inside query carries none.
@@ -1279,7 +1279,7 @@ theorem outputMBO_liftMBO {O J : Type} {U V : O → Type} {X Y : J → Type}
 
 /-- **Bits through a serial composition of lifts**: the inner lift tags its outside replies to
 the outer lift, its inside queries leave untagged, and the outer lift's queries carry no bit. -/
-theorem tagRouting_serialM (α : InsideOutsideSystem M J Xm Ym X Y) :
+lemma tagRouting_serialM (α : InsideOutsideSystem M J Xm Ym X Y) :
     TagRouting (inputMBO (U := U) (Y := Ym)) (inputMBO (U := Xm) (Y := Y))
       (inputMBO (U := U) (Y := Y)) outputMBO (liftMBO α)
       (serialRouteM (V := withMBO V) (Ym := withMBO Ym) (Yi := withMBO Y) (Xm := Xm) (Xi := X))
@@ -1332,7 +1332,7 @@ theorem tagRouting_serialM (α : InsideOutsideSystem M J Xm Ym X Y) :
 /-- **An outside reply of a serial composition of lifts carries the latest inside MBO**: when the
 outer lift replies outside, the inner lift is idle and its latest reply carried its latest
 inside MBO to the outer lift. -/
-theorem outputMBO_serialM_liftMBO {bβ bα : ℕ} {β : InsideOutsideSystem O M U V Xm Ym}
+lemma outputMBO_serialM_liftMBO {bβ bα : ℕ} {β : InsideOutsideSystem O M U V Xm Ym}
     {α : InsideOutsideSystem M J Xm Ym X Y} (hβ : IsDDC bβ β) (hα : IsDDC bα α) {u w c}
     (hr : Reach (serialM (liftMBO β) (liftMBO α)) u) (hw : w ∈ serialM (liftMBO β) (liftMBO α) u)
     (hc : outputMBO w = some c) : c = latestMBO u := by
@@ -1385,7 +1385,7 @@ theorem outputMBO_serialM_liftMBO {bβ bα : ℕ} {β : InsideOutsideSystem O M 
 
 /-- **A serial composition of lifts without its outside MBOs** is the serial composition run on
 the inside replies without their MBO. -/
-theorem relabel_serialM_liftMBO (β : InsideOutsideSystem O M U V Xm Ym)
+lemma relabel_serialM_liftMBO (β : InsideOutsideSystem O M U V Xm Ym)
     (α : InsideOutsideSystem M J Xm Ym X Y) :
     relabel (serialM (liftMBO β) (liftMBO α)) id (outsideMap forgetMBO) =
       relabel (serialM β α) (insideMap forgetMBO) id := by
@@ -1434,7 +1434,7 @@ theorem relabel_serialM_liftMBO (β : InsideOutsideSystem O M U V Xm Ym)
     rcases u with ⟨⟨_ | ⟨⟨⟩⟩, l⟩, v⟩ <;> rfl
 
 /-- An output whose MBO, if any, is `b` is the output without its MBO tagged with `b`. -/
-theorem eq_tag_of_outputMBO {O J : Type} {V : O → Type} {X : J → Type}
+lemma eq_tag_of_outputMBO {O J : Type} {V : O → Type} {X : J → Type}
     {y : Σ l, twoFam (withMBO V) X l} {b : Bool} (hy : ∀ c, outputMBO y = some c → c = b) :
     y = outsideMap (tagMBO b) (outsideMap forgetMBO y) := by
   -- An outside reply with MBO `b` is its own tag with `b`; tagging leaves an inside query alone.
@@ -1445,7 +1445,7 @@ theorem eq_tag_of_outputMBO {O J : Type} {V : O → Type} {X : J → Type}
   · rfl
 
 /-- **The serial composition of lifts is the lift of the serial composition.** -/
-theorem trim_serialM_liftMBO {bβ bα : ℕ} {β : InsideOutsideSystem O M U V Xm Ym}
+lemma trim_serialM_liftMBO {bβ bα : ℕ} {β : InsideOutsideSystem O M U V Xm Ym}
     {α : InsideOutsideSystem M J Xm Ym X Y} (hβ : IsDDC bβ β) (hα : IsDDC bα α) :
     trim (serialM (liftMBO β) (liftMBO α)) = liftMBO (trim (serialM β α)) := by
   -- The serial composition of the lifts:
@@ -1580,21 +1580,21 @@ def decisionBit : (Σ p, dOut U p) → Option Bool
   | ⟨.dec, b⟩ => some b
   | _ => none
 
-theorem tagDecision_fst (b : Bool) (z : Σ p, dOut U p) : (tagDecision b z).1 = z.1 := by
+lemma tagDecision_fst (b : Bool) (z : Σ p, dOut U p) : (tagDecision b z).1 = z.1 := by
   -- By cases on the port: replacing the decision keeps the port.
   rcases z with ⟨_ | _ | o, v⟩ <;> rfl
 
-theorem forgetEnvMBO_fst (z : Σ p, dIn (withMBO V) p) : (forgetEnvMBO z).1 = z.1 := by
+lemma forgetEnvMBO_fst (z : Σ p, dIn (withMBO V) p) : (forgetEnvMBO z).1 = z.1 := by
   -- By cases on the port: forgetting the MBO keeps the port.
   rcases z with ⟨_ | _ | o, v⟩ <;> rfl
 
-@[simp] theorem tagDecision_tagDecision (b c : Bool) (z : Σ p, dOut U p) :
+@[simp] lemma tagDecision_tagDecision (b c : Bool) (z : Σ p, dOut U p) :
     tagDecision b (tagDecision c z) = tagDecision b z := by
   -- By cases on the port: only the last replacement of the decision counts.
   rcases z with ⟨_ | _ | o, v⟩ <;> rfl
 
 /-- An output whose decision, if any, is `b` is unchanged by deciding `b`. -/
-theorem tagDecision_eq_self {z : Σ p, dOut U p} {b : Bool}
+lemma tagDecision_eq_self {z : Σ p, dOut U p} {b : Bool}
     (hz : ∀ c, decisionBit z = some c → c = b) : tagDecision b z = z := by
   -- Only a decision changes, and a decision is already `b`.
   rcases z with ⟨_ | _ | o, v⟩
@@ -1603,13 +1603,13 @@ theorem tagDecision_eq_self {z : Σ p, dOut U p} {b : Bool}
     rfl
   · rfl
 
-theorem map_forgetEnvMBO_dHist (ys : List (Σ o, withMBO V o)) :
+lemma map_forgetEnvMBO_dHist (ys : List (Σ o, withMBO V o)) :
     (dHist ys).map forgetEnvMBO = dHist (ys.map forgetMBO) := by
   -- `dHist` is the trigger followed by the replies; forgetting MBOs maps each reply.
   simp only [dHist, List.map_cons, List.map_map]
   rfl
 
-theorem latestBy_envMBO_dHist (ys : List (Σ o, withMBO V o)) :
+lemma latestBy_envMBO_dHist (ys : List (Σ o, withMBO V o)) :
     latestBy envMBO (dHist ys) = ((ys.getLast?).map fun y => y.2.2).getD false := by
   -- Induction from the right: the trigger carries no MBO, and the MBO of each new reply becomes
   -- the latest.
@@ -1625,10 +1625,10 @@ and decides the MBO of the latest reply. -/
 def DDD.winner (D : DDD O U V) : DDD O U (withMBO V) :=
   fun h => (D (h.map forgetEnvMBO)).map (tagDecision (latestBy envMBO h))
 
-theorem DDD.winner_dom (D : DDD O U V) (h) :
+lemma DDD.winner_dom (D : DDD O U V) (h) :
     (D.winner h).Dom ↔ (D (h.map forgetEnvMBO)).Dom := Iff.rfl
 
-theorem DDD.relabel_winner (D : DDD O U V) :
+lemma DDD.relabel_winner (D : DDD O U V) :
     relabel D.winner id (tagDecision false) = relabel D forgetEnvMBO (tagDecision false) := by
   -- With every decision replaced by `false`, what the winner decides is erased, leaving `D` on
   -- the replies without MBOs.
@@ -1639,7 +1639,7 @@ theorem DDD.relabel_winner (D : DDD O U V) :
   funext z
   simp
 
-theorem DDD.reach_winner_iff (D : DDD O U V) (h) :
+lemma DDD.reach_winner_iff (D : DDD O U V) (h) :
     Reach D.winner h ↔ Reach D (h.map forgetEnvMBO) := by
   -- Compare with `D` relabeled on its inputs, which reaches `h` iff `D` reaches `h` without MBOs.
   -- Reaching asks for a defined reply at every nonempty prefix, and the winner replies exactly
@@ -1651,7 +1651,7 @@ theorem DDD.reach_winner_iff (D : DDD O U V) (h) :
     rw [reach_snoc_iff, ih, reach_snoc_iff]
     simp [DDD.winner, relabel]
 
-theorem DDD.replyLabel_winner (D : DDD O U V) (h) :
+lemma DDD.replyLabel_winner (D : DDD O U V) (h) :
     replyLabel D.winner h = replyLabel D (h.map forgetEnvMBO) := by
   -- The winner replies exactly when `D` does on the replies without MBOs, and replacing the
   -- decision keeps the port.
@@ -1664,7 +1664,7 @@ theorem DDD.replyLabel_winner (D : DDD O U V) (h) :
   · rw [dif_neg hd, dif_neg (fun h' => hd ((D.winner_dom h).mp h'))]
 
 /-- The winner of a deterministic distinguisher is a deterministic distinguisher. -/
-theorem IsDDD.winner {D : DDD O U V} (hD : IsDDD D) : IsDDD D.winner := by
+lemma IsDDD.winner {D : DDD O U V} (hD : IsDDD D) : IsDDD D.winner := by
   -- Each condition on the winner at a history is the condition on `D` at the history without
   -- MBOs: the same domain (`winner_dom`), reaching (`reach_winner_iff`) and reply ports
   -- (`replyLabel_winner`); forgetting MBOs keeps the ports of inputs.
@@ -1688,7 +1688,7 @@ theorem IsDDD.winner {D : DDD O U V} (hD : IsDDD D) : IsDDD D.winner := by
       (by simpa only [List.map_append, List.map_singleton] using (D.reach_winner_iff _).mp hr)
 
 open scoped Classical in
-theorem DDD.trim_winner (D : DDD O U V) : trim D.winner = DDD.winner (trim D) := by
+lemma DDD.trim_winner (D : DDD O U V) : trim D.winner = DDD.winner (trim D) := by
   -- `trim` keeps the outputs at reachable histories, and the winner reaches exactly where `D`
   -- reaches on the replies without MBOs; the decision replacement passes through the `if`.
   funext h
@@ -1696,7 +1696,7 @@ theorem DDD.trim_winner (D : DDD O U V) : trim D.winner = DDD.winner (trim D) :=
   split_ifs <;> simp
 
 /-- The winner queries as the distinguisher on the replies without their MBO. -/
-theorem DDD.envOf_trim_winner (D : DDD O U V) (ys : List (Σ o, withMBO V o)) :
+lemma DDD.envOf_trim_winner (D : DDD O U V) (ys : List (Σ o, withMBO V o)) :
     envOf (trim D.winner) ys = envOf (trim D) (ys.map forgetMBO) := by
   -- The environment of a distinguisher reads only its queries. The history of the winner is that
   -- of `D` with the MBOs forgotten (`map_forgetEnvMBO_dHist`).
@@ -1713,7 +1713,7 @@ variable [Fintype O] [∀ o, Fintype (U o)] [∀ o, Fintype (V o)]
 
 /-- **Winning is deciding with the winner**: the winning probability of a compatible
 distinguisher is the decision probability of its winner. -/
-theorem RandomSystem.winProbability_eq_decisionProbability_winner (D : DDD O U V) (hD : IsDDD D)
+lemma RandomSystem.winProbability_eq_decisionProbability_winner (D : DDD O U V) (hD : IsDDD D)
     (hc : (Domain.ofInputs F n hF : Domain (Σ o, U o) (Σ o, V o)).DecisionCompatible D)
     {R : RandomSystem (Σ o, U o) (Σ o, withMBO V o) (Domain.ofInputs F n hF)}
     (hR : R.RepliesAtQueriedInterface) :
@@ -1806,7 +1806,7 @@ variable {O J : Type} {U V : O → Type} {X Y : J → Type}
 /-- **Bits through the absorption of a lift into a winner**: the lift's outside replies carry
 their tags to the winner, its inside queries leave untagged, and the winner's queries carry no
 bit. -/
-theorem tagRouting_absorbAll (a : InsideOutsideSystem O J U V X Y) :
+lemma tagRouting_absorbAll (a : InsideOutsideSystem O J U V X Y) :
     TagRouting (envMBO (V := V)) (inputMBO (U := U) (Y := Y)) (envMBO (V := Y))
       (outputMBO (V := V) (X := X)) (liftMBO a)
       (absorptionRoute (U := U) (V := withMBO V) (X := X) (Y := withMBO Y))
@@ -1864,7 +1864,7 @@ theorem tagRouting_absorbAll (a : InsideOutsideSystem O J U V X Y) :
 
 /-- **The decision of a winner with a lift absorbed is the latest MBO**: when the winner
 decides, the lift is idle and its latest reply carried its latest inside MBO to the winner. -/
-theorem decisionBit_absorbAll_winner {b : ℕ} {D : DDD O U V} (hD : IsDDD D)
+lemma decisionBit_absorbAll_winner {b : ℕ} {D : DDD O U V} (hD : IsDDD D)
     {a : InsideOutsideSystem O J U V X Y} (ha : IsDDC b a) {u w c}
     (hr : Reach (absorbAll D.winner (liftMBO a)) u) (hw : w ∈ absorbAll D.winner (liftMBO a) u)
     (hc : decisionBit w = some c) : c = latestBy envMBO u := by
@@ -1936,7 +1936,7 @@ theorem decisionBit_absorbAll_winner {b : ℕ} {D : DDD O U V} (hD : IsDDD D)
 
 /-- **A winner with a lift absorbed, without its decision**, is the distinguisher with the
 converter absorbed, on the replies without their MBO. -/
-theorem relabel_absorbAll_winner (D : DDD O U V) (a : InsideOutsideSystem O J U V X Y) :
+lemma relabel_absorbAll_winner (D : DDD O U V) (a : InsideOutsideSystem O J U V X Y) :
     relabel (absorbAll D.winner (liftMBO a)) id (tagDecision false) =
       relabel (absorbAll D a) forgetEnvMBO (tagDecision false) := by
   -- Move the relabelings through the interconnection, one component at a time:
@@ -1993,7 +1993,7 @@ theorem relabel_absorbAll_winner (D : DDD O U V) (a : InsideOutsideSystem O J U 
     rcases u with ⟨_ | _ | j, v⟩ <;> first | exact v.elim | rfl
 
 /-- **Absorbing a lift into a winner gives the winner of the absorbed distinguisher.** -/
-theorem trim_absorbAll_winner {b : ℕ} {D : DDD O U V} (hD : IsDDD D)
+lemma trim_absorbAll_winner {b : ℕ} {D : DDD O U V} (hD : IsDDD D)
     {a : InsideOutsideSystem O J U V X Y} (ha : IsDDC b a) :
     trim (absorbAll D.winner (liftMBO a)) = DDD.winner (trim (absorbAll D a)) := by
   -- The winner with the lift absorbed:
@@ -2065,7 +2065,7 @@ variable {O J : Type} [Fintype O] [Fintype J] {U V : O → Type} {X Y : J → Ty
 omit [Fintype J] [∀ j, Fintype (X j)] [∀ j, Fintype (Y j)] in
 /-- Equal distinguishers have equal decision probabilities, whatever the proofs that they are
 distinguishers. -/
-theorem RandomSystem.decisionProbability_congr {I : Type} [Fintype I] {X' Y' : I → Type}
+lemma RandomSystem.decisionProbability_congr {I : Type} [Fintype I] {X' Y' : I → Type}
     [∀ i, Fintype (X' i)] [∀ i, Fintype (Y' i)] {𝒟 : Domain (Σ i, X' i) (Σ i, Y' i)}
     (R : RandomSystem (Σ i, X' i) (Σ i, Y' i) 𝒟) {D₁ D₂ : DDD I X' Y'} (he : D₁ = D₂)
     (h₁ : IsDDD D₁) (h₂ : IsDDD D₂) :
@@ -2076,7 +2076,7 @@ theorem RandomSystem.decisionProbability_congr {I : Type} [Fintype I] {X' Y' : I
 
 /-- **Attaching a lift averages the absorbed winning probabilities** over a presentation of the
 PDC, the step towards CR18, equation (4.9), for a PDC. -/
-theorem RandomSystem.winProbability_attach_liftMBO (D : DDD O U V) (hD : IsDDD D)
+lemma RandomSystem.winProbability_attach_liftMBO (D : DDD O U V) (hD : IsDDD D)
     (hc : (Domain.ofInputs F n hF : Domain (Σ o, U o) (Σ o, V o)).DecisionCompatible D)
     (α : PDCBehavior O J U V X Y E m hE F n hF) {b : ℕ}
     (P : Distribution.ProbDist {a : InsideOutsideSystem O J U V X Y // IsDDCFrom E F b a})

@@ -53,9 +53,9 @@ def Good (n : ℕ) (h : List (A × B)) : Prop := Cons σ h ∧ Done σ n h
 
 variable {σ}
 
-theorem cons_nil : Cons σ ([] : List (A × B)) := fun i hi => absurd hi (by simp)
+lemma cons_nil : Cons σ ([] : List (A × B)) := fun i hi => absurd hi (by simp)
 
-theorem cons_snoc {h : List (A × B)} {z : A × B} :
+lemma cons_snoc {h : List (A × B)} {z : A × B} :
     Cons σ (h ++ [z]) ↔ Cons σ h ∧ z.1 ∈ σ (h.map Prod.snd) := by
   constructor
   · intro hc
@@ -75,7 +75,7 @@ theorem cons_snoc {h : List (A × B)} {z : A × B} :
       rw [List.take_left' rfl]
       simpa using hz
 
-theorem Cons.of_prefix {h h' : List (A × B)} (hc : Cons σ h') (hp : h <+: h') : Cons σ h := by
+lemma Cons.of_prefix {h h' : List (A × B)} (hc : Cons σ h') (hp : h <+: h') : Cons σ h := by
   obtain ⟨e, rfl⟩ := hp
   intro i hi
   have := hc i (by simp; omega)
@@ -83,7 +83,7 @@ theorem Cons.of_prefix {h h' : List (A × B)} (hc : Cons σ h') (hp : h <+: h') 
 
 variable {s : System A B}
 
-theorem transcript_cons {s : System A B} {xs ys}
+lemma transcript_cons {s : System A B} {xs ys}
     (tr : Transcript s σ xs ys) : Cons σ (xs.zip ys) := by
   induction tr with
   | nil => exact cons_nil
@@ -93,7 +93,7 @@ theorem transcript_cons {s : System A B} {xs ys}
     rw [List.map_snd_zip (by rw [tr.length_eq])]
     exact hx
 
-theorem transcript_of_cons {s : System A B} :
+lemma transcript_of_cons {s : System A B} :
     ∀ {h : List (A × B)}, Cons σ h → Replies s (h.map Prod.fst) (h.map Prod.snd) →
       Transcript s σ (h.map Prod.fst) (h.map Prod.snd) := by
   intro h
@@ -122,7 +122,7 @@ noncomputable def tSupp : ℕ → Finset (List (A × B))
 
 variable {R σ}
 
-theorem tSupp_good : ∀ {m h}, h ∈ tSupp R σ m → Good σ m h := by
+lemma tSupp_good : ∀ {m h}, h ∈ tSupp R σ m → Good σ m h := by
   intro m
   induction m with
   | zero => intro h hh; simp [tSupp] at hh; subst hh; exact ⟨cons_nil, Or.inl rfl⟩
@@ -143,7 +143,7 @@ theorem tSupp_good : ∀ {m h}, h ∈ tSupp R σ m → Good σ m h := by
       refine ⟨hc, Or.inr ⟨?_, hd⟩⟩
       rcases hd' with h | ⟨h, _⟩ <;> omega
 
-theorem mem_tSupp : ∀ {m h}, Good σ m h → R h ≠ 0 → h ∈ tSupp R σ m := by
+lemma mem_tSupp : ∀ {m h}, Good σ m h → R h ≠ 0 → h ∈ tSupp R σ m := by
   intro m
   induction m with
   | zero =>
@@ -184,10 +184,10 @@ noncomputable def sLaw (n : ℕ) : Distribution (List (A × B)) :=
 
 variable {R σ}
 
-theorem sLaw_apply (n : ℕ) (h : List (A × B)) :
+lemma sLaw_apply (n : ℕ) (h : List (A × B)) :
     sLaw R σ n h = if Good σ n h then R h else 0 := Finsupp.onFinset_apply
 
-theorem sLaw_nonNeg (n : ℕ) : (sLaw R σ n).NonNeg := fun h => by
+lemma sLaw_nonNeg (n : ℕ) : (sLaw R σ n).NonNeg := fun h => by
   rw [sLaw_apply]; split_ifs
   · exact R.mass_nonneg _
   · exact le_rfl
@@ -197,7 +197,7 @@ is admitted. It neither totalizes the resource nor requires a decision output. -
 def Compatible (R : RandomSystem A B D) (σ : List B →. A) : Prop :=
   ∀ h x, Cons σ h → R h ≠ 0 → x ∈ σ (h.map Prod.snd) → D h x
 
-theorem sum_extension (R : RandomSystem A B D) (h : List (A × B)) (x : A)
+lemma sum_extension (R : RandomSystem A B D) (h : List (A × B)) (x : A)
     (hd : D h x) : ∑ y ∈ (R.extensionLaw h x).support, R (h ++ [(x, y)]) = R h := by
   have hw := R.extensionLaw_weight h x
   rw [if_pos hd] at hw
@@ -205,7 +205,7 @@ theorem sum_extension (R : RandomSystem A B D) (h : List (A × B)) (x : A)
   unfold Finsupp.sum
   exact Finset.sum_congr rfl fun y _ => (R.extensionLaw_apply h x y).symm
 
-theorem tSupp_possible : ∀ {m h}, h ∈ tSupp R σ m → R h ≠ 0 := by
+lemma tSupp_possible : ∀ {m h}, h ∈ tSupp R σ m → R h ≠ 0 := by
   intro m
   induction m with
   | zero =>
@@ -226,7 +226,7 @@ theorem tSupp_possible : ∀ {m h}, h ∈ tSupp R σ m → R h ≠ 0 := by
 /-- **One more round**: a sum over the transcripts of `σ` within `m + 1` rounds is the sum, over
 the transcripts within `m` rounds, of the sum over their extensions by the possible replies to
 the next query of `σ`, or of the transcript itself when `σ` has stopped. -/
-theorem sum_tSupp_succ (f : List (A × B) → ℝ) (m : ℕ) :
+lemma sum_tSupp_succ (f : List (A × B) → ℝ) (m : ℕ) :
     ∑ h ∈ tSupp R σ (m + 1), f h = ∑ h ∈ tSupp R σ m,
       if hd : (σ (h.map Prod.snd)).Dom then
         ∑ y ∈ (R.extensionLaw h ((σ (h.map Prod.snd)).get hd)).support,
@@ -273,7 +273,7 @@ theorem sum_tSupp_succ (f : List (A × B) → ℝ) (m : ℕ) :
     -- Both kept: both are the transcript g.
     · exact hne ((Finset.mem_singleton.mp hg).symm.trans (Finset.mem_singleton.mp hg'))
 
-theorem sum_tSupp (hC : Compatible R σ) :
+lemma sum_tSupp (hC : Compatible R σ) :
     ∀ m, ∑ h ∈ tSupp R σ m, (if Good σ m h then R h else 0) = 1 := by
   intro m
   induction m with
@@ -300,7 +300,7 @@ theorem sum_tSupp (hC : Compatible R σ) :
     · rw [dif_neg hd, if_pos ⟨hc, Or.inr ⟨by rcases hd' with hl | ⟨hl, _⟩ <;> omega, hd⟩⟩]
 
 /-- **The transcript law is a probability distribution.** -/
-theorem sLaw_isProbDist (hC : Compatible R σ) (n : ℕ) : (sLaw R σ n).isProbDist := by
+lemma sLaw_isProbDist (hC : Compatible R σ) (n : ℕ) : (sLaw R σ n).isProbDist := by
   refine ⟨sLaw_nonNeg n, ?_⟩
   unfold Distribution.weight sLaw
   rw [Finsupp.onFinset_sum _ (fun _ => rfl)]
@@ -308,7 +308,7 @@ theorem sLaw_isProbDist (hC : Compatible R σ) (n : ℕ) : (sLaw R σ n).isProbD
 
 /-- Any two bounds beyond all possible queries give the same completed
 transcript law. The bound is needed only on possible interaction histories. -/
-theorem sLaw_eq_of_query_bounds {n m : ℕ}
+lemma sLaw_eq_of_query_bounds {n m : ℕ}
     (hn : ∀ h, Cons σ h → R h ≠ 0 → (σ (h.map Prod.snd)).Dom → h.length < n)
     (hm : ∀ h, Cons σ h → R h ≠ 0 → (σ (h.map Prod.snd)).Dom → h.length < m) :
     R.sLaw σ n = R.sLaw σ m := by
@@ -342,7 +342,7 @@ theorem sLaw_eq_of_query_bounds {n m : ℕ}
 
 /-- Restricting to completed observations removes the artificial truncation
 at the observation bound. -/
-theorem sLaw_completed_apply (R : RandomSystem A B D) (σ : List B →. A)
+lemma sLaw_completed_apply (R : RandomSystem A B D) (σ : List B →. A)
     (n : ℕ) (h : List (A × B)) :
     ((R.sLaw σ n).restrict fun h => ¬ (σ (h.map Prod.snd)).Dom) h =
       if Cons σ h ∧ h.length ≤ n ∧ ¬ (σ (h.map Prod.snd)).Dom then R h else 0 := by
@@ -355,7 +355,7 @@ theorem sLaw_completed_apply (R : RandomSystem A B D) (σ : List B →. A)
 
 /-- Once all possible completed transcripts fit, increasing the observation
 bound changes no completed probability, even for partial resources. -/
-theorem sLaw_completed_stable (R : RandomSystem A B D) (σ : List B →. A)
+lemma sLaw_completed_stable (R : RandomSystem A B D) (σ : List B →. A)
     {n m : ℕ} (hn : n ≤ m)
     (hb : ∀ h, Cons σ h → R h ≠ 0 → ¬ (σ (h.map Prod.snd)).Dom → h.length ≤ n) :
     (R.sLaw σ n).restrict (fun h => ¬ (σ (h.map Prod.snd)).Dom) =
@@ -375,7 +375,7 @@ theorem sLaw_completed_stable (R : RandomSystem A B D) (σ : List B →. A)
 /-- For a finite presentation, the probability of a completed observation is
 the mass of precisely those samples that produce that observation. Partiality
 is retained: an unanswered query is not a completed transcript. -/
-theorem sLaw_completed_eq_mass {ι : Type} (R : RandomSystem A B D)
+lemma sLaw_completed_eq_mass {ι : Type} (R : RandomSystem A B D)
     (P : Distribution ι) (hP : P.NonNeg) (systems : ι → System A B)
     (hR : ∀ h, R h = P.mass (fun s => Replies (systems s) (h.map Prod.fst) (h.map Prod.snd)))
     (σ : List B →. A) (n : ℕ) (E : List (A × B) → Prop) :
@@ -451,7 +451,7 @@ end RandomSystem
 
 section Follow
 
-theorem cons_fixedQueries {xs : List A} {t : List (A × B)} (hc : Cons (fixedQueries xs) t) :
+lemma cons_fixedQueries {xs : List A} {t : List (A × B)} (hc : Cons (fixedQueries xs) t) :
     t.length ≤ xs.length ∧ t.map Prod.fst = xs.take t.length := by
   induction t using List.reverseRecOn with
   | nil => simp
@@ -472,7 +472,7 @@ replies agree with `h`, and stops as soon as they deviate. -/
 noncomputable def follow (h : List (A × B)) : List B →. A := fun ys =>
   if ys = (h.take ys.length).map Prod.snd then fixedQueries (h.map Prod.fst) ys else Part.none
 
-theorem mem_follow {h : List (A × B)} {ys : List B} {x : A} :
+lemma mem_follow {h : List (A × B)} {ys : List B} {x : A} :
     x ∈ follow h ys ↔
       ys = (h.take ys.length).map Prod.snd ∧ x ∈ fixedQueries (h.map Prod.fst) ys := by
   unfold follow
@@ -480,13 +480,13 @@ theorem mem_follow {h : List (A × B)} {ys : List B} {x : A} :
   · exact ⟨fun hx => ⟨he, hx⟩, fun hx => hx.2⟩
   · exact ⟨fun hx => absurd hx (Part.notMem_none _), fun hx => absurd hx.1 he⟩
 
-theorem cons_follow_self (h : List (A × B)) : Cons (follow h) h := by
+lemma cons_follow_self (h : List (A × B)) : Cons (follow h) h := by
   intro i hi
   refine mem_follow.mpr ⟨by simp [Nat.min_eq_left hi.le], ?_⟩
   simp [fixedQueries, Nat.min_eq_left hi.le, hi]
 
 /-- Before each of its queries, the environment following `h` has seen a prefix of `h`. -/
-theorem follow_prefix {h t : List (A × B)} {x : A} (hc : Cons (follow h) t)
+lemma follow_prefix {h t : List (A × B)} {x : A} (hc : Cons (follow h) t)
     (hx : x ∈ follow h (t.map Prod.snd)) :
     ∃ (i : ℕ) (hi : i < h.length), t = h.take i ∧ x = (h[i]).1 := by
   obtain ⟨hy, hq⟩ := mem_follow.mp hx
@@ -510,17 +510,17 @@ namespace RandomSystem
 
 variable [Fintype A] [Fintype B] {D : Domain A B}
 
-theorem compatible_follow (R : RandomSystem A B D) {h : List (A × B)}
+lemma compatible_follow (R : RandomSystem A B D) {h : List (A × B)}
     (hadm : ∀ i (hi : i < h.length), D (h.take i) (h[i]).1) : Compatible R (follow h) := by
   intro t x hc _ hx
   obtain ⟨i, hi, rfl, rfl⟩ := follow_prefix hc hx
   exact hadm i hi
 
-theorem sLaw_follow (R : RandomSystem A B D) (h : List (A × B)) :
+lemma sLaw_follow (R : RandomSystem A B D) (h : List (A × B)) :
     sLaw R (follow h) h.length h = R h := by
   rw [sLaw_apply, if_pos ⟨cons_follow_self h, Or.inl rfl⟩]
 
-theorem admitted_of_ne_zero {R S : RandomSystem A B D} {h : List (A × B)}
+lemma admitted_of_ne_zero {R S : RandomSystem A B D} {h : List (A × B)}
     (h0 : ¬ (R h = 0 ∧ S h = 0)) : ∀ i (hi : i < h.length), D (h.take i) (h[i]).1 := by
   intro i hi
   by_cases hr : R h = 0

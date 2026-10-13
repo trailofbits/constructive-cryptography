@@ -166,7 +166,7 @@ def expandMask (rhoPrime : Bytes 64) (kappa : ℕ) (p : Params) : RqVec p.l :=
 
 /-- Every component produced by `expandMask` lies in the FIPS-204 `z` window for an approved
 parameter set. -/
-theorem expandMask_get_cInfNorm_le (p : Params) (hp : p.isApproved) (rhoPrime : Bytes 64)
+lemma expandMask_get_cInfNorm_le (p : Params) (hp : p.isApproved) (rhoPrime : Bytes 64)
     (kappa : ℕ) (j : Fin p.l) :
     LatticeCrypto.cInfNorm ((expandMask rhoPrime kappa p).get j) ≤ p.gamma1 := by
   obtain ⟨hwidth, hq⟩ := approved_gamma1_width p hp
@@ -242,7 +242,7 @@ consumed by the `concrete_*` theorems of `Commons.Schemes.Signature.MLDSA.Concre
 open LatticeCrypto in
 /-- After a `set!`, the defaulted lookup at any index is either the freshly written value or the
 prior defaulted lookup. -/
-theorem getD_set!_or {α : Type*} (a : Array α) (i : ℕ) (v d : α) (j : ℕ) :
+lemma getD_set!_or {α : Type*} (a : Array α) (i : ℕ) (v d : α) (j : ℕ) :
     (a.set! i v).getD j d = v ∨ (a.set! i v).getD j d = a.getD j d := by
   simp only [Array.set!, Array.getD_eq_getD_getElem?, Array.getElem?_setIfInBounds]
   by_cases heq : i = j <;> by_cases hj : j < a.size <;> simp [heq, hj]
@@ -250,7 +250,7 @@ theorem getD_set!_or {α : Type*} (a : Array α) (i : ℕ) (v d : α) (j : ℕ) 
 /-- One `sampleInBallStep` only writes a previously stored value (`out.getD chosen 0`) and a sign
 `±1`, so if every defaulted entry of `out` lies in `{0, 1, -1}` then so does every defaulted entry
 of the updated accumulator. -/
-theorem sampleInBallStep_mem (stream : ByteArray) (signs i : ℕ) (out : Array Coeff)
+lemma sampleInBallStep_mem (stream : ByteArray) (signs i : ℕ) (out : Array Coeff)
     (pos signIdx : ℕ)
     (hInv : ∀ j, (out.getD j 0 = 0 ∨ out.getD j 0 = 1 ∨ out.getD j 0 = -1)) (j : ℕ) :
     (sampleInBallStep stream signs i out pos signIdx).1.getD j 0 = 0 ∨
@@ -273,7 +273,7 @@ theorem sampleInBallStep_mem (stream : ByteArray) (signs i : ℕ) (out : Array C
 
 /-- The `sampleInBall` accumulator only ever holds values in `{0, 1, -1}` (every defaulted entry),
 by fuel induction on the outer challenge loop, starting from the all-zero accumulator. -/
-theorem sampleInBallLoop_mem (stream : ByteArray) (signs hi : ℕ) :
+lemma sampleInBallLoop_mem (stream : ByteArray) (signs hi : ℕ) :
     ∀ (fuel i : ℕ) (out : Array Coeff) (pos signIdx : ℕ),
       (∀ j, (out.getD j 0 = 0 ∨ out.getD j 0 = 1 ∨ out.getD j 0 = -1)) →
       ∀ j, (sampleInBallLoop stream signs hi fuel i out pos signIdx).getD j 0 = 0 ∨
@@ -290,7 +290,7 @@ theorem sampleInBallLoop_mem (stream : ByteArray) (signs hi : ℕ) :
       exact hInv j
 
 /-- Every coefficient of `sampleInBall` lies in `{0, 1, -1}`. -/
-theorem sampleInBall_coeff_mem (p : Params) (seed : CommitHashBytes p) (i : Fin ringDegree) :
+lemma sampleInBall_coeff_mem (p : Params) (seed : CommitHashBytes p) (i : Fin ringDegree) :
     (sampleInBall p seed).get i = 0 ∨ (sampleInBall p seed).get i = 1 ∨
       (sampleInBall p seed).get i = -1 := by
   unfold sampleInBall
@@ -302,7 +302,7 @@ theorem sampleInBall_coeff_mem (p : Params) (seed : CommitHashBytes p) (i : Fin 
   by_cases hj : j < ringDegree <;> simp [hj]
 
 /-- `sampleInBall` has centered infinity norm at most `1` (coefficients in `{-1, 0, +1}`). -/
-theorem sampleInBall_norm (p : Params) (seed : CommitHashBytes p) :
+lemma sampleInBall_norm (p : Params) (seed : CommitHashBytes p) :
     polyNorm (sampleInBall p seed) ≤ 1 := by
   rw [polyNorm_eq_cInfNorm, LatticeCrypto.cInfNorm_le_iff]
   intro i
@@ -322,19 +322,19 @@ def countNZ (out : Array Coeff) : ℕ :=
   ∑ j ∈ Finset.range ringDegree, (LatticeCrypto.centeredRepr (out.getD j 0)).natAbs
 
 /-- A defaulted lookup at the just-written slot returns the written value. -/
-theorem getD_set!_self (out : Array Coeff) (a : ℕ) (ha : a < out.size) (u : Coeff) :
+lemma getD_set!_self (out : Array Coeff) (a : ℕ) (ha : a < out.size) (u : Coeff) :
     (out.set! a u).getD a 0 = u := by
   simp only [Array.set!, Array.getD_eq_getD_getElem?, Array.getElem?_setIfInBounds, ha, ite_true,
     Option.getD_some]
 
 /-- A defaulted lookup away from the just-written slot is unchanged. -/
-theorem getD_set!_ne (out : Array Coeff) (a : ℕ) (u : Coeff) (j : ℕ) (hj : j ≠ a) :
+lemma getD_set!_ne (out : Array Coeff) (a : ℕ) (u : Coeff) (j : ℕ) (hj : j ≠ a) :
     (out.set! a u).getD j 0 = out.getD j 0 := by
   simp only [Array.set!, Array.getD_eq_getD_getElem?, Array.getElem?_setIfInBounds]
   rw [if_neg (fun h => hj h.symm)]
 
 /-- Exact additive single-slot update law for `countNZ`, stated to avoid `ℕ` subtraction. -/
-theorem countNZ_set!_eq (out : Array Coeff) (a : ℕ) (ha : a < ringDegree)
+lemma countNZ_set!_eq (out : Array Coeff) (a : ℕ) (ha : a < ringDegree)
     (hsize : out.size = ringDegree) (u : Coeff) :
     countNZ (out.set! a u) + (LatticeCrypto.centeredRepr (out.getD a 0)).natAbs
       = countNZ out + (LatticeCrypto.centeredRepr u).natAbs := by
@@ -352,7 +352,7 @@ theorem countNZ_set!_eq (out : Array Coeff) (a : ℕ) (ha : a < ringDegree)
   rw [hrest]; ring
 
 /-- The chosen slot index returned by the find loop is always `≤ i`. -/
-theorem findChosen_le (stream : ByteArray) (i : ℕ) :
+lemma findChosen_le (stream : ByteArray) (i : ℕ) :
     ∀ (fuel pos : ℕ), (sampleInBallFindChosen stream i fuel pos).1 ≤ i := by
   intro fuel
   induction fuel with
@@ -364,13 +364,13 @@ theorem findChosen_le (stream : ByteArray) (i : ℕ) :
     · simp only [hb, ite_false]; exact ih (pos + 1)
 
 /-- One challenge step preserves the accumulator size. -/
-theorem step_size (stream : ByteArray) (signs i : ℕ) (out : Array Coeff) (pos signIdx : ℕ)
+lemma step_size (stream : ByteArray) (signs i : ℕ) (out : Array Coeff) (pos signIdx : ℕ)
     (hsize : out.size = ringDegree) :
     (sampleInBallStep stream signs i out pos signIdx).1.size = ringDegree := by
   unfold sampleInBallStep; simp [Array.set!, hsize]
 
 /-- One challenge step preserves the freshness invariant: slots strictly above `i` stay zero. -/
-theorem step_fresh (stream : ByteArray) (signs i : ℕ) (out : Array Coeff) (pos signIdx : ℕ)
+lemma step_fresh (stream : ByteArray) (signs i : ℕ) (out : Array Coeff) (pos signIdx : ℕ)
     (hfresh : ∀ j, i ≤ j → out.getD j 0 = 0) :
     ∀ j, i + 1 ≤ j → (sampleInBallStep stream signs i out pos signIdx).1.getD j 0 = 0 := by
   intro j hj
@@ -382,7 +382,7 @@ theorem step_fresh (stream : ByteArray) (signs i : ℕ) (out : Array Coeff) (pos
 
 /-- One challenge step increases the nonzero count by at most one (in fact exactly one), given the
 freshness of slot `i`. -/
-theorem step_countNZ_le (stream : ByteArray) (signs i : ℕ) (out : Array Coeff)
+lemma step_countNZ_le (stream : ByteArray) (signs i : ℕ) (out : Array Coeff)
     (pos signIdx : ℕ) (hi : i < ringDegree) (hsize : out.size = ringDegree)
     (hfresh : (LatticeCrypto.centeredRepr (out.getD i 0)).natAbs = 0) :
     countNZ (sampleInBallStep stream signs i out pos signIdx).1 ≤ countNZ out + 1 := by
@@ -413,7 +413,7 @@ theorem step_countNZ_le (stream : ByteArray) (signs i : ℕ) (out : Array Coeff)
     rw [hgc] at e2; rw [e1, hsignAbs] at e2; omega
 
 /-- The challenge loop increases the nonzero count by at most the number of indices it processes. -/
-theorem loop_countNZ_le (stream : ByteArray) (signs hi : ℕ) (hhi : hi ≤ ringDegree) :
+lemma loop_countNZ_le (stream : ByteArray) (signs hi : ℕ) (hhi : hi ≤ ringDegree) :
     ∀ (fuel i : ℕ) (out : Array Coeff) (pos signIdx : ℕ),
       out.size = ringDegree → (∀ j, i ≤ j → out.getD j 0 = 0) →
       countNZ (sampleInBallLoop stream signs hi fuel i out pos signIdx) ≤ countNZ out + (hi - i)
@@ -442,7 +442,7 @@ theorem loop_countNZ_le (stream : ByteArray) (signs hi : ℕ) (hhi : hi ≤ ring
       exact Nat.le_add_right _ _
 
 /-- The all-zero accumulator has nonzero count zero. -/
-theorem countNZ_replicate_zero : countNZ (Array.replicate ringDegree (0 : Coeff)) = 0 := by
+lemma countNZ_replicate_zero : countNZ (Array.replicate ringDegree (0 : Coeff)) = 0 := by
   unfold countNZ
   apply Finset.sum_eq_zero
   intro j _
@@ -452,7 +452,7 @@ theorem countNZ_replicate_zero : countNZ (Array.replicate ringDegree (0 : Coeff)
 
 /-- The `ℓ₁` norm of a polynomial materialized by `Vector.ofFn` from a defaulted-array lookup is the
 nonzero count of that array. -/
-theorem l1Norm_ofPi_eq_countNZ (coeffs : Array Coeff) :
+lemma l1Norm_ofPi_eq_countNZ (coeffs : Array Coeff) :
     LatticeCrypto.l1Norm (LatticeCrypto.Poly.ofPi
       (fun i : Fin ringDegree => coeffs.getD i.val 0))
       = countNZ coeffs := by
@@ -465,7 +465,7 @@ theorem l1Norm_ofPi_eq_countNZ (coeffs : Array Coeff) :
 
 /-- The challenge loop, run from the all-zero accumulator over `[ringDegree - τ, ringDegree)`,
 produces an array with nonzero count at most `τ`. -/
-theorem countNZ_sampleInBallLoop_le (stream : ByteArray) (signs : ℕ) (p : Params) :
+lemma countNZ_sampleInBallLoop_le (stream : ByteArray) (signs : ℕ) (p : Params) :
     countNZ (sampleInBallLoop stream signs ringDegree p.tau (ringDegree - p.tau)
       (Array.replicate ringDegree 0) 8 0) ≤ p.tau := by
   have hsize : (Array.replicate ringDegree (0 : Coeff)).size = ringDegree :=
@@ -482,7 +482,7 @@ theorem countNZ_sampleInBallLoop_le (stream : ByteArray) (signs : ℕ) (p : Para
 
 /-- `sampleInBall` has centered `ℓ₁` norm at most `τ` (it writes at most `τ` nonzero `±1`
 coefficients). This is the count needed for the challenge-product bound `‖c · s‖∞ ≤ τ · η`. -/
-theorem sampleInBall_l1Norm (p : Params) (seed : CommitHashBytes p) :
+lemma sampleInBall_l1Norm (p : Params) (seed : CommitHashBytes p) :
     LatticeCrypto.l1Norm (sampleInBall p seed) ≤ p.tau := by
   unfold sampleInBall
   rw [l1Norm_ofPi_eq_countNZ]
@@ -490,7 +490,7 @@ theorem sampleInBall_l1Norm (p : Params) (seed : CommitHashBytes p) :
 
 /-- After a `push`, the defaulted lookup at any index is either the pushed value or the prior
 defaulted lookup. -/
-theorem getD_push_or {α : Type*} (a : Array α) (v d : α) (j : ℕ) :
+lemma getD_push_or {α : Type*} (a : Array α) (v d : α) (j : ℕ) :
     (a.push v).getD j d = v ∨ (a.push v).getD j d = a.getD j d := by
   simp only [Array.getD_eq_getD_getElem?, Array.getElem?_push]
   by_cases h : j < a.size <;> by_cases h2 : j = a.size <;> simp [h, h2]
@@ -504,7 +504,7 @@ def EtaInv (eta : ℕ) (c : Array ℤ) : Prop :=
 
 /-- A conditional push of a value whose `Coeff` cast is centered-bounded by `eta` (whenever the
 guard holds) preserves `EtaInv`. -/
-theorem EtaInv_condPush (eta : ℕ) (c : Array ℤ) (v : ℤ) (cond : Prop) [Decidable cond]
+lemma EtaInv_condPush (eta : ℕ) (c : Array ℤ) (v : ℤ) (cond : Prop) [Decidable cond]
     (hc : EtaInv eta c)
     (hv : cond → (LatticeCrypto.centeredRepr ((v : Coeff))).natAbs ≤ eta) :
     EtaInv eta (if cond then c.push v else c) := by
@@ -519,7 +519,7 @@ theorem EtaInv_condPush (eta : ℕ) (c : Array ℤ) (v : ℤ) (cond : Prop) [Dec
 /-- One `rejEtaStep` only pushes values whose `Coeff` cast is centered-bounded by `eta` (in the
 `eta = 2` and `eta = 4` branches; in any other case it pushes nothing). So `EtaInv eta` is preserved
 by a step. -/
-theorem rejEtaStep_mem (eta byte : ℕ) (coeffs : Array ℤ)
+lemma rejEtaStep_mem (eta byte : ℕ) (coeffs : Array ℤ)
     (hInv : EtaInv eta coeffs) : EtaInv eta (rejEtaStep eta byte coeffs) := by
   unfold rejEtaStep
   have hb2 : ∀ (tt : ℕ), tt < 15 →
@@ -548,7 +548,7 @@ theorem rejEtaStep_mem (eta byte : ℕ) (coeffs : Array ℤ)
     · exact hInv
 
 /-- `EtaInv eta` is preserved through the whole `rejEtaCoeffsAux` fuel recursion. -/
-theorem rejEtaCoeffsAux_mem (eta : ℕ) (stream : ByteArray) :
+lemma rejEtaCoeffsAux_mem (eta : ℕ) (stream : ByteArray) :
     ∀ (fuel : ℕ) (coeffs : Array ℤ) (pos : ℕ),
       EtaInv eta coeffs → EtaInv eta (rejEtaCoeffsAux eta stream fuel coeffs pos)
   | 0, coeffs, _, hInv => by simpa [rejEtaCoeffsAux] using hInv
@@ -561,12 +561,12 @@ theorem rejEtaCoeffsAux_mem (eta : ℕ) (stream : ByteArray) :
       exact hInv
 
 /-- The centered representative of the `Coeff` cast of `0` has absolute value `0`. -/
-theorem centeredRepr_zero_cast_le (eta : ℕ) :
+lemma centeredRepr_zero_cast_le (eta : ℕ) :
     (LatticeCrypto.centeredRepr (((0 : ℤ) : Coeff))).natAbs ≤ eta := by
   have : LatticeCrypto.centeredRepr (((0 : ℤ) : Coeff)) = 0 := by rfl
   rw [this]; exact Nat.zero_le eta
 
-theorem EtaInv_mkEmpty (eta : ℕ) : EtaInv eta (Array.mkEmpty ringDegree) := by
+lemma EtaInv_mkEmpty (eta : ℕ) : EtaInv eta (Array.mkEmpty ringDegree) := by
   intro j
   have hz : (Array.mkEmpty ringDegree : Array ℤ).getD j 0 = 0 := by
     rw [Array.getD_eq_getD_getElem?]; simp
@@ -575,7 +575,7 @@ theorem EtaInv_mkEmpty (eta : ℕ) : EtaInv eta (Array.mkEmpty ringDegree) := by
 
 /-- The `requireFullEtaSample` guard preserves `EtaInv`: it returns either the input array or the
 empty fallback, both `EtaInv`. -/
-theorem requireFullEtaSample_mem (eta : ℕ) (coeffs : Array ℤ) (hInv : EtaInv eta coeffs) :
+lemma requireFullEtaSample_mem (eta : ℕ) (coeffs : Array ℤ) (hInv : EtaInv eta coeffs) :
     EtaInv eta (requireFullEtaSample coeffs) := by
   unfold requireFullEtaSample
   split
@@ -588,7 +588,7 @@ theorem requireFullEtaSample_mem (eta : ℕ) (coeffs : Array ℤ) (hInv : EtaInv
     exact centeredRepr_zero_cast_le eta
 
 /-- Every coefficient of `sampleEtaPoly eta seed nonce` has centered infinity norm at most `eta`. -/
-theorem sampleEtaPoly_norm (eta : ℕ) (seed : Bytes 64) (nonce : ℕ) :
+lemma sampleEtaPoly_norm (eta : ℕ) (seed : Bytes 64) (nonce : ℕ) :
     polyNorm (sampleEtaPoly eta seed nonce) ≤ eta := by
   rw [polyNorm_eq_cInfNorm, LatticeCrypto.cInfNorm_le_iff]
   intro i
@@ -597,7 +597,7 @@ theorem sampleEtaPoly_norm (eta : ℕ) (seed : Bytes 64) (nonce : ℕ) :
   exact requireFullEtaSample_mem eta _ (rejEtaCoeffsAux_mem eta _ _ _ _ (EtaInv_mkEmpty eta)) i.val
 
 /-- `expandS` produces secret vectors with every coefficient bounded by `η`. -/
-theorem expandS_bound (rhoPrime : Bytes 64) (p : Params) :
+lemma expandS_bound (rhoPrime : Bytes 64) (p : Params) :
     polyVecBounded (expandS rhoPrime p).1 p.eta ∧
       polyVecBounded (expandS rhoPrime p).2 p.eta := by
   constructor <;>

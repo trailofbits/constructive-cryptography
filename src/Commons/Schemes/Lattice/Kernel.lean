@@ -139,22 +139,22 @@ instance (ring : NegacyclicRing Coeff) : Mul ring.Poly :=
   ⟨ring.mul⟩
 
 /-- The `i`-th coefficient of `f + g` equals the sum of the individual coefficients. -/
-@[simp] theorem coeff_add (ring : NegacyclicRing Coeff) (f g : ring.Poly) (i : Fin ring.degree) :
+@[simp] lemma coeff_add (ring : NegacyclicRing Coeff) (f g : ring.Poly) (i : Fin ring.degree) :
     ring.backend.coeff (f + g) i = ring.backend.coeff f i + ring.backend.coeff g i :=
   ring.add_coeff f g i
 
 /-- The `i`-th coefficient of `f - g` equals the difference of the individual coefficients. -/
-@[simp] theorem coeff_sub (ring : NegacyclicRing Coeff) (f g : ring.Poly) (i : Fin ring.degree) :
+@[simp] lemma coeff_sub (ring : NegacyclicRing Coeff) (f g : ring.Poly) (i : Fin ring.degree) :
     ring.backend.coeff (f - g) i = ring.backend.coeff f i - ring.backend.coeff g i :=
   ring.sub_coeff f g i
 
 /-- Every coefficient of the zero polynomial is zero. -/
-@[simp] theorem coeff_zero (ring : NegacyclicRing Coeff) (i : Fin ring.degree) :
+@[simp] lemma coeff_zero (ring : NegacyclicRing Coeff) (i : Fin ring.degree) :
     ring.backend.coeff (0 : ring.Poly) i = 0 :=
   ring.zero_coeff i
 
 /-- The `i`-th coefficient of `-f` is the negation of the `i`-th coefficient of `f`. -/
-@[simp] theorem coeff_neg (ring : NegacyclicRing Coeff) (f : ring.Poly) (i : Fin ring.degree) :
+@[simp] lemma coeff_neg (ring : NegacyclicRing Coeff) (f : ring.Poly) (i : Fin ring.degree) :
     ring.backend.coeff (-f) i = -ring.backend.coeff f i :=
   ring.neg_coeff f i
 
@@ -205,7 +205,7 @@ def negacyclicMul {Coeff : Type u} [Ring Coeff]
     negacyclicConvCoeff (backend.coeff f) (backend.coeff g) k
 
 /-- The `i`-th coefficient of `negacyclicMul backend f g` is `negacyclicConvCoeff`. -/
-@[simp] theorem negacyclicMul_coeff {Coeff : Type u} [Ring Coeff]
+@[simp] lemma negacyclicMul_coeff {Coeff : Type u} [Ring Coeff]
     (backend : PolyBackend.{u, u} Coeff) (f g : backend.Poly) (i : Fin backend.degree) :
     backend.coeff (negacyclicMul backend f g) i =
       negacyclicConvCoeff (backend.coeff f) (backend.coeff g) i :=

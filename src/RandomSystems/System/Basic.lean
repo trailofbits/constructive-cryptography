@@ -47,19 +47,19 @@ variable {A B C D E X Y M N : Type}
 def relabel (s : System X Y) (f : A → X) (g : Y → B) : System A B :=
   fun h => (s (h.map f)).map g
 
-theorem relabel_relabel (s : System X Y) (f : A → X) (g : Y → B)
+lemma relabel_relabel (s : System X Y) (f : A → X) (g : Y → B)
     (f' : C → A) (g' : B → D) :
     relabel (relabel s f g) f' g' = relabel s (f ∘ f') (g' ∘ g) := by
   funext h
   simp [relabel, List.map_map, Part.map_map]
 
-theorem relabel_id (s : System X Y) : relabel s id id = s := by
+lemma relabel_id (s : System X Y) : relabel s id id = s := by
   funext h
   simp [relabel]
   exact Part.map_id' (fun _ => rfl) _
 
 /-- Two systems are equal once their replies have the same members. -/
-theorem system_ext {s t : System A B} (h : ∀ u b, b ∈ s u ↔ b ∈ t u) : s = t := by
+lemma system_ext {s t : System A B} (h : ∀ u b, b ∈ s u ↔ b ∈ t u) : s = t := by
   funext u
   exact Part.ext (h u)
 
@@ -87,14 +87,14 @@ def Terminating (s : System X Y) : Prop :=
   ∃ μ : List X → ℕ, ∀ h x, (s (h ++ [x])).Dom → μ (h ++ [x]) < μ h
 
 /-- T0. -/
-theorem Finite.terminating {n : ℕ} {s : System X Y} (hs : Finite n s) : Terminating s :=
+lemma Finite.terminating {n : ℕ} {s : System X Y} (hs : Finite n s) : Terminating s :=
   ⟨fun h => n - h.length, fun h x hd => by
     have := hs _ hd
     simp at this ⊢
     omega⟩
 
 /-- T3. -/
-theorem Terminating.relabel {s : System X Y} (hs : Terminating s) (f : A → X) (g : Y → B) :
+lemma Terminating.relabel {s : System X Y} (hs : Terminating s) (f : A → X) (g : Y → B) :
     Terminating (SystemAlgebra.relabel s f g) := by
   obtain ⟨μ, hμ⟩ := hs
   exact ⟨fun h => μ (h.map f), fun h x hd => by simpa using hμ (h.map f) (f x) (by simpa [SystemAlgebra.relabel] using hd)⟩
@@ -107,7 +107,7 @@ def Reach (s : System X Y) (h : List X) : Prop :=
 noncomputable def trim (s : System X Y) : System X Y :=
   fun h => if Reach s h then s h else Part.none
 
-theorem trim_eq_of_prefix_eq {s t : System X Y} {h : List X}
+lemma trim_eq_of_prefix_eq {s t : System X Y} {h : List X}
     (he : ∀ p, p <+: h → s p = t p) : trim s h = trim t h := by
   have hr : Reach s h ↔ Reach t h := by
     constructor <;> intro hp p e hh hn
@@ -144,7 +144,7 @@ inductive Induces : List A → Option B → List X → Prop
 
 variable {s route inj}
 
-theorem Exchange.det {h o₁ H₁ o₂ H₂} (l₁ : Exchange s route h o₁ H₁) (l₂ : Exchange s route h o₂ H₂) :
+lemma Exchange.det {h o₁ H₁ o₂ H₂} (l₁ : Exchange s route h o₁ H₁) (l₂ : Exchange s route h o₂ H₂) :
     o₁ = o₂ ∧ H₁ = H₂ := by
   induction l₁ generalizing o₂ H₂ with
   | silent h hd =>
@@ -181,7 +181,7 @@ theorem Exchange.det {h o₁ H₁ o₂ H₂} (l₁ : Exchange s route h o₁ H�
       cases hr'
       exact ih l
 
-theorem Induces.inv {u o H} (r : Induces s route inj u o H) :
+lemma Induces.inv {u o H} (r : Induces s route inj u o H) :
     (u = [] ∧ o = none ∧ H = []) ∨
       ∃ u' a o₀ H₀, u = u' ++ [a] ∧ Induces s route inj u' o₀ H₀ ∧
         Exchange s route (H₀ ++ [inj a]) o H := by
@@ -189,7 +189,7 @@ theorem Induces.inv {u o H} (r : Induces s route inj u o H) :
   | nil => exact Or.inl ⟨rfl, rfl, rfl⟩
   | snoc u' a o₀ H₀ _ _ r l => exact Or.inr ⟨u', a, o₀, H₀, rfl, r, l⟩
 
-theorem induces_nil_iff {o H} : Induces s route inj [] o H ↔ o = none ∧ H = [] := by
+lemma induces_nil_iff {o H} : Induces s route inj [] o H ↔ o = none ∧ H = [] := by
   constructor
   · intro r
     rcases r.inv with ⟨-, h⟩ | ⟨u', a, _, _, hu, _, _⟩
@@ -197,7 +197,7 @@ theorem induces_nil_iff {o H} : Induces s route inj [] o H ↔ o = none ∧ H = 
     · simp at hu
   · rintro ⟨rfl, rfl⟩; exact Induces.nil
 
-theorem induces_snoc_iff {u a o H'} :
+lemma induces_snoc_iff {u a o H'} :
     Induces s route inj (u ++ [a]) o H' ↔
       ∃ o₀ H, Induces s route inj u o₀ H ∧ Exchange s route (H ++ [inj a]) o H' := by
   constructor
@@ -210,7 +210,7 @@ theorem induces_snoc_iff {u a o H'} :
   · rintro ⟨o₀, H, r, l⟩
     exact Induces.snoc _ _ _ _ _ _ r l
 
-theorem Induces.det {u o₁ H₁ o₂ H₂} (r₁ : Induces s route inj u o₁ H₁)
+lemma Induces.det {u o₁ H₁ o₂ H₂} (r₁ : Induces s route inj u o₁ H₁)
     (r₂ : Induces s route inj u o₂ H₂) : o₁ = o₂ ∧ H₁ = H₂ := by
   induction r₁ generalizing o₂ H₂ with
   | nil => obtain ⟨rfl, rfl⟩ := induces_nil_iff.mp r₂; exact ⟨rfl, rfl⟩
@@ -227,7 +227,7 @@ noncomputable def interconnect : System A B := fun u =>
 
 variable {s route inj}
 
-theorem mem_interconnect {u b} : b ∈ interconnect s route inj u ↔ ∃ H, Induces s route inj u (some b) H := by
+lemma mem_interconnect {u b} : b ∈ interconnect s route inj u ↔ ∃ H, Induces s route inj u (some b) H := by
   constructor
   · rintro ⟨h, rfl⟩
     exact Classical.choose_spec h
@@ -242,7 +242,7 @@ section Basic
 
 variable {s : System X Y} {route : Y → B ⊕ X} {inj : A → X}
 
-theorem Exchange.extends {h o h'} (l : Exchange s route h o h') : ∃ e, h' = h ++ e := by
+lemma Exchange.extends {h o h'} (l : Exchange s route h o h') : ∃ e, h' = h ++ e := by
   induction l with
   | silent => exact ⟨[], by simp⟩
   | out => exact ⟨[], by simp⟩
@@ -250,7 +250,7 @@ theorem Exchange.extends {h o h'} (l : Exchange s route h o h') : ∃ e, h' = h 
     obtain ⟨e, rfl⟩ := ih
     exact ⟨x :: e, by simp⟩
 
-theorem Induces.prefix {u e o H} (r : Induces s route inj (u ++ e) o H) :
+lemma Induces.prefix {u e o H} (r : Induces s route inj (u ++ e) o H) :
     ∃ o' H', Induces s route inj u o' H' := by
   induction e using List.reverseRecOn generalizing o H with
   | nil => exact ⟨o, H, by simpa using r⟩
@@ -259,25 +259,25 @@ theorem Induces.prefix {u e o H} (r : Induces s route inj (u ++ e) o H) :
     obtain ⟨o₀, H₀, r₀, -⟩ := induces_snoc_iff.mp r
     exact ih r₀
 
-theorem mem_of_induces_some {u b H} (r : Induces s route inj u (some b) H) :
+lemma mem_of_induces_some {u b H} (r : Induces s route inj u (some b) H) :
     b ∈ interconnect s route inj u := mem_interconnect.mpr ⟨H, r⟩
 
-theorem not_dom_of_induces_none {u H} (r : Induces s route inj u none H) :
+lemma not_dom_of_induces_none {u H} (r : Induces s route inj u none H) :
     ¬ (interconnect s route inj u).Dom := by
   intro d
   obtain ⟨H', r'⟩ := mem_interconnect.mp (Part.get_mem d)
   cases (r.det r').1
 
-theorem interconnect_eq_some {u b H} (r : Induces s route inj u (some b) H) :
+lemma interconnect_eq_some {u b H} (r : Induces s route inj u (some b) H) :
     interconnect s route inj u = Part.some b :=
   Part.eq_some_iff.mpr (mem_of_induces_some r)
 
-theorem interconnect_eq_none {u H} (r : Induces s route inj u none H) :
+lemma interconnect_eq_none {u H} (r : Induces s route inj u none H) :
     interconnect s route inj u = Part.none :=
   Part.eq_none_iff'.mpr (not_dom_of_induces_none r)
 
 /-- An exchange uses only the system values on its actual input prefixes. -/
-theorem Exchange.congr_of_prefix_eq {t : System X Y} {G o H}
+lemma Exchange.congr_of_prefix_eq {t : System X Y} {G o H}
     (l : Exchange s route G o H) (he : ∀ p, p <+: H → s p = t p) :
     Exchange t route G o H := by
   induction l with
@@ -289,7 +289,7 @@ theorem Exchange.congr_of_prefix_eq {t : System X Y} {G o H}
     exact Exchange.feed G y x o H (by rwa [← he G ⟨x :: e, by rw [hH]; simp⟩])
       hr (ih he)
 
-theorem Induces.congr_of_prefix_eq {t : System X Y} {u o H}
+lemma Induces.congr_of_prefix_eq {t : System X Y} {u o H}
     (r : Induces s route inj u o H) (he : ∀ p, p <+: H → s p = t p) :
     Induces t route inj u o H := by
   induction r with
@@ -301,7 +301,7 @@ theorem Induces.congr_of_prefix_eq {t : System X Y} {u o H}
       (l.congr_of_prefix_eq he)
 
 /-- Prefixes of the exposed history keep prefixes of the same component history. -/
-theorem Induces.prefix_history {u e o H} (r : Induces s route inj (u ++ e) o H) :
+lemma Induces.prefix_history {u e o H} (r : Induces s route inj (u ++ e) o H) :
     ∃ o' H', Induces s route inj u o' H' ∧ H' <+: H := by
   induction e using List.reverseRecOn generalizing o H with
   | nil => exact ⟨o, H, by simpa using r, List.prefix_refl H⟩
@@ -313,7 +313,7 @@ theorem Induces.prefix_history {u e o H} (r : Induces s route inj (u ++ e) o H) 
     exact ⟨o', H', r', hp.trans ⟨inj a :: e', by rw [he']; simp⟩⟩
 
 /-- Finite component agreement determines every observed prefix, including silence. -/
-theorem Induces.interconnect_eq_on_prefixes {t : System X Y} {u o H}
+lemma Induces.interconnect_eq_on_prefixes {t : System X Y} {u o H}
     (r : Induces s route inj u o H) (he : ∀ p, p <+: H → s p = t p) :
     ∀ p, p <+: u → interconnect s route inj p = interconnect t route inj p := by
   rintro p ⟨e, rfl⟩
@@ -328,7 +328,7 @@ def Converges (s : System X Y) (route : Y → B ⊕ X) (inj : A → X) : Prop :=
   ∀ u, ∃ o H, Induces s route inj u o H
 
 /-- If every internal exchange stops, the wiring converges. -/
-theorem converges_of_exchanges (h : ∀ H, ∃ o H', Exchange s route H o H') :
+lemma converges_of_exchanges (h : ∀ H, ∃ o H', Exchange s route H o H') :
     ∀ u, ∃ o H, Induces s route inj u o H := by
   intro u
   induction u using List.reverseRecOn with
@@ -369,7 +369,7 @@ def Cont (o₁ : Option M) (T : List X) (o : Option B) (T' : List X) : Prop :=
     (∃ b, r₂ m = Sum.inl b ∧ o = some b ∧ T' = T) ∨
       (∃ n, r₂ m = Sum.inr n ∧ Exchange s RJ (T ++ [i₁ n]) o T')
 
-theorem joint_of_inner {T₀ o₁ T₁ o T'} (l : Exchange s r₁ T₀ o₁ T₁)
+lemma joint_of_inner {T₀ o₁ T₁ o T'} (l : Exchange s r₁ T₀ o₁ T₁)
     (c : Cont (s := s) (r₁ := r₁) (i₁ := i₁) (r₂ := r₂) o₁ T₁ o T') : Exchange s RJ T₀ o T' := by
   induction l with
   | silent h hd =>
@@ -386,7 +386,7 @@ theorem joint_of_inner {T₀ o₁ T₁ o T'} (l : Exchange s r₁ T₀ o₁ T₁
 def Pending (K : List N) (T₀ : List X) : Prop :=
   ∀ o₂ T₂, Induces s r₁ i₁ K o₂ T₂ ↔ Exchange s r₁ T₀ o₂ T₂
 
-theorem pending_snoc {K o T n} (r : Induces s r₁ i₁ K o T) :
+lemma pending_snoc {K o T n} (r : Induces s r₁ i₁ K o T) :
     Pending (s := s) (r₁ := r₁) (i₁ := i₁) (K ++ [n]) (T ++ [i₁ n]) := by
   intro o₂ T₂
   rw [induces_snoc_iff]
@@ -397,7 +397,7 @@ theorem pending_snoc {K o T n} (r : Induces s r₁ i₁ K o T) :
   · intro l
     exact ⟨o, T, r, l⟩
 
-theorem pending_feed {K T₀ y x} (p : Pending (s := s) (r₁ := r₁) (i₁ := i₁) K T₀)
+lemma pending_feed {K T₀ y x} (p : Pending (s := s) (r₁ := r₁) (i₁ := i₁) K T₀)
     (hy : y ∈ s T₀) (hr : r₁ y = Sum.inr x) :
     Pending (s := s) (r₁ := r₁) (i₁ := i₁) K (T₀ ++ [x]) := by
   intro o₂ T₂
@@ -412,7 +412,7 @@ theorem pending_feed {K T₀ y x} (p : Pending (s := s) (r₁ := r₁) (i₁ := 
       rw [Part.mem_unique hy hy', hr'] at hr; cases hr; exact l
   · exact Exchange.feed _ y x _ _ hy hr
 
-theorem outer_of_joint {T₀ o T'} (l : Exchange s RJ T₀ o T') :
+lemma outer_of_joint {T₀ o T'} (l : Exchange s RJ T₀ o T') :
     ∀ K, Pending (s := s) (r₁ := r₁) (i₁ := i₁) K T₀ →
       ∃ K', Exchange F r₂ K o K' ∧ ∃ o₁, Induces s r₁ i₁ K' o₁ T' := by
   induction l with
@@ -447,7 +447,7 @@ theorem outer_of_joint {T₀ o T'} (l : Exchange s RJ T₀ o T') :
         obtain ⟨K', l', rest⟩ := ih (K ++ [n]) (pending_snoc r)
         exact ⟨K', Exchange.feed _ m n _ _ (mem_of_induces_some r) hn l', rest⟩
 
-theorem joint_of_outer {K o K'} (l : Exchange F r₂ K o K') :
+lemma joint_of_outer {K o K'} (l : Exchange F r₂ K o K') :
     ∀ T₀, Pending (s := s) (r₁ := r₁) (i₁ := i₁) K T₀ →
       ∀ o₁ T', Induces s r₁ i₁ K' o₁ T' → Exchange s RJ T₀ o T' := by
   induction l with
@@ -467,7 +467,7 @@ theorem joint_of_outer {K o K'} (l : Exchange F r₂ K o K') :
     exact joint_of_inner ((p _ _).mp r₁')
       (Or.inr ⟨n, hn, ih _ (pending_snoc r₁') o₁ T' r⟩)
 
-theorem induces_joint_iff {u o T} :
+lemma induces_joint_iff {u o T} :
     Induces s RJ (i₁ ∘ i₂) u o T ↔
       ∃ K, Induces F r₂ i₂ u o K ∧ ∃ o₁, Induces s r₁ i₁ K o₁ T := by
   induction u using List.reverseRecOn generalizing o T with
@@ -534,7 +534,7 @@ section Naturality
 variable (s : System X Y) (route : Y → B ⊕ X) (inj : A → X)
 
 /-- Relabeling the exposed side of a wired system relabels its routing table. -/
-theorem relabel_interconnect {A' B' : Type} (f : A' → A) (g : B → B') :
+lemma relabel_interconnect {A' B' : Type} (f : A' → A) (g : B → B') :
     relabel (interconnect s route inj) f g = interconnect s (fun y => (route y).map g id) (inj ∘ f) := by
   have hl : ∀ {h o h'}, Exchange s route h o h' →
       Exchange s (fun y => (route y).map g id) h (o.map g) h' := by
@@ -600,7 +600,7 @@ theorem relabel_interconnect {A' B' : Type} (f : A' → A) (g : B → B') :
     | some b => cases e; exact ⟨b, ⟨H, r'⟩, rfl⟩
 
 /-- An induced history of a relabeled system maps to one of the system itself. -/
-theorem induces_relabel {X' Y' : Type} {s : System X Y} {f : X' → X} {g : Y → Y'}
+lemma induces_relabel {X' Y' : Type} {s : System X Y} {f : X' → X} {g : Y → Y'}
     {route : Y' → B ⊕ X'} {inj : A → X'} {u o H}
     (r : Induces (relabel s f g) route inj u o H) :
     Induces s (fun y => (route (g y)).map id f) (f ∘ inj) u o (H.map f) := by
@@ -623,14 +623,14 @@ theorem induces_relabel {X' Y' : Type} {s : System X Y} {f : X' → X} {g : Y �
     obtain ⟨o₀, H₀, r₀, l⟩ := induces_snoc_iff.mp r
     exact Induces.snoc _ _ _ _ _ _ (ih r₀) (by simpa using hl l)
 
-theorem Converges.relabel {X' Y' : Type} {s : System X Y} {f : X' → X} {g : Y → Y'}
+lemma Converges.relabel {X' Y' : Type} {s : System X Y} {f : X' → X} {g : Y → Y'}
     {route : Y' → B ⊕ X'} {inj : A → X'} (hc : Converges (SystemAlgebra.relabel s f g) route inj) :
     Converges s (fun y => (route (g y)).map id f) (f ∘ inj) := fun u => by
   obtain ⟨o, H, r⟩ := hc u
   exact ⟨o, _, induces_relabel r⟩
 
 /-- Relabeling the inside of a wired system is absorbed by the routing table. -/
-theorem interconnect_relabel {X' Y' : Type} (s : System X Y) (f : X' → X) (g : Y → Y')
+lemma interconnect_relabel {X' Y' : Type} (s : System X Y) (f : X' → X) (g : Y → Y')
     (route : Y' → B ⊕ X') (inj : A → X') :
     interconnect (relabel s f g) route inj =
       interconnect s (fun y => (route (g y)).map id f) (f ∘ inj) := by
@@ -711,7 +711,7 @@ section NoFeedback
 variable {s : System X Y} {route : Y → B ⊕ X} {inj : A → X} {g : Y → B}
 
 /-- A routing that feeds nothing back: the wiring is a relabeling. -/
-theorem interconnect_no_feedback (hs : SilentAtEmpty s) (hr : ∀ y, route y = .inl (g y)) :
+lemma interconnect_no_feedback (hs : SilentAtEmpty s) (hr : ∀ y, route y = .inl (g y)) :
     interconnect s route inj = relabel s inj g := by
   have ex : ∀ H, ∃ o, Exchange s route H o H := by
     intro H
@@ -760,7 +760,7 @@ section Termination
 variable {s : System X Y} {route : Y → B ⊕ X}
 
 /-- Exchanges stop when every continued feedback step decreases a measure. -/
-theorem exchanges_of_measure (μ : List X → ℕ)
+lemma exchanges_of_measure (μ : List X → ℕ)
     (hμ : ∀ H y x, y ∈ s H → route y = Sum.inr x → (s (H ++ [x])).Dom → μ (H ++ [x]) < μ H)
     (H : List X) : ∃ o H', Exchange s route H o H' := by
   induction h : μ H using Nat.strong_induction_on generalizing H with
@@ -777,7 +777,7 @@ theorem exchanges_of_measure (μ : List X → ℕ)
     · exact ⟨none, H, Exchange.silent _ hd⟩
 
 /-- T2 (first half): the internal exchanges of a terminating system stop. -/
-theorem Terminating.converges {s : System X Y} (hs : Terminating s) (route : Y → B ⊕ X)
+lemma Terminating.converges {s : System X Y} (hs : Terminating s) (route : Y → B ⊕ X)
     (inj : A → X) : Converges s route inj := by
   obtain ⟨μ, hμ⟩ := hs
   exact converges_of_exchanges (exchanges_of_measure μ (fun H y x _ _ hd => hμ H x hd))
@@ -795,17 +795,17 @@ noncomputable def restrict (k : K) : List (Σ k, A k) → List (A k)
   | [] => []
   | x :: h => if e : x.1 = k then (e ▸ x.2) :: restrict k h else restrict k h
 
-@[simp] theorem restrict_nil (k : K) : restrict k ([] : List (Σ k, A k)) = [] := rfl
+@[simp] lemma restrict_nil (k : K) : restrict k ([] : List (Σ k, A k)) = [] := rfl
 
-@[simp] theorem restrict_cons_self (k : K) (a : A k) (h : List (Σ k, A k)) :
+@[simp] lemma restrict_cons_self (k : K) (a : A k) (h : List (Σ k, A k)) :
     restrict k (⟨k, a⟩ :: h) = a :: restrict k h := by
   simp [restrict]
 
-@[simp] theorem restrict_cons_ne {k k' : K} (hk : k' ≠ k) (a : A k') (h : List (Σ k, A k)) :
+@[simp] lemma restrict_cons_ne {k k' : K} (hk : k' ≠ k) (a : A k') (h : List (Σ k, A k)) :
     restrict k (⟨k', a⟩ :: h) = restrict k h := by
   simp [restrict, hk]
 
-@[simp] theorem restrict_append (k : K) (h h' : List (Σ k, A k)) :
+@[simp] lemma restrict_append (k : K) (h h' : List (Σ k, A k)) :
     restrict k (h ++ h') = restrict k h ++ restrict k h' := by
   induction h with
   | nil => rfl
@@ -815,7 +815,7 @@ noncomputable def restrict (k : K) : List (Σ k, A k) → List (A k)
     · subst hk; simp [ih]
     · simp [hk, ih]
 
-theorem length_restrict_le (k : K) (h : List (Σ k, A k)) : (restrict k h).length ≤ h.length := by
+lemma length_restrict_le (k : K) (h : List (Σ k, A k)) : (restrict k h).length ≤ h.length := by
   induction h with
   | nil => simp
   | cons x h ih =>
@@ -824,7 +824,7 @@ theorem length_restrict_le (k : K) (h : List (Σ k, A k)) : (restrict k h).lengt
     · subst hk; simpa using ih
     · simpa [hk] using ih.trans (Nat.le_succ _)
 
-theorem length_restrict_singleton (k : K) (x : Σ k, A k) :
+lemma length_restrict_singleton (k : K) (x : Σ k, A k) :
     (restrict k [x]).length = if x.1 = k then 1 else 0 := by
   obtain ⟨k', a⟩ := x
   by_cases hk : k' = k
@@ -832,7 +832,7 @@ theorem length_restrict_singleton (k : K) (x : Σ k, A k) :
   · simp [hk]
 
 /-- A history has as many inputs as its components together. -/
-theorem length_eq_sum_restrict [Fintype K] (h : List (Σ k, A k)) :
+lemma length_eq_sum_restrict [Fintype K] (h : List (Σ k, A k)) :
     h.length = ∑ k, (restrict k h).length := by
   classical
   induction h with
@@ -858,17 +858,17 @@ noncomputable def parAll (s : ∀ k, System (A k) (B k)) : System (Σ k, A k) (�
 
 variable (s : ∀ k, System (A k) (B k))
 
-@[simp] theorem parAll_nil : parAll s [] = Part.none := rfl
+@[simp] lemma parAll_nil : parAll s [] = Part.none := rfl
 
-theorem parAll_snoc (h : List (Σ k, A k)) (k : K) (a : A k) :
+lemma parAll_snoc (h : List (Σ k, A k)) (k : K) (a : A k) :
     parAll s (h ++ [⟨k, a⟩]) = (s k (restrict k h ++ [a])).map (Sigma.mk k) := by
   simp [parAll]
 
-theorem parAll_silentAtEmpty : SilentAtEmpty (parAll s) := by
+lemma parAll_silentAtEmpty : SilentAtEmpty (parAll s) := by
   simp [SilentAtEmpty]
 
 /-- Reverse induction on histories, split by the component of the last input. -/
-theorem parAll_ext {S : System (Σ k, A k) (Σ k, B k)} {T : System (Σ k, A k) (Σ k, B k)}
+lemma parAll_ext {S : System (Σ k, A k) (Σ k, B k)} {T : System (Σ k, A k) (Σ k, B k)}
     (h0 : S [] = T []) (h1 : ∀ h k a, S (h ++ [⟨k, a⟩]) = T (h ++ [⟨k, a⟩])) : S = T := by
   funext h
   induction h using List.reverseRecOn with
@@ -876,7 +876,7 @@ theorem parAll_ext {S : System (Σ k, A k) (Σ k, B k)} {T : System (Σ k, A k) 
   | append_singleton h x _ => exact h1 h x.1 x.2
 
 /-- P3: relabeling distributes over parallel composition. -/
-theorem parAll_relabel {A' B' : K → Type} (f : ∀ k, A' k → A k) (g : ∀ k, B k → B' k) :
+lemma parAll_relabel {A' B' : K → Type} (f : ∀ k, A' k → A k) (g : ∀ k, B k → B' k) :
     parAll (fun k => relabel (s k) (f k) (g k)) =
       relabel (parAll s) (Sigma.map id f) (Sigma.map id g) := by
   have hr : ∀ (k : K) (h : List (Σ k, A' k)),
@@ -903,7 +903,7 @@ def nestMsg {L : K → Type} {A : ∀ k, L k → Type} (y : Σ p : Σ k, L k, A 
     Σ k, Σ l, A k l := ⟨y.1.1, ⟨y.1.2, y.2⟩⟩
 
 /-- P2: flattening a parallel composition of parallel compositions. -/
-theorem parAll_flatten {L : K → Type} {A B : ∀ k, L k → Type}
+lemma parAll_flatten {L : K → Type} {A B : ∀ k, L k → Type}
     (s : ∀ k l, System (A k l) (B k l)) :
     parAll (fun k => parAll (s k)) =
       relabel (parAll fun p : Σ k, L k => s p.1 p.2) flatMsg nestMsg := by
@@ -933,7 +933,7 @@ theorem parAll_flatten {L : K → Type} {A B : ∀ k, L k → Type}
     rfl
 
 /-- P1: reindexing a parallel composition along a bijection of indices. -/
-theorem parAll_reindex {K' : Type} (τ : K' ≃ K) :
+lemma parAll_reindex {K' : Type} (τ : K' ≃ K) :
     parAll (fun k' => s (τ k')) =
       relabel (parAll s) (Equiv.sigmaCongrLeft τ (β := A))
         (Equiv.sigmaCongrLeft τ (β := B)).symm := by
@@ -978,23 +978,23 @@ def optS {Z W : Type} (s₀ : System Z W) (t : ∀ k, System (A k) (B k)) :
   | none => s₀
   | some k => t k
 
-@[simp] theorem restrict_none_cons_none {Z : Type} (z : Z) (h : List (Σ o, optF Z A o)) :
+@[simp] lemma restrict_none_cons_none {Z : Type} (z : Z) (h : List (Σ o, optF Z A o)) :
     restrict (A := optF Z A) none (⟨none, z⟩ :: h) = z :: restrict none h :=
   restrict_cons_self (A := optF Z A) none z h
 
-@[simp] theorem restrict_some_cons_none {Z : Type} (k : K) (z : Z) (h : List (Σ o, optF Z A o)) :
+@[simp] lemma restrict_some_cons_none {Z : Type} (k : K) (z : Z) (h : List (Σ o, optF Z A o)) :
     restrict (A := optF Z A) (some k) (⟨none, z⟩ :: h) = restrict (some k) h :=
   restrict_cons_ne (A := optF Z A) (k := some k) (k' := none) (by simp) z h
 
-@[simp] theorem restrict_none_cons_some {Z : Type} (k : K) (a : A k) (h : List (Σ o, optF Z A o)) :
+@[simp] lemma restrict_none_cons_some {Z : Type} (k : K) (a : A k) (h : List (Σ o, optF Z A o)) :
     restrict (A := optF Z A) none (⟨some k, a⟩ :: h) = restrict none h :=
   restrict_cons_ne (A := optF Z A) (k := none) (k' := some k) (by simp) a h
 
-@[simp] theorem restrict_some_cons_some {Z : Type} (k : K) (a : A k) (h : List (Σ o, optF Z A o)) :
+@[simp] lemma restrict_some_cons_some {Z : Type} (k : K) (a : A k) (h : List (Σ o, optF Z A o)) :
     restrict (A := optF Z A) (some k) (⟨some k, a⟩ :: h) = a :: restrict (some k) h :=
   restrict_cons_self (A := optF Z A) (some k) a h
 
-@[simp] theorem restrict_some_cons_some_ne {Z : Type} {k k' : K} (hk : k' ≠ k) (a : A k')
+@[simp] lemma restrict_some_cons_some_ne {Z : Type} {k k' : K} (hk : k' ≠ k) (a : A k')
     (h : List (Σ o, optF Z A o)) :
     restrict (A := optF Z A) (some k) (⟨some k', a⟩ :: h) = restrict (some k) h :=
   restrict_cons_ne (A := optF Z A) (k := some k) (k' := some k') (by simpa using hk) a h
@@ -1013,7 +1013,7 @@ def injOpt : (Σ o, optF A₀ A o) → Σ o, optF X A o
 
 variable {route inj} {s₀ : System X Y} {t : ∀ k, System (A k) (B k)}
 
-theorem parAll_opt_none (H₁ : List (Σ o, optF X A o)) (x : X) :
+lemma parAll_opt_none (H₁ : List (Σ o, optF X A o)) (x : X) :
     parAll (optS s₀ t) (H₁ ++ [⟨none, x⟩]) =
       (s₀ (restrict none (H₁ ++ [⟨none, x⟩]))).map (Sigma.mk none) := by
   have e := parAll_snoc (optS s₀ t) H₁ none x
@@ -1021,7 +1021,7 @@ theorem parAll_opt_none (H₁ : List (Σ o, optF X A o)) (x : X) :
   simp only [restrict_append, restrict_none_cons_none, restrict_nil]
   rfl
 
-theorem exchange_none {T₀ o T'} (l : Exchange s₀ route T₀ o T') :
+lemma exchange_none {T₀ o T'} (l : Exchange s₀ route T₀ o T') :
     ∀ (H₁ : List (Σ o, optF X A o)) (x : X), restrict none (H₁ ++ [⟨none, x⟩]) = T₀ →
       ∃ H', Exchange (parAll (optS s₀ t)) (routeOpt route) (H₁ ++ [⟨none, x⟩])
           (o.map (Sigma.mk none)) H' ∧
@@ -1042,7 +1042,7 @@ theorem exchange_none {T₀ o T'} (l : Exchange s₀ route T₀ o T') :
       fun k => by rw [h2]; simp⟩
     rw [parAll_opt_none]; exact Part.mem_map _ hy
 
-theorem exchange_some (H : List (Σ o, optF X A o)) (k : K) (a : A k) :
+lemma exchange_some (H : List (Σ o, optF X A o)) (k : K) (a : A k) :
     ∃ o, Exchange (parAll (optS s₀ t)) (routeOpt route) (H ++ [⟨some k, a⟩]) o
         (H ++ [⟨some k, a⟩]) ∧
       ∀ c, c ∈ (t k (restrict (some k) H ++ [a])).map (Sigma.mk (some k)) ↔ o = some c := by
@@ -1121,7 +1121,7 @@ end Locality
 section TermClosure
 
 /-- T1: a finite parallel composition of terminating systems terminates. -/
-theorem Terminating.parAll {K : Type} [Fintype K] {A B : K → Type}
+lemma Terminating.parAll {K : Type} [Fintype K] {A B : K → Type}
     {s : ∀ k, System (A k) (B k)} (hs : ∀ k, Terminating (s k)) :
     Terminating (SystemAlgebra.parAll s) := by
   choose μ hμ using hs
@@ -1136,7 +1136,7 @@ theorem Terminating.parAll {K : Type} [Fintype K] {A B : K → Type}
     · simp [restrict_append, restrict_cons_ne e]
   · exact ⟨k, Finset.mem_univ _, by simpa using hμ k (restrict k h) a hd⟩
 
-theorem exchange_some_measure {s : System X Y} {route : Y → B ⊕ X} (μ : List X → ℕ)
+lemma exchange_some_measure {s : System X Y} {route : Y → B ⊕ X} (μ : List X → ℕ)
     (hμ : ∀ h x, (s (h ++ [x])).Dom → μ (h ++ [x]) < μ h) {h o h'}
     (l : Exchange s route h o h') : ∀ b, o = some b → (s h).Dom ∧ μ h' ≤ μ h := by
   induction l with
@@ -1148,7 +1148,7 @@ theorem exchange_some_measure {s : System X Y} {route : Y → B ⊕ X} (μ : Lis
     exact ⟨Part.dom_iff_mem.mpr ⟨y, hy⟩, le_trans hle (le_of_lt (hμ h x hd))⟩
 
 /-- T2: wiring a terminating system gives a terminating system. -/
-theorem Terminating.interconnect {s : System X Y} (hs : Terminating s) (route : Y → B ⊕ X)
+lemma Terminating.interconnect {s : System X Y} (hs : Terminating s) (route : Y → B ⊕ X)
     (inj : A → X) : Terminating (SystemAlgebra.interconnect s route inj) := by
   have hconv := hs.converges route inj
   obtain ⟨μ, hμ⟩ := hs
@@ -1176,11 +1176,11 @@ abbrev Two (Z W : Type) : Type := Σ o, optF Z (fun _ : Unit => W) o
 noncomputable def pair (a : System A₁ B₁) (b : System A₂ B₂) : System (Two A₁ A₂) (Two B₁ B₂) :=
   parAll (optS a (fun _ : Unit => b))
 
-@[simp] theorem restrict_two_none_cons_none (z : A₁) (h : List (Two A₁ A₂)) :
+@[simp] lemma restrict_two_none_cons_none (z : A₁) (h : List (Two A₁ A₂)) :
     restrict none (⟨none, z⟩ :: h) = z :: restrict none h :=
   restrict_none_cons_none z h
 
-theorem length_restrict_two (G : List (Two A₁ A₂)) :
+lemma length_restrict_two (G : List (Two A₁ A₂)) :
     (restrict none G).length + (restrict (some ()) G).length = G.length := by
   induction G with
   | nil => rfl
@@ -1193,11 +1193,11 @@ theorem length_restrict_two (G : List (Two A₁ A₂)) :
         List.length_cons]
       omega
 
-theorem pair_left (a : System A₁ B₁) (b : System A₂ B₂) (h : List (Two A₁ A₂)) (x : A₁) :
+lemma pair_left (a : System A₁ B₁) (b : System A₂ B₂) (h : List (Two A₁ A₂)) (x : A₁) :
     pair a b (h ++ [⟨none, x⟩]) = (a (restrict none h ++ [x])).map (Sigma.mk none) :=
   parAll_snoc _ h none x
 
-theorem pair_right (a : System A₁ B₁) (b : System A₂ B₂) (h : List (Two A₁ A₂)) (x : A₂) :
+lemma pair_right (a : System A₁ B₁) (b : System A₂ B₂) (h : List (Two A₁ A₂)) (x : A₂) :
     pair a b (h ++ [⟨some (), x⟩]) = (b (restrict (some ()) h ++ [x])).map (Sigma.mk (some ())) :=
   parAll_snoc _ h (some ()) x
 
@@ -1223,20 +1223,20 @@ def twoAssoc' {Z W V : Type} : Two Z (Two W V) → Two (Two Z W) V
   | ⟨some (), ⟨none, w⟩⟩ => ⟨none, ⟨some (), w⟩⟩
   | ⟨some (), ⟨some (), v⟩⟩ => ⟨some (), v⟩
 
-theorem restrict_twoMap_none {Z Z' W W' : Type} (f : Z → Z') (g : W → W') (h : List (Two Z W)) :
+lemma restrict_twoMap_none {Z Z' W W' : Type} (f : Z → Z') (g : W → W') (h : List (Two Z W)) :
     restrict none (h.map (twoMap f g)) = (restrict none h).map f := by
   induction h with
   | nil => rfl
   | cons x h ih => rcases x with ⟨_ | ⟨⟩, x⟩ <;> simp [twoMap, ih]
 
-theorem restrict_twoMap_some {Z Z' W W' : Type} (f : Z → Z') (g : W → W') (h : List (Two Z W)) :
+lemma restrict_twoMap_some {Z Z' W W' : Type} (f : Z → Z') (g : W → W') (h : List (Two Z W)) :
     restrict (some ()) (h.map (twoMap f g)) = (restrict (some ()) h).map g := by
   induction h with
   | nil => rfl
   | cons x h ih => rcases x with ⟨_ | ⟨⟩, x⟩ <;> simp [twoMap, ih]
 
 /-- Relabeling each component of a pair. -/
-theorem pair_relabel {A₁' B₁' A₂' B₂' : Type} (a : System A₁ B₁) (b : System A₂ B₂)
+lemma pair_relabel {A₁' B₁' A₂' B₂' : Type} (a : System A₁ B₁) (b : System A₂ B₂)
     (f : A₁' → A₁) (g : B₁ → B₁') (f' : A₂' → A₂) (g' : B₂ → B₂') :
     pair (relabel a f g) (relabel b f' g') = relabel (pair a b) (twoMap f f') (twoMap g g') := by
   apply parAll_ext
@@ -1254,20 +1254,20 @@ theorem pair_relabel {A₁' B₁' A₂' B₂' : Type} (a : System A₁ B₁) (b 
       rw [parAll_snoc, parAll_snoc]
       simp [optS, relabel, restrict_twoMap_some, Part.map_map, twoMap, Function.comp_def]
 
-theorem restrict_twoSwap_none {Z W : Type} (h : List (Two Z W)) :
+lemma restrict_twoSwap_none {Z W : Type} (h : List (Two Z W)) :
     restrict none (h.map twoSwap) = restrict (some ()) h := by
   induction h with
   | nil => rfl
   | cons x h ih => rcases x with ⟨_ | ⟨⟩, x⟩ <;> simp [twoSwap, ih]
 
-theorem restrict_twoSwap_some {Z W : Type} (h : List (Two Z W)) :
+lemma restrict_twoSwap_some {Z W : Type} (h : List (Two Z W)) :
     restrict (some ()) (h.map twoSwap) = restrict none h := by
   induction h with
   | nil => rfl
   | cons x h ih => rcases x with ⟨_ | ⟨⟩, x⟩ <;> simp [twoSwap, ih]
 
 /-- Swapping the two components of a pair. -/
-theorem pair_swap (a : System A₁ B₁) (b : System A₂ B₂) :
+lemma pair_swap (a : System A₁ B₁) (b : System A₂ B₂) :
     pair b a = relabel (pair a b) twoSwap twoSwap := by
   apply parAll_ext
   · simp [relabel, pair]
@@ -1284,26 +1284,26 @@ theorem pair_swap (a : System A₁ B₁) (b : System A₂ B₂) :
       rw [parAll_snoc, parAll_snoc]
       simp [optS, restrict_twoSwap_none, Part.map_map, twoSwap, Function.comp_def]
 
-theorem restrict_twoAssoc_a {Z W V : Type} (h : List (Two (Two Z W) V)) :
+lemma restrict_twoAssoc_a {Z W V : Type} (h : List (Two (Two Z W) V)) :
     restrict none (h.map twoAssoc) = restrict none (restrict none h) := by
   induction h with
   | nil => rfl
   | cons x h ih => rcases x with ⟨_ | ⟨⟩, x⟩ <;> [rcases x with ⟨_ | ⟨⟩, x⟩; skip] <;> simp [twoAssoc, ih]
 
-theorem restrict_twoAssoc_b {Z W V : Type} (h : List (Two (Two Z W) V)) :
+lemma restrict_twoAssoc_b {Z W V : Type} (h : List (Two (Two Z W) V)) :
     restrict none (restrict (some ()) (h.map twoAssoc)) = restrict (some ()) (restrict none h) := by
   induction h with
   | nil => rfl
   | cons x h ih => rcases x with ⟨_ | ⟨⟩, x⟩ <;> [rcases x with ⟨_ | ⟨⟩, x⟩; skip] <;> simp [twoAssoc, ih]
 
-theorem restrict_twoAssoc_c {Z W V : Type} (h : List (Two (Two Z W) V)) :
+lemma restrict_twoAssoc_c {Z W V : Type} (h : List (Two (Two Z W) V)) :
     restrict (some ()) (restrict (some ()) (h.map twoAssoc)) = restrict (some ()) h := by
   induction h with
   | nil => rfl
   | cons x h ih => rcases x with ⟨_ | ⟨⟩, x⟩ <;> [rcases x with ⟨_ | ⟨⟩, x⟩; skip] <;> simp [twoAssoc, ih]
 
 /-- Associativity of pairs. -/
-theorem pair_assoc (a : System A₁ B₁) (b : System A₂ B₂) (c : System A₃ B₃) :
+lemma pair_assoc (a : System A₁ B₁) (b : System A₂ B₂) (c : System A₃ B₃) :
     pair (pair a b) c = relabel (pair a (pair b c)) twoAssoc twoAssoc' := by
   apply parAll_ext
   · simp [relabel, pair]
@@ -1324,24 +1324,24 @@ theorem pair_assoc (a : System A₁ B₁) (b : System A₂ B₂) (c : System A�
         parAll_snoc]
       simp [optS, parAll_snoc, restrict_twoAssoc_c, Part.map_map, twoAssoc', Function.comp_def]
 
-theorem Terminating.pair {a : System A₁ B₁} {b : System A₂ B₂} (ha : Terminating a)
+lemma Terminating.pair {a : System A₁ B₁} {b : System A₂ B₂} (ha : Terminating a)
     (hb : Terminating b) : Terminating (SystemAlgebra.pair a b) :=
   Terminating.parAll (fun o => by cases o <;> assumption)
 
-theorem pair_relabel_left {A₁' B₁' : Type} (a : System A₁ B₁) (b : System A₂ B₂)
+lemma pair_relabel_left {A₁' B₁' : Type} (a : System A₁ B₁) (b : System A₂ B₂)
     (f : A₁' → A₁) (g : B₁ → B₁') :
     pair (relabel a f g) b = relabel (pair a b) (twoMap f id) (twoMap g id) := by
   have := pair_relabel a b f g id id
   rwa [relabel_id] at this
 
-theorem pair_relabel_right {A₂' B₂' : Type} (a : System A₁ B₁) (b : System A₂ B₂)
+lemma pair_relabel_right {A₂' B₂' : Type} (a : System A₁ B₁) (b : System A₂ B₂)
     (f : A₂' → A₂) (g : B₂ → B₂') :
     pair a (relabel b f g) = relabel (pair a b) (twoMap id f) (twoMap id g) := by
   have := pair_relabel a b id id f g
   rwa [relabel_id] at this
 
 /-- Associativity of pairs, read from right to left. -/
-theorem pair_assoc' (a : System A₁ B₁) (b : System A₂ B₂) (c : System A₃ B₃) :
+lemma pair_assoc' (a : System A₁ B₁) (b : System A₂ B₂) (c : System A₃ B₃) :
     pair a (pair b c) = relabel (pair (pair a b) c) twoAssoc' twoAssoc := by
   rw [pair_assoc, relabel_relabel]
   have e1 : (twoAssoc ∘ twoAssoc' : Two A₁ (Two A₂ A₃) → _) = id := by
@@ -1356,26 +1356,26 @@ def twoLComm {Z W V : Type} : Two Z (Two W V) → Two W (Two Z V)
   | ⟨some (), ⟨none, w⟩⟩ => ⟨none, w⟩
   | ⟨some (), ⟨some (), v⟩⟩ => ⟨some (), ⟨some (), v⟩⟩
 
-theorem restrict_twoLComm_a {Z W V : Type} (h : List (Two Z (Two W V))) :
+lemma restrict_twoLComm_a {Z W V : Type} (h : List (Two Z (Two W V))) :
     restrict none (restrict (some ()) (h.map twoLComm)) = restrict none h := by
   induction h with
   | nil => rfl
   | cons x h ih => rcases x with ⟨_ | ⟨⟩, x⟩ <;> [skip; rcases x with ⟨_ | ⟨⟩, x⟩] <;> simp [twoLComm, ih]
 
-theorem restrict_twoLComm_b {Z W V : Type} (h : List (Two Z (Two W V))) :
+lemma restrict_twoLComm_b {Z W V : Type} (h : List (Two Z (Two W V))) :
     restrict none (h.map twoLComm) = restrict none (restrict (some ()) h) := by
   induction h with
   | nil => rfl
   | cons x h ih => rcases x with ⟨_ | ⟨⟩, x⟩ <;> [skip; rcases x with ⟨_ | ⟨⟩, x⟩] <;> simp [twoLComm, ih]
 
-theorem restrict_twoLComm_c {Z W V : Type} (h : List (Two Z (Two W V))) :
+lemma restrict_twoLComm_c {Z W V : Type} (h : List (Two Z (Two W V))) :
     restrict (some ()) (restrict (some ()) (h.map twoLComm)) = restrict (some ()) (restrict (some ()) h) := by
   induction h with
   | nil => rfl
   | cons x h ih => rcases x with ⟨_ | ⟨⟩, x⟩ <;> [skip; rcases x with ⟨_ | ⟨⟩, x⟩] <;> simp [twoLComm, ih]
 
 /-- Exchanging the first two of three components. -/
-theorem pair_left_comm (a : System A₁ B₁) (b : System A₂ B₂) (c : System A₃ B₃) :
+lemma pair_left_comm (a : System A₁ B₁) (b : System A₂ B₂) (c : System A₃ B₃) :
     pair b (pair a c) = relabel (pair a (pair b c)) twoLComm twoLComm := by
   apply parAll_ext
   · simp [relabel, pair]
@@ -1397,7 +1397,7 @@ theorem pair_left_comm (a : System A₁ B₁) (b : System A₂ B₂) (c : System
         simp [optS, parAll_snoc, restrict_twoLComm_c, Part.map_map, twoLComm, Function.comp_def]
 
 /-- Locality on the left component of a pair. -/
-theorem pair_interconnect_left {X Y B₀ A₀ : Type} {a : System X Y}
+lemma pair_interconnect_left {X Y B₀ A₀ : Type} {a : System X Y}
     {route : Y → B₀ ⊕ X} {inj : A₀ → X} (ha : Converges a route inj) (b : System A₂ B₂) :
     pair (interconnect a route inj) b =
       interconnect (pair a b) (routeOpt (B := fun _ : Unit => B₂) route) (injOpt (A := fun _ : Unit => A₂) inj) :=
@@ -1409,7 +1409,7 @@ def routeRight {Y X B₀ : Type} (route : Y → B₀ ⊕ X) : Two B₁ Y → Two
   | ⟨some (), y⟩ => (route y).elim (fun b => .inl ⟨some (), b⟩) (fun x => .inr ⟨some (), x⟩)
 
 /-- Locality on the right component of a pair. -/
-theorem pair_interconnect_right {X Y B₀ A₀ : Type} (a : System A₁ B₁) {b : System X Y}
+lemma pair_interconnect_right {X Y B₀ A₀ : Type} (a : System A₁ B₁) {b : System X Y}
     {route : Y → B₀ ⊕ X} {inj : A₀ → X} (hb : Converges b route inj) :
     pair a (interconnect b route inj) = interconnect (pair a b) (routeRight route) (twoMap id inj) := by
   rw [pair_swap, pair_interconnect_left hb, relabel_interconnect, pair_swap, interconnect_relabel]
@@ -1429,7 +1429,7 @@ def twoMiddle {A B C D : Type} : Two (Two A B) (Two C D) → Two (Two A C) (Two 
   | ⟨some (), ⟨none, c⟩⟩ => ⟨none, ⟨some (), c⟩⟩
   | ⟨some (), ⟨some (), d⟩⟩ => ⟨some (), ⟨some (), d⟩⟩
 
-theorem pair_middle {A B C D W X Y Z : Type}
+lemma pair_middle {A B C D W X Y Z : Type}
     (a : System A W) (b : System B X) (c : System C Y) (d : System D Z) :
     pair (pair a b) (pair c d) =
       relabel (pair (pair a c) (pair b d)) twoMiddle twoMiddle := by
@@ -1466,7 +1466,7 @@ def Transparent (R : Two Y D' → B ⊕ Two X C) (inj : A → Two X C) (φ : C �
   (∀ y, R ⟨none, y⟩ = .inl (g y) ∨
     ∃ x, R ⟨none, y⟩ = .inr ⟨some (), x⟩ ∧ R ⟨some (), φ x⟩ = .inl (g y))
 
-theorem exchange_forward (hc : Forwarder c φ) (hT : Transparent R inj φ f g)
+lemma exchange_forward (hc : Forwarder c φ) (hT : Transparent R inj φ f g)
     (H₁ : List (Two X C)) (x : X) :
     ∃ o H', Exchange (pair s c) R (H₁ ++ [⟨none, x⟩]) o H' ∧
       restrict none H' = restrict none (H₁ ++ [⟨none, x⟩]) ∧
@@ -1493,7 +1493,7 @@ theorem exchange_forward (hc : Forwarder c φ) (hT : Transparent R inj φ f g)
     simp only [reduceCtorEq, iff_false, Part.mem_map_iff, not_exists, not_and]
     exact fun y hy _ => hd (Part.dom_iff_mem.mpr ⟨y, hy⟩)
 
-theorem exchange_input (hc : Forwarder c φ) (hT : Transparent R inj φ f g)
+lemma exchange_input (hc : Forwarder c φ) (hT : Transparent R inj φ f g)
     (H : List (Two X C)) (a : A) :
     ∃ o H', Exchange (pair s c) R (H ++ [inj a]) o H' ∧
       restrict none H' = restrict none H ++ [f a] ∧
@@ -1510,7 +1510,7 @@ theorem exchange_input (hc : Forwarder c φ) (hT : Transparent R inj φ f g)
     exact Part.mem_map _ (Part.mem_some _)
 
 /-- A forwarder wired to a reactive `s` is transparent. -/
-theorem interconnect_forwarder (hs : SilentAtEmpty s) (hc : Forwarder c φ) (hT : Transparent R inj φ f g) :
+lemma interconnect_forwarder (hs : SilentAtEmpty s) (hc : Forwarder c φ) (hT : Transparent R inj φ f g) :
     interconnect (pair s c) R inj = relabel s f g := by
   have key : ∀ u, ∃ o H, Induces (pair s c) R inj u o H ∧ restrict none H = u.map f ∧
       ∀ b, b ∈ relabel s f g u ↔ o = some b := by
@@ -1543,11 +1543,11 @@ section Behaviour
 
 variable {s t : System X Y}
 
-@[simp] theorem reach_nil (s : System X Y) : Reach s [] := by
+@[simp] lemma reach_nil (s : System X Y) : Reach s [] := by
   intro h' e he hne
   exact (hne (List.append_eq_nil_iff.mp he.symm).1).elim
 
-theorem reach_snoc_iff {h : List X} {x : X} :
+lemma reach_snoc_iff {h : List X} {x : X} :
     Reach s (h ++ [x]) ↔ Reach s h ∧ (s (h ++ [x])).Dom := by
   constructor
   · intro hr
@@ -1563,14 +1563,14 @@ theorem reach_snoc_iff {h : List X} {x : X} :
 
 /-- For a DDS, a nonempty history is reachable exactly when it is in the domain.
 Prefix closure, rather than total responsiveness, supplies all earlier replies. -/
-theorem IsDDS.reach_iff (hs : IsDDS s) {h : List X} (hne : h ≠ []) :
+lemma IsDDS.reach_iff (hs : IsDDS s) {h : List X} (hne : h ≠ []) :
     Reach s h ↔ (s h).Dom :=
   ⟨fun hr => hr h [] (by simp) hne,
     fun hd p e he hp => hs.2 ⟨e, he.symm⟩ hp hd⟩
 
 /-- On DDSs, behavioral equality is equality of the partial history functions.
 This includes both the domain and every defined reply. -/
-theorem EqOnReachable.eq_of_isDDS (hst : s ≈ₛ t) (hs : IsDDS s) (ht : IsDDS t) : s = t := by
+lemma EqOnReachable.eq_of_isDDS (hst : s ≈ₛ t) (hs : IsDDS s) (ht : IsDDS t) : s = t := by
   apply system_ext
   intro h y
   by_cases hn : h = []
@@ -1585,7 +1585,7 @@ theorem EqOnReachable.eq_of_isDDS (hst : s ≈ₛ t) (hs : IsDDS s) (ht : IsDDS 
       exact hy
 
 /-- R1: trimming does not change the behaviour. -/
-theorem trim_behEq (s : System X Y) : trim s ≈ₛ s := by
+lemma trim_behEq (s : System X Y) : trim s ≈ₛ s := by
   have hreach : ∀ h, Reach (trim s) h ↔ Reach s h := by
     intro h
     induction h using List.reverseRecOn with
@@ -1607,14 +1607,14 @@ theorem trim_behEq (s : System X Y) : trim s ≈ₛ s := by
 
 /-- After a reachable history, trimming preserves the next partial reply,
 including undefinedness. -/
-theorem trim_snoc_of_reach {h : List X} (hr : Reach s h) (x : X) :
+lemma trim_snoc_of_reach {h : List X} (hr : Reach s h) (x : X) :
     trim s (h ++ [x]) = s (h ++ [x]) := by
   by_cases hd : (s (h ++ [x])).Dom
   · exact if_pos (reach_snoc_iff.mpr ⟨hr, hd⟩)
   · rw [trim, if_neg (fun ht => hd (reach_snoc_iff.mp ht).2), Part.eq_none_iff'.mpr hd]
 
 /-- R1: a trimmed system has a prefix-closed domain. -/
-theorem trim_prefix_closed (s : System X Y) {h e : List X} (hd : (trim s (h ++ e)).Dom)
+lemma trim_prefix_closed (s : System X Y) {h e : List X} (hd : (trim s (h ++ e)).Dom)
     (hne : h ≠ []) : (trim s h).Dom := by
   by_cases hr : Reach s (h ++ e)
   · have := hr h e rfl hne
@@ -1623,17 +1623,17 @@ theorem trim_prefix_closed (s : System X Y) {h e : List X} (hd : (trim s (h ++ e
   · simp [trim, hr] at hd
 
 /-- Restricting to reachable histories preserves a reactive system's silence at `[]`. -/
-theorem SilentAtEmpty.isDDS_trim (hs : SilentAtEmpty s) : IsDDS (trim s) := by
+lemma SilentAtEmpty.isDDS_trim (hs : SilentAtEmpty s) : IsDDS (trim s) := by
   refine ⟨by simpa [SilentAtEmpty, trim] using hs, ?_⟩
   rintro h k ⟨e, rfl⟩ hn hd
   exact trim_prefix_closed s hd hn
 
 /-- A DDS already has exactly its reachable nonempty histories. -/
-theorem IsDDS.trim_eq (hs : IsDDS s) : trim s = s :=
+lemma IsDDS.trim_eq (hs : IsDDS s) : trim s = s :=
   (trim_behEq s).eq_of_isDDS hs.1.isDDS_trim hs
 
 /-- B for relabeling. -/
-theorem EqOnReachable.relabel (hst : s ≈ₛ t) (f : A → X) (g : Y → B) :
+lemma EqOnReachable.relabel (hst : s ≈ₛ t) (f : A → X) (g : Y → B) :
     SystemAlgebra.relabel s f g ≈ₛ SystemAlgebra.relabel t f g := by
   have hr : ∀ (u : System X Y) h, Reach (SystemAlgebra.relabel u f g) h ↔ Reach u (h.map f) := by
     intro u h
@@ -1647,7 +1647,7 @@ theorem EqOnReachable.relabel (hst : s ≈ₛ t) (f : A → X) (g : Y → B) :
   rw [hst.2 _ ((hr s h).mp hh) (by simpa using hne)]
 
 /-- Trimming commutes with a change of the input and output vocabulary. -/
-theorem trim_relabel {A B X Y : Type} (s : System X Y) (f : A → X) (g : Y → B) :
+lemma trim_relabel {A B X Y : Type} (s : System X Y) (f : A → X) (g : Y → B) :
     trim (relabel s f g) = relabel (trim s) f g := by
   funext h
   have hr : Reach (relabel s f g) h ↔ Reach s (h.map f) := by
@@ -1667,7 +1667,7 @@ section BehaviourPar
 
 variable {K : Type} {A B : K → Type} {s t : ∀ k, System (A k) (B k)}
 
-theorem reach_restrict {h : List (Σ k, A k)} (hr : Reach (parAll s) h) (k : K) :
+lemma reach_restrict {h : List (Σ k, A k)} (hr : Reach (parAll s) h) (k : K) :
     Reach (s k) (restrict k h) := by
   induction h using List.reverseRecOn with
   | nil => simp
@@ -1684,7 +1684,7 @@ theorem reach_restrict {h : List (Σ k, A k)} (hr : Reach (parAll s) h) (k : K) 
 
 /-- A parallel transcript is reachable exactly when all its component
 projections are reachable. -/
-theorem reach_parAll_iff (h : List (Σ k, A k)) :
+lemma reach_parAll_iff (h : List (Σ k, A k)) :
     Reach (parAll s) h ↔ ∀ k, Reach (s k) (restrict k h) := by
   refine ⟨fun hr k => reach_restrict hr k, ?_⟩
   intro hr p e he hn
@@ -1695,7 +1695,7 @@ theorem reach_parAll_iff (h : List (Σ k, A k)) :
 
 /-- The reachable parallel composition of DDSs has exactly the intersection
 of their projected domains, with the empty input history excluded. -/
-theorem trim_parAll_dom (hs : ∀ k, IsDDS (s k)) (h : List (Σ k, A k)) :
+lemma trim_parAll_dom (hs : ∀ k, IsDDS (s k)) (h : List (Σ k, A k)) :
     (trim (parAll s) h).Dom ↔ h ≠ [] ∧
       ∀ k, restrict k h = [] ∨ (s k (restrict k h)).Dom := by
   have hr : Reach (parAll s) h ↔ ∀ k, restrict k h = [] ∨ (s k (restrict k h)).Dom := by
@@ -1720,7 +1720,7 @@ theorem trim_parAll_dom (hs : ∀ k, IsDDS (s k)) (h : List (Σ k, A k)) :
     exact hreach h [] (by simp) hn
 
 /-- B for parallel composition. -/
-theorem EqOnReachable.parAll (hst : ∀ k, s k ≈ₛ t k) :
+lemma EqOnReachable.parAll (hst : ∀ k, s k ≈ₛ t k) :
     SystemAlgebra.parAll s ≈ₛ SystemAlgebra.parAll t := by
   have hdom : ∀ h k a, Reach (SystemAlgebra.parAll s) h →
       ((s k (restrict k h ++ [a])).Dom ↔ (t k (restrict k h ++ [a])).Dom) := by
@@ -1753,7 +1753,7 @@ theorem EqOnReachable.parAll (hst : ∀ k, s k ≈ₛ t k) :
     rw [(hst k).2 _ h1 (by simp)]
 
 /-- R2: the trimmed parallel composition of finite systems is finite. -/
-theorem finite_trim_parAll [Fintype K] {n : K → ℕ} (hs : ∀ k, Finite (n k) (s k)) :
+lemma finite_trim_parAll [Fintype K] {n : K → ℕ} (hs : ∀ k, Finite (n k) (s k)) :
     Finite (∑ k, n k) (trim (SystemAlgebra.parAll s)) := by
   intro h hd
   have hr : Reach (SystemAlgebra.parAll s) h := by
@@ -1790,7 +1790,7 @@ section BehaviourWire
 
 variable {s t : System X Y} {route : Y → B ⊕ X} {inj : A → X}
 
-theorem exchange_of_behEq (hst : s ≈ₛ t) {h₀ o h'} (l : Exchange s route h₀ o h') :
+lemma exchange_of_behEq (hst : s ≈ₛ t) {h₀ o h'} (l : Exchange s route h₀ o h') :
     ∀ h x, h₀ = h ++ [x] → Reach s h → Exchange t route h₀ o h' := by
   induction l with
   | silent g hd =>
@@ -1808,7 +1808,7 @@ theorem exchange_of_behEq (hst : s ≈ₛ t) {h₀ o h'} (l : Exchange s route h
     exact Exchange.feed _ y x' _ _ (by rw [← hst.2 _ hrx (by simp)]; exact hy) hb
       (ih (h ++ [x]) x' rfl hrx)
 
-theorem reach_of_exchange_some {h x b h'} (l : Exchange s route (h ++ [x]) (some b) h')
+lemma reach_of_exchange_some {h x b h'} (l : Exchange s route (h ++ [x]) (some b) h')
     (hr : Reach s h) : Reach s h' := by
   generalize e : h ++ [x] = g at l
   generalize eb : some b = ob at l
@@ -1820,7 +1820,7 @@ theorem reach_of_exchange_some {h x b h'} (l : Exchange s route (h ++ [x]) (some
     exact ih (reach_snoc_iff.mpr ⟨hr, Part.dom_iff_mem.mpr ⟨y, hy⟩⟩) rfl eb
 
 /-- B for connection: behavioural equality is preserved by wiring, with no hypothesis. -/
-theorem EqOnReachable.interconnect (hst : s ≈ₛ t) (route : Y → B ⊕ X) (inj : A → X) :
+lemma EqOnReachable.interconnect (hst : s ≈ₛ t) (route : Y → B ⊕ X) (inj : A → X) :
     SystemAlgebra.interconnect s route inj ≈ₛ SystemAlgebra.interconnect t route inj := by
   have hts : t ≈ₛ s := ⟨fun h => (hst.1 h).symm, fun h hr hne => (hst.2 h ((hst.1 h).mpr hr) hne).symm⟩
   -- replies after a reachable internal history agree
@@ -1882,13 +1882,13 @@ theorem EqOnReachable.interconnect (hst : s ≈ₛ t) (route : Y → B ⊕ X) (i
     obtain ⟨o, H, rs, rt, hH⟩ := (key u).2 hr0
     exact Part.ext fun b => step (Or.inr ⟨o, rs⟩) hH (Or.inr ⟨o, rt⟩)
 
-theorem exchange_some_dom {h o h'} (l : Exchange s route h o h') : ∀ b, o = some b → (s h').Dom := by
+lemma exchange_some_dom {h o h'} (l : Exchange s route h o h') : ∀ b, o = some b → (s h').Dom := by
   induction l with
   | silent => intro b e; cases e
   | out h y _ hy _ => intro _ _; exact Part.dom_iff_mem.mpr ⟨y, hy⟩
   | feed _ _ _ _ _ _ _ _ ih => exact ih
 
-theorem Induces.length_le {u o H} (r : Induces s route inj u o H) : u.length ≤ H.length := by
+lemma Induces.length_le {u o H} (r : Induces s route inj u o H) : u.length ≤ H.length := by
   induction r with
   | nil => simp
   | snoc u a o₀ H o H' _ l ih =>
@@ -1896,28 +1896,28 @@ theorem Induces.length_le {u o H} (r : Induces s route inj u o H) : u.length ≤
     simp
     omega
 
-theorem exchange_start_dom {h o h'} (l : Exchange s route h o h') : ∀ b, o = some b → (s h).Dom := by
+lemma exchange_start_dom {h o h'} (l : Exchange s route h o h') : ∀ b, o = some b → (s h).Dom := by
   cases l with
   | silent => intro b e; cases e
   | out _ y _ hy _ => intro _ _; exact Part.dom_iff_mem.mpr ⟨y, hy⟩
   | feed _ y _ _ _ hy _ _ => intro _ _; exact Part.dom_iff_mem.mpr ⟨y, hy⟩
 
-@[simp] theorem interconnect_nil : SystemAlgebra.interconnect s route inj [] = Part.none := interconnect_eq_none Induces.nil
+@[simp] lemma interconnect_nil : SystemAlgebra.interconnect s route inj [] = Part.none := interconnect_eq_none Induces.nil
 
-theorem EqOnReachable.symm {t : System X Y} (hst : s ≈ₛ t) : t ≈ₛ s :=
+lemma EqOnReachable.symm {t : System X Y} (hst : s ≈ₛ t) : t ≈ₛ s :=
   ⟨fun h => (hst.1 h).symm, fun h hr hne => (hst.2 h ((hst.1 h).mpr hr) hne).symm⟩
 
-theorem EqOnReachable.trans {t u : System X Y} (hst : s ≈ₛ t) (htu : t ≈ₛ u) : s ≈ₛ u :=
+lemma EqOnReachable.trans {t u : System X Y} (hst : s ≈ₛ t) (htu : t ≈ₛ u) : s ≈ₛ u :=
   ⟨fun h => (hst.1 h).trans (htu.1 h),
     fun h hr hn => (hst.2 h hr hn).trans (htu.2 h ((hst.1 h).mp hr) hn)⟩
 
-theorem EqOnReachable.trim_eq {t : System X Y} (hst : s ≈ₛ t) (hs : SilentAtEmpty s) (ht : SilentAtEmpty t) :
+lemma EqOnReachable.trim_eq {t : System X Y} (hst : s ≈ₛ t) (hs : SilentAtEmpty s) (ht : SilentAtEmpty t) :
     trim s = trim t :=
   ((trim_behEq s).trans (hst.trans (trim_behEq t).symm)).eq_of_isDDS
     hs.isDDS_trim ht.isDDS_trim
 
 /-- R3: connecting a finite system gives a finite system. -/
-theorem Finite.interconnect {n : ℕ} (hs : Finite n s) : Finite n (SystemAlgebra.interconnect s route inj) := by
+lemma Finite.interconnect {n : ℕ} (hs : Finite n s) : Finite n (SystemAlgebra.interconnect s route inj) := by
   intro u hd
   obtain ⟨H, r⟩ := mem_interconnect.mp (Part.get_mem hd)
   refine le_trans r.length_le (hs H ?_)
@@ -1942,17 +1942,17 @@ inductive Transcript (s : System A B) (e : List B →. A) : List A → List B �
 
 variable {s t : System A B}
 
-theorem Transcript.length_eq {e xs ys} (tr : Transcript s e xs ys) : xs.length = ys.length := by
+lemma Transcript.length_eq {e xs ys} (tr : Transcript s e xs ys) : xs.length = ys.length := by
   induction tr with
   | nil => rfl
   | snoc _ _ _ ih => simp [ih]
 
-theorem Transcript.reach {e xs ys} (tr : Transcript s e xs ys) : Reach s xs := by
+lemma Transcript.reach {e xs ys} (tr : Transcript s e xs ys) : Reach s xs := by
   induction tr with
   | nil => exact reach_nil s
   | snoc _ _ hy ih => exact reach_snoc_iff.mpr ⟨ih, Part.dom_iff_mem.mpr ⟨_, hy⟩⟩
 
-theorem Transcript.snoc_inv {e xs ys' x} (tr : Transcript s e (xs ++ [x]) ys') :
+lemma Transcript.snoc_inv {e xs ys' x} (tr : Transcript s e (xs ++ [x]) ys') :
     ∃ ys y, ys' = ys ++ [y] ∧ Transcript s e xs ys ∧ x ∈ e ys ∧ y ∈ s (xs ++ [x]) := by
   generalize hx : xs ++ [x] = xs' at tr
   cases tr with
@@ -1961,7 +1961,7 @@ theorem Transcript.snoc_inv {e xs ys' x} (tr : Transcript s e (xs ++ [x]) ys') :
     obtain ⟨rfl, rfl⟩ := List.append_inj' hx rfl |>.imp id (fun h => by simpa using h.symm)
     exact ⟨_, _, rfl, tr, hx', hy⟩
 
-theorem Transcript.take {e xs ys} (tr : Transcript s e xs ys) (n : ℕ) :
+lemma Transcript.take {e xs ys} (tr : Transcript s e xs ys) (n : ℕ) :
     Transcript s e (xs.take n) (ys.take n) := by
   induction tr with
   | nil => simp only [List.take_nil]; exact Transcript.nil
@@ -1976,7 +1976,7 @@ theorem Transcript.take {e xs ys} (tr : Transcript s e xs ys) (n : ℕ) :
 
 /-- At each length, two deterministic systems have only one interaction
 transcript. -/
-theorem Transcript.eq_of_length_eq {e xs ys xs' ys'} (tr : Transcript s e xs ys)
+lemma Transcript.eq_of_length_eq {e xs ys xs' ys'} (tr : Transcript s e xs ys)
     (tr' : Transcript s e xs' ys') (hl : xs.length = xs'.length) : xs = xs' ∧ ys = ys' := by
   induction tr generalizing xs' ys' with
   | nil =>
@@ -1992,7 +1992,7 @@ theorem Transcript.eq_of_length_eq {e xs ys xs' ys'} (tr : Transcript s e xs ys)
       obtain rfl := Part.mem_unique hy hy'
       exact ⟨rfl, rfl⟩
 
-theorem Transcript.length_le_of_stopped {e xs ys xs' ys'} (tr : Transcript s e xs ys)
+lemma Transcript.length_le_of_stopped {e xs ys xs' ys'} (tr : Transcript s e xs ys)
     (hd : ¬ (e ys).Dom) (tr' : Transcript s e xs' ys') : xs'.length ≤ xs.length := by
   by_contra hn
   have hl : xs.length < xs'.length := Nat.lt_of_not_ge hn
@@ -2003,7 +2003,7 @@ theorem Transcript.length_le_of_stopped {e xs ys xs' ys'} (tr : Transcript s e x
   exact hd (he ▸ Part.dom_iff_mem.mpr ⟨_, hx⟩)
 
 /-- Completed transcripts are unique, including for partial systems. -/
-theorem Transcript.eq_of_stopped {e xs ys xs' ys'} (tr : Transcript s e xs ys)
+lemma Transcript.eq_of_stopped {e xs ys xs' ys'} (tr : Transcript s e xs ys)
     (tr' : Transcript s e xs' ys') (hd : ¬ (e ys).Dom) (hd' : ¬ (e ys').Dom) :
     xs = xs' ∧ ys = ys' :=
   tr.eq_of_length_eq tr' (le_antisymm (tr'.length_le_of_stopped hd' tr)
@@ -2012,7 +2012,7 @@ theorem Transcript.eq_of_stopped {e xs ys xs' ys'} (tr : Transcript s e xs ys)
 /-- The environment that issues the queries `H` in order, ignoring the replies. -/
 def fixedQueries (H : List A) : List B →. A := fun ys => (H[ys.length]? : Part A)
 
-theorem transcript_fixedQueries {H : List A} :
+lemma transcript_fixedQueries {H : List A} :
     ∀ h e', H = h ++ e' → (Reach s h ↔ ∃ ys, Transcript s (fixedQueries H) h ys) := by
   intro h
   induction h using List.reverseRecOn with
@@ -2030,7 +2030,7 @@ theorem transcript_fixedQueries {H : List A} :
       exact tr.reach
 
 /-- Behavioural equality is equality of the transcripts with every environment. -/
-theorem behEq_iff_transcript :
+lemma behEq_iff_transcript :
     s ≈ₛ t ↔ ∀ e xs ys, Transcript s e xs ys ↔ Transcript t e xs ys := by
   constructor
   · intro hst
@@ -2090,9 +2090,9 @@ noncomputable def runRev (P : Y → Prop) (s : System X Y) : List X → ℕ
 noncomputable def run (P : Y → Prop) (s : System X Y) (h : List X) : ℕ :=
   runRev P s h.reverse
 
-@[simp] theorem run_nil (P : Y → Prop) (s : System X Y) : run P s [] = 0 := rfl
+@[simp] lemma run_nil (P : Y → Prop) (s : System X Y) : run P s [] = 0 := rfl
 
-theorem run_snoc (P : Y → Prop) (s : System X Y) (h : List X) (x : X) :
+lemma run_snoc (P : Y → Prop) (s : System X Y) (h : List X) (x : X) :
     run P s (h ++ [x]) = if ∃ y ∈ s (h ++ [x]), P y then run P s h + 1 else 0 := by
   simp [run, runRev]
 
@@ -2111,18 +2111,18 @@ structure CyclesThrough (P : Ya → Prop) (route : Two Ya Yb → B ⊕ Two Xa Xb
   left_in : ∀ y, P y → (∃ c, route ⟨none, y⟩ = .inl c) ∨ ∃ x, route ⟨none, y⟩ = .inr ⟨some (), x⟩
   right : ∀ y, (∃ c, route ⟨some (), y⟩ = .inl c) ∨ ∃ x, route ⟨some (), y⟩ = .inr ⟨none, x⟩
 
-theorem restrict_none_snoc_left (G : List (Two Xa Xb)) (z : Xa) :
+lemma restrict_none_snoc_left (G : List (Two Xa Xb)) (z : Xa) :
     restrict none (G ++ [⟨none, z⟩]) = restrict none G ++ [z] := by simp
 
-theorem restrict_some_snoc_left (G : List (Two Xa Xb)) (z : Xa) :
+lemma restrict_some_snoc_left (G : List (Two Xa Xb)) (z : Xa) :
     restrict (some ()) (G ++ [⟨none, z⟩]) = restrict (some ()) G := by
   rw [restrict_append, restrict_cons_ne (by simp)]; simp
 
-theorem restrict_none_snoc_right (G : List (Two Xa Xb)) (x : Xb) :
+lemma restrict_none_snoc_right (G : List (Two Xa Xb)) (x : Xb) :
     restrict none (G ++ [⟨some (), x⟩]) = restrict none G := by
   rw [restrict_append, restrict_cons_ne (by simp)]; simp
 
-theorem restrict_some_snoc_right (G : List (Two Xa Xb)) (x : Xb) :
+lemma restrict_some_snoc_right (G : List (Two Xa Xb)) (x : Xb) :
     restrict (some ()) (G ++ [⟨some (), x⟩]) = restrict (some ()) G ++ [x] := by simp
 
 section Measure
@@ -2132,7 +2132,7 @@ variable (hc : CyclesThrough P route) (ν : List Xa → ℕ)
 include hc hν
 
 /-- From a turn of `a`, the exchange stops. -/
-theorem exchange_left_turn :
+lemma exchange_left_turn :
     ∀ m (G : List (Two Xa Xb)) (z : Xa), ν (restrict none G ++ [z]) = m →
       ∃ o G', Exchange (pair a b) route (G ++ [⟨none, z⟩]) o G' := by
   intro m
@@ -2191,7 +2191,7 @@ theorem exchange_left_turn :
     · exact ⟨none, _, Exchange.silent _ (by rw [hpl']; exact hd')⟩
 
 /-- Every exchange of `[a, b]` stops. -/
-theorem exchange_pair (G : List (Two Xa Xb)) : ∃ o G', Exchange (pair a b) route G o G' := by
+lemma exchange_pair (G : List (Two Xa Xb)) : ∃ o G', Exchange (pair a b) route G o G' := by
   rcases List.eq_nil_or_concat G with rfl | ⟨G₀, g, rfl⟩
   · exact ⟨none, [], Exchange.silent _ (by simp [pair])⟩
   rw [List.concat_eq_append]
@@ -2212,7 +2212,7 @@ theorem exchange_pair (G : List (Two Xa Xb)) : ∃ o G', Exchange (pair a b) rou
 
 /-- If every internal cycle passes through `a`, and a measure on `a`'s histories drops at
 each reply of `a` that continues a cycle, the wiring of `[a, b]` converges, whatever `b` is. -/
-theorem converges_pair_of_measure : Converges (pair a b) route inj :=
+lemma converges_pair_of_measure : Converges (pair a b) route inj :=
   converges_of_exchanges (exchange_pair hc ν hν)
 
 end Measure
@@ -2220,7 +2220,7 @@ end Measure
 /-- **Convergence of an attachment.** If every internal cycle passes through `a`, and `a`
 has at most `n` consecutive replies that continue a cycle, the wiring of `[a, b]` converges,
 whatever `b` is. -/
-theorem converges_pair (hc : CyclesThrough P route) (hb : ∀ h, (a h).Dom → run P a h ≤ n) :
+lemma converges_pair (hc : CyclesThrough P route) (hb : ∀ h, (a h).Dom → run P a h ≤ n) :
     Converges (pair a b) route inj := by
   refine converges_pair_of_measure hc (fun h => n - run P a h) (fun h x w hw hP => ?_)
   have hle := hb _ (Part.dom_iff_mem.mpr ⟨w, hw⟩)
@@ -2229,7 +2229,7 @@ theorem converges_pair (hc : CyclesThrough P route) (hb : ∀ h, (a h).Dom → r
 
 /-- Each internal cycle consumes one of the remaining consecutive queries of
 `a`. A turn of `b` adds at most one reply before control returns to `a`. -/
-theorem Exchange.length_le_of_cycles (hc : CyclesThrough P route)
+lemma Exchange.length_le_of_cycles (hc : CyclesThrough P route)
     (hb : ∀ h, (a h).Dom → run P a h ≤ n) {G o H}
     (l : Exchange (pair a b) route G o H) :
     ∀ G₀ x, G = G₀ ++ [x] →
@@ -2283,7 +2283,7 @@ theorem Exchange.length_le_of_cycles (hc : CyclesThrough P route)
 
 /-- A finite exposed history needs at most `2n + 2` component replies per
 input. This concerns interaction length, independently of sample support. -/
-theorem Induces.length_le_of_cycles (hc : CyclesThrough P route)
+lemma Induces.length_le_of_cycles (hc : CyclesThrough P route)
     (hb : ∀ h, (a h).Dom → run P a h ≤ n) {us o H}
     (r : Induces (pair a b) route inj us o H) :
     H.length ≤ (2 * n + 2) * us.length := by
@@ -2297,7 +2297,7 @@ theorem Induces.length_le_of_cycles (hc : CyclesThrough P route)
 
 /-- **Convergence against a terminating system.** If every internal cycle passes through a
 terminating `a`, the wiring of `[a, b]` converges, whatever `b` is. -/
-theorem converges_pair_of_terminating (hc : CyclesThrough P route) (ha : Terminating a) :
+lemma converges_pair_of_terminating (hc : CyclesThrough P route) (ha : Terminating a) :
     Converges (pair a b) route inj := by
   obtain ⟨μ, hμ⟩ := ha
   exact converges_pair_of_measure hc μ (fun h x w hw _ => hμ h x (Part.dom_iff_mem.mpr ⟨w, hw⟩))
@@ -2305,7 +2305,7 @@ theorem converges_pair_of_terminating (hc : CyclesThrough P route) (ha : Termina
 end Converge
 
 /-- If every input addresses the right constituent, only its history is used. -/
-theorem relabel_pair_right_only {A B C D E F : Type} (s : System A B) (t : System C D)
+lemma relabel_pair_right_only {A B C D E F : Type} (s : System A B) (t : System C D)
     (ht : SilentAtEmpty t) (f : E → C) (g : Two B D → F) :
     relabel (pair s t) (fun x => ⟨some (), f x⟩) g =
       relabel t f (fun y => g ⟨some (), y⟩) := by
@@ -2320,7 +2320,7 @@ theorem relabel_pair_right_only {A B C D E F : Type} (s : System A B) (t : Syste
   · simp only [relabel, List.concat_eq_append, List.map_append, List.map_singleton,
       pair_right, hm, Part.map_map, Function.comp_def]
 
-theorem relabel_pair_left_only {A B C D E F : Type} (s : System A B) (t : System C D)
+lemma relabel_pair_left_only {A B C D E F : Type} (s : System A B) (t : System C D)
     (hs : SilentAtEmpty s) (f : E → A) (g : Two B D → F) :
     relabel (pair s t) (fun x => ⟨none, f x⟩) g =
       relabel s f (fun y => g ⟨none, y⟩) := by

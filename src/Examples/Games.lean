@@ -151,11 +151,11 @@ noncomputable def collision : Interface.Game (AE.perPort M C q) :=
     (hybrid_visible scheme q)
 
 /-- The visible resource of the collision game is the hybrid. -/
-theorem collision_visible : DistinctionGames.visible (collision scheme q) = Hybrid scheme q :=
+lemma collision_visible : DistinctionGames.visible (collision scheme q) = Hybrid scheme q :=
   Interface.Game.visible_ofPDG _ _ _
 
 /-- The collision game is conditionally equivalent to the ideal system. -/
-theorem collision_conditionallyEquivalent :
+lemma collision_conditionallyEquivalent :
     DistinctionGames.ConditionallyEquivalent (collision scheme q)
       (AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme :
         Interface.Resource (AE.perPort M C q)) :=

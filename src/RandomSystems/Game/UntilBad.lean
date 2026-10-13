@@ -49,7 +49,7 @@ variable {I : Type} [Fintype I] {X Y : I → Type} [∀ i, Fintype (X i)] [∀ i
 
 /-- The part of a game with every MBO unset lies below its visible system: `G (h with every MBO
 unset)` is one term of the sum over the MBOs. -/
-theorem RandomSystem.mass_unsetMBOs_le_visible
+lemma RandomSystem.mass_unsetMBOs_le_visible
     (G : RandomSystem (Σ i, X i) (Σ i, withMBO Y i) (Domain.ofInputs E m hE))
     (h : List ((Σ i, X i) × Σ i, Y i)) : G (unsetMBOs h) ≤ G.visible h := by
   have := le_sumMBO G.mass_nonneg (unsetMBOs h)
@@ -60,7 +60,7 @@ theorem RandomSystem.mass_unsetMBOs_le_visible
 probability of `h` with every MBO unset minus the probability that `G` sets the MBO at `x`. So
 if that probability is at most `b` times the probability of `h` with every MBO unset, with
 `b ≥ 0`, the unset part loses at most `b` times the probability of `h` in the visible system. -/
-theorem RandomSystem.mass_unsetMBOs_sub_sum_le
+lemma RandomSystem.mass_unsetMBOs_sub_sum_le
     (G : RandomSystem (Σ i, X i) (Σ i, withMBO Y i) (Domain.ofInputs E m hE))
     {h : List ((Σ i, X i) × Σ i, Y i)} {x : Σ i, X i} (hx : E (h.map Prod.fst ++ [x])) {b : ℝ}
     (hb : 0 ≤ b) (hset : ∑ y, G (unsetMBOs h ++ [(x, tagMBO true y)]) ≤ b * G (unsetMBOs h)) :

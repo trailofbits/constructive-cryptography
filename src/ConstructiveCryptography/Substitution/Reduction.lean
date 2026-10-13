@@ -77,7 +77,7 @@ def SubstitutesWithin
     model.advantage A distinguisher left right ≤ error distinguisher
 
 /-- Reversing a concrete substitution preserves its error function. -/
-theorem SubstitutesWithin.symm
+lemma SubstitutesWithin.symm
     (model : DistinguisherAdvantage C Systems Distinguisher)
     {A : C} {error : Distinguisher A → ENNReal}
     {left right : Systems A}
@@ -107,7 +107,7 @@ theorem SubstitutesWithin.trans
 /-- A uniform statistical observation bound gives a constant concrete loss.
 Banfi, §2.3.1 (p. 15): “rather than a substitution”. The observation may be a
 transcript distribution; a resource metric or category is not required. -/
-theorem SubstitutesWithin.of_statistical
+lemma SubstitutesWithin.of_statistical
     (model : DistinguisherAdvantage C Systems Distinguisher)
     {A : C} {statistical : Distinguisher A → Systems A → Systems A → ENNReal}
     (domination : ∀ D ∈ model.admissible A, ∀ R S,
@@ -124,7 +124,7 @@ variable [Category.{v} C] {Phi : C → Type w} [ResourceTheory C Phi]
 advantage is dominated by distance. Banfi, Section 2.3.1 (printed p. 15),
 allows an approximate step "rather than a substitution". The domination
 hypothesis is explicit; no computational premise is promoted to a metric bound. -/
-theorem SubstitutesWithin.of_distance [MonoidalCategory C] [CompatiblePseudoMetric C Phi]
+lemma SubstitutesWithin.of_distance [MonoidalCategory C] [CompatiblePseudoMetric C Phi]
     (model : DistinguisherAdvantage C Phi Distinguisher)
     {A : C} {left right : Phi A} {error : ENNReal}
     (domination : ∀ distinguisher ∈ model.admissible A,
@@ -142,7 +142,7 @@ converter attachment and precomposes its error function.
 Banfi 2023, Section 2.3.3 (printed p. 16) defines the transformed loss by
 `ε'(D) := ε(D ∘ ρ)`. The `reduce` argument is that composed distinguisher;
 its admissibility and the displayed advantage equality remain explicit. -/
-theorem SubstitutesWithin.attach
+lemma SubstitutesWithin.attach
     (model : DistinguisherAdvantage C Phi Distinguisher)
     {A B : C} (converter : A ⟶ B)
     (reduce : Distinguisher A → Distinguisher B)
@@ -172,7 +172,7 @@ theorem SubstitutesWithin.attach
 This is the iterated form of Banfi 2023, Section 2.3.3 (printed p. 16):
 the final loss is `error (reduceInner (reduceOuter D))`, matching successive
 precomposition by the two named transformations. -/
-theorem SubstitutesWithin.attach_serial
+lemma SubstitutesWithin.attach_serial
     (model : DistinguisherAdvantage C Phi Distinguisher)
     {A B D : C} (outer : A ⟶ B) (inner : B ⟶ D)
     (reduceOuter : Distinguisher A → Distinguisher B)
@@ -239,7 +239,7 @@ noncomputable def reductionRelaxation
       exact bot_le)
 
 @[simp]
-theorem mem_reductionRelaxation_iff
+lemma mem_reductionRelaxation_iff
     (model : DistinguisherAdvantage C Phi Distinguisher)
     {A : C} {error : Distinguisher A → ENNReal}
     {source : Specification (Phi A)} {resource : Phi A} :
@@ -277,7 +277,7 @@ construction into Jost's reduction relaxation.
 Jost, Definition 2.2.9 (printed p. 22): "R^ε := {S | ∀D : |Δᴰ(R,S)| ≤ ε(D)}".
 MR16, Definition 1 (printed p. 11): "π R ⊆ S". The supplied ideal may
 already have its explicitly chosen simulator attached. -/
-theorem constructs_singleton_reductionRelaxation_iff
+lemma constructs_singleton_reductionRelaxation_iff
     (model : DistinguisherAdvantage C Phi Distinguisher)
     {A B : C} {protocol : A ⟶ B} {real : Phi B} {ideal : Phi A}
     {error : Distinguisher A → ENNReal} :

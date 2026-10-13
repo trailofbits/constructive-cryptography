@@ -61,7 +61,7 @@ noncomputable def mix (P : Distribution.ProbDist ι) (R : ι → RandomSystem A 
         simp only [hw, extensionLaw_weight]
         by_cases hd : D h x <;> simp only [hd, if_true, if_false, mul_zero, Finset.sum_const_zero]⟩
 
-theorem mix_mass (P : Distribution.ProbDist ι) (R : ι → RandomSystem A B D)
+lemma mix_mass (P : Distribution.ProbDist ι) (R : ι → RandomSystem A B D)
     (h : List (A × B)) : mix P R h = ∑ i ∈ P.1.support, P.1 i * R i h := rfl
 
 end Mix
@@ -82,7 +82,7 @@ def parallelRight (h : List ((Two A C) × (Two B E))) : List (C × E) :=
 def parallelConsistent (h : List ((Two A C) × (Two B E))) : Prop :=
   ∀ z ∈ h, z.1.1 = z.2.1
 
-theorem parallelConsistent_snoc {h : List ((Two A C) × (Two B E))} {z} :
+lemma parallelConsistent_snoc {h : List ((Two A C) × (Two B E))} {z} :
     parallelConsistent (h ++ [z]) ↔ parallelConsistent h ∧ z.1.1 = z.2.1 := by
   simp [parallelConsistent, or_imp, forall_and]
 
@@ -93,7 +93,7 @@ def parallelAdmits (D : List (A × B) → A → Prop) (D' : List (C × E) → C 
   | ⟨some (), x⟩ => D' (parallelRight h) x
 
 /-- Consistent transcripts split into their two component transcripts. -/
-theorem length_of_parallelConsistent {h : List ((Two A C) × (Two B E))}
+lemma length_of_parallelConsistent {h : List ((Two A C) × (Two B E))}
     (hh : parallelConsistent h) :
     h.length = (parallelLeft h).length + (parallelRight h).length := by
   induction h with
@@ -205,12 +205,12 @@ noncomputable def parallel (R : RandomSystem A B D) (S : RandomSystem C E D') :
           · rw [R.mass_eq_zero_of_bound_lt (not_le.mp hb), zero_mul,
               if_neg (fun h' => hb h'.2.1)]⟩
 
-theorem parallel_mass (R : RandomSystem A B D) (S : RandomSystem C E D')
+lemma parallel_mass (R : RandomSystem A B D) (S : RandomSystem C E D')
     (h : List ((Two A C) × (Two B E))) :
     parallel R S h =
       if parallelConsistent h then R (parallelLeft h) * S (parallelRight h) else 0 := rfl
 
-theorem parallel_mix_right (R : RandomSystem A B D) (P : Distribution.ProbDist ι)
+lemma parallel_mix_right (R : RandomSystem A B D) (P : Distribution.ProbDist ι)
     (S : ι → RandomSystem C E D') :
     parallel R (mix P S) = mix P (fun i => parallel R (S i)) := by
   apply RandomSystem.ext
@@ -222,7 +222,7 @@ theorem parallel_mix_right (R : RandomSystem A B D) (P : Distribution.ProbDist �
 
 end Parallel
 
-theorem parallelLeft_queries {h : List ((Two A C) × (Two B E))}
+lemma parallelLeft_queries {h : List ((Two A C) × (Two B E))}
     (hh : parallelConsistent h) :
     (parallelLeft h).map Prod.fst = restrict none (h.map Prod.fst) := by
   induction h with
@@ -233,7 +233,7 @@ theorem parallelLeft_queries {h : List ((Two A C) × (Two B E))}
     rcases z with ⟨⟨_ | ⟨⟩, x⟩, ⟨_ | ⟨⟩, y⟩⟩ <;>
       simp_all [parallelLeft]
 
-theorem parallelRight_queries {h : List ((Two A C) × (Two B E))}
+lemma parallelRight_queries {h : List ((Two A C) × (Two B E))}
     (hh : parallelConsistent h) :
     (parallelRight h).map Prod.fst = restrict (some ()) (h.map Prod.fst) := by
   induction h with
@@ -246,7 +246,7 @@ theorem parallelRight_queries {h : List ((Two A C) × (Two B E))}
 
 /-- The existing deterministic parallel operation produces precisely the two
 component transcripts, interleaved in the supplied order. No totality is needed. -/
-theorem replies_pair_iff (s : System A B) (t : System C E)
+lemma replies_pair_iff (s : System A B) (t : System C E)
     (h : List ((Two A C) × (Two B E))) :
     Replies (pair s t) (h.map Prod.fst) (h.map Prod.snd) ↔
       parallelConsistent h ∧
@@ -286,7 +286,7 @@ variable [Fintype A] [Fintype B] [Fintype C] [Fintype E] {D : Domain A B} {D' : 
 
 /-- Product cumulative behavior preserves any finite presentations of its two
 components, including presentations whose unreachable histories differ. -/
-theorem parallel_mass_of_presentations {ι κ : Type}
+lemma parallel_mass_of_presentations {ι κ : Type}
     (R : RandomSystem A B D) (S : RandomSystem C E D')
     (P : Distribution ι) (Q : Distribution κ)
     (s : ι → System A B) (t : κ → System C E)
@@ -305,7 +305,7 @@ theorem parallel_mass_of_presentations {ι κ : Type}
 
 /-- Parallel cumulative behavior agrees with independent sampling followed by
 the existing deterministic system operation. -/
-theorem parallel_ofPDS_mass
+lemma parallel_ofPDS_mass
     {p : System A B → Prop} {q : System C E → Prop}
     (P : Distribution {s : System A B // p s}) (Q : Distribution {s : System C E // q s})
     (hP : P.isProbDist) (hQ : Q.isProbDist)
@@ -333,7 +333,7 @@ variable {A B C E : Type} [Fintype A] [Fintype B] [Fintype C] [Fintype E]
 
 omit [Fintype A] [Fintype B] [Fintype C] [Fintype E] in
 /-- The reachable part of a pair of samples has the parallel domain. -/
-theorem hasDomain_trim_pair {s : System A B} {t : System C E} (hs : HasDomain D s)
+lemma hasDomain_trim_pair {s : System A B} {t : System C E} (hs : HasDomain D s)
     (ht : HasDomain D' t) : HasDomain (D.parallel D') (trim (pair s t)) := by
   intro h x hr
   rw [replies_trim_iff, RandomSystem.replies_pair_iff] at hr
@@ -375,11 +375,11 @@ noncomputable def parallel (P : PDS A B D) (Q : PDS C E D') : PDS (Two A C) (Two
       hasDomain_trim_pair st.1.2.2 st.2.2.2⟩)
       (Distribution.prod P Q)
 
-theorem parallel_isProbDist {P : PDS A B D} {Q : PDS C E D'}
+lemma parallel_isProbDist {P : PDS A B D} {Q : PDS C E D'}
     (hP : P.isProbDist) (hQ : Q.isProbDist) : (parallel P Q).isProbDist :=
   Distribution.fTransform_isProbDist _ (Distribution.prod_isProbDist P Q hP hQ)
 
-theorem parallel_mass (P : PDS A B D) (Q : PDS C E D')
+lemma parallel_mass (P : PDS A B D) (Q : PDS C E D')
     (h : List ((Two A C) × (Two B E))) :
     behaviorMass (parallel P Q) (h.map Prod.fst) (h.map Prod.snd) =
       if RandomSystem.parallelConsistent h then

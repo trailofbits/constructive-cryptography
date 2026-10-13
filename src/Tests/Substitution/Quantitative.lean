@@ -23,7 +23,7 @@ variable {Distinguisher : C → Type y}
 
 -- A three-step source chain uses the named assumption twice and a statistical
 -- bound once. The middle reverse step is not counted as an assumption use.
-theorem mixed_three_steps [MonoidalCategory C] [CompatiblePseudoMetric C Phi] {A : C}
+lemma mixed_three_steps [MonoidalCategory C] [CompatiblePseudoMetric C Phi] {A : C}
     (model : DistinguisherAdvantage C Phi Distinguisher)
     (left right : Phi A) (loss : Distinguisher A → ENNReal) (error : ENNReal)
     (domination : ∀ distinguisher ∈ model.admissible A,

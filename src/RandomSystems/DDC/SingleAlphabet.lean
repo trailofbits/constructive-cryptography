@@ -46,7 +46,7 @@ variable {K K' K'' : Type}
 def relabelL (τ : K ≃ K') (R : SingleAlphabetSystem X Y K) : SingleAlphabetSystem X Y K' :=
   relabel R (fun a => ⟨τ.symm a.1, a.2⟩) (fun b => ⟨τ b.1, b.2⟩)
 
-@[simp] theorem relabelL_refl (R : SingleAlphabetSystem X Y K) : relabelL (Equiv.refl K) R = R := by
+@[simp] lemma relabelL_refl (R : SingleAlphabetSystem X Y K) : relabelL (Equiv.refl K) R = R := by
   exact relabel_id R
 
 end Relabel
@@ -80,7 +80,7 @@ noncomputable def attachL (ι : J → K) (α : SingleAlphabetConverter X Y O J) 
 
 variable {ι : J → K} {b : ℕ} {α : SingleAlphabetConverter X Y O J} {R : SingleAlphabetSystem X Y K}
 
-theorem IsResponsiveDDC.totalResource_attachL (hι : Function.Injective ι) (hα : IsResponsiveDDC b α)
+lemma IsResponsiveDDC.totalResource_attachL (hι : Function.Injective ι) (hα : IsResponsiveDDC b α)
     (hR : TotalResource R) : TotalResource (attachL ι α R) := by
   have h := hα.totalResource_along hι hR
   refine ⟨fun u => ?_, fun u a y hy => ?_⟩
@@ -108,13 +108,13 @@ section Naturality
 
 variable {K K' O J : Type}
 
-theorem not_mem_alongSet_comp {τ : K ≃ K'} {κ : J → K'} {i : K}
+lemma not_mem_alongSet_comp {τ : K ≃ K'} {κ : J → K'} {i : K}
     (h : (⟨some (), i⟩ : Two (Two O J) K) ∉ alongSet (τ.symm ∘ κ)) :
     (⟨some (), τ i⟩ : Two (Two O J) K') ∉ alongSet κ := by
   rintro ⟨j, hj⟩
   exact h ⟨j, by simp [hj]⟩
 
-theorem not_mem_alongSet_comp' {τ : K ≃ K'} {κ : J → K'} {i : K'}
+lemma not_mem_alongSet_comp' {τ : K ≃ K'} {κ : J → K'} {i : K'}
     (h : (⟨some (), i⟩ : Two (Two O J) K') ∉ alongSet κ) :
     (⟨some (), τ.symm i⟩ : Two (Two O J) K) ∉ alongSet (τ.symm ∘ κ) := by
   rintro ⟨j, hj⟩
@@ -146,7 +146,7 @@ def freeEquivL (τ : K ≃ K') (κ : J → K') :
 
 /-- **Naturality of attachment**: attaching to a renamed resource is renaming the
 attachment. -/
-theorem attachL_relabelL (τ : K ≃ K') {κ : J → K'} (hκ : Function.Injective κ)
+lemma attachL_relabelL (τ : K ≃ K') {κ : J → K'} (hκ : Function.Injective κ)
     (β : SingleAlphabetConverter X Y O J) (S : SingleAlphabetSystem X Y K) :
     attachL κ β (relabelL τ S) = relabelL (freeEquivL τ κ) (attachL (τ.symm ∘ κ) β S) := by
   have hκ' : Function.Injective (τ.symm ∘ κ) := τ.symm.injective.comp hκ
@@ -215,7 +215,7 @@ def nestOut (ι : J → K) : (Σ l : Free (alongSet (O := O) (outerOfAlong (M :=
   | ⟨⟨⟨some (), ⟨⟨some (), i⟩, h'⟩⟩, h⟩, y⟩ => ⟨⟨⟨some (), ⟨⟨some (), i⟩, h'⟩⟩, h⟩, y⟩
 
 /-- Attaching `β` to the outside of `α^ι R` is the nested attachment. -/
-theorem attachL_outer (β : SingleAlphabetConverter X Y O M) (α : SingleAlphabetConverter X Y M J) (R : SingleAlphabetSystem X Y K) :
+lemma attachL_outer (β : SingleAlphabetConverter X Y O M) (α : SingleAlphabetConverter X Y M J) (R : SingleAlphabetSystem X Y K) :
     attachL (outerOfAlong ι) β (attachL ι α R) =
       relabel (attachAlong (outerOfAlong ι) β (attachAlong ι α R)) (nestIn ι) (nestOut ι) := by
   unfold attachL attachAlong connect pairI
@@ -400,7 +400,7 @@ def liftOut (hd : ∀ j, ι j ∉ Set.range κ) :
   | ⟨⟨⟨some (), ⟨⟨none, ⟨some (), k⟩⟩, h'⟩⟩, _⟩, _⟩ => absurd (inside_mem_alongSet κ k) h'
   | ⟨⟨⟨some (), ⟨⟨some (), i⟩, h'⟩⟩, h⟩, y⟩ => ⟨⟨⟨some (), ⟨⟨some (), i⟩, h'⟩⟩, h⟩, y⟩
 
-theorem attachL_lift (hd : ∀ j, ι j ∉ Set.range κ) (hι : Function.Injective ι)
+lemma attachL_lift (hd : ∀ j, ι j ∉ Set.range κ) (hι : Function.Injective ι)
     (α : SingleAlphabetConverter X Y O J) (β : SingleAlphabetConverter X Y O' J') (R : SingleAlphabetSystem X Y K) :
     attachL (liftAlong κ ι hd) α (attachL κ β R) =
       relabel (attachAlong (liftAlong κ ι hd) α (attachAlong κ β R)) (liftIn hd) (liftOut hd) := by
@@ -540,17 +540,17 @@ by side. -/
 noncomputable def parL (R : SingleAlphabetSystem X Y K) (S : SingleAlphabetSystem X Y K') : SingleAlphabetSystem X Y (K ⊕ K') :=
   relabel (pairI R S) parIn parOut
 
-theorem inl_not_mem_alongSet {ι : J → K} {k : K} (h : (⟨some (), k⟩ : Two (Two O J) K) ∉ alongSet ι) :
+lemma inl_not_mem_alongSet {ι : J → K} {k : K} (h : (⟨some (), k⟩ : Two (Two O J) K) ∉ alongSet ι) :
     (⟨some (), Sum.inl k⟩ : Two (Two O J) (K ⊕ K')) ∉ alongSet (Sum.inl ∘ ι) := by
   rintro ⟨j, hj⟩
   exact h ⟨j, Sum.inl_injective hj⟩
 
-theorem inr_not_mem_alongSet {ι : J → K} (k : K') :
+lemma inr_not_mem_alongSet {ι : J → K} (k : K') :
     (⟨some (), Sum.inr k⟩ : Two (Two O J) (K ⊕ K')) ∉ alongSet (Sum.inl ∘ ι) := by
   rintro ⟨j, hj⟩
   cases hj
 
-theorem not_mem_alongSet_of_inl {ι : J → K} {k : K}
+lemma not_mem_alongSet_of_inl {ι : J → K} {k : K}
     (h : (⟨some (), Sum.inl k⟩ : Two (Two O J) (K ⊕ K')) ∉ alongSet (Sum.inl ∘ ι)) :
     (⟨some (), k⟩ : Two (Two O J) K) ∉ alongSet ι := by
   rintro ⟨j, hj⟩
@@ -632,7 +632,7 @@ variable {K : Type}
 /-- The dummy resource (Jost p. 17): no interfaces. -/
 def dummyL : SingleAlphabetSystem X Y Empty := fun _ => Part.none
 
-theorem restrict_none_map_parIn (h : List (Σ _ : K, X)) :
+lemma restrict_none_map_parIn (h : List (Σ _ : K, X)) :
     restrict none ((h.map fun a => (⟨(Equiv.sumEmpty K Empty).symm a.1, a.2⟩ : Σ _ : K ⊕ Empty, X)).map
       (splitIn ∘ parIn)) = h := by
   induction h with

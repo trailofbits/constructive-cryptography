@@ -49,7 +49,7 @@ def BlockCipher.perm [Finite X] (E : BlockCipher K X) (k : K) : Equiv.Perm X :=
       rw [E.decrypt_encrypt] }
 
 /-- Encryption inverts decryption. -/
-theorem BlockCipher.encrypt_decrypt [Finite X] (E : BlockCipher K X) (k : K) (y : X) :
+lemma BlockCipher.encrypt_decrypt [Finite X] (E : BlockCipher K X) (k : K) (y : X) :
     E.encrypt k (E.decrypt k y) = y :=
   (E.perm k).right_inv y
 

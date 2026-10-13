@@ -44,7 +44,7 @@ instance : sSupHomClass (Relaxation X) (Specification X) (Specification X) where
   map_sSup relaxation := map_sSup (Specification.lift relaxation.toPointwise)
 
 /-- A relaxation is determined by its action on specifications. -/
-@[ext] theorem ext {left right : Relaxation X}
+@[ext] lemma ext {left right : Relaxation X}
     (equal : ∀ source, left source = right source) : left = right :=
   DFunLike.ext left right equal
 
@@ -64,13 +64,13 @@ def ofPointwise (relaxation : X → Specification X)
 /-- Specification membership is witnessed by an admitted center.
 
 Jost, Definition 2.2.6 (printed p. 20): “Rφ := ⋃R∈R φ(R)”. -/
-@[simp] theorem mem_apply_iff {relaxation : Relaxation X}
+@[simp] lemma mem_apply_iff {relaxation : Relaxation X}
     {source : Specification X} {resource : X} :
     resource ∈ relaxation source ↔
       ∃ center ∈ source, resource ∈ relaxation.toPointwise center :=
   Specification.mem_lift_iff
 
-@[simp] theorem mem_ofPointwise_iff {relaxation : X → Specification X}
+@[simp] lemma mem_ofPointwise_iff {relaxation : X → Specification X}
     {self_mem : ∀ resource, resource ∈ relaxation resource}
     {source : Specification X} {resource : X} :
     resource ∈ ofPointwise relaxation self_mem source ↔
@@ -78,7 +78,7 @@ Jost, Definition 2.2.6 (printed p. 20): “Rφ := ⋃R∈R φ(R)”. -/
   mem_apply_iff
 
 /-- Singleton specifications recover the pointwise relaxation. -/
-@[simp] theorem apply_singleton (relaxation : Relaxation X) (resource : X) :
+@[simp] lemma apply_singleton (relaxation : Relaxation X) (resource : X) :
     relaxation {resource} = relaxation.toPointwise resource :=
   Specification.lift_singleton _ _
 

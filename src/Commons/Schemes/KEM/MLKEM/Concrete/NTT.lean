@@ -61,35 +61,35 @@ def nInv : Coeff := 3303
 /-- Safe array access with fallback to zero. -/
 def getZ (a : Array Coeff) (i : Nat) : Coeff := a.getD i 0
 
-theorem bitRev7_layer_partner :
+lemma bitRev7_layer_partner :
     ∀ (s : Fin 7) (g : Fin (2 ^ s.val)),
       bitRev7 (2 ^ s.val + g.val) +
           bitRev7 (2 ^ (s.val + 1) - 1 - g.val) = 128 := by
   intro s g
   fin_cases s <;> fin_cases g <;> rfl
 
-theorem layer_twiddle_index_bounds :
+lemma layer_twiddle_index_bounds :
     ∀ (s : Fin 7) (g : Fin (2 ^ s.val)),
       2 ^ s.val + g.val < 128 ∧
         2 ^ (s.val + 1) - 1 - g.val < 128 := by
   intro s g
   fin_cases s <;> fin_cases g <;> norm_num
 
-theorem getZ_zetaArray (i : Nat) (hi : i < 128) :
+lemma getZ_zetaArray (i : Nat) (hi : i < 128) :
     getZ zetaArray i = zeta ^ bitRev7 i := by
   simp [getZ, zetaArray, hi]
 
-theorem getZ_gammaArray (i : Nat) (hi : i < 128) :
+lemma getZ_gammaArray (i : Nat) (hi : i < 128) :
     getZ gammaArray i = zeta ^ (2 * bitRev7 i + 1) := by
   simp [getZ, gammaArray, hi]
 
-theorem zeta_pow_128 : (zeta : Coeff) ^ 128 = -1 := by
+lemma zeta_pow_128 : (zeta : Coeff) ^ 128 = -1 := by
   change (17 : ZMod 3329) ^ 128 = -1
   reduce_mod_char
 
 /-- `ζ = 17` is a primitive `256`-th root of unity in `ℤ_q` (FIPS 203 §4.3): the twiddle half of
 the NTT correctness argument. -/
-theorem zeta_isPrimitiveRoot : IsPrimitiveRoot (zeta : Coeff) 256 := by
+lemma zeta_isPrimitiveRoot : IsPrimitiveRoot (zeta : Coeff) 256 := by
   change IsPrimitiveRoot (17 : ZMod 3329) 256
   rw [IsPrimitiveRoot.iff_orderOf]
   refine orderOf_eq_of_pow_and_pow_div_prime (by norm_num) (by reduce_mod_char) ?_
@@ -101,7 +101,7 @@ theorem zeta_isPrimitiveRoot : IsPrimitiveRoot (zeta : Coeff) 256 := by
 
 /-- The twiddle used by a forward butterfly and the complementary twiddle
 used by its matching inverse butterfly multiply to `-1`. -/
-theorem zetaArray_layer_partner :
+lemma zetaArray_layer_partner :
     ∀ (s : Fin 7) (g : Fin (2 ^ s.val)),
       getZ zetaArray (2 ^ s.val + g.val) *
           getZ zetaArray (2 ^ (s.val + 1) - 1 - g.val) = -1 := by
@@ -112,7 +112,7 @@ theorem zetaArray_layer_partner :
 
 /-! ## Forward NTT (Algorithm 9) -/
 
-theorem layer_shape :
+lemma layer_shape :
     ∀ s : Fin 7, 2 ^ s.val * (2 * (128 / 2 ^ s.val)) = polyBackend.degree := by
   intro s
   fin_cases s <;> rfl
@@ -149,7 +149,7 @@ def nttStages :
     List (LatticeCrypto.NTTCert.ScaledStage Coeff NTTCoord) :=
   [nttStage 0, nttStage 1, nttStage 2, nttStage 3, nttStage 4, nttStage 5, nttStage 6]
 
-theorem nInv_stageScalar :
+lemma nInv_stageScalar :
     nInv * LatticeCrypto.NTTCert.stageScalar nttStages = 1 := by
   change ((3303 * 128 : Nat) : ZMod 3329) = ((1 : Nat) : ZMod 3329)
   rw [ZMod.natCast_eq_natCast_iff']
@@ -164,23 +164,23 @@ def invNTTCoeffs (input : NTTCoord → Coeff) : NTTCoord → Coeff :=
   LatticeCrypto.NTTCert.scaleCoeffs nInv
     (LatticeCrypto.NTTCert.inverseStages nttStages input)
 
-theorem invNTTCoeffs_nttCoeffs (input : NTTCoord → Coeff) :
+lemma invNTTCoeffs_nttCoeffs (input : NTTCoord → Coeff) :
     invNTTCoeffs (nttCoeffs input) = input := by
   unfold invNTTCoeffs nttCoeffs
   exact LatticeCrypto.NTTCert.scale_inverseStages_forwardStages
     nttStages nInv nInv_stageScalar input
 
-theorem nttCoeffs_add (left right : NTTCoord → Coeff) :
+lemma nttCoeffs_add (left right : NTTCoord → Coeff) :
     nttCoeffs (left + right) = nttCoeffs left + nttCoeffs right := by
   unfold nttCoeffs
   exact LatticeCrypto.NTTCert.forwardStages_add nttStages left right
 
-theorem nttCoeffs_sub (left right : NTTCoord → Coeff) :
+lemma nttCoeffs_sub (left right : NTTCoord → Coeff) :
     nttCoeffs (left - right) = nttCoeffs left - nttCoeffs right := by
   unfold nttCoeffs
   exact LatticeCrypto.NTTCert.forwardStages_sub nttStages left right
 
-theorem nttCoeffs_zero : nttCoeffs 0 = 0 := by
+lemma nttCoeffs_zero : nttCoeffs 0 = 0 := by
   unfold nttCoeffs
   exact LatticeCrypto.NTTCert.forwardStages_zero nttStages
 
@@ -196,11 +196,11 @@ section Evaluation
 
 open LatticeCrypto.NTTCert
 
-theorem layerLayout_left_val (s : Fin 7) (g : Fin (2 ^ s.val)) (j : Fin (128 / 2 ^ s.val)) :
+lemma layerLayout_left_val (s : Fin 7) (g : Fin (2 ^ s.val)) (j : Fin (128 / 2 ^ s.val)) :
     ((layerLayout s).equiv ((g, j), false)).val = g.val * (2 * (128 / 2 ^ s.val)) + j.val := by
   simp [layerLayout]
 
-theorem layerLayout_right_val (s : Fin 7) (g : Fin (2 ^ s.val)) (j : Fin (128 / 2 ^ s.val)) :
+lemma layerLayout_right_val (s : Fin 7) (g : Fin (2 ^ s.val)) (j : Fin (128 / 2 ^ s.val)) :
     ((layerLayout s).equiv ((g, j), true)).val =
       g.val * (2 * (128 / 2 ^ s.val)) + 128 / 2 ^ s.val + j.val := by
   simp [layerLayout]
@@ -210,7 +210,7 @@ pair `i` evaluates at the roots of `X² − ζ^{2·BitRev₇(i)+1}`. -/
 def rootExponent (s g : ℕ) : ℕ :=
   if s < 7 then 2 * bitRev7 (2 ^ s + g) else 2 * bitRev7 g + 1
 
-theorem rootExponent_children :
+lemma rootExponent_children :
     ∀ (s : Fin 7) (g : Fin (2 ^ s.val)),
       rootExponent (s.val + 1) (2 * g.val) % 256 = bitRev7 (2 ^ s.val + g.val) % 256 ∧
       rootExponent (s.val + 1) (2 * g.val + 1) % 256 =
@@ -218,7 +218,7 @@ theorem rootExponent_children :
   intro s g
   fin_cases s <;> fin_cases g <;> exact ⟨rfl, rfl⟩
 
-theorem zeta_pow_mod (a : ℕ) : (zeta : Coeff) ^ a = zeta ^ (a % 256) := by
+lemma zeta_pow_mod (a : ℕ) : (zeta : Coeff) ^ a = zeta ^ (a % 256) := by
   conv_lhs => rw [← Nat.mod_add_div a 256]
   rw [pow_add, pow_mul, zeta_isPrimitiveRoot.pow_eq_one, one_pow, mul_one]
 
@@ -229,13 +229,13 @@ def EvalInvariant (s : ℕ) (a f : NTTCoord → Coeff) : Prop :=
     ω ^ (256 / 2 ^ s) = algebraMap Coeff S (zeta ^ rootExponent s g) →
       segmentEval a (g * (256 / 2 ^ s)) (256 / 2 ^ s) ω = segmentEval f 0 256 ω
 
-theorem evalInvariant_zero (f : NTTCoord → Coeff) : EvalInvariant 0 f f := by
+lemma evalInvariant_zero (f : NTTCoord → Coeff) : EvalInvariant 0 f f := by
   intro g hg S _ _ ω _
   obtain rfl : g = 0 := by simpa using hg
   simp
 
 /-- **One layer preserves the invariant.** -/
-theorem evalInvariant_step (s : Fin 7) {a f : NTTCoord → Coeff} (h : EvalInvariant s.val a f) :
+lemma evalInvariant_step (s : Fin 7) {a f : NTTCoord → Coeff} (h : EvalInvariant s.val a f) :
     EvalInvariant (s.val + 1) ((nttStage s).forward a) f := by
   intro g' hg' S _ _ ω hω
   have hB : 256 / 2 ^ s.val = 2 * (128 / 2 ^ s.val) := by fin_cases s <;> rfl
@@ -289,7 +289,7 @@ theorem evalInvariant_step (s : Fin 7) {a f : NTTCoord → Coeff} (h : EvalInvar
     exact h g hg S ω (hparent (Or.inr hω'))
 
 /-- The invariant after all seven layers. -/
-theorem evalInvariant_nttCoeffs (f : NTTCoord → Coeff) : EvalInvariant 7 (nttCoeffs f) f := by
+lemma evalInvariant_nttCoeffs (f : NTTCoord → Coeff) : EvalInvariant 7 (nttCoeffs f) f := by
   have h1 := evalInvariant_step 0 (evalInvariant_zero f)
   have h2 := evalInvariant_step 1 h1
   have h3 := evalInvariant_step 2 h2
@@ -300,7 +300,7 @@ theorem evalInvariant_nttCoeffs (f : NTTCoord → Coeff) : EvalInvariant 7 (nttC
 
 /-- **The NTT evaluates**: pair `i` of `nttCoeffs f`, read as `a₀ + a₁ ω`, is `f` at every root
 `ω` of `X² − ζ^{2·BitRev₇(i)+1}`. -/
-theorem nttCoeffs_pair_eval (f : NTTCoord → Coeff) (i : ℕ) (hi : i < 128)
+lemma nttCoeffs_pair_eval (f : NTTCoord → Coeff) (i : ℕ) (hi : i < 128)
     {S : Type} [CommRing S] [Algebra Coeff S] (ω : S)
     (hω : ω ^ 2 = algebraMap Coeff S (zeta ^ (2 * bitRev7 i + 1))) :
     algebraMap Coeff S (coeffAt (nttCoeffs f) (2 * i)) +
@@ -310,7 +310,7 @@ theorem nttCoeffs_pair_eval (f : NTTCoord → Coeff) (i : ℕ) (hi : i < 128)
   rw [← h]
   simp [segmentEval, Finset.sum_range_succ, mul_comm]
 
-theorem gamma_pow_128 (i : ℕ) : ((zeta : Coeff) ^ (2 * bitRev7 i + 1)) ^ 128 = -1 := by
+lemma gamma_pow_128 (i : ℕ) : ((zeta : Coeff) ^ (2 * bitRev7 i + 1)) ^ 128 = -1 := by
   rw [← pow_mul, mul_comm, pow_mul, zeta_pow_128, (odd_two_mul_add_one _).neg_one_pow]
 
 /-- **Base-case multiplication** (FIPS 203 Algorithm 12): the product of `a₀ + a₁X` and
@@ -321,7 +321,7 @@ def baseCaseMultiply (a0 a1 b0 b1 γ : Coeff) : Coeff × Coeff :=
 /-- **The NTT turns negacyclic products into base-case products**: pair `i` of the transformed
 product is the base-case product of pair `i` of the transformed factors modulo
 `X² − ζ^{2·BitRev₇(i)+1}`. -/
-theorem nttCoeffs_negacyclicConv (f g : NTTCoord → Coeff) (i : ℕ) (hi : i < 128) :
+lemma nttCoeffs_negacyclicConv (f g : NTTCoord → Coeff) (i : ℕ) (hi : i < 128) :
     (coeffAt (nttCoeffs fun k => LatticeCrypto.negacyclicConvCoeff f g k) (2 * i),
       coeffAt (nttCoeffs fun k => LatticeCrypto.negacyclicConvCoeff f g k) (2 * i + 1)) =
       baseCaseMultiply (coeffAt (nttCoeffs f) (2 * i)) (coeffAt (nttCoeffs f) (2 * i + 1))
@@ -384,13 +384,13 @@ def invNTT (fHat : Tq) : Rq :=
       (Vector.ofFn (polyBackend.coeff fHat.coeffs))).get)
 
 /-- The NTT is the stage composite `nttCoeffs` on coefficient functions. -/
-theorem ntt_eq (f : Rq) :
+lemma ntt_eq (f : Rq) :
     ntt f = ⟨LatticeCrypto.NTTCert.applyCoeffTransform polyBackend nttCoeffs f⟩ := by
   simp only [ntt, LatticeCrypto.NTTCert.applyCoeffTransform, nttCoeffs,
     LatticeCrypto.NTTCert.forwardStagesVec_get, LatticeCrypto.NTTCert.get_ofFn]
 
 /-- The inverse NTT is the stage composite `invNTTCoeffs` on coefficient functions. -/
-theorem invNTT_eq (fHat : Tq) :
+lemma invNTT_eq (fHat : Tq) :
     invNTT fHat = LatticeCrypto.NTTCert.applyCoeffTransform polyBackend invNTTCoeffs fHat.coeffs := by
   simp only [invNTT, LatticeCrypto.NTTCert.applyCoeffTransform, invNTTCoeffs,
     LatticeCrypto.NTTCert.inverseStagesVec_get, LatticeCrypto.NTTCert.get_ofFn]
@@ -407,17 +407,17 @@ def multiplyNTTs (fHat gHat : Tq) : Tq :=
     if k.val % 2 = 0 then h.1 else h.2⟩
 
 /-- The concrete inverse transform is a left inverse to the concrete forward transform. -/
-theorem invNTT_ntt (f : Rq) : invNTT (ntt f) = f := by
+lemma invNTT_ntt (f : Rq) : invNTT (ntt f) = f := by
   rw [invNTT_eq, ntt_eq]
   exact LatticeCrypto.NTTCert.applyCoeffTransform_comp
     nttCoeffs invNTTCoeffs invNTTCoeffs_nttCoeffs f
 
-theorem ntt_injective : Function.Injective ntt := by
+lemma ntt_injective : Function.Injective ntt := by
   intro f g h
   have hInv := congrArg invNTT h
   simpa [invNTT_ntt] using hInv
 
-theorem ntt_surjective : Function.Surjective ntt := by
+lemma ntt_surjective : Function.Surjective ntt := by
   let : NeZero modulus := ⟨by norm_num [modulus]⟩
   let : Fintype Coeff := by
     dsimp [Coeff]
@@ -425,19 +425,19 @@ theorem ntt_surjective : Function.Surjective ntt := by
   let : Finite Rq := Finite.of_equiv (Fin ringDegree → Coeff) rqEquivCoeffFun.symm
   exact ntt_injective.surjective_of_finite rqEquivTq
 
-theorem hadd_rq (f g : Rq) :
+lemma hadd_rq (f g : Rq) :
     polyBackend.coeff (f + g) = polyBackend.coeff f + polyBackend.coeff g := by
   funext i
   change (f + g).get i = f.get i + g.get i
   exact coeffRing.add_coeff f g i
 
-theorem hsub_rq (f g : Rq) :
+lemma hsub_rq (f g : Rq) :
     polyBackend.coeff (f - g) = polyBackend.coeff f - polyBackend.coeff g := by
   funext i
   change (f - g).get i = f.get i - g.get i
   exact coeffRing.sub_coeff f g i
 
-theorem hzero_rq : polyBackend.coeff (0 : Rq) = 0 := by
+lemma hzero_rq : polyBackend.coeff (0 : Rq) = 0 := by
   funext i
   change (0 : Rq).get i = 0
   exact LatticeCrypto.vectorRing_zero_get i
@@ -451,43 +451,43 @@ theorem ntt_invNTT (fHat : Tq) : ntt (invNTT fHat) = fHat := by
     _ = fHat := hf
 
 /-- The concrete NTT is additive on the coefficient-vector carrier of `T_q`. -/
-theorem ntt_add_toRq (f g : Rq) : (ntt (f + g) : Rq) = (ntt f : Rq) + (ntt g : Rq) := by
+lemma ntt_add_toRq (f g : Rq) : (ntt (f + g) : Rq) = (ntt f : Rq) + (ntt g : Rq) := by
   rw [ntt_eq, ntt_eq, ntt_eq]
   exact LatticeCrypto.NTTCert.applyCoeffTransform_add nttCoeffs hadd_rq
     nttCoeffs_add f g
 
 /-- The concrete NTT preserves subtraction on the coefficient-vector carrier of `T_q`. -/
-theorem ntt_sub_toRq (f g : Rq) : (ntt (f - g) : Rq) = (ntt f : Rq) - (ntt g : Rq) := by
+lemma ntt_sub_toRq (f g : Rq) : (ntt (f - g) : Rq) = (ntt f : Rq) - (ntt g : Rq) := by
   rw [ntt_eq, ntt_eq, ntt_eq]
   exact LatticeCrypto.NTTCert.applyCoeffTransform_sub nttCoeffs hsub_rq
     nttCoeffs_sub f g
 
 /-- The concrete NTT is additive. -/
-theorem ntt_add (f g : Rq) : ntt (f + g) = ntt f + ntt g := by
+lemma ntt_add (f g : Rq) : ntt (f + g) = ntt f + ntt g := by
   apply LatticeCrypto.TransformPoly.ext
   change (ntt (f + g) : Rq) = (ntt f : Rq) + (ntt g : Rq)
   exact ntt_add_toRq f g
 
 /-- The concrete NTT preserves subtraction. -/
-theorem ntt_sub (f g : Rq) : ntt (f - g) = ntt f - ntt g := by
+lemma ntt_sub (f g : Rq) : ntt (f - g) = ntt f - ntt g := by
   apply LatticeCrypto.TransformPoly.ext
   change (ntt (f - g) : Rq) = (ntt f : Rq) - (ntt g : Rq)
   exact ntt_sub_toRq f g
 
-theorem invNTT_add (g h : Tq) : invNTT (g + h) = invNTT g + invNTT h := by
+lemma invNTT_add (g h : Tq) : invNTT (g + h) = invNTT g + invNTT h := by
   apply ntt_injective
   rw [ntt_invNTT, ntt_add, ntt_invNTT, ntt_invNTT]
 
-theorem invNTT_sub (g h : Tq) : invNTT (g - h) = invNTT g - invNTT h := by
+lemma invNTT_sub (g h : Tq) : invNTT (g - h) = invNTT g - invNTT h := by
   apply ntt_injective
   rw [ntt_invNTT, ntt_sub, ntt_invNTT, ntt_invNTT]
 
-theorem hinvadd_tq (fHat gHat : Tq) :
+lemma hinvadd_tq (fHat gHat : Tq) :
     polyBackend.coeff (fHat + gHat).coeffs =
       fun i => polyBackend.coeff fHat.coeffs i + polyBackend.coeff gHat.coeffs i := by
   funext i; exact coeffRing.add_coeff fHat.coeffs gHat.coeffs i
 
-theorem negacyclicMul_coeff (a b : Rq) (k : Fin ringDegree) :
+lemma negacyclicMul_coeff (a b : Rq) (k : Fin ringDegree) :
     polyBackend.coeff (negacyclicMul a b) k =
       LatticeCrypto.negacyclicConvCoeff (polyBackend.coeff a) (polyBackend.coeff b) k :=
   LatticeCrypto.negacyclicMul_coeff polyBackend a b k
@@ -518,7 +518,7 @@ theorem ntt_negacyclicMul (f g : Rq) : ntt (negacyclicMul f g) = multiplyNTTs (n
     rw [h1]; rfl
 
 /-- `MultiplyNTTs` is the negacyclic product transported through the NTT. -/
-theorem multiplyNTTs_eq (fHat gHat : Tq) :
+lemma multiplyNTTs_eq (fHat gHat : Tq) :
     multiplyNTTs fHat gHat = ntt (negacyclicMul (invNTT fHat) (invNTT gHat)) := by
   rw [ntt_negacyclicMul, ntt_invNTT, ntt_invNTT]
 
@@ -530,7 +530,7 @@ theorem multiplyNTTs_eq (fHat gHat : Tq) :
 
 /-- Proof bundle showing that the concrete ML-KEM NTT implementation satisfies the abstract
 `NTTRingLaws`. -/
-theorem concreteNTTRingLaws : NTTRingLaws concreteNTTRingOps where
+lemma concreteNTTRingLaws : NTTRingLaws concreteNTTRingOps where
   fromHat_toHat := invNTT_ntt
   toHat_fromHat := ntt_invNTT
   toHat_zero := by

@@ -66,7 +66,7 @@ def ParallelCompatible
 
 omit [MonoidalCategory C] [CryptographicAlgebra C Phi] in
 /-- Pointwise composition of compatible relaxation families is compatible. -/
-theorem Compatible.comp
+lemma Compatible.comp
     {outer inner : (A : C) →
       ConstructiveCryptography.Relaxation (Phi A)}
     (outerCompatible : Compatible outer)
@@ -81,7 +81,7 @@ theorem Compatible.comp
 omit [MonoidalCategory C] [CryptographicAlgebra C Phi] in
 /-- Converter compatibility is equivalent to preservation of exact
 construction under the relaxation family. -/
-theorem compatible_iff
+lemma compatible_iff
     (relaxation : (A : C) →
       ConstructiveCryptography.Relaxation (Phi A)) :
     Compatible relaxation ↔
@@ -133,7 +133,7 @@ theorem Constructs.relax {A B : C} {converter : A ⟶ B}
 omit [MonoidalCategory C] [CryptographicAlgebra C Phi] in
 /-- Pull a compatible relaxation through the outer leg of a serial
 construction. -/
-theorem Constructs.relax_serial
+lemma Constructs.relax_serial
     {relaxation : (A : C) →
       ConstructiveCryptography.Relaxation (Phi A)}
     (compatible : Relaxation.Compatible relaxation)
@@ -160,7 +160,7 @@ theorem Constructs.relax_serial
 
 /-- Put an exact construction into an unchanged right context and pull a
 parallel-compatible relaxation around the result. -/
-theorem Constructs.relax_left_context
+lemma Constructs.relax_left_context
     {relaxation : (A : C) →
       ConstructiveCryptography.Relaxation (Phi A)}
     (parallelCompatible :
@@ -185,7 +185,7 @@ theorem Constructs.relax_left_context
       right, contextAdmitted, rfl⟩
 
 /-- Right-context counterpart of `Constructs.relax_left_context`. -/
-theorem Constructs.relax_right_context
+lemma Constructs.relax_right_context
     {relaxation : (A : C) →
       ConstructiveCryptography.Relaxation (Phi A)}
     (parallelCompatible :

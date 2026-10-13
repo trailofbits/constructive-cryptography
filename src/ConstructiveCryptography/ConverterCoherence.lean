@@ -25,7 +25,7 @@ variable {A B C D E F : Interface}
 
 /-- On deterministic samples, the two sides of associator naturality have the same
 transcripts. -/
-theorem replies_associator_iff {ba bb bc : ℕ} (ha : IsDDCFrom D.domain A.domain ba a)
+lemma replies_associator_iff {ba bb bc : ℕ} (ha : IsDDCFrom D.domain A.domain ba a)
     (hb : IsDDCFrom E.domain B.domain bb b) (hc : IsDDCFrom F.domain C.domain bc c)
     {rD : InsideOutsideSystem ((D.I ⊕ E.I) ⊕ F.I) (D.I ⊕ (E.I ⊕ F.I))
       (tensor (tensor D E) F).X (tensor (tensor D E) F).Y
@@ -68,7 +68,7 @@ theorem replies_associator_iff {ba bb bc : ℕ} (ha : IsDDCFrom D.domain A.domai
       (((replies_trim_iff _ _ _).mp hr).serialM_mono hA (fun _ _ hy => hy))
 
 /-- **The associator is natural.** -/
-theorem comp_associator (α : A ⟶ D) (β : B ⟶ E) (γ : C ⟶ F) :
+lemma comp_associator (α : A ⟶ D) (β : B ⟶ E) (γ : C ⟶ F) :
     parallelConverter (parallelConverter α β) γ ≫ (associator D E F).hom =
       (associator A B C).hom ≫ parallelConverter α (parallelConverter β γ) := by
   obtain ⟨rD, hrD, hD, hDle⟩ := exists_rename_eq_ofDDC (A := tensor (tensor D E) F)
@@ -100,7 +100,7 @@ theorem comp_associator (α : A ⟶ D) (β : B ⟶ E) (γ : C ⟶ F) :
   exact replies_associator_iff p.1.2 p.2.1.2 p.2.2.2 hrD hrA hDle hAle h
 
 /-- The identity on the unit interface is the forwarding converter. -/
-theorem filter_unit :
+lemma filter_unit :
     (DDC.filter (Y := unit.Y) (fun h => h = [] ∨ unit.domain h)
       (prefix_or_nil unit.nonempty_prefix.2)).1 = idConverter unit.I unit.X unit.Y := by
   funext h
@@ -112,7 +112,7 @@ theorem filter_unit :
 
 /-- On deterministic samples, the two sides of left-unitor naturality have the same
 transcripts. -/
-theorem replies_leftUnitor_iff {ba : ℕ} (ha : IsDDCFrom D.domain A.domain ba a)
+lemma replies_leftUnitor_iff {ba : ℕ} (ha : IsDDCFrom D.domain A.domain ba a)
     {rD : InsideOutsideSystem (Empty ⊕ D.I) D.I (tensor unit D).X (tensor unit D).Y D.X D.Y}
     {rA : InsideOutsideSystem (Empty ⊕ A.I) A.I (tensor unit A).X (tensor unit A).Y A.X A.Y}
     (hrD : IsDDCFrom D.domain (tensor unit D).domain 1 rD)
@@ -144,7 +144,7 @@ theorem replies_leftUnitor_iff {ba : ℕ} (ha : IsDDCFrom D.domain A.domain ba a
 
 /-- On deterministic samples, the two sides of right-unitor naturality have the same
 transcripts. -/
-theorem replies_rightUnitor_iff {ba : ℕ} (ha : IsDDCFrom D.domain A.domain ba a)
+lemma replies_rightUnitor_iff {ba : ℕ} (ha : IsDDCFrom D.domain A.domain ba a)
     {rD : InsideOutsideSystem (D.I ⊕ Empty) D.I (tensor D unit).X (tensor D unit).Y D.X D.Y}
     {rA : InsideOutsideSystem (A.I ⊕ Empty) A.I (tensor A unit).X (tensor A unit).Y A.X A.Y}
     (hrD : IsDDCFrom D.domain (tensor D unit).domain 1 rD)
@@ -175,7 +175,7 @@ theorem replies_rightUnitor_iff {ba : ℕ} (ha : IsDDCFrom D.domain A.domain ba 
       (((replies_trim_iff _ _ _).mp hr).serialM_mono hA (fun _ _ hy => hy))
 
 /-- **The left unitor is natural.** -/
-theorem comp_leftUnitor (α : A ⟶ D) :
+lemma comp_leftUnitor (α : A ⟶ D) :
     parallelConverter (𝟙 unit) α ≫ (leftUnitor D).hom = (leftUnitor A).hom ≫ α := by
   obtain ⟨rD, hrD, hD, hDle⟩ := exists_rename_eq_ofDDC (A := tensor unit D) (B := D) _ _ _
     (leftUnitAlphabet_fst D.X)
@@ -201,7 +201,7 @@ theorem comp_leftUnitor (α : A ⟶ D) :
   exact replies_leftUnitor_iff p.2 hrD hrA hDle hAle h
 
 /-- **The right unitor is natural.** -/
-theorem comp_rightUnitor (α : A ⟶ D) :
+lemma comp_rightUnitor (α : A ⟶ D) :
     parallelConverter α (𝟙 unit) ≫ (rightUnitor D).hom = (rightUnitor A).hom ≫ α := by
   obtain ⟨rD, hrD, hD, hDle⟩ := exists_rename_eq_ofDDC (A := tensor D unit) (B := D) _ _ _
     (rightUnitAlphabet_fst D.X)

@@ -192,7 +192,7 @@ noncomputable instance distinctionGames : DistinctionGames Interface Resource Ga
 /-- **Winning by every distinguisher bounds winning by every winner**: a bound on the winning
 probability of every distinguisher for the game's system bounds the winning probability of
 every winner. -/
-theorem win_le {A : Interface} {G : Game A} {ε : ℝ}
+lemma win_le {A : Interface} {G : Game A} {ε : ℝ}
     (hW : ∀ P : A.inputDomain.Distinguisher, P.winProbability G.1.1 ≤ ε)
     {winner : Game A → ℝ} (hw : winner ∈ Games.winners A) : winner G ≤ ε := by
   -- The winner is the winning probability of a solver behavior `s`, which is that of one

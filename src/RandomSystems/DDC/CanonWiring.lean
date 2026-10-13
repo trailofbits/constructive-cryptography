@@ -26,7 +26,7 @@ variable {O M J : Type} {U V : O → Type} {Xm Ym : M → Type} {X Y : J → Typ
 
 /-- Canonical restriction changes no value at a prefix of admissible
 component histories. -/
-theorem pair_canon_eq_of_admissible {β : InsideOutsideSystem O M U V Xm Ym} {α : InsideOutsideSystem M J Xm Ym X Y}
+lemma pair_canon_eq_of_admissible {β : InsideOutsideSystem O M U V Xm Ym} {α : InsideOutsideSystem M J Xm Ym X Y}
     {H : List (Two (Σ l, twoFam U Ym l) (Σ l, twoFam Xm Y l))}
     (hβ : Admissible β (restrict none H)) (hα : Admissible α (restrict (some ()) H)) :
     ∀ p, p <+: H → pair (canon β) (canon α) p = pair β α p := by
@@ -47,7 +47,7 @@ theorem pair_canon_eq_of_admissible {β : InsideOutsideSystem O M U V Xm Ym} {α
     rw [canon_of_admissible hα.of_append]
 
 /-- A reached serial state has admissible component histories. -/
-theorem SerialState.admissible {bα : ℕ} {β : InsideOutsideSystem O M U V Xm Ym} {α : InsideOutsideSystem M J Xm Ym X Y}
+lemma SerialState.admissible {bα : ℕ} {β : InsideOutsideSystem O M U V Xm Ym} {α : InsideOutsideSystem M J Xm Ym X Y}
     {u : List (Σ l : Two O J, twoFam U Y l)} {w} {H}
     (hs : SerialState β α bα u (some w) H) :
     Admissible β (restrict none H) ∧ Admissible α (restrict (some ()) H) := by
@@ -57,7 +57,7 @@ theorem SerialState.admissible {bα : ℕ} {β : InsideOutsideSystem O M U V Xm 
   · exact ⟨hwb.1, hwa.1⟩
 
 /-- **Canonical restriction commutes with serial wiring** on admitted histories. -/
-theorem replies_serialM_canon_iff {bβ bα : ℕ} {β : InsideOutsideSystem O M U V Xm Ym}
+lemma replies_serialM_canon_iff {bβ bα : ℕ} {β : InsideOutsideSystem O M U V Xm Ym}
     {α : InsideOutsideSystem M J Xm Ym X Y} (hβ : IsDDC bβ (canon β)) (hα : IsDDC bα (canon α)) :
     ∀ h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l)), Admitted converterAdmits h →
       (Replies (serialM (canon β) (canon α)) (h.map Prod.fst) (h.map Prod.snd) ↔

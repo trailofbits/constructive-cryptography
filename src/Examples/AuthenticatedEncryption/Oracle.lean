@@ -54,17 +54,17 @@ def messages : List (Σ p, AE.Input M C p) → List M :=
     | ⟨.enc, m⟩ => some m
     | ⟨.dec, _⟩ => none
 
-@[simp] theorem messages_nil : messages ([] : List (Σ p, AE.Input M C p)) = [] := rfl
+@[simp] lemma messages_nil : messages ([] : List (Σ p, AE.Input M C p)) = [] := rfl
 
-@[simp] theorem messages_append (h k : List (Σ p, AE.Input M C p)) :
+@[simp] lemma messages_append (h k : List (Σ p, AE.Input M C p)) :
     messages (h ++ k) = messages h ++ messages k := List.filterMap_append
 
-@[simp] theorem messages_enc (m : M) : messages (C := C) [⟨.enc, m⟩] = [m] := rfl
+@[simp] lemma messages_enc (m : M) : messages (C := C) [⟨.enc, m⟩] = [m] := rfl
 
-@[simp] theorem messages_dec (c : C) : messages (M := M) [⟨.dec, c⟩] = [] := rfl
+@[simp] lemma messages_dec (c : C) : messages (M := M) [⟨.dec, c⟩] = [] := rfl
 
 /-- The oracle's state is its sample and the messages so far. -/
-theorem stateAfter_oracleStep (encrypt : Ω → ℕ → M → C) (decrypt : Ω → List M → C → Option M)
+lemma stateAfter_oracleStep (encrypt : Ω → ℕ → M → C) (decrypt : Ω → List M → C → Option M)
     (ω : Ω) (h : List (Σ p, AE.Input M C p)) :
     stateAfter (oracleStep encrypt decrypt) (ω, []) h = (ω, messages h) := by
   induction h using List.reverseRecOn with
@@ -82,7 +82,7 @@ encrypted. -/
 def ptxtDecrypt (decrypt : Ω → List M → C → Option M) : Ω → List M → C → Option M :=
   fun ω known c => AE.retain known (decrypt ω known c)
 
-theorem ptxt_combine_enc (encrypt : Ω → ℕ → M → C) (decrypt : Ω → List M → C → Option M)
+lemma ptxt_combine_enc (encrypt : Ω → ℕ → M → C) (decrypt : Ω → List M → C → Option M)
     (queried : Option (List M)) (ω : Ω) (known : List M) (m : M) :
     (AE.PTXT.body M C).combine (oracleStep encrypt decrypt) (AE.PTXT.bound_spec M C)
         (queried, (ω, known)) .enc m =
@@ -90,7 +90,7 @@ theorem ptxt_combine_enc (encrypt : Ω → ℕ → M → C) (decrypt : Ω → Li
   Program.combine_eq_of_invoke _ _ (n := 1) (by
     cases queried <;> simp [Program.invoke, AE.PTXT.body, callProg, returnProg, oracleStep])
 
-theorem ptxt_combine_dec (encrypt : Ω → ℕ → M → C) (decrypt : Ω → List M → C → Option M)
+lemma ptxt_combine_dec (encrypt : Ω → ℕ → M → C) (decrypt : Ω → List M → C → Option M)
     (queried : Option (List M)) (ω : Ω) (known : List M) (c : C) :
     (AE.PTXT.body M C).combine (oracleStep encrypt decrypt) (AE.PTXT.bound_spec M C)
         (queried, (ω, known)) .dec c =
@@ -100,7 +100,7 @@ theorem ptxt_combine_dec (encrypt : Ω → ℕ → M → C) (decrypt : Ω → Li
 
 /-- **The plaintext filter on an oracle** answers encryptions as the oracle, and retains the
 decryptions whose message was queried. -/
-theorem ptxt_bisim (encrypt : Ω → ℕ → M → C) (decrypt : Ω → List M → C → Option M) :
+lemma ptxt_bisim (encrypt : Ω → ℕ → M → C) (decrypt : Ω → List M → C → Option M) :
     IsBisim ((AE.PTXT.body M C).combine (oracleStep encrypt decrypt) (AE.PTXT.bound_spec M C))
       (oracleStep encrypt (ptxtDecrypt decrypt))
       (fun a a' => a.2 = a' ∧ a.1.getD [] = a'.2) := by
@@ -150,7 +150,7 @@ noncomputable def idealDecrypt {k : ℕ} (law : Distribution.ProbDist M) (encryp
     Ω × (Fin k → M) → List M → C → Option M :=
   fun ω known c => AE.replay (known.zip (replacedCiphertexts law encrypt ω.1 ω.2 known.length)) c
 
-theorem cca_combine_enc {k : ℕ} (encrypt : Ω → ℕ → M → C) (decrypt : Ω → List M → C → Option M)
+lemma cca_combine_enc {k : ℕ} (encrypt : Ω → ℕ → M → C) (decrypt : Ω → List M → C → Option M)
     (table : Option (List (M × C))) (ω : Ω) (known : List M) (t : Fin k → M) (n : ℕ) (m : M) :
     (AE.CCA.body M C).combine (parallelStep (oracleStep encrypt decrypt) (sourceStep (AE.CCA.law1 M C)))
         (AE.CCA.bound_spec M C) (table, ((ω, known), (t, n))) .enc m =
@@ -161,7 +161,7 @@ theorem cca_combine_enc {k : ℕ} (encrypt : Ω → ℕ → M → C) (decrypt : 
     cases table <;> simp [Program.invoke, AE.CCA.body, callProg, returnProg, oracleStep,
       parallelStep, entry, sourceStep])
 
-theorem cca_combine_dec_replay {k : ℕ} (encrypt : Ω → ℕ → M → C)
+lemma cca_combine_dec_replay {k : ℕ} (encrypt : Ω → ℕ → M → C)
     (decrypt : Ω → List M → C → Option M) (table : Option (List (M × C))) (ω : Ω)
     (known : List M) (r : (Fin k → M) × ℕ) (c : C) {m : M}
     (hr : AE.replay (table.getD []) c = some m) :
@@ -171,7 +171,7 @@ theorem cca_combine_dec_replay {k : ℕ} (encrypt : Ω → ℕ → M → C)
   Program.combine_eq_of_invoke _ _ (n := 0) (by
     cases table <;> simp_all [Program.invoke, AE.CCA.body, returnProg])
 
-theorem cca_combine_dec_fresh {k : ℕ} (encrypt : Ω → ℕ → M → C)
+lemma cca_combine_dec_fresh {k : ℕ} (encrypt : Ω → ℕ → M → C)
     (decrypt : Ω → List M → C → Option M) (table : Option (List (M × C))) (ω : Ω)
     (known : List M) (r : (Fin k → M) × ℕ) (c : C) (hr : AE.replay (table.getD []) c = none) :
     (AE.CCA.body M C).combine (parallelStep (oracleStep encrypt decrypt) (sourceStep (AE.CCA.law1 M C)))
@@ -184,7 +184,7 @@ theorem cca_combine_dec_fresh {k : ℕ} (encrypt : Ω → ℕ → M → C)
 /-- **The random-message transformation on an oracle** encrypts the replacement messages, and
 decrypts by replay of its own encryptions, otherwise by the oracle on the replacement
 messages. -/
-theorem cca_bisim {k : ℕ} (encrypt : Ω → ℕ → M → C) (decrypt : Ω → List M → C → Option M) :
+lemma cca_bisim {k : ℕ} (encrypt : Ω → ℕ → M → C) (decrypt : Ω → List M → C → Option M) :
     IsBisim ((AE.CCA.body M C).combine
         (parallelStep (oracleStep encrypt decrypt) (sourceStep (AE.CCA.law1 M C)))
         (AE.CCA.bound_spec M C))
@@ -214,7 +214,7 @@ theorem cca_bisim {k : ℕ} (encrypt : Ω → ℕ → M → C) (decrypt : Ω →
       rw [cca_combine_dec_fresh _ _ _ _ _ _ _ hr]
       simp [oracleStep, ccaDecrypt, ← h₅, hr]
 
-theorem aeIdeal_combine_enc {k : ℕ} (encrypt : Ω → ℕ → M → C)
+lemma aeIdeal_combine_enc {k : ℕ} (encrypt : Ω → ℕ → M → C)
     (table : Option (List (M × C))) (ω : Ω) (known : List M) (t : Fin k → M) (n : ℕ) (m : M) :
     (AE.Ideal.body M C).combine
         (parallelStep (encryptionStep encrypt) (sourceStep (AE.Ideal.law1 M C)))
@@ -226,7 +226,7 @@ theorem aeIdeal_combine_enc {k : ℕ} (encrypt : Ω → ℕ → M → C)
     cases table <;> simp [Program.invoke, AE.Ideal.body, callProg, returnProg, encryptionStep,
       parallelStep, entry, sourceStep])
 
-theorem aeIdeal_combine_dec {k : ℕ} (encrypt : Ω → ℕ → M → C)
+lemma aeIdeal_combine_dec {k : ℕ} (encrypt : Ω → ℕ → M → C)
     (table : Option (List (M × C))) (ω : Ω) (known : List M) (r : (Fin k → M) × ℕ) (c : C) :
     (AE.Ideal.body M C).combine
         (parallelStep (encryptionStep encrypt) (sourceStep (AE.Ideal.law1 M C)))
@@ -237,7 +237,7 @@ theorem aeIdeal_combine_dec {k : ℕ} (encrypt : Ω → ℕ → M → C)
 
 /-- **The ideal transformation on an encryption oracle** encrypts the replacement messages, and
 decrypts only by replay of its own encryptions. -/
-theorem aeIdeal_bisim {k : ℕ} (encrypt : Ω → ℕ → M → C) :
+lemma aeIdeal_bisim {k : ℕ} (encrypt : Ω → ℕ → M → C) :
     IsBisim ((AE.Ideal.body M C).combine
         (parallelStep (encryptionStep encrypt) (sourceStep (AE.Ideal.law1 M C)))
         (AE.Ideal.bound_spec M C))
@@ -276,7 +276,7 @@ noncomputable abbrev realStep (k : ℕ) :=
   (AE.Real.body scheme).combine (parallelStep (sourceStep (q := k) (AE.Real.law1 scheme))
     (sourceStep (q := k) (AE.Real.law2 scheme))) (AE.Real.bound_spec scheme)
 
-theorem real_combine_enc_first {k : ℕ} (tK : Fin k → K) (tE : Fin k → (K × M → C)) (nE : ℕ)
+lemma real_combine_enc_first {k : ℕ} (tK : Fin k → K) (tE : Fin k → (K × M → C)) (nE : ℕ)
     (m : M) :
     realStep scheme k (none, ((tK, 0), (tE, nE))) .enc m =
       ((some (realKey scheme tK), ((tK, 1), (tE, nE + 1))),
@@ -285,14 +285,14 @@ theorem real_combine_enc_first {k : ℕ} (tK : Fin k → K) (tE : Fin k → (K �
     simp [Program.invoke, AE.Real.body, callProg, returnProg, parallelStep, sourceStep, entry,
       realKey])
 
-theorem real_combine_enc_later {k : ℕ} (key : K) (tK : Fin k → K) (nK : ℕ)
+lemma real_combine_enc_later {k : ℕ} (key : K) (tK : Fin k → K) (nK : ℕ)
     (tE : Fin k → (K × M → C)) (nE : ℕ) (m : M) :
     realStep scheme k (some key, ((tK, nK), (tE, nE))) .enc m =
       ((some key, ((tK, nK), (tE, nE + 1))), entry (AE.Real.law2 scheme) tE nE (key, m)) :=
   Program.combine_eq_of_invoke _ _ (n := 1) (by
     simp [Program.invoke, AE.Real.body, callProg, returnProg, parallelStep, sourceStep, entry])
 
-theorem real_combine_dec_first {k : ℕ} (tK : Fin k → K) (r : (Fin k → (K × M → C)) × ℕ)
+lemma real_combine_dec_first {k : ℕ} (tK : Fin k → K) (r : (Fin k → (K × M → C)) × ℕ)
     (c : C) :
     realStep scheme k (none, ((tK, 0), r)) .dec c =
       ((some (realKey scheme tK), ((tK, 1), r)), scheme.dec (realKey scheme tK) c) :=
@@ -300,7 +300,7 @@ theorem real_combine_dec_first {k : ℕ} (tK : Fin k → K) (r : (Fin k → (K �
     simp [Program.invoke, AE.Real.body, callProg, returnProg, parallelStep, sourceStep, entry,
       realKey])
 
-theorem real_combine_dec_later {k : ℕ} (key : K) (r : ((Fin k → K) × ℕ) ×
+lemma real_combine_dec_later {k : ℕ} (key : K) (r : ((Fin k → K) × ℕ) ×
     ((Fin k → (K × M → C)) × ℕ)) (c : C) :
     realStep scheme k (some key, r) .dec c = ((some key, r), scheme.dec key c) :=
   Program.combine_eq_of_invoke _ _ (n := 0) (by simp [Program.invoke, AE.Real.body, returnProg])
@@ -317,7 +317,7 @@ noncomputable def realDecrypt {k : ℕ} :
 
 /-- **The real system is an oracle**: the `i`-th encryption reads entry `i` of the encryption
 table under the key, and decryption decrypts under the key. -/
-theorem real_bisim {k : ℕ} :
+lemma real_bisim {k : ℕ} :
     IsBisim (realStep scheme k (M := M) (C := C))
       (oracleStep (realEncrypt scheme) (realDecrypt scheme))
       (fun a a' => a.2.1.1 = a'.1.1 ∧ a.2.2.1 = a'.1.2 ∧ a.2.2.2 = a'.2.length ∧
@@ -335,10 +335,10 @@ theorem real_bisim {k : ℕ} :
     simp [oracleStep, realDecrypt]
 
 omit [Fintype K] [Fintype M] [Fintype C] in
-theorem encryptionReal_law1 : Encryption.Real.law1 scheme = AE.Real.law1 scheme := rfl
+lemma encryptionReal_law1 : Encryption.Real.law1 scheme = AE.Real.law1 scheme := rfl
 
 omit [Fintype C] in
-theorem encryptionReal_law2 : Encryption.Real.law2 scheme = AE.Real.law2 scheme := rfl
+lemma encryptionReal_law2 : Encryption.Real.law2 scheme = AE.Real.law2 scheme := rfl
 
 /-- The real encryption system's automaton: its program against its key and encryption
 sources. -/
@@ -347,7 +347,7 @@ noncomputable abbrev encryptionRealStep (k : ℕ) :=
     (sourceStep (q := k) (Encryption.Real.law1 scheme))
     (sourceStep (q := k) (Encryption.Real.law2 scheme))) (Encryption.Real.bound_spec scheme)
 
-theorem encryptionReal_combine_first {k : ℕ} (tK : Fin k → K) (tE : Fin k → (K × M → C))
+lemma encryptionReal_combine_first {k : ℕ} (tK : Fin k → K) (tE : Fin k → (K × M → C))
     (nE : ℕ) (m : M) :
     encryptionRealStep scheme k (none, ((tK, 0), (tE, nE))) .enc m =
       ((some (realKey scheme tK), ((tK, 1), (tE, nE + 1))),
@@ -356,7 +356,7 @@ theorem encryptionReal_combine_first {k : ℕ} (tK : Fin k → K) (tE : Fin k �
     simp [Program.invoke, Encryption.Real.body, callProg, returnProg, parallelStep, sourceStep,
       entry, realKey, encryptionReal_law1, encryptionReal_law2])
 
-theorem encryptionReal_combine_later {k : ℕ} (key : K) (tK : Fin k → K) (nK : ℕ)
+lemma encryptionReal_combine_later {k : ℕ} (key : K) (tK : Fin k → K) (nK : ℕ)
     (tE : Fin k → (K × M → C)) (nE : ℕ) (m : M) :
     encryptionRealStep scheme k (some key, ((tK, nK), (tE, nE))) .enc m =
       ((some key, ((tK, nK), (tE, nE + 1))), entry (AE.Real.law2 scheme) tE nE (key, m)) :=
@@ -366,7 +366,7 @@ theorem encryptionReal_combine_later {k : ℕ} (key : K) (tK : Fin k → K) (nK 
 
 /-- **The real encryption system is an encryption oracle**: the `i`-th encryption reads entry `i`
 of the encryption table under the key. -/
-theorem encryptionReal_bisim {k : ℕ} :
+lemma encryptionReal_bisim {k : ℕ} :
     IsBisim (encryptionRealStep scheme k (M := M) (C := C))
       (encryptionStep (realEncrypt scheme))
       (fun a a' => a.2.1.1 = a'.1.1 ∧ a.2.2.1 = a'.1.2 ∧ a.2.2.2 = a'.2.length ∧
@@ -384,7 +384,7 @@ end Systems
 
 /-- **Oracles that agree on the first `n` encryptions** have the same system on the histories of
 at most `n` encryptions. -/
-theorem oracle_system_congr {Ω' : Type} {encrypt : Ω → ℕ → M → C}
+lemma oracle_system_congr {Ω' : Type} {encrypt : Ω → ℕ → M → C}
     {decrypt : Ω → List M → C → Option M} {encrypt' : Ω' → ℕ → M → C}
     {decrypt' : Ω' → List M → C → Option M} {ω : Ω} {ω' : Ω'} {n : ℕ}
     (henc : ∀ i < n, ∀ m, encrypt ω i m = encrypt' ω' i m)

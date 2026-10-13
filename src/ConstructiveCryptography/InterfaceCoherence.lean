@@ -36,12 +36,12 @@ def assocAlphabet {I J K : Type} (F : I → Type) (G : J → Type) (H : K → Ty
   left_inv := by rintro ⟨((i | j) | k), x⟩ <;> rfl
   right_inv := by rintro ⟨(i | j | k), x⟩ <;> rfl
 
-theorem assocAlphabet_fst {I J K : Type} (F : I → Type) (G : J → Type) (H : K → Type)
+lemma assocAlphabet_fst {I J K : Type} (F : I → Type) (G : J → Type) (H : K → Type)
     (x : Σ l, Sum.rec (Sum.rec F G) H l) :
     (assocAlphabet F G H x).1 = Equiv.sumAssoc I J K x.1 := by
   rcases x with ⟨((i | j) | k), x⟩ <;> rfl
 
-theorem empty_or_parallelDomain (A B : Interface)
+lemma empty_or_parallelDomain (A B : Interface)
     (h : List (Σ l, Sum.rec A.X B.X l)) :
     (h = [] ∨ parallelDomain A B h) ↔
       (restrict none (h.map (sumAlphabet (Sum.rec A.X B.X)).symm) = [] ∨
@@ -52,7 +52,7 @@ theorem empty_or_parallelDomain (A B : Interface)
   · simp only [hn, List.map_nil, restrict_nil, true_or, true_and]
   · simp only [parallelDomain, parallelInputs, ne_eq, hn, not_false_eq_true, true_and, false_or]
 
-theorem parallelDomain_assoc (A B C : Interface)
+lemma parallelDomain_assoc (A B C : Interface)
     (h : List (Σ l, Sum.rec (Sum.rec A.X B.X) C.X l)) :
     parallelDomain A (tensor B C) (h.map (assocAlphabet A.X B.X C.X)) ↔
       parallelDomain (tensor A B) C h := by
@@ -106,7 +106,7 @@ def leftUnitAlphabet {I : Type} (F : I → Type) :
   left_inv := by rintro ⟨(e | i), x⟩; exact e.elim; rfl
   right_inv := by rintro ⟨i, x⟩; rfl
 
-theorem leftUnitAlphabet_fst {I : Type} (F : I → Type)
+lemma leftUnitAlphabet_fst {I : Type} (F : I → Type)
     (x : Σ l, Sum.rec (fun e : Empty => Empty.elim e) F l) :
     (leftUnitAlphabet F x).1 = Equiv.emptySum Empty I x.1 := by
   rcases x with ⟨(e | i), x⟩
@@ -122,14 +122,14 @@ def rightUnitAlphabet {I : Type} (F : I → Type) :
   left_inv := by rintro ⟨(i | e), x⟩; rfl; exact e.elim
   right_inv := by rintro ⟨i, x⟩; rfl
 
-theorem rightUnitAlphabet_fst {I : Type} (F : I → Type)
+lemma rightUnitAlphabet_fst {I : Type} (F : I → Type)
     (x : Σ l, Sum.rec F (fun e : Empty => Empty.elim e) l) :
     (rightUnitAlphabet F x).1 = Equiv.sumEmpty I Empty x.1 := by
   rcases x with ⟨(i | e), x⟩
   · rfl
   · exact e.elim
 
-theorem parallelDomain_unit_left (A : Interface)
+lemma parallelDomain_unit_left (A : Interface)
     (h : List (Σ l, Sum.rec unit.X A.X l)) :
     A.domain (h.map (leftUnitAlphabet A.X)) ↔ parallelDomain unit A h := by
   change A.domain (h.map (leftUnitAlphabet A.X)) ↔
@@ -158,7 +158,7 @@ theorem parallelDomain_unit_left (A : Interface)
   · rintro ⟨hn, hd⟩
     exact hd.resolve_left hn
 
-theorem parallelDomain_unit_right (A : Interface)
+lemma parallelDomain_unit_right (A : Interface)
     (h : List (Σ l, Sum.rec A.X unit.X l)) :
     A.domain (h.map (rightUnitAlphabet A.X)) ↔ parallelDomain A unit h := by
   dsimp only [unit] at h

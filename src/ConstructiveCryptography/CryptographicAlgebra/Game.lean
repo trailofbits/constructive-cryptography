@@ -84,7 +84,7 @@ instance instHSMulConverterGame {A B : C} : HSMul (A ⟶ B) (Game B) (Game A) wh
   hSMul := attachGame
 
 @[simp]
-theorem smul_eq_attachGame {A B : C} (converter : A ⟶ B) (game : Game B) :
+lemma smul_eq_attachGame {A B : C} (converter : A ⟶ B) (game : Game B) :
     (converter • game : Game A) = attachGame converter game :=
   rfl
 
@@ -93,12 +93,12 @@ converter attached (CR18, §4.7.2, equation (4.10), `C G = G ∘ ρ_C`). -/
 def absorb {A B : C} (converter : A ⟶ B) (winner : Game A → ℝ) : Game B → ℝ :=
   fun game => winner (attachGame converter game)
 
-theorem absorb_mem {A B : C} (converter : A ⟶ B) {winner : Game A → ℝ}
+lemma absorb_mem {A B : C} (converter : A ⟶ B) {winner : Game A → ℝ}
     (h : winner ∈ winners A) : absorb converter winner ∈ winners B :=
   closed_attach converter h
 
 /-- **Absorbing a serial composition** absorbs its converters in turn. -/
-theorem absorb_comp {A B D : C} (first : A ⟶ B) (second : B ⟶ D) (winner : Game A → ℝ) :
+lemma absorb_comp {A B D : C} (first : A ⟶ B) (second : B ⟶ D) (winner : Game A → ℝ) :
     absorb (first ≫ second) winner = absorb second (absorb first winner) :=
   funext fun game => congrArg winner (attachGame_serial first second game)
 
@@ -149,7 +149,7 @@ def absorb {A B : C} (converter : A ⟶ B) (solver : (Phi A → ℝ) × (Game A 
     (Phi B → ℝ) × (Game B → ℝ) :=
   (fun R => solver.1 (ResourceTheory.attach converter R), Games.absorb converter solver.2)
 
-theorem absorb_mem {A B : C} (converter : A ⟶ B) {solver : (Phi A → ℝ) × (Game A → ℝ)}
+lemma absorb_mem {A B : C} (converter : A ⟶ B) {solver : (Phi A → ℝ) × (Game A → ℝ)}
     (h : solver ∈ solvers A) : absorb converter solver ∈ solvers B :=
   solvers_closed_attach converter h
 

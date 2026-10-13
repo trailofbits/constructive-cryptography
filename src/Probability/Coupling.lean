@@ -52,14 +52,14 @@ pushforward (`IsCoupling`'s own clause), and a pushforward of a non-negative
 law is non-negative, so the honesty hypothesis that accompanies every coupling
 statement is inherited by the two laws being coupled — it never has to be
 assumed twice. -/
-theorem IsCoupling.nonNeg_left {A B : Type*} {J : Distribution (A × B)}
+lemma IsCoupling.nonNeg_left {A B : Type*} {J : Distribution (A × B)}
     {X : Distribution A} {Y : Distribution B} (hJ : IsCoupling J X Y)
     (hnn : ∀ p, 0 ≤ J p) : X.NonNeg :=
   hJ.1 ▸ NonNeg.fTransform hnn Prod.fst
 
 /-- **An honest coupling has honest marginals**, right slot
 (`IsCoupling.nonNeg_left` at the second projection). -/
-theorem IsCoupling.nonNeg_right {A B : Type*} {J : Distribution (A × B)}
+lemma IsCoupling.nonNeg_right {A B : Type*} {J : Distribution (A × B)}
     {X : Distribution A} {Y : Distribution B} (hJ : IsCoupling J X Y)
     (hnn : ∀ p, 0 ≤ J p) : Y.NonNeg :=
   hJ.2 ▸ NonNeg.fTransform hnn Prod.snd
@@ -77,21 +77,21 @@ def offDiagonalMass {A : Type*} (J : Distribution (A × A)) : ℝ :=
 /-- The disagreement mass as a filtered sum over **any** finite set containing
 the support.  Decidability is an explicit binder, per the decidability policy
 of `Probability.Distribution`. -/
-theorem offDiagonalMass_eq_sum_filter {A : Type*} (J : Distribution (A × A))
+lemma offDiagonalMass_eq_sum_filter {A : Type*} (J : Distribution (A × A))
     {s : Finset (A × A)} (hs : J.support ⊆ s)
     [DecidablePred fun p : A × A => p.1 ≠ p.2] :
     offDiagonalMass J = ∑ p ∈ s.filter (fun p => p.1 ≠ p.2), J p :=
   mass_eq_sum_of_support_subset J hs _
 
 /-- An honest joint law has non-negative disagreement mass. -/
-theorem offDiagonalMass_nonneg {A : Type*} {J : Distribution (A × A)}
+lemma offDiagonalMass_nonneg {A : Type*} {J : Distribution (A × A)}
     (hnn : ∀ p, 0 ≤ J p) : 0 ≤ offDiagonalMass J :=
   NonNeg.mass_nonneg hnn _
 
 /-- A joint law supported entirely off the diagonal disagrees with probability
 its own total weight.  This is how the transport half of an optimal coupling
 is evaluated: it never charges a pair `(a, a)`. -/
-theorem offDiagonalMass_eq_weight_of_forall_ne {A : Type*}
+lemma offDiagonalMass_eq_weight_of_forall_ne {A : Type*}
     (J : Distribution (A × A)) (h : ∀ p ∈ J.support, p.1 ≠ p.2) :
     offDiagonalMass J = J.weight := by
   classical
@@ -128,12 +128,12 @@ variable {A : Type*} {X Y : Distribution A}
 /-- The transported residual of `Y` against `X` is the negative part of the
 same difference — the two residuals are the Jordan split of `X − Y`, which is
 why they never charge a point together. -/
-theorem posPart_sub_comm : (Y - X)⁺ = (X - Y)⁻ := by
+lemma posPart_sub_comm : (Y - X)⁺ = (X - Y)⁻ := by
   rw [posPart_def, negPart_def, neg_sub]
 
 /-- The transport plan never charges the diagonal: its two factors are the
 two halves of a Jordan split, and those have disjoint supports. -/
-theorem forall_ne_of_mem_support_prod_posPart
+lemma forall_ne_of_mem_support_prod_posPart
     {p : A × A} (hp : p ∈ (prod ((X - Y)⁺) ((Y - X)⁺)).support) : p.1 ≠ p.2 := by
   intro hpe
   refine Finsupp.mem_support_iff.mp hp ?_
@@ -145,7 +145,7 @@ theorem forall_ne_of_mem_support_prod_posPart
 the first by definition of `δ` as the weight of a positive part, the second by
 the equal-weight symmetry of `δ`.  This is what makes the normalized product a
 transport plan of exactly the disagreement mass. -/
-theorem weight_posPart_sub_eq_statDist (hw : X.weight = Y.weight) :
+lemma weight_posPart_sub_eq_statDist (hw : X.weight = Y.weight) :
     ((X - Y)⁺).weight = statDist X Y ∧ ((Y - X)⁺).weight = statDist X Y :=
   ⟨(statDist_eq_weight_posPart X Y).symm,
     by rw [← statDist_eq_weight_posPart Y X, ← statDist_symm_of_eq_weight X Y hw]⟩
@@ -153,7 +153,7 @@ theorem weight_posPart_sub_eq_statDist (hw : X.weight = Y.weight) :
 /-- The optimal joint law is honest whenever its marginals are: the diagonal
 carries a pointwise meet of non-negative laws, and the transport term is a
 non-negative multiple of a product of positive parts. -/
-theorem optimalJoint_nonNeg (hX : X.NonNeg) (hY : Y.NonNeg) :
+lemma optimalJoint_nonNeg (hX : X.NonNeg) (hY : Y.NonNeg) :
     (optimalJoint X Y).NonNeg := by
   have hinf : (X ⊓ Y).NonNeg :=
     nonNeg_iff_zero_le.mpr (le_inf (nonNeg_iff_zero_le.mp hX) (nonNeg_iff_zero_le.mp hY))
@@ -170,7 +170,7 @@ term as its own residual, rescaled by `δ(X, Y)⁻¹ · δ(X, Y) = 1`; the meet 
 the one-sided excess rebuilds the marginal (`inf_add_posPart_sub`).  At
 `δ(X, Y) = 0` the rescaling is `0`, but so is the residual — a non-negative
 law of weight zero is zero — so the identity holds there too. -/
-theorem isCoupling_optimalJoint (hw : X.weight = Y.weight) :
+lemma isCoupling_optimalJoint (hw : X.weight = Y.weight) :
     IsCoupling (optimalJoint X Y) X Y := by
   obtain ⟨hP, hQ⟩ := weight_posPart_sub_eq_statDist hw
   -- Rescaling by `δ⁻¹` undoes the residual weight, `δ = 0` included.
@@ -199,7 +199,7 @@ The diagonal term contributes nothing — it is supported on `{(a, a)}` — and
 the transport term contributes its whole weight, since it never charges the
 diagonal; that weight is `δ(X, Y)⁻¹ · δ(X, Y) · δ(X, Y) = δ(X, Y)`, and at
 `δ(X, Y) = 0` both sides are `0`. -/
-theorem offDiagonalMass_optimalJoint (hw : X.weight = Y.weight) :
+lemma offDiagonalMass_optimalJoint (hw : X.weight = Y.weight) :
     offDiagonalMass (optimalJoint X Y) = statDist X Y := by
   obtain ⟨hP, hQ⟩ := weight_posPart_sub_eq_statDist hw
   have hdiag :
@@ -353,14 +353,14 @@ def Coupling.prDisagree {X Y : Distribution A} (C : Coupling X Y) : ℝ :=
 omit [Fintype A] [DecidableEq A] in
 /-- The bundled joint law is a coupling in the sense of
 `Distribution.IsCoupling`. -/
-theorem Coupling.isCoupling_joint {X Y : Distribution A} (C : Coupling X Y) :
+lemma Coupling.isCoupling_joint {X Y : Distribution A} (C : Coupling X Y) :
     Distribution.IsCoupling C.joint X Y :=
   ⟨C.marginal_fst, C.marginal_snd⟩
 
 /-- The bundled disagreement probability is the general disagreement mass: the
 sum over the whole (finite) carrier and the sum over the support agree, since
 the summands off the support vanish. -/
-theorem Coupling.prDisagree_eq_offDiagonalMass {X Y : Distribution A}
+lemma Coupling.prDisagree_eq_offDiagonalMass {X Y : Distribution A}
     (C : Coupling X Y) :
     C.prDisagree = Distribution.offDiagonalMass C.joint := by
   classical
@@ -368,7 +368,7 @@ theorem Coupling.prDisagree_eq_offDiagonalMass {X Y : Distribution A}
     Distribution.offDiagonalMass_eq_sum_filter C.joint (Finset.subset_univ _)]
 
 /-- Disagreement mass of an honest coupling is non-negative. -/
-theorem Coupling.prDisagree_nonneg {X Y : Distribution A}
+lemma Coupling.prDisagree_nonneg {X Y : Distribution A}
     (C : Coupling X Y) : 0 ≤ C.prDisagree := by
   unfold Coupling.prDisagree
   exact Finset.sum_nonneg fun p _ ↦ C.nonneg p
@@ -404,7 +404,7 @@ def Coupling.fTransform {B : Type*} [Fintype B] [Nonempty B] [DecidableEq B]
 
 /-- Injective deterministic maps preserve the disagreement probability of a
 pushed-forward coupling. -/
-theorem Coupling.prDisagree_fTransform_of_injective
+lemma Coupling.prDisagree_fTransform_of_injective
     {B : Type*} [Fintype B] [Nonempty B] [DecidableEq B] [Nonempty A]
     {X Y : Distribution A} (C : Coupling X Y) (f : A → B)
     (hf : Function.Injective f) :
@@ -456,7 +456,7 @@ noncomputable def jointProfileList {I CH : Type*} [DecidableEq I]
       fTransform (fun cp : CH × (I → CH) => Function.update cp.2 i cp.1)
         (prod (D i) (jointProfileList u d D l))
 
-theorem jointProfileList_weight {I CH : Type*} [DecidableEq I]
+lemma jointProfileList_weight {I CH : Type*} [DecidableEq I]
     (u : ℝ) (d : CH) (D : I → Distribution CH) :
     ∀ l : List I, (∀ j ∈ l, (D j).weight = u) →
       (jointProfileList u d D l).weight = u := by
@@ -472,7 +472,7 @@ theorem jointProfileList_weight {I CH : Type*} [DecidableEq I]
       · simp
       · rw [← mul_assoc, inv_mul_cancel₀ hu, one_mul]
 
-theorem jointProfileList_marginal {I CH : Type*} [DecidableEq I]
+lemma jointProfileList_marginal {I CH : Type*} [DecidableEq I]
     (u : ℝ) (d : CH) (D : I → Distribution CH) :
     ∀ l : List I, (∀ j ∈ l, (D j).NonNeg) →
       (∀ j ∈ l, (D j).weight = u) → ∀ i ∈ l,
@@ -521,14 +521,14 @@ noncomputable def jointProfile {I CH : Type*} [DecidableEq I]
     Distribution (I → CH) :=
   jointProfileList u d D C.toList
 
-theorem jointProfile_weight {I CH : Type*} [DecidableEq I]
+lemma jointProfile_weight {I CH : Type*} [DecidableEq I]
     (u : ℝ) (d : CH) (C : Finset I) (D : I → Distribution CH)
     (hw : ∀ j ∈ C, (D j).weight = u) :
     (jointProfile u d C D).weight = u :=
   jointProfileList_weight u d D C.toList
     fun j hj => hw j (Finset.mem_toList.mp hj)
 
-theorem jointProfile_marginal {I CH : Type*} [DecidableEq I]
+lemma jointProfile_marginal {I CH : Type*} [DecidableEq I]
     (u : ℝ) (d : CH) (C : Finset I) (D : I → Distribution CH)
     (hDnn : ∀ j ∈ C, (D j).NonNeg)
     (hw : ∀ j ∈ C, (D j).weight = u) {i : I} (hi : i ∈ C) :
@@ -538,7 +538,7 @@ theorem jointProfile_marginal {I CH : Type*} [DecidableEq I]
     (fun j hj => hw j (Finset.mem_toList.mp hj)) i
     (Finset.mem_toList.mpr hi)
 
-theorem jointProfileList_nonNeg {I CH : Type*} [DecidableEq I]
+lemma jointProfileList_nonNeg {I CH : Type*} [DecidableEq I]
     {u : ℝ} (hu : 0 ≤ u) (d : CH) (D : I → Distribution CH) :
     ∀ l : List I, (∀ j ∈ l, (D j).NonNeg) →
       (jointProfileList u d D l).NonNeg := by
@@ -553,7 +553,7 @@ theorem jointProfileList_nonNeg {I CH : Type*} [DecidableEq I]
       exact (((hD j (by simp)).prod
         (ih fun k hk => hD k (by simp [hk]))).fTransform _) p
 
-theorem jointProfile_nonNeg {I CH : Type*} [DecidableEq I]
+lemma jointProfile_nonNeg {I CH : Type*} [DecidableEq I]
     {u : ℝ} (hu : 0 ≤ u) (d : CH) (C : Finset I) {D : I → Distribution CH}
     (hD : ∀ j ∈ C, (D j).NonNeg) : (jointProfile u d C D).NonNeg :=
   jointProfileList_nonNeg hu d D C.toList
@@ -561,7 +561,7 @@ theorem jointProfile_nonNeg {I CH : Type*} [DecidableEq I]
 
 /-- The joint never moves the inert value: a profile in its support takes the
 value `d` at every class outside the coupled list. -/
-theorem jointProfileList_support_default {I CH : Type*}
+lemma jointProfileList_support_default {I CH : Type*}
     [DecidableEq I] (u : ℝ) (d : CH) (D : I → Distribution CH) :
     ∀ (l : List I) (p : I → CH),
       p ∈ (jointProfileList u d D l).support → ∀ i, i ∉ l → p i = d := by
@@ -591,7 +591,7 @@ theorem jointProfileList_support_default {I CH : Type*}
 value untouched outside the coupled classes.  This is the two-summand form the
 attainment construction consumes, where one summand is the shared component
 and the other the residual. -/
-theorem add_jointProfile_support_default {I CH : Type*} [DecidableEq I]
+lemma add_jointProfile_support_default {I CH : Type*} [DecidableEq I]
     (u u' : ℝ) (d : CH) (C : Finset I) (E F : I → Distribution CH) :
     ∀ p ∈ (jointProfile u d C E + jointProfile u' d C F).support,
       ∀ i, i ∉ C → p i = d := by
@@ -603,7 +603,7 @@ theorem add_jointProfile_support_default {I CH : Type*} [DecidableEq I]
   · exact jointProfileList_support_default u' d F C.toList p h i hi'
 
 /-- The class-`Finset` form of `jointProfileList_support_default`. -/
-theorem jointProfile_support_default {I CH : Type*} [DecidableEq I]
+lemma jointProfile_support_default {I CH : Type*} [DecidableEq I]
     (u : ℝ) (d : CH) (C : Finset I) (D : I → Distribution CH)
     {p : I → CH} (hp : p ∈ (jointProfile u d C D).support) {i : I}
     (hi : i ∉ C) : p i = d :=

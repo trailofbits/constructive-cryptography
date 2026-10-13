@@ -41,14 +41,14 @@ noncomputable def resourceConverter (R : Interface.Resource A) : A ⟶ Interface
   PDCBehavior.ofPDC (resourcePDC R.exists_ofPDS.choose)
 
 /-- The unit interface has exactly one resource. -/
-theorem resource_empty_eq (S : Interface.Resource Interface.unit) : S = Interface.dummy := by
+lemma resource_empty_eq (S : Interface.Resource Interface.unit) : S = Interface.dummy := by
   apply Subtype.ext
   apply RandomSystem.ext
   rintro (_ | ⟨⟨⟨e, _⟩, _⟩, _⟩)
   · rw [S.1.mass_nil, Interface.dummy.1.mass_nil]
   · exact e.elim
 
-theorem attach_resourceConverter (R : Interface.Resource A)
+lemma attach_resourceConverter (R : Interface.Resource A)
     (S : Interface.Resource Interface.unit) :
     (resourceConverter R • S : Interface.Resource A) = R := by
   rw [resource_empty_eq S]
@@ -78,11 +78,11 @@ efficiency claim is made for this unrestricted mathematical converter. -/
 noncomputable def constant (R : Interface.Resource A) (B : Interface) : A ⟶ B :=
   resourceConverter R ≫ discardConverter B
 
-theorem attach_constant (R : Interface.Resource A) {B : Interface} (S : Interface.Resource B) :
+lemma attach_constant (R : Interface.Resource A) {B : Interface} (S : Interface.Resource B) :
     (constant R B • S : Interface.Resource A) = R := by
   rw [constant, Interface.comp_smul, attach_resourceConverter]
 
-theorem rightUnitor_hom_attach (R : Interface.Resource A) :
+lemma rightUnitor_hom_attach (R : Interface.Resource A) :
     ((Interface.rightUnitor A).hom • R : Interface.Resource (Interface.tensor A Interface.unit)) =
       Interface.parallel R Interface.dummy := by
   have h := congrArg (fun S : Interface.Resource A => ((Interface.rightUnitor A).hom • S :
@@ -90,7 +90,7 @@ theorem rightUnitor_hom_attach (R : Interface.Resource A) :
   rw [← Interface.comp_smul, Iso.hom_inv_id, Interface.identity_attach] at h
   exact h.symm
 
-theorem leftUnitor_hom_attach (R : Interface.Resource A) :
+lemma leftUnitor_hom_attach (R : Interface.Resource A) :
     ((Interface.leftUnitor A).hom • R : Interface.Resource (Interface.tensor Interface.unit A)) =
       Interface.parallel Interface.dummy R := by
   have h := congrArg (fun S : Interface.Resource A => ((Interface.leftUnitor A).hom • S :
@@ -108,12 +108,12 @@ noncomputable def leftContext {A : Interface} (R : Interface.Resource A) (B : In
     A ⊗ B ⟶ B :=
   (resourceConverter R ⊗ₘ 𝟙 B) ≫ (Interface.leftUnitor B).hom
 
-theorem attach_rightContext (R : Interface.Resource A) (S : Interface.Resource B) :
+lemma attach_rightContext (R : Interface.Resource A) (S : Interface.Resource B) :
     (rightContext A S • R : Interface.Resource (A ⊗ B)) = Interface.parallel R S := by
   rw [rightContext, Interface.comp_smul, rightUnitor_hom_attach, Interface.tensorHom_eq, Interface.parallel_attach, Interface.identity_attach,
     attach_resourceConverter]
 
-theorem attach_leftContext (R : Interface.Resource A) (S : Interface.Resource B) :
+lemma attach_leftContext (R : Interface.Resource A) (S : Interface.Resource B) :
     (leftContext R B • S : Interface.Resource (A ⊗ B)) = Interface.parallel R S := by
   rw [leftContext, Interface.comp_smul, leftUnitor_hom_attach, Interface.tensorHom_eq, Interface.parallel_attach, Interface.identity_attach,
     attach_resourceConverter]

@@ -15,7 +15,7 @@ open Classical Probability CategoryTheory
 variable {A B C D : Interface}
 
 /-- **Locality**: parallel converters act on parallel resources component by component. -/
-theorem parallel_attach (α : A ⟶ B) (β : C ⟶ D) (R : Resource B) (S : Resource D) :
+lemma parallel_attach (α : A ⟶ B) (β : C ⟶ D) (R : Resource B) (S : Resource D) :
     (parallelConverter α β • parallel R S : Resource (tensor A C)) =
       parallel (α • R : Resource A) (β • S : Resource C) := by
   obtain ⟨ba, P, hP⟩ := α.2

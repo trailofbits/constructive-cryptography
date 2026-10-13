@@ -36,7 +36,7 @@ noncomputable def behaviorMass {p : System A B → Prop}
     (P : Distribution {s : System A B // p s}) (xs : List A) (ys : List B) : ℝ :=
   P.mass fun s => Replies s.1 xs ys
 
-theorem behaviorMass_ne_zero {p : System A B → Prop}
+lemma behaviorMass_ne_zero {p : System A B → Prop}
     {P : Distribution {s : System A B // p s}} {xs : List A} {ys : List B}
     (hm : behaviorMass P xs ys ≠ 0) : ∃ s ∈ P.support, Replies s.1 xs ys := by
   change (∑ s ∈ P.support, if Replies s.1 xs ys then P s else 0) ≠ 0 at hm
@@ -51,12 +51,12 @@ def Equivalent {p : System A B → Prop}
     (P Q : Distribution {s : System A B // p s}) : Prop :=
   ∀ xs ys, behaviorMass P xs ys = behaviorMass Q xs ys
 
-theorem Equivalent.refl {p : System A B → Prop}
+lemma Equivalent.refl {p : System A B → Prop}
     (P : Distribution {s : System A B // p s}) : Equivalent P P := fun _ _ => rfl
-theorem Equivalent.symm {p : System A B → Prop}
+lemma Equivalent.symm {p : System A B → Prop}
     {P Q : Distribution {s : System A B // p s}} (h : Equivalent P Q) : Equivalent Q P :=
   fun xs ys => (h xs ys).symm
-theorem Equivalent.trans {p : System A B → Prop}
+lemma Equivalent.trans {p : System A B → Prop}
     {P Q R : Distribution {s : System A B // p s}} (h : Equivalent P Q)
     (h' : Equivalent Q R) : Equivalent P R := fun xs ys => (h xs ys).trans (h' xs ys)
 
@@ -81,7 +81,7 @@ def Domain.ofInputs (E : List A → Prop) (bound : ℕ) (hE : ∀ h, E h → h.l
     simp only [List.length_append, List.length_map, List.length_singleton] at this
     omega
 
-@[simp] theorem Domain.ofInputs_apply (E : List A → Prop) (bound : ℕ)
+@[simp] lemma Domain.ofInputs_apply (E : List A → Prop) (bound : ℕ)
     (hE : ∀ h, E h → h.length ≤ bound) (h : List (A × B)) (x : A) :
     (Domain.ofInputs E bound hE : Domain A B) h x = E (h.map Prod.fst ++ [x]) := rfl
 
@@ -93,14 +93,14 @@ def HasDomain (D : Domain A B) (s : System A B) : Prop :=
     ((s (h.map Prod.fst ++ [x])).Dom ↔ D h x)
 
 /-- A system whose domain is a set of input histories has that input domain. -/
-theorem HasDomain.ofInputs {E : List A → Prop} {bound : ℕ} {hE : ∀ h, E h → h.length ≤ bound}
+lemma HasDomain.ofInputs {E : List A → Prop} {bound : ℕ} {hE : ∀ h, E h → h.length ≤ bound}
     {s : System A B} (hs : ∀ h, (s h).Dom ↔ E h) :
     HasDomain (Domain.ofInputs E bound hE) s :=
   fun _ _ _ => hs _
 
 /-- **On an input domain, `HasDomain` is `dom(s) = E`** (Lanzenberger–Maurer, Definitions 5
 and 8, printed pp. 11, 13), for a DDS and a prefix-closed `E` without the empty history. -/
-theorem hasDomain_ofInputs_iff {E : List A → Prop} {bound : ℕ}
+lemma hasDomain_ofInputs_iff {E : List A → Prop} {bound : ℕ}
     {hE : ∀ h, E h → h.length ≤ bound} (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
     {s : System A B} (hs : IsDDS s) :
     HasDomain (Domain.ofInputs E bound hE) s ↔ ∀ h, (s h).Dom ↔ E h := by
@@ -114,7 +114,7 @@ theorem hasDomain_ofInputs_iff {E : List A → Prop} {bound : ℕ}
   rwa [hx] at this
 
 /-- Transcripts of a system with domain `D` stay within the bound of `D`. -/
-theorem HasDomain.length_le {D : Domain A B} {s : System A B} (hs : HasDomain D s)
+lemma HasDomain.length_le {D : Domain A B} {s : System A B} (hs : HasDomain D s)
     {h : List (A × B)} (hr : Replies s (h.map Prod.fst) (h.map Prod.snd)) : h.length ≤ D.bound := by
   induction h using List.reverseRecOn with
   | nil => exact Nat.zero_le _
@@ -146,7 +146,7 @@ noncomputable def nextReply (xs : List A) (ys : List B) (x : A) : Distribution B
     else 0
 
 /-- Next-reply masses are precisely the extended cumulative masses. -/
-theorem nextReply_apply (xs : List A) (ys : List B) (x : A) (y : B) :
+lemma nextReply_apply (xs : List A) (ys : List B) (x : A) (y : B) :
     nextReply P xs ys x y = behaviorMass P (xs ++ [x]) (ys ++ [y]) := by
   simp only [nextReply, Finsupp.finsetSum_apply, behaviorMass, Distribution.mass, Finsupp.sum]
   apply Finset.sum_congr rfl
@@ -160,14 +160,14 @@ theorem nextReply_apply (xs : List A) (ys : List B) (x : A) (y : B) :
     · simp [Part.eq_none_iff'.mpr hd]
   · simp [hr, replies_snoc]
 
-theorem nextReply_nonneg (hP : P.NonNeg) (xs : List A) (ys : List B) (x : A) :
+lemma nextReply_nonneg (hP : P.NonNeg) (xs : List A) (ys : List B) (x : A) :
     (nextReply P xs ys x).NonNeg := by
   intro y
   rw [nextReply_apply]
   exact hP.mass_nonneg _
 
 /-- The next-reply weight counts precisely the samples answering the extended query. -/
-theorem nextReply_weight (xs : List A) (ys : List B) (x : A) :
+lemma nextReply_weight (xs : List A) (ys : List B) (x : A) :
     (nextReply P xs ys x).weight =
       P.mass (fun s => Replies s.1 xs ys ∧ (s.1 (xs ++ [x])).Dom) := by
   rw [nextReply, Distribution.weight_finset_sum]
@@ -181,7 +181,7 @@ theorem nextReply_weight (xs : List A) (ys : List B) (x : A) :
   · simp [hr, Distribution.weight]
 
 /-- Partiality removes reply mass, without introducing an artificial reply. -/
-theorem nextReply_weight_le (hP : P.NonNeg) (xs : List A) (ys : List B) (x : A) :
+lemma nextReply_weight_le (hP : P.NonNeg) (xs : List A) (ys : List B) (x : A) :
     (nextReply P xs ys x).weight ≤ behaviorMass P xs ys := by
   rw [nextReply_weight]
   exact Distribution.mass_mono hP (fun _ h => h.1)
@@ -189,7 +189,7 @@ theorem nextReply_weight_le (hP : P.NonNeg) (xs : List A) (ys : List B) (x : A) 
 /-- On a specified preceding transcript, every sample that produced it admits the
 same next inputs. This also applies to converters, whose next port depends on the
 preceding output rather than only on the input sequence. -/
-theorem nextReply_weight_of_admitted {D : Prop} {xs : List A} {ys : List B} {x : A}
+lemma nextReply_weight_of_admitted {D : Prop} {xs : List A} {ys : List B} {x : A}
     (hD : ∀ s ∈ P.support, Replies s.1 xs ys → ((s.1 (xs ++ [x])).Dom ↔ D)) :
     (nextReply P xs ys x).weight = if D then behaviorMass P xs ys else 0 := by
   rw [nextReply_weight]
@@ -204,7 +204,7 @@ theorem nextReply_weight_of_admitted {D : Prop} {xs : List A} {ys : List B} {x :
     exact Distribution.mass_eq_zero_of_forall_not _ (fun _ h => h)
 
 /-- The empty cumulative mass is the distribution's weight. -/
-theorem behaviorMass_nil : behaviorMass P [] [] = P.weight := by
+lemma behaviorMass_nil : behaviorMass P [] [] = P.weight := by
   rw [behaviorMass, Distribution.mass_congr _ (fun _ => iff_true_intro (replies_nil _))]
   exact Distribution.mass_true _
 

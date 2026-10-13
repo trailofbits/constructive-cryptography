@@ -30,7 +30,7 @@ open SystemAlgebra SystemAlgebra.Substitution
 open scoped SystemAlgebra
 
 /-- Constant converters supply the diagonal of the unrestricted converter class. -/
-theorem unrestricted_diagonal {B : Interface} (left right : Interface.Resource B)
+lemma unrestricted_diagonal {B : Interface} (left right : Interface.Resource B)
     (A : Interface) (resource : Interface.Resource A) :
     ∃ transformation ∈ (Set.univ : Set (A ⟶ B)),
       transformation • left = resource ∧ transformation • right = resource :=

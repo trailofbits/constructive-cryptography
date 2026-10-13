@@ -83,13 +83,13 @@ carry it as a predicate. -/
 def NonNeg {A : Type*} (X : Distribution A) : Prop := ∀ a, 0 ≤ X a
 
 omit [Fintype A] [Nonempty A] in
-theorem NonNeg.weight_nonneg {X : Distribution A} (hX : X.NonNeg) : 0 ≤ X.weight :=
+lemma NonNeg.weight_nonneg {X : Distribution A} (hX : X.NonNeg) : 0 ≤ X.weight :=
   Finset.sum_nonneg fun a _ => hX a
 
 omit [Nonempty A] in
 /-- On a finite carrier, support-based weight is the ordinary sum over all
 points.  (Needs `Fintype A` but not `Nonempty A` — the latter is a section-variable leak.) -/
-theorem weight_eq_sum (X : Distribution A) :
+lemma weight_eq_sum (X : Distribution A) :
     X.weight = ∑ a : A, X a := by
   simpa [weight] using
     (Finsupp.sum_fintype (f := X) (g := fun _ w => w) (h := by intro _; rfl))
@@ -98,7 +98,7 @@ theorem weight_eq_sum (X : Distribution A) :
 points outside the support carry no mass.  This is the `Fintype`-free
 companion of `weight_eq_sum`, and the form needed on carriers that are
 genuinely infinite (transcript spaces, system laws). -/
-theorem weight_eq_sum_of_support_subset {A : Type*} (X : Distribution A)
+lemma weight_eq_sum_of_support_subset {A : Type*} (X : Distribution A)
     {s : Finset A} (hs : X.support ⊆ s) :
     X.weight = ∑ a ∈ s, X a :=
   Finsupp.sum_of_support_subset X hs (fun _ w => w) (fun _ _ => rfl)
@@ -110,14 +110,14 @@ def ofFiniteMassFunction (law : A → ℝ) : Distribution A :=
 
 omit [Nonempty A] in
 @[simp]
-theorem ofFiniteMassFunction_apply (law : A → ℝ) (a : A) :
+lemma ofFiniteMassFunction_apply (law : A → ℝ) (a : A) :
     ofFiniteMassFunction law a = law a := by
   simp [ofFiniteMassFunction]
 
 omit [Nonempty A] in
 /-- The total weight of a finite mass function as a distribution is the sum of
 its masses over the carrier. -/
-theorem weight_ofFiniteMassFunction (law : A → ℝ) :
+lemma weight_ofFiniteMassFunction (law : A → ℝ) :
     (ofFiniteMassFunction law).weight = ∑ a : A, law a := by
   simp [weight_eq_sum, ofFiniteMassFunction]
 
@@ -135,14 +135,14 @@ class IsProbability (X : Distribution A) : Prop where
 
 omit [Fintype A] [Nonempty A] in
 /-- The probability capability supplies the underlying distribution predicate. -/
-theorem IsProbability.isProbDist (X : Distribution A) [IsProbability X] : X.isProbDist :=
+lemma IsProbability.isProbDist (X : Distribution A) [IsProbability X] : X.isProbDist :=
   ⟨IsProbability.nonNeg, IsProbability.weight_eq_one⟩
 
 omit [Fintype A] [Nonempty A] in
-theorem isProbDist.nonNeg {X : Distribution A} (hX : X.isProbDist) : X.NonNeg := hX.1
+lemma isProbDist.nonNeg {X : Distribution A} (hX : X.isProbDist) : X.NonNeg := hX.1
 
 omit [Fintype A] [Nonempty A] in
-theorem isProbDist.weight_eq {X : Distribution A} (hX : X.isProbDist) : X.weight = 1 :=
+lemma isProbDist.weight_eq {X : Distribution A} (hX : X.isProbDist) : X.weight = 1 :=
   hX.2
 
 /-- Probability distributions are distributions with total mass one. -/
@@ -170,14 +170,14 @@ noncomputable def supportProbDist {A : Type*} (D : ProbDist A) :
     exact Finset.sum_attach D.val.support (fun a => D.val a)⟩
 
 @[simp]
-theorem supportProbDist_apply {A : Type*} (D : ProbDist A)
+lemma supportProbDist_apply {A : Type*} (D : ProbDist A)
     (a : {a : A // a ∈ D.val.support}) :
     supportProbDist D a = D.val a.1 := by
   rfl
 
 omit [Fintype A] [Nonempty A] in
 /-- A unit point mass is a probability distribution. -/
-theorem isProbDist_single (a : A) :
+lemma isProbDist_single (a : A) :
     isProbDist (Finsupp.single a (1 : ℝ) : Distribution A) := by
   constructor
   · intro b
@@ -192,7 +192,7 @@ noncomputable def ProbDist.single (a : A) : ProbDist A :=
 
 omit [Fintype A] [Nonempty A] in
 /-- A probability distribution has a sample. -/
-theorem ProbDist.nonempty (P : ProbDist A) : Nonempty A := by
+lemma ProbDist.nonempty (P : ProbDist A) : Nonempty A := by
   by_contra hA
   rw [not_nonempty_iff] at hA
   have hw := P.2.2
@@ -219,7 +219,7 @@ noncomputable def mass (X : Distribution A) (P : A → Prop) : ℝ :=
 
 omit [Fintype A] [Nonempty A] in
 /-- Event mass of a non-negative distribution is non-negative. -/
-theorem NonNeg.mass_nonneg {X : Distribution A} (hX : X.NonNeg) (P : A → Prop) :
+lemma NonNeg.mass_nonneg {X : Distribution A} (hX : X.NonNeg) (P : A → Prop) :
     0 ≤ X.mass P :=
   Finset.sum_nonneg fun a _ => by
     by_cases h : P a <;> simp [h, hX a]
@@ -228,7 +228,7 @@ omit [Fintype A] [Nonempty A] in
 /-- Event mass is additive in the distribution: `(X + Y)(P) = X(P) + Y(P)`.
 Signed layer, no `Fintype` — the companion of `weight_smul`/`mass_smul`
 (`Probability.Lift`) on the additive side. -/
-theorem mass_add (X Y : Distribution A) (P : A → Prop) :
+lemma mass_add (X Y : Distribution A) (P : A → Prop) :
     (X + Y).mass P = X.mass P + Y.mass P := by
   classical
   unfold mass
@@ -246,7 +246,7 @@ are genuinely infinite, and the companion of
 The decidability of `P` is an explicit binder, per this file's decidability
 policy: the statement contains a `Finset.filter`, so it must instantiate with
 the caller's ambient instance. -/
-theorem mass_eq_sum_of_support_subset (X : Distribution A) {s : Finset A}
+lemma mass_eq_sum_of_support_subset (X : Distribution A) {s : Finset A}
     (hs : X.support ⊆ s) (P : A → Prop) [DecidablePred P] :
     X.mass P = ∑ a ∈ s.filter P, X a := by
   classical
@@ -260,18 +260,18 @@ noncomputable def restrict {A : Type*} (X : Distribution A) (P : A → Prop) : D
   Finsupp.filter P X
 
 @[simp]
-theorem restrict_apply {A : Type*} (X : Distribution A) (P : A → Prop) (a : A) :
+lemma restrict_apply {A : Type*} (X : Distribution A) (P : A → Prop) (a : A) :
     X.restrict P a = if P a then X a else 0 := by
   simp [restrict, Finsupp.filter_apply]
 
 /-- Restriction preserves non-negativity. -/
-theorem NonNeg.restrict {A : Type*} {X : Distribution A} (hX : X.NonNeg) (P : A → Prop) :
+lemma NonNeg.restrict {A : Type*} {X : Distribution A} (hX : X.NonNeg) (P : A → Prop) :
     (X.restrict P).NonNeg := fun a => by
   rw [restrict_apply]
   by_cases h : P a <;> simp [h, hX a]
 
 /-- The mass of `P` after restricting to `Q` is the mass of `P ∩ Q`. -/
-theorem mass_restrict {A : Type*} (X : Distribution A) (P Q : A → Prop) :
+lemma mass_restrict {A : Type*} (X : Distribution A) (P Q : A → Prop) :
     (X.restrict Q).mass P = X.mass (fun a => P a ∧ Q a) := by
   unfold restrict mass Finsupp.sum
   simp only [Finsupp.support_filter, Finsupp.filter_apply]
@@ -325,19 +325,19 @@ lemma single_restrict {A : Type*} (a : A) (w : ℝ) (P : A → Prop) :
   · simp [restrict, Finsupp.filter_single_of_neg _ h, h]
 
 
-theorem mass_true {A : Type*} (X : Distribution A) :
+lemma mass_true {A : Type*} (X : Distribution A) :
     X.mass (fun _ => True) = X.weight := by
   unfold mass weight
   simp
 
 /-- A pointwise-impossible event has zero mass. -/
-theorem mass_eq_zero_of_forall_not {A : Type*} (X : Distribution A) {P : A → Prop}
+lemma mass_eq_zero_of_forall_not {A : Type*} (X : Distribution A) {P : A → Prop}
     (h : ∀ a, ¬ P a) : X.mass P = 0 := by
   unfold mass Finsupp.sum
   exact Finset.sum_eq_zero fun a _ => if_neg (h a)
 
 /-- Mass depends only on the event up to logical equivalence. -/
-theorem mass_congr {A : Type*} (X : Distribution A) {P Q : A → Prop} (h : ∀ a, P a ↔ Q a) :
+lemma mass_congr {A : Type*} (X : Distribution A) {P Q : A → Prop} (h : ∀ a, P a ↔ Q a) :
     X.mass P = X.mass Q := by
   unfold mass
   congr 1
@@ -346,7 +346,7 @@ theorem mass_congr {A : Type*} (X : Distribution A) {P Q : A → Prop} (h : ∀ 
 
 /-- `mass_congr` with the equivalence required only on the support — mass sums
 over the support, so that is all it reads. -/
-theorem mass_congr_of_support {A : Type*} (X : Distribution A) {P Q : A → Prop}
+lemma mass_congr_of_support {A : Type*} (X : Distribution A) {P Q : A → Prop}
     (h : ∀ a ∈ X.support, (P a ↔ Q a)) : X.mass P = X.mass Q := by
   unfold mass
   refine Finsupp.sum_congr fun a ha => ?_
@@ -354,7 +354,7 @@ theorem mass_congr_of_support {A : Type*} (X : Distribution A) {P Q : A → Prop
 
 open scoped Classical in
 /-- An event and its complement partition the total mass: `X(P) + X(¬P) = |X|`. -/
-theorem mass_add_compl {A : Type*} (X : Distribution A) (P : A → Prop) :
+lemma mass_add_compl {A : Type*} (X : Distribution A) (P : A → Prop) :
     X.mass P + X.mass (fun a => ¬ P a) = X.weight := by
   unfold mass weight Finsupp.sum
   rw [← Finset.sum_add_distrib]
@@ -363,7 +363,7 @@ theorem mass_add_compl {A : Type*} (X : Distribution A) (P : A → Prop) :
 /-- **Splitting one event by another**: `X(Q) = X(P ∧ Q) + X(¬P ∧ Q)`.  The
 relative form of `mass_add_compl`, which is the case `Q = True`.  Signed layer:
 the pointwise indicator identity, summed. -/
-theorem mass_and_add_mass_not_and {A : Type*} (X : Distribution A) (P Q : A → Prop) :
+lemma mass_and_add_mass_not_and {A : Type*} (X : Distribution A) (P Q : A → Prop) :
     X.mass (fun a => P a ∧ Q a) + X.mass (fun a => ¬ P a ∧ Q a) = X.mass Q := by
   classical
   simp only [Distribution.mass, Finsupp.sum]
@@ -373,13 +373,13 @@ theorem mass_and_add_mass_not_and {A : Type*} (X : Distribution A) (P Q : A → 
 
 /-- The mass of an event never exceeds the total mass of a non-negative
 distribution: `X(P) ≤ |X|`. -/
-theorem mass_le_weight {A : Type*} {X : Distribution A} (hX : X.NonNeg) (P : A → Prop) :
+lemma mass_le_weight {A : Type*} {X : Distribution A} (hX : X.NonNeg) (P : A → Prop) :
     X.mass P ≤ X.weight := by
   rw [← mass_add_compl X P]
   exact le_add_of_nonneg_right (hX.mass_nonneg _)
 
 /-- Monotonicity of event mass: a weaker event carries at least as much mass. -/
-theorem mass_mono {A : Type*} {X : Distribution A} (hX : X.NonNeg) {P Q : A → Prop}
+lemma mass_mono {A : Type*} {X : Distribution A} (hX : X.NonNeg) {P Q : A → Prop}
     (h : ∀ a, P a → Q a) : X.mass P ≤ X.mass Q := by
   classical
   simp only [Distribution.mass, Finsupp.sum]
@@ -391,7 +391,7 @@ theorem mass_mono {A : Type*} {X : Distribution A} (hX : X.NonNeg) {P Q : A → 
 /-- **A common part bounds the difference of masses**, one side: if `μ₁` has weight one and both
 `μ₁` and `μ₂` lie above `ν`, then `μ₁` exceeds `μ₂` on every event by at most the weight `μ₁` does
 not share with `ν`, `μ₁(P) − μ₂(P) ≤ 1 − |ν|`. -/
-theorem mass_sub_mass_le_of_le {A : Type*} {μ₁ μ₂ ν : Distribution A} (h₁ : μ₁.weight = 1)
+lemma mass_sub_mass_le_of_le {A : Type*} {μ₁ μ₂ ν : Distribution A} (h₁ : μ₁.weight = 1)
     (hν₁ : ∀ a, ν a ≤ μ₁ a) (hν₂ : ∀ a, ν a ≤ μ₂ a) (P : A → Prop) :
     μ₁.mass P - μ₂.mass P ≤ 1 - ν.weight := by
   -- Plan. Each μ above ν splits as ν + (μ − ν), with μ − ν ≥ 0. So
@@ -420,7 +420,7 @@ theorem mass_sub_mass_le_of_le {A : Type*} {μ₁ μ₂ ν : Distribution A} (h�
 /-- **A common part bounds the difference of masses**: two laws of weight one that both lie
 above `ν` differ on every event by at most the weight they do not share with `ν`,
 `|μ₁(P) − μ₂(P)| ≤ 1 − |ν|`. -/
-theorem abs_mass_sub_le_of_le {A : Type*} {μ₁ μ₂ ν : Distribution A} (h₁ : μ₁.weight = 1)
+lemma abs_mass_sub_le_of_le {A : Type*} {μ₁ μ₂ ν : Distribution A} (h₁ : μ₁.weight = 1)
     (h₂ : μ₂.weight = 1) (hν₁ : ∀ a, ν a ≤ μ₁ a) (hν₂ : ∀ a, ν a ≤ μ₂ a) (P : A → Prop) :
     |μ₁.mass P - μ₂.mass P| ≤ 1 - ν.weight :=
   -- The one-sided bound, for μ₁ over μ₂ and for μ₂ over μ₁.
@@ -432,7 +432,7 @@ signed-carrier form of `Finset.single_le_sum` for `Distribution.mass`.
 
 A support atom witnessing an event forces that event to carry positive mass,
 so an event of mass zero has no witness in the support. -/
-theorem apply_le_mass {A : Type*} {X : Distribution A} (hX : X.NonNeg)
+lemma apply_le_mass {A : Type*} {X : Distribution A} (hX : X.NonNeg)
     {P : A → Prop} {a : A} (ha : P a) : X a ≤ X.mass P := by
   classical
   by_cases hsupport : a ∈ X.support
@@ -446,7 +446,7 @@ theorem apply_le_mass {A : Type*} {X : Distribution A} (hX : X.NonNeg)
 
 /-- `mass_mono` with the implication required only on the support — mass is
 a support sum, so off-support behavior of the events is irrelevant. -/
-theorem mass_mono_on_support {A : Type*} {X : Distribution A} (hX : X.NonNeg)
+lemma mass_mono_on_support {A : Type*} {X : Distribution A} (hX : X.NonNeg)
     {P Q : A → Prop} (h : ∀ a ∈ X.support, P a → Q a) :
     X.mass P ≤ X.mass Q := by
   classical
@@ -457,7 +457,7 @@ theorem mass_mono_on_support {A : Type*} {X : Distribution A} (hX : X.NonNeg)
   · by_cases hQ : Q a <;> simp [hP, hQ, hX a]
 
 /-- Subadditivity over a disjunction — the two-event union bound. -/
-theorem mass_or_le {A : Type*} {X : Distribution A} (hX : X.NonNeg) (P Q : A → Prop) :
+lemma mass_or_le {A : Type*} {X : Distribution A} (hX : X.NonNeg) (P Q : A → Prop) :
     X.mass (fun a => P a ∨ Q a) ≤ X.mass P + X.mass Q := by
   classical
   simp only [Distribution.mass, Finsupp.sum]
@@ -477,7 +477,7 @@ theorem mass_or_le {A : Type*} {X : Distribution A} (hX : X.NonNeg) (P Q : A →
     simp [hpq.1, hpq.2]
 
 /-- The `Finset`-indexed union bound — `mass_or_le` iterated. -/
-theorem mass_exists_le {A ι : Type*} {X : Distribution A} (hX : X.NonNeg) (s : Finset ι)
+lemma mass_exists_le {A ι : Type*} {X : Distribution A} (hX : X.NonNeg) (s : Finset ι)
     (P : ι → A → Prop) :
     X.mass (fun a => ∃ i ∈ s, P i a) ≤ ∑ i ∈ s, X.mass (P i) := by
   classical
@@ -494,7 +494,7 @@ theorem mass_exists_le {A ι : Type*} {X : Distribution A} (hX : X.NonNeg) (s : 
       linarith [ih]
 
 /-- Restricting to an event leaves exactly the mass of that event. -/
-theorem weight_restrict {A : Type*} (X : Distribution A) (P : A → Prop) :
+lemma weight_restrict {A : Type*} (X : Distribution A) (P : A → Prop) :
     (X.restrict P).weight = X.mass P := by
   rw [← mass_true (X.restrict P), mass_restrict]
   simp
@@ -555,7 +555,7 @@ def evalPred (X : Distribution A) (P : A → Prop) : ℝ :=
   ∑ a ∈ Finset.univ.filter P, X a
 
 @[simp]
-theorem evalPred_eq_evalSet (X : Distribution A) (P : A → Prop) :
+lemma evalPred_eq_evalSet (X : Distribution A) (P : A → Prop) :
     X.evalPred P = X.evalSet (Finset.univ.filter P) := by
   rfl
 
@@ -569,17 +569,17 @@ def uniform (A : Type*) [Fintype A] [Nonempty A] : Distribution A :=
 /-! ### Uniform distribution lemmas -/
 
 /-- Pointwise evaluation of the uniform distribution. -/
-theorem uniform_apply (a : A) :
+lemma uniform_apply (a : A) :
     (uniform A) a = 1 / (Fintype.card A : ℝ) := by
   simp [uniform, Finsupp.equivFunOnFinite]
 
 /-- The uniform distribution is pointwise non-negative. -/
-theorem uniform_nonNeg : (uniform A).NonNeg := fun a => by
+lemma uniform_nonNeg : (uniform A).NonNeg := fun a => by
   rw [uniform_apply]
   positivity
 
 /-- The uniform distribution has weight 1. -/
-theorem weight_uniform :
+lemma weight_uniform :
     (uniform A).weight = 1 := by
   rw [weight_eq_sum]
   have h_card_pos : (0 : ℝ) < (Fintype.card A : ℝ) :=
@@ -589,7 +589,7 @@ theorem weight_uniform :
   exact_mod_cast h_card_pos.ne'
 
 /-- The uniform distribution is a probability distribution. -/
-theorem uniform_isProbDist :
+lemma uniform_isProbDist :
     (uniform A).isProbDist := ⟨uniform_nonNeg, weight_uniform⟩
 
 instance : IsProbability (uniform A) := ⟨uniform_nonNeg, weight_uniform⟩
@@ -617,7 +617,7 @@ def marginalAt {ι : Type*} {X : ι → Type*}
 
 /-- Pointwise form of `marginalAt`: the mass at `xj` is the mass of the fiber
 of product points whose `j`-th coordinate equals `xj`. -/
-theorem marginalAt_apply {ι : Type*} {X : ι → Type*}
+lemma marginalAt_apply {ι : Type*} {X : ι → Type*}
     (F : Distribution ((i : ι) → X i)) (j : ι) (xj : X j) :
     marginalAt F j xj = F.mass (fun x => x j = xj) := by
   unfold marginalAt mass
@@ -633,14 +633,14 @@ def fTransform (f : A → B) (X : Distribution A) : Distribution B :=
   X.sum (fun a w => Finsupp.single (f a) w)
 
 /-- Pushforward composes. -/
-theorem fTransform_fTransform {A B C : Type*}
+lemma fTransform_fTransform {A B C : Type*}
     (f : B → C) (g : A → B) (X : Distribution A) :
     fTransform f (fTransform g X) = fTransform (f ∘ g) X := by
   show Finsupp.mapDomain f (Finsupp.mapDomain g X) = Finsupp.mapDomain (f ∘ g) X
   exact (Finsupp.mapDomain_comp (v := X)).symm
 
 /-- Pointwise evaluation of a pushforward is the mass of the fiber. -/
-theorem fTransform_apply_eq_mass {A B : Type*}
+lemma fTransform_apply_eq_mass {A B : Type*}
     (f : A → B) (X : Distribution A) (b : B) :
     fTransform f X b = X.mass (fun a => f a = b) := by
   unfold fTransform mass
@@ -648,7 +648,7 @@ theorem fTransform_apply_eq_mass {A B : Type*}
 
 /-- Evaluating a pushforward at an image point of an injective map recovers the
 original mass. -/
-theorem fTransform_injective_apply {A B : Type*}
+lemma fTransform_injective_apply {A B : Type*}
     (X : Distribution A) (f : A → B) (hf : Function.Injective f) (a : A) :
     fTransform f X (f a) = X a := by
   simp only [fTransform, Finsupp.sum, Finsupp.coe_finsetSum, Finset.sum_apply,
@@ -661,7 +661,7 @@ theorem fTransform_injective_apply {A B : Type*}
     simp [Finsupp.notMem_support_iff.mp ha]
 
 /-- Evaluating a pushforward away from the image of the map gives zero mass. -/
-theorem fTransform_apply_of_forall_ne {A B : Type*}
+lemma fTransform_apply_of_forall_ne {A B : Type*}
     (X : Distribution A) (f : A → B) (b : B) (h : ∀ a, f a ≠ b) :
     fTransform f X b = 0 := by
   simp only [fTransform, Finsupp.sum, Finsupp.coe_finsetSum, Finset.sum_apply,
@@ -672,21 +672,21 @@ theorem fTransform_apply_of_forall_ne {A B : Type*}
 
 /-- Every support element of a pushforward has a support witness in the source
 distribution. -/
-theorem mem_support_fTransform {A B : Type*} (f : A → B) (X : Distribution A) {b : B}
+lemma mem_support_fTransform {A B : Type*} (f : A → B) (X : Distribution A) {b : B}
     (hb : b ∈ (fTransform f X).support) : ∃ a ∈ X.support, f a = b := by
   classical
   have hsub : (fTransform f X).support ⊆ X.support.image f := Finsupp.mapDomain_support
   simpa [fTransform] using hsub hb
 
 /-- A weighted sum over a pushforward pulls the summand back. -/
-theorem sum_fTransform_mul {A B : Type*} (f : A → B) (X : Distribution A) (g : B → ℝ) :
+lemma sum_fTransform_mul {A B : Type*} (f : A → B) (X : Distribution A) (g : B → ℝ) :
     (fTransform f X).sum (fun b w => w * g b) = X.sum (fun a w => w * g (f a)) := by
   classical
   unfold fTransform
   exact Finsupp.sum_mapDomain_index (fun _ => zero_mul _) (fun _ _ _ => add_mul _ _ _)
 
 /-- Event mass under a pushforward is event mass of the preimage. -/
-theorem mass_fTransform {A B : Type*}
+lemma mass_fTransform {A B : Type*}
     (f : A → B) (X : Distribution A) (P : B → Prop) :
     (fTransform f X).mass P = X.mass (fun a => P (f a)) := by
   unfold fTransform mass
@@ -715,7 +715,7 @@ lemma restrict_fTransform {A B : Type*} (f : A → B) (μ : Distribution A) (P :
     exact (mass_eq_zero_of_forall_not _ fun a (ha : f a = b ∧ P (f a)) => h (ha.1 ▸ ha.2)).symm
 
 /-- Pushforward preserves total mass. -/
-theorem weight_fTransform {A B : Type*}
+lemma weight_fTransform {A B : Type*}
     (f : A → B) (X : Distribution A) :
     (fTransform f X).weight = X.weight := by
   unfold weight
@@ -724,13 +724,13 @@ theorem weight_fTransform {A B : Type*}
 
 /-- Pushforward preserves non-negativity: the mass at each image point is a
 sum of non-negative source masses. -/
-theorem NonNeg.fTransform {A B : Type*} {X : Distribution A} (hX : X.NonNeg)
+lemma NonNeg.fTransform {A B : Type*} {X : Distribution A} (hX : X.NonNeg)
     (f : A → B) : (Distribution.fTransform f X).NonNeg := fun b => by
   rw [fTransform_apply_eq_mass]
   exact hX.mass_nonneg _
 
 /-- Pushforward preserves total probability mass. -/
-theorem fTransform_isProbDist {A B : Type*} (f : A → B) {X : Distribution A}
+lemma fTransform_isProbDist {A B : Type*} (f : A → B) {X : Distribution A}
     (hX : X.isProbDist) : (fTransform f X).isProbDist := by
   refine ⟨hX.nonNeg.fTransform f, ?_⟩
   rw [weight_fTransform]
@@ -744,7 +744,7 @@ instance {A B : Type*} (f : A → B) (X : Distribution A) [IsProbability X] :
 /-- `isProbDist` normalizes through pushforward — for a non-negative source
 law.  (Over the signed carrier the unconditional `↔` is false: a pushforward
 can merge cancelling signed masses into a non-negative law.) -/
-theorem isProbDist_fTransform {A B : Type*} (f : A → B) {X : Distribution A}
+lemma isProbDist_fTransform {A B : Type*} (f : A → B) {X : Distribution A}
     (hX : X.NonNeg) :
     (fTransform f X).isProbDist ↔ X.isProbDist := by
   constructor
@@ -756,7 +756,7 @@ theorem isProbDist_fTransform {A B : Type*} (f : A → B) {X : Distribution A}
 
 /-- An injective pushforward reflects non-negativity: every source mass shows
 up unmerged at its image point. -/
-theorem NonNeg.of_fTransform_injective {A B : Type*} {X : Distribution A} {f : A → B}
+lemma NonNeg.of_fTransform_injective {A B : Type*} {X : Distribution A} {f : A → B}
     (hf : Function.Injective f) (h : (Distribution.fTransform f X).NonNeg) : X.NonNeg :=
   fun a => by
     have := h (f a)
@@ -765,7 +765,7 @@ theorem NonNeg.of_fTransform_injective {A B : Type*} {X : Distribution A} {f : A
 /-- `isProbDist` normalizes through an **injective** pushforward with no
 side condition: injectivity rules out merging cancelling signed masses. -/
 @[simp]
-theorem isProbDist_fTransform_of_injective {A B : Type*} {f : A → B}
+lemma isProbDist_fTransform_of_injective {A B : Type*} {f : A → B}
     (hf : Function.Injective f) (X : Distribution A) :
     (fTransform f X).isProbDist ↔ X.isProbDist := by
   constructor
@@ -775,7 +775,7 @@ theorem isProbDist_fTransform_of_injective {A B : Type*} {f : A → B}
   · exact fTransform_isProbDist f
 
 /-- Dividing every mass by `c` divides the total mass by `c`. -/
-theorem weight_mapRange_div {A : Type*} (X : Distribution A) (c : ℝ) :
+lemma weight_mapRange_div {A : Type*} (X : Distribution A) (c : ℝ) :
     weight (Finsupp.mapRange (fun w => w / c) (by simp) X : Distribution A) =
       X.weight / c := by
   unfold weight
@@ -844,7 +844,7 @@ noncomputable def condPMF {Ω A : Type*} (p : ProbDist Ω)
           · rw [weight_mapRange_div, weight_fTransform, weight_restrict]
             exact div_self hE⟩⟩
 
-theorem condPMF_apply {Ω A : Type*} (p : ProbDist Ω)
+lemma condPMF_apply {Ω A : Type*} (p : ProbDist Ω)
     (X : RV (Ω := Ω) (A := A)) (E : Ω → Prop)
     (hE : p.val.mass E ≠ 0) (a : A) :
     (condPMF p X E).get hE a =
@@ -880,7 +880,7 @@ The decidability of the fiber predicate is an explicit parameter rather than
 this file's classical local instance: the statement's `Finset.filter` then
 instantiates with the caller's ambient instance, whether classical or derived
 from `[DecidableEq B]`, so `rw` matches goals in both instance policies. -/
-theorem fTransform_apply_eq_sum
+lemma fTransform_apply_eq_sum
     (f : A → B) (X : Distribution A) (b : B)
     [DecidablePred fun a : A => f a = b] :
     (fTransform f X) b =
@@ -906,7 +906,7 @@ the fiber cardinality divided by the total cardinality.
 
 As in `fTransform_apply_eq_sum`, the fiber decidability is an explicit
 parameter so the statement's filter matches the caller's ambient instance. -/
-theorem fTransform_uniform_apply
+lemma fTransform_uniform_apply
     (f : A → B) (b : B)
     [DecidablePred fun a : A => f a = b] :
     (fTransform f (uniform A)) b =
@@ -918,7 +918,7 @@ theorem fTransform_uniform_apply
 /-- If every fiber of `f : A -> B` has the cardinality expected for a uniform
 map, pushing the uniform distribution on `A` forward along `f` gives the
 uniform distribution on `B`. -/
-theorem fTransform_uniform_eq_uniform_of_card_fiber_mul
+lemma fTransform_uniform_eq_uniform_of_card_fiber_mul
     {A B : Type*} [Fintype A] [Nonempty A] [Fintype B] [Nonempty B]
     [DecidableEq B]
     (f : A → B)
@@ -952,7 +952,7 @@ theorem fTransform_uniform_eq_uniform_of_card_fiber_mul
   simp [c, d]
 
 /-- Summing against a pushforward distribution pulls the summand back. -/
-theorem fTransform_sum_mul
+lemma fTransform_sum_mul
     (X : Distribution A) (f : A → B) (g : B → ℝ) :
     (∑ b : B, (fTransform f X) b * g b) = ∑ a : A, X a * g (f a) := by
   classical
@@ -976,7 +976,7 @@ theorem fTransform_sum_mul
 
 /-- Evaluating a predicate after a pushforward is the same as evaluating the
 pulled-back predicate before the pushforward. -/
-theorem evalPred_fTransform
+lemma evalPred_fTransform
     (X : Distribution A) (f : A → B) (P : B → Prop) :
     (fTransform f X).evalPred P = X.evalPred (fun a => P (f a)) := by
   classical
@@ -1011,7 +1011,7 @@ def prod (X : Distribution A) (Y : Distribution B) : Distribution (A × B) :=
 section
 omit [Fintype A] [Nonempty A] [Fintype B] [Nonempty B]
 
-theorem prod_apply (X : Distribution A) (Y : Distribution B) (a : A) (b : B) :
+lemma prod_apply (X : Distribution A) (Y : Distribution B) (a : A) (b : B) :
     prod X Y (a, b) = X a * Y b := by
   classical
   -- Push evaluation inside the nested sums and discharge each sum via `Finsupp.sum_eq_single`.
@@ -1043,7 +1043,7 @@ theorem prod_apply (X : Distribution A) (Y : Distribution B) (a : A) (b : B) :
 
 /-- An independent product is supported on the rectangle of the component
 supports: a pair carries mass only if both of its coordinates do. -/
-theorem support_prod_subset (X : Distribution A) (Y : Distribution B) :
+lemma support_prod_subset (X : Distribution A) (Y : Distribution B) :
     (prod X Y).support ⊆ X.support ×ˢ Y.support := fun p hp =>
   have hne : X p.1 * Y p.2 ≠ 0 :=
     prod_apply X Y p.1 p.2 ▸ Finsupp.mem_support_iff.mp hp
@@ -1054,7 +1054,7 @@ theorem support_prod_subset (X : Distribution A) (Y : Distribution B) :
 /-- The mass of an arbitrary event under an independent product as an iterated
 finite-support sum.  The rectangle case is `mass_prod_and`; this unrestricted
 form is useful when the event couples the two coordinates. -/
-theorem mass_prod_eq_double_sum (X : Distribution A) (Y : Distribution B) (R : A × B → Prop) :
+lemma mass_prod_eq_double_sum (X : Distribution A) (Y : Distribution B) (R : A × B → Prop) :
     (prod X Y).mass R =
       X.sum fun a wa => Y.sum fun b wb => if R (a, b) then wa * wb else 0 := by
   classical
@@ -1069,7 +1069,7 @@ theorem mass_prod_eq_double_sum (X : Distribution A) (Y : Distribution B) (R : A
   rw [key (a, b)]
 
 /-- A weighted sum over an independent product is an iterated weighted sum. -/
-theorem sum_prod_mul (X : Distribution A) (Y : Distribution B) (f : A × B → ℝ) :
+lemma sum_prod_mul (X : Distribution A) (Y : Distribution B) (f : A × B → ℝ) :
     (prod X Y).sum (fun p w => w * f p) =
       X.sum fun a wa => wa * Y.sum fun b wb => wb * f (a, b) := by
   classical
@@ -1084,7 +1084,7 @@ theorem sum_prod_mul (X : Distribution A) (Y : Distribution B) (f : A × B → �
   rw [key (a, b)]
   ring
 
-theorem weight_prod (X : Distribution A) (Y : Distribution B) :
+lemma weight_prod (X : Distribution A) (Y : Distribution B) :
     (prod X Y).weight = X.weight * Y.weight := by
   classical
   -- Support-based, so **no `Fintype` on the carriers**: sum the product mass over the finite
@@ -1104,13 +1104,13 @@ theorem weight_prod (X : Distribution A) (Y : Distribution B) :
     _ = X.weight * Y.weight := by rw [← Finset.sum_mul_sum]; simp only [weight, Finsupp.sum]
 
 /-- Independent products preserve non-negativity. -/
-theorem NonNeg.prod {X : Distribution A} {Y : Distribution B} (hX : X.NonNeg) (hY : Y.NonNeg) :
+lemma NonNeg.prod {X : Distribution A} {Y : Distribution B} (hX : X.NonNeg) (hY : Y.NonNeg) :
     (Distribution.prod X Y).NonNeg := fun p => by
   rw [show p = (p.1, p.2) from rfl, prod_apply]
   exact mul_nonneg (hX p.1) (hY p.2)
 
 /-- The product of two probability distributions is a probability distribution. -/
-theorem prod_isProbDist (X : Distribution A) (Y : Distribution B)
+lemma prod_isProbDist (X : Distribution A) (Y : Distribution B)
     (hX : X.isProbDist) (hY : Y.isProbDist) : (prod X Y).isProbDist := by
   refine ⟨hX.nonNeg.prod hY.nonNeg, ?_⟩
   rw [weight_prod, hX.weight_eq, hY.weight_eq, mul_one]
@@ -1126,7 +1126,7 @@ the joint distribution of two **independently selected** random variables). -/
 noncomputable def prodProbDist (P : ProbDist A) (Q : ProbDist B) : ProbDist (A × B) :=
   ⟨prod P.val Q.val, prod_isProbDist P.val Q.val P.property Q.property⟩
 
-@[simp] theorem prodProbDist_val (P : ProbDist A) (Q : ProbDist B) :
+@[simp] lemma prodProbDist_val (P : ProbDist A) (Q : ProbDist B) :
     (prodProbDist P Q).val = prod P.val Q.val := rfl
 
 /-- CR18 **Definition 4.9** (finite part). The **q-fold i.i.d. power** `X^q` of a distribution:
@@ -1143,11 +1143,11 @@ noncomputable def iidPow (X : Distribution A) (q : ℕ) : Distribution (Fin q �
 
 /-- The defining property of `X^q`: its mass is the product of the marginals (independence +
 identical marginal `X`). -/
-@[simp] theorem iidPow_apply (X : Distribution A) (q : ℕ) (f : Fin q → A) :
+@[simp] lemma iidPow_apply (X : Distribution A) (q : ℕ) (f : Fin q → A) :
     iidPow X q f = ∏ i, X (f i) := by rw [iidPow]; exact Finsupp.onFinset_apply
 
 /-- The weight of `X^q` is the `q`-th power of the weight: `|X^q| = |X|^q`. -/
-theorem iidPow_weight (X : Distribution A) (q : ℕ) : (iidPow X q).weight = X.weight ^ q := by
+lemma iidPow_weight (X : Distribution A) (q : ℕ) : (iidPow X q).weight = X.weight ^ q := by
   have hsub : (iidPow X q).support ⊆ Fintype.piFinset fun _ : Fin q => X.support :=
     fun f hf => Fintype.mem_piFinset.mpr fun i => Finsupp.mem_support_iff.mpr fun hi =>
       (iidPow_apply X q f ▸ Finsupp.mem_support_iff.mp hf) (Finset.prod_eq_zero (Finset.mem_univ i) hi)
@@ -1164,7 +1164,7 @@ theorem iidPow_weight (X : Distribution A) (q : ℕ) : (iidPow X q).weight = X.w
 
 /-- `X^q` is a probability distribution whenever `X` is (CR18 Def 4.9: `X^q` is again a random
 variable) — the n-ary analogue of `prod_isProbDist`. -/
-theorem iidPow_isProbDist {X : Distribution A} (hX : X.isProbDist) (q : ℕ) : (iidPow X q).isProbDist := by
+lemma iidPow_isProbDist {X : Distribution A} (hX : X.isProbDist) (q : ℕ) : (iidPow X q).isProbDist := by
   refine ⟨fun f => ?_, ?_⟩
   · rw [iidPow_apply]
     exact Finset.prod_nonneg fun i _ => hX.nonNeg (f i)
@@ -1181,20 +1181,20 @@ def clonePow (X : Distribution A) (q : ℕ) : Distribution (Fin q → A) :=
 
 /-- `X^[q]` is supported on constant tuples: its mass at `g` is the `X`-mass of the values whose
 clone tuple is `g` (so `0` unless `g` is constant, and `X a` at the constant-`a` tuple). -/
-@[simp] theorem clonePow_apply (X : Distribution A) (q : ℕ) (g : Fin q → A) :
+@[simp] lemma clonePow_apply (X : Distribution A) (q : ℕ) (g : Fin q → A) :
     clonePow X q g = X.mass (fun a => (fun _ => a) = g) := fTransform_apply_eq_mass _ X g
 
 end
 
 omit [Nonempty A] in
 /-- `mass` as a `Fintype` sum: `X.mass P = ∑ a, (if P a then X a else 0)`. -/
-theorem mass_eq_sum (X : Distribution A) (P : A → Prop) :
+lemma mass_eq_sum (X : Distribution A) (P : A → Prop) :
     X.mass P = ∑ a, if P a then X a else 0 := by
   rw [Distribution.mass]
   exact Finsupp.sum_fintype _ _ (fun _ => by simp only [ite_self])
 
 /-- Uniform event mass as a cardinality ratio. -/
-theorem uniform_mass_eq_card_filter (P : A → Prop) [DecidablePred P] :
+lemma uniform_mass_eq_card_filter (P : A → Prop) [DecidablePred P] :
     (uniform A).mass P =
       (((Finset.univ : Finset A).filter P).card : ℝ) /
         (Fintype.card A : ℝ) := by
@@ -1205,7 +1205,7 @@ theorem uniform_mass_eq_card_filter (P : A → Prop) [DecidablePred P] :
 /-- **Uniform-mass product law from a counting identity**: if `#P · |B| = #Q · #E` then
 `mass P = mass Q · mass E` over the uniform distributions.  The algebraic endgame of balanced-fiber
 (re-randomisation) counting arguments: prove the count, read off the product law. -/
-theorem uniform_mass_eq_mass_mul_mass_of_card_mul_eq {A B : Type*}
+lemma uniform_mass_eq_mass_mul_mass_of_card_mul_eq {A B : Type*}
     [Fintype A] [Nonempty A] [Fintype B] [Nonempty B]
     (P E : A → Prop) (Q : B → Prop) [DecidablePred P] [DecidablePred E] [DecidablePred Q]
     (hcard : (Finset.univ.filter P).card * Fintype.card B
@@ -1264,7 +1264,7 @@ theorem mass_prod_and (P : Distribution A) (Q : Distribution B) (R₁ : A → Pr
 
 omit [Fintype A] [Nonempty A] [Fintype B] [Nonempty B] in
 /-- The mass of the singleton event `· = a` is just the weight `X a`. -/
-theorem mass_singleton (X : Distribution A) (a : A) : X.mass (fun b => b = a) = X a := by
+lemma mass_singleton (X : Distribution A) (a : A) : X.mass (fun b => b = a) = X a := by
   classical
   unfold mass
   rw [Finsupp.sum_eq_single a (fun b _ hb => by simp [hb]) (by simp)]
@@ -1273,7 +1273,7 @@ theorem mass_singleton (X : Distribution A) (a : A) : X.mass (fun b => b = a) = 
 omit [Fintype A] [Nonempty A] [Fintype B] [Nonempty B] in
 /-- **CR18 Def A.4 marginal** on the first coordinate of a product distribution:
 `P_X(x) = ∑_y P_{XY}(x,y)`, here `(prod P Q).mass (R ∘ fst) = P.mass R · weight Q`. -/
-theorem mass_prod_fst (P : Distribution A) (Q : Distribution B) (R : A → Prop) :
+lemma mass_prod_fst (P : Distribution A) (Q : Distribution B) (R : A → Prop) :
     (prod P Q).mass (fun ab => R ab.1) = P.mass R * Q.weight := by
   rw [show (fun ab : A × B => R ab.1) = (fun ab => R ab.1 ∧ (fun _ : B => True) ab.2) from by
         funext; simp,
@@ -1281,7 +1281,7 @@ theorem mass_prod_fst (P : Distribution A) (Q : Distribution B) (R : A → Prop)
 
 omit [Fintype A] [Nonempty A] [Fintype B] [Nonempty B] in
 /-- **CR18 Def A.4 marginal** on the second coordinate of a product distribution. -/
-theorem mass_prod_snd (P : Distribution A) (Q : Distribution B) (R : B → Prop) :
+lemma mass_prod_snd (P : Distribution A) (Q : Distribution B) (R : B → Prop) :
     (prod P Q).mass (fun ab => R ab.2) = P.weight * Q.mass R := by
   rw [show (fun ab : A × B => R ab.2) = (fun ab => (fun _ : A => True) ab.1 ∧ R ab.2) from by
         funext; simp,
@@ -1294,7 +1294,7 @@ first factor, scaled by the total weight of the discarded factor.  At
 distribution — the scaling is trivial (`one_smul`); the general form is what
 an optimal coupling needs, whose off-diagonal factors carry the transported
 mass rather than weight one. -/
-theorem fTransform_fst_prod (P : Distribution A) (Q : Distribution B) :
+lemma fTransform_fst_prod (P : Distribution A) (Q : Distribution B) :
     fTransform Prod.fst (prod P Q) = Q.weight • P := by
   ext a
   rw [fTransform_apply_eq_mass, Finsupp.smul_apply, smul_eq_mul]
@@ -1307,7 +1307,7 @@ theorem fTransform_fst_prod (P : Distribution A) (Q : Distribution B) :
 omit [Fintype A] [Nonempty A] [Fintype B] [Nonempty B] in
 /-- Projecting an independent product onto its second coordinate recovers the
 second factor, scaled by the total weight of the discarded factor. -/
-theorem fTransform_snd_prod (P : Distribution A) (Q : Distribution B) :
+lemma fTransform_snd_prod (P : Distribution A) (Q : Distribution B) :
     fTransform Prod.snd (prod P Q) = P.weight • Q := by
   ext b
   rw [fTransform_apply_eq_mass, Finsupp.smul_apply, smul_eq_mul]
@@ -1317,7 +1317,7 @@ theorem fTransform_snd_prod (P : Distribution A) (Q : Distribution B) :
       simpa using mass_prod_snd P Q (fun y => y = b)
     _ = P.weight * Q b := by rw [mass_singleton]
 
-theorem prod_uniform :
+lemma prod_uniform :
     prod (uniform A) (uniform B) = uniform (A × B) := by
   classical
   ext p
@@ -1331,7 +1331,7 @@ omit [Fintype A] [Nonempty A] in
 /-- The weight equals the Finsupp.sum with identity.  (`rfl`; needs no `Fintype`/`Nonempty` — those
 are section-variable leaks, omitted so callers over arbitrary carriers, e.g. `Distribution gs.Game`, can use
 it without spurious `Nonempty` obligations.) -/
-theorem weight_eq_finsupp_sum (X : Distribution A) :
+lemma weight_eq_finsupp_sum (X : Distribution A) :
     X.weight = X.sum (fun _ w => w) := by
   rfl
 
@@ -1339,7 +1339,7 @@ omit [Fintype A] [Nonempty A] [Fintype B] [Nonempty B] [Fintype C] [Nonempty C] 
 /-- Composing two f-transformations equals the f-transformation of the composition.
 
 This is the pushforward functoriality law: `f_*(g_*(X)) = (f ∘ g)_*(X)`. -/
-theorem fTransform_comp
+lemma fTransform_comp
     (g : B → C) (f : A → B) (X : Distribution A) :
     fTransform g (fTransform f X) = fTransform (g ∘ f) X := by
   show Finsupp.mapDomain g (Finsupp.mapDomain f X) = Finsupp.mapDomain (g ∘ f) X
@@ -1354,7 +1354,7 @@ random variables on the same sample space.  If stripping `aug` recovers
 All randomness, including fresh augmentation coins, belongs in the source
 law `X`; no product observation carrier or transcript-specific construction
 is involved. -/
-theorem fTransform_comp_eq_of_pointwise
+lemma fTransform_comp_eq_of_pointwise
     (strip : B → C) (aug : A → B) (plain : A → C) (X : Distribution A)
     (h : ∀ a, strip (aug a) = plain a) :
     fTransform strip (fTransform aug X) = fTransform plain X := by
@@ -1365,7 +1365,7 @@ omit [Fintype A] [Nonempty A] [Fintype B] [Nonempty B] [Fintype C] [Nonempty C] 
 /-- The pushforward is additive: it is `Finsupp.mapDomain`, a linear map, and
 mixtures therefore survive to the image.  Stated for a `Finset` sum, which is
 the form a decomposition over a finite support takes. -/
-theorem fTransform_sum {A B ι : Type*} (f : A → B) (t : Finset ι)
+lemma fTransform_sum {A B ι : Type*} (f : A → B) (t : Finset ι)
     (Z : ι → Distribution A) :
     fTransform f (∑ i ∈ t, Z i) = ∑ i ∈ t, fTransform f (Z i) :=
   map_sum (Finsupp.mapDomain.addMonoidHom f) Z t
@@ -1373,13 +1373,13 @@ theorem fTransform_sum {A B ι : Type*} (f : A → B) (t : Finset ι)
 omit [Fintype A] [Nonempty A] [Fintype B] [Nonempty B] [Fintype C] [Nonempty C] in
 /-- The binary face of `fTransform_sum`: the pushforward of a sum of two
 distributions is the sum of the pushforwards. -/
-theorem fTransform_add {A B : Type*} (f : A → B) (Z W : Distribution A) :
+lemma fTransform_add {A B : Type*} (f : A → B) (Z W : Distribution A) :
     fTransform f (Z + W) = fTransform f Z + fTransform f W :=
   map_add (Finsupp.mapDomain.addMonoidHom f) Z W
 
 omit [Fintype A] [Nonempty A] [Fintype B] [Nonempty B] [Fintype C] [Nonempty C] in
 /-- The pushforward commutes with scaling: mass is moved, not rescaled. -/
-theorem fTransform_smul {A B : Type*} (f : A → B) (c : ℝ)
+lemma fTransform_smul {A B : Type*} (f : A → B) (c : ℝ)
     (Z : Distribution A) : fTransform f (c • Z) = c • fTransform f Z :=
   Finsupp.mapDomain_smul c Z
 
@@ -1387,7 +1387,7 @@ omit [Fintype A] [Nonempty A] [Fintype B] [Nonempty B] [Fintype C] [Nonempty C] 
 /-- Pushing a distribution forward by the identity map
 does not change it. -/
 @[simp]
-theorem fTransform_id {A : Type*} (X : Distribution A) :
+lemma fTransform_id {A : Type*} (X : Distribution A) :
     fTransform id X = X := by
   ext a
   simpa using fTransform_injective_apply X id Function.injective_id a
@@ -1400,7 +1400,7 @@ This is the distribution-level conservative-extension law used by extended
 transcript arguments: constant terminal side information carries no observable
 mass once projected away. -/
 @[simp]
-theorem fTransform_fst_const_pair {A U : Type*} (X : Distribution A) (u : U) :
+lemma fTransform_fst_const_pair {A U : Type*} (X : Distribution A) (u : U) :
     fTransform (fun p : A × U => p.1) (fTransform (fun a : A => (a, u)) X) = X := by
   calc
     fTransform (fun p : A × U => p.1) (fTransform (fun a : A => (a, u)) X)
@@ -1418,7 +1418,7 @@ variable [Fintype A'] [Nonempty A'] [Fintype B'] [Nonempty B']
 Generalizes `fTransform_bijection_uniform` to maps between different types:
 if `e : A ≃ B` is an equivalence, then the pushforward of `uniform A`
 through `e` is `uniform B`. -/
-theorem fTransform_equiv_uniform (e : A' ≃ B') :
+lemma fTransform_equiv_uniform (e : A' ≃ B') :
     fTransform e (uniform A') = uniform B' := by
   classical
   apply fTransform_uniform_eq_uniform_of_card_fiber_mul e
@@ -1441,7 +1441,7 @@ end ProductUniform
 /-- **`prod` is a bifunctor for pushforward**: pushing an independent
 product forward coordinatewise is the independent product of the
 pushforwards. -/
-theorem fTransform_prod {A B A' B' : Type*} (f : A → A') (g : B → B')
+lemma fTransform_prod {A B A' B' : Type*} (f : A → A') (g : B → B')
     (X : Distribution A) (Y : Distribution B) :
     fTransform (Prod.map f g) (prod X Y) = prod (fTransform f X) (fTransform g Y) := by
   ext p
@@ -1451,20 +1451,20 @@ theorem fTransform_prod {A B A' B' : Type*} (f : A → A') (g : B → B')
   exact mass_congr _ fun q => by simp [Prod.map, Prod.ext_iff]
 
 /-- Pushing only the second factor forward is a pushforward of the product. -/
-theorem fTransform_prod_right {A B B' : Type*} (X : Distribution A) (g : B → B')
+lemma fTransform_prod_right {A B B' : Type*} (X : Distribution A) (g : B → B')
     (Y : Distribution B) :
     prod X (fTransform g Y) = fTransform (Prod.map id g) (prod X Y) := by
   rw [fTransform_prod, fTransform_id]
 
 /-- Pushing only the first factor forward is a pushforward of the product. -/
-theorem fTransform_prod_left {A A' B : Type*} (f : A → A') (X : Distribution A)
+lemma fTransform_prod_left {A A' B : Type*} (f : A → A') (X : Distribution A)
     (Y : Distribution B) :
     prod (fTransform f X) Y = fTransform (Prod.map f id) (prod X Y) := by
   rw [fTransform_prod, fTransform_id]
 
 /-- **Symmetry of the independent product**: exchanging the two coordinates
 exchanges the two factors. -/
-theorem fTransform_swap_prod {A B : Type*} (X : Distribution A) (Y : Distribution B) :
+lemma fTransform_swap_prod {A B : Type*} (X : Distribution A) (Y : Distribution B) :
     fTransform Prod.swap (prod X Y) = prod Y X := by
   ext p
   obtain ⟨b, a⟩ := p
@@ -1477,7 +1477,7 @@ theorem fTransform_swap_prod {A B : Type*} (X : Distribution A) (Y : Distributio
 
 /-- **Associativity of the independent product**: reassociating the sample
 reassociates the factors. -/
-theorem fTransform_assoc_prod {A B C : Type*} (X : Distribution A) (Y : Distribution B)
+lemma fTransform_assoc_prod {A B C : Type*} (X : Distribution A) (Y : Distribution B)
     (Z : Distribution C) :
     fTransform (fun p : A × B × C => ((p.1, p.2.1), p.2.2)) (prod X (prod Y Z)) =
       prod (prod X Y) Z := by
@@ -1494,7 +1494,7 @@ theorem fTransform_assoc_prod {A B C : Type*} (X : Distribution A) (Y : Distribu
     _ = prod (prod X Y) Z ((a, b), c) := by rw [prod_apply, prod_apply]
 
 /-- A fixed first coordinate is a pushforward of the second law. -/
-theorem prod_single_left {A B : Type*} (a : A) (Y : Distribution B) :
+lemma prod_single_left {A B : Type*} (a : A) (Y : Distribution B) :
     prod (Finsupp.single a 1) Y = fTransform (fun b => (a, b)) Y := by
   classical
   rw [prod, Finsupp.sum_single_index (by
@@ -1503,7 +1503,7 @@ theorem prod_single_left {A B : Type*} (a : A) (Y : Distribution B) :
   rfl
 
 /-- A fixed second coordinate is a pushforward of the first law. -/
-theorem prod_single_right {A B : Type*} (X : Distribution A) (b : B) :
+lemma prod_single_right {A B : Type*} (X : Distribution A) (b : B) :
     prod X (Finsupp.single b 1) = fTransform (fun a => (a, b)) X := by
   rw [← fTransform_swap_prod, prod_single_left, fTransform_comp]
   rfl
@@ -1513,7 +1513,7 @@ theorem prod_single_right {A B : Type*} (X : Distribution A) (b : B) :
 /-- **Fibering an event mass over the values of a statistic**: if `V` covers
 the image of `g` on the support, the mass of `P` splits into the masses of `P`
 on the fibers `g = v`. -/
-theorem mass_eq_sum_mass_fiber {A B : Type*} (μ : Distribution A)
+lemma mass_eq_sum_mass_fiber {A B : Type*} (μ : Distribution A)
     (P : A → Prop) (g : A → B) (V : Finset B)
     (hV : ∀ a ∈ μ.support, g a ∈ V) :
     μ.mass P = ∑ v ∈ V, μ.mass fun a => P a ∧ g a = v := by
@@ -1527,7 +1527,7 @@ theorem mass_eq_sum_mass_fiber {A B : Type*} (μ : Distribution A)
   · by_cases hP : P a <;> simp [hP]
 
 /-- The weight of a finite sum of laws is the sum of their weights. -/
-theorem weight_finset_sum {A ι : Type*} (t : Finset ι)
+lemma weight_finset_sum {A ι : Type*} (t : Finset ι)
     (Rf : ι → Distribution A) :
     (∑ i ∈ t, Rf i).weight = ∑ i ∈ t, (Rf i).weight := by
   rw [weight_eq_finsupp_sum,
@@ -1535,7 +1535,7 @@ theorem weight_finset_sum {A ι : Type*} (t : Finset ι)
   exact Finset.sum_congr rfl fun i _ => (weight_eq_finsupp_sum _).symm
 
 /-- A finite probabilistic choice of normalized laws is normalized. -/
-theorem isProbDist_sum_smul
+lemma isProbDist_sum_smul
     {I A : Type*} (indices : Finset I) (weights : I → ℝ) (laws : I → Distribution A)
     (nonnegative : ∀ i ∈ indices, 0 ≤ weights i)
     (total : ∑ i ∈ indices, weights i = 1)
@@ -1561,7 +1561,7 @@ theorem isProbDist_sum_smul
 
 /-- The pushforward of the zero law is the zero law. -/
 @[simp]
-theorem fTransform_zero {A B : Type*} (f : A → B) :
+lemma fTransform_zero {A B : Type*} (f : A → B) :
     fTransform f (0 : Distribution A) = 0 :=
   Finsupp.mapDomain_zero
 
@@ -1572,30 +1572,30 @@ section Products
 variable {A : Type*}
 
 /-- Weight is homogeneous: `|c · X| = c · |X|`.  Signed layer. -/
-theorem weight_smul (c : ℝ) (X : Distribution A) : (c • X).weight = c * X.weight := by
+lemma weight_smul (c : ℝ) (X : Distribution A) : (c • X).weight = c * X.weight := by
   unfold weight
   rw [Finsupp.sum_smul_index fun _ => rfl]
   unfold Finsupp.sum
   rw [Finset.mul_sum]
 
 /-- Weight is additive. -/
-theorem weight_add (X Y : Distribution A) :
+lemma weight_add (X Y : Distribution A) :
     (X + Y).weight = X.weight + Y.weight :=
   Finsupp.sum_add_index' (fun _ => rfl) (fun _ _ _ => rfl)
 
 /-- The weight of a point mass is its mass. -/
 @[simp]
-theorem weight_single (a : A) (c : ℝ) :
+lemma weight_single (a : A) (c : ℝ) :
     weight (Finsupp.single a c : Distribution A) = c := by
   unfold weight
   exact Finsupp.sum_single_index rfl
 
-theorem mass_single (a : A) (c : ℝ) (P : A → Prop) :
+lemma mass_single (a : A) (c : ℝ) (P : A → Prop) :
     mass (Finsupp.single a c : Distribution A) P = if P a then c else 0 := by
   unfold mass
   exact Finsupp.sum_single_index (ite_self 0)
 
-theorem mass_prod_eq_sum {A' B' : Type} (P : Distribution A') (Q : Distribution B')
+lemma mass_prod_eq_sum {A' B' : Type} (P : Distribution A') (Q : Distribution B')
     (C : A' → B' → Prop) :
     (Distribution.prod P Q).mass (fun p => C p.1 p.2) = P.sum fun a w => w * Q.mass (C a) := by
   rw [Distribution.mass_prod_eq_double_sum]
@@ -1605,14 +1605,14 @@ theorem mass_prod_eq_sum {A' B' : Type} (P : Distribution A') (Q : Distribution 
   refine Finsupp.sum_congr fun b _ => ?_
   split_ifs <;> simp
 
-theorem mass_prod_eq_sum_right {A' B' : Type} (P : Distribution A') (Q : Distribution B')
+lemma mass_prod_eq_sum_right {A' B' : Type} (P : Distribution A') (Q : Distribution B')
     (C : A' → B' → Prop) :
     (Distribution.prod P Q).mass (fun p => C p.1 p.2) = Q.sum fun b w => w * P.mass (fun a => C a b) := by
   rw [← mass_prod_eq_sum Q P (fun b a => C a b), ← Distribution.fTransform_swap_prod,
     Distribution.mass_fTransform]
   rfl
 
-theorem fTransform_prod_assoc {A B C D : Type} (f : (A × B) × C → D) (P : Distribution A)
+lemma fTransform_prod_assoc {A B C D : Type} (f : (A × B) × C → D) (P : Distribution A)
     (Q : Distribution B) (R : Distribution C) :
     Distribution.fTransform f (Distribution.prod (Distribution.prod P Q) R) =
       Distribution.fTransform (fun p => f ((p.1, p.2.1), p.2.2)) (Distribution.prod P (Distribution.prod Q R)) := by
@@ -1621,7 +1621,7 @@ theorem fTransform_prod_assoc {A B C D : Type} (f : (A × B) × C → D) (P : Di
 
 /-- Regrouping two independent pairs as the pairs of their first and of their second
 components. -/
-theorem independent_product_middle {A B C D : Type}
+lemma independent_product_middle {A B C D : Type}
     (P : Distribution A) (Q : Distribution B) (R : Distribution C) (S : Distribution D) :
     Distribution.fTransform (fun p : (A × B) × (C × D) => ((p.1.1, p.2.1), (p.1.2, p.2.2)))
       (Distribution.prod (Distribution.prod P Q) (Distribution.prod R S)) =
@@ -1652,19 +1652,19 @@ noncomputable def pi {ι : Type*} [Fintype ι] [DecidableEq ι]
         hf (Finset.prod_eq_zero (Finset.mem_univ i) h0))
 
 @[simp]
-theorem pi_apply {ι : Type*} [Fintype ι] [DecidableEq ι] (μ : ι → Distribution A) (f : ι → A) :
+lemma pi_apply {ι : Type*} [Fintype ι] [DecidableEq ι] (μ : ι → Distribution A) (f : ι → A) :
     pi μ f = ∏ i, μ i (f i) := by
   rw [pi]; exact Finsupp.onFinset_apply
 
 /-- An independent product of non-negative factors is non-negative. -/
-theorem pi_nonNeg {ι : Type*} [Fintype ι] [DecidableEq ι] {μ : ι → Distribution A}
+lemma pi_nonNeg {ι : Type*} [Fintype ι] [DecidableEq ι] {μ : ι → Distribution A}
     (h : ∀ i, (μ i).NonNeg) :
     (pi μ).NonNeg := fun f => by
   rw [pi_apply]
   exact Finset.prod_nonneg fun i _ => h i (f i)
 
 /-- The total mass of independent finite distributions is the product of their masses. -/
-theorem weight_pi {ι : Type*} [Fintype ι] [DecidableEq ι] (μ : ι → Distribution A) :
+lemma weight_pi {ι : Type*} [Fintype ι] [DecidableEq ι] (μ : ι → Distribution A) :
     (pi μ).weight = ∏ i, (μ i).weight := by
   classical
   rw [weight_eq_finsupp_sum]
@@ -1675,7 +1675,7 @@ theorem weight_pi {ι : Type*} [Fintype ι] [DecidableEq ι] (μ : ι → Distri
   exact (Finset.prod_univ_sum _ _).symm
 
 /-- Independent probability distributions form a probability distribution. -/
-theorem pi_isProbDist {ι : Type*} [Fintype ι] [DecidableEq ι] {μ : ι → Distribution A}
+lemma pi_isProbDist {ι : Type*} [Fintype ι] [DecidableEq ι] {μ : ι → Distribution A}
     (h : ∀ i, (μ i).isProbDist) : (pi μ).isProbDist :=
   ⟨pi_nonNeg fun i => (h i).1, by
     rw [weight_pi]
@@ -1690,14 +1690,14 @@ instance {ι : Type*} [Fintype ι] [DecidableEq ι] (μ : ι → Distribution A)
 /-! ### Marginal bookkeeping -/
 
 /-- Coordinate marginals are additive in the joint law. -/
-theorem marginalAt_add {ι : Type*} {T : ι → Type*}
+lemma marginalAt_add {ι : Type*} {T : ι → Type*}
     (F G : Distribution ((i : ι) → T i)) (j : ι) :
     marginalAt (F + G) j = marginalAt F j + marginalAt G j :=
   Finsupp.sum_add_index' (fun _ => Finsupp.single_zero _)
     (fun x b₁ b₂ => Finsupp.single_add (x j) b₁ b₂)
 
 /-- Coordinate marginals commute with scaling. -/
-theorem marginalAt_smul {ι : Type*} {T : ι → Type*}
+lemma marginalAt_smul {ι : Type*} {T : ι → Type*}
     (c : ℝ) (F : Distribution ((i : ι) → T i)) (j : ι) :
     marginalAt (c • F) j = c • marginalAt F j := by
   unfold marginalAt
@@ -1707,7 +1707,7 @@ theorem marginalAt_smul {ι : Type*} {T : ι → Type*}
 
 /-- The coordinate marginal of an independent product: the chosen factor,
 scaled by the total weights of all the other factors. -/
-theorem marginalAt_pi {ι : Type*} [Fintype ι] [DecidableEq ι] (μ : ι → Distribution A) (i : ι) :
+lemma marginalAt_pi {ι : Type*} [Fintype ι] [DecidableEq ι] (μ : ι → Distribution A) (i : ι) :
     marginalAt (pi μ) i
       = (∏ j ∈ Finset.univ.erase i, (μ j).weight) • μ i := by
   classical
@@ -1765,7 +1765,7 @@ theorem marginalAt_pi {ι : Type*} [Fintype ι] [DecidableEq ι] (μ : ι → Di
 
 /-- Under an independent product, an event not depending on coordinate `i` is
 independent of the value at `i`. -/
-theorem mass_pi_and_eq {ι : Type*} [Fintype ι] [DecidableEq ι] [Fintype A] [DecidableEq A]
+lemma mass_pi_and_eq {ι : Type*} [Fintype ι] [DecidableEq ι] [Fintype A] [DecidableEq A]
     (μ : ι → Distribution A) (hμ : ∀ j, (μ j).weight = 1) (i : ι) (a : A)
     (ev : (ι → A) → Prop) (hev : ∀ f a', ev (Function.update f i a') ↔ ev f) :
     (pi μ).mass (fun f => ev f ∧ f i = a) = (pi μ).mass ev * μ i a := by
@@ -1834,7 +1834,7 @@ theorem mass_pi_and_eq {ι : Type*} [Fintype ι] [DecidableEq ι] [Fintype A] [D
 
 /-- **Independent samples, truncated**: the first `k'` of `k` independent samples from a law of
 weight one are `k'` independent samples. -/
-theorem fTransform_pi_castLE [Fintype A] [DecidableEq A] (μ : Distribution A) (hμ : μ.weight = 1)
+lemma fTransform_pi_castLE [Fintype A] [DecidableEq A] (μ : Distribution A) (hμ : μ.weight = 1)
     {k' k : ℕ} (h : k' ≤ k) :
     fTransform (fun t : Fin k → A => fun i : Fin k' => t (Fin.castLE h i))
         (pi fun _ : Fin k => μ) = pi fun _ : Fin k' => μ := by

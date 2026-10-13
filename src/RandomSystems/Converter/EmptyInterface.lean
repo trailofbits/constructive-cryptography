@@ -59,14 +59,14 @@ def resourceDDC (s : InterfaceSystem O U V) :
     InsideOutsideSystem O Empty U V Empty.elim Empty.elim :=
   relabel s (outsideInput U) (outsideOutput V).symm
 
-theorem not_isInside_unit (y : Σ l : Two O Empty, twoFam V (Empty.elim : Empty → Type) l) :
+lemma not_isInside_unit (y : Σ l : Two O Empty, twoFam V (Empty.elim : Empty → Type) l) :
     ¬ IsInside y := by
   intro hy
   rcases y with ⟨⟨_ | ⟨⟨⟩⟩, j⟩, _⟩
   · simp [IsInside] at hy
   · exact j.elim
 
-theorem resourceDDC_isDDC {s : InterfaceSystem O U V} (hs : IsDDS s)
+lemma resourceDDC_isDDC {s : InterfaceSystem O U V} (hs : IsDDS s)
     (hr : RepliesAtQueriedInterface s) : IsDDC 0 (resourceDDC s) where
   dds := ⟨by simpa [SilentAtEmpty, resourceDDC, relabel] using hs.1,
     fun l₁ l₂ hp hne hd => by
@@ -98,7 +98,7 @@ theorem resourceDDC_isDDC {s : InterfaceSystem O U V} (hs : IsDDS s)
     · exact i.elim
 
 /-- Attaching a system with no inside interface reads the system itself. -/
-theorem apply_resourceDDC (s : InterfaceSystem O U V) (hs : SilentAtEmpty s)
+lemma apply_resourceDDC (s : InterfaceSystem O U V) (hs : SilentAtEmpty s)
     (t : InterfaceSystem Empty Empty.elim Empty.elim) :
     apply (resourceDDC s) t = s := by
   let g : Two (Σ l : Two O Empty, twoFam V (Empty.elim : Empty → Type) l)
@@ -130,7 +130,7 @@ theorem apply_resourceDDC (s : InterfaceSystem O U V) (hs : SilentAtEmpty s)
     exact Part.map_id' (fun _ => rfl) _
 
 /-- With no inside labels, the outside inputs are all inputs. -/
-theorem outsideInputs_unit (xs : List (Σ l : Two O Empty, twoFam U (Empty.elim : Empty → Type) l)) :
+lemma outsideInputs_unit (xs : List (Σ l : Two O Empty, twoFam U (Empty.elim : Empty → Type) l)) :
     outsideInputs xs = xs.map (outsideInput U) := by
   induction xs with
   | nil => rfl
@@ -141,7 +141,7 @@ theorem outsideInputs_unit (xs : List (Σ l : Two O Empty, twoFam U (Empty.elim 
     · exact i.elim
 
 /-- With no inside labels, there are no inside queries. -/
-theorem insideQueries_unit (ys : List (Σ l : Two O Empty, twoFam V (Empty.elim : Empty → Type) l)) :
+lemma insideQueries_unit (ys : List (Σ l : Two O Empty, twoFam V (Empty.elim : Empty → Type) l)) :
     insideQueries ys = [] := by
   induction ys with
   | nil => rfl
@@ -152,7 +152,7 @@ theorem insideQueries_unit (ys : List (Σ l : Two O Empty, twoFam V (Empty.elim 
     · exact i.elim
 
 /-- With no inside labels, every outside query is admitted after every transcript. -/
-theorem converterAdmits_unit
+lemma converterAdmits_unit
     (h : List ((Σ l : Two O Empty, twoFam U (Empty.elim : Empty → Type) l) ×
       (Σ l : Two O Empty, twoFam V (Empty.elim : Empty → Type) l)))
     (x : Σ l : Two O Empty, twoFam U (Empty.elim : Empty → Type) l) :
@@ -164,7 +164,7 @@ theorem converterAdmits_unit
 
 /-- The DDC reading of a deterministic system that answers exactly on `F` is a DDC from the
 empty domain to `F`. -/
-theorem resourceDDC_isDDCFrom {F : List (Σ o, U o) → Prop} {s : InterfaceSystem O U V}
+lemma resourceDDC_isDDCFrom {F : List (Σ o, U o) → Prop} {s : InterfaceSystem O U V}
     (hs : IsDDS s) (hr : RepliesAtQueriedInterface s) (hd : ∀ h, (s h).Dom ↔ F h) :
     IsDDCFrom (fun _ => False) F 0 (resourceDDC s) where
   isDDC := resourceDDC_isDDC hs hr
@@ -194,13 +194,13 @@ def discardSystem (J : Type) (X Y : J → Type) :
     InsideOutsideSystem Empty J Empty.elim Empty.elim X Y :=
   fun _ => Part.none
 
-theorem discardSystem_isDDC (J : Type) (X Y : J → Type) : IsDDC 0 (discardSystem J X Y) where
+lemma discardSystem_isDDC (J : Type) (X Y : J → Type) : IsDDC 0 (discardSystem J X Y) where
   dds := ⟨Part.not_none_dom, fun _ _ _ _ hd => (Part.not_none_dom hd).elim⟩
   admits _ _ hd := (Part.not_none_dom hd).elim
   bound _ hd := (Part.not_none_dom hd).elim
   replies _ _ _ hy := (Part.notMem_none _ hy).elim
 
-theorem discardSystem_isDDCFrom {J : Type} {X Y : J → Type} (E : List (Σ j, X j) → Prop) :
+lemma discardSystem_isDDCFrom {J : Type} {X Y : J → Type} (E : List (Σ j, X j) → Prop) :
     IsDDCFrom E (fun _ => False) 0 (discardSystem J X Y) where
   isDDC := discardSystem_isDDC J X Y
   answers h x _ := by

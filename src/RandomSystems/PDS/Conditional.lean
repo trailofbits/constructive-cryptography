@@ -28,16 +28,16 @@ def conditionalHistory (xs : List A) : Part (List (A × B)) :=
   List.reverseRecOn xs (Part.some []) fun _ x prior =>
     prior.bind fun h => (q h x).map fun y => h ++ [(x, y)]
 
-@[simp] theorem conditionalHistory_nil : conditionalHistory q [] = Part.some [] := by
+@[simp] lemma conditionalHistory_nil : conditionalHistory q [] = Part.some [] := by
   simp [conditionalHistory]
 
-theorem conditionalHistory_snoc (xs : List A) (x : A) :
+lemma conditionalHistory_snoc (xs : List A) (x : A) :
     conditionalHistory q (xs ++ [x]) =
       (conditionalHistory q xs).bind fun h => (q h x).map fun y => h ++ [(x, y)] := by
   unfold conditionalHistory
   rw [List.reverseRecOn_concat]
 
-theorem conditionalHistory_queries {xs : List A} {h : List (A × B)}
+lemma conditionalHistory_queries {xs : List A} {h : List (A × B)}
     (hh : h ∈ conditionalHistory q xs) : h.map Prod.fst = xs := by
   induction xs using List.reverseRecOn generalizing h with
   | nil =>
@@ -50,7 +50,7 @@ theorem conditionalHistory_queries {xs : List A} {h : List (A × B)}
     obtain ⟨y, _, rfl⟩ := hy
     simpa using congrArg (· ++ [x]) (ih hh')
 
-theorem conditionalHistory_prefix {xs ys : List A} (hp : xs <+: ys)
+lemma conditionalHistory_prefix {xs ys : List A} (hp : xs <+: ys)
     (hd : (conditionalHistory q ys).Dom) : (conditionalHistory q xs).Dom := by
   obtain ⟨e, rfl⟩ := hp
   induction e using List.reverseRecOn with
@@ -64,10 +64,10 @@ theorem conditionalHistory_prefix {xs ys : List A} (hp : xs <+: ys)
 def conditionalReply (xs : List A) : Part B :=
   (conditionalHistory q xs).bind fun h => (h.getLast?.map Prod.snd : Part B)
 
-@[simp] theorem conditionalReply_nil : conditionalReply q [] = Part.none := by
+@[simp] lemma conditionalReply_nil : conditionalReply q [] = Part.none := by
   simp [conditionalReply]
 
-theorem conditionalReply_snoc {xs : List A} {h : List (A × B)}
+lemma conditionalReply_snoc {xs : List A} {h : List (A × B)}
     (hh : h ∈ conditionalHistory q xs) (x : A) :
     conditionalReply q (xs ++ [x]) = q h x := by
   rw [conditionalReply, conditionalHistory_snoc, Part.eq_some_iff.mpr hh]
@@ -76,7 +76,7 @@ theorem conditionalReply_snoc {xs : List A} {h : List (A × B)}
   intro y
   simp
 
-theorem conditionalReply_dom {xs : List A} (hn : xs ≠ []) :
+lemma conditionalReply_dom {xs : List A} (hn : xs ≠ []) :
     (conditionalReply q xs).Dom ↔ (conditionalHistory q xs).Dom := by
   constructor
   · intro hd
@@ -103,7 +103,7 @@ def ofConditional : DDS A B :=
     have hyn : ys ≠ [] := by rintro rfl; simp at hd
     exact (conditionalReply_dom q hyn).mp hd⟩
 
-theorem conditionalHistory_replies {xs : List A} {h : List (A × B)}
+lemma conditionalHistory_replies {xs : List A} {h : List (A × B)}
     (hh : h ∈ conditionalHistory q xs) :
     Replies (ofConditional q).1 (h.map Prod.fst) (h.map Prod.snd) := by
   induction xs using List.reverseRecOn generalizing h with
@@ -122,7 +122,7 @@ theorem conditionalHistory_replies {xs : List A} {h : List (A × B)}
     rw [conditionalHistory_queries q hh', conditionalReply_snoc q hh']
     exact Part.eq_some_iff.mpr hy
 
-theorem replies_conditionalHistory {h : List (A × B)}
+lemma replies_conditionalHistory {h : List (A × B)}
     (hr : Replies (ofConditional q).1 (h.map Prod.fst) (h.map Prod.snd)) :
     h ∈ conditionalHistory q (h.map Prod.fst) := by
   induction h using List.reverseRecOn with
@@ -138,7 +138,7 @@ theorem replies_conditionalHistory {h : List (A × B)}
     simp only [Part.mem_map_iff]
     exact ⟨z.2, Part.eq_some_iff.mp hy, rfl⟩
 
-theorem ofConditional_snoc {h : List (A × B)}
+lemma ofConditional_snoc {h : List (A × B)}
     (hr : Replies (ofConditional q).1 (h.map Prod.fst) (h.map Prod.snd)) (x : A) :
     (ofConditional q).1 (h.map Prod.fst ++ [x]) = q h x :=
   conditionalReply_snoc q (replies_conditionalHistory q hr) x

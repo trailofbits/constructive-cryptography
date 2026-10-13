@@ -26,7 +26,7 @@ variable {outerSystems : ∀ i, Bool → Phi (outerBoundary i)}
 -- Two uses of one premise in the first proof and one use in a distinct
 -- source family stay 2 and 1 after serial composition. The families may be
 -- infinite and their individual assumptions may have heterogeneous interfaces.
-theorem repeated_assumption_counts [DecidableEq ι] [DecidableEq κ] {A : C}
+lemma repeated_assumption_counts [DecidableEq ι] [DecidableEq κ] {A : C}
     (innerAssumption : ι) (outerAssumption : κ)
     (innerTransformation : A ⟶ innerBoundary innerAssumption)
     (outerTransformation : A ⟶ outerBoundary outerAssumption)
@@ -67,7 +67,7 @@ theorem repeated_assumption_counts [DecidableEq ι] [DecidableEq κ] {A : C}
 -- Banfi's existential simulator statement, with honest/adversarial locality
 -- proved by ordered tensor. Resources are arbitrary joint resources: none
 -- is assumed to factor into an honest and an adversarial component.
-theorem construction_serial_disjoint [MonoidalCategory C]
+lemma construction_serial_disjoint [MonoidalCategory C]
     {A B D E : C} (innerProtocol : B ⟶ D) (outerProtocol : A ⟶ B)
     (real : Phi (D ⊗ E)) (middle : Phi (B ⊗ E))
     (ideal : Phi (A ⊗ E))

@@ -63,7 +63,7 @@ noncomputable def absorbL (D : DDD (Free (alongSet (O := O) ι)) (fun _ => X) (f
   interconnect (pair D α) (abRoute ι) (abInj ι)
 
 /-- Every internal cycle of `D ⋄ α` passes through `D`: `α` answers `D` or leaves. -/
-theorem abRoute_cyclesThrough : CyclesThrough (fun _ => True) (abRoute (X := X) (Y := Y) (O := O) ι) := by
+lemma abRoute_cyclesThrough : CyclesThrough (fun _ => True) (abRoute (X := X) (Y := Y) (O := O) ι) := by
   refine ⟨fun _ h => absurd trivial h, fun y _ => ?_, fun y => ?_⟩
   · rcases y with ⟨_ | _ | ⟨⟨_ | ⟨⟨⟩⟩, l⟩, h⟩, v⟩
     · exact v.elim
@@ -148,7 +148,7 @@ theorem close_attachL (D : DDD (Free (alongSet (O := O) ι)) (fun _ => X) (fun _
     · exact absurd (sys_mem_closeSet z) hz
 
 /-- The decision of `D ▹ (α^ι R)` is the decision of `(D ⋄ α) ▹ R`. -/
-theorem decision_attachL (D : DDD (Free (alongSet (O := O) ι)) (fun _ => X) (fun _ => Y))
+lemma decision_attachL (D : DDD (Free (alongSet (O := O) ι)) (fun _ => X) (fun _ => Y))
     (α : SingleAlphabetConverter X Y O J) (R : SingleAlphabetSystem X Y K) (hD : Terminating D) (hα : IsResponsiveDDC b α) (c : Bool) :
     decOut c ∈ close D (attachL ι α R) [startIn] ↔ decOut c ∈ close (absorbL ι D α) R [startIn] := by
   rw [close_attachL D α R hD hα]
@@ -176,7 +176,7 @@ def outerCount (h : List (Σ l, twoFam U Yi l)) : ℕ := h.countP (fun z => deci
 /-- The number of inside inputs of a converter history. -/
 def innerCount (h : List (Σ l, twoFam U Yi l)) : ℕ := h.countP (fun z => !decide (z.1.1 = none))
 
-theorem outerCount_add_innerCount (h : List (Σ l, twoFam U Yi l)) :
+lemma outerCount_add_innerCount (h : List (Σ l, twoFam U Yi l)) :
     outerCount h + innerCount h = h.length := by
   induction h with
   | nil => rfl
@@ -184,24 +184,24 @@ theorem outerCount_add_innerCount (h : List (Σ l, twoFam U Yi l)) :
     by_cases hz : z.1.1 = none <;>
       simp [outerCount, innerCount, List.countP_cons, hz] at ih ⊢ <;> omega
 
-theorem outerCount_snoc (h : List (Σ l, twoFam U Yi l)) (z : Σ l, twoFam U Yi l) :
+lemma outerCount_snoc (h : List (Σ l, twoFam U Yi l)) (z : Σ l, twoFam U Yi l) :
     outerCount (h ++ [z]) = outerCount h + if z.1.1 = none then 1 else 0 := by
   simp [outerCount, List.countP_append]
 
-theorem innerCount_snoc (h : List (Σ l, twoFam U Yi l)) (z : Σ l, twoFam U Yi l) :
+lemma innerCount_snoc (h : List (Σ l, twoFam U Yi l)) (z : Σ l, twoFam U Yi l) :
     innerCount (h ++ [z]) = innerCount h + if z.1.1 = none then 0 else 1 := by
   by_cases hz : z.1.1 = none <;> simp [innerCount, List.countP_append, hz]
 
 variable {b : ℕ} {α : InsideOutsideSystem O J U V Xi Yi}
 
-theorem replyLabel_nil_of_silentAtEmpty (hα : IsDDC b α) : replyLabel α [] = none := by
+lemma replyLabel_nil_of_silentAtEmpty (hα : IsDDC b α) : replyLabel α [] = none := by
   have h := hα.dds.1
   simp only [SilentAtEmpty] at h
   simp [replyLabel, h]
 
 /-- Inside inputs of an answered history: each outside call is followed by at most `b`
 inside calls. The first component is the invariant while an inside call is open. -/
-theorem IsDDC.count_le (hα : IsDDC b α) :
+lemma IsDDC.count_le (hα : IsDDC b α) :
     ∀ h, (α h).Dom → ∀ y ∈ α h,
       (IsInside y → innerCount h + 1 + b ≤ b * outerCount h + insideRun α h) ∧
       (¬ IsInside y → innerCount h ≤ b * outerCount h) := by
@@ -246,7 +246,7 @@ theorem IsDDC.count_le (hα : IsDDC b α) :
         simp only [hz, reduceCtorEq, if_false, if_true, Nat.add_zero] at *
         constructor <;> intro hi <;> (try simp only [hi, if_true, if_false]) <;> omega
 
-theorem IsDDC.innerCount_le (hα : IsDDC b α) {h} (hd : (α h).Dom) :
+lemma IsDDC.innerCount_le (hα : IsDDC b α) {h} (hd : (α h).Dom) :
     innerCount h ≤ b * outerCount h := by
   obtain ⟨h₁, h₂⟩ := hα.count_le h hd _ (Part.get_mem hd)
   by_cases hi : IsInside ((α h).get hd)
@@ -289,7 +289,7 @@ def ACnt (G : List (Two (Σ p : DPort (Free (alongSet (O := O) ι)), dIn (fun _ 
   outerCount (restrict (some ()) G) ≤ (restrict none G).length ∧
     (restrict (some ()) G = [] ∨ (α (restrict (some ()) G)).Dom)
 
-theorem ab_exchange {G o G'} (l : Exchange (pair D α) (abRoute ι) G o G') :
+lemma ab_exchange {G o G'} (l : Exchange (pair D α) (abRoute ι) G o G') :
     ∀ out, o = some out →
       ((∃ G₁ x, G = G₁ ++ [⟨none, x⟩] ∧ Reach D (restrict none G₁) ∧ AIdle α G₁ ∧ ACnt α G₁) ∨
         (∃ G₁ x, G = G₁ ++ [⟨some (), x⟩] ∧ Reach D (restrict none G₁) ∧
@@ -380,7 +380,7 @@ def AbInv (u : List (Σ p : DPort K, dIn (fun _ : K => Y) p))
   (u = [] ↔ restrict none H = []) ∧ (u = [] → H = []) ∧ ACnt α H ∧
   ∀ l, replyLabel (absorbL ι D α) u = some l → ARel D α l H
 
-theorem ab_step (hD : IsDDD D) (hα : IsResponsiveDDC b α) {u H} (inv : AbInv D α u H)
+lemma ab_step (hD : IsDDD D) (hα : IsResponsiveDDC b α) {u H} (inv : AbInv D α u H)
     {z : Σ p : DPort K, dIn (fun _ : K => Y) p} (hr : Reach (absorbL ι D α) (u ++ [z])) :
     (u = [] ↔ z.1 = .start) ∧
       (∀ k, replyLabel (absorbL ι D α) u = some (.res k) → z.1 = .res k) ∧
@@ -504,7 +504,7 @@ theorem ab_step (hD : IsDDD D) (hα : IsResponsiveDDC b α) {u H} (inv : AbInv D
 /-- **`D ⋄ α` is a distinguisher** (spec §5.6): with bound `(b + 2) n` for a distinguisher
 with bound `n` and a converter with at most `b` consecutive inside calls. Neither the
 converter nor the resource needs a finite lifetime. -/
-theorem absorbL_inv (hD : IsDDD D) (hα : IsResponsiveDDC b α) :
+lemma absorbL_inv (hD : IsDDD D) (hα : IsResponsiveDDC b α) :
     ∀ u, Reach (absorbL ι D α) u → ∃ H, AbInv D α u H := by
   intro u
   induction u using List.reverseRecOn with
@@ -519,7 +519,7 @@ theorem absorbL_inv (hD : IsDDD D) (hα : IsResponsiveDDC b α) :
     exact (ab_step hD hα hinv hr).2.2.2
 
 /-- The explicit query bound of `D ⋄ α`: `(b + 2) n` for a bound `n` of `D`. -/
-theorem absorbL_finite (hD : IsDDD D) (hα : IsResponsiveDDC b α) {nD : ℕ} (hnD : Finite nD D) :
+lemma absorbL_finite (hD : IsDDD D) (hα : IsResponsiveDDC b α) {nD : ℕ} (hnD : Finite nD D) :
     Finite ((b + 2) * nD) (trim (absorbL ι D α)) := by
   set γ := absorbL ι D α
   have inv := absorbL_inv hD hα
@@ -544,7 +544,7 @@ theorem absorbL_finite (hD : IsDDD D) (hα : IsResponsiveDDC b α) {nD : ℕ} (h
   have h2 : (b + 2) * nD = nD + (b + 1) * nD := by rw [Nat.succ_mul]; omega
   omega
 
-theorem absorbL_isDDD (hD : IsDDD D) (hα : IsResponsiveDDC b α) :
+lemma absorbL_isDDD (hD : IsDDD D) (hα : IsResponsiveDDC b α) :
     IsDDD (trim (absorbL ι D α)) := by
   set γ := absorbL ι D α
   have inv := absorbL_inv hD hα

@@ -40,7 +40,7 @@ abbrev lawType {T : Type} (_ : Distribution.ProbDist T) : Type := T
 abbrev TypeOf {T : Type} (_ : T) : Type := T
 
 /-- A total cost bound is closed under prefixes. -/
-theorem cost_prefix_closed {T : Type} (f : T → ℕ) (q : ℕ) :
+lemma cost_prefix_closed {T : Type} (f : T → ℕ) (q : ℕ) :
     ∀ p h : List T, p <+: h → (h.map f).sum ≤ q → (p.map f).sum ≤ q := by
   rintro p h ⟨e, rfl⟩ hh
   simp only [List.map_append, List.sum_append] at hh
@@ -48,7 +48,7 @@ theorem cost_prefix_closed {T : Type} (f : T → ℕ) (q : ℕ) :
 
 /-- An exact domain intersected with a budget of `k` inputs is again silent before the first
 input and closed under nonempty prefixes. -/
-theorem budget_nonempty_prefix {A : Type} {P : List A → Prop} {k : ℕ}
+lemma budget_nonempty_prefix {A : Type} {P : List A → Prop} {k : ℕ}
     (hP : ¬ P [] ∧ ∀ {p h}, p <+: h → p ≠ [] → P h → P p) :
     ¬ (P [] ∧ ([] : List A).length ≤ k) ∧
       ∀ {p h : List A}, p <+: h → p ≠ [] → P h ∧ h.length ≤ k → P p ∧ p.length ≤ k :=
@@ -73,18 +73,18 @@ noncomputable def callProg (j : J) (x : X j)
   | [] => .inr ⟨j, x⟩
   | (_, ⟨j', y⟩) :: h => if hj : j' = j then k (hj ▸ y) h else .inr ⟨j, x⟩
 
-theorem callBound_return (b : ℕ) (a : A) :
+lemma callBound_return (b : ℕ) (a : A) :
     CallBound (X := X) (Y := Y) b (returnProg a) := by
   intro h q _ hq
   cases hq
 
-theorem _root_.SystemAlgebra.Program.CallBound.mono {a b : ℕ} {f : List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j)}
+lemma _root_.SystemAlgebra.Program.CallBound.mono {a b : ℕ} {f : List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j)}
     (hf : CallBound a f) (hab : a ≤ b) : CallBound b f :=
   fun h q hc hq => (hf h q hc hq).trans_le hab
 
 /-- The exchanges of a call statement: its query, answered at its label, then the exchanges of
 its continuation. -/
-theorem exchangesOf_callProg {j : J} {x : X j}
+lemma exchangesOf_callProg {j : J} {x : X j}
     {k : Y j → List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j)}
     {z : (Σ j, X j) × (Σ j, Y j)} {h : List ((Σ j, X j) × (Σ j, Y j))}
     (hc : ExchangesOf (callProg j x k) (z :: h)) :
@@ -99,7 +99,7 @@ theorem exchangesOf_callProg {j : J} {x : X j}
   obtain ⟨hq', hl'⟩ := hc (i + 1) (by simpa using hi)
   simpa [callProg] using And.intro hq' hl'
 
-theorem callBound_call {b : ℕ} (j : J) (x : X j)
+lemma callBound_call {b : ℕ} (j : J) (x : X j)
     (k : Y j → List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j))
     (hk : ∀ y, CallBound b (k y)) : CallBound (b + 1) (callProg j x k) := by
   intro h q hc hq
@@ -110,7 +110,7 @@ theorem callBound_call {b : ℕ} (j : J) (x : X j)
     simpa using hk y h q hc' hq
 
 /-- Either branch uses at most the larger of their bounds. -/
-theorem callBound_ite (p : Prop) [Decidable p] {a b : ℕ}
+lemma callBound_ite (p : Prop) [Decidable p] {a b : ℕ}
     {f g : List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j)}
     (hf : CallBound a f) (hg : CallBound b g) :
     CallBound (max a b) (if p then f else g) := by
@@ -119,7 +119,7 @@ theorem callBound_ite (p : Prop) [Decidable p] {a b : ℕ}
   · exact hg.mono (le_max_right _ _)
 
 /-- A loop costs its final continuation plus a fixed bound per element. -/
-theorem callBound_foldr {T C : Type} (xs : List T)
+lemma callBound_foldr {T C : Type} (xs : List T)
     (step : T → (C → List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j)) →
       C → List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j))
     (finish : C → List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j))
@@ -133,7 +133,7 @@ theorem callBound_foldr {T C : Type} (xs : List T)
       hb x (a + xs.length * b) (xs.foldr step finish) ih c
 
 /-- Finite inputs and private bindings turn per-invocation bounds into one uniform bound. -/
-theorem callBound_uniform {S O : Type} {U V : O → Type}
+lemma callBound_uniform {S O : Type} {U V : O → Type}
     [_root_.Finite S] [_root_.Finite O] [∀ o, _root_.Finite (U o)]
     (body : Program S O J U V X Y) (hb : ∀ s o u, ∃ b, CallBound b (body s o u)) :
     ∃ b, body.Bounded b := by
@@ -142,17 +142,17 @@ theorem callBound_uniform {S O : Type} {U V : O → Type}
     (fun p : S × (Σ o, U o) => cost p.1 p.2.1 p.2.2)
   exact ⟨b, fun s o u => (hcost s o u).mono (hbound (s, ⟨o, u⟩))⟩
 
-theorem _root_.SystemAlgebra.Program.CallCost.of_eq {m n : ℕ} {f : List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j)}
+lemma _root_.SystemAlgebra.Program.CallCost.of_eq {m n : ℕ} {f : List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j)}
     (e : m = n) (hf : CallCost m f) : CallCost n f := e ▸ hf
 
-theorem callCost_return (a : A) : CallCost (X := X) (Y := Y) 0 (returnProg a) := by
+lemma callCost_return (a : A) : CallCost (X := X) (Y := Y) 0 (returnProg a) := by
   intro h hc
   refine ⟨fun q hq => by simp [returnProg] at hq, fun a' _ => ?_⟩
   rcases h with _ | ⟨z, h⟩
   · rfl
   · exact absurd (hc 0 (by simp)).1 (by simp [returnProg])
 
-theorem callCost_call {n : ℕ} (j : J) (x : X j)
+lemma callCost_call {n : ℕ} (j : J) (x : X j)
     (k : Y j → List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j))
     (hk : ∀ y, CallCost n (k y)) : CallCost (n + 1) (callProg j x k) := by
   intro h hc
@@ -164,7 +164,7 @@ theorem callCost_call {n : ℕ} (j : J) (x : X j)
       fun a ha => by rw [he] at ha; simpa using h₂ a ha⟩
 
 /-- A loop spends a fixed cost per element on top of its final continuation. -/
-theorem callCost_foldr {T C : Type} (xs : List T)
+lemma callCost_foldr {T C : Type} (xs : List T)
     (step : T → (C → List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j)) →
       C → List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j))
     (finish : C → List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j))
@@ -185,11 +185,11 @@ variable {O : Type} (ι : O → Option J)
 def Avoids (f : List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j)) : Prop :=
   ∀ h q, ExchangesOf f h → f h = .inr q → ∀ o, ι o ≠ some q.1
 
-theorem avoids_return (a : A) : Avoids (X := X) (Y := Y) ι (returnProg a) := by
+lemma avoids_return (a : A) : Avoids (X := X) (Y := Y) ι (returnProg a) := by
   intro h q _ hq
   cases hq
 
-theorem avoids_call {j : J} (x : X j)
+lemma avoids_call {j : J} (x : X j)
     (k : Y j → List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j))
     (hk : ∀ y, Avoids ι (k y)) (hj : ∀ o, ι o ≠ some j) : Avoids ι (callProg j x k) := by
   intro h q hc hq
@@ -200,14 +200,14 @@ theorem avoids_call {j : J} (x : X j)
     rw [he] at hq
     exact hk y h q hc' hq
 
-theorem preservesAt_return (o : O) (a : A) :
+lemma preservesAt_return (o : O) (a : A) :
     PreservesAt (X := X) (Y := Y) ι o (returnProg a) := by
   intro h q _ hq
   cases hq
 
 /-- A call at a label `ι` names at most for `o`, after which the body makes no query at the labels
 `ι o'`. -/
-theorem preservesAt_call_self {o : O} {j : J} (x : X j)
+lemma preservesAt_call_self {o : O} {j : J} (x : X j)
     (k : Y j → List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j))
     (hk : ∀ y, Avoids ι (k y)) (hι : ∀ o', ι o' = some j → o' = o) :
     PreservesAt ι o (callProg j x k) := by
@@ -220,7 +220,7 @@ theorem preservesAt_call_self {o : O} {j : J} (x : X j)
     exact absurd hq' (hk y h q hc' hq o')
 
 /-- A call at a label no `ι o'` names. -/
-theorem preservesAt_call_other {o : O} {j : J} (x : X j)
+lemma preservesAt_call_other {o : O} {j : J} (x : X j)
     (k : Y j → List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j))
     (hk : ∀ y, PreservesAt ι o (k y)) (hj : ∀ o', ι o' ≠ some j) :
     PreservesAt ι o (callProg j x k) := by

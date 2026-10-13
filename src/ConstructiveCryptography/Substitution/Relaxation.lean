@@ -70,7 +70,7 @@ def singleSubstitutionRelaxation {A B : C}
       exact ⟨transformation, allowed, leftEq.symm, rightEq⟩)
 
 /-- The pointwise relaxation lifts to exactly Banfi's one-use image. -/
-@[simp] theorem singleSubstitutionRelaxation_apply {A B : C}
+@[simp] lemma singleSubstitutionRelaxation_apply {A B : C}
     (transformations : Set (A ⟶ B)) (left right : Phi B)
     (diagonal : ∀ resource : Phi A,
       ∃ transformation ∈ transformations,
@@ -95,7 +95,7 @@ explicit class of admitted transformations by serial composition.
 Banfi, Section 4.1.4 (printed p. 76), requires an "(efficient) transformation";
 the admitted-class closure here is explicit. The attachment equation is
 the existing categorical law, not an additional system-specific axiom. -/
-theorem map_substitutionImage_subset {A B D : C} (converter : A ⟶ B)
+lemma map_substitutionImage_subset {A B D : C} (converter : A ⟶ B)
     (sourceTransformations : Set (B ⟶ D)) (targetTransformations : Set (A ⟶ D))
     (closed : ∀ transformation ∈ sourceTransformations,
       converter ≫ transformation ∈ targetTransformations)
@@ -116,7 +116,7 @@ under exactly the supplied transformation-closure hypothesis.
 This is the converter compatibility of Banfi's Section 4.1.4 image
 (printed p. 76), with the "(efficient) transformation" requirement kept as
 explicit data and closure, rather than inferred from a generic category. -/
-theorem singleSubstitutionRelaxation_compatible {B : C}
+lemma singleSubstitutionRelaxation_compatible {B : C}
     (transformations : ∀ A : C, Set (A ⟶ B)) (left right : Phi B)
     (diagonal : ∀ A (resource : Phi A),
       ∃ transformation ∈ transformations A,
@@ -138,7 +138,7 @@ endpoint equations.
 Banfi, Equation (4.2) (printed p. 76): "`π REAL ∈ (σ IDEAL)^s`". The
 singleton specification interpretation uses the existing `Constructs` and
 does not require an unsupported extensivity or idempotence claim. -/
-theorem constructs_singleton_substitutionImage_iff {A B D E : C}
+lemma constructs_singleton_substitutionImage_iff {A B D E : C}
     (transformations : Set (A ⟶ B)) (left right : Phi B)
     (protocol : A ⟶ D) (simulator : A ⟶ E)
     (real : Phi D) (ideal : Phi E) :
@@ -170,7 +170,7 @@ noncomputable def substitutionRelaxation
     ((reflexive A).refl)
 
 @[simp]
-theorem mem_substitutionRelaxation_iff
+lemma mem_substitutionRelaxation_iff
     (relation : SubstitutionRelation C)
     (reflexive : ∀ A, Std.Refl (relation.substitutes A))
     {A : C} {source : Specification (Phi A)} {resource : Phi A} :
@@ -179,7 +179,7 @@ theorem mem_substitutionRelaxation_iff
   ConstructiveCryptography.Relaxation.mem_ofPointwise_iff
 
 /-- Substitution relaxation is compatible with converter attachment. -/
-theorem substitutionRelaxation_compatible
+lemma substitutionRelaxation_compatible
     (relation : SubstitutionRelation C)
     (reflexive : ∀ A, Std.Refl (relation.substitutes A)) :
     Relaxation.Compatible
@@ -199,7 +199,7 @@ For the finite-chain implication of Banfi, Section 2.3.1 (printed pp. 14--15),
 transitivity concatenates the chains to an admitted center. The theorem uses
 that explicit transitivity hypothesis; it is not an idempotence claim for
 the single-use description in Section 4.1.4 (printed p. 76). -/
-theorem substitutionRelaxation_idem
+lemma substitutionRelaxation_idem
     (relation : SubstitutionRelation C)
     (reflexive : ∀ A, Std.Refl (relation.substitutes A))
     {A : C} (source : Specification (Phi A)) :
@@ -225,7 +225,7 @@ substitution relaxation of an explicitly simulated ideal resource.
 Banfi 2023, Definition 2.4.3 (printed p. 28) requires a simulator `σ` and the
 substitution `π REAL` versus `σ IDEAL`; Equation (4.2), printed p. 76, writes
 the same statement as `π REAL ∈ (σ IDEAL)^s`. -/
-theorem constructs_singleton_substitutionRelaxation_iff
+lemma constructs_singleton_substitutionRelaxation_iff
     (relation : SubstitutionRelation C)
     (reflexive : ∀ A, Std.Refl (relation.substitutes A))
     {A B : C} {protocol : A ⟶ B} {simulator : A ⟶ A}

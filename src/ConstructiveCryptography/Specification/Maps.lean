@@ -38,18 +38,18 @@ def lift (r : X → Set Y) : sSupHom (Specification X) (Specification Y) where
       exact ⟨x, ⟨source, admitted, member⟩, related⟩
 
 /-- Membership in a union lift is witnessed by an admitted center. -/
-@[simp] theorem mem_lift_iff {r : X → Set Y} {source : Specification X} {y : Y} :
+@[simp] lemma mem_lift_iff {r : X → Set Y} {source : Specification X} {y : Y} :
     y ∈ lift r source ↔ ∃ x ∈ source, y ∈ r x := by
   change y ∈ (⋃ x ∈ source, r x) ↔ _
   simp only [Set.mem_iUnion, exists_prop]
 
 /-- The lift of a singleton specification recovers the resource map. -/
-@[simp] theorem lift_singleton (r : X → Set Y) (x : X) :
+@[simp] lemma lift_singleton (r : X → Set Y) (x : X) :
     lift r {x} = r x :=
   Set.biUnion_singleton x r
 
 /-- Singleton-valued resource maps lift to ordinary specification images. -/
-theorem lift_singleton_eq_setImage (f : X → Y) :
+lemma lift_singleton_eq_setImage (f : X → Y) :
     lift (fun x => {f x}) = sSupHom.setImage f := by
   ext source y
   -- The relational witness is exactly the direct-image witness.
@@ -59,7 +59,7 @@ theorem lift_singleton_eq_setImage (f : X → Y) :
 /-- Every union-preserving specification map is the lift of its singleton
 values. The calculation uses Jost's union extension (Definition 2.2.6,
 printed p. 20) and the decomposition of a set into singletons. -/
-theorem lift_singletons (f : sSupHom (Specification X) (Specification Y)) :
+lemma lift_singletons (f : sSupHom (Specification X) (Specification Y)) :
     lift (fun x => f {x}) = f := by
   apply sSupHom.ext
   intro source
@@ -72,7 +72,7 @@ theorem lift_singletons (f : sSupHom (Specification X) (Specification Y)) :
 
 Jost, Definition 2.2.6 (printed p. 20): “Rφ := ⋃R∈R φ(R)”.
 Two successive lifts retain the intermediate resource as an existential witness. -/
-theorem lift_comp (outer : Y → Set Z) (inner : X → Set Y) :
+lemma lift_comp (outer : Y → Set Z) (inner : X → Set Y) :
     lift (fun x => lift outer (inner x)) = (lift outer).comp (lift inner) := by
   ext source z
   simp only [mem_lift_iff, sSupHom.comp_apply]

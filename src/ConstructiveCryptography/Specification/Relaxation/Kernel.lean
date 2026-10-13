@@ -17,7 +17,7 @@ def kernel {X : Type u} {Y : Type v} (view : X → Y) : Relaxation X :=
   Relaxation.ofPointwise (fun center => {R | view R = view center}) (fun _ => rfl)
 
 /-- Kernel relaxation is the preimage of the specification image. -/
-theorem kernel_apply {X : Type u} {Y : Type v} (view : X → Y) (S : Set X) :
+lemma kernel_apply {X : Type u} {Y : Type v} (view : X → Y) (S : Set X) :
     kernel view S = view ⁻¹' (view '' S) := by
   ext R
   -- An equal-view center is exactly a witness for membership in the image.
@@ -26,7 +26,7 @@ theorem kernel_apply {X : Type u} {Y : Type v} (view : X → Y) (S : Set X) :
   exact exists_congr fun _ => and_congr_right fun _ => eq_comm
 
 /-- Identifying equal images twice gives the same specification. -/
-theorem kernel_idem {X : Type u} {Y : Type v} (view : X → Y) (S : Set X) :
+lemma kernel_idem {X : Type u} {Y : Type v} (view : X → Y) (S : Set X) :
     kernel view (kernel view S) = kernel view S := by
   apply Set.Subset.antisymm
   · -- Two equal-view relations compose by transitivity.

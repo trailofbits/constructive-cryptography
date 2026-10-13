@@ -46,12 +46,12 @@ def toPi (v : PolyVec P k) : Fin k → P :=
 def ofPi (f : Fin k → P) : PolyVec P k :=
   Vector.ofFn f
 
-@[simp] theorem toPi_ofPi (f : Fin k → P) :
+@[simp] lemma toPi_ofPi (f : Fin k → P) :
     toPi (ofPi f) = f := by
   funext i
   simp [toPi, ofPi]
 
-@[simp] theorem ofPi_toPi (v : PolyVec P k) :
+@[simp] lemma ofPi_toPi (v : PolyVec P k) :
     ofPi (toPi v) = v := by
   apply Vector.ext
   intro i hi
@@ -71,12 +71,12 @@ def toMatrix (A : PolyMatrix P rows cols) : Matrix (Fin rows) (Fin cols) P :=
 def ofMatrix (A : Matrix (Fin rows) (Fin cols) P) : PolyMatrix P rows cols :=
   Vector.ofFn fun i => Vector.ofFn fun j => A i j
 
-@[simp] theorem toMatrix_ofMatrix (A : Matrix (Fin rows) (Fin cols) P) :
+@[simp] lemma toMatrix_ofMatrix (A : Matrix (Fin rows) (Fin cols) P) :
     toMatrix (ofMatrix A) = A := by
   funext i j
   simp [toMatrix, ofMatrix]
 
-@[simp] theorem ofMatrix_toMatrix (A : PolyMatrix P rows cols) :
+@[simp] lemma ofMatrix_toMatrix (A : PolyMatrix P rows cols) :
     ofMatrix (toMatrix A) = A := by
   apply Vector.ext
   intro i hi
@@ -110,12 +110,12 @@ variable {Coeff : Type u}
 def coeffArray (backend : PolyBackend Coeff) (p : backend.Poly) : Array Coeff :=
   Array.ofFn fun i : Fin backend.degree => backend.coeff p i
 
-@[simp] theorem coeff_build_apply (backend : PolyBackend Coeff)
+@[simp] lemma coeff_build_apply (backend : PolyBackend Coeff)
     (f : Fin backend.degree → Coeff) (i : Fin backend.degree) :
     backend.coeff (backend.build f) i = f i :=
   backend.coeff_build f i
 
-@[simp] theorem build_coeff_apply (backend : PolyBackend Coeff) (p : backend.Poly) :
+@[simp] lemma build_coeff_apply (backend : PolyBackend Coeff) (p : backend.Poly) :
     backend.build (backend.coeff p) = p :=
   backend.build_coeff p
 
@@ -133,7 +133,7 @@ def mapCoeffs {Coeff' : Type v}
       exact Nat.lt_of_lt_of_eq i.isLt hdeg.symm⟩)
 
 /-- Two `backend.Poly` values are equal iff they agree on every coefficient. -/
-@[ext] theorem ext_coeff {backend : PolyBackend Coeff} {p q : backend.Poly}
+@[ext] lemma ext_coeff {backend : PolyBackend Coeff} {p q : backend.Poly}
     (h : ∀ i, backend.coeff p i = backend.coeff q i) : p = q :=
   backend.build_coeff p ▸ backend.build_coeff q ▸ congr_arg backend.build (funext h)
 
@@ -146,12 +146,12 @@ def equivPi (backend : PolyBackend Coeff) : backend.Poly ≃ (Fin backend.degree
   right_inv f := funext (backend.coeff_build f)
 
 /-- `equivPi` reads coefficients through `PolyBackend.coeff`. -/
-@[simp] theorem equivPi_apply (backend : PolyBackend Coeff) (p : backend.Poly) :
+@[simp] lemma equivPi_apply (backend : PolyBackend Coeff) (p : backend.Poly) :
     backend.equivPi p = backend.coeff p :=
   rfl
 
 /-- The inverse of `equivPi` rebuilds a carrier through `PolyBackend.build`. -/
-@[simp] theorem equivPi_symm_apply (backend : PolyBackend Coeff)
+@[simp] lemma equivPi_symm_apply (backend : PolyBackend Coeff)
     (f : Fin backend.degree → Coeff) :
     backend.equivPi.symm f = backend.build f :=
   rfl
@@ -197,7 +197,7 @@ noncomputable def ofBackend (backend : PolyBackend R) (p : backend.Poly) :
 
 /-- `toPolynomial` is injective: distinct coefficient arrays yield
 distinct polynomials. -/
-theorem PolyBackend.toPolynomial_injective {R : Type u} [CommRing R]
+lemma PolyBackend.toPolynomial_injective {R : Type u} [CommRing R]
     (backend : PolyBackend R) : Function.Injective backend.toPolynomial := by
   intro p q h
   apply PolyBackend.ext_coeff
@@ -209,7 +209,7 @@ theorem PolyBackend.toPolynomial_injective {R : Type u} [CommRing R]
   rw [← extract p, ← extract q, h]
 
 /-- Coefficients of `toPolynomial x` at indices `≥ backend.degree` are zero. -/
-theorem PolyBackend.toPolynomial_coeff_high {R : Type u} [CommRing R]
+lemma PolyBackend.toPolynomial_coeff_high {R : Type u} [CommRing R]
     (backend : PolyBackend R) (x : backend.Poly) {j : Nat}
     (hj : backend.degree ≤ j) :
     (backend.toPolynomial x).coeff j = 0 := by
@@ -221,7 +221,7 @@ theorem PolyBackend.toPolynomial_coeff_high {R : Type u} [CommRing R]
 
 /-- `ofBackend` is injective: distinct backend carriers map to distinct
 elements of the negacyclic quotient. Holds for any `CommRing` coefficient type. -/
-theorem ofBackend_injective
+lemma ofBackend_injective
     {R : Type u} [CommRing R] (backend : PolyBackend R) :
     Function.Injective (NegacyclicQuotient.ofBackend backend) := by
   intro p q heq

@@ -107,7 +107,7 @@ abbrev mlkem512Encoding : Encoding mlkem512 := concreteEncoding mlkem512
 abbrev mlkem1024Encoding : Encoding mlkem1024 := concreteEncoding mlkem1024
 
 /-- Encoding roundtrip laws for ML-KEM-512. -/
-theorem mlkem512EncodingLaws : mlkem512Encoding.Laws :=
+lemma mlkem512EncodingLaws : mlkem512Encoding.Laws :=
   concreteEncodingLaws mlkem512
     (by norm_num [mlkem512, ParameterSet.params, modulus, Nat.shiftLeft_eq])
     (by norm_num [mlkem512, ParameterSet.params, modulus, Nat.shiftLeft_eq])
@@ -115,7 +115,7 @@ theorem mlkem512EncodingLaws : mlkem512Encoding.Laws :=
     (by norm_num [mlkem512, ParameterSet.params, modulus, Nat.shiftLeft_eq])
 
 /-- Encoding roundtrip laws for ML-KEM-768. -/
-theorem mlkem768EncodingLaws : mlkem768Encoding.Laws :=
+lemma mlkem768EncodingLaws : mlkem768Encoding.Laws :=
   concreteEncodingLaws mlkem768
     (by norm_num [mlkem768, ParameterSet.params, modulus, Nat.shiftLeft_eq])
     (by norm_num [mlkem768, ParameterSet.params, modulus, Nat.shiftLeft_eq])
@@ -123,7 +123,7 @@ theorem mlkem768EncodingLaws : mlkem768Encoding.Laws :=
     (by norm_num [mlkem768, ParameterSet.params, modulus, Nat.shiftLeft_eq])
 
 /-- Encoding roundtrip laws for ML-KEM-1024. -/
-theorem mlkem1024EncodingLaws : mlkem1024Encoding.Laws :=
+lemma mlkem1024EncodingLaws : mlkem1024Encoding.Laws :=
   concreteEncodingLaws mlkem1024
     (by norm_num [mlkem1024, ParameterSet.params, modulus, Nat.shiftLeft_eq])
     (by norm_num [mlkem1024, ParameterSet.params, modulus, Nat.shiftLeft_eq])

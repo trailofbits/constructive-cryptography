@@ -46,7 +46,7 @@ def selectedUsageCount [DecidableEq ι]
 /-- An explicit finite implication accumulates the concrete losses at its
 transformed, oriented steps. Banfi, Section 2.3.3 (printed p. 16), keeps
 the loss "ε(Dκρ)" dependent on the actual reduced distinguisher. -/
-theorem substitutesWithin
+lemma substitutesWithin
     (model : DistinguisherAdvantage C Phi Distinguisher)
     (implication : Implication boundary systems target uses)
     (error : Fin (uses + 1) → Distinguisher target → ENNReal)
@@ -102,7 +102,7 @@ turning a computational premise into a scalar-distance assertion.
 Banfi, Section 2.3.1 (printed p. 15): "rather than a substitution".
 `selected` explicitly chooses the assumption positions; the remaining
 positions contribute their supplied statistical error once each. -/
-theorem substitutesWithin_of_mixed [MonoidalCategory C] [CompatiblePseudoMetric C Phi]
+lemma substitutesWithin_of_mixed [MonoidalCategory C] [CompatiblePseudoMetric C Phi]
     (model : DistinguisherAdvantage C Phi Distinguisher)
     (implication : Implication boundary systems target uses)
     (selected : Fin (uses + 1) → Bool)

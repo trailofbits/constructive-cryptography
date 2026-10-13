@@ -70,10 +70,10 @@ abbrev Consistent (P : Program S O J U V X Y) (s : S) (o : O) (u : U o) :
 def Bounded (b : ℕ) (P : Program S O J U V X Y) : Prop :=
   ∀ s o u, CallBound b (P s o u)
 
-theorem consistent_nil (P : Program S O J U V X Y) (s : S) (o : O) (u : U o) :
+lemma consistent_nil (P : Program S O J U V X Y) (s : S) (o : O) (u : U o) :
     P.Consistent s o u [] := fun i hi => absurd hi (Nat.not_lt_zero i)
 
-theorem Consistent.snoc {P : Program S O J U V X Y} {s : S} {o : O} {u : U o}
+lemma Consistent.snoc {P : Program S O J U V X Y} {s : S} {o : O} {u : U o}
     {h : List ((Σ j, X j) × (Σ j, Y j))} (hc : P.Consistent s o u h) {q : Σ j, X j}
     (hq : P s o u h = .inr q) (v : Y q.1) : P.Consistent s o u (h ++ [(q, ⟨q.1, v⟩)]) := by
   intro i hi
@@ -85,7 +85,7 @@ theorem Consistent.snoc {P : Program S O J U V X Y} {s : S} {o : O} {u : U o}
     simpa using hq
 
 /-- **A bounded program's own exchanges** in one invocation number at most its bound. -/
-theorem Consistent.length_le {P : Program S O J U V X Y} {b : ℕ} (hP : P.Bounded b) {s : S} {o : O}
+lemma Consistent.length_le {P : Program S O J U V X Y} {b : ℕ} (hP : P.Bounded b) {s : S} {o : O}
     {u : U o} {h : List ((Σ j, X j) × (Σ j, Y j))} (hc : P.Consistent s o u h) : h.length ≤ b := by
   -- Either `h` is empty, or it is earlier exchanges `h'` followed by a last exchange `z`.
   rcases List.eq_nil_or_concat h with rfl | ⟨h', z, rfl⟩
@@ -194,36 +194,36 @@ def Mode.Sound (P : Program S O J U V X Y) : Mode S O J U X Y → Prop
 
 variable (P : Program S O J U V X Y)
 
-@[simp] theorem run_nil (m : Option (Mode S O J U X Y)) : P.run m [] = m := rfl
+@[simp] lemma run_nil (m : Option (Mode S O J U X Y)) : P.run m [] = m := rfl
 
-@[simp] theorem run_none (xs : List (Σ l, twoFam U Y l)) : P.run none xs = none := by
+@[simp] lemma run_none (xs : List (Σ l, twoFam U Y l)) : P.run none xs = none := by
   induction xs with
   | nil => rfl
   | cons x xs ih => exact ih
 
-theorem run_append (m : Option (Mode S O J U X Y)) (xs ys : List (Σ l, twoFam U Y l)) :
+lemma run_append (m : Option (Mode S O J U X Y)) (xs ys : List (Σ l, twoFam U Y l)) :
     P.run m (xs ++ ys) = P.run (P.run m xs) ys := by
   simp only [run, List.foldl_append]
 
-theorem run_snoc (m : Option (Mode S O J U X Y)) (xs : List (Σ l, twoFam U Y l))
+lemma run_snoc (m : Option (Mode S O J U X Y)) (xs : List (Σ l, twoFam U Y l))
     (x : Σ l, twoFam U Y l) :
     P.run m (xs ++ [x]) = (P.run m xs).bind fun m => (P.step m x).map Prod.fst := by
   rw [run_append]; rfl
 
-@[simp] theorem after_nil (s : S) : P.after s [] = some (.idle s) := rfl
+@[simp] lemma after_nil (s : S) : P.after s [] = some (.idle s) := rfl
 
-theorem after_snoc (s : S) (xs : List (Σ l, twoFam U Y l)) (x : Σ l, twoFam U Y l) :
+lemma after_snoc (s : S) (xs : List (Σ l, twoFam U Y l)) (x : Σ l, twoFam U Y l) :
     P.after s (xs ++ [x]) = (P.after s xs).bind fun m => (P.step m x).map Prod.fst :=
   P.run_snoc _ xs x
 
-theorem after_isSome_of_append (s : S) {xs ys : List (Σ l, twoFam U Y l)}
+lemma after_isSome_of_append (s : S) {xs ys : List (Σ l, twoFam U Y l)}
     (h : (P.after s (xs ++ ys)).isSome) : (P.after s xs).isSome := by
   rw [after, run_append] at h
   cases hx : P.run (some (.idle s)) xs with
   | none => rw [hx, run_none] at h; exact absurd h (by simp)
   | some m => rw [after, hx]; rfl
 
-theorem step_isSome_iff (m : Mode S O J U X Y) (z : Σ l, twoFam U Y l) :
+lemma step_isSome_iff (m : Mode S O J U X Y) (z : Σ l, twoFam U Y l) :
     (P.step m z).isSome ↔ m.AdmitsLabel z.1 := by
   rcases m with s | ⟨o, s, u, h, q⟩ <;> rcases z with ⟨⟨_ | ⟨⟨⟩⟩, i⟩, x⟩
   · simp [step, Mode.AdmitsLabel]
@@ -234,7 +234,7 @@ theorem step_isSome_iff (m : Mode S O J U X Y) (z : Σ l, twoFam U Y l) :
     · simp [step, Mode.AdmitsLabel, hi]
 
 /-- After an output, the next admitted labels are those of the new mode. -/
-theorem admitAfter_emit (s : S) (o : O) (u : U o) (h : List ((Σ j, X j) × (Σ j, Y j)))
+lemma admitAfter_emit (s : S) (o : O) (u : U o) (h : List ((Σ j, X j) × (Σ j, Y j)))
     (l : Two O J) :
     admitAfter (some (P.emit s o u h).2.1) l ↔ (P.emit s o u h).1.AdmitsLabel l := by
   unfold emit
@@ -244,7 +244,7 @@ theorem admitAfter_emit (s : S) (o : O) (u : U o) (h : List ((Σ j, X j) × (Σ 
 
 /-- A step starts an invocation from an idle mode on an outside query, or continues one on the
 reply to its pending query. -/
-theorem step_cases {m m' : Mode S O J U X Y} {z : Σ l, twoFam U Y l} {y : Σ l, twoFam V X l}
+lemma step_cases {m m' : Mode S O J U X Y} {z : Σ l, twoFam U Y l} {y : Σ l, twoFam V X l}
     (hs : P.step m z = some (m', y)) :
     (∃ s o u, m = .idle s ∧ z = ⟨⟨none, o⟩, u⟩ ∧ (m', y) = P.emit s o u []) ∨
       ∃ o s u h q, ∃ v : Y q.1, m = .busy o s u h q ∧ z = ⟨⟨some (), q.1⟩, v⟩ ∧
@@ -260,7 +260,7 @@ theorem step_cases {m m' : Mode S O J U X Y} {z : Σ l, twoFam U Y l} {y : Σ l,
     · simp [step, hi] at hs
 
 /-- The body's result determines the output and the mode. -/
-theorem emit_cases (s : S) (o : O) (u : U o) (h : List ((Σ j, X j) × (Σ j, Y j))) :
+lemma emit_cases (s : S) (o : O) (u : U o) (h : List ((Σ j, X j) × (Σ j, Y j))) :
     (∃ s' v, P s o u h = .inl (s', v) ∧ P.emit s o u h = (.idle s', ⟨⟨none, o⟩, v⟩)) ∨
       ∃ q, P s o u h = .inr q ∧ P.emit s o u h = (.busy o s u h q, ⟨⟨some (), q.1⟩, q.2⟩) := by
   unfold emit
@@ -268,7 +268,7 @@ theorem emit_cases (s : S) (o : O) (u : U o) (h : List ((Σ j, X j) × (Σ j, Y 
   | inl a => exact Or.inl ⟨a.1, a.2, rfl, rfl⟩
   | inr q => exact Or.inr ⟨q, rfl, rfl⟩
 
-theorem after_snoc_eq_some (s : S) (xs : List (Σ l, twoFam U Y l)) (x : Σ l, twoFam U Y l)
+lemma after_snoc_eq_some (s : S) (xs : List (Σ l, twoFam U Y l)) (x : Σ l, twoFam U Y l)
     (m' : Mode S O J U X Y) :
     P.after s (xs ++ [x]) = some m' ↔
       ∃ m y, P.after s xs = some m ∧ P.step m x = some (m', y) := by
@@ -292,9 +292,9 @@ namespace DDC
 
 variable (s : S) (P : Program S O J U V X Y)
 
-@[simp] theorem ofProgram_nil : DDC.ofProgram s P [] = Part.none := rfl
+@[simp] lemma ofProgram_nil : DDC.ofProgram s P [] = Part.none := rfl
 
-theorem mem_ofProgram_snoc (xs : List (Σ l, twoFam U Y l)) (x : Σ l, twoFam U Y l)
+lemma mem_ofProgram_snoc (xs : List (Σ l, twoFam U Y l)) (x : Σ l, twoFam U Y l)
     (y : Σ l, twoFam V X l) :
     y ∈ DDC.ofProgram s P (xs ++ [x]) ↔
       ∃ m m', P.after s xs = some m ∧ P.step m x = some (m', y) := by
@@ -307,13 +307,13 @@ theorem mem_ofProgram_snoc (xs : List (Σ l, twoFam U Y l)) (x : Σ l, twoFam U 
     | none => simp
     | some r => simp [eq_comm]
 
-theorem ofProgram_snoc (xs : List (Σ l, twoFam U Y l)) (x : Σ l, twoFam U Y l) :
+lemma ofProgram_snoc (xs : List (Σ l, twoFam U Y l)) (x : Σ l, twoFam U Y l) :
     DDC.ofProgram s P (xs ++ [x]) =
       Part.ofOption ((P.after s xs).bind fun m => (P.step m x).map Prod.snd) := by
   simp [DDC.ofProgram]
 
 /-- **The converter answers exactly the inputs its run admits.** -/
-theorem ofProgram_dom (xs : List (Σ l, twoFam U Y l)) :
+lemma ofProgram_dom (xs : List (Σ l, twoFam U Y l)) :
     (DDC.ofProgram s P xs).Dom ↔ xs ≠ [] ∧ (P.after s xs).isSome := by
   rcases List.eq_nil_or_concat xs with rfl | ⟨xs, x, rfl⟩
   · simp
@@ -327,7 +327,7 @@ theorem ofProgram_dom (xs : List (Σ l, twoFam U Y l)) :
 variable {s P}
 
 /-- The reply to an admitted history is the output of its last step. -/
-theorem ofProgram_mem_iff {xs : List (Σ l, twoFam U Y l)} {x : Σ l, twoFam U Y l}
+lemma ofProgram_mem_iff {xs : List (Σ l, twoFam U Y l)} {x : Σ l, twoFam U Y l}
     {y y' : Σ l, twoFam V X l} (hy : y ∈ DDC.ofProgram s P (xs ++ [x])) :
     y' ∈ DDC.ofProgram s P (xs ++ [x]) ↔ y' = y :=
   ⟨fun hy' => Part.mem_unique hy' hy, fun he => he ▸ hy⟩
@@ -335,7 +335,7 @@ theorem ofProgram_mem_iff {xs : List (Σ l, twoFam U Y l)} {x : Σ l, twoFam U Y
 /-- **Invariants of the run.** After an admitted history the mode waits for its body's query,
 counts the inside queries of the current invocation, knows that invocation's outside label, and
 admits exactly the labels the last reply admits. -/
-theorem after_invariant {xs : List (Σ l, twoFam U Y l)} {m : Program.Mode S O J U X Y}
+lemma after_invariant {xs : List (Σ l, twoFam U Y l)} {m : Program.Mode S O J U X Y}
     (hm : P.after s xs = some m) :
     m.Sound P ∧ insideRun (DDC.ofProgram s P) xs = m.pending ∧
       (∀ o, m.owner = some o → lastOuter xs = some o) ∧
@@ -457,7 +457,7 @@ theorem ofProgram_isResponsiveDDC {b : ℕ} (hP : P.Bounded b) :
         simp at hl
 
 /-- The mode after an admitted history of converter inputs. -/
-theorem after_of_replies {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))}
+lemma after_of_replies {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))}
     (hr : Replies (DDC.ofProgram s P) (h.map Prod.fst) (h.map Prod.snd)) :
     ∃ m, P.after s (h.map Prod.fst) = some m := by
   by_cases hn : h.map Prod.fst = []
@@ -466,7 +466,7 @@ theorem after_of_replies {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l)
 
 /-- **A program making at most `b` inside queries per invocation** makes at most `b` inside
 queries per outside query along its transcripts. -/
-theorem insideQueries_length_le {b : ℕ} (hP : P.Bounded b)
+lemma insideQueries_length_le {b : ℕ} (hP : P.Bounded b)
     {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))}
     (hr : Replies (DDC.ofProgram s P) (h.map Prod.fst) (h.map Prod.snd)) :
     (insideQueries (h.map Prod.snd)).length ≤ b * (outsideInputs (h.map Prod.fst)).length := by
@@ -534,7 +534,7 @@ theorem insideQueries_length_le {b : ℕ} (hP : P.Bounded b)
 
 /-- **A port-preserving program** makes, along its transcripts, at most as many inside queries at
 `j = ι o` as outside queries at `o`. -/
-theorem insideQueries_restrict_length_le {ι : O → Option J} (hP : P.PortPreserving ι)
+lemma insideQueries_restrict_length_le {ι : O → Option J} (hP : P.PortPreserving ι)
     {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))}
     (hr : Replies (DDC.ofProgram s P) (h.map Prod.fst) (h.map Prod.snd)) {o : O} {j : J}
     (hj : ι o = some j) :
@@ -619,7 +619,7 @@ noncomputable def ofProgramOn (F : List (Σ o, U o) → Prop) : InsideOutsideSys
 
 /-- A transcript of the restricted converter is a transcript of the program whose outside
 queries lie in `F`. -/
-theorem replies_ofProgramOn {F : List (Σ o, U o) → Prop}
+lemma replies_ofProgramOn {F : List (Σ o, U o) → Prop}
     {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))}
     (hr : Replies (ofProgramOn s P F) (h.map Prod.fst) (h.map Prod.snd)) :
     Replies (DDC.ofProgram s P) (h.map Prod.fst) (h.map Prod.snd) ∧
@@ -631,7 +631,7 @@ theorem replies_ofProgramOn {F : List (Σ o, U o) → Prop}
 
 /-- **A bounded program on the outside domain `F`** is a DDC from `E` to `F` when the inside
 queries of its transcripts lie in `E`. -/
-theorem ofProgramOn_isDDCFrom {E : List (Σ j, X j) → Prop} {F : List (Σ o, U o) → Prop}
+lemma ofProgramOn_isDDCFrom {E : List (Σ j, X j) → Prop} {F : List (Σ o, U o) → Prop}
     {b : ℕ} (hP : P.Bounded b) (hF : ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
     (hq : ∀ h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l)),
       Replies (DDC.ofProgram s P) (h.map Prod.fst) (h.map Prod.snd) →
@@ -643,7 +643,7 @@ theorem ofProgramOn_isDDCFrom {E : List (Σ j, X j) → Prop} {F : List (Σ o, U
 
 /-- **Budgets.** On outside histories of at most `q` queries, a program making at most `b` inside
 queries per invocation makes at most `b * q` inside queries. -/
-theorem insideQueries_length_le_of_budget {b q : ℕ} (hP : P.Bounded b)
+lemma insideQueries_length_le_of_budget {b q : ℕ} (hP : P.Bounded b)
     {F : List (Σ o, U o) → Prop} (hFq : ∀ xs, F xs → xs.length ≤ q)
     {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))}
     (hr : Replies (DDC.ofProgram s P) (h.map Prod.fst) (h.map Prod.snd))
@@ -656,7 +656,7 @@ theorem insideQueries_length_le_of_budget {b q : ℕ} (hP : P.Bounded b)
 
 /-- **Exact costs.** A program making exactly `cost u` inside queries on the outside query `u`
 makes at most the total cost of its outside queries along its transcripts. -/
-theorem insideQueries_length_le_of_costs {cost : (Σ o, U o) → ℕ} (hP : P.Costs cost)
+lemma insideQueries_length_le_of_costs {cost : (Σ o, U o) → ℕ} (hP : P.Costs cost)
     {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))}
     (hr : Replies (DDC.ofProgram s P) (h.map Prod.fst) (h.map Prod.snd)) :
     (insideQueries (h.map Prod.snd)).length ≤ ((outsideInputs (h.map Prod.fst)).map cost).sum := by

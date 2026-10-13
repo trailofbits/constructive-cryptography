@@ -47,13 +47,13 @@ def expect (X : Distribution A) (f : A → ℝ) : ℝ :=
 /-- On a finite carrier, `expect` is the ordinary sum over all points — the
 `Finset.univ` unfolding used by proofs that reason over the whole carrier
 (cf. `weight_eq_sum`, `mass_eq_sum`). -/
-theorem expect_eq_sum [Fintype A] (X : Distribution A) (f : A → ℝ) :
+lemma expect_eq_sum [Fintype A] (X : Distribution A) (f : A → ℝ) :
     X.expect f = ∑ a : A, X a * f a :=
   Finsupp.sum_fintype X (fun a w => w * f a) fun a => zero_mul (f a)
 
 /-- `expect` may be computed over any `Finset` containing the support: the
 off-support summands vanish. -/
-theorem expect_eq_sum_of_support_subset (X : Distribution A) (f : A → ℝ) {s : Finset A}
+lemma expect_eq_sum_of_support_subset (X : Distribution A) (f : A → ℝ) {s : Finset A}
     (hs : X.support ⊆ s) :
     X.expect f = ∑ a ∈ s, X a * f a :=
   Finset.sum_subset hs fun a _ ha => by
@@ -63,13 +63,13 @@ theorem expect_eq_sum_of_support_subset (X : Distribution A) (f : A → ℝ) {s 
 
 /-- Additivity of expectation in the distribution.  Signed layer: no
 hypothesis. -/
-theorem expect_add_left (X Y : Distribution A) (f : A → ℝ) :
+lemma expect_add_left (X Y : Distribution A) (f : A → ℝ) :
     (X + Y).expect f = X.expect f + Y.expect f :=
   Finsupp.sum_add_index' (fun a => zero_mul (f a)) fun a w₁ w₂ => add_mul w₁ w₂ (f a)
 
 /-- Scalar homogeneity of expectation in the distribution.  Signed layer: no
 hypothesis. -/
-theorem expect_smul_left (r : ℝ) (X : Distribution A) (f : A → ℝ) :
+lemma expect_smul_left (r : ℝ) (X : Distribution A) (f : A → ℝ) :
     (r • X).expect f = r * X.expect f := by
   unfold expect
   rw [Finsupp.sum_smul_index fun a => zero_mul (f a)]
@@ -80,20 +80,20 @@ theorem expect_smul_left (r : ℝ) (X : Distribution A) (f : A → ℝ) :
 /-- Expectation under a difference of distributions is the difference of
 expectations.  Signed layer: no hypothesis — this is the form consumed by
 `statDist`-style arguments on the signed carrier. -/
-theorem expect_sub_left (X Y : Distribution A) (f : A → ℝ) :
+lemma expect_sub_left (X Y : Distribution A) (f : A → ℝ) :
     (X - Y).expect f = X.expect f - Y.expect f :=
   Finsupp.sum_sub_index fun a w₁ w₂ => sub_mul w₁ w₂ (f a)
 
 /-- Expectation under the zero distribution vanishes. -/
 @[simp]
-theorem expect_zero_left (f : A → ℝ) : (0 : Distribution A).expect f = 0 :=
+lemma expect_zero_left (f : A → ℝ) : (0 : Distribution A).expect f = 0 :=
   Finsupp.sum_zero_index
 
 /-! ### Linearity in the function — signed layer -/
 
 /-- Additivity of expectation in the function.  Signed layer: no
 hypothesis. -/
-theorem expect_add_right (X : Distribution A) (f g : A → ℝ) :
+lemma expect_add_right (X : Distribution A) (f g : A → ℝ) :
     X.expect (f + g) = X.expect f + X.expect g := by
   unfold expect
   simp only [Pi.add_apply, mul_add]
@@ -101,7 +101,7 @@ theorem expect_add_right (X : Distribution A) (f g : A → ℝ) :
 
 /-- Expectation pulls out a constant factor of the function.  Signed layer: no
 hypothesis.  (`expect_smul_right` is the `•` spelling.) -/
-theorem expect_const_mul (X : Distribution A) (r : ℝ) (f : A → ℝ) :
+lemma expect_const_mul (X : Distribution A) (r : ℝ) (f : A → ℝ) :
     X.expect (fun a => r * f a) = r * X.expect f := by
   unfold expect Finsupp.sum
   rw [Finset.mul_sum]
@@ -109,14 +109,14 @@ theorem expect_const_mul (X : Distribution A) (r : ℝ) (f : A → ℝ) :
 
 /-- Scalar homogeneity of expectation in the function.  Signed layer: no
 hypothesis. -/
-theorem expect_smul_right (X : Distribution A) (r : ℝ) (f : A → ℝ) :
+lemma expect_smul_right (X : Distribution A) (r : ℝ) (f : A → ℝ) :
     X.expect (r • f) = r * X.expect f :=
   expect_const_mul X r f
 
 /-- Expectation of a difference of functions is the difference of expectations
 (the function-side mirror of `expect_sub_left`).  Signed layer: no
 hypothesis. -/
-theorem expect_sub_right (X : Distribution A) (f g : A → ℝ) :
+lemma expect_sub_right (X : Distribution A) (f g : A → ℝ) :
     X.expect (fun a => f a - g a) = X.expect f - X.expect g := by
   unfold expect Finsupp.sum
   rw [← Finset.sum_sub_distrib]
@@ -124,13 +124,13 @@ theorem expect_sub_right (X : Distribution A) (f g : A → ℝ) :
 
 /-- Expectation of the zero function vanishes. -/
 @[simp]
-theorem expect_zero_right (X : Distribution A) : X.expect 0 = 0 := by
+lemma expect_zero_right (X : Distribution A) : X.expect 0 = 0 := by
   unfold expect Finsupp.sum
   simp
 
 /-- Expectation of a constant is the constant times the total weight; at
 `weight = 1` this is `𝔼[c] = c`.  Signed layer: no hypothesis. -/
-theorem expect_const (X : Distribution A) (c : ℝ) :
+lemma expect_const (X : Distribution A) (c : ℝ) :
     X.expect (fun _ => c) = c * X.weight := by
   unfold expect weight Finsupp.sum
   rw [Finset.mul_sum]
@@ -139,7 +139,7 @@ theorem expect_const (X : Distribution A) (c : ℝ) :
 /-- Expectation of a finite sum of functions is the sum of expectations
 (the finite-sum form of `expect_add_right`, mirroring mathlib's
 `MeasureTheory.integral_finset_sum`).  Signed layer: no hypothesis. -/
-theorem expect_finset_sum {ι : Type*} (X : Distribution A) (s : Finset ι)
+lemma expect_finset_sum {ι : Type*} (X : Distribution A) (s : Finset ι)
     (f : ι → A → ℝ) :
     X.expect (fun a => ∑ i ∈ s, f i a) = ∑ i ∈ s, X.expect (f i) := by
   unfold expect Finsupp.sum
@@ -151,7 +151,7 @@ theorem expect_finset_sum {ι : Type*} (X : Distribution A) (s : Finset ι)
 /-- Expectation of a scaled indicator is the scalar times the event mass:
 `𝔼_X[c·𝟙[P]] = c·X(P)`.  Signed layer: no hypothesis.  Statement-level
 `[DecidablePred P]` per the decidability policy of `Probability.Distribution`. -/
-theorem expect_indicator_const (X : Distribution A) (P : A → Prop) [DecidablePred P]
+lemma expect_indicator_const (X : Distribution A) (P : A → Prop) [DecidablePred P]
     (c : ℝ) :
     X.expect (fun a => if P a then c else 0) = c * X.mass P := by
   classical
@@ -162,7 +162,7 @@ theorem expect_indicator_const (X : Distribution A) (P : A → Prop) [DecidableP
 
 /-- Expectation of an indicator is the event mass: `𝔼_X[𝟙[P]] = X(P)`.  This
 is the relation of `expect` to `Distribution.mass`.  Signed layer: no hypothesis. -/
-theorem expect_indicator (X : Distribution A) (P : A → Prop) [DecidablePred P] :
+lemma expect_indicator (X : Distribution A) (P : A → Prop) [DecidablePred P] :
     X.expect (fun a => if P a then (1 : ℝ) else 0) = X.mass P := by
   rw [expect_indicator_const, one_mul]
 
@@ -170,21 +170,21 @@ theorem expect_indicator (X : Distribution A) (P : A → Prop) [DecidablePred P]
 
 /-- Expectation of a nonnegative function under a nonnegative distribution is
 nonnegative.  `NonNeg` layer. -/
-theorem expect_nonneg {X : Distribution A} (hX : X.NonNeg) {f : A → ℝ}
+lemma expect_nonneg {X : Distribution A} (hX : X.NonNeg) {f : A → ℝ}
     (hf : ∀ a, 0 ≤ f a) :
     0 ≤ X.expect f :=
   Finset.sum_nonneg fun a _ => mul_nonneg (hX a) (hf a)
 
 /-- Monotonicity of expectation.  `NonNeg` layer: fails signed (one point of
 mass `-1`). -/
-theorem expect_mono {X : Distribution A} (hX : X.NonNeg) {f g : A → ℝ}
+lemma expect_mono {X : Distribution A} (hX : X.NonNeg) {f g : A → ℝ}
     (h : ∀ a, f a ≤ g a) :
     X.expect f ≤ X.expect g :=
   Finset.sum_le_sum fun a _ => mul_le_mul_of_nonneg_left (h a) (hX a)
 
 /-- A uniform bound on `f` over the support bounds the expectation by
 `c · |X|`.  `NonNeg` layer; the bound is only required where `X` has mass. -/
-theorem expect_le_mul_weight {X : Distribution A} (hX : X.NonNeg) {f : A → ℝ} {c : ℝ}
+lemma expect_le_mul_weight {X : Distribution A} (hX : X.NonNeg) {f : A → ℝ} {c : ℝ}
     (h : ∀ a ∈ X.support, f a ≤ c) :
     X.expect f ≤ c * X.weight := by
   unfold expect weight Finsupp.sum
@@ -238,19 +238,19 @@ def variance (X : Distribution A) (f : A → ℝ) : ℝ :=
 
 /-- Nonnegativity of the `𝔼[(f-c)²]` form for any center `c`.  `NonNeg`
 layer. -/
-theorem expect_sub_sq_nonneg {X : Distribution A} (hX : X.NonNeg) (f : A → ℝ) (c : ℝ) :
+lemma expect_sub_sq_nonneg {X : Distribution A} (hX : X.NonNeg) (f : A → ℝ) (c : ℝ) :
     0 ≤ X.expect fun a => (f a - c) ^ 2 :=
   Finset.sum_nonneg fun a _ => mul_nonneg (hX a) (sq_nonneg _)
 
 /-- Variance is nonnegative.  `NonNeg` layer (the `𝔼[(f-c)²]` form at
 `c = 𝔼f`; no normalization needed). -/
-theorem variance_nonneg {X : Distribution A} (hX : X.NonNeg) (f : A → ℝ) :
+lemma variance_nonneg {X : Distribution A} (hX : X.NonNeg) (f : A → ℝ) :
     0 ≤ X.variance f :=
   expect_sub_sq_nonneg hX f _
 
 /-- Expansion of the square about an arbitrary center:
 `𝔼[(f-c)²] = 𝔼[f²] - 2c·𝔼[f] + c²·|X|`.  Signed layer: pure bilinearity. -/
-theorem expect_sub_sq (X : Distribution A) (f : A → ℝ) (c : ℝ) :
+lemma expect_sub_sq (X : Distribution A) (f : A → ℝ) (c : ℝ) :
     (X.expect fun a => (f a - c) ^ 2)
       = (X.expect fun a => f a ^ 2) - 2 * c * X.expect f + c ^ 2 * X.weight := by
   unfold expect weight Finsupp.sum
@@ -262,7 +262,7 @@ theorem expect_sub_sq (X : Distribution A) (f : A → ℝ) (c : ℝ) :
 `Var_X f = 𝔼[f²] - 𝔼[f]²` (mathlib: `ProbabilityTheory.variance_def'`).
 Weakest layer: `weight = 1` alone — nonnegativity of `X` plays no role in the
 *identity*, only in the sign of either side. -/
-theorem variance_eq_expect_sq_sub_sq_expect {X : Distribution A} (hw : X.weight = 1)
+lemma variance_eq_expect_sq_sub_sq_expect {X : Distribution A} (hw : X.weight = 1)
     (f : A → ℝ) :
     X.variance f = (X.expect fun a => f a ^ 2) - X.expect f ^ 2 := by
   rw [variance, expect_sub_sq, hw]
@@ -272,7 +272,7 @@ theorem variance_eq_expect_sq_sub_sq_expect {X : Distribution A} (hw : X.weight 
 layer — this genuinely needs both conjuncts: `NonNeg` for the sign of the
 `𝔼[(f-c)²]` form and `weight = 1` to equate the two forms
 (the one-point law of mass `2` with `f = 1` gives `2 < 2²`). -/
-theorem expect_sq_sub_sq_expect_nonneg {X : Distribution A} (hX : X.isProbDist)
+lemma expect_sq_sub_sq_expect_nonneg {X : Distribution A} (hX : X.isProbDist)
     (f : A → ℝ) :
     0 ≤ (X.expect fun a => f a ^ 2) - X.expect f ^ 2 := by
   rw [← variance_eq_expect_sq_sub_sq_expect hX.2]
@@ -304,7 +304,7 @@ theorem _root_.ConvexOn.map_expect_le {φ : ℝ → ℝ}
 
 /-- Expectation transports along a pushforward: `𝔼_{f_*X}[g] = 𝔼_X[g ∘ f]`.
 This identity holds for finite signed distributions. -/
-theorem expect_fTransform {B : Type*} (X : Distribution A) (f : A → B) (g : B → ℝ) :
+lemma expect_fTransform {B : Type*} (X : Distribution A) (f : A → B) (g : B → ℝ) :
     (fTransform f X).expect g = X.expect (g ∘ f) := by
   classical
   unfold expect fTransform
@@ -313,13 +313,13 @@ theorem expect_fTransform {B : Type*} (X : Distribution A) (f : A → B) (g : B 
   exact Finsupp.sum_congr fun a _ => by simp
 
 /-- Integrands agreeing on the finite support have the same signed expectation. -/
-theorem expect_congr_of_support {X : Distribution A} {f g : A → ℝ}
+lemma expect_congr_of_support {X : Distribution A} {f g : A → ℝ}
     (h : ∀ a ∈ X.support, f a = g a) :
     X.expect f = X.expect g :=
   Finsupp.sum_congr fun a ha => by rw [h a ha]
 
 /-- Eta-expanded additivity of expectation in its integrand. -/
-theorem expect_add_right' (X : Distribution A) (f g : A → ℝ) :
+lemma expect_add_right' (X : Distribution A) (f g : A → ℝ) :
     (X.expect fun a => f a + g a) = X.expect f + X.expect g :=
   expect_add_right X f g
 

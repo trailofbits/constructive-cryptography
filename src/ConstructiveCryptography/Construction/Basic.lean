@@ -21,7 +21,7 @@ variable {judgment : Constructor → Source → Target → Prop}
 constructor. MR16, Section 2.3 (printed p. 5):
 “R —γ→ S =⇒ R′ —γ→ S′ if R′ ⊆ R and S ⊆ S′.”
 For arbitrary judgments the implication is supplied explicitly. -/
-theorem Constructible.of_imp {Source' : Type v'} {Target' : Type w'}
+lemma Constructible.of_imp {Source' : Type v'} {Target' : Type w'}
     {judgment' : Constructor → Source' → Target' → Prop}
     {constructors : Set Constructor} {source : Source} {target : Target}
     {source' : Source'} {target' : Target'}
@@ -34,7 +34,7 @@ theorem Constructible.of_imp {Source' : Type v'} {Target' : Type w'}
   exact ⟨constructor, admitted, implication constructor admitted constructs⟩
 
 /-- Enlarging the admitted constructor class preserves constructibility. -/
-theorem Constructible.mono_constructors {constructors constructors' : Set Constructor}
+lemma Constructible.mono_constructors {constructors constructors' : Set Constructor}
     (included : constructors ⊆ constructors') {source : Source} {target : Target}
     (construction : Constructible judgment constructors source target) :
     Constructible judgment constructors' source target := by
@@ -46,7 +46,7 @@ theorem Constructible.mono_constructors {constructors constructors' : Set Constr
 
 MR16, Section 2.3 (printed p. 6):
 “R ↛ S =⇒ R′ ↛ S′ if R ⊆ R′ and S′ ⊆ S.” -/
-theorem Unconstructible.of_imp {Source' : Type v'} {Target' : Type w'}
+lemma Unconstructible.of_imp {Source' : Type v'} {Target' : Type w'}
     {judgment' : Constructor → Source' → Target' → Prop}
     {constructors : Set Constructor} {source : Source} {target : Target}
     {source' : Source'} {target' : Target'}
@@ -58,7 +58,7 @@ theorem Unconstructible.of_imp {Source' : Type v'} {Target' : Type w'}
 
 /-- Non-constructibility against a class implies non-constructibility against
 each smaller class. -/
-theorem Unconstructible.mono_constructors {constructors constructors' : Set Constructor}
+lemma Unconstructible.mono_constructors {constructors constructors' : Set Constructor}
     (included : constructors ⊆ constructors') {source : Source} {target : Target}
     (impossible : Unconstructible judgment constructors' source target) :
     Unconstructible judgment constructors source target :=

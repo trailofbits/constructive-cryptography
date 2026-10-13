@@ -44,7 +44,7 @@ subset.
 
 This is the shared finite-set function-fiber count used by transcript
 normalization arguments. -/
-theorem card_function_fiber_finset {X Y : Type*} [Fintype X] [DecidableEq X]
+lemma card_function_fiber_finset {X Y : Type*} [Fintype X] [DecidableEq X]
     [Fintype Y] [DecidableEq Y] (S : Finset X) (g : S → Y) :
     (Finset.univ.filter (fun f : X → Y => ∀ x : S, f x.1 = g x)).card =
       Fintype.card Y ^ (Fintype.card X - S.card) := by
@@ -72,7 +72,7 @@ theorem card_function_fiber_finset {X Y : Type*} [Fintype X] [DecidableEq X]
 
 /-- The number of functions matching a prescribed output tuple on an injective
 input tuple is `|Y|^(|X|-q)`. -/
-theorem card_function_fiber_multipoint {X Y : Type*}
+lemma card_function_fiber_multipoint {X Y : Type*}
     [Fintype X] [DecidableEq X] [Fintype Y] [DecidableEq Y]
     {q : ℕ} (xs : Fin q → X) (ys : Fin q → Y)
     (hxs : Function.Injective xs) :
@@ -123,7 +123,7 @@ theorem card_function_fiber_multipoint {X Y : Type*}
 /-- **The fiber of a uniform random function over a
 prescribed value tuple at distinct points**, at an arbitrary finite index type:
 `card_function_fiber_multipoint` transported along `Fintype.equivFin`. -/
-theorem card_function_fiber_index {X Y ι : Type*} [Fintype X] [DecidableEq X]
+lemma card_function_fiber_index {X Y ι : Type*} [Fintype X] [DecidableEq X]
     [Fintype Y] [DecidableEq Y] [Fintype ι] (xs : ι → X) (ys : ι → Y)
     (hxs : Function.Injective xs) :
     ((Finset.univ : Finset (X → Y)).filter
@@ -151,7 +151,7 @@ distinct points are uniform.**  Pushing the uniform law on `𝒳 → 𝒴` forwa
 along evaluation at an injective family of points is the uniform law on value
 tuples: this is independence of the values at distinct points, in the form this
 carrier can state it. -/
-theorem fTransform_eval_uniform_eq_uniform {X Y ι : Type*} [Fintype X] [DecidableEq X]
+lemma fTransform_eval_uniform_eq_uniform {X Y ι : Type*} [Fintype X] [DecidableEq X]
     [Fintype Y] [DecidableEq Y] [Nonempty Y] [Fintype ι] [DecidableEq ι]
     (xs : ι → X) (hxs : Function.Injective xs) :
     Distribution.fTransform (fun f : X → Y => fun i => f (xs i))
@@ -169,7 +169,7 @@ theorem fTransform_eval_uniform_eq_uniform {X Y ι : Type*} [Fintype X] [Decidab
 points**: `(1/|𝒴|)^{|ι|}`, whatever the tuple.  The mass reading of
 `fTransform_eval_uniform_eq_uniform`, and the form a transcript-law computation
 consumes. -/
-theorem uniform_mass_eval_eq {X Y ι : Type*} [Fintype X] [DecidableEq X]
+lemma uniform_mass_eval_eq {X Y ι : Type*} [Fintype X] [DecidableEq X]
     [Fintype Y] [DecidableEq Y] [Nonempty Y] [Fintype ι] [DecidableEq ι]
     (xs : ι → X) (hxs : Function.Injective xs) (ys : ι → Y) :
     (Distribution.uniform (X → Y)).mass (fun f => (fun i => f (xs i)) = ys)
@@ -195,7 +195,7 @@ def walkSite {ι X : Type*} (par : ι → Option ι) (g : ι → X → X) (x₀ 
 on the very outputs `f` produced, and it reproduces `f`'s own site inputs.
 This needs no hypothesis on the walk at all — it is the recursion read
 outwards. -/
-theorem walkSite_of_eval {ι X : Type*}
+lemma walkSite_of_eval {ι X : Type*}
     (par : ι → Option ι) (g : ι → X → X) (x₀ : X)
     (inp : (X → X) → ι → X)
     (hinp : ∀ f t, inp f t = g t ((par t).elim x₀ (fun h => f (inp f h))))
@@ -210,7 +210,7 @@ answers `y t` at every lazily replayed site input, then `f`'s own site inputs
 *are* the replayed ones.  The converse direction of `walkSite_of_eval`, and the
 one that needs the parent relation to be well-founded — supplied here as a
 `rank` that strictly decreases towards the parent. -/
-theorem eq_walkSite_of_eval_eq {ι X : Type*}
+lemma eq_walkSite_of_eval_eq {ι X : Type*}
     (par : ι → Option ι) (g : ι → X → X) (x₀ : X) (rank : ι → ℕ)
     (hrank : ∀ t h, par t = some h → rank h < rank t)
     (inp : (X → X) → ι → X)
@@ -246,7 +246,7 @@ This is the lazy-sampling statement.  It is false without the repeat-freeness
 hypothesis: at a tuple whose replay repeats an input the two directions of
 `walkSite_of_eval` still pin the fiber, but the fiber is the one of a *smaller*
 set of distinct evaluation points, so its mass is larger (or zero). -/
-theorem uniform_mass_walk_eval_eq {ι X : Type*} [Fintype ι] [DecidableEq ι]
+lemma uniform_mass_walk_eval_eq {ι X : Type*} [Fintype ι] [DecidableEq ι]
     [Fintype X] [DecidableEq X] [Nonempty X]
     (par : ι → Option ι) (g : ι → X → X) (x₀ : X) (rank : ι → ℕ)
     (hrank : ∀ t h, par t = some h → rank h < rank t)
@@ -275,7 +275,7 @@ worlds.**  The probability that a uniform random function drives the walk
 without a repeat equals the probability that `|ι|` independent uniform draws
 replay it without a repeat.  Only the repeat-free region transports — which is
 enough, because the birthday argument takes the complement afterwards. -/
-theorem uniform_mass_walk_injective_eq {ι X : Type*} [Fintype ι] [DecidableEq ι]
+lemma uniform_mass_walk_injective_eq {ι X : Type*} [Fintype ι] [DecidableEq ι]
     [Fintype X] [DecidableEq X] [Nonempty X]
     (par : ι → Option ι) (g : ι → X → X) (x₀ : X) (rank : ι → ℕ)
     (hrank : ∀ t h, par t = some h → rank h < rank t)
@@ -311,7 +311,7 @@ probability is at most `1/|𝒳|`.
 This is the elementary counting behind every step of a birthday argument, in
 the form the walk consumes: `u` is the step at the site being added and `v` is
 the input already sitting at the site it might hit. -/
-theorem uniform_mass_coord_determined_le {ι X : Type*} [Fintype ι] [DecidableEq ι]
+lemma uniform_mass_coord_determined_le {ι X : Type*} [Fintype ι] [DecidableEq ι]
     [Fintype X] [DecidableEq X] [Nonempty X]
     (c : ι) (u : X → X) (hu : Function.Injective u) (v : (ι → X) → X)
     (hv : ∀ y z : ι → X, (∀ i, i ≠ c → y i = z i) → v y = v z) :
@@ -364,7 +364,7 @@ all.  Otherwise one of the two reads a state that the other does not, and
 `uniform_mass_coord_determined_le` charges the step `1/|𝒳|`; note this runs in
 *either* direction, so a deterministic site colliding with a randomized one is
 charged just as a continuation step is. -/
-theorem uniform_mass_walkSite_eq_le {ι X : Type*} [Fintype ι] [DecidableEq ι]
+lemma uniform_mass_walkSite_eq_le {ι X : Type*} [Fintype ι] [DecidableEq ι]
     [Fintype X] [DecidableEq X] [Nonempty X]
     (par : ι → Option ι) (g : ι → X → X) (x₀ : X)
     (hg : ∀ t, Function.Injective (g t))
@@ -415,7 +415,7 @@ costs `|s|/|𝒳|`.
 The induction is on the *set of sites*, not on a global statement, because
 "repeat-free so far" is what makes the next step's charge legitimate; the
 telescoping `∑_{k<|s|} k/|𝒳|` is the birthday bound's arithmetic. -/
-theorem uniform_mass_walkSite_not_injOn_le {ι X : Type*} [Fintype ι] [DecidableEq ι]
+lemma uniform_mass_walkSite_not_injOn_le {ι X : Type*} [Fintype ι] [DecidableEq ι]
     [Fintype X] [DecidableEq X] [Nonempty X]
     (par : ι → Option ι) (g : ι → X → X) (x₀ : X)
     (hg : ∀ t, Function.Injective (g t))
@@ -519,13 +519,13 @@ def multiShift {ι D A : Type*} [Fintype ι] [DecidableEq D] [AddCommMonoid A]
     (u : ι → D) (δ : ι → A) (f : D → A) : D → A :=
   fun x => f x + ∑ s, if u s = x then δ s else 0
 
-theorem multiShift_apply_of_ne {ι D A : Type*} [Fintype ι] [DecidableEq D]
+lemma multiShift_apply_of_ne {ι D A : Type*} [Fintype ι] [DecidableEq D]
     [AddCommMonoid A] {u : ι → D} (δ : ι → A) (f : D → A) {x : D}
     (h : ∀ s, u s ≠ x) :
     multiShift u δ f x = f x := by
   rw [multiShift, Finset.sum_eq_zero fun s _ => if_neg (h s), add_zero]
 
-theorem multiShift_apply_site {ι D A : Type*} [Fintype ι] [DecidableEq D]
+lemma multiShift_apply_site {ι D A : Type*} [Fintype ι] [DecidableEq D]
     [AddCommMonoid A] {u : ι → D} (δ : ι → A) (f : D → A)
     (hu : Function.Injective u) (s₀ : ι) :
     multiShift u δ f (u s₀) = f (u s₀) + δ s₀ := by
@@ -534,13 +534,13 @@ theorem multiShift_apply_site {ι D A : Type*} [Fintype ι] [DecidableEq D]
   rw [Finset.sum_eq_single s₀ (fun s _ hs => if_neg fun hc => hs (hu hc))
     (fun hns => absurd (Finset.mem_univ s₀) hns), if_pos rfl]
 
-theorem multiShift_zero {ι D A : Type*} [Fintype ι] [DecidableEq D]
+lemma multiShift_zero {ι D A : Type*} [Fintype ι] [DecidableEq D]
     [AddCommMonoid A] (u : ι → D) (f : D → A) :
     multiShift u 0 f = f := by
   funext x; simp [multiShift]
 
 /-- Shifts over the same site family compose additively. -/
-theorem multiShift_multiShift {ι D A : Type*} [Fintype ι] [DecidableEq D]
+lemma multiShift_multiShift {ι D A : Type*} [Fintype ι] [DecidableEq D]
     [AddCommMonoid A] (u : ι → D) (δ δ' : ι → A) (f : D → A) :
     multiShift u δ' (multiShift u δ f) = multiShift u (δ + δ') f := by
   funext x
@@ -554,7 +554,7 @@ theorem multiShift_multiShift {ι D A : Type*} [Fintype ι] [DecidableEq D]
 on a finite set `G` makes every `φ`-fiber the same size: `|fiber| · |A| = |G|`.  This is the shared
 counting principle behind re-randomisation arguments (e.g. the CBC-MAC's joint-MAC count and its
 birthday per-pair count). -/
-theorem card_filter_shift {F A : Type*} [Fintype F] [DecidableEq F]
+lemma card_filter_shift {F A : Type*} [Fintype F] [DecidableEq F]
     [AddCommGroup A] [Fintype A] [DecidableEq A]
     (G : Finset F) (φ : F → A) (act : A → F → F)
     (hmem : ∀ δ, ∀ f ∈ G, act δ f ∈ G)
@@ -590,7 +590,7 @@ theorem card_filter_shift {F A : Type*} [Fintype F] [DecidableEq F]
 /-- **Predicate form of `card_filter_shift`** over `univ`: a free, `φ`-equivariant `A`-action on the
 `Good` subtype balances the `φ`-fibers within it.  Phrased on the predicate `Good` so consumers avoid
 `Finset`-membership plumbing. -/
-theorem card_filter_shift_univ {F A : Type*} [Fintype F] [DecidableEq F]
+lemma card_filter_shift_univ {F A : Type*} [Fintype F] [DecidableEq F]
     [AddCommGroup A] [Fintype A] [DecidableEq A]
     (Good : F → Prop) [DecidablePred Good] (φ : F → A) (act : A → F → F)
     (hmem : ∀ δ f, Good f → Good (act δ f))

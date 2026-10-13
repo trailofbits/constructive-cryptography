@@ -26,7 +26,7 @@ noncomputable def oneTimePad : SymmetricEncryption Bool Bool Bool where
   dec k c := some (xor k c)
 
 /-- The collision step on the one-time pad: within `q_e² / 2`. -/
-theorem oneTimePad_hybrid_ideal (q : AE.Port → ℕ) :
+lemma oneTimePad_hybrid_ideal (q : AE.Port → ℕ) :
     Δ (Hybrid oneTimePad q) (AE.Ideal.perPort Bool Bool (budget := q) •
         Encryption.Real.perPort oneTimePad : Interface.Resource (AE.perPort Bool Bool q)) ≤
       ((q .enc) ^ 2 / 2 : ℝ≥0) := by
@@ -34,7 +34,7 @@ theorem oneTimePad_hybrid_ideal (q : AE.Port → ℕ) :
 
 /-- The collision step on the one-time pad, through the games layer: every solver's advantage is
 within `q_e² / 2`. -/
-theorem oneTimePad_hybrid_ideal_advantage (q : AE.Port → ℕ) {s}
+lemma oneTimePad_hybrid_ideal_advantage (q : AE.Port → ℕ) {s}
     (hs : s ∈ DistinctionGames.solvers (AE.perPort Bool Bool q)) :
     |s.1 (Hybrid oneTimePad q) - s.1 (AE.Ideal.perPort Bool Bool (budget := q) •
         Encryption.Real.perPort oneTimePad : Interface.Resource (AE.perPort Bool Bool q))| ≤
@@ -42,7 +42,7 @@ theorem oneTimePad_hybrid_ideal_advantage (q : AE.Port → ℕ) {s}
   simpa using GameExamples.hybrid_ideal_advantage_le oneTimePad q hs
 
 /-- The corrected chain on the one-time pad uses each assumption twice. -/
-theorem oneTimePad_usage (q : AE.Port → ℕ) :
+lemma oneTimePad_usage (q : AE.Port → ℕ) :
     (correctedChain oneTimePad q).usageCount .cca = 2 ∧
       (correctedChain oneTimePad q).usageCount .ptxt = 2 :=
   ⟨correctedChain_cca oneTimePad q, correctedChain_ptxt oneTimePad q⟩
@@ -55,12 +55,12 @@ example (q : AE.Port → ℕ) [AdmissibleDistinguishers]
   ⟨_, ae_of_ind_cca_int_ptxt oneTimePad q εptxt εcca ptxt cca⟩
 
 /-- Before any encryption, the plaintext filter rejects every decryption. -/
-theorem ptxtDecrypt_initial {Ω : Type} (decrypt : Ω → List Bool → Bool → Option Bool) (ω : Ω)
+lemma ptxtDecrypt_initial {Ω : Type} (decrypt : Ω → List Bool → Bool → Option Bool) (ω : Ω)
     (c : Bool) : ptxtDecrypt decrypt ω [] c = none := by
   simp [ptxtDecrypt, AE.retain]
 
 /-- Before any encryption, the ideal transformation rejects every ciphertext. -/
-theorem idealDecrypt_initial {Ω : Type} {k : ℕ} (encrypt : Ω → ℕ → Bool → Bool)
+lemma idealDecrypt_initial {Ω : Type} {k : ℕ} (encrypt : Ω → ℕ → Bool → Bool)
     (ω : Ω × (Fin k → Bool)) (c : Bool) :
     idealDecrypt (DSL.uniform Bool) encrypt ω [] c = none := by
   simp [idealDecrypt, AE.replay]

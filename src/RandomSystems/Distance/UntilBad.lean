@@ -40,7 +40,7 @@ def transcriptCost (β : List (A × B) → A → ℝ) : List (A × B) → ℝ
   | z :: t => β [] z.1 + transcriptCost (fun p x => β (z :: p) x) t
 
 /-- One more step adds its cost. -/
-theorem transcriptCost_snoc (β : List (A × B) → A → ℝ) (h : List (A × B)) (x : A) (y : B) :
+lemma transcriptCost_snoc (β : List (A × B) → A → ℝ) (h : List (A × B)) (x : A) (y : B) :
     transcriptCost β (h ++ [(x, y)]) = transcriptCost β h + β h x := by
   -- Induction on h, for every β: peel the first step off both sides.
   induction h generalizing β with
@@ -62,7 +62,7 @@ variable {A B : Type} [Fintype A] [Fintype B] {D : Domain A B}
 query `x` loses at most `β h x · R h` of `g`, and every possible transcript costs at most `ε`,
 then the transcripts of a compatible strategy `σ` within `n` rounds that `R` makes possible carry
 at least `1 - ε` of `g`. This is the union bound over the steps. -/
-theorem one_sub_le_sum_tSupp {R : RandomSystem A B D} {σ : List B →. A} (hC : R.Compatible σ)
+lemma one_sub_le_sum_tSupp {R : RandomSystem A B D} {σ : List B →. A} (hC : R.Compatible σ)
     {g : List (A × B) → ℝ} (hg : ∀ h, g h ≤ R h) (hnil : g [] = 1)
     {β : List (A × B) → A → ℝ}
     (hloss : ∀ h x, R h ≠ 0 → D h x → g h - ∑ y, g (h ++ [(x, y)]) ≤ β h x * R h) {ε : ℝ}

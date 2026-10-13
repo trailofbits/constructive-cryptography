@@ -38,7 +38,7 @@ variable {I : Type} {X Y : I → Type}
 /-- A reply of the system, read as an input of the environment. -/
 def envIn (y : Σ i, Y i) : Σ p, dIn Y p := ⟨.res y.1, y.2⟩
 
-theorem envIn_injective : Function.Injective (envIn (Y := Y)) := by
+lemma envIn_injective : Function.Injective (envIn (Y := Y)) := by
   rintro ⟨i, y⟩ ⟨i', y'⟩ h
   simp only [envIn, Sigma.mk.injEq, DPort.res.injEq] at h
   obtain ⟨rfl, h⟩ := h
@@ -57,7 +57,7 @@ def query : (Σ p, dOut X p) → Option (Σ i, X i)
 noncomputable def envOf (D : DDD I X Y) : List (Σ i, Y i) →. Σ i, X i :=
   fun ys => (D (dHist ys)).bind fun o => (query o : Part _)
 
-theorem mem_envOf {D : DDD I X Y} {ys x} : x ∈ envOf D ys ↔ ⟨.res x.1, x.2⟩ ∈ D (dHist ys) := by
+lemma mem_envOf {D : DDD I X Y} {ys x} : x ∈ envOf D ys ↔ ⟨.res x.1, x.2⟩ ∈ D (dHist ys) := by
   constructor
   · intro h
     obtain ⟨o, ho, hq⟩ := Part.mem_bind_iff.mp h
@@ -85,7 +85,7 @@ def closeInj : (Σ l : Free (closeSet I), twoFam (dIn Y) X l.1) → Two (Σ p, d
   | ⟨⟨⟨none, .res i⟩, h⟩, _⟩ => absurd (res_mem_closeSet i) h
   | ⟨⟨⟨some (), i⟩, h⟩, _⟩ => absurd (sys_mem_closeSet i) h
 
-theorem close_eq (D : DDD I X Y) (R : InterfaceSystem I X Y) :
+lemma close_eq (D : DDD I X Y) (R : InterfaceSystem I X Y) :
     close D R = interconnect (pair D R) closeRoute closeInj := by
   unfold close connect pairI
   rw [interconnect_relabel]
@@ -117,7 +117,7 @@ def decOut (b : Bool) : Σ l : Free (closeSet I), twoFam (dOut X) Y l.1 :=
   ⟨⟨⟨none, .dec⟩, dec_not_mem_closeSet⟩, b⟩
 
 /-- Every output of `D ▹ R` is a decision. -/
-theorem eq_decOut (z : Σ l : Free (closeSet I), twoFam (dOut X) Y l.1) : ∃ b, z = decOut b := by
+lemma eq_decOut (z : Σ l : Free (closeSet I), twoFam (dOut X) Y l.1) : ∃ b, z = decOut b := by
   rcases z with ⟨⟨⟨_ | ⟨⟨⟩⟩, l⟩, hl⟩, v⟩
   · rcases l with _ | _ | i
     · exact v.elim
@@ -125,7 +125,7 @@ theorem eq_decOut (z : Σ l : Free (closeSet I), twoFam (dOut X) Y l.1) : ∃ b,
     · exact absurd (res_mem_closeSet i) hl
   · exact absurd (sys_mem_closeSet l) hl
 
-theorem decOut_injective : Function.Injective (decOut (X := X) (Y := Y)) := by
+lemma decOut_injective : Function.Injective (decOut (X := X) (Y := Y)) := by
   intro b b' h
   simpa [decOut] using h
 
@@ -140,7 +140,7 @@ def inter : List (Σ i, X i) → List (Σ i, Y i) → List (Two (Σ p, dIn Y p) 
 def hist (xs : List (Σ i, X i)) (ys : List (Σ i, Y i)) : List (Two (Σ p, dIn Y p) (Σ i, X i)) :=
   ⟨none, ⟨.start, ()⟩⟩ :: inter xs ys
 
-theorem inter_snoc {xs : List (Σ i, X i)} {ys : List (Σ i, Y i)} (hl : xs.length = ys.length)
+lemma inter_snoc {xs : List (Σ i, X i)} {ys : List (Σ i, Y i)} (hl : xs.length = ys.length)
     (x : Σ i, X i) (y : Σ i, Y i) :
     inter (xs ++ [x]) (ys ++ [y]) = inter xs ys ++ [⟨some (), x⟩, ⟨none, envIn y⟩] := by
   induction xs generalizing ys with
@@ -153,12 +153,12 @@ theorem inter_snoc {xs : List (Σ i, X i)} {ys : List (Σ i, Y i)} (hl : xs.leng
     | nil => simp at hl
     | cons y' ys => simp [inter, ih (by simpa using hl)]
 
-theorem hist_snoc {xs : List (Σ i, X i)} {ys : List (Σ i, Y i)} (hl : xs.length = ys.length)
+lemma hist_snoc {xs : List (Σ i, X i)} {ys : List (Σ i, Y i)} (hl : xs.length = ys.length)
     (x : Σ i, X i) (y : Σ i, Y i) :
     hist (xs ++ [x]) (ys ++ [y]) = hist xs ys ++ [⟨some (), x⟩] ++ [⟨none, envIn y⟩] := by
   simp [hist, inter_snoc hl]
 
-theorem restrict_none_inter {xs : List (Σ i, X i)} {ys : List (Σ i, Y i)}
+lemma restrict_none_inter {xs : List (Σ i, X i)} {ys : List (Σ i, Y i)}
     (hl : xs.length = ys.length) : restrict none (inter xs ys) = ys.map envIn := by
   induction xs generalizing ys with
   | nil =>
@@ -173,7 +173,7 @@ theorem restrict_none_inter {xs : List (Σ i, X i)} {ys : List (Σ i, Y i)}
         restrict_cons_self, ih (by simpa using hl)]
       rfl
 
-theorem restrict_some_inter {xs : List (Σ i, X i)} {ys : List (Σ i, Y i)}
+lemma restrict_some_inter {xs : List (Σ i, X i)} {ys : List (Σ i, Y i)}
     (hl : xs.length = ys.length) : restrict (some ()) (inter xs ys) = xs := by
   induction xs generalizing ys with
   | nil => cases ys <;> rfl
@@ -184,15 +184,15 @@ theorem restrict_some_inter {xs : List (Σ i, X i)} {ys : List (Σ i, Y i)}
       rw [inter, restrict_cons_self, restrict_cons_ne (k := some ()) (k' := (none : Option Unit)) (by simp),
         ih (by simpa using hl)]
 
-theorem restrict_none_hist {xs : List (Σ i, X i)} {ys : List (Σ i, Y i)}
+lemma restrict_none_hist {xs : List (Σ i, X i)} {ys : List (Σ i, Y i)}
     (hl : xs.length = ys.length) : restrict none (hist xs ys) = dHist ys := by
   simp [hist, dHist, restrict_none_inter hl]
 
-theorem restrict_some_hist {xs : List (Σ i, X i)} {ys : List (Σ i, Y i)}
+lemma restrict_some_hist {xs : List (Σ i, X i)} {ys : List (Σ i, Y i)}
     (hl : xs.length = ys.length) : restrict (some ()) (hist xs ys) = xs := by
   simp [hist, restrict_some_inter hl]
 
-theorem hist_last {xs : List (Σ i, X i)} {ys : List (Σ i, Y i)} (hl : xs.length = ys.length) :
+lemma hist_last {xs : List (Σ i, X i)} {ys : List (Σ i, Y i)} (hl : xs.length = ys.length) :
     ∃ G a, hist xs ys = G ++ [⟨none, a⟩] := by
   rcases List.eq_nil_or_concat xs with rfl | ⟨xs', x, rfl⟩
   · cases ys with
@@ -205,7 +205,7 @@ theorem hist_last {xs : List (Σ i, X i)} {ys : List (Σ i, Y i)} (hl : xs.lengt
 
 variable {D : DDD I X Y} {R : InterfaceSystem I X Y}
 
-theorem pair_hist {xs : List (Σ i, X i)} {ys : List (Σ i, Y i)} (hl : xs.length = ys.length) :
+lemma pair_hist {xs : List (Σ i, X i)} {ys : List (Σ i, Y i)} (hl : xs.length = ys.length) :
     pair D R (hist xs ys) = (D (dHist ys)).map (Sigma.mk none) := by
   obtain ⟨G, a, e⟩ := hist_last hl
   have hr := restrict_none_hist (Y := Y) hl
@@ -214,7 +214,7 @@ theorem pair_hist {xs : List (Σ i, X i)} {ys : List (Σ i, Y i)} (hl : xs.lengt
   simp only [restrict_append, restrict_two_none_cons_none, restrict_nil] at hr
   rw [hr]
 
-theorem pair_hist_query {xs : List (Σ i, X i)} {ys : List (Σ i, Y i)}
+lemma pair_hist_query {xs : List (Σ i, X i)} {ys : List (Σ i, Y i)}
     (hl : xs.length = ys.length) (x : Σ i, X i) :
     pair D R (hist xs ys ++ [⟨some (), x⟩]) = (R (xs ++ [x])).map (Sigma.mk (some ())) := by
   rw [pair_right, restrict_some_hist hl]
@@ -223,7 +223,7 @@ theorem pair_hist_query {xs : List (Σ i, X i)} {ys : List (Σ i, Y i)}
 
 /-- Along an exchange of `D ▹ R` that starts on a transcript, a decision is a decision
 of `D` at the end of a longer transcript. -/
-theorem close_exchange {G o G'} (l : Exchange (pair D R) closeRoute G o G') :
+lemma close_exchange {G o G'} (l : Exchange (pair D R) closeRoute G o G') :
     ∀ b, o = some (decOut b) → ∀ xs ys, Transcript R (envOf D) xs ys →
       (G = hist xs ys ∨ ∃ x, x ∈ envOf D ys ∧ G = hist xs ys ++ [⟨some (), x⟩]) →
       ∃ xs' ys', Transcript R (envOf D) xs' ys' ∧ ⟨.dec, b⟩ ∈ D (dHist ys') := by
@@ -266,7 +266,7 @@ theorem close_exchange {G o G'} (l : Exchange (pair D R) closeRoute G o G') :
       rfl
 
 /-- An exchange from a later point of a transcript is an exchange from its start. -/
-theorem exchange_of_transcript {xs ys} (tr : Transcript R (envOf D) xs ys) :
+lemma exchange_of_transcript {xs ys} (tr : Transcript R (envOf D) xs ys) :
     ∀ {o G'}, Exchange (pair D R) closeRoute (hist xs ys) o G' →
       Exchange (pair D R) closeRoute (hist [] []) o G' := by
   induction tr with
@@ -281,7 +281,7 @@ theorem exchange_of_transcript {xs ys} (tr : Transcript R (envOf D) xs ys) :
     · refine Exchange.feed _ ⟨some (), y⟩ ⟨none, envIn y⟩ _ _ ?_ rfl l
       rw [pair_hist_query hl]; exact Part.mem_map _ hy
 
-theorem induces_start {o H} :
+lemma induces_start {o H} :
     Induces (pair D R) closeRoute closeInj [startIn] o H ↔
       Exchange (pair D R) closeRoute (hist [] []) o H := by
   rw [show ([startIn] : List (Σ l : Free (closeSet I), twoFam (dIn Y) X l.1)) = [] ++ [startIn]
@@ -295,7 +295,7 @@ theorem induces_start {o H} :
 
 /-- **The decision of `D ▹ R`** is the decision of `D` at the end of a transcript of `R`
 with `D`. -/
-theorem close_decision (b : Bool) :
+lemma close_decision (b : Bool) :
     decOut b ∈ close D R [startIn] ↔
       ∃ xs ys, Transcript R (envOf D) xs ys ∧ ⟨.dec, b⟩ ∈ D (dHist ys) := by
   rw [close_eq, mem_interconnect]
@@ -308,7 +308,7 @@ theorem close_decision (b : Bool) :
     exact Part.mem_map _ hd
 
 /-- The decision depends only on the transcripts. -/
-theorem close_start_eq {S : InterfaceSystem I X Y}
+lemma close_start_eq {S : InterfaceSystem I X Y}
     (h : ∀ xs ys, Transcript R (envOf D) xs ys ↔ Transcript S (envOf D) xs ys) :
     close D R [startIn] = close D S [startIn] := by
   apply Part.ext
@@ -326,7 +326,7 @@ def Compatible (D : DDD I X Y) (R : InterfaceSystem I X Y) : Prop :=
     (D (dHist ys)).Dom ∧ ∀ x, x ∈ envOf D ys → (R (xs ++ [x])).Dom
 
 /-- From every point of a transcript, the exchange of a defined decision goes on. -/
-theorem exchange_along {xs ys} (tr : Transcript R (envOf D) xs ys) :
+lemma exchange_along {xs ys} (tr : Transcript R (envOf D) xs ys) :
     ∀ {c G'}, Exchange (pair D R) closeRoute (hist [] []) (some c) G' →
       ∃ c' G'', Exchange (pair D R) closeRoute (hist xs ys) (some c') G'' := by
   induction tr with
@@ -362,7 +362,7 @@ theorem exchange_along {xs ys} (tr : Transcript R (envOf D) xs ys) :
 
 /-- **The decision is defined iff the environment is compatible with the system**
 (spec §5.6), for a finite environment. -/
-theorem close_dom_iff_compatible {n : ℕ} (hD : Finite n D) :
+lemma close_dom_iff_compatible {n : ℕ} (hD : Finite n D) :
     (close D R [startIn]).Dom ↔ Compatible D R := by
   rw [close_eq]
   constructor
@@ -433,7 +433,7 @@ variable {I : Type} {X Y : I → Type}
 def RepliesAtQueriedInterface (R : InterfaceSystem I X Y) : Prop := ∀ h a y, y ∈ R (h ++ [a]) → y.1 = a.1
 
 /-- A change of interface vocabulary preserves responding interfaces. -/
-theorem RepliesAtQueriedInterface.relabel {J : Type} {U V : J → Type} {R : InterfaceSystem I X Y} (hr : RepliesAtQueriedInterface R)
+lemma RepliesAtQueriedInterface.relabel {J : Type} {U V : J → Type} {R : InterfaceSystem I X Y} (hr : RepliesAtQueriedInterface R)
     (f : (Σ j, U j) → (Σ i, X i)) (g : (Σ i, Y i) → (Σ j, V j))
     (hl : ∀ x y, y.1 = (f x).1 → (g y).1 = x.1) : RepliesAtQueriedInterface (relabel R f g) := by
   intro h x y hy
@@ -463,7 +463,7 @@ noncomputable def probe (h : List (Σ i, X i)) (P : List (Σ i, Y i) → Bool) :
 
 variable {h : List (Σ i, X i)} {P : List (Σ i, Y i) → Bool}
 
-theorem probe_dHist {ys : List (Σ i, Y i)} (hv : Fits h ys) :
+lemma probe_dHist {ys : List (Σ i, Y i)} (hv : Fits h ys) :
     probe h P (dHist ys) = probeReply h P ys := by
   have hex : ∃ ys', ys.map envIn = ys'.map envIn ∧ Fits h ys' := ⟨ys, rfl, hv⟩
   simp only [probe, dHist, dif_pos hex]
@@ -471,7 +471,7 @@ theorem probe_dHist {ys : List (Σ i, Y i)} (hv : Fits h ys) :
     (List.map_injective_iff.mpr envIn_injective (Classical.choose_spec hex).1).symm
   rw [e]
 
-theorem probe_dom {w} (hd : (probe (Y := Y) h P w).Dom) : ∃ ys, w = dHist ys ∧ Fits h ys := by
+lemma probe_dom {w} (hd : (probe (Y := Y) h P w).Dom) : ∃ ys, w = dHist ys ∧ Fits h ys := by
   match w, hd with
   | ⟨.start, ()⟩ :: ws, hd =>
     simp only [probe] at hd
@@ -483,7 +483,7 @@ theorem probe_dom {w} (hd : (probe (Y := Y) h P w).Dom) : ∃ ys, w = dHist ys �
   | ⟨.dec, e⟩ :: _, _ => exact e.elim
   | ⟨.res _, _⟩ :: _, hd => exact hd.elim
 
-theorem Fits.of_snoc {ys : List (Σ i, Y i)} {y} (hv : Fits h (ys ++ [y])) :
+lemma Fits.of_snoc {ys : List (Σ i, Y i)} {y} (hv : Fits h (ys ++ [y])) :
     Fits h ys ∧ ∃ q, h[ys.length]? = some q ∧ y.1 = q.1 := by
   obtain ⟨hle, hm⟩ := hv
   simp only [List.length_append, List.length_singleton] at hle hm
@@ -494,7 +494,7 @@ theorem Fits.of_snoc {ys : List (Σ i, Y i)} {y} (hv : Fits h (ys ++ [y])) :
   simp only [List.cons.injEq, and_true] at h2
   exact ⟨⟨by omega, h1⟩, _, List.getElem?_eq_getElem hlt, h2⟩
 
-theorem Fits.snoc {ys : List (Σ i, Y i)} (hv : Fits h ys) {q} (hq : h[ys.length]? = some q)
+lemma Fits.snoc {ys : List (Σ i, Y i)} (hv : Fits h ys) {q} (hq : h[ys.length]? = some q)
     {y : Σ i, Y i} (hy : y.1 = q.1) : Fits h (ys ++ [y]) := by
   obtain ⟨hle, hm⟩ := hv
   have hlt : ys.length < h.length := (List.getElem?_eq_some_iff.mp hq).1
@@ -503,7 +503,7 @@ theorem Fits.snoc {ys : List (Σ i, Y i)} (hv : Fits h ys) {q} (hq : h[ys.length
   rw [List.length_append, List.length_singleton, List.take_add_one, List.getElem?_eq_getElem hlt]
   simp only [List.map_append, List.map_cons, List.map_nil, Option.toList_some, hm, hy]
 
-theorem dHist_snoc_inv {w : List (Σ p, dIn Y p)} {z} {ys' : List (Σ i, Y i)}
+lemma dHist_snoc_inv {w : List (Σ p, dIn Y p)} {z} {ys' : List (Σ i, Y i)}
     (e : w ++ [z] = dHist ys') :
     (w = [] ∧ z = ⟨.start, ()⟩) ∨ ∃ ys y, ys' = ys ++ [y] ∧ w = dHist ys ∧ z = envIn y := by
   rcases List.eq_nil_or_concat ys' with rfl | ⟨ys, y, rfl⟩
@@ -516,15 +516,15 @@ theorem dHist_snoc_inv {w : List (Σ p, dIn Y p)} {z} {ys' : List (Σ i, Y i)}
     obtain ⟨h1, h2⟩ := List.append_inj' this rfl
     exact ⟨ys, y, List.concat_eq_append .., h1, by simpa using h2⟩
 
-theorem dHist_ne_nil (ys : List (Σ i, Y i)) : dHist ys ≠ [] := by simp [dHist]
+lemma dHist_ne_nil (ys : List (Σ i, Y i)) : dHist ys ≠ [] := by simp [dHist]
 
 /-- The probe is a DDD. -/
-theorem probe_finite : Finite (h.length + 1) (probe (Y := Y) h P) := by
+lemma probe_finite : Finite (h.length + 1) (probe (Y := Y) h P) := by
   intro w hd
   obtain ⟨ys, rfl, hv⟩ := probe_dom hd
   simp [dHist]; exact hv.1
 
-theorem probe_isDDD : IsDDD (probe (Y := Y) h P) := by
+lemma probe_isDDD : IsDDD (probe (Y := Y) h P) := by
   refine ⟨?_, ⟨h.length + 1, probe_finite⟩, ?_, ?_, ?_⟩
   · simp [SilentAtEmpty, probe]
   · intro w z hr
@@ -549,7 +549,7 @@ theorem probe_isDDD : IsDDD (probe (Y := Y) h P) := by
       rw [replyLabel, probe_dHist hv] at hl
       simp [probeReply, hq] at hl
 
-theorem fixedQueries_take {R : InterfaceSystem I X Y} {H : List (Σ i, X i)} {xs ys}
+lemma fixedQueries_take {R : InterfaceSystem I X Y} {H : List (Σ i, X i)} {xs ys}
     (tr : Transcript R (fixedQueries H) xs ys) : xs = H.take xs.length := by
   induction tr with
   | nil => simp
@@ -559,7 +559,7 @@ theorem fixedQueries_take {R : InterfaceSystem I X Y} {H : List (Σ i, X i)} {xs
     rw [List.length_append, List.length_singleton, List.take_add_one, hl, hx, ← hl, ← ih]
     rfl
 
-theorem probe_transcript_fixed {R : InterfaceSystem I X Y} (hR : RepliesAtQueriedInterface R) {xs ys}
+lemma probe_transcript_fixed {R : InterfaceSystem I X Y} (hR : RepliesAtQueriedInterface R) {xs ys}
     (tr : Transcript R (envOf (probe h P)) xs ys) : Transcript R (fixedQueries h) xs ys ∧ Fits h ys := by
   induction tr with
   | nil => exact ⟨Transcript.nil, by simp [Fits]⟩
@@ -579,7 +579,7 @@ theorem probe_transcript_fixed {R : InterfaceSystem I X Y} (hR : RepliesAtQuerie
       exact hv.snoc hq (hR _ _ _ hy)
     · simp at hx
 
-theorem fixed_probe_transcript {R : InterfaceSystem I X Y} (hR : RepliesAtQueriedInterface R) {xs ys}
+lemma fixed_probe_transcript {R : InterfaceSystem I X Y} (hR : RepliesAtQueriedInterface R) {xs ys}
     (tr : Transcript R (fixedQueries h) xs ys) :
     Transcript R (envOf (probe h P)) xs ys ∧ Fits h ys := by
   induction tr with
@@ -593,7 +593,7 @@ theorem fixed_probe_transcript {R : InterfaceSystem I X Y} (hR : RepliesAtQuerie
 
 /-- The decisions of the probe on a resource: it decides `P` of the replies to `h`,
 exactly when `h` is answered. -/
-theorem probe_decision {R : InterfaceSystem I X Y} (hR : RepliesAtQueriedInterface R) (b : Bool) :
+lemma probe_decision {R : InterfaceSystem I X Y} (hR : RepliesAtQueriedInterface R) (b : Bool) :
     decOut b ∈ close (probe h P) R [startIn] ↔
       ∃ ys, Transcript R (fixedQueries h) h ys ∧ b = P ys := by
   rw [close_decision]
@@ -677,7 +677,7 @@ def swapper : InterfaceSystem Bool (fun _ => Unit) (fun _ => Unit)
 /-- Never answers. -/
 def mute : InterfaceSystem Bool (fun _ => Unit) (fun _ => Unit) := fun _ => Part.none
 
-theorem swapper_transcript {e xs ys} (tr : Transcript swapper e xs ys) :
+lemma swapper_transcript {e xs ys} (tr : Transcript swapper e xs ys) :
     ys = [] ∨ ∃ x y, xs = [x] ∧ ys = [y] ∧ x ∈ e [] ∧ y ∈ swapper [x] := by
   cases tr with
   | nil => exact Or.inl rfl
@@ -691,14 +691,14 @@ theorem swapper_transcript {e xs ys} (tr : Transcript swapper e xs ys) :
       rcases x₀ with ⟨i, ⟨⟩⟩
       simp [swapper] at hy
 
-theorem mute_transcript {e xs ys} (tr : Transcript mute e xs ys) : ys = [] := by
+lemma mute_transcript {e xs ys} (tr : Transcript mute e xs ys) : ys = [] := by
   cases tr with
   | nil => rfl
   | snoc _ _ hy => simp [mute] at hy
 
 /-- **DDDs do not see replies at another interface**: `swapper` and `mute` are not
 behaviourally equal, but every DDD decides the same with both. -/
-theorem dde_blind_beyond_resources :
+lemma dde_blind_beyond_resources :
     ¬ swapper ≈ₛ mute ∧
       ∀ D : DDD Bool (fun _ => Unit) (fun _ => Unit), IsDDD D →
         close D swapper [startIn] = close D mute [startIn] := by

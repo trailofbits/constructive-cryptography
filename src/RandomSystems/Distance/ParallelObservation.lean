@@ -47,13 +47,13 @@ noncomputable def pairObserver (D : DDD (I ⊕ J) (Sum.rec X₁ X₂) (Sum.rec Y
     DDD (Two I J) (twoFam X₁ X₂) (twoFam Y₁ Y₂) :=
   relabel D pairObserverInput pairObserverOutput
 
-theorem pairObserver_isDDD {D : DDD (I ⊕ J) (Sum.rec X₁ X₂) (Sum.rec Y₁ Y₂)}
+lemma pairObserver_isDDD {D : DDD (I ⊕ J) (Sum.rec X₁ X₂) (Sum.rec Y₁ Y₂)}
     (hD : IsDDD D) : IsDDD (pairObserver D) :=
   hD.relabel _ _ (twoSum I J)
     (by rintro ⟨_ | _ | ⟨_ | ⟨⟨⟩⟩, i⟩, v⟩ <;> first | exact v.elim | rfl)
     (by rintro ⟨_ | _ | (i | j), v⟩ <;> first | exact v.elim | rfl)
 
-theorem close_parallel_system
+lemma close_parallel_system
     (D : DDD (I ⊕ J) (Sum.rec X₁ X₂) (Sum.rec Y₁ Y₂))
     (s : InterfaceSystem I X₁ Y₁) (t : InterfaceSystem J X₂ Y₂) :
     close D (relabel (pair s t) (sumAlphabet (Sum.rec X₁ X₂)).symm
@@ -83,11 +83,11 @@ noncomputable def absorbRight (D : DDD (I ⊕ J) (Sum.rec X₁ X₂) (Sum.rec Y�
     (t : InterfaceSystem J X₂ Y₂) : DDD I X₁ Y₁ :=
   trim (partialClose (pairObserver D) t)
 
-theorem absorbRight_isDDD {D : DDD (I ⊕ J) (Sum.rec X₁ X₂) (Sum.rec Y₁ Y₂)}
+lemma absorbRight_isDDD {D : DDD (I ⊕ J) (Sum.rec X₁ X₂) (Sum.rec Y₁ Y₂)}
     (hD : IsDDD D) (t : InterfaceSystem J X₂ Y₂) : IsDDD (absorbRight D t) :=
   partialClose_isDDD (pairObserver_isDDD hD)
 
-theorem decision_parallel_system {D : DDD (I ⊕ J) (Sum.rec X₁ X₂) (Sum.rec Y₁ Y₂)}
+lemma decision_parallel_system {D : DDD (I ⊕ J) (Sum.rec X₁ X₂) (Sum.rec Y₁ Y₂)}
     (hD : IsDDD D) (s : InterfaceSystem I X₁ Y₁) (t : InterfaceSystem J X₂ Y₂) (b : Bool) :
     decOut b ∈ close D (relabel (trim (pair s t))
       (sumAlphabet (Sum.rec X₁ X₂)).symm (sumAlphabet (Sum.rec Y₁ Y₂))) [startIn] ↔
@@ -109,7 +109,7 @@ variable [Fintype I] [Fintype J] [∀ i, Fintype (X₁ i)] [∀ i, Fintype (Y₁
   {F : List (Σ j, X₂ j) → Prop} {n : ℕ} {hF : ∀ h, F h → h.length ≤ n}
 
 /-- Absorbing a deterministic resource run beside preserves compatibility. -/
-theorem Domain.DecisionCompatible.absorbRight
+lemma Domain.DecisionCompatible.absorbRight
     (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
     (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
     {D : DDD (I ⊕ J) (Sum.rec X₁ X₂) (Sum.rec Y₁ Y₂)}
@@ -131,7 +131,7 @@ theorem Domain.DecisionCompatible.absorbRight
 
 /-- On presentations, the decision probability on the parallel composition averages the
 absorbing decisions over the samples of the right resource. -/
-theorem RandomSystem.decisionProbability_parallel
+lemma RandomSystem.decisionProbability_parallel
     (D : DDD (I ⊕ J) (Sum.rec X₁ X₂) (Sum.rec Y₁ Y₂)) (hD : IsDDD D)
     (P : Distribution.ProbDist {s : InterfaceSystem I X₁ Y₁ //
       IsDDS s ∧ SystemAlgebra.RepliesAtQueriedInterface s ∧ ∀ h, (s h).Dom ↔ E h})

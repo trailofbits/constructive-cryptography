@@ -23,7 +23,7 @@ def ClosedUnderConverterClass (converters : Submonoid C)
     (fun resource => test (converter • resource)) ∈ tests
 
 /-- A test bound on the ideal is inherited by its converter-class closure. -/
-theorem star_subset_gameSpec [Preorder Bound]
+lemma star_subset_gameSpec [Preorder Bound]
     {converters : Submonoid C} {tests : Set (X → Bound)}
     {error : Bound} {ideal : X}
     (closed : ClosedUnderConverterClass converters tests)
@@ -43,7 +43,7 @@ def testClosure (converters : Submonoid C) (baseTests : Set (X → Bound)) :
     test = fun resource => baseTest (converter • resource)}
 
 /-- Every base test belongs to its converter closure. -/
-theorem subset_testClosure (converters : Submonoid C)
+lemma subset_testClosure (converters : Submonoid C)
     (baseTests : Set (X → Bound)) :
     baseTests ⊆ testClosure converters baseTests := by
   intro test admitted
@@ -53,7 +53,7 @@ theorem subset_testClosure (converters : Submonoid C)
   rw [one_smul]
 
 /-- Converter closure is closed under the same converter class. -/
-theorem closedUnderConverterClass_testClosure (converters : Submonoid C)
+lemma closedUnderConverterClass_testClosure (converters : Submonoid C)
     (baseTests : Set (X → Bound)) :
     ClosedUnderConverterClass converters (testClosure converters baseTests) := by
   intro test testAdmitted outer outerAdmitted

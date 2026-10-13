@@ -41,7 +41,7 @@ theorem ConstructsWithin.star {f : X → X} {converters : Submonoid C}
 
 MR16, Equation (3) (printed p. 12): “πR ≈ε Sσ”. The simulator remains
 an explicit witness; no distance on the real resource carrier is required. -/
-theorem constructsWithin_star_of_simulator {Y : Type w} {f : Y → X}
+lemma constructsWithin_star_of_simulator {Y : Type w} {f : Y → X}
     {converters : Submonoid C} {real : Y} {ideal : X} {error : ENNReal}
     (simulator : C) (admitted : simulator ∈ converters)
     (close : edist (f real) (simulator • ideal) ≤ error) :

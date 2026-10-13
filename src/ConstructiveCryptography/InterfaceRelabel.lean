@@ -13,7 +13,7 @@ namespace SystemAlgebra.Interface
 
 open Classical CategoryTheory
 
-theorem alphabet_symm_label {I J : Type} {X : I → Type} {Y : J → Type}
+lemma alphabet_symm_label {I J : Type} {X : I → Type} {Y : J → Type}
     (e : I ≃ J) (f : (Σ i, X i) ≃ (Σ j, Y j))
     (hf : ∀ x, (f x).1 = e x.1) (y : Σ j, Y j) :
     (f.symm y).1 = e.symm y.1 := by
@@ -32,13 +32,13 @@ noncomputable def rename {A B : Interface} (e : A.I ≃ B.I)
       (alphabet_symm_label e g hg) hd)
 
 /-- The identity filter lies below the forwarding converter. -/
-theorem filter_mem {A : Interface} {h y}
+lemma filter_mem {A : Interface} {h y}
     (hy : y ∈ (DDC.filter (Y := A.Y) (fun h => h = [] ∨ A.domain h)
       (prefix_or_nil A.nonempty_prefix.2)).1 h) : y ∈ idConverter A.I A.X A.Y h :=
   ((filterDom_mem_iff _ _ h y).mp hy).2
 
 /-- A renaming is the behavior of a DDC below the renaming converter. -/
-theorem exists_rename_eq_ofDDC {A B : Interface} (e : A.I ≃ B.I)
+lemma exists_rename_eq_ofDDC {A B : Interface} (e : A.I ≃ B.I)
     (f : (Σ i, A.X i) ≃ (Σ j, B.X j)) (g : (Σ i, A.Y i) ≃ (Σ j, B.Y j))
     (hf : ∀ x, (f x).1 = e x.1) (hg : ∀ y, (g y).1 = e y.1)
     (hd : ∀ h, B.domain (h.map f) ↔ A.domain h) :
@@ -47,7 +47,7 @@ theorem exists_rename_eq_ofDDC {A B : Interface} (e : A.I ≃ B.I)
         ∀ h y, y ∈ r h → y ∈ renameConverter f g.symm h :=
   ⟨_, _, rfl, relabel_mono (fun _ _ hy => filter_mem hy) _ _⟩
 
-theorem rename_refl (A : Interface) :
+lemma rename_refl (A : Interface) :
     rename (Equiv.refl A.I) (Equiv.refl (Σ i, A.X i)) (Equiv.refl (Σ i, A.Y i))
       (fun _ => rfl) (fun _ => rfl)
       (fun h => (congrArg A.domain (List.map_id h)).to_iff) = 𝟙 A := by
@@ -60,7 +60,7 @@ theorem rename_refl (A : Interface) :
   intro xs ys hr
   rwa [he] at hr
 
-theorem rename_comp {A B C : Interface}
+lemma rename_comp {A B C : Interface}
     (e : A.I ≃ B.I) (f : (Σ i, A.X i) ≃ (Σ j, B.X j)) (g : (Σ i, A.Y i) ≃ (Σ j, B.Y j))
     (hf : ∀ x, (f x).1 = e x.1) (hg : ∀ y, (g y).1 = e y.1)
     (hd : ∀ h, B.domain (h.map f) ↔ A.domain h)
