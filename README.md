@@ -18,7 +18,7 @@ summarizes the theory layer by layer, with links to the Lean declarations.
 | `RandomSystems` | systems and automata; deterministic converters and programs; distributions over deterministic systems; random systems given by their cumulative probabilities; probabilistic automata and memoryless systems; probabilistic converters, attachment and parallel composition; transcript distance and distinguishers; games |
 | `ConstructiveCryptography.Specification`, `.Construction` | specifications, constructions and relaxations over any carrier |
 | `ConstructiveCryptography.CryptographicAlgebra` | the classes of cryptographic algebras: resource theories, parallel composition, compatible pseudo-metrics and distinguisher classes, relaxations |
-| `ConstructiveCryptography` (top level) | interfaces, resources and converters on random systems, and their instances of the classes; filters, contexts, sources, automata, memoryless resources, functional resources, games presented by discrete games; notation |
+| `ConstructiveCryptography` (top level) | interfaces, resources and converters on random systems, and their instances of the classes; filters, contexts, sources, automata, memoryless systems, functional resources, games presented by discrete games; notation |
 | `ConstructiveCryptography.Substitution` | the substitution calculus for constructions [6] |
 | `ConstructiveCryptography.DSL` | a compiler from component declarations to resources and converters |
 | `ConstructiveCryptography.Tactics` | proof commands, including the substitution calculations `cc_calc` |

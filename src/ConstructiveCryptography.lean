@@ -65,7 +65,7 @@ import ConstructiveCryptography.Tactics.ProofAutomationAttributes
 
 /-!
 Constructive Cryptography: interfaces and domains, arrows, resources and the action, parallel
-composition, the resource distance, memoryless resources, specifications of resources, filters,
+composition, the resource distance, memoryless systems, specifications of resources, filters,
 budgets, functional constructors, games presented by discrete games; the categorical packaging;
 and the extensions (substitution, the DSL).
 -/
