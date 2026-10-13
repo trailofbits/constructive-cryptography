@@ -51,7 +51,7 @@ open Classical Probability CategoryTheory
 
 /-- **A filter attached to a resource** is the restriction of the resource's random system to
 the restricted domain. -/
-theorem filter_smul (A : Interface) (D : List (Σ i, A.X i) → Prop)
+lemma filter_smul (A : Interface) (D : List (Σ i, A.X i) → Prop)
     (hD : ∀ p h, p <+: h → D h → D p) (R : Resource A) :
     (filter A D hD • R).1 = R.1.restrict (A.restrict D hD).inputDomain fun _ _ hx => hx.1 := by
   obtain ⟨Q, hQ⟩ := Resource.exists_ofPDS R
@@ -85,7 +85,7 @@ theorem filter_smul (A : Interface) (D : List (Σ i, A.X i) → Prop)
 
 /-- **Two filters in series** act as the filter of both conditions: the resources have the
 same transcript masses. -/
-theorem filter_comp_filter_smul (A : Interface) (D : List (Σ i, A.X i) → Prop)
+lemma filter_comp_filter_smul (A : Interface) (D : List (Σ i, A.X i) → Prop)
     (hD : ∀ p h, p <+: h → D h → D p) (D' : List (Σ i, A.X i) → Prop)
     (hD' : ∀ p h, p <+: h → D' h → D' p) (R : Resource A) :
     ((filter (A.restrict D hD) D' hD' ≫ filter A D hD) • R).1.1 =

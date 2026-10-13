@@ -50,12 +50,12 @@ instance {n : ℕ} : XorOp (Bytes n) := ⟨Bytes.xor⟩
 
 instance {n : ℕ} : Zero (Bytes n) := ⟨Vector.replicate n 0⟩
 
-@[simp] theorem Bytes.getElem_xor {n : ℕ} (a b : Bytes n) (i : ℕ) (hi : i < n) :
+@[simp] lemma Bytes.getElem_xor {n : ℕ} (a b : Bytes n) (i : ℕ) (hi : i < n) :
     (a ^^^ b)[i] = a[i] ^^^ b[i] := by
   change (Vector.zipWith (· ^^^ ·) a b)[i] = _
   simp
 
-@[simp] theorem Bytes.getElem_zero {n : ℕ} (i : ℕ) (hi : i < n) : (0 : Bytes n)[i] = 0 := by
+@[simp] lemma Bytes.getElem_zero {n : ℕ} (i : ℕ) (hi : i < n) : (0 : Bytes n)[i] = 0 := by
   change (Vector.replicate n 0)[i] = _
   simp
 

@@ -21,7 +21,7 @@ namespace SystemAlgebra
 
 open Classical
 
-theorem renameConverter_mem {O J : Type} {U V : O → Type} {X Y : J → Type}
+lemma renameConverter_mem {O J : Type} {U V : O → Type} {X Y : J → Type}
     (f : (Σ o, U o) → (Σ j, X j)) (g : (Σ j, Y j) → (Σ o, V o)) :
     ∀ h y, y ∈ renameConverter f g h →
       y ∈ relabel (forwardAll J X Y) (outsideMap f) (outsideMap g) h :=
@@ -36,13 +36,13 @@ variable {O O' J : Type} {U V : O → Type} {U' V' : O' → Type} {X Y : J → T
 
 include hf hg in
 /-- The renaming converter is the canonical restriction of relabeled forwarding. -/
-theorem renameConverter_eq_canon :
+lemma renameConverter_eq_canon :
     renameConverter f g = canon (relabel (forwardAll O U V) (outsideMap f) (outsideMap g)) :=
   (canon_outsideMap e f g hf hg (forwardAll O U V)).symm
 
 include hf hg in
 /-- A renamed partial converter is a partial converter. -/
-theorem IsDDC.relabelOutside {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (hα : IsDDC b α) :
+lemma IsDDC.relabelOutside {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (hα : IsDDC b α) :
     IsDDC b (relabel α (outsideMap f) (outsideMap g)) := by
   refine ⟨⟨?_, ?_⟩, fun h z hd => ?_, fun h hd => ?_, fun h y o hy hl => ?_⟩
   · simpa only [SilentAtEmpty, relabel, List.map_nil, Part.map_Dom] using hα.dds.1
@@ -68,7 +68,7 @@ theorem IsDDC.relabelOutside {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (h
 
 include hf hg in
 /-- Composing a partial converter after a renaming converter relabels it. -/
-theorem IsDDC.trim_renameConverter_serialM {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (hα : IsDDC b α) :
+lemma IsDDC.trim_renameConverter_serialM {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (hα : IsDDC b α) :
     trim (serialM (renameConverter f g) α) = relabel α (outsideMap f) (outsideMap g) := by
   have hr := (renameConverter_isResponsiveDDC e f g hf hg).isDDC
   apply (hr.comp hα).eq_of_admitted_replies (hα.relabelOutside e f g hf hg)
@@ -90,7 +90,7 @@ variable {O J J' : Type} {U V : O → Type} {X Y : J → Type} {X' Y' : J' → T
 include hk hl in
 /-- Composing a partial converter before a renaming converter relabels its inside, on
 admitted histories. -/
-theorem IsDDC.replies_serialM_renameConverter {b : ℕ} {α : InsideOutsideSystem O J U V X Y}
+lemma IsDDC.replies_serialM_renameConverter {b : ℕ} {α : InsideOutsideSystem O J U V X Y}
     (hα : IsDDC b α) (h : List ((Σ l, twoFam U Y' l) × (Σ l, twoFam V X' l)))
     (hh : Admitted converterAdmits h) :
     Replies (serialM α (renameConverter k l)) (h.map Prod.fst) (h.map Prod.snd) ↔
@@ -108,7 +108,7 @@ section Relabeling
 variable {O J O' J' : Type} {U V : O → Type} {X Y : J → Type}
     {U' V' : O' → Type} {X' Y' : J' → Type}
 
-theorem admitAfter_twoMap (e : O' → O) (κ : J' → J) (hκ : Function.Injective κ)
+lemma admitAfter_twoMap (e : O' → O) (κ : J' → J) (hκ : Function.Injective κ)
     (r : Option (Two O' J')) (l : Two O' J') :
     admitAfter (r.map (twoMap e κ)) (twoMap e κ l) ↔ admitAfter r l := by
   rcases r with _ | ⟨_ | ⟨⟨⟩⟩, r⟩ <;> rcases l with ⟨_ | ⟨⟨⟩⟩, l⟩ <;>
@@ -116,7 +116,7 @@ theorem admitAfter_twoMap (e : O' → O) (κ : J' → J) (hκ : Function.Injecti
 
 /-- A relabeling preserving outside/inside labels, with one injective map on
 inside labels, preserves the admission of the next input. -/
-theorem converterAdmits_map_iff
+lemma converterAdmits_map_iff
     (i : (Σ l, twoFam U' Y' l) → (Σ l, twoFam U Y l))
     (o : (Σ l, twoFam V' X' l) → (Σ l, twoFam V X l))
     (e : O' → O) (κ : J' → J) (hκ : Function.Injective κ)
@@ -133,7 +133,7 @@ theorem converterAdmits_map_iff
 
 /-- A relabeling preserving outside/inside labels, with one injective map on
 inside labels, preserves admitted histories. -/
-theorem admitted_map_iff
+lemma admitted_map_iff
     (i : (Σ l, twoFam U' Y' l) → (Σ l, twoFam U Y l))
     (o : (Σ l, twoFam V' X' l) → (Σ l, twoFam V X l))
     (e : O' → O) (κ : J' → J) (hκ : Function.Injective κ)
@@ -148,7 +148,7 @@ theorem admitted_map_iff
     exact and_congr Iff.rfl (converterAdmits_map_iff i o e κ hκ hi ho h z.1)
 
 /-- Relabeling transports agreement of completed histories on admitted inputs. -/
-theorem replies_relabel_congr_of_admitted
+lemma replies_relabel_congr_of_admitted
     {s t : InsideOutsideSystem O J U V X Y}
     (i : (Σ l, twoFam U' Y' l) ≃ (Σ l, twoFam U Y l))
     (o : (Σ l, twoFam V X l) ≃ (Σ l, twoFam V' X' l))
@@ -213,7 +213,7 @@ section Transport
 
 variable {O O' J : Type} {U V : O → Type} {U' V' : O' → Type} {X Y : J → Type}
 
-theorem outsideInputs_outsideMap (f : (Σ o, U' o) → (Σ o, U o)) (xs : List (Σ l, twoFam U' Y l)) :
+lemma outsideInputs_outsideMap (f : (Σ o, U' o) → (Σ o, U o)) (xs : List (Σ l, twoFam U' Y l)) :
     outsideInputs (xs.map (outsideMap f)) = (outsideInputs xs).map f := by
   induction xs using List.reverseRecOn with
   | nil => rfl
@@ -223,7 +223,7 @@ theorem outsideInputs_outsideMap (f : (Σ o, U' o) → (Σ o, U o)) (xs : List (
     rcases x with ⟨⟨_ | ⟨⟨⟩⟩, o⟩, u⟩ <;>
       simp [outsideInputs, outsideMap, splitIn, restrict_cons_self, restrict_cons_ne]
 
-theorem insideQueries_outsideMap (g : (Σ o, V o) → (Σ o, V' o)) (ys : List (Σ l, twoFam V X l)) :
+lemma insideQueries_outsideMap (g : (Σ o, V o) → (Σ o, V' o)) (ys : List (Σ l, twoFam V X l)) :
     insideQueries (ys.map (outsideMap g)) = insideQueries ys := by
   induction ys using List.reverseRecOn with
   | nil => rfl
@@ -237,7 +237,7 @@ variable {E : List (Σ j, X j) → Prop} {F : List (Σ o, U o) → Prop} {F' : L
 
 /-- **Relabeling the outside of a DDC from `E` to `F`** by a label-preserving bijection gives a
 DDC from `E` to the transported outside domain. -/
-theorem IsDDCFrom.relabelOutside (e : O' ≃ O) (f : (Σ o, U' o) ≃ (Σ o, U o))
+lemma IsDDCFrom.relabelOutside (e : O' ≃ O) (f : (Σ o, U' o) ≃ (Σ o, U o))
     (g : (Σ o, V o) ≃ (Σ o, V' o)) (hf : ∀ u, (f u).1 = e u.1) (hg : ∀ v, (g v).1 = e.symm v.1)
     (hd : ∀ h, F (h.map f) ↔ F' h) {b : ℕ} {α : InsideOutsideSystem O J U V X Y}
     (hα : IsDDCFrom E F b α) : IsDDCFrom E F' b (relabel α (outsideMap f) (outsideMap g)) := by

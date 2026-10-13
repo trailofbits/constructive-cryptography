@@ -25,7 +25,7 @@ def echo : System Unit Unit := fun h => if h = [] then Part.none else Part.some 
 def spinRoute : Unit → Empty ⊕ Unit := fun _ => .inr ()
 
 /-- Once `spinner` has received an input, the exchange of the composite never stops. -/
-theorem spinner_no_exchange {H : List (Σ o, optF Unit (fun _ : Unit => Unit) o)} {o H'}
+lemma spinner_no_exchange {H : List (Σ o, optF Unit (fun _ : Unit => Unit) o)} {o H'}
     (l : Exchange (parAll (optS spinner fun _ : Unit => echo))
       (routeOpt (B := fun _ : Unit => Unit) spinRoute) H o H') :
     ∀ H₁ (x : Unit), H = H₁ ++ [⟨none, x⟩] → False := by
@@ -48,7 +48,7 @@ theorem spinner_no_exchange {H : List (Σ o, optF Unit (fun _ : Unit => Unit) o)
     exact ih _ _ (by rw [← hr])
 
 /-- **Locality fails for a non-terminating component.** -/
-theorem locality_fails_without_termination :
+lemma locality_fails_without_termination :
     parAll (optS (interconnect spinner spinRoute id) fun _ : Unit => echo) ≠
       interconnect (parAll (optS spinner fun _ : Unit => echo))
         (routeOpt (B := fun _ : Unit => Unit) spinRoute) (injOpt (A := fun _ : Unit => Unit) id) := by
@@ -84,7 +84,7 @@ def talker : InterfaceSystem Unit (fun _ => Unit) (fun _ => Unit) := fun h =>
 
 /-- **The identity law fails for a system that speaks first**: connection
 never consults the empty history. -/
-theorem identity_fails_without_reactivity :
+lemma identity_fails_without_reactivity :
     relabel (attachAlong (id : Unit → Unit) (forwardAll Unit (fun _ => Unit) (fun _ => Unit)) talker)
       (idAlongIn (Y := Unit) id) (idAlongOut id) ≠ talker := by
   intro e

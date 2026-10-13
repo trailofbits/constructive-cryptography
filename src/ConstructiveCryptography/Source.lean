@@ -38,7 +38,7 @@ noncomputable def sourceStep {q : ℕ} (law : Distribution.ProbDist X) :
   | (t, k), _, _ => ((t, k + 1), if hk : k < q then t ⟨k, hk⟩ else Classical.choice law.nonempty)
 
 /-- After `k` queries the source reads entry `k` of its table. -/
-theorem stateAfter_sourceStep {q : ℕ} (law : Distribution.ProbDist X) (t : Fin q → X)
+lemma stateAfter_sourceStep {q : ℕ} (law : Distribution.ProbDist X) (t : Fin q → X)
     (h : List (Σ _ : Unit, Unit)) : stateAfter (sourceStep law) (t, 0) h = (t, h.length) := by
   induction h using List.reverseRecOn with
   | nil => rfl

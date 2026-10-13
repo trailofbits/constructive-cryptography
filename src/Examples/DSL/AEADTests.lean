@@ -19,13 +19,13 @@ namespace DSLExamples.Authenticated
 open Commons DSLExamples.Cipher
 
 /-- Each invocation makes at least one inside call. -/
-theorem bound_pos : 0 < EncryptThenMAC.bound :=
+lemma bound_pos : 0 < EncryptThenMAC.bound :=
   EncryptThenMAC.bound_spec none AEAD.Port.encrypt (0, ⟨[], by norm_num⟩, ⟨[], by norm_num⟩) []
     ⟨.inl StreamCipher.Port.crypt, (0, ⟨[], by norm_num⟩)⟩
     (Program.consistent_nil EncryptThenMAC.body none _ _) (by simp [EncryptThenMAC.body, callProg])
 
 /-- Encryption calls CTR, tags the ciphertext, then returns the pair. -/
-theorem encrypt_transcript {q : ℕ} (hq : 1 ≤ q) (nonce : Nonce)
+lemma encrypt_transcript {q : ℕ} (hq : 1 ≤ q) (nonce : Nonce)
     (ad message ciphertext : Message) (tag : Block) :
     (EncryptThenMAC (budget := q)).1
       [(⟨⟨none, AEAD.Port.encrypt⟩, (nonce, ad, message)⟩,
@@ -45,7 +45,7 @@ theorem encrypt_transcript {q : ℕ} (hq : 1 ≤ q) (nonce : Nonce)
       Program.emit, EncryptThenMAC.body, callProg, returnProg, outsideInputs, splitIn, hq]
 
 /-- A tag that verifies permits exactly the requested decryption call. -/
-theorem decrypt_transcript {q : ℕ} (hq : 1 ≤ q) (nonce : Nonce)
+lemma decrypt_transcript {q : ℕ} (hq : 1 ≤ q) (nonce : Nonce)
     (ad ciphertext message : Message) (tag : Block) :
     (EncryptThenMAC (budget := q)).1
       [(⟨⟨none, AEAD.Port.decrypt⟩, (nonce, ad, ciphertext, tag)⟩,
@@ -65,7 +65,7 @@ theorem decrypt_transcript {q : ℕ} (hq : 1 ≤ q) (nonce : Nonce)
       Program.emit, EncryptThenMAC.body, callProg, returnProg, outsideInputs, splitIn, hq]
 
 /-- A tag that does not verify returns failure without querying the cipher. -/
-theorem decrypt_rejects {q : ℕ} (hq : 1 ≤ q) (nonce : Nonce) (ad ciphertext : Message)
+lemma decrypt_rejects {q : ℕ} (hq : 1 ≤ q) (nonce : Nonce) (ad ciphertext : Message)
     (tag : Block) :
     (EncryptThenMAC (budget := q)).1
       [(⟨⟨none, AEAD.Port.decrypt⟩, (nonce, ad, ciphertext, tag)⟩,
@@ -83,13 +83,13 @@ theorem decrypt_rejects {q : ℕ} (hq : 1 ≤ q) (nonce : Nonce) (ad ciphertext 
       Program.emit, EncryptThenMAC.body, callProg, returnProg, outsideInputs, splitIn, hq]
 
 /-- A message needs at most `2³²` counter blocks, so the 32-bit counter does not wrap. -/
-theorem blockCount_le (message : Message) : CTR.blockCount message.val.length ≤ 2 ^ 32 := by
+lemma blockCount_le (message : Message) : CTR.blockCount message.val.length ≤ 2 ^ 32 := by
   have hm := message.property
   simp only [CTR.blockCount]
   omega
 
 /-- No input to the authenticator reaches PMAC's oversized-message case. -/
-theorem authenticationBytes_length (nonce : Nonce) (ad ciphertext : Message) :
+lemma authenticationBytes_length (nonce : Nonce) (ad ciphertext : Message) :
     (authenticationBytes (nonce, ad, ciphertext)).length ≤ 16 * 2 ^ 128 := by
   have ha := ad.property
   have hc := ciphertext.property
@@ -117,7 +117,7 @@ def aeadDecrypt (encryptionKey authenticationKey : AES.Key .aes256) (nonce : Non
   else none
 
 /-- **Decryption inverts encryption.** -/
-theorem aeadDecrypt_aeadEncrypt (encryptionKey authenticationKey : AES.Key .aes256)
+lemma aeadDecrypt_aeadEncrypt (encryptionKey authenticationKey : AES.Key .aes256)
     (nonce : Nonce) (ad message : Message) :
     let encrypted := aeadEncrypt encryptionKey authenticationKey nonce ad message
     aeadDecrypt encryptionKey authenticationKey nonce ad encrypted.1 encrypted.2 =

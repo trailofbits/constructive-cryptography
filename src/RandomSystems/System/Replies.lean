@@ -34,10 +34,10 @@ def Replies (s : System A B) (xs : List A) (ys : List B) : Prop :=
   ys.length = xs.length ∧
     ∀ k (hk : k < xs.length) (hk' : k < ys.length), s (xs.take (k + 1)) = Part.some ys[k]
 
-@[simp] theorem replies_nil (s : System A B) : Replies s [] [] :=
+@[simp] lemma replies_nil (s : System A B) : Replies s [] [] :=
   ⟨rfl, fun k hk => absurd hk (by simp)⟩
 
-theorem replies_snoc {s : System A B} {xs : List A} {ys : List B} {x : A} {y : B} :
+lemma replies_snoc {s : System A B} {xs : List A} {ys : List B} {x : A} {y : B} :
     Replies s (xs ++ [x]) (ys ++ [y]) ↔ Replies s xs ys ∧ s (xs ++ [x]) = Part.some y := by
   constructor
   · rintro ⟨hl, h⟩
@@ -61,7 +61,7 @@ theorem replies_snoc {s : System A B} {xs : List A} {ys : List B} {x : A} {y : B
       simpa [hl] using hx
 
 /-- Systems that agree on the prefixes of `xs` give the same replies to `xs`. -/
-theorem replies_congr_of_prefix {s t : System A B} {xs : List A}
+lemma replies_congr_of_prefix {s t : System A B} {xs : List A}
     (h : ∀ p, p <+: xs → s p = t p) (ys : List B) :
     Replies s xs ys ↔ Replies t xs ys := by
   constructor
@@ -70,9 +70,9 @@ theorem replies_congr_of_prefix {s t : System A B} {xs : List A}
   · rintro ⟨hl, hr⟩
     exact ⟨hl, fun k hk hk' => (h _ (List.take_prefix _ _)).trans (hr k hk hk')⟩
 
-theorem Replies.length {s : System A B} {xs ys} (h : Replies s xs ys) : ys.length = xs.length := h.1
+lemma Replies.length {s : System A B} {xs ys} (h : Replies s xs ys) : ys.length = xs.length := h.1
 
-theorem Replies.dom {s : System A B} {xs ys} (h : Replies s xs ys) (hne : xs ≠ []) :
+lemma Replies.dom {s : System A B} {xs ys} (h : Replies s xs ys) (hne : xs ≠ []) :
     (s xs).Dom := by
   obtain ⟨xs', x, rfl⟩ := List.eq_nil_or_concat xs |>.resolve_left hne
   have hyn : ys ≠ [] := by intro he; have hl := h.length; simp [he] at hl
@@ -82,7 +82,7 @@ theorem Replies.dom {s : System A B} {xs ys} (h : Replies s xs ys) (hne : xs ≠
   trivial
 
 /-- A completed transcript contains a reply at every nonempty input prefix. -/
-theorem Replies.reach {s : System A B} {xs ys} (hr : Replies s xs ys) : Reach s xs := by
+lemma Replies.reach {s : System A B} {xs ys} (hr : Replies s xs ys) : Reach s xs := by
   induction xs using List.reverseRecOn generalizing ys with
   | nil => exact reach_nil s
   | append_singleton xs x ih =>
@@ -92,14 +92,14 @@ theorem Replies.reach {s : System A B} {xs ys} (hr : Replies s xs ys) : Reach s 
     exact reach_snoc_iff.mpr ⟨ih hr, by rw [hy]; trivial⟩
 
 /-- Extending a partial function preserves all of its completed replies. -/
-theorem Replies.mono {s t : System A B} (hst : ∀ h y, y ∈ s h → y ∈ t h)
+lemma Replies.mono {s t : System A B} (hst : ∀ h y, y ∈ s h → y ∈ t h)
     {xs ys} (hr : Replies s xs ys) : Replies t xs ys :=
   ⟨hr.length, fun i hi hj => Part.eq_some_iff.mpr
     (hst _ _ (Part.eq_some_iff.mp (hr.2 i hi hj)))⟩
 
 /-- Two systems with the same domain, the first replying only as the second, have the same
 transcripts. -/
-theorem replies_iff_of_dom_iff {s t : System A B} (hd : ∀ h, (s h).Dom ↔ (t h).Dom)
+lemma replies_iff_of_dom_iff {s t : System A B} (hd : ∀ h, (s h).Dom ↔ (t h).Dom)
     (hle : ∀ xs ys, Replies s xs ys → Replies t xs ys) (xs : List A) (ys : List B) :
     Replies s xs ys ↔ Replies t xs ys := by
   refine ⟨hle xs ys, fun hr => ?_⟩
@@ -118,7 +118,7 @@ theorem replies_iff_of_dom_iff {s t : System A B} (hd : ∀ h, (s h).Dom ↔ (t 
     exact hs
 
 /-- Every reachable input history has its uniquely determined list of replies. -/
-theorem Reach.exists_replies {s : System A B} {xs : List A} (hr : Reach s xs) :
+lemma Reach.exists_replies {s : System A B} {xs : List A} (hr : Reach s xs) :
     ∃ ys, Replies s xs ys := by
   induction xs using List.reverseRecOn with
   | nil => exact ⟨[], replies_nil s⟩
@@ -129,7 +129,7 @@ theorem Reach.exists_replies {s : System A B} {xs : List A} (hr : Reach s xs) :
     exact ⟨ys ++ [y], replies_snoc.mpr ⟨hy, Part.eq_some_iff.mpr hy'⟩⟩
 
 /-- Trimming removes no completed transcript. -/
-theorem replies_trim_iff (s : System A B) (xs : List A) (ys : List B) :
+lemma replies_trim_iff (s : System A B) (xs : List A) (ys : List B) :
     Replies (trim s) xs ys ↔ Replies s xs ys := by
   constructor
   · rintro ⟨hl, hr⟩
@@ -148,7 +148,7 @@ theorem replies_trim_iff (s : System A B) (xs : List A) (ys : List B) :
     exact hr.2 i hi hj
 
 /-- For DDSs, complete input/output behavior determines the partial function. -/
-theorem IsDDS.eq_of_replies_iff {s t : System A B} (hs : IsDDS s) (ht : IsDDS t)
+lemma IsDDS.eq_of_replies_iff {s t : System A B} (hs : IsDDS s) (ht : IsDDS t)
     (he : ∀ xs ys, Replies s xs ys ↔ Replies t xs ys) : s = t := by
   have step {s t : System A B} (hs : IsDDS s)
       (h : ∀ xs ys, Replies s xs ys → Replies t xs ys) (xs : List A) (y : B)
@@ -169,13 +169,13 @@ section Transcripts
 
 variable {A B : Type}
 
-theorem Transcript.replies {s : System A B} {e xs ys} (tr : Transcript s e xs ys) :
+lemma Transcript.replies {s : System A B} {e xs ys} (tr : Transcript s e xs ys) :
     Replies s xs ys := by
   induction tr with
   | nil => exact replies_nil s
   | snoc tr hx hy ih => exact replies_snoc.mpr ⟨ih, Part.eq_some_iff.mpr hy⟩
 
-theorem Transcript.of_replies {s t : System A B} {e xs ys} (tr : Transcript s e xs ys)
+lemma Transcript.of_replies {s t : System A B} {e xs ys} (tr : Transcript s e xs ys)
     (h : Replies t xs ys) : Transcript t e xs ys := by
   induction tr with
   | nil => exact Transcript.nil
@@ -183,7 +183,7 @@ theorem Transcript.of_replies {s t : System A B} {e xs ys} (tr : Transcript s e 
     obtain ⟨h₁, h₂⟩ := replies_snoc.mp h
     exact Transcript.snoc (ih h₁) hx (Part.eq_some_iff.mp h₂)
 
-theorem transcript_fixedQueries_of_replies {s : System A B} :
+lemma transcript_fixedQueries_of_replies {s : System A B} :
     ∀ {xs ys} (H : List A), xs <+: H → Replies s xs ys → Transcript s (fixedQueries H) xs ys := by
   intro xs
   induction xs using List.reverseRecOn with
@@ -202,13 +202,13 @@ theorem transcript_fixedQueries_of_replies {s : System A B} :
     obtain ⟨e, rfl⟩ := hp
     simp [fixedQueries, h₁.length]
 
-theorem transcript_fixedQueries_iff {s : System A B} {xs ys} :
+lemma transcript_fixedQueries_iff {s : System A B} {xs ys} :
     Transcript s (fixedQueries xs) xs ys ↔ Replies s xs ys :=
   ⟨Transcript.replies, transcript_fixedQueries_of_replies xs (List.prefix_refl xs)⟩
 
 end Transcripts
 
-theorem relabel_mono {A B A' B' : Type} {s t : System A B}
+lemma relabel_mono {A B A' B' : Type} {s t : System A B}
     (hst : ∀ h y, y ∈ s h → y ∈ t h) (f : A' → A) (g : B → B') :
     ∀ h y, y ∈ relabel s f g h → y ∈ relabel t f g h := by
   intro h y hy
@@ -216,7 +216,7 @@ theorem relabel_mono {A B A' B' : Type} {s t : System A B}
   exact (Part.mem_map_iff _).mpr ⟨v, hst _ _ hv, he⟩
 
 /-- The transcripts of a relabeled system are the relabeled transcripts. -/
-theorem replies_relabel_iff {A B A' B' : Type} (s : System A B)
+lemma replies_relabel_iff {A B A' B' : Type} (s : System A B)
     (i : A' ≃ A) (o : B ≃ B') (h : List (A' × B')) :
     Replies (relabel s i o) (h.map Prod.fst) (h.map Prod.snd) ↔
       Replies s ((h.map (i.prodCongr o.symm)).map Prod.fst)
@@ -234,7 +234,7 @@ theorem replies_relabel_iff {A B A' B' : Type} (s : System A B)
     rfl
 
 /-- A suffix of replies in `P` is counted by the existing consecutive-reply count. -/
-theorem Replies.suffix_le_run {s : System A B} (P : B → Prop)
+lemma Replies.suffix_le_run {s : System A B} (P : B → Prop)
     (h e : List (A × B))
     (hr : Replies s ((h ++ e).map Prod.fst) ((h ++ e).map Prod.snd))
     (he : ∀ z ∈ e, P z.2) : e.length ≤ run P s ((h ++ e).map Prod.fst) := by
@@ -252,7 +252,7 @@ theorem Replies.suffix_le_run {s : System A B} (P : B → Prop)
     simpa using Nat.succ_le_succ hb
 
 /-- The consecutive-reply count is realized by an actual suffix of the transcript. -/
-theorem Replies.exists_suffix_run {s : System A B} (P : B → Prop)
+lemma Replies.exists_suffix_run {s : System A B} (P : B → Prop)
     (h : List (A × B)) (hr : Replies s (h.map Prod.fst) (h.map Prod.snd)) :
     ∃ p e, h = p ++ e ∧ (∀ z ∈ e, P z.2) ∧ run P s (h.map Prod.fst) = e.length := by
   induction h using List.reverseRecOn with
@@ -275,7 +275,7 @@ theorem Replies.exists_suffix_run {s : System A B} (P : B → Prop)
 
 /-- Exact next-query admission on produced histories determines the whole
 prefix-closed domain after trimming. -/
-theorem trim_dom_of_admission {A B : Type} {s : System A B} {E : List A → Prop}
+lemma trim_dom_of_admission {A B : Type} {s : System A B} {E : List A → Prop}
     (hs₀ : SilentAtEmpty s)
     (hE : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
     (hs : ∀ h x ys, Replies s h ys → ((s (h ++ [x])).Dom ↔ E (h ++ [x]))) :

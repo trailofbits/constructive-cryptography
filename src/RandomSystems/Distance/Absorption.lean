@@ -42,7 +42,7 @@ def absorptionInput : (Σ p, dIn Y p) →
 noncomputable def absorbAll (D : DDD O U V) (α : InsideOutsideSystem O J U V X Y) : DDD J X Y :=
   interconnect (pair D α) absorptionRoute absorptionInput
 
-theorem cyclesThrough_absorption :
+lemma cyclesThrough_absorption :
     CyclesThrough (fun _ => True) (absorptionRoute (U := U) (V := V) (X := X) (Y := Y)) := by
   refine ⟨fun _ h => (h trivial).elim, ?_, ?_⟩
   · rintro ⟨_ | _ | o, v⟩ _
@@ -71,7 +71,7 @@ def absorptionCloseOutput :
 
 /-- Closing after attachment is closing after absorption. The equation is
 the same three-system connection with a different parenthesization. -/
-theorem close_apply (D : DDD O U V) (α : InsideOutsideSystem O J U V X Y) (R : InterfaceSystem J X Y)
+lemma close_apply (D : DDD O U V) (α : InsideOutsideSystem O J U V X Y) (R : InterfaceSystem J X Y)
     (hD : Terminating D) {b : ℕ} (hα : IsDDC b α) :
     close D (apply α R) =
       relabel (close (absorbAll D α) R) absorptionCloseInput absorptionCloseOutput := by
@@ -99,7 +99,7 @@ theorem close_apply (D : DDD O U V) (α : InsideOutsideSystem O J U V X Y) (R : 
       · exact False.elim (hl (res_mem_closeSet i))
     · exact False.elim (hl (sys_mem_closeSet l))
 
-theorem decision_apply (D : DDD O U V) (α : InsideOutsideSystem O J U V X Y) (R : InterfaceSystem J X Y)
+lemma decision_apply (D : DDD O U V) (α : InsideOutsideSystem O J U V X Y) (R : InterfaceSystem J X Y)
     (hD : Terminating D) {b : ℕ} (hα : IsDDC b α) (c : Bool) :
     decOut c ∈ close D (apply α R) [startIn] ↔
       decOut c ∈ close (absorbAll D α) R [startIn] := by
@@ -141,7 +141,7 @@ def AbsorptionCount (α : InsideOutsideSystem O J U V X Y)
   outerCount (restrict (some ()) H) ≤ (restrict none H).length ∧
     (restrict (some ()) H = [] ∨ (α (restrict (some ()) H)).Dom)
 
-theorem absorption_exchange {G out G'} (l : Exchange (pair D α) absorptionRoute G out G') :
+lemma absorption_exchange {G out G'} (l : Exchange (pair D α) absorptionRoute G out G') :
     ∀ y, out = some y →
       ((∃ H z, G = H ++ [⟨none, z⟩] ∧ Reach D (restrict none H) ∧
           AbsorptionIdle α H ∧ AbsorptionCount α H) ∨
@@ -225,7 +225,7 @@ def AbsorptionHistory (D : DDD O U V) (α : InsideOutsideSystem O J U V X Y)
     (u = [] → H = []) ∧ AbsorptionCount α H ∧
     ∀ l, replyLabel (absorbAll D α) u = some l → AbsorptionReply D α l H
 
-theorem absorption_history_snoc (hD : IsDDD D) (hα : IsDDC b α)
+lemma absorption_history_snoc (hD : IsDDD D) (hα : IsDDC b α)
     {u H} (hh : AbsorptionHistory D α u H) {z : Σ p, dIn Y p}
     (hr : Reach (absorbAll D α) (u ++ [z])) :
     (u = [] ↔ z.1 = .start) ∧
@@ -308,7 +308,7 @@ theorem absorption_history_snoc (hD : IsDDD D) (hα : IsDDC b α)
       simp only [absorptionInput, restrict_some_snoc_right, outerCount_snoc]
       simpa using hcnt.1
 
-theorem absorbAll_history (hD : IsDDD D) (hα : IsDDC b α) :
+lemma absorbAll_history (hD : IsDDD D) (hα : IsDDC b α) :
     ∀ u, Reach (absorbAll D α) u → ∃ H, AbsorptionHistory D α u H := by
   intro u
   induction u using List.reverseRecOn with
@@ -324,7 +324,7 @@ theorem absorbAll_history (hD : IsDDD D) (hα : IsDDC b α) :
 
 /-- A distinguisher with bound `n` absorbs a `b`-bounded converter with a
 uniform bound `(b+2)*n`; neither the resource nor the converter has a finite lifetime. -/
-theorem absorbAll_finite (hD : IsDDD D) (hα : IsDDC b α)
+lemma absorbAll_finite (hD : IsDDD D) (hα : IsDDC b α)
     {n : ℕ} (hn : Finite n D) : Finite ((b + 2) * n) (trim (absorbAll D α)) := by
   intro u hd
   have hr : Reach (absorbAll D α) u := by
@@ -349,7 +349,7 @@ theorem absorbAll_finite (hD : IsDDD D) (hα : IsDDC b α)
   omega
 
 /-- Absorbing a heterogeneous converter preserves the distinguisher conditions. -/
-theorem absorbAll_isDDD (hD : IsDDD D) (hα : IsDDC b α) :
+lemma absorbAll_isDDD (hD : IsDDD D) (hα : IsDDC b α) :
     IsDDD (trim (absorbAll D α)) := by
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · simp [SilentAtEmpty, trim, absorbAll]

@@ -37,14 +37,14 @@ def outsideMap (f : (Σ o, U o) → (Σ o, U' o)) :
   | ⟨⟨none, o⟩, u⟩ => ⟨⟨none, (f ⟨o, u⟩).1⟩, (f ⟨o, u⟩).2⟩
   | ⟨⟨some (), j⟩, y⟩ => ⟨⟨some (), j⟩, y⟩
 
-theorem outsideMap_fst (e : O → O') (f : (Σ o, U o) → (Σ o, U' o))
+lemma outsideMap_fst (e : O → O') (f : (Σ o, U o) → (Σ o, U' o))
     (hf : ∀ u, (f u).1 = e u.1) (z : Σ l, twoFam U Y l) :
     (outsideMap f z).1 = twoMap e id z.1 := by
   rcases z with ⟨⟨(_ | ⟨⟨⟩⟩), i⟩, z⟩
   · exact congrArg (Sigma.mk none) (hf ⟨i, z⟩)
   · rfl
 
-theorem isInside_outsideMap (f : (Σ o, V o) → (Σ o, V' o)) (z : Σ l, twoFam V X l) :
+lemma isInside_outsideMap (f : (Σ o, V o) → (Σ o, V' o)) (z : Σ l, twoFam V X l) :
     IsInside (outsideMap f z) ↔ IsInside z := by
   rcases z with ⟨⟨(_ | ⟨⟨⟩⟩), i⟩, z⟩ <;> rfl
 
@@ -54,7 +54,7 @@ variable (e : O' ≃ O) (f : (Σ o, U' o) → (Σ o, U o))
     (α : InsideOutsideSystem O J U V X Y)
 
 include hg in
-theorem replyLabel_outsideMap (h : List (Σ l, twoFam U' Y l)) :
+lemma replyLabel_outsideMap (h : List (Σ l, twoFam U' Y l)) :
     replyLabel (relabel α (outsideMap f) (outsideMap g)) h =
       (replyLabel α (h.map (outsideMap f))).map (twoMap e.symm id) := by
   unfold replyLabel
@@ -69,7 +69,7 @@ theorem replyLabel_outsideMap (h : List (Σ l, twoFam U' Y l)) :
     rfl
 
 include hf hg in
-theorem admits_outsideMap (h : List (Σ l, twoFam U' Y l)) (z : Σ l, twoFam U' Y l) :
+lemma admits_outsideMap (h : List (Σ l, twoFam U' Y l)) (z : Σ l, twoFam U' Y l) :
     Admits (relabel α (outsideMap f) (outsideMap g)) h z ↔
       Admits α (h.map (outsideMap f)) (outsideMap f z) := by
   unfold Admits
@@ -78,7 +78,7 @@ theorem admits_outsideMap (h : List (Σ l, twoFam U' Y l)) (z : Σ l, twoFam U' 
     rcases z with ⟨⟨(_ | ⟨⟨⟩⟩), j⟩, z⟩ <;> simp [admitAfter, twoMap]
 
 include hf hg in
-theorem admissible_outsideMap (h : List (Σ l, twoFam U' Y l)) :
+lemma admissible_outsideMap (h : List (Σ l, twoFam U' Y l)) :
     Admissible (relabel α (outsideMap f) (outsideMap g)) h ↔
       Admissible α (h.map (outsideMap f)) := by
   induction h using List.reverseRecOn with
@@ -90,7 +90,7 @@ theorem admissible_outsideMap (h : List (Σ l, twoFam U' Y l)) :
     have hn : h.map (outsideMap f) ≠ [] ↔ h ≠ [] := not_congr List.map_eq_nil_iff
     exact and_congr Iff.rfl (and_congr (imp_congr hn.symm Iff.rfl) Iff.rfl)
 
-theorem insideRun_outsideMap (h : List (Σ l, twoFam U' Y l)) :
+lemma insideRun_outsideMap (h : List (Σ l, twoFam U' Y l)) :
     insideRun (relabel α (outsideMap f) (outsideMap g)) h =
       insideRun α (h.map (outsideMap f)) := by
   induction h using List.reverseRecOn with
@@ -104,7 +104,7 @@ theorem insideRun_outsideMap (h : List (Σ l, twoFam U' Y l)) :
       fun ⟨y, hy, hi⟩ => ⟨_, ⟨y, hy, rfl⟩, (isInside_outsideMap g y).mpr hi⟩⟩
 
 include hf in
-theorem lastOuter_outsideMap (h : List (Σ l, twoFam U' Y l)) :
+lemma lastOuter_outsideMap (h : List (Σ l, twoFam U' Y l)) :
     lastOuter (h.map (outsideMap f)) = (lastOuter h).map e := by
   induction h using List.reverseRecOn with
   | nil => rfl
@@ -115,7 +115,7 @@ theorem lastOuter_outsideMap (h : List (Σ l, twoFam U' Y l)) :
     · rfl
 
 include hf hg in
-theorem IsResponsiveDDC.relabelOutside {b : ℕ} (hα : IsResponsiveDDC b α) :
+lemma IsResponsiveDDC.relabelOutside {b : ℕ} (hα : IsResponsiveDDC b α) :
     IsResponsiveDDC b (relabel α (outsideMap f) (outsideMap g)) := by
   refine ⟨⟨?_, ?_⟩, fun h z hd => ?_, fun h hd => ?_, fun h ha hn => ?_, fun h y o hy hl => ?_⟩
   · simpa only [SilentAtEmpty, relabel, List.map_nil, Part.map_Dom] using hα.dds.1
@@ -141,7 +141,7 @@ theorem IsResponsiveDDC.relabelOutside {b : ℕ} (hα : IsResponsiveDDC b α) :
     · cases hl
 
 include hf hg in
-theorem canon_outsideMap :
+lemma canon_outsideMap :
     canon (relabel α (outsideMap f) (outsideMap g)) =
       relabel (canon α) (outsideMap f) (outsideMap g) := by
   funext h
@@ -155,10 +155,10 @@ noncomputable def renameConverter : InsideOutsideSystem O' O U' V' U V :=
   relabel (idConverter O U V) (outsideMap f) (outsideMap g)
 
 include hf hg in
-theorem renameConverter_isResponsiveDDC : IsResponsiveDDC 1 (renameConverter f g) :=
+lemma renameConverter_isResponsiveDDC : IsResponsiveDDC 1 (renameConverter f g) :=
   IsResponsiveDDC.relabelOutside e f g hf hg _ (idConverter_isResponsiveDDC ..)
 
-theorem serialM_relabel_forwardAll (hα : SilentAtEmpty α) :
+lemma serialM_relabel_forwardAll (hα : SilentAtEmpty α) :
     serialM (relabel (forwardAll O U V) (outsideMap f) (outsideMap g)) α =
       relabel α (outsideMap f) (outsideMap g) := by
   unfold serialM
@@ -174,7 +174,7 @@ theorem serialM_relabel_forwardAll (hα : SilentAtEmpty α) :
 
 include hf hg in
 /-- A renaming converter is precisely the relabeled history function. -/
-theorem trim_renameConverter_serialM {b : ℕ} (hα : IsResponsiveDDC b α) :
+lemma trim_renameConverter_serialM {b : ℕ} (hα : IsResponsiveDDC b α) :
     trim (serialM (renameConverter f g) α) = relabel α (outsideMap f) (outsideMap g) := by
   apply ((renameConverter_isResponsiveDDC e f g hf hg).comp hα).eq_of_replies_imp
     (hα.relabelOutside e f g hf hg α)
@@ -189,7 +189,7 @@ theorem trim_renameConverter_serialM {b : ℕ} (hα : IsResponsiveDDC b α) :
   change Replies (serialM (relabel (forwardAll O U V) (outsideMap f) (outsideMap g)) α) xs ys at hr'
   rwa [serialM_relabel_forwardAll f g α hα.dds.1] at hr'
 
-theorem apply_relabel_forwardAll {R : InterfaceSystem O U V} (hR : SilentAtEmpty R) :
+lemma apply_relabel_forwardAll {R : InterfaceSystem O U V} (hR : SilentAtEmpty R) :
     apply (relabel (forwardAll O U V) (outsideMap f) (outsideMap g)) R = relabel R f g := by
   rw [apply_eq, pair_relabel_left, interconnect_relabel, pair_swap, interconnect_relabel]
   apply interconnect_forwarder hR forwardAll_heterogeneous
@@ -200,7 +200,7 @@ theorem apply_relabel_forwardAll {R : InterfaceSystem O U V} (hR : SilentAtEmpty
     exact Or.inr ⟨_, rfl, rfl⟩
 
 include hf hg in
-theorem trim_apply_renameConverter {R : InterfaceSystem O U V} (hR : IsDDS R) (hr : RepliesAtQueriedInterface R) :
+lemma trim_apply_renameConverter {R : InterfaceSystem O U V} (hR : IsDDS R) (hr : RepliesAtQueriedInterface R) :
     trim (apply (renameConverter f g) R) = relabel R f g := by
   have he := canon_outsideMap e f g hf hg (forwardAll O U V)
   change canon (relabel (forwardAll O U V) (outsideMap f) (outsideMap g)) = renameConverter f g at he
@@ -209,7 +209,7 @@ theorem trim_apply_renameConverter {R : InterfaceSystem O U V} (hR : IsDDS R) (h
 
 include hf hg in
 /-- Renaming transports the exact admitted domain; it does not change its replies. -/
-theorem renameConverter_mapsDomain (E : List (Σ o, U o) → Prop)
+lemma renameConverter_mapsDomain (E : List (Σ o, U o) → Prop)
     (F : List (Σ o, U' o) → Prop) (hd : ∀ h, E (h.map f) ↔ F h) :
     MapsDomain E F (renameConverter f g) := by
   intro R hR hr hE
@@ -221,24 +221,24 @@ theorem renameConverter_mapsDomain (E : List (Σ o, U o) → Prop)
   · intro h
     exact (Part.map_Dom _ _).to_iff.trans ((hE _).trans (hd h))
 
-theorem outsideMap_id :
+lemma outsideMap_id :
     outsideMap (Y := Y) (id : (Σ o, U o) → (Σ o, U o)) = id := by
   funext z
   rcases z with ⟨⟨(_ | ⟨⟨⟩⟩), i⟩, z⟩ <;> rfl
 
-theorem outsideMap_comp {O'' : Type} {U'' : O'' → Type}
+lemma outsideMap_comp {O'' : Type} {U'' : O'' → Type}
     (f' : (Σ o, U'' o) → (Σ o, U' o)) :
     outsideMap (Y := Y) f ∘ outsideMap f' = outsideMap (f ∘ f') := by
   funext z
   rcases z with ⟨⟨(_ | ⟨⟨⟩⟩), i⟩, z⟩ <;> rfl
 
-theorem renameConverter_id :
+lemma renameConverter_id :
     renameConverter (id : (Σ o, U o) → (Σ o, U o))
       (id : (Σ o, V o) → (Σ o, V o)) = idConverter O U V := by
   rw [renameConverter, outsideMap_id, outsideMap_id, relabel_id]
 
 include hf hg in
-theorem renameConverter_comp {O'' : Type} {U'' V'' : O'' → Type}
+lemma renameConverter_comp {O'' : Type} {U'' V'' : O'' → Type}
     (e' : O'' ≃ O') (f' : (Σ o, U'' o) → (Σ o, U' o)) (g' : (Σ o, V' o) → (Σ o, V'' o))
     (hf' : ∀ u, (f' u).1 = e' u.1) (hg' : ∀ v, (g' v).1 = e'.symm v.1) :
     trim (serialM (renameConverter f' g') (renameConverter f g)) =
@@ -256,7 +256,7 @@ def insideMap (k : (Σ j, Y j) → (Σ j, Y' j)) :
   | ⟨⟨none, o⟩, u⟩ => ⟨⟨none, o⟩, u⟩
   | ⟨⟨some (), j⟩, y⟩ => ⟨⟨some (), (k ⟨j, y⟩).1⟩, (k ⟨j, y⟩).2⟩
 
-theorem serialM_forwardAll_relabel (k : (Σ j, X j) → (Σ j, X' j))
+lemma serialM_forwardAll_relabel (k : (Σ j, X j) → (Σ j, X' j))
     (l : (Σ j, Y' j) → (Σ j, Y j)) (hα : SilentAtEmpty α) :
     serialM α (relabel (forwardAll J' X' Y') (outsideMap k) (outsideMap l)) =
       relabel α (insideMap l) (insideMap k) := by

@@ -22,7 +22,7 @@ open Classical
 variable {O J : Type} {U V : O → Type} {X Y : J → Type}
 
 /-- The last reply of a completed history fixes the reply label. -/
-theorem Replies.replyLabel_eq {α : InsideOutsideSystem O J U V X Y} (hα : SilentAtEmpty α) {us ys}
+lemma Replies.replyLabel_eq {α : InsideOutsideSystem O J U V X Y} (hα : SilentAtEmpty α) {us ys}
     (hr : Replies α us ys) : SystemAlgebra.replyLabel α us = ys.getLast?.map (·.1) := by
   rcases List.eq_nil_or_concat us with rfl | ⟨us, a, rfl⟩
   · have hy : ys = [] := List.length_eq_zero_iff.mp hr.length
@@ -36,7 +36,7 @@ theorem Replies.replyLabel_eq {α : InsideOutsideSystem O J U V X Y} (hα : Sile
     simp
 
 /-- A completed history restricted to its first `k + 1` exchanges is completed. -/
-theorem Replies.take {A B : Type} {s : System A B} {xs : List A} {ys : List B}
+lemma Replies.take {A B : Type} {s : System A B} {xs : List A} {ys : List B}
     (hr : Replies s xs ys) (k : ℕ) : Replies s (xs.take (k + 1)) (ys.take (k + 1)) := by
   refine ⟨by simp [hr.length], fun i hi hi' => ?_⟩
   simp only [List.length_take] at hi hi'
@@ -46,7 +46,7 @@ theorem Replies.take {A B : Type} {s : System A B} {xs : List A} {ys : List B}
 
 /-- Completed histories are those whose every prefix has the corresponding
 exposed run. -/
-theorem replies_interconnect_of_runs {A B X' Y' : Type} {s : System X' Y'}
+lemma replies_interconnect_of_runs {A B X' Y' : Type} {s : System X' Y'}
     {route : Y' → B ⊕ X'} {inj : A → X'} {us : List A} {ys : List B}
     (hl : ys.length = us.length)
     (hrun : ∀ k (hk : k < us.length) (hj : k < ys.length),
@@ -56,7 +56,7 @@ theorem replies_interconnect_of_runs {A B X' Y' : Type} {s : System X' Y'}
   obtain ⟨H, hi⟩ := hrun k hk hj
   exact Part.eq_some_iff.mpr (mem_interconnect.mpr ⟨H, hi⟩)
 
-theorem getLast?_take_succ {A : Type} {ys : List A} {k : ℕ} (hk : k < ys.length) :
+lemma getLast?_take_succ {A : Type} {ys : List A} {k : ℕ} (hk : k < ys.length) :
     (ys.take (k + 1)).getLast? = some ys[k] := by
   have he : ys.take (k + 1) = ys.take k ++ [ys[k]] := by
     rw [List.take_add_one, List.getElem?_eq_getElem hk]; rfl
@@ -64,7 +64,7 @@ theorem getLast?_take_succ {A : Type} {ys : List A} {k : ℕ} (hk : k < ys.lengt
   rfl
 
 /-- The identity forwards an outside query of an idle history. -/
-theorem idConverter_query {h : List (Σ l, twoFam X Y l)}
+lemma idConverter_query {h : List (Σ l, twoFam X Y l)}
     (hi : Idle (idConverter J X Y) h) (j : J) (x : X j) :
     idConverter J X Y (h ++ [⟨⟨none, j⟩, x⟩]) = Part.some ⟨⟨some (), j⟩, x⟩ := by
   have ha : Admissible (idConverter J X Y) (h ++ [⟨⟨none, j⟩, x⟩]) :=
@@ -72,17 +72,17 @@ theorem idConverter_query {h : List (Σ l, twoFam X Y l)}
   rw [idConverter, canon_of_admissible ((admissible_canon_iff _).mp ha)]
   exact forwardAll_snoc_outer h j x
 
-theorem admitAfter_none_iff {P Q : Type} {r : Option (Two P Q)} {l : P} :
+lemma admitAfter_none_iff {P Q : Type} {r : Option (Two P Q)} {l : P} :
     admitAfter r ⟨none, l⟩ ↔ ∀ j, r ≠ some ⟨some (), j⟩ := by
   rcases r with _ | ⟨_ | ⟨⟨⟩⟩, l'⟩ <;> simp [admitAfter]
 
-theorem admitAfter_some_iff {P Q : Type} {r : Option (Two P Q)} {j : Q} :
+lemma admitAfter_some_iff {P Q : Type} {r : Option (Two P Q)} {j : Q} :
     admitAfter r ⟨some (), j⟩ ↔ r = some ⟨some (), j⟩ := by
   rcases r with _ | ⟨_ | ⟨⟨⟩⟩, l'⟩ <;> simp [admitAfter, eq_comm]
 
 /-- Composing on the inside with the identity reproduces every completed
 history of a partial converter. -/
-theorem IsDDC.replies_serialM_id {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (hα : IsDDC b α)
+lemma IsDDC.replies_serialM_id {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (hα : IsDDC b α)
     {us ys} (hr : Replies α us ys) : Replies (serialM α (idConverter J X Y)) us ys := by
   have key : ∀ us ys, Replies α us ys → ∃ H,
       Induces (pair α (idConverter J X Y)) serialRouteM serialInjM us ys.getLast? H ∧
@@ -197,7 +197,7 @@ theorem IsDDC.replies_serialM_id {b : ℕ} {α : InsideOutsideSystem O J U V X Y
 /-- Composing on the outside with the identity reproduces every completed
 history of a partial converter. The identity's history alternates each outside
 call and the reply returned for it. -/
-theorem IsDDC.replies_id_serialM {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (hα : IsDDC b α)
+lemma IsDDC.replies_id_serialM {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (hα : IsDDC b α)
     {us ys} (hr : Replies α us ys) : Replies (serialM (idConverter O U V) α) us ys := by
   have key : ∀ us ys, Replies α us ys → ∃ H,
       Induces (pair (idConverter O U V) α) serialRouteM serialInjM us ys.getLast? H ∧
@@ -326,7 +326,7 @@ theorem IsDDC.replies_id_serialM {b : ℕ} {α : InsideOutsideSystem O J U V X Y
   exact ⟨H, hi⟩
 
 /-- The identity is a right unit for partial converters. -/
-theorem IsDDC.trim_serialM_id {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (hα : IsDDC b α) :
+lemma IsDDC.trim_serialM_id {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (hα : IsDDC b α) :
     trim (serialM α (idConverter J X Y)) = α := by
   apply IsDDS.eq_of_replies_iff (SilentAtEmpty.isDDS_trim (by simp [SilentAtEmpty, serialM])) hα.dds
   intro xs ys
@@ -339,7 +339,7 @@ theorem IsDDC.trim_serialM_id {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (
   · exact hα.replies_serialM_id
 
 /-- The identity is a left unit for partial converters. -/
-theorem IsDDC.trim_id_serialM {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (hα : IsDDC b α) :
+lemma IsDDC.trim_id_serialM {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (hα : IsDDC b α) :
     trim (serialM (idConverter O U V) α) = α := by
   apply IsDDS.eq_of_replies_iff (SilentAtEmpty.isDDS_trim (by simp [SilentAtEmpty, serialM])) hα.dds
   intro xs ys

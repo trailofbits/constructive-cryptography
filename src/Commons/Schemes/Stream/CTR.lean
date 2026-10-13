@@ -59,11 +59,11 @@ block `T₁`: `Cⱼ = Pⱼ ⊕ E(Tⱼ)`, the last block truncated. Decryption is
 def crypt (E : Bytes 16 → Bytes 16) (T₁ : Bytes 16) (message : List UInt8) : List UInt8 :=
   xorStream message ((counterBlocks T₁ (blockCount message.length)).map E)
 
-theorem length_xorStream (message : List UInt8) (outputs : List (Bytes 16)) :
+lemma length_xorStream (message : List UInt8) (outputs : List (Bytes 16)) :
     (xorStream message outputs).length ≤ message.length := by
   simp [xorStream]
 
-theorem xorStream_xorStream (message : List UInt8) (outputs : List (Bytes 16))
+lemma xorStream_xorStream (message : List UInt8) (outputs : List (Bytes 16))
     (h : message.length ≤ (outputs.flatMap Vector.toList).length) :
     xorStream (xorStream message outputs) outputs = message := by
   unfold xorStream
@@ -78,19 +78,19 @@ theorem xorStream_xorStream (message : List UInt8) (outputs : List (Bytes 16))
       exact ⟨by rw [UInt8.xor_assoc, UInt8.xor_self, UInt8.xor_zero],
         ih pad (by simpa using h)⟩
 
-theorem length_xorStream_eq (message : List UInt8) (outputs : List (Bytes 16))
+lemma length_xorStream_eq (message : List UInt8) (outputs : List (Bytes 16))
     (h : message.length ≤ (outputs.flatMap Vector.toList).length) :
     (xorStream message outputs).length = message.length := by
   simp only [xorStream, List.length_zipWith]
   exact Nat.min_eq_left h
 
-theorem length_flatMap_toList (outputs : List (Bytes 16)) :
+lemma length_flatMap_toList (outputs : List (Bytes 16)) :
     (outputs.flatMap Vector.toList).length = 16 * outputs.length := by
   induction outputs with
   | nil => simp
   | cons b outputs ih => simp only [List.flatMap_cons, List.length_append, ih]; simp; ring
 
-theorem length_outputs (E : Bytes 16 → Bytes 16) (T₁ : Bytes 16) (length : ℕ) :
+lemma length_outputs (E : Bytes 16 → Bytes 16) (T₁ : Bytes 16) (length : ℕ) :
     length ≤ (((counterBlocks T₁ (blockCount length)).map E).flatMap Vector.toList).length := by
   rw [length_flatMap_toList, List.length_map, counterBlocks, List.length_iterate, blockCount]
   omega

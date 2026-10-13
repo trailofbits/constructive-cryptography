@@ -54,7 +54,7 @@ def allOutsideOutput :
 noncomputable def apply (α : InsideOutsideSystem O J U V X Y) (R : InterfaceSystem J X Y) : InterfaceSystem O U V :=
   relabel (attachAlong id α R) allOutsideInput allOutsideOutput
 
-theorem apply_eq (α : InsideOutsideSystem O J U V X Y) (R : InterfaceSystem J X Y) :
+lemma apply_eq (α : InsideOutsideSystem O J U V X Y) (R : InterfaceSystem J X Y) :
     apply α R = interconnect (pair α R) resourceRoute resourceInput := by
   rw [apply, attachAlong_eq, relabel_interconnect]
   congr 1
@@ -67,7 +67,7 @@ theorem apply_eq (α : InsideOutsideSystem O J U V X Y) (R : InterfaceSystem J X
     exact congrArg (Sum.map allOutsideOutput id)
       (alongRoute_image (U := U) (V := V) id Function.injective_id j y)
 
-theorem cyclesThrough_resource :
+lemma cyclesThrough_resource :
     CyclesThrough (IsInside (F := twoFam V X)) (resourceRoute (U := U) (Y := Y)) := by
   refine ⟨?_, ?_, ?_⟩
   · rintro ⟨⟨_ | ⟨⟨⟩⟩, i⟩, y⟩ hy
@@ -79,18 +79,18 @@ theorem cyclesThrough_resource :
   · rintro ⟨j, y⟩
     exact Or.inr ⟨_, rfl⟩
 
-theorem IsDDC.converges_resource {b : ℕ} {α : InsideOutsideSystem O J U V X Y}
+lemma IsDDC.converges_resource {b : ℕ} {α : InsideOutsideSystem O J U V X Y}
     (hα : IsDDC b α) (R : InterfaceSystem J X Y) :
     Converges (pair α R) resourceRoute resourceInput :=
   converges_pair cyclesThrough_resource hα.bound
 
-theorem IsResponsiveDDC.converges_resource {b : ℕ} {α : InsideOutsideSystem O J U V X Y}
+lemma IsResponsiveDDC.converges_resource {b : ℕ} {α : InsideOutsideSystem O J U V X Y}
     (hα : IsResponsiveDDC b α) (R : InterfaceSystem J X Y) :
     Converges (pair α R) resourceRoute resourceInput :=
   hα.isDDC.converges_resource R
 
 /-- Regrouping connects the same three histories, including undefined behavior. -/
-theorem IsDDC.apply_serialM {bβ bα : ℕ} {β : InsideOutsideSystem O M U V Xm Ym}
+lemma IsDDC.apply_serialM {bβ bα : ℕ} {β : InsideOutsideSystem O M U V Xm Ym}
     {α : InsideOutsideSystem M J Xm Ym X Y} (hβ : IsDDC bβ β) (hα : IsDDC bα α)
     (R : InterfaceSystem J X Y) : apply (serialM β α) R = apply β (apply α R) := by
   simp only [apply_eq, serialM]
@@ -104,12 +104,12 @@ theorem IsDDC.apply_serialM {bβ bα : ℕ} {β : InsideOutsideSystem O M U V Xm
         rcases y with ⟨⟨_ | ⟨⟨⟩⟩, i⟩, y⟩ <;> rfl
     · rcases y with ⟨j, y⟩; rfl
 
-theorem apply_serialM {bβ bα : ℕ} {β : InsideOutsideSystem O M U V Xm Ym}
+lemma apply_serialM {bβ bα : ℕ} {β : InsideOutsideSystem O M U V Xm Ym}
     {α : InsideOutsideSystem M J Xm Ym X Y} (hβ : IsResponsiveDDC bβ β) (hα : IsResponsiveDDC bα α)
     (R : InterfaceSystem J X Y) : apply (serialM β α) R = apply β (apply α R) :=
   IsDDC.apply_serialM hβ.isDDC hα.isDDC R
 
-theorem EqOnReachable.apply {α α' : InsideOutsideSystem O J U V X Y} {R R' : InterfaceSystem J X Y}
+lemma EqOnReachable.apply {α α' : InsideOutsideSystem O J U V X Y} {R R' : InterfaceSystem J X Y}
     (hα : α ≈ₛ α') (hR : R ≈ₛ R') : apply α R ≈ₛ apply α' R' := by
   rw [apply_eq, apply_eq]
   apply EqOnReachable.interconnect
@@ -118,7 +118,7 @@ theorem EqOnReachable.apply {α α' : InsideOutsideSystem O J U V X Y} {R R' : I
     | some _ => exact hR)
 
 /-- The serial resource equation on canonical partial systems. -/
-theorem IsDDC.trim_apply_serialM {bβ bα : ℕ} {β : InsideOutsideSystem O M U V Xm Ym}
+lemma IsDDC.trim_apply_serialM {bβ bα : ℕ} {β : InsideOutsideSystem O M U V Xm Ym}
     {α : InsideOutsideSystem M J Xm Ym X Y} (hβ : IsDDC bβ β) (hα : IsDDC bα α)
     (R : InterfaceSystem J X Y) :
     trim (apply (trim (serialM β α)) R) =
@@ -129,7 +129,7 @@ theorem IsDDC.trim_apply_serialM {bβ bα : ℕ} {β : InsideOutsideSystem O M U
   exact (hl.trans hr.symm).trim_eq
     (by simp [SilentAtEmpty, apply_eq]) (by simp [SilentAtEmpty, apply_eq])
 
-theorem trim_apply_serialM {bβ bα : ℕ} {β : InsideOutsideSystem O M U V Xm Ym}
+lemma trim_apply_serialM {bβ bα : ℕ} {β : InsideOutsideSystem O M U V Xm Ym}
     {α : InsideOutsideSystem M J Xm Ym X Y} (hβ : IsResponsiveDDC bβ β) (hα : IsResponsiveDDC bα α)
     (R : InterfaceSystem J X Y) :
     trim (apply (trim (serialM β α)) R) =
@@ -146,7 +146,7 @@ noncomputable def attach (α : DDC O J U V X Y)
     SilentAtEmpty.isDDS_trim (by simp [SilentAtEmpty, apply_eq])⟩
 
 /-- Serial attachment on partial DDSs is the general system regrouping equation. -/
-theorem comp_attach (β : DDC O M U V Xm Ym) (α : DDC M J Xm Ym X Y)
+lemma comp_attach (β : DDC O M U V Xm Ym) (α : DDC M J Xm Ym X Y)
     (R : DDS (Σ j, X j) (Σ j, Y j)) :
     attach (comp β α) R = attach β (attach α R) := by
   apply Subtype.ext
@@ -157,7 +157,7 @@ theorem comp_attach (β : DDC O M U V Xm Ym) (α : DDC M J Xm Ym X Y)
 end DDC
 
 /-- One identity exchange forwards the query and reply at the same interface. -/
-theorem idConverter_call {h : List (Σ l, twoFam X Y l)}
+lemma idConverter_call {h : List (Σ l, twoFam X Y l)}
     (hi : Idle (idConverter J X Y) h) (j : J) (x : X j) (y : Y j) :
     idConverter J X Y (h ++ [⟨⟨none, j⟩, x⟩]) = Part.some ⟨⟨some (), j⟩, x⟩ ∧
     idConverter J X Y (h ++ [⟨⟨none, j⟩, x⟩, ⟨⟨some (), j⟩, y⟩]) =
@@ -186,7 +186,7 @@ theorem idConverter_call {h : List (Σ l, twoFam X Y l)}
   simpa only [List.append_assoc, List.singleton_append] using hif
 
 /-- Every completed resource history is forwarded by the canonical identity. -/
-theorem replies_apply_id {R : InterfaceSystem J X Y} (hR : RepliesAtQueriedInterface R)
+lemma replies_apply_id {R : InterfaceSystem J X Y} (hR : RepliesAtQueriedInterface R)
     {xs ys} (hr : Replies R xs ys) : Replies (apply (idConverter J X Y) R) xs ys := by
   have key : ∀ xs ys, Replies R xs ys → ∃ o H,
       Induces (pair (idConverter J X Y) R) resourceRoute resourceInput xs o H ∧
@@ -258,7 +258,7 @@ theorem replies_apply_id {R : InterfaceSystem J X Y} (hR : RepliesAtQueriedInter
   rw [ho _ hl] at hi
   exact Part.eq_some_iff.mpr (mem_interconnect.mpr ⟨H, hi⟩)
 
-theorem apply_forwardAll {R : InterfaceSystem J X Y} (hR : SilentAtEmpty R) :
+lemma apply_forwardAll {R : InterfaceSystem J X Y} (hR : SilentAtEmpty R) :
     apply (forwardAll J X Y) R = R := by
   rw [apply_eq, pair_swap, interconnect_relabel,
     interconnect_forwarder hR forwardAll_heterogeneous (f := id) (g := id), relabel_id]
@@ -267,7 +267,7 @@ theorem apply_forwardAll {R : InterfaceSystem J X Y} (hR : SilentAtEmpty R) :
   · rintro ⟨j, y⟩; exact Or.inr ⟨_, rfl, rfl⟩
 
 /-- Identity on a partial responding DDS, with its domain unchanged. -/
-theorem trim_apply_id {R : InterfaceSystem J X Y} (hR : IsDDS R) (hresp : RepliesAtQueriedInterface R) :
+lemma trim_apply_id {R : InterfaceSystem J X Y} (hR : IsDDS R) (hresp : RepliesAtQueriedInterface R) :
     trim (apply (idConverter J X Y) R) = R := by
   apply IsDDS.eq_of_replies_iff
     (SilentAtEmpty.isDDS_trim (s := apply (idConverter J X Y) R)
@@ -291,7 +291,7 @@ def MapsDomain (E : List (Σ j, X j) → Prop) (F : List (Σ o, U o) → Prop)
     RepliesAtQueriedInterface (trim (apply α R)) ∧ ∀ h, (trim (apply α R) h).Dom ↔ F h
 
 /-- Identity acts on every partial resource domain. -/
-theorem idConverter_mapsDomain (E : List (Σ j, X j) → Prop) :
+lemma idConverter_mapsDomain (E : List (Σ j, X j) → Prop) :
     MapsDomain E E (idConverter J X Y) := by
   intro R hR hresp hE
   rw [trim_apply_id hR hresp]
@@ -299,7 +299,7 @@ theorem idConverter_mapsDomain (E : List (Σ j, X j) → Prop) :
 
 /-- Domain preservation composes because attachment itself satisfies the
 serial equation. The intermediate system is the actual canonical attachment. -/
-theorem MapsDomain.comp
+lemma MapsDomain.comp
     {E : List (Σ j, X j) → Prop} {F : List (Σ m, Xm m) → Prop}
     {G : List (Σ o, U o) → Prop} {bβ bα : ℕ}
     {β : InsideOutsideSystem O M U V Xm Ym} {α : InsideOutsideSystem M J Xm Ym X Y}
@@ -315,7 +315,7 @@ theorem MapsDomain.comp
 
 /-- Domain preservation gives the exact next-query condition required by the
 cumulative connection constructor. -/
-theorem MapsDomain.admits {E : List (Σ j, X j) → Prop}
+lemma MapsDomain.admits {E : List (Σ j, X j) → Prop}
     {F : List (Σ o, U o) → Prop} {α : InsideOutsideSystem O J U V X Y}
     (hα : MapsDomain E F α) {R : InterfaceSystem J X Y}
     (hR : IsDDS R) (hresp : RepliesAtQueriedInterface R) (hE : ∀ h, (R h).Dom ↔ E h)
@@ -326,7 +326,7 @@ theorem MapsDomain.admits {E : List (Σ j, X j) → Prop}
   exact (hα R hR hresp hE).2 _
 
 /-- The left component is read only at prefixes of its own retained history. -/
-theorem pair_eq_on_prefixes_left {A B C D : Type} {s t : System A B} (R : System C D)
+lemma pair_eq_on_prefixes_left {A B C D : Type} {s t : System A B} (R : System C D)
     {H : List (Two A C)} (he : ∀ p, p <+: restrict none H → s p = t p) :
     ∀ G, G <+: H → pair s R G = pair t R G := by
   intro G hG
@@ -340,7 +340,7 @@ theorem pair_eq_on_prefixes_left {A B C D : Type} {s t : System A B} (R : System
 
 /-- Domain preservation depends only on finite converter behavior. This is
 the closure principle used when lifting to fresh converters. -/
-theorem IsResponsiveDDC.mapsDomain_of_replies {E : List (Σ j, X j) → Prop}
+lemma IsResponsiveDDC.mapsDomain_of_replies {E : List (Σ j, X j) → Prop}
     {F : List (Σ o, U o) → Prop} {b : ℕ} {α : InsideOutsideSystem O J U V X Y}
     (hα : IsResponsiveDDC b α)
     (ha : ∀ xs ys, Replies α xs ys → ∃ (c : ℕ) (β : InsideOutsideSystem O J U V X Y),

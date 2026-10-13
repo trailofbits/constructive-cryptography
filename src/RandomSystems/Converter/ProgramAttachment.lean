@@ -60,7 +60,7 @@ variable {P r}
 history whose converter inputs leave the program in the mode `m` and whose resource inputs are
 `rh`, the input `x` leads to the reply `w`, and the internal history reached records the new
 mode and resource inputs. -/
-theorem exchange_of_feed (s : S) :
+lemma exchange_of_feed (s : S) :
     ∀ (n : ℕ) (G : List (Two (Σ l, twoFam U Y l) (Σ j, X j))) (m : Mode S O J U X Y)
       (x : Σ l, twoFam U Y l) (rh : List (Σ j, X j)) (m' : Mode S O J U X Y)
       (rh' : List (Σ j, X j)) (w : Σ o, V o),
@@ -110,7 +110,7 @@ def Dead (s : S) (G : List (Two (Σ l, twoFam U Y l) (Σ j, X j))) : Prop :=
   ∀ m, P.after s (restrict none G) = some m → ∃ o s' u h q, m = .busy o s' u h q
 
 /-- A step producing an inside query counts one more inside query and keeps the mode sound. -/
-theorem step_inside {m m' : Mode S O J U X Y} {x : Σ l, twoFam U Y l} {j : J} {q : X j}
+lemma step_inside {m m' : Mode S O J U X Y} {x : Σ l, twoFam U Y l} {j : J} {q : X j}
     (hm : m.Sound P) (hs : P.step m x = some (m', ⟨⟨some (), j⟩, q⟩)) :
     m'.pending = m.pending + 1 ∧ m'.Sound P := by
   rcases P.step_cases hs with ⟨s', o, u, rfl, rfl, he⟩ | ⟨o, s', u, h, q', v, rfl, rfl, he⟩
@@ -126,14 +126,14 @@ theorem step_inside {m m' : Mode S O J U X Y} {x : Σ l, twoFam U Y l} {j : J} {
       exact ⟨by simp [Mode.pending], hm.1.snoc hm.2 v, hq⟩
 
 /-- A sound mode of a bounded program has made at most `b` inside queries. -/
-theorem pending_le {b : ℕ} (hP : P.Bounded b) {m : Mode S O J U X Y} (hm : m.Sound P) :
+lemma pending_le {b : ℕ} (hP : P.Bounded b) {m : Mode S O J U X Y} (hm : m.Sound P) :
     m.pending ≤ b := by
   rcases m with s | ⟨o, s, u, h, q⟩
   · exact Nat.zero_le _
   · exact hP s o u h q hm.1 hm.2
 
 /-- A step producing an outside reply leaves the program idle. -/
-theorem step_outside {m m' : Mode S O J U X Y} {x : Σ l, twoFam U Y l} {o : O} {v : V o}
+lemma step_outside {m m' : Mode S O J U X Y} {x : Σ l, twoFam U Y l} {o : O} {v : V o}
     (hs : P.step m x = some (m', ⟨⟨none, o⟩, v⟩)) : ∃ s', m' = .idle s' := by
   rcases P.step_cases hs with ⟨s', o', u, rfl, rfl, he⟩ | ⟨o', s', u, h, q', v', rfl, rfl, he⟩
   · rcases P.emit_cases s' o' u [] with ⟨s'', w, _, hE⟩ | ⟨q'', _, hE⟩
@@ -144,7 +144,7 @@ theorem step_outside {m m' : Mode S O J U X Y} {x : Σ l, twoFam U Y l} {o : O} 
     · rw [hE] at he; cases (Prod.mk.inj he).2
 
 /-- A completed invocation leaves the program idle. -/
-theorem feed_idle :
+lemma feed_idle :
     ∀ (n : ℕ) (m : Mode S O J U X Y) (x : Σ l, twoFam U Y l) (rh : List (Σ j, X j))
       (m' : Mode S O J U X Y) (rh' : List (Σ j, X j)) (w : Σ o, V o),
       P.feed r n m x rh = some (m', rh', w) → ∃ s', m' = .idle s'
@@ -163,7 +163,7 @@ theorem feed_idle :
 
 /-- **An invocation that does not complete is a silent exchange**, after which the program
 admits no outside query. -/
-theorem exchange_of_feed_none (s : S) {b : ℕ} (hP : P.Bounded b) :
+lemma exchange_of_feed_none (s : S) {b : ℕ} (hP : P.Bounded b) :
     ∀ (n : ℕ) (G : List (Two (Σ l, twoFam U Y l) (Σ j, X j))) (m : Mode S O J U X Y)
       (x : Σ l, twoFam U Y l) (rh : List (Σ j, X j)),
       P.after s (restrict none G) = some m → m.Sound P → b + 1 ≤ n + m.pending →
@@ -226,7 +226,7 @@ theorem exchange_of_feed_none (s : S) {b : ℕ} (hP : P.Bounded b) :
                 exact ⟨o', s', u, _, q'', (Prod.mk.inj he).1⟩
 
 /-- From a dead internal history, every outside query is a silent exchange. -/
-theorem exchange_of_dead (s : S) {G : List (Two (Σ l, twoFam U Y l) (Σ j, X j))}
+lemma exchange_of_dead (s : S) {G : List (Two (Σ l, twoFam U Y l) (Σ j, X j))}
     (hG : Dead P s G) (o : O) (u : U o) :
     Exchange (pair (DDC.ofProgram s P) r) resourceRoute (G ++ [⟨none, ⟨⟨none, o⟩, u⟩⟩]) none
       (G ++ [⟨none, ⟨⟨none, o⟩, u⟩⟩]) ∧ Dead P s (G ++ [⟨none, ⟨⟨none, o⟩, u⟩⟩]) := by
@@ -259,21 +259,21 @@ noncomputable def inline (b : ℕ) (s : S) : InterfaceSystem O U V := fun us =>
   Part.ofOption (us.getLast?.bind fun u => (P.inlineAfter r b s us.dropLast).bind fun mr =>
     (P.feed r (b + 1) mr.1 ⟨⟨none, u.1⟩, u.2⟩ mr.2).map fun t => t.2.2)
 
-@[simp] theorem inlineAfter_nil (b : ℕ) (s : S) :
+@[simp] lemma inlineAfter_nil (b : ℕ) (s : S) :
     P.inlineAfter r b s [] = some (.idle s, []) := rfl
 
-theorem inlineAfter_snoc (b : ℕ) (s : S) (us : List (Σ o, U o)) (u : Σ o, U o) :
+lemma inlineAfter_snoc (b : ℕ) (s : S) (us : List (Σ o, U o)) (u : Σ o, U o) :
     P.inlineAfter r b s (us ++ [u]) = (P.inlineAfter r b s us).bind fun mr =>
       (P.feed r (b + 1) mr.1 ⟨⟨none, u.1⟩, u.2⟩ mr.2).map fun t => (t.1, t.2.1) := by
   simp only [inlineAfter, List.foldl_append, List.foldl_cons, List.foldl_nil]
 
-theorem inline_snoc (b : ℕ) (s : S) (us : List (Σ o, U o)) (u : Σ o, U o) :
+lemma inline_snoc (b : ℕ) (s : S) (us : List (Σ o, U o)) (u : Σ o, U o) :
     P.inline r b s (us ++ [u]) = Part.ofOption ((P.inlineAfter r b s us).bind fun mr =>
       (P.feed r (b + 1) mr.1 ⟨⟨none, u.1⟩, u.2⟩ mr.2).map fun t => t.2.2) := by
   simp [inline]
 
 /-- **The internal histories of the attachment follow the inlined program.** -/
-theorem induces_inline (s : S) {b : ℕ} (hP : P.Bounded b) : ∀ us : List (Σ o, U o),
+lemma induces_inline (s : S) {b : ℕ} (hP : P.Bounded b) : ∀ us : List (Σ o, U o),
     (∀ m rh, P.inlineAfter r b s us = some (m, rh) →
       ∃ o H, Induces (pair (DDC.ofProgram s P) r) resourceRoute resourceInput us o H ∧
         P.after s (restrict none H) = some m ∧ (∃ s', m = .idle s') ∧
@@ -346,7 +346,7 @@ theorem apply_ofProgram (s : S) {b : ℕ} (hP : P.Bounded b) :
       rw [interconnect_eq_some (Induces.snoc _ _ _ _ _ _ hi l)]
       simp [hf]
 
-theorem inlineAfter_isSome_of_append (b : ℕ) (s : S) {us e : List (Σ o, U o)}
+lemma inlineAfter_isSome_of_append (b : ℕ) (s : S) {us e : List (Σ o, U o)}
     (h : (P.inlineAfter r b s (us ++ e)).isSome) : (P.inlineAfter r b s us).isSome := by
   induction e using List.reverseRecOn with
   | nil => simpa using h
@@ -357,7 +357,7 @@ theorem inlineAfter_isSome_of_append (b : ℕ) (s : S) {us e : List (Σ o, U o)}
     | none => rw [hst] at h; simp at h
     | some _ => rfl
 
-theorem inline_dom (b : ℕ) (s : S) (us : List (Σ o, U o)) :
+lemma inline_dom (b : ℕ) (s : S) (us : List (Σ o, U o)) :
     (P.inline r b s us).Dom ↔ us ≠ [] ∧ (P.inlineAfter r b s us).isSome := by
   rcases List.eq_nil_or_concat us with rfl | ⟨us, u, rfl⟩
   · simp [inline]
@@ -368,20 +368,20 @@ theorem inline_dom (b : ℕ) (s : S) (us : List (Σ o, U o)) :
     | none => simp
     | some mr => cases P.feed r (b + 1) mr.1 ⟨⟨none, u.1⟩, u.2⟩ mr.2 <;> simp
 
-theorem inline_isDDS (b : ℕ) (s : S) : IsDDS (P.inline r b s) := by
+lemma inline_isDDS (b : ℕ) (s : S) : IsDDS (P.inline r b s) := by
   refine ⟨by simp [SilentAtEmpty, inline], fun p h hp hne hd => ?_⟩
   obtain ⟨e, rfl⟩ := hp
   rw [inline_dom] at hd ⊢
   exact ⟨hne, inlineAfter_isSome_of_append b s hd.2⟩
 
 /-- The attachment of a program, as a deterministic system, is the inlined program. -/
-theorem trim_apply_ofProgram (s : S) {b : ℕ} (hP : P.Bounded b) :
+lemma trim_apply_ofProgram (s : S) {b : ℕ} (hP : P.Bounded b) :
     trim (apply (DDC.ofProgram s P) r) = P.inline r b s := by
   rw [apply_ofProgram s hP]
   exact (inline_isDDS b s).trim_eq
 
 /-- **Attaching the program on the outside domain `F`** is the inlined program on `F`. -/
-theorem trim_apply_ofProgramOn (s : S) {b : ℕ} (hP : P.Bounded b) (F : List (Σ o, U o) → Prop)
+lemma trim_apply_ofProgramOn (s : S) {b : ℕ} (hP : P.Bounded b) (F : List (Σ o, U o) → Prop)
     (hF : ∀ {p h}, p <+: h → p ≠ [] → F h → F p) :
     trim (apply (DDC.ofProgramOn s P F) r) = filterDom F (P.inline r b s) := by
   rw [DDC.ofProgramOn, apply_filterDom_outside F hF, apply_ofProgram s hP]
@@ -405,7 +405,7 @@ def invoke (s : S) (o : O) (u : U o) :
     | .inr q => invoke s o u n (stepR r q.1 q.2).1 (h ++ [(q, ⟨q.1, (stepR r q.1 q.2).2⟩)])
 
 /-- A bounded program completes each invocation against an automaton. -/
-theorem invoke_isSome {b : ℕ} (hP : P.Bounded b) (s : S) (o : O) (u : U o) :
+lemma invoke_isSome {b : ℕ} (hP : P.Bounded b) (s : S) (o : O) (u : U o) :
     ∀ n r h, P.Consistent s o u h → b ≤ n + h.length →
       (P.invoke stepR s o u n r h).isSome := by
   intro n
@@ -431,7 +431,7 @@ noncomputable def combine {b : ℕ} (hP : P.Bounded b) : S × R → (o : O) → 
     (invoke_isSome stepR hP sr.1 o u b sr.2 [] (consistent_nil P _ _ _) (by simp))
 
 /-- More inside queries allowed do not change a completed invocation. -/
-theorem invoke_add {s : S} {o : O} {u : U o} {v : (S × R) × V o} :
+lemma invoke_add {s : S} {o : O} {u : U o} {v : (S × R) × V o} :
     ∀ n r h k, P.invoke stepR s o u n r h = some v → P.invoke stepR s o u (n + k) r h = some v := by
   intro n
   induction n with
@@ -452,12 +452,12 @@ theorem invoke_add {s : S} {o : O} {u : U o} {v : (S × R) × V o} :
       simp only [invoke, hq] at hv ⊢
       exact ih _ _ k hv
 
-theorem invoke_eq_combine {b : ℕ} (hP : P.Bounded b) (sr : S × R) (o : O) (u : U o) :
+lemma invoke_eq_combine {b : ℕ} (hP : P.Bounded b) (sr : S × R) (o : O) (u : U o) :
     P.invoke stepR sr.1 o u b sr.2 [] = some (P.combine stepR hP sr o u) := by
   simp [combine]
 
 /-- The combined automaton answers as any invocation that completes. -/
-theorem combine_eq_of_invoke {b : ℕ} (hP : P.Bounded b) {sr : S × R} {o : O} {u : U o} {n : ℕ}
+lemma combine_eq_of_invoke {b : ℕ} (hP : P.Bounded b) {sr : S × R} {o : O} {u : U o} {n : ℕ}
     {v : (S × R) × V o} (hv : P.invoke stepR sr.1 o u n sr.2 [] = some v) :
     P.combine stepR hP sr o u = v := by
   have h₁ := invoke_add stepR n sr.2 [] b hv
@@ -467,7 +467,7 @@ theorem combine_eq_of_invoke {b : ℕ} (hP : P.Bounded b) {sr : S × R} {o : O} 
 
 /-- Against bisimilar automata an invocation makes the same queries and replies, and leaves
 related states. -/
-theorem invoke_bisim {R' : Type} {stepR' : R' → (j : J) → X j → R' × Y j} {rel : R → R' → Prop}
+lemma invoke_bisim {R' : Type} {stepR' : R' → (j : J) → X j → R' × Y j} {rel : R → R' → Prop}
     (hR : IsBisim stepR stepR' rel) (s : S) (o : O) (u : U o) :
     ∀ n r r' h, rel r r' →
       Option.Rel (fun a b => a.1.1 = b.1.1 ∧ rel a.1.2 b.1.2 ∧ a.2 = b.2)
@@ -496,7 +496,7 @@ theorem invoke_bisim {R' : Type} {stepR' : R' → (j : J) → X j → R' × Y j}
       exact ih _ _ _ hr'
 
 /-- **Attaching a program to bisimilar automata** gives bisimilar automata. -/
-theorem combine_bisim {R' : Type} {stepR' : R' → (j : J) → X j → R' × Y j} {rel : R → R' → Prop}
+lemma combine_bisim {R' : Type} {stepR' : R' → (j : J) → X j → R' × Y j} {rel : R → R' → Prop}
     (hR : IsBisim stepR stepR' rel) {b : ℕ} (hP : P.Bounded b) :
     IsBisim (P.combine stepR hP) (P.combine stepR' hP) (fun a a' => a.1 = a'.1 ∧ rel a.2 a'.2) := by
   rintro ⟨s, r⟩ ⟨s', r'⟩ o u ⟨rfl, hr⟩
@@ -506,7 +506,7 @@ theorem combine_bisim {R' : Type} {stepR' : R' → (j : J) → X j → R' × Y j
   exact ⟨h₃, h₁, h₂⟩
 
 /-- An invocation fed by an automaton is the invocation against the automaton. -/
-theorem feed_automatonSystem (r₀ : R) :
+lemma feed_automatonSystem (r₀ : R) :
     ∀ (n : ℕ) (s : S) (o : O) (u : U o) (h : List ((Σ j, X j) × (Σ j, Y j)))
       (rh : List (Σ j, X j)) (m : Mode S O J U X Y) (x : Σ l, twoFam U Y l),
       P.step m x = some (P.emit s o u h) →
@@ -598,7 +598,7 @@ theorem inline_automatonSystem {b : ℕ} (hP : P.Bounded b) (s : S) (r₀ : R) :
       simp only [Option.map_some, Part.coe_some, hf.2.2]
 
 /-- Attached to automata with the same system, a program gives automata with the same system. -/
-theorem combine_congr {R' : Type} {stepR' : R' → (j : J) → X j → R' × Y j} {b : ℕ}
+lemma combine_congr {R' : Type} {stepR' : R' → (j : J) → X j → R' × Y j} {b : ℕ}
     (hP : P.Bounded b) (s : S) {r₀ : R} {r₀' : R'}
     (h : automatonSystem stepR r₀ = automatonSystem stepR' r₀') :
     automatonSystem (P.combine stepR hP) (s, r₀) = automatonSystem (P.combine stepR' hP) (s, r₀') := by

@@ -29,14 +29,14 @@ open Classical Probability
 
 variable {A B : Type}
 
-theorem Admitted.mono {D D' : List (A × B) → A → Prop} (hD : ∀ h x, D' h x → D h x)
+lemma Admitted.mono {D D' : List (A × B) → A → Prop} (hD : ∀ h x, D' h x → D h x)
     {h : List (A × B)} (ha : Admitted D' h) : Admitted D h :=
   fun p z t he => hD _ _ (ha p z t he)
 
 /-- **Admission on an input domain**: a transcript is admitted exactly when it is empty or its
 inputs lie in the domain, for a domain without the empty history and closed under nonempty
 prefixes. -/
-theorem admitted_ofInputs_iff {E : List A → Prop} {bound : ℕ} {hE : ∀ h, E h → h.length ≤ bound}
+lemma admitted_ofInputs_iff {E : List A → Prop} {bound : ℕ} {hE : ∀ h, E h → h.length ≤ bound}
     (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p) (h : List (A × B)) :
     Admitted (Domain.ofInputs E bound hE : Domain A B) h ↔ h = [] ∨ E (h.map Prod.fst) := by
   induction h using List.reverseRecOn with
@@ -60,11 +60,11 @@ noncomputable def restrict (R : RandomSystem A B D) (D' : Domain A B)
     (hD : ∀ h x, D' h x → D h x) : RandomSystem A B D' :=
   ⟨fun h => if Admitted D' h then R h else 0, R.2.restrict hD⟩
 
-theorem restrict_apply (R : RandomSystem A B D) (hD : ∀ h x, D' h x → D h x)
+lemma restrict_apply (R : RandomSystem A B D) (hD : ∀ h x, D' h x → D h x)
     (h : List (A × B)) : R.restrict D' hD h = if Admitted D' h then R h else 0 := rfl
 
 /-- **Restrictions compose.** -/
-theorem restrict_restrict (R : RandomSystem A B D) (hD : ∀ h x, D' h x → D h x)
+lemma restrict_restrict (R : RandomSystem A B D) (hD : ∀ h x, D' h x → D h x)
     (hD' : ∀ h x, D'' h x → D' h x) :
     (R.restrict D' hD).restrict D'' hD' = R.restrict D'' fun h x hx => hD h x (hD' h x hx) := by
   ext h
@@ -75,7 +75,7 @@ theorem restrict_restrict (R : RandomSystem A B D) (hD : ∀ h x, D' h x → D h
 
 /-- Along the queries of a strategy compatible with the restriction, every possible transcript
 of the system is admitted by the smaller domain. -/
-theorem admitted_of_compatible_restrict {R : RandomSystem A B D} {hD : ∀ h x, D' h x → D h x}
+lemma admitted_of_compatible_restrict {R : RandomSystem A B D} {hD : ∀ h x, D' h x → D h x}
     {σ : List B →. A} (hc : (R.restrict D' hD).Compatible σ) {h : List (A × B)}
     (hh : Cons σ h) (hm : R h ≠ 0) : Admitted D' h := by
   induction h using List.reverseRecOn with
@@ -88,14 +88,14 @@ theorem admitted_of_compatible_restrict {R : RandomSystem A B D} {hD : ∀ h x, 
     rwa [restrict_apply, if_pos ha]
 
 /-- A strategy compatible with the restriction is compatible with the system. -/
-theorem Compatible.of_restrict {R : RandomSystem A B D} {hD : ∀ h x, D' h x → D h x}
+lemma Compatible.of_restrict {R : RandomSystem A B D} {hD : ∀ h x, D' h x → D h x}
     {σ : List B →. A} (hc : (R.restrict D' hD).Compatible σ) : R.Compatible σ := by
   intro h x hh hm hx
   have ha := admitted_of_compatible_restrict hc hh hm
   exact hD h x (hc h x hh (by rwa [restrict_apply, if_pos ha]) hx)
 
 /-- **An environment compatible with the restriction** sees the transcript law of the system. -/
-theorem sLaw_restrict {R : RandomSystem A B D} {hD : ∀ h x, D' h x → D h x}
+lemma sLaw_restrict {R : RandomSystem A B D} {hD : ∀ h x, D' h x → D h x}
     {σ : List B →. A} (hc : (R.restrict D' hD).Compatible σ) (n : ℕ) :
     (R.restrict D' hD).sLaw σ n = R.sLaw σ n := by
   ext h
@@ -111,14 +111,14 @@ end RandomSystem
 variable {I : Type} [Fintype I] {X Y : I → Type} [∀ i, Fintype (X i)] [∀ i, Fintype (Y i)]
   {𝒟 𝒟' : Domain (Σ i, X i) (Σ i, Y i)}
 
-theorem RandomSystem.RepliesAtQueriedInterface.restrict
+lemma RandomSystem.RepliesAtQueriedInterface.restrict
     {R : RandomSystem (Σ i, X i) (Σ i, Y i) 𝒟} (hR : R.RepliesAtQueriedInterface)
     (hD : ∀ h x, 𝒟' h x → 𝒟 h x) : (R.restrict 𝒟' hD).RepliesAtQueriedInterface := by
   intro h x y hy
   rw [RandomSystem.restrict_apply, hR h x y hy, ite_self]
 
 /-- An environment compatible with a smaller domain is compatible with the larger one. -/
-theorem Domain.Compatible.of_restrict {E : DDE (Σ i, X i) (Σ i, Y i)}
+lemma Domain.Compatible.of_restrict {E : DDE (Σ i, X i) (Σ i, Y i)}
     (hD : ∀ h x, 𝒟' h x → 𝒟 h x) (hc : 𝒟'.Compatible E) : 𝒟.Compatible E :=
   fun _ hR => RandomSystem.Compatible.of_restrict (hc _ (hR.restrict hD))
 

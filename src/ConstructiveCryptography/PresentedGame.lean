@@ -61,7 +61,7 @@ noncomputable def ofPDG (G : PDG (Σ i, A.X i) (Σ i, A.Y i) A.inputDomain) (hG 
 
 /-- The visible resource of the game a probabilistic discrete game presents is the resource its
 visible systems present. -/
-theorem visible_ofPDG (G : PDG (Σ i, A.X i) (Σ i, A.Y i) A.inputDomain) (hG : G.isProbDist)
+lemma visible_ofPDG (G : PDG (Σ i, A.X i) (Σ i, A.Y i) A.inputDomain) (hG : G.isProbDist)
     {R : Resource A} (visible : R.1 = PDS.behavior G.underlying (PDG.underlying_probability hG)) :
     DistinctionGames.visible (ofPDG G hG visible) = R :=
   -- The visible system of the behavior of `G` is the behavior of its visible systems
@@ -71,7 +71,7 @@ theorem visible_ofPDG (G : PDG (Σ i, A.X i) (Σ i, A.Y i) A.inputDomain) (hG : 
 /-- The game a probabilistic discrete game presents is conditionally equivalent to a resource
 exactly when its game on random systems is conditionally equivalent to the resource's random
 system. -/
-theorem conditionallyEquivalent_ofPDG_iff (G : PDG (Σ i, A.X i) (Σ i, A.Y i) A.inputDomain)
+lemma conditionallyEquivalent_ofPDG_iff (G : PDG (Σ i, A.X i) (Σ i, A.Y i) A.inputDomain)
     (hG : G.isProbDist) {R : Resource A}
     (visible : R.1 = PDS.behavior G.underlying (PDG.underlying_probability hG)) (S : Resource A) :
     ofPDG G hG visible |≡ S ↔ (G.behavior hG).ConditionallyEquivalent S.1 :=
@@ -104,7 +104,7 @@ theorem game_dist_le {A : Interface}
 
 /-- **The resource sampling a single-label function** is the behavior of the visible systems of
 the sampled-function game. -/
-theorem Resource.sample_ofFunction_eq_behavior {I K X Y : Type} [Unique I] [Fintype X]
+lemma Resource.sample_ofFunction_eq_behavior {I K X Y : Type} [Unique I] [Fintype X]
     [Fintype Y] (D : List (Σ _ : I, X) → Prop)
     (hD : ¬ D [] ∧ ∀ {p h}, p <+: h → p ≠ [] → D h → D p) (bound : ℕ)
     (hb : ∀ h, D h → h.length ≤ bound) (P : Distribution K) [Distribution.IsProbability P]
@@ -142,7 +142,7 @@ open Classical in
 /-- **A single-label sampled-function game is conditionally equivalent to the resource sampling
 the ideal function** when, on every fixed query sequence, the answers jointly with the unset
 condition factor through the ideal answers. -/
-theorem ofSingleFunction_conditionallyEquivalent {I K X Y : Type} [Unique I] [Fintype X]
+lemma ofSingleFunction_conditionallyEquivalent {I K X Y : Type} [Unique I] [Fintype X]
     [Fintype Y] (D : List (Σ _ : I, X) → Prop)
     (hD : ¬ D [] ∧ ∀ {p h}, p <+: h → p ≠ [] → D h → D p) (bound : ℕ)
     (hb : ∀ h, D h → h.length ≤ bound)
@@ -213,7 +213,7 @@ theorem ofSingleFunction_conditionallyEquivalent {I K X Y : Type} [Unique I] [Fi
 sampling the function is at most `ε` from a resource conditionally equivalent to the game when
 the sampled condition holds with probability at most `ε` on the empty and on every admitted
 query sequence. -/
-theorem game_dist_ofSingleFunction_le {I K X Y : Type}
+lemma game_dist_ofSingleFunction_le {I K X Y : Type}
     [Unique I] [Fintype X] [Fintype Y] {D : List (Σ _ : I, X) → Prop}
     {hD : ¬ D [] ∧ ∀ {p h}, p <+: h → p ≠ [] → D h → D p} {bound : ℕ}
     {hb : ∀ h, D h → h.length ≤ bound}

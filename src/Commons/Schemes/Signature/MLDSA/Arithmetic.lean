@@ -129,7 +129,7 @@ def polyVecBounded {k : ℕ} (v : RqVec k) (b : ℕ) : Prop :=
 /-- The ML-DSA centered infinity norm `polyNorm` agrees with the backend-generic
 `LatticeCrypto.cInfNorm` on the canonical vector backend. This is the bridge that lets the
 `polyNorm`-stated `Primitives.Laws` fields consume the `cInfNorm`-stated rounding lemmas. -/
-theorem polyNorm_eq_cInfNorm (f : Rq) : polyNorm f = LatticeCrypto.cInfNorm f :=
+lemma polyNorm_eq_cInfNorm (f : Rq) : polyNorm f = LatticeCrypto.cInfNorm f :=
   LatticeCrypto.zmodPolyNormOps_cInfNorm f
 
 end Norms

@@ -43,7 +43,7 @@ def Collision {k : ℕ} (law : Distribution.ProbDist M) (known : List M) (t : Fi
 
 omit [Fintype K] [Fintype M] [DecidableEq K] [DecidableEq M] in
 /-- Within the table's size, a source reads the table. -/
-theorem entry_of_lt {k : ℕ} (law : Distribution.ProbDist M) (t : Fin k → M) {i : ℕ}
+lemma entry_of_lt {k : ℕ} (law : Distribution.ProbDist M) (t : Fin k → M) {i : ℕ}
     (hi : i < k) : entry law t i = t ⟨i, hi⟩ := by
   -- The source's step at position `i < k` reads the table entry `t ⟨i, hi⟩`.
   simp [entry, sourceStep, hi]
@@ -51,7 +51,7 @@ theorem entry_of_lt {k : ℕ} (law : Distribution.ProbDist M) (t : Fin k → M) 
 omit [Fintype C] [Fintype K] [DecidableEq K] [DecidableEq M] in
 /-- **The collision probability** of `n` original messages and a uniform table is at most
 `n² / |M|`. -/
-theorem collision_mass_le [Nonempty M] {k : ℕ} (known : List M) (hk : known.length ≤ k) :
+lemma collision_mass_le [Nonempty M] {k : ℕ} (known : List M) (hk : known.length ≤ k) :
     (tableLaw 𝒰[M] k).mass (Collision 𝒰[M] known) ≤ (known.length : ℝ) ^ 2 / Fintype.card M := by
   -- Plan, with `n = |known|` (a union bound over pairs):
   --   1. a collision is a pair `(i, m)`, `i < n` and `m` an original message, with
@@ -117,7 +117,7 @@ variable [DecidableEq C] [Nonempty M] (scheme : SymmetricEncryption K M C)
 
 omit [Fintype K] [Fintype M] [Fintype C] [DecidableEq K] [DecidableEq M] [Nonempty M] in
 /-- A replayed message is one of the recorded messages. -/
-theorem replay_mem {l : List M} {l' : List C} {c : C} {m : M}
+lemma replay_mem {l : List M} {l' : List C} {c : C} {m : M}
     (h : AE.replay (l.zip l') c = some m) : m ∈ l := by
   -- `replay` returns the message of the first entry `e` of the table whose ciphertext is `c`.
   obtain ⟨e, he, rfl⟩ := Option.map_eq_some_iff.mp h
@@ -128,7 +128,7 @@ theorem replay_mem {l : List M} {l' : List C} {c : C} {m : M}
 outer table and passes the outer plaintext filter, its message being an original one, and a
 fresh ciphertext survives both filters only if its message is an original and a replacement
 message. -/
-theorem hybridDecrypt_eq {k k' : ℕ}
+lemma hybridDecrypt_eq {k k' : ℕ}
     (ω : (((Fin k → K) × (Fin k → (K × M → C))) × (Fin k' → M)) × (Fin k' → M))
     (known : List M) (c : C) (hgood : ¬ Collision (AE.CCA.law1 M C) known ω.2) :
     hybridDecrypt scheme ω known c =
@@ -184,14 +184,14 @@ theorem hybridDecrypt_eq {k k' : ℕ}
       · simp [AE.retain, h₁]
 
 omit [DecidableEq M] [DecidableEq C] [Nonempty M] in
-theorem messages_prefix {h h' : List (Σ p, AE.Input M C p)} (hp : h <+: h') :
+lemma messages_prefix {h h' : List (Σ p, AE.Input M C p)} (hp : h <+: h') :
     messages h <+: messages h' := by
   -- `h' = h ++ e`, and `messages (h ++ e) = messages h ++ messages e`.
   obtain ⟨e, rfl⟩ := hp
   exact ⟨messages e, (messages_append h e).symm⟩
 
 /-- **Without a collision, the hybrid oracle replies as the ideal oracle.** -/
-theorem hybrid_replies_iff {k k' : ℕ}
+lemma hybrid_replies_iff {k k' : ℕ}
     (ω : (((Fin k → K) × (Fin k → (K × M → C))) × (Fin k' → M)) × (Fin k' → M))
     (D : List (Σ p, AE.Input M C p) → Prop) (xs : List (Σ p, AE.Input M C p))
     (ys : List (Σ p, AE.Output M C p)) (hgood : ¬ Collision (AE.CCA.law1 M C) (messages xs) ω.2) :
@@ -231,7 +231,7 @@ variable [DecidableEq C] [Nonempty M] (scheme : SymmetricEncryption K M C) (q : 
 
 omit [Fintype K] [DecidableEq K] [DecidableEq M] [DecidableEq C] [Nonempty M] in
 /-- The encrypted messages are the queries at the encryption port. -/
-theorem length_messages (xs : List (Σ p, AE.Input M C p)) :
+lemma length_messages (xs : List (Σ p, AE.Input M C p)) :
     (messages xs).length = (SystemAlgebra.restrict AE.Port.enc xs).length := by
   -- Induction on the history: an encryption query adds one message and one query at the
   -- encryption port; a decryption query adds neither.
@@ -245,7 +245,7 @@ theorem length_messages (xs : List (Σ p, AE.Input M C p)) :
 omit [Fintype K] [Fintype M] [Fintype C] [DecidableEq K] [DecidableEq M] [DecidableEq C]
   [Nonempty M] in
 /-- The first `k'` entries of a table read as the table. -/
-theorem entry_castLE {X : Type} (law : Distribution.ProbDist X) {k' k : ℕ} (h : k' ≤ k)
+lemma entry_castLE {X : Type} (law : Distribution.ProbDist X) {k' k : ℕ} (h : k' ≤ k)
     (t : Fin k → X) {i : ℕ} (hi : i < k') :
     entry law (fun j : Fin k' => t (Fin.castLE h j)) i = entry law t i := by
   -- `i < k' ≤ k` indexes both tables, and both read the entry `t i`.
@@ -253,7 +253,7 @@ theorem entry_castLE {X : Type} (law : Distribution.ProbDist X) {k' k : ℕ} (h 
 
 omit [Fintype K] in
 /-- The real system's tables in the ideal are no larger than in the hybrid. -/
-theorem idealTableSize_le : idealTableSize scheme q ≤ AE.Real.bound scheme * ∑ i, q i := by
+lemma idealTableSize_le : idealTableSize scheme q ≤ AE.Real.bound scheme * ∑ i, q i := by
   -- The encryption system inside the ideal has the single port `enc`, with budget `q enc`.
   have : ∑ i, AE.Ideal.insideBudget M C q i = q .enc := by
     rw [Fintype.sum_eq_single Encryption.Port.enc (fun j hj => absurd (by cases j; rfl) hj)]
@@ -265,7 +265,7 @@ theorem idealTableSize_le : idealTableSize scheme q ≤ AE.Real.bound scheme * �
     (Finset.mem_univ AE.Port.enc))
 
 omit [Fintype K] in
-theorem lt_idealTableSize {i : ℕ} (hi : i < q .enc) : i < idealTableSize scheme q := by
+lemma lt_idealTableSize {i : ℕ} (hi : i < q .enc) : i < idealTableSize scheme q := by
   -- As in `idealTableSize_le`, the inside budget sums to `q enc`.
   have : ∑ i, AE.Ideal.insideBudget M C q i = q .enc := by
     rw [Fintype.sum_eq_single Encryption.Port.enc (fun j hj => absurd (by cases j; rfl) hj)]
@@ -285,7 +285,7 @@ noncomputable abbrev truncateTables {k₂ : ℕ} :
 
 /-- **The ideal oracle reads only the first entries**: on the histories within the budget, it
 answers on the real system's tables as on their first entries. -/
-theorem ideal_truncate {k₂ : ℕ}
+lemma ideal_truncate {k₂ : ℕ}
     (ω : ((Fin (AE.Real.bound scheme * ∑ i, q i) → K) ×
       (Fin (AE.Real.bound scheme * ∑ i, q i) → (K × M → C))) × (Fin k₂ → M)) :
     filterDom (AE.perPort M C q).domain (automatonSystem (oracleStep (idealEncrypt scheme)
@@ -329,7 +329,7 @@ theorem ideal_truncate {k₂ : ℕ}
   · rfl
 
 /-- **The ideal oracle on the hybrid's tables** has the mass it has on the ideal's own tables. -/
-theorem ideal_mass_hybridTables (xs : List (Σ i, (AE.perPort M C q).X i))
+lemma ideal_mass_hybridTables (xs : List (Σ i, (AE.perPort M C q).X i))
     (ys : List (Σ i, (AE.perPort M C q).Y i)) :
     (Distribution.prod (Distribution.prod
         (tableLaw (AE.Real.law1 scheme) (AE.Real.bound scheme * ∑ i, q i))
@@ -390,7 +390,7 @@ noncomputable abbrev hybridLaw :=
     (tableLaw (AE.CCA.law1 M C) (AE.CCA.bound M C * ∑ i, q i)))
     (tableLaw (AE.CCA.law1 M C) (AE.CCA.bound M C * ∑ i, q i))
 
-theorem hybridLaw_isProbDist : (hybridLaw scheme q).isProbDist := by
+lemma hybridLaw_isProbDist : (hybridLaw scheme q).isProbDist := by
   -- A product of probability laws is one, and each table law is one.
   repeat' (first | apply Distribution.prod_isProbDist | exact tableLaw_isProbDist _ _)
 
@@ -416,11 +416,11 @@ noncomputable def collisionGame :
           ⟨hd, fun he => (AE.perPort M C q).nonempty_prefix.1 (he ▸ hd)⟩⟩⟩)
     (hybridLaw scheme q)
 
-theorem collisionGame_isProbDist : (collisionGame scheme q).isProbDist :=
+lemma collisionGame_isProbDist : (collisionGame scheme q).isProbDist :=
   Distribution.fTransform_isProbDist _ (hybridLaw_isProbDist scheme q)
 
 /-- The hybrid is the behavior of the collision game's visible systems. -/
-theorem hybrid_visible : (Hybrid scheme q).1 = PDS.behavior (collisionGame scheme q).underlying
+lemma hybrid_visible : (Hybrid scheme q).1 = PDS.behavior (collisionGame scheme q).underlying
     (PDG.underlying_probability (collisionGame_isProbDist scheme q)) := by
   -- Compare the two random systems transcript by transcript.
   apply RandomSystem.ext
@@ -433,7 +433,7 @@ theorem hybrid_visible : (Hybrid scheme q).1 = PDS.behavior (collisionGame schem
     Distribution.mass_fTransform, Distribution.mass_fTransform]
 
 /-- The condition holds with the probability of a collision with the outer replacement table. -/
-theorem collisionGame_badProbability (xs : List (Σ i, (AE.perPort M C q).X i)) :
+lemma collisionGame_badProbability (xs : List (Σ i, (AE.perPort M C q).X i)) :
     (collisionGame scheme q).badProbability xs =
       (tableLaw (AE.CCA.law1 M C) (AE.CCA.bound M C * ∑ i, q i)).mass
         (Collision (AE.CCA.law1 M C) (messages xs)) := by
@@ -452,7 +452,7 @@ theorem collisionGame_badProbability (xs : List (Σ i, (AE.perPort M C q).X i)) 
 
 /-- **The collision game is conditionally equivalent to the ideal**: the replies with no
 collision are the ideal replies, independently of the outer replacement table. -/
-theorem collisionGame_conditionallyEquivalent :
+lemma collisionGame_conditionallyEquivalent :
     Interface.Game.ofPDG (collisionGame scheme q) (collisionGame_isProbDist scheme q)
         (hybrid_visible scheme q) |≡
       (AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme :

@@ -37,7 +37,7 @@ noncomputable def ofFunction {X Y : Type} (D : List X → Prop)
         simp [hh] at hd
       simp [hD.2 hp hn hh, hn]⟩
 
-theorem ofFunction_dom {X Y : Type} (D : List X → Prop)
+lemma ofFunction_dom {X Y : Type} (D : List X → Prop)
     (hD : ¬ D [] ∧ ∀ {p h}, p <+: h → p ≠ [] → D h → D p)
     (f : X → Y) (h : List X) : ((ofFunction D hD f).1 h).Dom ↔ D h := by
   by_cases hd : D h
@@ -45,7 +45,7 @@ theorem ofFunction_dom {X Y : Type} (D : List X → Prop)
     simp [ofFunction, hd, hn]
   · simp [ofFunction, hd]
 
-theorem ofFunction_snoc {X Y : Type} (D : List X → Prop)
+lemma ofFunction_snoc {X Y : Type} (D : List X → Prop)
     (hD : ¬ D [] ∧ ∀ {p h}, p <+: h → p ≠ [] → D h → D p)
     (f : X → Y) (xs : List X) (x : X) :
     (ofFunction D hD f).1 (xs ++ [x]) =
@@ -53,7 +53,7 @@ theorem ofFunction_snoc {X Y : Type} (D : List X → Prop)
   simp [ofFunction]
 
 /-- A fixed function's transcript consists precisely of its pointwise replies. -/
-theorem replies_ofFunction_iff {X Y : Type} (D : List X → Prop)
+lemma replies_ofFunction_iff {X Y : Type} (D : List X → Prop)
     (hD : ¬ D [] ∧ ∀ {p h}, p <+: h → p ≠ [] → D h → D p)
     (f : X → Y) (xs : List X) (ys : List Y) :
     Replies (ofFunction D hD f).1 xs ys ↔

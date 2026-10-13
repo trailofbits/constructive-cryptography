@@ -34,7 +34,7 @@ variable {O J : Type} [Fintype O] [Fintype J] {U V : O → Type} {X Y : J → Ty
 omit [Fintype O] [∀ o, Fintype (U o)] [∀ o, Fintype (V o)] in
 /-- **The realizations of possible choices of a resource** are deterministic resources with
 its domain, replying at the queried interface. -/
-theorem RandomSystem.isResource_realization
+lemma RandomSystem.isResource_realization
     (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
     {R : RandomSystem (Σ j, X j) (Σ j, Y j) (Domain.ofInputs E m hE)}
     (hR : R.RepliesAtQueriedInterface) {g} (hg : R.2.isSubprobabilistic.PossibleChoice g) :
@@ -54,7 +54,7 @@ theorem RandomSystem.isResource_realization
 
 omit [Fintype O] [∀ o, Fintype (U o)] [∀ o, Fintype (V o)] in
 /-- Every resource is the behavior of a PDS of deterministic resources with its domain. -/
-theorem RandomSystem.exists_resource_presentation
+lemma RandomSystem.exists_resource_presentation
     (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
     (R : RandomSystem (Σ j, X j) (Σ j, Y j) (Domain.ofInputs E m hE))
     (hR : R.RepliesAtQueriedInterface) :
@@ -69,7 +69,7 @@ theorem RandomSystem.exists_resource_presentation
 
 omit [Fintype O] [∀ o, Fintype (U o)] [∀ o, Fintype (V o)] in
 /-- The behavior of a PDS of deterministic resources replies at the queried interface. -/
-theorem RandomSystem.ofPDS_repliesAtQueriedInterface
+lemma RandomSystem.ofPDS_repliesAtQueriedInterface
     (Q : Distribution.ProbDist {s : InterfaceSystem J X Y //
       IsDDS s ∧ SystemAlgebra.RepliesAtQueriedInterface s ∧ ∀ h, (s h).Dom ↔ E h}) :
     (RandomSystem.ofPDS Q.1 Q.2 (fun s _ _ _ _ => s.2.2.2 _) :
@@ -97,7 +97,7 @@ noncomputable def attachPDS (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] �
 
 omit [Fintype O] [Fintype J] [∀ o, Fintype (U o)] [∀ o, Fintype (V o)] [∀ j, Fintype (X j)]
   [∀ j, Fintype (Y j)] in
-theorem behaviorMass_attachPDS (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p) {b : ℕ}
+lemma behaviorMass_attachPDS (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p) {b : ℕ}
     (P : Distribution.ProbDist {a : InsideOutsideSystem O J U V X Y // IsDDCFrom E F b a})
     (Q : Distribution.ProbDist {s : InterfaceSystem J X Y //
       IsDDS s ∧ RepliesAtQueriedInterface s ∧ ∀ h, (s h).Dom ↔ E h})
@@ -109,7 +109,7 @@ theorem behaviorMass_attachPDS (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [
 
 omit [Fintype O] [Fintype J] [∀ o, Fintype (U o)] [∀ o, Fintype (V o)] [∀ j, Fintype (X j)]
   [∀ j, Fintype (Y j)] in
-theorem resource_bound {b : ℕ} {a : InsideOutsideSystem O J U V X Y} (ha : IsDDC b a)
+lemma resource_bound {b : ℕ} {a : InsideOutsideSystem O J U V X Y} (ha : IsDDC b a)
     (s : InterfaceSystem J X Y) (us xs ys)
     (tr : Transcript (pair a s) (connectionQueries resourceRoute resourceInput us) xs ys)
     (hd : ¬ (connectionQueries resourceRoute resourceInput us ys).Dom) :
@@ -118,7 +118,7 @@ theorem resource_bound {b : ℕ} {a : InsideOutsideSystem O J U V X Y} (ha : IsD
 
 /-- On presentations, the attachment law is the behavior of the attached PDS, for any valid
 internal bound `c`. -/
-theorem resource_connectionLaw (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
+lemma resource_connectionLaw (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
     {α : RandomSystem (Σ l, twoFam U Y l) (Σ l, twoFam V X l) (Domain.converter E m hE F n hF)}
     {R : RandomSystem (Σ j, X j) (Σ j, Y j) (Domain.ofInputs E m hE)}
     {b c : ℕ} (hc : IsPDCBehavior O J U V X Y E m hE F n hF c α)
@@ -175,7 +175,7 @@ variable (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
   (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
 
 /-- **The attachment of presentations presents the attachment.** -/
-theorem attach_presents (α : PDCBehavior O J U V X Y E m hE F n hF)
+lemma attach_presents (α : PDCBehavior O J U V X Y E m hE F n hF)
     (R : RandomSystem (Σ j, X j) (Σ j, Y j) (Domain.ofInputs E m hE))
     (hR : R.RepliesAtQueriedInterface) {b : ℕ}
     (P : Distribution.ProbDist {a : InsideOutsideSystem O J U V X Y // IsDDCFrom E F b a})
@@ -189,7 +189,7 @@ theorem attach_presents (α : PDCBehavior O J U V X Y E m hE F n hF)
 
 /-- **A completed internal transcript of probability one** gives its outside transcript
 probability one. -/
-theorem attach_mass_eq_one (α : PDCBehavior O J U V X Y E m hE F n hF)
+lemma attach_mass_eq_one (α : PDCBehavior O J U V X Y E m hE F n hF)
     (R : RandomSystem (Σ j, X j) (Σ j, Y j) (Domain.ofInputs E m hE))
     (hR : R.RepliesAtQueriedInterface) (h : List ((Σ o, U o) × (Σ o, V o)))
     (H : List (Two (Σ l, twoFam U Y l) (Σ j, X j) × Two (Σ l, twoFam V X l) (Σ j, Y j)))
@@ -216,7 +216,7 @@ theorem attach_mass_eq_one (α : PDCBehavior O J U V X Y E m hE F n hF)
     exact lower
 
 /-- The attachment replies at the queried interface. -/
-theorem attach_repliesAtQueriedInterface (α : PDCBehavior O J U V X Y E m hE F n hF)
+lemma attach_repliesAtQueriedInterface (α : PDCBehavior O J U V X Y E m hE F n hF)
     (R : RandomSystem (Σ j, X j) (Σ j, Y j) (Domain.ofInputs E m hE))
     (hR : R.RepliesAtQueriedInterface) : (attach hE' hF' α R hR).RepliesAtQueriedInterface := by
   obtain ⟨b, P, hP⟩ := α.2
@@ -230,7 +230,7 @@ theorem attach_repliesAtQueriedInterface (α : PDCBehavior O J U V X Y E m hE F 
   exact hne (s.2.2.1 _ x y (Part.eq_some_iff.mp (replies_snoc.mp hs).2))
 
 /-- **Attaching the identity** leaves a resource unchanged. -/
-theorem attach_id (R : RandomSystem (Σ j, X j) (Σ j, Y j) (Domain.ofInputs E m hE))
+lemma attach_id (R : RandomSystem (Σ j, X j) (Σ j, Y j) (Domain.ofInputs E m hE))
     (hR : R.RepliesAtQueriedInterface) :
     attach hE' hE' (PDCBehavior.id (m := m) (hE := hE) hE') R hR = R := by
   obtain ⟨Q, hQ⟩ := RandomSystem.exists_resource_presentation hE' R hR

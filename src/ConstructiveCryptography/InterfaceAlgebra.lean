@@ -114,18 +114,18 @@ noncomputable def absorb {A B : Interface} (α : A ⟶ B) (D : A.inputDomain.Dis
 
 /-- **Absorbing a serial composition** absorbs its converters in turn:
 `D ∘ (α ≫ β) = (D ∘ α) ∘ β`. -/
-theorem absorb_comp {A B C : Interface} (α : A ⟶ B) (β : B ⟶ C)
+lemma absorb_comp {A B C : Interface} (α : A ⟶ B) (β : B ⟶ C)
     (D : A.inputDomain.DistinguisherBehavior) : absorb (α ≫ β) D = absorb β (absorb α D) :=
   D.absorb_comp C.nonempty_prefix A.nonempty_prefix B.nonempty_prefix α β
 
 /-- Absorbing a converter into a distinguisher gives a distinguisher. -/
-theorem distinguishers_attach {A B : Interface} (α : A ⟶ B) {d : Resource A → ℝ}
+lemma distinguishers_attach {A B : Interface} (α : A ⟶ B) {d : Resource A → ℝ}
     (hd : d ∈ distinguishers A) : (fun R : Resource B => d (α • R)) ∈ distinguishers B := by
   obtain ⟨D, rfl⟩ := hd
   exact ⟨absorb α D, rfl⟩
 
 /-- Running a fixed resource beside the distinguished one gives a distinguisher. -/
-theorem distinguishers_parallel_left {A B : Interface} (T : Resource B)
+lemma distinguishers_parallel_left {A B : Interface} (T : Resource B)
     {d : Resource (tensor A B) → ℝ} (hd : d ∈ distinguishers (tensor A B)) :
     (fun R : Resource A => d (parallel R T)) ∈ distinguishers A := by
   obtain ⟨D, rfl⟩ := hd
@@ -140,7 +140,7 @@ theorem distinguishers_parallel_left {A B : Interface} (T : Resource B)
   rw [parallel_ofPDS]
   exact (hQ Pr _ _ (fun _ => rfl) (fun _ => rfl)).symm
 
-theorem distinguishers_parallel_right {A B : Interface} (T : Resource A)
+lemma distinguishers_parallel_right {A B : Interface} (T : Resource A)
     {d : Resource (tensor A B) → ℝ} (hd : d ∈ distinguishers (tensor A B)) :
     (fun S : Resource B => d (parallel T S)) ∈ distinguishers B := by
   have h := distinguishers_parallel_left T (distinguishers_attach (swap A B).hom hd)
@@ -155,15 +155,15 @@ noncomputable instance compatibleDistinguisherClass :
     (fun T _ hd => distinguishers_parallel_left T hd)
     (fun T _ hd => distinguishers_parallel_right T hd)
 
-theorem cc_parallel_eq {A B : Interface} (R : Resource A) (S : Resource B) :
+lemma cc_parallel_eq {A B : Interface} (R : Resource A) (S : Resource B) :
     ConstructiveCryptography.CryptographicAlgebra.parallel R S =
       parallel R S := rfl
 
-theorem cc_dummy_eq :
+lemma cc_dummy_eq :
     ConstructiveCryptography.CryptographicAlgebra.dummy = dummy := rfl
 
 /-- The distance of two resources is the transcript distance of their random systems. -/
-theorem cc_distance_eq {A : Interface} (R S : Resource A) :
+lemma cc_distance_eq {A : Interface} (R S : Resource A) :
     ConstructiveCryptography.CryptographicAlgebra.distance R S =
       R.1.transcriptDistance S.1 := by
   rw [RandomSystem.transcriptDistance_eq_iSup_behavior R S]
@@ -187,7 +187,7 @@ noncomputable def distinguisherAdvantage
 
 /-- The advantage of a distinguisher between two attachments is the advantage of the
 distinguisher with the converter absorbed. -/
-theorem distinguisherAdvantage_attach
+lemma distinguisherAdvantage_attach
     (admissible : ∀ A : Interface, Set A.inputDomain.DistinguisherBehavior) {A B : Interface}
     (α : A ⟶ B) (D : A.inputDomain.DistinguisherBehavior) (R S : Resource B) :
     (distinguisherAdvantage admissible).advantage A D (α • R) (α • S) =
@@ -197,7 +197,7 @@ theorem distinguisherAdvantage_attach
 /-- **A concrete substitution through a converter**: its loss is the loss at the distinguisher
 with the converter absorbed (Banfi 2023, §2.3.3, printed p. 16: `ε'(D) := ε(D ∘ ρ)`), when the
 admitted distinguishers are closed under absorbing converters. -/
-theorem substitutesWithin_attach
+lemma substitutesWithin_attach
     (admissible : ∀ A : Interface, Set A.inputDomain.DistinguisherBehavior)
     (closed : ∀ {A B : Interface} (α : A ⟶ B) (D : A.inputDomain.DistinguisherBehavior),
       D ∈ admissible A → absorb α D ∈ admissible B)
@@ -220,7 +220,7 @@ class AdmissibleDistinguishers where
 
 /-- **A substitution through a converter**, for the admitted distinguishers: its loss is the loss
 at the distinguisher with the converter absorbed. -/
-theorem AdmissibleDistinguishers.substitutesWithin_attach [AdmissibleDistinguishers]
+lemma AdmissibleDistinguishers.substitutesWithin_attach [AdmissibleDistinguishers]
     {A B : Interface} (α : A ⟶ B) {error : B.inputDomain.DistinguisherBehavior → ENNReal}
     {R S : Resource B}
     (h : (distinguisherAdvantage AdmissibleDistinguishers.admissible).SubstitutesWithin error R S) :
@@ -232,7 +232,7 @@ theorem AdmissibleDistinguishers.substitutesWithin_attach [AdmissibleDistinguish
 `S` for `R` inside the context `ρ` loses the error at the distinguisher with `ρ` absorbed. The
 context may be a serial composition; its attachments `X` and `Y` are written converter by
 converter. -/
-theorem AdmissibleDistinguishers.substitutesWithin_context [AdmissibleDistinguishers]
+lemma AdmissibleDistinguishers.substitutesWithin_context [AdmissibleDistinguishers]
     {A B : Interface} (ρ : A ⟶ B) {error : B.inputDomain.DistinguisherBehavior → ENNReal}
     {R S : Resource B}
     (h : (distinguisherAdvantage AdmissibleDistinguishers.admissible).SubstitutesWithin error R S)
@@ -245,7 +245,7 @@ theorem AdmissibleDistinguishers.substitutesWithin_context [AdmissibleDistinguis
   exact AdmissibleDistinguishers.substitutesWithin_attach ρ h
 
 /-- The advantage of a distinguisher is at most the distance. -/
-theorem distinguisherAdvantage_le_distance
+lemma distinguisherAdvantage_le_distance
     (admissible : ∀ A : Interface, Set A.inputDomain.DistinguisherBehavior) {A : Interface}
     (D : A.inputDomain.DistinguisherBehavior) (R S : Resource A) :
     (distinguisherAdvantage admissible).advantage A D R S ≤

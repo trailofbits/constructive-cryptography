@@ -46,7 +46,7 @@ noncomputable def epsilonRelaxation {A : C} (error : ENNReal)
     (CompatiblePseudoMetric.fibreMetric A) error
 
 @[simp]
-theorem mem_epsilonRelaxation_iff {A : C} {error : ENNReal}
+lemma mem_epsilonRelaxation_iff {A : C} {error : ENNReal}
     {source : Specification (Phi A)} {resource : Phi A} :
     resource ∈ epsilonRelaxation error source ↔
       ∃ center ∈ source,
@@ -55,14 +55,14 @@ theorem mem_epsilonRelaxation_iff {A : C} {error : ENNReal}
 
 /-- Every specification is contained in each of its scalar-error
 relaxations. -/
-theorem subset_epsilonRelaxation {A : C} (error : ENNReal)
+lemma subset_epsilonRelaxation {A : C} (error : ENNReal)
     (source : Specification (Phi A)) :
     source ⊆ epsilonRelaxation error source := by
   -- Extensivity is part of the relaxation object.
   exact (epsilonRelaxation error).subset_apply source
 
 /-- Scalar-error relaxation is monotone in the underlying specification. -/
-theorem epsilonRelaxation_mono {A : C} {error : ENNReal}
+lemma epsilonRelaxation_mono {A : C} {error : ENNReal}
     {source target : Specification (Phi A)} (included : source ⊆ target) :
     epsilonRelaxation error source ⊆
       epsilonRelaxation error target := by
@@ -124,7 +124,7 @@ theorem parallel_epsilonRelaxation_left_subset {A B : C}
 
 /-- Relaxing the right component before ordered parallel is contained in
 relaxing the resulting parallel specification. -/
-theorem parallel_epsilonRelaxation_right_subset {A B : C}
+lemma parallel_epsilonRelaxation_right_subset {A B : C}
     (error : ENNReal) (context : Specification (Phi A))
     (source : Specification (Phi B)) :
     parallel context
@@ -143,7 +143,7 @@ theorem parallel_epsilonRelaxation_right_subset {A B : C}
 
 /-- The scalar-error relaxation family is compatible with converter
 attachment. -/
-theorem epsilonRelaxation_compatible (error : ENNReal) :
+lemma epsilonRelaxation_compatible (error : ENNReal) :
     Relaxation.Compatible (Phi := Phi)
       (fun A => epsilonRelaxation (A := A) error) := by
   intro A B converter source
@@ -152,7 +152,7 @@ theorem epsilonRelaxation_compatible (error : ENNReal) :
 
 /-- The scalar-error relaxation family is compatible with ordered parallel
 composition. -/
-theorem epsilonRelaxation_parallelCompatible (error : ENNReal) :
+lemma epsilonRelaxation_parallelCompatible (error : ENNReal) :
     Relaxation.ParallelCompatible (Phi := Phi)
       (fun A => epsilonRelaxation (A := A) error) := by
   intro A B left right
@@ -162,7 +162,7 @@ theorem epsilonRelaxation_parallelCompatible (error : ENNReal) :
 
 /-- Exact construction into a scalar-error relaxation is equivalent to
 approximate construction in the selected fibre distance. -/
-theorem constructs_epsilonRelaxation_iff {A B : C}
+lemma constructs_epsilonRelaxation_iff {A B : C}
     {converter : A ⟶ B} {source : Specification (Phi B)}
     {target : Specification (Phi A)} {error : ENNReal} :
     Constructs converter source
@@ -201,7 +201,7 @@ theorem Constructs.epsilonRelaxation {A B : C}
 
 /-- Singleton exact construction into a scalar-error relaxation is exactly a
 distance bound between the attached real resource and the ideal resource. -/
-theorem constructs_singleton_epsilonRelaxation_iff {A B : C}
+lemma constructs_singleton_epsilonRelaxation_iff {A B : C}
     {converter : A ⟶ B} {real : Phi B} {ideal : Phi A}
     {error : ENNReal} :
     Constructs converter ({real} : Specification (Phi B))
@@ -219,7 +219,7 @@ theorem constructs_singleton_epsilonRelaxation_iff {A B : C}
 Maurer--Renner 2016, Lemma 1 (printed p. 11): “This construction notion is
 composable.”  Jost--Maurer 2020, Corollary 1(1) (printed p. 11) states the
 serial construction with the two relaxation budgets added: “The composition
-theorem with ϵ-relaxations then follows directly from these compatibility
+lemma with ϵ-relaxations then follows directly from these compatibility
 results.”  Lean specializes its transformed budgets to constant scalar bounds
 under non-expansion. -/
 theorem Constructs.serial_epsilonRelaxation {A B D : C}

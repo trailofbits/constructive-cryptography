@@ -31,14 +31,14 @@ namespace Probability
 
 /-- `a⁺ * a⁻ = 0`: at most one of the two parts of a real number is nonzero.
 This is the multiplicative face of `posPart_inf_negPart_eq_zero`. -/
-theorem posPart_mul_negPart (a : ℝ) : a⁺ * a⁻ = 0 := by
+lemma posPart_mul_negPart (a : ℝ) : a⁺ * a⁻ = 0 := by
   rcases le_total a 0 with h | h
   · rw [posPart_eq_zero.mpr h, zero_mul]
   · rw [negPart_eq_zero.mpr h, mul_zero]
 
 /-- `a - a ⊓ b = (a - b)⁺` in a lattice-ordered additive group: the amount by
 which `a` exceeds `b` is exactly what the meet discards. -/
-theorem sub_inf_eq_posPart_sub {α : Type*} [Lattice α] [AddCommGroup α]
+lemma sub_inf_eq_posPart_sub {α : Type*} [Lattice α] [AddCommGroup α]
     [AddLeftMono α] (a b : α) : a - a ⊓ b = (a - b)⁺ := by
   rw [posPart_def, sub_eq_add_neg, neg_inf, add_sup, add_neg_cancel,
     ← sub_eq_add_neg, sup_comm]
@@ -46,7 +46,7 @@ theorem sub_inf_eq_posPart_sub {α : Type*} [Lattice α] [AddCommGroup α]
 /-- `a ⊓ b + (a - b)⁺ = a`: the meet plus the one-sided excess rebuilds `a`.
 This is the identity behind the diagonal of an optimal coupling, where the
 meet is the shared mass and the excess is what must be transported. -/
-theorem inf_add_posPart_sub {α : Type*} [Lattice α] [AddCommGroup α]
+lemma inf_add_posPart_sub {α : Type*} [Lattice α] [AddCommGroup α]
     [AddLeftMono α] (a b : α) : a ⊓ b + (a - b)⁺ = a := by
   rw [← sub_inf_eq_posPart_sub, add_sub_cancel]
 
@@ -58,35 +58,35 @@ variable {A : Type*}
 
 /-- `Distribution.NonNeg` is the `Finsupp` order relation `0 ≤ X`.  Every mathlib fact
 about the ordered group `A →₀ ℝ` reaches a `NonNeg` hypothesis through this. -/
-theorem nonNeg_iff_zero_le {X : Distribution A} : X.NonNeg ↔ 0 ≤ X := by
+lemma nonNeg_iff_zero_le {X : Distribution A} : X.NonNeg ↔ 0 ≤ X := by
   simp [NonNeg, Finsupp.le_def]
 
 /-! ## Positive and negative parts -/
 
 /-- Pointwise formula for the positive part: `X⁺(a) = max(X(a), 0)`. -/
 @[simp]
-theorem posPart_apply (X : Distribution A) (a : A) : X⁺ a = max (X a) 0 := by
+lemma posPart_apply (X : Distribution A) (a : A) : X⁺ a = max (X a) 0 := by
   simp [posPart_def, Finsupp.sup_apply]
 
 /-- Pointwise formula for the negative part: `X⁻(a) = max(-X(a), 0)`. -/
 @[simp]
-theorem negPart_apply (X : Distribution A) (a : A) : X⁻ a = max (-X a) 0 := by
+lemma negPart_apply (X : Distribution A) (a : A) : X⁻ a = max (-X a) 0 := by
   simp [negPart_def, Finsupp.sup_apply]
 
 /-- The positive part is an honest (nonnegative) distribution: this is the
 lift itself — a signed `Distribution` produces a `NonNeg` one. -/
-theorem nonNeg_posPart (X : Distribution A) : (X⁺).NonNeg := fun a => by
+lemma nonNeg_posPart (X : Distribution A) : (X⁺).NonNeg := fun a => by
   rw [posPart_apply]; exact le_max_right _ _
 
 /-- The two parts never charge the same point: `X⁺(a)·X⁻(a) = 0`. -/
-theorem posPart_mul_negPart_apply (X : Distribution A) (a : A) : X⁺ a * X⁻ a = 0 := by
+lemma posPart_mul_negPart_apply (X : Distribution A) (a : A) : X⁺ a * X⁻ a = 0 := by
   simpa using posPart_mul_negPart (X a)
 
 /-! ### The split and `statDist` -/
 
 /-- **`statDist` is the weight of a positive part**: `δ(X, Y) = |(X - Y)⁺|`.
 No layer hypothesis and no `Fintype` assumption are required. -/
-theorem statDist_eq_weight_posPart (X Y : Distribution A) :
+lemma statDist_eq_weight_posPart (X Y : Distribution A) :
     statDist X Y = ((X - Y)⁺).weight := by
   classical
   have hfun : ∀ a : A, ((X - Y)⁺) a = max (X a - Y a) 0 := fun a => by
@@ -103,7 +103,7 @@ theorem statDist_eq_weight_posPart (X Y : Distribution A) :
     exact ha
 
 /-- A nonnegative distribution of zero total weight is the zero distribution. -/
-theorem eq_zero_of_nonNeg_of_weight_eq_zero {X : Distribution A} (hX : X.NonNeg)
+lemma eq_zero_of_nonNeg_of_weight_eq_zero {X : Distribution A} (hX : X.NonNeg)
     (hw : X.weight = 0) : X = 0 := by
   refine Finsupp.ext fun a => ?_
   rw [Finsupp.coe_zero, Pi.zero_apply]
@@ -118,7 +118,7 @@ theorem eq_zero_of_nonNeg_of_weight_eq_zero {X : Distribution A} (hX : X.NonNeg)
 /-! ## Normalization -/
 
 /-- Event mass is homogeneous: `(c · X)(P) = c · X(P)`.  Signed layer. -/
-theorem mass_smul (c : ℝ) (X : Distribution A) (P : A → Prop) :
+lemma mass_smul (c : ℝ) (X : Distribution A) (P : A → Prop) :
     (c • X).mass P = c * X.mass P := by
   classical
   unfold mass
@@ -135,7 +135,7 @@ def normalize (X : Distribution A) : Distribution A := X.weight⁻¹ • X
 
 /-- Pointwise value of the normalization. -/
 @[simp]
-theorem normalize_apply (X : Distribution A) (a : A) :
+lemma normalize_apply (X : Distribution A) (a : A) :
     X.normalize a = X.weight⁻¹ * X a := by
   simp [normalize]
 
@@ -143,11 +143,11 @@ theorem normalize_apply (X : Distribution A) (a : A) :
 
 /-- Pointwise formula for the meet: `(X ⊓ Y)(a) = min(X(a), Y(a))`. -/
 @[simp]
-theorem inf_apply (X Y : Distribution A) (a : A) : (X ⊓ Y) a = min (X a) (Y a) := by
+lemma inf_apply (X Y : Distribution A) (a : A) : (X ⊓ Y) a = min (X a) (Y a) := by
   rw [Finsupp.inf_apply]
 
 /-- A point mass with nonnegative weight is honest. -/
-theorem single_nonNeg {c : ℝ} (hc : 0 ≤ c) (a : A) :
+lemma single_nonNeg {c : ℝ} (hc : 0 ≤ c) (a : A) :
     NonNeg (Finsupp.single a c : Distribution A) := by
   classical
   intro a'
@@ -157,7 +157,7 @@ theorem single_nonNeg {c : ℝ} (hc : 0 ≤ c) (a : A) :
   · exact le_rfl
 
 /-- Weight is subtractive. -/
-theorem weight_sub (X Y : Distribution A) :
+lemma weight_sub (X Y : Distribution A) :
     (X - Y).weight = X.weight - Y.weight := by
   have h := weight_add (X - Y) Y
   rw [sub_add_cancel] at h

@@ -84,7 +84,7 @@ noncomputable def Interface.Converter.ofPreservingProgram {A B : Interface} (s :
 /-- An interface admitting the histories with at most `q o` queries at each label, beside `B`,
 admits the histories with at most `q o` queries at each left label and at most `k` queries in
 all, when `B` admits every nonempty history of at most `k`. -/
-theorem Interface.perPort_tensor_admits {A B : Interface} (q : A.I → ℕ)
+lemma Interface.perPort_tensor_admits {A B : Interface} (q : A.I → ℕ)
     (hA : ∀ xs, xs ≠ [] → (∀ o, (SystemAlgebra.restrict o xs).length ≤ q o) → A.domain xs)
     {k : ℕ} (hB : ∀ xs, xs ≠ [] → xs.length ≤ k → B.domain xs) :
     ∀ ys, ys ≠ [] → ys.length ≤ k → (∀ o, (SystemAlgebra.restrict (Sum.inl o) ys).length ≤ q o) →
@@ -100,7 +100,7 @@ theorem Interface.perPort_tensor_admits {A B : Interface} (q : A.I → ℕ)
 
 /-- **Attaching the converter of a program** to the resource of a PDS: a transcript has the
 mass of the resources on which the inlined program, on the outside domain, gives it. -/
-theorem Interface.ofDDC_ofProgramOn_smul_ofPDS {A B : Interface} (s : S)
+lemma Interface.ofDDC_ofProgramOn_smul_ofPDS {A B : Interface} (s : S)
     (P : Program S A.I B.I A.X A.Y B.X B.Y) {b : ℕ} (hb : P.Bounded b)
     (hα : IsDDCFrom B.domain A.domain b (DDC.ofProgramOn s P A.domain))
     (Q : Probability.Distribution.ProbDist {r : InterfaceSystem B.I B.X B.Y //
@@ -118,7 +118,7 @@ theorem Interface.ofDDC_ofProgramOn_smul_ofPDS {A B : Interface} (s : S)
 
 /-- **Attaching the converter of a program to an automaton** gives the combined automaton, its
 initial state paired with the program's. -/
-theorem Interface.ofDDC_ofProgramOn_smul_ofAutomaton {A B : Interface} {R : Type} (s : S)
+lemma Interface.ofDDC_ofProgramOn_smul_ofAutomaton {A B : Interface} {R : Type} (s : S)
     (P : Program S A.I B.I A.X A.Y B.X B.Y) {b : ℕ} (hb : P.Bounded b)
     (hα : IsDDCFrom B.domain A.domain b (DDC.ofProgramOn s P A.domain))
     (stepR : R → (j : B.I) → B.X j → R × B.Y j) (initial : Probability.Distribution.ProbDist R) :
@@ -139,7 +139,7 @@ theorem Interface.ofDDC_ofProgramOn_smul_ofAutomaton {A B : Interface} {R : Type
   rw [← Program.trim_apply_ofProgramOn s hb A.domain A.nonempty_prefix.2,
     Program.trim_apply_ofProgramOn_automaton stepR hb s r B.nonempty_prefix A.nonempty_prefix hα]
 
-theorem Interface.Converter.ofProgram_smul_ofAutomaton {A B : Interface} {R : Type} (s : S)
+lemma Interface.Converter.ofProgram_smul_ofAutomaton {A B : Interface} {R : Type} (s : S)
     (P : Program S A.I B.I A.X A.Y B.X B.Y) {b : ℕ} (hb : P.Bounded b)
     (hB : ∀ xs, xs ≠ [] → xs.length ≤ b * A.bound → B.domain xs)
     (stepR : R → (j : B.I) → B.X j → R × B.Y j) (initial : Probability.Distribution.ProbDist R) :
@@ -149,7 +149,7 @@ theorem Interface.Converter.ofProgram_smul_ofAutomaton {A B : Interface} {R : Ty
           Probability.Distribution.fTransform_isProbDist _ initial.2⟩ :=
   Interface.ofDDC_ofProgramOn_smul_ofAutomaton s P hb _ stepR initial
 
-theorem Interface.Converter.ofPreservingProgram_smul_ofAutomaton {A B : Interface} {R : Type}
+lemma Interface.Converter.ofPreservingProgram_smul_ofAutomaton {A B : Interface} {R : Type}
     (s : S) (P : Program S A.I B.I A.X A.Y B.X B.Y) {b : ℕ} (hb : P.Bounded b)
     (ι : A.I → Option B.I) (hι : P.PortPreserving ι) (q : A.I → ℕ)
     (hA : ∀ xs, A.domain xs → ∀ o, (SystemAlgebra.restrict o xs).length ≤ q o)

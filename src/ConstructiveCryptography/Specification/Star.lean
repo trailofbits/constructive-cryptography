@@ -30,7 +30,7 @@ def star (converters : Submonoid C) (source : Specification X) : Specification X
 /-- The identity converter admits each original resource.
 
 MR16, Equation (1) (printed p. 8): “R ⊆ R* = (R*)*”. -/
-theorem subset_star (converters : Submonoid C) (source : Specification X) :
+lemma subset_star (converters : Submonoid C) (source : Specification X) :
     source ⊆ star converters source := by
   intro resource admitted
   exact ⟨1, converters.one_mem, resource, admitted, one_smul C resource⟩
@@ -40,7 +40,7 @@ theorem subset_star (converters : Submonoid C) (source : Specification X) :
 MR16, Equation (1) (printed p. 8): “R ⊆ R* = (R*)*”.
 Jost, Section 2.2.5 (printed pp. 23–24), uses a specified converter class;
 the submonoid here supplies its identity and composition closure. -/
-theorem star_idem (converters : Submonoid C) (source : Specification X) :
+lemma star_idem (converters : Submonoid C) (source : Specification X) :
     star converters (star converters source) = star converters source := by
   apply Set.Subset.antisymm
   · -- Replace two admitted converters by their admitted product.
@@ -61,7 +61,7 @@ def starClosure (converters : Submonoid C) : ClosureOperator (Specification X) :
 
 MR16, Section 3.3 (printed p. 8): “(αR)β = α(Rβ)”.
 The commutation equation is required only for the admitted converters. -/
-theorem image_star_subset {f : X → X} {converters : Submonoid C}
+lemma image_star_subset {f : X → X} {converters : Submonoid C}
     (commutes : ∀ converter ∈ converters, ∀ resource,
       f (converter • resource) = converter • f resource)
     (source : Specification X) :

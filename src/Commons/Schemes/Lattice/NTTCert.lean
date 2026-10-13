@@ -56,7 +56,7 @@ def applyCoeffTransform (backend : LatticeCrypto.PolyBackend Coeff)
   backend.build (transform (backend.coeff input))
 
 /-- Lift a coefficient-level roundtrip through a polynomial backend. -/
-theorem applyCoeffTransform_comp
+lemma applyCoeffTransform_comp
     (forward inverse : (Fin backend.degree → Coeff) → (Fin backend.degree → Coeff))
     (hroundtrip : ∀ input, inverse (forward input) = input)
     (input : backend.Poly) :
@@ -70,7 +70,7 @@ theorem applyCoeffTransform_comp
 
 /-- Lift additivity of a coefficient transformation through a backend whose
 addition is pointwise on coefficients. -/
-theorem applyCoeffTransform_add
+lemma applyCoeffTransform_add
     (transform : (Fin backend.degree → Coeff) → (Fin backend.degree → Coeff))
     [Add Coeff]
     [Add backend.Poly]
@@ -92,7 +92,7 @@ theorem applyCoeffTransform_add
   simp only [backend.coeff_build, Pi.add_apply]
 
 /-- Lift subtraction preservation through a pointwise backend. -/
-theorem applyCoeffTransform_sub
+lemma applyCoeffTransform_sub
     (transform : (Fin backend.degree → Coeff) → (Fin backend.degree → Coeff))
     [Sub Coeff]
     [Sub backend.Poly]
@@ -114,7 +114,7 @@ theorem applyCoeffTransform_sub
   simp only [backend.coeff_build, Pi.sub_apply]
 
 /-- Lift zero preservation through a pointwise backend. -/
-theorem applyCoeffTransform_zero
+lemma applyCoeffTransform_zero
     (transform : (Fin backend.degree → Coeff) → (Fin backend.degree → Coeff))
     [Zero Coeff]
     [Zero backend.Poly]
@@ -155,7 +155,7 @@ def blockLayout (groups len : Nat) :
         ((finTwoEquiv.symm.prodCongr (Equiv.refl (Fin len))).trans finProdFinEquiv) |>.trans
           finProdFinEquiv))
 
-@[simp] theorem blockLayout_left_val (groups len : Nat)
+@[simp] lemma blockLayout_left_val (groups len : Nat)
     (group : Fin groups) (offset : Fin len) :
     ((blockLayout groups len).equiv ((group, offset), false)).val =
       group.val * (2 * len) + offset.val := by
@@ -163,7 +163,7 @@ def blockLayout (groups len : Nat) :
     ac_rfl
   simpa [blockLayout, finProdFinEquiv, finTwoEquiv] using h
 
-@[simp] theorem blockLayout_right_val (groups len : Nat)
+@[simp] lemma blockLayout_right_val (groups len : Nat)
     (group : Fin groups) (offset : Fin len) :
     ((blockLayout groups len).equiv ((group, offset), true)).val =
       group.val * (2 * len) + len + offset.val := by
@@ -194,7 +194,7 @@ def inverseButterflyRev (zRev x y : R) : Bool → R
   | false => x + y
   | true => zRev * (y - x)
 
-theorem inverseButterflyRev_eq (zRev x y : R) :
+lemma inverseButterflyRev_eq (zRev x y : R) :
     inverseButterflyRev zRev x y = inverseButterfly (-zRev) x y := by
   funext side
   cases side <;> simp only [inverseButterflyRev, inverseButterfly]
@@ -227,7 +227,7 @@ def inverseStageRev {Pair : Type v} {Coord : Type w}
     (input (layout.equiv (pairSide.1, false)))
     (input (layout.equiv (pairSide.1, true))) pairSide.2
 
-theorem inverseStageRev_eq {Pair : Type v} {Coord : Type w}
+lemma inverseStageRev_eq {Pair : Type v} {Coord : Type w}
     (layout : ButterflyLayout Pair Coord) (zRev : Pair → R) :
     inverseStageRev layout zRev = inverseStage layout (fun pair => -zRev pair) := by
   funext input coord
@@ -240,7 +240,7 @@ def scaleCoeffs {Coord : Type w} (c : R) (input : Coord → R) : Coord → R :=
 
 /-- A matching inverse butterfly cancels a forward butterfly up to the factor
 `2` introduced by the unnormalised sum/difference convention. -/
-theorem inverseButterfly_forwardButterfly
+lemma inverseButterfly_forwardButterfly
     (z zInv u v : R) (hz : zInv * z = 1) :
     inverseButterfly zInv (forwardButterfly z u v false)
         (forwardButterfly z u v true) =
@@ -258,7 +258,7 @@ theorem inverseButterfly_forwardButterfly
 /-- Matching inverse and forward stages cancel pointwise up to multiplication
 by `2`.  The only concrete algebraic obligation is the per-pair twiddle inverse
 law; all schedule coverage and non-overlap follows from `layout.equiv`. -/
-theorem inverseStage_forwardStage
+lemma inverseStage_forwardStage
     {Pair : Type v} {Coord : Type w} (layout : ButterflyLayout Pair Coord)
     (z zInv : Pair → R) (hz : ∀ pair, zInv pair * z pair = 1)
     (input : Coord → R) :
@@ -286,7 +286,7 @@ theorem inverseStage_forwardStage
       _ = 2 * input (layout.equiv (pair, true)) := by rw [hz]; ring
 
 /-- A stage commutes with pointwise scalar multiplication. -/
-theorem inverseStage_scaleCoeffs
+lemma inverseStage_scaleCoeffs
     {Pair : Type v} {Coord : Type w} (layout : ButterflyLayout Pair Coord)
     (zInv : Pair → R) (c : R) (input : Coord → R) :
     inverseStage layout zInv (scaleCoeffs c input) =
@@ -299,7 +299,7 @@ theorem inverseStage_scaleCoeffs
   <;> ring
 
 /-- A forward butterfly stage is additive. -/
-theorem forwardStage_add
+lemma forwardStage_add
     {Pair : Type v} {Coord : Type w} (layout : ButterflyLayout Pair Coord)
     (z : Pair → R) (left right : Coord → R) :
     forwardStage layout z (left + right) =
@@ -312,7 +312,7 @@ theorem forwardStage_add
   <;> ring
 
 /-- A forward butterfly stage preserves subtraction. -/
-theorem forwardStage_sub
+lemma forwardStage_sub
     {Pair : Type v} {Coord : Type w} (layout : ButterflyLayout Pair Coord)
     (z : Pair → R) (left right : Coord → R) :
     forwardStage layout z (left - right) =
@@ -325,7 +325,7 @@ theorem forwardStage_sub
   <;> ring
 
 /-- A forward butterfly stage preserves zero. -/
-theorem forwardStage_zero
+lemma forwardStage_zero
     {Pair : Type v} {Coord : Type w} (layout : ButterflyLayout Pair Coord)
     (z : Pair → R) :
     forwardStage layout z 0 = 0 := by
@@ -405,7 +405,7 @@ def stageScalar {Coord : Type w} : List (ScaledStage R Coord) → R
 
 /-- A reverse sequence of certified inverse stages cancels its forward stage
 sequence, accumulating only the product of the per-stage scale factors. -/
-theorem inverseStages_forwardStages {Coord : Type w}
+lemma inverseStages_forwardStages {Coord : Type w}
     (stages : List (ScaledStage R Coord)) (input : Coord → R) :
     inverseStages stages (forwardStages stages input) =
       scaleCoeffs (stageScalar stages) input := by
@@ -423,7 +423,7 @@ theorem inverseStages_forwardStages {Coord : Type w}
 /-- Normalize the accumulated stage factor.  Concrete NTT developments use
 this with their final `nInv` constant, leaving only the small closed identity
 `nInv * stageScalar stages = 1`. -/
-theorem scale_inverseStages_forwardStages {Coord : Type w}
+lemma scale_inverseStages_forwardStages {Coord : Type w}
     (stages : List (ScaledStage R Coord)) (nInv : R)
     (hnorm : nInv * stageScalar stages = 1) (input : Coord → R) :
     scaleCoeffs nInv (inverseStages stages (forwardStages stages input)) = input := by
@@ -433,7 +433,7 @@ theorem scale_inverseStages_forwardStages {Coord : Type w}
   rw [← mul_assoc, hnorm, one_mul]
 
 /-- A sequence of certified forward stages is additive. -/
-theorem forwardStages_add {Coord : Type w} (stages : List (ScaledStage R Coord))
+lemma forwardStages_add {Coord : Type w} (stages : List (ScaledStage R Coord))
     (left right : Coord → R) :
     forwardStages stages (left + right) =
       forwardStages stages left + forwardStages stages right := by
@@ -444,7 +444,7 @@ theorem forwardStages_add {Coord : Type w} (stages : List (ScaledStage R Coord))
       rw [stage.forward_add, ih]
 
 /-- A sequence of certified forward stages preserves subtraction. -/
-theorem forwardStages_sub {Coord : Type w} (stages : List (ScaledStage R Coord))
+lemma forwardStages_sub {Coord : Type w} (stages : List (ScaledStage R Coord))
     (left right : Coord → R) :
     forwardStages stages (left - right) =
       forwardStages stages left - forwardStages stages right := by
@@ -455,7 +455,7 @@ theorem forwardStages_sub {Coord : Type w} (stages : List (ScaledStage R Coord))
       rw [stage.forward_sub, ih]
 
 /-- A sequence of certified forward stages preserves zero. -/
-theorem forwardStages_zero {Coord : Type w} (stages : List (ScaledStage R Coord)) :
+lemma forwardStages_zero {Coord : Type w} (stages : List (ScaledStage R Coord)) :
     forwardStages stages 0 = 0 := by
   induction stages with
   | nil => rfl
@@ -483,10 +483,10 @@ def inverseStagesVec {n : Nat} : List (ScaledStage R (Fin n)) → Vector R n →
 
 omit [CommRing R] in
 /-- A vector built from a function reads back as the function. -/
-theorem get_ofFn {n : Nat} (f : Fin n → R) : (Vector.ofFn f).get = f :=
+lemma get_ofFn {n : Nat} (f : Fin n → R) : (Vector.ofFn f).get = f :=
   funext fun i => by simp [Vector.get, Vector.ofFn]; rfl
 
-theorem forwardStagesVec_get {n : Nat} (stages : List (ScaledStage R (Fin n))) (v : Vector R n) :
+lemma forwardStagesVec_get {n : Nat} (stages : List (ScaledStage R (Fin n))) (v : Vector R n) :
     (forwardStagesVec stages v).get = forwardStages stages v.get := by
   induction stages generalizing v with
   | nil => rfl
@@ -494,7 +494,7 @@ theorem forwardStagesVec_get {n : Nat} (stages : List (ScaledStage R (Fin n))) (
       simp only [forwardStagesVec, forwardStages]
       rw [ih, get_ofFn]
 
-theorem inverseStagesVec_get {n : Nat} (stages : List (ScaledStage R (Fin n))) (v : Vector R n) :
+lemma inverseStagesVec_get {n : Nat} (stages : List (ScaledStage R (Fin n))) (v : Vector R n) :
     (inverseStagesVec stages v).get = inverseStages stages v.get := by
   induction stages with
   | nil => rfl
@@ -522,7 +522,7 @@ def coeffAt {N : ℕ} (a : Fin N → R) (i : ℕ) : R := if h : i < N then a ⟨
 def segmentEval {N : ℕ} (a : Fin N → R) (start L : ℕ) (ω : S) : S :=
   ∑ j ∈ range L, algebraMap R S (coeffAt a (start + j)) * ω ^ j
 
-theorem segmentEval_double {N : ℕ} (a : Fin N → R) (start len : ℕ) (ω : S) :
+lemma segmentEval_double {N : ℕ} (a : Fin N → R) (start len : ℕ) (ω : S) :
     segmentEval a start (2 * len) ω =
       segmentEval a start len ω + ω ^ len * segmentEval a (start + len) len ω := by
   unfold segmentEval
@@ -535,7 +535,7 @@ theorem segmentEval_double {N : ℕ} (a : Fin N → R) (start len : ℕ) (ω : S
 /-- **A butterfly preserves evaluations**: if the halves of a segment of length `2 len` become
 `u + z v` and `u - z v`, the left half evaluates like the segment at every `ω` with
 `ω ^ len = z`, and the right half at every `ω` with `ω ^ len = -z`. -/
-theorem segmentEval_butterfly {N M : ℕ} (a : Fin N → R) (b : Fin M → R) (start len : ℕ) (z : R)
+lemma segmentEval_butterfly {N M : ℕ} (a : Fin N → R) (b : Fin M → R) (start len : ℕ) (z : R)
     (hleft : ∀ j < len, coeffAt b (start + j) =
       coeffAt a (start + j) + z * coeffAt a (start + len + j))
     (hright : ∀ j < len, coeffAt b (start + len + j) =
@@ -562,7 +562,7 @@ theorem segmentEval_butterfly {N M : ℕ} (a : Fin N → R) (b : Fin M → R) (s
 
 /-- The left and right outputs of a forward stage on a layout whose pairs sit at
 `g · 2 len + j` and `g · 2 len + len + j`. -/
-theorem forwardStage_coeffAt {G len N : ℕ} (layout : ButterflyLayout (Fin G × Fin len) (Fin N))
+lemma forwardStage_coeffAt {G len N : ℕ} (layout : ButterflyLayout (Fin G × Fin len) (Fin N))
     (hl : ∀ g j, (layout.equiv ((g, j), false)).val = g.val * (2 * len) + j.val)
     (hr : ∀ g j, (layout.equiv ((g, j), true)).val = g.val * (2 * len) + len + j.val)
     (z : Fin G × Fin len → R) (a : Fin N → R) (g : Fin G) (j : Fin len) :
@@ -583,7 +583,7 @@ theorem forwardStage_coeffAt {G len N : ℕ} (layout : ButterflyLayout (Fin G ×
   · rw [key false _ (hl g j), hA false _ (hl g j), hA true _ (hr g j)]; rfl
   · rw [key true _ (hr g j), hA false _ (hl g j), hA true _ (hr g j)]; rfl
 
-theorem segmentEval_zero_eq {n : ℕ} (a : Fin n → R) (ω : S) :
+lemma segmentEval_zero_eq {n : ℕ} (a : Fin n → R) (ω : S) :
     segmentEval a 0 n ω = ∑ i : Fin n, algebraMap R S (a i) * ω ^ (i : ℕ) := by
   unfold segmentEval
   rw [← Fin.sum_univ_eq_sum_range (fun j => algebraMap R S (coeffAt a (0 + j)) * ω ^ j)]
@@ -591,7 +591,7 @@ theorem segmentEval_zero_eq {n : ℕ} (a : Fin n → R) (ω : S) :
   simp [coeffAt, i.isLt]
 
 omit [CommRing R] [Algebra R S] in
-theorem sum_ite_val_eq {n : ℕ} (m : ℕ) (hm : m < n) (F : Fin n → S) :
+lemma sum_ite_val_eq {n : ℕ} (m : ℕ) (hm : m < n) (F : Fin n → S) :
     (∑ k : Fin n, if m = k.val then F k else 0) = F ⟨m, hm⟩ := by
   rw [Finset.sum_eq_single ⟨m, hm⟩]
   · simp
@@ -603,7 +603,7 @@ theorem sum_ite_val_eq {n : ℕ} (m : ℕ) (hm : m < n) (F : Fin n → S) :
     exact absurd (Finset.mem_univ _) h
 
 /-- **Negacyclic products evaluate multiplicatively** at every `ω` with `ω ^ n = -1`. -/
-theorem segmentEval_negacyclicConv {n : ℕ} (f g : Fin n → R) (ω : S) (hω : ω ^ n = -1) :
+lemma segmentEval_negacyclicConv {n : ℕ} (f g : Fin n → R) (ω : S) (hω : ω ^ n = -1) :
     segmentEval (fun k => LatticeCrypto.negacyclicConvCoeff f g k) 0 n ω =
       segmentEval f 0 n ω * segmentEval g 0 n ω := by
   rw [segmentEval_zero_eq, segmentEval_zero_eq, segmentEval_zero_eq, sum_mul_sum,
@@ -636,7 +636,7 @@ section Quadratic
 open Polynomial
 
 /-- In `R[X] / (X² − γ)`, the root `ω` satisfies `ω² = γ`. -/
-theorem adjoinRoot_root_sq (γ : R) :
+lemma adjoinRoot_root_sq (γ : R) :
     AdjoinRoot.root (X ^ 2 - C γ) ^ 2 = algebraMap R (AdjoinRoot (X ^ 2 - C γ)) γ := by
   have h := AdjoinRoot.eval₂_root (X ^ 2 - C γ)
   simp only [eval₂_sub, eval₂_X_pow, eval₂_C] at h
@@ -645,7 +645,7 @@ theorem adjoinRoot_root_sq (γ : R) :
 
 /-- **Coordinates in `R[X] / (X² − γ)` are unique**: `a + b ω = c + d ω` at the root `ω` only if
 `a = c` and `b = d`. -/
-theorem adjoinRoot_pair_injective [Nontrivial R] {γ a b c d : R}
+lemma adjoinRoot_pair_injective [Nontrivial R] {γ a b c d : R}
     (h : algebraMap R (AdjoinRoot (X ^ 2 - C γ)) a +
         algebraMap R _ b * AdjoinRoot.root (X ^ 2 - C γ) =
       algebraMap R _ c + algebraMap R _ d * AdjoinRoot.root (X ^ 2 - C γ)) :

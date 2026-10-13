@@ -22,7 +22,7 @@ variable {O J : Type} {U V : O → Type} {X Y : J → Type}
     {α : InsideOutsideSystem O J U V X Y} {R : InterfaceSystem J X Y}
 
 /-- Internal exchanges append no outside query to the converter's history. -/
-theorem Exchange.outsideInputs_resource {G out H}
+lemma Exchange.outsideInputs_resource {G out H}
     (ex : Exchange (pair α R) resourceRoute G out H) :
     outsideInputs (restrict none H) = outsideInputs (restrict none G) := by
   induction ex with
@@ -40,7 +40,7 @@ theorem Exchange.outsideInputs_resource {G out H}
       simp [outsideInputs, List.map_append, splitIn]
 
 /-- The converter sees exactly the exposed input history at its outside ports. -/
-theorem Induces.outsideInputs_resource {us out H}
+lemma Induces.outsideInputs_resource {us out H}
     (hi : Induces (pair α R) resourceRoute resourceInput us out H) :
     outsideInputs (restrict none H) = us := by
   induction hi with
@@ -51,7 +51,7 @@ theorem Induces.outsideInputs_resource {us out H}
       congrArg (fun h => h ++ [u]) ih
 
 /-- A successful filtered call must lie in the retained outside domain. -/
-theorem apply_filterDom_dom
+lemma apply_filterDom_dom
     (D : List (Σ o, U o) → Prop) {us : List (Σ o, U o)}
     (hd : (apply (filterDom (fun h => D (outsideInputs h)) α) R us).Dom) : D us := by
   rw [apply_eq] at hd
@@ -86,7 +86,7 @@ theorem apply_filterDom_dom
 
 /-- Along an induced history whose exposed queries lie in a domain closed under nonempty
 prefixes, the converter restricted to that outside domain acts as the converter. -/
-theorem Induces.pair_filterDom_outside (F : List (Σ o, U o) → Prop)
+lemma Induces.pair_filterDom_outside (F : List (Σ o, U o) → Prop)
     (hF : ∀ {p h}, p <+: h → p ≠ [] → F h → F p) {α' : InsideOutsideSystem O J U V X Y}
     {us o H} (hi : Induces (pair α' R) resourceRoute resourceInput us o H) (hu : F us) :
     ∀ p, p <+: H → pair (filterDom (fun h => outsideInputs h = [] ∨ F (outsideInputs h)) α) R p =
@@ -111,7 +111,7 @@ theorem Induces.pair_filterDom_outside (F : List (Σ o, U o) → Prop)
 
 /-- **Restricting a converter's outside domain restricts its attachment**, for a domain closed
 under nonempty prefixes. -/
-theorem apply_filterDom_outside (F : List (Σ o, U o) → Prop)
+lemma apply_filterDom_outside (F : List (Σ o, U o) → Prop)
     (hF : ∀ {p h}, p <+: h → p ≠ [] → F h → F p) :
     apply (filterDom (fun h => outsideInputs h = [] ∨ F (outsideInputs h)) α) R =
       filterDom F (apply α R) := by
@@ -135,7 +135,7 @@ theorem apply_filterDom_outside (F : List (Σ o, U o) → Prop)
 
 /-- Forwarding through a filter is exactly domain restriction, including
 undefined behavior. The proof reuses identity attachment on admitted prefixes. -/
-theorem trim_apply_filter (D : List (Σ j, X j) → Prop)
+lemma trim_apply_filter (D : List (Σ j, X j) → Prop)
     (hD : ∀ {p h}, p <+: h → D h → D p)
     {R : InterfaceSystem J X Y} (hR : IsDDS R) (hr : RepliesAtQueriedInterface R) :
     trim (apply (DDC.filter (Y := Y) D hD).1 R) = filterDom D R := by
@@ -191,7 +191,7 @@ theorem trim_apply_filter (D : List (Σ j, X j) → Prop)
 namespace DDC
 
 /-- The DDS-level action of the forwarding filter is the same restriction. -/
-theorem filter_attach (D : List (Σ j, X j) → Prop)
+lemma filter_attach (D : List (Σ j, X j) → Prop)
     (hD : ∀ {p h}, p <+: h → D h → D p)
     (R : DDS (Σ j, X j) (Σ j, Y j)) (hR : RepliesAtQueriedInterface R.1) :
     attach (filter D hD) R = DDS.filterDom D (fun hp _ => hD hp) R := by

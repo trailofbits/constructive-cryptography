@@ -50,11 +50,11 @@ def converterAdmits
 def Admitted {A B : Type} (D : List (A × B) → A → Prop) (h : List (A × B)) : Prop :=
   ∀ p z t, h = p ++ z :: t → D p z.1
 
-@[simp] theorem admitted_nil {A B : Type} (D : List (A × B) → A → Prop) : Admitted D [] := by
+@[simp] lemma admitted_nil {A B : Type} (D : List (A × B) → A → Prop) : Admitted D [] := by
   intro p z t he
   simp at he
 
-theorem admitted_snoc {A B : Type} {D : List (A × B) → A → Prop} {h z} :
+lemma admitted_snoc {A B : Type} {D : List (A × B) → A → Prop} {h z} :
     Admitted D (h ++ [z]) ↔ Admitted D h ∧ D h z.1 := by
   constructor
   · intro ha
@@ -72,7 +72,7 @@ theorem admitted_snoc {A B : Type} {D : List (A × B) → A → Prop} {h z} :
 
 /-- **Restriction to a smaller domain**: a random system on `D`, set to zero on the histories
 not admitted by `D' ⊆ D`, is a random system on `D'`. -/
-theorem IsRandomSystem.restrict {A B : Type} {D D' : List (A × B) → A → Prop}
+lemma IsRandomSystem.restrict {A B : Type} {D D' : List (A × B) → A → Prop}
     {p : List (A × B) → ℝ} (hp : IsRandomSystem D p) (hD : ∀ h x, D' h x → D h x) :
     IsRandomSystem D' (fun h => if Admitted D' h then p h else 0) := by
   refine ⟨by simp [hp.1], fun h => ?_, fun h x => ?_⟩
@@ -98,7 +98,7 @@ theorem IsRandomSystem.restrict {A B : Type} {D D' : List (A × B) → A → Pro
         rfl
 
 /-- A completed deterministic transcript fixes the preceding reply label. -/
-theorem Replies.replyLabel {α : InsideOutsideSystem O J U V X Y} (hα : SilentAtEmpty α)
+lemma Replies.replyLabel {α : InsideOutsideSystem O J U V X Y} (hα : SilentAtEmpty α)
     {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))}
     (hr : Replies α (h.map Prod.fst) (h.map Prod.snd)) :
     replyLabel α (h.map Prod.fst) = h.getLast?.map (fun z => z.2.1) := by
@@ -110,7 +110,7 @@ theorem Replies.replyLabel {α : InsideOutsideSystem O J U V X Y} (hα : SilentA
     rw [replyLabel_of_mem α (by rw [hy]; exact Part.mem_some _)]
     simp
 
-theorem Replies.admissible_iff_admitted {c : InsideOutsideSystem O J U V X Y} (hc : SilentAtEmpty c)
+lemma Replies.admissible_iff_admitted {c : InsideOutsideSystem O J U V X Y} (hc : SilentAtEmpty c)
     {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))}
     (hr : Replies c (h.map Prod.fst) (h.map Prod.snd)) :
     Admissible c (h.map Prod.fst) ↔ Admitted converterAdmits h := by
@@ -125,7 +125,7 @@ theorem Replies.admissible_iff_admitted {c : InsideOutsideSystem O J U V X Y} (h
     simp only [Admits, hr.1.replyLabel hc, converterAdmits]
     exact ⟨fun ⟨ha, _, hz⟩ => ⟨ha, hz⟩, fun ⟨ha, hz⟩ => ⟨ha, hd, hz⟩⟩
 
-theorem replies_canon_iff (c : InsideOutsideSystem O J U V X Y) (hc : SilentAtEmpty c)
+lemma replies_canon_iff (c : InsideOutsideSystem O J U V X Y) (hc : SilentAtEmpty c)
     (h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))) :
     Replies (canon c) (h.map Prod.fst) (h.map Prod.snd) ↔
       Admitted converterAdmits h ∧ Replies c (h.map Prod.fst) (h.map Prod.snd) := by
@@ -152,7 +152,7 @@ theorem replies_canon_iff (c : InsideOutsideSystem O J U V X Y) (hc : SilentAtEm
       tauto
 
 /-- Defined histories of a partial DDC are admissible. -/
-theorem IsDDC.admissible {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (hα : IsDDC b α)
+lemma IsDDC.admissible {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (hα : IsDDC b α)
     {h : List (Σ l, twoFam U Y l)} (hd : (α h).Dom) : Admissible α h := by
   intro h' z e he
   subst he
@@ -160,7 +160,7 @@ theorem IsDDC.admissible {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (hα :
   exact ⟨fun hne => hα.dds.2 ⟨z :: e, rfl⟩ hne hd, hα.admits h' z hz⟩
 
 /-- Completed histories of a partial DDC are admitted. -/
-theorem IsDDC.admitted_of_replies {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (hα : IsDDC b α)
+lemma IsDDC.admitted_of_replies {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (hα : IsDDC b α)
     {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))}
     (hr : Replies α (h.map Prod.fst) (h.map Prod.snd)) : Admitted converterAdmits h := by
   by_cases hn : h.map Prod.fst = []
@@ -169,7 +169,7 @@ theorem IsDDC.admitted_of_replies {b : ℕ} {α : InsideOutsideSystem O J U V X 
   · exact (hr.admissible_iff_admitted hα.dds.1).mp (hα.admissible (hr.dom hn))
 
 /-- A partial converter is its own canonical restriction. -/
-theorem IsDDC.canon_eq {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (hα : IsDDC b α) : canon α = α := by
+lemma IsDDC.canon_eq {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (hα : IsDDC b α) : canon α = α := by
   funext h
   by_cases hd : (α h).Dom
   · exact canon_of_admissible (hα.admissible hd)
@@ -179,7 +179,7 @@ theorem IsDDC.canon_eq {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (hα : I
     · exact (Part.eq_none_iff'.mpr hd).symm
 
 /-- Partial converters with the same completed histories on admitted inputs are equal. -/
-theorem IsDDC.eq_of_admitted_replies {bα bβ : ℕ} {α β : InsideOutsideSystem O J U V X Y}
+lemma IsDDC.eq_of_admitted_replies {bα bβ : ℕ} {α β : InsideOutsideSystem O J U V X Y}
     (hα : IsDDC bα α) (hβ : IsDDC bβ β)
     (he : ∀ h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l)), Admitted converterAdmits h →
       (Replies α (h.map Prod.fst) (h.map Prod.snd) ↔
@@ -208,23 +208,23 @@ theorem IsDDC.eq_of_admitted_replies {bα bβ : ℕ} {α β : InsideOutsideSyste
 noncomputable def insideQueries (ys : List (Σ l, twoFam V X l)) : List (Σ j, X j) :=
   restrict (some ()) (ys.map splitIn)
 
-theorem insideQueries_append (ys zs : List (Σ l, twoFam V X l)) :
+lemma insideQueries_append (ys zs : List (Σ l, twoFam V X l)) :
     insideQueries (ys ++ zs) = insideQueries ys ++ insideQueries zs := by
   simp only [insideQueries, List.map_append, restrict_append]
 
-@[simp] theorem insideQueries_outside (o : O) (v : V o) :
+@[simp] lemma insideQueries_outside (o : O) (v : V o) :
     insideQueries [(⟨⟨none, o⟩, v⟩ : Σ l, twoFam V X l)] = [] := by
   simp [insideQueries, splitIn]
 
-@[simp] theorem insideQueries_inside (j : J) (x : X j) :
+@[simp] lemma insideQueries_inside (j : J) (x : X j) :
     insideQueries [(⟨⟨some (), j⟩, x⟩ : Σ l, twoFam V X l)] = [⟨j, x⟩] := by
   simp [insideQueries, splitIn]
 
-@[simp] theorem outsideInputs_outside (o : O) (u : U o) :
+@[simp] lemma outsideInputs_outside (o : O) (u : U o) :
     outsideInputs [(⟨⟨none, o⟩, u⟩ : Σ l, twoFam U Y l)] = [⟨o, u⟩] := by
   simp [outsideInputs, splitIn]
 
-@[simp] theorem outsideInputs_inside (j : J) (y : Y j) :
+@[simp] lemma outsideInputs_inside (j : J) (y : Y j) :
     outsideInputs [(⟨⟨some (), j⟩, y⟩ : Σ l, twoFam U Y l)] = [] := by
   simp [outsideInputs, splitIn]
 
@@ -238,7 +238,7 @@ def converterDomain (E : List (Σ j, X j) → Prop) (F : List (Σ o, U o) → Pr
     (insideQueries (h.map Prod.snd) = [] ∨ E (insideQueries (h.map Prod.snd)))
 
 /-- An input on the converter alphabets is an outside query or an inside reply. -/
-theorem length_eq_outsideInputs_add (xs : List (Σ l, twoFam U Y l)) :
+lemma length_eq_outsideInputs_add (xs : List (Σ l, twoFam U Y l)) :
     xs.length = (outsideInputs xs).length + (restrict (some ()) (xs.map splitIn)).length := by
   induction xs with
   | nil => rfl
@@ -247,7 +247,7 @@ theorem length_eq_outsideInputs_add (xs : List (Σ l, twoFam U Y l)) :
       simp [outsideInputs, splitIn, restrict_cons_self, restrict_cons_ne, ih] <;> omega
 
 /-- Each inside reply follows an inside query. -/
-theorem insideReplies_length_le {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))}
+lemma insideReplies_length_le {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))}
     {x : Σ l, twoFam U Y l} (ha : Admitted converterAdmits h) (hx : converterAdmits h x) :
     (restrict (some ()) ((h.map Prod.fst ++ [x]).map splitIn)).length ≤
       (insideQueries (h.map Prod.snd)).length := by
@@ -271,7 +271,7 @@ theorem insideReplies_length_le {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam
     · simp [splitIn] at ih ⊢; omega
 
 /-- Admitted transcripts are bounded by the two domain bounds. -/
-theorem length_lt_of_converterDomain {E : List (Σ j, X j) → Prop} {F : List (Σ o, U o) → Prop}
+lemma length_lt_of_converterDomain {E : List (Σ j, X j) → Prop} {F : List (Σ o, U o) → Prop}
     {m n : ℕ} (hE : ∀ h, E h → h.length ≤ m) (hF : ∀ h, F h → h.length ≤ n)
     {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))} {x : Σ l, twoFam U Y l}
     (hx : converterDomain E F h x) : h.length < n + m := by
@@ -309,7 +309,7 @@ structure IsDDCFrom (E : List (Σ j, X j) → Prop) (F : List (Σ o, U o) → Pr
       insideQueries (h.map Prod.snd) = [] ∨ E (insideQueries (h.map Prod.snd))
 
 /-- Along a transcript of a DDC from `E` to `F`, the outside queries are in `F`. -/
-theorem IsDDCFrom.outsideInputs_mem {E : List (Σ j, X j) → Prop} {F : List (Σ o, U o) → Prop}
+lemma IsDDCFrom.outsideInputs_mem {E : List (Σ j, X j) → Prop} {F : List (Σ o, U o) → Prop}
     {b : ℕ} {a : InsideOutsideSystem O J U V X Y} (ha : IsDDCFrom E F b a)
     {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))}
     (hr : Replies a (h.map Prod.fst) (h.map Prod.snd)) :
@@ -325,7 +325,7 @@ theorem IsDDCFrom.outsideInputs_mem {E : List (Σ j, X j) → Prop} {F : List (�
 section Identity
 
 /-- The first input of a legal history is an outside query. -/
-theorem outsideInputs_ne_nil {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))}
+lemma outsideInputs_ne_nil {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))}
     {x : Σ l, twoFam U Y l} (ha : Admitted converterAdmits h) (hx : converterAdmits h x) :
     outsideInputs (h.map Prod.fst ++ [x]) ≠ [] := by
   rcases h with _ | ⟨⟨x₀, y₀⟩, t⟩
@@ -338,7 +338,7 @@ theorem outsideInputs_ne_nil {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V 
     · simp [converterAdmits, admitAfter] at h₀
 
 /-- Along a transcript of the identity, the inside queries are the outside queries. -/
-theorem insideQueries_eq_of_replies_id {h : List ((Σ l, twoFam X Y l) × (Σ l, twoFam Y X l))}
+lemma insideQueries_eq_of_replies_id {h : List ((Σ l, twoFam X Y l) × (Σ l, twoFam Y X l))}
     (hr : Replies (idConverter J X Y) (h.map Prod.fst) (h.map Prod.snd)) :
     insideQueries (h.map Prod.snd) = outsideInputs (h.map Prod.fst) := by
   induction h using List.reverseRecOn with
@@ -357,7 +357,7 @@ theorem insideQueries_eq_of_replies_id {h : List ((Σ l, twoFam X Y l) × (Σ l,
       obtain rfl := Part.mem_some_iff.mp hy'
       simp
 
-theorem prefix_or_nil {A : Type} {E : List A → Prop}
+lemma prefix_or_nil {A : Type} {E : List A → Prop}
     (hE : ∀ {p h}, p <+: h → p ≠ [] → E h → E p) :
     ∀ {p h : List A}, p <+: h → (h = [] ∨ E h) → (p = [] ∨ E p) := by
   intro p h hp hh
@@ -367,7 +367,7 @@ theorem prefix_or_nil {A : Type} {E : List A → Prop}
     · exact Or.inl (List.prefix_nil.mp hp)
     · exact Or.inr (hE hp hn hh)
 
-theorem DDC.isDDC_filter (D : List (Σ j, X j) → Prop) (hD : ∀ {p h}, p <+: h → D h → D p) :
+lemma DDC.isDDC_filter (D : List (Σ j, X j) → Prop) (hD : ∀ {p h}, p <+: h → D h → D p) :
     IsDDC 1 (DDC.filter (Y := Y) D hD).1 :=
   (idConverter_isResponsiveDDC (J := J) (X := X) (Y := Y)).isDDC.filterDom _
     (fun {p h} hp _ hd => hD (by
@@ -376,7 +376,7 @@ theorem DDC.isDDC_filter (D : List (Σ j, X j) → Prop) (hD : ∀ {p h}, p <+: 
 
 /-- **A responsive DDC restricted to an outside domain `F`** is a DDC from `E` to `F` when the
 inside queries of its transcripts stay in `E`. -/
-theorem IsResponsiveDDC.isDDCFrom_filterDom {E : List (Σ j, X j) → Prop}
+lemma IsResponsiveDDC.isDDCFrom_filterDom {E : List (Σ j, X j) → Prop}
     {F : List (Σ o, U o) → Prop} {b : ℕ} {α : InsideOutsideSystem O J U V X Y}
     (hα : IsResponsiveDDC b α) (hF : ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
     (hq : ∀ h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l)),
@@ -407,7 +407,7 @@ theorem IsResponsiveDDC.isDDCFrom_filterDom {E : List (Σ j, X j) → Prop}
 
 /-- **The identity from `E` to `E`** is the filter forwarding the outside queries in `E`
 (CR18, §3.4.3, printed p. 62). -/
-theorem isDDCFrom_filter {E : List (Σ j, X j) → Prop}
+lemma isDDCFrom_filter {E : List (Σ j, X j) → Prop}
     (hE : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p) :
     IsDDCFrom E E 1 (DDC.filter (Y := Y) (fun h => h = [] ∨ E h) (prefix_or_nil hE.2)).1 :=
   (idConverter_isResponsiveDDC (J := J) (X := X) (Y := Y)).isDDCFrom_filterDom hE.2
@@ -419,7 +419,7 @@ theorem isDDCFrom_filter {E : List (Σ j, X j) → Prop}
       · exact ((filterDom_dom _ _ _).mp (hr.dom hn)).1
 
 /-- A DDC from `E` to `F` is a DDC from any larger inside domain `E'` to `F`. -/
-theorem IsDDCFrom.inside_mono {E E' : List (Σ j, X j) → Prop} {F : List (Σ o, U o) → Prop}
+lemma IsDDCFrom.inside_mono {E E' : List (Σ j, X j) → Prop} {F : List (Σ o, U o) → Prop}
     {b : ℕ} {a : InsideOutsideSystem O J U V X Y} (ha : IsDDCFrom E F b a)
     (hE : ∀ h, E h → E' h) : IsDDCFrom E' F b a where
   isDDC := ha.isDDC
@@ -430,7 +430,7 @@ theorem IsDDCFrom.inside_mono {E E' : List (Σ j, X j) → Prop} {F : List (Σ o
   queries h hr := (ha.queries h hr).imp_right (hE _)
 
 /-- Attaching the identity from `E` to `E` leaves a resource with domain `E` unchanged. -/
-theorem trim_apply_filter_of_dom {E : List (Σ j, X j) → Prop}
+lemma trim_apply_filter_of_dom {E : List (Σ j, X j) → Prop}
     (hE : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p) {R : InterfaceSystem J X Y}
     (hR : IsDDS R) (hr : RepliesAtQueriedInterface R) (hRE : ∀ h, (R h).Dom ↔ E h) :
     trim (apply (DDC.filter (Y := Y) (fun h => h = [] ∨ E h) (prefix_or_nil hE.2)).1 R) = R := by
@@ -479,7 +479,7 @@ def AttachCall (E : List (Σ j, X j) → Prop) (F : List (Σ o, U o) → Prop)
 
 /-- A call answers at its outside label and leaves the DDC idle: every
 admitted input is answered, and every query is in `E`, where the resource answers. -/
-theorem IsDDCFrom.attach_call (ha : IsDDCFrom E F b a) (hR : RepliesAtQueriedInterface R)
+lemma IsDDCFrom.attach_call (ha : IsDDCFrom E F b a) (hR : RepliesAtQueriedInterface R)
     (hRE : ∀ h, (R h).Dom ↔ E h) {G o' G'}
     (l : Exchange (pair a R) resourceRoute G o' G') :
     ∀ o, AttachCall E F a o G → ∃ w : Σ o, V o, o' = some w ∧ w.1 = o ∧ AttachIdle a G' := by
@@ -553,7 +553,7 @@ theorem IsDDCFrom.attach_call (ha : IsDDCFrom E F b a) (hR : RepliesAtQueriedInt
 
 /-- The next outside query after a completed history: answered exactly when it is
 in `F`, at its own label. -/
-theorem IsDDCFrom.attach_next (ha : IsDDCFrom E F b a) (hR : RepliesAtQueriedInterface R)
+lemma IsDDCFrom.attach_next (ha : IsDDCFrom E F b a) (hR : RepliesAtQueriedInterface R)
     (hRE : ∀ h, (R h).Dom ↔ E h) {xs : List (Σ o, U o)} {o₀ H}
     (r : Induces (pair a R) resourceRoute resourceInput xs o₀ H) (hi : AttachIdle a H)
     (x : Σ o, U o) {o' H'} (lx : Exchange (pair a R) resourceRoute (H ++ [resourceInput x]) o' H')
@@ -580,7 +580,7 @@ theorem IsDDCFrom.attach_next (ha : IsDDCFrom E F b a) (hR : RepliesAtQueriedInt
   exact ⟨w, hw, hw1, hi', hout ▸ hz.2.2.1⟩
 
 /-- Every completed history of the attachment leaves the DDC idle. -/
-theorem IsDDCFrom.attach_idle (ha : IsDDCFrom E F b a) (hR : RepliesAtQueriedInterface R)
+lemma IsDDCFrom.attach_idle (ha : IsDDCFrom E F b a) (hR : RepliesAtQueriedInterface R)
     (hRE : ∀ h, (R h).Dom ↔ E h) :
     ∀ xs ys, Replies (apply a R) xs ys →
       ∃ H, Induces (pair a R) resourceRoute resourceInput xs ys.getLast? H ∧ AttachIdle a H := by
@@ -606,7 +606,7 @@ theorem IsDDCFrom.attach_idle (ha : IsDDCFrom E F b a) (hR : RepliesAtQueriedInt
 
 /-- **A DDC from `E` to `F` maps resources with domain `E` to resources with domain
 `F`**, replying at the queried interface. -/
-theorem IsDDCFrom.mapsDomain (ha : IsDDCFrom E F b a)
+lemma IsDDCFrom.mapsDomain (ha : IsDDCFrom E F b a)
     (hF : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p) : MapsDomain E F a := by
   intro R _ hR hRE
   have next : ∀ xs ys x, Replies (apply a R) xs ys →
@@ -696,26 +696,26 @@ def SerialCall (E : List (Σ j, X j) → Prop) (F : List (Σ m, Xm m) → Prop)
       outsideInputs (ha.map Prod.fst ++ [z]) = insideQueries (hb.map Prod.snd) ∧
       insideQueries (ha.map Prod.snd) = Q)
 
-theorem getLast?_label {A K : Type} {F : K → Type}
+lemma getLast?_label {A K : Type} {F : K → Type}
     {h : List (A × (Σ l, F l))} {y : Σ l, F l} (hy : h.getLast?.map Prod.snd = some y) :
     h.getLast?.map (fun z => z.2.1) = some y.1 := by
   rw [show (fun z : A × (Σ l, F l) => z.2.1) = (fun y => y.1) ∘ Prod.snd from rfl,
     ← Option.map_map, hy]
   rfl
 
-theorem getLast?_snd {A B : Type} {h : List (A × B)} {p : A × B} (hp : p ∈ h.getLast?) :
+lemma getLast?_snd {A B : Type} {h : List (A × B)} {p : A × B} (hp : p ∈ h.getLast?) :
     p.2 ∈ (h.map Prod.snd).getLast? := by
   rw [List.getLast?_map, Option.mem_def.mp hp]
   rfl
 
-theorem converterAdmits_of_idle {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))}
+lemma converterAdmits_of_idle {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))}
     (hl : ∀ z ∈ h.getLast?, ¬ IsInside z.2) (x : Σ l, twoFam U Y l) :
     converterAdmits h x ↔ x.1.1 = none :=
   admitAfter_of_ne fun j hj => by
     obtain ⟨p, hp, hpj⟩ := Option.map_eq_some_iff.mp hj
     exact hl p hp (by simp [IsInside, hpj])
 
-theorem converterAdmits_of_query {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))}
+lemma converterAdmits_of_query {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))}
     {j : J} {x : X j} (hl : h.getLast?.map Prod.snd = some ⟨⟨some (), j⟩, x⟩)
     (z : Σ l, twoFam U Y l) : converterAdmits h z ↔ z.1 = ⟨some (), j⟩ := by
   rw [converterAdmits, getLast?_label hl]
@@ -723,7 +723,7 @@ theorem converterAdmits_of_query {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFa
 
 /-- A call of the composite ends with an exposed output: every input reaching a component
 lies in its domain. -/
-theorem IsDDCFrom.serial_call (hβ : IsDDCFrom F G bβ β) (hα : IsDDCFrom E F bα α)
+lemma IsDDCFrom.serial_call (hβ : IsDDCFrom F G bβ β) (hα : IsDDCFrom E F bα α)
     {P : List (Σ o, U o)} {Q : List (Σ j, X j)} (hP : G P) {K o' K'}
     (l : Exchange (pair β α) serialRouteM K o' K') :
     SerialCall E F G β α P Q K →
@@ -822,7 +822,7 @@ theorem IsDDCFrom.serial_call (hβ : IsDDCFrom F G bβ β) (hα : IsDDCFrom E F 
 
 /-- The composite's next input: in its domain exactly when the composite answers it, and then
 the components are again behind a composite step. -/
-theorem IsDDCFrom.serial_next (hβ : IsDDCFrom F G bβ β) (hα : IsDDCFrom E F bα α)
+lemma IsDDCFrom.serial_next (hβ : IsDDCFrom F G bβ β) (hα : IsDDCFrom E F bα α)
     {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))} {K}
     (hr : Replies (serialM β α) (h.map Prod.fst) (h.map Prod.snd))
     (hs : SerialAfter G β α (outsideInputs (h.map Prod.fst)) (insideQueries (h.map Prod.snd))
@@ -944,7 +944,7 @@ theorem IsDDCFrom.serial_next (hβ : IsDDCFrom F G bβ β) (hα : IsDDCFrom E F 
       hQ⟩)
 
 /-- Every completed history of the composite has its components behind it. -/
-theorem IsDDCFrom.serial_idle (hβ : IsDDCFrom F G bβ β) (hα : IsDDCFrom E F bα α) :
+lemma IsDDCFrom.serial_idle (hβ : IsDDCFrom F G bβ β) (hα : IsDDCFrom E F bα α) :
     ∀ h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l)),
       Replies (serialM β α) (h.map Prod.fst) (h.map Prod.snd) →
       ∃ K, Induces (pair β α) serialRouteM serialInjM (h.map Prod.fst)
@@ -972,7 +972,7 @@ theorem IsDDCFrom.serial_idle (hβ : IsDDCFrom F G bβ β) (hα : IsDDCFrom E F 
 
 /-- **Serial composition of DDCs from `E` to `F` and from `F` to `G` is a DDC from `E`
 to `G`**, with the product of the inside-query bounds. -/
-theorem IsDDCFrom.comp (hβ : IsDDCFrom F G bβ β) (hα : IsDDCFrom E F bα α) :
+lemma IsDDCFrom.comp (hβ : IsDDCFrom F G bβ β) (hα : IsDDCFrom E F bα α) :
     IsDDCFrom E G (bα * bβ) (trim (serialM β α)) := by
   refine ⟨hβ.isDDC.comp hα.isDDC, fun h x hr => ?_, fun h hr => ?_⟩
   · rw [replies_trim_iff] at hr
@@ -997,7 +997,7 @@ theorem IsDDCFrom.comp (hβ : IsDDCFrom F G bβ β) (hα : IsDDCFrom E F bα α)
 
 /-- **Two DDCs from `E` to `F` whose transcripts are transcripts of one system have the same
 transcripts.** -/
-theorem IsDDCFrom.replies_iff_of_le {γ s W : InsideOutsideSystem O M U V Xm Ym} {c b : ℕ}
+lemma IsDDCFrom.replies_iff_of_le {γ s W : InsideOutsideSystem O M U V Xm Ym} {c b : ℕ}
     (hγ : IsDDCFrom F G c γ) (hs : IsDDCFrom F G b s)
     (hγW : ∀ xs ys, Replies γ xs ys → Replies W xs ys)
     (hsW : ∀ xs ys, Replies s xs ys → Replies W xs ys)
@@ -1026,7 +1026,7 @@ theorem IsDDCFrom.replies_iff_of_le {γ s W : InsideOutsideSystem O M U V Xm Ym}
   exact ⟨key hs hγ hsW hγW h, key hγ hs hγW hsW h⟩
 
 /-- Composing with the identity on the inside changes no transcript. -/
-theorem IsDDCFrom.replies_serialM_filter (hβ : IsDDCFrom F G bβ β)
+lemma IsDDCFrom.replies_serialM_filter (hβ : IsDDCFrom F G bβ β)
     (hF : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
     (h : List ((Σ l, twoFam U Ym l) × (Σ l, twoFam V Xm l))) :
     Replies (trim (serialM β (DDC.filter (Y := Ym) (fun h => h = [] ∨ F h)
@@ -1044,7 +1044,7 @@ theorem IsDDCFrom.replies_serialM_filter (hβ : IsDDCFrom F G bβ β)
   exact hm
 
 /-- Composing with the identity on the outside changes no transcript. -/
-theorem IsDDCFrom.replies_filter_serialM (hβ : IsDDCFrom F G bβ β)
+lemma IsDDCFrom.replies_filter_serialM (hβ : IsDDCFrom F G bβ β)
     (hG : ¬ G [] ∧ ∀ {p h}, p <+: h → p ≠ [] → G h → G p)
     (h : List ((Σ l, twoFam U Ym l) × (Σ l, twoFam V Xm l))) :
     Replies (trim (serialM (DDC.filter (Y := V) (fun h => h = [] ∨ G h)

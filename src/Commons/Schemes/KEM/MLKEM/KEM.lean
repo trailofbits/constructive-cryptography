@@ -24,14 +24,14 @@ def encapsulationKeyCheck (encoding : Encoding params) [DecidableEq encoding.Enc
     (ek : EncapsulationKey params encoding) : Bool :=
   encoding.publicKeyCanonical ek.tHatEncoded
 
-@[simp] theorem encapsulationKeyCheck_keygenFromSeed_eq_true (ring : NTTRingOps)
+@[simp] lemma encapsulationKeyCheck_keygenFromSeed_eq_true (ring : NTTRingOps)
     (encoding : Encoding params) [DecidableEq encoding.EncodedTHat]
     (prims : Primitives params encoding) (d : Seed32) :
     encapsulationKeyCheck encoding (KPKE.keygenFromSeed ring encoding prims d).1 = true := by
   unfold encapsulationKeyCheck KPKE.keygenFromSeed
   simp
 
-@[simp] theorem encapsulationKeyCheck_keygenInternal_eq_true (ring : NTTRingOps)
+@[simp] lemma encapsulationKeyCheck_keygenInternal_eq_true (ring : NTTRingOps)
     (encoding : Encoding params) [DecidableEq encoding.EncodedTHat]
     (prims : Primitives params encoding) (d z : Seed32) :
     encapsulationKeyCheck encoding (keygenInternal ring encoding prims d z).1 = true := by

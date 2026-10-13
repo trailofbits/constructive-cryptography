@@ -34,7 +34,7 @@ noncomputable def countedChain (i j : ι)
     _ ≃ β • systems j false := ← j
     _ = Y := finish
 
-theorem countedChain_usageCount [DecidableEq ι] (i j k : ι)
+lemma countedChain_usageCount [DecidableEq ι] (i j k : ι)
     (α : A ⟶ boundary i) (β : A ⟶ boundary j)
     (X Y : Phi A) (start : X = α • systems i false)
     (join : α • systems i true = β • systems j true)
@@ -165,7 +165,7 @@ section Quantitative
 variable [MonoidalCategory C] [CompatiblePseudoMetric C Phi] {D : C → Type y}
 
 -- Distances are scalar, may be supplied before attachment, and can be reversed.
-theorem statistical_chain (α : A ⟶ B) (R S T : Phi B)
+lemma statistical_chain (α : A ⟶ B) (R S T : Phi B)
     (X Y : Phi A) (a b : ENNReal)
     (h : distance R S ≤ a) (g : distance T S ≤ b)
     (start : X = α • R) (finish : α • T = Y) : distance X Y ≤ a + b := by
@@ -176,7 +176,7 @@ theorem statistical_chain (α : A ⟶ B) (R S T : Phi B)
     _ = Y := finish
 
 -- Statistical steps do not become assumptions, and concrete losses retain D.
-theorem mixed_chain (model : DistinguisherAdvantage C Phi D)
+lemma mixed_chain (model : DistinguisherAdvantage C Phi D)
     (R S T U X Y : Phi A) (a b : D A → ENNReal) (ε : ENNReal)
     (domination : ∀ d ∈ model.admissible A,
       ∀ r s, model.advantage A d r s ≤ distance r s)
@@ -284,7 +284,7 @@ variable (domination : ∀ D ∈ model.admissible (), ∀ R T,
   model.advantage () D R T ≤ statistical D R T)
 include domination
 
-theorem observation_chain (R S T : Sys) (loss : O → ENNReal) (ε : ENNReal)
+lemma observation_chain (R S T : Sys) (loss : O → ENNReal) (ε : ENNReal)
     (h : model.SubstitutesWithin (A := ()) loss R S)
     (g : ∀ D ∈ model.admissible (), statistical D T S ≤ ε) :
     model.SubstitutesWithin (A := ()) (fun D => loss D + ε) R T := by

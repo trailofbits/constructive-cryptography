@@ -60,7 +60,7 @@ variable {C : Type u} [Category.{v} C]
 variable {Phi : C → Type w} [ResourceTheory C Phi]
 
 /-- Symmetry in Banfi's iff form. -/
-theorem substitutes_symm_iff
+lemma substitutes_symm_iff
     (relation : SubstitutionRelation C)
     {A : C} {left right : Phi A} :
     relation.substitutes A left right ↔
@@ -117,7 +117,7 @@ Banfi 2023, Section 2.3.1 (printed p. 15): “we then collect the sum of such
 `p_i`'s into a value `ε`.” Each supplied step is first transformed using
 converter non-expansion; the exact-behavior joins contribute no additional
 error. -/
-theorem distance_hybrid_le [MonoidalCategory C] [CompatiblePseudoMetric C Phi]
+lemma distance_hybrid_le [MonoidalCategory C] [CompatiblePseudoMetric C Phi]
     {n : Nat} {target : C} {source : Fin (n + 1) → C}
     (left right : ∀ i, Phi (source i))
     (transformation : ∀ i, target ⟶ source i)
@@ -211,7 +211,7 @@ def usageCount [DecidableEq ι]
 
 /-- An explicit Banfi implication witness transports valid premise
 substitutions to the target substitution. -/
-theorem substitutes
+lemma substitutes
     (relation : SubstitutionRelation C)
     (implication : Implication boundary systems target uses)
     (premise : ∀ i,
@@ -251,7 +251,7 @@ substitution use with a supplied statistical-distance bound.
 This is Banfi 2023, Section 2.3.1's quantitative extension (printed p. 15):
 the implication retains the same transformations, direction bits, exact
 joins, and endpoints, while its step errors add. -/
-theorem distance_le [MonoidalCategory C] [CompatiblePseudoMetric C Phi]
+lemma distance_le [MonoidalCategory C] [CompatiblePseudoMetric C Phi]
     (implication : Implication boundary systems target uses)
     (error : Fin (uses + 1) → ENNReal)
     (step : ∀ use,

@@ -56,7 +56,7 @@ noncomputable def ofConditional
 noncomputable def ofFunction (f : ∀ i, A.X i → A.Y i) : Resource A :=
   ofConditional fun _ i x _ => ⟨Finsupp.single (f i x) 1, Distribution.isProbDist_single _⟩
 
-theorem ofFunction_snoc (f : ∀ i, A.X i → A.Y i)
+lemma ofFunction_snoc (f : ∀ i, A.X i → A.Y i)
     (h : List ((Σ i, A.X i) × (Σ i, A.Y i))) (x : Σ i, A.X i) (y : Σ i, A.Y i) :
     (ofFunction f).1 (h ++ [(x, y)]) =
       if A.domain (h.map Prod.fst ++ [x]) then
@@ -71,7 +71,7 @@ theorem ofFunction_snoc (f : ∀ i, A.X i → A.Y i)
 
 /-- A functional resource gives probability one to its prescribed answers on
 each admitted history. -/
-theorem ofFunction_mass_eq_one (f : ∀ i, A.X i → A.Y i)
+lemma ofFunction_mass_eq_one (f : ∀ i, A.X i → A.Y i)
     (h : List ((Σ i, A.X i) × (Σ i, A.Y i)))
     (hd : h = [] ∨ A.domain (h.map Prod.fst))
     (he : ∀ z ∈ h, z.2 = ⟨z.1.1, f z.1.1 z.1.2⟩) :
@@ -90,7 +90,7 @@ theorem ofFunction_mass_eq_one (f : ∀ i, A.X i → A.Y i)
     rw [ofFunction_snoc, if_pos hp, if_pos (he z (by simp)),
       ih hh (fun w hw => he w (List.mem_append_left _ hw)), mul_one]
 
-theorem ofFunction_answers (f : ∀ i, A.X i → A.Y i)
+lemma ofFunction_answers (f : ∀ i, A.X i → A.Y i)
     (h : List ((Σ i, A.X i) × (Σ i, A.Y i))) (hm : (ofFunction f).1 h ≠ 0) :
     ∀ z ∈ h, z.2 = ⟨z.1.1, f z.1.1 z.1.2⟩ := by
   induction h using List.reverseRecOn with
@@ -107,7 +107,7 @@ theorem ofFunction_answers (f : ∀ i, A.X i → A.Y i)
 
 /-- The cumulative law of a function is the indicator of its admitted
 query/reply histories. -/
-theorem ofFunction_mass (f : ∀ i, A.X i → A.Y i)
+lemma ofFunction_mass (f : ∀ i, A.X i → A.Y i)
     (h : List ((Σ i, A.X i) × (Σ i, A.Y i))) :
     (ofFunction f).1 h =
       if (h = [] ∨ A.domain (h.map Prod.fst)) ∧
@@ -125,7 +125,7 @@ theorem ofFunction_mass (f : ∀ i, A.X i → A.Y i)
 
 /-- Probability one on the functional transcripts determines the entire
 behavior, including probability zero for every different answer. -/
-theorem eq_ofFunction (R : Resource A) (f : ∀ i, A.X i → A.Y i)
+lemma eq_ofFunction (R : Resource A) (f : ∀ i, A.X i → A.Y i)
     (certain : ∀ h, (h = [] ∨ A.domain (h.map Prod.fst)) →
       (∀ z ∈ h, z.2 = ⟨z.1.1, f z.1.1 z.1.2⟩) → R.1 h = 1) :
     R = ofFunction f := by
@@ -180,12 +180,12 @@ noncomputable def sample {K : Type} (P : Distribution K) [Distribution.IsProbabi
     rw [RandomSystem.mix_mass]
     exact Finset.sum_eq_zero fun k _ => by rw [(R k).2 h x y hne, mul_zero]⟩
 
-theorem sample_mass {K : Type} (P : Distribution K) [Distribution.IsProbability P]
+lemma sample_mass {K : Type} (P : Distribution K) [Distribution.IsProbability P]
     (R : K → Resource A) h :
     (sample P R).1 h = ∑ k ∈ P.support, P k * (R k).1 h := rfl
 
 /-- Initial sampling of functions is their existing finite DDS presentation. -/
-theorem sample_ofFunction_mass {K : Type} (P : Distribution K)
+lemma sample_ofFunction_mass {K : Type} (P : Distribution K)
     [Distribution.IsProbability P] (f : K → ∀ i, A.X i → A.Y i)
     (h : List ((Σ i, A.X i) × (Σ i, A.Y i))) :
     (sample P (fun k => ofFunction (f k))).1 h =

@@ -115,7 +115,7 @@ instance instHSMulConverterResource {A B : C} : HSMul (A ⟶ B) (Phi B) (Phi A) 
 
 omit [MonoidalCategory C] in
 @[simp]
-theorem smul_eq_attach {A B : C} (converter : A ⟶ B) (resource : Phi B) :
+lemma smul_eq_attach {A B : C} (converter : A ⟶ B) (resource : Phi B) :
     (converter • resource : Phi A) = attach converter resource :=
   rfl
 
@@ -136,13 +136,13 @@ def dummy [CryptographicAlgebra C Phi] : Phi (𝟙_ C) :=
   LaxMonoidal.ε (ResourceTheory.functor C Phi) PUnit.unit
 
 @[simp]
-theorem converter_parallel_identity (A B : C) :
+lemma converter_parallel_identity (A B : C) :
     (𝟙 A) ⊗ₘ (𝟙 B) = 𝟙 (A ⊗ B) := by
   -- The ordered tensor bifunctor preserves identities.
   simp
 
 /-- Ordered converter parallel preserves serial composition. -/
-theorem converter_parallel_serial
+lemma converter_parallel_serial
     {A B D E G H : C}
     (leftFirst : A ⟶ B) (leftSecond : B ⟶ D)
     (rightFirst : E ⟶ G) (rightSecond : G ⟶ H) :
@@ -179,7 +179,7 @@ Jost, Section 2.2.2 (printed p. 17): “A finite set of resources with disjoint
 interface sets can be viewed as a single one.” The equation below is the
 associativity law of this library's selected binary packaging; Jost does not
 postulate a monoidal category. -/
-theorem parallel_assoc [CryptographicAlgebra C Phi] {A B D : C}
+lemma parallel_assoc [CryptographicAlgebra C Phi] {A B D : C}
     (left : Phi A) (middle : Phi B)
     (right : Phi D) :
     attach (α_ A B D).inv
@@ -193,7 +193,7 @@ theorem parallel_assoc [CryptographicAlgebra C Phi] {A B D : C}
   exact types_congr_hom associativity ((left, middle), right)
 
 @[simp]
-theorem parallel_dummy_left [CryptographicAlgebra C Phi] {A : C}
+lemma parallel_dummy_left [CryptographicAlgebra C Phi] {A : C}
     (resource : Phi A) :
     attach (λ_ A).inv
         (parallel (dummy (C := C)) resource) =
@@ -208,7 +208,7 @@ theorem parallel_dummy_left [CryptographicAlgebra C Phi] {A : C}
   exact types_congr_hom unitality (PUnit.unit, resource) |>.symm
 
 @[simp]
-theorem parallel_dummy_right [CryptographicAlgebra C Phi] {A : C}
+lemma parallel_dummy_right [CryptographicAlgebra C Phi] {A : C}
     (resource : Phi A) :
     attach (ρ_ A).inv
         (parallel resource (dummy (C := C))) =
@@ -231,12 +231,12 @@ abbrev map {A B : C} (converter : A ⟶ B)
 
 omit [MonoidalCategory C] in
 @[simp]
-theorem map_identity {A : C} (source : Specification (Phi A)) :
+lemma map_identity {A : C} (source : Specification (Phi A)) :
     map (𝟙 A) source = source := by
   simp [map, attach_identity]
 
 omit [MonoidalCategory C] in
-theorem map_serial {A B D : C} (first : A ⟶ B) (second : B ⟶ D)
+lemma map_serial {A B D : C} (first : A ⟶ B) (second : B ⟶ D)
     (source : Specification (Phi D)) :
     map (first ≫ second) source =
       map first (map second source) := by
@@ -255,7 +255,7 @@ def parallel [CryptographicAlgebra C Phi] {A B : C}
 /-- Ordered parallel of singleton specifications is the singleton containing
 the ordered parallel resource. -/
 @[simp]
-theorem parallel_singleton [CryptographicAlgebra C Phi] {A B : C}
+lemma parallel_singleton [CryptographicAlgebra C Phi] {A B : C}
     (left : Phi A) (right : Phi B) :
     parallel ({left} : Specification (Phi A))
         ({right} : Specification (Phi B)) =
@@ -274,7 +274,7 @@ def dummy [CryptographicAlgebra C Phi] : Specification (Phi (𝟙_ C)) :=
 
 /-- Ordered specification parallel is associative through the routed
 associator. -/
-theorem parallel_assoc [CryptographicAlgebra C Phi] {A B D : C}
+lemma parallel_assoc [CryptographicAlgebra C Phi] {A B D : C}
     (left : Specification (Phi A)) (middle : Specification (Phi B))
     (right : Specification (Phi D)) :
     map (α_ A B D).inv
@@ -307,7 +307,7 @@ theorem parallel_assoc [CryptographicAlgebra C Phi] {A B D : C}
       leftResource middleResource rightResource
 
 @[simp]
-theorem parallel_dummy_left [CryptographicAlgebra C Phi] {A : C}
+lemma parallel_dummy_left [CryptographicAlgebra C Phi] {A : C}
     (source : Specification (Phi A)) :
     map (λ_ A).inv
         (parallel (dummy (C := C)) source) =
@@ -334,7 +334,7 @@ theorem parallel_dummy_left [CryptographicAlgebra C Phi] {A : C}
     exact CryptographicAlgebra.parallel_dummy_left resource
 
 @[simp]
-theorem parallel_dummy_right [CryptographicAlgebra C Phi] {A : C}
+lemma parallel_dummy_right [CryptographicAlgebra C Phi] {A : C}
     (source : Specification (Phi A)) :
     map (ρ_ A).inv
         (parallel source (dummy (C := C))) =
@@ -372,7 +372,7 @@ abbrev Constructs {A B : C} (converter : A ⟶ B)
 omit [MonoidalCategory C] in
 /-- Exact construction holds exactly when every admitted resource is carried
 into the target specification. -/
-theorem constructs_iff {A B : C} {converter : A ⟶ B}
+lemma constructs_iff {A B : C} {converter : A ⟶ B}
     {source : Specification (Phi B)} {target : Specification (Phi A)} :
     Constructs converter source target ↔
       ∀ resource ∈ source,
@@ -385,7 +385,7 @@ covariant in its target specification.
 
 Maurer--Renner 2016, Section 2.3 (printed p. 5):
 “`R —γ→ S =⇒ R′ —γ→ S′` if `R′ ⊆ R` and `S ⊆ S′`.” -/
-theorem Constructs.mono {A B : C} {converter : A ⟶ B}
+lemma Constructs.mono {A B : C} {converter : A ⟶ B}
     {source source' : Specification (Phi B)}
     {target target' : Specification (Phi A)}
     (construction : Constructs converter source target)
@@ -399,7 +399,7 @@ omit [MonoidalCategory C] in
 
 Jost--Maurer 2020, Definition 1 (printed p. 9): “In slight abuse of notation,
 we write `R —π→ S` in lieu of `{R} —π→ {S}`.” -/
-theorem constructs_singleton_iff {A B : C} {converter : A ⟶ B}
+lemma constructs_singleton_iff {A B : C} {converter : A ⟶ B}
     {source : Phi B} {target : Phi A} :
     Constructs converter
         ({source} : Specification (Phi B)) ({target} : Specification (Phi A)) ↔
@@ -410,7 +410,7 @@ theorem constructs_singleton_iff {A B : C} {converter : A ⟶ B}
 
 omit [MonoidalCategory C] in
 /-- Equal converters between the same interfaces have equal attachment on every resource. -/
-theorem attach_eq_of_converter_eq {A B : C} {left right : A ⟶ B}
+lemma attach_eq_of_converter_eq {A B : C} {left right : A ⟶ B}
     (equal : left = right) (resource : Phi B) :
     attach left resource = attach right resource := by
   -- Substitute the converter equality in the functor map.
@@ -419,7 +419,7 @@ theorem attach_eq_of_converter_eq {A B : C} {left right : A ⟶ B}
 
 omit [MonoidalCategory C] in
 /-- Exact construction is invariant under equality of converters between the same interfaces. -/
-theorem constructs_iff_of_converter_eq {A B : C} {left right : A ⟶ B}
+lemma constructs_iff_of_converter_eq {A B : C} {left right : A ⟶ B}
     (equal : left = right) {source : Specification (Phi B)}
     {target : Specification (Phi A)} :
     Constructs left source target ↔
@@ -430,7 +430,7 @@ theorem constructs_iff_of_converter_eq {A B : C} {left right : A ⟶ B}
 
 omit [MonoidalCategory C] in
 @[simp]
-theorem constructs_identity {A : C} (source : Specification (Phi A)) :
+lemma constructs_identity {A : C} (source : Specification (Phi A)) :
     Constructs (𝟙 A) source source := by
   intro resource admitted
   simpa [attach_identity] using admitted
@@ -536,7 +536,7 @@ theorem Constructs.parallel [CryptographicAlgebra C Phi]
 
 /-- Left context-insensitivity: an exact construction remains valid beside an
 unchanged right-hand resource specification. -/
-theorem Constructs.left_context [CryptographicAlgebra C Phi]
+lemma Constructs.left_context [CryptographicAlgebra C Phi]
     {A A' B : C} {converter : A ⟶ A'}
     {source : Specification (Phi A')} {target : Specification (Phi A)}
     (construction : Constructs converter source target)
@@ -549,7 +549,7 @@ theorem Constructs.left_context [CryptographicAlgebra C Phi]
 
 /-- Right context-insensitivity: an exact construction remains valid beside
 an unchanged left-hand resource specification. -/
-theorem Constructs.right_context [CryptographicAlgebra C Phi]
+lemma Constructs.right_context [CryptographicAlgebra C Phi]
     {A B B' : C} {converter : B ⟶ B'}
     {source : Specification (Phi B')} {target : Specification (Phi B)}
     (context : Specification (Phi A))

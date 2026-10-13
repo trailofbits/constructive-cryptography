@@ -32,9 +32,9 @@ variable {I S : Type} {X Y : I → Type} (step : S → (i : I) → X i → S × 
 def stateAfter (s : S) (h : List (Σ i, X i)) : S :=
   h.foldl (fun s x => (step s x.1 x.2).1) s
 
-@[simp] theorem stateAfter_nil (s : S) : stateAfter step s [] = s := rfl
+@[simp] lemma stateAfter_nil (s : S) : stateAfter step s [] = s := rfl
 
-theorem stateAfter_snoc (s : S) (h : List (Σ i, X i)) (x : Σ i, X i) :
+lemma stateAfter_snoc (s : S) (h : List (Σ i, X i)) (x : Σ i, X i) :
     stateAfter step s (h ++ [x]) = (step (stateAfter step s h) x.1 x.2).1 := by
   simp [stateAfter]
 
@@ -43,24 +43,24 @@ the state reached by the earlier inputs. -/
 def automatonSystem (s : S) : InterfaceSystem I X Y := fun h =>
   Part.ofOption (h.getLast?.map fun x => ⟨x.1, (step (stateAfter step s h.dropLast) x.1 x.2).2⟩)
 
-@[simp] theorem automatonSystem_nil (s : S) : automatonSystem step s [] = Part.none := rfl
+@[simp] lemma automatonSystem_nil (s : S) : automatonSystem step s [] = Part.none := rfl
 
-theorem automatonSystem_snoc (s : S) (h : List (Σ i, X i)) (x : Σ i, X i) :
+lemma automatonSystem_snoc (s : S) (h : List (Σ i, X i)) (x : Σ i, X i) :
     automatonSystem step s (h ++ [x]) = Part.some ⟨x.1, (step (stateAfter step s h) x.1 x.2).2⟩ := by
   simp [automatonSystem]
 
-theorem automatonSystem_dom (s : S) (h : List (Σ i, X i)) :
+lemma automatonSystem_dom (s : S) (h : List (Σ i, X i)) :
     (automatonSystem step s h).Dom ↔ h ≠ [] := by
   rcases List.eq_nil_or_concat h with rfl | ⟨h, x, rfl⟩
   · simp
   · simp [automatonSystem_snoc]
 
-theorem automatonSystem_isDDS (s : S) : IsDDS (automatonSystem step s) := by
+lemma automatonSystem_isDDS (s : S) : IsDDS (automatonSystem step s) := by
   refine ⟨by simp [SilentAtEmpty], fun p h _ hn _ => ?_⟩
   rw [automatonSystem_dom]
   exact hn
 
-theorem automatonSystem_replies (s : S) : RepliesAtQueriedInterface (automatonSystem step s) := by
+lemma automatonSystem_replies (s : S) : RepliesAtQueriedInterface (automatonSystem step s) := by
   intro h x y hy
   rw [automatonSystem_snoc] at hy
   exact congrArg Sigma.fst (Part.mem_some_iff.mp hy)
@@ -71,7 +71,7 @@ def IsBisim {S' : Type} (step' : S' → (i : I) → X i → S' × Y i) (rel : S 
   ∀ a a' i x, rel a a' → (step a i x).2 = (step' a' i x).2 ∧ rel (step a i x).1 (step' a' i x).1
 
 /-- Bisimulations compose. -/
-theorem IsBisim.comp {S' S'' : Type} {step' : S' → (i : I) → X i → S' × Y i}
+lemma IsBisim.comp {S' S'' : Type} {step' : S' → (i : I) → X i → S' × Y i}
     {step'' : S'' → (i : I) → X i → S'' × Y i} {rel : S → S' → Prop} {rel' : S' → S'' → Prop}
     (h : IsBisim step step' rel) (h' : IsBisim step' step'' rel') :
     IsBisim step step'' (fun a a'' => ∃ a', rel a a' ∧ rel' a' a'') := by
@@ -81,7 +81,7 @@ theorem IsBisim.comp {S' S'' : Type} {step' : S' → (i : I) → X i → S' × Y
   exact ⟨h₁.trans h₁', _, h₂, h₂'⟩
 
 /-- Equality is a bisimulation of an automaton with itself. -/
-theorem isBisim_eq : IsBisim step step (fun a a' => a = a') := by
+lemma isBisim_eq : IsBisim step step (fun a a' => a = a') := by
   rintro a a' i x rfl
   exact ⟨rfl, rfl⟩
 

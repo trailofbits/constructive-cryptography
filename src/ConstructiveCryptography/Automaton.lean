@@ -44,7 +44,7 @@ noncomputable def Resource.ofAutomaton (initial : Distribution.ProbDist S) : Res
     Distribution.fTransform_isProbDist _ initial.2⟩
 
 /-- A transcript has the mass of the initial states from which the automaton gives it. -/
-theorem Resource.ofAutomaton_mass (initial : Distribution.ProbDist S)
+lemma Resource.ofAutomaton_mass (initial : Distribution.ProbDist S)
     (h : List ((Σ i, T.X i) × (Σ i, T.Y i))) :
     (Resource.ofAutomaton T step initial).1 h = initial.1.mass fun s =>
       Replies (filterDom T.domain (automatonSystem step s)) (h.map Prod.fst) (h.map Prod.snd) := by
@@ -54,7 +54,7 @@ theorem Resource.ofAutomaton_mass (initial : Distribution.ProbDist S)
 
 /-- **Parallel automata** are the automaton running both side by side from independent initial
 states. -/
-theorem parallel_ofAutomaton {A B : Interface} {S T : Type}
+lemma parallel_ofAutomaton {A B : Interface} {S T : Type}
     (f : S → (i : A.I) → A.X i → S × A.Y i) (g : T → (j : B.I) → B.X j → T × B.Y j)
     (P : Distribution.ProbDist S) (Q : Distribution.ProbDist T) :
     parallel (Resource.ofAutomaton A f P) (Resource.ofAutomaton B g Q) =

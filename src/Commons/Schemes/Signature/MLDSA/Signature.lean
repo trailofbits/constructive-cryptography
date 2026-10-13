@@ -314,7 +314,7 @@ and the challenge-product norm bound (`h_cs2_bound`, for the challenge `c = Samp
 These conditions follow from the key generation relationship `t = A·s₁ + s₂`,
 `(t₁,t₀) = Power2Round(t)`, and the weight/norm structure of challenge polynomials and
 secret keys. -/
-theorem fipsSign_fipsVerify_correct'
+lemma fipsSign_fipsVerify_correct'
     (pk : PublicKey p prims) (sk : SecretKey p)
     (msg : List Byte) (sig : FIPSSignature p prims)
     (rhoDoublePrime : Bytes 64) (maxAttempts : ℕ)

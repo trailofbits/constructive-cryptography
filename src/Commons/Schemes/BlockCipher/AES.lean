@@ -75,13 +75,13 @@ def mul (b c : UInt8) : UInt8 :=
   (List.range 8).foldr
     (fun i acc => if (b >>> i.toUInt8) &&& 1 = 0 then acc else xTimes^[i] c ^^^ acc) 0
 
-theorem shiftRight_seven (b : UInt8) : b >>> 7 = 0 ∨ b >>> 7 = 1 := by
+lemma shiftRight_seven (b : UInt8) : b >>> 7 = 0 ∨ b >>> 7 = 1 := by
   obtain ⟨i, rfl⟩ : ∃ i : Fin 256, UInt8.ofFin i = b := ⟨b.toFin, rfl⟩
   revert i
   decide +kernel
 
 /-- `xTimes` is linear. -/
-theorem xTimes_xor (x y : UInt8) : xTimes (x ^^^ y) = xTimes x ^^^ xTimes y := by
+lemma xTimes_xor (x y : UInt8) : xTimes (x ^^^ y) = xTimes x ^^^ xTimes y := by
   unfold xTimes
   rw [UInt8.shiftRight_xor, UInt8.shiftLeft_xor]
   rcases shiftRight_seven x with hx | hx <;> rcases shiftRight_seven y with hy | hy <;>
@@ -91,14 +91,14 @@ theorem xTimes_xor (x y : UInt8) : xTimes (x ^^^ y) = xTimes x ^^^ xTimes y := b
     | rw [UInt8.xor_assoc, UInt8.xor_comm (y <<< 1) 27, ← UInt8.xor_assoc 27 27, UInt8.xor_self,
         UInt8.zero_xor]
 
-theorem iterate_xTimes_xor (n : ℕ) (x y : UInt8) :
+lemma iterate_xTimes_xor (n : ℕ) (x y : UInt8) :
     xTimes^[n] (x ^^^ y) = xTimes^[n] x ^^^ xTimes^[n] y := by
   induction n generalizing x y with
   | zero => rfl
   | succ n ih => simp only [Function.iterate_succ_apply, xTimes_xor, ih]
 
 /-- Multiplication in GF(2⁸) is linear. -/
-theorem mul_xor (b x y : UInt8) : mul b (x ^^^ y) = mul b x ^^^ mul b y := by
+lemma mul_xor (b x y : UInt8) : mul b (x ^^^ y) = mul b x ^^^ mul b y := by
   unfold mul
   induction List.range 8 with
   | nil => simp
@@ -158,7 +158,7 @@ def invSbox (b : UInt8) : UInt8 :=
   (invSboxTable[b.toNat / 16]'(by have := b.toNat_lt; omega))[b.toNat % 16]'(by omega)
 
 /-- The inverse S-box inverts the S-box. -/
-theorem invSbox_sbox (b : UInt8) : invSbox (sbox b) = b := by
+lemma invSbox_sbox (b : UInt8) : invSbox (sbox b) = b := by
   obtain ⟨i, rfl⟩ : ∃ i : Fin 256, UInt8.ofFin i = b := ⟨b.toFin, rfl⟩
   revert i
   decide +kernel
@@ -258,14 +258,14 @@ def invCipher (k : KeyLength) (key : Key k) (input : Block) : Block :=
 
 /-! ## The inverse cipher inverts the cipher -/
 
-theorem addRoundKey_addRoundKey (s : Block) (w : Array Word) (round : ℕ) :
+lemma addRoundKey_addRoundKey (s : Block) (w : Array Word) (round : ℕ) :
     addRoundKey (addRoundKey s w round) w round = s :=
   xor_cancel_right _ _
 
-theorem invSubBytes_subBytes (s : Block) : invSubBytes (subBytes s) = s :=
+lemma invSubBytes_subBytes (s : Block) : invSubBytes (subBytes s) = s :=
   Vector.ext fun i hi => by simp [invSubBytes, subBytes, invSbox_sbox]
 
-theorem invShiftRows_shiftRows (s : Block) : invShiftRows (shiftRows s) = s :=
+lemma invShiftRows_shiftRows (s : Block) : invShiftRows (shiftRows s) = s :=
   Vector.ext fun i hi => by
     interval_cases i <;> simp [invShiftRows, shiftRows]
 
@@ -273,13 +273,13 @@ theorem invShiftRows_shiftRows (s : Block) : invShiftRows (shiftRows s) = s :=
 def bit (j : ℕ) : UInt8 := 1 <<< j.toUInt8
 
 /-- A byte is the sum of its bits. -/
-theorem eq_xor_bits (x : UInt8) :
+lemma eq_xor_bits (x : UInt8) :
     x = (List.range 8).foldr (fun j acc => (x &&& bit j) ^^^ acc) 0 := by
   obtain ⟨i, rfl⟩ : ∃ i : Fin 256, UInt8.ofFin i = x := ⟨x.toFin, rfl⟩
   revert i
   decide +kernel
 
-theorem and_bit (x : UInt8) (j : ℕ) (hj : j < 8) :
+lemma and_bit (x : UInt8) (j : ℕ) (hj : j < 8) :
     x &&& bit j = 0 ∨ x &&& bit j = bit j := by
   obtain ⟨i, rfl⟩ : ∃ i : Fin 256, UInt8.ofFin i = x := ⟨x.toFin, rfl⟩
   obtain ⟨j, rfl⟩ : ∃ j' : Fin 8, j'.val = j := ⟨⟨j, hj⟩, rfl⟩
@@ -288,7 +288,7 @@ theorem and_bit (x : UInt8) (j : ℕ) (hj : j < 8) :
 
 /-- **Linear maps of bytes are determined by the bits**: two maps from bytes to words that
 preserve `^^^` and agree on each bit agree. -/
-theorem eq_of_xor_of_bits {f g : UInt8 → Word} (hf : ∀ x y, f (x ^^^ y) = f x ^^^ f y)
+lemma eq_of_xor_of_bits {f g : UInt8 → Word} (hf : ∀ x y, f (x ^^^ y) = f x ^^^ f y)
     (hg : ∀ x y, g (x ^^^ y) = g x ^^^ g y)
     (hbits : ∀ j < 8, f (bit j) = g (bit j)) (x : UInt8) : f x = g x := by
   have zero : ∀ {h : UInt8 → Word}, (∀ x y, h (x ^^^ y) = h x ^^^ h y) → h 0 = 0 := by
@@ -313,34 +313,34 @@ theorem eq_of_xor_of_bits {f g : UInt8 → Word} (hf : ∀ x y, f (x ^^^ y) = f 
 /-- The single-byte column `x` at row `r`. -/
 def singleton (r : Fin 4) (x : UInt8) : Word := Vector.ofFn fun r' => if r' = r then x else 0
 
-theorem singleton_xor (r : Fin 4) (x y : UInt8) :
+lemma singleton_xor (r : Fin 4) (x y : UInt8) :
     singleton r (x ^^^ y) = singleton r x ^^^ singleton r y :=
   Vector.ext fun i hi => by
     simp only [singleton, Vector.getElem_ofFn, Bytes.getElem_xor]
     split_ifs <;> simp
 
-theorem mixColumn_xor (a b : Word) : mixColumn (a ^^^ b) = mixColumn a ^^^ mixColumn b :=
+lemma mixColumn_xor (a b : Word) : mixColumn (a ^^^ b) = mixColumn a ^^^ mixColumn b :=
   Vector.ext fun i hi => by
     interval_cases i <;> simp [mixColumn, mul_xor] <;> ac_rfl
 
-theorem invMixColumn_xor (a b : Word) :
+lemma invMixColumn_xor (a b : Word) :
     invMixColumn (a ^^^ b) = invMixColumn a ^^^ invMixColumn b :=
   Vector.ext fun i hi => by
     interval_cases i <;> simp [invMixColumn, mul_xor] <;> ac_rfl
 
-theorem word_eq_singletons (a : Word) :
+lemma word_eq_singletons (a : Word) :
     a = singleton 0 a[0] ^^^ singleton 1 a[1] ^^^ singleton 2 a[2] ^^^ singleton 3 a[3] :=
   Vector.ext fun i hi => by
     interval_cases i <;> simp [singleton]
 
-theorem invMixColumn_mixColumn_bits :
+lemma invMixColumn_mixColumn_bits :
     ∀ r : Fin 4, ∀ j : Fin 8, invMixColumn (mixColumn (singleton r (bit j.val))) =
       singleton r (bit j.val) := by
   decide +kernel
 
 /-- **`INVMIXCOLUMNS` inverts `MIXCOLUMNS` on a column**: both are linear, so it suffices that each
 bit of each byte of a column is inverted. -/
-theorem invMixColumn_mixColumn (a : Word) : invMixColumn (mixColumn a) = a := by
+lemma invMixColumn_mixColumn (a : Word) : invMixColumn (mixColumn a) = a := by
   have hbyte : ∀ r x, invMixColumn (mixColumn (singleton r x)) = singleton r x := fun r =>
     eq_of_xor_of_bits (f := fun x => invMixColumn (mixColumn (singleton r x)))
       (fun x y => by simp only [singleton_xor, mixColumn_xor, invMixColumn_xor])
@@ -348,23 +348,23 @@ theorem invMixColumn_mixColumn (a : Word) : invMixColumn (mixColumn a) = a := by
   rw [word_eq_singletons a]
   simp only [mixColumn_xor, invMixColumn_xor, hbyte]
 
-theorem column_ofColumns (columns : Vector Word 4) (c : Fin 4) :
+lemma column_ofColumns (columns : Vector Word 4) (c : Fin 4) :
     column (ofColumns columns) c = columns[c] :=
   Vector.ext fun r hr => by
     fin_cases c <;> interval_cases r <;> simp [column, ofColumns]
 
-theorem ofColumns_column (s : Block) : ofColumns (Vector.ofFn fun c => column s c) = s :=
+lemma ofColumns_column (s : Block) : ofColumns (Vector.ofFn fun c => column s c) = s :=
   Vector.ext fun i hi => by
     interval_cases i <;> simp [ofColumns, column]
 
-theorem invMixColumns_mixColumns (s : Block) : invMixColumns (mixColumns s) = s := by
+lemma invMixColumns_mixColumns (s : Block) : invMixColumns (mixColumns s) = s := by
   simp only [invMixColumns, mixColumns, column_ofColumns, Fin.getElem_fin, Vector.getElem_ofFn,
     invMixColumn_mixColumn, Fin.eta, ofColumns_column]
 
 /-- **The inverse rounds invert the rounds**: after `SubBytes` and `ShiftRows`, the inverse rounds
 in the reverse order undo the rounds `rs`, the inverse of round `r` undoing `MixColumns` and
 `AddRoundKey` of round `r` and `SubBytes` and `ShiftRows` of the round before. -/
-theorem invRounds_rounds (w : Array Word) (rs : List ℕ) (s : Block) :
+lemma invRounds_rounds (w : Array Word) (rs : List ℕ) (s : Block) :
     rs.reverse.foldl (fun state round =>
         invMixColumns (addRoundKey (invSubBytes (invShiftRows state)) w round))
       (shiftRows (subBytes (rs.foldl (fun state round =>

@@ -57,7 +57,7 @@ noncomputable def serialM (β : InsideOutsideSystem O M U V Xm Ym) (α : InsideO
   interconnect (pair β α) serialRouteM serialInjM
 
 /-- Every internal cycle of `β ⊙ α` passes through `β`, continuing only after a query of `β`. -/
-theorem cyclesThrough_serial :
+lemma cyclesThrough_serial :
     CyclesThrough (IsInside (F := twoFam V Xm))
       (serialRouteM (U := U) (Ym := Ym) (Xi := Xi) (Yi := Yi)) := by
   refine ⟨?_, ?_, ?_⟩
@@ -71,11 +71,11 @@ theorem cyclesThrough_serial :
     · exact Or.inr ⟨_, rfl⟩
     · exact Or.inl ⟨_, rfl⟩
 
-theorem IsDDC.converges_serial {b : ℕ} {β : InsideOutsideSystem O M U V Xm Ym} (hβ : IsDDC b β)
+lemma IsDDC.converges_serial {b : ℕ} {β : InsideOutsideSystem O M U V Xm Ym} (hβ : IsDDC b β)
     (α : InsideOutsideSystem M J Xm Ym Xi Yi) : Converges (pair β α) serialRouteM serialInjM :=
   converges_pair cyclesThrough_serial hβ.bound
 
-theorem IsResponsiveDDC.converges_serial {b : ℕ} {β : InsideOutsideSystem O M U V Xm Ym} (hβ : IsResponsiveDDC b β)
+lemma IsResponsiveDDC.converges_serial {b : ℕ} {β : InsideOutsideSystem O M U V Xm Ym} (hβ : IsResponsiveDDC b β)
     (α : InsideOutsideSystem M J Xm Ym Xi Yi) : Converges (pair β α) serialRouteM serialInjM :=
   hβ.isDDC.converges_serial α
 
@@ -88,7 +88,7 @@ variable {O L M J : Type} {U V : O → Type} {XL YL : L → Type}
 
 /-- Both bracketings connect the same three component histories. Flattening
 their existing connections leaves identical routing and exposed inputs. -/
-theorem IsDDC.serialM_assoc {bγ bβ : ℕ} {γ : InsideOutsideSystem O L U V XL YL}
+lemma IsDDC.serialM_assoc {bγ bβ : ℕ} {γ : InsideOutsideSystem O L U V XL YL}
     {β : InsideOutsideSystem L M XL YL XM YM} (α : InsideOutsideSystem M J XM YM X Y)
     (hγ : IsDDC bγ γ) (hβ : IsDDC bβ β) :
     serialM (serialM γ β) α = serialM γ (serialM β α) := by
@@ -105,7 +105,7 @@ theorem IsDDC.serialM_assoc {bγ bβ : ℕ} {γ : InsideOutsideSystem O L U V XL
   · funext x
     rcases x with ⟨⟨_ | ⟨⟨⟩⟩, i⟩, x⟩ <;> rfl
 
-theorem serialM_assoc {bγ bβ : ℕ} {γ : InsideOutsideSystem O L U V XL YL}
+lemma serialM_assoc {bγ bβ : ℕ} {γ : InsideOutsideSystem O L U V XL YL}
     {β : InsideOutsideSystem L M XL YL XM YM} (α : InsideOutsideSystem M J XM YM X Y)
     (hγ : IsResponsiveDDC bγ γ) (hβ : IsResponsiveDDC bβ β) :
     serialM (serialM γ β) α = serialM γ (serialM β α) :=
@@ -155,7 +155,7 @@ def SerialPostM (β : InsideOutsideSystem O M U V Xm Ym) (α : InsideOutsideSyst
     Waits β (restrict none G) m o ∧ 1 ≤ insideRun β (restrict none G) ∧
     c + 1 ≤ bα * (insideRun β (restrict none G) - 1) + insideRun α (restrict (some ()) G))
 
-theorem insideRun_snoc_of_mem {O J : Type} {U V : O → Type} {Xi Yi : J → Type}
+lemma insideRun_snoc_of_mem {O J : Type} {U V : O → Type} {Xi Yi : J → Type}
     {γ : InsideOutsideSystem O J U V Xi Yi} {h z} {y : Σ l, twoFam V Xi l} (hy : y ∈ γ (h ++ [z])) :
     insideRun γ (h ++ [z]) = if IsInside y then insideRun γ h + 1 else 0 := by
   rw [insideRun, run_snoc]
@@ -165,14 +165,14 @@ theorem insideRun_snoc_of_mem {O J : Type} {U V : O → Type} {Xi Yi : J → Typ
     rintro ⟨y', hy', hi'⟩
     exact hi (Part.mem_unique hy hy' ▸ hi')
 
-theorem insideRun_le_of_admissible {O J : Type} {U V : O → Type} {Xi Yi : J → Type}
+lemma insideRun_le_of_admissible {O J : Type} {U V : O → Type} {Xi Yi : J → Type}
     {γ : InsideOutsideSystem O J U V Xi Yi} {b : ℕ} (hγ : IsDDC b γ) {h z}
     (ha : Admissible γ (h ++ [z])) : insideRun γ h ≤ b := by
   rcases eq_or_ne h [] with rfl | hne
   · simp [insideRun]
   · exact hγ.bound _ ((admissible_snoc.mp ha).2.1 hne)
 
-theorem serialM_exchange_partial (hβ : IsDDC bβ β) (hα : IsDDC bα α) {G o' G'}
+lemma serialM_exchange_partial (hβ : IsDDC bβ β) (hα : IsDDC bα α) {G o' G'}
     (l : Exchange (pair β α) serialRouteM G o' G') :
     ∀ o c, SerialAtB β α bα o c G ∨ SerialAtA β α bα o c G →
       (o' = none ∧ ¬ (pair β α G').Dom ∧
@@ -276,14 +276,14 @@ section SerialClosure
 variable {O M J : Type} {U V : O → Type} {Xm Ym : M → Type} {Xi Yi : J → Type}
   {β : InsideOutsideSystem O M U V Xm Ym} {α : InsideOutsideSystem M J Xm Ym Xi Yi} {bβ bα : ℕ}
 
-theorem exchange_silent_of_not_dom {X Y B : Type} {s : System X Y} {route : Y → B ⊕ X} {G o G'}
+lemma exchange_silent_of_not_dom {X Y B : Type} {s : System X Y} {route : Y → B ⊕ X} {G o G'}
     (l : Exchange s route G o G') (hd : ¬ (s G).Dom) : o = none := by
   cases l with
   | silent => rfl
   | out _ y _ hy => exact absurd (Part.dom_iff_mem.mpr ⟨y, hy⟩) hd
   | feed _ y _ _ _ hy => exact absurd (Part.dom_iff_mem.mpr ⟨y, hy⟩) hd
 
-theorem run_trim {X Y : Type} (P : Y → Prop) (s : System X Y) {h : List X} (hr : Reach s h) :
+lemma run_trim {X Y : Type} (P : Y → Prop) (s : System X Y) {h : List X} (hr : Reach s h) :
     run P (trim s) h = run P s h := by
   induction h using List.reverseRecOn with
   | nil => rfl
@@ -305,7 +305,7 @@ def SerialState (u : List (Σ l : Two O J, twoFam U Yi l)) (o : Option (Σ l : T
       insideRun (serialM β α) u ≤
         bα * (insideRun β (restrict none H) - 1) + insideRun α (restrict (some ()) H)))
 
-theorem serialM_next_partial (hβ : IsDDC bβ β) (hα : IsDDC bα α) {u o H}
+lemma serialM_next_partial (hβ : IsDDC bβ β) (hα : IsDDC bα α) {u o H}
     (r : Induces (pair β α) serialRouteM serialInjM u o H) (hs : SerialState β α bα u o H)
     (a : Σ l : Two O J, twoFam U Yi l) :
     (admitAfter (o.map (·.1)) a.1 →
@@ -432,7 +432,7 @@ theorem serialM_next_partial (hβ : IsDDC bβ β) (hα : IsDDC bα α) {u o H}
         exact absurd this (by simp [admitAfter, e])
 
 /-- The responsive case follows by excluding a stopped component. -/
-theorem serialM_next (hβ : IsResponsiveDDC bβ β) (hα : IsResponsiveDDC bα α) {u o H}
+lemma serialM_next (hβ : IsResponsiveDDC bβ β) (hα : IsResponsiveDDC bα α) {u o H}
     (r : Induces (pair β α) serialRouteM serialInjM u o H) (hs : SerialState β α bα u o H)
     (a : Σ l : Two O J, twoFam U Yi l) :
     (admitAfter (o.map (·.1)) a.1 → ∃ w H', Induces (pair β α) serialRouteM serialInjM (u ++ [a])
@@ -446,7 +446,7 @@ theorem serialM_next (hβ : IsResponsiveDDC bβ β) (hα : IsResponsiveDDC bα �
   · exact (hf.elim (fun h => h hβ.responsive) (fun h => h hα.responsive)).elim
   · exact hr
 
-theorem replyLabel_serialM {u o H} (r : Induces (pair β α) serialRouteM serialInjM u o H) :
+lemma replyLabel_serialM {u o H} (r : Induces (pair β α) serialRouteM serialInjM u o H) :
     replyLabel (serialM β α) u = o.map (·.1) := by
   rcases o with _ | w
   · have hd : ¬ (serialM β α u).Dom := by rw [serialM]; exact not_dom_of_induces_none r
@@ -454,7 +454,7 @@ theorem replyLabel_serialM {u o H} (r : Induces (pair β α) serialRouteM serial
   · have hw : w ∈ serialM β α u := by rw [serialM]; exact mem_of_induces_some r
     simp [replyLabel_of_mem _ hw]
 
-theorem serialM_reach_partial (hβ : IsDDC bβ β) (hα : IsDDC bα α) :
+lemma serialM_reach_partial (hβ : IsDDC bβ β) (hα : IsDDC bα α) :
     ∀ u, Reach (serialM β α) u → ∃ o H, Induces (pair β α) serialRouteM serialInjM u o H ∧
       SerialState β α bα u o H ∧
       ∀ u' a w, u = u' ++ [a] → o = some w → ∀ o', w.1 = ⟨none, o'⟩ → lastOuter u = some o' := by
@@ -480,17 +480,17 @@ theorem serialM_reach_partial (hβ : IsDDC bβ β) (hα : IsDDC bα α) :
       exact hlast o' ho
     · exact absurd (hnext.2 had _ _ r') (by simp)
 
-theorem serialM_reach (hβ : IsResponsiveDDC bβ β) (hα : IsResponsiveDDC bα α) :
+lemma serialM_reach (hβ : IsResponsiveDDC bβ β) (hα : IsResponsiveDDC bα α) :
     ∀ u, Reach (serialM β α) u → ∃ o H, Induces (pair β α) serialRouteM serialInjM u o H ∧
       SerialState β α bα u o H ∧
       ∀ u' a w, u = u' ++ [a] → o = some w → ∀ o', w.1 = ⟨none, o'⟩ → lastOuter u = some o' :=
   serialM_reach_partial hβ.isDDC hα.isDDC
 
-theorem reach_of_trim {X Y : Type} {s : System X Y} {h : List X} (hd : (trim s h).Dom) : Reach s h := by
+lemma reach_of_trim {X Y : Type} {s : System X Y} {h : List X} (hd : (trim s h).Dom) : Reach s h := by
   by_contra hr
   simp [trim, hr] at hd
 
-theorem serialM_reach_of_admissible (hβ : IsResponsiveDDC bβ β) (hα : IsResponsiveDDC bα α) :
+lemma serialM_reach_of_admissible (hβ : IsResponsiveDDC bβ β) (hα : IsResponsiveDDC bα α) :
     ∀ h, Admissible (trim (serialM β α)) h → Reach (serialM β α) h := by
   intro h
   induction h using List.reverseRecOn with
@@ -579,7 +579,7 @@ theorem IsDDC.comp (hβ : IsDDC bβ β) (hα : IsDDC bα α) :
     · obtain rfl := hwu w rfl
       exact hlast h' a w rfl rfl o' ho'
 
-theorem IsResponsiveDDC.comp (hβ : IsResponsiveDDC bβ β) (hα : IsResponsiveDDC bα α) :
+lemma IsResponsiveDDC.comp (hβ : IsResponsiveDDC bβ β) (hα : IsResponsiveDDC bα α) :
     IsResponsiveDDC (bα * bβ) (trim (serialM β α)) := by
   apply isResponsiveDDC_iff.mpr
   refine ⟨hβ.isDDC.comp hα.isDDC, fun h ha hne => ?_⟩
@@ -599,11 +599,11 @@ variable {I O M J : Type} {X Y : I → Type} {U V : O → Type} {Xm Ym : M → T
 abbrev outerOfAlong : M → Free (alongSet (O := M) ι) :=
   fun m => ⟨⟨none, ⟨none, m⟩⟩, outside_not_mem_alongSet ι m⟩
 
-theorem outerOfAlong_injective : Function.Injective (outerOfAlong (J := J) (M := M) ι) := by
+lemma outerOfAlong_injective : Function.Injective (outerOfAlong (J := J) (M := M) ι) := by
   intro a b h
   simpa [outerOfAlong] using congrArg Subtype.val h
 
-theorem free_not_mem_outerOfAlong {i : I} (h : (⟨some (), i⟩ : Two (Two M J) I) ∉ alongSet ι) :
+lemma free_not_mem_outerOfAlong {i : I} (h : (⟨some (), i⟩ : Two (Two M J) I) ∉ alongSet ι) :
     (⟨some (), ⟨⟨some (), i⟩, h⟩⟩ : Two (Two O M) (Free (alongSet (O := M) ι))) ∉
       alongSet (O := O) (outerOfAlong (M := M) ι) := by
   rintro ⟨m, hm⟩
@@ -631,7 +631,7 @@ def serialAppOut : (Σ l : Free (alongSet (O := O) (outerOfAlong (M := M) ι)),
 
 variable {ι}
 
-theorem attachAlong_serialM (hι : Function.Injective ι) (β : InsideOutsideSystem O M U V Xm Ym)
+lemma attachAlong_serialM (hι : Function.Injective ι) (β : InsideOutsideSystem O M U V Xm Ym)
     (α : InsideOutsideSystem M J Xm Ym (X ∘ ι) (Y ∘ ι)) (R : InterfaceSystem I X Y)
     (hβα : Converges (pair β α) serialRouteM serialInjM)
     (hαR : Converges (pair α R) (alongRoute ι) (alongInj ι)) :
@@ -676,15 +676,15 @@ end SerialLaw
 
 section SerialComp
 
-theorem EqOnReachable.rfl' {X Y : Type} (s : System X Y) : s ≈ₛ s := ⟨fun _ => Iff.rfl, fun _ _ _ => rfl⟩
+lemma EqOnReachable.rfl' {X Y : Type} (s : System X Y) : s ≈ₛ s := ⟨fun _ => Iff.rfl, fun _ _ _ => rfl⟩
 
-theorem EqOnReachable.pair_left {A₁ B₁ A₂ B₂ : Type} {a a' : System A₁ B₁} (ha : a ≈ₛ a') (b : System A₂ B₂) :
+lemma EqOnReachable.pair_left {A₁ B₁ A₂ B₂ : Type} {a a' : System A₁ B₁} (ha : a ≈ₛ a') (b : System A₂ B₂) :
     pair a b ≈ₛ pair a' b :=
   EqOnReachable.parAll fun o => by cases o with
     | none => exact ha
     | some _ => exact EqOnReachable.rfl' b
 
-theorem EqOnReachable.serialM {O M J : Type} {U V : O → Type} {Xm Ym : M → Type}
+lemma EqOnReachable.serialM {O M J : Type} {U V : O → Type} {Xm Ym : M → Type}
     {X Y : J → Type} {β β' : InsideOutsideSystem O M U V Xm Ym} {α α' : InsideOutsideSystem M J Xm Ym X Y}
     (hβ : β ≈ₛ β') (hα : α ≈ₛ α') : serialM β α ≈ₛ serialM β' α' := by
   apply EqOnReachable.interconnect
@@ -694,7 +694,7 @@ theorem EqOnReachable.serialM {O M J : Type} {U V : O → Type} {Xm Ym : M → T
 
 /-- Associativity also holds after restricting each intermediate converter to
 its reachable histories. -/
-theorem IsDDC.trim_serialM_assoc {O L M J : Type} {U V : O → Type} {XL YL : L → Type}
+lemma IsDDC.trim_serialM_assoc {O L M J : Type} {U V : O → Type} {XL YL : L → Type}
     {XM YM : M → Type} {X Y : J → Type} {bγ bβ : ℕ}
     {γ : InsideOutsideSystem O L U V XL YL} {β : InsideOutsideSystem L M XL YL XM YM}
     (α : InsideOutsideSystem M J XM YM X Y) (hγ : IsDDC bγ γ) (hβ : IsDDC bβ β) :
@@ -704,7 +704,7 @@ theorem IsDDC.trim_serialM_assoc {O L M J : Type} {U V : O → Type} {XL YL : L 
   rw [IsDDC.serialM_assoc α hγ hβ] at hl
   exact (hl.trans hr.symm).trim_eq (by simp [SilentAtEmpty, serialM]) (by simp [SilentAtEmpty, serialM])
 
-theorem trim_serialM_assoc {O L M J : Type} {U V : O → Type} {XL YL : L → Type}
+lemma trim_serialM_assoc {O L M J : Type} {U V : O → Type} {XL YL : L → Type}
     {XM YM : M → Type} {X Y : J → Type} {bγ bβ : ℕ}
     {γ : InsideOutsideSystem O L U V XL YL} {β : InsideOutsideSystem L M XL YL XM YM}
     (α : InsideOutsideSystem M J XM YM X Y) (hγ : IsResponsiveDDC bγ γ) (hβ : IsResponsiveDDC bβ β) :
@@ -722,7 +722,7 @@ noncomputable def comp {O M J : Type} {U V : O → Type} {Xm Ym : M → Type}
     obtain ⟨bα, hα⟩ := α.2
     exact ⟨bα * bβ, hβ.comp hα⟩⟩
 
-theorem comp_assoc {O L M J : Type} {U V : O → Type} {XL YL : L → Type}
+lemma comp_assoc {O L M J : Type} {U V : O → Type} {XL YL : L → Type}
     {XM YM : M → Type} {X Y : J → Type}
     (γ : DDC O L U V XL YL) (β : DDC L M XL YL XM YM) (α : DDC M J XM YM X Y) :
     comp (comp γ β) α = comp γ (comp β α) := by
@@ -735,13 +735,13 @@ end DDC
 
 variable {I O J : Type} {X Y : I → Type} {U V : O → Type}
 
-theorem EqOnReachable.attachAlong {ι : J → I} {α α' : InsideOutsideSystem O J U V (X ∘ ι) (Y ∘ ι)} (hα : α ≈ₛ α')
+lemma EqOnReachable.attachAlong {ι : J → I} {α α' : InsideOutsideSystem O J U V (X ∘ ι) (Y ∘ ι)} (hα : α ≈ₛ α')
     (R : InterfaceSystem I X Y) : SystemAlgebra.attachAlong ι α R ≈ₛ SystemAlgebra.attachAlong ι α' R := by
   unfold SystemAlgebra.attachAlong connect pairI
   exact EqOnReachable.interconnect (EqOnReachable.relabel (EqOnReachable.pair_left hα R) _ _) _ _
 
 /-- A system behaviourally equal to a total system, and silent before the first input, is it. -/
-theorem eq_of_behEq_total {A B : Type} {s t : System A B} (hst : s ≈ₛ t)
+lemma eq_of_behEq_total {A B : Type} {s t : System A B} (hst : s ≈ₛ t)
     (ht : ∀ h, (t h).Dom ↔ h ≠ []) (hs : SilentAtEmpty s) (ht₀ : SilentAtEmpty t) : s = t := by
   funext h
   rcases eq_or_ne h [] with rfl | hne
@@ -750,12 +750,12 @@ theorem eq_of_behEq_total {A B : Type} {s t : System A B} (hst : s ≈ₛ t)
   · have hr : Reach t h := fun h' e he hne' => (ht h').mpr hne'
     exact hst.2 h ((hst.1 h).mpr hr) hne
 
-theorem silentAtEmpty_attachAlong {ι : J → I} (α : InsideOutsideSystem O J U V (X ∘ ι) (Y ∘ ι)) (R : InterfaceSystem I X Y) :
+lemma silentAtEmpty_attachAlong {ι : J → I} (α : InsideOutsideSystem O J U V (X ∘ ι) (Y ∘ ι)) (R : InterfaceSystem I X Y) :
     SilentAtEmpty (attachAlong ι α R) := by
   rw [attachAlong_eq]
   exact not_dom_of_induces_none Induces.nil
 
-theorem TotalResource.relabel {R : InterfaceSystem I X Y} (hR : TotalResource R)
+lemma TotalResource.relabel {R : InterfaceSystem I X Y} (hR : TotalResource R)
     {L : Type} {F G : L → Type} (f : (Σ l, F l) → Σ i, X i) (g : (Σ i, Y i) → Σ l, G l)
     (hfg : ∀ h a y, y ∈ R ((h ++ [a]).map f) → (g y).1 = a.1) :
     TotalResource (SystemAlgebra.relabel R f g) := by
@@ -775,7 +775,7 @@ variable {I O M J : Type} {X Y : I → Type} {U V : O → Type} {Xm Ym : M → T
 
 /-- Serial attachment preserves behavior for arbitrary partial systems, with heterogeneous
 interfaces. Only the converters' internal-query bounds are needed for regrouping. -/
-theorem attachAlong_comp_behEq (hι : Function.Injective ι) (hβ : IsResponsiveDDC bβ β)
+lemma attachAlong_comp_behEq (hι : Function.Injective ι) (hβ : IsResponsiveDDC bβ β)
     (hα : IsResponsiveDDC bα α) :
     attachAlong ι (trim (serialM β α)) R ≈ₛ
       relabel (attachAlong (outerOfAlong ι) β (attachAlong ι α R))

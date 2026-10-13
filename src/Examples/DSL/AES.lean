@@ -98,30 +98,30 @@ noncomputable def WhitenedMaskedAES (mask : Block) (q : Evaluation.Port → ℕ)
 noncomputable example (q : ℕ) : Interface.Resource (Authentication (Bool × Block × Block) q) :=
   CBCMAC (fun (long, first, second) => if long then [first, second] else [first])
 
-theorem composedAES_eq (mask : Block) (q : ℕ) :
+lemma composedAES_eq (mask : Block) (q : ℕ) :
     ComposedAES mask (budget := q) = Whitening mask • (Twice • AES) := by
   unfold ComposedAES
   cc_normalize
 
-theorem parallelAES_eq (q : ℕ) : ParallelAES (budget := q) = DoubleAES ∥ DoubleAES := by
+lemma parallelAES_eq (q : ℕ) : ParallelAES (budget := q) = DoubleAES ∥ DoubleAES := by
   unfold ParallelAES DoubleAES
   cc_normalize
 
-theorem cbc_nonexpanding (blockForm : M → List Block) {q : ℕ}
+lemma cbc_nonexpanding (blockForm : M → List Block) {q : ℕ}
     (R S : Interface.Resource (Evaluation Block Block (CBC.bound blockForm * q))) :
     Δ (CBC blockForm • R) (CBC blockForm • S) ≤ Δ R S := by
   cc_nonexpand
 
 /-- Parallel components keep their own alphabets: whitening AES beside an unrelated resource
 leaves that resource unchanged. -/
-theorem whitening_beside_switch (mask : Block) (q n : ℕ) :
+lemma whitening_beside_switch (mask : Block) (q n : ℕ) :
     (Whitening mask (budget := q) ⊗ₘ 𝟙 (Control n)) • (AES ∥ Switch) =
       (Whitening mask • AES) ∥ Switch := by
   cc_normalize
 
 /-- A two-step hybrid: a bound on distinguishing AES from an ideal block cipher `R`, and a bound
 on the ideal system, give a bound on the real system. -/
-theorem aes_hybrid {A : Interface} {q : ℕ} (α : A ⟶ Evaluation Block Block q)
+lemma aes_hybrid {A : Interface} {q : ℕ} (α : A ⟶ Evaluation Block Block q)
     (R : Interface.Resource (Evaluation Block Block q)) (V : Interface.Resource A) (ε δ : ENNReal)
     (aesBound : Δ AES R ≤ ε) (idealBound : Δ (α • R) V ≤ δ) :
     Δ (α • AES) V ≤ ε + δ := by

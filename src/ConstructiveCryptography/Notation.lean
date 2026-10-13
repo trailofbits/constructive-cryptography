@@ -51,7 +51,7 @@ namespace Interface
 
 attribute [cc_normalization] comp_smul identity_attach
 
-theorem tensor_smul {A B C D : Interface} (α : A ⟶ B) (β : C ⟶ D)
+lemma tensor_smul {A B C D : Interface} (α : A ⟶ B) (β : C ⟶ D)
     (R : Resource B) (S : Resource D) :
     (α ⊗ₘ β) • (R ∥ S) = (α • R) ∥ (β • S) :=
   ConstructiveCryptography.CryptographicAlgebra.attach_parallel
@@ -71,28 +71,28 @@ simproc [cc_normalization] tensorSmul (@HSMul.hSMul _ _ _ _ _ _) := fun e => do
   unless ← withDefault (isDefEq e lhs) do return .continue
   return .visit { expr := rhs, proof? := some (← mkExpectedTypeHint proof (← mkEq e rhs)) }
 
-theorem distance_smul_le {A B : Interface} (α : A ⟶ B) (R S : Resource B) :
+lemma distance_smul_le {A B : Interface} (α : A ⟶ B) (R S : Resource B) :
     Δ (α • R) (α • S) ≤ Δ R S :=
   ConstructiveCryptography.CryptographicAlgebra.distance_attach_le
     α R S
 
 /-- The hybrid inequality, with both endpoints inferred from the goal. -/
-theorem distance_triangle {A : Interface} {R T : Resource A} (S : Resource A) :
+lemma distance_triangle {A : Interface} {R T : Resource A} (S : Resource A) :
     Δ R T ≤ Δ R S + Δ S T :=
   ConstructiveCryptography.CryptographicAlgebra.distance_triangle
     R S T
 
-theorem distance_parallel_left_le {A B : Interface}
+lemma distance_parallel_left_le {A B : Interface}
     (R S : Resource A) (T : Resource B) : Δ (R ∥ T) (S ∥ T) ≤ Δ R S :=
   ConstructiveCryptography.CryptographicAlgebra.distance_parallel_left_le
     R S T
 
-theorem distance_parallel_right_le {A B : Interface}
+lemma distance_parallel_right_le {A B : Interface}
     (R : Resource A) (S T : Resource B) : Δ (R ∥ S) (R ∥ T) ≤ Δ S T :=
   ConstructiveCryptography.CryptographicAlgebra.distance_parallel_right_le
     R S T
 
-theorem distance_parallel_le {A B : Interface}
+lemma distance_parallel_le {A B : Interface}
     (R S : Resource A) (T U : Resource B) :
     Δ (R ∥ T) (S ∥ U) ≤ Δ R S + Δ T U :=
   ConstructiveCryptography.CryptographicAlgebra.distance_parallel_le

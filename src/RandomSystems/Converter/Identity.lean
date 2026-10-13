@@ -22,7 +22,7 @@ namespace SystemAlgebra
 
 open Classical
 
-theorem pair_mono {A B C D : Type} {s s' : System A B} {t t' : System C D}
+lemma pair_mono {A B C D : Type} {s s' : System A B} {t t' : System C D}
     (hs : ∀ h y, y ∈ s h → y ∈ s' h) (ht : ∀ h y, y ∈ t h → y ∈ t' h) :
     ∀ h y, y ∈ pair s t h → y ∈ pair s' t' h := by
   intro h y hy
@@ -39,7 +39,7 @@ variable {O J : Type} {U V : O → Type} {X Y : J → Type}
 
 /-- Responsiveness fixes the domain once preceding replies agree; therefore
 inclusion of complete converter behavior already gives equality. -/
-theorem IsResponsiveDDC.eq_of_replies_imp {b c : ℕ} {α β : InsideOutsideSystem O J U V X Y}
+lemma IsResponsiveDDC.eq_of_replies_imp {b c : ℕ} {α β : InsideOutsideSystem O J U V X Y}
     (hα : IsResponsiveDDC b α) (hβ : IsResponsiveDDC c β)
     (he : ∀ xs ys, Replies α xs ys → Replies β xs ys) : α = β := by
   have key : ∀ h, α h = β h ∧ (Admissible α h ↔ Admissible β h) := by
@@ -67,13 +67,13 @@ theorem IsResponsiveDDC.eq_of_replies_imp {b c : ℕ} {α β : InsideOutsideSyst
           (hd.mpr (Part.dom_iff_mem.mpr ⟨y, hy⟩)))⟩)
   exact funext (fun h => (key h).1)
 
-theorem canon_mem {α : InsideOutsideSystem O J U V X Y} {h y} (hy : y ∈ canon α h) : y ∈ α h := by
+lemma canon_mem {α : InsideOutsideSystem O J U V X Y} {h y} (hy : y ∈ canon α h) : y ∈ α h := by
   unfold canon at hy
   split_ifs at hy with ha
   · exact hy
   · simp at hy
 
-theorem forwardAll_heterogeneous :
+lemma forwardAll_heterogeneous :
     Forwarder (forwardAll J X Y) (fun
       | ⟨⟨none, j⟩, x⟩ => ⟨⟨some (), j⟩, x⟩
       | ⟨⟨some (), j⟩, y⟩ => ⟨⟨none, j⟩, y⟩) := by
@@ -82,7 +82,7 @@ theorem forwardAll_heterogeneous :
   · exact forwardAll_snoc_outer h j v
   · exact forwardAll_snoc_inner h j v
 
-theorem serialM_forwardAll {α : InsideOutsideSystem O J U V X Y} (hα : SilentAtEmpty α) :
+lemma serialM_forwardAll {α : InsideOutsideSystem O J U V X Y} (hα : SilentAtEmpty α) :
     serialM α (forwardAll J X Y) = α := by
   unfold serialM
   rw [interconnect_forwarder hα forwardAll_heterogeneous (f := id) (g := id), relabel_id]
@@ -94,7 +94,7 @@ theorem serialM_forwardAll {α : InsideOutsideSystem O J U V X Y} (hα : SilentA
     · exact Or.inl rfl
     · exact Or.inr ⟨_, rfl, rfl⟩
 
-theorem forwardAll_serialM {α : InsideOutsideSystem O J U V X Y} (hα : SilentAtEmpty α) :
+lemma forwardAll_serialM {α : InsideOutsideSystem O J U V X Y} (hα : SilentAtEmpty α) :
     serialM (forwardAll O U V) α = α := by
   unfold serialM
   rw [pair_swap, interconnect_relabel,
@@ -107,7 +107,7 @@ theorem forwardAll_serialM {α : InsideOutsideSystem O J U V X Y} (hα : SilentA
     · exact Or.inr ⟨_, rfl, rfl⟩
     · exact Or.inl rfl
 
-theorem trim_serialM_id {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (hα : IsResponsiveDDC b α) :
+lemma trim_serialM_id {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (hα : IsResponsiveDDC b α) :
     trim (serialM α (idConverter J X Y)) = α := by
   apply (hα.comp (idConverter_isResponsiveDDC ..)).eq_of_replies_imp hα
   intro xs ys hr
@@ -116,7 +116,7 @@ theorem trim_serialM_id {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (hα : 
   change Replies (serialM α (forwardAll J X Y)) xs ys at hr'
   rwa [serialM_forwardAll hα.dds.1] at hr'
 
-theorem trim_id_serialM {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (hα : IsResponsiveDDC b α) :
+lemma trim_id_serialM {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (hα : IsResponsiveDDC b α) :
     trim (serialM (idConverter O U V) α) = α := by
   apply ((idConverter_isResponsiveDDC ..).comp hα).eq_of_replies_imp hα
   intro xs ys hr
@@ -126,7 +126,7 @@ theorem trim_id_serialM {b : ℕ} {α : InsideOutsideSystem O J U V X Y} (hα : 
   rwa [forwardAll_serialM hα.dds.1] at hr'
 
 /-- Equal completed replies identify every function value on their input prefixes. -/
-theorem IsResponsiveDDC.prefix_eq_of_replies {b c : ℕ} {α β : InsideOutsideSystem O J U V X Y}
+lemma IsResponsiveDDC.prefix_eq_of_replies {b c : ℕ} {α β : InsideOutsideSystem O J U V X Y}
     (hα : IsResponsiveDDC b α) (hβ : IsResponsiveDDC c β) {xs ys}
     (hr : Replies α xs ys) (hr' : Replies β xs ys) :
     ∀ p, p <+: xs → α p = β p := by
@@ -145,7 +145,7 @@ theorem IsResponsiveDDC.prefix_eq_of_replies {b c : ℕ} {α β : InsideOutsideS
 /-- A finite input sequence is determined by one finite completed converter
 history. If a query is illegal, agreement up to that query also determines all
 later undefined prefixes, by prefix closure and responsiveness. -/
-theorem IsResponsiveDDC.exists_prefix_test {b : ℕ} {α : InsideOutsideSystem O J U V X Y}
+lemma IsResponsiveDDC.exists_prefix_test {b : ℕ} {α : InsideOutsideSystem O J U V X Y}
     (hα : IsResponsiveDDC b α) (H : List (Σ l, twoFam U Y l)) :
     ∃ xs ys, xs <+: H ∧ Replies α xs ys ∧
       ∀ {c : ℕ} {β : InsideOutsideSystem O J U V X Y}, IsResponsiveDDC c β → Replies β xs ys →

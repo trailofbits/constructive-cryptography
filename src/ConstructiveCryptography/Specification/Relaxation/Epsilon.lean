@@ -27,7 +27,7 @@ noncomputable def epsilonRelaxation (error : ENNReal) : Relaxation X :=
     (fun resource => (le_of_eq (edist_self resource)).trans bot_le)
 
 /-- Membership is witnessed by an admitted center within the error bound. -/
-@[simp] theorem mem_epsilonRelaxation_iff {error : ENNReal}
+@[simp] lemma mem_epsilonRelaxation_iff {error : ENNReal}
     {source : Specification X} {resource : X} :
     resource ∈ epsilonRelaxation error source ↔
       ∃ center ∈ source, edist resource center ≤ error :=

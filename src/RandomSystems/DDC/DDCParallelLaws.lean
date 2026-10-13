@@ -24,7 +24,7 @@ namespace SystemAlgebra
 
 open Classical
 
-theorem trim_mem {A B : Type} {s : System A B} {h y} (hy : y ∈ trim s h) : y ∈ s h := by
+lemma trim_mem {A B : Type} {s : System A B} {h y} (hy : y ∈ trim s h) : y ∈ s h := by
   unfold trim at hy
   split_ifs at hy
   · exact hy
@@ -33,7 +33,7 @@ theorem trim_mem {A B : Type} {s : System A B} {h y} (hy : y ∈ trim s h) : y �
 variable {O J : Type} {U V : O → Type} {X Y : J → Type}
 
 /-- A common extension uniquely determines a responsive canonical converter. -/
-theorem IsResponsiveDDC.eq_of_common_replies {ba bb : ℕ}
+lemma IsResponsiveDDC.eq_of_common_replies {ba bb : ℕ}
     {α β c : InsideOutsideSystem O J U V X Y} (ha : IsResponsiveDDC ba α) (hb : IsResponsiveDDC bb β)
     (hα : ∀ xs ys, Replies α xs ys → Replies c xs ys)
     (hβ : ∀ xs ys, Replies β xs ys → Replies c xs ys) : α = β := by
@@ -75,7 +75,7 @@ variable {O' M M' J' : Type} {U V : O ⊕ O' → Type}
     {ba bb bc bd : ℕ}
 
 /-- Both orders connect the same four constituents. -/
-theorem serialM_tensorRaw (ha : IsDDC ba a) (hb : IsDDC bb b) :
+lemma serialM_tensorRaw (ha : IsDDC ba a) (hb : IsDDC bb b) :
     serialM (tensorRaw a b) (tensorRaw c d) =
       tensorRaw (serialM a c) (serialM b d) := by
   simp only [serialM, tensorRaw, pair_relabel, interconnect_relabel]
@@ -90,7 +90,7 @@ theorem serialM_tensorRaw (ha : IsDDC ba a) (hb : IsDDC bb b) :
     rcases z with ⟨⟨(_ | ⟨⟩), (i | j)⟩, z⟩ <;> rfl
 
 /-- Serial and parallel composition satisfy interchange on complete converter behavior. -/
-theorem trim_serialM_tensorL (ha : IsResponsiveDDC ba a) (hb : IsResponsiveDDC bb b)
+lemma trim_serialM_tensorL (ha : IsResponsiveDDC ba a) (hb : IsResponsiveDDC bb b)
     (hc : IsResponsiveDDC bc c) (hd : IsResponsiveDDC bd d) :
     trim (serialM (tensorL a b) (tensorL c d)) =
       tensorL (trim (serialM a c)) (trim (serialM b d)) := by
@@ -116,7 +116,7 @@ section Identity
 
 variable {J' : Type} {X Y : J ⊕ J' → Type}
 
-theorem tensorRaw_forwardAll :
+lemma tensorRaw_forwardAll :
     tensorRaw (U := X) (V := Y) (Xi := X) (Yi := Y)
       (forwardAll J (X ∘ Sum.inl) (Y ∘ Sum.inl))
       (forwardAll J' (X ∘ Sum.inr) (Y ∘ Sum.inr)) = forwardAll (J ⊕ J') X Y := by
@@ -129,7 +129,7 @@ theorem tensorRaw_forwardAll :
       Part.map_some, tOut]
 
 /-- Parallel identity converters forward the combined interface family unchanged. -/
-theorem tensorL_id :
+lemma tensorL_id :
     tensorL (U := X) (V := Y) (Xi := X) (Yi := Y)
       (idConverter J (X ∘ Sum.inl) (Y ∘ Sum.inl))
       (idConverter J' (X ∘ Sum.inr) (Y ∘ Sum.inr)) = idConverter (J ⊕ J') X Y := by

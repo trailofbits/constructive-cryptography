@@ -34,7 +34,7 @@ variable {I J : Type} {X₁ Y₁ : I → Type} {X₂ Y₂ : J → Type}
   {E : List (Σ i, X₁ i) → Prop} {F : List (Σ j, X₂ j) → Prop}
 
 /-- The exact domain of the parallel composition of two DDSs. -/
-theorem parallel_system_dom {S : InterfaceSystem I X₁ Y₁} {T : InterfaceSystem J X₂ Y₂}
+lemma parallel_system_dom {S : InterfaceSystem I X₁ Y₁} {T : InterfaceSystem J X₂ Y₂}
     (hS : IsDDS S) (hT : IsDDS T) (hdS : ∀ h, (S h).Dom ↔ E h) (hdT : ∀ h, (T h).Dom ↔ F h)
     (h : List (Σ l, Sum.rec X₁ X₂ l)) :
     (relabel (trim (pair S T)) (sumAlphabet (Sum.rec X₁ X₂)).symm
@@ -59,7 +59,7 @@ theorem parallel_system_dom {S : InterfaceSystem I X₁ Y₁} {T : InterfaceSyst
 
 /-- The parallel composition of two deterministic resources is a deterministic resource
 with the parallel domain. -/
-theorem parallel_system_valid {s : InterfaceSystem I X₁ Y₁} {t : InterfaceSystem J X₂ Y₂}
+lemma parallel_system_valid {s : InterfaceSystem I X₁ Y₁} {t : InterfaceSystem J X₂ Y₂}
     (hs : IsDDS s ∧ RepliesAtQueriedInterface s ∧ ∀ h, (s h).Dom ↔ E h)
     (ht : IsDDS t ∧ RepliesAtQueriedInterface t ∧ ∀ h, (t h).Dom ↔ F h) :
     let r := relabel (trim (pair s t)) (sumAlphabet (Sum.rec X₁ X₂)).symm
@@ -99,7 +99,7 @@ def parallelStep : S × T → (l : I ⊕ J) → Sum.rec X₁ X₂ l → (S × T)
   | (a, b), .inr j, x => ((a, (g b j x).1), (g b j x).2)
 
 /-- Side by side, each automaton reaches the state of its own inputs. -/
-theorem stateAfter_parallelStep (a : S) (b : T) (h : List (Σ l, Sum.rec X₁ X₂ l)) :
+lemma stateAfter_parallelStep (a : S) (b : T) (h : List (Σ l, Sum.rec X₁ X₂ l)) :
     stateAfter (parallelStep f g) (a, b) h =
       (stateAfter f a (restrict none (h.map (sumAlphabet (Sum.rec X₁ X₂)).symm)),
         stateAfter g b (restrict (some ()) (h.map (sumAlphabet (Sum.rec X₁ X₂)).symm))) := by
@@ -113,7 +113,7 @@ theorem stateAfter_parallelStep (a : S) (b : T) (h : List (Σ l, Sum.rec X₁ X�
     · simp [parallelStep, sumAlphabet, stateAfter_snoc, restrict_cons_ne]
 
 /-- Bisimulations side by side are a bisimulation. -/
-theorem parallelStep_bisim {S' T' : Type} {f' : S' → (i : I) → X₁ i → S' × Y₁ i}
+lemma parallelStep_bisim {S' T' : Type} {f' : S' → (i : I) → X₁ i → S' × Y₁ i}
     {g' : T' → (j : J) → X₂ j → T' × Y₂ j} {R : S → S' → Prop} {R' : T → T' → Prop}
     (hf : IsBisim f f' R) (hg : IsBisim g g' R') :
     IsBisim (parallelStep f g) (parallelStep f' g') (fun a a' => R a.1 a'.1 ∧ R' a.2 a'.2) := by
@@ -124,7 +124,7 @@ theorem parallelStep_bisim {S' T' : Type} {f' : S' → (i : I) → X₁ i → S'
     exact ⟨h₁, ha, h₂⟩
 
 /-- An automaton's reply to an input after a history is determined by its system. -/
-theorem step_reply_eq_of_system_eq {K S' S'' : Type} {Z W : K → Type}
+lemma step_reply_eq_of_system_eq {K S' S'' : Type} {Z W : K → Type}
     {f₁ : S' → (k : K) → Z k → S' × W k} {f₂ : S'' → (k : K) → Z k → S'' × W k} {a₁ : S'} {a₂ : S''}
     (h : automatonSystem f₁ a₁ = automatonSystem f₂ a₂) (hs : List (Σ k, Z k)) (x : Σ k, Z k) :
     (f₁ (stateAfter f₁ a₁ hs) x.1 x.2).2 = (f₂ (stateAfter f₂ a₂ hs) x.1 x.2).2 := by
@@ -133,7 +133,7 @@ theorem step_reply_eq_of_system_eq {K S' S'' : Type} {Z W : K → Type}
   exact eq_of_heq (Sigma.mk.inj e).2
 
 /-- Side by side, automata with the same systems have the same system. -/
-theorem parallelStep_congr {S' T' : Type} {f' : S' → (i : I) → X₁ i → S' × Y₁ i}
+lemma parallelStep_congr {S' T' : Type} {f' : S' → (i : I) → X₁ i → S' × Y₁ i}
     {g' : T' → (j : J) → X₂ j → T' × Y₂ j} {a : S} {b : T} {a' : S'} {b' : T'}
     (hf : automatonSystem f a = automatonSystem f' a')
     (hg : automatonSystem g b = automatonSystem g' b') :
@@ -151,7 +151,7 @@ theorem parallelStep_congr {S' T' : Type} {f' : S' → (i : I) → X₁ i → S'
 
 /-- **Two automata on domains, in parallel**, are the automaton running both side by side, on
 the parallel domain. -/
-theorem parallel_automatonSystem (hE : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
+lemma parallel_automatonSystem (hE : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
     (hF : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p) (a : S) (b : T) :
     relabel (trim (pair (filterDom E (automatonSystem f a)) (filterDom F (automatonSystem g b))))
         (sumAlphabet (Sum.rec X₁ X₂)).symm (sumAlphabet (Sum.rec Y₁ Y₂)) =

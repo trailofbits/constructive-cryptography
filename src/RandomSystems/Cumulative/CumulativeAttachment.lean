@@ -40,7 +40,7 @@ include hp hq hb hE
 
 /-- Independent finite presentations of the components present the connection;
 its samples answer exactly on the specified domain. -/
-theorem connection_isRandomSystem : IsRandomSystem E (fun h =>
+lemma connection_isRandomSystem : IsRandomSystem E (fun h =>
     (parallel R S).connectionLaw route inj (h.map Prod.fst) (bound (h.map Prod.fst))
       (h.map Prod.snd)) := by
   obtain ⟨P, Q, he⟩ := exists_parallel_connection_presentations R S route inj bound p q hp hq hb
@@ -71,14 +71,14 @@ noncomputable def connection : RandomSystem A B E :=
     (bound (h.map Prod.fst)) (h.map Prod.snd),
     connection_isRandomSystem R S route inj bound hp hq hb hE⟩
 
-theorem connection_mass (h : List (A × B)) :
+lemma connection_mass (h : List (A × B)) :
     connection R S route inj bound hp hq hb hE h =
       (parallel R S).connectionLaw route inj (h.map Prod.fst)
         (bound (h.map Prod.fst)) (h.map Prod.snd) := rfl
 
 /-- Every possible finite attached history is witnessed by deterministic
 components in the same classes. -/
-theorem connection_replies {h : List (A × B)}
+lemma connection_replies {h : List (A × B)}
     (hh : connection R S route inj bound hp hq hb hE h ≠ 0) :
     ∃ a b, p a ∧ q b ∧
       Replies (interconnect (pair a b) route inj) (h.map Prod.fst) (h.map Prod.snd) := by

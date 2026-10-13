@@ -57,7 +57,7 @@ variable {O J : Type} [Fintype O] [Fintype J] {U V : O → Type} {X Y : J → Ty
 
 /-- Absorbing a DDC from `E` to `F` into a distinguisher compatible with `F` gives a
 distinguisher compatible with `E`. -/
-theorem Domain.DecisionCompatible.absorbAll
+lemma Domain.DecisionCompatible.absorbAll
     (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
     (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
     {D : DDD O U V}
@@ -83,7 +83,7 @@ theorem Domain.DecisionCompatible.absorbAll
 
 /-- **Attaching a PDC averages the absorbed decisions** over a presentation of the PDC by
 DDCs. -/
-theorem RandomSystem.decisionProbability_attach
+lemma RandomSystem.decisionProbability_attach
     (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
     (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
     (D : DDD O U V) (hD : IsDDD D) (α : PDCBehavior O J U V X Y E m hE F n hF) {b : ℕ}
@@ -138,12 +138,12 @@ namespace Domain.Distinguisher
 variable {𝒟 : Domain (Σ i, X i) (Σ i, Y i)} (P : 𝒟.Distinguisher)
   (R S T : RandomSystem (Σ i, X i) (Σ i, Y i) 𝒟)
 
-@[simp] theorem advantage_self : P.advantage R R = 0 := by simp [advantage]
+@[simp] lemma advantage_self : P.advantage R R = 0 := by simp [advantage]
 
-theorem advantage_symm : P.advantage R S = P.advantage S R := by
+lemma advantage_symm : P.advantage R S = P.advantage S R := by
   rw [advantage, advantage, abs_sub_comm]
 
-theorem advantage_triangle : P.advantage R T ≤ P.advantage R S + P.advantage S T := by
+lemma advantage_triangle : P.advantage R T ≤ P.advantage R S + P.advantage S T := by
   rw [advantage, advantage, advantage, ← ENNReal.ofReal_add (abs_nonneg _) (abs_nonneg _)]
   exact ENNReal.ofReal_le_ofReal (abs_sub_le _ _ _)
 
@@ -181,7 +181,7 @@ theorem RandomSystem.transcriptDistance_eq_iSup {𝒟 : Domain (Σ i, X i) (Σ i
 
 /-- **A bound on every advantage bounds the transcript distance**: if every probabilistic
 distinguisher's advantage is at most `b`, the transcript distance is at most `b`. -/
-theorem RandomSystem.transcriptDistance_le_of_advantage_le {𝒟 : Domain (Σ i, X i) (Σ i, Y i)}
+lemma RandomSystem.transcriptDistance_le_of_advantage_le {𝒟 : Domain (Σ i, X i) (Σ i, Y i)}
     {R S : RandomSystem (Σ i, X i) (Σ i, Y i) 𝒟}
     (hR : R.RepliesAtQueriedInterface) (hS : S.RepliesAtQueriedInterface) {b : ℝ≥0}
     (h : ∀ P : 𝒟.Distinguisher, |P.probability R - P.probability S| ≤ b) :
@@ -193,7 +193,7 @@ theorem RandomSystem.transcriptDistance_le_of_advantage_le {𝒟 : Domain (Σ i,
   exact ENNReal.ofReal_le_ofReal (h P)
 
 /-- The advantage of a probabilistic distinguisher is at most the transcript distance. -/
-theorem Domain.Distinguisher.advantage_le_transcriptDistance {𝒟 : Domain (Σ i, X i) (Σ i, Y i)}
+lemma Domain.Distinguisher.advantage_le_transcriptDistance {𝒟 : Domain (Σ i, X i) (Σ i, Y i)}
     (P : 𝒟.Distinguisher) {R S : RandomSystem (Σ i, X i) (Σ i, Y i) 𝒟}
     (hR : R.RepliesAtQueriedInterface) (hS : S.RepliesAtQueriedInterface) :
     P.advantage R S ≤ R.transcriptDistance S := by
@@ -225,17 +225,17 @@ namespace Domain.DistinguisherBehavior
 variable {𝒟 : Domain (Σ i, X i) (Σ i, Y i)} (d : 𝒟.DistinguisherBehavior)
   (R S T : {R : RandomSystem (Σ i, X i) (Σ i, Y i) 𝒟 // R.RepliesAtQueriedInterface})
 
-@[simp] theorem advantage_self : d.advantage R R = 0 := by simp [advantage]
+@[simp] lemma advantage_self : d.advantage R R = 0 := by simp [advantage]
 
-theorem advantage_symm : d.advantage R S = d.advantage S R := by
+lemma advantage_symm : d.advantage R S = d.advantage S R := by
   rw [advantage, advantage, abs_sub_comm]
 
-theorem advantage_triangle : d.advantage R T ≤ d.advantage R S + d.advantage S T := by
+lemma advantage_triangle : d.advantage R T ≤ d.advantage R S + d.advantage S T := by
   rw [advantage, advantage, advantage, ← ENNReal.ofReal_add (abs_nonneg _) (abs_nonneg _)]
   exact ENNReal.ofReal_le_ofReal (abs_sub_le _ _ _)
 
 /-- The advantage of a distinguisher behavior is at most the transcript distance. -/
-theorem advantage_le_transcriptDistance : d.advantage R S ≤ R.1.transcriptDistance S.1 := by
+lemma advantage_le_transcriptDistance : d.advantage R S ≤ R.1.transcriptDistance S.1 := by
   obtain ⟨P, hP⟩ := d.2
   rw [advantage, hP, hP]
   exact P.advantage_le_transcriptDistance R.2 S.2
@@ -262,7 +262,7 @@ variable {O J : Type} [Fintype O] [Fintype J] {U V : O → Type} {X Y : J → Ty
 
 /-- Absorbing a PDC from `E` to `F` into a probabilistic distinguisher compatible with `F`
 gives a probabilistic distinguisher compatible with `E`. -/
-theorem Domain.Distinguisher.exists_absorbAll
+lemma Domain.Distinguisher.exists_absorbAll
     (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
     (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
     (α : PDCBehavior O J U V X Y E m hE F n hF)
@@ -301,7 +301,7 @@ noncomputable def Domain.DistinguisherBehavior.absorb
     exact ⟨Q, fun R => (hP _).trans (hQ R.1 R.2).symm⟩⟩
 
 /-- **Absorbing a serial composition** absorbs its PDCs in turn: `d ∘ (β ∘ α) = (d ∘ β) ∘ α`. -/
-theorem Domain.DistinguisherBehavior.absorb_comp {M : Type} [Fintype M] {Xm Ym : M → Type}
+lemma Domain.DistinguisherBehavior.absorb_comp {M : Type} [Fintype M] {Xm Ym : M → Type}
     [∀ k, Fintype (Xm k)] [∀ k, Fintype (Ym k)] {F'' : List (Σ k, Xm k) → Prop} {n'' : ℕ}
     {hF'' : ∀ h, F'' h → h.length ≤ n''}
     (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
@@ -327,7 +327,7 @@ variable {I J : Type} [Fintype I] [Fintype J] {X₁ Y₁ : I → Type} {X₂ Y�
 /-- Absorbing a resource with domain `F` run beside, given by a presentation `U`, into a
 probabilistic distinguisher compatible with the parallel domain gives a probabilistic
 distinguisher compatible with `E`. -/
-theorem Domain.Distinguisher.exists_absorbRight
+lemma Domain.Distinguisher.exists_absorbRight
     (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
     (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
     (P : (Domain.ofInputs (parallelInputs (F := Sum.rec X₁ X₂) E F) (m + n)

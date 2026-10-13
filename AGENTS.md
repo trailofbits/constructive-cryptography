@@ -248,6 +248,12 @@ globally; use `letI` or a wrapper carrier.
   the distances are defined from real probabilities (`transcriptDistance`, the advantages,
   `advantageDistance`) and in the lemmas that bridge to them (`transcriptDistance_le`,
   `transcriptDistance_le_of_advantage_le`).
+- `theorem` marks the results a reader comes for; `lemma` marks everything else. A `theorem`
+  states a source result, and its docstring cites it (`[1, Lemma 4.16]`, CR18, Lemma 4.15), or
+  it is one of the few headline results of its module that have no source: a correctness
+  theorem, a security bound, the law the module exists to prove. Steps, helpers, rewriting
+  lemmas and typed corollaries are `lemma`, even when the module doc lists them. Both keywords
+  elaborate the same way; the choice is documentation only.
 
 ## Naming and ownership
 

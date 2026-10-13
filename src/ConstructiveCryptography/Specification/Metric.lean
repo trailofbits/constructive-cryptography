@@ -25,7 +25,7 @@ def ConstructsWithin [EDist Y] (f : X → Y)
   ∀ resource ∈ source, ∃ ideal ∈ target, edist (f resource) ideal ≤ error
 
 /-- Exact construction into ε-relaxation is scalar approximate construction. -/
-theorem constructs_epsilonRelaxation_iff [PseudoEMetricSpace Y]
+lemma constructs_epsilonRelaxation_iff [PseudoEMetricSpace Y]
     {f : X → Y} {source : Specification X} {target : Specification Y} {error : ENNReal} :
     Constructs f source (epsilonRelaxation error target) ↔
       ConstructsWithin f source target error := by
@@ -33,7 +33,7 @@ theorem constructs_epsilonRelaxation_iff [PseudoEMetricSpace Y]
   simp only [Constructs, Set.MapsTo, mem_epsilonRelaxation_iff, ConstructsWithin]
 
 /-- Scalar-error bounds may be weakened. -/
-theorem ConstructsWithin.weaken [EDist Y] {f : X → Y}
+lemma ConstructsWithin.weaken [EDist Y] {f : X → Y}
     {source : Specification X} {target : Specification Y} {ε δ : ENNReal}
     (construction : ConstructsWithin f source target ε) (bound : ε ≤ δ) :
     ConstructsWithin f source target δ := by
@@ -67,7 +67,7 @@ theorem ConstructsWithin.serial [PseudoEMetricSpace Y] [PseudoEMetricSpace Z]
 MR16, Definition 2 (printed p. 11), expresses non-expansion of resource maps.
 Applying it to the two fixed-argument maps and using the triangle inequality
 gives this bound for the chosen ordered parallel operation. -/
-theorem edist_parallel_le [PseudoEMetricSpace X] [PseudoEMetricSpace Y]
+lemma edist_parallel_le [PseudoEMetricSpace X] [PseudoEMetricSpace Y]
     [PseudoEMetricSpace Z] (parallel : X → Y → Z)
     (leftNonexpanding : ∀ y, LipschitzWith 1 (fun x => parallel x y))
     (rightNonexpanding : ∀ x, LipschitzWith 1 (parallel x))

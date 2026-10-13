@@ -36,13 +36,13 @@ section Canon
 
 variable {O J : Type} {U V : O → Type} {Xi Yi : J → Type} {b : ℕ} {c : InsideOutsideSystem O J U V Xi Yi}
 
-theorem canon_dom_iff {h} : (canon c h).Dom ↔ Admissible c h ∧ (c h).Dom := by
+lemma canon_dom_iff {h} : (canon c h).Dom ↔ Admissible c h ∧ (c h).Dom := by
   unfold canon
   by_cases ha : Admissible c h
   · simp [ha]
   · simp [ha]
 
-theorem insideRun_canon : ∀ {h}, Admissible c h → insideRun (canon c) h = insideRun c h := by
+lemma insideRun_canon : ∀ {h}, Admissible c h → insideRun (canon c) h = insideRun c h := by
   intro h
   induction h using List.reverseRecOn with
   | nil => intro _; rfl
@@ -53,7 +53,7 @@ theorem insideRun_canon : ∀ {h}, Admissible c h → insideRun (canon c) h = in
 
 /-- **A criterion for partial converters.** Restricting a system to its admissible
 histories gives a DDC when it is bounded and replies at the last outside label there. -/
-theorem canon_isDDC (h0 : ¬ (c []).Dom)
+lemma canon_isDDC (h0 : ¬ (c []).Dom)
     (hB : ∀ h, Admissible c h → (c h).Dom → insideRun c h ≤ b)
     (hRep : ∀ h y o, Admissible c h → y ∈ c h → y.1 = ⟨none, o⟩ → lastOuter h = some o) :
     IsDDC b (canon c) := by
@@ -82,7 +82,7 @@ theorem canon_isDDC (h0 : ¬ (c []).Dom)
     exact hRep h y o ha hy e
 
 /-- **A criterion for converters**: responsiveness on admissible histories in addition. -/
-theorem canon_isResponsiveDDC (h0 : ¬ (c []).Dom)
+lemma canon_isResponsiveDDC (h0 : ¬ (c []).Dom)
     (hR : ∀ h, Admissible c h → h ≠ [] → (c h).Dom)
     (hB : ∀ h, Admissible c h → (c h).Dom → insideRun c h ≤ b)
     (hRep : ∀ h y o, Admissible c h → y ∈ c h → y.1 = ⟨none, o⟩ → lastOuter h = some o) :
@@ -119,17 +119,17 @@ def renameOut (α : SingleAlphabetConverter X Y O J) : SingleAlphabetConverter X
 
 variable {e}
 
-theorem renOut_fst (y : Σ l : Two O J, twoFam (fun _ : O => Y) (fun _ : J => X) l) :
+lemma renOut_fst (y : Σ l : Two O J, twoFam (fun _ : O => Y) (fun _ : J => X) l) :
     (renOut e y).1 = renLab e y.1 := by
   rcases y with ⟨⟨_ | ⟨⟨⟩⟩, l⟩, v⟩ <;> rfl
 
-theorem isInside_renOut (y : Σ l : Two O J, twoFam (fun _ : O => Y) (fun _ : J => X) l) :
+lemma isInside_renOut (y : Σ l : Two O J, twoFam (fun _ : O => Y) (fun _ : J => X) l) :
     IsInside (renOut e y) ↔ IsInside y := by
   rcases y with ⟨⟨_ | ⟨⟨⟩⟩, l⟩, v⟩ <;> simp [IsInside, renOut]
 
 variable {α : SingleAlphabetConverter X Y O J}
 
-theorem replyLabel_renameOut (h : List (Σ l : Two O' J, twoFam (fun _ : O' => X) (fun _ : J => Y) l)) :
+lemma replyLabel_renameOut (h : List (Σ l : Two O' J, twoFam (fun _ : O' => X) (fun _ : J => Y) l)) :
     replyLabel (renameOut e α) h = (replyLabel α (h.map (renIn e))).map (renLab e) := by
   unfold replyLabel
   by_cases hd : (α (h.map (renIn e))).Dom
@@ -140,14 +140,14 @@ theorem replyLabel_renameOut (h : List (Σ l : Two O' J, twoFam (fun _ : O' => X
     rw [dif_neg hd, dif_neg hd']
     rfl
 
-theorem admits_renameOut (h) (z : Σ l : Two O' J, twoFam (fun _ : O' => X) (fun _ : J => Y) l) :
+lemma admits_renameOut (h) (z : Σ l : Two O' J, twoFam (fun _ : O' => X) (fun _ : J => Y) l) :
     Admits (renameOut e α) h z ↔ Admits α (h.map (renIn e)) (renIn e z) := by
   unfold Admits
   rw [replyLabel_renameOut]
   rcases replyLabel α (h.map (renIn e)) with _ | ⟨_ | ⟨⟨⟩⟩, l⟩ <;>
     rcases z with ⟨⟨_ | ⟨⟨⟩⟩, l'⟩, v⟩ <;> simp [admitAfter, renLab, renIn]
 
-theorem admissible_renameOut : ∀ {h}, Admissible (renameOut e α) h ↔ Admissible α (h.map (renIn e)) := by
+lemma admissible_renameOut : ∀ {h}, Admissible (renameOut e α) h ↔ Admissible α (h.map (renIn e)) := by
   intro h
   induction h using List.reverseRecOn with
   | nil => simp
@@ -155,7 +155,7 @@ theorem admissible_renameOut : ∀ {h}, Admissible (renameOut e α) h ↔ Admiss
     rw [admissible_snoc, List.map_append, List.map_singleton, admissible_snoc, ih, admits_renameOut]
     simp [renameOut, relabel]
 
-theorem insideRun_renameOut : ∀ h, insideRun (renameOut e α) h = insideRun α (h.map (renIn e)) := by
+lemma insideRun_renameOut : ∀ h, insideRun (renameOut e α) h = insideRun α (h.map (renIn e)) := by
   intro h
   induction h using List.reverseRecOn with
   | nil => rfl
@@ -167,7 +167,7 @@ theorem insideRun_renameOut : ∀ h, insideRun (renameOut e α) h = insideRun α
     exact propext ⟨fun ⟨_, ⟨y, hy, rfl⟩, hi⟩ => ⟨y, hy, (isInside_renOut y).mp hi⟩,
       fun ⟨y, hy, hi⟩ => ⟨_, ⟨y, hy, rfl⟩, (isInside_renOut y).mpr hi⟩⟩
 
-theorem lastOuter_renIn : ∀ h : List (Σ l : Two O' J, twoFam (fun _ : O' => X) (fun _ : J => Y) l),
+lemma lastOuter_renIn : ∀ h : List (Σ l : Two O' J, twoFam (fun _ : O' => X) (fun _ : J => Y) l),
     lastOuter (h.map (renIn e)) = (lastOuter h).map e := by
   intro h
   induction h using List.reverseRecOn with
@@ -177,7 +177,7 @@ theorem lastOuter_renIn : ∀ h : List (Σ l : Two O' J, twoFam (fun _ : O' => X
     rcases z with ⟨⟨_ | ⟨⟨⟩⟩, l⟩, v⟩ <;> simp [outerOf, renIn]
 
 /-- **Renaming preserves converters.** -/
-theorem IsResponsiveDDC.renameOut {b : ℕ} (hα : IsResponsiveDDC b α) : IsResponsiveDDC b (renameOut e α) := by
+lemma IsResponsiveDDC.renameOut {b : ℕ} (hα : IsResponsiveDDC b α) : IsResponsiveDDC b (renameOut e α) := by
   refine ⟨⟨?_, ?_⟩, fun h z hd => ?_, fun h hd => ?_, fun h ha hne => ?_, fun h y o hy hl => ?_⟩
   · simpa [SilentAtEmpty, SystemAlgebra.renameOut, relabel] using hα.dds.1
   · intro l₁ l₂ hp hne hd
@@ -234,7 +234,7 @@ def renFree : Free (alongSet (O := O') ι) ≃ Free (alongSet (O := O) ι) where
 variable {e ι}
 
 /-- **Attaching a renamed converter** is attaching the converter and renaming. -/
-theorem attachL_renameOut (α : SingleAlphabetConverter X Y O J) (R : SingleAlphabetSystem X Y K) :
+lemma attachL_renameOut (α : SingleAlphabetConverter X Y O J) (R : SingleAlphabetSystem X Y K) :
     attachL ι (renameOut e α) R = relabelL (renFree e ι).symm (attachL ι α R) := by
   unfold attachL attachAlong connect pairI renameOut relabelL
   simp only [pair_relabel_left, interconnect_relabel, relabel_interconnect, relabel_relabel]
@@ -271,7 +271,7 @@ section RunZero
 
 variable {O J : Type} {U V : O → Type} {Xi Yi : J → Type}
 
-theorem insideRun_eq_zero_of_outer {c : InsideOutsideSystem O J U V Xi Yi} {h} {o : O}
+lemma insideRun_eq_zero_of_outer {c : InsideOutsideSystem O J U V Xi Yi} {h} {o : O}
     (hl : replyLabel c h = some ⟨none, o⟩) : insideRun c h = 0 := by
   rcases List.eq_nil_or_concat h with rfl | ⟨h₀, z, rfl⟩
   · rfl
@@ -326,52 +326,52 @@ noncomputable abbrev hA (h : List (Σ l : Two (O ⊕ O') (J ⊕ J'), twoFam U Yi
 noncomputable abbrev hB (h : List (Σ l : Two (O ⊕ O') (J ⊕ J'), twoFam U Yi l)) :=
   restrict (some ()) (h.map tIn)
 
-theorem tOut_left_fst (y : Σ l : Two O J, twoFam (V ∘ Sum.inl) (Xi ∘ Sum.inl) l) :
+lemma tOut_left_fst (y : Σ l : Two O J, twoFam (V ∘ Sum.inl) (Xi ∘ Sum.inl) l) :
     (tOut (V := V) (Xi := Xi) ⟨none, y⟩).1 = lLab y.1 := by
   rcases y with ⟨⟨_ | ⟨⟨⟩⟩, l⟩, v⟩ <;> rfl
 
-theorem tOut_right_fst (y : Σ l : Two O' J', twoFam (V ∘ Sum.inr) (Xi ∘ Sum.inr) l) :
+lemma tOut_right_fst (y : Σ l : Two O' J', twoFam (V ∘ Sum.inr) (Xi ∘ Sum.inr) l) :
     (tOut (V := V) (Xi := Xi) ⟨some (), y⟩).1 = rLab y.1 := by
   rcases y with ⟨⟨_ | ⟨⟨⟩⟩, l⟩, v⟩ <;> rfl
 
-theorem isInside_tOut_left (y : Σ l : Two O J, twoFam (V ∘ Sum.inl) (Xi ∘ Sum.inl) l) :
+lemma isInside_tOut_left (y : Σ l : Two O J, twoFam (V ∘ Sum.inl) (Xi ∘ Sum.inl) l) :
     IsInside (tOut (V := V) (Xi := Xi) ⟨none, y⟩) ↔ IsInside y := by
   rcases y with ⟨⟨_ | ⟨⟨⟩⟩, l⟩, v⟩ <;> simp [IsInside, tOut]
 
-theorem isInside_tOut_right (y : Σ l : Two O' J', twoFam (V ∘ Sum.inr) (Xi ∘ Sum.inr) l) :
+lemma isInside_tOut_right (y : Σ l : Two O' J', twoFam (V ∘ Sum.inr) (Xi ∘ Sum.inr) l) :
     IsInside (tOut (V := V) (Xi := Xi) ⟨some (), y⟩) ↔ IsInside y := by
   rcases y with ⟨⟨_ | ⟨⟨⟩⟩, l⟩, v⟩ <;> simp [IsInside, tOut]
 
 variable {h : List (Σ l : Two (O ⊕ O') (J ⊕ J'), twoFam U Yi l)}
   {z : Σ l : Two (O ⊕ O') (J ⊕ J'), twoFam U Yi l}
 
-theorem tensorRaw_left {a} (hz : tIn z = ⟨none, a⟩) :
+lemma tensorRaw_left {a} (hz : tIn z = ⟨none, a⟩) :
     tensorRaw α β (h ++ [z]) = (α (hA h ++ [a])).map (fun y => tOut ⟨none, y⟩) := by
   simp only [tensorRaw, relabel, List.map_append, List.map_singleton, hz, pair_left, Part.map_map]
   rfl
 
-theorem tensorRaw_right {a} (hz : tIn z = ⟨some (), a⟩) :
+lemma tensorRaw_right {a} (hz : tIn z = ⟨some (), a⟩) :
     tensorRaw α β (h ++ [z]) = (β (hB h ++ [a])).map (fun y => tOut ⟨some (), y⟩) := by
   simp only [tensorRaw, relabel, List.map_append, List.map_singleton, hz, pair_right, Part.map_map]
   rfl
 
-theorem hA_left {a} (hz : tIn z = ⟨none, a⟩) : hA (h ++ [z]) = hA h ++ [a] := by
+lemma hA_left {a} (hz : tIn z = ⟨none, a⟩) : hA (h ++ [z]) = hA h ++ [a] := by
   show restrict none ((h ++ [z]).map tIn) = restrict none (h.map tIn) ++ [a]
   rw [List.map_append, List.map_singleton, hz, restrict_none_snoc_left]
 
-theorem hB_left {a} (hz : tIn z = ⟨none, a⟩) : hB (h ++ [z]) = hB h := by
+lemma hB_left {a} (hz : tIn z = ⟨none, a⟩) : hB (h ++ [z]) = hB h := by
   simp only [hB, List.map_append, List.map_singleton, hz]
   exact restrict_some_snoc_left _ _
 
-theorem hA_right {a} (hz : tIn z = ⟨some (), a⟩) : hA (h ++ [z]) = hA h := by
+lemma hA_right {a} (hz : tIn z = ⟨some (), a⟩) : hA (h ++ [z]) = hA h := by
   simp only [hA, List.map_append, List.map_singleton, hz]
   exact restrict_none_snoc_right _ _
 
-theorem hB_right {a} (hz : tIn z = ⟨some (), a⟩) : hB (h ++ [z]) = hB h ++ [a] := by
+lemma hB_right {a} (hz : tIn z = ⟨some (), a⟩) : hB (h ++ [z]) = hB h ++ [a] := by
   show restrict (some ()) ((h ++ [z]).map tIn) = restrict (some ()) (h.map tIn) ++ [a]
   rw [List.map_append, List.map_singleton, hz, restrict_some_snoc_right]
 
-theorem replyLabel_tensorRaw_left {a} (hz : tIn z = ⟨none, a⟩) :
+lemma replyLabel_tensorRaw_left {a} (hz : tIn z = ⟨none, a⟩) :
     replyLabel (tensorRaw α β) (h ++ [z]) = (replyLabel α (hA h ++ [a])).map lLab := by
   unfold replyLabel
   rw [tensorRaw_left hz]
@@ -381,7 +381,7 @@ theorem replyLabel_tensorRaw_left {a} (hz : tIn z = ⟨none, a⟩) :
   · rw [dif_neg hd, dif_neg (by simpa using hd)]
     rfl
 
-theorem replyLabel_tensorRaw_right {a} (hz : tIn z = ⟨some (), a⟩) :
+lemma replyLabel_tensorRaw_right {a} (hz : tIn z = ⟨some (), a⟩) :
     replyLabel (tensorRaw α β) (h ++ [z]) = (replyLabel β (hB h ++ [a])).map rLab := by
   unfold replyLabel
   rw [tensorRaw_right hz]
@@ -391,7 +391,7 @@ theorem replyLabel_tensorRaw_right {a} (hz : tIn z = ⟨some (), a⟩) :
   · rw [dif_neg hd, dif_neg (by simpa using hd)]
     rfl
 
-theorem insideRun_tensorRaw_left {a} (hz : tIn z = ⟨none, a⟩) :
+lemma insideRun_tensorRaw_left {a} (hz : tIn z = ⟨none, a⟩) :
     insideRun (tensorRaw α β) (h ++ [z]) =
       if ∃ y ∈ α (hA h ++ [a]), IsInside y then insideRun (tensorRaw α β) h + 1 else 0 := by
   rw [insideRun, run_snoc, tensorRaw_left hz]
@@ -400,7 +400,7 @@ theorem insideRun_tensorRaw_left {a} (hz : tIn z = ⟨none, a⟩) :
   exact propext ⟨fun ⟨_, ⟨y, hy, rfl⟩, hi⟩ => ⟨y, hy, (isInside_tOut_left y).mp hi⟩,
     fun ⟨y, hy, hi⟩ => ⟨_, ⟨y, hy, rfl⟩, (isInside_tOut_left y).mpr hi⟩⟩
 
-theorem insideRun_tensorRaw_right {a} (hz : tIn z = ⟨some (), a⟩) :
+lemma insideRun_tensorRaw_right {a} (hz : tIn z = ⟨some (), a⟩) :
     insideRun (tensorRaw α β) (h ++ [z]) =
       if ∃ y ∈ β (hB h ++ [a]), IsInside y then insideRun (tensorRaw α β) h + 1 else 0 := by
   rw [insideRun, run_snoc, tensorRaw_right hz]
@@ -409,17 +409,17 @@ theorem insideRun_tensorRaw_right {a} (hz : tIn z = ⟨some (), a⟩) :
   exact propext ⟨fun ⟨_, ⟨y, hy, rfl⟩, hi⟩ => ⟨y, hy, (isInside_tOut_right y).mp hi⟩,
     fun ⟨y, hy, hi⟩ => ⟨_, ⟨y, hy, rfl⟩, (isInside_tOut_right y).mpr hi⟩⟩
 
-theorem insideRun_snoc_eq {O J : Type} {U V : O → Type} {Xi Yi : J → Type} (c : InsideOutsideSystem O J U V Xi Yi)
+lemma insideRun_snoc_eq {O J : Type} {U V : O → Type} {Xi Yi : J → Type} (c : InsideOutsideSystem O J U V Xi Yi)
     (h : List (Σ l, twoFam U Yi l)) (a : Σ l, twoFam U Yi l) :
     insideRun c (h ++ [a]) = if ∃ y ∈ c (h ++ [a]), IsInside y then insideRun c h + 1 else 0 :=
   run_snoc _ _ _ _
 
-theorem admitAfter_outer {P Q : Type} {r : Option (Two P Q)} {l : P}
+lemma admitAfter_outer {P Q : Type} {r : Option (Two P Q)} {l : P}
     (h : admitAfter r ⟨none, l⟩) : ∀ j, r ≠ some ⟨some (), j⟩ := by
   rintro j rfl
   simp [admitAfter] at h
 
-theorem admitAfter_inside {P Q : Type} {r : Option (Two P Q)} {j : Q}
+lemma admitAfter_inside {P Q : Type} {r : Option (Two P Q)} {j : Q}
     (h : admitAfter r ⟨some (), j⟩) : r = some ⟨some (), j⟩ := by
   rcases r with _ | ⟨_ | ⟨⟨⟩⟩, l⟩
   · simp [admitAfter] at h
@@ -427,13 +427,13 @@ theorem admitAfter_inside {P Q : Type} {r : Option (Two P Q)} {j : Q}
   · simp only [admitAfter] at h
     rw [h]
 
-theorem replyLabel_nil_conv {O J : Type} {U V : O → Type} {Xi Yi : J → Type} {b : ℕ}
+lemma replyLabel_nil_conv {O J : Type} {U V : O → Type} {Xi Yi : J → Type} {b : ℕ}
     {c : InsideOutsideSystem O J U V Xi Yi} (hc : IsDDC b c) : replyLabel c [] = none := by
   have h := hc.dds.1
   simp only [SilentAtEmpty] at h
   simp [replyLabel, h]
 
-theorem replyLabel_tensorRaw_nil : replyLabel (tensorRaw α β) [] = none := by
+lemma replyLabel_tensorRaw_nil : replyLabel (tensorRaw α β) [] = none := by
   simp [replyLabel, tensorRaw, relabel, pair, parAll]
 
 variable (α β) in
@@ -467,7 +467,7 @@ def TInv (h : List (Σ l : Two (O ⊕ O') (J ⊕ J'), twoFam U Yi l)) :
 
 variable {bα bβ : ℕ}
 
-theorem tpostA (hα : IsDDC bα α) {a} (hz : tIn z = ⟨none, a⟩)
+lemma tpostA (hα : IsDDC bα α) {a} (hz : tIn z = ⟨none, a⟩)
     (haA : Admissible α (hA h)) (hdA : hA h ≠ [] → (α (hA h)).Dom)
     (haB : Admissible β (hB h)) (hdB : hB h ≠ [] → (β (hB h)).Dom)
     (hadm : Admits α (hA h) a) (hidB : IdleB β (O := O) (J := J) h)
@@ -495,7 +495,7 @@ theorem tpostA (hα : IsDDC bα α) {a} (hz : tIn z = ⟨none, a⟩)
       if_pos ⟨_, hy, rfl⟩]
     omega
 
-theorem tpostB (hβ : IsDDC bβ β) {a} (hz : tIn z = ⟨some (), a⟩)
+lemma tpostB (hβ : IsDDC bβ β) {a} (hz : tIn z = ⟨some (), a⟩)
     (haA : Admissible α (hA h)) (hdA : hA h ≠ [] → (α (hA h)).Dom)
     (haB : Admissible β (hB h)) (hdB : hB h ≠ [] → (β (hB h)).Dom)
     (hadm : Admits β (hB h) a) (hidA : IdleA α (O' := O') (J' := J') h)
@@ -524,7 +524,7 @@ theorem tpostB (hβ : IsDDC bβ β) {a} (hz : tIn z = ⟨some (), a⟩)
     omega
 
 /-- Before an outside input, both components are idle and no inside call is open. -/
-theorem tensor_idle (hα : IsDDC bα α) (hβ : IsDDC bβ β) (inv : TInv α β h)
+lemma tensor_idle (hα : IsDDC bα α) (hβ : IsDDC bβ β) (inv : TInv α β h)
     (hn : ∀ j, replyLabel (tensorRaw α β) h ≠ some ⟨some (), j⟩) :
     IdleA α (O' := O') (J' := J') h ∧ IdleB β (O := O) (J := J) h ∧ insideRun (tensorRaw α β) h = 0 := by
   rcases eq_or_ne h [] with rfl | hne
@@ -536,7 +536,7 @@ theorem tensor_idle (hα : IsDDC bα α) (hβ : IsDDC bβ β) (inv : TInv α β 
     · exact absurd hl (hn _)
     · exact absurd hl (hn _)
 
-theorem tensor_step (hα : IsDDC bα α) (hβ : IsDDC bβ β) (inv : TInv α β h)
+lemma tensor_step (hα : IsDDC bα α) (hβ : IsDDC bβ β) (inv : TInv α β h)
     (hadm : Admits (tensorRaw α β) h z)
     (hnA : ∀ a, tIn z = ⟨none, a⟩ → Admissible α (hA h ++ [a]) → (α (hA h ++ [a])).Dom)
     (hnB : ∀ a, tIn z = ⟨some (), a⟩ → Admissible β (hB h ++ [a]) → (β (hB h ++ [a])).Dom) :
@@ -584,13 +584,13 @@ theorem tensor_step (hα : IsDDC bα α) (hβ : IsDDC bβ β) (inv : TInv α β 
       · rw [lastOuter_snoc, lastOuter_snoc]
         simpa [outerOf] using hlo
 
-theorem tInv_nil : TInv α β [] :=
+lemma tInv_nil : TInv α β [] :=
   ⟨fun h => absurd rfl h, admissible_nil, fun h => (h rfl).elim, admissible_nil,
     fun h => (h rfl).elim, fun h => absurd rfl h⟩
 
 /-- The invariant holds on every admissible history at which `[α, β]` is defined
 on all nonempty prefixes. No component need answer every legal input. -/
-theorem tensor_inv_partial (hα : IsDDC bα α) (hβ : IsDDC bβ β) :
+lemma tensor_inv_partial (hα : IsDDC bα α) (hβ : IsDDC bβ β) :
     ∀ h, Admissible (tensorRaw α β) h → (h ≠ [] → (tensorRaw α β h).Dom) → TInv α β h := by
   intro h
   induction h using List.reverseRecOn with
@@ -603,7 +603,7 @@ theorem tensor_inv_partial (hα : IsDDC bα α) (hβ : IsDDC bβ β) :
     · rw [tensorRaw_left e] at hd'; exact hd'
     · rw [tensorRaw_right e] at hd'; exact hd'
 
-theorem tensor_inv (hα : IsResponsiveDDC bα α) (hβ : IsResponsiveDDC bβ β) :
+lemma tensor_inv (hα : IsResponsiveDDC bα α) (hβ : IsResponsiveDDC bβ β) :
     ∀ h, Admissible (tensorRaw α β) h → TInv α β h := by
   intro h
   induction h using List.reverseRecOn with
@@ -619,7 +619,7 @@ noncomputable def tensorL (α : InsideOutsideSystem O J (U ∘ Sum.inl) (V ∘ S
   canon (tensorRaw α β)
 
 /-- **`α ⊗ β` is a partial converter**, with bound `max b b'`. -/
-theorem IsDDC.tensorL (hα : IsDDC bα α) (hβ : IsDDC bβ β) :
+lemma IsDDC.tensorL (hα : IsDDC bα α) (hβ : IsDDC bβ β) :
     IsDDC (max bα bβ) (SystemAlgebra.tensorL α β) := by
   refine canon_isDDC ?_ ?_ ?_
   · simp [tensorRaw, relabel, pair, parAll]
@@ -648,7 +648,7 @@ theorem IsDDC.tensorL (hα : IsDDC bα α) (hβ : IsDDC bβ β) :
     · rw [hl'] at hl''; simp at hl''
 
 /-- **`α ⊗ β` is a converter**, with bound `max b b'`. -/
-theorem IsResponsiveDDC.tensorL (hα : IsResponsiveDDC bα α) (hβ : IsResponsiveDDC bβ β) :
+lemma IsResponsiveDDC.tensorL (hα : IsResponsiveDDC bα α) (hβ : IsResponsiveDDC bβ β) :
     IsResponsiveDDC (max bα bβ) (SystemAlgebra.tensorL α β) := by
   refine isResponsiveDDC_iff.mpr ⟨hα.isDDC.tensorL hβ.isDDC, fun h ha hne => ?_⟩
   have ha' := (admissible_canon_iff h).mp ha
@@ -660,7 +660,7 @@ section TensorAttach
 
 variable {X Y O O' J J' K : Type} {ι : J ⊕ J' → K}
 
-theorem inl_not_mem_inr (hι : Function.Injective ι) (j : J) :
+lemma inl_not_mem_inr (hι : Function.Injective ι) (j : J) :
     (ι ∘ Sum.inl) j ∉ Set.range (ι ∘ Sum.inr) := by
   rintro ⟨j', e⟩
   exact Sum.inr_ne_inl (hι e)
@@ -705,7 +705,7 @@ def tensorEquiv :
       · exact absurd (inside_mem_alongSet _ l) h
     · rfl
 
-theorem attachL_tensorRaw {bβ : ℕ} (α : SingleAlphabetConverter X Y O J) {β : SingleAlphabetConverter X Y O' J'} (hβ : IsResponsiveDDC bβ β)
+lemma attachL_tensorRaw {bβ : ℕ} (α : SingleAlphabetConverter X Y O J) {β : SingleAlphabetConverter X Y O' J'} (hβ : IsResponsiveDDC bβ β)
     (R : SingleAlphabetSystem X Y K) :
     attachL ι (tensorRaw α β) R =
       relabelL (tensorEquiv hι)
@@ -770,7 +770,7 @@ theorem attachL_tensorRaw {bβ : ℕ} (α : SingleAlphabetConverter X Y O J) {β
     · simp [connectRoute_of_mem, connectRoute_of_not_mem, inside_mem_alongSet, image_mem_alongSet, outside_not_mem_alongSet, sys_mem_alongSet_lift_iff, outside_not_mem_alongSet_lift, inside_not_mem_alongSet_lift, liftC_alongRouting_inside, liftC_alongRouting_image _ hι, liftC_alongRouting_image _ (hι.comp Sum.inr_injective), liftC_alongRouting_lift _ (hι.comp Sum.inl_injective) (inl_not_mem_inr hι), tIn, tOut, liftIn, liftOut, tensorEquiv, freeIn, freeOut, splitIn, joinOut, twoAssoc, twoAssoc', connectInj, twoMap, routeComp, routeRight, alongRoute, alongInj, Function.comp_apply]
 
 /-- **Attaching `α ⊗ β`** to a total resource is attaching `β`, then `α`. -/
-theorem attachL_tensorL {bα bβ : ℕ} {α : SingleAlphabetConverter X Y O J} {β : SingleAlphabetConverter X Y O' J'} (hα : IsResponsiveDDC bα α)
+lemma attachL_tensorL {bα bβ : ℕ} {α : SingleAlphabetConverter X Y O J} {β : SingleAlphabetConverter X Y O' J'} (hα : IsResponsiveDDC bα α)
     (hβ : IsResponsiveDDC bβ β) {R : SingleAlphabetSystem X Y K} (hR : TotalResource R) :
     attachL ι (tensorL α β) R =
       relabelL (tensorEquiv hι)

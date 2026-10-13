@@ -23,7 +23,7 @@ variable {O J : Type} {U V : O → Type} {X Y : J → Type}
   {α c : InsideOutsideSystem O J U V X Y} {R : InterfaceSystem J X Y} {b : ℕ}
 
 /-- A successful call returns at its outside label and leaves the converter idle. -/
-theorem resource_call_reply (hα : IsDDC b α) (hR : RepliesAtQueriedInterface R)
+lemma resource_call_reply (hα : IsDDC b α) (hR : RepliesAtQueriedInterface R)
     {G o' G'} (l : Exchange (pair α R) resourceRoute G o' G') :
     ∀ o, AlongCall (ι := id) α o G → ∀ w, o' = some w →
       w.1 = o ∧ AlongIdle (ι := id) α G' := by
@@ -77,7 +77,7 @@ theorem resource_call_reply (hα : IsDDC b α) (hR : RepliesAtQueriedInterface R
 
 /-- Canonicalization preserves a call, including a rejected resource query or a
 converter that stops. -/
-theorem resource_call_canon (hR : RepliesAtQueriedInterface R)
+lemma resource_call_canon (hR : RepliesAtQueriedInterface R)
     {G o' G'} (l : Exchange (pair (canon c) R) resourceRoute G o' G') :
     ∀ o, AlongCall (ι := id) (canon c) o G →
       Exchange (pair c R) resourceRoute G o' G' := by
@@ -129,7 +129,7 @@ theorem resource_call_canon (hR : RepliesAtQueriedInterface R)
         simpa only [outerOf, Option.none_or] using hlo
 
 /-- Every completed raw interaction also uses only legitimate converter histories. -/
-theorem replies_apply_canon (hc : IsDDC b (canon c)) (hR : RepliesAtQueriedInterface R)
+lemma replies_apply_canon (hc : IsDDC b (canon c)) (hR : RepliesAtQueriedInterface R)
     (xs : List (Σ o, U o)) (ys : List (Σ o, V o)) :
     Replies (apply (canon c) R) xs ys ↔ Replies (apply c R) xs ys := by
   let F := interconnect (pair (canon c) R) resourceRoute resourceInput
@@ -182,7 +182,7 @@ theorem replies_apply_canon (hc : IsDDC b (canon c)) (hR : RepliesAtQueriedInter
     exact h
 
 /-- Canonicalization does not change the partial DDS produced by attachment. -/
-theorem trim_apply_canon (hc : IsDDC b (canon c)) (hR : RepliesAtQueriedInterface R) :
+lemma trim_apply_canon (hc : IsDDC b (canon c)) (hR : RepliesAtQueriedInterface R) :
     trim (apply (canon c) R) = trim (apply c R) := by
   apply IsDDS.eq_of_replies_iff
     (SilentAtEmpty.isDDS_trim (by simp [SilentAtEmpty, apply_eq]))

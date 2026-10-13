@@ -28,7 +28,7 @@ attribute [local instance] concreteNTTRingOps
 variable (p : Params)
 
 /-- `Primitives.Laws.transform` for the concrete instance. -/
-theorem concrete_transform : NTTRingLaws concreteNTTRingOps :=
+lemma concrete_transform : NTTRingLaws concreteNTTRingOps :=
   concreteNTTRingLaws
 
 /-! ## Bit-width fit for the `w₁` packer
@@ -40,7 +40,7 @@ which fits in that bit width, so the packer is inverted by `simpleBitUnpackPoly`
 there. -/
 
 /-- Every approved-parameter `highBits` coefficient fits in the `w₁` packer's bit width. -/
-theorem highBits_coeff_val_lt_width (hp : p.isApproved) (r : Rq) (c : Fin ringDegree) :
+lemma highBits_coeff_val_lt_width (hp : p.isApproved) (r : Rq) (c : Fin ringDegree) :
     ((MLDSA.Concrete.highBits p r).get c).val
       < 2 ^ MLDSA.Concrete.simpleWidth ((modulus - 1) / (2 * p.gamma2) - 1) := by
   have hlt : ((MLDSA.Concrete.highBits p r).get c).val < (modulus - 1) / (2 * p.gamma2) :=
@@ -55,20 +55,20 @@ theorem highBits_coeff_val_lt_width (hp : p.isApproved) (r : Rq) (c : Fin ringDe
 /-! ## Provable algebraic fields (banked) -/
 
 /-- `Primitives.Laws.high_low_decomp` for the concrete instance. -/
-theorem concrete_high_low_decomp (r : Rq) :
+lemma concrete_high_low_decomp (r : Rq) :
     (concretePrimitives p).highBitsShift ((concretePrimitives p).highBits r)
       + (concretePrimitives p).lowBits r = r :=
   concreteRounding_high_low_decomp p r
 
 /-- `Primitives.Laws.lowBits_bound` for the concrete instance (approved parameters). -/
-theorem concrete_lowBits_bound (hp : p.isApproved) (r : Rq) :
+lemma concrete_lowBits_bound (hp : p.isApproved) (r : Rq) :
     polyNorm ((concretePrimitives p).lowBits r) ≤ p.gamma2 := by
   rw [polyNorm_eq_cInfNorm]
   exact concreteRounding_lowBits_bound p (by rcases hp with rfl | rfl | rfl <;> norm_num [mldsa44, mldsa65, mldsa87, ParameterSet.params, modulus])
     (by rcases hp with rfl | rfl | rfl <;> norm_num [mldsa44, mldsa65, mldsa87, ParameterSet.params, modulus]) r
 
 /-- `Primitives.Laws.hide_low` for the concrete instance (approved parameters). -/
-theorem concrete_hide_low (hp : p.isApproved) (r s : Rq) (b : ℕ)
+lemma concrete_hide_low (hp : p.isApproved) (r s : Rq) (b : ℕ)
     (hs : polyNorm s ≤ b)
     (hlow : polyNorm ((concretePrimitives p).lowBits r) + b < p.gamma2) :
     (concretePrimitives p).highBits (r + s) = (concretePrimitives p).highBits r := by
@@ -77,25 +77,25 @@ theorem concrete_hide_low (hp : p.isApproved) (r s : Rq) (b : ℕ)
   · rw [← polyNorm_eq_cInfNorm]; exact hlow
 
 /-- `Primitives.Laws.highBitsShift_injective` for the concrete instance (approved parameters). -/
-theorem concrete_highBitsShift_injective (hp : p.isApproved) :
+lemma concrete_highBitsShift_injective (hp : p.isApproved) :
     Function.Injective (concretePrimitives p).highBitsShift :=
   highBitsShift_injective_of_isApproved p hp
 
 /-- `Primitives.Laws.useHint_makeHint` for the concrete instance (approved parameters). -/
-theorem concrete_useHint_makeHint (hp : p.isApproved) (z r : Rq) (hz : polyNorm z ≤ p.gamma2) :
+lemma concrete_useHint_makeHint (hp : p.isApproved) (z r : Rq) (hz : polyNorm z ≤ p.gamma2) :
     (concretePrimitives p).useHint ((concretePrimitives p).makeHint z r) r
       = (concretePrimitives p).highBits (r + z) := by
   apply concreteRounding_useHint_correct_of_isApproved p hp z r
   rwa [← polyNorm_eq_cInfNorm]
 
 /-- `Primitives.Laws.power2Round_decomp` for the concrete instance. -/
-theorem concrete_power2Round_decomp (r : Rq) :
+lemma concrete_power2Round_decomp (r : Rq) :
     (concretePrimitives p).power2RoundShift ((concretePrimitives p).power2Round r).1
       + ((concretePrimitives p).power2Round r).2 = r :=
   concretePower2Round_high_low_decomp r
 
 /-- `Primitives.Laws.power2Round_bound` for the concrete instance. -/
-theorem concrete_power2Round_bound (r : Rq) :
+lemma concrete_power2Round_bound (r : Rq) :
     polyNorm ((concretePrimitives p).power2Round r).2 ≤ 2 ^ (droppedBits - 1) := by
   rw [polyNorm_eq_cInfNorm]
   change LatticeCrypto.cInfNorm (power2RoundLow r) ≤ 2 ^ (droppedBits - 1)
@@ -111,7 +111,7 @@ after generalizing the byte argument; the two side conditions on the `z`-range b
 
 /-- `Primitives.Laws.expandMask_bound` (bound `γ₁`) for the concrete instance, at any
 approved parameter set. -/
-theorem concrete_expandMask_bound (hp : p.isApproved) (rhoDoublePrime : Bytes 64) (kappa : ℕ) :
+lemma concrete_expandMask_bound (hp : p.isApproved) (rhoDoublePrime : Bytes 64) (kappa : ℕ) :
     polyVecBounded ((concretePrimitives p).expandMask rhoDoublePrime kappa) p.gamma1 := by
   rw [polyVecBounded, polyVecNorm, LatticeCrypto.PolyVec.cInfNorm_le_iff]
   intro j
@@ -129,7 +129,7 @@ field, since the abstract validity set is the image of `highBits`. -/
 /-- `Primitives.Laws.w1Encode_injective` for the concrete instance, at any
 approved parameter set: `w1Encode` is injective on commitment vectors all of whose components are
 `highBits` outputs. -/
-theorem concrete_w1Encode_injOn (hp : p.isApproved) :
+lemma concrete_w1Encode_injOn (hp : p.isApproved) :
     Set.InjOn (concretePrimitives p).w1Encode
       { w : Vector (concretePrimitives p).High p.k |
           ∀ i : Fin p.k, w.get i ∈ Set.range (concretePrimitives p).highBits } := by
@@ -152,13 +152,13 @@ them at the `concretePrimitives` interface. -/
 
 /-- `Primitives.Laws.sampleInBall_norm` for the concrete instance: `SampleInBall(c̃)` has centered
 infinity norm at most `1` (its coefficients lie in `{-1, 0, +1}`). -/
-theorem concrete_sampleInBall_norm (cTilde : CommitHashBytes p) :
+lemma concrete_sampleInBall_norm (cTilde : CommitHashBytes p) :
     polyNorm ((concretePrimitives p).sampleInBall cTilde) ≤ 1 :=
   MLDSA.Concrete.sampleInBall_norm p cTilde
 
 /-- `Primitives.Laws.expandS_bound` for the concrete instance: `ExpandS(ρ')` produces secret vectors
 with every coefficient bounded by `η`. -/
-theorem concrete_expandS_bound (rhoPrime : Bytes 64) :
+lemma concrete_expandS_bound (rhoPrime : Bytes 64) :
     polyVecBounded ((concretePrimitives p).expandS rhoPrime).1 p.eta ∧
       polyVecBounded ((concretePrimitives p).expandS rhoPrime).2 p.eta :=
   MLDSA.Concrete.expandS_bound rhoPrime p
@@ -168,7 +168,7 @@ product `c · sⱼ` has centered infinity norm at most `β = τ · η` whenever 
 the generic negacyclic-convolution bound `‖c · sⱼ‖∞ ≤ ‖c‖₁ · ‖sⱼ‖∞` (`cInfNorm_mul_le`), the
 challenge `ℓ₁` count `‖SampleInBall(c̃)‖₁ ≤ τ` (`sampleInBall_l1Norm`), and the component law
 `(c • s).get j = c * sⱼ` (`coeffScalarVecMul_get`). -/
-theorem concrete_sampleInBall_smul_bound
+lemma concrete_sampleInBall_smul_bound
     (cTilde : CommitHashBytes p) {k : ℕ} (s : RqVec k)
     (hs : polyVecBounded s p.eta) :
     polyVecNorm (concreteNTTRingOps.coeffScalarVecMul
@@ -195,7 +195,7 @@ theorem concrete_sampleInBall_smul_bound
 /-! ## The laws and correctness -/
 
 /-- **The laws of the concrete ML-DSA primitives**, at every approved parameter set. -/
-theorem concretePrimitives_laws (hp : p.isApproved) :
+lemma concretePrimitives_laws (hp : p.isApproved) :
     Primitives.Laws (concretePrimitives p) concreteNTTRingOps where
   sampleInBall_norm := concrete_sampleInBall_norm p
   expandS_bound := concrete_expandS_bound p

@@ -27,7 +27,7 @@ theorem inter_subset (relaxation : Relaxation X) (left right : Specification X) 
 protected def id (X : Type u) : Relaxation X :=
   ofPointwise (fun resource => {resource}) Set.mem_singleton
 
-@[simp] theorem id_apply (source : Specification X) :
+@[simp] lemma id_apply (source : Specification X) :
     Relaxation.id X source = source :=
   Set.biUnion_of_singleton source
 
@@ -40,22 +40,22 @@ def comp (outer inner : Relaxation X) : Relaxation X where
   toPointwise resource := outer (inner.toPointwise resource)
   self_mem resource := outer.subset_apply _ (inner.self_mem resource)
 
-@[simp] theorem comp_apply (outer inner : Relaxation X) (source : Specification X) :
+@[simp] lemma comp_apply (outer inner : Relaxation X) (source : Specification X) :
     outer.comp inner source = outer (inner source) :=
   congrArg (fun f : sSupHom (Specification X) (Specification X) => f source)
     (Specification.lift_comp outer.toPointwise inner.toPointwise)
 
-@[simp] theorem comp_id (relaxation : Relaxation X) :
+@[simp] lemma comp_id (relaxation : Relaxation X) :
     relaxation.comp (Relaxation.id X) = relaxation := by
   ext source
   simp only [comp_apply, id_apply]
 
-@[simp] theorem id_comp (relaxation : Relaxation X) :
+@[simp] lemma id_comp (relaxation : Relaxation X) :
     (Relaxation.id X).comp relaxation = relaxation := by
   ext source
   simp only [comp_apply, id_apply]
 
-theorem comp_assoc (outer middle inner : Relaxation X) :
+lemma comp_assoc (outer middle inner : Relaxation X) :
     (outer.comp middle).comp inner = outer.comp (middle.comp inner) := by
   ext source
   simp only [comp_apply]

@@ -52,17 +52,17 @@ def IsJointOf (joint : Distribution (Fin n → A)) (laws : Fin n → Distributio
     Prop :=
   joint.NonNeg ∧ ∀ i, Distribution.marginalAt joint i = laws i
 
-theorem IsJointOf.nonNeg {joint : Distribution (Fin n → A)}
+lemma IsJointOf.nonNeg {joint : Distribution (Fin n → A)}
     {laws : Fin n → Distribution A} (h : IsJointOf joint laws) :
     joint.NonNeg := h.1
 
-theorem IsJointOf.marginalAt {joint : Distribution (Fin n → A)}
+lemma IsJointOf.marginalAt {joint : Distribution (Fin n → A)}
     {laws : Fin n → Distribution A} (h : IsJointOf joint laws) (i : Fin n) :
     Distribution.marginalAt joint i = laws i := h.2 i
 
 /-- Marginals of a non-negative joint are non-negative, so the represented
 laws inherit the layer. -/
-theorem IsJointOf.nonNeg_law {joint : Distribution (Fin n → A)}
+lemma IsJointOf.nonNeg_law {joint : Distribution (Fin n → A)}
     {laws : Fin n → Distribution A} (h : IsJointOf joint laws) (i : Fin n) :
     (laws i).NonNeg := by
   rw [← h.2 i]
@@ -71,7 +71,7 @@ theorem IsJointOf.nonNeg_law {joint : Distribution (Fin n → A)}
 /-- A joint distribution has each marginal's total weight; in particular all
 marginals of one joint weigh the same, so Definition 2.27's standing
 same-weight hypothesis is forced rather than optional. -/
-theorem weight_eq_of_isJointOf {joint : Distribution (Fin n → A)}
+lemma weight_eq_of_isJointOf {joint : Distribution (Fin n → A)}
     {laws : Fin n → Distribution A} (h : IsJointOf joint laws) (i : Fin n) :
     joint.weight = (laws i).weight := by
   rw [← h.2 i]
@@ -89,7 +89,7 @@ noncomputable def supAgreement (laws : Fin n → Distribution A) : ℝ :=
 
 /-- The inner supremum is non-negative — also when no joint exists, where the
 real `sSup` of the empty set is `0`. -/
-theorem supAgreement_nonneg (laws : Fin n → Distribution A) :
+lemma supAgreement_nonneg (laws : Fin n → Distribution A) :
     0 ≤ supAgreement laws :=
   Real.sSup_nonneg fun b hb => by
     obtain ⟨joint, hjoint, rfl⟩ := hb
@@ -98,7 +98,7 @@ theorem supAgreement_nonneg (laws : Fin n → Distribution A) :
 /-- The agreement masses of a representative tuple are bounded by the weight
 of any one representative, so Definition 2.27's inner supremum set is bounded
 above. -/
-theorem bddAbove_agreementSet (laws : Fin n → Distribution A) (i : Fin n) :
+lemma bddAbove_agreementSet (laws : Fin n → Distribution A) (i : Fin n) :
     BddAbove {b : ℝ |
       ∃ joint, IsJointOf joint laws ∧ b = agreementMass joint} := by
   refine ⟨(laws i).weight, ?_⟩
@@ -110,7 +110,7 @@ theorem bddAbove_agreementSet (laws : Fin n → Distribution A) (i : Fin n) :
 The `NonNeg` side condition is what the empty-`sSup` convention costs: with no
 joint at all the supremum is `0`, which a signed law's weight need not
 bound. -/
-theorem supAgreement_le_weight (laws : Fin n → Distribution A) (i : Fin n)
+lemma supAgreement_le_weight (laws : Fin n → Distribution A) (i : Fin n)
     (hnn : (laws i).NonNeg) :
     supAgreement laws ≤ (laws i).weight := by
   refine Real.sSup_le ?_ hnn.weight_nonneg
@@ -123,7 +123,7 @@ and then Definition 2.27's inner set is **empty**: `IsJointOf` demands a
 non-negative joint, and the coordinate marginals of a non-negative joint are
 non-negative.  The real `sSup` of the empty set is `0`, so a signed tuple
 contributes exactly `0`. -/
-theorem supAgreement_eq_zero_of_not_nonNeg {laws : Fin n → Distribution A}
+lemma supAgreement_eq_zero_of_not_nonNeg {laws : Fin n → Distribution A}
     (hsigned : ¬ ∀ i, (laws i).NonNeg) : supAgreement laws = 0 := by
   obtain ⟨i, hi⟩ := not_forall.mp hsigned
   have hempty : {b : ℝ | ∃ joint, IsJointOf joint laws ∧
@@ -143,16 +143,16 @@ def selectPair {B : Type*} (i j : Fin n) (f : Fin n → B) : Fin 2 → B :=
   fun k => if k = 0 then f i else f j
 
 @[simp]
-theorem selectPair_zero {B : Type*} (i j : Fin n) (f : Fin n → B) :
+lemma selectPair_zero {B : Type*} (i j : Fin n) (f : Fin n → B) :
     selectPair i j f 0 = f i := rfl
 
 @[simp]
-theorem selectPair_one {B : Type*} (i j : Fin n) (f : Fin n → B) :
+lemma selectPair_one {B : Type*} (i j : Fin n) (f : Fin n → B) :
     selectPair i j f 1 = f j := rfl
 
 /-- Projecting an `n`-tuple joint to two chosen coordinates yields a pair
 joint of the corresponding marginals. -/
-theorem isJointOf_selectPair {joint : Distribution (Fin n → A)}
+lemma isJointOf_selectPair {joint : Distribution (Fin n → A)}
     {laws : Fin n → Distribution A}
     (h : IsJointOf joint laws) (i j : Fin n) (pair : Fin 2 → Distribution A)
     (h0 : pair 0 = laws i) (h1 : pair 1 = laws j) :
@@ -170,7 +170,7 @@ theorem isJointOf_selectPair {joint : Distribution (Fin n → A)}
 
 /-- Total agreement implies agreement on any two chosen coordinates: the
 projected pair joint agrees at least as often as the tuple joint. -/
-theorem agreementMass_le_selectPair {joint : Distribution (Fin n → A)}
+lemma agreementMass_le_selectPair {joint : Distribution (Fin n → A)}
     (hjoint : joint.NonNeg) (i j : Fin n) :
     agreementMass joint ≤
       agreementMass (Distribution.fTransform (selectPair i j) joint) := by
@@ -188,7 +188,7 @@ theorem agreementMass_le_selectPair {joint : Distribution (Fin n → A)}
 whenever a pair of laws occurs as two chosen marginals of a tuple, every tuple
 joint projects to a pair joint with at least the tuple's agreement, so the
 tuple's inner supremum is at most the pair's. -/
-theorem supAgreement_le_of_pair_marginals
+lemma supAgreement_le_of_pair_marginals
     {laws : Fin n → Distribution A} (pairLaws : Fin 2 → Distribution A)
     (i j : Fin n) (h0 : pairLaws 0 = laws i) (h1 : pairLaws 1 = laws j) :
     supAgreement laws ≤ supAgreement pairLaws := by
@@ -217,7 +217,7 @@ Theorem 2.29's `ℓ` at one representative tuple. -/
 noncomputable def supportUnion (laws : Fin n → Distribution A) : Finset A :=
   Finset.univ.biUnion fun i => (laws i).support
 
-theorem support_subset_supportUnion (laws : Fin n → Distribution A) (i : Fin n) :
+lemma support_subset_supportUnion (laws : Fin n → Distribution A) (i : Fin n) :
     (laws i).support ⊆ supportUnion laws := by
   classical
   intro a ha
@@ -243,28 +243,28 @@ noncomputable def overlapDist [NeZero n] (laws : Fin n → Distribution A) :
           hmem (support_subset_supportUnion laws i h)).ge)
 
 @[simp]
-theorem overlapDist_apply [NeZero n] (laws : Fin n → Distribution A) (a : A) :
+lemma overlapDist_apply [NeZero n] (laws : Fin n → Distribution A) (a : A) :
     overlapDist laws a
       = Finset.univ.inf' Finset.univ_nonempty fun i => laws i a :=
   rfl
 
-theorem overlapDist_apply_le [NeZero n] (laws : Fin n → Distribution A)
+lemma overlapDist_apply_le [NeZero n] (laws : Fin n → Distribution A)
     (i : Fin n) (a : A) : overlapDist laws a ≤ laws i a :=
   Finset.inf'_le _ (Finset.mem_univ i)
 
-theorem overlapDist_le [NeZero n] (laws : Fin n → Distribution A) (i : Fin n) :
+lemma overlapDist_le [NeZero n] (laws : Fin n → Distribution A) (i : Fin n) :
     overlapDist laws ≤ laws i :=
   Finsupp.le_def.mpr fun a => overlapDist_apply_le laws i a
 
 /-- A pointwise minimum of non-negative laws is non-negative (structural on a
 `NNReal` carrier, a side condition on the signed one). -/
-theorem overlapDist_nonNeg [NeZero n] {laws : Fin n → Distribution A}
+lemma overlapDist_nonNeg [NeZero n] {laws : Fin n → Distribution A}
     (hnn : ∀ i, (laws i).NonNeg) : (overlapDist laws).NonNeg := fun a => by
   rw [overlapDist_apply]
   exact Finset.le_inf' _ _ fun i _ => hnn i a
 
 /-- The overlap weight as a sum over the support union. -/
-theorem weight_overlapDist_eq_sum [NeZero n] (laws : Fin n → Distribution A) :
+lemma weight_overlapDist_eq_sum [NeZero n] (laws : Fin n → Distribution A) :
     (overlapDist laws).weight
       = ∑ a ∈ supportUnion laws, overlapDist laws a := by
   rw [Distribution.weight_eq_finsupp_sum, Finsupp.sum]
@@ -275,7 +275,7 @@ theorem weight_overlapDist_eq_sum [NeZero n] (laws : Fin n → Distribution A) :
 half of the `n`-ary coupling lemma.  Total agreement happens on constant
 tuples only, the constant value determines the tuple, and each constant
 tuple's mass is below every coordinate marginal. -/
-theorem agreementMass_le_weight_overlapDist [NeZero n]
+lemma agreementMass_le_weight_overlapDist [NeZero n]
     {joint : Distribution (Fin n → A)} {laws : Fin n → Distribution A}
     (h : IsJointOf joint laws) :
     agreementMass joint ≤ (overlapDist laws).weight := by
@@ -326,7 +326,7 @@ least — hence, with the bound above, exactly — the overlap weight
 Construction: embed the overlap diagonally and add an independent product of
 the residuals `lawsᵢ − overlap`, normalized by the common residual weight;
 each marginal reassembles to `overlap + residualᵢ = lawsᵢ`. -/
-theorem exists_isJointOf_weight_overlapDist_le_agreementMass [NeZero n]
+lemma exists_isJointOf_weight_overlapDist_le_agreementMass [NeZero n]
     (laws : Fin n → Distribution A) (hnn : ∀ i, (laws i).NonNeg) {w : ℝ}
     (hweight : ∀ i, (laws i).weight = w) :
     ∃ joint : Distribution (Fin n → A), IsJointOf joint laws ∧
@@ -418,7 +418,7 @@ section PairCase
 variable {A : Type*}
 
 /-- The binary infimum over `Fin 2` is the `min` of the two values. -/
-theorem inf'_univ_fin_two {α : Type*} [LinearOrder α] (f : Fin 2 → α) :
+lemma inf'_univ_fin_two {α : Type*} [LinearOrder α] (f : Fin 2 → α) :
     Finset.univ.inf' Finset.univ_nonempty f = min (f 0) (f 1) := by
   refine le_antisymm
     (le_min (Finset.inf'_le f (Finset.mem_univ 0))
@@ -436,7 +436,7 @@ sub-distribution generality — the classical overlap formula behind Definition
 Hypothesis-free on the signed carrier: `statDist` sums over the support of the
 *difference* and needs no side condition to see points where only the second
 law is charged. -/
-theorem weight_overlapDist_pair (P : Fin 2 → Distribution A) :
+lemma weight_overlapDist_pair (P : Fin 2 → Distribution A) :
     (overlapDist P).weight = (P 0).weight - statDist (P 0) (P 1) := by
   classical
   have hδ : statDist (P 0) (P 1)

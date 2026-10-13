@@ -62,7 +62,7 @@ def swapAlphabet {I J : Type} (F : I → Type) (G : J → Type) :
 abbrev parallelDomain (A B : Interface) : List (Σ l, Sum.rec A.X B.X l) → Prop :=
   parallelInputs (F := Sum.rec A.X B.X) A.domain B.domain
 
-theorem parallelDomain_swap (A B : Interface) (h : List (Σ l, Sum.rec A.X B.X l)) :
+lemma parallelDomain_swap (A B : Interface) (h : List (Σ l, Sum.rec A.X B.X l)) :
     parallelDomain B A (h.map (swapAlphabet A.X B.X)) ↔ parallelDomain A B h := by
   have hp :
       restrict none ((h.map (swapAlphabet A.X B.X)).map (sumAlphabet (Sum.rec B.X A.X)).symm) =
@@ -91,7 +91,7 @@ abbrev tensor (A B : Interface) : Interface where
   bound := A.bound + B.bound
   length_le := parallelInputs_length_le A.length_le B.length_le
 
-theorem Resource.possible_domain {A : Interface} (R : Resource A)
+lemma Resource.possible_domain {A : Interface} (R : Resource A)
     {h : List ((Σ i, A.X i) × (Σ i, A.Y i))} (hp : R.1 h ≠ 0) :
     h.map Prod.fst = [] ∨ A.domain (h.map Prod.fst) := by
   rcases List.eq_nil_or_concat h with rfl | ⟨h, ⟨x, y⟩, rfl⟩
@@ -101,7 +101,7 @@ theorem Resource.possible_domain {A : Interface} (R : Resource A)
     by_contra hd
     exact hp (R.1.mass_eq_zero_of_not_admitted hd y)
 
-theorem parallel_admits_iff (A B : Interface) (R : Resource A) (S : Resource B)
+lemma parallel_admits_iff (A B : Interface) (R : Resource A) (S : Resource B)
     (h : List (Two (Σ i, A.X i) (Σ j, B.X j) × Two (Σ i, A.Y i) (Σ j, B.Y j)))
     (hp : RandomSystem.parallel R.1 S.1 h ≠ 0)
     (x : Two (Σ i, A.X i) (Σ j, B.X j)) :
@@ -192,7 +192,7 @@ noncomputable def parallel {A B : Interface} (R : Resource A) (S : Resource B) :
         List.append_nil] using mul_eq_zero.mpr (Or.inr hs)
     · rfl
 
-theorem parallel_mass {A B : Interface} (R : Resource A) (S : Resource B)
+lemma parallel_mass {A B : Interface} (R : Resource A) (S : Resource B)
     (h : List ((Σ i, (tensor A B).X i) × (Σ i, (tensor A B).Y i))) :
     (parallel R S).1 h = RandomSystem.parallel R.1 S.1
       (h.map ((sumAlphabet (Sum.rec A.X B.X)).symm.prodCongr

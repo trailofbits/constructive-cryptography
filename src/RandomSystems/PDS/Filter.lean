@@ -29,18 +29,18 @@ noncomputable def filterDom {X Y : Type} (D : List X → Prop)
     (s : System X Y) : System X Y :=
   fun h => if D h then s h else Part.none
 
-theorem filterDom_dom {X Y : Type} (D : List X → Prop)
+lemma filterDom_dom {X Y : Type} (D : List X → Prop)
     (s : System X Y) (h : List X) :
     (filterDom D s h).Dom ↔ D h ∧ (s h).Dom := by
   by_cases hd : D h <;> simp [filterDom, hd, Part.not_none_dom]
 
-theorem filterDom_mem_iff {X Y : Type} (D : List X → Prop)
+lemma filterDom_mem_iff {X Y : Type} (D : List X → Prop)
     (s : System X Y) (h : List X) (y : Y) :
     y ∈ filterDom D s h ↔ D h ∧ y ∈ s h := by
   by_cases hd : D h <;> simp [filterDom, hd]
 
 /-- Restriction retains the complete behavior at every admitted prefix. -/
-theorem run_filterDom {X Y : Type} (P : Y → Prop) (D : List X → Prop)
+lemma run_filterDom {X Y : Type} (P : Y → Prop) (D : List X → Prop)
     (hD : ∀ {p h}, p <+: h → p ≠ [] → D h → D p)
     (s : System X Y) {h : List X} (hd : D h) :
     run P (filterDom D s) h = run P s h := by
@@ -55,12 +55,12 @@ theorem run_filterDom {X Y : Type} (P : Y → Prop) (D : List X → Prop)
       · rw [ih (hD (List.prefix_append _ _) hn hd)]
     · rfl
 
-theorem filterDom_filterDom {X Y : Type} (D E : List X → Prop) (s : System X Y) :
+lemma filterDom_filterDom {X Y : Type} (D E : List X → Prop) (s : System X Y) :
     filterDom D (filterDom E s) = filterDom (fun h => D h ∧ E h) s := by
   funext h
   by_cases hd : D h <;> by_cases he : E h <;> simp [filterDom, hd, he]
 
-theorem IsDDS.filterDom {X Y : Type} {s : System X Y} (hs : IsDDS s)
+lemma IsDDS.filterDom {X Y : Type} {s : System X Y} (hs : IsDDS s)
     (D : List X → Prop)
     (hD : ∀ {p h}, p <+: h → p ≠ [] → D h → D p) :
     IsDDS (filterDom D s) := by
@@ -77,7 +77,7 @@ noncomputable def filterDom {X Y : Type} (D : List X → Prop)
     (hD : ∀ {p h}, p <+: h → p ≠ [] → D h → D p) (s : DDS X Y) : DDS X Y :=
   ⟨SystemAlgebra.filterDom D s.1, s.2.filterDom D hD⟩
 
-theorem filterDom_ofFunction {X Y : Type} (D E : List X → Prop)
+lemma filterDom_ofFunction {X Y : Type} (D E : List X → Prop)
     (hD : ∀ {p h}, p <+: h → p ≠ [] → D h → D p)
     (hE : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
     (f : X → Y) :
@@ -98,13 +98,13 @@ def Domain.restrict {X Y : Type} (D : Domain X Y) (F : List X → Prop) : Domain
   length_lt h x hx := D.length_lt h x hx.2
 
 /-- A restriction answers precisely the transcripts it retains. -/
-theorem replies_filterDom {X Y : Type} (F : List X → Prop) (s : System X Y) {xs ys} :
+lemma replies_filterDom {X Y : Type} (F : List X → Prop) (s : System X Y) {xs ys} :
     Replies (filterDom F s) xs ys → Replies s xs ys :=
   Replies.mono fun h y hy => ((filterDom_mem_iff F s h y).mp hy).2
 
 /-- On a history in a domain closed under nonempty prefixes, the restriction replies as the
 system. -/
-theorem replies_filterDom_iff {X Y : Type} {F : List X → Prop}
+lemma replies_filterDom_iff {X Y : Type} {F : List X → Prop}
     (hF : ∀ {p h}, p <+: h → p ≠ [] → F h → F p) (s : System X Y) {xs ys}
     (hx : xs ≠ [] → F xs) :
     Replies (filterDom F s) xs ys ↔ Replies s xs ys := by
@@ -113,7 +113,7 @@ theorem replies_filterDom_iff {X Y : Type} {F : List X → Prop}
   rw [filterDom, if_pos (hF (List.take_prefix _ _) hne (hx fun he => by simp [he] at hne))]
   exact hr.2 k hk hk'
 
-theorem HasDomain.filterDom {X Y : Type} {D : Domain X Y} {s : System X Y}
+lemma HasDomain.filterDom {X Y : Type} {D : Domain X Y} {s : System X Y}
     (hs : HasDomain D s) (F : List X → Prop) :
     HasDomain (D.restrict F) (SystemAlgebra.filterDom F s) := fun h x hr =>
   (filterDom_dom F s _).trans (and_congr_right fun _ => hs h x (replies_filterDom F s hr))

@@ -33,24 +33,24 @@ noncomputable abbrev mkQ (R : Type*) [CommRing R] (n : Nat) :
 /-! ## Section 1: Negacyclic Quotient Algebra -/
 
 /-- The negacyclic modulus `X^n + 1` maps to zero in the quotient. -/
-theorem mk_negacyclicModulus_eq_zero :
+lemma mk_negacyclicModulus_eq_zero :
     mkQ R n (negacyclicModulus R n) = 0 :=
   Ideal.Quotient.eq_zero_iff_mem.mpr (Ideal.subset_span rfl)
 
 /-- In `R[X]/(X^n + 1)`, `X^n = -1`. -/
-theorem mk_X_pow_n : mkQ R n ((X : Polynomial R) ^ n) = -1 := by
+lemma mk_X_pow_n : mkQ R n ((X : Polynomial R) ^ n) = -1 := by
   have h := mk_negacyclicModulus_eq_zero (R := R) (n := n)
   have h' : mkQ R n ((X : Polynomial R) ^ n) + 1 = 0 := by
     simpa [negacyclicModulus, map_add, map_one] using h
   exact (add_eq_zero_iff_eq_neg.mp h')
 
 /-- In `R[X]/(X^n + 1)`, `X^(k + n) = -X^k`. -/
-theorem mk_X_pow_add_n (k : Nat) :
+lemma mk_X_pow_add_n (k : Nat) :
     mkQ R n ((X : Polynomial R) ^ (k + n)) = -(mkQ R n (X ^ k)) := by
   rw [pow_add, map_mul, mk_X_pow_n]; ring
 
 /-- In `R[X]/(X^n + 1)`, `monomial (k + n) c = -monomial k c`. -/
-theorem mk_monomial_add_n (k : Nat) (c : R) :
+lemma mk_monomial_add_n (k : Nat) (c : R) :
     mkQ R n (Polynomial.monomial (k + n) c) =
       -(mkQ R n (Polynomial.monomial k c)) := by
   rw [← C_mul_X_pow_eq_monomial, ← C_mul_X_pow_eq_monomial, map_mul, map_mul,
@@ -60,7 +60,7 @@ theorem mk_monomial_add_n (k : Nat) (c : R) :
 /-! ## Section 2: Product Expansion -/
 
 /-- The product of two `toPolynomial` sums equals a double sum of monomial products. -/
-theorem toPolynomial_mul_eq_double_sum (backend : PolyBackend R) (f g : backend.Poly) :
+lemma toPolynomial_mul_eq_double_sum (backend : PolyBackend R) (f g : backend.Poly) :
     backend.toPolynomial f * backend.toPolynomial g =
       ∑ i : Fin backend.degree, ∑ j : Fin backend.degree,
         Polynomial.monomial (i.val + j.val) (backend.coeff f i * backend.coeff g j) := by
@@ -70,7 +70,7 @@ theorem toPolynomial_mul_eq_double_sum (backend : PolyBackend R) (f g : backend.
 
 /-- The key algebraic step: the double sum of monomial products maps to the
 same quotient element as the negacyclic convolution polynomial. -/
-theorem mk_double_sum_eq_mk_negacyclicConv (hn : 0 < n) (f g : Fin n → R) :
+lemma mk_double_sum_eq_mk_negacyclicConv (hn : 0 < n) (f g : Fin n → R) :
     mkQ R n (∑ i : Fin n, ∑ j : Fin n,
         Polynomial.monomial (i.val + j.val) (f i * g j)) =
     mkQ R n (∑ k : Fin n, Polynomial.monomial k.val (negacyclicConvCoeff f g k)) := by
@@ -167,7 +167,7 @@ theorem mk_double_sum_eq_mk_negacyclicConv (hn : 0 < n) (f g : Fin n → R) :
 
 /-- `toPolynomial` of the negacyclic multiplication equals the negacyclic convolution
 polynomial. -/
-theorem negacyclicMul_toPolynomial (backend : PolyBackend R) (f g : backend.Poly) :
+lemma negacyclicMul_toPolynomial (backend : PolyBackend R) (f g : backend.Poly) :
     backend.toPolynomial (negacyclicMul backend f g) =
       ∑ k : Fin backend.degree,
         Polynomial.monomial k.val
@@ -176,7 +176,7 @@ theorem negacyclicMul_toPolynomial (backend : PolyBackend R) (f g : backend.Poly
 
 /-- Soundness of `negacyclicMul`: its image in `R[X]/(X^n + 1)` equals the product of the
 images. -/
-theorem negacyclicMul_sound (backend : PolyBackend R) (f g : backend.Poly) :
+lemma negacyclicMul_sound (backend : PolyBackend R) (f g : backend.Poly) :
     NegacyclicQuotient.ofBackend backend (negacyclicMul backend f g) =
       NegacyclicQuotient.ofBackend backend f *
         NegacyclicQuotient.ofBackend backend g := by
@@ -195,7 +195,7 @@ theorem negacyclicMul_sound (backend : PolyBackend R) (f g : backend.Poly) :
 /-- The constant-`1` vector maps to `1` in `R[X] / (X^n + 1)` for `n > 0`.
 For `n = 0`, `X^0 + 1 = 2` and `mk(0) = 1` fails for general `CommRing`
 (e.g. `ℤ[X] / (2)`), so this theorem requires positivity. -/
-theorem vectorNegacyclicSemantics_one_sound
+lemma vectorNegacyclicSemantics_one_sound
     (Coeff : Type*) [CommRing Coeff] {n : Nat} (hn : 0 < n) :
     NegacyclicQuotient.ofBackend (vectorBackend Coeff n)
         (vectorNegacyclicRing Coeff n).one = 1 := by

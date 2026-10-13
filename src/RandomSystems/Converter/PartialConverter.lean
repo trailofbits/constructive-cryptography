@@ -26,7 +26,7 @@ open Classical
 variable {O J : Type} {U V : O → Type} {X Y : J → Type}
 
 /-- A prefix-closed restriction changes no replies or query bound. -/
-theorem IsDDC.filterDom {b : ℕ} {α : InsideOutsideSystem O J U V X Y}
+lemma IsDDC.filterDom {b : ℕ} {α : InsideOutsideSystem O J U V X Y}
     (hα : IsDDC b α) (D : List (Σ l, twoFam U Y l) → Prop)
     (hD : ∀ {p h}, p <+: h → p ≠ [] → D h → D p) :
     IsDDC b (filterDom D α) := by
@@ -47,7 +47,7 @@ theorem IsDDC.filterDom {b : ℕ} {α : InsideOutsideSystem O J U V X Y}
     exact hα.replies h y o ((filterDom_mem_iff D α h y).mp hy).2 ho
 
 /-- Only the finite internal-query bound is needed for attachment to converge. -/
-theorem IsDDC.converges_along {I : Type} {Xi Yi : I → Type}
+lemma IsDDC.converges_along {I : Type} {Xi Yi : I → Type}
     {ι : J → I} {α : InsideOutsideSystem O J U V (Xi ∘ ι) (Yi ∘ ι)} {b : ℕ}
     (hα : IsDDC b α) (R : InterfaceSystem I Xi Yi) :
     Converges (pair α R) (alongRoute ι) (alongInj ι) :=
@@ -57,7 +57,7 @@ theorem IsDDC.converges_along {I : Type} {Xi Yi : I → Type}
 noncomputable def outsideInputs (h : List (Σ l, twoFam U Y l)) : List (Σ o, U o) :=
   restrict none (h.map splitIn)
 
-theorem outsideInputs_append (h e : List (Σ l, twoFam U Y l)) :
+lemma outsideInputs_append (h e : List (Σ l, twoFam U Y l)) :
     outsideInputs (h ++ e) = outsideInputs h ++ outsideInputs e := by
   simp only [outsideInputs, List.map_append, restrict_append]
 

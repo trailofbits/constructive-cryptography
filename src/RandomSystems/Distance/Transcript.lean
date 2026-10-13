@@ -44,7 +44,7 @@ section Queries
 noncomputable def qsOf {A B : Type} (e : List B →. A) (ys : List B) : List A :=
   (List.range ys.length).filterMap fun k => (e (ys.take k)).toOption
 
-theorem qsOf_snoc {A B : Type} {e : List B →. A} {ys : List B} {x y}
+lemma qsOf_snoc {A B : Type} {e : List B →. A} {ys : List B} {x y}
     (hx : x ∈ e ys) : qsOf e (ys ++ [y]) = qsOf e ys ++ [x] := by
   unfold qsOf
   rw [List.length_append, List.length_singleton, List.range_succ, List.filterMap_append]
@@ -67,9 +67,9 @@ def EFits (e : List (Σ i, Yi i) →. Σ i, Xi i) (ys : List (Σ i, Yi i)) : Pro
 
 variable {e : List (Σ i, Yi i) →. Σ i, Xi i}
 
-theorem EFits.nil : EFits e [] := fun k hk => absurd hk (by simp)
+lemma EFits.nil : EFits e [] := fun k hk => absurd hk (by simp)
 
-theorem EFits.of_snoc {ys : List (Σ i, Yi i)} {y} (hv : EFits e (ys ++ [y])) :
+lemma EFits.of_snoc {ys : List (Σ i, Yi i)} {y} (hv : EFits e (ys ++ [y])) :
     EFits e ys ∧ ∃ x ∈ e ys, y.1 = x.1 := by
   refine ⟨fun k hk => ?_, ?_⟩
   · obtain ⟨x, hx, hl⟩ := hv k (by simp; omega)
@@ -79,7 +79,7 @@ theorem EFits.of_snoc {ys : List (Σ i, Yi i)} {y} (hv : EFits e (ys ++ [y])) :
     rw [List.take_left' rfl] at hx
     exact ⟨x, hx, by simpa using hl⟩
 
-theorem EFits.snoc {ys : List (Σ i, Yi i)} (hv : EFits e ys) {x y} (hx : x ∈ e ys)
+lemma EFits.snoc {ys : List (Σ i, Yi i)} (hv : EFits e ys) {x y} (hx : x ∈ e ys)
     (hy : y.1 = x.1) : EFits e (ys ++ [y]) := by
   intro k hk
   simp only [List.length_append, List.length_singleton] at hk
@@ -110,7 +110,7 @@ noncomputable def envProbe : DDD K Xi Yi
 
 variable {E A}
 
-theorem envProbe_dHist {ys : List (Σ i, Yi i)} (hv : EFits E.1 ys) :
+lemma envProbe_dHist {ys : List (Σ i, Yi i)} (hv : EFits E.1 ys) :
     envProbe E A (dHist ys) = envReply E A ys := by
   have hex : ∃ ys', ys.map envIn = ys'.map envIn ∧ EFits E.1 ys' := ⟨ys, rfl, hv⟩
   simp only [envProbe, dHist, dif_pos hex]
@@ -118,7 +118,7 @@ theorem envProbe_dHist {ys : List (Σ i, Yi i)} (hv : EFits E.1 ys) :
     (List.map_injective_iff.mpr envIn_injective (Classical.choose_spec hex).1).symm
   rw [e]
 
-theorem envProbe_dom {w} (hd : (envProbe E A w).Dom) : ∃ ys, w = dHist ys ∧ EFits E.1 ys := by
+lemma envProbe_dom {w} (hd : (envProbe E A w).Dom) : ∃ ys, w = dHist ys ∧ EFits E.1 ys := by
   match w, hd with
   | ⟨.start, ()⟩ :: ws, hd =>
     simp only [envProbe] at hd
@@ -130,7 +130,7 @@ theorem envProbe_dom {w} (hd : (envProbe E A w).Dom) : ∃ ys, w = dHist ys ∧ 
   | ⟨.dec, e⟩ :: _, _ => exact e.elim
   | ⟨.res _, _⟩ :: _, hd => exact hd.elim
 
-theorem envReply_of_mem {ys : List (Σ i, Yi i)} {x} (hx : x ∈ E.1 ys) :
+lemma envReply_of_mem {ys : List (Σ i, Yi i)} {x} (hx : x ∈ E.1 ys) :
     envReply E A ys = Part.some ⟨.res x.1, x.2⟩ := by
   have hd : (E.1 ys).Dom := Part.dom_iff_mem.mpr ⟨x, hx⟩
   unfold envReply
@@ -140,7 +140,7 @@ theorem envReply_of_mem {ys : List (Σ i, Yi i)} {x} (hx : x ∈ E.1 ys) :
 
 variable {n : ℕ}
 
-theorem envProbe_finite (hE : QueryBounded n E) : Finite (n + 1) (envProbe E A) := by
+lemma envProbe_finite (hE : QueryBounded n E) : Finite (n + 1) (envProbe E A) := by
   intro w hd
   obtain ⟨ys, rfl, hv⟩ := envProbe_dom hd
   simp only [dHist, List.length_cons, List.length_map]
@@ -152,7 +152,7 @@ theorem envProbe_finite (hE : QueryBounded n E) : Finite (n + 1) (envProbe E A) 
     simp; omega
 
 /-- **`envProbe E A` is a DDD**, with bound `n + 1` for an environment with query bound `n`. -/
-theorem envProbe_isDDD (hE : QueryBounded n E) : IsDDD (envProbe E A) := by
+lemma envProbe_isDDD (hE : QueryBounded n E) : IsDDD (envProbe E A) := by
   refine ⟨?_, ⟨n + 1, envProbe_finite hE⟩, ?_, ?_, ?_⟩
   · simp [SilentAtEmpty, envProbe]
   · intro w z hr
@@ -176,7 +176,7 @@ theorem envProbe_isDDD (hE : QueryBounded n E) : IsDDD (envProbe E A) := by
       rw [replyLabel, envProbe_dHist hv, envReply_of_mem hx] at hl
       simp at hl
 
-theorem envOf_envProbe {ys : List (Σ i, Yi i)} (hv : EFits E.1 ys) :
+lemma envOf_envProbe {ys : List (Σ i, Yi i)} (hv : EFits E.1 ys) :
     envOf (envProbe E A) ys = E.1 ys := by
   unfold envOf
   rw [envProbe_dHist hv]
@@ -215,7 +215,7 @@ noncomputable def ddeOf (hD : IsDDD D) : DDE (Σ i, Xi i) (Σ i, Yi i) :=
       exact ho⟩
 
 /-- The environment of a distinguisher's queries is bounded by the distinguisher's bound. -/
-theorem ddeOf_bounded (hD : IsDDD D) : QueryBounded hD.2.1.choose (ddeOf hD) := by
+lemma ddeOf_bounded (hD : IsDDD D) : QueryBounded hD.2.1.choose (ddeOf hD) := by
   intro ys hd
   obtain ⟨x, hx⟩ := Part.dom_iff_mem.mp hd
   have hx : x ∈ envOf (trim D) ys := hx
@@ -228,7 +228,7 @@ theorem ddeOf_bounded (hD : IsDDD D) : QueryBounded hD.2.1.choose (ddeOf hD) := 
   simp [dHist] at this
   omega
 
-theorem finite_trim {n : ℕ} {s : System X Y} (hs : Finite n s) : Finite n (trim s) := by
+lemma finite_trim {n : ℕ} {s : System X Y} (hs : Finite n s) : Finite n (trim s) := by
   intro h hd
   apply hs
   by_contra hn
@@ -238,7 +238,7 @@ theorem finite_trim {n : ℕ} {s : System X Y} (hs : Finite n s) : Finite n (tri
 
 end OfDDD
 
-theorem abs_mass_sub_le_statDist {S : Type} (P Q : Distribution.ProbDist S) (A : S → Prop) :
+lemma abs_mass_sub_le_statDist {S : Type} (P Q : Distribution.ProbDist S) (A : S → Prop) :
     |P.1.mass A - Q.1.mass A| ≤ statDist P.1 Q.1 := by
   rw [abs_le]
   refine ⟨?_, Probability.mass_sub_mass_le_statDist _ _ _⟩
@@ -252,7 +252,7 @@ section Utilities
 
 /-- Closing with the reachable part of an environment decides as closing with the
 environment. -/
-theorem close_trim_start {I : Type} {Xf Yf : I → Type} (D : DDD I Xf Yf) (R : InterfaceSystem I Xf Yf) :
+lemma close_trim_start {I : Type} {Xf Yf : I → Type} (D : DDD I Xf Yf) (R : InterfaceSystem I Xf Yf) :
     close (trim D) R [startIn] = close D R [startIn] := by
   rw [close_eq, close_eq]
   have hb := EqOnReachable.interconnect (EqOnReachable.pair_left (trim_behEq D) R) closeRoute closeInj
@@ -266,7 +266,7 @@ theorem close_trim_start {I : Type} {Xf Yf : I → Type} (D : DDD I Xf Yf) (R : 
 
 /-- **Averaging.** Under a probability distribution, a pointwise bound on a difference
 bounds the difference of the averages. -/
-theorem abs_average_sub_le {S : Type} (A : Distribution.ProbDist S) (f g : S → ℝ) {ε : ℝ}
+lemma abs_average_sub_le {S : Type} (A : Distribution.ProbDist S) (f g : S → ℝ) {ε : ℝ}
     (h : ∀ a, |f a - g a| ≤ ε) :
     |A.1.sum (fun a w => w * f a) - A.1.sum (fun a w => w * g a)| ≤ ε := by
   have hw : A.1.sum (fun _ w => w) = 1 := A.2.2
@@ -295,7 +295,7 @@ def DPort.map {L L' : Type} (σ : L → L') : DPort L → DPort L'
 
 variable {L L' : Type} {F G : DPort L → Type} {F' G' : DPort L' → Type}
 
-theorem reach_relabel_iff (D : InterfaceSystem (DPort L) F G) (f : (Σ p, F' p) → Σ p, F p)
+lemma reach_relabel_iff (D : InterfaceSystem (DPort L) F G) (f : (Σ p, F' p) → Σ p, F p)
     (g : (Σ p, G p) → Σ p, G' p) (h : List (Σ p, F' p)) :
     Reach (relabel D f g) h ↔ Reach D (h.map f) := by
   induction h using List.reverseRecOn with
@@ -304,7 +304,7 @@ theorem reach_relabel_iff (D : InterfaceSystem (DPort L) F G) (f : (Σ p, F' p) 
     rw [reach_snoc_iff, ih, List.map_append, List.map_singleton, reach_snoc_iff]
     simp [relabel]
 
-theorem replyLabel_relabel (D : InterfaceSystem (DPort L) F G) (f : (Σ p, F' p) → Σ p, F p)
+lemma replyLabel_relabel (D : InterfaceSystem (DPort L) F G) (f : (Σ p, F' p) → Σ p, F p)
     (g : (Σ p, G p) → Σ p, G' p) (σ : L' ≃ L) (hg : ∀ y, (g y).1 = DPort.map σ.symm y.1)
     (h : List (Σ p, F' p)) :
     replyLabel (relabel D f g) h = (replyLabel D (h.map f)).map (DPort.map σ.symm) := by
@@ -318,7 +318,7 @@ theorem replyLabel_relabel (D : InterfaceSystem (DPort L) F G) (f : (Σ p, F' p)
     rfl
 
 /-- **Renaming the labels of a distinguisher along a bijection gives a distinguisher.** -/
-theorem IsDDD.relabel {D : InterfaceSystem (DPort L) F G} (hD : IsDDD D) (f : (Σ p, F' p) → Σ p, F p)
+lemma IsDDD.relabel {D : InterfaceSystem (DPort L) F G} (hD : IsDDD D) (f : (Σ p, F' p) → Σ p, F p)
     (g : (Σ p, G p) → Σ p, G' p) (σ : L' ≃ L) (hf : ∀ z, (f z).1 = DPort.map σ z.1)
     (hg : ∀ y, (g y).1 = DPort.map σ.symm y.1) : IsDDD (SystemAlgebra.relabel D f g) := by
   obtain ⟨hre, ⟨n, hn⟩, htr, hres, hdec⟩ := hD
@@ -389,7 +389,7 @@ def decMap {I I' : Type} {Xf Yf : I → Type} {Xf' Yf' : I' → Type} :
   | ⟨⟨⟨none, .res i⟩, h⟩, _⟩ => absurd (res_mem_closeSet i) h
   | ⟨⟨⟨some (), i⟩, h⟩, _⟩ => absurd (sys_mem_closeSet i) h
 
-theorem trigMap_eq {I I' : Type} {Xf Yf : I → Type} {Xf' Yf' : I' → Type} (z) :
+lemma trigMap_eq {I I' : Type} {Xf Yf : I → Type} {Xf' Yf' : I' → Type} (z) :
     trigMap (Xf := Xf) (Yf := Yf) (Xf' := Xf') (Yf' := Yf') z = startIn := by
   rcases z with ⟨⟨⟨_ | ⟨⟨⟩⟩, l⟩, hl⟩, v⟩
   · rcases l with _ | _ | i
@@ -399,7 +399,7 @@ theorem trigMap_eq {I I' : Type} {Xf Yf : I → Type} {Xf' Yf' : I' → Type} (z
   · exact absurd (sys_mem_closeSet l) hl
 
 /-- Maps sending decisions to decisions do not change whether `1` is decided. -/
-theorem decOut_mem_map_iff {I I' : Type} {Xf Yf : I → Type} {Xf' Yf' : I' → Type}
+lemma decOut_mem_map_iff {I I' : Type} {Xf Yf : I → Type} {Xf' Yf' : I' → Type}
     (g : (Σ l : Free (closeSet I), twoFam (dOut Xf) Yf l.1) → Σ l : Free (closeSet I'), twoFam (dOut Xf') Yf' l.1)
     (hg : ∀ b, g (decOut b) = decOut b) (P : Part (Σ l : Free (closeSet I), twoFam (dOut Xf) Yf l.1))
     (c : Bool) : decOut c ∈ P.map g ↔ decOut c ∈ P := by

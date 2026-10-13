@@ -38,7 +38,7 @@ local infix:50 " ≃ₛ " => relation.substitutes _
 /-- Banfi, Section 2.3.1 (printed p. 15): "we explicitly show the implication
 by the following sequence of steps". The calculation keeps each supplied
 transformation, orientation, and exact join visible. -/
-theorem substitutes_of_two_steps
+lemma substitutes_of_two_steps
     (R₀ R₁ S₀ S₁ : Phi B) (X Y : Phi A)
     (α β : A ⟶ B)
     (hR : R₀ ≃ₛ R₁) (hS : S₀ ≃ₛ S₁)
@@ -56,7 +56,7 @@ local notation "d" => distance
 /-- Banfi, Section 2.3.1 (printed p. 15): "we then collect the sum of such
 pᵢ's into a value ε". This companion uses separately supplied statistical
 bounds; it does not infer them from the substitution premises. -/
-theorem distance_two_steps_le [MonoidalCategory C] [CompatiblePseudoMetric C Phi]
+lemma distance_two_steps_le [MonoidalCategory C] [CompatiblePseudoMetric C Phi]
     (R₀ R₁ S₀ S₁ : Phi B) (X Y : Phi A)
     (α β : A ⟶ B) (ε₁ ε₂ : ENNReal)
     (hR : d R₀ R₁ ≤ ε₁) (hS : d S₀ S₁ ≤ ε₂)

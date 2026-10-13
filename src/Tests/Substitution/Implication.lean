@@ -35,7 +35,7 @@ example (assumption : ι) :
 
 -- Heterogeneous assumptions, a reversed second use, and an additional outer
 -- context exercise the actual dependent chain rather than a same-fibre shortcut.
-theorem transformed_chain_counts [DecidableEq ι] {A B : C}
+lemma transformed_chain_counts [DecidableEq ι] {A B : C}
     (firstAssumption secondAssumption : ι)
     (firstTransform : B ⟶ boundary firstAssumption)
     (secondTransform : B ⟶ boundary secondAssumption)
@@ -108,7 +108,7 @@ example (relation : SubstitutionRelation C)
 
 -- An explicit implication now enters the existing CC specification calculus.
 -- The diagonal hypothesis remains visible, as required by Jost's relaxation.
-theorem construction_of_implication {A B : C} {uses : Nat}
+lemma construction_of_implication {A B : C} {uses : Nat}
     (protocol : A ⟶ B) (simulator : A ⟶ A)
     (real : Phi B) (ideal : Phi A)
     (implication : Implication boundary systems A uses)

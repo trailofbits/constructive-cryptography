@@ -27,31 +27,31 @@ noncomputable instance monoidalStruct : MonoidalCategoryStruct Interface where
   leftUnitor := leftUnitor
   rightUnitor := rightUnitor
 
-theorem tensorHom_eq {A B C D : Interface} (α : A ⟶ B) (β : C ⟶ D) :
+lemma tensorHom_eq {A B C D : Interface} (α : A ⟶ B) (β : C ⟶ D) :
     α ⊗ₘ β = parallelConverter α β := rfl
 
-theorem id_tensor_id (A B : Interface) : (𝟙 A ⊗ₘ 𝟙 B : A ⊗ B ⟶ A ⊗ B) = 𝟙 (A ⊗ B) :=
+lemma id_tensor_id (A B : Interface) : (𝟙 A ⊗ₘ 𝟙 B : A ⊗ B ⟶ A ⊗ B) = 𝟙 (A ⊗ B) :=
   PDCBehavior.tensor_id A.nonempty_prefix B.nonempty_prefix
 
-theorem tensor_comp {A B C D E F : Interface}
+lemma tensor_comp {A B C D E F : Interface}
     (α : A ⟶ B) (β : C ⟶ D) (γ : B ⟶ E) (δ : D ⟶ F) :
     (α ⊗ₘ β) ≫ (γ ⊗ₘ δ) = (α ≫ γ) ⊗ₘ (β ≫ δ) :=
   PDCBehavior.comp_tensor α β γ δ
 
-theorem associator_naturality {A B C D E F : Interface}
+lemma associator_naturality {A B C D E F : Interface}
     (α : A ⟶ D) (β : B ⟶ E) (γ : C ⟶ F) :
     ((α ⊗ₘ β) ⊗ₘ γ) ≫ (α_ D E F).hom = (α_ A B C).hom ≫ (α ⊗ₘ (β ⊗ₘ γ)) :=
   comp_associator α β γ
 
-theorem leftUnitor_naturality {A B : Interface} (α : A ⟶ B) :
+lemma leftUnitor_naturality {A B : Interface} (α : A ⟶ B) :
     (𝟙 (𝟙_ Interface) ⊗ₘ α) ≫ (λ_ B).hom = (λ_ A).hom ≫ α :=
   comp_leftUnitor α
 
-theorem rightUnitor_naturality {A B : Interface} (α : A ⟶ B) :
+lemma rightUnitor_naturality {A B : Interface} (α : A ⟶ B) :
     (α ⊗ₘ 𝟙 (𝟙_ Interface)) ≫ (ρ_ B).hom = (ρ_ A).hom ≫ α :=
   comp_rightUnitor α
 
-theorem pentagon (A B C D : Interface) :
+lemma pentagon (A B C D : Interface) :
     ((α_ A B C).hom ⊗ₘ 𝟙 D) ≫ (α_ A (B ⊗ C) D).hom ≫ (𝟙 A ⊗ₘ (α_ B C D).hom) =
       (α_ (A ⊗ B) C D).hom ≫ (α_ A B (C ⊗ D)).hom := by
   change parallelConverter (associator A B C).hom (𝟙 D) ≫
@@ -75,7 +75,7 @@ theorem pentagon (A B C D : Interface) :
     intro y
     rcases y with ⟨(((a | b) | c) | d), y⟩ <;> rfl
 
-theorem triangle (A B : Interface) :
+lemma triangle (A B : Interface) :
     (α_ A (𝟙_ Interface) B).hom ≫ (𝟙 A ⊗ₘ (λ_ B).hom) = (ρ_ A).hom ⊗ₘ 𝟙 B := by
   change (associator A unit B).hom ≫ parallelConverter (𝟙 A) (leftUnitor B).hom =
     parallelConverter (rightUnitor A).hom (𝟙 B)

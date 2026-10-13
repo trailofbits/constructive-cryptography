@@ -60,7 +60,7 @@ def admitAfter : Option (Two O J) → Two O J → Prop
   | some ⟨some (), j⟩, l => l = ⟨some (), j⟩
   | _, l => l.1 = none
 
-theorem admitAfter_of_ne {r : Option (Two O J)} (hr : ∀ j, r ≠ some ⟨some (), j⟩) {l : Two O J} :
+lemma admitAfter_of_ne {r : Option (Two O J)} (hr : ∀ j, r ≠ some ⟨some (), j⟩) {l : Two O J} :
     admitAfter r l ↔ l.1 = none := by
   rcases r with _ | ⟨_ | ⟨⟨⟩⟩, j⟩
   · rfl
@@ -76,7 +76,7 @@ def outerOf {F : Two O J → Type} : (Σ l, F l) → Option O
 def lastOuter {F : Two O J → Type} (h : List (Σ l, F l)) : Option O :=
   h.reverse.findSome? outerOf
 
-theorem lastOuter_snoc {F : Two O J → Type} (h : List (Σ l, F l)) (z : Σ l, F l) :
+lemma lastOuter_snoc {F : Two O J → Type} (h : List (Σ l, F l)) (z : Σ l, F l) :
     lastOuter (h ++ [z]) = (outerOf z).or (lastOuter h) := by
   simp only [lastOuter, List.reverse_append, List.reverse_cons, List.reverse_nil, List.nil_append,
     List.singleton_append, List.findSome?_cons]
@@ -95,11 +95,11 @@ def Admissible (α : InsideOutsideSystem O J U V Xi Yi) (h : List (Σ l, twoFam 
 
 variable {α : InsideOutsideSystem O J U V Xi Yi}
 
-@[simp] theorem admissible_nil : Admissible α [] := by
+@[simp] lemma admissible_nil : Admissible α [] := by
   intro h' z e he
   simp at he
 
-theorem admissible_snoc {h : List (Σ l, twoFam U Yi l)} {z : Σ l, twoFam U Yi l} :
+lemma admissible_snoc {h : List (Σ l, twoFam U Yi l)} {z : Σ l, twoFam U Yi l} :
     Admissible α (h ++ [z]) ↔ Admissible α h ∧ (h ≠ [] → (α h).Dom) ∧ Admits α h z := by
   constructor
   · intro ha
@@ -115,7 +115,7 @@ theorem admissible_snoc {h : List (Σ l, twoFam U Yi l)} {z : Σ l, twoFam U Yi 
       obtain ⟨rfl, -⟩ := List.append_inj' he' rfl
       exact ha h' z' e' rfl
 
-theorem Admissible.of_append {h e : List (Σ l, twoFam U Yi l)} (ha : Admissible α (h ++ e)) :
+lemma Admissible.of_append {h e : List (Σ l, twoFam U Yi l)} (ha : Admissible α (h ++ e)) :
     Admissible α h :=
   fun h' z e' he => ha h' z (e' ++ e) (by rw [he]; simp)
 
@@ -138,7 +138,7 @@ abbrev DDC (O J : Type) (U V : O → Type) (X Y : J → Type) :=
 def Responsive (α : InsideOutsideSystem O J U V Xi Yi) : Prop :=
   ∀ h, Admissible α h → h ≠ [] → (α h).Dom
 
-theorem IsDDC.mono {b c : ℕ} (hα : IsDDC b α) (hbc : b ≤ c) : IsDDC c α :=
+lemma IsDDC.mono {b c : ℕ} (hα : IsDDC b α) (hbc : b ≤ c) : IsDDC c α :=
   { hα with bound := fun h hd => (hα.bound h hd).trans hbc }
 
 /-- **Responsive converter** (Jost Def. 2.2.2, printed pp. 17–18): a deterministic system that
@@ -155,20 +155,20 @@ structure IsResponsiveDDC (b : ℕ) (α : InsideOutsideSystem O J U V Xi Yi) : P
   responsive : Responsive α
   replies : ∀ h y (o : O), y ∈ α h → y.1 = ⟨none, o⟩ → lastOuter h = some o
 
-theorem IsResponsiveDDC.isDDC {b : ℕ} (hα : IsResponsiveDDC b α) : IsDDC b α :=
+lemma IsResponsiveDDC.isDDC {b : ℕ} (hα : IsResponsiveDDC b α) : IsDDC b α :=
   ⟨hα.dds, hα.admits, hα.bound, hα.replies⟩
 
 /-- The responsive specialization adds exactly its reply obligation. -/
-theorem isResponsiveDDC_iff {b : ℕ} :
+lemma isResponsiveDDC_iff {b : ℕ} :
     IsResponsiveDDC b α ↔ IsDDC b α ∧ Responsive α :=
   ⟨fun h => ⟨h.isDDC, h.responsive⟩,
     fun ⟨h, hr⟩ => ⟨h.dds, h.admits, h.bound, hr, h.replies⟩⟩
 
-theorem IsResponsiveDDC.mono {b b' : ℕ} (hα : IsResponsiveDDC b α) (hb : b ≤ b') :
+lemma IsResponsiveDDC.mono {b b' : ℕ} (hα : IsResponsiveDDC b α) (hb : b ≤ b') :
     IsResponsiveDDC b' α :=
   { hα with bound := fun h hd => (hα.bound h hd).trans hb }
 
-theorem IsResponsiveDDC.admissible {b : ℕ} (hα : IsResponsiveDDC b α) {h : List (Σ l, twoFam U Yi l)}
+lemma IsResponsiveDDC.admissible {b : ℕ} (hα : IsResponsiveDDC b α) {h : List (Σ l, twoFam U Yi l)}
     (hd : (α h).Dom) : Admissible α h := by
   intro h' z e he
   subst he
@@ -177,7 +177,7 @@ theorem IsResponsiveDDC.admissible {b : ℕ} (hα : IsResponsiveDDC b α) {h : L
   refine ⟨fun hne => hα.dds.2 ⟨z :: e, rfl⟩ hne hd, hα.admits h' z hz⟩
 
 /-- A converter answers exactly the nonempty admissible histories. -/
-theorem IsResponsiveDDC.dom_iff {b : ℕ} (hα : IsResponsiveDDC b α) (h : List (Σ l, twoFam U Yi l)) :
+lemma IsResponsiveDDC.dom_iff {b : ℕ} (hα : IsResponsiveDDC b α) (h : List (Σ l, twoFam U Yi l)) :
     (α h).Dom ↔ h ≠ [] ∧ Admissible α h :=
   ⟨fun hd => ⟨by rintro rfl; exact hα.dds.1 hd, hα.admissible hd⟩,
     fun ⟨hne, ha⟩ => hα.responsive h ha hne⟩
@@ -194,14 +194,14 @@ variable {O J : Type} {U V : O → Type} {Xi Yi : J → Type}
 noncomputable def canon (c : InsideOutsideSystem O J U V Xi Yi) : InsideOutsideSystem O J U V Xi Yi := fun h =>
   if Admissible c h then c h else Part.none
 
-theorem canon_of_admissible {c : InsideOutsideSystem O J U V Xi Yi} {h} (ha : Admissible c h) :
+lemma canon_of_admissible {c : InsideOutsideSystem O J U V Xi Yi} {h} (ha : Admissible c h) :
     canon c h = c h := if_pos ha
 
-theorem replyLabel_canon {c : InsideOutsideSystem O J U V Xi Yi} {h} (ha : Admissible c h) :
+lemma replyLabel_canon {c : InsideOutsideSystem O J U V Xi Yi} {h} (ha : Admissible c h) :
     replyLabel (canon c) h = replyLabel c h := by
   simp [replyLabel, canon_of_admissible ha]
 
-theorem admissible_canon_iff {c : InsideOutsideSystem O J U V Xi Yi} (h : List (Σ l, twoFam U Yi l)) :
+lemma admissible_canon_iff {c : InsideOutsideSystem O J U V Xi Yi} (h : List (Σ l, twoFam U Yi l)) :
     Admissible (canon c) h ↔ Admissible c h := by
   induction h using List.reverseRecOn with
   | nil => simp
@@ -230,31 +230,31 @@ noncomputable def idConverter : InsideOutsideSystem J J X Y X Y := canon (forwar
 
 variable {J X Y}
 
-theorem forwardAll_snoc_outer (h : List (Σ l, twoFam X Y l)) (j : J) (x : X j) :
+lemma forwardAll_snoc_outer (h : List (Σ l, twoFam X Y l)) (j : J) (x : X j) :
     forwardAll J X Y (h ++ [⟨⟨none, j⟩, x⟩]) = Part.some ⟨⟨some (), j⟩, x⟩ := by
   simp [forwardAll]
 
-theorem forwardAll_snoc_inner (h : List (Σ l, twoFam X Y l)) (j : J) (y : Y j) :
+lemma forwardAll_snoc_inner (h : List (Σ l, twoFam X Y l)) (j : J) (y : Y j) :
     forwardAll J X Y (h ++ [⟨⟨some (), j⟩, y⟩]) = Part.some ⟨⟨none, j⟩, y⟩ := by
   simp [forwardAll]
 
-theorem forwardAll_dom {h : List (Σ l, twoFam X Y l)} (hne : h ≠ []) :
+lemma forwardAll_dom {h : List (Σ l, twoFam X Y l)} (hne : h ≠ []) :
     (forwardAll J X Y h).Dom := by
   obtain ⟨h₀, z, rfl⟩ := List.eq_nil_or_concat h |>.resolve_left hne
   rcases z with ⟨⟨_ | ⟨⟨⟩⟩, j⟩, v⟩
   · simp [List.concat_eq_append, forwardAll_snoc_outer]
   · simp [List.concat_eq_append, forwardAll_snoc_inner]
 
-theorem replyLabel_forwardAll_outer (h : List (Σ l, twoFam X Y l)) (j : J) (x : X j) :
+lemma replyLabel_forwardAll_outer (h : List (Σ l, twoFam X Y l)) (j : J) (x : X j) :
     replyLabel (forwardAll J X Y) (h ++ [⟨⟨none, j⟩, x⟩]) = some ⟨some (), j⟩ := by
   simp [replyLabel, forwardAll_snoc_outer]
 
-theorem replyLabel_forwardAll_inner (h : List (Σ l, twoFam X Y l)) (j : J) (y : Y j) :
+lemma replyLabel_forwardAll_inner (h : List (Σ l, twoFam X Y l)) (j : J) (y : Y j) :
     replyLabel (forwardAll J X Y) (h ++ [⟨⟨some (), j⟩, y⟩]) = some ⟨none, j⟩ := by
   simp [replyLabel, forwardAll_snoc_inner]
 
 /-- On an admissible history, an inside input at `j` follows an outside input at `j`. -/
-theorem forwardAll_inner_prev {h : List (Σ l, twoFam X Y l)} {j : J} {y : Y j}
+lemma forwardAll_inner_prev {h : List (Σ l, twoFam X Y l)} {j : J} {y : Y j}
     (ha : Admissible (forwardAll J X Y) (h ++ [⟨⟨some (), j⟩, y⟩])) :
     ∃ h₀ x, h = h₀ ++ [⟨⟨none, j⟩, x⟩] := by
   obtain ⟨-, -, hz⟩ := admissible_snoc.mp ha
@@ -269,7 +269,7 @@ theorem forwardAll_inner_prev {h : List (Σ l, twoFam X Y l)} {j : J} {y : Y j}
   · rw [Admits, replyLabel_forwardAll_inner] at hz
     simp [admitAfter] at hz
 
-theorem idConverter_isResponsiveDDC : IsResponsiveDDC 1 (idConverter J X Y) := by
+lemma idConverter_isResponsiveDDC : IsResponsiveDDC 1 (idConverter J X Y) := by
   refine ⟨⟨?_, ?_⟩, ?_, ?_, ?_, ?_⟩
   · simp [SilentAtEmpty, idConverter, canon, forwardAll]
   · intro l₁ l₂ hp hne hd
@@ -348,7 +348,7 @@ section AlongConverge
 variable {I O J : Type} {X Y : I → Type} {U V : O → Type}
 
 /-- Every internal cycle of `α^ι R` passes through `α`, continuing only after an inside query. -/
-theorem cyclesThrough_along (ι : J → I) :
+lemma cyclesThrough_along (ι : J → I) :
     CyclesThrough (IsInside (F := twoFam V (X ∘ ι))) (alongRoute (U := U) (Y := Y) ι) := by
   refine ⟨?_, ?_, ?_⟩
   · rintro ⟨⟨_ | ⟨⟨⟩⟩, l⟩, v⟩ hy
@@ -380,7 +380,7 @@ theorem cyclesThrough_along (ι : J → I) :
       rfl
 
 /-- **Attaching a converter converges**, whatever the resource. -/
-theorem IsResponsiveDDC.converges_along {b : ℕ} {ι : J → I} {α : InsideOutsideSystem O J U V (X ∘ ι) (Y ∘ ι)}
+lemma IsResponsiveDDC.converges_along {b : ℕ} {ι : J → I} {α : InsideOutsideSystem O J U V (X ∘ ι) (Y ∘ ι)}
     (hα : IsResponsiveDDC b α) (R : InterfaceSystem I X Y) :
     Converges (pair α R) (alongRoute ι) (alongInj ι) :=
   converges_pair (cyclesThrough_along ι) hα.bound
@@ -397,32 +397,32 @@ variable {I O J : Type} {X Y : I → Type} {U V : O → Type}
 histories, at the interface queried. -/
 def TotalResource (R : InterfaceSystem I X Y) : Prop := (∀ h, (R h).Dom ↔ h ≠ []) ∧ RepliesAtQueriedInterface R
 
-theorem TotalResource.isDDS {R : InterfaceSystem I X Y} (hR : TotalResource R) : IsDDS R :=
+lemma TotalResource.isDDS {R : InterfaceSystem I X Y} (hR : TotalResource R) : IsDDS R :=
   ⟨fun hd => (hR.1 []).mp hd rfl, fun l₁ _ _ hne _ => (hR.1 l₁).mpr hne⟩
 
 variable (ι : J → I)
 
-theorem alongRoute_outer (o : O) (v : V o) :
+lemma alongRoute_outer (o : O) (v : V o) :
     alongRoute (X := X) (U := U) (Y := Y) ι ⟨none, ⟨⟨none, o⟩, v⟩⟩ =
       .inl ⟨⟨⟨none, ⟨none, o⟩⟩, outside_not_mem_alongSet ι o⟩, v⟩ := by
   show Sum.map id splitIn (connectRoute (alongSet ι) (alongRouting ι) ⟨⟨none, ⟨none, o⟩⟩, v⟩) = _
   rw [connectRoute_of_not_mem _ (outside_not_mem_alongSet ι o)]
   rfl
 
-theorem alongRoute_inside (j : J) (x : X (ι j)) :
+lemma alongRoute_inside (j : J) (x : X (ι j)) :
     alongRoute (U := U) (V := V) (Y := Y) ι ⟨none, ⟨⟨some (), j⟩, x⟩⟩ = .inr ⟨some (), ⟨ι j, x⟩⟩ := by
   show Sum.map id splitIn (connectRoute (alongSet ι) (alongRouting ι) ⟨⟨none, ⟨some (), j⟩⟩, x⟩) = _
   rw [connectRoute_of_mem _ (inside_mem_alongSet ι j)]
   rfl
 
-theorem alongRoute_image (hι : Function.Injective ι) (j : J) (y : Y (ι j)) :
+lemma alongRoute_image (hι : Function.Injective ι) (j : J) (y : Y (ι j)) :
     alongRoute (X := X) (U := U) (V := V) ι ⟨some (), ⟨ι j, y⟩⟩ = .inr ⟨none, ⟨⟨some (), j⟩, y⟩⟩ := by
   simp only [alongRoute]
   rw [show (joinOut ⟨some (), ⟨ι j, y⟩⟩ : Σ p : Two (Two O J) I, _) = ⟨⟨some (), ι j⟩, y⟩
     from rfl, connectRoute_of_mem _ (image_mem_alongSet ι j), liftC_alongRouting_image ι hι j]
   rfl
 
-theorem alongRoute_free {i : I} (hi : i ∉ Set.range ι) (y : Y i) :
+lemma alongRoute_free {i : I} (hi : i ∉ Set.range ι) (y : Y i) :
     alongRoute (X := X) (U := U) (V := V) ι ⟨some (), ⟨i, y⟩⟩ =
       .inl ⟨⟨⟨some (), i⟩, sys_not_mem_alongSet ι hi⟩, y⟩ := by
   simp only [alongRoute]
@@ -448,7 +448,7 @@ def AlongCall (α : InsideOutsideSystem O J U V (X ∘ ι) (Y ∘ ι)) (o : O)
       (⟨⟨some (), j⟩, x⟩ : Σ l, twoFam V (X ∘ ι) l) ∈ α (restrict none G₁) ∧
       lastOuter (restrict none G₁) = some o)
 
-theorem along_call (hι : Function.Injective ι) (hα : IsResponsiveDDC b α) (hR : TotalResource R)
+lemma along_call (hι : Function.Injective ι) (hα : IsResponsiveDDC b α) (hR : TotalResource R)
     {G o' G'} (l : Exchange (pair α R) (alongRoute ι) G o' G') :
     ∀ o, AlongCall α o G → ∃ v, o' = some ⟨⟨⟨none, ⟨none, o⟩⟩, outside_not_mem_alongSet ι o⟩, v⟩ ∧
       AlongIdle α G' := by
@@ -512,7 +512,7 @@ theorem along_call (hι : Function.Injective ι) (hα : IsResponsiveDDC b α) (h
         simpa [outerOf] using hlo
 
 /-- Every external history leaves `α` idle, and each reply comes at the queried interface. -/
-theorem along_induces (hι : Function.Injective ι) (hα : IsResponsiveDDC b α) (hR : TotalResource R)
+lemma along_induces (hι : Function.Injective ι) (hα : IsResponsiveDDC b α) (hR : TotalResource R)
     {u o H} (r : Induces (pair α R) (alongRoute ι) (alongInj ι) u o H) :
     AlongIdle α H ∧ ∀ u' a, u = u' ++ [a] → ∃ c, o = some c ∧ c.1 = a.1 := by
   induction r with
@@ -554,7 +554,7 @@ theorem along_induces (hι : Function.Injective ι) (hα : IsResponsiveDDC b α)
 
 /-- **A converter on a total resource gives a total resource** (Jost p. 18): the attachment
 answers every nonempty history, at the interface queried. -/
-theorem IsResponsiveDDC.totalResource_along (hι : Function.Injective ι) (hα : IsResponsiveDDC b α)
+lemma IsResponsiveDDC.totalResource_along (hι : Function.Injective ι) (hα : IsResponsiveDDC b α)
     (hR : TotalResource R) : TotalResource (attachAlong ι α R) := by
   rw [attachAlong_eq]
   refine ⟨fun u => ⟨fun hd => ?_, fun hne => ?_⟩, fun h a c hc => ?_⟩
@@ -578,7 +578,7 @@ section AlongCanon
 variable {I O J : Type} {X Y : I → Type} {U V : O → Type} {ι : J → I} {b : ℕ}
   {c : InsideOutsideSystem O J U V (X ∘ ι) (Y ∘ ι)} {R : InterfaceSystem I X Y}
 
-theorem along_call_canon (hι : Function.Injective ι) (hc : IsResponsiveDDC b (canon c))
+lemma along_call_canon (hι : Function.Injective ι) (hc : IsResponsiveDDC b (canon c))
     (hR : TotalResource R) {G o' G'} (l : Exchange (pair (canon c) R) (alongRoute ι) G o' G') :
     ∀ o, AlongCall (canon c) o G → Exchange (pair c R) (alongRoute ι) G o' G' := by
   induction l with
@@ -634,7 +634,7 @@ theorem along_call_canon (hι : Function.Injective ι) (hc : IsResponsiveDDC b (
       · rw [restrict_none_snoc_right, lastOuter_snoc]
         simpa [outerOf] using hlo
 
-theorem along_induces_canon (hι : Function.Injective ι) (hc : IsResponsiveDDC b (canon c))
+lemma along_induces_canon (hι : Function.Injective ι) (hc : IsResponsiveDDC b (canon c))
     (hR : TotalResource R) {u o H}
     (r : Induces (pair (canon c) R) (alongRoute ι) (alongInj ι) u o H) :
     Induces (pair c R) (alongRoute ι) (alongInj ι) u o H := by
@@ -669,7 +669,7 @@ theorem along_induces_canon (hι : Function.Injective ι) (hc : IsResponsiveDDC 
 
 /-- Restricting a converter to its admissible histories does not change its attachment to a
 total resource. -/
-theorem attachAlong_canon (hι : Function.Injective ι) (hc : IsResponsiveDDC b (canon c))
+lemma attachAlong_canon (hι : Function.Injective ι) (hc : IsResponsiveDDC b (canon c))
     (hR : TotalResource R) : attachAlong ι (canon c) R = attachAlong ι c R := by
   rw [attachAlong_eq, attachAlong_eq]
   apply system_ext
@@ -700,11 +700,11 @@ noncomputable def idAlongIn : (Σ _ : I, X) →
   if h : a.1 ∈ Set.range ι then ⟨⟨⟨none, ⟨none, Classical.choose h⟩⟩, outside_not_mem_alongSet ι _⟩, a.2⟩
   else ⟨⟨⟨some (), a.1⟩, sys_not_mem_alongSet ι h⟩, a.2⟩
 
-theorem idAlongIn_of_mem {a : Σ _ : I, X} (h : a.1 ∈ Set.range ι) :
+lemma idAlongIn_of_mem {a : Σ _ : I, X} (h : a.1 ∈ Set.range ι) :
     idAlongIn (Y := Y) ι a =
       ⟨⟨⟨none, ⟨none, Classical.choose h⟩⟩, outside_not_mem_alongSet ι _⟩, a.2⟩ := dif_pos h
 
-theorem idAlongIn_of_not_mem {a : Σ _ : I, X} (h : a.1 ∉ Set.range ι) :
+lemma idAlongIn_of_not_mem {a : Σ _ : I, X} (h : a.1 ∉ Set.range ι) :
     idAlongIn (Y := Y) ι a = ⟨⟨⟨some (), a.1⟩, sys_not_mem_alongSet ι h⟩, a.2⟩ := dif_neg h
 
 /-- Outputs of `𝟙^ι R`, read as outputs of `R`. -/
@@ -714,7 +714,7 @@ def idAlongOut : (Σ l : Free (alongSet (O := J) ι), twoFam (twoFam (fun _ : J 
   | ⟨⟨⟨none, ⟨some (), j⟩⟩, h⟩, _⟩ => absurd (inside_mem_alongSet ι j) h
   | ⟨⟨⟨some (), i⟩, _⟩, y⟩ => ⟨i, y⟩
 
-theorem forwardAll_forwarder :
+lemma forwardAll_forwarder :
     Forwarder (forwardAll J (fun _ : J => X) (fun _ : J => Y)) fun
       | ⟨⟨none, j⟩, x⟩ => ⟨⟨some (), j⟩, x⟩
       | ⟨⟨some (), j⟩, y⟩ => ⟨⟨none, j⟩, y⟩ := by
@@ -726,7 +726,7 @@ theorem forwardAll_forwarder :
 variable {ι}
 
 /-- Forwarding along `ι` is transparent. -/
-theorem attachAlong_forwardAll (hι : Function.Injective ι) (R : InterfaceSystem I (fun _ => X) (fun _ => Y))
+lemma attachAlong_forwardAll (hι : Function.Injective ι) (R : InterfaceSystem I (fun _ => X) (fun _ => Y))
     (hR : SilentAtEmpty R) :
     relabel (attachAlong ι (forwardAll J (fun _ : J => X) (fun _ : J => Y)) R) (idAlongIn ι)
       (idAlongOut ι) = R := by
@@ -769,7 +769,7 @@ theorem attachAlong_forwardAll (hι : Function.Injective ι) (R : InterfaceSyste
 
 /-- **Law I, identity converter.** Attaching `𝟙` along `ι` to a total resource gives back
 the resource, after naming the outside labels of `𝟙` by `ι`. -/
-theorem attachAlong_idConverter (hι : Function.Injective ι) {R : InterfaceSystem I (fun _ => X) (fun _ => Y)}
+lemma attachAlong_idConverter (hι : Function.Injective ι) {R : InterfaceSystem I (fun _ => X) (fun _ => Y)}
     (hR : TotalResource R) :
     relabel (attachAlong ι (idConverter J (fun _ : J => X) (fun _ : J => Y)) R) (idAlongIn ι)
       (idAlongOut ι) = R := by
@@ -791,11 +791,11 @@ def AgreesAlong (b b' : System Xb Yb) (H : List (Two Xa Xb)) : Prop :=
   ∀ G₀ x, G₀ ++ [⟨some (), x⟩] <+: H →
     b (restrict (some ()) G₀ ++ [x]) = b' (restrict (some ()) G₀ ++ [x])
 
-theorem AgreesAlong.mono {H H'} (h : AgreesAlong (Xa := Xa) b b' H') (hp : H <+: H') :
+lemma AgreesAlong.mono {H H'} (h : AgreesAlong (Xa := Xa) b b' H') (hp : H <+: H') :
     AgreesAlong (Xa := Xa) b b' H :=
   fun G₀ x hG => h G₀ x (hG.trans hp)
 
-theorem pair_congr_right {G : List (Two Xa Xb)} (h : AgreesAlong (Xa := Xa) b b' G) :
+lemma pair_congr_right {G : List (Two Xa Xb)} (h : AgreesAlong (Xa := Xa) b b' G) :
     pair a b G = pair a b' G := by
   rcases List.eq_nil_or_concat G with rfl | ⟨G₀, g, rfl⟩
   · simp [pair]
@@ -804,7 +804,7 @@ theorem pair_congr_right {G : List (Two Xa Xb)} (h : AgreesAlong (Xa := Xa) b b'
   · rw [pair_left, pair_left]
   · rw [pair_right, pair_right, h G₀ g (List.prefix_refl _)]
 
-theorem Exchange.congr_right {G o G'} (l : Exchange (pair a b) route G o G')
+lemma Exchange.congr_right {G o G'} (l : Exchange (pair a b) route G o G')
     (h : AgreesAlong (Xa := Xa) b b' G') : Exchange (pair a b') route G o G' := by
   induction l with
   | silent G hd => exact Exchange.silent _ (by rwa [← pair_congr_right h])
@@ -815,7 +815,7 @@ theorem Exchange.congr_right {G o G'} (l : Exchange (pair a b) route G o G')
     rw [← pair_congr_right (h.mono ⟨x :: e, by rw [he]; simp⟩)]
     exact hy
 
-theorem Induces.congr_right {u o H} (r : Induces (pair a b) route inj u o H)
+lemma Induces.congr_right {u o H} (r : Induces (pair a b) route inj u o H)
     (h : AgreesAlong (Xa := Xa) b b' H) : Induces (pair a b') route inj u o H := by
   induction r with
   | nil => exact Induces.nil
@@ -824,7 +824,7 @@ theorem Induces.congr_right {u o H} (r : Induces (pair a b) route inj u o H)
     exact Induces.snoc _ _ _ _ _ _ (ih (h.mono ⟨inj x :: e, by rw [he]; simp⟩))
       (l.congr_right h)
 
-theorem restrict_prefix {K : Type} {F : K → Type} (k : K) {G H : List (Σ k, F k)} (h : G <+: H) :
+lemma restrict_prefix {K : Type} {F : K → Type} (k : K) {G H : List (Σ k, F k)} (h : G <+: H) :
     restrict k G <+: restrict k H := by
   obtain ⟨e, rfl⟩ := h
   exact ⟨restrict k e, by rw [restrict_append]⟩

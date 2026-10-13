@@ -20,13 +20,13 @@ namespace DSLTests.Semantics
 open DSLExamples
 
 /-- One call samples the source's next entry and returns it. -/
-theorem freshBits_invoke {K : ℕ} (t : Fin K → Bool) (st : Option Unit) (k : ℕ) :
+lemma freshBits_invoke {K : ℕ} (t : Fin K → Bool) (st : Option Unit) (k : ℕ) :
     FreshBits.body.invoke (sourceStep FreshBits.law1) st .bit () 1 (t, k) [] =
       some ((some (), (t, k + 1)),
         if hk : k < K then t ⟨k, hk⟩ else Classical.choice FreshBits.law1.nonempty) := by
   cases st <;> simp [Program.invoke, FreshBits.body, callProg, returnProg, sourceStep]
 
-theorem freshBits_stateAfter {K : ℕ} (t : Fin K → Bool) (bs : List Bool) :
+lemma freshBits_stateAfter {K : ℕ} (t : Fin K → Bool) (bs : List Bool) :
     stateAfter (FreshBits.body.combine (sourceStep FreshBits.law1) FreshBits.bound_spec)
         (none, (t, 0)) (bs.map fun _ => ⟨.bit, ()⟩) =
       (if bs = [] then none else some (), (t, bs.length)) := by
@@ -37,7 +37,7 @@ theorem freshBits_stateAfter {K : ℕ} (t : Fin K → Bool) (bs : List Bool) :
     rw [Program.combine_eq_of_invoke _ _ (freshBits_invoke t _ bs.length)]
     simp
 
-theorem freshBits_replies {K : ℕ} (t : Fin K → Bool) (bs : List Bool) (hn : bs.length ≤ K) :
+lemma freshBits_replies {K : ℕ} (t : Fin K → Bool) (bs : List Bool) (hn : bs.length ≤ K) :
     Replies (automatonSystem (FreshBits.body.combine (sourceStep FreshBits.law1)
         FreshBits.bound_spec) (none, (t, 0)))
         (bs.map fun _ => ⟨.bit, ()⟩) (bs.map fun b => ⟨.bit, b⟩) ↔
@@ -63,7 +63,7 @@ theorem freshBits_replies {K : ℕ} (t : Fin K → Bool) (bs : List Bool) (hn : 
       have hk' := h k (by simp; omega)
       rwa [List.getElem_append_left hk] at hk'
 
-theorem mass_prefix {K : ℕ} (bs : List Bool) (hn : bs.length ≤ K) :
+lemma mass_prefix {K : ℕ} (bs : List Bool) (hn : bs.length ≤ K) :
     (Distribution.pi fun _ : Fin K => (𝒰[Bool]).1).mass
         (fun tbl => ∀ k (hk : k < bs.length), tbl ⟨k, by omega⟩ = bs[k]) =
       (1 / 2) ^ bs.length := by
@@ -98,7 +98,7 @@ theorem mass_prefix {K : ℕ} (bs : List Bool) (hn : bs.length ≤ K) :
       rw [Function.update_of_ne (by simp [Fin.ext_iff]; omega)]
 
 /-- Fresh sampling is independent for every number of calls within the budget. -/
-theorem freshBits_independent {q : ℕ} (bs : List Bool) (hq : bs.length ≤ q) :
+lemma freshBits_independent {q : ℕ} (bs : List Bool) (hq : bs.length ≤ q) :
     (FreshBits (budget := q)).1 (bs.map fun b => (⟨.bit, ()⟩, ⟨.bit, b⟩)) =
       (1 / 2) ^ bs.length := by
   have hb : 1 ≤ FreshBits.bound := FreshBits.bound_spec none .bit () [] ⟨(), ()⟩
@@ -114,20 +114,20 @@ theorem freshBits_independent {q : ℕ} (bs : List Bool) (hq : bs.length ≤ q) 
   exact freshBits_replies t bs hK
 
 /-- The first call samples the secret; later calls return it without sampling. -/
-theorem secretBit_combine_first {K : ℕ} (t : Fin K → Bool) :
+lemma secretBit_combine_first {K : ℕ} (t : Fin K → Bool) :
     SecretBit.body.combine (sourceStep SecretBit.law1) SecretBit.bound_spec (none, (t, 0)) .bit () =
       ((some (if h : 0 < K then t ⟨0, h⟩ else Classical.choice SecretBit.law1.nonempty), (t, 1)),
         if h : 0 < K then t ⟨0, h⟩ else Classical.choice SecretBit.law1.nonempty) :=
   Program.combine_eq_of_invoke _ _ (n := 1) (by
     simp [Program.invoke, SecretBit.body, callProg, returnProg, sourceStep])
 
-theorem secretBit_combine_later {K : ℕ} (v : Bool) (r : (Fin K → Bool) × ℕ) :
+lemma secretBit_combine_later {K : ℕ} (v : Bool) (r : (Fin K → Bool) × ℕ) :
     SecretBit.body.combine (sourceStep SecretBit.law1) SecretBit.bound_spec (some v, r) .bit () =
       ((some v, r), v) :=
   Program.combine_eq_of_invoke _ _ (n := 0) (by simp [Program.invoke, SecretBit.body, returnProg])
 
 /-- Sampling at initialization retains the same bit on later calls, at every budget. -/
-theorem secretBit_retained (q : ℕ) (b : Bool) :
+lemma secretBit_retained (q : ℕ) (b : Bool) :
     (SecretBit (budget := q)).1 [(⟨.bit, ()⟩, ⟨.bit, b⟩), (⟨.bit, ()⟩, ⟨.bit, !b⟩)] = 0 := by
   rw [SecretBit, SecretBit.randomness, SecretBit.program, Resource.source,
     Converter.ofProgram_smul_ofAutomaton, Resource.ofAutomaton_mass,
@@ -146,7 +146,7 @@ theorem secretBit_retained (q : ℕ) (b : Bool) :
   cases b <;> simp_all
 
 /-- The two ports share the counter. -/
-theorem counter_interleaving {q : ℕ} (hq : 3 ≤ q) :
+lemma counter_interleaving {q : ℕ} (hq : 3 ≤ q) :
     (Counter (budget := q)).1 [(⟨.next, ()⟩, ⟨.next, 1⟩), (⟨.read, ()⟩, ⟨.read, 1⟩),
       (⟨.next, ()⟩, ⟨.next, 2⟩)] = 1 := by
   rw [Counter, Interface.Resource.ofAutomaton_mass]
@@ -162,7 +162,7 @@ def counterBudget : Counter.Port → ℕ
   | .read => 1
 
 /-- At per-port budgets, the two ports share the counter within their own budgets. -/
-theorem counter_perPort_interleaving :
+lemma counter_perPort_interleaving :
     (Counter.perPort (budget := counterBudget)).1 [(⟨.next, ()⟩, ⟨.next, 1⟩),
       (⟨.read, ()⟩, ⟨.read, 1⟩), (⟨.next, ()⟩, ⟨.next, 2⟩)] = 1 := by
   rw [Counter.perPort, Interface.Resource.ofAutomaton_mass]
@@ -174,7 +174,7 @@ theorem counter_perPort_interleaving :
       automatonSystem_snoc] <;> rfl
 
 /-- A second query at `read` exceeds its budget. -/
-theorem counter_perPort_exceeded (n m : Fin 16) :
+lemma counter_perPort_exceeded (n m : Fin 16) :
     (Counter.perPort (budget := counterBudget)).1 [(⟨.read, ()⟩, ⟨.read, n⟩),
       (⟨.read, ()⟩, ⟨.read, m⟩)] = 0 := by
   rw [Counter.perPort, Interface.Resource.ofAutomaton_mass]

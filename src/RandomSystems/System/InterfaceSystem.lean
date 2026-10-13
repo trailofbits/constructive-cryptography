@@ -71,10 +71,10 @@ noncomputable def connect (s : InterfaceSystem I X Y) (C : Set I) (r : Routing C
     InterfaceSystem (Free C) (fun i => X i.1) (fun i => Y i.1) :=
   interconnect s (connectRoute C r) (connectInj C)
 
-theorem connectRoute_of_mem {C : Set I} (r : Routing C X Y) {p : Σ i, Y i} (h : p.1 ∈ C) :
+lemma connectRoute_of_mem {C : Set I} (r : Routing C X Y) {p : Σ i, Y i} (h : p.1 ∈ C) :
     connectRoute C r p = .inr (liftC (r ⟨p.1, h⟩ p.2)) := dif_pos h
 
-theorem connectRoute_of_not_mem {C : Set I} (r : Routing C X Y) {p : Σ i, Y i} (h : p.1 ∉ C) :
+lemma connectRoute_of_not_mem {C : Set I} (r : Routing C X Y) {p : Σ i, Y i} (h : p.1 ∉ C) :
     connectRoute C r p = .inl ⟨⟨p.1, h⟩, p.2⟩ := dif_neg h
 
 /-! ### Vanishing at the level of labels (C1) -/
@@ -84,12 +84,12 @@ variable (C : Set I) (C' : Set (Free C))
 /-- The labels connected by two successive connections. -/
 def unionSet : Set I := C ∪ Subtype.val '' C'
 
-theorem mem_unionSet_left {i : I} (h : i ∈ C) : i ∈ unionSet C C' := Or.inl h
+lemma mem_unionSet_left {i : I} (h : i ∈ C) : i ∈ unionSet C C' := Or.inl h
 
-theorem mem_unionSet_right {i : Free C} (h : i ∈ C') : i.1 ∈ unionSet C C' :=
+lemma mem_unionSet_right {i : Free C} (h : i ∈ C') : i.1 ∈ unionSet C C' :=
   Or.inr ⟨i, h, rfl⟩
 
-theorem mem_of_mem_unionSet {i : I} (hu : i ∈ unionSet C C') (h : i ∉ C) :
+lemma mem_of_mem_unionSet {i : I} (hu : i ∈ unionSet C C') (h : i ∉ C) :
     (⟨i, h⟩ : Free C) ∈ C' := by
   rcases hu with hp | ⟨q, hq, e⟩
   · exact (h hp).elim
@@ -116,13 +116,13 @@ nested connection. -/
 def unionOut : (Σ i : Free (unionSet C C'), Y i.1) → Σ i : Free C', Y i.1.1
   | ⟨i, y⟩ => ⟨⟨⟨i.1, fun h => i.2 (Or.inl h)⟩, fun h => i.2 (Or.inr ⟨_, h, rfl⟩)⟩, y⟩
 
-theorem unionRouting_left (r : Routing C X Y)
+lemma unionRouting_left (r : Routing C X Y)
     (r' : Routing C' (fun i => X i.1) (fun i => Y i.1)) (p : unionSet C C') (h : p.1 ∈ C)
     (y : Y p) : unionRouting C C' r r' p y =
       ⟨⟨(r ⟨p.1, h⟩ y).1.1, mem_unionSet_left C C' (r ⟨p.1, h⟩ y).1.2⟩, (r ⟨p.1, h⟩ y).2⟩ :=
   dif_pos h
 
-theorem unionRouting_right (r : Routing C X Y)
+lemma unionRouting_right (r : Routing C X Y)
     (r' : Routing C' (fun i => X i.1) (fun i => Y i.1)) (p : unionSet C C') (h : p.1 ∉ C)
     (y : Y p) : unionRouting C C' r r' p y =
       ⟨⟨(r' ⟨⟨p.1, h⟩, mem_of_mem_unionSet C C' p.2 h⟩ y).1.1.1,
@@ -130,7 +130,7 @@ theorem unionRouting_right (r : Routing C X Y)
         (r' ⟨⟨p.1, h⟩, mem_of_mem_unionSet C C' p.2 h⟩ y).2⟩ :=
   dif_neg h
 
-theorem connectRoute_union_left (r : Routing C X Y)
+lemma connectRoute_union_left (r : Routing C X Y)
     (r' : Routing C' (fun i => X i.1) (fun i => Y i.1)) {i : I} (h : i ∈ C) (y : Y i) :
     connectRoute (unionSet C C') (unionRouting C C' r r') ⟨i, y⟩ =
       .inr (liftC (r ⟨i, h⟩ y)) := by
@@ -138,7 +138,7 @@ theorem connectRoute_union_left (r : Routing C X Y)
   rw [unionRouting_left C C' r r' ⟨i, _⟩ h]
   rfl
 
-theorem connectRoute_union_right (r : Routing C X Y)
+lemma connectRoute_union_right (r : Routing C X Y)
     (r' : Routing C' (fun i => X i.1) (fun i => Y i.1)) {i : I} (h : i ∉ C)
     (h' : (⟨i, h⟩ : Free C) ∈ C') (y : Y i) :
     connectRoute (unionSet C C') (unionRouting C C' r r') ⟨i, y⟩ =
@@ -179,7 +179,7 @@ def freeCast (hC : ∀ i, i ∈ C₁ ↔ i ∈ C₂) : (Σ i : Free C₁, X i.1)
   | ⟨i, x⟩ => ⟨⟨i.1, fun h => i.2 ((hC _).2 h)⟩, x⟩
 
 /-- Connecting along equal label sets with agreeing routings gives the same system. -/
-theorem connect_congr (s : InterfaceSystem I X Y) (r₁ : Routing C₁ X Y) (r₂ : Routing C₂ X Y)
+lemma connect_congr (s : InterfaceSystem I X Y) (r₁ : Routing C₁ X Y) (r₂ : Routing C₂ X Y)
     (hC : ∀ i, i ∈ C₁ ↔ i ∈ C₂)
     (hr : ∀ i (h₁ : i ∈ C₁) (y : Y i), liftC (r₁ ⟨i, h₁⟩ y) = liftC (r₂ ⟨i, (hC i).1 h₁⟩ y)) :
     connect s C₁ r₁ = relabel (connect s C₂ r₂) (freeCast hC) (freeCast (fun i => (hC i).symm)) := by
@@ -216,7 +216,7 @@ def swapFree : (Σ i : Free (freeSet C C'), X i.1.1) →
     Σ i : Free (freeSet C' C), X i.1.1
   | ⟨⟨⟨i, h₁⟩, h₂⟩, x⟩ => ⟨⟨⟨i, h₂⟩, h₁⟩, x⟩
 
-theorem union_freeSet_iff (i : I) :
+lemma union_freeSet_iff (i : I) :
     i ∈ unionSet C (freeSet C C') ↔ i ∈ unionSet C' (freeSet C' C) := by
   simp only [unionSet, freeSet, Set.mem_union, Set.mem_image, Set.mem_ofPred_eq, Subtype.exists,
     exists_and_right, exists_eq_right]
@@ -335,7 +335,7 @@ noncomputable def pairRouting (p q : I) (c₁ : Y p → X q) (c₂ : Y q → X p
       · exact e
     ⟨⟨p, by simp⟩, c₂ (hq ▸ y)⟩
 
-theorem liftC_pairRouting_p (p q : I) (c₁ : Y p → X q) (c₂ : Y q → X p)
+lemma liftC_pairRouting_p (p q : I) (c₁ : Y p → X q) (c₂ : Y q → X p)
     (p' : ({p, q} : Set I)) (h : p'.1 = p) (y : Y p') :
     liftC (pairRouting p q c₁ c₂ p' y) = ⟨q, c₁ (cast (congrArg Y h) y)⟩ := by
   obtain ⟨p', hp'⟩ := p'
@@ -345,7 +345,7 @@ theorem liftC_pairRouting_p (p q : I) (c₁ : Y p → X q) (c₂ : Y q → X p)
   rw [dif_pos rfl]
   rfl
 
-theorem liftC_pairRouting_q (p q : I) (hpq : q ≠ p) (c₁ : Y p → X q) (c₂ : Y q → X p)
+lemma liftC_pairRouting_q (p q : I) (hpq : q ≠ p) (c₁ : Y p → X q) (c₂ : Y q → X p)
     (p' : ({p, q} : Set I)) (h : p'.1 = q) (y : Y p') :
     liftC (pairRouting p q c₁ c₂ p' y) = ⟨p, c₂ (cast (congrArg Y h) y)⟩ := by
   obtain ⟨p', hp'⟩ := p'
@@ -380,10 +380,10 @@ abbrev setST : Set (Two I J) := {⟨none, p⟩, ⟨some (), q⟩}
 /-- The labels connected by `t ⋈_{q',x} u`. -/
 abbrev setTU : Set (Two J L) := {⟨none, q'⟩, ⟨some (), x⟩}
 
-theorem q'_free (hqq : q ≠ q') : (⟨some (), q'⟩ : Two I J) ∉ setST p q := by
+lemma q'_free (hqq : q ≠ q') : (⟨some (), q'⟩ : Two I J) ∉ setST p q := by
   simp [setST, Ne.symm hqq]
 
-theorem q_free (hqq : q ≠ q') : (⟨none, q⟩ : Two J L) ∉ setTU q' x := by
+lemma q_free (hqq : q ≠ q') : (⟨none, q⟩ : Two J L) ∉ setTU q' x := by
   simp [setTU, hqq]
 
 /-- The labels connected in the second step of `(s ⋈ t) ⋈ u`. -/
@@ -394,18 +394,18 @@ abbrev setL (hqq : q ≠ q') : Set (Two (Free (setST p q)) L) :=
 abbrev setR (hqq : q ≠ q') : Set (Two I (Free (setTU q' x))) :=
   {⟨none, p⟩, ⟨some (), ⟨⟨none, q⟩, q_free q q' x hqq⟩⟩}
 
-theorem notMem_ST_none {i : I} : (⟨none, i⟩ : Two I J) ∉ setST p q ↔ i ≠ p := by simp [setST]
-theorem notMem_ST_some {j : J} : (⟨some (), j⟩ : Two I J) ∉ setST p q ↔ j ≠ q := by simp [setST]
-theorem notMem_TU_none {j : J} : (⟨none, j⟩ : Two J L) ∉ setTU q' x ↔ j ≠ q' := by simp [setTU]
-theorem notMem_TU_some {k : L} : (⟨some (), k⟩ : Two J L) ∉ setTU q' x ↔ k ≠ x := by simp [setTU]
-theorem notMem_L_none (hqq : q ≠ q') {z : Free (setST p q)} :
+lemma notMem_ST_none {i : I} : (⟨none, i⟩ : Two I J) ∉ setST p q ↔ i ≠ p := by simp [setST]
+lemma notMem_ST_some {j : J} : (⟨some (), j⟩ : Two I J) ∉ setST p q ↔ j ≠ q := by simp [setST]
+lemma notMem_TU_none {j : J} : (⟨none, j⟩ : Two J L) ∉ setTU q' x ↔ j ≠ q' := by simp [setTU]
+lemma notMem_TU_some {k : L} : (⟨some (), k⟩ : Two J L) ∉ setTU q' x ↔ k ≠ x := by simp [setTU]
+lemma notMem_L_none (hqq : q ≠ q') {z : Free (setST p q)} :
     (⟨none, z⟩ : Two _ L) ∉ setL p q q' x hqq ↔ z.1 ≠ ⟨some (), q'⟩ := by
   simp [setL, Subtype.ext_iff]
-theorem notMem_L_some (hqq : q ≠ q') {k : L} :
+lemma notMem_L_some (hqq : q ≠ q') {k : L} :
     (⟨some (), k⟩ : Two (Free (setST p q)) L) ∉ setL p q q' x hqq ↔ k ≠ x := by simp [setL]
-theorem notMem_R_none (hqq : q ≠ q') {i : I} :
+lemma notMem_R_none (hqq : q ≠ q') {i : I} :
     (⟨none, i⟩ : Two I _) ∉ setR p q q' x hqq ↔ i ≠ p := by simp [setR]
-theorem notMem_R_some (hqq : q ≠ q') {z : Free (setTU q' x)} :
+lemma notMem_R_some (hqq : q ≠ q') {z : Free (setTU q' x)} :
     (⟨some (), z⟩ : Two I _) ∉ setR p q q' x hqq ↔ z.1 ≠ ⟨none, q⟩ := by
   simp [setR, Subtype.ext_iff]
 
@@ -514,15 +514,15 @@ def alongSet (ι : J → I) : Set (Two (Two O J) I)
   | ⟨some (), i⟩ => i ∈ Set.range ι
   | _ => False
 
-theorem inside_mem_alongSet (ι : J → I) (j : J) :
+lemma inside_mem_alongSet (ι : J → I) (j : J) :
     (⟨none, ⟨some (), j⟩⟩ : Two (Two O J) I) ∈ alongSet ι := trivial
-theorem image_mem_alongSet (ι : J → I) (j : J) :
+lemma image_mem_alongSet (ι : J → I) (j : J) :
     (⟨some (), ι j⟩ : Two (Two O J) I) ∈ alongSet (O := O) ι := ⟨j, rfl⟩
-theorem outside_not_mem_alongSet (ι : J → I) (o : O) :
+lemma outside_not_mem_alongSet (ι : J → I) (o : O) :
     (⟨none, ⟨none, o⟩⟩ : Two (Two O J) I) ∉ alongSet ι := id
-theorem sys_not_mem_alongSet (ι : J → I) {i : I} (h : i ∉ Set.range ι) :
+lemma sys_not_mem_alongSet (ι : J → I) {i : I} (h : i ∉ Set.range ι) :
     (⟨some (), i⟩ : Two (Two O J) I) ∉ alongSet (O := O) ι := h
-theorem sys_mem_alongSet_iff (ι : J → I) (i : I) :
+lemma sys_mem_alongSet_iff (ι : J → I) (i : I) :
     (⟨some (), i⟩ : Two (Two O J) I) ∈ alongSet (O := O) ι ↔ i ∈ Set.range ι := Iff.rfl
 
 /-- Queries at inside port `j` go to interface `ι j`; replies at `ι j` go back to `j`. -/
@@ -534,11 +534,11 @@ noncomputable def alongRouting (ι : J → I) :
         cast (congrArg Y (Classical.choose_spec h).symm) y⟩
   | ⟨⟨none, ⟨none, o⟩⟩, h⟩, _ => absurd h (outside_not_mem_alongSet ι o)
 
-theorem liftC_alongRouting_inside (ι : J → I) (j : J) (h) (x : X (ι j)) :
+lemma liftC_alongRouting_inside (ι : J → I) (j : J) (h) (x : X (ι j)) :
     liftC (alongRouting (U := U) (V := V) (Y := Y) ι ⟨⟨none, ⟨some (), j⟩⟩, h⟩ x) =
       ⟨⟨some (), ι j⟩, x⟩ := rfl
 
-theorem liftC_alongRouting_image (ι : J → I) (hι : Function.Injective ι) (j : J) (h)
+lemma liftC_alongRouting_image (ι : J → I) (hι : Function.Injective ι) (j : J) (h)
     (y : Y (ι j)) :
     liftC (alongRouting (U := U) (V := V) (X := X) ι ⟨⟨some (), ι j⟩, h⟩ y) =
       ⟨⟨none, ⟨some (), j⟩⟩, y⟩ := by
@@ -563,17 +563,17 @@ abbrev alongInj (ι : J → I) :=
   (splitIn (F := twoFam U (Y ∘ ι)) (G := X)) ∘ connectInj (X := twoFam (twoFam U (Y ∘ ι)) X)
     (alongSet (O := O) ι)
 
-theorem attachAlong_eq (ι : J → I) (α : InsideOutsideSystem O J U V (X ∘ ι) (Y ∘ ι)) (R : InterfaceSystem I X Y) :
+lemma attachAlong_eq (ι : J → I) (α : InsideOutsideSystem O J U V (X ∘ ι) (Y ∘ ι)) (R : InterfaceSystem I X Y) :
     attachAlong ι α R = interconnect (pair α R) (alongRoute ι) (alongInj ι) := by
   unfold attachAlong connect pairI
   rw [interconnect_relabel]
 
-@[simp] theorem connectRoute_along_outside (ι : J → I) (o : O) (v : V o) :
+@[simp] lemma connectRoute_along_outside (ι : J → I) (o : O) (v : V o) :
     connectRoute (alongSet (O := O) ι) (alongRouting (U := U) (X := X) (Y := Y) ι)
         ⟨⟨none, ⟨none, o⟩⟩, v⟩ = .inl ⟨⟨⟨none, ⟨none, o⟩⟩, outside_not_mem_alongSet ι o⟩, v⟩ :=
   connectRoute_of_not_mem _ (outside_not_mem_alongSet ι o)
 
-@[simp] theorem connectRoute_along_inside (ι : J → I) (j : J) (x : X (ι j)) :
+@[simp] lemma connectRoute_along_inside (ι : J → I) (j : J) (x : X (ι j)) :
     connectRoute (alongSet (O := O) ι) (alongRouting (U := U) (V := V) (Y := Y) ι)
         ⟨⟨none, ⟨some (), j⟩⟩, x⟩ = .inr ⟨⟨some (), ι j⟩, x⟩ :=
   connectRoute_of_mem _ (inside_mem_alongSet ι j)
@@ -590,11 +590,11 @@ variable {I O J O' J' : Type} {X Y : I → Type} {U V : O → Type} {U' V' : O' 
 @[reducible] def liftAlong (κ : J' → I) (ι : J → I) (hd : ∀ j, ι j ∉ Set.range κ) :
     J → Free (alongSet (O := O') κ) := fun j => ⟨⟨some (), ι j⟩, hd j⟩
 
-theorem liftAlong_injective (κ : J' → I) {ι : J → I} (hι : Function.Injective ι)
+lemma liftAlong_injective (κ : J' → I) {ι : J → I} (hι : Function.Injective ι)
     (hd : ∀ j, ι j ∉ Set.range κ) : Function.Injective (liftAlong (O' := O') κ ι hd) :=
   fun a b e => hι (by simpa [liftAlong] using congrArg (fun z => z.1) e)
 
-theorem sys_mem_alongSet_lift_iff (κ : J' → I) (ι : J → I) (hd : ∀ j, ι j ∉ Set.range κ)
+lemma sys_mem_alongSet_lift_iff (κ : J' → I) (ι : J → I) (hd : ∀ j, ι j ∉ Set.range κ)
     (i : I) (h) : (⟨some (), ⟨⟨some (), i⟩, h⟩⟩ : Two (Two O J) (Free (alongSet (O := O') κ))) ∈
       alongSet (liftAlong κ ι hd) ↔ i ∈ Set.range ι := by
   simp only [alongSet, Set.mem_range, liftAlong]
@@ -605,7 +605,7 @@ theorem sys_mem_alongSet_lift_iff (κ : J' → I) (ι : J → I) (hd : ∀ j, ι
     exact ⟨j, by simpa using e'⟩
   · rintro ⟨j, rfl⟩; exact ⟨j, rfl⟩
 
-theorem liftC_alongRouting_lift (κ : J' → I) {ι : J → I} (hι : Function.Injective ι)
+lemma liftC_alongRouting_lift (κ : J' → I) {ι : J → I} (hι : Function.Injective ι)
     (hd : ∀ j, ι j ∉ Set.range κ) (j : J) (h₁ h₂)
     (y : twoFam (twoFam V' (X ∘ κ)) Y ⟨some (), ι j⟩) :
     liftC (alongRouting (O := O) (U := U) (V := V)
@@ -618,14 +618,14 @@ theorem liftC_alongRouting_lift (κ : J' → I) {ι : J → I} (hι : Function.I
     (Y := fun l : Free (alongSet (O := O') κ) => twoFam (twoFam V' (X ∘ κ)) Y l.1)
     (liftAlong κ ι hd) (liftAlong_injective κ hι hd) j h₂ y
 
-theorem outside_not_mem_alongSet_lift (κ : J' → I) (ι : J → I) (hd : ∀ j, ι j ∉ Set.range κ)
+lemma outside_not_mem_alongSet_lift (κ : J' → I) (ι : J → I) (hd : ∀ j, ι j ∉ Set.range κ)
     (o : O') (h) : (⟨some (), ⟨⟨none, ⟨none, o⟩⟩, h⟩⟩ :
       Two (Two O J) (Free (alongSet (O := O') κ))) ∉ alongSet (liftAlong κ ι hd) := by
   rintro ⟨j, e⟩
   have e' := congrArg (fun z => z.1) e
   simp [liftAlong] at e'
 
-theorem inside_not_mem_alongSet_lift (κ : J' → I) (ι : J → I) (hd : ∀ j, ι j ∉ Set.range κ)
+lemma inside_not_mem_alongSet_lift (κ : J' → I) (ι : J → I) (hd : ∀ j, ι j ∉ Set.range κ)
     (k : J') (h) : (⟨some (), ⟨⟨none, ⟨some (), k⟩⟩, h⟩⟩ :
       Two (Two O J) (Free (alongSet (O := O') κ))) ∉ alongSet (liftAlong κ ι hd) := by
   rintro ⟨j, e⟩
@@ -763,7 +763,7 @@ noncomputable def protocol (α : InsideOutsideSystem O J U V (X ∘ ι) (Y ∘ �
 
 variable {ι κ} (hι : ∀ j, ι j ∉ Set.range κ)
 
-theorem jointAlong_injective (hι : ∀ j, ι j ∉ Set.range κ) (hιi : Function.Injective ι)
+lemma jointAlong_injective (hι : ∀ j, ι j ∉ Set.range κ) (hιi : Function.Injective ι)
     (hκi : Function.Injective κ) :
     Function.Injective (jointAlong ι κ) := by
   rintro ⟨_ | ⟨⟨⟩⟩, a⟩ ⟨_ | ⟨⟨⟩⟩, b⟩ e
@@ -772,7 +772,7 @@ theorem jointAlong_injective (hι : ∀ j, ι j ∉ Set.range κ) (hιi : Functi
   · exact absurd ⟨a, e⟩ (hι b)
   · simp [hκi e]
 
-theorem sys_mem_alongSet_joint_iff (i : I) :
+lemma sys_mem_alongSet_joint_iff (i : I) :
     (⟨some (), i⟩ : Two (Two (Two O O') (Two J J')) I) ∈ alongSet (jointAlong ι κ) ↔
       i ∈ Set.range ι ∨ i ∈ Set.range κ := by
   show i ∈ Set.range (jointAlong ι κ) ↔ _
@@ -821,7 +821,7 @@ def protoAppOut :
 
 /-- **Protocol application.** Applying a protocol of two converters at once is
 applying them one after the other, after the canonical relabeling. -/
-theorem attachAlong_protocol (hιi : Function.Injective ι) (hκi : Function.Injective κ)
+lemma attachAlong_protocol (hιi : Function.Injective ι) (hκi : Function.Injective κ)
     (α : InsideOutsideSystem O J U V (X ∘ ι) (Y ∘ ι)) (β : InsideOutsideSystem O' J' U' V' (X ∘ κ) (Y ∘ κ))
     (R : InterfaceSystem I X Y) (hβR : Converges (pair β R) (alongRoute κ) (alongInj κ)) :
     attachAlong (jointAlong ι κ) (protocol ι κ α β) R =
@@ -917,10 +917,10 @@ def closeSet (I : Type) : Set (Two (DPort I) I)
   | ⟨some (), _⟩ => True
   | _ => False
 
-theorem res_mem_closeSet (i : I) : (⟨none, .res i⟩ : Two (DPort I) I) ∈ closeSet I := trivial
-theorem sys_mem_closeSet (i : I) : (⟨some (), i⟩ : Two (DPort I) I) ∈ closeSet I := trivial
-theorem start_not_mem_closeSet : (⟨none, .start⟩ : Two (DPort I) I) ∉ closeSet I := id
-theorem dec_not_mem_closeSet : (⟨none, .dec⟩ : Two (DPort I) I) ∉ closeSet I := id
+lemma res_mem_closeSet (i : I) : (⟨none, .res i⟩ : Two (DPort I) I) ∈ closeSet I := trivial
+lemma sys_mem_closeSet (i : I) : (⟨some (), i⟩ : Two (DPort I) I) ∈ closeSet I := trivial
+lemma start_not_mem_closeSet : (⟨none, .start⟩ : Two (DPort I) I) ∉ closeSet I := id
+lemma dec_not_mem_closeSet : (⟨none, .dec⟩ : Two (DPort I) I) ∉ closeSet I := id
 
 /-- Queries at `res i` go to interface `i`; replies at `i` go back to `res i`. -/
 def closeRouting : Routing (closeSet I) (twoFam (dIn Y) X) (twoFam (dOut X) Y)
@@ -933,10 +933,10 @@ def closeRouting : Routing (closeSet I) (twoFam (dIn Y) X) (twoFam (dOut X) Y)
 noncomputable def close (D : DDD I X Y) (R : InterfaceSystem I X Y) :=
   connect (pairI D R) (closeSet I) closeRouting
 
-theorem liftC_closeRouting_res (i : I) (h) (x : X i) :
+lemma liftC_closeRouting_res (i : I) (h) (x : X i) :
     liftC (closeRouting (X := X) (Y := Y) ⟨⟨none, .res i⟩, h⟩ x) = ⟨⟨some (), i⟩, x⟩ := rfl
 
-theorem liftC_closeRouting_sys (i : I) (h) (y : Y i) :
+lemma liftC_closeRouting_sys (i : I) (h) (y : Y i) :
     liftC (closeRouting (X := X) (Y := Y) ⟨⟨some (), i⟩, h⟩ y) = ⟨⟨none, .res i⟩, y⟩ := rfl
 
 end DDD
@@ -952,12 +952,12 @@ noncomputable def replyLabel {K : Type} {F G : K → Type} (s : InterfaceSystem 
     Option K :=
   if hd : (s h).Dom then some ((s h).get hd).1 else none
 
-theorem replyLabel_of_mem {K : Type} {F G : K → Type} (s : InterfaceSystem K F G) {h} {y : Σ l, G l}
+lemma replyLabel_of_mem {K : Type} {F G : K → Type} (s : InterfaceSystem K F G) {h} {y : Σ l, G l}
     (hy : y ∈ s h) : replyLabel s h = some y.1 := by
   have hd : (s h).Dom := Part.dom_iff_mem.mpr ⟨y, hy⟩
   simp [replyLabel, hd, Part.get_eq_of_mem hy hd]
 
-theorem replyLabel_trim {K : Type} {F G : K → Type} (s : InterfaceSystem K F G) {h} (hr : Reach s h) :
+lemma replyLabel_trim {K : Type} {F G : K → Type} (s : InterfaceSystem K F G) {h} (hr : Reach s h) :
     replyLabel (trim s) h = replyLabel s h := by
   simp [replyLabel, trim, hr]
 
@@ -985,13 +985,13 @@ def pcSet (I J : Type) : Set (Two (DPort (Two I J)) J)
   | ⟨some (), _⟩ => True
   | _ => False
 
-theorem pc_res_mem (k : J) : (⟨none, .res ⟨some (), k⟩⟩ : Two (DPort (Two I J)) J) ∈ pcSet I J :=
+lemma pc_res_mem (k : J) : (⟨none, .res ⟨some (), k⟩⟩ : Two (DPort (Two I J)) J) ∈ pcSet I J :=
   trivial
-theorem pc_sys_mem (k : J) : (⟨some (), k⟩ : Two (DPort (Two I J)) J) ∈ pcSet I J := trivial
-theorem pc_res_none_not_mem (i : I) :
+lemma pc_sys_mem (k : J) : (⟨some (), k⟩ : Two (DPort (Two I J)) J) ∈ pcSet I J := trivial
+lemma pc_res_none_not_mem (i : I) :
     (⟨none, .res ⟨none, i⟩⟩ : Two (DPort (Two I J)) J) ∉ pcSet I J := id
-theorem pc_start_not_mem : (⟨none, .start⟩ : Two (DPort (Two I J)) J) ∉ pcSet I J := id
-theorem pc_dec_not_mem : (⟨none, .dec⟩ : Two (DPort (Two I J)) J) ∉ pcSet I J := id
+lemma pc_start_not_mem : (⟨none, .start⟩ : Two (DPort (Two I J)) J) ∉ pcSet I J := id
+lemma pc_dec_not_mem : (⟨none, .dec⟩ : Two (DPort (Two I J)) J) ∉ pcSet I J := id
 
 /-- Queries of `D` towards `S` go to `S`, and back. -/
 def pcRouting : Routing (pcSet I J) (twoFam (dIn (twoFam Y₁ Y₂)) X₂) (twoFam (dOut (twoFam X₁ X₂)) Y₂)
@@ -1022,11 +1022,11 @@ noncomputable def partialClose (D : DDD (Two I J) (twoFam X₁ X₂) (twoFam Y�
     (S : InterfaceSystem J X₂ Y₂) : DDD I X₁ Y₁ :=
   relabel (connect (pairI D S) (pcSet I J) pcRouting) pcIn pcOut
 
-theorem liftC_pcRouting_res (k : J) (h) (x : X₂ k) :
+lemma liftC_pcRouting_res (k : J) (h) (x : X₂ k) :
     liftC (pcRouting (X₁ := X₁) (Y₁ := Y₁) (Y₂ := Y₂) ⟨⟨none, .res ⟨some (), k⟩⟩, h⟩ x) =
       ⟨⟨some (), k⟩, x⟩ := rfl
 
-theorem liftC_pcRouting_sys (k : J) (h) (y : Y₂ k) :
+lemma liftC_pcRouting_sys (k : J) (h) (y : Y₂ k) :
     liftC (pcRouting (X₁ := X₁) (Y₁ := Y₁) (X₂ := X₂) ⟨⟨some (), k⟩, h⟩ y) =
       ⟨⟨none, .res ⟨some (), k⟩⟩, y⟩ := rfl
 
@@ -1047,7 +1047,7 @@ def e2Out : (Σ l : Free (closeSet I), twoFam (dOut X₁) Y₁ l.1) →
   | ⟨⟨⟨some (), i⟩, h⟩, _⟩ => absurd (sys_mem_closeSet i) h
 
 /-- Every internal cycle of `D[·, S]` passes through `D`: a reply of `S` goes back to `D`. -/
-theorem pc_cyclesThrough :
+lemma pc_cyclesThrough :
     CyclesThrough (fun _ => True) (fun y : Two (Σ p, dOut (twoFam X₁ X₂) p) (Σ k, Y₂ k) =>
       Sum.map id splitIn (connectRoute (pcSet I J)
         (pcRouting (X₁ := X₁) (Y₁ := Y₁) (X₂ := X₂) (Y₂ := Y₂)) (joinOut y))) := by
@@ -1116,7 +1116,7 @@ def pcInj : (Σ p : DPort I, dIn Y₁ p) → Two (Σ p, dIn (twoFam Y₁ Y₂) p
   | ⟨.dec, e⟩ => e.elim
   | ⟨.res i, y⟩ => ⟨none, ⟨.res ⟨none, i⟩, y⟩⟩
 
-theorem partialClose_eq (D : DDD (Two I J) (twoFam X₁ X₂) (twoFam Y₁ Y₂)) (S : InterfaceSystem J X₂ Y₂) :
+lemma partialClose_eq (D : DDD (Two I J) (twoFam X₁ X₂) (twoFam Y₁ Y₂)) (S : InterfaceSystem J X₂ Y₂) :
     partialClose D S = interconnect (pair D S) pcRoute pcInj := by
   unfold partialClose connect pairI
   rw [relabel_interconnect, interconnect_relabel]
@@ -1144,7 +1144,7 @@ def liftLab : DPort I → DPort (Two I J)
 
 variable {D : DDD (Two I J) (twoFam X₁ X₂) (twoFam Y₁ Y₂)} {S : InterfaceSystem J X₂ Y₂}
 
-theorem pc_exchange {G o G'} (l : Exchange (pair D S) pcRoute G o G') :
+lemma pc_exchange {G o G'} (l : Exchange (pair D S) pcRoute G o G') :
     ∀ out, o = some out →
       ((∃ G₁ x, G = G₁ ++ [⟨none, x⟩] ∧ Reach D (restrict none G₁)) ∨
         (∃ G₁ x, G = G₁ ++ [⟨some (), x⟩] ∧ Reach D (restrict none G₁) ∧
@@ -1202,7 +1202,7 @@ def PcInv (u : List (Σ p : DPort I, dIn Y₁ p))
   ∀ l, replyLabel (interconnect (pair D S) pcRoute pcInj) u = some l →
     replyLabel D (restrict none H) = some (liftLab (J := J) l)
 
-theorem pc_step (hD : IsDDD D) {u H} (inv : PcInv D S u H) {z : Σ p : DPort I, dIn Y₁ p}
+lemma pc_step (hD : IsDDD D) {u H} (inv : PcInv D S u H) {z : Σ p : DPort I, dIn Y₁ p}
     (hr : Reach (interconnect (pair D S) pcRoute pcInj) (u ++ [z])) :
     (u = [] ↔ z.1 = .start) ∧
       (∀ i, replyLabel (interconnect (pair D S) pcRoute pcInj) u = some (.res i) → z.1 = .res i) ∧
@@ -1241,7 +1241,7 @@ theorem pc_step (hD : IsDDD D) {u H} (inv : PcInv D S u H) {z : Σ p : DPort I, 
     cases hl
     exact h2
 
-theorem length_le_restrict_none {A B Xa Xb Y : Type} {s : System (Two Xa Xb) Y}
+lemma length_le_restrict_none {A B Xa Xb Y : Type} {s : System (Two Xa Xb) Y}
     {route : Y → B ⊕ Two Xa Xb} {inj : A → Two Xa Xb} (hinj : ∀ a, ∃ x, inj a = ⟨none, x⟩)
     {u o H} (r : Induces s route inj u o H) : u.length ≤ (restrict none H).length := by
   induction r with
@@ -1257,7 +1257,7 @@ theorem length_le_restrict_none {A B Xa Xb Y : Type} {s : System (Two Xa Xb) Y}
 
 /-- **`D[·, S]` is an environment** (spec §5.6): the reachable part of an environment
 with any system absorbed is an environment. The query bound is the bound of `D`. -/
-theorem partialClose_isDDD (hD : IsDDD D) : IsDDD (trim (partialClose D S)) := by
+lemma partialClose_isDDD (hD : IsDDD D) : IsDDD (trim (partialClose D S)) := by
   rw [partialClose_eq]
   set γ := interconnect (pair D S) pcRoute pcInj
   have inv : ∀ u, Reach γ u → ∃ H, PcInv D S u H := by

@@ -65,20 +65,20 @@ noncomputable def distance [CompatiblePseudoMetric C Phi] {A : C}
   @edist _ (CompatiblePseudoMetric.fibreMetric A).toEDist left right
 
 @[simp]
-theorem distance_self [CompatiblePseudoMetric C Phi] {A : C}
+lemma distance_self [CompatiblePseudoMetric C Phi] {A : C}
     (resource : Phi A) :
     distance resource resource = 0 := by
   let := CompatiblePseudoMetric.fibreMetric (Phi := Phi) A
   exact edist_self resource
 
 /-- Symmetry of the selected resource distance. -/
-theorem distance_comm [CompatiblePseudoMetric C Phi] {A : C}
+lemma distance_comm [CompatiblePseudoMetric C Phi] {A : C}
     (left right : Phi A) :
     distance left right = distance right left := by
   let := CompatiblePseudoMetric.fibreMetric (Phi := Phi) A
   exact edist_comm left right
 
-theorem distance_triangle [CompatiblePseudoMetric C Phi] {A : C}
+lemma distance_triangle [CompatiblePseudoMetric C Phi] {A : C}
     (left middle right : Phi A) :
     distance left right ≤
       distance left middle +
@@ -87,7 +87,7 @@ theorem distance_triangle [CompatiblePseudoMetric C Phi] {A : C}
   exact edist_triangle left middle right
 
 /-- Converter attachment is non-expanding in the selected fibre distances. -/
-theorem distance_attach_le [CompatiblePseudoMetric C Phi] {A B : C}
+lemma distance_attach_le [CompatiblePseudoMetric C Phi] {A B : C}
     (converter : A ⟶ B) (left right : Phi B) :
     distance (attach converter left)
         (attach converter right) ≤
@@ -117,7 +117,7 @@ theorem distance_attach_le_add_of_eq [CompatiblePseudoMetric C Phi] {A B : C}
 
 /-- Attachment along an interface isomorphism preserves the selected fibre
 distance exactly. -/
-theorem distance_attach_iso [CompatiblePseudoMetric C Phi] {A B : C}
+lemma distance_attach_iso [CompatiblePseudoMetric C Phi] {A B : C}
     (relabel : A ≅ B) (left right : Phi B) :
     distance (attach relabel.hom left)
         (attach relabel.hom right) =
@@ -142,7 +142,7 @@ theorem distance_attach_iso [CompatiblePseudoMetric C Phi] {A B : C}
           distance_attach_le relabel.inv _ _
 
 /-- Ordered resource parallel is jointly non-expanding. -/
-theorem distance_parallel_le [CompatiblePseudoMetric C Phi] {A B : C}
+lemma distance_parallel_le [CompatiblePseudoMetric C Phi] {A B : C}
     (left left' : Phi A) (right right' : Phi B) :
     distance (parallel left right)
         (parallel left' right') ≤
@@ -152,7 +152,7 @@ theorem distance_parallel_le [CompatiblePseudoMetric C Phi] {A B : C}
 
 /-- Ordered parallel with an unchanged right component is non-expanding in
 the left component. -/
-theorem distance_parallel_left_le [CompatiblePseudoMetric C Phi] {A B : C}
+lemma distance_parallel_left_le [CompatiblePseudoMetric C Phi] {A B : C}
     (left left' : Phi A) (right : Phi B) :
     distance (parallel left right)
         (parallel left' right) ≤
@@ -163,7 +163,7 @@ theorem distance_parallel_left_le [CompatiblePseudoMetric C Phi] {A B : C}
 
 /-- Ordered parallel with an unchanged left component is non-expanding in
 the right component. -/
-theorem distance_parallel_right_le [CompatiblePseudoMetric C Phi] {A B : C}
+lemma distance_parallel_right_le [CompatiblePseudoMetric C Phi] {A B : C}
     (left : Phi A) (right right' : Phi B) :
     distance (parallel left right)
         (parallel left right') ≤
@@ -186,7 +186,7 @@ abbrev ConstructsWithin [CompatiblePseudoMetric C Phi] {A B : C}
 
 /-- Approximate construction holds exactly when every admitted source
 resource attaches within the error bound of an admitted target resource. -/
-theorem constructsWithin_iff [CompatiblePseudoMetric C Phi] {A B : C}
+lemma constructsWithin_iff [CompatiblePseudoMetric C Phi] {A B : C}
     {converter : A ⟶ B} {source : Specification (Phi B)}
     {target : Specification (Phi A)} {error : ENNReal} :
     ConstructsWithin converter source target error ↔
@@ -198,7 +198,7 @@ theorem constructsWithin_iff [CompatiblePseudoMetric C Phi] {A B : C}
 
 /-- Singleton approximate construction is exactly the selected fibre-distance
 bound after converter attachment. -/
-theorem constructsWithin_singleton_iff [CompatiblePseudoMetric C Phi] {A B : C}
+lemma constructsWithin_singleton_iff [CompatiblePseudoMetric C Phi] {A B : C}
     {converter : A ⟶ B} {source : Phi B}
     {target : Phi A} {error : ENNReal} :
     ConstructsWithin converter
@@ -212,7 +212,7 @@ theorem constructsWithin_singleton_iff [CompatiblePseudoMetric C Phi] {A B : C}
 
 /-- Approximate construction is invariant under equality of converters
 between the same interfaces. -/
-theorem constructsWithin_iff_of_converter_eq [CompatiblePseudoMetric C Phi]
+lemma constructsWithin_iff_of_converter_eq [CompatiblePseudoMetric C Phi]
     {A B : C} {left right : A ⟶ B} (equal : left = right)
     {source : Specification (Phi B)} {target : Specification (Phi A)}
     {error : ENNReal} :
@@ -223,7 +223,7 @@ theorem constructsWithin_iff_of_converter_eq [CompatiblePseudoMetric C Phi]
   rfl
 
 @[simp]
-theorem constructsWithin_identity [CompatiblePseudoMetric C Phi] {A : C}
+lemma constructsWithin_identity [CompatiblePseudoMetric C Phi] {A : C}
     (source : Specification (Phi A)) :
     ConstructsWithin (𝟙 A) source source 0 := by
   let := CompatiblePseudoMetric.fibreMetric (Phi := Phi) A
@@ -231,7 +231,7 @@ theorem constructsWithin_identity [CompatiblePseudoMetric C Phi] {A : C}
   exact ⟨resource, member, by simp [attach_identity]⟩
 
 /-- Approximate constructions compose serially with additive error. -/
-theorem ConstructsWithin.serial [CompatiblePseudoMetric C Phi]
+lemma ConstructsWithin.serial [CompatiblePseudoMetric C Phi]
     {A B D : C} {first : A ⟶ B} {second : B ⟶ D}
     {source : Specification (Phi D)} {middle : Specification (Phi B)}
     {target : Specification (Phi A)} {innerError outerError : ENNReal}
@@ -251,7 +251,7 @@ theorem ConstructsWithin.serial [CompatiblePseudoMetric C Phi]
 
 /-- Approximate constructions compose in ordered parallel with additive
 error. -/
-theorem ConstructsWithin.parallel [CompatiblePseudoMetric C Phi]
+lemma ConstructsWithin.parallel [CompatiblePseudoMetric C Phi]
     {A A' B B' : C}
     {leftConverter : A ⟶ A'} {rightConverter : B ⟶ B'}
     {leftSource : Specification (Phi A')} {leftTarget : Specification (Phi A)}
@@ -276,7 +276,7 @@ theorem ConstructsWithin.parallel [CompatiblePseudoMetric C Phi]
     (attach_parallel leftConverter rightConverter) (distance_parallel_le)
 
 /-- Left context-insensitivity for approximate construction. -/
-theorem ConstructsWithin.left_context [CompatiblePseudoMetric C Phi]
+lemma ConstructsWithin.left_context [CompatiblePseudoMetric C Phi]
     {A A' B : C} {converter : A ⟶ A'}
     {source : Specification (Phi A')} {target : Specification (Phi A)}
     {error : ENNReal}
@@ -293,7 +293,7 @@ theorem ConstructsWithin.left_context [CompatiblePseudoMetric C Phi]
     (fun x y => by rw [attach_parallel, attach_identity]) (distance_parallel_left_le)
 
 /-- Right context-insensitivity for approximate construction. -/
-theorem ConstructsWithin.right_context [CompatiblePseudoMetric C Phi]
+lemma ConstructsWithin.right_context [CompatiblePseudoMetric C Phi]
     {A B B' : C} {converter : B ⟶ B'}
     {source : Specification (Phi B')} {target : Specification (Phi B)}
     {error : ENNReal}

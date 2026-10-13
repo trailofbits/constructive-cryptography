@@ -40,7 +40,7 @@ namespace SystemAlgebra
 open Classical Probability
 open scoped NNReal
 
-theorem Cons.queries_eq {A B : Type} {e : List B →. A} {h : List (A × B)}
+lemma Cons.queries_eq {A B : Type} {e : List B →. A} {h : List (A × B)}
     (hc : Cons e h) : h.map Prod.fst = qsOf e (h.map Prod.snd) := by
   induction h using List.reverseRecOn with
   | nil => rfl
@@ -49,7 +49,7 @@ theorem Cons.queries_eq {A B : Type} {e : List B →. A} {h : List (A × B)}
     simp only [List.map_append, List.map_singleton]
     rw [qsOf_snoc hz, ih hc]
 
-theorem Cons.fits {I : Type} {X Y : I → Type}
+lemma Cons.fits {I : Type} {X Y : I → Type}
     {e : List (Σ i, Y i) →. Σ i, X i}
     {h : List ((Σ i, X i) × (Σ i, Y i))} (hc : Cons e h)
     (hl : ∀ z ∈ h, z.2.1 = z.1.1) : EFits e (h.map Prod.snd) := by
@@ -61,7 +61,7 @@ theorem Cons.fits {I : Type} {X Y : I → Type}
     exact (ih hc (fun a ha => hl a (by simp [ha]))).snoc hz (hl z (by simp))
 
 /-- A probe is defined along precisely the environment's valid reply paths. -/
-theorem envProbe_reach {I : Type} {X Y : I → Type}
+lemma envProbe_reach {I : Type} {X Y : I → Type}
     {E : DDE (Σ i, X i) (Σ i, Y i)}
     (A : List (Σ i, X i) × List (Σ i, Y i) → Prop)
     {ys : List (Σ i, Y i)} (hv : EFits E.1 ys) : Reach (envProbe E A) (dHist ys) := by
@@ -82,7 +82,7 @@ theorem envProbe_reach {I : Type} {X Y : I → Type}
     simp only [envReply]
     split_ifs <;> exact Part.some_dom _
 
-theorem envOf_trim_envProbe {I : Type} {X Y : I → Type}
+lemma envOf_trim_envProbe {I : Type} {X Y : I → Type}
     {E : DDE (Σ i, X i) (Σ i, Y i)}
     {A : List (Σ i, X i) × List (Σ i, Y i) → Prop}
     {ys} (hv : EFits E.1 ys) : envOf (trim (envProbe E A)) ys = E.1 ys := by
@@ -95,7 +95,7 @@ namespace RandomSystem
 variable {I : Type} {X Y : I → Type} [Fintype (Σ i, X i)] [Fintype (Σ i, Y i)]
   {D : Domain (Σ i, X i) (Σ i, Y i)}
 
-theorem RepliesAtQueriedInterface.history
+lemma RepliesAtQueriedInterface.history
     {R : RandomSystem (Σ i, X i) (Σ i, Y i) D} (hr : R.RepliesAtQueriedInterface)
     {h} (hm : R h ≠ 0) : ∀ z ∈ h, z.2.1 = z.1.1 := by
   induction h using List.reverseRecOn with
@@ -110,7 +110,7 @@ theorem RepliesAtQueriedInterface.history
 
 /-- Canonicalizing the probe leaves exactly the original query strategy on
 all possible responding-resource transcripts. -/
-theorem cons_trim_envProbe_iff
+lemma cons_trim_envProbe_iff
     {R : RandomSystem (Σ i, X i) (Σ i, Y i) D} (hr : R.RepliesAtQueriedInterface)
     (E : DDE (Σ i, X i) (Σ i, Y i))
     (A : List (Σ i, X i) × List (Σ i, Y i) → Prop)
@@ -124,7 +124,7 @@ theorem cons_trim_envProbe_iff
     exact and_congr_right fun hc => by
       rw [envOf_trim_envProbe (hc.fits (hr.history hp))]
 
-theorem sLaw_trim_envProbe
+lemma sLaw_trim_envProbe
     (R : RandomSystem (Σ i, X i) (Σ i, Y i) D) (hr : R.RepliesAtQueriedInterface)
     (E : DDE (Σ i, X i) (Σ i, Y i))
     (A : List (Σ i, X i) × List (Σ i, Y i) → Prop) (n : ℕ) :
@@ -140,7 +140,7 @@ theorem sLaw_trim_envProbe
     · simp only [Good, hc, hh, false_and, if_false]
 
 /-- A completed transcript leaves a query-bounded environment without a next query. -/
-theorem sLaw_complete {E : DDE (Σ i, X i) (Σ i, Y i)} {n : ℕ} (hn : QueryBounded n E)
+lemma sLaw_complete {E : DDE (Σ i, X i) (Σ i, Y i)} {n : ℕ} (hn : QueryBounded n E)
     (R : RandomSystem (Σ i, X i) (Σ i, Y i) D) {h} (hh : h ∈ (R.sLaw E.1 n).support) :
     ¬ (E.1 (h.map Prod.snd)).Dom := by
   have hp := Finsupp.mem_support_iff.mp hh
@@ -176,12 +176,12 @@ def DecisionCompatible (𝒟 : Domain (Σ i, X i) (Σ i, Y i)) (D : DDD I X Y) :
 
 variable {𝒟 : Domain (Σ i, X i) (Σ i, Y i)}
 
-theorem DecisionCompatible.environment {D : DDD I X Y}
+lemma DecisionCompatible.environment {D : DDD I X Y}
     (hc : 𝒟.DecisionCompatible D) (hD : IsDDD D) : 𝒟.Compatible (ddeOf hD) :=
   fun R hR h x ht hp hx => (hc R hR h ht hp).2 x hx
 
 /-- Every completed possible transcript ends in a defined decision. -/
-theorem DecisionCompatible.producesDecision {D : DDD I X Y}
+lemma DecisionCompatible.producesDecision {D : DDD I X Y}
     (hc : 𝒟.DecisionCompatible D) (hD : IsDDD D) {R : RandomSystem (Σ i, X i) (Σ i, Y i) 𝒟}
     (hR : R.RepliesAtQueriedInterface) {h}
     (hh : h ∈ (R.sLaw (ddeOf hD).1 hD.2.1.choose).support) :
@@ -202,7 +202,7 @@ theorem DecisionCompatible.producesDecision {D : DDD I X Y}
 
 /-- An environment followed by an event test is compatible with the domain of the
 environment. -/
-theorem envProbe_decisionCompatible {E : DDE (Σ i, X i) (Σ i, Y i)} (hc : 𝒟.Compatible E)
+lemma envProbe_decisionCompatible {E : DDE (Σ i, X i) (Σ i, Y i)} (hc : 𝒟.Compatible E)
     (T : List (Σ i, X i) × List (Σ i, Y i) → Prop) :
     𝒟.DecisionCompatible (envProbe E T) := by
   intro R hR h ht hp
@@ -230,7 +230,7 @@ noncomputable def transcriptDistance (R S : RandomSystem (Σ i, X i) (Σ i, Y i)
   ⨆ (E : DDE (Σ i, X i) (Σ i, Y i)) (n : ℕ) (_ : QueryBounded n E) (_ : 𝒟.Compatible E),
     ENNReal.ofReal (statDist (R.sLaw E.1 n) (S.sLaw E.1 n))
 
-theorem statDist_le_transcriptDistance {E : DDE (Σ i, X i) (Σ i, Y i)} {n : ℕ}
+lemma statDist_le_transcriptDistance {E : DDE (Σ i, X i) (Σ i, Y i)} {n : ℕ}
     (hn : QueryBounded n E) (hc : 𝒟.Compatible E) (R S : RandomSystem (Σ i, X i) (Σ i, Y i) 𝒟) :
     ENNReal.ofReal (statDist (R.sLaw E.1 n) (S.sLaw E.1 n)) ≤ R.transcriptDistance S :=
   le_iSup_of_le E (le_iSup_of_le n (le_iSup_of_le hn (le_iSup_of_le hc le_rfl)))
@@ -238,7 +238,7 @@ theorem statDist_le_transcriptDistance {E : DDE (Σ i, X i) (Σ i, Y i)} {n : �
 /-- **A bound on the transcript laws bounds the transcript distance**: if under every compatible
 query-bounded environment the statistical distance of the transcript laws is at most `b`, the
 transcript distance is at most `b`. -/
-theorem transcriptDistance_le {R S : RandomSystem (Σ i, X i) (Σ i, Y i) 𝒟} {b : ℝ≥0}
+lemma transcriptDistance_le {R S : RandomSystem (Σ i, X i) (Σ i, Y i) 𝒟} {b : ℝ≥0}
     (h : ∀ (E : DDE (Σ i, X i) (Σ i, Y i)) (n : ℕ), QueryBounded n E → 𝒟.Compatible E →
       statDist (R.sLaw E.1 n) (S.sLaw E.1 n) ≤ b) :
     R.transcriptDistance S ≤ b :=
@@ -247,7 +247,7 @@ theorem transcriptDistance_le {R S : RandomSystem (Σ i, X i) (Σ i, Y i) 𝒟} 
     rw [← ENNReal.ofReal_coe_nnreal]
     exact ENNReal.ofReal_le_ofReal (h E n hn hc)
 
-theorem transcriptDistance_le_one {R S : RandomSystem (Σ i, X i) (Σ i, Y i) 𝒟}
+lemma transcriptDistance_le_one {R S : RandomSystem (Σ i, X i) (Σ i, Y i) 𝒟}
     (hR : R.RepliesAtQueriedInterface) (hS : S.RepliesAtQueriedInterface) :
     R.transcriptDistance S ≤ 1 := by
   rw [← ENNReal.coe_one]
@@ -266,7 +266,7 @@ noncomputable def decisionProbability (D : DDD I X Y) (hD : IsDDD D)
 
 /-- An environment followed by an event test decides `1` with exactly that event's
 probability on its completed transcript. -/
-theorem decisionProbability_envProbe {E : DDE (Σ i, X i) (Σ i, Y i)} {n : ℕ}
+lemma decisionProbability_envProbe {E : DDE (Σ i, X i) (Σ i, Y i)} {n : ℕ}
     (hn : QueryBounded n E) (T : List (Σ i, X i) × List (Σ i, Y i) → Prop)
     {R : RandomSystem (Σ i, X i) (Σ i, Y i) 𝒟} (hR : R.RepliesAtQueriedInterface) :
     R.decisionProbability (envProbe E T) (envProbe_isDDD hn) =
@@ -300,7 +300,7 @@ theorem decisionProbability_envProbe {E : DDE (Σ i, X i) (Σ i, Y i)} {n : ℕ}
   simp
 
 /-- Decision gaps of a compatible distinguisher are at most the transcript distance. -/
-theorem decisionProbability_gap_le {D : DDD I X Y} (hD : IsDDD D)
+lemma decisionProbability_gap_le {D : DDD I X Y} (hD : IsDDD D)
     (hc : 𝒟.DecisionCompatible D) {R S : RandomSystem (Σ i, X i) (Σ i, Y i) 𝒟}
     (hR : R.RepliesAtQueriedInterface) (hS : S.RepliesAtQueriedInterface) :
     |R.decisionProbability D hD - S.decisionProbability D hD| ≤
@@ -317,7 +317,7 @@ variable {E : List (Σ i, X i) → Prop} {m : ℕ} {hE : ∀ h, E h → h.length
 
 /-- On a presentation by deterministic resources, the decision probability is the
 probability of deciding `1` on a sample. -/
-theorem decisionProbability_of_presents (D : DDD I X Y) (hD : IsDDD D)
+lemma decisionProbability_of_presents (D : DDD I X Y) (hD : IsDDD D)
     (P : Distribution.ProbDist {s : InterfaceSystem I X Y //
       IsDDS s ∧ SystemAlgebra.RepliesAtQueriedInterface s ∧ ∀ h, (s h).Dom ↔ E h})
     {R : RandomSystem (Σ i, X i) (Σ i, Y i) (Domain.ofInputs E m hE)}
@@ -366,7 +366,7 @@ variable {E : List (Σ i, X i) → Prop} {m : ℕ} {hE : ∀ h, E h → h.length
 
 /-- Compatibility with a domain of input histories is checked on its deterministic
 resources: the distinguisher decides on each of them. -/
-theorem decisionCompatible_iff_deterministic
+lemma decisionCompatible_iff_deterministic
     (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p) {D : DDD I X Y} (hD : IsDDD D) :
     (Domain.ofInputs E m hE : Domain (Σ i, X i) (Σ i, Y i)).DecisionCompatible D ↔
       ∀ s : InterfaceSystem I X Y, IsDDS s → SystemAlgebra.RepliesAtQueriedInterface s →

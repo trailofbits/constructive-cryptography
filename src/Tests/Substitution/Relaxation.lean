@@ -22,7 +22,7 @@ variable {Phi : C → Type w} [ResourceTheory C Phi]
 
 -- The literal one-use statement works with a supplied transformation and two
 -- exact endpoints, without an unrelated substitution relation or reflexivity axiom.
-theorem construction_of_single_substitution {A B D E : C}
+lemma construction_of_single_substitution {A B D E : C}
     (transformations : Set (A ⟶ B)) (left right : Phi B)
     (protocol : A ⟶ D) (simulator : A ⟶ E)
     (real : Phi D) (ideal : Phi E)
@@ -45,7 +45,7 @@ example {A B : C} (left right : Phi B) (resource : Phi A) :
 
 -- A literal one-use image embeds in the finite-chain presentation with
 -- exactly one forward use of the sole assumption. The converse is not assumed.
-theorem single_image_has_one_use {A B : C}
+lemma single_image_has_one_use {A B : C}
     (transformations : Set (A ⟶ B)) (left right : Phi B)
     (source : Specification (Phi A))
     (resource : Phi A)

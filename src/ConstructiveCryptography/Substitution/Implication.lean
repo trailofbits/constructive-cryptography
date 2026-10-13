@@ -58,7 +58,7 @@ def withEndpoints {target : C} {uses : Nat}
 
 /-- Exact endpoint replacement does not use an assumption.
 Banfi, Section 2.3.1 (printed p. 14): "the number of times each substitution". -/
-theorem usageCount_withEndpoints [DecidableEq ι] {target : C} {uses : Nat}
+lemma usageCount_withEndpoints [DecidableEq ι] {target : C} {uses : Nat}
     (implication : Implication boundary systems target uses)
     (left right : Phi target)
     (left_eq : left = implication.targetLeft)
@@ -107,7 +107,7 @@ def single {target : C} (assumption : ι) (direction : Bool)
 /-- A one-position implication uses exactly its selected assumption once.
 Banfi, Section 2.3.1 (printed p. 14): "the number of times each substitution".
 The sole position is counted precisely when its assumption index matches. -/
-theorem usageCount_single [DecidableEq ι] {target : C}
+lemma usageCount_single [DecidableEq ι] {target : C}
     (selected assumption : ι) (direction : Bool)
     (transformation : target ⟶ boundary selected) :
     (single (systems := systems) selected direction transformation).usageCount assumption =
@@ -145,7 +145,7 @@ def map {source target : C} {uses : Nat}
 /-- Transforming a chain does not change the number of uses of an assumption.
 Banfi, Section 2.3.1 (printed p. 14): "the number of times each substitution".
 Only the named transformations change, not the index function being counted. -/
-theorem usageCount_map [DecidableEq ι] {source target : C} {uses : Nat}
+lemma usageCount_map [DecidableEq ι] {source target : C} {uses : Nat}
     (implication : Implication boundary systems source uses)
     (converter : target ⟶ source) (assumption : ι) :
     (implication.map converter).usageCount assumption = implication.usageCount assumption :=
@@ -189,7 +189,7 @@ def reverse {target : C} {uses : Nat}
 /-- Reversing a chain preserves each assumption's use count.
 Banfi, Section 2.3.1 (printed p. 14): "`tⱼ := |{k | iₖ = j, k ∈ [n]}|`".
 Reversal is a permutation of those positions. -/
-theorem usageCount_reverse [DecidableEq ι] {target : C} {uses : Nat}
+lemma usageCount_reverse [DecidableEq ι] {target : C} {uses : Nat}
     (implication : Implication boundary systems target uses) (assumption : ι) :
     implication.reverse.usageCount assumption = implication.usageCount assumption := by
   -- Count positions by their indicator, and reindex by the reversal permutation.
@@ -272,7 +272,7 @@ def append {target : C} {firstUses secondUses : Nat}
 Banfi, Section 2.3.1 (printed p. 14), counts
 "`tⱼ := |{k | iₖ = j, k ∈ [n]}|`". Splitting the disjoint position ranges
 therefore adds their cardinalities, even when both chains use the same premise. -/
-theorem usageCount_append [DecidableEq ι] {target : C} {firstUses secondUses : Nat}
+lemma usageCount_append [DecidableEq ι] {target : C} {firstUses secondUses : Nat}
     (first : Implication boundary systems target firstUses)
     (second : Implication boundary systems target secondUses)
     (join : first.targetRight = second.targetLeft) (assumption : ι) :

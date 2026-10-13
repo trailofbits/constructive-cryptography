@@ -78,9 +78,9 @@ def forgetMBO (y : Σ j, withMBO Y j) : Σ j, Y j := ⟨y.1, y.2.1⟩
 /-- A reply with the MBO `b`. -/
 def tagMBO (b : Bool) (y : Σ j, Y j) : Σ j, withMBO Y j := ⟨y.1, (y.2, b)⟩
 
-@[simp] theorem forgetMBO_tagMBO (b : Bool) (y : Σ j, Y j) : forgetMBO (tagMBO b y) = y := rfl
+@[simp] lemma forgetMBO_tagMBO (b : Bool) (y : Σ j, Y j) : forgetMBO (tagMBO b y) = y := rfl
 
-@[simp] theorem tagMBO_fst (b : Bool) (y : Σ j, Y j) : (tagMBO b y).1 = y.1 := rfl
+@[simp] lemma tagMBO_fst (b : Bool) (y : Σ j, Y j) : (tagMBO b y).1 = y.1 := rfl
 
 end Replies
 
@@ -97,7 +97,7 @@ def sumMBO (f : List (A × Σ j, withMBO Y j) → ℝ) : List (A × Σ j, Y j) �
   | z :: t => sumMBO (fun k => f ((z.1, tagMBO false z.2) :: k)) t +
       sumMBO (fun k => f ((z.1, tagMBO true z.2) :: k)) t
 
-theorem sumMBO_snoc (f : List (A × Σ j, withMBO Y j) → ℝ) (h : List (A × Σ j, Y j))
+lemma sumMBO_snoc (f : List (A × Σ j, withMBO Y j) → ℝ) (h : List (A × Σ j, Y j))
     (z : A × Σ j, Y j) :
     sumMBO f (h ++ [z]) =
       sumMBO (fun k => f (k ++ [(z.1, tagMBO false z.2)]) + f (k ++ [(z.1, tagMBO true z.2)]))
@@ -112,7 +112,7 @@ theorem sumMBO_snoc (f : List (A × Σ j, withMBO Y j) → ℝ) (h : List (A × 
     -- The induction hypothesis, for each of the two shifted summands.
     rw [ih, ih]
 
-theorem sumMBO_sum {ι : Type} (s : Finset ι) (f : ι → List (A × Σ j, withMBO Y j) → ℝ)
+lemma sumMBO_sum {ι : Type} (s : Finset ι) (f : ι → List (A × Σ j, withMBO Y j) → ℝ)
     (h : List (A × Σ j, Y j)) :
     sumMBO (fun k => ∑ i ∈ s, f i k) h = ∑ i ∈ s, sumMBO (f i) h := by
   -- Induction on h: a finite sum passes through each branch of sumMBO.
@@ -123,14 +123,14 @@ theorem sumMBO_sum {ι : Type} (s : Finset ι) (f : ι → List (A × Σ j, with
     simp only [sumMBO]
     rw [ih, ih, ← Finset.sum_add_distrib]
 
-theorem sumMBO_nonneg {f : List (A × Σ j, withMBO Y j) → ℝ} (hf : ∀ k, 0 ≤ f k)
+lemma sumMBO_nonneg {f : List (A × Σ j, withMBO Y j) → ℝ} (hf : ∀ k, 0 ≤ f k)
     (h : List (A × Σ j, Y j)) : 0 ≤ sumMBO f h := by
   -- Induction on h: a sum of the nonnegative values of f.
   induction h generalizing f with
   | nil => exact hf []
   | cons z t ih => exact add_nonneg (ih fun k => hf _) (ih fun k => hf _)
 
-theorem sumMBO_zero (h : List (A × Σ j, Y j)) :
+lemma sumMBO_zero (h : List (A × Σ j, Y j)) :
     sumMBO (fun _ : List (A × Σ j, withMBO Y j) => (0 : ℝ)) h = 0 := by
   -- Induction on h: every branch sums zeros.
   induction h with
@@ -139,7 +139,7 @@ theorem sumMBO_zero (h : List (A × Σ j, Y j)) :
 
 open scoped Classical in
 /-- A condition on the queries passes through the sum over MBOs. -/
-theorem sumMBO_ite (P : List A → Prop) (f : List (A × Σ j, withMBO Y j) → ℝ)
+lemma sumMBO_ite (P : List A → Prop) (f : List (A × Σ j, withMBO Y j) → ℝ)
     (h : List (A × Σ j, Y j)) :
     sumMBO (fun k => if P (k.map Prod.fst) then f k else 0) h =
       if P (h.map Prod.fst) then sumMBO f h else 0 := by
@@ -156,7 +156,7 @@ theorem sumMBO_ite (P : List A → Prop) (f : List (A × Σ j, withMBO Y j) → 
     split_ifs <;> simp
 
 /-- A factor depending only on the queries passes through the sum over MBOs. -/
-theorem sumMBO_mul_fst (f : List (A × Σ j, withMBO Y j) → ℝ) (g : List A → ℝ)
+lemma sumMBO_mul_fst (f : List (A × Σ j, withMBO Y j) → ℝ) (g : List A → ℝ)
     (h : List (A × Σ j, Y j)) :
     sumMBO (fun k => f k * g (k.map Prod.fst)) h = sumMBO f h * g (h.map Prod.fst) := by
   -- Induction on h, for every f and g: as in sumMBO_ite, the factor g depends only on the
@@ -171,7 +171,7 @@ theorem sumMBO_mul_fst (f : List (A × Σ j, withMBO Y j) → ℝ) (g : List A �
     -- a·c + b·c = (a + b)·c.
     ring
 
-theorem sumMBO_const_mul (c : ℝ) (f : List (A × Σ j, withMBO Y j) → ℝ) (h : List (A × Σ j, Y j)) :
+lemma sumMBO_const_mul (c : ℝ) (f : List (A × Σ j, withMBO Y j) → ℝ) (h : List (A × Σ j, Y j)) :
     sumMBO (fun k => c * f k) h = c * sumMBO f h := by
   -- Induction on h: the constant factor passes through both branches.
   induction h generalizing f with
@@ -181,7 +181,7 @@ theorem sumMBO_const_mul (c : ℝ) (f : List (A × Σ j, withMBO Y j) → ℝ) (
     rw [ih, ih]
     ring
 
-theorem eq_tagMBO_iff {v : Σ j, withMBO Y j} {c : Bool} {y : Σ j, Y j} :
+lemma eq_tagMBO_iff {v : Σ j, withMBO Y j} {c : Bool} {y : Σ j, Y j} :
     v = tagMBO c y ↔ forgetMBO v = y ∧ v.2.2 = c := by
   -- A reply with its MBO is determined by the reply without it and the MBO.
   constructor
@@ -192,7 +192,7 @@ theorem eq_tagMBO_iff {v : Σ j, withMBO Y j} {c : Bool} {y : Σ j, Y j} :
 
 open scoped Classical in
 /-- A reply forgets its MBO into `y` exactly when it is `y` with one of the two MBOs. -/
-theorem ite_tagMBO_add (p : Part (Σ j, withMBO Y j)) (y : Σ j, Y j) :
+lemma ite_tagMBO_add (p : Part (Σ j, withMBO Y j)) (y : Σ j, Y j) :
     ((if p = Part.some (tagMBO false y) then 1 else 0) +
       (if p = Part.some (tagMBO true y) then 1 else 0) : ℝ) =
       if p.map forgetMBO = Part.some y then 1 else 0 := by
@@ -213,7 +213,7 @@ theorem ite_tagMBO_add (p : Part (Σ j, withMBO Y j)) (y : Σ j, Y j) :
 open scoped Classical in
 /-- **The sum over MBOs of the transcripts of a system** is the indicator of the transcripts of
 the system with the MBO forgotten. -/
-theorem sumMBO_replies (t : System A (Σ j, withMBO Y j)) (h : List (A × Σ j, Y j)) :
+lemma sumMBO_replies (t : System A (Σ j, withMBO Y j)) (h : List (A × Σ j, Y j)) :
     sumMBO (fun k => if Replies t (k.map Prod.fst) (k.map Prod.snd) then 1 else 0) h =
       if Replies (relabel t id forgetMBO) (h.map Prod.fst) (h.map Prod.snd) then 1 else 0 := by
   -- t is a deterministic system whose replies carry the MBO; relabel t id forgetMBO is t with
@@ -263,22 +263,22 @@ def forgetMBOs (h : List (A × Σ j, withMBO Y j)) : List (A × Σ j, Y j) :=
 def unsetMBOs (h : List (A × Σ j, Y j)) : List (A × Σ j, withMBO Y j) :=
   h.map fun z => (z.1, tagMBO false z.2)
 
-@[simp] theorem forgetMBOs_unsetMBOs (h : List (A × Σ j, Y j)) : forgetMBOs (unsetMBOs h) = h := by
+@[simp] lemma forgetMBOs_unsetMBOs (h : List (A × Σ j, Y j)) : forgetMBOs (unsetMBOs h) = h := by
   -- Giving each reply MBO 0 and then forgetting it is the identity on each entry.
   simp [forgetMBOs, unsetMBOs, Function.comp_def]
 
-theorem map_fst_forgetMBOs (h : List (A × Σ j, withMBO Y j)) :
+lemma map_fst_forgetMBOs (h : List (A × Σ j, withMBO Y j)) :
     (forgetMBOs h).map Prod.fst = h.map Prod.fst := by
   -- Forgetting the MBOs keeps the queries.
   simp [forgetMBOs, Function.comp_def]
 
-theorem map_snd_forgetMBOs (h : List (A × Σ j, withMBO Y j)) :
+lemma map_snd_forgetMBOs (h : List (A × Σ j, withMBO Y j)) :
     (forgetMBOs h).map Prod.snd = (h.map Prod.snd).map forgetMBO := by
   -- The replies of the forgotten transcript are the replies with their MBOs forgotten.
   simp [forgetMBOs, Function.comp_def]
 
 /-- Each transcript is one of the terms of the sum over the MBOs of its visible transcript. -/
-theorem le_sumMBO {f : List (A × Σ j, withMBO Y j) → ℝ} (hf : ∀ k, 0 ≤ f k)
+lemma le_sumMBO {f : List (A × Σ j, withMBO Y j) → ℝ} (hf : ∀ k, 0 ≤ f k)
     (k : List (A × Σ j, withMBO Y j)) : f k ≤ sumMBO f (forgetMBOs k) := by
   -- Induction on k, for every nonnegative f. The first entry z of k, with MBO b, lies on the
   -- b-branch of the sum over MBOs of forgetMBOs k; the other branch is nonnegative.
@@ -311,7 +311,7 @@ variable {E : List A → Prop} {m : ℕ} {hE : ∀ h, E h → h.length ≤ m}
 open scoped Classical in
 /-- **The replies with both MBOs** to a query after a transcript `k` weigh `k` if the query is
 admitted, and nothing otherwise. -/
-theorem RandomSystem.sum_tagMBO (G : RandomSystem A (Σ j, withMBO Y j) (Domain.ofInputs E m hE))
+lemma RandomSystem.sum_tagMBO (G : RandomSystem A (Σ j, withMBO Y j) (Domain.ofInputs E m hE))
     (k : List (A × Σ j, withMBO Y j)) (x : A) :
     ∑ y : Σ j, Y j, (G (k ++ [(x, tagMBO false y)]) + G (k ++ [(x, tagMBO true y)])) =
       if E (k.map Prod.fst ++ [x]) then G k else 0 := by
@@ -361,13 +361,13 @@ noncomputable def RandomSystem.visible
     simp only [G.sum_tagMBO, Domain.ofInputs_apply]
     exact sumMBO_ite (fun xs => E (xs ++ [x])) G h⟩
 
-theorem RandomSystem.visible_apply
+lemma RandomSystem.visible_apply
     (G : RandomSystem A (Σ j, withMBO Y j) (Domain.ofInputs E m hE)) (h : List (A × Σ j, Y j)) :
     G.visible h = sumMBO G h := rfl
 
 end Visible
 
-theorem RandomSystem.RepliesAtQueriedInterface.visible {I : Type} [Fintype I]
+lemma RandomSystem.RepliesAtQueriedInterface.visible {I : Type} [Fintype I]
     {X Y : I → Type} [∀ i, Fintype (X i)] [∀ i, Fintype (Y i)]
     {E : List (Σ i, X i) → Prop} {m : ℕ} {hE : ∀ h, E h → h.length ≤ m}
     {G : RandomSystem (Σ i, X i) (Σ i, withMBO Y i) (Domain.ofInputs E m hE)}
@@ -383,7 +383,7 @@ theorem RandomSystem.RepliesAtQueriedInterface.visible {I : Type} [Fintype I]
   exact sumMBO_zero h
 
 /-- A game replies at the queried interface when its visible system does. -/
-theorem RandomSystem.RepliesAtQueriedInterface.of_visible {I : Type} [Fintype I]
+lemma RandomSystem.RepliesAtQueriedInterface.of_visible {I : Type} [Fintype I]
     {X Y : I → Type} [∀ i, Fintype (X i)] [∀ i, Fintype (Y i)]
     {E : List (Σ i, X i) → Prop} {m : ℕ} {hE : ∀ h, E h → h.length ≤ m}
     {G : RandomSystem (Σ i, X i) (Σ i, withMBO Y i) (Domain.ofInputs E m hE)}
@@ -413,7 +413,7 @@ def DDE.blindMBO (e : DDE (Σ i, X i) (Σ i, Y i)) : DDE (Σ i, X i) (Σ i, with
     (by simpa only [List.map_append, List.map_cons, List.map_nil] using hd)⟩
 
 omit [Fintype I] [∀ i, Fintype (X i)] [∀ i, Fintype (Y i)] in
-theorem cons_blindMBO_iff (e : DDE (Σ i, X i) (Σ i, Y i))
+lemma cons_blindMBO_iff (e : DDE (Σ i, X i) (Σ i, Y i))
     (h : List ((Σ i, X i) × Σ i, withMBO Y i)) :
     Cons (DDE.blindMBO e).1 h ↔ Cons e.1 (forgetMBOs h) := by
   -- Query i of the blinded environment is e's query on the first i replies with their MBOs
@@ -423,7 +423,7 @@ theorem cons_blindMBO_iff (e : DDE (Σ i, X i) (Σ i, Y i))
   rfl
 
 omit [Fintype I] [∀ i, Fintype (X i)] [∀ i, Fintype (Y i)] in
-theorem good_blindMBO_iff (e : DDE (Σ i, X i) (Σ i, Y i)) (n : ℕ)
+lemma good_blindMBO_iff (e : DDE (Σ i, X i) (Σ i, Y i)) (n : ℕ)
     (h : List ((Σ i, X i) × Σ i, withMBO Y i)) :
     Good (DDE.blindMBO e).1 n h ↔ Good e.1 n (forgetMBOs h) := by
   -- Good = Cons ∧ Done; Cons by cons_blindMBO_iff. Done depends on the length and on whether
@@ -439,7 +439,7 @@ def finalMBO {A : Type} (h : List (A × Σ i, withMBO Y i)) : Bool :=
 omit [Fintype I] [∀ i, Fintype (Y i)] in
 /-- Along a transcript whose MBO, once set, stays set, the final MBO is set exactly when some
 MBO is. -/
-theorem finalMBO_eq_true_iff {A : Type} {h : List (A × Σ i, withMBO Y i)}
+lemma finalMBO_eq_true_iff {A : Type} {h : List (A × Σ i, withMBO Y i)}
     (hp : (h.map fun z => z.2.2.2).Pairwise (· ≤ ·)) :
     finalMBO h = true ↔ ¬ ∀ z ∈ h, z.2.2.2 = false := by
   -- Only the last entry z matters: h is empty or ends with z.
@@ -493,7 +493,7 @@ noncomputable def RandomSystem.unsetProbability {D' : Domain (Σ i, X i) (Σ i, 
   (G.sLaw (DDE.ofQueries xs).1 xs.length).mass fun h => ∀ z ∈ h, z.2.2.2 = false
 
 /-- Before any query, the MBO is unset. -/
-theorem RandomSystem.unsetProbability_nil {D' : Domain (Σ i, X i) (Σ i, withMBO Y i)}
+lemma RandomSystem.unsetProbability_nil {D' : Domain (Σ i, X i) (Σ i, withMBO Y i)}
     (G : RandomSystem (Σ i, X i) (Σ i, withMBO Y i) D') : G.unsetProbability [] = 1 := by
   -- The environment asking no queries is compatible with G: it never asks.
   have hc : G.Compatible (DDE.ofQueries ([] : List (Σ i, X i))).1 := by
@@ -543,7 +543,7 @@ variable {E : List (Σ i, X i) → Prop} {m : ℕ} {hE : ∀ h, E h → h.length
 
 /-- A random system on the input domain admits the fixed queries of a possible transcript of
 another one. -/
-theorem RandomSystem.compatible_fixedQueries {B : Type} [Fintype B]
+lemma RandomSystem.compatible_fixedQueries {B : Type} [Fintype B]
     (R : RandomSystem (Σ i, X i) B (Domain.ofInputs E m hE))
     {T : RandomSystem (Σ i, X i) (Σ i, Y i) (Domain.ofInputs E m hE)}
     {h : List ((Σ i, X i) × Σ i, Y i)} (hT : T h ≠ 0) :
@@ -579,7 +579,7 @@ open scoped Classical in
 /-- **Winning is one minus the unset mass**: the winning probability of a deterministic
 distinguisher is one minus the mass of its transcripts on which the MBO stays unset, which on
 each transcript it may produce is the mass of the game with the MBO unset. -/
-theorem RandomSystem.exists_unset_winProbability
+lemma RandomSystem.exists_unset_winProbability
     {G : RandomSystem (Σ i, X i) (Σ i, withMBO Y i) (Domain.ofInputs E m hE)}
     (hG : G.RepliesAtQueriedInterface) (hm : G.MonotoneMBO) (D : DDD I X Y) (hD : IsDDD D)
     (hdc : (Domain.ofInputs E m hE : Domain (Σ i, X i) (Σ i, Y i)).DecisionCompatible D) :

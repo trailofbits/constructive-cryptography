@@ -78,7 +78,7 @@ def tensorInputs : (Σ l, twoFam U Y l) ≃
 abbrev tensorOutputs := (tensorInputs (U := V) (Y := X)).symm
 
 /-- Completed parallel histories are exactly pairs of completed component histories. -/
-theorem replies_tensorRaw_iff
+lemma replies_tensorRaw_iff
     (a : InsideOutsideSystem O J (U ∘ Sum.inl) (V ∘ Sum.inl) (X ∘ Sum.inl) (Y ∘ Sum.inl))
     (b : InsideOutsideSystem O' J' (U ∘ Sum.inr) (V ∘ Sum.inr) (X ∘ Sum.inr) (Y ∘ Sum.inr))
     (h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))) :
@@ -98,7 +98,7 @@ theorem replies_tensorRaw_iff
 
 /-! ## Projections of joint histories -/
 
-theorem outsideInputs_left (xs : List (Σ l, twoFam U Y l)) :
+lemma outsideInputs_left (xs : List (Σ l, twoFam U Y l)) :
     restrict none ((outsideInputs xs).map (sumAlphabet U).symm) =
       outsideInputs (restrict none (xs.map tIn)) := by
   induction xs using List.reverseRecOn with
@@ -109,7 +109,7 @@ theorem outsideInputs_left (xs : List (Σ l, twoFam U Y l)) :
     rcases x with ⟨⟨_ | ⟨⟨⟩⟩, (o | o)⟩, u⟩ <;>
       simp [outsideInputs, splitIn, sumAlphabet, tIn, restrict_cons_self, restrict_cons_ne]
 
-theorem outsideInputs_right (xs : List (Σ l, twoFam U Y l)) :
+lemma outsideInputs_right (xs : List (Σ l, twoFam U Y l)) :
     restrict (some ()) ((outsideInputs xs).map (sumAlphabet U).symm) =
       outsideInputs (restrict (some ()) (xs.map tIn)) := by
   induction xs using List.reverseRecOn with
@@ -120,7 +120,7 @@ theorem outsideInputs_right (xs : List (Σ l, twoFam U Y l)) :
     rcases x with ⟨⟨_ | ⟨⟨⟩⟩, (o | o)⟩, u⟩ <;>
       simp [outsideInputs, splitIn, sumAlphabet, tIn, restrict_cons_self, restrict_cons_ne]
 
-theorem insideQueries_left (ys : List (Σ l, twoFam V X l)) :
+lemma insideQueries_left (ys : List (Σ l, twoFam V X l)) :
     restrict none ((insideQueries ys).map (sumAlphabet X).symm) =
       insideQueries (restrict none (ys.map tensorOutputs.symm)) := by
   induction ys using List.reverseRecOn with
@@ -132,7 +132,7 @@ theorem insideQueries_left (ys : List (Σ l, twoFam V X l)) :
       simp [insideQueries, splitIn, sumAlphabet, tensorInputs, tIn, restrict_cons_self,
         restrict_cons_ne]
 
-theorem insideQueries_right (ys : List (Σ l, twoFam V X l)) :
+lemma insideQueries_right (ys : List (Σ l, twoFam V X l)) :
     restrict (some ()) ((insideQueries ys).map (sumAlphabet X).symm) =
       insideQueries (restrict (some ()) (ys.map tensorOutputs.symm)) := by
   induction ys using List.reverseRecOn with
@@ -155,7 +155,7 @@ variable {O O' J J' : Type} {U V : O ⊕ O' → Type} {X Y : J ⊕ J' → Type}
   {β : InsideOutsideSystem O' J' (U ∘ Sum.inr) (V ∘ Sum.inr) (X ∘ Sum.inr) (Y ∘ Sum.inr)}
   {bα bβ : ℕ}
 
-theorem parallelLeft_snd {A B C E : Type} {h : List ((Two A C) × (Two B E))}
+lemma parallelLeft_snd {A B C E : Type} {h : List ((Two A C) × (Two B E))}
     (hh : RandomSystem.parallelConsistent h) :
     (RandomSystem.parallelLeft h).map Prod.snd = restrict none (h.map Prod.snd) := by
   induction h with
@@ -166,7 +166,7 @@ theorem parallelLeft_snd {A B C E : Type} {h : List ((Two A C) × (Two B E))}
     rcases z with ⟨⟨_ | ⟨⟩, x⟩, ⟨_ | ⟨⟩, y⟩⟩ <;>
       simp_all [RandomSystem.parallelLeft]
 
-theorem parallelRight_snd {A B C E : Type} {h : List ((Two A C) × (Two B E))}
+lemma parallelRight_snd {A B C E : Type} {h : List ((Two A C) × (Two B E))}
     (hh : RandomSystem.parallelConsistent h) :
     (RandomSystem.parallelRight h).map Prod.snd = restrict (some ()) (h.map Prod.snd) := by
   induction h with
@@ -178,7 +178,7 @@ theorem parallelRight_snd {A B C E : Type} {h : List ((Two A C) × (Two B E))}
       simp_all [RandomSystem.parallelRight]
 
 /-- The component answering the next input is admitting it. -/
-theorem tensor_admits_left (hα : IsDDC bα α) (hβ : IsDDC bβ β)
+lemma tensor_admits_left (hα : IsDDC bα α) (hβ : IsDDC bβ β)
     {h : List (Σ l : Two (O ⊕ O') (J ⊕ J'), twoFam U Y l)}
     {z : Σ l : Two (O ⊕ O') (J ⊕ J'), twoFam U Y l} {a}
     (inv : TInv α β h) (hadm : Admits (tensorRaw α β) h z) (hz : tIn z = ⟨none, a⟩) :
@@ -200,7 +200,7 @@ theorem tensor_admits_left (hα : IsDDC bα α) (hβ : IsDDC bβ β)
     · rw [hl] at hl'; simp at hl'
   · cases hz
 
-theorem tensor_admits_right (hα : IsDDC bα α) (hβ : IsDDC bβ β)
+lemma tensor_admits_right (hα : IsDDC bα α) (hβ : IsDDC bβ β)
     {h : List (Σ l : Two (O ⊕ O') (J ⊕ J'), twoFam U Y l)}
     {z : Σ l : Two (O ⊕ O') (J ⊕ J'), twoFam U Y l} {a}
     (inv : TInv α β h) (hadm : Admits (tensorRaw α β) h z) (hz : tIn z = ⟨some (), a⟩) :
@@ -222,14 +222,14 @@ theorem tensor_admits_right (hα : IsDDC bα α) (hβ : IsDDC bβ β)
       show admitAfter (replyLabel β (hB h)) ⟨some (), o⟩
       rw [hj]; rfl
 
-theorem tensorRaw_silentAtEmpty (α : InsideOutsideSystem O J (U ∘ Sum.inl) (V ∘ Sum.inl) (X ∘ Sum.inl) (Y ∘ Sum.inl))
+lemma tensorRaw_silentAtEmpty (α : InsideOutsideSystem O J (U ∘ Sum.inl) (V ∘ Sum.inl) (X ∘ Sum.inl) (Y ∘ Sum.inl))
     (β : InsideOutsideSystem O' J' (U ∘ Sum.inr) (V ∘ Sum.inr) (X ∘ Sum.inr) (Y ∘ Sum.inr)) :
     SilentAtEmpty (tensorRaw α β) := by
   simp [SilentAtEmpty, tensorRaw, relabel, pair, parAll]
 
 /-- A canonical converter answers the next input of an admitted transcript exactly when the
 input is admitted and the converter answers it. -/
-theorem canon_snoc_dom_iff {O J : Type} {U V : O → Type} {X Y : J → Type}
+lemma canon_snoc_dom_iff {O J : Type} {U V : O → Type} {X Y : J → Type}
     {c : InsideOutsideSystem O J U V X Y} (hc : SilentAtEmpty c)
     {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))} (ha : Admitted converterAdmits h)
     (hr : Replies c (h.map Prod.fst) (h.map Prod.snd)) (x : Σ l, twoFam U Y l) :
@@ -246,7 +246,7 @@ theorem canon_snoc_dom_iff {O J : Type} {U V : O → Type} {X Y : J → Type}
     exact ⟨fun h => absurd h Part.not_none_dom, fun h => absurd (hx.mpr h.1) hd⟩
 
 /-- The components of a joint transcript of `α ⊗ β`. -/
-theorem replies_tensorL_split
+lemma replies_tensorL_split
     {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))}
     (hr : Replies (SystemAlgebra.tensorL α β) (h.map Prod.fst) (h.map Prod.snd)) :
     Admitted converterAdmits h ∧
@@ -283,7 +283,7 @@ theorem replies_tensorL_split
 
 /-- **The parallel composition of DDCs from `E₁` to `F₁` and from `E₂` to `F₂` is a DDC
 from `E₁ ∥ E₂` to `F₁ ∥ F₂`**, with the larger of the two inside-query bounds. -/
-theorem IsDDCFrom.tensorL {E₁ : List (Σ j, (X ∘ Sum.inl) j) → Prop}
+lemma IsDDCFrom.tensorL {E₁ : List (Σ j, (X ∘ Sum.inl) j) → Prop}
     {E₂ : List (Σ j, (X ∘ Sum.inr) j) → Prop} {F₁ : List (Σ o, (U ∘ Sum.inl) o) → Prop}
     {F₂ : List (Σ o, (U ∘ Sum.inr) o) → Prop}
     (hα : IsDDCFrom E₁ F₁ bα α) (hβ : IsDDCFrom E₂ F₂ bβ β) :
@@ -374,7 +374,7 @@ theorem IsDDCFrom.tensorL {E₁ : List (Σ j, (X ∘ Sum.inl) j) → Prop}
       rw [hrF] at hF₂
       exact hF₂.resolve_left (outsideInputs_ne_nil hadmβ hax)
 
-theorem parallelInputs_length_le {I J : Type} {F : I ⊕ J → Type}
+lemma parallelInputs_length_le {I J : Type} {F : I ⊕ J → Type}
     {E₁ : List (Σ i, F (.inl i)) → Prop} {E₂ : List (Σ j, F (.inr j)) → Prop} {m₁ m₂ : ℕ}
     (hE₁ : ∀ h, E₁ h → h.length ≤ m₁) (hE₂ : ∀ h, E₂ h → h.length ≤ m₂) (h : List (Σ l, F l))
     (hh : parallelInputs E₁ E₂ h) : h.length ≤ m₁ + m₂ := by
@@ -392,7 +392,7 @@ theorem parallelInputs_length_le {I J : Type} {F : I ⊕ J → Type}
 
 /-- Two domains that contain every nonempty history of at most `k` queries contain it in
 parallel. -/
-theorem parallelInputs_of_length_le {I J : Type} {F : I ⊕ J → Type}
+lemma parallelInputs_of_length_le {I J : Type} {F : I ⊕ J → Type}
     {E₁ : List (Σ i, F (.inl i)) → Prop} {E₂ : List (Σ j, F (.inr j)) → Prop} {k : ℕ}
     (h₁ : ∀ xs, xs ≠ [] → xs.length ≤ k → E₁ xs)
     (h₂ : ∀ xs, xs ≠ [] → xs.length ≤ k → E₂ xs) :
@@ -409,7 +409,7 @@ theorem parallelInputs_of_length_le {I J : Type} {F : I ⊕ J → Type}
     · exact Or.inr (h₂ _ he (by omega))
 
 /-- The queries at a left label of a parallel history are those of its left projection. -/
-theorem restrict_restrict_sumAlphabet {I J : Type} {F : I ⊕ J → Type} (i : I)
+lemma restrict_restrict_sumAlphabet {I J : Type} {F : I ⊕ J → Type} (i : I)
     (ys : List (Σ l, F l)) :
     restrict i (restrict none (ys.map (sumAlphabet F).symm)) = restrict (Sum.inl i) ys := by
   induction ys with
@@ -427,7 +427,7 @@ theorem restrict_restrict_sumAlphabet {I J : Type} {F : I ⊕ J → Type} (i : I
         ys.map (sumAlphabet F).symm)) = restrict (Sum.inl i) (⟨Sum.inr j, x⟩ :: ys)
       rw [restrict_cons_ne (by simp), restrict_cons_ne (by simp), ih]
 
-theorem parallelInputs_nonempty_prefix {I J : Type} {F : I ⊕ J → Type}
+lemma parallelInputs_nonempty_prefix {I J : Type} {F : I ⊕ J → Type}
     {E₁ : List (Σ i, F (.inl i)) → Prop} {E₂ : List (Σ j, F (.inr j)) → Prop}
     (hE₁ : ∀ {p h}, p <+: h → p ≠ [] → E₁ h → E₁ p) (hE₂ : ∀ {p h}, p <+: h → p ≠ [] → E₂ h → E₂ p) :
     ¬ parallelInputs E₁ E₂ [] ∧
@@ -448,14 +448,14 @@ end TensorDomain
 
 /-! ## Parallel and serial wiring -/
 
-theorem tensorRaw_mono {O O' J J' : Type} {U V : O ⊕ O' → Type} {X Y : J ⊕ J' → Type}
+lemma tensorRaw_mono {O O' J J' : Type} {U V : O ⊕ O' → Type} {X Y : J ⊕ J' → Type}
     {a a' : InsideOutsideSystem O J (U ∘ Sum.inl) (V ∘ Sum.inl) (X ∘ Sum.inl) (Y ∘ Sum.inl)}
     {b b' : InsideOutsideSystem O' J' (U ∘ Sum.inr) (V ∘ Sum.inr) (X ∘ Sum.inr) (Y ∘ Sum.inr)}
     (ha : ∀ h y, y ∈ a h → y ∈ a' h) (hb : ∀ h y, y ∈ b h → y ∈ b' h) :
     ∀ h y, y ∈ tensorRaw a b h → y ∈ tensorRaw a' b' h :=
   relabel_mono (pair_mono ha hb) _ _
 
-theorem Replies.serialM_mono {O M J : Type} {U V : O → Type}
+lemma Replies.serialM_mono {O M J : Type} {U V : O → Type}
     {Xm Ym : M → Type} {X Y : J → Type}
     {a a' : InsideOutsideSystem O M U V Xm Ym} {b b' : InsideOutsideSystem M J Xm Ym X Y}
     (ha : ∀ h y, y ∈ a h → y ∈ a' h) (hb : ∀ h y, y ∈ b h → y ∈ b' h)
@@ -467,7 +467,7 @@ section TensorWiring
 variable {O O' J J' : Type} {U V : O ⊕ O' → Type} {Xi Yi : J ⊕ J' → Type}
 
 /-- Parallel wiring respects equality of completed component histories. -/
-theorem replies_tensorRaw_congr
+lemma replies_tensorRaw_congr
     {a a' : InsideOutsideSystem O J (U ∘ Sum.inl) (V ∘ Sum.inl) (Xi ∘ Sum.inl) (Yi ∘ Sum.inl)}
     {b b' : InsideOutsideSystem O' J' (U ∘ Sum.inr) (V ∘ Sum.inr) (Xi ∘ Sum.inr) (Yi ∘ Sum.inr)}
     (ha : ∀ xs ys, Replies a xs ys ↔ Replies a' xs ys)
@@ -480,7 +480,7 @@ theorem replies_tensorRaw_congr
   rw [replies_tensorRaw_iff, replies_tensorRaw_iff, ha, hb]
 
 /-- **Canonical restriction commutes with parallel wiring** on admitted histories. -/
-theorem replies_tensorRaw_canon_iff {bP bQ : ℕ}
+lemma replies_tensorRaw_canon_iff {bP bQ : ℕ}
     {P : InsideOutsideSystem O J (U ∘ Sum.inl) (V ∘ Sum.inl) (Xi ∘ Sum.inl) (Yi ∘ Sum.inl)}
     {Q : InsideOutsideSystem O' J' (U ∘ Sum.inr) (V ∘ Sum.inr) (Xi ∘ Sum.inr) (Yi ∘ Sum.inr)}
     (hP : IsDDC bP (canon P)) (hQ : IsDDC bQ (canon Q)) :
@@ -546,7 +546,7 @@ variable {O O' M M' J J' : Type} {U V : O ⊕ O' → Type}
     {ba bb bc bd : ℕ}
 
 /-- Serial and parallel composition of partial converters satisfy interchange. -/
-theorem IsDDC.trim_serialM_tensorL (ha : IsDDC ba a) (hb : IsDDC bb b)
+lemma IsDDC.trim_serialM_tensorL (ha : IsDDC ba a) (hb : IsDDC bb b)
     (hc : IsDDC bc c) (hd : IsDDC bd d) :
     trim (serialM (SystemAlgebra.tensorL a b) (SystemAlgebra.tensorL c d)) =
       SystemAlgebra.tensorL (trim (serialM a c)) (trim (serialM b d)) := by
@@ -602,7 +602,7 @@ noncomputable def tensorPDC {bα bβ : ℕ}
 
 /-- On admitted joint transcripts, the parallel composition of presentations has the product
 of the component behaviors. -/
-theorem behaviorMass_tensorPDC {bα bβ : ℕ}
+lemma behaviorMass_tensorPDC {bα bβ : ℕ}
     {R : RandomSystem (Σ l, twoFam U₁ Y₁ l) (Σ l, twoFam V₁ X₁ l)
       (Domain.converter E₁ m₁ hE₁ F₁ n₁ hF₁)}
     {S : RandomSystem (Σ l, twoFam U₂ Y₂ l) (Σ l, twoFam V₂ X₂ l)
@@ -655,7 +655,7 @@ noncomputable def tensor (α : PDCBehavior O J U₁ V₁ X₁ Y₁ E₁ m₁ hE�
   ofPDC (tensorPDC α.2.choose_spec.choose β.2.choose_spec.choose)
 
 /-- **The parallel composition of presentations presents the parallel composition.** -/
-theorem tensor_presents (α : PDCBehavior O J U₁ V₁ X₁ Y₁ E₁ m₁ hE₁ F₁ n₁ hF₁)
+lemma tensor_presents (α : PDCBehavior O J U₁ V₁ X₁ Y₁ E₁ m₁ hE₁ F₁ n₁ hF₁)
     (β : PDCBehavior O' J' U₂ V₂ X₂ Y₂ E₂ m₂ hE₂ F₂ n₂ hF₂) {bα bβ : ℕ}
     (P : Distribution.ProbDist {a : InsideOutsideSystem O J U₁ V₁ X₁ Y₁ // IsDDCFrom E₁ F₁ bα a})
     (Q : Distribution.ProbDist {b : InsideOutsideSystem O' J' U₂ V₂ X₂ Y₂ // IsDDCFrom E₂ F₂ bβ b})
@@ -670,7 +670,7 @@ theorem tensor_presents (α : PDCBehavior O J U₁ V₁ X₁ Y₁ E₁ m₁ hE�
 
 /-- The parallel composition of two DDCs as behaviors is the behavior of their parallel
 composition. -/
-theorem tensor_ofDDC {a : InsideOutsideSystem O J U₁ V₁ X₁ Y₁}
+lemma tensor_ofDDC {a : InsideOutsideSystem O J U₁ V₁ X₁ Y₁}
     {c : InsideOutsideSystem O' J' U₂ V₂ X₂ Y₂} {bα bβ : ℕ}
     (ha : IsDDCFrom E₁ F₁ bα a) (hc : IsDDCFrom E₂ F₂ bβ c) :
     tensor (ofDDC a ha : PDCBehavior O J U₁ V₁ X₁ Y₁ E₁ m₁ hE₁ F₁ n₁ hF₁)
@@ -702,7 +702,7 @@ variable {J J' : Type} [Fintype J] [Fintype J'] {X₁ Y₁ : J → Type} {X₂ Y
 
 /-- **The parallel composition of the identities** from `E₁` to `E₁` and from `E₂` to `E₂` is the
 identity from `E₁ ∥ E₂` to `E₁ ∥ E₂`. -/
-theorem PDCBehavior.tensor_id (hE₁' : ¬ E₁ [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E₁ h → E₁ p)
+lemma PDCBehavior.tensor_id (hE₁' : ¬ E₁ [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E₁ h → E₁ p)
     (hE₂' : ¬ E₂ [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E₂ h → E₂ p) :
     PDCBehavior.tensor (PDCBehavior.id (Y := Y₁) (m := m₁) (hE := hE₁) hE₁')
       (PDCBehavior.id (Y := Y₂) (m := m₂) (hE := hE₂) hE₂') =
@@ -779,14 +779,14 @@ end Interchange
 
 
 /-- Trimming either constituent preserves the completed parallel behavior. -/
-theorem trim_pair_trim {A B C D : Type} (s : System A B) (t : System C D) :
+lemma trim_pair_trim {A B C D : Type} (s : System A B) (t : System C D) :
     trim (pair (trim s) (trim t)) = trim (pair s t) := by
   apply EqOnReachable.trim_eq
   · exact EqOnReachable.parAll (fun k => by cases k <;> exact trim_behEq _)
   · exact Part.not_none_dom
   · exact Part.not_none_dom
 
-theorem RepliesAtQueriedInterface.trim {I : Type} {X Y : I → Type} {R : InterfaceSystem I X Y}
+lemma RepliesAtQueriedInterface.trim {I : Type} {X Y : I → Type} {R : InterfaceSystem I X Y}
     (hR : RepliesAtQueriedInterface R) : RepliesAtQueriedInterface (SystemAlgebra.trim R) := by
   intro h x y hy
   unfold SystemAlgebra.trim at hy
@@ -795,7 +795,7 @@ theorem RepliesAtQueriedInterface.trim {I : Type} {X Y : I → Type} {R : Interf
   · exact (Part.not_none_dom hy.1).elim
 
 /-- The component tag and its original interface label both accompany the reply. -/
-theorem RepliesAtQueriedInterface.parallel {I J : Type} {X Y : I ⊕ J → Type}
+lemma RepliesAtQueriedInterface.parallel {I J : Type} {X Y : I ⊕ J → Type}
     {R : InterfaceSystem I (X ∘ Sum.inl) (Y ∘ Sum.inl)}
     {S : InterfaceSystem J (X ∘ Sum.inr) (Y ∘ Sum.inr)}
     (hR : RepliesAtQueriedInterface R) (hS : RepliesAtQueriedInterface S) :
@@ -823,7 +823,7 @@ variable {O O' J J' : Type} {U V : O ⊕ O' → Type} {X Y : J ⊕ J' → Type}
     {ba bb : ℕ}
 
 /-- Each converter interacts only with its own component. -/
-theorem apply_tensorRaw_pair (ha : IsDDC ba α) (hb : IsDDC bb β)
+lemma apply_tensorRaw_pair (ha : IsDDC ba α) (hb : IsDDC bb β)
     (R : InterfaceSystem J (X ∘ Sum.inl) (Y ∘ Sum.inl))
     (S : InterfaceSystem J' (X ∘ Sum.inr) (Y ∘ Sum.inr)) :
     apply (tensorRaw α β) (relabel (pair R S) (sumAlphabet X).symm (sumAlphabet Y)) =
@@ -844,7 +844,7 @@ theorem apply_tensorRaw_pair (ha : IsDDC ba α) (hb : IsDDC bb β)
     rcases z with ⟨(i | j), z⟩ <;> rfl
 
 /-- The canonical tensor has the same completed partial behavior. -/
-theorem trim_apply_tensorL_pair (ha : IsDDC ba α) (hb : IsDDC bb β)
+lemma trim_apply_tensorL_pair (ha : IsDDC ba α) (hb : IsDDC bb β)
     {R : InterfaceSystem J (X ∘ Sum.inl) (Y ∘ Sum.inl)}
     {S : InterfaceSystem J' (X ∘ Sum.inr) (Y ∘ Sum.inr)}
     (hR : RepliesAtQueriedInterface R) (hS : RepliesAtQueriedInterface S) :

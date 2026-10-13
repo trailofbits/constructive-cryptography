@@ -39,7 +39,7 @@ namespace Probability
 
 /-- If an index type is empty, then the image of `Set.univ` under any function
 out of it is empty. -/
-theorem image_univ_eq_empty_of_not_nonempty {ι : Type*} {α : Type*}
+lemma image_univ_eq_empty_of_not_nonempty {ι : Type*} {α : Type*}
     (f : ι → α) (hι : ¬ Nonempty ι) :
     f '' Set.univ = (∅ : Set α) := by
   ext x
@@ -51,7 +51,7 @@ theorem image_univ_eq_empty_of_not_nonempty {ι : Type*} {α : Type*}
 
 /-- A pointwise upper bound on an `sSup` image over `Set.univ` also covers the
 empty-index case when the upper bound is nonnegative. -/
-theorem sSup_image_univ_le_of_forall {ι : Type*} (f : ι → ℝ) {a : ℝ}
+lemma sSup_image_univ_le_of_forall {ι : Type*} (f : ι → ℝ) {a : ℝ}
     (ha : 0 ≤ a) (h : ∀ i, f i ≤ a) :
     sSup (f '' Set.univ) ≤ a := by
   by_cases hι : Nonempty ι
@@ -89,7 +89,7 @@ noncomputable def statDist {A : Type*} (X Y : Distribution A) : ℝ :=
   ∑ a ∈ (X - Y).support, max (X a - Y a) 0
 
 /-- On a `Fintype` carrier, `statDist` is the sum over all points. -/
-theorem statDist_eq_sum_univ {A : Type*} [Fintype A] (X Y : Distribution A) :
+lemma statDist_eq_sum_univ {A : Type*} [Fintype A] (X Y : Distribution A) :
     statDist X Y = ∑ a : A, max (X a - Y a) 0 := by
   classical
   rw [statDist]
@@ -104,7 +104,7 @@ of the difference: the summand `max (X a - Y a) 0` vanishes wherever
 and the working form on carriers that are genuinely infinite — transcript
 spaces `List (X × Option Y)`, system laws `Distribution (DDS X Y)`.  Taking
 `s = Finset.univ` recovers `statDist_eq_sum_univ`. -/
-theorem statDist_eq_sum_of_support_subset {A : Type*} (X Y : Distribution A)
+lemma statDist_eq_sum_of_support_subset {A : Type*} (X Y : Distribution A)
     {s : Finset A} (hs : (X - Y).support ⊆ s) :
     statDist X Y = ∑ a ∈ s, max (X a - Y a) 0 := by
   rw [statDist]
@@ -114,12 +114,12 @@ theorem statDist_eq_sum_of_support_subset {A : Type*} (X Y : Distribution A)
   rw [h, max_self]
 
 /-- Each summand of `statDist` is nonnegative, so the whole sum is. -/
-theorem statDist_nonneg {A : Type*} (X Y : Distribution A) :
+lemma statDist_nonneg {A : Type*} (X Y : Distribution A) :
     0 ≤ statDist X Y :=
   Finset.sum_nonneg fun _ _ => le_max_right _ _
 
 /-- `δ(X, X) = 0`. -/
-theorem statDist_self {A : Type*} (X : Distribution A) :
+lemma statDist_self {A : Type*} (X : Distribution A) :
     statDist X X = 0 := by
   simp [statDist]
 
@@ -130,7 +130,7 @@ Paper: For distributions of equal weight,
 
 No `Fintype`: the two sums run over `X.support ∪ Y.support`, which already
 covers both differences. -/
-theorem statDist_symm_of_eq_weight {A : Type*}
+lemma statDist_symm_of_eq_weight {A : Type*}
     (X Y : Distribution A) (h : X.weight = Y.weight) :
     statDist X Y = statDist Y X := by
   have : DecidableEq A := Classical.decEq A
@@ -174,7 +174,7 @@ Like the `Fintype` form it needs neither non-negativity nor equal weight: the
 pointwise lattice identity `max (x − y) 0 = x − min x y` is all it uses.  The
 asymmetry the paper notes for unequal weight is visible — the right-hand side
 carries `|P|`, not `|Q|`. -/
-theorem statDist_eq_weight_sub_sum_min_of_support_subset {A : Type*}
+lemma statDist_eq_weight_sub_sum_min_of_support_subset {A : Type*}
     (P Q : Distribution A) {s : Finset A} (hP : P.support ⊆ s)
     (hQ : Q.support ⊆ s) :
     statDist P Q = P.weight - ∑ a ∈ s, min (P a) (Q a) := by
@@ -193,7 +193,7 @@ theorem statDist_eq_weight_sub_sum_min_of_support_subset {A : Type*}
     ← Distribution.weight_eq_sum_of_support_subset P hP]
 
 /-- The `Fintype` instance of the min form: take `s = Finset.univ`. -/
-theorem statDist_eq_weight_sub_sum_min {A : Type*} [Fintype A] (X Y : Distribution A) :
+lemma statDist_eq_weight_sub_sum_min {A : Type*} [Fintype A] (X Y : Distribution A) :
     statDist X Y = X.weight - ∑ a : A, min (X a) (Y a) :=
   statDist_eq_weight_sub_sum_min_of_support_subset X Y
     (fun a _ => Finset.mem_univ a) (fun a _ => Finset.mem_univ a)
@@ -240,7 +240,7 @@ theorem statDist_eq_half_sum_abs_of_weight_eq {A : Type*} [Fintype A]
 No `Fintype`: all three sums run over the union of the three difference
 supports, and the estimate is the pointwise
 `max (a - c) 0 ≤ max (a - b) 0 + max (b - c) 0`. -/
-theorem statDist_triangle {A : Type*}
+lemma statDist_triangle {A : Type*}
     (X Y Z : Distribution A) :
     statDist X Z ≤ statDist X Y + statDist Y Z := by
   have : DecidableEq A := Classical.decEq A
@@ -267,7 +267,7 @@ theorem statDist_triangle {A : Type*}
 No `Fintype`: both sides are read on `X.support ∪ Y.support`, which already
 covers the difference's support.  The generality is what lets the bound reach
 the carriers the random-systems layer uses, where no `Fintype` exists. -/
-theorem statDist_le_weight {A : Type*}
+lemma statDist_le_weight {A : Type*}
     {X Y : Distribution A} (hX : X.NonNeg) (hY : Y.NonNeg) :
     statDist X Y ≤ X.weight := by
   have : DecidableEq A := Classical.decEq A
@@ -280,7 +280,7 @@ theorem statDist_le_weight {A : Type*}
 
 /-- **Event-mass bound by statistical distance.**
 For any event, the one-sided gap between its masses is bounded by statistical distance. -/
-theorem mass_tsub_mass_le_statDist {A : Type*}
+lemma mass_tsub_mass_le_statDist {A : Type*}
     (X Y : Distribution A) (P : A → Prop) :
     X.mass P - Y.mass P ≤ statDist X Y := by
   classical
@@ -298,7 +298,7 @@ theorem mass_tsub_mass_le_statDist {A : Type*}
 
 /-- **Real-valued event-mass bound by statistical distance.**
 This is the real-valued form of `mass_tsub_mass_le_statDist`. -/
-theorem mass_sub_mass_le_statDist {A : Type*}
+lemma mass_sub_mass_le_statDist {A : Type*}
     (X Y : Distribution A) (P : A → Prop) :
     ((X.mass P : ℝ) - (Y.mass P : ℝ)) ≤ (statDist X Y : ℝ) :=
   mass_tsub_mass_le_statDist X Y P
@@ -312,7 +312,7 @@ is the shared source `μ`, and the bound is the probability that the two
 readings of one sampled atom part company.  Both sides are pushforwards of the
 *same* `μ` — that is what makes it an equality of couplings rather than a
 triangle inequality, and it is why no weight or `Fintype` hypothesis appears. -/
-theorem statDist_fTransform_le_mass_of_eq_off {A B : Type*} {μ : Distribution A}
+lemma statDist_fTransform_le_mass_of_eq_off {A B : Type*} {μ : Distribution A}
     (hμ : μ.NonNeg) (F G : A → B) (P : A → Prop)
     (hoff : ∀ a ∈ μ.support, ¬ P a → F a = G a) :
     statDist (Distribution.fTransform F μ) (Distribution.fTransform G μ)
@@ -392,7 +392,7 @@ theorem abs_expect_sub_expect_le_mul_statDist {A : Type*}
 the first distribution is heavier. This is the canonical binary hypothesis
 test induced by the two laws. Finite supports suffice even when the sample
 carrier itself is infinite. -/
-theorem statDist_eq_mass_sub_mass_pos {A : Type*}
+lemma statDist_eq_mass_sub_mass_pos {A : Type*}
     (X Y : Distribution A) :
     (statDist X Y : ℝ) =
       (X.mass (fun a => Y a < X a) : ℝ) -
@@ -437,7 +437,7 @@ noncomputable def avgSuccessProb {A : Type*} (X Y : Distribution A) (g : A → B
 /-- Structural form of `avgSuccessProb`: eliminating the complement event turns the
 success probability into the signed mass gap of the acceptance set of `g`,
 shifted by the total weight of `Y`.  Unconditional. -/
-theorem avgSuccessProb_eq_mass_sub_mass_add_weight_div_two {A : Type*}
+lemma avgSuccessProb_eq_mass_sub_mass_add_weight_div_two {A : Type*}
     (X Y : Distribution A) (g : A → Bool) :
     avgSuccessProb X Y g =
       (X.mass (fun a => g a = true) - Y.mass (fun a => g a = true) +
@@ -509,7 +509,7 @@ theorem sSup_avgSuccessProb_eq_half_add_half_statDist {A : Type*}
         le_csSup hbdd ⟨_, Set.mem_univ _, rfl⟩
 
 /-- A one-sided ratio lower bound controls the pointwise deficit. -/
-theorem sub_le_mul_of_one_sub_mul_le {a b eps : ℝ}
+lemma sub_le_mul_of_one_sub_mul_le {a b eps : ℝ}
     (h_lower : (1 - eps) * b ≤ a) :
     b - a ≤ eps * b := by
   nlinarith [h_lower]
@@ -525,7 +525,7 @@ noncomputable def probBad {A : Type*}
 /-- Adding deterministic terminal side information does
 not change the mass of a bad event that ignores that terminal component. -/
 @[simp]
-theorem probBad_const_pair {A U : Type*}
+lemma probBad_const_pair {A U : Type*}
     (D : Distribution A) (B : A → Prop) (u : U) :
     probBad (Distribution.fTransform (fun a : A => (a, u)) D)
         (fun p : A × U => B p.1) =

@@ -43,7 +43,7 @@ def sumEquiv {I J K L : Type} {U : I → Type} {V : J → Type} {X : K → Type}
     · simpa only [Sigma.eta] using congrArg (fun z : Σ l, Y l =>
         (⟨.inr z.1, z.2⟩ : Σ j, Sum.rec V Y j)) (g.apply_symm_apply ⟨l, x⟩)
 
-theorem sumEquiv_label {A B C D : Interface} (e : A.I ≃ B.I) (e' : C.I ≃ D.I)
+lemma sumEquiv_label {A B C D : Interface} (e : A.I ≃ B.I) (e' : C.I ≃ D.I)
     (f : (Σ i, A.X i) ≃ (Σ j, B.X j)) (f' : (Σ i, C.X i) ≃ (Σ j, D.X j))
     (hf : ∀ x, (f x).1 = e x.1) (hf' : ∀ x, (f' x).1 = e' x.1)
     (x : Σ i, Sum.rec A.X C.X i) :
@@ -52,7 +52,7 @@ theorem sumEquiv_label {A B C D : Interface} (e : A.I ≃ B.I) (e' : C.I ≃ D.I
   · exact congrArg Sum.inl (hf ⟨i, x⟩)
   · exact congrArg Sum.inr (hf' ⟨j, x⟩)
 
-theorem parallelDomain_sumEquiv {A B C D : Interface}
+lemma parallelDomain_sumEquiv {A B C D : Interface}
     (f : (Σ i, A.X i) ≃ (Σ j, B.X j)) (f' : (Σ i, C.X i) ≃ (Σ j, D.X j))
     (hd : ∀ h, B.domain (h.map f) ↔ A.domain h)
     (hd' : ∀ h, D.domain (h.map f') ↔ C.domain h)
@@ -79,7 +79,7 @@ variable {A B C D : Interface}
     (e' : C.I ≃ D.I) (f' : (Σ i, C.X i) ≃ (Σ j, D.X j)) (g' : (Σ i, C.Y i) ≃ (Σ j, D.Y j))
     (hf' : ∀ x, (f' x).1 = e' x.1) (hg' : ∀ y, (g' y).1 = e' y.1)
 
-theorem tensorRaw_rename_forwardAll :
+lemma tensorRaw_rename_forwardAll :
     (tensorRaw (relabel (forwardAll B.I B.X B.Y) (outsideMap f) (outsideMap g.symm))
       (relabel (forwardAll D.I D.X D.Y) (outsideMap f') (outsideMap g'.symm)) :
       InsideOutsideSystem (A.I ⊕ C.I) (B.I ⊕ D.I) (Sum.rec A.X C.X) (Sum.rec A.Y C.Y)
@@ -95,7 +95,7 @@ theorem tensorRaw_rename_forwardAll :
     rcases z with ⟨(_ | ⟨⟨⟩⟩), ⟨⟨(_ | ⟨⟨⟩⟩), i⟩, z⟩⟩ <;> rfl
 
 include hf hg hf' hg' in
-theorem tensorL_renameConverter :
+lemma tensorL_renameConverter :
     (tensorL (renameConverter f g.symm) (renameConverter f' g'.symm) :
       InsideOutsideSystem (A.I ⊕ C.I) (B.I ⊕ D.I) (Sum.rec A.X C.X) (Sum.rec A.Y C.Y)
         (Sum.rec B.X D.X) (Sum.rec B.Y D.Y)) =
@@ -125,7 +125,7 @@ namespace SystemAlgebra.Interface
 
 open Classical CategoryTheory
 
-theorem parallelConverter_rename {A B C D : Interface}
+lemma parallelConverter_rename {A B C D : Interface}
     (e : A.I ≃ B.I) (f : (Σ i, A.X i) ≃ (Σ j, B.X j)) (g : (Σ i, A.Y i) ≃ (Σ j, B.Y j))
     (hf : ∀ x, (f x).1 = e x.1) (hg : ∀ y, (g y).1 = e y.1)
     (hd : ∀ h, B.domain (h.map f) ↔ A.domain h)

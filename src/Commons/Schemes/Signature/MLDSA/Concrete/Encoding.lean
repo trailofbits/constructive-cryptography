@@ -90,20 +90,20 @@ def unpackNatArray (count width : Nat) (bytes : ByteArray) : Array Nat :=
   Array.ofFn fun idx : Fin count =>
     Nat.ofDigits 2 <| List.ofFn fun j : Fin width => bits.getD (idx.val * width + j.val) 0
 
-theorem bytesToBits_size (bytes : ByteArray) :
+lemma bytesToBits_size (bytes : ByteArray) :
     (bytesToBits bytes).size = bytes.size * 8 := by
   simp [bytesToBits]
 
-theorem bytesToBits_getElem (bytes : ByteArray) (i : Nat)
+lemma bytesToBits_getElem (bytes : ByteArray) (i : Nat)
     (hi : i < (bytesToBits bytes).size) :
     (bytesToBits bytes)[i]'hi = bitOf (getByteD bytes (i / 8)) (i % 8) := by
   simp only [bytesToBits, Array.getElem_ofFn]
 
-theorem unpackNatArray_size (count width : Nat) (bytes : ByteArray) :
+lemma unpackNatArray_size (count width : Nat) (bytes : ByteArray) :
     (unpackNatArray count width bytes).size = count := by
   simp [unpackNatArray]
 
-theorem unpackNatArray_getElem (count width : Nat) (bytes : ByteArray) (i : Nat)
+lemma unpackNatArray_getElem (count width : Nat) (bytes : ByteArray) (i : Nat)
     (hi : i < (unpackNatArray count width bytes).size) :
     (unpackNatArray count width bytes)[i]'hi =
       Nat.ofDigits 2 (List.ofFn fun j : Fin width =>
@@ -142,18 +142,18 @@ the integer window `[b - (2^width - 1), b]`. For the FIPS-204 `z` range `[-γ₁
 centered infinity norm of at most `γ₁`, independent of the (opaque) SHAKE byte input. -/
 
 /-- Each `bitOf` value is a single bit, hence `< 2`. -/
-theorem bitOf_lt_two (b : UInt8) (j : Nat) : bitOf b j < 2 := by
+lemma bitOf_lt_two (b : UInt8) (j : Nat) : bitOf b j < 2 := by
   unfold bitOf
   rw [UInt8.toNat_and, show (1 : UInt8).toNat = 1 from rfl, show (2 : ℕ) = 2 ^ 1 from rfl]
   exact Nat.and_lt_two_pow _ (by norm_num)
 
 /-- Total `Array.getD` lookup with a default agrees with indexing within bounds. -/
-theorem array_getD_eq_getElem {α : Type} (a : Array α) {i : Nat}
+lemma array_getD_eq_getElem {α : Type} (a : Array α) {i : Nat}
     (fallback : α) (h : i < a.size) : a.getD i fallback = a[i] := by
   simp [Array.getD, h]
 
 /-- Every bit produced by `bytesToBits` is `< 2`. -/
-theorem bytesToBits_getD_lt_two (bytes : ByteArray) (i : Nat) :
+lemma bytesToBits_getD_lt_two (bytes : ByteArray) (i : Nat) :
     (bytesToBits bytes).getD i 0 < 2 := by
   by_cases hi : i < (bytesToBits bytes).size
   · rw [array_getD_eq_getElem (a := bytesToBits bytes) (i := i) (fallback := 0) hi]
@@ -164,7 +164,7 @@ theorem bytesToBits_getD_lt_two (bytes : ByteArray) (i : Nat) :
 
 /-- Each value produced by `unpackNatArray` at width `width` is `< 2 ^ width`: it is the
 `ofDigits` of `width` bits, each `< 2`. -/
-theorem unpackNatArray_getD_lt (count width : Nat) (bytes : ByteArray) (i : Nat) :
+lemma unpackNatArray_getD_lt (count width : Nat) (bytes : ByteArray) (i : Nat) :
     (unpackNatArray count width bytes).getD i 0 < 2 ^ width := by
   by_cases hi : i < (unpackNatArray count width bytes).size
   · rw [array_getD_eq_getElem (a := unpackNatArray count width bytes) (i := i) (fallback := 0) hi]
@@ -185,7 +185,7 @@ theorem unpackNatArray_getD_lt (count width : Nat) (bytes : ByteArray) (i : Nat)
 
 /-- The `i`-th coefficient of `bitUnpackPoly bytes a b` is `b - v` cast into `Coeff`, where `v` is a
 `width`-bit value (`width = rangeWidth a b`); in particular `0 ≤ v < 2 ^ width`. -/
-theorem bitUnpackPoly_get (bytes : ByteArray) (a b : ℤ) (i : Fin ringDegree) :
+lemma bitUnpackPoly_get (bytes : ByteArray) (a b : ℤ) (i : Fin ringDegree) :
     ∃ v : ℕ, v < 2 ^ rangeWidth a b ∧
       (bitUnpackPoly bytes a b).get i = ((b - (v : ℤ) : ℤ) : Coeff) := by
   refine ⟨(unpackNatArray ringDegree (rangeWidth a b) bytes).getD i.val 0,
@@ -207,7 +207,7 @@ def packBitsList (vals : Array Nat) (width : Nat) : List Nat :=
     (List.range width).map fun bit => (vals.getD i 0 / 2 ^ bit) % 2
 
 /-- A `for`-loop over a list that appends a per-element list to the accumulator array. -/
-theorem forIn_push_flatten (l : List Nat) (g : Nat → List Nat) (a : Array Nat) :
+lemma forIn_push_flatten (l : List Nat) (g : Nat → List Nat) (a : Array Nat) :
     (Id.run do
       let mut acc : Array Nat := a
       for i in l do
@@ -263,7 +263,7 @@ theorem forIn_push_flatten (l : List Nat) (g : Nat → List Nat) (a : Array Nat)
         = Array.mk (g x) ++ Array.mk (xs.flatMap g) from by simp, Array.append_assoc]
 
 /-- The bytes produced by `packNatArray` are `bitsToBytes` applied to the little-endian bit list. -/
-theorem packNatArray_eq (vals : Array Nat) (width : Nat) :
+lemma packNatArray_eq (vals : Array Nat) (width : Nat) :
     packNatArray vals width = bitsToBytes (Array.mk (packBitsList vals width)) := by
   unfold packNatArray packBitsList
   rw [show (Id.run do
@@ -286,12 +286,12 @@ theorem packNatArray_eq (vals : Array Nat) (width : Nat) :
   simp [Array.mkEmpty]
 
 /-- Length of `packBitsList`: `vals.size` chunks of `width` bits each. -/
-theorem packBitsList_length (vals : Array Nat) (width : Nat) :
+lemma packBitsList_length (vals : Array Nat) (width : Nat) :
     (packBitsList vals width).length = vals.size * width := by
   simp [packBitsList, List.length_flatMap, Nat.mul_comm]
 
 /-- The `(i * width + bit)`-th bit of `packBitsList vals width` is bit `bit` of `vals[i]`. -/
-theorem getD_flatMap_const_len {α} [Inhabited α] (n width : Nat) (h : Nat → Nat → α)
+lemma getD_flatMap_const_len {α} [Inhabited α] (n width : Nat) (h : Nat → Nat → α)
     (i bit : Nat) (hi : i < n) (hbit : bit < width) :
     ((List.range n).flatMap fun i => (List.range width).map fun b => h i b).getD (i * width + bit)
       default = h i bit := by
@@ -315,14 +315,14 @@ theorem getD_flatMap_const_len {α} [Inhabited α] (n width : Nat) (h : Nat → 
       rw [List.getD_eq_getElem _ _ (by simp [hbit])]
       simp
 
-theorem packBitsList_getD (vals : Array Nat) (width i bit : Nat)
+lemma packBitsList_getD (vals : Array Nat) (width i bit : Nat)
     (hi : i < vals.size) (hbit : bit < width) :
     (packBitsList vals width).getD (i * width + bit) 0 = (vals.getD i 0 / 2 ^ bit) % 2 :=
   getD_flatMap_const_len vals.size width (fun i b => (vals.getD i 0 / 2 ^ b) % 2) i bit hi hbit
 
 /-! ## `bitsToBytes` / `bytesToBits` roundtrip helpers (size a multiple of 8) -/
 
-theorem bitOf_packByte_fin :
+lemma bitOf_packByte_fin :
     ∀ bits : Fin 8 → Fin 2, ∀ j : Fin 8,
       bitOf (packByte fun i => (bits i).val) j.val = (bits j).val := by
   intro bits j
@@ -349,23 +349,23 @@ theorem bitOf_packByte_fin :
     Nat.ofDigits_div_pow_eq_ofDigits_drop j.val (by norm_num) digits hdigits,
     Nat.ofDigits_mod_eq_head!, hhead, Nat.mod_eq_of_lt (bits j).isLt]
 
-theorem bytearray_mk_getByteD {arr : Array UInt8} {i : Nat} (h : i < arr.size) :
+lemma bytearray_mk_getByteD {arr : Array UInt8} {i : Nat} (h : i < arr.size) :
     getByteD (ByteArray.mk arr) i = arr[i] := by
   unfold getByteD
   have hsz : i < (ByteArray.mk arr).size := by simpa [ByteArray.size] using h
   rw [getElem?_pos (ByteArray.mk arr) i hsz]; rfl
 
-theorem getByteD_bitsToBytes (bits : Array Nat) (b : Nat)
+lemma getByteD_bitsToBytes (bits : Array Nat) (b : Nat)
     (hb : b < (bits.size + 7) / 8) :
     getByteD (bitsToBytes bits) b = packByte fun j => bits.getD (8 * b + j.val) 0 := by
   unfold bitsToBytes
   rw [bytearray_mk_getByteD (by simpa using hb), Array.getElem_ofFn]
 
-theorem bitsToBytes_size_of_mod (bits : Array Nat) (h : bits.size % 8 = 0) :
+lemma bitsToBytes_size_of_mod (bits : Array Nat) (h : bits.size % 8 = 0) :
     (bitsToBytes bits).size = bits.size / 8 := by
   simp [bitsToBytes, ByteArray.size]; omega
 
-theorem bytesToBits_bitsToBytes_getD {bits : Array Nat} {i : Nat}
+lemma bytesToBits_bitsToBytes_getD {bits : Array Nat} {i : Nat}
     (hsize : bits.size % 8 = 0)
     (hbits : ∀ j, j < bits.size → bits.getD j 0 < 2)
     (hi : i < bits.size) :
@@ -388,7 +388,7 @@ theorem bytesToBits_bitsToBytes_getD {bits : Array Nat} {i : Nat}
 
 /-! ## `Nat.ofDigits` bit-decomposition recovery -/
 
-theorem ofDigits_bits (v width : Nat) (hv : v < 2 ^ width) :
+lemma ofDigits_bits (v width : Nat) (hv : v < 2 ^ width) :
     Nat.ofDigits 2 (List.ofFn fun j : Fin width => (v / 2 ^ j.val) % 2) = v := by
   induction width generalizing v with
   | zero => simp only [pow_zero] at hv; interval_cases v; simp
@@ -408,7 +408,7 @@ theorem ofDigits_bits (v width : Nat) (hv : v < 2 ^ width) :
 /-- Generic `unpackNatArray ∘ packNatArray` roundtrip: at any index `i < vals.size`, decoding a
 `width`-bit packing recovers `vals[i]`, provided every entry fits in `width` bits and
 `vals.size * width` is a multiple of 8 (so the byte packing has no relevant padding). -/
-theorem unpackNatArray_packNatArray_getD (vals : Array Nat) (width i : Nat)
+lemma unpackNatArray_packNatArray_getD (vals : Array Nat) (width i : Nat)
     (hi : i < vals.size) (hwpos : 0 < width)
     (hmod : vals.size * width % 8 = 0)
     (hvalsbnd : ∀ j, j < vals.size → vals.getD j 0 < 2 ^ width) :
@@ -457,7 +457,7 @@ theorem unpackNatArray_packNatArray_getD (vals : Array Nat) (width i : Nat)
 
 /-- `simpleBitUnpackPoly` inverts `simpleBitPackPoly` on polynomials whose coefficients fit in
 `simpleWidth b` bits: `(f.get i).val < 2 ^ simpleWidth b` for all `i`. -/
-theorem simpleBitUnpackPoly_simpleBitPackPoly (f : Rq) (b : Nat)
+lemma simpleBitUnpackPoly_simpleBitPackPoly (f : Rq) (b : Nat)
     (hf : ∀ i : Fin ringDegree, (f.get i).val < 2 ^ simpleWidth b) :
     simpleBitUnpackPoly (simpleBitPackPoly f b) b = f := by
   have hwpos : 0 < simpleWidth b := by unfold simpleWidth; omega
@@ -555,7 +555,7 @@ back out. When the per-polynomial codec is a left inverse on the valid range, th
 too, hence `packPolyVector` is injective on valid vectors. -/
 
 /-- Total `ByteArray` lookup agrees with the `toList` lookup. -/
-theorem ba_getElem?_getD (ba : ByteArray) (i : Nat) :
+lemma ba_getElem?_getD (ba : ByteArray) (i : Nat) :
     ba[i]?.getD 0 = ba.data.toList[i]?.getD 0 := by
   have hlen : ba.data.toList.length = ba.size := by rw [Array.length_toList]; rfl
   by_cases h : i < ba.size
@@ -565,14 +565,14 @@ theorem ba_getElem?_getD (ba : ByteArray) (i : Nat) :
   · rw [getElem?_neg ba i h, List.getElem?_eq_none_iff.mpr (by omega), Option.getD_none]
 
 /-- The size of `simpleBitPackPoly` is independent of the polynomial. -/
-theorem simpleBitPackPoly_size (f : Rq) (m : Nat) :
+lemma simpleBitPackPoly_size (f : Rq) (m : Nat) :
     (simpleBitPackPoly f m).size = (ringDegree * simpleWidth m + 7) / 8 := by
   unfold simpleBitPackPoly
   rw [packNatArray_eq]
   simp only [bitsToBytes, ByteArray.size, Array.size_ofFn, List.size_toArray, packBitsList_length]
 
 /-- `(packPolyVector v pack).data.toList` is the concatenation of the per-element packings. -/
-theorem packPolyVector_data_toList {k : Nat} (v : Vector Rq k) (pack : Rq → ByteArray) :
+lemma packPolyVector_data_toList {k : Nat} (v : Vector Rq k) (pack : Rq → ByteArray) :
     (packPolyVector v pack).data.toList
       = (v.toList.map fun f => (pack f).data.toList).flatten := by
   unfold packPolyVector concatByteArrays
@@ -589,7 +589,7 @@ theorem packPolyVector_data_toList {k : Nat} (v : Vector Rq k) (pack : Rq → By
   simp only [List.nil_append, List.map_map]
   rfl
 
-theorem getElem_flatten_const {α} (chunks : List (List α)) (sz : Nat)
+lemma getElem_flatten_const {α} (chunks : List (List α)) (sz : Nat)
     (hsz : ∀ c ∈ chunks, c.length = sz)
     (i j : Nat) (hi : i < chunks.length) (hj : j < sz) :
     chunks.flatten[i * sz + j]? = (chunks[i]'hi)[j]? := by
@@ -611,7 +611,7 @@ theorem getElem_flatten_const {α} (chunks : List (List α)) (sz : Nat)
 
 /-- Slicing chunk `i` out of `packPolyVector` recovers the `i`-th packing, when every chunk has the
 common size `chunkSize`. -/
-theorem sliceByteArray_packPolyVector {k : Nat} (v : Vector Rq k) (pack : Rq → ByteArray)
+lemma sliceByteArray_packPolyVector {k : Nat} (v : Vector Rq k) (pack : Rq → ByteArray)
     (chunkSize : Nat) (hpack : ∀ f, (pack f).size = chunkSize) (i : Fin k) :
     sliceByteArray (packPolyVector v pack) (i.val * chunkSize) chunkSize = pack (v.get i) := by
   have hmkdata : ∀ a : Array UInt8, (ByteArray.mk a).data = a := fun _ => rfl
@@ -640,7 +640,7 @@ theorem sliceByteArray_packPolyVector {k : Nat} (v : Vector Rq k) (pack : Rq →
 
 /-- `unpackPolyVector` inverts `packPolyVector` on vectors whose every component is fixed by the
 per-polynomial codec roundtrip. -/
-theorem unpackPolyVector_packPolyVector {k chunkSize : Nat} (v : Vector Rq k)
+lemma unpackPolyVector_packPolyVector {k chunkSize : Nat} (v : Vector Rq k)
     (pack : Rq → ByteArray) (unpack : ByteArray → Rq)
     (hpack : ∀ f, (pack f).size = chunkSize)
     (hroundtrip : ∀ i : Fin k, unpack (pack (v.get i)) = v.get i) :
@@ -659,7 +659,7 @@ def w1Encode (p : Params) (w1 : Vector High p.k) : List Byte :=
   byteArrayToList (w1EncodeBytes p w1)
 
 /-- `byteArrayToList` is injective. -/
-theorem byteArrayToList_injective : Function.Injective byteArrayToList := by
+lemma byteArrayToList_injective : Function.Injective byteArrayToList := by
   intro a b hab
   apply ByteArray.ext
   apply Array.ext'
@@ -668,7 +668,7 @@ theorem byteArrayToList_injective : Function.Injective byteArrayToList := by
 /-- `w1Encode` is injective on the range of commitment vectors whose every coefficient fits in the
 `w₁` packer's bit width `simpleWidth ((q-1)/(2γ₂) - 1)`. The `w₁` packer is `simpleBitPackPoly` at
 that width, which is inverted by `simpleBitUnpackPoly` on this range. -/
-theorem w1Encode_injOn (p : Params) :
+lemma w1Encode_injOn (p : Params) :
     Set.InjOn (w1Encode p)
       { w : Vector High p.k | ∀ i : Fin p.k, ∀ c : Fin ringDegree,
           ((w.get i).get c).val < 2 ^ simpleWidth ((modulus - 1) / (2 * p.gamma2) - 1) } := by
@@ -813,14 +813,14 @@ def secretKeyBytes (p : Params) : Nat :=
 def signatureBytes (p : Params) : Nat := p.lambda / 4 + p.l * polyZPackedBytes p + (p.omega + p.k)
 
 /-- The size of `bitPackPoly` is independent of the polynomial. -/
-theorem bitPackPoly_size (f : Rq) (a b : ℤ) :
+lemma bitPackPoly_size (f : Rq) (a b : ℤ) :
     (bitPackPoly f a b).size = (ringDegree * rangeWidth a b + 7) / 8 := by
   unfold bitPackPoly
   rw [packNatArray_eq]
   simp only [bitsToBytes, ByteArray.size, Array.size_ofFn, List.size_toArray, packBitsList_length]
 
 /-- A vector of polynomials packed at `n` bytes each has `k · n` bytes. -/
-theorem packPolyVector_size {k : Nat} (v : Vector Rq k) (pack : Rq → ByteArray) {n : Nat}
+lemma packPolyVector_size {k : Nat} (v : Vector Rq k) (pack : Rq → ByteArray) {n : Nat}
     (h : ∀ f, (pack f).size = n) : (packPolyVector v pack).size = k * n := by
   have hlen := congrArg List.length (packPolyVector_data_toList v pack)
   rw [Array.length_toList] at hlen
@@ -831,40 +831,40 @@ theorem packPolyVector_size {k : Nat} (v : Vector Rq k) (pack : Rq → ByteArray
       exact h f
   rw [hconst, List.map_const', List.sum_replicate, Vector.length_toList, smul_eq_mul]
 
-theorem polyT1Pack_size (f : Power2High) : (polyT1Pack f).size = polyT1PackedBytes := by
+lemma polyT1Pack_size (f : Power2High) : (polyT1Pack f).size = polyT1PackedBytes := by
   rw [polyT1Pack, simpleBitPackPoly_size, polyT1PackedBytes, ringDegree]
   omega
 
-theorem polyEtaPack_size (p : Params) (f : Rq) : (polyEtaPack p f).size = polyEtaPackedBytes p := by
+lemma polyEtaPack_size (p : Params) (f : Rq) : (polyEtaPack p f).size = polyEtaPackedBytes p := by
   rw [polyEtaPack, bitPackPoly_size, polyEtaPackedBytes, ringDegree]
   omega
 
-theorem polyT0Pack_size (f : Rq) : (polyT0Pack f).size = polyT0PackedBytes := by
+lemma polyT0Pack_size (f : Rq) : (polyT0Pack f).size = polyT0PackedBytes := by
   rw [polyT0Pack, bitPackPoly_size, polyT0PackedBytes, ringDegree]
   omega
 
-theorem polyZPack_size (p : Params) (f : Rq) : (polyZPack p f).size = polyZPackedBytes p := by
+lemma polyZPack_size (p : Params) (f : Rq) : (polyZPack p f).size = polyZPackedBytes p := by
   rw [polyZPack, bitPackPoly_size, polyZPackedBytes, ringDegree]
   omega
 
-theorem vectorToByteArray_size {n : Nat} (v : Bytes n) : (vectorToByteArray v).size = n := by
+lemma vectorToByteArray_size {n : Nat} (v : Bytes n) : (vectorToByteArray v).size = n := by
   simp [vectorToByteArray, ByteArray.size]
 
 /-- An encoded public key has `publicKeyBytes p` bytes. -/
-theorem pkEncode_size (p : Params) (rho : Bytes 32) (t1 : Vector Power2High p.k) :
+lemma pkEncode_size (p : Params) (rho : Bytes 32) (t1 : Vector Power2High p.k) :
     (pkEncode p rho t1).size = publicKeyBytes p := by
   rw [pkEncode, ByteArray.size_append, vectorToByteArray_size,
     packPolyVector_size _ _ polyT1Pack_size, publicKeyBytes]
 
 /-- An encoded secret key has `secretKeyBytes p` bytes. -/
-theorem skEncode_size (p : Params) (rho key : Bytes 32) (tr : Bytes 64) (s1 : RqVec p.l)
+lemma skEncode_size (p : Params) (rho key : Bytes 32) (tr : Bytes 64) (s1 : RqVec p.l)
     (s2 t0 : RqVec p.k) : (skEncode p rho key tr s1 s2 t0).size = secretKeyBytes p := by
   simp only [skEncode, ByteArray.size_append, vectorToByteArray_size,
     packPolyVector_size _ _ (polyEtaPack_size p), packPolyVector_size _ _ polyT0Pack_size,
     secretKeyBytes]
 
 /-- An encoded signature has `signatureBytes p` bytes. -/
-theorem sigEncode_size (p : Params) (cTilde : CommitHashBytes p) (z : RqVec p.l)
+lemma sigEncode_size (p : Params) (cTilde : CommitHashBytes p) (z : RqVec p.l)
     (h : Vector Hint p.k) : (sigEncode p cTilde z h).size = signatureBytes p := by
   rw [sigEncode, ByteArray.size_append, ByteArray.size_append, vectorToByteArray_size,
     packPolyVector_size _ _ (polyZPack_size p), vectorToByteArray_size, signatureBytes]
@@ -881,7 +881,7 @@ is purely about the decoder's output range and holds for any byte input. -/
 /-- Decode-range infinity-norm bound for a `z`-range `bitUnpackPoly`: every coefficient of
 `bitUnpackPoly bytes (-γ + 1) γ` has centered absolute value at most `γ`, provided the bit width
 satisfies `2 ^ width = 2 γ` (true for FIPS-204 `γ₁`, a power of two) and `2 γ < q`. -/
-theorem bitUnpackPoly_z_cInfNorm_le (bytes : ByteArray) (γ : ℕ)
+lemma bitUnpackPoly_z_cInfNorm_le (bytes : ByteArray) (γ : ℕ)
     (hwidth : (2 : ℕ) ^ rangeWidth (-(γ : ℤ) + 1) (γ : ℤ) = 2 * γ)
     (hq : 2 * γ < modulus) :
     LatticeCrypto.cInfNorm (bitUnpackPoly bytes (-(γ : ℤ) + 1) (γ : ℤ)) ≤ γ := by
@@ -895,7 +895,7 @@ theorem bitUnpackPoly_z_cInfNorm_le (bytes : ByteArray) (γ : ℕ)
 
 /-- For each approved parameter set the `z`-range bit width satisfies `2 ^ width = 2 γ₁` (because
 `γ₁` is a power of two) and `2 γ₁ < q`. -/
-theorem approved_gamma1_width (p : Params) (hp : p.isApproved) :
+lemma approved_gamma1_width (p : Params) (hp : p.isApproved) :
     (2 : ℕ) ^ rangeWidth (-(p.gamma1 : ℤ) + 1) (p.gamma1 : ℤ) = 2 * p.gamma1 ∧
       2 * p.gamma1 < modulus := by
   rcases hp with rfl | rfl | rfl <;> exact ⟨rfl, by norm_num [mldsa44, mldsa65, mldsa87, ParameterSet.params, modulus]⟩

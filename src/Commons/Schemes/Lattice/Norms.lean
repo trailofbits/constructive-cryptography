@@ -54,52 +54,52 @@ returns the integer itself, following `ZMod.valMinAbs`. -/
 def centeredRepr (x : ZMod q) : ℤ := x.valMinAbs
 
 /-- The centered representative is `ZMod.valMinAbs` by definition. -/
-theorem centeredRepr_eq_valMinAbs (x : ZMod q) :
+lemma centeredRepr_eq_valMinAbs (x : ZMod q) :
     centeredRepr x = x.valMinAbs := rfl
 
 /-- Negation preserves the absolute value of the centered representative. -/
-theorem centeredRepr_natAbs_neg (x : ZMod q) :
+lemma centeredRepr_natAbs_neg (x : ZMod q) :
     (centeredRepr (-x)).natAbs = (centeredRepr x).natAbs :=
   ZMod.natAbs_valMinAbs_neg x
 
 /-- Casting the centered representative back into `ZMod q` recovers the original element. -/
-theorem centeredRepr_intCast (x : ZMod q) :
+lemma centeredRepr_intCast (x : ZMod q) :
     (x : ZMod q) = ((centeredRepr x : ℤ) : ZMod q) :=
   (ZMod.coe_valMinAbs x).symm
 
 variable [NeZero q]
 
-theorem centeredRepr_of_le {x : ZMod q} (h : (x.val : ℤ) ≤ (q : ℤ) / 2) :
+lemma centeredRepr_of_le {x : ZMod q} (h : (x.val : ℤ) ≤ (q : ℤ) / 2) :
     centeredRepr x = x.val := by
   rw [centeredRepr, ZMod.valMinAbs_def_pos, if_pos (by omega)]
 
-theorem centeredRepr_of_gt {x : ZMod q} (h : (q : ℤ) / 2 < (x.val : ℤ)) :
+lemma centeredRepr_of_gt {x : ZMod q} (h : (q : ℤ) / 2 < (x.val : ℤ)) :
     centeredRepr x = (x.val : ℤ) - q := by
   rw [centeredRepr, ZMod.valMinAbs_def_pos, if_neg (by omega)]
 
 /-- The centered representative is always at most `q / 2`. -/
-theorem centeredRepr_upper_bound (x : ZMod q) : centeredRepr x ≤ (q : ℤ) / 2 := by
+lemma centeredRepr_upper_bound (x : ZMod q) : centeredRepr x ≤ (q : ℤ) / 2 := by
   have := (ZMod.valMinAbs_mem_Ioc x).2
   unfold centeredRepr
   omega
 
 /-- The centered representative has absolute value at most `q / 2`. -/
-theorem centeredRepr_abs_le (x : ZMod q) : (centeredRepr x).natAbs ≤ q / 2 :=
+lemma centeredRepr_abs_le (x : ZMod q) : (centeredRepr x).natAbs ≤ q / 2 :=
   ZMod.natAbs_valMinAbs_le x
 
 /-- Twice the centered representative lies in the interval used by `ZMod.valMinAbs`. -/
-theorem centeredRepr_mem_Ioc (x : ZMod q) :
+lemma centeredRepr_mem_Ioc (x : ZMod q) :
     centeredRepr x * 2 ∈ Set.Ioc (-(q : ℤ)) q :=
   ZMod.valMinAbs_mem_Ioc x
 
 /-- Casting an integer already in the centered interval preserves that integer. -/
-theorem centeredRepr_intCast_eq (z : ℤ)
+lemma centeredRepr_intCast_eq (z : ℤ)
     (hzlo : -(q : ℤ) < z * 2) (hzhi : z * 2 ≤ q) :
     centeredRepr ((z : ZMod q)) = z :=
   (ZMod.valMinAbs_spec ((z : ZMod q)) z).2 ⟨rfl, ⟨hzlo, hzhi⟩⟩
 
 /-- A small-enough integer is unchanged by casting into `ZMod q` and taking `centeredRepr`. -/
-theorem centeredRepr_intCast_eq_of_natAbs_le (z : ℤ) {b : ℕ}
+lemma centeredRepr_intCast_eq_of_natAbs_le (z : ℤ) {b : ℕ}
     (hbound : z.natAbs ≤ b) (hbq : 2 * b < q) :
     centeredRepr ((z : ZMod q)) = z := by
   apply centeredRepr_intCast_eq
@@ -109,13 +109,13 @@ theorem centeredRepr_intCast_eq_of_natAbs_le (z : ℤ) {b : ℕ}
     omega
 
 /-- A `natAbs` bound yields both lower and upper integer bounds. -/
-theorem neg_le_and_le_of_natAbs_le {z : ℤ} {b : ℕ}
+lemma neg_le_and_le_of_natAbs_le {z : ℤ} {b : ℕ}
     (hbound : z.natAbs ≤ b) : -(b : ℤ) ≤ z ∧ z ≤ b := by
   constructor <;> omega
 
 /-- Lower and upper integer bounds yield a `natAbs` bound. Inverse of
 `neg_le_and_le_of_natAbs_le`. -/
-theorem natAbs_le_of_neg_le_and_le {z : ℤ} {b : ℕ}
+lemma natAbs_le_of_neg_le_and_le {z : ℤ} {b : ℕ}
     (hl : -(b : ℤ) ≤ z) (hu : z ≤ b) : z.natAbs ≤ b := by
   omega
 
@@ -162,7 +162,7 @@ def intConvCoeff (f g : Fin n → ZMod q) (k : Fin n) : ℤ :=
 
 /-- `negacyclicConvCoeff` is the `ZMod q` reduction of the integer convolution `intConvCoeff`
 of the centered lifts. -/
-theorem negacyclicConvCoeff_eq_intCast (f g : Fin n → ZMod q) (k : Fin n) :
+lemma negacyclicConvCoeff_eq_intCast (f g : Fin n → ZMod q) (k : Fin n) :
     negacyclicConvCoeff f g k = ((intConvCoeff f g k : ℤ) : ZMod q) := by
   rw [intConvCoeff, negacyclicConvCoeff, Int.cast_sum]
   apply Finset.sum_congr rfl
@@ -178,7 +178,7 @@ theorem negacyclicConvCoeff_eq_intCast (f g : Fin n → ZMod q) (k : Fin n) :
 /-- The integer negacyclic convolution at any output index is bounded in absolute value by
 `(∑ |centeredRepr (f i)|) * bg`, where `bg` bounds every `|centeredRepr (g j)|`. The negacyclic
 wrap index `(i + j) % n = k` matches at most one `j` per `i`, removing the spurious factor `n`. -/
-theorem intConvCoeff_natAbs_le (f g : Fin n → ZMod q) (k : Fin n) (bg : ℕ)
+lemma intConvCoeff_natAbs_le (f g : Fin n → ZMod q) (k : Fin n) (bg : ℕ)
     (hg : ∀ j, (centeredRepr (g j)).natAbs ≤ bg) :
     (intConvCoeff f g k).natAbs ≤ (∑ i : Fin n, (centeredRepr (f i)).natAbs) * bg := by
   refine (Int.natAbs_sum_le _ _).trans ?_
@@ -215,7 +215,7 @@ theorem intConvCoeff_natAbs_le (f g : Fin n → ZMod q) (k : Fin n) (bg : ℕ)
 
 /-- The `k`-th coefficient of the negacyclic product equals the negacyclic convolution of the
 component coefficient functions. -/
-theorem mul_get_eq_convCoeff (f g : (vectorNegacyclicRing (ZMod q) n).Poly) (i : Fin n) :
+lemma mul_get_eq_convCoeff (f g : (vectorNegacyclicRing (ZMod q) n).Poly) (i : Fin n) :
     (f * g).get i = negacyclicConvCoeff f.get g.get i := by
   rw [vectorRing_mul_apply]
   exact vectorKernel_mul_get f g i
@@ -230,24 +230,24 @@ def cInfNorm (p : Poly (ZMod q) n) : ℕ :=
 def l1Norm (p : Poly (ZMod q) n) : ℕ :=
   l1NormOf (vectorBackend (ZMod q) n) (zmodCenteredCoeffView q) p
 
-theorem cInfNorm_le_iff {p : Poly (ZMod q) n} {b : ℕ} :
+lemma cInfNorm_le_iff {p : Poly (ZMod q) n} {b : ℕ} :
     cInfNorm p ≤ b ↔ ∀ i : Fin n, (centeredRepr (p.get i)).natAbs ≤ b := by
   simp [cInfNorm, cInfNormOf, vectorBackend, zmodCenteredCoeffView, Finset.sup_le_iff]
 
-theorem cInfNorm_le_of_coeff_le {p : Poly (ZMod q) n} {b : ℕ}
+lemma cInfNorm_le_of_coeff_le {p : Poly (ZMod q) n} {b : ℕ}
     (h : ∀ i : Fin n, (centeredRepr (p.get i)).natAbs ≤ b) : cInfNorm p ≤ b :=
   cInfNorm_le_iff.mpr h
 
-theorem coeff_le_cInfNorm (p : Poly (ZMod q) n) (i : Fin n) :
+lemma coeff_le_cInfNorm (p : Poly (ZMod q) n) (i : Fin n) :
     (centeredRepr (p.get i)).natAbs ≤ cInfNorm p :=
   Finset.le_sup (f := fun i => (centeredRepr (p.get i)).natAbs) (Finset.mem_univ i)
 
 /-- Every polynomial has centered infinity norm at most `q / 2`. -/
-theorem cInfNorm_le_halfq (p : Poly (ZMod q) n) : cInfNorm p ≤ q / 2 :=
+lemma cInfNorm_le_halfq (p : Poly (ZMod q) n) : cInfNorm p ≤ q / 2 :=
   cInfNorm_le_iff.mpr (fun i => centeredRepr_abs_le (p.get i))
 
 /-- Negation preserves the centered infinity norm. -/
-@[simp] theorem cInfNorm_neg (f : Poly (ZMod q) n) : cInfNorm (-f) = cInfNorm f := by
+@[simp] lemma cInfNorm_neg (f : Poly (ZMod q) n) : cInfNorm (-f) = cInfNorm f := by
   simp only [cInfNorm, cInfNormOf, vectorBackend, zmodCenteredCoeffView]
   congr 1
   ext i
@@ -255,12 +255,12 @@ theorem cInfNorm_le_halfq (p : Poly (ZMod q) n) : cInfNorm p ≤ q / 2 :=
   rw [hneg, centeredRepr_natAbs_neg]
 
 /-- The `ℓ₁` norm expands as the sum of the centered absolute values of the coefficients. -/
-theorem l1Norm_eq_sum (p : Poly (ZMod q) n) :
+lemma l1Norm_eq_sum (p : Poly (ZMod q) n) :
     l1Norm p = ∑ i : Fin n, (centeredRepr (p.get i)).natAbs := by
   unfold l1Norm l1NormOf
   rfl
 
-theorem l1Norm_le_of_cInfNorm_le {p : Poly (ZMod q) n} {b : ℕ}
+lemma l1Norm_le_of_cInfNorm_le {p : Poly (ZMod q) n} {b : ℕ}
     (h : cInfNorm p ≤ b) : l1Norm p ≤ n * b := by
   unfold l1Norm l1NormOf
   calc
@@ -281,7 +281,7 @@ ML-DSA `‖c · s‖∞ ≤ τ · η` challenge-product bound. -/
 `ℤ_q[X] / (X^n + 1)`, the centered `ℓ∞` norm of the product is bounded by the `ℓ₁` norm of the
 first factor times the `ℓ∞` norm of the second. Unconditional: the no-wraparound argument applies
 when `l1Norm f * cInfNorm g < q / 2`, and otherwise `cInfNorm_le_halfq` already gives the bound. -/
-theorem cInfNorm_mul_le (f g : (vectorNegacyclicRing (ZMod q) n).Poly) :
+lemma cInfNorm_mul_le (f g : (vectorNegacyclicRing (ZMod q) n).Poly) :
     cInfNorm (f * g) ≤ l1Norm f * cInfNorm g := by
   set bound := l1Norm f * cInfNorm g with hbound
   rw [cInfNorm_le_iff]
@@ -310,12 +310,12 @@ def cInfNorm (v : PolyVec backend.Poly k) : ℕ :=
 
 /-- A polynomial vector has centered infinity norm at most `b` exactly when each component
 polynomial does. -/
-theorem cInfNorm_le_iff {v : PolyVec backend.Poly k} {b : ℕ} :
+lemma cInfNorm_le_iff {v : PolyVec backend.Poly k} {b : ℕ} :
     PolyVec.cInfNorm ops v ≤ b ↔ ∀ j : Fin k, ops.cInfNorm (v.get j) ≤ b := by
   simp [PolyVec.cInfNorm, Finset.sup_le_iff]
 
 /-- Each component polynomial is bounded by the centered infinity norm of the whole vector. -/
-theorem component_cInfNorm_le (v : PolyVec backend.Poly k) (j : Fin k) :
+lemma component_cInfNorm_le (v : PolyVec backend.Poly k) (j : Fin k) :
     ops.cInfNorm (v.get j) ≤ PolyVec.cInfNorm ops v :=
   Finset.le_sup (f := fun j => ops.cInfNorm (v.get j)) (Finset.mem_univ j)
 
@@ -333,7 +333,7 @@ def zmodPolyNormOps (q : ℕ) [NeZero q] (backend : PolyBackend (ZMod q)) : Norm
 infinity norm. Keeping this bridge at the generic layer prevents clients from unfolding an
 entire concrete ring bundle merely to expose the shared coefficient formula. -/
 @[simp]
-theorem zmodPolyNormOps_cInfNorm {q n : ℕ} [NeZero q] (p : Poly (ZMod q) n) :
+lemma zmodPolyNormOps_cInfNorm {q n : ℕ} [NeZero q] (p : Poly (ZMod q) n) :
     (zmodPolyNormOps q (vectorBackend (ZMod q) n)).cInfNorm p = cInfNorm p :=
   rfl
 

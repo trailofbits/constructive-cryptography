@@ -37,12 +37,12 @@ noncomputable def advantageDistance {X : Type*} (distinguishers : Set (X → ℝ
     ENNReal :=
   ⨆ d ∈ distinguishers, ENNReal.ofReal |d R - d S|
 
-theorem advantageDistance_le {X : Type*} {distinguishers : Set (X → ℝ)} {R S : X}
+lemma advantageDistance_le {X : Type*} {distinguishers : Set (X → ℝ)} {R S : X}
     {ε : ENNReal} (h : ∀ d ∈ distinguishers, ENNReal.ofReal |d R - d S| ≤ ε) :
     advantageDistance distinguishers R S ≤ ε :=
   iSup₂_le h
 
-theorem le_advantageDistance {X : Type*} {distinguishers : Set (X → ℝ)} {d : X → ℝ}
+lemma le_advantageDistance {X : Type*} {distinguishers : Set (X → ℝ)} {d : X → ℝ}
     (hd : d ∈ distinguishers) (R S : X) :
     ENNReal.ofReal |d R - d S| ≤ advantageDistance distinguishers R S :=
   le_iSup₂ (f := fun d (_ : d ∈ distinguishers) => ENNReal.ofReal |d R - d S|) d hd

@@ -137,18 +137,18 @@ def useHint (p : Params) (h : Hint) (r : Rq) : High :=
 def hintWeight (h : Hint) : ℕ :=
   h.toList.foldl (fun acc b => acc + cond b 1 0) 0
 
-theorem Rq.get_zero (i : Fin ringDegree) : (0 : Rq).get i = 0 :=
+lemma Rq.get_zero (i : Fin ringDegree) : (0 : Rq).get i = 0 :=
   NegacyclicRing.coeff_zero coeffRing i
 
-@[simp] theorem Rq.get_add (a b : Rq) (i : Fin ringDegree) :
+@[simp] lemma Rq.get_add (a b : Rq) (i : Fin ringDegree) :
     (a + b).get i = a.get i + b.get i :=
   NegacyclicRing.coeff_add coeffRing a b i
 
-@[simp] theorem Rq.get_neg (a : Rq) (i : Fin ringDegree) :
+@[simp] lemma Rq.get_neg (a : Rq) (i : Fin ringDegree) :
     (-a).get i = -a.get i :=
   NegacyclicRing.coeff_neg coeffRing a i
 
-@[simp] theorem Rq.get_sub (a b : Rq) (i : Fin ringDegree) :
+@[simp] lemma Rq.get_sub (a b : Rq) (i : Fin ringDegree) :
     (a - b).get i = a.get i - b.get i :=
   NegacyclicRing.coeff_sub coeffRing a b i
 
@@ -158,7 +158,7 @@ structure BalancedDecomp (alpha m : ℕ) : Prop where
   hqm1 : alpha * m = modulus - 1
   hsmall : 2 * (alpha + 1) < modulus
 
-theorem BalancedDecomp.ofApproved {p : Params} (hp : p.isApproved) :
+lemma BalancedDecomp.ofApproved {p : Params} (hp : p.isApproved) :
     BalancedDecomp (2 * p.gamma2) ((modulus - 1) / (2 * p.gamma2)) where
   hα     := by rcases hp with rfl | rfl | rfl <;> norm_num [mldsa44, mldsa65, mldsa87, ParameterSet.params, modulus]
   heven  := by simp only [even_two, Even.mul_right]
@@ -192,12 +192,12 @@ lemma hunit {ctx : BalancedDecomp alpha m} : IsUnit (alpha : Coeff) :=
 
 end BalancedDecomp
 
-theorem natCast_div_add_mod (r : Coeff) (s : ℕ) :
+lemma natCast_div_add_mod (r : Coeff) (s : ℕ) :
     s * ((r.val / s):Coeff) + ((r.val % s): Coeff) = r := by
   simpa only [Nat.cast_add, Nat.cast_mul, ZMod.natCast_zmod_val] using
     congrArg (Nat.cast : ℕ → Coeff) (Nat.div_add_mod r.val s)
 
-theorem power2RoundCoeff_eq (r : Coeff) {r1 : ℕ} {r0 : ℤ}
+lemma power2RoundCoeff_eq (r : Coeff) {r1 : ℕ} {r0 : ℤ}
   (hdecomp : power2RoundCoeff r = (r1, r0)) :
     ((power2Scale : Coeff) * (r1 : Coeff)) + r0 = r := by
   simp only [power2RoundCoeff] at hdecomp
@@ -206,7 +206,7 @@ theorem power2RoundCoeff_eq (r : Coeff) {r1 : ℕ} {r0 : ℤ}
   · exact hdam
   · ring_nf; exact hdam
 
-theorem power2RoundCoeff_bound (r : Coeff) :
+lemma power2RoundCoeff_bound (r : Coeff) :
     (power2RoundCoeff r).2.natAbs ≤ power2Scale / 2 := by
   simp only [power2RoundCoeff]
   split_ifs with h
@@ -215,7 +215,7 @@ theorem power2RoundCoeff_bound (r : Coeff) :
     rw [Int.natAbs_natCast_sub_natCast_of_le htlt.le]
     omega
 
-theorem decomposeCoeff_eq
+lemma decomposeCoeff_eq
     {alpha r1 : ℕ} (r : Coeff) {r0 : ℤ}
     (h2α : 2 * (alpha / 2) = alpha)
     (hdecomp : decomposeCoeff r (alpha / 2) = (r1, r0)) :
@@ -235,7 +235,7 @@ theorem decomposeCoeff_eq
   · rw [← hdam]; ring_nf; rw [← hwrap (q+1) hs]; push_cast; ring_nf
   · rw [← hdam]; ring
 
-theorem lowBitsCoeff_bound (r : Coeff) {r1 gamma2 : ℕ} {r0 : ℤ} (hγ : 0 < gamma2)
+lemma lowBitsCoeff_bound (r : Coeff) {r1 gamma2 : ℕ} {r0 : ℤ} (hγ : 0 < gamma2)
     (hdec : decomposeCoeff r gamma2 = (r1, r0)) :
     r0.natAbs ≤ gamma2 := by
   simp only [decomposeCoeff] at hdec
@@ -247,7 +247,7 @@ theorem lowBitsCoeff_bound (r : Coeff) {r1 gamma2 : ℕ} {r0 : ℤ} (hγ : 0 < g
     obtain ⟨rfl, rfl⟩ := hdec
   all_goals omega
 
-theorem centeredRepr_intCast_lowBitsCoeff (r : Coeff) {gamma2 : ℕ}
+lemma centeredRepr_intCast_lowBitsCoeff (r : Coeff) {gamma2 : ℕ}
     (hγ : 0 < gamma2) (hq : 2 * gamma2 < modulus) :
     centeredRepr ((lowBitsCoeff r gamma2):Coeff) = lowBitsCoeff r gamma2 := by
   have : (lowBitsCoeff r gamma2).natAbs ≤ gamma2 := by
@@ -257,26 +257,26 @@ theorem centeredRepr_intCast_lowBitsCoeff (r : Coeff) {gamma2 : ℕ}
   exact centeredRepr_intCast_eq_of_natAbs_le
     (b:=gamma2) (lowBitsCoeff r gamma2) this hq
 
-theorem power2RoundShift_high_get (r : Rq) (i : Fin ringDegree) :
+lemma power2RoundShift_high_get (r : Rq) (i : Fin ringDegree) :
     (power2RoundShift (power2RoundHigh r)).get i =
       (power2Scale : Coeff) * ((power2RoundCoeff (r.get i)).1 : Coeff) := by
   simp [power2RoundShift, power2RoundHigh]
 
-theorem power2RoundLow_get (r : Rq) (i : Fin ringDegree) :
+lemma power2RoundLow_get (r : Rq) (i : Fin ringDegree) :
     (power2RoundLow r).get i = (power2RoundCoeff (r.get i)).2 := by
   simp [power2RoundLow]
 
-theorem concretePower2Round_high_low_decomp (r : Rq) :
+lemma concretePower2Round_high_low_decomp (r : Rq) :
     power2RoundShift (power2RoundHigh r) + power2RoundLow r = r :=
   Poly.ext_get_eq fun j => by
     rw [Rq.get_add, power2RoundShift_high_get, power2RoundLow_get]
     exact power2RoundCoeff_eq (r.get j) rfl
 
-theorem concretePower2Round_remainder_eq_low (r : Rq) :
+lemma concretePower2Round_remainder_eq_low (r : Rq) :
     r - power2RoundShift (power2RoundHigh r) = power2RoundLow r :=
   sub_eq_iff_eq_add'.2 (concretePower2Round_high_low_decomp r).symm
 
-theorem concretePower2Round_bound (r : Rq) :
+lemma concretePower2Round_bound (r : Rq) :
     cInfNorm (r - power2RoundShift (power2RoundHigh r)) ≤ 2 ^ (droppedBits - 1) := by
   rw [concretePower2Round_remainder_eq_low]
   refine cInfNorm_le_of_coeff_le fun i => ?_
@@ -287,16 +287,16 @@ theorem concretePower2Round_bound (r : Rq) :
       (by norm_num [power2Scale, droppedBits, modulus])]
   exact power2RoundCoeff_bound (r.get i)
 
-theorem highBitsShift_high_get (p : Params) (r : Rq) (i : Fin ringDegree) :
+lemma highBitsShift_high_get (p : Params) (r : Rq) (i : Fin ringDegree) :
     (highBitsShift p (highBits p r)).get i =
       ((2 * p.gamma2 : ℕ) : Coeff) * (highBitsCoeff (r.get i) p.gamma2 : Coeff) := by
   simp [highBitsShift, highBits]
 
-theorem lowBits_get (p : Params) (r : Rq) (i : Fin ringDegree) :
+lemma lowBits_get (p : Params) (r : Rq) (i : Fin ringDegree) :
     (lowBits p r).get i = lowBitsCoeff (r.get i) p.gamma2 := by
   simp [lowBits]
 
-theorem concreteRounding_high_low_decomp (p : Params) (r : Rq) :
+lemma concreteRounding_high_low_decomp (p : Params) (r : Rq) :
     highBitsShift p (highBits p r) + lowBits p r = r :=
   Poly.ext_get_eq fun j => by
     rw [Rq.get_add, highBitsShift_high_get, lowBits_get]
@@ -304,7 +304,7 @@ theorem concreteRounding_high_low_decomp (p : Params) (r : Rq) :
     exact decomposeCoeff_eq (alpha := 2 * p.gamma2) (r.get j) (by omega)
       (by simp only [this]; exact Prod.eta _)
 
-theorem concreteRounding_lowBits_bound (p : Params)
+lemma concreteRounding_lowBits_bound (p : Params)
     (hγ : 0 < p.gamma2) (hq : 2 * p.gamma2 < modulus) (r : Rq) :
     cInfNorm (lowBits p r) ≤ p.gamma2 := by
   refine cInfNorm_le_of_coeff_le ?_
@@ -315,7 +315,7 @@ theorem concreteRounding_lowBits_bound (p : Params)
   rcases hdec : decomposeCoeff (r.get i) p.gamma2 with ⟨r1, r0⟩
   exact lowBitsCoeff_bound (r := r.get i) hγ hdec
 
-theorem highBitsCoeff_lt_m {alpha m : ℕ}
+lemma highBitsCoeff_lt_m {alpha m : ℕ}
     (ctx : BalancedDecomp alpha m) (r : Coeff) :
     highBitsCoeff r (alpha / 2) < m := by
   simp only [highBitsCoeff, decomposeCoeff, ctx.h2α]
@@ -340,13 +340,13 @@ theorem highBitsCoeff_lt_m {alpha m : ℕ}
     have hdiv_le := Nat.add_one_le_of_lt hlt
     exact lt_of_le_of_ne hdiv_le fun hm => hs (by rw [hm, ctx.hqm1])
 
-theorem alpha_mul_pred_m_eq {alpha m : ℕ} (ctx : BalancedDecomp alpha m) :
+lemma alpha_mul_pred_m_eq {alpha m : ℕ} (ctx : BalancedDecomp alpha m) :
     (alpha: Coeff) * ((m - 1 : ℕ) : Coeff) = (-1 : Coeff) - (alpha : Coeff) := by
   rw [Nat.cast_sub (show 1 ≤ m from ctx.hm), mul_sub, ← Nat.cast_mul,
     ctx.hqm1, Nat.cast_sub (show 1 ≤ modulus by norm_num [modulus]), ZMod.natCast_self]
   ring_nf
 
-theorem highBitsCoeff_eq_of_repr {alpha m : ℕ} (ctx : BalancedDecomp alpha m)
+lemma highBitsCoeff_eq_of_repr {alpha m : ℕ} (ctx : BalancedDecomp alpha m)
     {r : Coeff} (r1 : ℕ) (r0 : ℤ)
     (hr1 : r1 < m)
     (hr0 : r0.natAbs ≤ alpha / 2)
@@ -430,7 +430,7 @@ theorem highBitsCoeff_eq_of_repr {alpha m : ℕ} (ctx : BalancedDecomp alpha m)
         ring_nf
       · right; omega
 
-theorem alpha_le_natAbs_centeredRepr_mul
+lemma alpha_le_natAbs_centeredRepr_mul
     {alpha m : ℕ} (ctx : BalancedDecomp alpha m)
     {z : ℤ} (hz0 : 0 < z) (hzm : z.toNat < m) :
     alpha ≤ (centeredRepr ((alpha : Coeff) * (z : Coeff))).natAbs := by
@@ -448,7 +448,7 @@ theorem alpha_le_natAbs_centeredRepr_mul
     ZMod.val_natCast_of_lt (by omega)]
   omega
 
-theorem highBitsCoeff_add_eq_of_centeredRepr_lt
+lemma highBitsCoeff_add_eq_of_centeredRepr_lt
     {alpha m b : ℕ} (ctx : BalancedDecomp alpha m) (r s : Coeff)
     (hs : (centeredRepr s).natAbs ≤ b)
     (hr : (lowBitsCoeff r (alpha / 2)).natAbs < (alpha / 2) - b) :
@@ -491,7 +491,7 @@ theorem highBitsCoeff_add_eq_of_centeredRepr_lt
     · simpa [highBitsCoeff, hdecomp_r] using highBitsCoeff_lt_m ctx r
     · rw [show w - v = -(v - w) from by ring, Int.natAbs_neg]; exact hdiffbound
 
-theorem useHintCoeff_shift_sub_le
+lemma useHintCoeff_shift_sub_le
     {alpha m : ℕ} (ctx : BalancedDecomp alpha m) (hbit : Bool) (r : Coeff) :
     (centeredRepr
       (r - (alpha : Coeff) * (useHintCoeff hbit r (alpha / 2) : Coeff))).natAbs ≤
@@ -538,7 +538,7 @@ theorem useHintCoeff_shift_sub_le
             push_cast; ring
           · omega
 
-theorem highBitsCoeff_eq_of_pos_overflow {alpha m : ℕ} (ctx : BalancedDecomp alpha m)
+lemma highBitsCoeff_eq_of_pos_overflow {alpha m : ℕ} (ctx : BalancedDecomp alpha m)
     {s : Coeff} (r1 : ℕ) (v : ℤ)
     (hr1 : r1 < m)
     (hv_lo : (alpha / 2 : ℤ) < v)
@@ -560,7 +560,7 @@ theorem highBitsCoeff_eq_of_pos_overflow {alpha m : ℕ} (ctx : BalancedDecomp a
       show r1 = m - 1 from by omega, alpha_mul_pred_m_eq ctx]
     push_cast; ring
 
-theorem highBitsCoeff_eq_of_neg_overflow {alpha m : ℕ} (ctx : BalancedDecomp alpha m)
+lemma highBitsCoeff_eq_of_neg_overflow {alpha m : ℕ} (ctx : BalancedDecomp alpha m)
     {s : Coeff} (r1 : ℕ) (v : ℤ)
     (hr1 : r1 < m)
     (hv_lo : -(alpha : ℤ) ≤ v)
@@ -583,7 +583,7 @@ theorem highBitsCoeff_eq_of_neg_overflow {alpha m : ℕ} (ctx : BalancedDecomp a
         Nat.add_mod_right, Nat.mod_eq_of_lt (by omega)]
     · rw [Nat.cast_sub hr1pos, ← hsum]; push_cast; ring
 
-theorem useHintCoeff_makeHintCoeff_eq_of_small
+lemma useHintCoeff_makeHintCoeff_eq_of_small
     {alpha m : ℕ} (ctx : BalancedDecomp alpha m) (z r : Coeff)
     (hz : (centeredRepr z).natAbs ≤ alpha / 2) :
     useHintCoeff (makeHintCoeff z r (alpha / 2)) r (alpha / 2) =
@@ -635,7 +635,7 @@ theorem useHintCoeff_makeHintCoeff_eq_of_small
       simp only [makeHintCoeff, ne_eq, hneq, not_false_eq_true, decide_true, huse]
       rw [highBitsCoeff_eq_of_neg_overflow ctx r1 v hr1lt (by omega) hv_hi hsum]
 
-theorem highBitsShift_injective_of_isApproved (p : Params)
+lemma highBitsShift_injective_of_isApproved (p : Params)
     (hp : p.isApproved) :
     Function.Injective (highBitsShift p) := by
   intro x y hxy
@@ -647,7 +647,7 @@ theorem highBitsShift_injective_of_isApproved (p : Params)
 /-- For approved parameters, each `HighBits` coefficient lies in the valid commitment window
 `[0, (q - 1) / (2 γ₂) - 1]`: its `ZMod` value is strictly below `(q - 1) / (2 γ₂)`. This is the
 range produced by Algorithm 37 and the domain on which the `w₁` packer is injective. -/
-theorem highBits_coeff_val_lt_m (p : Params) (hp : p.isApproved) (r : Rq) (i : Fin ringDegree) :
+lemma highBits_coeff_val_lt_m (p : Params) (hp : p.isApproved) (r : Rq) (i : Fin ringDegree) :
     ((highBits p r).get i).val < (modulus - 1) / (2 * p.gamma2) := by
   have hcoeff : highBitsCoeff (r.get i) p.gamma2 < (modulus - 1) / (2 * p.gamma2) := by
     have ctx := BalancedDecomp.ofApproved hp
@@ -677,7 +677,7 @@ def concreteRoundingOps (p : Params) : MLDSA.RoundingOps (2 * p.gamma2) where
   makeHint := makeHint p
   useHint := useHint p
 
-theorem concreteRounding_useHint_correct_of_isApproved (p : Params)
+lemma concreteRounding_useHint_correct_of_isApproved (p : Params)
     (hp : p.isApproved) (z r : Rq) :
     cInfNorm z ≤ p.gamma2 →
     useHint p (makeHint p z r) r = highBits p (r + z) := by
@@ -688,7 +688,7 @@ theorem concreteRounding_useHint_correct_of_isApproved (p : Params)
   simpa using useHintCoeff_makeHintCoeff_eq_of_small (BalancedDecomp.ofApproved hp)
     (z := z.get j) (r := r.get j) (by simpa using cInfNorm_le_iff.mp hz j)
 
-theorem concreteRounding_useHint_bound_of_isApproved (p : Params)
+lemma concreteRounding_useHint_bound_of_isApproved (p : Params)
     (hp : p.isApproved) (r : Rq) (h : Hint) :
     cInfNorm (r - highBitsShift p (useHint p h r)) ≤ 2 * p.gamma2 + 1 := by
   refine cInfNorm_le_iff.mpr fun j => ?_
@@ -698,7 +698,7 @@ theorem concreteRounding_useHint_bound_of_isApproved (p : Params)
   simpa using useHintCoeff_shift_sub_le
     (BalancedDecomp.ofApproved hp) (h.get j) (r.get j)
 
-theorem concreteRounding_hide_low_of_isApproved (p : Params)
+lemma concreteRounding_hide_low_of_isApproved (p : Params)
     (hp : p.isApproved) (r s : Rq) (b : ℕ) :
     cInfNorm s ≤ b →
     cInfNorm (lowBits p r) + b < p.gamma2 →
@@ -721,11 +721,11 @@ theorem concreteRounding_hide_low_of_isApproved (p : Params)
   exact highBitsCoeff_add_eq_of_centeredRepr_lt
     ctx (r.get j) (s.get j) (cInfNorm_le_iff.mp hs j) hr
 
-theorem concretePower2RoundLaws :
+lemma concretePower2RoundLaws :
     Power2RoundOps.Laws (ring := coeffRing) concretePower2RoundOps cInfNorm where
   power2Round_bound := concretePower2Round_bound
 
-theorem concreteRoundingLaws_of_isApproved (p : Params) (hp : p.isApproved) :
+lemma concreteRoundingLaws_of_isApproved (p : Params) (hp : p.isApproved) :
     RoundingOps.Laws (ring := coeffRing) (concreteRoundingOps p) cInfNorm where
   high_low_decomp := concreteRounding_high_low_decomp p
   lowBits_bound r := by
