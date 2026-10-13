@@ -81,8 +81,8 @@ p\big(h \cdot (x, y)\big) = p(h)\, \nu_x(y) \qquad \text{for every query } x \te
 ```
 
 and [a random system obeying it is the memoryless system][RandomSystem.eq_memoryless_of_snoc].
-A probabilistic automaton whose step [replies with the law $`\nu`$ from every
-state][ProbStep.Memoryless] [is the memoryless system of $`\nu`$][RandomSystem.ofProbAutomaton_eq_memoryless].
+A probabilistic automaton whose step [replies from every state with the same
+law][ProbStep.Memoryless] $`\nu`$ [is the memoryless system of this law][RandomSystem.ofProbAutomaton_eq_memoryless].
 
 ### 1.3 Converters
 
