@@ -7,9 +7,8 @@ carrier; the instance files `InterfaceCategory`, `InterfaceMonoidal`, `Interface
 `InterfaceGame` instantiate the classes on interfaces; `Substitution` is the substitution
 calculus; `Notation`, the proof commands of `Tactics` and the DSL front end
 ([GRAMMAR](DSL/GRAMMAR.md)) are built on these. The fields of the instances are the systems-level
-objects of [RandomSystems](../RandomSystems/README.md), and the table of
-[THEORY.md](../../THEORY.md#3-classes-and-instances) lists each field and axiom with its systems
-object and theorem. Citations refer to the numbered [references](../../THEORY.md#references) of
+objects of [RandomSystems](../RandomSystems/README.md), and [the table below](#the-instances-on-interfaces) lists each field and axiom with its
+systems object and theorem. Citations refer to the numbered [references](../../THEORY.md#references) of
 THEORY.md.
 
 ## The classes
@@ -116,7 +115,54 @@ and every axiom is discharged by a systems-level theorem. The instances are
 [`Interface.cryptographicAlgebra`][Interface.cryptographicAlgebra],
 [`Interface.compatibleDistinguisherClass`][Interface.compatibleDistinguisherClass],
 [`Interface.games`][Interface.games] and [`Interface.distinctionGames`][Interface.distinctionGames];
-the table of [THEORY.md](../../THEORY.md#3-classes-and-instances) gives each field and axiom.
+the table gives each field and axiom.
+
+| Class, instance | Field or axiom | Systems level |
+|---|---|---|
+| `Category` (Mathlib), [`Interface.category`][Interface.category] | objects | [interfaces][Interface] |
+| | `Hom A B` | [`TypedConverter A B`][TypedConverter] |
+| | `id`, `comp` | [`TypedConverter.id`][TypedConverter.id], [`TypedConverter.comp`][TypedConverter.comp]: the identity and the serial composition of PDC behaviors |
+| | `id_comp`, `comp_id`, `assoc` | [`PDCBehavior.id_comp`][PDCBehavior.id_comp], [`PDCBehavior.comp_id`][PDCBehavior.comp_id], [`PDCBehavior.comp_assoc`][PDCBehavior.comp_assoc] |
+| `MonoidalCategory` (Mathlib), [`Interface.monoidal`][Interface.monoidal] by `MonoidalCategory.ofTensorHom` on [`Interface.monoidalStruct`][Interface.monoidalStruct] | `tensorObj`, `tensorUnit` | [`Interface.tensor`][Interface.tensor], [`Interface.unit`][Interface.unit] |
+| | `tensorHom` | [`TypedConverter.parallel`][TypedConverter.parallel], the parallel composition of PDC behaviors; `whiskerLeft` and `whiskerRight` are it with an identity |
+| | `associator`, `leftUnitor`, `rightUnitor` | [`Interface.associator`][Interface.associator], [`Interface.leftUnitor`][Interface.leftUnitor], [`Interface.rightUnitor`][Interface.rightUnitor]: the [isomorphisms][Interface.isoOf] of the regrouping [renamings][TypedConverter.rename], with inverses by [`TypedConverter.rename_comp`][TypedConverter.rename_comp] and [`TypedConverter.rename_refl`][TypedConverter.rename_refl] |
+| | `id_tensorHom_id` ([`Interface.id_tensor_id`][Interface.id_tensor_id]) | [`PDCBehavior.tensor_id`][PDCBehavior.tensor_id] |
+| | `id_tensorHom`, `tensorHom_id` | the definition of the whiskers |
+| | `tensorHom_comp_tensorHom`, interchange ([`Interface.tensor_comp`][Interface.tensor_comp]) | [`PDCBehavior.comp_tensor`][PDCBehavior.comp_tensor] |
+| | `associator_naturality` ([`Interface.associator_naturality`][Interface.associator_naturality]) | [`TypedConverter.comp_associator`][TypedConverter.comp_associator] |
+| | `leftUnitor_naturality`, `rightUnitor_naturality` ([left][Interface.leftUnitor_naturality], [right][Interface.rightUnitor_naturality]) | [`TypedConverter.comp_leftUnitor`][TypedConverter.comp_leftUnitor], [`TypedConverter.comp_rightUnitor`][TypedConverter.comp_rightUnitor] |
+| | `pentagon`, `triangle` ([`Interface.pentagon`][Interface.pentagon], [`Interface.triangle`][Interface.triangle]) | [`TypedConverter.parallel_rename`][TypedConverter.parallel_rename] and [`TypedConverter.rename_comp`][TypedConverter.rename_comp] |
+| [`ResourceTheory`][ResourceTheory]: attachment; [`Interface.resourceTheory`][Interface.resourceTheory] | carrier $`\Phi A`$ | [`TypedSystem A`][TypedSystem] |
+| | `attach` | [`TypedConverter.attach`][TypedConverter.attach], the [attachment of PDC behaviors][PDCBehavior.attach] |
+| | `attach_identity` | [`TypedConverter.identity_attach`][TypedConverter.identity_attach], from [`PDCBehavior.attach_id`][PDCBehavior.attach_id] |
+| | `attach_serial` | [`TypedConverter.comp_smul`][TypedConverter.comp_smul], from [`PDCBehavior.attach_comp`][PDCBehavior.attach_comp] |
+| [`CryptographicAlgebra`][CryptographicAlgebra]: parallel composition; [`Interface.cryptographicAlgebra`][Interface.cryptographicAlgebra] | `laxMonoidal` | [`Interface.resourcesLaxMonoidal`][Interface.resourcesLaxMonoidal] |
+| | its product `μ` | [`TypedSystem.parallel`][TypedSystem.parallel], the [independent parallel composition][RandomSystem.parallel] ([`Interface.cc_parallel_eq`][Interface.cc_parallel_eq]) |
+| | its unit `ε` | the [dummy typed system][TypedSystem.dummy] ([`Interface.cc_dummy_eq`][Interface.cc_dummy_eq]) |
+| | `μ_natural_left`, `μ_natural_right` | [`TypedConverter.parallel_attach`][TypedConverter.parallel_attach], the locality of attachment |
+| | `associativity` ([`Interface.parallel_assoc`][Interface.parallel_assoc]) | [`TypedSystem.parallel_assoc_mass`][TypedSystem.parallel_assoc_mass], through [`TypedConverter.rename_mass`][TypedConverter.rename_mass] |
+| | `left_unitality`, `right_unitality` ([left][Interface.parallel_dummy_left], [right][Interface.parallel_dummy_right]) | [`TypedSystem.parallel_unit_left_mass`][TypedSystem.parallel_unit_left_mass], [`TypedSystem.parallel_unit_right_mass`][TypedSystem.parallel_unit_right_mass], through [`TypedConverter.rename_mass`][TypedConverter.rename_mass] |
+| [`CompatiblePseudoMetric`][CompatiblePseudoMetric]: distance; through [`Interface.compatibleDistinguisherClass`][Interface.compatibleDistinguisherClass] | `fibreMetric` | the [advantage distance][advantageDistance] of the distinguishers below, which [is the transcript distance][Interface.cc_distance_eq] |
+| | `edist_smul_le`, `edist_parallel_le` | [`CompatibleDistinguisherClass.ofClosure`][CompatibleDistinguisherClass.ofClosure] [8, Lemma 1], from the closure axioms below |
+| [`CompatibleDistinguisherClass`][CompatibleDistinguisherClass]: distinguishers; [`Interface.compatibleDistinguisherClass`][Interface.compatibleDistinguisherClass] by `ofClosure` | `distinguishers A` | [`Interface.distinguishers`][Interface.distinguishers]: the maps $`R \mapsto \Pr[d(R) = 1]`$ for the [distinguisher behaviors][Domain.DistinguisherBehavior] $`d`$ compatible with $`A`$'s domain |
+| | `closed_attach` ([`Interface.distinguishers_attach`][Interface.distinguishers_attach]) | [absorbing a converter][DistinguisherBehavior.absorb] |
+| | `closed_parallel_left` ([`Interface.distinguishers_parallel_left`][Interface.distinguishers_parallel_left]) | [absorbing a system run beside][Domain.Distinguisher.exists_absorbRight] |
+| | `closed_parallel_right` ([`Interface.distinguishers_parallel_right`][Interface.distinguishers_parallel_right]) | the previous two, through the [swap][Interface.parallel_swap], the [isomorphism][Interface.swap] of the renaming that [exchanges the two components][TypedSystem.parallel_swap_mass] |
+| | `edist_eq` | the definition of the metric in `ofClosure` |
+| [`Games`][Games]: games and winners; [`Interface.games`][Interface.games] | `Game A` | [`TypedGame A`][TypedGame]: the typed systems on the interface of $`A`$ with the MBO whose MBO stays set ([`RandomSystem.MonotoneMBO`][RandomSystem.MonotoneMBO]) |
+| | `attachGame` | [`TypedConverter.attachGame`][TypedConverter.attachGame], the attachment of the [MBO-forwarding lift][PDCBehavior.liftMBO] |
+| | `winners A` | [`Interface.winners`][Interface.winners]: the winning probabilities of the [solver behaviors][Domain.SolverBehavior] on $`A`$'s domain |
+| | `attachGame_identity` | [`PDCBehavior.liftMBO_id`][PDCBehavior.liftMBO_id], with [`PDCBehavior.attach_id`][PDCBehavior.attach_id] |
+| | `attachGame_serial` | [`PDCBehavior.liftMBO_comp`][PDCBehavior.liftMBO_comp], with [`PDCBehavior.attach_comp`][PDCBehavior.attach_comp] |
+| | `closed_attach` | [`Domain.SolverBehavior.absorb`][Domain.SolverBehavior.absorb] |
+| [`DistinctionGames`][DistinctionGames]: games and distinguishing; [`Interface.distinctionGames`][Interface.distinctionGames] | carrier, games | `TypedSystem A`, `TypedGame A` |
+| | `solvers A` | [`Interface.solvers`][Interface.solvers]: the pairs of the solver behaviors on $`A`$'s domain |
+| | `visible` | [`TypedGame.visible`][TypedGame.visible], the [visible system][RandomSystem.visible] |
+| | `ConditionallyEquivalent` | [`RandomSystem.ConditionallyEquivalent`][RandomSystem.ConditionallyEquivalent] |
+| | `solvers_winner` | the definition of the winners |
+| | `solvers_closed_attach` | [`Domain.SolverBehavior.absorb`][Domain.SolverBehavior.absorb] |
+| | `visible_attachGame` | [`RandomSystem.visible_attach_liftMBO`][RandomSystem.visible_attach_liftMBO] |
+| | `advantage_le_win` | [`Domain.Distinguisher.advantage_le_winProbability`][Domain.Distinguisher.advantage_le_winProbability] |
 
 Interfaces and typed converters form a category under serial composition, and a monoidal
 category under parallel composition. In the notation of the category, the attachment laws read
@@ -414,3 +460,75 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [substitutionRelaxation_idem]: Substitution/Relaxation.lean#L202
 [Implication.exists_serial_simulators]: Substitution/Construction.lean#L44
 [Constructs.derivable_serial_simulators]: Substitution/Construction.lean#L107
+[Domain.Distinguisher.advantage_le_winProbability]: ../RandomSystems/Game/MBO.lean#L756
+[Domain.Distinguisher.exists_absorbRight]: ../RandomSystems/Distance/Distinguisher.lean#L330
+[Domain.SolverBehavior.absorb]: ../RandomSystems/Game/MBOAttachment.lean#L2191
+[Interface]: ../RandomSystems/Typed/Interface.lean#L40
+[Interface.associator]: InterfaceMonoidal.lean#L52
+[Interface.associator_naturality]: InterfaceMonoidal.lean#L92
+[Interface.distinguishers]: InterfaceAlgebra.lean#L148
+[Interface.distinguishers_attach]: InterfaceAlgebra.lean#L152
+[Interface.distinguishers_parallel_left]: InterfaceAlgebra.lean#L158
+[Interface.distinguishers_parallel_right]: InterfaceAlgebra.lean#L173
+[Interface.id_tensor_id]: InterfaceMonoidal.lean#L84
+[Interface.isoOf]: InterfaceMonoidal.lean#L33
+[Interface.leftUnitor]: InterfaceMonoidal.lean#L57
+[Interface.leftUnitor_naturality]: InterfaceMonoidal.lean#L97
+[Interface.monoidalStruct]: InterfaceMonoidal.lean#L71
+[Interface.parallel_assoc]: InterfaceAlgebra.lean#L77
+[Interface.parallel_dummy_left]: InterfaceAlgebra.lean#L89
+[Interface.parallel_dummy_right]: InterfaceAlgebra.lean#L98
+[Interface.parallel_swap]: InterfaceAlgebra.lean#L107
+[Interface.pentagon]: InterfaceMonoidal.lean#L105
+[Interface.resourcesLaxMonoidal]: InterfaceAlgebra.lean#L116
+[Interface.rightUnitor]: InterfaceMonoidal.lean#L61
+[Interface.rightUnitor_naturality]: InterfaceMonoidal.lean#L101
+[Interface.solvers]: InterfaceGame.lean#L63
+[Interface.swap]: InterfaceMonoidal.lean#L66
+[Interface.tensor]: ../RandomSystems/Typed/Parallel.lean#L85
+[Interface.tensor_comp]: InterfaceMonoidal.lean#L87
+[Interface.triangle]: InterfaceMonoidal.lean#L132
+[Interface.unit]: ../RandomSystems/Typed/InterfaceCoherence.lean#L90
+[Interface.winners]: InterfaceGame.lean#L58
+[PDCBehavior.attach]: ../RandomSystems/Converter/ConverterAttachment.lean#L156
+[PDCBehavior.attach_comp]: ../RandomSystems/Converter/ConverterAttachment.lean#L246
+[PDCBehavior.attach_id]: ../RandomSystems/Converter/ConverterAttachment.lean#L233
+[PDCBehavior.comp_assoc]: ../RandomSystems/Converter/PDCBehavior.lean#L338
+[PDCBehavior.comp_id]: ../RandomSystems/Converter/PDCBehavior.lean#L375
+[PDCBehavior.comp_tensor]: ../RandomSystems/Converter/ConverterTensor.lean#L745
+[PDCBehavior.id_comp]: ../RandomSystems/Converter/PDCBehavior.lean#L385
+[PDCBehavior.liftMBO]: ../RandomSystems/Game/MBOAttachment.lean#L455
+[PDCBehavior.liftMBO_comp]: ../RandomSystems/Game/MBOAttachment.lean#L1515
+[PDCBehavior.liftMBO_id]: ../RandomSystems/Game/MBOAttachment.lean#L495
+[PDCBehavior.tensor_id]: ../RandomSystems/Converter/ConverterTensor.lean#L705
+[RandomSystem.ConditionallyEquivalent]: ../RandomSystems/Game/MBO.lean#L523
+[RandomSystem.MonotoneMBO]: ../RandomSystems/Game/MBO.lean#L305
+[RandomSystem.parallel]: ../RandomSystems/Cumulative/CumulativeOperations.lean#L130
+[RandomSystem.visible]: ../RandomSystems/Game/MBO.lean#L340
+[RandomSystem.visible_attach_liftMBO]: ../RandomSystems/Game/MBOAttachment.lean#L619
+[TypedConverter]: ../RandomSystems/Typed/Interface.lean#L127
+[TypedConverter.attach]: ../RandomSystems/Typed/Interface.lean#L157
+[TypedConverter.attachGame]: ../RandomSystems/Typed/Game.lean#L38
+[TypedConverter.comp]: ../RandomSystems/Typed/Interface.lean#L134
+[TypedConverter.comp_associator]: ../RandomSystems/Typed/ConverterCoherence.lean#L158
+[TypedConverter.comp_leftUnitor]: ../RandomSystems/Typed/ConverterCoherence.lean#L195
+[TypedConverter.comp_rightUnitor]: ../RandomSystems/Typed/ConverterCoherence.lean#L224
+[TypedConverter.comp_smul]: ../RandomSystems/Typed/Interface.lean#L177
+[TypedConverter.id]: ../RandomSystems/Typed/Interface.lean#L139
+[TypedConverter.identity_attach]: ../RandomSystems/Typed/Interface.lean#L171
+[TypedConverter.parallel]: ../RandomSystems/Typed/Parallel.lean#L210
+[TypedConverter.parallel_attach]: ../RandomSystems/Typed/ParallelAttachment.lean#L23
+[TypedConverter.parallel_rename]: ../RandomSystems/Typed/TensorRename.lean#L128
+[TypedConverter.rename]: ../RandomSystems/Typed/Relabel.lean#L48
+[TypedConverter.rename_comp]: ../RandomSystems/Typed/Relabel.lean#L80
+[TypedConverter.rename_mass]: ../RandomSystems/Typed/SystemParallel.lean#L55
+[TypedConverter.rename_refl]: ../RandomSystems/Typed/Relabel.lean#L67
+[TypedGame]: ../RandomSystems/Typed/Game.lean#L35
+[TypedGame.visible]: ../RandomSystems/Typed/Game.lean#L53
+[TypedSystem]: ../RandomSystems/Typed/Interface.lean#L92
+[TypedSystem.dummy]: ../RandomSystems/Typed/SystemCoherence.lean#L97
+[TypedSystem.parallel]: ../RandomSystems/Typed/Parallel.lean#L153
+[TypedSystem.parallel_assoc_mass]: ../RandomSystems/Typed/SystemCoherence.lean#L85
+[TypedSystem.parallel_swap_mass]: ../RandomSystems/Typed/SystemCoherence.lean#L153
+[TypedSystem.parallel_unit_left_mass]: ../RandomSystems/Typed/SystemCoherence.lean#L103
+[TypedSystem.parallel_unit_right_mass]: ../RandomSystems/Typed/SystemCoherence.lean#L128
