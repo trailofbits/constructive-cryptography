@@ -2,10 +2,12 @@
 
 This repository formalizes Constructive Cryptography [1, 2] in Lean 4. The
 framework is instantiated on a theory of random systems [3, 4] in which a
-resource answers exactly on a declared domain of input histories, and a
-converter may stop at random. The algebra of resources and converters is also
-stated in category-theoretic terms; a categorical model of composable security
-is given in [7].
+system answers exactly on a declared domain of input histories, and a
+converter may stop at random. The classes of the framework are assumptions; their
+instances on interfaces take every field from the typed systems and typed
+converters of the random-systems library. The algebra of typed systems and
+converters is also stated in category-theoretic terms; a categorical model of
+composable security is given in [7].
 
 ## Libraries
 
@@ -15,12 +17,12 @@ summarizes the theory layer by layer, with links to the Lean declarations.
 | Library | Content |
 |---|---|
 | `Probability` | finitely supported distributions, kernels, statistical distance, couplings, expectation, counting |
-| `RandomSystems` | systems and automata; deterministic converters and programs; distributions over deterministic systems; random systems given by their cumulative probabilities; probabilistic automata and memoryless systems; probabilistic converters, attachment and parallel composition; transcript distance and distinguishers; games |
+| `RandomSystems` | systems and automata; deterministic converters and programs; distributions over deterministic systems; random systems given by their cumulative probabilities; probabilistic automata and memoryless systems; probabilistic converters, attachment and parallel composition; transcript distance and distinguishers; games; typed systems, typed converters and typed games on interfaces, with filters, contexts, sources, automata, memoryless and functional systems, and games presented by discrete games; the programs and program converters of the DSL |
 | `ConstructiveCryptography.Specification`, `.Construction` | specifications, constructions and relaxations over any carrier |
 | `ConstructiveCryptography.CryptographicAlgebra` | the classes of cryptographic algebras: resource theories, parallel composition, compatible pseudo-metrics and distinguisher classes, relaxations |
-| `ConstructiveCryptography` (top level) | interfaces, resources and converters on random systems, and their instances of the classes; filters, contexts, sources, automata, memoryless systems, functional resources, games presented by discrete games; notation |
+| `ConstructiveCryptography` (top level) | the instances of the classes on interfaces (category, monoidal category, cryptographic algebra, distinguisher class, games), each field a systems-level object; notation |
 | `ConstructiveCryptography.Substitution` | the substitution calculus for constructions [6] |
-| `ConstructiveCryptography.DSL` | a compiler from component declarations to resources and converters |
+| `ConstructiveCryptography.DSL` | a compiler from component declarations to typed systems and typed converters |
 | `ConstructiveCryptography.Tactics` | proof commands, including the substitution calculations `cc_calc` |
 | `Commons` | common ideal systems (URF, URP and their strong and tweakable forms, memoryless sources), the CDH assumption as a pair of systems, the security notions as pairs of systems [6]: symmetric encryption (real-or-random and left-or-right CPA) and authenticated encryption (ind-cca, int-ptxt, int-ctxt, ae), public-key encryption and KEMs (IND-CPA, IND-CCA), MACs and signatures (EUF-CMA, SUF-CMA), PRGs, universal hashing (UHF, DUF) and collision resistance, and the schemes SHA-256, SHA-3, SHAKE, Keccak-256, ML-KEM [9] and ML-DSA [10] (the last two adapted from VCVio [11]) with known-answer tests, in the order of [8] |
 | `Examples` | authenticated encryption, AES, AEAD, PRG length extension, substitutions on interfaces, the proof commands |
