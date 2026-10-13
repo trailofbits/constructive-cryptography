@@ -11,9 +11,10 @@ laws, which are those of the current query alone, as for the beacon, whose condi
 `1/|Y|` "for all choices of the arguments" [1, Example 3.8, p. 68].
 
 A probabilistic automaton whose reply law does not depend on its state is memoryless, and a
-program run against memoryless replies replies memorylessly, with the law of one invocation fed
-with fresh samples of the inside laws. So attaching a program to a memoryless system gives a
-memoryless system, whatever the number of the program's inside queries:
+program run against memoryless replies replies memorylessly when one invocation, fed with fresh
+samples of the inside laws, has the same reply law `κ` from every program state. So attaching such
+a program to a memoryless system gives the memoryless system of `κ`, whatever the number of the
+program's inside queries:
 
 ```
         o(u)          ┌───┐   j(q)      ┌──────────┐
@@ -39,7 +40,8 @@ memoryless system, whatever the number of the program's inside queries:
 * `RandomSystem.parallel_memoryless`: memoryless systems side by side are memoryless
 * `RandomSystem.ofProbAutomaton_eq_memoryless`: an automaton with a memoryless step is the
   memoryless system of its reply law
-* `Program.memoryless_probCombine`: a program run against a memoryless step is memoryless
+* `Program.memoryless_probCombine`: a program run against a memoryless step, with the same reply
+  law from every program state, is memoryless
 * `PDCBehavior.attach_ofDDC_ofProgramOn_memoryless`: the composition law: attaching a program to
   the memoryless system of `ν` gives the memoryless system of its reply law against `ν`
 
@@ -276,7 +278,7 @@ lemma RandomSystem.ofProbAutomaton_eq_memoryless {S I : Type} {X Y : I → Type}
   -- It suffices to check the chain rule of `portLaw ν` at every admitted exchange `(x, y)`:
   --
   --   P(t · (x, y)) = ∑ₛ belief_t(s) · Pr[step s x replies y]      (state laws)
-  --                 = (∑ₛ belief_t(s)) · ν x y                       (memoryless step)
+  --                 = (∑ₛ belief_t(s)) · ν x y                     (memoryless step)
   --                 = P(t) · ν x y
   --
   -- where `belief_t` is the state law after the transcript `t`, of weight `P(t)`.
@@ -421,7 +423,7 @@ theorem attach_ofDDC_ofProgramOn_memoryless
     (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p) (s : S) (P : Program S O J U V X Y)
     {b : ℕ} (hb : P.Bounded b) (hα : IsDDCFrom E F b (DDC.ofProgramOn s P F))
     {ν : ∀ j, X j → ProbDist (Y j)} {κ : ∀ o, U o → ProbDist (V o)}
-    (hκ : ∀ s o u, P.replyLaw ν s o u b [] = (κ o u).1)
+    (hκ : ∀ s' o u, P.replyLaw ν s' o u b [] = (κ o u).1)
     {R : RandomSystem (Σ j, X j) (Σ j, Y j) (Domain.ofInputs E m hE)}
     (hR : R = RandomSystem.memoryless _ (RandomSystem.portLaw ν))
     (hRq : R.RepliesAtQueriedInterface) :

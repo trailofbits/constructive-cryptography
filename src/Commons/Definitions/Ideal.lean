@@ -100,7 +100,7 @@ system MemorylessSource(Y : Type) [Fintype Y] (ν : Distribution.ProbDist Y) : E
 open Distribution in
 /-- **The memoryless source of `ν` is the memoryless system of `ν`**: each `eval(())` is answered
 by a fresh sample of `ν`, independent of the history. -/
-theorem MemorylessSource.memoryless_eq {Y : Type} [Fintype Y] (ν : ProbDist Y)
+lemma MemorylessSource.memoryless_eq {Y : Type} [Fintype Y] (ν : ProbDist Y)
     (q : Evaluation.Port → ℕ) :
     (MemorylessSource.perPort Y ν (budget := q)).1 =
       RandomSystem.memoryless _ (RandomSystem.portLaw fun _ _ => ν) := by

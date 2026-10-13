@@ -263,10 +263,8 @@ theorem prg_length_extension [AdmissibleDistinguishers] (G : S → S × S)
   --   D ─ prg-rand             =                    last hop              𝓡₂_smul_prgRand
   --
   -- One chain: the equalities cost nothing, each swap costs `ε` at the distinguisher with the
-  -- calling converter absorbed, and the losses add up. (`using`: the advantage of an admitted
-  -- distinguisher is at most the distance, `distinguisherAdvantage_le_distance`.)
-  cc_calc mixed (distinguisherAdvantage AdmissibleDistinguishers.admissible) using
-      (fun D _ R S => distinguisherAdvantage_le_distance _ D R S)
+  -- calling converter absorbed, and the losses add up.
+  cc_calc quantitative (distinguisherAdvantage AdmissibleDistinguishers.admissible)
     -- The first hop: factor out the first call of `G`.
     PRGReal.perPort (H G) = 𝓡₁.perPort G • PRGReal.perPort G := prgReal_H_eq G q
     -- The first swap: `prg-real^G` ≃ `prg-rand` (`secure`), attached through `𝓡₁`; its loss is

@@ -42,7 +42,7 @@ open Probability Probability.Distribution CategoryTheory RandomSystem
 
 /-- **A source of independent samples is memoryless** [1, Definition 3.1]: the source of `q`
 samples of `law` replies to each trigger with a fresh sample of `law`. -/
-theorem source_eq_memoryless {Z : Type} [Fintype Z] (law : ProbDist Z) (q : ℕ) :
+lemma source_eq_memoryless {Z : Type} [Fintype Z] (law : ProbDist Z) (q : ℕ) :
     (Resource.source law q).1 =
       memoryless (Interface.source Z q).inputDomain (portLaw fun _ _ => law) := by
   -- Plan:
@@ -102,7 +102,7 @@ theorem source_eq_memoryless {Z : Type} [Fintype Z] (law : ProbDist Z) (q : ℕ)
     | append_singleton h e ih =>
       intro t t' ht
       obtain ⟨⟨⟨⟩, ⟨⟩⟩, ⟨⟨⟩, z⟩⟩ := e
-      -- the earlier entries agree, and so does the entry read now
+      -- the earlier entries agree
       have hpre := ih t t' fun j hj => ht j (by simp; omega)
       -- One step of the automaton after `h`, for both tables.
       simp only [event, List.map_append, List.map_cons, List.map_nil, replies_snoc,
@@ -237,7 +237,7 @@ lemma ofProgram_smul_memoryless (s : S) (P : Program S A.I B.I A.X A.Y B.X B.Y) 
     (hb : P.Bounded b) (hB : ∀ xs, xs ≠ [] → xs.length ≤ b * A.bound → B.domain xs)
     {R : Resource B} {ν : ∀ j, B.X j → ProbDist (B.Y j)} {κ : ∀ o, A.X o → ProbDist (A.Y o)}
     (hR : R.1 = memoryless B.inputDomain (portLaw ν))
-    (hκ : ∀ s o u, P.replyLaw ν s o u b [] = (κ o u).1) :
+    (hκ : ∀ s' o u, P.replyLaw ν s' o u b [] = (κ o u).1) :
     (ofProgram s P hb hB • R).1 = memoryless A.inputDomain (portLaw κ) :=
   -- The typed attachment's random system is the systems-level attachment of the behavior of
   -- the program's DDC (`DDC.ofProgramOn s P A.domain`) to `R.1`. The systems-level
@@ -261,7 +261,7 @@ lemma ofPreservingProgram_smul_memoryless (s : S) (P : Program S A.I B.I A.X A.Y
       (∀ o j, ι o = some j → (SystemAlgebra.restrict j ys).length ≤ q o) → B.domain ys)
     {R : Resource B} {ν : ∀ j, B.X j → ProbDist (B.Y j)} {κ : ∀ o, A.X o → ProbDist (A.Y o)}
     (hR : R.1 = memoryless B.inputDomain (portLaw ν))
-    (hκ : ∀ s o u, P.replyLaw ν s o u b [] = (κ o u).1) :
+    (hκ : ∀ s' o u, P.replyLaw ν s' o u b [] = (κ o u).1) :
     (ofPreservingProgram s P hb ι hι q hA hB • R).1 = memoryless A.inputDomain (portLaw κ) :=
   -- As for `ofProgram_smul_memoryless`: this converter is again the converter of the DDC
   -- `DDC.ofProgramOn s P A.domain`, and the same systems-level composition law applies.
@@ -281,7 +281,7 @@ lemma ofPreservingProgram_comp_rightContext_smul_memoryless {C : Interface} (s :
     {ν' : ∀ k, C.X k → ProbDist (C.Y k)} {κ : ∀ o, A.X o → ProbDist (A.Y o)}
     (hR : R.1 = memoryless B.inputDomain (portLaw ν))
     (hT : T.1 = memoryless C.inputDomain (portLaw ν'))
-    (hκ : ∀ s o u, P.replyLaw (parallelLaw ν ν') s o u b [] = (κ o u).1) :
+    (hκ : ∀ s' o u, P.replyLaw (parallelLaw ν ν') s' o u b [] = (κ o u).1) :
     ((ofPreservingProgram s P hb ι hι q hA hB ≫ rightContext B T) • R).1 =
       memoryless A.inputDomain (portLaw κ) := by
   -- Attaching `rightContext B T` places `T` beside `R` ...

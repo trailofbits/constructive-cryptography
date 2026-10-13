@@ -19,7 +19,7 @@ is the attachment of the program's converter to the automaton, as random systems
 ```
 
 A system `C(·)` invoking an internal system `F` is the combined system `C(F)` [1, §3.3]; for a
-deterministic automaton this is the inlining of `Program.inline_automatonSystem`. The
+deterministic automaton this is the inlining theorem `Program.inline_automatonSystem`. The
 probabilistic case is reduced to it: a probabilistic automaton is a random automaton in the sense
 of [1, Definition 2], a deterministic automaton whose internal randomness, a table of the draws of
 every step from every reachable state, is sampled once with the initial state. Reading this table
@@ -160,7 +160,7 @@ lemma probInvoke_weight {b : ℕ} (hP : P.Bounded b) (s : S) (o : O) (u : U o) :
       -- the body replies: a point law
       rw [probInvoke_inl hq]; exact (isProbDist_single _).2
     | inr q =>
-      -- a query with no query left: impossible, the body has made `b` queries already
+      -- a query with no query left: impossible, the body has made its `b` queries already
       exact absurd (hP s o u h q hc hq) (by omega)
   -- Step 2: `n + 1` queries left.
   | succ n ih =>
@@ -297,7 +297,6 @@ lemma probInvoke_simulation
   --     ▼                    ▼                                        ▼
   --     r₂ ── stepR₂, q ──► (r₂', y) ── rest against stepR₂ ──► ((s', r₂''), v)
   --
-  -- Induction on the number of inside queries left.
   intro n
   induction n with
   | zero =>
@@ -384,7 +383,6 @@ lemma probInvoke_support
   --    `(r', y)` of the step and an outcome of the rest of the invocation from `h · (q, y)`.
   --    The query is admitted, so `r'` keeps the invariant (`hpres`); by induction the rest
   --    ends on exchanges `hf` extending `h · (q, y)`, hence `h`.
-  -- Induction on the number of inside queries left.
   intro n
   induction n with
   | zero =>
