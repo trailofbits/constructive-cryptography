@@ -1,10 +1,16 @@
 # Cryptographic component DSL
 
 This is a DSL embedded in Lean for the finite systems algebra.
-The surface uses indentation, `←` for computation/assignment, `←$` for sampling,
+The surface uses indentation, `←` for computation/assignment, `` ←$ `` for sampling,
 and `𝒰[T]` for the uniform law on a finite nonempty type. There are no braces,
 semicolons, `do` blocks, or combined assignment/bind operators in the surface.
 Lean remains the language for types, pure expressions, propositions, and proofs.
+
+`interface`, `system`, `converter` and `filter` declarations compile to the typed systems and
+typed converters of [Typed](../../RandomSystems/Typed/README.md) at every budget ([DSL][DSL]);
+converters are declared as arrows of the [category of interfaces](../README.md#the-instances-on-interfaces),
+so that components assemble with `≫` and `⊗ₘ`. Citations refer to the numbered
+[references](../../../THEORY.md#references) of THEORY.md.
 
 ## Grammar
 
@@ -118,8 +124,8 @@ most once).
   the endomorphism `C.perPort : I.perPort q ⟶ I.perPort q`.
 - When the inside port has another declared interface `J`, each of whose labels one procedure
   calls, it is `C.perPort : I.perPort q ⟶ J.perPort (C.insideBudget q)`: the budget at an inside
-  label is that of the procedure calling it, and a procedure calling nothing needs none (Banfi's
-  `ρ^ctxt`, from `AE M C` to `Encryption M C`).
+  label is that of the procedure calling it, and a procedure calling nothing needs none (`ρ^ctxt`
+  of [9], from `AE M C` to `Encryption M C`).
 
 Its sources have the budget `C.bound * ∑ i, q i`. Other converters have no per-port typing.
 
@@ -148,43 +154,81 @@ cost at most `q` need `q` inside queries. It is omitted when the count depends o
 replies or private bindings.
 
 A `filter F : I domain h ↦ P` gives `F : (I q).restrict P ⟶ I q` for every budget: it forwards
-the queries of an admitted history and stops on the others (CR18 §3.4.3). The admitted
+the queries of an admitted history and stops on the others [3, §3.4.3]. The admitted
 predicate must be closed under prefixes; `by` supplies a proof when the default tactic does
 not find one.
 
 ## Compilation
 
-A component compiles to a deterministic program with sources of randomness: sampling stays in
-the surface, and randomness enters the generated systems only through sources
-(`TypedSystem.source`, Maurer 2002, Definition 1).
+A component compiles to a deterministic [program][Program] with **sources** of randomness:
+sampling stays in the surface, and randomness enters the generated systems only through
+[sources][TypedSystem.source] of fresh samples of a closed law [4, Definition 1].
 
-- Every sampling statement `x ←$ P` becomes a call `x ← sample_k()` to a synthetic inside port
-  whose source draws fresh samples from `P`; the law is `C.law_k`.
+- Every sampling statement `x ←$ P` [becomes a call][desugarSampling] `x ← sample_k()` to a
+  synthetic inside port whose source draws fresh samples from `P`; the law is `C.law_k`.
 - The body `C.body : Program (Option S) …` is a function of the inside exchanges of the current
   invocation, giving the next inside query or the reply and the new private bindings (a
-  deterministic automaton, Maurer 2002, Definition 2). Initialization runs in the first
+  deterministic automaton [4, Definition 2]). Initialization runs in the first
   invocation, when no bindings are stored yet; `S` is the type of `C.initial`, the initial
   bindings with each sample replaced by a value of its law.
 - Computation is ordinary `let` bindings; control flow is ordinary conditionals, pattern
   matching and list folds (`forEach`); a call is `callProg`, a reply `returnProg`.
-- `C.program : I q ⟶ J (C.bound * q)` is the converter of the program
+- `C.program : I q ⟶ J (C.bound * q)` is the [converter of the program][TypedConverter.ofProgram]
   (`TypedConverter.ofProgram`), on the outside domain of `I q`.
 - A converter is `C.program ≫ TypedConverter.rightContext J (C.randomness k)`: its program with
-  its sources attached beside the declared inside ports, each source at the inside budget `k`. A
-  converter that samples nothing is `C.program`.
+  its sources attached [beside][TypedConverter.rightContext] the declared inside ports, each
+  source at the inside budget `k`. A converter that samples nothing is `C.program`.
 - A system is `C.program • C.randomness k`. A system that samples nothing is the automaton of
   its program started in `C.initial`, `TypedSystem.ofAutomaton I step (single s)`.
 
+The declarations generate typed systems and typed converters at every budget. An
+[`interface I`][elabInterface] declaration generates `I q := Interface.queryBudget … q`, the
+[query budget][Interface.queryBudget], and `I.perPort q := Interface.portBudget … q`, the
+[per-port budget][Interface.portBudget]. A [`system S : I`][elabComponent] generates the typed
+system `S : TypedSystem (I q)`, [compiled][elabProgramDecls] to `S.program • S.randomness k`: the
+[converter of its program][TypedConverter.ofProgram] attached to its [sources][sourcesAt]. A
+system that samples nothing is the [automaton][TypedSystem.ofAutomaton] of its program, and
+a system without an exact domain [also gets][elabPerPortDecls]
+`S.perPort : TypedSystem (I.perPort q)`.
+
+A [`converter C : I`][elabComponent] with `inside J` generates `C : I q ⟶ J (C.bound * q)`,
+compiled to `C.program ≫ TypedConverter.rightContext J (C.randomness k)`: its program with its sources
+[beside][TypedConverter.rightContext] the inside interface, or `C.program` when it samples nothing. With
+a single inside interface it [also has a per-port typing][elabPerPortDecls] along a partial port
+map `C.portMap : I.Port → Option J.Port`, through the
+[converter of a port-preserving program][TypedConverter.ofPreservingProgram], with
+`C.preserving` a proof of [`Program.PortPreserving`][Program.PortPreserving]. When `J` is `I` and
+each procedure calls its own port, at most once, it is
+`C.perPort : I.perPort q ⟶ I.perPort q`. When `J` is another interface, each of whose labels one
+procedure calls at most once, it is `C.perPort : I.perPort q ⟶ J.perPort (C.insideBudget q)`: an
+inside label has the budget of the procedure calling it, and a procedure calling nothing maps to
+`none` and needs no inside budget, as in the [write-through cache][WriteThrough] and in
+$`\rho^{ctxt}`$ and $`\rho^{ae}`$ of the
+[authenticated encryption example](../../Examples/README.md#authenticated-encryption). When the
+converter samples nothing and its number of inside calls is a function of the input, the
+elaborator [also generates][elabExactDecls]
+`C.exact : (I n).restrict (fun h => (h.map C.cost).sum ≤ q) ⟶ J q`, the
+[converter of the costed program][TypedConverter.ofCostedProgram].
+
+A [`filter F : I domain h ↦ P`][elabFilter] generates `F : (I q).restrict P ⟶ I q`, the
+[filter][TypedConverter.filter] admitting `P`.
+
 Attaching a program to a typed system runs its body against the system
-(`Program.apply_ofProgram`, Maurer 2002, §3.3). A transcript of `C.program • R` has the mass of
+(`Program.apply_ofProgram`, [4, §3.3]). A transcript of `C.program • R` has the mass of
 the system's deterministic systems on which the inlined program gives it
 (`TypedConverter.ofDDC_ofProgramOn_smul_ofPDS`). Sources are automata whose initial state is a
-table of samples (`TypedSystem.ofAutomaton I step initial`, Maurer 2002, Definition 2, with the
+table of samples (`TypedSystem.ofAutomaton I step initial`, [4, Definition 2], with the
 randomness in the initial state); parallel automata are the automaton of both
-(`TypedSystem.parallel_ofAutomaton`), and a program attached to an automaton is the combined
-automaton (`TypedConverter.ofProgram_smul_ofAutomaton`, `Program.combine`). Every compiled
-component is therefore an automaton with a sampled initial state; bisimilar automata have the
-same system (`automatonSystem_eq_of_bisim`).
+(`TypedSystem.parallel_ofAutomaton`), and attaching a program to an automaton
+[gives the combined automaton][TypedConverter.ofProgram_smul_ofAutomaton] (`Program.combine`),
+also [for port-preserving programs][TypedConverter.ofPreservingProgram_smul_ofAutomaton]. Every
+compiled component is therefore an automaton with a sampled initial state, and compiled systems
+are compared by [bisimulation][automatonSystem_eq_of_bisim]: bisimilar automata have the same
+system. The [memoryless source][MemorylessSource] `y ←$ ν; return y`
+[is the memoryless system of `ν`][MemorylessSource.memoryless_eq], so systems built from programs
+and memoryless sources are compared by the laws of one reply, through the composition laws of
+[typed systems](../../RandomSystems/Typed/README.md#filters-contexts-sources-and-functional-systems):
+each hop of [PRG length extension][ExPRG] is one rewrite.
 
 The assembly operators denote the existing CC operations. `α • R` applies a
 converter, `α ≫ β` composes converters, and `∥` and `⊗ₘ` compose systems and
@@ -194,7 +238,7 @@ one component with multiple interfaces or by initialization enclosing all the
 shared behavior. A definition `system D ≔ e` takes its outside interface from the outermost
 component of `e`, at the implicit `budget`; the inner budgets follow from the converters' types.
 
-The earlier proposed `attach A[ports] ↔ B[ports]` surface is not implemented.
+There is no `attach A[ports] ↔ B[ports]` wiring form.
 The grammar above records the implemented DSL; it makes no claim that
 arbitrary feedback wiring can omit the existing domain and termination obligations.
 
@@ -259,3 +303,60 @@ To check the DSL and its tests, run from the repository root:
 ```sh
 lake build Tests.DSL.Diagnostics Tests.DSL.Axioms
 ```
+
+## Proof commands
+
+The proof commands are in `ConstructiveCryptography.Tactics`.
+[`cc_normalize`][cc_normalize] rewrites attachments to normal forms,
+[`cc_nonexpand`][cc_nonexpand] applies the compatibility laws, on interfaces also
+[with the concrete parallel composition][cc_nonexpand-interfaces], [`cc_triangle`][cc_triangle]
+takes a hybrid step, and [`cc_construct`][cc_construct] reduces a construction to its equality or
+distance obligation. [`cc_calc relation`][cc_calc] proves $`X \simeq Y`$ from `=` and `≃` steps,
+and [`cc_calc counted systems`][cc_calc-counted] builds an implication witness, whose uses
+[`cc_usage`][cc_usage] counts. [`cc_calc statistical`][cc_calc-statistical] proves
+$`d(X, Y) \le \sum_j \varepsilon_j`$ from `≈[ε]` steps, and
+[`cc_calc mixed model using domination`][cc_calc-mixed] proves
+$`X \simeq_{\sum_j \varepsilon_j} Y`$ from `≃[loss]` and `≈[ε]` steps.
+
+<!-- Files -->
+
+[DSL]: ../DSL.lean
+[ExPRG]: ../../Examples/PRGLengthExtension.lean
+
+<!-- Declarations -->
+
+[Program]: ../../RandomSystems/Converter/Program.lean#L45
+[Program.PortPreserving]: ../../RandomSystems/Converter/Program.lean#L123
+[automatonSystem_eq_of_bisim]: ../../RandomSystems/System/Automaton.lean#L89
+[Interface.queryBudget]: ../../RandomSystems/Typed/Interface.lean#L63
+[Interface.portBudget]: ../../RandomSystems/Typed/Interface.lean#L74
+[TypedSystem.source]: ../../RandomSystems/Typed/Source.lean#L51
+[TypedSystem.ofAutomaton]: ../../RandomSystems/Typed/Automaton.lean#L42
+[TypedConverter.rightContext]: ../../RandomSystems/Typed/Context.lean#L109
+[TypedConverter.filter]: ../../RandomSystems/Typed/Filter.lean#L49
+[TypedConverter.ofProgram]: ../../RandomSystems/Typed/DSL/Converters.lean#L39
+[TypedConverter.ofCostedProgram]: ../../RandomSystems/Typed/DSL/Converters.lean#L51
+[TypedConverter.ofPreservingProgram]: ../../RandomSystems/Typed/DSL/Converters.lean#L68
+[TypedConverter.ofProgram_smul_ofAutomaton]: ../../RandomSystems/Typed/DSL/Converters.lean#L145
+[TypedConverter.ofPreservingProgram_smul_ofAutomaton]: ../../RandomSystems/Typed/DSL/Converters.lean#L155
+[desugarSampling]: Elaborator.lean#L194
+[elabInterface]: Elaborator.lean#L351
+[elabComponent]: Elaborator.lean#L811
+[elabProgramDecls]: Elaborator.lean#L644
+[elabPerPortDecls]: Elaborator.lean#L541
+[elabExactDecls]: Elaborator.lean#L716
+[elabFilter]: Elaborator.lean#L927
+[sourcesAt]: Elaborator.lean#L635
+[MemorylessSource]: ../../Commons/Definitions/Ideal.lean#L95
+[MemorylessSource.memoryless_eq]: ../../Commons/Definitions/Ideal.lean#L103
+[WriteThrough]: ../../Examples/DSL/Components.lean#L104
+[cc_normalize]: ../Tactics/Basic.lean#L30
+[cc_nonexpand]: ../Tactics/Categorical.lean#L166
+[cc_nonexpand-interfaces]: ../Notation.lean#L105
+[cc_triangle]: ../Tactics/Categorical.lean#L155
+[cc_construct]: ../Tactics/Categorical.lean#L42
+[cc_calc]: ../Tactics/Substitution.lean#L88
+[cc_calc-counted]: ../Tactics/Substitution.lean#L147
+[cc_usage]: ../Tactics/Substitution.lean#L243
+[cc_calc-statistical]: ../Tactics/Substitution.lean#L292
+[cc_calc-mixed]: ../Tactics/Substitution.lean#L295
