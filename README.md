@@ -12,20 +12,21 @@ composable security is given in [7].
 ## Libraries
 
 The sources are under `src/`; module names follow their paths there. [THEORY.md](THEORY.md)
-summarizes the theory layer by layer, with links to the Lean declarations.
+shows the layers and how they connect, with each class and its instance. The READMEs linked in
+the table give the details of each library, with links to the Lean declarations.
 
 | Library | Content |
 |---|---|
-| `Probability` | finitely supported distributions, kernels, statistical distance, couplings, expectation, counting |
-| `RandomSystems` | systems and automata; deterministic converters and programs; distributions over deterministic systems; random systems given by their cumulative probabilities; probabilistic automata and memoryless systems; probabilistic converters, attachment and parallel composition; transcript distance and distinguishers; games; typed systems, typed converters and typed games on interfaces, with filters, contexts, sources, automata, memoryless and functional systems, and games presented by discrete games; the programs and program converters of the DSL |
-| `ConstructiveCryptography.Specification`, `.Construction` | specifications, constructions and relaxations over any carrier |
-| `ConstructiveCryptography.CryptographicAlgebra` | the classes of cryptographic algebras: resource theories, parallel composition, compatible pseudo-metrics and distinguisher classes, relaxations |
-| `ConstructiveCryptography` (top level) | the instances of the classes on interfaces (category, monoidal category, cryptographic algebra, distinguisher class, games), each field a systems-level object; notation |
-| `ConstructiveCryptography.Substitution` | the substitution calculus for constructions [6] |
-| `ConstructiveCryptography.DSL` | a compiler from component declarations to typed systems and typed converters |
-| `ConstructiveCryptography.Tactics` | proof commands, including the substitution calculations `cc_calc` |
+| [`Probability`](src/Probability/README.md) | finitely supported distributions, kernels, statistical distance, couplings, expectation, counting |
+| [`RandomSystems`](src/RandomSystems/README.md) | systems and automata; deterministic converters and programs; distributions over deterministic systems; random systems given by their cumulative probabilities; probabilistic automata and memoryless systems; probabilistic converters, attachment and parallel composition; transcript distance and distinguishers ([`Distance`](src/RandomSystems/Distance/README.md)); games ([`Game`](src/RandomSystems/Game/README.md)); typed systems, typed converters and typed games on interfaces, with filters, contexts, sources, automata, memoryless and functional systems, and games presented by discrete games ([`Typed`](src/RandomSystems/Typed/README.md)); the programs and program converters of the DSL |
+| [`ConstructiveCryptography.Specification`, `.Construction`](src/ConstructiveCryptography/README.md#specifications-and-constructions) | specifications, constructions and relaxations over any carrier |
+| [`ConstructiveCryptography.CryptographicAlgebra`](src/ConstructiveCryptography/README.md#the-classes) | the classes of cryptographic algebras: resource theories, parallel composition, compatible pseudo-metrics and distinguisher classes, relaxations |
+| [`ConstructiveCryptography`](src/ConstructiveCryptography/README.md#the-instances-on-interfaces) (top level) | the instances of the classes on interfaces (category, monoidal category, cryptographic algebra, distinguisher class, games), each field a systems-level object; notation |
+| [`ConstructiveCryptography.Substitution`](src/ConstructiveCryptography/README.md#the-substitution-calculus) | the substitution calculus for constructions [6] |
+| [`ConstructiveCryptography.DSL`](src/ConstructiveCryptography/DSL/GRAMMAR.md) | a compiler from component declarations to typed systems and typed converters |
+| [`ConstructiveCryptography.Tactics`](src/ConstructiveCryptography/DSL/GRAMMAR.md#proof-commands) | proof commands, including the substitution calculations `cc_calc` |
 | `Commons` | common ideal systems (URF, URP and their strong and tweakable forms, memoryless sources), the CDH assumption as a pair of systems, the security notions as pairs of systems [6]: symmetric encryption (real-or-random and left-or-right CPA) and authenticated encryption (ind-cca, int-ptxt, int-ctxt, ae), public-key encryption and KEMs (IND-CPA, IND-CCA), MACs and signatures (EUF-CMA, SUF-CMA), PRGs, universal hashing (UHF, DUF) and collision resistance, and the schemes SHA-256, SHA-3, SHAKE, Keccak-256, ML-KEM [9] and ML-DSA [10] (the last two adapted from VCVio [11]) with known-answer tests, in the order of [8] |
-| `Examples` | authenticated encryption, AES, AEAD, PRG length extension, substitutions on interfaces, the proof commands |
+| [`Examples`](src/Examples/README.md) | authenticated encryption, AES, AEAD, PRG length extension, substitutions on interfaces, the proof commands |
 | `Tests` | axiom audits, counterexamples, DSL diagnostics and semantics, tests of the substitution calculus |
 
 Module docstrings cite the source of each definition and theorem, with the
