@@ -48,7 +48,7 @@ local notation "⟦" "E_k" "," "D_k" "⟧" => AE.Real.perPort scheme (budget := 
 
 /-- `⟦E$_k, D^⊥⟧ = ρ^ae(E_k)` for `k ← Gen`, at the budget `q` per port. -/
 local notation "⟦" "E$_k" "," "D^⊥" "⟧" =>
-  (AE.Ideal.perPort M C • Encryption.Real.perPort scheme : Interface.Resource (AE.perPort M C q))
+  (AE.Ideal.perPort M C • Encryption.Real.perPort scheme : TypedSystem (AE.perPort M C q))
 
 /-- **`(ind-cca, int-ptxt) → ae`, corrected** (Banfi, Theorem 2.3.10(4)). For the admitted
 distinguishers, which are closed under absorbing converters, `int-ptxt` within `εptxt` and
@@ -58,17 +58,26 @@ theorem ae_of_ind_cca_int_ptxt [AdmissibleDistinguishers]
     (εptxt εcca : (AE.perPort M C q).inputDomain.DistinguisherBehavior → ENNReal)
     (ptxt : AE.INTPTXT scheme εptxt) (cca : AE.INDCCA scheme εcca) :
     AE.Secure scheme fun D =>
-      εptxt D + εcca (absorb ρ^ptxt D) + εptxt (absorb (ρ^ptxt ≫ ρ^cca) D) +
-        εcca (absorb (ρ^ptxt ≫ ρ^cca ≫ ρ^ptxt) D) +
+      εptxt D +
+        εcca (D.absorb (AE.perPort M C q).nonempty_prefix (AE.perPort M C q).nonempty_prefix
+          ρ^ptxt) +
+        εptxt (D.absorb (AE.perPort M C q).nonempty_prefix (AE.perPort M C q).nonempty_prefix
+          (ρ^ptxt ≫ ρ^cca)) +
+        εcca (D.absorb (AE.perPort M C q).nonempty_prefix (AE.perPort M C q).nonempty_prefix
+          (ρ^ptxt ≫ ρ^cca ≫ ρ^ptxt)) +
         ((q .enc) ^ 2 / Fintype.card M : ℝ≥0) := by
   cc_calc mixed (distinguisherAdvantage AdmissibleDistinguishers.admissible) using
       (fun D _ R S => distinguisherAdvantage_le_distance _ D R S)
     ⟦E_k, D_k⟧ ≃[εptxt] ρ^ptxt • ⟦E_k, D_k⟧ := ptxt
-    _ ≃[εcca ∘ absorb ρ^ptxt] ρ^ptxt • ρ^cca • ⟦E_k, D_k⟧ :=
+    _ ≃[fun D => εcca (D.absorb (AE.perPort M C q).nonempty_prefix
+          (AE.perPort M C q).nonempty_prefix ρ^ptxt)] ρ^ptxt • ρ^cca • ⟦E_k, D_k⟧ :=
       AdmissibleDistinguishers.substitutesWithin_context ρ^ptxt cca
-    _ ≃[εptxt ∘ absorb (ρ^ptxt ≫ ρ^cca)] ρ^ptxt • ρ^cca • ρ^ptxt • ⟦E_k, D_k⟧ :=
+    _ ≃[fun D => εptxt (D.absorb (AE.perPort M C q).nonempty_prefix
+          (AE.perPort M C q).nonempty_prefix (ρ^ptxt ≫ ρ^cca))]
+        ρ^ptxt • ρ^cca • ρ^ptxt • ⟦E_k, D_k⟧ :=
       AdmissibleDistinguishers.substitutesWithin_context (ρ^ptxt ≫ ρ^cca) ptxt
-    _ ≃[εcca ∘ absorb (ρ^ptxt ≫ ρ^cca ≫ ρ^ptxt)]
+    _ ≃[fun D => εcca (D.absorb (AE.perPort M C q).nonempty_prefix
+          (AE.perPort M C q).nonempty_prefix (ρ^ptxt ≫ ρ^cca ≫ ρ^ptxt))]
         ρ^ptxt • ρ^cca • ρ^ptxt • ρ^cca • ⟦E_k, D_k⟧ :=
       AdmissibleDistinguishers.substitutesWithin_context (ρ^ptxt ≫ ρ^cca ≫ ρ^ptxt) cca
     _ ≈[((q .enc) ^ 2 / Fintype.card M : ℝ≥0)] ⟦E$_k, D^⊥⟧ :=
@@ -82,7 +91,7 @@ inductive Assumption
 
 /-- The systems of each assumption, the pairs `AE.INDCCA.systems` and `AE.INTPTXT.systems`,
 indexed by Banfi's direction bit: `X_{i,false} = X₀` and `X_{i,true} = X₁`. -/
-noncomputable def assumptionSystems (i : Assumption) (b : Bool) : Resource (AE.perPort M C q) :=
+noncomputable def assumptionSystems (i : Assumption) (b : Bool) : TypedSystem (AE.perPort M C q) :=
   let X := match i with
     | .cca => AE.INDCCA.systems scheme q
     | .ptxt => AE.INTPTXT.systems scheme q

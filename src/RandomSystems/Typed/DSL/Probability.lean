@@ -1,4 +1,4 @@
-import ConstructiveCryptography.Functional
+import RandomSystems.Typed.Functional
 
 /-!
 # Laws

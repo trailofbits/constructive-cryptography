@@ -1,10 +1,10 @@
-import ConstructiveCryptography.DSL.Syntax
-import ConstructiveCryptography.DSL.Converters
-import ConstructiveCryptography.DSL.Tactics
-import ConstructiveCryptography.Source
-import ConstructiveCryptography.Context
-import ConstructiveCryptography.InterfaceFilter
-import ConstructiveCryptography.InterfaceCoherence
+import RandomSystems.Typed.DSL.Syntax
+import RandomSystems.Typed.DSL.Converters
+import RandomSystems.Typed.DSL.Tactics
+import RandomSystems.Typed.Source
+import RandomSystems.Typed.Context
+import RandomSystems.Typed.Filter
+import RandomSystems.Typed.InterfaceCoherence
 import ConstructiveCryptography.Notation
 
 /-!
@@ -18,7 +18,10 @@ that samples nothing is the deterministic system of its program. Initialization 
 first invocation. A converter gets its inferred per-call bound `C.bound` and the arrow from
 budget `q` to `C.bound * q` inside queries, plus the exact arrow `C.exact` when its number of
 inside calls is a function of the input; a filter is the arrow from the restricted budget.
-System definitions take their budget from their outermost component.
+System definitions take their budget from their outermost component. The compiler is a front end
+on the category of interfaces: systems are `TypedSystem`s, and converters, built from
+`TypedConverter.ofProgram` and its variants, are declared as arrows `A ⟶ B` of
+`Interface.category`, so that components assemble with `≫` and `⊗ₘ`.
 -/
 
 namespace SystemAlgebra.DSL
@@ -556,8 +559,8 @@ def elabPerPortDecls (converting : Bool) (name : Ident)
     if !converting then
       let (randK, admitsK, _) ← insideInterfaces sites used k
       elabCommand (← `(noncomputable def $perPortName:ident $params:bracketedBinder*
-          {$q : ($sigZero).I → ℕ} : Interface.Resource $sigPP :=
-        (Interface.Converter.ofProgram none ($bodyName $args*) ($boundSpecName $args*) $admitsK :
+          {$q : ($sigZero).I → ℕ} : TypedSystem $sigPP :=
+        (TypedConverter.ofProgram none ($bodyName $args*) ($boundSpecName $args*) $admitsK :
           $sigPP ⟶ $randK) • $randomnessName $args* $k))
     else
       let some declared := σ.declared | return
@@ -608,7 +611,7 @@ def elabPerPortDecls (converting : Bool) (name : Ident)
               $qIn (fun _ hne' hc' => ⟨hne', hc'⟩) $admitsK ys hne hl $within))
       elabCommand (← `(noncomputable def $programName:ident $params:bracketedBinder*
           {$q : ($sigZero).I → ℕ} : $sigPP ⟶ $innerPP :=
-        Interface.Converter.ofPreservingProgram none ($bodyName $args*) ($boundSpecName $args*)
+        TypedConverter.ofPreservingProgram none ($bodyName $args*) ($boundSpecName $args*)
           ($portMapName $args*) ($preservingName $args*) $q (fun _ hd => hd.2) $admitsPP))
       if sites.isEmpty then
         elabCommand (← `(noncomputable def $perPortName:ident $params:bracketedBinder*
@@ -617,7 +620,7 @@ def elabPerPortDecls (converting : Bool) (name : Ident)
         elabCommand (← `(noncomputable def $perPortName:ident $params:bracketedBinder*
             {$q : ($sigZero).I → ℕ} : $sigPP ⟶ $insidePP :=
           CategoryTheory.CategoryStruct.comp ($programName $args* (budget := $q))
-            (Interface.rightContext $insidePP ($randomnessName $args* $k))))
+            (TypedConverter.rightContext $insidePP ($randomnessName $args* $k))))
     if (← errorCount) > before then set saved
   catch _ => set saved
 
@@ -631,9 +634,9 @@ def siteDecl (site : Site) (lawName : Ident) (args : Array (TSyntax `term)) :
 /-- The parallel composition of the sources of the sites at budget `k`. -/
 def sourcesAt (lawNames : Array Ident) (args : Array (TSyntax `term)) (k : TSyntax `term) :
     CommandElabM (TSyntax `term) := do
-  let mut result ← `(Interface.Resource.source ($(lawNames.back!) $args*) $k)
+  let mut result ← `(TypedSystem.source ($(lawNames.back!) $args*) $k)
   for law in lawNames.pop.reverse do
-    result ← `(Interface.parallel (Interface.Resource.source ($law $args*) $k) $result)
+    result ← `(TypedSystem.parallel (TypedSystem.source ($law $args*) $k) $result)
   return result
 
 /-- The declarations of a component compiled to a program: its body, its inferred per-call
@@ -685,13 +688,13 @@ def elabProgramDecls (converting : Bool) (name : Ident) (params : Array (TSyntax
   let sigB ← σ.at budget
   elabCommand (← `(noncomputable def $programName:ident $params:bracketedBinder* {$budget : ℕ} :
       $sigB ⟶ $innerK :=
-    Interface.Converter.ofProgram none ($bodyName $args*) ($boundSpecName $args*) $admitsK))
+    TypedConverter.ofProgram none ($bodyName $args*) ($boundSpecName $args*) $admitsK))
   if !sites.isEmpty then
     -- A hygienic name, so the budget of the sources captures no parameter of the component.
     let q := Lean.mkIdent (← liftMacroM (Lean.Macro.addMacroScope `sourceBudget))
     let (randQ, _, _) ← insideInterfaces sites used q
     elabCommand (← `(noncomputable def $randomnessName:ident $params:bracketedBinder* ($q : ℕ) :
-        Interface.Resource $randQ := $(← sourcesAt lawNames args q)))
+        TypedSystem $randQ := $(← sourcesAt lawNames args q)))
   if converting then
     let (declK, _, _) ← insideInterfaces insides used k
     if sites.isEmpty then
@@ -701,10 +704,10 @@ def elabProgramDecls (converting : Bool) (name : Ident) (params : Array (TSyntax
       elabCommand (← `(noncomputable def $name:ident $params:bracketedBinder* {$budget : ℕ} :
           $sigB ⟶ $declK :=
         CategoryTheory.CategoryStruct.comp ($programName $args* (budget := $budget))
-          (Interface.rightContext $declK ($randomnessName $args* $k))))
+          (TypedConverter.rightContext $declK ($randomnessName $args* $k))))
   else
     elabCommand (← `(noncomputable def $name:ident $params:bracketedBinder* {$budget : ℕ} :
-        Interface.Resource $sigB :=
+        TypedSystem $sigB :=
       $programName $args* (budget := $budget) • $randomnessName $args* $k))
 
 /-- The exact typing of a converter that samples nothing, when its number of inside calls is
@@ -749,7 +752,7 @@ def elabExactDecls (name : Ident) (params : Array (TSyntax ``Term.bracketedBinde
       (fun h => (h.map fun x => $costName $args* x.1 x.2).sum ≤ $budget) (cost_prefix_closed _ _))
     elabCommand (← `(noncomputable def $exactName:ident $params:bracketedBinder*
         {$budget $queries : ℕ} : $outside ⟶ $innerB :=
-      Interface.Converter.ofCostedProgram none ($bodyName $args*) ($boundSpecName $args*)
+      TypedConverter.ofCostedProgram none ($bodyName $args*) ($boundSpecName $args*)
         (fun x => $costName $args* x.1 x.2) ($costsName $args*) (fun _ hd => hd.2) $admitsB))
     if (← errorCount) > before then set saved
   catch _ => set saved
@@ -892,15 +895,15 @@ def elabComponent : CommandElab := fun stx => do
         $stateTy → (i : ($sigZero).I) → ($sigZero).X i → $stateTy × ($sigZero).Y i :=
       fun $state:ident i => match i with $alts:matchAlt*))
     elabCommand (← `(noncomputable def $name:ident $params:bracketedBinder* {$budget : ℕ} :
-        Interface.Resource $sig :=
-      Interface.Resource.ofAutomaton $sig ($stepName $args*)
+        TypedSystem $sig :=
+      TypedSystem.ofAutomaton $sig ($stepName $args*)
         (Probability.Distribution.ProbDist.single ($initName $args*))))
     let q := Lean.mkIdent `budget
     if let some sigPP ← σ.perPortAt q then
       let perPortName := Lean.mkIdent (name.getId ++ `perPort)
       elabCommand (← `(noncomputable def $perPortName:ident $params:bracketedBinder*
-          {$q : ($sigZero).I → ℕ} : Interface.Resource $sigPP :=
-        Interface.Resource.ofAutomaton $sigPP ($stepName $args*)
+          {$q : ($sigZero).I → ℕ} : TypedSystem $sigPP :=
+        TypedSystem.ofAutomaton $sigPP ($stepName $args*)
           (Probability.Distribution.ProbDist.single ($initName $args*))))
     return
   let (innerZero, _, calls) ← componentInside converting insides sites used (← `(0))
@@ -943,7 +946,7 @@ others. -/
     Interface.restrict ($sig q) (fun $bound:ident => $admits) $closed))
   elabCommand (← `(noncomputable def $name:ident $params:bracketedBinder* {$budget : ℕ} :
       Interface.restrict ($sig $budget) (fun $bound:ident => $admits) $closed ⟶ ($sig $budget) :=
-    Interface.filter ($sig $budget) (fun $bound:ident => $admits) $closed))
+    TypedConverter.filter ($sig $budget) (fun $bound:ident => $admits) $closed))
 
 /-- The outside interface family of a system expression at budget `k`: the outer family of
 its outermost component. -/
@@ -964,7 +967,7 @@ partial def outerOf (e : TSyntax `term) (k : TSyntax `term) : CommandElabM (Opti
   | `($f:ident) => return some (← `($(Lean.mkIdent (f.getId ++ `outer)) $k))
   | _ => return none
 
-/-- Whether a system expression denotes a converter rather than a resource. -/
+/-- Whether a system expression denotes a converter rather than a typed system. -/
 partial def isConverterExpr (e : TSyntax `term) : Bool :=
   match e with
   | `(($e)) => isConverterExpr e
@@ -984,7 +987,7 @@ partial def isConverterExpr (e : TSyntax `term) : Bool :=
         ($rhs : $outer ⟶ _)))
     else
       elabCommand (← `(noncomputable def $name:ident $params:bracketedBinder* {$budget : ℕ} :
-          Interface.Resource $outer := $rhs))
+          TypedSystem $outer := $rhs))
     let outerName := Lean.mkIdent (name.getId ++ `outer)
     let outerQ ← outerOf rhs (← `(q))
     if let some o := outerQ then

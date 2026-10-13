@@ -59,15 +59,15 @@ variable [Fintype K] [Nonempty K] [Fintype X] {q : ℕ}
 
 /-- **The block cipher under a uniform key**: `E_k` for `k` uniform, answering each input with its
 encryption. -/
-def BlockCipher.Real (E : BlockCipher K X) : Interface.Resource (Evaluation X X q) :=
-  Interface.Resource.sample (Distribution.uniform K) fun k =>
-    Interface.Resource.ofFunction fun _ x => E.encrypt k x
+def BlockCipher.Real (E : BlockCipher K X) : TypedSystem (Evaluation X X q) :=
+  TypedSystem.sample (Distribution.uniform K) fun k =>
+    TypedSystem.ofFunction fun _ x => E.encrypt k x
 
 /-- **The block cipher and its inverse under a uniform key**: `E_k` answering forward queries and
 `D_k` answering inverse queries, for `k` uniform. -/
-def BlockCipher.StrongReal (E : BlockCipher K X) : Interface.Resource (Bidirectional X q) :=
-  Interface.Resource.sample (Distribution.uniform K) fun k =>
-    Interface.Resource.ofFunction fun
+def BlockCipher.StrongReal (E : BlockCipher K X) : TypedSystem (Bidirectional X q) :=
+  TypedSystem.sample (Distribution.uniform K) fun k =>
+    TypedSystem.ofFunction fun
       | .forward => fun x => E.encrypt k x
       | .inverse => fun y => E.decrypt k y
 

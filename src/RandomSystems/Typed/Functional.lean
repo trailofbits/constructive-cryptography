@@ -1,36 +1,36 @@
-import ConstructiveCryptography.Interface
+import RandomSystems.Typed.Interface
 import RandomSystems.PDS.Function
 
 /-!
-# Functional resources
+# Functional typed systems
 
-Resources given by reply functions, by conditional reply laws, and by sampling once and
+Typed systems given by reply functions, by conditional reply laws, and by sampling once and
 retaining the sample. Each is a random system on the declared alphabets and domain: reply
 laws use `RandomSystem.ofConditional`, sampling uses `RandomSystem.mix`.
 
 ## Main definitions
 
-* `Interface.Resource.ofConditional`: conditional reply distributions on the domain
-* `Interface.Resource.ofFunction`: a reply function at each interface
-* `Interface.Resource.sample`: sample once, then keep the sample
+* `TypedSystem.ofConditional`: conditional reply distributions on the domain
+* `TypedSystem.ofFunction`: a reply function at each interface
+* `TypedSystem.sample`: sample once, then keep the sample
 
 ## Main results
 
-* `Interface.Resource.ofFunction_mass`: the behavior of a function is the indicator of its
+* `TypedSystem.ofFunction_mass`: the behavior of a function is the indicator of its
   admitted transcripts
-* `Interface.Resource.eq_ofFunction`: probability one on the functional transcripts
-  determines the resource
-* `Interface.Resource.sample_ofFunction_mass`: sampled functions are the finite PDS of the
+* `TypedSystem.eq_ofFunction`: probability one on the functional transcripts
+  determines the typed system
+* `TypedSystem.sample_ofFunction_mass`: sampled functions are the finite PDS of the
   function systems
 -/
 
 namespace SystemAlgebra
 
-open Classical Probability CategoryTheory
+open Classical Probability
 open scoped BigOperators
 
 
-namespace Interface.Resource
+namespace TypedSystem
 
 variable {A : Interface}
 
@@ -38,7 +38,7 @@ variable {A : Interface}
 noncomputable def ofConditional
     (q : ∀ (h : List ((Σ i, A.X i) × (Σ i, A.Y i))) (i : A.I) (x : A.X i),
       A.domain (h.map Prod.fst ++ [⟨i, x⟩]) → Distribution.ProbDist (A.Y i)) :
-    Resource A := by
+    TypedSystem A := by
   let reply : ∀ h (x : Σ i, A.X i), A.inputDomain h x → Distribution.ProbDist (Σ i, A.Y i) :=
     fun h x hd => Distribution.PMF (q h x.1 x.2 hd) (fun y => (⟨x.1, y⟩ : Σ i, A.Y i))
   refine ⟨RandomSystem.ofConditional reply, ?_⟩
@@ -53,7 +53,7 @@ noncomputable def ofConditional
   · rfl
 
 /-- A deterministic function at each interface, on the declared input domain. -/
-noncomputable def ofFunction (f : ∀ i, A.X i → A.Y i) : Resource A :=
+noncomputable def ofFunction (f : ∀ i, A.X i → A.Y i) : TypedSystem A :=
   ofConditional fun _ i x _ => ⟨Finsupp.single (f i x) 1, Distribution.isProbDist_single _⟩
 
 lemma ofFunction_snoc (f : ∀ i, A.X i → A.Y i)
@@ -69,7 +69,7 @@ lemma ofFunction_snoc (f : ∀ i, A.X i → A.Y i)
     simp [Distribution.PMF, Distribution.fTransform, Finsupp.single_apply, eq_comm]
   · rw [dif_neg (show ¬ A.inputDomain h x from hd), if_neg hd]
 
-/-- A functional resource gives probability one to its prescribed answers on
+/-- A functional typed system gives probability one to its prescribed answers on
 each admitted history. -/
 lemma ofFunction_mass_eq_one (f : ∀ i, A.X i → A.Y i)
     (h : List ((Σ i, A.X i) × (Σ i, A.Y i)))
@@ -125,7 +125,7 @@ lemma ofFunction_mass (f : ∀ i, A.X i → A.Y i)
 
 /-- Probability one on the functional transcripts determines the entire
 behavior, including probability zero for every different answer. -/
-lemma eq_ofFunction (R : Resource A) (f : ∀ i, A.X i → A.Y i)
+lemma eq_ofFunction (R : TypedSystem A) (f : ∀ i, A.X i → A.Y i)
     (certain : ∀ h, (h = [] ∨ A.domain (h.map Prod.fst)) →
       (∀ z ∈ h, z.2 = ⟨z.1.1, f z.1.1 z.1.2⟩) → R.1 h = 1) :
     R = ofFunction f := by
@@ -174,14 +174,14 @@ lemma eq_ofFunction (R : Resource A) (f : ∀ i, A.X i → A.Y i)
 
 /-- Sample once and retain that choice throughout the interaction. -/
 noncomputable def sample {K : Type} (P : Distribution K) [Distribution.IsProbability P]
-    (R : K → Resource A) : Resource A :=
+    (R : K → TypedSystem A) : TypedSystem A :=
   ⟨RandomSystem.mix ⟨P, Distribution.IsProbability.isProbDist P⟩ (fun k => (R k).1), by
     intro h x y hne
     rw [RandomSystem.mix_mass]
     exact Finset.sum_eq_zero fun k _ => by rw [(R k).2 h x y hne, mul_zero]⟩
 
 lemma sample_mass {K : Type} (P : Distribution K) [Distribution.IsProbability P]
-    (R : K → Resource A) h :
+    (R : K → TypedSystem A) h :
     (sample P R).1 h = ∑ k ∈ P.support, P k * (R k).1 h := rfl
 
 /-- Initial sampling of functions is their existing finite DDS presentation. -/
@@ -205,25 +205,25 @@ lemma sample_ofFunction_mass {K : Type} (P : Distribution K)
   simp only [answers, List.map_eq_nil_iff]
   split_ifs <;> simp
 
-end Interface.Resource
+end TypedSystem
 
 open Lean.Parser.Term in
 /-- A function at each named interface. -/
 scoped macro "system " i:funBinder x:funBinder " => " f:term : term =>
-  `(Interface.Resource.ofFunction (fun $i $x => $f))
+  `(TypedSystem.ofFunction (fun $i $x => $f))
 
 open Lean.Parser.Term in
 /-- Annotate a functional system with its interface. -/
 scoped macro "system " "[" A:term "] " i:funBinder x:funBinder " => " f:term : term =>
-  `(Interface.Resource.ofFunction (A := $A) (fun $i $x => $f))
+  `(TypedSystem.ofFunction (A := $A) (fun $i $x => $f))
 
 /-- Initial sampling scopes over the complete system expression that follows. -/
 scoped macro "sample " k:ident " ← " law:term "; " body:term : term =>
-  `(Interface.Resource.sample $law (fun $k => $body))
+  `(TypedSystem.sample $law (fun $k => $body))
 
 /-- Initial sampling, with the same sampling symbol as component declarations. -/
 scoped macro "sample " k:ident " ←$ " law:term "; " body:term : term =>
-  `(Interface.Resource.sample (show Probability.Distribution.ProbDist _ from $law).1
+  `(TypedSystem.sample (show Probability.Distribution.ProbDist _ from $law).1
     (fun $k => $body))
 
 end SystemAlgebra

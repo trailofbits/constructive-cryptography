@@ -1,11 +1,11 @@
-import ConstructiveCryptography.Automaton
+import RandomSystems.Typed.Automaton
 
 /-!
 # Sources of fresh samples
 
 A source answers each query with a fresh sample from its law (Maurer 2002, Definition 1: an
 `X`-source is a sequence of random variables in `X`; here they are independent and identically
-distributed). It is the primitive randomness resource: randomness enters a system only through
+distributed). It is the primitive source of randomness: randomness enters a system only through
 sources. It is the automaton that draws a table of `q` independent samples as its initial state
 and answers the `k`-th query with the `k`-th entry.
 
@@ -13,7 +13,7 @@ and answers the `k`-th query with the `k`-th entry.
 
 * `Interface.source X q`: a single port with no input and outputs in `X`, at most `q` queries
 * `Interface.sourceStep law`: the `k`-th query receives the `k`-th entry of the table
-* `Interface.Resource.source law q`: the source of fresh samples from `law`
+* `TypedSystem.source law q`: the source of fresh samples from `law`
 
 ## Main results
 
@@ -24,9 +24,9 @@ namespace SystemAlgebra
 
 open Probability
 
-namespace Interface
-
 variable {X : Type}
+
+namespace Interface
 
 /-- A source interface: a single port with no input and outputs in `X`, at most `q` queries. -/
 abbrev source (X : Type) [Fintype X] (q : ℕ) : Interface :=
@@ -44,14 +44,14 @@ lemma stateAfter_sourceStep {q : ℕ} (law : Distribution.ProbDist X) (t : Fin q
   | nil => rfl
   | append_singleton h x ih => rw [stateAfter_snoc, ih]; simp [sourceStep]
 
+end Interface
+
 /-- **The source of fresh samples from `law`**: the automaton reading its answers from a table
 of `q` independent samples. -/
-noncomputable def Resource.source [Fintype X] (law : Distribution.ProbDist X) (q : ℕ) :
-    Resource (Interface.source X q) :=
-  Resource.ofAutomaton (Interface.source X q) (sourceStep law)
+noncomputable def TypedSystem.source [Fintype X] (law : Distribution.ProbDist X) (q : ℕ) :
+    TypedSystem (Interface.source X q) :=
+  TypedSystem.ofAutomaton (Interface.source X q) (Interface.sourceStep law)
     ⟨Distribution.fTransform (fun t => (t, 0)) (Distribution.pi fun _ : Fin q => law.1),
       Distribution.fTransform_isProbDist _ (Distribution.pi_isProbDist fun _ => law.2)⟩
-
-end Interface
 
 end SystemAlgebra

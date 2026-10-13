@@ -1,4 +1,4 @@
-import ConstructiveCryptography.DDCCoherence
+import RandomSystems.Typed.DDCCoherence
 
 /-!
 # Parallel renaming
@@ -13,13 +13,13 @@ Renaming two disjoint interface families independently is renaming their union.
 
 * `Interface.tensorL_renameConverter`: parallel renaming converters are the renaming
   converter of the union
-* `Interface.parallelConverter_rename`: the parallel composition of two renamings is the
-  renaming of the union
+* `TypedConverter.parallel_rename`: the parallel composition of two renamings is the renaming
+  of the union
 -/
 
 namespace SystemAlgebra.Interface
 
-open Classical CategoryTheory
+open Classical
 
 def sumEquiv {I J K L : Type} {U : I → Type} {V : J → Type} {X : K → Type} {Y : L → Type}
     (f : (Σ i, U i) ≃ (Σ j, V j)) (g : (Σ k, X k) ≃ (Σ l, Y l)) :
@@ -121,18 +121,18 @@ lemma tensorL_renameConverter :
 end SystemAlgebra.Interface
 
 
-namespace SystemAlgebra.Interface
+namespace SystemAlgebra.TypedConverter
 
-open Classical CategoryTheory
+open Classical Interface
 
-lemma parallelConverter_rename {A B C D : Interface}
+lemma parallel_rename {A B C D : Interface}
     (e : A.I ≃ B.I) (f : (Σ i, A.X i) ≃ (Σ j, B.X j)) (g : (Σ i, A.Y i) ≃ (Σ j, B.Y j))
     (hf : ∀ x, (f x).1 = e x.1) (hg : ∀ y, (g y).1 = e y.1)
     (hd : ∀ h, B.domain (h.map f) ↔ A.domain h)
     (e' : C.I ≃ D.I) (f' : (Σ i, C.X i) ≃ (Σ j, D.X j)) (g' : (Σ i, C.Y i) ≃ (Σ j, D.Y j))
     (hf' : ∀ x, (f' x).1 = e' x.1) (hg' : ∀ y, (g' y).1 = e' y.1)
     (hd' : ∀ h, D.domain (h.map f') ↔ C.domain h) :
-    parallelConverter (rename e f g hf hg hd) (rename e' f' g' hf' hg' hd') =
+    parallel (rename e f g hf hg hd) (rename e' f' g' hf' hg' hd') =
       rename (Equiv.sumCongr e e') (sumEquiv f f') (sumEquiv g g')
         (sumEquiv_label e e' f f' hf hf')
         (by rintro ⟨(i | j), y⟩; exact congrArg Sum.inl (hg ⟨i, y⟩); exact congrArg Sum.inr (hg' ⟨j, y⟩))
@@ -154,4 +154,4 @@ lemma parallelConverter_rename {A B C D : Interface}
     rw [← tensorL_renameConverter e f g hf hg e' f' g' hf' hg'] at hs
     exact hs.mono fun h y hy => canon_mem hy
 
-end SystemAlgebra.Interface
+end SystemAlgebra.TypedConverter

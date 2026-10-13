@@ -15,34 +15,34 @@ checks depend only on `propext`, `Classical.choice` and `Quot.sound`.
 #print axioms SystemAlgebra.DDC.ofProgramOn_isDDCFrom
 #print axioms SystemAlgebra.DDC.insideQueries_length_le_of_budget
 #print axioms SystemAlgebra.DDC.insideQueries_length_le_of_costs
-#print axioms SystemAlgebra.Interface.Converter.ofProgram
-#print axioms SystemAlgebra.Interface.Converter.ofCostedProgram
+#print axioms SystemAlgebra.TypedConverter.ofProgram
+#print axioms SystemAlgebra.TypedConverter.ofCostedProgram
 #print axioms SystemAlgebra.DDC.insideQueries_restrict_length_le
-#print axioms SystemAlgebra.Interface.Converter.ofPreservingProgram
+#print axioms SystemAlgebra.TypedConverter.ofPreservingProgram
 #print axioms SystemAlgebra.Interface.perPort_tensor_admits
 
--- Inlining: attaching a program runs its body against the resource.
+-- Inlining: attaching a program runs its body against the typed system.
 #print axioms SystemAlgebra.Program.apply_ofProgram
 #print axioms SystemAlgebra.Program.trim_apply_ofProgram
 #print axioms SystemAlgebra.Program.trim_apply_ofProgramOn
 #print axioms SystemAlgebra.apply_filterDom_outside
 #print axioms SystemAlgebra.PDCBehavior.ofDDC_apply
-#print axioms SystemAlgebra.Interface.ofDDC_apply
-#print axioms SystemAlgebra.Interface.ofDDC_ofProgramOn_smul_ofPDS
+#print axioms SystemAlgebra.TypedConverter.ofDDC_apply
+#print axioms SystemAlgebra.TypedConverter.ofDDC_ofProgramOn_smul_ofPDS
 #print axioms SystemAlgebra.Program.inline_automatonSystem
 #print axioms SystemAlgebra.Program.trim_apply_ofProgramOn_automaton
 #print axioms SystemAlgebra.Program.combine_eq_of_invoke
 #print axioms SystemAlgebra.Program.combine_congr
-#print axioms SystemAlgebra.Interface.ofDDC_ofProgramOn_smul_ofAutomaton
-#print axioms SystemAlgebra.Interface.Converter.ofProgram_smul_ofAutomaton
-#print axioms SystemAlgebra.Interface.Converter.ofPreservingProgram_smul_ofAutomaton
+#print axioms SystemAlgebra.TypedConverter.ofDDC_ofProgramOn_smul_ofAutomaton
+#print axioms SystemAlgebra.TypedConverter.ofProgram_smul_ofAutomaton
+#print axioms SystemAlgebra.TypedConverter.ofPreservingProgram_smul_ofAutomaton
 
 -- Sources, contexts and automata.
-#print axioms SystemAlgebra.Interface.Resource.source
+#print axioms SystemAlgebra.TypedSystem.source
 #print axioms SystemAlgebra.Interface.stateAfter_sourceStep
-#print axioms SystemAlgebra.Interface.rightContext
-#print axioms SystemAlgebra.Interface.attach_rightContext
-#print axioms SystemAlgebra.Interface.filter
+#print axioms SystemAlgebra.TypedConverter.rightContext
+#print axioms SystemAlgebra.TypedConverter.attach_rightContext
+#print axioms SystemAlgebra.TypedConverter.filter
 
 -- Obligation lemmas.
 #print axioms SystemAlgebra.DSL.sampleWitness

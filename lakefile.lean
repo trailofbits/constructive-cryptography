@@ -18,7 +18,7 @@ lean_lib Probability where
   globs := #[.andSubmodules `Probability]
 
 /-- Random systems, deterministic and probabilistic converters, attachment,
-parallel composition, distance and games. -/
+parallel composition, distance and games; typed systems and typed converters on interfaces. -/
 @[default_target]
 lean_lib RandomSystems where
   globs := #[.andSubmodules `RandomSystems]

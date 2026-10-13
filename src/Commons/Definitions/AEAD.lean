@@ -136,28 +136,28 @@ scoped notation "ρ^ae" => AE.Ideal.perPort _ _
 for `k ← Gen`, at the budget `q` per port. -/
 def AE.INDCCA.systems [DecidableEq K] [DecidableEq M] [DecidableEq C] [Nonempty M]
     (scheme : SymmetricEncryption K M C) (q : AE.Port → ℕ) :
-    Interface.Resource (AE.perPort M C q) × Interface.Resource (AE.perPort M C q) :=
+    TypedSystem (AE.perPort M C q) × TypedSystem (AE.perPort M C q) :=
   (AE.Real.perPort scheme, AE.CCA.perPort M C • AE.Real.perPort scheme)
 
 /-- **The systems of int-ptxt** (Banfi, Definition 2.3.6): `⟦E_k, D_k⟧` and
 `ρ^ptxt(⟦E_k, D_k⟧)`, for `k ← Gen`, at the budget `q` per port. -/
 def AE.INTPTXT.systems [DecidableEq K] [DecidableEq M] (scheme : SymmetricEncryption K M C)
     (q : AE.Port → ℕ) :
-    Interface.Resource (AE.perPort M C q) × Interface.Resource (AE.perPort M C q) :=
+    TypedSystem (AE.perPort M C q) × TypedSystem (AE.perPort M C q) :=
   (AE.Real.perPort scheme, AE.PTXT.perPort M C • AE.Real.perPort scheme)
 
 /-- **The systems of int-ctxt** (Banfi, Definition 2.3.7): `⟦E_k, D_k⟧` and `ρ^ctxt(E_k)`, for
 `k ← Gen`, at the budget `q` per port. -/
 def AE.INTCTXT.systems [DecidableEq K] [DecidableEq M] [DecidableEq C]
     (scheme : SymmetricEncryption K M C) (q : AE.Port → ℕ) :
-    Interface.Resource (AE.perPort M C q) × Interface.Resource (AE.perPort M C q) :=
+    TypedSystem (AE.perPort M C q) × TypedSystem (AE.perPort M C q) :=
   (AE.Real.perPort scheme, AE.CTXT.perPort M C • Encryption.Real.perPort scheme)
 
 /-- **The systems of ae** (Banfi, Definition 2.3.8): `⟦E_k, D_k⟧` and
 `⟦E$_k, D^⊥⟧ = ρ^ae(E_k)`, for `k ← Gen`, at the budget `q` per port. -/
 def AE.Secure.systems [DecidableEq K] [DecidableEq M] [DecidableEq C] [Nonempty M]
     (scheme : SymmetricEncryption K M C) (q : AE.Port → ℕ) :
-    Interface.Resource (AE.perPort M C q) × Interface.Resource (AE.perPort M C q) :=
+    TypedSystem (AE.perPort M C q) × TypedSystem (AE.perPort M C q) :=
   (AE.Real.perPort scheme, AE.Ideal.perPort M C • Encryption.Real.perPort scheme)
 
 /-- **ind-cca** within `error`: against the admitted distinguishers, `⟦E_k, D_k⟧` substitutes

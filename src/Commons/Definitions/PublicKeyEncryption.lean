@@ -101,7 +101,7 @@ converter PKE.CCA(PK M C : Type) [Fintype PK] [Fintype M] [Fintype C] [Decidable
 `(pk, sk) ← G`, at the budget `q` per port. -/
 def PKE.INDCCA.systems [DecidableEq PK] [DecidableEq M] [DecidableEq C] [Nonempty M]
     (scheme : PublicKeyEncryption PK SK M C) (q : PKE.Port → ℕ) :
-    Interface.Resource (PKE.perPort PK M C q) × Interface.Resource (PKE.perPort PK M C q) :=
+    TypedSystem (PKE.perPort PK M C q) × TypedSystem (PKE.perPort PK M C q) :=
   (PKE.Real.perPort scheme, PKE.CCA.perPort PK M C • PKE.Real.perPort scheme)
 
 /-- **IND-CCA** within `error`: against the admitted distinguishers, the real system substitutes
@@ -116,8 +116,8 @@ def PKE.INDCCA [Interface.AdmissibleDistinguishers]
 IND-CCA without decryption queries, at the budget `q` per port with none at `dec`. -/
 def PKE.INDCPA.systems [DecidableEq PK] [DecidableEq M] [DecidableEq C] [Nonempty M]
     (scheme : PublicKeyEncryption PK SK M C) (q : PKE.Port → ℕ) :
-    Interface.Resource (PKE.perPort PK M C (Function.update q .dec 0)) ×
-      Interface.Resource (PKE.perPort PK M C (Function.update q .dec 0)) :=
+    TypedSystem (PKE.perPort PK M C (Function.update q .dec 0)) ×
+      TypedSystem (PKE.perPort PK M C (Function.update q .dec 0)) :=
   PKE.INDCCA.systems scheme (Function.update q .dec 0)
 
 /-- **IND-CPA** within `error`: against the admitted distinguishers, the real system without

@@ -5,9 +5,9 @@ import Tests.Counterexamples
 # Axioms of the systems layer
 
 The laws of random systems, deterministic and probabilistic converters, attachment, parallel
-composition, probabilistic automata, memoryless systems, distance and games, and the
-counterexamples, depend only on `propext`, `Classical.choice` and `Quot.sound`. Comments name the
-laws of `papers/SYSTEM_ALGEBRA_SPEC.md`.
+composition, probabilistic automata, memoryless systems, distance and games, typed systems and
+typed converters, and the counterexamples, depend only on `propext`, `Classical.choice` and
+`Quot.sound`. Comments name the laws of `papers/SYSTEM_ALGEBRA_SPEC.md`.
 -/
 
 -- RandomSystems.Converter.ConverterAttachment
@@ -286,6 +286,46 @@ laws of `papers/SYSTEM_ALGEBRA_SPEC.md`.
 
 -- RandomSystems.System.Replies
 #print axioms SystemAlgebra.replies_trim_iff
+
+-- RandomSystems.Typed.Automaton
+#print axioms SystemAlgebra.TypedSystem.ofAutomaton
+#print axioms SystemAlgebra.TypedSystem.ofAutomaton_mass
+#print axioms SystemAlgebra.TypedSystem.parallel_ofAutomaton
+
+-- RandomSystems.Typed.Filter
+#print axioms SystemAlgebra.TypedConverter.filter
+#print axioms SystemAlgebra.Interface.restrict
+#print axioms SystemAlgebra.TypedConverter.filter_smul
+#print axioms SystemAlgebra.TypedConverter.filter_comp_filter_smul
+
+-- RandomSystems.Typed.Interface
+#print axioms SystemAlgebra.TypedSystem.exists_ofPDS
+#print axioms SystemAlgebra.TypedConverter.identity_attach
+#print axioms SystemAlgebra.TypedConverter.comp_smul
+
+-- RandomSystems.Typed.Memoryless
+#print axioms SystemAlgebra.TypedSystem.source_eq_memoryless
+#print axioms SystemAlgebra.TypedSystem.parallel_eq_memoryless
+#print axioms SystemAlgebra.TypedConverter.ofProgram_smul_memoryless
+#print axioms SystemAlgebra.TypedConverter.ofPreservingProgram_smul_memoryless
+#print axioms
+  SystemAlgebra.TypedConverter.ofPreservingProgram_comp_rightContext_smul_memoryless
+
+-- RandomSystems.Typed.Parallel
+#print axioms SystemAlgebra.TypedSystem.parallel
+#print axioms SystemAlgebra.TypedConverter.parallel
+
+-- RandomSystems.Typed.ParallelAttachment
+#print axioms SystemAlgebra.TypedConverter.parallel_attach
+
+-- RandomSystems.Typed.PresentedGame
+#print axioms SystemAlgebra.TypedGame.visible_ofPDG
+#print axioms SystemAlgebra.TypedSystem.sample_ofFunction_eq_behavior
+#print axioms SystemAlgebra.TypedGame.ofSingleFunction_conditionallyEquivalent
+
+-- RandomSystems.Typed.SystemParallel
+#print axioms SystemAlgebra.TypedConverter.rename_mass
+#print axioms SystemAlgebra.TypedSystem.parallel_ofPDS
 
 -- Tests.Counterexamples
 #print axioms SystemAlgebra.Counterexamples.locality_fails_without_termination

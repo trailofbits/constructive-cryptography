@@ -1,5 +1,5 @@
 import RandomSystems.Converter.ConverterRelabel
-import ConstructiveCryptography.InterfaceCoherence
+import RandomSystems.Typed.InterfaceCoherence
 
 /-!
 # Regrouping parallel DDCs

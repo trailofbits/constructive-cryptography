@@ -1,5 +1,5 @@
 import Examples.AuthenticatedEncryption.Hybrid
-import ConstructiveCryptography.PresentedGame
+import ConstructiveCryptography.InterfaceGame
 
 /-!
 # Authenticated encryption: the collision step
@@ -453,10 +453,10 @@ lemma collisionGame_badProbability (xs : List (Σ i, (AE.perPort M C q).X i)) :
 /-- **The collision game is conditionally equivalent to the ideal**: the replies with no
 collision are the ideal replies, independently of the outer replacement table. -/
 lemma collisionGame_conditionallyEquivalent :
-    Interface.Game.ofPDG (collisionGame scheme q) (collisionGame_isProbDist scheme q)
+    TypedGame.ofPDG (collisionGame scheme q) (collisionGame_isProbDist scheme q)
         (hybrid_visible scheme q) |≡
       (AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme :
-        Interface.Resource (AE.perPort M C q)) := by
+        TypedSystem (AE.perPort M C q)) := by
   -- Plan, on a transcript `h` with queries `xs`, `ω = (ω.1, ω.2)` the hybrid's tables with
   -- `ω.2` the outer replacement table, and `Coll` the collision of `xs`'s original messages
   -- with `ω.2`:
@@ -472,11 +472,11 @@ lemma collisionGame_conditionallyEquivalent :
   --     = Pr[¬Coll] · P_ideal(h)                        (step 5, ideal_mass_hybridTables)
   --     = (1 − Pr[Coll]) · P_ideal(h)                   (step 2, complement)
   --
-  -- Step 1: the presented game is `|≡` the ideal resource exactly when its game on random
+  -- Step 1: the presented game is `|≡` the ideal typed system exactly when its game on random
   -- systems is conditionally equivalent to the ideal's random system
   -- (`conditionallyEquivalent_ofPDG_iff`); that follows from the factorization above on every
   -- transcript `h` (`PDG.conditionallyEquivalent_behavior`).
-  refine (Interface.Game.conditionallyEquivalent_ofPDG_iff _ _ _ _).mpr
+  refine (Interface.conditionallyEquivalent_ofPDG_iff _ _ _ _).mpr
     (PDG.conditionallyEquivalent_behavior _ (AE.perPort M C q).nonempty_prefix fun h => ?_)
   -- Unfold the condition's probability (`collisionGame_badProbability`), the ideal as the
   -- ideal oracle on its tables (`ideal_mass`), and the left side as a mass over `hybridLaw`.
@@ -537,7 +537,7 @@ theorem collisionGame_badProbability_le (xs : List (Σ i, (AE.perPort M C q).X i
 /-- **The collision step**: the hybrid is within `q_e² / |M|` of the ideal. -/
 theorem hybrid_ideal_distance_le :
     Δ (Hybrid scheme q) (AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme :
-      Interface.Resource (AE.perPort M C q)) ≤
+      TypedSystem (AE.perPort M C q)) ≤
       ((q .enc) ^ 2 / Fintype.card M : ℝ≥0) :=
   -- The distinguisher D on the left queries either system at the ports `enc` (sends `m`,
   -- receives `c`) and `dec` (sends `c`, receives `m` or ⊥), at most `q p` times at port `p`;

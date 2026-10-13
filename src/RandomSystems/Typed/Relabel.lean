@@ -1,17 +1,28 @@
 import RandomSystems.Converter.ConverterRelabel
-import ConstructiveCryptography.InterfaceParallel
+import RandomSystems.Typed.Parallel
 
 /-!
 # Renaming heterogeneous interfaces
 
-A bijection of interfaces that keeps each message's label and transports the domain gives an
-arrow: the identity of the inside interface, with its outside relabeled. Renamings compose,
-the renaming by the identity is the identity, and each renaming is an isomorphism.
+A bijection of interfaces that keeps each message's label and transports the domain gives a
+typed converter: the identity of the inside interface, with its outside relabeled. Renamings
+compose, and the renaming by the identity is the identity.
+
+## Main definitions
+
+* `TypedConverter.rename e f g`: the renaming converter of a label-preserving bijection
+
+## Main results
+
+* `TypedConverter.rename_refl`: the renaming by the identity is the identity
+* `TypedConverter.rename_comp`: renamings compose
 -/
 
-namespace SystemAlgebra.Interface
+namespace SystemAlgebra
 
-open Classical CategoryTheory
+open Classical
+
+namespace Interface
 
 lemma alphabet_symm_label {I J : Type} {X : I → Type} {Y : J → Type}
     (e : I ≃ J) (f : (Σ i, X i) ≃ (Σ j, Y j))
@@ -20,22 +31,28 @@ lemma alphabet_symm_label {I J : Type} {X : I → Type} {Y : J → Type}
   have he := congrArg e.symm (hf (f.symm y))
   simpa only [f.apply_symm_apply, e.symm_apply_apply] using he.symm
 
-/-- The forwarding arrow for a label-preserving bijection of alphabets and domains: the
-identity of `B`, with its outside relabeled to `A`. -/
-noncomputable def rename {A B : Interface} (e : A.I ≃ B.I)
-    (f : (Σ i, A.X i) ≃ (Σ j, B.X j)) (g : (Σ i, A.Y i) ≃ (Σ j, B.Y j))
-    (hf : ∀ x, (f x).1 = e x.1) (hg : ∀ y, (g y).1 = e y.1)
-    (hd : ∀ h, B.domain (h.map f) ↔ A.domain h) : A ⟶ B :=
-  ofDDC (relabel (DDC.filter (Y := B.Y) (fun h => h = [] ∨ B.domain h)
-      (prefix_or_nil B.nonempty_prefix.2)).1 (outsideMap f) (outsideMap g.symm))
-    ((isDDCFrom_filter B.nonempty_prefix).relabelOutside e f g.symm hf
-      (alphabet_symm_label e g hg) hd)
-
 /-- The identity filter lies below the forwarding converter. -/
 lemma filter_mem {A : Interface} {h y}
     (hy : y ∈ (DDC.filter (Y := A.Y) (fun h => h = [] ∨ A.domain h)
       (prefix_or_nil A.nonempty_prefix.2)).1 h) : y ∈ idConverter A.I A.X A.Y h :=
   ((filterDom_mem_iff _ _ h y).mp hy).2
+
+end Interface
+
+namespace TypedConverter
+
+open Interface
+
+/-- The forwarding converter for a label-preserving bijection of alphabets and domains: the
+identity of `B`, with its outside relabeled to `A`. -/
+noncomputable def rename {A B : Interface} (e : A.I ≃ B.I)
+    (f : (Σ i, A.X i) ≃ (Σ j, B.X j)) (g : (Σ i, A.Y i) ≃ (Σ j, B.Y j))
+    (hf : ∀ x, (f x).1 = e x.1) (hg : ∀ y, (g y).1 = e y.1)
+    (hd : ∀ h, B.domain (h.map f) ↔ A.domain h) : TypedConverter A B :=
+  ofDDC (relabel (DDC.filter (Y := B.Y) (fun h => h = [] ∨ B.domain h)
+      (prefix_or_nil B.nonempty_prefix.2)).1 (outsideMap f) (outsideMap g.symm))
+    ((isDDCFrom_filter B.nonempty_prefix).relabelOutside e f g.symm hf
+      (alphabet_symm_label e g hg) hd)
 
 /-- A renaming is the behavior of a DDC below the renaming converter. -/
 lemma exists_rename_eq_ofDDC {A B : Interface} (e : A.I ≃ B.I)
@@ -50,7 +67,7 @@ lemma exists_rename_eq_ofDDC {A B : Interface} (e : A.I ≃ B.I)
 lemma rename_refl (A : Interface) :
     rename (Equiv.refl A.I) (Equiv.refl (Σ i, A.X i)) (Equiv.refl (Σ i, A.Y i))
       (fun _ => rfl) (fun _ => rfl)
-      (fun h => (congrArg A.domain (List.map_id h)).to_iff) = 𝟙 A := by
+      (fun h => (congrArg A.domain (List.map_id h)).to_iff) = TypedConverter.id A := by
   have he : relabel (DDC.filter (Y := A.Y) (fun h => h = [] ∨ A.domain h)
       (prefix_or_nil A.nonempty_prefix.2)).1 (outsideMap (Equiv.refl (Σ i, A.X i)))
       (outsideMap (Equiv.refl (Σ i, A.Y i)).symm) =
@@ -67,7 +84,7 @@ lemma rename_comp {A B C : Interface}
     (e' : B.I ≃ C.I) (f' : (Σ i, B.X i) ≃ (Σ j, C.X j)) (g' : (Σ i, B.Y i) ≃ (Σ j, C.Y j))
     (hf' : ∀ x, (f' x).1 = e' x.1) (hg' : ∀ y, (g' y).1 = e' y.1)
     (hd' : ∀ h, C.domain (h.map f') ↔ B.domain h) :
-    rename e f g hf hg hd ≫ rename e' f' g' hf' hg' hd' =
+    comp (rename e f g hf hg hd) (rename e' f' g' hf' hg' hd') =
       rename (e.trans e') (f.trans f') (g.trans g')
         (fun x => (hf' (f x)).trans (congrArg e' (hf x)))
         (fun y => (hg' (g y)).trans (congrArg e' (hg y)))
@@ -93,21 +110,6 @@ lemma rename_comp {A B C : Interface}
   · intro xs ys hr
     exact hr.mono (relabel_mono (fun _ _ hy => filter_mem hy) _ _)
 
-/-- A bijection of interfaces is an isomorphism of the existing converter category. -/
-noncomputable def isoOf {A B : Interface} (e : A.I ≃ B.I)
-    (f : (Σ i, A.X i) ≃ (Σ j, B.X j)) (g : (Σ i, A.Y i) ≃ (Σ j, B.Y j))
-    (hf : ∀ x, (f x).1 = e x.1) (hg : ∀ y, (g y).1 = e y.1)
-    (hd : ∀ h, B.domain (h.map f) ↔ A.domain h) : A ≅ B where
-  hom := rename e f g hf hg hd
-  inv := rename e.symm f.symm g.symm (alphabet_symm_label e f hf) (alphabet_symm_label e g hg)
-    (fun h => by
-      have he := (hd (h.map f.symm)).symm
-      simpa only [List.map_map, Equiv.self_comp_symm, List.map_id] using he)
-  hom_inv_id := by
-    rw [rename_comp]
-    simpa only [Equiv.self_trans_symm] using rename_refl A
-  inv_hom_id := by
-    rw [rename_comp]
-    simpa only [Equiv.symm_trans_self] using rename_refl B
+end TypedConverter
 
-end SystemAlgebra.Interface
+end SystemAlgebra

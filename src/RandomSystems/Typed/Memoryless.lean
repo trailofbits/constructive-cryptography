@@ -1,5 +1,5 @@
-import ConstructiveCryptography.DSL.Converters
-import ConstructiveCryptography.Context
+import RandomSystems.Typed.DSL.Converters
+import RandomSystems.Typed.Context
 import RandomSystems.System.Memoryless
 
 /-!
@@ -17,18 +17,18 @@ beside its inside interface:
   ────────────────►│ P │
   ◄────────────────┤   │ ── k(()) ──► T, memoryless with ν'   (the converter's own randomness)
         o ⇒ v      └───┘
-                   (P ≫ rightContext B T) • R  =  mem(κ),   κ = P's reply law against ν, ν'
+               comp P (rightContext B T) • R  =  mem(κ),   κ = P's reply law against ν, ν'
 ```
 
 Statements about typed systems are equalities of their random systems (`.1`).
 
 ## Main results
 
-* `Interface.source_eq_memoryless`: a source of independent samples of `law` is memoryless
-* `Interface.parallel_eq_memoryless`: memoryless systems side by side are memoryless
-* `Interface.Converter.ofProgram_smul_memoryless`,
-  `Interface.Converter.ofPreservingProgram_smul_memoryless`,
-  `Interface.Converter.ofPreservingProgram_comp_rightContext_smul_memoryless`: the composition law
+* `TypedSystem.source_eq_memoryless`: a source of independent samples of `law` is memoryless
+* `TypedSystem.parallel_eq_memoryless`: memoryless systems side by side are memoryless
+* `TypedConverter.ofProgram_smul_memoryless`,
+  `TypedConverter.ofPreservingProgram_smul_memoryless`,
+  `TypedConverter.ofPreservingProgram_comp_rightContext_smul_memoryless`: the composition law
   `P • mem(ν) = mem(κ)` for the converters of programs
 
 ## References
@@ -36,14 +36,16 @@ Statements about typed systems are equalities of their random systems (`.1`).
 1. U. Maurer. *Cryptography Foundations*. Lecture notes, ETH Zurich, Spring 2018.
 -/
 
-namespace SystemAlgebra.Interface
+namespace SystemAlgebra
 
-open Probability Probability.Distribution CategoryTheory RandomSystem
+open Probability Probability.Distribution RandomSystem Interface
+
+namespace TypedSystem
 
 /-- **A source of independent samples is memoryless** [1, Definition 3.1]: the source of `q`
 samples of `law` replies to each trigger with a fresh sample of `law`. -/
 lemma source_eq_memoryless {Z : Type} [Fintype Z] (law : ProbDist Z) (q : ℕ) :
-    (Resource.source law q).1 =
+    (TypedSystem.source law q).1 =
       memoryless (Interface.source Z q).inputDomain (portLaw fun _ _ => law) := by
   -- Plan:
   -- 1. The typed source's random system is presented by a table `t ← law^q` of independent
@@ -69,12 +71,13 @@ lemma source_eq_memoryless {Z : Type} [Fintype Z] (law : ProbDist Z) (q : ℕ) :
   let event : List ((Σ _ : Unit, Unit) × (Σ _ : Unit, Z)) → (Fin q → Z) → Prop := fun h t =>
     Replies (filterDom (Interface.source Z q).domain (automatonSystem (sourceStep law) (t, 0)))
       (h.map Prod.fst) (h.map Prod.snd)
-  have hmass : ∀ h, (Resource.source law q).1 h = (pi fun _ : Fin q => law.1).mass (event h) := by
+  have hmass : ∀ h,
+      (TypedSystem.source law q).1 h = (pi fun _ : Fin q => law.1).mass (event h) := by
     intro h
     -- The source is the automaton `sourceStep` started in `(t, 0)` (table `t`, counter `0`)
     -- for `t ← law^q`: a transcript has the mass of the initial states, hence of the tables,
     -- from which the automaton gives it.
-    rw [Resource.source, Resource.ofAutomaton_mass, mass_fTransform]
+    rw [TypedSystem.source, ofAutomaton_mass, mass_fTransform]
   -- Step 2: one more trigger reads the next entry of the table.
   -- One more exchange: the table also gives `h · ((), z)` when the domain admits one more query
   -- and its entry `h.length` is `z`.
@@ -140,7 +143,7 @@ lemma source_eq_memoryless {Z : Type} [Fintype Z] (law : ProbDist Z) (q : ℕ) :
 law of the left system, one at a right port the reply law of the right system. The typed parallel
 composition is the systems-level one, `RandomSystem.parallel_memoryless`, with the ports of the
 two interfaces relabelled as the ports of their tensor. -/
-lemma parallel_eq_memoryless {A B : Interface} {R : Resource A} {T : Resource B}
+lemma parallel_eq_memoryless {A B : Interface} {R : TypedSystem A} {T : TypedSystem B}
     {ν₁ : ∀ i, A.X i → ProbDist (A.Y i)} {ν₂ : ∀ j, B.X j → ProbDist (B.Y j)}
     (hR : R.1 = memoryless A.inputDomain (portLaw ν₁))
     (hT : T.1 = memoryless B.inputDomain (portLaw ν₂)) :
@@ -226,7 +229,9 @@ lemma parallel_eq_memoryless {A B : Interface} {R : Resource A} {T : Resource B}
     · simp only [twoLaw]
       rw [portLaw_apply_of_ne _ (by simpa using hl), portLaw_apply_of_ne _ (by simpa using hl)]
 
-namespace Converter
+end TypedSystem
+
+namespace TypedConverter
 
 variable {A B : Interface} {S : Type}
 
@@ -235,7 +240,7 @@ reply law `ν`, the converter of a program whose reply law against `ν` is `κ` 
 the memoryless system with the reply law `κ`. -/
 lemma ofProgram_smul_memoryless (s : S) (P : Program S A.I B.I A.X A.Y B.X B.Y) {b : ℕ}
     (hb : P.Bounded b) (hB : ∀ xs, xs ≠ [] → xs.length ≤ b * A.bound → B.domain xs)
-    {R : Resource B} {ν : ∀ j, B.X j → ProbDist (B.Y j)} {κ : ∀ o, A.X o → ProbDist (A.Y o)}
+    {R : TypedSystem B} {ν : ∀ j, B.X j → ProbDist (B.Y j)} {κ : ∀ o, A.X o → ProbDist (A.Y o)}
     (hR : R.1 = memoryless B.inputDomain (portLaw ν))
     (hκ : ∀ s' o u, P.replyLaw ν s' o u b [] = (κ o u).1) :
     (ofProgram s P hb hB • R).1 = memoryless A.inputDomain (portLaw κ) :=
@@ -259,7 +264,7 @@ lemma ofPreservingProgram_smul_memoryless (s : S) (P : Program S A.I B.I A.X A.Y
     (hA : ∀ xs, A.domain xs → ∀ o, (SystemAlgebra.restrict o xs).length ≤ q o)
     (hB : ∀ ys, ys ≠ [] → ys.length ≤ b * A.bound →
       (∀ o j, ι o = some j → (SystemAlgebra.restrict j ys).length ≤ q o) → B.domain ys)
-    {R : Resource B} {ν : ∀ j, B.X j → ProbDist (B.Y j)} {κ : ∀ o, A.X o → ProbDist (A.Y o)}
+    {R : TypedSystem B} {ν : ∀ j, B.X j → ProbDist (B.Y j)} {κ : ∀ o, A.X o → ProbDist (A.Y o)}
     (hR : R.1 = memoryless B.inputDomain (portLaw ν))
     (hκ : ∀ s' o u, P.replyLaw ν s' o u b [] = (κ o u).1) :
     (ofPreservingProgram s P hb ι hι q hA hB • R).1 = memoryless A.inputDomain (portLaw κ) :=
@@ -269,7 +274,7 @@ lemma ofPreservingProgram_smul_memoryless (s : S) (P : Program S A.I B.I A.X A.Y
     R.2
 
 /-- **The composition law** for the converter of a port-preserving program with a memoryless
-system `T` beside its inside interface (its own randomness, `≫ rightContext B T`): the program
+system `T` beside its inside interface (its own randomness, `rightContext B T`): the program
 is run against the side-by-side reply laws of `R` and `T`. -/
 lemma ofPreservingProgram_comp_rightContext_smul_memoryless {C : Interface} (s : S)
     (P : Program S A.I (tensor B C).I A.X A.Y (tensor B C).X (tensor B C).Y) {b : ℕ}
@@ -277,21 +282,22 @@ lemma ofPreservingProgram_comp_rightContext_smul_memoryless {C : Interface} (s :
     (q : A.I → ℕ) (hA : ∀ xs, A.domain xs → ∀ o, (SystemAlgebra.restrict o xs).length ≤ q o)
     (hB : ∀ ys, ys ≠ [] → ys.length ≤ b * A.bound →
       (∀ o j, ι o = some j → (SystemAlgebra.restrict j ys).length ≤ q o) → (tensor B C).domain ys)
-    {R : Resource B} {T : Resource C} {ν : ∀ j, B.X j → ProbDist (B.Y j)}
+    {R : TypedSystem B} {T : TypedSystem C} {ν : ∀ j, B.X j → ProbDist (B.Y j)}
     {ν' : ∀ k, C.X k → ProbDist (C.Y k)} {κ : ∀ o, A.X o → ProbDist (A.Y o)}
     (hR : R.1 = memoryless B.inputDomain (portLaw ν))
     (hT : T.1 = memoryless C.inputDomain (portLaw ν'))
     (hκ : ∀ s' o u, P.replyLaw (parallelLaw ν ν') s' o u b [] = (κ o u).1) :
-    ((ofPreservingProgram s P hb ι hι q hA hB ≫ rightContext B T) • R).1 =
+    (comp (ofPreservingProgram s P hb ι hι q hA hB) (rightContext B T) • R).1 =
       memoryless A.inputDomain (portLaw κ) := by
   -- Attaching `rightContext B T` places `T` beside `R` ...
-  -- (`Interface.comp_smul`: `(P ≫ K) • R = P • (K • R)`; `attach_rightContext`:
+  -- (`comp_smul`: `comp P K • R = P • (K • R)`; `attach_rightContext`:
   -- `rightContext B T • R = parallel R T`.)
-  rw [Interface.comp_smul, attach_rightContext]
+  rw [comp_smul, attach_rightContext]
   -- ... a memoryless system with the side-by-side law, to which the program is attached.
   -- `parallel_eq_memoryless`: `parallel R T` is the memoryless system of `parallelLaw ν ν'`.
-  exact ofPreservingProgram_smul_memoryless s P hb ι hι q hA hB (parallel_eq_memoryless hR hT) hκ
+  exact ofPreservingProgram_smul_memoryless s P hb ι hι q hA hB
+    (TypedSystem.parallel_eq_memoryless hR hT) hκ
 
-end Converter
+end TypedConverter
 
-end SystemAlgebra.Interface
+end SystemAlgebra

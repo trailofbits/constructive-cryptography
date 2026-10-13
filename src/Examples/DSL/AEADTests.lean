@@ -34,8 +34,8 @@ lemma encrypt_transcript {q : ℕ} (hq : 1 ≤ q) (nonce : Nonce)
         ⟨⟨some (), .inr Tagging.Port.tag⟩, (nonce, ad, ciphertext)⟩),
        (⟨⟨some (), .inr Tagging.Port.tag⟩, tag⟩,
         ⟨⟨none, AEAD.Port.encrypt⟩, (ciphertext, tag)⟩)] = 1 := by
-  simp only [EncryptThenMAC, EncryptThenMAC.program, Interface.Converter.ofProgram,
-    Interface.ofDDC_apply]
+  simp only [EncryptThenMAC, EncryptThenMAC.program, TypedConverter.ofProgram,
+    TypedConverter.ofDDC_apply]
   rw [if_pos]
   refine ⟨rfl, fun k hk _ => ?_⟩
   simp only [List.map_cons, List.map_nil, List.length_cons, List.length_nil] at hk
@@ -54,8 +54,8 @@ lemma decrypt_transcript {q : ℕ} (hq : 1 ≤ q) (nonce : Nonce)
         ⟨⟨some (), .inl StreamCipher.Port.crypt⟩, (nonce, ciphertext)⟩),
        (⟨⟨some (), .inl StreamCipher.Port.crypt⟩, message⟩,
         ⟨⟨none, AEAD.Port.decrypt⟩, some message⟩)] = 1 := by
-  simp only [EncryptThenMAC, EncryptThenMAC.program, Interface.Converter.ofProgram,
-    Interface.ofDDC_apply]
+  simp only [EncryptThenMAC, EncryptThenMAC.program, TypedConverter.ofProgram,
+    TypedConverter.ofDDC_apply]
   rw [if_pos]
   refine ⟨rfl, fun k hk _ => ?_⟩
   simp only [List.map_cons, List.map_nil, List.length_cons, List.length_nil] at hk
@@ -72,8 +72,8 @@ lemma decrypt_rejects {q : ℕ} (hq : 1 ≤ q) (nonce : Nonce) (ad ciphertext : 
         ⟨⟨some (), .inr Tagging.Port.verify⟩, ((nonce, ad, ciphertext), tag)⟩),
        (⟨⟨some (), .inr Tagging.Port.verify⟩, false⟩,
         ⟨⟨none, AEAD.Port.decrypt⟩, none⟩)] = 1 := by
-  simp only [EncryptThenMAC, EncryptThenMAC.program, Interface.Converter.ofProgram,
-    Interface.ofDDC_apply]
+  simp only [EncryptThenMAC, EncryptThenMAC.program, TypedConverter.ofProgram,
+    TypedConverter.ofDDC_apply]
   rw [if_pos]
   refine ⟨rfl, fun k hk _ => ?_⟩
   simp only [List.map_cons, List.map_nil, List.length_cons, List.length_nil] at hk

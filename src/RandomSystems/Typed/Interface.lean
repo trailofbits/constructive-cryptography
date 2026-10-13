@@ -1,16 +1,14 @@
 import RandomSystems.Converter.ConverterAttachment
-import Mathlib.CategoryTheory.Types.Basic
 
 /-!
-# Interfaces, resources and converters
+# Interfaces, typed systems and typed converters
 
 An interface is the tuple `A = (I, X, Y, D)`: finitely many labels, finite input and output
 alphabets at each label, and a finite domain of input histories, prefix-closed and without
-the empty history. A resource on `A` is a random system on these alphabets over this domain
-that replies at the queried interface. A converter from `A` to `B` is the behavior of a PDC
-from `B`'s domain (inside) to `A`'s domain (outside); it acts on resources by attachment.
-Interfaces and converters are an instance of `Category`, with serial composition and the
-identity; attachment is a contravariant functor to types.
+the empty history. A typed system on `A` is a random system on these alphabets over this domain
+that replies at the queried interface. A typed converter from `A` to `B` is the behavior of a PDC
+from `B`'s domain (inside) to `A`'s domain (outside); it acts on typed systems by the
+attachment of PDC behaviors.
 Sources: MR16, §3 (printed pp. 6–8); Jost, Definitions 2.2.1–2.2.2 (printed pp. 16–18);
 CR18, Definitions 3.8, 3.9 and 3.17 (printed pp. 61–64).
 
@@ -19,27 +17,26 @@ CR18, Definitions 3.8, 3.9 and 3.17 (printed pp. 61–64).
 * `Interface`: labels, alphabets and a finite domain
 * `Interface.queryBudget I X Y q`: the domain of at most `q` queries
 * `Interface.portBudget I X Y q`: the domain of at most `q i` queries at each label `i`
-* `Interface.Resource A`: resources on `A`
-* `Interface.Resource.ofPDS`, `Interface.ofDeterministic`: the resource of a PDS of
-  deterministic resources, and of one deterministic resource
-* `Interface.Converter A B`: converters from `A` to `B`, concretely behaviors of PDCs
-* `Interface.category`: the category of interfaces and converters
-* `Interface.ofDDC`: the converter of a DDC from `B`'s domain to `A`'s
-* `Interface.attach`: attachment of a converter to a resource
+* `TypedSystem A`: typed systems on `A`
+* `TypedSystem.ofPDS`, `TypedSystem.ofDeterministic`: the typed system of a PDS of
+  deterministic systems, and of one deterministic system
+* `TypedConverter A B`: typed converters from `A` to `B`, behaviors of PDCs
+* `TypedConverter.comp`, `TypedConverter.id`: serial composition and the identity, of PDC
+  behaviors
+* `TypedConverter.ofDDC`: the typed converter of a DDC from `B`'s domain to `A`'s
+* `TypedConverter.attach`: attachment of a typed converter to a typed system
 
 ## Main results
 
-* `Interface.Resource.exists_ofPDS`: every resource is the resource of a PDS
-* `Interface.identity_attach`: attaching the identity leaves a resource unchanged
-* `Interface.comp_smul`: attaching a serial composition attaches the inner converter first
-* `Interface.ofDDC_apply`: the converter of a DDC is one on its transcripts
+* `TypedSystem.exists_ofPDS`: every typed system is the typed system of a PDS
+* `TypedConverter.identity_attach`: attaching the identity leaves a typed system unchanged
+* `TypedConverter.comp_smul`: attaching a serial composition attaches the inner converter first
+* `TypedConverter.ofDDC_apply`: the typed converter of a DDC is one on its transcripts
 -/
 
 namespace SystemAlgebra
 
-open CategoryTheory
-
-/-- The interface-and-domain tuple indexing a class of resources. -/
+/-- The interface-and-domain tuple indexing a class of typed systems. -/
 structure Interface where
   /-- Local interface labels. -/
   I : Type
@@ -89,60 +86,66 @@ abbrev portBudget (I : Type) [Fintype I] (X Y : I → Type) [∀ i, Fintype (X i
 abbrev inputDomain (A : Interface) : Domain (Σ i, A.X i) (Σ i, A.Y i) :=
   Domain.ofInputs A.domain A.bound A.length_le
 
-/-- Resources on `A`: random systems over its domain replying at the queried interface. -/
-def Resource (A : Interface) :=
+end Interface
+
+/-- Typed systems on `A`: random systems over its domain replying at the queried interface. -/
+def TypedSystem (A : Interface) :=
   {R : RandomSystem (Σ i, A.X i) (Σ i, A.Y i) A.inputDomain // R.RepliesAtQueriedInterface}
 
-/-- The behavior of a PDS of deterministic resources with domain `A.domain`. -/
-noncomputable def Resource.ofPDS {A : Interface}
+/-- The behavior of a PDS of deterministic systems with domain `A.domain`. -/
+noncomputable def TypedSystem.ofPDS {A : Interface}
     (P : Probability.Distribution.ProbDist {s : InterfaceSystem A.I A.X A.Y //
-      IsDDS s ∧ RepliesAtQueriedInterface s ∧ ∀ h, (s h).Dom ↔ A.domain h}) : Resource A :=
+      IsDDS s ∧ RepliesAtQueriedInterface s ∧ ∀ h, (s h).Dom ↔ A.domain h}) : TypedSystem A :=
   ⟨RandomSystem.ofPDS P.1 P.2 (fun s _ _ _ _ => s.2.2.2 _),
     RandomSystem.ofPDS_repliesAtQueriedInterface P⟩
 
-/-- Every resource is the behavior of a PDS of deterministic resources. -/
-lemma Resource.exists_ofPDS {A : Interface} (R : Resource A) :
+/-- Every typed system is the behavior of a PDS of deterministic systems. -/
+lemma TypedSystem.exists_ofPDS {A : Interface} (R : TypedSystem A) :
     ∃ Q : Probability.Distribution.ProbDist {s : InterfaceSystem A.I A.X A.Y //
       IsDDS s ∧ SystemAlgebra.RepliesAtQueriedInterface s ∧ ∀ h, (s h).Dom ↔ A.domain h},
-      Resource.ofPDS Q = R := by
+      TypedSystem.ofPDS Q = R := by
   obtain ⟨Q, hQ⟩ := RandomSystem.exists_resource_presentation A.nonempty_prefix R.1 R.2
   exact ⟨Q, Subtype.ext (RandomSystem.ext hQ)⟩
 
-/-- A deterministic resource, as its point distribution. -/
-noncomputable def ofDeterministic {A : Interface} (s : InterfaceSystem A.I A.X A.Y)
+/-- A deterministic system, as its point distribution. -/
+noncomputable def TypedSystem.ofDeterministic {A : Interface} (s : InterfaceSystem A.I A.X A.Y)
     (hs : IsDDS s ∧ SystemAlgebra.RepliesAtQueriedInterface s ∧ ∀ h, (s h).Dom ↔ A.domain h) :
-    Resource A :=
-  Resource.ofPDS ⟨Finsupp.single ⟨s, hs⟩ 1, Probability.Distribution.isProbDist_single _⟩
+    TypedSystem A :=
+  TypedSystem.ofPDS ⟨Finsupp.single ⟨s, hs⟩ 1, Probability.Distribution.isProbDist_single _⟩
 
 open Classical in
-lemma ofDeterministic_mass {A : Interface} (s : InterfaceSystem A.I A.X A.Y)
+lemma TypedSystem.ofDeterministic_mass {A : Interface} (s : InterfaceSystem A.I A.X A.Y)
     (hs : IsDDS s ∧ SystemAlgebra.RepliesAtQueriedInterface s ∧ ∀ h, (s h).Dom ↔ A.domain h)
     (h : List ((Σ i, A.X i) × (Σ i, A.Y i))) :
-    (ofDeterministic s hs).1 h =
+    (TypedSystem.ofDeterministic s hs).1 h =
       if Replies s (h.map Prod.fst) (h.map Prod.snd) then 1 else 0 := by
-  simp [ofDeterministic, Resource.ofPDS, RandomSystem.ofPDS, behaviorMass,
+  simp [TypedSystem.ofDeterministic, TypedSystem.ofPDS, RandomSystem.ofPDS, behaviorMass,
     Probability.Distribution.mass, Finsupp.sum]
 
-/-- Converters from `A` to `B`: behaviors of PDCs from `B`'s domain (inside) to `A`'s
+/-- Typed converters from `A` to `B`: behaviors of PDCs from `B`'s domain (inside) to `A`'s
 domain (outside). -/
-abbrev Converter (A B : Interface) :=
+@[instance_reducible] def TypedConverter (A B : Interface) :=
   PDCBehavior A.I B.I A.X A.Y B.X B.Y B.domain B.bound B.length_le A.domain A.bound A.length_le
 
-/-- Interfaces and converters form a category under serial composition. -/
-noncomputable instance category : Category Interface where
-  Hom := Converter
-  id A := PDCBehavior.id A.nonempty_prefix
-  comp α β := PDCBehavior.comp α β
-  id_comp {A _} α := PDCBehavior.id_comp α A.nonempty_prefix
-  comp_id {_ B} α := PDCBehavior.comp_id α B.nonempty_prefix
-  assoc α β γ := PDCBehavior.comp_assoc α β γ
+namespace TypedConverter
 
-/-- The converter of a DDC from `B`'s domain to `A`'s domain. -/
+/-- Serial composition of typed converters: the composition of their PDC behaviors, `α` outside
+and `β` inside. -/
+noncomputable def comp {A B C : Interface} (α : TypedConverter A B) (β : TypedConverter B C) :
+    TypedConverter A C :=
+  PDCBehavior.comp α β
+
+/-- The identity typed converter: the identity PDC behavior on `A`'s domain. -/
+protected noncomputable def id (A : Interface) : TypedConverter A A :=
+  PDCBehavior.id A.nonempty_prefix
+
+/-- The typed converter of a DDC from `B`'s domain to `A`'s domain. -/
 noncomputable def ofDDC {A B : Interface} (α : InsideOutsideSystem A.I B.I A.X A.Y B.X B.Y)
-    {b : ℕ} (hα : IsDDCFrom B.domain A.domain b α) : A ⟶ B :=
+    {b : ℕ} (hα : IsDDCFrom B.domain A.domain b α) : TypedConverter A B :=
   PDCBehavior.ofDDC α hα
 
-/-- The converter of a DDC gives probability one to its transcripts and zero to all others. -/
+/-- The typed converter of a DDC gives probability one to its transcripts and zero to all
+others. -/
 lemma ofDDC_apply {A B : Interface} (α : InsideOutsideSystem A.I B.I A.X A.Y B.X B.Y)
     {b : ℕ} (hα : IsDDCFrom B.domain A.domain b α)
     (t : List ((Σ l, twoFam A.X B.Y l) × (Σ l, twoFam A.Y B.X l))) :
@@ -150,34 +153,32 @@ lemma ofDDC_apply {A B : Interface} (α : InsideOutsideSystem A.I B.I A.X A.Y B.
       if Replies α (t.map Prod.fst) (t.map Prod.snd) then 1 else 0 :=
   PDCBehavior.ofDDC_apply α hα t
 
-/-- Attachment of a converter to a resource. -/
-noncomputable def attach {A B : Interface} (α : A ⟶ B) (R : Resource B) : Resource A :=
+/-- Attachment of a typed converter to a typed system. -/
+noncomputable def attach {A B : Interface} (α : TypedConverter A B) (R : TypedSystem B) :
+    TypedSystem A :=
   ⟨PDCBehavior.attach B.nonempty_prefix A.nonempty_prefix α R.1 R.2,
     PDCBehavior.attach_repliesAtQueriedInterface _ _ α R.1 R.2⟩
 
-/-- The action of a converter on a resource is attachment. As a default instance, an arrow
-whose domains are still to be inferred takes them from the resource it acts on. -/
-@[default_instance high]
-noncomputable instance {A B : Interface} : HSMul (A ⟶ B) (Resource B) (Resource A) :=
+/-- The action of a typed converter on a typed system is attachment. -/
+noncomputable instance {A B : Interface} :
+    HSMul (TypedConverter A B) (TypedSystem B) (TypedSystem A) :=
   ⟨attach⟩
 
-lemma smul_val {A B : Interface} (α : A ⟶ B) (R : Resource B) :
+lemma smul_val {A B : Interface} (α : TypedConverter A B) (R : TypedSystem B) :
     (α • R).1 = PDCBehavior.attach B.nonempty_prefix A.nonempty_prefix α R.1 R.2 := rfl
 
-/-- **Attaching the identity** leaves a resource unchanged. -/
-lemma identity_attach {A : Interface} (R : Resource A) : (𝟙 A • R : Resource A) = R :=
+/-- **Attaching the identity** leaves a typed system unchanged. -/
+lemma identity_attach {A : Interface} (R : TypedSystem A) :
+    (TypedConverter.id A • R : TypedSystem A) = R :=
   Subtype.ext (PDCBehavior.attach_id A.nonempty_prefix R.1 R.2)
 
 /-- **Serial attachment** (MR16 §3.3, printed p. 7: “(β ∘ α)ⁱR = βⁱ(αⁱR)”): attaching a
 serial composition attaches the inner converter first. -/
-theorem comp_smul {A B C : Interface} (α : A ⟶ B) (β : B ⟶ C) (R : Resource C) :
-    (α ≫ β) • R = α • (β • R) :=
+theorem comp_smul {A B C : Interface} (α : TypedConverter A B) (β : TypedConverter B C)
+    (R : TypedSystem C) : comp α β • R = α • (β • R) :=
   Subtype.ext (PDCBehavior.attach_comp C.nonempty_prefix A.nonempty_prefix B.nonempty_prefix
     α β R.1 R.2)
 
-lemma comp_eq {A B C : Interface} (α : A ⟶ B) (β : B ⟶ C) :
-    α ≫ β = PDCBehavior.comp α β := rfl
-
-end Interface
+end TypedConverter
 
 end SystemAlgebra

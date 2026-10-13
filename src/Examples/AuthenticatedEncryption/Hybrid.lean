@@ -41,7 +41,7 @@ lemma tableLaw_isProbDist {X : Type} (law : Distribution.ProbDist X) (k : ℕ) :
 
 /-- **The real system is an automaton** on its key and encryption tables. -/
 lemma real_eq (scheme : SymmetricEncryption K M C) (q : AE.Port → ℕ) :
-    AE.Real.perPort scheme (budget := q) = Resource.ofAutomaton (AE.perPort M C q)
+    AE.Real.perPort scheme (budget := q) = TypedSystem.ofAutomaton (AE.perPort M C q)
       (realStep scheme (AE.Real.bound scheme * ∑ i, q i))
       ⟨Distribution.fTransform (fun ω => (none, ((ω.1, 0), (ω.2, 0))))
           (Distribution.prod (tableLaw (AE.Real.law1 scheme) (AE.Real.bound scheme * ∑ i, q i))
@@ -49,8 +49,8 @@ lemma real_eq (scheme : SymmetricEncryption K M C) (q : AE.Port → ℕ) :
         Distribution.fTransform_isProbDist _ (Distribution.prod_isProbDist _ _
           (Distribution.pi_isProbDist fun _ => (AE.Real.law1 scheme).2)
           (Distribution.pi_isProbDist fun _ => (AE.Real.law2 scheme).2))⟩ := by
-  rw [AE.Real.perPort, AE.Real.randomness, Resource.source, Resource.source, parallel_ofAutomaton,
-    Converter.ofProgram_smul_ofAutomaton]
+  rw [AE.Real.perPort, AE.Real.randomness, TypedSystem.source, TypedSystem.source,
+    TypedSystem.parallel_ofAutomaton, TypedConverter.ofProgram_smul_ofAutomaton]
   congr 1
   apply Subtype.ext
   dsimp only
@@ -59,17 +59,18 @@ lemma real_eq (scheme : SymmetricEncryption K M C) (q : AE.Port → ℕ) :
 
 /-- **The real encryption system is an automaton** on its key and encryption tables. -/
 lemma encryptionReal_eq (scheme : SymmetricEncryption K M C) (q : Encryption.Port → ℕ) :
-    Encryption.Real.perPort scheme (budget := q) = Resource.ofAutomaton (Encryption.perPort M C q)
-      (encryptionRealStep scheme (Encryption.Real.bound scheme * ∑ i, q i))
-      ⟨Distribution.fTransform (fun ω => (none, ((ω.1, 0), (ω.2, 0))))
-          (Distribution.prod
-            (tableLaw (Encryption.Real.law1 scheme) (Encryption.Real.bound scheme * ∑ i, q i))
-            (tableLaw (Encryption.Real.law2 scheme) (Encryption.Real.bound scheme * ∑ i, q i))),
-        Distribution.fTransform_isProbDist _ (Distribution.prod_isProbDist _ _
-          (Distribution.pi_isProbDist fun _ => (Encryption.Real.law1 scheme).2)
-          (Distribution.pi_isProbDist fun _ => (Encryption.Real.law2 scheme).2))⟩ := by
-  rw [Encryption.Real.perPort, Encryption.Real.randomness, Resource.source, Resource.source,
-    parallel_ofAutomaton, Converter.ofProgram_smul_ofAutomaton]
+    Encryption.Real.perPort scheme (budget := q) =
+      TypedSystem.ofAutomaton (Encryption.perPort M C q)
+        (encryptionRealStep scheme (Encryption.Real.bound scheme * ∑ i, q i))
+        ⟨Distribution.fTransform (fun ω => (none, ((ω.1, 0), (ω.2, 0))))
+            (Distribution.prod
+              (tableLaw (Encryption.Real.law1 scheme) (Encryption.Real.bound scheme * ∑ i, q i))
+              (tableLaw (Encryption.Real.law2 scheme) (Encryption.Real.bound scheme * ∑ i, q i))),
+          Distribution.fTransform_isProbDist _ (Distribution.prod_isProbDist _ _
+            (Distribution.pi_isProbDist fun _ => (Encryption.Real.law1 scheme).2)
+            (Distribution.pi_isProbDist fun _ => (Encryption.Real.law2 scheme).2))⟩ := by
+  rw [Encryption.Real.perPort, Encryption.Real.randomness, TypedSystem.source, TypedSystem.source,
+    TypedSystem.parallel_ofAutomaton, TypedConverter.ofProgram_smul_ofAutomaton]
   congr 1
   apply Subtype.ext
   dsimp only
@@ -85,12 +86,12 @@ noncomputable abbrev ptxtStep {S : Type}
 lemma ptxt_smul {Ω S : Type} (q : AE.Port → ℕ)
     (step : S → (p : AE.Port) → AE.Input M C p → S × AE.Output M C p) (L : Distribution Ω)
     (hL : L.isProbDist) (init : Ω → S) :
-    AE.PTXT.perPort M C (budget := q) • Resource.ofAutomaton (AE.perPort M C q) step
+    AE.PTXT.perPort M C (budget := q) • TypedSystem.ofAutomaton (AE.perPort M C q) step
         ⟨Distribution.fTransform init L, Distribution.fTransform_isProbDist _ hL⟩ =
-      Resource.ofAutomaton (AE.perPort M C q) (ptxtStep step)
+      TypedSystem.ofAutomaton (AE.perPort M C q) (ptxtStep step)
         ⟨Distribution.fTransform (fun ω => (none, init ω)) L,
           Distribution.fTransform_isProbDist _ hL⟩ := by
-  rw [AE.PTXT.perPort, AE.PTXT.perPortProgram, Converter.ofPreservingProgram_smul_ofAutomaton]
+  rw [AE.PTXT.perPort, AE.PTXT.perPortProgram, TypedConverter.ofPreservingProgram_smul_ofAutomaton]
   congr 1
   apply Subtype.ext
   dsimp only
@@ -114,15 +115,16 @@ table of replacement messages. -/
 lemma cca_smul {Ω S : Type} (q : AE.Port → ℕ)
     (step : S → (p : AE.Port) → AE.Input M C p → S × AE.Output M C p) (L : Distribution Ω)
     (hL : L.isProbDist) (init : Ω → S) :
-    AE.CCA.perPort M C (budget := q) • Resource.ofAutomaton (AE.perPort M C q) step
+    AE.CCA.perPort M C (budget := q) • TypedSystem.ofAutomaton (AE.perPort M C q) step
         ⟨Distribution.fTransform init L, Distribution.fTransform_isProbDist _ hL⟩ =
-      Resource.ofAutomaton (AE.perPort M C q) (ccaStep (AE.CCA.bound M C * ∑ i, q i) step)
+      TypedSystem.ofAutomaton (AE.perPort M C q) (ccaStep (AE.CCA.bound M C * ∑ i, q i) step)
         ⟨Distribution.fTransform (fun p => (none, (init p.1, (p.2, 0))))
             (Distribution.prod L (tableLaw (AE.CCA.law1 M C) (AE.CCA.bound M C * ∑ i, q i))),
           Distribution.fTransform_isProbDist _ (Distribution.prod_isProbDist _ _ hL
             (Distribution.pi_isProbDist fun _ => (AE.CCA.law1 M C).2))⟩ := by
-  rw [AE.CCA.perPort, Interface.comp_smul, attach_rightContext, AE.CCA.randomness, Resource.source,
-    parallel_ofAutomaton, AE.CCA.perPortProgram, Converter.ofPreservingProgram_smul_ofAutomaton]
+  rw [AE.CCA.perPort, Interface.comp_smul, TypedConverter.attach_rightContext, AE.CCA.randomness,
+    TypedSystem.source, TypedSystem.parallel_ofAutomaton, AE.CCA.perPortProgram,
+    TypedConverter.ofPreservingProgram_smul_ofAutomaton]
   congr 1
   apply Subtype.ext
   dsimp only
@@ -143,16 +145,16 @@ lemma aeIdeal_smul {Ω S : Type} (q : AE.Port → ℕ)
     (step : S → (p : Encryption.Port) → Encryption.Input M p → S × Encryption.Output C p)
     (L : Distribution Ω) (hL : L.isProbDist) (init : Ω → S) :
     AE.Ideal.perPort M C (budget := q) •
-        Resource.ofAutomaton (Encryption.perPort M C (AE.Ideal.insideBudget M C q)) step
+        TypedSystem.ofAutomaton (Encryption.perPort M C (AE.Ideal.insideBudget M C q)) step
         ⟨Distribution.fTransform init L, Distribution.fTransform_isProbDist _ hL⟩ =
-      Resource.ofAutomaton (AE.perPort M C q) (aeIdealStep (AE.Ideal.bound M C * ∑ i, q i) step)
+      TypedSystem.ofAutomaton (AE.perPort M C q) (aeIdealStep (AE.Ideal.bound M C * ∑ i, q i) step)
         ⟨Distribution.fTransform (fun p => (none, (init p.1, (p.2, 0))))
             (Distribution.prod L (tableLaw (AE.Ideal.law1 M C) (AE.Ideal.bound M C * ∑ i, q i))),
           Distribution.fTransform_isProbDist _ (Distribution.prod_isProbDist _ _ hL
             (Distribution.pi_isProbDist fun _ => (AE.Ideal.law1 M C).2))⟩ := by
-  rw [AE.Ideal.perPort, Interface.comp_smul, attach_rightContext, AE.Ideal.randomness,
-    Resource.source, parallel_ofAutomaton, AE.Ideal.perPortProgram,
-    Converter.ofPreservingProgram_smul_ofAutomaton]
+  rw [AE.Ideal.perPort, Interface.comp_smul, TypedConverter.attach_rightContext,
+    AE.Ideal.randomness, TypedSystem.source, TypedSystem.parallel_ofAutomaton,
+    AE.Ideal.perPortProgram, TypedConverter.ofPreservingProgram_smul_ofAutomaton]
   congr 1
   apply Subtype.ext
   dsimp only
@@ -217,7 +219,7 @@ lemma aeIdeal_system {Ω S : Type} {k : ℕ}
 variable (scheme : SymmetricEncryption K M C) (q : AE.Port → ℕ)
 
 /-- **The corrected hybrid** `ρ^ptxt ∘ ρ^cca ∘ ρ^ptxt ∘ ρ^cca` of the real system. -/
-noncomputable def Hybrid : Interface.Resource (AE.perPort M C q) :=
+noncomputable def Hybrid : TypedSystem (AE.perPort M C q) :=
   AE.PTXT.perPort M C • AE.CCA.perPort M C • AE.PTXT.perPort M C • AE.CCA.perPort M C •
     AE.Real.perPort scheme
 
@@ -246,7 +248,7 @@ lemma hybrid_mass (h : List ((Σ i, (AE.perPort M C q).X i) × (Σ i, (AE.perPor
         Replies (filterDom (AE.perPort M C q).domain
           (automatonSystem (oracleStep (hybridEncrypt scheme) (hybridDecrypt scheme)) (ω, [])))
           (h.map Prod.fst) (h.map Prod.snd) := by
-  rw [Hybrid, real_eq, cca_smul, ptxt_smul, cca_smul, ptxt_smul, Resource.ofAutomaton_mass,
+  rw [Hybrid, real_eq, cca_smul, ptxt_smul, cca_smul, ptxt_smul, TypedSystem.ofAutomaton_mass,
     Distribution.mass_fTransform]
   refine Distribution.mass_congr _ fun ω => ?_
   dsimp only
@@ -265,7 +267,7 @@ abbrev idealTableSize : ℕ :=
 /-- **The ideal is the ideal oracle** on independent key, encryption and replacement tables. -/
 lemma ideal_mass (h : List ((Σ i, (AE.perPort M C q).X i) × (Σ i, (AE.perPort M C q).Y i))) :
     (AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme :
-        Interface.Resource (AE.perPort M C q)).1 h =
+        TypedSystem (AE.perPort M C q)).1 h =
       (Distribution.prod (Distribution.prod
           (tableLaw (AE.Real.law1 scheme) (idealTableSize scheme q))
           (tableLaw (AE.Real.law2 scheme) (idealTableSize scheme q)))
@@ -274,7 +276,7 @@ lemma ideal_mass (h : List ((Σ i, (AE.perPort M C q).X i) × (Σ i, (AE.perPort
           (automatonSystem (oracleStep (idealEncrypt scheme)
             (idealDecrypt (AE.Ideal.law1 M C) (realEncrypt scheme))) (ω, [])))
           (h.map Prod.fst) (h.map Prod.snd) := by
-  rw [encryptionReal_eq, aeIdeal_smul, Resource.ofAutomaton_mass, Distribution.mass_fTransform]
+  rw [encryptionReal_eq, aeIdeal_smul, TypedSystem.ofAutomaton_mass, Distribution.mass_fTransform]
   refine Distribution.mass_congr _ fun ω => ?_
   dsimp only
   rw [aeIdeal_system (encryptionReal_system scheme ω.1) ω.2]

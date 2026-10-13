@@ -56,7 +56,7 @@ system Hash.Ideal(K M : Type) [Fintype K] [Nonempty K] [Fintype M] [DecidableEq 
 /-- **The systems of collision resistance**: the collisions of `H(k, ·)` for a published `k ← K`,
 and the equalities of messages, at the budget `q`. -/
 def Hash.CR.systems [DecidableEq M] [DecidableEq T] (H : K → M → T) (q : ℕ) :
-    Interface.Resource (KeyedCollision K M q) × Interface.Resource (KeyedCollision K M q) :=
+    TypedSystem (KeyedCollision K M q) × TypedSystem (KeyedCollision K M q) :=
   (Hash.Real H, Hash.Ideal K M)
 
 /-- **Collision resistance** within `error`: against the admitted distinguishers, the collisions

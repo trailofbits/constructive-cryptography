@@ -104,8 +104,8 @@ lemma freshBits_independent {q : ℕ} (bs : List Bool) (hq : bs.length ≤ q) :
   have hb : 1 ≤ FreshBits.bound := FreshBits.bound_spec none .bit () [] ⟨(), ()⟩
     (Program.consistent_nil FreshBits.body none _ _) (by simp [FreshBits.body, callProg])
   have hK : bs.length ≤ FreshBits.bound * q := hq.trans (Nat.le_mul_of_pos_left q hb)
-  rw [FreshBits, FreshBits.randomness, FreshBits.program, Resource.source,
-    Converter.ofProgram_smul_ofAutomaton, Resource.ofAutomaton_mass,
+  rw [FreshBits, FreshBits.randomness, FreshBits.program, TypedSystem.source,
+    TypedConverter.ofProgram_smul_ofAutomaton, TypedSystem.ofAutomaton_mass,
     Distribution.mass_fTransform, Distribution.mass_fTransform, ← mass_prefix bs hK]
   refine Distribution.mass_congr _ fun t => ?_
   simp only [List.map_map, Function.comp_def]
@@ -129,8 +129,8 @@ lemma secretBit_combine_later {K : ℕ} (v : Bool) (r : (Fin K → Bool) × ℕ)
 /-- Sampling at initialization retains the same bit on later calls, at every budget. -/
 lemma secretBit_retained (q : ℕ) (b : Bool) :
     (SecretBit (budget := q)).1 [(⟨.bit, ()⟩, ⟨.bit, b⟩), (⟨.bit, ()⟩, ⟨.bit, !b⟩)] = 0 := by
-  rw [SecretBit, SecretBit.randomness, SecretBit.program, Resource.source,
-    Converter.ofProgram_smul_ofAutomaton, Resource.ofAutomaton_mass,
+  rw [SecretBit, SecretBit.randomness, SecretBit.program, TypedSystem.source,
+    TypedConverter.ofProgram_smul_ofAutomaton, TypedSystem.ofAutomaton_mass,
     Distribution.mass_fTransform, Distribution.mass_fTransform]
   refine Distribution.mass_eq_zero_of_forall_not _ fun t hr => ?_
   have hr := replies_filterDom _ _ hr
@@ -149,7 +149,7 @@ lemma secretBit_retained (q : ℕ) (b : Bool) :
 lemma counter_interleaving {q : ℕ} (hq : 3 ≤ q) :
     (Counter (budget := q)).1 [(⟨.next, ()⟩, ⟨.next, 1⟩), (⟨.read, ()⟩, ⟨.read, 1⟩),
       (⟨.next, ()⟩, ⟨.next, 2⟩)] = 1 := by
-  rw [Counter, Interface.Resource.ofAutomaton_mass]
+  rw [Counter, TypedSystem.ofAutomaton_mass]
   refine (Distribution.mass_single _ _ _).trans (if_pos ?_)
   change Replies _ ([] ++ [(⟨.next, ()⟩ : Sigma Counter.Input)] ++ [⟨.read, ()⟩] ++ [⟨.next, ()⟩])
     ([] ++ [(⟨.next, 1⟩ : Sigma Counter.Output)] ++ [⟨.read, 1⟩] ++ [⟨.next, 2⟩])
@@ -165,7 +165,7 @@ def counterBudget : Counter.Port → ℕ
 lemma counter_perPort_interleaving :
     (Counter.perPort (budget := counterBudget)).1 [(⟨.next, ()⟩, ⟨.next, 1⟩),
       (⟨.read, ()⟩, ⟨.read, 1⟩), (⟨.next, ()⟩, ⟨.next, 2⟩)] = 1 := by
-  rw [Counter.perPort, Interface.Resource.ofAutomaton_mass]
+  rw [Counter.perPort, TypedSystem.ofAutomaton_mass]
   refine (Distribution.mass_single _ _ _).trans (if_pos ?_)
   change Replies _ ([] ++ [(⟨.next, ()⟩ : Sigma Counter.Input)] ++ [⟨.read, ()⟩] ++ [⟨.next, ()⟩])
     ([] ++ [(⟨.next, 1⟩ : Sigma Counter.Output)] ++ [⟨.read, 1⟩] ++ [⟨.next, 2⟩])
@@ -177,7 +177,7 @@ lemma counter_perPort_interleaving :
 lemma counter_perPort_exceeded (n m : Fin 16) :
     (Counter.perPort (budget := counterBudget)).1 [(⟨.read, ()⟩, ⟨.read, n⟩),
       (⟨.read, ()⟩, ⟨.read, m⟩)] = 0 := by
-  rw [Counter.perPort, Interface.Resource.ofAutomaton_mass]
+  rw [Counter.perPort, TypedSystem.ofAutomaton_mass]
   refine (Distribution.mass_single _ _ _).trans (if_neg fun hr => ?_)
   change Replies _ ([] ++ [(⟨.read, ()⟩ : Sigma Counter.Input)] ++ [⟨.read, ()⟩])
     ([] ++ [(⟨.read, n⟩ : Sigma Counter.Output)] ++ [⟨.read, m⟩]) at hr

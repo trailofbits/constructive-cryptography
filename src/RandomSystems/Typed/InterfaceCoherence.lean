@@ -1,17 +1,16 @@
-import ConstructiveCryptography.InterfaceRelabel
+import RandomSystems.Typed.Relabel
 
 /-!
 # Regrouping interfaces
 
-The associator and the unitors keep every message and regroup its interface label; each
-component sees the same inputs in either grouping, so the domains correspond exactly. The
-unit interface has no labels.
+Regrouping keeps every message and regroups its interface label; each component sees the same
+inputs in either grouping, so the domains correspond exactly. The unit interface has no labels.
 
 ## Main definitions
 
 * `Interface.unit`: the interface without labels
-* `Interface.associator`, `Interface.leftUnitor`, `Interface.rightUnitor`: the regrouping
-  isomorphisms
+* `Interface.assocAlphabet`, `Interface.leftUnitAlphabet`, `Interface.rightUnitAlphabet`: the
+  regroupings of the alphabets
 
 ## Main results
 
@@ -21,7 +20,7 @@ unit interface has no labels.
 
 namespace SystemAlgebra.Interface
 
-open Classical CategoryTheory
+open Classical
 
 def assocAlphabet {I J K : Type} (F : I → Type) (G : J → Type) (H : K → Type) :
     (Σ l, Sum.rec (Sum.rec F G) H l) ≃ (Σ l, Sum.rec F (Sum.rec G H) l) where
@@ -172,18 +171,5 @@ lemma parallelDomain_unit_right (A : Interface)
     · rfl
     · exact e.elim
   rwa [hm] at he
-
-noncomputable def associator (A B C : Interface) :
-    tensor (tensor A B) C ≅ tensor A (tensor B C) :=
-  isoOf (Equiv.sumAssoc A.I B.I C.I) (assocAlphabet A.X B.X C.X) (assocAlphabet A.Y B.Y C.Y)
-    (assocAlphabet_fst A.X B.X C.X) (assocAlphabet_fst A.Y B.Y C.Y) (parallelDomain_assoc A B C)
-
-noncomputable def leftUnitor (A : Interface) : tensor unit A ≅ A :=
-  isoOf (Equiv.emptySum Empty A.I) (leftUnitAlphabet A.X) (leftUnitAlphabet A.Y)
-    (leftUnitAlphabet_fst A.X) (leftUnitAlphabet_fst A.Y) (parallelDomain_unit_left A)
-
-noncomputable def rightUnitor (A : Interface) : tensor A unit ≅ A :=
-  isoOf (Equiv.sumEmpty A.I Empty) (rightUnitAlphabet A.X) (rightUnitAlphabet A.Y)
-    (rightUnitAlphabet_fst A.X) (rightUnitAlphabet_fst A.Y) (parallelDomain_unit_right A)
 
 end SystemAlgebra.Interface

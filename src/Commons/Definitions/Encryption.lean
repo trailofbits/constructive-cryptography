@@ -90,7 +90,7 @@ scoped notation "ρ^cpa" => Encryption.CPA.perPort _ _
 at the budget `q` per port. -/
 def Encryption.INDCPA.systems [DecidableEq K] [DecidableEq M] [Nonempty M]
     (scheme : SymmetricEncryption K M C) (q : Encryption.Port → ℕ) :
-    Interface.Resource (Encryption.perPort M C q) × Interface.Resource (Encryption.perPort M C q) :=
+    TypedSystem (Encryption.perPort M C q) × TypedSystem (Encryption.perPort M C q) :=
   (Encryption.Real.perPort scheme, Encryption.CPA.perPort M C • Encryption.Real.perPort scheme)
 
 /-- **ind-cpa** within `error`: against the admitted distinguishers, `E_k` substitutes for
@@ -119,7 +119,7 @@ converter Encryption.Right(M C : Type) [Fintype M] [Fintype C] : LeftRight M C
 /-- **The systems of left-or-right CPA** (Boneh–Shoup, Attack Game 5.2): `E_k` on the left
 message of each pair, and on the right one, for `k ← Gen`, at the budget `q`. -/
 def Encryption.LORCPA.systems [DecidableEq K] [DecidableEq M] (scheme : SymmetricEncryption K M C)
-    (q : ℕ) : Interface.Resource (LeftRight M C q) × Interface.Resource (LeftRight M C q) :=
+    (q : ℕ) : TypedSystem (LeftRight M C q) × TypedSystem (LeftRight M C q) :=
   (Encryption.Left M C • Encryption.Real scheme, Encryption.Right M C • Encryption.Real scheme)
 
 /-- **Left-or-right CPA** within `error`: against the admitted distinguishers, encrypting the left
