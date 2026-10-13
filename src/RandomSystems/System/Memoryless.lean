@@ -145,41 +145,79 @@ lemma parallel_memoryless (D : Domain A B) (D' : Domain C E) (ν₁ : A → Prob
     (ν₂ : C → ProbDist E) :
     parallel (memoryless D ν₁) (memoryless D' ν₂) =
       memoryless (D.parallel D') (portLaw (twoLaw ν₁ ν₂)) := by
+  -- Plan:
+  -- 1. Reduce to the chain rule of the side-by-side laws: each admitted exchange `(x, y)`
+  --    multiplies the probability of the transcript `h` by the law of `y` at the queried port.
+  -- 2. Write the parallel composition at `h` and at `h · (x, y)` as the product of the
+  --    probabilities of the left and the right transcripts.
+  -- 3. Case on the ports of the query and of the reply: the chain rule of the queried system
+  --    (same port), or no mass on both sides (different ports).
+  --
+  --           ┌─────────┐
+  --   ──x₁──▶ │ mem(ν₁) │     left port:  y₁ ← ν₁ x₁, a fresh sample
+  --   ◀──y₁── │         │
+  --           └─────────┘
+  --           ┌─────────┐
+  --   ──x₂──▶ │ mem(ν₂) │     right port: y₂ ← ν₂ x₂, a fresh sample
+  --   ◀──y₂── │         │
+  --           └─────────┘
+  --
+  -- Step 1: reduce to the chain rule.
   -- The chain rule of the side-by-side laws, at each admitted exchange `(x, y)`.
   refine eq_memoryless_of_snoc fun h x y hd => ?_
+  -- Step 2: split the transcript into its left and right transcripts.
   -- The parallel domain admits a query only after a transcript whose every exchange is with one
   -- of the two systems; such a transcript is a left and a right transcript side by side.
   have hcons : parallelConsistent h := hd.1
+  -- For such an `h`: `P(h) = mem(ν₁)(left h) · mem(ν₂)(right h)`, on both sides.
   rw [parallel_mass, parallel_mass, if_pos hcons]
+  -- Step 3: case on the ports of the query and of the reply.
   -- Case on the systems that receive the query and that give the reply.
   obtain ⟨(_ | ⟨⟩), x⟩ := x <;> obtain ⟨(_ | ⟨⟩), y⟩ := y
   · -- A query and a reply of the left system: the left transcript grows by `(x, y)`, the right
     -- one stays, and the left system multiplies its probability by `ν₁ x y`.
+    --
+    --   P(h · (x, y)) = mem(ν₁)(left h · (x, y)) · mem(ν₂)(right h)
+    --                 = mem(ν₁)(left h) · ν₁ x y · mem(ν₂)(right h)    (left chain rule)
+    --                 = P(h) · ν₁ x y
     have hleft : parallelLeft (h ++ [(⟨none, x⟩, ⟨none, y⟩)]) = parallelLeft h ++ [(x, y)] := by
       simp [parallelLeft]
     have hright : parallelRight (h ++ [(⟨none, x⟩, ⟨none, y⟩)]) = parallelRight h := by
       simp [parallelRight]
+    -- `h · (x, y)` is still consistent; the left chain rule applies, since the left domain
+    -- admits `x` after the left transcript (part of `hd`); the port law at the left port is `ν₁`.
     rw [if_pos (parallelConsistent_snoc.mpr ⟨hcons, rfl⟩), hleft, hright, memoryless_snoc,
       if_pos hd.2.2, portLaw_apply_mk]
     simp only [twoLaw]
+    -- reorder the product
     ring
   · -- A left query with a right reply: an exchange with no single system, impossible on both
     -- sides.
+    -- Left: `h · (x, y)` is not consistent. Right: the port law gives no mass to a reply at
+    -- another port than the queried one.
     rw [if_neg fun h' => absurd (parallelConsistent_snoc.mp h').2 (by simp),
       portLaw_apply_of_ne _ (by simp), mul_zero]
   · -- A right query with a left reply: impossible on both sides.
+    -- (The same two facts as in the previous case.)
     rw [if_neg fun h' => absurd (parallelConsistent_snoc.mp h').2 (by simp),
       portLaw_apply_of_ne _ (by simp), mul_zero]
   · -- A query and a reply of the right system: the right transcript grows by `(x, y)`, and the
     -- right system multiplies its probability by `ν₂ x y`.
+    --
+    --   P(h · (x, y)) = mem(ν₁)(left h) · mem(ν₂)(right h · (x, y))
+    --                 = mem(ν₁)(left h) · mem(ν₂)(right h) · ν₂ x y    (right chain rule)
+    --                 = P(h) · ν₂ x y
     have hleft : parallelLeft (h ++ [(⟨some (), x⟩, ⟨some (), y⟩)]) = parallelLeft h := by
       simp [parallelLeft]
     have hright :
         parallelRight (h ++ [(⟨some (), x⟩, ⟨some (), y⟩)]) = parallelRight h ++ [(x, y)] := by
       simp [parallelRight]
+    -- `h · (x, y)` is still consistent; the right chain rule applies, since the right domain
+    -- admits `x` after the right transcript (part of `hd`); the port law there is `ν₂`.
     rw [if_pos (parallelConsistent_snoc.mpr ⟨hcons, rfl⟩), hleft, hright, memoryless_snoc,
       if_pos hd.2.2, portLaw_apply_mk]
     simp only [twoLaw]
+    -- reorder the product
     ring
 
 end Parallel
@@ -223,6 +261,7 @@ lemma memoryless_fresh (ν : ∀ i, X i → ProbDist (Y i)) : (fresh ν).Memoryl
   intro _ i x
   -- The step pairs a sample of `ν i x` with the trivial state; keeping the reply undoes this.
   simp only [fresh, ProbDist.map_val, fTransform_fTransform]
+  -- `Prod.snd ∘ (y ↦ ((), y))` is the identity, and pushing forward along it changes nothing.
   exact fTransform_id _
 
 end ProbStep
@@ -239,6 +278,8 @@ lemma RandomSystem.ofProbAutomaton_eq_memoryless {S I : Type} {X Y : I → Type}
   --   P(t · (x, y)) = ∑ₛ belief_t(s) · Pr[step s x replies y]      (state laws)
   --                 = (∑ₛ belief_t(s)) · ν x y                       (memoryless step)
   --                 = P(t) · ν x y
+  --
+  -- where `belief_t` is the state law after the transcript `t`, of weight `P(t)`.
   refine eq_memoryless_of_snoc fun t x y hd => ?_
   -- the probability of `t · (x, y)` is the weight of the state law after it
   rw [ofProbAutomaton_apply, ProbStep.belief_snoc, if_pos hd]
@@ -291,11 +332,29 @@ whatever the state of the step. -/
 lemma fTransform_snd_probInvoke {stepR : ProbStep R J X Y} {ν : ∀ j, X j → ProbDist (Y j)}
     (hν : stepR.Memoryless ν) (s : S) (o : O) (u : U o) :
     ∀ n r h, fTransform Prod.snd (P.probInvoke stepR s o u n r h) = P.replyLaw ν s o u n h := by
+  -- Plan: induction on the number `n` of inside queries still allowed, for every state `r` of
+  -- the step and every list `h` of inside exchanges so far.
+  -- 1. `n = 0`: the body replies (a point law on both sides) or asks (no mass on both sides).
+  -- 2. `n + 1`: the body replies (a point law on both sides) or asks `q`; then the chain below,
+  --    where `snd₊` keeps only the reply of the invocation:
+  --
+  --   snd₊ invoke_{n+1}(r, h)
+  --     = ∑_{(r', y) ← step r q} snd₊ invoke_n(r', h · (q, y))     (one inside query)
+  --     = ∑_{(r', y) ← step r q} replyLaw_n(h · (q, y))            (induction hypothesis)
+  --     = ∑_{y ← ν q} replyLaw_n(h · (q, y))                       (memoryless: `r'` drops out)
+  --     = replyLaw_{n+1}(h)
+  --
+  --          ┌───┐ ──q──▶ ┌────────────────┐
+  --   o(u) ─▶│ P │        │ step, state r  │    the step's reply y has the law ν q,
+  --   ◀── v ─│   │ ◀──y── │                │    whatever its state r
+  --          └───┘        └────────────────┘
+  --
   -- `probInvoke` runs the body against the step, tracking (next states, reply). Looking only at
   -- the reply, the state of the step drops out: each inside answer has the law `ν q`.
   -- Induction on the number `n` of inside queries still allowed.
   intro n
   induction n with
+  -- Step 1: no inside query left.
   | zero =>
     intro r h
     cases hq : P s o u h with
@@ -305,6 +364,7 @@ lemma fTransform_snd_probInvoke {stepR : ProbStep R J X Y} {ν : ∀ j, X j → 
     | inr q =>
       -- the body asks, but no query is left: no mass on both sides
       simp [probInvoke_zero_inr hq, replyLaw, hq, fTransform]
+  -- Step 2: one more inside query allowed.
   | succ n ih =>
     intro r h
     cases hq : P s o u h with
@@ -320,6 +380,7 @@ lemma fTransform_snd_probInvoke {stepR : ProbStep R J X Y} {ν : ∀ j, X j → 
       rw [← hν r q.1 q.2, bindK_fTransform]
       -- the continuation's reply law does not depend on the next state (induction hypothesis)
       simp only [ih, ProbStep.outcome, bindK_fTransform]
+      -- both kernels read only the answer `y` of the draw `(r', y)`, tagged by the port of `q`
       rfl
 
 /-- **A program run against a memoryless step is memoryless**, when its reply law against `ν` is
@@ -366,14 +427,28 @@ theorem attach_ofDDC_ofProgramOn_memoryless
     (hRq : R.RepliesAtQueriedInterface) :
     attach hE' hF' (ofDDC (DDC.ofProgramOn s P F) hα) R hRq =
       RandomSystem.memoryless (Domain.ofInputs F n hF) (RandomSystem.portLaw κ) := by
+  -- The program `P`, started in the state `s`, attached to the memoryless system of `ν`:
+  --
+  --           ┌───┐ ──j(q)──▶ ┌────────┐
+  --   ─o(u)─▶ │ P │           │ mem(ν) │      =   mem(κ)
+  --   ◀──v─── │   │ ◀───y──── │        │
+  --           └───┘           └────────┘
+  --
+  --   P • mem(ν) = P • aut(fresh ν)               (Step 1: fresh samples present mem(ν))
+  --              = aut(P run against fresh ν)     (Step 2: attachment to an automaton)
+  --              = mem(κ)                         (Step 3: a memoryless step of law κ)
+  --
   -- Step 1: the memoryless system of `ν` is the automaton of fresh samples of `ν`.
   have hfresh : R = RandomSystem.ofProbAutomaton _ (ProbStep.fresh ν)
       (Distribution.ProbDist.single ()) :=
     hR.trans (RandomSystem.ofProbAutomaton_eq_memoryless _ (ProbStep.memoryless_fresh ν) _).symm
+  -- Replace `R` by that automaton (with no state, started at `()`).
   subst hfresh
   -- Step 2: attached to an automaton, the program is the program run against its step ...
   rw [attach_ofDDC_ofProgramOn_ofProbAutomaton hE' hF' s P hb hα]
   -- Step 3: ... a memoryless step of law `κ`, so the memoryless system of `κ`.
+  -- (The combined step is memoryless of law `κ` because fresh samples are memoryless of law
+  -- `ν` and `P`'s reply law against `ν` is `κ` in every state, `hκ`.)
   exact RandomSystem.ofProbAutomaton_eq_memoryless _
     (Program.memoryless_probCombine (ProbStep.memoryless_fresh ν) hb hκ) _
 

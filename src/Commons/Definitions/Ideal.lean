@@ -111,6 +111,8 @@ theorem MemorylessSource.memoryless_eq {Y : Type} [Fintype Y] (ν : ProbDist Y)
   --
   -- The source of samples is memoryless, so by the composition law the system is memoryless with
   -- the reply law of one invocation of the program.
+  -- The composition law `Interface.Converter.ofProgram_smul_memoryless`, with the source of
+  -- samples memoryless (`Interface.source_eq_memoryless`); the law of one invocation remains.
   refine Interface.Converter.ofProgram_smul_memoryless none _ _ _
     (Interface.source_eq_memoryless _ _) ?_
   -- One invocation: draw `y ← ν` and reply `y`. Its law is `ν`, in both initialization states
