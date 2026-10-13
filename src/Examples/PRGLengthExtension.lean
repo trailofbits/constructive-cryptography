@@ -105,8 +105,11 @@ lemma prgReal_eq_source [Nonempty S] (G : S → R) :
   -- of one invocation of the program.
   have real : (PRGReal.perPort G (budget := q)).1 =
       memoryless _ (portLaw fun _ _ => ProbDist.map G 𝒰[S]) := by
+    -- The composition law `Converter.ofProgram_smul_memoryless`, with the source of seeds
+    -- memoryless (`source_eq_memoryless`); the law of one invocation remains.
     refine Converter.ofProgram_smul_memoryless none _ _ _ (source_eq_memoryless _ _) ?_
     -- One invocation: draw `s ← 𝒰[S]`, reply `G s`; the same in both initialization states.
+    -- The cases: initialization state `none` or `some ()`, the port `eval`, the input `()`.
     rintro (_ | ⟨⟩) ⟨⟩ ⟨⟩
     · simp [Program.replyLaw, PRGReal.body, PRGReal.law1, callProg, returnProg, ProbDist.map,
         bindK_single_comp]
@@ -119,6 +122,7 @@ lemma prgReal_eq_source [Nonempty S] (G : S → R) :
 lemma 𝓡₁_smul_source (G : S → S × S) (ν : ProbDist (S × S)) :
     𝓡₁.perPort G (budget := q) • MemorylessSource.perPort (S × S) ν =
       MemorylessSource.perPort (S × S × S) (ProbDist.map (fun AB => (AB.1, G AB.2)) ν) := by
+  -- Equal systems: compare their random systems.
   apply Subtype.ext
   -- One invocation of `𝓡₁` against the source of `ν`:
   --
@@ -129,9 +133,12 @@ lemma 𝓡₁_smul_source (G : S → S × S) (ν : ProbDist (S × S)) :
       memoryless _ (portLaw fun _ _ => ProbDist.map (fun AB => (AB.1, G AB.2)) ν) := by
     -- `𝓡₁.perPort` is the converter of a port-preserving program.
     unfold 𝓡₁.perPort 𝓡₁.perPortProgram
+    -- The composition law for port-preserving programs, with the source of `ν` memoryless
+    -- (`MemorylessSource.memoryless_eq`); the law of one invocation remains.
     refine Converter.ofPreservingProgram_smul_memoryless none _ _ _ _ _ _ _
       (MemorylessSource.memoryless_eq ν _) ?_
     -- The law of one invocation: one call, answered `(a, b) ← ν`, reply `(a, G b)`.
+    -- The cases: initialization state `none` or `some ()`, the port `eval`, the input `()`.
     rintro (_ | ⟨⟩) ⟨⟩ ⟨⟩
     · simp [Program.replyLaw, 𝓡₁.body, callProg, returnProg, ProbDist.map, bindK_single_comp]
     · simp [Program.replyLaw, 𝓡₁.body, callProg, returnProg, ProbDist.map, bindK_single_comp]
@@ -143,6 +150,7 @@ uniform `A`. -/
 lemma 𝓡₂_smul_source [Nonempty S] (ν : ProbDist (S × S)) :
     𝓡₂.perPort S (budget := q) • MemorylessSource.perPort (S × S) ν =
       MemorylessSource.perPort (S × S × S) (prodProbDist 𝒰[S] ν) := by
+  -- Equal systems: compare their random systems.
   apply Subtype.ext
   -- One invocation of `𝓡₂` against the source of `ν`, with its own source of `A`'s beside:
   --
@@ -154,10 +162,15 @@ lemma 𝓡₂_smul_source [Nonempty S] (ν : ProbDist (S × S)) :
       memoryless _ (portLaw fun _ _ => prodProbDist 𝒰[S] ν) := by
     -- `𝓡₂.perPort` is its program with its own source beside the inside interface.
     unfold 𝓡₂.perPort 𝓡₂.perPortProgram 𝓡₂.randomness
+    -- The composition law with the converter's own source beside its inside interface: the
+    -- source of `ν` and the source of the `a`'s are memoryless (`MemorylessSource.memoryless_eq`,
+    -- `source_eq_memoryless`); the law of one invocation against their side-by-side laws
+    -- remains.
     refine Converter.ofPreservingProgram_comp_rightContext_smul_memoryless none _ _ _ _ _ _ _
       (MemorylessSource.memoryless_eq ν _) (source_eq_memoryless _ _) ?_
     -- The law of one invocation: `a` from its own source, `(c, d)` from the source of `ν`,
     -- reply `(a, c, d)`: the product of the two laws.
+    -- The cases: initialization state `none` or `some ()`, the port `eval`, the input `()`.
     rintro (_ | ⟨⟩) ⟨⟩ ⟨⟩
     · simp [Program.replyLaw, 𝓡₂.body, 𝓡₂.law1, parallelLaw, callProg, returnProg,
         prod_eq_bindK, bindK_single_comp]
@@ -174,6 +187,7 @@ variable [Nonempty S]
 lemma map_uniform_eq_prod (G : S → S × S) :
     ProbDist.map (fun AB => (AB.1, G AB.2)) 𝒰[S × S] =
       prodProbDist 𝒰[S] (ProbDist.map G 𝒰[S]) := by
+  -- Equal laws: compare their distributions.
   apply Subtype.ext
   -- `(a, b) ↦ (a, G b)` is the product map `id × G` ...
   change fTransform (Prod.map id G) (Distribution.uniform (S × S)) = _
@@ -247,16 +261,26 @@ theorem prg_length_extension [AdmissibleDistinguishers] (G : S → S × S)
   --   D ─ 𝓡₂ ─ prg-real^G      =                    middle hop            𝓡₁_smul_prgRand
   --   D ─ 𝓡₂ ─ prg-rand        ≃[ε(D ∘ 𝓡₂)]         swap: G is secure
   --   D ─ prg-rand             =                    last hop              𝓡₂_smul_prgRand
+  --
+  -- One chain: the equalities cost nothing, each swap costs `ε` at the distinguisher with the
+  -- calling converter absorbed, and the losses add up. (`using`: the advantage of an admitted
+  -- distinguisher is at most the distance, `distinguisherAdvantage_le_distance`.)
   cc_calc mixed (distinguisherAdvantage AdmissibleDistinguishers.admissible) using
       (fun D _ R S => distinguisherAdvantage_le_distance _ D R S)
+    -- The first hop: factor out the first call of `G`.
     PRGReal.perPort (H G) = 𝓡₁.perPort G • PRGReal.perPort G := prgReal_H_eq G q
+    -- The first swap: `prg-real^G` ≃ `prg-rand` (`secure`), attached through `𝓡₁`; its loss is
+    -- `ε` at `D` with `𝓡₁` absorbed (`substitutesWithin_attach`).
     _ ≃[fun D => ε (absorb (𝓡₁.perPort G) D)]
         𝓡₁.perPort G • MemorylessSource.perPort (S × S) 𝒰[S × S] :=
       AdmissibleDistinguishers.substitutesWithin_attach _ secure
+    -- The middle hop: both are the memoryless source of `𝒰[S] ⊗ G_* 𝒰[S]`.
     _ = 𝓡₂.perPort S • PRGReal.perPort G := 𝓡₁_smul_prgRand G q
+    -- The second swap, through `𝓡₂`; its loss is `ε` at `D` with `𝓡₂` absorbed.
     _ ≃[fun D => ε (absorb (𝓡₂.perPort S) D)]
         𝓡₂.perPort S • MemorylessSource.perPort (S × S) 𝒰[S × S] :=
       AdmissibleDistinguishers.substitutesWithin_attach _ secure
+    -- The last hop: both are the memoryless source of `𝒰[S × S × S]`.
     _ = MemorylessSource.perPort (S × S × S) 𝒰[S × S × S] := 𝓡₂_smul_prgRand q
 
 end

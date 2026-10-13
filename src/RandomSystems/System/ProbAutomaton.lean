@@ -77,6 +77,7 @@ lemma outcome_nonNeg (s : S) (x : Σ i, X i) : (step.outcome s x).NonNeg :=
 lemma weight_outcome (s : S) (x : Σ i, X i) : (step.outcome s x).weight = 1 := by
   -- Tagging the reply moves mass without changing it, and the step is a probability law.
   rw [outcome, weight_fTransform]
+  -- the weight-one field of the probability law `step s x.1 x.2`
   exact (step s x.1 x.2).2.2
 
 /-- The replies of an outcome are at the queried port. -/
@@ -109,6 +110,7 @@ lemma replyLaw_apply (β : Distribution S) (x : Σ i, X i) (y : Σ i, Y i) :
     step.replyLaw β x y = (step.transition β x y).weight := by
   -- Both sides are `∑ₛ β s · Pr[step s x replies y]`.
   rw [weight_transition, replyLaw, bindK_apply]
+  -- The reply marginal of the outcome at `y` is the mass of the outcomes with reply `y`.
   simp only [fTransform_apply_eq_mass]
 
 /-- The reply law has the weight of the state law. -/
@@ -128,16 +130,20 @@ lemma transition_eq_zero {β : Distribution S} {x : Σ i, X i} {y : Σ i, Y i} (
   -- No outcome of `x` has its reply at `y.1`, so every restriction to the reply `y` is empty.
   have hr : ∀ s, (step.outcome s x).restrict (fun sy => sy.2 = y) = 0 := by
     intro s
+    -- Pointwise at `sy = (s', y')`: the restriction is the outcome if `y' = y`, else zero.
     ext sy
     rw [restrict_apply]
     split_ifs with h
     · -- an outcome with reply `y` would be the tag of a step replying at `x.1`
       rw [outcome, fTransform_apply_eq_mass]
+      -- (a step `a` tagged to `sy` with `sy.2 = y` would force `y.1 = x.1`, against `hy`)
       exact mass_eq_zero_of_forall_not _ fun a ha => hy (by rw [← h, ← ha]; rfl)
+    -- a reply other than `y`: both sides are zero
     · rfl
   -- The kernel vanishes, so the mixture does.
   rw [transition]
   simp only [hr]
+  -- Each kernel law is the projection of zero, which is zero; a mixture of zeros is zero.
   exact (bindK_congr fun _ _ => fTransform_zero _).trans (bindK_zero_right β)
 
 variable (D : Domain (Σ i, X i) (Σ i, Y i)) (init : Distribution S)
@@ -161,6 +167,9 @@ lemma belief_snoc (h : List ((Σ i, X i) × (Σ i, Y i))) (x : Σ i, X i) (y : �
     step.belief D init (h ++ [(x, y)]) =
       if D h x then step.transition (step.belief D init h) x y else 0 := by
   -- Reversed, the exchange `(x, y)` comes first: one step of `beliefRev`.
+  --
+  --   belief h ──(x, reply y)──▶ belief (h · (x, y))   if the domain admits `x` after `h`
+  --                               = 0                   otherwise
   simp [belief, beliefRev, List.reverse_append]
 
 /-- The state laws of a nonnegative initial law are nonnegative. -/
@@ -172,7 +181,9 @@ lemma belief_nonNeg (hinit : init.NonNeg) (h : List ((Σ i, X i) × (Σ i, Y i))
   | append_singleton h e ih =>
     rw [belief_snoc]
     split_ifs
+    -- admitted query: a transition of the state law after `h`, nonnegative by induction
     · exact step.transition_nonNeg ih _ _
+    -- query outside the domain: the zero law
     · exact fun _ => le_rfl
 
 end ProbStep
@@ -185,6 +196,9 @@ open scoped Classical in
 noncomputable def RandomSystem.ofProbAutomaton (D : Domain (Σ i, X i) (Σ i, Y i))
     (step : ProbStep S I X Y) (init : Distribution.ProbDist S) :
     RandomSystem (Σ i, X i) (Σ i, Y i) D :=
+  -- The fields of a random system: the probability of `h` is the weight of the state law
+  -- after it; the empty transcript has the weight of `init`, which is one; probabilities are
+  -- nonnegative as the state laws are; and, at each `h` and `x`, a reply law below.
   ⟨fun h => (step.belief D init.1 h).weight, init.2.2,
     fun h => (step.belief_nonNeg D init.1 init.2.1 h).weight_nonneg, fun h x =>
     -- At an admitted query, the replies have the law of the reply from the current state law;
@@ -213,6 +227,7 @@ lemma RandomSystem.ofProbAutomaton_apply (D : Domain (Σ i, X i) (Σ i, Y i))
 lemma RandomSystem.ofProbAutomaton_repliesAtQueriedInterface (D : Domain (Σ i, X i) (Σ i, Y i))
     (step : ProbStep S I X Y) (init : Distribution.ProbDist S) :
     (RandomSystem.ofProbAutomaton D step init).RepliesAtQueriedInterface := by
+  -- A transcript `h`, a query `x`, and a reply `y` at a port `y.1 ≠ x.1`.
   intro h x y hy
   -- The probability of `h · (x, y)` is the weight of the state law after it ...
   rw [ofProbAutomaton_apply, step.belief_snoc]
@@ -255,9 +270,12 @@ lemma fTransform_fst_restrict_pair {A C : Type} (ν : Distribution A) (c y : C) 
   -- otherwise; then forgetting `c` gives back `ν`.
   rw [restrict_fTransform, fTransform_fTransform]
   split_ifs with h
+  -- `c = y`: every pair passes the event; restricting to `True` keeps `ν`, and `a ↦ (a, c).1`
+  -- is the identity.
   · rw [restrict_congr ν (Q := fun _ => True) fun _ => by simp [h]]
     rw [show (ν.restrict fun _ => True) = ν by ext; simp]
     exact fTransform_id ν
+  -- `c ≠ y`: no pair passes; the restriction to `False` is zero, and so is its pushforward.
   · rw [restrict_congr ν (Q := fun _ => False) fun _ => by simp [h], restrict_false]
     exact fTransform_zero _
 
@@ -268,25 +286,44 @@ lemma transition_bindK {K : S₁ → Distribution.ProbDist S₂} {β : Distribut
     {x : Σ i, X i} (hsim : ∀ s ∈ β.support, SimulatesAt step₁ step₂ K s x) (y : Σ i, Y i) :
     step₂.transition (bindK β fun s => (K s).1) x y =
       bindK (step₁.transition β x y) fun s => (K s).1 := by
+  -- Plan: at each state `s` of `β`, the claim is the simulation step at `s` restricted to the
+  -- reply `y`, with the reply then forgotten:
+  --
+  --   (fst ∘ [reply = y]) (∑_{s₂ ~ K s} step₂ s₂ x)
+  --     = (fst ∘ [reply = y]) (∑_{(s₁', y') ~ step₁ s x} (K s₁', y'))   (simulation step at s)
+  --     = ∑_{(s₁', y') ~ step₁ s x} [y' = y] · K s₁'
+  --     = ∑_{s₁' ~ fst ([reply = y] (step₁ s x))} K s₁'
+  --
+  -- 1. Write both sides as mixtures over `β` and compare them state by state.
+  -- 2. Move the restriction to the reply `y` and the projection out of the mixture over `K s`.
+  -- 3. Replace that mixture by the step of `step₁` followed by `K` (`hsim` at `s`).
+  -- 4. Move the restriction and projection back over the outcomes of `step₁` and evaluate.
+  --
+  -- Step 1.
   -- Both sides are mixtures over `β`; compare them state by state.
   rw [transition, transition, bindK_bindK, bindK_bindK]
   refine bindK_congr fun s hs => ?_
+  -- Step 2.
   -- Left: from `K s`, the step of `step₂` restricted to the reply `y`, next states only.
   -- Move the restriction and the projection outside the mixture over `K s`.
   have hpush : (bindK (K s).1 fun s₂ =>
       fTransform Prod.fst ((step₂.outcome s₂ x).restrict fun sy => sy.2 = y)) =
       fTransform Prod.fst ((bindK (K s).1 fun s₂ => step₂.outcome s₂ x).restrict
         fun sy => sy.2 = y) := by
+    -- restriction and pushforward commute with mixtures
     rw [restrict_bindK, fTransform_bindK]
   rw [hpush]
+  -- Step 3.
   -- The simulation step replaces the mixture by the step of `step₁` followed by `K`.
   rw [hsim s hs]
+  -- Step 4.
   -- Move the restriction and projection back inside, over the outcomes `p` of `step₁`.
   rw [restrict_bindK, fTransform_bindK]
   -- For each outcome `p = (s₁', y')`: `K s₁'` if `y' = y`, nothing otherwise.
   simp only [fTransform_fst_restrict_pair]
   -- Keeping the outcomes with reply `y` and their next states is the right-hand side.
   rw [bindK_ite, bindK_fTransform]
+  -- both kernels are `p ↦ K p.1`
   rfl
 
 omit [Fintype (Σ i, X i)] [Fintype (Σ i, Y i)] in
@@ -305,26 +342,52 @@ lemma belief_simulation (E : List (Σ i, X i) → Prop) (bound : ℕ)
     (∀ s ∈ (step₁.belief (Domain.ofInputs E bound hE) init h).support, inv (h.map Prod.fst) s) ∧
       step₂.belief (Domain.ofInputs E bound hE) (bindK init fun s => (K s).1) h =
         bindK (step₁.belief (Domain.ofInputs E bound hE) init h) fun s => (K s).1 := by
+  -- Plan: prove both claims together, by induction on the transcript. Writing `βᵢ` for the
+  -- state laws of `step₁`, the square below commutes at every exchange:
+  --
+  --   init ───(x₁, y₁)───▶ β₁ ───(x₂, y₂)───▶ β₂ ⋯         state laws of step₁
+  --    │ K                  │ K                 │ K
+  --    ▼                    ▼                   ▼
+  --   K(init) ─(x₁, y₁)──▶ K(β₁) ─(x₂, y₂)──▶ K(β₂) ⋯     state laws of step₂
+  --
+  -- 1. Empty transcript: the invariant holds on `init` (`hinit`), and the initial law of
+  --    `step₂` is the kernel image of `init` by definition.
+  -- 2. One more exchange `(x, y)` that the domain admits: the invariant passes to the states
+  --    reached (`hpres`); the states after `h` satisfy the invariant, so `step₂` simulates
+  --    `step₁` there (`hsim`), and the transition commutes with `K` (`transition_bindK`).
+  -- 3. An exchange the domain does not admit: both state laws are zero.
+  --
   -- Induction on the transcript, one exchange `(x, y)` at a time.
   induction h using List.reverseRecOn with
+  -- Step 1.
   | nil => exact ⟨hinit, rfl⟩
   | append_singleton h e ih =>
     obtain ⟨x, y⟩ := e
+    -- After `h · (x, y)` each state law is the transition of the one after `h` if the domain
+    -- admits `x`, and zero otherwise; case on the domain.
     rw [belief_snoc, belief_snoc]
     split_ifs with hd
+    -- Step 2.
+    -- (admitting `x` after `h` means the inputs of `h` followed by `x` are in `E`)
     · have hd' : E (h.map Prod.fst ++ [x]) := hd
       refine ⟨fun s hs => ?_, ?_⟩
       · -- A state after `h · (x, y)` is reached by a step from a state after `h`, which
         -- satisfies the invariant; the step preserves it.
+        -- `s` gets mass from some state `s₀` after `h` ...
         obtain ⟨s₀, hs₀, hs⟩ := mem_support_bindK hs
+        -- ... as the next state of an outcome `p` of `step₁` from `s₀` with reply `y` ...
         obtain ⟨p, hp, rfl⟩ := mem_support_fTransform _ _ hs
+        -- ... which is a possible outcome (restricting only removes mass);
         have hp' : p ∈ (step₁.outcome s₀ x).support := support_restrict_subset _ _ hp
+        -- `hpres` at `s₀`; the inputs of `h · (x, y)` are those of `h` followed by `x`.
         simpa using hpres _ _ x (ih.1 s₀ hs₀) hd' p hp'
       · -- The state law of `step₂` after `h` is the kernel image (induction hypothesis), and
         -- transitions commute with the kernel along simulation steps.
         rw [ih.2]
         exact transition_bindK step₁ step₂ (fun s hs => hsim _ s x (ih.1 s hs) hd') y
+    -- Step 3.
     · -- The query is not admitted: both state laws are zero.
+      -- (the zero law has no states, and the kernel image of zero is zero)
       exact ⟨fun s hs => absurd hs (by simp), by simp⟩
 
 end ProbStep
@@ -344,8 +407,15 @@ lemma RandomSystem.ofProbAutomaton_eq_of_simulation {E : List (Σ i, X i) → Pr
     RandomSystem.ofProbAutomaton (Domain.ofInputs E bound hE) step₁ init =
       RandomSystem.ofProbAutomaton (Domain.ofInputs E bound hE) step₂ (init.bind K) := by
   -- Compare the probabilities of every transcript `h`.
+  -- Writing `β₁ h` for the state law of `step₁` after `h` and `β₂ h` for that of `step₂`:
+  --
+  --   P₁(h) = weight (β₁ h)
+  --         = weight (K(β₁ h))    (each `K s` is a probability law)
+  --         = weight (β₂ h)       (`belief_simulation`)
+  --         = P₂(h)
   apply RandomSystem.ext
   intro h
+  -- each probability is the weight of the state law after `h`
   rw [ofProbAutomaton_apply, ofProbAutomaton_apply]
   -- The state law of `step₂` after `h` is the kernel image of that of `step₁` ...
   rw [ProbDist.bind_val, (ProbStep.belief_simulation step₁ step₂ E bound hE K inv hpres hsim
@@ -380,7 +450,10 @@ lemma transition_ofDeterministic (step : S → (i : I) → X i → S × Y i) (β
   simp only [outcome_ofDeterministic, single_restrict]
   -- A kernel vanishing off an event is the kernel on the restriction, here a point kernel.
   rw [← bindK_single_comp, ← bindK_ite]
+  -- Compare the kernels state by state.
   refine bindK_congr fun s _ => ?_
+  -- Reply `y`: the next-state projection of the point mass at `(s', y)` is the point mass at
+  -- `s'`. Another reply: both kernels give zero.
   split_ifs <;> simp [fTransform]
 
 omit [Fintype (Σ i, X i)] [Fintype (Σ i, Y i)] in
@@ -392,14 +465,29 @@ lemma belief_ofDeterministic (step : S → (i : I) → X i → S × Y i) (E : Li
     (ofDeterministic step).belief (Domain.ofInputs E bound hE) init h =
       fTransform (fun s => stateAfter step s (h.map Prod.fst)) (init.restrict fun s =>
         Replies (filterDom E (automatonSystem step s)) (h.map Prod.fst) (h.map Prod.snd)) := by
+  -- Plan: induction on the transcript. An initial state `s` is kept iff the automaton started
+  -- in `s` gives `h`; it then sits at the state its run reaches:
+  --
+  --   s ──x₁ / y₁──▶ s₁ ──x₂ / y₂──▶ s₂ ⋯ ──xₙ / yₙ──▶ stateAfter step s (x₁ ⋯ xₙ)
+  --
+  -- (each reply of the run is the `yᵢ` of `h`, and each prefix of inputs is in `E`).
+  -- 1. Empty transcript: every initial state gives it and stays where it is.
+  -- 2. One more exchange `(x, y)`: "gives `h · (x, y)`" unfolds into "gives `h`, `E` admits
+  --    `x`, and the reply from the state after `h` is `y`" (`hrep`).
+  -- 3. Admitted `x`: the deterministic transition keeps the states that reply `y` and moves
+  --    each one step; with the induction hypothesis this is the event of step 2, moved.
+  -- 4. Not admitted: the state law is zero, and no initial state gives the transcript.
   induction h using List.reverseRecOn with
+  -- Step 1.
   | nil =>
     -- No exchange: every initial state gives the empty transcript, and stays where it is.
     simp only [belief_nil, List.map_nil, stateAfter_nil, replies_nil]
+    -- restricting to `True` keeps `init`, and moving along the identity keeps it too
     rw [show (init.restrict fun _ => True) = init by ext; simp]
     exact (fTransform_id init).symm
   | append_singleton h e ih =>
     obtain ⟨x, y⟩ := e
+    -- Step 2.
     -- The automaton from `s` gives `h · (x, y)` when it gives `h`, the domain admits `x`, and
     -- its reply from the state after `h` is `y`.
     have hrep : ∀ s, Replies (filterDom E (automatonSystem step s)) ((h ++ [(x, y)]).map Prod.fst)
@@ -408,23 +496,33 @@ lemma belief_ofDeterministic (step : S → (i : I) → X i → S × Y i) (E : Li
             E (h.map Prod.fst ++ [x]) ∧
               (⟨x.1, (step (stateAfter step s (h.map Prod.fst)) x.1 x.2).2⟩ : Σ i, Y i) = y := by
       intro s
+      -- Giving `h · (x, y)` = giving `h`, and the system's answer to `x` after `h` is `y`;
+      -- the system filtered by `E` answers only when `E` admits the inputs `h · x`.
       simp only [List.map_append, List.map_cons, List.map_nil, replies_snoc,
         SystemAlgebra.filterDom, automatonSystem_snoc]
       by_cases hx : E (h.map Prod.fst ++ [x])
+      -- admitted: the answer is the automaton's reply, equal to `y` iff the replies agree
       · simp [hx, Part.some_inj, eq_comm]
+      -- not admitted: no answer, so the transcript is not given
       · simp [hx, Part.none_ne_some]
+    -- Unfold the state law after `h · (x, y)` and rewrite the event by `hrep`.
     rw [belief_snoc, restrict_congr init hrep]
     split_ifs with hd
+    -- Step 3.
     · have hd' : E (h.map Prod.fst ++ [x]) := hd
       -- The transition moves the states replying `y` (induction hypothesis for `h`) ...
       rw [ih, transition_ofDeterministic, restrict_fTransform, fTransform_fTransform,
         restrict_restrict]
       -- ... to the state after `h · x`.
       simp only [List.map_append, List.map_cons, List.map_nil, stateAfter_snoc]
+      -- Both sides move each state the same way; it remains to match the events, which
+      -- differ only by the conjunct `E (inputs of h · x)`, true here (`hd'`).
       congr 1
       exact restrict_congr init fun s => by simp [hd']
+    -- Step 4.
     · -- The query is not admitted: no initial state gives the transcript.
       have hd' : ¬ E (h.map Prod.fst ++ [x]) := hd
+      -- the event contains the false conjunct `E (inputs of h · x)`: the restriction is zero
       rw [restrict_congr init (Q := fun _ => False) fun s => by simp [hd'], restrict_false]
       exact (fTransform_zero _).symm
 

@@ -87,8 +87,11 @@ theorem Consistent.snoc {P : Program S O J U V X Y} {s : S} {o : O} {u : U o}
 /-- **A bounded program's own exchanges** in one invocation number at most its bound. -/
 theorem Consistent.length_le {P : Program S O J U V X Y} {b : ℕ} (hP : P.Bounded b) {s : S} {o : O}
     {u : U o} {h : List ((Σ j, X j) × (Σ j, Y j))} (hc : P.Consistent s o u h) : h.length ≤ b := by
+  -- Either `h` is empty, or it is earlier exchanges `h'` followed by a last exchange `z`.
   rcases List.eq_nil_or_concat h with rfl | ⟨h', z, rfl⟩
+  -- No exchange: `0 ≤ b`.
   · exact Nat.zero_le _
+  -- `h = h' · z`:
   · rw [List.concat_eq_append] at hc ⊢
     -- The last exchange answers a query the body made after the exchanges `h'` ...
     have hz := hc h'.length (by simp)
@@ -98,7 +101,10 @@ theorem Consistent.length_le {P : Program S O J U V X Y} {b : ℕ} (hP : P.Bound
       have := hc i (by simp; omega)
       rwa [List.take_append_of_le_length hi.le, List.getElem_append_left hi] at this
     -- ... so `h'` is shorter than the bound, and `h' · z` is within it.
+    -- The body still queries after its own exchanges `h'` (`hz.1`), so the bound of `P`
+    -- gives `h'.length < b`.
     have := hP s o u h' _ hc' (by simpa using hz.1)
+    -- Hence `(h' · z).length = h'.length + 1 ≤ b`.
     simp only [List.length_append, List.length_singleton]
     omega
 
