@@ -62,7 +62,7 @@ systems on one domain form [mixtures][RandomSystem.mix], and two random systems 
 A [**probabilistic automaton**][RandomSystem.ofProbAutomaton] answers a query from its state with a
 law on the next state and the reply, a [probabilistic step][ProbStep]; its random system follows
 the [sub-law of the states][ProbStep.belief] reached with the replies of a transcript, whose weight
-is the probability of the transcript. Two probabilistic automata
+is the probability of the transcript. On an input domain, two probabilistic automata
 [have the same random system][RandomSystem.ofProbAutomaton_eq_of_simulation] along a
 [simulation][ProbStep.SimulatesAt], a kernel between their states through which their steps
 commute. A deterministic automaton with a random initial state
@@ -128,9 +128,9 @@ the inside queries with fresh steps; it [respects simulations][RandomSystem.ofPr
 it**][PDCBehavior.attach_ofDDC_ofProgramOn_ofProbAutomaton], the combined system $`C(F)`$ of a
 system $`C(\cdot)`$ invoking $`F`$ [4, §3.3]; for point steps it is the
 [combined automaton][PDCBehavior.attach_ofDDC_ofProgramOn_ofDeterministic]. Against memoryless
-replies of the laws $`\nu`$, a program [replies memorylessly][Program.memoryless_probCombine], with
-its [reply law][Program.replyLaw] $`\kappa`$: the law of one invocation whose inside queries are
-answered by fresh samples of $`\nu`$. So [the composition law][PDCBehavior.attach_ofDDC_ofProgramOn_memoryless]
+replies of the laws $`\nu`$, a program [replies memorylessly][Program.memoryless_probCombine] when
+its [reply law][Program.replyLaw] $`\kappa`$, the law of one invocation whose inside queries are
+answered by fresh samples of $`\nu`$, is the same from every program state. So [the composition law][PDCBehavior.attach_ofDDC_ofProgramOn_memoryless]
 holds, whatever the number of the program's inside queries:
 
 ```math
@@ -1012,25 +1012,25 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [Program.inline]: src/RandomSystems/Converter/ProgramAttachment.lean#L258
 [Program.combine]: src/RandomSystems/Converter/ProgramAttachment.lean#L429
 [Program.trim_apply_ofProgramOn_automaton]: src/RandomSystems/Converter/ProgramAttachment.lean#L609
-[RandomSystem.ofProbAutomaton]: src/RandomSystems/System/ProbAutomaton.lean#L196
-[ProbStep]: src/RandomSystems/System/ProbAutomaton.lean#L57
-[ProbStep.belief]: src/RandomSystems/System/ProbAutomaton.lean#L159
-[ProbStep.SimulatesAt]: src/RandomSystems/System/ProbAutomaton.lean#L259
-[RandomSystem.ofProbAutomaton_eq_of_simulation]: src/RandomSystems/System/ProbAutomaton.lean#L399
-[RandomSystem.ofProbAutomaton_ofDeterministic_apply]: src/RandomSystems/System/ProbAutomaton.lean#L534
-[RandomSystem.ofProbAutomaton_eq_drawStep]: src/RandomSystems/Converter/ProbProgramAttachment.lean#L935
-[RandomSystem.memoryless]: src/RandomSystems/System/Memoryless.lean#L63
-[RandomSystem.eq_memoryless_of_snoc]: src/RandomSystems/System/Memoryless.lean#L82
-[RandomSystem.parallel_memoryless]: src/RandomSystems/System/Memoryless.lean#L144
-[ProbStep.Memoryless]: src/RandomSystems/System/Memoryless.lean#L235
-[RandomSystem.ofProbAutomaton_eq_memoryless]: src/RandomSystems/System/Memoryless.lean#L271
+[RandomSystem.ofProbAutomaton]: src/RandomSystems/System/ProbAutomaton.lean#L197
+[ProbStep]: src/RandomSystems/System/ProbAutomaton.lean#L58
+[ProbStep.belief]: src/RandomSystems/System/ProbAutomaton.lean#L160
+[ProbStep.SimulatesAt]: src/RandomSystems/System/ProbAutomaton.lean#L260
+[RandomSystem.ofProbAutomaton_eq_of_simulation]: src/RandomSystems/System/ProbAutomaton.lean#L400
+[RandomSystem.ofProbAutomaton_ofDeterministic_apply]: src/RandomSystems/System/ProbAutomaton.lean#L535
+[RandomSystem.ofProbAutomaton_eq_drawStep]: src/RandomSystems/Converter/ProbProgramAttachment.lean#L933
+[RandomSystem.memoryless]: src/RandomSystems/System/Memoryless.lean#L65
+[RandomSystem.eq_memoryless_of_snoc]: src/RandomSystems/System/Memoryless.lean#L84
+[RandomSystem.parallel_memoryless]: src/RandomSystems/System/Memoryless.lean#L146
+[ProbStep.Memoryless]: src/RandomSystems/System/Memoryless.lean#L237
+[RandomSystem.ofProbAutomaton_eq_memoryless]: src/RandomSystems/System/Memoryless.lean#L273
 [Program.probCombine]: src/RandomSystems/Converter/ProbProgramAttachment.lean#L187
-[RandomSystem.ofProbAutomaton_probCombine_eq_of_simulation]: src/RandomSystems/Converter/ProbProgramAttachment.lean#L509
-[PDCBehavior.attach_ofDDC_ofProgramOn_ofProbAutomaton]: src/RandomSystems/Converter/ProbProgramAttachment.lean#L1097
-[PDCBehavior.attach_ofDDC_ofProgramOn_ofDeterministic]: src/RandomSystems/Converter/ProbProgramAttachment.lean#L1011
-[Program.memoryless_probCombine]: src/RandomSystems/System/Memoryless.lean#L388
-[Program.replyLaw]: src/RandomSystems/System/Memoryless.lean#L302
-[PDCBehavior.attach_ofDDC_ofProgramOn_memoryless]: src/RandomSystems/System/Memoryless.lean#L419
+[RandomSystem.ofProbAutomaton_probCombine_eq_of_simulation]: src/RandomSystems/Converter/ProbProgramAttachment.lean#L507
+[PDCBehavior.attach_ofDDC_ofProgramOn_ofProbAutomaton]: src/RandomSystems/Converter/ProbProgramAttachment.lean#L1095
+[PDCBehavior.attach_ofDDC_ofProgramOn_ofDeterministic]: src/RandomSystems/Converter/ProbProgramAttachment.lean#L1009
+[Program.memoryless_probCombine]: src/RandomSystems/System/Memoryless.lean#L390
+[Program.replyLaw]: src/RandomSystems/System/Memoryless.lean#L304
+[PDCBehavior.attach_ofDDC_ofProgramOn_memoryless]: src/RandomSystems/System/Memoryless.lean#L421
 [RandomSystem.transcriptDistance]: src/RandomSystems/Distance/Decision.lean#L228
 [Domain.Compatible]: src/RandomSystems/Distance/Decision.lean#L165
 [Domain.DecisionCompatible]: src/RandomSystems/Distance/Decision.lean#L171

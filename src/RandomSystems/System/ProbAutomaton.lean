@@ -17,11 +17,12 @@ moves this sub-law by one step and keeps the states that replied `y`:
   P(h)                     = ∑ₛ belief h (s)
 ```
 
-Two probabilistic automata have the same random system along a **simulation**: a kernel from the
-states of the first to those of the second such that, from the kernel image of a state, a step of
-the second is a step of the first followed by the kernel. A deterministic automaton is the
-probabilistic automaton of its point steps, and its random system is the one of the distribution
-over deterministic systems its initial law induces [1, Definition 2].
+On an input domain, two probabilistic automata have the same random system along a
+**simulation**: a kernel from the states of the first to those of the second such that, from the
+kernel image of a state, a step of the second is a step of the first followed by the kernel. A
+deterministic automaton is the probabilistic automaton of its point steps: with its initial state
+sampled, a transcript has the probability of the initial states from which the automaton gives
+it, as for a random automaton whose only randomness is its initial state [1, Definition 2].
 
 ## Main definitions
 
@@ -38,7 +39,7 @@ over deterministic systems its initial law induces [1, Definition 2].
 * `RandomSystem.ofProbAutomaton_repliesAtQueriedInterface`: a probabilistic automaton replies at
   the queried port
 * `ProbStep.belief_simulation`, `RandomSystem.ofProbAutomaton_eq_of_simulation`: along a
-  simulation the state laws correspond, and the random systems are equal
+  simulation the state laws correspond, and on an input domain the random systems are equal
 * `RandomSystem.ofProbAutomaton_ofDeterministic_apply`: a deterministic automaton with a random
   initial state is the probabilistic automaton of its point steps
 
@@ -531,7 +532,7 @@ end ProbStep
 /-- **A deterministic automaton is a probabilistic automaton** with point steps: with its initial
 state sampled from `init`, a transcript has the probability of the initial states from which the
 automaton gives it [1, Definition 2]. -/
-theorem RandomSystem.ofProbAutomaton_ofDeterministic_apply {E : List (Σ i, X i) → Prop}
+lemma RandomSystem.ofProbAutomaton_ofDeterministic_apply {E : List (Σ i, X i) → Prop}
     {bound : ℕ} {hE : ∀ h, E h → h.length ≤ bound} (step : S → (i : I) → X i → S × Y i)
     (init : Distribution.ProbDist S) (h : List ((Σ i, X i) × (Σ i, Y i))) :
     RandomSystem.ofProbAutomaton (Domain.ofInputs E bound hE) (ProbStep.ofDeterministic step)
