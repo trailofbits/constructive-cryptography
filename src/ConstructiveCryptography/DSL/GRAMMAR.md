@@ -100,7 +100,7 @@ determines every argument. With two or more ports these are instances, so the al
 port is finite by instance search; with one port the alphabet reduces to its declared type, whose
 own instances apply.
 
-A system declares a resource for every budget: `S : Interface.Resource (I q)` with the implicit
+A system declares a typed system for every budget: `S : TypedSystem (I q)` with the implicit
 argument `budget`. Its default domain consists of the histories of one to `q` inputs. An
 explicit `domain h ↦ P` is intersected with the budget and requires the nonempty-prefix
 condition, proved in `by`. This clause belongs to a system without an interface annotation.
@@ -109,7 +109,7 @@ value.
 
 `interface I` also declares `I.perPort q := Interface.portBudget … q` for a budget
 `q : I.Port → ℕ` per port: at most `q i` queries at each port `i`. A system without an exact
-domain also gets `S.perPort : Interface.Resource (I.perPort q)`. A converter with a single inside
+domain also gets `S.perPort : TypedSystem (I.perPort q)`. A converter with a single inside
 port is typed by per-port budgets along a partial port map `C.portMap : I.Port → Option J.Port`,
 which sends each procedure to the inside label it calls, or to `none` when it calls none
 (`C.preserving`, a `Program.PortPreserving` proof: each procedure calls at most its own label, at
@@ -156,7 +156,7 @@ not find one.
 
 A component compiles to a deterministic program with sources of randomness: sampling stays in
 the surface, and randomness enters the generated systems only through sources
-(`Interface.Resource.source`, Maurer 2002, Definition 1).
+(`TypedSystem.source`, Maurer 2002, Definition 1).
 
 - Every sampling statement `x ←$ P` becomes a call `x ← sample_k()` to a synthetic inside port
   whose source draws fresh samples from `P`; the law is `C.law_k`.
@@ -168,21 +168,21 @@ the surface, and randomness enters the generated systems only through sources
 - Computation is ordinary `let` bindings; control flow is ordinary conditionals, pattern
   matching and list folds (`forEach`); a call is `callProg`, a reply `returnProg`.
 - `C.program : I q ⟶ J (C.bound * q)` is the converter of the program
-  (`Interface.Converter.ofProgram`), on the outside domain of `I q`.
-- A converter is `C.program ≫ Interface.rightContext J (C.randomness k)`: its program with its
-  sources attached beside the declared inside ports, each source at the inside budget `k`. A
+  (`TypedConverter.ofProgram`), on the outside domain of `I q`.
+- A converter is `C.program ≫ TypedConverter.rightContext J (C.randomness k)`: its program with
+  its sources attached beside the declared inside ports, each source at the inside budget `k`. A
   converter that samples nothing is `C.program`.
 - A system is `C.program • C.randomness k`. A system that samples nothing is the automaton of
-  its program started in `C.initial`, `Interface.Resource.ofAutomaton I step (single s)`.
+  its program started in `C.initial`, `TypedSystem.ofAutomaton I step (single s)`.
 
-Attaching a program to a resource runs its body against the resource
+Attaching a program to a typed system runs its body against the system
 (`Program.apply_ofProgram`, Maurer 2002, §3.3). A transcript of `C.program • R` has the mass of
-the resource's deterministic systems on which the inlined program gives it
-(`Interface.ofDDC_ofProgramOn_smul_ofPDS`). Sources are automata whose initial state is a table
-of samples (`Interface.Resource.ofAutomaton I step initial`, Maurer 2002, Definition 2, with the
+the system's deterministic systems on which the inlined program gives it
+(`TypedConverter.ofDDC_ofProgramOn_smul_ofPDS`). Sources are automata whose initial state is a
+table of samples (`TypedSystem.ofAutomaton I step initial`, Maurer 2002, Definition 2, with the
 randomness in the initial state); parallel automata are the automaton of both
-(`Interface.parallel_ofAutomaton`), and a program attached to an automaton is the combined
-automaton (`Interface.Converter.ofProgram_smul_ofAutomaton`, `Program.combine`). Every compiled
+(`TypedSystem.parallel_ofAutomaton`), and a program attached to an automaton is the combined
+automaton (`TypedConverter.ofProgram_smul_ofAutomaton`, `Program.combine`). Every compiled
 component is therefore an automaton with a sampled initial state; bisimilar automata have the
 same system (`automatonSystem_eq_of_bisim`).
 
@@ -234,7 +234,7 @@ obligation. This example specifies the composition, without claiming a security
 reduction or a standardized AEAD mode.
 
 `Examples/DSL/AEADTests.lean` proves the generated encrypt/verify/reject interaction paths of
-the program's converter (`Interface.ofDDC_apply`), checks the encoding bounds, and checks the
+the program's converter (`TypedConverter.ofDDC_apply`), checks the encoding bounds, and checks the
 combination as functions (`CTR.crypt` and `PMAC.pmac`): decryption inverts encryption, and
 modified inputs are rejected. The published CTR and PMAC vectors are checked in
 `Commons/Tests`, on the functions; they are separate from a proof that the converters

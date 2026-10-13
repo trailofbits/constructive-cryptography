@@ -64,7 +64,7 @@ system AESCTR ≔ CTR (2 ^ 36) • AES
 system AESPMAC ≔ PMAC authenticationBytes • AES
 system AuthenticatedEncryption ≔ EncryptThenMAC • (AESCTR ∥ AESPMAC)
 
-/-- The combined converter uses two independently keyed AES resources. -/
+/-- The combined converter uses two independently keyed AES systems. -/
 lemma authenticatedEncryption_eq (q : ℕ) :
     AuthenticatedEncryption (budget := q) =
       (EncryptThenMAC ≫ (CTR (2 ^ 36) ⊗ₘ PMAC authenticationBytes)) • (AES ∥ AES) := by

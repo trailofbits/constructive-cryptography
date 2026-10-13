@@ -45,11 +45,11 @@ open SystemAlgebra SystemAlgebra.Substitution
 #print axioms resourceDDC_isDDCFrom
 #print axioms apply_resourceDDC
 #print axioms discardSystem_isDDCFrom
-#print axioms SystemAlgebra.Interface.attach_resourceConverter
-#print axioms SystemAlgebra.Interface.resource_empty_eq
-#print axioms SystemAlgebra.Interface.attach_constant
-#print axioms SystemAlgebra.Interface.attach_rightContext
-#print axioms SystemAlgebra.Interface.attach_leftContext
+#print axioms SystemAlgebra.TypedConverter.attach_ofSystem
+#print axioms SystemAlgebra.TypedSystem.empty_eq
+#print axioms SystemAlgebra.TypedConverter.attach_constant
+#print axioms SystemAlgebra.TypedConverter.attach_rightContext
+#print axioms SystemAlgebra.TypedConverter.attach_leftContext
 #print axioms singleSubstitutionRelaxation_parallelCompatible
 
 #print axioms SubstitutionExamples.unrestricted_diagonal

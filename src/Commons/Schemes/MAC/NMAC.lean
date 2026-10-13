@@ -42,9 +42,9 @@ variable [Fintype C] [Nonempty C] [Fintype M] {q : ℕ}
 /-- **NMAC under two uniform keys**: for independent uniform `K₁` and `K₂`, each message is
 answered with NMAC of its blocks. -/
 def Real (f : C → B → C) (pad : C ↪ B) (blockForm : M → List B) :
-    Interface.Resource (Evaluation M C q) :=
-  Interface.Resource.sample (Distribution.uniform (C × C)) fun keys =>
-    Interface.Resource.ofFunction fun _ message => nmac f pad keys (blockForm message)
+    TypedSystem (Evaluation M C q) :=
+  TypedSystem.sample (Distribution.uniform (C × C)) fun keys =>
+    TypedSystem.ofFunction fun _ message => nmac f pad keys (blockForm message)
 
 end
 

@@ -1,7 +1,5 @@
 import ConstructiveCryptography.Construction.Basic
 import ConstructiveCryptography.Construction.Defs
-import ConstructiveCryptography.ConverterCoherence
-import ConstructiveCryptography.Automaton
 import ConstructiveCryptography.CryptographicAlgebra.Basic
 import ConstructiveCryptography.CryptographicAlgebra.Distinguisher
 import ConstructiveCryptography.CryptographicAlgebra.Epsilon
@@ -9,31 +7,13 @@ import ConstructiveCryptography.CryptographicAlgebra.Game
 import ConstructiveCryptography.CryptographicAlgebra.PseudoMetric
 import ConstructiveCryptography.CryptographicAlgebra.Relaxation
 import ConstructiveCryptography.CryptographicAlgebra.Star
-import ConstructiveCryptography.DDCCoherence
-import ConstructiveCryptography.Functional
-import ConstructiveCryptography.Interface
 import ConstructiveCryptography.InterfaceAlgebra
-import ConstructiveCryptography.InterfaceCoherence
-import ConstructiveCryptography.InterfaceFilter
+import ConstructiveCryptography.InterfaceCategory
 import ConstructiveCryptography.InterfaceGame
 import ConstructiveCryptography.InterfaceMonoidal
-import ConstructiveCryptography.InterfaceParallel
-import ConstructiveCryptography.InterfaceRelabel
-import ConstructiveCryptography.InterfaceTensorRename
-import ConstructiveCryptography.Memoryless
 import ConstructiveCryptography.Notation
-import ConstructiveCryptography.PresentedGame
 import ConstructiveCryptography.DSL
-import ConstructiveCryptography.DSL.Converters
 import ConstructiveCryptography.DSL.Elaborator
-import ConstructiveCryptography.DSL.Probability
-import ConstructiveCryptography.DSL.Programs
-import ConstructiveCryptography.DSL.Syntax
-import ConstructiveCryptography.DSL.Tactics
-import ConstructiveCryptography.ResourceCoherence
-import ConstructiveCryptography.ResourceParallel
-import ConstructiveCryptography.ResourceParallelAttachment
-import ConstructiveCryptography.Source
 import ConstructiveCryptography.Specification
 import ConstructiveCryptography.Specification.Action
 import ConstructiveCryptography.Specification.Basic
@@ -52,7 +32,6 @@ import ConstructiveCryptography.Specification.Star
 import ConstructiveCryptography.Specification.Star.Metric
 import ConstructiveCryptography.Substitution.Basic
 import ConstructiveCryptography.Substitution.Construction
-import ConstructiveCryptography.Context
 import ConstructiveCryptography.Substitution.Implication
 import ConstructiveCryptography.Substitution.Parallel
 import ConstructiveCryptography.Substitution.Quantitative
@@ -64,8 +43,8 @@ import ConstructiveCryptography.Tactics.Substitution
 import ConstructiveCryptography.Tactics.ProofAutomationAttributes
 
 /-!
-Constructive Cryptography: interfaces and domains, arrows, resources and the action, parallel
-composition, the resource distance, memoryless systems, specifications of resources, filters,
-budgets, functional constructors, games presented by discrete games; the categorical packaging;
-and the extensions (substitution, the DSL).
+Constructive Cryptography: the classes of cryptographic algebras (attachment, parallel
+composition, distance, distinguishers, games), specifications, constructions and substitution;
+their instances on interfaces, whose fields are the typed systems and typed converters of
+`RandomSystems.Typed`; the notation, the proof commands and the DSL front end.
 -/

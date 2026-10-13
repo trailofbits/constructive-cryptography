@@ -54,7 +54,7 @@ system CDH.Ideal(q : ℕ) [NeZero q] (g : G) : CDH G
 /-- **The systems of the CDH assumption**: the real and the ideal system, at the budget
 `budget`. -/
 noncomputable def CDH.Assumption.systems (q : ℕ) [NeZero q] (g : G) [DecidableEq G] (budget : ℕ) :
-    Interface.Resource (CDH G budget) × Interface.Resource (CDH G budget) :=
+    TypedSystem (CDH G budget) × TypedSystem (CDH G budget) :=
   (CDH.Real q g, CDH.Ideal q g)
 
 /-- **The CDH assumption** within `error`: against the admitted distinguishers, the real system

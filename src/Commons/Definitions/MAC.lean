@@ -102,14 +102,14 @@ converter MAC.SUF(M T : Type) [Fintype M] [Fintype T] [DecidableEq M] [Decidable
 /-- **The systems of EUF-CMA**: the real system and the one whose verification accepts only tags
 on tagged messages, for `k ← G`, at the budget `q` per port. -/
 def MAC.EUFCMA.systems [DecidableEq K] [DecidableEq M] (mac : MAC K M T) (q : Tagging.Port → ℕ) :
-    Interface.Resource (Tagging.perPort M T q) × Interface.Resource (Tagging.perPort M T q) :=
+    TypedSystem (Tagging.perPort M T q) × TypedSystem (Tagging.perPort M T q) :=
   (MAC.Real.perPort mac, MAC.EUF.perPort M T • MAC.Real.perPort mac)
 
 /-- **The systems of SUF-CMA**: the real system and the one whose verification accepts only tagged
 pairs, for `k ← G`, at the budget `q` per port. -/
 def MAC.SUFCMA.systems [DecidableEq K] [DecidableEq M] [DecidableEq T] (mac : MAC K M T)
     (q : Tagging.Port → ℕ) :
-    Interface.Resource (Tagging.perPort M T q) × Interface.Resource (Tagging.perPort M T q) :=
+    TypedSystem (Tagging.perPort M T q) × TypedSystem (Tagging.perPort M T q) :=
   (MAC.Real.perPort mac, MAC.SUF.perPort M T • MAC.Real.perPort mac)
 
 /-- **EUF-CMA** within `error`: against the admitted distinguishers, the real system substitutes

@@ -6,7 +6,7 @@ import ConstructiveCryptography.Tactics.Substitution
 # Substitutions on interfaces
 
 A single substitution establishes a construction `{R} —[π]→ …`, and the context rules of the
-relaxation add an independent resource on either side (Jost, §2.2.2 and Proposition 2.2.3).
+relaxation add an independent typed system on either side (Jost, §2.2.2 and Proposition 2.2.3).
 Constant converters supply the diagonal of the unrestricted converter class; a restricted class
 needs its own closure under the two contexts. A calculation of statistical substitutions
 `≈[ε]` joined by exact equalities gives an approximate construction `{R} —[π; ε]→ …`.
@@ -30,19 +30,19 @@ open SystemAlgebra SystemAlgebra.Substitution
 open scoped SystemAlgebra
 
 /-- Constant converters supply the diagonal of the unrestricted converter class. -/
-lemma unrestricted_diagonal {B : Interface} (left right : Interface.Resource B)
-    (A : Interface) (resource : Interface.Resource A) :
+lemma unrestricted_diagonal {B : Interface} (left right : TypedSystem B)
+    (A : Interface) (R : TypedSystem A) :
     ∃ transformation ∈ (Set.univ : Set (A ⟶ B)),
-      transformation • left = resource ∧ transformation • right = resource :=
-  ⟨Interface.constant resource B, Set.mem_univ _,
-    Interface.attach_constant resource left, Interface.attach_constant resource right⟩
+      transformation • left = R ∧ transformation • right = R :=
+  ⟨TypedConverter.constant R B, Set.mem_univ _,
+    TypedConverter.attach_constant R left, TypedConverter.attach_constant R right⟩
 
 /-- **A single substitution with a right context**: the substitution of `right` for `left`
-through `transformation` constructs the simulated ideal, and an independent resource on the
+through `transformation` constructs the simulated ideal, and an independent typed system on the
 right is carried along. -/
 theorem construction_with_right_context {A B C D E : Interface}
-    (left right : Interface.Resource B) (protocol : A ⟶ D) (simulator : A ⟶ E)
-    (real : Interface.Resource D) (ideal : Interface.Resource E) (context : Interface.Resource C)
+    (left right : TypedSystem B) (protocol : A ⟶ D) (simulator : A ⟶ E)
+    (real : TypedSystem D) (ideal : TypedSystem E) (context : TypedSystem C)
     (transformation : A ⟶ B)
     (realEq : protocol • real = transformation • left)
     (idealEq : transformation • right = simulator • ideal) :
@@ -68,8 +68,8 @@ theorem construction_with_right_context {A B C D E : Interface}
 
 /-- **A single substitution with a left context**, in the other order. -/
 theorem construction_with_left_context {A B C D E : Interface}
-    (left right : Interface.Resource B) (protocol : A ⟶ D) (simulator : A ⟶ E)
-    (real : Interface.Resource D) (ideal : Interface.Resource E) (context : Interface.Resource C)
+    (left right : TypedSystem B) (protocol : A ⟶ D) (simulator : A ⟶ E)
+    (real : TypedSystem D) (ideal : TypedSystem E) (context : TypedSystem C)
     (transformation : A ⟶ B)
     (realEq : protocol • real = transformation • left)
     (idealEq : transformation • right = simulator • ideal) :
@@ -96,16 +96,16 @@ theorem construction_with_left_context {A B C D E : Interface}
 /-- A restricted class is compatible with parallel composition once it is closed under both
 contexts; membership of the composed converter is not automatic. -/
 example {D : Interface} (transformations : ∀ A : Interface, Set (A ⟶ D))
-    (left right : Interface.Resource D)
-    (diagonal : ∀ A (resource : Interface.Resource A),
+    (left right : TypedSystem D)
+    (diagonal : ∀ A (R : TypedSystem A),
       ∃ transformation ∈ transformations A,
-        transformation • left = resource ∧ transformation • right = resource)
-    (rightClosed : ∀ (A B : Interface) (context : Interface.Resource B)
+        transformation • left = R ∧ transformation • right = R)
+    (rightClosed : ∀ (A B : Interface) (context : TypedSystem B)
       (transformation : A ⟶ D), transformation ∈ transformations A →
-        Interface.rightContext A context ≫ transformation ∈ transformations (A ⊗ B))
-    (leftClosed : ∀ (A B : Interface) (context : Interface.Resource A)
+        TypedConverter.rightContext A context ≫ transformation ∈ transformations (A ⊗ B))
+    (leftClosed : ∀ (A B : Interface) (context : TypedSystem A)
       (transformation : B ⟶ D), transformation ∈ transformations B →
-        Interface.leftContext context B ≫ transformation ∈ transformations (A ⊗ B)) :
+        TypedConverter.leftContext context B ≫ transformation ∈ transformations (A ⊗ B)) :
     Specification.Relaxation.ParallelCompatible
       (fun A => Specification.singleSubstitutionRelaxation
         (transformations A) left right (diagonal A)) := by
@@ -119,7 +119,7 @@ example {D : Interface} (transformations : ∀ A : Interface, Set (A ⟶ D))
 protocol, a join, `H'` by `S'` through a transformation, and a join to the simulated ideal. -/
 theorem constructsWithin_of_two_substitutions {A B D E : Interface}
     (protocol : A ⟶ B) (transformation : A ⟶ D) (simulator : A ⟶ E)
-    (R H : Interface.Resource B) (H' S' : Interface.Resource D) (ideal : Interface.Resource E)
+    (R H : TypedSystem B) (H' S' : TypedSystem D) (ideal : TypedSystem E)
     (ε₁ ε₂ : ENNReal) (first : Δ R H ≤ ε₁) (join : protocol • H = transformation • H')
     (second : Δ H' S' ≤ ε₂) (finish : transformation • S' = simulator • ideal) :
     {R} —[protocol; ε₁ + ε₂]→ {simulator • ideal} := by

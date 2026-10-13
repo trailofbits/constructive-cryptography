@@ -68,7 +68,7 @@ system UniversalHash.DifferenceIdeal(M T : Type) [Fintype M] [DecidableEq M] [Fi
 /-- **The systems of a UHF**: the collisions of `H(k, ·)` for `k ← K`, and the equalities of
 messages, at the budget `q`. -/
 def UniversalHash.UHF.systems [DecidableEq M] [DecidableEq T] (H : K → M → T) (q : ℕ) :
-    Interface.Resource (Collision M q) × Interface.Resource (Collision M q) :=
+    TypedSystem (Collision M q) × TypedSystem (Collision M q) :=
   (UniversalHash.Real H, UniversalHash.Ideal M)
 
 /-- **UHF** within `error`: against the admitted distinguishers, the collisions of `H(k, ·)`
@@ -82,7 +82,7 @@ def UniversalHash.UHF [Interface.AdmissibleDistinguishers]
 differences, at the budget `q`. -/
 def UniversalHash.DUF.systems [DecidableEq M] [Fintype T] [DecidableEq T] [AddCommGroup T]
     (H : K → M → T) (q : ℕ) :
-    Interface.Resource (Difference M T q) × Interface.Resource (Difference M T q) :=
+    TypedSystem (Difference M T q) × TypedSystem (Difference M T q) :=
   (UniversalHash.DifferenceReal H, UniversalHash.DifferenceIdeal M T)
 
 /-- **DUF** within `error`: against the admitted distinguishers, the digest differences of

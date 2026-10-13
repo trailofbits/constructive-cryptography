@@ -106,8 +106,8 @@ converter KEM.CCA(PK C K : Type) [Fintype PK] [Fintype C] [Fintype K] [Decidable
 `(pk, sk) ← G`, at the budget `q` per port. -/
 def KEM.INDCCA.systems [DecidableEq PK] [DecidableEq C] [Nonempty K] (kem : KEM PK SK C K)
     (q : Encapsulation.Port → ℕ) :
-    Interface.Resource (Encapsulation.perPort PK C K q) ×
-      Interface.Resource (Encapsulation.perPort PK C K q) :=
+    TypedSystem (Encapsulation.perPort PK C K q) ×
+      TypedSystem (Encapsulation.perPort PK C K q) :=
   (KEM.Real.perPort kem, KEM.CCA.perPort PK C K • KEM.Real.perPort kem)
 
 /-- **IND-CCA** within `error`: against the admitted distinguishers, the real system substitutes
@@ -122,8 +122,8 @@ def KEM.INDCCA [Interface.AdmissibleDistinguishers]
 per port with none at `decaps`. -/
 def KEM.INDCPA.systems [DecidableEq PK] [DecidableEq C] [Nonempty K] (kem : KEM PK SK C K)
     (q : Encapsulation.Port → ℕ) :
-    Interface.Resource (Encapsulation.perPort PK C K (Function.update q .decaps 0)) ×
-      Interface.Resource (Encapsulation.perPort PK C K (Function.update q .decaps 0)) :=
+    TypedSystem (Encapsulation.perPort PK C K (Function.update q .decaps 0)) ×
+      TypedSystem (Encapsulation.perPort PK C K (Function.update q .decaps 0)) :=
   KEM.INDCCA.systems kem (Function.update q .decaps 0)
 
 /-- **IND-CPA** within `error`: against the admitted distinguishers, the real system without

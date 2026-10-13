@@ -16,7 +16,7 @@ samples [2, Example 3.2, p. 56], the memoryless source `MemorylessSource 𝒰[R]
 
 Every system of the proof is a memoryless source [2, Definition 3.1, p. 55], and the calling
 programs `𝓡₁` and `𝓡₂` of the two swaps map memoryless sources to memoryless sources, with the
-law of one invocation (the composition laws `Interface.Converter.*_smul_memoryless`). So each
+law of one invocation (the composition laws `TypedConverter.*_smul_memoryless`). So each
 hop is an equality of the laws of one reply:
 
 ```
@@ -105,9 +105,10 @@ lemma prgReal_eq_source [Nonempty S] (G : S → R) :
   -- of one invocation of the program.
   have real : (PRGReal.perPort G (budget := q)).1 =
       memoryless _ (portLaw fun _ _ => ProbDist.map G 𝒰[S]) := by
-    -- The composition law `Converter.ofProgram_smul_memoryless`, with the source of seeds
-    -- memoryless (`source_eq_memoryless`); the law of one invocation remains.
-    refine Converter.ofProgram_smul_memoryless none _ _ _ (source_eq_memoryless _ _) ?_
+    -- The composition law `TypedConverter.ofProgram_smul_memoryless`, with the source of seeds
+    -- memoryless (`TypedSystem.source_eq_memoryless`); the law of one invocation remains.
+    refine TypedConverter.ofProgram_smul_memoryless none _ _ _
+      (TypedSystem.source_eq_memoryless _ _) ?_
     -- One invocation: draw `s ← 𝒰[S]`, reply `G s`; the same in both initialization states.
     -- The cases: initialization state `none` or `some ()`, the port `eval`, the input `()`.
     rintro (_ | ⟨⟩) ⟨⟩ ⟨⟩
@@ -135,7 +136,7 @@ lemma 𝓡₁_smul_source (G : S → S × S) (ν : ProbDist (S × S)) :
     unfold 𝓡₁.perPort 𝓡₁.perPortProgram
     -- The composition law for port-preserving programs, with the source of `ν` memoryless
     -- (`MemorylessSource.memoryless_eq`); the law of one invocation remains.
-    refine Converter.ofPreservingProgram_smul_memoryless none _ _ _ _ _ _ _
+    refine TypedConverter.ofPreservingProgram_smul_memoryless none _ _ _ _ _ _ _
       (MemorylessSource.memoryless_eq ν _) ?_
     -- The law of one invocation: one call, answered `(a, b) ← ν`, reply `(a, G b)`.
     -- The cases: initialization state `none` or `some ()`, the port `eval`, the input `()`.
@@ -164,10 +165,10 @@ lemma 𝓡₂_smul_source [Nonempty S] (ν : ProbDist (S × S)) :
     unfold 𝓡₂.perPort 𝓡₂.perPortProgram 𝓡₂.randomness
     -- The composition law with the converter's own source beside its inside interface: the
     -- source of `ν` and the source of the `a`'s are memoryless (`MemorylessSource.memoryless_eq`,
-    -- `source_eq_memoryless`); the law of one invocation against their side-by-side laws
-    -- remains.
-    refine Converter.ofPreservingProgram_comp_rightContext_smul_memoryless none _ _ _ _ _ _ _
-      (MemorylessSource.memoryless_eq ν _) (source_eq_memoryless _ _) ?_
+    -- `TypedSystem.source_eq_memoryless`); the law of one invocation against their side-by-side
+    -- laws remains.
+    refine TypedConverter.ofPreservingProgram_comp_rightContext_smul_memoryless none _ _ _ _ _ _ _
+      (MemorylessSource.memoryless_eq ν _) (TypedSystem.source_eq_memoryless _ _) ?_
     -- The law of one invocation: `a` from its own source, `(c, d)` from the source of `ν`,
     -- reply `(a, c, d)`: the product of the two laws.
     -- The cases: initialization state `none` or `some ()`, the port `eval`, the input `()`.
@@ -252,7 +253,10 @@ theorem prg_length_extension [AdmissibleDistinguishers] (G : S → S × S)
       → ENNReal)
     (secure : PRGSamples G ε) :
     PRGSamples (H G) (q := q) fun D =>
-      ε (absorb (𝓡₁.perPort G) D) + ε (absorb (𝓡₂.perPort S) D) := by
+      ε (D.absorb (Evaluation.perPort Unit (S × S) (𝓡₁.insideBudget G q)).nonempty_prefix
+          (Evaluation.perPort Unit (S × S × S) q).nonempty_prefix (𝓡₁.perPort G)) +
+        ε (D.absorb (Evaluation.perPort Unit (S × S) (𝓡₂.insideBudget S q)).nonempty_prefix
+          (Evaluation.perPort Unit (S × S × S) q).nonempty_prefix (𝓡₂.perPort S)) := by
   -- The hybrids, as systems (the distinguisher D on the left):
   --
   --   D ─ prg-real^H                                start
@@ -269,13 +273,15 @@ theorem prg_length_extension [AdmissibleDistinguishers] (G : S → S × S)
     PRGReal.perPort (H G) = 𝓡₁.perPort G • PRGReal.perPort G := prgReal_H_eq G q
     -- The first swap: `prg-real^G` ≃ `prg-rand` (`secure`), attached through `𝓡₁`; its loss is
     -- `ε` at `D` with `𝓡₁` absorbed (`substitutesWithin_attach`).
-    _ ≃[fun D => ε (absorb (𝓡₁.perPort G) D)]
+    _ ≃[fun D => ε (D.absorb (Evaluation.perPort Unit (S × S) (𝓡₁.insideBudget G q)).nonempty_prefix
+          (Evaluation.perPort Unit (S × S × S) q).nonempty_prefix (𝓡₁.perPort G))]
         𝓡₁.perPort G • MemorylessSource.perPort (S × S) 𝒰[S × S] :=
       AdmissibleDistinguishers.substitutesWithin_attach _ secure
     -- The middle hop: both are the memoryless source of `𝒰[S] ⊗ G_* 𝒰[S]`.
     _ = 𝓡₂.perPort S • PRGReal.perPort G := 𝓡₁_smul_prgRand G q
     -- The second swap, through `𝓡₂`; its loss is `ε` at `D` with `𝓡₂` absorbed.
-    _ ≃[fun D => ε (absorb (𝓡₂.perPort S) D)]
+    _ ≃[fun D => ε (D.absorb (Evaluation.perPort Unit (S × S) (𝓡₂.insideBudget S q)).nonempty_prefix
+          (Evaluation.perPort Unit (S × S × S) q).nonempty_prefix (𝓡₂.perPort S))]
         𝓡₂.perPort S • MemorylessSource.perPort (S × S) 𝒰[S × S] :=
       AdmissibleDistinguishers.substitutesWithin_attach _ secure
     -- The last hop: both are the memoryless source of `𝒰[S × S × S]`.

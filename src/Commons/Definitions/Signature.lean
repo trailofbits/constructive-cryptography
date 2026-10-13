@@ -118,8 +118,8 @@ converter SignatureScheme.SUF(PK M Sig : Type) [Fintype PK] [Fintype M] [Fintype
 signatures on signed messages, for `(pk, sk) ← G`, at the budget `q` per port. -/
 def SignatureScheme.EUFCMA.systems [DecidableEq SK] [DecidableEq M]
     (scheme : SignatureScheme PK SK M Sig) (q : Signing.Port → ℕ) :
-    Interface.Resource (Signing.perPort PK M Sig q) ×
-      Interface.Resource (Signing.perPort PK M Sig q) :=
+    TypedSystem (Signing.perPort PK M Sig q) ×
+      TypedSystem (Signing.perPort PK M Sig q) :=
   (SignatureScheme.Real.perPort scheme,
     SignatureScheme.EUF.perPort PK M Sig • SignatureScheme.Real.perPort scheme)
 
@@ -127,8 +127,8 @@ def SignatureScheme.EUFCMA.systems [DecidableEq SK] [DecidableEq M]
 pairs, for `(pk, sk) ← G`, at the budget `q` per port. -/
 def SignatureScheme.SUFCMA.systems [DecidableEq SK] [DecidableEq M] [DecidableEq Sig]
     (scheme : SignatureScheme PK SK M Sig) (q : Signing.Port → ℕ) :
-    Interface.Resource (Signing.perPort PK M Sig q) ×
-      Interface.Resource (Signing.perPort PK M Sig q) :=
+    TypedSystem (Signing.perPort PK M Sig q) ×
+      TypedSystem (Signing.perPort PK M Sig q) :=
   (SignatureScheme.Real.perPort scheme,
     SignatureScheme.SUF.perPort PK M Sig • SignatureScheme.Real.perPort scheme)
 

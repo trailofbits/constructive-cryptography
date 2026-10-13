@@ -28,7 +28,7 @@ noncomputable def oneTimePad : SymmetricEncryption Bool Bool Bool where
 /-- The collision step on the one-time pad: within `q_e² / 2`. -/
 lemma oneTimePad_hybrid_ideal (q : AE.Port → ℕ) :
     Δ (Hybrid oneTimePad q) (AE.Ideal.perPort Bool Bool (budget := q) •
-        Encryption.Real.perPort oneTimePad : Interface.Resource (AE.perPort Bool Bool q)) ≤
+        Encryption.Real.perPort oneTimePad : TypedSystem (AE.perPort Bool Bool q)) ≤
       ((q .enc) ^ 2 / 2 : ℝ≥0) := by
   simpa using hybrid_ideal_distance_le oneTimePad q
 
@@ -37,7 +37,7 @@ within `q_e² / 2`. -/
 lemma oneTimePad_hybrid_ideal_advantage (q : AE.Port → ℕ) {s}
     (hs : s ∈ DistinctionGames.solvers (AE.perPort Bool Bool q)) :
     |s.1 (Hybrid oneTimePad q) - s.1 (AE.Ideal.perPort Bool Bool (budget := q) •
-        Encryption.Real.perPort oneTimePad : Interface.Resource (AE.perPort Bool Bool q))| ≤
+        Encryption.Real.perPort oneTimePad : TypedSystem (AE.perPort Bool Bool q))| ≤
       (q .enc : ℝ) ^ 2 / 2 := by
   simpa using GameExamples.hybrid_ideal_advantage_le oneTimePad q hs
 

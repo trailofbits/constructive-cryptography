@@ -54,9 +54,33 @@ import RandomSystems.System.Memoryless
 import RandomSystems.System.Observation
 import RandomSystems.System.ProbAutomaton
 import RandomSystems.System.Replies
+import RandomSystems.Typed.Automaton
+import RandomSystems.Typed.Context
+import RandomSystems.Typed.ConverterCoherence
+import RandomSystems.Typed.DDCCoherence
+import RandomSystems.Typed.DSL.Converters
+import RandomSystems.Typed.DSL.Probability
+import RandomSystems.Typed.DSL.Programs
+import RandomSystems.Typed.DSL.Syntax
+import RandomSystems.Typed.DSL.Tactics
+import RandomSystems.Typed.Filter
+import RandomSystems.Typed.Functional
+import RandomSystems.Typed.Game
+import RandomSystems.Typed.Interface
+import RandomSystems.Typed.InterfaceCoherence
+import RandomSystems.Typed.Memoryless
+import RandomSystems.Typed.Parallel
+import RandomSystems.Typed.ParallelAttachment
+import RandomSystems.Typed.PresentedGame
+import RandomSystems.Typed.Relabel
+import RandomSystems.Typed.Source
+import RandomSystems.Typed.SystemCoherence
+import RandomSystems.Typed.SystemParallel
+import RandomSystems.Typed.TensorRename
 
 /-!
 Random systems: raw systems and connection, deterministic converters, PDSs, cumulative random
 systems, probabilistic automata and memoryless systems, converters and attachment, parallel
-composition, distance and games.
+composition, distance and games; typed systems and typed converters on interfaces, and the
+programs and converters of the component DSL.
 -/

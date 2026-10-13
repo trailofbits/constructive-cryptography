@@ -347,63 +347,63 @@ $`D = \lbrace h \ne \varepsilon \mid \lvert h \rvert \le q \rbrace`$ and the
 $`D = \lbrace h \ne \varepsilon \mid \forall i.\ \lvert h \restriction i \rvert \le q_i \rbrace`$,
 where $`h \restriction i`$ [keeps the inputs at the label][restrict] $`i`$.
 
-A [**resource**][Interface.Resource] on $`A`$ is a random system on
+A [**resource**][TypedSystem] on $`A`$ is a random system on
 $`(\Sigma_i X_i, \Sigma_i Y_i)`$ over $`D`$,
 [replying at the queried label][RandomSystem.RepliesAtQueriedInterface]. A
-[**converter**][Interface.Converter] $`A \to B`$ is a PDC behavior from $`B`$'s domain (inside) to
-$`A`$'s domain (outside), and a DDC between the two domains [is one][Interface.ofDDC].
-[**Attachment**][Interface.attach] $`\alpha R`$ is the attachment of the PDC behavior.
+[**converter**][TypedConverter] $`A \to B`$ is a PDC behavior from $`B`$'s domain (inside) to
+$`A`$'s domain (outside), and a DDC between the two domains [is one][TypedConverter.ofDDC].
+[**Attachment**][TypedConverter.attach] $`\alpha R`$ is the attachment of the PDC behavior.
 [**Parallel interfaces**][Interface.tensor] put the label sets side by side, and
-[parallel resources][Interface.parallel] and [parallel converters][Interface.parallelConverter]
+[parallel resources][TypedSystem.parallel] and [parallel converters][TypedConverter.parallel]
 are the independent parallel compositions.
 
 ### 2.2 Concrete resources and converters
 
-The [**filter**][Interface.filter] admitting $`D`$ forwards the queries of admitted histories; it is
+The [**filter**][TypedConverter.filter] admitting $`D`$ forwards the queries of admitted histories; it is
 a converter $`(A \restriction D) \to A`$ from the [restricted interface][Interface.restrict].
-[Attached to a resource][Interface.filter_smul], it is the [restriction][RandomSystem.restrict] of the
+[Attached to a resource][TypedConverter.filter_smul], it is the [restriction][RandomSystem.restrict] of the
 resource's random system to the restricted domain, and
-[two filters in series][Interface.filter_comp_filter_smul] act as the filter of both conditions. A
-[**constant**][Interface.constant] converter ignores its inside resource and exposes a fixed one,
-and the fixed [right][Interface.rightContext] and [left][Interface.leftContext] **contexts** run a
-resource beside: [attaching][Interface.attach_rightContext] $`\mathrm{rightContext}\ A\ S`$ to $`R`$
-gives $`R \parallel S`$, and so does [attaching][Interface.attach_leftContext]
+[two filters in series][TypedConverter.filter_comp_filter_smul] act as the filter of both conditions. A
+[**constant**][TypedConverter.constant] converter ignores its inside resource and exposes a fixed one,
+and the fixed [right][TypedConverter.rightContext] and [left][TypedConverter.leftContext] **contexts** run a
+resource beside: [attaching][TypedConverter.attach_rightContext] $`\mathrm{rightContext}\ A\ S`$ to $`R`$
+gives $`R \parallel S`$, and so does [attaching][TypedConverter.attach_leftContext]
 $`\mathrm{leftContext}\ R\ B`$ to $`S`$.
 
-A [**source**][Interface.Resource.source] answers with fresh independent samples of a law: a
-memoryless source [3, Definition 3.1] (the sources of [4, Definition 1] may have memory). An [**automaton**][Interface.Resource.ofAutomaton] is a transition function with
-a sampled initial state [4, Definition 2], and [parallel automata][Interface.parallel_ofAutomaton]
-are the automaton running both side by side. A source [is memoryless][Interface.source_eq_memoryless],
-memoryless systems [side by side are memoryless][Interface.parallel_eq_memoryless], and the
+A [**source**][TypedSystem.source] answers with fresh independent samples of a law: a
+memoryless source [3, Definition 3.1] (the sources of [4, Definition 1] may have memory). An [**automaton**][TypedSystem.ofAutomaton] is a transition function with
+a sampled initial state [4, Definition 2], and [parallel automata][TypedSystem.parallel_ofAutomaton]
+are the automaton running both side by side. A source [is memoryless][TypedSystem.source_eq_memoryless],
+memoryless systems [side by side are memoryless][TypedSystem.parallel_eq_memoryless], and the
 converter of a program [maps a memoryless system to the memoryless system of its reply
-law][Interface.Converter.ofProgram_smul_memoryless], also
-[for port-preserving programs][Interface.Converter.ofPreservingProgram_smul_memoryless] and
-[with its own sources beside its inside interface][Interface.Converter.ofPreservingProgram_comp_rightContext_smul_memoryless]:
+law][TypedConverter.ofProgram_smul_memoryless], also
+[for port-preserving programs][TypedConverter.ofPreservingProgram_smul_memoryless] and
+[with its own sources beside its inside interface][TypedConverter.ofPreservingProgram_comp_rightContext_smul_memoryless]:
 the composition law of §1.3 on their random systems.
 **Functional resources** are given by
-[reply functions][Interface.Resource.ofFunction], by
-[conditional reply laws][Interface.Resource.ofConditional], or by
-[sampling once][Interface.Resource.sample] and keeping the sample.
+[reply functions][TypedSystem.ofFunction], by
+[conditional reply laws][TypedSystem.ofConditional], or by
+[sampling once][TypedSystem.sample] and keeping the sample.
 
-A [**game**][Interface.Game] on $`A`$ is a resource on the
+A [**game**][TypedGame] on $`A`$ is a resource on the
 [interface][Interface.withMBO] of $`A`$ with the MBO whose MBO, once set, stays set, a game in the
-sense of §1.5. A converter attaches to it through its [lift][Interface.liftMBO], and its
-[visible resource][Interface.Game.visible] is its visible system. A game conditionally
+sense of §1.5. A converter attaches to it through its [lift][PDCBehavior.liftMBO], and its
+[visible resource][TypedGame.visible] is its visible system. A game conditionally
 equivalent to a resource $`T`$, $`G \mathrel{|\!\equiv} T`$ (the conditional equivalence of §3.6),
 whose MBO stays unset with probability at least $`1 - \varepsilon`$ on fixed queries,
 [has its visible resource within][Interface.dist_visible_le] $`\varepsilon`$ of $`T`$,
 $`\Delta(G^-, T) \le \varepsilon`$ [3, Theorem 4.17].
 
 A discrete game whose visible systems present a resource $`R`$
-[presents a game][Interface.Game.ofPDG] on the interface of $`R`$, with
-[visible resource][Interface.Game.visible_ofPDG] $`R`$; it is conditionally equivalent to a
-resource [exactly when][Interface.Game.conditionallyEquivalent_ofPDG_iff] the game it presents on
+[presents a game][TypedGame.ofPDG] on the interface of $`R`$, with
+[visible resource][TypedGame.visible_ofPDG] $`R`$; it is conditionally equivalent to a
+resource [exactly when][Interface.conditionallyEquivalent_ofPDG_iff] the game it presents on
 random systems is. If that game is conditionally equivalent to $`S`$ and the condition holds with
 probability at most $`\varepsilon`$ on the empty and every admitted query sequence,
 [the distance is at most][Interface.game_dist_le] $`\varepsilon`$, $`\Delta(R, S) \le \varepsilon`$.
 A single-label sampled function with a hidden condition
-[presents a game][Interface.Game.ofSingleFunction],
-[conditionally equivalent][Interface.ofSingleFunction_conditionallyEquivalent] to the resource
+[presents a game][TypedGame.ofSingleFunction],
+[conditionally equivalent][TypedGame.ofSingleFunction_conditionallyEquivalent] to the resource
 sampling the ideal function under the fixed-query factorization. Parallel composition is commutative: $`R \parallel S`$ and
 $`S \parallel R`$ [agree][Interface.parallel_swap] through the [swap][Interface.swap] of the two
 interfaces.
@@ -456,9 +456,9 @@ renamings. The axioms are discharged by [interchange][Interface.tensor_comp], fr
 [tensor of identities][Interface.id_tensor_id], from the
 [same law for PDC behaviors][PDCBehavior.tensor_id]; the
 [naturality of the associator][Interface.associator_naturality], from
-[regrouping arbitrary converters][Interface.comp_associator]; the naturality of the
+[regrouping arbitrary converters][TypedConverter.comp_associator]; the naturality of the
 [left][Interface.leftUnitor_naturality] and [right][Interface.rightUnitor_naturality] unitors,
-from the [left][Interface.comp_leftUnitor] and [right][Interface.comp_rightUnitor] unit
+from the [left][TypedConverter.comp_leftUnitor] and [right][TypedConverter.comp_rightUnitor] unit
 regroupings of arbitrary converters; and the [pentagon][Interface.pentagon] and
 [triangle][Interface.triangle] identities.
 
@@ -476,7 +476,7 @@ $`\Phi : C^{\mathrm{op}} \to \mathrm{Type}`$.
 
 Interfaces are an instance of `ResourceTheory`
 ([`Interface.resourceTheory`][Interface.resourceTheory]): its field `attach` is the
-[attachment of converters to resources][Interface.attach], the systems-level
+[attachment of converters to resources][TypedConverter.attach], the systems-level
 [attachment of PDC behaviors][PDCBehavior.attach]; its axioms `attach_identity` and
 `attach_serial` are discharged by [attaching the identity][Interface.identity_attach] and
 [attaching a serial composition][Interface.comp_smul], from the systems-level
@@ -498,10 +498,10 @@ Derived: [locality][CA.attach_parallel], [associativity][CA.parallel_assoc], and
 Interfaces are an instance of `CryptographicAlgebra`
 ([`Interface.cryptographicAlgebra`][Interface.cryptographicAlgebra]): its field `laxMonoidal` is
 [`Interface.resourcesLaxMonoidal`][Interface.resourcesLaxMonoidal], whose product is the
-[parallel composition of resources][Interface.parallel], the systems-level
+[parallel composition of resources][TypedSystem.parallel], the systems-level
 [independent parallel composition][RandomSystem.parallel], and whose unit is the
-[dummy resource][Interface.dummy]; naturality, associativity and unitality are discharged by
-[locality][Interface.parallel_attach], [associativity][Interface.parallel_assoc] and the
+[dummy resource][TypedSystem.dummy]; naturality, associativity and unitality are discharged by
+[locality][TypedConverter.parallel_attach], [associativity][Interface.parallel_assoc] and the
 [left][Interface.parallel_dummy_left] and [right][Interface.parallel_dummy_right] unit laws of
 parallel resources. The abstract [parallel composition][Interface.cc_parallel_eq] and
 [dummy][Interface.cc_dummy_eq] are the concrete ones.
@@ -592,7 +592,7 @@ and its winners and solvers are probabilistic distinguishers, through their
 [solver behaviors][Domain.SolverBehavior].
 
 Interfaces are an instance of `Games` ([`Interface.games`][Interface.games]): its field `Game A`
-is the set of [games][Interface.Game] on $`A`$, the resources on the interface of $`A`$ with the MBO
+is the set of [games][TypedGame] on $`A`$, the resources on the interface of $`A`$ with the MBO
 whose MBO, once set, stays set ([`RandomSystem.MonotoneMBO`][RandomSystem.MonotoneMBO]);
 `attachGame` attaches the systems-level [lift][PDCBehavior.liftMBO] of the converter; and
 `winners A` is the set of [winning probabilities][Interface.winners] of the systems-level solver
@@ -725,9 +725,9 @@ field `admissible` is that class, its field `advantage` is the systems-level
 [triangle][DistinguisherBehavior.advantage_triangle] laws.
 
 A converter $`\alpha`$ absorbed into a distinguisher is the reduction of a security proof [3]:
-[absorbing it][Interface.absorb] gives $`D \circ \alpha`$, the systems-level
+[absorbing it][DistinguisherBehavior.absorb] gives $`D \circ \alpha`$, the systems-level
 [absorption][DistinguisherBehavior.absorb], and absorbing a serial composition
-[absorbs its converters in turn][Interface.absorb_comp],
+[absorbs its converters in turn][DistinguisherBehavior.absorb_comp],
 $`D \circ (\alpha \gg \beta) = (D \circ \alpha) \circ \beta`$. Hence an advantage between attachments
 [is the advantage with the converter absorbed][Interface.distinguisherAdvantage_attach],
 $`\mathrm{Adv}_D(\alpha R, \alpha S) = \mathrm{Adv}_{D \circ \alpha}(R, S)`$; every advantage
@@ -760,24 +760,24 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 *`interface`, `system`, `converter` and `filter` declarations compile to the objects of §2 at every
 budget ([DSL][DSL], [GRAMMAR][Grammar]).* A component compiles to a deterministic
 [program][Program] and **sources**: every sampling `x ←$ P` [becomes a call][desugarSampling] to
-a [source][Interface.Resource.source] of fresh samples of the closed law $`P`$, and initialization
+a [source][TypedSystem.source] of fresh samples of the closed law $`P`$, and initialization
 runs in the first invocation.
 
 An [`interface I`][elabInterface] declaration generates `I q := Interface.queryBudget … q`, the
 [query budget][Interface.queryBudget], and `I.perPort q := Interface.portBudget … q`, the
 [per-port budget][Interface.portBudget]. A [`system S : I`][elabComponent] generates
 `S : Interface.Resource (I q)`, [compiled][elabProgramDecls] to `S.program • S.randomness k`: the
-[converter of its program][Interface.Converter.ofProgram] attached to its [sources][sourcesAt]. A
-system that samples nothing is the [automaton][Interface.Resource.ofAutomaton] of its program, and
+[converter of its program][TypedConverter.ofProgram] attached to its [sources][sourcesAt]. A
+system that samples nothing is the [automaton][TypedSystem.ofAutomaton] of its program, and
 a system without an exact domain [also gets][elabPerPortDecls]
 `S.perPort : Interface.Resource (I.perPort q)`.
 
 A [`converter C : I`][elabComponent] with `inside J` generates `C : I q ⟶ J (C.bound * q)`,
 compiled to `C.program ≫ Interface.rightContext J (C.randomness k)`: its program with its sources
-[beside][Interface.rightContext] the inside interface, or `C.program` when it samples nothing. With
+[beside][TypedConverter.rightContext] the inside interface, or `C.program` when it samples nothing. With
 a single inside interface it [also has a per-port typing][elabPerPortDecls] along a partial port
 map `C.portMap : I.Port → Option J.Port`, through the
-[converter of a port-preserving program][Interface.Converter.ofPreservingProgram], with
+[converter of a port-preserving program][TypedConverter.ofPreservingProgram], with
 `C.preserving` a proof of [`Program.PortPreserving`][Program.PortPreserving]. When `J` is `I` and
 each procedure calls its own port, at most once, it is
 `C.perPort : I.perPort q ⟶ I.perPort q`. When `J` is another interface, each of whose labels one
@@ -787,14 +787,14 @@ inside label has the budget of the procedure calling it, and a procedure calling
 $`\rho^{ctxt}`$ and $`\rho^{ae}`$ of §8. When the converter samples nothing and its number of inside
 calls is a function of the input, the elaborator [also generates][elabExactDecls]
 `C.exact : (I n).restrict (fun h => (h.map C.cost).sum ≤ q) ⟶ J q`, the
-[converter of the costed program][Interface.Converter.ofCostedProgram].
+[converter of the costed program][TypedConverter.ofCostedProgram].
 
 A [`filter F : I domain h ↦ P`][elabFilter] generates `F : (I q).restrict P ⟶ I q`, the
-[filter][Interface.filter] admitting `P`.
+[filter][TypedConverter.filter] admitting `P`.
 
 A compiled component is an automaton with a sampled initial state. Attaching a program to an
-automaton [gives the combined automaton][Interface.Converter.ofProgram_smul_ofAutomaton], also
-[for port-preserving programs][Interface.Converter.ofPreservingProgram_smul_ofAutomaton], so
+automaton [gives the combined automaton][TypedConverter.ofProgram_smul_ofAutomaton], also
+[for port-preserving programs][TypedConverter.ofPreservingProgram_smul_ofAutomaton], so
 compiled systems are compared by [bisimulation][automatonSystem_eq_of_bisim]. The
 [memoryless source][MemorylessSource] `y ←$ ν; return y`
 [is the memoryless system of `ν`][MemorylessSource.memoryless_eq], so systems built from programs
@@ -1104,51 +1104,50 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 
 <!-- Declarations: §2 -->
 
-[Interface]: src/ConstructiveCryptography/Interface.lean#L43
-[Interface.queryBudget]: src/ConstructiveCryptography/Interface.lean#L66
-[Interface.portBudget]: src/ConstructiveCryptography/Interface.lean#L77
-[Interface.Resource]: src/ConstructiveCryptography/Interface.lean#L93
-[Interface.Converter]: src/ConstructiveCryptography/Interface.lean#L128
-[Interface.category]: src/ConstructiveCryptography/Interface.lean#L132
-[Interface.ofDDC]: src/ConstructiveCryptography/Interface.lean#L141
-[Interface.attach]: src/ConstructiveCryptography/Interface.lean#L154
-[Interface.identity_attach]: src/ConstructiveCryptography/Interface.lean#L168
-[Interface.comp_smul]: src/ConstructiveCryptography/Interface.lean#L173
-[Interface.tensor]: src/ConstructiveCryptography/InterfaceParallel.lean#L85
-[Interface.parallel]: src/ConstructiveCryptography/InterfaceParallel.lean#L147
-[Interface.parallelConverter]: src/ConstructiveCryptography/InterfaceParallel.lean#L202
-[Interface.restrict]: src/ConstructiveCryptography/InterfaceFilter.lean#L30
-[Interface.filter]: src/ConstructiveCryptography/InterfaceFilter.lean#L43
-[Interface.filter_smul]: src/ConstructiveCryptography/InterfaceFilter.lean#L54
-[Interface.filter_comp_filter_smul]: src/ConstructiveCryptography/InterfaceFilter.lean#L88
-[Interface.constant]: src/ConstructiveCryptography/Context.lean#L78
-[Interface.rightContext]: src/ConstructiveCryptography/Context.lean#L102
-[Interface.leftContext]: src/ConstructiveCryptography/Context.lean#L107
-[Interface.attach_rightContext]: src/ConstructiveCryptography/Context.lean#L111
-[Interface.attach_leftContext]: src/ConstructiveCryptography/Context.lean#L116
-[Interface.Resource.source]: src/ConstructiveCryptography/Source.lean#L49
-[Interface.Resource.ofAutomaton]: src/ConstructiveCryptography/Automaton.lean#L42
-[Interface.parallel_ofAutomaton]: src/ConstructiveCryptography/Automaton.lean#L57
-[Interface.source_eq_memoryless]: src/ConstructiveCryptography/Memoryless.lean#L45
-[Interface.parallel_eq_memoryless]: src/ConstructiveCryptography/Memoryless.lean#L143
-[Interface.Converter.ofProgram_smul_memoryless]: src/ConstructiveCryptography/Memoryless.lean#L236
-[Interface.Converter.ofPreservingProgram_smul_memoryless]: src/ConstructiveCryptography/Memoryless.lean#L257
-[Interface.Converter.ofPreservingProgram_comp_rightContext_smul_memoryless]: src/ConstructiveCryptography/Memoryless.lean#L274
-[Interface.Resource.ofFunction]: src/ConstructiveCryptography/Functional.lean#L56
-[Interface.Resource.ofConditional]: src/ConstructiveCryptography/Functional.lean#L38
-[Interface.Resource.sample]: src/ConstructiveCryptography/Functional.lean#L176
-[Interface.withMBO]: src/ConstructiveCryptography/InterfaceGame.lean#L52
-[Interface.Game]: src/ConstructiveCryptography/InterfaceGame.lean#L63
-[Interface.liftMBO]: src/ConstructiveCryptography/InterfaceGame.lean#L66
-[Interface.Game.visible]: src/ConstructiveCryptography/InterfaceGame.lean#L84
-[Interface.Game.ofPDG]: src/ConstructiveCryptography/PresentedGame.lean#L54
-[Interface.Game.visible_ofPDG]: src/ConstructiveCryptography/PresentedGame.lean#L64
-[Interface.Game.conditionallyEquivalent_ofPDG_iff]: src/ConstructiveCryptography/PresentedGame.lean#L74
-[Interface.game_dist_le]: src/ConstructiveCryptography/PresentedGame.lean#L88
-[Interface.Game.ofSingleFunction]: src/ConstructiveCryptography/PresentedGame.lean#L132
-[Interface.ofSingleFunction_conditionallyEquivalent]: src/ConstructiveCryptography/PresentedGame.lean#L145
-[Interface.swap]: src/ConstructiveCryptography/ResourceCoherence.lean#L177
-[Interface.parallel_swap]: src/ConstructiveCryptography/ResourceCoherence.lean#L211
+[Interface]: src/RandomSystems/Typed/Interface.lean#L40
+[Interface.queryBudget]: src/RandomSystems/Typed/Interface.lean#L63
+[Interface.portBudget]: src/RandomSystems/Typed/Interface.lean#L74
+[TypedSystem]: src/RandomSystems/Typed/Interface.lean#L92
+[TypedConverter]: src/RandomSystems/Typed/Interface.lean#L127
+[Interface.category]: src/ConstructiveCryptography/InterfaceCategory.lean#L30
+[TypedConverter.ofDDC]: src/RandomSystems/Typed/Interface.lean#L143
+[TypedConverter.attach]: src/RandomSystems/Typed/Interface.lean#L157
+[Interface.identity_attach]: src/ConstructiveCryptography/InterfaceCategory.lean#L45
+[Interface.comp_smul]: src/ConstructiveCryptography/InterfaceCategory.lean#L50
+[Interface.tensor]: src/RandomSystems/Typed/Parallel.lean#L85
+[TypedSystem.parallel]: src/RandomSystems/Typed/Parallel.lean#L153
+[TypedConverter.parallel]: src/RandomSystems/Typed/Parallel.lean#L210
+[Interface.restrict]: src/RandomSystems/Typed/Filter.lean#L32
+[TypedConverter.filter]: src/RandomSystems/Typed/Filter.lean#L49
+[TypedConverter.filter_smul]: src/RandomSystems/Typed/Filter.lean#L60
+[TypedConverter.filter_comp_filter_smul]: src/RandomSystems/Typed/Filter.lean#L94
+[TypedConverter.constant]: src/RandomSystems/Typed/Context.lean#L78
+[TypedConverter.rightContext]: src/RandomSystems/Typed/Context.lean#L109
+[TypedConverter.leftContext]: src/RandomSystems/Typed/Context.lean#L116
+[TypedConverter.attach_rightContext]: src/RandomSystems/Typed/Context.lean#L122
+[TypedConverter.attach_leftContext]: src/RandomSystems/Typed/Context.lean#L127
+[TypedSystem.source]: src/RandomSystems/Typed/Source.lean#L51
+[TypedSystem.ofAutomaton]: src/RandomSystems/Typed/Automaton.lean#L42
+[TypedSystem.parallel_ofAutomaton]: src/RandomSystems/Typed/Automaton.lean#L57
+[TypedSystem.source_eq_memoryless]: src/RandomSystems/Typed/Memoryless.lean#L47
+[TypedSystem.parallel_eq_memoryless]: src/RandomSystems/Typed/Memoryless.lean#L146
+[TypedConverter.ofProgram_smul_memoryless]: src/RandomSystems/Typed/Memoryless.lean#L241
+[TypedConverter.ofPreservingProgram_smul_memoryless]: src/RandomSystems/Typed/Memoryless.lean#L262
+[TypedConverter.ofPreservingProgram_comp_rightContext_smul_memoryless]: src/RandomSystems/Typed/Memoryless.lean#L279
+[TypedSystem.ofFunction]: src/RandomSystems/Typed/Functional.lean#L56
+[TypedSystem.ofConditional]: src/RandomSystems/Typed/Functional.lean#L38
+[TypedSystem.sample]: src/RandomSystems/Typed/Functional.lean#L176
+[Interface.withMBO]: src/RandomSystems/Typed/Game.lean#L24
+[TypedGame]: src/RandomSystems/Typed/Game.lean#L35
+[TypedGame.visible]: src/RandomSystems/Typed/Game.lean#L53
+[TypedGame.ofPDG]: src/RandomSystems/Typed/PresentedGame.lean#L41
+[TypedGame.visible_ofPDG]: src/RandomSystems/Typed/PresentedGame.lean#L51
+[Interface.conditionallyEquivalent_ofPDG_iff]: src/ConstructiveCryptography/InterfaceGame.lean#L200
+[Interface.game_dist_le]: src/ConstructiveCryptography/InterfaceGame.lean#L213
+[TypedGame.ofSingleFunction]: src/RandomSystems/Typed/PresentedGame.lean#L88
+[TypedGame.ofSingleFunction_conditionallyEquivalent]: src/RandomSystems/Typed/PresentedGame.lean#L101
+[Interface.swap]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L66
+[Interface.parallel_swap]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L107
 [notation-distance]: src/ConstructiveCryptography/Notation.lean#L24
 [notation-parallel]: src/ConstructiveCryptography/Notation.lean#L28
 [notation-constructs]: src/ConstructiveCryptography/Notation.lean#L31
@@ -1158,22 +1157,22 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 
 <!-- Declarations: §3 -->
 
-[Interface.monoidalStruct]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L20
-[Interface.monoidal]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L107
-[Interface.id_tensor_id]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L33
-[Interface.tensor_comp]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L36
-[Interface.associator_naturality]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L41
-[Interface.leftUnitor_naturality]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L46
-[Interface.rightUnitor_naturality]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L50
-[Interface.pentagon]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L54
-[Interface.triangle]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L78
-[Interface.unit]: src/ConstructiveCryptography/InterfaceCoherence.lean#L91
-[Interface.associator]: src/ConstructiveCryptography/InterfaceCoherence.lean#L176
-[Interface.leftUnitor]: src/ConstructiveCryptography/InterfaceCoherence.lean#L181
-[Interface.rightUnitor]: src/ConstructiveCryptography/InterfaceCoherence.lean#L185
-[Interface.comp_associator]: src/ConstructiveCryptography/ConverterCoherence.lean#L71
-[Interface.comp_leftUnitor]: src/ConstructiveCryptography/ConverterCoherence.lean#L178
-[Interface.comp_rightUnitor]: src/ConstructiveCryptography/ConverterCoherence.lean#L204
+[Interface.monoidalStruct]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L71
+[Interface.monoidal]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L162
+[Interface.id_tensor_id]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L84
+[Interface.tensor_comp]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L87
+[Interface.associator_naturality]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L92
+[Interface.leftUnitor_naturality]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L97
+[Interface.rightUnitor_naturality]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L101
+[Interface.pentagon]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L105
+[Interface.triangle]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L132
+[Interface.unit]: src/RandomSystems/Typed/InterfaceCoherence.lean#L90
+[Interface.associator]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L52
+[Interface.leftUnitor]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L57
+[Interface.rightUnitor]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L61
+[TypedConverter.comp_associator]: src/RandomSystems/Typed/ConverterCoherence.lean#L158
+[TypedConverter.comp_leftUnitor]: src/RandomSystems/Typed/ConverterCoherence.lean#L195
+[TypedConverter.comp_rightUnitor]: src/RandomSystems/Typed/ConverterCoherence.lean#L224
 [ResourceTheory]: src/ConstructiveCryptography/CryptographicAlgebra/Basic.lean#L50
 [ResourceTheory.functor]: src/ConstructiveCryptography/CryptographicAlgebra/Basic.lean#L69
 [CryptographicAlgebra]: src/ConstructiveCryptography/CryptographicAlgebra/Basic.lean#L97
@@ -1183,22 +1182,22 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [CA.parallel_assoc]: src/ConstructiveCryptography/CryptographicAlgebra/Basic.lean#L182
 [CA.parallel_dummy_left]: src/ConstructiveCryptography/CryptographicAlgebra/Basic.lean#L196
 [CA.parallel_dummy_right]: src/ConstructiveCryptography/CryptographicAlgebra/Basic.lean#L211
-[Interface.resourceTheory]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L68
-[Interface.resourcesLaxMonoidal]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L74
-[Interface.cryptographicAlgebra]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L99
-[Interface.distinguishers]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L105
-[Interface.distinguishers_attach]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L122
-[Interface.distinguishers_parallel_left]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L128
-[Interface.distinguishers_parallel_right]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L143
-[Interface.compatibleDistinguisherClass]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L151
-[Interface.cc_parallel_eq]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L158
-[Interface.cc_dummy_eq]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L162
-[Interface.cc_distance_eq]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L166
-[Interface.dummy]: src/ConstructiveCryptography/ResourceCoherence.lean#L102
-[Interface.parallel_assoc]: src/ConstructiveCryptography/ResourceCoherence.lean#L91
-[Interface.parallel_dummy_left]: src/ConstructiveCryptography/ResourceCoherence.lean#L158
-[Interface.parallel_dummy_right]: src/ConstructiveCryptography/ResourceCoherence.lean#L167
-[Interface.parallel_attach]: src/ConstructiveCryptography/ResourceParallelAttachment.lean#L18
+[Interface.resourceTheory]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L71
+[Interface.resourcesLaxMonoidal]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L116
+[Interface.cryptographicAlgebra]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L142
+[Interface.distinguishers]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L148
+[Interface.distinguishers_attach]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L152
+[Interface.distinguishers_parallel_left]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L158
+[Interface.distinguishers_parallel_right]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L173
+[Interface.compatibleDistinguisherClass]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L181
+[Interface.cc_parallel_eq]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L188
+[Interface.cc_dummy_eq]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L192
+[Interface.cc_distance_eq]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L196
+[TypedSystem.dummy]: src/RandomSystems/Typed/SystemCoherence.lean#L97
+[Interface.parallel_assoc]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L77
+[Interface.parallel_dummy_left]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L89
+[Interface.parallel_dummy_right]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L98
+[TypedConverter.parallel_attach]: src/RandomSystems/Typed/ParallelAttachment.lean#L23
 [CompatiblePseudoMetric]: src/ConstructiveCryptography/CryptographicAlgebra/PseudoMetric.lean#L43
 [CA.distance]: src/ConstructiveCryptography/CryptographicAlgebra/PseudoMetric.lean#L63
 [distance_attach_le]: src/ConstructiveCryptography/CryptographicAlgebra/PseudoMetric.lean#L90
@@ -1212,12 +1211,12 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [Games.absorb]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L93
 [DistinctionGames.absorb]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L148
 [Games.absorb_comp]: src/ConstructiveCryptography/CryptographicAlgebra/Game.lean#L101
-[Interface.games]: src/ConstructiveCryptography/InterfaceGame.lean#L100
-[Interface.distinctionGames]: src/ConstructiveCryptography/InterfaceGame.lean#L150
-[Interface.dist_visible_le]: src/ConstructiveCryptography/InterfaceGame.lean#L211
-[Interface.winners]: src/ConstructiveCryptography/InterfaceGame.lean#L89
-[Interface.solvers]: src/ConstructiveCryptography/InterfaceGame.lean#L94
-[Interface.win_le]: src/ConstructiveCryptography/InterfaceGame.lean#L195
+[Interface.games]: src/ConstructiveCryptography/InterfaceGame.lean#L69
+[Interface.distinctionGames]: src/ConstructiveCryptography/InterfaceGame.lean#L125
+[Interface.dist_visible_le]: src/ConstructiveCryptography/InterfaceGame.lean#L186
+[Interface.winners]: src/ConstructiveCryptography/InterfaceGame.lean#L58
+[Interface.solvers]: src/ConstructiveCryptography/InterfaceGame.lean#L63
+[Interface.win_le]: src/ConstructiveCryptography/InterfaceGame.lean#L170
 
 <!-- Declarations: §4 -->
 
@@ -1271,14 +1270,12 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [SubstitutesWithin.attach_serial]: src/ConstructiveCryptography/Substitution/Reduction.lean#L175
 [Implication.substitutesWithin]: src/ConstructiveCryptography/Substitution/Quantitative.lean#L49
 [Implication.substitutesWithin_of_mixed]: src/ConstructiveCryptography/Substitution/Quantitative.lean#L105
-[Interface.distinguisherAdvantage]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L178
-[Interface.absorb]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L111
-[Interface.absorb_comp]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L117
-[Interface.distinguisherAdvantage_attach]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L190
-[Interface.distinguisherAdvantage_le_distance]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L248
-[Interface.substitutesWithin_attach]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L200
-[Interface.AdmissibleDistinguishers]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L214
-[AdmissibleDistinguishers.substitutesWithin_attach]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L223
+[Interface.distinguisherAdvantage]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L208
+[Interface.distinguisherAdvantage_attach]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L220
+[Interface.distinguisherAdvantage_le_distance]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L280
+[Interface.substitutesWithin_attach]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L231
+[Interface.AdmissibleDistinguishers]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L246
+[AdmissibleDistinguishers.substitutesWithin_attach]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L255
 [substitutionImage]: src/ConstructiveCryptography/Substitution/Relaxation.lean#L45
 [singleSubstitutionRelaxation]: src/ConstructiveCryptography/Substitution/Relaxation.lean#L59
 [substitutionRelaxation]: src/ConstructiveCryptography/Substitution/Relaxation.lean#L164
@@ -1289,19 +1286,19 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 
 <!-- Declarations: §6–7 -->
 
-[desugarSampling]: src/ConstructiveCryptography/DSL/Elaborator.lean#L191
-[elabInterface]: src/ConstructiveCryptography/DSL/Elaborator.lean#L348
-[elabComponent]: src/ConstructiveCryptography/DSL/Elaborator.lean#L808
-[elabProgramDecls]: src/ConstructiveCryptography/DSL/Elaborator.lean#L641
-[elabPerPortDecls]: src/ConstructiveCryptography/DSL/Elaborator.lean#L538
-[elabExactDecls]: src/ConstructiveCryptography/DSL/Elaborator.lean#L713
-[elabFilter]: src/ConstructiveCryptography/DSL/Elaborator.lean#L924
-[sourcesAt]: src/ConstructiveCryptography/DSL/Elaborator.lean#L632
-[Interface.Converter.ofProgram]: src/ConstructiveCryptography/DSL/Converters.lean#L38
-[Interface.Converter.ofCostedProgram]: src/ConstructiveCryptography/DSL/Converters.lean#L50
-[Interface.Converter.ofPreservingProgram]: src/ConstructiveCryptography/DSL/Converters.lean#L67
-[Interface.Converter.ofProgram_smul_ofAutomaton]: src/ConstructiveCryptography/DSL/Converters.lean#L142
-[Interface.Converter.ofPreservingProgram_smul_ofAutomaton]: src/ConstructiveCryptography/DSL/Converters.lean#L152
+[desugarSampling]: src/ConstructiveCryptography/DSL/Elaborator.lean#L194
+[elabInterface]: src/ConstructiveCryptography/DSL/Elaborator.lean#L351
+[elabComponent]: src/ConstructiveCryptography/DSL/Elaborator.lean#L811
+[elabProgramDecls]: src/ConstructiveCryptography/DSL/Elaborator.lean#L644
+[elabPerPortDecls]: src/ConstructiveCryptography/DSL/Elaborator.lean#L541
+[elabExactDecls]: src/ConstructiveCryptography/DSL/Elaborator.lean#L716
+[elabFilter]: src/ConstructiveCryptography/DSL/Elaborator.lean#L927
+[sourcesAt]: src/ConstructiveCryptography/DSL/Elaborator.lean#L635
+[TypedConverter.ofProgram]: src/RandomSystems/Typed/DSL/Converters.lean#L39
+[TypedConverter.ofCostedProgram]: src/RandomSystems/Typed/DSL/Converters.lean#L51
+[TypedConverter.ofPreservingProgram]: src/RandomSystems/Typed/DSL/Converters.lean#L68
+[TypedConverter.ofProgram_smul_ofAutomaton]: src/RandomSystems/Typed/DSL/Converters.lean#L145
+[TypedConverter.ofPreservingProgram_smul_ofAutomaton]: src/RandomSystems/Typed/DSL/Converters.lean#L155
 [MemorylessSource]: src/Commons/Definitions/Ideal.lean#L95
 [MemorylessSource.memoryless_eq]: src/Commons/Definitions/Ideal.lean#L103
 [cc_normalize]: src/ConstructiveCryptography/Tactics/Basic.lean#L30
@@ -1352,11 +1349,11 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [collision_win_le]: src/Examples/Games.lean#L165
 [hybrid_ideal_advantage_le]: src/Examples/Games.lean#L190
 [attach_hybrid_ideal_advantage_le]: src/Examples/Games.lean#L209
-[correctedChain]: src/Examples/AuthenticatedEncryption/Security.lean#L93
-[correctedChain_cca]: src/Examples/AuthenticatedEncryption/Security.lean#L112
-[correctedChain_ptxt]: src/Examples/AuthenticatedEncryption/Security.lean#L117
+[correctedChain]: src/Examples/AuthenticatedEncryption/Security.lean#L102
+[correctedChain_cca]: src/Examples/AuthenticatedEncryption/Security.lean#L121
+[correctedChain_ptxt]: src/Examples/AuthenticatedEncryption/Security.lean#L126
 [ae_of_ind_cca_int_ptxt]: src/Examples/AuthenticatedEncryption/Security.lean#L57
-[real_ideal_distance_le]: src/Examples/AuthenticatedEncryption/Security.lean#L123
+[real_ideal_distance_le]: src/Examples/AuthenticatedEncryption/Security.lean#L132
 [construction_with_right_context]: src/Examples/Substitution.lean#L43
 [construction_with_left_context]: src/Examples/Substitution.lean#L70
 [constructsWithin_of_two_substitutions]: src/Examples/Substitution.lean#L120

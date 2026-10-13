@@ -1,5 +1,5 @@
 import RandomSystems.Converter.ProgramAttachment
-import ConstructiveCryptography.DSL.Probability
+import RandomSystems.Typed.DSL.Probability
 import Mathlib.Data.Fintype.Order
 
 /-!

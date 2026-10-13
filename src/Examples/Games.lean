@@ -16,7 +16,7 @@ construction attached (`advantage_attach_le_win`).
 
 On interfaces, the collision game of authenticated encryption is the game the collision
 discrete game presents (`collision`): the hybrid oracle with the MBO the collision so far. Its
-visible resource is the hybrid, it is conditionally equivalent to the ideal system, and every
+visible typed system is the hybrid, it is conditionally equivalent to the ideal system, and every
 winner wins it with probability at most `q_e² / |M|`. Every solver's advantage between the
 hybrid and the ideal is then at most `q_e² / |M|` (`hybrid_ideal_advantage_le`), also inside any
 construction (`attach_hybrid_ideal_advantage_le`).
@@ -146,19 +146,19 @@ variable {K M C : Type} [Fintype K] [Fintype M] [Fintype C] [DecidableEq K] [Dec
 /-- **The collision game** on the authenticated-encryption interface: the game the collision
 discrete game presents, the hybrid oracle with the MBO the collision between the original
 messages so far and the outer replacement messages. -/
-noncomputable def collision : Interface.Game (AE.perPort M C q) :=
-  Interface.Game.ofPDG (collisionGame scheme q) (collisionGame_isProbDist scheme q)
+noncomputable def collision : TypedGame (AE.perPort M C q) :=
+  TypedGame.ofPDG (collisionGame scheme q) (collisionGame_isProbDist scheme q)
     (hybrid_visible scheme q)
 
-/-- The visible resource of the collision game is the hybrid. -/
+/-- The visible typed system of the collision game is the hybrid. -/
 lemma collision_visible : DistinctionGames.visible (collision scheme q) = Hybrid scheme q :=
-  Interface.Game.visible_ofPDG _ _ _
+  TypedGame.visible_ofPDG _ _ _
 
 /-- The collision game is conditionally equivalent to the ideal system. -/
 lemma collision_conditionallyEquivalent :
     DistinctionGames.ConditionallyEquivalent (collision scheme q)
       (AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme :
-        Interface.Resource (AE.perPort M C q)) :=
+        TypedSystem (AE.perPort M C q)) :=
   collisionGame_conditionallyEquivalent scheme q
 
 /-- **Every winner wins the collision game with probability at most `q_e² / |M|`.** -/
@@ -179,8 +179,8 @@ theorem collision_win_le {w} (hw : w ∈ Games.winners (AE.perPort M C q)) :
   exact P.winProbability_le_of_unsetProbability
     (PDG.repliesAtQueriedInterface_behavior _ (hybrid_visible scheme q ▸ (Hybrid scheme q).2))
     (AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme :
-      Interface.Resource (AE.perPort M C q)).2 (PDG.monotoneMBO_behavior _)
-    ((Interface.Game.conditionallyEquivalent_ofPDG_iff _ _ (hybrid_visible scheme q) _).mp
+      TypedSystem (AE.perPort M C q)).2 (PDG.monotoneMBO_behavior _)
+    ((Interface.conditionallyEquivalent_ofPDG_iff _ _ (hybrid_visible scheme q) _).mp
       (collisionGame_conditionallyEquivalent scheme q))
     (PDG.one_sub_le_unsetProbability_behavior _ (AE.perPort M C q).nonempty_prefix
       (collisionGame_badProbability_le scheme q))
@@ -189,9 +189,9 @@ theorem collision_win_le {w} (hw : w ∈ Games.winners (AE.perPort M C q)) :
 and the ideal is at most `q_e² / |M|`. -/
 theorem hybrid_ideal_advantage_le {s} (hs : s ∈ DistinctionGames.solvers (AE.perPort M C q)) :
     |s.1 (Hybrid scheme q) - s.1 (AE.Ideal.perPort M C (budget := q) •
-        Encryption.Real.perPort scheme : Interface.Resource (AE.perPort M C q))| ≤
+        Encryption.Real.perPort scheme : TypedSystem (AE.perPort M C q))| ≤
       (q .enc : ℝ) ^ 2 / Fintype.card M := by
-  -- The hybrid is the visible resource `G⁻` of the collision game `G`.
+  -- The hybrid is the visible typed system `G⁻` of the collision game `G`.
   rw [← collision_visible]
   -- With `Ideal` the ideal system `AE.Ideal.perPort M C • Encryption.Real.perPort scheme`:
   --
@@ -209,9 +209,9 @@ construction on the hybrid and on the ideal is at most `q_e² / |M|`. -/
 theorem attach_hybrid_ideal_advantage_le {B : Interface} (α : B ⟶ AE.perPort M C q) {s}
     (hs : s ∈ DistinctionGames.solvers B) :
     |s.1 (α • Hybrid scheme q) - s.1 (α • (AE.Ideal.perPort M C (budget := q) •
-        Encryption.Real.perPort scheme : Interface.Resource (AE.perPort M C q)))| ≤
+        Encryption.Real.perPort scheme : TypedSystem (AE.perPort M C q)))| ≤
       (q .enc : ℝ) ^ 2 / Fintype.card M := by
-  -- The hybrid is the visible resource `G⁻` of the collision game `G`.
+  -- The hybrid is the visible typed system `G⁻` of the collision game `G`.
   rw [← collision_visible]
   -- The game hop inside the construction `α` (`advantage_attach_le`), with the bound on
   -- winning `G` by every solver on `AE.perPort M C q` (`collision_win_le`):

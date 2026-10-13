@@ -1,30 +1,32 @@
-import ConstructiveCryptography.Interface
+import RandomSystems.Typed.Interface
 import RandomSystems.Distance.Restriction
 
 /-!
 # Domain filters
 
 A filter forwards the queries of an admitted history and stops on the others. The filter
-admitting `D` on `A` is a converter from `A` restricted to `D` to `A`: the forwarding DDC of
-the restricted domain, a DDC from `A`'s domain. Attached to a resource, it is the restriction of
-the resource's random system to the restricted domain, so two filters in series act as the
-filter of both conditions.
+admitting `D` on `A` is a typed converter from `A` restricted to `D` to `A`: the forwarding DDC
+of the restricted domain, a DDC from `A`'s domain. Attached to a typed system, it is the
+restriction of the system's random system to the restricted domain, so two filters in series act
+as the filter of both conditions.
 Source: CR18, §3.4.3 (printed p. 62).
 
 ## Main definitions
 
 * `Interface.restrict A D`: the histories of `A`'s domain admitted by `D`
-* `Interface.filter A D`: the filter admitting `D` on `A`
+* `TypedConverter.filter A D`: the filter admitting `D` on `A`
 
 ## Main results
 
-* `Interface.filter_smul`: a filter attached to a resource is the restriction of its random
-  system
-* `Interface.filter_comp_filter_smul`: two filters in series act as the filter of both
+* `TypedConverter.filter_smul`: a filter attached to a typed system is the restriction of its
+  random system
+* `TypedConverter.filter_comp_filter_smul`: two filters in series act as the filter of both
   conditions
 -/
 
-namespace SystemAlgebra.Interface
+namespace SystemAlgebra
+
+namespace Interface
 
 /-- The histories of `A`'s domain admitted by `D`. -/
 abbrev restrict (A : Interface) (D : List (Σ i, A.X i) → Prop)
@@ -38,23 +40,27 @@ abbrev restrict (A : Interface) (D : List (Σ i, A.X i) → Prop)
   bound := A.bound
   length_le h hd := A.length_le h hd.1
 
+end Interface
+
+namespace TypedConverter
+
 /-- **The filter** admitting `D` on `A`: it forwards the queries of an admitted history and
 stops on the others. -/
 noncomputable def filter (A : Interface) (D : List (Σ i, A.X i) → Prop)
-    (hD : ∀ p h, p <+: h → D h → D p) : A.restrict D hD ⟶ A :=
+    (hD : ∀ p h, p <+: h → D h → D p) : TypedConverter (A.restrict D hD) A :=
   ofDDC
     (DDC.filter (Y := A.Y) (fun h => h = [] ∨ (A.restrict D hD).domain h)
       (prefix_or_nil (A.restrict D hD).nonempty_prefix.2)).1
     ((isDDCFrom_filter (A.restrict D hD).nonempty_prefix).inside_mono fun _ hd => hd.1)
 
-open Classical Probability CategoryTheory
+open Classical Probability
 
-/-- **A filter attached to a resource** is the restriction of the resource's random system to
+/-- **A filter attached to a typed system** is the restriction of the system's random system to
 the restricted domain. -/
 lemma filter_smul (A : Interface) (D : List (Σ i, A.X i) → Prop)
-    (hD : ∀ p h, p <+: h → D h → D p) (R : Resource A) :
+    (hD : ∀ p h, p <+: h → D h → D p) (R : TypedSystem A) :
     (filter A D hD • R).1 = R.1.restrict (A.restrict D hD).inputDomain fun _ _ hx => hx.1 := by
-  obtain ⟨Q, hQ⟩ := Resource.exists_ofPDS R
+  obtain ⟨Q, hQ⟩ := TypedSystem.exists_ofPDS R
   subst hQ
   ext h
   change _ = if Admitted _ h then _ else _
@@ -83,12 +89,12 @@ lemma filter_smul (A : Interface) (D : List (Σ i, A.X i) → Prop)
     have hf := ((filterDom_dom _ _ _).mp (hr.dom hne)).1
     exact Or.inr (hf.resolve_left hne)
 
-/-- **Two filters in series** act as the filter of both conditions: the resources have the
+/-- **Two filters in series** act as the filter of both conditions: the typed systems have the
 same transcript masses. -/
 lemma filter_comp_filter_smul (A : Interface) (D : List (Σ i, A.X i) → Prop)
     (hD : ∀ p h, p <+: h → D h → D p) (D' : List (Σ i, A.X i) → Prop)
-    (hD' : ∀ p h, p <+: h → D' h → D' p) (R : Resource A) :
-    ((filter (A.restrict D hD) D' hD' ≫ filter A D hD) • R).1.1 =
+    (hD' : ∀ p h, p <+: h → D' h → D' p) (R : TypedSystem A) :
+    (comp (filter (A.restrict D hD) D' hD') (filter A D hD) • R).1.1 =
       (filter A (fun h => D h ∧ D' h)
         (fun p h hp hh => ⟨hD p h hp hh.1, hD' p h hp hh.2⟩) • R).1.1 := by
   rw [comp_smul, filter_smul, filter_smul, filter_smul]
@@ -101,4 +107,6 @@ lemma filter_comp_filter_smul (A : Interface) (D : List (Σ i, A.X i) → Prop)
     admitted_ofInputs_iff (A.restrict _ both).nonempty_prefix]
   exact or_congr_right and_assoc
 
-end SystemAlgebra.Interface
+end TypedConverter
+
+end SystemAlgebra

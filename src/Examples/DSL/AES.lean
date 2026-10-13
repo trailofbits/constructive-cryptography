@@ -8,7 +8,7 @@ import Commons.Schemes.BlockCipher.AES
 AES-256 as a system with a random key, and converters around it: whitening, double encryption,
 a fresh mask, CBC-MAC over a finite message space, and a two-key cascade; at per-port budgets,
 whitening and the fresh mask are endomorphisms of the interface of a block function. Whitened AES
-beside an unrelated resource, and a two-step hybrid bound through an ideal block cipher. The block
+beside an unrelated system, and a two-step hybrid bound through an ideal block cipher. The block
 cipher is AES-256 of `Commons.Schemes.BlockCipher.AES`, answering at the interface `Evaluation` of
 `Commons.Definitions.Ideal`, on blocks of sixteen bytes with bytewise exclusive or.
 -/
@@ -91,11 +91,11 @@ system ParallelAES ≔ (Twice ⊗ₘ Twice) • (AES ∥ AES)
 /-- At per-port budgets, port-preserving converters are endomorphisms of the block-cipher
 interface: they compose and attach without changing the budget. -/
 noncomputable def WhitenedMaskedAES (mask : Block) (q : Evaluation.Port → ℕ) :
-    Interface.Resource (Evaluation.perPort Block Block q) :=
+    TypedSystem (Evaluation.perPort Block Block q) :=
   (Whitening.perPort mask ≫ RandomMask.perPort) • AES.perPort
 
 /-- The same converter accepts messages with different block counts. -/
-noncomputable example (q : ℕ) : Interface.Resource (Authentication (Bool × Block × Block) q) :=
+noncomputable example (q : ℕ) : TypedSystem (Authentication (Bool × Block × Block) q) :=
   CBCMAC (fun (long, first, second) => if long then [first, second] else [first])
 
 lemma composedAES_eq (mask : Block) (q : ℕ) :
@@ -108,12 +108,12 @@ lemma parallelAES_eq (q : ℕ) : ParallelAES (budget := q) = DoubleAES ∥ Doubl
   cc_normalize
 
 lemma cbc_nonexpanding (blockForm : M → List Block) {q : ℕ}
-    (R S : Interface.Resource (Evaluation Block Block (CBC.bound blockForm * q))) :
+    (R S : TypedSystem (Evaluation Block Block (CBC.bound blockForm * q))) :
     Δ (CBC blockForm • R) (CBC blockForm • S) ≤ Δ R S := by
   cc_nonexpand
 
-/-- Parallel components keep their own alphabets: whitening AES beside an unrelated resource
-leaves that resource unchanged. -/
+/-- Parallel components keep their own alphabets: whitening AES beside an unrelated system
+leaves that system unchanged. -/
 lemma whitening_beside_switch (mask : Block) (q n : ℕ) :
     (Whitening mask (budget := q) ⊗ₘ 𝟙 (Control n)) • (AES ∥ Switch) =
       (Whitening mask • AES) ∥ Switch := by
@@ -122,7 +122,7 @@ lemma whitening_beside_switch (mask : Block) (q n : ℕ) :
 /-- A two-step hybrid: a bound on distinguishing AES from an ideal block cipher `R`, and a bound
 on the ideal system, give a bound on the real system. -/
 lemma aes_hybrid {A : Interface} {q : ℕ} (α : A ⟶ Evaluation Block Block q)
-    (R : Interface.Resource (Evaluation Block Block q)) (V : Interface.Resource A) (ε δ : ENNReal)
+    (R : TypedSystem (Evaluation Block Block q)) (V : TypedSystem A) (ε δ : ENNReal)
     (aesBound : Δ AES R ≤ ε) (idealBound : Δ (α • R) V ≤ δ) :
     Δ (α • AES) V ≤ ε + δ := by
   calc

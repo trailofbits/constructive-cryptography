@@ -15,23 +15,23 @@ open SystemAlgebra
 variable {A B C D : Interface}
 
 /-- Serial construction. -/
-example {α : A ⟶ B} {β : B ⟶ C} {R : Specification (Interface.Resource C)}
-    {S : Specification (Interface.Resource B)} {T : Specification (Interface.Resource A)}
+example {α : A ⟶ B} {β : B ⟶ C} {R : Specification (TypedSystem C)}
+    {S : Specification (TypedSystem B)} {T : Specification (TypedSystem A)}
     (inner : Constructs β R S)
     (outer : Constructs α S T) :
     Constructs (α ≫ β) R T :=
   inner.serial outer
 
 /-- Relaxing both endpoints by the same error. -/
-example {α : A ⟶ B} {R : Specification (Interface.Resource B)}
-    {S : Specification (Interface.Resource A)}
+example {α : A ⟶ B} {R : Specification (TypedSystem B)}
+    {S : Specification (TypedSystem A)}
     (construction : Constructs α R S) (ε : ENNReal) :
     Constructs α (epsilonRelaxation ε R) (epsilonRelaxation ε S) :=
   construction.epsilonRelaxation ε
 
 /-- Approximate serial construction adds the errors. -/
-example {α : A ⟶ B} {β : B ⟶ C} {R : Specification (Interface.Resource C)}
-    {S : Specification (Interface.Resource B)} {T : Specification (Interface.Resource A)}
+example {α : A ⟶ B} {β : B ⟶ C} {R : Specification (TypedSystem C)}
+    {S : Specification (TypedSystem B)} {T : Specification (TypedSystem A)}
     {ε δ : ENNReal}
     (inner : ConstructsWithin β R S ε)
     (outer : ConstructsWithin α S T δ) :
@@ -39,9 +39,9 @@ example {α : A ⟶ B} {β : B ⟶ C} {R : Specification (Interface.Resource C)}
   inner.serial outer
 
 /-- Parallel construction. -/
-example {α : A ⟶ B} {β : C ⟶ D} {R : Specification (Interface.Resource B)}
-    {S : Specification (Interface.Resource A)} {T : Specification (Interface.Resource D)}
-    {U : Specification (Interface.Resource C)}
+example {α : A ⟶ B} {β : C ⟶ D} {R : Specification (TypedSystem B)}
+    {S : Specification (TypedSystem A)} {T : Specification (TypedSystem D)}
+    {U : Specification (TypedSystem C)}
     (left : Constructs α R S)
     (right : Constructs β T U) :
     Constructs (α ⊗ₘ β) (Specification.parallel R T)
@@ -49,9 +49,9 @@ example {α : A ⟶ B} {β : C ⟶ D} {R : Specification (Interface.Resource B)}
   left.parallel right
 
 /-- Approximate parallel construction adds the errors. -/
-example {α : A ⟶ B} {β : C ⟶ D} {R : Specification (Interface.Resource B)}
-    {S : Specification (Interface.Resource A)} {T : Specification (Interface.Resource D)}
-    {U : Specification (Interface.Resource C)} {ε δ : ENNReal}
+example {α : A ⟶ B} {β : C ⟶ D} {R : Specification (TypedSystem B)}
+    {S : Specification (TypedSystem A)} {T : Specification (TypedSystem D)}
+    {U : Specification (TypedSystem C)} {ε δ : ENNReal}
     (left : ConstructsWithin α R S ε)
     (right : ConstructsWithin β T U δ) :
     ConstructsWithin (α ⊗ₘ β) (Specification.parallel R T)
@@ -59,8 +59,8 @@ example {α : A ⟶ B} {β : C ⟶ D} {R : Specification (Interface.Resource B)}
   left.parallel right
 
 /-- Closure under a class of converters that commute with the constructing one. -/
-example {π : End A} {converters : EndoFamily A} {R S : Specification (Interface.Resource A)}
-    (commutes : ∀ σ : End A, σ.op ∈ converters → ∀ T : Interface.Resource A,
+example {π : End A} {converters : EndoFamily A} {R S : Specification (TypedSystem A)}
+    (commutes : ∀ σ : End A, σ.op ∈ converters → ∀ T : TypedSystem A,
       attach π (attach σ T) =
         attach σ (attach π T))
     (construction : Constructs π R S) :
@@ -68,9 +68,9 @@ example {π : End A} {converters : EndoFamily A} {R S : Specification (Interface
   Constructs.star commutes construction
 
 /-- Approximate construction is preserved by the same closure. -/
-example {π : End A} {converters : EndoFamily A} {R S : Specification (Interface.Resource A)}
+example {π : End A} {converters : EndoFamily A} {R S : Specification (TypedSystem A)}
     {ε : ENNReal}
-    (commutes : ∀ σ : End A, σ.op ∈ converters → ∀ T : Interface.Resource A,
+    (commutes : ∀ σ : End A, σ.op ∈ converters → ∀ T : TypedSystem A,
       attach π (attach σ T) =
         attach σ (attach π T))
     (construction : ConstructsWithin π R S ε) :

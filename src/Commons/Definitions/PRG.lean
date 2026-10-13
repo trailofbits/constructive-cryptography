@@ -33,9 +33,9 @@ variable {S R : Type} [Fintype S] [Nonempty S] [Fintype R] [Nonempty R]
 /-- **The systems of PRG security**: `G s` for a uniform seed `s`, and a uniform element of `R`,
 at the budget `q`. -/
 def PRG.Secure.systems (G : S → R) (q : ℕ) :
-    Interface.Resource (Evaluation Unit R q) × Interface.Resource (Evaluation Unit R q) :=
-  (Interface.Resource.sample (Distribution.uniform S)
-      fun s => Interface.Resource.ofFunction fun _ _ => G s,
+    TypedSystem (Evaluation Unit R q) × TypedSystem (Evaluation Unit R q) :=
+  (TypedSystem.sample (Distribution.uniform S)
+      fun s => TypedSystem.ofFunction fun _ _ => G s,
     URF (Evaluation Unit R q))
 
 /-- **PRG security** within `error`: against the admitted distinguishers, `G` on a uniform seed

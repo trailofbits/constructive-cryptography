@@ -1,22 +1,26 @@
-import ConstructiveCryptography.DDCCoherence
-import ConstructiveCryptography.InterfaceTensorRename
+import RandomSystems.Typed.DDCCoherence
+import RandomSystems.Typed.TensorRename
 
 /-!
-# Naturality of the associator and the unitors
+# Naturality of regrouping
 
-The associator and the unitors are natural for arbitrary converters. With presentations of the
-converters, both sides are mixtures over the same samples; on each sample both sides are DDCs
-with the same domains below one unrestricted regrouping, so they have the same transcripts.
+The regrouping renamings (associativity and the two unit laws of parallel interfaces) are
+natural for arbitrary typed converters. With presentations of the converters, both sides are
+mixtures over the same samples; on each sample both sides are DDCs with the same domains below
+one unrestricted regrouping, so they have the same transcripts.
 
 ## Main results
 
-* `Interface.comp_associator`: naturality of the associator
-* `Interface.comp_leftUnitor`, `Interface.comp_rightUnitor`: naturality of the unitors
+* `TypedConverter.comp_associator`: naturality of the associativity renaming
+* `TypedConverter.comp_leftUnitor`, `TypedConverter.comp_rightUnitor`: naturality of the unit
+  renamings
 -/
 
-namespace SystemAlgebra.Interface
+namespace SystemAlgebra
 
-open Classical CategoryTheory Probability
+open Classical Probability
+
+namespace Interface
 
 variable {A B C D E F : Interface}
   {a : InsideOutsideSystem A.I D.I A.X A.Y D.X D.Y}
@@ -66,38 +70,6 @@ lemma replies_associator_iff {ba bb bc : ℕ} (ha : IsDDCFrom D.domain A.domain 
     rw [trim_serialM_associator_of_isDDC ha.isDDC hb.isDDC hc.isDDC]
     exact (replies_trim_iff _ _ _).mpr
       (((replies_trim_iff _ _ _).mp hr).serialM_mono hA (fun _ _ hy => hy))
-
-/-- **The associator is natural.** -/
-lemma comp_associator (α : A ⟶ D) (β : B ⟶ E) (γ : C ⟶ F) :
-    parallelConverter (parallelConverter α β) γ ≫ (associator D E F).hom =
-      (associator A B C).hom ≫ parallelConverter α (parallelConverter β γ) := by
-  obtain ⟨rD, hrD, hD, hDle⟩ := exists_rename_eq_ofDDC (A := tensor (tensor D E) F)
-    (B := tensor D (tensor E F)) _ _ _ (assocAlphabet_fst D.X E.X F.X)
-    (assocAlphabet_fst D.Y E.Y F.Y) (parallelDomain_assoc D E F)
-  obtain ⟨rA, hrA, hA, hAle⟩ := exists_rename_eq_ofDDC (A := tensor (tensor A B) C)
-    (B := tensor A (tensor B C)) _ _ _ (assocAlphabet_fst A.X B.X C.X)
-    (assocAlphabet_fst A.Y B.Y C.Y) (parallelDomain_assoc A B C)
-  have hD' : (associator D E F).hom = PDCBehavior.ofDDC rD hrD := hD
-  have hA' : (associator A B C).hom = PDCBehavior.ofDDC rA hrA := hA
-  rw [hD', hA']
-  obtain ⟨ba, P, hP⟩ := α.2
-  obtain ⟨bb, Q, hQ⟩ := β.2
-  obtain ⟨bc, R, hR⟩ := γ.2
-  apply PDCBehavior.ext
-  intro h
-  change (PDCBehavior.comp _ _).1 h = (PDCBehavior.comp _ _).1 h
-  have hAB := fun h => (PDCBehavior.tensor_presents α β P Q hP hQ h).symm
-  have hBC := fun h => (PDCBehavior.tensor_presents β γ Q R hQ hR h).symm
-  have hL := fun h => (PDCBehavior.tensor_presents (parallelConverter α β) γ _ R hAB hR h).symm
-  have hR' := fun h => (PDCBehavior.tensor_presents α (parallelConverter β γ) P _ hP hBC h).symm
-  rw [PDCBehavior.comp_ofDDC_presents (parallelConverter (parallelConverter α β) γ) _ hL hrD h,
-    PDCBehavior.ofDDC_comp_presents hrA (parallelConverter α (parallelConverter β γ)) _ hR' h]
-  simp only [tensorPDC, Distribution.mass_fTransform, Distribution.fTransform_prod_left,
-    Distribution.fTransform_prod_right]
-  rw [← Distribution.fTransform_assoc_prod P.1 Q.1 R.1, Distribution.mass_fTransform]
-  apply Distribution.mass_congr
-  intro p
-  exact replies_associator_iff p.1.2 p.2.1.2 p.2.2.2 hrD hrA hDle hAle h
 
 /-- The identity on the unit interface is the forwarding converter. -/
 lemma filter_unit :
@@ -174,56 +146,109 @@ lemma replies_rightUnitor_iff {ba : ℕ} (ha : IsDDCFrom D.domain A.domain ba a)
     exact (replies_trim_iff _ _ _).mpr
       (((replies_trim_iff _ _ _).mp hr).serialM_mono hA (fun _ _ hy => hy))
 
-/-- **The left unitor is natural.** -/
-lemma comp_leftUnitor (α : A ⟶ D) :
-    parallelConverter (𝟙 unit) α ≫ (leftUnitor D).hom = (leftUnitor A).hom ≫ α := by
+end Interface
+
+namespace TypedConverter
+
+open Interface
+
+variable {A B C D E F : Interface}
+
+/-- **The associativity renaming is natural.** -/
+lemma comp_associator (α : TypedConverter A D) (β : TypedConverter B E)
+    (γ : TypedConverter C F) :
+    comp (parallel (parallel α β) γ)
+        (rename (Equiv.sumAssoc D.I E.I F.I) (assocAlphabet D.X E.X F.X)
+          (assocAlphabet D.Y E.Y F.Y) (assocAlphabet_fst D.X E.X F.X)
+          (assocAlphabet_fst D.Y E.Y F.Y) (parallelDomain_assoc D E F)) =
+      comp (rename (Equiv.sumAssoc A.I B.I C.I) (assocAlphabet A.X B.X C.X)
+          (assocAlphabet A.Y B.Y C.Y) (assocAlphabet_fst A.X B.X C.X)
+          (assocAlphabet_fst A.Y B.Y C.Y) (parallelDomain_assoc A B C))
+        (parallel α (parallel β γ)) := by
+  obtain ⟨rD, hrD, hD, hDle⟩ := exists_rename_eq_ofDDC (A := tensor (tensor D E) F)
+    (B := tensor D (tensor E F)) _ _ _ (assocAlphabet_fst D.X E.X F.X)
+    (assocAlphabet_fst D.Y E.Y F.Y) (parallelDomain_assoc D E F)
+  obtain ⟨rA, hrA, hA, hAle⟩ := exists_rename_eq_ofDDC (A := tensor (tensor A B) C)
+    (B := tensor A (tensor B C)) _ _ _ (assocAlphabet_fst A.X B.X C.X)
+    (assocAlphabet_fst A.Y B.Y C.Y) (parallelDomain_assoc A B C)
+  rw [hD, hA]
+  obtain ⟨ba, P, hP⟩ := α.2
+  obtain ⟨bb, Q, hQ⟩ := β.2
+  obtain ⟨bc, R, hR⟩ := γ.2
+  apply PDCBehavior.ext
+  intro h
+  change (PDCBehavior.comp _ _).1 h = (PDCBehavior.comp _ _).1 h
+  have hAB := fun h => (PDCBehavior.tensor_presents α β P Q hP hQ h).symm
+  have hBC := fun h => (PDCBehavior.tensor_presents β γ Q R hQ hR h).symm
+  have hL := fun h => (PDCBehavior.tensor_presents (parallel α β) γ _ R hAB hR h).symm
+  have hR' := fun h => (PDCBehavior.tensor_presents α (parallel β γ) P _ hP hBC h).symm
+  rw [PDCBehavior.comp_ofDDC_presents (parallel (parallel α β) γ) _ hL hrD h,
+    PDCBehavior.ofDDC_comp_presents hrA (parallel α (parallel β γ)) _ hR' h]
+  simp only [tensorPDC, Distribution.mass_fTransform, Distribution.fTransform_prod_left,
+    Distribution.fTransform_prod_right]
+  rw [← Distribution.fTransform_assoc_prod P.1 Q.1 R.1, Distribution.mass_fTransform]
+  apply Distribution.mass_congr
+  intro p
+  exact replies_associator_iff p.1.2 p.2.1.2 p.2.2.2 hrD hrA hDle hAle h
+
+/-- **The left unit renaming is natural.** -/
+lemma comp_leftUnitor (α : TypedConverter A D) :
+    comp (parallel (TypedConverter.id unit) α)
+        (rename (Equiv.emptySum Empty D.I) (leftUnitAlphabet D.X) (leftUnitAlphabet D.Y)
+          (leftUnitAlphabet_fst D.X) (leftUnitAlphabet_fst D.Y) (parallelDomain_unit_left D)) =
+      comp (rename (Equiv.emptySum Empty A.I) (leftUnitAlphabet A.X) (leftUnitAlphabet A.Y)
+          (leftUnitAlphabet_fst A.X) (leftUnitAlphabet_fst A.Y) (parallelDomain_unit_left A))
+        α := by
   obtain ⟨rD, hrD, hD, hDle⟩ := exists_rename_eq_ofDDC (A := tensor unit D) (B := D) _ _ _
     (leftUnitAlphabet_fst D.X)
     (leftUnitAlphabet_fst D.Y) (parallelDomain_unit_left D)
   obtain ⟨rA, hrA, hA, hAle⟩ := exists_rename_eq_ofDDC (A := tensor unit A) (B := A) _ _ _
     (leftUnitAlphabet_fst A.X)
     (leftUnitAlphabet_fst A.Y) (parallelDomain_unit_left A)
-  have hD' : (leftUnitor D).hom = PDCBehavior.ofDDC rD hrD := hD
-  have hA' : (leftUnitor A).hom = PDCBehavior.ofDDC rA hrA := hA
-  rw [hD', hA']
+  rw [hD, hA]
   obtain ⟨ba, P, hP⟩ := α.2
   apply PDCBehavior.ext
   intro h
   change (PDCBehavior.comp _ _).1 h = (PDCBehavior.comp _ _).1 h
-  have hT := fun h => (PDCBehavior.tensor_presents (𝟙 unit) α
+  have hT := fun h => (PDCBehavior.tensor_presents (TypedConverter.id unit) α
     ⟨Finsupp.single ⟨_, isDDCFrom_filter unit.nonempty_prefix⟩ 1, Distribution.isProbDist_single _⟩
     P (fun _ => rfl) hP h).symm
-  rw [PDCBehavior.comp_ofDDC_presents (parallelConverter (𝟙 unit) α) _ hT hrD h,
+  rw [PDCBehavior.comp_ofDDC_presents (parallel (TypedConverter.id unit) α) _ hT hrD h,
     PDCBehavior.ofDDC_comp_presents hrA α P hP h]
   simp only [tensorPDC, Distribution.mass_fTransform, Distribution.prod_single_left]
   apply Distribution.mass_congr
   intro p
   exact replies_leftUnitor_iff p.2 hrD hrA hDle hAle h
 
-/-- **The right unitor is natural.** -/
-lemma comp_rightUnitor (α : A ⟶ D) :
-    parallelConverter α (𝟙 unit) ≫ (rightUnitor D).hom = (rightUnitor A).hom ≫ α := by
+/-- **The right unit renaming is natural.** -/
+lemma comp_rightUnitor (α : TypedConverter A D) :
+    comp (parallel α (TypedConverter.id unit))
+        (rename (Equiv.sumEmpty D.I Empty) (rightUnitAlphabet D.X) (rightUnitAlphabet D.Y)
+          (rightUnitAlphabet_fst D.X) (rightUnitAlphabet_fst D.Y) (parallelDomain_unit_right D)) =
+      comp (rename (Equiv.sumEmpty A.I Empty) (rightUnitAlphabet A.X) (rightUnitAlphabet A.Y)
+          (rightUnitAlphabet_fst A.X) (rightUnitAlphabet_fst A.Y) (parallelDomain_unit_right A))
+        α := by
   obtain ⟨rD, hrD, hD, hDle⟩ := exists_rename_eq_ofDDC (A := tensor D unit) (B := D) _ _ _
     (rightUnitAlphabet_fst D.X)
     (rightUnitAlphabet_fst D.Y) (parallelDomain_unit_right D)
   obtain ⟨rA, hrA, hA, hAle⟩ := exists_rename_eq_ofDDC (A := tensor A unit) (B := A) _ _ _
     (rightUnitAlphabet_fst A.X)
     (rightUnitAlphabet_fst A.Y) (parallelDomain_unit_right A)
-  have hD' : (rightUnitor D).hom = PDCBehavior.ofDDC rD hrD := hD
-  have hA' : (rightUnitor A).hom = PDCBehavior.ofDDC rA hrA := hA
-  rw [hD', hA']
+  rw [hD, hA]
   obtain ⟨ba, P, hP⟩ := α.2
   apply PDCBehavior.ext
   intro h
   change (PDCBehavior.comp _ _).1 h = (PDCBehavior.comp _ _).1 h
-  have hT := fun h => (PDCBehavior.tensor_presents α (𝟙 unit) P
+  have hT := fun h => (PDCBehavior.tensor_presents α (TypedConverter.id unit) P
     ⟨Finsupp.single ⟨_, isDDCFrom_filter unit.nonempty_prefix⟩ 1, Distribution.isProbDist_single _⟩
     hP (fun _ => rfl) h).symm
-  rw [PDCBehavior.comp_ofDDC_presents (parallelConverter α (𝟙 unit)) _ hT hrD h,
+  rw [PDCBehavior.comp_ofDDC_presents (parallel α (TypedConverter.id unit)) _ hT hrD h,
     PDCBehavior.ofDDC_comp_presents hrA α P hP h]
   simp only [tensorPDC, Distribution.mass_fTransform, Distribution.prod_single_right]
   apply Distribution.mass_congr
   intro p
   exact replies_rightUnitor_iff p.2 hrD hrA hDle hAle h
 
-end SystemAlgebra.Interface
+end TypedConverter
+
+end SystemAlgebra

@@ -1,25 +1,25 @@
-import ConstructiveCryptography.Interface
+import RandomSystems.Typed.Interface
 import RandomSystems.Converter.ConverterTensor
 
 /-!
-# Parallel interfaces and parallel resources
+# Parallel interfaces and parallel typed systems
 
 The parallel interface of `A` and `B` has both label sets, the parallel domain of the two
-domains, and the sum of the two bounds. The parallel composition of two resources is the
+domains, and the sum of the two bounds. The parallel composition of two typed systems is the
 parallel composition of their random systems, with the component tag moved into the
-interface label. The parallel composition of two converters is the parallel composition
+interface label. The parallel composition of two typed converters is the parallel composition
 of their PDC behaviors.
 
 ## Main definitions
 
 * `Interface.parallelDomain A B`: the parallel domain of two interfaces
 * `Interface.tensor A B`: the parallel interface
-* `Interface.parallel R S`: the parallel composition of resources
-* `Interface.parallelConverter α β`: the parallel composition of converters
+* `TypedSystem.parallel R S`: the parallel composition of typed systems
+* `TypedConverter.parallel α β`: the parallel composition of typed converters
 
 ## Main results
 
-* `Interface.parallel_admits_iff`: on possible histories, the parallel domain of the random
+* `TypedSystem.parallel_admits_iff`: on possible histories, the parallel domain of the random
   systems is the domain of the parallel interface
 -/
 
@@ -42,7 +42,7 @@ end SystemAlgebra.RandomSystem
 
 namespace SystemAlgebra
 
-open Classical Probability CategoryTheory
+open Classical Probability
 
 namespace Interface
 
@@ -91,7 +91,13 @@ abbrev tensor (A B : Interface) : Interface where
   bound := A.bound + B.bound
   length_le := parallelInputs_length_le A.length_le B.length_le
 
-lemma Resource.possible_domain {A : Interface} (R : Resource A)
+end Interface
+
+namespace TypedSystem
+
+open Interface
+
+lemma possible_domain {A : Interface} (R : TypedSystem A)
     {h : List ((Σ i, A.X i) × (Σ i, A.Y i))} (hp : R.1 h ≠ 0) :
     h.map Prod.fst = [] ∨ A.domain (h.map Prod.fst) := by
   rcases List.eq_nil_or_concat h with rfl | ⟨h, ⟨x, y⟩, rfl⟩
@@ -101,7 +107,7 @@ lemma Resource.possible_domain {A : Interface} (R : Resource A)
     by_contra hd
     exact hp (R.1.mass_eq_zero_of_not_admitted hd y)
 
-lemma parallel_admits_iff (A B : Interface) (R : Resource A) (S : Resource B)
+lemma parallel_admits_iff (A B : Interface) (R : TypedSystem A) (S : TypedSystem B)
     (h : List (Two (Σ i, A.X i) (Σ j, B.X j) × Two (Σ i, A.Y i) (Σ j, B.Y j)))
     (hp : RandomSystem.parallel R.1 S.1 h ≠ 0)
     (x : Two (Σ i, A.X i) (Σ j, B.X j)) :
@@ -142,10 +148,10 @@ lemma parallel_admits_iff (A B : Interface) (R : Resource A) (S : Resource B)
   · have hla' : (RandomSystem.parallelLeft h).length ≤ A.inputDomain.bound := hla
     simp [Domain.parallel, hh, hla', ha, RandomSystem.parallelRight_queries hh]
 
-/-- Parallel resources use the product cumulative behavior. The two domain
+/-- Parallel typed systems use the product cumulative behavior. The two domain
 descriptions agree on every possible history, including rejected next queries. -/
-noncomputable def parallel {A B : Interface} (R : Resource A) (S : Resource B) :
-    Resource (tensor A B) := by
+noncomputable def parallel {A B : Interface} (R : TypedSystem A) (S : TypedSystem B) :
+    TypedSystem (tensor A B) := by
   let eX := sumAlphabet (Sum.rec A.X B.X)
   let eY := sumAlphabet (Sum.rec A.Y B.Y)
   let T := (RandomSystem.parallel R.1 S.1).relabel eX eY
@@ -192,16 +198,17 @@ noncomputable def parallel {A B : Interface} (R : Resource A) (S : Resource B) :
         List.append_nil] using mul_eq_zero.mpr (Or.inr hs)
     · rfl
 
-lemma parallel_mass {A B : Interface} (R : Resource A) (S : Resource B)
+lemma parallel_mass {A B : Interface} (R : TypedSystem A) (S : TypedSystem B)
     (h : List ((Σ i, (tensor A B).X i) × (Σ i, (tensor A B).Y i))) :
     (parallel R S).1 h = RandomSystem.parallel R.1 S.1
       (h.map ((sumAlphabet (Sum.rec A.X B.X)).symm.prodCongr
         (sumAlphabet (Sum.rec A.Y B.Y)).symm)) := rfl
 
-/-- **Parallel converters**: the parallel composition of the two PDC behaviors. -/
-noncomputable def parallelConverter {A B C D : Interface} (α : A ⟶ B) (β : C ⟶ D) :
-    tensor A C ⟶ tensor B D :=
+end TypedSystem
+
+/-- **Parallel typed converters**: the parallel composition of the two PDC behaviors. -/
+noncomputable def TypedConverter.parallel {A B C D : Interface} (α : TypedConverter A B)
+    (β : TypedConverter C D) : TypedConverter (Interface.tensor A C) (Interface.tensor B D) :=
   PDCBehavior.tensor α β
 
-end Interface
 end SystemAlgebra
