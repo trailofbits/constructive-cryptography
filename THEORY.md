@@ -1,18 +1,20 @@
 # The theory, layer by layer
 
-This is a cheat-sheet of what the library formalizes. It starts with **random systems** and their
-properties, then packages them: first into **interfaces, resources and converters**, then into the
-**abstract layers** (classes of assumptions, up to categories), each shown with the instance that
-connects it to the systems. It ends with what the layers are used for: **constructions**, the
-**substitution calculus**, the **DSL** and the **examples**. Every notion and result is linked, in
-the text, to its Lean declaration; citations refer to the [references](#references) at the end.
+This is a cheat-sheet of what the library formalizes. It starts at the systems level: **random
+systems** and their properties, and **typed systems**, the random systems and converters on the
+alphabets and domain of an interface. Then come the **abstract layers** (classes of assumptions,
+up to categories), each shown with the instance that connects it to the systems: every field of
+the instance is a systems-level object and every axiom a systems-level theorem. It ends with what
+the layers are used for: **constructions**, the **substitution calculus**, the **DSL** and the
+**examples**. Every notion and result is linked, in the text, to its Lean declaration; citations
+refer to the [references](#references) at the end.
 
 ```
-Probability ─▶ Random systems ─▶ Interfaces, resources, converters ══ instance ══▶ Classes
-  (App. A)        (§1)                    (§2)                                     (§3)
-                                            ▲                                        │
-                                           DSL (§6)                                  ▼
-                                                               Constructions (§4) ─▶ Substitution (§5)
+Probability ─▶ Random systems, typed systems ══ instance ══▶ Classes
+  (App. A)            (§1, §2)                               (§3)
+                         ▲                                     │
+                        DSL (§6)                               ▼
+                                         Constructions (§4) ─▶ Substitution (§5)
 ```
 
 ---
@@ -332,12 +334,13 @@ the ideal answers.
 
 ---
 
-## 2. Interfaces, resources and converters
+## 2. Typed systems
 
-*The systems of §1, typed by interfaces [3, Definitions 3.8, 3.9, 3.17], [6, §3],
-[7, Definitions 2.2.1–2.2.2].*
+*The random systems and converters of §1, typed by interfaces [3, Definitions 3.8, 3.9, 3.17],
+[6, §3], [7, Definitions 2.2.1–2.2.2]. Every object of this section is a systems-level object; §3
+uses them as the fields of the instances.*
 
-### 2.1 The objects
+### 2.1 Interfaces, typed systems and typed converters
 
 An [**interface**][Interface] $`A = (I, X, Y, D)`$ has finitely many labels, finite alphabets
 $`X_i, Y_i`$, and a domain $`D`$ of input histories, prefix-closed, without the empty history, of
@@ -347,72 +350,74 @@ $`D = \lbrace h \ne \varepsilon \mid \lvert h \rvert \le q \rbrace`$ and the
 $`D = \lbrace h \ne \varepsilon \mid \forall i.\ \lvert h \restriction i \rvert \le q_i \rbrace`$,
 where $`h \restriction i`$ [keeps the inputs at the label][restrict] $`i`$.
 
-A [**resource**][TypedSystem] on $`A`$ is a random system on
+A [**typed system**][TypedSystem] on $`A`$ is a random system on
 $`(\Sigma_i X_i, \Sigma_i Y_i)`$ over $`D`$,
 [replying at the queried label][RandomSystem.RepliesAtQueriedInterface]. A
-[**converter**][TypedConverter] $`A \to B`$ is a PDC behavior from $`B`$'s domain (inside) to
-$`A`$'s domain (outside), and a DDC between the two domains [is one][TypedConverter.ofDDC].
-[**Attachment**][TypedConverter.attach] $`\alpha R`$ is the attachment of the PDC behavior.
+[**typed converter**][TypedConverter] from $`A`$ to $`B`$ is a PDC behavior from $`B`$'s domain
+(inside) to $`A`$'s domain (outside), and a DDC between the two domains
+[is one][TypedConverter.ofDDC]. Typed converters compose by the [serial composition][TypedConverter.comp]
+of PDC behaviors, with the [identity][TypedConverter.id] PDC behavior.
+[**Attachment**][TypedConverter.attach] $`\alpha R`$ is the attachment of the PDC behavior:
+[the identity leaves a typed system unchanged][TypedConverter.identity_attach], and
+[a serial composition attaches its inner converter first][TypedConverter.comp_smul].
+
 [**Parallel interfaces**][Interface.tensor] put the label sets side by side, and
-[parallel resources][TypedSystem.parallel] and [parallel converters][TypedConverter.parallel]
-are the independent parallel compositions.
+[parallel typed systems][TypedSystem.parallel] and [parallel typed converters][TypedConverter.parallel]
+are the independent parallel compositions; attachment [is local][TypedConverter.parallel_attach],
+$`(\alpha \otimes \beta)(R \parallel S) = \alpha R \parallel \beta S`$. A label-preserving
+bijection of interfaces gives a [**renaming**][TypedConverter.rename], which
+[relabels the transcripts][TypedConverter.rename_mass] of the typed system it is attached to;
+renamings [compose][TypedConverter.rename_comp], and the renaming by the identity
+[is the identity][TypedConverter.rename_refl]. Regrouping three parallel typed systems
+[keeps the probabilities][TypedSystem.parallel_assoc_mass] of the regrouped transcripts, the
+[dummy system][TypedSystem.dummy] on the [interface without labels][Interface.unit] beside a typed
+system keeps its probabilities, on the [left][TypedSystem.parallel_unit_left_mass] and on the
+[right][TypedSystem.parallel_unit_right_mass], and [exchanging the two components][TypedSystem.parallel_swap_mass]
+of a parallel composition exchanges the labels of its transcripts. The regrouping renamings are
+natural for typed converters: [associativity][TypedConverter.comp_associator] and the
+[left][TypedConverter.comp_leftUnitor] and [right][TypedConverter.comp_rightUnitor] unit
+regroupings commute with parallel typed converters.
 
-### 2.2 Concrete resources and converters
+### 2.2 Filters, contexts, sources and functional systems
 
-The [**filter**][TypedConverter.filter] admitting $`D`$ forwards the queries of admitted histories; it is
-a converter $`(A \restriction D) \to A`$ from the [restricted interface][Interface.restrict].
-[Attached to a resource][TypedConverter.filter_smul], it is the [restriction][RandomSystem.restrict] of the
-resource's random system to the restricted domain, and
-[two filters in series][TypedConverter.filter_comp_filter_smul] act as the filter of both conditions. A
-[**constant**][TypedConverter.constant] converter ignores its inside resource and exposes a fixed one,
-and the fixed [right][TypedConverter.rightContext] and [left][TypedConverter.leftContext] **contexts** run a
-resource beside: [attaching][TypedConverter.attach_rightContext] $`\mathrm{rightContext}\ A\ S`$ to $`R`$
+The [**filter**][TypedConverter.filter] admitting $`D`$ forwards the queries of admitted histories;
+it is a typed converter $`(A \restriction D) \to A`$ from the [restricted interface][Interface.restrict].
+[Attached to a typed system][TypedConverter.filter_smul], it is the
+[restriction][RandomSystem.restrict] of the system's random system to the restricted domain, and
+[two filters in series][TypedConverter.filter_comp_filter_smul] act as the filter of both
+conditions. A [**constant**][TypedConverter.constant] converter ignores its inside system and
+exposes a fixed one, and the fixed [right][TypedConverter.rightContext] and
+[left][TypedConverter.leftContext] **contexts** run a typed system beside:
+[attaching][TypedConverter.attach_rightContext] $`\mathrm{rightContext}\ A\ S`$ to $`R`$
 gives $`R \parallel S`$, and so does [attaching][TypedConverter.attach_leftContext]
 $`\mathrm{leftContext}\ R\ B`$ to $`S`$.
 
 A [**source**][TypedSystem.source] answers with fresh independent samples of a law: a
-memoryless source [3, Definition 3.1] (the sources of [4, Definition 1] may have memory). An [**automaton**][TypedSystem.ofAutomaton] is a transition function with
-a sampled initial state [4, Definition 2], and [parallel automata][TypedSystem.parallel_ofAutomaton]
-are the automaton running both side by side. A source [is memoryless][TypedSystem.source_eq_memoryless],
+memoryless source [3, Definition 3.1] (the sources of [4, Definition 1] may have memory). An
+[**automaton**][TypedSystem.ofAutomaton] is a transition function with a sampled initial state
+[4, Definition 2], and [parallel automata][TypedSystem.parallel_ofAutomaton] are the automaton
+running both side by side. A source [is memoryless][TypedSystem.source_eq_memoryless],
 memoryless systems [side by side are memoryless][TypedSystem.parallel_eq_memoryless], and the
 converter of a program [maps a memoryless system to the memoryless system of its reply
 law][TypedConverter.ofProgram_smul_memoryless], also
 [for port-preserving programs][TypedConverter.ofPreservingProgram_smul_memoryless] and
 [with its own sources beside its inside interface][TypedConverter.ofPreservingProgram_comp_rightContext_smul_memoryless]:
-the composition law of §1.3 on their random systems.
-**Functional resources** are given by
+the composition law of §1.3 on their random systems. **Functional systems** are given by
 [reply functions][TypedSystem.ofFunction], by
 [conditional reply laws][TypedSystem.ofConditional], or by
 [sampling once][TypedSystem.sample] and keeping the sample.
 
-A [**game**][TypedGame] on $`A`$ is a resource on the
-[interface][Interface.withMBO] of $`A`$ with the MBO whose MBO, once set, stays set, a game in the
-sense of §1.5. A converter attaches to it through its [lift][PDCBehavior.liftMBO], and its
-[visible resource][TypedGame.visible] is its visible system. A game conditionally
-equivalent to a resource $`T`$, $`G \mathrel{|\!\equiv} T`$ (the conditional equivalence of §3.6),
-whose MBO stays unset with probability at least $`1 - \varepsilon`$ on fixed queries,
-[has its visible resource within][Interface.dist_visible_le] $`\varepsilon`$ of $`T`$,
-$`\Delta(G^-, T) \le \varepsilon`$ [3, Theorem 4.17].
+### 2.3 Typed games
 
-A discrete game whose visible systems present a resource $`R`$
-[presents a game][TypedGame.ofPDG] on the interface of $`R`$, with
-[visible resource][TypedGame.visible_ofPDG] $`R`$; it is conditionally equivalent to a
-resource [exactly when][Interface.conditionallyEquivalent_ofPDG_iff] the game it presents on
-random systems is. If that game is conditionally equivalent to $`S`$ and the condition holds with
-probability at most $`\varepsilon`$ on the empty and every admitted query sequence,
-[the distance is at most][Interface.game_dist_le] $`\varepsilon`$, $`\Delta(R, S) \le \varepsilon`$.
-A single-label sampled function with a hidden condition
-[presents a game][TypedGame.ofSingleFunction],
-[conditionally equivalent][TypedGame.ofSingleFunction_conditionallyEquivalent] to the resource
-sampling the ideal function under the fixed-query factorization. Parallel composition is commutative: $`R \parallel S`$ and
-$`S \parallel R`$ [agree][Interface.parallel_swap] through the [swap][Interface.swap] of the two
-interfaces.
-
-**Notation** (`open scoped SystemAlgebra`): [`Δ R S`][notation-distance],
-[`R ∥ S`][notation-parallel], [`𝓡 —[π]→ 𝒮`][notation-constructs] for
-$`\mathcal R \xrightarrow{\pi} \mathcal S`$ and [`𝓡 —[π; ε]→ 𝒮`][notation-constructsWithin] for
-$`\mathcal R \xrightarrow{\pi,\ \varepsilon} \mathcal S`$, and
-[`G |≡ T`][notation-conditionallyEquivalent] for $`G \mathrel{|\!\equiv} T`$.
+A [**typed game**][TypedGame] on $`A`$ is a typed system on the [interface][Interface.withMBO] of
+$`A`$ with the MBO whose MBO, once set, stays set: a game in the sense of §1.5. A typed converter
+[attaches][TypedConverter.attachGame] to it through its [MBO-forwarding lift][PDCBehavior.liftMBO],
+and its [visible typed system][TypedGame.visible] is its visible system. A discrete game whose
+visible systems present a typed system $`R`$ [presents a typed game][TypedGame.ofPDG] on the
+interface of $`R`$, with [visible typed system][TypedGame.visible_ofPDG] $`R`$. A single-label
+sampled function with a hidden condition [presents a typed game][TypedGame.ofSingleFunction]
+whose random system is [conditionally equivalent][TypedGame.ofSingleFunction_conditionallyEquivalent]
+to that of the typed system sampling the ideal function, under the fixed-query factorization.
 
 ---
 
@@ -420,9 +425,10 @@ $`\mathcal R \xrightarrow{\pi,\ \varepsilon} \mathcal S`$, and
 
 *Each layer is a class of assumptions: it introduces its notions (attachment, parallel
 composition, distance, distinguishers, games, winners, solvers) only as fields and axioms, and
-knows nothing about systems [3, §§4.4.3, 4.5.1, 4.7.2, 4.10–4.11], [6, §3], [7, §2.2], [8]. Interfaces are an
-instance of each class: every field is a systems-level object of §1–2, and every axiom is a
-theorem about it.*
+knows nothing about systems [3, §§4.4.3, 4.5.1, 4.7.2, 4.10–4.11], [6, §3], [7, §2.2], [8]. Interfaces
+are an instance of each class: the carrier $`\Phi A`$ is the typed systems on $`A`$, every field is
+a systems-level object of §1–2, and every axiom is discharged by a systems-level theorem. Only the
+classes say "resource", for an element of $`\Phi A`$.*
 
 ```
 Category ─▶ MonoidalCategory
@@ -436,31 +442,36 @@ Games ─▶ DistinctionGames
 
 ### 3.1 The category of interfaces
 
-Interfaces and converters form a category under serial composition, and a monoidal category under
-parallel composition.
+Interfaces and typed converters form a category under serial composition, and a monoidal
+category under parallel composition.
 
-Interfaces are an instance of Mathlib's `Category` ([`Interface.category`][Interface.category]):
-its field `Hom` is the [PDC behavior][PDCBehavior], `id` is the [identity][PDCBehavior.id] and
-`comp` is [serial composition][PDCBehavior.comp]; the axioms `id_comp`, `comp_id` and `assoc` are
-discharged by the [left identity][PDCBehavior.id_comp], [right identity][PDCBehavior.comp_id] and
+Interfaces are an instance of Mathlib's `Category` ([`Interface.category`][Interface.category])
+with the interfaces as objects: its field `Hom A B` is [`TypedConverter A B`][TypedConverter],
+`id` is [`TypedConverter.id`][TypedConverter.id] and `comp` is
+[`TypedConverter.comp`][TypedConverter.comp], the identity and the serial composition of PDC
+behaviors; the axioms `id_comp`, `comp_id` and `assoc` are discharged by the
+[left identity][PDCBehavior.id_comp], [right identity][PDCBehavior.comp_id] and
 [associativity][PDCBehavior.comp_assoc] laws of PDC behaviors.
 
-They are an instance of `MonoidalCategory` ([`Interface.monoidal`][Interface.monoidal], on the
-structure [`Interface.monoidalStruct`][Interface.monoidalStruct]): `tensorObj` is the
-[parallel interface][Interface.tensor], `tensorHom` is the
-[parallel composition][PDCBehavior.tensor] of PDC behaviors, the unit is the
-[interface without labels][Interface.unit], and the [associator][Interface.associator] and the
-[left][Interface.leftUnitor] and [right][Interface.rightUnitor] unitors are the regrouping
-renamings. The axioms are discharged by [interchange][Interface.tensor_comp], from the
+Interfaces are an instance of `MonoidalCategory` ([`Interface.monoidal`][Interface.monoidal],
+on the structure [`Interface.monoidalStruct`][Interface.monoidalStruct]): `tensorObj` is the
+[parallel interface][Interface.tensor], `tensorHom` is
+[`TypedConverter.parallel`][TypedConverter.parallel], the parallel composition of PDC behaviors,
+the unit is the [interface without labels][Interface.unit], and the
+[associator][Interface.associator] and the [left][Interface.leftUnitor] and
+[right][Interface.rightUnitor] unitors are the [isomorphisms][Interface.isoOf] of the regrouping
+[renamings][TypedConverter.rename], with inverses by [`TypedConverter.rename_comp`][TypedConverter.rename_comp]
+and [`TypedConverter.rename_refl`][TypedConverter.rename_refl]. The axioms are discharged by
+[interchange][Interface.tensor_comp], from the
 [interchange of PDC behaviors][PDCBehavior.comp_tensor]; the
 [tensor of identities][Interface.id_tensor_id], from the
 [same law for PDC behaviors][PDCBehavior.tensor_id]; the
-[naturality of the associator][Interface.associator_naturality], from
-[regrouping arbitrary converters][TypedConverter.comp_associator]; the naturality of the
+[naturality of the associator][Interface.associator_naturality], from the systems-level
+[naturality of the associativity renaming][TypedConverter.comp_associator]; the naturality of the
 [left][Interface.leftUnitor_naturality] and [right][Interface.rightUnitor_naturality] unitors,
 from the [left][TypedConverter.comp_leftUnitor] and [right][TypedConverter.comp_rightUnitor] unit
-regroupings of arbitrary converters; and the [pentagon][Interface.pentagon] and
-[triangle][Interface.triangle] identities.
+renamings; and the [pentagon][Interface.pentagon] and [triangle][Interface.triangle] identities,
+from [parallel renamings][TypedConverter.parallel_rename] and their composition.
 
 ### 3.2 `ResourceTheory C Φ`: attachment
 
@@ -475,12 +486,15 @@ Attachment is the [contravariant functor][ResourceTheory.functor]
 $`\Phi : C^{\mathrm{op}} \to \mathrm{Type}`$.
 
 Interfaces are an instance of `ResourceTheory`
-([`Interface.resourceTheory`][Interface.resourceTheory]): its field `attach` is the
-[attachment of converters to resources][TypedConverter.attach], the systems-level
+([`Interface.resourceTheory`][Interface.resourceTheory]) with carrier
+$`\Phi A :=`$ [`TypedSystem A`][TypedSystem]: its field `attach` is
+[`TypedConverter.attach`][TypedConverter.attach], the systems-level
 [attachment of PDC behaviors][PDCBehavior.attach]; its axioms `attach_identity` and
-`attach_serial` are discharged by [attaching the identity][Interface.identity_attach] and
-[attaching a serial composition][Interface.comp_smul], from the systems-level
-[identity][PDCBehavior.attach_id] and [serial][PDCBehavior.attach_comp] attachment laws.
+`attach_serial` are discharged by [`TypedConverter.identity_attach`][TypedConverter.identity_attach]
+and [`TypedConverter.comp_smul`][TypedConverter.comp_smul], from the
+[identity][PDCBehavior.attach_id] and [serial][PDCBehavior.attach_comp] attachment laws of PDC
+behaviors. In the notation of the category they read [`Interface.identity_attach`][Interface.identity_attach]
+and [`Interface.comp_smul`][Interface.comp_smul].
 
 ### 3.3 `CryptographicAlgebra C Φ`: parallel composition
 
@@ -496,15 +510,20 @@ Derived: [locality][CA.attach_parallel], [associativity][CA.parallel_assoc], and
 [left][CA.parallel_dummy_left] and [right][CA.parallel_dummy_right] unit laws.
 
 Interfaces are an instance of `CryptographicAlgebra`
-([`Interface.cryptographicAlgebra`][Interface.cryptographicAlgebra]): its field `laxMonoidal` is
-[`Interface.resourcesLaxMonoidal`][Interface.resourcesLaxMonoidal], whose product is the
-[parallel composition of resources][TypedSystem.parallel], the systems-level
+([`Interface.cryptographicAlgebra`][Interface.cryptographicAlgebra]) with carrier
+$`\Phi A :=`$ `TypedSystem A`: its field `laxMonoidal` is
+[`Interface.resourcesLaxMonoidal`][Interface.resourcesLaxMonoidal], whose product is
+[`TypedSystem.parallel`][TypedSystem.parallel], the systems-level
 [independent parallel composition][RandomSystem.parallel], and whose unit is the
-[dummy resource][TypedSystem.dummy]; naturality, associativity and unitality are discharged by
-[locality][TypedConverter.parallel_attach], [associativity][Interface.parallel_assoc] and the
-[left][Interface.parallel_dummy_left] and [right][Interface.parallel_dummy_right] unit laws of
-parallel resources. The abstract [parallel composition][Interface.cc_parallel_eq] and
-[dummy][Interface.cc_dummy_eq] are the concrete ones.
+[dummy typed system][TypedSystem.dummy]. Naturality is discharged by the
+[locality of attachment][TypedConverter.parallel_attach]; associativity and unitality by
+[`Interface.parallel_assoc`][Interface.parallel_assoc] and the
+[left][Interface.parallel_dummy_left] and [right][Interface.parallel_dummy_right] unit laws,
+which are the systems-level [regrouping][TypedSystem.parallel_assoc_mass] and
+[left][TypedSystem.parallel_unit_left_mass] and [right][TypedSystem.parallel_unit_right_mass] unit
+laws of parallel typed systems, read through the [renaming][TypedConverter.rename_mass] of the
+regrouping isomorphisms. The abstract [parallel composition][Interface.cc_parallel_eq] and
+[dummy][Interface.cc_dummy_eq] are the systems-level ones.
 
 ### 3.4 `CompatiblePseudoMetric C Φ`: distance
 
@@ -536,16 +555,17 @@ D \in \mathcal D_A \;\Longrightarrow\; D(\alpha\,\cdot\,) \in \mathcal D_B,\ \ D
 
 Interfaces are an instance of `CompatibleDistinguisherClass`
 ([`Interface.compatibleDistinguisherClass`][Interface.compatibleDistinguisherClass], built by
-`ofClosure`): its field `distinguishers A` is the [set of maps][Interface.distinguishers]
-$`R \mapsto \Pr[d(R) = 1]`$ for the systems-level [distinguisher behaviors][Domain.DistinguisherBehavior]
-$`d`$ compatible with $`A`$'s domain. Its axiom `closed_attach` is discharged by
-[closure under attachment][Interface.distinguishers_attach], from
-[absorbing a converter][DistinguisherBehavior.absorb]; `closed_parallel_left` by
-[closure under a resource on the right][Interface.distinguishers_parallel_left], from
+`ofClosure`) with carrier $`\Phi A :=`$ `TypedSystem A`: its field `distinguishers A` is the
+[set of maps][Interface.distinguishers] $`R \mapsto \Pr[d(R) = 1]`$ for the systems-level
+[distinguisher behaviors][Domain.DistinguisherBehavior] $`d`$ compatible with $`A`$'s domain. Its
+axiom `closed_attach` is discharged by [closure under attachment][Interface.distinguishers_attach],
+from [absorbing a converter][DistinguisherBehavior.absorb]; `closed_parallel_left` by
+[closure under a typed system run on the right][Interface.distinguishers_parallel_left], from
 [absorbing a system run beside][Domain.Distinguisher.exists_absorbRight]; and
 `closed_parallel_right` by
-[closure under a resource on the left][Interface.distinguishers_parallel_right], from the previous
-two through the [swap][Interface.parallel_swap]. Its metric
+[closure under a typed system run on the left][Interface.distinguishers_parallel_right], from the
+previous two through the [swap][Interface.parallel_swap], the [isomorphism][Interface.swap] of the
+renaming that [exchanges the two components][TypedSystem.parallel_swap_mass]. Its metric
 [is the transcript distance][Interface.cc_distance_eq] of §1.4:
 
 ```math
@@ -587,16 +607,17 @@ G \mathrel{|\!\equiv} T,\ (D, W) \in \mathcal S_A \;\Longrightarrow\; \lvert D(G
 ```
 
 Interfaces are an instance of both classes, and the instance is the only place where they meet
-random systems: its games are the MBO random systems of §1.5, as [3, §3.7.1] instantiates games,
-and its winners and solvers are probabilistic distinguishers, through their
+random systems: its games are the typed games of §2.3, MBO random systems as [3, §3.7.1]
+instantiates games, and its winners and solvers are probabilistic distinguishers, through their
 [solver behaviors][Domain.SolverBehavior].
 
 Interfaces are an instance of `Games` ([`Interface.games`][Interface.games]): its field `Game A`
-is the set of [games][TypedGame] on $`A`$, the resources on the interface of $`A`$ with the MBO
-whose MBO, once set, stays set ([`RandomSystem.MonotoneMBO`][RandomSystem.MonotoneMBO]);
-`attachGame` attaches the systems-level [lift][PDCBehavior.liftMBO] of the converter; and
-`winners A` is the set of [winning probabilities][Interface.winners] of the systems-level solver
-behaviors on $`A`$'s domain. Its axiom `attachGame_identity` is discharged by
+is [`TypedGame A`][TypedGame], the typed systems on the interface of $`A`$ with the MBO whose MBO,
+once set, stays set ([`RandomSystem.MonotoneMBO`][RandomSystem.MonotoneMBO]); `attachGame` is
+[`TypedConverter.attachGame`][TypedConverter.attachGame], the attachment of the systems-level
+[lift][PDCBehavior.liftMBO] of the converter; and `winners A` is the set of
+[winning probabilities][Interface.winners] of the systems-level solver behaviors on $`A`$'s
+domain. Its axiom `attachGame_identity` is discharged by
 [`PDCBehavior.liftMBO_id`][PDCBehavior.liftMBO_id], `attachGame_serial` by
 [`PDCBehavior.liftMBO_comp`][PDCBehavior.liftMBO_comp], and `closed_attach` by
 [absorbing a PDC into a solver behavior][Domain.SolverBehavior.absorb]. A bound on the winning
@@ -604,17 +625,33 @@ probability of every distinguisher
 [bounds the winning probability of every winner][Interface.win_le].
 
 Interfaces are an instance of `DistinctionGames`
-([`Interface.distinctionGames`][Interface.distinctionGames]): its field `solvers A` is the
-[set of pairs][Interface.solvers] of the solver behaviors on $`A`$'s domain, `visible` is the
-systems-level [visible system][RandomSystem.visible], and `ConditionallyEquivalent` is the
-systems-level [conditional equivalence][RandomSystem.ConditionallyEquivalent]. Its axiom
+([`Interface.distinctionGames`][Interface.distinctionGames]) with carrier $`\Phi A :=`$
+`TypedSystem A` and games `TypedGame A`: its field `solvers A` is the
+[set of pairs][Interface.solvers] of the solver behaviors on $`A`$'s domain, `visible` is
+[`TypedGame.visible`][TypedGame.visible], the systems-level [visible system][RandomSystem.visible],
+and `ConditionallyEquivalent` is the systems-level
+[conditional equivalence][RandomSystem.ConditionallyEquivalent] of the random systems. Its axiom
 `solvers_winner` holds by the definition of the winners, `solvers_closed_attach` is discharged by
 [`Domain.SolverBehavior.absorb`][Domain.SolverBehavior.absorb], `visible_attachGame` by
 [`RandomSystem.visible_attach_liftMBO`][RandomSystem.visible_attach_liftMBO], and
 `advantage_le_win` by
 [`Domain.Distinguisher.advantage_le_winProbability`][Domain.Distinguisher.advantage_le_winProbability].
-The distance bound on interfaces, [`Interface.dist_visible_le`][Interface.dist_visible_le], is
-stated with this conditional equivalence.
+A typed game conditionally equivalent to a typed system $`T`$, $`G \mathrel{|\!\equiv} T`$, whose MBO
+stays unset with probability at least $`1 - \varepsilon`$ on fixed queries,
+[has its visible typed system within][Interface.dist_visible_le] $`\varepsilon`$ of $`T`$,
+$`\Delta(G^-, T) \le \varepsilon`$ [3, Theorem 4.17]. A presented typed game is conditionally
+equivalent to a typed system [exactly when][Interface.conditionallyEquivalent_ofPDG_iff] the game
+it presents on random systems is; if it is conditionally equivalent to $`S`$ and the condition
+holds with probability at most $`\varepsilon`$ on the empty and every admitted query sequence, the
+presented typed system $`R`$ is [within][Interface.game_dist_le] $`\varepsilon`$ of $`S`$,
+$`\Delta(R, S) \le \varepsilon`$.
+
+**Notation** (`open scoped SystemAlgebra`): [`Δ R S`][notation-distance] for the distance of
+§3.4, [`R ∥ S`][notation-parallel] for `TypedSystem.parallel`,
+[`𝓡 —[π]→ 𝒮`][notation-constructs] for $`\mathcal R \xrightarrow{\pi} \mathcal S`$ and
+[`𝓡 —[π; ε]→ 𝒮`][notation-constructsWithin] for
+$`\mathcal R \xrightarrow{\pi,\ \varepsilon} \mathcal S`$ (§4), and
+[`G |≡ T`][notation-conditionallyEquivalent] for $`G \mathrel{|\!\equiv} T`$.
 
 ---
 
@@ -715,19 +752,19 @@ transports substitutions [through one converter][SubstitutesWithin.attach] and
 [7, Theorem 2.2.10], the [assumption uses][Implication.substitutesWithin] and the
 [statistical steps][Implication.substitutesWithin_of_mixed] along a witness add up.
 
-**On interfaces.** [`DistinguisherAdvantage`][DistinguisherAdvantage] is a structure, and for every class of admitted
-distinguishers [`Interface.distinguisherAdvantage`][Interface.distinguisherAdvantage] is one: its
-distinguishers are the systems-level [distinguisher behaviors][Domain.DistinguisherBehavior], its
-field `admissible` is that class, its field `advantage` is the systems-level
+**On interfaces.** [`DistinguisherAdvantage`][DistinguisherAdvantage] is a structure, and for every
+class of admitted distinguishers [`Interface.distinguisherAdvantage`][Interface.distinguisherAdvantage]
+is one, with carrier $`\Phi A :=`$ `TypedSystem A`: its distinguishers are the systems-level
+[distinguisher behaviors][Domain.DistinguisherBehavior], its field `admissible` is that class, its
+field `advantage` is the systems-level
 [advantage][DistinguisherBehavior.advantage], and its laws `advantage_self`, `advantage_symm` and
 `advantage_triangle` are the systems-level [zero][DistinguisherBehavior.advantage_self],
 [symmetry][DistinguisherBehavior.advantage_symm] and
 [triangle][DistinguisherBehavior.advantage_triangle] laws.
 
 A converter $`\alpha`$ absorbed into a distinguisher is the reduction of a security proof [3]:
-[absorbing it][DistinguisherBehavior.absorb] gives $`D \circ \alpha`$, the systems-level
-[absorption][DistinguisherBehavior.absorb], and absorbing a serial composition
-[absorbs its converters in turn][DistinguisherBehavior.absorb_comp],
+the systems-level [absorption][DistinguisherBehavior.absorb] gives $`D \circ \alpha`$, and absorbing
+a serial composition [absorbs its converters in turn][DistinguisherBehavior.absorb_comp],
 $`D \circ (\alpha \gg \beta) = (D \circ \alpha) \circ \beta`$. Hence an advantage between attachments
 [is the advantage with the converter absorbed][Interface.distinguisherAdvantage_attach],
 $`\mathrm{Adv}_D(\alpha R, \alpha S) = \mathrm{Adv}_{D \circ \alpha}(R, S)`$; every advantage
@@ -757,23 +794,24 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 
 ## 6. Writing systems: the DSL
 
-*`interface`, `system`, `converter` and `filter` declarations compile to the objects of §2 at every
-budget ([DSL][DSL], [GRAMMAR][Grammar]).* A component compiles to a deterministic
+*`interface`, `system`, `converter` and `filter` declarations compile to the typed systems and
+typed converters of §2 at every budget ([DSL][DSL], [GRAMMAR][Grammar]); converters are declared
+as arrows of the category of interfaces (§3.1), so that components assemble with `≫` and `⊗ₘ`.* A component compiles to a deterministic
 [program][Program] and **sources**: every sampling `x ←$ P` [becomes a call][desugarSampling] to
 a [source][TypedSystem.source] of fresh samples of the closed law $`P`$, and initialization
 runs in the first invocation.
 
 An [`interface I`][elabInterface] declaration generates `I q := Interface.queryBudget … q`, the
 [query budget][Interface.queryBudget], and `I.perPort q := Interface.portBudget … q`, the
-[per-port budget][Interface.portBudget]. A [`system S : I`][elabComponent] generates
-`S : Interface.Resource (I q)`, [compiled][elabProgramDecls] to `S.program • S.randomness k`: the
+[per-port budget][Interface.portBudget]. A [`system S : I`][elabComponent] generates the typed
+system `S : TypedSystem (I q)`, [compiled][elabProgramDecls] to `S.program • S.randomness k`: the
 [converter of its program][TypedConverter.ofProgram] attached to its [sources][sourcesAt]. A
 system that samples nothing is the [automaton][TypedSystem.ofAutomaton] of its program, and
 a system without an exact domain [also gets][elabPerPortDecls]
-`S.perPort : Interface.Resource (I.perPort q)`.
+`S.perPort : TypedSystem (I.perPort q)`.
 
 A [`converter C : I`][elabComponent] with `inside J` generates `C : I q ⟶ J (C.bound * q)`,
-compiled to `C.program ≫ Interface.rightContext J (C.randomness k)`: its program with its sources
+compiled to `C.program ≫ TypedConverter.rightContext J (C.randomness k)`: its program with its sources
 [beside][TypedConverter.rightContext] the inside interface, or `C.program` when it samples nothing. With
 a single inside interface it [also has a per-port typing][elabPerPortDecls] along a partial port
 map `C.portMap : I.Port → Option J.Port`, through the
@@ -854,7 +892,7 @@ R \;\simeq_{\mathrm{ptxt}}\; P R \;\simeq_{\mathrm{cca}}\; P C R \;\simeq_{\math
   $`\lvert D(\alpha\, G^-) - D(\alpha T) \rvert \le W(\alpha \cdot G)`$ for $`G \mathrel{|\!\equiv} T`$.
   On interfaces, the collision game of authenticated encryption
   [is the game the collision discrete game presents][collision], with
-  [visible resource the hybrid][collision_visible] and
+  [visible typed system the hybrid][collision_visible] and
   [conditionally equivalent to the ideal][collision_conditionallyEquivalent]; every winner
   [wins it with probability at most][collision_win_le] $`q_e^2 / \lvert \mathcal M \rvert`$, so
   every solver's advantage between the hybrid and the ideal
@@ -877,7 +915,7 @@ R \;\simeq_{\mathrm{ptxt}}\; P R \;\simeq_{\mathrm{cca}}\; P C R \;\simeq_{\math
 
 ## Where the formalization departs from its sources
 
-1. **Everything is finite.** Interfaces carry finite labels and alphabets and a domain of bounded length, so resources are finite random systems with [finite presentations][RandomSystem.exists_presentation]. The sources allow infinite alphabets and unbounded interactions.
+1. **Everything is finite.** Interfaces carry finite labels and alphabets and a domain of bounded length, so typed systems are finite random systems with [finite presentations][RandomSystem.exists_presentation]. The sources allow infinite alphabets and unbounded interactions.
 2. **Randomness enters DSL systems only through sources.** A sampled law must be closed: it may depend on declaration parameters, not on runtime values. A probabilistic encryption is therefore a [sampled table of ciphertexts][SymmetricEncryption.encryptions] ([Encryption][SymEnc]).
 3. **[9, Theorem 2.3.10(4)] needs a second [`ind-cca`][AE.INDCCA] step.** The printed chain `int-ptxt`, `ind-cca`, `int-ptxt`, followed by a collision bound, fails when a later message equals an earlier replacement message. The [corrected chain][correctedChain] and an [all-pairs collision bound][collision_mass_le] are in [Security][AESec] and [Collision][AECol].
 4. **[2, Theorem 2.29] holds with a [maximum over pairs][exists_pair_one_sub_supAgreement_le], not a minimum.** The minimum form [is refuted][not_supAgreement_disagreement_le_every_pair].
@@ -1112,6 +1150,10 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [Interface.category]: src/ConstructiveCryptography/InterfaceCategory.lean#L30
 [TypedConverter.ofDDC]: src/RandomSystems/Typed/Interface.lean#L143
 [TypedConverter.attach]: src/RandomSystems/Typed/Interface.lean#L157
+[TypedConverter.comp]: src/RandomSystems/Typed/Interface.lean#L134
+[TypedConverter.id]: src/RandomSystems/Typed/Interface.lean#L139
+[TypedConverter.identity_attach]: src/RandomSystems/Typed/Interface.lean#L171
+[TypedConverter.comp_smul]: src/RandomSystems/Typed/Interface.lean#L177
 [Interface.identity_attach]: src/ConstructiveCryptography/InterfaceCategory.lean#L45
 [Interface.comp_smul]: src/ConstructiveCryptography/InterfaceCategory.lean#L50
 [Interface.tensor]: src/RandomSystems/Typed/Parallel.lean#L85
@@ -1139,6 +1181,7 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [TypedSystem.sample]: src/RandomSystems/Typed/Functional.lean#L176
 [Interface.withMBO]: src/RandomSystems/Typed/Game.lean#L24
 [TypedGame]: src/RandomSystems/Typed/Game.lean#L35
+[TypedConverter.attachGame]: src/RandomSystems/Typed/Game.lean#L38
 [TypedGame.visible]: src/RandomSystems/Typed/Game.lean#L53
 [TypedGame.ofPDG]: src/RandomSystems/Typed/PresentedGame.lean#L41
 [TypedGame.visible_ofPDG]: src/RandomSystems/Typed/PresentedGame.lean#L51
@@ -1159,6 +1202,7 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 
 [Interface.monoidalStruct]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L71
 [Interface.monoidal]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L162
+[Interface.isoOf]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L33
 [Interface.id_tensor_id]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L84
 [Interface.tensor_comp]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L87
 [Interface.associator_naturality]: src/ConstructiveCryptography/InterfaceMonoidal.lean#L92
@@ -1173,6 +1217,11 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [TypedConverter.comp_associator]: src/RandomSystems/Typed/ConverterCoherence.lean#L158
 [TypedConverter.comp_leftUnitor]: src/RandomSystems/Typed/ConverterCoherence.lean#L195
 [TypedConverter.comp_rightUnitor]: src/RandomSystems/Typed/ConverterCoherence.lean#L224
+[TypedConverter.parallel_rename]: src/RandomSystems/Typed/TensorRename.lean#L128
+[TypedConverter.rename]: src/RandomSystems/Typed/Relabel.lean#L48
+[TypedConverter.rename_comp]: src/RandomSystems/Typed/Relabel.lean#L80
+[TypedConverter.rename_refl]: src/RandomSystems/Typed/Relabel.lean#L67
+[TypedConverter.rename_mass]: src/RandomSystems/Typed/SystemParallel.lean#L55
 [ResourceTheory]: src/ConstructiveCryptography/CryptographicAlgebra/Basic.lean#L50
 [ResourceTheory.functor]: src/ConstructiveCryptography/CryptographicAlgebra/Basic.lean#L69
 [CryptographicAlgebra]: src/ConstructiveCryptography/CryptographicAlgebra/Basic.lean#L97
@@ -1194,6 +1243,10 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [Interface.cc_dummy_eq]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L192
 [Interface.cc_distance_eq]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L196
 [TypedSystem.dummy]: src/RandomSystems/Typed/SystemCoherence.lean#L97
+[TypedSystem.parallel_assoc_mass]: src/RandomSystems/Typed/SystemCoherence.lean#L85
+[TypedSystem.parallel_unit_left_mass]: src/RandomSystems/Typed/SystemCoherence.lean#L103
+[TypedSystem.parallel_unit_right_mass]: src/RandomSystems/Typed/SystemCoherence.lean#L128
+[TypedSystem.parallel_swap_mass]: src/RandomSystems/Typed/SystemCoherence.lean#L153
 [Interface.parallel_assoc]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L77
 [Interface.parallel_dummy_left]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L89
 [Interface.parallel_dummy_right]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L98

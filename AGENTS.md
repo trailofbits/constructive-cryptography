@@ -12,26 +12,31 @@ systems with declared domains. Its libraries, under `src/`, form strict layers:
 
 ```text
 Probability
-  -> RandomSystems                         (systems, converters, distances, games)
-    -> ConstructiveCryptography            (interfaces, arrows, resources, action,
-                                            distance; the classes of cryptographic
-                                            algebras and their instance on interfaces;
+  -> RandomSystems                         (systems, converters, distances, games;
+                                            typed systems and typed converters on
+                                            interfaces; the programs of the DSL)
+    -> ConstructiveCryptography            (the classes of cryptographic algebras and
+                                            their instances on interfaces;
                                             specifications, constructions, substitution;
-                                            the DSL and the proof commands)
+                                            the notation, the proof commands and the
+                                            DSL front end)
       -> Commons                           (ideal systems, security definitions,
                                             schemes and their known-answer tests)
         -> Examples
 Tests  (audits of every layer)
 ```
 
-No module imports a higher layer. `RandomSystems` knows systems and
-converters, not interfaces or resources. `ConstructiveCryptography` proves the
-laws of resources and converters on the concrete objects, with the transcript
-distance. The abstract theory (`ConstructiveCryptography.CryptographicAlgebra`,
+No module imports a higher layer. `RandomSystems` holds the concrete objects and their laws:
+random systems, converters, distances and games, and, in `RandomSystems.Typed`, interfaces with
+their typed systems, typed converters and typed games, with the transcript distance. It knows
+nothing of the classes. The abstract theory (`ConstructiveCryptography.CryptographicAlgebra`,
 `ConstructiveCryptography.Specification` and `ConstructiveCryptography.Construction`)
-uses only Mathlib: its classes are assumptions, and `ConstructiveCryptography.InterfaceAlgebra`
-instantiates them on interfaces with the concrete objects. The notation and the proof commands
-are built on laws already proved below them, and nothing below them imports them. The downstream
+uses only Mathlib: its classes are assumptions, and "resource" names only their carrier `Φ A`.
+The instance files (`ConstructiveCryptography.InterfaceCategory`, `InterfaceMonoidal`,
+`InterfaceAlgebra`, `InterfaceGame`) instantiate them on interfaces: each field is a systems-level
+object and each axiom is discharged by a systems-level theorem; no concrete object is defined
+there. The notation, the proof commands and the DSL front end are built on laws already proved
+below them, and nothing below them imports them. The downstream
 ChaCha20-Poly1305 development (`chachapoly-cc`) imports modules of this repository; changes to
 public declarations it uses must keep it building.
 
@@ -57,8 +62,8 @@ are secondary evidence.
 
 ## Modeling rules
 
-- A resource is its cumulative behavior on its interface's domain. Equality of
-  resources is equality of all cumulative probabilities; observers
+- A typed system is its cumulative behavior on its interface's domain. Equality of
+  typed systems is equality of all cumulative probabilities; observers
   characterize this relation, they do not define it. Do not introduce a
   second quotient.
 - On normalized PDSs, equivalence is equivalently equality of the partial
