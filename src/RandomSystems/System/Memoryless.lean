@@ -27,6 +27,7 @@ memoryless system, whatever the number of the program's inside queries:
 * `RandomSystem.memoryless D ν`: the memoryless system with the reply law `ν` on the domain `D`
 * `RandomSystem.portLaw ν`: the reply law `ν i x` at the queried port `i`
 * `RandomSystem.parallelLaw ν₁ ν₂`: the reply laws of two systems side by side
+* `RandomSystem.twoLaw ν₁ ν₂`: the same, on the alphabets of their parallel composition
 * `ProbStep.Memoryless step ν`: a probabilistic step replying with the law `ν` from every state
 * `ProbStep.fresh ν`: fresh samples of `ν`, a step with no state
 * `Program.replyLaw P ν`: the reply law of an invocation against inside replies of the laws `ν`
@@ -35,6 +36,7 @@ memoryless system, whatever the number of the program's inside queries:
 
 * `RandomSystem.memoryless_snoc`, `RandomSystem.eq_memoryless_of_snoc`: the chain rule, and a
   random system obeying it is the memoryless system
+* `RandomSystem.parallel_memoryless`: memoryless systems side by side are memoryless
 * `RandomSystem.ofProbAutomaton_eq_memoryless`: an automaton with a memoryless step is the
   memoryless system of its reply law
 * `Program.memoryless_probCombine`: a program run against a memoryless step is memoryless
@@ -48,7 +50,7 @@ memoryless system, whatever the number of the program's inside queries:
 
 namespace SystemAlgebra
 
-open Probability Probability.Distribution Classical
+open Probability Probability.Distribution
 
 /-! ### Memoryless systems -/
 
@@ -63,6 +65,7 @@ noncomputable def memoryless (D : Domain A B) (ν : A → ProbDist B) : RandomSy
   -- the history `h` and the query `x` ignores `h`: it is `ν x`.
   ofConditional fun _ x _ => ν x
 
+open scoped Classical in
 /-- **The chain rule**: one more exchange multiplies the probability of a transcript by the
 reply law, when the domain admits the query. -/
 lemma memoryless_snoc (D : Domain A B) (ν : A → ProbDist B) (h : List (A × B)) (x : A)
@@ -123,6 +126,63 @@ def parallelLaw (ν₁ : ∀ i, X₁ i → ProbDist (Y₁ i)) (ν₂ : ∀ j, X�
       ProbDist (Sum.rec (motive := fun _ => Type) Y₁ Y₂ l)
   | .inl i, x => ν₁ i x
   | .inr j, x => ν₂ j x
+
+section Parallel
+
+variable {A B C E : Type} [Fintype A] [Fintype B] [Fintype C] [Fintype E]
+
+/-- **The reply laws of two systems side by side**, on the alphabets of their parallel
+composition: a query to the left system has the law `ν₁`, one to the right system the law `ν₂`. -/
+def twoLaw (ν₁ : A → ProbDist B) (ν₂ : C → ProbDist E) :
+    ∀ o, optF A (fun _ : Unit => C) o → ProbDist (optF B (fun _ : Unit => E) o)
+  | none, x => ν₁ x
+  | some (), x => ν₂ x
+
+/-- **Memoryless systems side by side are memoryless**: in the parallel composition of the
+memoryless systems of `ν₁` and `ν₂`, a query to the left system is answered by a fresh sample of
+`ν₁`, and a query to the right system by a fresh sample of `ν₂`. -/
+lemma parallel_memoryless (D : Domain A B) (D' : Domain C E) (ν₁ : A → ProbDist B)
+    (ν₂ : C → ProbDist E) :
+    parallel (memoryless D ν₁) (memoryless D' ν₂) =
+      memoryless (D.parallel D') (portLaw (twoLaw ν₁ ν₂)) := by
+  -- The chain rule of the side-by-side laws, at each admitted exchange `(x, y)`.
+  refine eq_memoryless_of_snoc fun h x y hd => ?_
+  -- The parallel domain admits a query only after a transcript whose every exchange is with one
+  -- of the two systems; such a transcript is a left and a right transcript side by side.
+  have hcons : parallelConsistent h := hd.1
+  rw [parallel_mass, parallel_mass, if_pos hcons]
+  -- Case on the systems that receive the query and that give the reply.
+  obtain ⟨(_ | ⟨⟩), x⟩ := x <;> obtain ⟨(_ | ⟨⟩), y⟩ := y
+  · -- A query and a reply of the left system: the left transcript grows by `(x, y)`, the right
+    -- one stays, and the left system multiplies its probability by `ν₁ x y`.
+    have hleft : parallelLeft (h ++ [(⟨none, x⟩, ⟨none, y⟩)]) = parallelLeft h ++ [(x, y)] := by
+      simp [parallelLeft]
+    have hright : parallelRight (h ++ [(⟨none, x⟩, ⟨none, y⟩)]) = parallelRight h := by
+      simp [parallelRight]
+    rw [if_pos (parallelConsistent_snoc.mpr ⟨hcons, rfl⟩), hleft, hright, memoryless_snoc,
+      if_pos hd.2.2, portLaw_apply_mk]
+    simp only [twoLaw]
+    ring
+  · -- A left query with a right reply: an exchange with no single system, impossible on both
+    -- sides.
+    rw [if_neg fun h' => absurd (parallelConsistent_snoc.mp h').2 (by simp),
+      portLaw_apply_of_ne _ (by simp), mul_zero]
+  · -- A right query with a left reply: impossible on both sides.
+    rw [if_neg fun h' => absurd (parallelConsistent_snoc.mp h').2 (by simp),
+      portLaw_apply_of_ne _ (by simp), mul_zero]
+  · -- A query and a reply of the right system: the right transcript grows by `(x, y)`, and the
+    -- right system multiplies its probability by `ν₂ x y`.
+    have hleft : parallelLeft (h ++ [(⟨some (), x⟩, ⟨some (), y⟩)]) = parallelLeft h := by
+      simp [parallelLeft]
+    have hright :
+        parallelRight (h ++ [(⟨some (), x⟩, ⟨some (), y⟩)]) = parallelRight h ++ [(x, y)] := by
+      simp [parallelRight]
+    rw [if_pos (parallelConsistent_snoc.mpr ⟨hcons, rfl⟩), hleft, hright, memoryless_snoc,
+      if_pos hd.2.2, portLaw_apply_mk]
+    simp only [twoLaw]
+    ring
+
+end Parallel
 
 end RandomSystem
 

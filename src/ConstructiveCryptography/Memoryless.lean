@@ -38,13 +38,14 @@ Statements about typed systems are equalities of their random systems (`.1`).
 
 namespace SystemAlgebra.Interface
 
-open Probability Probability.Distribution Classical CategoryTheory RandomSystem
+open Probability Probability.Distribution CategoryTheory RandomSystem
 
 /-- **A source of independent samples is memoryless** [1, Definition 3.1]: the source of `q`
 samples of `law` replies to each trigger with a fresh sample of `law`. -/
 theorem source_eq_memoryless {Z : Type} [Fintype Z] (law : ProbDist Z) (q : ℕ) :
     (Resource.source law q).1 =
       memoryless (Interface.source Z q).inputDomain (portLaw fun _ _ => law) := by
+  classical
   -- The source reads its `k`-th reply from the `k`-th entry of a table `t` of independent
   -- samples. A transcript `h` has the probability of the tables from which it is read.
   let event : List ((Σ _ : Unit, Unit) × (Σ _ : Unit, Z)) → (Fin q → Z) → Prop := fun h t =>
@@ -96,97 +97,64 @@ theorem source_eq_memoryless {Z : Type} [Fintype Z] (law : ProbDist Z) (q : ℕ)
   rw [portLaw_apply_mk]
 
 /-- **Memoryless systems side by side are memoryless**: a query at a left port has the reply
-law of the left system, one at a right port the reply law of the right system. -/
+law of the left system, one at a right port the reply law of the right system. The typed parallel
+composition is the systems-level one, `RandomSystem.parallel_memoryless`, with the ports of the
+two interfaces relabelled as the ports of their tensor. -/
 lemma parallel_eq_memoryless {A B : Interface} {R : Resource A} {T : Resource B}
     {ν₁ : ∀ i, A.X i → ProbDist (A.Y i)} {ν₂ : ∀ j, B.X j → ProbDist (B.Y j)}
     (hR : R.1 = memoryless A.inputDomain (portLaw ν₁))
     (hT : T.1 = memoryless B.inputDomain (portLaw ν₂)) :
     (parallel R T).1 = memoryless (tensor A B).inputDomain (portLaw (parallelLaw ν₁ ν₂)) := by
-  -- The chain rule of the side-by-side law, at each admitted exchange `(x, y)`.
+  -- At the systems level, the two memoryless systems side by side are the memoryless system of
+  -- their side-by-side laws.
+  have hsys := RandomSystem.parallel_memoryless A.inputDomain B.inputDomain (portLaw ν₁)
+    (portLaw ν₂)
+  rw [← hR, ← hT] at hsys
+  -- The chain rule of the laws of the ports of the tensor, at each admitted exchange `(x, y)`.
   refine eq_memoryless_of_snoc fun h x y hd => ?_
-  -- The parallel system is the product of its two components on the projected transcripts.
-  let e := (sumAlphabet (Sum.rec A.X B.X)).symm.prodCongr (sumAlphabet (Sum.rec A.Y B.Y)).symm
+  -- The typed system is the systems-level one on the transcript with relabelled ports.
+  let eX := sumAlphabet (Sum.rec A.X B.X)
+  let e := eX.symm.prodCongr (sumAlphabet (Sum.rec A.Y B.Y)).symm
   change RandomSystem.parallel R.1 T.1 ((h ++ [(x, y)]).map e) =
     RandomSystem.parallel R.1 T.1 (h.map e) * (portLaw (parallelLaw ν₁ ν₂) x).1 y
   rw [List.map_append, List.map_singleton]
   by_cases hz : RandomSystem.parallel R.1 T.1 (h.map e) = 0
-  · -- an impossible transcript stays impossible
+  · -- An impossible transcript stays impossible.
     rw [hz, zero_mul]
     exact (RandomSystem.parallel R.1 T.1).mass_eq_zero_of_prefix (List.prefix_append _ _) hz
-  -- A possible transcript: the components' own domains admit the query (the parallel domain
-  -- of the two random systems agrees with the domain of the parallel interface there).
-  have hadm := (parallel_admits_iff A B R T (h.map e) hz
-    ((sumAlphabet (Sum.rec A.X B.X)).symm x)).mpr (by
-      have hround : ((h.map e).map Prod.fst).map (sumAlphabet (Sum.rec A.X B.X)) =
-          h.map Prod.fst := by
-        simp only [List.map_map]
-        exact List.map_congr_left fun z _ => (sumAlphabet (Sum.rec A.X B.X)).apply_symm_apply _
-      rw [hround, (sumAlphabet (Sum.rec A.X B.X)).apply_symm_apply]
-      exact hd)
-  have hcons : RandomSystem.parallelConsistent (h.map e) := hadm.1
-  -- So the transcript so far is a left and a right transcript, side by side.
-  have hsplit : RandomSystem.parallel R.1 T.1 (h.map e) =
-      R.1 (RandomSystem.parallelLeft (h.map e)) * T.1 (RandomSystem.parallelRight (h.map e)) := by
-    rw [RandomSystem.parallel_mass, if_pos hcons]
-  rw [hsplit, RandomSystem.parallel_mass]
-  -- Case on the ports of the query and of the reply.
+  -- A possible transcript: the systems-level parallel domain admits the relabelled query, as the
+  -- domain of the tensor admits `x`.
+  have hadm := (parallel_admits_iff A B R T (h.map e) hz (eX.symm x)).mpr (by
+    have hround : ((h.map e).map Prod.fst).map eX = h.map Prod.fst := by
+      simp only [List.map_map]
+      exact List.map_congr_left fun z _ => eX.apply_symm_apply _
+    rw [hround, eX.apply_symm_apply]
+    exact hd)
+  -- The chain rule at the systems level; it remains to compare the two laws of the reply.
+  rw [hsys, show e (x, y) = (eX.symm x, (sumAlphabet (Sum.rec A.Y B.Y)).symm y) from rfl,
+    memoryless_snoc, if_pos hadm]
+  congr 1
+  -- The relabelled query goes to the system of its port, and its law there is the law of that
+  -- port; a reply at another port has probability zero on both sides.
   obtain ⟨(i | j), x⟩ := x <;> obtain ⟨(k | l), y⟩ := y
-  · -- A left query with a left reply: the left component steps, with the law `ν₁`.
-    have hA : A.inputDomain (RandomSystem.parallelLeft (h.map e)) ⟨i, x⟩ := hadm.2.2
-    -- the exchange is the left exchange `(⟨i, x⟩, ⟨k, y⟩)`
-    have hz : e (⟨.inl i, x⟩, ⟨.inl k, y⟩) = (⟨none, ⟨i, x⟩⟩, ⟨none, ⟨k, y⟩⟩) := rfl
-    have hleft : RandomSystem.parallelLeft (h.map e ++ [(⟨none, ⟨i, x⟩⟩, ⟨none, ⟨k, y⟩⟩)]) =
-        RandomSystem.parallelLeft (h.map e) ++ [(⟨i, x⟩, ⟨k, y⟩)] := by
-      simp [RandomSystem.parallelLeft]
-    have hright : RandomSystem.parallelRight (h.map e ++ [(⟨none, ⟨i, x⟩⟩, ⟨none, ⟨k, y⟩⟩)]) =
-        RandomSystem.parallelRight (h.map e) := by
-      simp [RandomSystem.parallelRight]
-    rw [hz, if_pos (RandomSystem.parallelConsistent_snoc.mpr ⟨hcons, rfl⟩), hleft, hright]
-    -- the left component is memoryless: its chain rule at an admitted query
-    have hstep : R.1 (RandomSystem.parallelLeft (h.map e) ++ [(⟨i, x⟩, ⟨k, y⟩)]) =
-        R.1 (RandomSystem.parallelLeft (h.map e)) * (portLaw ν₁ ⟨i, x⟩).1 ⟨k, y⟩ := by
-      rw [hR, memoryless_snoc, if_pos hA]
-    rw [hstep]
-    -- the side-by-side law at a left query is the left law
+  · change (portLaw (twoLaw (portLaw ν₁) (portLaw ν₂)) ⟨none, ⟨i, x⟩⟩).1 ⟨none, ⟨k, y⟩⟩ = _
+    rw [portLaw_apply_mk]
     by_cases hk : k = i
     · subst hk
-      rw [portLaw_apply_mk, portLaw_apply_mk]
-      simp only [parallelLaw]
-      ring
-    · rw [portLaw_apply_of_ne _ (by simpa using hk), portLaw_apply_of_ne _ (by simpa using hk)]
-      ring
-  · -- A left query with a right reply: impossible on both sides.
-    have hz : e (⟨.inl i, x⟩, ⟨.inr l, y⟩) = (⟨none, ⟨i, x⟩⟩, ⟨some (), ⟨l, y⟩⟩) := rfl
-    rw [hz, if_neg fun h => absurd (RandomSystem.parallelConsistent_snoc.mp h).2 (by simp),
-      portLaw_apply_of_ne _ (by simp), mul_zero]
-  · -- A right query with a left reply: impossible on both sides.
-    have hz : e (⟨.inr j, x⟩, ⟨.inl k, y⟩) = (⟨some (), ⟨j, x⟩⟩, ⟨none, ⟨k, y⟩⟩) := rfl
-    rw [hz, if_neg fun h => absurd (RandomSystem.parallelConsistent_snoc.mp h).2 (by simp),
-      portLaw_apply_of_ne _ (by simp), mul_zero]
-  · -- A right query with a right reply: the right component steps, with the law `ν₂`.
-    have hB : B.inputDomain (RandomSystem.parallelRight (h.map e)) ⟨j, x⟩ := hadm.2.2
-    have hz : e (⟨.inr j, x⟩, ⟨.inr l, y⟩) = (⟨some (), ⟨j, x⟩⟩, ⟨some (), ⟨l, y⟩⟩) := rfl
-    have hleft : RandomSystem.parallelLeft (h.map e ++ [(⟨some (), ⟨j, x⟩⟩, ⟨some (), ⟨l, y⟩⟩)]) =
-        RandomSystem.parallelLeft (h.map e) := by
-      simp [RandomSystem.parallelLeft]
-    have hright :
-        RandomSystem.parallelRight (h.map e ++ [(⟨some (), ⟨j, x⟩⟩, ⟨some (), ⟨l, y⟩⟩)]) =
-          RandomSystem.parallelRight (h.map e) ++ [(⟨j, x⟩, ⟨l, y⟩)] := by
-      simp [RandomSystem.parallelRight]
-    rw [hz, if_pos (RandomSystem.parallelConsistent_snoc.mpr ⟨hcons, rfl⟩), hleft, hright]
-    -- the right component is memoryless: its chain rule at an admitted query
-    have hstep : T.1 (RandomSystem.parallelRight (h.map e) ++ [(⟨j, x⟩, ⟨l, y⟩)]) =
-        T.1 (RandomSystem.parallelRight (h.map e)) * (portLaw ν₂ ⟨j, x⟩).1 ⟨l, y⟩ := by
-      rw [hT, memoryless_snoc, if_pos hB]
-    rw [hstep]
-    -- the side-by-side law at a right query is the right law
+      simp only [twoLaw, parallelLaw, portLaw_apply_mk]
+    · simp only [twoLaw]
+      rw [portLaw_apply_of_ne _ (by simpa using hk), portLaw_apply_of_ne _ (by simpa using hk)]
+  · change (portLaw (twoLaw (portLaw ν₁) (portLaw ν₂)) ⟨none, ⟨i, x⟩⟩).1 ⟨some (), ⟨l, y⟩⟩ = _
+    rw [portLaw_apply_of_ne _ (by simp), portLaw_apply_of_ne _ (by simp)]
+  · change (portLaw (twoLaw (portLaw ν₁) (portLaw ν₂)) ⟨some (), ⟨j, x⟩⟩).1 ⟨none, ⟨k, y⟩⟩ = _
+    rw [portLaw_apply_of_ne _ (by simp), portLaw_apply_of_ne _ (by simp)]
+  · change (portLaw (twoLaw (portLaw ν₁) (portLaw ν₂)) ⟨some (), ⟨j, x⟩⟩).1 ⟨some (), ⟨l, y⟩⟩ = _
+    rw [portLaw_apply_mk]
     by_cases hl : l = j
     · subst hl
-      rw [portLaw_apply_mk, portLaw_apply_mk]
-      simp only [parallelLaw]
-      ring
-    · rw [portLaw_apply_of_ne _ (by simpa using hl), portLaw_apply_of_ne _ (by simpa using hl)]
-      ring
+      simp only [twoLaw, parallelLaw, portLaw_apply_mk]
+    · simp only [twoLaw]
+      rw [portLaw_apply_of_ne _ (by simpa using hl), portLaw_apply_of_ne _ (by simpa using hl)]
 
 namespace Converter
 

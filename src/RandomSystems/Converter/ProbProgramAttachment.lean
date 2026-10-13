@@ -55,7 +55,7 @@ deterministic automaton is the combined automaton, and the program respects simu
 
 namespace SystemAlgebra
 
-open Probability Probability.Distribution Classical
+open Probability Probability.Distribution
 
 variable {S O J R : Type} {U V : O → Type} {X Y : J → Type}
 
@@ -509,6 +509,7 @@ lemma simulatesAt_forget (rd : R × List (Draw R J X Y)) (x : Σ j, X j) :
     bindK_fTransform, Function.comp_def, fTransform_single]
   exact (bindK_single_one _).symm
 
+open scoped Classical in
 /-- The reply at the queried port from a tagged draw, or the default `d`. -/
 noncomputable def untag (x : Σ j, X j) (o : R × Σ j, Y j) (d : R × Y x.1) : R × Y x.1 :=
   if h : o.2.1 = x.1 then (o.1, h ▸ o.2.2) else d
@@ -529,6 +530,7 @@ lemma bind_forget (init : Distribution.ProbDist R) :
 
 variable [Fintype (Σ j, X j)] (init : Distribution R)
 
+open scoped Classical in
 /-- **The states reachable** from the initial law in at most `k` steps. -/
 noncomputable def reachable : ℕ → Finset R
   | 0 => init.support
@@ -538,11 +540,13 @@ noncomputable def reachable : ℕ → Finset R
 /-- More steps reach more states. -/
 lemma reachable_mono {k k' : ℕ} (h : k ≤ k') :
     step.reachable init k ⊆ step.reachable init k' := by
+  classical
   -- Each step adds states to the reachable ones.
   induction h with
   | refl => exact subset_refl _
   | step _ ih => exact ih.trans Finset.subset_union_left
 
+open scoped Classical in
 /-- A possible next state from a state reachable in `k` steps is reachable in `k + 1`. -/
 lemma mem_reachable_succ {k : ℕ} {r : R} (hr : r ∈ step.reachable init k) {x : Σ j, X j}
     {p : R × Σ j, Y j} (hp : p ∈ (step.outcome r x).support) :
@@ -567,6 +571,7 @@ variable (L : ℕ)
 /-- A cell of the table of draws: a step number below `L`, a reachable state and a query. -/
 abbrev Cell := Fin L × {r // r ∈ step.reachable init L} × (Σ j, X j)
 
+open scoped Classical in
 /-- **The deterministic step reading pre-sampled draws**: in the state `r` with `k` steps done
 and the table `t`, the query `x` is answered by the draw in the cell `(k, r, x)`.
 
@@ -584,6 +589,7 @@ noncomputable def drawStep :
       ((o.1, rkt.2.1 + 1, rkt.2.2), o.2)
     else ((rkt.1, rkt.2.1 + 1, rkt.2.2), d.2)
 
+open scoped Classical in
 /-- The law of the draw in a cell, given the recorded draws: the recorded one if the cell was
 read, a fresh step otherwise. -/
 noncomputable def drawLaw (rec : List (Draw R J X Y)) (c : step.Cell init L) :
@@ -602,6 +608,7 @@ lemma drawLaw_isProbDist (rec : List (Draw R J X Y)) (c : step.Cell init L) :
   · exact fTransform_isProbDist _ (step _ _ _).2
   · exact fTransform_isProbDist _ (step _ _ _).2
 
+open scoped Classical in
 /-- **The law of the table given the recorded draws**: the recorded cells fixed, the others
 independent fresh steps; with the state and the number of steps done. -/
 noncomputable def drawKernel (rd : R × List (Draw R J X Y)) :
@@ -609,6 +616,7 @@ noncomputable def drawKernel (rd : R × List (Draw R J X Y)) :
   ProbDist.map (fun t => (rd.1, rd.2.length, t))
     ⟨pi (step.drawLaw init L rd.2), pi_isProbDist fun c => step.drawLaw_isProbDist init L rd.2 c⟩
 
+open scoped Classical in
 /-- Recording a draw in a cell fixes that cell. -/
 lemma update_drawLaw (rec : List (Draw R J X Y)) (r : R) (x : Σ j, X j) (o : R × Σ j, Y j)
     (hk : rec.length < L) (hr : r ∈ step.reachable init L) :
@@ -658,6 +666,7 @@ lemma simulatesAt_drawStep (rd : R × List (Draw R J X Y)) (hk : rd.2.length < L
     (hr : rd.1 ∈ step.reachable init L) (x : Σ j, X j) :
     SimulatesAt step.recording (ofDeterministic (step.drawStep init L)) (step.drawKernel init L)
       rd x := by
+  classical
   obtain ⟨r, rec⟩ := rd
   obtain ⟨j, x⟩ := x
   simp only at hk hr

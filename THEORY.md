@@ -83,6 +83,8 @@ p\big(h \cdot (x, y)\big) = p(h)\, \nu_x(y) \qquad \text{for every query } x \te
 and [a random system obeying it is the memoryless system][RandomSystem.eq_memoryless_of_snoc].
 A probabilistic automaton whose step [replies from every state with the same
 law][ProbStep.Memoryless] $`\nu`$ [is the memoryless system of this law][RandomSystem.ofProbAutomaton_eq_memoryless].
+Two memoryless systems [side by side are memoryless][RandomSystem.parallel_memoryless]: a query
+to either system is answered with the reply law of that system.
 
 ### 1.3 Converters
 
@@ -1010,24 +1012,25 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [Program.inline]: src/RandomSystems/Converter/ProgramAttachment.lean#L258
 [Program.combine]: src/RandomSystems/Converter/ProgramAttachment.lean#L429
 [Program.trim_apply_ofProgramOn_automaton]: src/RandomSystems/Converter/ProgramAttachment.lean#L609
-[RandomSystem.ofProbAutomaton]: src/RandomSystems/System/ProbAutomaton.lean#L182
+[RandomSystem.ofProbAutomaton]: src/RandomSystems/System/ProbAutomaton.lean#L185
 [ProbStep]: src/RandomSystems/System/ProbAutomaton.lean#L57
-[ProbStep.belief]: src/RandomSystems/System/ProbAutomaton.lean#L152
-[ProbStep.SimulatesAt]: src/RandomSystems/System/ProbAutomaton.lean#L241
-[RandomSystem.ofProbAutomaton_eq_of_simulation]: src/RandomSystems/System/ProbAutomaton.lean#L332
-[RandomSystem.ofProbAutomaton_ofDeterministic_apply]: src/RandomSystems/System/ProbAutomaton.lean#L432
-[RandomSystem.ofProbAutomaton_eq_drawStep]: src/RandomSystems/Converter/ProbProgramAttachment.lean#L734
-[RandomSystem.memoryless]: src/RandomSystems/System/Memoryless.lean#L61
-[RandomSystem.eq_memoryless_of_snoc]: src/RandomSystems/System/Memoryless.lean#L79
-[ProbStep.Memoryless]: src/RandomSystems/System/Memoryless.lean#L137
-[RandomSystem.ofProbAutomaton_eq_memoryless]: src/RandomSystems/System/Memoryless.lean#L172
+[ProbStep.belief]: src/RandomSystems/System/ProbAutomaton.lean#L153
+[ProbStep.SimulatesAt]: src/RandomSystems/System/ProbAutomaton.lean#L244
+[RandomSystem.ofProbAutomaton_eq_of_simulation]: src/RandomSystems/System/ProbAutomaton.lean#L336
+[RandomSystem.ofProbAutomaton_ofDeterministic_apply]: src/RandomSystems/System/ProbAutomaton.lean#L436
+[RandomSystem.ofProbAutomaton_eq_drawStep]: src/RandomSystems/Converter/ProbProgramAttachment.lean#L743
+[RandomSystem.memoryless]: src/RandomSystems/System/Memoryless.lean#L63
+[RandomSystem.eq_memoryless_of_snoc]: src/RandomSystems/System/Memoryless.lean#L82
+[RandomSystem.parallel_memoryless]: src/RandomSystems/System/Memoryless.lean#L144
+[ProbStep.Memoryless]: src/RandomSystems/System/Memoryless.lean#L197
+[RandomSystem.ofProbAutomaton_eq_memoryless]: src/RandomSystems/System/Memoryless.lean#L232
 [Program.probCombine]: src/RandomSystems/Converter/ProbProgramAttachment.lean#L165
 [RandomSystem.ofProbAutomaton_probCombine_eq_of_simulation]: src/RandomSystems/Converter/ProbProgramAttachment.lean#L414
-[PDCBehavior.attach_ofDDC_ofProgramOn_ofProbAutomaton]: src/RandomSystems/Converter/ProbProgramAttachment.lean#L853
-[PDCBehavior.attach_ofDDC_ofProgramOn_ofDeterministic]: src/RandomSystems/Converter/ProbProgramAttachment.lean#L792
-[Program.memoryless_probCombine]: src/RandomSystems/System/Memoryless.lean#L267
-[Program.replyLaw]: src/RandomSystems/System/Memoryless.lean#L201
-[PDCBehavior.attach_ofDDC_ofProgramOn_memoryless]: src/RandomSystems/System/Memoryless.lean#L298
+[PDCBehavior.attach_ofDDC_ofProgramOn_ofProbAutomaton]: src/RandomSystems/Converter/ProbProgramAttachment.lean#L862
+[PDCBehavior.attach_ofDDC_ofProgramOn_ofDeterministic]: src/RandomSystems/Converter/ProbProgramAttachment.lean#L801
+[Program.memoryless_probCombine]: src/RandomSystems/System/Memoryless.lean#L327
+[Program.replyLaw]: src/RandomSystems/System/Memoryless.lean#L261
+[PDCBehavior.attach_ofDDC_ofProgramOn_memoryless]: src/RandomSystems/System/Memoryless.lean#L358
 [RandomSystem.transcriptDistance]: src/RandomSystems/Distance/Decision.lean#L228
 [Domain.Compatible]: src/RandomSystems/Distance/Decision.lean#L165
 [Domain.DecisionCompatible]: src/RandomSystems/Distance/Decision.lean#L171
@@ -1127,10 +1130,10 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [Interface.Resource.ofAutomaton]: src/ConstructiveCryptography/Automaton.lean#L42
 [Interface.parallel_ofAutomaton]: src/ConstructiveCryptography/Automaton.lean#L57
 [Interface.source_eq_memoryless]: src/ConstructiveCryptography/Memoryless.lean#L45
-[Interface.parallel_eq_memoryless]: src/ConstructiveCryptography/Memoryless.lean#L100
-[Interface.Converter.ofProgram_smul_memoryless]: src/ConstructiveCryptography/Memoryless.lean#L198
-[Interface.Converter.ofPreservingProgram_smul_memoryless]: src/ConstructiveCryptography/Memoryless.lean#L208
-[Interface.Converter.ofPreservingProgram_comp_rightContext_smul_memoryless]: src/ConstructiveCryptography/Memoryless.lean#L223
+[Interface.parallel_eq_memoryless]: src/ConstructiveCryptography/Memoryless.lean#L103
+[Interface.Converter.ofProgram_smul_memoryless]: src/ConstructiveCryptography/Memoryless.lean#L166
+[Interface.Converter.ofPreservingProgram_smul_memoryless]: src/ConstructiveCryptography/Memoryless.lean#L176
+[Interface.Converter.ofPreservingProgram_comp_rightContext_smul_memoryless]: src/ConstructiveCryptography/Memoryless.lean#L191
 [Interface.Resource.ofFunction]: src/ConstructiveCryptography/Functional.lean#L56
 [Interface.Resource.ofConditional]: src/ConstructiveCryptography/Functional.lean#L38
 [Interface.Resource.sample]: src/ConstructiveCryptography/Functional.lean#L176

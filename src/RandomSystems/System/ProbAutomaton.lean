@@ -50,7 +50,7 @@ over deterministic systems its initial law induces [1, Definition 2].
 
 namespace SystemAlgebra
 
-open Probability Probability.Distribution Classical
+open Probability Probability.Distribution
 
 /-- **A probabilistic step**: from a state and a query at the port `i`, a law on the next state
 and the reply at `i`. -/
@@ -142,6 +142,7 @@ lemma transition_eq_zero {β : Distribution S} {x : Σ i, X i} {y : Σ i, Y i} (
 
 variable (D : Domain (Σ i, X i) (Σ i, Y i)) (init : Distribution S)
 
+open scoped Classical in
 /-- The state laws along a reversed transcript. -/
 noncomputable def beliefRev : List ((Σ i, X i) × (Σ i, Y i)) → Distribution S
   | [] => init
@@ -154,6 +155,7 @@ noncomputable def belief (h : List ((Σ i, X i) × (Σ i, Y i))) : Distribution 
 
 @[simp] lemma belief_nil : step.belief D init [] = init := rfl
 
+open scoped Classical in
 /-- One more exchange: the transition of the state law, if the domain admits the query. -/
 lemma belief_snoc (h : List ((Σ i, X i) × (Σ i, Y i))) (x : Σ i, X i) (y : Σ i, Y i) :
     step.belief D init (h ++ [(x, y)]) =
@@ -177,6 +179,7 @@ end ProbStep
 
 variable {S I : Type} {X Y : I → Type} [Fintype (Σ i, X i)] [Fintype (Σ i, Y i)]
 
+open scoped Classical in
 /-- **The random system of a probabilistic automaton** with its initial state sampled from
 `init`: the probability of a transcript is the weight of the state law after it. -/
 noncomputable def RandomSystem.ofProbAutomaton (D : Domain (Σ i, X i) (Σ i, Y i))
@@ -188,7 +191,7 @@ noncomputable def RandomSystem.ofProbAutomaton (D : Domain (Σ i, X i) (Σ i, Y 
     -- elsewhere no reply has mass.
     ⟨if D h x then step.replyLaw (step.belief D init.1 h) x else 0, fun y => by
       -- the reply `y` has the weight of the state law after `h · (x, y)` ...
-      show _ = (step.belief D init.1 (h ++ [(x, y)])).weight
+      change _ = (step.belief D init.1 (h ++ [(x, y)])).weight
       rw [step.belief_snoc]
       split_ifs
       · -- ... which is the transition with the reply `y`
@@ -243,6 +246,7 @@ def SimulatesAt (K : S₁ → Distribution.ProbDist S₂) (s : S₁) (x : Σ i, 
     bindK (step₁.outcome s x) fun p => fTransform (fun s₂ => (s₂, p.2)) (K p.1).1
 
 omit [Fintype (Σ i, X i)] [Fintype (Σ i, Y i)] in
+open scoped Classical in
 /-- The states of a pushforward into pairs `(a, c)` with second component `y`. -/
 lemma fTransform_fst_restrict_pair {A C : Type} (ν : Distribution A) (c y : C) :
     fTransform Prod.fst ((fTransform (fun a => (a, c)) ν).restrict fun p => p.2 = y) =
