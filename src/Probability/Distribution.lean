@@ -280,6 +280,51 @@ theorem mass_restrict {A : Type*} (X : Distribution A) (P Q : A → Prop) :
   intro a _ha
   by_cases hP : P a <;> by_cases hQ : Q a <;> simp [hP, hQ]
 
+/-- Restricting keeps only mass that was there. -/
+lemma support_restrict_subset {A : Type*} (μ : Distribution A) (P : A → Prop) :
+    (μ.restrict P).support ⊆ μ.support := fun a ha => by
+  -- The restriction at `a` is `μ a` or zero; it is nonzero, so it is `μ a`.
+  rw [Finsupp.mem_support_iff, restrict_apply] at ha
+  rw [Finsupp.mem_support_iff]
+  split_ifs at ha
+  · exact ha
+  · exact absurd rfl ha
+
+
+/-- Restricting twice is restricting to both events. -/
+lemma restrict_restrict {A : Type*} (μ : Distribution A) (P Q : A → Prop) :
+    (μ.restrict P).restrict Q = μ.restrict fun a => P a ∧ Q a := by
+  -- Pointwise: `μ a` exactly when both events hold.
+  ext a
+  simp only [restrict_apply]
+  by_cases hP : P a <;> by_cases hQ : Q a <;> simp [hP, hQ]
+
+
+/-- Restriction depends only on the event up to equivalence. -/
+lemma restrict_congr {A : Type*} (μ : Distribution A) {P Q : A → Prop} (h : ∀ a, P a ↔ Q a) :
+    μ.restrict P = μ.restrict Q := by
+  -- Pointwise, the two events are the same condition.
+  ext a
+  simp only [restrict_apply, h]
+
+
+/-- Restricting to the impossible event leaves nothing. -/
+lemma restrict_false {A : Type*} (μ : Distribution A) : μ.restrict (fun _ => False) = 0 := by
+  -- Pointwise, the condition never holds.
+  ext a
+  simp
+
+
+/-- A point mass restricted to an event: itself or nothing. -/
+lemma single_restrict {A : Type*} (a : A) (w : ℝ) (P : A → Prop) :
+    Distribution.restrict (Finsupp.single a w : Distribution A) P =
+      if P a then Finsupp.single a w else 0 := by
+  -- The only point with mass is `a`: kept if `P a`, dropped otherwise.
+  by_cases h : P a
+  · simp [restrict, Finsupp.filter_single_of_pos _ h, h]
+  · simp [restrict, Finsupp.filter_single_of_neg _ h, h]
+
+
 theorem mass_true {A : Type*} (X : Distribution A) :
     X.mass (fun _ => True) = X.weight := by
   unfold mass weight
@@ -650,6 +695,24 @@ theorem mass_fTransform {A B : Type*}
   rw [Finsupp.sum_mapDomain_index
     (fun b => by by_cases hb : P b <;> simp [hb])
     (fun b m₁ m₂ => by by_cases hb : P b <;> simp [hb])]
+
+/-- The pushforward of a point mass. -/
+lemma fTransform_single {A B : Type*} (f : A → B) (a : A) (w : ℝ) :
+    fTransform f (Finsupp.single a w) = Finsupp.single (f a) w :=
+  Finsupp.mapDomain_single
+
+
+/-- Restricting a pushforward is pushing forward the restriction to the preimage. -/
+lemma restrict_fTransform {A B : Type*} (f : A → B) (μ : Distribution A) (P : B → Prop) :
+    (fTransform f μ).restrict P = fTransform f (μ.restrict fun a => P (f a)) := by
+  -- At `b`, both sides are masses of fibres of `f`.
+  ext b
+  rw [restrict_apply, fTransform_apply_eq_mass, fTransform_apply_eq_mass, mass_restrict]
+  split_ifs with h
+  · -- `P b`: on the fibre of `b`, the condition `P (f a)` holds
+    exact mass_congr _ fun a => ⟨fun ha => ⟨ha, ha ▸ h⟩, fun ha => ha.1⟩
+  · -- not `P b`: the fibre of `b` meets no point with `P (f a)`
+    exact (mass_eq_zero_of_forall_not _ fun a (ha : f a = b ∧ P (f a)) => h (ha.1 ▸ ha.2)).symm
 
 /-- Pushforward preserves total mass. -/
 theorem weight_fTransform {A B : Type*}

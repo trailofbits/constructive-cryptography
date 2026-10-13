@@ -41,68 +41,7 @@ after the other, and kernels of probability laws mix probability laws into proba
 
 namespace Probability.Distribution
 
-open Classical
-
 variable {A B C : Type*}
-
-/-! ### Restriction and pushforward -/
-
-/-- Restricting keeps only mass that was there. -/
-lemma support_restrict_subset (μ : Distribution A) (P : A → Prop) :
-    (μ.restrict P).support ⊆ μ.support := fun a ha => by
-  -- The restriction at `a` is `μ a` or zero; it is nonzero, so it is `μ a`.
-  rw [Finsupp.mem_support_iff, restrict_apply] at ha
-  rw [Finsupp.mem_support_iff]
-  split_ifs at ha
-  · exact ha
-  · exact absurd rfl ha
-
-/-- Restricting twice is restricting to both events. -/
-lemma restrict_restrict (μ : Distribution A) (P Q : A → Prop) :
-    (μ.restrict P).restrict Q = μ.restrict fun a => P a ∧ Q a := by
-  -- Pointwise: `μ a` exactly when both events hold.
-  ext a
-  simp only [restrict_apply]
-  by_cases hP : P a <;> by_cases hQ : Q a <;> simp [hP, hQ]
-
-/-- Restriction depends only on the event up to equivalence. -/
-lemma restrict_congr (μ : Distribution A) {P Q : A → Prop} (h : ∀ a, P a ↔ Q a) :
-    μ.restrict P = μ.restrict Q := by
-  -- Pointwise, the two events are the same condition.
-  ext a
-  simp only [restrict_apply, h]
-
-/-- Restricting to the impossible event leaves nothing. -/
-lemma restrict_false (μ : Distribution A) : μ.restrict (fun _ => False) = 0 := by
-  -- Pointwise, the condition never holds.
-  ext a
-  simp
-
-/-- A point mass restricted to an event: itself or nothing. -/
-lemma single_restrict (a : A) (w : ℝ) (P : A → Prop) :
-    Distribution.restrict (Finsupp.single a w : Distribution A) P =
-      if P a then Finsupp.single a w else 0 := by
-  -- The only point with mass is `a`: kept if `P a`, dropped otherwise.
-  by_cases h : P a
-  · simp [restrict, Finsupp.filter_single_of_pos _ h, h]
-  · simp [restrict, Finsupp.filter_single_of_neg _ h, h]
-
-/-- The pushforward of a point mass. -/
-lemma fTransform_single (f : A → B) (a : A) (w : ℝ) :
-    fTransform f (Finsupp.single a w) = Finsupp.single (f a) w :=
-  Finsupp.mapDomain_single
-
-/-- Restricting a pushforward is pushing forward the restriction to the preimage. -/
-lemma restrict_fTransform (f : A → B) (μ : Distribution A) (P : B → Prop) :
-    (fTransform f μ).restrict P = fTransform f (μ.restrict fun a => P (f a)) := by
-  -- At `b`, both sides are masses of fibres of `f`.
-  ext b
-  rw [restrict_apply, fTransform_apply_eq_mass, fTransform_apply_eq_mass, mass_restrict]
-  split_ifs with h
-  · -- `P b`: on the fibre of `b`, the condition `P (f a)` holds
-    exact mass_congr _ fun a => ⟨fun ha => ⟨ha, ha ▸ h⟩, fun ha => ha.1⟩
-  · -- not `P b`: the fibre of `b` meets no point with `P (f a)`
-    exact (mass_eq_zero_of_forall_not _ fun a (ha : f a = b ∧ P (f a)) => h (ha.1 ▸ ha.2)).symm
 
 /-! ### Kernels -/
 
@@ -147,9 +86,7 @@ lemma bindK_congr {μ : Distribution A} {f g : A → Distribution B}
   -- Both are sums over the support of `μ`, term by term equal.
   unfold bindK
   rw [Finsupp.linearCombination_apply, Finsupp.linearCombination_apply]
-  exact Finset.sum_congr rfl fun a ha => by
-    show μ a • f a = μ a • g a
-    rw [h a ha]
+  exact Finset.sum_congr rfl fun a ha => congrArg (μ a • ·) (h a ha)
 
 /-- **Mixtures compose**: mixing `g` over the mixture of `f` is mixing, over `μ`, the mixtures of
 `g` over each `f a`. -/
@@ -214,6 +151,7 @@ lemma fTransform_congr_support {f g : A → B} {μ : Distribution A}
 /-- **Restricting a mixture** restricts each law of the kernel. -/
 lemma restrict_bindK (P : B → Prop) (μ : Distribution A) (f : A → Distribution B) :
     (bindK μ f).restrict P = bindK μ fun a => (f a).restrict P := by
+  classical
   -- Induction on `μ`: restriction is linear.
   induction μ using Finsupp.induction_linear with
   | zero => simp [restrict, Finsupp.filter_zero]
@@ -221,6 +159,7 @@ lemma restrict_bindK (P : B → Prop) (μ : Distribution A) (f : A → Distribut
       ← restrict, hμ, hν]
   | single a w => simp [restrict, Finsupp.filter_smul]
 
+open scoped Classical in
 /-- A kernel that vanishes off an event is the kernel on the restriction to it. -/
 lemma bindK_ite (μ : Distribution A) (P : A → Prop) (f : A → Distribution B) :
     bindK μ (fun a => if P a then f a else 0) = bindK (μ.restrict P) f := by
@@ -250,9 +189,7 @@ lemma weight_bindK_of_weight {μ : Distribution A} {f : A → Distribution B}
     (hf : ∀ a ∈ μ.support, (f a).weight = 1) : (bindK μ f).weight = μ.weight := by
   -- Each `μ a` is weighted by the weight of `f a`, which is one.
   rw [weight_bindK, weight]
-  exact Finset.sum_congr rfl fun a ha => by
-    show μ a * (f a).weight = μ a
-    rw [hf a ha, mul_one]
+  exact Finset.sum_congr rfl fun a ha => by simp only [hf a ha, mul_one]
 
 /-- **A nonnegative kernel mixed over a nonnegative distribution** is nonnegative. -/
 lemma bindK_nonNeg {μ : Distribution A} {f : A → Distribution B} (hμ : μ.NonNeg)
@@ -281,6 +218,7 @@ lemma mem_support_bindK {μ : Distribution A} {f : A → Distribution B} {b : B}
 /-- **An independent product as a mixture**: sample the first factor, then the second beside it. -/
 lemma prod_eq_bindK (μ : Distribution A) (ν : Distribution B) :
     prod μ ν = bindK μ fun a => fTransform (fun b => (a, b)) ν := by
+  classical
   -- Compare at a pair `(a, b)`: `μ a · ν b` on the left.
   ext ⟨a, b⟩
   rw [prod_apply, bindK_apply, Finsupp.sum]
@@ -308,6 +246,7 @@ lemma prod_eq_bindK (μ : Distribution A) (ν : Distribution B) :
 then the product with that coordinate fixed. -/
 lemma pi_eq_bindK_update {ι : Type*} [Fintype ι] [DecidableEq ι] (μ : ι → Distribution A)
     (n : ι) : pi μ = bindK (μ n) fun z => pi (Function.update μ n (Finsupp.single z 1)) := by
+  classical
   -- Compare at a sample `t`: `∏ᵢ μᵢ(tᵢ)` on the left.
   ext t
   -- With coordinate `n` fixed to `z`, the product is `[t n = z] · ∏_{i ≠ n} μᵢ(tᵢ)`.
@@ -332,6 +271,7 @@ lemma pi_eq_bindK_update {ι : Type*} [Fintype ι] [DecidableEq ι] (μ : ι →
 lemma eq_of_mem_support_pi_update {ι : Type*} [Fintype ι] [DecidableEq ι]
     (μ : ι → Distribution A) (n : ι) (z : A) {t : ι → A}
     (ht : t ∈ (pi (Function.update μ n (Finsupp.single z 1))).support) : t n = z := by
+  classical
   -- Otherwise the factor at `n`, the point mass at `z`, vanishes at `t n`.
   rw [Finsupp.mem_support_iff, pi_apply] at ht
   by_contra hne
