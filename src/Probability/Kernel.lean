@@ -77,7 +77,9 @@ lemma bindK_apply (μ : Distribution A) (f : A → Distribution B) (b : B) :
   -- Induction on `μ` as a sum of point masses.
   induction μ using Finsupp.induction_linear with
   | zero => simp
+  -- A sum of two laws: the mixture is additive, and `0 + 0 = 0`.
   | add μ ν hμ hν => rw [bindK_add, hμ, hν, add_zero]
+  -- A point mass of weight `w`: it mixes to `w • 0 = 0`.
   | single a w => simp
 
 /-- A mixture depends only on the kernel on the support. -/
@@ -95,7 +97,10 @@ lemma bindK_bindK (μ : Distribution A) (f : A → Distribution B) (g : B → Di
   -- Induction on `μ`: both sides are additive in `μ`, and agree on point masses.
   induction μ using Finsupp.induction_linear with
   | zero => simp
+  -- A sum of two laws: every mixture involved is additive in its first law.
   | add μ ν hμ hν => rw [bindK_add, bindK_add, bindK_add, hμ, hν]
+  -- A point mass of weight `w` at `a`: both sides are `w • bindK (f a) g`, as the mixture is
+  -- linear in its first law.
   | single a w => simp [bindK]
 
 /-- **The point kernel** leaves a distribution unchanged. -/
@@ -103,7 +108,9 @@ lemma bindK_single_one (μ : Distribution A) : bindK μ (fun a => Finsupp.single
   -- Induction on `μ`: a point mass of weight `w` mixes to `w` times the point mass.
   induction μ using Finsupp.induction_linear with
   | zero => simp
+  -- A sum of two laws: the mixture is additive.
   | add μ ν hμ hν => rw [bindK_add, hμ, hν]
+  -- A point mass of weight `w` at `a`: `w • single a 1 = single a w`.
   | single a w => simp
 
 /-- **A point kernel along `φ` is the pushforward** along `φ`. -/
@@ -113,8 +120,11 @@ lemma bindK_single_comp (μ : Distribution A) (φ : A → B) :
   induction μ using Finsupp.induction_linear with
   | zero => simp [fTransform]
   | add μ ν hμ hν =>
+    -- the mixture is additive; then the induction hypotheses ...
     rw [bindK_add, hμ, hν]
+    -- ... and the pushforward of a sum is the sum of the pushforwards
     exact (Finsupp.mapDomain_add).symm
+  -- A point mass of weight `w` at `a`: both sides are the point mass of weight `w` at `φ a`.
   | single a w => simp [fTransform]
 
 /-- **Pushing a mixture forward** pushes each law of the kernel forward. -/
@@ -124,10 +134,14 @@ lemma fTransform_bindK (φ : B → C) (μ : Distribution A) (f : A → Distribut
   induction μ using Finsupp.induction_linear with
   | zero => simp [fTransform]
   | add μ ν hμ hν =>
+    -- both mixtures split over `μ + ν`; the right one is folded back by the hypotheses ...
     rw [bindK_add, bindK_add, ← hμ, ← hν]
+    -- ... leaving the additivity of the pushforward
     exact Finsupp.mapDomain_add
   | single a w =>
+    -- a point mass of weight `w` at `a` mixes to `w • f a` and `w • fTransform φ (f a)` ...
     rw [bindK_single, bindK_single]
+    -- ... and the pushforward commutes with scaling by `w`
     exact Finsupp.mapDomain_smul _ _
 
 /-- **Mixing over a pushforward** is mixing the composite kernel. -/
@@ -137,8 +151,10 @@ lemma bindK_fTransform (φ : A → B) (μ : Distribution A) (f : B → Distribut
   induction μ using Finsupp.induction_linear with
   | zero => simp [fTransform]
   | add μ ν hμ hν =>
+    -- the pushforward and both mixtures are additive; then the induction hypotheses
     rw [show fTransform φ (μ + ν) = fTransform φ μ + fTransform φ ν from Finsupp.mapDomain_add,
       bindK_add, bindK_add, hμ, hν]
+  -- A point mass of weight `w` at `a`: both sides are `w • f (φ a)`.
   | single a w => simp [fTransform]
 
 /-- A pushforward depends only on the function on the support. -/
@@ -155,8 +171,10 @@ lemma restrict_bindK (P : B → Prop) (μ : Distribution A) (f : A → Distribut
   -- Induction on `μ`: restriction is linear.
   induction μ using Finsupp.induction_linear with
   | zero => simp [restrict, Finsupp.filter_zero]
+  -- A sum of two laws: the mixtures and the restriction (a filter) are all additive.
   | add μ ν hμ hν => rw [bindK_add, bindK_add, restrict, Finsupp.filter_add, ← restrict,
       ← restrict, hμ, hν]
+  -- A point mass of weight `w` at `a`: restricting `w • f a` is `w •` the restriction of `f a`.
   | single a w => simp [restrict, Finsupp.filter_smul]
 
 open scoped Classical in
@@ -166,11 +184,16 @@ lemma bindK_ite (μ : Distribution A) (P : A → Prop) (f : A → Distribution B
   -- Induction on `μ`: a point mass at `a` contributes `f a` exactly when `P a`.
   induction μ using Finsupp.induction_linear with
   | zero => simp [restrict, Finsupp.filter_zero]
+  -- A sum of two laws: the mixtures are additive, and the restriction of a sum is the sum of
+  -- the restrictions.
   | add μ ν hμ hν => rw [bindK_add, hμ, hν, ← bindK_add, restrict, restrict, restrict,
       Finsupp.filter_add]
   | single a w =>
+    -- a point mass of weight `w` at `a`: case on the event at `a`
     by_cases h : P a
+    -- `P a`: the restriction keeps the point mass, and both sides are `w • f a`
     · simp [h, restrict, Finsupp.filter_single_of_pos _ h]
+    -- not `P a`: the restriction drops the point mass, and both sides are zero
     · simp [h, restrict, Finsupp.filter_single_of_neg _ h]
 
 /-- **The weight of a mixture**: each weight of the kernel, weighted by `μ`. -/
@@ -180,8 +203,11 @@ lemma weight_bindK (μ : Distribution A) (f : A → Distribution B) :
   induction μ using Finsupp.induction_linear with
   | zero => simp [weight]
   | add μ ν hμ hν =>
+    -- the mixture and its weight are additive; the sum over `μ + ν` splits, as its summand
+    -- `w * (f a).weight` is additive in `w`
     rw [bindK_add, weight_add, hμ, hν,
       Finsupp.sum_add_index' (by simp) (fun _ _ _ => add_mul _ _ _)]
+  -- A point mass of weight `w` at `a`: the weight of `w • f a` is `w` times that of `f a`.
   | single a w => simp [weight_smul]
 
 /-- **A kernel of weight one preserves the weight.** -/
@@ -189,6 +215,7 @@ lemma weight_bindK_of_weight {μ : Distribution A} {f : A → Distribution B}
     (hf : ∀ a ∈ μ.support, (f a).weight = 1) : (bindK μ f).weight = μ.weight := by
   -- Each `μ a` is weighted by the weight of `f a`, which is one.
   rw [weight_bindK, weight]
+  -- Term by term over the support of `μ`: `μ(a) · 1 = μ(a)`.
   exact Finset.sum_congr rfl fun a ha => by simp only [hf a ha, mul_one]
 
 /-- **A nonnegative kernel mixed over a nonnegative distribution** is nonnegative. -/
@@ -196,8 +223,10 @@ lemma bindK_nonNeg {μ : Distribution A} {f : A → Distribution B} (hμ : μ.No
     (hf : ∀ a, (f a).NonNeg) : (bindK μ f).NonNeg := by
   -- At each `b`, a sum of products of nonnegative numbers.
   intro b
+  -- The mixture at `b` is `∑ₐ μ(a) · f(a)(b)`.
   unfold bindK
   rw [Finsupp.linearCombination_apply, Finsupp.sum, Finsupp.finsetSum_apply]
+  -- Each term is `μ(a) · f(a)(b)`, with `μ(a) ≥ 0` and `f(a)(b) ≥ 0`.
   exact Finset.sum_nonneg fun a _ => by
     simpa [Finsupp.smul_apply] using mul_nonneg (hμ a) (hf a b)
 
@@ -207,9 +236,12 @@ lemma mem_support_bindK {μ : Distribution A} {f : A → Distribution B} {b : B}
   -- Otherwise every term `μ a · f a b` of the mixture at `b` vanishes.
   by_contra hn
   push Not at hn
+  -- So `f(a)(b) = 0` at every possible `a`; we show the mixture at `b` is zero, against `hb`.
   apply Finsupp.mem_support_iff.mp hb
+  -- The mixture at `b` is `∑ₐ μ(a) · f(a)(b)` over the support of `μ` ...
   unfold bindK
   rw [Finsupp.linearCombination_apply, Finsupp.sum, Finsupp.finsetSum_apply]
+  -- ... and every term vanishes, since `f(a)(b) = 0`.
   exact Finset.sum_eq_zero fun a ha => by
     simp [Finsupp.notMem_support_iff.mp (hn a ha)]
 
@@ -225,8 +257,10 @@ lemma prod_eq_bindK (μ : Distribution A) (ν : Distribution B) :
   -- The law `ν` placed beside `a'` puts `ν b` at `(a, b)` if `a' = a`, and nothing otherwise.
   have hpt : ∀ a', fTransform (fun b' => (a', b')) ν (a, b) = if a' = a then ν b else 0 := by
     intro a'
+    -- The pushforward at `(a, b)` is the `ν`-mass of the event `(a', b') = (a, b)`.
     rw [fTransform_apply_eq_mass]
     split_ifs with h
+    -- `a' = a`: the event is `b' = b`, of mass `ν b` (zero when `b` is outside the support).
     · subst h
       rw [mass, Finsupp.sum]
       simp only [Prod.mk.injEq, true_and]
@@ -234,10 +268,12 @@ lemma prod_eq_bindK (μ : Distribution A) (ν : Distribution B) :
       split_ifs with hb
       · rfl
       · exact (Finsupp.notMem_support_iff.mp hb).symm
+    -- `a' ≠ a`: no pair `(a', b')` is `(a, b)`, so the event is empty.
     · exact mass_eq_zero_of_forall_not _ fun b' h' => h (Prod.mk.inj h').1
   -- So the mixture at `(a, b)` keeps only the term `a' = a`: `μ a · ν b`.
   simp only [hpt, mul_ite, mul_zero]
   rw [Finset.sum_ite_eq']
+  -- The sum keeps that term if `a` is in the support of `μ`; otherwise `μ a = 0`.
   split_ifs with ha
   · rfl
   · rw [Finsupp.notMem_support_iff.mp ha, zero_mul]
@@ -253,16 +289,21 @@ lemma pi_eq_bindK_update {ι : Type*} [Fintype ι] [DecidableEq ι] (μ : ι →
   have hrest : ∀ z : A, (∏ i, Function.update μ n (Finsupp.single z 1) i (t i)) =
       (Finsupp.single z (1 : ℝ)) (t n) * ∏ i ∈ Finset.univ.erase n, μ i (t i) := by
     intro z
+    -- Split off the factor at `n`, which the update sets to the point mass at `z` ...
     rw [← Finset.mul_prod_erase Finset.univ _ (Finset.mem_univ n), Function.update_self]
     congr 1
+    -- ... and off `n` the update leaves the factors `μ i` unchanged.
     exact Finset.prod_congr rfl fun i hi => by
       rw [Function.update_of_ne (Finset.ne_of_mem_erase hi)]
   -- Mixing over `z ← μ n` keeps the term `z = t n`: `μ n (t n) · ∏_{i ≠ n} μᵢ(tᵢ)`.
   rw [pi_apply, bindK_apply]
   simp only [pi_apply, hrest, Finsupp.single_apply]
+  -- Split the factor at `n` off the left side too: `μ n (t n) · ∏_{i ≠ n} μᵢ(tᵢ)`.
   rw [← Finset.mul_prod_erase Finset.univ _ (Finset.mem_univ n), Finsupp.sum]
+  -- On the right, the term at `z` is `μ n z · ∏_{i ≠ n} μᵢ(tᵢ)` if `z = t n`, and zero otherwise.
   simp only [← mul_assoc, mul_ite, mul_one, mul_zero, ite_mul, zero_mul]
   rw [Finset.sum_ite_eq']
+  -- The sum keeps that term if `t n` is in the support of `μ n`; otherwise `μ n (t n) = 0`.
   split_ifs with h
   · rfl
   · rw [Finsupp.notMem_support_iff.mp h, zero_mul]
@@ -276,6 +317,7 @@ lemma eq_of_mem_support_pi_update {ι : Type*} [Fintype ι] [DecidableEq ι]
   rw [Finsupp.mem_support_iff, pi_apply] at ht
   by_contra hne
   apply ht
+  -- The product `∏ᵢ` vanishes: its factor at `n`, `single z 1 (t n)`, is zero as `t n ≠ z`.
   refine Finset.prod_eq_zero (Finset.mem_univ n) ?_
   rw [Function.update_self, Finsupp.single_apply, if_neg (Ne.symm hne)]
 
@@ -298,7 +340,9 @@ lemma map_map (f : B → C) (g : A → B) (P : ProbDist A) :
 /-- **Sequential composition**: the law of `b ← f a` for `a ← P`, the mixture of `f` over `P`. -/
 noncomputable def bind (P : ProbDist A) (f : A → ProbDist B) : ProbDist B :=
   ⟨bindK P.1 fun a => (f a).1,
+    -- nonnegative: a mixture of nonnegative laws over the nonnegative law `P`
     bindK_nonNeg P.2.1 fun a => (f a).2.1,
+    -- weight one: each `f a` has weight one, so the mixture keeps the weight of `P`, which is one
     (weight_bindK_of_weight fun a _ => (f a).2.2).trans P.2.2⟩
 
 @[simp] lemma bind_val (P : ProbDist A) (f : A → ProbDist B) :

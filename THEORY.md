@@ -1297,11 +1297,11 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [prod]: src/Probability/Distribution.lean#L1005
 [pi]: src/Probability/Distribution.lean#L1646
 [bindK]: src/Probability/Kernel.lean#L49
-[bindK_bindK]: src/Probability/Kernel.lean#L93
-[bindK_single_comp]: src/Probability/Kernel.lean#L110
-[pi_eq_bindK_update]: src/Probability/Kernel.lean#L247
-[ProbDist.map]: src/Probability/Kernel.lean#L287
-[ProbDist.bind]: src/Probability/Kernel.lean#L299
+[bindK_bindK]: src/Probability/Kernel.lean#L95
+[bindK_single_comp]: src/Probability/Kernel.lean#L117
+[pi_eq_bindK_update]: src/Probability/Kernel.lean#L283
+[ProbDist.map]: src/Probability/Kernel.lean#L329
+[ProbDist.bind]: src/Probability/Kernel.lean#L341
 [uniform]: src/Probability/Distribution.lean#L566
 [statDist]: src/Probability/StatisticalDistance.lean#L88
 [statDist_triangle]: src/Probability/StatisticalDistance.lean#L243
