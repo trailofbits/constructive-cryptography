@@ -347,7 +347,7 @@ def elaborateCCQuantitativeCalc (model? domination? : Option (TSyntax `term))
         let original := leaf
         if reverse then
           leaf ← `(by simpa only [distance, ConstructiveCryptography.CryptographicAlgebra.distance,
-            edist_comm] using $proof)
+            PseudoEMetricSpace.edist_comm] using $proof)
         leaf ← `(show distance $previous $next ≤ $budget from by
           first
           | cc_exact_rule "cc_calc supplied distance" => $leaf
