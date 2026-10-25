@@ -346,7 +346,7 @@ lemma Domain.Distinguisher.exists_absorbRight
         (∀ h, behaviorMass (parallelPDS T U).1 (h.map Prod.fst) (h.map Prod.snd) = S h) →
           Q.probability R = P.probability S := by
   refine ⟨⟨Distribution.fTransform (fun p => (⟨absorbRight p.1.1 p.2.1,
-      absorbRight_isDDD p.1.2.1 p.2.1, p.1.2.2.absorbRight (hF := hF) hE' hF' p.1.2.1 p.2.2⟩ :
+      absorbRight_isDDD p.1.2.1 _, p.1.2.2.absorbRight (hF := hF) hE' hF' p.1.2.1 p.2.2⟩ :
         {D : DDD I X₁ Y₁ // IsDDD D ∧
           (Domain.ofInputs E m hE : Domain (Σ i, X₁ i) (Σ i, Y₁ i)).DecisionCompatible D}))
       (Distribution.prod P.1 U.1),
