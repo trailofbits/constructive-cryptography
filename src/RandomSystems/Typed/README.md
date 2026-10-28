@@ -90,6 +90,9 @@ once-sampled right system [retains that one right-side choice][TypedSystem.paral
 For a certified [direct call rule][callRule], pointwise query and return equations against a fixed
 inside function yield the [outside functional system][TypedConverter.ofDDC_callConverter_smul_ofFunction].
 The call rule may choose later inside queries from earlier replies.
+An [input-dependent router][routingConverter] can move a payload field into the inside port label;
+its [typed attachment][TypedConverter.ofDDC_routingConverter_smul_ofFunction] returns the explicitly
+translated inside answer at the original outside port.
 
 ## Typed games
 
@@ -164,6 +167,8 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedSystem.parallel_sample_right]: SamplingAlgebra.lean
 [callRule]: ../Converter/Calls.lean
 [TypedConverter.ofDDC_callConverter_smul_ofFunction]: CallRuleFunctional.lean
+[routingConverter]: ../Converter/QueryRouting.lean
+[TypedConverter.ofDDC_routingConverter_smul_ofFunction]: QueryRouting.lean
 [TypedSystem.sample_fTransform]: Functional.lean#L190
 [TypedConverter.smul_sample]: Functional.lean#L218
 [Interface.withMBO]: Game.lean#L24
