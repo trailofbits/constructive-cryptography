@@ -51,6 +51,10 @@ fixes one independent value per distinct input; repeated inputs add no factor. T
 families with [the same equality pattern][fTransform_eval_uniform_eq_of_same_fibers] have the
 same output law, even when their table domains have different sizes. The index type may be
 infinite; the finite table domains keep both query images finite.
+If fresh coordinates are chosen from previously observed values, their
+[joint mass][uniform_mass_adaptive_eval_eq_mul] still contributes one independent uniform
+factor per chosen coordinate, provided the combined coordinate family is injective on the
+stated good event.
 
 <!-- Declarations -->
 
@@ -86,5 +90,6 @@ infinite; the finite table domains keep both query images finite.
 [expect_mul_sq_le_sq_mul_sq]: Expectation.lean#L215
 [ConvexOn.map_expect_le]: Expectation.lean#L297
 [card_function_fiber_finset]: Counting.lean#L47
-[uniform_mass_transcript_eq]: Counting.lean#L195
-[fTransform_eval_uniform_eq_of_same_fibers]: Counting.lean#L232
+[uniform_mass_transcript_eq]: Counting.lean#L197
+[fTransform_eval_uniform_eq_of_same_fibers]: Counting.lean#L234
+[uniform_mass_adaptive_eval_eq_mul]: Counting.lean#L281
