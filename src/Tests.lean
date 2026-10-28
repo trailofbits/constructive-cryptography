@@ -1,3 +1,4 @@
+import Tests.Replay
 import Tests.RevealedHCoefficient
 import Tests.AuthenticatedEncryption
 import Tests.AdaptiveUniformEvaluations
