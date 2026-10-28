@@ -54,8 +54,10 @@ d(R \parallel R',\ S \parallel S') \le d(R, S) + d(R', S') .
 ```
 
 Derived: [attachment is non-expanding][distance_attach_le] and
-[parallel composition adds distances][distance_parallel_le]. For interfaces the metric comes from
-the distinguisher class below.
+[parallel composition adds distances][distance_parallel_le].
+[Opposite attachment bridges preserve distance][distance_eq_of_mutual_attach] for the
+chosen two resources using only their four bridge equations. For interfaces the metric
+comes from the distinguisher class below.
 
 ### `CompatibleDistinguisherClass C Φ`: distinguishers
 
@@ -351,6 +353,7 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [CompatiblePseudoMetric]: CryptographicAlgebra/PseudoMetric.lean#L43
 [CA.distance]: CryptographicAlgebra/PseudoMetric.lean#L63
 [distance_attach_le]: CryptographicAlgebra/PseudoMetric.lean#L90
+[distance_eq_of_mutual_attach]: CryptographicAlgebra/PseudoMetric.lean
 [distance_parallel_le]: CryptographicAlgebra/PseudoMetric.lean#L145
 [advantageDistance]: CryptographicAlgebra/Distinguisher.lean#L36
 [CompatibleDistinguisherClass]: CryptographicAlgebra/Distinguisher.lean#L77

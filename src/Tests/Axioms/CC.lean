@@ -24,6 +24,7 @@ on interfaces, depend only on `propext`, `Classical.choice` and `Quot.sound`.
 
 -- ConstructiveCryptography.CryptographicAlgebra.PseudoMetric
 #print axioms ConstructiveCryptography.CryptographicAlgebra.distance_attach_le
+#print axioms ConstructiveCryptography.CryptographicAlgebra.distance_eq_of_mutual_attach
 #print axioms ConstructiveCryptography.CryptographicAlgebra.distance_parallel_le
 #print axioms ConstructiveCryptography.CryptographicAlgebra.Specification.ConstructsWithin.serial
 #print axioms ConstructiveCryptography.CryptographicAlgebra.Specification.ConstructsWithin.parallel
@@ -73,5 +74,6 @@ on interfaces, depend only on `propext`, `Classical.choice` and `Quot.sound`.
 
 -- ConstructiveCryptography.Notation
 #print axioms SystemAlgebra.Interface.distance_triangle
+#print axioms SystemAlgebra.Interface.distance_eq_of_mutual_smul
 #print axioms SystemAlgebra.Interface.tensor_smul
 #print axioms SystemAlgebra.Interface.distance_parallel_le

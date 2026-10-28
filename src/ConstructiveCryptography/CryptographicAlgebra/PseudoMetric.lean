@@ -141,6 +141,27 @@ lemma distance_attach_iso [CompatiblePseudoMetric C Phi] {A B : C}
             (attach relabel.hom right) :=
           distance_attach_le relabel.inv _ _
 
+/-- Two explicit attachment bridges in opposite directions preserve the distance of the
+chosen resource pair. Maurer--Renner 2016, Definition 2 (printed p. 11): “d(αR, αS) ≤ d(R, S)”.
+Applying this law to both bridges gives equality. Jost, Proposition 2.2.17 (printed
+pp. 29–30), treats constructions through attachment equations; it does not require these
+converters to be global inverses. -/
+theorem distance_eq_of_mutual_attach [CompatiblePseudoMetric C Phi] {A B : C}
+    (forward : A ⟶ B) (backward : B ⟶ A)
+    (left right : Phi B) (left' right' : Phi A)
+    (hforwardLeft : attach forward left = left')
+    (hforwardRight : attach forward right = right')
+    (hbackwardLeft : attach backward left' = left)
+    (hbackwardRight : attach backward right' = right) :
+    distance left' right' = distance left right := by
+  apply le_antisymm
+  · -- Forward attachment cannot increase the distance.
+    rw [← hforwardLeft, ← hforwardRight]
+    exact distance_attach_le forward left right
+  · -- The backward bridge supplies the reverse inequality on this pair.
+    rw [← hbackwardLeft, ← hbackwardRight]
+    exact distance_attach_le backward left' right'
+
 /-- Ordered resource parallel is jointly non-expanding. -/
 lemma distance_parallel_le [CompatiblePseudoMetric C Phi] {A B : C}
     (left left' : Phi A) (right right' : Phi B) :
