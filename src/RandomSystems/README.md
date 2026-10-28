@@ -114,6 +114,9 @@ by [outside-domain restriction][callConverter] yields a certified
 proved on the actual transcript. A [pointwise fixed-function schedule][replies_callConverter_of_schedule]
 has a completed transcript, and its [typed attachment][ofDDC_callConverter_smul_ofFunction]
 computes the indicated outside function. This construction does not require a `Program`.
+A [query router][routingConverter] specializes this call to one input-dependent inside request.
+Its [query history][routingCall_queries] is the exact request-map image of the outside history,
+including a pending call; an explicit answer map translates the inside reply.
 
 A [**program**][Program] is a deterministic oracle body: from its state, the outside query and the
 inside exchanges of the current invocation, it computes the reply or the next inside query. A
@@ -201,6 +204,8 @@ holds, whatever the number of the program's inside queries:
 [callConverter_isDDCFrom]: Converter/Calls.lean
 [replies_callConverter_of_schedule]: Converter/CallRuleTranscript.lean
 [ofDDC_callConverter_smul_ofFunction]: Typed/CallRuleFunctional.lean
+[routingConverter]: Converter/QueryRouting.lean
+[routingCall_queries]: Converter/QueryRouting.lean
 [PDCBehavior]: Converter/PDCBehavior.lean#L67
 [PDCBehavior.ofPDC]: Converter/PDCBehavior.lean#L169
 [PDCBehavior.comp]: Converter/PDCBehavior.lean#L273

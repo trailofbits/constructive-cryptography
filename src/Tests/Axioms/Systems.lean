@@ -37,6 +37,8 @@ typed converters, and the counterexamples, depend only on `propext`, `Classical.
 #print axioms SystemAlgebra.callRule_isResponsiveDDC
 #print axioms SystemAlgebra.callConverter_isDDCFrom
 #print axioms SystemAlgebra.callRule_completed_exact_length
+#print axioms SystemAlgebra.routingCall_queries
+#print axioms SystemAlgebra.routingConverter_isDDCFrom
 #print axioms SystemAlgebra.IsDDC.comp_of_query_cost
 
 -- RandomSystems.Converter.PDCBehavior
@@ -312,6 +314,7 @@ typed converters, and the counterexamples, depend only on `propext`, `Classical.
 #print axioms SystemAlgebra.TypedConverter.ofDDC_eq_comp
 #print axioms SystemAlgebra.TypedConverter.smul_sample
 #print axioms SystemAlgebra.TypedConverter.ofDDC_callConverter_smul_ofFunction
+#print axioms SystemAlgebra.TypedConverter.ofDDC_routingConverter_smul_ofFunction
 #print axioms SystemAlgebra.TypedSystem.sample_fTransform
 #print axioms SystemAlgebra.TypedSystem.sample_prod
 #print axioms SystemAlgebra.TypedSystem.sample_comm
