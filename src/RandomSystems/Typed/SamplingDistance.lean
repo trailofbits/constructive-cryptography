@@ -25,10 +25,11 @@ Each wire carries queries and replies; each box retains its own component choice
 * `RandomSystem.transcriptDistance_le_of_advantage_le` reduces the conclusion to the
   advantage of an arbitrary distinguisher compatible with the shared interface domain.
 * `Domain.Distinguisher.probability_mix` in `RandomSystems.Distance.Mixture` expresses both
-  decision probabilities as component averages. The common weights let their difference
-  be bounded by the average of the component advantages, using the triangle inequality.
+  decision probabilities as component averages.
+* `abs_average_sub_le` in `RandomSystems.Distance.Transcript` preserves a common bound on
+  their component gaps: its triangle inequality uses nonnegative weights summing to one.
 * `Domain.Distinguisher.advantage_le_transcriptDistance` bounds each component advantage
-  by `error`. The weights are nonnegative and sum to one, so their average is at most `error`.
+  by the component distance, which is at most `error` by hypothesis.
 -/
 
 open Probability
@@ -50,33 +51,13 @@ lemma TypedSystem.transcriptDistance_sample_le {A : Interface} {K : Type}
   apply RandomSystem.transcriptDistance_le_of_advantage_le
     (TypedSystem.sample P R).2 (TypedSystem.sample P S).2
   intro D
-  -- Typed sampling is the mixture of the underlying random systems on this domain.
-  change |D.probability (RandomSystem.mix ⟨P, Distribution.IsProbability.isProbDist P⟩
-      (fun k => (R k).1)) -
-    D.probability (RandomSystem.mix ⟨P, Distribution.IsProbability.isProbDist P⟩
-      (fun k => (S k).1))| ≤ _
-  -- Express D's two decision probabilities as averages over their common sampling law.
-  rw [Domain.Distinguisher.probability_mix, Domain.Distinguisher.probability_mix]
-  -- Subtract under the common sum: each term compares R k with S k at the same weight.
-  simp only [Finsupp.sum]
-  rw [← Finset.sum_sub_distrib]
-  calc
-    -- The absolute gap of the averages is at most the sum of the absolute component gaps.
-    _ ≤ ∑ k ∈ P.support, |P k * D.probability (R k).1 - P k * D.probability (S k).1| :=
-      Finset.abs_sum_le_sum_abs _ _
-    _ ≤ ∑ k ∈ P.support, P k * error := by
-      refine Finset.sum_le_sum fun k _ => ?_
-      -- Nonnegative sampling weights preserve each component's upper bound.
-      have hp := (Distribution.IsProbability.isProbDist P).1 k
-      -- D's advantage on R k and S k is at most their distance, bounded by h k.
-      have hk := (D.advantage_le_transcriptDistance (R k).2 (S k).2).trans (h k)
-      rw [← mul_sub, abs_mul, abs_of_nonneg hp]
-      -- Convert the finite ENNReal bound to a real bound on the absolute probability gap.
-      exact mul_le_mul_of_nonneg_left ((ENNReal.ofReal_le_coe).mp hk) hp
-    _ = error := by
-      -- Averaging the constant error leaves error because P has total mass one.
-      rw [← Finset.sum_mul]
-      change P.weight * error = error
-      rw [(Distribution.IsProbability.isProbDist P).weight_eq, one_mul]
+  -- Typed sampling is a mixture; express both decision probabilities as component averages.
+  simp only [TypedSystem.sample, Domain.Distinguisher.probability_mix]
+  -- Averaging with a normalized law preserves a common bound on the component gaps.
+  apply abs_average_sub_le ⟨P, Distribution.IsProbability.isProbDist P⟩
+  intro k
+  -- D's component advantage is at most the distance bounded by h k; read it as a real gap.
+  exact (ENNReal.ofReal_le_coe).mp
+    ((D.advantage_le_transcriptDistance (R k).2 (S k).2).trans (h k))
 
 end SystemAlgebra
