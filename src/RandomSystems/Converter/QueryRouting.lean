@@ -8,17 +8,25 @@ One outside input `u` is forwarded as `request u` to the selected inside port. A
 whole outside input, so this is a converter call rather than a label-only interface renaming.
 
 ```text
-(o,u) ──► [ request ] ──► (j,x)
-(o,v) ◄── [ answer  ] ◄── (j,y)
+              ┌────────────────────────┐
+u = (o,v) ──► │ request u = (j,x)      │ ──► (j,x)
+              │ retain u for this call │
+(o,z)     ◄── │ z = answer u (j,y)     │ ◄── (j,y)
+              └────────────────────────┘
 ```
 
 The pending inside query is counted as soon as the outside input arrives. The request map must
-preserve the chosen inside domain on every admitted outside history.
+preserve the chosen inside domain: `F(us) → E(map request us)` for outside domain `F` and inside
+domain `E`. Against fixed inside functions `f_j`, the outside reply is
+`g(u) = answer u (j, f_j(x))`, where `request u = (j,x)`.
 -/
 
 namespace SystemAlgebra
 
-/-- The one-query call rule for a value-dependent router. Jost, Definition 2.2.2, printed
+/-- One-query rule: `c_u([]) = query(request u)` and
+`c_u(r :: rs) = return(answer u r)`. The outside input `u` is retained until the reply arrives.
+
+Jost, Definition 2.2.2, printed
 pp. 17–18: “Upon an input at an outside interface, the converter is allowed to make a bounded
 number of queries to the inside interfaces ... before returning a value at the queried
 interface.” -/
@@ -31,7 +39,10 @@ def routingCall {O J : Type} {U V : O → Type} {X Y : J → Type}
   | [] => .inr (request u)
   | r :: _ => .inl (answer u r)
 
-/-- Canonical routing restricted to the declared outside domain. -/
+/-- On outside input `u`, query `request u = (j,x)`; on inside reply `(j,y)`, return
+`answer u (j,y)` at the original outside port `u.1`. The current input `u` is retained for
+this call. Canonicalization enforces the query/reply order, and restriction to `F` admits
+exactly the chosen outside input histories. -/
 noncomputable def routingConverter {O J : Type} {U V : O → Type} {X Y : J → Type}
     (request : (Σ o, U o) → Σ j, X j)
     (answer : (u : Σ o, U o) → (Σ j, Y j) → V u.1)
@@ -101,7 +112,9 @@ lemma routingCall_queries {O J : Type} {U V : O → Type} {X Y : J → Type}
           simpa only [insideQueries_append, insideQueries_outside, outsideInputs_append,
             outsideInputs_inside, List.append_nil] using hi
 
-/-- A request map preserving the inside domain certifies the routed DDC. -/
+/-- If `F(us) → E(map request us)`, the router converts the inside domain `E` to the
+outside domain `F`, using one inside query per outside input. The history condition covers
+the pending query as well as completed calls. -/
 lemma routingConverter_isDDCFrom {O J : Type} {U V : O → Type} {X Y : J → Type}
     (request : (Σ o, U o) → Σ j, X j)
     (answer : (u : Σ o, U o) → (Σ j, Y j) → V u.1)

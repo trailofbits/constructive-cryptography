@@ -108,6 +108,15 @@ The call rule may choose later inside queries from earlier replies.
 An [input-dependent router][routingConverter] can move a payload field into the inside port label;
 its [typed attachment][TypedConverter.ofDDC_routingConverter_smul_ofFunction] returns the explicitly
 translated inside answer at the original outside port.
+Writing $`\operatorname{request}(u) = (j,x)`$, the outside function is
+
+```math
+g(u) = \operatorname{answer}\bigl(u,(j,f_j(x))\bigr).
+```
+
+The input $`u`$ is retained until the inside reply arrives. For outside domain $`F`$ and
+inside domain $`E`$, the domain guarantee follows from
+$`F(us) \Rightarrow E(\operatorname{map}(\operatorname{request},us))`$.
 
 ## Typed games
 

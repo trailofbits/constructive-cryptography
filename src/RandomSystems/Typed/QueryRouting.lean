@@ -7,12 +7,17 @@ import RandomSystems.Typed.CallFunctional
 The systems-level router moves a port choice from an input value into the inside port label.
 Its typed attachment forwards the request and returns the translated answer at the original
 outside port. The answer translation is explicit, so output alphabets may be heterogeneous.
+If `request u = (j,x)`, attachment to fixed functions `f_j` gives the outside function
+`g(u) = answer u (j, f_j(x))`. Its domain guarantee follows from
+`F(us) → E(map request us)`, where `F = A.domain` and `E = B.domain`.
 -/
 
 namespace SystemAlgebra.TypedConverter
 
-/-- A certified router attached to a fixed inside function computes the routed outside
-function. The certificate includes the exact request-map domain obligation. -/
+/-- If `request u = (j,x)`, the router `α` attached to `f` computes
+`g(u) = answer u (j, f_j(x))`: `α • ofFunction f = ofFunction g`.
+The domain guarantee `ha` can be supplied by `routingConverter_isDDCFrom`, using
+`F(us) → E(map request us)` for `F = A.domain` and `E = B.domain`. -/
 lemma ofDDC_routingConverter_smul_ofFunction {A B : Interface}
     (request : (Σ o, A.X o) → Σ j, B.X j)
     (answer : (u : Σ o, A.X o) → (Σ j, B.Y j) → A.Y u.1)
