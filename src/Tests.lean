@@ -4,6 +4,7 @@ import Tests.Axioms.CC
 import Tests.Axioms.Commons
 import Tests.Axioms.Systems
 import Tests.Counterexamples
+import Tests.DependentProduct
 import Tests.DirectCalls
 import Tests.NaryParallelSystems
 import Tests.DSL.Axioms
