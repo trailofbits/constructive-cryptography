@@ -153,6 +153,29 @@ lemma ofDDC_apply {A B : Interface} (α : InsideOutsideSystem A.I B.I A.X A.Y B.
       if Replies α (t.map Prod.fst) (t.map Prod.snd) then 1 else 0 :=
   PDCBehavior.ofDDC_apply α hα t
 
+/-- A direct certified DDC that is the trimmed serial wiring gives the same typed converter
+as the composition of its certified components. The chosen numerical certificates can differ.
+
+MR16 §3.3, printed p. 7: “(β ◦ α)ⁱR = βⁱ(αⁱR).” Jost's bounded converter
+(Definition 2.2.2, printed pp. 17–18) permits this direct presentation; the equality here
+identifies its behavior with the serial presentation. -/
+lemma ofDDC_eq_comp {A B C : Interface}
+    {α : InsideOutsideSystem A.I B.I A.X A.Y B.X B.Y}
+    {β : InsideOutsideSystem B.I C.I B.X B.Y C.X C.Y}
+    {γ : InsideOutsideSystem A.I C.I A.X A.Y C.X C.Y} {a b c : Nat}
+    (hα : IsDDCFrom B.domain A.domain a α) (hβ : IsDDCFrom C.domain B.domain b β)
+    (hγ : IsDDCFrom C.domain A.domain c γ) (he : γ = trim (serialM α β)) :
+    ofDDC γ hγ = comp (ofDDC α hα) (ofDDC β hβ) := by
+  -- Apply the existing serial law for deterministic converter behaviors.
+  change PDCBehavior.ofDDC γ hγ =
+    PDCBehavior.comp (PDCBehavior.ofDDC α hα) (PDCBehavior.ofDDC β hβ)
+  rw [PDCBehavior.comp_ofDDC]
+  subst γ
+  -- The behavior of a DDC depends on its replies, not on the chosen certificate.
+  apply PDCBehavior.ext
+  intro t
+  simp only [PDCBehavior.ofDDC_apply]
+
 /-- Attachment of a typed converter to a typed system. -/
 noncomputable def attach {A B : Interface} (α : TypedConverter A B) (R : TypedSystem B) :
     TypedSystem A :=
