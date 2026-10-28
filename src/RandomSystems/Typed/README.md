@@ -85,8 +85,23 @@ the composition law of [converters](../README.md#converters) on their random sys
 Sampling a transformed law [maps the same retained choice][TypedSystem.sample_fTransform], and
 converter attachment [commutes with that one sampling][TypedConverter.smul_sample].
 Two independent initial choices can be [grouped as a product][TypedSystem.sample_prod] or
-[sampled in either order][TypedSystem.sample_comm]. A fixed left system in parallel with a
-once-sampled right system [retains that one right-side choice][TypedSystem.parallel_sample_right].
+[sampled in either order][TypedSystem.sample_comm]: the second sampling law is fixed,
+independently of the first value. The laws may be nonuniform and the sample types infinite;
+only their supports are finite. Product regrouping follows from the product-weighted sum,
+and reordering follows by swapping the product coordinates and applying `sample_fTransform`.
+
+A fixed left system in parallel with a sampled right system
+[retains the right-side choice][TypedSystem.parallel_sample_right]:
+
+```math
+R \parallel \operatorname{sample}(P,S)
+= \operatorname{sample}(P, k \mapsto R \parallel S_k).
+```
+
+The draw is retained for the whole interaction and used only to select $`S_k`$. The same
+left system $`R`$ is used for every $`k`$, with its own independent randomness. An environment
+may still adapt queries using either component's replies.
+
 For a certified [direct call rule][callRule], pointwise query and return equations against a fixed
 inside function yield the [outside functional system][TypedConverter.ofDDC_callConverter_smul_ofFunction].
 The call rule may choose later inside queries from earlier replies.
