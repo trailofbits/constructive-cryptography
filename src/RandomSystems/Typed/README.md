@@ -48,7 +48,20 @@ heterogeneous component interfaces. A fixed function on the combined interface
 Independent deterministic component presentations combine through
 [parallelAllPDS][TypedSystem.parallelAllPDS], which presents the
 [same typed system][TypedSystem.parallelAll_ofPDS] as the n-ary parallel behavior.
-Stochastic n-ary attachment requires a separate locality theorem.
+[General locality][TypedConverter.parallelAll_attach] attaches independently sampled
+converters to independently sampled resources component by component:
+
+```text
+(⨂ₘ k, α k) • (∥ k, R k) = ∥ k, (α k • R k)
+```
+
+The theorem applies to arbitrary stochastic components. Its
+[functional corollary][TypedConverter.parallelAll_attach_ofFunction] assembles supplied
+component realization equalities without revisiting their internal transcripts.
+[The binary bridge][TypedSystem.parallelAll_option_mass] uses an explicit alphabet
+equivalence; regrouping does not identify different interface types implicitly.
+A sample shared outside the whole family remains shared, and an aggregate budget remains
+an aggregate restriction rather than a separate full budget for every component.
 A label-preserving
 bijection of interfaces gives a [**renaming**][TypedConverter.rename], which
 [relabels the transcripts][TypedConverter.rename_mass] of the typed system it is attached to;
@@ -196,3 +209,7 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedGame.visible_ofPDG]: PresentedGame.lean#L51
 [TypedGame.ofSingleFunction]: PresentedGame.lean#L88
 [TypedGame.ofSingleFunction_conditionallyEquivalent]: PresentedGame.lean#L101
+
+[TypedConverter.parallelAll_attach]: ParallelAllAttachment.lean
+[TypedConverter.parallelAll_attach_ofFunction]: ParallelAllAttachment.lean
+[TypedSystem.parallelAll_option_mass]: ParallelAllRegroup.lean

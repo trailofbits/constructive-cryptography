@@ -1,4 +1,5 @@
-import RandomSystems.Typed.ParallelAllPresentation
+import RandomSystems.Typed.ParallelAllAttachment
+import RandomSystems.Typed.ParallelAllRegroup
 
 /-!
 # Typed finite parallel families
@@ -84,6 +85,41 @@ example : sharedBit ≠ independentBit := by
   have hm := congrArg (fun R : TypedSystem (⨂ _k : Bool, bitInterface) => R.1 mixedReplies) he
   rw [sharedBit_mixedReplies_eq_zero, independentBit_mixedReplies_eq_quarter] at hm
   norm_num at hm
+
+/-- Locality elaborates directly for heterogeneous stochastic components. -/
+example (α : ∀ k, TypedConverter (heterogeneousFamily k) (heterogeneousFamily k))
+    (R : ∀ k, TypedSystem (heterogeneousFamily k)) :
+    (⨂ₘ k, α k) • (∥ k, R k) = ∥ k, (α k • R k) :=
+  TypedConverter.parallelAll_attach α R
+
+/-- The same statement admits the empty family without a positive budget assumption. -/
+example {A B : Empty → Interface} (α : ∀ k, TypedConverter (A k) (B k))
+    (R : ∀ k, TypedSystem (B k)) :
+    (⨂ₘ k, α k) • (∥ k, R k) = ∥ k, (α k • R k) :=
+  TypedConverter.parallelAll_attach α R
+
+/-- A component budget of one permits two total queries; a shared total budget of one does not. -/
+example :
+    (⨂ _k : Bool, bitInterface).domain
+      [⟨⟨false, ()⟩, ()⟩, ⟨⟨true, ()⟩, ()⟩] ∧
+    ¬ (Interface.queryBudget (Σ _k : Bool, Unit) (fun _ => Unit) (fun _ => Bool) 1).domain
+      [⟨⟨false, ()⟩, ()⟩, ⟨⟨true, ()⟩, ()⟩] := by
+  simp [Interface.tensorAll, parallelAllInputs, bitInterface,
+    Interface.queryBudget, Equiv.sigmaAssoc, SystemAlgebra.restrict]
+
+/-- The binary bridge retains both the family tag and the component's local port. -/
+example {A : Option Unit → Interface} (R : ∀ k, TypedSystem (A k))
+    (h : List ((Σ l, (⨂ k, A k).X l) × (Σ l, (⨂ k, A k).Y l))) :
+    (∥ k, R k).1 h = (TypedSystem.parallel (R none) (R (some ()))).1
+      (h.map ((Interface.optionFamilyAlphabet fun k => (A k).X).prodCongr
+        (Interface.optionFamilyAlphabet fun k => (A k).Y))) :=
+  TypedSystem.parallelAll_option_mass R h
+
+#print axioms SystemAlgebra.parAll_interconnect_all
+#print axioms SystemAlgebra.trim_apply_tensorAllL_parAll
+#print axioms SystemAlgebra.TypedConverter.parallelAll_attach
+#print axioms SystemAlgebra.TypedConverter.parallelAll_attach_ofFunction
+#print axioms SystemAlgebra.TypedSystem.parallelAll_option_mass
 
 #print axioms SystemAlgebra.TypedSystem.parallelAll
 #print axioms SystemAlgebra.TypedSystem.ofFunction_parallelAll

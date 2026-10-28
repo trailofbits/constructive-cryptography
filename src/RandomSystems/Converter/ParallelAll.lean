@@ -562,6 +562,43 @@ noncomputable def tensorAllPDC
     Distribution.fTransform_isProbDist _
       (Distribution.piDep_isProbDist fun k => (P k).2)⟩
 
+omit [∀ k, Fintype (O k)] [∀ k, Fintype (J k)] [∀ k o, Fintype (U k o)]
+  [∀ k o, Fintype (V k o)] [∀ k j, Fintype (X k j)] [∀ k j, Fintype (Y k j)] in
+open Classical in
+/-- The cumulative law of independent n-ary converters factors along the component
+histories, provided the joint transcript is admitted and its tags are consistent. -/
+lemma behaviorMass_tensorAllPDC
+    (P : ∀ k, Distribution.ProbDist {a : InsideOutsideSystem (O k) (J k) (U k) (V k) (X k) (Y k) //
+      IsDDCFrom (E k) (F k) (b k) a})
+    (t : List ((Σ l, twoFam (fun o : Σ k, O k => U o.1 o.2)
+      (fun j : Σ k, J k => Y j.1 j.2) l) ×
+      (Σ l, twoFam (fun o : Σ k, O k => V o.1 o.2)
+        (fun j : Σ k, J k => X j.1 j.2) l))) :
+    behaviorMass (tensorAllPDC P).1 (t.map Prod.fst) (t.map Prod.snd) =
+      if Admitted converterAdmits t ∧
+          RandomSystem.parallelAllConsistent
+            (t.map (tensorAllInputs.prodCongr tensorAllOutputs.symm)) then
+        ∏ k, behaviorMass (P k).1
+          ((RandomSystem.restrictExchanges k
+            (t.map (tensorAllInputs.prodCongr tensorAllOutputs.symm))).map Prod.fst)
+          ((RandomSystem.restrictExchanges k
+            (t.map (tensorAllInputs.prodCongr tensorAllOutputs.symm))).map Prod.snd)
+      else 0 := by
+  -- A joint reply transcript consists exactly of the compatible component transcripts.
+  unfold behaviorMass tensorAllPDC
+  rw [Distribution.mass_fTransform]
+  simp only [tensorAllL, replies_canon_iff _ tensorAllRaw_silentAtEmpty,
+    replies_tensorAllRaw_iff]
+  split_ifs with hc
+  · -- Independence factors the component events, without changing their histories.
+    rw [Distribution.mass_congr _ fun f => ⟨fun h => h.2.2, fun h => ⟨hc.1, hc.2, h⟩⟩]
+    exact Distribution.piDep_mass_forall (fun k => (P k).1) (fun k s => Replies s.1
+      ((RandomSystem.restrictExchanges k
+        (t.map (tensorAllInputs.prodCongr tensorAllOutputs.symm))).map Prod.fst)
+      ((RandomSystem.restrictExchanges k
+        (t.map (tensorAllInputs.prodCongr tensorAllOutputs.symm))).map Prod.snd))
+  · exact Distribution.mass_eq_zero_of_forall_not _ fun _ hf => hc ⟨hf.1, hf.2.1⟩
+
 variable {m n : K → ℕ} {hE : ∀ k h, E k h → h.length ≤ m k} {hF : ∀ k h, F k h → h.length ≤ n k}
 
 open Classical in
@@ -576,6 +613,24 @@ noncomputable def PDCBehavior.tensorAll
       (parallelAllInputs E) (∑ k, m k) (parallelAllInputs_length_le hE)
       (parallelAllInputs F) (∑ k, n k) (parallelAllInputs_length_le hF) :=
   PDCBehavior.ofPDC (tensorAllPDC fun k => (α k).2.choose_spec.choose)
+
+open Classical in
+/-- Any component presentations present the same n-ary converter behavior. -/
+lemma PDCBehavior.tensorAll_presents
+    (α : ∀ k, PDCBehavior (O k) (J k) (U k) (V k) (X k) (Y k)
+      (E k) (m k) (hE k) (F k) (n k) (hF k))
+    (P : ∀ k, Distribution.ProbDist {a : InsideOutsideSystem (O k) (J k) (U k) (V k) (X k) (Y k) //
+      IsDDCFrom (E k) (F k) (b k) a})
+    (hP : ∀ k h, behaviorMass (P k).1 (h.map Prod.fst) (h.map Prod.snd) = (α k).1 h)
+    (t : List ((Σ l, twoFam (fun o : Σ k, O k => U o.1 o.2)
+      (fun j : Σ k, J k => Y j.1 j.2) l) ×
+      (Σ l, twoFam (fun o : Σ k, O k => V o.1 o.2)
+        (fun j : Σ k, J k => X j.1 j.2) l))) :
+    (PDCBehavior.tensorAll α).1 t =
+      behaviorMass (tensorAllPDC P).1 (t.map Prod.fst) (t.map Prod.snd) := by
+  -- Both presentation choices factor into the same component cumulative masses.
+  change behaviorMass (tensorAllPDC _).1 _ _ = _
+  simp only [behaviorMass_tensorAllPDC, hP, fun k => (α k).2.choose_spec.choose_spec]
 
 open Classical in
 /-- **The n-ary parallel composition of DDCs** as behaviors is the behavior of their n-ary
