@@ -17,6 +17,7 @@ import Tests.ProbabilityTablePatterns
 import Tests.QueryRouting
 import Tests.ResourceSpecification
 import Tests.SamplingAlgebra
+import Tests.SerialAccounting
 import Tests.Substitution.Axioms
 import Tests.Substitution.Calculation
 import Tests.Substitution.Construction

@@ -420,6 +420,20 @@ noncomputable def callConverter {O J : Type} {U V : O → Type} {X Y : J → Typ
     (F : List (Σ o, U o) → Prop) : InsideOutsideSystem O J U V X Y :=
   filterDom (fun h => outsideInputs h = [] ∨ F (outsideInputs h)) (canon (callRule call))
 
+/-- Canonicalization and outside-domain restriction preserve the direct rule's aggregate
+query bound, including the last query of an interrupted invocation. -/
+lemma callConverter_query_count {O J : Type} {U V : O → Type} {X Y : J → Type}
+    (call : (u : Σ o, U o) → List (Σ j, Y j) → V u.1 ⊕ (Σ j, X j))
+    (cost : (Σ o, U o) → Nat)
+    (hphase : ∀ u replies, (call u replies).isRight = true → replies.length < cost u)
+    (F : List (Σ o, U o) → Prop) (T : List (_ × _))
+    (hr : Replies (callConverter call F) (T.map Prod.fst) (T.map Prod.snd)) :
+    (insideQueries (T.map Prod.snd)).length ≤
+      ((outsideInputs (T.map Prod.fst)).map cost).sum := by
+  -- Forget the restrictions only to apply the rule's arbitrary-reply accounting law.
+  exact callRule_query_count call cost hphase T
+    (hr.mono fun h y hy => canon_mem ((filterDom_mem_iff _ _ h y).mp hy).2)
+
 /-- The charged outside domain implies the inside query budget. Any further inside-domain
 condition `P` remains an explicit obligation on the actual converter transcripts. -/
 lemma callConverter_isDDCFrom {O J : Type} {U V : O → Type} {X Y : J → Type}

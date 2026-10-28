@@ -8,8 +8,9 @@ converter's charge increases by that cost when it issues the query. This refines
 serial DDC run bound without changing its domain or serial wiring.
 
 The conclusion bounds the composite's *consecutive run*. It does not bound its aggregate work
-over all outside invocations. An aggregate theorem needs a separate accounting statement on
-every admissible intermediate-query transcript.
+over all outside invocations. `RandomSystems.Converter.SerialAccounting` provides the
+separate aggregate theorem, with query-value-dependent costs and a hypothesis on every
+partial component transcript.
 -/
 
 namespace SystemAlgebra

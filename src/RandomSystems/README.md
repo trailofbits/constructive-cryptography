@@ -58,6 +58,13 @@ The [n-ary converter][tensorAllL] canonicalizes its complete-history rule and co
 component domain certificates; [stochastic converter families][PDCBehavior.tensorAll]
 sample their components independently.
 
+[Aggregate serial accounting][IsDDCFrom.comp_query_charge_le] uses costs of actual
+intermediate query values. The inner component's partial-transcript bound includes pending
+calls. An input-only composite budget additionally requires the outer weighted sum to be
+bounded on every reply trace; consecutive-query bounds alone do not provide this result.
+[Direct call rules][callConverter_query_count] supply their aggregate bound from the
+arbitrary-reply phase contract.
+
 A [**probabilistic automaton**][RandomSystem.ofProbAutomaton] answers a query from its state with a
 law on the next state and the reply, a [probabilistic step][ProbStep]; its random system follows
 the [sub-law of the states][ProbStep.belief] reached with the replies of a transcript, whose weight
@@ -246,3 +253,6 @@ holds, whatever the number of the program's inside queries:
 [Program.replyLaw]: System/Memoryless.lean#L304
 [Program.memoryless_probCombine]: System/Memoryless.lean#L390
 [PDCBehavior.attach_ofDDC_ofProgramOn_memoryless]: System/Memoryless.lean#L421
+
+[IsDDCFrom.comp_query_charge_le]: Converter/SerialAccounting.lean
+[callConverter_query_count]: Converter/Calls.lean
