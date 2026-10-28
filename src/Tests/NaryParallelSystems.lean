@@ -1,4 +1,4 @@
-import RandomSystems.Cumulative.ParallelAll
+import RandomSystems.Cumulative.ParallelAllPresentation
 
 /-!
 # Finite parallel systems: boundary cases
@@ -18,6 +18,15 @@ variable (D : ∀ _k : Empty, Domain Unit Unit)
   (R : ∀ k : Empty, RandomSystem Unit Unit (D k))
 
 example : (RandomSystem.parallelAll R) [] = 1 := RandomSystem.mass_nil _
+
+example (P : ∀ _k : Empty, Probability.Distribution Unit)
+    (s : ∀ _k : Empty, Unit → System Unit Unit) :
+    RandomSystem.parallelAll R [] =
+      (Probability.Distribution.piDep P).mass (fun st =>
+        Replies (parAll (fun k => s k (st k))) [] []) := by
+  apply RandomSystem.parallelAll_mass_of_presentations R P s
+  intro k
+  cases k
 
 example : ¬ parallelAllInputs (K := Empty) (I := fun _ => Unit)
     (F := fun _ _ => Unit) (fun k => nomatch k) [] := by
@@ -63,6 +72,7 @@ example (D : ∀ b : Bool,
 
 #print axioms SystemAlgebra.RandomSystem.parallelAll
 #print axioms SystemAlgebra.RandomSystem.replies_parAll_iff
+#print axioms SystemAlgebra.RandomSystem.parallelAll_mass_of_presentations
 
 end
 end SystemAlgebra.Tests
