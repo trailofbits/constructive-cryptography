@@ -39,11 +39,27 @@ A behavior has an [advantage][DistinguisherBehavior.advantage], which is
 [triangle inequality][DistinguisherBehavior.advantage_triangle], and
 [is at most the distance][DistinguisherBehavior.advantage_le_transcriptDistance].
 
-[Observation of a retained sample](Mixture.lean) is linear:
-`RandomSystem.decisionProbability_mix` and `Domain.Distinguisher.probability_mix`
-move the one initial sample outside the observation probability. The typed
-[`transcriptDistance_sample_le`](../Typed/SamplingDistance.lean) preserves a common
-componentwise distance bound when both families use the same normalized sample law.
+## Initially sampled systems
+
+Choose a component with law $`P`$ and retain it throughout the interaction. For a fixed
+compatible distinguisher $`D`$, [the decision probability](Mixture.lean) is an average:
+
+```math
+\Pr[D(\operatorname{sample}(P, R)) = 1]
+= \sum_k P(k)\,\Pr[D(R_k) = 1].
+```
+
+`RandomSystem.decisionProbability_mix` proves this for a deterministic distinguisher by
+taking the decision event's mass in the transcript mixture. `Domain.Distinguisher.probability_mix`
+then averages over the distinguisher's independent random choice.
+
+For two families on the same interface, the typed
+[`transcriptDistance_sample_le`](../Typed/SamplingDistance.lean) derives
+$`\Delta(\operatorname{sample}(P, R), \operatorname{sample}(P, S)) \le \varepsilon`$
+from $`\Delta(R_k, S_k) \le \varepsilon`$ for every $`k`$. For each distinguisher, the
+triangle inequality bounds its advantage by the average of the component advantages;
+nonnegative weights summing to one preserve the common bound. The law may be nonuniform,
+but it must be the same in both mixtures. Sampling itself does not reveal the component index.
 
 ## Couplings
 

@@ -116,8 +116,9 @@ example {A : Option Unit → Interface} (R : ∀ k, TypedSystem (A k))
         (Interface.optionFamilyAlphabet fun k => (A k).Y))) :=
   TypedSystem.parallelAll_option_mass R h
 
-/-- The explicit regrouping also connects general stochastic n-ary attachment to binary
-converter attachment, not only to the binary resource product. -/
+/-- **Two components in family and binary form**: for arbitrary stochastic systems and
+converters, family attachment and binary attachment have equal cumulative probabilities
+after `optionFamilyAlphabet` maps the family-tagged transcript to the binary interface. -/
 example {A B : Option Unit → Interface} (α : ∀ k, TypedConverter (A k) (B k))
     (R : ∀ k, TypedSystem (B k))
     (h : List ((Σ l, (⨂ k, A k).X l) × (Σ l, (⨂ k, A k).Y l))) :
@@ -126,8 +127,9 @@ example {A B : Option Unit → Interface} (α : ∀ k, TypedConverter (A k) (B k
         TypedSystem.parallel (R none) (R (some ()))).1
         (h.map ((Interface.optionFamilyAlphabet fun k => (A k).X).prodCongr
           (Interface.optionFamilyAlphabet fun k => (A k).Y))) := by
-  -- Both locality laws expose the same component attachments; regroup only the alphabets.
+  -- Locality attaches each converter to its own component on both sides.
   rw [TypedConverter.parallelAll_attach, TypedConverter.parallel_attach]
+  -- The remaining parallel systems agree after relabelling the transcript's interface tags.
   exact TypedSystem.parallelAll_option_mass _ h
 
 #print axioms SystemAlgebra.parAll_interconnect_all
