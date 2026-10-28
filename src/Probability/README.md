@@ -51,10 +51,16 @@ fixes one independent value per distinct input; repeated inputs add no factor. T
 families with [the same equality pattern][fTransform_eval_uniform_eq_of_same_fibers] have the
 same output law, even when their table domains have different sizes. The index type may be
 infinite; the finite table domains keep both query images finite.
-If fresh coordinates are chosen from previously observed values, their
-[joint mass][uniform_mass_adaptive_eval_eq_mul] still contributes one independent uniform
-factor per chosen coordinate, provided the combined coordinate family is injective on the
-stated good event.
+A batch $`\mathrm{next}(b) : I \to X`$ may also be chosen from the revealed base values
+$`b = F \circ \mathrm{base}`$. If base and selected coordinates are jointly injective whenever
+$`\mathrm{good}(b)`$ holds, then [the joint mass][uniform_mass_adaptive_eval_eq_mul] is
+
+```math
+\Pr\big[\mathrm{good}(b) \wedge F \circ \mathrm{next}(b) = v\big]
+  = \Pr\big[\mathrm{good}(b)\big] \cdot \lvert Y \rvert^{-\lvert I \rvert} .
+```
+
+Outside the good event, coordinates may repeat, and the good event may have probability zero.
 
 <!-- Declarations -->
 
@@ -92,4 +98,4 @@ stated good event.
 [card_function_fiber_finset]: Counting.lean#L47
 [uniform_mass_transcript_eq]: Counting.lean#L197
 [fTransform_eval_uniform_eq_of_same_fibers]: Counting.lean#L234
-[uniform_mass_adaptive_eval_eq_mul]: Counting.lean#L281
+[uniform_mass_adaptive_eval_eq_mul]: Counting.lean#L299
