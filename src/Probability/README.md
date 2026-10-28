@@ -61,6 +61,10 @@ An event that ignores one table coordinate [factors from its fresh value]
 [uniform_mass_fresh_eval_eq]. A [symmetric pair union bound][mass_exists_pair_le_choose]
 counts each unordered pair once; [uniform-table collisions][uniform_mass_not_injOn_le_choose]
 therefore cost at most $`\binom{|S|}{2}/|Y|`$ on a fixed queried set $`S`$.
+A uniform-preserving [projection of a fresh full reply][uniform_mass_fresh_projected_eval_eq]
+remains uniform after a transcript event that ignores its coordinate. The
+[projected collision bound][uniform_mass_transcript_projected_collision_le] keeps the full
+reply table and charges only the visible output alphabet.
 
 <!-- Declarations -->
 
@@ -103,3 +107,5 @@ therefore cost at most $`\binom{|S|}{2}/|Y|`$ on a fixed queried set $`S`$.
 [uniform_mass_fresh_eval_eq]: Counting.lean
 [mass_exists_pair_le_choose]: Distribution.lean
 [uniform_mass_not_injOn_le_choose]: Counting.lean
+[uniform_mass_fresh_projected_eval_eq]: Counting.lean
+[uniform_mass_transcript_projected_collision_le]: Counting.lean

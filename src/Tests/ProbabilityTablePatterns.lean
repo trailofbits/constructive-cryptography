@@ -57,10 +57,38 @@ example : (Distribution.uniform (Bool → Bool)).mass
   intro f g he
   simp only [he false (by simp)]
 
+/-- Discarding the second bit of a full uniform reply leaves a uniform first bit. -/
+lemma pair_first_uniform :
+    Distribution.fTransform Prod.fst (Distribution.uniform (Bool × Bool)) =
+      Distribution.uniform Bool := by
+  rw [← Distribution.prod_uniform, Distribution.fTransform_fst_prod,
+    Distribution.weight_uniform, one_smul]
+
+/-- The transcript still records the entire old reply while the next test sees a projection. -/
+example : (Distribution.uniform (Bool → Bool × Bool)).mass
+    (fun f => f false = (true, false) ∧ (f true).1 = true) =
+      (Distribution.uniform (Bool → Bool × Bool)).mass
+        (fun f => f false = (true, false)) / 2 := by
+  apply uniform_mass_fresh_projected_eval_eq Prod.fst pair_first_uniform
+  intro f g he
+  simp only [he false (by simp)]
+
+/-- Projected collision accounting retains full replies in the table and transcript. -/
+example (h : List (Bool × (Bool × Bool))) (x : Bool)
+    (hg : ∀ a ∈ h, ∀ b ∈ h, a.2.1 = b.2.1 → a.1 = b.1) :
+    (Distribution.uniform (Bool → Bool × Bool)).mass (fun f =>
+      (∀ z ∈ h, f z.1 = z.2) ∧ ∃ z ∈ h, z.1 ≠ x ∧ (f x).1 = z.2.1) ≤
+        (h.length : ℝ) / 2 *
+          (Distribution.uniform (Bool → Bool × Bool)).mass
+            (fun f => ∀ z ∈ h, f z.1 = z.2) := by
+  simpa using uniform_mass_transcript_projected_collision_le Prod.fst
+    pair_first_uniform h x hg
+
 #print axioms Probability.Counting.uniform_mass_transcript_eq
 #print axioms Probability.Counting.fTransform_eval_uniform_eq_of_same_fibers
 #print axioms Probability.Counting.uniform_mass_fresh_eval_eq
 #print axioms Probability.Counting.uniform_mass_not_injOn_le_choose
+#print axioms Probability.Counting.uniform_mass_transcript_projected_collision_le
 #print axioms Probability.Distribution.mass_exists_pair_le_choose
 
 end Probability.Counting.Tests
