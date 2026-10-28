@@ -65,6 +65,10 @@ A uniform-preserving [projection of a fresh full reply][uniform_mass_fresh_proje
 remains uniform after a transcript event that ignores its coordinate. The
 [projected collision bound][uniform_mass_transcript_projected_collision_le] keeps the full
 reply table and charges only the visible output alphabet.
+[Disjoint finite table restrictions][uniform_mass_disjoint_events] factor for arbitrary
+events on their respective output tuples. The [base-set form]
+[uniform_mass_fresh_outputs_eq] applies when an event depends only on a named finite set
+of coordinates and the other outputs lie outside it.
 
 <!-- Declarations -->
 
@@ -109,3 +113,5 @@ reply table and charges only the visible output alphabet.
 [uniform_mass_not_injOn_le_choose]: Counting.lean
 [uniform_mass_fresh_projected_eval_eq]: Counting.lean
 [uniform_mass_transcript_projected_collision_le]: Counting.lean
+[uniform_mass_disjoint_events]: Counting.lean
+[uniform_mass_fresh_outputs_eq]: Counting.lean

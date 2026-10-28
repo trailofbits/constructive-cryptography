@@ -84,11 +84,27 @@ example (h : List (Bool × (Bool × Bool))) (x : Bool)
   simpa using uniform_mass_transcript_projected_collision_le Prod.fst
     pair_first_uniform h x hg
 
+/-- A constraint on coordinate zero factors from a disjoint output at coordinate one. -/
+example : (Distribution.uniform (Fin 3 → Bool)).mass
+    (fun f => f 0 = true ∧ f 1 = false) =
+      (Distribution.uniform (Fin 3 → Bool)).mass (fun f => f 0 = true) *
+        (Distribution.uniform (Unit → Bool)).mass (fun g => g () = false) := by
+  simpa using uniform_mass_fresh_outputs_eq ({0} : Finset (Fin 3))
+    (fun _ : Unit => 1) (by intro a b _; cases a; cases b; rfl)
+    (by intro i; cases i; simp) false
+    (fun f => f 0 = true) (fun g => g () = false)
+    (by
+      intro f g h
+      have h0 := h 0 (by simp)
+      simp only [h0])
+
 #print axioms Probability.Counting.uniform_mass_transcript_eq
 #print axioms Probability.Counting.fTransform_eval_uniform_eq_of_same_fibers
 #print axioms Probability.Counting.uniform_mass_fresh_eval_eq
 #print axioms Probability.Counting.uniform_mass_not_injOn_le_choose
 #print axioms Probability.Counting.uniform_mass_transcript_projected_collision_le
+#print axioms Probability.Counting.uniform_mass_disjoint_events
+#print axioms Probability.Counting.uniform_mass_fresh_outputs_eq
 #print axioms Probability.Distribution.mass_exists_pair_le_choose
 
 end Probability.Counting.Tests
