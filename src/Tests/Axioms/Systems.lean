@@ -302,6 +302,9 @@ typed converters, and the counterexamples, depend only on `propext`, `Classical.
 #print axioms SystemAlgebra.TypedSystem.exists_ofPDS
 #print axioms SystemAlgebra.TypedConverter.identity_attach
 #print axioms SystemAlgebra.TypedConverter.comp_smul
+#print axioms SystemAlgebra.TypedConverter.ofDDC_eq_comp
+#print axioms SystemAlgebra.TypedConverter.smul_sample
+#print axioms SystemAlgebra.TypedSystem.sample_fTransform
 
 -- RandomSystems.Typed.Memoryless
 #print axioms SystemAlgebra.TypedSystem.source_eq_memoryless

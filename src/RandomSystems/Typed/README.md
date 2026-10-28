@@ -32,6 +32,9 @@ of PDC behaviors, with the [identity][TypedConverter.id] PDC behavior.
 [**Attachment**][TypedConverter.attach] $`\alpha R`$ is the attachment of the PDC behavior:
 [the identity leaves a typed system unchanged][TypedConverter.identity_attach], and
 [a serial composition attaches its inner converter first][TypedConverter.comp_smul].
+A direct DDC identified with a trimmed serial wiring [gives the same typed converter]
+[TypedConverter.ofDDC_eq_comp] as the composition of its certified parts, even when its
+separately proved query bound differs from the product bound.
 
 [**Parallel interfaces**][Interface.tensor] put the label sets side by side, and
 [parallel typed systems][TypedSystem.parallel] and [parallel typed converters][TypedConverter.parallel]
@@ -79,6 +82,8 @@ the composition law of [converters](../README.md#converters) on their random sys
 **Functional systems** are given by [reply functions][TypedSystem.ofFunction], by
 [conditional reply laws][TypedSystem.ofConditional], or by
 [sampling once][TypedSystem.sample] and keeping the sample.
+Sampling a transformed law [maps the same retained choice][TypedSystem.sample_fTransform], and
+converter attachment [commutes with that one sampling][TypedConverter.smul_sample].
 
 ## Typed games
 
@@ -108,6 +113,7 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedConverter.attach]: Interface.lean#L157
 [TypedConverter.identity_attach]: Interface.lean#L171
 [TypedConverter.comp_smul]: Interface.lean#L177
+[TypedConverter.ofDDC_eq_comp]: Interface.lean#L157
 [Interface.tensor]: Parallel.lean#L85
 [TypedSystem.parallel]: Parallel.lean#L153
 [TypedConverter.parallel]: Parallel.lean#L210
@@ -147,6 +153,8 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedSystem.ofFunction]: Functional.lean#L56
 [TypedSystem.ofConditional]: Functional.lean#L38
 [TypedSystem.sample]: Functional.lean#L176
+[TypedSystem.sample_fTransform]: Functional.lean#L190
+[TypedConverter.smul_sample]: Functional.lean#L218
 [Interface.withMBO]: Game.lean#L24
 [TypedGame]: Game.lean#L35
 [TypedConverter.attachGame]: Game.lean#L38
