@@ -84,6 +84,9 @@ the composition law of [converters](../README.md#converters) on their random sys
 [sampling once][TypedSystem.sample] and keeping the sample.
 Sampling a transformed law [maps the same retained choice][TypedSystem.sample_fTransform], and
 converter attachment [commutes with that one sampling][TypedConverter.smul_sample].
+Two independent initial choices can be [grouped as a product][TypedSystem.sample_prod] or
+[sampled in either order][TypedSystem.sample_comm]. A fixed left system in parallel with a
+once-sampled right system [retains that one right-side choice][TypedSystem.parallel_sample_right].
 For a certified [direct call rule][callRule], pointwise query and return equations against a fixed
 inside function yield the [outside functional system][TypedConverter.ofDDC_callConverter_smul_ofFunction].
 The call rule may choose later inside queries from earlier replies.
@@ -156,6 +159,9 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedSystem.ofFunction]: Functional.lean#L56
 [TypedSystem.ofConditional]: Functional.lean#L38
 [TypedSystem.sample]: Functional.lean#L176
+[TypedSystem.sample_prod]: SamplingAlgebra.lean
+[TypedSystem.sample_comm]: SamplingAlgebra.lean
+[TypedSystem.parallel_sample_right]: SamplingAlgebra.lean
 [callRule]: ../Converter/Calls.lean
 [TypedConverter.ofDDC_callConverter_smul_ofFunction]: CallRuleFunctional.lean
 [TypedSystem.sample_fTransform]: Functional.lean#L190
