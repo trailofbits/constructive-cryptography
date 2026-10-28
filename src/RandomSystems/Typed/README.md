@@ -39,7 +39,14 @@ separately proved query bound differs from the product bound.
 [**Parallel interfaces**][Interface.tensor] put the label sets side by side, and
 [parallel typed systems][TypedSystem.parallel] and [parallel typed converters][TypedConverter.parallel]
 are the independent parallel compositions; attachment [is local][TypedConverter.parallel_attach],
-$`(\alpha \otimes \beta)(R \parallel S) = \alpha R \parallel \beta S`$. A label-preserving
+$`(\alpha \otimes \beta)(R \parallel S) = \alpha R \parallel \beta S`$.
+The [finite tagged interface family][Interface.tensorAll], its
+[independent system family][TypedSystem.parallelAll], and its
+[independent converter family][TypedConverter.parallelAll] extend these objects to
+heterogeneous component interfaces. A fixed function on the combined interface
+[assembles from its component functions][TypedSystem.ofFunction_parallelAll].
+Stochastic n-ary attachment requires a separate locality theorem.
+A label-preserving
 bijection of interfaces gives a [**renaming**][TypedConverter.rename], which
 [relabels the transcripts][TypedConverter.rename_mass] of the typed system it is attached to;
 renamings [compose][TypedConverter.rename_comp], and the renaming by the identity
@@ -127,6 +134,10 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedSystem.parallel]: Parallel.lean#L153
 [TypedConverter.parallel]: Parallel.lean#L210
 [TypedConverter.parallel_attach]: ParallelAttachment.lean#L23
+[Interface.tensorAll]: ParallelAll.lean#L41
+[TypedSystem.parallelAll]: ParallelAll.lean#L108
+[TypedConverter.parallelAll]: ParallelAll.lean#L166
+[TypedSystem.ofFunction_parallelAll]: ParallelAll.lean#L191
 [TypedConverter.rename]: Relabel.lean#L48
 [TypedConverter.rename_comp]: Relabel.lean#L80
 [TypedConverter.rename_refl]: Relabel.lean#L67
