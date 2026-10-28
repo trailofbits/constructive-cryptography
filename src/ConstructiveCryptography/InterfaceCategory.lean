@@ -41,6 +41,12 @@ whose domains are still to be inferred takes them from the typed system it acts 
 noncomputable instance {A B : Interface} : HSMul (A ⟶ B) (TypedSystem B) (TypedSystem A) :=
   ⟨TypedConverter.attach⟩
 
+/-- Categorical and direct typed actions are the same `TypedConverter.attach` operation.
+The explicit typed view selects the direct action instance for rewriting without unfolding
+systems or converter behaviors. It adds no assumption about attachment. -/
+lemma smul_eq_typed_smul {A B : Interface} (α : A ⟶ B) (R : TypedSystem B) :
+    α • R = (show TypedConverter A B from α) • R := rfl
+
 /-- **Attaching the identity** leaves a typed system unchanged. -/
 lemma identity_attach {A : Interface} (R : TypedSystem A) : (𝟙 A • R : TypedSystem A) = R :=
   TypedConverter.identity_attach R

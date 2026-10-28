@@ -75,6 +75,13 @@ noncomputable instance resourceTheory :
   attach_identity := TypedConverter.identity_attach
   attach_serial := TypedConverter.comp_smul
 
+/-- The selected CC instance's attachment field is the direct typed action.
+This is a representation equality for `resourceTheory`, not a law about an arbitrary
+resource theory or a choice of another action on typed systems. -/
+lemma attach_eq_typed_smul {A B : Interface} (α : A ⟶ B) (R : TypedSystem B) :
+    ConstructiveCryptography.ResourceTheory.attach α R =
+      (show TypedConverter A B from α) • R := rfl
+
 lemma parallel_assoc {A B C : Interface} (R : TypedSystem A) (S : TypedSystem B)
     (T : TypedSystem C) :
     ((associator A B C).inv • TypedSystem.parallel (TypedSystem.parallel R S) T :

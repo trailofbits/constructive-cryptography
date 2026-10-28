@@ -13,9 +13,12 @@ parallel composition, `S —[α]→ T` and `S —[α; ε]→ T` for exact and ap
 typed system. The compatibility laws of the distance are restated with `∥`, the parallel
 composition `TypedSystem.parallel`, for the `cc_nonexpand` tactic, and `cc_normalize` applies
 locality, `(α ⊗ₘ β) • (R ∥ S) = α • R ∥ β • S`, whether the interfaces are written with `⊗` or
-with `Interface.tensor`. It also applies finite-family locality and pushes attachment
-through one retained initial sample. The same sample remains outside the entire family;
-normalization never distributes shared randomness into independent component samples.
+with `Interface.tensor`. Direct typed actions, categorical actions and the selected CC
+instance's attachment field normalize using the same typed laws, including after serial
+composition or `cc_construct`. Finite-family locality and attachment through initial sampling
+apply to arbitrary normalized laws, including nested samples whose laws depend on earlier
+draws. Each shared sample remains outside the entire family; normalization never distributes
+shared randomness into independent component samples.
 -/
 
 namespace SystemAlgebra
@@ -54,8 +57,15 @@ namespace Interface
 
 attribute [cc_normalization] comp_smul identity_attach
 
+-- Apply the existing categorical laws first, then reconcile the action's representation.
+-- This also exposes the attachment field left by `cc_construct` to the same typed laws.
+attribute [cc_normalization 100] smul_eq_typed_smul attach_eq_typed_smul
+
 -- These laws preserve each initial sample and each component's declared interface.
 attribute [cc_normalization]
+  TypedConverter.comp_smul
+  TypedConverter.identity_attach
+  TypedConverter.parallel_attach
   TypedConverter.smul_sample
   TypedConverter.parallelAll_attach
 
