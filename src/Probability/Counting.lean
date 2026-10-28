@@ -27,6 +27,8 @@ collision bounds.
 * `uniform_mass_transcript_eq`: repeated consistent queries constrain one table coordinate
 * `fTransform_eval_uniform_eq_of_same_fibers`: query families with the same equality pattern
   induce the same output law
+* `uniform_mass_adaptive_eval_eq_mul`: fresh coordinates chosen from previously revealed
+  values retain an independent uniform law
 * `uniform_mass_walk_eval_eq`, `uniform_mass_coord_determined_le`,
   `uniform_mass_walk_repeat_le`: lazy sampling along a walk
 * `card_filter_shift`, `card_filter_shift_univ`: re-randomization fibers
@@ -252,6 +254,69 @@ lemma fTransform_eval_uniform_eq_of_same_fibers {I X Z Y : Type*}
   congr 1
   funext table i
   exact congrArg table (hp i)
+
+/-- After revealing a finite family of base coordinates, fresh coordinates selected from
+those revealed values have independent uniform outputs. The good event depends only on the
+base observations, and the union of base and selected coordinates is injective whenever good
+holds.
+
+MauRen16, printed p. 6, models the URF by "a uniformly chosen function table F" whose
+query at `x` returns `F (x)`. This adaptive finite-coordinate formula is derived from that
+table model and `uniform_mass_eval_eq`; it is not a separately stated paper theorem. -/
+lemma uniform_mass_adaptive_eval_eq_mul {X Y B I : Type}
+    [Fintype X] [DecidableEq X] [Fintype Y] [Nonempty Y]
+    [Finite B] [Fintype I]
+    (base : B → X) (hbase : Function.Injective base)
+    (next : (B → Y) → I → X) (good : (B → Y) → Prop)
+    (hfresh : ∀ b, good b → Function.Injective (Sum.elim base (next b))) (values : I → Y) :
+    (Distribution.uniform (X → Y)).mass (fun f =>
+      good (fun b => f (base b)) ∧ (fun i => f (next (fun b => f (base b)) i)) = values) =
+        (Distribution.uniform (X → Y)).mass (fun f => good (fun b => f (base b))) *
+          (1 / (Fintype.card Y : ℝ)) ^ Fintype.card I := by
+  classical
+  let := Fintype.ofFinite B
+  let F := Distribution.uniform (X → Y)
+  let observe := fun f : X → Y => fun b => f (base b)
+  -- Partition both masses by the already revealed base tuple.
+  rw [Distribution.mass_eq_sum_mass_fiber F _ observe Finset.univ
+      (fun _ _ => Finset.mem_univ _),
+    Distribution.mass_eq_sum_mass_fiber F _ observe Finset.univ
+      (fun _ _ => Finset.mem_univ _), Finset.sum_mul]
+  apply Finset.sum_congr rfl
+  intro b _
+  by_cases hb : good b
+  · -- On a good base tuple, combine the base and fresh observations into one injective family.
+    have hleft : F.mass (fun f =>
+        (good (observe f) ∧ (fun i => f (next (observe f) i)) = values) ∧ observe f = b) =
+        F.mass (fun f => (fun c : B ⊕ I => f (Sum.elim base (next b) c)) =
+          Sum.elim b values) := by
+      apply Distribution.mass_congr
+      intro f
+      constructor
+      · rintro ⟨⟨_, hy⟩, hf⟩
+        funext c
+        cases c with
+        | inl c => exact congrFun hf c
+        | inr i => rw [hf] at hy; exact congrFun hy i
+      · intro he
+        have hf : observe f = b := funext fun c => congrFun he (.inl c)
+        refine ⟨⟨hf ▸ hb, ?_⟩, hf⟩
+        rw [hf]
+        exact funext fun i => congrFun he (.inr i)
+    have hright : F.mass (fun f => good (observe f) ∧ observe f = b) =
+        F.mass (fun f => observe f = b) :=
+      Distribution.mass_congr _ fun f =>
+        ⟨fun h => h.2, fun h => ⟨h ▸ hb, h⟩⟩
+    -- The joint and base masses differ by one uniform factor per fresh coordinate.
+    rw [hleft, hright,
+      uniform_mass_eval_eq _ (hfresh b hb) (Sum.elim b values),
+      uniform_mass_eval_eq base hbase b, Fintype.card_sum, pow_add]
+  · -- A base tuple outside the good event contributes zero to both sides.
+    rw [Distribution.mass_eq_zero_of_forall_not F (by
+        rintro f ⟨⟨hg, _⟩, hf⟩
+        exact hb (hf ▸ hg)), Distribution.mass_eq_zero_of_forall_not F (by
+        rintro f ⟨hg, hf⟩
+        exact hb (hf ▸ hg)), zero_mul]
 
 /-! ## Lazy sampling along a walk on a uniform random function -/
 

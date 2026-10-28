@@ -50,6 +50,10 @@ For a uniform function table, [a consistent query transcript][uniform_mass_trans
 fixes one independent value per distinct input; repeated inputs add no factor. Two query
 families with [the same equality pattern][fTransform_eval_uniform_eq_of_same_fibers] have the
 same output law, even when their table domains have different sizes.
+If fresh coordinates are chosen from previously observed values, their
+[joint mass][uniform_mass_adaptive_eval_eq_mul] still contributes one independent uniform
+factor per chosen coordinate, provided the combined coordinate family is injective on the
+stated good event.
 
 <!-- Declarations -->
 
@@ -87,3 +91,4 @@ same output law, even when their table domains have different sizes.
 [card_function_fiber_finset]: Counting.lean#L47
 [uniform_mass_transcript_eq]: Counting.lean#L194
 [fTransform_eval_uniform_eq_of_same_fibers]: Counting.lean#L222
+[uniform_mass_adaptive_eval_eq_mul]: Counting.lean#L266
