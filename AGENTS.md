@@ -287,6 +287,11 @@ globally; use `letI` or a wrapper carrier.
   Lean representation or a repository-specific modeling choice.
 - In proofs, short local comments expose each paper-level step; omit them only
   for Lean bookkeeping.
+- Explain the role of each code and proof step at its point of use. Give opaque
+  bookkeeping a terse comment, and describe the mathematical reason rather than
+  narrating tactic syntax.
+- Use small diagrams when they clarify wiring, shared randomness, call schedules,
+  history projections, or proof and reduction chains.
 - Put theorem-specific source and modeling facts in the docstring,
   representation and proof guidance in the owning module's documentation, and
   contributor rules in this file.
