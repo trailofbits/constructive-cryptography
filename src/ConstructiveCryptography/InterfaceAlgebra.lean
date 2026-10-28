@@ -1,3 +1,4 @@
+import RandomSystems.Distance.RevealedHCoefficient
 import RandomSystems.Typed.ParallelAttachment
 import RandomSystems.Typed.SystemCoherence
 import ConstructiveCryptography.InterfaceMonoidal
@@ -200,6 +201,14 @@ lemma cc_distance_eq {A : Interface} (R S : TypedSystem A) :
   change ConstructiveCryptography.advantageDistance (distinguishers A) R S = _
   simp only [ConstructiveCryptography.advantageDistance, distinguishers, iSup_range,
     Domain.DistinguisherBehavior.advantage]
+
+/-- A revealed-transcript H-coefficient argument bounds the existing interface distance. -/
+lemma distance_le_of_hCoefficient {A : Interface} {R S : TypedSystem A} {error : NNReal}
+    (w : RandomSystem.HCoefficient R.1 S.1 error) :
+    ConstructiveCryptography.CryptographicAlgebra.distance R S ≤ error := by
+  -- The interface instance uses precisely the cumulative systems' transcript distance.
+  rw [cc_distance_eq]
+  exact w.transcriptDistance_le_nnreal S.2
 
 /-- Interfaces carry a distinguishing advantage for every class `admissible` of admitted
 distinguishers: the distinguishers on `A` are the behaviors of the probabilistic distinguishers

@@ -1,3 +1,5 @@
+import RandomSystems.Cumulative.Revealed
+import RandomSystems.Distance.RevealedHCoefficient
 import RandomSystems.Converter.ConverterAttachment
 import RandomSystems.Converter.ConverterDomain
 import RandomSystems.Converter.ConverterRelabel

@@ -727,4 +727,26 @@ theorem statDist_sum_of_disjoint_support {A ι : Type*} [DecidableEq A]
     rw [hcell Xf (fun _ => Finset.subset_union_left) i hi a ha,
       hcell Yf (fun _ => Finset.subset_union_right) i hi a ha]
 
+/-- The expectation method: a pointwise ratio bounds distance by the ideal expected error.
+Hoang–Tessaro, CRYPTO 2016, §3; Jha, *Provable Security of Symmetric-key Cryptographic
+Schemes*, Lemma 2.2.1, printed pp. 19–20, uses a “non-negative function” of the transcript.
+This is its all-transcripts form, with bad points assigned error one. Multiplication avoids
+any division by a zero ideal mass. Equal total weights suffice; normalization is not needed. -/
+theorem statDist_le_expect_of_ratio {A : Type*} (real ideal : Distribution A)
+    (ε : A → ℝ) (hweight : real.weight = ideal.weight) (hε : ∀ a, 0 ≤ ε a)
+    (hideal : ideal.NonNeg) (ratio : ∀ a, (1 - ε a) * ideal a ≤ real a) :
+    statDist real ideal ≤ ideal.expect ε := by
+  classical
+  -- Equal weights let us sum the ideal positive deficit.
+  rw [statDist_symm_of_eq_weight _ _ hweight,
+    statDist_eq_sum_of_support_subset ideal real (s := ideal.support ∪ real.support)
+      (Finsupp.support_sub),
+    Distribution.expect_eq_sum_of_support_subset ideal ε Finset.subset_union_left]
+  -- The pointwise ratio bounds that deficit by its ideal weighted error.
+  refine Finset.sum_le_sum fun a _ => max_le ?_ (mul_nonneg (hideal a) (hε a))
+  have h := ratio a
+  rw [sub_mul, one_mul] at h
+  linarith [mul_comm (ε a) (ideal a)]
+
+
 end Probability

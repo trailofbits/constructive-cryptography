@@ -64,6 +64,17 @@ noncomputable def mix (P : Distribution.ProbDist ι) (R : ι → RandomSystem A 
 lemma mix_mass (P : Distribution.ProbDist ι) (R : ι → RandomSystem A B D)
     (h : List (A × B)) : mix P R h = ∑ i ∈ P.1.support, P.1 i * R i h := rfl
 
+/-- The transcript law of a mixture is the mixture of the transcript laws. -/
+lemma sLaw_mix (P : Distribution.ProbDist ι) (R : ι → RandomSystem A B D) (e : List B →. A)
+    (n : ℕ) : (mix P R).sLaw e n = ∑ k ∈ P.1.support, P.1 k • (R k).sLaw e n := by
+  -- The common environment indicator distributes over the finite mixture.
+  apply Finsupp.ext
+  intro h
+  simp only [sLaw_apply, mix_mass, Finsupp.finsetSum_apply, Finsupp.smul_apply, smul_eq_mul]
+  split_ifs
+  · rfl
+  · simp
+
 end Mix
 
 /-- Project the exchanges belonging to the left component. -/

@@ -334,6 +334,21 @@ lemma expect_prod_eq {A B : Type*} (first : Distribution A)
   simp only [Distribution.prod_apply, Distribution.expect, Finsupp.sum,
     Finset.mul_sum, mul_assoc]
 
+/-- An error constant on the classes of a partition has as expectation the sum of the class
+errors weighted by the class masses. -/
+lemma expect_comp_eq_sum_mass {A C : Type*} [Fintype C]
+    (X : Distribution A) (classOf : A → C) (ε : C → ℝ) :
+    X.expect (fun a => ε (classOf a)) = ∑ c, ε c * X.mass (fun a => classOf a = c) := by
+  classical
+  -- Sum each atom in its unique class.
+  unfold Distribution.expect Distribution.mass Finsupp.sum
+  simp only [Finset.mul_sum]
+  rw [Finset.sum_comm]
+  refine Finset.sum_congr rfl fun a _ => ?_
+  rw [Finset.sum_eq_single (classOf a) (fun c _ hc => by simp [Ne.symm hc])
+    (fun h => absurd (Finset.mem_univ _) h)]
+  simp [mul_comm]
+
 end Distribution
 
 end Probability
