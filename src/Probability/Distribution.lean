@@ -594,6 +594,11 @@ lemma uniform_isProbDist :
 
 instance : IsProbability (uniform A) := ⟨uniform_nonNeg, weight_uniform⟩
 
+/-- The uniform probability law on a finite nonempty type, retaining the normalization proof.
+The underlying distribution is `Distribution.uniform`; no mass is changed by this wrapper. -/
+noncomputable def ProbDist.uniform (A : Type*) [Fintype A] [Nonempty A] : ProbDist A :=
+  ⟨Distribution.uniform A, uniform_isProbDist⟩
+
 /-- The unique probability distribution on a one-point sample space. -/
 def unitProbDist : ProbDist PUnit :=
   ⟨uniform PUnit, uniform_isProbDist⟩
@@ -1860,5 +1865,9 @@ lemma fTransform_pi_castLE [Fintype A] [DecidableEq A] (μ : Distribution A) (h�
 end Products
 
 end Distribution
+
+/-- The normalized uniform law. Its type is `Distribution.ProbDist A`; use
+`Distribution.uniform A` when a raw distribution is required. -/
+notation "𝒰[" A "]" => Distribution.ProbDist.uniform A
 
 end Probability

@@ -23,6 +23,8 @@ distribution [3, §3.6.1]; mixed over a law $`\mu`$ it gives $`\sum_a \mu(a)\, f
 [is the point kernel of its function][bindK_single_comp], and an independent product
 [disintegrates][pi_eq_bindK_update] at a coordinate. Probability laws have
 [pushforwards][ProbDist.map] and [sequential compositions][ProbDist.bind].
+The notation `𝒰[A]` denotes the [normalized uniform law][ProbDist.uniform] of type
+`Distribution.ProbDist A`; `Distribution.uniform A` is its underlying raw distribution.
 
 ## Statistical distance
 
@@ -55,6 +57,7 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [prod]: Distribution.lean#L1005
 [pi]: Distribution.lean#L1646
 [uniform]: Distribution.lean#L566
+[ProbDist.uniform]: Distribution.lean#L599
 [bindK]: Kernel.lean#L49
 [bindK_bindK]: Kernel.lean#L95
 [bindK_single_comp]: Kernel.lean#L117

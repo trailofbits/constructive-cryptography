@@ -5,6 +5,8 @@ The surface uses indentation, `←` for computation/assignment, `` ←$ `` for s
 and `𝒰[T]` for the uniform law on a finite nonempty type. There are no braces,
 semicolons, `do` blocks, or combined assignment/bind operators in the surface.
 Lean remains the language for types, pure expressions, propositions, and proofs.
+The `𝒰[T]` notation comes from `Probability` and has type `Distribution.ProbDist T`;
+direct systems can use it without importing the component DSL.
 
 `interface`, `system`, `converter` and `filter` declarations compile to the typed systems and
 typed converters of [Typed](../../RandomSystems/Typed/README.md) at every budget ([DSL][DSL]);
