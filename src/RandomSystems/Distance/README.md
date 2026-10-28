@@ -39,6 +39,12 @@ A behavior has an [advantage][DistinguisherBehavior.advantage], which is
 [triangle inequality][DistinguisherBehavior.advantage_triangle], and
 [is at most the distance][DistinguisherBehavior.advantage_le_transcriptDistance].
 
+[Observation of a retained sample](Mixture.lean) is linear:
+`RandomSystem.decisionProbability_mix` and `Domain.Distinguisher.probability_mix`
+move the one initial sample outside the observation probability. The typed
+[`transcriptDistance_sample_le`](../Typed/SamplingDistance.lean) preserves a common
+componentwise distance bound when both families use the same normalized sample law.
+
 ## Couplings
 
 The [transcript][System.tr] $`\mathrm{tr}(s, E, n)`$ of a deterministic system $`s`$

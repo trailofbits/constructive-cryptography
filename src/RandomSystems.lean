@@ -1,3 +1,5 @@
+import RandomSystems.Distance.Mixture
+import RandomSystems.Typed.SamplingDistance
 import RandomSystems.Cumulative.Revealed
 import RandomSystems.Distance.RevealedHCoefficient
 import RandomSystems.Converter.ConverterAttachment

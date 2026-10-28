@@ -1,3 +1,4 @@
+import RandomSystems.Typed.ParallelAttachment
 import RandomSystems.Typed.ParallelAllAttachment
 import RandomSystems.Typed.ParallelAllRegroup
 
@@ -114,6 +115,20 @@ example {A : Option Unit → Interface} (R : ∀ k, TypedSystem (A k))
       (h.map ((Interface.optionFamilyAlphabet fun k => (A k).X).prodCongr
         (Interface.optionFamilyAlphabet fun k => (A k).Y))) :=
   TypedSystem.parallelAll_option_mass R h
+
+/-- The explicit regrouping also connects general stochastic n-ary attachment to binary
+converter attachment, not only to the binary resource product. -/
+example {A B : Option Unit → Interface} (α : ∀ k, TypedConverter (A k) (B k))
+    (R : ∀ k, TypedSystem (B k))
+    (h : List ((Σ l, (⨂ k, A k).X l) × (Σ l, (⨂ k, A k).Y l))) :
+    ((⨂ₘ k, α k) • (∥ k, R k)).1 h =
+      (TypedConverter.parallel (α none) (α (some ())) •
+        TypedSystem.parallel (R none) (R (some ()))).1
+        (h.map ((Interface.optionFamilyAlphabet fun k => (A k).X).prodCongr
+          (Interface.optionFamilyAlphabet fun k => (A k).Y))) := by
+  -- Both locality laws expose the same component attachments; regroup only the alphabets.
+  rw [TypedConverter.parallelAll_attach, TypedConverter.parallel_attach]
+  exact TypedSystem.parallelAll_option_mass _ h
 
 #print axioms SystemAlgebra.parAll_interconnect_all
 #print axioms SystemAlgebra.trim_apply_tensorAllL_parAll

@@ -128,6 +128,17 @@ lemma mass_smul (c : ℝ) (X : Distribution A) (P : A → Prop) :
   exact Finset.sum_congr rfl fun a _ => by
     by_cases h : P a <;> simp [h]
 
+/-- Event mass is additive over a finite family of laws. -/
+lemma mass_finset_sum {I X : Type*} (s : Finset I) (laws : I → Distribution X)
+    (event : X → Prop) :
+    (∑ i ∈ s, laws i).mass event = ∑ i ∈ s, (laws i).mass event := by
+  classical
+  -- Additivity over two laws iterates over the finite index set.
+  induction s using Finset.induction with
+  | empty => simp only [Finset.sum_empty, mass, Finsupp.sum_zero_index]
+  | insert i s hi ih => rw [Finset.sum_insert hi, mass_add, ih, Finset.sum_insert hi]
+
+
 /-- Normalization of a distribution: `X̂ = |X|⁻¹ · X`.  A probability
 distribution as soon as `X` is nonnegative of nonzero weight
 (`isProbDist_normalize`); the second of the two lifts. -/
