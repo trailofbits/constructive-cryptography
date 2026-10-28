@@ -24,6 +24,9 @@ collision bounds.
   `card_function_fiber_index`: the number of functions with prescribed values
 * `fTransform_eval_uniform_eq_uniform`, `uniform_mass_eval_eq`: evaluations of
   a uniform random function are uniform and independent
+* `uniform_mass_transcript_eq`: repeated consistent queries constrain one table coordinate
+* `fTransform_eval_uniform_eq_of_same_fibers`: query families with the same equality pattern
+  induce the same output law
 * `uniform_mass_walk_eval_eq`, `uniform_mass_coord_determined_le`,
   `uniform_mass_walk_repeat_le`: lazy sampling along a walk
 * `card_filter_shift`, `card_filter_shift_univ`: re-randomization fibers
@@ -180,6 +183,75 @@ lemma uniform_mass_eval_eq {X Y ι : Type*} [Fintype X] [DecidableEq X]
   rw [h, Fintype.card_fun, div_pow, one_pow]
   push_cast
   ring
+
+/-- A function-consistent transcript fixes one independent uniform value at each distinct
+input. Repeating an input adds no new factor. This is the finite-coordinate law
+`uniform_mass_eval_eq` applied to the transcript's set of queried coordinates.
+
+MauRen16, printed p. 6, describes the URF as "a uniformly chosen function table F" and
+queries as "receiving as output the value F (x)." The repeated-query mass formula follows
+from that table model; it is not stated as a separate paper theorem. -/
+lemma uniform_mass_transcript_eq {X Y : Type} [Fintype X] [DecidableEq X]
+    [Fintype Y] [Nonempty Y] (h : List (X × Y)) (g : X → Y)
+    (hg : ∀ z ∈ h, g z.1 = z.2) :
+    (Distribution.uniform (X → Y)).mass (fun f => ∀ z ∈ h, f z.1 = z.2) =
+      (1 / (Fintype.card Y : ℝ)) ^ (h.map Prod.fst).toFinset.card := by
+  classical
+  let points := (h.map Prod.fst).toFinset
+  -- The chosen values on `points` are consistent because `g` answers every exchange.
+  have hm := uniform_mass_eval_eq (fun x : points => x.val) Subtype.val_injective
+    (fun x : points => g x.val)
+  rw [Fintype.card_coe] at hm
+  refine Eq.trans ?_ hm
+  apply Distribution.mass_congr
+  intro f
+  constructor
+  · intro hf
+    funext x
+    obtain ⟨z, hz, he⟩ := List.mem_map.mp (List.mem_toFinset.mp x.property)
+    exact he ▸ (hf z hz).trans (hg z hz).symm
+  · intro hf z hz
+    have hx : z.1 ∈ points := List.mem_toFinset.mpr (List.mem_map.mpr ⟨z, hz, rfl⟩)
+    exact (congrFun hf ⟨z.1, hx⟩).trans (hg z hz)
+
+/-- Evaluation families with the same equality pattern have the same uniform value law.
+Only the finite image is revealed; the index type itself need not be finite.
+
+MauRen16, printed p. 6, specifies "a uniformly chosen function table F" queried by input.
+This equality is a derived finite-table consequence of that model, not a stated paper theorem. -/
+lemma fTransform_eval_uniform_eq_of_same_fibers {I X Z Y : Type*}
+    [Fintype X] [DecidableEq X] [Fintype Z] [DecidableEq Z]
+    [Fintype Y] [Nonempty Y]
+    (left : I → X) (right : I → Z)
+    (hfibers : ∀ i j, left i = left j ↔ right i = right j) :
+    Distribution.fTransform (fun f : X → Y => fun i => f (left i))
+        (Distribution.uniform (X → Y)) =
+      Distribution.fTransform (fun f : Z → Y => fun i => f (right i))
+        (Distribution.uniform (Z → Y)) := by
+  classical
+  -- Select one representative of every coordinate on the left.
+  let R := Set.range left
+  let : Fintype R := Fintype.ofFinite R
+  let selected (x : R) : I := x.property.choose
+  have hselected (x : R) : left (selected x) = x.val := x.property.choose_spec
+  let points (x : R) : Z := right (selected x)
+  have hinj : Function.Injective points := by
+    intro x y he
+    apply Subtype.ext
+    exact (hselected x).symm.trans (((hfibers _ _).mpr he).trans (hselected y))
+  have hp (i : I) : points ⟨left i, ⟨i, rfl⟩⟩ = right i :=
+    (hfibers _ _).mp (hselected ⟨left i, ⟨i, rfl⟩⟩)
+  let recover (values : R → Y) : I → Y := fun i => values ⟨left i, ⟨i, rfl⟩⟩
+  -- Both laws are the same uniform law on the selected coordinates.
+  have hl := fTransform_eval_uniform_eq_uniform (Y := Y)
+    (fun x : R => x.val) Subtype.val_injective
+  have hr := fTransform_eval_uniform_eq_uniform (Y := Y) points hinj
+  have he := congrArg (Distribution.fTransform recover) (hl.trans hr.symm)
+  simp only [Distribution.fTransform_fTransform] at he
+  refine he.trans ?_
+  congr 1
+  funext table i
+  exact congrArg table (hp i)
 
 /-! ## Lazy sampling along a walk on a uniform random function -/
 
