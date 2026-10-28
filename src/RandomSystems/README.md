@@ -100,6 +100,17 @@ first][PDCBehavior.attach_comp]. [Parallel composition][PDCBehavior.tensor] samp
 independently and runs them side by side, with [interchange][PDCBehavior.comp_tensor] against
 serial composition.
 
+A [**direct call rule**][callRule] reads the current outside invocation and its inside replies
+from the complete history. At each point it returns an outside value or issues an inside query.
+An [exact phase contract][callRule_completed_exact_length] gives the length of a completed call;
+an upper phase bound gives [responsiveness][callRule_isResponsiveDDC] and
+[aggregate accounting][callRule_query_count], including pending calls. Canonicalization followed
+by [outside-domain restriction][callConverter] yields a certified
+[DDC from an inside domain][callConverter_isDDCFrom]; any nonnumeric inside-domain predicate is
+proved on the actual transcript. A [pointwise fixed-function schedule][replies_callConverter_of_schedule]
+has a completed transcript, and its [typed attachment][ofDDC_callConverter_smul_ofFunction]
+computes the indicated outside function. This construction does not require a `Program`.
+
 A [**program**][Program] is a deterministic oracle body: from its state, the outside query and the
 inside exchanges of the current invocation, it computes the reply or the next inside query. A
 program can be [bounded][Program.Bounded] (at most $`b`$ inside queries per invocation), have
@@ -176,6 +187,14 @@ holds, whatever the number of the program's inside queries:
 [converterDomain]: Converter/ConverterDomain.lean#L234
 [IsDDCFrom]: Converter/ConverterDomain.lean#L301
 [IsDDCFrom.mapsDomain]: Converter/ConverterDomain.lean#L609
+[callRule]: Converter/Calls.lean
+[callRule_completed_exact_length]: Converter/CallRuleTranscript.lean
+[callRule_isResponsiveDDC]: Converter/Calls.lean
+[callRule_query_count]: Converter/Calls.lean
+[callConverter]: Converter/Calls.lean
+[callConverter_isDDCFrom]: Converter/Calls.lean
+[replies_callConverter_of_schedule]: Converter/CallRuleTranscript.lean
+[ofDDC_callConverter_smul_ofFunction]: Typed/CallRuleFunctional.lean
 [PDCBehavior]: Converter/PDCBehavior.lean#L67
 [PDCBehavior.ofPDC]: Converter/PDCBehavior.lean#L169
 [PDCBehavior.comp]: Converter/PDCBehavior.lean#L273
