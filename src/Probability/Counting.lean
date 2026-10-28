@@ -187,11 +187,12 @@ lemma uniform_mass_eval_eq {X Y ι : Type*} [Fintype X] [DecidableEq X]
 /-- A function-consistent transcript fixes one independent uniform value at each distinct
 input. Repeating an input adds no new factor. This is the finite-coordinate law
 `uniform_mass_eval_eq` applied to the transcript's set of queried coordinates.
+For `S = {x | ∃ y, (x,y) ∈ h}`, the formula is `Pr[F matches h] = (1 / |Y|)^|S|`.
 
 MauRen16, printed p. 6, describes the URF as "a uniformly chosen function table F" and
 queries as "receiving as output the value F (x)." The repeated-query mass formula follows
 from that table model; it is not stated as a separate paper theorem. -/
-lemma uniform_mass_transcript_eq {X Y : Type} [Fintype X] [DecidableEq X]
+lemma uniform_mass_transcript_eq {X Y : Type*} [Fintype X] [DecidableEq X]
     [Fintype Y] [Nonempty Y] (h : List (X × Y)) (g : X → Y)
     (hg : ∀ z ∈ h, g z.1 = z.2) :
     (Distribution.uniform (X → Y)).mass (fun f => ∀ z ∈ h, f z.1 = z.2) =
@@ -207,15 +208,24 @@ lemma uniform_mass_transcript_eq {X Y : Type} [Fintype X] [DecidableEq X]
   intro f
   constructor
   · intro hf
+    -- Matching the transcript fixes g's value at each queried coordinate.
     funext x
     obtain ⟨z, hz, he⟩ := List.mem_map.mp (List.mem_toFinset.mp x.property)
     exact he ▸ (hf z hz).trans (hg z hz).symm
   · intro hf z hz
+    -- Agreement on those coordinates supplies every recorded reply, including repeats.
     have hx : z.1 ∈ points := List.mem_toFinset.mpr (List.mem_map.mpr ⟨z, hz, rfl⟩)
     exact (congrFun hf ⟨z.1, hx⟩).trans (hg z hz)
 
-/-- Evaluation families with the same equality pattern have the same uniform value law.
-Only the finite image is revealed; the index type itself need not be finite.
+/-- Query families with `left i = left j ↔ right i = right j` for all `i,j` have the same
+joint output law under uniform tables: `Law(i ↦ F(left i)) = Law(i ↦ G(right i))`.
+Only the finite image is revealed; the index type itself need not be finite. For example:
+
+```text
+left queries:   a, b, a, ...     a ≠ b
+right queries:  u, v, u, ...     u ≠ v
+common law:     U, V, U, ...     U and V independent uniform values in Y
+```
 
 MauRen16, printed p. 6, specifies "a uniformly chosen function table F" queried by input.
 This equality is a derived finite-table consequence of that model, not a stated paper theorem. -/
@@ -229,25 +239,30 @@ lemma fTransform_eval_uniform_eq_of_same_fibers {I X Z Y : Type*}
       Distribution.fTransform (fun f : Z → Y => fun i => f (right i))
         (Distribution.uniform (Z → Y)) := by
   classical
-  -- Select one representative of every coordinate on the left.
+  -- The left image is finite even for infinite I; select one occurrence per coordinate.
   let R := Set.range left
   let : Fintype R := Fintype.ofFinite R
   let selected (x : R) : I := x.property.choose
   have hselected (x : R) : left (selected x) = x.val := x.property.choose_spec
   let points (x : R) : Z := right (selected x)
+  -- The reverse implication prevents distinct left coordinates from sharing a right one.
   have hinj : Function.Injective points := by
     intro x y he
     apply Subtype.ext
     exact (hselected x).symm.trans (((hfibers _ _).mpr he).trans (hselected y))
+  -- The forward implication gives the same right query at every occurrence of a left one.
   have hp (i : I) : points ⟨left i, ⟨i, rfl⟩⟩ = right i :=
     (hfibers _ _).mp (hselected ⟨left i, ⟨i, rfl⟩⟩)
+  -- Recover the output at index i from its coordinate, reusing values at repeated queries.
   let recover (values : R → Y) : I → Y := fun i => values ⟨left i, ⟨i, rfl⟩⟩
-  -- Both laws are the same uniform law on the selected coordinates.
+  -- Both families of distinct coordinates receive independent uniform values.
   have hl := fTransform_eval_uniform_eq_uniform (Y := Y)
     (fun x : R => x.val) Subtype.val_injective
   have hr := fTransform_eval_uniform_eq_uniform (Y := Y) points hinj
+  -- Applying the same reconstruction map to equal coordinate laws preserves equality.
   have he := congrArg (Distribution.fTransform recover) (hl.trans hr.symm)
   simp only [Distribution.fTransform_fTransform] at he
+  -- The representative correspondence recovers the original right query at every index.
   refine he.trans ?_
   congr 1
   funext table i
