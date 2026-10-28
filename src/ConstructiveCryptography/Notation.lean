@@ -1,3 +1,4 @@
+import RandomSystems.Typed.ParallelAllAttachment
 import ConstructiveCryptography.InterfaceAlgebra
 import ConstructiveCryptography.CryptographicAlgebra.Game
 import ConstructiveCryptography.Tactics.Categorical
@@ -12,7 +13,9 @@ parallel composition, `S —[α]→ T` and `S —[α; ε]→ T` for exact and ap
 typed system. The compatibility laws of the distance are restated with `∥`, the parallel
 composition `TypedSystem.parallel`, for the `cc_nonexpand` tactic, and `cc_normalize` applies
 locality, `(α ⊗ₘ β) • (R ∥ S) = α • R ∥ β • S`, whether the interfaces are written with `⊗` or
-with `Interface.tensor`.
+with `Interface.tensor`. It also applies finite-family locality and pushes attachment
+through one retained initial sample. The same sample remains outside the entire family;
+normalization never distributes shared randomness into independent component samples.
 -/
 
 namespace SystemAlgebra
@@ -50,6 +53,11 @@ scoped notation:50 G:51 " |≡ " T:51 =>
 namespace Interface
 
 attribute [cc_normalization] comp_smul identity_attach
+
+-- These laws preserve each initial sample and each component's declared interface.
+attribute [cc_normalization]
+  TypedConverter.smul_sample
+  TypedConverter.parallelAll_attach
 
 lemma tensor_smul {A B C D : Interface} (α : A ⟶ B) (β : C ⟶ D)
     (R : TypedSystem B) (S : TypedSystem D) :

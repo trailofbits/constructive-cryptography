@@ -1,3 +1,4 @@
+import Tests.ProofErgonomics
 import Tests.Replay
 import Tests.RevealedHCoefficient
 import Tests.AuthenticatedEncryption

@@ -320,6 +320,13 @@ $`d(X, Y) \le \sum_j \varepsilon_j`$ from `≈[ε]` steps, and
 [`cc_calc mixed model using domination`][cc_calc-mixed] proves
 $`X \simeq_{\sum_j \varepsilon_j} Y`$ from `≃[loss]` and `≈[ε]` steps.
 
+On direct typed systems, importing `ConstructiveCryptography.Notation` also registers
+retained sampling and finite-family locality. Thus `cc_normalize` proves
+`(⨂ₘ k, α k) • (∥ k, R k) = ∥ k, (α k • R k)` and pushes an attachment through
+`sample b ←$ 𝒰[Bool]; ...` while retaining that one draw. It does not split a shared
+sample into independent component samples. The before/after proofs and elaborated-goal
+guards are in [`Tests.ProofErgonomics`](../../Tests/ProofErgonomics.lean).
+
 <!-- Files -->
 
 [DSL]: ../DSL.lean
