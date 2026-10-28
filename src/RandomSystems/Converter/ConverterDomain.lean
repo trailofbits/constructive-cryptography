@@ -443,6 +443,58 @@ lemma trim_apply_filter_of_dom {E : List (Σ j, X j) → Prop}
 
 end Identity
 
+/-! ## Comparison through outside restriction -/
+
+/-- A certified DDC whose transcripts occur in a responsive DDC is exactly that DDC restricted
+to the certified outside domain. The inside-domain certificate admits every next inside query;
+determinism then fixes the same reply on every admitted prefix. This is a consequence of the
+bounded converter and domain model of Jost, Definition 2.2.2, printed pp. 17–18: “Upon an input
+at an outside interface, the converter is allowed to make a bounded number of queries to the
+inside interfaces ... before returning a value at the queried interface.” -/
+lemma IsDDCFrom.eq_filterDom_of_replies_le {E : List (Σ j, X j) → Prop}
+    {F : List (Σ o, U o) → Prop} {a r : InsideOutsideSystem O J U V X Y} {ba br : Nat}
+    (ha : IsDDCFrom E F ba a) (hr : IsDDC br r)
+    (hF : ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
+    (hle : ∀ xs ys, Replies a xs ys → Replies r xs ys) :
+    a = filterDom (fun h => outsideInputs h = [] ∨ F (outsideInputs h)) r := by
+  have hD {p h : List (Σ l, twoFam U Y l)} (hp : p <+: h) :
+      outsideInputs h = [] ∨ F (outsideInputs h) →
+        outsideInputs p = [] ∨ F (outsideInputs p) := by
+    apply prefix_or_nil hF
+    obtain ⟨rest, rfl⟩ := hp
+    exact ⟨outsideInputs rest, (outsideInputs_append p rest).symm⟩
+  have hf := hr.filterDom _ (fun hp _ hh => hD hp hh)
+  apply ha.isDDC.eq_of_admitted_replies hf
+  intro h _
+  constructor
+  · -- Restricting a certified transcript preserves its outside domain and raw replies.
+    intro hrep
+    apply (replies_filterDom_iff (fun hp _ hh => hD hp hh) r
+      (fun _ => ha.outsideInputs_mem hrep)).mpr
+    exact hle _ _ hrep
+  · -- Every restricted reply is the unique reply of the certified DDC on that prefix.
+    intro hrep
+    induction h using List.reverseRecOn with
+    | nil => exact replies_nil _
+    | append_singleton h z ih =>
+      obtain ⟨x, y⟩ := z
+      have hadm := admitted_snoc.mp (hf.admitted_of_replies hrep)
+      simp only [List.map_append, List.map_singleton] at hrep ⊢
+      obtain ⟨hrep, hy⟩ := replies_snoc.mp hrep
+      have hprev := ih hadm.1 hrep
+      have hy' := Part.eq_some_iff.mp hy
+      have hout := ((filterDom_mem_iff _ _ _ _).mp hy').1
+      have hdom := (ha.answers h x hprev).mpr
+        ⟨hadm.1, hadm.2, hout.resolve_left (outsideInputs_ne_nil hadm.1 hadm.2),
+          ha.queries h hprev⟩
+      obtain ⟨v, hv⟩ := Part.dom_iff_mem.mp hdom
+      have hnext := replies_snoc.mpr ⟨hprev, Part.eq_some_iff.mpr hv⟩
+      have hraw := hle _ _ hnext
+      have heq : v = y := Part.mem_unique
+        (Part.eq_some_iff.mp (replies_snoc.mp hraw).2)
+        ((filterDom_mem_iff _ _ _ _).mp hy').2
+      exact heq ▸ hnext
+
 /-! ## Attachment to a resource -/
 
 section Attachment
