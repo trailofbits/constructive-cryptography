@@ -290,6 +290,12 @@ globally; use `letI` or a wrapper carrier.
 - Explain the role of each code and proof step at its point of use. Give opaque
   bookkeeping a terse comment, and describe the mathematical reason rather than
   narrating tactic syntax.
+- Object docstrings give the mathematical definition as well as its role: a
+  defining equation, distribution, or input/output rule. For a system, specify
+  its interface and domain, any sampled or retained state, and its reply law;
+  for a transcript or event, give the sequence or predicate. A short equation
+  with the necessary notation is enough; a prose label alone is not. This
+  applies to test objects too, without requiring a long explanation.
 - Use small diagrams when they clarify wiring, shared randomness, call schedules,
   history projections, or proof and reduction chains.
 - Put theorem-specific source and modeling facts in the docstring,

@@ -57,15 +57,19 @@ example {A B : Interface} {K L : Type} (R : TypedSystem A)
 
 /-! ## Independence boundary -/
 
-/-- One query returns a pair of Boolean values. -/
+/-- One port with query alphabet `X = {⋆}` and reply alphabet `Y = {false, true}²`.
+Suppressing the sole port label, the nonempty input domain is `D = {[⋆]}`: one query. -/
 abbrev pairReplyInterface : Interface :=
   Interface.queryBudget Unit (fun _ => Unit) (fun _ => Bool × Bool) 1
 
-/-- A system that returns the chosen pair. -/
+/-- Deterministic system `R_p`: on its sole allowed query `⋆`, return the fixed pair `p`.
+Its cumulative mass is `R_p(h) = 1` for `h = []` or `h = [(⋆, p)]`, and `0` otherwise;
+the sole port label is suppressed. -/
 noncomputable def replyPair (p : Bool × Bool) : TypedSystem pairReplyInterface :=
   TypedSystem.ofFunction fun _ _ => p
 
-/-- The single reply contains two different values. -/
+/-- The transcript `h = [(⋆, (false, true))]`, suppressing the sole port label.
+Its unequal reply coordinates distinguish a shared bit from two independent bits. -/
 def mixedPairTranscript : List
     ((Σ i, pairReplyInterface.X i) × (Σ i, pairReplyInterface.Y i)) :=
   [(⟨(), ()⟩, ⟨(), (false, true)⟩)]
