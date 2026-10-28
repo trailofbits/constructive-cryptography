@@ -1,4 +1,4 @@
-import RandomSystems.Typed.ParallelAll
+import RandomSystems.Typed.ParallelAllPresentation
 
 /-!
 # Typed finite parallel families
@@ -27,6 +27,16 @@ example (f : ∀ k i, (heterogeneousFamily k).X i → (heterogeneousFamily k).Y 
       (fun l x => f l.1 l.2 x) =
       ∥ k, TypedSystem.ofFunction (f k) :=
   TypedSystem.ofFunction_parallelAll f
+
+/-- Independent presentations assemble even when the two components use different alphabets. -/
+example (P : ∀ k : Bool, Probability.Distribution.ProbDist
+    {s : InterfaceSystem (heterogeneousFamily k).I (heterogeneousFamily k).X
+      (heterogeneousFamily k).Y //
+      IsDDS s ∧ RepliesAtQueriedInterface s ∧
+        ∀ h, (s h).Dom ↔ (heterogeneousFamily k).domain h}) :
+    (∥ k, TypedSystem.ofPDS (P k)) =
+      TypedSystem.ofPDS (TypedSystem.parallelAllPDS P) :=
+  TypedSystem.parallelAll_ofPDS P
 
 abbrev bitInterface : Interface :=
   Interface.queryBudget Unit (fun _ => Unit) (fun _ => Bool) 1
@@ -78,6 +88,7 @@ example : sharedBit ≠ independentBit := by
 #print axioms SystemAlgebra.TypedSystem.parallelAll
 #print axioms SystemAlgebra.TypedSystem.ofFunction_parallelAll
 #print axioms SystemAlgebra.TypedConverter.parallelAll
+#print axioms SystemAlgebra.TypedSystem.parallelAll_ofPDS
 
 end
 end SystemAlgebra.Tests

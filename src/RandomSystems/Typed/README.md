@@ -45,6 +45,9 @@ The [finite tagged interface family][Interface.tensorAll], its
 [independent converter family][TypedConverter.parallelAll] extend these objects to
 heterogeneous component interfaces. A fixed function on the combined interface
 [assembles from its component functions][TypedSystem.ofFunction_parallelAll].
+Independent deterministic component presentations combine through
+[parallelAllPDS][TypedSystem.parallelAllPDS], which presents the
+[same typed system][TypedSystem.parallelAll_ofPDS] as the n-ary parallel behavior.
 Stochastic n-ary attachment requires a separate locality theorem.
 A label-preserving
 bijection of interfaces gives a [**renaming**][TypedConverter.rename], which
@@ -138,6 +141,8 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedSystem.parallelAll]: ParallelAll.lean#L108
 [TypedConverter.parallelAll]: ParallelAll.lean#L166
 [TypedSystem.ofFunction_parallelAll]: ParallelAll.lean#L191
+[TypedSystem.parallelAllPDS]: ParallelAllPresentation.lean
+[TypedSystem.parallelAll_ofPDS]: ParallelAllPresentation.lean
 [TypedConverter.rename]: Relabel.lean#L48
 [TypedConverter.rename_comp]: Relabel.lean#L80
 [TypedConverter.rename_refl]: Relabel.lean#L67

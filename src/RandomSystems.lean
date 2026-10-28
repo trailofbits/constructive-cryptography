@@ -79,6 +79,7 @@ import RandomSystems.Typed.Memoryless
 import RandomSystems.Typed.Parallel
 import RandomSystems.Typed.ParallelAttachment
 import RandomSystems.Typed.ParallelAll
+import RandomSystems.Typed.ParallelAllPresentation
 import RandomSystems.Typed.PresentedGame
 import RandomSystems.Typed.Relabel
 import RandomSystems.Typed.QueryRouting
