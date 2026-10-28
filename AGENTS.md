@@ -112,6 +112,25 @@ For each public mathematical change, establish these facts before editing:
 Prefer a short compilable probe to speculative API design, and remove it once
 the result is captured in a test or docstring.
 
+### Review checks
+
+Every review checks correctness together with readability, deduplication and
+use of notation; a passing build does not settle these questions.
+
+- **Readability:** follow the public statement through its proof ladder. Check
+  that names, local facts, comments and diagrams expose each mathematical step,
+  its assumptions and its role. Keep explanations concise without omitting them.
+- **Deduplication:** search the owning layer and its dependencies for existing
+  lemmas before accepting a new helper or an inline calculation. Reuse the named
+  result when it expresses the required step, including routine averaging,
+  finite-sum, distance and attachment arguments. Update comments to describe
+  the reused result instead of the removed calculation.
+- **Notation:** use the established mathematical notation available in the
+  owning layer where it makes statements and proofs clearer. Check that it
+  elaborates to the intended objects and retains explicit semantic choices.
+  Avoid unnecessary casts, projections and expanded implementation terms;
+  preserve dependency direction rather than importing a higher layer for notation.
+
 ## Modeling workflow
 
 Start with the agreed mathematical model and its correspondence to the
@@ -141,6 +160,32 @@ Start at the outermost stable theorem and work inward.
 4. Use the proof commands for deterministic assembly.
 5. Prove program equivalence, probability, coupling, counting or algebra in
    the owning lower layer.
+
+### Proof ladders
+
+- Make a substantial proof readable from its public endpoint down to the
+  mathematical leaves. In the owning module's introduction, name the main
+  intermediate results and explain how they establish that endpoint; include
+  the owning modules when the argument crosses files. Source order may still
+  follow Lean's declaration dependencies.
+- Each rung states a mathematical fact with its actual hypotheses and
+  conclusion. Each link explains why that fact gives the next result: an exact
+  equality, a reduction, a distance bound, or explicit error accounting. A list
+  of theorem names or broad stage labels alone is not a proof outline.
+- Keep the final assembly short and recognizable as the paper's argument.
+  Name substantial intermediate facts with `have` or a lemma; put reusable
+  probability, counting and algebra in their owning layer. Do not add wrappers
+  merely to make a ladder longer, or bury a mathematical subargument in a large
+  tactic block.
+- Keep systems, observations, restrictions, shared randomness and budgets
+  identifiable between rungs. Explain representation changes and where side
+  conditions are discharged; do not hide a stronger assumption in a helper.
+- Review the complete chain through the stated public endpoint, not just its
+  leaves. For an H-coefficient argument, for example, follow construction,
+  distance, revealed transcript comparison, ratio and bad-mass bounds, then
+  their counting lemmas. Comments describe the implemented chain, not a plan.
+
+### Proof commands
 
 The proof commands (`ConstructiveCryptography.Tactics.Categorical` and
 `ConstructiveCryptography.Tactics.Basic`) replace unfolding specifications and relaxations:
@@ -282,16 +327,48 @@ globally; use `letI` or a wrapper carrier.
 
 ## Documentation policy
 
+Write comments so a reader can follow the mathematical argument without
+reverse-engineering the tactics. Be concise in wording, not in explanatory
+coverage: shorten sentences and remove repetition, never a necessary step,
+hypothesis, invariant or reason. One sentence per local step is usually enough;
+use more when the mathematics or representation needs it.
+
+- Begin each substantive module with a `/-! ... -/` introduction explaining
+  its mathematical purpose, the objects involved, the principal results by
+  declaration name, and their role in the proof ladder. Group related results
+  instead of listing every helper. Use section comments for mathematical
+  stages, not development milestones.
+- Give definitions, theorem statements and non-obvious structure fields
+  docstrings explaining their mathematical meaning and role. State the relevant
+  hypotheses and consequence in prose or an equation; explain restrictions,
+  conventions and differences from the source where they matter. Scale the
+  explanation to the declaration rather than repeating its Lean type.
 - A paper-derived definition, theorem or proof step carries a concise verbatim
   quotation of the source statement with its printed page. Paraphrase only the
   Lean representation or a repository-specific modeling choice.
-- In proofs, short local comments expose each paper-level step; omit them only
-  for Lean bookkeeping.
-- Explain the role of each code and proof step at its point of use. Give opaque
-  bookkeeping a terse comment, and describe the mathematical reason rather than
-  narrating tactic syntax.
+- Within proofs, explain each paper-level step at its point of use, including
+  routine steps: what fact is established and why it follows or is needed next.
+  Put the comment beside the relevant `have`, `calc` link or case, rather than
+  replacing the local argument with one introductory paragraph. A legible
+  one-line application needs no comment duplicating its docstring.
+- Explain code in terms of the object it implements: what an interface exposes,
+  a converter does, or a sampled value controls. Give opaque Lean bookkeeping a
+  terse explanation of the representation obstacle; omit commentary on obvious
+  syntax. Comments such as "apply the lemma" do not explain mathematics.
 - Use small diagrams when they clarify wiring, shared randomness, call schedules,
   history projections, or proof and reduction chains.
+  Put them beside the relevant object or proof in module and declaration comments.
+  Label queries and replies, place state and sampled values inside their owning
+  component, and distinguish a retained shared draw from independent draws or
+  merely using the same law in separate experiments. In proof chains, label exact
+  equalities, approximation bounds and the results justifying them.
+  Prefer compact ASCII or Unicode diagrams in fenced `text` blocks that remain
+  readable in Lean source, VS Code and GitHub diffs. Shorten surrounding prose
+  when the drawing already conveys the structure; diagrams must match the live code.
+- Keep notation and declaration references consistent with the live code.
+  Avoid restating a source quotation, narrating each tactic, or duplicating the
+  same explanation in module prose, docstrings and local comments. Keep details
+  at the narrowest useful location and refer to them from the overview.
 - Put theorem-specific source and modeling facts in the docstring,
   representation and proof guidance in the owning module's documentation, and
   contributor rules in this file.
