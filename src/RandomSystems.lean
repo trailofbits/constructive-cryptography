@@ -28,6 +28,7 @@ import RandomSystems.DDC.DDC
 import RandomSystems.DDC.DDCParallelLaws
 import RandomSystems.DDC.DDCRelabel
 import RandomSystems.DDC.Serial
+import RandomSystems.DDC.SerialCost
 import RandomSystems.DDC.SingleAlphabet
 import RandomSystems.DDC.Tensor
 import RandomSystems.Distance.Absorption

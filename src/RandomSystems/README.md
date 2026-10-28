@@ -87,9 +87,13 @@ inside queries and outside replies out) with at most $`b`$ consecutive inside qu
 it [gives one with domain][IsDDCFrom.mapsDomain] $`F`$. A [**PDC**][PDCBehavior.ofPDC] is a distribution over DDCs, and
 its [**behavior**][PDCBehavior] is a random system over the converter domain
 [3, Definitions 3.17–3.18].
+If a certified DDC's transcripts occur in a larger DDC, it [equals that DDC restricted to its
+outside domain][IsDDCFrom.eq_filterDom_of_replies_le].
 
 [Serial composition][serialM] $`\beta \odot \alpha`$ connects the inside of $`\beta`$ to the outside
-of $`\alpha`$, and [DDCs compose][IsDDC.comp] with the product of their bounds. PDC behaviors have a
+of $`\alpha`$, and [DDCs compose][IsDDC.comp] with the product of their bounds. When the inner
+bound depends on the intermediate port, [weighted serial composition][IsDDC.comp_of_query_cost]
+uses the outer converter's charge to bound the composite's consecutive run. PDC behaviors have a
 [composition][PDCBehavior.comp] and an [identity][PDCBehavior.id], with
 [associativity][PDCBehavior.comp_assoc] and the [left][PDCBehavior.id_comp] and
 [right][PDCBehavior.comp_id] identity laws. [Attachment][PDCBehavior.attach] samples the PDC, then
@@ -187,6 +191,8 @@ holds, whatever the number of the program's inside queries:
 [converterDomain]: Converter/ConverterDomain.lean#L234
 [IsDDCFrom]: Converter/ConverterDomain.lean#L301
 [IsDDCFrom.mapsDomain]: Converter/ConverterDomain.lean#L609
+[IsDDCFrom.eq_filterDom_of_replies_le]: Converter/ConverterDomain.lean
+[IsDDC.comp_of_query_cost]: DDC/SerialCost.lean
 [callRule]: Converter/Calls.lean
 [callRule_completed_exact_length]: Converter/CallRuleTranscript.lean
 [callRule_isResponsiveDDC]: Converter/Calls.lean
