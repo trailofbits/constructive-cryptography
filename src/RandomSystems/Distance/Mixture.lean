@@ -4,15 +4,23 @@ import Probability.Lift
 /-!
 # Decision probabilities of sampled systems
 
-Choose `k` with law `P`, then interact with `R k` throughout. A fixed distinguisher `D`
-outputs `1` with the average of its decision probabilities on the components:
+Choose `k` with law `P`, then interact with `R k` throughout:
+
+```text
+                         sample P R
+                  ┌────────────────────┐
+      queries     │ k ← P, once        │
+   D ───────────► │ retain R k         │
+     ◄─────────── │                    │
+      replies     └────────────────────┘
+```
+
+The sample is retained inside the system across adaptive queries; only the replies cross
+back to `D`. Its probability of deciding `1` is the component average:
 
 ```text
 Pr[D(mix P R) = 1] = ∑ k, P(k) · Pr[D(R k) = 1].
 ```
-
-The choice of component is retained across adaptive queries. The distinguisher receives
-the system's replies; sampling does not add an interface that reveals `k`.
 
 ## Main results and proof
 

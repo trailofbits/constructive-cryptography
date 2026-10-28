@@ -10,6 +10,16 @@ component with law `P` in either family preserves this bound. Each experiment re
 choice throughout the interaction; the two experiments use the same distribution `P`.
 The law may be nonuniform, and only its support, not the sample type, must be finite.
 
+```text
+             sample P R                           sample P S
+       ┌─────────────────────┐              ┌─────────────────────┐
+ D ◄──►│ k ← P, once; R k    │        D ◄──►│ k ← P, once; S k    │
+       └─────────────────────┘              └─────────────────────┘
+```
+
+These are separate experiments with the same fixed distinguisher `D` and sampling law `P`.
+Each wire carries queries and replies; each box retains its own component choice.
+
 ## Proof
 
 * `RandomSystem.transcriptDistance_le_of_advantage_le` reduces the conclusion to the
