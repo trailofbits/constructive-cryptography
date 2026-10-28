@@ -493,6 +493,58 @@ lemma mass_exists_le {A ι : Type*} {X : Distribution A} (hX : X.NonNeg) (s : Fi
         (mass_or_le hX _ _)) ?_
       linarith [ih]
 
+/-- A symmetric bad event costs one union-bound term per unordered pair of distinct
+indices. This refines `mass_exists_le` using the symmetry of the event. Jost's
+resource formalism imposes no additional structure on this finite probability bound. -/
+lemma mass_exists_pair_le_choose {Ω ι : Type*} (X : Distribution Ω) (hX : X.NonNeg)
+    (s : Finset ι) (bad : ι → ι → Ω → Prop)
+    (hsym : ∀ i j ω, bad i j ω → bad j i ω) (δ : ℝ)
+    (hbad : ∀ i ∈ s, ∀ j ∈ s, i ≠ j → X.mass (bad i j) ≤ δ) :
+    X.mass (fun ω => ∃ i ∈ s, ∃ j ∈ s, i ≠ j ∧ bad i j ω) ≤
+      (s.card.choose 2 : ℝ) * δ := by
+  classical
+  revert hbad
+  induction s using Finset.induction_on with
+  | empty =>
+    intro _
+    rw [mass_eq_zero_of_forall_not X (by
+      rintro ω ⟨i, hi, _⟩
+      exact Finset.notMem_empty i hi)]
+    simp only [Finset.card_empty, Nat.choose_zero_succ, Nat.cast_zero, zero_mul]
+    exact le_rfl
+  | @insert i s hi ih =>
+    intro hbad
+    -- A new bad pair is either old or incident to the new index.
+    have hcover (ω : Ω) :
+        (∃ a ∈ insert i s, ∃ b ∈ insert i s, a ≠ b ∧ bad a b ω) →
+          (∃ a ∈ s, ∃ b ∈ s, a ≠ b ∧ bad a b ω) ∨
+            ∃ j ∈ s, bad i j ω := by
+      rintro ⟨a, ha, b, hb, hab, he⟩
+      rcases Finset.mem_insert.mp ha with hai | ha
+      · rcases Finset.mem_insert.mp hb with hbi | hb
+        · exact (hab (hai.trans hbi.symm)).elim
+        · exact Or.inr ⟨b, hb, hai ▸ he⟩
+      · rcases Finset.mem_insert.mp hb with hbi | hb
+        · exact Or.inr ⟨a, ha, hsym a i ω (hbi ▸ he)⟩
+        · exact Or.inl ⟨a, ha, b, hb, hab, he⟩
+    refine (mass_mono hX hcover).trans ?_
+    refine (mass_or_le hX _ _).trans ?_
+    have hold := ih (fun a ha b hb => hbad a (Finset.mem_insert_of_mem ha)
+      b (Finset.mem_insert_of_mem hb))
+    -- Charge one new pair for each old index.
+    have hnew : X.mass (fun ω => ∃ j ∈ s, bad i j ω) ≤ s.card * δ := by
+      refine (mass_exists_le hX s _).trans ?_
+      calc
+        _ ≤ ∑ j ∈ s, δ := Finset.sum_le_sum fun j hj =>
+          hbad i (Finset.mem_insert_self i s) j (Finset.mem_insert_of_mem hj)
+            (fun he => hi (he ▸ hj))
+        _ = _ := by rw [Finset.sum_const, nsmul_eq_mul]
+    -- The new pairs turn `choose(n,2)` into `choose(n+1,2)`.
+    refine (add_le_add hold hnew).trans_eq ?_
+    rw [Finset.card_insert_of_notMem hi, Nat.choose_succ_succ, Nat.choose_one_right,
+      Nat.cast_add]
+    ring
+
 /-- Restricting to an event leaves exactly the mass of that event. -/
 lemma weight_restrict {A : Type*} (X : Distribution A) (P : A → Prop) :
     (X.restrict P).weight = X.mass P := by

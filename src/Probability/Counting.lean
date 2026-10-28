@@ -29,6 +29,8 @@ collision bounds.
   induce the same output law
 * `uniform_mass_adaptive_eval_eq_mul`: fresh coordinates chosen from previously revealed
   values retain an independent uniform law
+* `uniform_mass_fresh_eval_eq`, `uniform_mass_not_injOn_le_choose`: fresh-coordinate
+  independence and an unordered-pair birthday bound
 * `uniform_mass_walk_eval_eq`, `uniform_mass_coord_determined_le`,
   `uniform_mass_walk_repeat_le`: lazy sampling along a walk
 * `card_filter_shift`, `card_filter_shift_univ`: re-randomization fibers
@@ -185,6 +187,118 @@ lemma uniform_mass_eval_eq {X Y ι : Type*} [Fintype X] [DecidableEq X]
   rw [h, Fintype.card_fun, div_pow, one_pow]
   push_cast
   ring
+
+/-- An event insensitive to the value at a fresh coordinate factors from that coordinate's
+uniform value. MauRen16, printed p. 6, defines the random function as “a uniformly chosen
+function table F”; this is a finite-table consequence. Jost's resource view permits this
+table specialization without requiring it for generic systems. -/
+lemma uniform_mass_fresh_eval_eq {X Y : Type*} [Fintype X] [DecidableEq X]
+    [Fintype Y] [Nonempty Y] (x : X) (y : Y) (event : (X → Y) → Prop)
+    (hfresh : ∀ f g, (∀ z, z ≠ x → f z = g z) → (event f ↔ event g)) :
+    (Distribution.uniform (X → Y)).mass (fun f => event f ∧ f x = y) =
+      (Distribution.uniform (X → Y)).mass event / Fintype.card Y := by
+  classical
+  let split := Equiv.funSplitAt x Y
+  let rest : ({z : X // z ≠ x} → Y) → Prop := fun g =>
+    event (split.symm (Classical.choice ‹Nonempty Y›, g))
+  have hrest (f : X → Y) : event f ↔ rest (split f).2 := by
+    apply hfresh
+    intro z hz
+    dsimp only [split]
+    rw [Equiv.funSplitAt_symm_apply, dif_neg hz]
+    rfl
+  -- Splitting the fresh coordinate turns the uniform table into a product.
+  have hpush := Distribution.fTransform_equiv_uniform split
+  rw [← Distribution.prod_uniform] at hpush
+  have hm := congrArg (fun P : Distribution (Y × ({z : X // z ≠ x} → Y)) =>
+    P.mass (fun t => t.1 = y ∧ rest t.2)) hpush
+  rw [Distribution.mass_fTransform] at hm
+  rw [Distribution.mass_prod_and (Distribution.uniform Y)
+    (Distribution.uniform ({z : X // z ≠ x} → Y)) (fun a => a = y) rest] at hm
+  have he : (Distribution.uniform (X → Y)).mass event =
+      (Distribution.uniform ({z : X // z ≠ x} → Y)).mass rest := by
+    calc
+      _ = (Distribution.fTransform split (Distribution.uniform (X → Y))).mass
+          (fun t => rest t.2) := by
+        rw [Distribution.mass_fTransform]
+        exact Distribution.mass_congr _ hrest
+      _ = _ := by rw [hpush, Distribution.mass_prod_snd, Distribution.weight_uniform, one_mul]
+  rw [Distribution.mass_singleton, Distribution.uniform_apply] at hm
+  rw [he]
+  -- The event sees only the remainder of the table.
+  calc
+    _ = (Distribution.uniform (X → Y)).mass
+        (fun f => (split f).1 = y ∧ rest (split f).2) := by
+      apply Distribution.mass_congr
+      intro f
+      exact ⟨fun h => ⟨h.2, (hrest f).mp h.1⟩,
+        fun h => ⟨(hrest f).mpr h.2, h.1⟩⟩
+    _ = _ := hm.trans (by ring)
+
+/-- At distinct table coordinates, a prediction based on one reply equals the other reply
+with mass `1/|Y|`. MauRen16, printed p. 6, models the random function as “a uniformly chosen
+function table F”; the equation follows from independent coordinates. -/
+lemma uniform_two_outputs_graph_mass {X Y : Type*} [Fintype X] [DecidableEq X]
+    [Fintype Y] [Nonempty Y] (x z : X) (hxz : x ≠ z) (predict : Y → Y) :
+    (Distribution.uniform (X → Y)).mass (fun f => f z = predict (f x)) =
+      1 / (Fintype.card Y : ℝ) := by
+  classical
+  let P := Distribution.uniform (X → Y)
+  -- Partition by the first reply, then expose the still-fresh second reply.
+  rw [Distribution.mass_eq_sum_mass_fiber P _ (fun f => f x) Finset.univ
+    (fun _ _ => Finset.mem_univ _)]
+  have he (y : Y) : P.mass (fun f => f z = predict (f x) ∧ f x = y) =
+      P.mass (fun f => f x = y) / Fintype.card Y := by
+    calc
+      _ = P.mass (fun f => f x = y ∧ f z = predict y) := by
+        apply Distribution.mass_congr
+        intro f
+        constructor
+        · rintro ⟨ha, hb⟩
+          exact ⟨hb, hb ▸ ha⟩
+        · rintro ⟨ha, hb⟩
+          exact ⟨ha ▸ hb, ha⟩
+      _ = _ := uniform_mass_fresh_eval_eq z (predict y) _
+        (fun f g hfg => by rw [hfg x hxz])
+  simp only [he, div_eq_mul_inv]
+  rw [← Finset.sum_mul]
+  have hs : ∑ y : Y, P.mass (fun f => f x = y) = 1 := by
+    have hh := Distribution.mass_eq_sum_mass_fiber P (fun _ => True)
+      (fun f => f x) Finset.univ (fun _ _ => Finset.mem_univ _)
+    simpa only [true_and, Distribution.mass_true, P, Distribution.weight_uniform] using hh.symm
+  rw [hs]
+
+/-- Two distinct coordinates of a uniformly sampled table collide with mass `1/|Y|`.
+CR18, printed p. 51: “For a hash function with k-bit output one can find collisions in time
+O(2k/2 ), due to the so-called birthday paradox.” This is the exact two-coordinate
+probability underlying that collision bound; Jost does not require a birthday bound for
+generic resources. -/
+lemma uniform_two_outputs_collision_mass {X Y : Type*} [Fintype X] [DecidableEq X]
+    [Fintype Y] [Nonempty Y] (x z : X) (hxz : x ≠ z) :
+    (Distribution.uniform (X → Y)).mass (fun f => f x = f z) =
+      1 / (Fintype.card Y : ℝ) := by
+  exact uniform_two_outputs_graph_mass z x hxz.symm id
+
+/-- A uniform function collides on a fixed set with mass at most one pair cost for each
+unordered pair. CR18, printed p. 51: “For a hash function with k-bit output one can find
+collisions in time O(2k/2 ), due to the so-called birthday paradox.” This is its finite-table
+union-bound form. Jost treats collision bounds as application-specific probability estimates. -/
+lemma uniform_mass_not_injOn_le_choose {X Y : Type*} [Fintype X] [DecidableEq X]
+    [Fintype Y] [Nonempty Y] (s : Finset X) :
+    (Distribution.uniform (X → Y)).mass (fun f => ¬ Set.InjOn f (s : Set X)) ≤
+      (s.card.choose 2 : ℝ) / Fintype.card Y := by
+  -- Every failure of injectivity identifies a pair of distinct queried coordinates.
+  have hcount := Distribution.mass_exists_pair_le_choose
+    (Distribution.uniform (X → Y)) Distribution.uniform_nonNeg s
+    (fun x z f => f x = f z) (fun _ _ _ he => he.symm) _
+    (fun x _ z _ hxz => (uniform_two_outputs_collision_mass x z hxz).le)
+  rw [mul_one_div] at hcount
+  refine (Distribution.mass_mono Distribution.uniform_nonNeg ?_).trans hcount
+  intro f hf
+  unfold Set.InjOn at hf
+  push Not at hf
+  obtain ⟨x, hx, z, hz, he, hn⟩ := hf
+  exact ⟨x, hx, z, hz, hn, he⟩
 
 /-- A function-consistent transcript fixes one independent uniform value at each distinct
 input. Repeating an input adds no new factor. This is the finite-coordinate law
