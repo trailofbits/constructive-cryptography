@@ -192,33 +192,48 @@ lemma uniform_mass_eval_eq {X Y ι : Type*} [Fintype X] [DecidableEq X]
   push_cast
   ring
 
-/-- An event insensitive to the value at a fresh coordinate factors from that coordinate's
-uniform value. MauRen16, printed p. 6, defines the random function as “a uniformly chosen
-function table F”; this is a finite-table consequence. Jost's resource view permits this
-table specialization without requiring it for generic systems. -/
+/-- **A fresh coordinate factors.** Let `F` be uniform on `X → Y`, `x : X`, `y : Y`, and let
+`E = event` ignore the value at `x` (`f = g` off `x` gives `E f ↔ E g`). Then
+
+    Pr[E(F) ∧ F x = y] = Pr[E(F)] / |Y| .
+
+Splitting the table at `x` (`Equiv.funSplitAt`) gives two independent uniform parts:
+
+```text
+F  ↦  ( F x ,  F restricted to {z // z ≠ x} )
+        "= y"   E reads only this part
+```
+
+The table model is MauRen16, printed p. 6: "a uniformly chosen function table F". This law is
+derived from it for finite tables, not a stated paper theorem. -/
 lemma uniform_mass_fresh_eval_eq {X Y : Type*} [Fintype X] [DecidableEq X]
     [Fintype Y] [Nonempty Y] (x : X) (y : Y) (event : (X → Y) → Prop)
     (hfresh : ∀ f g, (∀ z, z ≠ x → f z = g z) → (event f ↔ event g)) :
     (Distribution.uniform (X → Y)).mass (fun f => event f ∧ f x = y) =
       (Distribution.uniform (X → Y)).mass event / Fintype.card Y := by
   classical
+  -- `split f = (f x, f off x)`.
   let split := Equiv.funSplitAt x Y
+  -- `rest g`: `E` on the table equal to `g` off `x`, with an arbitrary value at `x`.
   let rest : ({z : X // z ≠ x} → Y) → Prop := fun g =>
     event (split.symm (Classical.choice ‹Nonempty Y›, g))
+  -- `E f ↔ rest (f off x)`: the rebuilt table agrees with `f` off `x`.
   have hrest (f : X → Y) : event f ↔ rest (split f).2 := by
     apply hfresh
     intro z hz
     dsimp only [split]
     rw [Equiv.funSplitAt_symm_apply, dif_neg hz]
     rfl
-  -- Splitting the fresh coordinate turns the uniform table into a product.
+  -- `Law(split F) = 𝒰(Y) × 𝒰({z // z ≠ x} → Y)`: a bijection keeps `𝒰`, which is a product.
   have hpush := Distribution.fTransform_equiv_uniform split
   rw [← Distribution.prod_uniform] at hpush
+  -- `Pr[F x = y ∧ rest (F off x)] = Pr_𝒰(Y)[= y] · Pr_𝒰[rest]` (rectangle event).
   have hm := congrArg (fun P : Distribution (Y × ({z : X // z ≠ x} → Y)) =>
     P.mass (fun t => t.1 = y ∧ rest t.2)) hpush
   rw [Distribution.mass_fTransform] at hm
   rw [Distribution.mass_prod_and (Distribution.uniform Y)
     (Distribution.uniform ({z : X // z ≠ x} → Y)) (fun a => a = y) rest] at hm
+  -- `Pr[E(F)] = Pr_𝒰[rest]`: second marginal, the first factor has weight 1.
   have he : (Distribution.uniform (X → Y)).mass event =
       (Distribution.uniform ({z : X // z ≠ x} → Y)).mass rest := by
     calc
@@ -227,9 +242,10 @@ lemma uniform_mass_fresh_eval_eq {X Y : Type*} [Fintype X] [DecidableEq X]
         rw [Distribution.mass_fTransform]
         exact Distribution.mass_congr _ hrest
       _ = _ := by rw [hpush, Distribution.mass_prod_snd, Distribution.weight_uniform, one_mul]
+  -- `Pr_𝒰(Y)[= y] = 1/|Y|`.
   rw [Distribution.mass_singleton, Distribution.uniform_apply] at hm
   rw [he]
-  -- The event sees only the remainder of the table.
+  -- Rewrite `E(F) ∧ F x = y` as the rectangle event, then `(1/|Y|) · Pr[rest]`.
   calc
     _ = (Distribution.uniform (X → Y)).mass
         (fun f => (split f).1 = y ∧ rest (split f).2) := by
@@ -239,21 +255,28 @@ lemma uniform_mass_fresh_eval_eq {X Y : Type*} [Fintype X] [DecidableEq X]
         fun h => ⟨(hrest f).mpr h.2, h.1⟩⟩
     _ = _ := hm.trans (by ring)
 
-/-- At distinct table coordinates, a prediction based on one reply equals the other reply
-with mass `1/|Y|`. MauRen16, printed p. 6, models the random function as “a uniformly chosen
-function table F”; the equation follows from independent coordinates. -/
+/-- **Predicting one coordinate from another.** For `F` uniform on `X → Y`, `x ≠ z` and any
+`predict : Y → Y`,
+
+    Pr[F z = predict (F x)] = 1/|Y| .
+
+Given `F x = y`, the coordinate `z` is still fresh: `Σ_y Pr[F x = y] · 1/|Y| = 1/|Y|`.
+Derived from the table model of MauRen16, printed p. 6: "a uniformly chosen function table F".
+-/
 lemma uniform_two_outputs_graph_mass {X Y : Type*} [Fintype X] [DecidableEq X]
     [Fintype Y] [Nonempty Y] (x z : X) (hxz : x ≠ z) (predict : Y → Y) :
     (Distribution.uniform (X → Y)).mass (fun f => f z = predict (f x)) =
       1 / (Fintype.card Y : ℝ) := by
   classical
   let P := Distribution.uniform (X → Y)
-  -- Partition by the first reply, then expose the still-fresh second reply.
+  -- Partition by the first reply: `Σ_y Pr[F z = predict (F x) ∧ F x = y]`.
   rw [Distribution.mass_eq_sum_mass_fiber P _ (fun f => f x) Finset.univ
     (fun _ _ => Finset.mem_univ _)]
+  -- Each summand is `Pr[F x = y] / |Y|`.
   have he (y : Y) : P.mass (fun f => f z = predict (f x) ∧ f x = y) =
       P.mass (fun f => f x = y) / Fintype.card Y := by
     calc
+      -- On `F x = y` the target is the fixed value `predict y`.
       _ = P.mass (fun f => f x = y ∧ f z = predict y) := by
         apply Distribution.mass_congr
         intro f
@@ -262,41 +285,53 @@ lemma uniform_two_outputs_graph_mass {X Y : Type*} [Fintype X] [DecidableEq X]
           exact ⟨hb, hb ▸ ha⟩
         · rintro ⟨ha, hb⟩
           exact ⟨ha ▸ hb, ha⟩
+      -- `F x = y` ignores the fresh coordinate `z`, since `x ≠ z`.
       _ = _ := uniform_mass_fresh_eval_eq z (predict y) _
         (fun f g hfg => by rw [hfg x hxz])
+  -- `Σ_y Pr[F x = y] / |Y| = (Σ_y Pr[F x = y]) · |Y|⁻¹`.
   simp only [he, div_eq_mul_inv]
   rw [← Finset.sum_mul]
+  -- The fibers of `F x` cover the whole weight `1`.
   have hs : ∑ y : Y, P.mass (fun f => f x = y) = 1 := by
     have hh := Distribution.mass_eq_sum_mass_fiber P (fun _ => True)
       (fun f => f x) Finset.univ (fun _ _ => Finset.mem_univ _)
     simpa only [true_and, Distribution.mass_true, P, Distribution.weight_uniform] using hh.symm
   rw [hs]
 
-/-- Two distinct coordinates of a uniformly sampled table collide with mass `1/|Y|`.
-CR18, printed p. 51: “For a hash function with k-bit output one can find collisions in time
-O(2k/2 ), due to the so-called birthday paradox.” This is the exact two-coordinate
-probability underlying that collision bound; Jost does not require a birthday bound for
-generic resources. -/
+/-- **Two-coordinate collision.** For `F` uniform on `X → Y` and `x ≠ z`,
+
+    Pr[F x = F z] = 1/|Y| .
+
+The case `predict = id` of `uniform_two_outputs_graph_mass`, derived from the table model of
+MauRen16, printed p. 6. -/
 lemma uniform_two_outputs_collision_mass {X Y : Type*} [Fintype X] [DecidableEq X]
     [Fintype Y] [Nonempty Y] (x z : X) (hxz : x ≠ z) :
     (Distribution.uniform (X → Y)).mass (fun f => f x = f z) =
       1 / (Fintype.card Y : ℝ) := by
+  -- `F x = id (F z)`, predicting `x` from `z`.
   exact uniform_two_outputs_graph_mass z x hxz.symm id
 
-/-- A uniform function collides on a fixed set with mass at most one pair cost for each
-unordered pair. CR18, printed p. 51: “For a hash function with k-bit output one can find
-collisions in time O(2k/2 ), due to the so-called birthday paradox.” This is its finite-table
-union-bound form. Jost treats collision bounds as application-specific probability estimates. -/
+/-- **The birthday bound on a fixed set.** For `F` uniform on `X → Y` and a finite `s ⊆ X`,
+
+    Pr[F not injective on s] ≤ C(|s|, 2) / |Y| .
+
+Each unordered pair of distinct points of `s` collides with mass `1/|Y|`
+(`uniform_two_outputs_collision_mass`), summed by `Distribution.mass_exists_pair_le_choose`.
+A law of the finite table model of MauRen16, printed p. 6, not an assumption on generic
+systems. CR18, printed p. 51, motivates collision finding for hash functions by "the so-called
+birthday paradox"; this finite union bound is not a statement of CR18. -/
 lemma uniform_mass_not_injOn_le_choose {X Y : Type*} [Fintype X] [DecidableEq X]
     [Fintype Y] [Nonempty Y] (s : Finset X) :
     (Distribution.uniform (X → Y)).mass (fun f => ¬ Set.InjOn f (s : Set X)) ≤
       (s.card.choose 2 : ℝ) / Fintype.card Y := by
-  -- Every failure of injectivity identifies a pair of distinct queried coordinates.
+  -- Pair union bound, `bad x z = (F x = F z)`, `δ = 1/|Y|`:
+  --   Pr[∃ x, z ∈ s, x ≠ z ∧ F x = F z] ≤ C(|s|, 2) · (1/|Y|) = C(|s|, 2) / |Y|.
   have hcount := Distribution.mass_exists_pair_le_choose
     (Distribution.uniform (X → Y)) Distribution.uniform_nonNeg s
     (fun x z f => f x = f z) (fun _ _ _ he => he.symm) _
     (fun x _ z _ hxz => (uniform_two_outputs_collision_mass x z hxz).le)
   rw [mul_one_div] at hcount
+  -- Every failure of injectivity on `s` is a collision of two distinct points of `s`.
   refine (Distribution.mass_mono Distribution.uniform_nonNeg ?_).trans hcount
   intro f hf
   unfold Set.InjOn at hf

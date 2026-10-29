@@ -493,9 +493,15 @@ lemma mass_exists_le {A ι : Type*} {X : Distribution A} (hX : X.NonNeg) (s : Fi
         (mass_or_le hX _ _)) ?_
       linarith [ih]
 
-/-- A symmetric bad event costs one union-bound term per unordered pair of distinct
-indices. This refines `mass_exists_le` using the symmetry of the event. Jost's
-resource formalism imposes no additional structure on this finite probability bound. -/
+/-- **The union bound over unordered pairs.** For a nonnegative distribution `X`, a finite
+index set `s`, a symmetric bad event (`bad i j → bad j i`) and `X.mass (bad i j) ≤ δ` for all
+distinct `i, j ∈ s`,
+
+    X.mass (∃ i, j ∈ s, i ≠ j ∧ bad i j) ≤ C(|s|, 2) · δ .
+
+Symmetry charges each pair once; `mass_exists_le` over ordered pairs gives `|s|(|s|-1) δ`.
+`X` need not be normalized and `ι` need not be finite. No `0 ≤ δ` is assumed: for `|s| ≤ 1`
+the event is empty and `C(|s|, 2) = 0`; otherwise `δ` bounds a mass. -/
 lemma mass_exists_pair_le_choose {Ω ι : Type*} (X : Distribution Ω) (hX : X.NonNeg)
     (s : Finset ι) (bad : ι → ι → Ω → Prop)
     (hsym : ∀ i j ω, bad i j ω → bad j i ω) (δ : ℝ)
@@ -503,10 +509,12 @@ lemma mass_exists_pair_le_choose {Ω ι : Type*} (X : Distribution Ω) (hX : X.N
     X.mass (fun ω => ∃ i ∈ s, ∃ j ∈ s, i ≠ j ∧ bad i j ω) ≤
       (s.card.choose 2 : ℝ) * δ := by
   classical
+  -- Induct on `s`, adding one index `i` at a time; `hbad` must follow `s`.
   revert hbad
   induction s using Finset.induction_on with
   | empty =>
     intro _
+    -- `s = ∅`: no pair, mass `0 = C(0, 2) · δ`.
     rw [mass_eq_zero_of_forall_not X (by
       rintro ω ⟨i, hi, _⟩
       exact Finset.notMem_empty i hi)]
@@ -514,7 +522,8 @@ lemma mass_exists_pair_le_choose {Ω ι : Type*} (X : Distribution Ω) (hX : X.N
     exact le_rfl
   | @insert i s hi ih =>
     intro hbad
-    -- A new bad pair is either old or incident to the new index.
+    -- A bad pair in `insert i s` lies in `s` or contains `i`; symmetry puts `i` first:
+    --   bad pair in `insert i s`  →  bad pair in `s`  ∨  ∃ j ∈ s, bad i j.
     have hcover (ω : Ω) :
         (∃ a ∈ insert i s, ∃ b ∈ insert i s, a ≠ b ∧ bad a b ω) →
           (∃ a ∈ s, ∃ b ∈ s, a ≠ b ∧ bad a b ω) ∨
@@ -522,16 +531,22 @@ lemma mass_exists_pair_le_choose {Ω ι : Type*} (X : Distribution Ω) (hX : X.N
       rintro ⟨a, ha, b, hb, hab, he⟩
       rcases Finset.mem_insert.mp ha with hai | ha
       · rcases Finset.mem_insert.mp hb with hbi | hb
+        -- `a = i = b` contradicts `a ≠ b`.
         · exact (hab (hai.trans hbi.symm)).elim
+        -- `(i, b)`: already incident with `i` first.
         · exact Or.inr ⟨b, hb, hai ▸ he⟩
       · rcases Finset.mem_insert.mp hb with hbi | hb
+        -- `(a, i)`: symmetry gives `bad i a`.
         · exact Or.inr ⟨a, ha, hsym a i ω (hbi ▸ he)⟩
+        -- `(a, b)` with both in `s`: an old pair.
         · exact Or.inl ⟨a, ha, b, hb, hab, he⟩
+    -- Monotonicity and the two-event union bound: mass ≤ old + new.
     refine (mass_mono hX hcover).trans ?_
     refine (mass_or_le hX _ _).trans ?_
+    -- Old pairs: the induction hypothesis on `s`, `≤ C(|s|, 2) · δ`.
     have hold := ih (fun a ha b hb => hbad a (Finset.mem_insert_of_mem ha)
       b (Finset.mem_insert_of_mem hb))
-    -- Charge one new pair for each old index.
+    -- New pairs `(i, j)`, `j ∈ s`: `j ≠ i` as `i ∉ s`, so each costs `δ`; total `|s| · δ`.
     have hnew : X.mass (fun ω => ∃ j ∈ s, bad i j ω) ≤ s.card * δ := by
       refine (mass_exists_le hX s _).trans ?_
       calc
@@ -539,7 +554,7 @@ lemma mass_exists_pair_le_choose {Ω ι : Type*} (X : Distribution Ω) (hX : X.N
           hbad i (Finset.mem_insert_self i s) j (Finset.mem_insert_of_mem hj)
             (fun he => hi (he ▸ hj))
         _ = _ := by rw [Finset.sum_const, nsmul_eq_mul]
-    -- The new pairs turn `choose(n,2)` into `choose(n+1,2)`.
+    -- Pascal: `C(n, 2) + n = C(n + 1, 2)` with `n = |s|` and `|insert i s| = n + 1`.
     refine (add_le_add hold hnew).trans_eq ?_
     rw [Finset.card_insert_of_notMem hi, Nat.choose_succ_succ, Nat.choose_one_right,
       Nat.cast_add]

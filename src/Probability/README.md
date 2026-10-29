@@ -78,12 +78,12 @@ therefore cost at most $`\binom{|S|}{2}/|Y|`$ on a fixed queried set $`S`$.
 [ProbDist]: Distribution.lean#L149
 [isProbDist]: Distribution.lean#L128
 [mass]: Distribution.lean#L217
-[fTransform]: Distribution.lean#L637
-[prod]: Distribution.lean#L1010
-[pi]: Distribution.lean#L1651
+[fTransform]: Distribution.lean#L704
+[prod]: Distribution.lean#L1077
+[pi]: Distribution.lean#L1718
 [piDep]: DependentProduct.lean#L37
-[uniform]: Distribution.lean#L566
-[ProbDist.uniform]: Distribution.lean#L599
+[uniform]: Distribution.lean#L633
+[ProbDist.uniform]: Distribution.lean#L666
 [bindK]: Kernel.lean#L49
 [bindK_bindK]: Kernel.lean#L95
 [bindK_single_comp]: Kernel.lean#L117
@@ -106,11 +106,11 @@ therefore cost at most $`\binom{|S|}{2}/|Y|`$ on a fixed queried set $`S`$.
 [mass_ge_le_expect_div]: Expectation.lean#L199
 [expect_mul_sq_le_sq_mul_sq]: Expectation.lean#L215
 [ConvexOn.map_expect_le]: Expectation.lean#L297
-[card_function_fiber_finset]: Counting.lean#L56
-[uniform_mass_transcript_eq]: Counting.lean#L209
-[fTransform_eval_uniform_eq_of_same_fibers]: Counting.lean#L265
-[uniform_mass_adaptive_eval_eq_mul]: Counting.lean#L337
+[card_function_fiber_finset]: Counting.lean#L58
+[uniform_mass_transcript_eq]: Counting.lean#L358
+[fTransform_eval_uniform_eq_of_same_fibers]: Counting.lean#L414
+[uniform_mass_adaptive_eval_eq_mul]: Counting.lean#L486
 
-[uniform_mass_fresh_eval_eq]: Counting.lean
-[mass_exists_pair_le_choose]: Distribution.lean
-[uniform_mass_not_injOn_le_choose]: Counting.lean
+[uniform_mass_fresh_eval_eq]: Counting.lean#L209
+[mass_exists_pair_le_choose]: Distribution.lean#L505
+[uniform_mass_not_injOn_le_choose]: Counting.lean#L323
