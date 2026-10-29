@@ -7,7 +7,8 @@ import Lean
 Tactics that discharge the generated obligations from the displayed statements of a body:
 `program_bound` for a bound on its inside queries, `program_bounded` for a uniform bound of a
 program, `program_cost` for an exact number of inside queries, `program_preserving` for port
-preservation.
+preservation. `component_cases` gives them one goal per procedure, also on an ordered tensor of
+outside interfaces.
 -/
 
 namespace SystemAlgebra.DSL
@@ -26,6 +27,25 @@ elab "component_continuation" : tactic => withMainContext do
       catch _ => pure ()
       saved.restore
   throwError "No matching loop continuation."
+
+/-- Split a procedure label through each tensor tag, then through the component's ports.
+Only the supplied label is split; input values and private state remain arbitrary. -/
+partial def componentCases (goal : MVarId) (label : FVarId) : MetaM (List MVarId) :=
+  goal.withContext do
+    let tensor := (← whnf (← label.getType)).isAppOf ``Sum
+    let cases ← goal.cases label
+    if !tensor then return cases.toList.map (·.mvarId)
+    let mut goals := []
+    for c in cases do
+      let #[.fvar port] := c.fields | throwError "Expected one label in a tensor component."
+      goals := goals ++ (← componentCases c.mvarId port)
+    return goals
+
+/-- One goal per procedure: split the label `i` through its `Sum.inl`/`Sum.inr` tensor tags,
+then through the component's ports (`componentCases`). -/
+elab "component_cases " label:ident : tactic => do
+  let label ← getFVarId label
+  liftMetaTactic fun goal => componentCases goal label
 
 /-- Bound the inside queries of a body by its displayed calls. -/
 syntax "program_bound" : tactic
@@ -75,11 +95,11 @@ elab_rules : tactic
         evalTactic (← `(tactic| first
           | (apply Exists.intro
              intro s i x
-             cases i <;> dsimp <;> program_bound)
+             component_cases i <;> dsimp <;> program_bound)
           | (let : ∀ i : ($signature).I, _root_.Finite (($signature).X i) := by
-               intro i; cases i <;> dsimp <;> infer_instance
+               intro i; component_cases i <;> dsimp <;> infer_instance
              apply callBound_uniform
-             intro s i x; cases i <;> dsimp
+             intro s i x; component_cases i <;> dsimp
              all_goals repeat' split
              all_goals (apply Exists.intro; program_bound))))
         defaultBounds goal
@@ -157,7 +177,7 @@ elab_rules : tactic
     let saved ← saveState
     try
       Term.withoutErrToSorry <| withoutRecover <| evalTactic (← `(tactic|
-        (intro s i x; cases i <;> dsimp <;> program_preserves)))
+        (intro s i x; component_cases i <;> dsimp <;> program_preserves)))
     catch _ =>
       saved.restore
       throwError "Could not show from the displayed calls that each procedure calls at most its \

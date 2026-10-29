@@ -15,8 +15,10 @@ budget. Every sampling statement becomes a call to a source of fresh samples fro
 component is a deterministic program with sources: a converter is its program followed by the
 context attaching its sources, and a system is its program attached to its sources; a system
 that samples nothing is the deterministic system of its program. Initialization runs in the
-first invocation. A converter gets its inferred per-call bound `C.bound` and the arrow from
-budget `q` to `C.bound * q` inside queries, plus the exact arrow `C.exact` when its number of
+first invocation. Named `outside` components `a : A`, `b : B`, `c : C` give the ordered tensor
+`A q₁ ⊗ (B q₂ ⊗ C q₃)` at the budget tuple `(q₁, q₂, q₃)`; one component keeps a scalar budget.
+A converter gets its inferred per-call bound `C.bound` and an inside allowance
+of `C.bound` times its outside interface's bound, plus the exact arrow `C.exact` when its number of
 inside calls is a function of the input; a filter is the arrow from the restricted budget.
 System definitions take their budget from their outermost component. The compiler is a front end
 on the category of interfaces: systems are `TypedSystem`s, and converters, built from
@@ -165,7 +167,8 @@ partial def lowerFunction (ss : Array Syntax) (bound persistent : Array Ident)
   if s.getKind == ``forStmt then
     checkPure s[3] calls
     let x : Ident := ⟨s[1]⟩
-    if bound.any (·.getId == x.getId) then throwErrorAt s "Loop variable shadows an existing binding."
+    if bound.any (·.getId == x.getId) then
+      throwErrorAt s "Loop variable shadows an existing binding."
     let body ← lowerFunction (statements s[4]) (bound.push x) persistent calls onward mode
     return ← `(forEach $(⟨s[3]⟩):term
       (fun $x:ident $next:ident $received:ident => let $values:term := $received:ident; $body)
@@ -248,7 +251,8 @@ partial def checkReserved (stx : Syntax) : CommandElabM Unit := do
   match stx with
   | .ident _ _ n _ =>
     if reservedNames.contains n.getRoot then
-      throwErrorAt stx m!"`{n.getRoot}` is reserved: the generated declarations bind it for the query budget."
+      throwErrorAt stx m!"`{n.getRoot}` is reserved: the generated declarations bind it for the \
+        query budget."
   | .node _ kind args =>
     if kind == ``Lean.Parser.Term.namedArgument then checkReserved args[3]!
     else for a in args do checkReserved a
@@ -336,9 +340,11 @@ def declareInterface (name : Ident) (params : Array Syntax)
     fun i => match i with $outs:matchAlt*))
   let fintypeInput := Lean.mkIdent (name.getId ++ `fintypeInput)
   let fintypeOutput := Lean.mkIdent (name.getId ++ `fintypeOutput)
-  elabCommand (← `(@[reducible] def $fintypeInput:ident $inBinders:bracketedBinder* (i : $portName:ident) :
+  elabCommand (← `(@[reducible] def $fintypeInput:ident $inBinders:bracketedBinder*
+      (i : $portName:ident) :
       Fintype ($inputName:ident $inArgs* i) := by cases i <;> infer_instance))
-  elabCommand (← `(@[reducible] def $fintypeOutput:ident $outBinders:bracketedBinder* (i : $portName:ident) :
+  elabCommand (← `(@[reducible] def $fintypeOutput:ident $outBinders:bracketedBinder*
+      (i : $portName:ident) :
       Fintype ($outputName:ident $outArgs* i) := by cases i <;> infer_instance))
   -- With one port, the alphabet at a port reduces to its declared type, whose instances apply;
   -- with more, the alphabet at a variable port is found by these instances.
@@ -355,7 +361,8 @@ def declareInterface (name : Ident) (params : Array Syntax)
   elabCommand (← `(abbrev $(⟨stx[1]⟩):ident $params:bracketedBinder* (q : ℕ) : Interface :=
     @Interface.queryBudget $labels _ $inputs $outputs $fx $fy q))
   let perPortName := Lean.mkIdent ((⟨stx[1]⟩ : Ident).getId ++ `perPort)
-  elabCommand (← `(abbrev $perPortName:ident $params:bracketedBinder* (q : $labels → ℕ) : Interface :=
+  elabCommand (← `(abbrev $perPortName:ident $params:bracketedBinder*
+      (q : $labels → ℕ) : Interface :=
     @Interface.portBudget $labels _ $inputs $outputs $fx $fy q))
 
 def parameterBinders (ps : Array Syntax) : CommandElabM (Array (TSyntax ``Term.bracketedBinder)) :=
@@ -387,7 +394,8 @@ partial def insideInterfaces (insideDecls : Array Syntax) (used : Array Name) (k
       `($ty $k)
   let admits ← `(fun _ hne hl => ⟨hne, hl⟩)
   if insideDecls.size == 1 then return (sig, admits, calls)
-  let (rest, restAdmits, restCalls) ← insideInterfaces (insideDecls.extract 1 insideDecls.size) used k
+  let (rest, restAdmits, restCalls) ←
+    insideInterfaces (insideDecls.extract 1 insideDecls.size) used k
   let leftCalls ← calls.mapM fun (n,l) => return (n, ← `(Sum.inl $l))
   let restCalls ← restCalls.mapM fun (n,l) => return (n, ← `(Sum.inr $l))
   return (← `(Interface.tensor $sig $rest), ← `(parallelInputs_of_length_le $admits $restAdmits),
@@ -458,9 +466,12 @@ def errorCount : CommandElabM Nat := do
   return (← get).messages.toList.countP (·.severity == .error)
 
 /-- What determines a component's outside interface at every budget: a declared interface
-family, or its generated labels and finite alphabets with an optional exact domain. -/
+family, named components of an ordered tensor, or generated labels and finite alphabets with
+an optional exact domain. -/
 structure Signature where
   declared : Option (TSyntax `term)
+  /-- The named outside components and their interface families, in declaration order. -/
+  outside : Array (Ident × TSyntax `term) := #[]
   labels : TSyntax `term
   inputs : TSyntax `term
   outputs : TSyntax `term
@@ -468,8 +479,48 @@ structure Signature where
   fintypeOutputs : TSyntax `term
   exactDomain : Option (Ident × TSyntax `term × TSyntax `term)
 
-/-- The outside interface at budget `k`. -/
+/-- A budget for each of `n` named outside components, nested to the right in declaration order:
+`ℕ × (ℕ × ℕ)` for three, and `ℕ` for one component or none. -/
+partial def outsideBudgetType (n : Nat) : CommandElabM (TSyntax `term) := do
+  if n ≤ 1 then `(ℕ) else `(ℕ × $(← outsideBudgetType (n - 1)))
+
+/-- Zero queries at every named outside component, of type `outsideBudgetType n`. -/
+partial def outsideZeroBudget (n : Nat) : CommandElabM (TSyntax `term) := do
+  if n ≤ 1 then `(0) else `((0, $(← outsideZeroBudget (n - 1))))
+
+/-- The ordered tensor of the named components' interfaces, each at its own entry of the budget
+tuple `q`: `A q.1 ⊗ (B q.2.1 ⊗ C q.2.2)` for three, `A q` for one. -/
+partial def outsideAt (outside : Array (Ident × TSyntax `term)) (q : TSyntax `term) :
+    CommandElabM (TSyntax `term) := do
+  if outside.isEmpty then throwError "Declare at least one outside component."
+  let sig := outside[0]!.2
+  if outside.size == 1 then return ← `($sig $q)
+  let rest ← outsideAt (outside.extract 1 outside.size) (← `(($q).2))
+  `(Interface.tensor ($sig ($q).1) $rest)
+
+/-- The label of a procedure `c.p` in the ordered tensor: the port `.p` of component `c`, as
+`.inl .p` when `c` is the first of several components and behind `.inr` when it is later; one
+component keeps `.p`. A missing or unknown prefix is rejected. -/
+partial def outsideLabel (outside : Array (Ident × TSyntax `term)) (procedure : Ident) :
+    CommandElabM (TSyntax `term) := do
+  if outside.isEmpty then throwErrorAt procedure "Unknown outside component in procedure name."
+  if procedure.getId.getPrefix == outside[0]!.1.getId then
+    let port := Lean.mkIdent (Name.mkSimple procedure.getId.getString!)
+    let label ← `(.$port:ident)
+    if outside.size == 1 then return label
+    return ← `(Sum.inl $label)
+  let label ← outsideLabel (outside.extract 1 outside.size) procedure
+  `(Sum.inr $label)
+
+/-- The procedure's label in its ordered tensor, declared interface or generated interface. -/
+def Signature.label (σ : Signature) (name procedure : Ident) : CommandElabM (TSyntax `term) := do
+  if !σ.outside.isEmpty then return ← outsideLabel σ.outside procedure
+  if σ.declared.isSome then return ← `(.$procedure:ident)
+  return ⟨(Lean.mkIdent (name.getId ++ `Port ++ procedure.getId)).raw⟩
+
+/-- The outside interface at budget `k`, a tuple for several named components. -/
 def Signature.at (σ : Signature) (k : TSyntax `term) : CommandElabM (TSyntax `term) := do
+  if !σ.outside.isEmpty then return ← outsideAt σ.outside k
   if let some sig := σ.declared then return ← `(($sig $k))
   let labels := σ.labels
   let inputs := σ.inputs
@@ -484,12 +535,26 @@ def Signature.at (σ : Signature) (k : TSyntax `term) : CommandElabM (TSyntax `t
          nonempty_prefix := budget_nonempty_prefix (P := fun $x:ident => $predicate) $proof,
          bound := $k, length_le := fun _ hd => hd.2 } : Interface))
 
+/-- The interface alphabets, independent of the outside budgets. -/
+def Signature.zero (σ : Signature) : CommandElabM (TSyntax `term) := do
+  σ.at (← outsideZeroBudget σ.outside.size)
+
 /-- The outside interface at the per-port budget `q`, when the component has one: a declared
-interface family, or its generated labels without an exact domain. -/
-def Signature.perPortAt (σ : Signature) (q : TSyntax `term) :
+interface family, its generated labels without an exact domain, or named components each with a
+declared family. Named components restrict `q` along their tags:
+`A.perPort (fun i => q (.inl i)) ⊗ B.perPort (fun i => q (.inr i))` for two. -/
+partial def Signature.perPortAt (σ : Signature) (q : TSyntax `term) :
     CommandElabM (Option (TSyntax `term)) := do
+  if !σ.outside.isEmpty then
+    let first : Signature := { σ with declared := some σ.outside[0]!.2, outside := #[] }
+    if σ.outside.size == 1 then return ← first.perPortAt q
+    let some left ← first.perPortAt (← `(fun i => $q (Sum.inl i))) | return none
+    let rest := { σ with outside := σ.outside.extract 1 σ.outside.size }
+    let some right ← rest.perPortAt (← `(fun i => $q (Sum.inr i))) | return none
+    return some (← `(Interface.tensor $left $right))
   if let some sig := σ.declared then
     match sig with
+    | `(($inner)) => return ← ({ σ with declared := some inner } : Signature).perPortAt q
     | `($f:ident $args*) => return some (← `($(Lean.mkIdent (f.getId ++ `perPort)) $args* $q))
     | `($f:ident) => return some (← `($(Lean.mkIdent (f.getId ++ `perPort)) $q))
     | _ => return none
@@ -532,8 +597,10 @@ def insidePortMap (oracles : Array Syntax) (calls : Array (Name × TSyntax `term
     entries := entries.push ((⟨p[1]⟩ : Ident), entry)
   return some entries
 
-/-- The per-port typing of a component: a system at every per-port budget, and a converter
-whose single inside port has its outside interface, when each procedure calls only its own
+/-- The per-port typing of a component: a system at every per-port budget; a converter with
+named outside components, into its inside interfaces at the aggregate allowance
+`bound · (outside per-port interface).bound`; and a converter with an annotated outside interface
+whose single inside port has that interface, when each procedure calls only its own
 inside port, at most once; or whose single inside port has another interface, each of whose
 labels one procedure calls, at most once, the other procedures calling none: its budget at a
 label is that procedure's (`insideBudget`), along the port map `portMap`. The declarations are
@@ -544,7 +611,7 @@ def elabPerPortDecls (converting : Bool) (name : Ident)
   let q := Lean.mkIdent `budget
   let some sigPP ← σ.perPortAt q | return
   let args := binderArgs params
-  let sigZero ← σ.at (← `(0))
+  let sigZero ← σ.zero
   let bodyName := Lean.mkIdent (name.getId ++ `body)
   let boundName := Lean.mkIdent (name.getId ++ `bound)
   let boundSpecName := Lean.mkIdent (name.getId ++ `bound_spec)
@@ -552,16 +619,27 @@ def elabPerPortDecls (converting : Bool) (name : Ident)
   let preservingName := Lean.mkIdent (name.getId ++ `preserving)
   let programName := Lean.mkIdent (name.getId ++ `perPortProgram)
   let perPortName := Lean.mkIdent (name.getId ++ `perPort)
-  let k ← `($boundName $args* * ∑ i, $q i)
+  -- The inside allowance: the bound times the total of the per-port budgets.
+  let k ← if σ.outside.isEmpty then `($boundName $args* * ∑ i, $q i)
+    else `($boundName $args* * ($sigPP).bound)
   let saved ← get
   let before ← errorCount
   try
-    if !converting then
-      let (randK, admitsK, _) ← insideInterfaces sites used k
-      elabCommand (← `(noncomputable def $perPortName:ident $params:bracketedBinder*
-          {$q : ($sigZero).I → ℕ} : TypedSystem $sigPP :=
-        (TypedConverter.ofProgram none ($bodyName $args*) ($boundSpecName $args*) $admitsK :
-          $sigPP ⟶ $randK) • $randomnessName $args* $k))
+    -- Systems, and converters with named outside components, use the aggregate allowance `k`.
+    if !converting || !σ.outside.isEmpty then
+      let (innerK, admitsK, _) ← componentInside converting insides sites used k
+      let program ← `((TypedConverter.ofProgram none ($bodyName $args*) ($boundSpecName $args*)
+        $admitsK : $sigPP ⟶ $innerK))
+      if converting then
+        let (declK, _, _) ← insideInterfaces insides used k
+        let result ← if sites.isEmpty then pure program else
+          `($program ≫ TypedConverter.rightContext $declK ($randomnessName $args* $k))
+        elabCommand (← `(noncomputable def $perPortName:ident $params:bracketedBinder*
+            {$q : ($sigZero).I → ℕ} : $sigPP ⟶ $declK := $result))
+      else
+        elabCommand (← `(noncomputable def $perPortName:ident $params:bracketedBinder*
+            {$q : ($sigZero).I → ℕ} : TypedSystem $sigPP :=
+          $program • $randomnessName $args* $k))
     else
       let some declared := σ.declared | return
       unless insides.size == 1 do return
@@ -584,7 +662,8 @@ def elabPerPortDecls (converting : Bool) (name : Ident)
           let some insidePP ← ({ σ with declared := some insideTy } : Signature).perPortAt qIn
             | return
           elabCommand (← `(def $insideBudgetName:ident $params:bracketedBinder*
-              ($q : ($sigZero).I → ℕ) : ($insideTy 0).I → ℕ := fun j => match j with $qAlts:matchAlt*))
+              ($q : ($sigZero).I → ℕ) : ($insideTy 0).I → ℕ :=
+            fun j => match j with $qAlts:matchAlt*))
           let ιAlts ← entries.mapM fun (o, e) => do
             match e with
             | some (_, l) => `(Term.matchAltExpr| | .$o:ident => some $(← wrap l))
@@ -640,14 +719,17 @@ def sourcesAt (lawNames : Array Ident) (args : Array (TSyntax `term)) (k : TSynt
   return result
 
 /-- The declarations of a component compiled to a program: its body, its inferred per-call
-bound, its program from the outside budget `q` to `bound · q` inside queries, and its sources. -/
-def elabProgramDecls (converting : Bool) (name : Ident) (params : Array (TSyntax ``Term.bracketedBinder))
+bound, its program from the outside interface `A` to `bound · A.bound` inside queries,
+and its sources. -/
+def elabProgramDecls (converting : Bool) (name : Ident)
+    (params : Array (TSyntax ``Term.bracketedBinder))
     (σ : Signature) (insides sites : Array Syntax) (lawNames : Array Ident) (used : Array Name)
     (state : Ident) (alts : Array (TSyntax ``Term.matchAlt)) (innerZero stateTy : TSyntax `term)
     (displayedBound : Option Nat) : CommandElabM Unit := do
   let args := binderArgs params
   let budget := Lean.mkIdent `budget
-  let sigZero ← σ.at (← `(0))
+  let budgetType ← outsideBudgetType σ.outside.size
+  let sigZero ← σ.zero
   let bodyName := Lean.mkIdent (name.getId ++ `body)
   let boundedName := Lean.mkIdent (name.getId ++ `bounded)
   let boundName := Lean.mkIdent (name.getId ++ `bound)
@@ -670,7 +752,7 @@ def elabProgramDecls (converting : Bool) (name : Ident) (params : Array (TSyntax
             ($bodyName $args*).Bounded ($boundName $args*) := by
           unfold $bodyName:ident
           intro s i x
-          cases i <;> dsimp <;> program_bound))
+          component_cases i <;> dsimp <;> program_bound))
       if (← errorCount) > before then set saved else displayed := true
     catch _ => set saved
   unless displayed do
@@ -683,10 +765,13 @@ def elabProgramDecls (converting : Bool) (name : Ident) (params : Array (TSyntax
     elabCommand (← `(theorem $boundSpecName:ident $params:bracketedBinder* :
         ($bodyName $args*).Bounded ($boundName $args*) :=
       @Nat.find_spec _ (Classical.decPred _) ($boundedName $args*)))
-  let k ← `($boundName $args* * $budget)
-  let (innerK, admitsK, _) ← componentInside converting insides sites used k
   let sigB ← σ.at budget
-  elabCommand (← `(noncomputable def $programName:ident $params:bracketedBinder* {$budget : ℕ} :
+  -- The inside allowance `bound · A.bound`: for a budget tuple, the bound times its total.
+  let k ← if σ.outside.isEmpty then `($boundName $args* * $budget)
+    else `($boundName $args* * ($sigB).bound)
+  let (innerK, admitsK, _) ← componentInside converting insides sites used k
+  elabCommand (← `(noncomputable def $programName:ident $params:bracketedBinder*
+        {$budget : $budgetType} :
       $sigB ⟶ $innerK :=
     TypedConverter.ofProgram none ($bodyName $args*) ($boundSpecName $args*) $admitsK))
   if !sites.isEmpty then
@@ -698,20 +783,24 @@ def elabProgramDecls (converting : Bool) (name : Ident) (params : Array (TSyntax
   if converting then
     let (declK, _, _) ← insideInterfaces insides used k
     if sites.isEmpty then
-      elabCommand (← `(noncomputable def $name:ident $params:bracketedBinder* {$budget : ℕ} :
+      elabCommand (← `(noncomputable def $name:ident $params:bracketedBinder*
+        {$budget : $budgetType} :
           $sigB ⟶ $declK := $programName $args* (budget := $budget)))
     else
-      elabCommand (← `(noncomputable def $name:ident $params:bracketedBinder* {$budget : ℕ} :
+      elabCommand (← `(noncomputable def $name:ident $params:bracketedBinder*
+        {$budget : $budgetType} :
           $sigB ⟶ $declK :=
         CategoryTheory.CategoryStruct.comp ($programName $args* (budget := $budget))
           (TypedConverter.rightContext $declK ($randomnessName $args* $k))))
   else
-    elabCommand (← `(noncomputable def $name:ident $params:bracketedBinder* {$budget : ℕ} :
+    elabCommand (← `(noncomputable def $name:ident $params:bracketedBinder*
+        {$budget : $budgetType} :
         TypedSystem $sigB :=
       $programName $args* (budget := $budget) • $randomnessName $args* $k))
 
 /-- The exact typing of a converter that samples nothing, when its number of inside calls is
-a function of the input: the outside query budget restricted to total cost `q` into `q` inside
+a function of the input: the outside interface at query budget `queries` (a tuple for several
+named components), restricted to histories of total cost at most `budget`, into `budget` inside
 queries. The declarations are kept only if the inferred count elaborates and is proved. -/
 def elabExactDecls (name : Ident) (params : Array (TSyntax ``Term.bracketedBinder))
     (σ : Signature) (insides : Array Syntax) (used : Array Name)
@@ -720,7 +809,8 @@ def elabExactDecls (name : Ident) (params : Array (TSyntax ``Term.bracketedBinde
   let args := binderArgs params
   let budget := Lean.mkIdent `budget
   let queries := Lean.mkIdent `queries
-  let sigZero ← σ.at (← `(0))
+  let budgetType ← outsideBudgetType σ.outside.size
+  let sigZero ← σ.zero
   let bodyName := Lean.mkIdent (name.getId ++ `body)
   let boundSpecName := Lean.mkIdent (name.getId ++ `bound_spec)
   let costName := Lean.mkIdent (name.getId ++ `cost)
@@ -732,8 +822,7 @@ def elabExactDecls (name : Ident) (params : Array (TSyntax ``Term.bracketedBinde
     let mut costAlts : Array (TSyntax ``Term.matchAlt) := #[]
     for (procedure, body) in oracles.zip bodies do
       let procArgs : Array Ident := procedure[3].getSepArgs.map (fun a => ⟨a[0]⟩)
-      let label ← if σ.declared.isSome then `(.$(⟨procedure[1]⟩):ident)
-        else pure (⟨(Lean.mkIdent (name.getId ++ `Port ++ procedure[1].getId)).raw⟩ : TSyntax `term)
+      let label ← σ.label name ⟨procedure[1]⟩
       let mut c ← costOf body calls
       if !procArgs.isEmpty then
         let pat ← tupleTerm (procArgs.map fun x => ⟨x.raw⟩)
@@ -745,20 +834,20 @@ def elabExactDecls (name : Ident) (params : Array (TSyntax ``Term.bracketedBinde
       theorem $costsName:ident $params:bracketedBinder* :
         ($bodyName $args*).Costs (fun x => $costName $args* x.1 x.2) := by
       intro s i x
-      cases i <;> simp only [$bodyName:ident, $costName:ident] <;> program_cost))
+      component_cases i <;> simp only [$bodyName:ident, $costName:ident] <;> program_cost))
     let (innerB, admitsB, _) ← insideInterfaces insides used budget
     let sigQ ← σ.at queries
     let outside ← `(Interface.restrict $sigQ
       (fun h => (h.map fun x => $costName $args* x.1 x.2).sum ≤ $budget) (cost_prefix_closed _ _))
     elabCommand (← `(noncomputable def $exactName:ident $params:bracketedBinder*
-        {$budget $queries : ℕ} : $outside ⟶ $innerB :=
+        {$budget : ℕ} {$queries : $budgetType} : $outside ⟶ $innerB :=
       TypedConverter.ofCostedProgram none ($bodyName $args*) ($boundSpecName $args*)
         (fun x => $costName $args* x.1 x.2) ($costsName $args*) (fun _ hd => hd.2) $admitsB))
     if (← errorCount) > before then set saved
   catch _ => set saved
 
 /-- The port label, the input type and the reply type of a procedure. -/
-def procedureSignature (name : Ident) (typed : Bool) (persistent : Array Ident)
+def procedureSignature (name : Ident) (σ : Signature) (persistent : Array Ident)
     (procedure : Syntax) :
     CommandElabM (Array Ident × TSyntax `term × TSyntax `term × TSyntax `term) := do
   if !returns procedure[7] then throwErrorAt procedure "Every procedure path must return a reply."
@@ -766,8 +855,7 @@ def procedureSignature (name : Ident) (typed : Bool) (persistent : Array Ident)
   for a in procArgs do
     if persistent.any (·.getId == a.getId) then
       throwErrorAt a "Oracle parameter shadows persistent binding."
-  let label ← if typed then `(.$(⟨procedure[1]⟩):ident)
-    else pure (⟨(Lean.mkIdent (name.getId ++ `Port ++ procedure[1].getId)).raw⟩ : TSyntax `term)
+  let label ← σ.label name ⟨procedure[1]⟩
   let types : Array (TSyntax `term) := procedure[3].getSepArgs.map (fun a => ⟨a[2]⟩)
   let mut argType ← `(Unit)
   if !types.isEmpty then
@@ -776,9 +864,9 @@ def procedureSignature (name : Ident) (typed : Bool) (persistent : Array Ident)
   return (procArgs, label, argType, ⟨procedure[6]⟩)
 
 /-- The step of a procedure of a system that samples nothing. -/
-def systemAlt (name : Ident) (typed : Bool) (persistent : Array Ident) (stored : TSyntax `term)
+def systemAlt (name : Ident) (σ : Signature) (persistent : Array Ident) (stored : TSyntax `term)
     (state input : Ident) (procedure : Syntax) : CommandElabM (TSyntax ``Term.matchAlt) := do
-  let (procArgs, label, argType, resultType) ← procedureSignature name typed persistent procedure
+  let (procArgs, label, argType, resultType) ← procedureSignature name σ persistent procedure
   let checkedBody ← annotateReturns procedure[7] resultType
   let mut body ← lowerFunction (statements checkedBody) (persistent ++ procArgs) persistent
     #[] ⟨.missing⟩ .system
@@ -789,11 +877,11 @@ def systemAlt (name : Ident) (typed : Bool) (persistent : Array Ident) (stored :
   `(matchAltExpr| | $label:term => fun ($input:ident : $argType) => ($body : _ × $resultType))
 
 /-- The program of a procedure: initialization first when no bindings are stored yet. -/
-def programAlt (name : Ident) (typed : Bool) (persistent : Array Ident) (stored : TSyntax `term)
+def programAlt (name : Ident) (σ : Signature) (persistent : Array Ident) (stored : TSyntax `term)
     (state input : Ident) (calls : Array (Name × TSyntax `term)) (initD : Array Syntax)
     (resultOf : TSyntax `term → CommandElabM (TSyntax `term)) (procedure : Syntax)
     (bodyD : Array Syntax) : CommandElabM (TSyntax ``Term.matchAlt) := do
-  let (procArgs, label, argType, resultType) ← procedureSignature name typed persistent procedure
+  let (procArgs, label, argType, resultType) ← procedureSignature name σ persistent procedure
   let checked ← bodyD.mapM (annotateReturns · resultType)
   let resumed ← lowerFunction checked (persistent ++ procArgs) persistent calls ⟨.missing⟩ .program
   let first ← lowerFunction (initD ++ checked) procArgs persistent calls ⟨.missing⟩ .program
@@ -806,6 +894,10 @@ def programAlt (name : Ident) (typed : Bool) (persistent : Array Ident) (stored 
   `(matchAltExpr| | $label:term => fun ($input:ident : $argType) =>
     ($body : $(← resultOf resultType)))
 
+/-- A system or converter declaration. Its outside interface is the annotation, the ordered
+tensor of its named `outside` components, or its generated ports; an annotation and named
+components exclude each other. The private state of `initialize`, samples included, is shared
+by every procedure, whichever component it is on. -/
 @[command_elab systemComponentDecl, command_elab systemComponentTypedDecl,
   command_elab converterDecl, command_elab converterTypedDecl]
 def elabComponent : CommandElab := fun stx => do
@@ -817,12 +909,25 @@ def elabComponent : CommandElab := fun stx => do
   let proofBlock := if converting then Syntax.missing else stx[if typed then 6 else 4]
   let oracles := members.filter (·.getKind == ``oracleDecl)
   if oracles.isEmpty then throwError "A system must declare at least one procedure."
+  let outsideDecls := members.filter (·.getKind == ``outsideDecl)
+  if typed && !outsideDecls.isEmpty then
+    throwError "Use either an interface annotation or named outside components."
+  let outside : Array (Ident × TSyntax `term) := outsideDecls.map fun d => (⟨d[1]⟩, ⟨d[3]⟩)
+  let mut names : Array Name := #[]
+  for (component, _) in outside do
+    if names.contains component.getId then throwErrorAt component "Duplicate outside component."
+    names := names.push component.getId
   let ports := oracles.map fun p =>
     ((⟨p[1]⟩ : Ident), p[3].getSepArgs, (⟨p[6]⟩ : TSyntax `term))
   let (labels, inputs, outputs, params, fx, fy) ← if typed then do
       let sig : TSyntax `term := ⟨stx[4]⟩
       pure (← `(($sig 0).I), ← `(($sig 0).X), ← `(($sig 0).Y), ← parameterBinders stx[2].getArgs,
         ← `(inferInstance), ← `(inferInstance))
+    else if !outside.isEmpty then do
+      -- The alphabets of the ordered tensor, which do not depend on the budgets.
+      let sig ← outsideAt outside (← outsideZeroBudget outside.size)
+      pure (← `(($sig).I), ← `(($sig).X), ← `(($sig).Y),
+        ← parameterBinders stx[2].getArgs, ← `(inferInstance), ← `(inferInstance))
     else declareInterface name stx[2].getArgs ports
   let mut params := params
   for m in members do
@@ -833,7 +938,7 @@ def elabComponent : CommandElab := fun stx => do
   let args := binderArgs params
   let domains := members.filter (·.getKind == ``domainDecl)
   if domains.size > 1 then throwError "Declare the domain only once."
-  if !domains.isEmpty && (typed || converting) then
+  if !domains.isEmpty && (typed || converting || !outside.isEmpty) then
     throwError "Use an exact domain on an unannotated system declaration."
   if !domains.isEmpty && proofBlock.isNone then
     throwError "An explicit domain requires a proof of nonempty prefix closure in `by`."
@@ -843,13 +948,15 @@ def elabComponent : CommandElab := fun stx => do
       ← `(by $(⟨proofBlock[1]⟩):tacticSeq)))
   let σ : Signature := {
     declared := if typed then some ⟨stx[4]⟩ else none
-    labels, inputs, outputs, fintypeInputs := fx, fintypeOutputs := fy, exactDomain }
+    outside, labels, inputs, outputs, fintypeInputs := fx, fintypeOutputs := fy, exactDomain }
   let sigAt := σ.at
+  let budgetType ← outsideBudgetType outside.size
   let budget := Lean.mkIdent `budget
   let outerName := Lean.mkIdent (name.getId ++ `outer)
-  elabCommand (← `(abbrev $outerName:ident $params:bracketedBinder* (q : ℕ) : Interface :=
+  elabCommand (← `(abbrev $outerName:ident $params:bracketedBinder*
+        (q : $budgetType) : Interface :=
     $(← sigAt (← `(q)))))
-  let sigZero ← sigAt (← `(0))
+  let sigZero ← σ.zero
   let inits := members.filter (·.getKind == ``initializeDecl)
   if inits.size > 1 then throwError "Declare initialization only once."
   let initStatements := if inits.isEmpty then #[] else statements (inits[0]!)[1]
@@ -888,13 +995,14 @@ def elabComponent : CommandElab := fun stx => do
   -- A system that samples nothing is the deterministic system of its program.
   if !converting && siteList.isEmpty then
     let alts ← oracles.mapM fun procedure =>
-      systemAlt name typed persistent stored state input procedure
+      systemAlt name σ persistent stored state input procedure
     let sig ← sigAt budget
     let stepName := Lean.mkIdent (name.getId ++ `step)
     elabCommand (← `(noncomputable def $stepName:ident $params:bracketedBinder* :
         $stateTy → (i : ($sigZero).I) → ($sigZero).X i → $stateTy × ($sigZero).Y i :=
       fun $state:ident i => match i with $alts:matchAlt*))
-    elabCommand (← `(noncomputable def $name:ident $params:bracketedBinder* {$budget : ℕ} :
+    elabCommand (← `(noncomputable def $name:ident $params:bracketedBinder*
+        {$budget : $budgetType} :
         TypedSystem $sig :=
       TypedSystem.ofAutomaton $sig ($stepName $args*)
         (Probability.Distribution.ProbDist.single ($initName $args*))))
@@ -911,7 +1019,7 @@ def elabComponent : CommandElab := fun stx => do
     `(List ((Sigma ($innerZero).X) × (Sigma ($innerZero).Y)) →
         (Option $stateTy × $resultType) ⊕ Sigma ($innerZero).X)
   let alts ← (oracles.zip bodies).mapM fun (procedure, bodyD) =>
-    programAlt name typed persistent stored state input calls initD resultOf procedure bodyD
+    programAlt name σ persistent stored state input calls initD resultOf procedure bodyD
   let counts := bodies.map fun b => callCount (initD ++ b) calls
   let displayedBound := if counts.all Option.isSome then
       some (counts.foldl (fun m c => max m (c.getD 0)) 0)
@@ -950,7 +1058,8 @@ others. -/
 
 /-- The outside interface family of a system expression at budget `k`: the outer family of
 its outermost component. -/
-partial def outerOf (e : TSyntax `term) (k : TSyntax `term) : CommandElabM (Option (TSyntax `term)) := do
+partial def outerOf (e : TSyntax `term) (k : TSyntax `term) :
+    CommandElabM (Option (TSyntax `term)) := do
   match e with
   | `(($e)) => outerOf e k
   | `($α • $_) => outerOf α k
@@ -967,6 +1076,10 @@ partial def outerOf (e : TSyntax `term) (k : TSyntax `term) : CommandElabM (Opti
   | `($f:ident) => return some (← `($(Lean.mkIdent (f.getId ++ `outer)) $k))
   | _ => return none
 
+/-- The budget type of an interface family, inferred from the family's parameter: `ℕ`, or a tuple
+for named outside components. -/
+abbrev BudgetOf {B : Type} (_ : B → Interface) : Type := B
+
 /-- Whether a system expression denotes a converter rather than a typed system. -/
 partial def isConverterExpr (e : TSyntax `term) : Bool :=
   match e with
@@ -974,6 +1087,9 @@ partial def isConverterExpr (e : TSyntax `term) : Bool :=
   | `($_ ≫ $_) | `($_ ⊗ₘ $_) => true
   | _ => false
 
+/-- A system definition `D ≔ e`: `D.outer` is the outer family of the outermost component of `e`,
+and `D` takes that family's budget, `BudgetOf D.outer`, so a tuple when the component has named
+outside components. -/
 @[command_elab systemDecl] def elabSystem : CommandElab := fun stx => do
   checkReserved stx
   let params ← parameterBinders stx[2].getArgs
@@ -982,16 +1098,20 @@ partial def isConverterExpr (e : TSyntax `term) : Bool :=
   let budget := Lean.mkIdent `budget
   match ← outerOf rhs budget with
   | some outer =>
+    let budgetType ← `(BudgetOf (fun $budget:ident => $outer))
     if isConverterExpr rhs then
-      elabCommand (← `(noncomputable def $name:ident $params:bracketedBinder* {$budget : ℕ} :=
+      elabCommand (← `(noncomputable def $name:ident $params:bracketedBinder*
+        {$budget : $budgetType} :=
         ($rhs : $outer ⟶ _)))
     else
-      elabCommand (← `(noncomputable def $name:ident $params:bracketedBinder* {$budget : ℕ} :
+      elabCommand (← `(noncomputable def $name:ident $params:bracketedBinder*
+        {$budget : $budgetType} :
           TypedSystem $outer := $rhs))
     let outerName := Lean.mkIdent (name.getId ++ `outer)
     let outerQ ← outerOf rhs (← `(q))
     if let some o := outerQ then
-      elabCommand (← `(noncomputable abbrev $outerName:ident $params:bracketedBinder* (q : ℕ) :
+      elabCommand (← `(noncomputable abbrev $outerName:ident $params:bracketedBinder*
+        (q : $budgetType) :
         Interface := $o))
   | none =>
     elabCommand (← `(noncomputable def $name:ident $params:bracketedBinder* := $rhs))

@@ -53,6 +53,7 @@ syntax (name := oracleDecl) "on " ident "(" cryptoArg,* ")" " → " lineTerm
 syntax (name := initializeDecl) "initialize" cryptoBlock : cryptoMember
 syntax (name := requiresDecl) "requires " ident " : " lineTerm : cryptoMember
 syntax (name := domainDecl) "domain " ident " ↦ " lineTerm : cryptoMember
+syntax (name := outsideDecl) "outside " ident " : " lineTerm : cryptoMember
 syntax (name := insideDecl) "inside " ident " : " lineTerm : cryptoMember
 
 def cryptoMembers := leading_parser
