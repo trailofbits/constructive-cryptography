@@ -19,6 +19,8 @@ Relates signed, nonnegative and probability distributions.
 * `nonNeg_iff_zero_le`, `posPart_apply`, `negPart_apply`, `nonNeg_posPart`
 * `statDist_eq_weight_posPart`: `δ(X, Y) = |(X − Y)⁺|`
 * `statDist_eq_weight_sub_weight_inf`: `δ(X, Y) = |X| − |X ⊓ Y|`
+* `mass_finset_sum`: `(∑ i ∈ s, Xᵢ)(E) = ∑ i ∈ s, Xᵢ(E)` for signed laws; with `mass_smul`,
+  this computes event probabilities in mixtures from their component masses.
 -/
 
 noncomputable section
@@ -127,6 +129,19 @@ lemma mass_smul (c : ℝ) (X : Distribution A) (P : A → Prop) :
   rw [Finset.mul_sum]
   exact Finset.sum_congr rfl fun a _ => by
     by_cases h : P a <;> simp [h]
+
+/-- **Event mass of a finite sum**: for signed laws `Xᵢ` and an event `E`,
+`(∑ i ∈ s, Xᵢ)(E) = ∑ i ∈ s, Xᵢ(E)`. Neither nonnegativity nor normalization is needed.
+With `mass_smul`, it gives mixture event masses `(∑ₖ P(k) • Xₖ)(E) = ∑ₖ P(k) · Xₖ(E)`. -/
+lemma mass_finset_sum {I X : Type*} (s : Finset I) (laws : I → Distribution X)
+    (event : X → Prop) :
+    (∑ i ∈ s, laws i).mass event = ∑ i ∈ s, (laws i).mass event := by
+  classical
+  induction s using Finset.induction with
+  -- The empty family assigns zero mass to the event.
+  | empty => simp only [Finset.sum_empty, mass, Finsupp.sum_zero_index]
+  -- Adding one law adds its event mass; the remaining family satisfies the identity by induction.
+  | insert i s hi ih => rw [Finset.sum_insert hi, mass_add, ih, Finset.sum_insert hi]
 
 /-- Normalization of a distribution: `X̂ = |X|⁻¹ · X`.  A probability
 distribution as soon as `X` is nonnegative of nonzero weight

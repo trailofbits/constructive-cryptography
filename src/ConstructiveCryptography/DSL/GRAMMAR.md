@@ -5,6 +5,8 @@ The surface uses indentation, `←` for computation/assignment, `` ←$ `` for s
 and `𝒰[T]` for the uniform law on a finite nonempty type. There are no braces,
 semicolons, `do` blocks, or combined assignment/bind operators in the surface.
 Lean remains the language for types, pure expressions, propositions, and proofs.
+The `𝒰[T]` notation comes from `Probability` and has type `Distribution.ProbDist T`;
+direct systems can use it without importing the component DSL.
 
 `interface`, `system`, `converter` and `filter` declarations compile to the typed systems and
 typed converters of [Typed](../../RandomSystems/Typed/README.md) at every budget ([DSL][DSL]);
@@ -318,6 +320,17 @@ $`d(X, Y) \le \sum_j \varepsilon_j`$ from `≈[ε]` steps, and
 [`cc_calc mixed model using domination`][cc_calc-mixed] proves
 $`X \simeq_{\sum_j \varepsilon_j} Y`$ from `≃[loss]` and `≈[ε]` steps.
 
+Importing `ConstructiveCryptography.Notation` registers the typed attachment laws and the
+representation equalities connecting them to categorical arrows and the selected CC instance.
+Thus `cc_normalize` handles direct typed and categorical serial composition, binary and finite
+parallel families, and the attachment goals produced by `cc_construct`. In particular, it proves
+`(⨂ₘ k, α k) • (∥ k, R k) = ∥ k, (α k • R k)` and pushes attachment through initial sampling
+from any normalized law. Nested laws may depend on earlier draws. Every draw stays in its
+original scope: a sample shared by a whole family remains shared, rather than becoming
+independent component samples. A separately supplied action is not replaced by the canonical
+one. The before/after proofs, expression guards, negative tests and exact rewrite traces are in
+[`Tests.ProofErgonomics`](../../Tests/ProofErgonomics.lean).
+
 <!-- Files -->
 
 [DSL]: ../DSL.lean
@@ -328,8 +341,8 @@ $`X \simeq_{\sum_j \varepsilon_j} Y`$ from `≃[loss]` and `≈[ε]` steps.
 [Program]: ../../RandomSystems/Converter/Program.lean#L45
 [Program.PortPreserving]: ../../RandomSystems/Converter/Program.lean#L123
 [automatonSystem_eq_of_bisim]: ../../RandomSystems/System/Automaton.lean#L89
-[Interface.queryBudget]: ../../RandomSystems/Typed/Interface.lean#L63
-[Interface.portBudget]: ../../RandomSystems/Typed/Interface.lean#L74
+[Interface.queryBudget]: ../../RandomSystems/Typed/Interface.lean#L65
+[Interface.portBudget]: ../../RandomSystems/Typed/Interface.lean#L76
 [TypedSystem.source]: ../../RandomSystems/Typed/Source.lean#L51
 [TypedSystem.ofAutomaton]: ../../RandomSystems/Typed/Automaton.lean#L42
 [TypedConverter.rightContext]: ../../RandomSystems/Typed/Context.lean#L109

@@ -20,7 +20,7 @@ Lanzenberger–Maurer, *Coupling of Random Systems*, Definitions 1, 2 and 4.
 
 * `Distribution A`, `weight`, `NonNeg`, `isProbDist`, `IsProbability`, `ProbDist`
 * `mass X P`: the mass of the event `P`; `restrict`, `evalSet`, `evalPred`
-* `uniform A`: the uniform distribution on a finite type
+* `uniform A`, `ProbDist.uniform A`, notation `𝒰[A]`: the uniform law, raw and normalized
 * `marginal`, `marginalAt`: marginals of a joint distribution
 * `fTransform f X`: the pushforward of `X` along `f`
 * `RV`, `PMF`, `condPMF`: random variables, their laws and conditional laws,
@@ -493,6 +493,73 @@ lemma mass_exists_le {A ι : Type*} {X : Distribution A} (hX : X.NonNeg) (s : Fi
         (mass_or_le hX _ _)) ?_
       linarith [ih]
 
+/-- **The union bound over unordered pairs.** For a nonnegative distribution `X`, a finite
+index set `s`, a symmetric bad event (`bad i j → bad j i`) and `X.mass (bad i j) ≤ δ` for all
+distinct `i, j ∈ s`,
+
+    X.mass (∃ i, j ∈ s, i ≠ j ∧ bad i j) ≤ C(|s|, 2) · δ .
+
+Symmetry charges each pair once; `mass_exists_le` over ordered pairs gives `|s|(|s|-1) δ`.
+`X` need not be normalized and `ι` need not be finite. No `0 ≤ δ` is assumed: for `|s| ≤ 1`
+the event is empty and `C(|s|, 2) = 0`; otherwise `δ` bounds a mass. -/
+lemma mass_exists_pair_le_choose {Ω ι : Type*} (X : Distribution Ω) (hX : X.NonNeg)
+    (s : Finset ι) (bad : ι → ι → Ω → Prop)
+    (hsym : ∀ i j ω, bad i j ω → bad j i ω) (δ : ℝ)
+    (hbad : ∀ i ∈ s, ∀ j ∈ s, i ≠ j → X.mass (bad i j) ≤ δ) :
+    X.mass (fun ω => ∃ i ∈ s, ∃ j ∈ s, i ≠ j ∧ bad i j ω) ≤
+      (s.card.choose 2 : ℝ) * δ := by
+  classical
+  -- Induct on `s`, adding one index `i` at a time; `hbad` must follow `s`.
+  revert hbad
+  induction s using Finset.induction_on with
+  | empty =>
+    intro _
+    -- `s = ∅`: no pair, mass `0 = C(0, 2) · δ`.
+    rw [mass_eq_zero_of_forall_not X (by
+      rintro ω ⟨i, hi, _⟩
+      exact Finset.notMem_empty i hi)]
+    simp only [Finset.card_empty, Nat.choose_zero_succ, Nat.cast_zero, zero_mul]
+    exact le_rfl
+  | @insert i s hi ih =>
+    intro hbad
+    -- A bad pair in `insert i s` lies in `s` or contains `i`; symmetry puts `i` first:
+    --   bad pair in `insert i s`  →  bad pair in `s`  ∨  ∃ j ∈ s, bad i j.
+    have hcover (ω : Ω) :
+        (∃ a ∈ insert i s, ∃ b ∈ insert i s, a ≠ b ∧ bad a b ω) →
+          (∃ a ∈ s, ∃ b ∈ s, a ≠ b ∧ bad a b ω) ∨
+            ∃ j ∈ s, bad i j ω := by
+      rintro ⟨a, ha, b, hb, hab, he⟩
+      rcases Finset.mem_insert.mp ha with hai | ha
+      · rcases Finset.mem_insert.mp hb with hbi | hb
+        -- `a = i = b` contradicts `a ≠ b`.
+        · exact (hab (hai.trans hbi.symm)).elim
+        -- `(i, b)`: already incident with `i` first.
+        · exact Or.inr ⟨b, hb, hai ▸ he⟩
+      · rcases Finset.mem_insert.mp hb with hbi | hb
+        -- `(a, i)`: symmetry gives `bad i a`.
+        · exact Or.inr ⟨a, ha, hsym a i ω (hbi ▸ he)⟩
+        -- `(a, b)` with both in `s`: an old pair.
+        · exact Or.inl ⟨a, ha, b, hb, hab, he⟩
+    -- Monotonicity and the two-event union bound: mass ≤ old + new.
+    refine (mass_mono hX hcover).trans ?_
+    refine (mass_or_le hX _ _).trans ?_
+    -- Old pairs: the induction hypothesis on `s`, `≤ C(|s|, 2) · δ`.
+    have hold := ih (fun a ha b hb => hbad a (Finset.mem_insert_of_mem ha)
+      b (Finset.mem_insert_of_mem hb))
+    -- New pairs `(i, j)`, `j ∈ s`: `j ≠ i` as `i ∉ s`, so each costs `δ`; total `|s| · δ`.
+    have hnew : X.mass (fun ω => ∃ j ∈ s, bad i j ω) ≤ s.card * δ := by
+      refine (mass_exists_le hX s _).trans ?_
+      calc
+        _ ≤ ∑ j ∈ s, δ := Finset.sum_le_sum fun j hj =>
+          hbad i (Finset.mem_insert_self i s) j (Finset.mem_insert_of_mem hj)
+            (fun he => hi (he ▸ hj))
+        _ = _ := by rw [Finset.sum_const, nsmul_eq_mul]
+    -- Pascal: `C(n, 2) + n = C(n + 1, 2)` with `n = |s|` and `|insert i s| = n + 1`.
+    refine (add_le_add hold hnew).trans_eq ?_
+    rw [Finset.card_insert_of_notMem hi, Nat.choose_succ_succ, Nat.choose_one_right,
+      Nat.cast_add]
+    ring
+
 /-- Restricting to an event leaves exactly the mass of that event. -/
 lemma weight_restrict {A : Type*} (X : Distribution A) (P : A → Prop) :
     (X.restrict P).weight = X.mass P := by
@@ -593,6 +660,11 @@ lemma uniform_isProbDist :
     (uniform A).isProbDist := ⟨uniform_nonNeg, weight_uniform⟩
 
 instance : IsProbability (uniform A) := ⟨uniform_nonNeg, weight_uniform⟩
+
+/-- The uniform law `uniform A` as a probability distribution, `𝒰[A].1 a = 1 / |A|`: the same
+masses, together with the proof `uniform_isProbDist` that they are normalized. -/
+noncomputable def ProbDist.uniform (A : Type*) [Fintype A] [Nonempty A] : ProbDist A :=
+  ⟨Distribution.uniform A, uniform_isProbDist⟩
 
 /-- The unique probability distribution on a one-point sample space. -/
 def unitProbDist : ProbDist PUnit :=
@@ -1860,5 +1932,9 @@ lemma fTransform_pi_castLE [Fintype A] [DecidableEq A] (μ : Distribution A) (h�
 end Products
 
 end Distribution
+
+/-- `𝒰[A]` is the normalized uniform law `Distribution.ProbDist.uniform A`, with
+`𝒰[A].1 a = 1 / |A|`; its underlying raw distribution `𝒰[A].1` is `Distribution.uniform A`. -/
+notation "𝒰[" A "]" => Distribution.ProbDist.uniform A
 
 end Probability

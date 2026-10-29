@@ -15,11 +15,13 @@ typed converters, and the counterexamples, depend only on `propext`, `Classical.
 #print axioms SystemAlgebra.PDCBehavior.attach_comp
 #print axioms SystemAlgebra.PDCBehavior.attach_presents
 #print axioms SystemAlgebra.PDCBehavior.attach_mass_eq_one
+#print axioms SystemAlgebra.PDCBehavior.attach_mix
 
 -- RandomSystems.Converter.ConverterDomain
 #print axioms SystemAlgebra.IsDDC.eq_of_admitted_replies
 #print axioms SystemAlgebra.IsDDCFrom.mapsDomain
 #print axioms SystemAlgebra.IsDDCFrom.replies_iff_of_le
+#print axioms SystemAlgebra.IsDDCFrom.eq_filterDom_of_replies_le
 #print axioms SystemAlgebra.IsRandomSystem.restrict
 
 -- RandomSystems.Converter.ConverterTensor
@@ -31,6 +33,14 @@ typed converters, and the counterexamples, depend only on `propext`, `Classical.
 #print axioms SystemAlgebra.PDCBehavior.tensor_presents
 #print axioms SystemAlgebra.IsDDCFrom.tensorL
 #print axioms SystemAlgebra.parallelInputs_of_length_le
+
+-- RandomSystems.Converter.Calls and RandomSystems.DDC.SerialCost
+#print axioms SystemAlgebra.callRule_isResponsiveDDC
+#print axioms SystemAlgebra.callConverter_isDDCFrom
+#print axioms SystemAlgebra.callRule_completed_exact_length
+#print axioms SystemAlgebra.routingCall_queries
+#print axioms SystemAlgebra.routingConverter_isDDCFrom
+#print axioms SystemAlgebra.IsDDC.comp_of_query_cost
 
 -- RandomSystems.Converter.PDCBehavior
 #print axioms SystemAlgebra.PDCBehavior.comp_assoc
@@ -302,6 +312,14 @@ typed converters, and the counterexamples, depend only on `propext`, `Classical.
 #print axioms SystemAlgebra.TypedSystem.exists_ofPDS
 #print axioms SystemAlgebra.TypedConverter.identity_attach
 #print axioms SystemAlgebra.TypedConverter.comp_smul
+#print axioms SystemAlgebra.TypedConverter.ofDDC_eq_comp
+#print axioms SystemAlgebra.TypedConverter.smul_sample
+#print axioms SystemAlgebra.TypedConverter.ofDDC_callConverter_smul_ofFunction
+#print axioms SystemAlgebra.TypedConverter.ofDDC_routingConverter_smul_ofFunction
+#print axioms SystemAlgebra.TypedSystem.sample_fTransform
+#print axioms SystemAlgebra.TypedSystem.sample_prod
+#print axioms SystemAlgebra.TypedSystem.sample_comm
+#print axioms SystemAlgebra.TypedSystem.parallel_sample_right
 
 -- RandomSystems.Typed.Memoryless
 #print axioms SystemAlgebra.TypedSystem.source_eq_memoryless

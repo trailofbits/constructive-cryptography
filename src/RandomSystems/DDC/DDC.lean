@@ -7,7 +7,7 @@ A deterministic discrete converter (DDC) is a system with outside and inside
 interfaces that is silent before its first input, answers only admissible
 histories, makes a bounded number of consecutive inside queries, and replies
 outside at the label of the last outside input. A responsive converter also
-answers every admissible history. Sources: CR18 Definition 3.8, printed p. 61;
+answers every admissible history. Sources: CR18 Definition 3.8, printed p. 62;
 Lanzenberger–Maurer Definition 5, printed p. 11; Jost Definition 2.2.2,
 printed pp. 17–18.
 
@@ -824,11 +824,26 @@ lemma Induces.congr_right {u o H} (r : Induces (pair a b) route inj u o H)
     exact Induces.snoc _ _ _ _ _ _ (ih (h.mono ⟨inj x :: e, by rw [he]; simp⟩))
       (l.congr_right h)
 
-lemma restrict_prefix {K : Type} {F : K → Type} (k : K) {G H : List (Σ k, F k)} (h : G <+: H) :
-    restrict k G <+: restrict k H := by
-  obtain ⟨e, rfl⟩ := h
-  exact ⟨restrict k e, by rw [restrict_append]⟩
-
 end PairCongr
+
+/-- **An admitted outside input ends the run**: if `a` admits an outside input `o(u)` after `h`,
+then `insideRun a h = 0`. After an inside query `j(x)` only the reply at `j` is admitted, so the
+last output on `h` is not an inside query; the silent empty history admits any outside input and
+has run `0`. -/
+lemma insideRun_eq_zero_of_admits_outside {O J : Type} {U V : O → Type} {X Y : J → Type}
+    {a : InsideOutsideSystem O J U V X Y} {h} {o : O} {u : U o}
+    (ha : Admits a h ⟨⟨none, o⟩, u⟩) : insideRun a h = 0 := by
+  classical
+  rcases List.eq_nil_or_concat h with rfl | ⟨h, z, rfl⟩
+  · rfl
+  -- On `h · z` the run is `0` unless `a` answers `h · z` with an inside query, which would admit
+  -- only the inside reply.
+  · rw [List.concat_eq_append] at ha ⊢
+    rw [insideRun, run_snoc, if_neg]
+    rintro ⟨y, hy, hi⟩
+    rw [Admits, replyLabel_of_mem _ hy] at ha
+    rcases y with ⟨⟨_ | ⟨⟨⟩⟩, port⟩, y⟩
+    · exact absurd hi (by simp only [IsInside, reduceCtorEq, not_false_eq_true])
+    · cases ha
 
 end SystemAlgebra

@@ -1,3 +1,4 @@
+import RandomSystems.Distance.RevealedHCoefficient
 import RandomSystems.Typed.ParallelAttachment
 import RandomSystems.Typed.SystemCoherence
 import ConstructiveCryptography.InterfaceMonoidal
@@ -54,6 +55,7 @@ distinguisher (`Domain.DistinguisherBehavior.absorb`) is the reduction (CR18).
 * `Interface.cc_parallel_eq`, `Interface.cc_dummy_eq`: the abstract operations are the
   concrete ones
 * `Interface.cc_distance_eq`: the distance is the transcript distance of the random systems
+* `Interface.distance_le_of_hCoefficient`: an H-coefficient argument bounds the distance
 * `Interface.distinguisherAdvantage_le_distance`: an advantage is at most the distance
 * `Interface.distinguisherAdvantage_attach`, `Interface.substitutesWithin_attach`: an advantage
   between attachments is the advantage with the converter absorbed, and a concrete substitution
@@ -73,6 +75,14 @@ noncomputable instance resourceTheory :
   attach := TypedConverter.attach
   attach_identity := TypedConverter.identity_attach
   attach_serial := TypedConverter.comp_smul
+
+/-- The attachment field of `resourceTheory` is the direct typed action:
+`ResourceTheory.attach α R = α • R` with `α : TypedConverter A B`, by definition. A
+representation bridge for this selected instance, not a law of an arbitrary resource theory or
+of another action on typed systems. -/
+lemma attach_eq_typed_smul {A B : Interface} (α : A ⟶ B) (R : TypedSystem B) :
+    ConstructiveCryptography.ResourceTheory.attach α R =
+      (show TypedConverter A B from α) • R := rfl
 
 lemma parallel_assoc {A B C : Interface} (R : TypedSystem A) (S : TypedSystem B)
     (T : TypedSystem C) :
@@ -200,6 +210,16 @@ lemma cc_distance_eq {A : Interface} (R S : TypedSystem A) :
   change ConstructiveCryptography.advantageDistance (distinguishers A) R S = _
   simp only [ConstructiveCryptography.advantageDistance, distinguishers, iSup_range,
     Domain.DistinguisherBehavior.advantage]
+
+/-- **An H-coefficient argument bounds the CC distance** of typed systems on `A`:
+`distance R S ≤ error`, since that distance is the transcript distance of `R.1` and `S.1`. -/
+lemma distance_le_of_hCoefficient {A : Interface} {R S : TypedSystem A} {error : NNReal}
+    (w : RandomSystem.HCoefficient R.1 S.1 error) :
+    ConstructiveCryptography.CryptographicAlgebra.distance R S ≤ error := by
+  -- `distance R S = R.1.transcriptDistance S.1` (`cc_distance_eq`); a typed system replies
+  -- at the queried interface (`S.2`).
+  rw [cc_distance_eq]
+  exact w.transcriptDistance_le_nnreal S.2
 
 /-- Interfaces carry a distinguishing advantage for every class `admissible` of admitted
 distinguishers: the distinguishers on `A` are the behaviors of the probabilistic distinguishers

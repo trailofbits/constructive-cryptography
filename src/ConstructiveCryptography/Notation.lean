@@ -1,3 +1,4 @@
+import RandomSystems.Typed.ParallelAllAttachment
 import ConstructiveCryptography.InterfaceAlgebra
 import ConstructiveCryptography.CryptographicAlgebra.Game
 import ConstructiveCryptography.Tactics.Categorical
@@ -12,7 +13,17 @@ parallel composition, `S —[α]→ T` and `S —[α; ε]→ T` for exact and ap
 typed system. The compatibility laws of the distance are restated with `∥`, the parallel
 composition `TypedSystem.parallel`, for the `cc_nonexpand` tactic, and `cc_normalize` applies
 locality, `(α ⊗ₘ β) • (R ∥ S) = α • R ∥ β • S`, whether the interfaces are written with `⊗` or
-with `Interface.tensor`.
+with `Interface.tensor`. The categorical action, the direct typed action and the attachment
+field of `Interface.resourceTheory` are identified by definitional bridges, so all three
+normalize by the same typed laws, also after serial composition or `cc_construct`. Attachment
+enters an initial sample, `α • sample P R = sample P (fun s => α • R s)`, for any normalized
+law `P`, including nested samples whose laws depend on earlier draws, and acts componentwise on
+a finite family, `(⨂ₘ k, α k) • (∥ k, R k) = ∥ k, α k • R k`. A shared draw stays outside the
+whole family; normalization never splits it into independent draws of the components:
+
+```text
+sample s ← P; ∥ k, R s k    ≠    ∥ k, (sample s ← P; R s k)    in general
+```
 -/
 
 namespace SystemAlgebra
@@ -51,6 +62,21 @@ namespace Interface
 
 attribute [cc_normalization] comp_smul identity_attach
 
+-- Definitional bridges to the direct typed action, below the laws' default priority: the
+-- categorical action and the `resourceTheory` attachment field left by `cc_construct` are
+-- rewritten to `α • R` with `α : TypedConverter A B`, where the typed laws below apply.
+attribute [cc_normalization 100] smul_eq_typed_smul attach_eq_typed_smul
+
+-- The typed laws: `(α ≫ β) • R = α • (β • R)`, `id • R = R`, binary and finite-family
+-- locality, and `α • sample P R = sample P (fun s => α • R s)`. None moves an initial sample
+-- into a component, so a shared draw stays shared.
+attribute [cc_normalization]
+  TypedConverter.comp_smul
+  TypedConverter.identity_attach
+  TypedConverter.parallel_attach
+  TypedConverter.smul_sample
+  TypedConverter.parallelAll_attach
+
 lemma tensor_smul {A B C D : Interface} (α : A ⟶ B) (β : C ⟶ D)
     (R : TypedSystem B) (S : TypedSystem D) :
     (α ⊗ₘ β) • (R ∥ S) = (α • R) ∥ (β • S) :=
@@ -75,6 +101,20 @@ lemma distance_smul_le {A B : Interface} (α : A ⟶ B) (R S : TypedSystem B) :
     Δ (α • R) (α • S) ≤ Δ R S :=
   ConstructiveCryptography.CryptographicAlgebra.distance_attach_le
     α R S
+
+/-- Opposite typed attachments that exchange two system pairs preserve their distance: for
+`forward : A ⟶ B` and `backward : B ⟶ A`, the four equalities `forward • R = R'`,
+`forward • S = S'`, `backward • R' = R` and `backward • S' = S` give `Δ R' S' = Δ R S`.
+The interface form of `distance_eq_of_mutual_attach`; Maurer--Renner 2016, Definition 2
+(printed p. 11): “d(αR, αS) ≤ d(R, S) for all α”. -/
+lemma distance_eq_of_mutual_smul {A B : Interface}
+    (forward : A ⟶ B) (backward : B ⟶ A)
+    (R S : TypedSystem B) (R' S' : TypedSystem A)
+    (hforwardR : forward • R = R') (hforwardS : forward • S = S')
+    (hbackwardR : backward • R' = R) (hbackwardS : backward • S' = S) :
+    Δ R' S' = Δ R S :=
+  ConstructiveCryptography.CryptographicAlgebra.distance_eq_of_mutual_attach
+    forward backward R S R' S' hforwardR hforwardS hbackwardR hbackwardS
 
 /-- The hybrid inequality, with both endpoints inferred from the goal. -/
 lemma distance_triangle {A : Interface} {R T : TypedSystem A} (S : TypedSystem A) :

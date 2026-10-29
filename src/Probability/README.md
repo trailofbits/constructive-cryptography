@@ -17,12 +17,19 @@ to the numbered [references](../../THEORY.md#references) of THEORY.md.
 A [**distribution**][Distribution] is a finitely supported function to $`\mathbb R`$, and a
 [**probability distribution**][ProbDist] one that is [nonnegative with weight one][isProbDist].
 Distributions have [masses][mass] of events, [pushforwards][fTransform], [products][prod] of two
-laws and of [families][pi], and [uniform][uniform] laws. A [**kernel**][bindK] $`f`$ is a conditional
-distribution [3, §3.6.1]; mixed over a law $`\mu`$ it gives $`\sum_a \mu(a)\, f(a)`$:
+laws and of [families][pi], and [uniform][uniform] laws. The
+[heterogeneous finite product][piDep] assigns the product mass to a dependent family of
+coordinate outcomes. The alphabets may be infinite; only the index set and each support are
+finite. It is a probability law when each coordinate law is a probability law. A
+[**kernel**][bindK] $`f`$ is a conditional distribution [3, §3.6.1]; mixed over a law $`\mu`$
+it gives $`\sum_a \mu(a)\, f(a)`$:
 [mixtures compose][bindK_bindK], a pushforward
 [is the point kernel of its function][bindK_single_comp], and an independent product
 [disintegrates][pi_eq_bindK_update] at a coordinate. Probability laws have
 [pushforwards][ProbDist.map] and [sequential compositions][ProbDist.bind].
+The notation `𝒰[A]` denotes the [normalized uniform law][ProbDist.uniform] of type
+`Distribution.ProbDist A`, with mass $`1/\lvert A \rvert`$ at each point of a finite nonempty
+$`A`$; its underlying raw distribution `𝒰[A].1` is `Distribution.uniform A`.
 
 ## Statistical distance
 
@@ -44,6 +51,40 @@ laws of one weight [is the weight of their overlap][supAgreement_eq_weight_overl
 the [Cauchy–Schwarz][expect_mul_sq_le_sq_mul_sq] and [Jensen's][ConvexOn.map_expect_le]
 inequalities. Collision bounds [count][card_function_fiber_finset] the functions $`X \to Y`$
 agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X \rvert - \lvert S \rvert}`$.
+For a uniform function table, [a consistent query transcript][uniform_mass_transcript_eq]
+fixes one independent value per distinct input; repeated inputs add no factor. Two query
+families with [the same equality pattern][fTransform_eval_uniform_eq_of_same_fibers] have the
+same output law, even when their table domains have different sizes. The index type may be
+infinite; the finite table domains keep both query images finite.
+A batch $`\mathrm{next}(b) : I \to X`$ may also be chosen from the revealed base values
+$`b = F \circ \mathrm{base}`$. If base and selected coordinates are jointly injective whenever
+$`\mathrm{good}(b)`$ holds, then [the joint mass][uniform_mass_adaptive_eval_eq_mul] is
+
+```math
+\Pr\big[\mathrm{good}(b) \wedge F \circ \mathrm{next}(b) = v\big]
+  = \Pr\big[\mathrm{good}(b)\big] \cdot \lvert Y \rvert^{-\lvert I \rvert} .
+```
+
+Outside the good event, coordinates may repeat, and the good event may have probability zero.
+
+An event that ignores one table coordinate [factors from its fresh value]
+[uniform_mass_fresh_eval_eq]. A [symmetric pair union bound][mass_exists_pair_le_choose]
+counts each unordered pair once; [uniform-table collisions][uniform_mass_not_injOn_le_choose]
+therefore cost at most $`\binom{|S|}{2}/|Y|`$ on a fixed queried set $`S`$.
+A uniform-preserving [projection of a fresh full reply][uniform_mass_fresh_projected_eval_eq]
+remains uniform after a transcript event that ignores its coordinate. The
+[projected collision bound][uniform_mass_transcript_projected_collision_le] keeps the full
+reply table and charges only the visible output alphabet.
+[Disjoint finite table restrictions][uniform_mass_disjoint_events] factor for arbitrary
+events on their respective output tuples. The [base-set form]
+[uniform_mass_fresh_outputs_eq] applies when an event depends only on a named finite set
+of coordinates and the other outputs lie outside it.
+
+For an adaptive evaluator whose complete output tuple pins its queried sites,
+[`uniform_mass_replay_public_eq`](Replay.lean) counts the joint replay/public table fiber.
+[`uniform_replay_public_good_factor`](Replay.lean) factors an event over the good output
+tuples from fixed public values. Both retain the explicit pinned-fiber equivalence and
+injectivity of all replay and public sites; neither asserts independence on bad runs.
 
 <!-- Declarations -->
 
@@ -51,10 +92,12 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [ProbDist]: Distribution.lean#L149
 [isProbDist]: Distribution.lean#L128
 [mass]: Distribution.lean#L217
-[fTransform]: Distribution.lean#L632
-[prod]: Distribution.lean#L1005
-[pi]: Distribution.lean#L1646
-[uniform]: Distribution.lean#L566
+[fTransform]: Distribution.lean#L704
+[prod]: Distribution.lean#L1077
+[pi]: Distribution.lean#L1718
+[piDep]: DependentProduct.lean#L37
+[uniform]: Distribution.lean#L633
+[ProbDist.uniform]: Distribution.lean#L666
 [bindK]: Kernel.lean#L49
 [bindK_bindK]: Kernel.lean#L95
 [bindK_single_comp]: Kernel.lean#L117
@@ -77,4 +120,17 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [mass_ge_le_expect_div]: Expectation.lean#L199
 [expect_mul_sq_le_sq_mul_sq]: Expectation.lean#L215
 [ConvexOn.map_expect_le]: Expectation.lean#L297
-[card_function_fiber_finset]: Counting.lean#L47
+[card_function_fiber_finset]: Counting.lean#L62
+[uniform_mass_transcript_eq]: Counting.lean#L479
+[fTransform_eval_uniform_eq_of_same_fibers]: Counting.lean#L535
+[uniform_mass_adaptive_eval_eq_mul]: Counting.lean#L607
+
+[uniform_mass_fresh_eval_eq]: Counting.lean#L213
+[mass_exists_pair_le_choose]: Distribution.lean#L505
+[uniform_mass_not_injOn_le_choose]: Counting.lean#L327
+
+[uniform_mass_fresh_projected_eval_eq]: Counting.lean#L352
+[uniform_mass_transcript_projected_collision_le]: Counting.lean#L402
+
+[uniform_mass_disjoint_events]: Counting.lean#L681
+[uniform_mass_fresh_outputs_eq]: Counting.lean#L725

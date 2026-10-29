@@ -24,7 +24,8 @@ Lanzenberger–Maurer, *Coupling of Random Systems*, Definition 3, Lemmas 2 and 
 * event gaps: `mass_sub_mass_le_statDist`; expectation gaps:
   `abs_expect_sub_expect_le_mul_statDist`
 * the optimal-test identity `sSup_avgSuccessProb_eq_half_add_half_statDist`
-* the H-coefficient bound `statDist_le_probBad_add_of_ratio_on_good`
+* the expectation bound `statDist_le_expect_of_ratio` and its good/bad specialization
+  `statDist_le_probBad_add_of_ratio_on_good`
 * `statDist_partition` (Lemma 2), `statDist_fTransform_le` (Lemma 3, data
   processing), `statDist_fTransform_injective`, `statDist_sum_of_disjoint_support`
 -/
@@ -514,6 +515,36 @@ lemma sub_le_mul_of_one_sub_mul_le {a b eps : ℝ}
     b - a ≤ eps * b := by
   nlinarith [h_lower]
 
+/-- **The expectation method**, algebraic form: if `(1 − ε a) · ideal(a) ≤ real(a)` at every
+point, with `ε ≥ 0`, then `δ(real, ideal) ≤ 𝔼_ideal[ε]`.
+
+Jha, *Provable Security of Symmetric-key Cryptographic Schemes*, Lemma 2.2.1, printed
+pp. 19–20, attributed there to Hoang–Tessaro (Jha's [90]): for “a non-negative function
+ϵratio : Ω → [0, ∞)” with ratio at least `1 − ϵratio` off a bad set,
+“Adv_{O₁;O₀}(A) ≤ ϵ_bad + Ex[ϵ_ratio(Θ₀)]”. Jha states it for transcript probability laws with
+a bad set. Here `real` and `ideal` are finite distributions of equal total weight, not
+necessarily one, `ideal` nonnegative and `real` possibly signed, with one error `ε` and no bad
+set; Jha's bound follows with `ε = 1` on the bad set and `ϵ_ratio` elsewhere. The ratio is a
+product, not a quotient: at an atom with `ideal a = 0` it says `0 ≤ real a`. -/
+theorem statDist_le_expect_of_ratio {A : Type*} (real ideal : Distribution A)
+    (ε : A → ℝ) (hweight : real.weight = ideal.weight) (hε : ∀ a, 0 ≤ ε a)
+    (hideal : ideal.NonNeg) (ratio : ∀ a, (1 - ε a) * ideal a ≤ real a) :
+    statDist real ideal ≤ ideal.expect ε := by
+  classical
+  -- Equal weights make `δ` symmetric, so `δ(real, ideal)` is the ideal deficit
+  -- `∑_a max(ideal a − real a, 0)`, Jha's “∑_{ω∈Ω} max{0, Pr[Θ0 = ω] − Pr[Θ1 = ω]}”
+  -- (printed p. 20). Sum it and `𝔼_ideal[ε]` over `ideal.support ∪ real.support`.
+  rw [statDist_symm_of_eq_weight _ _ hweight,
+    statDist_eq_sum_of_support_subset ideal real (s := ideal.support ∪ real.support)
+      (Finsupp.support_sub),
+    Distribution.expect_eq_sum_of_support_subset ideal ε Finset.subset_union_left]
+  -- Pointwise `max(ideal a − real a, 0) ≤ ε a · ideal a`: the ratio rearranges to
+  -- `ideal a − real a ≤ ε a · ideal a`, and `0 ≤ ε a · ideal a`.
+  refine Finset.sum_le_sum fun a _ => max_le ?_ (mul_nonneg (hideal a) (hε a))
+  have h := ratio a
+  rw [sub_mul, one_mul] at h
+  linarith [mul_comm (ε a) (ideal a)]
+
 /-! ### H-coefficient bound -/
 
 /-- The mass of the bad event `B` under distribution `D`. -/
@@ -535,10 +566,11 @@ lemma probBad_const_pair {A U : Type*}
 
 /-- **The H-technique ratio bound on an arbitrary carrier.**  If the
 real/ideal density ratio is at least `1 - eps` on good points then
-`δ(real, ideal) ≤ Pr_ideal[Bad] + eps`.
+`δ(real, ideal) ≤ Pr_ideal[Bad] + eps`, for `real ≥ 0`, `ideal ≥ 0` of equal weight at most one.
+It is `statDist_le_expect_of_ratio` with error `1[Bad] + eps`.
 
 `Distribution` is `A →₀ ℝ`: the sums run over
-`(ideal - real).support ∪ ideal.support`, so no finiteness of the carrier is
+`ideal.support ∪ real.support`, so no finiteness of the carrier is
 used. Transcript laws live on lists of query–reply pairs, a carrier that is
 infinite even for finite alphabets. -/
 theorem statDist_le_probBad_add_of_ratio_on_good {A : Type*}
@@ -549,36 +581,26 @@ theorem statDist_le_probBad_add_of_ratio_on_good {A : Type*}
     (h_ratio : ∀ a, ¬ Bad a → (1 - eps) * ideal a ≤ real a) :
     statDist real ideal ≤ probBad ideal Bad + eps := by
   classical
-  set s : Finset A := (ideal - real).support ∪ ideal.support with hs
-  have hsub : (ideal - real).support ⊆ s := Finset.subset_union_left
-  have hsupp : ideal.support ⊆ s := Finset.subset_union_right
-  rw [statDist_symm_of_eq_weight real ideal h_weight,
-    statDist_eq_sum_of_support_subset ideal real hsub]
-  have hterm : ∀ a ∈ s,
-      max (ideal a - real a) 0 ≤ (if Bad a then ideal a else 0) + eps * ideal a := by
-    intro a _
-    by_cases hbad : Bad a
-    · have h0 := h_ideal_nonneg a
-      have h1 := h_real_nonneg a
-      have h2 : 0 ≤ (eps : ℝ) * ideal a :=
-        mul_nonneg eps.coe_nonneg (h_ideal_nonneg a)
-      simp only [hbad, if_true]
-      exact max_le (by linarith) (by linarith)
-    · simp only [hbad, if_false, zero_add]
-      exact max_le (sub_le_mul_of_one_sub_mul_le (h_ratio a hbad))
-        (mul_nonneg eps.coe_nonneg (h_ideal_nonneg a))
-  calc ∑ a ∈ s, max (ideal a - real a) 0
-      ≤ ∑ a ∈ s, ((if Bad a then ideal a else 0) + (eps : ℝ) * ideal a) :=
-        Finset.sum_le_sum hterm
-    _ = (∑ a ∈ s.filter Bad, ideal a) + (eps : ℝ) * ∑ a ∈ s, ideal a := by
-        rw [Finset.sum_add_distrib, ← Finset.mul_sum, Finset.sum_filter]
+  -- Use the expectation method with error `1[Bad] + eps`.
+  have h := statDist_le_expect_of_ratio real ideal
+    (fun a => (if Bad a then (1 : ℝ) else 0) + eps) h_weight
+    (fun a => add_nonneg (by split_ifs <;> norm_num) eps.coe_nonneg) h_ideal_nonneg (by
+      intro a
+      by_cases hb : Bad a
+      · -- On bad points the required lower bound is `-eps * ideal(a) ≤ real(a)`.
+        simp only [if_pos hb]
+        nlinarith [h_real_nonneg a, mul_nonneg eps.coe_nonneg (h_ideal_nonneg a)]
+      · simpa only [if_neg hb, zero_add] using h_ratio a hb)
+  calc
+    _ ≤ ideal.expect (fun a => (if Bad a then (1 : ℝ) else 0) + eps) := h
     _ = probBad ideal Bad + (eps : ℝ) * ideal.weight := by
-        rw [probBad, Distribution.mass_eq_sum_of_support_subset ideal hsupp,
-          Distribution.weight_eq_sum_of_support_subset ideal hsupp]
+      -- The indicator contributes the bad mass; the constant contributes `eps * weight`.
+      rw [Distribution.expect_add_right', Distribution.expect_indicator, Distribution.expect_const]
+      rfl
     _ ≤ probBad ideal Bad + eps := by
-        have : (eps : ℝ) * ideal.weight ≤ (eps : ℝ) * 1 :=
-          mul_le_mul_of_nonneg_left h_ideal_le eps.coe_nonneg
-        linarith
+      -- A subprobability law has total weight at most one.
+      exact add_le_add le_rfl (by
+        simpa only [mul_one] using mul_le_mul_of_nonneg_left h_ideal_le eps.coe_nonneg)
 
 /-! ### Partition and data processing -/
 
