@@ -10,7 +10,8 @@ direct systems can use it without importing the component DSL.
 
 `interface`, `system`, `converter` and `filter` declarations compile to the typed systems and
 typed converters of [Typed](../../RandomSystems/Typed/README.md) at every budget ([DSL][DSL]);
-converters are declared as arrows of the [category of interfaces](../README.md#the-instances-on-interfaces),
+converters are declared as arrows of the [category of
+interfaces](../README.md#the-instances-on-interfaces),
 so that components assemble with `≫` and `⊗ₘ`. Citations refer to the numbered
 [references](../../../THEORY.md#references) of THEORY.md.
 
@@ -178,11 +179,13 @@ generated declaration.
 
 `requires h : P` is a visible premise, supplied when the component is instantiated.
 
-A converter's per-invocation inside-query bound is inferred from its operations. When the
-procedures have no loops, `C.bound` is the numeral read off the displayed calls: a call counts
-one, a conditional or a match the largest count of its branches, and the bound is the largest
-count over the procedures, initialization included. Otherwise, for finite inputs and private
-bindings, `C.bound` is the least bound, a supremum over them. The elaborator generates `C.bound`,
+A converter's per-invocation inside-query bound is inferred from its operations. When every
+loop runs over a displayed literal list, `C.bound` is the numeral read off the displayed calls:
+a call counts one, a conditional or a match the largest count of its branches, a loop over
+`[a₁, …, aₙ]` `n` times its body's count, and the bound is the largest count over the
+procedures, initialization included; its proof first reduces the literal fold. Otherwise, for
+finite inputs and private bindings, `C.bound` is the least bound, a supremum over them. The
+elaborator generates `C.bound`,
 `C.bound_spec`, and
 `C : I q ⟶ J (C.bound * q)` for every budget `q`, where the inside interfaces `J` are at budget
 `C.bound * q`. A converter without a uniform bound is rejected. When a converter samples nothing
@@ -231,7 +234,8 @@ a system without an exact domain [also gets][elabPerPortDecls]
 `S.perPort : TypedSystem (I.perPort q)`.
 
 A [`converter C : I`][elabComponent] with `inside J` generates `C : I q ⟶ J (C.bound * q)`,
-compiled to `C.program ≫ TypedConverter.rightContext J (C.randomness k)`: its program with its sources
+compiled to `C.program ≫ TypedConverter.rightContext J (C.randomness k)`: its program with its
+sources
 [beside][TypedConverter.rightContext] the inside interface, or `C.program` when it samples nothing. With
 an annotated outside interface and a single inside interface it
 [also has a per-port typing][elabPerPortDecls] along a partial port
@@ -261,7 +265,8 @@ table of samples (`TypedSystem.ofAutomaton I step initial`, [4, Definition 2], w
 randomness in the initial state); parallel automata are the automaton of both
 (`TypedSystem.parallel_ofAutomaton`), and attaching a program to an automaton
 [gives the combined automaton][TypedConverter.ofProgram_smul_ofAutomaton] (`Program.combine`),
-also [for port-preserving programs][TypedConverter.ofPreservingProgram_smul_ofAutomaton]. Every
+also [for port-preserving programs][TypedConverter.ofPreservingProgram_smul_ofAutomaton] and
+[for costed programs][TypedConverter.ofCostedProgram_smul_ofAutomaton]. Every
 compiled component is therefore an automaton with a sampled initial state, and compiled systems
 are compared by [bisimulation][automatonSystem_eq_of_bisim]: bisimilar automata have the same
 system. The [memoryless source][MemorylessSource] `y ←$ ν; return y`
@@ -269,6 +274,74 @@ system. The [memoryless source][MemorylessSource] `y ←$ ν; return y`
 and memoryless sources are compared by the laws of one reply, through the composition laws of
 [typed systems](../../RandomSystems/Typed/README.md#filters-contexts-sources-and-functional-systems):
 each hop of [PRG length extension][ExPRG] is one rewrite.
+
+### Invocation equations and `inline`
+
+A component declaration also generates proved equations for its procedures. For a procedure
+`get`, a deterministic system has `C.step_get`; a program has `C.body_get_initial` and
+`C.body_get_resumed`. The latter two distinguish `none` before initialization from `some state`
+afterward. A named outside procedure `read.get` puts its equations in `C.read`.
+
+When the compiler proves a displayed constant call bound, it also generates
+`C.combine_get_initial`, `C.combine_get_resumed`,
+`C.memorylessReplyLaw_get_initial` and `C.memorylessReplyLaw_get_resumed`. The first pair gives
+one invocation against an arbitrary deterministic inside transition, with the reply and both next
+states; the second gives its reply law when each inside call gets a fresh sample of arbitrary
+inside laws `ν`. Straight-line bodies and loops over displayed literal lists are fully evaluated.
+A component with a symbolic loop gets only the `body` equations, with the existing inferred
+bound: its loops are not evaluated, enumerated or given a new bound.
+
+All these equations are ordinary kernel-checked equalities in the dedicated
+`component_equations` simplification set. Use `simp only [component_equations]` to expose them.
+They do not enter global simplification. Only the component's body or step and the fixed
+program combinators are unfolded; other definitions and user-defined pure functions stay opaque.
+
+```lean
+-- Rewrite the attachment as the existing combined automaton; the brackets are optional aliases.
+inline [Converter, System]
+-- With the supplied memorylessness certificate, expose each procedure's reply law.
+inline using inside_is_memoryless
+-- The second certificate is for the converter's own source beside its inside system.
+inline using inside_is_memoryless, source_is_memoryless
+```
+
+The compiler registers the wrappers each declaration newly generates (`C`, `C.program`,
+`C.perPort`, `C.perPortProgram`, `C.randomness`, `C.exact`) in `component_definitions`, and
+`inline` expands them itself, so a plain `inline`, or `inline using` its certificates, suffices
+for a declared component. Bodies, pure functions and initial values are not registered, and a
+declaration with errors gets neither equations nor registrations. The optional brackets name
+further user aliases to unfold.
+
+The attachment law is selected by the displayed constructor of the attached converter,
+`ofProgram`, `ofPreservingProgram` or `ofCostedProgram`, so `C.exact` keeps its cost-restricted
+domain and no other budget obligation arises. Without a certificate, `inline` rewrites the
+attachment as the combined automaton and simplifies with the generated equations. A converter
+with its own source is first reshaped by `Interface.comp_smul`,
+`TypedConverter.attach_rightContext` and `TypedSystem.parallel_ofAutomaton`: the source runs
+beside the inside automaton, and both are one automaton with step `parallelStep`. With a
+certificate `hR : R.1 = memoryless _ (portLaw ν)`, it applies the memoryless composition law of
+that constructor (`TypedConverter.ofProgram_smul_memoryless` and its port-preserving and costed
+forms), which reduces `(C • R).1 = memoryless _ (portLaw κ)` to the reply law of one invocation
+in every state:
+
+```math
+\forall s\,o\,u,\quad \mathrm{memorylessReplyLaw}\;\nu\;s\;o\;u = \kappa\;o\;u .
+```
+
+It then splits only the generated `Option` state (`none` before initialization, `some s`
+after) and the procedure labels, and rewrites with the generated equations. A second
+certificate is for the converter's own source beside its inside system: the two certificates
+give `TypedSystem.parallel_eq_memoryless`, and the program then runs against their side-by-side
+laws `parallelLaw ν ν'`.
+
+The command applies only the existing attachment laws and generated equations. The caller
+proves the remaining identities of probability laws, such as an identity or composed
+pushforward or a product law, and any state relations. In particular, a sample retained by
+initialization becomes a point law at the stored value on resumed calls; inlining does not
+replace it with fresh independent samples. The source identifications in
+[PRG length extension][ExPRG] use `inline` followed by reflexivity or the existing product-law
+identity, and [`MemorylessSource.memoryless_eq`][MemorylessSource.memoryless_eq] by
+`id_* ν = ν`.
 
 The assembly operators denote the existing CC operations. `α • R` applies a
 converter, `α ≫ β` composes converters, and `∥` and `⊗ₘ` compose systems and
@@ -298,7 +371,8 @@ bits, branches, matching, tuple assignment, list folds, an exact domain, the inf
 inside budget (`WriteThrough.perPort`), and a filter. `Examples/DSL/AES.lean` uses AES-256 of
 Commons,
 answering at the interface `Evaluation`, for serial converters, fresh masks, a two-key cascade,
-and CBC-MAC over a finite message space `M`. `CBC blockForm` processes `blockForm message`, so each invocation
+and CBC-MAC over a finite message space `M`. `CBC blockForm` processes `blockForm message`, so
+each invocation
 can have a different number of blocks; `CBC.exact` types it by the total number of blocks.
 These examples specify systems; they do not establish new security bounds.
 
@@ -386,20 +460,21 @@ one. The before/after proofs, expression guards, negative tests and exact rewrit
 [TypedConverter.rightContext]: ../../RandomSystems/Typed/Context.lean#L109
 [TypedConverter.filter]: ../../RandomSystems/Typed/Filter.lean#L49
 [TypedConverter.ofProgram]: ../../RandomSystems/Typed/DSL/Converters.lean#L39
-[TypedConverter.ofCostedProgram]: ../../RandomSystems/Typed/DSL/Converters.lean#L51
-[TypedConverter.ofPreservingProgram]: ../../RandomSystems/Typed/DSL/Converters.lean#L68
-[TypedConverter.ofProgram_smul_ofAutomaton]: ../../RandomSystems/Typed/DSL/Converters.lean#L145
-[TypedConverter.ofPreservingProgram_smul_ofAutomaton]: ../../RandomSystems/Typed/DSL/Converters.lean#L155
-[desugarSampling]: Elaborator.lean#L194
-[elabInterface]: Elaborator.lean#L351
-[elabComponent]: Elaborator.lean#L811
-[elabProgramDecls]: Elaborator.lean#L644
-[elabPerPortDecls]: Elaborator.lean#L541
-[elabExactDecls]: Elaborator.lean#L716
-[elabFilter]: Elaborator.lean#L927
-[sourcesAt]: Elaborator.lean#L635
-[MemorylessSource]: ../../Commons/Definitions/Ideal.lean#L95
-[MemorylessSource.memoryless_eq]: ../../Commons/Definitions/Ideal.lean#L103
+[TypedConverter.ofCostedProgram]: ../../RandomSystems/Typed/DSL/Converters.lean#L52
+[TypedConverter.ofPreservingProgram]: ../../RandomSystems/Typed/DSL/Converters.lean#L70
+[TypedConverter.ofProgram_smul_ofAutomaton]: ../../RandomSystems/Typed/DSL/Converters.lean#L151
+[TypedConverter.ofPreservingProgram_smul_ofAutomaton]: ../../RandomSystems/Typed/DSL/Converters.lean#L161
+[TypedConverter.ofCostedProgram_smul_ofAutomaton]: ../../RandomSystems/Typed/DSL/Converters.lean#L179
+[desugarSampling]: Elaborator.lean#L202
+[elabInterface]: Elaborator.lean#L362
+[elabComponent]: Elaborator.lean#L994
+[elabProgramDecls]: Elaborator.lean#L736
+[elabPerPortDecls]: Elaborator.lean#L620
+[elabExactDecls]: Elaborator.lean#L822
+[elabFilter]: Elaborator.lean#L1135
+[sourcesAt]: Elaborator.lean#L726
+[MemorylessSource]: ../../Commons/Definitions/Ideal.lean#L99
+[MemorylessSource.memoryless_eq]: ../../Commons/Definitions/Ideal.lean#L107
 [WriteThrough]: ../../Examples/DSL/Components.lean#L104
 [cc_normalize]: ../Tactics/Basic.lean#L30
 [cc_nonexpand]: ../Tactics/Categorical.lean#L166

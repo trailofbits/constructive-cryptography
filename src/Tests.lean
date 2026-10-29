@@ -15,6 +15,7 @@ import Tests.NaryParallelConverters
 import Tests.CompositionalCosts
 import Tests.DSL.Axioms
 import Tests.DSL.Diagnostics
+import Tests.DSL.Inlining
 import Tests.DSL.ParallelOutside
 import Tests.DSL.ProbabilityNotation
 import Tests.DSL.Semantics

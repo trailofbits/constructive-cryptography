@@ -1,3 +1,4 @@
+import ConstructiveCryptography.DSL.Equations
 import RandomSystems.Typed.DSL.Syntax
 import RandomSystems.Typed.DSL.Converters
 import RandomSystems.Typed.DSL.Tactics
@@ -24,6 +25,10 @@ System definitions take their budget from their outermost component. The compile
 on the category of interfaces: systems are `TypedSystem`s, and converters, built from
 `TypedConverter.ofProgram` and its variants, are declared as arrows `A ⟶ B` of
 `Interface.category`, so that components assemble with `≫` and `⊗ₘ`.
+
+A declaration that elaborates without errors also gets its per-procedure equations
+(`elabComponentEquations`), and its newly generated wrappers are registered in
+`component_definitions` (`registerComponentDefinitions`), so that `inline` expands them.
 -/
 
 namespace SystemAlgebra.DSL
@@ -438,8 +443,9 @@ partial def costOf (ss : Array Syntax) (calls : Array (Name × TSyntax `term)) :
     return ← `($rest + ($(⟨s[3]⟩):term).length * $body)
   throwErrorAt s "Unsupported cryptographic statement."
 
-/-- The most inside calls along a path of a procedure body without loops: a call counts one,
-branches and matches take the largest of their counts. -/
+/-- The most inside calls along a path of a procedure body: a call counts one, branches and
+matches take the largest of their counts, and a loop over a displayed list `[a₁, …, aₙ]`
+multiplies its body's count by `n`. A loop over any other list has no constant count. -/
 partial def callCount (ss : Array Syntax) (calls : Array (Name × TSyntax `term)) : Option Nat := do
   if ss.isEmpty then return 0
   let s := ss[0]!
@@ -452,6 +458,12 @@ partial def callCount (ss : Array Syntax) (calls : Array (Name × TSyntax `term)
         | `($f:ident $_) => calls.any (·.1 == f.getId)
         | _ => false)
     return (if called then 1 else 0) + (← callCount tail calls)
+  if s.getKind == ``forStmt then
+    match (⟨s[3]⟩ : TSyntax `term) with
+    | `([$items,*]) =>
+      return items.getElems.size * (← callCount (statements s[4]) calls) +
+        (← callCount tail calls)
+    | _ => none
   if s.getKind == ``ifStmt then
     let yes ← callCount (statements s[2]) calls
     let no ← if s[3].isNone then pure 0 else callCount (statements s[3][1]) calls
@@ -720,12 +732,12 @@ def sourcesAt (lawNames : Array Ident) (args : Array (TSyntax `term)) (k : TSynt
 
 /-- The declarations of a component compiled to a program: its body, its inferred per-call
 bound, its program from the outside interface `A` to `bound · A.bound` inside queries,
-and its sources. -/
+and its sources. The result records whether the displayed constant bound was proved. -/
 def elabProgramDecls (converting : Bool) (name : Ident)
     (params : Array (TSyntax ``Term.bracketedBinder))
     (σ : Signature) (insides sites : Array Syntax) (lawNames : Array Ident) (used : Array Name)
     (state : Ident) (alts : Array (TSyntax ``Term.matchAlt)) (innerZero stateTy : TSyntax `term)
-    (displayedBound : Option Nat) : CommandElabM Unit := do
+    (displayedBound : Option Nat) : CommandElabM Bool := do
   let args := binderArgs params
   let budget := Lean.mkIdent `budget
   let budgetType ← outsideBudgetType σ.outside.size
@@ -740,7 +752,9 @@ def elabProgramDecls (converting : Bool) (name : Ident)
       Program (Option $stateTy) ($sigZero).I ($innerZero).I ($sigZero).X
         ($sigZero).Y ($innerZero).X ($innerZero).Y :=
     fun $state:ident i => match i with $alts:matchAlt*))
-  -- The bound read off the displayed calls, when the procedures have no loops.
+  -- The bound read off the displayed calls, when every loop runs over a displayed list.
+  -- Its proof first reduces the literal fold `forEach [a₁, …, aₙ]`, then runs `program_bound`;
+  -- otherwise the bound is inferred below.
   let mut displayed := false
   if let some n := displayedBound then
     let saved ← get
@@ -752,7 +766,9 @@ def elabProgramDecls (converting : Bool) (name : Ident)
             ($bodyName $args*).Bounded ($boundName $args*) := by
           unfold $bodyName:ident
           intro s i x
-          component_cases i <;> dsimp <;> program_bound))
+          component_cases i <;>
+            dsimp -failIfUnchanged only [forEach, List.foldr_cons, List.foldr_nil] <;>
+            dsimp -failIfUnchanged <;> program_bound))
       if (← errorCount) > before then set saved else displayed := true
     catch _ => set saved
   unless displayed do
@@ -797,6 +813,7 @@ def elabProgramDecls (converting : Bool) (name : Ident)
         {$budget : $budgetType} :
         TypedSystem $sigB :=
       $programName $args* (budget := $budget) • $randomnessName $args* $k))
+  return displayed
 
 /-- The exact typing of a converter that samples nothing, when its number of inside calls is
 a function of the input: the outside interface at query budget `queries` (a tuple for several
@@ -894,6 +911,80 @@ def programAlt (name : Ident) (σ : Signature) (persistent : Array Ident) (store
   `(matchAltExpr| | $label:term => fun ($input:ident : $argType) =>
     ($body : $(← resultOf resultType)))
 
+/-- Register the wrappers this declaration generated in `component_definitions`, which `inline`
+expands automatically. Bodies, pure functions and initial values stay named objects. -/
+def registerComponentDefinitions (name : Ident) (before : Environment) : CommandElabM Unit := do
+  let owner := (← getCurrNamespace) ++ name.getId
+  for suffix in [Name.anonymous, `program, `perPort, `perPortProgram, `randomness, `exact] do
+    let decl := owner ++ suffix
+    if !before.contains decl && (← getEnv).contains decl then
+      elabCommand (← `(attribute [component_definitions] $(Lean.mkIdent decl):ident))
+
+/-- The equations of each procedure, at its concrete label: for a system that samples nothing,
+its step; for a program, its body and, when the displayed bound was proved, its `combine` and
+memoryless reply law. Initialization and later calls have separate equations, so a retained
+sample is never replaced by a fresh one. Loops over symbolic lists stay folds. -/
+def elabComponentEquations (name : Ident) (params : Array (TSyntax ``Term.bracketedBinder))
+    (σ : Signature) (oracles : Array Syntax) (stateTy : TSyntax `term)
+    (inner : Option (TSyntax `term)) (normalizeInvocation : Bool := true) : CommandElabM Unit := do
+  let args := binderArgs params
+  let body := Lean.mkIdent (name.getId ++ `body)
+  let step := Lean.mkIdent (name.getId ++ `step)
+  let bound := Lean.mkIdent (name.getId ++ `bound)
+  let spec := Lean.mkIdent (name.getId ++ `bound_spec)
+  let state := Lean.mkIdent (← liftCoreM <| mkFreshUserName `state)
+  let input := Lean.mkIdent (← liftCoreM <| mkFreshUserName `input)
+  let insideState := Lean.mkIdent (← liftCoreM <| mkFreshUserName `InsideState)
+  let insideStep := Lean.mkIdent (← liftCoreM <| mkFreshUserName `insideStep)
+  let insideValue := Lean.mkIdent (← liftCoreM <| mkFreshUserName `insideState)
+  let law := Lean.mkIdent (← liftCoreM <| mkFreshUserName `law)
+  let outer ← σ.zero
+  for procedure in oracles do
+    let proc : Ident := ⟨procedure[1]⟩
+    let label ← σ.label name proc
+    let owner := name.getId ++ proc.getId.getPrefix
+    let suffix := proc.getId.getString!
+    if let some inner := inner then
+      for initial in [true, false] do
+        let stateBinders ← if initial then pure #[]
+          else pure #[← `(bracketedBinder| ($state : $stateTy))]
+        let current ← if initial then `(none) else `(some $state:ident)
+        let phase := if initial then "_initial" else "_resumed"
+        let history := Lean.mkIdent (← liftCoreM <| mkFreshUserName `exchanges)
+        let bodyEq := Lean.mkIdent (owner ++ Name.mkSimple ("body_" ++ suffix ++ phase))
+        elabCommand (← `(component_equation $bodyEq:ident $params:bracketedBinder*
+          $stateBinders:bracketedBinder* ($input : ($outer).X $label)
+          ($history : List ((Sigma ($inner).X) × (Sigma ($inner).Y))) :
+          $body $args* $current $label $input $history using $body:ident))
+        unless normalizeInvocation do continue
+        let combineEq := Lean.mkIdent
+          (owner ++ Name.mkSimple ("combine_" ++ suffix ++ phase))
+        elabCommand (← `(component_equation $combineEq:ident $params:bracketedBinder*
+          ($insideState : Type)
+          ($insideStep : $insideState → (j : ($inner).I) →
+            ($inner).X j → $insideState × ($inner).Y j)
+          ($insideValue : $insideState) $stateBinders:bracketedBinder*
+          ($input : ($outer).X $label) :
+          ($body $args*).combine $insideStep ($spec $args*) ($current, $insideValue) $label $input
+          using Program.combine, Program.invoke, $body:ident, callProg, returnProg,
+            List.nil_append, List.cons_append, Option.get_some, forEach,
+            List.foldr_cons, List.foldr_nil))
+        let lawEq := Lean.mkIdent
+          (owner ++ Name.mkSimple ("memorylessReplyLaw_" ++ suffix ++ phase))
+        elabCommand (← `(component_equation $lawEq:ident $params:bracketedBinder*
+          ($law : (j : ($inner).I) → ($inner).X j →
+            Probability.Distribution.ProbDist (($inner).Y j))
+          $stateBinders:bracketedBinder* ($input : ($outer).X $label) :
+          ($body $args*).memorylessReplyLaw $law $current $label $input ($bound $args*) []
+          using Program.memorylessReplyLaw, $body:ident, callProg, returnProg,
+            List.nil_append, List.cons_append, forEach, List.foldr_cons, List.foldr_nil,
+            Probability.Distribution.bindK_single_comp))
+    else
+      let stepEq := Lean.mkIdent (owner ++ Name.mkSimple ("step_" ++ suffix))
+      elabCommand (← `(component_equation $stepEq:ident $params:bracketedBinder*
+        ($state : $stateTy) ($input : ($outer).X $label) :
+        $step $args* $state $label $input using $step:ident))
+
 /-- A system or converter declaration. Its outside interface is the annotation, the ordered
 tensor of its named `outside` components, or its generated ports; an annotation and named
 components exclude each other. The private state of `initialize`, samples included, is shared
@@ -901,6 +992,8 @@ by every procedure, whichever component it is on. -/
 @[command_elab systemComponentDecl, command_elab systemComponentTypedDecl,
   command_elab converterDecl, command_elab converterTypedDecl]
 def elabComponent : CommandElab := fun stx => do
+  let before ← getEnv
+  let beforeErrors ← errorCount
   checkReserved stx
   let converting := stx.getKind == ``converterDecl || stx.getKind == ``converterTypedDecl
   let typed := stx.getKind == ``systemComponentTypedDecl || stx.getKind == ``converterTypedDecl
@@ -1013,6 +1106,9 @@ def elabComponent : CommandElab := fun stx => do
           {$q : ($sigZero).I → ℕ} : TypedSystem $sigPP :=
         TypedSystem.ofAutomaton $sigPP ($stepName $args*)
           (Probability.Distribution.ProbDist.single ($initName $args*))))
+    if (← errorCount) == beforeErrors then
+      elabComponentEquations name params σ oracles stateTy none
+      registerComponentDefinitions name before
     return
   let (innerZero, _, calls) ← componentInside converting insides sites used (← `(0))
   let resultOf (resultType : TSyntax `term) : CommandElabM (TSyntax `term) :=
@@ -1024,11 +1120,15 @@ def elabComponent : CommandElab := fun stx => do
   let displayedBound := if counts.all Option.isSome then
       some (counts.foldl (fun m c => max m (c.getD 0)) 0)
     else none
-  elabProgramDecls converting name params σ insides sites lawNames used state alts innerZero stateTy
-    displayedBound
+  let normalized ← elabProgramDecls converting name params σ insides sites lawNames used state alts
+    innerZero stateTy displayedBound
   elabPerPortDecls converting name params σ insides sites oracles used
+  if (← errorCount) == beforeErrors then
+    elabComponentEquations name params σ oracles stateTy (some innerZero) normalized
   if converting && sites.isEmpty then
     elabExactDecls name params σ insides used oracles bodies calls input
+  if (← errorCount) == beforeErrors then
+    registerComponentDefinitions name before
 
 /-- A domain filter: forward the queries whose input history is admitted, and stop on the
 others. -/
@@ -1091,6 +1191,8 @@ partial def isConverterExpr (e : TSyntax `term) : Bool :=
 and `D` takes that family's budget, `BudgetOf D.outer`, so a tuple when the component has named
 outside components. -/
 @[command_elab systemDecl] def elabSystem : CommandElab := fun stx => do
+  let before ← getEnv
+  let beforeErrors ← errorCount
   checkReserved stx
   let params ← parameterBinders stx[2].getArgs
   let name : Ident := ⟨stx[1]⟩
@@ -1115,5 +1217,7 @@ outside components. -/
         Interface := $o))
   | none =>
     elabCommand (← `(noncomputable def $name:ident $params:bracketedBinder* := $rhs))
+  if (← errorCount) == beforeErrors then
+    registerComponentDefinitions name before
 
 end SystemAlgebra.DSL

@@ -16,8 +16,10 @@ samples [2, Example 3.2, p. 56], the memoryless source `MemorylessSource 𝒰[R]
 
 Every system of the proof is a memoryless source [2, Definition 3.1, p. 55], and the calling
 programs `𝓡₁` and `𝓡₂` of the two swaps map memoryless sources to memoryless sources, with the
-law of one invocation (the composition laws `TypedConverter.*_smul_memoryless`). So each
-hop is an equality of the laws of one reply:
+law of one invocation (the composition laws `TypedConverter.*_smul_memoryless`). `inline`
+applies them from explicit memorylessness certificates and the generated invocation equations;
+the identity of laws that remains is proved in place. So each hop is an equality of the laws of
+one reply:
 
 ```
  system                 law of one reply to eval(())       (U = 𝒰[S])
@@ -105,17 +107,12 @@ lemma prgReal_eq_source [Nonempty S] (G : S → R) :
   -- of one invocation of the program.
   have real : (PRGReal.perPort G (budget := q)).1 =
       memoryless _ (portLaw fun _ _ => ProbDist.map G 𝒰[S]) := by
-    -- The composition law `TypedConverter.ofProgram_smul_memoryless`, with the source of seeds
-    -- memoryless (`TypedSystem.source_eq_memoryless`); the law of one invocation remains.
-    refine TypedConverter.ofProgram_smul_memoryless none _ _ _
-      (TypedSystem.source_eq_memoryless _ _) ?_
-    -- One invocation: draw `s ← 𝒰[S]`, reply `G s`; the same in both initialization states.
-    -- The cases: initialization state `none` or `some ()`, the port `eval`, the input `()`.
-    rintro (_ | ⟨⟩) ⟨⟩ ⟨⟩
-    · simp [Program.memorylessReplyLaw, PRGReal.body, PRGReal.law1, callProg, returnProg,
-        ProbDist.map, bindK_single_comp]
-    · simp [Program.memorylessReplyLaw, PRGReal.body, PRGReal.law1, callProg, returnProg,
-        ProbDist.map, bindK_single_comp]
+    -- `inline` applies `TypedConverter.ofProgram_smul_memoryless` with the certificate that the
+    -- source of seeds is memoryless (`TypedSystem.source_eq_memoryless`), then the generated
+    -- `PRGReal.memorylessReplyLaw_eval_initial`/`_resumed`.
+    inline using (TypedSystem.source_eq_memoryless _ _)
+    -- In either state, `s ← 𝒰[S]; return G s` is by definition the pushforward `G_* 𝒰[S]`.
+    all_goals rfl
   -- The memoryless source of `G_* 𝒰[S]` is the same memoryless system.
   rw [real, MemorylessSource.memoryless_eq]
 
@@ -132,19 +129,13 @@ lemma 𝓡₁_smul_source (G : S → S × S) (ν : ProbDist (S × S)) :
   have attached : (𝓡₁.perPort G (budget := q) •
       MemorylessSource.perPort (S × S) ν (budget := 𝓡₁.insideBudget G q)).1 =
       memoryless _ (portLaw fun _ _ => ProbDist.map (fun AB => (AB.1, G AB.2)) ν) := by
-    -- `𝓡₁.perPort` is the converter of a port-preserving program.
-    unfold 𝓡₁.perPort 𝓡₁.perPortProgram
-    -- The composition law for port-preserving programs, with the source of `ν` memoryless
-    -- (`MemorylessSource.memoryless_eq`); the law of one invocation remains.
-    refine TypedConverter.ofPreservingProgram_smul_memoryless none _ _ _ _ _ _ _
-      (MemorylessSource.memoryless_eq ν _) ?_
-    -- The law of one invocation: one call, answered `(a, b) ← ν`, reply `(a, G b)`.
-    -- The cases: initialization state `none` or `some ()`, the port `eval`, the input `()`.
-    rintro (_ | ⟨⟩) ⟨⟩ ⟨⟩
-    · simp [Program.memorylessReplyLaw, 𝓡₁.body, callProg, returnProg,
-        ProbDist.map, bindK_single_comp]
-    · simp [Program.memorylessReplyLaw, 𝓡₁.body, callProg, returnProg,
-        ProbDist.map, bindK_single_comp]
+    -- `𝓡₁.perPort` is the converter of a port-preserving program. `inline` applies its
+    -- composition law `TypedConverter.ofPreservingProgram_smul_memoryless` with the certificate
+    -- that the source of `ν` is memoryless (`MemorylessSource.memoryless_eq`), then the
+    -- generated `𝓡₁.memorylessReplyLaw_eval_initial`/`_resumed`.
+    inline using (MemorylessSource.memoryless_eq ν _)
+    -- In either state, `(a, b) ← ν; return (a, G b)` is by definition `(a, G b)_* ν`.
+    all_goals rfl
   -- The memoryless source of `(a, G b)_* ν` is the same memoryless system.
   rw [attached, MemorylessSource.memoryless_eq]
 
@@ -163,22 +154,21 @@ lemma 𝓡₂_smul_source [Nonempty S] (ν : ProbDist (S × S)) :
   have attached : (𝓡₂.perPort S (budget := q) •
       MemorylessSource.perPort (S × S) ν (budget := 𝓡₂.insideBudget S q)).1 =
       memoryless _ (portLaw fun _ _ => prodProbDist 𝒰[S] ν) := by
-    -- `𝓡₂.perPort` is its program with its own source beside the inside interface.
-    unfold 𝓡₂.perPort 𝓡₂.perPortProgram 𝓡₂.randomness
-    -- The composition law with the converter's own source beside its inside interface: the
-    -- source of `ν` and the source of the `a`'s are memoryless (`MemorylessSource.memoryless_eq`,
-    -- `TypedSystem.source_eq_memoryless`); the law of one invocation against their side-by-side
-    -- laws remains.
-    refine TypedConverter.ofPreservingProgram_comp_rightContext_smul_memoryless none _ _ _ _ _ _ _
-      (MemorylessSource.memoryless_eq ν _) (TypedSystem.source_eq_memoryless _ _) ?_
-    -- The law of one invocation: `a` from its own source, `(c, d)` from the source of `ν`,
-    -- reply `(a, c, d)`: the product of the two laws.
-    -- The cases: initialization state `none` or `some ()`, the port `eval`, the input `()`.
-    rintro (_ | ⟨⟩) ⟨⟩ ⟨⟩
-    · simp [Program.memorylessReplyLaw, 𝓡₂.body, 𝓡₂.law1, parallelLaw, callProg, returnProg,
-        prod_eq_bindK, bindK_single_comp]
-    · simp [Program.memorylessReplyLaw, 𝓡₂.body, 𝓡₂.law1, parallelLaw, callProg, returnProg,
-        prod_eq_bindK, bindK_single_comp]
+    -- `𝓡₂.perPort` is its program with its own source beside the inside interface. `inline`
+    -- places that source beside the source of `ν` (`comp_smul`, `attach_rightContext`), as in
+    -- `TypedConverter.ofPreservingProgram_comp_rightContext_smul_memoryless`. Two certificates,
+    -- the source of `ν` (`MemorylessSource.memoryless_eq`) and the source of the `a`'s
+    -- (`TypedSystem.source_eq_memoryless`), give the side-by-side law
+    -- (`TypedSystem.parallel_eq_memoryless`) for `ofPreservingProgram_smul_memoryless`.
+    -- The generated `𝓡₂.memorylessReplyLaw_eval_initial`/`_resumed` give the law of one
+    -- invocation against their side-by-side laws: `a ← 𝒰[S]; (c, d) ← ν; return (a, c, d)`.
+    inline using (MemorylessSource.memoryless_eq ν _), (TypedSystem.source_eq_memoryless _ _)
+    all_goals
+      -- Read the side-by-side laws at the two ports: `𝒰[S]` for `a` (`𝓡₂.law1`), `ν` for
+      -- `(c, d)` ...
+      simp only [parallelLaw, 𝓡₂.law1]
+      -- ... and sampling `a`, then independently `(c, d)`, is the product `𝒰[S] ⊗ ν`.
+      exact (prod_eq_bindK _ _).symm
   -- The memoryless source of `𝒰[S] ⊗ ν` is the same memoryless system.
   rw [attached, MemorylessSource.memoryless_eq]
 
