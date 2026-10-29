@@ -7,6 +7,7 @@ import Tests.Counterexamples
 import Tests.DependentProduct
 import Tests.DirectCalls
 import Tests.NaryParallelSystems
+import Tests.NaryParallelConverters
 import Tests.CompositionalCosts
 import Tests.DSL.Axioms
 import Tests.DSL.Diagnostics

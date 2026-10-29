@@ -12,6 +12,7 @@ import RandomSystems.Converter.Program
 import RandomSystems.Converter.ProgramAttachment
 import RandomSystems.Converter.ProbProgramAttachment
 import RandomSystems.Converter.ParallelPDS
+import RandomSystems.Converter.ParallelAll
 import RandomSystems.Converter.PDCBehavior
 import RandomSystems.Converter.ResourceAttachment
 import RandomSystems.Converter.ResourceCanon
