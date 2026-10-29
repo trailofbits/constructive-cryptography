@@ -28,6 +28,7 @@ Statements about typed systems are equalities of their random systems (`.1`).
 * `TypedSystem.parallel_eq_memoryless`: memoryless systems side by side are memoryless
 * `TypedConverter.ofProgram_smul_memoryless`,
   `TypedConverter.ofPreservingProgram_smul_memoryless`,
+  `TypedConverter.ofCostedProgram_smul_memoryless`,
   `TypedConverter.ofPreservingProgram_comp_rightContext_smul_memoryless`: the composition law
   `P • mem(ν) = mem(κ)` for the converters of programs
 
@@ -270,6 +271,23 @@ lemma ofPreservingProgram_smul_memoryless (s : S) (P : Program S A.I B.I A.X A.Y
     (ofPreservingProgram s P hb ι hι q hA hB • R).1 = memoryless A.inputDomain (portLaw κ) :=
   -- As for `ofProgram_smul_memoryless`: this converter is again the converter of the DDC
   -- `DDC.ofProgramOn s P A.domain`, and the same systems-level composition law applies.
+  PDCBehavior.attach_ofDDC_ofProgramOn_memoryless B.nonempty_prefix A.nonempty_prefix s P hb _ hκ hR
+    R.2
+
+/-- **The composition law** for the converter of a program with exact costs: on `mem(ν)`, a
+program whose reply law against `ν` is `κ` in every state gives `mem(κ)` on the cost-restricted
+outside domain `A`. -/
+lemma ofCostedProgram_smul_memoryless (s : S) (P : Program S A.I B.I A.X A.Y B.X B.Y)
+    {b : ℕ} (hb : P.Bounded b) (cost : (Σ o, A.X o) → ℕ) (hc : P.Costs cost) {q : ℕ}
+    (hA : ∀ us, A.domain us → (us.map cost).sum ≤ q)
+    (hB : ∀ xs, xs ≠ [] → xs.length ≤ q → B.domain xs)
+    {R : TypedSystem B} {ν : ∀ j, B.X j → ProbDist (B.Y j)} {κ : ∀ o, A.X o → ProbDist (A.Y o)}
+    (hR : R.1 = memoryless B.inputDomain (portLaw ν))
+    (hκ : ∀ s' o u, P.memorylessReplyLaw ν s' o u b [] = (κ o u).1) :
+    (ofCostedProgram s P hb cost hc hA hB • R).1 =
+      memoryless A.inputDomain (portLaw κ) :=
+  -- As for `ofProgram_smul_memoryless`: this converter is again the converter of the DDC
+  -- `DDC.ofProgramOn s P A.domain`; the cost hypotheses only type it.
   PDCBehavior.attach_ofDDC_ofProgramOn_memoryless B.nonempty_prefix A.nonempty_prefix s P hb _ hκ hR
     R.2
 

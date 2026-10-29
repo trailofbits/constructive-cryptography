@@ -94,8 +94,8 @@ end
 
 open SystemAlgebra.DSL
 
--- **The memoryless source** of `ν` (CR18, Definition 3.1, printed p. 55): on `eval(())`, a fresh
--- sample `y ← ν`, returned.
+-- **The memoryless source** of `ν` (CR18, Definition 3.1, printed p. 55): each `eval(())` is
+-- answered by a fresh sample `y ← ν`; no state is retained between queries.
 system MemorylessSource(Y : Type) [Fintype Y] (ν : Distribution.ProbDist Y) : Evaluation Unit Y
   on eval(_input : Unit) → Y
     y ←$ ν
@@ -113,18 +113,13 @@ lemma MemorylessSource.memoryless_eq {Y : Type} [Fintype Y] (ν : ProbDist Y)
   --   eval(()) ──► program ── randomness(()) ──► source, fresh samples y ← ν
   --            ◄── eval ⇒ y
   --
-  -- The source of samples is memoryless, so by the composition law the system is memoryless with
-  -- the reply law of one invocation of the program.
-  -- The composition law `TypedConverter.ofProgram_smul_memoryless`, with the source of
-  -- samples memoryless (`TypedSystem.source_eq_memoryless`); the law of one invocation remains.
-  refine TypedConverter.ofProgram_smul_memoryless none _ _ _
-    (TypedSystem.source_eq_memoryless _ _) ?_
-  -- One invocation: draw `y ← ν` and reply `y`. Its law is `ν`, in both initialization states
-  -- (`none` before the first call, `some ()` after).
-  rintro (_ | ⟨⟩) ⟨⟩ ⟨⟩
-  · simp [Program.memorylessReplyLaw, MemorylessSource.body, MemorylessSource.law1, callProg,
-      returnProg, bindK_single_one]
-  · simp [Program.memorylessReplyLaw, MemorylessSource.body, MemorylessSource.law1, callProg,
-      returnProg, bindK_single_one]
+  -- `inline` expands the registered wrapper `MemorylessSource.perPort` to this attachment and
+  -- applies the composition law `TypedConverter.ofProgram_smul_memoryless` with the
+  -- certificate that the source of samples is memoryless (`TypedSystem.source_eq_memoryless`),
+  -- then the generated `MemorylessSource.memorylessReplyLaw_eval_initial`/`_resumed`. In either
+  -- state, one invocation `y ← ν; return y` has reply law `id_* ν`.
+  inline using (TypedSystem.source_eq_memoryless _ _)
+  -- The identity pushforward: `id_* ν = ν` (`fTransform_id`).
+  all_goals exact Distribution.fTransform_id _
 
 end Commons

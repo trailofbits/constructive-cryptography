@@ -24,16 +24,16 @@ at most `q` to an inside budget of `q`.
   typed system inlines the program
 * `TypedConverter.ofDDC_ofProgramOn_smul_ofAutomaton`,
   `TypedConverter.ofProgram_smul_ofAutomaton`,
-  `TypedConverter.ofPreservingProgram_smul_ofAutomaton`: attached to an automaton, it is
+  `TypedConverter.ofPreservingProgram_smul_ofAutomaton`,
+  `TypedConverter.ofCostedProgram_smul_ofAutomaton`: attached to an automaton, it is
   the combined automaton
 -/
 
 namespace SystemAlgebra
 
-open Classical
-
 variable {S : Type}
 
+open Classical in
 /-- **The converter of a program** making at most `b` inside queries per invocation, started in
 the state `s`. -/
 noncomputable def TypedConverter.ofProgram {A B : Interface} (s : S)
@@ -46,6 +46,7 @@ noncomputable def TypedConverter.ofProgram {A B : Interface} (s : S)
       · exact Or.inr (hB _ hne
           (DDC.insideQueries_length_le_of_budget hb A.length_le hr hF)))
 
+open Classical in
 /-- **The converter of a program with exact costs**: outside histories of total cost at most `q`
 make at most `q` inside queries. -/
 noncomputable def TypedConverter.ofCostedProgram {A B : Interface} (s : S)
@@ -62,6 +63,7 @@ noncomputable def TypedConverter.ofCostedProgram {A B : Interface} (s : S)
         · rw [he]; exact Nat.zero_le _
         · exact hA _ hF)
 
+open Classical in
 /-- **The converter of a port-preserving program**: on outside histories with at most `q o`
 queries at each label `o`, it makes at most `q o` inside queries at `ι o`, and none for
 `ι o = none`. -/
@@ -90,12 +92,16 @@ lemma Interface.perPort_tensor_admits {A B : Interface} (q : A.I → ℕ)
     {k : ℕ} (hB : ∀ xs, xs ≠ [] → xs.length ≤ k → B.domain xs) :
     ∀ ys, ys ≠ [] → ys.length ≤ k → (∀ o, (SystemAlgebra.restrict (Sum.inl o) ys).length ≤ q o) →
       (Interface.tensor A B).domain ys := by
+  classical
   intro ys hne hl hc
   refine ⟨hne, ?_, ?_⟩
   · by_cases he : SystemAlgebra.restrict none (ys.map (sumAlphabet (Sum.rec A.X B.X)).symm) = []
     · exact Or.inl he
-    · exact Or.inr (hA _ he fun o => by rw [SystemAlgebra.restrict_restrict_sumAlphabet]; exact hc o)
-  · by_cases he : SystemAlgebra.restrict (some ()) (ys.map (sumAlphabet (Sum.rec A.X B.X)).symm) = []
+    · exact Or.inr (hA _ he fun o => by
+        rw [SystemAlgebra.restrict_restrict_sumAlphabet]
+        exact hc o)
+  · by_cases he :
+        SystemAlgebra.restrict (some ()) (ys.map (sumAlphabet (Sum.rec A.X B.X)).symm) = []
     · exact Or.inl he
     · exact Or.inr (hB _ he ((SystemAlgebra.length_restrict_le _ _).trans (by simpa using hl)))
 
@@ -160,6 +166,23 @@ lemma TypedConverter.ofPreservingProgram_smul_ofAutomaton {A B : Interface} {R :
       (∀ o j, ι o = some j → (SystemAlgebra.restrict j ys).length ≤ q o) → B.domain ys)
     (stepR : R → (j : B.I) → B.X j → R × B.Y j) (initial : Probability.Distribution.ProbDist R) :
     TypedConverter.ofPreservingProgram s P hb ι hι q hA hB •
+        TypedSystem.ofAutomaton B stepR initial =
+      TypedSystem.ofAutomaton A (P.combine stepR hb)
+        ⟨Probability.Distribution.fTransform (fun r => (s, r)) initial.1,
+          Probability.Distribution.fTransform_isProbDist _ initial.2⟩ :=
+  TypedConverter.ofDDC_ofProgramOn_smul_ofAutomaton s P hb _ stepR initial
+
+/-- **Attaching the converter of a costed program to an automaton** gives the combined automaton
+`P.combine stepR hb` started in `(s, r)`, `r ∼ initial`. Its DDC is `DDC.ofProgramOn s P A.domain`
+as for `ofProgram`, so this is `ofDDC_ofProgramOn_smul_ofAutomaton`; the cost hypotheses only
+type the converter. -/
+lemma TypedConverter.ofCostedProgram_smul_ofAutomaton {A B : Interface} {R : Type} (s : S)
+    (P : Program S A.I B.I A.X A.Y B.X B.Y) {b : ℕ} (hb : P.Bounded b)
+    (cost : (Σ o, A.X o) → ℕ) (hc : P.Costs cost) {q : ℕ}
+    (hA : ∀ us, A.domain us → (us.map cost).sum ≤ q)
+    (hB : ∀ xs, xs ≠ [] → xs.length ≤ q → B.domain xs)
+    (stepR : R → (j : B.I) → B.X j → R × B.Y j) (initial : Probability.Distribution.ProbDist R) :
+    TypedConverter.ofCostedProgram s P hb cost hc hA hB •
         TypedSystem.ofAutomaton B stepR initial =
       TypedSystem.ofAutomaton A (P.combine stepR hb)
         ⟨Probability.Distribution.fTransform (fun r => (s, r)) initial.1,
