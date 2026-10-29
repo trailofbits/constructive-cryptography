@@ -109,6 +109,18 @@ For a certified [direct call rule][callRule], query and return equations against
 function $`f`$ yield the
 [outside functional system][TypedConverter.ofDDC_callConverter_smul_ofFunction]; later inside
 queries of an invocation may depend on its earlier replies.
+An [input-dependent router][routingConverter] can move a payload field into the inside port label;
+its [typed attachment][TypedConverter.ofDDC_routingConverter_smul_ofFunction] returns the explicitly
+translated inside answer at the original outside port.
+Writing $`\operatorname{request}(u) = (j,x)`$, the outside function is
+
+```math
+g(u) = \operatorname{answer}\bigl(u,(j,f_j(x))\bigr).
+```
+
+The input $`u`$ is retained until the inside reply arrives. For outside domain $`F`$ and
+inside domain $`E`$, the domain guarantee follows from
+$`F(us) \Rightarrow E(\operatorname{map}(\operatorname{request},us))`$.
 
 ## Typed games
 
@@ -185,6 +197,8 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedSystem.parallel_sample_right]: SamplingAlgebra.lean#L83
 [callRule]: ../Converter/Calls.lean#L391
 [TypedConverter.ofDDC_callConverter_smul_ofFunction]: CallRuleFunctional.lean#L31
+[routingConverter]: ../Converter/QueryRouting.lean#L69
+[TypedConverter.ofDDC_routingConverter_smul_ofFunction]: QueryRouting.lean#L38
 [Interface.withMBO]: Game.lean#L24
 [TypedGame]: Game.lean#L35
 [TypedConverter.attachGame]: Game.lean#L38
