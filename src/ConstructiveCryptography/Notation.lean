@@ -13,12 +13,17 @@ parallel composition, `S —[α]→ T` and `S —[α; ε]→ T` for exact and ap
 typed system. The compatibility laws of the distance are restated with `∥`, the parallel
 composition `TypedSystem.parallel`, for the `cc_nonexpand` tactic, and `cc_normalize` applies
 locality, `(α ⊗ₘ β) • (R ∥ S) = α • R ∥ β • S`, whether the interfaces are written with `⊗` or
-with `Interface.tensor`. Direct typed actions, categorical actions and the selected CC
-instance's attachment field normalize using the same typed laws, including after serial
-composition or `cc_construct`. Finite-family locality and attachment through initial sampling
-apply to arbitrary normalized laws, including nested samples whose laws depend on earlier
-draws. Each shared sample remains outside the entire family; normalization never distributes
-shared randomness into independent component samples.
+with `Interface.tensor`. The categorical action, the direct typed action and the attachment
+field of `Interface.resourceTheory` are identified by definitional bridges, so all three
+normalize by the same typed laws, also after serial composition or `cc_construct`. Attachment
+enters an initial sample, `α • sample P R = sample P (fun s => α • R s)`, for any normalized
+law `P`, including nested samples whose laws depend on earlier draws, and acts componentwise on
+a finite family, `(⨂ₘ k, α k) • (∥ k, R k) = ∥ k, α k • R k`. A shared draw stays outside the
+whole family; normalization never splits it into independent draws of the components:
+
+```text
+sample s ← P; ∥ k, R s k    ≠    ∥ k, (sample s ← P; R s k)    in general
+```
 -/
 
 namespace SystemAlgebra
@@ -57,11 +62,14 @@ namespace Interface
 
 attribute [cc_normalization] comp_smul identity_attach
 
--- Apply the existing categorical laws first, then reconcile the action's representation.
--- This also exposes the attachment field left by `cc_construct` to the same typed laws.
+-- Definitional bridges to the direct typed action, below the laws' default priority: the
+-- categorical action and the `resourceTheory` attachment field left by `cc_construct` are
+-- rewritten to `α • R` with `α : TypedConverter A B`, where the typed laws below apply.
 attribute [cc_normalization 100] smul_eq_typed_smul attach_eq_typed_smul
 
--- These laws preserve each initial sample and each component's declared interface.
+-- The typed laws: `(α ≫ β) • R = α • (β • R)`, `id • R = R`, binary and finite-family
+-- locality, and `α • sample P R = sample P (fun s => α • R s)`. None moves an initial sample
+-- into a component, so a shared draw stays shared.
 attribute [cc_normalization]
   TypedConverter.comp_smul
   TypedConverter.identity_attach
