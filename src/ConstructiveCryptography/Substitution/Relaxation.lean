@@ -12,6 +12,22 @@ relation turns a specification into its substitution relaxation, the resources s
 for one of its members; the relaxation is compatible with converters and idempotent, so
 constructions into relaxed specifications compose with simulators.
 
+## Two operations
+
+`map α` is the direct image of a specification under `attach α`. For admitted
+transformations `ρs`, an assumption's systems `X₀`, `X₁` and a specification `𝒮`, with `ρ(X)`
+abbreviating `attach ρ X`:
+
+```text
+substitutionImage ρs X₀ X₁ 𝒮 = { ρ(X₀) | ρ ∈ ρs, ρ(X₁) ∈ 𝒮 }          one oriented use
+substitutionRelaxation 𝒮     = { S | ∃ R ∈ 𝒮, relation.substitutes A S R }
+```
+
+The first is a single use of one assumption and is a relaxation only under the supplied
+`diagonal` witnesses; the second is closed under the relation's transitivity and so is
+idempotent. Compatibility with converters needs closure of `transformations` under
+precomposition for the first, and the relation's `preserved` law for the second.
+
 ## Main definitions
 
 * `Specification.substitutionImage`, `Specification.singleSubstitutionRelaxation`
@@ -33,7 +49,10 @@ open CategoryTheory
 
 universe u v w
 
+-- `C` is the category of interfaces; `A ⟶ B` is a converter with outside `A`, inside `B`.
 variable {C : Type u} [Category.{v} C]
+-- `Phi A` is the type of resources on `A`; `attach α : Phi B → Phi A` for `α : A ⟶ B`, and
+-- `map α` is the direct image of a specification under it.
 variable {Phi : C → Type w} [ResourceTheory C Phi]
 
 /-- The specification image obtained by one oriented use of a substitution,
@@ -41,9 +60,22 @@ with its admitted transformations explicit.
 
 Banfi, Section 4.1.4 (printed p. 76), specifies "`S ≡ ρ_S(X₀) ≃ ρ_S(X₁) ≡ R`"
 and unions over `R` in the source specification. This is exactly that image;
-it does not add reversed uses, transitive closure, or diagonal elements. -/
-def substitutionImage {A B : C} (transformations : Set (A ⟶ B))
-    (left right : Phi B) (source : Specification (Phi A)) :
+it does not add reversed uses, transitive closure, or diagonal elements.
+
+```text
+resource ∈ substitutionImage transformations left right source  :⇔
+  ∃ ρ ∈ transformations, resource = attach ρ left ∧ attach ρ right ∈ source
+```
+
+Only resource equalities appear; no substitution premise `X₀ ≃ X₁` is asserted. -/
+def substitutionImage
+    -- `transformations` is the selected set of `ρ_S : A ⟶ B`, Banfi's “(efficient)
+    -- transformation”; it carries no efficiency notion of its own.
+    {A B : C} (transformations : Set (A ⟶ B))
+    -- `left = X₀` and `right = X₁` are the assumption's systems on `B`.
+    (left right : Phi B)
+    -- `source = 𝒮` is the specification on `A` that must contain the `X₁`-side `ρ(X₁)`.
+    (source : Specification (Phi A)) :
     Specification (Phi A) :=
   {resource | ∃ transformation ∈ transformations,
     resource = attach transformation left ∧
@@ -55,9 +87,14 @@ transformations provide every required diagonal witness.
 Jost, Definition 2.2.6 (printed p. 20), requires "`R ∈ φ(R)` for all `R ∈ Θ`".
 For Banfi's one-transformation image (Section 4.1.4, printed p. 76), the
 `diagonal` argument states precisely the missing obligation. Neither
-transitivity nor idempotence is imposed or concluded. -/
+transitivity nor idempotence is imposed or concluded. The pointwise relaxation of a center
+`R : Phi A` is `substitutionImage … {R}`. -/
 def singleSubstitutionRelaxation {A B : C}
+    -- `transformations` is the admitted set of `ρ : A ⟶ B`; `left = X₀`, `right = X₁` on `B`.
     (transformations : Set (A ⟶ B)) (left right : Phi B)
+    -- `diagonal R` gives one admitted `ρ` with `ρ(X₀) = R = ρ(X₁)`, so `R ∈ φ(R)`. A strong
+    -- hypothesis on the class (met, e.g., by converters that ignore their inside and expose
+    -- `R`, where the category has them), not derived.
     (diagonal : ∀ resource : Phi A,
       ∃ transformation ∈ transformations,
         attach transformation left = resource ∧
@@ -69,7 +106,9 @@ def singleSubstitutionRelaxation {A B : C}
       obtain ⟨transformation, allowed, leftEq, rightEq⟩ := diagonal resource
       exact ⟨transformation, allowed, leftEq.symm, rightEq⟩)
 
-/-- The pointwise relaxation lifts to exactly Banfi's one-use image. -/
+/-- The pointwise relaxation lifts to exactly Banfi's one-use image: applied to any
+specification `source` on `A`, `singleSubstitutionRelaxation` equals
+`substitutionImage transformations left right source`. -/
 @[simp] lemma singleSubstitutionRelaxation_apply {A B : C}
     (transformations : Set (A ⟶ B)) (left right : Phi B)
     (diagonal : ∀ resource : Phi A,
@@ -94,11 +133,23 @@ explicit class of admitted transformations by serial composition.
 
 Banfi, Section 4.1.4 (printed p. 76), requires an "(efficient) transformation";
 the admitted-class closure here is explicit. The attachment equation is
-the existing categorical law, not an additional system-specific axiom. -/
-lemma map_substitutionImage_subset {A B D : C} (converter : A ⟶ B)
+the existing categorical law, not an additional system-specific axiom.
+
+```text
+A ──converter──▶ B ──ρ──▶ D         ρ(X₀) ↦ attach converter (ρ X₀) = (converter ≫ ρ)(X₀)
+``` -/
+lemma map_substitutionImage_subset
+    -- `converter : A ⟶ B` is attached to the specification on `B`; `D` is the assumption's
+    -- interface.
+    {A B D : C} (converter : A ⟶ B)
+    -- `sourceTransformations` are the admitted `ρ : B ⟶ D` at the inside interface `B`;
+    -- `targetTransformations` the admitted ones `A ⟶ D` at the outside interface `A`.
     (sourceTransformations : Set (B ⟶ D)) (targetTransformations : Set (A ⟶ D))
+    -- `closed` says `converter ≫ ρ ∈ targetTransformations` for each `ρ ∈ sourceTransformations`.
     (closed : ∀ transformation ∈ sourceTransformations,
       converter ≫ transformation ∈ targetTransformations)
+    -- `left = X₀`, `right = X₁` are the assumption's systems on `D`; `source` is the
+    -- specification on `B`.
     (left right : Phi D) (source : Specification (Phi B)) :
     map converter (substitutionImage sourceTransformations left right source) ⊆
       substitutionImage targetTransformations left right (map converter source) := by
@@ -115,13 +166,23 @@ under exactly the supplied transformation-closure hypothesis.
 
 This is the converter compatibility of Banfi's Section 4.1.4 image
 (printed p. 76), with the "(efficient) transformation" requirement kept as
-explicit data and closure, rather than inferred from a generic category. -/
-lemma singleSubstitutionRelaxation_compatible {B : C}
-    (transformations : ∀ A : C, Set (A ⟶ B)) (left right : Phi B)
+explicit data and closure, rather than inferred from a generic category. Compatibility means
+`map converter (φ_D source) ⊆ φ_A (map converter source)` for all converters. -/
+lemma singleSubstitutionRelaxation_compatible
+    -- `B : C` is the fixed interface of the assumption's systems.
+    {B : C}
+    -- `transformations A` is the admitted set of `ρ : A ⟶ B` at each outside interface `A`.
+    (transformations : ∀ A : C, Set (A ⟶ B))
+    -- `left = X₀` and `right = X₁` are the assumption's systems on `B`.
+    (left right : Phi B)
+    -- `diagonal A R` gives an admitted `ρ` with `ρ(X₀) = R = ρ(X₁)`, as required by
+    -- `singleSubstitutionRelaxation` at each `A`.
     (diagonal : ∀ A (resource : Phi A),
       ∃ transformation ∈ transformations A,
         attach transformation left = resource ∧
         attach transformation right = resource)
+    -- `closed` says that for every `converter : A ⟶ D` (all of `C`, not a selected class),
+    -- `converter ≫ ρ ∈ transformations A` whenever `ρ ∈ transformations D`.
     (closed : ∀ {A D : C} (converter : A ⟶ D) transformation,
       transformation ∈ transformations D → converter ≫ transformation ∈ transformations A) :
     Relaxation.Compatible (fun A =>
@@ -137,10 +198,14 @@ endpoint equations.
 
 Banfi, Equation (4.2) (printed p. 76): "`π REAL ∈ (σ IDEAL)^s`". The
 singleton specification interpretation uses the existing `Constructs` and
-does not require an unsupported extensivity or idempotence claim. -/
+does not require an unsupported extensivity or idempotence claim. Both equations are exact
+resource equalities. -/
 lemma constructs_singleton_substitutionImage_iff {A B D E : C}
+    -- `transformations` is the admitted set of `ρ : A ⟶ B`; `left = X₀`, `right = X₁` on `B`.
     (transformations : Set (A ⟶ B)) (left right : Phi B)
+    -- `protocol = π` (pi) and `simulator = σ` (sigma) both have outside interface `A`.
     (protocol : A ⟶ D) (simulator : A ⟶ E)
+    -- `real : Phi D` receives π and `ideal : Phi E` receives σ.
     (real : Phi D) (ideal : Phi E) :
     Constructs protocol {real}
         (substitutionImage transformations left right {attach simulator ideal}) ↔
@@ -160,15 +225,23 @@ by finite assumption chains, select `SubstitutionRelation.generatedRelation`.
 An arbitrary supplied relation has only its explicitly provided semantics;
 it is not automatically implication under any chosen assumptions. The
 reflexivity proof supplies the extensivity required by Jost, Definition 2.2.6
-(printed p. 20): "`R ∈ φ(R)` for all `R ∈ Θ`". -/
+(printed p. 20): "`R ∈ φ(R)` for all `R ∈ Θ`".
+
+The pointwise relaxation of a center `R : Phi A` is `{S | relation.substitutes A S R}`, the
+candidate resource written first. -/
 noncomputable def substitutionRelaxation
+    -- `relation.substitutes A S R` is the selected `S ≃ R`; it may be equality.
     (relation : SubstitutionRelation C)
+    -- `reflexive A` gives `R ≃ R` in `Phi A`: an extra hypothesis, since
+    -- `SubstitutionRelation` has no reflexivity law.
     (reflexive : ∀ A, Std.Refl (relation.substitutes A))
     {A : C} : ConstructiveCryptography.Relaxation (Phi A) :=
   ConstructiveCryptography.Relaxation.ofPointwise
     (fun center => {resource | relation.substitutes A resource center})
     ((reflexive A).refl)
 
+/-- Membership in a relaxed specification: `resource` lies in the substitution relaxation of
+`source` exactly when `resource ≃ center` for some `center ∈ source`. -/
 @[simp]
 lemma mem_substitutionRelaxation_iff
     (relation : SubstitutionRelation C)
@@ -178,8 +251,13 @@ lemma mem_substitutionRelaxation_iff
       ∃ center ∈ source, relation.substitutes A resource center :=
   ConstructiveCryptography.Relaxation.mem_ofPointwise_iff
 
-/-- Substitution relaxation is compatible with converter attachment. -/
+/-- Substitution relaxation is compatible with converter attachment: for every converter
+`converter : A ⟶ B` and specification `source` on `B`, attaching `converter` to the relaxation
+of `source` lands in the relaxation of `map converter source`. If `S ≃ R` with `R ∈ source`,
+then `attach converter S ≃ attach converter R` by `preserved`. -/
 lemma substitutionRelaxation_compatible
+    -- `relation` is the selected `≃`, whose `preserved` law gives compatibility; `reflexive`
+    -- only makes each `substitutionRelaxation` a relaxation.
     (relation : SubstitutionRelation C)
     (reflexive : ∀ A, Std.Refl (relation.substitutes A)) :
     Relaxation.Compatible
@@ -198,10 +276,15 @@ Banfi, Definition 2.3.1 (printed p. 13): "Transitivity".
 For the finite-chain implication of Banfi, Section 2.3.1 (printed pp. 14--15),
 transitivity concatenates the chains to an admitted center. The theorem uses
 that explicit transitivity hypothesis; it is not an idempotence claim for
-the single-use description in Section 4.1.4 (printed p. 76). -/
+the single-use description in Section 4.1.4 (printed p. 76).
+
+For every specification `source` on `A`, relaxing twice equals relaxing once: `⊆` by
+transitivity (`S ≃ M` and `M ≃ R` give `S ≃ R`), `⊇` by extensivity from `reflexive`. -/
 lemma substitutionRelaxation_idem
+    -- `relation` is the selected `≃`, used through `transitive`; `reflexive` gives `⊇`.
     (relation : SubstitutionRelation C)
     (reflexive : ∀ A, Std.Refl (relation.substitutes A))
+    -- `source` is any specification on interface `A`.
     {A : C} (source : Specification (Phi A)) :
     substitutionRelaxation relation reflexive
         (substitutionRelaxation relation reflexive source) =
@@ -226,9 +309,12 @@ Banfi 2023, Definition 2.4.3 (printed p. 28) requires a simulator `σ` and the
 substitution `π REAL` versus `σ IDEAL`; Equation (4.2), printed p. 76, writes
 the same statement as `π REAL ∈ (σ IDEAL)^s`. -/
 lemma constructs_singleton_substitutionRelaxation_iff
+    -- `relation` is the selected `≃`; `reflexive` makes its relaxation extensive.
     (relation : SubstitutionRelation C)
     (reflexive : ∀ A, Std.Refl (relation.substitutes A))
+    -- `protocol = π : A ⟶ B` (pi) and `simulator = σ : A ⟶ A` (sigma).
     {A B : C} {protocol : A ⟶ B} {simulator : A ⟶ A}
+    -- `real : Phi B` receives π and `ideal : Phi A` receives σ.
     {real : Phi B} {ideal : Phi A} :
     Constructs protocol ({real} : Specification (Phi B))
         (substitutionRelaxation relation reflexive
@@ -247,22 +333,42 @@ substitution by the outer protocol, commutes honest protocol and adversarial
 simulator attachment, transforms the second substitution by the transported
 simulator, and composes the simulators. The commuting converter equation is
 explicit here; the generic categorical layer does not infer interface
-disjointness. -/
+disjointness. Writing `π₁, π₂, σ₁, σ₂, σ'` for `innerProtocol`, `outerProtocol`,
+`innerSimulator`, `outerSimulator`, `transportedSimulator`, and `α R` for `attach α R`:
+
+```text
+(π₂ ≫ π₁) real = π₂(π₁ real) ≃ π₂(σ₁ middle)    inner, preserved by π₂
+               = σ'(π₂ middle)                   commutes
+               ≃ σ'(σ₂ ideal)                    outer, preserved by σ'
+               = (σ' ≫ σ₂) ideal                  attach_serial; ≃ steps joined by transitivity
+``` -/
 theorem Constructs.substitutionRelaxation_serial_simulators
+    -- `relation` is the selected `≃`; `reflexive` makes its relaxation extensive.
     (relation : SubstitutionRelation C)
     (reflexive : ∀ A, Std.Refl (relation.substitutes A))
+    -- `outerProtocol = π₂ : A ⟶ B` (pi) and `innerProtocol = π₁ : B ⟶ D`; `π₂ ≫ π₁` is
+    -- attached to `real`.
     {A B D : C} {outerProtocol : A ⟶ B} {innerProtocol : B ⟶ D}
+    -- `innerSimulator = σ₁` (sigma) acts on `B`.
     {innerSimulator : B ⟶ B}
+    -- `transportedSimulator = σ'` is σ₁ moved to `A`, tied to it only by `commutes`;
+    -- `outerSimulator = σ₂` acts on `A`.
     {transportedSimulator outerSimulator : A ⟶ A}
+    -- `real : Phi D` is the real resource; `middle : Phi B` and `ideal : Phi A` are the
+    -- ideals of the inner and outer constructions.
     {real : Phi D} {middle : Phi B} {ideal : Phi A}
+    -- `inner` is `π₁ real ≃ σ₁ middle`, as a singleton construction.
     (inner : Constructs innerProtocol
       ({real} : Specification (Phi D))
       (substitutionRelaxation relation reflexive
         ({attach innerSimulator middle} : Specification (Phi B))))
+    -- `outer` is `π₂ middle ≃ σ₂ ideal`, as a singleton construction.
     (outer : Constructs outerProtocol
       ({middle} : Specification (Phi B))
       (substitutionRelaxation relation reflexive
         ({attach outerSimulator ideal} : Specification (Phi A))))
+    -- `commutes` is the converter equation `π₂ ≫ σ₁ = σ' ≫ π₂`, stronger than the
+    -- single-resource equality of `exists_serial_simulators`.
     (commutes : outerProtocol ≫ innerSimulator =
       transportedSimulator ≫ outerProtocol) :
     Constructs (outerProtocol ≫ innerProtocol)

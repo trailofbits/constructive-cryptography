@@ -348,6 +348,26 @@ use more when the mathematics or representation needs it.
   hypotheses and consequence in prose or an equation; explain restrictions,
   conventions and differences from the source where they matter. Scale the
   explanation to the declaration rather than repeating its Lean type.
+- Abstract declarations must explain their parameters where they occur. Keep
+  the leading docstring short: the mathematical claim or definition, its role,
+  and the relevant source. Put concise inline comments immediately before the
+  corresponding binder or small binder group in the Lean statement. Explain
+  what each type carries, what each map transforms, the direction of each order,
+  and the meaning of the hypotheses and conclusion. Reflow a long signature
+  when needed to place those comments. Explain shared context beside `variable`
+  declarations and structure fields at their fields. Name unfamiliar symbols
+  and connect source notation to Lean names at the point of use. Do not put a
+  long parameter glossary above the declaration or duplicate it in the module
+  introduction: the reader should not have to remember a paragraph while
+  reading the type. Concision means short explanations beside the mathematics,
+  not leaving parameters unexplained. Keep useful equations and diagrams.
+  These inline comments are the explanatory docstring distributed through the
+  declaration, not generic labels for groups of arguments. Name the actual Lean
+  symbols in each comment, including Greek ones. For example, explain that
+  `A : I` selects an interface `A` from the interface type `I`, and `Game A` is
+  the type of games at that interface; “the interfaces of the games” is not
+  enough. Explain `Ω`, `Λ`, `ρ`, `loss` and each hypothesis beside their binders,
+  rather than making the reader infer which description belongs to which name.
 - Object docstrings give the mathematical definition as well as its role: a
   defining equation, distribution, or input/output rule. For a system, specify
   its interface and domain, any sampled or retained state, and its reply law;
