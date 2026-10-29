@@ -1,157 +1,146 @@
 import ConstructiveCryptography.CryptographicAlgebra.Basic
-import Mathlib.Data.Real.Basic
+import ConstructiveCryptography.Game
 
 set_option autoImplicit false
 
 /-!
-# Games
+# Converter actions on games
 
-The abstraction of games of CR18, Chapter 4, in two classes. They introduce games, winners and
-solvers only as fields and axioms, and know nothing about systems.
+The evaluation classes `Games` and `DistinctionGames` live in `ConstructiveCryptography.Game`
+without a category assumption. Here the interface carrier is a category `C`: its objects are
+interfaces and a morphism `α : A ⟶ B` is a converter with outside interface `A` and inside
+interface `B`. `GameAction C Game Ω` attaches such a converter to a game on `B`, giving a game
+`αG` on `A`, with closure under the same converters as the CC algebra, for the performance
+space `Ω` (Omega) of `Games C Game Ω`: an absorbed winner `Wα` takes values in the same `Ω`.
+`DistinctionGameAction`, over the probability instance `GameAction C Game ℝ` and a resource
+family `Phi`, closes the common solvers under absorbing a converter into both views at once,
+and commutes attachment with the visible resource.
 
-`Games` is the abstraction of CR18, §4.4.3, §4.5.1 and §4.7.2. A problem is a set of solvers with
-a performance function (Definition 4.2); for a game the solvers are winners, and the performance
-of a winner is its winning probability (Definition 4.5), so a winner is given here by its winning
-probability for each game. A converter turns a game into a game, contravariantly in serial
-composition, and a winner into a winner: the winner with the converter absorbed wins a game as
-the winner wins the game with the converter attached, `ω(w c, g) = ω(w, c g)` (equation (4.9)).
-Games and winners do not involve resources.
+CR18 §4.7.2 (printed p. 94), equation (4.9), gives `ω(wc, g) = ω(w, cg)`. Absorption keeps
+physical order, with the winner first:
 
-`DistinctionGames` extends it to the abstraction of CR18, §§4.10–4.11, which relates games to
-distinction problems. Its solvers are the objects that are both a distinguisher and a winner, as `D`
-in Lemma 4.16: each is given by its probability of outputting `1` on each resource and its winning
-probability for each game, which is a winner of `Games`; they are closed under absorbing a
-converter. It assumes the visible resource of each game (Definition 4.18), with which attachment
-commutes since a converter neither sees nor affects the MBO (§4.7.2), and a conditional equivalence
-of games to resources (Definition 4.19), under which each solver's advantage between the visible
-resource of a game and the resource is at most its winning probability (Lemma 4.16 and the proof of
-Theorem 4.17).
+```text
+W -- α -- β -- G
+(Wα)β = W(α ≫ β)        (α ≫ β) • G = α • (β • G)
+```
 
-CR18 instantiates games as systems with a monotone binary output (§3.7.1); so does the instance
-on interfaces, `ConstructiveCryptography.InterfaceGame`.
-
-Sources: CR18, §4.4.3 (Definition 4.2, printed p. 85), §4.5.1 (Definition 4.5, p. 90), §4.7.2
-(reductions by a converter, equations (4.9) and (4.10), p. 94), §4.10.3 (Definition 4.18, the
-visible system `S⁻`; Lemma 4.16, p. 107), §4.11.1 (Definition 4.19, conditional equivalence,
-p. 108) and §4.11.2 (Theorem 4.17, p. 110).
-
-## Main definitions
-
-* `Games C Game`: games on each interface, attachment of converters, and winners closed under
-  absorbing a converter
-* `DistinctionGames C Φ Game`: solvers that are both distinguishers and winners, the visible
-  resource of a game, and conditional equivalence of a game to a resource
-* `Games.absorb`, `DistinctionGames.absorb`: a winner, and a solver, with a converter absorbed
-
-## Main results
-
-* `Games.absorb_mem`, `DistinctionGames.absorb_mem`: absorbing a converter gives a winner, and a
-  solver
-* `Games.absorb_comp`: absorbing a serial composition absorbs its converters in turn
+`Games.absorb_mem` uses closure of the admitted winners. `Games.absorb_comp` uses serial
+attachment; `DistinctionGames.absorb_mem` preserves the two evaluations of the same solver.
+On interfaces (`ConstructiveCryptography.InterfaceGame`), the identity and serial laws are
+`TypedConverter.identity_attachGame` and `TypedConverter.comp_attachGame`, and both closure
+laws are `Domain.SolverBehavior.absorb`.
 -/
 
 namespace ConstructiveCryptography
 
 open CategoryTheory
 
-universe u v w x
+universe u v w x y
 
-/-- **Games** (CR18, §4.4.3, §4.5.1 and §4.7.2): the games on each interface, attachment of
-converters to games, contravariant in serial composition, and the winners, each given by its
-winning probability for every game, closed under absorbing a converter. -/
-class Games (C : Type u) [Category.{v} C] (Game : outParam (C → Type x)) where
-  /-- Attaching a converter to a game: the converter turns a game into a game (CR18, §4.7.2). -/
+/-- Attachment of the CC converters to games, with identity, serial and admission laws.
+CR18 §4.7.2 (printed p. 94): “if g is a game, then cg is also a game.” -/
+class GameAction
+    -- Objects `A : C` are interfaces; `α : A ⟶ B` is a converter from outside `A` to inside
+    -- `B`, and `α ≫ β` places `α` outside `β`.
+    (C : Type u) [Category.{v} C]
+    -- `Game` assigns to each interface `A : C` its type of games `Game A`; attachment runs
+    -- against the arrow, `Game B → Game A`.
+    (Game : C → Type x)
+    -- Ω (Omega) contains the performance values of the winners selected by `Games C Game Ω`;
+    -- absorbed winners keep values in Ω. `outParam` is for inference only.
+    (Ω : outParam (Type y)) [Preorder Ω] [Games C Game Ω] where
+  /-- The attached game `αG` presents the outside interface of `α`. -/
   attachGame : ∀ {A B : C}, (A ⟶ B) → Game B → Game A
-  /-- Attaching the identity converter leaves a game unchanged. -/
+  /-- Attaching the identity leaves the game unchanged. -/
   attachGame_identity : ∀ {A : C} (game : Game A), attachGame (𝟙 A) game = game
-  /-- Serial converter attachment is nested attachment. -/
+  /-- Serial attachment groups the wiring from the game end: `(αβ)G = α(βG)`. -/
   attachGame_serial : ∀ {A B D : C} (first : A ⟶ B) (second : B ⟶ D) (game : Game D),
     attachGame (first ≫ second) game = attachGame first (attachGame second game)
-  /-- The winners at each interface, each given by its winning probability for every game, its
-  performance (CR18, Definitions 4.2 and 4.5). -/
-  winners : ∀ A : C, Set (Game A → ℝ)
-  /-- A winner with a converter absorbed is a winner: it wins a game as the winner wins the game
-  with the converter attached, `ω(w c, g) = ω(w, c g)` (CR18, §4.7.2, equation (4.9)). -/
-  closed_attach : ∀ {A B : C} (converter : A ⟶ B) {winner : Game A → ℝ},
-    winner ∈ winners A → (fun game => winner (attachGame converter game)) ∈ winners B
+  /-- Absorbing an allowed converter preserves admission of the winner: if `W` is admitted
+  on `A` and `α : A ⟶ B`, then `G ↦ W(αG)` is admitted on `B`. -/
+  closed_attach : ∀ {A B : C} (converter : A ⟶ B) {winner : Game A → Ω},
+    winner ∈ Games.winners A →
+      (fun game => winner (attachGame converter game)) ∈ Games.winners B
 
 namespace Games
 
-variable {C : Type u} [Category.{v} C] {Game : C → Type x} [Games C Game]
+-- Objects `A : C` are interfaces with converters `A ⟶ B`; `Game A` is the type of games on
+-- `A`; Ω (Omega) contains performances, with admitted winners `Games.winners A` and
+-- attachment `Game B → Game A` from `GameAction C Game Ω`.
+variable {C : Type u} [Category.{v} C] {Game : C → Type x} {Ω : Type y} [Preorder Ω]
+  [Games C Game Ω] [GameAction C Game Ω]
 
 /-- Converter attachment to games uses the heterogeneous action notation. -/
 instance instHSMulConverterGame {A B : C} : HSMul (A ⟶ B) (Game B) (Game A) where
-  hSMul := attachGame
+  hSMul := GameAction.attachGame (Ω := Ω)
 
+/-- The action notation `α • G` on a game `G : Game B` unfolds to `attachGame α G`. -/
 @[simp]
 lemma smul_eq_attachGame {A B : C} (converter : A ⟶ B) (game : Game B) :
-    (converter • game : Game A) = attachGame converter game :=
+    (converter • game : Game A) = GameAction.attachGame converter game :=
   rfl
 
-/-- A winner with a converter absorbed: it wins a game as the winner wins the game with the
-converter attached (CR18, §4.7.2, equation (4.10), `C G = G ∘ ρ_C`). -/
-def absorb {A B : C} (converter : A ⟶ B) (winner : Game A → ℝ) : Game B → ℝ :=
-  fun game => winner (attachGame converter game)
+/-- Absorbing a converter into an admitted winner gives an admitted winner (`closed_attach`). -/
+lemma absorb_mem {A B : C} (converter : A ⟶ B) {winner : Game A → Ω}
+    (h : winner ∈ winners A) : absorb winner converter ∈ winners B :=
+  GameAction.closed_attach converter h
 
-lemma absorb_mem {A B : C} (converter : A ⟶ B) {winner : Game A → ℝ}
-    (h : winner ∈ winners A) : absorb converter winner ∈ winners B :=
-  closed_attach converter h
-
-/-- **Absorbing a serial composition** absorbs its converters in turn. -/
-lemma absorb_comp {A B D : C} (first : A ⟶ B) (second : B ⟶ D) (winner : Game A → ℝ) :
-    absorb (first ≫ second) winner = absorb second (absorb first winner) :=
-  funext fun game => congrArg winner (attachGame_serial first second game)
+/-- **Absorbing a serial composition** absorbs its converters in turn. For a winner
+`W : Game A → Ω`, `first : A ⟶ B` and `second : B ⟶ D`, the winner `W(first ≫ second)` on
+`Game D` equals `(W first) second`, absorbing the outer converter `first` before `second`;
+it is `attachGame_serial` under `W`. No admission is claimed. -/
+lemma absorb_comp {A B D : C} (winner : Game A → Ω) (first : A ⟶ B) (second : B ⟶ D) :
+    absorb (H := Game D) winner (first ≫ second) =
+      absorb (absorb (H := Game B) winner first) second :=
+  funext fun game => congrArg winner (GameAction.attachGame_serial first second game)
 
 end Games
 
-/-- **Games related to distinction problems** (CR18, §§4.10–4.11): the solvers that are both a
-distinguisher and a winner, as `D` in Lemma 4.16, closed under absorbing a converter; the visible
-resource of a game, with which attachment commutes; and a conditional equivalence of games to
-resources, under which each solver's advantage between the visible resource and the resource is
-at most its winning probability. -/
-class DistinctionGames (C : Type u) [Category.{v} C] (Phi : outParam (C → Type w))
-    [ResourceTheory C Phi] (Game : outParam (C → Type x)) extends Games C Game where
-  /-- The solvers at each interface that are both a distinguisher and a winner, each given by its
-  probability of outputting `1` on every resource and its winning probability for every game
-  (CR18, Lemma 4.16). -/
-  solvers : ∀ A : C, Set ((Phi A → ℝ) × (Game A → ℝ))
-  /-- The winning probability of a solver is a winner. -/
-  solvers_winner : ∀ {A : C} {solver : (Phi A → ℝ) × (Game A → ℝ)},
-    solver ∈ solvers A → solver.2 ∈ winners A
-  /-- A solver with a converter absorbed is a solver: it decides on a resource as the solver
-  decides on the converter attached to it, and wins a game as the solver wins the converter
-  attached to it (CR18, §4.7.2, equation (4.9)). -/
+/-- The CC action on a common solver's two evaluations, and on visible resources, over the
+probability instance `GameAction C Game ℝ`.
+CR18 §4.7.2 (printed p. 94) keeps the MBO “not being seen or affected” by the converter. -/
+class DistinctionGameAction
+    -- Objects `A : C` are interfaces and morphisms `A ⟶ B` converters, as in `GameAction`.
+    (C : Type u) [Category.{v} C]
+    -- `Phi A` is the type of resources on `A`; `ResourceTheory C Phi` attaches converters,
+    -- `Phi B → Phi A`.
+    (Phi : C → Type w)
+    [ResourceTheory C Phi]
+    -- `Game A` is the type of games on `A`; `DistinctionGames.solvers A` holds pairs `(d, w)`
+    -- of an output-1 probability `d` on `Phi A` and a winning probability `w` on `Game A`.
+    (Game : C → Type x) [DistinctionGames C Phi Game]
+    -- `GameAction C Game ℝ` attaches converters to games, with real (probability) performance.
+    [GameAction C Game ℝ] where
+  /-- Absorption preserves admission and transforms both views with the same converter:
+  `α : A ⟶ B` turns `(d, w)` into `(R ↦ d(αR), G ↦ w(αG))` on `B`. -/
   solvers_closed_attach : ∀ {A B : C} (converter : A ⟶ B)
-    {solver : (Phi A → ℝ) × (Game A → ℝ)}, solver ∈ solvers A →
+    {solver : (Phi A → ℝ) × (Game A → ℝ)}, solver ∈ DistinctionGames.solvers A →
       (fun R => solver.1 (ResourceTheory.attach converter R),
-        fun game => solver.2 (attachGame converter game)) ∈ solvers B
-  /-- The visible resource `S⁻` of a game (CR18, Definition 4.18). -/
-  visible : ∀ {A : C}, Game A → Phi A
-  /-- Attaching a converter to a game attaches it to the visible resource. -/
+        fun game => solver.2 (GameAction.attachGame converter game)) ∈ DistinctionGames.solvers B
+  /-- Forgetting the hidden condition commutes with converter attachment: `(αG)⁻ = αG⁻`. -/
   visible_attachGame : ∀ {A B : C} (converter : A ⟶ B) (game : Game B),
-    visible (attachGame converter game) = ResourceTheory.attach converter (visible game)
-  /-- Conditional equivalence `S |≡ T` of a game to a resource (CR18, Definition 4.19). -/
-  ConditionallyEquivalent : ∀ {A : C}, Game A → Phi A → Prop
-  /-- **Conditional equivalence bounds distinguishing by winning** (CR18, Lemma 4.16 and the
-  proof of Theorem 4.17). -/
-  advantage_le_win : ∀ {A : C} {game : Game A} {T : Phi A}
-    {solver : (Phi A → ℝ) × (Game A → ℝ)}, ConditionallyEquivalent game T →
-      solver ∈ solvers A → |solver.1 (visible game) - solver.1 T| ≤ solver.2 game
+    DistinctionGames.visible (GameAction.attachGame converter game) =
+      ResourceTheory.attach converter (DistinctionGames.visible game)
 
 namespace DistinctionGames
 
+-- Objects `A : C` are interfaces with converters `A ⟶ B`; `Phi A` and `Game A` are the
+-- resources and games on `A`; `solvers A` holds pairs of evaluations on them, and converters
+-- act on resources, games and solvers.
 variable {C : Type u} [Category.{v} C] {Phi : C → Type w} [ResourceTheory C Phi]
-  {Game : C → Type x} [DistinctionGames C Phi Game]
+  {Game : C → Type x} [DistinctionGames C Phi Game] [GameAction C Game ℝ]
+  [DistinctionGameAction C Phi Game]
 
 /-- A solver with a converter absorbed: it decides on a resource as the solver decides on the
 converter attached to it, and wins a game as the solver wins the converter attached to it. -/
-def absorb {A B : C} (converter : A ⟶ B) (solver : (Phi A → ℝ) × (Game A → ℝ)) :
+def absorb {A B : C} (solver : (Phi A → ℝ) × (Game A → ℝ)) (converter : A ⟶ B) :
     (Phi B → ℝ) × (Game B → ℝ) :=
-  (fun R => solver.1 (ResourceTheory.attach converter R), Games.absorb converter solver.2)
+  (fun R => solver.1 (ResourceTheory.attach converter R), Games.absorb solver.2 converter)
 
+/-- Absorbing a converter into a solver gives a solver (`solvers_closed_attach`). -/
 lemma absorb_mem {A B : C} (converter : A ⟶ B) {solver : (Phi A → ℝ) × (Game A → ℝ)}
-    (h : solver ∈ solvers A) : absorb converter solver ∈ solvers B :=
-  solvers_closed_attach converter h
+    (h : solver ∈ solvers A) : absorb solver converter ∈ solvers B :=
+  DistinctionGameAction.solvers_closed_attach converter h
 
 end DistinctionGames
 

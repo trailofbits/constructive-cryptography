@@ -92,7 +92,11 @@ wins $`G`$ [as the winner wins][RandomSystem.winProbability_attach_liftMBO] $`\h
 [3, §4.7.2, equation (4.9)]. A [**solver behavior**][Domain.SolverBehavior] pairs a probabilistic
 distinguisher's probability of outputting 1 on each random system with its winning probability
 for each game, and [absorbing a PDC][Domain.SolverBehavior.absorb] into a solver behavior gives a
-solver behavior.
+solver behavior. Its [decision projection][Domain.SolverBehavior.decision] keeps the same
+underlying distinguisher's output probabilities. The projection
+[commutes with absorption][Domain.SolverBehavior.decision_absorb]: deciding after absorption
+is the decision view with the same converter absorbed. The winning view remains available for
+the game bound; it is not reconstructed from decision probabilities.
 
 ## Discrete games
 
@@ -133,14 +137,14 @@ the ideal answers.
 [Domain.Distinguisher.winProbability_le_of_transcriptCost_le]: UntilBad.lean#L148
 [RandomSystem.GameEquivalent.transcriptDistance_visible_le]: UntilBad.lean#L177
 [PDG.gameEquivalent_behavior_of_isCoupling]: UntilBad.lean#L209
-[PDCBehavior.liftMBO]: MBOAttachment.lean#L455
-[PDCBehavior.liftMBO_id]: MBOAttachment.lean#L495
-[PDCBehavior.liftMBO_comp]: MBOAttachment.lean#L1515
-[RandomSystem.MonotoneMBO.attach_liftMBO]: MBOAttachment.lean#L965
-[RandomSystem.visible_attach_liftMBO]: MBOAttachment.lean#L619
-[RandomSystem.winProbability_attach_liftMBO]: MBOAttachment.lean#L2079
-[Domain.SolverBehavior]: MBOAttachment.lean#L2169
-[Domain.SolverBehavior.absorb]: MBOAttachment.lean#L2191
+[PDCBehavior.liftMBO]: MBOAttachment.lean#L460
+[PDCBehavior.liftMBO_id]: MBOAttachment.lean#L500
+[PDCBehavior.liftMBO_comp]: MBOAttachment.lean#L1520
+[RandomSystem.MonotoneMBO.attach_liftMBO]: MBOAttachment.lean#L970
+[RandomSystem.visible_attach_liftMBO]: MBOAttachment.lean#L624
+[RandomSystem.winProbability_attach_liftMBO]: MBOAttachment.lean#L2084
+[Domain.SolverBehavior]: MBOAttachment.lean#L2174
+[Domain.SolverBehavior.absorb]: MBOAttachment.lean#L2213
 [MC]: DiscreteMBO.lean#L46
 [DDG]: DiscreteMBO.lean#L50
 [PDG]: DiscreteMBO.lean#L54
@@ -152,3 +156,6 @@ the ideal answers.
 [PDG.conditionallyEquivalent_behavior]: DiscreteMBO.lean#L460
 [PDG.ofFunction]: FunctionGame.lean#L37
 [PDG.ofFunction_conditionallyEquivalent]: FunctionGame.lean#L73
+
+[Domain.SolverBehavior.decision]: MBOAttachment.lean#L2185
+[Domain.SolverBehavior.decision_absorb]: MBOAttachment.lean#L2234

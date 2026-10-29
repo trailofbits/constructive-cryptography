@@ -12,7 +12,9 @@ and the lift is functorial. Attaching a lift commutes
 with the visible system, and attaching it to a game gives a game. A probabilistic
 distinguisher with a PDC absorbed wins a game as the distinguisher wins the lift of the PDC
 attached to it; so the solver behaviors, the decision probabilities on random systems and the
-winning probabilities for games of one distinguisher, are closed under absorbing a PDC.
+winning probabilities for games of one distinguisher, are closed under absorbing a PDC. The
+decision view of a solver behavior is a distinguisher behavior, every distinguisher behavior is
+one, and the view commutes with absorption: `decision (sα) = (decision s)α`.
 
 Sources: CR18, §4.7.2 (printed p. 94), states this action informally: a converter turns a game
 `g` into a game `c g`, the MBO being neither seen nor affected by the converter, and a winner `w`
@@ -24,6 +26,7 @@ the proof of Lemma 4.9 use it.
 * `latestMBO`, `liftMBO`, `PDCBehavior.liftMBO`: the MBO-forwarding lift of a DDC and of a PDC
 * `TaggedMBO`: converter transcripts whose outside replies carry the latest inside MBO
 * `Domain.SolverBehavior`, `Domain.SolverBehavior.absorb`: solver behaviors
+* `Domain.SolverBehavior.decision`: the decision view of a solver behavior
 
 ## Main results
 
@@ -33,6 +36,8 @@ the proof of Lemma 4.9 use it.
 * `RandomSystem.visible_attach_liftMBO`: attaching a lift attaches to the visible system
 * `RandomSystem.MonotoneMBO.attach_liftMBO`: attaching a lift to a game gives a game
 * `Domain.Distinguisher.exists_absorbAll_winProbability`: absorbing a PDC into a winner
+* `Domain.SolverBehavior.decision_surjective`, `Domain.SolverBehavior.decision_absorb`: every
+  distinguisher behavior is a decision view, and the view commutes with absorption
 -/
 
 namespace SystemAlgebra
@@ -2175,6 +2180,24 @@ abbrev Domain.SolverBehavior (E : List (Σ i, X i) → Prop) (m : ℕ)
     ∃ P : (Domain.ofInputs E m hE : Domain (Σ i, X i) (Σ i, Y i)).Distinguisher,
       (∀ R, s.1 R = P.probability R.1) ∧ ∀ G, s.2 G = P.winProbability G.1}
 
+/-- The decision view of a joint solver: `decision s R` is its probability of outputting `1`
+on `R`. The same distinguisher witnessing both views also witnesses this projection. -/
+def Domain.SolverBehavior.decision {E : List (Σ i, X i) → Prop} {m : ℕ}
+    {hE : ∀ h, E h → h.length ≤ m} (s : Domain.SolverBehavior (Y := Y) E m hE) :
+    (Domain.ofInputs E m hE : Domain (Σ i, X i) (Σ i, Y i)).DistinguisherBehavior :=
+  ⟨s.1.1, by
+    obtain ⟨P, hP, _⟩ := s.2
+    exact ⟨P, hP⟩⟩
+
+/-- Every decision behavior has a joint realization: its distinguisher witness supplies a
+winning view. This asserts existence, without choosing a unique winning view. -/
+lemma Domain.SolverBehavior.decision_surjective (E : List (Σ i, X i) → Prop) (m : ℕ)
+    (hE : ∀ h, E h → h.length ≤ m) :
+    Function.Surjective (Domain.SolverBehavior.decision (Y := Y) (E := E) (hE := hE)) := by
+  intro d
+  obtain ⟨P, hP⟩ := d.2
+  exact ⟨⟨(d.1, fun G => P.winProbability G.1), P, hP, fun _ => rfl⟩, rfl⟩
+
 end Solvers
 
 section SolverAbsorption
@@ -2183,13 +2206,15 @@ variable {O J : Type} [Fintype O] [Fintype J] {U V : O → Type} {X Y : J → Ty
   [∀ o, Fintype (U o)] [∀ o, Fintype (V o)] [∀ j, Fintype (X j)] [∀ j, Fintype (Y j)]
   {E : List (Σ j, X j) → Prop} {m : ℕ} {hE : ∀ h, E h → h.length ≤ m}
   {F : List (Σ o, U o) → Prop} {n : ℕ} {hF : ∀ h, F h → h.length ≤ n}
-  (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
-  (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
 
-/-- **A solver with a PDC absorbed**: it decides on a random system as the solver decides on
-the PDC attached to it, and wins a game as the solver wins the lift attached to it. -/
-noncomputable def Domain.SolverBehavior.absorb (α : PDCBehavior O J U V X Y E m hE F n hF)
-    (s : Domain.SolverBehavior (X := U) (Y := V) F n hF) :
+/-- **A solver with a PDC absorbed**, `sα = s.absorb hE' hF' α`: it decides on a random system
+as the solver decides on the PDC attached to it, and wins a game as the solver wins the lift
+attached to it. -/
+noncomputable def Domain.SolverBehavior.absorb
+    (s : Domain.SolverBehavior (X := U) (Y := V) F n hF)
+    (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
+    (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
+    (α : PDCBehavior O J U V X Y E m hE F n hF) :
     Domain.SolverBehavior (X := X) (Y := Y) E m hE :=
   -- On random systems: `s` on `α` attached. On games: `s` on the lift of `α` attached, a game by
   -- `attach_liftMBO`.
@@ -2203,6 +2228,15 @@ noncomputable def Domain.SolverBehavior.absorb (α : PDCBehavior O J U V X Y E m
     obtain ⟨Q, hQ, hQW⟩ := Domain.Distinguisher.exists_absorbAll_winProbability hE' hF' α P
     exact ⟨Q, fun R => (hP _).trans (hQ R.1 R.2).symm,
       fun G => (hW _).trans (hQW G.1 G.2.1).symm⟩⟩
+
+/-- Projecting after absorption gives the decision view with the same converter absorbed:
+`decision (sα) = (decision s)α`. Both sides evaluate `s` on the attached resource. -/
+lemma Domain.SolverBehavior.decision_absorb
+    (s : Domain.SolverBehavior (X := U) (Y := V) F n hF)
+    (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
+    (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
+    (α : PDCBehavior O J U V X Y E m hE F n hF) :
+    (s.absorb hE' hF' α).decision = s.decision.absorb hE' hF' α := rfl
 
 end SolverAbsorption
 

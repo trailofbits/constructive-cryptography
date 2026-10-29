@@ -1,4 +1,7 @@
 import Tests.TranscriptHorizon
+import Tests.Games
+import Tests.Problem
+import Tests.GameConsumers
 import Tests.AllDistinguishers
 import Tests.MixtureObservation
 import Tests.ProofErgonomics

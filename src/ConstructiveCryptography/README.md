@@ -1,7 +1,10 @@
 # Constructive cryptography
 
-This library holds the abstract theory and its instances on interfaces. `CryptographicAlgebra`
-defines the classes of assumptions, from resource theories to distinguisher classes and games;
+This library holds the abstract theory and its instances on interfaces. `Problem` states
+reductions over ordered performance spaces, and `Game` defines the evaluation classes of
+games, without categories or converters; `CryptographicAlgebra` defines
+the classes of assumptions, from resource theories to distinguisher classes and the converter
+actions on games;
 `Specification` and `Construction` define specifications, constructions and relaxations over any
 carrier; the instance files `InterfaceCategory`, `InterfaceMonoidal`, `InterfaceAlgebra` and
 `InterfaceGame` instantiate the classes on interfaces; `Substitution` is the substitution
@@ -73,39 +76,66 @@ D \in \mathcal D_A \;\Longrightarrow\; D(\alpha\,\cdot\,) \in \mathcal D_B,\ \ D
 **Closure gives compatibility** [8, Lemma 1]: the advantage distance of a closed class
 [is a compatible pseudo-metric][CompatibleDistinguisherClass.ofClosure].
 
-### `Games C Game` and `DistinctionGames C Φ Game`: games, and games related to distinguishing
+### Games, solver evaluations and converter actions
 
-The class [`Games`][Games] is the abstraction of [3, §4.4.3, §4.5.1 and §4.7.2]. A problem is a
-set of solvers with a performance function [3, Definition 4.2]; for a game the solvers are
-winners and the performance is the winning probability [3, Definition 4.5], so a winner is given
-by its winning probability $`W : \mathrm{Game}\,A \to \mathbb R`$ for each game. The class has games
-$`\mathrm{Game}\,A`$ on each object, attachment $`\alpha \cdot G`$ of converters to games,
-contravariant in serial composition, and a set $`\mathcal W_A`$ of winners closed under
-[absorbing][Games.absorb] a converter, $`\omega(w c, g) = \omega(w, c g)`$ [3, §4.7.2,
-equation (4.9)]. Games and winners do not involve resources:
+[`Games`][Games] and [`DistinctionGames`][DistinctionGames] are defined in `Game.lean`,
+without categories, converters or metrics. `Games I Game Ω` selects admitted winners
+$`W : \mathrm{Game}\,A \to \Omega`$; the model fixes the performance space $`\Omega`$, as it
+fixes the games. The source orders performances partially [3, Definition 4.2, printed p. 85];
+the reduction laws need only a preorder, since they use no antisymmetry. Ordinary games
+specialize performance to winning probabilities in $`[0,1]`$, and multi-games have several
+winning events [3, Definition 4.5, p. 90]. Three notions are kept apart:
 
-```math
-\mathrm{id} \cdot G = G, \qquad (\alpha \beta) \cdot G = \alpha \cdot (\beta \cdot G), \qquad
-W \in \mathcal W_A \;\Longrightarrow\; W(\alpha \cdot\,\cdot\,) \in \mathcal W_B .
-```
+- general performance: any preorder, including non-total products such as $`\mathbb N \times \mathbb N`$; the class asserts no range;
+- probability performance: `DistinctionGames`, `Interface.games` and `Interface.gameAction` select $`\mathbb R`$, with winning probabilities as values;
+- error budgets: the $`\mathbb R_{\ge 0}`$ bounds on distances, which are not performance values.
 
-Absorbing a serial composition [absorbs its converters in turn][Games.absorb_comp].
-
-The class [`DistinctionGames`][DistinctionGames], extending `Games`, is the abstraction of
-[3, §§4.10–4.11], relating games and distinction problems. Its solvers are the objects that are
-both a distinguisher and a winner, as $`D`$ in [3, Lemma 4.16]: a set $`\mathcal S_A`$ of pairs
-$`(D, W)`$ of a decision probability $`D : \Phi A \to \mathbb R`$ and a winning probability $`W`$, which
-is a winner, closed under [absorbing][DistinctionGames.absorb] a converter [3, §4.7.2]. It has the visible
-resource $`G^-`$ of a game [3, Definition 4.18], with which attachment commutes since a converter
-neither sees nor affects the MBO [3, §4.7.2], and a conditional equivalence
-$`G \mathrel{|\!\equiv} T`$ of games to resources [3, Definition 4.19], under which each solver's advantage is at most its winning
-probability [3, Lemma 4.16 and the proof of Theorem 4.17]:
+The [general reduction theorem][Problem.performance_le_of_reduction] in `Problem.lean`
+takes a source solver type `Solver` and a target solver type `OtherSolver`, with ordered
+performance spaces $`\Omega`$ and $`\Lambda`$. The evaluations
+$`p : \mathrm{Solver} \to \Omega`$ and $`q : \mathrm{OtherSolver} \to \Lambda`$ measure how
+well a solver performs on its problem. The solver map $`\rho`$ transforms a source solver
+into a target solver. A monotone loss $`\lambda : \Lambda \to \Omega`$ translates a target
+performance bound back to a source bound [3, equation (4.3), printed p. 87]:
 
 ```math
-(D, W) \in \mathcal S_A \;\Longrightarrow\; W \in \mathcal W_A, \qquad
-(\alpha \cdot G)^- = \alpha\, G^-, \qquad
-G \mathrel{|\!\equiv} T,\ (D, W) \in \mathcal S_A \;\Longrightarrow\; \lvert D(G^-) - D(T) \rvert \le W(G) .
+p(s) \le \lambda(q(\rho(s))),\quad q(\rho(s)) \le \varepsilon
+\quad\Longrightarrow\quad p(s) \le \lambda(\varepsilon).
 ```
+
+[`Games.win_le_of_reduction`][Games.win_le_of_reduction] applies this theorem to the subtypes
+of admitted winners. Source and target games may use different performance spaces; closure
+ensures the reduction maps admitted winners to admitted winners.
+
+`DistinctionGames I Φ Game` selects paired decision and winning evaluations of a common
+solver, with real-valued probabilities, the visible resource $`G^-`$, and conditional equivalence.
+It specializes `Games I Game ℝ`. The game bound uses
+both views of the same solver [3, Lemma 4.16 and the proof of Theorem 4.17]:
+
+```math
+G \mathrel{|\!\equiv} T,\quad (D,W) \in \mathcal S_A
+\quad\Longrightarrow\quad |D(G^-)-D(T)| \le W(G).
+```
+
+The categorical integration lives in `CryptographicAlgebra/Game.lean`. `GameAction C Game Ω`
+supplies attachment, identity and serial laws, and closure of admitted winners under
+absorption; absorbed winners keep the performance space $`\Omega`$. `DistinctionGameAction C Φ Game`,
+over `GameAction C Game ℝ`, supplies closure of the paired solvers and commutation of visibility
+with attachment. These actions use the same converters as the CC
+algebra; they do not impose categorical structure on the evaluation classes.
+
+[Absorption][Games.absorb] takes the winner first, `absorb W α`, and only needs an attachment
+action: $`\omega(wc,g)=\omega(w,cg)`$ [3, equation (4.9), printed p. 94].
+The [serial law][Games.absorb_comp] preserves the physical order:
+
+```text
+W -- α -- β -- G
+absorb W (α ≫ β) = absorb (absorb W α) β
+```
+
+The [joint solver projection][Domain.SolverBehavior.decision] supplies an ordinary decision
+behavior. It [commutes with absorption][Domain.SolverBehavior.decision_absorb], so a PRG proof
+can use the decision view while a game bound keeps both views of the same solver.
 
 ## The instances on interfaces
 
@@ -116,7 +146,9 @@ and every axiom is discharged by a systems-level theorem. The instances are
 [`Interface.resourceTheory`][Interface.resourceTheory],
 [`Interface.cryptographicAlgebra`][Interface.cryptographicAlgebra],
 [`Interface.compatibleDistinguisherClass`][Interface.compatibleDistinguisherClass],
-[`Interface.games`][Interface.games] and [`Interface.distinctionGames`][Interface.distinctionGames];
+[`Interface.games`][Interface.games], [`Interface.gameAction`][Interface.gameAction],
+[`Interface.distinctionGames`][Interface.distinctionGames] and
+[`Interface.distinctionGameAction`][Interface.distinctionGameAction];
 the table gives each field and axiom.
 
 | Class, instance | Field or axiom | Systems level |
@@ -152,19 +184,20 @@ the table gives each field and axiom.
 | | `closed_parallel_right` ([`Interface.distinguishers_parallel_right`][Interface.distinguishers_parallel_right]) | the previous two, through the [swap][Interface.parallel_swap], the [isomorphism][Interface.swap] of the renaming that [exchanges the two components][TypedSystem.parallel_swap_mass] |
 | | `edist_eq` | [`Interface.transcriptDistance_eq_advantageDistance`][Interface.transcriptDistance_eq_advantageDistance]: the transcript distance is the [advantage distance][advantageDistance] of these distinguishers, by the systems characterization [`RandomSystem.transcriptDistance_eq_iSup_behavior`][RandomSystem.transcriptDistance_eq_iSup_behavior] |
 | [`Games`][Games]: games and winners; [`Interface.games`][Interface.games] | `Game A` | [`TypedGame A`][TypedGame]: the typed systems on the interface of $`A`$ with the MBO whose MBO stays set ([`RandomSystem.MonotoneMBO`][RandomSystem.MonotoneMBO]) |
-| | `attachGame` | [`TypedConverter.attachGame`][TypedConverter.attachGame], the attachment of the [MBO-forwarding lift][PDCBehavior.liftMBO] |
+| | performance space `Ω` | $`\mathbb R`$ |
 | | `winners A` | [`Interface.winners`][Interface.winners]: the winning probabilities of the [solver behaviors][Domain.SolverBehavior] on $`A`$'s domain |
-| | `attachGame_identity` | [`PDCBehavior.liftMBO_id`][PDCBehavior.liftMBO_id], with [`PDCBehavior.attach_id`][PDCBehavior.attach_id] |
-| | `attachGame_serial` | [`PDCBehavior.liftMBO_comp`][PDCBehavior.liftMBO_comp], with [`PDCBehavior.attach_comp`][PDCBehavior.attach_comp] |
+| `GameAction`; [`Interface.gameAction`][Interface.gameAction] | `attachGame` | [`TypedConverter.attachGame`][TypedConverter.attachGame], the attachment of the [MBO-forwarding lift][PDCBehavior.liftMBO] |
+| | `attachGame_identity` | [`TypedConverter.identity_attachGame`][TypedConverter.identity_attachGame], from [`PDCBehavior.liftMBO_id`][PDCBehavior.liftMBO_id] and [`TypedConverter.identity_attach`][TypedConverter.identity_attach] |
+| | `attachGame_serial` | [`TypedConverter.comp_attachGame`][TypedConverter.comp_attachGame], from [`PDCBehavior.liftMBO_comp`][PDCBehavior.liftMBO_comp] and [`TypedConverter.comp_smul`][TypedConverter.comp_smul] |
 | | `closed_attach` | [`Domain.SolverBehavior.absorb`][Domain.SolverBehavior.absorb] |
 | [`DistinctionGames`][DistinctionGames]: games and distinguishing; [`Interface.distinctionGames`][Interface.distinctionGames] | carrier, games | `TypedSystem A`, `TypedGame A` |
 | | `solvers A` | [`Interface.solvers`][Interface.solvers]: the pairs of the solver behaviors on $`A`$'s domain |
 | | `visible` | [`TypedGame.visible`][TypedGame.visible], the [visible system][RandomSystem.visible] |
 | | `ConditionallyEquivalent` | [`RandomSystem.ConditionallyEquivalent`][RandomSystem.ConditionallyEquivalent] |
 | | `solvers_winner` | the definition of the winners |
-| | `solvers_closed_attach` | [`Domain.SolverBehavior.absorb`][Domain.SolverBehavior.absorb] |
-| | `visible_attachGame` | [`RandomSystem.visible_attach_liftMBO`][RandomSystem.visible_attach_liftMBO] |
 | | `advantage_le_win` | [`Domain.Distinguisher.advantage_le_winProbability`][Domain.Distinguisher.advantage_le_winProbability] |
+| `DistinctionGameAction`; [`Interface.distinctionGameAction`][Interface.distinctionGameAction] | `solvers_closed_attach` | [`Domain.SolverBehavior.absorb`][Domain.SolverBehavior.absorb] |
+| | `visible_attachGame` | [`RandomSystem.visible_attach_liftMBO`][RandomSystem.visible_attach_liftMBO] |
 
 Interfaces and typed converters form a category under serial composition, and a monoidal
 category under parallel composition. In the notation of the category, the attachment laws read
@@ -178,9 +211,9 @@ and [dummy][Interface.cc_dummy_eq] are the systems-level ones, and the metric
 d(R, S) = \Delta(R, S) = \sup_P \mathrm{Adv}_P(R, S) .
 ```
 
-Interfaces are an instance of both games classes, and the instance is the only place where they
-meet random systems: its games are the [typed games](../RandomSystems/Typed/README.md#typed-games),
-MBO random systems as [3, §3.7.1] instantiates games, and its winners and solvers are
+Interfaces instantiate the evaluation classes and their converter actions, and these instances
+are the only place where they meet random systems: their games are the [typed games](../RandomSystems/Typed/README.md#typed-games),
+MBO random systems as [3, §3.7.1] instantiates games, and their winners and solvers are
 probabilistic distinguishers, through their [solver behaviors][Domain.SolverBehavior]. A bound on
 the winning probability of every distinguisher
 [bounds the winning probability of every winner][Interface.win_le]. A typed game conditionally
@@ -362,18 +395,18 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [CA.parallel_dummy_left]: CryptographicAlgebra/Basic.lean#L196
 [CA.parallel_dummy_right]: CryptographicAlgebra/Basic.lean#L211
 [CompatiblePseudoMetric]: CryptographicAlgebra/PseudoMetric.lean#L45
-[CA.distance]: CryptographicAlgebra/PseudoMetric.lean#L63
+[CA.distance]: CryptographicAlgebra/PseudoMetric.lean#L65
 [distance_attach_le]: CryptographicAlgebra/PseudoMetric.lean#L92
 [distance_eq_of_mutual_attach]: CryptographicAlgebra/PseudoMetric.lean#L133
 [distance_parallel_le]: CryptographicAlgebra/PseudoMetric.lean#L167
 [advantageDistance]: CryptographicAlgebra/Distinguisher.lean#L36
 [CompatibleDistinguisherClass]: CryptographicAlgebra/Distinguisher.lean#L77
 [CompatibleDistinguisherClass.ofClosure]: CryptographicAlgebra/Distinguisher.lean#L102
-[Games]: CryptographicAlgebra/Game.lean#L62
-[Games.absorb]: CryptographicAlgebra/Game.lean#L93
-[Games.absorb_comp]: CryptographicAlgebra/Game.lean#L101
-[DistinctionGames]: CryptographicAlgebra/Game.lean#L112
-[DistinctionGames.absorb]: CryptographicAlgebra/Game.lean#L148
+[Games]: Game.lean#L53
+[Games.absorb]: Game.lean#L69
+[Games.absorb_comp]: CryptographicAlgebra/Game.lean#L92
+[DistinctionGames]: Game.lean#L131
+[DistinctionGames.absorb]: CryptographicAlgebra/Game.lean#L136
 
 <!-- Declarations: the instances and the notation -->
 
@@ -390,13 +423,13 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [Interface.cc_distance_eq]: InterfaceAlgebra.lean#L254
 [TypedSystem.transcriptPseudoEMetricSpace]: ../RandomSystems/Typed/Distance.lean#L22
 [RandomSystem.transcriptDistance_eq_iSup_behavior]: ../RandomSystems/Distance/Distinguisher.lean#L246
-[Interface.games]: InterfaceGame.lean#L69
-[Interface.distinctionGames]: InterfaceGame.lean#L125
-[Domain.SolverBehavior]: ../RandomSystems/Game/MBOAttachment.lean#L2169
-[Interface.win_le]: InterfaceGame.lean#L170
-[Interface.dist_visible_le]: InterfaceGame.lean#L186
-[Interface.conditionallyEquivalent_ofPDG_iff]: InterfaceGame.lean#L200
-[Interface.game_dist_le]: InterfaceGame.lean#L213
+[Interface.games]: InterfaceGame.lean#L70
+[Interface.distinctionGames]: InterfaceGame.lean#L100
+[Domain.SolverBehavior]: ../RandomSystems/Game/MBOAttachment.lean#L2174
+[Interface.win_le]: InterfaceGame.lean#L150
+[Interface.dist_visible_le]: InterfaceGame.lean#L166
+[Interface.conditionallyEquivalent_ofPDG_iff]: InterfaceGame.lean#L180
+[Interface.game_dist_le]: InterfaceGame.lean#L193
 [notation-distance]: Notation.lean#L24
 [notation-parallel]: Notation.lean#L28
 [notation-constructs]: Notation.lean#L31
@@ -410,7 +443,7 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [Specification.Constructs]: Specification/Basic.lean#L31
 [Specification.ConstructsWithin]: Specification/Metric.lean#L23
 [CA.Specification.Constructs]: CryptographicAlgebra/Basic.lean#L368
-[CA.Specification.ConstructsWithin]: CryptographicAlgebra/PseudoMetric.lean#L179
+[CA.Specification.ConstructsWithin]: CryptographicAlgebra/PseudoMetric.lean#L201
 [Constructs.serial]: CryptographicAlgebra/Basic.lean#L443
 [ConstructsWithin.serial]: CryptographicAlgebra/PseudoMetric.lean#L256
 [Constructs.parallel]: CryptographicAlgebra/Basic.lean#L518
@@ -480,7 +513,7 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [Constructs.derivable_serial_simulators]: Substitution/Construction.lean#L107
 [Domain.Distinguisher.advantage_le_winProbability]: ../RandomSystems/Game/MBO.lean#L758
 [Domain.Distinguisher.exists_absorbRight]: ../RandomSystems/Distance/Distinguisher.lean#L330
-[Domain.SolverBehavior.absorb]: ../RandomSystems/Game/MBOAttachment.lean#L2191
+[Domain.SolverBehavior.absorb]: ../RandomSystems/Game/MBOAttachment.lean#L2213
 [Interface]: ../RandomSystems/Typed/Interface.lean#L42
 [Interface.associator]: InterfaceMonoidal.lean#L52
 [Interface.associator_naturality]: InterfaceMonoidal.lean#L92
@@ -501,13 +534,13 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [Interface.resourcesLaxMonoidal]: InterfaceAlgebra.lean#L131
 [Interface.rightUnitor]: InterfaceMonoidal.lean#L61
 [Interface.rightUnitor_naturality]: InterfaceMonoidal.lean#L101
-[Interface.solvers]: InterfaceGame.lean#L63
+[Interface.solvers]: InterfaceGame.lean#L64
 [Interface.swap]: InterfaceMonoidal.lean#L66
 [Interface.tensor]: ../RandomSystems/Typed/Parallel.lean#L85
 [Interface.tensor_comp]: InterfaceMonoidal.lean#L87
 [Interface.triangle]: InterfaceMonoidal.lean#L132
 [Interface.unit]: ../RandomSystems/Typed/InterfaceCoherence.lean#L90
-[Interface.winners]: InterfaceGame.lean#L58
+[Interface.winners]: InterfaceGame.lean#L59
 [PDCBehavior.attach]: ../RandomSystems/Converter/ConverterAttachment.lean#L157
 [PDCBehavior.attach_comp]: ../RandomSystems/Converter/ConverterAttachment.lean#L277
 [PDCBehavior.attach_id]: ../RandomSystems/Converter/ConverterAttachment.lean#L264
@@ -515,18 +548,18 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [PDCBehavior.comp_id]: ../RandomSystems/Converter/PDCBehavior.lean#L381
 [PDCBehavior.comp_tensor]: ../RandomSystems/Converter/ConverterTensor.lean#L745
 [PDCBehavior.id_comp]: ../RandomSystems/Converter/PDCBehavior.lean#L391
-[PDCBehavior.liftMBO]: ../RandomSystems/Game/MBOAttachment.lean#L455
-[PDCBehavior.liftMBO_comp]: ../RandomSystems/Game/MBOAttachment.lean#L1515
-[PDCBehavior.liftMBO_id]: ../RandomSystems/Game/MBOAttachment.lean#L495
+[PDCBehavior.liftMBO]: ../RandomSystems/Game/MBOAttachment.lean#L460
+[PDCBehavior.liftMBO_comp]: ../RandomSystems/Game/MBOAttachment.lean#L1520
+[PDCBehavior.liftMBO_id]: ../RandomSystems/Game/MBOAttachment.lean#L500
 [PDCBehavior.tensor_id]: ../RandomSystems/Converter/ConverterTensor.lean#L705
 [RandomSystem.ConditionallyEquivalent]: ../RandomSystems/Game/MBO.lean#L525
 [RandomSystem.MonotoneMBO]: ../RandomSystems/Game/MBO.lean#L305
 [RandomSystem.parallel]: ../RandomSystems/Cumulative/CumulativeOperations.lean#L130
 [RandomSystem.visible]: ../RandomSystems/Game/MBO.lean#L340
-[RandomSystem.visible_attach_liftMBO]: ../RandomSystems/Game/MBOAttachment.lean#L619
+[RandomSystem.visible_attach_liftMBO]: ../RandomSystems/Game/MBOAttachment.lean#L624
 [TypedConverter]: ../RandomSystems/Typed/Interface.lean#L129
 [TypedConverter.attach]: ../RandomSystems/Typed/Interface.lean#L192
-[TypedConverter.attachGame]: ../RandomSystems/Typed/Game.lean#L38
+[TypedConverter.attachGame]: ../RandomSystems/Typed/Game.lean#L45
 [TypedConverter.comp]: ../RandomSystems/Typed/Interface.lean#L136
 [TypedConverter.comp_associator]: ../RandomSystems/Typed/ConverterCoherence.lean#L158
 [TypedConverter.comp_leftUnitor]: ../RandomSystems/Typed/ConverterCoherence.lean#L195
@@ -541,8 +574,8 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [TypedConverter.rename_comp]: ../RandomSystems/Typed/Relabel.lean#L80
 [TypedConverter.rename_mass]: ../RandomSystems/Typed/SystemParallel.lean#L55
 [TypedConverter.rename_refl]: ../RandomSystems/Typed/Relabel.lean#L67
-[TypedGame]: ../RandomSystems/Typed/Game.lean#L35
-[TypedGame.visible]: ../RandomSystems/Typed/Game.lean#L53
+[TypedGame]: ../RandomSystems/Typed/Game.lean#L42
+[TypedGame.visible]: ../RandomSystems/Typed/Game.lean#L86
 [TypedSystem]: ../RandomSystems/Typed/Interface.lean#L94
 [TypedSystem.dummy]: ../RandomSystems/Typed/SystemCoherence.lean#L97
 [TypedSystem.parallel]: ../RandomSystems/Typed/Parallel.lean#L153
@@ -550,3 +583,12 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [TypedSystem.parallel_swap_mass]: ../RandomSystems/Typed/SystemCoherence.lean#L153
 [TypedSystem.parallel_unit_left_mass]: ../RandomSystems/Typed/SystemCoherence.lean#L103
 [TypedSystem.parallel_unit_right_mass]: ../RandomSystems/Typed/SystemCoherence.lean#L128
+
+[Games.win_le_of_reduction]: Game.lean#L85
+[Problem.performance_le_of_reduction]: Problem.lean#L50
+[Interface.gameAction]: InterfaceGame.lean#L75
+[Interface.distinctionGameAction]: InterfaceGame.lean#L133
+[Domain.SolverBehavior.decision]: ../RandomSystems/Game/MBOAttachment.lean#L2185
+[Domain.SolverBehavior.decision_absorb]: ../RandomSystems/Game/MBOAttachment.lean#L2234
+[TypedConverter.identity_attachGame]: ../RandomSystems/Typed/Game.lean#L61
+[TypedConverter.comp_attachGame]: ../RandomSystems/Typed/Game.lean#L71

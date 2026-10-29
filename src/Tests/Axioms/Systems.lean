@@ -220,6 +220,9 @@ typed converters, and the counterexamples, depend only on `propext`, `Classical.
 #print axioms SystemAlgebra.RandomSystem.winProbability_attach_liftMBO
 #print axioms SystemAlgebra.Domain.Distinguisher.exists_absorbAll_winProbability
 #print axioms SystemAlgebra.Domain.SolverBehavior.absorb
+#print axioms SystemAlgebra.Domain.SolverBehavior.decision_absorb
+#print axioms SystemAlgebra.TypedConverter.identity_attachGame
+#print axioms SystemAlgebra.TypedConverter.comp_attachGame
 
 -- RandomSystems.Game.UntilBad
 #print axioms SystemAlgebra.Domain.Distinguisher.winProbability_le_of_transcriptCost_le
