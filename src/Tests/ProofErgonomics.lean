@@ -7,7 +7,8 @@ import Tests.TypedNaryParallel
 # Direct systems: notation and deterministic assembly
 
 Direct typed actions, categorical arrows and the selected CC attachment field normalize by
-the same laws. The examples cover notation elaboration, finite-family locality, dependent
+the same laws. The examples cover the selected distance and its non-expansion, notation
+elaboration, finite-family locality, dependent
 initial samples, serial attachment and construction proofs. `guard_target` checks the
 elaborated goals; trace guards check the chosen rules. Negative tests preserve shared
 randomness and leave a separately supplied action unrewritten.
@@ -17,6 +18,16 @@ namespace SystemAlgebra.Tests.ProofErgonomics
 
 open Probability CategoryTheory CategoryTheory.MonoidalCategory
 open scoped SystemAlgebra
+
+/-- The CC notation `Δ R S` is the systems-level transcript distance by definition
+(`Interface.cc_distance_eq`). -/
+example {A : Interface} (R S : TypedSystem A) : Δ R S = R.1.transcriptDistance S.1 := rfl
+
+/-- Attachment is non-expanding for the transcript metric, `Δ(αR, αS) ≤ Δ(R, S)`, by
+`cc_nonexpand`; the instance proves this field from the closure bound (Maurer 2011, Lemma 1). -/
+example {A B : Interface} (α : A ⟶ B) (R S : TypedSystem B) :
+    Δ (α • R) (α • S) ≤ Δ R S := by
+  cc_nonexpand
 
 /-- The probability notation elaborates to a normalized law, with the raw law explicit. -/
 example : (𝒰[Bool] : Distribution.ProbDist Bool).1 = Distribution.uniform Bool := by

@@ -56,8 +56,8 @@ d(R \parallel R',\ S \parallel S') \le d(R, S) + d(R', S') .
 Derived: [attachment is non-expanding][distance_attach_le] and
 [parallel composition adds distances][distance_parallel_le].
 [Opposite attachment bridges preserve distance][distance_eq_of_mutual_attach] for the
-chosen two resources using only their four bridge equations. For interfaces the metric
-comes from the distinguisher class below.
+chosen two resources using only their four bridge equations. For interfaces the metric is the
+transcript distance, and its compatibility comes from the distinguisher class below.
 
 ### `CompatibleDistinguisherClass C Φ`: distinguishers
 
@@ -144,13 +144,13 @@ the table gives each field and axiom.
 | | `μ_natural_left`, `μ_natural_right` | [`TypedConverter.parallel_attach`][TypedConverter.parallel_attach], the locality of attachment |
 | | `associativity` ([`Interface.parallel_assoc`][Interface.parallel_assoc]) | [`TypedSystem.parallel_assoc_mass`][TypedSystem.parallel_assoc_mass], through [`TypedConverter.rename_mass`][TypedConverter.rename_mass] |
 | | `left_unitality`, `right_unitality` ([left][Interface.parallel_dummy_left], [right][Interface.parallel_dummy_right]) | [`TypedSystem.parallel_unit_left_mass`][TypedSystem.parallel_unit_left_mass], [`TypedSystem.parallel_unit_right_mass`][TypedSystem.parallel_unit_right_mass], through [`TypedConverter.rename_mass`][TypedConverter.rename_mass] |
-| [`CompatiblePseudoMetric`][CompatiblePseudoMetric]: distance; through [`Interface.compatibleDistinguisherClass`][Interface.compatibleDistinguisherClass] | `fibreMetric` | the [advantage distance][advantageDistance] of the distinguishers below, which [is the transcript distance][Interface.cc_distance_eq] |
-| | `edist_smul_le`, `edist_parallel_le` | [`CompatibleDistinguisherClass.ofClosure`][CompatibleDistinguisherClass.ofClosure] [8, Lemma 1], from the closure axioms below |
-| [`CompatibleDistinguisherClass`][CompatibleDistinguisherClass]: distinguishers; [`Interface.compatibleDistinguisherClass`][Interface.compatibleDistinguisherClass] by `ofClosure` | `distinguishers A` | [`Interface.distinguishers`][Interface.distinguishers]: the maps $`R \mapsto \Pr[d(R) = 1]`$ for the [distinguisher behaviors][Domain.DistinguisherBehavior] $`d`$ compatible with $`A`$'s domain |
+| [`CompatiblePseudoMetric`][CompatiblePseudoMetric]: distance; through [`Interface.compatibleDistinguisherClass`][Interface.compatibleDistinguisherClass] | `fibreMetric` | the [transcript distance][TypedSystem.transcriptPseudoEMetricSpace] itself, so [`Interface.cc_distance_eq`][Interface.cc_distance_eq] is `rfl` |
+| | `edist_smul_le`, `edist_parallel_le` | the bounds of [`CompatibleDistinguisherClass.ofClosure`][CompatibleDistinguisherClass.ofClosure] [8, Lemma 1], from the closure axioms below, transported by [`Interface.transcriptDistance_eq_advantageDistance`][Interface.transcriptDistance_eq_advantageDistance] |
+| [`CompatibleDistinguisherClass`][CompatibleDistinguisherClass]: distinguishers; [`Interface.compatibleDistinguisherClass`][Interface.compatibleDistinguisherClass], with the closure proofs of `ofClosure` | `distinguishers A` | [`Interface.distinguishers`][Interface.distinguishers]: the maps $`R \mapsto \Pr[d(R) = 1]`$ for the [distinguisher behaviors][Domain.DistinguisherBehavior] $`d`$ compatible with $`A`$'s domain |
 | | `closed_attach` ([`Interface.distinguishers_attach`][Interface.distinguishers_attach]) | [absorbing a converter][DistinguisherBehavior.absorb] |
 | | `closed_parallel_left` ([`Interface.distinguishers_parallel_left`][Interface.distinguishers_parallel_left]) | [absorbing a system run beside][Domain.Distinguisher.exists_absorbRight] |
 | | `closed_parallel_right` ([`Interface.distinguishers_parallel_right`][Interface.distinguishers_parallel_right]) | the previous two, through the [swap][Interface.parallel_swap], the [isomorphism][Interface.swap] of the renaming that [exchanges the two components][TypedSystem.parallel_swap_mass] |
-| | `edist_eq` | the definition of the metric in `ofClosure` |
+| | `edist_eq` | [`Interface.transcriptDistance_eq_advantageDistance`][Interface.transcriptDistance_eq_advantageDistance]: the transcript distance is the [advantage distance][advantageDistance] of these distinguishers, by the systems characterization [`RandomSystem.transcriptDistance_eq_iSup_behavior`][RandomSystem.transcriptDistance_eq_iSup_behavior] |
 | [`Games`][Games]: games and winners; [`Interface.games`][Interface.games] | `Game A` | [`TypedGame A`][TypedGame]: the typed systems on the interface of $`A`$ with the MBO whose MBO stays set ([`RandomSystem.MonotoneMBO`][RandomSystem.MonotoneMBO]) |
 | | `attachGame` | [`TypedConverter.attachGame`][TypedConverter.attachGame], the attachment of the [MBO-forwarding lift][PDCBehavior.liftMBO] |
 | | `winners A` | [`Interface.winners`][Interface.winners]: the winning probabilities of the [solver behaviors][Domain.SolverBehavior] on $`A`$'s domain |
@@ -171,7 +171,7 @@ category under parallel composition. In the notation of the category, the attach
 [`Interface.identity_attach`][Interface.identity_attach] and
 [`Interface.comp_smul`][Interface.comp_smul]. The abstract [parallel composition][Interface.cc_parallel_eq]
 and [dummy][Interface.cc_dummy_eq] are the systems-level ones, and the metric
-[is the transcript distance][Interface.cc_distance_eq] of
+[is, by definition, the transcript distance][Interface.cc_distance_eq] of
 [Distance](../RandomSystems/Distance/README.md):
 
 ```math
@@ -370,12 +370,15 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [Interface.identity_attach]: InterfaceCategory.lean#L45
 [Interface.comp_smul]: InterfaceCategory.lean#L50
 [Interface.monoidal]: InterfaceMonoidal.lean#L162
-[Interface.resourceTheory]: InterfaceAlgebra.lean#L71
-[Interface.cryptographicAlgebra]: InterfaceAlgebra.lean#L142
-[Interface.compatibleDistinguisherClass]: InterfaceAlgebra.lean#L181
-[Interface.cc_parallel_eq]: InterfaceAlgebra.lean#L188
-[Interface.cc_dummy_eq]: InterfaceAlgebra.lean#L192
-[Interface.cc_distance_eq]: InterfaceAlgebra.lean#L196
+[Interface.resourceTheory]: InterfaceAlgebra.lean#L78
+[Interface.cryptographicAlgebra]: InterfaceAlgebra.lean#L157
+[Interface.transcriptDistance_eq_advantageDistance]: InterfaceAlgebra.lean#L197
+[Interface.compatibleDistinguisherClass]: InterfaceAlgebra.lean#L218
+[Interface.cc_parallel_eq]: InterfaceAlgebra.lean#L245
+[Interface.cc_dummy_eq]: InterfaceAlgebra.lean#L249
+[Interface.cc_distance_eq]: InterfaceAlgebra.lean#L254
+[TypedSystem.transcriptPseudoEMetricSpace]: ../RandomSystems/Typed/Distance.lean#L22
+[RandomSystem.transcriptDistance_eq_iSup_behavior]: ../RandomSystems/Distance/Distinguisher.lean#L246
 [Interface.games]: InterfaceGame.lean#L69
 [Interface.distinctionGames]: InterfaceGame.lean#L125
 [Domain.SolverBehavior]: ../RandomSystems/Game/MBOAttachment.lean#L2169
@@ -442,7 +445,7 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [SubstitutesWithin.attach_serial]: Substitution/Reduction.lean#L175
 [Implication.substitutesWithin]: Substitution/Quantitative.lean#L49
 [Implication.substitutesWithin_of_mixed]: Substitution/Quantitative.lean#L105
-[Interface.distinguisherAdvantage]: InterfaceAlgebra.lean#L208
+[Interface.distinguisherAdvantage]: InterfaceAlgebra.lean#L273
 [Domain.DistinguisherBehavior]: ../RandomSystems/Distance/Distinguisher.lean#L207
 [DistinguisherBehavior.advantage]: ../RandomSystems/Distance/Distinguisher.lean#L218
 [DistinguisherBehavior.advantage_self]: ../RandomSystems/Distance/Distinguisher.lean#L228
@@ -451,11 +454,11 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [DistinguisherBehavior.advantage_le_transcriptDistance]: ../RandomSystems/Distance/Distinguisher.lean#L238
 [DistinguisherBehavior.absorb]: ../RandomSystems/Distance/Distinguisher.lean#L291
 [DistinguisherBehavior.absorb_comp]: ../RandomSystems/Distance/Distinguisher.lean#L304
-[Interface.distinguisherAdvantage_attach]: InterfaceAlgebra.lean#L220
-[Interface.distinguisherAdvantage_le_distance]: InterfaceAlgebra.lean#L280
-[Interface.substitutesWithin_attach]: InterfaceAlgebra.lean#L231
-[Interface.AdmissibleDistinguishers]: InterfaceAlgebra.lean#L246
-[AdmissibleDistinguishers.substitutesWithin_attach]: InterfaceAlgebra.lean#L255
+[Interface.distinguisherAdvantage_attach]: InterfaceAlgebra.lean#L285
+[Interface.distinguisherAdvantage_le_distance]: InterfaceAlgebra.lean#L345
+[Interface.substitutesWithin_attach]: InterfaceAlgebra.lean#L296
+[Interface.AdmissibleDistinguishers]: InterfaceAlgebra.lean#L311
+[AdmissibleDistinguishers.substitutesWithin_attach]: InterfaceAlgebra.lean#L320
 [substitutionImage]: Substitution/Relaxation.lean#L45
 [singleSubstitutionRelaxation]: Substitution/Relaxation.lean#L59
 [substitutionRelaxation]: Substitution/Relaxation.lean#L164
@@ -469,21 +472,21 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [Interface]: ../RandomSystems/Typed/Interface.lean#L42
 [Interface.associator]: InterfaceMonoidal.lean#L52
 [Interface.associator_naturality]: InterfaceMonoidal.lean#L92
-[Interface.distinguishers]: InterfaceAlgebra.lean#L148
-[Interface.distinguishers_attach]: InterfaceAlgebra.lean#L152
-[Interface.distinguishers_parallel_left]: InterfaceAlgebra.lean#L158
-[Interface.distinguishers_parallel_right]: InterfaceAlgebra.lean#L173
+[Interface.distinguishers]: InterfaceAlgebra.lean#L163
+[Interface.distinguishers_attach]: InterfaceAlgebra.lean#L167
+[Interface.distinguishers_parallel_left]: InterfaceAlgebra.lean#L173
+[Interface.distinguishers_parallel_right]: InterfaceAlgebra.lean#L188
 [Interface.id_tensor_id]: InterfaceMonoidal.lean#L84
 [Interface.isoOf]: InterfaceMonoidal.lean#L33
 [Interface.leftUnitor]: InterfaceMonoidal.lean#L57
 [Interface.leftUnitor_naturality]: InterfaceMonoidal.lean#L97
 [Interface.monoidalStruct]: InterfaceMonoidal.lean#L71
-[Interface.parallel_assoc]: InterfaceAlgebra.lean#L77
-[Interface.parallel_dummy_left]: InterfaceAlgebra.lean#L89
-[Interface.parallel_dummy_right]: InterfaceAlgebra.lean#L98
-[Interface.parallel_swap]: InterfaceAlgebra.lean#L107
+[Interface.parallel_assoc]: InterfaceAlgebra.lean#L92
+[Interface.parallel_dummy_left]: InterfaceAlgebra.lean#L104
+[Interface.parallel_dummy_right]: InterfaceAlgebra.lean#L113
+[Interface.parallel_swap]: InterfaceAlgebra.lean#L122
 [Interface.pentagon]: InterfaceMonoidal.lean#L105
-[Interface.resourcesLaxMonoidal]: InterfaceAlgebra.lean#L116
+[Interface.resourcesLaxMonoidal]: InterfaceAlgebra.lean#L131
 [Interface.rightUnitor]: InterfaceMonoidal.lean#L61
 [Interface.rightUnitor_naturality]: InterfaceMonoidal.lean#L101
 [Interface.solvers]: InterfaceGame.lean#L63

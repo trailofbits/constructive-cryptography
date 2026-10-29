@@ -142,7 +142,7 @@ category are the typed converters, composed as PDC behaviors, and its monoidal p
 parallel composition. The carrier $`\Phi A`$ is [`TypedSystem A`][TypedSystem], attachment is
 [`TypedConverter.attach`][TypedConverter.attach], and the parallel composition of typed systems
 is the [independent parallel composition][RandomSystem.parallel]. The distance
-[is the transcript distance][Interface.cc_distance_eq] of §1, the distinguishers are the
+[is, by definition, the transcript distance][Interface.cc_distance_eq] of §1, the distinguishers are the
 [distinguisher behaviors][Domain.DistinguisherBehavior], and the games are the
 [typed games][TypedGame]. Each axiom is discharged by a systems-level theorem;
 [ConstructiveCryptography](src/ConstructiveCryptography/README.md#the-instances-on-interfaces)
@@ -290,7 +290,7 @@ extension are in [Examples](src/Examples/README.md).
 
 <!-- Declarations: §3 -->
 
-[Interface.cc_distance_eq]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L196
+[Interface.cc_distance_eq]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L254
 
 <!-- Declarations: §4 -->
 
@@ -303,7 +303,7 @@ extension are in [Examples](src/Examples/README.md).
 [SubstitutesWithin]: src/ConstructiveCryptography/Substitution/Reduction.lean#L72
 [Implication.substitutesWithin]: src/ConstructiveCryptography/Substitution/Quantitative.lean#L49
 [Implication.substitutesWithin_of_mixed]: src/ConstructiveCryptography/Substitution/Quantitative.lean#L105
-[Interface.distinguisherAdvantage]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L208
+[Interface.distinguisherAdvantage]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L273
 
 <!-- Declarations: §5 and departures -->
 

@@ -69,6 +69,7 @@ import RandomSystems.Typed.Automaton
 import RandomSystems.Typed.Context
 import RandomSystems.Typed.ConverterCoherence
 import RandomSystems.Typed.DDCCoherence
+import RandomSystems.Typed.Distance
 import RandomSystems.Typed.DSL.Converters
 import RandomSystems.Typed.DSL.Probability
 import RandomSystems.Typed.DSL.Programs

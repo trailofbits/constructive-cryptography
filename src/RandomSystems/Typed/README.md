@@ -3,7 +3,7 @@
 This folder holds the random systems and converters of [RandomSystems](../README.md), typed by
 interfaces [3, Definitions 3.8, 3.9, 3.17], [6, §3], [7, Definitions 2.2.1–2.2.2]: interfaces and
 their budgets, typed systems and typed converters, attachment, parallel composition and renaming
-with their coherence laws, filters, contexts, sources, automata, memoryless and functional
+with their coherence laws, the transcript pseudo-metric, filters, contexts, sources, automata, memoryless and functional
 systems, typed games and the typed games presented by discrete games. Its `DSL` folder holds the
 part of the DSL below the front end: the surface syntax, the laws that components sample from,
 program bodies and their typed converters, and the tactics for the generated obligations
@@ -76,6 +76,15 @@ natural for typed converters: [associativity][TypedConverter.comp_associator] an
 [left][TypedConverter.comp_leftUnitor] and [right][TypedConverter.comp_rightUnitor] unit
 regroupings commute with parallel typed converters, and the parallel composition of two renamings
 [is the renaming of their union][TypedConverter.parallel_rename].
+
+## Distance
+
+The [**transcript pseudo-metric**][TypedSystem.transcriptPseudoEMetricSpace] on $`A`$ is the
+[transcript distance](../Distance/README.md) of the random systems,
+$`d(R, S) = \Delta(R, S)`$, with its laws from the supremum over compatible stopping distinguisher
+behaviors [1, Definition 11]. Zero distance is not equality. It is an explicit structure, not a
+global instance; the [CC instance](../../ConstructiveCryptography/README.md#the-instances-on-interfaces)
+selects it as its metric.
 
 ## Filters, contexts, sources and functional systems
 
@@ -198,6 +207,7 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedConverter.comp_leftUnitor]: ConverterCoherence.lean#L195
 [TypedConverter.comp_rightUnitor]: ConverterCoherence.lean#L224
 [TypedConverter.parallel_rename]: TensorRename.lean#L128
+[TypedSystem.transcriptPseudoEMetricSpace]: Distance.lean#L22
 [Interface.restrict]: Filter.lean#L32
 [TypedConverter.filter]: Filter.lean#L49
 [TypedConverter.filter_smul]: Filter.lean#L60
