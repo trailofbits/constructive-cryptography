@@ -15,6 +15,7 @@ typed converters, and the counterexamples, depend only on `propext`, `Classical.
 #print axioms SystemAlgebra.PDCBehavior.attach_comp
 #print axioms SystemAlgebra.PDCBehavior.attach_presents
 #print axioms SystemAlgebra.PDCBehavior.attach_mass_eq_one
+#print axioms SystemAlgebra.PDCBehavior.attach_mix
 
 -- RandomSystems.Converter.ConverterDomain
 #print axioms SystemAlgebra.IsDDC.eq_of_admitted_replies
@@ -302,6 +303,9 @@ typed converters, and the counterexamples, depend only on `propext`, `Classical.
 #print axioms SystemAlgebra.TypedSystem.exists_ofPDS
 #print axioms SystemAlgebra.TypedConverter.identity_attach
 #print axioms SystemAlgebra.TypedConverter.comp_smul
+#print axioms SystemAlgebra.TypedConverter.ofDDC_eq_comp
+#print axioms SystemAlgebra.TypedConverter.smul_sample
+#print axioms SystemAlgebra.TypedSystem.sample_fTransform
 
 -- RandomSystems.Typed.Memoryless
 #print axioms SystemAlgebra.TypedSystem.source_eq_memoryless

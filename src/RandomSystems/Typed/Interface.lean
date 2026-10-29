@@ -32,6 +32,8 @@ CR18, Definitions 3.8, 3.9 and 3.17 (printed pp. 61–64).
 * `TypedConverter.identity_attach`: attaching the identity leaves a typed system unchanged
 * `TypedConverter.comp_smul`: attaching a serial composition attaches the inner converter first
 * `TypedConverter.ofDDC_apply`: the typed converter of a DDC is one on its transcripts
+* `TypedConverter.ofDDC_eq_comp`: a DDC equal to the trimmed serial wiring of `α` (outside) and
+  `β` (inside) is `comp (ofDDC α) (ofDDC β)`, whatever bound it is certified with
 -/
 
 namespace SystemAlgebra
@@ -152,6 +154,39 @@ lemma ofDDC_apply {A B : Interface} (α : InsideOutsideSystem A.I B.I A.X A.Y B.
     (ofDDC α hα).1 t = open Classical in
       if Replies α (t.map Prod.fst) (t.map Prod.snd) then 1 else 0 :=
   PDCBehavior.ofDDC_apply α hα t
+
+/-- **A direct DDC presents the serial composition.** For DDCs `α` (outside, `A` to `B`) and
+`β` (inside, `B` to `C`), a DDC `γ = trim (serialM α β)` certified with its own bound `c` gives
+`ofDDC γ hγ = comp (ofDDC α hα) (ofDDC β hβ)`, although `c` need not be the product bound
+`b * a` of `IsDDCFrom.comp`.
+
+```text
+    A ┌───┐ B ┌───┐ C             A ┌────────────────────────┐ C
+  ────┤ α ├───┤ β ├────    =    ────┤ γ = trim (serialM α β) ├────
+      └───┘   └───┘                 └────────────────────────┘
+```
+
+This is a presentation bridge of the repository, not a source statement: a typed converter is
+a cumulative behavior, which does not depend on the bound certified for a DDC. The bound is the
+finite bound on consecutive inside outputs of Jost, Definition 2.2.2 (printed pp. 17–18). The
+attachment law of serial composition, MR16 §3.3 (printed p. 7), “(β ∘ α)ⁱR = βⁱ(αⁱR)” with the
+paper's `β` outside, is `comp_smul`. -/
+lemma ofDDC_eq_comp {A B C : Interface}
+    {α : InsideOutsideSystem A.I B.I A.X A.Y B.X B.Y}
+    {β : InsideOutsideSystem B.I C.I B.X B.Y C.X C.Y}
+    {γ : InsideOutsideSystem A.I C.I A.X A.Y C.X C.Y} {a b c : Nat}
+    (hα : IsDDCFrom B.domain A.domain a α) (hβ : IsDDCFrom C.domain B.domain b β)
+    (hγ : IsDDCFrom C.domain A.domain c γ) (he : γ = trim (serialM α β)) :
+    ofDDC γ hγ = comp (ofDDC α hα) (ofDDC β hβ) := by
+  -- `PDCBehavior.comp_ofDDC`: the composition is `ofDDC (trim (serialM α β))` with bound `b * a`.
+  change PDCBehavior.ofDDC γ hγ =
+    PDCBehavior.comp (PDCBehavior.ofDDC α hα) (PDCBehavior.ofDDC β hβ)
+  rw [PDCBehavior.comp_ofDDC]
+  subst γ
+  -- The behavior of a DDC depends on its replies, not on the chosen certificate.
+  apply PDCBehavior.ext
+  intro t
+  simp only [PDCBehavior.ofDDC_apply]
 
 /-- Attachment of a typed converter to a typed system. -/
 noncomputable def attach {A B : Interface} (α : TypedConverter A B) (R : TypedSystem B) :

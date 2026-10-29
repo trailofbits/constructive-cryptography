@@ -1,25 +1,22 @@
 import RandomSystems.Typed.Functional
 
 /-!
-# Laws
+# The uniform law in the DSL namespace
 
-Uniform laws on finite normalized distributions, the usual laws that component bodies sample
-from; any closed law of type `Distribution.ProbDist A` may be sampled.
+`SystemAlgebra.DSL.uniform A` is `Distribution.ProbDist.uniform A`, the normalized uniform law
+`𝒰[A]` of `Probability.Distribution`. Component bodies sample closed laws of type
+`Distribution.ProbDist A`.
 
 ## Main definitions
 
-* `uniform` (notation `𝒰[A]`)
+* `uniform`: `Distribution.ProbDist.uniform`, exported into `SystemAlgebra.DSL`
 -/
 
 namespace SystemAlgebra.DSL
 
-universe u
-
 open Probability
 
-noncomputable def uniform (A : Type u) [Fintype A] [Nonempty A] :
-    Distribution.ProbDist A := ⟨Distribution.uniform A, Distribution.uniform_isProbDist⟩
-
-scoped notation "𝒰[" A "]" => uniform A
+-- `DSL.uniform`, and `uniform` under `open SystemAlgebra.DSL`, name the Probability definition.
+export Probability.Distribution.ProbDist (uniform)
 
 end SystemAlgebra.DSL

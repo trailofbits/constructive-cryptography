@@ -5,6 +5,8 @@ The surface uses indentation, `←` for computation/assignment, `` ←$ `` for s
 and `𝒰[T]` for the uniform law on a finite nonempty type. There are no braces,
 semicolons, `do` blocks, or combined assignment/bind operators in the surface.
 Lean remains the language for types, pure expressions, propositions, and proofs.
+The `𝒰[T]` notation comes from `Probability` and has type `Distribution.ProbDist T`;
+direct systems can use it without importing the component DSL.
 
 `interface`, `system`, `converter` and `filter` declarations compile to the typed systems and
 typed converters of [Typed](../../RandomSystems/Typed/README.md) at every budget ([DSL][DSL]);
@@ -328,8 +330,8 @@ $`X \simeq_{\sum_j \varepsilon_j} Y`$ from `≃[loss]` and `≈[ε]` steps.
 [Program]: ../../RandomSystems/Converter/Program.lean#L45
 [Program.PortPreserving]: ../../RandomSystems/Converter/Program.lean#L123
 [automatonSystem_eq_of_bisim]: ../../RandomSystems/System/Automaton.lean#L89
-[Interface.queryBudget]: ../../RandomSystems/Typed/Interface.lean#L63
-[Interface.portBudget]: ../../RandomSystems/Typed/Interface.lean#L74
+[Interface.queryBudget]: ../../RandomSystems/Typed/Interface.lean#L65
+[Interface.portBudget]: ../../RandomSystems/Typed/Interface.lean#L76
 [TypedSystem.source]: ../../RandomSystems/Typed/Source.lean#L51
 [TypedSystem.ofAutomaton]: ../../RandomSystems/Typed/Automaton.lean#L42
 [TypedConverter.rightContext]: ../../RandomSystems/Typed/Context.lean#L109

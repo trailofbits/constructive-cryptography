@@ -22,6 +22,8 @@ laws use `RandomSystem.ofConditional`, sampling uses `RandomSystem.mix`.
   determines the typed system
 * `TypedSystem.sample_ofFunction_mass`: sampled functions are the finite PDS of the
   function systems
+* `TypedSystem.sample_fTransform`, `TypedConverter.smul_sample`: a retained sample commutes with
+  pushforward of its law and with converter attachment
 -/
 
 namespace SystemAlgebra
@@ -184,6 +186,19 @@ lemma sample_mass {K : Type} (P : Distribution K) [Distribution.IsProbability P]
     (R : K → TypedSystem A) h :
     (sample P R).1 h = ∑ k ∈ P.support, P k * (R k).1 h := rfl
 
+/-- **Sampling a pushforward**: drawing `l ← f(P)` once equals drawing `k ← P` once and
+retaining `f k`, `sample (f(P)) R = sample P (R ∘ f)`; at every transcript `h`,
+`∑ₗ f(P)(l) · R l (h) = ∑ₖ P(k) · R (f k) (h)`. The map `f` need not be injective. -/
+lemma sample_fTransform {K L : Type} (f : K → L) (P : Distribution K)
+    [Distribution.IsProbability P] (R : L → TypedSystem A) :
+    sample (Distribution.fTransform f P) R = sample P (fun k => R (f k)) := by
+  -- Equal cumulative masses at every transcript, by the change of variables
+  -- `∑ₗ f(P)(l) · g l = ∑ₖ P(k) · g (f k)` (`Distribution.sum_fTransform_mul`).
+  apply Subtype.ext
+  apply RandomSystem.ext
+  intro h
+  exact Distribution.sum_fTransform_mul f P (fun k => (R k).1 h)
+
 /-- Initial sampling of functions is their existing finite DDS presentation. -/
 lemma sample_ofFunction_mass {K : Type} (P : Distribution K)
     [Distribution.IsProbability P] (f : K → ∀ i, A.X i → A.Y i)
@@ -206,6 +221,27 @@ lemma sample_ofFunction_mass {K : Type} (P : Distribution K)
   split_ifs <;> simp
 
 end TypedSystem
+
+namespace TypedConverter
+
+/-- **Attachment to a retained sample**: `α • sample P R = sample P (fun k => α • R k)`. One
+`k ← P` is drawn before the interaction, and every inside query of `α` reaches the same `R k`;
+nothing is redrawn per query. This is `PDCBehavior.attach_mix` on typed systems.
+
+```text
+   A ┌───┐ B ┌─────────────┐          A ┌─────────────┐
+ ────┤ α ├───┤ k ← P, once │   =    ────┤ k ← P, once │
+     └───┘   │ R k         │            │ α • R k     │
+             └─────────────┘            └─────────────┘
+``` -/
+lemma smul_sample {A B : Interface} (α : TypedConverter A B) {K : Type}
+    (P : Distribution K) [Distribution.IsProbability P] (R : K → TypedSystem B) :
+    α • TypedSystem.sample P R = TypedSystem.sample P (fun k => α • R k) :=
+  Subtype.ext (PDCBehavior.attach_mix B.nonempty_prefix A.nonempty_prefix α
+    ⟨P, Distribution.IsProbability.isProbDist P⟩ (fun k => (R k).1)
+    (fun k => (R k).2) (TypedSystem.sample P R).2)
+
+end TypedConverter
 
 open Lean.Parser.Term in
 /-- A function at each named interface. -/
