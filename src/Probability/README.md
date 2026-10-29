@@ -47,6 +47,11 @@ laws of one weight [is the weight of their overlap][supAgreement_eq_weight_overl
 the [Cauchy–Schwarz][expect_mul_sq_le_sq_mul_sq] and [Jensen's][ConvexOn.map_expect_le]
 inequalities. Collision bounds [count][card_function_fiber_finset] the functions $`X \to Y`$
 agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X \rvert - \lvert S \rvert}`$.
+For a uniform function table, [a consistent query transcript][uniform_mass_transcript_eq]
+fixes one independent value per distinct input; repeated inputs add no factor. Two query
+families with [the same equality pattern][fTransform_eval_uniform_eq_of_same_fibers] have the
+same output law, even when their table domains have different sizes. The index type may be
+infinite; the finite table domains keep both query images finite.
 
 <!-- Declarations -->
 
@@ -81,4 +86,6 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 [mass_ge_le_expect_div]: Expectation.lean#L199
 [expect_mul_sq_le_sq_mul_sq]: Expectation.lean#L215
 [ConvexOn.map_expect_le]: Expectation.lean#L297
-[card_function_fiber_finset]: Counting.lean#L47
+[card_function_fiber_finset]: Counting.lean#L54
+[uniform_mass_transcript_eq]: Counting.lean#L207
+[fTransform_eval_uniform_eq_of_same_fibers]: Counting.lean#L263

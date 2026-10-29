@@ -10,6 +10,7 @@ import Tests.DSL.Diagnostics
 import Tests.DSL.ProbabilityNotation
 import Tests.DSL.Semantics
 import Tests.ProbabilityNotation
+import Tests.ProbabilityTablePatterns
 import Tests.QueryRouting
 import Tests.ResourceSpecification
 import Tests.SamplingAlgebra
