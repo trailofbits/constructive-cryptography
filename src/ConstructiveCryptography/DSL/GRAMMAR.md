@@ -320,6 +320,17 @@ $`d(X, Y) \le \sum_j \varepsilon_j`$ from `≈[ε]` steps, and
 [`cc_calc mixed model using domination`][cc_calc-mixed] proves
 $`X \simeq_{\sum_j \varepsilon_j} Y`$ from `≃[loss]` and `≈[ε]` steps.
 
+Importing `ConstructiveCryptography.Notation` registers the typed attachment laws and the
+representation equalities connecting them to categorical arrows and the selected CC instance.
+Thus `cc_normalize` handles direct typed and categorical serial composition, binary and finite
+parallel families, and the attachment goals produced by `cc_construct`. In particular, it proves
+`(⨂ₘ k, α k) • (∥ k, R k) = ∥ k, (α k • R k)` and pushes attachment through initial sampling
+from any normalized law. Nested laws may depend on earlier draws. Every draw stays in its
+original scope: a sample shared by a whole family remains shared, rather than becoming
+independent component samples. A separately supplied action is not replaced by the canonical
+one. The before/after proofs, expression guards, negative tests and exact rewrite traces are in
+[`Tests.ProofErgonomics`](../../Tests/ProofErgonomics.lean).
+
 <!-- Files -->
 
 [DSL]: ../DSL.lean
