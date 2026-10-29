@@ -86,6 +86,6 @@ infinite; the finite table domains keep both query images finite.
 [mass_ge_le_expect_div]: Expectation.lean#L199
 [expect_mul_sq_le_sq_mul_sq]: Expectation.lean#L215
 [ConvexOn.map_expect_le]: Expectation.lean#L297
-[card_function_fiber_finset]: Counting.lean#L47
-[uniform_mass_transcript_eq]: Counting.lean#L195
-[fTransform_eval_uniform_eq_of_same_fibers]: Counting.lean#L232
+[card_function_fiber_finset]: Counting.lean#L54
+[uniform_mass_transcript_eq]: Counting.lean#L207
+[fTransform_eval_uniform_eq_of_same_fibers]: Counting.lean#L263
