@@ -25,6 +25,10 @@ Audits of `⨂ k, A k`, `∥ k, R k` and `⨂ₘ k, α k` over `K = Bool`:
   PDS presenting the retained bit, sampled independently per component, has the latter law;
 * the prefix `∥ k, R k` and the binary infix `R ∥ S` parse together.
 
+Beyond `Bool`: attachment `(⨂ₘ k, α k) • (∥ k, R k) = ∥ k, (α k • R k)` holds for `K = Empty`,
+and for `K = Option Unit` the family and binary forms agree after relabelling the transcript
+by `optionFamilyAlphabet` (`none ↦ inl`, `some () ↦ inr`).
+
 `sharedBit`, one draw outside `∥`:
 
                     ┌─ c ← U(Bool) ─┐
@@ -302,8 +306,8 @@ example {A : Option Unit → Interface} (R : ∀ k, TypedSystem (A k))
   TypedSystem.parallelAll_option_mass R h
 
 /-- **Two components in family and binary form**: for arbitrary stochastic systems and
-converters, family attachment and binary attachment have equal cumulative probabilities
-after `optionFamilyAlphabet` maps the family-tagged transcript to the binary interface. -/
+converters on `K = Option Unit`, with `ρ` the `optionFamilyAlphabet` relabelling,
+`((⨂ₘ k, α k) • (∥ k, R k))(h) = ((α none ∥ α (some ())) • (R none ∥ R (some ())))(ρ h)`. -/
 example {A B : Option Unit → Interface} (α : ∀ k, TypedConverter (A k) (B k))
     (R : ∀ k, TypedSystem (B k))
     (h : List ((Σ l, (⨂ k, A k).X l) × (Σ l, (⨂ k, A k).Y l))) :

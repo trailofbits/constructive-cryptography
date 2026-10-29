@@ -181,12 +181,11 @@ lemma kernelLaw_mass_eq_expect (S : RandomSystem X Y D) (K : List (X × Y) → D
     (kernelLaw S K e n).mass P =
       (S.sLaw e n).expect fun h => (K h).mass fun z => P (h, z) := by
   classical
-  -- Both sides sum `(S.sLaw e n)(h) · (K h){z | P (h, z)}` over the support; induct on it.
-  unfold kernelLaw Distribution.expect Finsupp.sum
-  induction (S.sLaw e n).support using Finset.induction_on with
-  | empty => simp only [Distribution.mass, Finset.sum_empty, Finsupp.sum_zero_index]
-  | insert h s hh ih =>
-    rw [Finset.sum_insert hh, Finset.sum_insert hh, Distribution.mass_add, ih,
-      Distribution.mass_smul, Distribution.mass_fTransform]
+  -- Linearity over the finite transcript support leaves each conditional event mass.
+  rw [kernelLaw, Distribution.mass_finset_sum]
+  -- Summand `h`: `(S.sLaw e n)(h) · (fTransform (z ↦ (h, z)) (K h))(P)`, and the pushforward's
+  -- mass is `(K h){z | P (h, z)}`, the summand of the expectation.
+  simp only [Distribution.mass_smul, Distribution.mass_fTransform, Distribution.expect,
+    Finsupp.sum]
 
 end SystemAlgebra.RandomSystem
