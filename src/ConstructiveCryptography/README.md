@@ -350,11 +350,11 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [CA.parallel_assoc]: CryptographicAlgebra/Basic.lean#L182
 [CA.parallel_dummy_left]: CryptographicAlgebra/Basic.lean#L196
 [CA.parallel_dummy_right]: CryptographicAlgebra/Basic.lean#L211
-[CompatiblePseudoMetric]: CryptographicAlgebra/PseudoMetric.lean#L43
+[CompatiblePseudoMetric]: CryptographicAlgebra/PseudoMetric.lean#L45
 [CA.distance]: CryptographicAlgebra/PseudoMetric.lean#L63
-[distance_attach_le]: CryptographicAlgebra/PseudoMetric.lean#L90
-[distance_eq_of_mutual_attach]: CryptographicAlgebra/PseudoMetric.lean
-[distance_parallel_le]: CryptographicAlgebra/PseudoMetric.lean#L145
+[distance_attach_le]: CryptographicAlgebra/PseudoMetric.lean#L92
+[distance_eq_of_mutual_attach]: CryptographicAlgebra/PseudoMetric.lean#L133
+[distance_parallel_le]: CryptographicAlgebra/PseudoMetric.lean#L167
 [advantageDistance]: CryptographicAlgebra/Distinguisher.lean#L36
 [CompatibleDistinguisherClass]: CryptographicAlgebra/Distinguisher.lean#L77
 [CompatibleDistinguisherClass.ofClosure]: CryptographicAlgebra/Distinguisher.lean#L102
@@ -398,9 +398,9 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [CA.Specification.Constructs]: CryptographicAlgebra/Basic.lean#L368
 [CA.Specification.ConstructsWithin]: CryptographicAlgebra/PseudoMetric.lean#L179
 [Constructs.serial]: CryptographicAlgebra/Basic.lean#L443
-[ConstructsWithin.serial]: CryptographicAlgebra/PseudoMetric.lean#L234
+[ConstructsWithin.serial]: CryptographicAlgebra/PseudoMetric.lean#L256
 [Constructs.parallel]: CryptographicAlgebra/Basic.lean#L518
-[ConstructsWithin.parallel]: CryptographicAlgebra/PseudoMetric.lean#L254
+[ConstructsWithin.parallel]: CryptographicAlgebra/PseudoMetric.lean#L276
 [Relaxation]: Specification/Relaxation/Defs.lean#L22
 [Relaxation.Compatible]: CryptographicAlgebra/Relaxation.lean#L46
 [Relaxation.compatible_iff]: CryptographicAlgebra/Relaxation.lean#L84
