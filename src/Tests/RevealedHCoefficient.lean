@@ -1,4 +1,4 @@
-import ConstructiveCryptography.InterfaceAlgebra
+import ConstructiveCryptography.Instances.Algebra
 import RandomSystems.Typed.Functional
 
 /-!

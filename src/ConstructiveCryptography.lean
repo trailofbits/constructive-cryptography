@@ -1,23 +1,20 @@
-import ConstructiveCryptography.CryptographicAlgebra.DistinguisherAction
-import ConstructiveCryptography.Distinguisher
 import ConstructiveCryptography.Construction.Basic
 import ConstructiveCryptography.Construction.Defs
 import ConstructiveCryptography.CryptographicAlgebra.Basic
 import ConstructiveCryptography.CryptographicAlgebra.Distinguisher
+import ConstructiveCryptography.CryptographicAlgebra.DistinguisherAction
 import ConstructiveCryptography.CryptographicAlgebra.Epsilon
 import ConstructiveCryptography.CryptographicAlgebra.Game
 import ConstructiveCryptography.CryptographicAlgebra.PseudoMetric
 import ConstructiveCryptography.CryptographicAlgebra.Relaxation
 import ConstructiveCryptography.CryptographicAlgebra.Star
-import ConstructiveCryptography.InterfaceAlgebra
-import ConstructiveCryptography.InterfaceCategory
-import ConstructiveCryptography.Game
-import ConstructiveCryptography.InterfaceGame
-import ConstructiveCryptography.InterfaceMonoidal
-import ConstructiveCryptography.Notation
-import ConstructiveCryptography.Problem
 import ConstructiveCryptography.DSL
 import ConstructiveCryptography.DSL.Elaborator
+import ConstructiveCryptography.Distinguisher
+import ConstructiveCryptography.Game
+import ConstructiveCryptography.Instances
+import ConstructiveCryptography.Notation
+import ConstructiveCryptography.Problem
 import ConstructiveCryptography.Specification
 import ConstructiveCryptography.Specification.Action
 import ConstructiveCryptography.Specification.Basic
@@ -37,19 +34,19 @@ import ConstructiveCryptography.Specification.Star.Metric
 import ConstructiveCryptography.Substitution.Basic
 import ConstructiveCryptography.Substitution.Construction
 import ConstructiveCryptography.Substitution.Implication
-import ConstructiveCryptography.Substitution.Parallel
 import ConstructiveCryptography.Substitution.Quantitative
 import ConstructiveCryptography.Substitution.Reduction
 import ConstructiveCryptography.Substitution.Relaxation
 import ConstructiveCryptography.Tactics.Basic
 import ConstructiveCryptography.Tactics.Categorical
-import ConstructiveCryptography.Tactics.Substitution
 import ConstructiveCryptography.Tactics.ProofAutomationAttributes
+import ConstructiveCryptography.Tactics.Substitution
 
 /-!
 Constructive Cryptography: the classes of cryptographic algebras (attachment, parallel
 composition, distance, games), of distinguishers (decision evaluation, admitted tests,
-absorption of converters), specifications, constructions and substitution; their instances on
-interfaces, whose fields are the typed systems, typed converters and typed distinguishers of
-`RandomSystems.Typed`; the notation, the proof commands and the DSL front end.
+absorption of converters), specifications, constructions and substitution, with their generic
+notation (`Notation.Basic`); their instances on interfaces (`Instances`), whose fields are the
+typed systems, typed converters and typed distinguishers of `RandomSystems.Typed`; above them,
+the interface notation frontend, the proof commands and the DSL front end.
 -/

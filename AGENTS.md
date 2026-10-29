@@ -32,11 +32,16 @@ their typed systems, typed converters and typed games, with the transcript dista
 nothing of the classes. The abstract theory (`ConstructiveCryptography.CryptographicAlgebra`,
 `ConstructiveCryptography.Specification` and `ConstructiveCryptography.Construction`)
 uses only Mathlib: its classes are assumptions, and "resource" names only their carrier `Φ A`.
-The instance files (`ConstructiveCryptography.InterfaceCategory`, `InterfaceMonoidal`,
-`InterfaceAlgebra`, `InterfaceGame`) instantiate them on interfaces: each field is a systems-level
-object and each axiom is discharged by a systems-level theorem; no concrete object is defined
-there. The notation, the proof commands and the DSL front end are built on laws already proved
-below them, and nothing below them imports them. The downstream
+The instance files (`ConstructiveCryptography.Instances.Category`, `Instances.Monoidal`,
+`Instances.Algebra`, `Instances.Game`, with the corollary `Instances.Substitution`; root
+`ConstructiveCryptography.Instances`) instantiate them on interfaces: each field is a
+systems-level object and each axiom is discharged by systems-level theorems, possibly composed
+by an abstract theorem such as `CompatibleDistinguisherClass.ofClosure`; no concrete object is
+defined there. Interfaces, typed systems, typed games and `TypedDistinguisher` remain
+`RandomSystems` objects. The generic notation `ConstructiveCryptography.Notation.Basic` imports
+only abstract classes and sits below the instance consumers, which may import it. The full
+`ConstructiveCryptography.Notation`, the proof commands and the DSL front end are built on the
+instances, and nothing below them imports them. The downstream
 ChaCha20-Poly1305 development (`chachapoly-cc`) imports modules of this repository; changes to
 public declarations it uses must keep it building.
 
