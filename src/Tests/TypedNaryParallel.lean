@@ -1,3 +1,6 @@
+import RandomSystems.Typed.ParallelAllAttachment
+import RandomSystems.Typed.ParallelAllRegroup
+
 import RandomSystems.Typed.ParallelAllPresentation
 import ConstructiveCryptography.Notation
 
@@ -10,6 +13,8 @@ Audits of `⨂ k, A k`, `∥ k, R k` and `⨂ₘ k, α k` over `K = Bool`:
   `2 + 1 = 3`, and fixed functions on it assemble componentwise;
 * its domain is checked per component: two queries at the budget-1 component are rejected,
   although `2 ≤ 3`;
+* conversely, one query at each budget-1 component of `⨂ _k : Bool, bitInterface` is admitted,
+  while one interface with joint budget 1 rejects the same history, since `2 ≤ 1` fails;
 * replies only at the queried label: a reply at another component, or at another port of the
   queried component, has mass 0;
 * DDCs `a k` with bounds `b k` give `⨂ₘ k, ofDDC (a k) = ofDDC (tensorAllL a)`, of bound
@@ -246,6 +251,61 @@ example : sharedBit ≠ independentBit := by
   have hm := congrArg (fun R : TypedSystem (⨂ _k : Bool, bitInterface) => R.1 mixedReplies) he
   rw [sharedBit_mixedReplies_eq_zero, independentBit_mixedReplies_eq_quarter] at hm
   norm_num at hm
+
+/-- **Heterogeneous components**: on `heterogeneousFamily` (component `false`: `Bool` messages,
+budget 2; component `true`: `Unit` messages, budget 1), for arbitrary, possibly randomized
+`α k` and `R k`, `(⨂ₘ k, α k) • (∥ k, R k) = ∥ k, (α k • R k)`. -/
+example (α : ∀ k, TypedConverter (heterogeneousFamily k) (heterogeneousFamily k))
+    (R : ∀ k, TypedSystem (heterogeneousFamily k)) :
+    (⨂ₘ k, α k) • (∥ k, R k) = ∥ k, (α k • R k) :=
+  TypedConverter.parallelAll_attach α R
+
+/-- **Empty family**: for `K = Empty`, `(⨂ₘ k, α k) • (∥ k, R k) = ∥ k, (α k • R k)` holds
+with no hypothesis; the joint consecutive bound is `Finset.univ.sup b = 0`. -/
+example {A B : Empty → Interface} (α : ∀ k, TypedConverter (A k) (B k))
+    (R : ∀ k, TypedSystem (B k)) :
+    (⨂ₘ k, α k) • (∥ k, R k) = ∥ k, (α k • R k) :=
+  TypedConverter.parallelAll_attach α R
+
+/-- **Componentwise budget vs. joint budget**: the history `⟨false, ()⟩(())`, `⟨true, ()⟩(())`
+is in the domain of `⨂ _k : Bool, bitInterface` (one query per component), but not in that of
+the single interface on the same labels with total budget 1. -/
+example :
+    (⨂ _k : Bool, bitInterface).domain
+      [⟨⟨false, ()⟩, ()⟩, ⟨⟨true, ()⟩, ()⟩] ∧
+    ¬ (Interface.queryBudget (Σ _k : Bool, Unit) (fun _ => Unit) (fun _ => Bool) 1).domain
+      [⟨⟨false, ()⟩, ()⟩, ⟨⟨true, ()⟩, ()⟩] := by
+  constructor
+  · -- The whole history is nonempty; each component projection has exactly one query.
+    refine ⟨List.cons_ne_nil _ _, ?_⟩
+    intro k
+    cases k <;>
+      simp only [List.map_cons, List.map_nil, Equiv.sigmaAssoc, Equiv.coe_fn_mk,
+        restrict_cons_self, restrict_cons_ne Bool.false_ne_true,
+        restrict_cons_ne (Ne.symm Bool.false_ne_true), restrict_nil]
+    all_goals exact Or.inr ⟨List.cons_ne_nil _ _, Nat.le_refl 1⟩
+  · -- The joint budget counts both queries, so it would require `2 ≤ 1`.
+    intro h
+    have hlength := h.2
+    norm_num only [List.length_cons, List.length_nil] at hlength
+
+
+/-- **Explicit binary regrouping**: for `A : Option Unit → Interface`, `(∥ k, R k)(h)` is
+`(parallel (R none) (R (some ())))` at `h` mapped by `optionFamilyAlphabet`,
+`⟨⟨none, i⟩, x⟩ ↦ ⟨inl i, x⟩`, `⟨⟨some (), i⟩, x⟩ ↦ ⟨inr i, x⟩`, on inputs and replies. -/
+example {A : Option Unit → Interface} (R : ∀ k, TypedSystem (A k))
+    (h : List ((Σ l, (⨂ k, A k).X l) × (Σ l, (⨂ k, A k).Y l))) :
+    (∥ k, R k).1 h = (TypedSystem.parallel (R none) (R (some ()))).1
+      (h.map ((Interface.optionFamilyAlphabet fun k => (A k).X).prodCongr
+        (Interface.optionFamilyAlphabet fun k => (A k).Y))) :=
+  TypedSystem.parallelAll_option_mass R h
+
+#print axioms SystemAlgebra.parAll_interconnect_all
+#print axioms SystemAlgebra.trim_apply_tensorAllL_parAll
+#print axioms SystemAlgebra.TypedConverter.parallelAll_attach
+#print axioms SystemAlgebra.TypedConverter.parallelAll_attach_ofFunction
+#print axioms SystemAlgebra.TypedSystem.parallelAll_option_mass
+
 
 /-- The prefix finite-family notation and the binary parallel notation parse together:
 `(∥ k, R k) ∥ S` groups the family as the left component of the binary product. -/

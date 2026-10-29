@@ -72,26 +72,10 @@ lemma parallelAll_system_valid
     rw [← trim_relabel]
     exact SilentAtEmpty.isDDS_trim (by simp only [SilentAtEmpty, relabel, List.map_nil, parAll_nil,
       Part.map_none, Part.not_none_dom, not_false_eq_true, S])
-  · -- Reply port: `y` is the regrouped reply of `trim S` at `h.map regroup ++ [regroup x]`.
-    intro h x y hy
-    change y ∈ (trim S ((h ++ [x]).map xAssoc)).map yAssoc at hy
-    obtain ⟨z, hz, hzy⟩ := (Part.mem_map_iff _).mp hy
-    simp only [List.map_append, List.map_singleton] at hz
-    rw [trim] at hz
-    split_ifs at hz with hr
-    -- Reachable: for `x = ⟨⟨k, i⟩, a⟩`, `parAll` answers `⟨k, w⟩` with
-    -- `w ∈ s k (h|k ++ [⟨i, a⟩])`; `s k` replies at `i`, so `w.1 = i` and `y.1 = ⟨k, i⟩`.
-    · obtain ⟨⟨k, i⟩, a⟩ := x
-      change z ∈ parAll (fun k => (s k).1)
-        (h.map xAssoc ++ [⟨k, ⟨i, a⟩⟩]) at hz
-      rw [parAll_snoc] at hz
-      obtain ⟨w, hw, hzw⟩ := (Part.mem_map_iff _).mp hz
-      subst z
-      subst y
-      have hi := (s k).2.2.1 (restrict k (h.map xAssoc)) ⟨i, a⟩ w hw
-      exact congrArg (Sigma.mk k) hi
-    -- Unreachable: `trim` gives no reply.
-    · exact False.elim (Part.notMem_none _ hz)
+  · -- The regrouped `parAll` keeps tag and local port (`RepliesAtQueriedInterface.parallelAll`);
+    -- trimming preserves that reply law.
+    rw [← trim_relabel]
+    exact (RepliesAtQueriedInterface.parallelAll (fun k => (s k).2.2.1)).trim
   · -- Domain: for component DDSs, `trim_parAll_dom` gives
     --   (trim S h').Dom ↔ h' ≠ [] ∧ ∀ k, h'|k = [] ∨ (s k (h'|k)).Dom,
     -- regrouping keeps `h ≠ []`, and the exact component domains turn `Dom` into `(A k).domain`.

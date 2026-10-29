@@ -24,6 +24,13 @@ and the carriers may live in different universes.
   `(piDep μ).mass (fun f => ∀ k, Q k (f k)) = ∏ k, (μ k).mass (Q k)`
 * `piDep_isProbDist`: a finite product of probability laws is a probability law
 * `piDep_eq_pi`: with one carrier `A k = A`, `piDep μ` is the homogeneous product `pi μ`
+* `fTransform_piDep`: coordinatewise pushforward commutes with the product,
+  `(a ↦ (k ↦ f k (a k)))_* (piDep μ) = piDep (k ↦ (f k)_* (μ k))`
+* `independent_product_piDep`: two product families regroup as one family of pairs,
+  `piDep μ × piDep ν = unzip_* (piDep (k ↦ μ k × ν k))`, `unzip p = ((p k).1)_k, ((p k).2)_k`
+
+The pushforward and regrouping laws take the carrier families `A` and `B` in independent
+universes and hold for raw laws.
 -/
 
 namespace Probability.Distribution
@@ -96,5 +103,48 @@ theorem piDep_mass_forall {A : K → Type*} (μ : ∀ k, Distribution (A k)) (Q 
   -- Each factor is the indicator sum defining `(μ k).mass (Q k)`.
   refine Finset.prod_congr rfl fun k _ => ?_
   rw [mass_eq_sum_of_support_subset (μ k) (s := (μ k).support) subset_rfl, Finset.sum_filter]
+
+open Classical in
+/-- A coordinatewise pushforward commutes with the finite product:
+`(a ↦ (k ↦ f k (a k)))_* (∏ k, μ k) = ∏ k, (f k)_* (μ k)`. The `μ k` are finitely supported
+signed distributions; neither normalization nor nonnegativity is assumed. -/
+lemma fTransform_piDep {A : K → Type*} {B : K → Type*} (μ : ∀ k, Distribution (A k))
+    (f : ∀ k, A k → B k) :
+    fTransform (fun a k => f k (a k)) (piDep μ) =
+      piDep (fun k => fTransform (f k) (μ k)) := by
+  -- At `g`: the left is the `piDep μ` mass of `{a | ∀ k, f k (a k) = g k}`, a rectangle, so
+  -- it factors as `∏ k, μ k {a | f k a = g k} = ∏ k, (f k)_* (μ k) (g k)`.
+  ext g
+  rw [fTransform_apply_eq_mass]
+  calc
+    _ = (piDep μ).mass (fun a => ∀ k, f k (a k) = g k) :=
+      mass_congr _ fun a => ⟨fun h k => congrFun h k, fun h => funext h⟩
+    _ = ∏ k, (μ k).mass (fun a => f k a = g k) :=
+      piDep_mass_forall μ (fun k a => f k a = g k)
+    _ = _ := by simp only [piDep, Finsupp.onFinset_apply, fTransform_apply_eq_mass]
+
+open Classical in
+/-- Two product families regroup as one product family of pairs:
+`(∏ k, μ k) × (∏ k, ν k) = (p ↦ ((p k).1)_k, ((p k).2)_k)_* (∏ k, μ k × ν k)`. Each sample
+`a k`, `b k` occurs once on both sides. The laws are finitely supported signed distributions;
+neither normalization nor nonnegativity is assumed. -/
+lemma independent_product_piDep {A : K → Type*} {B : K → Type*}
+    (μ : ∀ k, Distribution (A k)) (ν : ∀ k, Distribution (B k)) :
+    prod (piDep μ) (piDep ν) =
+      fTransform (fun f => ((fun k => (f k).1), (fun k => (f k).2)))
+        (piDep fun k => prod (μ k) (ν k)) := by
+  -- Unzipping `f ↦ ((f k).1)_k, ((f k).2)_k` is injective, so the pushforward at `(a, b)` is
+  -- the mass at its unique preimage `k ↦ (a k, b k)`.
+  have hinj : Function.Injective
+      (fun f : ∀ k, A k × B k => ((fun k => (f k).1), (fun k => (f k).2))) := by
+    intro f g he
+    funext k
+    exact Prod.ext (congrFun (congrArg Prod.fst he) k)
+      (congrFun (congrArg Prod.snd he) k)
+  ext p
+  obtain ⟨a, b⟩ := p
+  rw [fTransform_injective_apply _ _ hinj (fun k => (a k, b k)), prod_apply]
+  -- `∏ k, μ k (a k) * ν k (b k) = (∏ k, μ k (a k)) * ∏ k, ν k (b k)`.
+  simp only [piDep, Finsupp.onFinset_apply, prod_apply, Finset.prod_mul_distrib]
 
 end Probability.Distribution

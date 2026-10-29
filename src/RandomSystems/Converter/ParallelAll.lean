@@ -46,6 +46,8 @@ Def. 2.2.2, printed pp. 17–18 (alternating interfaces, consecutive bound) for 
 * `IsDDC.tensorAllL`: `⨂ₖ α k` is a partial converter with bound `Finset.univ.sup b`
 * `IsDDCFrom.tensorAllL`: DDCs from `E k` to `F k` give one from `parallelAllInputs E` to
   `parallelAllInputs F`
+* `behaviorMass_tensorAllPDC`: for any presentations `P k` and admitted, consistent `t`,
+  `Pr_{tensorAllPDC P}[Replies · t] = ∏ k, Pr_{P k}[Replies · t'|k]`
 * `PDCBehavior.tensorAll_apply`: with `t'` the regrouped transcript,
   `(tensorAll α)(t) = ∏ k, α_k(t'|k)` if `t` is admitted and `t'` tag-consistent, else `0`
 * `PDCBehavior.tensorAll_ofDDC`: on DDC behaviors, `tensorAll` is the behavior of `tensorAllL`
@@ -427,7 +429,6 @@ theorem IsDDC.tensorAllL (hα : ∀ k, IsDDC (b k) (α k)) :
     · rw [hl'] at hl''
       simp only [Option.some.injEq, Sigma.mk.injEq, reduceCtorEq, false_and] at hl''
 
-
 omit [Fintype K] in
 open Classical in
 /-- The transcripts of `[α_k]_k` are the interleavings of the components' transcripts: with
@@ -689,6 +690,53 @@ noncomputable def tensorAllPDC
     Distribution.fTransform_isProbDist _
       (Distribution.piDep_isProbDist fun k => (P k).2)⟩
 
+omit [∀ k, Fintype (O k)] [∀ k, Fintype (J k)] [∀ k o, Fintype (U k o)]
+  [∀ k o, Fintype (V k o)] [∀ k j, Fintype (X k j)] [∀ k j, Fintype (Y k j)] in
+open Classical in
+/-- **The rectangular mass of `tensorAllPDC`.** With `t' = t.map (tensorAllInputs ×
+tensorAllOutputs⁻¹)` the regrouped transcript and `t'|k` its exchanges tagged `k`,
+
+  `Pr_{tensorAllPDC P}[Replies · t] = ∏ k, Pr_{P k}[Replies · t'|k]`
+
+if `t` is admitted and `t'` tag-consistent, and `0` otherwise: the event
+`{f | Replies (⨂ₖ f k) t}` is then the rectangle `{f | ∀ k, Replies (f k) t'|k}`
+(`piDep_mass_forall`). Stated for arbitrary presentations `P k`; `tensorAll_apply` and
+`tensorAll_presents` both instantiate it. -/
+lemma behaviorMass_tensorAllPDC
+    (P : ∀ k, Distribution.ProbDist {a : InsideOutsideSystem (O k) (J k) (U k) (V k) (X k) (Y k) //
+      IsDDCFrom (E k) (F k) (b k) a})
+    (t : List ((Σ l, twoFam (fun o : Σ k, O k => U o.1 o.2)
+      (fun j : Σ k, J k => Y j.1 j.2) l) ×
+      (Σ l, twoFam (fun o : Σ k, O k => V o.1 o.2)
+        (fun j : Σ k, J k => X j.1 j.2) l))) :
+    behaviorMass (tensorAllPDC P).1 (t.map Prod.fst) (t.map Prod.snd) =
+      if Admitted converterAdmits t ∧
+          RandomSystem.parallelAllConsistent
+            (t.map (tensorAllInputs.prodCongr tensorAllOutputs.symm)) then
+        ∏ k, behaviorMass (P k).1
+          ((RandomSystem.restrictExchanges k
+            (t.map (tensorAllInputs.prodCongr tensorAllOutputs.symm))).map Prod.fst)
+          ((RandomSystem.restrictExchanges k
+            (t.map (tensorAllInputs.prodCongr tensorAllOutputs.symm))).map Prod.snd)
+      else 0 := by
+  -- `Replies (⨂ₖ f k) t` iff `t` is admitted, `t'` tag-consistent and every `f k` replies
+  -- `t'|k`; the left side is the `piDep P` mass of that event.
+  unfold behaviorMass tensorAllPDC
+  rw [Distribution.mass_fTransform]
+  simp only [tensorAllL, replies_canon_iff _ tensorAllRaw_silentAtEmpty,
+    replies_tensorAllRaw_iff]
+  split_ifs with hc
+  · -- Admitted and consistent: the event is the rectangle `{f | ∀ k, Replies (f k) t'|k}`,
+    -- whose `piDep` mass is the product of the component masses.
+    rw [Distribution.mass_congr _ fun f => ⟨fun h => h.2.2, fun h => ⟨hc.1, hc.2, h⟩⟩]
+    exact Distribution.piDep_mass_forall (fun k => (P k).1) (fun k s => Replies s.1
+      ((RandomSystem.restrictExchanges k
+        (t.map (tensorAllInputs.prodCongr tensorAllOutputs.symm))).map Prod.fst)
+      ((RandomSystem.restrictExchanges k
+        (t.map (tensorAllInputs.prodCongr tensorAllOutputs.symm))).map Prod.snd))
+  -- Otherwise no sample replies `t`: the mass is `0`.
+  · exact Distribution.mass_eq_zero_of_forall_not _ fun _ hf => hc ⟨hf.1, hf.2.1⟩
+
 variable {m n : K → ℕ} {hE : ∀ k h, E k h → h.length ≤ m k} {hF : ∀ k h, F k h → h.length ≤ n k}
 
 open Classical in
@@ -728,41 +776,31 @@ theorem PDCBehavior.tensorAll_apply
         ∏ k, (α k).1 (RandomSystem.restrictExchanges k
           (t.map (tensorAllInputs.prodCongr tensorAllOutputs.symm)))
       else 0 := by
-  -- `P k` is the chosen presentation of `α k`.
-  let P := fun k => (α k).2.choose_spec.choose
-  -- For any family `c`: `t` is a transcript of `⨂ₖ c k` iff `t` is admitted, `t'` is
-  -- tag-consistent, and every `t'|k` is a transcript of `c k`.
-  have key : ∀ c : ∀ k, InsideOutsideSystem (O k) (J k) (U k) (V k) (X k) (Y k),
-      Replies (tensorAllL c) (t.map Prod.fst) (t.map Prod.snd) ↔
-        Admitted converterAdmits t ∧
-          (RandomSystem.parallelAllConsistent (t.map (tensorAllInputs.prodCongr
-            tensorAllOutputs.symm)) ∧
-          ∀ k, Replies (c k)
-            ((RandomSystem.restrictExchanges k
-              (t.map (tensorAllInputs.prodCongr tensorAllOutputs.symm))).map Prod.fst)
-            ((RandomSystem.restrictExchanges k
-              (t.map (tensorAllInputs.prodCongr tensorAllOutputs.symm))).map Prod.snd)) :=
-    fun c => by rw [tensorAllL, replies_canon_iff _ tensorAllRaw_silentAtEmpty t,
-      replies_tensorAllRaw_iff]
-  -- Left side: the `piDep` mass of `{f | Replies (⨂ₖ f k) t}`.
-  change behaviorMass (tensorAllPDC P).1 (t.map Prod.fst) (t.map Prod.snd) = _
-  unfold behaviorMass tensorAllPDC
-  rw [Distribution.mass_fTransform]
-  simp only [key]
-  by_cases hc : Admitted converterAdmits t ∧
-      RandomSystem.parallelAllConsistent (t.map (tensorAllInputs.prodCongr tensorAllOutputs.symm))
-  -- Admitted and consistent: the event is the rectangle `{f | ∀ k, Replies (f k) t'|k}`, of
-  -- mass `∏ k, Pr_{P k}[Replies · t'|k] = ∏ k, α_k(t'|k)`, since `P k` presents `α k`.
-  · rw [if_pos hc, Distribution.mass_congr _
-      (fun f => ⟨fun h => h.2.2, fun h => ⟨hc.1, hc.2, h⟩⟩),
-      Distribution.piDep_mass_forall (fun k => (P k).1) (fun k s => Replies s.1
-        ((RandomSystem.restrictExchanges k
-          (t.map (tensorAllInputs.prodCongr tensorAllOutputs.symm))).map Prod.fst)
-        ((RandomSystem.restrictExchanges k
-          (t.map (tensorAllInputs.prodCongr tensorAllOutputs.symm))).map Prod.snd))]
-    exact Finset.prod_congr rfl fun k _ => (α k).2.choose_spec.choose_spec _
-  -- Otherwise no sample has `t` as a transcript: both sides are `0`.
-  · rw [if_neg hc, Distribution.mass_eq_zero_of_forall_not _ fun f hf => hc ⟨hf.1, hf.2.1⟩]
+  -- `behaviorMass_tensorAllPDC` at the chosen presentations, each factor of mass `α_k(t'|k)`.
+  change behaviorMass (tensorAllPDC fun k => (α k).2.choose_spec.choose).1
+    (t.map Prod.fst) (t.map Prod.snd) = _
+  simp only [behaviorMass_tensorAllPDC, fun k => (α k).2.choose_spec.choose_spec]
+
+omit [DecidableEq K] in
+open Classical in
+/-- Any presentations `P k` of the `α k` present `tensorAll α`:
+`(tensorAll α)(t) = Pr_{tensorAllPDC P}[Replies · t]`. Both sides factor by
+`behaviorMass_tensorAllPDC` into `∏ k, α_k(t'|k)` on admitted, tag-consistent `t`. -/
+lemma PDCBehavior.tensorAll_presents
+    (α : ∀ k, PDCBehavior (O k) (J k) (U k) (V k) (X k) (Y k)
+      (E k) (m k) (hE k) (F k) (n k) (hF k))
+    (P : ∀ k, Distribution.ProbDist {a : InsideOutsideSystem (O k) (J k) (U k) (V k) (X k) (Y k) //
+      IsDDCFrom (E k) (F k) (b k) a})
+    (hP : ∀ k h, behaviorMass (P k).1 (h.map Prod.fst) (h.map Prod.snd) = (α k).1 h)
+    (t : List ((Σ l, twoFam (fun o : Σ k, O k => U o.1 o.2)
+      (fun j : Σ k, J k => Y j.1 j.2) l) ×
+      (Σ l, twoFam (fun o : Σ k, O k => V o.1 o.2)
+        (fun j : Σ k, J k => X j.1 j.2) l))) :
+    (PDCBehavior.tensorAll α).1 t =
+      behaviorMass (tensorAllPDC P).1 (t.map Prod.fst) (t.map Prod.snd) := by
+  -- Both sides factor into the same component behaviors on every admitted, consistent trace.
+  rw [PDCBehavior.tensorAll_apply, behaviorMass_tensorAllPDC]
+  simp only [hP]
 
 omit [DecidableEq K] in
 open Classical in
@@ -789,9 +827,6 @@ lemma PDCBehavior.tensorAll_ofDDC
   simp only [← ite_and, and_assoc]
   split_ifs <;> rfl
 
-
 end Converters
-
-
 
 end SystemAlgebra
