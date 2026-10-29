@@ -20,7 +20,7 @@ Lanzenberger–Maurer, *Coupling of Random Systems*, Definitions 1, 2 and 4.
 
 * `Distribution A`, `weight`, `NonNeg`, `isProbDist`, `IsProbability`, `ProbDist`
 * `mass X P`: the mass of the event `P`; `restrict`, `evalSet`, `evalPred`
-* `uniform A`: the uniform distribution on a finite type
+* `uniform A`, `ProbDist.uniform A`, notation `𝒰[A]`: the uniform law, raw and normalized
 * `marginal`, `marginalAt`: marginals of a joint distribution
 * `fTransform f X`: the pushforward of `X` along `f`
 * `RV`, `PMF`, `condPMF`: random variables, their laws and conditional laws,
@@ -594,8 +594,8 @@ lemma uniform_isProbDist :
 
 instance : IsProbability (uniform A) := ⟨uniform_nonNeg, weight_uniform⟩
 
-/-- The uniform probability law on a finite nonempty type, retaining the normalization proof.
-The underlying distribution is `Distribution.uniform`; no mass is changed by this wrapper. -/
+/-- The uniform law `uniform A` as a probability distribution, `𝒰[A].1 a = 1 / |A|`: the same
+masses, together with the proof `uniform_isProbDist` that they are normalized. -/
 noncomputable def ProbDist.uniform (A : Type*) [Fintype A] [Nonempty A] : ProbDist A :=
   ⟨Distribution.uniform A, uniform_isProbDist⟩
 
@@ -1866,8 +1866,8 @@ end Products
 
 end Distribution
 
-/-- The normalized uniform law. Its type is `Distribution.ProbDist A`; use
-`Distribution.uniform A` when a raw distribution is required. -/
+/-- `𝒰[A]` is the normalized uniform law `Distribution.ProbDist.uniform A`, with
+`𝒰[A].1 a = 1 / |A|`; its underlying raw distribution `𝒰[A].1` is `Distribution.uniform A`. -/
 notation "𝒰[" A "]" => Distribution.ProbDist.uniform A
 
 end Probability
