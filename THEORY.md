@@ -251,25 +251,25 @@ extension are in [Examples](src/Examples/README.md).
 [RandomSystem.parallel]: src/RandomSystems/Cumulative/CumulativeOperations.lean#L130
 [IsDDC]: src/RandomSystems/DDC/DDC.lean#L127
 [PDCBehavior]: src/RandomSystems/Converter/PDCBehavior.lean#L67
-[PDCBehavior.ofPDC]: src/RandomSystems/Converter/PDCBehavior.lean#L169
-[PDCBehavior.comp]: src/RandomSystems/Converter/PDCBehavior.lean#L273
-[PDCBehavior.id]: src/RandomSystems/Converter/PDCBehavior.lean#L369
-[PDCBehavior.attach]: src/RandomSystems/Converter/ConverterAttachment.lean#L156
-[PDCBehavior.attach_id]: src/RandomSystems/Converter/ConverterAttachment.lean#L262
-[PDCBehavior.attach_comp]: src/RandomSystems/Converter/ConverterAttachment.lean#L275
+[PDCBehavior.ofPDC]: src/RandomSystems/Converter/PDCBehavior.lean#L171
+[PDCBehavior.comp]: src/RandomSystems/Converter/PDCBehavior.lean#L277
+[PDCBehavior.id]: src/RandomSystems/Converter/PDCBehavior.lean#L375
+[PDCBehavior.attach]: src/RandomSystems/Converter/ConverterAttachment.lean#L157
+[PDCBehavior.attach_id]: src/RandomSystems/Converter/ConverterAttachment.lean#L264
+[PDCBehavior.attach_comp]: src/RandomSystems/Converter/ConverterAttachment.lean#L277
 [PDCBehavior.tensor]: src/RandomSystems/Converter/ConverterTensor.lean#L649
 [Program]: src/RandomSystems/Converter/Program.lean#L45
-[RandomSystem.transcriptDistance]: src/RandomSystems/Distance/Decision.lean#L228
+[RandomSystem.transcriptDistance]: src/RandomSystems/Distance/Decision.lean#L245
 [Domain.Distinguisher]: src/RandomSystems/Distance/Distinguisher.lean#L122
 [RandomSystem.transcriptDistance_eq_iSup]: src/RandomSystems/Distance/Distinguisher.lean#L154
 [Domain.DistinguisherBehavior]: src/RandomSystems/Distance/Distinguisher.lean#L207
 [RandomSystem.MonotoneMBO]: src/RandomSystems/Game/MBO.lean#L305
 [RandomSystem.visible]: src/RandomSystems/Game/MBO.lean#L340
-[RandomSystem.winProbability]: src/RandomSystems/Game/MBO.lean#L480
-[RandomSystem.ConditionallyEquivalent]: src/RandomSystems/Game/MBO.lean#L523
-[RandomSystem.GameEquivalent]: src/RandomSystems/Game/MBO.lean#L537
-[Domain.Distinguisher.advantage_le_winProbability]: src/RandomSystems/Game/MBO.lean#L756
-[Domain.Distinguisher.advantage_le_winProbability_of_gameEquivalent]: src/RandomSystems/Game/MBO.lean#L874
+[RandomSystem.winProbability]: src/RandomSystems/Game/MBO.lean#L482
+[RandomSystem.ConditionallyEquivalent]: src/RandomSystems/Game/MBO.lean#L525
+[RandomSystem.GameEquivalent]: src/RandomSystems/Game/MBO.lean#L539
+[Domain.Distinguisher.advantage_le_winProbability]: src/RandomSystems/Game/MBO.lean#L758
+[Domain.Distinguisher.advantage_le_winProbability_of_gameEquivalent]: src/RandomSystems/Game/MBO.lean#L876
 [PDCBehavior.liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L455
 
 <!-- Declarations: §2 -->

@@ -10,14 +10,33 @@ converters it uses are those of [RandomSystems](../README.md). Citations refer t
 ## Distance and distinguishers
 
 The [**transcript distance**][RandomSystem.transcriptDistance] takes the supremum over environments
-$`E`$ [compatible with the domain][Domain.Compatible] and [bounded][QueryBounded] to $`n`$ queries; a
-[**probabilistic distinguisher**][Domain.Distinguisher] $`P`$ [1, Definition 9] has an
-[advantage][Domain.Distinguisher.advantage]:
+$`E`$ [compatible with the domain][Domain.Compatible] and [bounded][QueryBounded] to $`n`$ queries.
+For systems replying at the queried interface, the observation horizon and global query bound
+can both be fixed to $`b = \mathcal D.\mathrm{bound}`$
+(`RandomSystem.transcriptDistance_eq_iSup_domainBound` in [Decision](Decision.lean)):
 
 ```math
-\Delta(R, S) = \sup_{E,\, n}\ \delta\big(\mathrm{tr}(R, E, n),\ \mathrm{tr}(S, E, n)\big),
-\qquad
-\mathrm{Adv}_P(R, S) = \big\lvert \Pr[P(R) = 1] - \Pr[P(S) = 1] \big\rvert .
+\Delta(R,S) = \sup_{\substack{E\text{ compatible with }\mathcal D\\ E\text{ bounded by }b}}
+\delta\bigl(\mathrm{tr}(R,E,b),\mathrm{tr}(S,E,b)\bigr).
+```
+
+For compatible $`E`$ bounded by $`n`$ and $`E' = E{\restriction}b`$ (`DDE.limitQueries` in
+[DDE](../System/DDE.lean)), each term of the supremum is a term at $`b`$, by exact equalities:
+
+```math
+\mathrm{tr}(R,E,n) \overset{(1)}{=} \mathrm{tr}(R,E,b) \overset{(2)}{=} \mathrm{tr}(R,E',b).
+```
+
+(1) `RandomSystem.sLaw_eq_domainBound`: compatibility admits possible queries only below $`b`$.
+(2) `RandomSystem.sLaw_limitQueries`: $`E'`$ asks $`E`$'s queries before $`b`$ replies and stops
+at $`b`$ on every reply history, including impossible ones; it remains compatible. The global
+stopping condition stays explicit, and the formula has the shape of
+[1, Definition 11, printed p. 15]: "the supremum is over all compatible (Y, X)-DDE."
+
+A [**probabilistic distinguisher**][Domain.Distinguisher] $`P`$ [1, Definition 9] has advantage
+
+```math
+\mathrm{Adv}_P(R,S) = \big\lvert\Pr[P(R)=1]-\Pr[P(S)=1]\big\rvert.
 ```
 
 A probabilistic distinguisher is a distribution over
@@ -156,12 +175,12 @@ Games build on this bound: see [Game](../Game/README.md#identical-until-bad).
 
 <!-- Declarations -->
 
-[RandomSystem.transcriptDistance]: Decision.lean#L228
-[Domain.Compatible]: Decision.lean#L165
-[Domain.DecisionCompatible]: Decision.lean#L171
-[QueryBounded]: ../System/DDE.lean#L24
+[RandomSystem.transcriptDistance]: Decision.lean#L245
+[Domain.Compatible]: Decision.lean#L182
+[Domain.DecisionCompatible]: Decision.lean#L188
+[QueryBounded]: ../System/DDE.lean#L30
 [IsDDD]: ../System/InterfaceSystem.lean#L968
-[RandomSystem.decisionProbability]: Decision.lean#L262
+[RandomSystem.decisionProbability]: Decision.lean#L311
 [Domain.Distinguisher]: Distinguisher.lean#L122
 [Domain.Distinguisher.probability]: Distinguisher.lean#L126
 [Domain.Distinguisher.advantage]: Distinguisher.lean#L132
@@ -187,10 +206,10 @@ Games build on this bound: see [Game](../Game/README.md#identical-until-bad).
 [Domain.Distinguisher.exists_absorbAll]: Distinguisher.lean#L265
 [Domain.Distinguisher.exists_absorbRight]: Distinguisher.lean#L330
 [absorbAll]: Absorption.lean#L42
-[RandomSystem.restrict]: Restriction.lean#L59
-[RandomSystem.restrict_restrict]: Restriction.lean#L67
-[RandomSystem.sLaw_restrict]: Restriction.lean#L98
-[RandomSystem.transcriptDistance_restrict_le]: Restriction.lean#L129
+[RandomSystem.restrict]: Restriction.lean#L60
+[RandomSystem.restrict_restrict]: Restriction.lean#L69
+[RandomSystem.sLaw_restrict]: Restriction.lean#L100
+[RandomSystem.transcriptDistance_restrict_le]: Restriction.lean#L132
 [RandomSystem.transcriptDistance_le_add_of_ratio_on_good]: HCoefficient.lean#L40
 [transcriptCost]: UntilBad.lean#L38
 [RandomSystem.one_sub_le_sum_tSupp]: UntilBad.lean#L65

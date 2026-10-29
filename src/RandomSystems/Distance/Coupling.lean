@@ -62,15 +62,15 @@ noncomputable def tr (s : System A B) (σ : List B →. A) : ℕ → List (A × 
 variable {s : System A B} {σ : List B →. A}
 
 /-- The queries of the transcript follow `σ`. -/
-lemma cons_tr (n : ℕ) : Cons σ (s.tr σ n) := by
+lemma followsStrategy_tr (n : ℕ) : FollowsStrategy σ (s.tr σ n) := by
   induction n with
-  | zero => exact cons_nil
+  | zero => exact FollowsStrategy.nil
   | succ n ih =>
     rw [tr]
     dsimp only
     split_ifs with hx hy
     -- A new round: its query is the strategy's query after the replies so far.
-    · exact cons_snoc.mpr ⟨ih, Part.get_mem hx⟩
+    · exact FollowsStrategy.snoc_iff.mpr ⟨ih, Part.get_mem hx⟩
     all_goals exact ih
 
 /-- The system gives the replies of its transcript. -/
@@ -114,7 +114,7 @@ lemma good_tr {n : ℕ}
       -- `σ` has stopped.
       · exact Or.inr ⟨by rcases ih with hl | ⟨hl, -⟩ <;> omega,
           fun x hx' => absurd (Part.dom_iff_mem.mpr ⟨x, hx'⟩) hx⟩
-  refine ⟨cons_tr n, ?_⟩
+  refine ⟨followsStrategy_tr n, ?_⟩
   rcases key n with hl | ⟨hl, hn⟩
   · exact Or.inl hl
   -- Ended early: as `s` answers every query of `σ`, the strategy must have stopped.
@@ -130,8 +130,8 @@ lemma tr_eq_iff {n : ℕ}
   refine ⟨fun he => he ▸ ⟨good_tr hs, replies_tr n⟩, fun ⟨hg, hr⟩ => ?_⟩
   -- Both `h` and the transcript of `s` are interaction transcripts of `s` with `σ`.
   have hg' := good_tr hs
-  have tt := transcript_of_cons hg'.1 (replies_tr (s := s) n)
-  have th := transcript_of_cons hg.1 hr
+  have tt := FollowsStrategy.transcript hg'.1 (replies_tr (s := s) n)
+  have th := FollowsStrategy.transcript hg.1 hr
   -- Their queries and replies agree: both have `n` rounds, or both end when `σ` stops; one
   -- with `n` rounds and one ending earlier is impossible, since a transcript ending when `σ`
   -- stops is at least as long as any other.
@@ -177,7 +177,7 @@ theorem sLaw_behavior_eq_fTransform (P : PDS A B D) (hP : P.isProbDist) {σ : Li
         (lt_of_le_of_ne (hP.1 s) (Ne.symm (Finsupp.mem_support_iff.mp hs))) ?_)
       exact Distribution.apply_le_mass hP.1 (P := fun t => Replies t.1 _ _)
         (System.replies_tr n)
-    exact (s.2.2 _ x (System.replies_tr n)).mpr (hC _ x (System.cons_tr n) hpos hx)
+    exact (s.2.2 _ x (System.replies_tr n)).mpr (hC _ x (System.followsStrategy_tr n) hpos hx)
   -- 2. Compare the two laws at each transcript `h`: the left side is the mass of the samples
   --    replying `h` if `h` is complete for `σ` within `n` rounds, and zero otherwise; the right
   --    side is the mass of the samples whose transcript is `h`.

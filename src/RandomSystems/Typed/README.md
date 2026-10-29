@@ -212,7 +212,7 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedConverter.filter]: Filter.lean#L49
 [TypedConverter.filter_smul]: Filter.lean#L60
 [TypedConverter.filter_comp_filter_smul]: Filter.lean#L94
-[RandomSystem.restrict]: ../Distance/Restriction.lean#L59
+[RandomSystem.restrict]: ../Distance/Restriction.lean#L60
 [TypedConverter.constant]: Context.lean#L78
 [TypedConverter.rightContext]: Context.lean#L109
 [TypedConverter.leftContext]: Context.lean#L116

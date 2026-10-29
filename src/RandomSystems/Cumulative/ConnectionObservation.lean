@@ -46,7 +46,8 @@ def connectionQueries (route : Y → B ⊕ X) (inj : A → X) (us : List A) : Li
     | some y => (route y).elim (fun _ => inj us[(exposedReplies route ys).length]) id⟩
 
 lemma connectionQueries_dom (route : Y → B ⊕ X) (inj : A → X) (us : List A) (ys : List Y) :
-    (connectionQueries route inj us ys).Dom ↔ (exposedReplies route ys).length < us.length := Iff.rfl
+    (connectionQueries route inj us ys).Dom ↔
+      (exposedReplies route ys).length < us.length := Iff.rfl
 
 lemma connectionQueries_prefix (route : Y → B ⊕ X) (inj : A → X) (us : List A)
     (ys : List Y) (y : Y) (hd : (connectionQueries route inj us (ys ++ [y])).Dom) :
@@ -67,7 +68,8 @@ lemma exposedReplies_snoc_in (route : Y → B ⊕ X) (ys : List Y) {y : Y} {x : 
   simp [exposedReplies, List.filterMap_append, hy]
 
 lemma exposedReplies_snoc_out (route : Y → B ⊕ X) (ys : List Y) {y : Y} {b : B}
-    (hy : route y = .inl b) : exposedReplies route (ys ++ [y]) = exposedReplies route ys ++ [b] := by
+    (hy : route y = .inl b) :
+    exposedReplies route (ys ++ [y]) = exposedReplies route ys ++ [b] := by
   simp [exposedReplies, List.filterMap_append, hy]
 
 lemma connectionQueries_snoc_in (route : Y → B ⊕ X) (inj : A → X) (us : List A)
@@ -93,13 +95,13 @@ lemma connectionQueries_snoc_out (route : Y → B ⊕ X) (inj : A → X) (us : L
       hy, hl]
 
 /-- A routing environment never receives more exposed replies than requested. -/
-lemma Cons.exposedReplies_length_le {route : Y → B ⊕ X} {inj : A → X}
-    {us : List A} {h : List (X × Y)} (hc : Cons (connectionQueries route inj us) h) :
+lemma FollowsStrategy.exposedReplies_length_le {route : Y → B ⊕ X} {inj : A → X}
+    {us : List A} {h : List (X × Y)} (hc : FollowsStrategy (connectionQueries route inj us) h) :
     (exposedReplies route (h.map Prod.snd)).length ≤ us.length := by
   rcases List.eq_nil_or_concat h with rfl | ⟨h, z, rfl⟩
   · simp [exposedReplies]
   · rw [List.concat_eq_append] at hc ⊢
-    have hd := Part.dom_iff_mem.mpr ⟨_, (cons_snoc.mp hc).2⟩
+    have hd := Part.dom_iff_mem.mpr ⟨_, (FollowsStrategy.snoc_iff.mp hc).2⟩
     change (exposedReplies route (h.map Prod.snd)).length < us.length at hd
     simp only [List.map_append, List.map_singleton]
     cases he : route z.2 with
@@ -281,7 +283,7 @@ lemma Transcript.connection_length_le
 
 namespace RandomSystem
 
-open Classical Probability
+open Probability
 
 variable [Fintype X] [Fintype Y] {D : Domain X Y}
 
@@ -302,7 +304,7 @@ lemma connectionLaw_nonneg (R : RandomSystem X Y D) (route : Y → B ⊕ X)
 exposed reply sequence. -/
 lemma mass_le_connectionLaw (R : RandomSystem X Y D) (route : Y → B ⊕ X)
     (inj : A → X) (us : List A) (n : ℕ) (h : List (X × Y))
-    (hc : Cons (connectionQueries route inj us) h) (hn : h.length ≤ n)
+    (hc : FollowsStrategy (connectionQueries route inj us) h) (hn : h.length ≤ n)
     (hd : ¬ (connectionQueries route inj us (h.map Prod.snd)).Dom) :
     R h ≤ R.connectionLaw route inj us n (exposedReplies route (h.map Prod.snd)) := by
   unfold connectionLaw
@@ -328,7 +330,7 @@ lemma connectionLaw_mix {ι : Type} (P : Distribution.ProbDist ι)
     apply Finsupp.ext
     intro h
     simp only [Finsupp.finsetSum_apply, Finsupp.smul_apply, smul_eq_mul, sLaw_completed_apply]
-    by_cases hd : Cons (connectionQueries route inj us) h ∧ h.length ≤ n ∧
+    by_cases hd : FollowsStrategy (connectionQueries route inj us) h ∧ h.length ≤ n ∧
         ¬ (connectionQueries route inj us (h.map Prod.snd)).Dom
     · simp only [if_pos hd, mix_mass]
     · simp only [if_neg hd, mul_zero, Finset.sum_const_zero]
@@ -351,7 +353,7 @@ hypotheses are explicit for partial resources. -/
 lemma connectionLaw_isProbDist (R : RandomSystem X Y D) (route : Y → B ⊕ X)
     (inj : A → X) (us : List A) (n : ℕ)
     (hc : Compatible R (connectionQueries route inj us))
-    (hs : ∀ h, Cons (connectionQueries route inj us) h → R h ≠ 0 → h.length = n →
+    (hs : ∀ h, FollowsStrategy (connectionQueries route inj us) h → R h ≠ 0 → h.length = n →
       ¬ (connectionQueries route inj us (h.map Prod.snd)).Dom) :
     (R.connectionLaw route inj us n).isProbDist := by
   have he : (R.sLaw (connectionQueries route inj us) n).restrict
@@ -376,7 +378,7 @@ lemma connectionLaw_isProbDist (R : RandomSystem X Y D) (route : Y → B ⊕ X)
 /-- A sufficient internal bound is immaterial to the completed reply law. -/
 lemma connectionLaw_stable (R : RandomSystem X Y D) (route : Y → B ⊕ X)
     (inj : A → X) (us : List A) {n m : ℕ} (hn : n ≤ m)
-    (hb : ∀ h, Cons (connectionQueries route inj us) h → R h ≠ 0 →
+    (hb : ∀ h, FollowsStrategy (connectionQueries route inj us) h → R h ≠ 0 →
       ¬ (connectionQueries route inj us (h.map Prod.snd)).Dom → h.length ≤ n) :
     R.connectionLaw route inj us n = R.connectionLaw route inj us m := by
   unfold connectionLaw
@@ -385,9 +387,9 @@ lemma connectionLaw_stable (R : RandomSystem X Y D) (route : Y → B ⊕ X)
 /-- Any two sufficient bounds give the same completed law. -/
 lemma connectionLaw_eq_of_bounds (R : RandomSystem X Y D) (route : Y → B ⊕ X)
     (inj : A → X) (us : List A) (n m : ℕ)
-    (hn : ∀ h, Cons (connectionQueries route inj us) h → R h ≠ 0 →
+    (hn : ∀ h, FollowsStrategy (connectionQueries route inj us) h → R h ≠ 0 →
       ¬ (connectionQueries route inj us (h.map Prod.snd)).Dom → h.length ≤ n)
-    (hm : ∀ h, Cons (connectionQueries route inj us) h → R h ≠ 0 →
+    (hm : ∀ h, FollowsStrategy (connectionQueries route inj us) h → R h ≠ 0 →
       ¬ (connectionQueries route inj us (h.map Prod.snd)).Dom → h.length ≤ m) :
     R.connectionLaw route inj us n = R.connectionLaw route inj us m := by
   rcases le_total n m with h | h
@@ -472,7 +474,7 @@ lemma parallel_connection_length_le
     (hb : ∀ a b, p a → q b → ∀ us xs ys,
       Transcript (pair a b) (connectionQueries route inj us) xs ys →
       ¬ (connectionQueries route inj us ys).Dom → ys.length ≤ bound us)
-    {us h} (hc : Cons (connectionQueries route inj us) h)
+    {us h} (hc : FollowsStrategy (connectionQueries route inj us) h)
     (hm : parallel R S h ≠ 0)
     (hd : ¬ (connectionQueries route inj us (h.map Prod.snd)).Dom) :
     h.length ≤ bound us := by
@@ -486,7 +488,7 @@ lemma parallel_connection_length_le
     (fun h hl => S.mass_eq_zero_of_bound_lt hl) q hq (mul_ne_zero_iff.mp hm).2
   have hr := (replies_pair_iff a b h).mpr ⟨hpair, hra, hrb⟩
   simpa only [List.length_map] using
-    hb a b ha hb' us _ _ (transcript_of_cons hc hr) hd
+    hb a b ha hb' us _ _ (FollowsStrategy.transcript hc hr) hd
 
 end RandomSystem
 

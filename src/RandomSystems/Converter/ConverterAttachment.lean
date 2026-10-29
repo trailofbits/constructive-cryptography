@@ -24,7 +24,7 @@ identity changes nothing, and attaching a serial composition attaches the inner 
 
 namespace SystemAlgebra
 
-open Classical Probability
+open Probability
 
 variable {O J : Type} [Fintype O] [Fintype J] {U V : O → Type} {X Y : J → Type}
   [∀ o, Fintype (U o)] [∀ o, Fintype (V o)] [∀ j, Fintype (X j)] [∀ j, Fintype (Y j)]
@@ -43,7 +43,8 @@ lemma RandomSystem.isResource_realization
   have hs := (realization g).2
   have answers := R.hasDomain_realization hg
   refine ⟨hs, fun h a y hy => ?_, fun h => ?_⟩
-  · obtain ⟨t, rfl, ht⟩ := (reach_snoc_iff.mp ((hs.reach_iff (by simp)).mpr hy.1)).1.exists_transcript
+  · obtain ⟨t, rfl, ht⟩ :=
+      (reach_snoc_iff.mp ((hs.reach_iff (by simp)).mpr hy.1)).1.exists_transcript
     have hr : Replies (realization g).1 ((t ++ [(a, y)]).map Prod.fst)
         ((t ++ [(a, y)]).map Prod.snd) := by
       simpa only [List.map_append, List.map_singleton] using
@@ -132,7 +133,7 @@ lemma resource_connectionLaw (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] 
         ((2 * c + 2) * (h.map Prod.fst).length) (h.map Prod.snd) =
       behaviorMass (attachPDS hF' P Q).1 (h.map Prod.fst) (h.map Prod.snd) := by
   have hbound {b} (hb : IsPDCBehavior O J U V X Y E m hE F n hF b α) :
-      ∀ t, Cons (connectionQueries resourceRoute resourceInput (h.map Prod.fst)) t →
+      ∀ t, FollowsStrategy (connectionQueries resourceRoute resourceInput (h.map Prod.fst)) t →
         RandomSystem.parallel α R t ≠ 0 →
         ¬ (connectionQueries resourceRoute resourceInput (h.map Prod.fst) (t.map Prod.snd)).Dom →
         t.length ≤ (2 * b + 2) * (h.map Prod.fst).length :=
@@ -213,7 +214,8 @@ lemma attach_presents (α : PDCBehavior O J U V X Y E m hE F n hF)
     (hP : ∀ h, behaviorMass P.1 (h.map Prod.fst) (h.map Prod.snd) = α.1 h)
     (hQ : ∀ h, behaviorMass Q.1 (h.map Prod.fst) (h.map Prod.snd) = R h)
     (h : List ((Σ o, U o) × (Σ o, V o))) :
-    attach hE' hF' α R hR h = behaviorMass (attachPDS hF' P Q).1 (h.map Prod.fst) (h.map Prod.snd) :=
+    attach hE' hF' α R hR h =
+      behaviorMass (attachPDS hF' P Q).1 (h.map Prod.fst) (h.map Prod.snd) :=
   resource_connectionLaw hF' α.2.choose_spec P Q hP hQ h
 
 /-- **A completed internal transcript of probability one** gives its outside transcript
@@ -222,7 +224,7 @@ lemma attach_mass_eq_one (α : PDCBehavior O J U V X Y E m hE F n hF)
     (R : RandomSystem (Σ j, X j) (Σ j, Y j) (Domain.ofInputs E m hE))
     (hR : R.RepliesAtQueriedInterface) (h : List ((Σ o, U o) × (Σ o, V o)))
     (H : List (Two (Σ l, twoFam U Y l) (Σ j, X j) × Two (Σ l, twoFam V X l) (Σ j, Y j)))
-    (hc : Cons (connectionQueries resourceRoute resourceInput (h.map Prod.fst)) H)
+    (hc : FollowsStrategy (connectionQueries resourceRoute resourceInput (h.map Prod.fst)) H)
     (he : exposedReplies (resourceRoute (U := U)) (H.map Prod.snd) = h.map Prod.snd)
     (hm : RandomSystem.parallel α.1 R H = 1) :
     attach hE' hF' α R hR h = 1 := by
@@ -276,7 +278,8 @@ theorem attach_comp {M : Type} [Fintype M] {Xm Ym : M → Type} [∀ k, Fintype 
     [∀ k, Fintype (Ym k)] {F'' : List (Σ k, Xm k) → Prop} {n'' : ℕ}
     {hF'' : ∀ h, F'' h → h.length ≤ n''}
     (hF''' : ¬ F'' [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F'' h → F'' p)
-    (β : PDCBehavior O M U V Xm Ym F'' n'' hF'' F n hF) (α : PDCBehavior M J Xm Ym X Y E m hE F'' n'' hF'')
+    (β : PDCBehavior O M U V Xm Ym F'' n'' hF'' F n hF)
+    (α : PDCBehavior M J Xm Ym X Y E m hE F'' n'' hF'')
     (R : RandomSystem (Σ j, X j) (Σ j, Y j) (Domain.ofInputs E m hE))
     (hR : R.RepliesAtQueriedInterface) :
     attach hE' hF' (comp β α) R hR =

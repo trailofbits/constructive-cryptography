@@ -33,7 +33,7 @@ composition samples the two PDCs independently and composes the samples (Definit
 
 namespace SystemAlgebra
 
-open Classical Probability
+open Probability
 
 instance instFintypeTwoFam {I J : Type} {F : I → Type} {G : J → Type} [∀ i, Fintype (F i)]
     [∀ j, Fintype (G j)] : ∀ l : Two I J, Fintype (twoFam F G l)
@@ -93,7 +93,8 @@ lemma IsPDCBehavior.isDDCFrom_realization {b : ℕ}
   have hs := (SystemAlgebra.realization g).2
   have answers := R.hasDomain_realization hg
   refine ⟨⟨hs, fun xs z hd => ?_, fun xs hd => ?_, fun xs y o hy ho => ?_⟩, answers, fun h hr => ?_⟩
-  · obtain ⟨t, rfl, ht⟩ := (hs.reach_iff (by simp) |>.mpr hd |> reach_snoc_iff.mp).1.exists_transcript
+  · obtain ⟨t, rfl, ht⟩ :=
+      (hs.reach_iff (by simp) |>.mpr hd |> reach_snoc_iff.mp).1.exists_transcript
     have hz := ((answers t z ht).mp hd).2.1
     simpa only [Admits, ht.replyLabel hs.1, converterAdmits] using hz
   · have hn : xs ≠ [] := fun he => hs.1 (he ▸ hd)
@@ -103,7 +104,8 @@ lemma IsPDCBehavior.isDDCFrom_realization {b : ℕ}
     change run IsInside _ _ ≤ b
     rw [hc]
     subst he
-    exact (hst.suffix_le_run IsInside p e hi).trans (s.2.isDDC.bound _ (hst.dom (by simpa using hn)))
+    exact (hst.suffix_le_run IsInside p e hi).trans
+      (s.2.isDDC.bound _ (hst.dom (by simpa using hn)))
   · have hn : xs ≠ [] := fun he => hs.1 (he ▸ hy.1)
     obtain ⟨xs, z, rfl⟩ := List.eq_nil_or_concat xs |>.resolve_left hn
     rw [List.concat_eq_append] at hy ⊢
@@ -176,6 +178,7 @@ noncomputable def ofDDC (a : InsideOutsideSystem O J U V X Y) {b : ℕ} (ha : Is
     PDCBehavior O J U V X Y E m hE F n hF :=
   ofPDC ⟨Finsupp.single ⟨a, ha⟩ 1, Distribution.isProbDist_single _⟩
 
+open Classical in
 /-- **A DDC's behavior** gives probability one to its transcripts and zero to all others. -/
 lemma ofDDC_apply (a : InsideOutsideSystem O J U V X Y) {b : ℕ} (ha : IsDDCFrom E F b a)
     (t : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))) :
@@ -190,6 +193,7 @@ lemma ofDDC_eq_of_le {a c W : InsideOutsideSystem O J U V X Y} {b b' : ℕ}
     (haW : ∀ xs ys, Replies a xs ys → Replies W xs ys)
     (hcW : ∀ xs ys, Replies c xs ys → Replies W xs ys) :
     (ofDDC a ha : PDCBehavior O J U V X Y E m hE F n hF) = ofDDC c hc := by
+  classical
   apply ext
   intro t
   change behaviorMass (Finsupp.single _ 1) _ _ = behaviorMass (Finsupp.single _ 1) _ _
@@ -249,7 +253,7 @@ lemma serial_connectionLaw
         ((2 * c + 2) * (h.map Prod.fst).length) (h.map Prod.snd) =
       behaviorMass (compPDC P Q).1 (h.map Prod.fst) (h.map Prod.snd) := by
   have hbound {b} (hb : IsPDCBehavior O M U V Xm Ym F' n' hF' G q hG b R) :
-      ∀ t, Cons (connectionQueries serialRouteM serialInjM (h.map Prod.fst)) t →
+      ∀ t, FollowsStrategy (connectionQueries serialRouteM serialInjM (h.map Prod.fst)) t →
         RandomSystem.parallel R S t ≠ 0 →
         ¬ (connectionQueries serialRouteM serialInjM (h.map Prod.fst) (t.map Prod.snd)).Dom →
         t.length ≤ (2 * b + 2) * (h.map Prod.fst).length :=
@@ -274,7 +278,8 @@ noncomputable def comp (β : PDCBehavior O M U V Xm Ym F' n' hF' G q hG)
     (α : PDCBehavior M J Xm Ym X Y E m hE F' n' hF') : PDCBehavior O J U V X Y E m hE G q hG :=
   ⟨RandomSystem.connection β.1 α.1 serialRouteM serialInjM
       (fun us => (2 * β.2.choose + 2) * us.length)
-      (fun _ hg => β.2.choose_spec.isDDCFrom_realization hg) (fun _ hg => α.2.choose_spec.isDDCFrom_realization hg)
+      (fun _ hg => β.2.choose_spec.isDDCFrom_realization hg)
+      (fun _ hg => α.2.choose_spec.isDDCFrom_realization hg)
       (fun a c ha _ => serial_bound ha.isDDC c)
       (fun a c ha hc h x hr => by
         have hr' : Replies (trim (serialM a c)) (h.map Prod.fst) (h.map Prod.snd) :=
@@ -338,7 +343,8 @@ lemma comp_ofDDC_presents (β : PDCBehavior O M U V Xm Ym F' n' hF' G q hG) {bβ
 lemma comp_assoc {L : Type} [Fintype L] {XL YL : L → Type} [∀ k, Fintype (XL k)]
     [∀ k, Fintype (YL k)] {F'' : List (Σ k, XL k) → Prop} {n'' : ℕ}
     {hF'' : ∀ h, F'' h → h.length ≤ n''}
-    (γ : PDCBehavior O L U V XL YL F'' n'' hF'' G q hG) (β : PDCBehavior L M XL YL Xm Ym F' n' hF' F'' n'' hF'')
+    (γ : PDCBehavior O L U V XL YL F'' n'' hF'' G q hG)
+    (β : PDCBehavior L M XL YL Xm Ym F' n' hF' F'' n'' hF'')
     (α : PDCBehavior M J Xm Ym X Y E m hE F' n' hF') : comp (comp γ β) α = comp γ (comp β α) := by
   obtain ⟨bγ, P, hP⟩ := γ.2
   obtain ⟨bβ, Q, hQ⟩ := β.2

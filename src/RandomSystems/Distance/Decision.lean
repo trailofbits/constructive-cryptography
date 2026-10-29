@@ -25,6 +25,8 @@ a sample.
 
 * `RandomSystem.transcriptDistance_le`: a bound in `ℝ≥0` on the transcript laws under every
   environment bounds the transcript distance
+* `RandomSystem.transcriptDistance_eq_iSup_domainBound`: the supremum may range over the
+  compatible environments globally bounded by `𝒟.bound`, observed at `𝒟.bound`
 * `RandomSystem.decisionProbability_envProbe`: an environment followed by an event test
   decides `1` with the probability of the event
 * `RandomSystem.decisionProbability_gap_le`: decision gaps are at most the transcript
@@ -33,30 +35,44 @@ a sample.
   presentation
 * `Domain.decisionCompatible_iff_deterministic`: compatibility is checked on the
   deterministic resources of the domain
+
+## Observing at the domain bound
+
+For compatible `E` with `QueryBounded n E`, and `E' = DDE.limitQueries E 𝒟.bound`, every
+term of the defining supremum is a term at the domain bound, by exact law equalities:
+
+```text
+sLaw R E n  = sLaw R E 𝒟.bound     (sLaw_eq_domainBound: possible queries lie below 𝒟.bound)
+            = sLaw R E' 𝒟.bound    (sLaw_limitQueries; E' is compatible and globally bounded)
+```
+
+Here `R` replies at the queried interface, as `Domain.Compatible` requires. `E'` stops after
+`𝒟.bound` replies on every reply history, including impossible ones; compatibility alone does
+not give this bound.
 -/
 
 namespace SystemAlgebra
 
-open Classical Probability
+open Probability
 open scoped NNReal
 
-lemma Cons.queries_eq {A B : Type} {e : List B →. A} {h : List (A × B)}
-    (hc : Cons e h) : h.map Prod.fst = qsOf e (h.map Prod.snd) := by
+lemma FollowsStrategy.queries_eq {A B : Type} {e : List B →. A} {h : List (A × B)}
+    (hc : FollowsStrategy e h) : h.map Prod.fst = qsOf e (h.map Prod.snd) := by
   induction h using List.reverseRecOn with
   | nil => rfl
   | append_singleton h z ih =>
-    obtain ⟨hc, hz⟩ := cons_snoc.mp hc
+    obtain ⟨hc, hz⟩ := FollowsStrategy.snoc_iff.mp hc
     simp only [List.map_append, List.map_singleton]
     rw [qsOf_snoc hz, ih hc]
 
-lemma Cons.fits {I : Type} {X Y : I → Type}
+lemma FollowsStrategy.fits {I : Type} {X Y : I → Type}
     {e : List (Σ i, Y i) →. Σ i, X i}
-    {h : List ((Σ i, X i) × (Σ i, Y i))} (hc : Cons e h)
+    {h : List ((Σ i, X i) × (Σ i, Y i))} (hc : FollowsStrategy e h)
     (hl : ∀ z ∈ h, z.2.1 = z.1.1) : EFits e (h.map Prod.snd) := by
   induction h using List.reverseRecOn with
   | nil => exact EFits.nil
   | append_singleton h z ih =>
-    obtain ⟨hc, hz⟩ := cons_snoc.mp hc
+    obtain ⟨hc, hz⟩ := FollowsStrategy.snoc_iff.mp hc
     simp only [List.map_append, List.map_singleton]
     exact (ih hc (fun a ha => hl a (by simp [ha]))).snoc hz (hl z (by simp))
 
@@ -110,17 +126,17 @@ lemma RepliesAtQueriedInterface.history
 
 /-- Canonicalizing the probe leaves exactly the original query strategy on
 all possible responding-resource transcripts. -/
-lemma cons_trim_envProbe_iff
+lemma followsStrategy_trim_envProbe_iff
     {R : RandomSystem (Σ i, X i) (Σ i, Y i) D} (hr : R.RepliesAtQueriedInterface)
     (E : DDE (Σ i, X i) (Σ i, Y i))
     (A : List (Σ i, X i) × List (Σ i, Y i) → Prop)
     {h} (hm : R h ≠ 0) :
-    Cons (envOf (trim (envProbe E A))) h ↔ Cons E.1 h := by
+    FollowsStrategy (envOf (trim (envProbe E A))) h ↔ FollowsStrategy E.1 h := by
   induction h using List.reverseRecOn with
-  | nil => exact iff_of_true cons_nil cons_nil
+  | nil => exact iff_of_true FollowsStrategy.nil FollowsStrategy.nil
   | append_singleton h z ih =>
     have hp : R h ≠ 0 := fun hz => hm (R.mass_eq_zero_of_prefix ⟨[z], rfl⟩ hz)
-    rw [cons_snoc, cons_snoc, ih hp]
+    rw [FollowsStrategy.snoc_iff, FollowsStrategy.snoc_iff, ih hp]
     exact and_congr_right fun hc => by
       rw [envOf_trim_envProbe (hc.fits (hr.history hp))]
 
@@ -129,12 +145,13 @@ lemma sLaw_trim_envProbe
     (E : DDE (Σ i, X i) (Σ i, Y i))
     (A : List (Σ i, X i) × List (Σ i, Y i) → Prop) (n : ℕ) :
     R.sLaw (envOf (trim (envProbe E A))) n = R.sLaw E.1 n := by
+  classical
   ext h
   rw [sLaw_apply, sLaw_apply]
   by_cases hm : R h = 0
   · simp [hm]
-  · have hc := cons_trim_envProbe_iff hr E A hm
-    by_cases hh : Cons E.1 h
+  · have hc := followsStrategy_trim_envProbe_iff hr E A hm
+    by_cases hh : FollowsStrategy E.1 h
     · simp only [Good, hc, hh, true_and, Done,
         envOf_trim_envProbe (hh.fits (hr.history hm))]
     · simp only [Good, hc, hh, false_and, if_false]
@@ -170,7 +187,7 @@ domain, it queries only admitted inputs and replies along every possible transcr
 Together with its finite bound this gives an actual decision. -/
 def DecisionCompatible (𝒟 : Domain (Σ i, X i) (Σ i, Y i)) (D : DDD I X Y) : Prop :=
   ∀ R : RandomSystem (Σ i, X i) (Σ i, Y i) 𝒟, R.RepliesAtQueriedInterface →
-    ∀ h, Cons (envOf (trim D)) h → R h ≠ 0 →
+    ∀ h, FollowsStrategy (envOf (trim D)) h → R h ≠ 0 →
       ((trim D) (dHist (h.map Prod.snd))).Dom ∧
         ∀ x, x ∈ envOf (trim D) (h.map Prod.snd) → 𝒟 h x
 
@@ -190,7 +207,7 @@ lemma DecisionCompatible.producesDecision {D : DDD I X Y}
   have hp : R h ≠ 0 := by
     intro hz
     exact Finsupp.mem_support_iff.mp hh (by simp [RandomSystem.sLaw_apply, hz])
-  have ht : Cons (envOf (trim D)) h := by
+  have ht : FollowsStrategy (envOf (trim D)) h := by
     by_contra hn
     exact Finsupp.mem_support_iff.mp hh
       (by simp [RandomSystem.sLaw_apply, Good, ddeOf, hn])
@@ -206,7 +223,7 @@ lemma envProbe_decisionCompatible {E : DDE (Σ i, X i) (Σ i, Y i)} (hc : 𝒟.C
     (T : List (Σ i, X i) × List (Σ i, Y i) → Prop) :
     𝒟.DecisionCompatible (envProbe E T) := by
   intro R hR h ht hp
-  have he := (RandomSystem.cons_trim_envProbe_iff hR E T hp).mp ht
+  have he := (RandomSystem.followsStrategy_trim_envProbe_iff hR E T hp).mp ht
   have hv := he.fits (hR.history hp)
   constructor
   · rw [trim, if_pos (envProbe_reach T hv), envProbe_dHist hv]
@@ -234,6 +251,38 @@ lemma statDist_le_transcriptDistance {E : DDE (Σ i, X i) (Σ i, Y i)} {n : ℕ}
     (hn : QueryBounded n E) (hc : 𝒟.Compatible E) (R S : RandomSystem (Σ i, X i) (Σ i, Y i) 𝒟) :
     ENNReal.ofReal (statDist (R.sLaw E.1 n) (S.sLaw E.1 n)) ≤ R.transcriptDistance S :=
   le_iSup_of_le E (le_iSup_of_le n (le_iSup_of_le hn (le_iSup_of_le hc le_rfl)))
+
+/-- The supremum defining the transcript distance may use the domain bound for both the
+observation horizon and the environments' global query bound: with `N = 𝒟.bound`,
+`Δ(R, S) = ⨆ {E | QueryBounded N E, 𝒟.Compatible E}, d(R.sLaw E N, S.sLaw E N)`.
+The systems must reply at the queried interface, as required by `Domain.Compatible`.
+Lanzenberger–Maurer, Definition 11, printed p. 15: “the supremum is over all compatible
+(Y, X)-DDE.” -/
+lemma transcriptDistance_eq_iSup_domainBound
+    {R S : RandomSystem (Σ i, X i) (Σ i, Y i) 𝒟}
+    (hr : R.RepliesAtQueriedInterface) (hs : S.RepliesAtQueriedInterface) :
+    R.transcriptDistance S =
+      ⨆ (E : DDE (Σ i, X i) (Σ i, Y i)) (_ : QueryBounded 𝒟.bound E)
+        (_ : 𝒟.Compatible E),
+        ENNReal.ofReal (statDist (R.sLaw E.1 𝒟.bound) (S.sLaw E.1 𝒟.bound)) := by
+  apply le_antisymm
+  -- `≤`: each term `(E, n)` equals the term of `E' = limitQueries E 𝒟.bound`.
+  · refine iSup_le fun E => iSup_le fun n => iSup_le fun hn => iSup_le fun hc => ?_
+    -- Move the horizon from `n` to `𝒟.bound`; compatibility uses the interface replies.
+    rw [sLaw_eq_domainBound R hn (hc R hr), sLaw_eq_domainBound S hn (hc S hs)]
+    -- Truncation keeps compatibility with every resource on the domain.
+    have hlim : 𝒟.Compatible (DDE.limitQueries E 𝒟.bound) :=
+      fun T hT => (hc T hT).limitQueries _
+    refine le_iSup_of_le (DDE.limitQueries E 𝒟.bound)
+      (le_iSup_of_le (DDE.limitQueries_queryBounded E 𝒟.bound) (le_iSup_of_le hlim ?_))
+    -- On the raw cutoff `limitQueries E.1`, truncation at the horizon keeps both laws.
+    change ENNReal.ofReal (statDist (R.sLaw E.1 𝒟.bound) (S.sLaw E.1 𝒟.bound)) ≤
+      ENNReal.ofReal (statDist (R.sLaw (limitQueries E.1 𝒟.bound) 𝒟.bound)
+        (S.sLaw (limitQueries E.1 𝒟.bound) 𝒟.bound))
+    rw [sLaw_limitQueries, sLaw_limitQueries]
+  -- `≥`: the right side is the restriction of the defining supremum to `n = 𝒟.bound`.
+  · exact iSup_le fun E => iSup_le fun hn => iSup_le fun hc =>
+      RandomSystem.statDist_le_transcriptDistance hn hc R S
 
 /-- **A bound on the transcript laws bounds the transcript distance**: if under every compatible
 query-bounded environment the statistical distance of the transcript laws is at most `b`, the
@@ -274,7 +323,7 @@ lemma decisionProbability_envProbe {E : DDE (Σ i, X i) (Σ i, Y i)} {n : ℕ}
   let hD := envProbe_isDDD (A := T) hn
   change (R.sLaw (envOf (trim (envProbe E T))) hD.2.1.choose).mass _ = _
   rw [R.sLaw_trim_envProbe hR E T]
-  have hb : ∀ h, Cons E.1 h → R h ≠ 0 → (E.1 (h.map Prod.snd)).Dom →
+  have hb : ∀ h, FollowsStrategy E.1 h → R h ≠ 0 → (E.1 (h.map Prod.snd)).Dom →
       h.length < hD.2.1.choose := by
     intro h ht hp hd
     have hv := ht.fits (hR.history hp)
@@ -289,7 +338,7 @@ lemma decisionProbability_envProbe {E : DDE (Σ i, X i) (Σ i, Y i)} {n : ℕ}
   have hp : R h ≠ 0 := by
     intro hz
     exact Finsupp.mem_support_iff.mp hh (by simp [sLaw_apply, hz])
-  have ht : Cons E.1 h := by
+  have ht : FollowsStrategy E.1 h := by
     by_contra hn'
     exact Finsupp.mem_support_iff.mp hh (by simp [sLaw_apply, Good, hn'])
   have hv := ht.fits (hR.history hp)
@@ -371,6 +420,7 @@ lemma decisionCompatible_iff_deterministic
     (Domain.ofInputs E m hE : Domain (Σ i, X i) (Σ i, Y i)).DecisionCompatible D ↔
       ∀ s : InterfaceSystem I X Y, IsDDS s → SystemAlgebra.RepliesAtQueriedInterface s →
         (∀ h, (s h).Dom ↔ E h) → (close D s [startIn]).Dom := by
+  classical
   constructor
   · intro hc s hs hr he
     rw [← close_trim_start D s]
@@ -390,7 +440,7 @@ lemma decisionCompatible_iff_deterministic
       rw [hm, hfst, hsnd, if_pos ht.replies]
       exact one_ne_zero
     have hh := hc R (RandomSystem.ofPDS_repliesAtQueriedInterface Q) (xs.zip ys)
-      (transcript_cons ht) hp
+      (Transcript.followsStrategy ht) hp
     simp only [Domain.ofInputs_apply, hfst, hsnd] at hh
     exact ⟨hh.1, fun x hx => (he _).mpr (hh.2 x hx)⟩
   · intro hc R hR h ht hp
@@ -401,7 +451,7 @@ lemma decisionCompatible_iff_deterministic
     have hd := hc s hs hr he
     rw [← close_trim_start D s] at hd
     have hcompat := (close_dom_iff_compatible (finite_trim hD.2.1.choose_spec)).mp hd
-    obtain ⟨hdec, hquery⟩ := hcompat _ _ (transcript_of_cons ht hsrep)
+    obtain ⟨hdec, hquery⟩ := hcompat _ _ (FollowsStrategy.transcript ht hsrep)
     exact ⟨hdec, fun x hx => (he _).mp (hquery x hx)⟩
 
 end Domain

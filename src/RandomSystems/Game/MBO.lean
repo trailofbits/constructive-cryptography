@@ -413,12 +413,15 @@ def DDE.blindMBO (e : DDE (Σ i, X i) (Σ i, Y i)) : DDE (Σ i, X i) (Σ i, with
     (by simpa only [List.map_append, List.map_cons, List.map_nil] using hd)⟩
 
 omit [Fintype I] [∀ i, Fintype (X i)] [∀ i, Fintype (Y i)] in
-lemma cons_blindMBO_iff (e : DDE (Σ i, X i) (Σ i, Y i))
+/-- Forgetting each MBO before the next query preserves strategy-following. -/
+lemma followsStrategy_blindMBO_iff (e : DDE (Σ i, X i) (Σ i, Y i))
     (h : List ((Σ i, X i) × Σ i, withMBO Y i)) :
-    Cons (DDE.blindMBO e).1 h ↔ Cons e.1 (forgetMBOs h) := by
+    FollowsStrategy (DDE.blindMBO e).1 h ↔ FollowsStrategy e.1 (forgetMBOs h) := by
   -- Query i of the blinded environment is e's query on the first i replies with their MBOs
   -- forgotten, which are the first i replies of forgetMBOs h.
-  simp only [Cons, DDE.blindMBO, forgetMBOs, List.length_map, List.getElem_map,
+  refine (FollowsStrategy.iff_getElem (σ := (DDE.blindMBO e).1)).trans ?_
+  rw [FollowsStrategy.iff_getElem]
+  simp only [DDE.blindMBO, forgetMBOs, List.length_map, List.getElem_map,
     ← List.map_take, List.map_map]
   rfl
 
@@ -426,9 +429,8 @@ omit [Fintype I] [∀ i, Fintype (X i)] [∀ i, Fintype (Y i)] in
 lemma good_blindMBO_iff (e : DDE (Σ i, X i) (Σ i, Y i)) (n : ℕ)
     (h : List ((Σ i, X i) × Σ i, withMBO Y i)) :
     Good (DDE.blindMBO e).1 n h ↔ Good e.1 n (forgetMBOs h) := by
-  -- Good = Cons ∧ Done; Cons by cons_blindMBO_iff. Done depends on the length and on whether
-  -- the environment asks a further query, which forgetting the MBOs keeps.
-  rw [Good, Good, cons_blindMBO_iff]
+  -- Forgetting MBOs preserves the query rule, transcript length, and stopping decision.
+  rw [Good, Good, followsStrategy_blindMBO_iff]
   simp only [Done, DDE.blindMBO, forgetMBOs, List.length_map, List.map_map]
   rfl
 
@@ -554,7 +556,7 @@ lemma RandomSystem.compatible_fixedQueries {B : Type} [Fintype B]
   -- on the queries.
   intro t x hc _ hx
   -- t follows the fixed queries: |t| ≤ |h| and t has h's first |t| queries.
-  obtain ⟨hl, ht⟩ := cons_fixedQueries hc
+  obtain ⟨hl, ht⟩ := FollowsStrategy.fixedQueries hc
   -- x is the query of h at position |t|.
   have hx' : (h.map Prod.fst)[t.length]? = some x := by
     simpa [fixedQueries] using hx
@@ -614,7 +616,7 @@ lemma RandomSystem.exists_unset_winProbability
       exact ne_of_gt (lt_of_lt_of_le (lt_of_le_of_ne (G.mass_nonneg h) (Ne.symm hGh)) this)
     -- e's query after the visible transcript is admitted, since G⁻ is compatible with e;
     -- admission depends only on the queries, which forgetting the MBOs keeps.
-    have := hV (forgetMBOs h) x ((cons_blindMBO_iff e h).mp hcons) hpos
+    have := hV (forgetMBOs h) x ((followsStrategy_blindMBO_iff e h).mp hcons) hpos
       (by rwa [map_snd_forgetMBOs])
     simpa only [Domain.ofInputs_apply, map_fst_forgetMBOs] using this
   -- Step 2. μ: the transcript law of G with W within n rounds; ν: its restriction to the

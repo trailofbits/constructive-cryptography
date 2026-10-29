@@ -125,13 +125,12 @@ lemma sample_single_distance_eq_one :
   -- `t` follows `bitQuery` and is complete within one round.
   have ht : Good bitQuery.1 1 t := by
     constructor
-    -- Its only query `()` is the query `bitQuery` asks first.
-    · intro i hi
-      have : i = 0 := by simp only [t, List.length_singleton] at hi; omega
-      subst i
-      simp only [bitQuery, DDE.ofQueries, List.take_zero, List.map_nil, fixedQueries,
-        List.length_nil, List.length_cons, zero_add, Order.lt_one_iff, getElem?_pos,
-        List.getElem_cons_zero, Part.coe_some, Part.mem_some_iff, t]
+    -- `t = [] ++ [()(()) ⇒ true]`: the empty prefix follows trivially, and the query
+    -- `()` is `bitQuery`'s answer at the empty reply history, `E [] = ()`.
+    · apply (FollowsStrategy.snoc_iff (h := [])).mpr
+      refine ⟨FollowsStrategy.nil, ?_⟩
+      simp only [bitQuery, DDE.ofQueries, List.map_nil, fixedQueries, List.length_nil,
+        List.getElem?_cons_zero, Part.coe_some, Part.mem_some_iff]
     -- Completeness: `t` has reached the round bound `1`.
     · exact Or.inl rfl
   -- The singleton event `{t}` gives `R.sLaw(t) − S.sLaw(t) ≤ δ(R.sLaw, S.sLaw)`.

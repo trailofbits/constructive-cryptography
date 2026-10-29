@@ -1,3 +1,4 @@
+import Tests.TranscriptHorizon
 import Tests.AllDistinguishers
 import Tests.MixtureObservation
 import Tests.ProofErgonomics
