@@ -114,23 +114,13 @@ lemma currentCall_of_admissible {O J : Type} {U V : O → Type} {X Y : J → Typ
   | append_singleton h x ih =>
     obtain ⟨ha0, _, hx⟩ := admissible_snoc.mp ha
     obtain ⟨⟨_ | ⟨⟨⟩⟩, i⟩, x⟩ := x
-    -- A new outside input starts the invocation `(⟨i, x⟩, [])`; it is not admitted after an
-    -- inside query, so its previous inside run is zero.
+    -- A new outside input starts the invocation `(⟨i, x⟩, [])`. No inside query is pending,
+    -- including initially, so the run before it is `0` and the run after it is at most `0 + 1`.
     · refine Or.inr ⟨⟨i, x⟩, [], ?_, ?_, ?_⟩
       · simp only [List.reverse_append, List.reverse_singleton, List.singleton_append,
           currentCall]
       · rw [lastOuter_snoc]; rfl
-      · have hrun : insideRun a h = 0 := by
-          rcases List.eq_nil_or_concat h with rfl | ⟨h, z, rfl⟩
-          · rfl
-          · rw [List.concat_eq_append] at hx ⊢
-            rw [insideRun, run_snoc, if_neg]
-            rintro ⟨y, hy, hi⟩
-            unfold Admits at hx
-            rw [replyLabel_of_mem _ hy] at hx
-            obtain ⟨⟨_ | ⟨⟨⟩⟩, j⟩, y⟩ := y
-            · exact absurd hi (by simp only [IsInside, reduceCtorEq, not_false_eq_true])
-            · cases hx
+      · have hrun := insideRun_eq_zero_of_admits_outside hx
         rw [insideRun, run_snoc]
         change run IsInside a h = 0 at hrun
         rw [hrun]

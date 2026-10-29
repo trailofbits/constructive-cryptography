@@ -87,10 +87,18 @@ inside queries and outside replies out) with at most $`b`$ consecutive inside qu
 it [gives one with domain][IsDDCFrom.mapsDomain] $`F`$. A [**PDC**][PDCBehavior.ofPDC] is a distribution over DDCs, and
 its [**behavior**][PDCBehavior] is a random system over the converter domain
 [3, Definitions 3.17–3.18].
+A DDC from $`E`$ to $`F`$ whose transcripts are transcripts of a DDC $`r`$, not necessarily
+responsive, [is a filter][IsDDCFrom.eq_filterDom_of_replies_le] of $`r`$ [3, §3.4.3]: the
+restriction of $`r`$ to the input histories whose outside queries lie in $`F`$.
 
 [Serial composition][serialM] $`\beta \odot \alpha`$ connects the inside of $`\beta`$ to the outside
-of $`\alpha`$, and [DDCs compose][IsDDC.comp] with the product of their bounds. PDC behaviors have a
-[composition][PDCBehavior.comp] and an [identity][PDCBehavior.id], with
+of $`\alpha`$, and [DDCs compose][IsDDC.comp] with the product of their bounds. When the run of
+$`\alpha`$ in an invocation at the intermediate port $`m`$ is at most $`\mathrm{cost}(m)`$, and
+the outer converter carries a charge, raised by $`\mathrm{cost}(m)`$ with each query at $`m`$ and
+at most $`B`$, the composite [is bounded by the charge][IsDDC.comp_of_query_cost]: at most
+$`B`$ consecutive inside queries. This bounds one run, not the total over invocations.
+
+PDC behaviors have a [composition][PDCBehavior.comp] and an [identity][PDCBehavior.id], with
 [associativity][PDCBehavior.comp_assoc] and the [left][PDCBehavior.id_comp] and
 [right][PDCBehavior.comp_id] identity laws. [Attachment][PDCBehavior.attach] samples the PDC, then
 attaches the sample deterministically: [presentations attach to
@@ -188,15 +196,17 @@ holds, whatever the number of the program's inside queries:
 [IsDDC]: DDC/DDC.lean#L127
 [serialM]: DDC/Serial.lean#L55
 [IsDDC.comp]: DDC/Serial.lean#L514
-[converterDomain]: Converter/ConverterDomain.lean#L234
-[IsDDCFrom]: Converter/ConverterDomain.lean#L301
-[IsDDCFrom.mapsDomain]: Converter/ConverterDomain.lean#L609
-[callRule]: Converter/Calls.lean#L401
+[converterDomain]: Converter/ConverterDomain.lean#L236
+[IsDDCFrom]: Converter/ConverterDomain.lean#L303
+[IsDDCFrom.mapsDomain]: Converter/ConverterDomain.lean#L678
+[IsDDCFrom.eq_filterDom_of_replies_le]: Converter/ConverterDomain.lean#L465
+[IsDDC.comp_of_query_cost]: DDC/SerialCost.lean#L209
+[callRule]: Converter/Calls.lean#L391
 [callRule_completed_exact_length]: Converter/CallRuleTranscript.lean#L92
-[callRule_isResponsiveDDC]: Converter/Calls.lean#L443
-[callRule_query_count]: Converter/Calls.lean#L491
-[callConverter]: Converter/Calls.lean#L509
-[callConverter_isDDCFrom]: Converter/Calls.lean#L524
+[callRule_isResponsiveDDC]: Converter/Calls.lean#L433
+[callRule_query_count]: Converter/Calls.lean#L481
+[callConverter]: Converter/Calls.lean#L499
+[callConverter_isDDCFrom]: Converter/Calls.lean#L514
 [replies_callConverter_of_schedule]: Converter/CallRuleTranscript.lean#L168
 [ofDDC_callConverter_smul_ofFunction]: Typed/CallRuleFunctional.lean#L31
 [PDCBehavior]: Converter/PDCBehavior.lean#L67
