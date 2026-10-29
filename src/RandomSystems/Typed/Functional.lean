@@ -22,6 +22,8 @@ laws use `RandomSystem.ofConditional`, sampling uses `RandomSystem.mix`.
   determines the typed system
 * `TypedSystem.sample_ofFunction_mass`: sampled functions are the finite PDS of the
   function systems
+* `TypedSystem.sample_fTransform`, `TypedConverter.smul_sample`: a retained sample commutes with
+  pushforward of its law and with converter attachment
 -/
 
 namespace SystemAlgebra
@@ -184,12 +186,14 @@ lemma sample_mass {K : Type} (P : Distribution K) [Distribution.IsProbability P]
     (R : K → TypedSystem A) h :
     (sample P R).1 h = ∑ k ∈ P.support, P k * (R k).1 h := rfl
 
-/-- Sampling a pushed-forward choice is equivalent to applying that map to the one retained
-sample. This is the typed form of the distribution pushforward law. -/
-lemma sample_fTransform {K L : Type} (P : Distribution K)
-    [Distribution.IsProbability P] (f : K → L) (R : L → TypedSystem A) :
+/-- **Sampling a pushforward**: drawing `l ← f(P)` once equals drawing `k ← P` once and
+retaining `f k`, `sample (f(P)) R = sample P (R ∘ f)`; at every transcript `h`,
+`∑ₗ f(P)(l) · R l (h) = ∑ₖ P(k) · R (f k) (h)`. The map `f` need not be injective. -/
+lemma sample_fTransform {K L : Type} (f : K → L) (P : Distribution K)
+    [Distribution.IsProbability P] (R : L → TypedSystem A) :
     sample (Distribution.fTransform f P) R = sample P (fun k => R (f k)) := by
-  -- Both systems have the same cumulative mass at every transcript.
+  -- Equal cumulative masses at every transcript, by the change of variables
+  -- `∑ₗ f(P)(l) · g l = ∑ₖ P(k) · g (f k)` (`Distribution.sum_fTransform_mul`).
   apply Subtype.ext
   apply RandomSystem.ext
   intro h
@@ -220,24 +224,22 @@ end TypedSystem
 
 namespace TypedConverter
 
-/-- Attaching a converter after sampling one inside system equals sampling once and then
-attaching it. The choice remains shared across all queries of the attached system. -/
+/-- **Attachment to a retained sample**: `α • sample P R = sample P (fun k => α • R k)`. One
+`k ← P` is drawn before the interaction, and every inside query of `α` reaches the same `R k`;
+nothing is redrawn per query. This is `PDCBehavior.attach_mix` on typed systems.
+
+```text
+   A ┌───┐ B ┌─────────────┐          A ┌─────────────┐
+ ────┤ α ├───┤ k ← P, once │   =    ────┤ k ← P, once │
+     └───┘   │ R k         │            │ α • R k     │
+             └─────────────┘            └─────────────┘
+``` -/
 lemma smul_sample {A B : Interface} (α : TypedConverter A B) {K : Type}
     (P : Distribution K) [Distribution.IsProbability P] (R : K → TypedSystem B) :
-    α • TypedSystem.sample P R = TypedSystem.sample P (fun k => α • R k) := by
-  -- Attachment is a connection; its inside component is the mixture over the single sample.
-  apply Subtype.ext
-  apply RandomSystem.ext
-  intro h
-  change (RandomSystem.parallel α.1
-      (RandomSystem.mix ⟨P, Distribution.IsProbability.isProbDist P⟩
-        (fun k => (R k).1))).connectionLaw
-      resourceRoute resourceInput (h.map Prod.fst)
-      ((2 * α.2.choose + 2) * (h.map Prod.fst).length) (h.map Prod.snd) = _
-  -- Parallel composition and the connection law both distribute over this mixture.
-  rw [RandomSystem.parallel_mix_right, RandomSystem.connectionLaw_mix]
-  simp only [Finsupp.finsetSum_apply, Finsupp.smul_apply, smul_eq_mul]
-  rfl
+    α • TypedSystem.sample P R = TypedSystem.sample P (fun k => α • R k) :=
+  Subtype.ext (PDCBehavior.attach_mix B.nonempty_prefix A.nonempty_prefix α
+    ⟨P, Distribution.IsProbability.isProbDist P⟩ (fun k => (R k).1)
+    (fun k => (R k).2) (TypedSystem.sample P R).2)
 
 end TypedConverter
 

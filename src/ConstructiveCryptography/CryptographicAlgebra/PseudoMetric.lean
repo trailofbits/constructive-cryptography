@@ -23,6 +23,8 @@ constructions compose serially and in parallel with additive errors.
 
 * `CryptographicAlgebra.distance_attach_le`, `CryptographicAlgebra.distance_parallel_le`:
   the compatibility conditions
+* `CryptographicAlgebra.distance_eq_of_mutual_attach`: opposite attachments preserving a
+  chosen pair preserve its distance; `distance_attach_iso` is the isomorphism case
 * `CryptographicAlgebra.Specification.ConstructsWithin.serial`,
   `CryptographicAlgebra.Specification.ConstructsWithin.parallel`: composition with additive
   errors
@@ -98,10 +100,8 @@ lemma distance_attach_le [CompatiblePseudoMetric C Phi] {A B : C}
 on each side bounds the distance between their real outputs.
 
 Maurer--Renner 2016, Definition 2 (printed p. 11): “d(αR, αS) ≤ d(R, S)”.
-The triangle inequality applies this law twice. Jost, Proposition 2.2.17
-(printed pp. 29–30), identifies constructions through attachment equations;
-here equality of the two ideal attachments is an explicit premise, rather
-than a property assumed of arbitrary converters. -/
+The triangle inequality applies this law twice, using the supplied equality of the two
+ideal attachments. -/
 theorem distance_attach_le_add_of_eq [CompatiblePseudoMetric C Phi] {A B : C}
     (left right : A ⟶ B) (real ideal : Phi B)
     (equal : attach left ideal = attach right ideal) :
@@ -115,38 +115,22 @@ theorem distance_attach_le_add_of_eq [CompatiblePseudoMetric C Phi] {A B : C}
     (LipschitzWith.of_edist_le (distance_attach_le left))
     (LipschitzWith.of_edist_le (distance_attach_le right)) real ideal equal
 
-/-- Attachment along an interface isomorphism preserves the selected fibre
-distance exactly. -/
-lemma distance_attach_iso [CompatiblePseudoMetric C Phi] {A B : C}
-    (relabel : A ≅ B) (left right : Phi B) :
-    distance (attach relabel.hom left)
-        (attach relabel.hom right) =
-      distance left right := by
-  apply le_antisymm
-  · -- Non-expansion gives the forward inequality.
-    exact distance_attach_le relabel.hom left right
-  · -- Apply the inverse isomorphism to obtain the reverse inequality.
-    calc
-      distance left right =
-          distance
-            (attach relabel.inv
-              (attach relabel.hom left))
-            (attach relabel.inv
-              (attach relabel.hom right)) := by
-                rw [← attach_serial relabel.inv relabel.hom,
-                  ← attach_serial relabel.inv relabel.hom]
-                simp
-      _ ≤ distance
-            (attach relabel.hom left)
-            (attach relabel.hom right) :=
-          distance_attach_le relabel.inv _ _
+/-- Opposite attachments that exchange two resource pairs preserve their distance. Attachment
+is contravariant, so `forward : A ⟶ B` maps `Φ B → Φ A` and `backward : B ⟶ A` maps back:
 
-/-- Two explicit attachment bridges in opposite directions preserve the distance of the
-chosen resource pair. Maurer--Renner 2016, Definition 2 (printed p. 11): “d(αR, αS) ≤ d(R, S)”.
-Applying this law to both bridges gives equality. Jost, Proposition 2.2.17 (printed
-pp. 29–30), treats constructions through attachment equations; it does not require these
-converters to be global inverses. -/
-theorem distance_eq_of_mutual_attach [CompatiblePseudoMetric C Phi] {A B : C}
+```text
+                 attach forward
+  R, S : Φ B   ──────────────────▶   R', S' : Φ A
+               ◀──────────────────
+                 attach backward
+```
+
+Here `R, S, R', S'` are `left, right, left', right'`. Maurer--Renner 2016, Definition 2
+(printed p. 11): “A metric d on Φ is called non-expanding if d(αR, αS) ≤ d(R, S) for all α”.
+With the four pair equalities, one application in each direction gives
+`d(R', S') = d(forward R, forward S) ≤ d(R, S) = d(backward R', backward S') ≤ d(R', S')`.
+Nothing else is assumed: the converters need not be inverse, nor the metric separated. -/
+lemma distance_eq_of_mutual_attach [CompatiblePseudoMetric C Phi] {A B : C}
     (forward : A ⟶ B) (backward : B ⟶ A)
     (left right : Phi B) (left' right' : Phi A)
     (hforwardLeft : attach forward left = left')
@@ -155,12 +139,29 @@ theorem distance_eq_of_mutual_attach [CompatiblePseudoMetric C Phi] {A B : C}
     (hbackwardRight : attach backward right' = right) :
     distance left' right' = distance left right := by
   apply le_antisymm
-  · -- Forward attachment cannot increase the distance.
+  · -- d(R', S') = d(forward R, forward S) ≤ d(R, S), by non-expansion of `forward`.
     rw [← hforwardLeft, ← hforwardRight]
     exact distance_attach_le forward left right
-  · -- The backward bridge supplies the reverse inequality on this pair.
+  · -- d(R, S) = d(backward R', backward S') ≤ d(R', S'), by non-expansion of `backward`.
     rw [← hbackwardLeft, ← hbackwardRight]
     exact distance_attach_le backward left' right'
+
+/-- Attachment along an interface isomorphism preserves the selected fibre distance exactly.
+This is `distance_eq_of_mutual_attach` with `forward = relabel.hom` and
+`backward = relabel.inv`: the forward equations hold by definition, and
+`relabel.inv ≫ relabel.hom = 𝟙 B` supplies the backward ones. -/
+lemma distance_attach_iso [CompatiblePseudoMetric C Phi] {A B : C}
+    (relabel : A ≅ B) (left right : Phi B) :
+    distance (attach relabel.hom left)
+        (attach relabel.hom right) =
+      distance left right := by
+  -- The pair lemma with `R' = attach hom R`, `S' = attach hom S`; forward equations are `rfl`.
+  apply distance_eq_of_mutual_attach relabel.hom relabel.inv left right
+    (attach relabel.hom left) (attach relabel.hom right) rfl rfl
+  -- Backward on `R`: attaching `hom`, then `inv`, is attaching `inv ≫ hom = 𝟙 B`.
+  · rw [← attach_serial, relabel.inv_hom_id, attach_identity]
+  -- Backward on `S`: the same identity.
+  · rw [← attach_serial, relabel.inv_hom_id, attach_identity]
 
 /-- Ordered resource parallel is jointly non-expanding. -/
 lemma distance_parallel_le [CompatiblePseudoMetric C Phi] {A B : C}
