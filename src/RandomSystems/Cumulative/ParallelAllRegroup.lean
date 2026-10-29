@@ -3,17 +3,29 @@ import RandomSystems.Cumulative.ParallelAll
 /-!
 # The two-component view of a parallel family
 
-The equivalence below makes the alphabet regrouping explicit. On the corresponding
-transcripts, the n-ary and binary independent products have exactly the same cumulative
-mass. Jost, Thesis, printed p. 17: “A finite set of resources with disjoint interface sets
-can be viewed as a single one.” Binary composition is its two-component specialization.
+A family `R : ∀ k : Option Unit, RandomSystem (A k) (B k) (D k)` has two components. Its
+n-ary independent product and the binary product of `R none` and `R (some ())` live on
+different alphabet types, `Σ k, A k` and `Two (A none) (A (some ()))`; the explicit
+equivalence `optionPair` relates them, and on corresponding transcripts
+
+  `parallelAll R h = parallel (R none) (R (some ())) (h.map (optionPair A × optionPair B))`.
+
+## Main definitions
+
+* `optionPair A`: `(Σ k : Option Unit, A k) ≃ Two (A none) (A (some ()))`
+
+## Main results
+
+* `RandomSystem.optionPair_transcripts`: regrouping preserves consistency and both projections
+* `RandomSystem.parallelAll_option_mass`: the n-ary product of two is the binary product
 -/
 
 namespace SystemAlgebra
 
 
 open Classical in
-/-- The two tags of an option-indexed family, viewed as a pair of alphabets. -/
+/-- An `Option Unit`-tagged alphabet as a pair of alphabets: `⟨none, a⟩ ↦ ⟨none, a⟩`,
+`⟨some (), a⟩ ↦ ⟨some (), a⟩`, an explicit equivalence between the two types. -/
 def optionPair (A : Option Unit → Type) : (Σ k, A k) ≃ Two (A none) (A (some ())) where
   toFun
     | ⟨none, a⟩ => ⟨none, a⟩
@@ -29,7 +41,8 @@ namespace RandomSystem
 variable {A B : Option Unit → Type}
 
 open Classical in
-/-- Regrouping does not change consistency or either component transcript. -/
+/-- With `h' = h.map (optionPair A × optionPair B)`: `parallelConsistent h' ↔
+parallelAllConsistent h`, `parallelLeft h' = h|none` and `parallelRight h' = h|some ()`. -/
 lemma optionPair_transcripts (h : List ((Σ k, A k) × (Σ k, B k))) :
     (parallelConsistent (h.map ((optionPair A).prodCongr (optionPair B))) ↔
       parallelAllConsistent h) ∧
@@ -37,7 +50,9 @@ lemma optionPair_transcripts (h : List ((Σ k, A k) × (Σ k, B k))) :
       restrictExchanges none h ∧
     parallelRight (h.map ((optionPair A).prodCongr (optionPair B))) =
       restrictExchanges (some ()) h := by
-  -- Each exchange keeps its tag and value; cross-tag replies are rejected in both views.
+  -- `optionPair` keeps each tag and value, so an exchange is consistent (input and reply
+  -- tags equal) and kept by a projection in one view iff in the other. Each part splits on
+  -- the input and reply tags, four cases.
   refine ⟨?_, ?_, ?_⟩
   · simp only [parallelConsistent, parallelAllConsistent, List.forall_mem_map]
     apply forall_congr'
@@ -48,21 +63,30 @@ lemma optionPair_transcripts (h : List ((Σ k, A k) × (Σ k, B k))) :
   · rw [parallelLeft, List.filterMap_map, restrictExchanges]
     apply List.filterMap_congr
     intro z _
-    rcases z with ⟨⟨(_ | ⟨⟨⟩⟩), x⟩, ⟨(_ | ⟨⟨⟩⟩), y⟩⟩ <;> simp [optionPair]
+    rcases z with ⟨⟨(_ | ⟨⟨⟩⟩), x⟩, ⟨(_ | ⟨⟨⟩⟩), y⟩⟩ <;>
+      simp only [optionPair, Equiv.prodCongr_apply, Equiv.coe_fn_mk, Function.comp_apply,
+        Prod.map_apply, ↓reduceDIte, reduceCtorEq]
   · rw [parallelRight, List.filterMap_map, restrictExchanges]
     apply List.filterMap_congr
     intro z _
-    rcases z with ⟨⟨(_ | ⟨⟨⟩⟩), x⟩, ⟨(_ | ⟨⟨⟩⟩), y⟩⟩ <;> simp [optionPair]
+    rcases z with ⟨⟨(_ | ⟨⟨⟩⟩), x⟩, ⟨(_ | ⟨⟨⟩⟩), y⟩⟩ <;>
+      simp only [optionPair, Equiv.prodCongr_apply, Equiv.coe_fn_mk, Function.comp_apply,
+        Prod.map_apply, ↓reduceDIte, reduceCtorEq]
 
 open Classical in
-/-- The binary independent product is the two-component n-ary product after explicit
-alphabet regrouping. -/
+/-- **The n-ary product of two components is the binary product**, after the explicit
+regrouping:
+
+  `parallelAll R h = parallel (R none) (R (some ())) (h.map (optionPair A × optionPair B))`.
+
+Both sides are `R none (h|none) · R (some ()) (h|some ())` on consistent `h`, `0` otherwise. -/
 lemma parallelAll_option_mass [∀ k, Fintype (A k)] [∀ k, Fintype (B k)]
     {D : ∀ k, Domain (A k) (B k)} (R : ∀ k, RandomSystem (A k) (B k) (D k))
     (h : List ((Σ k, A k) × (Σ k, B k))) :
     parallelAll R h = parallel (R none) (R (some ()))
       (h.map ((optionPair A).prodCongr (optionPair B))) := by
-  -- Factor the two-coordinate product and identify its two projected histories.
+  -- `∏ k : Option Unit, R k (h|k) = R none (h|none) * R (some ()) (h|some ())`, and the
+  -- binary consistency and projections are those of `h` by `optionPair_transcripts`.
   obtain ⟨hc, hl, hr⟩ := optionPair_transcripts h
   rw [parallelAll_mass, parallel_mass, hc, hl, hr]
   simp only [Fintype.prod_option, Fintype.prod_unique]

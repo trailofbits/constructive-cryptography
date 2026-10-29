@@ -442,6 +442,29 @@ lemma RepliesAtQueriedInterface.relabel {J : Type} {U V : J → Type} {R : Inter
     simpa only [List.map_append, List.map_singleton] using hz
   exact hl x z (hr (h.map f) (f x) z hz')
 
+open Classical in
+/-- If each `R k` replies at its queried port, so does the regrouped `parAll R`: a query
+`⟨⟨k, j⟩, x⟩` is answered `⟨⟨k, j⟩, y⟩`, keeping both the tag `k` and the port `j`. -/
+lemma RepliesAtQueriedInterface.parallelAll
+    {K : Type} {J : K → Type} {X Y : ∀ k, J k → Type}
+    {R : ∀ k, InterfaceSystem (J k) (X k) (Y k)}
+    (hR : ∀ k, RepliesAtQueriedInterface (R k)) :
+    RepliesAtQueriedInterface (SystemAlgebra.relabel (parAll R)
+      (Equiv.sigmaAssoc fun k j => X k j)
+      (Equiv.sigmaAssoc fun k j => Y k j).symm) := by
+  -- The last query `⟨⟨k, j⟩, x⟩` is answered by `R k` at `h|k ++ [⟨j, x⟩]`, tagged `k`;
+  -- `R k` replies at its port `j`.
+  intro h x y hy
+  obtain ⟨v, hv, rfl⟩ := (Part.mem_map_iff _).mp hy
+  obtain ⟨⟨k, j⟩, x⟩ := x
+  simp only [List.map_append, List.map_singleton] at hv
+  change v ∈ parAll R
+    (h.map (Equiv.sigmaAssoc fun k j => X k j) ++ [⟨k, ⟨j, x⟩⟩]) at hv
+  rw [parAll_snoc] at hv
+  obtain ⟨z, hz, rfl⟩ := (Part.mem_map_iff _).mp hv
+  exact congrArg (Sigma.mk k)
+    (hR k (restrict k (h.map (Equiv.sigmaAssoc fun k j => X k j))) ⟨j, x⟩ z hz)
+
 /-- Replies `ys` whose labels are those of the first queries of `h`. -/
 def Fits (h : List (Σ i, X i)) (ys : List (Σ i, Y i)) : Prop :=
   ys.length ≤ h.length ∧ ys.map Sigma.fst = (h.take ys.length).map Sigma.fst
