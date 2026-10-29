@@ -27,6 +27,7 @@ import Tests.Substitution.Relaxation
 import Tests.Substitution.Tactics
 import Tests.TypedConverterComposition
 import Tests.TypedSampling
+import Tests.TypedNaryParallel
 
 /-! Axiom audits per layer and of the Commons library, the checks of the authenticated-encryption example,
 counterexamples, DSL diagnostics and semantics, and the tests of the cryptographic-algebra and
