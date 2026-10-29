@@ -17,8 +17,12 @@ to the numbered [references](../../THEORY.md#references) of THEORY.md.
 A [**distribution**][Distribution] is a finitely supported function to $`\mathbb R`$, and a
 [**probability distribution**][ProbDist] one that is [nonnegative with weight one][isProbDist].
 Distributions have [masses][mass] of events, [pushforwards][fTransform], [products][prod] of two
-laws and of [families][pi], and [uniform][uniform] laws. A [**kernel**][bindK] $`f`$ is a conditional
-distribution [3, §3.6.1]; mixed over a law $`\mu`$ it gives $`\sum_a \mu(a)\, f(a)`$:
+laws and of [families][pi], and [uniform][uniform] laws. The
+[heterogeneous finite product][piDep] assigns the product mass to a dependent family of
+coordinate outcomes. The alphabets may be infinite; only the index set and each support are
+finite. It is a probability law when each coordinate law is a probability law. A
+[**kernel**][bindK] $`f`$ is a conditional distribution [3, §3.6.1]; mixed over a law $`\mu`$
+it gives $`\sum_a \mu(a)\, f(a)`$:
 [mixtures compose][bindK_bindK], a pushforward
 [is the point kernel of its function][bindK_single_comp], and an independent product
 [disintegrates][pi_eq_bindK_update] at a coordinate. Probability laws have
@@ -72,6 +76,7 @@ Outside the good event, coordinates may repeat, and the good event may have prob
 [fTransform]: Distribution.lean#L637
 [prod]: Distribution.lean#L1010
 [pi]: Distribution.lean#L1651
+[piDep]: DependentProduct.lean#L37
 [uniform]: Distribution.lean#L566
 [ProbDist.uniform]: Distribution.lean#L599
 [bindK]: Kernel.lean#L49
