@@ -75,6 +75,10 @@ A uniform-preserving [projection of a fresh full reply][uniform_mass_fresh_proje
 remains uniform after a transcript event that ignores its coordinate. The
 [projected collision bound][uniform_mass_transcript_projected_collision_le] keeps the full
 reply table and charges only the visible output alphabet.
+[Disjoint finite table restrictions][uniform_mass_disjoint_events] factor for arbitrary
+events on their respective output tuples. The [base-set form]
+[uniform_mass_fresh_outputs_eq] applies when an event depends only on a named finite set
+of coordinates and the other outputs lie outside it.
 
 <!-- Declarations -->
 
@@ -110,14 +114,17 @@ reply table and charges only the visible output alphabet.
 [mass_ge_le_expect_div]: Expectation.lean#L199
 [expect_mul_sq_le_sq_mul_sq]: Expectation.lean#L215
 [ConvexOn.map_expect_le]: Expectation.lean#L297
-[card_function_fiber_finset]: Counting.lean#L60
-[uniform_mass_transcript_eq]: Counting.lean#L477
-[fTransform_eval_uniform_eq_of_same_fibers]: Counting.lean#L533
-[uniform_mass_adaptive_eval_eq_mul]: Counting.lean#L605
+[card_function_fiber_finset]: Counting.lean#L62
+[uniform_mass_transcript_eq]: Counting.lean#L479
+[fTransform_eval_uniform_eq_of_same_fibers]: Counting.lean#L535
+[uniform_mass_adaptive_eval_eq_mul]: Counting.lean#L607
 
-[uniform_mass_fresh_eval_eq]: Counting.lean#L211
+[uniform_mass_fresh_eval_eq]: Counting.lean#L213
 [mass_exists_pair_le_choose]: Distribution.lean#L505
-[uniform_mass_not_injOn_le_choose]: Counting.lean#L325
+[uniform_mass_not_injOn_le_choose]: Counting.lean#L327
 
-[uniform_mass_fresh_projected_eval_eq]: Counting.lean#L350
-[uniform_mass_transcript_projected_collision_le]: Counting.lean#L400
+[uniform_mass_fresh_projected_eval_eq]: Counting.lean#L352
+[uniform_mass_transcript_projected_collision_le]: Counting.lean#L402
+
+[uniform_mass_disjoint_events]: Counting.lean#L681
+[uniform_mass_fresh_outputs_eq]: Counting.lean#L725

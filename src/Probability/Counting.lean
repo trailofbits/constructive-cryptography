@@ -34,6 +34,8 @@ distinct inputs are independent and uniform on `Y`; a repeated input reads the s
   independence and an unordered-pair birthday bound
 * `uniform_mass_fresh_projected_eval_eq`, `uniform_mass_transcript_projected_collision_le`:
   bounds for projected replies while the full table remains sampled
+* `uniform_mass_disjoint_events`, `uniform_mass_fresh_outputs_eq`: factorization of
+  events on disjoint sets of table coordinates
 * `uniform_mass_walk_eval_eq`, `uniform_mass_coord_determined_le`,
   `uniform_mass_walk_repeat_le`: lazy sampling along a walk
 * `card_filter_shift`, `card_filter_shift_univ`: re-randomization fibers
@@ -666,6 +668,98 @@ lemma uniform_mass_adaptive_eval_eq_mul {X Y B I : Type*}
         exact hb (hf ▸ hg)), Distribution.mass_eq_zero_of_forall_not F (by
         rintro f ⟨hg, hf⟩
         exact hb (hf ▸ hg)), zero_mul]
+
+/-- **Disjoint coordinates of one uniform table are independent.** For uniform `f : X → Y` and
+`Sum.elim base next : B ⊕ I → X` injective,
+`Pr[good (f ∘ base) ∧ output (f ∘ next)] = Pr[good (f ∘ base)] · Pr_{g ← U(I → Y)}[output g]`.
+```text
+        f : X → Y, sampled once
+  base(B) ⊆ X ──f──▶ good
+  next(I) ⊆ X ──f──▶ output       base(B) ∩ next(I) = ∅
+```
+Model: MauRen16, printed p. 6, "a uniformly chosen function table F". -/
+lemma uniform_mass_disjoint_events {X Y B I : Type*}
+    [Fintype X] [DecidableEq X] [Fintype Y] [Nonempty Y]
+    [Finite B] [Fintype I] [DecidableEq I]
+    (base : B → X) (next : I → X)
+    (hinj : Function.Injective (Sum.elim base next))
+    (good : (B → Y) → Prop) (output : (I → Y) → Prop) :
+    (Distribution.uniform (X → Y)).mass (fun f =>
+      good (fun b => f (base b)) ∧ output (fun i => f (next i))) =
+      (Distribution.uniform (X → Y)).mass (fun f => good (fun b => f (base b))) *
+        (Distribution.uniform (I → Y)).mass output := by
+  classical
+  -- Partition by the new reply tuple `value = f ∘ next`; expand `Pr[output]` as a sum over
+  -- `value` and compare the two sums termwise.
+  rw [Distribution.mass_eq_sum_mass_fiber _ _ (fun f i => f (next i)) Finset.univ
+    (fun _ _ => Finset.mem_univ _)]
+  conv_rhs => rw [Distribution.mass_eq_sum (Distribution.uniform (I → Y)) output, Finset.mul_sum]
+  apply Finset.sum_congr rfl
+  intro value _
+  by_cases hv : output value
+  -- `output value`: the fiber is `good (f ∘ base) ∧ f ∘ next = value`.
+  · rw [if_pos hv]
+    have hm : (Distribution.uniform (X → Y)).mass (fun f =>
+        (good (fun b => f (base b)) ∧ output (fun i => f (next i))) ∧
+          (fun i => f (next i)) = value) =
+        (Distribution.uniform (X → Y)).mass (fun f =>
+          good (fun b => f (base b)) ∧ (fun i => f (next i)) = value) := by
+      apply Distribution.mass_congr
+      intro f
+      exact ⟨fun h => ⟨h.1.1, h.2⟩, fun h => ⟨⟨h.1, h.2.symm ▸ hv⟩, h.2⟩⟩
+    -- Adaptive lemma with constant `next`:
+    -- `Pr[good ∧ f ∘ next = value] = Pr[good] / |Y| ^ |I| = Pr[good] · U(I → Y){value}`.
+    rw [hm, uniform_mass_adaptive_eval_eq_mul base (fun _ => next) good
+      (fun _ _ => hinj) value, Distribution.uniform_apply, Fintype.card_fun, Nat.cast_pow,
+      div_pow, one_pow]
+  -- `¬ output value`: both terms vanish.
+  · rw [if_neg hv, mul_zero]
+    exact Distribution.mass_eq_zero_of_forall_not _ (fun _ h => hv (h.2 ▸ h.1.2))
+
+/-- **Fresh outputs factor from an event on a finite base.** For uniform `f : X → Y`, `good`
+depending only on `f` on `base`, and `next : I → X` injective with image outside `base`,
+`Pr[good f ∧ output (f ∘ next)] = Pr[good f] · Pr_{g ← U(I → Y)}[output g]`.
+`fallback` only fills the coordinates outside `base` to represent the restricted table as a
+total function; the factorization does not depend on it. This is `uniform_mass_disjoint_events`
+with `B = base` and the event `good ∘ extend`. -/
+lemma uniform_mass_fresh_outputs_eq {X Y I : Type*}
+    [Fintype X] [DecidableEq X] [Fintype Y] [Nonempty Y] [Fintype I] [DecidableEq I]
+    (base : Finset X) (next : I → X) (hinj : Function.Injective next)
+    (hdisjoint : ∀ i, next i ∉ base) (fallback : Y)
+    (good : (X → Y) → Prop) (output : (I → Y) → Prop)
+    (hgood : ∀ f g, (∀ x ∈ base, f x = g x) → (good f ↔ good g)) :
+    (Distribution.uniform (X → Y)).mass (fun f => good f ∧ output (fun i => f (next i))) =
+      (Distribution.uniform (X → Y)).mass good * (Distribution.uniform (I → Y)).mass output := by
+  classical
+  -- `extend b` is `b` on `base` and `fallback` elsewhere.
+  let extend (b : base → Y) : X → Y := fun x =>
+    if hx : x ∈ base then b ⟨x, hx⟩ else fallback
+  -- `good` reads only `base`, so it cannot see `fallback`.
+  have hg (f : X → Y) : good (extend (fun x : base => f x)) ↔ good f := by
+    apply hgood
+    intro x hx
+    simp only [extend, dif_pos hx]
+  -- `Sum.elim Subtype.val next : base ⊕ I → X` is injective: each part is injective, and
+  -- a base point equal to some `next i` contradicts `hdisjoint`.
+  have hsum : Function.Injective (Sum.elim (fun x : base => x.val) next) := by
+    intro a b he
+    cases a with
+    | inl a =>
+      cases b with
+      | inl b => exact congrArg Sum.inl (Subtype.ext he)
+      | inr b =>
+        change a.val = next b at he
+        exact False.elim (hdisjoint b (he ▸ a.2))
+    | inr a =>
+      cases b with
+      | inl b =>
+        change next a = b.val at he
+        exact False.elim (hdisjoint a (he.symm ▸ b.2))
+      | inr b => exact congrArg Sum.inr (hinj he)
+  -- Disjoint events with `B = base` and `good ∘ extend`, then drop `extend` by `hg`.
+  have he := uniform_mass_disjoint_events (fun x : base => x.val) next hsum
+    (fun b => good (extend b)) output
+  simpa only [hg] using he
 
 /-! ## Lazy sampling along a walk on a uniform random function -/
 
