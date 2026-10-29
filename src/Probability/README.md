@@ -110,14 +110,14 @@ reply table and charges only the visible output alphabet.
 [mass_ge_le_expect_div]: Expectation.lean#L199
 [expect_mul_sq_le_sq_mul_sq]: Expectation.lean#L215
 [ConvexOn.map_expect_le]: Expectation.lean#L297
-[card_function_fiber_finset]: Counting.lean#L58
-[uniform_mass_transcript_eq]: Counting.lean#L358
-[fTransform_eval_uniform_eq_of_same_fibers]: Counting.lean#L414
-[uniform_mass_adaptive_eval_eq_mul]: Counting.lean#L486
+[card_function_fiber_finset]: Counting.lean#L60
+[uniform_mass_transcript_eq]: Counting.lean#L477
+[fTransform_eval_uniform_eq_of_same_fibers]: Counting.lean#L533
+[uniform_mass_adaptive_eval_eq_mul]: Counting.lean#L605
 
-[uniform_mass_fresh_eval_eq]: Counting.lean#L209
+[uniform_mass_fresh_eval_eq]: Counting.lean#L211
 [mass_exists_pair_le_choose]: Distribution.lean#L505
-[uniform_mass_not_injOn_le_choose]: Counting.lean#L323
+[uniform_mass_not_injOn_le_choose]: Counting.lean#L325
 
-[uniform_mass_fresh_projected_eval_eq]: Counting.lean
-[uniform_mass_transcript_projected_collision_le]: Counting.lean
+[uniform_mass_fresh_projected_eval_eq]: Counting.lean#L350
+[uniform_mass_transcript_projected_collision_le]: Counting.lean#L400

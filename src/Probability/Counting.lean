@@ -341,10 +341,12 @@ lemma uniform_mass_not_injOn_le_choose {X Y : Type*} [Fintype X] [DecidableEq X]
   obtain ⟨x, hx, z, hz, he, hn⟩ := hf
   exact ⟨x, hx, z, hz, hn, he⟩
 
-/-- A fresh *full* reply remains random under an event that ignores its coordinate; applying
-a uniform-preserving projection then gives a uniform visible value. MauRen16, printed p. 6,
-models a random function as “a uniformly chosen function table F”. The projection is an
-explicit additional map, and the theorem retains the complete reply table. -/
+/-- **A projected fresh reply is uniform.** For a uniform table `f : X → Y`, a map
+`project : Y → Z` sending the uniform law on `Y` to the uniform law on `Z`, and an `event` that
+ignores the coordinate `x`,
+`Pr[event f ∧ project (f x) = z] = Pr[event f] / |Z|`.
+The table keeps its full replies; only the new test reads `project (f x)`. Model: MauRen16,
+printed p. 6, “a uniformly chosen function table F”. -/
 lemma uniform_mass_fresh_projected_eval_eq {X Y Z : Type*} [Fintype X] [DecidableEq X]
     [Fintype Y] [Nonempty Y] [Fintype Z] [Nonempty Z]
     (project : Y → Z)
@@ -356,9 +358,10 @@ lemma uniform_mass_fresh_projected_eval_eq {X Y Z : Type*} [Fintype X] [Decidabl
       (Distribution.uniform (X → Y)).mass event / Fintype.card Z := by
   classical
   let P := Distribution.uniform (X → Y)
-  -- Partition by the full reply at the fresh coordinate.
+  -- Partition by the full reply `y = f x` at the fresh coordinate.
   rw [Distribution.mass_eq_sum_mass_fiber P _ (fun f => f x) Finset.univ
     (fun _ _ => Finset.mem_univ _)]
+  -- Fiber `y`: `Pr[event ∧ f x = y] = Pr[event] / |Y|` if `project y = z`, empty otherwise.
   have hm (y : Y) : P.mass (fun f => (event f ∧ project (f x) = z) ∧ f x = y) =
       (if project y = z then P.mass event / Fintype.card Y else 0) := by
     split_ifs with hy
@@ -370,11 +373,12 @@ lemma uniform_mass_fresh_projected_eval_eq {X Y Z : Type*} [Fintype X] [Decidabl
         _ = _ := uniform_mass_fresh_eval_eq x y event hfresh
     · exact Distribution.mass_eq_zero_of_forall_not _ (fun f h => hy (h.2 ▸ h.1.2))
   simp only [hm]
-  -- The projection hypothesis supplies the fraction of full replies with visible value `z`.
+  -- By `hproject`, `Pr_{y ← U(Y)}[project y = z] = U(Z){z} = 1 / |Z|`.
   have he : (Distribution.uniform Y).mass (fun y => project y = z) =
       1 / (Fintype.card Z : ℝ) := by
     rw [← Distribution.mass_fTransform project (Distribution.uniform Y) (fun t => t = z),
       hproject, Distribution.mass_singleton, Distribution.uniform_apply]
+  -- `∑ y, [project y = z] · Pr[event] / |Y| = Pr[event] · Pr_{y ← U(Y)}[project y = z]`.
   have hs : (∑ y : Y, if project y = z then P.mass event / Fintype.card Y else 0) =
       P.mass event * (Distribution.uniform Y).mass (fun y => project y = z) := by
     rw [Distribution.mass_eq_sum_of_support_subset (Distribution.uniform Y)
@@ -386,11 +390,13 @@ lemma uniform_mass_fresh_projected_eval_eq {X Y Z : Type*} [Fintype X] [Decidabl
   rw [hs, he]
   ring
 
-/-- After a collision-free projected transcript, the next full table reply has at most
-`|h|/|Z|` mass of colliding with an earlier visible value, relative to the transcript mass.
-Repeated inputs create no new collision. MauRen16, printed p. 6, describes the uniform
-function table; the collision estimate is the finite-table birthday specialization noted
-by CR18, printed p. 51. Jost leaves this estimate optional for a selected resource. -/
+/-- **Conditional projected collision bound.** Let `h` be a history of inputs and full replies
+whose projected replies differ on distinct inputs (`hgood`), and write `f ⊨ h` for
+`∀ (a, y) ∈ h, f a = y`. For a uniform table `f : X → Y`,
+`Pr[f ⊨ h ∧ ∃ (a, y) ∈ h, a ≠ x ∧ project (f x) = project y] ≤ |h| / |Z| · Pr[f ⊨ h]`.
+A fresh `x` costs a union bound; a repeated `x` has no collision under `hgood`. `h` need not be
+consistent: an impossible history has mass zero. Model: MauRen16, printed p. 6, “a uniformly
+chosen function table F”. -/
 lemma uniform_mass_transcript_projected_collision_le {X Y Z : Type*}
     [Fintype X] [DecidableEq X] [Fintype Y] [Nonempty Y] [Fintype Z] [Nonempty Z]
     (project : Y → Z)
@@ -402,10 +408,12 @@ lemma uniform_mass_transcript_projected_collision_le {X Y Z : Type*}
         (h.length : ℝ) / Fintype.card Z *
           (Distribution.uniform (X → Y)).mass (fun f => ∀ z ∈ h, f z.1 = z.2) := by
   classical
+  -- Either `x` is fresh (no input of `h`) or it repeats an input of `h`.
   by_cases hfresh : ∀ z ∈ h, z.1 ≠ x
-  · -- A fresh input can hit one of at most `h.length` old projected replies.
+  · -- Fresh `x`: union bound over the old pairs `(a, y)` of `h`.
     have hm := Distribution.mass_exists_le (Distribution.uniform_nonNeg (A := X → Y))
       h.toFinset (fun z f => (∀ a ∈ h, f a.1 = a.2) ∧ project (f x) = project z.2)
+    -- The bad event is the union over `(a, y) ∈ h` of `f ⊨ h ∧ project (f x) = project y`.
     have he : (Distribution.uniform (X → Y)).mass (fun f =>
         (∀ z ∈ h, f z.1 = z.2) ∧ ∃ z ∈ h, z.1 ≠ x ∧ project (f x) = project z.2) =
         (Distribution.uniform (X → Y)).mass (fun f =>
@@ -420,12 +428,14 @@ lemma uniform_mass_transcript_projected_collision_le {X Y Z : Type*}
         exact ⟨ha, z, hz', hfresh z hz', he⟩
     rw [he]
     refine hm.trans ?_
+    -- Each term is `Pr[f ⊨ h] / |Z|`: `f ⊨ h` ignores the fresh coordinate `x`.
     simp only [uniform_mass_fresh_projected_eval_eq project hproject x _
       (fun f => ∀ a ∈ h, f a.1 = a.2) (fun f g he => by
       constructor <;> intro hh z hz
       · rw [← he z.1 (hfresh z hz)]; exact hh z hz
       · rw [he z.1 (hfresh z hz)]; exact hh z hz), Finset.sum_const,
       nsmul_eq_mul]
+    -- At most `|h|` distinct old pairs.
     have hc : (h.toFinset.card : ℝ) ≤ h.length := by
       exact_mod_cast List.toFinset_card_le h
     have hn := (Distribution.uniform_nonNeg (A := X → Y)).mass_nonneg
@@ -435,8 +445,9 @@ lemma uniform_mass_transcript_projected_collision_le {X Y Z : Type*}
           (fun f => ∀ z ∈ h, f z.1 = z.2) / Fintype.card Z) :=
         mul_le_mul_of_nonneg_right hc (div_nonneg hn (Nat.cast_nonneg _))
       _ = _ := by ring
-  · -- A repeated input has its reply fixed by the transcript; good projected values
-      -- rule out a collision with any different input.
+  · -- Repeated `x`: some `(x, y) ∈ h`, so `f ⊨ h` fixes `f x = y`. A match
+    -- `project y' = project y` with `(b, y') ∈ h` forces `b = x` by `hgood`, contradicting
+    -- `b ≠ x`. The bad event is empty; the bound is nonnegative.
     push Not at hfresh
     obtain ⟨a, ha, hax⟩ := hfresh
     rw [Distribution.mass_eq_zero_of_forall_not _ (by
