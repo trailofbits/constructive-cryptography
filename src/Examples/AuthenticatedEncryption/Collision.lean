@@ -1,5 +1,5 @@
 import Examples.AuthenticatedEncryption.Hybrid
-import ConstructiveCryptography.InterfaceGame
+import ConstructiveCryptography.Instances.Game
 
 /-!
 # Authenticated encryption: the collision step

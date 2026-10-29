@@ -1,5 +1,5 @@
 import ConstructiveCryptography.DSL.Equations
-import ConstructiveCryptography.InterfaceCategory
+import ConstructiveCryptography.Instances.Category
 import RandomSystems.Typed.DSL.Tactics
 
 /-! # Inlining a declared component

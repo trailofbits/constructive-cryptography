@@ -1,17 +1,17 @@
 import ConstructiveCryptography.Notation.Basic
 import RandomSystems.Typed.ParallelAllAttachment
-import ConstructiveCryptography.InterfaceAlgebra
+import ConstructiveCryptography.Instances.Algebra
 import ConstructiveCryptography.CryptographicAlgebra.Game
 import ConstructiveCryptography.Tactics.Categorical
 
 /-!
-# Notation for interfaces
+# Notation frontend for interfaces
 
-Scoped notation for the CC operations on interfaces: `S —[α]→ T` and `S —[α; ε]→ T` for exact
-and approximate construction, and `G |≡ T` for conditional equivalence of a game to a typed
-system. The generic `Δ R S`, `R ∥ S` and `R ≃[ε] S` come from
-`ConstructiveCryptography.Notation.Basic`; on interfaces `Δ` is the transcript distance and
-`≃[ε]` quantifies over the `AdmissibleDistinguishers` instance a statement installs. Second
+All notation, `Δ R S`, `R ∥ S`, `R ≃[ε] S`, `𝓡 —[π]→ 𝒮`, `𝓡 —[π; ε]→ 𝒮` and `G |≡ T`, is
+defined over the abstract classes in `ConstructiveCryptography.Notation.Basic`, and reads the
+selected instances. This module sits above the interface instances and the proof commands and
+defines no notation of its own; on interfaces `Δ` is the transcript distance and `≃[ε]`
+quantifies over the `AdmissibleDistinguishers` instance a statement installs. Second
 handlers for `Δ` and `∥` (`elabTypedCCDistance`, `elabTypedCCParallel`, sharing
 `elabTypedCCOperands`) first read each operand as a typed system on its own interface, so that
 attachments such as `Δ (α • R) (α • S)` or `α • R ∥ β • S` infer their interfaces and budgets.
@@ -74,19 +74,6 @@ def elabTypedCCParallel : TermElab
     elabTypedCCOperands (← `(ConstructiveCryptography.CryptographicAlgebra.parallel))
       R S expectedType?
   | _, _ => throwUnsupportedSyntax
-
-scoped notation:50 source " —[" converter "]→ " target:51 =>
-  ConstructiveCryptography.CryptographicAlgebra.Specification.Constructs
-    converter source target
-
-scoped notation:50 source " —[" converter "; " error "]→ " target:51 =>
-  ConstructiveCryptography.CryptographicAlgebra.Specification.ConstructsWithin
-    converter source target error
-
-/-- Conditional equivalence `G |≡ T` of a game to a typed system (CR18, Definition 4.19): the
-field of `DistinctionGames`. -/
-scoped notation:50 G:51 " |≡ " T:51 =>
-  ConstructiveCryptography.DistinctionGames.ConditionallyEquivalent G T
 
 namespace Interface
 

@@ -1,4 +1,5 @@
-import ConstructiveCryptography.Notation
+import ConstructiveCryptography.Notation.Basic
+import ConstructiveCryptography.Instances.Algebra
 import RandomSystems.Typed.Game
 import RandomSystems.Typed.PresentedGame
 
@@ -12,8 +13,9 @@ random systems. The carrier `Game A` is the typed games `TypedGame A`, MBO rando
 instantiates games (§3.7.1). Winners and solvers are probabilistic distinguishers, through their
 behaviors `Domain.SolverBehavior`: a winner does not see the MBO (`DDE.blindMBO`).
 
-* `games`: the performance space is `ℝ`, and `winners` are the winning probabilities of the
-  solver behaviors.
+* `games`: the class is abstract over a preordered performance space `Ω`; this instance selects
+  `Ω = ℝ`, and `winners` are the winning probabilities of the solver behaviors. No range axiom
+  is added.
 * `gameAction`, over the same `ℝ`: `attachGame` is `TypedConverter.attachGame`, the attachment
   of the MBO-forwarding lift `PDCBehavior.liftMBO`. Its identity and serial laws are
   `TypedConverter.identity_attachGame` and `TypedConverter.comp_attachGame`
@@ -30,7 +32,8 @@ Conditional equivalence then bounds the distance of the visible system of a game
 probability that its MBO is set on fixed queries (CR18, Theorem 4.17), through
 `RandomSystem.transcriptDistance_visible_le_of_unsetProbability`. For a game presented by a
 discrete game (`TypedGame.ofPDG`), the bound on the condition bounds the distance from the
-presented typed system.
+presented typed system. The statements use `Δ` and `|≡` from the abstract
+`Notation.Basic`, read at these instances; the interface frontend `Notation` is not imported.
 
 ## Main definitions
 

@@ -26,7 +26,7 @@ W -- α -- β -- G
 
 `Games.absorb_mem` uses closure of the admitted winners. `Games.absorb_comp` uses serial
 attachment; `DistinctionGames.absorb_mem` preserves the two evaluations of the same solver.
-On interfaces (`ConstructiveCryptography.InterfaceGame`), the identity and serial laws are
+On interfaces (`ConstructiveCryptography.Instances.Game`), the identity and serial laws are
 `TypedConverter.identity_attachGame` and `TypedConverter.comp_attachGame`, and both closure
 laws are `Domain.SolverBehavior.absorb`.
 -/

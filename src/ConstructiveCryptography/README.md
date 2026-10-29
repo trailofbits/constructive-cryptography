@@ -7,13 +7,15 @@ distinguishers and the selection of admitted tests, likewise without categories 
 `CryptographicAlgebra` defines the classes of assumptions, from resource theories to
 distinguisher classes and the converter actions on distinguishers and games;
 `Specification` and `Construction` define specifications, constructions and relaxations over any
-carrier; the instance files `InterfaceCategory`, `InterfaceMonoidal`, `InterfaceAlgebra` and
-`InterfaceGame` instantiate the classes on interfaces; `Substitution` is the substitution
-calculus; `Notation`, the proof commands of `Tactics` and the DSL front end
-([GRAMMAR](DSL/GRAMMAR.md)) are built on these. The fields of the instances are the systems-level
-objects of [RandomSystems](../RandomSystems/README.md), and [the table below](#the-instances-on-interfaces) lists each field and axiom with its
-systems object and theorem. Citations refer to the numbered [references](../../THEORY.md#references) of
-THEORY.md.
+carrier; `Substitution` is the substitution calculus; `Notation.Basic` gives their generic
+notation. The instance files `Instances.Category`, `Instances.Monoidal`, `Instances.Algebra`,
+`Instances.Game` and `Instances.Substitution` instantiate the classes on interfaces; the full
+`Notation`, the proof commands of `Tactics` and the DSL front end ([GRAMMAR](DSL/GRAMMAR.md))
+are built on them. The fields of the instances are the systems-level objects of
+[RandomSystems](../RandomSystems/README.md), and the
+[instance table in THEORY.md](../../THEORY.md#interface-instance-table) lists each
+field and axiom with its systems object and theorem. Citations refer to the numbered
+[references](../../THEORY.md#references) of THEORY.md.
 
 ## The classes
 
@@ -182,8 +184,9 @@ can use the decision view while a game bound keeps both views of the same solver
 
 Interfaces are an instance of each class: the carrier $`\Phi A`$ is the
 [typed systems](../RandomSystems/Typed/README.md) on $`A`$, every field is a systems-level object,
-and every axiom is discharged by a systems-level theorem. The instances are
-[`Interface.category`][Interface.category], [`Interface.monoidal`][Interface.monoidal],
+and every axiom is discharged by systems-level theorems; non-expansion of the transcript metric
+composes them through the abstract [`ofClosure`][CompatibleDistinguisherClass.ofClosure].
+The instances are [`Interface.category`][Interface.category], [`Interface.monoidal`][Interface.monoidal],
 [`Interface.resourceTheory`][Interface.resourceTheory],
 [`Interface.cryptographicAlgebra`][Interface.cryptographicAlgebra],
 [`Interface.compatibleDistinguisherClass`][Interface.compatibleDistinguisherClass],
@@ -192,62 +195,13 @@ and every axiom is discharged by a systems-level theorem. The instances are
 [`Interface.distinguisherAdvantageDominated`][Interface.distinguisherAdvantageDominated],
 [`Interface.games`][Interface.games], [`Interface.gameAction`][Interface.gameAction],
 [`Interface.distinctionGames`][Interface.distinctionGames] and
-[`Interface.distinctionGameAction`][Interface.distinctionGameAction];
-the table gives each field and axiom. No `AdmissibleDistinguishers` instance is installed on
-interfaces: each security statement takes the admitted tests as an instance argument.
-
-| Class, instance | Field or axiom | Systems level |
-|---|---|---|
-| `Category` (Mathlib), [`Interface.category`][Interface.category] | objects | [interfaces][Interface] |
-| | `Hom A B` | [`TypedConverter A B`][TypedConverter] |
-| | `id`, `comp` | [`TypedConverter.id`][TypedConverter.id], [`TypedConverter.comp`][TypedConverter.comp]: the identity and the serial composition of PDC behaviors |
-| | `id_comp`, `comp_id`, `assoc` | [`PDCBehavior.id_comp`][PDCBehavior.id_comp], [`PDCBehavior.comp_id`][PDCBehavior.comp_id], [`PDCBehavior.comp_assoc`][PDCBehavior.comp_assoc] |
-| `MonoidalCategory` (Mathlib), [`Interface.monoidal`][Interface.monoidal] by `MonoidalCategory.ofTensorHom` on [`Interface.monoidalStruct`][Interface.monoidalStruct] | `tensorObj`, `tensorUnit` | [`Interface.tensor`][Interface.tensor], [`Interface.unit`][Interface.unit] |
-| | `tensorHom` | [`TypedConverter.parallel`][TypedConverter.parallel], the parallel composition of PDC behaviors; `whiskerLeft` and `whiskerRight` are it with an identity |
-| | `associator`, `leftUnitor`, `rightUnitor` | [`Interface.associator`][Interface.associator], [`Interface.leftUnitor`][Interface.leftUnitor], [`Interface.rightUnitor`][Interface.rightUnitor]: the [isomorphisms][Interface.isoOf] of the regrouping [renamings][TypedConverter.rename], with inverses by [`TypedConverter.rename_comp`][TypedConverter.rename_comp] and [`TypedConverter.rename_refl`][TypedConverter.rename_refl] |
-| | `id_tensorHom_id` ([`Interface.id_tensor_id`][Interface.id_tensor_id]) | [`PDCBehavior.tensor_id`][PDCBehavior.tensor_id] |
-| | `id_tensorHom`, `tensorHom_id` | the definition of the whiskers |
-| | `tensorHom_comp_tensorHom`, interchange ([`Interface.tensor_comp`][Interface.tensor_comp]) | [`PDCBehavior.comp_tensor`][PDCBehavior.comp_tensor] |
-| | `associator_naturality` ([`Interface.associator_naturality`][Interface.associator_naturality]) | [`TypedConverter.comp_associator`][TypedConverter.comp_associator] |
-| | `leftUnitor_naturality`, `rightUnitor_naturality` ([left][Interface.leftUnitor_naturality], [right][Interface.rightUnitor_naturality]) | [`TypedConverter.comp_leftUnitor`][TypedConverter.comp_leftUnitor], [`TypedConverter.comp_rightUnitor`][TypedConverter.comp_rightUnitor] |
-| | `pentagon`, `triangle` ([`Interface.pentagon`][Interface.pentagon], [`Interface.triangle`][Interface.triangle]) | [`TypedConverter.parallel_rename`][TypedConverter.parallel_rename] and [`TypedConverter.rename_comp`][TypedConverter.rename_comp] |
-| [`ResourceTheory`][ResourceTheory]: attachment; [`Interface.resourceTheory`][Interface.resourceTheory] | carrier $`\Phi A`$ | [`TypedSystem A`][TypedSystem] |
-| | `attach` | [`TypedConverter.attach`][TypedConverter.attach], the [attachment of PDC behaviors][PDCBehavior.attach] |
-| | `attach_identity` | [`TypedConverter.identity_attach`][TypedConverter.identity_attach], from [`PDCBehavior.attach_id`][PDCBehavior.attach_id] |
-| | `attach_serial` | [`TypedConverter.comp_smul`][TypedConverter.comp_smul], from [`PDCBehavior.attach_comp`][PDCBehavior.attach_comp] |
-| [`CryptographicAlgebra`][CryptographicAlgebra]: parallel composition; [`Interface.cryptographicAlgebra`][Interface.cryptographicAlgebra] | `laxMonoidal` | [`Interface.resourcesLaxMonoidal`][Interface.resourcesLaxMonoidal] |
-| | its product `μ` | [`TypedSystem.parallel`][TypedSystem.parallel], the [independent parallel composition][RandomSystem.parallel] ([`Interface.cc_parallel_eq`][Interface.cc_parallel_eq]) |
-| | its unit `ε` | the [dummy typed system][TypedSystem.dummy] ([`Interface.cc_dummy_eq`][Interface.cc_dummy_eq]) |
-| | `μ_natural_left`, `μ_natural_right` | [`TypedConverter.parallel_attach`][TypedConverter.parallel_attach], the locality of attachment |
-| | `associativity` ([`Interface.parallel_assoc`][Interface.parallel_assoc]) | [`TypedSystem.parallel_assoc_mass`][TypedSystem.parallel_assoc_mass], through [`TypedConverter.rename_mass`][TypedConverter.rename_mass] |
-| | `left_unitality`, `right_unitality` ([left][Interface.parallel_dummy_left], [right][Interface.parallel_dummy_right]) | [`TypedSystem.parallel_unit_left_mass`][TypedSystem.parallel_unit_left_mass], [`TypedSystem.parallel_unit_right_mass`][TypedSystem.parallel_unit_right_mass], through [`TypedConverter.rename_mass`][TypedConverter.rename_mass] |
-| [`CompatiblePseudoMetric`][CompatiblePseudoMetric]: distance; through [`Interface.compatibleDistinguisherClass`][Interface.compatibleDistinguisherClass] | `fibreMetric` | the [transcript distance][TypedSystem.transcriptPseudoEMetricSpace] itself, so [`Interface.cc_distance_eq`][Interface.cc_distance_eq] is `rfl` |
-| | `edist_smul_le`, `edist_parallel_le` | the bounds of [`CompatibleDistinguisherClass.ofClosure`][CompatibleDistinguisherClass.ofClosure] [8, Lemma 1], from the closure axioms below, transported by [`Interface.transcriptDistance_eq_advantageDistance`][Interface.transcriptDistance_eq_advantageDistance] |
-| [`CompatibleDistinguisherClass`][CompatibleDistinguisherClass]: distinguishers; [`Interface.compatibleDistinguisherClass`][Interface.compatibleDistinguisherClass], with the closure proofs of `ofClosure` | `distinguishers A` | [`Interface.distinguishers`][Interface.distinguishers]: the maps $`R \mapsto \Pr[d(R) = 1]`$ for the [distinguisher behaviors][Domain.DistinguisherBehavior] $`d`$ compatible with $`A`$'s domain |
-| | `closed_attach` ([`Interface.distinguishers_attach`][Interface.distinguishers_attach]) | [absorbing a converter][DistinguisherBehavior.absorb] |
-| | `closed_parallel_left` ([`Interface.distinguishers_parallel_left`][Interface.distinguishers_parallel_left]) | [absorbing a system run beside][Domain.Distinguisher.exists_absorbRight] |
-| | `closed_parallel_right` ([`Interface.distinguishers_parallel_right`][Interface.distinguishers_parallel_right]) | the previous two, through the [swap][Interface.parallel_swap], the [isomorphism][Interface.swap] of the renaming that [exchanges the two components][TypedSystem.parallel_swap_mass] |
-| | `edist_eq` | [`Interface.transcriptDistance_eq_advantageDistance`][Interface.transcriptDistance_eq_advantageDistance]: the transcript distance is the [advantage distance][advantageDistance] of these distinguishers, by the systems characterization [`RandomSystem.transcriptDistance_eq_iSup_behavior`][RandomSystem.transcriptDistance_eq_iSup_behavior] |
-| [`Distinguishers`][Distinguishers]: decision evaluation; [`Interface.distinguisherEvaluations`][Interface.distinguisherEvaluations] | `D A` | [`TypedDistinguisher A`][TypedDistinguisher], the [distinguisher behaviors][Domain.DistinguisherBehavior] compatible with $`A`$'s domain |
-| | `probability d R` | $`\Pr[d(R) = 1]`$, the behavior `d.1` at `R` |
-| [`DistinguisherAction`][DistinguisherAction]: absorption; [`Interface.distinguisherAction`][Interface.distinguisherAction] | `absorb` | [`TypedDistinguisher.absorb`][TypedDistinguisher.absorb], from [absorbing a converter][DistinguisherBehavior.absorb] |
-| | `probability_absorb`, `absorb_id`, `absorb_comp` | [`TypedDistinguisher.probability_absorb`][TypedDistinguisher.probability_absorb] (by definition), [`TypedDistinguisher.absorb_id`][TypedDistinguisher.absorb_id], [`TypedDistinguisher.absorb_comp`][TypedDistinguisher.absorb_comp], from the identity and serial attachment laws |
-| [`DominatedByDistance`][DominatedByDistance], for every admitted set; [`Interface.distinguisherAdvantageDominated`][Interface.distinguisherAdvantageDominated] | `advantage_le_distance` | [`DistinguisherBehavior.advantage_le_transcriptDistance`][DistinguisherBehavior.advantage_le_transcriptDistance] |
-| [`Games`][Games]: games and winners; [`Interface.games`][Interface.games] | `Game A` | [`TypedGame A`][TypedGame]: the typed systems on the interface of $`A`$ with the MBO whose MBO stays set ([`RandomSystem.MonotoneMBO`][RandomSystem.MonotoneMBO]) |
-| | performance space `Ω` | $`\mathbb R`$ |
-| | `winners A` | [`Interface.winners`][Interface.winners]: the winning probabilities of the [solver behaviors][Domain.SolverBehavior] on $`A`$'s domain |
-| `GameAction`; [`Interface.gameAction`][Interface.gameAction] | `attachGame` | [`TypedConverter.attachGame`][TypedConverter.attachGame], the attachment of the [MBO-forwarding lift][PDCBehavior.liftMBO] |
-| | `attachGame_identity` | [`TypedConverter.identity_attachGame`][TypedConverter.identity_attachGame], from [`PDCBehavior.liftMBO_id`][PDCBehavior.liftMBO_id] and [`TypedConverter.identity_attach`][TypedConverter.identity_attach] |
-| | `attachGame_serial` | [`TypedConverter.comp_attachGame`][TypedConverter.comp_attachGame], from [`PDCBehavior.liftMBO_comp`][PDCBehavior.liftMBO_comp] and [`TypedConverter.comp_smul`][TypedConverter.comp_smul] |
-| | `closed_attach` | [`Domain.SolverBehavior.absorb`][Domain.SolverBehavior.absorb] |
-| [`DistinctionGames`][DistinctionGames]: games and distinguishing; [`Interface.distinctionGames`][Interface.distinctionGames] | carrier, games | `TypedSystem A`, `TypedGame A` |
-| | `solvers A` | [`Interface.solvers`][Interface.solvers]: the pairs of the solver behaviors on $`A`$'s domain |
-| | `visible` | [`TypedGame.visible`][TypedGame.visible], the [visible system][RandomSystem.visible] |
-| | `ConditionallyEquivalent` | [`RandomSystem.ConditionallyEquivalent`][RandomSystem.ConditionallyEquivalent] |
-| | `solvers_winner` | the definition of the winners |
-| | `advantage_le_win` | [`Domain.Distinguisher.advantage_le_winProbability`][Domain.Distinguisher.advantage_le_winProbability] |
-| `DistinctionGameAction`; [`Interface.distinctionGameAction`][Interface.distinctionGameAction] | `solvers_closed_attach` | [`Domain.SolverBehavior.absorb`][Domain.SolverBehavior.absorb] |
-| | `visible_attachGame` | [`RandomSystem.visible_attach_liftMBO`][RandomSystem.visible_attach_liftMBO] |
+[`Interface.distinctionGameAction`][Interface.distinctionGameAction]; the
+[instance table in THEORY.md](../../THEORY.md#interface-instance-table) maps each field
+and axiom to its systems object or theorem. No `AdmissibleDistinguishers` instance is installed on
+interfaces: each security statement takes the admitted tests as an instance argument. Import
+`ConstructiveCryptography.Instances` for the whole layer, or one of `Instances.Category`,
+`Instances.Monoidal`, `Instances.Algebra`, `Instances.Game` and `Instances.Substitution` for the
+required part.
 
 Interfaces and typed converters form a category under serial composition, and a monoidal
 category under parallel composition. In the notation of the category, the attachment laws read
@@ -279,23 +233,28 @@ $`\Delta(R, S) \le \varepsilon`$.
 
 ## Notation
 
-With `open scoped SystemAlgebra`, the generic notation of `Notation/Basic.lean`, which imports
-only the abstract layer: [`Δ R S`][notation-distance] for the distance of
-`CompatiblePseudoMetric`, [`R ∥ S`][notation-parallel] for the selected parallel composition,
-and [`R ≃[ε] S`][notation-substitutes] for substitution within $`\varepsilon`$ against the
+With `open scoped SystemAlgebra`, `Notation/Basic.lean` defines all the notation over the
+abstract classes; it imports only those classes, so instance modules such as `Instances.Game`
+use it. Each symbol reads the selected instances and selects none:
+[`Δ R S`][notation-distance] for the distance of `CompatiblePseudoMetric`,
+[`R ∥ S`][notation-parallel] for the selected parallel composition,
+[`R ≃[ε] S`][notation-substitutes] for substitution within $`\varepsilon`$ against the
 admitted tests of the `AdmissibleDistinguishers` instance in scope (the substitution calculus,
-below). `Notation.lean` adds, for interfaces,
-[`𝓡 —[π]→ 𝒮`][notation-constructs] for $`\mathcal R \xrightarrow{\pi} \mathcal S`$ and
+below), [`𝓡 —[π]→ 𝒮`][notation-constructs] for $`\mathcal R \xrightarrow{\pi} \mathcal S`$ and
 [`𝓡 —[π; ε]→ 𝒮`][notation-constructsWithin] for
-$`\mathcal R \xrightarrow{\pi,\ \varepsilon} \mathcal S`$ (constructions, below) and
-[`G |≡ T`][notation-conditionallyEquivalent] for $`G \mathrel{|\!\equiv} T`$, and registers the
-normalization rules, including [`Interface.cc_parallel_eq`][Interface.cc_parallel_eq], which
-identifies `∥` with `TypedSystem.parallel`. It also adds second elaboration handlers for `Δ`
-and `∥`: they first read each operand as a typed system on its own interface, so that the
-interfaces and budgets of attachments such as `Δ (α • R) (α • S)` and `α • R ∥ β • S` are
-inferred, and otherwise restore the elaboration state and defer to the generic handlers. Both
-paths produce the same selected `distance` or `parallel`; on another resource theory `Δ` and
-`∥` keep that theory's own metric and parallel operation.
+$`\mathcal R \xrightarrow{\pi,\ \varepsilon} \mathcal S`$ (constructions, below), and
+[`G |≡ T`][notation-conditionallyEquivalent] for $`G \mathrel{|\!\equiv} T`$, the field of
+`DistinctionGames`.
+
+`Notation.lean`, above the instances and the proof commands, defines no new notation. It
+registers the normalization rules for interfaces, including
+[`Interface.cc_parallel_eq`][Interface.cc_parallel_eq], which identifies `∥` with
+`TypedSystem.parallel`, and adds typed carrier-hint handlers for `Δ` and `∥`: they first read
+each operand as a typed system on its own interface, so that the interfaces and budgets of
+attachments such as `Δ (α • R) (α • S)` and `α • R ∥ β • S` are inferred, and otherwise restore
+the elaboration state and defer to the generic handlers. Both paths produce the same selected
+`distance` or `parallel`; on another resource theory `Δ` and `∥` keep that theory's own metric
+and parallel operation.
 
 ## Specifications and constructions
 
@@ -472,32 +431,32 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 
 <!-- Declarations: the instances and the notation -->
 
-[Interface.category]: InterfaceCategory.lean#L30
-[Interface.identity_attach]: InterfaceCategory.lean#L45
-[Interface.comp_smul]: InterfaceCategory.lean#L50
-[Interface.monoidal]: InterfaceMonoidal.lean#L162
-[Interface.resourceTheory]: InterfaceAlgebra.lean#L77
-[Interface.cryptographicAlgebra]: InterfaceAlgebra.lean#L156
-[Interface.transcriptDistance_eq_advantageDistance]: InterfaceAlgebra.lean#L214
-[Interface.compatibleDistinguisherClass]: InterfaceAlgebra.lean#L236
-[Interface.cc_parallel_eq]: InterfaceAlgebra.lean#L263
-[Interface.cc_dummy_eq]: InterfaceAlgebra.lean#L267
-[Interface.cc_distance_eq]: InterfaceAlgebra.lean#L272
+[Interface.category]: Instances/Category.lean#L30
+[Interface.identity_attach]: Instances/Category.lean#L52
+[Interface.comp_smul]: Instances/Category.lean#L57
+[Interface.monoidal]: Instances/Monoidal.lean#L162
+[Interface.resourceTheory]: Instances/Algebra.lean#L79
+[Interface.cryptographicAlgebra]: Instances/Algebra.lean#L158
+[Interface.transcriptDistance_eq_advantageDistance]: Instances/Algebra.lean#L216
+[Interface.compatibleDistinguisherClass]: Instances/Algebra.lean#L238
+[Interface.cc_parallel_eq]: Instances/Algebra.lean#L265
+[Interface.cc_dummy_eq]: Instances/Algebra.lean#L269
+[Interface.cc_distance_eq]: Instances/Algebra.lean#L274
 [TypedSystem.transcriptPseudoEMetricSpace]: ../RandomSystems/Typed/Distance.lean#L22
 [RandomSystem.transcriptDistance_eq_iSup_behavior]: ../RandomSystems/Distance/Distinguisher.lean#L246
-[Interface.games]: InterfaceGame.lean#L70
-[Interface.distinctionGames]: InterfaceGame.lean#L100
+[Interface.games]: Instances/Game.lean#L73
+[Interface.distinctionGames]: Instances/Game.lean#L103
 [Domain.SolverBehavior]: ../RandomSystems/Game/MBOAttachment.lean#L2174
-[Interface.win_le]: InterfaceGame.lean#L150
-[Interface.dist_visible_le]: InterfaceGame.lean#L166
-[Interface.conditionallyEquivalent_ofPDG_iff]: InterfaceGame.lean#L180
-[Interface.game_dist_le]: InterfaceGame.lean#L193
-[notation-distance]: Notation/Basic.lean#L26
-[notation-parallel]: Notation/Basic.lean#L38
-[notation-constructs]: Notation.lean#L78
-[notation-constructsWithin]: Notation.lean#L82
-[notation-substitutes]: Notation/Basic.lean#L65
-[notation-conditionallyEquivalent]: Notation.lean#L88
+[Interface.win_le]: Instances/Game.lean#L153
+[Interface.dist_visible_le]: Instances/Game.lean#L169
+[Interface.conditionallyEquivalent_ofPDG_iff]: Instances/Game.lean#L183
+[Interface.game_dist_le]: Instances/Game.lean#L196
+[notation-distance]: Notation/Basic.lean#L36
+[notation-parallel]: Notation/Basic.lean#L48
+[notation-constructs]: Notation/Basic.lean#L82
+[notation-constructsWithin]: Notation/Basic.lean#L88
+[notation-substitutes]: Notation/Basic.lean#L75
+[notation-conditionallyEquivalent]: Notation/Basic.lean#L94
 
 <!-- Declarations: specifications and constructions -->
 
@@ -553,9 +512,9 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [Domain.DistinguisherBehavior]: ../RandomSystems/Distance/Distinguisher.lean#L207
 [DistinguisherBehavior.advantage_le_transcriptDistance]: ../RandomSystems/Distance/Distinguisher.lean#L238
 [DistinguisherBehavior.absorb]: ../RandomSystems/Distance/Distinguisher.lean#L291
-[Interface.distinguisherEvaluations]: InterfaceAlgebra.lean#L162
-[Interface.distinguisherAction]: InterfaceAlgebra.lean#L168
-[Interface.distinguisherAdvantageDominated]: InterfaceAlgebra.lean#L290
+[Interface.distinguisherEvaluations]: Instances/Algebra.lean#L164
+[Interface.distinguisherAction]: Instances/Algebra.lean#L170
+[Interface.distinguisherAdvantageDominated]: Instances/Algebra.lean#L292
 [DistinguisherAdvantage]: Distinguisher.lean#L54
 [Distinguishers]: Distinguisher.lean#L89
 [AdmissibleDistinguishers]: Distinguisher.lean#L100
@@ -586,32 +545,32 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [Domain.Distinguisher.exists_absorbRight]: ../RandomSystems/Distance/Distinguisher.lean#L330
 [Domain.SolverBehavior.absorb]: ../RandomSystems/Game/MBOAttachment.lean#L2213
 [Interface]: ../RandomSystems/Typed/Interface.lean#L42
-[Interface.associator]: InterfaceMonoidal.lean#L52
-[Interface.associator_naturality]: InterfaceMonoidal.lean#L92
-[Interface.distinguishers]: InterfaceAlgebra.lean#L177
-[Interface.distinguishers_attach]: InterfaceAlgebra.lean#L182
-[Interface.distinguishers_parallel_left]: InterfaceAlgebra.lean#L188
-[Interface.distinguishers_parallel_right]: InterfaceAlgebra.lean#L205
-[Interface.id_tensor_id]: InterfaceMonoidal.lean#L84
-[Interface.isoOf]: InterfaceMonoidal.lean#L33
-[Interface.leftUnitor]: InterfaceMonoidal.lean#L57
-[Interface.leftUnitor_naturality]: InterfaceMonoidal.lean#L97
-[Interface.monoidalStruct]: InterfaceMonoidal.lean#L71
-[Interface.parallel_assoc]: InterfaceAlgebra.lean#L91
-[Interface.parallel_dummy_left]: InterfaceAlgebra.lean#L103
-[Interface.parallel_dummy_right]: InterfaceAlgebra.lean#L112
-[Interface.parallel_swap]: InterfaceAlgebra.lean#L121
-[Interface.pentagon]: InterfaceMonoidal.lean#L105
-[Interface.resourcesLaxMonoidal]: InterfaceAlgebra.lean#L130
-[Interface.rightUnitor]: InterfaceMonoidal.lean#L61
-[Interface.rightUnitor_naturality]: InterfaceMonoidal.lean#L101
-[Interface.solvers]: InterfaceGame.lean#L64
-[Interface.swap]: InterfaceMonoidal.lean#L66
+[Interface.associator]: Instances/Monoidal.lean#L52
+[Interface.associator_naturality]: Instances/Monoidal.lean#L92
+[Interface.distinguishers]: Instances/Algebra.lean#L179
+[Interface.distinguishers_attach]: Instances/Algebra.lean#L184
+[Interface.distinguishers_parallel_left]: Instances/Algebra.lean#L190
+[Interface.distinguishers_parallel_right]: Instances/Algebra.lean#L207
+[Interface.id_tensor_id]: Instances/Monoidal.lean#L84
+[Interface.isoOf]: Instances/Monoidal.lean#L33
+[Interface.leftUnitor]: Instances/Monoidal.lean#L57
+[Interface.leftUnitor_naturality]: Instances/Monoidal.lean#L97
+[Interface.monoidalStruct]: Instances/Monoidal.lean#L71
+[Interface.parallel_assoc]: Instances/Algebra.lean#L93
+[Interface.parallel_dummy_left]: Instances/Algebra.lean#L105
+[Interface.parallel_dummy_right]: Instances/Algebra.lean#L114
+[Interface.parallel_swap]: Instances/Algebra.lean#L123
+[Interface.pentagon]: Instances/Monoidal.lean#L105
+[Interface.resourcesLaxMonoidal]: Instances/Algebra.lean#L132
+[Interface.rightUnitor]: Instances/Monoidal.lean#L61
+[Interface.rightUnitor_naturality]: Instances/Monoidal.lean#L101
+[Interface.solvers]: Instances/Game.lean#L67
+[Interface.swap]: Instances/Monoidal.lean#L66
 [Interface.tensor]: ../RandomSystems/Typed/Parallel.lean#L85
-[Interface.tensor_comp]: InterfaceMonoidal.lean#L87
-[Interface.triangle]: InterfaceMonoidal.lean#L132
+[Interface.tensor_comp]: Instances/Monoidal.lean#L87
+[Interface.triangle]: Instances/Monoidal.lean#L132
 [Interface.unit]: ../RandomSystems/Typed/InterfaceCoherence.lean#L90
-[Interface.winners]: InterfaceGame.lean#L59
+[Interface.winners]: Instances/Game.lean#L62
 [PDCBehavior.attach]: ../RandomSystems/Converter/ConverterAttachment.lean#L157
 [PDCBehavior.attach_comp]: ../RandomSystems/Converter/ConverterAttachment.lean#L277
 [PDCBehavior.attach_id]: ../RandomSystems/Converter/ConverterAttachment.lean#L264
@@ -657,8 +616,8 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 
 [Games.win_le_of_reduction]: Game.lean#L85
 [Problem.performance_le_of_reduction]: Problem.lean#L50
-[Interface.gameAction]: InterfaceGame.lean#L75
-[Interface.distinctionGameAction]: InterfaceGame.lean#L133
+[Interface.gameAction]: Instances/Game.lean#L78
+[Interface.distinctionGameAction]: Instances/Game.lean#L136
 [Domain.SolverBehavior.decision]: ../RandomSystems/Game/MBOAttachment.lean#L2185
 [Domain.SolverBehavior.decision_absorb]: ../RandomSystems/Game/MBOAttachment.lean#L2234
 [TypedConverter.identity_attachGame]: ../RandomSystems/Typed/Game.lean#L61

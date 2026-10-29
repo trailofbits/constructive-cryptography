@@ -1,6 +1,6 @@
 import RandomSystems.Typed.Context
 import ConstructiveCryptography.Substitution.Relaxation
-import ConstructiveCryptography.InterfaceAlgebra
+import ConstructiveCryptography.Instances.Algebra
 
 set_option autoImplicit false
 
@@ -10,7 +10,7 @@ set_option autoImplicit false
 For interfaces, the fixed contexts `TypedConverter.rightContext` and `TypedConverter.leftContext`
 realize parallel composition with a fixed typed system. A single-substitution relaxation whose
 transformation class is closed under both contexts is therefore compatible with parallel
-composition.
+composition. The closure is a hypothesis of the corollary, not a property of the instances.
 
 This module is concrete: interfaces are `Interface`, resources on `A` are typed systems
 `TypedSystem A`, an arrow `A ⟶ D` is a typed converter with outside `A` and inside `D`, and
@@ -42,7 +42,7 @@ open ConstructiveCryptography.CryptographicAlgebra
 
 
 /-- The literal one-use substitution relaxation preserves independent
-parallel under explicit closure of the admitted transformations in both
+parallel composition under explicit closure of the admitted transformations in both
 ordered context positions.
 
 Banfi, Section 4.1.4 (printed p. 76), requires an "(efficient) transformation".

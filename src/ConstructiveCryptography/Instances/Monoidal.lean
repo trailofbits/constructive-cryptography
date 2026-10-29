@@ -1,4 +1,4 @@
-import ConstructiveCryptography.InterfaceCategory
+import ConstructiveCryptography.Instances.Category
 import RandomSystems.Typed.ConverterCoherence
 import RandomSystems.Typed.TensorRename
 import Mathlib.CategoryTheory.Monoidal.Category

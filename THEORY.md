@@ -124,8 +124,8 @@ typed games presented by discrete games.
 composition, distance, distinguishers, games, winners, solvers) only as fields and axioms, and
 knows nothing about systems [3, §§4.4.3, 4.5.1, 4.7.2, 4.10–4.11], [6, §3], [7, §2.2], [8].
 Interfaces are an instance of each class: the carrier $`\Phi A`$ is the typed systems on $`A`$,
-every field is a systems-level object of §1–2, and every axiom is discharged by a systems-level
-theorem. Only the classes say "resource", for an element of $`\Phi A`$.*
+every field is a systems-level object of §1–2, and every axiom is discharged by systems-level
+theorems. Only the classes say "resource", for an element of $`\Phi A`$.*
 
 ```
 Category ─▶ MonoidalCategory
@@ -174,9 +174,49 @@ is the [independent parallel composition][RandomSystem.parallel]. The distance
 [is, by definition, the transcript distance][Interface.cc_distance_eq] of §1, the distinguishers are the
 [distinguisher behaviors][Domain.DistinguisherBehavior], absorbing converters by attachment, and
 the games are the
-[typed games][TypedGame]. Each axiom is discharged by a systems-level theorem;
-[ConstructiveCryptography](src/ConstructiveCryptography/README.md#the-instances-on-interfaces)
-lists every field and axiom with the object or theorem behind it.
+[typed games][TypedGame]. Each axiom is discharged by systems-level theorems, which the abstract
+theorem `CompatibleDistinguisherClass.ofClosure` composes for non-expansion; the table below
+records the correspondence.
+
+### Interface instance table
+
+The instance modules select existing systems objects and discharge the abstract axioms with
+their laws. They define no new system, converter, distance or game carrier; interfaces, typed
+systems, typed games and `TypedDistinguisher` remain objects of `RandomSystems`. The import
+root is [`ConstructiveCryptography.Instances`](src/ConstructiveCryptography/Instances.lean).
+Every row is a global instance (`DominatedByDistance` one for each admitted set) except
+`AdmissibleDistinguishers`, which a statement chooses locally and is never installed globally.
+
+| Class | Field | Systems object | Axiom | Systems theorem |
+|---|---|---|---|---|
+| `Category Interface` ([Category](src/ConstructiveCryptography/Instances/Category.lean)) | `Hom`, `id`, `comp` | `TypedConverter`, `TypedConverter.id`, `TypedConverter.comp` | `id_comp`, `comp_id`, `assoc` | `PDCBehavior.id_comp`, `comp_id`, `comp_assoc` |
+| `MonoidalCategory Interface` ([Monoidal](src/ConstructiveCryptography/Instances/Monoidal.lean)) | `tensorObj`, `tensorHom`, `tensorUnit` | `Interface.tensor`, `TypedConverter.parallel`, `Interface.unit` | identity and composition under tensor | `PDCBehavior.tensor_id`, `comp_tensor` |
+| `MonoidalCategory Interface` | associator and unitors | `TypedConverter.rename` through the interface regroupings | naturality, pentagon, triangle | `TypedConverter.comp_associator`, `comp_leftUnitor`, `comp_rightUnitor`; `parallel_rename` and `rename_comp` for coherence |
+| `ResourceTheory Interface TypedSystem` ([Algebra](src/ConstructiveCryptography/Instances/Algebra.lean)) | `attach` | `TypedConverter.attach` | `attach_identity`, `attach_serial` | `TypedConverter.identity_attach`, `comp_smul` |
+| `CryptographicAlgebra Interface TypedSystem` | `laxMonoidal` product and unit | `TypedSystem.parallel`, `TypedSystem.dummy` | naturality | `TypedConverter.parallel_attach` |
+| `CryptographicAlgebra Interface TypedSystem` | the same product and unit | typed systems through the regrouping renamings | associativity and unitality | `TypedConverter.rename_mass` with `TypedSystem.parallel_assoc_mass`, `parallel_unit_left_mass`, `parallel_unit_right_mass` |
+| `Distinguishers Interface TypedSystem TypedDistinguisher` | `probability` | the output-1 evaluation `d.1 R` of a `TypedDistinguisher` | none; no range axiom | none |
+| `DistinguisherAction Interface TypedSystem TypedDistinguisher` | `absorb` | `TypedDistinguisher.absorb` | evaluation, identity, serial absorption | `TypedDistinguisher.probability_absorb`, `absorb_id`, `absorb_comp` |
+| `CompatibleDistinguisherClass Interface TypedSystem` | `distinguishers` | all compatible stopping decision behaviors, as functions on typed systems | attachment and ordered-context closure | `Domain.DistinguisherBehavior.absorb`, `Domain.Distinguisher.exists_absorbRight`, `TypedSystem.parallel_swap_mass` |
+| `CompatibleDistinguisherClass Interface TypedSystem` | `fibreMetric`, set explicitly | the canonical transcript distance `TypedSystem.transcriptPseudoEMetricSpace`, over all compatible stopping behaviors | `edist_eq` | `RandomSystem.transcriptDistance_eq_iSup_behavior`, via `Interface.transcriptDistance_eq_advantageDistance` |
+| `CompatiblePseudoMetric Interface TypedSystem` (parent of the row above) | the same `fibreMetric` | transcript distance | attachment and parallel non-expansion | not a systems theorem: the abstract `CompatibleDistinguisherClass.ofClosure` [8, Lemma 1] applied to the closure row, transferred by `edist_eq` |
+| `DistinguisherAdvantage.DominatedByDistance`, for each admitted set | no new metric | decision advantage and the selected transcript distance | `advantage_le_distance` | `Domain.DistinguisherBehavior.advantage_le_transcriptDistance` |
+| `AdmissibleDistinguishers Interface TypedDistinguisher` | `admissible`, a **local choice** | a selected set of typed distinguishers at each interface | none; each reduction supplies `ClosedUnder α` for its own converter | none; no global instance, efficiency or universal closure claim |
+| `Games Interface TypedGame ℝ` ([Game](src/ConstructiveCryptography/Instances/Game.lean)) | `winners` | the winning views of `Domain.SolverBehavior`; the class is abstract over a preordered $`\Omega`$, here $`\Omega = \mathbb R`$, real winning probabilities | none; no range axiom | none |
+| `GameAction Interface TypedGame ℝ` | `attachGame` | `TypedConverter.attachGame`, using the MBO-forwarding lift | identity, serial action, winner closure | `TypedConverter.identity_attachGame`, `comp_attachGame`; `Domain.SolverBehavior.absorb` |
+| `DistinctionGames Interface TypedSystem TypedGame` | `solvers`, `visible`, `ConditionallyEquivalent` | joint solver views, `TypedGame.visible`, `RandomSystem.ConditionallyEquivalent` | `solvers_winner`, `advantage_le_win` | membership by definition; `Domain.Distinguisher.advantage_le_winProbability` |
+| `DistinctionGameAction Interface TypedSystem TypedGame` | the same joint solvers and game action | one solver absorbed through one converter, preserving both views | solver closure, visibility under attachment | `Domain.SolverBehavior.absorb`, `RandomSystem.visible_attach_liftMBO` |
+
+The [Substitution](src/ConstructiveCryptography/Instances/Substitution.lean) corollary uses
+`TypedConverter.rightContext` and `leftContext`, whose attachment laws realize the two ordered
+parallel contexts. Explicit closure under these contexts makes a single-substitution relaxation
+parallel-compatible. Game distance bounds in the Game module similarly reuse systems-level
+conditional-equivalence bounds; neither adds an instance axiom.
+
+The metric's class contains **all** compatible stopping decision behaviors. A computational
+security statement separately selects admitted distinguishers, and its reduction proves closure
+under the converters it actually uses. Thus the canonical transcript metric neither selects an
+efficient class nor assumes that every converter preserves efficiency.
 
 ---
 
@@ -324,7 +364,7 @@ extension are in [Examples](src/Examples/README.md).
 
 <!-- Declarations: §3 -->
 
-[Interface.cc_distance_eq]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L272
+[Interface.cc_distance_eq]: src/ConstructiveCryptography/Instances/Algebra.lean#L274
 
 <!-- Declarations: §4 -->
 

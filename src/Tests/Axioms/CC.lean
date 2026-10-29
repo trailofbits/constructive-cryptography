@@ -36,7 +36,7 @@ on interfaces, depend only on `propext`, `Classical.choice` and `Quot.sound`.
 #print axioms ConstructiveCryptography.CryptographicAlgebra.Specification.star_idem
 #print axioms ConstructiveCryptography.CryptographicAlgebra.Specification.Constructs.star
 
--- ConstructiveCryptography.InterfaceAlgebra
+-- ConstructiveCryptography.Instances.Algebra
 #print axioms SystemAlgebra.Interface.resourcesLaxMonoidal
 #print axioms SystemAlgebra.Interface.cc_parallel_eq
 #print axioms SystemAlgebra.Interface.cc_distance_eq
@@ -55,19 +55,19 @@ on interfaces, depend only on `propext`, `Classical.choice` and `Quot.sound`.
 #print axioms SystemAlgebra.TypedDistinguisher.absorb_comp
 #print axioms ConstructiveCryptography.AdmissibleDistinguishers.substitutesWithin_attach
 #print axioms ConstructiveCryptography.AdmissibleDistinguishers.substitutesWithin_context
--- ConstructiveCryptography.InterfaceAlgebra, continued
+-- ConstructiveCryptography.Instances.Algebra, continued
 #print axioms SystemAlgebra.Interface.distinguisherAdvantageDominated
 #print axioms SystemAlgebra.Interface.parallel_assoc
 #print axioms SystemAlgebra.Interface.parallel_dummy_left
 #print axioms SystemAlgebra.Interface.parallel_dummy_right
 #print axioms SystemAlgebra.Interface.parallel_swap
 
--- ConstructiveCryptography.InterfaceCategory
+-- ConstructiveCryptography.Instances.Category
 #print axioms SystemAlgebra.Interface.category
 #print axioms SystemAlgebra.Interface.identity_attach
 #print axioms SystemAlgebra.Interface.comp_smul
 
--- ConstructiveCryptography.InterfaceGame
+-- ConstructiveCryptography.Instances.Game
 #print axioms SystemAlgebra.Interface.games
 #print axioms SystemAlgebra.Interface.distinctionGames
 #print axioms SystemAlgebra.Interface.win_le
@@ -75,7 +75,7 @@ on interfaces, depend only on `propext`, `Classical.choice` and `Quot.sound`.
 #print axioms SystemAlgebra.Interface.game_dist_le
 #print axioms SystemAlgebra.Interface.game_dist_ofSingleFunction_le
 
--- ConstructiveCryptography.InterfaceMonoidal
+-- ConstructiveCryptography.Instances.Monoidal
 #print axioms SystemAlgebra.Interface.monoidal
 
 -- ConstructiveCryptography.Notation

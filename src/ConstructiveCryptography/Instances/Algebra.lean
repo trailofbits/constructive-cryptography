@@ -4,7 +4,7 @@ import RandomSystems.Distance.RevealedHCoefficient
 import RandomSystems.Typed.ParallelAttachment
 import RandomSystems.Typed.SystemCoherence
 import RandomSystems.Typed.Distance
-import ConstructiveCryptography.InterfaceMonoidal
+import ConstructiveCryptography.Instances.Monoidal
 import ConstructiveCryptography.CryptographicAlgebra.Distinguisher
 import RandomSystems.Distance.Distinguisher
 import ConstructiveCryptography.Substitution.Reduction
@@ -22,20 +22,22 @@ associativity and unitality by `parallel_assoc`, `parallel_dummy_left` and `para
 which read `TypedConverter.rename_mass` with `TypedSystem.parallel_assoc_mass`,
 `TypedSystem.parallel_unit_left_mass` and `TypedSystem.parallel_unit_right_mass` through the
 regrouping isomorphisms. They are an instance of `CompatibleDistinguisherClass`: the
-distinguishers on `A` are the behaviors of the probabilistic distinguishers compatible with `A`'s
-domain (`Domain.DistinguisherBehavior`), their probabilities of outputting `1` on typed systems.
+distinguishers on `A` are the output-1 probabilities of **all** stopping distinguishers
+compatible with `A`'s domain (`TypedDistinguisher A`, i.e. `Domain.DistinguisherBehavior`).
 The axiom `closed_attach` is discharged by `Domain.DistinguisherBehavior.absorb`, and
 `closed_parallel_left` and `closed_parallel_right` by `Domain.Distinguisher.exists_absorbRight`
-and the swap (`TypedSystem.parallel_swap_mass`). Its metric is the transcript distance
+and the swap (`TypedSystem.parallel_swap_mass`). Its metric is the canonical transcript distance
 (`TypedSystem.transcriptPseudoEMetricSpace`), so `cc_distance_eq` holds by definition. The bridge
 `transcriptDistance_eq_advantageDistance` identifies it with the advantage distance of these
-distinguishers; through it Maurer's Lemma 1 (`CompatibleDistinguisherClass.ofClosure`) supplies
-non-expansion under attachment and parallel composition.
+distinguishers. Non-expansion under attachment and parallel composition is not a systems
+theorem: the abstract `CompatibleDistinguisherClass.ofClosure` (Maurer 2011, Lemma 1) derives it
+from the closure lemmas, and the bridge transfers it to the transcript distance.
 
 The decision layer is instantiated separately. `TypedDistinguisher A` evaluates by its output-1
 probability (`distinguisherEvaluations`), and typed absorption `(dα)(R) = d(αR)` is the CC
-action (`distinguisherAction`). These instances select no admitted class: a security
-statement chooses its tests through `AdmissibleDistinguishers`, and each reduction supplies
+action (`distinguisherAction`). These instances select no admitted class, and no
+`AdmissibleDistinguishers` instance is installed: a security statement chooses its tests
+locally, with no efficiency or universal closure claim, and each reduction supplies
 `AdmissibleDistinguishers.ClosedUnder α` for its own converter `α`. For every admitted set,
 `distinguisherAdvantageDominated` bounds the decision advantage by the transcript distance, the
 domination law needed by statistical steps of a substitution chain.

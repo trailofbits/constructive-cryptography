@@ -1,4 +1,4 @@
-import ConstructiveCryptography.Substitution.Parallel
+import ConstructiveCryptography.Instances.Substitution
 import ConstructiveCryptography.Notation
 import ConstructiveCryptography.Tactics.Substitution
 

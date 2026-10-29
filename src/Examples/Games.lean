@@ -1,4 +1,4 @@
-import ConstructiveCryptography.InterfaceGame
+import ConstructiveCryptography.Instances.Game
 import Examples.AuthenticatedEncryption.Collision
 import RandomSystems.Game.DiscreteMBO
 

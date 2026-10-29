@@ -9,7 +9,7 @@ import Mathlib.Topology.EMetricSpace.Defs
 laws follow from the characterization by compatible stopping distinguisher behaviors
 (`RandomSystem.transcriptDistance_eq_iSup_behavior`), `Δ(R, S) = ⨆ d, Adv_d(R, S)`.
 Zero distance is not equality: no separation is claimed. It is an explicit structure, not a
-global instance; the CC instance on interfaces (`ConstructiveCryptography.InterfaceAlgebra`)
+global instance; the CC instance on interfaces (`ConstructiveCryptography.Instances.Algebra`)
 selects it as its metric.
 -/
 

@@ -1,23 +1,33 @@
+import ConstructiveCryptography.CryptographicAlgebra.Game
 import ConstructiveCryptography.CryptographicAlgebra.DistinguisherAction
 
 /-!
 # Abstract CC notation
 
-Scoped notation, in the `SystemAlgebra` scope, for any cryptographic algebra:
+Scoped notation, in the `SystemAlgebra` scope, for any instances of the abstract classes:
 
 ```text
-Δ R S       distance R S                         selected compatible pseudo-metric
-R ∥ S       parallel R S                         selected ordered parallel operation
-R ≃[ε] S    ∀ d ∈ admissible A, advantage(d, R, S) ≤ ε(d)    decision advantage
+Δ R S         distance R S                      selected compatible pseudo-metric
+R ∥ S         parallel R S                      selected ordered parallel operation
+R ≃[ε] S      ∀ d ∈ admissible A,               decision advantage against the
+                advantage(d, R, S) ≤ ε(d)         selected admitted tests
+𝓡 —[π]→ 𝒮     Constructs π 𝓡 𝒮                  π𝓡 ⊆ 𝒮
+𝓡 —[π; ε]→ 𝒮  ConstructsWithin π 𝓡 𝒮 ε          ∀ R ∈ 𝓡, ∃ S ∈ 𝒮, d(πR, S) ≤ ε
+G |≡ T        ConditionallyEquivalent G T       selected `DistinctionGames` field
 ```
 
 The notation reads the instances in scope and selects none: the metric, the parallel
-operation, the decision evaluation and the admitted tests are all fixed by the statement
-using it. `Δ` and `∥` are syntaxes with their own generic elaborators, `elabCCDistance` and
-`elabCCParallel`, so that a concrete layer can add carrier hints; every handler produces the
-same `distance R S` or `parallel R S` of the selected instance. Unexpanders print both back in
-this notation. This module imports only the abstract layer; `ConstructiveCryptography.Notation`
-adds the typed-system handlers, the interface notation and the normalization rules.
+operation, the attachment, the decision evaluation, the admitted tests and conditional
+equivalence are all fixed by the statement using it. `Δ` and `∥` are syntaxes with their own
+generic elaborators, `elabCCDistance` and `elabCCParallel`, so that a concrete layer can add
+carrier hints; every handler produces the same `distance R S` or `parallel R S` of the selected
+instance. Unexpanders print both back in this notation.
+
+This module imports only abstract classes, so instance modules such as
+`ConstructiveCryptography.Instances.Game` use it without loading the frontend.
+`ConstructiveCryptography.Notation`, above the instances and the proof commands, defines no
+further notation: it adds the typed carrier hints for `Δ` and `∥` and registers the
+normalization rules for interfaces.
 -/
 
 namespace SystemAlgebra
@@ -66,5 +76,22 @@ scoped notation:50 R:51 " ≃[" error "] " S:51 =>
   ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin
     (ConstructiveCryptography.Distinguishers.distinguisherAdvantage
       ConstructiveCryptography.AdmissibleDistinguishers.admissible) error R S
+
+/-- Exact construction `𝓡 —[π]→ 𝒮`: attaching the converter `π` maps every resource of the
+specification `𝓡` into `𝒮`, `π𝓡 ⊆ 𝒮` (MR16 §§2–4). -/
+scoped notation:50 source " —[" converter "]→ " target:51 =>
+  ConstructiveCryptography.CryptographicAlgebra.Specification.Constructs
+    converter source target
+
+/-- Construction within `ε`, `𝓡 —[π; ε]→ 𝒮`: every `R ∈ 𝓡` has some `S ∈ 𝒮` with
+`d(πR, S) ≤ ε` in the selected metric (MR16 §§2–4). -/
+scoped notation:50 source " —[" converter "; " error "]→ " target:51 =>
+  ConstructiveCryptography.CryptographicAlgebra.Specification.ConstructsWithin
+    converter source target error
+
+/-- Conditional equivalence `G |≡ T` of a game `G` to a resource `T` (CR18, Definition 4.19):
+the `ConditionallyEquivalent` field of the selected `DistinctionGames` instance. -/
+scoped notation:50 G:51 " |≡ " T:51 =>
+  ConstructiveCryptography.DistinctionGames.ConditionallyEquivalent G T
 
 end SystemAlgebra
