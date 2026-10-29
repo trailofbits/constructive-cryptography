@@ -28,6 +28,8 @@ distinct inputs are independent and uniform on `Y`; a repeated input reads the s
   `Pr[F x = y for all (x, y) ∈ h] = (1/|Y|)^d`, `d` the number of distinct inputs of `h`
 * `fTransform_eval_uniform_eq_of_same_fibers`: if `left i = left j ↔ right i = right j`, then
   `Law(i ↦ F (left i)) = Law(i ↦ G (right i))` for uniform `F : X → Y`, `G : Z → Y`
+* `uniform_mass_adaptive_eval_eq_mul`: a batch chosen from revealed base values, fresh on a
+  good base event, contributes `(1/|Y|)^|I|` to the joint mass with that event
 * `uniform_mass_walk_eval_eq`, `uniform_mass_coord_determined_le`,
   `uniform_mass_walk_repeat_le`: lazy sampling along a walk
 * `card_filter_shift`, `card_filter_shift_univ`: re-randomization fibers
@@ -305,6 +307,97 @@ lemma fTransform_eval_uniform_eq_of_same_fibers {I X Z Y : Type*}
   congr 1
   funext table i
   exact congrArg table (hp i)
+
+/-- **Adaptive fresh evaluations of a uniform table.** Let `F` be uniform on `X → Y`. Fix
+finitely many base coordinates `base : B → X` and reveal `b = F ∘ base`. From this one reveal,
+choose a good event `good b` and the entire next batch `next b : I → X`; the batch does not
+depend on any of its own outputs. If on `good b` the combined family
+`Sum.elim base (next b) : B ⊕ I → X` is injective, then for every `values : I → Y`
+
+```text
+Pr[good(F ∘ base) ∧ F ∘ next(F ∘ base) = values] = Pr[good(F ∘ base)] · (1/|Y|)^|I|
+```
+
+Timing of the single table `F`:
+
+```text
+      F ←$ (X → Y)
+base ──F──▶ b ──▶ good(b), next(b) ──F──▶ F ∘ next(b) =? values
+```
+
+Outside `good` no freshness is required: selected coordinates may repeat base ones. The fixed
+`base` is injective as soon as some base tuple is good; it may repeat only when no base tuple
+is good. The statement is a joint mass, so `Pr[good] = 0` is allowed.
+
+MauRen16, printed p. 6, specifies the URF by "a uniformly chosen function table F" queried by
+"giving as input a value x and receiving as output the value F (x)". Jost, Figure 4.4, printed
+p. 55, samples `T [x]` only "if T [x] = ⊥" and then does "output T [x]", so a repeated query
+reuses its stored reply. The two table models agree; this formula is a derived consequence of
+`uniform_mass_eval_eq`, not a stated paper theorem. -/
+lemma uniform_mass_adaptive_eval_eq_mul {X Y B I : Type*}
+    [Fintype X] [DecidableEq X] [Fintype Y] [Nonempty Y]
+    [Finite B] [Fintype I]
+    (base : B → X) (next : (B → Y) → I → X) (good : (B → Y) → Prop)
+    (hfresh : ∀ b, good b → Function.Injective (Sum.elim base (next b))) (values : I → Y) :
+    (Distribution.uniform (X → Y)).mass (fun f =>
+      good (fun b => f (base b)) ∧ (fun i => f (next (fun b => f (base b)) i)) = values) =
+        (Distribution.uniform (X → Y)).mass (fun f => good (fun b => f (base b))) *
+          (1 / (Fintype.card Y : ℝ)) ^ Fintype.card I := by
+  classical
+  let := Fintype.ofFinite B
+  let F := Distribution.uniform (X → Y)
+  let observe := fun f : X → Y => fun b => f (base b)
+  -- Proof chain, summing over revealed base tuples `b`:
+  --
+  --   Pr[good ∧ F ∘ next = values] = Σ_b Pr[good ∧ F ∘ next = values ∧ F ∘ base = b]
+  --   good b:     Pr[F ∘ Sum.elim base (next b) = Sum.elim b values] = (1/|Y|)^(|B| + |I|)
+  --               Pr[good ∧ F ∘ base = b] = Pr[F ∘ base = b] = (1/|Y|)^|B|
+  --   not good b: both summands are 0
+  --
+  -- Partition both masses by the revealed base tuple `F ∘ base`.
+  rw [Distribution.mass_eq_sum_mass_fiber F _ observe Finset.univ
+      (fun _ _ => Finset.mem_univ _),
+    Distribution.mass_eq_sum_mass_fiber F _ observe Finset.univ
+      (fun _ _ => Finset.mem_univ _), Finset.sum_mul]
+  apply Finset.sum_congr rfl
+  intro b _
+  by_cases hb : good b
+  · -- Base injectivity is the base part of freshness at this good `b`.
+    have hbase : Function.Injective base := (Sum.elim_injective.mp (hfresh b hb)).1
+    -- With `F ∘ base = b` fixed, `next b` is a fixed batch: the joint event is the evaluation
+    -- of the single injective family `Sum.elim base (next b)` at `Sum.elim b values`.
+    have hleft : F.mass (fun f =>
+        (good (observe f) ∧ (fun i => f (next (observe f) i)) = values) ∧ observe f = b) =
+        F.mass (fun f => (fun c : B ⊕ I => f (Sum.elim base (next b) c)) =
+          Sum.elim b values) := by
+      apply Distribution.mass_congr
+      intro f
+      constructor
+      · rintro ⟨⟨_, hy⟩, hf⟩
+        funext c
+        cases c with
+        | inl c => exact congrFun hf c
+        | inr i => rw [hf] at hy; exact congrFun hy i
+      · intro he
+        have hf : observe f = b := funext fun c => congrFun he (.inl c)
+        refine ⟨⟨hf ▸ hb, ?_⟩, hf⟩
+        rw [hf]
+        exact funext fun i => congrFun he (.inr i)
+    -- The reveal `F ∘ base = b` already implies `good`.
+    have hright : F.mass (fun f => good (observe f) ∧ observe f = b) =
+        F.mass (fun f => observe f = b) :=
+      Distribution.mass_congr _ fun f =>
+        ⟨fun h => h.2, fun h => ⟨h ▸ hb, h⟩⟩
+    -- Uniform marginals at distinct points; `(1/|Y|)^(|B|+|I|)` splits off `(1/|Y|)^|I|`.
+    rw [hleft, hright,
+      uniform_mass_eval_eq _ (hfresh b hb) (Sum.elim b values),
+      uniform_mass_eval_eq base hbase b, Fintype.card_sum, pow_add]
+  · -- Outside `good`, both summands are empty events; no freshness is used here.
+    rw [Distribution.mass_eq_zero_of_forall_not F (by
+        rintro f ⟨⟨hg, _⟩, hf⟩
+        exact hb (hf ▸ hg)), Distribution.mass_eq_zero_of_forall_not F (by
+        rintro f ⟨hg, hf⟩
+        exact hb (hf ▸ hg)), zero_mul]
 
 /-! ## Lazy sampling along a walk on a uniform random function -/
 

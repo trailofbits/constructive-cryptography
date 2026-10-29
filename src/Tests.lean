@@ -1,4 +1,5 @@
 import Tests.AuthenticatedEncryption
+import Tests.AdaptiveUniformEvaluations
 import Tests.Axioms.CC
 import Tests.Axioms.Commons
 import Tests.Axioms.Systems
