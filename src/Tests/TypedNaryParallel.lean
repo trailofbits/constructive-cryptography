@@ -1,4 +1,4 @@
-import RandomSystems.Typed.ParallelAll
+import RandomSystems.Typed.ParallelAllPresentation
 import ConstructiveCryptography.Notation
 
 /-!
@@ -14,7 +14,9 @@ Audits of `⨂ k, A k`, `∥ k, R k` and `⨂ₘ k, α k` over `K = Bool`:
   queried component, has mass 0;
 * DDCs `a k` with bounds `b k` give `⨂ₘ k, ofDDC (a k) = ofDDC (tensorAllL a)`, of bound
   `max_k b k`;
-* one bit drawn once outside `∥` differs from one bit drawn per component inside `∥`;
+* `parallelAllPDS P` presents `∥ k, ofPDS (P k)`, also on the heterogeneous family;
+* one bit drawn once outside `∥` differs from one bit drawn per component inside `∥`, and any
+  PDS presenting the retained bit, sampled independently per component, has the latter law;
 * the prefix `∥ k, R k` and the binary infix `R ∥ S` parse together.
 
 `sharedBit`, one draw outside `∥`:
@@ -65,6 +67,18 @@ example (f : ∀ k i, (heterogeneousFamily k).X i → (heterogeneousFamily k).Y 
       (fun l x => f l.1 l.2 x) =
       ∥ k, TypedSystem.ofFunction (f k) :=
   TypedSystem.ofFunction_parallelAll f
+
+/-- **Heterogeneous presentations**: for laws `P k` on DDSs on `heterogeneousFamily k` with
+exact domains, `∥ k, ofPDS (P k) = ofPDS (parallelAllPDS P)`, although the two components use
+different alphabets and budgets. -/
+example (P : ∀ k : Bool, Probability.Distribution.ProbDist
+    {s : InterfaceSystem (heterogeneousFamily k).I (heterogeneousFamily k).X
+      (heterogeneousFamily k).Y //
+      IsDDS s ∧ RepliesAtQueriedInterface s ∧
+        ∀ h, (s h).Dom ↔ (heterogeneousFamily k).domain h}) :
+    (∥ k, TypedSystem.ofPDS (P k)) =
+      TypedSystem.ofPDS (TypedSystem.parallelAllPDS P) :=
+  TypedSystem.parallelAll_ofPDS P
 
 /-- **Per-component budgets**: `⟨true, ()⟩(())` twice is rejected. Its length 2 is within the
 sum bound 3, but `h|true = [(), ()]` exceeds the budget 1 of component `true`. -/
@@ -204,6 +218,27 @@ lemma independentBit_mixedReplies_eq_quarter :
   rw [single, single]
   norm_num
 
+/-- **Independent presentations of a retained bit**: let `P` be any law on DDSs on
+`bitInterface` with `ofPDS P = sample U(Bool) fixedBit`, one bit `c ← U(Bool)` drawn once and
+answered `()(()) ⇒ c`. Sampling one DDS per component, `st ∼ piDep (fun _ => P)`, gives
+
+  `ofPDS (parallelAllPDS (fun _ => P)) mixedReplies = 1/4`,
+
+the mass of `independentBit`, not the mass `0` of `sharedBit`. -/
+example (P : Probability.Distribution.ProbDist
+    {s : InterfaceSystem bitInterface.I bitInterface.X bitInterface.Y //
+      IsDDS s ∧ RepliesAtQueriedInterface s ∧ ∀ h, (s h).Dom ↔ bitInterface.domain h})
+    (hp : TypedSystem.ofPDS P =
+      TypedSystem.sample (Probability.Distribution.uniform Bool) fixedBit) :
+    (TypedSystem.ofPDS (TypedSystem.parallelAllPDS (fun _ : Bool => P))).1 mixedReplies =
+      (1 / 4 : ℝ) := by
+  -- Back to the behavior: `ofPDS (parallelAllPDS (fun _ => P)) = ∥ _k, ofPDS P`.
+  rw [← TypedSystem.parallelAll_ofPDS]
+  -- Each component `ofPDS P` is the retained bit, so the system is `independentBit`.
+  simp only [hp]
+  -- Its `mixedReplies` mass is `1/2 · 1/2 = 1/4`.
+  exact independentBit_mixedReplies_eq_quarter
+
 /-- One bit shared outside `∥` differs from independent bits inside `∥`. -/
 example : sharedBit ≠ independentBit := by
   -- Equal systems give `mixedReplies` equal mass, but `0 ≠ 1/4`.
@@ -222,6 +257,7 @@ example {A : Bool → Interface} {B : Interface}
 #print axioms SystemAlgebra.TypedSystem.parallelAll
 #print axioms SystemAlgebra.TypedSystem.ofFunction_parallelAll
 #print axioms SystemAlgebra.TypedConverter.parallelAll
+#print axioms SystemAlgebra.TypedSystem.parallelAll_ofPDS
 
 end
 end SystemAlgebra.Tests
