@@ -61,7 +61,6 @@ def currentCall {O J : Type} {U : O → Type} {Y : J → Type} :
   | ⟨⟨none, o⟩, x⟩ :: _, replies => some (⟨o, x⟩, replies)
   | ⟨⟨some (), j⟩, y⟩ :: rest, replies => currentCall rest (⟨j, y⟩ :: replies)
 
-
 /-- Accumulated replies append to the replies of the last outside invocation. -/
 lemma currentCall_acc {O J : Type} {U : O → Type} {Y : J → Type}
     (h : List (Σ l : Two O J, twoFam U Y l)) (acc : List (Σ j, Y j)) :
@@ -350,7 +349,6 @@ lemma currentCall_query_charge {O J : Type} {U V : O → Type} {X Y : J → Type
           List.sum_append, List.sum_singleton, outsideInputs_inside, List.map_nil, List.sum_nil]
         omega
 
-
 /-- The current invocation's outside input occurs in the complete outside-input history. -/
 lemma currentCall_mem_outsideInputs {O J : Type} {U : O → Type} {Y : J → Type}
     (h : List (Σ l, twoFam U Y l)) (u : Σ o, U o) (rs : List (Σ j, Y j))
@@ -376,7 +374,6 @@ lemma currentCall_mem_outsideInputs {O J : Type} {U : O → Type} {Y : J → Typ
         obtain ⟨rfl, rfl⟩ := hc
         rw [outsideInputs_append, outsideInputs_inside, List.append_nil]
         exact ih v replies he
-
 
 /-! ### A complete-history rule for dependent calls -/
 
@@ -522,7 +519,6 @@ lemma callConverter_query_count {O J : Type} {U V : O → Type} {X Y : J → Typ
   exact callRule_query_count call cost hphase T
     (hr.mono fun h y hy => canon_mem ((filterDom_mem_iff _ _ h y).mp hy).2)
 
-
 /-- **A certified direct-call DDC**: if `F` is closed under nonempty prefixes and its histories
 cost at most `work`, the direct-call converter is a DDC from the inside domain of nonempty query
 histories of length `≤ work` satisfying `P` to `F`, with bound `bound`. The length follows from
@@ -553,10 +549,10 @@ lemma callConverter_isDDCFrom {O J : Type} {U V : O → Type} {X Y : J → Type}
   · have hT : T = [] := List.map_eq_nil_iff.mp hnil
     subst T
     exact Or.inl rfl
-  -- Forget the filter only for the raw call-count invariant.
+  -- The filter gives the outside-domain condition; `callConverter_query_count` gives
+  -- `|insideQueries T| ≤ ∑_{u ∈ outsideInputs T} cost u`.
   have houtside := ((filterDom_dom _ _ _).mp (hr.dom hnil)).1
-  have hraw := hr.mono fun h y hy => canon_mem ((filterDom_mem_iff _ _ h y).mp hy).2
-  have hcount := callRule_query_count call cost hphase T hraw
+  have hcount := callConverter_query_count call cost hphase F T hr
   -- The outside inputs are empty, with charge `0`, or in `F`, with charge `≤ work`.
   have hlength : (insideQueries (T.map Prod.snd)).length ≤ work := by
     rcases houtside with he | hf
