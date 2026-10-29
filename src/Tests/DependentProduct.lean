@@ -9,7 +9,10 @@ carriers `A false = Bool` and `A true = Unit`, a rectangular event factors coord
 fixing the `Bool` coordinate and leaving the `Unit` coordinate free has mass `1/2 · 1`.
 With one index in `ULift.{u} Unit`, the infinite carrier `ULift.{v} ℕ` and the raw,
 unnormalized law `2 · δ₇`, the rectangle `{f | f k = 7}` has mass `2`: the event law
-needs neither finite carriers, normalization, nor a shared universe.
+needs neither finite carriers, normalization, nor a shared universe. Pushing the singleton
+product of `-2 · δ₇` on `ULift.{2} ℕ` by the noninjective parity `n ↦ n % 2` into `ℕ`
+(`fTransform_piDep`) gives the rectangle `{f | f k = 1}` mass `-2`: the pushforward law
+holds for signed weights across universes.
 -/
 
 namespace Probability.Distribution.Tests
@@ -57,6 +60,23 @@ example : (piDep (K := ULift.{u} Unit) fun _ =>
     Finsupp.single (⟨7⟩ : ULift.{v} ℕ) (2 : ℝ)) (fun _ x => x = ⟨7⟩)]
   simp only [Fintype.prod_unique, mass_singleton, Finsupp.single_eq_same]
 
+/-- `K = ULift.{1} Unit`, carrier `ULift.{2} ℕ`, raw law `μ = -2 · δ₇`, parity `p n = n % 2`
+into `ℕ` (noninjective, crossing universes): `(p_* piDep μ).mass {f | f k = 1} = -2`. -/
+example : (fTransform (fun a : ULift.{1} Unit → ULift.{2} ℕ => fun k => (a k).down % 2)
+    (piDep fun _ : ULift.{1} Unit => Finsupp.single (⟨7⟩ : ULift.{2} ℕ) (-2 : ℝ))).mass
+      (fun f => ∀ k, f k = 1) = -2 := by
+  -- Push each coordinate, factor the rectangle; the one factor is `p_*(-2 · δ₇) = -2 · δ₁`.
+  rw [fTransform_piDep (fun _ : ULift.{1} Unit =>
+    Finsupp.single (⟨7⟩ : ULift.{2} ℕ) (-2 : ℝ))
+    (fun _ a => a.down % 2)]
+  rw [piDep_mass_forall (fun _ : ULift.{1} Unit =>
+    fTransform (fun a : ULift.{2} ℕ => a.down % 2) (Finsupp.single ⟨7⟩ (-2 : ℝ)))
+    (fun _ n => n = 1)]
+  simp only [Fintype.prod_unique, mass_singleton, fTransform_single]
+  norm_num
+
+#print axioms Probability.Distribution.fTransform_piDep
+#print axioms Probability.Distribution.independent_product_piDep
 #print axioms Probability.Distribution.piDep_eq_pi
 #print axioms Probability.Distribution.piDep_isProbDist
 #print axioms Probability.Distribution.piDep_mass_forall

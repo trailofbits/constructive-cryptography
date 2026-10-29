@@ -240,4 +240,4 @@ typed system sampling the ideal function, under the fixed-query factorization.
 
 [TypedConverter.parallelAll_attach]: ParallelAllAttachment.lean
 [TypedConverter.parallelAll_attach_ofFunction]: ParallelAllAttachment.lean
-[TypedSystem.parallelAll_option_mass]: ParallelAllRegroup.lean
+[TypedSystem.parallelAll_option_mass]: ParallelAllRegroup.lean#L49
