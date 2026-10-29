@@ -1,12 +1,14 @@
 import Probability.Counting
 
 /-!
-# Repeated-query table laws
+# Uniform random-table laws
 
 Examples of `uniform_mass_transcript_eq`, `Pr[F matches h] = (1/|Y|)^d` for a transcript `h`
 answered by a function, with `d` the number of distinct inputs of `h`, and of
 `fTransform_eval_uniform_eq_of_same_fibers`,
 `Law(i ↦ F (left i)) = Law(i ↦ G (right i))` for query maps with the same equality pattern.
+Further examples cover the birthday and pair bounds, fresh and projected replies, and a
+projection that is not uniform.
 
 ```text
 h = [(false, true), (false, true)]                  mass 1/2        one coordinate, repeated
@@ -15,6 +17,13 @@ h = [(false, true), (true, false), (false, true)]   mass (1/2)^2    two coordina
 i ↦ F false  vs  i ↦ G 0,  G : Fin 3 → Bool         equal laws      different table domains
 n ↦ F (n even)  vs  n ↦ G (some (n even)),  n : ℕ   equal laws      infinite index type
 ULift.{1} Bool → ULift.{2} Bool                     (1/|Y|)^d       other universes
+¬ InjOn F {false},  ¬ InjOn F {false, true}         ≤ 0,  ≤ 1/2     birthday bound
+F false = true ∧ F true = false                     halves mass     fresh coordinate
+∃ i ≠ j in {0} ⊆ ℕ, δ = -1                          ≤ 0             empty pair event
+F true = predict (F false), predict ≡ false         1/2             non-injective predictor
+F false = (true, false) ∧ (F true).1 = true         halves mass     projected fresh reply
+(F x).1 = z.2.1 for some z ∈ h, z.1 ≠ x             ≤ |h|/2 · mass  projected collision
+(a, b) ↦ false on uniform Bool × Bool               Pr[true] = 0    not uniform on Bool
 ```
 -/
 
@@ -161,10 +170,57 @@ example : (Distribution.uniform (Bool → Bool)).mass
   simpa only [Fintype.card_bool, Nat.cast_ofNat] using
     uniform_two_outputs_graph_mass false true Bool.false_ne_true (fun _ : Bool => false)
 
+/-- `Prod.fst` sends the uniform law on `Bool × Bool` to the uniform law on `Bool`. -/
+lemma pair_first_uniform :
+    Distribution.fTransform Prod.fst (Distribution.uniform (Bool × Bool)) =
+      Distribution.uniform Bool := by
+  rw [← Distribution.prod_uniform, Distribution.fTransform_fst_prod,
+    Distribution.weight_uniform, one_smul]
+
+/-- For uniform `f : Bool → Bool × Bool`,
+`Pr[f false = (true, false) ∧ (f true).1 = true] = Pr[f false = (true, false)] / 2`:
+the event keeps the full old reply, the new test reads only the first bit. -/
+example : (Distribution.uniform (Bool → Bool × Bool)).mass
+    (fun f => f false = (true, false) ∧ (f true).1 = true) =
+      (Distribution.uniform (Bool → Bool × Bool)).mass
+        (fun f => f false = (true, false)) / 2 := by
+  apply uniform_mass_fresh_projected_eval_eq Prod.fst pair_first_uniform
+  -- The event reads only `f false`, not the fresh coordinate `true`.
+  intro f g he
+  simp only [he false Bool.false_ne_true]
+
+/-- The collision bound with `project = Prod.fst`, `|Z| = 2`: the history keeps full replies
+`(a, (b₁, b₂))`, while the bad event compares first bits only. -/
+example (h : List (Bool × (Bool × Bool))) (x : Bool)
+    (hg : ∀ a ∈ h, ∀ b ∈ h, a.2.1 = b.2.1 → a.1 = b.1) :
+    (Distribution.uniform (Bool → Bool × Bool)).mass (fun f =>
+      (∀ z ∈ h, f z.1 = z.2) ∧ ∃ z ∈ h, z.1 ≠ x ∧ (f x).1 = z.2.1) ≤
+        (h.length : ℝ) / 2 *
+          (Distribution.uniform (Bool → Bool × Bool)).mass
+            (fun f => ∀ z ∈ h, f z.1 = z.2) := by
+  simpa only [Fintype.card_bool, Nat.cast_ofNat] using
+    uniform_mass_transcript_projected_collision_le Prod.fst
+    pair_first_uniform h x hg
+
+/-- The constant projection `p (a, b) = false` does not send the uniform law on `Bool × Bool`
+to the uniform law on `Bool`: `Pr[p (a, b) = true] = 0`, whereas `Pr_U[true] = 1/2`. -/
+example : Distribution.fTransform (fun _ : Bool × Bool => false)
+    (Distribution.uniform (Bool × Bool)) ≠ Distribution.uniform Bool := by
+  -- Assume the laws are equal; then they give the event `{true}` the same mass.
+  intro h
+  have hm := congrArg (fun P : Distribution Bool => P.mass (fun b => b = true)) h
+  -- Left: `Pr[false = true] = 0`, no pair satisfies it. Right: `Pr_U[true] = 1/|Bool| = 1/2`.
+  -- So `0 = 1/2`, a contradiction.
+  rw [Distribution.mass_fTransform,
+    Distribution.mass_eq_zero_of_forall_not _ (fun _ => Bool.false_ne_true),
+    Distribution.mass_singleton, Distribution.uniform_apply] at hm
+  norm_num at hm
+
 #print axioms Probability.Counting.uniform_mass_transcript_eq
 #print axioms Probability.Counting.fTransform_eval_uniform_eq_of_same_fibers
 #print axioms Probability.Counting.uniform_mass_fresh_eval_eq
 #print axioms Probability.Counting.uniform_mass_not_injOn_le_choose
+#print axioms Probability.Counting.uniform_mass_transcript_projected_collision_le
 #print axioms Probability.Distribution.mass_exists_pair_le_choose
 
 end Probability.Counting.Tests

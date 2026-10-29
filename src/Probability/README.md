@@ -71,6 +71,10 @@ An event that ignores one table coordinate [factors from its fresh value]
 [uniform_mass_fresh_eval_eq]. A [symmetric pair union bound][mass_exists_pair_le_choose]
 counts each unordered pair once; [uniform-table collisions][uniform_mass_not_injOn_le_choose]
 therefore cost at most $`\binom{|S|}{2}/|Y|`$ on a fixed queried set $`S`$.
+A uniform-preserving [projection of a fresh full reply][uniform_mass_fresh_projected_eval_eq]
+remains uniform after a transcript event that ignores its coordinate. The
+[projected collision bound][uniform_mass_transcript_projected_collision_le] keeps the full
+reply table and charges only the visible output alphabet.
 
 <!-- Declarations -->
 
@@ -106,11 +110,14 @@ therefore cost at most $`\binom{|S|}{2}/|Y|`$ on a fixed queried set $`S`$.
 [mass_ge_le_expect_div]: Expectation.lean#L199
 [expect_mul_sq_le_sq_mul_sq]: Expectation.lean#L215
 [ConvexOn.map_expect_le]: Expectation.lean#L297
-[card_function_fiber_finset]: Counting.lean#L58
-[uniform_mass_transcript_eq]: Counting.lean#L358
-[fTransform_eval_uniform_eq_of_same_fibers]: Counting.lean#L414
-[uniform_mass_adaptive_eval_eq_mul]: Counting.lean#L486
+[card_function_fiber_finset]: Counting.lean#L60
+[uniform_mass_transcript_eq]: Counting.lean#L477
+[fTransform_eval_uniform_eq_of_same_fibers]: Counting.lean#L533
+[uniform_mass_adaptive_eval_eq_mul]: Counting.lean#L605
 
-[uniform_mass_fresh_eval_eq]: Counting.lean#L209
+[uniform_mass_fresh_eval_eq]: Counting.lean#L211
 [mass_exists_pair_le_choose]: Distribution.lean#L505
-[uniform_mass_not_injOn_le_choose]: Counting.lean#L323
+[uniform_mass_not_injOn_le_choose]: Counting.lean#L325
+
+[uniform_mass_fresh_projected_eval_eq]: Counting.lean#L350
+[uniform_mass_transcript_projected_collision_le]: Counting.lean#L400
