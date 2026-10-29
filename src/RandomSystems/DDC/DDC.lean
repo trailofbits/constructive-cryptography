@@ -824,11 +824,6 @@ lemma Induces.congr_right {u o H} (r : Induces (pair a b) route inj u o H)
     exact Induces.snoc _ _ _ _ _ _ (ih (h.mono ⟨inj x :: e, by rw [he]; simp⟩))
       (l.congr_right h)
 
-lemma restrict_prefix {K : Type} {F : K → Type} (k : K) {G H : List (Σ k, F k)} (h : G <+: H) :
-    restrict k G <+: restrict k H := by
-  obtain ⟨e, rfl⟩ := h
-  exact ⟨restrict k e, by rw [restrict_append]⟩
-
 end PairCongr
 
 /-- **An admitted outside input ends the run**: if `a` admits an outside input `o(u)` after `h`,

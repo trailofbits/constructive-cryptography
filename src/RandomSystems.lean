@@ -21,6 +21,7 @@ import RandomSystems.Cumulative.Cumulative
 import RandomSystems.Cumulative.CumulativeAttachment
 import RandomSystems.Cumulative.CumulativeObservation
 import RandomSystems.Cumulative.CumulativeOperations
+import RandomSystems.Cumulative.ParallelAll
 import RandomSystems.Cumulative.Presentation
 import RandomSystems.Cumulative.Subprobability
 import RandomSystems.DDC.Absorb

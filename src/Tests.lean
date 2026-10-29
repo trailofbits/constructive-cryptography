@@ -5,6 +5,7 @@ import Tests.Axioms.Commons
 import Tests.Axioms.Systems
 import Tests.Counterexamples
 import Tests.DirectCalls
+import Tests.NaryParallelSystems
 import Tests.CompositionalCosts
 import Tests.DSL.Axioms
 import Tests.DSL.Diagnostics

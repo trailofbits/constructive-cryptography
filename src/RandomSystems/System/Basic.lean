@@ -815,6 +815,12 @@ noncomputable def restrict (k : K) : List (Σ k, A k) → List (A k)
     · subst hk; simp [ih]
     · simp [hk, ih]
 
+/-- Projecting a prefix of a tagged history leaves a prefix of the component history. -/
+lemma restrict_prefix (k : K) {G H : List (Σ k, A k)} (h : G <+: H) :
+    restrict k G <+: restrict k H := by
+  obtain ⟨e, rfl⟩ := h
+  exact ⟨restrict k e, by rw [restrict_append]⟩
+
 lemma length_restrict_le (k : K) (h : List (Σ k, A k)) : (restrict k h).length ≤ h.length := by
   induction h with
   | nil => simp
