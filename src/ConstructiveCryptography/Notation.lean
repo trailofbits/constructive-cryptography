@@ -76,9 +76,11 @@ lemma distance_smul_le {A B : Interface} (α : A ⟶ B) (R S : TypedSystem B) :
   ConstructiveCryptography.CryptographicAlgebra.distance_attach_le
     α R S
 
-/-- Opposite typed attachment bridges preserve the distance of the two selected
-experiments. This is the interface form of `distance_eq_of_mutual_attach`; Maurer--Renner
-2016, Definition 2 (printed p. 11), gives “d(αR, αS) ≤ d(R, S)”. -/
+/-- Opposite typed attachments that exchange two system pairs preserve their distance: for
+`forward : A ⟶ B` and `backward : B ⟶ A`, the four equalities `forward • R = R'`,
+`forward • S = S'`, `backward • R' = R` and `backward • S' = S` give `Δ R' S' = Δ R S`.
+The interface form of `distance_eq_of_mutual_attach`; Maurer--Renner 2016, Definition 2
+(printed p. 11): “d(αR, αS) ≤ d(R, S) for all α”. -/
 lemma distance_eq_of_mutual_smul {A B : Interface}
     (forward : A ⟶ B) (backward : B ⟶ A)
     (R S : TypedSystem B) (R' S' : TypedSystem A)
