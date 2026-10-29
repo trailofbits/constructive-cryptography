@@ -274,8 +274,13 @@ globally; use `letI` or a wrapper carrier.
 
 - Do not raise `maxHeartbeats` or `maxRecDepth` to make a proof pass; a
   heartbeat limit is a symptom to diagnose.
-- Do not use `decide` or `native_decide` in new proofs or checks. For small
-  test vectors, use ordinary kernel-checked equality and simplification proofs.
+- Do not use `native_decide`, `bv_decide` or any other native evaluation in a
+  proof, and do not use plain `decide`, which evaluates in the elaborator. A
+  computation certificate or a test vector stated as a proposition may use
+  `decide +kernel`: the kernel evaluates it, and it adds no axiom; small ones
+  can also use ordinary equality and simplification proofs. Known-answer tests
+  may run by evaluation with `#guard`, as the Commons tests do: they check the
+  code, and no proof depends on them.
 - Do not introduce `Fintype I` or enumerate `Fin n` merely to shorten a proof.
 - Prefer `Nat`-indexed traces and explicit finite-support witness sets for long
   hybrids. Keep dependent transcript values out of instance search.
