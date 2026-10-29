@@ -314,6 +314,9 @@ typed converters, and the counterexamples, depend only on `propext`, `Classical.
 #print axioms SystemAlgebra.TypedConverter.smul_sample
 #print axioms SystemAlgebra.TypedConverter.ofDDC_callConverter_smul_ofFunction
 #print axioms SystemAlgebra.TypedSystem.sample_fTransform
+#print axioms SystemAlgebra.TypedSystem.sample_prod
+#print axioms SystemAlgebra.TypedSystem.sample_comm
+#print axioms SystemAlgebra.TypedSystem.parallel_sample_right
 
 -- RandomSystems.Typed.Memoryless
 #print axioms SystemAlgebra.TypedSystem.source_eq_memoryless

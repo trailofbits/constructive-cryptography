@@ -76,6 +76,7 @@ import RandomSystems.Typed.Parallel
 import RandomSystems.Typed.ParallelAttachment
 import RandomSystems.Typed.PresentedGame
 import RandomSystems.Typed.Relabel
+import RandomSystems.Typed.SamplingAlgebra
 import RandomSystems.Typed.Source
 import RandomSystems.Typed.SystemCoherence
 import RandomSystems.Typed.SystemParallel

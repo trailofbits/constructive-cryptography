@@ -11,6 +11,7 @@ import Tests.DSL.ProbabilityNotation
 import Tests.DSL.Semantics
 import Tests.ProbabilityNotation
 import Tests.ResourceSpecification
+import Tests.SamplingAlgebra
 import Tests.Substitution.Axioms
 import Tests.Substitution.Calculation
 import Tests.Substitution.Construction
