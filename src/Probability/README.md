@@ -27,7 +27,8 @@ it gives $`\sum_a \mu(a)\, f(a)`$:
 [disintegrates][pi_eq_bindK_update] at a coordinate. Probability laws have
 [pushforwards][ProbDist.map] and [sequential compositions][ProbDist.bind].
 The notation `𝒰[A]` denotes the [normalized uniform law][ProbDist.uniform] of type
-`Distribution.ProbDist A`; `Distribution.uniform A` is its underlying raw distribution.
+`Distribution.ProbDist A`, with mass $`1/\lvert A \rvert`$ at each point of a finite nonempty
+$`A`$; its underlying raw distribution `𝒰[A].1` is `Distribution.uniform A`.
 
 ## Statistical distance
 
@@ -52,11 +53,18 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 For a uniform function table, [a consistent query transcript][uniform_mass_transcript_eq]
 fixes one independent value per distinct input; repeated inputs add no factor. Two query
 families with [the same equality pattern][fTransform_eval_uniform_eq_of_same_fibers] have the
-same output law, even when their table domains have different sizes.
-If fresh coordinates are chosen from previously observed values, their
-[joint mass][uniform_mass_adaptive_eval_eq_mul] still contributes one independent uniform
-factor per chosen coordinate, provided the combined coordinate family is injective on the
-stated good event.
+same output law, even when their table domains have different sizes. The index type may be
+infinite; the finite table domains keep both query images finite.
+A batch $`\mathrm{next}(b) : I \to X`$ may also be chosen from the revealed base values
+$`b = F \circ \mathrm{base}`$. If base and selected coordinates are jointly injective whenever
+$`\mathrm{good}(b)`$ holds, then [the joint mass][uniform_mass_adaptive_eval_eq_mul] is
+
+```math
+\Pr\big[\mathrm{good}(b) \wedge F \circ \mathrm{next}(b) = v\big]
+  = \Pr\big[\mathrm{good}(b)\big] \cdot \lvert Y \rvert^{-\lvert I \rvert} .
+```
+
+Outside the good event, coordinates may repeat, and the good event may have probability zero.
 
 <!-- Declarations -->
 
@@ -64,9 +72,9 @@ stated good event.
 [ProbDist]: Distribution.lean#L149
 [isProbDist]: Distribution.lean#L128
 [mass]: Distribution.lean#L217
-[fTransform]: Distribution.lean#L632
-[prod]: Distribution.lean#L1005
-[pi]: Distribution.lean#L1646
+[fTransform]: Distribution.lean#L637
+[prod]: Distribution.lean#L1010
+[pi]: Distribution.lean#L1651
 [piDep]: DependentProduct.lean#L29
 [uniform]: Distribution.lean#L566
 [ProbDist.uniform]: Distribution.lean#L599
@@ -92,7 +100,7 @@ stated good event.
 [mass_ge_le_expect_div]: Expectation.lean#L199
 [expect_mul_sq_le_sq_mul_sq]: Expectation.lean#L215
 [ConvexOn.map_expect_le]: Expectation.lean#L297
-[card_function_fiber_finset]: Counting.lean#L47
-[uniform_mass_transcript_eq]: Counting.lean#L194
-[fTransform_eval_uniform_eq_of_same_fibers]: Counting.lean#L222
-[uniform_mass_adaptive_eval_eq_mul]: Counting.lean#L266
+[card_function_fiber_finset]: Counting.lean#L56
+[uniform_mass_transcript_eq]: Counting.lean#L209
+[fTransform_eval_uniform_eq_of_same_fibers]: Counting.lean#L265
+[uniform_mass_adaptive_eval_eq_mul]: Counting.lean#L337

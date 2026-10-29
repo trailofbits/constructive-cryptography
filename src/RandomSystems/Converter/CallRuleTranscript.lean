@@ -4,13 +4,38 @@ import RandomSystems.Converter.CallTranscript
 /-!
 # Transcripts of direct call rules
 
-A call transcript's input prefix remembers precisely the replies already received in the
-current invocation. This links a pointwise call schedule to the canonical complete-history DDC.
+The direct rule `callRule call` produces the transcript of a call with
+`qs = [(x₁, y₁), …, (xₘ, yₘ)]` when `call` follows its *schedule*:
+
+  `call u [y₁, …, yₙ] = inr xₙ₊₁` for `n < m`,   `call u [y₁, …, yₘ] = inl v`.
+
+Against a fixed inside function `f`, the schedule `queries u` and the replies `yᵢ = f xᵢ` depend
+on `f` and `u`; each query `xₙ₊₁` may depend on the earlier replies. The proof chain to the typed
+endpoint of `RandomSystems.Typed.CallRuleFunctional`:
+
+```text
+  schedule of call                         callRule_callTranscript_step
+    → transcript of callRule               (every prefix of every call)
+    → transcript of canon (callRule call)  replies_canon_callRule_of_schedule
+    → transcript of callConverter call F   replies_callConverter_of_schedule (outside history in F)
+    → apply (callConverter call F) f       replies_apply_of_calls
+    → equality of typed systems            TypedConverter.ofDDC_smul_ofFunction
+```
+
+## Main results
+
+* `currentCall_callTranscript_take`: after `n` inside exchanges of a call, the current
+  invocation is `(u, [y₁, …, yₙ])`, whatever precedes the call
+* `callRule_completed_exact_length`: under the biconditional phase condition, a completed call
+  has exactly `cost u` inside queries
+* `replies_canon_callRule_of_schedule`, `replies_callConverter_of_schedule`: fixed-function
+  schedules give transcripts of the canonical and of the restricted converter
 -/
 
 namespace SystemAlgebra
 
-/-- The current invocation after the first `n` completed inside exchanges of a call. -/
+/-- After any history `before` and the first `n` inside exchanges of a call, the current
+invocation is `(u, [y₁, …, yₙ])`. -/
 lemma currentCall_callTranscript_take {O J : Type} {U V : O → Type} {X Y : J → Type}
     (before : List (Σ l, twoFam U Y l)) (u : Σ o, U o)
     (qs : List ((Σ j, X j) × (Σ j, Y j))) (v : Σ o, V o) (n : Nat) :
@@ -21,8 +46,8 @@ lemma currentCall_callTranscript_take {O J : Type} {U V : O → Type} {X Y : J �
   simpa only [List.map_map, Function.comp_def] using
     (currentCall_reverse_append_call before u ((qs.take n).map Prod.snd))
 
-/-- A pointwise schedule for one call determines every complete-history output prefix,
-independently of preceding calls. -/
+/-- If `call` follows the schedule of one call, the direct rule answers every prefix of that
+call's transcript with the call's next output, after any preceding history. -/
 lemma callRule_callTranscript_step {O J : Type} {U V : O → Type} {X Y : J → Type}
     (call : (u : Σ o, U o) → List (Σ j, Y j) → V u.1 ⊕ (Σ j, X j))
     (before : List (Σ l, twoFam U Y l)) (u : Σ o, U o)
@@ -60,8 +85,10 @@ lemma callRule_callTranscript_step {O J : Type} {U V : O → Type} {X Y : J → 
     simp only [callRule, currentCall_callTranscript_take,
       List.take_of_length_le (le_refl _), hreturn]
 
-/-- Under an exact phase contract, a completed call has exactly its advertised number of
-inside queries. The upper-bound phase contract alone does not imply this equality. -/
+/-- **Exact length**: under the biconditional phase condition
+`(call u rs).isRight ↔ rs.length < cost u`, a completed call of `u` has exactly `cost u` inside
+queries. The one-way condition alone gives only `≤`: the rule may return early. This is a
+repository fact about the explicit hypothesis, not a source theorem. -/
 lemma callRule_completed_exact_length {O J : Type} {U V : O → Type} {X Y : J → Type}
     (call : (u : Σ o, U o) → List (Σ j, Y j) → V u.1 ⊕ (Σ j, X j))
     (cost : (Σ o, U o) → Nat)
@@ -71,6 +98,7 @@ lemma callRule_completed_exact_length {O J : Type} {U V : O → Type} {X Y : J �
       call u ((qs.take n).map Prod.snd) = .inr qs[n].1)
     (hreturn : call u (qs.map Prod.snd) = .inl v) :
     (insideQueries ((callTranscript u qs ⟨u.1, v⟩).map Prod.snd)).length = cost u := by
+  -- `≤`: a query after `cost u` replies would contradict the forward direction.
   have hle : qs.length ≤ cost u := by
     by_contra hn
     have hnext := hquery (cost u) (by omega)
@@ -79,6 +107,7 @@ lemma callRule_completed_exact_length {O J : Type} {U V : O → Type} {X Y : J �
       rfl)
     simp only [List.length_map, List.length_take] at hphaseNext
     omega
+  -- `≥`: returning with fewer than `cost u` replies would contradict the backward direction.
   have hge : cost u ≤ qs.length := by
     by_contra hn
     have hmore := (hphase u (qs.map Prod.snd)).mpr (by
@@ -89,8 +118,9 @@ lemma callRule_completed_exact_length {O J : Type} {U V : O → Type} {X Y : J �
   rw [callTranscript, insideQueries_callSteps, List.length_map]
   omega
 
-/-- Pointwise next-query and final-result equations make every sequence of fixed-function
-calls a canonical converter transcript. -/
+/-- If `call` follows the schedule `queries u` against the fixed function `f` and returns
+`g u`, every sequence of calls `us` gives a transcript of `canon (callRule call)`: each call
+`u` queries `queries u`, receives the replies of `f`, and returns `g u`. -/
 lemma replies_canon_callRule_of_schedule {O J : Type} {U V : O → Type} {X Y : J → Type}
     (call : (u : Σ o, U o) → List (Σ j, Y j) → V u.1 ⊕ (Σ j, X j))
     (f : ∀ j, X j → Y j) (g : ∀ o, U o → V o)
@@ -111,6 +141,7 @@ lemma replies_canon_callRule_of_schedule {O J : Type} {U V : O → Type} {X Y : 
   let calls : List ((Σ o, U o) × List ((Σ j, X j) × (Σ j, Y j)) × (Σ o, V o)) :=
     us.map fun u =>
     (u, (queries u).map fun x => (x, ⟨x.1, f x.1 x.2⟩), ⟨u.1, g u.1 u.2⟩)
+  -- The rule is silent on `[]`; it remains to give reply ports and each call's prefix outputs.
   apply replies_canon_calls (c := callRule call) (by rfl) calls
   · -- A fixed-function reply is tagged with the query's inside label.
     intro c hc xy hxy
@@ -119,7 +150,9 @@ lemma replies_canon_callRule_of_schedule {O J : Type} {U V : O → Type} {X Y : 
     rfl
   · -- Earlier completed calls do not affect the current invocation's reply prefix.
     intro pre c post he n w hw
-    have hc : c ∈ calls := by rw [he]; simp
+    have hc : c ∈ calls := by
+      rw [he]
+      simp only [List.mem_append, List.mem_cons, true_or, or_true]
     obtain ⟨u, _, rfl⟩ := List.mem_map.mp hc
     apply callRule_callTranscript_step call _ u _ (g u.1 u.2)
     · intro m hm
@@ -129,8 +162,9 @@ lemma replies_canon_callRule_of_schedule {O J : Type} {U V : O → Type} {X Y : 
     · simpa only [List.map_map, Function.comp_def] using hreturn u
     · exact hw
 
-/-- A fixed-function call schedule in the outside domain is a transcript of the restricted
-canonical DDC. This is the systems-level realization step used by typed attachment. -/
+/-- For a prefix-closed outside domain `F` and calls with `F us`, the fixed-function transcript
+of `replies_canon_callRule_of_schedule` is also a transcript of `callConverter call F`: the
+filter keeps every prefix, whose outside inputs are a prefix of `us`. -/
 lemma replies_callConverter_of_schedule {O J : Type} {U V : O → Type} {X Y : J → Type}
     (call : (u : Σ o, U o) → List (Σ j, Y j) → V u.1 ⊕ (Σ j, X j))
     (F : List (Σ o, U o) → Prop)
@@ -151,6 +185,7 @@ lemma replies_callConverter_of_schedule {O J : Type} {U V : O → Type} {X Y : J
   let calls : List ((Σ o, U o) × List ((Σ j, X j) × (Σ j, Y j)) × (Σ o, V o)) :=
     us.map fun u =>
       (u, (queries u).map fun x => (x, ⟨x.1, f x.1 x.2⟩), ⟨u.1, g u.1 u.2⟩)
+  -- The filter's predicate is closed under nonempty prefixes of converter input histories.
   have hprefix : ∀ {p h : List (Σ l, twoFam U Y l)}, p <+: h → p ≠ [] →
       (outsideInputs h = [] ∨ F (outsideInputs h)) →
       (outsideInputs p = [] ∨ F (outsideInputs p)) := by
@@ -158,11 +193,13 @@ lemma replies_callConverter_of_schedule {O J : Type} {U V : O → Type} {X Y : J
     exact prefix_or_nil hF (p := outsideInputs p) (h := outsideInputs h) (by
       obtain ⟨e, rfl⟩ := hp
       exact ⟨outsideInputs e, (outsideInputs_append p e).symm⟩) hh
+  -- The whole transcript's outside inputs are `us`, which lies in `F`.
   have houtside : outsideInputs
       ((calls.flatMap fun c => callTranscript c.1 c.2.1 c.2.2).map Prod.fst) = us := by
     rw [outsideInputs_flatMap_callTranscript]
     simp only [calls, List.map_map, Function.comp_def]
     exact List.map_id us
+  -- Canonical transcript first; restricting a prefix-closed domain it lies in keeps it.
   have hcanon := replies_canon_callRule_of_schedule call f g queries hquery hreturn us
   change Replies (canon (callRule call))
     ((calls.flatMap fun c => callTranscript c.1 c.2.1 c.2.2).map Prod.fst)

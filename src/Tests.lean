@@ -7,6 +7,7 @@ import Tests.Counterexamples
 import Tests.DependentProduct
 import Tests.DirectCalls
 import Tests.NaryParallelSystems
+import Tests.CompositionalCosts
 import Tests.DSL.Axioms
 import Tests.DSL.Diagnostics
 import Tests.DSL.ProbabilityNotation
@@ -23,6 +24,7 @@ import Tests.Substitution.Implication
 import Tests.Substitution.Quantitative
 import Tests.Substitution.Relaxation
 import Tests.Substitution.Tactics
+import Tests.TypedConverterComposition
 import Tests.TypedSampling
 
 /-! Axiom audits per layer and of the Commons library, the checks of the authenticated-encryption example,

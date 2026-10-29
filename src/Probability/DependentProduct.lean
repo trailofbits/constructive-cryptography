@@ -3,18 +3,26 @@ import Probability.Distribution
 /-!
 # Independent finite products of heterogeneous laws
 
-`Distribution.piDep` assigns mass `∏ k, μ k (f k)` to a dependent family of outcomes.
-The index type is finite; each coordinate law has finite support, while its carrier may be
-infinite. This is the probability law needed by finite parallel stochastic converters.
+For a finite index type `K` and finitely supported laws `μ k : Distribution (A k)` on
+carriers that may differ and may be infinite, the independent product is the law on
+dependent functions `f : ∀ k, A k` given by
 
-Jost, Thesis, printed p. 17: “A finite set of resources with disjoint interface sets can be
-viewed as a single one.” Independence is an explicit choice for this product law, rather
-than a consequence of disjoint interfaces.
+  `(piDep μ)(f) = ∏ k, μ k (f k)`.
+
+A factor vanishes as soon as `f k ∉ supp (μ k)`, so the support lies in the finite box
+`∏ k, supp (μ k)` (`Fintype.piFinset`) and the product is again finitely supported. The laws
+are raw distributions: real-valued, neither nonnegative nor normalized in general.
+`Distribution.pi` is the homogeneous case `A k = A`.
+
+## Main definitions
+
+* `Distribution.piDep μ`: the independent product of the family `μ`
 
 ## Main results
 
-* `piDep_isProbDist`: normalization of products of probability laws
-* `piDep_mass_forall`: componentwise events have product mass
+* `piDep_isProbDist`: a finite product of probability laws is a probability law
+* `piDep_mass_forall`: for raw laws, a rectangular event has product mass,
+  `(piDep μ).mass (fun f => ∀ k, Q k (f k)) = ∏ k, (μ k).mass (Q k)`
 -/
 
 namespace Probability.Distribution
@@ -22,10 +30,9 @@ namespace Probability.Distribution
 variable {K : Type} [Fintype K] [DecidableEq K]
 
 open Classical in
-/-- The independent product of finitely many finitely supported laws on different types,
-`(⨂ₖ μₖ)(f) = ∏ₖ μₖ(f k)`; `Distribution.pi` is the homogeneous case. Jost, Thesis,
-printed p. 17, describes a finite set of disjoint-interface resources as one resource;
-this distribution makes the independence specialization explicit. -/
+/-- The independent product of the finitely supported laws `μ k` on the carriers `A k`:
+`(piDep μ)(f) = ∏ k, μ k (f k)` for `f : ∀ k, A k`. Its support lies in the finite box
+`∏ k, supp (μ k)`, since a factor `μ k (f k)` vanishes off `supp (μ k)`. -/
 noncomputable def piDep {A : K → Type} (μ : ∀ k, Distribution (A k)) :
     Distribution (∀ k, A k) :=
   Finsupp.onFinset (Fintype.piFinset fun k => (μ k).support)
@@ -35,39 +42,49 @@ noncomputable def piDep {A : K → Type} (μ : ∀ k, Distribution (A k)) :
         hf (Finset.prod_eq_zero (Finset.mem_univ k) h0))
 
 open Classical in
-/-- A finite independent product of probability laws is normalized. -/
+/-- A finite independent product of probability laws is a probability law: each mass
+`∏ k, μ k (f k)` is nonnegative, and the total weight factors,
+`∑_f ∏_k μ_k(f k) = ∏_k ∑_a μ_k(a) = ∏_k 1 = 1`. -/
 lemma piDep_isProbDist {A : K → Type} {μ : ∀ k, Distribution (A k)}
     (hμ : ∀ k, (μ k).isProbDist) : (piDep μ).isProbDist := by
   refine ⟨fun f => ?_, ?_⟩
   · -- Every component mass is nonnegative, so their product is nonnegative.
     rw [piDep, Finsupp.onFinset_apply]
     exact Finset.prod_nonneg fun k _ => (hμ k).1 (f k)
-  · -- The total product mass factors into the product of coordinate weights.
+  · -- Sum the weight over the box `B = ∏ k, supp μ_k`, which contains the support.
     rw [weight_eq_finsupp_sum, Finsupp.sum_of_support_subset (piDep μ)
       (s := Fintype.piFinset fun k => (μ k).support)
       Finsupp.support_onFinset_subset _ (fun _ _ => rfl)]
     simp only [piDep, Finsupp.onFinset_apply]
+    -- Exchange sum and product: `∑_{f ∈ B} ∏_k μ_k(f k) = ∏_k ∑_{a ∈ supp μ_k} μ_k(a)`.
     rw [← Finset.prod_univ_sum]
+    -- Each factor is the weight of `μ k`, which is one.
     refine Finset.prod_eq_one fun k _ => ?_
     have hw := (hμ k).2
     rwa [weight_eq_finsupp_sum, Finsupp.sum] at hw
 
 open Classical in
-/-- A componentwise event under the independent product has the product of its component
-probabilities. -/
+/-- A rectangular event `{f | ∀ k, Q k (f k)}` has the product of the coordinate masses:
+`(piDep μ).mass (fun f => ∀ k, Q k (f k)) = ∏ k, (μ k).mass (Q k)`. Nonnegativity and
+normalization are not assumed; the identity is finite-sum algebra over the support box. -/
 lemma piDep_mass_forall {A : K → Type} (μ : ∀ k, Distribution (A k)) (Q : ∀ k, A k → Prop) :
     (piDep μ).mass (fun f => ∀ k, Q k (f k)) = ∏ k, (μ k).mass (Q k) := by
-  -- Restrict to the finite product support and factor the event indicator.
+  -- Write the mass as an indicator sum over the box `B = ∏ k, supp μ_k`:
+  -- `∑_{f ∈ B} 1[∀ k, Q_k(f k)] · ∏_k μ_k(f k)`.
   rw [mass_eq_sum_of_support_subset (piDep μ) (s := Fintype.piFinset fun k => (μ k).support)
     Finsupp.support_onFinset_subset, Finset.sum_filter]
+  -- The rectangle's indicator distributes over the product:
+  -- `1[∀ k, Q_k(f k)] · ∏_k μ_k(f k) = ∏_k 1[Q_k(f k)] · μ_k(f k)`.
   have h1 : ∀ f : ∀ k, A k, (if ∀ k, Q k (f k) then piDep μ f else 0) =
       ∏ k, (if Q k (f k) then μ k (f k) else 0) := by
     intro f
     rw [Finset.prod_ite_zero]
     simp [piDep, Finsupp.onFinset_apply]
   simp only [h1]
-  -- Factor the finite sum and read each coordinate sum as its event mass.
+  -- Exchange sum and product over the box:
+  -- `∑_{f ∈ B} ∏_k 1[Q_k(f k)] μ_k(f k) = ∏_k ∑_{a ∈ supp μ_k} 1[Q_k(a)] μ_k(a)`.
   rw [← Finset.prod_univ_sum (fun k => (μ k).support) (fun k a => if Q k a then μ k a else 0)]
+  -- Each factor is the indicator sum defining `(μ k).mass (Q k)`.
   refine Finset.prod_congr rfl fun k _ => ?_
   rw [mass_eq_sum_of_support_subset (μ k) (s := (μ k).support) subset_rfl, Finset.sum_filter]
 
