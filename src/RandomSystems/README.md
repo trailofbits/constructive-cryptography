@@ -184,9 +184,9 @@ holds, whatever the number of the program's inside queries:
 [PDCBehavior.id_comp]: Converter/PDCBehavior.lean#L385
 [PDCBehavior.comp_id]: Converter/PDCBehavior.lean#L375
 [PDCBehavior.attach]: Converter/ConverterAttachment.lean#L156
-[PDCBehavior.attach_presents]: Converter/ConverterAttachment.lean#L178
-[PDCBehavior.attach_id]: Converter/ConverterAttachment.lean#L233
-[PDCBehavior.attach_comp]: Converter/ConverterAttachment.lean#L246
+[PDCBehavior.attach_presents]: Converter/ConverterAttachment.lean#L207
+[PDCBehavior.attach_id]: Converter/ConverterAttachment.lean#L262
+[PDCBehavior.attach_comp]: Converter/ConverterAttachment.lean#L275
 [PDCBehavior.tensor]: Converter/ConverterTensor.lean#L649
 [PDCBehavior.comp_tensor]: Converter/ConverterTensor.lean#L745
 [Program]: Converter/Program.lean#L45
