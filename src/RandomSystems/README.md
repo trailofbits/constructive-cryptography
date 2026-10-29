@@ -161,9 +161,10 @@ it**][PDCBehavior.attach_ofDDC_ofProgramOn_ofProbAutomaton], the combined system
 system $`C(\cdot)`$ invoking $`F`$ [4, §3.3]; for point steps it is the
 [combined automaton][PDCBehavior.attach_ofDDC_ofProgramOn_ofDeterministic]. Against memoryless
 replies of the laws $`\nu`$, a program [replies memorylessly][Program.memoryless_probCombine] when
-its [reply law][Program.replyLaw] $`\kappa`$, the law of one invocation whose inside queries are
-answered by fresh samples of $`\nu`$, is the same from every program state. So [the composition law][PDCBehavior.attach_ofDDC_ofProgramOn_memoryless]
-holds, whatever the number of the program's inside queries:
+its [reply law][Program.memorylessReplyLaw] $`\kappa`$, the law of one invocation whose inside
+queries are answered by fresh samples of $`\nu`$, is the same from every program state. So
+[the composition law][PDCBehavior.attach_ofDDC_ofProgramOn_memoryless] holds, whatever the number
+of the program's inside queries:
 
 ```math
 \alpha_P\, \mathrm{mem}(\nu) = \mathrm{mem}(\kappa).
@@ -208,7 +209,7 @@ holds, whatever the number of the program's inside queries:
 [ProbStep.SimulatesAt]: System/ProbAutomaton.lean#L260
 [RandomSystem.ofProbAutomaton_eq_of_simulation]: System/ProbAutomaton.lean#L400
 [RandomSystem.ofProbAutomaton_ofDeterministic_apply]: System/ProbAutomaton.lean#L535
-[RandomSystem.ofProbAutomaton_eq_drawStep]: Converter/ProbProgramAttachment.lean#L933
+[RandomSystem.ofProbAutomaton_eq_drawStep]: Converter/ProbProgramAttachment.lean#L943
 [RandomSystem.memoryless]: System/Memoryless.lean#L65
 [RandomSystem.eq_memoryless_of_snoc]: System/Memoryless.lean#L84
 [RandomSystem.parallel_memoryless]: System/Memoryless.lean#L146
@@ -256,11 +257,11 @@ holds, whatever the number of the program's inside queries:
 [Program.trim_apply_ofProgramOn_automaton]: Converter/ProgramAttachment.lean#L609
 [Program.probCombine]: Converter/ProbProgramAttachment.lean#L187
 [RandomSystem.ofProbAutomaton_probCombine_eq_of_simulation]: Converter/ProbProgramAttachment.lean#L507
-[PDCBehavior.attach_ofDDC_ofProgramOn_ofProbAutomaton]: Converter/ProbProgramAttachment.lean#L1095
-[PDCBehavior.attach_ofDDC_ofProgramOn_ofDeterministic]: Converter/ProbProgramAttachment.lean#L1009
-[Program.replyLaw]: System/Memoryless.lean#L304
-[Program.memoryless_probCombine]: System/Memoryless.lean#L390
-[PDCBehavior.attach_ofDDC_ofProgramOn_memoryless]: System/Memoryless.lean#L421
+[PDCBehavior.attach_ofDDC_ofProgramOn_ofProbAutomaton]: Converter/ProbProgramAttachment.lean#L1102
+[PDCBehavior.attach_ofDDC_ofProgramOn_ofDeterministic]: Converter/ProbProgramAttachment.lean#L1016
+[Program.memorylessReplyLaw]: System/Memoryless.lean#L313
+[Program.memoryless_probCombine]: System/Memoryless.lean#L400
+[PDCBehavior.attach_ofDDC_ofProgramOn_memoryless]: System/Memoryless.lean#L431
 
 [IsDDCFrom.comp_query_charge_le]: Converter/SerialAccounting.lean
 [callConverter_query_count]: Converter/Calls.lean

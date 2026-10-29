@@ -31,7 +31,7 @@ program's inside queries:
 * `RandomSystem.twoLaw ν₁ ν₂`: the same, on the alphabets of their parallel composition
 * `ProbStep.Memoryless step ν`: a probabilistic step replying with the law `ν` from every state
 * `ProbStep.fresh ν`: fresh samples of `ν`, a step with no state
-* `Program.replyLaw P ν`: the reply law of an invocation against inside replies of the laws `ν`
+* `Program.memorylessReplyLaw P ν`: the reply law of an invocation against fresh samples of `ν`
 
 ## Main results
 
@@ -298,10 +298,19 @@ namespace Program
 
 variable {S O J R : Type} {U V : O → Type} {X Y : J → Type} (P : Program S O J U V X Y)
 
-/-- **The reply law of an invocation** against inside replies of the laws `ν`: the body runs
-from the exchanges `h`, with at most `n` more inside queries, and each inside query `q` is
-answered by a fresh sample of `ν q`. -/
-noncomputable def replyLaw (ν : ∀ j, X j → ProbDist (Y j)) (s : S) (o : O) (u : U o) :
+/-- **The reply law of an invocation against memoryless inside replies**: the subdistribution
+`κ_n(h)` of the reply to the outside query `o(u)` from the program state `s`, after the inside
+exchanges `h` and with at most `n` more inside queries, each inside query `q` answered by a fresh
+sample of `ν q`. With `body(h) = P s o u h`:
+
+```text
+  κ_n(h)     = δ_v                          if body(h) replies (s', v)
+  κ_0(h)     = 0                            if body(h) asks q       (budget exhausted: no mass)
+  κ_{n+1}(h) = ∑_{y ← ν q} κ_n(h · (q, y))  if body(h) asks q
+```
+
+A program with the query bound `b` has the reply law `κ_b([])`. -/
+noncomputable def memorylessReplyLaw (ν : ∀ j, X j → ProbDist (Y j)) (s : S) (o : O) (u : U o) :
     ℕ → List ((Σ j, X j) × (Σ j, Y j)) → Distribution (V o)
   -- No inside query is left: the body must reply now (otherwise no mass).
   | 0, h => match P s o u h with
@@ -310,41 +319,42 @@ noncomputable def replyLaw (ν : ∀ j, X j → ProbDist (Y j)) (s : S) (o : O) 
   -- The body replies (a point law on its reply), or asks `q` and continues with `y ← ν q`.
   | n + 1, h => match P s o u h with
     | .inl a => Finsupp.single a.2 1
-    | .inr q => bindK (ν q.1 q.2).1 fun y => replyLaw ν s o u n (h ++ [(q, ⟨q.1, y⟩)])
+    | .inr q => bindK (ν q.1 q.2).1 fun y => memorylessReplyLaw ν s o u n (h ++ [(q, ⟨q.1, y⟩)])
 
 variable {P}
 
 /-- When the body replies, the reply law is the point law on its reply. -/
-lemma replyLaw_inl {ν : ∀ j, X j → ProbDist (Y j)} {s : S} {o : O} {u : U o}
+lemma memorylessReplyLaw_inl {ν : ∀ j, X j → ProbDist (Y j)} {s : S} {o : O} {u : U o}
     {h : List ((Σ j, X j) × (Σ j, Y j))} {a : S × V o} (ha : P s o u h = .inl a) (n : ℕ) :
-    P.replyLaw ν s o u n h = Finsupp.single a.2 1 := by
+    P.memorylessReplyLaw ν s o u n h = Finsupp.single a.2 1 := by
   -- Whatever the number of queries left, the first case of the definition.
-  cases n <;> simp [replyLaw, ha]
+  cases n <;> simp [memorylessReplyLaw, ha]
 
 /-- When the body asks `q`, the reply law samples the answer `y ← ν q` and continues. -/
-lemma replyLaw_succ_inr {ν : ∀ j, X j → ProbDist (Y j)} {s : S} {o : O} {u : U o}
+lemma memorylessReplyLaw_succ_inr {ν : ∀ j, X j → ProbDist (Y j)} {s : S} {o : O} {u : U o}
     {h : List ((Σ j, X j) × (Σ j, Y j))} {q : Σ j, X j} (hq : P s o u h = .inr q) (n : ℕ) :
-    P.replyLaw ν s o u (n + 1) h =
-      bindK (ν q.1 q.2).1 fun y => P.replyLaw ν s o u n (h ++ [(q, ⟨q.1, y⟩)]) := by
+    P.memorylessReplyLaw ν s o u (n + 1) h =
+      bindK (ν q.1 q.2).1 fun y => P.memorylessReplyLaw ν s o u n (h ++ [(q, ⟨q.1, y⟩)]) := by
   -- The second case of the definition with a query left.
-  simp [replyLaw, hq]
+  simp [memorylessReplyLaw, hq]
 
 /-- **An invocation against a memoryless step** replies with the reply law of the program,
 whatever the state of the step. -/
 lemma fTransform_snd_probInvoke {stepR : ProbStep R J X Y} {ν : ∀ j, X j → ProbDist (Y j)}
     (hν : stepR.Memoryless ν) (s : S) (o : O) (u : U o) :
-    ∀ n r h, fTransform Prod.snd (P.probInvoke stepR s o u n r h) = P.replyLaw ν s o u n h := by
+    ∀ n r h, fTransform Prod.snd (P.probInvoke stepR s o u n r h) =
+      P.memorylessReplyLaw ν s o u n h := by
   -- Plan: induction on the number `n` of inside queries still allowed, for every state `r` of
   -- the step and every list `h` of inside exchanges so far.
   -- 1. `n = 0`: the body replies (a point law on both sides) or asks (no mass on both sides).
   -- 2. `n + 1`: the body replies (a point law on both sides) or asks `q`; then the chain below,
-  --    where `snd₊` keeps only the reply of the invocation:
+  --    where `snd₊` keeps only the reply of the invocation and `κ_n` is `memorylessReplyLaw … n`:
   --
   --   snd₊ invoke_{n+1}(r, h)
   --     = ∑_{(r', y) ← step r q} snd₊ invoke_n(r', h · (q, y))     (one inside query)
-  --     = ∑_{(r', y) ← step r q} replyLaw_n(h · (q, y))            (induction hypothesis)
-  --     = ∑_{y ← ν q} replyLaw_n(h · (q, y))                       (memoryless: `r'` drops out)
-  --     = replyLaw_{n+1}(h)
+  --     = ∑_{(r', y) ← step r q} κ_n(h · (q, y))                   (induction hypothesis)
+  --     = ∑_{y ← ν q} κ_n(h · (q, y))                              (memoryless: `r'` drops out)
+  --     = κ_{n+1}(h)
   --
   --          ┌───┐ ──q──▶ ┌────────────────┐
   --   o(u) ─▶│ P │        │ step, state r  │    the step's reply y has the law ν q,
@@ -362,20 +372,20 @@ lemma fTransform_snd_probInvoke {stepR : ProbStep R J X Y} {ν : ∀ j, X j → 
     cases hq : P s o u h with
     | inl a =>
       -- the body replies `a.2`: a point law on both sides
-      simp [probInvoke_inl hq, replyLaw_inl hq, fTransform]
+      simp [probInvoke_inl hq, memorylessReplyLaw_inl hq, fTransform]
     | inr q =>
       -- the body asks, but no query is left: no mass on both sides
-      simp [probInvoke_zero_inr hq, replyLaw, hq, fTransform]
+      simp [probInvoke_zero_inr hq, memorylessReplyLaw, hq, fTransform]
   -- Step 2: one more inside query allowed.
   | succ n ih =>
     intro r h
     cases hq : P s o u h with
     | inl a =>
       -- the body replies `a.2`: a point law on both sides
-      simp [probInvoke_inl hq, replyLaw_inl hq, fTransform]
+      simp [probInvoke_inl hq, memorylessReplyLaw_inl hq, fTransform]
     | inr q =>
       -- the body asks `q`: the invocation draws the step's (next state, answer) and continues
-      rw [probInvoke_succ_inr hq, replyLaw_succ_inr hq]
+      rw [probInvoke_succ_inr hq, memorylessReplyLaw_succ_inr hq]
       -- move the projection to the reply inside the draw
       rw [fTransform_bindK]
       -- the step's answer law, with the state forgotten, is `ν q` (memoryless)
@@ -389,7 +399,7 @@ lemma fTransform_snd_probInvoke {stepR : ProbStep R J X Y} {ν : ∀ j, X j → 
 the same `κ` in every state of the program. -/
 lemma memoryless_probCombine {stepR : ProbStep R J X Y} {ν : ∀ j, X j → ProbDist (Y j)}
     (hν : stepR.Memoryless ν) {b : ℕ} (hb : P.Bounded b) {κ : ∀ o, U o → ProbDist (V o)}
-    (hκ : ∀ s o u, P.replyLaw ν s o u b [] = (κ o u).1) :
+    (hκ : ∀ s o u, P.memorylessReplyLaw ν s o u b [] = (κ o u).1) :
     (P.probCombine stepR hb).Memoryless κ := by
   -- The combined step runs one invocation from the pair of states `(s, r)`.
   intro sr o u
@@ -423,7 +433,7 @@ theorem attach_ofDDC_ofProgramOn_memoryless
     (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p) (s : S) (P : Program S O J U V X Y)
     {b : ℕ} (hb : P.Bounded b) (hα : IsDDCFrom E F b (DDC.ofProgramOn s P F))
     {ν : ∀ j, X j → ProbDist (Y j)} {κ : ∀ o, U o → ProbDist (V o)}
-    (hκ : ∀ s' o u, P.replyLaw ν s' o u b [] = (κ o u).1)
+    (hκ : ∀ s' o u, P.memorylessReplyLaw ν s' o u b [] = (κ o u).1)
     {R : RandomSystem (Σ j, X j) (Σ j, Y j) (Domain.ofInputs E m hE)}
     (hR : R = RandomSystem.memoryless _ (RandomSystem.portLaw ν))
     (hRq : R.RepliesAtQueriedInterface) :
