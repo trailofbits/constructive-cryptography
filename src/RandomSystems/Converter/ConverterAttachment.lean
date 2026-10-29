@@ -19,7 +19,7 @@ identity changes nothing, and attaching a serial composition attaches the inner 
 * `RandomSystem.isResource_realization`: the realizations of possible choices of a resource
   are deterministic resources with the same domain
 * `PDCBehavior.attach_presents`: the attachment of presentations presents the attachment
-* `PDCBehavior.attach_id`, `PDCBehavior.attach_comp`
+* `PDCBehavior.attach_mix` (of a mixture), `PDCBehavior.attach_id`, `PDCBehavior.attach_comp`
 -/
 
 namespace SystemAlgebra
@@ -173,6 +173,35 @@ noncomputable def attach (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → 
 
 variable (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
   (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
+
+/-- **Attachment to a mixture**: for resources `R k` with domain `E`, mixed by `P`,
+`α (∑ₖ P(k) R k) = ∑ₖ P(k) (α (R k))` as resources with domain `F`. The index `k` is chosen
+once, independently of the PDC, and retained: every inside query of `α` reaches the same `R k`. -/
+lemma attach_mix (α : PDCBehavior O J U V X Y E m hE F n hF) {K : Type}
+    (P : Distribution.ProbDist K)
+    (R : K → RandomSystem (Σ j, X j) (Σ j, Y j) (Domain.ofInputs E m hE))
+    (hR : ∀ k, (R k).RepliesAtQueriedInterface)
+    (hmix : (RandomSystem.mix P R).RepliesAtQueriedInterface) :
+    attach hE' hF' α (RandomSystem.mix P R) hmix =
+      RandomSystem.mix P fun k => attach hE' hF' α (R k) (hR k) := by
+  -- Compare cumulative masses at an outside transcript `h`; the right side is
+  -- `∑ₖ P(k) · (α (R k))(h)`.
+  apply RandomSystem.ext
+  intro h
+  rw [RandomSystem.mix_mass]
+  -- Attachment is the connection of `α ∥ R` with `α`'s inside port wired to `R`, within the
+  -- internal query bound `(2b + 2)·|h|` of `α`'s certificate `b`, the same on both sides.
+  change (RandomSystem.parallel α.1 (RandomSystem.mix P R)).connectionLaw resourceRoute
+      resourceInput (h.map Prod.fst) ((2 * α.2.choose + 2) * (h.map Prod.fst).length)
+      (h.map Prod.snd) =
+    ∑ k ∈ P.1.support, P.1 k * (RandomSystem.parallel α.1 (R k)).connectionLaw resourceRoute
+      resourceInput (h.map Prod.fst) ((2 * α.2.choose + 2) * (h.map Prod.fst).length)
+      (h.map Prod.snd)
+  -- `α` is independent of the choice of `k`: `α ∥ ∑ₖ P(k) R k = ∑ₖ P(k) (α ∥ R k)`, and the
+  -- connection law is linear in that mixture.
+  rw [RandomSystem.parallel_mix_right, RandomSystem.connectionLaw_mix]
+  -- Evaluate the finite sum of scaled laws at the outside replies.
+  simp only [Finsupp.finsetSum_apply, Finsupp.smul_apply, smul_eq_mul]
 
 /-- **The attachment of presentations presents the attachment.** -/
 lemma attach_presents (α : PDCBehavior O J U V X Y E m hE F n hF)
