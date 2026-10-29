@@ -197,8 +197,8 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedSystem.parallel_sample_right]: SamplingAlgebra.lean#L83
 [callRule]: ../Converter/Calls.lean#L391
 [TypedConverter.ofDDC_callConverter_smul_ofFunction]: CallRuleFunctional.lean#L31
-[routingConverter]: ../Converter/QueryRouting.lean
-[TypedConverter.ofDDC_routingConverter_smul_ofFunction]: QueryRouting.lean
+[routingConverter]: ../Converter/QueryRouting.lean#L69
+[TypedConverter.ofDDC_routingConverter_smul_ofFunction]: QueryRouting.lean#L38
 [Interface.withMBO]: Game.lean#L24
 [TypedGame]: Game.lean#L35
 [TypedConverter.attachGame]: Game.lean#L38

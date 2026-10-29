@@ -212,8 +212,8 @@ holds, whatever the number of the program's inside queries:
 [callConverter_isDDCFrom]: Converter/Calls.lean#L514
 [replies_callConverter_of_schedule]: Converter/CallRuleTranscript.lean#L168
 [ofDDC_callConverter_smul_ofFunction]: Typed/CallRuleFunctional.lean#L31
-[routingConverter]: Converter/QueryRouting.lean
-[routingCall_queries]: Converter/QueryRouting.lean
+[routingConverter]: Converter/QueryRouting.lean#L69
+[routingCall_queries]: Converter/QueryRouting.lean#L108
 [PDCBehavior]: Converter/PDCBehavior.lean#L67
 [PDCBehavior.ofPDC]: Converter/PDCBehavior.lean#L169
 [PDCBehavior.comp]: Converter/PDCBehavior.lean#L273
