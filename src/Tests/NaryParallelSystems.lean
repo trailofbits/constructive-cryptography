@@ -1,4 +1,4 @@
-import RandomSystems.Cumulative.ParallelAll
+import RandomSystems.Cumulative.ParallelAllPresentation
 
 /-!
 # Finite parallel systems: boundary cases
@@ -16,7 +16,9 @@ projection of `h` to component `k`:
   that history has mass `0`;
 * heterogeneous alphabets `Bool`/`Unit` and `Unit`/`Bool`: a parallel domain and a parallel
   random system;
-* infinite tags `K = ℕ`: the transcript law of `parAll` needs no finiteness of `K`.
+* infinite tags `K = ℕ`: the transcript law of `parAll` needs no finiteness of `K`;
+* a raw presentation: the signed law `2δ₀ − δ₁` on the infinite carrier `ULift.{1} ℕ`, every
+  sample the non-DDS `emptyOnly`, presents any product of zero-query components.
 -/
 
 namespace SystemAlgebra.Tests
@@ -35,6 +37,16 @@ example : (RandomSystem.parallelAll R) [] = 1 := by
   simp only [RandomSystem.parallelAllConsistent, List.not_mem_nil, IsEmpty.forall_iff,
     ↓reduceIte, Finset.univ_eq_empty, RandomSystem.restrictExchanges,
     eq_rec_constant, dite_eq_ite, List.filterMap_nil, Finset.prod_empty]
+
+-- The presentation law on the empty family: `hR` quantifies over no component.
+example (P : ∀ _k : Empty, Probability.Distribution Unit)
+    (s : ∀ _k : Empty, Unit → System Unit Unit) :
+    RandomSystem.parallelAll R [] =
+      (Probability.Distribution.piDep P).mass (fun st =>
+        Replies (parAll (fun k => s k (st k))) [] []) := by
+  apply RandomSystem.parallelAll_mass_of_presentations R P s
+  intro k
+  cases k
 
 -- `parallelAllInputs E []` fails its first clause `h ≠ []`.
 example : ¬ parallelAllInputs (K := Empty) (I := fun _ => Unit)
@@ -158,9 +170,70 @@ example (s : ℕ → System Unit Unit) (h : List ((Σ _ : ℕ, Unit) × (Σ _ : 
           ((RandomSystem.restrictExchanges k h).map Prod.snd) :=
   RandomSystem.replies_parAll_iff s h
 
--- The main definition and the transcript law use only the standard axioms.
+namespace RawPresentation
+
+/-- The raw system on `Unit`/`Unit` defined only at the empty input history:
+`emptyOnly [] = some ()` and `emptyOnly h = none` for `h ≠ []`. It is not a DDS, which must be
+silent at `[]`, but `Replies` never reads the value at `[]`: its only transcript is the empty
+one, the transcripts of the zero-query system. -/
+noncomputable def emptyOnly : System Unit Unit :=
+  fun h => if h = [] then Part.some () else Part.none
+
+/-- The signed law `2δ₀ − δ₁` on the infinite carrier `ULift.{1} ℕ`, in universe `1` above the
+alphabets: mass `2` at `0`, mass `−1` at `1`, weight `2 − 1 = 1`. Not a probability law. -/
+noncomputable def signedLaw : Probability.Distribution (ULift.{1} ℕ) :=
+  Finsupp.single (ULift.up 0) 2 + Finsupp.single (ULift.up 1) (-1)
+
+-- Raw presentation: for any components `R k` on `zeroDomain` (mass `1` at `[]`, `0` elsewhere),
+-- `signedLaw` with every sample `emptyOnly` presents each `R k`, so by the presentation law
+--   (parallelAll R) h = (piDep signedLaw).mass {st | parAll (fun _ => emptyOnly) answers h}.
+-- One consumer covers a sample carrier in a higher universe, an infinite carrier, a signed law
+-- and a non-DDS sample system.
+example (R : Bool → RandomSystem Unit Unit zeroDomain)
+    (h : List ((Σ _ : Bool, Unit) × (Σ _ : Bool, Unit))) :
+    RandomSystem.parallelAll R h =
+      (Probability.Distribution.piDep
+        (fun _ : Bool => signedLaw)).mass
+        (fun _ => Replies (parAll (fun _ : Bool => emptyOnly))
+          (h.map Prod.fst) (h.map Prod.snd)) := by
+  apply RandomSystem.parallelAll_mass_of_presentations R
+    (fun _ : Bool => signedLaw)
+    (fun _ _ => emptyOnly)
+  -- `hR`: `R k t = signedLaw.mass {i | emptyOnly answers t}`, by cases on `t = []` or a snoc.
+  intro k t
+  induction t using List.reverseRecOn with
+  | nil =>
+    -- `[]`: every sample answers it, so the right side is the weight `2 − 1 = 1 = R k []`.
+    rw [RandomSystem.mass_nil, signedLaw, Probability.Distribution.mass_add,
+      Probability.Distribution.mass_single, Probability.Distribution.mass_single]
+    simp only [List.map_nil, replies_nil, ↓reduceIte]
+    norm_num
+  | append_singleton t z _ =>
+    -- `t ++ [z]`: the bound `0` of `zeroDomain` gives `R k (t ++ [z]) = 0`.
+    have hz : R k (t ++ [z]) = 0 :=
+      (R k).mass_eq_zero_of_bound_lt (by
+        change 0 < (t ++ [z]).length
+        simp only [List.length_append, List.length_singleton]
+        omega)
+    rw [hz, signedLaw, Probability.Distribution.mass_add,
+      Probability.Distribution.mass_single, Probability.Distribution.mass_single]
+    -- `emptyOnly` is undefined at the nonempty input history, so no sample answers `t ++ [z]`
+    -- and the right side is `2 · 0 + (−1) · 0 = 0`.
+    have hn : ¬ Replies emptyOnly ((t ++ [z]).map Prod.fst)
+        ((t ++ [z]).map Prod.snd) := by
+      simp only [List.map_append, List.map_singleton, replies_snoc]
+      rintro ⟨_, hy⟩
+      rw [emptyOnly, if_neg (List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _))] at hy
+      exact Part.none_ne_some _ hy
+    rw [if_neg hn, if_neg hn, zero_add]
+
+end RawPresentation
+
+-- The main definition, the transcript law and the presentation law use only the standard
+-- axioms.
 #print axioms SystemAlgebra.RandomSystem.parallelAll
 #print axioms SystemAlgebra.RandomSystem.replies_parAll_iff
+#print axioms SystemAlgebra.RandomSystem.parallelAll_mass_of_presentations
 
 end
 end SystemAlgebra.Tests

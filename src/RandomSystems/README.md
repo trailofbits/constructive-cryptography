@@ -52,6 +52,8 @@ systems on one domain form [mixtures][RandomSystem.mix], and two random systems 
 [independently in parallel][RandomSystem.parallel] form one on the combined alphabets.
 For a finite tagged family, [the n-ary product][RandomSystem.parallelAll] multiplies component
 transcript masses on consistent interleavings and keeps each component's input domain.
+Independent deterministic component presentations
+[present the same joint cumulative law][RandomSystem.parallelAll_mass_of_presentations].
 The [n-ary converter][tensorAllL] canonicalizes its complete-history rule and combines
 component domain certificates; [stochastic converter families][PDCBehavior.tensorAll]
 sample their components independently.
@@ -190,6 +192,7 @@ holds, whatever the number of the program's inside queries:
 [RandomSystem.mix]: Cumulative/CumulativeOperations.lean#L45
 [RandomSystem.parallel]: Cumulative/CumulativeOperations.lean#L130
 [RandomSystem.parallelAll]: Cumulative/ParallelAll.lean#L193
+[RandomSystem.parallelAll_mass_of_presentations]: Cumulative/ParallelAllPresentation.lean#L60
 [tensorAllL]: Converter/ParallelAll.lean#L104
 [PDCBehavior.tensorAll]: Converter/ParallelAll.lean#L699
 [RandomSystem.ofProbAutomaton]: System/ProbAutomaton.lean#L197
