@@ -20,6 +20,9 @@ no queries at `dec`.
 
 A notion is the pair of its systems `(X₀, X₁)` (Banfi, §2.3.1), independent of the substitution
 relation; the predicate of the same name states it for the admitted distinguishers, `X₀ ≃[ε] X₁`.
+The admitted distinguishers are the typed distinguishers selected by the
+`AdmissibleDistinguishers` instance in scope, with no closure assumed, and `ε(d)` is the error
+allowed to each of them.
 
 ## Main definitions
 
@@ -64,7 +67,8 @@ def PublicKeyEncryption.encryptions [DecidableEq PK] [DecidableEq M]
 
 -- The public key, `E_pk` and `D_sk` for `(pk, sk) ← G`: on `m`, output `c ← E(pk, m)`; on `c`,
 -- output `D(sk, c)`.
-system PKE.Real(scheme : PublicKeyEncryption PK SK M C) [DecidableEq PK] [DecidableEq M] : PKE PK M C
+system PKE.Real(scheme : PublicKeyEncryption PK SK M C)
+    [DecidableEq PK] [DecidableEq M] : PKE PK M C
   initialize
     keys ←$ scheme.gen
   on publicKey() → PK
@@ -77,7 +81,8 @@ system PKE.Real(scheme : PublicKeyEncryption PK SK M C) [DecidableEq PK] [Decida
 
 -- Encrypt a random message `m̃` instead of `m` and record `(c, m)`; on `c`, output its first
 -- recorded message, otherwise forward `c`.
-converter PKE.CCA(PK M C : Type) [Fintype PK] [Fintype M] [Fintype C] [DecidableEq C] [Nonempty M] : PKE PK M C
+converter PKE.CCA(PK M C : Type)
+    [Fintype PK] [Fintype M] [Fintype C] [DecidableEq C] [Nonempty M] : PKE PK M C
   inside pke : PKE PK M C
   initialize
     table ← ([] : List (C × M))
@@ -106,10 +111,11 @@ def PKE.INDCCA.systems [DecidableEq PK] [DecidableEq M] [DecidableEq C] [Nonempt
 
 /-- **IND-CCA** within `error`: against the admitted distinguishers, the real system substitutes
 for its random-message transformation. -/
-def PKE.INDCCA [Interface.AdmissibleDistinguishers]
+def PKE.INDCCA [ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher]
     [DecidableEq PK] [DecidableEq M] [DecidableEq C] [Nonempty M]
     (scheme : PublicKeyEncryption PK SK M C) {q : PKE.Port → ℕ}
-    (error : (PKE.perPort PK M C q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
+    -- `q` is the query budget per port; `error d` bounds the advantage of each admitted `d`.
+    (error : (TypedDistinguisher (PKE.perPort PK M C q)) → ENNReal) : Prop :=
   (PKE.INDCCA.systems scheme q).1 ≃[error] (PKE.INDCCA.systems scheme q).2
 
 /-- **The systems of IND-CPA** (Boneh–Shoup, Attack Game 11.2, in real-or-random form): those of
@@ -122,10 +128,12 @@ def PKE.INDCPA.systems [DecidableEq PK] [DecidableEq M] [DecidableEq C] [Nonempt
 
 /-- **IND-CPA** within `error`: against the admitted distinguishers, the real system without
 decryption queries substitutes for its random-message transformation. -/
-def PKE.INDCPA [Interface.AdmissibleDistinguishers]
+def PKE.INDCPA [ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher]
     [DecidableEq PK] [DecidableEq M] [DecidableEq C] [Nonempty M]
     (scheme : PublicKeyEncryption PK SK M C) {q : PKE.Port → ℕ}
-    (error : (PKE.perPort PK M C (Function.update q .dec 0)).inputDomain.DistinguisherBehavior →
+    -- `q` is the query budget per port, with no decryption queries; `error d` bounds the
+    -- advantage of each admitted `d`.
+    (error : (TypedDistinguisher (PKE.perPort PK M C (Function.update q .dec 0))) →
       ENNReal) :
     Prop :=
   (PKE.INDCPA.systems scheme q).1 ≃[error] (PKE.INDCPA.systems scheme q).2

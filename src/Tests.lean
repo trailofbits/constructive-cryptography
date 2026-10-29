@@ -1,3 +1,5 @@
+import Tests.Distinguishers
+import Tests.DistinguisherAction
 import Tests.TranscriptHorizon
 import Tests.Games
 import Tests.Problem
@@ -43,5 +45,5 @@ import Tests.TypedNaryParallel
 
 /-! Axiom audits per layer and of the Commons library, the checks of the
 authenticated-encryption example,
-counterexamples, DSL diagnostics and semantics, and the tests of the cryptographic-algebra and
-substitution APIs. -/
+counterexamples, DSL diagnostics and semantics, and the tests of the cryptographic-algebra,
+distinguisher-admission and substitution APIs. -/

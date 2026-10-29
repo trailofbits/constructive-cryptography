@@ -18,6 +18,9 @@ predicates are the `ε`-UHF and `ε`-DUF properties.
 
 A notion is the pair of its systems `(X₀, X₁)` (Banfi, §2.3.1), independent of the substitution
 relation; the predicate of the same name states it for the admitted distinguishers, `X₀ ≃[ε] X₁`.
+The admitted distinguishers are the typed distinguishers selected by the
+`AdmissibleDistinguishers` instance in scope, with no closure assumed, and `ε(d)` is the error
+allowed to each of them.
 
 ## Main definitions
 
@@ -54,14 +57,16 @@ system UniversalHash.Ideal(M : Type) [Fintype M] [DecidableEq M] : Collision M
     return decide (first = second)
 
 -- For `k ← K`: on `(m₀, m₁, δ)`, whether `H(k, m₁) - H(k, m₀) = δ`.
-system UniversalHash.DifferenceReal(H : K → M → T) [Fintype T] [DecidableEq T] [AddCommGroup T] : Difference M T
+system UniversalHash.DifferenceReal(H : K → M → T)
+    [Fintype T] [DecidableEq T] [AddCommGroup T] : Difference M T
   initialize
     key ←$ 𝒰[K]
   on differ(first : M, second : M, difference : T) → Bool
     return decide (H key second - H key first = difference)
 
 -- On `(m₀, m₁, δ)`, whether `m₀ = m₁` and `δ = 0`.
-system UniversalHash.DifferenceIdeal(M T : Type) [Fintype M] [DecidableEq M] [Fintype T] [DecidableEq T] [AddCommGroup T] : Difference M T
+system UniversalHash.DifferenceIdeal(M T : Type)
+    [Fintype M] [DecidableEq M] [Fintype T] [DecidableEq T] [AddCommGroup T] : Difference M T
   on differ(first : M, second : M, difference : T) → Bool
     return decide (first = second ∧ difference = 0)
 
@@ -73,9 +78,11 @@ def UniversalHash.UHF.systems [DecidableEq M] [DecidableEq T] (H : K → M → T
 
 /-- **UHF** within `error`: against the admitted distinguishers, the collisions of `H(k, ·)`
 substitute for the equalities of messages. -/
-def UniversalHash.UHF [Interface.AdmissibleDistinguishers]
+def UniversalHash.UHF
+    [ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher]
     [DecidableEq M] [DecidableEq T] (H : K → M → T) {q : ℕ}
-    (error : (Collision M q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
+    -- `q` is the query budget; `error d` bounds the advantage of each admitted `d`.
+    (error : (TypedDistinguisher (Collision M q)) → ENNReal) : Prop :=
   (UniversalHash.UHF.systems H q).1 ≃[error] (UniversalHash.UHF.systems H q).2
 
 /-- **The systems of a DUF**: the digest differences of `H(k, ·)` for `k ← K`, and the trivial
@@ -87,9 +94,11 @@ def UniversalHash.DUF.systems [DecidableEq M] [Fintype T] [DecidableEq T] [AddCo
 
 /-- **DUF** within `error`: against the admitted distinguishers, the digest differences of
 `H(k, ·)` substitute for the trivial differences. -/
-def UniversalHash.DUF [Interface.AdmissibleDistinguishers]
+def UniversalHash.DUF
+    [ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher]
     [DecidableEq M] [Fintype T] [DecidableEq T] [AddCommGroup T] (H : K → M → T) {q : ℕ}
-    (error : (Difference M T q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
+    -- `q` is the query budget; `error d` bounds the advantage of each admitted `d`.
+    (error : (TypedDistinguisher (Difference M T q)) → ENNReal) : Prop :=
   (UniversalHash.DUF.systems H q).1 ≃[error] (UniversalHash.DUF.systems H q).2
 
 end

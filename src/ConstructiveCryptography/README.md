@@ -2,9 +2,10 @@
 
 This library holds the abstract theory and its instances on interfaces. `Problem` states
 reductions over ordered performance spaces, and `Game` defines the evaluation classes of
-games, without categories or converters; `CryptographicAlgebra` defines
-the classes of assumptions, from resource theories to distinguisher classes and the converter
-actions on games;
+games, without categories or converters; `Distinguisher` defines the decision evaluation of
+distinguishers and the selection of admitted tests, likewise without categories or metrics;
+`CryptographicAlgebra` defines the classes of assumptions, from resource theories to
+distinguisher classes and the converter actions on distinguishers and games;
 `Specification` and `Construction` define specifications, constructions and relaxations over any
 carrier; the instance files `InterfaceCategory`, `InterfaceMonoidal`, `InterfaceAlgebra` and
 `InterfaceGame` instantiate the classes on interfaces; `Substitution` is the substitution
@@ -74,7 +75,47 @@ D \in \mathcal D_A \;\Longrightarrow\; D(\alpha\,\cdot\,) \in \mathcal D_B,\ \ D
 ```
 
 **Closure gives compatibility** [8, Lemma 1]: the advantage distance of a closed class
-[is a compatible pseudo-metric][CompatibleDistinguisherClass.ofClosure].
+[is a compatible pseudo-metric][CompatibleDistinguisherClass.ofClosure]. These closure fields
+serve the metric; the tests admitted by a computational statement are selected separately,
+below, and are not assumed closed.
+
+### Decisions, admitted tests and absorption
+
+The decision layer, in `Distinguisher.lean`, uses no category, converter or metric.
+[`Distinguishers I Φ D`][Distinguishers] evaluates a distinguisher $`d \in D_A`$ on a resource
+$`R \in \Phi A`$, read as $`p(d, R) = \Pr[d(R) = 1]`$, and the
+[advantage][Distinguishers.advantage] is the absolute difference. The source takes the signed
+difference [3, Definition 4.7, printed p. 91]; the absolute value follows [9, §2.3.3, p. 16]:
+
+```math
+\mathrm{Adv}_d(R, S) = \lvert p(d, R) - p(d, S) \rvert .
+```
+
+The evaluation is an abstract real number. Typed distinguishers return probabilities, but the
+class asserts no range, and the advantage laws hold for any real evaluation. Independently,
+[`AdmissibleDistinguishers I D`][AdmissibleDistinguishers] selects the tests
+$`\mathcal D_A \subseteq D_A`$ a security statement quantifies over, with no efficiency or
+closure claim. [`AdmissibleDistinguishers.all`][AdmissibleDistinguishers.all] admits every test;
+it is a value, not an instance. The [decision-derived distinguisher
+advantage][Distinguishers.distinguisherAdvantage] combines the evaluation with an admitted set
+for the substitution calculus below.
+
+[`DistinguisherAction C Φ D`][DistinguisherAction], over a resource theory, absorbs a converter
+into a distinguisher [9, §2.3.3], [7, Proposition 2.2.17]:
+
+```math
+p(d\alpha, R) = p(d, \alpha R), \qquad d\,\mathrm{id}_A = d, \qquad d(\alpha \gg \beta) = (d\alpha)\beta ,
+```
+
+so [absorption preserves advantage][DistinguisherAction.advantage_absorb],
+$`\mathrm{Adv}_{d\alpha}(R, S) = \mathrm{Adv}_d(\alpha R, \alpha S)`$. Admission is not assumed
+closed under converters. A reduction through $`\alpha`$ carries the proof
+[`ClosedUnder α`][ClosedUnder] that $`d\alpha`$ is admitted whenever $`d`$ is, as closure is
+required only for selected converters [6, §4.3, pp. 12–13]; [closure proofs
+compose][ClosedUnder.comp] in category order, following the association of $`\gg`$.
+[`DominatedByDistance model`][DominatedByDistance], indexed by the model and the selected
+metric, states that every admitted test's advantage between $`R`$ and $`S`$ is at most their
+distance; only statistical steps of a substitution chain need it.
 
 ### Games, solver evaluations and converter actions
 
@@ -146,10 +187,14 @@ and every axiom is discharged by a systems-level theorem. The instances are
 [`Interface.resourceTheory`][Interface.resourceTheory],
 [`Interface.cryptographicAlgebra`][Interface.cryptographicAlgebra],
 [`Interface.compatibleDistinguisherClass`][Interface.compatibleDistinguisherClass],
+[`Interface.distinguisherEvaluations`][Interface.distinguisherEvaluations],
+[`Interface.distinguisherAction`][Interface.distinguisherAction],
+[`Interface.distinguisherAdvantageDominated`][Interface.distinguisherAdvantageDominated],
 [`Interface.games`][Interface.games], [`Interface.gameAction`][Interface.gameAction],
 [`Interface.distinctionGames`][Interface.distinctionGames] and
 [`Interface.distinctionGameAction`][Interface.distinctionGameAction];
-the table gives each field and axiom.
+the table gives each field and axiom. No `AdmissibleDistinguishers` instance is installed on
+interfaces: each security statement takes the admitted tests as an instance argument.
 
 | Class, instance | Field or axiom | Systems level |
 |---|---|---|
@@ -183,6 +228,11 @@ the table gives each field and axiom.
 | | `closed_parallel_left` ([`Interface.distinguishers_parallel_left`][Interface.distinguishers_parallel_left]) | [absorbing a system run beside][Domain.Distinguisher.exists_absorbRight] |
 | | `closed_parallel_right` ([`Interface.distinguishers_parallel_right`][Interface.distinguishers_parallel_right]) | the previous two, through the [swap][Interface.parallel_swap], the [isomorphism][Interface.swap] of the renaming that [exchanges the two components][TypedSystem.parallel_swap_mass] |
 | | `edist_eq` | [`Interface.transcriptDistance_eq_advantageDistance`][Interface.transcriptDistance_eq_advantageDistance]: the transcript distance is the [advantage distance][advantageDistance] of these distinguishers, by the systems characterization [`RandomSystem.transcriptDistance_eq_iSup_behavior`][RandomSystem.transcriptDistance_eq_iSup_behavior] |
+| [`Distinguishers`][Distinguishers]: decision evaluation; [`Interface.distinguisherEvaluations`][Interface.distinguisherEvaluations] | `D A` | [`TypedDistinguisher A`][TypedDistinguisher], the [distinguisher behaviors][Domain.DistinguisherBehavior] compatible with $`A`$'s domain |
+| | `probability d R` | $`\Pr[d(R) = 1]`$, the behavior `d.1` at `R` |
+| [`DistinguisherAction`][DistinguisherAction]: absorption; [`Interface.distinguisherAction`][Interface.distinguisherAction] | `absorb` | [`TypedDistinguisher.absorb`][TypedDistinguisher.absorb], from [absorbing a converter][DistinguisherBehavior.absorb] |
+| | `probability_absorb`, `absorb_id`, `absorb_comp` | [`TypedDistinguisher.probability_absorb`][TypedDistinguisher.probability_absorb] (by definition), [`TypedDistinguisher.absorb_id`][TypedDistinguisher.absorb_id], [`TypedDistinguisher.absorb_comp`][TypedDistinguisher.absorb_comp], from the identity and serial attachment laws |
+| [`DominatedByDistance`][DominatedByDistance], for every admitted set; [`Interface.distinguisherAdvantageDominated`][Interface.distinguisherAdvantageDominated] | `advantage_le_distance` | [`DistinguisherBehavior.advantage_le_transcriptDistance`][DistinguisherBehavior.advantage_le_transcriptDistance] |
 | [`Games`][Games]: games and winners; [`Interface.games`][Interface.games] | `Game A` | [`TypedGame A`][TypedGame]: the typed systems on the interface of $`A`$ with the MBO whose MBO stays set ([`RandomSystem.MonotoneMBO`][RandomSystem.MonotoneMBO]) |
 | | performance space `Ω` | $`\mathbb R`$ |
 | | `winners A` | [`Interface.winners`][Interface.winners]: the winning probabilities of the [solver behaviors][Domain.SolverBehavior] on $`A`$'s domain |
@@ -229,14 +279,23 @@ $`\Delta(R, S) \le \varepsilon`$.
 
 ## Notation
 
-With `open scoped SystemAlgebra`: [`Δ R S`][notation-distance] for the distance of
-`CompatiblePseudoMetric`, [`R ∥ S`][notation-parallel] for `TypedSystem.parallel`,
+With `open scoped SystemAlgebra`, the generic notation of `Notation/Basic.lean`, which imports
+only the abstract layer: [`Δ R S`][notation-distance] for the distance of
+`CompatiblePseudoMetric`, [`R ∥ S`][notation-parallel] for the selected parallel composition,
+and [`R ≃[ε] S`][notation-substitutes] for substitution within $`\varepsilon`$ against the
+admitted tests of the `AdmissibleDistinguishers` instance in scope (the substitution calculus,
+below). `Notation.lean` adds, for interfaces,
 [`𝓡 —[π]→ 𝒮`][notation-constructs] for $`\mathcal R \xrightarrow{\pi} \mathcal S`$ and
 [`𝓡 —[π; ε]→ 𝒮`][notation-constructsWithin] for
-$`\mathcal R \xrightarrow{\pi,\ \varepsilon} \mathcal S`$ (constructions, below),
-[`G |≡ T`][notation-conditionallyEquivalent] for $`G \mathrel{|\!\equiv} T`$, and
-[`R ≃[ε] S`][notation-substitutes] for substitution within $`\varepsilon`$ (the substitution
-calculus, below).
+$`\mathcal R \xrightarrow{\pi,\ \varepsilon} \mathcal S`$ (constructions, below) and
+[`G |≡ T`][notation-conditionallyEquivalent] for $`G \mathrel{|\!\equiv} T`$, and registers the
+normalization rules, including [`Interface.cc_parallel_eq`][Interface.cc_parallel_eq], which
+identifies `∥` with `TypedSystem.parallel`. It also adds second elaboration handlers for `Δ`
+and `∥`: they first read each operand as a typed system on its own interface, so that the
+interfaces and budgets of attachments such as `Δ (α • R) (α • S)` and `α • R ∥ β • S` are
+inferred, and otherwise restore the elaboration state and defer to the generic handlers. Both
+paths produce the same selected `distance` or `parallel`; on another resource theory `Δ` and
+`∥` keep that theory's own metric and parallel operation.
 
 ## Specifications and constructions
 
@@ -334,40 +393,43 @@ transports substitutions [through one converter][SubstitutesWithin.attach] and
 [7, Theorem 2.2.10], the [assumption uses][Implication.substitutesWithin] and the
 [statistical steps][Implication.substitutesWithin_of_mixed] along a witness add up.
 
-**On interfaces.** [`DistinguisherAdvantage`][DistinguisherAdvantage] is a structure, and for every
-class of admitted distinguishers [`Interface.distinguisherAdvantage`][Interface.distinguisherAdvantage]
-is one, with carrier $`\Phi A :=`$ `TypedSystem A`: its distinguishers are the systems-level
-[distinguisher behaviors][Domain.DistinguisherBehavior], its field `admissible` is that class, its
-field `advantage` is the systems-level
-[advantage][DistinguisherBehavior.advantage], and its laws `advantage_self`, `advantage_symm` and
-`advantage_triangle` are the systems-level [zero][DistinguisherBehavior.advantage_self],
-[symmetry][DistinguisherBehavior.advantage_symm] and
-[triangle][DistinguisherBehavior.advantage_triangle] laws.
+**From decisions.** [`DistinguisherAdvantage`][DistinguisherAdvantage] is a structure with an
+arbitrary per-test pseudo-distance. The decision layer supplies one for every admitted set,
+[`Distinguishers.distinguisherAdvantage`][Distinguishers.distinguisherAdvantage]: its field
+`admissible` is that set, its field `advantage` is the decision advantage
+$`\lvert p(d, R) - p(d, S) \rvert`$, and its laws follow from those of the absolute value. For
+the `AdmissibleDistinguishers` instance in scope, $`R \simeq_\varepsilon S`$ against this model is
+written [`R ≃[ε] S`][notation-substitutes], and every security notion of Commons is stated this
+way, on interfaces with the [typed distinguishers][TypedDistinguisher].
 
-A converter $`\alpha`$ absorbed into a distinguisher is the reduction of a security proof [3]:
-the systems-level [absorption][DistinguisherBehavior.absorb] gives $`D \circ \alpha`$, and absorbing
-a serial composition [absorbs its converters in turn][DistinguisherBehavior.absorb_comp],
-$`D \circ (\alpha \gg \beta) = (D \circ \alpha) \circ \beta`$. Hence an advantage between attachments
-[is the advantage with the converter absorbed][Interface.distinguisherAdvantage_attach],
-$`\mathrm{Adv}_D(\alpha R, \alpha S) = \mathrm{Adv}_{D \circ \alpha}(R, S)`$; every advantage
-[is at most the distance][Interface.distinguisherAdvantage_le_distance], $`\mathrm{Adv}_D \le \Delta`$,
-by the [systems-level bound][DistinguisherBehavior.advantage_le_transcriptDistance]; and
-substitutions [transport through converters][Interface.substitutesWithin_attach] when the class is
-closed under absorbing converters. The class
-[`Interface.AdmissibleDistinguishers`][Interface.AdmissibleDistinguishers]
-bundles the admitted distinguishers with that closure; for its instance in scope,
-$`R \simeq_\varepsilon S`$ is written [`R ≃[ε] S`][notation-substitutes] (scoped in
-`SystemAlgebra`), substitutions
-[transport through every converter][AdmissibleDistinguishers.substitutesWithin_attach], and every
-security notion of Commons is stated this way.
+A converter $`\alpha`$ absorbed into a distinguisher is the reduction of a security proof [3]. A
+substitution [transports through $`\alpha`$][AdmissibleDistinguishers.substitutesWithin_attach]
+given the proof `ClosedUnder α`, with its loss read at the actual reduced distinguisher
+[9, §2.3.3, p. 16]:
+
+```math
+R \simeq_\varepsilon S,\quad \alpha \text{ preserves admission}
+\quad\Longrightarrow\quad \alpha R \simeq_{d \mapsto \varepsilon(d\alpha)} \alpha S .
+```
+
+[`AdmissibleDistinguishers.substitutesWithin_context`][AdmissibleDistinguishers.substitutesWithin_context]
+states the same with the outer systems named. In a chain of contexts the closure proofs of the
+named transformations are composed with [`ClosedUnder.comp`][ClosedUnder.comp]; no other
+converter needs one. A statistical step needs domination of the decision advantage by the
+metric; on interfaces it is
+[`Interface.distinguisherAdvantageDominated`][Interface.distinguisherAdvantageDominated], from the
+[systems-level bound][DistinguisherBehavior.advantage_le_transcriptDistance]
+$`\mathrm{Adv}_d(R, S) \le \Delta(R, S)`$, for every admitted set.
 
 For an unrestricted per-distinguisher statement, select
 [`AdmissibleDistinguishers.all`][AdmissibleDistinguishers.all] locally with
-`let := AdmissibleDistinguishers.all`. It admits every compatible stopping distinguisher
-behavior and is not an instance, so importing it selects no global security model. Taking each
-assumption's own advantage for its error gives the explicit reduction inequalities in
-[`Tests.AllDistinguishers`](../Tests/AllDistinguishers.lean): the fresh-seed PRG bound
-$`\mathrm{Adv}_H(D) \le \mathrm{Adv}_G(D\circ\mathcal R_1) + \mathrm{Adv}_G(D\circ\mathcal R_2)`$
+`let := AdmissibleDistinguishers.all`; on interfaces it admits every compatible stopping
+distinguisher behavior, and
+[`AdmissibleDistinguishers.all_closedUnder`][AdmissibleDistinguishers.all_closedUnder] discharges
+every closure hypothesis. It is not an instance, so importing it selects no global security
+model. Taking each assumption's own advantage for its error gives the explicit reduction
+inequalities in [`Tests.AllDistinguishers`](../Tests/AllDistinguishers.lean): the fresh-seed PRG
+bound $`\mathrm{Adv}_H(D) \le \mathrm{Adv}_G(D\mathcal R_1) + \mathrm{Adv}_G(D\mathcal R_2)`$
 and the corrected AE bound with two `int-ptxt` terms, two `ind-cca` terms and collision error
 $`q_{\mathrm{enc}}^2/|M|`$. The bounds are symbolic in the scheme, budgets and $`D`$; no
 computational claim is made.
@@ -399,9 +461,9 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [distance_attach_le]: CryptographicAlgebra/PseudoMetric.lean#L127
 [distance_eq_of_mutual_attach]: CryptographicAlgebra/PseudoMetric.lean#L177
 [distance_parallel_le]: CryptographicAlgebra/PseudoMetric.lean#L218
-[advantageDistance]: CryptographicAlgebra/Distinguisher.lean#L49
-[CompatibleDistinguisherClass]: CryptographicAlgebra/Distinguisher.lean#L108
-[CompatibleDistinguisherClass.ofClosure]: CryptographicAlgebra/Distinguisher.lean#L166
+[advantageDistance]: CryptographicAlgebra/Distinguisher.lean#L56
+[CompatibleDistinguisherClass]: CryptographicAlgebra/Distinguisher.lean#L115
+[CompatibleDistinguisherClass.ofClosure]: CryptographicAlgebra/Distinguisher.lean#L173
 [Games]: Game.lean#L53
 [Games.absorb]: Game.lean#L69
 [Games.absorb_comp]: CryptographicAlgebra/Game.lean#L92
@@ -414,13 +476,13 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [Interface.identity_attach]: InterfaceCategory.lean#L45
 [Interface.comp_smul]: InterfaceCategory.lean#L50
 [Interface.monoidal]: InterfaceMonoidal.lean#L162
-[Interface.resourceTheory]: InterfaceAlgebra.lean#L78
-[Interface.cryptographicAlgebra]: InterfaceAlgebra.lean#L157
-[Interface.transcriptDistance_eq_advantageDistance]: InterfaceAlgebra.lean#L197
-[Interface.compatibleDistinguisherClass]: InterfaceAlgebra.lean#L218
-[Interface.cc_parallel_eq]: InterfaceAlgebra.lean#L245
-[Interface.cc_dummy_eq]: InterfaceAlgebra.lean#L249
-[Interface.cc_distance_eq]: InterfaceAlgebra.lean#L254
+[Interface.resourceTheory]: InterfaceAlgebra.lean#L77
+[Interface.cryptographicAlgebra]: InterfaceAlgebra.lean#L156
+[Interface.transcriptDistance_eq_advantageDistance]: InterfaceAlgebra.lean#L214
+[Interface.compatibleDistinguisherClass]: InterfaceAlgebra.lean#L236
+[Interface.cc_parallel_eq]: InterfaceAlgebra.lean#L263
+[Interface.cc_dummy_eq]: InterfaceAlgebra.lean#L267
+[Interface.cc_distance_eq]: InterfaceAlgebra.lean#L272
 [TypedSystem.transcriptPseudoEMetricSpace]: ../RandomSystems/Typed/Distance.lean#L22
 [RandomSystem.transcriptDistance_eq_iSup_behavior]: ../RandomSystems/Distance/Distinguisher.lean#L246
 [Interface.games]: InterfaceGame.lean#L70
@@ -430,12 +492,12 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [Interface.dist_visible_le]: InterfaceGame.lean#L166
 [Interface.conditionallyEquivalent_ofPDG_iff]: InterfaceGame.lean#L180
 [Interface.game_dist_le]: InterfaceGame.lean#L193
-[notation-distance]: Notation.lean#L24
-[notation-parallel]: Notation.lean#L28
-[notation-constructs]: Notation.lean#L31
-[notation-constructsWithin]: Notation.lean#L35
-[notation-substitutes]: Notation.lean#L41
-[notation-conditionallyEquivalent]: Notation.lean#L47
+[notation-distance]: Notation/Basic.lean#L26
+[notation-parallel]: Notation/Basic.lean#L38
+[notation-constructs]: Notation.lean#L78
+[notation-constructsWithin]: Notation.lean#L82
+[notation-substitutes]: Notation/Basic.lean#L65
+[notation-conditionallyEquivalent]: Notation.lean#L88
 
 <!-- Declarations: specifications and constructions -->
 
@@ -479,31 +541,40 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [usageCount_append]: Substitution/Implication.lean#L349
 [generatedRelation]: Substitution/Implication.lean#L402
 [derivable_substitutes]: Substitution/Implication.lean#L431
-[DistinguisherAdvantage]: Substitution/Reduction.lean#L63
-[SubstitutesWithin]: Substitution/Reduction.lean#L108
-[SubstitutesWithin.symm]: Substitution/Reduction.lean#L120
-[SubstitutesWithin.trans]: Substitution/Reduction.lean#L136
-[SubstitutesWithin.of_distance]: Substitution/Reduction.lean#L184
-[SubstitutesWithin.of_statistical]: Substitution/Reduction.lean#L158
-[SubstitutesWithin.attach]: Substitution/Reduction.lean#L210
-[SubstitutesWithin.attach_serial]: Substitution/Reduction.lean#L261
+[SubstitutesWithin]: Substitution/Reduction.lean#L80
+[SubstitutesWithin.symm]: Substitution/Reduction.lean#L92
+[SubstitutesWithin.trans]: Substitution/Reduction.lean#L108
+[SubstitutesWithin.of_distance]: Substitution/Reduction.lean#L156
+[SubstitutesWithin.of_statistical]: Substitution/Reduction.lean#L130
+[SubstitutesWithin.attach]: Substitution/Reduction.lean#L182
+[SubstitutesWithin.attach_serial]: Substitution/Reduction.lean#L233
 [Implication.substitutesWithin]: Substitution/Quantitative.lean#L84
 [Implication.substitutesWithin_of_mixed]: Substitution/Quantitative.lean#L157
-[Interface.distinguisherAdvantage]: InterfaceAlgebra.lean#L273
 [Domain.DistinguisherBehavior]: ../RandomSystems/Distance/Distinguisher.lean#L207
-[DistinguisherBehavior.advantage]: ../RandomSystems/Distance/Distinguisher.lean#L218
-[DistinguisherBehavior.advantage_self]: ../RandomSystems/Distance/Distinguisher.lean#L228
-[DistinguisherBehavior.advantage_symm]: ../RandomSystems/Distance/Distinguisher.lean#L230
-[DistinguisherBehavior.advantage_triangle]: ../RandomSystems/Distance/Distinguisher.lean#L233
 [DistinguisherBehavior.advantage_le_transcriptDistance]: ../RandomSystems/Distance/Distinguisher.lean#L238
 [DistinguisherBehavior.absorb]: ../RandomSystems/Distance/Distinguisher.lean#L291
-[DistinguisherBehavior.absorb_comp]: ../RandomSystems/Distance/Distinguisher.lean#L304
-[Interface.distinguisherAdvantage_attach]: InterfaceAlgebra.lean#L285
-[Interface.distinguisherAdvantage_le_distance]: InterfaceAlgebra.lean#L353
-[Interface.substitutesWithin_attach]: InterfaceAlgebra.lean#L296
-[Interface.AdmissibleDistinguishers]: InterfaceAlgebra.lean#L311
-[AdmissibleDistinguishers.all]: InterfaceAlgebra.lean#L322
-[AdmissibleDistinguishers.substitutesWithin_attach]: InterfaceAlgebra.lean#L328
+[Interface.distinguisherEvaluations]: InterfaceAlgebra.lean#L162
+[Interface.distinguisherAction]: InterfaceAlgebra.lean#L168
+[Interface.distinguisherAdvantageDominated]: InterfaceAlgebra.lean#L290
+[DistinguisherAdvantage]: Distinguisher.lean#L54
+[Distinguishers]: Distinguisher.lean#L89
+[AdmissibleDistinguishers]: Distinguisher.lean#L100
+[AdmissibleDistinguishers.all]: Distinguisher.lean#L110
+[Distinguishers.advantage]: Distinguisher.lean#L125
+[Distinguishers.distinguisherAdvantage]: Distinguisher.lean#L132
+[DistinguisherAction]: CryptographicAlgebra/DistinguisherAction.lean#L51
+[DistinguisherAction.advantage_absorb]: CryptographicAlgebra/DistinguisherAction.lean#L77
+[ClosedUnder]: CryptographicAlgebra/DistinguisherAction.lean#L96
+[ClosedUnder.comp]: CryptographicAlgebra/DistinguisherAction.lean#L106
+[AdmissibleDistinguishers.substitutesWithin_attach]: CryptographicAlgebra/DistinguisherAction.lean#L123
+[AdmissibleDistinguishers.substitutesWithin_context]: CryptographicAlgebra/DistinguisherAction.lean#L141
+[AdmissibleDistinguishers.all_closedUnder]: CryptographicAlgebra/DistinguisherAction.lean#L158
+[DominatedByDistance]: CryptographicAlgebra/DistinguisherAction.lean#L173
+[TypedDistinguisher]: ../RandomSystems/Typed/Distinguisher.lean#L37
+[TypedDistinguisher.absorb]: ../RandomSystems/Typed/Distinguisher.lean#L43
+[TypedDistinguisher.probability_absorb]: ../RandomSystems/Typed/Distinguisher.lean#L49
+[TypedDistinguisher.absorb_id]: ../RandomSystems/Typed/Distinguisher.lean#L54
+[TypedDistinguisher.absorb_comp]: ../RandomSystems/Typed/Distinguisher.lean#L62
 [substitutionImage]: Substitution/Relaxation.lean#L71
 [singleSubstitutionRelaxation]: Substitution/Relaxation.lean#L92
 [substitutionRelaxation]: Substitution/Relaxation.lean#L232
@@ -517,21 +588,21 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [Interface]: ../RandomSystems/Typed/Interface.lean#L42
 [Interface.associator]: InterfaceMonoidal.lean#L52
 [Interface.associator_naturality]: InterfaceMonoidal.lean#L92
-[Interface.distinguishers]: InterfaceAlgebra.lean#L163
-[Interface.distinguishers_attach]: InterfaceAlgebra.lean#L167
-[Interface.distinguishers_parallel_left]: InterfaceAlgebra.lean#L173
-[Interface.distinguishers_parallel_right]: InterfaceAlgebra.lean#L188
+[Interface.distinguishers]: InterfaceAlgebra.lean#L177
+[Interface.distinguishers_attach]: InterfaceAlgebra.lean#L182
+[Interface.distinguishers_parallel_left]: InterfaceAlgebra.lean#L188
+[Interface.distinguishers_parallel_right]: InterfaceAlgebra.lean#L205
 [Interface.id_tensor_id]: InterfaceMonoidal.lean#L84
 [Interface.isoOf]: InterfaceMonoidal.lean#L33
 [Interface.leftUnitor]: InterfaceMonoidal.lean#L57
 [Interface.leftUnitor_naturality]: InterfaceMonoidal.lean#L97
 [Interface.monoidalStruct]: InterfaceMonoidal.lean#L71
-[Interface.parallel_assoc]: InterfaceAlgebra.lean#L92
-[Interface.parallel_dummy_left]: InterfaceAlgebra.lean#L104
-[Interface.parallel_dummy_right]: InterfaceAlgebra.lean#L113
-[Interface.parallel_swap]: InterfaceAlgebra.lean#L122
+[Interface.parallel_assoc]: InterfaceAlgebra.lean#L91
+[Interface.parallel_dummy_left]: InterfaceAlgebra.lean#L103
+[Interface.parallel_dummy_right]: InterfaceAlgebra.lean#L112
+[Interface.parallel_swap]: InterfaceAlgebra.lean#L121
 [Interface.pentagon]: InterfaceMonoidal.lean#L105
-[Interface.resourcesLaxMonoidal]: InterfaceAlgebra.lean#L131
+[Interface.resourcesLaxMonoidal]: InterfaceAlgebra.lean#L130
 [Interface.rightUnitor]: InterfaceMonoidal.lean#L61
 [Interface.rightUnitor_naturality]: InterfaceMonoidal.lean#L101
 [Interface.solvers]: InterfaceGame.lean#L64

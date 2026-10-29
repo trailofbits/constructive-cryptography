@@ -11,6 +11,9 @@ is the uniform random function on the one-point domain.
 
 A notion is the pair of its systems `(X₀, X₁)` (Banfi, §2.3.1), independent of the substitution
 relation; the predicate of the same name states it for the admitted distinguishers, `X₀ ≃[ε] X₁`.
+The admitted distinguishers are the typed distinguishers selected by the
+`AdmissibleDistinguishers` instance in scope, with no closure assumed, and `ε(d)` is the error
+allowed to each of them.
 
 ## Main definitions
 
@@ -26,8 +29,6 @@ open scoped SystemAlgebra
 
 noncomputable section
 
-open Classical
-
 variable {S R : Type} [Fintype S] [Nonempty S] [Fintype R] [Nonempty R]
 
 /-- **The systems of PRG security**: `G s` for a uniform seed `s`, and a uniform element of `R`,
@@ -40,8 +41,10 @@ def PRG.Secure.systems (G : S → R) (q : ℕ) :
 
 /-- **PRG security** within `error`: against the admitted distinguishers, `G` on a uniform seed
 substitutes for a uniform element of `R`. -/
-def PRG.Secure [Interface.AdmissibleDistinguishers] (G : S → R)
-    {q : ℕ} (error : (Evaluation Unit R q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
+def PRG.Secure
+    [ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher] (G : S → R)
+    -- `q` bounds the queries; `error d` bounds the advantage of each admitted `d`.
+    {q : ℕ} (error : (TypedDistinguisher (Evaluation Unit R q)) → ENNReal) : Prop :=
   (PRG.Secure.systems G q).1 ≃[error] (PRG.Secure.systems G q).2
 
 end

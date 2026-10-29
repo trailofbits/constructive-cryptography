@@ -12,8 +12,12 @@ with the ideal, with a collision bound over every pair of an original and a repl
 (`hybrid_ideal_distance_le`).
 
 The proof is Banfi's sequence of steps (§2.3.1): each step substitutes one assumption inside its
-context `ρ`, losing the assumption's error at the distinguisher with `ρ` absorbed, `ε(D ∘ ρ)`
-(§2.3.3), and the statistical step loses `q_e² / |M|` at the budget `q` per port. The chain is
+context `ρ`, losing the assumption's error at the distinguisher with `ρ` absorbed, `ε(Dρ)`
+(§2.3.3), and the statistical step loses `q_e² / |M|` at the budget `q` per port. The admitted
+distinguishers are an arbitrary selected class; the theorem asks only that the two
+transformations `ρ^ptxt` and `ρ^cca` preserve it, and the closure of each composite context is
+composed from these two proofs. The statistical step needs the domination of the decision
+advantage by the transcript distance (`Interface.distinguisherAdvantageDominated`). The chain is
 also counted (`correctedChain`: two uses of each assumption). In distance form
 (`real_ideal_distance_le`), `⟦E_k, D_k⟧` is within
 `2 Δ(⟦E_k, D_k⟧, ρ^ptxt(⟦E_k, D_k⟧)) + 2 Δ(⟦E_k, D_k⟧, ρ^cca(⟦E_k, D_k⟧)) + q_e² / |M|` of
@@ -50,36 +54,58 @@ local notation "⟦" "E_k" "," "D_k" "⟧" => AE.Real.perPort scheme (budget := 
 local notation "⟦" "E$_k" "," "D^⊥" "⟧" =>
   (AE.Ideal.perPort M C • Encryption.Real.perPort scheme : TypedSystem (AE.perPort M C q))
 
-/-- **`(ind-cca, int-ptxt) → ae`, corrected** (Banfi, Theorem 2.3.10(4)). For the admitted
-distinguishers, which are closed under absorbing converters, `int-ptxt` within `εptxt` and
-`ind-cca` within `εcca` give `ae`, losing each assumption's error at the distinguisher with the
-context of its use absorbed, and `q_e² / |M|` for the collision step. -/
-theorem ae_of_ind_cca_int_ptxt [AdmissibleDistinguishers]
-    (εptxt εcca : (AE.perPort M C q).inputDomain.DistinguisherBehavior → ENNReal)
-    (ptxt : AE.INTPTXT scheme εptxt) (cca : AE.INDCCA scheme εcca) :
+/-- **`(ind-cca, int-ptxt) → ae`, corrected** (Banfi, Theorem 2.3.10(4)). If `ρ^ptxt` and
+`ρ^cca` preserve the admitted distinguishers, then `int-ptxt` within `εptxt` and `ind-cca`
+within `εcca` give `ae`, losing each assumption's error at the distinguisher with the context
+of its use absorbed, and `q_e² / |M|` for the collision step. -/
+theorem ae_of_ind_cca_int_ptxt
+    [ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher]
+    -- `εptxt d`, `εcca d`: the errors of `int-ptxt` and `ind-cca` against each distinguisher.
+    (εptxt εcca : (TypedDistinguisher (AE.perPort M C q)) → ENNReal)
+    -- `ptxt`: `⟦E_k, D_k⟧ ≃[εptxt] ρ^ptxt(⟦E_k, D_k⟧)`; `cca`: the same for `ρ^cca` and `εcca`.
+    (ptxt : AE.INTPTXT scheme εptxt) (cca : AE.INDCCA scheme εcca)
+    -- `closedPtxt`, `closedCca`: absorbing `ρ^ptxt`, resp. `ρ^cca`, keeps admitted distinguishers
+    -- admitted. Closure is assumed only for these two; the composite contexts compose them.
+    (closedPtxt : AdmissibleDistinguishers.ClosedUnder
+      (Phi := TypedSystem) (D := TypedDistinguisher)
+      (ρ^ptxt : AE.perPort M C q ⟶ AE.perPort M C q))
+    (closedCca : AdmissibleDistinguishers.ClosedUnder
+      (Phi := TypedSystem) (D := TypedDistinguisher)
+      (ρ^cca : AE.perPort M C q ⟶ AE.perPort M C q)) :
     AE.Secure scheme fun D =>
       εptxt D +
-        εcca (D.absorb (AE.perPort M C q).nonempty_prefix (AE.perPort M C q).nonempty_prefix
-          ρ^ptxt) +
-        εptxt (D.absorb (AE.perPort M C q).nonempty_prefix (AE.perPort M C q).nonempty_prefix
-          (ρ^ptxt ≫ ρ^cca)) +
-        εcca (D.absorb (AE.perPort M C q).nonempty_prefix (AE.perPort M C q).nonempty_prefix
-          (ρ^ptxt ≫ ρ^cca ≫ ρ^ptxt)) +
+        εcca (D.absorb ρ^ptxt) +
+        εptxt (D.absorb (ρ^ptxt ≫ ρ^cca)) +
+        εcca (D.absorb (ρ^ptxt ≫ ρ^cca ≫ ρ^ptxt)) +
         ((q .enc) ^ 2 / Fintype.card M : ℝ≥0) := by
-  cc_calc mixed (distinguisherAdvantage AdmissibleDistinguishers.admissible) using
-      (fun D _ R S => distinguisherAdvantage_le_distance _ D R S)
+  -- The hybrids, as systems (the distinguisher D on the left; `X = ⟦E_k, D_k⟧`):
+  --
+  --   D ─ X                                   start
+  --   D ─ ρ^ptxt ─ X                          ≃[εptxt(D)]                   int-ptxt
+  --   D ─ ρ^ptxt ─ ρ^cca ─ X                  ≃[εcca(Dρ^ptxt)]              ind-cca in context
+  --   D ─ ρ^ptxt ─ ρ^cca ─ ρ^ptxt ─ X         ≃[εptxt(D(ρ^ptxt ≫ ρ^cca))]   int-ptxt in context
+  --   D ─ ρ^ptxt ─ ρ^cca ─ ρ^ptxt ─ ρ^cca ─ X ≃[εcca(D(ρ^ptxt ≫ ρ^cca ≫ ρ^ptxt))]
+  --   D ─ ⟦E$_k, D^⊥⟧                         ≈[q_e² / |M|]   hybrid_ideal_distance_le
+  --
+  -- `cc_calc mixed` reads the model of the goal; its statistical last step uses the domination
+  -- instance `distinguisherAdvantageDominated`. The losses add up.
+  cc_calc mixed
+    -- `int-ptxt` itself, with no context.
     ⟦E_k, D_k⟧ ≃[εptxt] ρ^ptxt • ⟦E_k, D_k⟧ := ptxt
-    _ ≃[fun D => εcca (D.absorb (AE.perPort M C q).nonempty_prefix
-          (AE.perPort M C q).nonempty_prefix ρ^ptxt)] ρ^ptxt • ρ^cca • ⟦E_k, D_k⟧ :=
-      AdmissibleDistinguishers.substitutesWithin_context ρ^ptxt cca
-    _ ≃[fun D => εptxt (D.absorb (AE.perPort M C q).nonempty_prefix
-          (AE.perPort M C q).nonempty_prefix (ρ^ptxt ≫ ρ^cca))]
+    -- `ind-cca` inside the context `ρ^ptxt`, admitted by `closedPtxt`.
+    _ ≃[fun D => εcca (D.absorb ρ^ptxt)] ρ^ptxt • ρ^cca • ⟦E_k, D_k⟧ :=
+      AdmissibleDistinguishers.substitutesWithin_context ρ^ptxt closedPtxt cca
+    -- `int-ptxt` inside `ρ^ptxt ≫ ρ^cca`; its closure is composed in category order.
+    _ ≃[fun D => εptxt (D.absorb (ρ^ptxt ≫ ρ^cca))]
         ρ^ptxt • ρ^cca • ρ^ptxt • ⟦E_k, D_k⟧ :=
-      AdmissibleDistinguishers.substitutesWithin_context (ρ^ptxt ≫ ρ^cca) ptxt
-    _ ≃[fun D => εcca (D.absorb (AE.perPort M C q).nonempty_prefix
-          (AE.perPort M C q).nonempty_prefix (ρ^ptxt ≫ ρ^cca ≫ ρ^ptxt))]
+      AdmissibleDistinguishers.substitutesWithin_context (ρ^ptxt ≫ ρ^cca)
+        (closedPtxt.comp closedCca) ptxt
+    -- `ind-cca` inside `ρ^ptxt ≫ (ρ^cca ≫ ρ^ptxt)`, with closure composed in the same grouping.
+    _ ≃[fun D => εcca (D.absorb (ρ^ptxt ≫ ρ^cca ≫ ρ^ptxt))]
         ρ^ptxt • ρ^cca • ρ^ptxt • ρ^cca • ⟦E_k, D_k⟧ :=
-      AdmissibleDistinguishers.substitutesWithin_context (ρ^ptxt ≫ ρ^cca ≫ ρ^ptxt) cca
+      AdmissibleDistinguishers.substitutesWithin_context (ρ^ptxt ≫ ρ^cca ≫ ρ^ptxt)
+        (closedPtxt.comp (closedCca.comp closedPtxt)) cca
+    -- The statistical step: the doubly randomized hybrid is within `q_e² / |M|` of the ideal.
     _ ≈[((q .enc) ^ 2 / Fintype.card M : ℝ≥0)] ⟦E$_k, D^⊥⟧ :=
       hybrid_ideal_distance_le scheme q
 

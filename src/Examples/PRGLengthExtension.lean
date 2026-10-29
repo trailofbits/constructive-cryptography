@@ -31,6 +31,11 @@ one reply:
  = prg-rand             U³                                  a product of uniform laws
 ```
 
+Each swap `≃` is the security of `G` attached through the calling program, and costs `ε` at the
+actual distinguisher with that program absorbed, `ε(D𝓡₁)` or `ε(D𝓡₂)`. The admitted
+distinguishers are an arbitrary selected class; the theorem asks only that `𝓡₁` and `𝓡₂`
+preserve it (`AdmissibleDistinguishers.ClosedUnder`), not that every converter does.
+
 ## Main definitions
 
 * `H G`: the 2-wise sequential composition of `G`
@@ -53,6 +58,7 @@ one reply:
 
 namespace Examples.PRGLengthExtension
 
+open ConstructiveCryptography
 open Commons Probability Probability.Distribution SystemAlgebra SystemAlgebra.DSL
   SystemAlgebra.Interface RandomSystem
 open scoped SystemAlgebra SystemAlgebra.DSL
@@ -232,50 +238,61 @@ lemma 𝓡₂_smul_prgRand (q : Evaluation.Port → ℕ) :
 
 /-- **PRG security with a fresh seed for every query** within `error`: against the admitted
 distinguishers, `prg-real^G` substitutes for `prg-rand`, the beacon of uniform samples. -/
-def PRGSamples [AdmissibleDistinguishers] [Nonempty R] (G : S → R)
+def PRGSamples
+    [ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher]
+    [Nonempty R] (G : S → R)
+    -- `q` is the query budget; `error d` bounds the advantage of each admitted `d`.
     {q : Evaluation.Port → ℕ}
-    (error : (Evaluation.perPort Unit R q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
+    (error : (TypedDistinguisher (Evaluation.perPort Unit R q)) → ENNReal) : Prop :=
   PRGReal.perPort G (budget := q) ≃[error] MemorylessSource.perPort R 𝒰[R] (budget := q)
 
 /-- **PRG length extension**, as [1, Theorem 3.3] for `n = 2` with a fresh seed for every query:
-if `G` is a secure PRG within `ε`, then `H` is a secure PRG within the losses of the two swaps. -/
-theorem prg_length_extension [AdmissibleDistinguishers] (G : S → S × S)
+if `G` is a secure PRG within `ε` and the calling programs `𝓡₁`, `𝓡₂` preserve the admitted
+distinguishers, then `H` is a secure PRG within `D ↦ ε(D𝓡₁) + ε(D𝓡₂)`. -/
+theorem prg_length_extension
+    [ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher] (G : S → S × S)
+    -- `q` is the query budget of `H`'s interface.
     {q : Evaluation.Port → ℕ}
-    (ε : (Evaluation.perPort Unit (S × S) (𝓡₁.insideBudget G q)).inputDomain.DistinguisherBehavior
+    -- `ε d` is the error of `G` against `d` on `G`'s interface (the inside budget of `𝓡₁`).
+    (ε : (TypedDistinguisher (Evaluation.perPort Unit (S × S) (𝓡₁.insideBudget G q)))
       → ENNReal)
-    (secure : PRGSamples G ε) :
+    -- `secure`: `prg-real^G ≃[ε] prg-rand`.
+    (secure : PRGSamples G ε)
+    -- `closed₁`, `closed₂`: absorbing `𝓡₁`, resp. `𝓡₂`, keeps admitted distinguishers admitted;
+    -- these are the only converters whose closure is assumed.
+    (closed₁ : AdmissibleDistinguishers.ClosedUnder
+      (Phi := TypedSystem) (D := TypedDistinguisher) (𝓡₁.perPort G (budget := q)))
+    (closed₂ : AdmissibleDistinguishers.ClosedUnder
+      (Phi := TypedSystem) (D := TypedDistinguisher) (𝓡₂.perPort S (budget := q))) :
     PRGSamples (H G) (q := q) fun D =>
-      ε (D.absorb (Evaluation.perPort Unit (S × S) (𝓡₁.insideBudget G q)).nonempty_prefix
-          (Evaluation.perPort Unit (S × S × S) q).nonempty_prefix (𝓡₁.perPort G)) +
-        ε (D.absorb (Evaluation.perPort Unit (S × S) (𝓡₂.insideBudget S q)).nonempty_prefix
-          (Evaluation.perPort Unit (S × S × S) q).nonempty_prefix (𝓡₂.perPort S)) := by
+      ε (D.absorb (𝓡₁.perPort G)) +
+        ε (D.absorb (𝓡₂.perPort S)) := by
   -- The hybrids, as systems (the distinguisher D on the left):
   --
   --   D ─ prg-real^H                                start
   --   D ─ 𝓡₁ ─ prg-real^G      =                    factor out            prgReal_H_eq
-  --   D ─ 𝓡₁ ─ prg-rand        ≃[ε(D ∘ 𝓡₁)]         swap: G is secure
+  --   D ─ 𝓡₁ ─ prg-rand        ≃[ε(D𝓡₁)]            swap: G is secure
   --   D ─ 𝓡₂ ─ prg-real^G      =                    middle hop            𝓡₁_smul_prgRand
-  --   D ─ 𝓡₂ ─ prg-rand        ≃[ε(D ∘ 𝓡₂)]         swap: G is secure
+  --   D ─ 𝓡₂ ─ prg-rand        ≃[ε(D𝓡₂)]            swap: G is secure
   --   D ─ prg-rand             =                    last hop              𝓡₂_smul_prgRand
   --
   -- One chain: the equalities cost nothing, each swap costs `ε` at the distinguisher with the
-  -- calling converter absorbed, and the losses add up.
-  cc_calc quantitative (distinguisherAdvantage AdmissibleDistinguishers.admissible)
+  -- calling converter absorbed, and the losses add up. `cc_calc quantitative` reads the
+  -- substitution model of the goal, the decision advantage of the admitted distinguishers.
+  cc_calc quantitative
     -- The first hop: factor out the first call of `G`.
     PRGReal.perPort (H G) = 𝓡₁.perPort G • PRGReal.perPort G := prgReal_H_eq G q
     -- The first swap: `prg-real^G` ≃ `prg-rand` (`secure`), attached through `𝓡₁`; its loss is
-    -- `ε` at `D` with `𝓡₁` absorbed (`substitutesWithin_attach`).
-    _ ≃[fun D => ε (D.absorb (Evaluation.perPort Unit (S × S) (𝓡₁.insideBudget G q)).nonempty_prefix
-          (Evaluation.perPort Unit (S × S × S) q).nonempty_prefix (𝓡₁.perPort G))]
+    -- `ε(D𝓡₁)`, and `closed₁` admits `D𝓡₁` (`substitutesWithin_attach`).
+    _ ≃[fun D => ε (D.absorb (𝓡₁.perPort G))]
         𝓡₁.perPort G • MemorylessSource.perPort (S × S) 𝒰[S × S] :=
-      AdmissibleDistinguishers.substitutesWithin_attach _ secure
+      AdmissibleDistinguishers.substitutesWithin_attach _ closed₁ secure
     -- The middle hop: both are the memoryless source of `𝒰[S] ⊗ G_* 𝒰[S]`.
     _ = 𝓡₂.perPort S • PRGReal.perPort G := 𝓡₁_smul_prgRand G q
-    -- The second swap, through `𝓡₂`; its loss is `ε` at `D` with `𝓡₂` absorbed.
-    _ ≃[fun D => ε (D.absorb (Evaluation.perPort Unit (S × S) (𝓡₂.insideBudget S q)).nonempty_prefix
-          (Evaluation.perPort Unit (S × S × S) q).nonempty_prefix (𝓡₂.perPort S))]
+    -- The second swap, through `𝓡₂`; its loss is `ε(D𝓡₂)`, and `closed₂` admits `D𝓡₂`.
+    _ ≃[fun D => ε (D.absorb (𝓡₂.perPort S))]
         𝓡₂.perPort S • MemorylessSource.perPort (S × S) 𝒰[S × S] :=
-      AdmissibleDistinguishers.substitutesWithin_attach _ secure
+      AdmissibleDistinguishers.substitutesWithin_attach _ closed₂ secure
     -- The last hop: both are the memoryless source of `𝒰[S × S × S]`.
     _ = MemorylessSource.perPort (S × S × S) 𝒰[S × S × S] := 𝓡₂_smul_prgRand q
 

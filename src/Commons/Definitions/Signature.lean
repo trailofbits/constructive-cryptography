@@ -19,6 +19,9 @@ every message, and returns the one of the current key and message.
 
 A notion is the pair of its systems `(X₀, X₁)` (Banfi, §2.3.1), independent of the substitution
 relation; the predicate of the same name states it for the admitted distinguishers, `X₀ ≃[ε] X₁`.
+The admitted distinguishers are the typed distinguishers selected by the
+`AdmissibleDistinguishers` instance in scope, with no closure assumed, and `ε(d)` is the error
+allowed to each of them.
 
 ## Main definitions
 
@@ -71,7 +74,8 @@ def SignatureScheme.signatures [DecidableEq SK] [DecidableEq M]
 
 -- The public key, `S_sk` and `V_pk` for `(pk, sk) ← G`: on `m`, output `σ ← S(sk, m)`; on
 -- `(m, σ)`, output `V(pk, m, σ)`.
-system SignatureScheme.Real(scheme : SignatureScheme PK SK M Sig) [DecidableEq SK] [DecidableEq M] : Signing PK M Sig
+system SignatureScheme.Real(scheme : SignatureScheme PK SK M Sig)
+    [DecidableEq SK] [DecidableEq M] : Signing PK M Sig
   initialize
     keys ←$ scheme.gen
   on publicKey() → PK
@@ -83,7 +87,8 @@ system SignatureScheme.Real(scheme : SignatureScheme PK SK M Sig) [DecidableEq S
     return scheme.verify keys.1 message signature
 
 -- Record each signed message; accept a signature only if it verifies and its message was signed.
-converter SignatureScheme.EUF(PK M Sig : Type) [Fintype PK] [Fintype M] [Fintype Sig] [DecidableEq M] : Signing PK M Sig
+converter SignatureScheme.EUF(PK M Sig : Type)
+    [Fintype PK] [Fintype M] [Fintype Sig] [DecidableEq M] : Signing PK M Sig
   inside signing : Signing PK M Sig
   initialize
     signed ← ([] : List M)
@@ -99,7 +104,8 @@ converter SignatureScheme.EUF(PK M Sig : Type) [Fintype PK] [Fintype M] [Fintype
     return valid && decide (message ∈ signed)
 
 -- Record each signed pair; accept a signature only if it verifies and the pair was signed.
-converter SignatureScheme.SUF(PK M Sig : Type) [Fintype PK] [Fintype M] [Fintype Sig] [DecidableEq M] [DecidableEq Sig] : Signing PK M Sig
+converter SignatureScheme.SUF(PK M Sig : Type)
+    [Fintype PK] [Fintype M] [Fintype Sig] [DecidableEq M] [DecidableEq Sig] : Signing PK M Sig
   inside signing : Signing PK M Sig
   initialize
     signed ← ([] : List (M × Sig))
@@ -134,18 +140,22 @@ def SignatureScheme.SUFCMA.systems [DecidableEq SK] [DecidableEq M] [DecidableEq
 
 /-- **EUF-CMA** within `error`: against the admitted distinguishers, the real system substitutes
 for the one that accepts only signatures on signed messages. -/
-def SignatureScheme.EUFCMA [Interface.AdmissibleDistinguishers]
+def SignatureScheme.EUFCMA
+    [ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher]
     [DecidableEq SK] [DecidableEq M] (scheme : SignatureScheme PK SK M Sig)
     {q : Signing.Port → ℕ}
-    (error : (Signing.perPort PK M Sig q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
+    -- `q` is the query budget per port; `error d` bounds the advantage of each admitted `d`.
+    (error : (TypedDistinguisher (Signing.perPort PK M Sig q)) → ENNReal) : Prop :=
   (SignatureScheme.EUFCMA.systems scheme q).1 ≃[error] (SignatureScheme.EUFCMA.systems scheme q).2
 
 /-- **SUF-CMA** within `error`: against the admitted distinguishers, the real system substitutes
 for the one that accepts only signed pairs. -/
-def SignatureScheme.SUFCMA [Interface.AdmissibleDistinguishers]
+def SignatureScheme.SUFCMA
+    [ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher]
     [DecidableEq SK] [DecidableEq M] [DecidableEq Sig] (scheme : SignatureScheme PK SK M Sig)
     {q : Signing.Port → ℕ}
-    (error : (Signing.perPort PK M Sig q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
+    -- `q` is the query budget per port; `error d` bounds the advantage of each admitted `d`.
+    (error : (TypedDistinguisher (Signing.perPort PK M Sig q)) → ENNReal) : Prop :=
   (SignatureScheme.SUFCMA.systems scheme q).1 ≃[error] (SignatureScheme.SUFCMA.systems scheme q).2
 
 end

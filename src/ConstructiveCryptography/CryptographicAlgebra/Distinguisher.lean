@@ -1,3 +1,4 @@
+import ConstructiveCryptography.Distinguisher
 import ConstructiveCryptography.CryptographicAlgebra.PseudoMetric
 
 set_option autoImplicit false
@@ -18,6 +19,12 @@ Its reading as an output-1 probability is the intended model only: no range `[0,
 measurability or efficiency is required, and the class `distinguishers A` is an arbitrary
 set, possibly empty, closed only under the operations its hypotheses list. The distance is
 `ENNReal`-valued and may be `∞` for unbounded test functions.
+
+This class concerns the metric only, and its closure fields serve the metric laws. On
+interfaces its test functions are the evaluation maps `R ↦ Distinguishers.probability d R`
+of all compatible typed distinguishers (`Interface.distinguishers A`). The admitted tests of
+a computational substitution are chosen separately, by `AdmissibleDistinguishers`, and carry
+no such closure.
 
 ## Main definitions
 

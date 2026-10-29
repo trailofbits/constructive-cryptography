@@ -51,6 +51,9 @@ example {A B : Interface} {K L : Type} (R : TypedSystem A)
     R ∥ TypedSystem.sample (P.prod Q) S =
       TypedSystem.sample P (fun k =>
         TypedSystem.sample Q (fun l => R ∥ S (k, l))) := by
+  -- `∥` is the abstract `parallel`; `cc_parallel_eq` exposes it as `TypedSystem.parallel`, the
+  -- form the typed sampling laws are stated for.
+  simp only [Interface.cc_parallel_eq]
   -- Move the draw `(k, l) ← P × Q` outside the parallel composition, then split it.
   rw [TypedSystem.parallel_sample_right, TypedSystem.sample_prod]
 

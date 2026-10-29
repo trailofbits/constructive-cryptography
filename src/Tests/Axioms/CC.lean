@@ -47,12 +47,16 @@ on interfaces, depend only on `propext`, `Classical.choice` and `Quot.sound`.
 #print axioms SystemAlgebra.Interface.distinguishers_parallel_left
 #print axioms SystemAlgebra.Interface.distinguishers_parallel_right
 #print axioms SystemAlgebra.Interface.cc_dummy_eq
-#print axioms SystemAlgebra.Interface.distinguisherAdvantage
-#print axioms SystemAlgebra.Interface.distinguisherAdvantage_attach
-#print axioms SystemAlgebra.Interface.substitutesWithin_attach
-#print axioms SystemAlgebra.Interface.AdmissibleDistinguishers.substitutesWithin_attach
-#print axioms SystemAlgebra.Interface.AdmissibleDistinguishers.substitutesWithin_context
-#print axioms SystemAlgebra.Interface.distinguisherAdvantage_le_distance
+-- The decision layer (`ConstructiveCryptography.Distinguisher`), typed absorption
+-- (`RandomSystems.Typed.Distinguisher`) and admitted reductions
+-- (`ConstructiveCryptography.CryptographicAlgebra.DistinguisherAction`)
+#print axioms ConstructiveCryptography.Distinguishers.distinguisherAdvantage
+#print axioms ConstructiveCryptography.DistinguisherAction.advantage_absorb
+#print axioms SystemAlgebra.TypedDistinguisher.absorb_comp
+#print axioms ConstructiveCryptography.AdmissibleDistinguishers.substitutesWithin_attach
+#print axioms ConstructiveCryptography.AdmissibleDistinguishers.substitutesWithin_context
+-- ConstructiveCryptography.InterfaceAlgebra, continued
+#print axioms SystemAlgebra.Interface.distinguisherAdvantageDominated
 #print axioms SystemAlgebra.Interface.parallel_assoc
 #print axioms SystemAlgebra.Interface.parallel_dummy_left
 #print axioms SystemAlgebra.Interface.parallel_dummy_right

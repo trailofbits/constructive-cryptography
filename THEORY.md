@@ -133,6 +133,13 @@ Category ─▶ MonoidalCategory
     ▼
 ResourceTheory ─▶ CryptographicAlgebra ─▶ CompatiblePseudoMetric ─▶ CompatibleDistinguisherClass
 
+Distinguishers                            (decision evaluation)
+  │
+  ▼
+DistinguisherAction                       (absorption of converters, over ResourceTheory)
+  + AdmissibleDistinguishers              (independently selected tests)
+  → ClosedUnder α                         (proof required for the particular converter α)
+
 Games Ω ─▶ DistinctionGames               (evaluation; DistinctionGames fixes Ω = ℝ, probabilities)
   │              │
   ▼              ▼
@@ -141,19 +148,32 @@ GameAction Ω ─▶ DistinctionGameAction     (CC converter actions, over Categ
 ```
 
 General problem reductions use explicit solver types and preordered performance spaces in
-`ConstructiveCryptography.Problem` [3, equation (4.3), printed p. 87]. `Games` and `GameAction` select their
-performance space $`\Omega`$ with the games; the game reduction specializes the general result
-to admitted winners, and neither layer requires a category or metric. `DistinctionGames` and
+`ConstructiveCryptography.Problem` [3, equation (4.3), printed p. 87]. `Games` selects the
+performance space $`\Omega`$ with the games; its reduction specializes the general result
+to admitted winners. These evaluations and reductions require no category or metric;
+`GameAction` adds the categorical converter action. `DistinctionGames` and
 the interface instances select $`\Omega = \mathbb R`$, with winning probabilities as values.
 Performance values are distinct from the $`\mathbb R_{\ge 0}`$ error budgets bounding distances.
 
-On interfaces each class has one instance, whose fields are systems objects. The arrows of the
+Distinguishers are treated the same way. `Distinguishers` evaluates a distinguisher on a
+resource, read as the probability $`p(d, R)`$ that it outputs $`1`$, with advantage
+$`\lvert p(d, R) - p(d, S) \rvert`$ [3, Definition 4.7], [9, §2.3.3]; the evaluation is an
+abstract real number, with no range axiom. `AdmissibleDistinguishers` independently selects the
+tests a security statement quantifies over, with no efficiency or closure claim, and neither
+class needs a category or metric. `DistinguisherAction` absorbs converters,
+$`p(d\alpha, R) = p(d, \alpha R)`$; closure of the admitted tests under a converter is a proof
+supplied for each reduction, not an axiom [6, §4.3]. The closure fields of
+`CompatibleDistinguisherClass` concern only the metric.
+
+Canonical interface instances supply the systems objects; admitted tests remain a separate
+selection. The arrows of the
 category are the typed converters, composed as PDC behaviors, and its monoidal product is their
 parallel composition. The carrier $`\Phi A`$ is [`TypedSystem A`][TypedSystem], attachment is
 [`TypedConverter.attach`][TypedConverter.attach], and the parallel composition of typed systems
 is the [independent parallel composition][RandomSystem.parallel]. The distance
 [is, by definition, the transcript distance][Interface.cc_distance_eq] of §1, the distinguishers are the
-[distinguisher behaviors][Domain.DistinguisherBehavior], and the games are the
+[distinguisher behaviors][Domain.DistinguisherBehavior], absorbing converters by attachment, and
+the games are the
 [typed games][TypedGame]. Each axiom is discharged by a systems-level theorem;
 [ConstructiveCryptography](src/ConstructiveCryptography/README.md#the-instances-on-interfaces)
 lists every field and axiom with the object or theorem behind it.
@@ -183,12 +203,16 @@ derives a target substitution from assumptions by a chain of substitutions in co
 [9, §2.3.1], and counts the uses of each assumption.
 [Substitution within an error function][SubstitutesWithin] [9, §2.3.3], $`S \simeq_\varepsilon T`$
 when $`\Delta_D(S, T) \le \varepsilon(D)`$ for every admitted distinguisher $`D`$, transports
-through a converter by absorbing it into the distinguishers [9, p. 16], and along a witness the
-[assumption uses][Implication.substitutesWithin] and the
-[statistical steps][Implication.substitutesWithin_of_mixed] add up [7, Theorem 2.2.10]. On
-interfaces the [distinguishing advantage][Interface.distinguisherAdvantage] is the systems-level
-advantage of distinguisher behaviors, and every security notion of Commons is a substitution
-$`R \simeq_\varepsilon S`$ for it. Relaxations, simulators and the rest of the calculus are in
+through a converter $`\alpha`$ that preserves the admitted tests, with loss
+$`D \mapsto \varepsilon(D\alpha)`$ at the actual reduced distinguisher [9, p. 16], and along a
+witness the [assumption uses][Implication.substitutesWithin] and the
+[statistical steps][Implication.substitutesWithin_of_mixed] add up [7, Theorem 2.2.10]; a
+statistical step needs the advantage to be dominated by the distance. The
+[decision-derived advantage][Distinguishers.distinguisherAdvantage] supplies the per-test
+advantage, on interfaces that of the typed distinguishers, which is dominated by the transcript
+distance. Every security notion of Commons is a substitution $`R \simeq_\varepsilon S`$ for it,
+against the admitted tests the statement selects. Relaxations, simulators and the rest of the
+calculus are in
 [ConstructiveCryptography](src/ConstructiveCryptography/README.md).
 
 ---
@@ -300,7 +324,7 @@ extension are in [Examples](src/Examples/README.md).
 
 <!-- Declarations: §3 -->
 
-[Interface.cc_distance_eq]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L254
+[Interface.cc_distance_eq]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L272
 
 <!-- Declarations: §4 -->
 
@@ -310,10 +334,10 @@ extension are in [Examples](src/Examples/README.md).
 [ConstructsWithin.serial]: src/ConstructiveCryptography/CryptographicAlgebra/PseudoMetric.lean#L331
 [ConstructsWithin.parallel]: src/ConstructiveCryptography/CryptographicAlgebra/PseudoMetric.lean#L359
 [Implication]: src/ConstructiveCryptography/Substitution/Basic.lean#L270
-[SubstitutesWithin]: src/ConstructiveCryptography/Substitution/Reduction.lean#L108
+[SubstitutesWithin]: src/ConstructiveCryptography/Substitution/Reduction.lean#L80
 [Implication.substitutesWithin]: src/ConstructiveCryptography/Substitution/Quantitative.lean#L84
 [Implication.substitutesWithin_of_mixed]: src/ConstructiveCryptography/Substitution/Quantitative.lean#L157
-[Interface.distinguisherAdvantage]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L273
+[Distinguishers.distinguisherAdvantage]: src/ConstructiveCryptography/Distinguisher.lean#L132
 
 <!-- Declarations: §5 and departures -->
 
@@ -321,11 +345,11 @@ extension are in [Examples](src/Examples/README.md).
 [cc_nonexpand]: src/ConstructiveCryptography/Tactics/Categorical.lean#L166
 [cc_triangle]: src/ConstructiveCryptography/Tactics/Categorical.lean#L155
 [cc_construct]: src/ConstructiveCryptography/Tactics/Categorical.lean#L42
-[cc_calc]: src/ConstructiveCryptography/Tactics/Substitution.lean#L88
-[real_ideal_distance_le]: src/Examples/AuthenticatedEncryption/Security.lean#L132
-[SymmetricEncryption.encryptions]: src/Commons/Definitions/Encryption.lean#L65
-[AE.INDCCA]: src/Commons/Definitions/AEAD.lean#L165
-[correctedChain]: src/Examples/AuthenticatedEncryption/Security.lean#L102
+[cc_calc]: src/ConstructiveCryptography/Tactics/Substitution.lean#L101
+[real_ideal_distance_le]: src/Examples/AuthenticatedEncryption/Security.lean#L158
+[SymmetricEncryption.encryptions]: src/Commons/Definitions/Encryption.lean#L68
+[AE.INDCCA]: src/Commons/Definitions/AEAD.lean#L168
+[correctedChain]: src/Examples/AuthenticatedEncryption/Security.lean#L128
 [collision_mass_le]: src/Examples/AuthenticatedEncryption/Collision.lean#L54
 [exists_pair_one_sub_supAgreement_le]: src/Probability/MultiCoupling.lean#L616
 [not_supAgreement_disagreement_le_every_pair]: src/Probability/MultiCoupling.lean#L778

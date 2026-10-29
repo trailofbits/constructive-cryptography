@@ -16,6 +16,9 @@ of the current key and message.
 
 A notion is the pair of its systems `(X₀, X₁)` (Banfi, §2.3.1), independent of the substitution
 relation; the predicate of the same name states it for the admitted distinguishers, `X₀ ≃[ε] X₁`.
+The admitted distinguishers are the typed distinguishers selected by the
+`AdmissibleDistinguishers` instance in scope, with no closure assumed, and `ε(d)` is the error
+allowed to each of them.
 
 The left-or-right form (Boneh–Shoup, Attack Game 5.2) takes a pair `(m_L, m_R)` per query and
 encrypts `m_L` in one system and `m_R` in the other, both transformations of `E_k`.
@@ -68,7 +71,8 @@ def SymmetricEncryption.encryptions [DecidableEq K] [DecidableEq M]
     Distribution.pi_isProbDist fun km => (scheme.enc km.1 km.2).2⟩
 
 -- `E_k` for `k ← Gen`: on `m`, output `c ← Enc_k(m)`.
-system Encryption.Real(scheme : SymmetricEncryption K M C) [DecidableEq K] [DecidableEq M] : Encryption M C
+system Encryption.Real(scheme : SymmetricEncryption K M C)
+    [DecidableEq K] [DecidableEq M] : Encryption M C
   initialize
     key ←$ scheme.gen
   on enc(message : M) → C
@@ -95,10 +99,12 @@ def Encryption.INDCPA.systems [DecidableEq K] [DecidableEq M] [Nonempty M]
 
 /-- **ind-cpa** within `error`: against the admitted distinguishers, `E_k` substitutes for
 `ρ^cpa(E_k)`. -/
-def Encryption.INDCPA [Interface.AdmissibleDistinguishers]
+def Encryption.INDCPA
+    [ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher]
     [DecidableEq K] [DecidableEq M] [Nonempty M] (scheme : SymmetricEncryption K M C)
     {q : Encryption.Port → ℕ}
-    (error : (Encryption.perPort M C q).inputDomain.DistinguisherBehavior → ENNReal) :
+    -- `q` is the query budget per port; `error d` bounds the advantage of each admitted `d`.
+    (error : (TypedDistinguisher (Encryption.perPort M C q)) → ENNReal) :
     Prop :=
   (Encryption.INDCPA.systems scheme q).1 ≃[error] (Encryption.INDCPA.systems scheme q).2
 
@@ -124,9 +130,11 @@ def Encryption.LORCPA.systems [DecidableEq K] [DecidableEq M] (scheme : Symmetri
 
 /-- **Left-or-right CPA** within `error`: against the admitted distinguishers, encrypting the left
 messages substitutes for encrypting the right ones. -/
-def Encryption.LORCPA [Interface.AdmissibleDistinguishers]
+def Encryption.LORCPA
+    [ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher]
     [DecidableEq K] [DecidableEq M] (scheme : SymmetricEncryption K M C) {q : ℕ}
-    (error : (LeftRight M C q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
+    -- `q` is the query budget; `error d` bounds the advantage of each admitted `d`.
+    (error : (TypedDistinguisher (LeftRight M C q)) → ENNReal) : Prop :=
   (Encryption.LORCPA.systems scheme q).1 ≃[error] (Encryption.LORCPA.systems scheme q).2
 
 end
