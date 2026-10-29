@@ -19,7 +19,8 @@ A [**distribution**][Distribution] is a finitely supported function to $`\mathbb
 Distributions have [masses][mass] of events, [pushforwards][fTransform], [products][prod] of two
 laws and of [families][pi], and [uniform][uniform] laws. The
 [heterogeneous finite product][piDep] assigns the product mass to a dependent family of
-coordinate outcomes; it is normalized when each coordinate law is normalized. A
+coordinate outcomes. The alphabets may be infinite; only the index set and each support are
+finite. It is a probability law when each coordinate law is a probability law. A
 [**kernel**][bindK] $`f`$ is a conditional distribution [3, §3.6.1]; mixed over a law $`\mu`$
 it gives $`\sum_a \mu(a)\, f(a)`$:
 [mixtures compose][bindK_bindK], a pushforward
@@ -27,7 +28,8 @@ it gives $`\sum_a \mu(a)\, f(a)`$:
 [disintegrates][pi_eq_bindK_update] at a coordinate. Probability laws have
 [pushforwards][ProbDist.map] and [sequential compositions][ProbDist.bind].
 The notation `𝒰[A]` denotes the [normalized uniform law][ProbDist.uniform] of type
-`Distribution.ProbDist A`; `Distribution.uniform A` is its underlying raw distribution.
+`Distribution.ProbDist A`, with mass $`1/\lvert A \rvert`$ at each point of a finite nonempty
+$`A`$; its underlying raw distribution `𝒰[A].1` is `Distribution.uniform A`.
 
 ## Statistical distance
 
@@ -52,11 +54,19 @@ agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X
 For a uniform function table, [a consistent query transcript][uniform_mass_transcript_eq]
 fixes one independent value per distinct input; repeated inputs add no factor. Two query
 families with [the same equality pattern][fTransform_eval_uniform_eq_of_same_fibers] have the
-same output law, even when their table domains have different sizes.
-If fresh coordinates are chosen from previously observed values, their
-[joint mass][uniform_mass_adaptive_eval_eq_mul] still contributes one independent uniform
-factor per chosen coordinate, provided the combined coordinate family is injective on the
-stated good event.
+same output law, even when their table domains have different sizes. The index type may be
+infinite; the finite table domains keep both query images finite.
+A batch $`\mathrm{next}(b) : I \to X`$ may also be chosen from the revealed base values
+$`b = F \circ \mathrm{base}`$. If base and selected coordinates are jointly injective whenever
+$`\mathrm{good}(b)`$ holds, then [the joint mass][uniform_mass_adaptive_eval_eq_mul] is
+
+```math
+\Pr\big[\mathrm{good}(b) \wedge F \circ \mathrm{next}(b) = v\big]
+  = \Pr\big[\mathrm{good}(b)\big] \cdot \lvert Y \rvert^{-\lvert I \rvert} .
+```
+
+Outside the good event, coordinates may repeat, and the good event may have probability zero.
+
 An event that ignores one table coordinate [factors from its fresh value]
 [uniform_mass_fresh_eval_eq]. A [symmetric pair union bound][mass_exists_pair_le_choose]
 counts each unordered pair once; [uniform-table collisions][uniform_mass_not_injOn_le_choose]
@@ -82,12 +92,12 @@ injectivity of all replay and public sites; neither asserts independence on bad 
 [ProbDist]: Distribution.lean#L149
 [isProbDist]: Distribution.lean#L128
 [mass]: Distribution.lean#L217
-[fTransform]: Distribution.lean#L632
-[prod]: Distribution.lean#L1005
-[pi]: Distribution.lean#L1646
-[piDep]: DependentProduct.lean#L29
-[uniform]: Distribution.lean#L566
-[ProbDist.uniform]: Distribution.lean#L599
+[fTransform]: Distribution.lean#L704
+[prod]: Distribution.lean#L1077
+[pi]: Distribution.lean#L1718
+[piDep]: DependentProduct.lean#L37
+[uniform]: Distribution.lean#L633
+[ProbDist.uniform]: Distribution.lean#L666
 [bindK]: Kernel.lean#L49
 [bindK_bindK]: Kernel.lean#L95
 [bindK_single_comp]: Kernel.lean#L117
@@ -110,14 +120,17 @@ injectivity of all replay and public sites; neither asserts independence on bad 
 [mass_ge_le_expect_div]: Expectation.lean#L199
 [expect_mul_sq_le_sq_mul_sq]: Expectation.lean#L215
 [ConvexOn.map_expect_le]: Expectation.lean#L297
-[card_function_fiber_finset]: Counting.lean#L47
-[uniform_mass_transcript_eq]: Counting.lean#L194
-[fTransform_eval_uniform_eq_of_same_fibers]: Counting.lean#L222
-[uniform_mass_adaptive_eval_eq_mul]: Counting.lean#L266
-[uniform_mass_fresh_eval_eq]: Counting.lean
-[mass_exists_pair_le_choose]: Distribution.lean
-[uniform_mass_not_injOn_le_choose]: Counting.lean
-[uniform_mass_fresh_projected_eval_eq]: Counting.lean
-[uniform_mass_transcript_projected_collision_le]: Counting.lean
-[uniform_mass_disjoint_events]: Counting.lean
-[uniform_mass_fresh_outputs_eq]: Counting.lean
+[card_function_fiber_finset]: Counting.lean#L62
+[uniform_mass_transcript_eq]: Counting.lean#L479
+[fTransform_eval_uniform_eq_of_same_fibers]: Counting.lean#L535
+[uniform_mass_adaptive_eval_eq_mul]: Counting.lean#L607
+
+[uniform_mass_fresh_eval_eq]: Counting.lean#L213
+[mass_exists_pair_le_choose]: Distribution.lean#L505
+[uniform_mass_not_injOn_le_choose]: Counting.lean#L327
+
+[uniform_mass_fresh_projected_eval_eq]: Counting.lean#L352
+[uniform_mass_transcript_projected_collision_le]: Counting.lean#L402
+
+[uniform_mass_disjoint_events]: Counting.lean#L681
+[uniform_mass_fresh_outputs_eq]: Counting.lean#L725
