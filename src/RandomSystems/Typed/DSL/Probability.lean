@@ -1,22 +1,22 @@
 import RandomSystems.Typed.Functional
 
 /-!
-# Probability law compatibility
+# The uniform law in the DSL namespace
 
-The uniform probability law and its notation now belong to `Probability.Distribution`.
-The exported `uniform` name keeps existing DSL terms and rewrite proofs elaborating.
-Component bodies may sample any closed law of type `Distribution.ProbDist A`.
+`SystemAlgebra.DSL.uniform A` is `Distribution.ProbDist.uniform A`, the normalized uniform law
+`𝒰[A]` of `Probability.Distribution`. Component bodies sample closed laws of type
+`Distribution.ProbDist A`.
 
 ## Main definitions
 
-* `uniform`: export of `Distribution.ProbDist.uniform`; `𝒰[A]` is available from `Probability`.
+* `uniform`: `Distribution.ProbDist.uniform`, exported into `SystemAlgebra.DSL`
 -/
 
 namespace SystemAlgebra.DSL
 
 open Probability
 
--- Existing DSL users refer to this name in rewrite proofs; export the Probability definition.
+-- `DSL.uniform`, and `uniform` under `open SystemAlgebra.DSL`, name the Probability definition.
 export Probability.Distribution.ProbDist (uniform)
 
 end SystemAlgebra.DSL
