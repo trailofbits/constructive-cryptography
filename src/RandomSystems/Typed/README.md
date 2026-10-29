@@ -162,10 +162,10 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedSystem.parallel]: Parallel.lean#L153
 [TypedConverter.parallel]: Parallel.lean#L210
 [TypedConverter.parallel_attach]: ParallelAttachment.lean#L23
-[Interface.tensorAll]: ParallelAll.lean#L41
-[TypedSystem.parallelAll]: ParallelAll.lean#L108
-[TypedConverter.parallelAll]: ParallelAll.lean#L166
-[TypedSystem.ofFunction_parallelAll]: ParallelAll.lean#L191
+[Interface.tensorAll]: ParallelAll.lean#L59
+[TypedSystem.parallelAll]: ParallelAll.lean#L156
+[TypedConverter.parallelAll]: ParallelAll.lean#L240
+[TypedSystem.ofFunction_parallelAll]: ParallelAll.lean#L268
 [TypedConverter.rename]: Relabel.lean#L48
 [TypedConverter.rename_comp]: Relabel.lean#L80
 [TypedConverter.rename_refl]: Relabel.lean#L67
