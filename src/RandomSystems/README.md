@@ -29,6 +29,13 @@ next output, and a DDS [is determined by its completed replies][IsDDS.eq_of_repl
 
 ## Probabilistic systems
 
+A transcript follows a query strategy when every exchange prefix $`p\mathbin{+\!+}[(x,y)]`$
+has $`x\in\sigma(\operatorname{replies}(p))`$, the rule $`x_i = e(y_1,\dots,y_{i-1})`$ of
+[1, Definition 7, printed p. 12]
+(`FollowsStrategy` in [CumulativeObservation](Cumulative/CumulativeObservation.lean)).
+This states the next-query rule directly; `FollowsStrategy.iff_getElem` supplies the equivalent
+indexed form when needed for list calculations.
+
 A [**domain**][Domain] $`\mathcal D`$ admits next queries after each transcript, with a bound on the
 length. A [**PDS**][PDS] is a finite distribution over DDSs [with domain][HasDomain]
 $`\mathcal D`$ [1, Definition 8]. A [**random system**][RandomSystem] is given by its cumulative
@@ -182,7 +189,7 @@ of the program's inside queries:
 [automatonSystem]: System/Automaton.lean#L43
 [IsBisim]: System/Automaton.lean#L70
 [automatonSystem_eq_of_bisim]: System/Automaton.lean#L89
-[DDE]: System/DDE.lean#L20
+[DDE]: System/DDE.lean#L26
 [Domain]: PDS/PDS.lean#L65
 [Equivalent]: PDS/PDS.lean#L50
 [HasDomain]: PDS/PDS.lean#L91
@@ -193,10 +200,10 @@ of the program's inside queries:
 [PDS.behavior_eq_iff]: Cumulative/Cumulative.lean#L225
 [RandomSystem.exists_presentation]: Cumulative/Presentation.lean#L302
 [RandomSystem.ofPDSClass_bijective]: Cumulative/Presentation.lean#L312
-[RandomSystem.sLaw]: Cumulative/CumulativeObservation.lean#L179
-[RandomSystem.Compatible]: Cumulative/CumulativeObservation.lean#L197
-[RandomSystem.eq_iff_sLaw]: Cumulative/CumulativeObservation.lean#L534
-[RandomSystem.eq_iff_sLaw_fixedQueries]: Cumulative/CumulativeObservation.lean#L548
+[RandomSystem.sLaw]: Cumulative/CumulativeObservation.lean#L240
+[RandomSystem.Compatible]: Cumulative/CumulativeObservation.lean#L259
+[RandomSystem.eq_iff_sLaw]: Cumulative/CumulativeObservation.lean#L643
+[RandomSystem.eq_iff_sLaw_fixedQueries]: Cumulative/CumulativeObservation.lean#L657
 [RandomSystem.mix]: Cumulative/CumulativeOperations.lean#L45
 [RandomSystem.parallel]: Cumulative/CumulativeOperations.lean#L130
 [RandomSystem.parallelAll]: Cumulative/ParallelAll.lean#L193
@@ -234,16 +241,16 @@ of the program's inside queries:
 [routingConverter]: Converter/QueryRouting.lean#L69
 [routingCall_queries]: Converter/QueryRouting.lean#L108
 [PDCBehavior]: Converter/PDCBehavior.lean#L67
-[PDCBehavior.ofPDC]: Converter/PDCBehavior.lean#L169
-[PDCBehavior.comp]: Converter/PDCBehavior.lean#L273
-[PDCBehavior.id]: Converter/PDCBehavior.lean#L369
-[PDCBehavior.comp_assoc]: Converter/PDCBehavior.lean#L338
-[PDCBehavior.id_comp]: Converter/PDCBehavior.lean#L385
-[PDCBehavior.comp_id]: Converter/PDCBehavior.lean#L375
-[PDCBehavior.attach]: Converter/ConverterAttachment.lean#L156
-[PDCBehavior.attach_presents]: Converter/ConverterAttachment.lean#L207
-[PDCBehavior.attach_id]: Converter/ConverterAttachment.lean#L262
-[PDCBehavior.attach_comp]: Converter/ConverterAttachment.lean#L275
+[PDCBehavior.ofPDC]: Converter/PDCBehavior.lean#L171
+[PDCBehavior.comp]: Converter/PDCBehavior.lean#L277
+[PDCBehavior.id]: Converter/PDCBehavior.lean#L375
+[PDCBehavior.comp_assoc]: Converter/PDCBehavior.lean#L343
+[PDCBehavior.id_comp]: Converter/PDCBehavior.lean#L391
+[PDCBehavior.comp_id]: Converter/PDCBehavior.lean#L381
+[PDCBehavior.attach]: Converter/ConverterAttachment.lean#L157
+[PDCBehavior.attach_presents]: Converter/ConverterAttachment.lean#L208
+[PDCBehavior.attach_id]: Converter/ConverterAttachment.lean#L264
+[PDCBehavior.attach_comp]: Converter/ConverterAttachment.lean#L277
 [PDCBehavior.tensor]: Converter/ConverterTensor.lean#L649
 [PDCBehavior.comp_tensor]: Converter/ConverterTensor.lean#L745
 [Program]: Converter/Program.lean#L45

@@ -25,7 +25,7 @@ transcript is admitted exactly when it is empty or its inputs lie in the domain.
 
 namespace SystemAlgebra
 
-open Classical Probability
+open Probability
 
 variable {A B : Type}
 
@@ -54,12 +54,14 @@ namespace RandomSystem
 
 variable [Fintype A] [Fintype B] {D D' D'' : Domain A B}
 
+open Classical in
 /-- **The restriction** of a random system on `D` to a smaller domain `D'`: the masses of the
 transcripts `D'` admits, and zero elsewhere. -/
 noncomputable def restrict (R : RandomSystem A B D) (D' : Domain A B)
     (hD : ∀ h x, D' h x → D h x) : RandomSystem A B D' :=
   ⟨fun h => if Admitted D' h then R h else 0, R.2.restrict hD⟩
 
+open Classical in
 lemma restrict_apply (R : RandomSystem A B D) (hD : ∀ h x, D' h x → D h x)
     (h : List (A × B)) : R.restrict D' hD h = if Admitted D' h then R h else 0 := rfl
 
@@ -77,11 +79,11 @@ lemma restrict_restrict (R : RandomSystem A B D) (hD : ∀ h x, D' h x → D h x
 of the system is admitted by the smaller domain. -/
 lemma admitted_of_compatible_restrict {R : RandomSystem A B D} {hD : ∀ h x, D' h x → D h x}
     {σ : List B →. A} (hc : (R.restrict D' hD).Compatible σ) {h : List (A × B)}
-    (hh : Cons σ h) (hm : R h ≠ 0) : Admitted D' h := by
+    (hh : FollowsStrategy σ h) (hm : R h ≠ 0) : Admitted D' h := by
   induction h using List.reverseRecOn with
   | nil => exact admitted_nil _
   | append_singleton h z ih =>
-    obtain ⟨hh, hz⟩ := cons_snoc.mp hh
+    obtain ⟨hh, hz⟩ := FollowsStrategy.snoc_iff.mp hh
     have hp : R h ≠ 0 := fun h0 => hm (R.mass_eq_zero_of_prefix ⟨[z], rfl⟩ h0)
     have ha := ih hh hp
     refine admitted_snoc.mpr ⟨ha, hc h z.1 hh ?_ hz⟩
@@ -98,6 +100,7 @@ lemma Compatible.of_restrict {R : RandomSystem A B D} {hD : ∀ h x, D' h x → 
 lemma sLaw_restrict {R : RandomSystem A B D} {hD : ∀ h x, D' h x → D h x}
     {σ : List B →. A} (hc : (R.restrict D' hD).Compatible σ) (n : ℕ) :
     (R.restrict D' hD).sLaw σ n = R.sLaw σ n := by
+  classical
   ext h
   rw [sLaw_apply, sLaw_apply, restrict_apply]
   by_cases hg : Good σ n h
