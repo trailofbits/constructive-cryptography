@@ -304,4 +304,23 @@ lemma trim_dom_of_admission {A B : Type} {s : System A B} {E : List A → Prop}
       rw [trim_snoc_of_reach hr]
       exact (hs h x ys hy).mpr hd
 
+/-- Every exchange of a completed transcript is the system's reply to its prefix: if
+`T = T₁ ++ z :: T₂` and `s` replies `T`, then `s` answers the inputs of `T₁` followed by `z.1`
+with `z.2`. -/
+lemma Replies.eq_some_of_eq_append {A B : Type} {s : System A B} {T : List (A × B)}
+    (hr : Replies s (T.map Prod.fst) (T.map Prod.snd)) {T₁ : List (A × B)} {z : A × B}
+    {T₂ : List (A × B)} (he : T = T₁ ++ z :: T₂) :
+    s (T₁.map Prod.fst ++ [z.1]) = Part.some z.2 := by
+  subst he
+  -- The reply at position `|T₁|`, then the prefix of length `|T₁| + 1` and its last output.
+  have hk := hr.2 T₁.length (by simp only [List.map_append, List.map_cons,
+    List.length_append, List.length_map, List.length_cons, lt_add_iff_pos_right,
+    Nat.zero_lt_succ]) (by simp only [List.map_append, List.map_cons,
+    List.length_append, List.length_map, List.length_cons, lt_add_iff_pos_right,
+    Nat.zero_lt_succ])
+  simpa only [List.map_append, List.map_cons, List.take_append, List.length_map,
+    le_add_iff_nonneg_right, zero_le, List.take_of_length_le, add_tsub_cancel_left,
+    List.take_succ_cons, List.take_zero, Std.le_refl, List.getElem_append_right, Nat.sub_self,
+    List.getElem_cons_zero] using hk
+
 end SystemAlgebra

@@ -11,7 +11,7 @@ outside queries lie in `F` and whose inside replies answer queries in `E`. On fi
 domains its transcripts are bounded. A DDC from `E` to `F` answers exactly these inputs
 and queries only in `E`; attached to a resource with domain `E` it gives a resource with
 domain `F`.
-Sources: CR18, Definitions 3.8–3.9 (printed pp. 61–62); Lanzenberger–Maurer,
+Sources: CR18, Definitions 3.8–3.9 (printed p. 62); Lanzenberger–Maurer,
 Definitions 5 and 8 (printed pp. 11, 13).
 
 ## Main definitions
@@ -28,6 +28,8 @@ Definitions 5 and 8 (printed pp. 11, 13).
 * `IsDDC.eq_of_admitted_replies`: a DDC is determined by its transcripts on admitted inputs
 * `IsDDCFrom.mapsDomain`: a DDC from `E` to `F` maps resources with domain `E`
   to resources with domain `F`
+* `IsDDCFrom.eq_filterDom_of_replies_le`: a certified DDC below a partial DDC is its
+  outside-domain restriction
 * `IsDDCFrom.replies_iff_of_le`: two DDCs from `E` to `F` below one system have the same
   transcripts
 -/
@@ -445,18 +447,28 @@ end Identity
 
 /-! ## Comparison through outside restriction -/
 
-/-- A certified DDC whose transcripts occur in a responsive DDC is exactly that DDC restricted
-to the certified outside domain. The inside-domain certificate admits every next inside query;
-determinism then fixes the same reply on every admitted prefix. This is a consequence of the
-bounded converter and domain model of Jost, Definition 2.2.2, printed pp. 17–18: “Upon an input
-at an outside interface, the converter is allowed to make a bounded number of queries to the
-inside interfaces ... before returning a value at the queried interface.” -/
+/-- **A certified DDC below a partial DDC is its outside restriction.** If `a` is a DDC from `E`
+to `F` and every transcript of `a` is a transcript of the DDC `r`, possibly not responsive, then
+`a` is `r` restricted to the input histories `h` whose outside queries `out(h)` lie in `F`:
+
+```text
+  a(h) = r(h)        if out(h) = [] or out(h) ∈ F
+  a(h) undefined     otherwise
+```
+
+This is a filter, CR18, §3.4.3, printed p. 62: “A special type of converter, which we call a
+filter, is one that restricts the domain dom(s) of a DDS s to a subset of dom(s) (again closed
+under taking prefixes)”, with “(ϕs)(x₁, …, x_k) = s(x₁, …, x_k) for all (x₁, …, x_k) ∈ dom(ϕs).”
+Here the filtered system is the converter `r`, cut by the outside projection of its inputs. The
+exact domain of `a` decides where the restriction is defined, and determinism of `r` fixes the
+replies there. -/
 lemma IsDDCFrom.eq_filterDom_of_replies_le {E : List (Σ j, X j) → Prop}
     {F : List (Σ o, U o) → Prop} {a r : InsideOutsideSystem O J U V X Y} {ba br : Nat}
     (ha : IsDDCFrom E F ba a) (hr : IsDDC br r)
     (hF : ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
     (hle : ∀ xs ys, Replies a xs ys → Replies r xs ys) :
     a = filterDom (fun h => outsideInputs h = [] ∨ F (outsideInputs h)) r := by
+  -- The restriction is prefix-closed, so the restricted `r` is again a partial DDC.
   have hD {p h : List (Σ l, twoFam U Y l)} (hp : p <+: h) :
       outsideInputs h = [] ∨ F (outsideInputs h) →
         outsideInputs p = [] ∨ F (outsideInputs p) := by
@@ -464,15 +476,17 @@ lemma IsDDCFrom.eq_filterDom_of_replies_le {E : List (Σ j, X j) → Prop}
     obtain ⟨rest, rfl⟩ := hp
     exact ⟨outsideInputs rest, (outsideInputs_append p rest).symm⟩
   have hf := hr.filterDom _ (fun hp _ hh => hD hp hh)
+  -- Two DDCs with the same transcripts on admitted inputs are equal.
   apply ha.isDDC.eq_of_admitted_replies hf
   intro h _
   constructor
-  · -- Restricting a certified transcript preserves its outside domain and raw replies.
+  · -- A transcript of `a` has its outside queries in `F` and is a transcript of `r`, hence of the
+    -- restriction.
     intro hrep
     apply (replies_filterDom_iff (fun hp _ hh => hD hp hh) r
       (fun _ => ha.outsideInputs_mem hrep)).mpr
     exact hle _ _ hrep
-  · -- Every restricted reply is the unique reply of the certified DDC on that prefix.
+  · -- A transcript of the restriction is one of `a`, by induction on its length.
     intro hrep
     induction h using List.reverseRecOn with
     | nil => exact replies_nil _
@@ -484,10 +498,13 @@ lemma IsDDCFrom.eq_filterDom_of_replies_le {E : List (Σ j, X j) → Prop}
       have hprev := ih hadm.1 hrep
       have hy' := Part.eq_some_iff.mp hy
       have hout := ((filterDom_mem_iff _ _ _ _).mp hy').1
+      -- `x` is admitted, the outside queries up to `x` lie in `F` and the inside queries so far
+      -- in `E`: `x` is in the converter domain, so `a` answers it with some `v`.
       have hdom := (ha.answers h x hprev).mpr
         ⟨hadm.1, hadm.2, hout.resolve_left (outsideInputs_ne_nil hadm.1 hadm.2),
           ha.queries h hprev⟩
       obtain ⟨v, hv⟩ := Part.dom_iff_mem.mp hdom
+      -- The extended transcript of `a` is one of `r`, and `r` answers `x` with `y`: `v = y`.
       have hnext := replies_snoc.mpr ⟨hprev, Part.eq_some_iff.mpr hv⟩
       have hraw := hle _ _ hnext
       have heq : v = y := Part.mem_unique
@@ -995,7 +1012,8 @@ lemma IsDDCFrom.serial_next (hβ : IsDDCFrom F G bβ β) (hα : IsDDCFrom E F b�
       by simpa [lastOuter_snoc, outerOf] using hlo, hPb, by simpa [outsideInputs_append] using hR2,
       hQ⟩)
 
-/-- Every completed history of the composite has its components behind it. -/
+/-- Every partial transcript of the composite has its component transcripts behind it,
+including a final inside query whose reply is pending. -/
 lemma IsDDCFrom.serial_idle (hβ : IsDDCFrom F G bβ β) (hα : IsDDCFrom E F bα α) :
     ∀ h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l)),
       Replies (serialM β α) (h.map Prod.fst) (h.map Prod.snd) →
@@ -1021,6 +1039,31 @@ lemma IsDDCFrom.serial_idle (hβ : IsDDCFrom F G bβ β) (hα : IsDDCFrom E F b�
     obtain ⟨-, w', hw', hs'⟩ := hβ.serial_next hα hp hs x lx (Or.inr (by simp))
     cases hw'
     exact ⟨K', by simpa using r', by simpa using hs'⟩
+
+/-- **The component transcripts of a serial composite**: behind every partial transcript `T` of
+`trim (serialM β α)` lie a transcript `Tb` of `β` and a transcript `Ta` of `α` with
+
+* `outsideInputs Tb = outsideInputs T`: the outer converter receives the outside inputs;
+* `outsideInputs Ta = insideQueries Tb`: the inner converter receives the outer queries;
+* `insideQueries Ta = insideQueries T`: the inner queries are the exposed ones.
+
+The lists include a final query whose reply has not arrived. -/
+lemma IsDDCFrom.serial_transcripts (hβ : IsDDCFrom F G bβ β)
+    (hα : IsDDCFrom E F bα α)
+    {T : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))}
+    (hr : Replies (trim (serialM β α)) (T.map Prod.fst) (T.map Prod.snd)) :
+    ∃ (Tb : List ((Σ l, twoFam U Ym l) × (Σ l, twoFam V Xm l)))
+      (Ta : List ((Σ l, twoFam Xm Y l) × (Σ l, twoFam Ym X l))),
+      Replies β (Tb.map Prod.fst) (Tb.map Prod.snd) ∧
+      Replies α (Ta.map Prod.fst) (Ta.map Prod.snd) ∧
+      outsideInputs (Tb.map Prod.fst) = outsideInputs (T.map Prod.fst) ∧
+      outsideInputs (Ta.map Prod.fst) = insideQueries (Tb.map Prod.snd) ∧
+      insideQueries (Ta.map Prod.snd) = insideQueries (T.map Prod.snd) := by
+  -- `serial_idle` holds on every composite transcript, idle or pending; keep its two
+  -- component transcripts and the three history equations.
+  rw [replies_trim_iff] at hr
+  obtain ⟨_, _, Tb, Ta, _, hb, _, ha, ho, hm, hi, _⟩ := hβ.serial_idle hα T hr
+  exact ⟨Tb, Ta, hb, ha, ho, hm, hi⟩
 
 /-- **Serial composition of DDCs from `E` to `F` and from `F` to `G` is a DDC from `E`
 to `G`**, with the product of the inside-query bounds. -/

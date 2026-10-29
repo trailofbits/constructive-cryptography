@@ -333,6 +333,11 @@ coverage: shorten sentences and remove repetition, never a necessary step,
 hypothesis, invariant or reason. One sentence per local step is usually enough;
 use more when the mathematics or representation needs it.
 
+- Delegate comment and documentation passes to Claude, using its saved style preferences and
+  the ChaChaPoly and proof-ladders developments as references. Preserve the mathematical
+  explanations and diagrams while making the wording concise. Give Claude only file-reading
+  and editing tools, with shell access, Git access, external tools and hooks disabled. Claude
+  must not stage, commit or push. The coordinating agent checks the diff and verifies the result.
 - Begin each substantive module with a `/-! ... -/` introduction explaining
   its mathematical purpose, the objects involved, the principal results by
   declaration name, and their role in the proof ladder. Group related results
@@ -343,6 +348,12 @@ use more when the mathematics or representation needs it.
   hypotheses and consequence in prose or an equation; explain restrictions,
   conventions and differences from the source where they matter. Scale the
   explanation to the declaration rather than repeating its Lean type.
+- Object docstrings give the mathematical definition as well as its role: a
+  defining equation, distribution, or input/output rule. For a system, specify
+  its interface and domain, any sampled or retained state, and its reply law;
+  for a transcript or event, give the sequence or predicate. A short equation
+  with the necessary notation is enough; a prose label alone is not. This
+  applies to test objects too, without requiring a long explanation.
 - A paper-derived definition, theorem or proof step carries a concise verbatim
   quotation of the source statement with its printed page. Paraphrase only the
   Lean representation or a repository-specific modeling choice.
