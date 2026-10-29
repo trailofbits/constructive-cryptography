@@ -92,14 +92,18 @@ inside queries and outside replies out) with at most $`b`$ consecutive inside qu
 it [gives one with domain][IsDDCFrom.mapsDomain] $`F`$. A [**PDC**][PDCBehavior.ofPDC] is a distribution over DDCs, and
 its [**behavior**][PDCBehavior] is a random system over the converter domain
 [3, Definitions 3.17–3.18].
-If a certified DDC's transcripts occur in a larger DDC, it [equals that DDC restricted to its
-outside domain][IsDDCFrom.eq_filterDom_of_replies_le].
+A DDC from $`E`$ to $`F`$ whose transcripts are transcripts of a DDC $`r`$, not necessarily
+responsive, [is a filter][IsDDCFrom.eq_filterDom_of_replies_le] of $`r`$ [3, §3.4.3]: the
+restriction of $`r`$ to the input histories whose outside queries lie in $`F`$.
 
 [Serial composition][serialM] $`\beta \odot \alpha`$ connects the inside of $`\beta`$ to the outside
-of $`\alpha`$, and [DDCs compose][IsDDC.comp] with the product of their bounds. When the inner
-bound depends on the intermediate port, [weighted serial composition][IsDDC.comp_of_query_cost]
-uses the outer converter's charge to bound the composite's consecutive run. PDC behaviors have a
-[composition][PDCBehavior.comp] and an [identity][PDCBehavior.id], with
+of $`\alpha`$, and [DDCs compose][IsDDC.comp] with the product of their bounds. When the run of
+$`\alpha`$ in an invocation at the intermediate port $`m`$ is at most $`\mathrm{cost}(m)`$, and
+the outer converter carries a charge, raised by $`\mathrm{cost}(m)`$ with each query at $`m`$ and
+at most $`B`$, the composite [is bounded by the charge][IsDDC.comp_of_query_cost]: at most
+$`B`$ consecutive inside queries. This bounds one run, not the total over invocations.
+
+PDC behaviors have a [composition][PDCBehavior.comp] and an [identity][PDCBehavior.id], with
 [associativity][PDCBehavior.comp_assoc] and the [left][PDCBehavior.id_comp] and
 [right][PDCBehavior.comp_id] identity laws. [Attachment][PDCBehavior.attach] samples the PDC, then
 attaches the sample deterministically: [presentations attach to
@@ -109,16 +113,20 @@ first][PDCBehavior.attach_comp]. [Parallel composition][PDCBehavior.tensor] samp
 independently and runs them side by side, with [interchange][PDCBehavior.comp_tensor] against
 serial composition.
 
-A [**direct call rule**][callRule] reads the current outside invocation and its inside replies
-from the complete history. At each point it returns an outside value or issues an inside query.
-An [exact phase contract][callRule_completed_exact_length] gives the length of a completed call;
-an upper phase bound gives [responsiveness][callRule_isResponsiveDDC] and
-[aggregate accounting][callRule_query_count], including pending calls. Canonicalization followed
-by [outside-domain restriction][callConverter] yields a certified
-[DDC from an inside domain][callConverter_isDDCFrom]; any nonnumeric inside-domain predicate is
-proved on the actual transcript. A [pointwise fixed-function schedule][replies_callConverter_of_schedule]
-has a completed transcript, and its [typed attachment][ofDDC_callConverter_smul_ofFunction]
-computes the indicated outside function. This construction does not require a `Program`.
+A [**direct call rule**][callRule] reads from the complete history the current invocation, the
+latest outside query $`u`$ with the inside replies $`r_1 \dots r_k`$ received since, and either
+returns at the label of $`u`$ or issues the next inside query [7, Definition 2.2.2]. It depends
+on $`u`$ and $`r_1 \dots r_k`$ only. The one-way phase condition, an inside query only when
+$`k < \mathrm{cost}(u)`$, gives [responsiveness][callRule_isResponsiveDDC] and the
+[query count][callRule_query_count] $`\#\text{inside queries} \le \sum_u \mathrm{cost}(u)`$,
+including pending and interrupted invocations; the biconditional gives the
+[exact length][callRule_completed_exact_length] of a completed call. Canonicalization followed by
+[outside-domain restriction][callConverter] yields a certified
+[DDC from an inside domain][callConverter_isDDCFrom]; any further inside-domain predicate is
+proved on the actual transcripts. A rule following a
+[schedule against a fixed function][replies_callConverter_of_schedule] has the completed
+transcripts, and [attached to that function][ofDDC_callConverter_smul_ofFunction] it computes
+the indicated outside function through the existing deterministic attachment.
 A [query router][routingConverter] specializes this call to one input-dependent inside request.
 Its [query history][routingCall_queries] is the exact request-map image of the outside history,
 including a pending call; an explicit answer map translates the inside reply.
@@ -181,9 +189,9 @@ holds, whatever the number of the program's inside queries:
 [RandomSystem.eq_iff_sLaw_fixedQueries]: Cumulative/CumulativeObservation.lean#L548
 [RandomSystem.mix]: Cumulative/CumulativeOperations.lean#L45
 [RandomSystem.parallel]: Cumulative/CumulativeOperations.lean#L130
-[RandomSystem.parallelAll]: Cumulative/ParallelAll.lean#L151
-[tensorAllL]: Converter/ParallelAll.lean#L72
-[PDCBehavior.tensorAll]: Converter/ParallelAll.lean#L571
+[RandomSystem.parallelAll]: Cumulative/ParallelAll.lean#L193
+[tensorAllL]: Converter/ParallelAll.lean#L104
+[PDCBehavior.tensorAll]: Converter/ParallelAll.lean#L699
 [RandomSystem.ofProbAutomaton]: System/ProbAutomaton.lean#L197
 [ProbStep]: System/ProbAutomaton.lean#L58
 [ProbStep.belief]: System/ProbAutomaton.lean#L160
@@ -199,21 +207,21 @@ holds, whatever the number of the program's inside queries:
 [IsDDC]: DDC/DDC.lean#L127
 [serialM]: DDC/Serial.lean#L55
 [IsDDC.comp]: DDC/Serial.lean#L514
-[converterDomain]: Converter/ConverterDomain.lean#L234
-[IsDDCFrom]: Converter/ConverterDomain.lean#L301
-[IsDDCFrom.mapsDomain]: Converter/ConverterDomain.lean#L609
-[IsDDCFrom.eq_filterDom_of_replies_le]: Converter/ConverterDomain.lean
-[IsDDC.comp_of_query_cost]: DDC/SerialCost.lean
-[callRule]: Converter/Calls.lean
-[callRule_completed_exact_length]: Converter/CallRuleTranscript.lean
-[callRule_isResponsiveDDC]: Converter/Calls.lean
-[callRule_query_count]: Converter/Calls.lean
-[callConverter]: Converter/Calls.lean
-[callConverter_isDDCFrom]: Converter/Calls.lean
-[replies_callConverter_of_schedule]: Converter/CallRuleTranscript.lean
-[ofDDC_callConverter_smul_ofFunction]: Typed/CallRuleFunctional.lean
-[routingConverter]: Converter/QueryRouting.lean
-[routingCall_queries]: Converter/QueryRouting.lean
+[converterDomain]: Converter/ConverterDomain.lean#L236
+[IsDDCFrom]: Converter/ConverterDomain.lean#L303
+[IsDDCFrom.mapsDomain]: Converter/ConverterDomain.lean#L678
+[IsDDCFrom.eq_filterDom_of_replies_le]: Converter/ConverterDomain.lean#L465
+[IsDDC.comp_of_query_cost]: DDC/SerialCost.lean#L209
+[callRule]: Converter/Calls.lean#L391
+[callRule_completed_exact_length]: Converter/CallRuleTranscript.lean#L92
+[callRule_isResponsiveDDC]: Converter/Calls.lean#L433
+[callRule_query_count]: Converter/Calls.lean#L481
+[callConverter]: Converter/Calls.lean#L499
+[callConverter_isDDCFrom]: Converter/Calls.lean#L514
+[replies_callConverter_of_schedule]: Converter/CallRuleTranscript.lean#L168
+[ofDDC_callConverter_smul_ofFunction]: Typed/CallRuleFunctional.lean#L31
+[routingConverter]: Converter/QueryRouting.lean#L69
+[routingCall_queries]: Converter/QueryRouting.lean#L108
 [PDCBehavior]: Converter/PDCBehavior.lean#L67
 [PDCBehavior.ofPDC]: Converter/PDCBehavior.lean#L169
 [PDCBehavior.comp]: Converter/PDCBehavior.lean#L273
@@ -222,9 +230,9 @@ holds, whatever the number of the program's inside queries:
 [PDCBehavior.id_comp]: Converter/PDCBehavior.lean#L385
 [PDCBehavior.comp_id]: Converter/PDCBehavior.lean#L375
 [PDCBehavior.attach]: Converter/ConverterAttachment.lean#L156
-[PDCBehavior.attach_presents]: Converter/ConverterAttachment.lean#L178
-[PDCBehavior.attach_id]: Converter/ConverterAttachment.lean#L233
-[PDCBehavior.attach_comp]: Converter/ConverterAttachment.lean#L246
+[PDCBehavior.attach_presents]: Converter/ConverterAttachment.lean#L207
+[PDCBehavior.attach_id]: Converter/ConverterAttachment.lean#L262
+[PDCBehavior.attach_comp]: Converter/ConverterAttachment.lean#L275
 [PDCBehavior.tensor]: Converter/ConverterTensor.lean#L649
 [PDCBehavior.comp_tensor]: Converter/ConverterTensor.lean#L745
 [Program]: Converter/Program.lean#L45
