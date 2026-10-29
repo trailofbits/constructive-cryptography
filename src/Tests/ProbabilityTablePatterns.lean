@@ -7,8 +7,8 @@ Examples of `uniform_mass_transcript_eq`, `Pr[F matches h] = (1/|Y|)^d` for a tr
 answered by a function, with `d` the number of distinct inputs of `h`, and of
 `fTransform_eval_uniform_eq_of_same_fibers`,
 `Law(i ↦ F (left i)) = Law(i ↦ G (right i))` for query maps with the same equality pattern.
-Further examples cover the birthday and pair bounds, fresh and projected replies, and a
-projection that is not uniform.
+Further examples cover the birthday and pair bounds, fresh and projected replies, events on
+disjoint coordinates, and a projection that is not uniform.
 
 ```text
 h = [(false, true), (false, true)]                  mass 1/2        one coordinate, repeated
@@ -23,7 +23,9 @@ F false = true ∧ F true = false                     halves mass     fresh coor
 F true = predict (F false), predict ≡ false         1/2             non-injective predictor
 F false = (true, false) ∧ (F true).1 = true         halves mass     projected fresh reply
 (F x).1 = z.2.1 for some z ∈ h, z.1 ≠ x             ≤ |h|/2 · mass  projected collision
+f 0 = true ∧ f 1 = false,  f : Fin 3 → Bool         factors         fresh output, base {0}
 (a, b) ↦ false on uniform Bool × Bool               Pr[true] = 0    not uniform on Bool
+good (F false) ∧ output (F true), universes 1, 3, 2 factors         disjoint coordinates
 ```
 -/
 
@@ -202,18 +204,21 @@ example (h : List (Bool × (Bool × Bool))) (x : Bool)
     uniform_mass_transcript_projected_collision_le Prod.fst
     pair_first_uniform h x hg
 
-/-- A constraint on coordinate zero factors from a disjoint output at coordinate one. -/
+/-- For uniform `f : Fin 3 → Bool`, `base = {0}` and `next () = 1`:
+`Pr[f 0 = true ∧ f 1 = false] = Pr[f 0 = true] · Pr_{g ← U(Unit → Bool)}[g () = false]`. -/
 example : (Distribution.uniform (Fin 3 → Bool)).mass
     (fun f => f 0 = true ∧ f 1 = false) =
       (Distribution.uniform (Fin 3 → Bool)).mass (fun f => f 0 = true) *
         (Distribution.uniform (Unit → Bool)).mass (fun g => g () = false) := by
-  simpa using uniform_mass_fresh_outputs_eq ({0} : Finset (Fin 3))
+  -- `next` is injective, `1 ∉ {0}`, fallback `false`; `good` reads only `f 0`.
+  simpa only [Fin.isValue] using uniform_mass_fresh_outputs_eq ({0} : Finset (Fin 3))
     (fun _ : Unit => 1) (by intro a b _; cases a; cases b; rfl)
-    (by intro i; cases i; simp) false
+    (by intro i; cases i; simp only [Fin.isValue, Finset.mem_singleton, one_ne_zero,
+      not_false_eq_true]) false
     (fun f => f 0 = true) (fun g => g () = false)
     (by
       intro f g h
-      have h0 := h 0 (by simp)
+      have h0 := h 0 (Finset.mem_singleton_self _)
       simp only [h0])
 
 /-- The constant projection `p (a, b) = false` does not send the uniform law on `Bool × Bool`
@@ -229,6 +234,31 @@ example : Distribution.fTransform (fun _ : Bool × Bool => false)
     Distribution.mass_eq_zero_of_forall_not _ (fun _ => Bool.false_ne_true),
     Distribution.mass_singleton, Distribution.uniform_apply] at hm
   norm_num at hm
+
+/-- The base and output index types and reply alphabet may inhabit different universes:
+`B = ULift.{1} Unit`, `I = ULift.{3} Unit`, `Y = ULift.{2} Bool`. For uniform `F : Bool → Y`,
+base query `false` and next query `true`,
+`Pr[good (F false) ∧ output (F true)] = Pr[good (F false)] · Pr_{g ← U(I → Y)}[output g]`. -/
+example (good : (ULift.{1} Unit → ULift.{2} Bool) → Prop)
+    (output : (ULift.{3} Unit → ULift.{2} Bool) → Prop) :
+    (Distribution.uniform (Bool → ULift.{2} Bool)).mass
+        (fun f => good (fun _ => f false) ∧ output (fun _ => f true)) =
+      (Distribution.uniform (Bool → ULift.{2} Bool)).mass
+        (fun f => good (fun _ => f false)) *
+          (Distribution.uniform (ULift.{3} Unit → ULift.{2} Bool)).mass output := by
+  refine uniform_mass_disjoint_events (fun _ : ULift.{1} Unit => false)
+    (fun _ : ULift.{3} Unit => true) ?_ good output
+  -- The two constant query maps have singleton sources and distinct images.
+  intro a b h
+  cases a with
+  | inl a =>
+    cases b with
+    | inl b => exact congrArg Sum.inl (Subsingleton.elim a b)
+    | inr b => exact (Bool.false_ne_true h).elim
+  | inr a =>
+    cases b with
+    | inl b => exact (Bool.false_ne_true h.symm).elim
+    | inr b => exact congrArg Sum.inr (Subsingleton.elim a b)
 
 #print axioms Probability.Counting.uniform_mass_transcript_eq
 #print axioms Probability.Counting.fTransform_eval_uniform_eq_of_same_fibers
