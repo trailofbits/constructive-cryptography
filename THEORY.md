@@ -132,10 +132,20 @@ Category ─▶ MonoidalCategory
     │
     ▼
 ResourceTheory ─▶ CryptographicAlgebra ─▶ CompatiblePseudoMetric ─▶ CompatibleDistinguisherClass
-    │
-    ▼
-Games ─▶ DistinctionGames
+
+Games Ω ─▶ DistinctionGames               (evaluation; DistinctionGames fixes Ω = ℝ, probabilities)
+  │              │
+  ▼              ▼
+GameAction Ω ─▶ DistinctionGameAction     (CC converter actions, over Category and
+                                           ResourceTheory)
 ```
+
+General problem reductions use explicit solver types and preordered performance spaces in
+`ConstructiveCryptography.Problem` [3, equation (4.3), printed p. 87]. `Games` and `GameAction` select their
+performance space $`\Omega`$ with the games; the game reduction specializes the general result
+to admitted winners, and neither layer requires a category or metric. `DistinctionGames` and
+the interface instances select $`\Omega = \mathbb R`$, with winning probabilities as values.
+Performance values are distinct from the $`\mathbb R_{\ge 0}`$ error budgets bounding distances.
 
 On interfaces each class has one instance, whose fields are systems objects. The arrows of the
 category are the typed converters, composed as PDC behaviors, and its monoidal product is their
@@ -201,8 +211,8 @@ are described in [GRAMMAR](src/ConstructiveCryptography/DSL/GRAMMAR.md#proof-com
 **Examples.** Authenticated encryption is secure under ind-cca and int-ptxt
 [9, Theorem 2.3.10(4)], corrected: a [counted chain][correctedChain] uses each assumption twice,
 and a collision bound of $`q_e^2 / \lvert \mathcal M \rvert`$ ends it
-([distance form][real_ideal_distance_le]). Games and reductions in every instance of the games
-classes, substitutions on interfaces, components, AES and an AEAD in the DSL, and PRG length
+([distance form][real_ideal_distance_le]). Games and reductions in every instance of the game
+action classes with real performance, substitutions on interfaces, components, AES and an AEAD in the DSL, and PRG length
 extension are in [Examples](src/Examples/README.md).
 
 ---
@@ -270,7 +280,7 @@ extension are in [Examples](src/Examples/README.md).
 [RandomSystem.GameEquivalent]: src/RandomSystems/Game/MBO.lean#L539
 [Domain.Distinguisher.advantage_le_winProbability]: src/RandomSystems/Game/MBO.lean#L758
 [Domain.Distinguisher.advantage_le_winProbability_of_gameEquivalent]: src/RandomSystems/Game/MBO.lean#L876
-[PDCBehavior.liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L455
+[PDCBehavior.liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L460
 
 <!-- Declarations: §2 -->
 
@@ -286,7 +296,7 @@ extension are in [Examples](src/Examples/README.md).
 [TypedConverter.parallel_attach]: src/RandomSystems/Typed/ParallelAttachment.lean#L23
 [TypedConverter.rename]: src/RandomSystems/Typed/Relabel.lean#L48
 [TypedSystem.source]: src/RandomSystems/Typed/Source.lean#L51
-[TypedGame]: src/RandomSystems/Typed/Game.lean#L35
+[TypedGame]: src/RandomSystems/Typed/Game.lean#L42
 
 <!-- Declarations: §3 -->
 
@@ -297,8 +307,8 @@ extension are in [Examples](src/Examples/README.md).
 [Specification]: src/ConstructiveCryptography/Specification/Defs.lean#L18
 [Relaxation]: src/ConstructiveCryptography/Specification/Relaxation/Defs.lean#L22
 [constructs_of_simulator]: src/ConstructiveCryptography/CryptographicAlgebra/Star.lean#L269
-[ConstructsWithin.serial]: src/ConstructiveCryptography/CryptographicAlgebra/PseudoMetric.lean#L234
-[ConstructsWithin.parallel]: src/ConstructiveCryptography/CryptographicAlgebra/PseudoMetric.lean#L254
+[ConstructsWithin.serial]: src/ConstructiveCryptography/CryptographicAlgebra/PseudoMetric.lean#L256
+[ConstructsWithin.parallel]: src/ConstructiveCryptography/CryptographicAlgebra/PseudoMetric.lean#L276
 [Implication]: src/ConstructiveCryptography/Substitution/Basic.lean#L176
 [SubstitutesWithin]: src/ConstructiveCryptography/Substitution/Reduction.lean#L72
 [Implication.substitutesWithin]: src/ConstructiveCryptography/Substitution/Quantitative.lean#L49

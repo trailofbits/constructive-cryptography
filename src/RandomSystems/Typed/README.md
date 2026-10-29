@@ -238,11 +238,11 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedConverter.ofDDC_callConverter_smul_ofFunction]: CallRuleFunctional.lean#L31
 [routingConverter]: ../Converter/QueryRouting.lean#L69
 [TypedConverter.ofDDC_routingConverter_smul_ofFunction]: QueryRouting.lean#L38
-[Interface.withMBO]: Game.lean#L24
-[TypedGame]: Game.lean#L35
-[TypedConverter.attachGame]: Game.lean#L38
-[PDCBehavior.liftMBO]: ../Game/MBOAttachment.lean#L455
-[TypedGame.visible]: Game.lean#L53
+[Interface.withMBO]: Game.lean#L31
+[TypedGame]: Game.lean#L42
+[TypedConverter.attachGame]: Game.lean#L45
+[PDCBehavior.liftMBO]: ../Game/MBOAttachment.lean#L460
+[TypedGame.visible]: Game.lean#L86
 [TypedGame.ofPDG]: PresentedGame.lean#L41
 [TypedGame.visible_ofPDG]: PresentedGame.lean#L51
 [TypedGame.ofSingleFunction]: PresentedGame.lean#L88

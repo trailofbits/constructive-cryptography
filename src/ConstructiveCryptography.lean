@@ -9,9 +9,11 @@ import ConstructiveCryptography.CryptographicAlgebra.Relaxation
 import ConstructiveCryptography.CryptographicAlgebra.Star
 import ConstructiveCryptography.InterfaceAlgebra
 import ConstructiveCryptography.InterfaceCategory
+import ConstructiveCryptography.Game
 import ConstructiveCryptography.InterfaceGame
 import ConstructiveCryptography.InterfaceMonoidal
 import ConstructiveCryptography.Notation
+import ConstructiveCryptography.Problem
 import ConstructiveCryptography.DSL
 import ConstructiveCryptography.DSL.Elaborator
 import ConstructiveCryptography.Specification

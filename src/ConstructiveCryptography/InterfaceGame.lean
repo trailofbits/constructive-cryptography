@@ -5,26 +5,26 @@ import RandomSystems.Typed.PresentedGame
 /-!
 # Games on interfaces
 
-Interfaces are an instance of `Games`, the abstraction of CR18, §4.4.3, §4.5.1 and §4.7.2, and
-of `DistinctionGames`, the abstraction of CR18, §§4.10–4.11; the instance is where these
-abstractions meet random systems. Its field `Game A` is the typed games `TypedGame A`, MBO random
-systems as CR18 instantiates games (§3.7.1). Winners and solvers are probabilistic distinguishers,
-through their behaviors `Domain.SolverBehavior`: a winner does not see the MBO
-(`DDE.blindMBO`).
+Interfaces are an instance of the evaluation classes `Games` (CR18, §§4.4.3, 4.5.1) and
+`DistinctionGames` (CR18, §§4.10–4.11), and of their converter actions `GameAction` and
+`DistinctionGameAction` (CR18, §4.7.2); these four instances are where the abstractions meet
+random systems. The carrier `Game A` is the typed games `TypedGame A`, MBO random systems as CR18
+instantiates games (§3.7.1). Winners and solvers are probabilistic distinguishers, through their
+behaviors `Domain.SolverBehavior`: a winner does not see the MBO (`DDE.blindMBO`).
 
-For `Games`, the field `attachGame` is `TypedConverter.attachGame`, the attachment of the
-MBO-forwarding lift `PDCBehavior.liftMBO`, and `winners` are the winning probabilities of the
-solver behaviors.
-The axiom `attachGame_identity` is discharged by `PDCBehavior.liftMBO_id` and
-`PDCBehavior.attach_id`, `attachGame_serial` by `PDCBehavior.liftMBO_comp` and
-`PDCBehavior.attach_comp`, and `closed_attach` by `Domain.SolverBehavior.absorb`.
-
-For `DistinctionGames`, the field `solvers` is the pairs of the solver behaviors, `visible` is
-`TypedGame.visible`, the visible system `RandomSystem.visible`, and `ConditionallyEquivalent` is
-`RandomSystem.ConditionallyEquivalent`. The axiom `solvers_winner` holds by the definition of the
-winners, `solvers_closed_attach` is discharged by `Domain.SolverBehavior.absorb`,
-`visible_attachGame` by `RandomSystem.visible_attach_liftMBO`, and `advantage_le_win` by
-`Domain.Distinguisher.advantage_le_winProbability`.
+* `games`: the performance space is `ℝ`, and `winners` are the winning probabilities of the
+  solver behaviors.
+* `gameAction`, over the same `ℝ`: `attachGame` is `TypedConverter.attachGame`, the attachment
+  of the MBO-forwarding lift `PDCBehavior.liftMBO`. Its identity and serial laws are
+  `TypedConverter.identity_attachGame` and `TypedConverter.comp_attachGame`
+  (`RandomSystems.Typed.Game`); `closed_attach` is discharged by `Domain.SolverBehavior.absorb`.
+* `distinctionGames`: `solvers` are the pairs of views of the solver behaviors, `visible` is
+  `TypedGame.visible`, the visible system `RandomSystem.visible`, and `ConditionallyEquivalent` is
+  `RandomSystem.ConditionallyEquivalent`. The axiom `solvers_winner` holds by the definition of
+  the winners, and `advantage_le_win` by `Domain.Distinguisher.advantage_le_winProbability`.
+* `distinctionGameAction`: `solvers_closed_attach` is discharged by
+  `Domain.SolverBehavior.absorb`, and `visible_attachGame` by
+  `RandomSystem.visible_attach_liftMBO`.
 
 Conditional equivalence then bounds the distance of the visible system of a game by the
 probability that its MBO is set on fixed queries (CR18, Theorem 4.17), through
@@ -35,7 +35,8 @@ presented typed system.
 ## Main definitions
 
 * `Interface.winners A`, `Interface.solvers A`: the winners and solvers on `A`
-* `Interface.games`, `Interface.distinctionGames`: the instances
+* `Interface.games`, `Interface.gameAction`, `Interface.distinctionGames`,
+  `Interface.distinctionGameAction`: the instances
 
 ## Main results
 
@@ -64,59 +65,33 @@ def solvers (A : Interface) : Set ((TypedSystem A → ℝ) × (TypedGame A → �
   Set.range fun s : Domain.SolverBehavior (Y := A.Y) A.domain A.bound A.length_le =>
     (fun R => s.1.1 R, fun G => s.1.2 ⟨G.1.1, G.1.2, G.2⟩)
 
-/-- **Interfaces are an instance of `Games`**: attachment is the attachment of the lift, and the
-winners are the winning probabilities of the solver behaviors. -/
-noncomputable instance games : Games Interface TypedGame where
-  -- Field `attachGame`: the systems-level attachment `PDCBehavior.attach` of the lift
-  -- `PDCBehavior.liftMBO α` to the game's random system.
-  attachGame := TypedConverter.attachGame
-  -- Axiom `attachGame_identity`, discharged by the systems-level theorems
-  -- `PDCBehavior.liftMBO_id` (the lift of the identity PDC is the identity PDC) and
-  -- `PDCBehavior.attach_id` (attaching the identity PDC leaves a random system unchanged,
-  -- used here as `TypedConverter.identity_attach`).
-  attachGame_identity {A} G := by
-    -- Two games are equal when their typed systems are.
-    apply Subtype.ext
-    change TypedConverter.attach (PDCBehavior.liftMBO (𝟙 A)) G.1 = G.1
-    -- The lift of the identity converter is the identity converter on `A.withMBO`.
-    rw [show PDCBehavior.liftMBO (𝟙 A) = TypedConverter.id A.withMBO from
-      PDCBehavior.liftMBO_id _]
-    -- Attaching the identity converter leaves the game's typed system unchanged.
-    exact TypedConverter.identity_attach G.1
-  -- Axiom `attachGame_serial`, discharged by the systems-level theorems
-  -- `PDCBehavior.liftMBO_comp` (the lift of `α ≫ β` is the composition of the lifts) and
-  -- `PDCBehavior.attach_comp` (attaching a serial composition is nested attachment, used
-  -- here as `TypedConverter.comp_smul`).
-  attachGame_serial {A B C} α β G := by
-    -- Two games are equal when their typed systems are.
-    apply Subtype.ext
-    change TypedConverter.attach (PDCBehavior.liftMBO (α ≫ β)) G.1 =
-      TypedConverter.attach (A := A.withMBO) (PDCBehavior.liftMBO α)
-        (TypedConverter.attach (A := B.withMBO) (PDCBehavior.liftMBO β) G.1)
-    -- The lift is functorial: lift (α ≫ β) = lift α ≫ lift β.
-    rw [show PDCBehavior.liftMBO (α ≫ β) = TypedConverter.comp (A := A.withMBO) (B := B.withMBO)
-      (C := C.withMBO) (PDCBehavior.liftMBO α) (PDCBehavior.liftMBO β) from
-      PDCBehavior.liftMBO_comp α β]
-    -- (lift α ≫ lift β) • G = lift α • (lift β • G): attach the inner converter first.
-    exact TypedConverter.comp_smul _ _ G.1
-  -- Field `winners`: the winning probabilities of the systems-level solver behaviors
-  -- `Domain.SolverBehavior` on the input domain.
+/-- Interfaces select real performance: the winners are the winning views of the joint solver
+behaviors, which are winning probabilities. No range axiom is recorded. -/
+noncomputable instance games : Games Interface TypedGame ℝ where
   winners := winners
+
+/-- The categorical game action on real performance uses the typed attachment and its
+systems-level laws. -/
+noncomputable instance gameAction : GameAction Interface TypedGame ℝ where
+  attachGame := TypedConverter.attachGame
+  attachGame_identity := TypedConverter.identity_attachGame
+  attachGame_serial := TypedConverter.comp_attachGame
   -- Axiom `closed_attach`, discharged by the systems-level construction
   -- `Domain.SolverBehavior.absorb` (a solver behavior with a PDC absorbed).
   closed_attach {A B} α := by
     -- The winner on `A` is the winning probability of a solver behavior `s`.
     rintro _ ⟨s, rfl⟩
     -- Absorb `α` into `s`: a solver behavior on `B`, which wins `G` as `s` wins the lift of
-    -- `α` attached to `G`, by definition of the absorbed solver (`rfl`). The winner `s` does
-    -- not see the MBO `a`:
+    -- `α` attached to `G`, by definition of the absorbed solver (`rfl`). The lift forwards the
+    -- MBO `a` of `G`; `s` reads only `y` (`DDE.blindMBO`), and `a` only scores the win:
     --
-    --   ┌───────────────────────────┐
-    --   │ ┌───┐ ──x────▶ ┌────────┐ │ ──u────▶ ┌───┐
-    --   │ │ s │          │ lift α │ │          │ G │
-    --   │ └───┘ ◀─(y,a)─ └────────┘ │ ◀─(v,a)─ └───┘
-    --   └───────────────────────────┘
-    exact ⟨Domain.SolverBehavior.absorb B.nonempty_prefix A.nonempty_prefix α s, rfl⟩
+    --   ┌──────────────────────────────┐
+    --   │ ┌───┐ ──x────▶ ┌────────┐    │ ──u────▶ ┌───┐
+    --   │ │ s │          │ lift α │    │          │ G │
+    --   │ └───┘ ◀──y──┬─ └────────┘    │ ◀─(v,a)─ └───┘
+    --   │             └─ a ─▶ win      │
+    --   └──────────────────────────────┘
+    exact ⟨s.absorb B.nonempty_prefix A.nonempty_prefix α, rfl⟩
 
 /-- **Interfaces are an instance of `DistinctionGames`** with carrier `TypedSystem` and games
 `TypedGame`: the solvers are the solver behaviors, `visible` is `TypedGame.visible`, the visible
@@ -132,19 +107,8 @@ noncomputable instance distinctionGames : DistinctionGames Interface TypedSystem
   solvers_winner := by
     rintro _ _ ⟨s, rfl⟩
     exact ⟨s, rfl⟩
-  -- Axiom `solvers_closed_attach`, discharged by the systems-level construction
-  -- `Domain.SolverBehavior.absorb`: `s` with `α` absorbed decides on `R` as `s` decides on
-  -- `α • R`, and wins `G` as `s` wins the lift of `α` attached to `G` (both by `rfl`).
-  solvers_closed_attach {A B} α := by
-    rintro _ ⟨s, rfl⟩
-    exact ⟨Domain.SolverBehavior.absorb B.nonempty_prefix A.nonempty_prefix α s, rfl⟩
   -- Field `visible`: the systems-level visible system `RandomSystem.visible` (`S⁻`).
   visible := TypedGame.visible
-  -- Axiom `visible_attachGame`, discharged by the systems-level theorem
-  -- `RandomSystem.visible_attach_liftMBO`: `(lift α • G)⁻ = α • G⁻`.
-  visible_attachGame {A B} α G :=
-    Subtype.ext (RandomSystem.visible_attach_liftMBO B.nonempty_prefix A.nonempty_prefix α G.1.1
-      G.1.2)
   -- Field `ConditionallyEquivalent`: the systems-level `RandomSystem.ConditionallyEquivalent`
   -- of the game's random system and the typed system's random system.
   ConditionallyEquivalent G T := G.1.1.ConditionallyEquivalent T.1
@@ -163,6 +127,22 @@ noncomputable instance distinctionGames : DistinctionGames Interface TypedSystem
     rw [hP G.visible, hP T, hW ⟨G.1.1, G.1.2, G.2⟩]
     -- Conditional equivalence `G |≡ T` bounds `P`'s advantage by its winning probability.
     exact P.advantage_le_winProbability G.1.2 T.2 G.2 hc
+
+/-- Absorbing the same typed converter preserves both solver views, and visibility commutes
+with attachment. This is the CC integration of the systems-level game laws. -/
+noncomputable instance distinctionGameAction :
+    DistinctionGameAction Interface TypedSystem TypedGame where
+  -- Axiom `solvers_closed_attach`, discharged by the systems-level construction
+  -- `Domain.SolverBehavior.absorb`: `s` with `α` absorbed decides on `R` as `s` decides on
+  -- `α • R`, and wins `G` as `s` wins the lift of `α` attached to `G` (both by `rfl`).
+  solvers_closed_attach {A B} α := by
+    rintro _ ⟨s, rfl⟩
+    exact ⟨s.absorb B.nonempty_prefix A.nonempty_prefix α, rfl⟩
+  -- Axiom `visible_attachGame`, discharged by the systems-level theorem
+  -- `RandomSystem.visible_attach_liftMBO`: `(lift α • G)⁻ = α • G⁻`.
+  visible_attachGame {A B} α G :=
+    Subtype.ext (RandomSystem.visible_attach_liftMBO B.nonempty_prefix A.nonempty_prefix α G.1.1
+      G.1.2)
 
 /-- **Winning by every distinguisher bounds winning by every winner**: a bound on the winning
 probability of every distinguisher for the game's system bounds the winning probability of

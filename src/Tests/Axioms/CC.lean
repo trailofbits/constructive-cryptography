@@ -20,6 +20,8 @@ on interfaces, depend only on `propext`, `Classical.choice` and `Quot.sound`.
 
 -- ConstructiveCryptography.CryptographicAlgebra.Game
 #print axioms ConstructiveCryptography.Games.absorb_comp
+#print axioms ConstructiveCryptography.Games.win_le_of_reduction
+#print axioms ConstructiveCryptography.Problem.performance_le_of_reduction
 #print axioms ConstructiveCryptography.DistinctionGames.absorb_mem
 
 -- ConstructiveCryptography.CryptographicAlgebra.PseudoMetric
