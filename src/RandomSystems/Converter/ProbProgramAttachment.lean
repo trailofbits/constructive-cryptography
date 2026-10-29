@@ -700,6 +700,16 @@ lemma recording_reachable {k : ℕ} {rd : R × List (Draw R J X Y)} (hl : rd.2.l
   -- One more draw in the record, and the next state of a possible draw.
   exact ⟨by simp [hl], step.mem_reachable_succ init hr ho⟩
 
+/-- **The record initially**: a possible initial recorded state `(r, [])`, `r ∈ supp init`, has
+no draws, and `r` is reachable in zero steps. -/
+lemma recording_init_reachable (init : Distribution.ProbDist R)
+    {rd : R × List (Draw R J X Y)}
+    (hrd : rd ∈ (init.map fun r => (r, ([] : List (Draw R J X Y)))).1.support) :
+    rd.2.length = 0 ∧ rd.1 ∈ step.reachable init.1 0 := by
+  -- The support of the pushforward `r ↦ (r, [])`: `rd = (r, [])` with `r ∈ supp init`.
+  obtain ⟨r, hr, rfl⟩ := mem_support_fTransform _ _ hrd
+  exact ⟨rfl, hr⟩
+
 variable (L : ℕ)
 
 /-- A cell of the table of draws: a step number below `L`, a reachable state and a query. -/
@@ -950,18 +960,15 @@ theorem RandomSystem.ofProbAutomaton_eq_drawStep {E : List (Σ j, X j) → Prop}
   -- The invariant of the recording step: one draw per query, from a reachable state.
   let inv : List (Σ j, X j) → R × List (ProbStep.Draw R J X Y) → Prop :=
     fun xs rd => rd.2.length = xs.length ∧ rd.1 ∈ step.reachable init.1 xs.length
+  -- Each query appends one draw, from a reachable state (`recording_reachable`).
   have hpres : ∀ xs rd x, inv xs rd → E (xs ++ [x]) →
       ∀ p ∈ (step.recording.outcome rd x).support, inv (xs ++ [x]) p.1 := by
-    -- a recording step adds one draw and reaches one step further (`recording_reachable`)
     rintro xs rd x ⟨hl, hr⟩ - p hp
-    obtain ⟨h₁, h₂⟩ := step.recording_reachable init.1 hl hr x hp
-    exact ⟨by simpa using h₁, by simpa using h₂⟩
+    simpa only [inv, List.length_append, List.length_singleton] using
+      step.recording_reachable init.1 hl hr x hp
+  -- Initially: no draws, from a state in the support of `init`.
   have hinit : ∀ rd ∈ (init.map fun r => (r, ([] : List (ProbStep.Draw R J X Y)))).1.support,
-      inv [] rd := by
-    -- initially: the empty record, and a state of `init`'s support, reachable in no step
-    intro rd hrd
-    obtain ⟨r, hr, rfl⟩ := mem_support_fTransform _ _ hrd
-    exact ⟨rfl, hr⟩
+      inv [] rd := fun _ hrd => step.recording_init_reachable init hrd
   -- Step 2: the simulation by the table of draws.
   -- Along the domain, fewer than `L` steps are done, from states reachable in `L` steps: the
   -- deterministic step on the table of draws simulates the recording step.
@@ -1130,18 +1137,15 @@ theorem attach_ofDDC_ofProgramOn_ofProbAutomaton (s : S) (P : Program S O J U V 
   -- law. The invariant: one draw per inside query, from a reachable state.
   let inv : List (Σ j, X j) → R × List (ProbStep.Draw R J X Y) → Prop :=
     fun τ rd => rd.2.length = τ.length ∧ rd.1 ∈ step.reachable init.1 τ.length
+  -- Each inside query appends one draw, from a reachable state (`recording_reachable`).
   have hpres : ∀ τ rd q, inv τ rd → τ.length < b * n →
       ∀ p ∈ (step.recording.outcome rd q).support, inv (τ ++ [q]) p.1 := by
-    -- a recording step adds one draw and reaches one step further (`recording_reachable`)
     rintro τ rd q ⟨hl, hr⟩ - p hp
-    obtain ⟨h₁, h₂⟩ := step.recording_reachable init.1 hl hr q hp
-    exact ⟨by simpa using h₁, by simpa using h₂⟩
+    simpa only [inv, List.length_append, List.length_singleton] using
+      step.recording_reachable init.1 hl hr q hp
+  -- Initially: no draws, from a state in the support of `init`.
   have hinit : ∀ rd ∈ (init.map fun r => (r, ([] : List (ProbStep.Draw R J X Y)))).1.support,
-      inv [] rd := by
-    -- initially: the empty record, and a state of `init`'s support, reachable in no step
-    intro rd hrd
-    obtain ⟨r, hr, rfl⟩ := mem_support_fTransform _ _ hrd
-    exact ⟨rfl, hr⟩
+      inv [] rd := fun _ hrd => step.recording_init_reachable init hrd
   -- Before the program's budget `b * n ≤ L`, the deterministic step on the table of draws
   -- simulates the recording step.
   have hsim : ∀ τ rd q, inv τ rd → τ.length < b * n →

@@ -47,13 +47,14 @@ interface TweakedBidirectional(T X : Type) [Fintype T] [Fintype X]
 
 noncomputable section
 
-open Classical
 
+open Classical in
 /-- **The uniform random function** on `A`: at each label, a uniformly random function from its
 inputs to its outputs. On `Evaluation X Y q` it is the `(X, Y)`-URF. -/
 def URF (A : Interface) [∀ i, Nonempty (A.Y i)] : TypedSystem A :=
   TypedSystem.sample (Distribution.uniform (∀ i, A.X i → A.Y i)) TypedSystem.ofFunction
 
+open Classical in
 /-- **The uniform random permutation** on `A`: at each label, a uniformly random bijection from its
 inputs to its outputs. On `Evaluation X X q` it is the `X`-URP. -/
 def URP (A : Interface) [∀ i, Nonempty (A.X i ≃ A.Y i)] : TypedSystem A :=
@@ -62,6 +63,7 @@ def URP (A : Interface) [∀ i, Nonempty (A.X i ≃ A.Y i)] : TypedSystem A :=
 
 variable (T X : Type) [Fintype T] [Fintype X] {q : ℕ}
 
+open Classical in
 /-- **The strong uniform random permutation**: a uniformly random permutation of `X`, answering
 forward queries with it and inverse queries with its inverse. -/
 def StrongURP : TypedSystem (Bidirectional X q) :=
@@ -70,12 +72,14 @@ def StrongURP : TypedSystem (Bidirectional X q) :=
       | .forward => fun x => π x
       | .inverse => fun y => π.symm y
 
+open Classical in
 /-- **The tweakable uniform random permutation**: an independent uniformly random permutation of
 `X` for each tweak. -/
 def TweakableURP : TypedSystem (TweakedEvaluation T X q) :=
   TypedSystem.sample (Distribution.uniform (T → Equiv.Perm X)) fun π =>
     TypedSystem.ofFunction fun _ tx => π tx.1 tx.2
 
+open Classical in
 /-- **The strong tweakable uniform random permutation**: the tweakable URP, answering inverse
 queries with the inverse permutation of their tweak. -/
 def TweakableStrongURP : TypedSystem (TweakedBidirectional T X q) :=
@@ -118,9 +122,9 @@ lemma MemorylessSource.memoryless_eq {Y : Type} [Fintype Y] (ν : ProbDist Y)
   -- One invocation: draw `y ← ν` and reply `y`. Its law is `ν`, in both initialization states
   -- (`none` before the first call, `some ()` after).
   rintro (_ | ⟨⟩) ⟨⟩ ⟨⟩
-  · simp [Program.replyLaw, MemorylessSource.body, MemorylessSource.law1, callProg, returnProg,
-      bindK_single_one]
-  · simp [Program.replyLaw, MemorylessSource.body, MemorylessSource.law1, callProg, returnProg,
-      bindK_single_one]
+  · simp [Program.memorylessReplyLaw, MemorylessSource.body, MemorylessSource.law1, callProg,
+      returnProg, bindK_single_one]
+  · simp [Program.memorylessReplyLaw, MemorylessSource.body, MemorylessSource.law1, callProg,
+      returnProg, bindK_single_one]
 
 end Commons

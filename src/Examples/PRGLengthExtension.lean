@@ -112,10 +112,10 @@ lemma prgReal_eq_source [Nonempty S] (G : S → R) :
     -- One invocation: draw `s ← 𝒰[S]`, reply `G s`; the same in both initialization states.
     -- The cases: initialization state `none` or `some ()`, the port `eval`, the input `()`.
     rintro (_ | ⟨⟩) ⟨⟩ ⟨⟩
-    · simp [Program.replyLaw, PRGReal.body, PRGReal.law1, callProg, returnProg, ProbDist.map,
-        bindK_single_comp]
-    · simp [Program.replyLaw, PRGReal.body, PRGReal.law1, callProg, returnProg, ProbDist.map,
-        bindK_single_comp]
+    · simp [Program.memorylessReplyLaw, PRGReal.body, PRGReal.law1, callProg, returnProg,
+        ProbDist.map, bindK_single_comp]
+    · simp [Program.memorylessReplyLaw, PRGReal.body, PRGReal.law1, callProg, returnProg,
+        ProbDist.map, bindK_single_comp]
   -- The memoryless source of `G_* 𝒰[S]` is the same memoryless system.
   rw [real, MemorylessSource.memoryless_eq]
 
@@ -141,8 +141,10 @@ lemma 𝓡₁_smul_source (G : S → S × S) (ν : ProbDist (S × S)) :
     -- The law of one invocation: one call, answered `(a, b) ← ν`, reply `(a, G b)`.
     -- The cases: initialization state `none` or `some ()`, the port `eval`, the input `()`.
     rintro (_ | ⟨⟩) ⟨⟩ ⟨⟩
-    · simp [Program.replyLaw, 𝓡₁.body, callProg, returnProg, ProbDist.map, bindK_single_comp]
-    · simp [Program.replyLaw, 𝓡₁.body, callProg, returnProg, ProbDist.map, bindK_single_comp]
+    · simp [Program.memorylessReplyLaw, 𝓡₁.body, callProg, returnProg,
+        ProbDist.map, bindK_single_comp]
+    · simp [Program.memorylessReplyLaw, 𝓡₁.body, callProg, returnProg,
+        ProbDist.map, bindK_single_comp]
   -- The memoryless source of `(a, G b)_* ν` is the same memoryless system.
   rw [attached, MemorylessSource.memoryless_eq]
 
@@ -173,9 +175,9 @@ lemma 𝓡₂_smul_source [Nonempty S] (ν : ProbDist (S × S)) :
     -- reply `(a, c, d)`: the product of the two laws.
     -- The cases: initialization state `none` or `some ()`, the port `eval`, the input `()`.
     rintro (_ | ⟨⟩) ⟨⟩ ⟨⟩
-    · simp [Program.replyLaw, 𝓡₂.body, 𝓡₂.law1, parallelLaw, callProg, returnProg,
+    · simp [Program.memorylessReplyLaw, 𝓡₂.body, 𝓡₂.law1, parallelLaw, callProg, returnProg,
         prod_eq_bindK, bindK_single_comp]
-    · simp [Program.replyLaw, 𝓡₂.body, 𝓡₂.law1, parallelLaw, callProg, returnProg,
+    · simp [Program.memorylessReplyLaw, 𝓡₂.body, 𝓡₂.law1, parallelLaw, callProg, returnProg,
         prod_eq_bindK, bindK_single_comp]
   -- The memoryless source of `𝒰[S] ⊗ ν` is the same memoryless system.
   rw [attached, MemorylessSource.memoryless_eq]
