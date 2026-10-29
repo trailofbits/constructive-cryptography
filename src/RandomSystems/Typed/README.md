@@ -32,9 +32,9 @@ of PDC behaviors, with the [identity][TypedConverter.id] PDC behavior.
 [**Attachment**][TypedConverter.attach] $`\alpha R`$ is the attachment of the PDC behavior:
 [the identity leaves a typed system unchanged][TypedConverter.identity_attach], and
 [a serial composition attaches its inner converter first][TypedConverter.comp_smul].
-A direct DDC identified with a trimmed serial wiring [gives the same typed converter]
-[TypedConverter.ofDDC_eq_comp] as the composition of its certified parts, even when its
-separately proved query bound differs from the product bound.
+A DDC equal to the trimmed serial wiring of $`\alpha`$ (outside) and $`\beta`$ (inside)
+[gives their composition][TypedConverter.ofDDC_eq_comp] as typed converters, even when its own
+query bound is not the product of theirs.
 
 [**Parallel interfaces**][Interface.tensor] put the label sets side by side, and
 [parallel typed systems][TypedSystem.parallel] and [parallel typed converters][TypedConverter.parallel]
@@ -82,8 +82,11 @@ the composition law of [converters](../README.md#converters) on their random sys
 **Functional systems** are given by [reply functions][TypedSystem.ofFunction], by
 [conditional reply laws][TypedSystem.ofConditional], or by
 [sampling once][TypedSystem.sample] and keeping the sample.
-Sampling a transformed law [maps the same retained choice][TypedSystem.sample_fTransform], and
-converter attachment [commutes with that one sampling][TypedConverter.smul_sample].
+The sample is drawn once and shared by all queries, never redrawn: sampling a pushforward
+[samples once and keeps the image][TypedSystem.sample_fTransform],
+$`\mathrm{sample}(f(P), R) = \mathrm{sample}(P, R \circ f)`$, and attachment
+[commutes with the single draw][TypedConverter.smul_sample],
+$`\alpha\, \mathrm{sample}(P, R) = \mathrm{sample}(P, k \mapsto \alpha R_k)`$.
 For a certified [direct call rule][callRule], pointwise query and return equations against a fixed
 inside function yield the [outside functional system][TypedConverter.ofDDC_callConverter_smul_ofFunction].
 The call rule may choose later inside queries from earlier replies.
@@ -103,20 +106,20 @@ typed system sampling the ideal function, under the fixed-query factorization.
 
 <!-- Declarations -->
 
-[Interface]: Interface.lean#L40
-[Interface.queryBudget]: Interface.lean#L63
-[Interface.portBudget]: Interface.lean#L74
+[Interface]: Interface.lean#L42
+[Interface.queryBudget]: Interface.lean#L65
+[Interface.portBudget]: Interface.lean#L76
 [restrict]: ../System/Basic.lean#L794
-[TypedSystem]: Interface.lean#L92
+[TypedSystem]: Interface.lean#L94
 [RandomSystem.RepliesAtQueriedInterface]: ../Cumulative/Cumulative.lean#L70
-[TypedConverter]: Interface.lean#L127
-[TypedConverter.ofDDC]: Interface.lean#L143
-[TypedConverter.comp]: Interface.lean#L134
-[TypedConverter.id]: Interface.lean#L139
-[TypedConverter.attach]: Interface.lean#L157
-[TypedConverter.identity_attach]: Interface.lean#L171
-[TypedConverter.comp_smul]: Interface.lean#L177
-[TypedConverter.ofDDC_eq_comp]: Interface.lean#L157
+[TypedConverter]: Interface.lean#L129
+[TypedConverter.ofDDC]: Interface.lean#L145
+[TypedConverter.comp]: Interface.lean#L136
+[TypedConverter.id]: Interface.lean#L141
+[TypedConverter.attach]: Interface.lean#L192
+[TypedConverter.identity_attach]: Interface.lean#L206
+[TypedConverter.comp_smul]: Interface.lean#L212
+[TypedConverter.ofDDC_eq_comp]: Interface.lean#L174
 [Interface.tensor]: Parallel.lean#L85
 [TypedSystem.parallel]: Parallel.lean#L153
 [TypedConverter.parallel]: Parallel.lean#L210
@@ -153,13 +156,13 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedConverter.ofProgram_smul_memoryless]: Memoryless.lean#L241
 [TypedConverter.ofPreservingProgram_smul_memoryless]: Memoryless.lean#L262
 [TypedConverter.ofPreservingProgram_comp_rightContext_smul_memoryless]: Memoryless.lean#L279
-[TypedSystem.ofFunction]: Functional.lean#L56
-[TypedSystem.ofConditional]: Functional.lean#L38
-[TypedSystem.sample]: Functional.lean#L176
+[TypedSystem.ofFunction]: Functional.lean#L58
+[TypedSystem.ofConditional]: Functional.lean#L40
+[TypedSystem.sample]: Functional.lean#L178
+[TypedSystem.sample_fTransform]: Functional.lean#L192
+[TypedConverter.smul_sample]: Functional.lean#L237
 [callRule]: ../Converter/Calls.lean
 [TypedConverter.ofDDC_callConverter_smul_ofFunction]: CallRuleFunctional.lean
-[TypedSystem.sample_fTransform]: Functional.lean#L190
-[TypedConverter.smul_sample]: Functional.lean#L218
 [Interface.withMBO]: Game.lean#L24
 [TypedGame]: Game.lean#L35
 [TypedConverter.attachGame]: Game.lean#L38

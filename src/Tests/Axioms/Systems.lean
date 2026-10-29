@@ -15,6 +15,7 @@ typed converters, and the counterexamples, depend only on `propext`, `Classical.
 #print axioms SystemAlgebra.PDCBehavior.attach_comp
 #print axioms SystemAlgebra.PDCBehavior.attach_presents
 #print axioms SystemAlgebra.PDCBehavior.attach_mass_eq_one
+#print axioms SystemAlgebra.PDCBehavior.attach_mix
 
 -- RandomSystems.Converter.ConverterDomain
 #print axioms SystemAlgebra.IsDDC.eq_of_admitted_replies
