@@ -45,6 +45,11 @@ The proof follows the composite's run `c` along the joint history of `[β, α]`,
 * `serialCostAtOuter`, `serialCostAtInner`: the charge invariant while `β`, resp. `α`, is about
   to answer
 
+The conclusion bounds the composite's consecutive run. It does not bound its aggregate work
+over all outside invocations. `RandomSystems.Converter.SerialAccounting` provides the
+aggregate theorem, with query-value-dependent costs and a hypothesis on every partial
+component transcript.
+
 ## Main results
 
 * `IsDDC.insideRun_prefix_le_cost`: the run of `α` before its last input is within the cost

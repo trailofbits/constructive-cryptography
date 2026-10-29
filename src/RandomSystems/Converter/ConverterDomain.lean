@@ -1012,7 +1012,8 @@ lemma IsDDCFrom.serial_next (hβ : IsDDCFrom F G bβ β) (hα : IsDDCFrom E F b�
       by simpa [lastOuter_snoc, outerOf] using hlo, hPb, by simpa [outsideInputs_append] using hR2,
       hQ⟩)
 
-/-- Every completed history of the composite has its components behind it. -/
+/-- Every partial transcript of the composite has its component transcripts behind it,
+including a final inside query whose reply is pending. -/
 lemma IsDDCFrom.serial_idle (hβ : IsDDCFrom F G bβ β) (hα : IsDDCFrom E F bα α) :
     ∀ h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l)),
       Replies (serialM β α) (h.map Prod.fst) (h.map Prod.snd) →
@@ -1038,6 +1039,31 @@ lemma IsDDCFrom.serial_idle (hβ : IsDDCFrom F G bβ β) (hα : IsDDCFrom E F b�
     obtain ⟨-, w', hw', hs'⟩ := hβ.serial_next hα hp hs x lx (Or.inr (by simp))
     cases hw'
     exact ⟨K', by simpa using r', by simpa using hs'⟩
+
+/-- **The component transcripts of a serial composite**: behind every partial transcript `T` of
+`trim (serialM β α)` lie a transcript `Tb` of `β` and a transcript `Ta` of `α` with
+
+* `outsideInputs Tb = outsideInputs T`: the outer converter receives the outside inputs;
+* `outsideInputs Ta = insideQueries Tb`: the inner converter receives the outer queries;
+* `insideQueries Ta = insideQueries T`: the inner queries are the exposed ones.
+
+The lists include a final query whose reply has not arrived. -/
+lemma IsDDCFrom.serial_transcripts (hβ : IsDDCFrom F G bβ β)
+    (hα : IsDDCFrom E F bα α)
+    {T : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))}
+    (hr : Replies (trim (serialM β α)) (T.map Prod.fst) (T.map Prod.snd)) :
+    ∃ (Tb : List ((Σ l, twoFam U Ym l) × (Σ l, twoFam V Xm l)))
+      (Ta : List ((Σ l, twoFam Xm Y l) × (Σ l, twoFam Ym X l))),
+      Replies β (Tb.map Prod.fst) (Tb.map Prod.snd) ∧
+      Replies α (Ta.map Prod.fst) (Ta.map Prod.snd) ∧
+      outsideInputs (Tb.map Prod.fst) = outsideInputs (T.map Prod.fst) ∧
+      outsideInputs (Ta.map Prod.fst) = insideQueries (Tb.map Prod.snd) ∧
+      insideQueries (Ta.map Prod.snd) = insideQueries (T.map Prod.snd) := by
+  -- `serial_idle` holds on every composite transcript, idle or pending; keep its two
+  -- component transcripts and the three history equations.
+  rw [replies_trim_iff] at hr
+  obtain ⟨_, _, Tb, Ta, _, hb, _, ha, ho, hm, hi, _⟩ := hβ.serial_idle hα T hr
+  exact ⟨Tb, Ta, hb, ha, ho, hm, hi⟩
 
 /-- **Serial composition of DDCs from `E` to `F` and from `F` to `G` is a DDC from `E`
 to `G`**, with the product of the inside-query bounds. -/
