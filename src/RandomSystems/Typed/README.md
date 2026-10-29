@@ -162,7 +162,7 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedSystem.sample]: Functional.lean#L178
 [TypedSystem.sample_fTransform]: Functional.lean#L192
 [TypedConverter.smul_sample]: Functional.lean#L237
-[callRule]: ../Converter/Calls.lean#L401
+[callRule]: ../Converter/Calls.lean#L391
 [TypedConverter.ofDDC_callConverter_smul_ofFunction]: CallRuleFunctional.lean#L31
 [Interface.withMBO]: Game.lean#L24
 [TypedGame]: Game.lean#L35
