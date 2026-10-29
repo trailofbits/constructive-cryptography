@@ -330,8 +330,8 @@ $`X \simeq_{\sum_j \varepsilon_j} Y`$ from `≃[loss]` and `≈[ε]` steps.
 [Program]: ../../RandomSystems/Converter/Program.lean#L45
 [Program.PortPreserving]: ../../RandomSystems/Converter/Program.lean#L123
 [automatonSystem_eq_of_bisim]: ../../RandomSystems/System/Automaton.lean#L89
-[Interface.queryBudget]: ../../RandomSystems/Typed/Interface.lean#L63
-[Interface.portBudget]: ../../RandomSystems/Typed/Interface.lean#L74
+[Interface.queryBudget]: ../../RandomSystems/Typed/Interface.lean#L65
+[Interface.portBudget]: ../../RandomSystems/Typed/Interface.lean#L76
 [TypedSystem.source]: ../../RandomSystems/Typed/Source.lean#L51
 [TypedSystem.ofAutomaton]: ../../RandomSystems/Typed/Automaton.lean#L42
 [TypedConverter.rightContext]: ../../RandomSystems/Typed/Context.lean#L109

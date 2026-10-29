@@ -3,42 +3,49 @@ import RandomSystems.Converter.ConverterDomain
 /-!
 # Completed converter calls
 
-A call transcript interleaves one outside query, the inside queries with their replies, and
-the final outside reply. These lemmas connect such completed transcripts through the existing
-`apply` attachment and show that canonicalization preserves each admissible prefix.
+A completed call of a converter `α` attached to an inside system `R`: the outside query `u` at
+port `o`, the inside exchanges `qs = [(x₁, y₁), …, (xₙ, yₙ)]`, and the outside reply `v`.
+
+```text
+            o(u)   ┌─────┐   j₁(x₁) … jₙ(xₙ)   ┌─────┐
+  ────────────────►│  α  ├────────────────────►│  R  │
+  ◄────────────────┤     │◄────────────────────┤     │
+            o ⇒ v  └─────┘   j₁ ⇒ y₁ … jₙ ⇒ yₙ └─────┘
+```
+
+## Main definitions
+
+* `callTranscript u qs v`: the converter's exchanges (input, output),
+  `(u, x₁), (y₁, x₂), …, (yₙ, v)`, and `[(u, v)]` when `n = 0`; `callSteps first qs v` is the
+  same from the converter input `first` on
+* `callInternal ⟨u⟩ qs`: the internal history of the connection of `α` with `R`, the converter
+  inputs and inside queries interleaved, `u, x₁, y₁, …, xₙ, yₙ`, and `[u]` when `n = 0`
+
+## Main results
+
+* `replies_apply_of_calls`: if `α` has the call transcripts and `R` answers their inside queries,
+  the attachment `apply α R` answers each call `u` with `v`
+* `replies_canon_calls`: a rule answering every prefix of its calls still does so after
+  canonicalization
 -/
 
 namespace SystemAlgebra
 
-/-- Every exchange of a completed transcript is the system's reply to its prefix. -/
-lemma Replies.eq_some_of_eq_append {A B : Type} {s : System A B} {T : List (A × B)}
-    (hr : Replies s (T.map Prod.fst) (T.map Prod.snd)) {T₁ : List (A × B)} {z : A × B}
-    {T₂ : List (A × B)} (he : T = T₁ ++ z :: T₂) :
-    s (T₁.map Prod.fst ++ [z.1]) = Part.some z.2 := by
-  subst he
-  have hk := hr.2 T₁.length (by simp only [List.map_append, List.map_cons,
-    List.length_append, List.length_map, List.length_cons, lt_add_iff_pos_right,
-    Order.lt_add_one_iff, zero_le]) (by simp only [List.map_append, List.map_cons,
-    List.length_append, List.length_map, List.length_cons, lt_add_iff_pos_right,
-    Order.lt_add_one_iff, zero_le])
-  simpa only [List.map_append, List.map_cons, List.take_append, List.length_map,
-    le_add_iff_nonneg_right, zero_le, List.take_of_length_le, add_tsub_cancel_left,
-    List.take_succ_cons, List.take_zero, Std.le_refl, List.getElem_append_right, tsub_self,
-    List.getElem_cons_zero] using hk
-
 variable {O J : Type} {U V : O → Type} {X Y : J → Type}
 
-/-- The exchanges of a call from the converter input `first` on: each inside query of `qs` is
-answered with its given reply and fed back; the last input is answered by the outside reply
-`v`. -/
+/-- The exchanges of a call from the converter input `first` on,
+`(first, x₁), (y₁, x₂), …, (yₙ, v)` for `qs = [(x₁, y₁), …, (xₙ, yₙ)]`, and `[(first, v)]` for
+`qs = []`: each inside query is answered with its given reply and fed back; the last input is
+answered by the outside reply `v`. -/
 def callSteps (first : Σ l, twoFam U Y l) :
     List ((Σ j, X j) × (Σ j, Y j)) → (Σ o, V o) → List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))
   | [], v => [(first, ⟨⟨none, v.1⟩, v.2⟩)]
   | xy :: qs, v => (first, ⟨⟨some (), xy.1.1⟩, xy.1.2⟩) ::
       callSteps ⟨⟨some (), xy.2.1⟩, xy.2.2⟩ qs v
 
-/-- **The transcript of one call** of a converter: the outside query `u`, the inside exchanges
-`qs`, and the outside reply `v`. -/
+/-- **The transcript of one call** of a converter, `(u, x₁), (y₁, x₂), …, (yₙ, v)`, or `[(u, v)]`
+without inside exchanges: the outside query `u`, the inside exchanges `qs`, and the outside reply
+`v`. -/
 def callTranscript (u : Σ o, U o) (qs : List ((Σ j, X j) × (Σ j, Y j))) (v : Σ o, V o) :
     List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l)) :=
   callSteps ⟨⟨none, u.1⟩, u.2⟩ qs v
@@ -66,12 +73,14 @@ lemma insideQueries_flatMap_callTranscript
       insideQueries_callSteps, List.flatMap_cons, List.map_append]
 
 /-- The internal history of a call from the converter input `first` on, in the connection of
-the converter with the inside system: the converter inputs and inside queries, interleaved. -/
+the converter with the inside system, `first, x₁, y₁, …, xₙ, yₙ`, or `[first]` for `qs = []`:
+the converter inputs (tag `none`) and inside queries (tag `some ()`), interleaved. -/
 def callInternal (first : Σ l, twoFam U Y l) :
     List ((Σ j, X j) × (Σ j, Y j)) → List (Two (Σ l, twoFam U Y l) (Σ j, X j))
   | [] => [⟨none, first⟩]
   | xy :: qs => ⟨none, first⟩ :: ⟨some (), xy.1⟩ :: callInternal ⟨⟨some (), xy.2.1⟩, xy.2.2⟩ qs
 
+/-- The converter's view of the internal history is the call's converter inputs. -/
 lemma restrict_none_callInternal (v : Σ o, V o) :
     ∀ (qs : List ((Σ j, X j) × (Σ j, Y j))) (first : Σ l, twoFam U Y l),
       restrict none (callInternal first qs) = (callSteps first qs v).map Prod.fst
@@ -81,6 +90,7 @@ lemma restrict_none_callInternal (v : Σ o, V o) :
     simp only [callInternal, restrict_cons_self, ne_eq, reduceCtorEq, not_false_eq_true,
       restrict_cons_ne, restrict_none_callInternal v qs, callSteps, List.map_cons]
 
+/-- The inside system's view of the internal history is the call's inside queries. -/
 lemma restrict_some_callInternal :
     ∀ (qs : List ((Σ j, X j) × (Σ j, Y j))) (first : Σ l, twoFam U Y l),
       restrict (some ()) (callInternal first qs) = qs.map Prod.fst
@@ -143,7 +153,11 @@ lemma exchange_callSteps {α : InsideOutsideSystem O J U V X Y} {R : InterfaceSy
 
 /-- **Attachment along calls**: if a converter answers a sequence of calls with the transcripts
 `callTranscript`, and the inside system answers their queries with the given replies, the
-attachment answers the calls' outside queries with their outside replies. -/
+attachment answers the calls' outside queries with their outside replies.
+
+CR18, Definition 3.9, printed p. 62: “Whenever α outputs (in, x), then x is given as input to
+s⊥ … Whenever α outputs (out, v), then v is defined to be the output of αs”. Here every inside
+query is answered, so `⊥` does not arise. -/
 theorem replies_apply_of_calls {α : InsideOutsideSystem O J U V X Y} {R : InterfaceSystem J X Y}
     (calls : List ((Σ o, U o) × List ((Σ j, X j) × (Σ j, Y j)) × (Σ o, V o)))
     (hα : Replies α ((calls.flatMap fun c => callTranscript c.1 c.2.1 c.2.2).map Prod.fst)
@@ -197,6 +211,7 @@ theorem replies_apply_of_calls {α : InsideOutsideSystem O J U V X Y} {R : Inter
         exact Part.eq_some_iff.mpr (mem_interconnect.mpr ⟨_, hind⟩)
   exact (key calls [] (by simp only [List.append_nil])).2.2.2
 
+/-- The converter inputs of a call: `first`, then the inside replies. -/
 lemma callSteps_map_fst (v : Σ o, V o) :
     ∀ (qs : List ((Σ j, X j) × (Σ j, Y j))) (first : Σ l, twoFam U Y l),
       (callSteps first qs v).map Prod.fst =
@@ -205,6 +220,7 @@ lemma callSteps_map_fst (v : Σ o, V o) :
   | xy :: qs, first => by
     rw [callSteps, List.map_cons, callSteps_map_fst v qs, List.map_cons]
 
+/-- The converter outputs of a call: the inside queries, then the outside reply. -/
 lemma callSteps_map_snd (v : Σ o, V o) :
     ∀ (qs : List ((Σ j, X j) × (Σ j, Y j))) (first : Σ l, twoFam U Y l),
       (callSteps first qs v).map Prod.snd =
@@ -214,6 +230,7 @@ lemma callSteps_map_snd (v : Σ o, V o) :
   | xy :: qs, first => by
     rw [callSteps, List.map_cons, callSteps_map_snd v qs, List.map_cons, List.cons_append]
 
+/-- A call has the single outside input `u`. -/
 lemma outsideInputs_callSteps (v : Σ o, V o) (u : Σ o, U o) (qs : List ((Σ j, X j) × (Σ j, Y j))) :
     outsideInputs ((callTranscript u qs v).map Prod.fst) = [u] := by
   rw [callTranscript, callSteps_map_fst, ← List.singleton_append, outsideInputs_append,
