@@ -29,8 +29,9 @@ and `B k` is finite, as the `RandomSystem` carrier requires; `K` is finite becau
 and the sum of the component query bounds range over it.
 
 Jost, Thesis, printed p. 17: “A finite set of resources with disjoint interface sets can be
-viewed as a single one.” The independent product is this repository's specialization of that
-view to random systems.
+viewed as a single one”. The source writes this composition `[R₁, …, Rₙ]`; here the components
+are named by the tags in `K`, and the independent product is this repository's specialization
+of that view to random systems.
 
 ## Main definitions
 
@@ -83,7 +84,7 @@ open Classical in
 /-- `((⟨k, a⟩, ⟨k, b⟩) :: h)|k = (a, b) :: h|k`. -/
 lemma restrictExchanges_cons_self (k : K) (h : List ((Σ k, A k) × (Σ k, B k))) (a : A k)
     (b : B k) : restrictExchanges k ((⟨k, a⟩, ⟨k, b⟩) :: h) = (a, b) :: restrictExchanges k h := by
-  simp [restrictExchanges]
+  simp only [restrictExchanges, ↓reduceDIte, Option.some.injEq, List.filterMap_cons_some]
 
 omit [Fintype K] in
 open Classical in
@@ -91,7 +92,7 @@ open Classical in
 lemma restrictExchanges_cons_of_ne {k k₀ : K} (hk : k₀ ≠ k)
     (h : List ((Σ k, A k) × (Σ k, B k))) (a : A k₀) (b : B k₀) :
     restrictExchanges k ((⟨k₀, a⟩, ⟨k₀, b⟩) :: h) = restrictExchanges k h := by
-  simp [restrictExchanges, hk]
+  simp only [restrictExchanges, hk, ↓reduceDIte, List.filterMap_cons_none]
 
 
 omit [Fintype K] [DecidableEq K] in
@@ -99,7 +100,8 @@ open Classical in
 /-- `h ++ [z]` is consistent iff `h` is and `z` has equal input and reply tags. -/
 lemma parallelAllConsistent_snoc {h : List ((Σ k, A k) × (Σ k, B k))} {z} :
     parallelAllConsistent (h ++ [z]) ↔ parallelAllConsistent h ∧ z.1.1 = z.2.1 := by
-  simp [parallelAllConsistent, or_imp, forall_and]
+  simp only [parallelAllConsistent, List.mem_append, List.mem_cons, List.not_mem_nil, or_false,
+    or_imp, forall_and, Prod.forall, forall_eq]
 
 open Classical in
 /-- A consistent history splits into its projections: `|h| = ∑ k, |h|k|`. -/
@@ -107,7 +109,8 @@ lemma length_eq_sum_of_parallelAllConsistent {h : List ((Σ k, A k) × (Σ k, B 
     (hh : parallelAllConsistent h) :
     h.length = ∑ k, (restrictExchanges k h).length := by
   induction h with
-  | nil => simp [restrictExchanges]
+  | nil => simp only [List.length_nil, restrictExchanges, List.filterMap_nil,
+    Finset.sum_const_zero]
   | cons z h ih =>
     -- The consistent head exchange `z` adds one to the projection of its tag only.
     have hz := hh z List.mem_cons_self
@@ -117,8 +120,10 @@ lemma length_eq_sum_of_parallelAllConsistent {h : List ((Σ k, A k) × (Σ k, B 
       intro k
       by_cases hx : z.1.1 = k
       · have hy : z.2.1 = k := hz ▸ hx
-        simp [restrictExchanges, hx, hy]
-      · simp [restrictExchanges, hx]
+        simp only [restrictExchanges, hx, ↓reduceDIte, hy, Option.some.injEq,
+          List.filterMap_cons_some, List.length_cons, ↓reduceIte]
+      · simp only [restrictExchanges, hx, ↓reduceDIte, List.filterMap_cons_none, ↓reduceIte,
+        add_zero]
     -- `|h| + 1 = ∑ k, |h|k| + ∑ k, [z.1.1 = k]`, and the indicator sum is `1`.
     rw [List.length_cons, ih ht]
     simp only [hk, Finset.sum_add_distrib, Finset.sum_ite_eq, Finset.mem_univ, if_true]
@@ -140,9 +145,11 @@ lemma restrictExchanges_queries {h : List ((Σ k, A k) × (Σ k, B k))}
     subst hz
     by_cases hk : kx = k
     · subst hk
-      simp [restrictExchanges, restrict_cons_self, ← ih ht]
+      simp only [restrictExchanges, ↓reduceDIte, Option.some.injEq,
+        List.filterMap_cons_some, List.map_cons, restrict_cons_self, ← ih ht]
     · simp only [restrictExchanges] at ih ⊢
-      simp [restrict_cons_ne hk, hk, ih ht]
+      simp only [hk, ↓reduceDIte, List.filterMap_cons_none, ih ht, List.map_cons,
+        restrict_cons_ne hk]
 
 end RandomSystem
 
@@ -181,7 +188,7 @@ with domain `Domain.parallelAll D`: each query `⟨k, x⟩` goes to `R k`, which
 from its own history `h|k` and its own randomness, so
 `(parallelAll R) h = ∏ k, R k (h|k)` on a tag-consistent `h`, and `0` otherwise.
 Jost, Thesis, printed p. 17: “A finite set of resources with disjoint interface sets can be
-viewed as a single one.” Independence is the chosen product; disjoint tags alone do not
+viewed as a single one”. Independence is the chosen product; disjoint tags alone do not
 imply it. -/
 noncomputable def parallelAll (R : ∀ k, RandomSystem (A k) (B k) (D k)) :
     RandomSystem (Σ k, A k) (Σ k, B k) (Domain.parallelAll D) :=
@@ -190,7 +197,8 @@ noncomputable def parallelAll (R : ∀ k, RandomSystem (A k) (B k) (D k)) :
     -- reply law `μ` with `μ y = mass (h ++ [(x, y)])` and weight `[x admitted after h] · mass h`.
     refine ⟨?_, ?_, fun h x => ?_⟩
     -- Empty mass: every projection of `[]` is `[]`, and `∏ k, R k [] = 1`.
-    · simp [parallelAllConsistent, restrictExchanges, RandomSystem.mass_nil]
+    · simp only [parallelAllConsistent, List.not_mem_nil, IsEmpty.forall_iff, implies_true,
+      ↓reduceIte, restrictExchanges, List.filterMap_nil, mass_nil, Finset.prod_const_one]
     -- Nonnegativity: a product of nonnegative component masses, or `0`.
     · intro h
       dsimp only
@@ -204,8 +212,8 @@ noncomputable def parallelAll (R : ∀ k, RandomSystem (A k) (B k) (D k)) :
       · refine ⟨0, fun y => ?_, ?_⟩
         · have hn : ¬ parallelAllConsistent (h ++ [(x, y)]) :=
             fun h' => hh fun z hz => h' z (List.mem_append_left _ hz)
-          simp [hn]
-        · simp [hh, Distribution.weight]
+          simp only [Finsupp.coe_zero, Pi.zero_apply, hn, ↓reduceIte]
+        · simp only [Distribution.weight, Finsupp.sum_zero_index, hh, ↓reduceIte, ite_self]
       obtain ⟨k₀, x₀⟩ := x
       -- Consistent `h`, query `⟨k₀, x₀⟩`: only component `k₀` moves. The reply law is
       --   μ = (∏ k ≠ k₀, R k (h|k)) · ⟨k₀, ·⟩₊ (extension law of `R k₀` at `h|k₀`, `x₀`),
@@ -235,9 +243,11 @@ noncomputable def parallelAll (R : ∀ k, RandomSystem (A k) (B k) (D k)) :
           -- For `k ≠ k₁` the new exchange is not in `h|k`, so the factor is unchanged.
           · refine Finset.prod_congr rfl fun k hk' => ?_
             have hne : k₁ ≠ k := fun he => (Finset.mem_erase.mp hk').1 he.symm
-            simp [restrictExchanges, List.filterMap_append, hne]
+            simp only [restrictExchanges, List.filterMap_append, hne, ↓reduceDIte,
+              List.filterMap_cons_none, List.filterMap_nil, List.append_nil]
           -- For `k₁`: `(h ++ [(⟨k₁, x₀⟩, ⟨k₁, y₁⟩)])|k₁ = h|k₁ ++ [(x₀, y₁)]`.
-          · simp [restrictExchanges, List.filterMap_append]
+          · simp only [restrictExchanges, List.filterMap_append, ↓reduceDIte,
+            Option.some.injEq, List.filterMap_cons_some, List.filterMap_nil]
         -- Reply `⟨k₁, y₁⟩` with `k₁ ≠ k₀`: outside the image of the tagging `⟨k₀, ·⟩`, so
         -- `μ` gives `0`; the extended history is inconsistent, so its mass is `0`.
         · have hz : Distribution.fTransform (fun y : B k₀ => (⟨k₀, y⟩ : Σ k, B k))
@@ -249,7 +259,7 @@ noncomputable def parallelAll (R : ∀ k, RandomSystem (A k) (B k) (D k)) :
               (h ++ [((⟨k₀, x₀⟩ : Σ k, A k), (⟨k₁, y₁⟩ : Σ k, B k))]) :=
             fun h' => hk (h' _ (List.mem_append_right _ (List.mem_singleton_self _))).symm
           rw [Finsupp.smul_apply, smul_eq_mul, hz, mul_zero]
-          simp [hn]
+          simp only [hn, ↓reduceIte]
       -- Weight: tagging preserves weight, so
       --   weight μ = (∏ k ≠ k₀, R k (h|k)) · [D k₀ (h|k₀) x₀] · R k₀ (h|k₀),
       -- to be compared with `[⟨k₀, x₀⟩ admitted after h] · ∏ k, R k (h|k)`.
@@ -271,7 +281,7 @@ noncomputable def parallelAll (R : ∀ k, RandomSystem (A k) (B k) (D k)) :
               ← Finset.prod_erase_mul _ _ (Finset.mem_univ k₀)]
           -- Not admitted: both sides are `0`.
           · rw [if_neg hd, if_neg (fun h' => hd (hadm.mp h'))]
-            simp
+            simp only [mul_zero]
         -- Some `k ≠ k₀` has `|h|k| > (D k).bound`: then `R k (h|k) = 0`, so `weight μ = 0`, and
         -- `⟨k₀, x₀⟩` is not admitted, so the required weight is `0` too.
         · push Not at hb
@@ -360,9 +370,11 @@ lemma restrictExchanges_snd {h : List ((Σ k, A k) × (Σ k, B k))}
     subst hz
     by_cases hk : kx = k
     · subst hk
-      simp [restrictExchanges, restrict_cons_self, ← ih ht]
+      simp only [restrictExchanges, ↓reduceDIte, Option.some.injEq,
+        List.filterMap_cons_some, List.map_cons, restrict_cons_self, ← ih ht]
     · simp only [restrictExchanges] at ih ⊢
-      simp [restrict_cons_ne hk, hk, ih ht]
+      simp only [hk, ↓reduceDIte, List.filterMap_cons_none, ih ht, List.map_cons,
+        restrict_cons_ne hk]
 
 omit [Fintype K] in
 open Classical in
@@ -378,20 +390,20 @@ lemma replies_parAll_iff (s : ∀ k, System (A k) (B k)) (h : List ((Σ k, A k) 
   -- Induction on the history from the right.
   induction h using List.reverseRecOn with
   -- Empty history: both sides hold trivially.
-  | nil => simp [parallelAllConsistent, restrictExchanges]
+  | nil => simp only [List.map_nil, replies_nil, parallelAllConsistent, List.not_mem_nil,
+    IsEmpty.forall_iff, implies_true, restrictExchanges, List.filterMap_nil, and_self]
   | append_singleton h z ih =>
     -- Last exchange `(⟨kx, x⟩, ⟨ky, y⟩)`. By the hypothesis on `h`, the left side becomes
     --   (consistent h ∧ ∀ k, Replies (s k) on h|k) ∧ parAll s answers ⟨ky, y⟩ to ⟨kx, x⟩,
     -- and the right side is `(consistent h ∧ kx = ky) ∧ ∀ k, Replies (s k) on (h ++ [z])|k`.
     obtain ⟨⟨kx, x⟩, ⟨ky, y⟩⟩ := z
     have hc : parallelAllConsistent (h ++ [((⟨kx, x⟩ : Σ k, A k), (⟨ky, y⟩ : Σ k, B k))]) ↔
-        parallelAllConsistent h ∧ kx = ky := by
-      simp [parallelAllConsistent, or_imp, forall_and]
+        parallelAllConsistent h ∧ kx = ky := parallelAllConsistent_snoc
     simp only [List.map_append, List.map_cons, List.map_nil, replies_snoc, ih, hc]
     by_cases hh : parallelAllConsistent h
     swap
     -- Inconsistent `h`: both sides are false.
-    · simp [hh]
+    · simp only [hh, false_and]
     by_cases hk : kx = ky
     -- Matching tags `kx = ky`: only component `kx` gains the exchange `(x, y)`.
     · subst hk
@@ -400,16 +412,19 @@ lemma replies_parAll_iff (s : ∀ k, System (A k) (B k)) (h : List ((Σ k, A k) 
           restrictExchanges k (h ++ [((⟨kx, x⟩ : Σ k, A k), (⟨kx, y⟩ : Σ k, B k))]) =
             restrictExchanges k h := by
         intro k hk
-        simp [restrictExchanges, List.filterMap_append, Ne.symm hk]
+        simp only [restrictExchanges, List.filterMap_append, Ne.symm hk, ↓reduceDIte,
+          List.filterMap_cons_none, List.filterMap_nil, List.append_nil]
       -- The queried projection gains the exchange: `(h ++ [z])|kx = h|kx ++ [(x, y)]`.
       have hself : restrictExchanges kx (h ++ [((⟨kx, x⟩ : Σ k, A k), (⟨kx, y⟩ : Σ k, B k))]) =
           restrictExchanges kx h ++ [(x, y)] := by
-        simp [restrictExchanges, List.filterMap_append]
+        simp only [restrictExchanges, List.filterMap_append, ↓reduceDIte, Option.some.injEq,
+          List.filterMap_cons_some, List.filterMap_nil]
       -- `parAll s` answers `⟨kx, y⟩` iff `s kx` answers `y` on the inputs of `h|kx`, then `x`.
       have hmap : parAll s (h.map Prod.fst ++ [⟨kx, x⟩]) = Part.some ⟨kx, y⟩ ↔
           s kx ((restrictExchanges kx h).map Prod.fst ++ [x]) = Part.some y := by
         rw [parAll_snoc, ← restrictExchanges_queries hh kx]
-        simp [Part.eq_some_iff, Part.mem_map_iff]
+        simp only [Part.eq_some_iff, Part.mem_map_iff, Sigma.mk.injEq, heq_eq_eq, true_and,
+          exists_eq_right]
       rw [hmap]
       constructor
       -- (→) Each `s k` replies on `h|k`, and `s kx` answers `y` to `x`.
@@ -445,7 +460,7 @@ lemma replies_parAll_iff (s : ∀ k, System (A k) (B k)) (h : List ((Σ k, A k) 
         intro he
         obtain ⟨w, -, hw⟩ := (Part.mem_map_iff _).mp (Part.eq_some_iff.mp he)
         exact hk (congrArg Sigma.fst hw)
-      simp [hn, hk]
+      simp only [hn, and_false, hk, false_and]
 
 end RandomSystem
 

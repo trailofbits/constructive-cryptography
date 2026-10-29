@@ -186,7 +186,7 @@ holds, whatever the number of the program's inside queries:
 [RandomSystem.eq_iff_sLaw_fixedQueries]: Cumulative/CumulativeObservation.lean#L548
 [RandomSystem.mix]: Cumulative/CumulativeOperations.lean#L45
 [RandomSystem.parallel]: Cumulative/CumulativeOperations.lean#L130
-[RandomSystem.parallelAll]: Cumulative/ParallelAll.lean#L151
+[RandomSystem.parallelAll]: Cumulative/ParallelAll.lean#L193
 [RandomSystem.ofProbAutomaton]: System/ProbAutomaton.lean#L197
 [ProbStep]: System/ProbAutomaton.lean#L58
 [ProbStep.belief]: System/ProbAutomaton.lean#L160
