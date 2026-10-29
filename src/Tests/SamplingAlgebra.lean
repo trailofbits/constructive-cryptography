@@ -4,13 +4,13 @@ import ConstructiveCryptography.Notation
 /-!
 # Retained samples in attachment and parallel proofs
 
-These consumers group, reorder and move independent initial draws through typed operations.
-The laws are arbitrary normalized distributions on possibly infinite sample types. Parallel
-composition uses the public `∥` notation in this test layer; the foundational module stays
-independent of the CC notation import.
+Consumers of `RandomSystems.Typed.SamplingAlgebra`: independent initial draws are grouped,
+reordered and moved through attachment `α •` and parallel composition `∥`. The laws are
+arbitrary normalized distributions on possibly infinite sample types.
 
-A final counterexample separates one shared Boolean draw from two independent draws by
-the probability of a mixed reply, making the independence requirement observable.
+A counterexample shows that the laws do not split one retained draw: one shared uniform bit
+`b`, replying `(b, b)`, differs from two independent uniform bits `b, c`, replying `(b, c)`,
+since the reply `(false, true)` has probability `0` against `1/4`.
 -/
 
 namespace SystemAlgebra.Tests.SamplingAlgebra
@@ -18,33 +18,32 @@ namespace SystemAlgebra.Tests.SamplingAlgebra
 open Probability
 open scoped SystemAlgebra
 
-/-- Attaching a converter preserves the component chosen by a product draw. Grouping that
-draw as two independent choices lets attachment act on the resulting component. -/
+/-- Attachment to a product draw: `α • sample (P × Q) R` draws `k ← P` and `l ← Q` once and
+attaches `α` to the retained `R (k, l)`. -/
 example {A B : Interface} {K L : Type} (α : TypedConverter A B)
     (P : Distribution K) [Distribution.IsProbability P]
     (Q : Distribution L) [Distribution.IsProbability Q]
     (R : K × L → TypedSystem B) :
     α • TypedSystem.sample (P.prod Q) R =
       TypedSystem.sample P (fun k => TypedSystem.sample Q (fun l => α • R (k, l))) := by
-  -- Split the product and carry attachment through the first retained draw.
+  -- Split the product draw, then move `α` inside the draw `k ← P`.
   rw [TypedSystem.sample_prod, TypedConverter.smul_sample]
-  -- The second draw is retained as well; attachment acts on R (k, l).
+  -- Move `α` inside the draw `l ← Q`, onto `R (k, l)`.
   simp only [TypedConverter.smul_sample]
 
-/-- Reordering two independent choices inside an attached system keeps the same outside
-behavior. This is the sampling step used when exchanging a sampled key and a random function. -/
+/-- Reordering two independent draws behind an attached converter keeps the selected system. -/
 example {A B : Interface} {K L : Type} (α : TypedConverter A B)
     (P : Distribution K) [Distribution.IsProbability P]
     (Q : Distribution L) [Distribution.IsProbability Q]
     (R : K → L → TypedSystem B) :
     α • TypedSystem.sample P (fun k => TypedSystem.sample Q (R k)) =
       TypedSystem.sample Q (fun l => TypedSystem.sample P (fun k => α • R k l)) := by
-  -- Exchange the independent choices before carrying attachment through them.
+  -- Exchange the two draws, then move `α` inside both.
   rw [TypedSystem.sample_comm P Q R]
   simp only [TypedConverter.smul_sample]
 
-/-- A fixed left system stays independent of the right component's retained pair. Moving the
-pair outside and splitting it must not make the left system depend on either sample. -/
+/-- A product draw used only by the right component moves outside `R ∥ ·` and splits into two
+draws; the left system is the same `R` for every pair `(k, l)`. -/
 example {A B : Interface} {K L : Type} (R : TypedSystem A)
     (P : Distribution K) [Distribution.IsProbability P]
     (Q : Distribution L) [Distribution.IsProbability Q]
@@ -52,10 +51,10 @@ example {A B : Interface} {K L : Type} (R : TypedSystem A)
     R ∥ TypedSystem.sample (P.prod Q) S =
       TypedSystem.sample P (fun k =>
         TypedSystem.sample Q (fun l => R ∥ S (k, l))) := by
-  -- Move the retained pair outside the parallel system, then split its independent law.
+  -- Move the draw `(k, l) ← P × Q` outside the parallel composition, then split it.
   rw [TypedSystem.parallel_sample_right, TypedSystem.sample_prod]
 
-/-! ## Independence boundary -/
+/-! ### Independence boundary -/
 
 /-- One port with query alphabet `X = {⋆}` and reply alphabet `Y = {false, true}²`.
 Suppressing the sole port label, the nonempty input domain is `D = {[⋆]}`: one query. -/
@@ -74,9 +73,18 @@ def mixedPairTranscript : List
     ((Σ i, pairReplyInterface.X i) × (Σ i, pairReplyInterface.Y i)) :=
   [(⟨(), ()⟩, ⟨(), (false, true)⟩)]
 
-/-- A shared bit cannot give the reply `(false, true)`, whereas two independent uniform
-bits give it with probability `1/4`. Thus the product and commutation laws cannot replace
-a retained shared draw by independent draws. -/
+/-- **One retained draw is not two draws.** On the one query `⋆`, a shared uniform bit never
+gives the reply `(false, true)`; two independent uniform bits give it with probability `1/4`.
+Here `U` is the uniform law on `Bool`.
+
+```text
+   ⋆  ┌───────────────┐              ⋆  ┌───────────────┐
+  ────┤ b ← U, once   │      ≠      ────┤ b ← U, once   │
+  ⇒   │ R_(b, b)      │             ⇒   │ c ← U, once   │
+      └───────────────┘                 │ R_(b, c)      │
+                                        └───────────────┘
+   Pr[⇒ (false, true)] = 0               Pr[⇒ (false, true)] = 1/4
+``` -/
 example :
     TypedSystem.sample (Distribution.uniform Bool) (fun b => replyPair (b, b)) ≠
       TypedSystem.sample (Distribution.uniform Bool) (fun b =>
@@ -87,11 +95,17 @@ example :
   -- Both Boolean values have positive sampling mass, so the sums cover both values.
   have hs : (Distribution.uniform Bool).support = Finset.univ := by
     ext b
-    simp [Finsupp.mem_support_iff, Distribution.uniform_apply]
-  -- The shared draw gives mass zero to the mixed reply; the independent draws give 1/4.
+    simp only [Finsupp.mem_support_iff, Distribution.uniform_apply, Fintype.card_bool,
+      Nat.cast_ofNat, one_div, ne_eq, inv_eq_zero, OfNat.ofNat_ne_zero, not_false_eq_true,
+      Fintype.univ_bool, Finset.mem_insert, Finset.mem_singleton, Bool.eq_true_or_eq_false_self]
+  -- Expand both masses: `∑_b ½ · [(b, b) = (false, true)] = 0` on the left and
+  -- `∑_{b,c} ½ · ½ · [(b, c) = (false, true)] = 1/4` on the right.
   norm_num [TypedSystem.sample_mass, TypedSystem.ofFunction_mass, replyPair,
     pairReplyInterface, mixedPairTranscript, Distribution.uniform_apply, hs] at hm
-  simp [Prod.mk.injEq] at hm
+  -- Evaluating the remaining reply predicates would force the false equality `0 = 1/4`.
+  simp only [Prod.mk.injEq, Bool.false_eq_true, and_true, ↓reduceIte, Bool.true_eq_false,
+    and_false, add_zero, one_div, and_self, mul_zero, zero_add, zero_eq_mul, inv_eq_zero,
+    OfNat.ofNat_ne_zero, or_self] at hm
 
 #print axioms TypedSystem.sample_prod
 #print axioms TypedSystem.sample_comm
