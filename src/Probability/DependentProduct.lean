@@ -11,8 +11,8 @@ dependent functions `f : ∀ k, A k` given by
 
 A factor vanishes as soon as `f k ∉ supp (μ k)`, so the support lies in the finite box
 `∏ k, supp (μ k)` (`Fintype.piFinset`) and the product is again finitely supported. The laws
-are raw distributions: real-valued, neither nonnegative nor normalized in general.
-`Distribution.pi` is the homogeneous case `A k = A`.
+are raw distributions: real-valued, neither nonnegative nor normalized in general. The index
+and the carriers may live in different universes.
 
 ## Main definitions
 
@@ -20,20 +20,21 @@ are raw distributions: real-valued, neither nonnegative nor normalized in genera
 
 ## Main results
 
-* `piDep_isProbDist`: a finite product of probability laws is a probability law
 * `piDep_mass_forall`: for raw laws, a rectangular event has product mass,
   `(piDep μ).mass (fun f => ∀ k, Q k (f k)) = ∏ k, (μ k).mass (Q k)`
+* `piDep_isProbDist`: a finite product of probability laws is a probability law
+* `piDep_eq_pi`: with one carrier `A k = A`, `piDep μ` is the homogeneous product `pi μ`
 -/
 
 namespace Probability.Distribution
 
-variable {K : Type} [Fintype K] [DecidableEq K]
+variable {K : Type*} [Fintype K]
 
 open Classical in
 /-- The independent product of the finitely supported laws `μ k` on the carriers `A k`:
 `(piDep μ)(f) = ∏ k, μ k (f k)` for `f : ∀ k, A k`. Its support lies in the finite box
 `∏ k, supp (μ k)`, since a factor `μ k (f k)` vanishes off `supp (μ k)`. -/
-noncomputable def piDep {A : K → Type} (μ : ∀ k, Distribution (A k)) :
+noncomputable def piDep {A : K → Type*} (μ : ∀ k, Distribution (A k)) :
     Distribution (∀ k, A k) :=
   Finsupp.onFinset (Fintype.piFinset fun k => (μ k).support)
     (fun f => ∏ k, μ k (f k))
@@ -41,11 +42,19 @@ noncomputable def piDep {A : K → Type} (μ : ∀ k, Distribution (A k)) :
       Finsupp.mem_support_iff.mpr fun h0 =>
         hf (Finset.prod_eq_zero (Finset.mem_univ k) h0))
 
+/-- With one carrier `A k = A`, the dependent product is the homogeneous product:
+`piDep μ = pi μ`, both being `f ↦ ∏ k, μ k (f k)` for `f : K → A`. -/
+lemma piDep_eq_pi {A : Type*} [DecidableEq K] (μ : K → Distribution A) :
+    piDep μ = pi μ := by
+  -- Pointwise, both sides unfold to `∏ k, μ k (f k)`.
+  ext f
+  rfl
+
 open Classical in
 /-- A finite independent product of probability laws is a probability law: each mass
 `∏ k, μ k (f k)` is nonnegative, and the total weight factors,
 `∑_f ∏_k μ_k(f k) = ∏_k ∑_a μ_k(a) = ∏_k 1 = 1`. -/
-lemma piDep_isProbDist {A : K → Type} {μ : ∀ k, Distribution (A k)}
+lemma piDep_isProbDist {A : K → Type*} {μ : ∀ k, Distribution (A k)}
     (hμ : ∀ k, (μ k).isProbDist) : (piDep μ).isProbDist := by
   refine ⟨fun f => ?_, ?_⟩
   · -- Every component mass is nonnegative, so their product is nonnegative.
@@ -67,7 +76,7 @@ open Classical in
 /-- A rectangular event `{f | ∀ k, Q k (f k)}` has the product of the coordinate masses:
 `(piDep μ).mass (fun f => ∀ k, Q k (f k)) = ∏ k, (μ k).mass (Q k)`. Nonnegativity and
 normalization are not assumed; the identity is finite-sum algebra over the support box. -/
-lemma piDep_mass_forall {A : K → Type} (μ : ∀ k, Distribution (A k)) (Q : ∀ k, A k → Prop) :
+theorem piDep_mass_forall {A : K → Type*} (μ : ∀ k, Distribution (A k)) (Q : ∀ k, A k → Prop) :
     (piDep μ).mass (fun f => ∀ k, Q k (f k)) = ∏ k, (μ k).mass (Q k) := by
   -- Write the mass as an indicator sum over the box `B = ∏ k, supp μ_k`:
   -- `∑_{f ∈ B} 1[∀ k, Q_k(f k)] · ∏_k μ_k(f k)`.
@@ -79,7 +88,7 @@ lemma piDep_mass_forall {A : K → Type} (μ : ∀ k, Distribution (A k)) (Q : �
       ∏ k, (if Q k (f k) then μ k (f k) else 0) := by
     intro f
     rw [Finset.prod_ite_zero]
-    simp [piDep, Finsupp.onFinset_apply]
+    simp only [piDep, Finsupp.onFinset_apply, Finset.mem_univ, forall_const]
   simp only [h1]
   -- Exchange sum and product over the box:
   -- `∑_{f ∈ B} ∏_k 1[Q_k(f k)] μ_k(f k) = ∏_k ∑_{a ∈ supp μ_k} 1[Q_k(a)] μ_k(a)`.
