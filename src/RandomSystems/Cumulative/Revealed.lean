@@ -12,12 +12,12 @@ transcript; the ideal system `S` samples `z` from a law `K h` conditional on the
 
 ```text
           ┌───────────┐
-  e ──x──▶│ k ← P     │    transcript h, then z = reveal k h
-    ◀──y──│ R k       │
+  e ──x──▶│ k ← P     │    k drawn once, kept for every query;
+    ◀──y──│ R k       │    transcript h, then z = reveal k h
           └───────────┘
           ┌───────────┐
-  e ──x──▶│ S         │    transcript h, then z ← K h
-    ◀──y──│           │
+  e ──x──▶│ S         │    transcript h, then z ← K h,
+    ◀──y──│           │    sampled after the interaction
           └───────────┘
 ```
 
@@ -42,6 +42,7 @@ namespace SystemAlgebra.RandomSystem
 
 open Probability
 
+-- `X`, `Y`: queries and replies, `D`: the domain; `κ`: the real samples, `Z`: revealed values.
 variable {X Y : Type} [Fintype X] [Fintype Y] {D : Domain X Y} {κ Z : Type}
 
 /-- **The revealed transcript law** of the mixture `mix P R` under the environment `e` within
@@ -51,15 +52,22 @@ variable {X Y : Type} [Fintype X] [Fintype Y] {D : Domain X Y} {κ Z : Type}
 Jha, §2.2.1, printed p. 19: the transcript “may also include any additional information the
 oracle chooses to reveal to the distinguisher at the end of the query-response phase of the
 game.” -/
-noncomputable def revealLaw (P : Distribution.ProbDist κ) (R : κ → RandomSystem X Y D)
-    (reveal : κ → List (X × Y) → Z) (e : List Y →. X) (n : ℕ) :
+noncomputable def revealLaw
+    -- `P`: the law of the sample `k`, drawn once; `R k`: the real system on `k`.
+    (P : Distribution.ProbDist κ) (R : κ → RandomSystem X Y D)
+    -- `reveal k h` may depend on both the sample `k` and the transcript `h`.
+    (reveal : κ → List (X × Y) → Z)
+    -- `e`: the environment, its next query from the replies so far; `n`: the observed rounds.
+    (e : List Y →. X) (n : ℕ) :
     Distribution (List (X × Y) × Z) :=
   ∑ k ∈ P.1.support, P.1 k • Distribution.fTransform (fun h => (h, reveal k h)) ((R k).sLaw e n)
 
 /-- **The kernel transcript law** of `S` under `e` within `n` rounds: interact with `S`, then
 sample the revealed value from `K h`,
 `kernelLaw = ∑_h (S.sLaw e n)(h) • fTransform (z ↦ (h, z)) (K h)`. -/
-noncomputable def kernelLaw (S : RandomSystem X Y D) (K : List (X × Y) → Distribution Z)
+noncomputable def kernelLaw
+    -- `S`: the ideal system; `K h`: the law of `z` given the complete transcript `h`.
+    (S : RandomSystem X Y D) (K : List (X × Y) → Distribution Z)
     (e : List Y →. X) (n : ℕ) : Distribution (List (X × Y) × Z) :=
   ∑ h ∈ (S.sLaw e n).support, S.sLaw e n h • Distribution.fTransform (fun z => (h, z)) (K h)
 
@@ -160,6 +168,7 @@ lemma fTransform_fst_revealLaw (P : Distribution.ProbDist κ) (R : κ → Random
 /-- **The transcript marginal of the kernel law** is the transcript law of `S`, when every
 `K h` is a probability law: `fTransform Prod.fst (kernelLaw S K e n) = S.sLaw e n`. -/
 lemma fTransform_fst_kernelLaw (S : RandomSystem X Y D) {K : List (X × Y) → Distribution Z}
+    -- Stated for every `h`; only `h` in the support of `S.sLaw e n` enter `kernelLaw`.
     (hK : ∀ h, (K h).isProbDist) (e : List Y →. X) (n : ℕ) :
     Distribution.fTransform Prod.fst (kernelLaw S K e n) = S.sLaw e n := by
   -- Forgetting `z` collapses the conditional law `K h` to its weight at `h`.
@@ -177,7 +186,9 @@ lemma fTransform_fst_kernelLaw (S : RandomSystem X Y D) {K : List (X × Y) → D
 /-- **The ideal probability of an event, conditioned on the transcript**:
 `kernelLaw(P) = 𝔼_{h ∼ S.sLaw e n}[(K h){z | P (h, z)}]`. No normalization of `K` is needed. -/
 lemma kernelLaw_mass_eq_expect (S : RandomSystem X Y D) (K : List (X × Y) → Distribution Z)
-    (e : List Y →. X) (n : ℕ) (P : List (X × Y) × Z → Prop) :
+    (e : List Y →. X) (n : ℕ)
+    -- `P`: an event of extended transcripts here, not a sample law.
+    (P : List (X × Y) × Z → Prop) :
     (kernelLaw S K e n).mass P =
       (S.sLaw e n).expect fun h => (K h).mass fun z => P (h, z) := by
   classical
