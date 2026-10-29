@@ -190,8 +190,8 @@ holds, whatever the number of the program's inside queries:
 [RandomSystem.mix]: Cumulative/CumulativeOperations.lean#L45
 [RandomSystem.parallel]: Cumulative/CumulativeOperations.lean#L130
 [RandomSystem.parallelAll]: Cumulative/ParallelAll.lean#L193
-[tensorAllL]: Converter/ParallelAll.lean#L72
-[PDCBehavior.tensorAll]: Converter/ParallelAll.lean#L571
+[tensorAllL]: Converter/ParallelAll.lean#L104
+[PDCBehavior.tensorAll]: Converter/ParallelAll.lean#L699
 [RandomSystem.ofProbAutomaton]: System/ProbAutomaton.lean#L197
 [ProbStep]: System/ProbAutomaton.lean#L58
 [ProbStep.belief]: System/ProbAutomaton.lean#L160
