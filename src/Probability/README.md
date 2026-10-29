@@ -80,6 +80,12 @@ events on their respective output tuples. The [base-set form]
 [uniform_mass_fresh_outputs_eq] applies when an event depends only on a named finite set
 of coordinates and the other outputs lie outside it.
 
+For an adaptive evaluator whose complete output tuple pins its queried sites,
+[`uniform_mass_replay_public_eq`](Replay.lean) counts the joint replay/public table fiber.
+[`uniform_replay_public_good_factor`](Replay.lean) factors an event over the good output
+tuples from fixed public values. Both retain the explicit pinned-fiber equivalence and
+injectivity of all replay and public sites; neither asserts independence on bad runs.
+
 <!-- Declarations -->
 
 [Distribution]: Distribution.lean#L56
