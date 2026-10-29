@@ -24,7 +24,8 @@ distribution [3, §3.6.1]; mixed over a law $`\mu`$ it gives $`\sum_a \mu(a)\, f
 [disintegrates][pi_eq_bindK_update] at a coordinate. Probability laws have
 [pushforwards][ProbDist.map] and [sequential compositions][ProbDist.bind].
 The notation `𝒰[A]` denotes the [normalized uniform law][ProbDist.uniform] of type
-`Distribution.ProbDist A`; `Distribution.uniform A` is its underlying raw distribution.
+`Distribution.ProbDist A`, with mass $`1/\lvert A \rvert`$ at each point of a finite nonempty
+$`A`$; its underlying raw distribution `𝒰[A].1` is `Distribution.uniform A`.
 
 ## Statistical distance
 
@@ -68,9 +69,9 @@ Outside the good event, coordinates may repeat, and the good event may have prob
 [ProbDist]: Distribution.lean#L149
 [isProbDist]: Distribution.lean#L128
 [mass]: Distribution.lean#L217
-[fTransform]: Distribution.lean#L632
-[prod]: Distribution.lean#L1005
-[pi]: Distribution.lean#L1646
+[fTransform]: Distribution.lean#L637
+[prod]: Distribution.lean#L1010
+[pi]: Distribution.lean#L1651
 [uniform]: Distribution.lean#L566
 [ProbDist.uniform]: Distribution.lean#L599
 [bindK]: Kernel.lean#L49
@@ -95,7 +96,7 @@ Outside the good event, coordinates may repeat, and the good event may have prob
 [mass_ge_le_expect_div]: Expectation.lean#L199
 [expect_mul_sq_le_sq_mul_sq]: Expectation.lean#L215
 [ConvexOn.map_expect_le]: Expectation.lean#L297
-[card_function_fiber_finset]: Counting.lean#L47
-[uniform_mass_transcript_eq]: Counting.lean#L197
-[fTransform_eval_uniform_eq_of_same_fibers]: Counting.lean#L234
-[uniform_mass_adaptive_eval_eq_mul]: Counting.lean#L299
+[card_function_fiber_finset]: Counting.lean#L56
+[uniform_mass_transcript_eq]: Counting.lean#L209
+[fTransform_eval_uniform_eq_of_same_fibers]: Counting.lean#L265
+[uniform_mass_adaptive_eval_eq_mul]: Counting.lean#L337

@@ -9,29 +9,33 @@ import Mathlib.Analysis.Complex.ExponentialBounds
 /-!
 # Fibers of uniform random functions
 
-Counting facts about functions `X → Y` under the uniform distribution, used for
-collision bounds.
+The uniform law on function tables `F : X → Y`, for finite `X` and finite nonempty `Y`, and the
+counting facts about it used by transcript laws and collision bounds. The values of `F` at
+distinct inputs are independent and uniform on `Y`; a repeated input reads the same value.
 
 ## Main definitions
 
-* `walkSite`: the point a walk visits, given its parent map, step functions and
-  start
-* `multiShift u δ f`: `f` shifted by `δ s` at the points `u s`
+* `walkSite par g x₀ y t = g t x₀` if `par t = none`, and `g t (y p)` if `par t = some p`
+* `multiShift u δ f x = f x + ∑ s, (if u s = x then δ s else 0)`
 
 ## Main results
 
 * `card_function_fiber_finset`, `card_function_fiber_multipoint`,
-  `card_function_fiber_index`: the number of functions with prescribed values
-* `fTransform_eval_uniform_eq_uniform`, `uniform_mass_eval_eq`: evaluations of
-  a uniform random function are uniform and independent
-* `uniform_mass_transcript_eq`: repeated consistent queries constrain one table coordinate
-* `fTransform_eval_uniform_eq_of_same_fibers`: query families with the same equality pattern
-  induce the same output law
+  `card_function_fiber_index`: `#{F | F = g on S} = |Y|^(|X| - |S|)`
+* `fTransform_eval_uniform_eq_uniform`, `uniform_mass_eval_eq`: for injective `xs : ι → X`,
+  `Law(i ↦ F (xs i)) = 𝒰(ι → Y)`, so `Pr[F ∘ xs = ys] = (1/|Y|)^|ι|`
+* `uniform_mass_transcript_eq`: a transcript `h` answered by a function has
+  `Pr[F x = y for all (x, y) ∈ h] = (1/|Y|)^d`, `d` the number of distinct inputs of `h`
+* `fTransform_eval_uniform_eq_of_same_fibers`: if `left i = left j ↔ right i = right j`, then
+  `Law(i ↦ F (left i)) = Law(i ↦ G (right i))` for uniform `F : X → Y`, `G : Z → Y`
 * `uniform_mass_adaptive_eval_eq_mul`: a batch chosen from revealed base values, fresh on a
   good base event, contributes `(1/|Y|)^|I|` to the joint mass with that event
 * `uniform_mass_walk_eval_eq`, `uniform_mass_coord_determined_le`,
   `uniform_mass_walk_repeat_le`: lazy sampling along a walk
 * `card_filter_shift`, `card_filter_shift_univ`: re-randomization fibers
+
+Source: the uniform random function of MauRen16, printed p. 6, "a uniformly chosen function
+table F"; first-access sampling with retained answers is Jost, Figure 4.4, printed p. 55.
 -/
 
 noncomputable section
@@ -186,51 +190,78 @@ lemma uniform_mass_eval_eq {X Y ι : Type*} [Fintype X] [DecidableEq X]
   push_cast
   ring
 
-/-- A function-consistent transcript fixes one independent uniform value at each distinct
-input. Repeating an input adds no new factor. This is the finite-coordinate law
-`uniform_mass_eval_eq` applied to the transcript's set of queried coordinates.
-For `S = {x | ∃ y, (x,y) ∈ h}`, the formula is `Pr[F matches h] = (1 / |Y|)^|S|`.
+/-- **A transcript of a uniform table.** Let `h = [(x₁, y₁), …, (x_q, y_q)]` be answered by a
+function `g : X → Y` (`g xₖ = yₖ` for every `k`), and let `S = {x₁, …, x_q}` be its set of
+distinct inputs. For `F` uniform on `X → Y`,
 
-MauRen16, printed p. 6, describes the URF as "a uniformly chosen function table F" and
-queries as "receiving as output the value F (x)." The repeated-query mass formula follows
-from that table model; it is not stated as a separate paper theorem. -/
+    Pr[F xₖ = yₖ for every k] = (1/|Y|)^|S| .
+
+The event is `F = g on S`: one independent uniform coordinate per distinct input. A repeated
+input names a coordinate already fixed and adds no factor.
+
+```text
+h:   (a, y₁)   (b, y₂)   (a, y₁)     a ≠ b in X
+S:    a         b                   mass (1/|Y|)^2, not (1/|Y|)^3
+```
+
+The formula follows from the table model of MauRen16, printed p. 6: "a uniformly chosen
+function table F", queried by "receiving as output the value F (x)". -/
 lemma uniform_mass_transcript_eq {X Y : Type*} [Fintype X] [DecidableEq X]
     [Fintype Y] [Nonempty Y] (h : List (X × Y)) (g : X → Y)
     (hg : ∀ z ∈ h, g z.1 = z.2) :
     (Distribution.uniform (X → Y)).mass (fun f => ∀ z ∈ h, f z.1 = z.2) =
       (1 / (Fintype.card Y : ℝ)) ^ (h.map Prod.fst).toFinset.card := by
   classical
+  -- `points` is `S`, the set of distinct inputs of `h`.
   let points := (h.map Prod.fst).toFinset
-  -- The chosen values on `points` are consistent because `g` answers every exchange.
+  -- The points of `S` are distinct, so `Pr[F x = g x for every x ∈ S] = (1/|Y|)^|S|`.
   have hm := uniform_mass_eval_eq (fun x : points => x.val) Subtype.val_injective
     (fun x : points => g x.val)
   rw [Fintype.card_coe] at hm
+  -- It remains to show that the two events are equal: `F` matches `h` iff `F = g` on `S`.
   refine Eq.trans ?_ hm
   apply Distribution.mass_congr
   intro f
   constructor
   · intro hf
-    -- Matching the transcript fixes g's value at each queried coordinate.
+    -- (⇒) Each `x ∈ S` is the input of some `(x, y) ∈ h`, so `F x = y = g x`.
     funext x
     obtain ⟨z, hz, he⟩ := List.mem_map.mp (List.mem_toFinset.mp x.property)
     exact he ▸ (hf z hz).trans (hg z hz).symm
   · intro hf z hz
-    -- Agreement on those coordinates supplies every recorded reply, including repeats.
+    -- (⇐) Each `(x, y) ∈ h`, repeated or not, has `x ∈ S`, so `F x = g x = y`.
     have hx : z.1 ∈ points := List.mem_toFinset.mpr (List.mem_map.mpr ⟨z, hz, rfl⟩)
     exact (congrFun hf ⟨z.1, hx⟩).trans (hg z hz)
 
-/-- Query families with `left i = left j ↔ right i = right j` for all `i,j` have the same
-joint output law under uniform tables: `Law(i ↦ F(left i)) = Law(i ↦ G(right i))`.
-Only the finite image is revealed; the index type itself need not be finite. For example:
+/-- **Query maps with the same equality pattern.** Let `left : I → X` and `right : I → Z` be fixed
+query maps with `left i = left j ↔ right i = right j` for all `i, j`. For `F` uniform on
+`X → Y` and `G` uniform on `Z → Y`,
+
+    Law(i ↦ F (left i)) = Law(i ↦ G (right i))   on I → Y.
+
+Here `X`, `Z` are finite and `Y` is finite and nonempty; `I` may be infinite, since only the
+finite images of `left` and `right` are read. The common law gives one independent uniform value
+to each class of equal queries, and the same value at every index of the class:
 
 ```text
-left queries:   a, b, a, ...     a ≠ b
-right queries:  u, v, u, ...     u ≠ v
-common law:     U, V, U, ...     U and V independent uniform values in Y
+i:         0   1   2   3   …
+left i:    a   b   a   b   …     a ≠ b in X
+right i:   u   v   u   v   …     u ≠ v in Z
+output:    U   V   U   V   …     U, V independent uniform in Y
 ```
 
-MauRen16, printed p. 6, specifies "a uniformly chosen function table F" queried by input.
-This equality is a derived finite-table consequence of that model, not a stated paper theorem. -/
+Proof chain, with `R = left(I)`, `sel x` one index with `left (sel x) = x`, and
+`recover v i = v (left i)` (`~` is equality of laws):
+
+```text
+F ∘ left = recover (x ↦ F x on R)                   by definition of recover
+         ~ recover (𝒰(R → Y))                       R is a set of distinct points of X
+         ~ recover (x ↦ G (right (sel x)) on R)     x ↦ right (sel x) is injective
+         = G ∘ right                                right (sel (left i)) = right i
+```
+
+The table model is MauRen16, printed p. 6: "a uniformly chosen function table F", queried by
+"receiving as output the value F (x)". -/
 lemma fTransform_eval_uniform_eq_of_same_fibers {I X Z Y : Type*}
     [Fintype X] [DecidableEq X] [Fintype Z] [DecidableEq Z]
     [Fintype Y] [Nonempty Y]
@@ -241,30 +272,37 @@ lemma fTransform_eval_uniform_eq_of_same_fibers {I X Z Y : Type*}
       Distribution.fTransform (fun f : Z → Y => fun i => f (right i))
         (Distribution.uniform (Z → Y)) := by
   classical
-  -- The left image is finite even for infinite I; select one occurrence per coordinate.
+  -- `R = left(I) ⊆ X` is finite because `X` is, even for infinite `I`.
   let R := Set.range left
   let : Fintype R := Fintype.ofFinite R
+  -- For each `x ∈ R`, choose an index `sel x` with `left (sel x) = x`.
   let selected (x : R) : I := x.property.choose
   have hselected (x : R) : left (selected x) = x.val := x.property.choose_spec
+  -- `points x = right (sel x)`: the right query paired with `x`.
   let points (x : R) : Z := right (selected x)
-  -- The reverse implication prevents distinct left coordinates from sharing a right one.
+  -- `points` is injective: `right (sel x) = right (sel x')` gives, by `⇐` of the hypothesis,
+  -- `x = left (sel x) = left (sel x') = x'`.
   have hinj : Function.Injective points := by
     intro x y he
     apply Subtype.ext
     exact (hselected x).symm.trans (((hfibers _ _).mpr he).trans (hselected y))
-  -- The forward implication gives the same right query at every occurrence of a left one.
+  -- `points (left i) = right i`: `sel (left i)` and `i` have the same left query, hence by `⇒`
+  -- the same right query.
   have hp (i : I) : points ⟨left i, ⟨i, rfl⟩⟩ = right i :=
     (hfibers _ _).mp (hselected ⟨left i, ⟨i, rfl⟩⟩)
-  -- Recover the output at index i from its coordinate, reusing values at repeated queries.
+  -- `recover v i = v (left i)`: rebuild the output at every index from one value per class.
   let recover (values : R → Y) : I → Y := fun i => values ⟨left i, ⟨i, rfl⟩⟩
-  -- Both families of distinct coordinates receive independent uniform values.
+  -- `(F x)_{x ∈ R}` is uniform on `R → Y`: the points of `R` are distinct.
   have hl := fTransform_eval_uniform_eq_uniform (Y := Y)
     (fun x : R => x.val) Subtype.val_injective
+  -- `(G (points x))_{x ∈ R}` is uniform on `R → Y`: `points` is injective.
   have hr := fTransform_eval_uniform_eq_uniform (Y := Y) points hinj
-  -- Applying the same reconstruction map to equal coordinate laws preserves equality.
+  -- Equal laws have equal images under `recover`; an image of an image is the image under
+  -- the composite: `Law(recover (F x)_{x ∈ R}) = Law(recover (G (points x))_{x ∈ R})`.
   have he := congrArg (Distribution.fTransform recover) (hl.trans hr.symm)
   simp only [Distribution.fTransform_fTransform] at he
-  -- The representative correspondence recovers the original right query at every index.
+  -- The left side is `Law(i ↦ F (left i))` by definition of `recover`. On the right,
+  -- `G (points (left i)) = G (right i)` by `hp`.
   refine he.trans ?_
   congr 1
   funext table i
