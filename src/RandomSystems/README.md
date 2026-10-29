@@ -192,7 +192,7 @@ holds, whatever the number of the program's inside queries:
 [RandomSystem.mix]: Cumulative/CumulativeOperations.lean#L45
 [RandomSystem.parallel]: Cumulative/CumulativeOperations.lean#L130
 [RandomSystem.parallelAll]: Cumulative/ParallelAll.lean#L193
-[RandomSystem.parallelAll_mass_of_presentations]: Cumulative/ParallelAllPresentation.lean#L28
+[RandomSystem.parallelAll_mass_of_presentations]: Cumulative/ParallelAllPresentation.lean#L60
 [tensorAllL]: Converter/ParallelAll.lean#L104
 [PDCBehavior.tensorAll]: Converter/ParallelAll.lean#L699
 [RandomSystem.ofProbAutomaton]: System/ProbAutomaton.lean#L197
