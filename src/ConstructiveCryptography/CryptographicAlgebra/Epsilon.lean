@@ -12,6 +12,17 @@ of it (MR16, §2.3, printed p. 5: `R^ε = {R′ | ∃R ∈ R : R′ ≈ε R}`). 
 add their errors; the relaxation is compatible with attachment and with parallel
 composition, and construction into it is approximate construction.
 
+An `error : ENNReal` is a scalar budget (the source's `ε`), possibly `∞`, with errors added
+untruncated. The relaxation on interface `A` is
+
+```text
+epsilonRelaxation error S = {R' : Phi A | ∃ R ∈ S, distance R' R ≤ error}
+```
+
+a union of closed balls (`≤`, not `<`). At `error = 0` it contains every resource at
+pseudo-distance zero from `S`, which can be more than `S`; at `error = ∞` it is all of
+`Phi A` when `S` is nonempty. Compatibility uses only the two `CompatiblePseudoMetric` laws.
+
 ## Main definitions
 
 * `CryptographicAlgebra.Specification.epsilonRelaxation`
@@ -31,20 +42,33 @@ open CategoryTheory
 
 universe u v w
 
+-- Objects `A : C` are interfaces, morphisms `A ⟶ B` converters, and `A ⊗ B` places two
+-- interfaces side by side.
 variable {C : Type u} [Category.{v} C] [MonoidalCategory C]
+-- `Phi A` is the type of resources on `A`; `attach α` maps `Phi B` to `Phi A`.
 variable {Phi : C → Type w} [ResourceTheory C Phi]
+-- `CompatiblePseudoMetric C Phi` selects `distance` on each `Phi A`, non-expanding under
+-- attachment and subadditive under parallel composition.
 variable [CompatiblePseudoMetric C Phi]
 
 /-- The closed scalar-error relaxation of a specification in one resource
-fibre.
+fibre: the relaxation on `Phi A` sending each resource `R` to the closed ball
+`{R' | distance R' R ≤ error}` in `fibreMetric A`, hence a specification `S` to the union of
+these balls over `R ∈ S`.
 
 Maurer--Renner 2016, Section 2.3 (printed p. 5), defines
 `R^ε = {R' | ∃ R ∈ R : R' ≈ε R}`. -/
-noncomputable def epsilonRelaxation {A : C} (error : ENNReal)
+noncomputable def epsilonRelaxation
+    -- `A : C` is the interface whose resources `Phi A` are relaxed.
+    {A : C}
+    -- `error : ENNReal` is the ball radius (MR16's `ε`), possibly `0` or `∞`.
+    (error : ENNReal)
     : ConstructiveCryptography.Relaxation (Phi A) :=
   @ConstructiveCryptography.Specification.epsilonRelaxation (Phi A)
     (CompatiblePseudoMetric.fibreMetric A) error
 
+/-- A resource lies in the `error`-relaxation of `source` iff some `center ∈ source` is
+within `error` of it. -/
 @[simp]
 lemma mem_epsilonRelaxation_iff {A : C} {error : ENNReal}
     {source : Specification (Phi A)} {resource : Phi A} :
@@ -69,7 +93,11 @@ lemma epsilonRelaxation_mono {A : C} {error : ENNReal}
   -- Monotonicity is part of the relaxation object.
   exact (epsilonRelaxation error).mono included
 
-/-- Successive scalar-error relaxations add their error bounds.
+/-- Successive scalar-error relaxations add their error bounds: relaxing `source` by
+`firstError` and then by `secondError` stays within its `firstError + secondError`
+relaxation. If `R'' ≈ R'` within `secondError` and `R' ≈ R` within `firstError` with
+`R ∈ source`, the triangle inequality gives `distance R'' R ≤ firstError + secondError`.
+Only inclusion is claimed.
 
 Jost--Maurer 2020, Theorem 2 (printed p. 11): “the errors just add up.” -/
 theorem epsilonRelaxation_epsilonRelaxation_subset {A : C}
@@ -83,7 +111,9 @@ theorem epsilonRelaxation_epsilonRelaxation_subset {A : C}
     firstError secondError source
 
 /-- Converter attachment carries a relaxed source into the relaxation of its
-direct image.
+direct image. For `converter : A ⟶ B` and `source` on `B`: if `R'` is within `error` of
+`R ∈ source` in `Phi B`, then `converter • R'` is within `error` of `converter • R` in
+`Phi A`, by `distance_attach_le`. The budget is unchanged.
 
 Jost--Maurer 2020, Theorem 3 (printed p. 11): “The ε-relaxation is compatible
 with protocol application.”  The scalar bound is unchanged here because every
@@ -101,7 +131,11 @@ theorem map_epsilonRelaxation_subset {A B : C} (converter : A ⟶ B)
     (LipschitzWith.of_edist_le (distance_attach_le converter)) error source
 
 /-- Relaxing the left component before ordered parallel is contained in
-relaxing the resulting parallel specification.
+relaxing the resulting parallel specification: for `source` on `A` and `context` on `B`,
+`parallel (epsilonRelaxation error source) context` is contained in
+`epsilonRelaxation error (parallel source context)` on `A ⊗ B`. A resource `L ∥ T` with
+`L` within `error` of `center ∈ source` is within `error` of `center ∥ T`, since
+`distance_parallel_le` adds `distance T T = 0`.
 
 Jost--Maurer 2020, Theorem 3 (printed p. 11): the error relaxation “is
 compatible with parallel composition.” -/
@@ -123,7 +157,9 @@ theorem parallel_epsilonRelaxation_left_subset {A B : C}
     (by simpa using close)
 
 /-- Relaxing the right component before ordered parallel is contained in
-relaxing the resulting parallel specification. -/
+relaxing the resulting parallel specification: for `context` on `A` and `source` on `B`,
+`parallel context (epsilonRelaxation error source)` is contained in
+`epsilonRelaxation error (parallel context source)`, with the same error. -/
 lemma parallel_epsilonRelaxation_right_subset {A B : C}
     (error : ENNReal) (context : Specification (Phi A))
     (source : Specification (Phi B)) :
@@ -142,7 +178,8 @@ lemma parallel_epsilonRelaxation_right_subset {A B : C}
     (by simpa using close)
 
 /-- The scalar-error relaxation family is compatible with converter
-attachment. -/
+attachment: the family choosing `epsilonRelaxation error` on every interface, with one
+budget `error` for all interfaces, satisfies `Relaxation.Compatible`. -/
 lemma epsilonRelaxation_compatible (error : ENNReal) :
     Relaxation.Compatible (Phi := Phi)
       (fun A => epsilonRelaxation (A := A) error) := by
@@ -151,7 +188,9 @@ lemma epsilonRelaxation_compatible (error : ENNReal) :
   exact map_epsilonRelaxation_subset converter error source
 
 /-- The scalar-error relaxation family is compatible with ordered parallel
-composition. -/
+composition: the same constant-budget family satisfies `Relaxation.ParallelCompatible`, its
+two inclusions being `parallel_epsilonRelaxation_left_subset` and
+`parallel_epsilonRelaxation_right_subset`. -/
 lemma epsilonRelaxation_parallelCompatible (error : ENNReal) :
     Relaxation.ParallelCompatible (Phi := Phi)
       (fun A => epsilonRelaxation (A := A) error) := by
@@ -161,7 +200,10 @@ lemma epsilonRelaxation_parallelCompatible (error : ENNReal) :
     parallel_epsilonRelaxation_right_subset error left right⟩
 
 /-- Exact construction into a scalar-error relaxation is equivalent to
-approximate construction in the selected fibre distance. -/
+approximate construction in the selected fibre distance: for `converter : A ⟶ B`,
+`source` on `B` and `target` on `A`, `converter` constructs `epsilonRelaxation error target`
+from `source` iff `ConstructsWithin converter source target error`. Both say that each
+`converter • R` with `R ∈ source` is within `error` of some member of `target`. -/
 lemma constructs_epsilonRelaxation_iff {A B : C}
     {converter : A ⟶ B} {source : Specification (Phi B)}
     {target : Specification (Phi A)} {error : ENNReal} :
@@ -178,9 +220,12 @@ lemma constructs_epsilonRelaxation_iff {A B : C}
     exact mem_epsilonRelaxation_iff.mpr (construction resource admitted)
 
 /-- Exact construction remains valid after relaxing both endpoint
-specifications by the same scalar error.
+specifications by the same scalar error: if `converter : A ⟶ B` constructs `target` from
+`source`, it constructs `epsilonRelaxation error target` from
+`epsilonRelaxation error source`, for every `error : ENNReal`. Non-expansion of attachment
+keeps the relaxed resource within `error` of the attached center.
 
-Maurer--Renner 2016, Lemma 2 (printed p. 12): “If the metric on Φ is
+Maurer--Renner 2016, Lemma 2 (printed p. 11): “If the metric on Φ is
 non-expanding, then, for any ε > 0, `R —π→ S ⟹ R^ε —π→ S^ε`.”  The proof
 also applies at zero. -/
 theorem Constructs.epsilonRelaxation {A B : C}
@@ -200,7 +245,9 @@ theorem Constructs.epsilonRelaxation {A B : C}
       converter source target construction
 
 /-- Singleton exact construction into a scalar-error relaxation is exactly a
-distance bound between the attached real resource and the ideal resource. -/
+distance bound between the attached real resource and the ideal resource: for
+`converter : A ⟶ B`, `real : Phi B` and `ideal : Phi A`, `{real}` constructs the
+`error`-relaxation of `{ideal}` iff `distance (converter • real) ideal ≤ error`. -/
 lemma constructs_singleton_epsilonRelaxation_iff {A B : C}
     {converter : A ⟶ B} {real : Phi B} {ideal : Phi A}
     {error : ENNReal} :
@@ -214,7 +261,9 @@ lemma constructs_singleton_epsilonRelaxation_iff {A B : C}
   -- The singleton approximate-construction law is the desired distance bound.
   exact constructsWithin_singleton_iff
 
-/-- Scalar-error constructions compose serially, and their errors add.
+/-- Scalar-error constructions compose serially, and their errors add: `first ≫ second`
+constructs the `(innerError + outerError)`-relaxation of `target` from `source`. The proof
+reads both hypotheses as `ConstructsWithin` and applies `ConstructsWithin.serial`.
 
 Maurer--Renner 2016, Lemma 1 (printed p. 11): “This construction notion is
 composable.”  Jost--Maurer 2020, Corollary 1(1) (printed p. 11) states the
@@ -223,11 +272,17 @@ lemma with ϵ-relaxations then follows directly from these compatibility
 results.”  Lean specializes its transformed budgets to constant scalar bounds
 under non-expansion. -/
 theorem Constructs.serial_epsilonRelaxation {A B D : C}
+    -- `first : A ⟶ B` is the outer converter and `second : B ⟶ D` the inner one.
     {first : A ⟶ B} {second : B ⟶ D}
+    -- `source` lies on the inside interface `D` and `middle` on the intermediate `B`.
     {source : Specification (Phi D)} {middle : Specification (Phi B)}
+    -- `target` lies on the outside `A`; `innerError` and `outerError` are the two steps'
+    -- budgets, added untruncated in `ENNReal`.
     {target : Specification (Phi A)} {innerError outerError : ENNReal}
+    -- `inner`: `second` constructs the `innerError`-relaxation of `middle` from `source`.
     (inner : Constructs second source
       (Specification.epsilonRelaxation innerError middle))
+    -- `outer`: `first` constructs the `outerError`-relaxation of `target` from `middle`.
     (outer : Constructs first middle
       (Specification.epsilonRelaxation outerError target)) :
     Constructs (first ≫ second) source

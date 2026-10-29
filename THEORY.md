@@ -304,15 +304,15 @@ extension are in [Examples](src/Examples/README.md).
 
 <!-- Declarations: §4 -->
 
-[Specification]: src/ConstructiveCryptography/Specification/Defs.lean#L18
-[Relaxation]: src/ConstructiveCryptography/Specification/Relaxation/Defs.lean#L22
-[constructs_of_simulator]: src/ConstructiveCryptography/CryptographicAlgebra/Star.lean#L269
-[ConstructsWithin.serial]: src/ConstructiveCryptography/CryptographicAlgebra/PseudoMetric.lean#L256
-[ConstructsWithin.parallel]: src/ConstructiveCryptography/CryptographicAlgebra/PseudoMetric.lean#L276
-[Implication]: src/ConstructiveCryptography/Substitution/Basic.lean#L176
-[SubstitutesWithin]: src/ConstructiveCryptography/Substitution/Reduction.lean#L72
-[Implication.substitutesWithin]: src/ConstructiveCryptography/Substitution/Quantitative.lean#L49
-[Implication.substitutesWithin_of_mixed]: src/ConstructiveCryptography/Substitution/Quantitative.lean#L105
+[Specification]: src/ConstructiveCryptography/Specification/Defs.lean#L26
+[Relaxation]: src/ConstructiveCryptography/Specification/Relaxation/Defs.lean#L42
+[constructs_of_simulator]: src/ConstructiveCryptography/CryptographicAlgebra/Star.lean#L363
+[ConstructsWithin.serial]: src/ConstructiveCryptography/CryptographicAlgebra/PseudoMetric.lean#L331
+[ConstructsWithin.parallel]: src/ConstructiveCryptography/CryptographicAlgebra/PseudoMetric.lean#L359
+[Implication]: src/ConstructiveCryptography/Substitution/Basic.lean#L270
+[SubstitutesWithin]: src/ConstructiveCryptography/Substitution/Reduction.lean#L108
+[Implication.substitutesWithin]: src/ConstructiveCryptography/Substitution/Quantitative.lean#L84
+[Implication.substitutesWithin_of_mixed]: src/ConstructiveCryptography/Substitution/Quantitative.lean#L157
 [Interface.distinguisherAdvantage]: src/ConstructiveCryptography/InterfaceAlgebra.lean#L273
 
 <!-- Declarations: §5 and departures -->

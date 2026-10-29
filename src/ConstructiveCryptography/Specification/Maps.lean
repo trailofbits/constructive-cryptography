@@ -9,20 +9,38 @@ set_option autoImplicit false
 `lift r` extends a set-valued resource map by union and preserves all suprema.
 Ordinary resource maps are the singleton-valued case. General monotone
 specification maps use `OrderHom`; union-preserving maps use `sSupHom`.
+
+A lifted specification admits `y` when some admitted center `x ∈ source` relates to it.
+
+* `lift_singleton`, `lift_singletons`: lifts are determined by singleton values, and every
+  union-preserving specification map is a lift.
+* `lift_singleton_eq_setImage`: a function `f : X → Y` lifts to direct image `f '' source`.
+* `lift_comp`: lifting a relational composite is composing lifts, inner first.
 -/
 
 namespace ConstructiveCryptography.Specification
 
 universe u v w
 
+-- `X`, `Y` and `Z` are arbitrary types of resources; `Specification X` etc. are ordered by
+-- inclusion.
 variable {X : Type u} {Y : Type v} {Z : Type w}
 
-/-- Union lift of a set-valued resource map.
+/-- Union lift of a set-valued resource map, preserving all unions (`sSupHom`):
+
+```text
+lift r source = ⋃ x ∈ source, r x,
+lift r (⋃₀ specifications) = ⋃ source ∈ specifications, lift r source.
+```
 
 Jost, Definition 2.2.6 (printed p. 20): “Rφ := ⋃R∈R φ(R)”.
 Liu's thesis, Definition 3.4.1 (printed p. 24), uses the same union.
-The lift and its union laws apply to arbitrary source and target carriers. -/
-def lift (r : X → Set Y) : sSupHom (Specification X) (Specification Y) where
+The source's φ (phi) maps one universe Θ (Theta) to its subsets and is reflexive; here `r`
+may change carrier, and reflexivity is added only in `Relaxation`. -/
+def lift
+    -- `r : X → Set Y`, the source's φ, gives the set `r x : Set Y` of resources `x : X` may
+    -- become; `r x` may be empty or have several elements, so `r` is a relation.
+    (r : X → Set Y) : sSupHom (Specification X) (Specification Y) where
   toFun source := ⋃ x ∈ source, r x
   map_sSup' specifications := by
     -- A center in a union belongs to one of its specifications.
@@ -37,18 +55,24 @@ def lift (r : X → Set Y) : sSupHom (Specification X) (Specification Y) where
     · rintro ⟨source, admitted, x, member, related⟩
       exact ⟨x, ⟨source, admitted, member⟩, related⟩
 
-/-- Membership in a union lift is witnessed by an admitted center. -/
+/-- Membership in a union lift is witnessed by an admitted center: `y ∈ lift r source` exactly
+when some `x ∈ source` has `y ∈ r x`. -/
 @[simp] lemma mem_lift_iff {r : X → Set Y} {source : Specification X} {y : Y} :
     y ∈ lift r source ↔ ∃ x ∈ source, y ∈ r x := by
   change y ∈ (⋃ x ∈ source, r x) ↔ _
   simp only [Set.mem_iUnion, exists_prop]
 
-/-- The lift of a singleton specification recovers the resource map. -/
+/-- The lift of a singleton specification recovers the resource map:
+`lift r {x} = r x` for every resource `x : X`. -/
 @[simp] lemma lift_singleton (r : X → Set Y) (x : X) :
     lift r {x} = r x :=
   Set.biUnion_singleton x r
 
-/-- Singleton-valued resource maps lift to ordinary specification images. -/
+/-- Singleton-valued resource maps lift to ordinary specification images.
+
+For a function `f : X → Y`, the relation `x ↦ {f x}` lifts to the direct-image map
+`sSupHom.setImage f`, which sends `source` to `f '' source`. Thus `Constructs f source target`
+is `lift (fun x => {f x}) source ⊆ target`. -/
 lemma lift_singleton_eq_setImage (f : X → Y) :
     lift (fun x => {f x}) = sSupHom.setImage f := by
   ext source y
@@ -58,8 +82,17 @@ lemma lift_singleton_eq_setImage (f : X → Y) :
 
 /-- Every union-preserving specification map is the lift of its singleton
 values. The calculation uses Jost's union extension (Definition 2.2.6,
-printed p. 20) and the decomposition of a set into singletons. -/
-lemma lift_singletons (f : sSupHom (Specification X) (Specification Y)) :
+printed p. 20) and the decomposition of a set into singletons.
+
+```text
+f source = f (⋃ x ∈ source, {x}) = ⋃ x ∈ source, f {x} = lift (fun x => f {x}) source.
+```
+
+Hence the union lift is a bijection between relations `X → Set Y` and union-preserving maps,
+with inverse `f ↦ fun x => f {x}` by `lift_singleton`. -/
+lemma lift_singletons
+    -- `f` maps specifications on `X` to specifications on `Y` and preserves all unions.
+    (f : sSupHom (Specification X) (Specification Y)) :
     lift (fun x => f {x}) = f := by
   apply sSupHom.ext
   intro source
@@ -71,8 +104,18 @@ lemma lift_singletons (f : sSupHom (Specification X) (Specification Y)) :
 /-- Lifting relational composition gives composition of specification maps.
 
 Jost, Definition 2.2.6 (printed p. 20): “Rφ := ⋃R∈R φ(R)”.
-Two successive lifts retain the intermediate resource as an existential witness. -/
-lemma lift_comp (outer : Y → Set Z) (inner : X → Set Y) :
+Two successive lifts retain the intermediate resource as an existential witness.
+
+The composite relates `x` to `z` when some `y ∈ inner x` has `z ∈ outer y`; its lift applies
+`lift inner` first:
+
+```text
+X ── inner ──▶ Set Y ── lift outer ──▶ Set Z
+lift (fun x => lift outer (inner x)) source = lift outer (lift inner source)
+``` -/
+lemma lift_comp
+    -- `inner : X → Set Y` relates first; `outer : Y → Set Z` then relates its outputs.
+    (outer : Y → Set Z) (inner : X → Set Y) :
     lift (fun x => lift outer (inner x)) = (lift outer).comp (lift inner) := by
   ext source z
   simp only [mem_lift_iff, sSupHom.comp_apply]
