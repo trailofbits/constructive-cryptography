@@ -4,18 +4,56 @@ import RandomSystems.DDC.Tensor
 /-!
 # Direct converter calls
 
-A complete converter input history determines the current outside invocation and the inside
-replies it has received so far. The query-count invariant charges each invocation when its
-outside query arrives, so it includes a pending inside query and interrupted calls.
+A direct call converter is given by a per-invocation rule `call`. On the outside query `u` at
+port `o` and the inside replies `r₁, …, rₖ` received since, `call u [r₁, …, rₖ]` either returns
+`v` at `o` or issues the next inside query `x`, which may depend on those replies:
 
-The lemmas below are about the existing complete-history and DDC carriers. They introduce no
-program state or alternative converter semantics.
+```text
+            o(u)   ┌──────────────────────┐   j(x)
+  ────────────────►│                      ├──────────────►
+                   │  call u [r₁, …, rₖ]  │
+  ◄────────────────┤                      │◄──────────────
+            o ⇒ v  └──────────────────────┘   j ⇒ rₖ₊₁
+```
+
+Earlier invocations do not enter the call rule: the current invocation is read from the complete
+converter input history,
+
+```text
+  h = … u′ r … r   u   r₁ … rₖ          currentCall h.reverse [] = some (u, [r₁, …, rₖ])
+                   └─ current ─┘
+```
+
+## Main definitions
+
+* `currentCall`: the latest outside input with the inside replies received after it
+* `callRule call`: the complete-history system applying `call` to the current invocation
+* `callConverter call F`: `callRule call` canonicalized, then restricted to outside histories
+  that are empty or in `F`
+
+## Main results
+
+* `currentCall_query_count`, `callRule_query_count`: under the one-way phase condition
+  `(call u rs).isRight → rs.length < cost u`, a transcript has at most `Σ cost u` inside
+  queries over its outside inputs `u`
+* `currentCall_query_charge`: the same bound for per-port charges on admitted transcripts
+* `callRule_isResponsiveDDC`: the canonical rule is a responsive DDC
+* `callConverter_isDDCFrom`: the direct-call converter is a DDC between explicit domains
+
+Converters as in [1, Definition 2.2.2]; DDCs as in [2, Definition 3.8].
+
+## References
+
+1. D. Jost. *On Generalizations of Composable Security*. Doctoral thesis, ETH Zurich, 2020.
+2. U. Maurer. *Cryptography Foundations*. Lecture notes, ETH Zurich, Spring 2018.
 -/
 
 namespace SystemAlgebra
 
-/-- The current invocation, read directly from a complete converter input history.
-This is the history projection used by the direct-DDC ChaChaPoly model. -/
+/-- **The current invocation** of a reversed converter input history: scanning back, prepend each
+inside reply to the accumulator `replies` and stop at the latest outside input `u`, returning
+`(u, replies)`; with no outside input, `none`. Started with the empty accumulator, it returns the
+replies received after `u`, in chronological order. -/
 def currentCall {O J : Type} {U : O → Type} {Y : J → Type} :
     List (Σ l : Two O J, twoFam U Y l) → List (Σ j, Y j) →
       Option ((Σ o, U o) × List (Σ j, Y j))
@@ -61,8 +99,9 @@ lemma currentCall_reverse_append_call {O J : Type} {U : O → Type} {Y : J → T
     List.append_assoc, List.singleton_append, List.reverse_reverse, List.append_nil]
     using scan replies.reverse []
 
-/-- A silent complete-history rule identifies the invocation of every nonempty admissible
-history. The run length is bounded by the replies recorded in that invocation plus one. -/
+/-- A rule silent on `[]` admits no inside reply first, so every nonempty admissible history has
+a current invocation `(u, [r₁, …, rₖ])`; `u` is at the last outside label, and the current run
+of consecutive inside queries has length at most `k + 1`, counting a possible pending query. -/
 lemma currentCall_of_admissible {O J : Type} {U V : O → Type} {X Y : J → Type}
     (a : InsideOutsideSystem O J U V X Y) (hzero : ¬ (a []).Dom)
     (h) (ha : Admissible a h) :
@@ -75,25 +114,19 @@ lemma currentCall_of_admissible {O J : Type} {U V : O → Type} {X Y : J → Typ
   | append_singleton h x ih =>
     obtain ⟨ha0, _, hx⟩ := admissible_snoc.mp ha
     obtain ⟨⟨_ | ⟨⟨⟩⟩, i⟩, x⟩ := x
+    -- A new outside input starts the invocation `(⟨i, x⟩, [])`. No inside query is pending,
+    -- including initially, so the run before it is `0` and the run after it is at most `0 + 1`.
     · refine Or.inr ⟨⟨i, x⟩, [], ?_, ?_, ?_⟩
       · simp only [List.reverse_append, List.reverse_singleton, List.singleton_append,
           currentCall]
       · rw [lastOuter_snoc]; rfl
-      · have hrun : insideRun a h = 0 := by
-          rcases List.eq_nil_or_concat h with rfl | ⟨h, z, rfl⟩
-          · rfl
-          · rw [List.concat_eq_append] at hx ⊢
-            rw [insideRun, run_snoc, if_neg]
-            rintro ⟨y, hy, hi⟩
-            unfold Admits at hx
-            rw [replyLabel_of_mem _ hy] at hx
-            obtain ⟨⟨_ | ⟨⟨⟩⟩, j⟩, y⟩ := y
-            · exact absurd hi (by simp only [IsInside, reduceCtorEq, not_false_eq_true])
-            · cases hx
+      · have hrun := insideRun_eq_zero_of_admits_outside hx
         rw [insideRun, run_snoc]
         change run IsInside a h = 0 at hrun
         rw [hrun]
         split_ifs <;> omega
+    -- An inside reply extends the current invocation, and the run grows by at most one; on the
+    -- empty history a silent rule admits no inside reply.
     · rcases ih ha0 with rfl | ⟨u, replies, hc, hl, hr⟩
       · simp only [Admits, replyLabel, hzero, ↓reduceDIte, admitAfter, reduceCtorEq] at hx
       · refine Or.inr ⟨u, replies ++ [⟨i, x⟩], ?_, ?_, ?_⟩
@@ -107,8 +140,11 @@ lemma currentCall_of_admissible {O J : Type} {U V : O → Type} {X Y : J → Typ
           simp only [List.length_append, List.length_singleton]
           split_ifs <;> omega
 
-/-- Charge every invocation for its total number of inside queries. The phase condition
-also covers interrupted calls and arbitrary inside replies. -/
+/-- **Query count**: if a rule is silent without a current invocation and issues an inside query
+in invocation `(u, [r₁, …, rₖ])` only when `k < cost u`, then every transcript has at most
+`Σ cost u` inside queries over its outside inputs `u`. Each invocation is charged when `u`
+arrives, so the bound covers a pending query, and an invocation interrupted by a new outside
+query keeps its charge. The hypotheses quantify over arbitrary inside replies. -/
 lemma currentCall_query_count {O J : Type} {U V : O → Type} {X Y : J → Type}
     (a : InsideOutsideSystem O J U V X Y) (cost : (Σ o, U o) → Nat)
     (hnone : ∀ h, currentCall h.reverse [] = none → a h = Part.none)
@@ -117,10 +153,13 @@ lemma currentCall_query_count {O J : Type} {U V : O → Type} {X Y : J → Type}
     (T : List (_ × _)) (hr : Replies a (T.map Prod.fst) (T.map Prod.snd)) :
     (insideQueries (T.map Prod.snd)).length ≤
       ((outsideInputs (T.map Prod.fst)).map cost).sum := by
+  -- The current invocation `(u, [r₁, …, rₖ])` keeps `cost u − (k + 1)` units in reserve; the
+  -- `+ 1` covers a possible pending query, already counted, and is merely unused after a return.
   let remaining (h : List (Σ l : Two O J, twoFam U Y l)) : Nat :=
     match currentCall h.reverse [] with
     | none => 0
     | some (u, replies) => cost u - (replies.length + 1)
+  -- Invariant: `#inside queries + remaining ≤ Σ cost u`; dropping `remaining` gives the bound.
   suffices count : ∀ T : List (_ × _), Replies a (T.map Prod.fst) (T.map Prod.snd) →
       (insideQueries (T.map Prod.snd)).length + remaining (T.map Prod.fst) ≤
         ((outsideInputs (T.map Prod.fst)).map cost).sum by
@@ -138,6 +177,8 @@ lemma currentCall_query_count {O J : Type} {U V : O → Type} {X Y : J → Type}
     rw [insideQueries_append, List.length_append, outsideInputs_append,
       List.map_append, List.sum_append]
     obtain ⟨⟨_ | ⟨⟨⟩⟩, i⟩, x⟩ := x
+    -- An outside input adds `cost u`: an inside query in reply uses one unit (`0 < cost u`),
+    -- leaving `cost u − 1`; the unused charge of an interrupted invocation is dropped.
     · have hc : currentCall ((T.map Prod.fst) ++
           [(⟨⟨none, i⟩, x⟩ : Σ l : Two O J, twoFam U Y l)]).reverse [] =
           some (⟨i, x⟩, []) := by
@@ -152,6 +193,8 @@ lemma currentCall_query_count {O J : Type} {U V : O → Type} {X Y : J → Type}
         simp only [List.length_nil] at hp
         simp only [insideQueries_inside, List.length_singleton]
         omega
+    -- An inside reply becomes `rₖ₊₁`, lowering `remaining` by at most one; a further query is
+    -- allowed by the phase condition, `k + 1 < cost u`, and consumes that unit.
     · have hc : currentCall ((T.map Prod.fst) ++
           [(⟨⟨some (), i⟩, x⟩ : Σ l : Two O J, twoFam U Y l)]).reverse [] =
           (currentCall (T.map Prod.fst).reverse []).map
@@ -161,6 +204,7 @@ lemma currentCall_query_count {O J : Type} {U V : O → Type} {X Y : J → Type}
         exact currentCall_acc _ _
       cases he : currentCall (T.map Prod.fst).reverse [] with
       | none =>
+        -- Without a current invocation the rule is silent, so no reply was given.
         have hd := hnone _ (by rw [hc, he]; rfl)
         rw [hd] at hym
         exact (Part.notMem_none _ hym).elim
@@ -179,7 +223,9 @@ lemma currentCall_query_count {O J : Type} {U V : O → Type} {X Y : J → Type}
             List.map_nil, List.sum_nil]
           omega
 
-/-- An admitted inside reply has exactly the port charge of the preceding pending query. -/
+/-- An admitted input has the port charge of the pending query: after an inside query at `j` the
+converter admits only a reply at `j`, and after an outside output (or none) only an outside
+input, both sides then being `0`. -/
 lemma converterAdmits_inside_charge_eq {O J : Type} {U V : O → Type} {X Y : J → Type}
     (cost : J → Nat)
     (h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l)))
@@ -207,25 +253,36 @@ lemma converterAdmits_inside_charge_eq {O J : Type} {U V : O → Type} {X Y : J 
         subst k
         simp only [Option.toList_some, List.map_singleton, insideQueries_inside]
 
-/-- Per-port charges of each partial invocation sum to the outside charge budget. The explicit
-admission premise matches each inside reply with the previous pending query's port. -/
+/-- **Weighted query count**: if, on every admissible history with invocation `(u, [r₁, …, rₖ])`,
+every output `y` satisfies
+
+  `charge r₁ + … + charge rₖ + charge y ≤ cost u`   (`charge y = 0` for an outside return),
+
+then every admitted transcript charges its inside queries at most `Σ cost u` over its outside
+inputs. The invariant uses the condition at returns too. Inadmissible histories, such as an
+inside reply with no pending query, need no budget. Admission gives each reply the port, hence
+the charge, of its pending query, so the received replies account for the queries charged. -/
 lemma currentCall_query_charge {O J : Type} {U V : O → Type} {X Y : J → Type}
     (a : InsideOutsideSystem O J U V X Y) (charge : J → Nat)
     (cost : (Σ o, U o) → Nat)
     (hnone : ∀ h, currentCall h.reverse [] = none → a h = Part.none)
-    (hphase : ∀ h u replies y, currentCall h.reverse [] = some (u, replies) → y ∈ a h →
+    (hphase : ∀ h u replies y, Admissible a h →
+      currentCall h.reverse [] = some (u, replies) → y ∈ a h →
       (replies.map fun r => charge r.1).sum +
         ((insideQueries [y]).map fun q => charge q.1).sum ≤ cost u)
     (T : List (_ × _)) (hr : Replies a (T.map Prod.fst) (T.map Prod.snd))
     (ha : Admitted converterAdmits T) :
     ((insideQueries (T.map Prod.snd)).map fun q => charge q.1).sum ≤
       ((outsideInputs (T.map Prod.fst)).map cost).sum := by
+  -- The charge of the pending inside query, already counted among the queries issued.
   let pending (T : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))) : Nat :=
     ((insideQueries (T.getLast?.toList.map Prod.snd)).map fun q => charge q.1).sum
+  -- The charge still available to the current invocation after its replies and pending query.
   let remaining (T : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))) : Nat :=
     match currentCall (T.map Prod.fst).reverse [] with
     | none => 0
     | some (u, replies) => cost u - ((replies.map fun r => charge r.1).sum + pending T)
+  -- Invariant: `Σ charges of inside queries + remaining ≤ Σ cost u`.
   suffices hbound : ∀ T : List (_ × _),
       Replies a (T.map Prod.fst) (T.map Prod.snd) → Admitted converterAdmits T →
       ((insideQueries (T.map Prod.snd)).map fun q => charge q.1).sum + remaining T ≤
@@ -237,27 +294,37 @@ lemma currentCall_query_charge {O J : Type} {U V : O → Type} {X Y : J → Type
   | append_singleton T z ih =>
     intro hr ha
     obtain ⟨x, y⟩ := z
+    -- The extended input history is admissible, so the phase hypothesis applies to it.
+    have hzero : SilentAtEmpty a := by
+      rw [SilentAtEmpty, hnone [] rfl]
+      exact Part.not_none_dom
+    have hadmissible := (hr.admissible_iff_admitted hzero).mpr ha
+    simp only [List.map_append, List.map_singleton] at hadmissible
     obtain ⟨ha, hx⟩ := admitted_snoc.mp ha
     simp only [List.map_append, List.map_singleton] at hr ⊢
     obtain ⟨hr, hy⟩ := replies_snoc.mp hr
     have hi := ih hr ha
     have hym := Part.eq_some_iff.mp hy
+    -- The new input carries the charge of the pending query it answers.
     have hcharge := converterAdmits_inside_charge_eq charge T x hx
     change ((insideQueries [x]).map fun r => charge r.1).sum = pending T at hcharge
     rw [insideQueries_append, List.map_append, List.sum_append, outsideInputs_append,
       List.map_append, List.sum_append]
     rcases x with ⟨⟨_ | ⟨⟨⟩⟩, i⟩, x⟩
+    -- An outside input adds `cost u`, which bounds the charge of its first output.
     · have hc : currentCall ((T.map Prod.fst) ++
           [(⟨⟨none, i⟩, x⟩ : Σ l, twoFam U Y l)]).reverse [] = some (⟨i, x⟩, []) := by
         simp only [List.reverse_append, List.reverse_singleton, List.singleton_append,
           currentCall]
-      have hp := hphase _ _ _ y hc hym
+      have hp := hphase _ _ _ y hadmissible hc hym
       simp only [List.map_nil, List.sum_nil, Nat.zero_add] at hp
       simp only [remaining, List.map_append, List.map_singleton, hc, pending,
         List.getLast?_append, List.getLast?_singleton, Option.some_or, Option.toList_some,
         List.map_nil, List.sum_nil, Nat.zero_add, outsideInputs_outside,
         List.sum_singleton]
       omega
+    -- An inside reply moves the pending charge to the received replies, and the phase condition
+    -- bounds the charge of the next query by what remains.
     · have hc : currentCall ((T.map Prod.fst) ++
           [(⟨⟨some (), i⟩, x⟩ : Σ l, twoFam U Y l)]).reverse [] =
           (currentCall (T.map Prod.fst).reverse []).map
@@ -273,7 +340,7 @@ lemma currentCall_query_charge {O J : Type} {U V : O → Type} {X Y : J → Type
         obtain ⟨u, replies⟩ := call
         rw [he] at hc
         simp only [Option.map_some] at hc
-        have hp := hphase _ _ _ y hc hym
+        have hp := hphase _ _ _ y hadmissible hc hym
         simp only [List.map_append, List.map_singleton, List.sum_append,
           List.sum_singleton] at hp
         simp only [insideQueries_inside, List.map_singleton, List.sum_singleton] at hcharge
@@ -311,14 +378,16 @@ lemma currentCall_mem_outsideInputs {O J : Type} {U : O → Type} {Y : J → Typ
         exact ih v replies he
 
 
-/-! ## A complete-history rule for dependent calls -/
+/-! ### A complete-history rule for dependent calls -/
 
-/-- Read the current invocation and either return at its outside label or issue the next
-inside query. The rule has no state beyond the complete input history.
+/-- **The direct call rule** of a per-invocation rule `call`: on a history with current
+invocation `(u, rs)`, it returns `v` at the outside label `u.1` when `call u rs = inl v`, and
+issues the inside query `x` when `call u rs = inr x`; without a current invocation it is silent.
+The output depends on `u` and the replies `rs` of that invocation only.
 
 Jost, Definition 2.2.2, printed pp. 17–18: “Upon an input at an outside interface, the
 converter is allowed to make a bounded number of queries to the inside interfaces ... before
-returning a value at the queried interface.” The bound is certified separately. -/
+returning a value at the queried interface.” The bound is a separate phase hypothesis. -/
 def callRule {O J : Type} {U V : O → Type} {X Y : J → Type}
     (call : (u : Σ o, U o) → List (Σ j, Y j) → V u.1 ⊕ (Σ j, X j)) :
     InsideOutsideSystem O J U V X Y :=
@@ -329,17 +398,17 @@ def callRule {O J : Type} {U V : O → Type} {X Y : J → Type}
       | .inl v => Part.some ⟨⟨none, u.1⟩, v⟩
       | .inr x => Part.some ⟨⟨some (), x.1⟩, x.2⟩
 
-/-- The direct rule answers exactly when an outside invocation has begun. -/
+/-- The direct rule answers exactly when the history has a current invocation. -/
 lemma callRule_dom_iff {O J : Type} {U V : O → Type} {X Y : J → Type}
     (call : (u : Σ o, U o) → List (Σ j, Y j) → V u.1 ⊕ (Σ j, X j)) (h) :
     (callRule call h).Dom ↔ (currentCall h.reverse []).isSome := by
   cases hc : currentCall h.reverse [] with
-  | none => simp [callRule, hc]
+  | none => simp only [callRule, hc, Part.not_none_dom, Option.isSome_none, Bool.false_eq_true]
   | some ur =>
     obtain ⟨u, replies⟩ := ur
     cases hstep : call u replies with
-    | inl v => simp [callRule, hc, hstep]
-    | inr x => simp [callRule, hc, hstep]
+    | inl v => simp only [callRule, hc, hstep, Part.some_dom, Option.isSome_some]
+    | inr x => simp only [callRule, hc, hstep, Part.some_dom, Option.isSome_some]
 
 /-- An inside output is exactly the right branch of the current call rule. -/
 lemma callRule_inside_iff {O J : Type} {U V : O → Type} {X Y : J → Type}
@@ -348,18 +417,26 @@ lemma callRule_inside_iff {O J : Type} {U V : O → Type} {X Y : J → Type}
     (hc : currentCall h.reverse [] = some (u, replies)) :
     (∃ y, y ∈ callRule call h ∧ IsInside y) ↔ (call u replies).isRight = true := by
   cases hs : call u replies with
-  | inl v => simp [callRule, hc, hs, IsInside]
-  | inr x => simp [callRule, hc, hs, IsInside]
+  | inl v => simp only [callRule, hc, hs, Part.mem_some_iff, IsInside, exists_eq_left, reduceCtorEq,
+      Sum.isRight_inl, Bool.false_eq_true]
+  | inr x => simp only [callRule, hc, hs, Part.mem_some_iff, IsInside, exists_eq_left,
+      Sum.isRight_inr]
 
-/-- A phase-bounded direct call is a responsive canonical DDC. The phase contract holds for
-all reply histories, whether or not they come from a fixed inside function. -/
+/-- **Responsiveness**: under the one-way phase condition `isRight → rs.length < cost u` and
+`cost u ≤ bound`, the canonical direct rule is a responsive DDC with bound `bound`: it answers
+every nonempty admissible history, runs at most `bound` consecutive inside queries, and returns
+at the label of the current outside query. The hypothesis is over arbitrary replies `rs`, not
+only those of a fixed inside function.
+
+CR18, Definition 3.8, printed p. 62: “There is a finite upper bound on the number of
+consecutive outputs of the form (in, x).” -/
 lemma callRule_isResponsiveDDC {O J : Type} {U V : O → Type} {X Y : J → Type}
     (call : (u : Σ o, U o) → List (Σ j, Y j) → V u.1 ⊕ (Σ j, X j))
     (cost : (Σ o, U o) → Nat) (bound : Nat)
     (hphase : ∀ u replies, (call u replies).isRight = true → replies.length < cost u)
     (hbound : ∀ u, cost u ≤ bound) : IsResponsiveDDC bound (canon (callRule call)) := by
   have hzero : ¬ (callRule call ([] : List (Σ l, twoFam U Y l))).Dom := by
-    simp [callRule, currentCall]
+    simp only [callRule, List.reverse_nil, currentCall, Part.not_none_dom, not_false_eq_true]
   refine canon_isResponsiveDDC hzero ?_ ?_ ?_
   · -- Every nonempty admissible history has a current outside invocation.
     intro h ha hne
@@ -367,7 +444,7 @@ lemma callRule_isResponsiveDDC {O J : Type} {U V : O → Type} {X Y : J → Type
       (currentCall_of_admissible (callRule call) hzero h ha).resolve_left hne
     rw [callRule_dom_iff, hc]
     rfl
-  · -- During an inside phase, the pending query fits within that invocation's cost.
+  · -- If the next output is an inside query, the run is `≤ k + 1 ≤ cost u ≤ bound`.
     intro h ha hd
     obtain ⟨u, replies, hc, _, hr⟩ :=
       (currentCall_of_admissible (callRule call) hzero h ha).resolve_left
@@ -397,8 +474,10 @@ lemma callRule_isResponsiveDDC {O J : Type} {U V : O → Type} {X Y : J → Type
       subst y
       cases ho
 
-/-- Every completed or pending direct-call transcript spends at most the costs already
-charged to its outside invocations. -/
+/-- **Query count of a direct call rule**: under the one-way phase condition, every transcript,
+with completed, pending or interrupted invocations and arbitrary inside replies, has at most
+`Σ cost u` inside queries over its outside inputs `u`. This is an upper bound only; exact
+lengths need the biconditional phase condition (`callRule_completed_exact_length`). -/
 lemma callRule_query_count {O J : Type} {U V : O → Type} {X Y : J → Type}
     (call : (u : Σ o, U o) → List (Σ j, Y j) → V u.1 ⊕ (Σ j, X j))
     (cost : (Σ o, U o) → Nat)
@@ -413,15 +492,25 @@ lemma callRule_query_count {O J : Type} {U V : O → Type} {X Y : J → Type}
   · intro h u replies hc hi
     exact hphase u replies ((callRule_inside_iff call h u replies hc).mp hi)
 
-/-- Canonicalize the complete-history call rule, then restrict its outside input history to
-`F`. The raw rule is never exposed as a DDC. -/
+/-- **The direct-call converter** on the outside domain `F`: canonicalize the call rule, so that
+it answers only admissible histories, then answer only histories whose outside inputs are empty
+or in `F`. The raw complete-history rule, whose off-tree values are arbitrary, is never exposed
+as a DDC. -/
 noncomputable def callConverter {O J : Type} {U V : O → Type} {X Y : J → Type}
     (call : (u : Σ o, U o) → List (Σ j, Y j) → V u.1 ⊕ (Σ j, X j))
     (F : List (Σ o, U o) → Prop) : InsideOutsideSystem O J U V X Y :=
   filterDom (fun h => outsideInputs h = [] ∨ F (outsideInputs h)) (canon (callRule call))
 
-/-- The charged outside domain implies the inside query budget. Any further inside-domain
-condition `P` remains an explicit obligation on the actual converter transcripts. -/
+/-- **A certified direct-call DDC**: if `F` is closed under nonempty prefixes and its histories
+cost at most `work`, the direct-call converter is a DDC from the inside domain of nonempty query
+histories of length `≤ work` satisfying `P` to `F`, with bound `bound`. The length follows from
+the query count; any further condition `P` is an explicit obligation on the converter's actual
+transcripts.
+
+Jost's conditional distributions are partial only on impossible histories (Definition 2.2.1,
+printed p. 16: “i.e., when not conditioning on an impossible history”); the corresponding
+property here is responsiveness on admissible histories, with the restricted domains supplied
+by this certificate. -/
 lemma callConverter_isDDCFrom {O J : Type} {U V : O → Type} {X Y : J → Type}
     (call : (u : Σ o, U o) → List (Σ j, Y j) → V u.1 ⊕ (Σ j, X j))
     (cost : (Σ o, U o) → Nat) (bound work : Nat)
@@ -446,6 +535,7 @@ lemma callConverter_isDDCFrom {O J : Type} {U V : O → Type} {X Y : J → Type}
   have houtside := ((filterDom_dom _ _ _).mp (hr.dom hnil)).1
   have hraw := hr.mono fun h y hy => canon_mem ((filterDom_mem_iff _ _ h y).mp hy).2
   have hcount := callRule_query_count call cost hphase T hraw
+  -- The outside inputs are empty, with charge `0`, or in `F`, with charge `≤ work`.
   have hlength : (insideQueries (T.map Prod.snd)).length ≤ work := by
     rcases houtside with he | hf
     · rw [he] at hcount

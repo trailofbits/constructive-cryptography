@@ -3,7 +3,8 @@ import Probability
 /-!
 # Uniform law notation at the probability layer
 
-The notation elaborates after importing `Probability`, without any systems or DSL import.
+`𝒰[A]` elaborates from `Probability` alone, with no systems or DSL import, as a normalized law
+whose raw distribution `𝒰[A].1` is `Distribution.uniform A`.
 -/
 
 open Probability
