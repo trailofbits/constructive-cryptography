@@ -1,3 +1,4 @@
+import Tests.RevealedHCoefficient
 import Tests.AuthenticatedEncryption
 import Tests.AdaptiveUniformEvaluations
 import Tests.Axioms.CC

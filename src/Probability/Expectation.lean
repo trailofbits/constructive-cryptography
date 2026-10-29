@@ -21,6 +21,7 @@ The expectation `𝔼_X[f] = ∑ₐ X(a) · f(a)` over a finite distribution.
 * `variance_nonneg`, `variance_eq_expect_sq_sub_sq_expect`
 * Jensen: `ConcaveOn.le_map_expect`, `ConvexOn.map_expect_le`
 * `expect_fTransform`, `expect_prod_eq`
+* `expect_comp_eq_sum_mass`: `𝔼_X[ε ∘ classOf] = ∑_c ε(c) · X(classOf = c)`
 -/
 
 noncomputable section
@@ -333,6 +334,22 @@ lemma expect_prod_eq {A B : Type*} (first : Distribution A)
     (Distribution.support_prod_subset first second), Finset.sum_product]
   simp only [Distribution.prod_apply, Distribution.expect, Finsupp.sum,
     Finset.mul_sum, mul_assoc]
+
+/-- **The expectation of an error constant on classes**, for a finite type of classes `C`:
+`𝔼_X[ε ∘ classOf] = ∑_c ε(c) · X(classOf = c)`. Signed layer: no hypothesis. -/
+lemma expect_comp_eq_sum_mass {A C : Type*} [Fintype C]
+    (X : Distribution A) (classOf : A → C) (ε : C → ℝ) :
+    X.expect (fun a => ε (classOf a)) = ∑ c, ε c * X.mass (fun a => classOf a = c) := by
+  classical
+  -- Exchange the sums; each atom `a` contributes `X(a) · ε(classOf a)` to its own class only.
+  unfold Distribution.expect Distribution.mass Finsupp.sum
+  simp only [Finset.mul_sum]
+  rw [Finset.sum_comm]
+  refine Finset.sum_congr rfl fun a _ => ?_
+  rw [Finset.sum_eq_single (classOf a) (fun c _ hc => by simp only [Ne.symm hc, ↓reduceIte,
+    mul_zero])
+    (fun h => absurd (Finset.mem_univ _) h)]
+  simp only [mul_comm, ↓reduceIte]
 
 end Distribution
 

@@ -17,6 +17,7 @@ alphabets, with product probabilities on the two component transcripts.
 
 ## Main results
 
+* `sLaw_mix`: the transcript law of a mixture is the mixture of the transcript laws
 * `replies_pair_iff`: the transcripts of a deterministic pair are the interleaved
   component transcripts
 * `parallel_mass_of_presentations`, `PDS.parallel_mass`: parallel composition of
@@ -63,6 +64,18 @@ noncomputable def mix (P : Distribution.ProbDist ι) (R : ι → RandomSystem A 
 
 lemma mix_mass (P : Distribution.ProbDist ι) (R : ι → RandomSystem A B D)
     (h : List (A × B)) : mix P R h = ∑ i ∈ P.1.support, P.1 i * R i h := rfl
+
+/-- **The transcript law of a mixture** is the mixture of the transcript laws:
+`(mix P R).sLaw e n = ∑ₖ P(k) • (R k).sLaw e n`. -/
+lemma sLaw_mix (P : Distribution.ProbDist ι) (R : ι → RandomSystem A B D) (e : List B →. A)
+    (n : ℕ) : (mix P R).sLaw e n = ∑ k ∈ P.1.support, P.1 k • (R k).sLaw e n := by
+  -- At `h` both sides are `[Good e n h] · ∑ₖ P(k) · (R k)(h)`: the indicator is common.
+  apply Finsupp.ext
+  intro h
+  simp only [sLaw_apply, mix_mass, Finsupp.finsetSum_apply, Finsupp.smul_apply, smul_eq_mul]
+  split_ifs
+  · rfl
+  · simp only [mul_zero, Finset.sum_const_zero]
 
 end Mix
 

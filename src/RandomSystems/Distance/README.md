@@ -99,6 +99,19 @@ $`\varepsilon_1`$ of the ratio and the bound $`\varepsilon_2`$ on the bad transc
 \Delta(R, S) \le \varepsilon_1 + \varepsilon_2 .
 ```
 
+For revealed values and multiple transcript classes, use
+[`RandomSystem.HCoefficient`](RevealedHCoefficient.lean). Supply the real mixture,
+its deterministic reveal, the ideal conditional reveal law, the finite classification,
+the pointwise ratio, and the expected class-error bound. Its
+`transcriptDistance_le_nnreal` theorem gives the same distance; the instance-layer
+`Interface.distance_le_of_hCoefficient` gives the CC distance. `ofGoodBad` assigns
+error one to the bad class and the ratio error to the good class.
+
+The [reveal laws](../Cumulative/Revealed.lean) have the original transcript laws as
+marginals. `kernelLaw_mass_eq_expect` turns a revealed bad-event mass into the
+expectation of its conditional probability. The reveal and the partition remain explicit;
+no security choice is made by automation.
+
 ## Identical until bad
 
 Two random systems $`R_1`$ and $`R_2`$ have transcript probabilities that both lie above a common
