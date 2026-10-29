@@ -39,6 +39,28 @@ A behavior has an [advantage][DistinguisherBehavior.advantage], which is
 [triangle inequality][DistinguisherBehavior.advantage_triangle], and
 [is at most the distance][DistinguisherBehavior.advantage_le_transcriptDistance].
 
+## Initially sampled systems
+
+Choose a component with law $`P`$ and retain it throughout the interaction. For a fixed
+compatible distinguisher $`D`$, [the decision probability](Mixture.lean) is an average:
+
+```math
+\Pr[D(\operatorname{sample}(P, R)) = 1]
+= \sum_k P(k)\,\Pr[D(R_k) = 1].
+```
+
+`RandomSystem.decisionProbability_mix` proves this for a deterministic distinguisher by
+taking the decision event's mass in the transcript mixture. `Domain.Distinguisher.probability_mix`
+then averages over the distinguisher's independent random choice.
+
+For two families on the same interface, the typed
+[`transcriptDistance_sample_le`](../Typed/SamplingDistance.lean) derives
+$`\Delta(\operatorname{sample}(P, R), \operatorname{sample}(P, S)) \le \varepsilon`$
+from $`\Delta(R_k, S_k) \le \varepsilon`$ for every $`k`$. For each distinguisher, the
+averaging lemma `abs_average_sub_le` in [Transcript](Transcript.lean) preserves the bound
+on its component advantages, using nonnegative weights summing to one. The law may be nonuniform,
+but it must be the same in both mixtures. Sampling itself does not reveal the component index.
+
 ## Couplings
 
 The [transcript][System.tr] $`\mathrm{tr}(s, E, n)`$ of a deterministic system $`s`$

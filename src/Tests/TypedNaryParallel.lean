@@ -1,3 +1,4 @@
+import RandomSystems.Typed.ParallelAttachment
 import RandomSystems.Typed.ParallelAllAttachment
 import RandomSystems.Typed.ParallelAllRegroup
 
@@ -23,6 +24,10 @@ Audits of `⨂ k, A k`, `∥ k, R k` and `⨂ₘ k, α k` over `K = Bool`:
 * one bit drawn once outside `∥` differs from one bit drawn per component inside `∥`, and any
   PDS presenting the retained bit, sampled independently per component, has the latter law;
 * the prefix `∥ k, R k` and the binary infix `R ∥ S` parse together.
+
+Beyond `Bool`: attachment `(⨂ₘ k, α k) • (∥ k, R k) = ∥ k, (α k • R k)` holds for `K = Empty`,
+and for `K = Option Unit` the family and binary forms agree after relabelling the transcript
+by `optionFamilyAlphabet` (`none ↦ inl`, `some () ↦ inr`).
 
 `sharedBit`, one draw outside `∥`:
 
@@ -299,6 +304,22 @@ example {A : Option Unit → Interface} (R : ∀ k, TypedSystem (A k))
       (h.map ((Interface.optionFamilyAlphabet fun k => (A k).X).prodCongr
         (Interface.optionFamilyAlphabet fun k => (A k).Y))) :=
   TypedSystem.parallelAll_option_mass R h
+
+/-- **Two components in family and binary form**: for arbitrary stochastic systems and
+converters on `K = Option Unit`, with `ρ` the `optionFamilyAlphabet` relabelling,
+`((⨂ₘ k, α k) • (∥ k, R k))(h) = ((α none ∥ α (some ())) • (R none ∥ R (some ())))(ρ h)`. -/
+example {A B : Option Unit → Interface} (α : ∀ k, TypedConverter (A k) (B k))
+    (R : ∀ k, TypedSystem (B k))
+    (h : List ((Σ l, (⨂ k, A k).X l) × (Σ l, (⨂ k, A k).Y l))) :
+    ((⨂ₘ k, α k) • (∥ k, R k)).1 h =
+      (TypedConverter.parallel (α none) (α (some ())) •
+        TypedSystem.parallel (R none) (R (some ()))).1
+        (h.map ((Interface.optionFamilyAlphabet fun k => (A k).X).prodCongr
+          (Interface.optionFamilyAlphabet fun k => (A k).Y))) := by
+  -- Locality attaches each converter to its own component on both sides.
+  rw [TypedConverter.parallelAll_attach, TypedConverter.parallel_attach]
+  -- The remaining parallel systems agree after relabelling the transcript's interface tags.
+  exact TypedSystem.parallelAll_option_mass _ h
 
 #print axioms SystemAlgebra.parAll_interconnect_all
 #print axioms SystemAlgebra.trim_apply_tensorAllL_parAll
