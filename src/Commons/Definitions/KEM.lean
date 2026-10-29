@@ -17,6 +17,9 @@ the one under the current key.
 
 A notion is the pair of its systems `(X₀, X₁)` (Banfi, §2.3.1), independent of the substitution
 relation; the predicate of the same name states it for the admitted distinguishers, `X₀ ≃[ε] X₁`.
+The admitted distinguishers are the typed distinguishers selected by the
+`AdmissibleDistinguishers` instance in scope, with no closure assumed, and `ε(d)` is the error
+allowed to each of them.
 
 IND-CPA is IND-CCA without decapsulation queries: its systems are those of IND-CCA at a budget
 with no queries at `decaps`.
@@ -65,7 +68,8 @@ variable {PK SK C K : Type} [Fintype PK] [Fintype SK] [Fintype C] [Fintype K]
 /-- Independent encapsulations under every public key. -/
 def KEM.encapsulations [DecidableEq PK] (kem : KEM PK SK C K) :
     Distribution.ProbDist (PK → C × K) :=
-  ⟨Distribution.pi fun pk => (kem.encaps pk).1, Distribution.pi_isProbDist fun pk => (kem.encaps pk).2⟩
+  ⟨Distribution.pi fun pk => (kem.encaps pk).1,
+    Distribution.pi_isProbDist fun pk => (kem.encaps pk).2⟩
 
 -- The public key, `E_pk` and `D_sk` for `(pk, sk) ← G`: on `encaps`, output `(c, k) ← E(pk)`;
 -- on `c`, output `D(sk, c)`.
@@ -82,7 +86,8 @@ system KEM.Real(kem : KEM PK SK C K) [DecidableEq PK] : Encapsulation PK C K
 
 -- Replace each encapsulated key by a uniform key `k̃` and record `(c, k̃)`; on `c`, output its
 -- first recorded key, otherwise forward `c`.
-converter KEM.CCA(PK C K : Type) [Fintype PK] [Fintype C] [Fintype K] [DecidableEq C] [Nonempty K] : Encapsulation PK C K
+converter KEM.CCA(PK C K : Type)
+    [Fintype PK] [Fintype C] [Fintype K] [DecidableEq C] [Nonempty K] : Encapsulation PK C K
   inside kem : Encapsulation PK C K
   initialize
     table ← ([] : List (C × K))
@@ -112,10 +117,11 @@ def KEM.INDCCA.systems [DecidableEq PK] [DecidableEq C] [Nonempty K] (kem : KEM 
 
 /-- **IND-CCA** within `error`: against the admitted distinguishers, the real system substitutes
 for the one with uniform keys. -/
-def KEM.INDCCA [Interface.AdmissibleDistinguishers]
+def KEM.INDCCA [ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher]
     [DecidableEq PK] [DecidableEq C] [Nonempty K] (kem : KEM PK SK C K)
     {q : Encapsulation.Port → ℕ}
-    (error : (Encapsulation.perPort PK C K q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
+    -- `q` is the query budget per port; `error d` bounds the advantage of each admitted `d`.
+    (error : (TypedDistinguisher (Encapsulation.perPort PK C K q)) → ENNReal) : Prop :=
   (KEM.INDCCA.systems kem q).1 ≃[error] (KEM.INDCCA.systems kem q).2
 
 /-- **The systems of IND-CPA**: those of IND-CCA without decapsulation queries, at the budget `q`
@@ -128,11 +134,13 @@ def KEM.INDCPA.systems [DecidableEq PK] [DecidableEq C] [Nonempty K] (kem : KEM 
 
 /-- **IND-CPA** within `error`: against the admitted distinguishers, the real system without
 decapsulation queries substitutes for the one with uniform keys. -/
-def KEM.INDCPA [Interface.AdmissibleDistinguishers]
+def KEM.INDCPA [ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher]
     [DecidableEq PK] [DecidableEq C] [Nonempty K] (kem : KEM PK SK C K)
     {q : Encapsulation.Port → ℕ}
+    -- `q` is the query budget per port, with no decapsulation queries; `error d` bounds the
+    -- advantage of each admitted `d`.
     (error :
-      (Encapsulation.perPort PK C K (Function.update q .decaps 0)).inputDomain.DistinguisherBehavior →
+      (TypedDistinguisher (Encapsulation.perPort PK C K (Function.update q .decaps 0))) →
         ENNReal) : Prop :=
   (KEM.INDCPA.systems kem q).1 ≃[error] (KEM.INDCPA.systems kem q).2
 

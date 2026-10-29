@@ -50,10 +50,11 @@ def parseCT (p : Params) (bytes : ByteArray) : KPKE.Ciphertext p (concreteEncodi
     vEncoded := byteArrayToVector bytes (32 * p.du * p.k) (32 * p.dv) }
 
 /-- The keys and ciphertexts of ML-KEM are finite, so its IND-CCA security is a statement. -/
-example [Interface.AdmissibleDistinguishers]
+example [ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher]
     {q : Commons.Encapsulation.Port → ℕ}
-    (error : (Commons.Encapsulation.perPort (EncapsulationKey mlkem768 mlkem768Encoding)
-      (Ciphertext mlkem768 mlkem768Encoding) SharedSecret q).inputDomain.DistinguisherBehavior →
+    (error : (TypedDistinguisher
+      (Commons.Encapsulation.perPort (EncapsulationKey mlkem768 mlkem768Encoding)
+      (Ciphertext mlkem768 mlkem768Encoding) SharedSecret q)) →
         ENNReal) :
     Prop :=
   Commons.KEM.INDCCA (toKEM concreteNTTRingOps mlkem768Encoding mlkem768Primitives) error

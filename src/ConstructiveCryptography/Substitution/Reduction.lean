@@ -1,3 +1,4 @@
+import ConstructiveCryptography.Distinguisher
 import ConstructiveCryptography.CryptographicAlgebra.Relaxation
 import ConstructiveCryptography.CryptographicAlgebra.PseudoMetric
 
@@ -27,12 +28,15 @@ same direction as `α`, opposite to attachment `Phi B → Phi A`; below, `α S` 
 ```
 
 Admissibility of `reduce D` and the advantage equation are explicit hypotheses; nothing
-asserts that composing with an arbitrary converter keeps a distinguisher efficient.
+asserts that composing with an arbitrary converter keeps a distinguisher efficient. For
+decision-derived models, `AdmissibleDistinguishers.substitutesWithin_attach` supplies both,
+with `reduce D = Dα` and a closure proof `ClosedUnder α`.
+
+The record `DistinguisherAdvantage` of admitted distinguishers and their per-test advantage is
+defined in `ConstructiveCryptography.Distinguisher`.
 
 ## Main definitions
 
-* `DistinguisherAdvantage C Systems Distinguisher`: admitted distinguishers and their
-  advantage
 * `DistinguisherAdvantage.SubstitutesWithin`: substitution within an error function
 * `Specification.reductionRelaxation`: the reduction relaxation
 
@@ -53,38 +57,6 @@ open CategoryTheory
 
 universe u v w x
 
-/-- A typed family of admissible distinguishers and its advantage function.
-
-Banfi 2023, Section 2.3.3 (printed p. 16) defines concrete substitution by
-requiring `Δ_D(S, T) ≤ ε(D)` “for all poly-time (distinguishing) programs.”
-The three advantage laws below are exactly the symmetry and triangle facts
-used by the substitution and reduction-relaxation calculations. The laws hold for every
-distinguisher, admitted or not. -/
-structure DistinguisherAdvantage
-    -- `C` is the type of interfaces; no category structure is needed here.
-    (C : Type u)
-    -- `Systems A` is the type of resources compared on `A : C`; `Distinguisher A` contains all
-    -- candidate distinguishers on `A`, admitted or not.
-    (Systems : C → Type w) (Distinguisher : C → Type x) where
-  /-- The distinguishers admitted at each resource interface, Banfi's “poly-time” programs: the
-  class over which `SubstitutesWithin` quantifies. It is an arbitrary subset, possibly empty;
-  efficiency is only the caller's choice of this set, and no closure property is assumed. -/
-  admissible : ∀ A, Set (Distinguisher A)
-  /-- The distinguishing advantage `Δ_D(S, T)` of `D : Distinguisher A` between two resources
-  `S T : Systems A` in one fibre, possibly `∞`. It is an abstract pseudo-distance per
-  distinguisher, not assumed bounded by `1` or derived from a concrete experiment; advantage
-  `0` for every admitted `D` does not make `S` and `T` equal. -/
-  advantage : ∀ A, Distinguisher A → Systems A → Systems A → ENNReal
-  /-- A distinguisher has zero advantage between identical resources. -/
-  advantage_self : ∀ A distinguisher resource,
-    advantage A distinguisher resource resource = 0
-  /-- Distinguishing advantage is symmetric in the compared resources. -/
-  advantage_symm : ∀ A distinguisher left right,
-    advantage A distinguisher left right = advantage A distinguisher right left
-  /-- Distinguishing advantage satisfies the triangle inequality. -/
-  advantage_triangle : ∀ A distinguisher left middle right,
-    advantage A distinguisher left right ≤
-      advantage A distinguisher left middle + advantage A distinguisher middle right
 
 namespace DistinguisherAdvantage
 
@@ -238,7 +210,7 @@ lemma SubstitutesWithin.attach
   intro distinguisher admitted
   -- Replace the transformed advantage by that of the supplied reduction.
   rw [advantage_eq]
-  -- Efficiency closure admits the reduced distinguisher at the source fibre.
+  -- `reduce_admissible` admits the reduced distinguisher on `B`.
   exact substitution (reduce distinguisher)
     (reduce_admissible distinguisher admitted)
 

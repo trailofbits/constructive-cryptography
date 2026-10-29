@@ -55,10 +55,11 @@ def zero : String := "0000000000000000000000000000000000000000000000000000000000
 
 
 /-- The keys, messages and signatures of ML-DSA are finite, so its unforgeability is a statement. -/
-example [Interface.AdmissibleDistinguishers] (L : ℕ)
+example [ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher] (L : ℕ)
     {q : Commons.Signing.Port → ℕ}
-    (error : (Commons.Signing.perPort (PublicKey mldsa65 (concretePrimitives mldsa65)) (Message L)
-      (Option (FIPSSignature mldsa65 (concretePrimitives mldsa65))) q).inputDomain.DistinguisherBehavior
+    (error : (TypedDistinguisher
+      (Commons.Signing.perPort (PublicKey mldsa65 (concretePrimitives mldsa65)) (Message L)
+      (Option (FIPSSignature mldsa65 (concretePrimitives mldsa65))) q))
         → ENNReal) :
     Prop :=
   Commons.SignatureScheme.EUFCMA

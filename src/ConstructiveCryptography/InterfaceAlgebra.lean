@@ -1,3 +1,5 @@
+import RandomSystems.Typed.Distinguisher
+import ConstructiveCryptography.CryptographicAlgebra.DistinguisherAction
 import RandomSystems.Distance.RevealedHCoefficient
 import RandomSystems.Typed.ParallelAttachment
 import RandomSystems.Typed.SystemCoherence
@@ -28,11 +30,15 @@ and the swap (`TypedSystem.parallel_swap_mass`). Its metric is the transcript di
 (`TypedSystem.transcriptPseudoEMetricSpace`), so `cc_distance_eq` holds by definition. The bridge
 `transcriptDistance_eq_advantageDistance` identifies it with the advantage distance of these
 distinguishers; through it Maurer's Lemma 1 (`CompatibleDistinguisherClass.ofClosure`) supplies
-non-expansion under attachment and parallel composition. For every class of admitted
-distinguishers they carry a `DistinguisherAdvantage`: its field `advantage` is
-`Domain.DistinguisherBehavior.advantage`, and its laws are `advantage_self`, `advantage_symm` and
-`advantage_triangle` of the random systems. In a security proof a converter absorbed into a
-distinguisher (`Domain.DistinguisherBehavior.absorb`) is the reduction (CR18).
+non-expansion under attachment and parallel composition.
+
+The decision layer is instantiated separately. `TypedDistinguisher A` evaluates by its output-1
+probability (`distinguisherEvaluations`), and typed absorption `(dα)(R) = d(αR)` is the CC
+action (`distinguisherAction`). These instances select no admitted class: a security
+statement chooses its tests through `AdmissibleDistinguishers`, and each reduction supplies
+`AdmissibleDistinguishers.ClosedUnder α` for its own converter `α`. For every admitted set,
+`distinguisherAdvantageDominated` bounds the decision advantage by the transcript distance, the
+domination law needed by statistical steps of a substitution chain.
 
 ## Main definitions
 
@@ -41,11 +47,10 @@ distinguisher (`Domain.DistinguisherBehavior.absorb`) is the reduction (CR18).
   `A`'s domain
 * `Interface.resourceTheory`, `Interface.cryptographicAlgebra`,
   `Interface.compatibleDistinguisherClass`: the instances
-* `Interface.distinguisherAdvantage admissible`: the distinguishing advantage of the
-  substitution calculus, with its field `advantage` the systems-level
-  `Domain.DistinguisherBehavior.advantage`
-* `Interface.AdmissibleDistinguishers`: the class of the admitted distinguishers, closed under
-  absorbing converters
+* `Interface.distinguisherEvaluations`, `Interface.distinguisherAction`: decision evaluation and
+  absorption of `TypedDistinguisher`
+* `Interface.distinguisherAdvantageDominated admitted`: the decision advantage of every admitted
+  set is dominated by the transcript distance
 
 ## Main results
 
@@ -61,12 +66,6 @@ distinguisher (`Domain.DistinguisherBehavior.absorb`) is the reduction (CR18).
 * `Interface.cc_distance_eq`: the distance is the transcript distance of the random systems, by
   definition
 * `Interface.distance_le_of_hCoefficient`: an H-coefficient argument bounds the distance
-* `Interface.distinguisherAdvantage_le_distance`: an advantage is at most the distance
-* `Interface.distinguisherAdvantage_attach`, `Interface.substitutesWithin_attach`: an advantage
-  between attachments is the advantage with the converter absorbed, and a concrete substitution
-  transports through a converter; `Interface.AdmissibleDistinguishers.substitutesWithin_attach`
-  for the admitted distinguishers, and
-  `Interface.AdmissibleDistinguishers.substitutesWithin_context` in a composite context
 -/
 
 namespace SystemAlgebra.Interface
@@ -158,16 +157,32 @@ noncomputable instance cryptographicAlgebra :
     ConstructiveCryptography.CryptographicAlgebra Interface TypedSystem where
   laxMonoidal := resourcesLaxMonoidal
 
+/-- Typed distinguishers evaluate by their output-1 behavior: `probability d R = d.1 R`, the
+probability that `d` connected to `R` outputs `1`. -/
+noncomputable instance distinguisherEvaluations :
+    ConstructiveCryptography.Distinguishers Interface TypedSystem TypedDistinguisher where
+  probability d R := d.1 R
+
+/-- Typed absorption is the abstract action: `absorb d α = dα`, with its probability, identity
+and serial laws discharged by the `TypedDistinguisher` lemmas. No admitted class is involved. -/
+noncomputable instance distinguisherAction :
+    ConstructiveCryptography.DistinguisherAction Interface TypedSystem TypedDistinguisher where
+  absorb := TypedDistinguisher.absorb
+  probability_absorb := TypedDistinguisher.probability_absorb
+  absorb_id := TypedDistinguisher.absorb_id
+  absorb_comp := TypedDistinguisher.absorb_comp
+
 /-- The distinguishers on `A`: the behaviors of the probabilistic distinguishers compatible with
 `A`'s domain, their probabilities of outputting `1`. -/
 def distinguishers (A : Interface) : Set (TypedSystem A → ℝ) :=
-  Set.range fun (d : A.inputDomain.DistinguisherBehavior) (R : TypedSystem A) => d.1 R
+  Set.range fun (d : TypedDistinguisher A) =>
+    ConstructiveCryptography.Distinguishers.probability (Phi := TypedSystem) d
 
 /-- Absorbing a converter into a distinguisher gives a distinguisher. -/
 lemma distinguishers_attach {A B : Interface} (α : A ⟶ B) {d : TypedSystem A → ℝ}
     (hd : d ∈ distinguishers A) : (fun R : TypedSystem B => d (α • R)) ∈ distinguishers B := by
   obtain ⟨D, rfl⟩ := hd
-  exact ⟨D.absorb B.nonempty_prefix A.nonempty_prefix α, rfl⟩
+  exact ⟨TypedDistinguisher.absorb D α, rfl⟩
 
 /-- Running a fixed typed system beside the distinguished one gives a distinguisher. -/
 lemma distinguishers_parallel_left {A B : Interface} (T : TypedSystem B)
@@ -185,6 +200,8 @@ lemma distinguishers_parallel_left {A B : Interface} (T : TypedSystem B)
   rw [TypedSystem.parallel_ofPDS]
   exact (hQ Pr _ _ (fun _ => rfl) (fun _ => rfl)).symm
 
+/-- Running a fixed typed system `T` to the left gives a distinguisher `S ↦ d(T ∥ S)`, by the
+left case through the swap. -/
 lemma distinguishers_parallel_right {A B : Interface} (T : TypedSystem A)
     {d : TypedSystem (tensor A B) → ℝ} (hd : d ∈ distinguishers (tensor A B)) :
     (fun S : TypedSystem B => d (TypedSystem.parallel T S)) ∈ distinguishers B := by
@@ -201,7 +218,8 @@ lemma transcriptDistance_eq_advantageDistance {A : Interface} (R S : TypedSystem
   rw [RandomSystem.transcriptDistance_eq_iSup_behavior R S]
   -- The advantage distance is the same supremum, indexed through `Set.range`.
   simp only [ConstructiveCryptography.advantageDistance, distinguishers, iSup_range,
-    Domain.DistinguisherBehavior.advantage]
+    Domain.DistinguisherBehavior.advantage,
+    ConstructiveCryptography.Distinguishers.probability]
 
 /-- The selected metric `fibreMetric` is the transcript distance
 `TypedSystem.transcriptPseudoEMetricSpace`, and the distinguishers are `distinguishers A`.
@@ -266,96 +284,17 @@ lemma distance_le_of_hCoefficient {A : Interface} {R S : TypedSystem A} {error :
   rw [cc_distance_eq]
   exact w.transcriptDistance_le_nnreal S.2
 
-/-- Interfaces carry a distinguishing advantage for every class `admissible` of admitted
-distinguishers: the distinguishers on `A` are the behaviors of the probabilistic distinguishers
-compatible with `A`'s domain, and the advantage between two typed systems is their advantage
-between the random systems. -/
-noncomputable def distinguisherAdvantage
-    (admissible : ∀ A : Interface, Set A.inputDomain.DistinguisherBehavior) :
-    ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage Interface TypedSystem
-      fun A => A.inputDomain.DistinguisherBehavior where
-  admissible := admissible
-  advantage _ D R S := D.advantage R S
-  advantage_self _ D R := D.advantage_self R
-  advantage_symm _ D R S := D.advantage_symm R S
-  advantage_triangle _ D R S T := D.advantage_triangle R S T
-
-/-- The advantage of a distinguisher between two attachments is the advantage of the
-distinguisher with the converter absorbed. -/
-lemma distinguisherAdvantage_attach
-    (admissible : ∀ A : Interface, Set A.inputDomain.DistinguisherBehavior) {A B : Interface}
-    (α : A ⟶ B) (D : A.inputDomain.DistinguisherBehavior) (R S : TypedSystem B) :
-    (distinguisherAdvantage admissible).advantage A D (α • R) (α • S) =
-      (distinguisherAdvantage admissible).advantage B
-        (D.absorb B.nonempty_prefix A.nonempty_prefix α) R S :=
-  rfl
-
-/-- **A concrete substitution through a converter**: its loss is the loss at the distinguisher
-with the converter absorbed (Banfi 2023, §2.3.3, printed p. 16: `ε'(D) := ε(D ∘ ρ)`), when the
-admitted distinguishers are closed under absorbing converters. -/
-lemma substitutesWithin_attach
-    (admissible : ∀ A : Interface, Set A.inputDomain.DistinguisherBehavior)
-    (closed : ∀ {A B : Interface} (α : A ⟶ B) (D : A.inputDomain.DistinguisherBehavior),
-      D ∈ admissible A → D.absorb B.nonempty_prefix A.nonempty_prefix α ∈ admissible B)
-    {A B : Interface} (α : A ⟶ B) {error : B.inputDomain.DistinguisherBehavior → ENNReal}
-    {R S : TypedSystem B} (h : (distinguisherAdvantage admissible).SubstitutesWithin error R S) :
-    (distinguisherAdvantage admissible).SubstitutesWithin
-      (fun D => error (D.absorb B.nonempty_prefix A.nonempty_prefix α)) (α • R) (α • S) :=
-  ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.attach _ α
-    (fun D => D.absorb B.nonempty_prefix A.nonempty_prefix α) (fun D hD => closed α D hD)
-    (distinguisherAdvantage_attach admissible α) h
-
-/-- **The admitted distinguishers**: a class of distinguishers at every interface, closed under
-absorbing converters. Security statements are substitutions for their distinguishing
-advantage, written `R ≃[ε] S`. -/
-class AdmissibleDistinguishers where
-  /-- The admitted distinguishers at each interface. -/
-  admissible : ∀ A : Interface, Set A.inputDomain.DistinguisherBehavior
-  /-- An admitted distinguisher with a converter absorbed is admitted. -/
-  closed : ∀ {A B : Interface} (α : A ⟶ B) (D : A.inputDomain.DistinguisherBehavior),
-    D ∈ admissible A → D.absorb B.nonempty_prefix A.nonempty_prefix α ∈ admissible B
-
-/-- Every compatible stopping distinguisher behavior is admitted: `admissible A = Set.univ`.
-Use `let := AdmissibleDistinguishers.all` locally for an unrestricted per-distinguisher bound;
-it is a value, not an instance, so importing it selects no security model. Absorption preserves
-the behavior type, so closure imposes no further restriction. -/
-@[reducible] def AdmissibleDistinguishers.all : AdmissibleDistinguishers where
-  admissible _ := Set.univ
-  closed _ _ _ := Set.mem_univ _
-
-/-- **A substitution through a converter**, for the admitted distinguishers: its loss is the loss
-at the distinguisher with the converter absorbed. -/
-lemma AdmissibleDistinguishers.substitutesWithin_attach [AdmissibleDistinguishers]
-    {A B : Interface} (α : A ⟶ B) {error : B.inputDomain.DistinguisherBehavior → ENNReal}
-    {R S : TypedSystem B}
-    (h : (distinguisherAdvantage AdmissibleDistinguishers.admissible).SubstitutesWithin error R S) :
-    (distinguisherAdvantage AdmissibleDistinguishers.admissible).SubstitutesWithin
-      (fun D => error (D.absorb B.nonempty_prefix A.nonempty_prefix α)) (α • R) (α • S) :=
-  Interface.substitutesWithin_attach _ AdmissibleDistinguishers.closed α h
-
-/-- **A substitution in a context** (Banfi 2023, §2.3.3, printed p. 16: `ε(D ∘ ρ)`): substituting
-`S` for `R` inside the context `ρ` loses the error at the distinguisher with `ρ` absorbed. The
-context may be a serial composition; its attachments `X` and `Y` are written converter by
-converter. -/
-lemma AdmissibleDistinguishers.substitutesWithin_context [AdmissibleDistinguishers]
-    {A B : Interface} (ρ : A ⟶ B) {error : B.inputDomain.DistinguisherBehavior → ENNReal}
-    {R S : TypedSystem B}
-    (h : (distinguisherAdvantage AdmissibleDistinguishers.admissible).SubstitutesWithin error R S)
-    {X Y : TypedSystem A}
-    (hX : ρ • R = X := by first | rfl | (simp only [SystemAlgebra.Interface.comp_smul] <;> rfl))
-    (hY : ρ • S = Y := by first | rfl | (simp only [SystemAlgebra.Interface.comp_smul] <;> rfl)) :
-    (distinguisherAdvantage AdmissibleDistinguishers.admissible).SubstitutesWithin
-      (fun D => error (D.absorb B.nonempty_prefix A.nonempty_prefix ρ)) X Y := by
-  subst hX hY
-  exact AdmissibleDistinguishers.substitutesWithin_attach ρ h
-
-/-- The advantage of a distinguisher is at most the distance. -/
-lemma distinguisherAdvantage_le_distance
-    (admissible : ∀ A : Interface, Set A.inputDomain.DistinguisherBehavior) {A : Interface}
-    (D : A.inputDomain.DistinguisherBehavior) (R S : TypedSystem A) :
-    (distinguisherAdvantage admissible).advantage A D R S ≤
-      ConstructiveCryptography.CryptographicAlgebra.distance R S := by
-  rw [cc_distance_eq]
-  exact D.advantage_le_transcriptDistance R S
+/-- Decision advantage is dominated by the transcript distance: every typed decision behavior
+`d` has `|d R - d S| ≤ Δ(R, S)`, so the domination law holds for whatever set is admitted. The
+metric is the selected transcript metric; nothing is changed or chosen here. -/
+noncomputable instance distinguisherAdvantageDominated
+    -- `admitted A` is the selected set of typed distinguishers on interface `A`.
+    (admitted : ∀ A : Interface, Set (TypedDistinguisher A)) :
+    ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.DominatedByDistance
+      (ConstructiveCryptography.Distinguishers.distinguisherAdvantage
+        (Phi := TypedSystem) admitted) where
+  advantage_le_distance d _ R S := by
+    rw [cc_distance_eq]
+    exact d.advantage_le_transcriptDistance R S
 
 end SystemAlgebra.Interface

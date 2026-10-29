@@ -1,3 +1,4 @@
+import RandomSystems.Typed.Distinguisher
 import RandomSystems.Distance.Mixture
 import RandomSystems.Typed.SamplingDistance
 import RandomSystems.Cumulative.Revealed
@@ -100,6 +101,6 @@ import RandomSystems.Typed.TensorRename
 /-!
 Random systems: raw systems and connection, deterministic converters, PDSs, cumulative random
 systems, probabilistic automata and memoryless systems, converters and attachment, parallel
-composition, distance and games; typed systems and typed converters on interfaces, and the
-programs and converters of the component DSL.
+composition, distance and games; typed systems, typed converters and typed distinguishers on
+interfaces, and the programs and converters of the component DSL.
 -/

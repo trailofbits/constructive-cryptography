@@ -1,5 +1,6 @@
 import ConstructiveCryptography.Tactics.Basic
 import ConstructiveCryptography.Substitution.Quantitative
+import ConstructiveCryptography.CryptographicAlgebra.DistinguisherAction
 
 /-!
 # Substitution proof commands
@@ -59,16 +60,28 @@ cc_calc mixed model using domination
 This proves `model.SubstitutesWithin (fun D => loss₁ D + ε + loss₂ D) X Y`.
 `cc_calc quantitative model` allows only concrete steps and `cc_calc statistical` only
 statistical steps.
+
+`cc_calc quantitative` and `cc_calc mixed`, written without a model, read the exact model of
+the goal `model.SubstitutesWithin error X Y` (`ccSubstitutionModel`). The inferred mixed form
+takes its domination law from a `DistinguisherAdvantage.DominatedByDistance model` instance
+and fails without one; no statistical step is converted otherwise. Every supplied premise
+must be stated for that same model; a premise for another model is rejected. The explicit
+forms remain for goals whose model is not displayed.
 -/
 
 open Lean
+open ConstructiveCryptography.CryptographicAlgebra
 
 syntax (name := ccSubstitute)
   "cc_substitute " term " through " term " using " term : tactic
 
 macro_rules
   | `(tactic| cc_substitute $relation through $converter using $premise) => do
-    let label := Syntax.mkStrLit s!"SubstitutionRelation.preserved; transformation={converter.raw.unsetTrailing.reprint.getD "<term>"}; premise={premise.raw.unsetTrailing.reprint.getD "<term>"}"
+    -- The trace label names the rule, transformation and premise; the `\` string gaps only
+    -- wrap the source line and leave the label unchanged.
+    let label := Syntax.mkStrLit s!"SubstitutionRelation.preserved; \
+      transformation={converter.raw.unsetTrailing.reprint.getD "<term>"}; \
+      premise={premise.raw.unsetTrailing.reprint.getD "<term>"}"
     `(tactic| cc_exact_rule $label =>
       ConstructiveCryptography.CryptographicAlgebra.SubstitutionRelation.preserved
         $relation $converter $premise)
@@ -240,7 +253,7 @@ partial def ccUsageRule? (witness : Expr) : MetaM (Option (Name × Expr)) := do
 open Lean Meta Elab Tactic in
 /-- Normalize use counts by constructor-directed structural laws, not by
 enumerating positions or trying unrelated count rules at default transparency. -/
-elab "cc_usage" : tactic => withMainContext do
+elab "cc_usage" : tactic => Lean.Elab.Tactic.withMainContext do
   let rec findUsage (expression : Expr) : MetaM (Option (Expr × Name × Expr)) := do
     if expression.isAppOf ``SubstitutionRelation.Implication.usageCount &&
         (← isDefEq (← inferType expression) (mkConst ``Nat)) then
@@ -294,6 +307,24 @@ syntax (name := ccCalcQuantitative) "cc_calc " &"quantitative" term:max
   ccQuantitativeCalcSteps : tactic
 syntax (name := ccCalcMixed) "cc_calc " "mixed " term:max " using " term:max
   ccQuantitativeCalcSteps : tactic
+/-- `cc_calc quantitative` with the model read from the `SubstitutesWithin` goal. -/
+syntax (name := ccCalcQuantitativeInferred) "cc_calc " &"quantitative"
+  ccQuantitativeCalcSteps : tactic
+/-- `cc_calc mixed` with the model read from the goal and its domination law taken from the
+`DominatedByDistance model` instance. -/
+syntax (name := ccCalcMixedInferred) "cc_calc " &"mixed" ccQuantitativeCalcSteps : tactic
+
+open Lean Meta in
+/-- Read the selected substitution model from the goal, unfolding only its outer definition
+until `SubstitutesWithin` is exposed. This does not search for a security model. -/
+partial def ccSubstitutionModel (target : Expr) : MetaM Expr := do
+  let target ← instantiateMVars target
+  if target.getAppFn.isConstOf
+      ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin then
+    return target.getAppArgs[3]!
+  if let some expanded ← unfoldDefinition? target then
+    return ← ccSubstitutionModel expanded
+  throwError "cc_calc needs a substitution goal to infer its selected distinguisher model"
 
 open ConstructiveCryptography.CryptographicAlgebra in
 open Lean Elab Tactic in
@@ -400,6 +431,7 @@ def elaborateCCQuantitativeCalc (model? domination? : Option (TSyntax `term))
   if (← instantiateMVars (mkMVar goal)).hasSorry then
     throwError "cc_calc requires a complete proof for every bound and join"
 
+open Lean Elab Tactic in
 elab_rules : tactic
   | `(tactic| cc_calc statistical $block:ccQuantitativeCalcSteps) =>
       elaborateCCQuantitativeCalc none none block
@@ -407,13 +439,23 @@ elab_rules : tactic
       elaborateCCQuantitativeCalc (some model) none block
   | `(tactic| cc_calc mixed $model using $domination $block:ccQuantitativeCalcSteps) =>
       elaborateCCQuantitativeCalc (some model) (some domination) block
+  | `(tactic| cc_calc quantitative $block:ccQuantitativeCalcSteps) => withMainContext do
+      let model ← Term.exprToSyntax (← ccSubstitutionModel (← getMainTarget))
+      elaborateCCQuantitativeCalc (some model) none block
+  | `(tactic| cc_calc mixed $block:ccQuantitativeCalcSteps) => withMainContext do
+      let model ← Term.exprToSyntax (← ccSubstitutionModel (← getMainTarget))
+      let domination ← ``(DistinguisherAdvantage.DominatedByDistance.advantage_le_distance
+        (model := $model))
+      elaborateCCQuantitativeCalc (some model) (some domination) block
 
 syntax (name := ccSubstitutionChain)
   "cc_substitution_chain " term " using " term "," term : tactic
 
 macro_rules
   | `(tactic| cc_substitution_chain $relation using $witness, $premises) => do
-    let label := Syntax.mkStrLit s!"Implication.substitutes; witness={witness.raw.unsetTrailing.reprint.getD "<term>"}; premises={premises.raw.unsetTrailing.reprint.getD "<term>"}"
+    let label := Syntax.mkStrLit s!"Implication.substitutes; \
+      witness={witness.raw.unsetTrailing.reprint.getD "<term>"}; \
+      premises={premises.raw.unsetTrailing.reprint.getD "<term>"}"
     `(tactic| cc_exact_rule $label =>
       ConstructiveCryptography.CryptographicAlgebra.SubstitutionRelation.Implication.substitutes
         $relation $witness $premises)
@@ -423,9 +465,12 @@ syntax (name := ccSubstitutionChainConcrete)
 
 macro_rules
   | `(tactic| cc_substitution_chain concrete $model using $witness, $losses, $bounds) => do
-    let label := Syntax.mkStrLit s!"Implication.substitutesWithin; witness={witness.raw.unsetTrailing.reprint.getD "<term>"}; losses={losses.raw.unsetTrailing.reprint.getD "<term>"}; bounds={bounds.raw.unsetTrailing.reprint.getD "<term>"}"
+    let label := Syntax.mkStrLit s!"Implication.substitutesWithin; \
+      witness={witness.raw.unsetTrailing.reprint.getD "<term>"}; \
+      losses={losses.raw.unsetTrailing.reprint.getD "<term>"}; \
+      bounds={bounds.raw.unsetTrailing.reprint.getD "<term>"}"
     `(tactic| cc_exact_rule $label =>
-      ConstructiveCryptography.CryptographicAlgebra.SubstitutionRelation.Implication.substitutesWithin
+      SubstitutionRelation.Implication.substitutesWithin
         $model $witness $losses $bounds)
 
 syntax (name := ccSubstitutionChainMixed)
@@ -435,7 +480,11 @@ syntax (name := ccSubstitutionChainMixed)
 macro_rules
   | `(tactic| cc_substitution_chain mixed $model using $witness, $selected, $losses,
       $errors, $domination, $assumptions, $statistical) => do
-    let label := Syntax.mkStrLit s!"Implication.substitutesWithin_of_mixed; witness={witness.raw.unsetTrailing.reprint.getD "<term>"}; selected={selected.raw.unsetTrailing.reprint.getD "<term>"}; losses={losses.raw.unsetTrailing.reprint.getD "<term>"}; statistical errors={errors.raw.unsetTrailing.reprint.getD "<term>"}"
+    let label := Syntax.mkStrLit s!"Implication.substitutesWithin_of_mixed; \
+      witness={witness.raw.unsetTrailing.reprint.getD "<term>"}; \
+      selected={selected.raw.unsetTrailing.reprint.getD "<term>"}; \
+      losses={losses.raw.unsetTrailing.reprint.getD "<term>"}; \
+      statistical errors={errors.raw.unsetTrailing.reprint.getD "<term>"}"
     `(tactic| cc_exact_rule $label =>
-      ConstructiveCryptography.CryptographicAlgebra.SubstitutionRelation.Implication.substitutesWithin_of_mixed
+      SubstitutionRelation.Implication.substitutesWithin_of_mixed
         $model $witness $selected $losses $errors $domination $assumptions $statistical)

@@ -15,6 +15,9 @@ The random oracle on `M` is the uniform random function `URF (Evaluation M T q)`
 
 A notion is the pair of its systems `(X₀, X₁)` (Banfi, §2.3.1), independent of the substitution
 relation; the predicate of the same name states it for the admitted distinguishers, `X₀ ≃[ε] X₁`.
+The admitted distinguishers are the typed distinguishers selected by the
+`AdmissibleDistinguishers` instance in scope, with no closure assumed, and `ε(d)` is the error
+allowed to each of them.
 
 ## Main definitions
 
@@ -45,7 +48,8 @@ system Hash.Real(H : K → M → T) [DecidableEq T] : KeyedCollision K M
     return decide (H k first = H k second)
 
 -- For `k ← K`: publish `k`; on `(m₀, m₁)`, whether `m₀ = m₁`.
-system Hash.Ideal(K M : Type) [Fintype K] [Nonempty K] [Fintype M] [DecidableEq M] : KeyedCollision K M
+system Hash.Ideal(K M : Type)
+    [Fintype K] [Nonempty K] [Fintype M] [DecidableEq M] : KeyedCollision K M
   initialize
     k ←$ 𝒰[K]
   on key() → K
@@ -61,9 +65,11 @@ def Hash.CR.systems [DecidableEq M] [DecidableEq T] (H : K → M → T) (q : ℕ
 
 /-- **Collision resistance** within `error`: against the admitted distinguishers, the collisions
 of `H(k, ·)` for a published key substitute for the equalities of messages. -/
-def Hash.CR [Interface.AdmissibleDistinguishers] [DecidableEq M]
+def Hash.CR
+    [ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher] [DecidableEq M]
     [DecidableEq T] (H : K → M → T) {q : ℕ}
-    (error : (KeyedCollision K M q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
+    -- `q` is the query budget; `error d` bounds the advantage of each admitted `d`.
+    (error : (TypedDistinguisher (KeyedCollision K M q)) → ENNReal) : Prop :=
   (Hash.CR.systems H q).1 ≃[error] (Hash.CR.systems H q).2
 
 end

@@ -14,8 +14,11 @@ whose decryption queries nothing inside, attached to the system `E_k` of `Encryp
 
 A notion is the pair of its systems `(X₀, X₁)` (Banfi, §2.3.1), independent of the substitution
 relation; the predicate of the same name states it for the admitted distinguishers, `X₀ ≃[ε] X₁`.
+The admitted distinguishers are the typed distinguishers selected by the
+`AdmissibleDistinguishers` instance in scope, with no closure assumed, and `ε(d)` is the error
+allowed to each of them.
 
-Planned: nonces and associated data.
+The interface here has no nonce or associated-data argument.
 
 ## Main definitions
 
@@ -162,33 +165,37 @@ def AE.Secure.systems [DecidableEq K] [DecidableEq M] [DecidableEq C] [Nonempty 
 
 /-- **ind-cca** within `error`: against the admitted distinguishers, `⟦E_k, D_k⟧` substitutes
 for `ρ^cca(⟦E_k, D_k⟧)`. -/
-def AE.INDCCA [Interface.AdmissibleDistinguishers]
+def AE.INDCCA [ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher]
     [DecidableEq K] [DecidableEq M] [DecidableEq C] [Nonempty M]
     (scheme : SymmetricEncryption K M C) {q : AE.Port → ℕ}
-    (error : (AE.perPort M C q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
+    -- `q` is the query budget per port; `error d` bounds the advantage of each admitted `d`.
+    (error : (TypedDistinguisher (AE.perPort M C q)) → ENNReal) : Prop :=
   (AE.INDCCA.systems scheme q).1 ≃[error] (AE.INDCCA.systems scheme q).2
 
 /-- **int-ptxt** within `error`: against the admitted distinguishers, `⟦E_k, D_k⟧` substitutes
 for `ρ^ptxt(⟦E_k, D_k⟧)`. -/
-def AE.INTPTXT [Interface.AdmissibleDistinguishers]
+def AE.INTPTXT [ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher]
     [DecidableEq K] [DecidableEq M] (scheme : SymmetricEncryption K M C) {q : AE.Port → ℕ}
-    (error : (AE.perPort M C q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
+    -- `q` is the query budget per port; `error d` bounds the advantage of each admitted `d`.
+    (error : (TypedDistinguisher (AE.perPort M C q)) → ENNReal) : Prop :=
   (AE.INTPTXT.systems scheme q).1 ≃[error] (AE.INTPTXT.systems scheme q).2
 
 /-- **int-ctxt** within `error`: against the admitted distinguishers, `⟦E_k, D_k⟧` substitutes
 for `ρ^ctxt(E_k)`. -/
-def AE.INTCTXT [Interface.AdmissibleDistinguishers]
+def AE.INTCTXT [ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher]
     [DecidableEq K] [DecidableEq M] [DecidableEq C] (scheme : SymmetricEncryption K M C)
-    {q : AE.Port → ℕ} (error : (AE.perPort M C q).inputDomain.DistinguisherBehavior → ENNReal) :
+    -- `q` is the query budget per port; `error d` bounds the advantage of each admitted `d`.
+    {q : AE.Port → ℕ} (error : (TypedDistinguisher (AE.perPort M C q)) → ENNReal) :
     Prop :=
   (AE.INTCTXT.systems scheme q).1 ≃[error] (AE.INTCTXT.systems scheme q).2
 
 /-- **ae** within `error`: against the admitted distinguishers, `⟦E_k, D_k⟧` substitutes for
 `⟦E$_k, D^⊥⟧ = ρ^ae(E_k)`. -/
-def AE.Secure [Interface.AdmissibleDistinguishers]
+def AE.Secure [ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher]
     [DecidableEq K] [DecidableEq M] [DecidableEq C] [Nonempty M]
     (scheme : SymmetricEncryption K M C) {q : AE.Port → ℕ}
-    (error : (AE.perPort M C q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
+    -- `q` is the query budget per port; `error d` bounds the advantage of each admitted `d`.
+    (error : (TypedDistinguisher (AE.perPort M C q)) → ENNReal) : Prop :=
   (AE.Secure.systems scheme q).1 ≃[error] (AE.Secure.systems scheme q).2
 
 end

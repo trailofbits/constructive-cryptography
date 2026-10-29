@@ -86,6 +86,19 @@ behaviors [1, Definition 11]. Zero distance is not equality. It is an explicit s
 global instance; the [CC instance](../../ConstructiveCryptography/README.md#the-instances-on-interfaces)
 selects it as its metric.
 
+## Typed distinguishers
+
+A [**typed distinguisher**][TypedDistinguisher] on $`A`$ is the decision behavior
+$`R \mapsto \Pr[d(R) = 1]`$ of a stopping distinguisher compatible with $`A`$'s domain: an
+abbreviation of the existing distinguisher behaviors, with no new carrier or equivalence.
+[Absorbing][TypedDistinguisher.absorb] a typed converter $`\alpha : A \to B`$ gives the
+distinguisher $`d\alpha`$ on $`B`$ with
+[$`(d\alpha)(R) = d(\alpha R)`$][TypedDistinguisher.probability_absorb]; absorbing the identity
+[changes nothing][TypedDistinguisher.absorb_id], and absorbing a serial composition
+[absorbs its converters in turn][TypedDistinguisher.absorb_comp], $`d(\alpha\beta) = (d\alpha)\beta`$.
+These are laws of the action only: a selected set of typed distinguishers need not be closed
+under absorption.
+
 ## Filters, contexts, sources and functional systems
 
 The [**filter**][TypedConverter.filter] admitting $`D`$ forwards the queries of admitted histories;
@@ -208,6 +221,11 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedConverter.comp_rightUnitor]: ConverterCoherence.lean#L224
 [TypedConverter.parallel_rename]: TensorRename.lean#L128
 [TypedSystem.transcriptPseudoEMetricSpace]: Distance.lean#L22
+[TypedDistinguisher]: Distinguisher.lean#L37
+[TypedDistinguisher.absorb]: Distinguisher.lean#L43
+[TypedDistinguisher.probability_absorb]: Distinguisher.lean#L49
+[TypedDistinguisher.absorb_id]: Distinguisher.lean#L54
+[TypedDistinguisher.absorb_comp]: Distinguisher.lean#L62
 [Interface.restrict]: Filter.lean#L32
 [TypedConverter.filter]: Filter.lean#L49
 [TypedConverter.filter_smul]: Filter.lean#L60

@@ -410,7 +410,8 @@ the inherited composition and tensor notation, as in `Examples/DSL/AES.lean`.
 Environment and distinguisher declarations are not syntax forms of the DSL. Environments
 (`DDE`), distinguishers and their compatibility with a domain are systems-level definitions;
 see `Domain.Compatible` and `Domain.DecisionCompatible` in
-[Decision](../../RandomSystems/Distance/Decision.lean).
+[Decision](../../RandomSystems/Distance/Decision.lean). On an interface the distinguishers are
+`TypedDistinguisher A`, in [Typed/Distinguisher](../../RandomSystems/Typed/Distinguisher.lean).
 
 To check the DSL and its tests, run from the repository root:
 
@@ -430,7 +431,11 @@ and [`cc_calc counted systems`][cc_calc-counted] builds an implication witness, 
 [`cc_usage`][cc_usage] counts. [`cc_calc statistical`][cc_calc-statistical] proves
 $`d(X, Y) \le \sum_j \varepsilon_j`$ from `≈[ε]` steps, and
 [`cc_calc mixed model using domination`][cc_calc-mixed] proves
-$`X \simeq_{\sum_j \varepsilon_j} Y`$ from `≃[loss]` and `≈[ε]` steps.
+$`X \simeq_{\sum_j \varepsilon_j} Y`$ from `≃[loss]` and `≈[ε]` steps, where `domination` bounds
+each admitted advantage by the distance. Written without a model, `cc_calc quantitative` and
+`cc_calc mixed` read the exact model of the `SubstitutesWithin` goal; the inferred mixed form
+takes its domination law from a `DominatedByDistance` instance for that model and fails without
+one.
 
 Importing `ConstructiveCryptography.Notation` registers the typed attachment laws and the
 representation equalities connecting them to categorical arrows and the selected CC instance.
@@ -440,7 +445,10 @@ parallel families, and the attachment goals produced by `cc_construct`. In parti
 from any normalized law. Nested laws may depend on earlier draws. Every draw stays in its
 original scope: a sample shared by a whole family remains shared, rather than becoming
 independent component samples. A separately supplied action is not replaced by the canonical
-one. The before/after proofs, expression guards, negative tests and exact rewrite traces are in
+one. The same import makes `Δ R S` and `R ∥ S` read typed-system operands first, so that the
+interfaces and budgets of DSL attachments are inferred; any other carrier keeps its own
+selected metric and parallel operation. The
+before/after proofs, expression guards, negative tests and exact rewrite traces are in
 [`Tests.ProofErgonomics`](../../Tests/ProofErgonomics.lean).
 
 <!-- Files -->
@@ -478,11 +486,11 @@ one. The before/after proofs, expression guards, negative tests and exact rewrit
 [WriteThrough]: ../../Examples/DSL/Components.lean#L104
 [cc_normalize]: ../Tactics/Basic.lean#L30
 [cc_nonexpand]: ../Tactics/Categorical.lean#L166
-[cc_nonexpand-interfaces]: ../Notation.lean#L105
+[cc_nonexpand-interfaces]: ../Notation.lean#L176
 [cc_triangle]: ../Tactics/Categorical.lean#L155
 [cc_construct]: ../Tactics/Categorical.lean#L42
-[cc_calc]: ../Tactics/Substitution.lean#L88
-[cc_calc-counted]: ../Tactics/Substitution.lean#L147
-[cc_usage]: ../Tactics/Substitution.lean#L243
-[cc_calc-statistical]: ../Tactics/Substitution.lean#L292
-[cc_calc-mixed]: ../Tactics/Substitution.lean#L295
+[cc_calc]: ../Tactics/Substitution.lean#L101
+[cc_calc-counted]: ../Tactics/Substitution.lean#L160
+[cc_usage]: ../Tactics/Substitution.lean#L256
+[cc_calc-statistical]: ../Tactics/Substitution.lean#L305
+[cc_calc-mixed]: ../Tactics/Substitution.lean#L308

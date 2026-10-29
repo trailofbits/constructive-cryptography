@@ -18,6 +18,9 @@ on every message, and returns the one of the current key and message.
 
 A notion is the pair of its systems `(X₀, X₁)` (Banfi, §2.3.1), independent of the substitution
 relation; the predicate of the same name states it for the admitted distinguishers, `X₀ ≃[ε] X₁`.
+The admitted distinguishers are the typed distinguishers selected by the
+`AdmissibleDistinguishers` instance in scope, with no closure assumed, and `ε(d)` is the error
+allowed to each of them.
 
 ## Main definitions
 
@@ -114,16 +117,18 @@ def MAC.SUFCMA.systems [DecidableEq K] [DecidableEq M] [DecidableEq T] (mac : MA
 
 /-- **EUF-CMA** within `error`: against the admitted distinguishers, the real system substitutes
 for the one that accepts only tags on tagged messages. -/
-def MAC.EUFCMA [Interface.AdmissibleDistinguishers]
+def MAC.EUFCMA [ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher]
     [DecidableEq K] [DecidableEq M] (mac : MAC K M T) {q : Tagging.Port → ℕ}
-    (error : (Tagging.perPort M T q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
+    -- `q` is the query budget per port; `error d` bounds the advantage of each admitted `d`.
+    (error : (TypedDistinguisher (Tagging.perPort M T q)) → ENNReal) : Prop :=
   (MAC.EUFCMA.systems mac q).1 ≃[error] (MAC.EUFCMA.systems mac q).2
 
 /-- **SUF-CMA** within `error`: against the admitted distinguishers, the real system substitutes
 for the one that accepts only tagged pairs. -/
-def MAC.SUFCMA [Interface.AdmissibleDistinguishers]
+def MAC.SUFCMA [ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher]
     [DecidableEq K] [DecidableEq M] [DecidableEq T] (mac : MAC K M T) {q : Tagging.Port → ℕ}
-    (error : (Tagging.perPort M T q).inputDomain.DistinguisherBehavior → ENNReal) : Prop :=
+    -- `q` is the query budget per port; `error d` bounds the advantage of each admitted `d`.
+    (error : (TypedDistinguisher (Tagging.perPort M T q)) → ENNReal) : Prop :=
   (MAC.SUFCMA.systems mac q).1 ≃[error] (MAC.SUFCMA.systems mac q).2
 
 end

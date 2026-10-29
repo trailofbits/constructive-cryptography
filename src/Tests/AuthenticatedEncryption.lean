@@ -47,12 +47,18 @@ lemma oneTimePad_usage (q : AE.Port → ℕ) :
       (correctedChain oneTimePad q).usageCount .ptxt = 2 :=
   ⟨correctedChain_cca oneTimePad q, correctedChain_ptxt oneTimePad q⟩
 
-/-- The implication applies to the one-time pad for any admitted distinguishers. -/
-example (q : AE.Port → ℕ) [AdmissibleDistinguishers]
-    (εptxt εcca : (AE.perPort Bool Bool q).inputDomain.DistinguisherBehavior → ENNReal)
-    (ptxt : AE.INTPTXT oneTimePad εptxt) (cca : AE.INDCCA oneTimePad εcca) :
+/-- The implication applies to the one-time pad for any admitted distinguishers, given closure
+under the two transformations `ρ^ptxt` and `ρ^cca` only. -/
+example (q : AE.Port → ℕ)
+    [ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher]
+    (εptxt εcca : (TypedDistinguisher (AE.perPort Bool Bool q)) → ENNReal)
+    (ptxt : AE.INTPTXT oneTimePad εptxt) (cca : AE.INDCCA oneTimePad εcca)
+    (closedPtxt : AdmissibleDistinguishers.ClosedUnder
+      (Phi := TypedSystem) (D := TypedDistinguisher) (AE.PTXT.perPort Bool Bool (budget := q)))
+    (closedCca : AdmissibleDistinguishers.ClosedUnder
+      (Phi := TypedSystem) (D := TypedDistinguisher) (AE.CCA.perPort Bool Bool (budget := q))) :
     ∃ error, AE.Secure oneTimePad (q := q) error :=
-  ⟨_, ae_of_ind_cca_int_ptxt oneTimePad q εptxt εcca ptxt cca⟩
+  ⟨_, ae_of_ind_cca_int_ptxt oneTimePad q εptxt εcca ptxt cca closedPtxt closedCca⟩
 
 /-- Before any encryption, the plaintext filter rejects every decryption. -/
 lemma ptxtDecrypt_initial {Ω : Type} (decrypt : Ω → List Bool → Bool → Option Bool) (ω : Ω)

@@ -23,6 +23,21 @@ open scoped SystemAlgebra
 (`Interface.cc_distance_eq`). -/
 example {A : Interface} (R S : TypedSystem A) : Δ R S = R.1.transcriptDistance S.1 := rfl
 
+/-- With the full `Notation` imported, `Δ R S` on an arbitrary resource theory `Phi` is still
+`distance R S` of its own selected `CompatiblePseudoMetric`: the typed-system handler fails on
+`Phi A` and defers to the generic one, without substituting the transcript metric. -/
+example {C : Type} [Category C] [MonoidalCategory C] {Phi : C → Type}
+    [ConstructiveCryptography.ResourceTheory C Phi]
+    [ConstructiveCryptography.CompatiblePseudoMetric C Phi] {A : C} (R S : Phi A) :
+    Δ R S = ConstructiveCryptography.CryptographicAlgebra.distance R S := rfl
+
+/-- Likewise `R ∥ S` on `Phi A`, `Phi B` is the theory's own selected `parallel R S`, not
+`TypedSystem.parallel`: the typed handler fails and defers to the generic one. -/
+example {C : Type} [Category C] [MonoidalCategory C] {Phi : C → Type}
+    [ConstructiveCryptography.ResourceTheory C Phi]
+    [ConstructiveCryptography.CryptographicAlgebra C Phi] {A B : C} (R : Phi A) (S : Phi B) :
+    R ∥ S = ConstructiveCryptography.CryptographicAlgebra.parallel R S := rfl
+
 /-- Attachment is non-expanding for the transcript metric, `Δ(αR, αS) ≤ Δ(R, S)`, by
 `cc_nonexpand`; the instance proves this field from the closure bound (Maurer 2011, Lemma 1). -/
 example {A B : Interface} (α : A ⟶ B) (R S : TypedSystem B) :

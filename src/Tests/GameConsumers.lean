@@ -29,16 +29,21 @@ example {C : Type} [Category C] {Game : C → Type} [Games C Game (ℕ × ℕ)]
       Games.absorb (Games.absorb (H := Game B) W α) β :=
   Games.absorb_comp W α β
 
--- The decision projection preserves the selected class's closure under this reduction.
-example [AdmissibleDistinguishers] {A B : Interface} (s : Solver A) (α : A ⟶ B)
-    (hs : s.decision ∈ AdmissibleDistinguishers.admissible A) :
+-- Decision projection commutes with absorption, `(sα).decision = s.decision α`, so a supplied
+-- closure proof for `α` keeps an admitted solver's decision admitted after absorbing `α`.
+example
+    [ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher]
+    {A B : Interface} (s : Solver A) (α : A ⟶ B)
+    (closed : AdmissibleDistinguishers.ClosedUnder
+      (Phi := TypedSystem) (D := TypedDistinguisher) α)
+    (hs : s.decision ∈ AdmissibleDistinguishers.admissible (D := TypedDistinguisher) A) :
     (s.absorb B.nonempty_prefix A.nonempty_prefix α).decision ∈
-      AdmissibleDistinguishers.admissible B := by
+      AdmissibleDistinguishers.admissible (D := TypedDistinguisher) B := by
   rw [Domain.SolverBehavior.decision_absorb]
-  exact AdmissibleDistinguishers.closed α s.decision hs
+  exact closed s.decision hs
 
 -- Every existing decision behavior remains available through a joint realization.
-example {A : Interface} (d : A.inputDomain.DistinguisherBehavior) :
+example {A : Interface} (d : (TypedDistinguisher A)) :
     ∃ s : Solver A, s.decision = d :=
   Domain.SolverBehavior.decision_surjective A.domain A.bound A.length_le d
 
@@ -54,12 +59,15 @@ lemma prg_joint {S : Type} [Fintype S] [Nonempty S] (G : S → S × S)
       (s.absorb (Evaluation.perPort Unit (S × S) (𝓡₂.insideBudget S q)).nonempty_prefix
         (Evaluation.perPort Unit (S × S × S) q).nonempty_prefix (𝓡₂.perPort S)).decision.advantage
           (PRGReal.perPort G) (MemorylessSource.perPort (S × S) 𝒰[S × S]) := by
-  let := AdmissibleDistinguishers.all
-  -- Use each transformed solver's actual advantage as its bound; projection commutes with
-  -- both reductions, so the existing PRG theorem has exactly this conclusion.
+  let : ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher :=
+    ConstructiveCryptography.AdmissibleDistinguishers.all
+  -- Under the local `all`, both reductions preserve admission. Use each transformed solver's
+  -- actual advantage as its bound; projection commutes with both reductions, so the existing
+  -- PRG theorem has exactly this conclusion.
   exact prg_length_extension G
     (fun D => D.advantage (PRGReal.perPort G) (MemorylessSource.perPort (S × S) 𝒰[S × S]))
-    (fun _ _ => le_rfl) s.decision (Set.mem_univ _)
+    (fun _ _ => le_rfl) (AdmissibleDistinguishers.all_closedUnder _)
+    (AdmissibleDistinguishers.all_closedUnder _) s.decision (Set.mem_univ _)
 
 /-- The AE game bound controls the same joint solver's decision view by `q_enc² / |M|`. -/
 lemma ae_joint {K M C : Type} [Fintype K] [Fintype M] [Fintype C]
@@ -74,7 +82,7 @@ lemma ae_joint {K M C : Type} [Fintype K] [Fintype M] [Fintype C]
 
 -- Introducing the joint view does not narrow the class characterizing transcript distance.
 example {A : Interface} (R S : TypedSystem A) :
-    Δ R S = ⨆ D : A.inputDomain.DistinguisherBehavior, D.advantage R S :=
+    Δ R S = ⨆ D : (TypedDistinguisher A), D.advantage R S :=
   RandomSystem.transcriptDistance_eq_iSup_behavior R S
 
 #print axioms Domain.SolverBehavior.decision

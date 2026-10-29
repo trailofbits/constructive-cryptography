@@ -1,3 +1,4 @@
+import ConstructiveCryptography.Notation.Basic
 import RandomSystems.Typed.ParallelAllAttachment
 import ConstructiveCryptography.InterfaceAlgebra
 import ConstructiveCryptography.CryptographicAlgebra.Game
@@ -6,16 +7,23 @@ import ConstructiveCryptography.Tactics.Categorical
 /-!
 # Notation for interfaces
 
-Scoped notation for the CC operations on interfaces: `Δ R S` for the distance, `R ∥ S` for
-parallel composition, `S —[α]→ T` and `S —[α; ε]→ T` for exact and approximate construction,
-`R ≃[ε] S` for substitution within `ε` for the admitted distinguishers
-(`Interface.AdmissibleDistinguishers`), and `G |≡ T` for conditional equivalence of a game to a
-typed system. The compatibility laws of the distance are restated with `∥`, the parallel
-composition `TypedSystem.parallel`, for the `cc_nonexpand` tactic, and `cc_normalize` applies
-locality, `(α ⊗ₘ β) • (R ∥ S) = α • R ∥ β • S`, whether the interfaces are written with `⊗` or
-with `Interface.tensor`. The categorical action, the direct typed action and the attachment
-field of `Interface.resourceTheory` are identified by definitional bridges, so all three
-normalize by the same typed laws, also after serial composition or `cc_construct`. Attachment
+Scoped notation for the CC operations on interfaces: `S —[α]→ T` and `S —[α; ε]→ T` for exact
+and approximate construction, and `G |≡ T` for conditional equivalence of a game to a typed
+system. The generic `Δ R S`, `R ∥ S` and `R ≃[ε] S` come from
+`ConstructiveCryptography.Notation.Basic`; on interfaces `Δ` is the transcript distance and
+`≃[ε]` quantifies over the `AdmissibleDistinguishers` instance a statement installs. Second
+handlers for `Δ` and `∥` (`elabTypedCCDistance`, `elabTypedCCParallel`, sharing
+`elabTypedCCOperands`) first read each operand as a typed system on its own interface, so that
+attachments such as `Δ (α • R) (α • S)` or `α • R ∥ β • S` infer their interfaces and budgets.
+If that fails they restore the elaboration state and defer to the generic handlers, so any
+other carrier keeps its own metric and parallel operation. The hints select nothing: both
+paths produce the same `distance R S` or `parallel R S`. The
+compatibility laws of the distance are restated with `∥` for the `cc_nonexpand` tactic, and
+`cc_normalize` applies locality, `(α ⊗ₘ β) • (R ∥ S) = α • R ∥ β • S`, whether the interfaces
+are written with `⊗` or with `Interface.tensor`. The categorical action, the direct typed
+action and the attachment field of `Interface.resourceTheory` are identified by definitional
+bridges, and `cc_parallel_eq` rewrites the abstract `parallel` to `TypedSystem.parallel`, so
+all normalize by the same typed laws, also after serial composition or `cc_construct`. Attachment
 enters an initial sample, `α • sample P R = sample P (fun s => α • R s)`, for any normalized
 law `P`, including nested samples whose laws depend on earlier draws, and acts componentwise on
 a finite family, `(⨂ₘ k, α k) • (∥ k, R k) = ∥ k, α k • R k`. A shared draw stays outside the
@@ -30,14 +38,42 @@ namespace SystemAlgebra
 
 open CategoryTheory CategoryTheory.MonoidalCategory
 
-/-- The CC distance of two typed systems on an interface. Both arguments are elaborated as typed
-systems on an interface, so arrows acting on them take their domains from the systems. -/
-scoped macro "Δ " R:term:max S:term:max : term =>
-  `(ConstructiveCryptography.CryptographicAlgebra.distance
-    ($R : TypedSystem _) ($S : TypedSystem _))
+open Lean Elab Term in
+/-- Elaborate `operation (R : TypedSystem _) (S : TypedSystem _)` for a binary CC operation
+(`distance` or `parallel`), the two `_` being independent interfaces. The carrier is then
+known before attachments in `R`, `S` are elaborated, so their outside interfaces are inferred.
+Elaboration errors are not turned into `sorry`, so a failure is visible here; the saved state
+is then restored and the syntax is passed on to the generic handler. The result is the
+selected `operation` itself; the hints choose no metric, action or parallel instance. -/
+def elabTypedCCOperands (operation R S : TSyntax `term)
+    (expectedType? : Option Expr) : TermElabM Expr := do
+  let saved ← saveState
+  try
+    withoutErrToSorry <| withSynthesize do
+      elabTerm (← `($operation
+        ($R : TypedSystem _) ($S : TypedSystem _))) expectedType?
+  catch _ =>
+    saved.restore
+    throwUnsupportedSyntax
 
-scoped infixl:70 " ∥ " =>
-  TypedSystem.parallel
+open Lean Elab Term in
+/-- `Δ R S` with typed carrier hints (`elabTypedCCOperands`); the metric is the selected one. -/
+@[term_elab ccDistance]
+def elabTypedCCDistance : TermElab
+  | `(Δ $R $S), expectedType? => do
+    elabTypedCCOperands (← `(ConstructiveCryptography.CryptographicAlgebra.distance))
+      R S expectedType?
+  | _, _ => throwUnsupportedSyntax
+
+open Lean Elab Term in
+/-- `R ∥ S` with typed carrier hints (`elabTypedCCOperands`), one interface per ordered
+component; the parallel operation is the selected one. -/
+@[term_elab ccParallel]
+def elabTypedCCParallel : TermElab
+  | `($R ∥ $S), expectedType? => do
+    elabTypedCCOperands (← `(ConstructiveCryptography.CryptographicAlgebra.parallel))
+      R S expectedType?
+  | _, _ => throwUnsupportedSyntax
 
 scoped notation:50 source " —[" converter "]→ " target:51 =>
   ConstructiveCryptography.CryptographicAlgebra.Specification.Constructs
@@ -46,12 +82,6 @@ scoped notation:50 source " —[" converter "]→ " target:51 =>
 scoped notation:50 source " —[" converter "; " error "]→ " target:51 =>
   ConstructiveCryptography.CryptographicAlgebra.Specification.ConstructsWithin
     converter source target error
-
-/-- Substitution within `error` for the admitted distinguishers of the instance in scope:
-`R ≃[ε] S` is `SubstitutesWithin (distinguisherAdvantage admissible) ε R S`. -/
-scoped notation:50 R:51 " ≃[" error "] " S:51 =>
-  ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin
-    (Interface.distinguisherAdvantage Interface.AdmissibleDistinguishers.admissible) error R S
 
 /-- Conditional equivalence `G |≡ T` of a game to a typed system (CR18, Definition 4.19): the
 field of `DistinctionGames`. -/
@@ -62,10 +92,11 @@ namespace Interface
 
 attribute [cc_normalization] comp_smul identity_attach
 
--- Definitional bridges to the direct typed action, below the laws' default priority: the
--- categorical action and the `resourceTheory` attachment field left by `cc_construct` are
--- rewritten to `α • R` with `α : TypedConverter A B`, where the typed laws below apply.
-attribute [cc_normalization 100] smul_eq_typed_smul attach_eq_typed_smul
+-- Definitional bridges, below the laws' default priority: the categorical action and the
+-- `resourceTheory` attachment field left by `cc_construct` are rewritten to `α • R` with
+-- `α : TypedConverter A B`, and the abstract `parallel` to `TypedSystem.parallel`, where the
+-- typed laws below apply.
+attribute [cc_normalization 100] smul_eq_typed_smul attach_eq_typed_smul cc_parallel_eq
 
 -- The typed laws: `(α ≫ β) • R = α • (β • R)`, `id • R = R`, binary and finite-family
 -- locality, and `α • sample P R = sample P (fun s => α • R s)`. None moves an initial sample

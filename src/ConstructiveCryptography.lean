@@ -1,3 +1,5 @@
+import ConstructiveCryptography.CryptographicAlgebra.DistinguisherAction
+import ConstructiveCryptography.Distinguisher
 import ConstructiveCryptography.Construction.Basic
 import ConstructiveCryptography.Construction.Defs
 import ConstructiveCryptography.CryptographicAlgebra.Basic
@@ -46,7 +48,8 @@ import ConstructiveCryptography.Tactics.ProofAutomationAttributes
 
 /-!
 Constructive Cryptography: the classes of cryptographic algebras (attachment, parallel
-composition, distance, distinguishers, games), specifications, constructions and substitution;
-their instances on interfaces, whose fields are the typed systems and typed converters of
+composition, distance, games), of distinguishers (decision evaluation, admitted tests,
+absorption of converters), specifications, constructions and substitution; their instances on
+interfaces, whose fields are the typed systems, typed converters and typed distinguishers of
 `RandomSystems.Typed`; the notation, the proof commands and the DSL front end.
 -/
