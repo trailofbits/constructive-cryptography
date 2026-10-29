@@ -104,7 +104,67 @@ example (h : List (ULift.{1} Bool × ULift.{2} Bool))
   -- The transcript law holds at any universes of `X` and `Y`.
   exact uniform_mass_transcript_eq h g hg
 
+/-- `F` uniform on `Bool → Bool`, `s = {false}`: `Pr[F not injective on s] ≤ C(1, 2)/2 = 0`. -/
+example : (Distribution.uniform (Bool → Bool)).mass
+    (fun f => ¬ Set.InjOn f ({false} : Finset Bool)) ≤ 0 := by
+  -- The birthday bound with `|s| = 1`: `C(1, 2) = 0`.
+  simpa only [Finset.coe_singleton, Set.injOn_singleton, not_true_eq_false, Finset.card_singleton,
+    Nat.choose_succ_self, CharP.cast_eq_zero, Fintype.card_bool, Nat.cast_ofNat, zero_div] using
+    uniform_mass_not_injOn_le_choose (X := Bool) (Y := Bool) ({false} : Finset Bool)
+
+/-- `F` uniform on `Bool → Bool`, `s = {false, true}`: not injective on `s` is
+`F false = F true`, and `Pr ≤ C(2, 2)/2 = 1/2`. -/
+example : (Distribution.uniform (Bool → Bool)).mass
+    (fun f => ¬ Set.InjOn f (Finset.univ : Finset Bool)) ≤ (1 / 2 : ℝ) := by
+  -- The birthday bound with `|s| = 2` and `|Y| = 2`: one pair, `C(2, 2)/2 = 1/2`.
+  simpa only [Fintype.univ_bool, Finset.coe_insert, Finset.coe_singleton, Set.injOn_pair,
+    Bool.true_eq_false, imp_false, Decidable.not_not, one_div, Finset.mem_singleton,
+    not_false_eq_true, Finset.card_insert_of_notMem, Finset.card_singleton, Nat.reduceAdd,
+    Nat.choose_self, Nat.cast_one, Fintype.card_bool, Nat.cast_ofNat] using
+    uniform_mass_not_injOn_le_choose (X := Bool) (Y := Bool) Finset.univ
+
+/-- `F` uniform on `Bool → Bool`, fresh coordinate `true` under the first-reply event
+`F false = true`: `Pr[F false = true ∧ F true = false] = Pr[F false = true] / 2`. -/
+example : (Distribution.uniform (Bool → Bool)).mass
+    (fun f => f false = true ∧ f true = false) =
+      (Distribution.uniform (Bool → Bool)).mass (fun f => f false = true) / 2 := by
+  -- The fresh-coordinate law with `x = true`, `y = false` and `|Y| = 2`.
+  apply uniform_mass_fresh_eval_eq
+  -- Tables agreeing off `true` agree at `false`, so the event ignores `F true`.
+  intro f g he
+  simp only [he false (by simp only [ne_eq, Bool.false_eq_true, not_false_eq_true])]
+
+/-- For any nonnegative `P : Distribution ℕ`, not necessarily normalized, and the singleton
+`s = {0}` of the infinite index type `ℕ`, the pair event `∃ i, j ∈ s, i ≠ j ∧ bad i j` is empty:
+the pair bound gives mass `≤ C(1, 2) · δ = 0` even for `δ = -1`. -/
+example (P : Distribution ℕ) (hP : P.NonNeg) (bad : ℕ → ℕ → ℕ → Prop)
+    (hsym : ∀ i j ω, bad i j ω → bad j i ω) :
+    P.mass (fun ω => ∃ i ∈ ({0} : Finset ℕ), ∃ j ∈ ({0} : Finset ℕ),
+      i ≠ j ∧ bad i j ω) ≤ 0 := by
+  -- The pair bound with `δ = -1`.
+  have h := Distribution.mass_exists_pair_le_choose P hP {0} bad hsym (-1)
+    (by
+      -- Vacuous: `i, j ∈ {0}` gives `i = 0 = j`, contradicting `i ≠ j`.
+      intro i hi j hj hij
+      have hi0 := Finset.mem_singleton.mp hi
+      have hj0 := Finset.mem_singleton.mp hj
+      exact (hij (hi0.trans hj0.symm)).elim)
+  -- `C(1, 2) = 0`, so the bound is `0 · (-1) = 0`.
+  simpa only [Finset.card_singleton, Nat.choose_eq_zero_of_lt (show 1 < 2 by omega),
+    Nat.cast_zero, zero_mul] using h
+
+/-- A constant predictor is not injective, but it still guesses a fresh Boolean reply with
+probability `1/2`: `Pr[F true = (fun _ => false) (F false)] = 1/2`. -/
+example : (Distribution.uniform (Bool → Bool)).mass
+    (fun f => f true = (fun _ : Bool => false) (f false)) = (1 / 2 : ℝ) := by
+  -- The graph law with `x = false`, `z = true` and `|Y| = 2`; `predict` need not be injective.
+  simpa only [Fintype.card_bool, Nat.cast_ofNat] using
+    uniform_two_outputs_graph_mass false true Bool.false_ne_true (fun _ : Bool => false)
+
 #print axioms Probability.Counting.uniform_mass_transcript_eq
 #print axioms Probability.Counting.fTransform_eval_uniform_eq_of_same_fibers
+#print axioms Probability.Counting.uniform_mass_fresh_eval_eq
+#print axioms Probability.Counting.uniform_mass_not_injOn_le_choose
+#print axioms Probability.Distribution.mass_exists_pair_le_choose
 
 end Probability.Counting.Tests
