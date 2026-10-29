@@ -271,7 +271,7 @@ lemma distance_le [MonoidalCategory C] [CompatiblePseudoMetric C Phi]
     | true =>
         -- Fibre distance symmetry reverses a true-bit step at no cost.
         simpa only [directionEq, Bool.not_true, distance,
-          CryptographicAlgebra.distance, edist_comm] using step use
+          CryptographicAlgebra.distance, PseudoEMetricSpace.edist_comm] using step use
   -- Sum the explicitly transformed and oriented statistical steps.
   have chain := distance_hybrid_le
     (left := fun use =>

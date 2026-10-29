@@ -46,9 +46,9 @@ abbrev EndoFamily (A : C) := Submonoid (CategoryTheory.End (Opposite.op A))
 MR16, §3.3 (printed p. 7): “(β ◦ α)ⁱR = βⁱ(αⁱR)”. -/
 @[reducible] def endoMulAction (Phi : C → Type w) [ResourceTheory C Phi] (A : C) :
     MulAction (CategoryTheory.End (Opposite.op A)) (Phi A) where
-  smul converter resource := attach converter.unop resource
+  smul converter resource := attach converter.asHom.unop resource
   one_smul resource := attach_identity resource
-  mul_smul outer inner resource := attach_serial outer.unop inner.unop resource
+  mul_smul outer inner resource := attach_serial outer.asHom.unop inner.asHom.unop resource
 
 namespace Specification
 
@@ -69,16 +69,16 @@ lemma mem_star_iff {A : C}
     {converters : EndoFamily A}
     {source : Specification (Phi A)} {resource : Phi A} :
     resource ∈ star converters source ↔
-      ∃ converter : CategoryTheory.End A, converter.op ∈ converters ∧
+      ∃ converter : A ⟶ A, End.of converter.op ∈ converters ∧
         ∃ original ∈ source,
           attach converter original = resource := by
   constructor
   · -- Read the opposite-category converter as its ordinary base converter.
     rintro ⟨converter, admitted, original, sourceAdmitted, equation⟩
-    exact ⟨converter.unop, admitted, original, sourceAdmitted, equation⟩
+    exact ⟨converter.asHom.unop, admitted, original, sourceAdmitted, equation⟩
   · -- Send the ordinary base converter to the acting opposite category.
     rintro ⟨converter, admitted, original, sourceAdmitted, equation⟩
-    exact ⟨converter.op, admitted, original, sourceAdmitted, equation⟩
+    exact ⟨End.of converter.op, admitted, original, sourceAdmitted, equation⟩
 
 omit [MonoidalCategory C] in
 /-- Every specification is contained in its converter-class closure. -/
@@ -117,10 +117,10 @@ lemma star_mono {A : C}
 omit [MonoidalCategory C] in
 /-- Converter attachment carries a star-relaxed source into the star closure
 of its direct image when the converter commutes with the admitted class. -/
-lemma map_star_subset {A : C} {converter : CategoryTheory.End A}
+lemma map_star_subset {A : C} {converter : A ⟶ A}
     {converters : EndoFamily A}
-    (commutes : ∀ classConverter : CategoryTheory.End A,
-      classConverter.op ∈ converters →
+    (commutes : ∀ classConverter : A ⟶ A,
+      End.of classConverter.op ∈ converters →
         ∀ resource : Phi A,
           attach converter
               (attach classConverter resource) =
@@ -134,7 +134,7 @@ lemma map_star_subset {A : C} {converter : CategoryTheory.End A}
   -- Apply image compatibility to the induced endomorphism action.
   exact ConstructiveCryptography.Specification.image_star_subset
     (f := attach converter)
-    (fun classConverter admitted resource => commutes classConverter.unop admitted resource)
+    (fun classConverter admitted resource => commutes classConverter.asHom.unop admitted resource)
     source
 
 omit [MonoidalCategory C] in
@@ -142,11 +142,11 @@ omit [MonoidalCategory C] in
 
 Maurer--Renner 2016, Lemma 3 (printed p. 11):
 “`R —π→ S  ⟹  R* —π→ S*`.” -/
-theorem Constructs.star {A : C} {converter : CategoryTheory.End A}
+theorem Constructs.star {A : C} {converter : A ⟶ A}
     {converters : EndoFamily A}
     {source target : Specification (Phi A)}
-    (commutes : ∀ classConverter : CategoryTheory.End A,
-      classConverter.op ∈ converters →
+    (commutes : ∀ classConverter : A ⟶ A,
+      End.of classConverter.op ∈ converters →
         ∀ resource : Phi A,
           attach converter
               (attach classConverter resource) =
@@ -159,16 +159,16 @@ theorem Constructs.star {A : C} {converter : CategoryTheory.End A}
   let := endoMulAction Phi A
   -- Specialize exact star compatibility to the induced endomorphism action.
   exact ConstructiveCryptography.Specification.Constructs.star construction
-    (fun classConverter admitted resource => commutes classConverter.unop admitted resource)
+    (fun classConverter admitted resource => commutes classConverter.asHom.unop admitted resource)
 
 /-- Approximate construction remains valid after star-relaxing both endpoints
 when the constructing converter commutes with the admitted class. -/
 lemma ConstructsWithin.star [CompatiblePseudoMetric C Phi] {A : C}
-    {converter : CategoryTheory.End A}
+    {converter : A ⟶ A}
     {converters : EndoFamily A}
     {source target : Specification (Phi A)} {error : ENNReal}
-    (commutes : ∀ classConverter : CategoryTheory.End A,
-      classConverter.op ∈ converters →
+    (commutes : ∀ classConverter : A ⟶ A,
+      End.of classConverter.op ∈ converters →
         ∀ resource : Phi A,
           attach converter
               (attach classConverter resource) =
@@ -182,8 +182,8 @@ lemma ConstructsWithin.star [CompatiblePseudoMetric C Phi] {A : C}
   let := CompatiblePseudoMetric.fibreMetric (Phi := Phi) A
   -- Apply scalar compatibility to the same class and its non-expanding action.
   exact ConstructiveCryptography.Specification.ConstructsWithin.star construction
-    (fun classConverter admitted resource => commutes classConverter.unop admitted resource)
-    (fun classConverter _ R S => distance_attach_le classConverter.unop R S)
+    (fun classConverter admitted resource => commutes classConverter.asHom.unop admitted resource)
+    (fun classConverter _ R S => distance_attach_le classConverter.asHom.unop R S)
 
 omit [MonoidalCategory C] in
 /-- An explicit exact simulator equation proves construction into the
@@ -194,14 +194,14 @@ Maurer--Renner 2016, Section 4.3 (printed p. 13): an equality of the form
 lemma constructs_star_of_simulator {A B : C}
     {converter : A ⟶ B} {converters : EndoFamily A}
     {real : Phi B} {ideal : Phi A}
-    (simulator : CategoryTheory.End A) (admitted : simulator.op ∈ converters)
+    (simulator : A ⟶ A) (admitted : End.of simulator.op ∈ converters)
     (equation : attach converter real =
       attach simulator ideal) :
     Constructs converter ({real} : Specification (Phi B))
       (star converters ({ideal} : Specification (Phi A))) := by
   let := endoMulAction Phi A
   exact ConstructiveCryptography.Specification.constructs_star_of_simulator
-    simulator.op admitted equation
+    (End.of simulator.op) admitted equation
 
 omit [MonoidalCategory C] in
 /-- Pointwise exact simulator witnesses prove construction into a star-relaxed
@@ -213,7 +213,7 @@ lemma constructs_star_of_simulators {A B : C}
     {converter : A ⟶ B} {converters : EndoFamily A}
     {real : Specification (Phi B)} {ideal : Phi A}
     (simulates : ∀ resource ∈ real,
-      ∃ simulator : CategoryTheory.End A, simulator.op ∈ converters ∧
+      ∃ simulator : A ⟶ A, End.of simulator.op ∈ converters ∧
         attach converter resource =
           attach simulator ideal) :
     Constructs converter real
@@ -223,14 +223,14 @@ lemma constructs_star_of_simulators {A B : C}
   apply ConstructiveCryptography.Specification.constructs_star_of_simulators
   intro resource admitted
   obtain ⟨simulator, simulatorAdmitted, equation⟩ := simulates resource admitted
-  exact ⟨simulator.op, simulatorAdmitted, equation⟩
+  exact ⟨End.of simulator.op, simulatorAdmitted, equation⟩
 
 /-- An explicit simulator distance bound proves approximate construction into
 the converter-class-relaxed ideal. -/
 lemma constructsWithin_star_of_simulator [CompatiblePseudoMetric C Phi] {A B : C}
     {converter : A ⟶ B} {converters : EndoFamily A}
     {real : Phi B} {ideal : Phi A} {error : ENNReal}
-    (simulator : CategoryTheory.End A) (admitted : simulator.op ∈ converters)
+    (simulator : A ⟶ A) (admitted : End.of simulator.op ∈ converters)
     (close : distance (attach converter real)
       (attach simulator ideal) ≤ error) :
     ConstructsWithin converter ({real} : Specification (Phi B))
@@ -239,7 +239,7 @@ lemma constructsWithin_star_of_simulator [CompatiblePseudoMetric C Phi] {A B : C
   let := endoMulAction Phi A
   let := CompatiblePseudoMetric.fibreMetric (Phi := Phi) A
   exact ConstructiveCryptography.Specification.constructsWithin_star_of_simulator
-    simulator.op admitted close
+    (End.of simulator.op) admitted close
 
 /-- Pointwise simulator distance witnesses prove approximate construction into
 a star-relaxed singleton ideal. -/
@@ -247,7 +247,7 @@ lemma constructsWithin_star_of_simulators [CompatiblePseudoMetric C Phi] {A B : 
     {converter : A ⟶ B} {converters : EndoFamily A}
     {real : Specification (Phi B)} {ideal : Phi A} {error : ENNReal}
     (simulates : ∀ resource ∈ real,
-      ∃ simulator : CategoryTheory.End A, simulator.op ∈ converters ∧
+      ∃ simulator : A ⟶ A, End.of simulator.op ∈ converters ∧
         distance (attach converter resource)
           (attach simulator ideal) ≤ error) :
     ConstructsWithin converter real
@@ -259,7 +259,7 @@ lemma constructsWithin_star_of_simulators [CompatiblePseudoMetric C Phi] {A B : 
   apply ConstructiveCryptography.Specification.constructsWithin_star_of_simulators
   intro resource admitted
   obtain ⟨simulator, simulatorAdmitted, close⟩ := simulates resource admitted
-  exact ⟨simulator.op, simulatorAdmitted, close⟩
+  exact ⟨End.of simulator.op, simulatorAdmitted, close⟩
 
 /-- Maurer--Renner's simulator proof step as exact construction into an error
 relaxation of the converter-class-relaxed ideal.
@@ -269,7 +269,7 @@ Maurer--Renner 2016, Lemma 5 (printed p. 12):
 theorem constructs_of_simulator [CompatiblePseudoMetric C Phi] {A B : C}
     {converter : A ⟶ B} {converters : EndoFamily A}
     {real : Phi B} {ideal : Phi A} {error : ENNReal}
-    (simulator : CategoryTheory.End A) (admitted : simulator.op ∈ converters)
+    (simulator : A ⟶ A) (admitted : End.of simulator.op ∈ converters)
     (close : distance (attach converter real)
       (attach simulator ideal) ≤ error) :
     Constructs converter ({real} : Specification (Phi B))

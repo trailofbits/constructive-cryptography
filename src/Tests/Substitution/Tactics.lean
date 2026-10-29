@@ -90,7 +90,7 @@ example [DecidableEq ι] (i : ι) (α : A ⟶ boundary i) :
   cc_usage
 
 example [DecidableEq ι] {n : Nat} (chain : Implication boundary systems A n)
-    (i : ι) (given : chain.usageCount i = 7) : chain.usageCount i = 7 := by
+    (i : ι) («given» : chain.usageCount i = 7) : chain.usageCount i = 7 := by
   -- No search for a local proof of an unknown witness's count.
   fail_if_success solve | cc_usage
   exact given
