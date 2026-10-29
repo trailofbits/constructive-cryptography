@@ -328,6 +328,17 @@ $`R \simeq_\varepsilon S`$ is written [`R ≃[ε] S`][notation-substitutes] (sco
 [transport through every converter][AdmissibleDistinguishers.substitutesWithin_attach], and every
 security notion of Commons is stated this way.
 
+For an unrestricted per-distinguisher statement, select
+[`AdmissibleDistinguishers.all`][AdmissibleDistinguishers.all] locally with
+`let := AdmissibleDistinguishers.all`. It admits every compatible stopping distinguisher
+behavior and is not an instance, so importing it selects no global security model. Taking each
+assumption's own advantage for its error gives the explicit reduction inequalities in
+[`Tests.AllDistinguishers`](../Tests/AllDistinguishers.lean): the fresh-seed PRG bound
+$`\mathrm{Adv}_H(D) \le \mathrm{Adv}_G(D\circ\mathcal R_1) + \mathrm{Adv}_G(D\circ\mathcal R_2)`$
+and the corrected AE bound with two `int-ptxt` terms, two `ind-cca` terms and collision error
+$`q_{\mathrm{enc}}^2/|M|`$. The bounds are symbolic in the scheme, budgets and $`D`$; no
+computational claim is made.
+
 ### Substitution relaxations and constructions
 
 The [**substitution image**][substitutionImage] collects the transformed endpoints of a one-use
@@ -455,10 +466,11 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [DistinguisherBehavior.absorb]: ../RandomSystems/Distance/Distinguisher.lean#L291
 [DistinguisherBehavior.absorb_comp]: ../RandomSystems/Distance/Distinguisher.lean#L304
 [Interface.distinguisherAdvantage_attach]: InterfaceAlgebra.lean#L285
-[Interface.distinguisherAdvantage_le_distance]: InterfaceAlgebra.lean#L345
+[Interface.distinguisherAdvantage_le_distance]: InterfaceAlgebra.lean#L353
 [Interface.substitutesWithin_attach]: InterfaceAlgebra.lean#L296
 [Interface.AdmissibleDistinguishers]: InterfaceAlgebra.lean#L311
-[AdmissibleDistinguishers.substitutesWithin_attach]: InterfaceAlgebra.lean#L320
+[AdmissibleDistinguishers.all]: InterfaceAlgebra.lean#L322
+[AdmissibleDistinguishers.substitutesWithin_attach]: InterfaceAlgebra.lean#L328
 [substitutionImage]: Substitution/Relaxation.lean#L45
 [singleSubstitutionRelaxation]: Substitution/Relaxation.lean#L59
 [substitutionRelaxation]: Substitution/Relaxation.lean#L164
