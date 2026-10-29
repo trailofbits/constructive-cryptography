@@ -2,6 +2,7 @@ import RandomSystems.Converter.ConverterAttachment
 import RandomSystems.Converter.ConverterDomain
 import RandomSystems.Converter.ConverterRelabel
 import RandomSystems.Converter.ConverterTensor
+import RandomSystems.Converter.CallRuleTranscript
 import RandomSystems.Converter.EmptyInterface
 import RandomSystems.Converter.FilterAttachment
 import RandomSystems.Converter.Identity
@@ -65,6 +66,7 @@ import RandomSystems.Typed.DSL.Syntax
 import RandomSystems.Typed.DSL.Tactics
 import RandomSystems.Typed.Filter
 import RandomSystems.Typed.Functional
+import RandomSystems.Typed.CallRuleFunctional
 import RandomSystems.Typed.Game
 import RandomSystems.Typed.Interface
 import RandomSystems.Typed.InterfaceCoherence

@@ -87,6 +87,10 @@ The sample is drawn once and shared by all queries, never redrawn: sampling a pu
 $`\mathrm{sample}(f(P), R) = \mathrm{sample}(P, R \circ f)`$, and attachment
 [commutes with the single draw][TypedConverter.smul_sample],
 $`\alpha\, \mathrm{sample}(P, R) = \mathrm{sample}(P, k \mapsto \alpha R_k)`$.
+For a certified [direct call rule][callRule], query and return equations against a fixed inside
+function $`f`$ yield the
+[outside functional system][TypedConverter.ofDDC_callConverter_smul_ofFunction]; later inside
+queries of an invocation may depend on its earlier replies.
 
 ## Typed games
 
@@ -158,6 +162,8 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedSystem.sample]: Functional.lean#L178
 [TypedSystem.sample_fTransform]: Functional.lean#L192
 [TypedConverter.smul_sample]: Functional.lean#L237
+[callRule]: ../Converter/Calls.lean#L401
+[TypedConverter.ofDDC_callConverter_smul_ofFunction]: CallRuleFunctional.lean#L31
 [Interface.withMBO]: Game.lean#L24
 [TypedGame]: Game.lean#L35
 [TypedConverter.attachGame]: Game.lean#L38

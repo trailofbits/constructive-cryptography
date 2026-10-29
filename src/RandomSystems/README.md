@@ -100,6 +100,21 @@ first][PDCBehavior.attach_comp]. [Parallel composition][PDCBehavior.tensor] samp
 independently and runs them side by side, with [interchange][PDCBehavior.comp_tensor] against
 serial composition.
 
+A [**direct call rule**][callRule] reads from the complete history the current invocation, the
+latest outside query $`u`$ with the inside replies $`r_1 \dots r_k`$ received since, and either
+returns at the label of $`u`$ or issues the next inside query [7, Definition 2.2.2]. It depends
+on $`u`$ and $`r_1 \dots r_k`$ only. The one-way phase condition, an inside query only when
+$`k < \mathrm{cost}(u)`$, gives [responsiveness][callRule_isResponsiveDDC] and the
+[query count][callRule_query_count] $`\#\text{inside queries} \le \sum_u \mathrm{cost}(u)`$,
+including pending and interrupted invocations; the biconditional gives the
+[exact length][callRule_completed_exact_length] of a completed call. Canonicalization followed by
+[outside-domain restriction][callConverter] yields a certified
+[DDC from an inside domain][callConverter_isDDCFrom]; any further inside-domain predicate is
+proved on the actual transcripts. A rule following a
+[schedule against a fixed function][replies_callConverter_of_schedule] has the completed
+transcripts, and [attached to that function][ofDDC_callConverter_smul_ofFunction] it computes
+the indicated outside function through the existing deterministic attachment.
+
 A [**program**][Program] is a deterministic oracle body: from its state, the outside query and the
 inside exchanges of the current invocation, it computes the reply or the next inside query. A
 program can be [bounded][Program.Bounded] (at most $`b`$ inside queries per invocation), have
@@ -176,6 +191,14 @@ holds, whatever the number of the program's inside queries:
 [converterDomain]: Converter/ConverterDomain.lean#L234
 [IsDDCFrom]: Converter/ConverterDomain.lean#L301
 [IsDDCFrom.mapsDomain]: Converter/ConverterDomain.lean#L609
+[callRule]: Converter/Calls.lean#L401
+[callRule_completed_exact_length]: Converter/CallRuleTranscript.lean#L92
+[callRule_isResponsiveDDC]: Converter/Calls.lean#L443
+[callRule_query_count]: Converter/Calls.lean#L491
+[callConverter]: Converter/Calls.lean#L509
+[callConverter_isDDCFrom]: Converter/Calls.lean#L524
+[replies_callConverter_of_schedule]: Converter/CallRuleTranscript.lean#L168
+[ofDDC_callConverter_smul_ofFunction]: Typed/CallRuleFunctional.lean#L31
 [PDCBehavior]: Converter/PDCBehavior.lean#L67
 [PDCBehavior.ofPDC]: Converter/PDCBehavior.lean#L169
 [PDCBehavior.comp]: Converter/PDCBehavior.lean#L273

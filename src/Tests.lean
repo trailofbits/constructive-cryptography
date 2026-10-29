@@ -3,6 +3,7 @@ import Tests.Axioms.CC
 import Tests.Axioms.Commons
 import Tests.Axioms.Systems
 import Tests.Counterexamples
+import Tests.DirectCalls
 import Tests.DSL.Axioms
 import Tests.DSL.Diagnostics
 import Tests.DSL.ProbabilityNotation
