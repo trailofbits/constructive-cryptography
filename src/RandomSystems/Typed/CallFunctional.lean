@@ -2,11 +2,25 @@ import RandomSystems.Converter.CallTranscript
 import RandomSystems.Typed.Functional
 
 /-!
-# Direct DDCs attached to fixed functions
+# DDCs attached to fixed functions
 
-A completed call witness against a fixed inside function determines the outside functional
-system. Attachment first uses the systems-level completed-call connection; the typed equality
-then follows from probability one on every admitted functional transcript.
+A certified DDC `a` that answers every outside history `us` in the domain with the completed
+calls in which each `u` queries `queries u`, receives the replies of the fixed function `f` and
+returns `g u`, turns the functional system of `f` into that of `g`:
+
+```text
+            o(u)   ┌───────┐   j(x), x ∈ queries u   ┌──────────────┐
+  ────────────────►│       ├────────────────────────►│              │
+                   │   a   │                         │ ofFunction f │
+  ◄────────────────┤       │◄────────────────────────┤              │
+          o ⇒ g u  └───────┘   j ⇒ f x               └──────────────┘
+```
+
+## Main results
+
+* `ofDDC_smul_ofPDS_mass`: a DDC attached to a mixture of deterministic systems, through the
+  existing deterministic attachment
+* `ofDDC_smul_ofFunction`: `ofDDC a ha • ofFunction f = ofFunction g`
 -/
 
 namespace SystemAlgebra.TypedConverter
@@ -31,7 +45,9 @@ lemma ofDDC_smul_ofPDS_mass {A B : Interface}
 
 /-- **A DDC computing a function**: if on every admitted outside history the DDC answers each
 query `u` by querying `f` at `queries u` and replying `g u`, it turns the function `f` into the
-function `g`. -/
+function `g`. Each deterministic sample answering the inside history with `f`, an event of
+probability one, makes the attachment answer the outside history with `g`
+(`replies_apply_of_calls`); so every admitted functional transcript of `g` has probability one. -/
 lemma ofDDC_smul_ofFunction {A B : Interface} {a : InsideOutsideSystem A.I B.I A.X A.Y B.X B.Y}
     {b : ℕ} (ha : IsDDCFrom B.domain A.domain b a) (f : ∀ j, B.X j → B.Y j)
     (g : ∀ o, A.X o → A.Y o) (queries : (Σ o, A.X o) → List (Σ j, B.X j))
