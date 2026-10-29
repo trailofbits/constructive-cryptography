@@ -315,6 +315,14 @@ class AdmissibleDistinguishers where
   closed : ∀ {A B : Interface} (α : A ⟶ B) (D : A.inputDomain.DistinguisherBehavior),
     D ∈ admissible A → D.absorb B.nonempty_prefix A.nonempty_prefix α ∈ admissible B
 
+/-- Every compatible stopping distinguisher behavior is admitted: `admissible A = Set.univ`.
+Use `let := AdmissibleDistinguishers.all` locally for an unrestricted per-distinguisher bound;
+it is a value, not an instance, so importing it selects no security model. Absorption preserves
+the behavior type, so closure imposes no further restriction. -/
+@[reducible] def AdmissibleDistinguishers.all : AdmissibleDistinguishers where
+  admissible _ := Set.univ
+  closed _ _ _ := Set.mem_univ _
+
 /-- **A substitution through a converter**, for the admitted distinguishers: its loss is the loss
 at the distinguisher with the converter absorbed. -/
 lemma AdmissibleDistinguishers.substitutesWithin_attach [AdmissibleDistinguishers]
