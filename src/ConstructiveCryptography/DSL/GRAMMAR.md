@@ -31,11 +31,12 @@ port      ::= Name "(" arguments ")" "→" Type
 
 system ::= "system" Name parameters [":" InterfaceApplication]
            block(system_member) ["by" Proof]
-system_member ::= requirement | domain | initialization | reply
+system_member ::= requirement | domain | outside | initialization | reply
 
 converter ::= "converter" Name parameters [":" InterfaceApplication]
               block(converter_member)
-converter_member ::= requirement | inside | initialization | reply
+converter_member ::= requirement | outside | inside | initialization | reply
+outside       ::= "outside" Name ":" InterfaceApplication
 inside        ::= "inside" Name ":" InterfaceType
 InterfaceType ::= Type "→" Type | InterfaceApplication
 requirement   ::= "requires" Name ":" Proposition
@@ -45,7 +46,7 @@ filter ::= "filter" Name parameters ":" InterfaceApplication
            "domain" Name "↦" Proposition ["by" Proof]
 
 initialization ::= "initialize" block(statement)
-reply ::= "on" Name "(" arguments ")" "→" Type block(statement)
+reply ::= "on" PortPath "(" arguments ")" "→" Type block(statement)
 
 statement ::= assignment | sampling | conditional | iteration | matching | returning
 assignment ::= target [":" Type] "←" Expression
@@ -100,7 +101,8 @@ input type; their return type is its output type. Both must be finite (`Fintype`
 parameter of an interface carries its `[Fintype]` instance. Return types may depend on
 component parameters, but not on the current query value. `interface I` declares the family
 `I q := Interface.queryBudget … q` of its query budgets. A `: InterfaceApplication` annotation
-selects that vocabulary. Without the annotation, the declaration creates its own `Name.Port`,
+selects that vocabulary. Without an annotation or named outside components, the declaration
+creates its own `Name.Port`,
 `Name.Input`, and `Name.Output`, with their finiteness at each port, `Name.fintypeInput` and
 `Name.fintypeOutput`. Each alphabet takes only the parameters its ports mention (closed under the
 parameters' types and instance arguments), so instance search on the alphabet at a port
@@ -115,21 +117,56 @@ condition, proved in `by`. This clause belongs to a system without an interface 
 Private initialization does not emit a message. An error reply is an ordinary declared output
 value.
 
+Named `outside` components select an ordered tensor. For example:
+
+```lean
+system Store
+  outside read : Reading
+  outside write : Writing
+  initialize
+    value ← false
+  on read.get() → Bool
+    return value
+  on write.put(b : Bool) → Unit
+    value ← b
+    return ()
+```
+
+With `Reading` exposing `get() → Bool` and `Writing` exposing `put(b : Bool) → Unit`,
+`Store (budget := (r, w)) : TypedSystem (Reading r ⊗ Writing w)`. The label of `read.get`
+is `Sum.inl .get`, and that of `write.put` is `Sum.inr .put`. Each history projection respects
+its own budget: at most `r` reads and at most `w` writes, not `r + w` queries of either kind.
+The state `value` is shared by both procedures; the tensor describes the outside interface,
+while the component supplies one joint system on it.
+
+Three components `a : A`, `b : B`, `c : C` give `A q₁ ⊗ (B q₂ ⊗ C q₃)` with
+`budget := (q₁, q₂, q₃)`. One named component keeps a scalar budget and its interface's labels.
+Every procedure is qualified by its component, as in `read.get`. Initialization, including
+sampling, runs once for the whole component, so an initial sample is one draw shared by all
+components. `C.perPort` takes one budget function `q` on the tagged labels, giving
+`A.perPort (fun i => q (.inl i)) ⊗ B.perPort (fun i => q (.inr i))` for two components.
+A converter with per-invocation bound `b` gets the inside allowance of `b` times the outside
+interface's total bound: `b * (q₁ + q₂)` at `budget := (q₁, q₂)`, and `b` times the sum of all
+per-port budgets for `C.perPort`. In the exact-cost form `C.exact`, `queries` is the tuple of
+outside budgets and `budget` is the scalar work bound. Named outside components and an interface
+annotation are alternative declarations of the outside interface.
+
 `interface I` also declares `I.perPort q := Interface.portBudget … q` for a budget
 `q : I.Port → ℕ` per port: at most `q i` queries at each port `i`. A system without an exact
-domain also gets `S.perPort : TypedSystem (I.perPort q)`. A converter with a single inside
-port is typed by per-port budgets along a partial port map `C.portMap : I.Port → Option J.Port`,
-which sends each procedure to the inside label it calls, or to `none` when it calls none
-(`C.preserving`, a `Program.PortPreserving` proof: each procedure calls at most its own label, at
-most once).
+domain also gets `S.perPort : TypedSystem (I.perPort q)`. A converter with one annotated outside
+interface and a single inside port is typed by per-port budgets along a partial port map
+`C.portMap : I.Port → Option J.Port`, which sends each procedure to the inside label it calls, or
+to `none` when it calls none (`C.preserving`, a `Program.PortPreserving` proof: each procedure
+calls at most its own label, at most once).
 - When the inside port has the outside interface `I`, each procedure calling its own port, it is
   the endomorphism `C.perPort : I.perPort q ⟶ I.perPort q`.
 - When the inside port has another declared interface `J`, each of whose labels one procedure
   calls, it is `C.perPort : I.perPort q ⟶ J.perPort (C.insideBudget q)`: the budget at an inside
-  label is that of the procedure calling it, and a procedure calling nothing needs none (`ρ^ctxt`
-  of [9], from `AE M C` to `Encryption M C`).
+  label is that of the procedure calling it, and a procedure calling nothing needs none
+  ($`\rho^{ctxt}`$ of [9], from `AE M C` to `Encryption M C`).
 
-Its sources have the budget `C.bound * ∑ i, q i`. Other converters have no per-port typing.
+Its sources have the budget `C.bound * ∑ i, q i`. Converters with named outside components have
+the aggregate per-port typing above; other converters have no per-port typing.
 
 The budget is the implicit argument `budget` in both forms, a number for `I q` and a function
 of the port for `I.perPort q`: `S (budget := k)`, `C.perPort (budget := q)`. `C.exact` also takes
@@ -196,7 +233,8 @@ a system without an exact domain [also gets][elabPerPortDecls]
 A [`converter C : I`][elabComponent] with `inside J` generates `C : I q ⟶ J (C.bound * q)`,
 compiled to `C.program ≫ TypedConverter.rightContext J (C.randomness k)`: its program with its sources
 [beside][TypedConverter.rightContext] the inside interface, or `C.program` when it samples nothing. With
-a single inside interface it [also has a per-port typing][elabPerPortDecls] along a partial port
+an annotated outside interface and a single inside interface it
+[also has a per-port typing][elabPerPortDecls] along a partial port
 map `C.portMap : I.Port → Option J.Port`, through the
 [converter of a port-preserving program][TypedConverter.ofPreservingProgram], with
 `C.preserving` a proof of [`Program.PortPreserving`][Program.PortPreserving]. When `J` is `I` and
