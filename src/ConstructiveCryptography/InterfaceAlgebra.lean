@@ -1,6 +1,7 @@
 import RandomSystems.Distance.RevealedHCoefficient
 import RandomSystems.Typed.ParallelAttachment
 import RandomSystems.Typed.SystemCoherence
+import RandomSystems.Typed.Distance
 import ConstructiveCryptography.InterfaceMonoidal
 import ConstructiveCryptography.CryptographicAlgebra.Distinguisher
 import RandomSystems.Distance.Distinguisher
@@ -23,10 +24,11 @@ distinguishers on `A` are the behaviors of the probabilistic distinguishers comp
 domain (`Domain.DistinguisherBehavior`), their probabilities of outputting `1` on typed systems.
 The axiom `closed_attach` is discharged by `Domain.DistinguisherBehavior.absorb`, and
 `closed_parallel_left` and `closed_parallel_right` by `Domain.Distinguisher.exists_absorbRight`
-and the swap (`TypedSystem.parallel_swap_mass`), so Maurer's Lemma 1
-(`CompatibleDistinguisherClass.ofClosure`) makes its advantage distance a compatible
-pseudo-metric. This distance of two typed systems is the transcript distance of their random
-systems (`RandomSystem.transcriptDistance_eq_iSup_behavior`). For every class of admitted
+and the swap (`TypedSystem.parallel_swap_mass`). Its metric is the transcript distance
+(`TypedSystem.transcriptPseudoEMetricSpace`), so `cc_distance_eq` holds by definition. The bridge
+`transcriptDistance_eq_advantageDistance` identifies it with the advantage distance of these
+distinguishers; through it Maurer's Lemma 1 (`CompatibleDistinguisherClass.ofClosure`) supplies
+non-expansion under attachment and parallel composition. For every class of admitted
 distinguishers they carry a `DistinguisherAdvantage`: its field `advantage` is
 `Domain.DistinguisherBehavior.advantage`, and its laws are `advantage_self`, `advantage_symm` and
 `advantage_triangle` of the random systems. In a security proof a converter absorbed into a
@@ -54,7 +56,10 @@ distinguisher (`Domain.DistinguisherBehavior.absorb`) is the reduction (CR18).
   `Interface.distinguishers_parallel_right`: closure
 * `Interface.cc_parallel_eq`, `Interface.cc_dummy_eq`: the abstract operations are the
   concrete ones
-* `Interface.cc_distance_eq`: the distance is the transcript distance of the random systems
+* `Interface.transcriptDistance_eq_advantageDistance`: the transcript distance is the advantage
+  distance of `Interface.distinguishers A`
+* `Interface.cc_distance_eq`: the distance is the transcript distance of the random systems, by
+  definition
 * `Interface.distance_le_of_hCoefficient`: an H-coefficient argument bounds the distance
 * `Interface.distinguisherAdvantage_le_distance`: an advantage is at most the distance
 * `Interface.distinguisherAdvantage_attach`, `Interface.substitutesWithin_attach`: an advantage
@@ -186,14 +191,56 @@ lemma distinguishers_parallel_right {A B : Interface} (T : TypedSystem A)
   have h := distinguishers_parallel_left T (distinguishers_attach (swap A B).hom hd)
   simpa only [parallel_swap] using h
 
-/-- The distinguishers are a compatible distinguisher class; by Maurer's Lemma 1 their
-advantage distance is a compatible pseudo-metric. -/
+/-- The systems-level transcript distance is the advantage distance of all compatible
+distinguisher behaviors: `Δ(R, S) = ⨆ d, |d R - d S| = advantageDistance (distinguishers A) R S`.
+The systems characterization of the selected metric, and its `edist_eq` field. -/
+lemma transcriptDistance_eq_advantageDistance {A : Interface} (R S : TypedSystem A) :
+    R.1.transcriptDistance S.1 =
+      ConstructiveCryptography.advantageDistance (distinguishers A) R S := by
+  -- `Δ(R, S) = ⨆ d, Adv_d(R, S)` over compatible stopping distinguisher behaviors.
+  rw [RandomSystem.transcriptDistance_eq_iSup_behavior R S]
+  -- The advantage distance is the same supremum, indexed through `Set.range`.
+  simp only [ConstructiveCryptography.advantageDistance, distinguishers, iSup_range,
+    Domain.DistinguisherBehavior.advantage]
+
+/-- The selected metric `fibreMetric` is the transcript distance
+`TypedSystem.transcriptPseudoEMetricSpace`, and the distinguishers are `distinguishers A`.
+Maurer 2011, Lemma 1, printed p. 46: “the pseudo-metric ΔD is compatible with the cryptographic
+algebra”. Each non-expansion bound passes through the bridge (`═`,
+`transcriptDistance_eq_advantageDistance`) to the bound of `ofClosure` on the advantage
+distance `d_𝒟` of `distinguishers`:
+
+```text
+Δ(αR, αS)     ═ d_𝒟(αR, αS)     ≤ d_𝒟(R, S)              ═ Δ(R, S)
+Δ(R∥S, R'∥S') ═ d_𝒟(R∥S, R'∥S') ≤ d_𝒟(R, R') + d_𝒟(S, S') ═ Δ(R, R') + Δ(S, S')
+```
+-/
 noncomputable instance compatibleDistinguisherClass :
     ConstructiveCryptography.CompatibleDistinguisherClass Interface TypedSystem :=
-  ConstructiveCryptography.CompatibleDistinguisherClass.ofClosure distinguishers
+  -- The closed class of Lemma 1 supplies the closure fields and non-expansion proofs; its
+  -- advantage metric is replaced by the transcript metric below.
+  let closed := ConstructiveCryptography.CompatibleDistinguisherClass.ofClosure distinguishers
     (fun α _ hd => distinguishers_attach α hd)
     (fun T _ hd => distinguishers_parallel_left T hd)
     (fun T _ hd => distinguishers_parallel_right T hd)
+  { closed with
+    fibreMetric := TypedSystem.transcriptPseudoEMetricSpace
+    edist_smul_le := by
+      intro A B α R S
+      -- `edist` of the selected metric unfolds to transcript distance.
+      change (α • R).1.transcriptDistance (α • S).1 ≤ R.1.transcriptDistance S.1
+      -- Both sides become advantage distances; absorbing `α` is Lemma 1's attachment bound.
+      rw [transcriptDistance_eq_advantageDistance, transcriptDistance_eq_advantageDistance]
+      exact closed.edist_smul_le α R S
+    edist_parallel_le := by
+      intro A B R R' S S'
+      change (TypedSystem.parallel R S).1.transcriptDistance (TypedSystem.parallel R' S').1 ≤
+        R.1.transcriptDistance R'.1 + S.1.transcriptDistance S'.1
+      -- All three distances become advantage distances; Lemma 1 gives the parallel bound.
+      rw [transcriptDistance_eq_advantageDistance, transcriptDistance_eq_advantageDistance,
+        transcriptDistance_eq_advantageDistance]
+      exact closed.edist_parallel_le R R' S S'
+    edist_eq := transcriptDistance_eq_advantageDistance }
 
 lemma cc_parallel_eq {A B : Interface} (R : TypedSystem A) (S : TypedSystem B) :
     ConstructiveCryptography.CryptographicAlgebra.parallel R S =
@@ -202,14 +249,12 @@ lemma cc_parallel_eq {A B : Interface} (R : TypedSystem A) (S : TypedSystem B) :
 lemma cc_dummy_eq :
     ConstructiveCryptography.CryptographicAlgebra.dummy = TypedSystem.dummy := rfl
 
-/-- The distance of two typed systems is the transcript distance of their random systems. -/
+/-- The distance of two typed systems is the transcript distance of their random systems, by
+definition: the selected `fibreMetric` is `TypedSystem.transcriptPseudoEMetricSpace`. -/
 lemma cc_distance_eq {A : Interface} (R S : TypedSystem A) :
     ConstructiveCryptography.CryptographicAlgebra.distance R S =
       R.1.transcriptDistance S.1 := by
-  rw [RandomSystem.transcriptDistance_eq_iSup_behavior R S]
-  change ConstructiveCryptography.advantageDistance (distinguishers A) R S = _
-  simp only [ConstructiveCryptography.advantageDistance, distinguishers, iSup_range,
-    Domain.DistinguisherBehavior.advantage]
+  rfl
 
 /-- **An H-coefficient argument bounds the CC distance** of typed systems on `A`:
 `distance R S ≤ error`, since that distance is the transcript distance of `R.1` and `S.1`. -/
