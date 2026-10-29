@@ -178,7 +178,8 @@ example (x : Bool) (h : List (Sigma Bits.Input × Sigma Bits.Output)) :
   exact Counted.body_get_initial x h
 
 -- Unrelated section variables must not become uninferrable arguments of generated equations.
--- The unused universe `u` is also dropped, so `simp` can still apply both equations below.
+-- The closure step keeps only the variables and universes the equation uses, so `Unused` and
+-- `u` are dropped and `simp` can still apply both equations below.
 section
 universe u
 variable (Unused : Type u) [Fintype Unused]
@@ -204,10 +205,32 @@ example (ν : Unit → Unit → ProbDist Bool) (x : Bool) :
   rfl
 end
 
+-- `Guesses Value`: one port `check(guess : Value) → Bool`, over a finite guess space.
+interface Guesses(Value : Type) [Fintype Value]
+  check(guess : Value) → Bool
+
+section
+variable {Value : Type} [Fintype Value]
+
+-- Stateless; rejects every guess: `check(guess) ↦ false`.
+system Reject : Guesses Value
+  on check(_guess : Value) → Bool
+    return false
+
+-- The proof mentions `Value` via the `guess` binder, but `simp` may erase the `Fintype` instance
+-- that `Reject.step` needs; the equation keeps it in type and proof, so `simp` applies it.
+example (st : Unit) (guess : Value) : Reject.step st .check guess = ((), false) := by
+  simp only [component_equations]
+end
+
 -- Unsupported shapes fail rather than searching for another proof route.
 example (n : ℕ) : n = n := by
   fail_if_success inline
   rfl
+
+/-- error: Cannot generate a component equation with unresolved metavariables. -/
+#guard_msgs in
+component_equation unfinished : (_ : Nat) using Nat.add_zero
 
 #print axioms Negate.combine_get_initial
 #print axioms Retained.memorylessReplyLaw_get_resumed

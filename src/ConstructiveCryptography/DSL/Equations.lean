@@ -22,7 +22,7 @@ generator; it does not search for mathematical lemmas. -/
 elab "component_equation " name:ident binders:bracketedBinder* " : " lhs:term
     " using " rules:ident,+ : command => do
   let declName := (← getCurrNamespace) ++ name.getId
-  runTermElabM fun vars =>
+  runTermElabM fun _ =>
     Term.withoutErrToSorry <| Term.elabBinders binders fun xs => do
       let lhs ← Term.elabTerm lhs none
       Term.synthesizeSyntheticMVarsNoPostponing
@@ -46,20 +46,21 @@ elab "component_equation " name:ident binders:bracketedBinder* " : " lhs:term
       let (result, _) ← Meta.simp lhs ctx
       let proof ← result.getProof
       let type ← mkForallFVars xs (← mkEq lhs result.expr)
-      let type ← mkForallFVars vars type (usedOnly := true)
       let value ← mkLambdaFVars xs proof
-      let value ← mkLambdaFVars vars value (usedOnly := true)
       let type ← instantiateMVars type
       let value ← instantiateMVars value
-      -- Keep only universes in the type or proof; an unused section universe could not be
-      -- inferred from the goal, so `simp` would never apply the equation.
-      let usedLevels := collectLevelParams (collectLevelParams {} type) value |>.params
-      let levelParams := (← get).levelNames.filter usedLevels.contains
+      -- Reject leftover metavariables: `Closure` would turn them into extra theorem assumptions.
+      if type.hasExprMVar || value.hasExprMVar then
+        throwError "Cannot generate a component equation with unresolved metavariables."
+      -- Close type and proof together over the section variables and universes either uses.
+      -- `simp` may erase one from the proof that `lhs` still needs, and the declaration's type
+      -- and value must take the same binders; unused variables and universes are dropped.
+      let closed ← Closure.mkValueTypeClosure type value false
       addDecl <| .thmDecl {
         name := declName
-        levelParams := levelParams
-        type := type
-        value := value }
+        levelParams := closed.levelParams.toList
+        type := closed.type
+        value := closed.value }
       let some ext ← getSimpExtension? `component_equations
         | throwError "Missing component equation registry."
       addSimpTheorem ext declName true false .global 1000
