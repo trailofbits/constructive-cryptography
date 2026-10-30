@@ -303,6 +303,7 @@ typed converters, and the counterexamples, depend only on `propext`, `Classical.
 -- RandomSystems.Typed.Automaton
 #print axioms SystemAlgebra.TypedSystem.ofAutomaton
 #print axioms SystemAlgebra.TypedSystem.ofAutomaton_mass
+#print axioms SystemAlgebra.TypedSystem.ofAutomaton_map_congr
 #print axioms SystemAlgebra.TypedSystem.parallel_ofAutomaton
 
 -- RandomSystems.Typed.Filter

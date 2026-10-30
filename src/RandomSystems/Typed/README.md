@@ -117,7 +117,12 @@ A [**source**][TypedSystem.source] answers with fresh independent samples of a l
 memoryless source [3, Definition 3.1] (the sources of [4, Definition 1] may have memory). An
 [**automaton**][TypedSystem.ofAutomaton] is a transition function with a sampled initial state
 [4, Definition 2], and [parallel automata][TypedSystem.parallel_ofAutomaton] are the automaton
-running both side by side. A source [is memoryless][TypedSystem.source_eq_memoryless],
+running both side by side. If two automata initialized from a common draw $`\omega \sim P`$ give
+the same deterministic system for every $`\omega`$, then
+[their sampled automata are equal typed systems][TypedSystem.ofAutomaton_map_congr] on the
+interface's domain. A bisimulation for each draw thus yields an equation of typed systems, which
+rewrites under attachment and parallel composition.
+A source [is memoryless][TypedSystem.source_eq_memoryless],
 memoryless systems [side by side are memoryless][TypedSystem.parallel_eq_memoryless], and the
 converter of a program [maps a memoryless system to the memoryless system of its reply
 law][TypedConverter.ofProgram_smul_memoryless], also
@@ -237,8 +242,9 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedConverter.attach_rightContext]: Context.lean#L122
 [TypedConverter.attach_leftContext]: Context.lean#L127
 [TypedSystem.source]: Source.lean#L51
-[TypedSystem.ofAutomaton]: Automaton.lean#L42
-[TypedSystem.parallel_ofAutomaton]: Automaton.lean#L57
+[TypedSystem.ofAutomaton]: Automaton.lean
+[TypedSystem.ofAutomaton_map_congr]: Automaton.lean
+[TypedSystem.parallel_ofAutomaton]: Automaton.lean
 [TypedSystem.source_eq_memoryless]: Memoryless.lean#L47
 [TypedSystem.parallel_eq_memoryless]: Memoryless.lean#L146
 [TypedConverter.ofProgram_smul_memoryless]: Memoryless.lean#L241

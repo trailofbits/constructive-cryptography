@@ -1,12 +1,16 @@
+import Probability.Kernel
 import RandomSystems.Typed.SystemParallel
 
 /-!
 # Automata as typed systems
 
 An automaton whose initial state is sampled from a law is a typed system: the behavior of its
-deterministic systems on the interface's domain, one for each initial state (Maurer 2002,
-Definition 2, with the randomness in the initial state). Parallel composition runs two such
-automata side by side from independent initial states.
+deterministic systems on the interface's domain, one for each initial state [1, Definition 2,
+p. 6: "specifying the internal randomness and the initial state"]. Parallel composition runs
+two such automata side by side from independent initial states. Two automata initialized from
+one common draw are equal typed systems when they give the same deterministic system for each
+draw; a bisimulation for each draw thus yields an equation of typed systems, which rewrites
+under attachment and parallel composition.
 
 ## Main definitions
 
@@ -18,8 +22,14 @@ automata side by side from independent initial states.
 
 * `TypedSystem.ofAutomaton_mass`: a transcript has the mass of the initial states from which
   the automaton gives it
+* `TypedSystem.ofAutomaton_map_congr`: pointwise equality of initialized automata gives equality
+  of their typed systems under a common sampling law, even with different state spaces
 * `TypedSystem.parallel_ofAutomaton`: parallel automata are the automaton running both side by
   side
+
+## References
+
+1. U. Maurer. *Indistinguishability of Random Systems*. Preprint, 2002.
 -/
 
 namespace SystemAlgebra
@@ -51,6 +61,30 @@ lemma TypedSystem.ofAutomaton_mass (initial : Distribution.ProbDist S)
   change behaviorMass _ _ _ = _
   rw [behaviorMass, Distribution.mass_fTransform]
   rfl
+
+/-- Pointwise equality of initialized automata gives equality of their sampled typed systems.
+The same law and domain are used for both representations. -/
+lemma TypedSystem.ofAutomaton_map_congr
+    -- `A` fixes the ports and admitted histories; `S`, `S'` are the two state spaces.
+    {A : Interface} {Ω S S' : Type}
+    -- `step` and `step'` turn a state and a query at port `i` into a new state and reply.
+    (step : S → (i : A.I) → A.X i → S × A.Y i)
+    (step' : S' → (i : A.I) → A.X i → S' × A.Y i)
+    -- `P` is the law of one draw `ω : Ω`; `init`, `init'` build the corresponding states.
+    (P : Probability.Distribution.ProbDist Ω) (init : Ω → S) (init' : Ω → S')
+    -- `same` equates the deterministic systems for every retained draw `ω`.
+    (same : ∀ ω, automatonSystem step (init ω) = automatonSystem step' (init' ω)) :
+    ofAutomaton A step (Distribution.ProbDist.map init P) =
+      ofAutomaton A step' (Distribution.ProbDist.map init' P) := by
+  -- Each transcript has the mass of draws whose initialized automaton produces it.
+  apply Subtype.ext
+  apply RandomSystem.ext
+  intro h
+  simp only [ofAutomaton_mass, Distribution.ProbDist.map, Distribution.mass_fTransform]
+  -- The component equation equates those events under the same law `P`.
+  apply Distribution.mass_congr
+  intro ω
+  rw [same]
 
 /-- **Parallel automata** are the automaton running both side by side from independent initial
 states. -/

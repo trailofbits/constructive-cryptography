@@ -58,6 +58,8 @@ printed pages, so that this correspondence can be reviewed.
 ## Contributing
 
 Contributor rules are in [AGENTS.md](AGENTS.md).
+The [reuse guide](REUSE.md) maps common objects to their owners and gives the assembly and
+definition-review workflow.
 
 ## License
 
