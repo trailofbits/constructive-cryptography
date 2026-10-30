@@ -41,16 +41,15 @@ defined there. Interfaces, typed systems, typed games and `TypedDistinguisher` r
 `RandomSystems` objects. The generic notation `ConstructiveCryptography.Notation.Basic` imports
 only abstract classes and sits below the instance consumers, which may import it. The full
 `ConstructiveCryptography.Notation`, the proof commands and the DSL front end are built on the
-instances, and nothing below them imports them. The downstream
-ChaCha20-Poly1305 development (`chachapoly-cc`) imports modules of this repository; changes to
-public declarations it uses must keep it building.
+instances, and nothing below them imports them. Building and testing the repository requires
+only this checkout and the dependencies declared in `lakefile.lean` and `lake-manifest.json`.
 
 ## Sources
 
 There is no fixed authority ranking among the reference papers. For each
-modeling question, compare every relevant source: Maurer–Renner, Jost,
-Liu-Zhang–Maurer, Lanzenberger–Maurer, the Cryptography Foundations lecture
-notes, Banfi, and the system-algebra literature where applicable. Compare
+modeling question, compare every relevant source: the Constructive Cryptography
+papers and theses, the random-systems papers, the Cryptography Foundations
+lecture notes, and the system-algebra literature where applicable. Compare
 their exact definitions, hypotheses, abstraction levels and conclusions, and
 distinguish a genuine disagreement from different notation or a
 specialization of a more general model. Existing Lean definitions and ease of
@@ -62,8 +61,9 @@ resolutions, and agree on the mathematical solution before proceeding. Do not
 silently choose a preferred source, strengthen assumptions, or merge
 incompatible definitions.
 
-Reference PDFs are in the sibling `random-systems/papers/` tree; notes and plans
-are secondary evidence.
+Locate the primary sources through this repository's bibliographies: the
+`References` sections of [README.md](README.md), [THEORY.md](THEORY.md) and the
+owning module's documentation. Notes and plans are secondary evidence.
 
 ## Modeling rules
 
@@ -111,8 +111,12 @@ For each public mathematical change, establish these facts before editing:
    build a parallel foundation.
 5. **Small change:** one declaration or one dependency seam plus its immediate
    consumers.
-6. **Verification:** focused build, downstream build, axiom check for
-   important endpoints, and the static checks below.
+6. **Verification:** focused and full repository builds, the affected
+   consumers within this repository, an axiom check for important endpoints,
+   and the static checks below.
+
+Validation in an external consumer, when a task includes it, is a separate check
+run in that consumer; it is not a dependency of this repository's build.
 
 Prefer a short compilable probe to speculative API design, and remove it once
 the result is captured in a test or docstring.
@@ -122,7 +126,7 @@ the result is captured in a test or docstring.
 Every review checks correctness together with readability, deduplication and
 use of notation; a passing build does not settle these questions.
 
-- **Readability:** follow the public statement through its proof ladder. Check
+- **Readability:** follow the public statement through its proof chain. Check
   that names, local facts, comments and diagrams expose each mathematical step,
   its assumptions and its role. Keep explanations concise without omitting them.
 - **Deduplication:** search the owning layer and its dependencies for existing
@@ -166,24 +170,25 @@ Start at the outermost stable theorem and work inward.
 5. Prove program equivalence, probability, coupling, counting or algebra in
    the owning lower layer.
 
-### Proof ladders
+### Proof structure
 
-- Make a substantial proof readable from its public endpoint down to the
-  mathematical leaves. In the owning module's introduction, name the main
+- Make a substantial proof readable from its public endpoint down through its
+  intermediate equalities, bounds and assumptions to the probability and
+  counting leaves. In the owning module's introduction, name the main
   intermediate results and explain how they establish that endpoint; include
   the owning modules when the argument crosses files. Source order may still
   follow Lean's declaration dependencies.
-- Each rung states a mathematical fact with its actual hypotheses and
+- Each intermediate result states a mathematical fact with its actual hypotheses and
   conclusion. Each link explains why that fact gives the next result: an exact
   equality, a reduction, a distance bound, or explicit error accounting. A list
   of theorem names or broad stage labels alone is not a proof outline.
 - Keep the final assembly short and recognizable as the paper's argument.
   Name substantial intermediate facts with `have` or a lemma; put reusable
   probability, counting and algebra in their owning layer. Do not add wrappers
-  merely to make a ladder longer, or bury a mathematical subargument in a large
+  merely to lengthen the proof chain, or bury a mathematical subargument in a large
   tactic block.
 - Keep systems, observations, restrictions, shared randomness and budgets
-  identifiable between rungs. Explain representation changes and where side
+  identifiable between intermediate results. Explain representation changes and where side
   conditions are discharged; do not hide a stronger assumption in a helper.
 - Review the complete chain through the stated public endpoint, not just its
   leaves. For an H-coefficient argument, for example, follow construction,
@@ -304,7 +309,7 @@ globally; use `letI` or a wrapper carrier.
   `advantageDistance`) and in the lemmas that bridge to them (`transcriptDistance_le`,
   `transcriptDistance_le_of_advantage_le`).
 - `theorem` marks the results a reader comes for; `lemma` marks everything else. A `theorem`
-  states a source result, and its docstring cites it (`[1, Lemma 4.16]`, CR18, Lemma 4.15), or
+  states a source result, and its docstring cites it (`[1, Lemma 4.16]`), or
   it is one of the few headline results of its module that have no source: a correctness
   theorem, a security bound, the law the module exists to prove. Steps, helpers, rewriting
   lemmas and typed corollaries are `lemma`, even when the module doc lists them. Both keywords
@@ -338,14 +343,10 @@ coverage: shorten sentences and remove repetition, never a necessary step,
 hypothesis, invariant or reason. One sentence per local step is usually enough;
 use more when the mathematics or representation needs it.
 
-- Delegate comment and documentation passes to Claude, using its saved style preferences and
-  the ChaChaPoly and proof-ladders developments as references. Preserve the mathematical
-  explanations and diagrams while making the wording concise. Give Claude only file-reading
-  and editing tools, with shell access, Git access, external tools and hooks disabled. Claude
-  must not stage, commit or push. The coordinating agent checks the diff and verifies the result.
+- Review every change against these rules for mathematical accuracy as well as wording.
 - Begin each substantive module with a `/-! ... -/` introduction explaining
   its mathematical purpose, the objects involved, the principal results by
-  declaration name, and their role in the proof ladder. Group related results
+  declaration name, and their role in the proof chain. Group related results
   instead of listing every helper. Use section comments for mathematical
   stages, not development milestones.
 - Give definitions, theorem statements and non-obvious structure fields
@@ -382,6 +383,13 @@ use more when the mathematics or representation needs it.
 - A paper-derived definition, theorem or proof step carries a concise verbatim
   quotation of the source statement with its printed page. Paraphrase only the
   Lean representation or a repository-specific modeling choice.
+- Cite sources by number in Lean comments, docstrings and Markdown prose, as `[n]` or
+  `[n, Lemma x, p. y]`, with full entries in a `References` section of the module
+  documentation or document. Author names appear only in those entries, never in prose,
+  headings or diagrams. Give the source theorem and printed page at the point of use.
+- State a declaration's scope positively once; do not repeat caveats, negative comparisons or
+  design discussion. Put necessary assumptions at their binders and definitions, and keep the
+  diagrams and mathematics.
 - Within proofs, explain each paper-level step at its point of use, including
   routine steps: what fact is established and why it follows or is needed next.
   Put the comment beside the relevant `have`, `calc` link or case, rather than
@@ -439,5 +447,3 @@ the main results; the audit does not depend on them. CI (`.github/workflows/ci.y
 three on every pull request and on `main`, and `.github/workflows/zizmor.yml` audits the
 workflows with zizmor. Actions are pinned to commit hashes, which Dependabot updates; elan is
 pinned to a release and its SHA-256 in `ci.yml`, which is updated by hand.
-
-For changes to public declarations used downstream, also build `chachapoly-cc`.
