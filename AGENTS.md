@@ -126,10 +126,21 @@ the result is captured in a test or docstring.
 Every review checks correctness together with readability, deduplication and
 use of notation; a passing build does not settle these questions.
 
+- **Composition:** inspect the definitions before the proofs. Composite systems and
+  converters must expose their component structure, including domains, wiring and shared
+  randomness. When constructions are compared, check that they share an explicit context and
+  that each differing component leaves only its local equality or bound to prove; structural
+  normalization and transport through the common context belong to the library.
 - **Readability:** follow the public statement through its proof chain. Check
   that names, local facts, comments and diagrams expose each mathematical step,
   its assumptions and its role. Keep explanations concise without omitting them.
-- **Deduplication:** search the owning layer and its dependencies for existing
+- **Object reuse:** inspect every new definition and sampling site. Check its owner against
+  the existing systems, interfaces, converters and probability laws. Environments assemble
+  these objects; lemmas refer to their laws. A renamed copy is still a duplicate. Preserve
+  which callers share a draw and which receive independent draws. Use
+  `scripts/review-reuse.sh` to locate candidate sites in the diff; its lexical report does
+  not establish semantic reuse. Follow the sites through their definitions.
+- **Lemma reuse:** search the owning layer and its dependencies for existing
   lemmas before accepting a new helper or an inline calculation. Reuse the named
   result when it expresses the required step, including routine averaging,
   finite-sum, distance and attachment arguments. Update comments to describe
@@ -145,9 +156,67 @@ use of notation; a passing build does not settle these questions.
 Start with the agreed mathematical model and its correspondence to the
 sources: their parties, symbols, interfaces, resources, converters, equations
 and timing. Describe what each object does on paper before choosing its Lean
-representation. For a new construction, make the interfaces and object
-signatures explicit, then implement their internals, then state the complete
-construction. Only then plan the proof.
+representation. Then give the algebraic component structure of each system and
+converter, whether defined directly in Lean or through the DSL, before implementing
+internal histories or programs or proving their properties. Derive this structure from
+the model; an existing representation is not presumed to be the right starting point.
+
+Before implementing a composite object or its internal proofs:
+
+1. Find the existing objects first. For each intended system, interface, converter and law,
+   identify its declaration and owning module, or the precise missing capability. Record
+   the short mapping in the working notes or task update. Start from
+   [REUSE.md](REUSE.md), then search the owning layer and read the live signatures and semantics.
+   Check domains, budgets and sampling scope, not just names. Extend the owner when an object
+   needs another interface or law; a new environment is not a reason to redefine the object.
+2. Write its assembly from named components with the library's existing objects and
+   operations: serial and parallel composition, attachment, sampling and restriction.
+   Give each component's interface, domain, query costs and behavioral contract; keep
+   the wiring explicit and place retained state and shared draws in their owning components.
+3. When the task compares constructions, write them together over an explicit common
+   context, up to the structural laws and explicit interface rewirings. Only the
+   differing components then need local mathematics: state the equalities or bounds
+   required there. A construction-only task needs no comparison theorem.
+4. Type-check a small assembly probe with components as variables. For a requested
+   property or comparison, supply their contracts as explicit hypotheses and prove the
+   endpoint through the library's structural laws, without inspecting component internals.
+   Generic factorization and transport are library work: resolve a missing structural law
+   or representation bridge in the owning layer before the component proofs. Keep this
+   probe in `Scratch/`, without placeholders or axioms. Also instantiate the probe with the
+   selected existing objects: an abstract-variable proof alone does not check that the
+   chosen interfaces and budgets fit the intended use.
+5. Implement only the missing components and discharge their contracts. Define the composite object
+   by the assembly expression. If the object also has an independent functional or
+   operational specification, prove once that it agrees with that expression and reuse
+   the result.
+
+For a primitive object, state its contract and its place in an intended composition;
+no artificial decomposition is required. When a lower-level presentation is needed for
+a mathematical argument, expose how it represents the components and preserves their
+assembly. Keep the correspondence at that boundary rather than rebuilding the whole
+construction for each comparison. Lean's declaration order may follow dependencies;
+the design order starts with the assembly.
+
+### Ownership of objects and laws
+
+Define a reusable object once in the lowest layer that owns its meaning, before its first
+consumer. Generic ideal systems belong in `Commons`; concrete systems and their operations
+in `RandomSystems`; probability operations in `Probability`; a construction-specific joint
+law belongs beside that construction's model. A proof file must not become the owner of a law
+already used by the worlds it compares.
+
+Name a nontrivial law used in several definitions or lemmas once as `ProbDist Ω`, with its
+normalization included. Derive variants with `ProbDist.map`, `prodProbDist`, `ProbDist.bind`
+or `ProbDist.jointLaw`. Use the named law in systems and in later probability statements;
+unfold it at the probability argument that needs its factors. Generic lemmas take the law
+as a parameter. Short expressions such as `𝒰[X]` need no new alias solely to avoid repetition.
+
+Reuse a mathematical object without changing its sampling semantics. Separate experiments can
+use the same declaration. Within one system, independent permutation copies use parallel
+composition; several callers of one permutation route to one shared component with an explicit
+combined domain guarantee. `StrongURP` serves forward and inverse queries from one retained
+permutation; `URP` samples independently at each label. An alternate representation gets one
+correspondence lemma, which consumers reuse instead of defining the object in each environment.
 
 Add an encoding, record, wrapper or generalization only when a concrete
 requirement of the current object calls for it, and explain its meaning.
@@ -160,15 +229,21 @@ plumbing stay in the foundation.
 
 ## Proof workflow
 
-Start at the outermost stable theorem and work inward.
+Start from the assembly and contracts established above, at the outermost theorem,
+and work inward. Apply the same workflow recursively to systems-level comparisons:
+expose their common structure before treating a remaining goal as a semantic leaf.
+The definitions stay compositional and the final proof readable.
 
 1. State the final construction, distance or property endpoint.
 2. Choose the proof route explicitly: direct metric, simulator, conditional
    equivalence, coupling, H-coefficient, hybrid, or reduction.
-3. Name the intermediate systems, transcript or reveal, bad event and budgets.
-4. Use the proof commands for deterministic assembly.
-5. Prove program equivalence, probability, coupling, counting or algebra in
-   the owning lower layer.
+3. Express intermediate systems through their shared components; name the transcript
+   or reveal, bad event and budgets needed by the selected route.
+4. Where constructions are compared, normalize their structural differences and transport
+   the local component facts through the common context; use the proof commands for
+   deterministic assembly.
+5. Prove the remaining local program equivalence, probability, coupling, counting or
+   algebra obligations in the owning lower layer.
 
 ### Proof structure
 

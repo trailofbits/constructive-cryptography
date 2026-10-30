@@ -1,4 +1,5 @@
 import ConstructiveCryptography.Notation
+import Commons.Definitions.Ideal
 
 /-!
 # Proof commands on interfaces
@@ -6,6 +7,8 @@ import ConstructiveCryptography.Notation
 The CC notation and proof commands on arbitrary interfaces: normalization of attachment and
 parallel composition (`cc_normalize`), non-expansion (`cc_nonexpand`), the triangle
 inequality (`cc_triangle`), and exact construction (`cc_construct`).
+The first example compares two systems built from `Commons.StrongURP`, whose forward and
+inverse ports share one retained permutation. Their equality lifts through a common context.
 -/
 
 namespace SystemAlgebra.Usability
@@ -15,6 +18,25 @@ open Interface
 open scoped SystemAlgebra
 
 variable {A B C : Interface}
+
+/-- Both environments attach a converter to one `Commons.StrongURP X` beside `T` inside
+`context`. `cc_normalize` brings both sides to the same wiring; the local equation `component`
+then closes the comparison. -/
+example
+    -- `X` is the finite permuted set; `q` bounds the combined forward and inverse queries.
+    {X : Type} [Fintype X] {q : ℕ}
+    -- `first`, `second : A ⟶ Commons.Bidirectional X q` answer `A`-queries with forward and
+    -- inverse queries to the one permutation.
+    (first second : A ⟶ Commons.Bidirectional X q)
+    -- `context` answers `C`-queries through the component's `A` and the unchanged system
+    -- `T : TypedSystem B`.
+    (context : C ⟶ A ⊗ B) (T : TypedSystem B)
+    -- `component`: the two converters give equal systems on the same `StrongURP X`.
+    (component : first • Commons.StrongURP X = second • Commons.StrongURP X) :
+    context • ((first • Commons.StrongURP X) ∥ T) =
+      (context ≫ (second ⊗ₘ 𝟙 B)) • (Commons.StrongURP X ∥ T) := by
+  cc_normalize
+  rw [component]
 
 example (α : A ⟶ B) (β : B ⟶ C) (R : TypedSystem C) :
     (α ≫ β) • R = α • (β • R) := by

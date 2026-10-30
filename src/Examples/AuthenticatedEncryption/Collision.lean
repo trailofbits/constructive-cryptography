@@ -328,71 +328,46 @@ lemma ideal_truncate {k₂ : ℕ}
   -- Not admitted: both systems are undefined.
   · rfl
 
-/-- **The ideal oracle on the hybrid's tables** has the mass it has on the ideal's own tables. -/
+/-- **The ideal oracle on the hybrid's tables** has the mass it has on the ideal's own tables.
+The left law `μ × ν` is the first factor of `hybridLaw = (μ × ν) × ν`: full-size real tables
+and the inner replacement table. The right law is `idealLaw`, with shorter real tables. -/
 lemma ideal_mass_hybridTables (xs : List (Σ i, (AE.perPort M C q).X i))
     (ys : List (Σ i, (AE.perPort M C q).Y i)) :
-    (Distribution.prod (Distribution.prod
-        (tableLaw (AE.Real.law1 scheme) (AE.Real.bound scheme * ∑ i, q i))
-        (tableLaw (AE.Real.law2 scheme) (AE.Real.bound scheme * ∑ i, q i)))
-        (tableLaw (AE.CCA.law1 M C) (AE.CCA.bound M C * ∑ i, q i))).mass (fun ω =>
+    (Distribution.prodProbDist
+      (realTableLaw scheme (AE.Real.bound scheme * ∑ i, q i)) (ccaTableLaw M C q)).1.mass (fun ω =>
       Replies (filterDom (AE.perPort M C q).domain (automatonSystem (oracleStep
         (idealEncrypt scheme) (idealDecrypt (AE.Ideal.law1 M C) (realEncrypt scheme))) (ω, [])))
         xs ys) =
-    (Distribution.prod (Distribution.prod
-        (tableLaw (AE.Real.law1 scheme) (idealTableSize scheme q))
-        (tableLaw (AE.Real.law2 scheme) (idealTableSize scheme q)))
-        (tableLaw (AE.Ideal.law1 M C) (AE.Ideal.bound M C * ∑ i, q i))).mass (fun ω =>
+    (idealLaw scheme q).1.mass (fun ω =>
       Replies (filterDom (AE.perPort M C q).domain (automatonSystem (oracleStep
         (idealEncrypt scheme) (idealDecrypt (AE.Ideal.law1 M C) (realEncrypt scheme))) (ω, [])))
         xs ys) := by
-  -- Plan: truncating the hybrid's key and encryption tables to their first `idealTableSize`
-  -- entries pushes the law `L_H` of the hybrid's key, encryption and inner replacement tables
-  -- to the ideal's law `L_I`, and the ideal oracle replies on the truncated tables as on the
-  -- full ones (`ideal_truncate`):
+  -- Truncating the real tables to their first `idealTableSize` entries, keeping the
+  -- replacement table, pushes `μ × ν` forward to `idealLaw`, and the ideal oracle replies on
+  -- the truncated tables as on the full ones (`ideal_truncate`):
   --
-  --   Pr_{ω ~ L_H}[ideal(ω) replies]
-  --     = Pr_{ω ~ L_H}[ideal(truncate ω) replies]   (ideal_truncate)
-  --     = Pr_{ω' ~ L_I}[ideal(ω') replies]          (L_I is the pushforward of L_H)
+  --   Pr_{ω ~ μ × ν}[ideal(ω) replies]
+  --     = Pr_{ω ~ μ × ν}[ideal(truncate ω) replies]   (ideal_truncate)
+  --     = Pr_{ω' ~ idealLaw}[ideal(ω') replies]       (idealLaw is the pushforward of μ × ν)
   classical
   -- Step 1: the law of the truncated tables is the ideal's law.
   have hpush : Distribution.fTransform (truncateTables scheme q (k₂ := AE.CCA.bound M C * ∑ i, q i))
-      (Distribution.prod (Distribution.prod
-        (tableLaw (AE.Real.law1 scheme) (AE.Real.bound scheme * ∑ i, q i))
-        (tableLaw (AE.Real.law2 scheme) (AE.Real.bound scheme * ∑ i, q i)))
-        (tableLaw (AE.CCA.law1 M C) (AE.CCA.bound M C * ∑ i, q i))) =
-      Distribution.prod (Distribution.prod
-        (tableLaw (AE.Real.law1 scheme) (idealTableSize scheme q))
-        (tableLaw (AE.Real.law2 scheme) (idealTableSize scheme q)))
-        (tableLaw (AE.CCA.law1 M C) (AE.CCA.bound M C * ∑ i, q i)) := by
+      (Distribution.prodProbDist
+        (realTableLaw scheme (AE.Real.bound scheme * ∑ i, q i)) (ccaTableLaw M C q)).1 =
+      (idealLaw scheme q).1 := by
     -- Truncation acts factor by factor on the product law (the identity on the replacement
     -- table), and the first entries of a table of independent samples are a table of
     -- independent samples (`fTransform_pi_castLE`).
+    dsimp only [realTableLaw, ccaTableLaw, idealLaw, idealTableLaw, Distribution.prodProbDist]
     rw [truncateTables, Distribution.fTransform_prod, Distribution.fTransform_prod,
       Distribution.fTransform_id,
       Distribution.fTransform_pi_castLE _ (AE.Real.law1 scheme).2.2,
       Distribution.fTransform_pi_castLE _ (AE.Real.law2 scheme).2.2]
-  -- The ideal's replacement table has the law and size of the inner `ρ^cca`'s (both uniform on
-  -- `M`; definitional), so state the right side with the latter.
-  change _ = (Distribution.prod (Distribution.prod
-        (tableLaw (AE.Real.law1 scheme) (idealTableSize scheme q))
-        (tableLaw (AE.Real.law2 scheme) (idealTableSize scheme q)))
-        (tableLaw (AE.CCA.law1 M C) (AE.CCA.bound M C * ∑ i, q i))).mass _
+    rfl
   -- Step 2: write the right side as the pushforward, and pull the event back along truncation.
   rw [← hpush, Distribution.mass_fTransform]
   -- Step 3: pointwise, truncation does not change the replies (`ideal_truncate`).
   exact Distribution.mass_congr _ fun ω => by rw [ideal_truncate scheme q ω]
-
-/-- The law of the hybrid's tables: the ideal's tables beside the outer replacement table. -/
-noncomputable abbrev hybridLaw :=
-  Distribution.prod (Distribution.prod (Distribution.prod
-    (tableLaw (AE.Real.law1 scheme) (AE.Real.bound scheme * ∑ i, q i))
-    (tableLaw (AE.Real.law2 scheme) (AE.Real.bound scheme * ∑ i, q i)))
-    (tableLaw (AE.CCA.law1 M C) (AE.CCA.bound M C * ∑ i, q i)))
-    (tableLaw (AE.CCA.law1 M C) (AE.CCA.bound M C * ∑ i, q i))
-
-lemma hybridLaw_isProbDist : (hybridLaw scheme q).isProbDist := by
-  -- A product of probability laws is one, and each table law is one.
-  repeat' (first | apply Distribution.prod_isProbDist | exact tableLaw_isProbDist _ _)
 
 /-- **The collision game**: the hybrid oracle, whose condition is a collision between the
 original messages and the outer replacement messages. -/
@@ -414,10 +389,11 @@ noncomputable def collisionGame :
         rw [filterDom_dom, automatonSystem_dom]
         exact ⟨fun hd => hd.1, fun hd =>
           ⟨hd, fun he => (AE.perPort M C q).nonempty_prefix.1 (he ▸ hd)⟩⟩⟩)
-    (hybridLaw scheme q)
+    (hybridLaw scheme q).1
 
+/-- The collision game is normalized: it is a pushforward of the normalized `hybridLaw`. -/
 lemma collisionGame_isProbDist : (collisionGame scheme q).isProbDist :=
-  Distribution.fTransform_isProbDist _ (hybridLaw_isProbDist scheme q)
+  Distribution.fTransform_isProbDist _ (hybridLaw scheme q).2
 
 /-- The hybrid is the behavior of the collision game's visible systems. -/
 lemma hybrid_visible : (Hybrid scheme q).1 = PDS.behavior (collisionGame scheme q).underlying
@@ -432,12 +408,14 @@ lemma hybrid_visible : (Hybrid scheme q).1 = PDS.behavior (collisionGame scheme 
   rw [hybrid_mass, PDS.behavior_mass, behaviorMass, PDG.underlying, collisionGame,
     Distribution.mass_fTransform, Distribution.mass_fTransform]
 
-/-- The condition holds with the probability of a collision with the outer replacement table. -/
+/-- The condition holds with the probability of a collision with the outer replacement table,
+whose law is `ccaTableLaw M C q`. -/
 lemma collisionGame_badProbability (xs : List (Σ i, (AE.perPort M C q).X i)) :
     (collisionGame scheme q).badProbability xs =
-      (tableLaw (AE.CCA.law1 M C) (AE.CCA.bound M C * ∑ i, q i)).mass
+      (ccaTableLaw M C q).1.mass
         (Collision (AE.CCA.law1 M C) (messages xs)) := by
-  -- The condition's probability is the mass, over `hybridLaw`, of a collision with `ω.2`.
+  -- The condition's probability is the mass, over `hybridLaw = (μ × ν) × ν`, of a collision
+  -- with the outer table `ω.2`.
   rw [PDG.badProbability, collisionGame, Distribution.mass_fTransform]
   -- The event reads only the last factor `ω.2`: write it as `True ∧ Collision` to split it.
   rw [show (fun ω : _ × _ => Collision (AE.CCA.law1 M C) (messages xs) ω.2) =
@@ -446,9 +424,10 @@ lemma collisionGame_badProbability (xs : List (Σ i, (AE.perPort M C q).X i)) :
   -- Independence: on the product law the mass is `Pr[True] · Pr[Collision]`, ...
   refine (Distribution.mass_prod_and _ _ (fun _ => True)
     (Collision (AE.CCA.law1 M C) (messages xs))).trans ?_
-  -- ... and `Pr[True] = 1`, the other tables' law being a probability law.
-  rw [Distribution.mass_true, (Distribution.prod_isProbDist _ _ (Distribution.prod_isProbDist _ _
-    (tableLaw_isProbDist _ _) (tableLaw_isProbDist _ _)) (tableLaw_isProbDist _ _)).2, one_mul]
+  -- ... and `Pr[True] = 1`, since `μ × ν` is normalized.
+  rw [Distribution.mass_true,
+    (Distribution.prodProbDist (realTableLaw scheme (AE.Real.bound scheme * ∑ i, q i))
+      (ccaTableLaw M C q)).2.2, one_mul]
 
 /-- **The collision game is conditionally equivalent to the ideal**: the replies with no
 collision are the ideal replies, independently of the outer replacement table. -/
@@ -457,18 +436,18 @@ lemma collisionGame_conditionallyEquivalent :
         (hybrid_visible scheme q) |≡
       (AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme :
         TypedSystem (AE.perPort M C q)) := by
-  -- Plan, on a transcript `h` with queries `xs`, `ω = (ω.1, ω.2)` the hybrid's tables with
-  -- `ω.2` the outer replacement table, and `Coll` the collision of `xs`'s original messages
-  -- with `ω.2`:
-  --   1. reduce `|≡` to the factorization of the replies with the condition unset;
-  --   2. rewrite `1 − Pr[Coll]` as `Pr[¬Coll]`;
+  -- Fix a transcript `h` with queries `xs` and the hybrid's draw `ω = (ω.1, ω.2) ~ (μ × ν) × ν`:
+  -- `ω.1` holds the real tables and inner replacement table, `ω.2` the independent outer one.
+  -- `Coll` is the collision of `xs`'s original messages with `ω.2`. The proof establishes:
+  --   1. `|≡` reduces to the factorization of the replies with the condition unset;
+  --   2. `1 − Pr[Coll] = Pr[¬Coll]`;
   --   3. without a collision the hybrid replies as the ideal oracle on `ω.1`;
   --   4. `ω.1` and `ω.2` are independent, so the mass factors;
   --   5. the ideal oracle on `ω.1` has the ideal's own mass.
   --
   --   Pr_ω[hybrid(ω) replies h ∧ ¬Coll(ω.2)]
   --     = Pr_ω[ideal(ω.1) replies h ∧ ¬Coll(ω.2)]       (step 3, hybrid_replies_iff)
-  --     = Pr[ideal(ω.1) replies h] · Pr[¬Coll]          (step 4, independence)
+  --     = Pr_{μ × ν}[ideal replies h] · Pr_ν[¬Coll]     (step 4, independence)
   --     = Pr[¬Coll] · P_ideal(h)                        (step 5, ideal_mass_hybridTables)
   --     = (1 − Pr[Coll]) · P_ideal(h)                   (step 2, complement)
   --
@@ -479,17 +458,17 @@ lemma collisionGame_conditionallyEquivalent :
   refine (Interface.conditionallyEquivalent_ofPDG_iff _ _ _ _).mpr
     (PDG.conditionallyEquivalent_behavior _ (AE.perPort M C q).nonempty_prefix fun h => ?_)
   -- Unfold the condition's probability (`collisionGame_badProbability`), the ideal as the
-  -- ideal oracle on its tables (`ideal_mass`), and the left side as a mass over `hybridLaw`.
+  -- ideal oracle on `idealLaw` (`ideal_mass`), and the left side as a mass over `hybridLaw`.
   rw [collisionGame_badProbability, ideal_mass, PDG.goodProbability, collisionGame,
     Distribution.mass_fTransform]
-  -- Step 2: `Pr[Coll] + Pr[¬Coll] = 1` on the outer table, so `1 − Pr[Coll] = Pr[¬Coll]`.
+  -- Step 2: `Pr[Coll] + Pr[¬Coll] = 1` under the normalized `ν`, so `1 − Pr[Coll] = Pr[¬Coll]`.
   have hcompl := Distribution.mass_add_compl
-    (tableLaw (AE.CCA.law1 M C) (AE.CCA.bound M C * ∑ i, q i))
+    (ccaTableLaw M C q).1
     (Collision (AE.CCA.law1 M C) (messages (h.map Prod.fst)))
-  rw [(tableLaw_isProbDist _ _).2] at hcompl
-  have hgood : (1 : ℝ) - (tableLaw (AE.CCA.law1 M C) (AE.CCA.bound M C * ∑ i, q i)).mass
+  rw [(ccaTableLaw M C q).2.2] at hcompl
+  have hgood : (1 : ℝ) - (ccaTableLaw M C q).1.mass
       (Collision (AE.CCA.law1 M C) (messages (h.map Prod.fst))) =
-      (tableLaw (AE.CCA.law1 M C) (AE.CCA.bound M C * ∑ i, q i)).mass
+      (ccaTableLaw M C q).1.mass
         (fun t => ¬ Collision (AE.CCA.law1 M C) (messages (h.map Prod.fst)) t) := by linarith
   rw [hgood]
   dsimp only [hybridLaw]
@@ -497,15 +476,15 @@ lemma collisionGame_conditionallyEquivalent :
   -- oracle's on `ω.1` (`hybrid_replies_iff`).
   rw [Distribution.mass_congr _ fun ω => and_congr_left fun hgood =>
     hybrid_replies_iff scheme ω _ _ _ hgood]
-  -- Step 4: the event is `A(ω.1) ∧ B(ω.2)` on the product law, so its mass is the product
-  -- `Pr[A] · Pr[B]` (`mass_prod_and`).
+  -- Step 4: the event is `A(ω.1) ∧ B(ω.2)` under `(μ × ν) × ν`, so its mass is the product
+  -- `Pr_{μ × ν}[A] · Pr_ν[B]` (`mass_prod_and`).
   refine (Distribution.mass_prod_and _ _ (fun ω₁ => Replies (filterDom (AE.perPort M C q).domain
     (automatonSystem (oracleStep (idealEncrypt scheme)
       (idealDecrypt (AE.Ideal.law1 M C) (realEncrypt scheme))) (ω₁, [])))
     (h.map Prod.fst) (h.map Prod.snd))
     (fun t => ¬ Collision (AE.CCA.law1 M C) (messages (h.map Prod.fst)) t)).trans ?_
-  -- Step 5: reorder the product; the ideal oracle on the hybrid's first tables has the mass
-  -- it has on the ideal's own tables (`ideal_mass_hybridTables`).
+  -- Step 5: reorder the product; the ideal oracle has the same mass under `μ × ν` as under
+  -- `idealLaw` (`ideal_mass_hybridTables`).
   rw [mul_comm, ideal_mass_hybridTables]
 
 /-- **The collision bound**: on the empty and on each admitted query sequence, the condition
