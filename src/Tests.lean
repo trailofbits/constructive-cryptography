@@ -1,3 +1,5 @@
+import Tests.ProbabilityObservation
+import Tests.TranscriptCompletion
 import Tests.Distinguishers
 import Tests.DistinguisherAction
 import Tests.TranscriptHorizon

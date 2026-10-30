@@ -5,8 +5,9 @@ import Mathlib.Algebra.Order.Sub.Basic
 /-!
 # Statistical distance
 
-The statistical distance `δ(X, Y) = ∑ₐ max (X(a) − Y(a), 0)`. Source:
-Lanzenberger–Maurer, *Coupling of Random Systems*, Definition 3, Lemmas 2 and 3.
+The statistical distance `δ(X, Y) = ∑ₐ max (X(a) − Y(a), 0)` of finitely supported real mass
+functions [1, Definition 3], its equivalent forms, the optimal-test identity and the ratio bounds
+behind H-coefficient arguments. The carrier may be infinite; each law has finite support.
 
 ## Main definitions
 
@@ -24,10 +25,23 @@ Lanzenberger–Maurer, *Coupling of Random Systems*, Definition 3, Lemmas 2 and 
 * event gaps: `mass_sub_mass_le_statDist`; expectation gaps:
   `abs_expect_sub_expect_le_mul_statDist`
 * the optimal-test identity `sSup_avgSuccessProb_eq_half_add_half_statDist`
-* the expectation bound `statDist_le_expect_of_ratio` and its good/bad specialization
-  `statDist_le_probBad_add_of_ratio_on_good`
-* `statDist_partition` (Lemma 2), `statDist_fTransform_le` (Lemma 3, data
-  processing), `statDist_fTransform_injective`, `statDist_sum_of_disjoint_support`
+* the expectation method `statDist_le_expect_of_ratio` [3, Lemma 2.2.1] and its good/bad
+  specialization `statDist_le_probBad_add_of_ratio_on_good` [3, Corollary 2.2.2]
+* `statDist_fTransform_le_expect_of_ratio`: `δ(f_* P, f_* Q) ≤ 𝔼_Q[ε]`, data processing
+  followed by the expectation method; the root of the system-level ratio bounds
+* `statDist_partition` [1, Lemma 2], `statDist_fTransform_le` (data processing,
+  [1, Lemma 3]), `statDist_fTransform_injective` (injective pushforward preserves statistical
+  distance), `statDist_sum_of_disjoint_support` [1, Lemma 2, p. 10]
+
+## References
+
+1. D. Lanzenberger and U. Maurer. Coupling of Random Systems. In *Theory of Cryptography
+   (TCC 2020)*, Springer, 2020. Cryptology ePrint Archive, Paper 2020/1187.
+2. U. Maurer. *Cryptography Foundations*. Lecture notes, ETH Zurich, Spring 2018.
+3. Jha. *Provable Security of Symmetric-key Cryptographic Schemes*.
+4. U. Maurer, K. Pietrzak and R. Renner. *Indistinguishability Amplification*. In CRYPTO 2007,
+   LNCS 4622, pp. 130–149, 2007.
+5. C. Portmann and R. Renner. *Security in Quantum Cryptography*. arXiv:2102.00021v2, 2021.
 -/
 
 noncomputable section
@@ -68,24 +82,15 @@ lemma sSup_image_univ_le_of_forall {ι : Type*} (f : ι → ℝ) {a : ℝ}
 
 /-- Statistical distance between two distributions.
 
-Paper Definition 3:
-  `δ(X, Y) := ∑_{a} max(0, X(a) - Y(a))`
+[1, Definition 3]: `δ(X, Y) := ∑_{a} max(0, X(a) - Y(a))`, the one-sided excess, here on
+signed laws.
 
-Over the `NNReal` carrier the truncating subtraction spelled the `max`; over
-the signed carrier it is written out.  The value is the same one-sided excess
-the paper defines.
+`Distribution A = A →₀ ℝ` has finite support, and a summand `max (X a - Y a) 0` is nonzero only
+on `(X - Y).support`. The sum therefore equals the sum over `Finset.univ` on a `Fintype`
+(`statDist_eq_sum_univ`) and is defined on infinite carriers such as transcript spaces;
+indexing by `(X - Y).support` needs no `DecidableEq`.
 
-**No `Fintype` is needed, and requiring one was a spurious restriction.**
-`Distribution A = A →₀ ℝ` already carries finite support, and a summand `max (X a - Y a) 0` can
-only be nonzero where `X a ≠ Y a`, i.e. on `(X - Y).support`.  So the sum below has the
-same value as the sum over `Finset.univ` *unconditionally* — `statDist_eq_sum_univ` —
-while also being defined on infinite carriers such as a transcript space.  Indexing by
-`(X - Y).support` rather than `X.support ∪ Y.support` additionally avoids a `DecidableEq`
-hypothesis, which would have been the same mistake one level down.
-
-This is the difference from `δ` (`RandomSystem.lean`), which sums over `μ.support` alone
-and therefore agrees with this only when `ν ≥ 0`; the two are one metric at two
-generalities, both one-sided. -/
+`δ` (`RandomSystem.lean`) sums over `μ.support` alone and agrees with this when `ν ≥ 0`. -/
 noncomputable def statDist {A : Type*} (X Y : Distribution A) : ℝ :=
   ∑ a ∈ (X - Y).support, max (X a - Y a) 0
 
@@ -126,11 +131,10 @@ lemma statDist_self {A : Type*} (X : Distribution A) :
 
 /-- `δ(X, Y) = δ(Y, X)` when `|X| = |Y|`.
 
-Paper: For distributions of equal weight,
+[1, Definition 3, p. 10]: for distributions of equal weight,
   δ(X,Y) = (1/2) ∑_a |X(a) - Y(a)| = δ(Y,X).
 
-No `Fintype`: the two sums run over `X.support ∪ Y.support`, which already
-covers both differences. -/
+Both sums run over the finite set `X.support ∪ Y.support`, which covers both differences. -/
 lemma statDist_symm_of_eq_weight {A : Type*}
     (X Y : Distribution A) (h : X.weight = Y.weight) :
     statDist X Y = statDist Y X := by
@@ -159,22 +163,18 @@ lemma statDist_symm_of_eq_weight {A : Type*}
 /-! ### Alternative forms of statistical distance -/
 
 /-- **Min form of statistical distance on an arbitrary carrier**
-(LanMau20 Definition 3, second form; **MaPiRe07 equation (3), printed p. 140**,
-used in the proof of their Lemma 5): `δ(P,Q) = |P| − ∑ min(P,Q)`, the sum taken
-over any finite set containing both supports.
+([1, Definition 3], second form; [4, equation (3), p. 140], used in the proof of
+[4, Lemma 5]): `δ(P,Q) = |P| − ∑ min(P,Q)`, the sum taken over any finite set containing both
+supports.
 
-`Distribution` is `A →₀ ℝ`, so finite support is already in the carrier and no
-`Fintype A` is needed; the `[Fintype]` form below is the instance at
-`s = Finset.univ`.  The carriers that force the general form are the genuinely
-infinite ones — transcript spaces `List (X × Option Y)`, system laws
-`Distribution (DDS X Y)`; this is the companion of
-`statDist_eq_sum_of_support_subset` and
-`Distribution.weight_eq_sum_of_support_subset` one level up.
+`Distribution` is `A →₀ ℝ`, so no `Fintype A` is needed; the `[Fintype]` form below is the
+instance at `s = Finset.univ`. The general form serves carriers such as transcript spaces
+`List (X × Option Y)` and system laws `Distribution (DDS X Y)`, like
+`statDist_eq_sum_of_support_subset` and `Distribution.weight_eq_sum_of_support_subset`.
 
-Like the `Fintype` form it needs neither non-negativity nor equal weight: the
-pointwise lattice identity `max (x − y) 0 = x − min x y` is all it uses.  The
-asymmetry the paper notes for unequal weight is visible — the right-hand side
-carries `|P|`, not `|Q|`. -/
+It uses only the pointwise lattice identity `max (x − y) 0 = x − min x y`, so signed laws of
+unequal weight are allowed. The asymmetry [1] notes for unequal weight is visible: the
+right-hand side carries `|P|`. -/
 lemma statDist_eq_weight_sub_sum_min_of_support_subset {A : Type*}
     (P Q : Distribution A) {s : Finset A} (hP : P.support ⊆ s)
     (hQ : Q.support ⊆ s) :
@@ -199,8 +199,8 @@ lemma statDist_eq_weight_sub_sum_min {A : Type*} [Fintype A] (X Y : Distribution
   statDist_eq_weight_sub_sum_min_of_support_subset X Y
     (fun a _ => Finset.mem_univ a) (fun a _ => Finset.mem_univ a)
 
-/-- Weight-one specialization of the min form (MaPiRe07 equation (3), used in
-the proof of their Lemma 5): `δ(X, Y) = 1 - ∑_a min(X(a), Y(a))`.
+/-- Weight-one specialization of the min form ([4, equation (3)], used in the proof of
+[4, Lemma 5]): `δ(X, Y) = 1 - ∑_a min(X(a), Y(a))`.
 
 Only the *first* argument needs weight one — the min form charges `|X|`, so
 `Y` may be an arbitrary signed distribution. -/
@@ -209,8 +209,8 @@ theorem statDist_eq_one_sub_sum_min {A : Type*} [Fintype A]
     statDist X Y = 1 - ∑ a : A, min (X a) (Y a) := by
   rw [statDist_eq_weight_sub_sum_min, hX]
 
-/-- **Half-`L1` form of statistical distance** (LanMau20 Definition 3 remark;
-PorRen22 Definition 4): for distributions of equal weight,
+/-- **Half-`L1` form of statistical distance** ([1, Definition 3, remark];
+[5, Definition 4]): for distributions of equal weight,
 `δ(X, Y) = ½ ∑_a |X(a) - Y(a)|`.
 
 Equal weight is exactly what is needed: pointwise
@@ -348,7 +348,7 @@ lemma statDist_fTransform_le_mass_of_eq_off {A B : Type*} {μ : Distribution A}
 
 /-! ### The distance/expectation bridge -/
 
-/-- **CR18_LN Exercise 4.4**, one-sided: a functional taking values in `[m, M]`
+/-- **[2, Exercise 4.4]**, one-sided: a functional taking values in `[m, M]`
 moves by at most `(M − m) · δ(X, Y)`.
 
 The proof is the exercise's: recentre `f` by the constant `m`, which is free
@@ -374,13 +374,13 @@ theorem expect_sub_expect_le_mul_statDist {A : Type*} (X Y : Distribution A) (f 
   · rw [max_eq_right h]
     nlinarith [hm a]
 
-/-- **CR18_LN Exercise 4.4**, the two-sided form the exercise asks to "state
+/-- **[2, Exercise 4.4]**, the two-sided form the exercise asks to "state
 formally": for distributions of equal weight, a functional taking values in
 `[m, M]` satisfies `|𝔼_X[f] − 𝔼_Y[f]| ≤ (M − m) · δ(X, Y)`.
 
-At `[m, M] = [-1, 1]` — the calibration CR18_LN Definition 2.9 puts on a
-bit-guessing advantage — this is the printed constant `2d`; at `[m, M] = [0, 1]`
-it is footnote 12's `d`.  Signed layer plus `|X| = |Y|`; no `Fintype`. -/
+At `[m, M] = [-1, 1]`, the calibration [2, Definition 2.9] puts on a bit-guessing advantage,
+this is the printed constant `2d`; at `[m, M] = [0, 1]` it is the `d` of [2, footnote 12].
+Signed layer plus `|X| = |Y|`; no `Fintype`. -/
 theorem abs_expect_sub_expect_le_mul_statDist {A : Type*}
     (X Y : Distribution A) (f : A → ℝ) {m M : ℝ} (hw : X.weight = Y.weight)
     (hm : ∀ a, m ≤ f a) (hM : ∀ a, f a ≤ M) :
@@ -451,10 +451,9 @@ lemma avgSuccessProb_eq_mass_sub_mass_add_weight_div_two {A : Type*}
   rw [← hfalse]
   linarith
 
-/-- **No decision rule beats `½ + ½ δ(X, Y)`** (optimality half of PorRen22
-Theorem 8).  Only `|Y| = 1` is needed: the acceptance-set mass gap is bounded
-by `δ(X, Y)` for arbitrary signed `X`, `Y` (`mass_tsub_mass_le_statDist`),
-and the weight of `Y` is the only normalization the bound consumes. -/
+/-- **No decision rule beats `½ + ½ δ(X, Y)`** (optimality half of [5, Theorem 8]).
+Only `|Y| = 1` is needed: the acceptance-set mass gap is bounded by `δ(X, Y)` for arbitrary
+signed `X`, `Y` (`mass_tsub_mass_le_statDist`). -/
 theorem avgSuccessProb_le_half_add_half_statDist {A : Type*}
     (X Y : Distribution A) (hY : Y.weight = 1) (g : A → Bool) :
     avgSuccessProb X Y g ≤ 1 / 2 + statDist X Y / 2 := by
@@ -462,8 +461,8 @@ theorem avgSuccessProb_le_half_add_half_statDist {A : Type*}
   have := mass_tsub_mass_le_statDist X Y (fun a => g a = true)
   linarith
 
-/-- **The Bayes rule attains `½ + ½ δ(X, Y)`** (attainment half of PorRen22
-Theorem 8): any rule that guesses `X` exactly on `{a | Y(a) < X(a)}` — the
+/-- **The Bayes rule attains `½ + ½ δ(X, Y)`** (attainment half of
+[5, Theorem 8]): any rule that guesses `X` exactly on `{a | Y(a) < X(a)}` — the
 Bayes-optimal rule for equal prior ½ — succeeds with probability exactly
 `½ + ½ δ(X, Y)`.  The rule is taken as an abstract `g` with a specification
 hypothesis so the statement does not fix a `Decidable` instance. -/
@@ -476,8 +475,8 @@ theorem avgSuccessProb_eq_half_add_half_statDist_of_forall_eq_true_iff_lt
     ← statDist_eq_mass_sub_mass_pos]
   ring
 
-/-- **Optimal-test identity** (PorRen22 Theorem 8, classical case; the
-`½ + ½p` computation of MaPiRe07 Lemma 4): the best success probability over
+/-- **Optimal-test identity** ([5, Theorem 8], classical case; the
+`½ + ½p` computation of [4, Lemma 4]): the best success probability over
 all decision rules `A → Bool` of deciding which of `X`, `Y` (equal prior ½) a
 sample came from is exactly `½ + ½ δ(X, Y)`.  In mathlib's decision-theory
 vocabulary this is `1 - bayesRisk` at 0-1 loss and uniform prior.
@@ -515,25 +514,26 @@ lemma sub_le_mul_of_one_sub_mul_le {a b eps : ℝ}
     b - a ≤ eps * b := by
   nlinarith [h_lower]
 
-/-- **The expectation method**, algebraic form: if `(1 − ε a) · ideal(a) ≤ real(a)` at every
-point, with `ε ≥ 0`, then `δ(real, ideal) ≤ 𝔼_ideal[ε]`.
-
-Jha, *Provable Security of Symmetric-key Cryptographic Schemes*, Lemma 2.2.1, printed
-pp. 19–20, attributed there to Hoang–Tessaro (Jha's [90]): for “a non-negative function
-ϵratio : Ω → [0, ∞)” with ratio at least `1 − ϵratio` off a bad set,
-“Adv_{O₁;O₀}(A) ≤ ϵ_bad + Ex[ϵ_ratio(Θ₀)]”. Jha states it for transcript probability laws with
-a bad set. Here `real` and `ideal` are finite distributions of equal total weight, not
-necessarily one, `ideal` nonnegative and `real` possibly signed, with one error `ε` and no bad
-set; Jha's bound follows with `ε = 1` on the bad set and `ϵ_ratio` elsewhere. The ratio is a
-product, not a quotient: at an atom with `ideal a = 0` it says `0 ≤ real a`. -/
-theorem statDist_le_expect_of_ratio {A : Type*} (real ideal : Distribution A)
-    (ε : A → ℝ) (hweight : real.weight = ideal.weight) (hε : ∀ a, 0 ≤ ε a)
-    (hideal : ideal.NonNeg) (ratio : ∀ a, (1 - ε a) * ideal a ≤ real a) :
+/-- The expectation method for equal-weight mass functions:
+`(1 − ε) · ideal ≤ real` gives `δ(real, ideal) ≤ 𝔼_ideal[ε]`.
+[3, Lemma 2.2.1, p. 20]: “Adv_{O₁;O₀}(A) ≤ ϵ_bad + Ex[ϵ_ratio(Θ₀)]”. For probability laws,
+setting `ε = 1` on the bad set and `ϵ_ratio` elsewhere gives the source's good/bad bound. -/
+theorem statDist_le_expect_of_ratio
+    -- `A` carries outcomes; `real`, `ideal` are finitely supported real mass functions on `A`.
+    {A : Type*} (real ideal : Distribution A)
+    -- `ε a` is the scalar loss at outcome `a`; `hε` below requires it to be nonnegative.
+    (ε : A → ℝ)
+    -- `hweight` gives equal total mass; `hε` allows any nonnegative loss, including above one.
+    (hweight : real.weight = ideal.weight) (hε : ∀ a, 0 ≤ ε a)
+    -- `hideal` makes `ideal` nonnegative; `real` may be signed.
+    (hideal : ideal.NonNeg)
+    -- `ratio` bounds the ideal deficit at every `a`, including where `ideal a = 0`.
+    (ratio : ∀ a, (1 - ε a) * ideal a ≤ real a) :
     statDist real ideal ≤ ideal.expect ε := by
   classical
   -- Equal weights make `δ` symmetric, so `δ(real, ideal)` is the ideal deficit
-  -- `∑_a max(ideal a − real a, 0)`, Jha's “∑_{ω∈Ω} max{0, Pr[Θ0 = ω] − Pr[Θ1 = ω]}”
-  -- (printed p. 20). Sum it and `𝔼_ideal[ε]` over `ideal.support ∪ real.support`.
+  -- `∑_a max(ideal a − real a, 0)`, the sum “∑_{ω∈Ω} max{0, Pr[Θ0 = ω] − Pr[Θ1 = ω]}” of
+  -- [3, p. 20]. Sum it and `𝔼_ideal[ε]` over `ideal.support ∪ real.support`.
   rw [statDist_symm_of_eq_weight _ _ hweight,
     statDist_eq_sum_of_support_subset ideal real (s := ideal.support ∪ real.support)
       (Finsupp.support_sub),
@@ -566,8 +566,9 @@ lemma probBad_const_pair {A U : Type*}
 
 /-- **The H-technique ratio bound on an arbitrary carrier.**  If the
 real/ideal density ratio is at least `1 - eps` on good points then
-`δ(real, ideal) ≤ Pr_ideal[Bad] + eps`, for `real ≥ 0`, `ideal ≥ 0` of equal weight at most one.
-It is `statDist_le_expect_of_ratio` with error `1[Bad] + eps`.
+`δ(real, ideal) ≤ Pr_ideal[Bad] + eps`, for `real ≥ 0`, `ideal ≥ 0` of equal weight at most one:
+the distribution form of [3, Corollary 2.2.2, p. 20], “a simple corollary of this result where
+ϵratio is a constant function”. It is `statDist_le_expect_of_ratio` with error `1[Bad] + eps`.
 
 `Distribution` is `A →₀ ℝ`: the sums run over
 `ideal.support ∪ real.support`, so no finiteness of the carrier is
@@ -604,7 +605,7 @@ theorem statDist_le_probBad_add_of_ratio_on_good {A : Type*}
 
 /-! ### Partition and data processing -/
 
-/-- Lemma 2 (Partition of statistical distance).
+/-- Partition of statistical distance [1, Lemma 2].
 
 For any partition {Aⱼ} of A:
   δ(X, Y) = ∑_j δ(X_j, Y_j)
@@ -617,23 +618,18 @@ theorem statDist_partition {A : Type*} [Fintype A] {n : ℕ}
   simp only [statDist_eq_sum_univ]
   exact (Finset.sum_fiberwise Finset.univ P _).symm
 
-/-- Lemma 3 (Data processing inequality).
+/-- Data processing inequality [1, Lemma 3, p. 11]: “δ(X, Y) ≥ δ(f(X), f(Y))”. For any
+function `f : A → B`, applying `f` can only decrease statistical distance.
 
-For any function f : A → B:
-  δ(f(X), f(Y)) ≤ δ(X, Y).
-
-Applying a function can only decrease statistical distance.
-
-Paper proof (Appendix A): δ(f(X), f(Y)) = ∑_b max(0, ∑_{f(a)=b} (X(a) - Y(a)))
+Proof of [1, Lemma 3] (Appendix A): δ(f(X), f(Y)) = ∑_b max(0, ∑_{f(a)=b} (X(a) - Y(a)))
   ≤ ∑_b ∑_{f(a)=b} max(0, X(a) - Y(a)) = ∑_a max(0, X(a) - Y(a)) = δ(X,Y).
 
 The one step that is about the **signed** carrier is the fiber estimate
 `max (0, ∑ᵢ dᵢ) ≤ ∑ᵢ max (0, dᵢ)`: a pushforward sums a fiber, and
 cancellation inside a fiber can only shrink the one-sided excess.
 
-No `Fintype`, no `DecidableEq`: the source sum runs over `X.support ∪
-Y.support` and the image sum over its image under `f`, which is where the
-pushed-forward difference is supported. -/
+The source sum runs over `X.support ∪ Y.support`; its image under `f` supports the
+pushed-forward difference. -/
 theorem statDist_fTransform_le {A B : Type*}
     (X Y : Distribution A) (f : A → B) :
     statDist (Distribution.fTransform f X) (Distribution.fTransform f Y) ≤ statDist X Y := by
@@ -672,23 +668,40 @@ theorem statDist_fTransform_le {A B : Type*}
   rw [← Finset.sum_sub_distrib]
   exact Finset.sum_le_sum fun a _ => le_max_left _ _
 
+/-- A ratio bound controls the distance after any common function:
+`(1 − ε) · Q ≤ P` pointwise gives `δ(f_* P, f_* Q) ≤ 𝔼_Q[ε]`: data processing [1, Lemma 3]
+followed by the expectation method [3, Lemma 2.2.1], quoted at `statDist_fTransform_le` and
+`statDist_le_expect_of_ratio`.
+
+```text
+  δ(f_* P, f_* Q) ≤ δ(P, Q)      statDist_fTransform_le (data processing)
+                  ≤ 𝔼_Q[ε]       statDist_le_expect_of_ratio (expectation method)
+``` -/
+theorem statDist_fTransform_le_expect_of_ratio
+    -- `P`, `Q`: finitely supported real mass functions on an arbitrary type `A`;
+    -- `f : A → B` is any function to an arbitrary type `B`.
+    {A B : Type*} (P Q : Distribution A) (f : A → B)
+    -- `ε a`: the scalar ratio loss at `a`, a real number that may exceed one.
+    (ε : A → ℝ)
+    -- `hweight`: `|P| = |Q|`. `hQ`: `Q ≥ 0`; `P` may be signed.
+    (hweight : P.weight = Q.weight) (hQ : Q.NonNeg)
+    -- `hε`: `ε ≥ 0`. `ratio`: `(1 − ε a) · Q a ≤ P a` at every atom `a`, before `f`.
+    (hε : ∀ a, 0 ≤ ε a) (ratio : ∀ a, (1 - ε a) * Q a ≤ P a) :
+    statDist (Distribution.fTransform f P) (Distribution.fTransform f Q) ≤ Q.expect ε := by
+  calc
+    -- Data processing: applying the same `f` to both laws cannot increase `δ`.
+    _ ≤ statDist P Q := statDist_fTransform_le P Q f
+    -- Expectation method: equal weights and the pointwise ratio give the expected loss under `Q`.
+    _ ≤ Q.expect ε := statDist_le_expect_of_ratio P Q ε hweight hε hQ ratio
+
 /-! ### Injective pushforward -/
 
-/-- Lemma 3+ (Data processing equality for injective functions).
+/-- Injective pushforward preserves statistical distance: for injective `f : A → B`,
+`δ(f(X), f(Y)) = δ(X, Y)`.
 
-For any injective function f : A → B:
-  δ(f(X), f(Y)) = δ(X, Y).
-
-An injective function preserves statistical distance exactly (not just ≤).
-
-**No `Fintype`, no `DecidableEq`** — as for `statDist` itself, requiring them
-was a spurious restriction.  The `≤` half is the data processing inequality,
-which never needed them; the `≥` half re-indexes the source sum along `f`,
-which is a `Finset.sum_image` on the *support* of the difference and lands
-inside any finite superset of the image law's own difference support.  The
-generality lets the lemma apply to infinite carriers such as transcript spaces
-`List (X × Option Y)` and system laws
-`Distribution (System.DDS X Y)` — where no `Fintype` exists. -/
+The `≤` half is data processing [1, Lemma 3]; the `≥` half re-indexes the sum over
+`(X − Y).support` along `f` (`Finset.sum_image`) inside a finite superset of the image law's
+difference support. Both sums use finite supports on arbitrary carriers. -/
 theorem statDist_fTransform_injective {A B : Type*}
     (X Y : Distribution A) (f : A → B) (hf : Function.Injective f) :
     statDist (Distribution.fTransform f X) (Distribution.fTransform f Y) = statDist X Y := by
@@ -708,9 +721,9 @@ theorem statDist_fTransform_injective {A B : Type*}
   exact Finset.sum_le_sum_of_subset_of_nonneg Finset.subset_union_right
     fun b _ _ => le_max_right _ _
 
-/-! ### Additivity across disjoint cells (Lanzenberger Lemma 2.5) -/
+/-! ### Additivity across disjoint cells -/
 
-/-- **Lanzenberger Lemma 2.5 (family form)**: for families supported on
+/-- **[1, Lemma 2, p. 10], family form**: for families supported on
 pairwise disjoint cells, statistical distance is additive,
 `δ(∑ᵢ Xᵢ, ∑ᵢ Yᵢ) = ∑ᵢ δ(Xᵢ, Yᵢ)`. -/
 theorem statDist_sum_of_disjoint_support {A ι : Type*} [DecidableEq A]
