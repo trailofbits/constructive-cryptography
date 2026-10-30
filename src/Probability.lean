@@ -1,3 +1,4 @@
+import Probability.FiniteSupport
 import Probability.Replay
 import Probability.Counting
 import Probability.Coupling

@@ -4,14 +4,10 @@ import RandomSystems.Cumulative.Revealed
 /-!
 # H-coefficient arguments with revealed values and transcript classes
 
-The expectation method for random systems on extended transcripts `τ = (h, z)`. The real system
-`R` is a mixture of components and reveals `z` from its sample and the transcript; the ideal
-system `S` samples `z` conditionally on the transcript. If every `τ` has
-`(1 − ε τ) · kernelMass τ ≤ revealMass τ`, the statistical distance of the transcript laws under
-a compatible environment `E`, observed for `n` rounds, is at most the ideal expectation of `ε`.
-With `ε` constant on the classes of a finite partition, a bound on that expectation for every
-compatible `E` that stops within `n` queries bounds the transcript distance. The error is a scalar
-budget in `ℝ`, not a test output, and is not truncated at one:
+Extended transcripts `τ = (h, z)` pair a public history with a record: the real record is a
+function of the retained sample and `h`; the ideal record is drawn conditionally on `h`.
+The expectation method [1, Lemma 2.2.1] bounds public distance by the expected ratio loss.
+`HCoefficient` groups this loss into finitely many transcript classes:
 
 ```text
 δ(tr(R), tr(S)) = δ(fst₊ revealLaw, fst₊ kernelLaw)     R = mix sample component; marginals
@@ -26,15 +22,18 @@ budget in `ℝ`, not a test output, and is not truncated at one:
 
 * `RandomSystem.HCoefficient R S error`: the evidence of an H-coefficient argument
 * `RandomSystem.HCoefficient.ofGoodBad`: the argument with good and bad transcripts
+  [1, Corollary 2.2.2]
 
 ## Main results
 
-* `RandomSystem.statDist_sLaw_le_of_reveal`: the expectation method under one environment
+* `RandomSystem.statDist_sLaw_le_of_reveal`: the expectation method under one environment,
+  `Probability.statDist_fTransform_le_expect_of_ratio` with `f = Prod.fst` on the extended laws
 * `RandomSystem.HCoefficient.transcriptDistance_le`, `transcriptDistance_le_nnreal`: an
   H-coefficient argument bounds the transcript distance
 
-Source: Jha, *Provable Security of Symmetric-key Cryptographic Schemes*, Lemma 2.2.1 and
-Corollary 2.2.2, printed pp. 19–20.
+## References
+
+1. Jha. *Provable Security of Symmetric-key Cryptographic Schemes*.
 -/
 
 namespace SystemAlgebra
@@ -48,10 +47,10 @@ variable {X Y : Type} [Fintype X] [Fintype Y] {D : Domain X Y} {κ Z : Type}
 namespace RandomSystem
 
 /-- **The expectation method with a reveal**, under one environment `e` within `n` rounds
-(Jha, Lemma 2.2.1, printed pp. 19–20, with Jha's `Θ₁` the real and `Θ₀` the ideal transcript):
+([1, Lemma 2.2.1, pp. 19–20], with the source's `Θ₁` the real and `Θ₀` the ideal transcript):
 if every extended transcript has `(1 − ε τ) · kernelLaw(τ) ≤ revealLaw(τ)`, with `ε ≥ 0`, then
 `δ((mix P R).sLaw e n, S.sLaw e n) ≤ 𝔼_{kernelLaw}[ε]`.
-Jha: “Adv_{O₁;O₀}(A) ≤ ϵ_bad + Ex[ϵ_ratio(Θ₀)]”. -/
+[1, p. 20]: “Adv_{O₁;O₀}(A) ≤ ϵ_bad + Ex[ϵ_ratio(Θ₀)]”. -/
 theorem statDist_sLaw_le_of_reveal
     -- `P`: the law of the real sample `k`, drawn once and kept for the whole interaction;
     -- `R k`: the real system on sample `k`.
@@ -83,13 +82,13 @@ theorem statDist_sLaw_le_of_reveal
   have hwS : (kernelLaw S K e n).weight = 1 := by
     rw [← Distribution.weight_fTransform Prod.fst, fTransform_fst_kernelLaw S hK,
       (S.sLaw_isProbDist hS n).weight_eq]
-  -- Write the transcript laws as marginals, then
+  -- Write the transcript laws as `fst₊` marginals; `statDist_fTransform_le_expect_of_ratio`
+  -- with `P = revealLaw`, `Q = kernelLaw ≥ 0`, `f = Prod.fst` then gives
   --   δ(fst₊ revealLaw, fst₊ kernelLaw) ≤ δ(revealLaw, kernelLaw)   data processing
   --                                     ≤ 𝔼_{kernelLaw}[ε]          expectation method
   rw [← fTransform_fst_revealLaw P R reveal e n, ← fTransform_fst_kernelLaw S hK e n]
-  exact (statDist_fTransform_le _ _ Prod.fst).trans
-    (Probability.statDist_le_expect_of_ratio _ _ ε (hwR.trans hwS.symm) hε
-      (kernelLaw_nonNeg S (fun h => (hK h).1) e n) ratio)
+  exact statDist_fTransform_le_expect_of_ratio _ _ Prod.fst ε (hwR.trans hwS.symm)
+    (kernelLaw_nonNeg S (fun h => (hK h).1) e n) hε ratio
 
 end RandomSystem
 
@@ -99,14 +98,14 @@ variable {I : Type} [Fintype I] {Xi Yi : I → Type} [∀ i, Fintype (Xi i)] [�
   {𝒟 : Domain (Σ i, Xi i) (Σ i, Yi i)}
 
 /-- **An H-coefficient argument** that the real system `R` is within `error` of the ideal system
-`S` on `𝒟`: the evidence of the expectation method (Jha, Lemma 2.2.1, printed pp. 19–20) on
+`S` on `𝒟`: the evidence of the expectation method [1, Lemma 2.2.1, pp. 19–20] on
 extended transcripts `τ = (h, z)`, with `ε τ = classError (classOf τ)`. The sample, reveals and
 classes are part of the evidence, chosen by the proof; the systems are drawn in
 `RandomSystems.Cumulative.Revealed`. -/
 structure RandomSystem.HCoefficient
     -- `R`: the real system, `S`: the ideal system, both on the domain `𝒟`.
     (R S : RandomSystem (Σ i, Xi i) (Σ i, Yi i) 𝒟)
-    -- `error`: a scalar budget in `ℝ`, not a test output; it is not truncated at one.
+    -- `error`: a scalar budget in `ℝ`; it may exceed one.
     (error : ℝ) where
   /-- The type of the real system's sample `k`. -/
   Sample : Type
@@ -130,7 +129,7 @@ structure RandomSystem.HCoefficient
   /-- Every `idealReveal h` is a probability law, also for `h` that `S` never produces. -/
   idealReveal_isProbDist : ∀ h, (idealReveal h).isProbDist
   /-- The finite type of classes. With `classOf` and `classError` it presents the error `ε` as
-  constant on classes; it restricts neither the environments nor the reveals. -/
+  constant on classes. -/
   Class : Type
   [instFintypeClass : Fintype Class]
   /-- The class of an extended transcript `τ = (h, z)`. -/
@@ -142,7 +141,7 @@ structure RandomSystem.HCoefficient
   /-- **The ratio**: every extended transcript `τ` is at least `1 − classError (classOf τ)`
   times as likely for the real system as for the ideal one,
   `(1 − ε τ) · S(h) · idealReveal h z ≤ ∑ₖ sample(k) · [realReveal k h = z] · (component k)(h)`.
-  A product, not a quotient: at `kernelMass = 0` it holds trivially. No environment appears. -/
+  As a product it holds trivially at `kernelMass = 0`; it involves no environment. -/
   ratio : ∀ τ, (1 - classError (classOf τ)) * RandomSystem.kernelMass S idealReveal τ ≤
     RandomSystem.revealMass sample component realReveal τ
   /-- **The expected error**: for every environment `E` compatible with `𝒟` that stops within
@@ -194,10 +193,10 @@ lemma transcriptDistance_le_nnreal {error : ℝ≥0} (w : HCoefficient R S error
     (hS : S.RepliesAtQueriedInterface) : R.transcriptDistance S ≤ error := by
   simpa only [ENNReal.ofReal_coe_nnreal] using w.transcriptDistance_le hS
 
-/-- **Good and bad transcripts**: the H-coefficient technique, Jha, Corollary 2.2.2, printed
-p. 20, “a simple corollary of this result where ϵratio is a constant function”, which Jha
-attributes to Patarin. Two classes: `true` for `Bad τ`, with error `1`, and `false` for the
-good transcripts, with error `ε₁`. The error is `ε₁ + ε₂`, not truncated at one. -/
+/-- **Good and bad transcripts**: the H-coefficient technique [1, Corollary 2.2.2, p. 20], “a
+simple corollary of this result where ϵratio is a constant function”. Two classes: `true` for
+`Bad τ`, with error `1`, and `false` for the good transcripts, with error `ε₁`. The error is
+`ε₁ + ε₂`, which may exceed one. -/
 noncomputable def ofGoodBad {Sample Revealed : Type}
     -- The sample, components and reveals, as in the fields of `HCoefficient`.
     (sample : Distribution.ProbDist Sample)

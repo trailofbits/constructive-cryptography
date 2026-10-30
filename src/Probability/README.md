@@ -3,7 +3,8 @@
 This library holds the finitely supported laws on which the random systems are built:
 distributions and probability distributions, kernels, the statistical distance, couplings and the
 $`n`$-ary maximal coupling, expectation, and the counting behind collision bounds. Citations refer
-to the numbered [references](../../THEORY.md#references) of THEORY.md.
+to the numbered [references](#references) at the end; [1]–[3] are those of
+[THEORY.md](../../THEORY.md#references).
 
 ## Distributions and kernels
 
@@ -27,6 +28,16 @@ it gives $`\sum_a \mu(a)\, f(a)`$:
 [is the point kernel of its function][bindK_single_comp], and an independent product
 [disintegrates][pi_eq_bindK_update] at a coordinate. Probability laws have
 [pushforwards][ProbDist.map] and [sequential compositions][ProbDist.bind].
+A [joint law][ProbDist.jointLaw] retains both successive draws:
+$`J_{\mu,K}(h,z)=\mu(h)K(h,z)`$, with [first marginal][ProbDist.jointLaw_fst] $`\mu`$. For
+arbitrary maps $`d_H, d_Z`$ with $`(d_H)_*\mu'=\mu`$ and $`(d_Z)_*K'(h)=K(d_H h)`$,
+[`ProbDist.jointLaw_map`][ProbDist.jointLaw_map] gives
+$`(d_H\times d_Z)_*J_{\mu',K'}=J_{\mu,K}`$. The outcome types are arbitrary; each law has finite
+support. For a nonnegative mass function $`X`$, [`normalizeOr`][normalizeOr] is
+$`\lvert X\rvert^{-1}X`$ at nonzero weight and an explicit fallback law at weight zero. Its
+identity $`\lvert X\rvert\,\operatorname{normalizeOr}(X)=X`$ also holds at zero weight, where
+the fallback is multiplied by zero.
+
 The notation `𝒰[A]` denotes the [normalized uniform law][ProbDist.uniform] of type
 `Distribution.ProbDist A`, with mass $`1/\lvert A \rvert`$ at each point of a finite nonempty
 $`A`$; its underlying raw distribution `𝒰[A].1` is `Distribution.uniform A`.
@@ -38,6 +49,20 @@ satisfies the [triangle inequality][statDist_triangle] and [data processing][sta
 $`\delta(fX, fY) \le \delta(X, Y)`$; with [positive parts][statDist_eq_weight_posPart] it is
 $`\delta(X, Y) = \lvert (X - Y)^{+} \rvert`$, and with [overlaps][statDist_eq_weight_sub_weight_inf]
 $`\delta(X, Y) = \lvert X \rvert - \lvert X \wedge Y \rvert`$.
+
+[`statDist_fTransform_le_expect_of_ratio`][statDist_fTransform_le_expect_of_ratio] combines
+data processing [1, Lemma 3] with the expectation method [4, Lemma 2.2.1] after any common
+function $`f`$:
+
+```math
+(1-\varepsilon(a))Q(a)\le P(a)\ \text{for all } a,\quad \varepsilon\ge0
+\quad\Longrightarrow\quad
+\delta(f_*P,f_*Q)\le\delta(P,Q)\le\mathbb E_Q[\varepsilon].
+```
+
+Here $`P,Q`$ have equal total weight, $`Q`$ is nonnegative and $`P`$ may be signed; the
+nonnegative loss $`\varepsilon`$ may exceed one. Systems specialize $`P,Q`$ to probability laws
+and $`f`$ to a transcript projection, then take a supremum over environments.
 
 ## Couplings, expectation and counting
 
@@ -86,6 +111,15 @@ For an adaptive evaluator whose complete output tuple pins its queried sites,
 tuples from fixed public values. Both retain the explicit pinned-fiber equivalence and
 injectivity of all replay and public sites; neither asserts independence on bad runs.
 
+## References
+
+1. D. Lanzenberger and U. Maurer. Coupling of Random Systems. In *Theory of Cryptography
+   (TCC 2020)*, Springer, 2020. Cryptology ePrint Archive, Paper 2020/1187.
+2. D. Lanzenberger. *A Theory of Random Systems, Games, and Hardness Amplification*. Doctoral
+   thesis, ETH Zurich.
+3. U. Maurer. *Cryptography Foundations*. Lecture notes, ETH Zurich, Spring 2018.
+4. Jha. *Provable Security of Symmetric-key Cryptographic Schemes*.
+
 <!-- Declarations -->
 
 [Distribution]: Distribution.lean#L56
@@ -98,17 +132,22 @@ injectivity of all replay and public sites; neither asserts independence on bad 
 [piDep]: DependentProduct.lean#L37
 [uniform]: Distribution.lean#L633
 [ProbDist.uniform]: Distribution.lean#L666
-[bindK]: Kernel.lean#L49
-[bindK_bindK]: Kernel.lean#L95
-[bindK_single_comp]: Kernel.lean#L117
-[pi_eq_bindK_update]: Kernel.lean#L283
-[ProbDist.map]: Kernel.lean#L329
-[ProbDist.bind]: Kernel.lean#L341
-[statDist]: StatisticalDistance.lean#L88
-[statDist_triangle]: StatisticalDistance.lean#L243
-[statDist_fTransform_le]: StatisticalDistance.lean#L615
-[statDist_eq_weight_posPart]: Lift.lean#L89
-[statDist_eq_weight_sub_weight_inf]: Lift.lean#L170
+[bindK]: Kernel.lean#L55
+[bindK_bindK]: Kernel.lean#L101
+[bindK_single_comp]: Kernel.lean#L123
+[pi_eq_bindK_update]: Kernel.lean#L289
+[ProbDist.map]: Kernel.lean#L335
+[ProbDist.bind]: Kernel.lean#L347
+[ProbDist.jointLaw]: Kernel.lean#L365
+[ProbDist.jointLaw_fst]: Kernel.lean#L372
+[ProbDist.jointLaw_map]: Kernel.lean#L392
+[normalizeOr]: Lift.lean#L183
+[statDist]: StatisticalDistance.lean#L94
+[statDist_triangle]: StatisticalDistance.lean#L244
+[statDist_fTransform_le]: StatisticalDistance.lean#L633
+[statDist_fTransform_le_expect_of_ratio]: StatisticalDistance.lean#L680
+[statDist_eq_weight_posPart]: Lift.lean#L102
+[statDist_eq_weight_sub_weight_inf]: Lift.lean#L232
 [IsCoupling]: Coupling.lean#L46
 [statDist_le_offDiagonalMass]: Coupling.lean#L241
 [exists_coupling_offDiagonalMass_eq]: Coupling.lean#L320

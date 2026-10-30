@@ -14,12 +14,15 @@ of the first outcome is the law of the second (`bindK`),
 
 A pushforward is the point kernel of its function, an independent product samples its factors one
 after the other, and kernels of probability laws mix probability laws into probability laws.
+Retaining both draws gives the joint law `μ(h) · K h z`, whose first marginal is `μ`; no outcome
+type needs to be finite.
 
 ## Main definitions
 
 * `Distribution.bindK μ f`: the mixture of the kernel `f` over `μ`
 * `Distribution.ProbDist.map f P`: the law of `f a` for `a ← P`
 * `Distribution.ProbDist.bind P f`: the law of `b ← f a` for `a ← P`
+* `Distribution.ProbDist.jointLaw μ K`: the joint law of `h ← μ; z ← K h`, retaining both
 
 ## Main results
 
@@ -33,6 +36,9 @@ after the other, and kernels of probability laws mix probability laws into proba
 * `Distribution.prod_eq_bindK`, `Distribution.pi_eq_bindK_update`: independent products as
   mixtures
 * `Distribution.ProbDist.map_map`: pushing forward twice is pushing forward along the composite
+* `Distribution.ProbDist.jointLaw_fst`: the first marginal of `jointLaw μ K` is `μ`
+* `Distribution.ProbDist.jointLaw_map`: `(decodeH × decodeZ)_* (jointLaw μ' K') = jointLaw μ K`
+  when `decodeH_* μ' = μ` and `decodeZ_* (K' h) = K (decodeH h)`, for arbitrary maps
 
 ## References
 
@@ -347,6 +353,67 @@ noncomputable def bind (P : ProbDist A) (f : A → ProbDist B) : ProbDist B :=
 
 @[simp] lemma bind_val (P : ProbDist A) (f : A → ProbDist B) :
     (bind P f).1 = bindK P.1 fun a => (f a).1 := rfl
+
+/-! ### Joint laws -/
+
+-- `H` carries the first outcome `h`; `Z` the second outcome `z`, drawn given `h`.
+-- Both are arbitrary types; each law has finite support.
+variable {H Z : Type*}
+
+/-- The joint law of successive draws `h ← μ`, then `z ← K h`, retaining both:
+`jointLaw μ K (h, z) = μ(h) · K h z`. Its weight is `∑_h μ(h) · 1 = 1`. -/
+noncomputable def jointLaw
+    -- `μ`: the law of `h`; `K h`: the conditional law of `z` given `h` [1, §3.6.1, p. 65].
+    (μ : ProbDist H) (K : H → ProbDist Z) : ProbDist (H × Z) :=
+  μ.bind fun h => ProbDist.map (fun z => (h, z)) (K h)
+
+/-- The first marginal of the joint law is the original law,
+`fst_* (jointLaw μ K) = μ`: summing out `z` uses only that each `K h` has weight one. -/
+lemma jointLaw_fst
+    -- `μ` and `K` as in `jointLaw`.
+    (μ : ProbDist H) (K : H → ProbDist Z) :
+    ProbDist.map Prod.fst (jointLaw μ K) = μ := by
+  apply Subtype.ext
+  change fTransform Prod.fst (μ.1.bindK _) = _
+  rw [fTransform_bindK]
+  -- Forgetting `z` collapses `K h` to its weight one at `h`: `(z ↦ h)_* K h = δ_h`.
+  have hconst : ∀ h : H, fTransform (fun _ : Z => h) (K h).1 = Finsupp.single h 1 := by
+    intro h
+    change (K h).1.sum (fun _ w => Finsupp.single h w) = _
+    rw [Finsupp.sum, ← Finsupp.single_finsetSum]
+    congr 1
+    exact (K h).2.weight_eq
+  -- Then `∑_h μ(h) · δ_h = μ`.
+  simp only [ProbDist.map_val, fTransform_fTransform, Function.comp_def, hconst, bindK_single_one]
+
+/-- Joint laws commute with pushforward along a product map: if `decodeH_* μ' = μ` and
+`decodeZ_* (K' h) = K (decodeH h)` for every `h`, then
+`(decodeH × decodeZ)_* (jointLaw μ' K') = jointLaw μ K`. -/
+lemma jointLaw_map
+    -- `H'`, `Z'`: the source outcome types; `decodeH : H' → H` and `decodeZ : Z' → Z` are
+    -- arbitrary maps.
+    {H' Z' : Type*} (decodeH : H' → H) (decodeZ : Z' → Z)
+    -- `μ`, `K`: the target first law and conditional laws on `H`, `Z`; `μ'`, `K'`: the
+    -- source ones on `H'`, `Z'`.
+    (μ : ProbDist H) (μ' : ProbDist H') (K : H → ProbDist Z) (K' : H' → ProbDist Z')
+    -- `hμ`: the first laws correspond, `decodeH_* μ' = μ`.
+    (hμ : ProbDist.map decodeH μ' = μ)
+    -- `hK`: at every `h : H'`, `K' h` maps to the target conditional law at `decodeH h`.
+    (hK : ∀ h, ProbDist.map decodeZ (K' h) = K (decodeH h)) :
+    ProbDist.map (Prod.map decodeH decodeZ) (jointLaw μ' K') = jointLaw μ K := by
+  apply Subtype.ext
+  change fTransform _ (μ'.1.bindK _) = μ.1.bindK _
+  -- Replace `μ` by `decodeH_* μ'`; both sides then draw `h ← μ'` first.
+  rw [← congrArg Subtype.val hμ]
+  simp only [ProbDist.map, bindK_fTransform, fTransform_bindK]
+  apply bindK_congr
+  intro h _
+  -- Given `h : H'`, decoding `(h, z')` gives `(decodeH h, decodeZ z')`, and
+  -- `decodeZ_* (K' h) = K (decodeH h)` is `hK h`.
+  rw [fTransform_fTransform]
+  change fTransform ((fun z => (decodeH h, z)) ∘ decodeZ) (K' h).1 = _
+  rw [← fTransform_fTransform]
+  exact congrArg (fTransform (fun z => (decodeH h, z))) (congrArg Subtype.val (hK h))
 
 end ProbDist
 

@@ -5,7 +5,7 @@ probabilistic distinguishers and their behaviors, with the transcript distance a
 advantage; absorption of converters and systems into distinguishers; couplings; restriction to a
 smaller domain; the H-coefficient bound; and the identical-until-bad bound. The systems, PDSs and
 converters it uses are those of [RandomSystems](../README.md). Citations refer to the numbered
-[references](../../../THEORY.md#references) of THEORY.md.
+[references](#references) at the end; [1] is that of [THEORY.md](../../../THEORY.md#references).
 
 ## Distance and distinguishers
 
@@ -129,7 +129,7 @@ Under an environment $`E`$, the transcript law of $`R`$ gives each
 transcript $`h`$ that $`E`$ produces the probability $`R(h)`$, and the others zero; the restriction
 is the same for $`S`$, so a ratio of the two systems' probabilities on the good transcripts is a
 ratio of their transcript laws. For $`R`$ and $`S`$ replying at the queried label, the
-H-coefficient technique then
+H-coefficient technique [2, Corollary 2.2.2] then
 [bounds the distance][RandomSystem.transcriptDistance_le_add_of_ratio_on_good] by the error
 $`\varepsilon_1`$ of the ratio and the bound $`\varepsilon_2`$ on the bad transcripts under $`S`$:
 
@@ -140,7 +140,29 @@ $`\varepsilon_1`$ of the ratio and the bound $`\varepsilon_2`$ on the bad transc
 \Delta(R, S) \le \varepsilon_1 + \varepsilon_2 .
 ```
 
-For revealed values and multiple transcript classes, use
+More generally, [observation laws](Observation.lean) may use any alphabet $`W`$ and a common
+projection $`\pi : W \to H`$ to public histories. If $`\pi_*\mu_R^{E,n}=R.\mathrm{sLaw}(E,n)`$
+and $`\pi_*\mu_S^{E,n}=S.\mathrm{sLaw}(E,n)`$, then
+`RandomSystem.transcriptDistance_le_iSup_observation` gives
+
+```math
+\Delta(R,S) \le \sup_{E,n}\delta(\mu_R^{E,n},\mu_S^{E,n}).
+```
+
+The supremum ranges over compatible environments stopping within $`n`$ queries, and the
+normalized laws need only exist for those experiments; $`W`$ is an arbitrary type. With a
+nonnegative loss $`\varepsilon`$, possibly exceeding one,
+`RandomSystem.transcriptDistance_le_of_observation_ratio` derives $`\Delta(R,S)\le b`$ from
+$`(1-\varepsilon(w))\mu_S^{E,n}(w)\le\mu_R^{E,n}(w)`$ at every $`w`$ and a uniform ideal
+expected loss $`\mathbb E_{\mu_S^{E,n}}[\varepsilon]\le b`$, by the expectation method
+[2, Lemma 2.2.1]. Conditional [completions](../Typed/Completion.lean) instantiate this theorem
+with pairs $`(h,z)`$ and $`\pi(h,z)=h`$; the real and ideal record kernels may differ.
+
+This theorem and `RandomSystem.statDist_sLaw_le_of_reveal` below both apply the
+probability-level bound `Probability.statDist_fTransform_le_expect_of_ratio`. The systems layer
+contributes the exact marginals and the supremum over compatible stopping environments.
+
+For sampled presentations with records and multiple transcript classes, use
 [`RandomSystem.HCoefficient`](RevealedHCoefficient.lean). Supply the real mixture,
 its deterministic reveal, the ideal conditional reveal law, the finite classification,
 the pointwise ratio, and the expected class-error bound. Its
@@ -172,6 +194,12 @@ g(h) - \sum_y g(h, x, y) \le \beta(h, x)\, R_1(h), \qquad
 ```
 
 Games build on this bound: see [Game](../Game/README.md#identical-until-bad).
+
+## References
+
+1. D. Lanzenberger and U. Maurer. Coupling of Random Systems. In *Theory of Cryptography
+   (TCC 2020)*, Springer, 2020. Cryptology ePrint Archive, Paper 2020/1187.
+2. Jha. *Provable Security of Symmetric-key Cryptographic Schemes*.
 
 <!-- Declarations -->
 
