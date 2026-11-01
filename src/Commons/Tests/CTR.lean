@@ -1,6 +1,11 @@
-import Commons.Tests.Hex
-import Commons.Schemes.BlockCipher.AES
-import Commons.Schemes.Stream.CTR
+module
+
+public import Commons.Tests.Hex
+public import Commons.Schemes.BlockCipher.AES
+public import Commons.Schemes.Stream.CTR
+public meta import Commons.Schemes.BlockCipher.AES
+public meta import Commons.Schemes.Stream.CTR
+public meta import Commons.Tests.Hex
 
 /-!
 # Known-answer tests for CTR mode
@@ -9,6 +14,8 @@ CTR under AES-128, AES-192 and AES-256 against NIST SP 800-38A (F.5.1–F.5.6), 
 counter block `f0f1…feff`: four blocks encrypted and decrypted, a truncated last block, and the
 counter wrapping in its last 32 bits. The checks run the functions by evaluation (`#guard`).
 -/
+
+@[expose] public section
 
 namespace Commons.Tests.CTR
 

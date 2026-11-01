@@ -1,4 +1,6 @@
-import RandomSystems.Converter.ConverterDomain
+module
+
+public import RandomSystems.Converter.ConverterDomain
 
 /-!
 # Converters with an empty interface
@@ -19,6 +21,8 @@ never replies; it is a DDC from any domain to the empty domain.
 * `apply_resourceDDC`: attaching `resourceDDC s` to a system on the empty interface gives `s`
 * `resourceDDC_isDDCFrom`, `discardSystem_isDDCFrom`: their domains
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -80,7 +84,7 @@ lemma resourceDDC_isDDC {s : InterfaceSystem O U V} (hs : IsDDS s)
     rcases List.eq_nil_or_concat h with rfl | ⟨h, z, rfl⟩
     · simp [insideRun]
     · rw [List.concat_eq_append, insideRun, run_snoc,
-        if_neg (fun ⟨y, _, hy⟩ => not_isInside_unit y hy)]
+        ite_eq_right (fun ⟨y, _, hy⟩ => not_isInside_unit y hy)]
   replies h y o hy hl := by
     rcases List.eq_nil_or_concat h with rfl | ⟨h, z, rfl⟩
     · exact absurd (Part.dom_iff_mem.mpr ⟨y, hy⟩)

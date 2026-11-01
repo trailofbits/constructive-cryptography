@@ -1,5 +1,7 @@
-import RandomSystems.DDC.DDCRelabel
-import RandomSystems.DDC.CanonWiring
+module
+
+public import RandomSystems.DDC.DDCRelabel
+public import RandomSystems.DDC.CanonWiring
 
 /-!
 # Relabeling DDCs from `E` to `F`
@@ -16,6 +18,8 @@ renaming converter relabels it.
   with a renaming converter relabels
 * `admitted_map_iff`: label-preserving relabelings preserve admitted histories
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

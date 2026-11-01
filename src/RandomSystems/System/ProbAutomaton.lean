@@ -1,7 +1,9 @@
-import RandomSystems.System.Automaton
-import RandomSystems.Cumulative.Cumulative
-import RandomSystems.PDS.Filter
-import Probability.Kernel
+module
+
+public import RandomSystems.System.Automaton
+public import RandomSystems.Cumulative.Cumulative
+public import RandomSystems.PDS.Filter
+public import Probability.Kernel
 
 /-!
 # Probabilistic automata
@@ -48,6 +50,8 @@ it, as for a random automaton whose only randomness is its initial state [1, Def
 1. U. Maurer. Indistinguishability of Random Systems. In *Advances in Cryptology – EUROCRYPT
    2002*, LNCS 2332, Springer, 2002.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

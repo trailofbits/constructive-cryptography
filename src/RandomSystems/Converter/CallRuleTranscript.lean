@@ -1,5 +1,7 @@
-import RandomSystems.Converter.Calls
-import RandomSystems.Converter.CallTranscript
+module
+
+public import RandomSystems.Converter.Calls
+public import RandomSystems.Converter.CallTranscript
 
 /-!
 # Transcripts of direct call rules
@@ -31,6 +33,8 @@ endpoint of `RandomSystems.Typed.CallRuleFunctional`:
 * `replies_canon_callRule_of_schedule`, `replies_callConverter_of_schedule`: fixed-function
   schedules give transcripts of the canonical and of the restricted converter
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

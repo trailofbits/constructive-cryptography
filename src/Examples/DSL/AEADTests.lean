@@ -1,5 +1,9 @@
-import Examples.DSL.AEAD
-import Commons.Tests.AES
+module
+
+public import Examples.DSL.AEAD
+public import Commons.Tests.AES
+public meta import Examples.DSL.AEAD
+public meta import Commons.Tests.AES
 
 /-!
 # Checks of the AEAD example
@@ -11,6 +15,8 @@ decrypting after verifying the tag: decryption inverts encryption, and a change 
 associated data, the ciphertext or the tag is rejected. The known-answer tests of CTR and PMAC are
 in `Commons.Tests`.
 -/
+
+@[expose] public section
 
 open SystemAlgebra SystemAlgebra.DSL Probability
 open scoped SystemAlgebra SystemAlgebra.DSL
@@ -36,7 +42,7 @@ lemma encrypt_transcript {q : ℕ} (hq : 1 ≤ q) (nonce : Nonce)
         ⟨⟨none, AEAD.Port.encrypt⟩, (ciphertext, tag)⟩)] = 1 := by
   simp only [EncryptThenMAC, EncryptThenMAC.program, TypedConverter.ofProgram,
     TypedConverter.ofDDC_apply]
-  rw [if_pos]
+  rw [ite_eq_left]
   refine ⟨rfl, fun k hk _ => ?_⟩
   simp only [List.map_cons, List.map_nil, List.length_cons, List.length_nil] at hk
   rcases k with _ | _ | _ | k <;> first
@@ -56,7 +62,7 @@ lemma decrypt_transcript {q : ℕ} (hq : 1 ≤ q) (nonce : Nonce)
         ⟨⟨none, AEAD.Port.decrypt⟩, some message⟩)] = 1 := by
   simp only [EncryptThenMAC, EncryptThenMAC.program, TypedConverter.ofProgram,
     TypedConverter.ofDDC_apply]
-  rw [if_pos]
+  rw [ite_eq_left]
   refine ⟨rfl, fun k hk _ => ?_⟩
   simp only [List.map_cons, List.map_nil, List.length_cons, List.length_nil] at hk
   rcases k with _ | _ | _ | k <;> first
@@ -74,7 +80,7 @@ lemma decrypt_rejects {q : ℕ} (hq : 1 ≤ q) (nonce : Nonce) (ad ciphertext : 
         ⟨⟨none, AEAD.Port.decrypt⟩, none⟩)] = 1 := by
   simp only [EncryptThenMAC, EncryptThenMAC.program, TypedConverter.ofProgram,
     TypedConverter.ofDDC_apply]
-  rw [if_pos]
+  rw [ite_eq_left]
   refine ⟨rfl, fun k hk _ => ?_⟩
   simp only [List.map_cons, List.map_nil, List.length_cons, List.length_nil] at hk
   rcases k with _ | _ | k <;> first
@@ -122,7 +128,7 @@ lemma aeadDecrypt_aeadEncrypt (encryptionKey authenticationKey : AES.Key .aes256
     let encrypted := aeadEncrypt encryptionKey authenticationKey nonce ad message
     aeadDecrypt encryptionKey authenticationKey nonce ad encrypted.1 encrypted.2 =
       some message.val := by
-  simp only [aeadEncrypt, aeadDecrypt, beq_self_eq_true, if_true, CTR.crypt_crypt]
+  simp only [aeadEncrypt, aeadDecrypt, beq_self_eq_true, ite_true, CTR.crypt_crypt]
 
 /-- A message of the given bytes. -/
 def message (xs : List UInt8) (h : xs.length ≤ 2 ^ 36) : Message := ⟨xs, h⟩

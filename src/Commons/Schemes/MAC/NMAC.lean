@@ -1,4 +1,6 @@
-import Commons.Definitions.Ideal
+module
+
+public import Commons.Definitions.Ideal
 
 /-!
 # The cascade and NMAC
@@ -18,6 +20,8 @@ whose security as a PRF is its substitution for `URF`.
 * `NMAC.nmac f pad (K₁, K₂) blocks`: NMAC
 * `NMAC.Real f pad blockForm`: NMAC of the encoded messages under two uniform keys
 -/
+
+@[expose] public section
 
 namespace Commons
 

@@ -1,4 +1,6 @@
-import RandomSystems.System.Basic
+module
+
+public import RandomSystems.System.Basic
 
 /-!
 # Replies of a deterministic system
@@ -24,6 +26,8 @@ determine the system, and they are the transcripts of the environment that submi
   property are counted by `run`
 * `trim_dom_of_admission`: exact next-query admission determines a prefix-closed domain
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -144,7 +148,7 @@ lemma replies_trim_iff (s : System A B) (xs : List A) (ys : List B) :
     have hp : Reach s (xs.take (i + 1)) := by
       intro p e he hn
       exact hr.reach p (e ++ xs.drop (i + 1)) (by rw [← List.append_assoc, ← he]; simp) hn
-    rw [trim, if_pos hp]
+    rw [trim, ite_eq_left hp]
     exact hr.2 i hi hj
 
 /-- For DDSs, complete input/output behavior determines the partial function. -/
@@ -248,7 +252,7 @@ lemma Replies.suffix_le_run {s : System A B} (P : B → Prop)
     have hz := he z (by simp)
     have hm : z.2 ∈ s ((h ++ e).map Prod.fst ++ [z.1]) := by rw [hy]; exact Part.mem_some _
     rw [← List.append_assoc, List.map_append, List.map_cons, List.map_nil,
-      run_snoc, if_pos ⟨z.2, hm, hz⟩]
+      run_snoc, ite_eq_left ⟨z.2, hm, hz⟩]
     simpa using Nat.succ_le_succ hb
 
 /-- The consecutive-reply count is realized by an actual suffix of the transcript. -/
@@ -263,14 +267,14 @@ lemma Replies.exists_suffix_run {s : System A B} (P : B → Prop)
     have hm : z.2 ∈ s (h.map Prod.fst ++ [z.1]) := by rw [hy]; exact Part.mem_some _
     rw [run_snoc]
     by_cases hz : P z.2
-    · rw [if_pos ⟨z.2, hm, hz⟩]
+    · rw [ite_eq_left ⟨z.2, hm, hz⟩]
       obtain ⟨p, e, he, hp, hn⟩ := ih hr
       refine ⟨p, e ++ [z], by rw [he]; simp, ?_, by simp [hn]⟩
       intro w hw
       rcases List.mem_append.mp hw with hw | hw
       · exact hp w hw
       · simpa using (List.mem_singleton.mp hw ▸ hz)
-    · rw [if_neg (by rintro ⟨y, hmem, hP⟩; exact hz (Part.mem_unique hmem hm ▸ hP))]
+    · rw [ite_eq_right (by rintro ⟨y, hmem, hP⟩; exact hz (Part.mem_unique hmem hm ▸ hP))]
       exact ⟨h ++ [z], [], by simp, by simp, rfl⟩
 
 /-- Exact next-query admission on produced histories determines the whole
@@ -283,7 +287,7 @@ lemma trim_dom_of_admission {A B : Type} {s : System A B} {E : List A → Prop}
   intro h
   induction h using List.reverseRecOn with
   | nil =>
-    simp only [trim, reach_nil, if_true, hE.1, iff_false]
+    simp only [trim, reach_nil, ite_true, hE.1, iff_false]
     exact hs₀
   | append_singleton h x ih =>
     constructor

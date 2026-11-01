@@ -1,4 +1,6 @@
-import RandomSystems.Distance.Distinguisher
+module
+
+public import RandomSystems.Distance.Distinguisher
 
 /-!
 # Games with a monotone binary output
@@ -57,6 +59,8 @@ Sources: CR18, §3.7.1 (games), Definition 4.5 (the winning probability), Defini
 * `RandomSystem.transcriptDistance_visible_le_of_unsetProbability`: it then bounds the
   transcript distance between the visible system and the random system
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -511,7 +515,7 @@ lemma RandomSystem.unsetProbability_nil {D' : Domain (Σ i, X i) (Σ i, withMBO 
   have hnil : h = [] := by
     by_contra hne
     apply Finsupp.mem_support_iff.mp hh
-    rw [sLaw_apply, if_neg]
+    rw [sLaw_apply, ite_eq_right]
     rintro ⟨-, hd | ⟨hd, -⟩⟩
     · exact hne (List.length_eq_zero_iff.mp hd)
     · exact Nat.not_lt_zero _ hd

@@ -1,8 +1,8 @@
-import ConstructiveCryptography.CryptographicAlgebra.Epsilon
-import ConstructiveCryptography.Specification.Star.Metric
-import Mathlib.CategoryTheory.Endomorphism
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.CryptographicAlgebra.Epsilon
+public import ConstructiveCryptography.Specification.Star.Metric
+public import Mathlib.CategoryTheory.Endomorphism
 
 /-!
 # Star relaxation
@@ -39,6 +39,10 @@ outside A ──[ β ]── A ── R ∈ S        β • R ∈ star converter
 * `CryptographicAlgebra.Specification.constructs_of_simulator`: MR16, Lemma 5
 -/
 
+@[expose] public section
+
+set_option autoImplicit false
+
 namespace ConstructiveCryptography.CryptographicAlgebra
 
 open CategoryTheory
@@ -56,9 +60,10 @@ resources contravariantly, so the class is a submonoid of the endomorphisms of `
 opposite category, whose multiplication is attachment order.
 
 An element is `End.of β.op` for a converter `β : A ⟶ A` of `C`. In the opposite endomorphism
-monoid `End (op A)`, the product `outer * inner` corresponds to `outer.asHom.unop ≫ inner.asHom.unop`
-in `C`, with `outer` outside, so `(outer * inner) • R = outer • (inner • R)`. Being a
-submonoid means `𝟙 A` is admitted and admitted converters compose; no inverses are required,
+monoid `End (op A)`, `outer * inner` corresponds to
+`outer.asHom.unop ≫ inner.asHom.unop` in `C`, with `outer` outside, so
+`(outer * inner) • R = outer • (inner • R)`. Being a submonoid means `𝟙 A` is admitted and
+admitted converters compose; no inverses are required,
 and nothing bounds the class's size or efficiency. This is MR16's `Σ`. -/
 abbrev EndoFamily (A : C) := Submonoid (CategoryTheory.End (Opposite.op A))
 

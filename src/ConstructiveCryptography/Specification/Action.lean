@@ -1,5 +1,7 @@
-import ConstructiveCryptography.Specification.Basic
-import Mathlib.Algebra.Group.Action.Pointwise.Set.Basic
+module
+
+public import ConstructiveCryptography.Specification.Basic
+public import Mathlib.Algebra.Group.Action.Pointwise.Set.Basic
 
 /-!
 # Converter attachment
@@ -21,6 +23,8 @@ This is a single-sorted action. The interface-typed category of converters, wher
 `A ⟶ B` has outside interface `A` and inside `B` and attaches as a map from resources at `B`
 to resources at `A`, is a separate layer and is not assumed here.
 -/
+
+@[expose] public section
 
 namespace ConstructiveCryptography.Specification
 

@@ -1,4 +1,6 @@
-import ConstructiveCryptography.Game
+module
+
+public import ConstructiveCryptography.Game
 
 /-!
 # Games without categorical assumptions
@@ -10,6 +12,8 @@ diagonal loss. One solver's winning view bounds its decision view, without conve
 assumptions. The `#check_failure` guards confirm that neither the CC resource theory nor the
 converter action is in scope.
 -/
+
+@[expose] public section
 
 #check_failure ConstructiveCryptography.ResourceTheory
 #check_failure ConstructiveCryptography.GameAction

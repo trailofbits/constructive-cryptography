@@ -1,7 +1,7 @@
-import ConstructiveCryptography.Distinguisher
-import ConstructiveCryptography.CryptographicAlgebra.PseudoMetric
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.Distinguisher
+public import ConstructiveCryptography.CryptographicAlgebra.PseudoMetric
 
 /-!
 # Compatible distinguisher classes
@@ -36,6 +36,10 @@ no such closure.
 
 * `CompatibleDistinguisherClass.ofClosure`: Maurer 2011, Lemma 1
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace ConstructiveCryptography
 

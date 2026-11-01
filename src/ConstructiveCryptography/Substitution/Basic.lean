@@ -1,8 +1,8 @@
-import ConstructiveCryptography.CryptographicAlgebra.PseudoMetric
-import Mathlib.Algebra.BigOperators.Fin
-import Mathlib.Data.Finset.Card
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.CryptographicAlgebra.PseudoMetric
+public import Mathlib.Algebra.BigOperators.Fin
+public import Mathlib.Data.Finset.Card
 
 /-!
 # Substitutions between resources
@@ -55,6 +55,10 @@ its direction.
 
 Source: Banfi 2023, Definition 2.3.1 and §2.3.1.
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace ConstructiveCryptography.CryptographicAlgebra
 
@@ -415,8 +419,8 @@ lemma distance_le
         simpa only [directionEq, Bool.not_false] using step use
     | true =>
         -- Fibre distance symmetry reverses a true-bit step at no cost.
-        simpa only [directionEq, Bool.not_true, distance,
-          CryptographicAlgebra.distance, PseudoEMetricSpace.edist_comm] using step use
+        simp only [Bool.not_true]
+        exact (distance_comm _ _).trans_le (step use)
   -- Sum the explicitly transformed and oriented statistical steps.
   have chain := distance_hybrid_le
     (left := fun use =>

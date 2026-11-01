@@ -1,4 +1,6 @@
-import Probability.Distribution
+module
+
+public import Probability.Distribution
 
 /-!
 # Independent finite products of heterogeneous laws
@@ -32,6 +34,8 @@ and the carriers may live in different universes.
 The pushforward and regrouping laws take the carrier families `A` and `B` in independent
 universes and hold for raw laws.
 -/
+
+@[expose] public section
 
 namespace Probability.Distribution
 

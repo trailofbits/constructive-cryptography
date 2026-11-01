@@ -1,5 +1,7 @@
-import RandomSystems.Distance.Mixture
-import RandomSystems.Typed.Functional
+module
+
+public import RandomSystems.Distance.Mixture
+public import RandomSystems.Typed.Functional
 
 /-!
 # Distance between systems sampled with a common law
@@ -43,6 +45,8 @@ For a fixed compatible `D`, both decision probabilities are averages over the sa
 * `Domain.Distinguisher.advantage_le_transcriptDistance` bounds the gap at `k` by
   `Δ(R k, S k) ≤ error`.
 -/
+
+@[expose] public section
 
 open Probability
 open scoped NNReal

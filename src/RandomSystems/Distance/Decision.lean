@@ -1,5 +1,7 @@
-import RandomSystems.Distance.Transcript
-import RandomSystems.Converter.ConverterAttachment
+module
+
+public import RandomSystems.Distance.Transcript
+public import RandomSystems.Converter.ConverterAttachment
 
 /-!
 # Decision probabilities
@@ -50,6 +52,8 @@ Here `R` replies at the queried interface, as `Domain.Compatible` requires. `E'`
 `𝒟.bound` replies on every reply history, including impossible ones; compatibility alone does
 not give this bound.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -103,7 +107,7 @@ lemma envOf_trim_envProbe {I : Type} {X Y : I → Type}
     {A : List (Σ i, X i) × List (Σ i, Y i) → Prop}
     {ys} (hv : EFits E.1 ys) : envOf (trim (envProbe E A)) ys = E.1 ys := by
   change ((trim (envProbe E A)) (dHist ys)).bind _ = _
-  rw [trim, if_pos (envProbe_reach A hv)]
+  rw [trim, ite_eq_left (envProbe_reach A hv)]
   exact envOf_envProbe hv
 
 namespace RandomSystem
@@ -154,7 +158,7 @@ lemma sLaw_trim_envProbe
     by_cases hh : FollowsStrategy E.1 h
     · simp only [Good, hc, hh, true_and, Done,
         envOf_trim_envProbe (hh.fits (hr.history hm))]
-    · simp only [Good, hc, hh, false_and, if_false]
+    · simp only [Good, hc, hh, false_and, ite_false]
 
 /-- A completed transcript leaves a query-bounded environment without a next query. -/
 lemma sLaw_complete {E : DDE (Σ i, X i) (Σ i, Y i)} {n : ℕ} (hn : QueryBounded n E)
@@ -226,7 +230,7 @@ lemma envProbe_decisionCompatible {E : DDE (Σ i, X i) (Σ i, Y i)} (hc : 𝒟.C
   have he := (RandomSystem.followsStrategy_trim_envProbe_iff hR E T hp).mp ht
   have hv := he.fits (hR.history hp)
   constructor
-  · rw [trim, if_pos (envProbe_reach T hv), envProbe_dHist hv]
+  · rw [trim, ite_eq_left (envProbe_reach T hv), envProbe_dHist hv]
     simp only [envReply]
     split_ifs <;> exact Part.some_dom _
   · intro x hx
@@ -343,7 +347,7 @@ lemma decisionProbability_envProbe {E : DDE (Σ i, X i) (Σ i, Y i)} {n : ℕ}
     exact Finsupp.mem_support_iff.mp hh (by simp [sLaw_apply, Good, hn'])
   have hv := ht.fits (hR.history hp)
   have hstop := R.sLaw_complete hn hh
-  rw [trim, if_pos (envProbe_reach T hv), envProbe_dHist hv, envReply, dif_neg hstop]
+  rw [trim, ite_eq_left (envProbe_reach T hv), envProbe_dHist hv, envReply, dite_eq_right hstop]
   simp only [Part.mem_some_iff, Sigma.mk.inj_iff, heq_eq_eq, true_and]
   rw [← ht.queries_eq]
   simp
@@ -437,7 +441,7 @@ lemma decisionCompatible_iff_deterministic
         if Replies s ((xs.zip ys).map Prod.fst) ((xs.zip ys).map Prod.snd) then 1 else 0 := by
       simp [R, Q, RandomSystem.ofPDS, behaviorMass, Distribution.mass, Finsupp.sum]
     have hp : R (xs.zip ys) ≠ 0 := by
-      rw [hm, hfst, hsnd, if_pos ht.replies]
+      rw [hm, hfst, hsnd, ite_eq_left ht.replies]
       exact one_ne_zero
     have hh := hc R (RandomSystem.ofPDS_repliesAtQueriedInterface Q) (xs.zip ys)
       (Transcript.followsStrategy ht) hp

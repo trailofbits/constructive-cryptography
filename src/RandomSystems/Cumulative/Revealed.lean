@@ -1,7 +1,9 @@
-import RandomSystems.Cumulative.CumulativeOperations
-import Probability.Expectation
-import Probability.Kernel
-import Probability.Lift
+module
+
+public import RandomSystems.Cumulative.CumulativeOperations
+public import Probability.Expectation
+public import Probability.Kernel
+public import Probability.Lift
 
 /-!
 # Revealed transcript laws
@@ -39,6 +41,8 @@ Forgetting `z` (`Prod.fst`) gives back the transcript laws of `mix P R` and `S`.
 
 Source: Jha, *Provable Security of Symmetric-key Cryptographic Schemes*, §2.2.1, printed p. 19.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.RandomSystem
 

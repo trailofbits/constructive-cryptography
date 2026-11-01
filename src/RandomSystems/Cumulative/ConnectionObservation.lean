@@ -1,5 +1,7 @@
-import RandomSystems.Cumulative.CumulativeOperations
-import RandomSystems.Cumulative.Presentation
+module
+
+public import RandomSystems.Cumulative.CumulativeOperations
+public import RandomSystems.Cumulative.Presentation
 
 /-!
 # Observing a connection
@@ -24,6 +26,8 @@ system.
 * `exists_parallel_connection_presentations`: a connection of two random systems is
   observed through independent presentations
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -311,7 +315,7 @@ lemma mass_le_connectionLaw (R : RandomSystem X Y D) (route : Y → B ⊕ X)
   rw [Distribution.fTransform_apply_eq_mass]
   have hh : ((R.sLaw (connectionQueries route inj us) n).restrict
       (fun h => ¬ (connectionQueries route inj us (h.map Prod.snd)).Dom)) h = R h := by
-    rw [sLaw_completed_apply, if_pos ⟨hc, hn, hd⟩]
+    rw [sLaw_completed_apply, ite_eq_left ⟨hc, hn, hd⟩]
   rw [← hh]
   exact Distribution.apply_le_mass
     ((sLaw_nonNeg n).restrict _) rfl
@@ -332,8 +336,8 @@ lemma connectionLaw_mix {ι : Type} (P : Distribution.ProbDist ι)
     simp only [Finsupp.finsetSum_apply, Finsupp.smul_apply, smul_eq_mul, sLaw_completed_apply]
     by_cases hd : FollowsStrategy (connectionQueries route inj us) h ∧ h.length ≤ n ∧
         ¬ (connectionQueries route inj us (h.map Prod.snd)).Dom
-    · simp only [if_pos hd, mix_mass]
-    · simp only [if_neg hd, mul_zero, Finset.sum_const_zero]
+    · simp only [ite_eq_left hd, mix_mass]
+    · simp only [ite_eq_right hd, mul_zero, Finset.sum_const_zero]
   unfold connectionLaw
   rw [completed, Distribution.fTransform_sum]
   simp only [Distribution.fTransform_smul]
@@ -370,7 +374,7 @@ lemma connectionLaw_isProbDist (R : RandomSystem X Y D) (route : Y → B ⊕ X)
         rcases hd with hl | ⟨_, hd⟩
         · exact hs h hg (tSupp_possible hh) hl
         · exact hd
-      exact if_pos hstop
+      exact ite_eq_left hstop
   unfold connectionLaw
   rw [he]
   exact Distribution.fTransform_isProbDist _ (sLaw_isProbDist hc n)

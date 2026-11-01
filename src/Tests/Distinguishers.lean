@@ -1,4 +1,6 @@
-import ConstructiveCryptography.Distinguisher
+module
+
+public import ConstructiveCryptography.Distinguisher
 
 /-!
 # Decision-layer boundary checks
@@ -9,6 +11,8 @@ out of scope. No admitted set is selected by importing it, not even the value
 `AdmissibleDistinguishers.all`, so instance search fails. The derived substitution model uses
 exactly the supplied admitted set and the decision advantage.
 -/
+
+@[expose] public section
 
 open ConstructiveCryptography
 

@@ -1,6 +1,8 @@
-import RandomSystems.Converter.ParallelAll
-import RandomSystems.Typed.Functional
-import RandomSystems.Typed.Parallel
+module
+
+public import RandomSystems.Converter.ParallelAll
+public import RandomSystems.Typed.Functional
+public import RandomSystems.Typed.Parallel
 
 /-!
 # Typed finite parallel interfaces and systems
@@ -36,6 +38,8 @@ it is not identified with nested binary compositions, and no unitor is stated.
 
 Source: Jost, Thesis, printed p. 17.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -94,12 +98,12 @@ lemma parallelAll_admits_iff {A : K → Interface} (R : ∀ k, TypedSystem (A k)
   -- An inconsistent history has mass 0, so `h` is tag consistent.
   have hh : RandomSystem.parallelAllConsistent h := by
     by_contra hn
-    exact hp (by rw [RandomSystem.parallelAll_mass, if_neg hn])
+    exact hp (by rw [RandomSystem.parallelAll_mass, ite_eq_right hn])
   -- The mass is `∏ k, (R k)(h|k)`, so every factor is nonzero.
   have hab : ∀ k, (R k).1 (RandomSystem.restrictExchanges k h) ≠ 0 := by
     intro k hk
     apply hp
-    rw [RandomSystem.parallelAll_mass, if_pos hh]
+    rw [RandomSystem.parallelAll_mass, ite_eq_left hh]
     exact Finset.prod_eq_zero (Finset.mem_univ k) hk
   -- A nonzero factor bounds its projection: `|h|k| ≤ (A k).bound`.
   have hl : ∀ k, (RandomSystem.restrictExchanges k h).length ≤ (A k).bound := fun k => by
@@ -201,7 +205,7 @@ noncomputable def parallelAll {A : K → Interface} (R : ∀ k, TypedSystem (A k
         Option.some.injEq, List.filterMap_cons_some, List.filterMap_nil] using hr
     · rfl
   -- Wrong component `k' ≠ k`: the history is not tag consistent, so its mass is 0.
-  · rw [if_neg]
+  · rw [ite_eq_right]
     intro hc
     exact hk (hc _ (List.mem_append_right _ (List.mem_singleton_self _))).symm
 
@@ -282,7 +286,7 @@ lemma ofFunction_parallelAll {A : K → Interface} (f : ∀ k i, (A k).X i → (
     obtain ⟨⟨⟨⟨k, i⟩, x⟩, ⟨⟨k', j⟩, y⟩⟩, hw, rfl⟩ := List.mem_map.mp hz
     have hl : (⟨k', j⟩ : Σ k, (A k).I) = ⟨k, i⟩ := (Sigma.mk.inj_iff.mp (hf _ hw)).1
     exact (Sigma.mk.inj_iff.mp hl).1.symm
-  rw [if_pos hc]
+  rw [ite_eq_left hc]
   -- Each factor is 1: `h|k` is empty or admitted by `A k`, and answered by `f k`.
   refine Finset.prod_eq_one fun k _ => TypedSystem.ofFunction_mass_eq_one (f k) _ ?_ ?_
   -- The inputs of `h|k` are `(h.map Prod.fst)|k`, empty or admitted since `h` is.
@@ -312,7 +316,7 @@ lemma ofFunction_parallelAll {A : K → Interface} (f : ∀ k i, (A k).X i → (
       change (if hx : k₂ = k₂ then if hy : k₂ = k₂ then
         some (hx ▸ (⟨j, x⟩ : Σ i, (A k₂).X i), hy ▸ (⟨j, f k₂ j x⟩ : Σ i, (A k₂).Y i))
           else none else none) = some z at hwz
-      rw [dif_pos rfl, dif_pos rfl] at hwz
+      rw [dite_eq_left rfl, dite_eq_left rfl] at hwz
       obtain rfl := Option.some.inj hwz
       rfl
     -- `k₂ ≠ k`: the projection to `k` drops it.

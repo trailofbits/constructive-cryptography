@@ -1,4 +1,6 @@
-import RandomSystems.Cumulative.CumulativeOperations
+module
+
+public import RandomSystems.Cumulative.CumulativeOperations
 
 /-!
 # Finite independent parallel random systems
@@ -47,6 +49,8 @@ of that view to random systems.
 * `RandomSystem.replies_parAll_iff`: a transcript of the deterministic `parAll s` is a
   tag-consistent interleaving of transcripts of the components `s k`
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -126,7 +130,7 @@ lemma length_eq_sum_of_parallelAllConsistent {h : List ((Σ k, A k) × (Σ k, B 
         add_zero]
     -- `|h| + 1 = ∑ k, |h|k| + ∑ k, [z.1.1 = k]`, and the indicator sum is `1`.
     rw [List.length_cons, ih ht]
-    simp only [hk, Finset.sum_add_distrib, Finset.sum_ite_eq, Finset.mem_univ, if_true]
+    simp only [hk, Finset.sum_add_distrib, Finset.sum_ite_eq, Finset.mem_univ, ite_true]
 
 omit [Fintype K] in
 open Classical in
@@ -238,7 +242,7 @@ noncomputable def parallelAll (R : ∀ k, RandomSystem (A k) (B k) (D k)) :
             · rw [List.mem_singleton.mp hz]
           -- Split the extended product into the factors `k ≠ k₁` and the factor `k₁`.
           beta_reduce
-          rw [if_pos hc, ← Finset.prod_erase_mul _ _ (Finset.mem_univ k₁)]
+          rw [ite_eq_left hc, ← Finset.prod_erase_mul _ _ (Finset.mem_univ k₁)]
           congr 1
           -- For `k ≠ k₁` the new exchange is not in `h|k`, so the factor is unchanged.
           · refine Finset.prod_congr rfl fun k hk' => ?_
@@ -277,10 +281,10 @@ noncomputable def parallelAll (R : ∀ k, RandomSystem (A k) (B k) (D k)) :
           by_cases hd : D k₀ (restrictExchanges k₀ h) x₀
           -- Admitted: the other factors and `R k₀ (h|k₀)` reassemble `∏ k, R k (h|k)`.
           · beta_reduce
-            rw [if_pos hd, if_pos (hadm.mpr hd), if_pos hh,
+            rw [ite_eq_left hd, ite_eq_left (hadm.mpr hd), ite_eq_left hh,
               ← Finset.prod_erase_mul _ _ (Finset.mem_univ k₀)]
           -- Not admitted: both sides are `0`.
-          · rw [if_neg hd, if_neg (fun h' => hd (hadm.mp h'))]
+          · rw [ite_eq_right hd, ite_eq_right (fun h' => hd (hadm.mp h'))]
             simp only [mul_zero]
         -- Some `k ≠ k₀` has `|h|k| > (D k).bound`: then `R k (h|k) = 0`, so `weight μ = 0`, and
         -- `⟨k₀, x₀⟩` is not admitted, so the required weight is `0` too.
@@ -288,7 +292,7 @@ noncomputable def parallelAll (R : ∀ k, RandomSystem (A k) (B k) (D k)) :
           obtain ⟨k, hk, hlt⟩ := hb
           rw [Finset.prod_eq_zero (Finset.mem_erase.mpr ⟨hk, Finset.mem_univ k⟩)
               ((R k).mass_eq_zero_of_bound_lt hlt), zero_mul,
-            if_neg (fun h' => (not_le.mpr hlt) (h'.2.1 k hk))]⟩
+            ite_eq_right (fun h' => (not_le.mpr hlt) (h'.2.1 k hk))]⟩
 
 open Classical in
 /-- The defining equation: `(parallelAll R) h = ∏ k, R k (h|k)` if `h` is tag consistent,

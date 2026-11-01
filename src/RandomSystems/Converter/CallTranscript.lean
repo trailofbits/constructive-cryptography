@@ -1,4 +1,6 @@
-import RandomSystems.Converter.ConverterDomain
+module
+
+public import RandomSystems.Converter.ConverterDomain
 
 /-!
 # Completed converter calls
@@ -28,6 +30,8 @@ port `o`, the inside exchanges `qs = [(x₁, y₁), …, (xₙ, yₙ)]`, and the
 * `replies_canon_calls`: a rule answering every prefix of its calls still does so after
   canonicalization
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

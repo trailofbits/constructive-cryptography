@@ -1,5 +1,7 @@
-import RandomSystems.Converter.ParallelAll
-import Tests.CompositionalCosts
+module
+
+public import RandomSystems.Converter.ParallelAll
+public import Tests.CompositionalCosts
 
 /-!
 # Canonical n-ary converters
@@ -22,6 +24,8 @@ Checks for `tensorAllL` on small families, with `t` for `true`, `f` for `false`:
                 └──────────────────────┘
 ```
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.Tests
 
@@ -73,7 +77,7 @@ example : tensorAllRaw forwardRules
 -- Canonicalization rejects an inside reply `⟨f,()⟩ ⇒ 11` before any outside query, although
 -- the raw rule would forward it.
 example : tensorAllL forwardRules [⟨⟨some (), ⟨false, ()⟩⟩, 11⟩] = Part.none := by
-  apply if_neg
+  apply ite_eq_right
   intro ha
   -- At `[]` there is no reply, so only outside labels are admitted (`admitAfter none`).
   have hz := ((admissible_snoc (h := [])).mp ha).2.2

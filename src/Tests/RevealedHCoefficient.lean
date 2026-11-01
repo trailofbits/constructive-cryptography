@@ -1,5 +1,7 @@
-import ConstructiveCryptography.Instances.Algebra
-import RandomSystems.Typed.Functional
+module
+
+public import ConstructiveCryptography.Instances.Algebra
+public import RandomSystems.Typed.Functional
 
 /-!
 # Revealed H-coefficient tests
@@ -13,6 +15,8 @@ import RandomSystems.Typed.Functional
 * `halfBadReveal`: a nonconstant ideal reveal, `z ← 𝒰(Bool)`, giving an argument of error `1/2`
   from a typed system to itself, on every interface
 -/
+
+@[expose] public section
 
 open Probability SystemAlgebra
 open scoped NNReal
@@ -80,8 +84,8 @@ example : statDist (Finsupp.single false 1) (Distribution.uniform Bool) ≤ 1 / 
     Distribution.uniform_nonNeg
     (by intro b; cases b <;> norm_num [Distribution.uniform_apply, Finsupp.single_apply])
   -- `𝔼_{𝒰(Bool)}[ε] = 1/2 · 0 + 1/2 · 1 = 1/2`.
-  simpa only [Distribution.expect_eq_sum, Fintype.sum_bool, Bool.false_eq_true, if_false,
-    if_true, mul_zero, add_zero, mul_one, Distribution.uniform_apply,
+  simpa only [Distribution.expect_eq_sum, Fintype.sum_bool, Bool.false_eq_true, ite_false,
+    ite_true, mul_zero, add_zero, mul_one, Distribution.uniform_apply,
     Fintype.card_bool, Nat.cast_ofNat] using h
 
 /-- **A nonconstant reveal**: the argument of error `1/2` from a typed system `S` on `A` to

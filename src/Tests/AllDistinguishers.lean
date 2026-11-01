@@ -1,5 +1,7 @@
-import Examples.PRGLengthExtension
-import Examples.AuthenticatedEncryption.Security
+module
+
+public import Examples.PRGLengthExtension
+public import Examples.AuthenticatedEncryption.Security
 
 /-! # Unrestricted per-distinguisher reductions
 
@@ -13,6 +15,8 @@ printed p. 16: `ε'(D) := ε(D ∘ ρ)`). The bounds are symbolic in the PRG or 
 The PRG check uses the fresh-seed systems of `Examples.PRGLengthExtension`; the AE check uses
 the corrected four-hop chain of `AuthenticatedEncryption.ae_of_ind_cca_int_ptxt`.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.Tests.AllDistinguishers
 open ConstructiveCryptography

@@ -1,5 +1,7 @@
-import Examples.AuthenticatedEncryption.Hybrid
-import ConstructiveCryptography.Instances.Game
+module
+
+public import Examples.AuthenticatedEncryption.Hybrid
+public import ConstructiveCryptography.Instances.Game
 
 /-!
 # Authenticated encryption: the collision step
@@ -27,6 +29,8 @@ replacement message, in either order.
 * `collisionGame_badProbability_le`: the collision probability on admitted queries
 * `hybrid_ideal_distance_le`: the hybrid is within `q_e² / |M|` of the ideal
 -/
+
+@[expose] public section
 
 open SystemAlgebra SystemAlgebra.DSL SystemAlgebra.Interface Probability
 open Commons

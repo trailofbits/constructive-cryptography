@@ -1,5 +1,7 @@
-import Examples.AuthenticatedEncryption.Collision
-import ConstructiveCryptography.Tactics.Substitution
+module
+
+public import Examples.AuthenticatedEncryption.Collision
+public import ConstructiveCryptography.Tactics.Substitution
 
 /-!
 # Authenticated encryption: `(ind-cca, int-ptxt) → ae`
@@ -35,6 +37,8 @@ also counted (`correctedChain`: two uses of each assumption). In distance form
 * `correctedChain_cca`, `correctedChain_ptxt`: two uses of each assumption
 * `real_ideal_distance_le`: the distance form
 -/
+
+@[expose] public section
 
 open CategoryTheory
 open Commons

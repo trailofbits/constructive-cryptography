@@ -1,4 +1,6 @@
-import Lean
+module
+
+public import Lean
 
 /-!
 # Surface syntax
@@ -6,6 +8,8 @@ import Lean
 Indentation-based declarations of interfaces, systems, converters and filters, and their effect
 statements. Pure expressions, types and proofs use Lean's own parsers.
 -/
+
+@[expose] public meta section
 
 namespace SystemAlgebra.DSL
 

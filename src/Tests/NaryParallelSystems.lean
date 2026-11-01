@@ -1,4 +1,6 @@
-import RandomSystems.Cumulative.ParallelAllPresentation
+module
+
+public import RandomSystems.Cumulative.ParallelAllPresentation
 
 /-!
 # Finite parallel systems: boundary cases
@@ -20,6 +22,8 @@ projection of `h` to component `k`:
 * a raw presentation: the signed law `2δ₀ − δ₁` on the infinite carrier `ULift.{1} ℕ`, every
   sample the non-DDS `emptyOnly`, presents any product of zero-query components.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.Tests
 
@@ -223,9 +227,10 @@ example (R : Bool → RandomSystem Unit Unit zeroDomain)
         ((t ++ [z]).map Prod.snd) := by
       simp only [List.map_append, List.map_singleton, replies_snoc]
       rintro ⟨_, hy⟩
-      rw [emptyOnly, if_neg (List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _))] at hy
+      rw [emptyOnly,
+        ite_eq_right (List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _))] at hy
       exact Part.none_ne_some _ hy
-    rw [if_neg hn, if_neg hn, zero_add]
+    rw [ite_eq_right hn, ite_eq_right hn, zero_add]
 
 end RawPresentation
 

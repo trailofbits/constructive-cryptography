@@ -1,4 +1,6 @@
-import RandomSystems.Converter.ConverterDomain
+module
+
+public import RandomSystems.Converter.ConverterDomain
 
 /-!
 # Deterministic programs
@@ -32,6 +34,8 @@ its body does.
 * `DDC.insideQueries_restrict_length_le`: a port-preserving program queries `j = ι o` at most as
   often as it is queried at `o`
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -255,7 +259,7 @@ lemma step_cases {m m' : Mode S O J U X Y} {z : Σ l, twoFam U Y l} {y : Σ l, t
   · simp [step] at hs
   · by_cases hi : i = q.1
     · subst hi
-      simp only [step, if_true] at hs
+      simp only [step, ite_true] at hs
       exact Or.inr ⟨o, s, u, h, q, x, rfl, rfl, (Option.some.inj hs).symm⟩
     · simp [step, hi] at hs
 
@@ -369,7 +373,7 @@ lemma after_invariant {xs : List (Σ l, twoFam U Y l)} {m : Program.Mode S O J U
       · rw [hE] at he
         obtain ⟨rfl, rfl⟩ := Prod.mk.inj he
         refine ⟨⟨Program.consistent_nil P s' o u, hP⟩, ?_, fun o' ho => ?_, fun l => ?_⟩
-        · simp only [IsInside, if_true, runEq]
+        · simp only [IsInside, ite_true, runEq]
           simp [Program.Mode.pending]
         · simp only [Program.Mode.owner, Option.some.injEq] at ho
           subst ho
@@ -385,7 +389,7 @@ lemma after_invariant {xs : List (Σ l, twoFam U Y l)} {m : Program.Mode S O J U
       · rw [hE] at he
         obtain ⟨rfl, rfl⟩ := Prod.mk.inj he
         refine ⟨⟨sound.1.snoc sound.2 v, hP⟩, ?_, fun o' ho => ?_, fun l => ?_⟩
-        · simp only [IsInside, if_true, runEq]
+        · simp only [IsInside, ite_true, runEq]
           simp [Program.Mode.pending]
         · simp only [Program.Mode.owner, Option.some.injEq] at ho
           subst ho

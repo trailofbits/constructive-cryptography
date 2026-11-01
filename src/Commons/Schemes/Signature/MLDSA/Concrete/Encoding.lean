@@ -1,6 +1,9 @@
-import Commons.Schemes.Signature.MLDSA.Primitives
-import Commons.Schemes.Signature.MLDSA.Concrete.Rounding
-import Mathlib.Data.List.OfFn
+module
+
+public import Commons.Schemes.Signature.MLDSA.Primitives
+public import Commons.Schemes.Signature.MLDSA.Concrete.Rounding
+public import Mathlib.Data.List.OfFn
+public import Mathlib.Data.List.GetD
 
 /-!
 # Concrete Byte Encoding for ML-DSA
@@ -18,6 +21,8 @@ well-formed subset actually produced by the concrete primitives. The encoders pr
 FIPS 204 lengths (`pkEncode_size`, `skEncode_size`, `sigEncode_size`), so the encoded keys and
 signatures of the concrete bundle are fixed-length byte strings.
 -/
+
+@[expose] public section
 
 
 

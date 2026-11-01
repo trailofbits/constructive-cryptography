@@ -1,6 +1,8 @@
-import Probability.Distribution
-import Mathlib.Analysis.Real.Sqrt
-import Mathlib.Analysis.Convex.Jensen
+module
+
+public import Probability.Distribution
+public import Mathlib.Analysis.Real.Sqrt
+public import Mathlib.Analysis.Convex.Jensen
 
 /-!
 # Expectation
@@ -23,6 +25,8 @@ The expectation `𝔼_X[f] = ∑ₐ X(a) · f(a)` over a finite distribution.
 * `expect_fTransform`, `expect_prod_eq`
 * `expect_comp_eq_sum_mass`: `𝔼_X[ε ∘ classOf] = ∑_c ε(c) · X(classOf = c)`
 -/
+
+@[expose] public section
 
 noncomputable section
 

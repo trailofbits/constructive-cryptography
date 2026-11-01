@@ -1,5 +1,7 @@
-import ConstructiveCryptography.Specification.Basic
-import Mathlib.Data.Set.NAry
+module
+
+public import ConstructiveCryptography.Specification.Basic
+public import Mathlib.Data.Set.NAry
 
 /-!
 # Parallel composition and locality
@@ -16,6 +18,8 @@ hypothesis, not derived from any structure of the carriers.
 parallel x y ── combined ──▶ parallel' (f x) (g y)        (locality)
 ```
 -/
+
+@[expose] public section
 
 namespace ConstructiveCryptography.Specification
 

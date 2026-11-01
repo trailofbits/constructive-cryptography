@@ -1,6 +1,6 @@
-import ConstructiveCryptography.Tactics.Substitution
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.Tactics.Substitution
 
 /-!
 # A two-step substitution argument
@@ -21,6 +21,10 @@ The generated implication-witness and use-count examples live in
 Tests.Substitution.Tactics; the raw regressions
 remain in Tests.Substitution.Implication.
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace Tests.Substitution.Calculation
 

@@ -1,4 +1,6 @@
-import ConstructiveCryptography.DSL
+module
+
+public import ConstructiveCryptography.DSL
 
 /-!
 # Procedures on parallel outside interfaces
@@ -17,6 +19,8 @@ own budget, while state and initial samples belong to the whole component:
 The per-port (`perPort`) and exact-cost (`exact`) typings, the scalar budget of one component and
 the rejected declarations are checked as well.
 -/
+
+@[expose] public section
 
 open SystemAlgebra SystemAlgebra.DSL Probability
 open CategoryTheory MonoidalCategory
@@ -107,7 +111,7 @@ lemma store_write_read :
   -- `Store` is the automaton started in the single state `false`: the mass is one exactly when
   -- the deterministic system, restricted to the domain, gives these replies.
   rw [Store, TypedSystem.ofAutomaton_mass]
-  refine (Distribution.mass_single _ _ _).trans (if_pos ?_)
+  refine (Distribution.mass_single _ _ _).trans (ite_eq_left ?_)
   simp only [List.map_cons, List.map_nil]
   -- The queries lie in the domain (`store_admits_write_read`), so the restriction is inactive.
   apply (replies_filterDom_iff (Store.outer (1, 1)).nonempty_prefix.2 _

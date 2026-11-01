@@ -1,6 +1,8 @@
-import RandomSystems.DDC.Absorb
-import RandomSystems.System.DDE
-import Probability.StatisticalDistance
+module
+
+public import RandomSystems.DDC.Absorb
+public import RandomSystems.System.DDE
+public import Probability.StatisticalDistance
 
 /-!
 # Environments and distinguishers
@@ -26,6 +28,8 @@ environment. Source: Lanzenberger, Definitions 2.11–2.12 and 2.26 (printed pp.
 * `abs_mass_sub_le_statDist`, `abs_average_sub_le`: distinguishing probabilities are
   bounded by statistical distance
 -/
+
+@[expose] public section
 
 set_option linter.unusedSimpArgs false
 
@@ -113,7 +117,7 @@ variable {E A}
 lemma envProbe_dHist {ys : List (Σ i, Yi i)} (hv : EFits E.1 ys) :
     envProbe E A (dHist ys) = envReply E A ys := by
   have hex : ∃ ys', ys.map envIn = ys'.map envIn ∧ EFits E.1 ys' := ⟨ys, rfl, hv⟩
-  simp only [envProbe, dHist, dif_pos hex]
+  simp only [envProbe, dHist, dite_eq_left hex]
   have e : Classical.choose hex = ys :=
     (List.map_injective_iff.mpr envIn_injective (Classical.choose_spec hex).1).symm
   rw [e]
@@ -134,7 +138,7 @@ lemma envReply_of_mem {ys : List (Σ i, Yi i)} {x} (hx : x ∈ E.1 ys) :
     envReply E A ys = Part.some ⟨.res x.1, x.2⟩ := by
   have hd : (E.1 ys).Dom := Part.dom_iff_mem.mpr ⟨x, hx⟩
   unfold envReply
-  rw [dif_pos hd]
+  rw [dite_eq_left hd]
   obtain rfl := Part.get_eq_of_mem hx hd
   rfl
 
@@ -184,7 +188,7 @@ lemma envOf_envProbe {ys : List (Σ i, Yi i)} (hv : EFits E.1 ys) :
   · rw [envReply_of_mem (Part.get_mem hd)]
     simp only [Part.bind_some, query]
     exact (Part.get_eq_iff_eq_some.mp rfl).symm
-  · simp only [envReply, dif_neg hd, Part.bind_some, query]
+  · simp only [envReply, dite_eq_right hd, Part.bind_some, query]
     exact (Part.eq_none_iff'.mpr hd).symm
 
 end EnvProbe
@@ -211,7 +215,7 @@ noncomputable def ddeOf (hD : IsDDD D) : DDE (Σ i, Xi i) (Σ i, Yi i) :=
     · exact v.elim
     · exact absurd (replyLabel_of_mem D ho) hne
     · refine Part.dom_iff_mem.mpr ⟨⟨i, v⟩, mem_envOf.mpr ?_⟩
-      simp only [trim, if_pos hr₀]
+      simp only [trim, ite_eq_left hr₀]
       exact ho⟩
 
 /-- The environment of a distinguisher's queries is bounded by the distinguisher's bound. -/
@@ -222,7 +226,7 @@ lemma ddeOf_bounded (hD : IsDDD D) : QueryBounded hD.2.1.choose (ddeOf hD) := by
   rw [mem_envOf] at hx
   have hd' : (D (dHist ys)).Dom := by
     by_cases h : Reach D (dHist ys)
-    · simp only [trim, if_pos h] at hx; exact Part.dom_iff_mem.mpr ⟨_, hx⟩
+    · simp only [trim, ite_eq_left h] at hx; exact Part.dom_iff_mem.mpr ⟨_, hx⟩
     · simp [trim, h] at hx
   have := hD.2.1.choose_spec _ hd'
   simp [dHist] at this
@@ -311,10 +315,10 @@ lemma replyLabel_relabel (D : InterfaceSystem (DPort L) F G) (f : (Σ p, F' p) �
   unfold replyLabel
   by_cases hd : (D (h.map f)).Dom
   · have hd' : (relabel D f g h).Dom := by simpa [relabel] using hd
-    rw [dif_pos hd, dif_pos hd']
+    rw [dite_eq_left hd, dite_eq_left hd']
     exact congrArg some (hg _)
   · have hd' : ¬ (relabel D f g h).Dom := by simpa [relabel] using hd
-    rw [dif_neg hd, dif_neg hd']
+    rw [dite_eq_right hd, dite_eq_right hd']
     rfl
 
 /-- **Renaming the labels of a distinguisher along a bijection gives a distinguisher.** -/

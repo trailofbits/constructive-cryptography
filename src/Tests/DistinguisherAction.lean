@@ -1,5 +1,7 @@
-import ConstructiveCryptography.Notation.Basic
-import ConstructiveCryptography.Tactics.Substitution
+module
+
+public import ConstructiveCryptography.Notation.Basic
+public import ConstructiveCryptography.Tactics.Substitution
 
 /-!
 # Admission and abstract calculation checks
@@ -15,6 +17,8 @@ statistical step only with a `DominatedByDistance` instance for that model, and 
 stated for a different model does not prove the goal's substitution. No random-system
 instance is imported.
 -/
+
+@[expose] public section
 
 namespace DistinguisherActionTests
 

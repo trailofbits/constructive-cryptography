@@ -1,4 +1,6 @@
-import RandomSystems.Distance.Decision
+module
+
+public import RandomSystems.Distance.Decision
 
 /-!
 # Identical until bad
@@ -23,6 +25,8 @@ taken, minus the probability lost, does not decrease in expectation from one rou
 * `RandomSystem.transcriptDistance_le_of_transcriptCost_le`: two random systems above a common
   part are within the largest cost of a possible transcript
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -121,7 +125,7 @@ lemma one_sub_le_sum_tSupp {R : RandomSystem A B D} {σ : List B →. A} (hC : R
   -- The transcript law of σ has weight one.
   have hone : ∑ h ∈ tSupp R σ n, R h = 1 := by
     rw [← sum_tSupp hC n]
-    exact Finset.sum_congr rfl fun h hh => (if_pos (tSupp_good hh)).symm
+    exact Finset.sum_congr rfl fun h hh => (ite_eq_left (tSupp_good hh)).symm
   -- Σ_h c(h)·R(h) ≤ ε·Σ_h R(h) = ε.
   have hcR : ∑ h ∈ tSupp R σ n, transcriptCost β h * R h ≤ ε := by
     calc ∑ h ∈ tSupp R σ n, transcriptCost β h * R h ≤ ∑ h ∈ tSupp R σ n, ε * R h :=
@@ -168,7 +172,7 @@ theorem transcriptDistance_le_of_transcriptCost_le
     Finsupp.onFinset (tSupp R₁ E.1 n) (fun h => if h ∈ tSupp R₁ E.1 n then g h else 0)
       fun h hh => by
         by_contra hn
-        exact hh (if_neg hn)
+        exact hh (ite_eq_right hn)
   have hν : ∀ h, ν h = if h ∈ tSupp R₁ E.1 n then g h else 0 := fun _ => Finsupp.onFinset_apply
   -- ν lies below both transcript laws: on its transcripts both laws are the systems'
   -- probabilities, and elsewhere ν is zero.
@@ -177,7 +181,7 @@ theorem transcriptDistance_le_of_transcriptCost_le
     intro R hgR h
     rw [hν]
     split_ifs with hh
-    · rw [sLaw_apply, if_pos (tSupp_good hh)]
+    · rw [sLaw_apply, ite_eq_left (tSupp_good hh)]
       exact hgR h
     · exact sLaw_nonNeg n h
   -- |ν| ≥ 1 − ε, by the potential argument.
@@ -185,7 +189,7 @@ theorem transcriptDistance_le_of_transcriptCost_le
     rw [Distribution.weight_eq_sum_of_support_subset ν Finsupp.support_onFinset_subset]
     refine (one_sub_le_sum_tSupp hC hg₁ hnil hloss hcost n).trans_eq
       (Finset.sum_congr rfl fun h hh => ?_)
-    rw [hν, if_pos hh]
+    rw [hν, ite_eq_left hh]
   -- δ(μ₁, μ₂) = μ₁(P) − μ₂(P) ≤ 1 − |ν| ≤ ε.
   rw [statDist_eq_mass_sub_mass_pos]
   linarith [Distribution.mass_sub_mass_le_of_le (R₁.sLaw_isProbDist hC n).2 (below R₁ hg₁)

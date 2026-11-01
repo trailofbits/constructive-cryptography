@@ -1,6 +1,8 @@
-import RandomSystems.Typed.ParallelAttachment
-import RandomSystems.Typed.SystemCoherence
-import RandomSystems.Converter.EmptyInterface
+module
+
+public import RandomSystems.Typed.ParallelAttachment
+public import RandomSystems.Typed.SystemCoherence
+public import RandomSystems.Converter.EmptyInterface
 
 /-!
 # Fixed contexts
@@ -25,6 +27,8 @@ contexts: attaching `rightContext A S` to `R` is `R ∥ S`, and so is attaching
 
 Source: Jost, §2.2.2 and Proposition 2.2.3.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

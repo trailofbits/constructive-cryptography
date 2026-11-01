@@ -1,4 +1,6 @@
-import Commons.Schemes.Lattice.Kernel
+module
+
+public import Commons.Schemes.Lattice.Kernel
 
 /-!
 # Rounding And Decomposition For Negacyclic Rings
@@ -18,6 +20,8 @@ parameterized by a `NegacyclicRing`. Defines:
 Concrete implementations live in `MLDSA.Concrete.Rounding`. The abstract
 interfaces are consumed by `MLDSA.Scheme` and `MLDSA.Signature`.
 -/
+
+@[expose] public section
 
 
 

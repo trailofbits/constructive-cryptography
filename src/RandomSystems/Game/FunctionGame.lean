@@ -1,5 +1,7 @@
-import RandomSystems.Game.DiscreteMBO
-import RandomSystems.PDS.Function
+module
+
+public import RandomSystems.Game.DiscreteMBO
+public import RandomSystems.PDS.Function
 
 /-!
 # Sampled-function games
@@ -22,6 +24,8 @@ answers jointly with the unset condition factor through the ideal answers.
 * `PDG.ofFunction_conditionallyEquivalent`: conditional equivalence from the fixed-query
   factorization
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.PDG
 

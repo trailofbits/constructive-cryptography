@@ -1,7 +1,9 @@
-import ConstructiveCryptography.Instances.Category
-import RandomSystems.Typed.ConverterCoherence
-import RandomSystems.Typed.TensorRename
-import Mathlib.CategoryTheory.Monoidal.Category
+module
+
+public import ConstructiveCryptography.Instances.Category
+public import RandomSystems.Typed.ConverterCoherence
+public import RandomSystems.Typed.TensorRename
+public import Mathlib.CategoryTheory.Monoidal.Category
 
 /-!
 # The monoidal category of interfaces
@@ -24,6 +26,8 @@ renamings. The axioms are discharged by `PDCBehavior.comp_tensor`, `PDCBehavior.
   regrouping isomorphisms
 * `Interface.monoidal`: the monoidal category of interfaces and typed converters
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.Interface
 

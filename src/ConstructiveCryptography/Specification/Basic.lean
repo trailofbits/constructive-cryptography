@@ -1,7 +1,7 @@
-import ConstructiveCryptography.Specification.Defs
-import Mathlib.Data.Set.Function
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.Specification.Defs
+public import Mathlib.Data.Set.Function
 
 /-!
 # Specification maps and exact construction
@@ -21,6 +21,10 @@ source           ── f ──▶ target              Constructs: f '' source 
 sourceMap source ── f ──▶ targetMap target    Constructs.map
 ```
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace ConstructiveCryptography.Specification
 

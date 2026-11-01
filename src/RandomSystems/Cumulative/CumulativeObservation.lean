@@ -1,5 +1,7 @@
-import RandomSystems.Cumulative.Cumulative
-import RandomSystems.System.DDE
+module
+
+public import RandomSystems.Cumulative.Cumulative
+public import RandomSystems.System.DDE
 
 /-!
 # Transcript laws
@@ -37,6 +39,8 @@ Source: Lanzenberger–Maurer, Definitions 7 and 10, Lemma 5 (printed pp. 12–1
 * `RandomSystem.eq_iff_sLaw_fixedQueries`: on input domains, fixed query sequences
   suffice (Lemma 5)
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -223,12 +227,12 @@ lemma mem_tSupp : ∀ {m h}, Good σ m h → R h ≠ 0 → h ∈ tSupp R σ m :=
       have hm' : R h' ≠ 0 := fun h0 => hm (mass_eq_zero_of_prefix R ⟨_, rfl⟩ h0)
       refine ⟨h', ih ⟨hc', Or.inl hl'⟩ hm', ?_⟩
       have hd : (σ (h'.map Prod.snd)).Dom := Part.dom_iff_mem.mpr ⟨_, hz⟩
-      rw [dif_pos hd]
+      rw [dite_eq_left hd]
       have hx : (σ (h'.map Prod.snd)).get hd = z.1 := Part.get_eq_of_mem hz hd
       refine Finset.mem_image.mpr ⟨z.2, ?_, by rw [hx]⟩
       rw [Finsupp.mem_support_iff, hx, R.extensionLaw_apply]
       exact hm
-    · refine ⟨h, ih ⟨hc, ?_⟩ hm, by rw [dif_neg hnd]; exact Finset.mem_singleton_self _⟩
+    · refine ⟨h, ih ⟨hc, ?_⟩ hm, by rw [dite_eq_right hnd]; exact Finset.mem_singleton_self _⟩
       by_cases e : h.length = m
       · exact Or.inl e
       · exact Or.inr ⟨by omega, hnd⟩
@@ -269,7 +273,7 @@ lemma Compatible.limitQueries {R : RandomSystem A B D} {σ : List B →. A}
 lemma sum_extension (R : RandomSystem A B D) (h : List (A × B)) (x : A)
     (hd : D h x) : ∑ y ∈ (R.extensionLaw h x).support, R (h ++ [(x, y)]) = R h := by
   have hw := R.extensionLaw_weight h x
-  rw [if_pos hd] at hw
+  rw [ite_eq_left hd] at hw
   rw [← hw, Distribution.weight]
   unfold Finsupp.sum
   exact Finset.sum_congr rfl fun y _ => (R.extensionLaw_apply h x y).symm
@@ -356,20 +360,21 @@ lemma sum_tSupp (hC : Compatible R σ) :
     rw [sum_tSupp_succ, ← ih]
     refine Finset.sum_congr rfl fun h hh => ?_
     obtain ⟨hc, hd'⟩ := tSupp_good hh
-    rw [if_pos (show Good σ m h from ⟨hc, hd'⟩)]
+    rw [ite_eq_left (show Good σ m h from ⟨hc, hd'⟩)]
     by_cases hd : (σ (h.map Prod.snd)).Dom
     -- σ asks x after h, admitted by compatibility: the possible replies to x weigh R h, and each
     -- extension of h has m + 1 rounds.
-    · rw [dif_pos hd, ← sum_extension R h ((σ (h.map Prod.snd)).get hd)
+    · rw [dite_eq_left hd, ← sum_extension R h ((σ (h.map Prod.snd)).get hd)
         (hC h _ hc (tSupp_possible hh) (Part.get_mem hd))]
       have hl : h.length = m := by
         rcases hd' with hl | ⟨_, hs⟩
         · exact hl
         · exact absurd hd hs
       refine Finset.sum_congr rfl fun y _ => ?_
-      rw [if_pos ⟨FollowsStrategy.snoc_iff.mpr ⟨hc, Part.get_mem hd⟩, Or.inl (by simp [hl])⟩]
+      rw [ite_eq_left ⟨FollowsStrategy.snoc_iff.mpr ⟨hc, Part.get_mem hd⟩, Or.inl (by simp [hl])⟩]
     -- σ has stopped: h is complete within m + 1 rounds too.
-    · rw [dif_neg hd, if_pos ⟨hc, Or.inr ⟨by rcases hd' with hl | ⟨hl, _⟩ <;> omega, hd⟩⟩]
+    · rw [dite_eq_right hd,
+        ite_eq_left ⟨hc, Or.inr ⟨by rcases hd' with hl | ⟨hl, _⟩ <;> omega, hd⟩⟩]
 
 /-- **The transcript law is a probability distribution.** -/
 lemma sLaw_isProbDist (hC : Compatible R σ) (n : ℕ) : (sLaw R σ n).isProbDist := by
@@ -456,7 +461,7 @@ lemma sLaw_completed_apply (R : RandomSystem A B D) (σ : List B →. A)
   by_cases hd : (σ (h.map Prod.snd)).Dom
   · simp [hd]
   · have he : (h.length = n ∨ h.length < n) ↔ h.length ≤ n := by omega
-    simp only [hd, not_false_eq_true, if_true, Good, Done, he, and_true]
+    simp only [hd, not_false_eq_true, ite_true, Good, Done, he, and_true]
 
 /-- Once all possible completed transcripts fit, increasing the observation
 bound changes no completed probability, even for partial resources. -/
@@ -501,7 +506,7 @@ lemma sLaw_completed_eq_mass {ι : Type} (R : RandomSystem A B D)
         (Finsupp.support_onFinset_subset ..) event, Finset.sum_filter]
       apply Finset.sum_congr rfl
       intro h hh
-      rw [sLaw_apply, if_pos (good h hh)]
+      rw [sLaw_apply, ite_eq_left (good h hh)]
       rw [hR h]
       change (if event h then P.mass _ else 0) = _
       by_cases he : event h <;> simp [he, Distribution.mass, Finsupp.sum]
@@ -516,7 +521,7 @@ lemma sLaw_completed_eq_mass {ι : Type} (R : RandomSystem A B D)
       by_cases hex : ∃ h : List (A × B),
           Transcript (systems s) σ (h.map Prod.fst) (h.map Prod.snd) ∧
           h.length ≤ n ∧ ¬ (σ (h.map Prod.snd)).Dom ∧ E h
-      · simp only [if_pos hex]
+      · simp only [ite_eq_left hex]
         obtain ⟨h, tr, hn, hd, he⟩ := hex
         have hc : FollowsStrategy σ h := by
           have := Transcript.followsStrategy tr
@@ -532,19 +537,19 @@ lemma sLaw_completed_eq_mass {ι : Type} (R : RandomSystem A B D)
           by_cases eq : h.length = n
           · exact Or.inl eq
           · exact Or.inr ⟨by omega, hd⟩⟩ hm
-        rw [Finset.sum_eq_single_of_mem h ht, if_pos ⟨⟨hd, he⟩, tr.replies⟩]
+        rw [Finset.sum_eq_single_of_mem h ht, ite_eq_left ⟨⟨hd, he⟩, tr.replies⟩]
         intro g hg hne
-        apply if_neg
+        apply ite_eq_right
         rintro ⟨⟨hgd, _⟩, hgr⟩
         have tg := FollowsStrategy.transcript (good g hg).1 hgr
         obtain ⟨hx, hy⟩ := tg.eq_of_stopped tr hgd hd
         apply hne
         exact (List.zip_of_prod rfl rfl).trans
           ((congrArg₂ List.zip hx hy).trans (List.zip_of_prod rfl rfl).symm)
-      · simp only [if_neg hex]
+      · simp only [ite_eq_right hex]
         apply Finset.sum_eq_zero
         intro h hh
-        apply if_neg
+        apply ite_eq_right
         rintro ⟨⟨hd, he⟩, hr⟩
         obtain ⟨hc, hn⟩ := good h hh
         exact hex ⟨h, FollowsStrategy.transcript hc hr,
@@ -627,7 +632,7 @@ lemma compatible_follow (R : RandomSystem A B D) {h : List (A × B)}
 
 lemma sLaw_follow (R : RandomSystem A B D) (h : List (A × B)) :
     sLaw R (follow h) h.length h = R h := by
-  rw [sLaw_apply, if_pos ⟨FollowsStrategy.follow_self h, Or.inl rfl⟩]
+  rw [sLaw_apply, ite_eq_left ⟨FollowsStrategy.follow_self h, Or.inl rfl⟩]
 
 lemma admitted_of_ne_zero {R S : RandomSystem A B D} {h : List (A × B)}
     (h0 : ¬ (R h = 0 ∧ S h = 0)) : ∀ i (hi : i < h.length), D (h.take i) (h[i]).1 := by
@@ -680,7 +685,7 @@ theorem eq_iff_sLaw_fixedQueries {E : List A → Prop} {bound : ℕ}
   have hgood : Good (fixedQueries (h.map Prod.fst)) h.length h :=
     ⟨fun pre z hp => (mem_follow.mp (FollowsStrategy.follow_self h pre z hp)).2, Or.inl rfl⟩
   have e := congrArg (· h) (he _ (hcomp R) (hcomp S) h.length)
-  simpa only [sLaw_apply, if_pos hgood] using e
+  simpa only [sLaw_apply, ite_eq_left hgood] using e
 
 end RandomSystem
 

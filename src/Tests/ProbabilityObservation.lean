@@ -1,5 +1,7 @@
-import Probability.Kernel
-import Probability.Lift
+module
+
+public import Probability.Kernel
+public import Probability.Lift
 
 /-!
 # Probability-level comparisons through a common function
@@ -9,6 +11,8 @@ laws at distance one with identical first marginals; data processing bounds push
 one common map. The mass-two example on `ℕ` applies the ratio theorem to two laws of equal
 weight two.
 -/
+
+@[expose] public section
 
 namespace Probability.Tests.Observation
 

@@ -1,6 +1,8 @@
-import Commons.Schemes.Bytes
-import Commons.Definitions.Ideal
-import Mathlib.Data.List.Iterate
+module
+
+public import Commons.Schemes.Bytes
+public import Commons.Definitions.Ideal
+public import Mathlib.Data.List.Iterate
 
 /-!
 # Counter mode
@@ -26,6 +28,8 @@ the counters must be distinct” (§6.5), so nonce uniqueness is the caller's ob
 
 * `CTR.crypt_crypt`: decryption inverts encryption
 -/
+
+@[expose] public section
 
 namespace Commons
 

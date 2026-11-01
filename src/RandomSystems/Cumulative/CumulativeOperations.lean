@@ -1,4 +1,6 @@
-import RandomSystems.Cumulative.CumulativeObservation
+module
+
+public import RandomSystems.Cumulative.CumulativeObservation
 
 /-!
 # Mixtures and parallel composition
@@ -24,6 +26,8 @@ alphabets, with product probabilities on the two component transcripts.
   presentations presents the parallel composition
 * `parallel_mix_right`: parallel composition distributes over mixtures
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.RandomSystem
 
@@ -60,7 +64,8 @@ noncomputable def mix (P : Distribution.ProbDist ι) (R : ι → RandomSystem A 
           unfold Distribution.weight
           rw [Finsupp.sum_smul_index (fun _ => rfl), ← Finsupp.mul_sum]
         simp only [hw, extensionLaw_weight]
-        by_cases hd : D h x <;> simp only [hd, if_true, if_false, mul_zero, Finset.sum_const_zero]⟩
+        by_cases hd : D h x <;>
+          simp only [hd, ite_true, ite_false, mul_zero, Finset.sum_const_zero]⟩
 
 lemma mix_mass (P : Distribution.ProbDist ι) (R : ι → RandomSystem A B D)
     (h : List (A × B)) : mix P R h = ∑ i ∈ P.1.support, P.1 i * R i h := rfl
@@ -181,12 +186,12 @@ noncomputable def parallel (R : RandomSystem A B D) (S : RandomSystem C E D') :
           · have hadm : (D.parallel D').admits h ⟨none, x⟩ ↔ D (parallelLeft h) x :=
               ⟨fun h' => h'.2.2, fun h' => ⟨hh, hb, h'⟩⟩
             by_cases hd : D (parallelLeft h) x
-            · rw [if_pos hd, if_pos (hadm.mpr hd)]
+            · rw [ite_eq_left hd, ite_eq_left (hadm.mpr hd)]
               simp [hh, mul_comm]
-            · rw [if_neg hd, if_neg (fun h' => hd (hadm.mp h'))]
+            · rw [ite_eq_right hd, ite_eq_right (fun h' => hd (hadm.mp h'))]
               simp
           · rw [S.mass_eq_zero_of_bound_lt (not_le.mp hb), zero_mul,
-              if_neg (fun h' => hb h'.2.1)]
+              ite_eq_right (fun h' => hb h'.2.1)]
       · refine ⟨R (parallelLeft h) • Distribution.fTransform (fun y : E => (⟨some (), y⟩ : Two B E)) (S.extensionLaw (parallelRight h) x),
           ?_, ?_⟩
         · intro y
@@ -211,12 +216,12 @@ noncomputable def parallel (R : RandomSystem A B D) (S : RandomSystem C E D') :
           · have hadm : (D.parallel D').admits h ⟨some (), x⟩ ↔ D' (parallelRight h) x :=
               ⟨fun h' => h'.2.2, fun h' => ⟨hh, hb, h'⟩⟩
             by_cases hd : D' (parallelRight h) x
-            · rw [if_pos hd, if_pos (hadm.mpr hd)]
+            · rw [ite_eq_left hd, ite_eq_left (hadm.mpr hd)]
               simp [hh]
-            · rw [if_neg hd, if_neg (fun h' => hd (hadm.mp h'))]
+            · rw [ite_eq_right hd, ite_eq_right (fun h' => hd (hadm.mp h'))]
               simp
           · rw [R.mass_eq_zero_of_bound_lt (not_le.mp hb), zero_mul,
-              if_neg (fun h' => hb h'.2.1)]⟩
+              ite_eq_right (fun h' => hb h'.2.1)]⟩
 
 lemma parallel_mass (R : RandomSystem A B D) (S : RandomSystem C E D')
     (h : List ((Two A C) × (Two B E))) :
@@ -230,8 +235,8 @@ lemma parallel_mix_right (R : RandomSystem A B D) (P : Distribution.ProbDist ι)
   intro h
   simp only [parallel_mass, mix_mass]
   by_cases hc : parallelConsistent h
-  · simp only [if_pos hc, Finset.mul_sum, mul_left_comm]
-  · simp only [if_neg hc, mul_zero, Finset.sum_const_zero]
+  · simp only [ite_eq_left hc, Finset.mul_sum, mul_left_comm]
+  · simp only [ite_eq_right hc, mul_zero, Finset.sum_const_zero]
 
 end Parallel
 
@@ -311,9 +316,9 @@ lemma parallel_mass_of_presentations {ι κ : Type}
   rw [parallel_mass, Distribution.mass_congr (Distribution.prod P Q)
     (fun st => replies_pair_iff (s st.1) (t st.2) h)]
   by_cases hh : parallelConsistent h
-  · simp only [hh, if_true, true_and, hR, hS]
+  · simp only [hh, ite_true, true_and, hR, hS]
     exact (Distribution.mass_prod_and P Q _ _).symm
-  · simp only [hh, if_false, false_and]
+  · simp only [hh, ite_false, false_and]
     exact (Distribution.mass_eq_zero_of_forall_not _ (fun _ hf => hf)).symm
 
 /-- Parallel cumulative behavior agrees with independent sampling followed by
@@ -365,7 +370,7 @@ lemma hasDomain_trim_pair {s : System A B} {t : System C E} (hs : HasDomain D s)
       · exact hd
       · exact hd.elim
     · intro hd
-      rw [if_pos ⟨hreach, hd⟩]
+      rw [ite_eq_left ⟨hreach, hd⟩]
       exact hd
   rw [hdom]
   change _ ↔ RandomSystem.parallelConsistent h ∧ _
@@ -404,13 +409,13 @@ lemma parallel_mass (P : PDS A B D) (Q : PDS C E D')
   rw [Distribution.mass_congr (Distribution.prod P Q)
     (fun st => RandomSystem.replies_pair_iff st.1.1 st.2.1 h)]
   by_cases hh : RandomSystem.parallelConsistent h
-  · simp only [hh, if_true, true_and]
+  · simp only [hh, ite_true, true_and]
     exact Distribution.mass_prod_and P Q
       (fun s => Replies s.1 ((RandomSystem.parallelLeft h).map Prod.fst)
         ((RandomSystem.parallelLeft h).map Prod.snd))
       (fun t => Replies t.1 ((RandomSystem.parallelRight h).map Prod.fst)
         ((RandomSystem.parallelRight h).map Prod.snd))
-  · simp only [hh, if_false, false_and]
+  · simp only [hh, ite_false, false_and]
     exact Distribution.mass_eq_zero_of_forall_not _ (fun _ hf => hf)
 
 end SystemAlgebra.PDS

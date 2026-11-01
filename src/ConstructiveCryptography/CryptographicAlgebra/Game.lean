@@ -1,7 +1,7 @@
-import ConstructiveCryptography.CryptographicAlgebra.Basic
-import ConstructiveCryptography.Game
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.CryptographicAlgebra.Basic
+public import ConstructiveCryptography.Game
 
 /-!
 # Converter actions on games
@@ -30,6 +30,10 @@ On interfaces (`ConstructiveCryptography.Instances.Game`), the identity and seri
 `TypedConverter.identity_attachGame` and `TypedConverter.comp_attachGame`, and both closure
 laws are `Domain.SolverBehavior.absorb`.
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace ConstructiveCryptography
 

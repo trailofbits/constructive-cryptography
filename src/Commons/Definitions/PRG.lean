@@ -1,5 +1,7 @@
-import Commons.Definitions.Ideal
-import ConstructiveCryptography.Notation
+module
+
+public import Commons.Definitions.Ideal
+public import ConstructiveCryptography.Notation
 
 /-!
 # Pseudorandom generators
@@ -21,6 +23,8 @@ allowed to each of them.
 * `PRG.Secure G error`: the security of `G` for the admitted distinguishers,
   within `error`
 -/
+
+@[expose] public section
 
 namespace Commons
 

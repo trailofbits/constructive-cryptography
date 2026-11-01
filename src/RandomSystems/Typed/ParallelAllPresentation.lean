@@ -1,5 +1,7 @@
-import RandomSystems.Typed.ParallelAll
-import RandomSystems.Cumulative.ParallelAllPresentation
+module
+
+public import RandomSystems.Typed.ParallelAll
+public import RandomSystems.Cumulative.ParallelAllPresentation
 
 /-!
 # Deterministic presentations of typed finite parallel systems
@@ -38,6 +40,8 @@ Jost, Thesis, printed p. 17: “A finite set of resources with disjoint interfac
 viewed as a single one”. The independent sampling of the components is this repository's
 chosen specialization of that view.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.TypedSystem
 

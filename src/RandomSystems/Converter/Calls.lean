@@ -1,5 +1,7 @@
-import RandomSystems.Converter.ConverterDomain
-import RandomSystems.DDC.Tensor
+module
+
+public import RandomSystems.Converter.ConverterDomain
+public import RandomSystems.DDC.Tensor
 
 /-!
 # Direct converter calls
@@ -47,6 +49,8 @@ Converters as in [1, Definition 2.2.2]; DDCs as in [2, Definition 3.8].
 1. D. Jost. *On Generalizations of Composable Security*. Doctoral thesis, ETH Zurich, 2020.
 2. U. Maurer. *Cryptography Foundations*. Lecture notes, ETH Zurich, Spring 2018.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -453,7 +457,7 @@ lemma callRule_isResponsiveDDC {O J : Type} {U V : O → Type} {X Y : J → Type
       rcases List.eq_nil_or_concat h with rfl | ⟨h, z, rfl⟩
       · exact Nat.zero_le _
       · rw [List.concat_eq_append] at hi ⊢
-        rw [insideRun, run_snoc, if_neg hi]
+        rw [insideRun, run_snoc, ite_eq_right hi]
         exact Nat.zero_le _
   · -- The result label is the label of the current outside invocation.
     intro h y o ha hy ho

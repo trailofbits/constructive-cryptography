@@ -1,4 +1,6 @@
-import ConstructiveCryptography.DSL
+module
+
+public import ConstructiveCryptography.DSL
 
 /-! # Checked component equations and inlining
 
@@ -8,6 +10,8 @@ labels. `inline` expands the registered wrappers itself: attachments to automata
 converters and own sources need no arguments, memoryless attachments take their certificate
 with `using`, and an unsupported goal fails.
 -/
+
+@[expose] public section
 
 open SystemAlgebra SystemAlgebra.DSL Probability Probability.Distribution
 open CategoryTheory MonoidalCategory

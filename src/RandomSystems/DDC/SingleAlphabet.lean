@@ -1,4 +1,6 @@
-import RandomSystems.DDC.Serial
+module
+
+public import RandomSystems.DDC.Serial
 
 /-!
 # Single-alphabet systems and converters
@@ -20,6 +22,8 @@ Jost, *On Generalizations of Composable Security*, Definitions 2.2.1–2.2.2.
   of the identity
 * `attachL_parL`, `parL_dummyL`: locality and the unit
 -/
+
+@[expose] public section
 
 set_option linter.unusedSimpArgs false
 
@@ -331,19 +335,19 @@ noncomputable def idEquivL (hι : Function.Injective ι) : Free (alongSet (O := 
     rintro ⟨⟨_ | ⟨⟨⟩⟩, l⟩, h⟩
     · rcases l with ⟨_ | ⟨⟨⟩⟩, j⟩
       · have hm : ι j ∈ Set.range ι := ⟨j, rfl⟩
-        simp only [dif_pos hm]
+        simp only [dite_eq_left hm]
         have := hι (Classical.choose_spec hm)
         simp only [Subtype.mk.injEq, Sigma.mk.injEq, heq_eq_eq, true_and]
         exact this
       · exact absurd (inside_mem_alongSet ι j) h
     · show (if h' : l ∈ Set.range ι then _ else _) = _
-      rw [dif_neg (show l ∉ Set.range ι from h)]
+      rw [dite_eq_right (show l ∉ Set.range ι from h)]
   right_inv := by
     intro i
     by_cases h : i ∈ Set.range ι
-    · simp only [dif_pos h]
+    · simp only [dite_eq_left h]
       exact Classical.choose_spec h
-    · simp only [dif_neg h]
+    · simp only [dite_eq_right h]
 
 /-- **Law I, identity converter** (MR16 §3.3; Jost p. 18, “id R = R”): attaching `𝟙` along
 `ι` to a total resource gives back the resource, with its interfaces renamed by `ι`. -/
@@ -358,12 +362,12 @@ theorem attachL_idConverter (hι : Function.Injective ι) {R : SingleAlphabetSys
     · simp only [Function.comp_apply]
       rw [idAlongIn_of_mem ι (a := ⟨i, x⟩) h]
       change freeIn ι ⟨(idEquivL hι).symm i, x⟩ = _
-      simp only [idEquivL, Equiv.coe_fn_symm_mk, dif_pos h]
+      simp only [idEquivL, Equiv.coe_fn_symm_mk, dite_eq_left h]
       rfl
     · simp only [Function.comp_apply]
       rw [idAlongIn_of_not_mem ι (a := ⟨i, x⟩) h]
       change freeIn ι ⟨(idEquivL hι).symm i, x⟩ = _
-      simp only [idEquivL, Equiv.coe_fn_symm_mk, dif_neg h]
+      simp only [idEquivL, Equiv.coe_fn_symm_mk, dite_eq_right h]
       rfl
   · funext b
     rcases b with ⟨⟨⟨_ | ⟨⟨⟩⟩, l⟩, h⟩, y⟩

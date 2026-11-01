@@ -1,4 +1,6 @@
-import RandomSystems.Distance.Decision
+module
+
+public import RandomSystems.Distance.Decision
 
 /-!
 # The H-coefficient bound for random systems
@@ -20,6 +22,8 @@ Sources: Patarin's H-coefficient technique, in the form for distributions
 * `RandomSystem.transcriptDistance_le_add_of_ratio_on_good`: the H-coefficient bound on the
   transcript distance
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

@@ -1,7 +1,7 @@
-import ConstructiveCryptography.Specification.Basic
-import Mathlib.Order.Hom.CompleteLattice
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.Specification.Basic
+public import Mathlib.Order.Hom.CompleteLattice
 
 /-!
 # Union lifts of resource maps
@@ -17,6 +17,10 @@ A lifted specification admits `y` when some admitted center `x ∈ source` relat
 * `lift_singleton_eq_setImage`: a function `f : X → Y` lifts to direct image `f '' source`.
 * `lift_comp`: lifting a relational composite is composing lifts, inner first.
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace ConstructiveCryptography.Specification
 

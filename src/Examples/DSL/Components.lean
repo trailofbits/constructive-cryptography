@@ -1,4 +1,6 @@
-import ConstructiveCryptography.DSL
+module
+
+public import ConstructiveCryptography.DSL
 
 /-!
 # DSL components
@@ -9,6 +11,8 @@ domain, branches, a padding converter with an inferred cost (`Padding.exact`), a
 converter onto a smaller interface, typed by per-port budgets through a partial port map, and a
 filter.
 -/
+
+@[expose] public section
 
 open SystemAlgebra SystemAlgebra.DSL
 open scoped SystemAlgebra.DSL

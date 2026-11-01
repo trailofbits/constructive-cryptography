@@ -1,4 +1,6 @@
-import RandomSystems.System.Basic
+module
+
+public import RandomSystems.System.Basic
 
 /-!
 # Componentwise wiring of parallel systems
@@ -35,6 +37,8 @@ finite, and no off-tree representatives are identified.
 Source: Jost, Thesis, printed p. 17, views finite disjoint-interface resources as one; the
 wiring law is derived here from `Induces`.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -226,7 +230,7 @@ lemma restrict_pairParallel_none (k : K) (h : List (Two (Σ k, A k) (Σ k, C k))
   | cons a h ih =>
     simp only [pairParallel, Equiv.coe_fn_mk] at ih
     rcases a with ⟨(_ | ⟨⟩), ⟨j, a⟩⟩ <;> by_cases he : j = k
-    all_goals first | subst j | skip
+    all_goals try subst j
     all_goals simp only [pairParallel, List.map_cons, Equiv.coe_fn_mk]
     · simpa only [restrict_cons_self] using congrArg (List.cons a) ih
     · simpa only [restrict_cons_ne he, restrict_cons_self] using ih
@@ -246,7 +250,7 @@ lemma restrict_pairParallel_some (k : K) (h : List (Two (Σ k, A k) (Σ k, C k))
   | cons a h ih =>
     simp only [pairParallel, Equiv.coe_fn_mk] at ih
     rcases a with ⟨(_ | ⟨⟩), ⟨j, a⟩⟩ <;> by_cases he : j = k
-    all_goals first | subst j | skip
+    all_goals try subst j
     all_goals simp only [pairParallel, List.map_cons, Equiv.coe_fn_mk]
     · simpa only [restrict_cons_self, restrict_cons_ne (Ne.symm (Option.some_ne_none _))] using ih
     · simpa only [restrict_cons_ne he, restrict_cons_ne (Ne.symm (Option.some_ne_none _))] using ih

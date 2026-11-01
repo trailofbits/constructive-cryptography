@@ -1,7 +1,9 @@
-import ConstructiveCryptography.Notation
-import RandomSystems.Typed.ParallelAllAttachment
-import RandomSystems.Typed.SamplingAlgebra
-import Tests.TypedNaryParallel
+module
+
+public import ConstructiveCryptography.Notation
+public import RandomSystems.Typed.ParallelAllAttachment
+public import RandomSystems.Typed.SamplingAlgebra
+public import Tests.TypedNaryParallel
 
 /-!
 # Direct systems: notation and deterministic assembly
@@ -14,6 +16,8 @@ in a shared context to a supplied component equation. `guard_target` checks the
 elaborated goals; trace guards check the chosen rules. Negative tests preserve shared
 randomness and leave a separately supplied action unrewritten.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.Tests.ProofErgonomics
 

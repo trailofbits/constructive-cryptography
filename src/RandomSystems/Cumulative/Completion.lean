@@ -1,4 +1,6 @@
-import RandomSystems.Cumulative.Revealed
+module
+
+public import RandomSystems.Cumulative.Revealed
 
 /-!
 # Conditional completion of a sampled system's transcript
@@ -45,6 +47,8 @@ The completion reproduces the actual record's joint law in two steps:
 
 1. U. Maurer. *Cryptography Foundations*. Lecture notes, ETH Zurich, Spring 2018.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.RandomSystem
 

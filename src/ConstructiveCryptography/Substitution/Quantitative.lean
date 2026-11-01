@@ -1,7 +1,7 @@
-import ConstructiveCryptography.Substitution.Implication
-import ConstructiveCryptography.Substitution.Reduction
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.Substitution.Implication
+public import ConstructiveCryptography.Substitution.Reduction
 
 /-!
 # Concrete and mixed substitution chains
@@ -36,6 +36,10 @@ budgets at equal names and is not stated here.
 
 Source: Banfi 2023, §2.3.1; Jost, Theorem 2.2.10.
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace ConstructiveCryptography.CryptographicAlgebra.SubstitutionRelation.Implication
 

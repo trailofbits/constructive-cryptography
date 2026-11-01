@@ -1,5 +1,7 @@
-import Commons.Schemes.Signature.MLDSA.Signature
-import Commons.Schemes.Signature.MLDSA.Concrete.Instance
+module
+
+public import Commons.Schemes.Signature.MLDSA.Signature
+public import Commons.Schemes.Signature.MLDSA.Concrete.Instance
 
 /-!
 # Laws of the Concrete ML-DSA Primitives
@@ -18,6 +20,8 @@ and the challenge-product bound `‖c·s‖∞ ≤ τ·η = β` from the convolu
 * `MLDSA.Concrete.concretePrimitives_laws`: the laws of the concrete primitives
 * `MLDSA.Concrete.fipsSign_fipsVerify`: correctness of concrete ML-DSA
 -/
+
+@[expose] public section
 
 namespace MLDSA.Concrete
 

@@ -1,5 +1,7 @@
-import RandomSystems.Converter.PartialConverter
-import RandomSystems.Converter.ResourceAttachment
+module
+
+public import RandomSystems.Converter.PartialConverter
+public import RandomSystems.Converter.ResourceAttachment
 
 /-!
 # Filters
@@ -13,6 +15,8 @@ domain of a system. Source: CR18, §3.4.3 (printed p. 62).
 * `trim_apply_filter`, `DDC.filter_attach`: attaching a filter is domain restriction
 * `apply_filterDom_outside`: restricting a converter's outside domain restricts its attachment
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -105,7 +109,7 @@ lemma Induces.pair_filterDom_outside (F : List (Σ o, U o) → Prop)
   · simp [pair]
   rw [List.concat_eq_append] at hp ⊢
   rcases z with ⟨_ | ⟨⟩, z⟩
-  · rw [pair_left, pair_left, filterDom, if_pos]
+  · rw [pair_left, pair_left, filterDom, ite_eq_left]
     simpa only [restrict_none_snoc_left] using hD _ hp
   · rw [pair_right, pair_right]
 
@@ -117,7 +121,7 @@ lemma apply_filterDom_outside (F : List (Σ o, U o) → Prop)
       filterDom F (apply α R) := by
   funext us
   by_cases hu : F us
-  · rw [filterDom, if_pos hu, apply_eq, apply_eq]
+  · rw [filterDom, ite_eq_left hu, apply_eq, apply_eq]
     ext b
     rw [mem_interconnect, mem_interconnect]
     constructor
@@ -126,7 +130,7 @@ lemma apply_filterDom_outside (F : List (Σ o, U o) → Prop)
     · rintro ⟨H, hi⟩
       exact ⟨H, hi.congr_of_prefix_eq fun p hp =>
         (hi.pair_filterDom_outside (α := α) F hF hu p hp).symm⟩
-  · rw [filterDom, if_neg hu]
+  · rw [filterDom, ite_eq_right hu]
     refine Part.eq_none_iff'.mpr fun hd => ?_
     rcases apply_filterDom_dom (fun us => us = [] ∨ F us) hd with rfl | h
     · rw [apply_eq, interconnect_eq_none Induces.nil] at hd
@@ -158,7 +162,7 @@ lemma trim_apply_filter (D : List (Σ j, X j) → Prop)
     refine ⟨hbase.length, fun k hk hk' => ?_⟩
     have hd : D (xs.take (k + 1)) :=
       apply_filterDom_dom D (Part.eq_some_iff.mp (ht.2 k hk hk')).1
-    rw [filterDom, if_pos hd]
+    rw [filterDom, ite_eq_left hd]
     exact hbase.2 k hk hk'
   · intro ht
     have hbase : Replies R xs ys :=
@@ -185,7 +189,7 @@ lemma trim_apply_filter (D : List (Σ j, X j) → Prop)
       rcases z with ⟨_ | ⟨⟩, z⟩
       · simp only [pair_left] at *
         simp only [DDC.filter, filterDom, restrict_none_snoc_left] at hdp ⊢
-        rw [if_pos hdp]
+        rw [ite_eq_left hdp]
       · rw [pair_right, pair_right]
 
 namespace DDC

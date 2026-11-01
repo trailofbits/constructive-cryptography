@@ -1,4 +1,6 @@
-import RandomSystems.DDC.DDC
+module
+
+public import RandomSystems.DDC.DDC
 
 /-!
 # Serial composition of converters
@@ -24,6 +26,8 @@ Section 3.3, printed p. 7.
 * `eq_of_behEq_total`: a system behaviourally equal to a total system is equal
   to it
 -/
+
+@[expose] public section
 
 set_option linter.unusedSimpArgs false
 
@@ -160,8 +164,8 @@ lemma insideRun_snoc_of_mem {O J : Type} {U V : O → Type} {Xi Yi : J → Type}
     insideRun γ (h ++ [z]) = if IsInside y then insideRun γ h + 1 else 0 := by
   rw [insideRun, run_snoc]
   by_cases hi : IsInside y
-  · rw [if_pos ⟨y, hy, hi⟩, if_pos hi]; rfl
-  · rw [if_neg hi, if_neg]
+  · rw [ite_eq_left ⟨y, hy, hi⟩, ite_eq_left hi]; rfl
+  · rw [ite_eq_right hi, ite_eq_right]
     rintro ⟨y', hy', hi'⟩
     exact hi (Part.mem_unique hy hy' ▸ hi')
 
@@ -212,7 +216,7 @@ lemma serialM_exchange_partial (hβ : IsDDC bβ β) (hα : IsDDC bα α) {G o' G
         subst e
         have hrun : insideRun α (restrict (some ()) G₁ ++ [z]) =
             insideRun α (restrict (some ()) G₁) + 1 := by
-          rw [insideRun_snoc_of_mem hy']; exact if_pos rfl
+          rw [insideRun_snoc_of_mem hy']; exact ite_eq_left rfl
         refine ⟨m, ⟨by simpa using ha, by simpa using Part.dom_iff_mem.mpr ⟨_, hy'⟩,
           by simpa using replyLabel_of_mem _ hy', by simpa using hlo⟩, by simpa using hwb,
           by simpa using h1, ?_⟩
@@ -229,7 +233,7 @@ lemma serialM_exchange_partial (hβ : IsDDC bβ β) (hα : IsDDC bα α) {G o' G
       · simp only [serialRouteM, Sum.inr.injEq] at hr
         subst hr
         have hrun : insideRun β (restrict none G₁ ++ [z]) = insideRun β (restrict none G₁) + 1 := by
-          rw [insideRun_snoc_of_mem hy']; exact if_pos rfl
+          rw [insideRun_snoc_of_mem hy']; exact ite_eq_left rfl
         refine ih o c (Or.inr ⟨_, _, m, rfl, ?_, ?_, ?_, ?_, ?_⟩)
         · rw [restrict_some_snoc_left]
           exact admissible_snoc.mpr ⟨hid.1, hid.2.1, (admitAfter_of_ne hid.2.2).mpr rfl⟩
@@ -357,7 +361,8 @@ lemma serialM_next_partial (hβ : IsDDC bβ β) (hα : IsDDC bα α) {u o H}
       exact ⟨hlb.trans hlo₁.symm, Or.inr (Or.inl ⟨_, rfl, ⟨l, rfl⟩, hib, hia⟩)⟩
     · obtain ⟨m, hwa, hwb, h1, hc⟩ := hpi l rfl
       refine ⟨hwb.2.2.2.trans hlo₁.symm, Or.inr (Or.inr ⟨_, l, m, o₁, rfl, rfl, hlo₁, hwa, hwb, h1, ?_⟩)⟩
-      rw [insideRun_snoc_of_mem hw', if_pos (show IsInside (⟨⟨some (), l⟩, v⟩ : Σ l, twoFam V Xi l)
+      rw [insideRun_snoc_of_mem hw',
+        ite_eq_left (show IsInside (⟨⟨some (), l⟩, v⟩ : Σ l, twoFam V Xi l)
         from rfl), hcu]
       exact hc
   -- an input that is not admitted reaches a silent component
@@ -371,12 +376,12 @@ lemma serialM_next_partial (hβ : IsDDC bβ β) (hα : IsDDC bα α) {u o H}
   · -- the first input
     have hia : Idle α (restrict (some ()) ([] : List (Two (Σ l, twoFam U Ym l) (Σ l, twoFam Xm Yi l)))) :=
       ⟨admissible_nil, fun h => absurd rfl h, fun j => by
-        rw [restrict_nil, replyLabel, dif_neg hα.dds.1]; simp⟩
+        rw [restrict_nil, replyLabel, dite_eq_right hα.dds.1]; simp⟩
     rcases a with ⟨⟨_ | ⟨⟨⟩⟩, o₁⟩, v⟩
     · refine ⟨fun _ => finish o₁ 0 (Or.inl ⟨[], _, rfl, ?_, ?_, hia, by simp⟩) ?_ (by simp [insideRun]),
         fun hna => absurd rfl hna⟩
       · refine admissible_snoc.mpr ⟨admissible_nil, fun h => absurd rfl h, ?_⟩
-        rw [restrict_nil, Admits, replyLabel, dif_neg hβ.dds.1]; rfl
+        rw [restrict_nil, Admits, replyLabel, dite_eq_right hβ.dds.1]; rfl
       · simp [lastOuter, outerOf]
       · simp [lastOuter, outerOf]
     · refine ⟨fun had => absurd had (by simp [admitAfter]), fun _ => silent ?_⟩
@@ -392,7 +397,7 @@ lemma serialM_next_partial (hβ : IsDDC bβ β) (hα : IsDDC bα α) {u o H}
       rcases List.eq_nil_or_concat u with rfl | ⟨u', a', rfl⟩
       · exact rfl
       · rw [List.concat_eq_append] at hwu ⊢
-        rw [insideRun_snoc_of_mem hwu, if_neg (by simp [IsInside, hw])]
+        rw [insideRun_snoc_of_mem hwu, ite_eq_right (by simp [IsInside, hw])]
     rcases a with ⟨⟨_ | ⟨⟨⟩⟩, o₁⟩, v⟩
     · refine ⟨fun _ => finish o₁ 0 (Or.inl ⟨H, _, rfl, admissible_snoc.mpr ⟨hib.1, hib.2.1,
         (admitAfter_of_ne hib.2.2).mpr rfl⟩, by simp [lastOuter_snoc, outerOf], hia, by simp⟩)
@@ -518,7 +523,7 @@ theorem IsDDC.comp (hβ : IsDDC bβ β) (hα : IsDDC bα α) :
   refine ⟨⟨?_, ?_⟩, ?_, ?_, ?_⟩
   · intro hd
     have := reach_of_trim hd
-    simp only [trim, reach_nil, if_true] at hd
+    simp only [trim, reach_nil, ite_true] at hd
     rw [serialM] at hd
     exact not_dom_of_induces_none Induces.nil hd
   · rintro l₁ l₂ ⟨e, rfl⟩ hne hd
@@ -544,7 +549,7 @@ theorem IsDDC.comp (hβ : IsDDC bβ β) (hα : IsDDC bα α) :
       rcases List.eq_nil_or_concat h with rfl | ⟨h', a', rfl⟩
       · simp
       · rw [List.concat_eq_append] at hwu ⊢
-        rw [run_snoc, if_neg]
+        rw [run_snoc, ite_eq_right]
         · exact Nat.zero_le _
         · rintro ⟨w', hw', hi⟩
           rw [Part.mem_unique hwu hw'] at hw
@@ -562,7 +567,7 @@ theorem IsDDC.comp (hβ : IsDDC bβ β) (hα : IsDDC bα α) :
   · intro h y o' hy ho'
     have hr := reach_of_trim (Part.dom_iff_mem.mpr ⟨y, hy⟩)
     obtain ⟨o, H, r, -, hlast⟩ := serialM_reach_partial hβ hα h hr
-    simp only [trim, hr, if_true] at hy
+    simp only [trim, hr, ite_true] at hy
     have hne : h ≠ [] := by
       rintro rfl
       rw [serialM] at hy
@@ -584,7 +589,7 @@ lemma IsResponsiveDDC.comp (hβ : IsResponsiveDDC bβ β) (hα : IsResponsiveDDC
   apply isResponsiveDDC_iff.mpr
   refine ⟨hβ.isDDC.comp hα.isDDC, fun h ha hne => ?_⟩
   have hr := serialM_reach_of_admissible hβ hα h ha
-  simp only [trim, hr, if_true]
+  simp only [trim, hr, ite_true]
   exact hr h [] (by simp) hne
 
 end SerialClosure

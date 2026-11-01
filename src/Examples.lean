@@ -1,12 +1,14 @@
-import Examples.AuthenticatedEncryption.Security
-import Examples.DSL.AEAD
-import Examples.DSL.AEADTests
-import Examples.DSL.AES
-import Examples.DSL.Components
-import Examples.Games
-import Examples.PRGLengthExtension
-import Examples.Substitution
-import Examples.Usability
+module
+
+public import Examples.AuthenticatedEncryption.Security
+public import Examples.DSL.AEAD
+public import Examples.DSL.AEADTests
+public import Examples.DSL.AES
+public import Examples.DSL.Components
+public import Examples.Games
+public import Examples.PRGLengthExtension
+public import Examples.Substitution
+public import Examples.Usability
 
 /-! Applications and examples: AES and components in the DSL, authenticated encryption with
 AES-CTR and PMAC, `(ind-cca, int-ptxt) → ae` (Banfi, Theorem 2.3.10(4), corrected), the proof

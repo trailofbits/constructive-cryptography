@@ -1,5 +1,7 @@
-import RandomSystems.Converter.QueryRouting
-import RandomSystems.Typed.CallFunctional
+module
+
+public import RandomSystems.Converter.QueryRouting
+public import RandomSystems.Typed.CallFunctional
 
 /-!
 # Typed realization of input-dependent routing
@@ -23,6 +25,8 @@ lets the reply alphabets `B.Y j` differ from `A.Y o` and from each other.
 
 Source: CR18, Definition 3.9.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.TypedConverter
 

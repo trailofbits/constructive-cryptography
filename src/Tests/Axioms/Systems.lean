@@ -1,5 +1,7 @@
-import RandomSystems
-import Tests.Counterexamples
+module
+
+public import RandomSystems
+public import Tests.Counterexamples
 
 /-!
 # Axioms of the systems layer
@@ -9,6 +11,8 @@ composition, probabilistic automata, memoryless systems, distance and games, typ
 typed converters, and the counterexamples, depend only on `propext`, `Classical.choice` and
 `Quot.sound`. Comments name the laws of `papers/SYSTEM_ALGEBRA_SPEC.md`.
 -/
+
+@[expose] public section
 
 -- RandomSystems.Converter.ConverterAttachment
 #print axioms SystemAlgebra.PDCBehavior.attach_id

@@ -1,4 +1,6 @@
-import RandomSystems.Typed.CallRuleFunctional
+module
+
+public import RandomSystems.Typed.CallRuleFunctional
 
 /-!
 # Direct-call examples
@@ -26,6 +28,8 @@ its failure under the loose bound `3`, the charge of a pending query, rejection 
 the wrong inside label, the domain certificates, the typed equation
 `toggleCall • ofFunction id = ofFunction (! ·)`, and the weighted count of `zeroCall`.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.Tests.DirectCalls
 

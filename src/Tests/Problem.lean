@@ -1,4 +1,6 @@
-import ConstructiveCryptography.Problem
+module
+
+public import ConstructiveCryptography.Problem
 
 /-!
 # Ordered reductions with explicit solvers
@@ -8,6 +10,8 @@ preordered performance spaces. Solvers are values of the supplied types, not fun
 identified by their performance on games. The `#check_failure` guards confirm that the
 reduction layer brings neither `Real` nor `Games` nor `ResourceTheory` into scope.
 -/
+
+@[expose] public section
 
 #check_failure Real
 #check_failure ConstructiveCryptography.Games

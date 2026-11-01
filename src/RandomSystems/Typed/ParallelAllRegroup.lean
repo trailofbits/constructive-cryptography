@@ -1,5 +1,7 @@
-import RandomSystems.Typed.ParallelAll
-import RandomSystems.Cumulative.ParallelAllRegroup
+module
+
+public import RandomSystems.Typed.ParallelAll
+public import RandomSystems.Cumulative.ParallelAllRegroup
 
 /-!
 # Regrouping a typed pair as a finite family
@@ -22,6 +24,8 @@ No definitional identification of the two interfaces and no implicit unitor is u
 
 * `TypedSystem.parallelAll_option_mass`: the n-ary product of two is the binary product
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

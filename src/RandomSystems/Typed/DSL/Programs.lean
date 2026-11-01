@@ -1,6 +1,8 @@
-import RandomSystems.Converter.ProgramAttachment
-import RandomSystems.Typed.DSL.Probability
-import Mathlib.Data.Fintype.Order
+module
+
+public import RandomSystems.Converter.ProgramAttachment
+public import RandomSystems.Typed.DSL.Probability
+public import Mathlib.Data.Fintype.Order
 
 /-!
 # Program bodies
@@ -15,7 +17,7 @@ count the inside queries along the exchanges a body makes itself.
 
 * `returnProg`, `callProg`, `forEach`: the bodies of return, call and loop statements
 * `lawType`, `sampleWitness`: the type of a law, and a value of it
-* `TypeOf`: the type of the private bindings, from their initial values
+* `TypeOf`, `BudgetOf`: types inferred from initial values and interface families
 
 ## Main results
 
@@ -25,6 +27,8 @@ count the inside queries along the exchanges a body makes itself.
 * `preservesAt_return`, `preservesAt_call_self`, `preservesAt_call_other`, `avoids_return`,
   `avoids_call`: port preservation of the statement forms
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.DSL
 
@@ -38,6 +42,10 @@ abbrev lawType {T : Type} (_ : Distribution.ProbDist T) : Type := T
 
 /-- The type of a value: the private bindings of a component, from their initial values. -/
 abbrev TypeOf {T : Type} (_ : T) : Type := T
+
+/-- The budget type of an interface family, inferred from the family's parameter: `ℕ`, or a tuple
+for named outside components. -/
+abbrev BudgetOf {B : Type} (_ : B → Interface) : Type := B
 
 /-- A total cost bound is closed under prefixes. -/
 lemma cost_prefix_closed {T : Type} (f : T → ℕ) (q : ℕ) :

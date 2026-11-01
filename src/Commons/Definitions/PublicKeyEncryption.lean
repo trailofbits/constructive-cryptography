@@ -1,5 +1,7 @@
-import ConstructiveCryptography.DSL
-import ConstructiveCryptography.Notation
+module
+
+public import ConstructiveCryptography.DSL
+public import ConstructiveCryptography.Notation
 
 /-!
 # Public-key encryption
@@ -34,6 +36,8 @@ allowed to each of them.
 * `PKE.INDCCA scheme error`: IND-CCA for the admitted distinguishers, within `error`
 * `PKE.INDCPA.systems scheme q`, `PKE.INDCPA scheme error`: IND-CPA
 -/
+
+@[expose] public section
 
 namespace Commons
 

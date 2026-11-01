@@ -1,6 +1,6 @@
-import ConstructiveCryptography.Substitution.Construction
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.Substitution.Construction
 
 /-!
 # Implication witnesses under serial composition
@@ -8,6 +8,10 @@ set_option autoImplicit false
 Use counts of assumptions from two source families stay separate after serial composition, and
 constructions of disjoint parts compose.
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace Tests.Substitution.Construction
 
@@ -45,7 +49,7 @@ lemma repeated_assumption_counts [DecidableEq ι] [DecidableEq κ] {A : C}
   let outer := Implication.single (systems := outerSystems) outerAssumption false outerTransformation
   have one : single.usageCount innerAssumption = 1 :=
     (Implication.usageCount_single innerAssumption innerAssumption false
-      innerTransformation).trans (if_pos rfl)
+      innerTransformation).trans (ite_eq_left rfl)
   have two : inner.usageCount innerAssumption = 2 :=
     (single.usageCount_append single.reverse rfl innerAssumption).trans
       (congrArg₂ Nat.add one ((single.usageCount_reverse innerAssumption).trans one))
@@ -62,7 +66,7 @@ lemma repeated_assumption_counts [DecidableEq ι] [DecidableEq κ] {A : C}
       Bool.not_false] using lastEq
   · exact (lastCounts _).trans
       ((Implication.usageCount_single outerAssumption outerAssumption false
-        outerTransformation).trans (if_pos rfl))
+        outerTransformation).trans (ite_eq_left rfl))
 
 -- Banfi's existential simulator statement, with honest/adversarial locality
 -- proved by ordered tensor. Resources are arbitrary joint resources: none

@@ -1,13 +1,15 @@
-import Init.Data.Array.Basic
-import Init.Data.Vector.Algebra
-import Commons.Schemes.KEM.MLKEM.Arithmetic
-import Mathlib.Tactic.ReduceModChar
-import Commons.Schemes.KEM.MLKEM.Params
-import Mathlib.Data.Fintype.Defs
-import Mathlib.Data.ZMod.Defs
-import Commons.Schemes.Lattice.NTTCert
-import Mathlib.Algebra.BigOperators.Ring.Finset
-import Mathlib.RingTheory.RootsOfUnity.PrimitiveRoots
+module
+
+public import Init.Data.Array.Basic
+public import Init.Data.Vector.Algebra
+public import Commons.Schemes.KEM.MLKEM.Arithmetic
+public import Mathlib.Tactic.ReduceModChar
+public import Commons.Schemes.KEM.MLKEM.Params
+public import Mathlib.Data.Fintype.Defs
+public import Mathlib.Data.ZMod.Defs
+public import Commons.Schemes.Lattice.NTTCert
+public import Mathlib.Algebra.BigOperators.Ring.Finset
+public import Mathlib.RingTheory.RootsOfUnity.PrimitiveRoots
 
 /-!
 # Concrete NTT for ML-KEM
@@ -31,6 +33,8 @@ evaluates: pair `i` of the transform, read as `a₀ + a₁ω`, is the input at t
 * `ntt_negacyclicMul`: the NTT is multiplicative
 * `concreteNTTRingLaws`: the laws of the NTT ring operations
 -/
+
+@[expose] public section
 
 
 
@@ -271,7 +275,7 @@ lemma evalInvariant_step (s : Fin 7) {a f : NTTCoord → Coeff} (h : EvalInvaria
       ω ^ (128 / 2 ^ s.val) = -algebraMap Coeff S (getZ zetaArray (2 ^ s.val + g)) →
       ω ^ (256 / 2 ^ s.val) = algebraMap Coeff S (zeta ^ rootExponent s.val g) := by
     rintro (hω' | hω') <;>
-    · rw [hB, pow_mul', hω', rootExponent, if_pos s.isLt, pow_mul', hz]
+    · rw [hB, pow_mul', hω', rootExponent, ite_eq_left s.isLt, pow_mul', hz]
       simp [map_pow]
   rw [hB'] at hω ⊢
   interval_cases c
@@ -549,14 +553,14 @@ lemma concreteNTTRingLaws : NTTRingLaws concreteNTTRingOps where
     change multiplyNTTs f (g + h) = multiplyNTTs f g + multiplyNTTs f h
     simp only [multiplyNTTs_eq, invNTT_add]
     rw [← ntt_add]
-    exact congrArg ntt (LatticeCrypto.vectorRing_mul_add_right
-      (Coeff := Coeff) (n := ringDegree) _ _ _)
+    -- The bundled law fixes `+` and `*` to the input polynomial ring's operations.
+    exact congrArg ntt (Distrib.left_distrib (invNTT f) (invNTT g) (invNTT h))
   mul_sub f g h := by
     change multiplyNTTs f (g - h) = multiplyNTTs f g - multiplyNTTs f h
     simp only [multiplyNTTs_eq, invNTT_sub]
     rw [← ntt_sub]
-    exact congrArg ntt (LatticeCrypto.vectorRing_mul_sub_right
-      (Coeff := Coeff) (n := ringDegree) _ _ _)
+    -- Distributivity in the input polynomial ring is preserved by the NTT.
+    exact congrArg ntt (mul_sub (invNTT f) (invNTT g) (invNTT h))
   mul_comm f g := by
     change multiplyNTTs f g = multiplyNTTs g f
     simp only [multiplyNTTs_eq, LatticeCrypto.vectorRing_mul_comm]

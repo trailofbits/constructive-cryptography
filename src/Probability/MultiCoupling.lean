@@ -1,4 +1,6 @@
-import Probability.Coupling
+module
+
+public import Probability.Coupling
 
 /-!
 # Couplings of finitely many distributions
@@ -24,6 +26,8 @@ Amplification*, Definitions 2.27–2.28, Lemma 2.30 and Theorem 2.29.
 * `not_supAgreement_disagreement_le_every_pair`: the minimum-over-pairs form
   of the bound fails
 -/
+
+@[expose] public section
 
 namespace Probability
 
@@ -297,8 +301,8 @@ lemma agreementMass_le_weight_overlapDist [NeZero n]
     rw [Finsupp.sum, hagree, Finset.sum_filter]
     refine Finset.sum_congr rfl fun f _ => ?_
     by_cases hP : ∀ i j : Fin n, f i = f j
-    · rw [if_pos hP, if_pos hP]
-    · rw [if_neg hP, if_neg hP]
+    · rw [ite_eq_left hP, ite_eq_left hP]
+    · rw [ite_eq_right hP, ite_eq_right hP]
   rw [hmass]
   have hstep : ∑ f ∈ agreeSet, joint f
       ≤ ∑ f ∈ agreeSet, overlapDist laws (f 0) :=

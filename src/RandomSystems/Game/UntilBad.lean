@@ -1,6 +1,8 @@
-import RandomSystems.Distance.UntilBad
-import RandomSystems.Game.DiscreteMBO
-import Probability.Coupling
+module
+
+public import RandomSystems.Distance.UntilBad
+public import RandomSystems.Game.DiscreteMBO
+public import Probability.Coupling
 
 /-!
 # Games identical until bad
@@ -36,6 +38,8 @@ Lanzenberger–Maurer, Theorem 2 (a joint distribution, or coupling, of two PDSs
 * `PDG.gameEquivalent_behavior_of_isCoupling`: coupled discrete games whose systems answer alike
   while the condition does not hold are equivalent as games
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -73,7 +77,7 @@ lemma RandomSystem.mass_unsetMBOs_sub_sum_le
   -- The replies to the admitted x with both MBOs weigh G(h unset) (sum_tagMBO), so the loss is
   -- the probability that G sets the MBO at x.
   have hsum := G.sum_tagMBO (unsetMBOs h) x
-  rw [hfst, if_pos hx, Finset.sum_add_distrib] at hsum
+  rw [hfst, ite_eq_left hx, Finset.sum_add_distrib] at hsum
   simp only [hsnoc]
   calc G (unsetMBOs h) - ∑ y, G (unsetMBOs h ++ [(x, tagMBO false y)])
       = ∑ y, G (unsetMBOs h ++ [(x, tagMBO true y)]) := by linarith
@@ -135,7 +139,7 @@ theorem RandomSystem.winProbability_le_of_transcriptCost_le
     · exact absurd rfl hh
   have hw : ν.weight = ∑ h ∈ tSupp G.visible e.1 n, G (unsetMBOs h) := by
     rw [Distribution.weight_eq_sum_of_support_subset ν hsupp]
-    exact Finset.sum_congr rfl fun h hh => by rw [hν, if_pos (tSupp_good hh)]
+    exact Finset.sum_congr rfl fun h hh => by rw [hν, ite_eq_left (tSupp_good hh)]
   -- Γ_D(G) = 1 − |ν| ≤ ε.
   rw [hwin, hw]
   linarith

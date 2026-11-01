@@ -1,4 +1,6 @@
-import Commons.Schemes.Hash.Keccak
+module
+
+public import Commons.Schemes.Hash.Keccak
 
 /-!
 # Hexadecimal helpers for the known-answer tests
@@ -6,6 +8,8 @@ import Commons.Schemes.Hash.Keccak
 Byte strings to and from hexadecimal, fixed-length byte strings and 32-byte seeds, and SHA3-256
 digests, for comparing long outputs against reference values.
 -/
+
+@[expose] public section
 
 namespace Commons.Tests
 

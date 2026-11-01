@@ -1,4 +1,6 @@
-import Examples.DSL.Components
+module
+
+public import Examples.DSL.Components
 
 /-!
 # DSL semantics across calls
@@ -12,6 +14,8 @@ reads to nothing, so the store's budget is that of the writes. A system that sam
 automaton combining the program with the source's table of samples; the first two checks
 compute that automaton.
 -/
+
+@[expose] public section
 
 open Classical SystemAlgebra SystemAlgebra.DSL SystemAlgebra.Interface Probability
 open scoped SystemAlgebra.DSL
@@ -49,7 +53,7 @@ lemma freshBits_replies {K : ℕ} (t : Fin K → Bool) (bs : List Bool) (hn : bs
     rw [List.map_append, List.map_append, List.map_singleton, List.map_singleton, replies_snoc,
       ih (by omega), automatonSystem_snoc, freshBits_stateAfter,
       Program.combine_eq_of_invoke _ _ (freshBits_invoke t _ bs.length)]
-    simp only [dif_pos (show bs.length < K by omega), Part.some_inj, Sigma.mk.injEq, heq_eq_eq,
+    simp only [dite_eq_left (show bs.length < K by omega), Part.some_inj, Sigma.mk.injEq, heq_eq_eq,
       true_and]
     constructor
     · rintro ⟨h, hb⟩ k hk
@@ -150,11 +154,11 @@ lemma counter_interleaving {q : ℕ} (hq : 3 ≤ q) :
     (Counter (budget := q)).1 [(⟨.next, ()⟩, ⟨.next, 1⟩), (⟨.read, ()⟩, ⟨.read, 1⟩),
       (⟨.next, ()⟩, ⟨.next, 2⟩)] = 1 := by
   rw [Counter, TypedSystem.ofAutomaton_mass]
-  refine (Distribution.mass_single _ _ _).trans (if_pos ?_)
+  refine (Distribution.mass_single _ _ _).trans (ite_eq_left ?_)
   change Replies _ ([] ++ [(⟨.next, ()⟩ : Sigma Counter.Input)] ++ [⟨.read, ()⟩] ++ [⟨.next, ()⟩])
     ([] ++ [(⟨.next, 1⟩ : Sigma Counter.Output)] ++ [⟨.read, 1⟩] ++ [⟨.next, 2⟩])
   refine replies_snoc.mpr ⟨replies_snoc.mpr ⟨replies_snoc.mpr ⟨replies_nil _, ?_⟩, ?_⟩, ?_⟩ <;>
-    rw [filterDom, if_pos ⟨by simp, by simp; omega⟩, automatonSystem_snoc] <;> rfl
+    rw [filterDom, ite_eq_left ⟨by simp, by simp; omega⟩, automatonSystem_snoc] <;> rfl
 
 /-- Budgets of two queries at `next` and one at `read`. -/
 def counterBudget : Counter.Port → ℕ
@@ -166,11 +170,11 @@ lemma counter_perPort_interleaving :
     (Counter.perPort (budget := counterBudget)).1 [(⟨.next, ()⟩, ⟨.next, 1⟩),
       (⟨.read, ()⟩, ⟨.read, 1⟩), (⟨.next, ()⟩, ⟨.next, 2⟩)] = 1 := by
   rw [Counter.perPort, TypedSystem.ofAutomaton_mass]
-  refine (Distribution.mass_single _ _ _).trans (if_pos ?_)
+  refine (Distribution.mass_single _ _ _).trans (ite_eq_left ?_)
   change Replies _ ([] ++ [(⟨.next, ()⟩ : Sigma Counter.Input)] ++ [⟨.read, ()⟩] ++ [⟨.next, ()⟩])
     ([] ++ [(⟨.next, 1⟩ : Sigma Counter.Output)] ++ [⟨.read, 1⟩] ++ [⟨.next, 2⟩])
   refine replies_snoc.mpr ⟨replies_snoc.mpr ⟨replies_snoc.mpr ⟨replies_nil _, ?_⟩, ?_⟩, ?_⟩ <;>
-    rw [filterDom, if_pos ⟨by simp, by intro i; cases i <;> simp [counterBudget]⟩,
+    rw [filterDom, ite_eq_left ⟨by simp, by intro i; cases i <;> simp [counterBudget]⟩,
       automatonSystem_snoc] <;> rfl
 
 /-- A second query at `read` exceeds its budget. -/
@@ -178,11 +182,11 @@ lemma counter_perPort_exceeded (n m : Fin 16) :
     (Counter.perPort (budget := counterBudget)).1 [(⟨.read, ()⟩, ⟨.read, n⟩),
       (⟨.read, ()⟩, ⟨.read, m⟩)] = 0 := by
   rw [Counter.perPort, TypedSystem.ofAutomaton_mass]
-  refine (Distribution.mass_single _ _ _).trans (if_neg fun hr => ?_)
+  refine (Distribution.mass_single _ _ _).trans (ite_eq_right fun hr => ?_)
   change Replies _ ([] ++ [(⟨.read, ()⟩ : Sigma Counter.Input)] ++ [⟨.read, ()⟩])
     ([] ++ [(⟨.read, n⟩ : Sigma Counter.Output)] ++ [⟨.read, m⟩]) at hr
   have hd := (replies_snoc.mp hr).2
-  rw [filterDom, if_neg] at hd
+  rw [filterDom, ite_eq_right] at hd
   · exact Part.some_ne_none _ hd.symm
   · rintro ⟨-, h⟩
     simpa [counterBudget] using h .read

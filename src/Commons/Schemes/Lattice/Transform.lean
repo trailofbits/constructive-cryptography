@@ -1,6 +1,8 @@
-import Init.Data.Vector.Algebra
-import Batteries.Data.Vector.Lemmas
-import Commons.Schemes.Lattice.Kernel
+module
+
+public import Init.Data.Vector.Algebra
+public import Batteries.Data.Vector.Lemmas
+public import Commons.Schemes.Lattice.Kernel
 
 /-!
 # Generic Transform Layer For Negacyclic Rings
@@ -22,6 +24,8 @@ coefficient-domain `NegacyclicRing`. Defines:
 Scheme-specific concrete NTTs (under `Concrete/NTT.lean`) provide executable
 `TransformOps` instances. Proof-oriented uses consume `TransformOps.Laws`.
 -/
+
+@[expose] public section
 
 
 
@@ -300,6 +304,11 @@ lemma zipWith_push {β γ} {n : ℕ}
 
 lemma foldl_distribute {k} (a b : PolyVec Hat k) :
   (a + b).foldl (· + ·) 0 = (a.foldl (· + ·) 0) + (b.foldl (· + ·) 0) := by
+  -- Vector addition is pointwise; its entrywise law identifies it with `zipWith`.
+  have add_zip {n : ℕ} (x y : PolyVec Hat n) : x + y = x.zipWith (· + ·) y := by
+    apply Vector.ext
+    intro i hi
+    simp only [Vector.getElem_add, Vector.getElem_zipWith]
   induction k with
   | zero =>
     have : a = #v[] := Vector.eq_empty
@@ -309,12 +318,9 @@ lemma foldl_distribute {k} (a b : PolyVec Hat k) :
   | succ n ih =>
     have : NeZero (n + 1) := ⟨Nat.succ_ne_zero n⟩
     rw [← Vector.push_pop_back a, ← Vector.push_pop_back b]
-    set sum_a := a.pop.foldl (· + ·) 0
-    set sum_b := b.pop.foldl (· + ·) 0
-    have : (a.pop.zipWith (· + ·) b.pop).foldl (· + ·) 0 = sum_a + sum_b := ih a.pop b.pop
-    change ((a.pop.push a.back).zipWith (· + ·) (b.pop.push b.back)).foldl (· + ·) 0  =
-      (a.pop.push a.back).foldl (· + ·) 0  + (b.pop.push b.back).foldl (· + ·) 0
-    rw [zipWith_push, Vector.foldl_push, Vector.foldl_push, Vector.foldl_push, this]
+    -- Split off the last coordinate; the induction hypothesis distributes the prefix sum.
+    rw [add_zip, zipWith_push, ← add_zip, Vector.foldl_push, Vector.foldl_push,
+      Vector.foldl_push, ih]
     abel
 
 lemma dot_add_right {k} (row u v : PolyVec Hat k) :

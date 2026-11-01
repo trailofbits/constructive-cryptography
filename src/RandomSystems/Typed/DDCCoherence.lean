@@ -1,5 +1,7 @@
-import RandomSystems.Converter.ConverterRelabel
-import RandomSystems.Typed.InterfaceCoherence
+module
+
+public import RandomSystems.Converter.ConverterRelabel
+public import RandomSystems.Typed.InterfaceCoherence
 
 /-!
 # Regrouping parallel DDCs
@@ -17,6 +19,8 @@ unrestricted wiring.
   `Interface.trim_serialM_associator_of_isDDC`: naturality of the unitors and the associator
   for DDCs
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

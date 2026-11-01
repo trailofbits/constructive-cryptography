@@ -1,6 +1,8 @@
-import RandomSystems.Typed.DSL.Converters
-import RandomSystems.Typed.Context
-import RandomSystems.System.Memoryless
+module
+
+public import RandomSystems.Typed.DSL.Converters
+public import RandomSystems.Typed.Context
+public import RandomSystems.System.Memoryless
 
 /-!
 # Memoryless systems on interfaces
@@ -36,6 +38,8 @@ Statements about typed systems are equalities of their random systems (`.1`).
 
 1. U. Maurer. *Cryptography Foundations*. Lecture notes, ETH Zurich, Spring 2018.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -90,7 +94,7 @@ lemma source_eq_memoryless {Z : Type} [Fintype Z] (law : ProbDist Z) (q : ℕ) :
     -- domain admits the new trigger (`hd`), so the domain filter keeps its reply, the entry
     -- `t h.length`.
     simp only [event, List.map_append, List.map_cons, List.map_nil, replies_snoc,
-      SystemAlgebra.filterDom, automatonSystem_snoc, stateAfter_sourceStep, if_pos hd]
+      SystemAlgebra.filterDom, automatonSystem_snoc, stateAfter_sourceStep, ite_eq_left hd]
     simp [sourceStep, hlt, Part.some_inj, eq_comm]
   -- Step 3: tables agreeing on the entries that `h` reads give `h` alike.
   -- The event of `h` reads only the entries before `h.length`.
@@ -198,7 +202,7 @@ lemma parallel_eq_memoryless {A B : Interface} {R : TypedSystem A} {T : TypedSys
     exact hd)
   -- The chain rule at the systems level; it remains to compare the two laws of the reply.
   rw [hsys, show e (x, y) = (eX.symm x, (sumAlphabet (Sum.rec A.Y B.Y)).symm y) from rfl,
-    memoryless_snoc, if_pos hadm]
+    memoryless_snoc, ite_eq_left hadm]
   -- Cancel the common factor, the probability of `h`.
   congr 1
   -- Step 4: the two reply laws agree.

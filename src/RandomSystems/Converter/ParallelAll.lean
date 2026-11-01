@@ -1,7 +1,9 @@
-import Probability.DependentProduct
-import RandomSystems.Cumulative.ParallelAll
-import RandomSystems.Converter.ConverterTensor
-import RandomSystems.Converter.ConverterAttachment
+module
+
+public import Probability.DependentProduct
+public import RandomSystems.Cumulative.ParallelAll
+public import RandomSystems.Converter.ConverterTensor
+public import RandomSystems.Converter.ConverterAttachment
 
 /-!
 # Finite parallel canonical converters
@@ -52,6 +54,8 @@ Def. 2.2.2, printed pp. 17–18 (alternating interfaces, consecutive bound) for 
   `(tensorAll α)(t) = ∏ k, α_k(t'|k)` if `t` is admitted and `t'` tag-consistent, else `0`
 * `PDCBehavior.tensorAll_ofDDC`: on DDC behaviors, `tensorAll` is the behavior of `tensorAllL`
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -176,9 +180,9 @@ lemma replyLabel_tensorAllRaw_snoc {k : K} {a} (hz : tensorAllInputs z = ⟨k, a
   rw [tensorAllRaw_snoc hz]
   -- Both sides are defined exactly when `α k` answers `h|k ++ [a]`.
   by_cases hd : (α k (hAt k h ++ [a])).Dom
-  · rw [dif_pos hd, dif_pos (by simpa only [Part.map_Dom] using hd)]
+  · rw [dite_eq_left hd, dite_eq_left (by simpa only [Part.map_Dom] using hd)]
     exact congrArg some (tensorAllOutputs_fst _ _)
-  · rw [dif_neg hd, dif_neg (by simpa only [Part.map_Dom] using hd)]
+  · rw [dite_eq_right hd, dite_eq_right (by simpa only [Part.map_Dom] using hd)]
     rfl
 
 omit [Fintype K] [DecidableEq K] in
@@ -206,7 +210,7 @@ omit [Fintype K] [DecidableEq K] in
 open Classical in
 /-- `[α_k]_k` has no reply at `[]`. -/
 lemma replyLabel_tensorAllRaw_nil : replyLabel (tensorAllRaw α) [] = none := by
-  simp only [replyLabel, dif_neg tensorAllRaw_silentAtEmpty]
+  simp only [replyLabel, dite_eq_right tensorAllRaw_silentAtEmpty]
 
 variable (α) in
 open Classical in
@@ -306,8 +310,8 @@ lemma tpostAll (hα : ∀ k, IsDDC (b k) (α k)) {k : K} {a} (hz : tensorAllInpu
     -- `α k` queries `in l`; the joint run and `k`'s run both grow by one.
     · refine Or.inr ⟨k, l, hl', by rw [hAt_snoc_self hz]; exact replyLabel_of_mem (α k) hy, hid',
         by rw [hAt_snoc_self hz]; exact hlo, ?_⟩
-      rw [insideRun_tensorAllRaw_snoc hz, if_pos ⟨_, hy, rfl⟩, hAt_snoc_self hz,
-        insideRun_snoc_eq, if_pos ⟨_, hy, rfl⟩]
+      rw [insideRun_tensorAllRaw_snoc hz, ite_eq_left ⟨_, hy, rfl⟩, hAt_snoc_self hz,
+        insideRun_snoc_eq, ite_eq_left ⟨_, hy, rfl⟩]
       omega
 
 omit [Fintype K] [DecidableEq K] in

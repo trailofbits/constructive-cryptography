@@ -1,9 +1,13 @@
-import ConstructiveCryptography.Notation
-import ConstructiveCryptography.CryptographicAlgebra.Epsilon
-import ConstructiveCryptography.CryptographicAlgebra.Star
+module
+
+public import ConstructiveCryptography.Notation
+public import ConstructiveCryptography.CryptographicAlgebra.Epsilon
+public import ConstructiveCryptography.CryptographicAlgebra.Star
 
 /-! The abstract construction, relaxation and closure theorems of `CryptographicAlgebra`,
 applied to the instance for interfaces. -/
+
+@[expose] public section
 
 namespace ResourceSpecificationTests
 

@@ -1,5 +1,7 @@
-import RandomSystems.Typed.Interface
-import RandomSystems.Game.MBOAttachment
+module
+
+public import RandomSystems.Typed.Interface
+public import RandomSystems.Game.MBOAttachment
 
 /-!
 # Typed games
@@ -24,6 +26,8 @@ the visible system `RandomSystem.visible`. Game attachment satisfies the attachm
 * `TypedConverter.identity_attachGame`, `TypedConverter.comp_attachGame`: the identity and
   serial laws of game attachment
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

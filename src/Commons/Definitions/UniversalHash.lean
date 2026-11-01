@@ -1,5 +1,7 @@
-import ConstructiveCryptography.DSL
-import ConstructiveCryptography.Notation
+module
+
+public import ConstructiveCryptography.DSL
+public import ConstructiveCryptography.Notation
 
 /-!
 # Universal hash functions
@@ -28,6 +30,8 @@ allowed to each of them.
 * `UniversalHash.UHF.systems H q`, `UniversalHash.UHF H error`: UHF
 * `UniversalHash.DUF.systems H q`, `UniversalHash.DUF H error`: DUF
 -/
+
+@[expose] public section
 
 namespace Commons
 

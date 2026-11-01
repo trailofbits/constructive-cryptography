@@ -1,10 +1,11 @@
-import Commons.Tests.Hex
-import Commons.Schemes.KEM.MLKEM.KEM
-import Commons.Schemes.KEM.MLKEM.Concrete.Instance
+module
 
-set_option linter.mathlibStandardSet true
--- These executable tests use `#guard`; the Mathlib library-only command ban does not apply.
-set_option linter.hashCommand false
+public import Commons.Tests.Hex
+public import Commons.Schemes.KEM.MLKEM.KEM
+public import Commons.Schemes.KEM.MLKEM.Concrete.Instance
+public meta import Commons.Schemes.KEM.MLKEM.Concrete.Instance
+public meta import Commons.Schemes.KEM.MLKEM.KEM
+public meta import Commons.Tests.Hex
 
 /-!
 # Known-answer tests for ML-KEM
@@ -15,6 +16,12 @@ ML-KEM-512, ML-KEM-768 and ML-KEM-1024 against the NIST ACVP vectors (`usnistgov
 ciphertexts, and the encapsulation- and decapsulation-key checks. Keys and ciphertexts are compared
 through their SHA3-256 digests. The checks run by evaluation (`#guard`).
 -/
+
+@[expose] public section
+
+set_option linter.mathlibStandardSet true
+-- These executable tests use `#guard`; the Mathlib library-only command ban does not apply.
+set_option linter.hashCommand false
 
 namespace Commons.Tests.MLKEM
 

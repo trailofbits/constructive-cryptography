@@ -1,12 +1,14 @@
-import ConstructiveCryptography.DSL.Equations
-import RandomSystems.Typed.DSL.Syntax
-import RandomSystems.Typed.DSL.Converters
-import RandomSystems.Typed.DSL.Tactics
-import RandomSystems.Typed.Source
-import RandomSystems.Typed.Context
-import RandomSystems.Typed.Filter
-import RandomSystems.Typed.InterfaceCoherence
-import ConstructiveCryptography.Notation
+module
+
+public import ConstructiveCryptography.DSL.Equations
+public import RandomSystems.Typed.DSL.Syntax
+public import RandomSystems.Typed.DSL.Converters
+public import RandomSystems.Typed.DSL.Tactics
+public import RandomSystems.Typed.Source
+public import RandomSystems.Typed.Context
+public import RandomSystems.Typed.Filter
+public import RandomSystems.Typed.InterfaceCoherence
+public import ConstructiveCryptography.Notation
 
 /-!
 # The component compiler
@@ -30,6 +32,8 @@ A declaration that elaborates without errors also gets its per-procedure equatio
 (`elabComponentEquations`), and its newly generated wrappers are registered in
 `component_definitions` (`registerComponentDefinitions`), so that `inline` expands them.
 -/
+
+@[expose] public meta section
 
 namespace SystemAlgebra.DSL
 
@@ -1175,10 +1179,6 @@ partial def outerOf (e : TSyntax `term) (k : TSyntax `term) :
   | `($f:ident $args*) => return some (← `($(Lean.mkIdent (f.getId ++ `outer)) $args* $k))
   | `($f:ident) => return some (← `($(Lean.mkIdent (f.getId ++ `outer)) $k))
   | _ => return none
-
-/-- The budget type of an interface family, inferred from the family's parameter: `ℕ`, or a tuple
-for named outside components. -/
-abbrev BudgetOf {B : Type} (_ : B → Interface) : Type := B
 
 /-- Whether a system expression denotes a converter rather than a typed system. -/
 partial def isConverterExpr (e : TSyntax `term) : Bool :=

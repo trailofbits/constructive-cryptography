@@ -1,4 +1,6 @@
-import RandomSystems.System.Basic
+module
+
+public import RandomSystems.System.Basic
 
 /-!
 # Interface systems and connection by labels
@@ -25,6 +27,8 @@ inputs; attachment, converters and closing with a distinguisher are connections.
 * `attachAlong_eq`, `attachAlong_comm`, `attachAlong_protocol`
 * `close_pair`, `partialClose_isDDD`
 -/
+
+@[expose] public section
 
 -- The case analyses below share one simp set per law; not every case uses every rule.
 set_option linter.unusedSimpArgs false
@@ -72,10 +76,10 @@ noncomputable def connect (s : InterfaceSystem I X Y) (C : Set I) (r : Routing C
   interconnect s (connectRoute C r) (connectInj C)
 
 lemma connectRoute_of_mem {C : Set I} (r : Routing C X Y) {p : Σ i, Y i} (h : p.1 ∈ C) :
-    connectRoute C r p = .inr (liftC (r ⟨p.1, h⟩ p.2)) := dif_pos h
+    connectRoute C r p = .inr (liftC (r ⟨p.1, h⟩ p.2)) := dite_eq_left h
 
 lemma connectRoute_of_not_mem {C : Set I} (r : Routing C X Y) {p : Σ i, Y i} (h : p.1 ∉ C) :
-    connectRoute C r p = .inl ⟨⟨p.1, h⟩, p.2⟩ := dif_neg h
+    connectRoute C r p = .inl ⟨⟨p.1, h⟩, p.2⟩ := dite_eq_right h
 
 /-! ### Vanishing at the level of labels (C1) -/
 
@@ -120,7 +124,7 @@ lemma unionRouting_left (r : Routing C X Y)
     (r' : Routing C' (fun i => X i.1) (fun i => Y i.1)) (p : unionSet C C') (h : p.1 ∈ C)
     (y : Y p) : unionRouting C C' r r' p y =
       ⟨⟨(r ⟨p.1, h⟩ y).1.1, mem_unionSet_left C C' (r ⟨p.1, h⟩ y).1.2⟩, (r ⟨p.1, h⟩ y).2⟩ :=
-  dif_pos h
+  dite_eq_left h
 
 lemma unionRouting_right (r : Routing C X Y)
     (r' : Routing C' (fun i => X i.1) (fun i => Y i.1)) (p : unionSet C C') (h : p.1 ∉ C)
@@ -128,13 +132,13 @@ lemma unionRouting_right (r : Routing C X Y)
       ⟨⟨(r' ⟨⟨p.1, h⟩, mem_of_mem_unionSet C C' p.2 h⟩ y).1.1.1,
         mem_unionSet_right C C' (r' ⟨⟨p.1, h⟩, mem_of_mem_unionSet C C' p.2 h⟩ y).1.2⟩,
         (r' ⟨⟨p.1, h⟩, mem_of_mem_unionSet C C' p.2 h⟩ y).2⟩ :=
-  dif_neg h
+  dite_eq_right h
 
 lemma connectRoute_union_left (r : Routing C X Y)
     (r' : Routing C' (fun i => X i.1) (fun i => Y i.1)) {i : I} (h : i ∈ C) (y : Y i) :
     connectRoute (unionSet C C') (unionRouting C C' r r') ⟨i, y⟩ =
       .inr (liftC (r ⟨i, h⟩ y)) := by
-  simp only [connectRoute, dif_pos (mem_unionSet_left C C' h)]
+  simp only [connectRoute, dite_eq_left (mem_unionSet_left C C' h)]
   rw [unionRouting_left C C' r r' ⟨i, _⟩ h]
   rfl
 
@@ -143,7 +147,7 @@ lemma connectRoute_union_right (r : Routing C X Y)
     (h' : (⟨i, h⟩ : Free C) ∈ C') (y : Y i) :
     connectRoute (unionSet C C') (unionRouting C C' r r') ⟨i, y⟩ =
       .inr (liftC (liftC (r' ⟨⟨i, h⟩, h'⟩ y))) := by
-  simp only [connectRoute, dif_pos (mem_unionSet_right C C' h')]
+  simp only [connectRoute, dite_eq_left (mem_unionSet_right C C' h')]
   rw [unionRouting_right C C' r r' ⟨i, _⟩ h]
   rfl
 
@@ -342,7 +346,7 @@ lemma liftC_pairRouting_p (p q : I) (c₁ : Y p → X q) (c₂ : Y q → X p)
   dsimp only at h
   subst p'
   unfold pairRouting
-  rw [dif_pos rfl]
+  rw [dite_eq_left rfl]
   rfl
 
 lemma liftC_pairRouting_q (p q : I) (hpq : q ≠ p) (c₁ : Y p → X q) (c₂ : Y q → X p)
@@ -352,7 +356,7 @@ lemma liftC_pairRouting_q (p q : I) (hpq : q ≠ p) (c₁ : Y p → X q) (c₂ :
   dsimp only at h
   subst p'
   unfold pairRouting
-  rw [dif_neg hpq]
+  rw [dite_eq_right hpq]
   rfl
 
 /-- Connect `p` with `q`. -/

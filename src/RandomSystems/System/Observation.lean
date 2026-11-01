@@ -1,4 +1,6 @@
-import RandomSystems.System.InterfaceSystem
+module
+
+public import RandomSystems.System.InterfaceSystem
 
 /-!
 # Decisions of distinguishers
@@ -24,6 +26,8 @@ the transcripts of `R` with `D`.
 * `dde_blind_beyond_resources`: without that condition, distinguishers observe
   less than `≈`
 -/
+
+@[expose] public section
 
 set_option linter.unusedSimpArgs false
 
@@ -489,7 +493,7 @@ variable {h : List (Σ i, X i)} {P : List (Σ i, Y i) → Bool}
 lemma probe_dHist {ys : List (Σ i, Y i)} (hv : Fits h ys) :
     probe h P (dHist ys) = probeReply h P ys := by
   have hex : ∃ ys', ys.map envIn = ys'.map envIn ∧ Fits h ys' := ⟨ys, rfl, hv⟩
-  simp only [probe, dHist, dif_pos hex]
+  simp only [probe, dHist, dite_eq_left hex]
   have e : Classical.choose hex = ys :=
     (List.map_injective_iff.mpr envIn_injective (Classical.choose_spec hex).1).symm
   rw [e]

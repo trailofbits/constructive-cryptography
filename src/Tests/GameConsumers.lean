@@ -1,5 +1,7 @@
-import Examples.Games
-import Examples.PRGLengthExtension
+module
+
+public import Examples.Games
+public import Examples.PRGLengthExtension
 
 /-!
 # The joint solver in game and distinction proofs
@@ -10,6 +12,8 @@ length-extension proof; both views feed the AE collision-game proof. Absorbing t
 reduction converters keeps these views tied to the same interaction. The transcript metric
 still ranges over all compatible stopping decision behaviors.
 -/
+
+@[expose] public section
 
 namespace GameConsumerTests
 

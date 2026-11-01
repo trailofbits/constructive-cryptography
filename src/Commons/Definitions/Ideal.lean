@@ -1,7 +1,9 @@
-import ConstructiveCryptography.DSL
-import RandomSystems.Typed.Functional
-import RandomSystems.Typed.Memoryless
-import Mathlib.Data.Fintype.Perm
+module
+
+public import ConstructiveCryptography.DSL
+public import RandomSystems.Typed.Functional
+public import RandomSystems.Typed.Memoryless
+public import Mathlib.Data.Fintype.Perm
 
 /-!
 # Ideal systems
@@ -26,6 +28,8 @@ at each query (CR18, Definition 3.1, printed p. 55: "A source can be memoryless 
 
 * `MemorylessSource.memoryless_eq`: the memoryless source of `ν` is the memoryless system of `ν`
 -/
+
+@[expose] public section
 
 namespace Commons
 

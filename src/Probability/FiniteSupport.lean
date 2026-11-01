@@ -1,4 +1,6 @@
-import Probability.Kernel
+module
+
+public import Probability.Kernel
 
 /-!
 # Probability laws on a chosen finite support
@@ -16,6 +18,8 @@ one finite alphabet when `s` contains the union of their supports.
 
 * `ProbDist.map_onFinset_val`: `val_* (onFinset P s hs) = P`, an exact presentation
 -/
+
+@[expose] public section
 
 namespace Probability.Distribution.ProbDist
 

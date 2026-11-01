@@ -1,4 +1,6 @@
-import Commons.Definitions.AEAD
+module
+
+public import Commons.Definitions.AEAD
 
 /-!
 # Authenticated encryption: the oracle automata
@@ -26,6 +28,8 @@ oracle automata: each by a bisimulation of its compiled automaton.
 * `oracle_system_congr`: oracles agreeing on the first `n` encryptions agree on the histories of
   at most `n` encryptions
 -/
+
+@[expose] public section
 
 open SystemAlgebra SystemAlgebra.DSL SystemAlgebra.Interface Probability
 open Commons

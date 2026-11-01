@@ -1,4 +1,6 @@
-import RandomSystems.PDS.Function
+module
+
+public import RandomSystems.PDS.Function
 
 /-!
 # Restricting the domain of a system
@@ -19,6 +21,8 @@ Lanzenberger–Maurer, Definition 5 (printed p. 11).
 * `HasDomain.filterDom`: a restriction has the restricted domain
 * `replies_filterDom_iff`: on its domain, a restriction replies as the system
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -48,7 +52,7 @@ lemma run_filterDom {X Y : Type} (P : Y → Prop) (D : List X → Prop)
   | nil => rfl
   | append_singleton h x ih =>
     rw [run_snoc, run_snoc]
-    simp only [filterDom, if_pos hd]
+    simp only [filterDom, ite_eq_left hd]
     split_ifs
     · by_cases hn : h = []
       · subst hn; rfl
@@ -110,7 +114,7 @@ lemma replies_filterDom_iff {X Y : Type} {F : List X → Prop}
     Replies (filterDom F s) xs ys ↔ Replies s xs ys := by
   refine ⟨replies_filterDom F s, fun hr => ⟨hr.1, fun k hk hk' => ?_⟩⟩
   have hne : xs.take (k + 1) ≠ [] := List.ne_nil_of_length_pos (by simp; omega)
-  rw [filterDom, if_pos (hF (List.take_prefix _ _) hne (hx fun he => by simp [he] at hne))]
+  rw [filterDom, ite_eq_left (hF (List.take_prefix _ _) hne (hx fun he => by simp [he] at hne))]
   exact hr.2 k hk hk'
 
 lemma HasDomain.filterDom {X Y : Type} {D : Domain X Y} {s : System X Y}

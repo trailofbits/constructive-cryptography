@@ -1,6 +1,8 @@
-import ConstructiveCryptography.DSL.Equations
-import ConstructiveCryptography.Instances.Category
-import RandomSystems.Typed.DSL.Tactics
+module
+
+public import ConstructiveCryptography.DSL.Equations
+public import ConstructiveCryptography.Instances.Category
+public import RandomSystems.Typed.DSL.Tactics
 
 /-! # Inlining a declared component
 
@@ -37,6 +39,8 @@ The command uses only the supplied definitions, named attachment laws and genera
 The caller proves the remaining identities of laws (identity or composed pushforwards, product
 laws) and any state-dependent obligations.
 -/
+
+@[expose] public meta section
 
 namespace SystemAlgebra.DSL
 

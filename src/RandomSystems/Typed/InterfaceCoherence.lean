@@ -1,4 +1,6 @@
-import RandomSystems.Typed.Relabel
+module
+
+public import RandomSystems.Typed.Relabel
 
 /-!
 # Regrouping interfaces
@@ -17,6 +19,8 @@ inputs in either grouping, so the domains correspond exactly. The unit interface
 * `Interface.parallelDomain_assoc`, `Interface.parallelDomain_unit_left`,
   `Interface.parallelDomain_unit_right`: regrouping transports the parallel domain
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.Interface
 

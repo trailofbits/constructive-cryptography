@@ -1,4 +1,6 @@
-import Commons.Schemes.Lattice.Core
+module
+
+public import Commons.Schemes.Lattice.Core
 
 /-!
 # Generic Negacyclic Ring Kernels
@@ -26,6 +28,8 @@ The executable / proof boundary is enforced structurally: `NegacyclicRing` is
 computable and carries no quotient types, while `NegacyclicRingSemantics` is
 `noncomputable` and provides the algebraic soundness bridge.
 -/
+
+@[expose] public section
 
 
 

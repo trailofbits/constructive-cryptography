@@ -1,6 +1,8 @@
-import RandomSystems.Converter.Program
-import RandomSystems.Converter.FilterAttachment
-import RandomSystems.System.Automaton
+module
+
+public import RandomSystems.Converter.Program
+public import RandomSystems.Converter.FilterAttachment
+public import RandomSystems.System.Automaton
 
 /-!
 # Attaching a program
@@ -27,6 +29,8 @@ a system `C(.)` invoking an internal system `F` is the combined system `C(F)`).
 * `Program.combine_bisim`, `Program.combine_congr`: attached to bisimilar automata, or to
   automata with the same system, a program gives bisimilar automata, or the same system
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -202,7 +206,7 @@ lemma exchange_of_feed_none (s : S) {b : ℕ} (hP : P.Bounded b) :
           rw [pair_right, restrict_some_snoc_left, hrh]
         simp only [feed, hs] at hf
         by_cases hd : (r (rh ++ [⟨o, v⟩])).Dom
-        · rw [dif_pos hd] at hf
+        · rw [dite_eq_left hd] at hf
           obtain ⟨G', l, hdead⟩ := exchange_of_feed_none s hP n _ m₁ _ _ hG₁ hsound₁
             (by omega) hrh₁ hf
           refine ⟨G', Exchange.feed (route := resourceRoute) _ _ _ _ _ hy rfl
@@ -533,7 +537,7 @@ lemma feed_automatonSystem (r₀ : R) :
       simp only [emit, hq]
       have hd : (automatonSystem stepR r₀ (rh ++ [⟨q.1, q.2⟩])).Dom :=
         (automatonSystem_dom stepR r₀ _).mpr (by simp)
-      rw [dif_pos hd]
+      rw [dite_eq_left hd]
       have hget : (automatonSystem stepR r₀ (rh ++ [⟨q.1, q.2⟩])).get hd =
           ⟨q.1, (stepR (stateAfter stepR r₀ rh) q.1 q.2).2⟩ := by
         simp [automatonSystem_snoc]

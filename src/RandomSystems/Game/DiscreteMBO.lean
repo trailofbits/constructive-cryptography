@@ -1,4 +1,6 @@
-import RandomSystems.Game.MBO
+module
+
+public import RandomSystems.Game.MBO
 
 /-!
 # Discrete games: presentations of games
@@ -35,6 +37,8 @@ replies with the condition unset factor through `S`.
 * `PDG.conditionallyEquivalent_behavior`: conditional equivalence from the factorization of the
   replies with the condition unset
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -365,7 +369,7 @@ lemma unsetProbability_behavior {xs : List (Σ i, X i)} (hxs : E xs) :
       by_contra hn
       apply Finsupp.mem_support_iff.mp hh
       rw [RandomSystem.sLaw_apply]
-      exact if_neg hn
+      exact ite_eq_right hn
     refine ⟨fun hu => ⟨?_, hu⟩, fun hu => hu.2⟩
     -- Done: either |h| = |xs|, after which there is no further query, or the environment has
     -- stopped already.

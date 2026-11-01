@@ -1,5 +1,7 @@
-import RandomSystems.Typed.Interface
-import RandomSystems.Distance.Distinguisher
+module
+
+public import RandomSystems.Typed.Interface
+public import RandomSystems.Distance.Distinguisher
 
 /-!
 # Typed distinguishers and absorption
@@ -29,6 +31,8 @@ dα ── R   =   d ── α ── R          (dα)(R) = d(αR)
 These laws are about the action only; a selected subset of typed distinguishers need not be
 closed under absorption.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

@@ -1,4 +1,6 @@
-import Mathlib.Tactic.Attr.Register
+module
+
+public import Mathlib.Tactic.Attr.Register
 
 /-! # Equations of generated components
 
@@ -8,6 +10,8 @@ default simp set: expanding a component is an explicit step, `simp only [compone
 or `inline`. `component_definitions` holds the generated wrappers that `inline` unfolds to their
 program constructors.
 -/
+
+@[expose] public meta section
 
 /-- Proved equations for one invocation of a declared system or converter. -/
 register_simp_attr component_equations

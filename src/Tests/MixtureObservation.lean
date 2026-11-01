@@ -1,5 +1,7 @@
-import Tests.TypedNaryParallel
-import RandomSystems.Typed.SamplingDistance
+module
+
+public import Tests.TypedNaryParallel
+public import RandomSystems.Typed.SamplingDistance
 
 /-!
 # Observation and distance of initially sampled systems
@@ -24,6 +26,8 @@ Concrete checks on the fixtures `bitInterface` and `fixedBit c : ()(()) ⇒ c` o
   `natBit` replies `true` with probability `2/3`, and every compatible observer `D` satisfies
   `Pr[D(sample biasedNat R) = 1] = (1/3) · Pr[D(R 0) = 1] + (2/3) · Pr[D(R 1) = 1]`.
 -/
+
+@[expose] public section
 
 open Probability SystemAlgebra
 open scoped NNReal
@@ -138,7 +142,7 @@ lemma sample_single_distance_eq_one :
     (fun h => h = t)
   -- As `t` is good, each transcript-law value is the system's mass: `R(t) − S(t) ≤ δ`.
   rw [Distribution.mass_singleton, Distribution.mass_singleton,
-    RandomSystem.sLaw_apply, RandomSystem.sLaw_apply, if_pos ht, if_pos ht] at hg
+    RandomSystem.sLaw_apply, RandomSystem.sLaw_apply, ite_eq_left ht, ite_eq_left ht] at hg
   -- `R(t) = 1` (component `fixedBit true`) and `S(t) = 0` (component `fixedBit false`).
   norm_num [R, S, TypedSystem.sample_mass, fixedBit, TypedSystem.ofFunction_mass,
     bitInterface, t] at hg
@@ -179,7 +183,6 @@ example : (TypedSystem.sample biasedNat natBit).1 [(⟨(), ()⟩, ⟨(), true⟩
   -- The two support points contribute `1/3 · 0` and `2/3 · 1`, respectively.
   norm_num [biasedNat, Finsupp.support_add_eq, natBit, fixedBit,
     TypedSystem.ofFunction_mass, bitInterface]
-  exact fun h => Bool.false_ne_true h.symm
 
 /-- For any compatible observer `D` and any family `R` on `ℕ`, sampling with
 `P = (1/3)δ₀ + (2/3)δ₁` gives

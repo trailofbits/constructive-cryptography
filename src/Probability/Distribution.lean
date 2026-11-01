@@ -1,14 +1,18 @@
-import Mathlib.Data.Finsupp.Basic
-import Mathlib.Data.Finsupp.Defs
-import Mathlib.Data.Finsupp.SMul
-import Mathlib.Data.Part
-import Mathlib.Data.NNReal.Basic
-import Mathlib.Data.Fintype.Basic
-import Mathlib.Algebra.BigOperators.Group.Finset.Basic
-import Mathlib.Algebra.BigOperators.Ring.Finset
-import Mathlib.LinearAlgebra.Finsupp.LSum
-import Mathlib.Logic.Equiv.Fin.Basic
-import Mathlib.Algebra.BigOperators.Fin
+module
+
+public import Mathlib.Data.Finsupp.Basic
+public import Mathlib.Data.Finsupp.Defs
+public import Mathlib.Data.Finsupp.SMul
+public import Mathlib.Data.Part
+public import Mathlib.Basic.NNReal.Basic
+public import Mathlib.Data.Fintype.Basic
+public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+public import Mathlib.Algebra.BigOperators.Ring.Finset
+public import Mathlib.LinearAlgebra.Finsupp.LSum
+public import Mathlib.Logic.Equiv.Fin.Basic
+public import Mathlib.Algebra.BigOperators.Fin
+
+@[expose] public section
 /-!
 # Finite distributions
 
@@ -40,6 +44,8 @@ Lanzenberger–Maurer, *Coupling of Random Systems*, Definitions 1, 2 and 4.
 * probability is preserved by pushforward, products and finite mixtures:
   `fTransform_isProbDist`, `prod_isProbDist`, `isProbDist_sum_smul`
 -/
+
+@[expose] public section
 
 noncomputable section
 
@@ -334,7 +340,7 @@ lemma mass_true {A : Type*} (X : Distribution A) :
 lemma mass_eq_zero_of_forall_not {A : Type*} (X : Distribution A) {P : A → Prop}
     (h : ∀ a, ¬ P a) : X.mass P = 0 := by
   unfold mass Finsupp.sum
-  exact Finset.sum_eq_zero fun a _ => if_neg (h a)
+  exact Finset.sum_eq_zero fun a _ => ite_eq_right (h a)
 
 /-- Mass depends only on the event up to logical equivalence. -/
 lemma mass_congr {A : Type*} (X : Distribution A) {P Q : A → Prop} (h : ∀ a, P a ↔ Q a) :
@@ -437,7 +443,7 @@ lemma apply_le_mass {A : Type*} {X : Distribution A} (hX : X.NonNeg)
   classical
   by_cases hsupport : a ∈ X.support
   · unfold Distribution.mass Finsupp.sum
-    calc X a = (if P a then X a else 0) := (if_pos ha).symm
+    calc X a = (if P a then X a else 0) := (ite_eq_left ha).symm
       _ ≤ _ := Finset.single_le_sum
           (f := fun a' => if P a' then X a' else 0)
           (fun a' _ => by by_cases h : P a' <;> simp [h, hX a']) hsupport
@@ -464,15 +470,15 @@ lemma mass_or_le {A : Type*} {X : Distribution A} (hX : X.NonNeg) (P Q : A → P
   rw [← Finset.sum_add_distrib]
   refine Finset.sum_le_sum fun a _ => ?_
   by_cases hpq : P a ∨ Q a
-  · rw [if_pos hpq]
+  · rw [ite_eq_left hpq]
     rcases hpq with hp | hq
-    · rw [if_pos hp]
+    · rw [ite_eq_left hp]
       refine le_add_of_nonneg_right ?_
       by_cases hq : Q a <;> simp [hq, hX a]
-    · rw [if_pos hq]
+    · rw [ite_eq_left hq]
       refine le_add_of_nonneg_left ?_
       by_cases hp : P a <;> simp [hp, hX a]
-  · rw [if_neg hpq]
+  · rw [ite_eq_right hpq]
     push Not at hpq
     simp [hpq.1, hpq.2]
 
@@ -1595,7 +1601,7 @@ lemma mass_eq_sum_mass_fiber {A B : Type*} (μ : Distribution A)
   refine Finset.sum_congr rfl fun a ha => ?_
   refine Eq.symm (Eq.trans (Finset.sum_eq_single_of_mem (g a) (hV a ha) ?_) ?_)
   · intro v _ hv
-    exact if_neg fun hc => hv (hc.2.symm)
+    exact ite_eq_right fun hc => hv (hc.2.symm)
   · by_cases hP : P a <;> simp [hP]
 
 /-- The weight of a finite sum of laws is the sum of their weights. -/
@@ -1795,15 +1801,15 @@ lemma marginalAt_pi {ι : Type*} [Fintype ι] [DecidableEq ι] (μ : ι → Dist
             else μ j (f j) := by
     intro f _
     by_cases hf : f i = b
-    · rw [if_pos hf, pi_apply]
+    · rw [ite_eq_left hf, pi_apply]
       refine Finset.prod_congr rfl fun j _ => ?_
       by_cases hj : j = i
       · subst hj
-        rw [if_pos rfl, if_pos hf]
-      · rw [if_neg hj]
-    · rw [if_neg hf]
+        rw [ite_eq_left rfl, ite_eq_left hf]
+      · rw [ite_eq_right hj]
+    · rw [ite_eq_right hf]
       refine (Finset.prod_eq_zero (Finset.mem_univ i) ?_).symm
-      rw [if_pos rfl, if_neg hf]
+      rw [ite_eq_left rfl, ite_eq_right hf]
   have hfubini :
       (∑ f ∈ Fintype.piFinset fun j => (μ j).support,
         ∏ j, if j = i then (if f j = b then μ j (f j) else 0)
@@ -1820,7 +1826,7 @@ lemma marginalAt_pi {ι : Type*} [Fintype ι] [DecidableEq ι] (μ : ι → Dist
         = μ i b := by
     have hred : ∀ a ∈ (μ i).support,
         (if i = i then (if a = b then μ i a else 0) else μ i a)
-          = (if a = b then μ i a else 0) := fun a _ => if_pos rfl
+          = (if a = b then μ i a else 0) := fun a _ => ite_eq_left rfl
     rw [Finset.sum_congr rfl hred,
       Finset.sum_ite_eq' (μ i).support b (fun a => μ i a)]
     split
@@ -1832,7 +1838,7 @@ lemma marginalAt_pi {ι : Type*} [Fintype ι] [DecidableEq ι] (μ : ι → Dist
         = (μ j).weight := by
     intro j hj
     rw [weight_eq_finsupp_sum, Finsupp.sum]
-    exact Finset.sum_congr rfl fun a _ => if_neg (Finset.ne_of_mem_erase hj)
+    exact Finset.sum_congr rfl fun a _ => ite_eq_right (Finset.ne_of_mem_erase hj)
   rw [hifactor, Finset.prod_congr rfl hother, mul_comm]
 
 /-- Under an independent product, an event not depending on coordinate `i` is
@@ -1921,7 +1927,7 @@ lemma fTransform_pi_castLE [Fintype A] [DecidableEq A] (μ : Distribution A) (h�
   simp only [Fin.appendEquiv, Equiv.coe_fn_mk, htrunc, pi_apply, Fin.prod_univ_add,
     Fin.append_left, Fin.append_right, Fintype.sum_prod_type]
   rw [Finset.sum_eq_single f]
-  · simp only [if_true]
+  · simp only [ite_true]
     rw [← Finset.mul_sum, ← Fintype.prod_sum]
     have : ∑ a, μ a = 1 := by rw [← weight_eq_sum]; exact hμ
     simp [this]

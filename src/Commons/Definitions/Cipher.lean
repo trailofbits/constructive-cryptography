@@ -1,4 +1,6 @@
-import Commons.Definitions.Ideal
+module
+
+public import Commons.Definitions.Ideal
 
 /-!
 # Block ciphers
@@ -19,6 +21,8 @@ Planned: the syntax of a Shannon cipher and perfect secrecy (Boneh–Shoup, Chap
 * `BlockCipher.perm`: encryption under a key, as a permutation of the blocks
 * `BlockCipher.Real E`, `BlockCipher.StrongReal E`: `E_k`, and `E_k` with `D_k`, for a uniform key
 -/
+
+@[expose] public section
 
 namespace Commons
 

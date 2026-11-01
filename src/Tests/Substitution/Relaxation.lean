@@ -1,6 +1,6 @@
-import ConstructiveCryptography.Substitution.Relaxation
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.Substitution.Relaxation
 
 /-!
 # Substitution-relaxation tests
@@ -9,6 +9,10 @@ The serial test uses typed intermediate and target interfaces, separate inner
 and transported simulators, and an explicit protocol/simulator commutation
 equation. The negative check ensures that equation cannot be omitted.
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace Tests.Substitution.Relaxation
 
@@ -62,7 +66,7 @@ lemma single_image_has_one_use {A B : C}
     (systems := systems) () false transformation
   refine ⟨attach transformation right, center, implication, leftEq.symm, rfl, ?_⟩
   exact (SubstitutionRelation.Implication.usageCount_single
-    (systems := systems) () () false transformation).trans (if_pos rfl)
+    (systems := systems) () () false transformation).trans (ite_eq_left rfl)
 
 -- Admitted-transform closure, rather than mere type correctness, is required
 -- for converter compatibility of a computationally restricted one-use image.

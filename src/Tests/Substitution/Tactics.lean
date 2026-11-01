@@ -1,6 +1,6 @@
-import ConstructiveCryptography.Tactics.Substitution
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.Tactics.Substitution
 
 /-!
 # Substitution proof commands
@@ -8,6 +8,10 @@ set_option autoImplicit false
 `cc_substitute`, `cc_calc`, `cc_calc counted`, `cc_substitution_chain` and `cc_usage` on
 abstract witnesses and on concrete quantitative chains, including the traced count rules.
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace Tests.Substitution.Tactics
 
@@ -70,11 +74,21 @@ noncomputable def repeatedChain (i : ι) (α : A ⟶ boundary i) :
     _ ≃ α • systems i false := ← i
     _ ≃ α • systems i true := i
 
--- The total length can be inferred from the calculation, rather than entered.
-noncomputable def inferredChain (i : ι) (α : A ⟶ boundary i) := by
+-- The exported signature records the two-use witness type.
+noncomputable def inferredChain (i : ι) (α : A ⟶ boundary i) :
+    Implication boundary systems A 1 := by
   cc_calc counted systems
     α • systems i false ≃ α • systems i true := i
     _ ≃ α • systems i false := ← i
+
+-- Without an expected type, the calculation infers the two-use witness.
+noncomputable example (i : ι) (α : A ⟶ boundary i) :
+    Implication boundary systems A 1 := by
+  let chain := by
+    cc_calc counted systems
+      α • systems i false ≃ α • systems i true := i
+      _ ≃ α • systems i false := ← i
+  exact chain
 
 noncomputable example (i : ι) (α : A ⟶ boundary i) :
     Implication boundary systems A 1 := inferredChain systems i α
@@ -90,10 +104,10 @@ example [DecidableEq ι] (i : ι) (α : A ⟶ boundary i) :
   cc_usage
 
 example [DecidableEq ι] {n : Nat} (chain : Implication boundary systems A n)
-    (i : ι) («given» : chain.usageCount i = 7) : chain.usageCount i = 7 := by
+    (i : ι) (count : chain.usageCount i = 7) : chain.usageCount i = 7 := by
   -- No search for a local proof of an unknown witness's count.
   fail_if_success solve | cc_usage
-  exact given
+  exact count
 
 /-- trace: [ConstructiveCryptography.ProofAutomation.rule] cc_calc counted; assumption=i; reverse=true; transformation=α -/
 #guard_msgs in

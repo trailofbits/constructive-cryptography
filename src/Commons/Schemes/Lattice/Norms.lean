@@ -1,6 +1,8 @@
-import Commons.Schemes.Lattice.VectorBackend
-import Mathlib.Data.ZMod.Basic
-import Mathlib.Data.ZMod.ValMinAbs
+module
+
+public import Commons.Schemes.Lattice.VectorBackend
+public import Mathlib.Data.ZMod.Basic
+public import Mathlib.Data.ZMod.ValMinAbs
 
 /-!
 # Norms For Negacyclic Ring Backends
@@ -20,6 +22,8 @@ Backend-generic norm infrastructure for the lattice ring layer. Defines:
 
 `MLDSA.Arithmetic` assembles its scheme-local norm aliases from `zmodPolyNormOps`.
 -/
+
+@[expose] public section
 
 
 
@@ -71,11 +75,11 @@ variable [NeZero q]
 
 lemma centeredRepr_of_le {x : ZMod q} (h : (x.val : ℤ) ≤ (q : ℤ) / 2) :
     centeredRepr x = x.val := by
-  rw [centeredRepr, ZMod.valMinAbs_def_pos, if_pos (by omega)]
+  rw [centeredRepr, ZMod.valMinAbs_def_pos, ite_eq_left (by omega)]
 
 lemma centeredRepr_of_gt {x : ZMod q} (h : (q : ℤ) / 2 < (x.val : ℤ)) :
     centeredRepr x = (x.val : ℤ) - q := by
-  rw [centeredRepr, ZMod.valMinAbs_def_pos, if_neg (by omega)]
+  rw [centeredRepr, ZMod.valMinAbs_def_pos, ite_eq_right (by omega)]
 
 /-- The centered representative is always at most `q / 2`. -/
 lemma centeredRepr_upper_bound (x : ZMod q) : centeredRepr x ≤ (q : ℤ) / 2 := by

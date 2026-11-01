@@ -1,6 +1,6 @@
-import ConstructiveCryptography.Specification.Relaxation.Defs
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.Specification.Relaxation.Defs
 
 /-!
 # Composition and set laws of relaxations
@@ -17,6 +17,10 @@ On specifications,
 (outer.comp inner) R = outer (inner R)        Relaxation.id X R = R
 ```
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace ConstructiveCryptography.Relaxation
 

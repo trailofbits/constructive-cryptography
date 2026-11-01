@@ -1,4 +1,6 @@
-import RandomSystems.Cumulative.ParallelAll
+module
+
+public import RandomSystems.Cumulative.ParallelAll
 
 /-!
 # The two-component view of a parallel family
@@ -19,6 +21,8 @@ equivalence `optionPair` relates them, and on corresponding transcripts
 * `RandomSystem.optionPair_transcripts`: regrouping preserves consistency and both projections
 * `RandomSystem.parallelAll_option_mass`: the n-ary product of two is the binary product
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

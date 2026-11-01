@@ -1,4 +1,6 @@
-import RandomSystems.Converter.ProbProgramAttachment
+module
+
+public import RandomSystems.Converter.ProbProgramAttachment
 
 /-!
 # Memoryless systems
@@ -49,6 +51,8 @@ program's inside queries:
 
 1. U. Maurer. *Cryptography Foundations*. Lecture notes, ETH Zurich, Spring 2018.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -172,7 +176,7 @@ lemma parallel_memoryless (D : Domain A B) (D' : Domain C E) (ν₁ : A → Prob
   -- of the two systems; such a transcript is a left and a right transcript side by side.
   have hcons : parallelConsistent h := hd.1
   -- For such an `h`: `P(h) = mem(ν₁)(left h) · mem(ν₂)(right h)`, on both sides.
-  rw [parallel_mass, parallel_mass, if_pos hcons]
+  rw [parallel_mass, parallel_mass, ite_eq_left hcons]
   -- Step 3: case on the ports of the query and of the reply.
   -- Case on the systems that receive the query and that give the reply.
   obtain ⟨(_ | ⟨⟩), x⟩ := x <;> obtain ⟨(_ | ⟨⟩), y⟩ := y
@@ -188,8 +192,8 @@ lemma parallel_memoryless (D : Domain A B) (D' : Domain C E) (ν₁ : A → Prob
       simp [parallelRight]
     -- `h · (x, y)` is still consistent; the left chain rule applies, since the left domain
     -- admits `x` after the left transcript (part of `hd`); the port law at the left port is `ν₁`.
-    rw [if_pos (parallelConsistent_snoc.mpr ⟨hcons, rfl⟩), hleft, hright, memoryless_snoc,
-      if_pos hd.2.2, portLaw_apply_mk]
+    rw [ite_eq_left (parallelConsistent_snoc.mpr ⟨hcons, rfl⟩), hleft, hright, memoryless_snoc,
+      ite_eq_left hd.2.2, portLaw_apply_mk]
     simp only [twoLaw]
     -- reorder the product
     ring
@@ -197,11 +201,11 @@ lemma parallel_memoryless (D : Domain A B) (D' : Domain C E) (ν₁ : A → Prob
     -- sides.
     -- Left: `h · (x, y)` is not consistent. Right: the port law gives no mass to a reply at
     -- another port than the queried one.
-    rw [if_neg fun h' => absurd (parallelConsistent_snoc.mp h').2 (by simp),
+    rw [ite_eq_right fun h' => absurd (parallelConsistent_snoc.mp h').2 (by simp),
       portLaw_apply_of_ne _ (by simp), mul_zero]
   · -- A right query with a left reply: impossible on both sides.
     -- (The same two facts as in the previous case.)
-    rw [if_neg fun h' => absurd (parallelConsistent_snoc.mp h').2 (by simp),
+    rw [ite_eq_right fun h' => absurd (parallelConsistent_snoc.mp h').2 (by simp),
       portLaw_apply_of_ne _ (by simp), mul_zero]
   · -- A query and a reply of the right system: the right transcript grows by `(x, y)`, and the
     -- right system multiplies its probability by `ν₂ x y`.
@@ -216,8 +220,8 @@ lemma parallel_memoryless (D : Domain A B) (D' : Domain C E) (ν₁ : A → Prob
       simp [parallelRight]
     -- `h · (x, y)` is still consistent; the right chain rule applies, since the right domain
     -- admits `x` after the right transcript (part of `hd`); the port law there is `ν₂`.
-    rw [if_pos (parallelConsistent_snoc.mpr ⟨hcons, rfl⟩), hleft, hright, memoryless_snoc,
-      if_pos hd.2.2, portLaw_apply_mk]
+    rw [ite_eq_left (parallelConsistent_snoc.mpr ⟨hcons, rfl⟩), hleft, hright, memoryless_snoc,
+      ite_eq_left hd.2.2, portLaw_apply_mk]
     simp only [twoLaw]
     -- reorder the product
     ring
@@ -284,7 +288,7 @@ lemma RandomSystem.ofProbAutomaton_eq_memoryless {S I : Type} {X Y : I → Type}
   -- where `belief_t` is the state law after the transcript `t`, of weight `P(t)`.
   refine eq_memoryless_of_snoc fun t x y hd => ?_
   -- the probability of `t · (x, y)` is the weight of the state law after it
-  rw [ofProbAutomaton_apply, ProbStep.belief_snoc, if_pos hd]
+  rw [ofProbAutomaton_apply, ProbStep.belief_snoc, ite_eq_left hd]
   -- the weight of the transition: the old state law, weighted by the reply probabilities
   rw [ProbStep.weight_transition]
   -- every state replies `y` with the same probability (the step is memoryless) ...

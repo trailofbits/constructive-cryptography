@@ -1,6 +1,6 @@
-import ConstructiveCryptography.Substitution.Implication
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.Substitution.Implication
 
 /-!
 # Construction from implication witnesses
@@ -35,6 +35,10 @@ in `κ`, and the combined count of each name equals its original count; no error
 
 Source: Banfi 2023, §2.4.
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace ConstructiveCryptography.CryptographicAlgebra
 

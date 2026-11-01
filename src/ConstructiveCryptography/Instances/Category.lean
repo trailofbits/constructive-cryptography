@@ -1,5 +1,7 @@
-import RandomSystems.Typed.Interface
-import Mathlib.CategoryTheory.Types.Basic
+module
+
+public import RandomSystems.Typed.Interface
+public import Mathlib.CategoryTheory.Types.Basic
 
 /-!
 # The category of interfaces
@@ -21,6 +23,8 @@ typed systems by `TypedConverter.attach`; attachment is a contravariant functor 
 * `Interface.comp_smul`: attaching a serial composition attaches the inner arrow first,
   `TypedConverter.comp_smul`
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.Interface
 

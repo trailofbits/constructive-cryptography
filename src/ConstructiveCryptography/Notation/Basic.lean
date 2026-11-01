@@ -1,5 +1,7 @@
-import ConstructiveCryptography.CryptographicAlgebra.Game
-import ConstructiveCryptography.CryptographicAlgebra.DistinguisherAction
+module
+
+public import ConstructiveCryptography.CryptographicAlgebra.Game
+public import ConstructiveCryptography.CryptographicAlgebra.DistinguisherAction
 
 /-!
 # Abstract CC notation
@@ -29,6 +31,8 @@ This module imports only abstract classes, so instance modules such as
 further notation: it adds the typed carrier hints for `Δ` and `∥` and registers the
 normalization rules for interfaces.
 -/
+
+@[expose] public meta section
 
 namespace SystemAlgebra
 

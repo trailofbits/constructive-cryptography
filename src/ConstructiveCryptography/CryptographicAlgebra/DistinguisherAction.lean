@@ -1,7 +1,7 @@
-import ConstructiveCryptography.Distinguisher
-import ConstructiveCryptography.Substitution.Reduction
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.Distinguisher
+public import ConstructiveCryptography.Substitution.Reduction
 
 /-!
 # Absorption and admitted reductions
@@ -39,6 +39,10 @@ efficiency. Given that proof, a substitution between `R` and `S` within `ε` tra
 Sources: Banfi, §2.3.3 (printed p. 16), for the transformed loss; MR16, §4.3 (printed
 pp. 12–13), for closure under selected converters only.
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace ConstructiveCryptography
 

@@ -1,6 +1,8 @@
-import RandomSystems.Cumulative.Cumulative
-import RandomSystems.Cumulative.Subprobability
-import RandomSystems.PDS.Conditional
+module
+
+public import RandomSystems.Cumulative.Cumulative
+public import RandomSystems.Cumulative.Subprobability
+public import RandomSystems.PDS.Conditional
 
 /-!
 # Finite presentations
@@ -28,6 +30,8 @@ deterministic systems"); CR18, Definition 3.17 (printed p. 64).
 * `RandomSystem.ofPDSClass_bijective`: random systems are exactly the classes of
   equivalent PDSs
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -117,7 +121,7 @@ def PossibleChoice (g : List (A × B) → A → Option B) : Prop :=
 
 lemma replyChoice_none (h : List (A × B)) (x : A) :
     hp.replyChoice h x none = 1 - (hp.extensionLaw h x).weight / p h := by
-  simp only [replyChoice, Finsupp.add_apply, Finsupp.single_apply, if_true]
+  simp only [replyChoice, Finsupp.add_apply, Finsupp.single_apply, ite_true]
   have h0 : Distribution.fTransform some
       ((hp.extensionLaw h x).mapRange (fun w => w / p h) (zero_div _)) none = 0 :=
     Finsupp.mapDomain_of_notMem_range _ _ (by rintro ⟨b, hb⟩; cases hb)
@@ -195,7 +199,7 @@ lemma mass_replies (hn : ∀ h, n < h.length → p h = 0) (t : List (A × B)) :
     by_cases hl : t.length < n
     · let j : Node A B n := (⟨t, hl⟩, x)
       have hc : ∀ c : Node A B n → Option B, choiceAt c t x = c j := fun c => by
-        simp only [choiceAt, dif_pos hl, j]
+        simp only [choiceAt, dite_eq_left hl, j]
       rw [Distribution.mass_congr _ (fun c => (replies_realization_snoc (choiceAt c) t x y).trans
         (by rw [hc c]))]
       rw [choiceLaw, mass_pi_and_eq (fun j : Node A B n => hp.replyChoice j.1.1 j.2)
@@ -247,9 +251,9 @@ theorem exists_presentation (hn : ∀ h, n < h.length → p h = 0) (P : System A
     fun h => ?_, fun s hs h hr => ?_⟩
   · unfold behaviorMass
     rw [mass_fTransform, ← hp.mass_replies hn h]
-    exact Distribution.mass_congr_of_support _ fun c hc => by simp only [F, dif_pos hc]
+    exact Distribution.mass_congr_of_support _ fun c hc => by simp only [F, dite_eq_left hc]
   · obtain ⟨c, hc, rfl⟩ := mem_support_fTransform _ _ hs
-    simp only [F, dif_pos hc] at hr
+    simp only [F, dite_eq_left hc] at hr
     exact hp.realization_possible _ (hp.choiceAt_supported hn hc) hr
 
 /-- Every possible transcript is produced by a deterministic system with every
@@ -293,7 +297,7 @@ lemma hasDomain_realization (R : RandomSystem A B D) {g : List (A × B) → A �
     | some z => trivial
     | none =>
       have hmem := Finsupp.mem_support_iff.mp (hg t x)
-      rw [hgt, hp.replyChoice_none, hext, R.extensionLaw_weight, if_pos hd,
+      rw [hgt, hp.replyChoice_none, hext, R.extensionLaw_weight, ite_eq_left hd,
         div_self hpos, sub_self] at hmem
       exact absurd rfl hmem
 

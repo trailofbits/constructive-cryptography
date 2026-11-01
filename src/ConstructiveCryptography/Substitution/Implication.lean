@@ -1,6 +1,6 @@
-import ConstructiveCryptography.Substitution.Basic
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.Substitution.Basic
 
 /-!
 # Operations on implication witnesses
@@ -44,6 +44,10 @@ only when some chain of assumption uses returns to `S`.
 
 Source: Banfi 2023, §2.3.1.
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace ConstructiveCryptography.CryptographicAlgebra.SubstitutionRelation
 

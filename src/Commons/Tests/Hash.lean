@@ -1,6 +1,11 @@
-import Commons.Tests.Hex
-import Commons.Schemes.Hash.SHA256
-import Commons.Schemes.Hash.Keccak
+module
+
+public import Commons.Tests.Hex
+public import Commons.Schemes.Hash.SHA256
+public import Commons.Schemes.Hash.Keccak
+public meta import Commons.Schemes.Hash.Keccak
+public meta import Commons.Schemes.Hash.SHA256
+public meta import Commons.Tests.Hex
 
 /-!
 # Known-answer tests for the hash functions
@@ -10,6 +15,8 @@ SHA-3, SHAKE and Keccak-256 against the reference implementations, on inputs aro
 rate: 135, 136 and 200 bytes, and outputs longer than one rate block. The checks run the
 functions by evaluation (`#guard`).
 -/
+
+@[expose] public section
 
 namespace Commons.Tests.Hash
 

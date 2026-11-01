@@ -1,4 +1,6 @@
-import RandomSystems.System.Basic
+module
+
+public import RandomSystems.System.Basic
 
 /-!
 # Deterministic environments
@@ -19,6 +21,8 @@ Systems, Games, and Hardness Amplification*, Definition 2.11.
 `CumulativeObservation` and `Distance.Decision` use them to observe a system at its domain
 bound.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -61,10 +65,10 @@ def limitQueries (E : DDE A B) (n : ℕ) : DDE A B :=
     change (if (ys ++ [y]).length < n then E.1 (ys ++ [y]) else Part.none).Dom at hd
     change (if ys.length < n then E.1 ys else Part.none).Dom
     by_cases hn : (ys ++ [y]).length < n
-    · rw [if_pos hn] at hd
-      rw [if_pos (by simp only [List.length_append, List.length_singleton] at hn; omega)]
+    · rw [ite_eq_left hn] at hd
+      rw [ite_eq_left (by simp only [List.length_append, List.length_singleton] at hn; omega)]
       exact E.2 ys y hd
-    · rw [if_neg hn] at hd
+    · rw [ite_eq_right hn] at hd
       exact hd.elim⟩
 
 /-- The limited environment is bounded by `n` on every reply history. -/

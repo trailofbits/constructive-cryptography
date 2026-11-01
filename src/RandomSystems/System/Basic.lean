@@ -1,7 +1,9 @@
-import Mathlib.Data.PFun
-import Mathlib.Algebra.Order.BigOperators.Group.Finset
-import Mathlib.Logic.Equiv.Basic
-import Mathlib.Data.Fintype.Option
+module
+
+public import Mathlib.Data.PFun
+public import Mathlib.Algebra.Order.BigOperators.Group.Finset
+public import Mathlib.Logic.Equiv.Basic
+public import Mathlib.Data.Fintype.Option
 
 /-!
 # Systems and their wiring
@@ -31,6 +33,8 @@ Lanzenberger–Maurer, *Coupling of Random Systems*, Definition 5.
 * `converges_pair`, `converges_pair_of_terminating`, `interconnect_no_feedback`
 * `trim_behEq`, `trim_prefix_closed`, `IsDDS.trim_eq`
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -852,7 +856,7 @@ lemma length_eq_sum_restrict [Fintype K] (h : List (Σ k, A k)) :
       · subst hk; simp
       · simp [hk]
     rw [List.length_cons, ih, Finset.sum_congr rfl fun k _ => step k, Finset.sum_add_distrib,
-      Finset.sum_eq_single k' (fun k _ hk => if_neg (Ne.symm hk)) (by simp), if_pos rfl]
+      Finset.sum_eq_single k' (fun k _ hk => ite_eq_right (Ne.symm hk)) (by simp), ite_eq_left rfl]
 
 /-- Parallel composition: an input `⟨k, a⟩` is answered by component `k` on
 its own restricted history. Undefined on the empty history. -/
@@ -1616,8 +1620,8 @@ including undefinedness. -/
 lemma trim_snoc_of_reach {h : List X} (hr : Reach s h) (x : X) :
     trim s (h ++ [x]) = s (h ++ [x]) := by
   by_cases hd : (s (h ++ [x])).Dom
-  · exact if_pos (reach_snoc_iff.mpr ⟨hr, hd⟩)
-  · rw [trim, if_neg (fun ht => hd (reach_snoc_iff.mp ht).2), Part.eq_none_iff'.mpr hd]
+  · exact ite_eq_left (reach_snoc_iff.mpr ⟨hr, hd⟩)
+  · rw [trim, ite_eq_right (fun ht => hd (reach_snoc_iff.mp ht).2), Part.eq_none_iff'.mpr hd]
 
 /-- R1: a trimmed system has a prefix-closed domain. -/
 lemma trim_prefix_closed (s : System X Y) {h e : List X} (hd : (trim s (h ++ e)).Dom)
@@ -1722,7 +1726,7 @@ lemma trim_parAll_dom (hs : ∀ k, IsDDS (s k)) (h : List (Σ k, A k)) :
     simp [trim, parAll] at hd
   · rintro ⟨hn, hh⟩
     have hreach := hr.mpr hh
-    rw [trim, if_pos hreach]
+    rw [trim, ite_eq_left hreach]
     exact hreach h [] (by simp) hn
 
 /-- B for parallel composition. -/
@@ -2230,7 +2234,7 @@ lemma converges_pair (hc : CyclesThrough P route) (hb : ∀ h, (a h).Dom → run
     Converges (pair a b) route inj := by
   refine converges_pair_of_measure hc (fun h => n - run P a h) (fun h x w hw hP => ?_)
   have hle := hb _ (Part.dom_iff_mem.mpr ⟨w, hw⟩)
-  rw [run_snoc, if_pos ⟨w, hw, hP⟩] at hle ⊢
+  rw [run_snoc, ite_eq_left ⟨w, hw, hP⟩] at hle ⊢
   omega
 
 /-- Each internal cycle consumes one of the remaining consecutive queries of
@@ -2269,12 +2273,12 @@ lemma Exchange.length_le_of_cycles (hc : CyclesThrough P route)
         subst z
         have hrun : run P a (restrict none G₀ ++ [x]) =
             run P a (restrict none G₀) + 1 := by
-          rw [run_snoc, if_pos ⟨y, hySource, hP⟩]
+          rw [run_snoc, ite_eq_left ⟨y, hySource, hP⟩]
         have hn := hb _ hySource.1
         rw [hrun] at hn
         have hi := ih (G₀ ++ [⟨none, x⟩]) ⟨some (), z'⟩ rfl
         simp only [restrict_none_snoc_left, hrun, List.length_append,
-          List.length_singleton, reduceCtorEq, if_false, if_true] at hi ⊢
+          List.length_singleton, reduceCtorEq, ite_false, ite_true] at hi ⊢
         omega
     · rw [pair_right] at hy
       obtain ⟨y, hy, rfl⟩ := Part.mem_map_iff _ |>.mp hy
@@ -2284,7 +2288,7 @@ lemma Exchange.length_le_of_cycles (hc : CyclesThrough P route)
         subst z
         have hi := ih (G₀ ++ [⟨some (), x⟩]) ⟨none, z'⟩ rfl
         simp only [restrict_none_snoc_right, List.length_append,
-          List.length_singleton, reduceCtorEq, if_false, if_true] at hi ⊢
+          List.length_singleton, reduceCtorEq, ite_false, ite_true] at hi ⊢
         omega
 
 /-- A finite exposed history needs at most `2n + 2` component replies per

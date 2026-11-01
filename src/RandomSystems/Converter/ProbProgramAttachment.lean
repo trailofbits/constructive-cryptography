@@ -1,6 +1,8 @@
-import RandomSystems.Converter.ProgramAttachment
-import RandomSystems.Converter.ConverterAttachment
-import RandomSystems.System.ProbAutomaton
+module
+
+public import RandomSystems.Converter.ProgramAttachment
+public import RandomSystems.Converter.ConverterAttachment
+public import RandomSystems.System.ProbAutomaton
 
 /-!
 # Attaching a program to a probabilistic automaton
@@ -52,6 +54,8 @@ deterministic automaton is the combined automaton, and the program respects simu
 1. U. Maurer. Indistinguishability of Random Systems. In *Advances in Cryptology – EUROCRYPT
    2002*, LNCS 2332, Springer, 2002.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -804,15 +808,15 @@ lemma update_drawLaw (rec : List (Draw R J X Y)) (r : R) (x : Σ j, X j) (o : R 
     -- Step 2: a row already done.
     · -- an earlier cell: the same record
       -- (the entry `k < |rec|` of `rec ++ [_]` is `rec[k]`, so both case splits agree)
-      rw [dif_pos hlt, dif_pos (by simp; omega), List.getElem_append_left hlt]
+      rw [dite_eq_left hlt, dite_eq_left (by simp; omega), List.getElem_append_left hlt]
     · by_cases heq : c.1.val = rec.length
       -- Step 3: the row read now, at another state or query.
       · -- a cell of the current step at another state or query: still a fresh step
-        rw [dif_neg hlt, dif_pos (by simp; omega)]
+        rw [dite_eq_right hlt, dite_eq_left (by simp; omega)]
         -- entry `|rec|` of the new record is the new draw
         have hget : (rec ++ [((r, x), o)])[c.1.val]'(by simp; omega) = ((r, x), o) := by
           simp [heq]
-        rw [hget, if_neg]
+        rw [hget, ite_eq_right]
         -- the new record is at another state or query than `c`
         intro h
         obtain ⟨h₁, h₂⟩ := Prod.mk.inj h
@@ -825,7 +829,7 @@ lemma update_drawLaw (rec : List (Draw R J X Y)) (r : R) (x : Σ j, X j) (o : R 
         rfl
       -- Step 4: a row not yet reached.
       · -- a later cell: a fresh step
-        rw [dif_neg hlt, dif_neg (by simp; omega)]
+        rw [dite_eq_right hlt, dite_eq_right (by simp; omega)]
 
 /-- **Reading the next cell is drawing afresh**: while fewer than `L` steps are done from a
 reachable state, the deterministic step on the table of draws simulates the recording step,
@@ -871,7 +875,7 @@ lemma simulatesAt_drawStep (rd : R × List (Draw R J X Y)) (hk : rd.2.length < L
           (untag ⟨j, x⟩ (t c) (Classical.choice (step r j x).nonempty)).2) := by
     intro t
     -- the guard of `drawStep` holds: `|rec| < L` and `r` is reachable in `L` steps
-    simp only [drawStep, dif_pos (And.intro hk hr), c]
+    simp only [drawStep, dite_eq_left (And.intro hk hr), c]
   -- The simulation equation: the kernel then `drawStep`, against `recording` then the kernel.
   unfold SimulatesAt
   calc bindK (step.drawKernel init L (r, rec)).1

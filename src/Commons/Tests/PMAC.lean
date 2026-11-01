@@ -1,6 +1,11 @@
-import Commons.Tests.Hex
-import Commons.Schemes.BlockCipher.AES
-import Commons.Schemes.MAC.PMAC
+module
+
+public import Commons.Tests.Hex
+public import Commons.Schemes.BlockCipher.AES
+public import Commons.Schemes.MAC.PMAC
+public meta import Commons.Schemes.BlockCipher.AES
+public meta import Commons.Schemes.MAC.PMAC
+public meta import Commons.Tests.Hex
 
 /-!
 # Known-answer tests for PMAC
@@ -10,6 +15,8 @@ https://www.cs.ucdavis.edu/~rogaway/ocb/): the messages `00 01 02 …` of 0, 3, 
 bytes, covering the empty message and partial and full last blocks, and 1000 zero bytes. The
 checks run the functions by evaluation (`#guard`).
 -/
+
+@[expose] public section
 
 namespace Commons.Tests.PMAC
 

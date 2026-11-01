@@ -1,4 +1,6 @@
-import Probability.DependentProduct
+module
+
+public import Probability.DependentProduct
 
 /-!
 # Finite heterogeneous products
@@ -14,6 +16,8 @@ product of `-2 · δ₇` on `ULift.{2} ℕ` by the noninjective parity `n ↦ n 
 (`fTransform_piDep`) gives the rectangle `{f | f k = 1}` mass `-2`: the pushforward law
 holds for signed weights across universes.
 -/
+
+@[expose] public section
 
 namespace Probability.Distribution.Tests
 

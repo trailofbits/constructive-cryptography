@@ -1,10 +1,14 @@
-import ConstructiveCryptography.Tactics.ProofAutomationAttributes
+module
+
+public import ConstructiveCryptography.Tactics.ProofAutomationAttributes
 
 /-! # Shared deterministic CC proof commands
 
 Tracing, bounded rule checking and curated normalization are independent of
 the resource interpretation. Semantic command rules live with their presentation.
 -/
+
+@[expose] public meta section
 
 open Lean.Parser.Tactic
 

@@ -1,8 +1,8 @@
-import ConstructiveCryptography.Specification.Parallel
-import Mathlib.CategoryTheory.Monoidal.Functor
-import Mathlib.CategoryTheory.Monoidal.Types.Basic
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.Specification.Parallel
+public import Mathlib.CategoryTheory.Monoidal.Functor
+public import Mathlib.CategoryTheory.Monoidal.Types.Basic
 
 /-!
 # Cryptographic algebras
@@ -48,6 +48,10 @@ Jost, §2.2 (printed pp. 16–19).
 * `CryptographicAlgebra.Specification.Constructs.serial`,
   `CryptographicAlgebra.Specification.Constructs.parallel`: composition of constructions
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace ConstructiveCryptography
 

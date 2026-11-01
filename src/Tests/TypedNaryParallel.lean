@@ -1,9 +1,11 @@
-import RandomSystems.Typed.ParallelAttachment
-import RandomSystems.Typed.ParallelAllAttachment
-import RandomSystems.Typed.ParallelAllRegroup
+module
 
-import RandomSystems.Typed.ParallelAllPresentation
-import ConstructiveCryptography.Notation
+public import RandomSystems.Typed.ParallelAttachment
+public import RandomSystems.Typed.ParallelAllAttachment
+public import RandomSystems.Typed.ParallelAllRegroup
+
+public import RandomSystems.Typed.ParallelAllPresentation
+public import ConstructiveCryptography.Notation
 
 /-!
 # Typed finite parallel families
@@ -51,6 +53,8 @@ by `optionFamilyAlphabet` (`none ↦ inl`, `some () ↦ inr`).
 The mixed replies `⟨false,()⟩ ⇒ false`, `⟨true,()⟩ ⇒ true` have probability 0 for
 `sharedBit` and `1/2 · 1/2 = 1/4` for `independentBit`.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.Tests
 
@@ -206,7 +210,7 @@ lemma independentBit_mixedReplies_eq_quarter :
     simp only [mixedReplies, RandomSystem.parallelAllConsistent, List.map_cons, List.map_nil,
       List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq,
       Equiv.prodCongr_apply, Prod.map_apply, Equiv.sigmaAssoc, Equiv.coe_fn_mk, and_self]
-  rw [if_pos hc]
+  rw [ite_eq_left hc]
   -- One component, one exchange: `()(()) ⇒ c` has mass `Pr[c' = c] = 1/2` for `c' ← U(Bool)`.
   have single (c : Bool) :
       (TypedSystem.sample (Probability.Distribution.uniform Bool) fixedBit).1

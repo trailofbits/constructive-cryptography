@@ -1,8 +1,10 @@
-import Commons.Schemes.KEM.MLKEM.Primitives
-import Commons.Schemes.KEM.MLKEM.Concrete.NTT
-import Commons.Schemes.KEM.MLKEM.Concrete.Encoding
-import Commons.Schemes.KEM.MLKEM.Concrete.CBD
-import Commons.Schemes.Hash.Keccak
+module
+
+public import Commons.Schemes.KEM.MLKEM.Primitives
+public import Commons.Schemes.KEM.MLKEM.Concrete.NTT
+public import Commons.Schemes.KEM.MLKEM.Concrete.Encoding
+public import Commons.Schemes.KEM.MLKEM.Concrete.CBD
+public import Commons.Schemes.Hash.Keccak
 
 /-!
 # Concrete ML-KEM Instance
@@ -13,6 +15,8 @@ Wires the pure-Lean NTT, encoding, and CBD implementations together with the SHA
 functions of `Commons.Schemes.Hash.Keccak` to produce fully executable `NTTRingOps`, `Encoding`,
 and `Primitives` instances for ML-KEM.
 -/
+
+@[expose] public section
 
 
 

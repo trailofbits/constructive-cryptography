@@ -1,13 +1,17 @@
-import ConstructiveCryptography.Substitution.Quantitative
-import Mathlib.Tactic.FinCases
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.Substitution.Quantitative
+public import Mathlib.Tactic.FinCases
 
 /-!
 # A mixed quantitative chain
 
 Three steps, two uses of one assumption and one statistical step, sum to the stated loss.
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace Tests.Substitution.Quantitative
 

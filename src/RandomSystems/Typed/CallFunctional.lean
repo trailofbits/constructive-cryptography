@@ -1,5 +1,7 @@
-import RandomSystems.Converter.CallTranscript
-import RandomSystems.Typed.Functional
+module
+
+public import RandomSystems.Converter.CallTranscript
+public import RandomSystems.Typed.Functional
 
 /-!
 # DDCs attached to fixed functions
@@ -22,6 +24,8 @@ returns `g u`, turns the functional system of `f` into that of `g`:
   existing deterministic attachment
 * `ofDDC_smul_ofFunction`: `ofDDC a ha • ofFunction f = ofFunction g`
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.TypedConverter
 

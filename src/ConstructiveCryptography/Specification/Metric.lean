@@ -1,5 +1,7 @@
-import ConstructiveCryptography.Specification.Parallel
-import ConstructiveCryptography.Specification.Relaxation.Epsilon
+module
+
+public import ConstructiveCryptography.Specification.Parallel
+public import ConstructiveCryptography.Specification.Relaxation.Epsilon
 
 /-!
 # Construction within scalar error
@@ -28,6 +30,8 @@ resource ── f ──▶ f resource  ≈ε  middleResource ∈ middle
           ⇒ edist (g (f resource)) ideal ≤ ε + δ           (triangle inequality)
 ```
 -/
+
+@[expose] public section
 
 namespace ConstructiveCryptography.Specification
 

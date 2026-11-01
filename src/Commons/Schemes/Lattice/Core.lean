@@ -1,9 +1,11 @@
-import Init.Data.Vector.Basic
-import Mathlib.LinearAlgebra.Matrix.Defs
-import Mathlib.RingTheory.AdjoinRoot
-import Mathlib.RingTheory.Ideal.Operations
-import Mathlib.RingTheory.Ideal.Quotient.Basic
-import Mathlib.RingTheory.Polynomial.Basic
+module
+
+public import Init.Data.Vector.Basic
+public import Mathlib.LinearAlgebra.Matrix.Defs
+public import Mathlib.RingTheory.AdjoinRoot
+public import Mathlib.RingTheory.Ideal.Operations
+public import Mathlib.RingTheory.Ideal.Quotient.Basic
+public import Mathlib.RingTheory.Polynomial.Basic
 
 /-!
 # Generic Negacyclic Ring Core
@@ -20,6 +22,8 @@ All definitions here are purely semantic — no executable array operations or m
 state. Executable array exposure is layered on top in `LatticeCrypto.Ring.Kernel`, and
 the canonical vector-backed instantiation lives in `LatticeCrypto.Ring.VectorBackend`.
 -/
+
+@[expose] public section
 
 
 
@@ -217,7 +221,7 @@ lemma PolyBackend.toPolynomial_coeff_high {R : Type u} [CommRing R]
   apply Finset.sum_eq_zero
   intro i _
   simp only [Polynomial.coeff_monomial]
-  exact if_neg (Nat.ne_of_lt (i.isLt.trans_le hj))
+  exact ite_eq_right (Nat.ne_of_lt (i.isLt.trans_le hj))
 
 /-- `ofBackend` is injective: distinct backend carriers map to distinct
 elements of the negacyclic quotient. Holds for any `CommRing` coefficient type. -/

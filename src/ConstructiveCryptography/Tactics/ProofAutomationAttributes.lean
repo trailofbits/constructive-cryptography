@@ -1,4 +1,6 @@
-import Mathlib.Tactic.Attr.Register
+module
+
+public import Mathlib.Tactic.Attr.Register
 
 /-!
 # Constructive Cryptography proof-automation attributes
@@ -9,6 +11,8 @@ declares it.  Semantic rules are selected only by
 `ConstructiveCryptography.Tactics.ProofAutomation`; CC definition modules do
 not import this metaprogramming layer.
 -/
+
+@[expose] public meta section
 
 /-- Terminating equations that put selected CC expressions into the documented
 paper normal form. -/

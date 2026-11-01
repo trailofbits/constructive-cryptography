@@ -1,4 +1,6 @@
-import RandomSystems.DDC.DDCParallelLaws
+module
+
+public import RandomSystems.DDC.DDCParallelLaws
 
 /-!
 # Relabeling converters
@@ -24,6 +26,8 @@ renaming converter that forwards between two outside vocabularies.
 * `ResponsiveConverter.ofConverter_mass`: the behavior of a converter read as a
   probabilistic converter
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -61,11 +65,11 @@ lemma replyLabel_outsideMap (h : List (Σ l, twoFam U' Y l)) :
   by_cases hd : (α (h.map (outsideMap f))).Dom
   · have hd' : (relabel α (outsideMap f) (outsideMap g) h).Dom := by
       simpa only [relabel, Part.map_Dom] using hd
-    rw [dif_pos hd, dif_pos hd']
+    rw [dite_eq_left hd, dite_eq_left hd']
     exact congrArg some (outsideMap_fst e.symm g hg _)
   · have hd' : ¬ (relabel α (outsideMap f) (outsideMap g) h).Dom := by
       simpa only [relabel, Part.map_Dom] using hd
-    rw [dif_neg hd, dif_neg hd']
+    rw [dite_eq_right hd, dite_eq_right hd']
     rfl
 
 include hf hg in

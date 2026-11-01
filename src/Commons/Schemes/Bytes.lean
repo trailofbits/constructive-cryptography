@@ -1,6 +1,8 @@
-import Mathlib.Data.FinEnum
-import Mathlib.Data.Fintype.Pi
-import Mathlib.Data.LawfulXor.Basic
+module
+
+public import Mathlib.Data.FinEnum
+public import Mathlib.Data.Fintype.Pi
+public import Mathlib.Data.LawfulXor.Basic
 
 /-!
 # Byte strings
@@ -15,6 +17,8 @@ are finite, so byte strings of a fixed length are, and so are those of a bounded
 * `Bytes.xor`: bytewise exclusive or, the `^^^` of `Bytes n`, lawful with `0` as identity
 * `ByteString ℓ`: the byte strings of length at most `ℓ`
 -/
+
+@[expose] public section
 
 namespace Commons
 

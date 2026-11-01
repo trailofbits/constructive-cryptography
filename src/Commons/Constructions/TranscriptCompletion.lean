@@ -1,5 +1,7 @@
-import Commons.Definitions.Ideal
-import Probability.FiniteSupport
+module
+
+public import Commons.Definitions.Ideal
+public import Probability.FiniteSupport
 
 /-!
 # Converters for conditional completion of an experiment
@@ -51,6 +53,8 @@ decoding by `jointLaw_map`, `TypedSystem.fTransform_boundedTranscriptLaw` and
 `RandomSystem.kernelLaw_eq_jointLaw` gives the completed laws used by
 `TypedSystem.transcriptDistance_le_of_completion`.
 -/
+
+@[expose] public section
 
 namespace Commons.TranscriptCompletion
 

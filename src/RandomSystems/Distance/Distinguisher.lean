@@ -1,5 +1,7 @@
-import RandomSystems.Distance.Absorption
-import RandomSystems.Distance.ParallelObservation
+module
+
+public import RandomSystems.Distance.Absorption
+public import RandomSystems.Distance.ParallelObservation
 
 /-!
 # Probabilistic distinguishers
@@ -42,6 +44,8 @@ serial composition is absorbing its PDCs in turn.
 * `Domain.DistinguisherBehavior.absorb_comp`: absorbing a serial composition absorbs its PDCs
   in turn
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

@@ -1,5 +1,7 @@
-import Examples.AuthenticatedEncryption.Security
-import Examples.Games
+module
+
+public import Examples.AuthenticatedEncryption.Security
+public import Examples.Games
 
 /-!
 # Authenticated encryption: checks and axioms
@@ -9,6 +11,8 @@ layer, and the implication; the plaintext filter and the ideal transformation re
 before any encryption. The development depends only on `propext`, `Classical.choice` and
 `Quot.sound`.
 -/
+
+@[expose] public section
 
 open SystemAlgebra SystemAlgebra.Interface Probability CategoryTheory
 open CategoryTheory.MonoidalCategory

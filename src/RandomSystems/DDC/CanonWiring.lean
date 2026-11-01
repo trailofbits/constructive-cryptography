@@ -1,5 +1,7 @@
-import RandomSystems.Converter.ConverterDomain
-import RandomSystems.Converter.PartialIdentity
+module
+
+public import RandomSystems.Converter.ConverterDomain
+public import RandomSystems.Converter.PartialIdentity
 
 /-!
 # Canonical converters in serial wiring
@@ -17,6 +19,8 @@ exactly the completed histories of the unrestricted composition.
 * `replies_serialM_canon_iff`: canonical restriction commutes with serial
   composition on admitted histories
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

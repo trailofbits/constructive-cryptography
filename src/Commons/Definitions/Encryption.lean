@@ -1,5 +1,7 @@
-import ConstructiveCryptography.DSL
-import ConstructiveCryptography.Notation
+module
+
+public import ConstructiveCryptography.DSL
+public import ConstructiveCryptography.Notation
 
 /-!
 # Symmetric encryption
@@ -37,6 +39,8 @@ encrypts `m_L` in one system and `m_R` in the other, both transformations of `E_
 * `Encryption.LORCPA.systems scheme q`, `Encryption.LORCPA scheme error`:
   left-or-right CPA
 -/
+
+@[expose] public section
 
 namespace Commons
 

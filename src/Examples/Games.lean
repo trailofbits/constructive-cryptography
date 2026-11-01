@@ -1,6 +1,8 @@
-import ConstructiveCryptography.Instances.Game
-import Examples.AuthenticatedEncryption.Collision
-import RandomSystems.Game.DiscreteMBO
+module
+
+public import ConstructiveCryptography.Instances.Game
+public import Examples.AuthenticatedEncryption.Collision
+public import RandomSystems.Game.DiscreteMBO
 
 /-!
 # Games
@@ -35,6 +37,8 @@ construction (`attach_hybrid_ideal_advantage_le`).
 * `hybrid_ideal_advantage_le`, `attach_hybrid_ideal_advantage_le`: the collision step through
   the games layer
 -/
+
+@[expose] public section
 
 universe u v w x
 

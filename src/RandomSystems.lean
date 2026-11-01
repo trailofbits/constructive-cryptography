@@ -1,104 +1,106 @@
-import RandomSystems.Distance.Observation
-import RandomSystems.Typed.Completion
-import RandomSystems.Typed.Distinguisher
-import RandomSystems.Distance.Mixture
-import RandomSystems.Typed.SamplingDistance
-import RandomSystems.Cumulative.Revealed
-import RandomSystems.Distance.RevealedHCoefficient
-import RandomSystems.Converter.ConverterAttachment
-import RandomSystems.Converter.ConverterDomain
-import RandomSystems.Converter.ConverterRelabel
-import RandomSystems.Converter.ConverterTensor
-import RandomSystems.Converter.CallRuleTranscript
-import RandomSystems.Converter.EmptyInterface
-import RandomSystems.Converter.FilterAttachment
-import RandomSystems.Converter.Identity
-import RandomSystems.Converter.PartialConverter
-import RandomSystems.Converter.PartialIdentity
-import RandomSystems.Converter.Program
-import RandomSystems.Converter.ProgramAttachment
-import RandomSystems.Converter.ProbProgramAttachment
-import RandomSystems.Converter.ParallelPDS
-import RandomSystems.Converter.ParallelAll
-import RandomSystems.Converter.PDCBehavior
-import RandomSystems.Converter.ResourceAttachment
-import RandomSystems.Converter.ResourceCanon
-import RandomSystems.Converter.SerialAccounting
-import RandomSystems.Converter.QueryRouting
-import RandomSystems.Cumulative.ConnectionObservation
-import RandomSystems.Cumulative.Cumulative
-import RandomSystems.Cumulative.CumulativeAttachment
-import RandomSystems.Cumulative.CumulativeObservation
-import RandomSystems.Cumulative.CumulativeOperations
-import RandomSystems.Cumulative.ParallelAll
-import RandomSystems.Cumulative.ParallelAllPresentation
-import RandomSystems.Cumulative.Presentation
-import RandomSystems.Cumulative.Subprobability
-import RandomSystems.DDC.Absorb
-import RandomSystems.DDC.CanonWiring
-import RandomSystems.DDC.DDC
-import RandomSystems.DDC.DDCParallelLaws
-import RandomSystems.DDC.DDCRelabel
-import RandomSystems.DDC.Serial
-import RandomSystems.DDC.SerialCost
-import RandomSystems.DDC.SingleAlphabet
-import RandomSystems.DDC.Tensor
-import RandomSystems.Distance.Absorption
-import RandomSystems.Distance.Coupling
-import RandomSystems.Distance.Decision
-import RandomSystems.Distance.Distinguisher
-import RandomSystems.Distance.HCoefficient
-import RandomSystems.Distance.ParallelObservation
-import RandomSystems.Distance.Restriction
-import RandomSystems.Distance.Transcript
-import RandomSystems.Distance.UntilBad
-import RandomSystems.Game.DiscreteMBO
-import RandomSystems.Game.FunctionGame
-import RandomSystems.Game.MBO
-import RandomSystems.Game.MBOAttachment
-import RandomSystems.Game.UntilBad
-import RandomSystems.PDS.Conditional
-import RandomSystems.PDS.Filter
-import RandomSystems.PDS.Function
-import RandomSystems.PDS.PDS
-import RandomSystems.System.Basic
-import RandomSystems.System.DDE
-import RandomSystems.System.InterfaceSystem
-import RandomSystems.System.Memoryless
-import RandomSystems.System.Observation
-import RandomSystems.System.ProbAutomaton
-import RandomSystems.System.Replies
-import RandomSystems.Typed.Automaton
-import RandomSystems.Typed.Context
-import RandomSystems.Typed.ConverterCoherence
-import RandomSystems.Typed.DDCCoherence
-import RandomSystems.Typed.Distance
-import RandomSystems.Typed.DSL.Converters
-import RandomSystems.Typed.DSL.Probability
-import RandomSystems.Typed.DSL.Programs
-import RandomSystems.Typed.DSL.Syntax
-import RandomSystems.Typed.DSL.Tactics
-import RandomSystems.Typed.Filter
-import RandomSystems.Typed.Functional
-import RandomSystems.Typed.CallRuleFunctional
-import RandomSystems.Typed.Game
-import RandomSystems.Typed.Interface
-import RandomSystems.Typed.InterfaceCoherence
-import RandomSystems.Typed.Memoryless
-import RandomSystems.Typed.Parallel
-import RandomSystems.Typed.ParallelAttachment
-import RandomSystems.Typed.ParallelAll
-import RandomSystems.Typed.ParallelAllPresentation
-import RandomSystems.Typed.ParallelAllAttachment
-import RandomSystems.Typed.ParallelAllRegroup
-import RandomSystems.Typed.PresentedGame
-import RandomSystems.Typed.Relabel
-import RandomSystems.Typed.QueryRouting
-import RandomSystems.Typed.SamplingAlgebra
-import RandomSystems.Typed.Source
-import RandomSystems.Typed.SystemCoherence
-import RandomSystems.Typed.SystemParallel
-import RandomSystems.Typed.TensorRename
+module
+
+public import RandomSystems.Distance.Observation
+public import RandomSystems.Typed.Completion
+public import RandomSystems.Typed.Distinguisher
+public import RandomSystems.Distance.Mixture
+public import RandomSystems.Typed.SamplingDistance
+public import RandomSystems.Cumulative.Revealed
+public import RandomSystems.Distance.RevealedHCoefficient
+public import RandomSystems.Converter.ConverterAttachment
+public import RandomSystems.Converter.ConverterDomain
+public import RandomSystems.Converter.ConverterRelabel
+public import RandomSystems.Converter.ConverterTensor
+public import RandomSystems.Converter.CallRuleTranscript
+public import RandomSystems.Converter.EmptyInterface
+public import RandomSystems.Converter.FilterAttachment
+public import RandomSystems.Converter.Identity
+public import RandomSystems.Converter.PartialConverter
+public import RandomSystems.Converter.PartialIdentity
+public import RandomSystems.Converter.Program
+public import RandomSystems.Converter.ProgramAttachment
+public import RandomSystems.Converter.ProbProgramAttachment
+public import RandomSystems.Converter.ParallelPDS
+public import RandomSystems.Converter.ParallelAll
+public import RandomSystems.Converter.PDCBehavior
+public import RandomSystems.Converter.ResourceAttachment
+public import RandomSystems.Converter.ResourceCanon
+public import RandomSystems.Converter.SerialAccounting
+public import RandomSystems.Converter.QueryRouting
+public import RandomSystems.Cumulative.ConnectionObservation
+public import RandomSystems.Cumulative.Cumulative
+public import RandomSystems.Cumulative.CumulativeAttachment
+public import RandomSystems.Cumulative.CumulativeObservation
+public import RandomSystems.Cumulative.CumulativeOperations
+public import RandomSystems.Cumulative.ParallelAll
+public import RandomSystems.Cumulative.ParallelAllPresentation
+public import RandomSystems.Cumulative.Presentation
+public import RandomSystems.Cumulative.Subprobability
+public import RandomSystems.DDC.Absorb
+public import RandomSystems.DDC.CanonWiring
+public import RandomSystems.DDC.DDC
+public import RandomSystems.DDC.DDCParallelLaws
+public import RandomSystems.DDC.DDCRelabel
+public import RandomSystems.DDC.Serial
+public import RandomSystems.DDC.SerialCost
+public import RandomSystems.DDC.SingleAlphabet
+public import RandomSystems.DDC.Tensor
+public import RandomSystems.Distance.Absorption
+public import RandomSystems.Distance.Coupling
+public import RandomSystems.Distance.Decision
+public import RandomSystems.Distance.Distinguisher
+public import RandomSystems.Distance.HCoefficient
+public import RandomSystems.Distance.ParallelObservation
+public import RandomSystems.Distance.Restriction
+public import RandomSystems.Distance.Transcript
+public import RandomSystems.Distance.UntilBad
+public import RandomSystems.Game.DiscreteMBO
+public import RandomSystems.Game.FunctionGame
+public import RandomSystems.Game.MBO
+public import RandomSystems.Game.MBOAttachment
+public import RandomSystems.Game.UntilBad
+public import RandomSystems.PDS.Conditional
+public import RandomSystems.PDS.Filter
+public import RandomSystems.PDS.Function
+public import RandomSystems.PDS.PDS
+public import RandomSystems.System.Basic
+public import RandomSystems.System.DDE
+public import RandomSystems.System.InterfaceSystem
+public import RandomSystems.System.Memoryless
+public import RandomSystems.System.Observation
+public import RandomSystems.System.ProbAutomaton
+public import RandomSystems.System.Replies
+public import RandomSystems.Typed.Automaton
+public import RandomSystems.Typed.Context
+public import RandomSystems.Typed.ConverterCoherence
+public import RandomSystems.Typed.DDCCoherence
+public import RandomSystems.Typed.Distance
+public import RandomSystems.Typed.DSL.Converters
+public import RandomSystems.Typed.DSL.Probability
+public import RandomSystems.Typed.DSL.Programs
+public import RandomSystems.Typed.DSL.Syntax
+public import RandomSystems.Typed.DSL.Tactics
+public import RandomSystems.Typed.Filter
+public import RandomSystems.Typed.Functional
+public import RandomSystems.Typed.CallRuleFunctional
+public import RandomSystems.Typed.Game
+public import RandomSystems.Typed.Interface
+public import RandomSystems.Typed.InterfaceCoherence
+public import RandomSystems.Typed.Memoryless
+public import RandomSystems.Typed.Parallel
+public import RandomSystems.Typed.ParallelAttachment
+public import RandomSystems.Typed.ParallelAll
+public import RandomSystems.Typed.ParallelAllPresentation
+public import RandomSystems.Typed.ParallelAllAttachment
+public import RandomSystems.Typed.ParallelAllRegroup
+public import RandomSystems.Typed.PresentedGame
+public import RandomSystems.Typed.Relabel
+public import RandomSystems.Typed.QueryRouting
+public import RandomSystems.Typed.SamplingAlgebra
+public import RandomSystems.Typed.Source
+public import RandomSystems.Typed.SystemCoherence
+public import RandomSystems.Typed.SystemParallel
+public import RandomSystems.Typed.TensorRename
 
 /-!
 Random systems: raw systems and connection, deterministic converters, PDSs, cumulative random

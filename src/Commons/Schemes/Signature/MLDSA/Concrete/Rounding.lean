@@ -1,9 +1,11 @@
-import Commons.Schemes.Signature.MLDSA.Arithmetic
-import Commons.Schemes.Lattice.Norms
-import Batteries.Data.Vector.Lemmas
-import Mathlib.Data.Int.Lemmas
-import Mathlib.Data.Int.NatAbs
-import Mathlib.Data.ZMod.ValMinAbs
+module
+
+public import Commons.Schemes.Signature.MLDSA.Arithmetic
+public import Commons.Schemes.Lattice.Norms
+public import Batteries.Data.Vector.Lemmas
+public import Mathlib.Data.Int.Lemmas
+public import Mathlib.Data.Int.NatAbs
+public import Mathlib.Data.ZMod.ValMinAbs
 
 /-!
 # Concrete Rounding for ML-DSA
@@ -23,6 +25,8 @@ The concrete high-order representations are kept in `Rq`, matching the rest of t
 ML-DSA ring layer and avoiding conversion overhead in the verifier equation
 `Az - c · (t₁ · 2^d)`.
 -/
+
+@[expose] public section
 
 
 

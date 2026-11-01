@@ -1,4 +1,6 @@
-import RandomSystems.DDC.SingleAlphabet
+module
+
+public import RandomSystems.DDC.SingleAlphabet
 
 /-!
 # Absorbing a converter into a distinguisher
@@ -17,6 +19,8 @@ For a converter `α` attached along `ι` and a distinguisher `D`, the distinguis
 * `absorbL_isDDD`: `D ⋄ α` is a distinguisher, with bound `n (b + 1)`
 * `IsDDC.count_le`: a converter's inside inputs are bounded by its outside inputs
 -/
+
+@[expose] public section
 
 set_option linter.unusedSimpArgs false
 
@@ -214,13 +218,13 @@ lemma IsDDC.count_le (hα : IsDDC b α) :
     have hrun : insideRun α (h₀ ++ [z]) = if IsInside y then insideRun α h₀ + 1 else 0 := by
       rw [insideRun, run_snoc]
       by_cases hi : IsInside y
-      · rw [if_pos ⟨y, hy, hi⟩, if_pos hi]; rfl
-      · rw [if_neg (fun ⟨y', hy', hi'⟩ => hi (Part.mem_unique hy hy' ▸ hi')), if_neg hi]
+      · rw [ite_eq_left ⟨y, hy, hi⟩, ite_eq_left hi]; rfl
+      · rw [ite_eq_right (fun ⟨y', hy', hi'⟩ => hi (Part.mem_unique hy hy' ▸ hi')), ite_eq_right hi]
     rw [outerCount_snoc, innerCount_snoc, hrun]
     rcases eq_or_ne h₀ [] with rfl | hne
     · have hz : z.1.1 = none := by
         simpa [Admits, replyLabel_nil_of_silentAtEmpty hα, admitAfter] using hadm
-      simp only [outerCount, innerCount, List.countP_nil, hz, if_true, insideRun, run_nil]
+      simp only [outerCount, innerCount, List.countP_nil, hz, ite_true, insideRun, run_nil]
       constructor
       · intro hi
         simp [hi]
@@ -239,12 +243,12 @@ lemma IsDDC.count_le (hα : IsDDC b α) :
       rcases y₀ with ⟨⟨_ | ⟨⟨⟩⟩, l₀⟩, v₀⟩
       · have hz : z.1.1 = none := by simpa [Admits, hl, admitAfter] using hadm
         have ih₂ := ih₂ (by simp [IsInside])
-        simp only [hz, if_true, if_false, Nat.mul_succ] at *
-        constructor <;> intro hi <;> (try simp only [hi, if_true, if_false]) <;> omega
+        simp only [hz, ite_true, ite_false, Nat.mul_succ] at *
+        constructor <;> intro hi <;> (try simp only [hi, ite_true, ite_false]) <;> omega
       · have hz : z.1 = ⟨some (), l₀⟩ := by simpa [Admits, hl, admitAfter] using hadm
         have ih₁ := ih₁ rfl
-        simp only [hz, reduceCtorEq, if_false, if_true, Nat.add_zero] at *
-        constructor <;> intro hi <;> (try simp only [hi, if_true, if_false]) <;> omega
+        simp only [hz, reduceCtorEq, ite_false, ite_true, Nat.add_zero] at *
+        constructor <;> intro hi <;> (try simp only [hi, ite_true, ite_false]) <;> omega
 
 lemma IsDDC.innerCount_le (hα : IsDDC b α) {h} (hd : (α h).Dom) :
     innerCount h ≤ b * outerCount h := by
@@ -352,7 +356,7 @@ lemma ab_exchange {G o G'} (l : Exchange (pair D α) (abRoute ι) G o G') :
           refine ih out e (Or.inr ⟨_, _, rfl, by simpa using hr', by simp, ⟨o', h, by simpa using hl⟩,
             ?_, ?_⟩)
           · simp only [restrict_some_snoc_right, restrict_some_snoc_left, restrict_none_snoc_left,
-              outerCount_snoc, List.length_append, List.length_singleton, if_true]
+              outerCount_snoc, List.length_append, List.length_singleton, ite_true]
             have := hcnt.1
             omega
           · simpa only [restrict_some_snoc_left] using hcnt.2

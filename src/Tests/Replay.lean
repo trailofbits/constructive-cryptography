@@ -1,4 +1,6 @@
-import Probability.Replay
+module
+
+public import Probability.Replay
 
 /-!
 # Adaptive replay and public table constraints
@@ -17,6 +19,8 @@ The replay sites `none` and `some b` avoid the public site `some false` exactly 
 Off that event the factorization fails: at `y = (false, false)` the second replay site is the
 public site, so only two entries are constrained, with mass `1/4` rather than `(1/2)^3 = 1/8`.
 -/
+
+@[expose] public section
 
 namespace Probability.Tests.Replay
 

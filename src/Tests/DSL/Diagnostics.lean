@@ -1,4 +1,6 @@
-import ConstructiveCryptography.DSL
+module
+
+public import ConstructiveCryptography.DSL
 
 /-!
 # DSL diagnostics
@@ -9,6 +11,8 @@ with the messages below, components that mention the reserved budget names, infi
 missing replies, hidden calls, shadowed state, returns in initialization, laws that depend on
 bindings, inside calls in initialization, unknown names and ill-typed replies.
 -/
+
+@[expose] public section
 
 open SystemAlgebra SystemAlgebra.DSL
 open scoped SystemAlgebra.DSL

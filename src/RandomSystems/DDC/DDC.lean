@@ -1,4 +1,6 @@
-import RandomSystems.System.Observation
+module
+
+public import RandomSystems.System.Observation
 
 /-!
 # Deterministic discrete converters
@@ -38,6 +40,8 @@ printed pp. 17–18.
 * `pair_congr_right`, `Exchange.congr_right`, `Induces.congr_right`: an
   attachment depends only on the replies to the queries made
 -/
+
+@[expose] public section
 
 set_option linter.unusedSimpArgs false
 
@@ -195,7 +199,7 @@ noncomputable def canon (c : InsideOutsideSystem O J U V Xi Yi) : InsideOutsideS
   if Admissible c h then c h else Part.none
 
 lemma canon_of_admissible {c : InsideOutsideSystem O J U V Xi Yi} {h} (ha : Admissible c h) :
-    canon c h = c h := if_pos ha
+    canon c h = c h := ite_eq_left ha
 
 lemma replyLabel_canon {c : InsideOutsideSystem O J U V Xi Yi} {h} (ha : Admissible c h) :
     replyLabel (canon c) h = replyLabel c h := by
@@ -517,7 +521,7 @@ lemma along_induces (hι : Function.Injective ι) (hα : IsResponsiveDDC b α) (
     AlongIdle α H ∧ ∀ u' a, u = u' ++ [a] → ∃ c, o = some c ∧ c.1 = a.1 := by
   induction r with
   | nil => exact ⟨⟨admissible_nil, fun h => absurd rfl h, fun j => by
-      rw [restrict_nil, replyLabel, dif_neg hα.dds.1]; simp⟩, fun u' a e => by simp at e⟩
+      rw [restrict_nil, replyLabel, dite_eq_right hα.dds.1]; simp⟩, fun u' a e => by simp at e⟩
   | snoc u a o₀ H o H' _ lx ih =>
     obtain ⟨⟨ha, hd, hi⟩, -⟩ := ih
     suffices hfin : AlongIdle α H' ∧ ∃ c, o = some c ∧ c.1 = a.1 by
@@ -702,10 +706,10 @@ noncomputable def idAlongIn : (Σ _ : I, X) →
 
 lemma idAlongIn_of_mem {a : Σ _ : I, X} (h : a.1 ∈ Set.range ι) :
     idAlongIn (Y := Y) ι a =
-      ⟨⟨⟨none, ⟨none, Classical.choose h⟩⟩, outside_not_mem_alongSet ι _⟩, a.2⟩ := dif_pos h
+      ⟨⟨⟨none, ⟨none, Classical.choose h⟩⟩, outside_not_mem_alongSet ι _⟩, a.2⟩ := dite_eq_left h
 
 lemma idAlongIn_of_not_mem {a : Σ _ : I, X} (h : a.1 ∉ Set.range ι) :
-    idAlongIn (Y := Y) ι a = ⟨⟨⟨some (), a.1⟩, sys_not_mem_alongSet ι h⟩, a.2⟩ := dif_neg h
+    idAlongIn (Y := Y) ι a = ⟨⟨⟨some (), a.1⟩, sys_not_mem_alongSet ι h⟩, a.2⟩ := dite_eq_right h
 
 /-- Outputs of `𝟙^ι R`, read as outputs of `R`. -/
 def idAlongOut : (Σ l : Free (alongSet (O := J) ι), twoFam (twoFam (fun _ : J => Y)
@@ -839,7 +843,7 @@ lemma insideRun_eq_zero_of_admits_outside {O J : Type} {U V : O → Type} {X Y :
   -- On `h · z` the run is `0` unless `a` answers `h · z` with an inside query, which would admit
   -- only the inside reply.
   · rw [List.concat_eq_append] at ha ⊢
-    rw [insideRun, run_snoc, if_neg]
+    rw [insideRun, run_snoc, ite_eq_right]
     rintro ⟨y, hy, hi⟩
     rw [Admits, replyLabel_of_mem _ hy] at ha
     rcases y with ⟨⟨_ | ⟨⟨⟩⟩, port⟩, y⟩

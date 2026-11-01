@@ -1,4 +1,6 @@
-import Mathlib.Data.ZMod.Defs
+module
+
+public import Mathlib.Data.ZMod.Defs
 
 /-!
 # ML-KEM Parameters
@@ -9,6 +11,8 @@ This file collects the fixed constants and approved parameter sets from FIPS 203
 The development stays generic over the variable parameters while exposing the three
 named NIST-approved instantiations.
 -/
+
+@[expose] public section
 
 
 

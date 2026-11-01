@@ -1,4 +1,6 @@
-import RandomSystems.Cumulative.ConnectionObservation
+module
+
+public import RandomSystems.Cumulative.ConnectionObservation
 
 /-!
 # Connection of random systems
@@ -16,6 +18,8 @@ on it.
 * `connection_isRandomSystem`: the connection is a random system
 * `connection_replies`: every possible transcript comes from deterministic components
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.RandomSystem
 

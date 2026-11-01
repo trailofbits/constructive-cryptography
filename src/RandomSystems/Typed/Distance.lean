@@ -1,6 +1,8 @@
-import RandomSystems.Typed.Interface
-import RandomSystems.Distance.Distinguisher
-import Mathlib.Topology.EMetricSpace.Defs
+module
+
+public import RandomSystems.Typed.Interface
+public import RandomSystems.Distance.Distinguisher
+public import Mathlib.Topology.EMetricSpace.Defs
 
 /-! # Transcript distance on typed systems
 
@@ -12,6 +14,8 @@ Zero distance is not equality: no separation is claimed. It is an explicit struc
 global instance; the CC instance on interfaces (`ConstructiveCryptography.Instances.Algebra`)
 selects it as its metric.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.TypedSystem
 

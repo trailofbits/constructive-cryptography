@@ -1,4 +1,6 @@
-import Commons.Schemes.Signature.MLDSA.Primitives
+module
+
+public import Commons.Schemes.Signature.MLDSA.Primitives
 
 /-!
 # ML-DSA Encoding Interfaces
@@ -13,6 +15,8 @@ semantic objects consumed by the spec-level KeyGen, Sign, and Verify algorithms.
 
 - NIST FIPS 204, Section 7.1–7.2 (key and signature encodings)
 -/
+
+@[expose] public section
 
 
 

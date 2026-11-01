@@ -1,4 +1,6 @@
-import RandomSystems.Distance.Decision
+module
+
+public import RandomSystems.Distance.Decision
 
 /-!
 # Distance bounds from observations with the public transcript as a projection
@@ -39,6 +41,8 @@ identity `π (aug x) = publicHistory x`.
 2. A. Jha. *Provable Security of Symmetric-key Cryptographic Schemes*. Doctoral thesis,
    Indian Statistical Institute, 2020. https://digitalcommons.isical.ac.in/doctoral-theses/456/.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.RandomSystem
 

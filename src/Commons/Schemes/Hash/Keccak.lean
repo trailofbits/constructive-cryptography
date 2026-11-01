@@ -1,3 +1,7 @@
+module
+
+
+@[expose] public section
 /-!
 # Keccak, SHA-3 and SHAKE
 
@@ -15,6 +19,8 @@ Keccak padding used by Ethereum. The state is 25 lanes of 64 bits, lane `(x, y)`
 * `Keccak.shake128`, `Keccak.shake256`: SHAKE (§6.2)
 * `Keccak.keccak256`: Keccak-256
 -/
+
+@[expose] public section
 
 namespace Commons.Keccak
 

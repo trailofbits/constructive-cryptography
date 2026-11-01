@@ -1,4 +1,6 @@
-import RandomSystems.Converter.ConverterAttachment
+module
+
+public import RandomSystems.Converter.ConverterAttachment
 
 /-!
 # Interfaces, typed systems and typed converters
@@ -35,6 +37,8 @@ CR18, Definitions 3.8, 3.9 and 3.17 (printed pp. 61–64).
 * `TypedConverter.ofDDC_eq_comp`: a DDC equal to the trimmed serial wiring of `α` (outside) and
   `β` (inside) is `comp (ofDDC α) (ofDDC β)`, whatever bound it is certified with
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

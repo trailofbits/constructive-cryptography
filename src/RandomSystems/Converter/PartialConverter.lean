@@ -1,5 +1,7 @@
-import RandomSystems.DDC.DDC
-import RandomSystems.PDS.Filter
+module
+
+public import RandomSystems.DDC.DDC
+public import RandomSystems.PDS.Filter
 
 /-!
 # Partial converters and filters
@@ -18,6 +20,8 @@ is the identity restricted to a set of outside-query histories.
 * `IsDDC.filterDom`: restriction keeps a DDC
 * `IsDDC.converges_along`: attaching a DDC converges
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -38,7 +42,7 @@ lemma IsDDC.filterDom {b : ℕ} {α : InsideOutsideSystem O J U V X Y}
       · subst hn
         exact (Part.eq_none_iff.mpr (fun _ hy => (hα.dds.filterDom D hD).1 hy.1)).trans
           (Part.eq_none_iff.mpr (fun _ hy => hα.dds.1 hy.1)).symm
-      · exact if_pos (hD (List.prefix_append _ _) hn hd)
+      · exact ite_eq_left (hD (List.prefix_append _ _) hn hd)
     simpa only [Admits, replyLabel, he] using hα.admits h z ha
   · intro h hd
     obtain ⟨hd, ha⟩ := (filterDom_dom D α h).mp hd

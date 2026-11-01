@@ -1,4 +1,6 @@
-import RandomSystems.DDC.SingleAlphabet
+module
+
+public import RandomSystems.DDC.SingleAlphabet
 
 /-!
 # Parallel converters and renaming converters
@@ -25,6 +27,8 @@ converters, and their attachments are the attachments of their components.
 * `attachL_tensorL`: attaching `α ⊗ β` to a total resource is attaching `β`,
   then `α`
 -/
+
+@[expose] public section
 
 set_option linter.unusedSimpArgs false
 
@@ -134,10 +138,10 @@ lemma replyLabel_renameOut (h : List (Σ l : Two O' J, twoFam (fun _ : O' => X) 
   unfold replyLabel
   by_cases hd : (α (h.map (renIn e))).Dom
   · have hd' : (renameOut e α h).Dom := by simpa [renameOut, relabel] using hd
-    rw [dif_pos hd, dif_pos hd']
+    rw [dite_eq_left hd, dite_eq_left hd']
     exact congrArg some (renOut_fst _)
   · have hd' : ¬ (renameOut e α h).Dom := by simpa [renameOut, relabel] using hd
-    rw [dif_neg hd, dif_neg hd']
+    rw [dite_eq_right hd, dite_eq_right hd']
     rfl
 
 lemma admits_renameOut (h) (z : Σ l : Two O' J, twoFam (fun _ : O' => X) (fun _ : J => Y) l) :
@@ -276,7 +280,7 @@ lemma insideRun_eq_zero_of_outer {c : InsideOutsideSystem O J U V Xi Yi} {h} {o 
   rcases List.eq_nil_or_concat h with rfl | ⟨h₀, z, rfl⟩
   · rfl
   · rw [List.concat_eq_append] at hl ⊢
-    rw [insideRun, run_snoc, if_neg]
+    rw [insideRun, run_snoc, ite_eq_right]
     rintro ⟨y, hy, hi⟩
     rw [replyLabel_of_mem c hy] at hl
     rcases y with ⟨⟨_ | ⟨⟨⟩⟩, l⟩, v⟩
@@ -376,9 +380,9 @@ lemma replyLabel_tensorRaw_left {a} (hz : tIn z = ⟨none, a⟩) :
   unfold replyLabel
   rw [tensorRaw_left hz]
   by_cases hd : (α (hA h ++ [a])).Dom
-  · rw [dif_pos hd, dif_pos (by simpa using hd)]
+  · rw [dite_eq_left hd, dite_eq_left (by simpa using hd)]
     exact congrArg some (tOut_left_fst _)
-  · rw [dif_neg hd, dif_neg (by simpa using hd)]
+  · rw [dite_eq_right hd, dite_eq_right (by simpa using hd)]
     rfl
 
 lemma replyLabel_tensorRaw_right {a} (hz : tIn z = ⟨some (), a⟩) :
@@ -386,9 +390,9 @@ lemma replyLabel_tensorRaw_right {a} (hz : tIn z = ⟨some (), a⟩) :
   unfold replyLabel
   rw [tensorRaw_right hz]
   by_cases hd : (β (hB h ++ [a])).Dom
-  · rw [dif_pos hd, dif_pos (by simpa using hd)]
+  · rw [dite_eq_left hd, dite_eq_left (by simpa using hd)]
     exact congrArg some (tOut_right_fst _)
-  · rw [dif_neg hd, dif_neg (by simpa using hd)]
+  · rw [dite_eq_right hd, dite_eq_right (by simpa using hd)]
     rfl
 
 lemma insideRun_tensorRaw_left {a} (hz : tIn z = ⟨none, a⟩) :
@@ -491,8 +495,8 @@ lemma tpostA (hα : IsDDC bα α) {a} (hz : tIn z = ⟨none, a⟩)
       simp at hj
   · refine Or.inr (Or.inl ⟨l, hl', by rw [hA_left hz]; exact replyLabel_of_mem α hy, hidB',
       by rw [hA_left hz]; exact hlo, ?_⟩)
-    rw [insideRun_tensorRaw_left hz, if_pos ⟨_, hy, rfl⟩, hA_left hz, insideRun_snoc_eq,
-      if_pos ⟨_, hy, rfl⟩]
+    rw [insideRun_tensorRaw_left hz, ite_eq_left ⟨_, hy, rfl⟩, hA_left hz, insideRun_snoc_eq,
+      ite_eq_left ⟨_, hy, rfl⟩]
     omega
 
 lemma tpostB (hβ : IsDDC bβ β) {a} (hz : tIn z = ⟨some (), a⟩)
@@ -519,8 +523,8 @@ lemma tpostB (hβ : IsDDC bβ β) {a} (hz : tIn z = ⟨some (), a⟩)
       simp at hj
   · refine Or.inr (Or.inr ⟨l, hl', by rw [hB_right hz]; exact replyLabel_of_mem β hy, hidA',
       by rw [hB_right hz]; exact hlo, ?_⟩)
-    rw [insideRun_tensorRaw_right hz, if_pos ⟨_, hy, rfl⟩, hB_right hz, insideRun_snoc_eq,
-      if_pos ⟨_, hy, rfl⟩]
+    rw [insideRun_tensorRaw_right hz, ite_eq_left ⟨_, hy, rfl⟩, hB_right hz, insideRun_snoc_eq,
+      ite_eq_left ⟨_, hy, rfl⟩]
     omega
 
 /-- Before an outside input, both components are idle and no inside call is open. -/

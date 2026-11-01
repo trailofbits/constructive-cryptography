@@ -1,4 +1,6 @@
-import RandomSystems.Typed.QueryRouting
+module
+
+public import RandomSystems.Typed.QueryRouting
 
 /-!
 # Input-dependent routing regression
@@ -21,6 +23,8 @@ that no renaming of labels expresses.
 * The unrestricted domains `F = E = True`, which contain `[]`, check the domain theorem under
   nonempty-prefix closure alone.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.Tests.QueryRouting
 

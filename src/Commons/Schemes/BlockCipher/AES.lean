@@ -1,6 +1,8 @@
-import Commons.Schemes.Bytes
-import Commons.Definitions.Cipher
-import Mathlib.Tactic.IntervalCases
+module
+
+public import Commons.Schemes.Bytes
+public import Commons.Definitions.Cipher
+public import Mathlib.Tactic.IntervalCases
 
 /-!
 # AES
@@ -28,6 +30,8 @@ inverse cipher inverts the cipher, and AES is a block cipher.
 
 * `invCipher_cipher`: the inverse cipher inverts the cipher
 -/
+
+@[expose] public section
 
 namespace Commons.AES
 

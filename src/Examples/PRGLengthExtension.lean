@@ -1,5 +1,7 @@
-import Commons.Definitions.Ideal
-import ConstructiveCryptography.Tactics.Substitution
+module
+
+public import Commons.Definitions.Ideal
+public import ConstructiveCryptography.Tactics.Substitution
 
 /-!
 # PRG length extension
@@ -55,6 +57,8 @@ preserve it (`AdmissibleDistinguishers.ClosedUnder`), not that every converter d
 1. D. Boneh and V. Shoup. *A Graduate Course in Applied Cryptography*. Version 0.6, 2023.
 2. U. Maurer. *Cryptography Foundations*. Lecture notes, ETH Zurich, Spring 2018.
 -/
+
+@[expose] public section
 
 namespace Examples.PRGLengthExtension
 

@@ -1,5 +1,7 @@
-import RandomSystems.Converter.CallRuleTranscript
-import RandomSystems.Typed.CallFunctional
+module
+
+public import RandomSystems.Converter.CallRuleTranscript
+public import RandomSystems.Typed.CallFunctional
 
 /-!
 # Direct calls against fixed functions
@@ -19,6 +21,8 @@ invocation.
 * `ofDDC_callConverter_smul_ofFunction`: the typed equation, through the existing deterministic
   attachment
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.TypedConverter
 

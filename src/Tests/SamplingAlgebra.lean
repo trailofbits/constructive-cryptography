@@ -1,5 +1,7 @@
-import RandomSystems.Typed.SamplingAlgebra
-import ConstructiveCryptography.Notation
+module
+
+public import RandomSystems.Typed.SamplingAlgebra
+public import ConstructiveCryptography.Notation
 
 /-!
 # Retained samples in attachment and parallel proofs
@@ -12,6 +14,8 @@ A counterexample shows that the laws do not split one retained draw: one shared 
 `b`, replying `(b, b)`, differs from two independent uniform bits `b, c`, replying `(b, c)`,
 since the reply `(false, true)` has probability `0` against `1/4`.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.Tests.SamplingAlgebra
 

@@ -1,6 +1,8 @@
-import Probability.StatisticalDistance
-import Mathlib.Data.Finsupp.Order
-import Mathlib.Algebra.Order.Group.PosPart
+module
+
+public import Probability.StatisticalDistance
+public import Mathlib.Data.Finsupp.Order
+public import Mathlib.Algebra.Order.Group.PosPart
 
 /-!
 # Positive parts, normalization and overlaps
@@ -33,6 +35,8 @@ Relates signed, nonnegative and probability distributions.
 1. D. Lanzenberger and U. Maurer. Coupling of Random Systems. In *Theory of Cryptography
    (TCC 2020)*, Springer, 2020. Cryptology ePrint Archive, Paper 2020/1187.
 -/
+
+@[expose] public section
 
 noncomputable section
 

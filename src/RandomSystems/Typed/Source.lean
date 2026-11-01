@@ -1,4 +1,6 @@
-import RandomSystems.Typed.Automaton
+module
+
+public import RandomSystems.Typed.Automaton
 
 /-!
 # Sources of fresh samples
@@ -19,6 +21,8 @@ and answers the `k`-th query with the `k`-th entry.
 
 * `Interface.stateAfter_sourceStep`: after `k` queries the source reads entry `k`
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

@@ -33,7 +33,9 @@ unsafe def main (args : List String) : IO UInt32 := do
     return 1
   enableInitializersExecution
   initSearchPath (← findSysroot)
+  -- The private import level includes anonymous examples and generated auxiliaries.
   let env ← importModules (modules.map ({ module := · })) {} (loadExts := true)
+    (level := .private)
   let audited : NameSet := modules.foldl (·.insert ·) {}
   -- The declarations defined in the audited modules, not in their imports.
   let ours (c : Name) : Bool :=

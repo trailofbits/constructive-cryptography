@@ -1,5 +1,7 @@
-import ConstructiveCryptography.Notation
-import Commons.Definitions.Ideal
+module
+
+public import ConstructiveCryptography.Notation
+public import Commons.Definitions.Ideal
 
 /-!
 # Proof commands on interfaces
@@ -10,6 +12,8 @@ inequality (`cc_triangle`), and exact construction (`cc_construct`).
 The first example compares two systems built from `Commons.StrongURP`, whose forward and
 inverse ports share one retained permutation. Their equality lifts through a common context.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.Usability
 
