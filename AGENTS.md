@@ -500,6 +500,18 @@ Cleanup is preservation-first: delete only material proved temporary or
 superseded, or whose removal was approved. Every module must be reachable from
 its library root.
 
+### Issues and pull requests
+
+Keep titles and bodies short, concrete and factual.
+
+- Issues state the problem, requested change and acceptance criteria.
+- PRs state the resulting behavior, main change and relevant validation. Give dependencies
+  in one line.
+- Remove work narratives, chronology, repeated background, promotional wording and routine
+  caveats. Avoid section templates and inventories that add no information.
+- Preserve essential mathematical assumptions and material limitations, stated once where
+  they affect the claim. Link to supporting documentation instead of repeating it.
+
 ## Verification
 
 ```bash
