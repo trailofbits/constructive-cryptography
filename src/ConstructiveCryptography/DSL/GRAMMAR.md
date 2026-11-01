@@ -464,7 +464,7 @@ before/after proofs, expression guards, negative tests and exact rewrite traces 
 [Interface.queryBudget]: ../../RandomSystems/Typed/Interface.lean#L65
 [Interface.portBudget]: ../../RandomSystems/Typed/Interface.lean#L76
 [TypedSystem.source]: ../../RandomSystems/Typed/Source.lean#L51
-[TypedSystem.ofAutomaton]: ../../RandomSystems/Typed/Automaton.lean#L42
+[TypedSystem.ofAutomaton]: ../../RandomSystems/Typed/Automaton.lean#L53
 [TypedConverter.rightContext]: ../../RandomSystems/Typed/Context.lean#L109
 [TypedConverter.filter]: ../../RandomSystems/Typed/Filter.lean#L49
 [TypedConverter.ofProgram]: ../../RandomSystems/Typed/DSL/Converters.lean#L39

@@ -10,20 +10,37 @@ before any encryption. The development depends only on `propext`, `Classical.cho
 `Quot.sound`.
 -/
 
-open SystemAlgebra SystemAlgebra.Interface Probability
+open SystemAlgebra SystemAlgebra.Interface Probability CategoryTheory
+open CategoryTheory.MonoidalCategory
 open Commons
 open ConstructiveCryptography ConstructiveCryptography.CryptographicAlgebra
 
 namespace AuthenticatedEncryptionTests
 
 open AuthenticatedEncryption
-open scoped NNReal
+open scoped NNReal SystemAlgebra
 
 /-- The one-time pad on bits: a uniform key, `Enc_k(m) = k ⊕ m` and `Dec_k(c) = k ⊕ c`. -/
 noncomputable def oneTimePad : SymmetricEncryption Bool Bool Bool where
   gen := DSL.uniform Bool
   enc k m := Distribution.ProbDist.single (xor k m)
   dec k c := some (xor k c)
+
+/-- Normalize serial/parallel wiring, then replace only the plaintext-filtered oracle.
+Each representation retains one oracle draw across queries, independently of the context `T`. -/
+lemma ptxt_oracle_context
+    -- `A` is the outer interface; `B` carries the unchanged system `T`; `q` bounds oracle queries.
+    {A B : Interface} (q : AE.Port → ℕ)
+    -- `α` exposes `A` by querying the oracle beside `T` on the inside interface.
+    (α : A ⟶ AE.perPort Bool Bool q ⊗ B) (T : TypedSystem B)
+    -- `Ω` carries the draw from `law`; `encrypt` and `decrypt` are the oracle's reply rules.
+    {Ω : Type} (encrypt : Ω → ℕ → Bool → Bool)
+    (decrypt : Ω → List Bool → Bool → Option Bool) (law : Distribution.ProbDist Ω) :
+    (α ≫ (AE.PTXT.perPort Bool Bool ⊗ₘ 𝟙 B)) •
+        (oracleSystem q encrypt decrypt law ∥ T) =
+      α • (oracleSystem q encrypt (ptxtDecrypt decrypt) law ∥ T) := by
+  cc_normalize
+  rw [ptxt_system]
 
 /-- The collision step on the one-time pad: within `q_e² / 2`. -/
 lemma oneTimePad_hybrid_ideal (q : AE.Port → ℕ) :
@@ -85,6 +102,14 @@ end AuthenticatedEncryptionTests
 #print axioms AuthenticatedEncryption.ptxt_smul
 #print axioms AuthenticatedEncryption.cca_smul
 #print axioms AuthenticatedEncryption.aeIdeal_smul
+#print axioms AuthenticatedEncryption.oracleSystem_mass
+#print axioms AuthenticatedEncryption.real_system
+#print axioms AuthenticatedEncryption.encryptionReal_system
+#print axioms AuthenticatedEncryption.ptxt_system
+#print axioms AuthenticatedEncryption.cca_system
+#print axioms AuthenticatedEncryption.aeIdeal_system
+#print axioms AuthenticatedEncryption.hybrid_system
+#print axioms AuthenticatedEncryption.ideal_system
 #print axioms AuthenticatedEncryption.hybrid_mass
 #print axioms AuthenticatedEncryption.ideal_mass
 
@@ -122,5 +147,6 @@ end AuthenticatedEncryptionTests
 #print axioms AuthenticatedEncryptionTests.oneTimePad_hybrid_ideal
 #print axioms AuthenticatedEncryptionTests.oneTimePad_hybrid_ideal_advantage
 #print axioms AuthenticatedEncryptionTests.oneTimePad_usage
+#print axioms AuthenticatedEncryptionTests.ptxt_oracle_context
 #print axioms AuthenticatedEncryptionTests.ptxtDecrypt_initial
 #print axioms AuthenticatedEncryptionTests.idealDecrypt_initial

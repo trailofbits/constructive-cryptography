@@ -9,7 +9,8 @@ import Tests.TypedNaryParallel
 Direct typed actions, categorical arrows and the selected CC attachment field normalize by
 the same laws. The examples cover the selected distance and its non-expansion, notation
 elaboration, finite-family locality, dependent
-initial samples, serial attachment and construction proofs. `guard_target` checks the
+initial samples, serial attachment, construction proofs, and the reduction of two assemblies
+in a shared context to a supplied component equation. `guard_target` checks the
 elaborated goals; trace guards check the chosen rules. Negative tests preserve shared
 randomness and leave a separately supplied action unrewritten.
 -/
@@ -122,6 +123,26 @@ example {A B : Interface} {S : Type} (α : A ⟶ B) (P : Distribution.ProbDist S
 /-- The direct identity, `TypedConverter.id A • R = R`, by `cc_normalize`. -/
 example {A : Interface} (R : TypedSystem A) : TypedConverter.id A • R = R := by
   cc_normalize
+
+/-- Two assemblies sharing the context `α • (_ ∥ T)` differ in one component. `cc_normalize`
+rewrites `(α ≫ (γ ⊗ₘ 𝟙 D)) • (V ∥ T)` to `α • ((γ • V) ∥ T)`, where `𝟙 D` is the identity
+converter on `D`; the local equation `component` then closes the goal. -/
+example
+    -- `O` is the exposed interface; `A` is the changed component's interface; `D` carries `T`.
+    {O A B C D : Interface}
+    -- `α` uses the pair; `β` and `γ` adapt inside interfaces `B` and `C` to the common `A`.
+    (α : O ⟶ A ⊗ D) (β : A ⟶ B) (γ : A ⟶ C)
+    -- `U` and `V` are the two inner components; `T` is the unchanged parallel system.
+    (U : TypedSystem B) (V : TypedSystem C) (T : TypedSystem D)
+    -- `component` is the local semantic fact: both adapted components are equal typed systems.
+    (component : β • U = γ • V) :
+    α • ((β • U) ∥ T) = (α ≫ (γ ⊗ₘ 𝟙 D)) • (V ∥ T) := by
+  cc_normalize
+  -- The normal form is the shared context around the two components, as typed systems.
+  guard_target = α • TypedSystem.parallel (β • U) T = α • TypedSystem.parallel (γ • V) T
+  -- Normalization does not decide the component equation.
+  fail_if_success solve | rfl
+  rw [component]
 
 /-- Binary locality under one shared draw, with the direct `TypedConverter.parallel α β`:
 `(α ∥ β) • sample P (fun s => R s ∥ T s) = sample P (fun s => α • R s ∥ β • T s)`. -/
