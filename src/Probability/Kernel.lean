@@ -38,6 +38,7 @@ type needs to be finite.
 * `Distribution.prod_eq_bindK`, `Distribution.pi_eq_bindK_update`: independent products as
   mixtures
 * `Distribution.ProbDist.map_map`: pushing forward twice is pushing forward along the composite
+* `Distribution.ProbDist.bind_const`: sampling a constant probability kernel returns its law
 * `Distribution.ProbDist.jointLaw_fst`: the first marginal of `jointLaw μ K` is `μ`
 * `Distribution.ProbDist.jointLaw_map`: `(decodeH × decodeZ)_* (jointLaw μ' K') = jointLaw μ K`
   when `decodeH_* μ' = μ` and `decodeZ_* (K' h) = K (decodeH h)`, for arbitrary maps
@@ -357,6 +358,17 @@ noncomputable def bind (P : ProbDist A) (f : A → ProbDist B) : ProbDist B :=
 
 @[simp] lemma bind_val (P : ProbDist A) (f : A → ProbDist B) :
     (bind P f).1 = bindK P.1 fun a => (f a).1 := rfl
+
+/-- Sampling a constant probability kernel gives its law: `P.bind (fun _ => Q) = Q`. -/
+lemma bind_const
+    -- `P` is the first-outcome law on `A`; `Q` is the same second-outcome law on `B` each time.
+    (P : ProbDist A) (Q : ProbDist B) : P.bind (fun _ => Q) = Q := by
+  apply Subtype.ext
+  ext b
+  -- Every summand has the factor `Q(b)`; the remaining weights sum to one.
+  rw [bind_val, bindK_apply, Finsupp.sum, ← Finset.sum_mul]
+  change P.1.weight * Q.1 b = Q.1 b
+  rw [P.2.weight_eq, one_mul]
 
 /-! ### Joint laws -/
 

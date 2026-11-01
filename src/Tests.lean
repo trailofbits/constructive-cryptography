@@ -12,6 +12,7 @@ public import Tests.AllDistinguishers
 public import Tests.MixtureObservation
 public import Tests.ProofErgonomics
 public import Tests.Replay
+public import Tests.RSARandomization
 public import Tests.RevealedHCoefficient
 public import Tests.AuthenticatedEncryption
 public import Tests.AdaptiveUniformEvaluations

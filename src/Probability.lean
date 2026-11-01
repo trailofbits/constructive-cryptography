@@ -7,6 +7,7 @@ public import Probability.Coupling
 public import Probability.Distribution
 public import Probability.DependentProduct
 public import Probability.Expectation
+public import Probability.Group
 public import Probability.Kernel
 public import Probability.Lift
 public import Probability.MultiCoupling

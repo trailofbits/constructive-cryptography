@@ -18,6 +18,8 @@ Ideal systems are in the `Commons` namespace; typed systems and converters are i
 | Retained state | `TypedSystem.sample` in [Functional]; `ofAutomaton` in [Automaton] |
 | Independent joint law | `prodProbDist` in [Distribution] |
 | Transformed or dependent law | `ProbDist.map`, `ProbDist.bind`, `ProbDist.jointLaw` in [Kernel] |
+| Root blinding | `ProbDist.blindRootSolver`, `ProbDist.rootSuccessLaw` in [Group] |
+| RSA unit-root blinding | `Commons.RSA.blinding_success_eq` in [RSA] |
 | Restricted interface | `TypedConverter.filter` in [Filter] |
 | Relabeled interface | `TypedConverter.rename` in [Relabel] |
 
@@ -27,6 +29,8 @@ Ideal systems are in the `Commons` namespace; typed systems and converters are i
 [Automaton]: src/RandomSystems/Typed/Automaton.lean
 [Distribution]: src/Probability/Distribution.lean
 [Kernel]: src/Probability/Kernel.lean
+[Group]: src/Probability/Group.lean
+[RSA]: src/Commons/Definitions/RSA.lean
 [Filter]: src/RandomSystems/Typed/Filter.lean
 [Relabel]: src/RandomSystems/Typed/Relabel.lean
 
