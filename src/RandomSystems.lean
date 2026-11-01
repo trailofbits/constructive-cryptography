@@ -1,3 +1,5 @@
+import RandomSystems.Distance.Observation
+import RandomSystems.Typed.Completion
 import RandomSystems.Typed.Distinguisher
 import RandomSystems.Distance.Mixture
 import RandomSystems.Typed.SamplingDistance

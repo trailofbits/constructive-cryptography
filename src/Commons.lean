@@ -1,3 +1,4 @@
+import Commons.Constructions.TranscriptCompletion
 import Commons.Definitions.AEAD
 import Commons.Definitions.Cipher
 import Commons.Definitions.DiffieHellman

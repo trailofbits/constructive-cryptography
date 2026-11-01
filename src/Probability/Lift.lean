@@ -11,16 +11,27 @@ Relates signed, nonnegative and probability distributions.
 
 * `X⁺`, `X⁻`: the positive and negative parts of a distribution (the lattice
   parts of `A →₀ ℝ`)
-* `normalize X`: `X` scaled to weight `1`
+* `normalize X`: `|X|⁻¹ • X`, of weight `1` when `|X| ≠ 0`
+* `normalizeOr X hX fallback`: for `X ≥ 0`, `normalize X` at nonzero weight and the explicit
+  probability law `fallback` at weight zero
 * `X ⊓ Y`: the pointwise minimum of two distributions
 
 ## Main results
 
 * `nonNeg_iff_zero_le`, `posPart_apply`, `negPart_apply`, `nonNeg_posPart`
 * `statDist_eq_weight_posPart`: `δ(X, Y) = |(X − Y)⁺|`
-* `statDist_eq_weight_sub_weight_inf`: `δ(X, Y) = |X| − |X ⊓ Y|`
+* `statDist_eq_weight_sub_weight_inf`: `δ(X, Y) = |X| − |X ⊓ Y|`, the overlap formula of
+  [1, Definition 3, p. 10]
+* `isProbDist_normalize`: `normalize X` is a probability law for `X ≥ 0` with `|X| ≠ 0`
+* `weight_smul_normalizeOr`: `|X| • normalizeOr X hX fallback = X`, including at weight zero,
+  where nonnegativity forces `X = 0`
 * `mass_finset_sum`: `(∑ i ∈ s, Xᵢ)(E) = ∑ i ∈ s, Xᵢ(E)` for signed laws; with `mass_smul`,
   this computes event probabilities in mixtures from their component masses.
+
+## References
+
+1. D. Lanzenberger and U. Maurer. Coupling of Random Systems. In *Theory of Cryptography
+   (TCC 2020)*, Springer, 2020. Cryptology ePrint Archive, Paper 2020/1187.
 -/
 
 noncomputable section
@@ -154,6 +165,44 @@ lemma normalize_apply (X : Distribution A) (a : A) :
     X.normalize a = X.weight⁻¹ * X a := by
   simp [normalize]
 
+/-- Dividing a nonnegative law of nonzero weight by its weight gives a probability law:
+`|X|⁻¹ · X(a) ≥ 0` and `|X|⁻¹ • X` has weight `|X|⁻¹ · |X| = 1`. -/
+lemma isProbDist_normalize
+    -- `hX`: `X ≥ 0` pointwise; `hw`: `|X| ≠ 0`, so `|X|⁻¹ · |X| = 1`.
+    {X : Distribution A} (hX : X.NonNeg) (hw : X.weight ≠ 0) :
+    X.normalize.isProbDist := by
+  refine ⟨fun a => ?_, ?_⟩
+  · rw [normalize_apply]
+    exact mul_nonneg (inv_nonneg.mpr hX.weight_nonneg) (hX a)
+  · rw [normalize, weight_smul, inv_mul_cancel₀ hw]
+
+open Classical in
+/-- `normalizeOr X hX fallback = normalize X` when `|X| ≠ 0`, and exactly `fallback` when
+`|X| = 0`. It is a probability law for every nonnegative `X`. `weight_smul_normalizeOr`
+rescales by `|X|`, so at weight zero `fallback` is multiplied by `0`. -/
+def normalizeOr
+    -- `X` is a finitely supported mass function on `A`; `hX` makes its masses nonnegative.
+    (X : Distribution A) (hX : X.NonNeg)
+    -- `fallback`: the caller's probability law, returned when `|X| = 0`.
+    (fallback : ProbDist A) : ProbDist A :=
+  if hw : X.weight = 0 then fallback else ⟨X.normalize, isProbDist_normalize hX hw⟩
+
+/-- Scaling the normalized law by the original weight recovers every mass:
+`|X| • normalizeOr X hX fallback = X`, for every `fallback`. At `|X| = 0` both sides vanish:
+the left is `0 • fallback`, and a nonnegative `X` of weight zero is `0`. -/
+lemma weight_smul_normalizeOr
+    -- `X ≥ 0` by `hX`; `fallback` is any probability law on `A`.
+    (X : Distribution A) (hX : X.NonNeg) (fallback : ProbDist A) :
+    X.weight • (X.normalizeOr hX fallback).1 = X := by
+  classical
+  unfold normalizeOr
+  split_ifs with hw
+  · -- A nonnegative law of weight zero vanishes at every point.
+    rw [hw, zero_smul, eq_zero_of_nonNeg_of_weight_eq_zero hX hw]
+  · -- At positive weight, `|X| · |X|⁻¹ · X = X`.
+    change X.weight • (X.weight⁻¹ • X) = X
+    rw [smul_smul, mul_inv_cancel₀ hw, one_smul]
+
 /-! ## Overlaps -/
 
 /-- Pointwise formula for the meet: `(X ⊓ Y)(a) = min(X(a), Y(a))`. -/
@@ -178,10 +227,8 @@ lemma weight_sub (X Y : Distribution A) :
   rw [sub_add_cancel] at h
   linarith
 
-/-- **Lemma 2.3's overlap formula**: the one-sided distance is the first
-weight minus the weight of the shared part.  This is the identity the
-attainment construction maximizes against — making `δ` large is making the
-overlap small. -/
+/-- The overlap formula [1, Definition 3, p. 10]: “δ(X, Y) = |X| − ∑ₐ min(X(a), Y(a))”.
+Here `X ⊓ Y` is the pointwise shared mass. The identity also holds for signed laws. -/
 theorem statDist_eq_weight_sub_weight_inf (X Y : Distribution A) :
     statDist X Y = X.weight - (X ⊓ Y).weight := by
   have hsplit : (X ⊓ Y) + (X - Y)⁺ = X := inf_add_posPart_sub X Y
