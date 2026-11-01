@@ -27,7 +27,8 @@ it gives $`\sum_a \mu(a)\, f(a)`$:
 [mixtures compose][bindK_bindK], a pushforward
 [is the point kernel of its function][bindK_single_comp], and an independent product
 [disintegrates][pi_eq_bindK_update] at a coordinate. Probability laws have
-[pushforwards][ProbDist.map] and [sequential compositions][ProbDist.bind].
+[pushforwards][ProbDist.map] and [sequential compositions][ProbDist.bind]; a
+[constant probability kernel][ProbDist.bind_const] returns its law.
 A [joint law][ProbDist.jointLaw] retains both successive draws:
 $`J_{\mu,K}(h,z)=\mu(h)K(h,z)`$, with [first marginal][ProbDist.jointLaw_fst] $`\mu`$. For
 arbitrary maps $`d_H, d_Z`$ with $`(d_H)_*\mu'=\mu`$ and $`(d_Z)_*K'(h)=K(d_H h)`$,
@@ -41,6 +42,13 @@ the fallback is multiplied by zero.
 The notation `𝒰[A]` denotes the [normalized uniform law][ProbDist.uniform] of type
 `Distribution.ProbDist A`, with mass $`1/\lvert A \rvert`$ at each point of a finite nonempty
 $`A`$; its underlying raw distribution `𝒰[A].1` is `Distribution.uniform A`.
+
+For a finite group $`G`$ with $`\gcd(|G|,e)=1`$, [blinding](Group.lean) sends a uniform
+$`r`$ to a uniform $`yr^e`$. `ProbDist.bind_uniform_mul_pow` transports any output kernel
+through this map. `ProbDist.blindRootSolver` unblinds the returned root with the same multiplier;
+`ProbDist.rootSuccessLaw` observes success, rejecting failure. For commutative groups,
+`ProbDist.blinding_success_eq` equates this success law at a fixed challenge with the original
+solver's uniform-challenge success law.
 
 ## Statistical distance
 
@@ -133,15 +141,16 @@ injectivity of all replay and public sites; neither asserts independence on bad 
 [piDep]: DependentProduct.lean#L41
 [uniform]: Distribution.lean#L639
 [ProbDist.uniform]: Distribution.lean#L672
-[bindK]: Kernel.lean#L59
-[bindK_bindK]: Kernel.lean#L105
-[bindK_single_comp]: Kernel.lean#L127
-[pi_eq_bindK_update]: Kernel.lean#L293
-[ProbDist.map]: Kernel.lean#L339
-[ProbDist.bind]: Kernel.lean#L351
-[ProbDist.jointLaw]: Kernel.lean#L369
-[ProbDist.jointLaw_fst]: Kernel.lean#L376
-[ProbDist.jointLaw_map]: Kernel.lean#L396
+[bindK]: Kernel.lean#L60
+[bindK_bindK]: Kernel.lean#L106
+[bindK_single_comp]: Kernel.lean#L128
+[pi_eq_bindK_update]: Kernel.lean#L294
+[ProbDist.map]: Kernel.lean#L340
+[ProbDist.bind]: Kernel.lean#L352
+[ProbDist.bind_const]: Kernel.lean#L363
+[ProbDist.jointLaw]: Kernel.lean#L381
+[ProbDist.jointLaw_fst]: Kernel.lean#L388
+[ProbDist.jointLaw_map]: Kernel.lean#L408
 [normalizeOr]: Lift.lean#L187
 [statDist]: StatisticalDistance.lean#L99
 [statDist_triangle]: StatisticalDistance.lean#L249
