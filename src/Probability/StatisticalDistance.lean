@@ -670,14 +670,7 @@ theorem statDist_fTransform_le {A B : Type*}
   exact Finset.sum_le_sum fun a _ => le_max_left _ _
 
 /-- A ratio bound controls the distance after any common function:
-`(1 − ε) · Q ≤ P` pointwise gives `δ(f_* P, f_* Q) ≤ 𝔼_Q[ε]`: data processing [1, Lemma 3]
-followed by the expectation method [3, Lemma 2.2.1], quoted at `statDist_fTransform_le` and
-`statDist_le_expect_of_ratio`.
-
-```text
-  δ(f_* P, f_* Q) ≤ δ(P, Q)      statDist_fTransform_le (data processing)
-                  ≤ 𝔼_Q[ε]       statDist_le_expect_of_ratio (expectation method)
-``` -/
+`(1 − ε) · Q ≤ P` pointwise gives `δ(f_* P, f_* Q) ≤ 𝔼_Q[ε]`. -/
 theorem statDist_fTransform_le_expect_of_ratio
     -- `P`, `Q`: finitely supported real mass functions on an arbitrary type `A`;
     -- `f : A → B` is any function to an arbitrary type `B`.
@@ -690,9 +683,9 @@ theorem statDist_fTransform_le_expect_of_ratio
     (hε : ∀ a, 0 ≤ ε a) (ratio : ∀ a, (1 - ε a) * Q a ≤ P a) :
     statDist (Distribution.fTransform f P) (Distribution.fTransform f Q) ≤ Q.expect ε := by
   calc
-    -- Data processing: applying the same `f` to both laws cannot increase `δ`.
+    -- Data processing [1, Lemma 3, p. 11]: the common `f` cannot increase `δ`.
     _ ≤ statDist P Q := statDist_fTransform_le P Q f
-    -- Expectation method: equal weights and the pointwise ratio give the expected loss under `Q`.
+    -- Expectation method [3, Lemma 2.2.1, p. 19]: equal weights and the ratio give `𝔼_Q[ε]`.
     _ ≤ Q.expect ε := statDist_le_expect_of_ratio P Q ε hweight hε hQ ratio
 
 /-! ### Injective pushforward -/

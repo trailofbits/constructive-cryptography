@@ -1,5 +1,6 @@
 import RandomSystems.Cumulative.CumulativeOperations
 import Probability.Expectation
+import Probability.Kernel
 import Probability.Lift
 
 /-!
@@ -33,6 +34,7 @@ Forgetting `z` (`Prod.fst`) gives back the transcript laws of `mix P R` and `S`.
 
 * `revealLaw_apply`, `kernelLaw_apply`: each law is `[Good e n h]` times its mass
 * `fTransform_fst_revealLaw`, `fTransform_fst_kernelLaw`: the transcript marginals
+* `kernelLaw_eq_jointLaw`: a normalized kernel law is the probability-level joint law
 * `kernelLaw_mass_eq_expect`: the ideal probability of an event, conditioned on the transcript
 
 Source: Jha, *Provable Security of Symmetric-key Cryptographic Schemes*, §2.2.1, printed p. 19.
@@ -70,6 +72,20 @@ noncomputable def kernelLaw
     (S : RandomSystem X Y D) (K : List (X × Y) → Distribution Z)
     (e : List Y →. X) (n : ℕ) : Distribution (List (X × Y) × Z) :=
   ∑ h ∈ (S.sLaw e n).support, S.sLaw e n h • Distribution.fTransform (fun z => (h, z)) (K h)
+
+/-- The kernel transcript law is the joint law `h ← S.sLaw e n; z ← K h`. -/
+lemma kernelLaw_eq_jointLaw
+    -- `S` is the observed system; `K h` is the normalized record law given history `h`.
+    (S : RandomSystem X Y D) (K : List (X × Y) → Distribution.ProbDist Z)
+    -- `e` chooses queries from previous replies; `n` is the observation cutoff.
+    -- Compatibility `hC` makes `S.sLaw e n` a probability law.
+    (e : List Y →. X) (n : ℕ) (hC : S.Compatible e) :
+    kernelLaw S (fun h => (K h).1) e n =
+      (Distribution.ProbDist.jointLaw ⟨S.sLaw e n, S.sLaw_isProbDist hC n⟩ K).1 := by
+  -- Both laws mix `z ↦ (h, z)` under `K h` with weight `S.sLaw e n h`.
+  simp only [kernelLaw, Distribution.ProbDist.jointLaw, Distribution.ProbDist.bind_val,
+    Distribution.ProbDist.map_val, Distribution.bindK, Finsupp.linearCombination_apply,
+    Finsupp.sum]
 
 open Classical in
 /-- **The real probability of an extended transcript** `(h, z)`: the probability, over

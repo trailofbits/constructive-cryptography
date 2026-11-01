@@ -41,7 +41,9 @@ noncomputable def onFinset
 
 /-- Decoding the finite alphabet is an exact presentation of `P`:
 `val_* (onFinset P s hs) = P`. -/
-lemma map_onFinset_val (P : ProbDist A) (s : Finset A) (hs : P.1.support ⊆ s) :
+lemma map_onFinset_val
+    -- `P` is the original law; `s` is the finite alphabet and `hs` asserts `supp(P) ⊆ s`.
+    (P : ProbDist A) (s : Finset A) (hs : P.1.support ⊆ s) :
     ProbDist.map Subtype.val (onFinset P s hs) = P := by
   classical
   -- Compare the masses at each `a : A`.

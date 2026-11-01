@@ -370,7 +370,7 @@ noncomputable def jointLaw
 /-- The first marginal of the joint law is the original law,
 `fst_* (jointLaw μ K) = μ`: summing out `z` uses only that each `K h` has weight one. -/
 lemma jointLaw_fst
-    -- `μ` and `K` as in `jointLaw`.
+    -- `μ` is the law of the first outcome `h`; `K h` is the conditional law of `z` given `h`.
     (μ : ProbDist H) (K : H → ProbDist Z) :
     ProbDist.map Prod.fst (jointLaw μ K) = μ := by
   apply Subtype.ext

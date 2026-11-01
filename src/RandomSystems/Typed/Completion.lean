@@ -35,25 +35,13 @@ of a sampled presentation of `R`, without changing its joint law.
 * `fTransform_boundedTranscriptLaw`: decoding the finite alphabet recovers `R.sLaw E n`
 * `transcriptDistance_le_of_completion`: ratio and expected error of the completed laws bound
   `Δ(R, S)`. It instantiates `RandomSystem.transcriptDistance_le_of_observation_ratio` in
-  `Distance.Observation` with the two kernel laws and `π = Prod.fst`. That theorem bounds, for
-  each compatible `E` stopping within `n` queries:
-
-```text
-  δ(R.sLaw E n, S.sLaw E n)
-    = δ(fst_* realLaw, fst_* idealLaw)      fTransform_fst_kernelLaw (marginals)
-    ≤ δ(realLaw, idealLaw)                  statDist_fTransform_le [1, Lemma 3]
-    ≤ 𝔼_idealLaw[ε]                         statDist_le_expect_of_ratio [2, Lemma 2.2.1]
-    ≤ b                                     hypothesis `bound`
-```
-
-Here `realLaw = kernelLaw R K_R E n` and `idealLaw = kernelLaw S K_S E n`. The pointwise ratio
-on masses becomes a ratio on these laws because both carry the same factor `[Good E n h]`.
+  `Distance.Observation` with the kernel laws, `π = Prod.fst` and marginals
+  `fTransform_fst_kernelLaw`. The pointwise ratio on masses becomes a ratio on these laws
+  because both carry the same factor `[Good E n h]`.
 
 ## References
 
-1. D. Lanzenberger and U. Maurer. Coupling of Random Systems. In *Theory of Cryptography
-   (TCC 2020)*, Springer, 2020. Cryptology ePrint Archive, Paper 2020/1187.
-2. A. Jha. *Provable Security of Symmetric-key Cryptographic Schemes*. Doctoral thesis,
+1. A. Jha. *Provable Security of Symmetric-key Cryptographic Schemes*. Doctoral thesis,
    Indian Statistical Institute, 2020. https://digitalcommons.isical.ac.in/doctoral-theses/456/.
 -/
 
@@ -126,7 +114,7 @@ if `(1 − ε(h, z)) · S(h) · K_S h z ≤ R(h) · K_R h z` for every `(h, z)` 
 expectation of `ε` is at most `b` under every compatible stopping environment, then
 `Δ(R, S) ≤ b`.
 
-[2, Lemma 2.2.1, p. 19]: “Adv_{O₁;O₀}(A) ≤ ϵ_bad + Ex[ϵ_ratio(Θ₀)]”. Here the single error
+[1, Lemma 2.2.1, p. 19]: “Adv_{O₁;O₀}(A) ≤ ϵ_bad + Ex[ϵ_ratio(Θ₀)]”. Here the single error
 function `ε` includes any bad-event contribution. -/
 theorem transcriptDistance_le_of_completion
     -- `A : Interface` fixes the public ports, query/reply alphabets and admissible histories;

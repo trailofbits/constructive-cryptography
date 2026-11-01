@@ -143,10 +143,10 @@ injectivity of all replay and public sites; neither asserts independence on bad 
 [ProbDist.jointLaw_fst]: Kernel.lean#L372
 [ProbDist.jointLaw_map]: Kernel.lean#L392
 [normalizeOr]: Lift.lean#L183
-[statDist]: StatisticalDistance.lean#L94
-[statDist_triangle]: StatisticalDistance.lean#L244
-[statDist_fTransform_le]: StatisticalDistance.lean#L633
-[statDist_fTransform_le_expect_of_ratio]: StatisticalDistance.lean#L680
+[statDist]: StatisticalDistance.lean#L95
+[statDist_triangle]: StatisticalDistance.lean#L245
+[statDist_fTransform_le]: StatisticalDistance.lean#L634
+[statDist_fTransform_le_expect_of_ratio]: StatisticalDistance.lean#L674
 [statDist_eq_weight_posPart]: Lift.lean#L102
 [statDist_eq_weight_sub_weight_inf]: Lift.lean#L232
 [IsCoupling]: Coupling.lean#L46

@@ -158,10 +158,6 @@ expected loss $`\mathbb E_{\mu_S^{E,n}}[\varepsilon]\le b`$, by the expectation 
 [2, Lemma 2.2.1]. Conditional [completions](../Typed/Completion.lean) instantiate this theorem
 with pairs $`(h,z)`$ and $`\pi(h,z)=h`$; the real and ideal record kernels may differ.
 
-This theorem and `RandomSystem.statDist_sLaw_le_of_reveal` below both apply the
-probability-level bound `Probability.statDist_fTransform_le_expect_of_ratio`. The systems layer
-contributes the exact marginals and the supremum over compatible stopping environments.
-
 For sampled presentations with records and multiple transcript classes, use
 [`RandomSystem.HCoefficient`](RevealedHCoefficient.lean). Supply the real mixture,
 its deterministic reveal, the ideal conditional reveal law, the finite classification,

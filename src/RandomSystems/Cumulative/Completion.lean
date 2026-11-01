@@ -8,7 +8,7 @@ behaves as `component k`; an analysis record `z = record k h` depends on `k` and
 history `h`. At a history with `R(h) > 0`, `completionKernel` is the conditional law of the
 record [1, §3.6.1],
 
-  `completionKernel h z = ∑ₖ sample(k) · (component k)(h) · [record k h = z] / R(h)`,
+  `completionKernel h z = ∑ₖ sample(k) · (component k)(h) · [record k h = z] / R(h)`.
 
 The same kernel works for every environment; its inputs are `h` and the presentation
 `(sample, component, record)`.
@@ -27,7 +27,7 @@ The same kernel works for every environment; its inputs are `h` and the presenta
 
 ## Main results
 
-The completion reproduces the actual record's joint law in two rungs:
+The completion reproduces the actual record's joint law in two steps:
 
 ```text
   recordLikelihood h z = revealMass (h, z)            recordLikelihood_apply
@@ -53,22 +53,24 @@ open Probability
 -- `X`, `Y`: queries and replies, `D`: the domain; `κ`: retained samples, `Z`: records.
 variable {X Y : Type} [Fintype X] [Fintype Y] {D : Domain X Y} {κ Z : Type}
 
+variable
+    -- `sample : ProbDist κ` draws the retained sample `k` once.
+    (sample : Distribution.ProbDist κ)
+    -- `component k` is the system with sample `k` fixed; `record k h : Z` is its record
+    -- at the complete public history `h`.
+    (component : κ → RandomSystem X Y D) (record : κ → List (X × Y) → Z)
+
 /-- The unnormalized law of the record at public history `h`:
 `recordLikelihood h = ∑ₖ sample(k) · (component k)(h) • δ(record k h)`. Sample `k` has
 likelihood `sample(k) · (component k)(h)` of producing `h`. -/
 noncomputable def recordLikelihood
-    -- `sample : ProbDist κ`: the law of the retained sample `k`.
-    (sample : Distribution.ProbDist κ)
-    -- `component k`: the system with its sample fixed to `k`; `record k h`: its record.
-    (component : κ → RandomSystem X Y D) (record : κ → List (X × Y) → Z)
     -- `h`: the complete public history.
     (h : List (X × Y)) : Distribution Z :=
   ∑ k ∈ sample.1.support,
     (sample.1 k * component k h) • Finsupp.single (record k h) 1
 
 /-- The likelihood is the actual record's mass: `recordLikelihood h z = revealMass (h, z)`. -/
-lemma recordLikelihood_apply (sample : Distribution.ProbDist κ)
-    (component : κ → RandomSystem X Y D) (record : κ → List (X × Y) → Z)
+lemma recordLikelihood_apply
     (h : List (X × Y)) (z : Z) :
     recordLikelihood sample component record h z = revealMass sample component record (h, z) := by
   classical
@@ -80,8 +82,7 @@ lemma recordLikelihood_apply (sample : Distribution.ProbDist κ)
   split_ifs <;> simp only [mul_one, mul_zero]
 
 /-- The likelihood is nonnegative, being a real record mass. -/
-lemma recordLikelihood_nonNeg (sample : Distribution.ProbDist κ)
-    (component : κ → RandomSystem X Y D) (record : κ → List (X × Y) → Z)
+lemma recordLikelihood_nonNeg
     (h : List (X × Y)) : (recordLikelihood sample component record h).NonNeg := by
   intro z
   rw [recordLikelihood_apply]
@@ -89,8 +90,7 @@ lemma recordLikelihood_nonNeg (sample : Distribution.ProbDist κ)
 
 /-- Summing over every record leaves the public history mass:
 `∑_z recordLikelihood h z = ∑ₖ sample(k) · (component k)(h) = R(h)`. -/
-lemma weight_recordLikelihood (sample : Distribution.ProbDist κ)
-    (component : κ → RandomSystem X Y D) (record : κ → List (X × Y) → Z)
+lemma weight_recordLikelihood
     (h : List (X × Y)) :
     (recordLikelihood sample component record h).weight = mix sample component h := by
   rw [recordLikelihood, Distribution.weight_finset_sum]
@@ -103,18 +103,16 @@ exactly the fallback `δ(record k₀ h)` for the sample `k₀ = Classical.choice
 of [1, §3.6.1, p. 65], “a probability distribution for each x ∈ X”, with the public history as
 conditioning input. -/
 noncomputable def completionKernel
-    -- `sample` draws the retained state `k`; `component k` is the system with `k` fixed.
-    (sample : Distribution.ProbDist κ) (component : κ → RandomSystem X Y D)
-    -- `record k h : Z` is the analysis value of state `k` at public history `h`.
-    (record : κ → List (X × Y) → Z) (h : List (X × Y)) : Distribution.ProbDist Z :=
+    -- `h` is the public history whose record is being completed.
+    (h : List (X × Y)) : Distribution.ProbDist Z :=
   (recordLikelihood sample component record h).normalizeOr
     (recordLikelihood_nonNeg sample component record h)
     (Distribution.ProbDist.single (record (Classical.choice sample.nonempty) h))
 
 /-- Multiplying the conditional law by the public history mass recovers the actual record
 mass, `R(h) · completionKernel h z = revealMass (h, z)`, also where both sides are zero. -/
-theorem kernelMass_completionKernel (sample : Distribution.ProbDist κ)
-    (component : κ → RandomSystem X Y D) (record : κ → List (X × Y) → Z)
+lemma kernelMass_completionKernel
+    -- `τ = (h, z)` carries the public history and its record.
     (τ : List (X × Y) × Z) :
     kernelMass (mix sample component) (fun h => (completionKernel sample component record h).1) τ =
       revealMass sample component record τ := by
@@ -134,8 +132,7 @@ theorem kernelMass_completionKernel (sample : Distribution.ProbDist κ)
 /-- Conditional completion reproduces the joint law of the actual record,
 `kernelLaw R completionKernel e n = revealLaw sample component record e n`, uniformly over all
 environments `e` and horizons `n`; no environment enters the kernel. -/
-theorem kernelLaw_completionKernel (sample : Distribution.ProbDist κ)
-    (component : κ → RandomSystem X Y D) (record : κ → List (X × Y) → Z)
+theorem kernelLaw_completionKernel
     -- `e`: the environment, its next query from the replies so far; `n`: the observed rounds.
     (e : List Y →. X) (n : ℕ) :
     kernelLaw (mix sample component) (fun h => (completionKernel sample component record h).1)

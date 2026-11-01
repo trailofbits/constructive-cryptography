@@ -47,8 +47,9 @@ converters `cR`, `cS` and one common forgetting converter `h` are chosen before 
 law `μ`, and `h • (cR • experiment μ) = experiment μ = h • (cS • experiment μ)`. The record
 type `Z` need not be finite; the finite union of the kernels' supports is the record alphabet.
 For a bounded interface `A`, `TypedSystem.BoundedTranscript A` serves as `H`, and
-`TypedSystem.transcriptDistance_le_of_completion` gives the distance bound from the completed
-laws.
+decoding by `jointLaw_map`, `TypedSystem.fTransform_boundedTranscriptLaw` and
+`RandomSystem.kernelLaw_eq_jointLaw` gives the completed laws used by
+`TypedSystem.transcriptDistance_le_of_completion`.
 -/
 
 namespace Commons.TranscriptCompletion
@@ -89,7 +90,10 @@ converter forget(H Z : Type) [Fintype H] [Fintype Z] : Evaluation Unit H
 
 /-- Completing a memoryless source of `μ` gives a memoryless source of the joint law,
 `complete K • source(μ) = source(jointLaw μ K)`, for every query budget `q`. -/
-lemma complete_smul_source (K : H → ProbDist Z) (μ : ProbDist H)
+lemma complete_smul_source
+    -- `K h` is the conditional record law; `μ` is the source's public outcome law.
+    (K : H → ProbDist Z) (μ : ProbDist H)
+    -- `q` bounds the queries at the outer `eval` port.
     (q : Evaluation.Port → ℕ) :
     complete.perPort K (budget := q) • MemorylessSource.perPort H μ =
       MemorylessSource.perPort (H × Z) (jointLaw μ K) := by
@@ -120,7 +124,9 @@ lemma complete_smul_source (K : H → ProbDist Z) (μ : ProbDist H)
 
 /-- Forgetting the record of a memoryless source of `μ : ProbDist (H × Z)` gives the source
 of its first marginal, `forget • source(μ) = source(fst_* μ)`. -/
-lemma forget_smul_source (μ : ProbDist (H × Z)) (q : Evaluation.Port → ℕ) :
+lemma forget_smul_source
+    -- `μ` is the joint law of the public outcome and record; `q` bounds outer `eval` queries.
+    (μ : ProbDist (H × Z)) (q : Evaluation.Port → ℕ) :
     forget.perPort H Z (budget := q) • MemorylessSource.perPort (H × Z) μ =
       MemorylessSource.perPort H (ProbDist.map Prod.fst μ) := by
   apply Subtype.ext
@@ -134,7 +140,10 @@ lemma forget_smul_source (μ : ProbDist (H × Z)) (q : Evaluation.Port → ℕ) 
 
 /-- The common forgetting converter recovers the experiment exactly,
 `forget • (complete K • source(μ)) = source(μ)`. -/
-lemma forget_complete_smul_source (K : H → ProbDist Z) (μ : ProbDist H)
+lemma forget_complete_smul_source
+    -- `K h` is the conditional record law; `μ` is the source's public outcome law.
+    (K : H → ProbDist Z) (μ : ProbDist H)
+    -- `q` bounds the queries at the outer `eval` port.
     (q : Evaluation.Port → ℕ) :
     forget.perPort H Z (budget := q) •
         (complete.perPort K • MemorylessSource.perPort H μ) =
