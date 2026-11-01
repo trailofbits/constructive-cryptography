@@ -33,7 +33,8 @@ The expectation method [1, Lemma 2.2.1] bounds public distance by the expected r
 
 ## References
 
-1. Jha. *Provable Security of Symmetric-key Cryptographic Schemes*.
+1. A. Jha. *Provable Security of Symmetric-key Cryptographic Schemes*. Doctoral thesis,
+   Indian Statistical Institute, 2020. https://digitalcommons.isical.ac.in/doctoral-theses/456/.
 -/
 
 namespace SystemAlgebra

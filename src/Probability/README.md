@@ -118,7 +118,8 @@ injectivity of all replay and public sites; neither asserts independence on bad 
 2. D. Lanzenberger. *A Theory of Random Systems, Games, and Hardness Amplification*. Doctoral
    thesis, ETH Zurich.
 3. U. Maurer. *Cryptography Foundations*. Lecture notes, ETH Zurich, Spring 2018.
-4. Jha. *Provable Security of Symmetric-key Cryptographic Schemes*.
+4. A. Jha. *Provable Security of Symmetric-key Cryptographic Schemes*. Doctoral thesis,
+   Indian Statistical Institute, 2020. https://digitalcommons.isical.ac.in/doctoral-theses/456/.
 
 <!-- Declarations -->
 

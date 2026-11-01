@@ -38,7 +38,8 @@ behind H-coefficient arguments. The carrier may be infinite; each law has finite
 1. D. Lanzenberger and U. Maurer. Coupling of Random Systems. In *Theory of Cryptography
    (TCC 2020)*, Springer, 2020. Cryptology ePrint Archive, Paper 2020/1187.
 2. U. Maurer. *Cryptography Foundations*. Lecture notes, ETH Zurich, Spring 2018.
-3. Jha. *Provable Security of Symmetric-key Cryptographic Schemes*.
+3. A. Jha. *Provable Security of Symmetric-key Cryptographic Schemes*. Doctoral thesis,
+   Indian Statistical Institute, 2020. https://digitalcommons.isical.ac.in/doctoral-theses/456/.
 4. U. Maurer, K. Pietrzak and R. Renner. *Indistinguishability Amplification*. In CRYPTO 2007,
    LNCS 4622, pp. 130–149, 2007.
 5. C. Portmann and R. Renner. *Security in Quantum Cryptography*. arXiv:2102.00021v2, 2021.
@@ -516,7 +517,7 @@ lemma sub_le_mul_of_one_sub_mul_le {a b eps : ℝ}
 
 /-- The expectation method for equal-weight mass functions:
 `(1 − ε) · ideal ≤ real` gives `δ(real, ideal) ≤ 𝔼_ideal[ε]`.
-[3, Lemma 2.2.1, p. 20]: “Adv_{O₁;O₀}(A) ≤ ϵ_bad + Ex[ϵ_ratio(Θ₀)]”. For probability laws,
+[3, Lemma 2.2.1, p. 19]: “Adv_{O₁;O₀}(A) ≤ ϵ_bad + Ex[ϵ_ratio(Θ₀)]”. For probability laws,
 setting `ε = 1` on the bad set and `ϵ_ratio` elsewhere gives the source's good/bad bound. -/
 theorem statDist_le_expect_of_ratio
     -- `A` carries outcomes; `real`, `ideal` are finitely supported real mass functions on `A`.

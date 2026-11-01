@@ -53,7 +53,8 @@ on masses becomes a ratio on these laws because both carry the same factor `[Goo
 
 1. D. Lanzenberger and U. Maurer. Coupling of Random Systems. In *Theory of Cryptography
    (TCC 2020)*, Springer, 2020. Cryptology ePrint Archive, Paper 2020/1187.
-2. Jha. *Provable Security of Symmetric-key Cryptographic Schemes*.
+2. A. Jha. *Provable Security of Symmetric-key Cryptographic Schemes*. Doctoral thesis,
+   Indian Statistical Institute, 2020. https://digitalcommons.isical.ac.in/doctoral-theses/456/.
 -/
 
 namespace SystemAlgebra.TypedSystem
@@ -125,7 +126,7 @@ if `(1 − ε(h, z)) · S(h) · K_S h z ≤ R(h) · K_R h z` for every `(h, z)` 
 expectation of `ε` is at most `b` under every compatible stopping environment, then
 `Δ(R, S) ≤ b`.
 
-[2, Lemma 2.2.1, p. 20]: “Adv_{O₁;O₀}(A) ≤ ϵ_bad + Ex[ϵ_ratio(Θ₀)]”. Here the single error
+[2, Lemma 2.2.1, p. 19]: “Adv_{O₁;O₀}(A) ≤ ϵ_bad + Ex[ϵ_ratio(Θ₀)]”. Here the single error
 function `ε` includes any bad-event contribution. -/
 theorem transcriptDistance_le_of_completion
     -- `A : Interface` fixes the public ports, query/reply alphabets and admissible histories;

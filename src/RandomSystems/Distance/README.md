@@ -199,7 +199,8 @@ Games build on this bound: see [Game](../Game/README.md#identical-until-bad).
 
 1. D. Lanzenberger and U. Maurer. Coupling of Random Systems. In *Theory of Cryptography
    (TCC 2020)*, Springer, 2020. Cryptology ePrint Archive, Paper 2020/1187.
-2. Jha. *Provable Security of Symmetric-key Cryptographic Schemes*.
+2. A. Jha. *Provable Security of Symmetric-key Cryptographic Schemes*. Doctoral thesis,
+   Indian Statistical Institute, 2020. https://digitalcommons.isical.ac.in/doctoral-theses/456/.
 
 <!-- Declarations -->
 

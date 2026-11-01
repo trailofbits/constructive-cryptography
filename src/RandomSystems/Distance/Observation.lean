@@ -36,7 +36,8 @@ identity `π (aug x) = publicHistory x`.
 
 1. D. Lanzenberger and U. Maurer. Coupling of Random Systems. In *Theory of Cryptography
    (TCC 2020)*, Springer, 2020. Cryptology ePrint Archive, Paper 2020/1187.
-2. Jha. *Provable Security of Symmetric-key Cryptographic Schemes*.
+2. A. Jha. *Provable Security of Symmetric-key Cryptographic Schemes*. Doctoral thesis,
+   Indian Statistical Institute, 2020. https://digitalcommons.isical.ac.in/doctoral-theses/456/.
 -/
 
 namespace SystemAlgebra.RandomSystem
@@ -90,7 +91,7 @@ theorem transcriptDistance_le_iSup_observation :
   exact statDist_fTransform_le _ _ π
 
 /-- A ratio bound on any observations with the public transcript as a common projection gives
-`Δ(R, S) ≤ b`. [2, Lemma 2.2.1, p. 20]: “Adv_{O₁;O₀}(A) ≤ ϵ_bad + Ex[ϵ_ratio(Θ₀)]”. Here `ε`
+`Δ(R, S) ≤ b`. [2, Lemma 2.2.1, p. 19]: “Adv_{O₁;O₀}(A) ≤ ϵ_bad + Ex[ϵ_ratio(Θ₀)]”. Here `ε`
 includes any bad-event contribution. -/
 theorem transcriptDistance_le_of_observation_ratio
     -- `ε w`: the scalar loss at observation `w`, a real number; `hε` gives `ε ≥ 0`, and `ε w`
