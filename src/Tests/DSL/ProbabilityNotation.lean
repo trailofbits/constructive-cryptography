@@ -1,4 +1,6 @@
-import RandomSystems.Typed.DSL.Probability
+module
+
+public import RandomSystems.Typed.DSL.Probability
 
 /-!
 # The DSL name of the uniform law
@@ -6,6 +8,8 @@ import RandomSystems.Typed.DSL.Probability
 `SystemAlgebra.DSL.uniform Bool` is the normalized law `𝒰[Bool]`, and rewriting with it exposes
 the raw law `Distribution.uniform Bool` underlying `𝒰[Bool]`.
 -/
+
+@[expose] public section
 
 open Probability SystemAlgebra.DSL
 

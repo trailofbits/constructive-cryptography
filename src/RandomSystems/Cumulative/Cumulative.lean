@@ -1,4 +1,6 @@
-import RandomSystems.PDS.PDS
+module
+
+public import RandomSystems.PDS.PDS
 
 /-!
 # Random systems
@@ -28,6 +30,8 @@ deterministic environments”.
 * `mass_eq_zero_of_not_admitted`, `mass_eq_zero_of_bound_lt`: no mass outside the domain
 * `isRandomSystem_behaviorMass`: a mixture of systems with domain `D` is normalized on `D`
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -119,7 +123,7 @@ lemma exists_reply (R : RandomSystem A B D) {h : List (A × B)} {x : A}
     rw [extensionLaw_apply]
     exact not_not.mp (fun hy => hn ⟨y, hy⟩)
   have hw := R.extensionLaw_weight h x
-  rw [hz, if_pos hd] at hw
+  rw [hz, ite_eq_left hd] at hw
   exact hp hw.symm
 
 /-- Renaming input and output alphabets transports the admitted domain and the
@@ -165,7 +169,7 @@ lemma mass_eq_zero_of_not_admitted (R : RandomSystem A B D) {h : List (A × B)} 
   calc R.extensionLaw h x y ≤ (R.extensionLaw h x).mass (· = y) :=
       Distribution.apply_le_mass (R.extensionLaw_nonneg h x) rfl
     _ ≤ (R.extensionLaw h x).weight := Distribution.mass_le_weight (R.extensionLaw_nonneg h x) _
-    _ = 0 := by rw [extensionLaw_weight, if_neg hd]
+    _ = 0 := by rw [extensionLaw_weight, ite_eq_right hd]
 
 /-- A random system has no mass on transcripts longer than its domain's bound. -/
 lemma mass_eq_zero_of_bound_lt (R : RandomSystem A B D) {h : List (A × B)}
@@ -270,7 +274,8 @@ noncomputable def conditional (R : RandomSystem A B D) (h : List (A × B)) (x : 
       constructor
       · intro y
         exact div_nonneg (R.extensionLaw_nonneg h x y) (R.mass_nonneg h)
-      · rw [Distribution.weight_mapRange_div, extensionLaw_weight, if_pos hd.1, div_self hd.2]⟩⟩
+      · rw [Distribution.weight_mapRange_div, extensionLaw_weight,
+          ite_eq_left hd.1, div_self hd.2]⟩⟩
 
 @[simp] lemma conditional_dom (R : RandomSystem A B D) (h : List (A × B)) (x : A) :
     (R.conditional h x).Dom ↔ D h x ∧ R h ≠ 0 := Iff.rfl
@@ -318,7 +323,7 @@ noncomputable def ofConditional : RandomSystem A B D :=
     · refine ⟨conditionalMass q h • (q h x hd).1, ?_, ?_⟩
       · intro y
         simp [conditionalMass_snoc, hd, Finsupp.smul_apply]
-      · rw [if_pos hd]
+      · rw [ite_eq_left hd]
         have weighted : (conditionalMass q h • (q h x hd).1).weight =
             conditionalMass q h * (q h x hd).1.weight := by
           unfold Distribution.weight

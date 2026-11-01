@@ -1,4 +1,6 @@
-import RandomSystems.Typed.Interface
+module
+
+public import RandomSystems.Typed.Interface
 
 /-!
 # Direct and serial converter certificates
@@ -6,6 +8,8 @@ import RandomSystems.Typed.Interface
 The trimmed serial wiring of `α` (outside, bound `2`) and `β` (inside, bound `3`), certified
 directly with bound `7` rather than the product `3 * 2`, is the typed composition of `α` and `β`.
 -/
+
+@[expose] public section
 
 open SystemAlgebra
 

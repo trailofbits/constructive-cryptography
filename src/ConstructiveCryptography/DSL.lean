@@ -1,5 +1,7 @@
-import ConstructiveCryptography.DSL.Elaborator
-import ConstructiveCryptography.DSL.Inlining
+module
+
+public import ConstructiveCryptography.DSL.Elaborator
+public import ConstructiveCryptography.DSL.Inlining
 
 /-!
 # The cryptographic component DSL

@@ -1,6 +1,8 @@
-import Commons.Schemes.KEM.MLKEM.Params
-import Commons.Schemes.Lattice.SchoolbookCert
-import Commons.Schemes.Lattice.Transform
+module
+
+public import Commons.Schemes.KEM.MLKEM.Params
+public import Commons.Schemes.Lattice.SchoolbookCert
+public import Commons.Schemes.Lattice.Transform
 
 /-!
 # ML-KEM Arithmetic Assembly
@@ -27,6 +29,8 @@ ML-KEM does not use rounding or norm bundles at the arithmetic layer.
 This module is mixed: the executable aliases are computable, while
 `coeffSemantics` and `quotientOfRq` are `noncomputable`.
 -/
+
+@[expose] public section
 
 
 

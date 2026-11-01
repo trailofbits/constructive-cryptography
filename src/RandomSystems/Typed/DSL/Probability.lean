@@ -1,4 +1,6 @@
-import RandomSystems.Typed.Functional
+module
+
+public import RandomSystems.Typed.Functional
 
 /-!
 # The uniform law in the DSL namespace
@@ -11,6 +13,8 @@ import RandomSystems.Typed.Functional
 
 * `uniform`: `Distribution.ProbDist.uniform`, exported into `SystemAlgebra.DSL`
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.DSL
 

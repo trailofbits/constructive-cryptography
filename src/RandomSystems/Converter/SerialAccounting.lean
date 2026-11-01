@@ -1,4 +1,6 @@
-import RandomSystems.Converter.Calls
+module
+
+public import RandomSystems.Converter.Calls
 
 /-!
 # Aggregate work of certified serial converters
@@ -38,6 +40,8 @@ Jost, Definition 2.2.2, printed p. 18, bounds a different quantity, the length o
 inside outputs: “There is a finite upper bound on the number of consecutive outputs of the form
 (y, I′) ∈ X × Iin.” The bounds here are aggregate totals over a transcript.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

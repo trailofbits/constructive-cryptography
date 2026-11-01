@@ -1,8 +1,10 @@
-import RandomSystems.Cumulative.Completion
-import RandomSystems.Distance.Observation
-import RandomSystems.Typed.Interface
-import Probability.Kernel
-import Mathlib.Data.Set.Finite.List
+module
+
+public import RandomSystems.Cumulative.Completion
+public import RandomSystems.Distance.Observation
+public import RandomSystems.Typed.Interface
+public import Probability.Kernel
+public import Mathlib.Data.Set.Finite.List
 
 /-!
 # H-coefficient bounds through conditional transcript completions
@@ -44,6 +46,8 @@ of a sampled presentation of `R`, without changing its joint law.
 1. A. Jha. *Provable Security of Symmetric-key Cryptographic Schemes*. Doctoral thesis,
    Indian Statistical Institute, 2020. https://digitalcommons.isical.ac.in/doctoral-theses/456/.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.TypedSystem
 
@@ -107,7 +111,7 @@ lemma fTransform_boundedTranscriptLaw
   -- encoding takes its first branch and returns `h`.
   change (if hl : h.length ≤ A.bound then
     (⟨h, hl⟩ : {h : List _ // h.length ≤ A.bound}) else ⟨[], Nat.zero_le _⟩).val = h
-  rw [dif_pos hl]
+  rw [dite_eq_left hl]
 
 /-- Any two normalized terminal completions certify the distance of the original systems:
 if `(1 − ε(h, z)) · S(h) · K_S h z ≤ R(h) · K_R h z` for every `(h, z)` and the ideal

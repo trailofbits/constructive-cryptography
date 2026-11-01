@@ -1,5 +1,7 @@
-import RandomSystems.DDC.Serial
-import RandomSystems.Cumulative.ConnectionObservation
+module
+
+public import RandomSystems.DDC.Serial
+public import RandomSystems.Cumulative.ConnectionObservation
 
 /-!
 # The identity on responsive converters
@@ -17,6 +19,8 @@ Source: Jost, Definition 2.2.2 (printed pp. 17–18).
 * `IsResponsiveDDC.prefix_eq_of_replies`, `IsResponsiveDDC.exists_prefix_test`: completed
   replies determine a responsive converter on their prefixes
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

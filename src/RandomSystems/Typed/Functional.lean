@@ -1,5 +1,7 @@
-import RandomSystems.Typed.Interface
-import RandomSystems.PDS.Function
+module
+
+public import RandomSystems.Typed.Interface
+public import RandomSystems.PDS.Function
 
 /-!
 # Functional typed systems
@@ -25,6 +27,8 @@ laws use `RandomSystem.ofConditional`, sampling uses `RandomSystem.mix`.
 * `TypedSystem.sample_fTransform`, `TypedConverter.smul_sample`: a retained sample commutes with
   pushforward of its law and with converter attachment
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -66,10 +70,10 @@ lemma ofFunction_snoc (f : ∀ i, A.X i → A.Y i)
   unfold ofFunction ofConditional
   rw [RandomSystem.ofConditional_snoc]
   by_cases hd : A.domain (h.map Prod.fst ++ [x])
-  · rw [dif_pos (show A.inputDomain h x from hd), if_pos hd]
+  · rw [dite_eq_left (show A.inputDomain h x from hd), ite_eq_left hd]
     congr 1
     simp [Distribution.PMF, Distribution.fTransform, Finsupp.single_apply, eq_comm]
-  · rw [dif_neg (show ¬ A.inputDomain h x from hd), if_neg hd]
+  · rw [dite_eq_right (show ¬ A.inputDomain h x from hd), ite_eq_right hd]
 
 /-- A functional typed system gives probability one to its prescribed answers on
 each admitted history. -/
@@ -89,7 +93,7 @@ lemma ofFunction_mass_eq_one (f : ∀ i, A.X i → A.Y i)
       by_cases hn : h = []
       · exact Or.inl hn
       · exact Or.inr (A.nonempty_prefix.2 (List.prefix_append _ _) (by simpa using hn) hp)
-    rw [ofFunction_snoc, if_pos hp, if_pos (he z (by simp)),
+    rw [ofFunction_snoc, ite_eq_left hp, ite_eq_left (he z (by simp)),
       ih hh (fun w hw => he w (List.mem_append_left _ hw)), mul_one]
 
 lemma ofFunction_answers (f : ∀ i, A.X i → A.Y i)
@@ -116,14 +120,14 @@ lemma ofFunction_mass (f : ∀ i, A.X i → A.Y i)
         (∀ z ∈ h, z.2 = ⟨z.1.1, f z.1.1 z.1.2⟩) then 1 else 0 := by
   by_cases hd : h = [] ∨ A.domain (h.map Prod.fst)
   · by_cases he : ∀ z ∈ h, z.2 = ⟨z.1.1, f z.1.1 z.1.2⟩
-    · rw [if_pos ⟨hd, he⟩]; exact ofFunction_mass_eq_one f h hd he
-    · rw [if_neg (fun hc => he hc.2)]
+    · rw [ite_eq_left ⟨hd, he⟩]; exact ofFunction_mass_eq_one f h hd he
+    · rw [ite_eq_right (fun hc => he hc.2)]
       by_contra hn
       exact he (ofFunction_answers f h hn)
-  · rw [if_neg (fun hc => hd hc.1)]
+  · rw [ite_eq_right (fun hc => hd hc.1)]
     obtain ⟨h, z, rfl⟩ := List.eq_nil_or_concat h |>.resolve_left (fun hn => hd (Or.inl hn))
     simp only [List.concat_eq_append, List.map_append, List.map_singleton] at hd ⊢
-    rw [ofFunction_snoc, if_neg (fun hc => hd (Or.inr hc))]
+    rw [ofFunction_snoc, ite_eq_right (fun hc => hd (Or.inr hc))]
 
 /-- Probability one on the functional transcripts determines the entire
 behavior, including probability zero for every different answer. -/
@@ -152,16 +156,17 @@ lemma eq_ofFunction (R : TypedSystem A) (f : ∀ i, A.X i → A.Y i)
             · exact he w hw
             · obtain rfl := List.mem_singleton.mp hw
               rfl
-          rw [ofFunction_snoc, if_pos hd, ← ih, hp, one_mul]
+          rw [ofFunction_snoc, ite_eq_left hd, ← ih, hp, one_mul]
           by_cases hy : z.2 = v
-          · rw [if_pos hy]
+          · rw [ite_eq_left hy]
             have hz : z = (z.1, v) := Prod.ext rfl hy
             rw [hz]
             exact hv
-          · rw [if_neg hy]
+          · rw [ite_eq_right hy]
             have hc := Distribution.mass_add_compl (R.1.extensionLaw h z.1) (fun y => y = v)
             rw [Distribution.mass_singleton, RandomSystem.extensionLaw_apply, hv,
-              RandomSystem.extensionLaw_weight, if_pos (show A.inputDomain h z.1 from hd), hp] at hc
+              RandomSystem.extensionLaw_weight,
+              ite_eq_left (show A.inputDomain h z.1 from hd), hp] at hc
             have hz := Distribution.apply_le_mass (R.1.extensionLaw_nonneg h z.1)
               (P := fun y => y ≠ v) (a := z.2) hy
             rw [RandomSystem.extensionLaw_apply] at hz
@@ -170,8 +175,8 @@ lemma eq_ofFunction (R : TypedSystem A) (f : ∀ i, A.X i → A.Y i)
             by_contra hn
             exact he (ofFunction_answers f h hn)
           have hz := R.1.mass_eq_zero_of_prefix (List.prefix_append h [z]) (ih.trans zero)
-          rw [hz, ofFunction_snoc, if_pos hd, zero, zero_mul]
-      · rw [R.1.mass_eq_zero_of_not_admitted hd, ofFunction_snoc, if_neg hd]
+          rw [hz, ofFunction_snoc, ite_eq_left hd, zero, zero_mul]
+      · rw [R.1.mass_eq_zero_of_not_admitted hd, ofFunction_snoc, ite_eq_right hd]
   exact Subtype.ext (RandomSystem.ext mass)
 
 /-- Sample once and retain that choice throughout the interaction. -/

@@ -1,5 +1,7 @@
-import Probability.Kernel
-import RandomSystems.Typed.SystemParallel
+module
+
+public import Probability.Kernel
+public import RandomSystems.Typed.SystemParallel
 
 /-!
 # Automata as typed systems
@@ -32,6 +34,8 @@ under attachment and parallel composition.
 1. U. Maurer. Indistinguishability of Random Systems. In *Advances in Cryptology —
    EUROCRYPT 2002*, LNCS 2332, pp. 110–132, Springer, 2002. Page numbers refer to the preprint.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

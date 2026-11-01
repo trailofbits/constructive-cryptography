@@ -1,7 +1,7 @@
-import ConstructiveCryptography.CryptographicAlgebra.Relaxation
-import ConstructiveCryptography.Substitution.Implication
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.CryptographicAlgebra.Relaxation
+public import ConstructiveCryptography.Substitution.Implication
 
 /-!
 # Substitution relaxations
@@ -42,6 +42,10 @@ precomposition for the first, and the relation's `preserved` law for the second.
 
 Source: Banfi 2023, Definition 2.3.1 and §4.1.4; Jost, Definition 2.2.6.
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace ConstructiveCryptography.CryptographicAlgebra.Specification
 

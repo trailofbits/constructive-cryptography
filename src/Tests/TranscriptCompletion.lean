@@ -1,5 +1,7 @@
-import Commons.Constructions.TranscriptCompletion
-import RandomSystems.Typed.Completion
+module
+
+public import Commons.Constructions.TranscriptCompletion
+public import RandomSystems.Typed.Completion
 
 /-!
 # System applications of probability-level observation bounds
@@ -12,6 +14,8 @@ decodes their completed laws to the original list-based kernel laws.
 The reversed-history check applies the observation theorem on the list type of all histories,
 with `reverse` as the projection.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.Tests.TranscriptCompletion
 
@@ -46,7 +50,7 @@ example {X Y κ Z : Type} [Fintype X] [Fintype Y] {D : Domain X Y}
     (hz : mix P component h = 0) :
     completionKernel P component record h =
       ProbDist.single (record (Classical.choice P.nonempty) h) := by
-  simp only [completionKernel, Distribution.normalizeOr, weight_recordLikelihood, hz, dif_pos]
+  simp only [completionKernel, Distribution.normalizeOr, weight_recordLikelihood, hz, dite_eq_left]
 
 /-- The finite public alphabet `BoundedTranscript A` is inferred for every interface `A`,
 including a restricted one; it depends on no system or environment. -/

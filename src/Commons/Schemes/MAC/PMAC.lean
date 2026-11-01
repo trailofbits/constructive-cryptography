@@ -1,6 +1,8 @@
-import Commons.Schemes.Bytes
-import Commons.Definitions.Cipher
-import Commons.Definitions.MAC
+module
+
+public import Commons.Schemes.Bytes
+public import Commons.Definitions.Cipher
+public import Commons.Definitions.MAC
 
 /-!
 # PMAC
@@ -28,6 +30,8 @@ verifies on any block function answering at the interface `Evaluation`.
 
 * `PMAC.mac_correct`: every tag verifies
 -/
+
+@[expose] public section
 
 namespace Commons
 

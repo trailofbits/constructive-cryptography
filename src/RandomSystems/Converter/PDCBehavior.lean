@@ -1,5 +1,7 @@
-import RandomSystems.Converter.ConverterDomain
-import RandomSystems.Cumulative.CumulativeAttachment
+module
+
+public import RandomSystems.Converter.ConverterDomain
+public import RandomSystems.Cumulative.CumulativeAttachment
 
 /-!
 # Behaviors of PDCs
@@ -30,6 +32,8 @@ composition samples the two PDCs independently and composes the samples (Definit
 * `PDCBehavior.comp_presents`: the composition of presentations presents the composition
 * `PDCBehavior.comp_assoc`, `PDCBehavior.comp_id`, `PDCBehavior.id_comp`
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

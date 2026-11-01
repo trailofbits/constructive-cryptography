@@ -1,5 +1,7 @@
-import RandomSystems.Cumulative.Cumulative
-import Probability.Lift
+module
+
+public import RandomSystems.Cumulative.Cumulative
+public import Probability.Lift
 
 /-!
 # Random systems with stopping
@@ -20,6 +22,8 @@ stopping. Exact normalization on a domain is a separate property.
   stopping
 * `isSubprobabilistic_behaviorMass`: every finite mixture has this form
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -119,7 +123,7 @@ lemma replyChoice_some (h : List (A × B)) (x : A) (y : B) :
   simp only [replyChoice, Finsupp.add_apply,
     Distribution.fTransform_injective_apply _ _ (Option.some_injective B),
     Finsupp.mapRange_apply, hp.extensionLaw_apply, Finsupp.single_apply,
-    reduceCtorEq, if_false, add_zero]
+    reduceCtorEq, ite_false, add_zero]
 
 lemma replyChoice_isProbDist (h : List (A × B)) (x : A) :
     (hp.replyChoice h x).isProbDist := by

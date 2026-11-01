@@ -1,4 +1,6 @@
-import RandomSystems.DDC.Tensor
+module
+
+public import RandomSystems.DDC.Tensor
 
 /-!
 # Port-weighted serial converter bounds
@@ -60,6 +62,8 @@ component transcript.
 
 1. D. Jost. *On Generalizations of Composable Security*. Doctoral thesis, ETH Zurich, 2020.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -278,7 +282,7 @@ theorem IsDDC.comp_of_query_cost (hβ : IsDDC bβ β) (hα : IsDDC bα α)
       -- The exchange ends with the inside query `w`, so `run(u · a) = run(u) + 1`.
       refine ⟨m, hm, hmle, ?_⟩
       have hy : w ∈ serialM β α (u ++ [a]) := mem_of_induces_some r'
-      rw [insideRun_snoc_of_mem hy, if_pos (show IsInside w from congrArg Sigma.fst hw)]
+      rw [insideRun_snoc_of_mem hy, ite_eq_left (show IsInside w from congrArg Sigma.fst hw)]
       exact hc
   -- The other DDC conditions are those of `IsDDC.comp`; only the run bound changes.
   refine { hβ.comp hα with bound := ?_ }

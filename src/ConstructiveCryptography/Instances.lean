@@ -1,8 +1,10 @@
-import ConstructiveCryptography.Instances.Category
-import ConstructiveCryptography.Instances.Monoidal
-import ConstructiveCryptography.Instances.Algebra
-import ConstructiveCryptography.Instances.Game
-import ConstructiveCryptography.Instances.Substitution
+module
+
+public import ConstructiveCryptography.Instances.Category
+public import ConstructiveCryptography.Instances.Monoidal
+public import ConstructiveCryptography.Instances.Algebra
+public import ConstructiveCryptography.Instances.Game
+public import ConstructiveCryptography.Instances.Substitution
 
 /-!
 # Interface instances of the abstract theory

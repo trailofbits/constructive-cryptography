@@ -1,8 +1,8 @@
-import RandomSystems.Typed.Context
-import ConstructiveCryptography.Substitution.Relaxation
-import ConstructiveCryptography.Instances.Algebra
+module
 
-set_option autoImplicit false
+public import RandomSystems.Typed.Context
+public import ConstructiveCryptography.Substitution.Relaxation
+public import ConstructiveCryptography.Instances.Algebra
 
 /-!
 # Substitution images and parallel composition
@@ -31,6 +31,10 @@ exact equalities of typed systems; no error is involved.
 
 Source: Banfi 2023, §4.1.4; Jost, §2.2.2.
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace SystemAlgebra.Substitution
 

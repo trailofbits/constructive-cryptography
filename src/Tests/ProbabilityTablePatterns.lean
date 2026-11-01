@@ -1,4 +1,6 @@
-import Probability.Counting
+module
+
+public import Probability.Counting
 
 /-!
 # Uniform random-table laws
@@ -28,6 +30,8 @@ f 0 = true ∧ f 1 = false,  f : Fin 3 → Bool         factors         fresh ou
 good (F false) ∧ output (F true), universes 1, 3, 2 factors         disjoint coordinates
 ```
 -/
+
+@[expose] public section
 
 namespace Probability.Counting.Tests
 

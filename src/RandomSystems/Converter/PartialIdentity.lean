@@ -1,4 +1,6 @@
-import RandomSystems.Converter.ResourceAttachment
+module
+
+public import RandomSystems.Converter.ResourceAttachment
 
 /-!
 # The identity on partial converters
@@ -15,6 +17,8 @@ every legal input.
 * `IsDDC.trim_serialM_id`, `IsDDC.trim_id_serialM`: the identity laws for partial DDCs
 -/
 
+@[expose] public section
+
 namespace SystemAlgebra
 
 open Classical
@@ -27,7 +31,7 @@ lemma Replies.replyLabel_eq {α : InsideOutsideSystem O J U V X Y} (hα : Silent
   rcases List.eq_nil_or_concat us with rfl | ⟨us, a, rfl⟩
   · have hy : ys = [] := List.length_eq_zero_iff.mp hr.length
     subst ys
-    rw [SystemAlgebra.replyLabel, dif_neg hα]
+    rw [SystemAlgebra.replyLabel, dite_eq_right hα]
     rfl
   · have hn : ys ≠ [] := by intro hz; simpa [hz] using hr.length
     obtain ⟨ys, w, rfl⟩ := List.eq_nil_or_concat ys |>.resolve_left hn

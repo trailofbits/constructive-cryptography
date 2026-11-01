@@ -1,6 +1,6 @@
-import Mathlib.Order.Monotone.Defs
+module
 
-set_option autoImplicit false
+public import Mathlib.Order.Monotone.Defs
 
 /-!
 # Problems with ordered performance
@@ -37,6 +37,10 @@ probabilities; the `ℝ≥0` error budgets bounding distances are a separate not
 * `Problem.performance_le_of_reduction`: CR18 equation (4.3) between independent solver types
   and performance spaces
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace ConstructiveCryptography.Problem
 

@@ -1,4 +1,6 @@
-import RandomSystems.Converter.Identity
+module
+
+public import RandomSystems.Converter.Identity
 
 /-!
 # Attaching a converter to a resource
@@ -24,6 +26,8 @@ Definition 3.9 (printed p. 62).
 * `MapsDomain.comp`, `MapsDomain.admits`: domain maps compose, and give the exact
   next-query admission
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

@@ -1,14 +1,16 @@
-import Probability.FiniteSupport
-import Probability.Replay
-import Probability.Counting
-import Probability.Coupling
-import Probability.Distribution
-import Probability.DependentProduct
-import Probability.Expectation
-import Probability.Kernel
-import Probability.Lift
-import Probability.MultiCoupling
-import Probability.StatisticalDistance
+module
+
+public import Probability.FiniteSupport
+public import Probability.Replay
+public import Probability.Counting
+public import Probability.Coupling
+public import Probability.Distribution
+public import Probability.DependentProduct
+public import Probability.Expectation
+public import Probability.Kernel
+public import Probability.Lift
+public import Probability.MultiCoupling
+public import Probability.StatisticalDistance
 
 /-! Finitely supported distributions, kernels, statistical distance, couplings, expectation and
 counting. -/

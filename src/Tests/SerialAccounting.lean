@@ -1,5 +1,7 @@
-import Tests.DirectCalls
-import RandomSystems.Converter.SerialAccounting
+module
+
+public import Tests.DirectCalls
+public import RandomSystems.Converter.SerialAccounting
 
 /-!
 # Input-dependent serial costs and interrupted calls
@@ -24,6 +26,8 @@ Two `toggleCall` converters in series, with queries flowing `D₁ → D₂ → D
 exposed query and reserve `6` per intermediate query: `∑_{j(z) ∈ insideQueries T} 3 ≤ 12 · n`
 on `n` outside inputs.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.Tests.SerialAccounting
 

@@ -1,5 +1,7 @@
-import RandomSystems.Converter.ResourceAttachment
-import RandomSystems.DDC.Absorb
+module
+
+public import RandomSystems.Converter.ResourceAttachment
+public import RandomSystems.DDC.Absorb
 
 /-!
 # Absorbing a converter into a distinguisher
@@ -19,6 +21,8 @@ the same component histories.
   closing the distinguisher with the attached resource
 * `absorbAll_finite`, `absorbAll_isDDD`: absorption keeps the distinguisher conditions
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -199,7 +203,7 @@ lemma absorption_exchange {G out G'} (l : Exchange (pair D α) absorptionRoute G
           ⟨o, by simpa using hl⟩, ?_, ?_⟩)
         · simp only [restrict_some_snoc_right, restrict_some_snoc_left,
             restrict_none_snoc_left, outerCount_snoc, List.length_append,
-            List.length_singleton, if_true]
+            List.length_singleton, ite_true]
           have := hn.1
           omega
         · simpa only [restrict_some_snoc_left] using hn.2

@@ -1,6 +1,8 @@
-import ConstructiveCryptography.Specification.Action
-import ConstructiveCryptography.Specification.Relaxation.Closure
-import Mathlib.Algebra.Group.Submonoid.Defs
+module
+
+public import ConstructiveCryptography.Specification.Action
+public import ConstructiveCryptography.Specification.Relaxation.Closure
+public import Mathlib.Algebra.Group.Submonoid.Defs
 
 /-!
 # Converter-class closure
@@ -20,6 +22,8 @@ star Γ (star Γ S) = star Γ S          (star_idem, using Γ * Γ ⊆ Γ)
 ∃ σ ∈ Γ, f real = σ • ideal   ⇒   f real ∈ star Γ {ideal}     (simulator rules)
 ```
 -/
+
+@[expose] public section
 
 namespace ConstructiveCryptography.Specification
 

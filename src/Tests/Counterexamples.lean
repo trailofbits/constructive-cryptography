@@ -1,4 +1,6 @@
-import RandomSystems.DDC.Serial
+module
+
+public import RandomSystems.DDC.Serial
 
 /-!
 # The hypotheses of the laws are needed
@@ -8,6 +10,8 @@ Witnesses for `papers/SYSTEM_ALGEBRA_SPEC.md`, §6:
 1. locality (C3, `parAll_interconnect`) fails without convergence (`spinner`);
 2. the identity law (I, `attachAlong_forwardAll`) fails without reactivity.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.Counterexamples
 

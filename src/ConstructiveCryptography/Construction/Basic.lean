@@ -1,6 +1,6 @@
-import ConstructiveCryptography.Construction.Defs
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.Construction.Defs
 
 /-!
 # Laws of constructibility
@@ -23,6 +23,10 @@ Notation as in `ConstructiveCryptography.Construction.Defs`; `constructors` is M
 No category, composition or efficiency structure is assumed on constructors; closure of the
 admitted classes under composition is the explicit hypothesis `closed`.
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace ConstructiveCryptography.Construction
 

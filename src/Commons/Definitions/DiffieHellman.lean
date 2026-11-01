@@ -1,6 +1,8 @@
-import ConstructiveCryptography.DSL
-import ConstructiveCryptography.Notation
-import Mathlib.Data.ZMod.Basic
+module
+
+public import ConstructiveCryptography.DSL
+public import ConstructiveCryptography.Notation
+public import Mathlib.Data.ZMod.Basic
 
 /-!
 # The computational Diffie–Hellman assumption
@@ -20,6 +22,8 @@ substitutes for the ideal one within an error, for the typed distinguishers sele
 * `CDH.Assumption q g error`: the real system substitutes for the ideal one within
   `error` against the admitted distinguishers
 -/
+
+@[expose] public section
 
 namespace Commons
 

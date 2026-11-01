@@ -1,8 +1,10 @@
-import ConstructiveCryptography.Construction.Basic
-import ConstructiveCryptography.Specification.Basic
-import ConstructiveCryptography.Specification.Game.Basic
-import ConstructiveCryptography.Specification.Maps
-import ConstructiveCryptography.Specification.Relaxation.Kernel
+module
+
+public import ConstructiveCryptography.Construction.Basic
+public import ConstructiveCryptography.Specification.Basic
+public import ConstructiveCryptography.Specification.Game.Basic
+public import ConstructiveCryptography.Specification.Maps
+public import ConstructiveCryptography.Specification.Relaxation.Kernel
 
 /-!
 # Objects, specifications and maps

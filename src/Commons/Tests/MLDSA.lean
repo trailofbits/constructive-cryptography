@@ -1,10 +1,11 @@
-import Commons.Tests.Hex
-import Commons.Schemes.Signature.MLDSA.Signature
-import Commons.Schemes.Signature.MLDSA.Concrete.Instance
+module
 
-set_option linter.mathlibStandardSet true
--- These executable tests use `#guard`; the Mathlib library-only command ban does not apply.
-set_option linter.hashCommand false
+public import Commons.Tests.Hex
+public import Commons.Schemes.Signature.MLDSA.Signature
+public import Commons.Schemes.Signature.MLDSA.Concrete.Instance
+public meta import Commons.Schemes.Signature.MLDSA.Concrete.Instance
+public meta import Commons.Schemes.Signature.MLDSA.Signature
+public meta import Commons.Tests.Hex
 
 /-!
 # Known-answer tests for ML-DSA
@@ -16,6 +17,12 @@ signing of `M'`, and verification of valid signatures and of modified messages, 
 responses `z` and hints. Keys and signatures are compared through their SHA3-256 digests. The
 checks run by evaluation (`#guard`).
 -/
+
+@[expose] public section
+
+set_option linter.mathlibStandardSet true
+-- These executable tests use `#guard`; the Mathlib library-only command ban does not apply.
+set_option linter.hashCommand false
 
 namespace Commons.Tests.MLDSA
 

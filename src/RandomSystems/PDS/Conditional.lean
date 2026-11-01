@@ -1,4 +1,6 @@
-import RandomSystems.PDS.PDS
+module
+
+public import RandomSystems.PDS.PDS
 
 /-!
 # Systems given by their conditional replies
@@ -18,6 +20,8 @@ the earlier inputs.
 * `DDS.conditionalHistory_replies`, `DDS.replies_conditionalHistory`: its transcripts
   are exactly the reconstructed ones
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.DDS
 

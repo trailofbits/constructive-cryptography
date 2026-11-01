@@ -1,3 +1,7 @@
+module
+
+
+@[expose] public section
 /-!
 # SHA-256
 
@@ -11,6 +15,8 @@ the initial hash value (§5.3.3).
 * `SHA256.pad`: the padding of a message to a multiple of 512 bits
 * `SHA256.sha256`: the hash of a byte string
 -/
+
+@[expose] public section
 
 namespace Commons.SHA256
 

@@ -1,5 +1,7 @@
-import RandomSystems.Typed.Functional
-import RandomSystems.Typed.Parallel
+module
+
+public import RandomSystems.Typed.Functional
+public import RandomSystems.Typed.Parallel
 
 /-!
 # Algebra of retained samples
@@ -26,6 +28,8 @@ mixture semantics of `sample`.
 * `parallel_sample_right`: a draw used only by the right component of `R ∥ sample P S` is
   taken outside the parallel composition
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.TypedSystem
 

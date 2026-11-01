@@ -1,5 +1,7 @@
-import ConstructiveCryptography.Specification.Star
-import ConstructiveCryptography.Specification.Metric
+module
+
+public import ConstructiveCryptography.Specification.Star
+public import ConstructiveCryptography.Specification.Metric
 
 /-!
 # Scalar comparison and converter-class closure
@@ -16,6 +18,8 @@ Simulator witnesses use the distance on the target resource carrier. Notation fo
 
 The simulator σ (sigma) is chosen after the real resource and may depend on it.
 -/
+
+@[expose] public section
 
 namespace ConstructiveCryptography.Specification
 

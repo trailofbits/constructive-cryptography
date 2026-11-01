@@ -1,10 +1,12 @@
-import Examples.Substitution
-import Tests.Substitution.Implication
-import Tests.Substitution.Relaxation
-import Tests.Substitution.Construction
-import Tests.Substitution.Quantitative
-import Tests.Substitution.Tactics
-import Tests.Substitution.Calculation
+module
+
+public import Examples.Substitution
+public import Tests.Substitution.Implication
+public import Tests.Substitution.Relaxation
+public import Tests.Substitution.Construction
+public import Tests.Substitution.Quantitative
+public import Tests.Substitution.Tactics
+public import Tests.Substitution.Calculation
 
 /-!
 # Axioms of the substitution calculus
@@ -12,6 +14,8 @@ import Tests.Substitution.Calculation
 The substitution calculus, its instance on interfaces and its tests depend only on `propext`,
 `Classical.choice` and `Quot.sound`.
 -/
+
+@[expose] public section
 
 open ConstructiveCryptography ConstructiveCryptography.CryptographicAlgebra
 

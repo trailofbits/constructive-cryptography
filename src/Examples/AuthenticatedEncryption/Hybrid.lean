@@ -1,4 +1,6 @@
-import Examples.AuthenticatedEncryption.Oracle
+module
+
+public import Examples.AuthenticatedEncryption.Oracle
 
 /-!
 # Authenticated encryption: the systems as oracles
@@ -45,6 +47,8 @@ These equalities of typed systems rewrite under any surrounding converter or par
 * `hybrid_mass`, `ideal_mass`: the transcript laws of the hybrid and the ideal, as the mass of
   the independent table draws whose oracle gives the transcript
 -/
+
+@[expose] public section
 
 open SystemAlgebra SystemAlgebra.DSL SystemAlgebra.Interface Probability
 open Commons

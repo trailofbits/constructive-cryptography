@@ -1,4 +1,6 @@
-import ConstructiveCryptography.Notation
+module
+
+public import ConstructiveCryptography.Notation
 
 /-! # Strategy prefixes and completed observation horizons
 
@@ -7,6 +9,8 @@ provides a positive one-exchange transcript and a negative transcript past its t
 limit. The final check reads the fixed-domain-horizon formula through the selected CC distance,
 with compatibility and the environment's global stopping bound still explicit.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.Tests.TranscriptHorizon
 
@@ -35,7 +39,7 @@ example : ¬ FollowsStrategy (DDE.limitQueries (DDE.ofQueries [false, true]) 1).
 /-- A zero-query limit stops even on reply histories where the original environment continues. -/
 example {A B : Type} (E : DDE A B) (ys : List B) :
     (DDE.limitQueries E 0).1 ys = Part.none := by
-  simp only [DDE.limitQueries, limitQueries, Nat.not_lt_zero, if_false]
+  simp only [DDE.limitQueries, limitQueries, Nat.not_lt_zero, ite_false]
 
 /-- The typed CC distance needs only the interface domain bound; the permitted environments
 remain compatible with the domain and globally stop within that bound. -/

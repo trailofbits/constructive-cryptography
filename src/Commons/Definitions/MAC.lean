@@ -1,5 +1,7 @@
-import ConstructiveCryptography.DSL
-import ConstructiveCryptography.Notation
+module
+
+public import ConstructiveCryptography.DSL
+public import ConstructiveCryptography.Notation
 
 /-!
 # Message authentication codes
@@ -32,6 +34,8 @@ allowed to each of them.
 * `MAC.EUFCMA.systems`, `MAC.SUFCMA.systems`: the systems of EUF-CMA and SUF-CMA
 * `MAC.EUFCMA`, `MAC.SUFCMA`: these notions for the admitted distinguishers, within an error
 -/
+
+@[expose] public section
 
 namespace Commons
 

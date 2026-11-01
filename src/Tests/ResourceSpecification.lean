@@ -1,9 +1,13 @@
-import ConstructiveCryptography.Notation
-import ConstructiveCryptography.CryptographicAlgebra.Epsilon
-import ConstructiveCryptography.CryptographicAlgebra.Star
+module
+
+public import ConstructiveCryptography.Notation
+public import ConstructiveCryptography.CryptographicAlgebra.Epsilon
+public import ConstructiveCryptography.CryptographicAlgebra.Star
 
 /-! The abstract construction, relaxation and closure theorems of `CryptographicAlgebra`,
 applied to the instance for interfaces. -/
+
+@[expose] public section
 
 namespace ResourceSpecificationTests
 
@@ -59,8 +63,8 @@ example {α : A ⟶ B} {β : C ⟶ D} {R : Specification (TypedSystem B)}
   left.parallel right
 
 /-- Closure under a class of converters that commute with the constructing one. -/
-example {π : End A} {converters : EndoFamily A} {R S : Specification (TypedSystem A)}
-    (commutes : ∀ σ : End A, σ.op ∈ converters → ∀ T : TypedSystem A,
+example {π : A ⟶ A} {converters : EndoFamily A} {R S : Specification (TypedSystem A)}
+    (commutes : ∀ σ : A ⟶ A, End.of σ.op ∈ converters → ∀ T : TypedSystem A,
       attach π (attach σ T) =
         attach σ (attach π T))
     (construction : Constructs π R S) :
@@ -68,9 +72,9 @@ example {π : End A} {converters : EndoFamily A} {R S : Specification (TypedSyst
   Constructs.star commutes construction
 
 /-- Approximate construction is preserved by the same closure. -/
-example {π : End A} {converters : EndoFamily A} {R S : Specification (TypedSystem A)}
+example {π : A ⟶ A} {converters : EndoFamily A} {R S : Specification (TypedSystem A)}
     {ε : ENNReal}
-    (commutes : ∀ σ : End A, σ.op ∈ converters → ∀ T : TypedSystem A,
+    (commutes : ∀ σ : A ⟶ A, End.of σ.op ∈ converters → ∀ T : TypedSystem A,
       attach π (attach σ T) =
         attach σ (attach π T))
     (construction : ConstructsWithin π R S ε) :

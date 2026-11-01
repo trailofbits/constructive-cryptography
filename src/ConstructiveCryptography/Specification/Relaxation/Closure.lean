@@ -1,7 +1,7 @@
-import ConstructiveCryptography.Specification.Relaxation.Basic
-import Mathlib.Order.Closure
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.Specification.Relaxation.Basic
+public import Mathlib.Order.Closure
 
 /-!
 # Idempotent relaxation
@@ -25,6 +25,10 @@ hypothesis of `toClosureOperator`; `Relaxation.kernel_idem` supplies it for the 
 relaxation. Converter-class closure (`Specification.starClosure`) is instead built directly
 with `ClosureOperator.mk'`.
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace ConstructiveCryptography.Relaxation
 

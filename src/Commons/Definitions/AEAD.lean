@@ -1,4 +1,6 @@
-import Commons.Definitions.Encryption
+module
+
+public import Commons.Definitions.Encryption
 
 /-!
 # Authenticated encryption
@@ -31,6 +33,8 @@ The interface here has no nonce or associated-data argument.
 * `AE.INDCCA`, `AE.INTPTXT`, `AE.INTCTXT`, `AE.Secure`: these notions for the distinguisher
   advantage, within an error
 -/
+
+@[expose] public section
 
 namespace Commons
 

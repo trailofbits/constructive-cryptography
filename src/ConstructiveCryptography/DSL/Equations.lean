@@ -1,6 +1,8 @@
-import ConstructiveCryptography.DSL.EquationAttributes
-import RandomSystems.Typed.Memoryless
-import Lean
+module
+
+public import ConstructiveCryptography.DSL.EquationAttributes
+public import RandomSystems.Typed.Memoryless
+public import Lean
 
 /-! # Proved equations of component invocations
 
@@ -11,6 +13,8 @@ rewriting lemmas. `component_equation` simplifies `lhs` with only those rules an
 by the procedure stay opaque. The kernel checks the equality before it enters
 `component_equations`.
 -/
+
+@[expose] public meta section
 
 namespace SystemAlgebra.DSL
 

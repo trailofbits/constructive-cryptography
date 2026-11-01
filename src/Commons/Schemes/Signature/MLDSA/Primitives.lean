@@ -1,4 +1,6 @@
-import Commons.Schemes.Signature.MLDSA.Arithmetic
+module
+
+public import Commons.Schemes.Signature.MLDSA.Arithmetic
 
 /-!
 # ML-DSA Primitive Interfaces
@@ -21,6 +23,8 @@ spec executable without committing to one implementation yet.
 
 - NIST FIPS 204, Section 7 (supporting algorithms)
 -/
+
+@[expose] public section
 
 
 

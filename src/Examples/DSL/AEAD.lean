@@ -1,6 +1,8 @@
-import Examples.DSL.AES
-import Commons.Schemes.Stream.CTR
-import Commons.Schemes.MAC.PMAC
+module
+
+public import Examples.DSL.AES
+public import Commons.Schemes.Stream.CTR
+public import Commons.Schemes.MAC.PMAC
 
 /-!
 AES-CTR followed by PMAC, with independent keys and associated data, from the CTR and PMAC
@@ -13,6 +15,8 @@ with PMAC's verification.
 The combination and its length-delimited authentication encoding are specified here; this is not
 a claim of a standardized AEAD mode or a security reduction.
 -/
+
+@[expose] public section
 
 open SystemAlgebra SystemAlgebra.DSL Probability
 open CategoryTheory CategoryTheory.MonoidalCategory

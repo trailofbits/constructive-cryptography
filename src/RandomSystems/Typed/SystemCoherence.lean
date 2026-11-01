@@ -1,4 +1,6 @@
-import RandomSystems.Typed.SystemParallel
+module
+
+public import RandomSystems.Typed.SystemParallel
 
 /-!
 # Regrouping parallel typed systems
@@ -20,6 +22,8 @@ two components of a parallel composition exchanges the labels of its transcripts
   system beside a typed system keeps its probabilities
 * `TypedSystem.parallel_swap_mass`: exchanging the two components exchanges the labels
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -123,7 +127,7 @@ lemma parallel_unit_left_mass {A : Interface} (R : TypedSystem A)
           Equiv.coe_fn_symm_mk, Equiv.coe_fn_mk, Prod.map_apply,
           Option.some.injEq, List.cons.injEq, true_and] using ih
   change RandomSystem.parallel dummy.1 R.1 k = _
-  rw [RandomSystem.parallel_mass, if_pos hp.1, hp.2.1, hp.2.2, dummy.1.mass_nil, one_mul]
+  rw [RandomSystem.parallel_mass, ite_eq_left hp.1, hp.2.1, hp.2.2, dummy.1.mass_nil, one_mul]
 
 lemma parallel_unit_right_mass {A : Interface} (R : TypedSystem A)
     (h : List ((Σ i, (tensor A unit).X i) × (Σ i, (tensor A unit).Y i))) :
@@ -148,7 +152,7 @@ lemma parallel_unit_right_mass {A : Interface} (R : TypedSystem A)
       · exact e.elim
       · exact e.elim
   change RandomSystem.parallel R.1 dummy.1 k = _
-  rw [RandomSystem.parallel_mass, if_pos hp.1, hp.2.1, hp.2.2, dummy.1.mass_nil, mul_one]
+  rw [RandomSystem.parallel_mass, ite_eq_left hp.1, hp.2.1, hp.2.2, dummy.1.mass_nil, mul_one]
 
 lemma parallel_swap_mass {A B : Interface} (R : TypedSystem A) (S : TypedSystem B)
     (h : List ((Σ i, (tensor A B).X i) × (Σ i, (tensor A B).Y i))) :

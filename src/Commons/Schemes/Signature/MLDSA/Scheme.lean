@@ -1,5 +1,7 @@
-import Commons.Schemes.Signature.MLDSA.Primitives
-import Mathlib.Data.FinEnum
+module
+
+public import Commons.Schemes.Signature.MLDSA.Primitives
+public import Mathlib.Data.FinEnum
 
 /-!
 # ML-DSA Keys and Key Generation
@@ -21,6 +23,8 @@ algorithms are in `Commons.Schemes.Signature.MLDSA.Signature`.
 
 * `MLDSA.keyGenFromSeed_wApprox_eq`: `A·(y + c·s₁) − c·(t₁·2^d) = A·y − c·s₂ + c·t₀`
 -/
+
+@[expose] public section
 
 open LatticeCrypto TransformOps
 

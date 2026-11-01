@@ -1,4 +1,6 @@
-import Commons.Schemes.KEM.MLKEM.Encoding
+module
+
+public import Commons.Schemes.KEM.MLKEM.Encoding
 
 /-!
 # ML-KEM Primitive Interfaces
@@ -9,6 +11,8 @@ This file keeps the hash, PRF, and XOF components abstract while exposing the se
 the FIPS 203 pseudocode needs. The intent is to keep the spec executable once a concrete primitive
 bundle is supplied, without committing to one implementation yet.
 -/
+
+@[expose] public section
 
 
 

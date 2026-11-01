@@ -1,4 +1,6 @@
-import ConstructiveCryptography.Specification.Relaxation.Closure
+module
+
+public import ConstructiveCryptography.Specification.Relaxation.Closure
 
 /-!
 # Kernel relaxation
@@ -15,6 +17,8 @@ kernel view S = {R | ∃ S₀ ∈ S, view R = view S₀} = view ⁻¹' (view '' 
 The relation is an equivalence, so `kernel_idem` holds and `Relaxation.toClosureOperator`
 applies. Equal views need not mean equal resources: `view` is not assumed injective.
 -/
+
+@[expose] public section
 
 namespace ConstructiveCryptography.Relaxation
 

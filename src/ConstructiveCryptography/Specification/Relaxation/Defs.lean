@@ -1,6 +1,6 @@
-import ConstructiveCryptography.Specification.Maps
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.Specification.Maps
 
 /-!
 # Pointwise relaxations
@@ -26,6 +26,10 @@ resource in `R`”.
 * `Relaxation.mono`: `R ⊆ S` implies `φ R ⊆ φ S`.
 * `Relaxation.mem_apply_iff`: membership is witnessed by an admitted center.
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace ConstructiveCryptography
 

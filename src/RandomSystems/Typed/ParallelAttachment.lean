@@ -1,4 +1,6 @@
-import RandomSystems.Typed.SystemParallel
+module
+
+public import RandomSystems.Typed.SystemParallel
 
 /-!
 # Locality of independent attachment
@@ -11,6 +13,8 @@ systems, both sides are mixtures over the same four independent samples.
 
 * `TypedConverter.parallel_attach`: locality of attachment
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.TypedConverter
 

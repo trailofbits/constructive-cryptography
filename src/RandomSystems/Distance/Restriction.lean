@@ -1,4 +1,6 @@
-import RandomSystems.Distance.Decision
+module
+
+public import RandomSystems.Distance.Decision
 
 /-!
 # Restriction to a smaller domain
@@ -22,6 +24,8 @@ transcript is admitted exactly when it is empty or its inputs lie in the domain.
 * `RandomSystem.transcriptDistance_restrict_le`: restriction does not increase the transcript
   distance
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -72,8 +76,8 @@ lemma restrict_restrict (R : RandomSystem A B D) (hD : ∀ h x, D' h x → D h x
   ext h
   simp only [restrict_apply]
   by_cases ha : Admitted D'' h
-  · rw [if_pos ha, if_pos ha, if_pos (ha.mono hD')]
-  · rw [if_neg ha, if_neg ha]
+  · rw [ite_eq_left ha, ite_eq_left ha, ite_eq_left (ha.mono hD')]
+  · rw [ite_eq_right ha, ite_eq_right ha]
 
 /-- Along the queries of a strategy compatible with the restriction, every possible transcript
 of the system is admitted by the smaller domain. -/
@@ -87,14 +91,14 @@ lemma admitted_of_compatible_restrict {R : RandomSystem A B D} {hD : ∀ h x, D'
     have hp : R h ≠ 0 := fun h0 => hm (R.mass_eq_zero_of_prefix ⟨[z], rfl⟩ h0)
     have ha := ih hh hp
     refine admitted_snoc.mpr ⟨ha, hc h z.1 hh ?_ hz⟩
-    rwa [restrict_apply, if_pos ha]
+    rwa [restrict_apply, ite_eq_left ha]
 
 /-- A strategy compatible with the restriction is compatible with the system. -/
 lemma Compatible.of_restrict {R : RandomSystem A B D} {hD : ∀ h x, D' h x → D h x}
     {σ : List B →. A} (hc : (R.restrict D' hD).Compatible σ) : R.Compatible σ := by
   intro h x hh hm hx
   have ha := admitted_of_compatible_restrict hc hh hm
-  exact hD h x (hc h x hh (by rwa [restrict_apply, if_pos ha]) hx)
+  exact hD h x (hc h x hh (by rwa [restrict_apply, ite_eq_left ha]) hx)
 
 /-- **An environment compatible with the restriction** sees the transcript law of the system. -/
 lemma sLaw_restrict {R : RandomSystem A B D} {hD : ∀ h x, D' h x → D h x}
@@ -106,8 +110,8 @@ lemma sLaw_restrict {R : RandomSystem A B D} {hD : ∀ h x, D' h x → D h x}
   by_cases hg : Good σ n h
   · by_cases hm : R h = 0
     · simp [hm]
-    · rw [if_pos hg, if_pos hg, if_pos (admitted_of_compatible_restrict hc hg.1 hm)]
-  · rw [if_neg hg, if_neg hg]
+    · rw [ite_eq_left hg, ite_eq_left hg, ite_eq_left (admitted_of_compatible_restrict hc hg.1 hm)]
+  · rw [ite_eq_right hg, ite_eq_right hg]
 
 end RandomSystem
 

@@ -1,5 +1,7 @@
-import RandomSystems.Distance.Distinguisher
-import Probability.Lift
+module
+
+public import RandomSystems.Distance.Distinguisher
+public import Probability.Lift
 
 /-!
 # Decision probabilities of sampled systems
@@ -39,6 +41,8 @@ Pr[D(mix P R) = 1] = ∑ k ∈ supp P, P(k) · Pr[D(R k) = 1].
 `TypedSystem.transcriptDistance_sample_le` in `RandomSystems.Typed.SamplingDistance` uses
 the second identity to bound the advantage between two families sampled with a common law.
 -/
+
+@[expose] public section
 
 open Probability
 

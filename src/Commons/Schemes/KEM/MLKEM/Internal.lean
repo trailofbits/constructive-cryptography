@@ -1,4 +1,6 @@
-import Commons.Schemes.KEM.MLKEM.KPKE
+module
+
+public import Commons.Schemes.KEM.MLKEM.KPKE
 
 /-!
 # ML-KEM Internal Algorithms
@@ -7,6 +9,8 @@ Adapted from VCVio (`Verified-zkEVM/VCVio`, `LatticeCrypto/MLKEM/Internal.lean` 
 
 This file models the deterministic internal algorithms from FIPS 203 Section 6.
 -/
+
+@[expose] public section
 
 
 

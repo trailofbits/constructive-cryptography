@@ -1,5 +1,7 @@
-import RandomSystems.Typed.InterfaceCoherence
-import RandomSystems.Converter.ParallelPDS
+module
+
+public import RandomSystems.Typed.InterfaceCoherence
+public import RandomSystems.Converter.ParallelPDS
 
 /-!
 # Presentations of parallel typed systems
@@ -13,6 +15,8 @@ composition `parallelPDS`. Attaching a renaming relabels a typed system.
   composition of presentations
 * `TypedConverter.rename_mass`: attaching a renaming relabels the transcripts
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

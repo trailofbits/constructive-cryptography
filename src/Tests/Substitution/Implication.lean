@@ -1,8 +1,8 @@
-import ConstructiveCryptography.Substitution.Relaxation
-import Mathlib.Data.Fin.VecNotation
-import Mathlib.Tactic.FinCases
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.Substitution.Relaxation
+public import Mathlib.Data.Fin.VecNotation
+public import Mathlib.Tactic.FinCases
 
 /-!
 # Implication-witness tests
@@ -10,6 +10,10 @@ set_option autoImplicit false
 Witnesses built from single uses, reversal, concatenation and transformation: their endpoints,
 their use counts (repeated uses are counted, not collapsed), and their validity.
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace Tests.Substitution.Implication
 
@@ -68,7 +72,8 @@ example [DecidableEq ι] {A : C} (assumption : ι)
     (single.append single.reverse rfl).usageCount assumption = 2 := by
   intro single
   have one : single.usageCount assumption = 1 :=
-    (Implication.usageCount_single assumption assumption false transformation).trans (if_pos rfl)
+    (Implication.usageCount_single assumption assumption false transformation).trans
+      (ite_eq_left rfl)
   calc
     _ = single.usageCount assumption + single.reverse.usageCount assumption :=
       single.usageCount_append single.reverse rfl assumption

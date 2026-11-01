@@ -1,6 +1,8 @@
-import RandomSystems.Converter.ResourceCanon
-import RandomSystems.Converter.FilterAttachment
-import RandomSystems.Converter.PartialIdentity
+module
+
+public import RandomSystems.Converter.ResourceCanon
+public import RandomSystems.Converter.FilterAttachment
+public import RandomSystems.Converter.PartialIdentity
 
 /-!
 # Converter domains
@@ -33,6 +35,8 @@ Definitions 5 and 8 (printed pp. 11, 13).
 * `IsDDCFrom.replies_iff_of_le`: two DDCs from `E` to `F` below one system have the same
   transcripts
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -85,18 +89,18 @@ lemma IsRandomSystem.restrict {A B : Type} {D D' : List (A × B) → A → Prop}
   by_cases hadm : Admitted D' h ∧ D' h x
   · refine ⟨μ, fun y => ?_, ?_⟩
     · dsimp only
-      rw [hμ, if_pos (admitted_snoc.mpr hadm)]
+      rw [hμ, ite_eq_left (admitted_snoc.mpr hadm)]
     · dsimp only
-      rw [hw, if_pos (hD h x hadm.2), if_pos hadm.2, if_pos hadm.1]
+      rw [hw, ite_eq_left (hD h x hadm.2), ite_eq_left hadm.2, ite_eq_left hadm.1]
   · refine ⟨0, fun y => ?_, ?_⟩
     · dsimp only
-      rw [if_neg (fun ha => hadm (admitted_snoc.mp ha))]
+      rw [ite_eq_right (fun ha => hadm (admitted_snoc.mp ha))]
       rfl
     · dsimp only
       by_cases hx : D' h x
-      · rw [if_pos hx, if_neg (fun ha => hadm ⟨ha, hx⟩)]
+      · rw [ite_eq_left hx, ite_eq_right (fun ha => hadm ⟨ha, hx⟩)]
         rfl
-      · rw [if_neg hx]
+      · rw [ite_eq_right hx]
         rfl
 
 /-- A completed deterministic transcript fixes the preceding reply label. -/
@@ -106,7 +110,7 @@ lemma Replies.replyLabel {α : InsideOutsideSystem O J U V X Y} (hα : SilentAtE
     replyLabel α (h.map Prod.fst) = h.getLast?.map (fun z => z.2.1) := by
   rcases List.eq_nil_or_concat h with rfl | ⟨h, ⟨x, y⟩, rfl⟩
   · simp only [List.map_nil, List.getLast?_nil, Option.map_none]
-    exact dif_neg hα
+    exact dite_eq_right hα
   · simp only [List.concat_eq_append, List.map_append, List.map_cons, List.map_nil] at hr ⊢
     have hy := (replies_snoc.mp hr).2
     rw [replyLabel_of_mem α (by rw [hy]; exact Part.mem_some _)]
@@ -150,7 +154,7 @@ lemma replies_canon_iff (c : InsideOutsideSystem O J U V X Y) (hc : SilentAtEmpt
     · rw [canon_of_admissible (hx.mpr had)]
       tauto
     · have hn : ¬ Admissible c (h.map Prod.fst ++ [x]) := fun hh => had (hx.mp hh)
-      simp only [canon, hn, if_false, Part.none_ne_some]
+      simp only [canon, hn, ite_false, Part.none_ne_some]
       tauto
 
 /-- Defined histories of a partial DDC are admissible. -/
@@ -440,7 +444,7 @@ lemma trim_apply_filter_of_dom {E : List (Σ j, X j) → Prop}
   funext h
   by_cases hd : h = [] ∨ E h
   · simp [filterDom, hd]
-  · rw [filterDom, if_neg hd]
+  · rw [filterDom, ite_eq_right hd]
     exact (Part.eq_none_iff'.mpr fun hd' => hd (Or.inr ((hRE h).mp hd'))).symm
 
 end Identity
@@ -703,7 +707,7 @@ lemma IsDDCFrom.mapsDomain (ha : IsDDCFrom E F b a)
     (fun xs x ys hr => (next xs ys x hr).1)⟩
   have hreach := reach_of_trim hy.1
   obtain ⟨ys, hr⟩ := (reach_snoc_iff.mp hreach).1.exists_replies
-  exact (next xs ys x hr).2 y (by simpa only [trim, if_pos hreach] using hy)
+  exact (next xs ys x hr).2 y (by simpa only [trim, ite_eq_left hreach] using hy)
 
 end Attachment
 

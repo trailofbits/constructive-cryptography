@@ -1,8 +1,8 @@
-import ConstructiveCryptography.CryptographicAlgebra.Epsilon
-import ConstructiveCryptography.Specification.Star.Metric
-import Mathlib.CategoryTheory.Endomorphism
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.CryptographicAlgebra.Epsilon
+public import ConstructiveCryptography.Specification.Star.Metric
+public import Mathlib.CategoryTheory.Endomorphism
 
 /-!
 # Star relaxation
@@ -39,6 +39,10 @@ outside A ──[ β ]── A ── R ∈ S        β • R ∈ star converter
 * `CryptographicAlgebra.Specification.constructs_of_simulator`: MR16, Lemma 5
 -/
 
+@[expose] public section
+
+set_option autoImplicit false
+
 namespace ConstructiveCryptography.CryptographicAlgebra
 
 open CategoryTheory
@@ -55,35 +59,36 @@ variable {Phi : C → Type w} [ResourceTheory C Phi]
 resources contravariantly, so the class is a submonoid of the endomorphisms of `A` in the
 opposite category, whose multiplication is attachment order.
 
-An element is `β.op` for a converter `β : A ⟶ A` of `C`. In the opposite endomorphism
-monoid `End (op A)`, the product `outer * inner` corresponds to `outer.unop ≫ inner.unop`
-in `C`, with `outer` outside, so `(outer * inner) • R = outer • (inner • R)`. Being a
-submonoid means `𝟙 A` is admitted and admitted converters compose; no inverses are required,
+An element is `End.of β.op` for a converter `β : A ⟶ A` of `C`. In the opposite endomorphism
+monoid `End (op A)`, `outer * inner` corresponds to
+`outer.asHom.unop ≫ inner.asHom.unop` in `C`, with `outer` outside, so
+`(outer * inner) • R = outer • (inner • R)`. Being a submonoid means `𝟙 A` is admitted and
+admitted converters compose; no inverses are required,
 and nothing bounds the class's size or efficiency. This is MR16's `Σ`. -/
 abbrev EndoFamily (A : C) := Submonoid (CategoryTheory.End (Opposite.op A))
 
 /-- Attachment as an action of the endomorphisms of `A` in the opposite category:
-`β • R = attach β.unop R` for `β : End (op A)` and `R : Phi A`. The identity law is
+`β • R = attach β.asHom.unop R` for `β : End (op A)` and `R : Phi A`. The identity law is
 `attach_identity`; the multiplication law `(outer * inner) • R = outer • (inner • R)` is
 `attach_serial`. Callers install this action locally to reuse the generic star calculus.
 
 MR16, §3.3 (printed p. 7): “(β ◦ α)ⁱR = βⁱ(αⁱR)”. -/
 @[reducible] def endoMulAction (Phi : C → Type w) [ResourceTheory C Phi] (A : C) :
     MulAction (CategoryTheory.End (Opposite.op A)) (Phi A) where
-  smul converter resource := attach converter.unop resource
+  smul converter resource := attach converter.asHom.unop resource
   one_smul resource := attach_identity resource
-  mul_smul outer inner resource := attach_serial outer.unop inner.unop resource
+  mul_smul outer inner resource := attach_serial outer.asHom.unop inner.asHom.unop resource
 
 namespace Specification
 
 /-- Closure of a specification under an interface-preserving converter class:
 for `converters : EndoFamily A` and `source` on `A`,
-`star converters source = {β • R | β.op ∈ converters, R ∈ source}`, again on `A`.
+`star converters source = {β • R | End.of β.op ∈ converters, R ∈ source}`, again on `A`.
 
 Maurer--Renner 2016, Section 3.4 (printed p. 8):
 “`R* := RΣ = {Rβ | R ∈ R, β ∈ Σ}`.” -/
 noncomputable abbrev star {A : C}
-    -- MR16's `Σ`, storing opposite morphisms: `β` is admitted when `β.op ∈ converters`.
+    -- MR16's `Σ`, storing opposite morphisms: `β` is admitted when `End.of β.op ∈ converters`.
     (converters : EndoFamily A)
     (source : Specification (Phi A)) : Specification (Phi A) :=
   letI := endoMulAction Phi A
@@ -92,21 +97,21 @@ noncomputable abbrev star {A : C}
 omit [MonoidalCategory C] in
 /-- Membership in converter-class closure, expressed with ordinary base
 converters: `resource ∈ star converters source` iff `resource = converter • original` for
-some `converter : A ⟶ A` with `converter.op ∈ converters` and some `original ∈ source`. -/
+some `converter : A ⟶ A` with `End.of converter.op ∈ converters` and some `original ∈ source`. -/
 lemma mem_star_iff {A : C}
     {converters : EndoFamily A}
     {source : Specification (Phi A)} {resource : Phi A} :
     resource ∈ star converters source ↔
-      ∃ converter : CategoryTheory.End A, converter.op ∈ converters ∧
+      ∃ converter : A ⟶ A, End.of converter.op ∈ converters ∧
         ∃ original ∈ source,
           attach converter original = resource := by
   constructor
   · -- Read the opposite-category converter as its ordinary base converter.
     rintro ⟨converter, admitted, original, sourceAdmitted, equation⟩
-    exact ⟨converter.unop, admitted, original, sourceAdmitted, equation⟩
+    exact ⟨converter.asHom.unop, admitted, original, sourceAdmitted, equation⟩
   · -- Send the ordinary base converter to the acting opposite category.
     rintro ⟨converter, admitted, original, sourceAdmitted, equation⟩
-    exact ⟨converter.op, admitted, original, sourceAdmitted, equation⟩
+    exact ⟨End.of converter.op, admitted, original, sourceAdmitted, equation⟩
 
 omit [MonoidalCategory C] in
 /-- Every specification is contained in its converter-class closure, using the admitted
@@ -151,15 +156,15 @@ omit [MonoidalCategory C] in
 of its direct image when the converter commutes with the admitted class, since
 `converter • (β • R) = β • (converter • R)` with the same admitted `β`. -/
 lemma map_star_subset {A : C}
-    -- `converter : End A` is a converter from `A` to itself, not necessarily admitted.
-    {converter : CategoryTheory.End A}
-    -- `converters` is the admitted class; `β` is admitted when `β.op ∈ converters`.
+    -- `converter : A ⟶ A` is a converter from `A` to itself, not necessarily admitted.
+    {converter : A ⟶ A}
+    -- `converters` is the admitted class; `β` is admitted when `End.of β.op ∈ converters`.
     {converters : EndoFamily A}
     -- `commutes`: `converter • (classConverter • R) = classConverter • (converter • R)` for
-    -- every `classConverter` with `classConverter.op ∈ converters` and every `R : Phi A`.
+    -- every `classConverter` with `End.of classConverter.op ∈ converters` and every `R : Phi A`.
     -- This stands in for MR16's composition-order invariance; it is assumed, not derived.
-    (commutes : ∀ classConverter : CategoryTheory.End A,
-      classConverter.op ∈ converters →
+    (commutes : ∀ classConverter : A ⟶ A,
+      End.of classConverter.op ∈ converters →
         ∀ resource : Phi A,
           attach converter
               (attach classConverter resource) =
@@ -174,7 +179,7 @@ lemma map_star_subset {A : C}
   -- Apply image compatibility to the induced endomorphism action.
   exact ConstructiveCryptography.Specification.image_star_subset
     (f := attach converter)
-    (fun classConverter admitted resource => commutes classConverter.unop admitted resource)
+    (fun classConverter admitted resource => commutes classConverter.asHom.unop admitted resource)
     source
 
 omit [MonoidalCategory C] in
@@ -187,16 +192,16 @@ for `π` attached as `πR` and `β ∈ Σ` as `Rβ` (§3.3, printed p. 8). Here 
 endomorphism on the whole interface `A`, so the corresponding commutation is an explicit
 hypothesis. -/
 theorem Constructs.star {A : C}
-    -- `converter : End A` is MR16's protocol `π`, here a converter from `A` to itself.
-    {converter : CategoryTheory.End A}
-    -- `converters` is MR16's `Σ`; `β` is admitted when `β.op ∈ converters`.
+    -- `converter : A ⟶ A` is MR16's protocol `π`, here a converter from `A` to itself.
+    {converter : A ⟶ A}
+    -- `converters` is MR16's `Σ`; `β` is admitted when `End.of β.op ∈ converters`.
     {converters : EndoFamily A}
     -- `source` and `target` are specifications on `A`.
     {source target : Specification (Phi A)}
     -- `commutes`: `converter` commutes with every admitted `classConverter` on every
     -- `resource : Phi A`; MR16 gets this from its two-side setting, here it is a premise.
-    (commutes : ∀ classConverter : CategoryTheory.End A,
-      classConverter.op ∈ converters →
+    (commutes : ∀ classConverter : A ⟶ A,
+      End.of classConverter.op ∈ converters →
         ∀ resource : Phi A,
           attach converter
               (attach classConverter resource) =
@@ -210,7 +215,7 @@ theorem Constructs.star {A : C}
   let := endoMulAction Phi A
   -- Specialize exact star compatibility to the induced endomorphism action.
   exact ConstructiveCryptography.Specification.Constructs.star construction
-    (fun classConverter admitted resource => commutes classConverter.unop admitted resource)
+    (fun classConverter admitted resource => commutes classConverter.asHom.unop admitted resource)
 
 /-- Approximate construction remains valid after star-relaxing both endpoints
 when the constructing converter commutes with the admitted class: `converter` constructs
@@ -222,16 +227,16 @@ d(converter • (β • R), β • T) = d(β • (converter • R), β • T)   
                               ≤ d(converter • R, T) ≤ error      non-expansion of β
 ``` -/
 lemma ConstructsWithin.star [CompatiblePseudoMetric C Phi] {A : C}
-    -- `converter : End A` is a converter from `A` to itself, not necessarily admitted.
-    {converter : CategoryTheory.End A}
-    -- `converters` is the admitted class; `β` is admitted when `β.op ∈ converters`.
+    -- `converter : A ⟶ A` is a converter from `A` to itself, not necessarily admitted.
+    {converter : A ⟶ A}
+    -- `converters` is the admitted class; `β` is admitted when `End.of β.op ∈ converters`.
     {converters : EndoFamily A}
     -- `source` and `target` are specifications on `A`; `error : ENNReal` is the budget.
     {source target : Specification (Phi A)} {error : ENNReal}
     -- `commutes`: `converter` commutes with every admitted `classConverter` on every
     -- `resource : Phi A`.
-    (commutes : ∀ classConverter : CategoryTheory.End A,
-      classConverter.op ∈ converters →
+    (commutes : ∀ classConverter : A ⟶ A,
+      End.of classConverter.op ∈ converters →
         ∀ resource : Phi A,
           attach converter
               (attach classConverter resource) =
@@ -246,8 +251,8 @@ lemma ConstructsWithin.star [CompatiblePseudoMetric C Phi] {A : C}
   let := CompatiblePseudoMetric.fibreMetric (Phi := Phi) A
   -- Apply scalar compatibility to the same class and its non-expanding action.
   exact ConstructiveCryptography.Specification.ConstructsWithin.star construction
-    (fun classConverter admitted resource => commutes classConverter.unop admitted resource)
-    (fun classConverter _ R S => distance_attach_le classConverter.unop R S)
+    (fun classConverter admitted resource => commutes classConverter.asHom.unop admitted resource)
+    (fun classConverter _ R S => distance_attach_le classConverter.asHom.unop R S)
 
 omit [MonoidalCategory C] in
 /-- An explicit exact simulator equation proves construction into the
@@ -265,8 +270,8 @@ lemma constructs_star_of_simulator {A B : C}
     {converter : A ⟶ B} {converters : EndoFamily A}
     -- `real : Phi B` is the real resource inside; `ideal : Phi A` the ideal one outside.
     {real : Phi B} {ideal : Phi A}
-    -- `simulator : End A` is admitted, as `admitted : simulator.op ∈ converters` records.
-    (simulator : CategoryTheory.End A) (admitted : simulator.op ∈ converters)
+    -- `simulator : A ⟶ A` is admitted, as `admitted : End.of simulator.op ∈ converters` records.
+    (simulator : A ⟶ A) (admitted : End.of simulator.op ∈ converters)
     -- `equation`: `converter • real = simulator • ideal`.
     (equation : attach converter real =
       attach simulator ideal) :
@@ -274,7 +279,7 @@ lemma constructs_star_of_simulator {A B : C}
       (star converters ({ideal} : Specification (Phi A))) := by
   let := endoMulAction Phi A
   exact ConstructiveCryptography.Specification.constructs_star_of_simulator
-    simulator.op admitted equation
+    (End.of simulator.op) admitted equation
 
 omit [MonoidalCategory C] in
 /-- Pointwise exact simulator witnesses prove construction into a star-relaxed
@@ -290,7 +295,7 @@ lemma constructs_star_of_simulators {A B : C}
     -- `simulates`: each `resource ∈ real` has an admitted `simulator`, possibly depending on
     -- `resource`, with `converter • resource = simulator • ideal`.
     (simulates : ∀ resource ∈ real,
-      ∃ simulator : CategoryTheory.End A, simulator.op ∈ converters ∧
+      ∃ simulator : A ⟶ A, End.of simulator.op ∈ converters ∧
         attach converter resource =
           attach simulator ideal) :
     Constructs converter real
@@ -300,7 +305,7 @@ lemma constructs_star_of_simulators {A B : C}
   apply ConstructiveCryptography.Specification.constructs_star_of_simulators
   intro resource admitted
   obtain ⟨simulator, simulatorAdmitted, equation⟩ := simulates resource admitted
-  exact ⟨simulator.op, simulatorAdmitted, equation⟩
+  exact ⟨End.of simulator.op, simulatorAdmitted, equation⟩
 
 /-- An explicit simulator distance bound proves approximate construction into
 the converter-class-relaxed ideal: `converter` constructs `star converters {ideal}` from
@@ -312,8 +317,8 @@ lemma constructsWithin_star_of_simulator [CompatiblePseudoMetric C Phi] {A B : C
     {real : Phi B} {ideal : Phi A}
     -- `error` bounds the distance in Phi A; ENNReal permits infinity and untruncated addition.
     {error : ENNReal}
-    -- `simulator : End A` is admitted, as `admitted : simulator.op ∈ converters` records.
-    (simulator : CategoryTheory.End A) (admitted : simulator.op ∈ converters)
+    -- `simulator : A ⟶ A` is admitted, as `admitted : End.of simulator.op ∈ converters` records.
+    (simulator : A ⟶ A) (admitted : End.of simulator.op ∈ converters)
     -- `close`: `simulator • ideal` is within `error` of `converter • real` in `Phi A`.
     (close : distance (attach converter real)
       (attach simulator ideal) ≤ error) :
@@ -323,7 +328,7 @@ lemma constructsWithin_star_of_simulator [CompatiblePseudoMetric C Phi] {A B : C
   let := endoMulAction Phi A
   let := CompatiblePseudoMetric.fibreMetric (Phi := Phi) A
   exact ConstructiveCryptography.Specification.constructsWithin_star_of_simulator
-    simulator.op admitted close
+    (End.of simulator.op) admitted close
 
 /-- Pointwise simulator distance witnesses prove approximate construction into
 a star-relaxed singleton ideal: `converter` constructs `star converters {ideal}` from `real`
@@ -339,7 +344,7 @@ lemma constructsWithin_star_of_simulators [CompatiblePseudoMetric C Phi] {A B : 
     -- `resource`, with `simulator • ideal` within the one budget `error` of
     -- `converter • resource`.
     (simulates : ∀ resource ∈ real,
-      ∃ simulator : CategoryTheory.End A, simulator.op ∈ converters ∧
+      ∃ simulator : A ⟶ A, End.of simulator.op ∈ converters ∧
         distance (attach converter resource)
           (attach simulator ideal) ≤ error) :
     ConstructsWithin converter real
@@ -351,7 +356,7 @@ lemma constructsWithin_star_of_simulators [CompatiblePseudoMetric C Phi] {A B : 
   apply ConstructiveCryptography.Specification.constructsWithin_star_of_simulators
   intro resource admitted
   obtain ⟨simulator, simulatorAdmitted, close⟩ := simulates resource admitted
-  exact ⟨simulator.op, simulatorAdmitted, close⟩
+  exact ⟨End.of simulator.op, simulatorAdmitted, close⟩
 
 /-- Maurer--Renner's simulator proof step as exact construction into an error
 relaxation of the converter-class-relaxed ideal: `converter` constructs
@@ -365,8 +370,8 @@ theorem constructs_of_simulator [CompatiblePseudoMetric C Phi] {A B : C}
     {converter : A ⟶ B} {converters : EndoFamily A}
     -- `real : Phi B` is MR16's `R`, `ideal : Phi A` its `S`, and `error : ENNReal` its `ε`.
     {real : Phi B} {ideal : Phi A} {error : ENNReal}
-    -- `simulator : End A` is MR16's `σ`; `admitted : simulator.op ∈ converters` is `σ ∈ Σ`.
-    (simulator : CategoryTheory.End A) (admitted : simulator.op ∈ converters)
+    -- `simulator : A ⟶ A` is MR16's `σ`; `admitted : End.of simulator.op ∈ converters` is `σ ∈ Σ`.
+    (simulator : A ⟶ A) (admitted : End.of simulator.op ∈ converters)
     -- `close` is `πR ≈ᵋ Sσ`: `converter • real` lies within `error` of `simulator • ideal`.
     (close : distance (attach converter real)
       (attach simulator ideal) ≤ error) :

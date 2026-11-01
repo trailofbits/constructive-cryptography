@@ -9,7 +9,7 @@ package ConstructiveCryptography where
   ]
 
 require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git" @ "v4.33.1"
+  "https://github.com/leanprover-community/mathlib4.git" @ "v4.35.0"
 
 /-- Finitely supported distributions, statistical distance, couplings,
 expectation and counting. Independent of any system model. -/

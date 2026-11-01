@@ -1,5 +1,7 @@
-import RandomSystems.Game.MBO
-import RandomSystems.Converter.ConverterRelabel
+module
+
+public import RandomSystems.Game.MBO
+public import RandomSystems.Converter.ConverterRelabel
 
 /-!
 # Converters attached to games
@@ -39,6 +41,8 @@ the proof of Lemma 4.9 use it.
 * `Domain.SolverBehavior.decision_surjective`, `Domain.SolverBehavior.decision_absorb`: every
   distinguisher behavior is a decision view, and the view commutes with absorption
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -145,10 +149,10 @@ lemma replyLabel_liftMBO (a : InsideOutsideSystem O J U V X Y) (h) :
   unfold replyLabel
   by_cases hd : (a (h.map (insideMap forgetMBO))).Dom
   -- Both reply, with the same label.
-  · rw [dif_pos hd, dif_pos ((liftMBO_dom a h).mpr hd)]
+  · rw [dite_eq_left hd, dite_eq_left ((liftMBO_dom a h).mpr hd)]
     exact congrArg some (outsideMap_tagMBO_fst _ _)
   -- Neither replies.
-  · rw [dif_neg hd, dif_neg (fun h' => hd ((liftMBO_dom a h).mp h'))]
+  · rw [dite_eq_right hd, dite_eq_right (fun h' => hd ((liftMBO_dom a h).mp h'))]
 
 lemma lastOuter_insideMap_forgetMBO (h : List (Σ l, twoFam U (withMBO Y) l)) :
     lastOuter (h.map (insideMap forgetMBO)) = lastOuter h := by
@@ -1663,10 +1667,10 @@ lemma DDD.replyLabel_winner (D : DDD O U V) (h) :
   unfold replyLabel
   by_cases hd : (D (h.map forgetEnvMBO)).Dom
   -- Both reply, at the same port.
-  · rw [dif_pos hd, dif_pos ((D.winner_dom h).mpr hd)]
+  · rw [dite_eq_left hd, dite_eq_left ((D.winner_dom h).mpr hd)]
     exact congrArg some (tagDecision_fst _ _)
   -- Neither replies.
-  · rw [dif_neg hd, dif_neg (fun h' => hd ((D.winner_dom h).mp h'))]
+  · rw [dite_eq_right hd, dite_eq_right (fun h' => hd ((D.winner_dom h).mp h'))]
 
 /-- The winner of a deterministic distinguisher is a deterministic distinguisher. -/
 lemma IsDDD.winner {D : DDD O U V} (hD : IsDDD D) : IsDDD D.winner := by
@@ -1770,7 +1774,7 @@ lemma RandomSystem.winProbability_eq_decisionProbability_winner (D : DDD O U V) 
   -- `h` without MBOs is completed for `D` (`good_blindMBO_iff`), and its mass under `R⁻` is ≥
   -- the mass of `h` under `R` (`le_sumMBO`), hence positive.
   have hvis : forgetMBOs h ∈ (R.visible.sLaw (ddeOf hD).1 hD.2.1.choose).support := by
-    rw [Finsupp.mem_support_iff, sLaw_apply, if_pos ((good_blindMBO_iff _ _ h).mp hg)]
+    rw [Finsupp.mem_support_iff, sLaw_apply, ite_eq_left ((good_blindMBO_iff _ _ h).mp hg)]
     have := le_sumMBO R.mass_nonneg h
     rw [← RandomSystem.visible_apply] at this
     exact ne_of_gt (lt_of_lt_of_le (lt_of_le_of_ne (R.mass_nonneg h) (Ne.symm hRh)) this)

@@ -1,4 +1,6 @@
-import RandomSystems.Typed.Functional
+module
+
+public import RandomSystems.Typed.Functional
 
 /-!
 # Retained sampling through typed operations
@@ -7,6 +9,8 @@ One sample `k ← P` is drawn before the interaction and retained, never redrawn
 attaching `α` sends every inside query to the same `R k`, and sampling `f(P)` is sampling `P`
 and keeping `R (f k)`, for any map `f`, injective or not, and any probability law `P`.
 -/
+
+@[expose] public section
 
 open Probability SystemAlgebra
 

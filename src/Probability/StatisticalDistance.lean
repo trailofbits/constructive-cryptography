@@ -1,6 +1,8 @@
-import Probability.Distribution
-import Probability.Expectation
-import Mathlib.Algebra.Order.Sub.Basic
+module
+
+public import Probability.Distribution
+public import Probability.Expectation
+public import Mathlib.Algebra.Order.Sub.Basic
 
 /-!
 # Statistical distance
@@ -44,6 +46,8 @@ behind H-coefficient arguments. The carrier may be infinite; each law has finite
    LNCS 4622, pp. 130–149, 2007.
 5. C. Portmann and R. Renner. *Security in Quantum Cryptography*. arXiv:2102.00021v2, 2021.
 -/
+
+@[expose] public section
 
 noncomputable section
 
@@ -409,8 +413,8 @@ lemma statDist_eq_mass_sub_mass_pos {A : Type*}
   apply Finset.sum_congr rfl
   intro a _
   by_cases h : Y a < X a
-  · rw [if_pos h, if_pos h, max_eq_left (sub_nonneg.mpr h.le)]
-  · rw [if_neg h, if_neg h, max_eq_right (sub_nonpos.mpr (not_lt.mp h))]
+  · rw [ite_eq_left h, ite_eq_left h, max_eq_left (sub_nonneg.mpr h.le)]
+  · rw [ite_eq_right h, ite_eq_right h, max_eq_right (sub_nonpos.mpr (not_lt.mp h))]
     simp
 
 /-! ### The optimal-test identity -/
@@ -590,9 +594,9 @@ theorem statDist_le_probBad_add_of_ratio_on_good {A : Type*}
       intro a
       by_cases hb : Bad a
       · -- On bad points the required lower bound is `-eps * ideal(a) ≤ real(a)`.
-        simp only [if_pos hb]
+        simp only [ite_eq_left hb]
         nlinarith [h_real_nonneg a, mul_nonneg eps.coe_nonneg (h_ideal_nonneg a)]
-      · simpa only [if_neg hb, zero_add] using h_ratio a hb)
+      · simpa only [ite_eq_right hb, zero_add] using h_ratio a hb)
   calc
     _ ≤ ideal.expect (fun a => (if Bad a then (1 : ℝ) else 0) + eps) := h
     _ = probBad ideal Bad + (eps : ℝ) * ideal.weight := by

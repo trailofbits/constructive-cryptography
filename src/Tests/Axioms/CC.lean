@@ -1,4 +1,6 @@
-import ConstructiveCryptography
+module
+
+public import ConstructiveCryptography
 
 /-!
 # Axioms of the Constructive Cryptography layer
@@ -6,6 +8,8 @@ import ConstructiveCryptography
 The abstract results of the Constructive Cryptography classes, and the instances of those classes
 on interfaces, depend only on `propext`, `Classical.choice` and `Quot.sound`.
 -/
+
+@[expose] public section
 
 -- ConstructiveCryptography.CryptographicAlgebra.Basic
 #print axioms ConstructiveCryptography.CryptographicAlgebra.attach_parallel

@@ -1,7 +1,13 @@
-import ConstructiveCryptography.Specification.Defs
-import Mathlib.Data.Set.Lattice
-import Mathlib.Order.Monotone.Defs
-import Mathlib.Order.Nat
+module
+
+public import ConstructiveCryptography.Specification.Defs
+public import Mathlib.Data.Set.Lattice.Bounded
+public import Mathlib.Data.Set.Lattice.Disjoint
+public import Mathlib.Data.Set.Lattice.Image
+public import Mathlib.Data.Set.Lattice.Indexed
+public import Mathlib.Data.Set.Lattice.Order
+public import Mathlib.Order.Monotone.Defs
+public import Mathlib.Order.Nat
 
 /-!
 # Specifications defined by test bounds
@@ -20,6 +26,8 @@ gameSpec tests error = {resource | ∀ test ∈ tests, test resource ≤ error}
 The specification shrinks as `error` decreases (`gameSpec_mono`) or as tests are added
 (`gameSpec_antitone`). With no tests it admits every resource.
 -/
+
+@[expose] public section
 
 namespace ConstructiveCryptography.Specification
 

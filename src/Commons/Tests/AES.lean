@@ -1,5 +1,9 @@
-import Commons.Tests.Hex
-import Commons.Schemes.BlockCipher.AES
+module
+
+public import Commons.Tests.Hex
+public import Commons.Schemes.BlockCipher.AES
+public meta import Commons.Schemes.BlockCipher.AES
+public meta import Commons.Tests.Hex
 
 /-!
 # Known-answer tests for AES
@@ -9,6 +13,8 @@ the cipher example (Appendix B), and the cipher and inverse cipher examples (App
 against the ECB vectors of NIST SP 800-38A (F.1.1–F.1.6), four blocks per key length, encrypted
 and decrypted. The checks run the functions by evaluation (`#guard`).
 -/
+
+@[expose] public section
 
 namespace Commons.Tests.AES
 

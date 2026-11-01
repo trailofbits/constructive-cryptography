@@ -1,7 +1,9 @@
-import Init.Data.Vector.Algebra
-import Commons.Schemes.Lattice.Kernel
-import Commons.Schemes.Bytes
-import Mathlib.Data.Fintype.Pi
+module
+
+public import Init.Data.Vector.Algebra
+public import Commons.Schemes.Lattice.Kernel
+public import Commons.Schemes.Bytes
+public import Mathlib.Data.Fintype.Pi
 
 /-!
 # Vector Backend For Negacyclic Rings
@@ -22,6 +24,8 @@ polynomial carrier. Provides:
 Both scheme `Arithmetic.lean` modules (`MLDSA`, `MLKEM`) instantiate their
 coefficient-domain rings through `vectorNegacyclicRing`.
 -/
+
+@[expose] public section
 
 
 
@@ -256,14 +260,23 @@ as `(vectorNegacyclicRing ...).Poly` rather than `Poly Coeff n`. -/
       (vectorBackend Coeff n).coeff f i + (vectorBackend Coeff n).coeff g i :=
   NegacyclicRing.coeff_add (vectorNegacyclicRing Coeff n) f g i
 
+@[simp] lemma vectorRing_add_get (f g : Poly Coeff n) (i : Fin n) :
+    ((vectorNegacyclicRing Coeff n).add f g).get i = f.get i + g.get i := by
+  exact Poly.get_zipWith (· + ·) f g i
+
+@[simp] lemma vectorRing_sub_get (f g : Poly Coeff n) (i : Fin n) :
+    ((vectorNegacyclicRing Coeff n).sub f g).get i = f.get i - g.get i := by
+  exact Poly.get_zipWith (· - ·) f g i
+
 lemma vectorRing_mul_add_right (f g h : Poly Coeff n) :
     (vRing Coeff n).mul f (g + h) = (vRing Coeff n).mul f g + (vRing Coeff n).mul f h := by
   apply Poly.ext_get_eq
   intro k
   change (negacyclicMul (vectorBackend Coeff n) f (g + h)).get k =
-    (negacyclicMul (vectorBackend Coeff n) f g +
-      negacyclicMul (vectorBackend Coeff n) f h).get k
-  simp only [vectorKernel_mul_get, Poly.get_add, negacyclicConvCoeff]
+    ((vectorNegacyclicRing Coeff n).add (negacyclicMul (vectorBackend Coeff n) f g)
+      (negacyclicMul (vectorBackend Coeff n) f h)).get k
+  -- Read the bundled and vector operations through their coefficient laws.
+  simp only [vectorRing_add_get, vectorKernel_mul_get, Poly.get_add, negacyclicConvCoeff]
   rw [← Finset.sum_add_distrib]; congr 1; ext ij
   split_ifs <;> ring
 
@@ -277,9 +290,10 @@ lemma vectorRing_mul_sub_right (f g h : Poly Coeff n) :
   apply Poly.ext_get_eq
   intro k
   change (negacyclicMul (vectorBackend Coeff n) f (g - h)).get k =
-    (negacyclicMul (vectorBackend Coeff n) f g -
-      negacyclicMul (vectorBackend Coeff n) f h).get k
-  simp only [vectorKernel_mul_get, Poly.get_sub, negacyclicConvCoeff]
+    ((vectorNegacyclicRing Coeff n).sub (negacyclicMul (vectorBackend Coeff n) f g)
+      (negacyclicMul (vectorBackend Coeff n) f h)).get k
+  -- Read the bundled and vector operations through their coefficient laws.
+  simp only [vectorRing_sub_get, vectorKernel_mul_get, Poly.get_sub, negacyclicConvCoeff]
   rw [← Finset.sum_sub_distrib]; congr 1; ext ij
   split_ifs <;> ring
 
@@ -304,14 +318,6 @@ lemma vectorRing_mul_comm (f g : Poly Coeff n) :
     congr 1; ext ⟨a, b⟩
     simp only [Nat.add_comm b a]
     split_ifs  <;> ring
-
-@[simp] lemma vectorRing_add_get (f g : Poly Coeff n) (i : Fin n) :
-    ((vectorNegacyclicRing Coeff n).add f g).get i = f.get i + g.get i := by
-  exact Poly.get_zipWith (· + ·) f g i
-
-@[simp] lemma vectorRing_sub_get (f g : Poly Coeff n) (i : Fin n) :
-    ((vectorNegacyclicRing Coeff n).sub f g).get i = f.get i - g.get i := by
-  exact Poly.get_zipWith (· - ·) f g i
 
 @[simp] lemma vectorRing_neg_get (f : Poly Coeff n) (i : Fin n) :
     ((vectorNegacyclicRing Coeff n).neg f).get i = -f.get i := by

@@ -1,5 +1,7 @@
-import RandomSystems.Converter.ConverterRelabel
-import RandomSystems.Typed.Parallel
+module
+
+public import RandomSystems.Converter.ConverterRelabel
+public import RandomSystems.Typed.Parallel
 
 /-!
 # Renaming heterogeneous interfaces
@@ -17,6 +19,8 @@ compose, and the renaming by the identity is the identity.
 * `TypedConverter.rename_refl`: the renaming by the identity is the identity
 * `TypedConverter.rename_comp`: renamings compose
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

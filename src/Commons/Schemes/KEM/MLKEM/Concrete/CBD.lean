@@ -1,4 +1,6 @@
-import Commons.Schemes.KEM.MLKEM.Concrete.Encoding
+module
+
+public import Commons.Schemes.KEM.MLKEM.Concrete.Encoding
 
 /-!
 # Concrete CBD Sampling for ML-KEM
@@ -7,6 +9,8 @@ Adapted from VCVio (`Verified-zkEVM/VCVio`, `LatticeCrypto/MLKEM/Concrete/CBD.le
 
 Pure-Lean executable implementation of FIPS 203 Algorithm 8 (SamplePolyCBD_η).
 -/
+
+@[expose] public section
 
 
 

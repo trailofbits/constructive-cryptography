@@ -1,5 +1,7 @@
-import RandomSystems.Typed.Interface
-import RandomSystems.Converter.ConverterTensor
+module
+
+public import RandomSystems.Typed.Interface
+public import RandomSystems.Converter.ConverterTensor
 
 /-!
 # Parallel interfaces and parallel typed systems
@@ -22,6 +24,8 @@ of their PDC behaviors.
 * `TypedSystem.parallel_admits_iff`: on possible histories, the parallel domain of the random
   systems is the domain of the parallel interface
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.RandomSystem
 
@@ -120,7 +124,7 @@ lemma parallel_admits_iff (A B : Interface) (R : TypedSystem A) (S : TypedSystem
     exact hp (by simp [RandomSystem.parallel_mass, hn])
   have hab : R.1 (RandomSystem.parallelLeft h) ≠ 0 ∧
       S.1 (RandomSystem.parallelRight h) ≠ 0 := by
-    simpa only [RandomSystem.parallel_mass, if_pos hh, ne_eq, mul_eq_zero, not_or] using hp
+    simpa only [RandomSystem.parallel_mass, ite_eq_left hh, ne_eq, mul_eq_zero, not_or] using hp
   have hla : (RandomSystem.parallelLeft h).length ≤ A.bound := by
     by_contra hl
     exact hab.1 (R.1.mass_eq_zero_of_bound_lt (Nat.lt_of_not_le hl))

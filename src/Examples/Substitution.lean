@@ -1,6 +1,8 @@
-import ConstructiveCryptography.Instances.Substitution
-import ConstructiveCryptography.Notation
-import ConstructiveCryptography.Tactics.Substitution
+module
+
+public import ConstructiveCryptography.Instances.Substitution
+public import ConstructiveCryptography.Notation
+public import ConstructiveCryptography.Tactics.Substitution
 
 /-!
 # Substitutions on interfaces
@@ -19,6 +21,8 @@ needs its own closure under the two contexts. A calculation of statistical subst
 * `constructsWithin_of_two_substitutions`: two statistical substitutions give an approximate
   construction
 -/
+
+@[expose] public section
 
 namespace SubstitutionExamples
 

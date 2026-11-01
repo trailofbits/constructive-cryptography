@@ -1,4 +1,6 @@
-import RandomSystems.System.Observation
+module
+
+public import RandomSystems.System.Observation
 
 /-!
 # Automata
@@ -23,6 +25,8 @@ the same system.
 * `IsBisim.comp`, `isBisim_eq`: bisimulations compose, and equality is one
 * `automatonSystem_eq_of_bisim`: bisimilar automata (`IsBisim`) have the same system
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

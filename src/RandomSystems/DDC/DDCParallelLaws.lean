@@ -1,6 +1,8 @@
-import RandomSystems.Converter.ResourceCanon
-import RandomSystems.Converter.ConverterDomain
-import RandomSystems.DDC.Tensor
+module
+
+public import RandomSystems.Converter.ResourceCanon
+public import RandomSystems.Converter.ConverterDomain
+public import RandomSystems.DDC.Tensor
 
 /-!
 # Parallel converter laws
@@ -19,6 +21,8 @@ unrestricted wiring.
 * `tensorL_id`: the parallel composition of identity converters is the
   identity converter
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

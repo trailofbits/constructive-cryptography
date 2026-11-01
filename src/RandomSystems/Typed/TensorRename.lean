@@ -1,4 +1,6 @@
-import RandomSystems.Typed.DDCCoherence
+module
+
+public import RandomSystems.Typed.DDCCoherence
 
 /-!
 # Parallel renaming
@@ -16,6 +18,8 @@ Renaming two disjoint interface families independently is renaming their union.
 * `TypedConverter.parallel_rename`: the parallel composition of two renamings is the renaming
   of the union
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.Interface
 

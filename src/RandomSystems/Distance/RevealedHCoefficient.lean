@@ -1,5 +1,7 @@
-import RandomSystems.Distance.HCoefficient
-import RandomSystems.Cumulative.Revealed
+module
+
+public import RandomSystems.Distance.HCoefficient
+public import RandomSystems.Cumulative.Revealed
 
 /-!
 # H-coefficient arguments with revealed values and transcript classes
@@ -36,6 +38,8 @@ The expectation method [1, Lemma 2.2.1] bounds public distance by the expected r
 1. A. Jha. *Provable Security of Symmetric-key Cryptographic Schemes*. Doctoral thesis,
    Indian Statistical Institute, 2020. https://digitalcommons.isical.ac.in/doctoral-theses/456/.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -241,9 +245,9 @@ noncomputable def ofGoodBad {Sample Revealed : Type}
     -- is the hypothesis.
     ratio := fun τ => by
       by_cases hb : Bad τ
-      · simp only [if_pos hb, if_true, sub_self, zero_mul]
+      · simp only [ite_eq_left hb, ite_true, sub_self, zero_mul]
         exact revealMass_nonneg _ _ _ τ
-      · simpa only [if_neg hb, Bool.false_eq_true, if_false] using ratio τ hb
+      · simpa only [ite_eq_right hb, Bool.false_eq_true, ite_false] using ratio τ hb
     -- `1 · Pr[Bad] + ε₁ · Pr[good] ≤ ε₂ + ε₁ · 1`: the ideal law has weight one, so the good
     -- transcripts have probability at most one.
     bound := fun E n hn hE => by
@@ -257,9 +261,9 @@ noncomputable def ofGoodBad {Sample Revealed : Type}
         (Distribution.mass_le_weight hK _).trans hw.le
       have hbad : (kernelLaw S idealReveal E.1 n).mass
           (fun τ => (if Bad τ then true else false) = true) ≤ ε₂ := by
-        simpa only [Bool.if_false_right, Bool.and_true, decide_eq_true_eq] using bad E n hn hE
+        simpa only [Bool.ite_false_right, Bool.and_true, decide_eq_true_eq] using bad E n hn hE
       rw [Fintype.sum_bool]
-      simp only [if_true, Bool.false_eq_true, if_false, one_mul]
+      simp only [ite_true, Bool.false_eq_true, ite_false, one_mul]
       nlinarith [mul_le_mul_of_nonneg_left hgood hε₁] }
 
 end RandomSystem.HCoefficient

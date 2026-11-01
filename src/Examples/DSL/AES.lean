@@ -1,6 +1,8 @@
-import ConstructiveCryptography.DSL
-import ConstructiveCryptography.Notation
-import Commons.Schemes.BlockCipher.AES
+module
+
+public import ConstructiveCryptography.DSL
+public import ConstructiveCryptography.Notation
+public import Commons.Schemes.BlockCipher.AES
 
 /-!
 # AES in the DSL
@@ -12,6 +14,8 @@ beside an unrelated system, and a two-step hybrid bound through an ideal block c
 cipher is AES-256 of `Commons.Schemes.BlockCipher.AES`, answering at the interface `Evaluation` of
 `Commons.Definitions.Ideal`, on blocks of sixteen bytes with bytewise exclusive or.
 -/
+
+@[expose] public section
 
 open SystemAlgebra SystemAlgebra.DSL Probability
 open CategoryTheory CategoryTheory.MonoidalCategory

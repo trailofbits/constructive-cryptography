@@ -1,8 +1,8 @@
-import ConstructiveCryptography.CryptographicAlgebra.Relaxation
-import ConstructiveCryptography.CryptographicAlgebra.PseudoMetric
-import ConstructiveCryptography.Specification.Relaxation.Epsilon
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.CryptographicAlgebra.Relaxation
+public import ConstructiveCryptography.CryptographicAlgebra.PseudoMetric
+public import ConstructiveCryptography.Specification.Relaxation.Epsilon
 
 /-!
 # Error relaxation
@@ -35,6 +35,10 @@ pseudo-distance zero from `S`, which can be more than `S`; at `error = ∞` it i
   the relaxation is approximate construction
 * `CryptographicAlgebra.Specification.Constructs.serial_epsilonRelaxation`: errors add
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace ConstructiveCryptography.CryptographicAlgebra.Specification
 

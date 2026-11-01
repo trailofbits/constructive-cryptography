@@ -1,8 +1,10 @@
-import ConstructiveCryptography.Notation.Basic
-import RandomSystems.Typed.ParallelAllAttachment
-import ConstructiveCryptography.Instances.Algebra
-import ConstructiveCryptography.CryptographicAlgebra.Game
-import ConstructiveCryptography.Tactics.Categorical
+module
+
+public import ConstructiveCryptography.Notation.Basic
+public import RandomSystems.Typed.ParallelAllAttachment
+public import ConstructiveCryptography.Instances.Algebra
+public import ConstructiveCryptography.CryptographicAlgebra.Game
+public import ConstructiveCryptography.Tactics.Categorical
 
 /-!
 # Notation frontend for interfaces
@@ -34,6 +36,8 @@ sample s ← P; ∥ k, R s k    ≠    ∥ k, (sample s ← P; R s k)    in gene
 ```
 -/
 
+@[expose] public section
+
 namespace SystemAlgebra
 
 open CategoryTheory CategoryTheory.MonoidalCategory
@@ -45,7 +49,7 @@ known before attachments in `R`, `S` are elaborated, so their outside interfaces
 Elaboration errors are not turned into `sorry`, so a failure is visible here; the saved state
 is then restored and the syntax is passed on to the generic handler. The result is the
 selected `operation` itself; the hints choose no metric, action or parallel instance. -/
-def elabTypedCCOperands (operation R S : TSyntax `term)
+meta def elabTypedCCOperands (operation R S : TSyntax `term)
     (expectedType? : Option Expr) : TermElabM Expr := do
   let saved ← saveState
   try
@@ -59,7 +63,7 @@ def elabTypedCCOperands (operation R S : TSyntax `term)
 open Lean Elab Term in
 /-- `Δ R S` with typed carrier hints (`elabTypedCCOperands`); the metric is the selected one. -/
 @[term_elab ccDistance]
-def elabTypedCCDistance : TermElab
+meta def elabTypedCCDistance : TermElab
   | `(Δ $R $S), expectedType? => do
     elabTypedCCOperands (← `(ConstructiveCryptography.CryptographicAlgebra.distance))
       R S expectedType?
@@ -69,7 +73,7 @@ open Lean Elab Term in
 /-- `R ∥ S` with typed carrier hints (`elabTypedCCOperands`), one interface per ordered
 component; the parallel operation is the selected one. -/
 @[term_elab ccParallel]
-def elabTypedCCParallel : TermElab
+meta def elabTypedCCParallel : TermElab
   | `($R ∥ $S), expectedType? => do
     elabTypedCCOperands (← `(ConstructiveCryptography.CryptographicAlgebra.parallel))
       R S expectedType?

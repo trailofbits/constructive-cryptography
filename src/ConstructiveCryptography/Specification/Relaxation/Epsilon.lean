@@ -1,5 +1,7 @@
-import ConstructiveCryptography.Specification.Relaxation.Basic
-import Mathlib.Topology.EMetricSpace.Lipschitz
+module
+
+public import ConstructiveCryptography.Specification.Relaxation.Basic
+public import Mathlib.Topology.EMetricSpace.Lipschitz
 
 /-!
 # Scalar-error relaxation
@@ -14,6 +16,8 @@ outputs such as probabilities in `[0, 1]`.
 epsilonRelaxation error source = {R | ∃ center ∈ source, edist R center ≤ error}
 ```
 -/
+
+@[expose] public section
 
 namespace ConstructiveCryptography.Specification
 

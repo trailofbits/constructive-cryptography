@@ -1,5 +1,7 @@
-import Commons.Schemes.Lattice.VectorBackend
-import Mathlib.RingTheory.Polynomial.Basic
+module
+
+public import Commons.Schemes.Lattice.VectorBackend
+public import Mathlib.RingTheory.Polynomial.Basic
 
 /-!
 # Schoolbook Negacyclic Multiplication Soundness
@@ -15,6 +17,8 @@ quotient ring `R[X] / (X^n + 1)`. The proof decomposes into:
 3. **Negacyclic reduction**: relating the double sum to `negacyclicConvCoeff`.
 4. **Assembly**: connecting the above to the `NegacyclicRingSemantics` obligation.
 -/
+
+@[expose] public section
 
 
 open Polynomial

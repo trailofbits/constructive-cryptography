@@ -1,7 +1,9 @@
-import Examples.DSL.AEADTests
-import Examples.PRGLengthExtension
-import Tests.DSL.Diagnostics
-import Tests.DSL.Semantics
+module
+
+public import Examples.DSL.AEADTests
+public import Examples.PRGLengthExtension
+public import Tests.DSL.Diagnostics
+public import Tests.DSL.Semantics
 
 /-!
 # Axioms of the DSL
@@ -9,6 +11,8 @@ import Tests.DSL.Semantics
 The compilation of declarations, the obligation lemmas, the example components and their
 checks depend only on `propext`, `Classical.choice` and `Quot.sound`.
 -/
+
+@[expose] public section
 
 -- Programs and their converters.
 #print axioms SystemAlgebra.DDC.ofProgram_isResponsiveDDC

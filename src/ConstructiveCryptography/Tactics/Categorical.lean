@@ -1,10 +1,13 @@
-import ConstructiveCryptography.Tactics.Basic
-import ConstructiveCryptography.CryptographicAlgebra.Star
-import ConstructiveCryptography.Specification
-import ConstructiveCryptography.Specification.Action
-import ConstructiveCryptography.Specification.Parallel
-import ConstructiveCryptography.Specification.Star.Metric
-import ConstructiveCryptography.Specification.Game
+module
+
+public import ConstructiveCryptography.Tactics.Basic
+public import ConstructiveCryptography.CryptographicAlgebra.Star
+public import ConstructiveCryptography.Specification
+public import ConstructiveCryptography.Specification.Action
+public import ConstructiveCryptography.Specification.Parallel
+public import ConstructiveCryptography.Specification.Star.Metric
+public import ConstructiveCryptography.Specification.Game
+public meta import ConstructiveCryptography.Tactics.Basic
 
 /-!
 # Constructive Cryptography proof automation
@@ -17,6 +20,8 @@ The commands implement the paper-level steps of Maurer--Renner 2016.  Jost's
 typed attachment and ordered context laws provide the heterogeneous theorem
 heads used here; no symmetry or implicit interface rearrangement is assumed.
 -/
+
+@[expose] public meta section
 
 namespace ConstructiveCryptography
 

@@ -1,7 +1,9 @@
-import ConstructiveCryptography.Notation.Basic
-import ConstructiveCryptography.Instances.Algebra
-import RandomSystems.Typed.Game
-import RandomSystems.Typed.PresentedGame
+module
+
+public import ConstructiveCryptography.Notation.Basic
+public import ConstructiveCryptography.Instances.Algebra
+public import RandomSystems.Typed.Game
+public import RandomSystems.Typed.PresentedGame
 
 /-!
 # Games on interfaces
@@ -51,6 +53,8 @@ presented typed system. The statements use `Δ` and `|≡` from the abstract
 * `Interface.game_dist_le`, `Interface.game_dist_ofSingleFunction_le`: the distance bound for a
   presented game and for a single-label sampled-function game
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.Interface
 

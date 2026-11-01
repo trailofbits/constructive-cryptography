@@ -1,5 +1,7 @@
-import RandomSystems.Distance.Decision
-import Probability.Coupling
+module
+
+public import RandomSystems.Distance.Decision
+public import Probability.Coupling
 
 /-!
 # Couplings of random systems
@@ -28,6 +30,8 @@ footnote 9 (printed p. 14), Definition 11 and Theorem 2 (printed p. 15).
 * `PDS.transcriptDistance_behavior_le_of_isCoupling`: under a coupling, the transcript distance is
   at most the probability that the systems differ
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -185,12 +189,12 @@ theorem sLaw_behavior_eq_fTransform (P : PDS A B D) (hP : P.isProbDist) {σ : Li
   rw [RandomSystem.sLaw_apply, PDS.behavior_mass, Distribution.fTransform_apply_eq_mass]
   by_cases hg : Good σ n h
   -- A complete `h`: the samples replying `h` are those whose transcript is `h`.
-  · rw [if_pos hg]
+  · rw [ite_eq_left hg]
     exact Distribution.mass_congr_of_support P fun s hs =>
       ⟨fun hr => (System.tr_eq_iff (hans s hs) h).mpr ⟨hg, hr⟩,
         fun ht => ((System.tr_eq_iff (hans s hs) h).mp ht).2⟩
   -- An incomplete `h` is the transcript of no sample.
-  · rw [if_neg hg]
+  · rw [ite_eq_right hg]
     refine ((Distribution.mass_congr_of_support P (Q := fun _ => False) fun s hs =>
       ⟨fun ht => hg ((System.tr_eq_iff (hans s hs) h).mp ht).1, False.elim⟩).trans
         (Distribution.mass_eq_zero_of_forall_not P fun _ hf => hf)).symm

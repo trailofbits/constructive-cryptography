@@ -1,4 +1,6 @@
-import Commons
+module
+
+public import Commons
 
 /-!
 # Axioms of the Commons library
@@ -8,6 +10,8 @@ symmetric, authenticated and public-key encryption, of KEMs, MACs, signatures, P
 collision-resistant hash functions, AES, CTR, PMAC and NMAC, the hash functions, ML-KEM and
 ML-DSA depend only on `propext`, `Classical.choice` and `Quot.sound`.
 -/
+
+@[expose] public section
 
 -- Commons.Definitions.Ideal
 #print axioms Commons.URF

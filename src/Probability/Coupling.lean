@@ -1,4 +1,6 @@
-import Probability.Lift
+module
+
+public import Probability.Lift
 
 /-!
 # Couplings
@@ -21,6 +23,8 @@ Source: Lanzenberger–Maurer, *Coupling of Random Systems*, Lemma 4.
 * `coupling_bound`, `optimal_coupling_exists`: the same, bundled
 * `jointProfile_marginal`, `jointProfile_weight`, `jointProfile_nonNeg`
 -/
+
+@[expose] public section
 
 noncomputable section
 

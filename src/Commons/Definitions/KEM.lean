@@ -1,5 +1,7 @@
-import ConstructiveCryptography.DSL
-import ConstructiveCryptography.Notation
+module
+
+public import ConstructiveCryptography.DSL
+public import ConstructiveCryptography.Notation
 
 /-!
 # Key encapsulation mechanisms
@@ -35,6 +37,8 @@ with no queries at `decaps`.
 * `KEM.INDCCA kem error`: IND-CCA for the admitted distinguishers, within `error`
 * `KEM.INDCPA.systems kem q`, `KEM.INDCPA kem error`: IND-CPA
 -/
+
+@[expose] public section
 
 namespace Commons
 

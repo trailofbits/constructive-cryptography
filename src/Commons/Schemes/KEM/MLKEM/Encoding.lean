@@ -1,4 +1,6 @@
-import Commons.Schemes.KEM.MLKEM.Arithmetic
+module
+
+public import Commons.Schemes.KEM.MLKEM.Arithmetic
 
 /-!
 # ML-KEM Encoding Interfaces
@@ -9,6 +11,8 @@ This file records the compression and byte-encoding operations referenced by the
 pseudocode. In this first phase they are kept abstract, but their types match the semantic objects
 consumed by the spec-level `K-PKE` and `ML-KEM` algorithms.
 -/
+
+@[expose] public section
 
 
 

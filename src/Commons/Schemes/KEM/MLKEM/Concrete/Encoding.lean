@@ -1,10 +1,12 @@
-import Batteries.Data.ByteArray
-import Mathlib.Data.Nat.Digits.Lemmas
-import Commons.Schemes.KEM.MLKEM.Encoding
-import Mathlib.Data.List.GetD
-import Mathlib.Data.List.OfFn
-import Mathlib.Data.ZMod.Basic
-import Mathlib.Data.FinEnum
+module
+
+public import Batteries.Data.ByteArray
+public import Mathlib.Data.Nat.Digits.Lemmas
+public import Commons.Schemes.KEM.MLKEM.Encoding
+public import Mathlib.Data.List.GetD
+public import Mathlib.Data.List.OfFn
+public import Mathlib.Data.ZMod.Basic
+public import Mathlib.Data.FinEnum
 
 /-!
 # Concrete Encoding for ML-KEM
@@ -14,6 +16,8 @@ Adapted from VCVio (`Verified-zkEVM/VCVio`, `LatticeCrypto/MLKEM/Concrete/Encodi
 Pure-Lean executable implementation of the byte-encoding (FIPS 203 Algorithms 4–5) and
 compression / decompression (FIPS 203 Section 4.2.1) operations.
 -/
+
+@[expose] public section
 
 
 namespace MLKEM.Concrete
@@ -237,7 +241,13 @@ lemma digitsAppend_getD_two_lt {d n bit : Nat} (hn : n < 2 ^ d) (hbit : bit < d)
 lemma digitsAppend_two_one_getD_zero :
     ∀ n : Fin 2, (Nat.digitsAppend 2 1 n.val).getD 0 0 = n.val := by
   intro n
-  fin_cases n <;> rfl
+  -- A one-digit encoding is a singleton, and decoding that digit recovers `n`.
+  have hn : n.val < 2 ^ 1 := by simpa only [Nat.pow_one] using n.isLt
+  obtain ⟨digit, hdigit⟩ := List.length_eq_one_iff.mp
+    (Nat.length_digitsAppend (by norm_num : 1 < 2) 1 hn)
+  have hvalue := ofDigits_digitsAppend_two hn
+  rw [hdigit, Nat.ofDigits_singleton] at hvalue
+  simp only [hdigit, List.getD_cons_zero, hvalue]
 
 lemma digitsAppend_two_one_getD_zero_mod (n : Nat) :
     (Nat.digitsAppend 2 1 (n % 2 ^ 1)).getD 0 0 = n % 2 := by
@@ -629,7 +639,7 @@ lemma byteDecode12Poly_byteEncode12Poly (f : Tq) :
     · have hidx : idx.val = 2 * pair := by
         dsimp [pair]
         omega
-      rw [if_pos hEven]
+      rw [ite_eq_left hEven]
       calc
         (((getByteD (byteEncode12Poly f) (3 * pair)).toNat +
             256 * ((getByteD (byteEncode12Poly f) (3 * pair + 1)).toNat % 16) : Nat) : Coeff)
@@ -647,7 +657,7 @@ lemma byteDecode12Poly_byteEncode12Poly (f : Tq) :
       have hidx : idx.val = 2 * pair + 1 := by
         dsimp [pair]
         omega
-      rw [if_neg hEven]
+      rw [ite_eq_right hEven]
       calc
         (((getByteD (byteEncode12Poly f) (3 * pair + 1)).toNat / 16 +
             16 * (getByteD (byteEncode12Poly f) (3 * pair + 2)).toNat : Nat) : Coeff)

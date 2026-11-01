@@ -1,8 +1,8 @@
-import ConstructiveCryptography.Distinguisher
-import ConstructiveCryptography.CryptographicAlgebra.Relaxation
-import ConstructiveCryptography.CryptographicAlgebra.PseudoMetric
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.Distinguisher
+public import ConstructiveCryptography.CryptographicAlgebra.Relaxation
+public import ConstructiveCryptography.CryptographicAlgebra.PseudoMetric
 
 /-!
 # Distinguisher-indexed reductions
@@ -50,6 +50,10 @@ defined in `ConstructiveCryptography.Distinguisher`.
 
 Source: Banfi 2023, §2.3.3; Jost, Definitions 2.2.8–2.2.9 and Theorem 2.2.10.
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace ConstructiveCryptography.CryptographicAlgebra
 

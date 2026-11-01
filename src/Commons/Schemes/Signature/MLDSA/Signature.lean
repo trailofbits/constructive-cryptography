@@ -1,9 +1,11 @@
-import Commons.Schemes.Signature.MLDSA.Scheme
-import Commons.Schemes.Signature.MLDSA.Encoding
-import Commons.Definitions.Signature
-import Mathlib.Data.FinEnum
-import Mathlib.Data.Fintype.Vector
-import Mathlib.Data.Fintype.Sigma
+module
+
+public import Commons.Schemes.Signature.MLDSA.Scheme
+public import Commons.Schemes.Signature.MLDSA.Encoding
+public import Commons.Definitions.Signature
+public import Mathlib.Data.FinEnum
+public import Mathlib.Data.Fintype.Vector
+public import Mathlib.Data.Fintype.Sigma
 
 /-!
 # ML-DSA Signing and Verification
@@ -31,6 +33,8 @@ signing returns `none` when every attempt aborts.
 
 * `MLDSA.fipsSign_fipsVerify_correct`: an honest key pair's signatures verify
 -/
+
+@[expose] public section
 
 open LatticeCrypto TransformOps
 

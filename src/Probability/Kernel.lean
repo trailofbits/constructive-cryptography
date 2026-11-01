@@ -1,5 +1,7 @@
-import Probability.Distribution
-import Mathlib.LinearAlgebra.Finsupp.LinearCombination
+module
+
+public import Probability.Distribution
+public import Mathlib.LinearAlgebra.Finsupp.LinearCombination
 
 /-!
 # Kernels
@@ -44,6 +46,8 @@ type needs to be finite.
 
 1. U. Maurer. *Cryptography Foundations*. Lecture notes, ETH Zurich, Spring 2018.
 -/
+
+@[expose] public section
 
 namespace Probability.Distribution
 
@@ -325,7 +329,7 @@ lemma eq_of_mem_support_pi_update {ι : Type*} [Fintype ι] [DecidableEq ι]
   apply ht
   -- The product `∏ᵢ` vanishes: its factor at `n`, `single z 1 (t n)`, is zero as `t n ≠ z`.
   refine Finset.prod_eq_zero (Finset.mem_univ n) ?_
-  rw [Function.update_self, Finsupp.single_apply, if_neg (Ne.symm hne)]
+  rw [Function.update_self, Finsupp.single_apply, ite_eq_right (Ne.symm hne)]
 
 /-! ### Probability laws -/
 

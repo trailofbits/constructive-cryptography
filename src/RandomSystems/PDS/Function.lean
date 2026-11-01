@@ -1,4 +1,6 @@
-import RandomSystems.PDS.PDS
+module
+
+public import RandomSystems.PDS.PDS
 
 /-!
 # Sampled functions
@@ -17,6 +19,8 @@ query. Sampling the function once and retaining it gives a PDS.
 * `DDS.replies_ofFunction_iff`: the transcripts of an evaluator are its pointwise
   replies
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -74,7 +78,7 @@ lemma replies_ofFunction_iff {X Y : Type} (D : List X → Prop)
       obtain ⟨hp, he⟩ := replies_snoc.mp h
       have hd := (ofFunction_dom D hD f _).mp
         ((replies_snoc.mpr ⟨hp, he⟩).dom (by simp))
-      rw [ofFunction_snoc, if_pos hd] at he
+      rw [ofFunction_snoc, ite_eq_left hd] at he
       have hy : f x = y := Part.some_injective he
       exact ⟨Or.inr hd, by simp [(ih ys).mp hp |>.2, hy]⟩
     · rintro ⟨hd, rfl⟩
@@ -85,7 +89,7 @@ lemma replies_ofFunction_iff {X Y : Type} (D : List X → Prop)
       · by_cases hn : xs = []
         · exact Or.inl hn
         · exact Or.inr (hD.2 (List.prefix_append xs [x]) hn hd')
-      · rw [ofFunction_snoc, if_pos hd']
+      · rw [ofFunction_snoc, ite_eq_left hd']
 
 end DDS
 

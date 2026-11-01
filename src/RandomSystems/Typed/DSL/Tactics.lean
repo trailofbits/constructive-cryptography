@@ -1,5 +1,7 @@
-import RandomSystems.Typed.DSL.Programs
-import Lean
+module
+
+public import RandomSystems.Typed.DSL.Programs
+public import Lean
 
 /-!
 # Obligation tactics
@@ -10,6 +12,8 @@ program, `program_cost` for an exact number of inside queries, `program_preservi
 preservation. `component_cases` gives them one goal per procedure, also on an ordered tensor of
 outside interfaces.
 -/
+
+@[expose] public meta section
 
 namespace SystemAlgebra.DSL
 open Lean Elab Tactic Meta

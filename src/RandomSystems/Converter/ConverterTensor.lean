@@ -1,6 +1,8 @@
-import RandomSystems.Converter.PDCBehavior
-import RandomSystems.DDC.DDCParallelLaws
-import RandomSystems.DDC.CanonWiring
+module
+
+public import RandomSystems.Converter.PDCBehavior
+public import RandomSystems.DDC.DDCParallelLaws
+public import RandomSystems.DDC.CanonWiring
 
 /-!
 # Parallel composition of DDCs and PDCs
@@ -32,6 +34,8 @@ identity.
 * `trim_apply_tensorL_pair`: parallel DDCs attached to parallel systems attach component by
   component
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -240,9 +244,9 @@ lemma canon_snoc_dom_iff {O J : Type} {U V : O → Type} {X Y : J → Type}
     exact ⟨fun h => h.2.2, fun hx => ⟨(hr.admissible_iff_admitted hc).mpr ha, hr.dom, hx⟩⟩
   unfold canon
   by_cases hd : Admissible c (h.map Prod.fst ++ [x])
-  · rw [if_pos hd]
+  · rw [ite_eq_left hd]
     exact ⟨fun h => ⟨hx.mp hd, h⟩, fun h => h.2⟩
-  · rw [if_neg hd]
+  · rw [ite_eq_right hd]
     exact ⟨fun h => absurd h Part.not_none_dom, fun h => absurd (hx.mpr h.1) hd⟩
 
 /-- The components of a joint transcript of `α ⊗ β`. -/
@@ -637,9 +641,9 @@ lemma behaviorMass_tensorPDC {bα bβ : ℕ}
   refine (Distribution.mass_congr (Distribution.prod P.1 Q.1)
     (fun st => key st.1.1 st.2.1)).trans ?_
   by_cases hh : Admitted converterAdmits h
-  · simp only [hh, if_true, true_and]
+  · simp only [hh, ite_true, true_and]
     rfl
-  · simp only [hh, if_false, false_and]
+  · simp only [hh, ite_false, false_and]
     exact Distribution.mass_eq_zero_of_forall_not _ (fun _ hf => hf)
 
 namespace PDCBehavior

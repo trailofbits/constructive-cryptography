@@ -1,6 +1,8 @@
-import Commons.Schemes.KEM.MLKEM.Encoding
-import Commons.Schemes.KEM.MLKEM.Primitives
-import Mathlib.Data.FinEnum
+module
+
+public import Commons.Schemes.KEM.MLKEM.Encoding
+public import Commons.Schemes.KEM.MLKEM.Primitives
+public import Mathlib.Data.FinEnum
 
 /-!
 # ML-KEM K-PKE
@@ -11,6 +13,8 @@ This file gives a spec-level implementation of the `K-PKE` component used by ML-
 arithmetic, encoding, and primitive operations are supplied abstractly, but the algorithm structure
 follows FIPS 203 Section 5 closely.
 -/
+
+@[expose] public section
 
 
 

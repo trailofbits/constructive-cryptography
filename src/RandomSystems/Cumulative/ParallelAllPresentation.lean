@@ -1,5 +1,7 @@
-import Probability.DependentProduct
-import RandomSystems.Cumulative.ParallelAll
+module
+
+public import Probability.DependentProduct
+public import RandomSystems.Cumulative.ParallelAll
 
 /-!
 # Presentations of finite parallel random systems
@@ -33,6 +35,8 @@ Jost, Thesis, printed p. 17: “A finite set of resources with disjoint interfac
 viewed as a single one”. `parallelAll` is this repository's independent specialization of
 that view; the presentation law here is derived from it, not stated in the source.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.RandomSystem
 
@@ -73,13 +77,13 @@ lemma parallelAll_mass_of_presentations {ι : K → Type*}
   · -- Consistent `h`: the event is the rectangle `∀ k, st k ∈ {i | s k i answers h|k}`, so
     --   (piDep P).mass rectangle = ∏ k, (P k).mass {i | s k i answers h|k} = ∏ k, R k (h|k)
     -- by `piDep_mass_forall` and then `hR` at each `h|k`.
-    simp only [hh, if_true, true_and]
+    simp only [hh, ite_true, true_and]
     rw [Distribution.piDep_mass_forall P (fun k i =>
       Replies (s k i) ((restrictExchanges k h).map Prod.fst)
         ((restrictExchanges k h).map Prod.snd))]
     exact Finset.prod_congr rfl fun k _ => hR k _
   · -- Inconsistent `h`: the left side is `0`, and the event is empty, of mass `0`.
-    simp only [hh, if_false, false_and]
+    simp only [hh, ite_false, false_and]
     exact (Distribution.mass_eq_zero_of_forall_not _ (fun _ hf => hf)).symm
 
 end SystemAlgebra.RandomSystem

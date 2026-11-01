@@ -1,5 +1,7 @@
-import RandomSystems.System.Replies
-import Probability.Distribution
+module
+
+public import RandomSystems.System.Replies
+public import Probability.Distribution
 
 /-!
 # Probabilistic discrete systems
@@ -24,6 +26,8 @@ the samples replying `ys` to `xs`. Source: Lanzenberger–Maurer, Definition 8 (
 * `hasDomain_ofInputs_iff`: on an input domain `E`, having domain `E` is `dom(s) = E`
 * `HasDomain.length_le`: transcripts stay within the domain's bound
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -152,9 +156,9 @@ lemma nextReply_apply (xs : List A) (ys : List B) (x : A) (y : B) :
   apply Finset.sum_congr rfl
   intro s hs
   by_cases hr : Replies s.1 xs ys
-  · simp only [if_pos hr, replies_snoc]
+  · simp only [ite_eq_left hr, replies_snoc]
     by_cases hd : (s.1 (xs ++ [x])).Dom
-    · simp only [dif_pos hd, Finsupp.single_apply]
+    · simp only [dite_eq_left hd, Finsupp.single_apply]
       rw [Part.get_eq_iff_eq_some]
       simp only [hr, true_and]
     · simp [Part.eq_none_iff'.mpr hd]
@@ -199,8 +203,8 @@ lemma nextReply_weight_of_admitted {D : Prop} {xs : List A} {ys : List B} {x : A
     (fun s hs => and_congr_right (fun hr => hD s hs hr))
   rw [h]
   by_cases hd : D
-  · simp only [hd, and_true, if_true, behaviorMass]
-  · simp only [hd, and_false, if_false]
+  · simp only [hd, and_true, ite_true, behaviorMass]
+  · simp only [hd, and_false, ite_false]
     exact Distribution.mass_eq_zero_of_forall_not _ (fun _ h => h)
 
 /-- The empty cumulative mass is the distribution's weight. -/

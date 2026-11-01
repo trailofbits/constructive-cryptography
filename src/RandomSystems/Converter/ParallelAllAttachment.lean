@@ -1,5 +1,7 @@
-import RandomSystems.Converter.ParallelAll
-import RandomSystems.System.ParallelWiring
+module
+
+public import RandomSystems.Converter.ParallelAll
+public import RandomSystems.System.ParallelWiring
 
 /-!
 # Componentwise attachment of parallel converters
@@ -35,6 +37,8 @@ queried port for `trim_apply_canon`.
 Sources: Jost, Thesis, printed p. 17 (finite disjoint-interface resources viewed as one);
 Def. 2.2.2, printed pp. 17–18 (finite bound on consecutive inside queries).
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

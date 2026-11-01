@@ -1,10 +1,12 @@
-import Probability.Distribution
-import Mathlib.Data.Fintype.Perm
-import Mathlib.Data.Fintype.CardEmbedding
-import Mathlib.Data.Nat.Factorial.BigOperators
-import Mathlib.GroupTheory.GroupAction.MultipleTransitivity
-import Mathlib.Algebra.Order.Chebyshev
-import Mathlib.Analysis.Complex.ExponentialBounds
+module
+
+public import Probability.Distribution
+public import Mathlib.Data.Fintype.Perm
+public import Mathlib.Data.Fintype.CardEmbedding
+public import Mathlib.Data.Nat.Factorial.BigOperators
+public import Mathlib.GroupTheory.GroupAction.MultipleTransitivity
+public import Mathlib.Algebra.Order.Chebyshev
+public import Mathlib.Analysis.Complex.ExponentialBounds
 
 /-!
 # Fibers of uniform random functions
@@ -43,6 +45,8 @@ distinct inputs are independent and uniform on `Y`; a repeated input reads the s
 Source: the uniform random function of MauRen16, printed p. 6, "a uniformly chosen function
 table F"; first-access sampling with retained answers is Jost, Figure 4.4, printed p. 55.
 -/
+
+@[expose] public section
 
 noncomputable section
 
@@ -125,13 +129,13 @@ lemma card_function_fiber_multipoint {X Y : Type*}
       ext i
       have h_mem : xs i ∈ S := Finset.mem_image_of_mem _ (Finset.mem_univ i)
       show dite (xs i ∈ S) _ _ = ys i
-      rw [dif_pos h_mem]
+      rw [dite_eq_left h_mem]
       have hcs := (h_ext (xs i) h_mem).choose_spec
       congr 1
       exact hxs hcs.1
     · ext ⟨x, hx⟩
       show dite (x ∈ S) _ _ = g ⟨x, hx⟩
-      rw [dif_neg ((Finset.mem_sdiff.mp hx).2)]
+      rw [dite_eq_right ((Finset.mem_sdiff.mp hx).2)]
 
 /-! ## The uniform random function: marginals, joint marginals, and freshness -/
 
@@ -226,7 +230,7 @@ lemma uniform_mass_fresh_eval_eq {X Y : Type*} [Fintype X] [DecidableEq X]
     apply hfresh
     intro z hz
     dsimp only [split]
-    rw [Equiv.funSplitAt_symm_apply, dif_neg hz]
+    rw [Equiv.funSplitAt_symm_apply, dite_eq_right hz]
     rfl
   -- `Law(split F) = 𝒰(Y) × 𝒰({z // z ≠ x} → Y)`: a bijection keeps `𝒰`, which is a product.
   have hpush := Distribution.fTransform_equiv_uniform split
@@ -698,7 +702,7 @@ lemma uniform_mass_disjoint_events {X Y B I : Type*}
   intro value _
   by_cases hv : output value
   -- `output value`: the fiber is `good (f ∘ base) ∧ f ∘ next = value`.
-  · rw [if_pos hv]
+  · rw [ite_eq_left hv]
     have hm : (Distribution.uniform (X → Y)).mass (fun f =>
         (good (fun b => f (base b)) ∧ output (fun i => f (next i))) ∧
           (fun i => f (next i)) = value) =
@@ -713,7 +717,7 @@ lemma uniform_mass_disjoint_events {X Y B I : Type*}
       (fun _ _ => hinj) value, Distribution.uniform_apply, Fintype.card_fun, Nat.cast_pow,
       div_pow, one_pow]
   -- `¬ output value`: both terms vanish.
-  · rw [if_neg hv, mul_zero]
+  · rw [ite_eq_right hv, mul_zero]
     exact Distribution.mass_eq_zero_of_forall_not _ (fun _ h => hv (h.2 ▸ h.1.2))
 
 /-- **Fresh outputs factor from an event on a finite base.** For uniform `f : X → Y`, `good`
@@ -738,7 +742,7 @@ lemma uniform_mass_fresh_outputs_eq {X Y I : Type*}
   have hg (f : X → Y) : good (extend (fun x : base => f x)) ↔ good f := by
     apply hgood
     intro x hx
-    simp only [extend, dif_pos hx]
+    simp only [extend, dite_eq_left hx]
   -- `Sum.elim Subtype.val next : base ⊕ I → X` is injective: each part is injective, and
   -- a base point equal to some `next i` contradicts `hdisjoint`.
   have hsum : Function.Injective (Sum.elim (fun x : base => x.val) next) := by
@@ -1103,7 +1107,7 @@ lemma multiShift_apply_of_ne {ι D A : Type*} [Fintype ι] [DecidableEq D]
     [AddCommMonoid A] {u : ι → D} (δ : ι → A) (f : D → A) {x : D}
     (h : ∀ s, u s ≠ x) :
     multiShift u δ f x = f x := by
-  rw [multiShift, Finset.sum_eq_zero fun s _ => if_neg (h s), add_zero]
+  rw [multiShift, Finset.sum_eq_zero fun s _ => ite_eq_right (h s), add_zero]
 
 lemma multiShift_apply_site {ι D A : Type*} [Fintype ι] [DecidableEq D]
     [AddCommMonoid A] {u : ι → D} (δ : ι → A) (f : D → A)
@@ -1111,8 +1115,8 @@ lemma multiShift_apply_site {ι D A : Type*} [Fintype ι] [DecidableEq D]
     multiShift u δ f (u s₀) = f (u s₀) + δ s₀ := by
   rw [multiShift]
   congr 1
-  rw [Finset.sum_eq_single s₀ (fun s _ hs => if_neg fun hc => hs (hu hc))
-    (fun hns => absurd (Finset.mem_univ s₀) hns), if_pos rfl]
+  rw [Finset.sum_eq_single s₀ (fun s _ hs => ite_eq_right fun hc => hs (hu hc))
+    (fun hns => absurd (Finset.mem_univ s₀) hns), ite_eq_left rfl]
 
 lemma multiShift_zero {ι D A : Type*} [Fintype ι] [DecidableEq D]
     [AddCommMonoid A] (u : ι → D) (f : D → A) :

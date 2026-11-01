@@ -1,6 +1,8 @@
-import RandomSystems.Game.FunctionGame
-import RandomSystems.Typed.Game
-import RandomSystems.Typed.Functional
+module
+
+public import RandomSystems.Game.FunctionGame
+public import RandomSystems.Typed.Game
+public import RandomSystems.Typed.Functional
 
 /-!
 # Typed games presented by discrete games
@@ -26,6 +28,8 @@ answers.
   conditionally equivalent to the typed system sampling the ideal function, from the
   fixed-query factorization
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

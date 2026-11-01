@@ -1,6 +1,6 @@
-import Mathlib.Data.Set.Defs
+module
 
-set_option autoImplicit false
+public import Mathlib.Data.Set.Defs
 
 /-!
 # Resource specifications
@@ -12,6 +12,10 @@ about its elements is assumed here: they may be concrete random systems, abstrac
 or any other values. Inclusion `R ⊆ S` of specifications reads “every object meeting `R` also
 meets `S`”, so a smaller specification is the stronger guarantee.
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace ConstructiveCryptography
 

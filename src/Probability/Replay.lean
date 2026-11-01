@@ -1,4 +1,6 @@
-import Probability.Counting
+module
+
+public import Probability.Counting
 
 /-!
 # Adaptive replay against fixed public table entries
@@ -30,6 +32,8 @@ finite table and `y` a finite tuple.
 Both are derived from `uniform_mass_eval_eq` (`Probability.Counting`) in the table model of
 MauRen16, printed p. 6.
 -/
+
+@[expose] public section
 
 namespace Probability.Counting
 
@@ -117,7 +121,7 @@ lemma uniform_replay_public_good_factor {X Y I J : Type*}
   apply Finset.sum_congr rfl
   intro value _
   by_cases hg : Good value ∧ Event value
-  · rw [if_pos hg]
+  · rw [ite_eq_left hg]
     -- A good fiber: the replay and public sites are distinct, so the first law applies.
     have he := uniform_mass_replay_public_eq site evaluate pinned publicSite publicValue value
       (hinj value hg.1)
@@ -139,7 +143,7 @@ lemma uniform_replay_public_good_factor {X Y I J : Type*}
       div_pow, one_pow]
   -- Any other fiber is empty on both sides, since `evaluate F = value` would give
   -- `Good value ∧ Event value`; no injectivity is used here.
-  · rw [if_neg hg, zero_mul]
+  · rw [ite_eq_right hg, zero_mul]
     apply Distribution.mass_eq_zero_of_forall_not
     rintro f ⟨⟨hgood, hevent, _⟩, he⟩
     exact hg (he ▸ ⟨hgood, hevent⟩)

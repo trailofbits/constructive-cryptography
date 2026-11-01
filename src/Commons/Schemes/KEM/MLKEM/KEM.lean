@@ -1,6 +1,8 @@
-import Commons.Schemes.KEM.MLKEM.Internal
-import Commons.Definitions.KEM
-import Mathlib.Data.FinEnum
+module
+
+public import Commons.Schemes.KEM.MLKEM.Internal
+public import Commons.Definitions.KEM
+public import Mathlib.Data.FinEnum
 
 /-!
 # ML-KEM Top-Level KEM
@@ -12,6 +14,8 @@ The top-level algorithms of FIPS 203 Section 7 on the deterministic internal alg
 `Commons.KEM`, with key generation from uniform seeds `d, z` and encapsulation of a uniform
 message `m`.
 -/
+
+@[expose] public section
 
 
 

@@ -1,5 +1,7 @@
-import ConstructiveCryptography.DSL
-import ConstructiveCryptography.Notation
+module
+
+public import ConstructiveCryptography.DSL
+public import ConstructiveCryptography.Notation
 
 /-!
 # Hash functions
@@ -24,6 +26,8 @@ allowed to each of them.
 * `KeyedCollision K M`: the interface of the key and the candidate collisions
 * `Hash.CR.systems H q`, `Hash.CR H error`: collision resistance
 -/
+
+@[expose] public section
 
 namespace Commons
 

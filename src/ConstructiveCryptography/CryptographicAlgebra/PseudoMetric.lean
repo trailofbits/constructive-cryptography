@@ -1,8 +1,8 @@
-import ConstructiveCryptography.CryptographicAlgebra.Basic
-import ConstructiveCryptography.Specification.Metric
-import Mathlib.Topology.EMetricSpace.Lipschitz
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.CryptographicAlgebra.Basic
+public import ConstructiveCryptography.Specification.Metric
+public import Mathlib.Topology.EMetricSpace.Lipschitz
 
 /-!
 # Compatible pseudo-metrics
@@ -37,6 +37,10 @@ comes from distinguishers or random systems (`CompatibleDistinguisherClass` adds
   `CryptographicAlgebra.Specification.ConstructsWithin.parallel`: composition with additive
   errors
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace ConstructiveCryptography
 

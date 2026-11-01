@@ -1,6 +1,8 @@
-import ConstructiveCryptography.Tactics.Basic
-import ConstructiveCryptography.Substitution.Quantitative
-import ConstructiveCryptography.CryptographicAlgebra.DistinguisherAction
+module
+
+public import ConstructiveCryptography.Tactics.Basic
+public import ConstructiveCryptography.Substitution.Quantitative
+public import ConstructiveCryptography.CryptographicAlgebra.DistinguisherAction
 
 /-!
 # Substitution proof commands
@@ -68,6 +70,8 @@ and fails without one; no statistical step is converted otherwise. Every supplie
 must be stated for that same model; a premise for another model is rejected. The explicit
 forms remain for goals whose model is not displayed.
 -/
+
+@[expose] public meta section
 
 open Lean
 open ConstructiveCryptography.CryptographicAlgebra
@@ -377,8 +381,8 @@ def elaborateCCQuantitativeCalc (model? domination? : Option (TSyntax `term))
       if statistical then
         let original := leaf
         if reverse then
-          leaf ← `(by simpa only [distance, ConstructiveCryptography.CryptographicAlgebra.distance,
-            edist_comm] using $proof)
+          leaf ← `((ConstructiveCryptography.CryptographicAlgebra.distance_comm _ _).trans_le
+            $proof)
         leaf ← `(show distance $previous $next ≤ $budget from by
           first
           | cc_exact_rule "cc_calc supplied distance" => $leaf

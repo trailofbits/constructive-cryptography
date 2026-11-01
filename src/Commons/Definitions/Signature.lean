@@ -1,5 +1,7 @@
-import ConstructiveCryptography.DSL
-import ConstructiveCryptography.Notation
+module
+
+public import ConstructiveCryptography.DSL
+public import ConstructiveCryptography.Notation
 
 /-!
 # Digital signature schemes
@@ -36,6 +38,8 @@ allowed to each of them.
 * `SignatureScheme.EUFCMA`, `SignatureScheme.SUFCMA`: these notions for the distinguisher
   advantage, within an error
 -/
+
+@[expose] public section
 
 namespace Commons
 

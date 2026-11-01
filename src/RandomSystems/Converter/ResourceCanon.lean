@@ -1,4 +1,6 @@
-import RandomSystems.Converter.ResourceAttachment
+module
+
+public import RandomSystems.Converter.ResourceAttachment
 
 /-!
 # Admissible histories in attachment
@@ -14,6 +16,8 @@ unchanged.
 * `replies_apply_canon`, `trim_apply_canon`: canonical restriction does not change an
   attachment
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -147,7 +151,7 @@ lemma replies_apply_canon (hc : IsDDC b (canon c)) (hR : RepliesAtQueriedInterfa
       exact ⟨none, [], Induces.nil, Induces.nil,
         ⟨admissible_nil, fun hn => (hn rfl).elim, fun j => by
           change replyLabel (canon c) [] ≠ some ⟨some (), j⟩
-          rw [replyLabel, dif_neg hc.dds.1]
+          rw [replyLabel, dite_eq_right hc.dds.1]
           intro he; cases he⟩, replies_nil F⟩
     | append_singleton xs a ih =>
       intro ys hy

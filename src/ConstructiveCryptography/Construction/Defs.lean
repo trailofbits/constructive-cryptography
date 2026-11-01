@@ -1,6 +1,6 @@
-import Mathlib.Data.Set.Defs
+module
 
-set_option autoImplicit false
+public import Mathlib.Data.Set.Defs
 
 /-!
 # Constructor-indexed judgments
@@ -18,6 +18,10 @@ with no structure assumed on the carriers. `Constructible judgment constructors 
 `R → S` relative to `Γ = constructors`, and `Unconstructible` is its negation `R ↛ S`. The
 laws relating these predicates are in `ConstructiveCryptography.Construction.Basic`.
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace ConstructiveCryptography.Construction
 

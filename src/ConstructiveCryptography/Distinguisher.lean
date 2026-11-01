@@ -1,6 +1,6 @@
-import Mathlib.Data.ENNReal.Real
+module
 
-set_option autoImplicit false
+public import Mathlib.Basic.ENNReal.Real
 
 /-!
 # Distinguishers, decisions and admission
@@ -37,6 +37,10 @@ one instance of it for each admitted set.
 Sources: CR18, Definition 4.7 (printed p. 91), takes the signed performance; this library
 takes the absolute value, as Banfi, §2.3.3 (printed p. 16).
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace ConstructiveCryptography
 

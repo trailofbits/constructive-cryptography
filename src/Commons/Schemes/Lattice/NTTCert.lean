@@ -1,6 +1,8 @@
-import Mathlib.Algebra.BigOperators.Ring.Finset
-import Commons.Schemes.Lattice.VectorBackend
-import Mathlib.RingTheory.AdjoinRoot
+module
+
+public import Mathlib.Algebra.BigOperators.Ring.Finset
+public import Commons.Schemes.Lattice.VectorBackend
+public import Mathlib.RingTheory.AdjoinRoot
 
 /-!
 # Certified NTTs
@@ -34,6 +36,8 @@ evaluations back into coefficients.
 * `segmentEval_negacyclicConv`: negacyclic products evaluate multiplicatively
 * `adjoinRoot_pair_injective`: coordinates in `R[X]/(X² − γ)` are unique
 -/
+
+@[expose] public section
 
 
 
@@ -596,7 +600,7 @@ lemma sum_ite_val_eq {n : ℕ} (m : ℕ) (hm : m < n) (F : Fin n → S) :
   rw [Finset.sum_eq_single ⟨m, hm⟩]
   · simp
   · intro b _ hb
-    rw [if_neg]
+    rw [ite_eq_right]
     intro h
     exact hb (Fin.ext h.symm)
   · intro h
@@ -616,11 +620,11 @@ lemma segmentEval_negacyclicConv {n : ℕ} (f g : Fin n → R) (ω : S) (hω : �
   have hj := ij.2.isLt
   have hm : (ij.1.val + ij.2.val) % n < n := Nat.mod_lt _ hn
   by_cases hlt : ij.1.val + ij.2.val < n
-  · simp only [hlt, if_true, apply_ite (algebraMap R S), map_zero, ite_mul, zero_mul]
+  · simp only [hlt, ite_true, apply_ite (algebraMap R S), map_zero, ite_mul, zero_mul]
     rw [sum_ite_val_eq _ hm (fun k => algebraMap R S (f ij.1 * g ij.2) * ω ^ (k : ℕ))]
     simp only [Nat.mod_eq_of_lt hlt, map_mul, pow_add]
     ring
-  · simp only [hlt, if_false, apply_ite (algebraMap R S), map_zero, ite_mul, zero_mul]
+  · simp only [hlt, ite_false, apply_ite (algebraMap R S), map_zero, ite_mul, zero_mul]
     rw [sum_ite_val_eq _ hm (fun k => algebraMap R S (-(f ij.1 * g ij.2)) * ω ^ (k : ℕ))]
     have hmod : (ij.1.val + ij.2.val) % n = ij.1.val + ij.2.val - n := by
       rw [Nat.mod_eq_sub_mod (by omega), Nat.mod_eq_of_lt (by omega)]

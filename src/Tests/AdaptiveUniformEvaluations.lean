@@ -1,4 +1,6 @@
-import Probability.Counting
+module
+
+public import Probability.Counting
 
 /-!
 # Reply-dependent fresh coordinates
@@ -21,6 +23,8 @@ whenever `Sum.elim base (next b)` is injective on `good b`.
 * an empty good event with repeated base queries: mass `0`, no base injectivity needed
 * four independent universes for base indices, outputs, selected indices and coordinates
 -/
+
+@[expose] public section
 
 namespace Probability.Counting.Tests
 

@@ -1,7 +1,7 @@
-import ConstructiveCryptography.CryptographicAlgebra.Basic
-import ConstructiveCryptography.Specification.Relaxation.Basic
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.CryptographicAlgebra.Basic
+public import ConstructiveCryptography.Specification.Relaxation.Basic
 
 /-!
 # Relaxations of specifications in a cryptographic algebra
@@ -30,6 +30,10 @@ resource `R` a set `φ.toPointwise R ∋ R` and acts on a specification `S` by u
   `CryptographicAlgebra.Specification.Constructs.relax_left_context`,
   `CryptographicAlgebra.Specification.Constructs.relax_right_context`
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace ConstructiveCryptography.CryptographicAlgebra.Specification
 

@@ -1,13 +1,15 @@
-import RandomSystems.Typed.Distinguisher
-import ConstructiveCryptography.CryptographicAlgebra.DistinguisherAction
-import RandomSystems.Distance.RevealedHCoefficient
-import RandomSystems.Typed.ParallelAttachment
-import RandomSystems.Typed.SystemCoherence
-import RandomSystems.Typed.Distance
-import ConstructiveCryptography.Instances.Monoidal
-import ConstructiveCryptography.CryptographicAlgebra.Distinguisher
-import RandomSystems.Distance.Distinguisher
-import ConstructiveCryptography.Substitution.Reduction
+module
+
+public import RandomSystems.Typed.Distinguisher
+public import ConstructiveCryptography.CryptographicAlgebra.DistinguisherAction
+public import RandomSystems.Distance.RevealedHCoefficient
+public import RandomSystems.Typed.ParallelAttachment
+public import RandomSystems.Typed.SystemCoherence
+public import RandomSystems.Typed.Distance
+public import ConstructiveCryptography.Instances.Monoidal
+public import ConstructiveCryptography.CryptographicAlgebra.Distinguisher
+public import RandomSystems.Distance.Distinguisher
+public import ConstructiveCryptography.Substitution.Reduction
 
 /-!
 # Interfaces as a cryptographic algebra
@@ -69,6 +71,8 @@ domination law needed by statistical steps of a substitution chain.
   definition
 * `Interface.distance_le_of_hCoefficient`: an H-coefficient argument bounds the distance
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.Interface
 

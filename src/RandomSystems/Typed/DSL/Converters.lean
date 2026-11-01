@@ -1,7 +1,9 @@
-import RandomSystems.Typed.DSL.Programs
-import RandomSystems.Typed.Filter
-import RandomSystems.Typed.Source
-import RandomSystems.Typed.Parallel
+module
+
+public import RandomSystems.Typed.DSL.Programs
+public import RandomSystems.Typed.Filter
+public import RandomSystems.Typed.Source
+public import RandomSystems.Typed.Parallel
 
 /-!
 # Programs as converters
@@ -28,6 +30,8 @@ at most `q` to an inside budget of `q`.
   `TypedConverter.ofCostedProgram_smul_ofAutomaton`: attached to an automaton, it is
   the combined automaton
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

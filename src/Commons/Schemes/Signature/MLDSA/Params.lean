@@ -1,4 +1,6 @@
-import Mathlib.Data.ZMod.Defs
+module
+
+public import Mathlib.Data.ZMod.Defs
 
 /-!
 # ML-DSA Parameters
@@ -13,6 +15,8 @@ named NIST-approved instantiations.
 
 - NIST FIPS 204, Section 4 (Table 1: ML-DSA parameter sets)
 -/
+
+@[expose] public section
 
 
 

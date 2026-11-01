@@ -1,8 +1,10 @@
-import Commons.Schemes.Signature.MLDSA.Params
-import Commons.Schemes.Lattice.SchoolbookCert
-import Commons.Schemes.Lattice.Transform
-import Commons.Schemes.Lattice.Norms
-import Commons.Schemes.Lattice.Rounding
+module
+
+public import Commons.Schemes.Signature.MLDSA.Params
+public import Commons.Schemes.Lattice.SchoolbookCert
+public import Commons.Schemes.Lattice.Transform
+public import Commons.Schemes.Lattice.Norms
+public import Commons.Schemes.Lattice.Rounding
 
 /-!
 # ML-DSA Arithmetic Assembly
@@ -29,6 +31,8 @@ Provides:
 This module is mixed: the executable aliases are computable, while
 `coeffSemantics` and `quotientOfRq` are `noncomputable`.
 -/
+
+@[expose] public section
 
 
 

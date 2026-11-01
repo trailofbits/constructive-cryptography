@@ -1,5 +1,7 @@
-import RandomSystems.DDC.SerialCost
-import RandomSystems.Converter.ConverterDomain
+module
+
+public import RandomSystems.DDC.SerialCost
+public import RandomSystems.Converter.ConverterDomain
 
 /-!
 # Restricted converters and weighted serial bounds
@@ -26,6 +28,8 @@ Two tests, on arbitrary and on concrete interfaces.
   outside queries, so it is not responsive. `IsDDCFrom.eq_filterDom_of_replies_le` shows that
   the one-query converter is the two-query converter restricted to one outside query.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.Tests.CompositionalCosts
 

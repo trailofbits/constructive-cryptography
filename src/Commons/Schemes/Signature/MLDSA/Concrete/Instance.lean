@@ -1,9 +1,11 @@
-import Commons.Schemes.Signature.MLDSA.Encoding
-import Commons.Schemes.Signature.MLDSA.Concrete.Rounding
-import Commons.Schemes.Signature.MLDSA.Concrete.NTT
-import Commons.Schemes.Signature.MLDSA.Concrete.Sampling
-import Commons.Schemes.Signature.MLDSA.Concrete.Encoding
-import Mathlib.Data.FinEnum
+module
+
+public import Commons.Schemes.Signature.MLDSA.Encoding
+public import Commons.Schemes.Signature.MLDSA.Concrete.Rounding
+public import Commons.Schemes.Signature.MLDSA.Concrete.NTT
+public import Commons.Schemes.Signature.MLDSA.Concrete.Sampling
+public import Commons.Schemes.Signature.MLDSA.Concrete.Encoding
+public import Mathlib.Data.FinEnum
 
 /-!
 # Concrete ML-DSA Instance
@@ -15,6 +17,8 @@ abstract `Primitives` and `Encoding` bundles used by the ML-DSA specification. T
 and signatures are byte strings of the FIPS 204 lengths, `Bytes (publicKeyBytes p)`,
 `Bytes (secretKeyBytes p)` and `Bytes (signatureBytes p)`.
 -/
+
+@[expose] public section
 
 
 

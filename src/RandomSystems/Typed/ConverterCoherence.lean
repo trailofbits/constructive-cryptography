@@ -1,5 +1,7 @@
-import RandomSystems.Typed.DDCCoherence
-import RandomSystems.Typed.TensorRename
+module
+
+public import RandomSystems.Typed.DDCCoherence
+public import RandomSystems.Typed.TensorRename
 
 /-!
 # Naturality of regrouping
@@ -15,6 +17,8 @@ one unrestricted regrouping, so they have the same transcripts.
 * `TypedConverter.comp_leftUnitor`, `TypedConverter.comp_rightUnitor`: naturality of the unit
   renamings
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

@@ -1,4 +1,6 @@
-import RandomSystems.Converter.PDCBehavior
+module
+
+public import RandomSystems.Converter.PDCBehavior
 
 /-!
 # Attaching PDC behaviors to resources
@@ -21,6 +23,8 @@ identity changes nothing, and attaching a serial composition attaches the inner 
 * `PDCBehavior.attach_presents`: the attachment of presentations presents the attachment
 * `PDCBehavior.attach_mix` (of a mixture), `PDCBehavior.attach_id`, `PDCBehavior.attach_comp`
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

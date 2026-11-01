@@ -1,4 +1,6 @@
-import RandomSystems.Converter.CallRuleTranscript
+module
+
+public import RandomSystems.Converter.CallRuleTranscript
 
 /-!
 # Input-dependent query routing
@@ -34,6 +36,8 @@ router is a converter call and not a renaming of interface labels.
 
 Sources: Jost, Definition 2.2.2; CR18, Definitions 3.8–3.9.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

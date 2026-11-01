@@ -1,6 +1,8 @@
-import RandomSystems.Converter.ConverterTensor
-import RandomSystems.System.Automaton
-import RandomSystems.PDS.Filter
+module
+
+public import RandomSystems.Converter.ConverterTensor
+public import RandomSystems.System.Automaton
+public import RandomSystems.PDS.Filter
 
 /-!
 # Parallel composition of PDSs
@@ -25,6 +27,8 @@ composition.
 * `parallelStep_bisim`, `parallelStep_congr`: bisimulations side by side are a bisimulation, and
   automata with the same systems side by side have the same system
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 
@@ -177,7 +181,7 @@ lemma parallel_automatonSystem (hE : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ []
     rcases List.eq_nil_or_concat h with rfl | ⟨h, z, rfl⟩
     · exact absurd rfl hp.1
     rw [List.concat_eq_append] at hy hp ⊢
-    rw [filterDom, if_pos hp, automatonSystem_snoc, stateAfter_parallelStep]
+    rw [filterDom, ite_eq_left hp, automatonSystem_snoc, stateAfter_parallelStep]
     simp only [relabel, List.map_append, List.map_singleton, Part.mem_map_iff] at hy
     obtain ⟨y', hy', rfl⟩ := hy
     rw [trim] at hy'

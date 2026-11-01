@@ -312,84 +312,84 @@ extension are in [Examples](src/Examples/README.md).
 
 <!-- Declarations: §1 -->
 
-[IsDDS]: src/RandomSystems/System/Basic.lean#L77
-[automatonSystem_eq_of_bisim]: src/RandomSystems/System/Automaton.lean#L89
-[Domain]: src/RandomSystems/PDS/PDS.lean#L65
-[PDS]: src/RandomSystems/PDS/PDS.lean#L133
-[IsRandomSystem]: src/RandomSystems/Cumulative/Cumulative.lean#L39
-[RandomSystem]: src/RandomSystems/Cumulative/Cumulative.lean#L53
-[RandomSystem.RepliesAtQueriedInterface]: src/RandomSystems/Cumulative/Cumulative.lean#L70
-[PDS.behavior]: src/RandomSystems/Cumulative/Cumulative.lean#L216
-[RandomSystem.exists_presentation]: src/RandomSystems/Cumulative/Presentation.lean#L302
-[RandomSystem.ofPDSClass_bijective]: src/RandomSystems/Cumulative/Presentation.lean#L312
-[RandomSystem.parallel]: src/RandomSystems/Cumulative/CumulativeOperations.lean#L130
-[IsDDC]: src/RandomSystems/DDC/DDC.lean#L127
-[PDCBehavior]: src/RandomSystems/Converter/PDCBehavior.lean#L67
-[PDCBehavior.ofPDC]: src/RandomSystems/Converter/PDCBehavior.lean#L171
-[PDCBehavior.comp]: src/RandomSystems/Converter/PDCBehavior.lean#L277
-[PDCBehavior.id]: src/RandomSystems/Converter/PDCBehavior.lean#L375
-[PDCBehavior.attach]: src/RandomSystems/Converter/ConverterAttachment.lean#L157
-[PDCBehavior.attach_id]: src/RandomSystems/Converter/ConverterAttachment.lean#L264
-[PDCBehavior.attach_comp]: src/RandomSystems/Converter/ConverterAttachment.lean#L277
-[PDCBehavior.tensor]: src/RandomSystems/Converter/ConverterTensor.lean#L649
-[Program]: src/RandomSystems/Converter/Program.lean#L45
-[RandomSystem.transcriptDistance]: src/RandomSystems/Distance/Decision.lean#L245
-[Domain.Distinguisher]: src/RandomSystems/Distance/Distinguisher.lean#L122
-[RandomSystem.transcriptDistance_eq_iSup]: src/RandomSystems/Distance/Distinguisher.lean#L154
-[Domain.DistinguisherBehavior]: src/RandomSystems/Distance/Distinguisher.lean#L207
-[RandomSystem.MonotoneMBO]: src/RandomSystems/Game/MBO.lean#L305
-[RandomSystem.visible]: src/RandomSystems/Game/MBO.lean#L340
-[RandomSystem.winProbability]: src/RandomSystems/Game/MBO.lean#L482
-[RandomSystem.ConditionallyEquivalent]: src/RandomSystems/Game/MBO.lean#L525
-[RandomSystem.GameEquivalent]: src/RandomSystems/Game/MBO.lean#L539
-[Domain.Distinguisher.advantage_le_winProbability]: src/RandomSystems/Game/MBO.lean#L758
-[Domain.Distinguisher.advantage_le_winProbability_of_gameEquivalent]: src/RandomSystems/Game/MBO.lean#L876
-[PDCBehavior.liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L460
+[IsDDS]: src/RandomSystems/System/Basic.lean#L81
+[automatonSystem_eq_of_bisim]: src/RandomSystems/System/Automaton.lean#L93
+[Domain]: src/RandomSystems/PDS/PDS.lean#L69
+[PDS]: src/RandomSystems/PDS/PDS.lean#L137
+[IsRandomSystem]: src/RandomSystems/Cumulative/Cumulative.lean#L43
+[RandomSystem]: src/RandomSystems/Cumulative/Cumulative.lean#L57
+[RandomSystem.RepliesAtQueriedInterface]: src/RandomSystems/Cumulative/Cumulative.lean#L74
+[PDS.behavior]: src/RandomSystems/Cumulative/Cumulative.lean#L220
+[RandomSystem.exists_presentation]: src/RandomSystems/Cumulative/Presentation.lean#L306
+[RandomSystem.ofPDSClass_bijective]: src/RandomSystems/Cumulative/Presentation.lean#L316
+[RandomSystem.parallel]: src/RandomSystems/Cumulative/CumulativeOperations.lean#L135
+[IsDDC]: src/RandomSystems/DDC/DDC.lean#L131
+[PDCBehavior]: src/RandomSystems/Converter/PDCBehavior.lean#L71
+[PDCBehavior.ofPDC]: src/RandomSystems/Converter/PDCBehavior.lean#L175
+[PDCBehavior.comp]: src/RandomSystems/Converter/PDCBehavior.lean#L281
+[PDCBehavior.id]: src/RandomSystems/Converter/PDCBehavior.lean#L379
+[PDCBehavior.attach]: src/RandomSystems/Converter/ConverterAttachment.lean#L161
+[PDCBehavior.attach_id]: src/RandomSystems/Converter/ConverterAttachment.lean#L268
+[PDCBehavior.attach_comp]: src/RandomSystems/Converter/ConverterAttachment.lean#L281
+[PDCBehavior.tensor]: src/RandomSystems/Converter/ConverterTensor.lean#L653
+[Program]: src/RandomSystems/Converter/Program.lean#L49
+[RandomSystem.transcriptDistance]: src/RandomSystems/Distance/Decision.lean#L249
+[Domain.Distinguisher]: src/RandomSystems/Distance/Distinguisher.lean#L126
+[RandomSystem.transcriptDistance_eq_iSup]: src/RandomSystems/Distance/Distinguisher.lean#L158
+[Domain.DistinguisherBehavior]: src/RandomSystems/Distance/Distinguisher.lean#L211
+[RandomSystem.MonotoneMBO]: src/RandomSystems/Game/MBO.lean#L309
+[RandomSystem.visible]: src/RandomSystems/Game/MBO.lean#L344
+[RandomSystem.winProbability]: src/RandomSystems/Game/MBO.lean#L486
+[RandomSystem.ConditionallyEquivalent]: src/RandomSystems/Game/MBO.lean#L529
+[RandomSystem.GameEquivalent]: src/RandomSystems/Game/MBO.lean#L543
+[Domain.Distinguisher.advantage_le_winProbability]: src/RandomSystems/Game/MBO.lean#L762
+[Domain.Distinguisher.advantage_le_winProbability_of_gameEquivalent]: src/RandomSystems/Game/MBO.lean#L880
+[PDCBehavior.liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L464
 
 <!-- Declarations: §2 -->
 
-[Interface]: src/RandomSystems/Typed/Interface.lean#L42
-[TypedSystem]: src/RandomSystems/Typed/Interface.lean#L94
-[TypedConverter]: src/RandomSystems/Typed/Interface.lean#L129
-[TypedConverter.comp]: src/RandomSystems/Typed/Interface.lean#L136
-[TypedConverter.id]: src/RandomSystems/Typed/Interface.lean#L141
-[TypedConverter.attach]: src/RandomSystems/Typed/Interface.lean#L192
-[Interface.tensor]: src/RandomSystems/Typed/Parallel.lean#L85
-[TypedSystem.parallel]: src/RandomSystems/Typed/Parallel.lean#L153
-[TypedConverter.parallel]: src/RandomSystems/Typed/Parallel.lean#L210
-[TypedConverter.parallel_attach]: src/RandomSystems/Typed/ParallelAttachment.lean#L23
-[TypedConverter.rename]: src/RandomSystems/Typed/Relabel.lean#L48
-[TypedSystem.source]: src/RandomSystems/Typed/Source.lean#L51
-[TypedGame]: src/RandomSystems/Typed/Game.lean#L42
+[Interface]: src/RandomSystems/Typed/Interface.lean#L46
+[TypedSystem]: src/RandomSystems/Typed/Interface.lean#L98
+[TypedConverter]: src/RandomSystems/Typed/Interface.lean#L133
+[TypedConverter.comp]: src/RandomSystems/Typed/Interface.lean#L140
+[TypedConverter.id]: src/RandomSystems/Typed/Interface.lean#L145
+[TypedConverter.attach]: src/RandomSystems/Typed/Interface.lean#L196
+[Interface.tensor]: src/RandomSystems/Typed/Parallel.lean#L89
+[TypedSystem.parallel]: src/RandomSystems/Typed/Parallel.lean#L157
+[TypedConverter.parallel]: src/RandomSystems/Typed/Parallel.lean#L214
+[TypedConverter.parallel_attach]: src/RandomSystems/Typed/ParallelAttachment.lean#L27
+[TypedConverter.rename]: src/RandomSystems/Typed/Relabel.lean#L52
+[TypedSystem.source]: src/RandomSystems/Typed/Source.lean#L55
+[TypedGame]: src/RandomSystems/Typed/Game.lean#L46
 
 <!-- Declarations: §3 -->
 
-[Interface.cc_distance_eq]: src/ConstructiveCryptography/Instances/Algebra.lean#L274
+[Interface.cc_distance_eq]: src/ConstructiveCryptography/Instances/Algebra.lean#L278
 
 <!-- Declarations: §4 -->
 
-[Specification]: src/ConstructiveCryptography/Specification/Defs.lean#L26
-[Relaxation]: src/ConstructiveCryptography/Specification/Relaxation/Defs.lean#L42
-[constructs_of_simulator]: src/ConstructiveCryptography/CryptographicAlgebra/Star.lean#L363
-[ConstructsWithin.serial]: src/ConstructiveCryptography/CryptographicAlgebra/PseudoMetric.lean#L331
-[ConstructsWithin.parallel]: src/ConstructiveCryptography/CryptographicAlgebra/PseudoMetric.lean#L359
-[Implication]: src/ConstructiveCryptography/Substitution/Basic.lean#L270
-[SubstitutesWithin]: src/ConstructiveCryptography/Substitution/Reduction.lean#L80
-[Implication.substitutesWithin]: src/ConstructiveCryptography/Substitution/Quantitative.lean#L84
-[Implication.substitutesWithin_of_mixed]: src/ConstructiveCryptography/Substitution/Quantitative.lean#L157
-[Distinguishers.distinguisherAdvantage]: src/ConstructiveCryptography/Distinguisher.lean#L132
+[Specification]: src/ConstructiveCryptography/Specification/Defs.lean#L30
+[Relaxation]: src/ConstructiveCryptography/Specification/Relaxation/Defs.lean#L46
+[constructs_of_simulator]: src/ConstructiveCryptography/CryptographicAlgebra/Star.lean#L368
+[ConstructsWithin.serial]: src/ConstructiveCryptography/CryptographicAlgebra/PseudoMetric.lean#L335
+[ConstructsWithin.parallel]: src/ConstructiveCryptography/CryptographicAlgebra/PseudoMetric.lean#L363
+[Implication]: src/ConstructiveCryptography/Substitution/Basic.lean#L274
+[SubstitutesWithin]: src/ConstructiveCryptography/Substitution/Reduction.lean#L84
+[Implication.substitutesWithin]: src/ConstructiveCryptography/Substitution/Quantitative.lean#L88
+[Implication.substitutesWithin_of_mixed]: src/ConstructiveCryptography/Substitution/Quantitative.lean#L161
+[Distinguishers.distinguisherAdvantage]: src/ConstructiveCryptography/Distinguisher.lean#L136
 
 <!-- Declarations: §5 and departures -->
 
-[cc_normalize]: src/ConstructiveCryptography/Tactics/Basic.lean#L30
-[cc_nonexpand]: src/ConstructiveCryptography/Tactics/Categorical.lean#L166
-[cc_triangle]: src/ConstructiveCryptography/Tactics/Categorical.lean#L155
-[cc_construct]: src/ConstructiveCryptography/Tactics/Categorical.lean#L42
-[cc_calc]: src/ConstructiveCryptography/Tactics/Substitution.lean#L101
-[real_ideal_distance_le]: src/Examples/AuthenticatedEncryption/Security.lean#L158
-[SymmetricEncryption.encryptions]: src/Commons/Definitions/Encryption.lean#L68
-[AE.INDCCA]: src/Commons/Definitions/AEAD.lean#L168
-[correctedChain]: src/Examples/AuthenticatedEncryption/Security.lean#L128
-[collision_mass_le]: src/Examples/AuthenticatedEncryption/Collision.lean#L54
-[exists_pair_one_sub_supAgreement_le]: src/Probability/MultiCoupling.lean#L616
-[not_supAgreement_disagreement_le_every_pair]: src/Probability/MultiCoupling.lean#L778
+[cc_normalize]: src/ConstructiveCryptography/Tactics/Basic.lean#L34
+[cc_nonexpand]: src/ConstructiveCryptography/Tactics/Categorical.lean#L171
+[cc_triangle]: src/ConstructiveCryptography/Tactics/Categorical.lean#L160
+[cc_construct]: src/ConstructiveCryptography/Tactics/Categorical.lean#L47
+[cc_calc]: src/ConstructiveCryptography/Tactics/Substitution.lean#L105
+[real_ideal_distance_le]: src/Examples/AuthenticatedEncryption/Security.lean#L162
+[SymmetricEncryption.encryptions]: src/Commons/Definitions/Encryption.lean#L72
+[AE.INDCCA]: src/Commons/Definitions/AEAD.lean#L172
+[correctedChain]: src/Examples/AuthenticatedEncryption/Security.lean#L132
+[collision_mass_le]: src/Examples/AuthenticatedEncryption/Collision.lean#L58
+[exists_pair_one_sub_supAgreement_le]: src/Probability/MultiCoupling.lean#L620
+[not_supAgreement_disagreement_le_every_pair]: src/Probability/MultiCoupling.lean#L782

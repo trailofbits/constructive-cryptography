@@ -1,6 +1,8 @@
-import Commons.Schemes.Signature.MLDSA.Concrete.Encoding
-import Commons.Schemes.Signature.MLDSA.Concrete.NTT
-import Commons.Schemes.Hash.Keccak
+module
+
+public import Commons.Schemes.Signature.MLDSA.Concrete.Encoding
+public import Commons.Schemes.Signature.MLDSA.Concrete.NTT
+public import Commons.Schemes.Hash.Keccak
 
 /-!
 # Concrete Sampling and Hash Wiring for ML-DSA
@@ -17,6 +19,8 @@ FIPS 204:
 - `ExpandMask`
 - message / commitment hash wrappers
 -/
+
+@[expose] public section
 
 
 
@@ -331,7 +335,7 @@ lemma getD_set!_self (out : Array Coeff) (a : ℕ) (ha : a < out.size) (u : Coef
 lemma getD_set!_ne (out : Array Coeff) (a : ℕ) (u : Coeff) (j : ℕ) (hj : j ≠ a) :
     (out.set! a u).getD j 0 = out.getD j 0 := by
   simp only [Array.set!, Array.getD_eq_getD_getElem?, Array.getElem?_setIfInBounds]
-  rw [if_neg (fun h => hj h.symm)]
+  rw [ite_eq_right (fun h => hj h.symm)]
 
 /-- Exact additive single-slot update law for `countNZ`, stated to avoid `ℕ` subtraction. -/
 lemma countNZ_set!_eq (out : Array Coeff) (a : ℕ) (ha : a < ringDegree)

@@ -1,5 +1,7 @@
-import RandomSystems.Typed.Interface
-import RandomSystems.Distance.Restriction
+module
+
+public import RandomSystems.Typed.Interface
+public import RandomSystems.Distance.Restriction
 
 /-!
 # Domain filters
@@ -23,6 +25,8 @@ Source: CR18, §3.4.3 (printed p. 62).
 * `TypedConverter.filter_comp_filter_smul`: two filters in series act as the filter of both
   conditions
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

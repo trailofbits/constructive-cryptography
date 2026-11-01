@@ -1,5 +1,7 @@
-import RandomSystems.Distance.Decision
-import RandomSystems.Converter.ParallelPDS
+module
+
+public import RandomSystems.Distance.Decision
+public import RandomSystems.Converter.ParallelPDS
 
 /-!
 # Absorbing a system run beside
@@ -22,6 +24,8 @@ the left one.
 * `Domain.DecisionCompatible.absorbRight`: absorption preserves compatibility
 * `RandomSystem.decisionProbability_parallel`: averaging over the right presentation
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra
 

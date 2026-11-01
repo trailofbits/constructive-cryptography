@@ -1,7 +1,7 @@
-import ConstructiveCryptography.Problem
-import Mathlib.Data.Real.Basic
+module
 
-set_option autoImplicit false
+public import ConstructiveCryptography.Problem
+public import Mathlib.Basic.Real.Basic
 
 /-!
 # Games and their performance
@@ -42,6 +42,10 @@ decision evaluation alone is not assumed to determine the winning evaluation.
 
 * `Games.win_le_of_reduction`: hardness through a reduction between admitted winners
 -/
+
+@[expose] public section
+
+set_option autoImplicit false
 
 namespace ConstructiveCryptography
 

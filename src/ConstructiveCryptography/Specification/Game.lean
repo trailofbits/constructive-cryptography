@@ -1,5 +1,7 @@
-import ConstructiveCryptography.Specification.Game.Basic
-import ConstructiveCryptography.Specification.Star
+module
+
+public import ConstructiveCryptography.Specification.Game.Basic
+public import ConstructiveCryptography.Specification.Star
 
 /-!
 # Test bounds under converter-class closure
@@ -19,6 +21,8 @@ If every precomposed test is again admitted, a bound on `ideal` transfers to eve
 is the set of all such precompositions of a base set; it contains the base set and is closed
 under the same class.
 -/
+
+@[expose] public section
 
 namespace ConstructiveCryptography.Specification
 

@@ -1,5 +1,7 @@
-import RandomSystems.Converter.ParallelAllAttachment
-import RandomSystems.Typed.ParallelAllPresentation
+module
+
+public import RandomSystems.Converter.ParallelAllAttachment
+public import RandomSystems.Typed.ParallelAllPresentation
 
 /-!
 # Componentwise attachment of independent families
@@ -35,6 +37,8 @@ Only cumulative behavior is compared.
 Source: Jost, Thesis, printed p. 17, views finite disjoint-interface resources as one; the
 stochastic law is derived here from the independent products.
 -/
+
+@[expose] public section
 
 namespace SystemAlgebra.TypedConverter
 
