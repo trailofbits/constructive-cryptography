@@ -19,7 +19,7 @@ open scoped SystemAlgebra
 
 variable {A B C : Interface}
 
-/-- Both environments attach a converter to one `Commons.StrongURP X` beside `T` inside
+/-- Both assemblies attach a converter to one `Commons.StrongURP X` beside `T` inside
 `context`. `cc_normalize` brings both sides to the same wiring; the local equation `component`
 then closes the comparison. -/
 example

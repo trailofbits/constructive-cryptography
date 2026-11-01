@@ -48,7 +48,8 @@ review_sites() {
 }
 
 printf 'Reuse review candidates: inspect ownership, existing declarations and sampling scope.\n'
-git -c core.quotepath=false diff --no-ext-diff --no-color --unified=0 "$review_base" -- '*.lean' |
+git -c core.quotepath=false diff --no-ext-diff --no-color --unified=0 \
+  --src-prefix=a/ --dst-prefix=b/ "$review_base" -- '*.lean' |
   review_sites
 while IFS= read -r -d '' review_file; do
   [[ $review_file == *.lean ]] || continue

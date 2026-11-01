@@ -83,7 +83,9 @@ noncomputable def oracleSystem
   TypedSystem.ofAutomaton _ (oracleStep encrypt decrypt)
     (Distribution.ProbDist.map (fun ω => (ω, [])) law)
 
-/-- The encryption-only sampled oracle, with its encryption counter starting at zero. -/
+/-- An encryption oracle on `Encryption.perPort M C q`, retaining one draw `ω ← law` and
+the messages `known`, initially empty. `enc(m)` replies `encrypt ω known.length m` and
+appends `m` to `known`. -/
 noncomputable def encryptionOracleSystem
     -- `Ω` is the type of the retained draw `ω`; `q .enc` bounds the encryption queries.
     {Ω : Type} (q : Encryption.Port → ℕ)
@@ -141,7 +143,7 @@ noncomputable abbrev ptxtStep {S : Type}
     (step : S → (p : AE.Port) → AE.Input M C p → S × AE.Output M C p) :=
   (AE.PTXT.body M C).combine step (AE.PTXT.bound_spec M C)
 
-/-- **The plaintext filter on an automaton** is its automaton on the same tables. -/
+/-- **The plaintext filter on an automaton** is its automaton on the same draw. -/
 lemma ptxt_smul
     -- `Ω` carries the draw, `S` the inside state; `q` bounds the outer queries per port.
     {Ω S : Type} (q : AE.Port → ℕ)
@@ -267,6 +269,7 @@ lemma encryptionReal_system (scheme : SymmetricEncryption K M C) (q : Encryption
   refine TypedSystem.ofAutomaton_map_congr _ _
     (realTableLaw scheme (Encryption.Real.bound scheme * ∑ i, q i)) _ _ ?_
   intro ω
+  -- Initially both representations retain the same tables, with counters zero and key unread.
   exact automatonSystem_eq_of_bisim _ (encryptionReal_bisim scheme)
     ⟨rfl, rfl, rfl, Or.inl ⟨rfl, rfl⟩⟩
 
@@ -329,6 +332,8 @@ lemma aeIdeal_system
   refine TypedSystem.ofAutomaton_map_congr _ _
     (Distribution.prodProbDist law (idealTableLaw M C q)) _ _ ?_
   intro ω
+  -- Initially both retain the same draw and table, with counter zero and empty message
+  -- histories and replay table.
   exact automatonSystem_eq_of_bisim _ (aeIdeal_bisim encrypt) ⟨rfl, rfl, rfl, rfl, rfl⟩
 
 /-! ## The hybrid and the ideal as oracles -/

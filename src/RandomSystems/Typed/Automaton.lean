@@ -29,7 +29,8 @@ under attachment and parallel composition.
 
 ## References
 
-1. U. Maurer. *Indistinguishability of Random Systems*. Preprint, 2002.
+1. U. Maurer. Indistinguishability of Random Systems. In *Advances in Cryptology —
+   EUROCRYPT 2002*, LNCS 2332, pp. 110–132, Springer, 2002. Page numbers refer to the preprint.
 -/
 
 namespace SystemAlgebra
@@ -65,13 +66,13 @@ lemma TypedSystem.ofAutomaton_mass (initial : Distribution.ProbDist S)
 /-- Pointwise equality of initialized automata gives equality of their sampled typed systems.
 The same law and domain are used for both representations. -/
 lemma TypedSystem.ofAutomaton_map_congr
-    -- `A` fixes the ports and admitted histories; `S`, `S'` are the two state spaces.
+    -- `A` fixes the ports and admitted histories; `Ω` carries draws; `S`, `S'` carry states.
     {A : Interface} {Ω S S' : Type}
     -- `step` and `step'` turn a state and a query at port `i` into a new state and reply.
     (step : S → (i : A.I) → A.X i → S × A.Y i)
     (step' : S' → (i : A.I) → A.X i → S' × A.Y i)
     -- `P` is the law of one draw `ω : Ω`; `init`, `init'` build the corresponding states.
-    (P : Probability.Distribution.ProbDist Ω) (init : Ω → S) (init' : Ω → S')
+    (P : Distribution.ProbDist Ω) (init : Ω → S) (init' : Ω → S')
     -- `same` equates the deterministic systems for every retained draw `ω`.
     (same : ∀ ω, automatonSystem step (init ω) = automatonSystem step' (init' ω)) :
     ofAutomaton A step (Distribution.ProbDist.map init P) =

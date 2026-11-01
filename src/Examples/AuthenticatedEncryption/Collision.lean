@@ -21,7 +21,7 @@ replacement message, in either order.
 * `collision_mass_le`: the collision probability is at most `n² / |M|`
 * `hybridDecrypt_eq`: without a collision, the hybrid decrypts as the ideal
 * `ideal_mass_hybridTables`: the ideal oracle reads only the first entries of the real system's
-  tables, so it has the same mass on the hybrid's tables as on the ideal's smaller ones
+  tables, so truncating them to `idealTableSize scheme q` preserves its mass
 * `collisionGame_conditionallyEquivalent`: the collision game is conditionally equivalent to
   the ideal
 * `collisionGame_badProbability_le`: the collision probability on admitted queries
@@ -227,6 +227,8 @@ end Agreement
 
 section Game
 
+-- In this section, `μ = realTableLaw scheme (AE.Real.bound scheme * ∑ i, q i)` is the real
+-- table law, and `ν = ccaTableLaw M C q` is the replacement-table law.
 variable [DecidableEq C] [Nonempty M] (scheme : SymmetricEncryption K M C) (q : AE.Port → ℕ)
 
 omit [Fintype K] [DecidableEq K] [DecidableEq M] [DecidableEq C] [Nonempty M] in
@@ -329,8 +331,8 @@ lemma ideal_truncate {k₂ : ℕ}
   · rfl
 
 /-- **The ideal oracle on the hybrid's tables** has the mass it has on the ideal's own tables.
-The left law `μ × ν` is the first factor of `hybridLaw = (μ × ν) × ν`: full-size real tables
-and the inner replacement table. The right law is `idealLaw`, with shorter real tables. -/
+The left law `μ × ν` is the first factor of `hybridLaw = (μ × ν) × ν`; the right law is
+`idealLaw`, with real tables truncated to `idealTableSize scheme q` entries. -/
 lemma ideal_mass_hybridTables (xs : List (Σ i, (AE.perPort M C q).X i))
     (ys : List (Σ i, (AE.perPort M C q).Y i)) :
     (Distribution.prodProbDist
@@ -363,6 +365,7 @@ lemma ideal_mass_hybridTables (xs : List (Σ i, (AE.perPort M C q).X i))
       Distribution.fTransform_id,
       Distribution.fTransform_pi_castLE _ (AE.Real.law1 scheme).2.2,
       Distribution.fTransform_pi_castLE _ (AE.Real.law2 scheme).2.2]
+    -- `ν` and `idealTableLaw M C q` draw the same number of independent `𝒰[M]` entries.
     rfl
   -- Step 2: write the right side as the pushforward, and pull the event back along truncation.
   rw [← hpush, Distribution.mass_fTransform]

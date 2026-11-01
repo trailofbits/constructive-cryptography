@@ -242,9 +242,9 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedConverter.attach_rightContext]: Context.lean#L122
 [TypedConverter.attach_leftContext]: Context.lean#L127
 [TypedSystem.source]: Source.lean#L51
-[TypedSystem.ofAutomaton]: Automaton.lean
-[TypedSystem.ofAutomaton_map_congr]: Automaton.lean
-[TypedSystem.parallel_ofAutomaton]: Automaton.lean
+[TypedSystem.ofAutomaton]: Automaton.lean#L53
+[TypedSystem.ofAutomaton_map_congr]: Automaton.lean#L68
+[TypedSystem.parallel_ofAutomaton]: Automaton.lean#L92
 [TypedSystem.source_eq_memoryless]: Memoryless.lean#L47
 [TypedSystem.parallel_eq_memoryless]: Memoryless.lean#L146
 [TypedConverter.ofProgram_smul_memoryless]: Memoryless.lean#L241

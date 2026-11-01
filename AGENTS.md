@@ -135,7 +135,7 @@ use of notation; a passing build does not settle these questions.
   that names, local facts, comments and diagrams expose each mathematical step,
   its assumptions and its role. Keep explanations concise without omitting them.
 - **Object reuse:** inspect every new definition and sampling site. Check its owner against
-  the existing systems, interfaces, converters and probability laws. Environments assemble
+  the existing systems, interfaces, converters and probability laws. Composite definitions assemble
   these objects; lemmas refer to their laws. A renamed copy is still a duplicate. Preserve
   which callers share a draw and which receive independent draws. Use
   `scripts/review-reuse.sh` to locate candidate sites in the diff; its lexical report does
@@ -168,7 +168,7 @@ Before implementing a composite object or its internal proofs:
    the short mapping in the working notes or task update. Start from
    [REUSE.md](REUSE.md), then search the owning layer and read the live signatures and semantics.
    Check domains, budgets and sampling scope, not just names. Extend the owner when an object
-   needs another interface or law; a new environment is not a reason to redefine the object.
+   needs another interface or law; a new assembly is not a reason to redefine the object.
 2. Write its assembly from named components with the library's existing objects and
    operations: serial and parallel composition, attachment, sampling and restriction.
    Give each component's interface, domain, query costs and behavioral contract; keep
@@ -216,7 +216,7 @@ use the same declaration. Within one system, independent permutation copies use 
 composition; several callers of one permutation route to one shared component with an explicit
 combined domain guarantee. `StrongURP` serves forward and inverse queries from one retained
 permutation; `URP` samples independently at each label. An alternate representation gets one
-correspondence lemma, which consumers reuse instead of defining the object in each environment.
+correspondence lemma, which consumers reuse instead of defining the object in each assembly.
 
 Add an encoding, record, wrapper or generalization only when a concrete
 requirement of the current object calls for it, and explain its meaning.
