@@ -37,6 +37,7 @@ Ideal systems are in the `Commons` namespace; typed systems and converters are i
 | Nonce-unique encryption inputs | `nonceRestricted` in [Nonce] |
 | KEM–DEM composition | `KEMDEM.scheme` and `KEMDEM.correct` in [KEM–DEM](src/Commons/Constructions/KEMDEM.lean) |
 | Nonce/AD encrypt-then-MAC | `nonceEncryptThenMAC` in [NonceEncryptThenMAC] |
+| Hash-and-sign | `hashAndSign` in [HashAndSign] |
 | Restricted interface | `TypedConverter.filter` in [Filter] |
 | Relabeled interface | `TypedConverter.rename` in [Relabel] |
 | One-query input and reply translation | `TypedConverter.routing` in [QueryRouting] |
@@ -64,6 +65,7 @@ Ideal systems are in the `Commons` namespace; typed systems and converters are i
 [RSA]: src/Commons/Definitions/RSA.lean
 [Nonce]: src/Commons/Definitions/Nonce.lean
 [NonceEncryptThenMAC]: src/Commons/Constructions/NonceEncryptThenMAC.lean
+[HashAndSign]: src/Commons/Constructions/HashAndSign.lean
 [Filter]: src/RandomSystems/Typed/Filter.lean
 [Relabel]: src/RandomSystems/Typed/Relabel.lean
 [QueryRouting]: src/RandomSystems/Typed/QueryRouting.lean
