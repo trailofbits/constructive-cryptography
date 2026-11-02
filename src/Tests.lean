@@ -51,6 +51,7 @@ public import Tests.Substitution.Relaxation
 public import Tests.Substitution.Tactics
 public import Tests.TypedConverterComposition
 public import Tests.NonceDomain
+public import Tests.KEMDEM
 public import Tests.Keyed
 public import Tests.PKEKeyed
 public import Tests.TypedSampling
