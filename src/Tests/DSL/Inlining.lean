@@ -59,7 +59,6 @@ example (q : ℕ) :
         (Negate.body.combine Echo.step Negate.bound_spec)
         (ProbDist.map (fun r => (none, r)) (ProbDist.single ())) := by
   inline
-  rfl
 
 -- An assembled DSL declaration reuses the equations of its constituent components.
 system Wired ≔ Negate • Echo
@@ -70,7 +69,6 @@ example (q : ℕ) :
         (Negate.body.combine Echo.step Negate.bound_spec)
         (ProbDist.map (fun r => (none, r)) (ProbDist.single ())) := by
   inline
-  rfl
 
 -- Exact-cost domains use the same invocation, with the admitted histories restricted by cost.
 example (q work : ℕ) :
@@ -82,7 +80,6 @@ example (q work : ℕ) :
         (Negate.body.combine Echo.step Negate.bound_spec)
         (ProbDist.map (fun r => (none, r)) (ProbDist.single ())) := by
   inline
-  rfl
 
 -- The cumulative certificate `hR : R.1 = memoryless …` keeps the outside cost restriction:
 -- `Negate.exact • mem(ν) = mem(fun i x => map not (ν i x))`.
@@ -198,6 +195,21 @@ example {A B C : Interface} {S R T : Type} (s : S)
       TypedSystem.ofAutomaton A (P.combine (parallelStep f g) hb)
         (ProbDist.map (fun rt => (s, rt)) (prodProbDist μ ν)) := by
   inline
+
+-- Independent initialized states assemble under the same attached converter `α`.
+example {A B C : Interface}
+    -- `Ω`, `Ξ` carry independent draws; `init`, `init'` turn them into retained states `S`, `T`.
+    {Ω Ξ S T : Type} (init : Ω → S) (init' : Ξ → T) (P : ProbDist Ω) (Q : ProbDist Ξ)
+    -- `f`, `g` update the state and answer queries at `A`, `B`; `α` is their common context.
+    (f : S → (i : A.I) → A.X i → S × A.Y i)
+    (g : T → (j : B.I) → B.X j → T × B.Y j) (α : TypedConverter C (A ⊗ B)) :
+    α • TypedSystem.parallel
+        (TypedSystem.ofAutomaton A f (ProbDist.map init P))
+        (TypedSystem.ofAutomaton B g (ProbDist.map init' Q)) =
+      α • TypedSystem.ofAutomaton (A ⊗ B) (parallelStep f g)
+        (ProbDist.map (Prod.map init init') (prodProbDist P Q)) := by
+  -- Parallel states start independently; initializing each draw commutes with their product.
+  rw [TypedSystem.parallel_ofAutomaton, prodProbDist_map]
   rfl
 
 -- Explicit typed `comp` places the independent `g`-automaton beside the inside `f`-automaton.
@@ -214,7 +226,6 @@ example {A B C : Interface} {S R T : Type} (s : S)
       TypedSystem.ofAutomaton A (P.combine (parallelStep f g) hb)
         (ProbDist.map (fun rt => (s, rt)) (prodProbDist μ ν)) := by
   inline
-  rfl
 
 -- An arbitrary inner converter `α` is not the displayed own-source context required by `inline`.
 example (q : Bits.Port → ℕ) (α : TypedConverter (Bits.perPort q) (Bits.perPort q))

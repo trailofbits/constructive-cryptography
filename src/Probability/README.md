@@ -32,6 +32,8 @@ it gives $`\sum_a \mu(a)\, f(a)`$:
 [disintegrates][pi_eq_bindK_update] at a coordinate. Probability laws have
 [pushforwards][ProbDist.map] and [sequential compositions][ProbDist.bind]; a
 [constant probability kernel][ProbDist.bind_const] returns its law.
+[Successive maps][ProbDist.map_map] compose, and [independent maps][prodProbDist_map] satisfy
+$`(f_*P) \times (g_*Q) = (f \times g)_*(P \times Q)`$.
 A [joint law][ProbDist.jointLaw] retains both successive draws:
 $`J_{\mu,K}(h,z)=\mu(h)K(h,z)`$, with [first marginal][ProbDist.jointLaw_fst] $`\mu`$. For
 arbitrary maps $`d_H, d_Z`$ with $`(d_H)_*\mu'=\mu`$ and $`(d_Z)_*K'(h)=K(d_H h)`$,
@@ -144,16 +146,18 @@ injectivity of all replay and public sites; neither asserts independence on bad 
 [piDep]: DependentProduct.lean#L49
 [uniform]: Distribution.lean#L639
 [ProbDist.uniform]: Distribution.lean#L672
-[bindK]: Kernel.lean#L60
-[bindK_bindK]: Kernel.lean#L106
-[bindK_single_comp]: Kernel.lean#L128
-[pi_eq_bindK_update]: Kernel.lean#L294
-[ProbDist.map]: Kernel.lean#L340
-[ProbDist.bind]: Kernel.lean#L352
-[ProbDist.bind_const]: Kernel.lean#L363
-[ProbDist.jointLaw]: Kernel.lean#L381
-[ProbDist.jointLaw_fst]: Kernel.lean#L388
-[ProbDist.jointLaw_map]: Kernel.lean#L408
+[bindK]: Kernel.lean#L47
+[bindK_bindK]: Kernel.lean#L93
+[bindK_single_comp]: Kernel.lean#L115
+[pi_eq_bindK_update]: Kernel.lean#L281
+[ProbDist.map]: Kernel.lean#L327
+[ProbDist.map_map]: Kernel.lean#L336
+[prodProbDist_map]: Kernel.lean#L435
+[ProbDist.bind]: Kernel.lean#L344
+[ProbDist.bind_const]: Kernel.lean#L358
+[ProbDist.jointLaw]: Kernel.lean#L376
+[ProbDist.jointLaw_fst]: Kernel.lean#L383
+[ProbDist.jointLaw_map]: Kernel.lean#L403
 [normalizeOr]: Lift.lean#L187
 [statDist]: StatisticalDistance.lean#L99
 [statDist_triangle]: StatisticalDistance.lean#L249

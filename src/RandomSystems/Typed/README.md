@@ -117,7 +117,8 @@ A [**source**][TypedSystem.source] answers with fresh independent samples of a l
 memoryless source [3, Definition 3.1] (the sources of [4, Definition 1] may have memory). An
 [**automaton**][TypedSystem.ofAutomaton] is a transition function with a sampled initial state
 [4, Definition 2], and [parallel automata][TypedSystem.parallel_ofAutomaton] are the automaton
-running both side by side. If two automata initialized from a common draw $`\omega \sim P`$ give
+running both side by side from the independent initial law `prodProbDist P Q`. If two
+automata initialized from a common draw $`\omega \sim P`$ give
 the same deterministic system for every $`\omega`$, then
 [their sampled automata are equal typed systems][TypedSystem.ofAutomaton_map_congr] on the
 interface's domain. A bisimulation for each draw thus yields an equation of typed systems, which
@@ -247,9 +248,9 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedConverter.attach_rightContext]: Context.lean#L126
 [TypedConverter.attach_leftContext]: Context.lean#L131
 [TypedSystem.source]: Source.lean#L55
-[TypedSystem.ofAutomaton]: Automaton.lean#L57
-[TypedSystem.ofAutomaton_map_congr]: Automaton.lean#L72
-[TypedSystem.parallel_ofAutomaton]: Automaton.lean#L96
+[TypedSystem.ofAutomaton]: Automaton.lean#L55
+[TypedSystem.ofAutomaton_map_congr]: Automaton.lean#L76
+[TypedSystem.parallel_ofAutomaton]: Automaton.lean#L100
 [TypedSystem.ofMemoryless]: Memoryless.lean#L57
 [TypedSystem.source_eq_ofMemoryless]: Memoryless.lean#L151
 [TypedSystem.parallel_ofMemoryless]: Memoryless.lean#L231
