@@ -72,6 +72,7 @@ interface TweakedBidirectional(T X : Type) [Fintype T] [Fintype X]
 noncomputable section
 
 
+
 open Classical in
 /-- Sample `f ∼ 𝒰[∀ i, A.X i → A.Y i]` once; answer each admitted `i(x)` with `f i x`.
 The functions at distinct ports are independent. On `Evaluation X Y q` this is the `(X, Y)`-URF. -/
@@ -101,9 +102,7 @@ open Classical in
 /-- Draw from `replyLaw`; on a miss append `(x, y)` at the queried port, and retain the other
 records. [2, §4.4.2, p. 134]: “otherwise, he chooses yᵢ at random from the set Y”. -/
 def tableLaw : ProbStep (∀ i, List (A.X i × A.Y i)) A.I A.X A.Y :=
-  fun table i x => (replyLaw A table i x).map fun y =>
-    (if ((table i).lookup x).isNone then Function.update table i (table i ++ [(x, y)])
-      else table, y)
+  ProbStep.recordReplies (replyLaw A)
 
 open Classical in
 /-- The lazy presentation on `A.domain`: start with an empty list at every port and use
@@ -212,7 +211,8 @@ lemma tableLaw_simulates
   cases lookup : (table i).lookup x with
   | none =>
     -- Reveal a fresh coordinate, then retain it in the conditional completion.
-    simp only [tableLaw, replyLaw, lookup, Option.elim_none, Option.isNone_none,
+    simp only [tableLaw, ProbStep.recordReplies, replyLaw, lookup, Option.elim_none,
+      Option.isNone_none,
       ite_true, ProbDist.map_val, fTransform_fTransform, Function.comp_def,
       bindK_fTransform, ProbStep.tagged]
     have disintegration := congrArg Subtype.val (completionLaw_eq_bind A table i x lookup)
@@ -228,7 +228,8 @@ lemma tableLaw_simulates
     rw [pin]
   | some y =>
     -- A hit leaves the records unchanged; every completion already returns `y`.
-    simp only [tableLaw, replyLaw, lookup, Option.elim_some, Option.isNone_some,
+    simp only [tableLaw, ProbStep.recordReplies, replyLaw, lookup, Option.elim_some,
+      Option.isNone_some,
       ProbDist.map_val, ProbDist.single, fTransform_single,
       bindK_single, one_smul, ProbStep.tagged]
     apply fTransform_congr_support

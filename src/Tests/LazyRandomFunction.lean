@@ -29,7 +29,8 @@ lemma tableLaw_lookup
     (hit : (table i).lookup x = some y) :
     URF.tableLaw A table i x = ProbDist.single (table, y) := by
   apply Subtype.ext
-  simp only [URF.tableLaw, URF.replyLaw, hit, Option.elim_some, Option.isNone_some,
+  simp only [URF.tableLaw, ProbStep.recordReplies, URF.replyLaw, hit, Option.elim_some,
+    Option.isNone_some,
     Bool.false_eq_true, ite_false, ProbDist.map_val, ProbDist.single, fTransform_single]
 
 open Classical in
@@ -38,7 +39,8 @@ example (table : ∀ i, List (A.X i × A.Y i)) (i : A.I) (x : A.X i)
     (miss : (table i).lookup x = none) :
     URF.tableLaw A table i x =
       𝒰[A.Y i].map (fun y => (Function.update table i (table i ++ [(x, y)]), y)) := by
-  simp only [URF.tableLaw, miss, Option.isNone_none, ite_true, URF.replyLaw, Option.elim_none]
+  simp only [URF.tableLaw, ProbStep.recordReplies, miss, Option.isNone_none, ite_true,
+    URF.replyLaw, Option.elim_none]
 
 open Classical in
 /-- After receiving `y` at a fresh input, repeating that input returns `y` with certainty. -/
