@@ -2,7 +2,8 @@ module
 
 public import Commons.Definitions.PublicKeyEncryption
 public import Commons.Definitions.Cipher
-public import RandomSystems.Typed.Keyed
+public import RandomSystems.Typed.KeyedAutomaton
+public import RandomSystems.Typed.ProbProgramAttachment
 
 /-!
 # Retained-key clients
@@ -121,5 +122,8 @@ example :
 
 #print axioms TypedSystem.keyed_snoc
 #print axioms TypedSystem.keyed_single
+#print axioms TypedSystem.ofProbAutomaton_bind
+#print axioms TypedSystem.ofProbAutomaton_eq_keyed
+#print axioms TypedConverter.ofProgram_smul_ofProbAutomaton
 
 end

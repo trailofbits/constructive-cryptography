@@ -210,12 +210,12 @@ of the program's inside queries:
 [RandomSystem.parallelAll_mass_of_presentations]: Cumulative/ParallelAllPresentation.lean#L64
 [tensorAllL]: Converter/ParallelAll.lean#L108
 [PDCBehavior.tensorAll]: Converter/ParallelAll.lean#L703
-[RandomSystem.ofProbAutomaton]: System/ProbAutomaton.lean#L201
+[RandomSystem.ofProbAutomaton]: System/ProbAutomaton.lean#L219
 [ProbStep]: System/ProbAutomaton.lean#L62
 [ProbStep.belief]: System/ProbAutomaton.lean#L164
-[ProbStep.SimulatesAt]: System/ProbAutomaton.lean#L264
-[RandomSystem.ofProbAutomaton_eq_of_simulation]: System/ProbAutomaton.lean#L404
-[RandomSystem.ofProbAutomaton_ofDeterministic_apply]: System/ProbAutomaton.lean#L539
+[ProbStep.SimulatesAt]: System/ProbAutomaton.lean#L282
+[RandomSystem.ofProbAutomaton_eq_of_simulation]: System/ProbAutomaton.lean#L422
+[RandomSystem.ofProbAutomaton_ofDeterministic_apply]: System/ProbAutomaton.lean#L557
 [RandomSystem.ofProbAutomaton_eq_drawStep]: Converter/ProbProgramAttachment.lean#L878
 [RandomSystem.memoryless]: System/Memoryless.lean#L69
 [RandomSystem.eq_memoryless_of_snoc]: System/Memoryless.lean#L88

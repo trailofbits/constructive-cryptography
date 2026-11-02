@@ -19,6 +19,8 @@ Ideal systems are in the `Commons` namespace; typed systems and converters are i
 | Retained key, fresh replies | `TypedSystem.keyed` in [Keyed] |
 | Retained state | `TypedSystem.sample` in [Functional]; `ofAutomaton` in [Automaton] |
 | Retained state with fresh transitions | `TypedSystem.ofProbAutomaton` in [ProbAutomaton] |
+| Retained key as an automaton | `TypedSystem.ofProbAutomaton_eq_keyed` in [KeyedAutomaton] |
+| Program with fresh inside transitions | `TypedConverter.ofProgram_smul_ofProbAutomaton` in [ProbProgramAttachment] |
 | Independent joint law | `prodProbDist` in [Distribution] |
 | Independent finite family of draws | `ProbDist.pi` in [Distribution] |
 | Independent draws with different outcome types | `ProbDist.piDep` in [DependentProduct] |
@@ -38,6 +40,8 @@ Ideal systems are in the `Commons` namespace; typed systems and converters are i
 [Functional]: src/RandomSystems/Typed/Functional.lean
 [Automaton]: src/RandomSystems/Typed/Automaton.lean
 [ProbAutomaton]: src/RandomSystems/Typed/ProbAutomaton.lean
+[KeyedAutomaton]: src/RandomSystems/Typed/KeyedAutomaton.lean
+[ProbProgramAttachment]: src/RandomSystems/Typed/ProbProgramAttachment.lean
 [Distribution]: src/Probability/Distribution.lean
 [DependentProduct]: src/Probability/DependentProduct.lean
 [Kernel]: src/Probability/Kernel.lean

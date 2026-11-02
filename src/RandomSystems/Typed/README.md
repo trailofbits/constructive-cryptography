@@ -146,6 +146,9 @@ A [**keyed system**](Keyed.lean) retains `k ∼ P` and replies freshly from `ν 
 In `TypedSystem.keyed P ν`, all ports share the retained key; reply draws are independent
 conditional on it. `keyed_snoc` averages the fixed-key transcript/reply products, and
 `keyed_single` gives the existing retained-function presentation.
+[An automaton retaining its key](KeyedAutomaton.lean) and drawing each reply from `ν k i x`
+is equal to that keyed system. [Program attachment](ProbProgramAttachment.lean) combines
+a bounded program with a probabilistic automaton, retaining both states.
 **Functional systems** are given by [reply functions][TypedSystem.ofFunction], by
 [conditional reply laws][TypedSystem.ofConditional], or by
 [sampling once][TypedSystem.sample] and keeping the sample.

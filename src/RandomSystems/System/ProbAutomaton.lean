@@ -191,6 +191,24 @@ lemma belief_nonNeg (hinit : init.NonNeg) (h : List ((Σ i, X i) × (Σ i, Y i))
     -- query outside the domain: the zero law
     · exact fun _ => le_rfl
 
+/-- Mixing initial state laws mixes their state sub-laws after every transcript. -/
+lemma belief_bindK
+    -- `K` indexes initial laws `μ k`; `P` gives their mixing weights.
+    {K : Type} (P : Distribution K) (μ : K → Distribution S)
+    -- `h` is the observed transcript on the domain `D`.
+    (h : List ((Σ i, X i) × (Σ i, Y i))) :
+    step.belief D (bindK P μ) h = bindK P (fun k => step.belief D (μ k) h) := by
+  -- Each admitted exchange applies the same transition kernel to every initial law.
+  induction h using List.reverseRecOn with
+  | nil => rfl
+  | append_singleton h e ih =>
+    obtain ⟨x, y⟩ := e
+    simp only [belief_snoc]
+    split_ifs
+    · rw [ih, transition, bindK_bindK]
+      rfl
+    · exact (bindK_zero_right P).symm
+
 end ProbStep
 
 variable {S I : Type} {X Y : I → Type} [Fintype (Σ i, X i)] [Fintype (Σ i, Y i)]
