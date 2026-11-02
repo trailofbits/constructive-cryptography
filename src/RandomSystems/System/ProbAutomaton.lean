@@ -29,6 +29,7 @@ it, as for a random automaton whose only randomness is its initial state [1, Def
 ## Main definitions
 
 * `ProbStep S I X Y`: a probabilistic step
+* `ProbStep.recordReplies`: retain first query/reply pairs using a supplied reply law
 * `ProbStep.outcome`, `ProbStep.transition`: the law of the next state and the reply, and the
   states reached with a given reply
 * `ProbStep.belief D step init h`: the sub-law of the states after the transcript `h`
@@ -65,6 +66,18 @@ abbrev ProbStep (S I : Type) (X Y : I → Type) :=
 namespace ProbStep
 
 variable {S I : Type} {X Y : I → Type} (step : ProbStep S I X Y)
+
+open Classical in
+/-- Use the supplied reply law and retain its first input/output pair at each port. A fresh
+input appends `(x, y)`; a recorded input leaves the entire table unchanged. -/
+noncomputable def recordReplies
+    -- `I` indexes ports; `X i`, `Y i` are their queries and replies, retained as per-port lists.
+    -- `replyLaw table i x` selects a reply distribution from the current records and query.
+    (replyLaw : (∀ i, List (X i × Y i)) → (i : I) → X i → ProbDist (Y i)) :
+    ProbStep (∀ i, List (X i × Y i)) I X Y :=
+  fun table i x => (replyLaw table i x).map fun y =>
+    (if ((table i).lookup x).isNone then Function.update table i (table i ++ [(x, y)])
+      else table, y)
 
 /-- The next state with the reply tagged by the queried port. -/
 def tagged (x : Σ i, X i) (sy : S × Y x.1) : S × Σ i, Y i := (sy.1, ⟨x.1, sy.2⟩)
