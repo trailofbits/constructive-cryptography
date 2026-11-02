@@ -30,6 +30,7 @@ identifies all cumulative probabilities. The retained-key law in
   interfaces of a function, of a permutation with its inverse, and of their tweaked versions
 * `URF A`, `URP A`: an independent URF, and an independent URP, at each label of `A`
 * `URF.lazy A`: the same random function, recording replies and sampling only on a miss
+* `URP.lazy A` in `Commons.Definitions.LazyPermutation`: uniform unused replies at fresh inputs
 * `StrongURP X`, `TweakableURP T X`, `TweakableStrongURP T X`
 * `MemorylessSource Y ν`: the memoryless source of `ν`, answering each query with a fresh sample
 
