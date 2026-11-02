@@ -94,7 +94,8 @@ system PKE.system
     return scheme.dec keys.2 ciphertext
 
 -- Encrypt a random message `m̃` instead of `m` and record `(c, m)`; on `c`, output its first
--- recorded message, otherwise forward `c`.
+-- recorded message, otherwise forward `c` [1, p. 18, footnote 2]. `List.lookup_append` keeps
+-- an earlier recorded message when a later encryption returns the same ciphertext.
 converter PKE.CCA(PK M C : Type)
     [Fintype PK] [Fintype M] [Fintype C] [DecidableEq C] [Nonempty M] : PKE PK M C
   inside pke : PKE PK M C
