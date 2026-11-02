@@ -330,6 +330,14 @@ assumptions to its target, and [distances add][Implication.distance_le] along it
 derivable targets form the [generated relation][generatedRelation], and they
 [hold in every substitution relation satisfying the assumptions][derivable_substitutes].
 
+For a tagged finite family, [the assembly witness](Substitution/FiniteFamily.lean)
+`parallelAllImplication R S order context` replaces each component once in the supplied order.
+Its exact endpoints are `context • (∥ k, R k)` and `context • (∥ k, S k)`. The theorem
+`distance_smul_parallelAll_le_sum` transports the local component bounds through the fixed
+components and common context, then sums their budgets; an empty family has zero distance.
+`substitutesWithin_smul_parallelAll` uses the same witness with explicit reductions, class
+closure and advantage equations, evaluating each component's loss at its actual reduced test.
+
 ### Distinguisher-indexed substitution
 
 A [**distinguisher advantage**][DistinguisherAdvantage] gives admitted distinguishers
