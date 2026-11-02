@@ -4,6 +4,7 @@ public import RandomSystems.Distance.Observation
 public import RandomSystems.Typed.Completion
 public import RandomSystems.Typed.Distinguisher
 public import RandomSystems.Typed.Solver
+public import RandomSystems.Typed.Guessing
 public import RandomSystems.Distance.Mixture
 public import RandomSystems.Typed.SamplingDistance
 public import RandomSystems.Cumulative.Revealed
@@ -19,6 +20,7 @@ public import RandomSystems.Converter.Identity
 public import RandomSystems.Converter.PartialConverter
 public import RandomSystems.Converter.PartialIdentity
 public import RandomSystems.Converter.Program
+public import RandomSystems.Converter.ForwardingProgram
 public import RandomSystems.Converter.ProgramSchedule
 public import RandomSystems.Converter.ProgramAttachment
 public import RandomSystems.Converter.ProbProgramAttachment
@@ -106,6 +108,7 @@ public import RandomSystems.Typed.PresentedGame
 public import RandomSystems.Typed.ProbAutomaton
 public import RandomSystems.Typed.ProbProgramAttachment
 public import RandomSystems.Typed.Relabel
+public import RandomSystems.Typed.RecordingGuard
 public import RandomSystems.Typed.QueryRouting
 public import RandomSystems.Typed.SamplingAlgebra
 public import RandomSystems.Typed.Source
@@ -119,4 +122,3 @@ systems, probabilistic automata and memoryless systems, converters and attachmen
 composition, distance and games; typed systems, typed converters and typed distinguishers on
 interfaces, and the programs and converters of the component DSL.
 -/
-public import RandomSystems.Typed.Guessing
