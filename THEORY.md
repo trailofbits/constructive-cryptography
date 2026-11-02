@@ -386,10 +386,10 @@ extension are in [Examples](src/Examples/README.md).
 [cc_triangle]: src/ConstructiveCryptography/Tactics/Categorical.lean#L160
 [cc_construct]: src/ConstructiveCryptography/Tactics/Categorical.lean#L47
 [cc_calc]: src/ConstructiveCryptography/Tactics/Substitution.lean#L105
-[real_ideal_distance_le]: src/Examples/AuthenticatedEncryption/Security.lean#L162
-[SymmetricEncryption.encryptions]: src/Commons/Definitions/Encryption.lean#L73
-[AE.INDCCA]: src/Commons/Definitions/AEAD.lean#L172
-[correctedChain]: src/Examples/AuthenticatedEncryption/Security.lean#L132
+[real_ideal_distance_le]: src/Examples/AuthenticatedEncryption/Security.lean#L167
+[SymmetricEncryption.encryptions]: src/Commons/Definitions/Encryption.lean#L79
+[AE.INDCCA]: src/Commons/Definitions/AEAD.lean#L180
+[correctedChain]: src/Examples/AuthenticatedEncryption/Security.lean#L137
 [collision_mass_le]: src/Examples/AuthenticatedEncryption/Collision.lean#L58
 [exists_pair_one_sub_supAgreement_le]: src/Probability/MultiCoupling.lean#L620
 [not_supAgreement_disagreement_le_every_pair]: src/Probability/MultiCoupling.lean#L782

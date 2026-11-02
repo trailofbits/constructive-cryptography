@@ -6,33 +6,35 @@ public import ConstructiveCryptography.Notation
 /-!
 # Message authentication codes
 
-A MAC `(G, S, V)`: key generation, tagging of a message, and verification of a tag, both with the
-secret key (Boneh–Shoup, Definition 6.1). It is correct when every tag verifies.
+`MAC` supplies a key law, probabilistic tagging, and deterministic verification
+[2, Definition 6.1, p. 217]; `MAC.Correct` states that supported tags verify.
+`MAC.system` retains one key shared by the tagging and verification ports. Each tagging call
+draws a fresh independent table from `MAC.tags` and selects the current key/message entry.
 
-Unforgeability under chosen-message attacks, as pairs of systems in the form of Banfi's
-int-ptxt and int-ctxt (Definitions 2.3.6–2.3.7, printed p. 21): the system of the tagging and the
-verification oracle, against the one whose verification accepts only what verifies and was
-issued. Existential unforgeability accepts a tag on a tagged message; strong unforgeability
-accepts only a tagged pair, which is the security of Boneh–Shoup (Attack Game 6.2 and
-Definition 6.2, with verification queries). A distinguisher tells the two systems apart exactly
-when it submits a forgery. Tagging samples, from the closed law `MAC.tags`, a tag under every key
-on every message, and returns the one of the current key and message.
+`MAC.EUF` accepts only valid tags on previously tagged messages; `MAC.SUF` accepts only valid
+previously issued pairs. The pairs `MAC.EUFCMA.systems` and `MAC.SUFCMA.systems` compare the
+scheme oracle with these restrictions. This uses the substitution presentation of integrity
+from [1, Definitions 2.3.6–2.3.7, p. 21]. The strong form's fresh-pair condition corresponds
+to [2, Attack Game 6.2, p. 221].
 
-A notion is the pair of its systems `(X₀, X₁)` (Banfi, §2.3.1), independent of the substitution
-relation; the predicate of the same name states it for the admitted distinguishers, `X₀ ≃[ε] X₁`.
-The admitted distinguishers are the typed distinguishers selected by the
-`AdmissibleDistinguishers` instance in scope, with no closure assumed, and `ε(d)` is the error
-allowed to each of them.
+The security predicates bound each typed distinguisher's advantage by `error d`, following
+[1, §2.3.1, p. 14]. `AdmissibleDistinguishers` selects the tests, with no closure assumed.
 
 ## Main definitions
 
 * `MAC K M T`: the syntax
 * `MAC.Correct`: correctness
 * `Tagging M T`: the interface of tagging and verification
-* `MAC.Real mac`: `S_k` and `V_k` for `k ← G`
+* `MAC.system mac`: `S_k` and `V_k` for `k ← G`
 * `MAC.EUF`, `MAC.SUF`: verification restricted to the tagged messages, and to the tagged pairs
 * `MAC.EUFCMA.systems`, `MAC.SUFCMA.systems`: the systems of EUF-CMA and SUF-CMA
 * `MAC.EUFCMA`, `MAC.SUFCMA`: these notions for the admitted distinguishers, within an error
+
+## References
+
+1. F. Banfi. *A Composable Treatment of Anonymous Communication*. Doctoral thesis,
+   Diss. ETH No. 29663, ETH Zurich, 2023.
+2. D. Boneh and V. Shoup. *A Graduate Course in Applied Cryptography*. Version 0.6, 2023.
 -/
 
 @[expose] public section
@@ -42,12 +44,14 @@ namespace Commons
 open SystemAlgebra SystemAlgebra.DSL Probability
 open scoped SystemAlgebra SystemAlgebra.DSL
 
-/-- **A MAC** with keys `K`, messages `M` and tags `T` (Boneh–Shoup, Definition 6.1, with a key
-distribution). -/
-structure MAC (K M T : Type) where
+/-- **A MAC** with keys `K`, messages `M` and tags `T` [2, Definition 6.1, p. 217],
+with an explicit key law. -/
+structure MAC
+    -- `K` carries shared keys, `M` messages, and `T` authentication tags.
+    (K M T : Type) where
   /-- Key generation `G`. -/
   gen : Distribution.ProbDist K
-  /-- Tagging `S`. -/
+  /-- The “signing algorithm” of [2, Definition 6.1, p. 217], as the tag law at `k, m`. -/
   tag : K → M → Distribution.ProbDist T
   /-- Verification `V`. -/
   verify : K → M → T → Bool
@@ -62,6 +66,7 @@ interface Tagging(M T : Type) [Fintype M] [Fintype T]
 
 noncomputable section
 
+-- `K` carries shared keys, `M` messages, and `T` authentication tags.
 variable {K M T : Type} [Fintype K] [Fintype M] [Fintype T]
 
 /-- The table law `tags mac f = ∏ km, mac.tag km.1 km.2 (f km)`: independent tags for
@@ -70,8 +75,12 @@ def MAC.tags [DecidableEq K] [DecidableEq M] (mac : MAC K M T) :
     Distribution.ProbDist (K × M → T) :=
   Distribution.ProbDist.pi fun km => mac.tag km.1 km.2
 
--- `S_k` and `V_k` for `k ← G`: on `m`, output `t ← S(k, m)`; on `(m, t)`, output `V(k, m, t)`.
-system MAC.Real(mac : MAC K M T) [DecidableEq K] [DecidableEq M] : Tagging M T
+-- Retain one `k ← mac.gen` shared by tagging and verification [2, Definition 6.1, p. 217].
+-- Each `tag(m)` draws a fresh `mac.tag k m`; `verify(m, t)` returns `mac.verify k m t`.
+-- The interface admits the selected total or per-port query budget.
+system MAC.system
+    -- `mac` supplies the shared-key law and tagging and verification operations.
+    (mac : MAC K M T) [DecidableEq K] [DecidableEq M] : Tagging M T
   initialize
     key ←$ mac.gen
   on tag(message : M) → T
@@ -110,14 +119,14 @@ converter MAC.SUF(M T : Type) [Fintype M] [Fintype T] [DecidableEq M] [Decidable
 on tagged messages, for `k ← G`, at the budget `q` per port. -/
 def MAC.EUFCMA.systems [DecidableEq K] [DecidableEq M] (mac : MAC K M T) (q : Tagging.Port → ℕ) :
     TypedSystem (Tagging.perPort M T q) × TypedSystem (Tagging.perPort M T q) :=
-  (MAC.Real.perPort mac, MAC.EUF.perPort M T • MAC.Real.perPort mac)
+  (MAC.system.perPort mac, MAC.EUF.perPort M T • MAC.system.perPort mac)
 
 /-- **The systems of SUF-CMA**: the real system and the one whose verification accepts only tagged
 pairs, for `k ← G`, at the budget `q` per port. -/
 def MAC.SUFCMA.systems [DecidableEq K] [DecidableEq M] [DecidableEq T] (mac : MAC K M T)
     (q : Tagging.Port → ℕ) :
     TypedSystem (Tagging.perPort M T q) × TypedSystem (Tagging.perPort M T q) :=
-  (MAC.Real.perPort mac, MAC.SUF.perPort M T • MAC.Real.perPort mac)
+  (MAC.system.perPort mac, MAC.SUF.perPort M T • MAC.system.perPort mac)
 
 /-- **EUF-CMA** within `error`: against the admitted distinguishers, the real system substitutes
 for the one that accepts only tags on tagged messages. -/

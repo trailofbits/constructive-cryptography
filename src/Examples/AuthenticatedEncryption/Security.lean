@@ -6,17 +6,17 @@ public import ConstructiveCryptography.Tactics.Substitution
 /-!
 # Authenticated encryption: `(ind-cca, int-ptxt) → ae`
 
-Banfi, Theorem 2.3.10(4) (printed pp. 24–25), corrected. The printed chain uses `int-ptxt`,
+[1, Theorem 2.3.10(4), pp. 24–25], corrected. The printed chain uses `int-ptxt`,
 `ind-cca`, `int-ptxt` and then claims `ρ^ptxt ∘ ρ^cca ∘ ρ^ptxt(⟦E_k, D_k⟧) ≈ ρ^ae(E_k)` up to
 `q_e² / 2^ℓ`; that last step fails when a later message equals an earlier replacement
 message. The correction uses `ind-cca` a second time, then compares the doubly randomized hybrid
 with the ideal, with a collision bound over every pair of an original and a replacement message
 (`hybrid_ideal_distance_le`).
 
-The proof is Banfi's sequence of steps (§2.3.1): each step substitutes one assumption inside its
+The proof follows [1, §2.3.1, pp. 14–15]: each step substitutes one assumption inside its
 context `ρ`, losing the assumption's error at the distinguisher with `ρ` absorbed, `ε(Dρ)`
-(§2.3.3), and the statistical step loses `q_e² / |M|` at the budget `q` per port. The admitted
-distinguishers are an arbitrary selected class; the theorem asks only that the two
+[1, §2.3.3, p. 16], and the statistical step loses `q_e² / |M|` at the budget `q` per port.
+The admitted distinguishers form an arbitrary selected class; the theorem asks only that the two
 transformations `ρ^ptxt` and `ρ^cca` preserve it, and the closure of each composite context is
 composed from these two proofs. The statistical step needs the domination of the decision
 advantage by the transcript distance (`Interface.distinguisherAdvantageDominated`). The chain is
@@ -36,6 +36,11 @@ also counted (`correctedChain`: two uses of each assumption). In distance form
   notions `AE.INDCCA`, `AE.INTPTXT` and `AE.Secure` of `Commons.Definitions.AEAD`
 * `correctedChain_cca`, `correctedChain_ptxt`: two uses of each assumption
 * `real_ideal_distance_le`: the distance form
+
+## References
+
+1. F. Banfi. *A Composable Treatment of Anonymous Communication*. Doctoral thesis,
+   Diss. ETH No. 29663, ETH Zurich, 2023.
 -/
 
 @[expose] public section
@@ -52,13 +57,13 @@ variable {K M C : Type} [Fintype K] [Fintype M] [Fintype C] [DecidableEq K] [Dec
   [DecidableEq C] [Nonempty M] (scheme : SymmetricEncryption K M C) (q : AE.Port → ℕ)
 
 /-- `⟦E_k, D_k⟧` for `k ← Gen`, at the budget `q` per port. -/
-local notation "⟦" "E_k" "," "D_k" "⟧" => AE.Real.perPort scheme (budget := q)
+local notation "⟦" "E_k" "," "D_k" "⟧" => AE.system.perPort scheme (budget := q)
 
 /-- `⟦E$_k, D^⊥⟧ = ρ^ae(E_k)` for `k ← Gen`, at the budget `q` per port. -/
 local notation "⟦" "E$_k" "," "D^⊥" "⟧" =>
-  (AE.Ideal.perPort M C • Encryption.Real.perPort scheme : TypedSystem (AE.perPort M C q))
+  (AE.Ideal.perPort M C • Encryption.system.perPort scheme : TypedSystem (AE.perPort M C q))
 
-/-- **`(ind-cca, int-ptxt) → ae`, corrected** (Banfi, Theorem 2.3.10(4)). If `ρ^ptxt` and
+/-- **`(ind-cca, int-ptxt) → ae`, corrected** [1, Theorem 2.3.10(4), pp. 24–25]. If `ρ^ptxt` and
 `ρ^cca` preserve the admitted distinguishers, then `int-ptxt` within `εptxt` and `ind-cca`
 within `εcca` give `ae`, losing each assumption's error at the distinguisher with the context
 of its use absorbed, and `q_e² / |M|` for the collision step. -/
@@ -120,7 +125,7 @@ inductive Assumption
   deriving DecidableEq
 
 /-- The systems of each assumption, the pairs `AE.INDCCA.systems` and `AE.INTPTXT.systems`,
-indexed by Banfi's direction bit: `X_{i,false} = X₀` and `X_{i,true} = X₁`. -/
+indexed by the direction bit of [1, §2.3.1, pp. 14–15]: `X_{i,false} = X₀`, `X_{i,true} = X₁`. -/
 noncomputable def assumptionSystems (i : Assumption) (b : Bool) : TypedSystem (AE.perPort M C q) :=
   let X := match i with
     | .cca => AE.INDCCA.systems scheme q

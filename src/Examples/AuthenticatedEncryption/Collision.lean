@@ -231,7 +231,7 @@ end Agreement
 
 section Game
 
--- In this section, `μ = realTableLaw scheme (AE.Real.bound scheme * ∑ i, q i)` is the real
+-- In this section, `μ = realTableLaw scheme (AE.system.bound scheme * ∑ i, q i)` is the real
 -- table law, and `ν = ccaTableLaw M C q` is the replacement-table law.
 variable [DecidableEq C] [Nonempty M] (scheme : SymmetricEncryption K M C) (q : AE.Port → ℕ)
 
@@ -259,7 +259,7 @@ lemma entry_castLE {X : Type} (law : Distribution.ProbDist X) {k' k : ℕ} (h : 
 
 omit [Fintype K] in
 /-- The real system's tables in the ideal are no larger than in the hybrid. -/
-lemma idealTableSize_le : idealTableSize scheme q ≤ AE.Real.bound scheme * ∑ i, q i := by
+lemma idealTableSize_le : idealTableSize scheme q ≤ AE.system.bound scheme * ∑ i, q i := by
   -- The encryption system inside the ideal has the single port `enc`, with budget `q enc`.
   have : ∑ i, AE.Ideal.insideBudget M C q i = q .enc := by
     rw [Fintype.sum_eq_single Encryption.Port.enc (fun j hj => absurd (by cases j; rfl) hj)]
@@ -276,14 +276,14 @@ lemma lt_idealTableSize {i : ℕ} (hi : i < q .enc) : i < idealTableSize scheme 
   have : ∑ i, AE.Ideal.insideBudget M C q i = q .enc := by
     rw [Fintype.sum_eq_single Encryption.Port.enc (fun j hj => absurd (by cases j; rfl) hj)]
     rfl
-  -- The ideal's tables have `Encryption.Real.bound · q enc ≥ q enc` entries, so `i` fits.
-  simp only [idealTableSize, this, Encryption.Real.bound]
+  -- The ideal's tables have `Encryption.system.bound · q enc ≥ q enc` entries, so `i` fits.
+  simp only [idealTableSize, this, Encryption.system.bound]
   omega
 
 /-- The first entries of the real system's tables, beside the replacement table. -/
 noncomputable abbrev truncateTables {k₂ : ℕ} :
-    ((Fin (AE.Real.bound scheme * ∑ i, q i) → K) ×
-        (Fin (AE.Real.bound scheme * ∑ i, q i) → (K × M → C))) × (Fin k₂ → M) →
+    ((Fin (AE.system.bound scheme * ∑ i, q i) → K) ×
+        (Fin (AE.system.bound scheme * ∑ i, q i) → (K × M → C))) × (Fin k₂ → M) →
       ((Fin (idealTableSize scheme q) → K) × (Fin (idealTableSize scheme q) → (K × M → C))) ×
         (Fin k₂ → M) :=
   Prod.map (Prod.map (fun t j => t (Fin.castLE (idealTableSize_le scheme q) j))
@@ -292,8 +292,8 @@ noncomputable abbrev truncateTables {k₂ : ℕ} :
 /-- **The ideal oracle reads only the first entries**: on the histories within the budget, it
 answers on the real system's tables as on their first entries. -/
 lemma ideal_truncate {k₂ : ℕ}
-    (ω : ((Fin (AE.Real.bound scheme * ∑ i, q i) → K) ×
-      (Fin (AE.Real.bound scheme * ∑ i, q i) → (K × M → C))) × (Fin k₂ → M)) :
+    (ω : ((Fin (AE.system.bound scheme * ∑ i, q i) → K) ×
+      (Fin (AE.system.bound scheme * ∑ i, q i) → (K × M → C))) × (Fin k₂ → M)) :
     filterDom (AE.perPort M C q).domain (automatonSystem (oracleStep (idealEncrypt scheme)
         (idealDecrypt (AE.Ideal.law1 M C) (realEncrypt scheme))) (ω, [])) =
       filterDom (AE.perPort M C q).domain (automatonSystem (oracleStep (idealEncrypt scheme)
@@ -340,7 +340,8 @@ The left law `μ × ν` is the first factor of `hybridLaw = (μ × ν) × ν`; t
 lemma ideal_mass_hybridTables (xs : List (Σ i, (AE.perPort M C q).X i))
     (ys : List (Σ i, (AE.perPort M C q).Y i)) :
     (Distribution.prodProbDist
-      (realTableLaw scheme (AE.Real.bound scheme * ∑ i, q i)) (ccaTableLaw M C q)).1.mass (fun ω =>
+      (realTableLaw scheme (AE.system.bound scheme * ∑ i, q i))
+      (ccaTableLaw M C q)).1.mass (fun ω =>
       Replies (filterDom (AE.perPort M C q).domain (automatonSystem (oracleStep
         (idealEncrypt scheme) (idealDecrypt (AE.Ideal.law1 M C) (realEncrypt scheme))) (ω, [])))
         xs ys) =
@@ -359,7 +360,7 @@ lemma ideal_mass_hybridTables (xs : List (Σ i, (AE.perPort M C q).X i))
   -- Step 1: the law of the truncated tables is the ideal's law.
   have hpush : Distribution.fTransform (truncateTables scheme q (k₂ := AE.CCA.bound M C * ∑ i, q i))
       (Distribution.prodProbDist
-        (realTableLaw scheme (AE.Real.bound scheme * ∑ i, q i)) (ccaTableLaw M C q)).1 =
+        (realTableLaw scheme (AE.system.bound scheme * ∑ i, q i)) (ccaTableLaw M C q)).1 =
       (idealLaw scheme q).1 := by
     -- Truncation acts factor by factor on the product law (the identity on the replacement
     -- table), and the first entries of a table of independent samples are a table of
@@ -368,8 +369,8 @@ lemma ideal_mass_hybridTables (xs : List (Σ i, (AE.perPort M C q).X i))
     simp only [Distribution.ProbDist.pi_val]
     rw [truncateTables, Distribution.fTransform_prod, Distribution.fTransform_prod,
       Distribution.fTransform_id,
-      Distribution.fTransform_pi_castLE _ (AE.Real.law1 scheme).2.2,
-      Distribution.fTransform_pi_castLE _ (AE.Real.law2 scheme).2.2]
+      Distribution.fTransform_pi_castLE _ (AE.system.law1 scheme).2.2,
+      Distribution.fTransform_pi_castLE _ (AE.system.law2 scheme).2.2]
     -- `ν` and `idealTableLaw M C q` draw the same number of independent `𝒰[M]` entries.
     rfl
   -- Step 2: write the right side as the pushforward, and pull the event back along truncation.
@@ -434,7 +435,7 @@ lemma collisionGame_badProbability (xs : List (Σ i, (AE.perPort M C q).X i)) :
     (Collision (AE.CCA.law1 M C) (messages xs))).trans ?_
   -- ... and `Pr[True] = 1`, since `μ × ν` is normalized.
   rw [Distribution.mass_true,
-    (Distribution.prodProbDist (realTableLaw scheme (AE.Real.bound scheme * ∑ i, q i))
+    (Distribution.prodProbDist (realTableLaw scheme (AE.system.bound scheme * ∑ i, q i))
       (ccaTableLaw M C q)).2.2, one_mul]
 
 /-- **The collision game is conditionally equivalent to the ideal**: the replies with no
@@ -442,7 +443,7 @@ collision are the ideal replies, independently of the outer replacement table. -
 lemma collisionGame_conditionallyEquivalent :
     TypedGame.ofPDG (collisionGame scheme q) (collisionGame_isProbDist scheme q)
         (hybrid_visible scheme q) |≡
-      (AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme :
+      (AE.Ideal.perPort M C (budget := q) • Encryption.system.perPort scheme :
         TypedSystem (AE.perPort M C q)) := by
   -- Fix a transcript `h` with queries `xs` and the hybrid's draw `ω = (ω.1, ω.2) ~ (μ × ν) × ν`:
   -- `ω.1` holds the real tables and inner replacement table, `ω.2` the independent outer one.
@@ -523,7 +524,7 @@ theorem collisionGame_badProbability_le (xs : List (Σ i, (AE.perPort M C q).X i
 
 /-- **The collision step**: the hybrid is within `q_e² / |M|` of the ideal. -/
 theorem hybrid_ideal_distance_le :
-    Δ (Hybrid scheme q) (AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme :
+    Δ (Hybrid scheme q) (AE.Ideal.perPort M C (budget := q) • Encryption.system.perPort scheme :
       TypedSystem (AE.perPort M C q)) ≤
       ((q .enc) ^ 2 / Fintype.card M : ℝ≥0) :=
   -- The distinguisher D on the left queries either system at the ports `enc` (sends `m`,

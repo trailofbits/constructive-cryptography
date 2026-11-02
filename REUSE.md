@@ -63,7 +63,7 @@ The client supplies the mathematical inputs to existing objects:
 | Uniform functions or permutations | [Ideal] | Interface and sharing. |
 | Independent families | `∥ k, R k`, `⨂ₘ k, α k` | Component contracts and call allowances. |
 | Relabeling or restriction | [Relabel], [Filter] | Wiring or admission. |
-| A standard scheme | e.g. `PKE.Real` | Algorithms and their contracts. |
+| A standard scheme | e.g. `PKE.system` | Algorithms and their contracts. |
 | A common context | `≫`, `•`, `∥`, `cc_normalize`, `cc_substitute` | Local equality or bound. |
 
 Keep types and domains in shared declarations, and explain parameters beside their binders.

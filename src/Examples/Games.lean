@@ -168,7 +168,7 @@ lemma collision_visible : DistinctionGames.visible (collision scheme q) = Hybrid
 /-- The collision game is conditionally equivalent to the ideal system. -/
 lemma collision_conditionallyEquivalent :
     DistinctionGames.ConditionallyEquivalent (collision scheme q)
-      (AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme :
+      (AE.Ideal.perPort M C (budget := q) • Encryption.system.perPort scheme :
         TypedSystem (AE.perPort M C q)) :=
   collisionGame_conditionallyEquivalent scheme q
 
@@ -189,7 +189,7 @@ theorem collision_win_le {w} (hw : w ∈ Games.winners (AE.perPort M C q)) :
   -- admitted query sequence, turned into the bound on the unset MBO.
   exact P.winProbability_le_of_unsetProbability
     (PDG.repliesAtQueriedInterface_behavior _ (hybrid_visible scheme q ▸ (Hybrid scheme q).2))
-    (AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme :
+    (AE.Ideal.perPort M C (budget := q) • Encryption.system.perPort scheme :
       TypedSystem (AE.perPort M C q)).2 (PDG.monotoneMBO_behavior _)
     ((Interface.conditionallyEquivalent_ofPDG_iff _ _ (hybrid_visible scheme q) _).mp
       (collisionGame_conditionallyEquivalent scheme q))
@@ -200,11 +200,11 @@ theorem collision_win_le {w} (hw : w ∈ Games.winners (AE.perPort M C q)) :
 and the ideal is at most `q_e² / |M|`. -/
 theorem hybrid_ideal_advantage_le {s} (hs : s ∈ DistinctionGames.solvers (AE.perPort M C q)) :
     |s.1 (Hybrid scheme q) - s.1 (AE.Ideal.perPort M C (budget := q) •
-        Encryption.Real.perPort scheme : TypedSystem (AE.perPort M C q))| ≤
+        Encryption.system.perPort scheme : TypedSystem (AE.perPort M C q))| ≤
       (q .enc : ℝ) ^ 2 / Fintype.card M := by
   -- The hybrid is the visible typed system `G⁻` of the collision game `G`.
   rw [← collision_visible]
-  -- With `Ideal` the ideal system `AE.Ideal.perPort M C • Encryption.Real.perPort scheme`:
+  -- With `Ideal` the ideal system `AE.Ideal.perPort M C • Encryption.system.perPort scheme`:
   --
   --   ┌───┐ ── ┌────┐        ┌───┐ ── ┌───────┐
   --   │ s │    │ G⁻ │   vs   │ s │    │ Ideal │
@@ -220,7 +220,7 @@ construction on the hybrid and on the ideal is at most `q_e² / |M|`. -/
 theorem attach_hybrid_ideal_advantage_le {B : Interface} (α : B ⟶ AE.perPort M C q) {s}
     (hs : s ∈ DistinctionGames.solvers B) :
     |s.1 (α • Hybrid scheme q) - s.1 (α • (AE.Ideal.perPort M C (budget := q) •
-        Encryption.Real.perPort scheme : TypedSystem (AE.perPort M C q)))| ≤
+        Encryption.system.perPort scheme : TypedSystem (AE.perPort M C q)))| ≤
       (q .enc : ℝ) ^ 2 / Fintype.card M := by
   -- The hybrid is the visible typed system `G⁻` of the collision game `G`.
   rw [← collision_visible]

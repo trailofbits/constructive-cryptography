@@ -6,36 +6,37 @@ public import ConstructiveCryptography.Notation
 /-!
 # Key encapsulation mechanisms
 
-A key encapsulation mechanism `(G, E, D)`: key generation, encapsulation of a fresh key under a
-public key, and decapsulation of a ciphertext with the secret key, which may reject (Boneh–Shoup,
-Chapters 11–12). It is correct when decapsulation recovers every encapsulated key.
+`KEM` supplies key generation, encapsulation, and deterministic decapsulation with rejection
+[2, Exercise 11.9, p. 460]. `KEM.Correct` states that supported encapsulations decapsulate to their
+keys. `KEM.system` retains a key pair, publishes its public key, and answers encapsulation
+with a fresh `(ciphertext, key)` pair. `KEM.encapsulations` samples independent outcomes for
+all public keys on each call, and the system selects the current public key's entry.
 
-Security against chosen-ciphertext attacks in the real-or-random form of Banfi's ind-cca
-(Definition 2.3.5, printed p. 20): the system of the public key, the encapsulation oracle and the
-decapsulation oracle substitutes for the one in which each encapsulated key is replaced by a
-uniform key, and decapsulating a ciphertext it output returns that key. Encapsulation samples,
-from the closed law `KEM.encapsulations`, an encapsulation under every public key, and returns
-the one under the current key.
+`KEM.INDCCA.systems` is `(X, KEM.CCA.perPort PK C K • X)` for `X = KEM.system.perPort kem`.
+The converter replaces each encapsulated key by an independent uniform key and replays it on
+recorded ciphertexts. This adapts the
+substitution convention of [1, Definition 2.3.5, p. 20] to the KEM syntax of [2, Exercise 11.9].
+`KEM.INDCPA.systems` sets the decapsulation budget to zero.
 
-A notion is the pair of its systems `(X₀, X₁)` (Banfi, §2.3.1), independent of the substitution
-relation; the predicate of the same name states it for the admitted distinguishers, `X₀ ≃[ε] X₁`.
-The admitted distinguishers are the typed distinguishers selected by the
-`AdmissibleDistinguishers` instance in scope, with no closure assumed, and `ε(d)` is the error
-allowed to each of them.
-
-IND-CPA is IND-CCA without decapsulation queries: its systems are those of IND-CCA at a budget
-with no queries at `decaps`.
+The security predicates bound each typed distinguisher's advantage by `error d`, following
+[1, §2.3.1, p. 14]. `AdmissibleDistinguishers` selects the tests, with no closure assumed.
 
 ## Main definitions
 
 * `KEM PK SK C K`: the syntax
 * `KEM.Correct`: correctness
 * `Encapsulation PK C K`: the interface of the public key, encapsulation and decapsulation
-* `KEM.Real kem`: the public key, `E_pk` and `D_sk` for `(pk, sk) ← G`
+* `KEM.system kem`: the public key, `E_pk` and `D_sk` for `(pk, sk) ← G`
 * `KEM.CCA`: the substitution of uniform keys for the encapsulated keys
 * `KEM.INDCCA.systems kem q`: the systems of IND-CCA
 * `KEM.INDCCA kem error`: IND-CCA for the admitted distinguishers, within `error`
 * `KEM.INDCPA.systems kem q`, `KEM.INDCPA kem error`: IND-CPA
+
+## References
+
+1. F. Banfi. *A Composable Treatment of Anonymous Communication*. Doctoral thesis,
+   Diss. ETH No. 29663, ETH Zurich, 2023.
+2. D. Boneh and V. Shoup. *A Graduate Course in Applied Cryptography*. Version 0.6, 2023.
 -/
 
 @[expose] public section
@@ -47,10 +48,13 @@ open scoped SystemAlgebra SystemAlgebra.DSL
 
 /-- **A key encapsulation mechanism** with public keys `PK`, secret keys `SK`, ciphertexts `C` and
 keys `K`. -/
-structure KEM (PK SK C K : Type) where
-  /-- Key generation `G`. -/
+structure KEM
+    -- `PK`, `SK` carry asymmetric keys; `C` carries ciphertexts; `K` carries encapsulated keys.
+    (PK SK C K : Type) where
+  /-- The generated public/secret key pair of [2, Exercise 11.9, p. 460]. -/
   gen : Distribution.ProbDist (PK × SK)
-  /-- Encapsulation `E`: a ciphertext and the key it encapsulates. -/
+  /-- Encapsulation returns the ciphertext and key; [2, Exercise 11.9, p. 460]
+  orders this pair as “(k, ckem)”. -/
   encaps : PK → Distribution.ProbDist (C × K)
   /-- Decapsulation `D`; `none` is rejection. -/
   decaps : SK → C → Option K
@@ -67,6 +71,7 @@ interface Encapsulation(PK C K : Type) [Fintype PK] [Fintype C] [Fintype K]
 
 noncomputable section
 
+-- `PK`, `SK` carry asymmetric keys; `C` carries ciphertexts; `K` carries encapsulated keys.
 variable {PK SK C K : Type} [Fintype PK] [Fintype SK] [Fintype C] [Fintype K]
 
 /-- The table law `encapsulations kem f = ∏ pk, kem.encaps pk (f pk)`: one independent
@@ -75,9 +80,12 @@ def KEM.encapsulations [DecidableEq PK] (kem : KEM PK SK C K) :
     Distribution.ProbDist (PK → C × K) :=
   Distribution.ProbDist.pi kem.encaps
 
--- The public key, `E_pk` and `D_sk` for `(pk, sk) ← G`: on `encaps`, output `(c, k) ← E(pk)`;
--- on `c`, output `D(sk, c)`.
-system KEM.Real(kem : KEM PK SK C K) [DecidableEq PK] : Encapsulation PK C K
+-- Retain `(pk, sk) ← kem.gen` and publish `pk` [2, Exercise 11.9, p. 460].
+-- Each `encaps()` draws a fresh `(c, k) ← kem.encaps pk`; `decaps(c)` returns `kem.decaps sk c`.
+-- The interface admits the selected total or per-port query budget.
+system KEM.system
+    -- `kem` supplies the key-pair law and encapsulation and decapsulation operations.
+    (kem : KEM PK SK C K) [DecidableEq PK] : Encapsulation PK C K
   initialize
     keys ←$ kem.gen
   on publicKey() → PK
@@ -117,7 +125,7 @@ def KEM.INDCCA.systems [DecidableEq PK] [DecidableEq C] [Nonempty K] (kem : KEM 
     (q : Encapsulation.Port → ℕ) :
     TypedSystem (Encapsulation.perPort PK C K q) ×
       TypedSystem (Encapsulation.perPort PK C K q) :=
-  (KEM.Real.perPort kem, KEM.CCA.perPort PK C K • KEM.Real.perPort kem)
+  (KEM.system.perPort kem, KEM.CCA.perPort PK C K • KEM.system.perPort kem)
 
 /-- **IND-CCA** within `error`: against the admitted distinguishers, the real system substitutes
 for the one with uniform keys. -/
