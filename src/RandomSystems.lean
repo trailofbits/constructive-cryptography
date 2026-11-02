@@ -77,6 +77,7 @@ public import RandomSystems.System.Observation
 public import RandomSystems.System.ProbAutomaton
 public import RandomSystems.System.Replies
 public import RandomSystems.Typed.Automaton
+public import RandomSystems.Typed.AutomatonGame
 public import RandomSystems.Typed.Context
 public import RandomSystems.Typed.ConverterCoherence
 public import RandomSystems.Typed.DDCCoherence

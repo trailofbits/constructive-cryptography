@@ -121,6 +121,14 @@ presents is [conditionally equivalent to the ideal function][PDG.ofFunction_cond
 once, on every fixed query sequence, the answers jointly with the unset condition factor through
 the ideal answers.
 
+A [retained-state automaton with a hidden condition][PDG.ofAutomaton] uses the same input
+interface and updates as its visible automaton. The initial normalized law selects both the
+starting state and its monotone predicate on query histories. Its
+[typed presentation][TypedGame.ofAutomaton] forgets to that exact automaton by
+[the visible-system equation][TypedGame.visible_ofAutomaton]. This supplies one monitor
+constructor for the URF collision between distinct inputs and the separate AE collision
+between original and replacement messages.
+
 <!-- Declarations -->
 
 [RandomSystem.MonotoneMBO]: MBO.lean#L309
@@ -159,3 +167,7 @@ the ideal answers.
 
 [Domain.SolverBehavior.decision]: MBOAttachment.lean#L2189
 [Domain.SolverBehavior.decision_absorb]: MBOAttachment.lean#L2238
+
+[PDG.ofAutomaton]: ../Typed/AutomatonGame.lean
+[TypedGame.ofAutomaton]: ../Typed/AutomatonGame.lean
+[TypedGame.visible_ofAutomaton]: ../Typed/AutomatonGame.lean

@@ -10,6 +10,7 @@ public import RandomSystems.Typed.ProbAutomaton
 `ofProbAutomaton_eq_keyed` then identifies an automaton which retains its state `k` and
 draws each reply from `ν k i x` with `keyed P ν`. The equality holds for every transcript
 on the declared domain, so it preserves repeated and adaptive queries at all ports.
+`ofAutomaton_eq_sample` specializes this correspondence to deterministic replies.
 
 `ofProbAutomaton_eq_keyed_of_optional_key` moves a first-query key draw to initialization.
 Its local transition contract records the sampled key and retains it on every later query.
@@ -78,6 +79,20 @@ theorem ofProbAutomaton_eq_keyed
   -- The fresh-sampling automaton has the memoryless law of replies conditional on `k`.
   exact Subtype.ext (RandomSystem.ofProbAutomaton_eq_memoryless A.inputDomain
     (ProbStep.memoryless_fresh (ν k)) (ProbDist.single ()))
+
+/-- Keeping `k` unchanged and replying with `f k i x` retains one sampled function. -/
+lemma ofAutomaton_eq_sample
+    -- `P` draws the retained state; `f k` is its reply function across all ports of `A`.
+    (P : ProbDist K) (f : K → ∀ i, A.X i → A.Y i) :
+    ofAutomaton A (fun k i x => (k, f k i x)) P =
+      TypedSystem.sample P (fun k => ofFunction (f k)) := by
+  -- Deterministic transitions are point laws, so the retained-key correspondence applies.
+  rw [← ofProbAutomaton_ofDeterministic]
+  have hstep : ProbStep.ofDeterministic (fun k i x => (k, f k i x)) =
+      fun k i x => (ProbDist.single (f k i x)).map (fun y => (k, y)) := by
+    funext k i x
+    exact Subtype.ext (fTransform_single _ _ _).symm
+  rw [hstep, ofProbAutomaton_eq_keyed, keyed_single]
 
 /-- Drawing a missing key on the first query and retaining it realizes `keyed P ν`. -/
 lemma ofProbAutomaton_eq_keyed_of_optional_key

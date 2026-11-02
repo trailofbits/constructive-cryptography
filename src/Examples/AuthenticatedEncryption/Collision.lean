@@ -2,6 +2,7 @@ module
 
 public import Examples.AuthenticatedEncryption.Hybrid
 public import ConstructiveCryptography.Instances.Game
+public import RandomSystems.Typed.AutomatonGame
 
 /-!
 # Authenticated encryption: the collision step
@@ -385,44 +386,31 @@ lemma ideal_mass_hybridTables (xs : List (Σ i, (AE.perPort M C q).X i))
   -- Step 3: pointwise, truncation does not change the replies (`ideal_truncate`).
   exact Distribution.mass_congr _ fun ω => by rw [ideal_truncate scheme q ω]
 
-/-- **The collision game**: the hybrid oracle, whose condition is a collision between the
-original messages and the outer replacement messages. -/
+/-- On `AE.perPort M C q`, draw the hybrid tables once and start with no original messages.
+Original messages are recorded as in [1, p. 24]: “set Q to Q ∪ {m}”. The hybrid oracle replies
+while a hidden bit records `Collision` with the outer replacement table. -/
 noncomputable def collisionGame :
     PDG (Σ i, (AE.perPort M C q).X i) (Σ i, (AE.perPort M C q).Y i)
       (AE.perPort M C q).inputDomain :=
-  Distribution.fTransform (fun ω =>
-    -- At the sample `ω` of the hybrid's tables, the DDG: the hybrid oracle restricted to the
-    -- admitted histories, ...
-    ⟨(⟨filterDom (AE.perPort M C q).domain (automatonSystem
-          (oracleStep (hybridEncrypt scheme) (hybridDecrypt scheme)) (ω, [])),
-        (automatonSystem_isDDS _ _).filterDom _ (AE.perPort M C q).nonempty_prefix.2⟩,
-      -- ... with the condition that an original message collides with the outer table `ω.2`,
-      -- monotone because the messages of a prefix are a prefix of the messages.
-      ⟨fun xs => Collision (AE.CCA.law1 M C) (messages xs) ω.2, fun _ _ hp ⟨m, hm, i, hi, he⟩ =>
-        ⟨m, (messages_prefix hp).subset hm, i, hi.trans_le (messages_prefix hp).length_le, he⟩⟩),
-      -- Its DDS is defined exactly on the admitted histories, which are nonempty.
-      HasDomain.ofInputs fun h => by
-        rw [filterDom_dom, automatonSystem_dom]
-        exact ⟨fun hd => hd.1, fun hd =>
-          ⟨hd, fun he => (AE.perPort M C q).nonempty_prefix.1 (he ▸ hd)⟩⟩⟩)
-    (hybridLaw scheme q).1
+  (PDG.ofAutomaton (AE.perPort M C q)
+    (oracleStep (hybridEncrypt scheme) (hybridDecrypt scheme))
+    ((hybridLaw scheme q).map (fun ω => (ω, [])))
+    -- At initial state `s = (ω, [])`, the event reads `ω.2` and the originals in `messages xs`.
+    -- Prefix extension adds originals and enlarges the tested replacement segment.
+    (fun s => ⟨fun xs => Collision (AE.CCA.law1 M C) (messages xs) s.1.2,
+      fun _ _ hp ⟨m, hm, i, hi, he⟩ =>
+        ⟨m, (messages_prefix hp).subset hm, i, hi.trans_le (messages_prefix hp).length_le,
+          he⟩⟩)).1
 
-/-- The collision game is normalized: it is a pushforward of the normalized `hybridLaw`. -/
+/-- The collision game is normalized by the automaton monitor constructor. -/
 lemma collisionGame_isProbDist : (collisionGame scheme q).isProbDist :=
-  Distribution.fTransform_isProbDist _ (hybridLaw scheme q).2
+  (PDG.ofAutomaton _ _ _ _).2
 
 /-- The hybrid is the behavior of the collision game's visible systems. -/
 lemma hybrid_visible : (Hybrid scheme q).1 = PDS.behavior (collisionGame scheme q).underlying
     (PDG.underlying_probability (collisionGame_isProbDist scheme q)) := by
-  -- Compare the two random systems transcript by transcript.
-  apply RandomSystem.ext
-  intro h
-  -- Left: the hybrid oracle on independent tables (`hybrid_mass`). Right: the behavior of the
-  -- visible PDS is the mass of the samples whose DDS gives the transcript; the visible PDS
-  -- is a pushforward of the collision game, itself a pushforward of `hybridLaw`, so both
-  -- sides become the same mass over `hybridLaw`.
-  rw [hybrid_mass, PDS.behavior_mass, behaviorMass, PDG.underlying, collisionGame,
-    Distribution.mass_fTransform, Distribution.mass_fTransform]
+  rw [hybrid_system]
+  exact PDG.ofAutomaton_visible _ _ _ _
 
 /-- The condition holds with the probability of a collision with the outer replacement table,
 whose law is `ccaTableLaw M C q`. -/
@@ -432,7 +420,8 @@ lemma collisionGame_badProbability (xs : List (Σ i, (AE.perPort M C q).X i)) :
         (Collision (AE.CCA.law1 M C) (messages xs)) := by
   -- The condition's probability is the mass, over `hybridLaw = (μ × ν) × ν`, of a collision
   -- with the outer table `ω.2`.
-  rw [PDG.badProbability, collisionGame, Distribution.mass_fTransform]
+  rw [collisionGame, PDG.ofAutomaton_badProbability, Distribution.ProbDist.map_val,
+    Distribution.mass_fTransform]
   -- The event reads only the last factor `ω.2`: write it as `True ∧ Collision` to split it.
   rw [show (fun ω : _ × _ => Collision (AE.CCA.law1 M C) (messages xs) ω.2) =
       (fun ω => True ∧ Collision (AE.CCA.law1 M C) (messages xs) ω.2) from by simp]
@@ -473,10 +462,9 @@ lemma collisionGame_conditionallyEquivalent :
   -- transcript `h` (`PDG.conditionallyEquivalent_behavior`).
   refine (Interface.conditionallyEquivalent_ofPDG_iff _ _ _ _).mpr
     (PDG.conditionallyEquivalent_behavior _ (AE.perPort M C q).nonempty_prefix fun h => ?_)
-  -- Unfold the condition's probability (`collisionGame_badProbability`), the ideal as the
-  -- ideal oracle on `idealLaw` (`ideal_mass`), and the left side as a mass over `hybridLaw`.
-  rw [collisionGame_badProbability, ideal_mass, PDG.goodProbability, collisionGame,
-    Distribution.mass_fTransform]
+  -- Pull the monitored good event back to `hybridLaw`; identify the condition and ideal masses.
+  rw [collisionGame_badProbability, ideal_mass, collisionGame,
+    PDG.ofAutomaton_goodProbability, Distribution.ProbDist.map_val, Distribution.mass_fTransform]
   -- Step 2: `Pr[Coll] + Pr[¬Coll] = 1` under the normalized `ν`, so `1 − Pr[Coll] = Pr[¬Coll]`.
   have hcompl := Distribution.mass_add_compl
     (ccaTableLaw M C q).1
