@@ -30,6 +30,7 @@ CR18, Definitions 3.8, 3.9 and 3.17 (printed pp. 61–64).
 
 ## Main results
 
+* `Interface.queryBudget_domain_map`: one-query maps preserve a supplied aggregate query bound
 * `TypedSystem.exists_ofPDS`: every typed system is the typed system of a PDS
 * `TypedConverter.identity_attach`: attaching the identity leaves a typed system unchanged
 * `TypedConverter.comp_smul`: attaching a serial composition attaches the inner converter first
@@ -75,6 +76,22 @@ abbrev queryBudget (I : Type) [Fintype I] (X Y : I → Type) [∀ i, Fintype (X 
   nonempty_prefix := ⟨fun h => h.1 rfl, fun hp hne hd => ⟨hne, hp.length_le.trans hd.2⟩⟩
   bound := q
   length_le _ hd := hd.2
+
+/-- A one-query map sends each history of `A` into a query-budget interface when its whole
+history bound fits inside `q`. For a tagged caller family, this checks the sum of caller bounds. -/
+lemma queryBudget_domain_map
+    -- `A` is the outside interface, including its complete history bound `A.bound`.
+    {A : Interface}
+    -- `I`, `X`, `Y` give the inside ports, queries, and replies.
+    {I : Type} [Fintype I] {X Y : I → Type} [∀ i, Fintype (X i)] [∀ i, Fintype (Y i)]
+    -- `request` makes one inside query for each outside input; `q` bounds their combined count.
+    (request : (Σ o, A.X o) → Σ i, X i) {q : ℕ} (hq : A.bound ≤ q)
+    -- `hx` admits the complete outside history `xs`, including all callers.
+    {xs : List (Σ o, A.X o)} (hx : A.domain xs) :
+    (queryBudget I X Y q).domain (xs.map request) := by
+  refine ⟨fun he => A.nonempty_prefix.1 (List.map_eq_nil_iff.mp he ▸ hx), ?_⟩
+  -- Each outside input contributes one query, so mapping preserves the aggregate length.
+  exact (List.length_map request).trans_le ((A.length_le xs hx).trans hq)
 
 /-- The domain of at most `q i` queries at each label `i`. -/
 abbrev portBudget (I : Type) [Fintype I] (X Y : I → Type) [∀ i, Fintype (X i)]

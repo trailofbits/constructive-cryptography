@@ -195,6 +195,13 @@ pushes that law forward through $`y \mapsto \operatorname{answer}(u,(j,y))`$.
 The [input-encoding and output-projection clients](../../Tests/QueryRouting.lean) use this law
 on a restricted inside domain.
 
+To share one component among tagged callers, erase the caller tag in `request` and attach the
+router to that single system. `smul_sample` preserves its retained draw. The domain certificate
+checks all callers together: `Interface.queryBudget_domain_map` admits the mapped history when
+the outside interface's aggregate bound fits the inside query budget. The
+[two-caller permutation test](../../Tests/SharedRouting.lean) checks the sum of caller bounds and
+cross-caller inverse consistency, and distinguishes independent parallel copies.
+
 ## Typed games
 
 A [**typed game**][TypedGame] on $`A`$ is a typed system on the [interface][Interface.withMBO] of

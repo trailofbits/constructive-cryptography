@@ -29,6 +29,7 @@ Ideal systems are in the `Commons` namespace; typed systems and converters are i
 | Restricted interface | `TypedConverter.filter` in [Filter] |
 | Relabeled interface | `TypedConverter.rename` in [Relabel] |
 | One-query input and reply translation | `TypedConverter.routing` in [QueryRouting] |
+| Shared access by tagged callers | `routing` in [QueryRouting], `smul_sample` in [Functional] |
 
 [Ideal]: src/Commons/Definitions/Ideal.lean
 [Source]: src/RandomSystems/Typed/Source.lean
@@ -131,6 +132,9 @@ Three cases differ:
   each label.
 - **One permutation shared by several callers.** Route the callers to one component.
   `StrongURP X` samples one `π` and answers `forward` with `π` and `inverse` with `π.symm`.
+  `Interface.queryBudget_domain_map` checks the callers' aggregate bound against the inside
+  budget. The [shared-routing test](src/Tests/SharedRouting.lean) uses this certificate and
+  distinguishes one retained permutation from independent copies by cross-caller inversion.
 
 Similarly, define a construction's joint law once as `ProbDist Ω`. Worlds, transcript laws
 and counting lemmas refer to that declaration or take it as an explicit parameter. Reuse its
