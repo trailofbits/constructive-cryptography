@@ -86,6 +86,7 @@ public import RandomSystems.Typed.CallRuleFunctional
 public import RandomSystems.Typed.Game
 public import RandomSystems.Typed.Interface
 public import RandomSystems.Typed.InterfaceCoherence
+public import RandomSystems.Typed.Keyed
 public import RandomSystems.Typed.Memoryless
 public import RandomSystems.Typed.Parallel
 public import RandomSystems.Typed.ParallelAttachment

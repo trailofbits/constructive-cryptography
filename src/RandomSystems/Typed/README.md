@@ -135,6 +135,10 @@ inside memorylessness as an explicit typed equality. For an own source beside th
 [parallel certificates][TypedSystem.parallel_eq_ofMemoryless] combine their reply laws;
 [the own-source contract][TypedConverter.ofPreservingProgram_comp_rightContext_smul_memoryless]
 gives the cumulative form.
+A [**keyed system**](Keyed.lean) retains `k ∼ P` and replies freshly from `ν k i x`.
+In `TypedSystem.keyed P ν`, all ports share the retained key; reply draws are independent
+conditional on it. `keyed_snoc` averages the fixed-key transcript/reply products, and
+`keyed_single` gives the existing retained-function presentation.
 **Functional systems** are given by [reply functions][TypedSystem.ofFunction], by
 [conditional reply laws][TypedSystem.ofConditional], or by
 [sampling once][TypedSystem.sample] and keeping the sample.

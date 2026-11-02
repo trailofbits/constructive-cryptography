@@ -45,6 +45,7 @@ public import Tests.Substitution.Quantitative
 public import Tests.Substitution.Relaxation
 public import Tests.Substitution.Tactics
 public import Tests.TypedConverterComposition
+public import Tests.Keyed
 public import Tests.TypedSampling
 public import Tests.TypedMemoryless
 public import Tests.TypedNaryParallel
