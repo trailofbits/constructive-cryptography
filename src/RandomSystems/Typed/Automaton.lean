@@ -16,6 +16,9 @@ updates it with `step` on the domain of `T`. This is a random automaton
 Pr[h] = Pr[s ← initial : automatonSystem step s answers h on T.domain].
 ```
 
+`Interface.automatonDDS_eq_ofFunction` identifies a retained function with its existing DDS,
+including unadmitted histories.
+
 `ofAutomaton_map_congr` compares two state representations initialized from the same law:
 pointwise equality for each draw yields equality of typed systems. `parallel_ofAutomaton`
 assembles two automata using `parallelStep` and the independent initial law `prodProbDist P Q`.
@@ -49,6 +52,25 @@ noncomputable def Interface.automatonDDS (s : S) : {r : InterfaceSystem T.I T.X 
     fun h => by
       rw [filterDom_dom, automatonSystem_dom]
       exact ⟨fun hd => hd.1, fun hd => ⟨hd, fun he => T.nonempty_prefix.1 (he ▸ hd)⟩⟩⟩
+
+/-- An automaton retaining `k` and replying with `f k` is exactly the function's DDS on
+`A.domain`, including unadmitted histories. -/
+lemma Interface.automatonDDS_eq_ofFunction
+    -- `A` supplies the domain and alphabets; `K` carries retained parameters.
+    (A : Interface) {K : Type}
+    -- `f k i x` is the parameter's reply at port `i`; `k` stays unchanged.
+    (f : K → ∀ i, A.X i → A.Y i) (k : K) :
+    (A.automatonDDS (fun k i x => (k, f k i x)) k).1 =
+      (DDS.ofFunction A.domain A.nonempty_prefix (fun x => ⟨x.1, f k x.1 x.2⟩)).1 := by
+  classical
+  -- Every input leaves the retained parameter unchanged.
+  have hs (xs : List (Σ i, A.X i)) : stateAfter (fun k i x => (k, f k i x)) k xs = k := by
+    induction xs using List.reverseRecOn with
+    | nil => rfl
+    | append_singleton xs x ih => exact (stateAfter_snoc _ _ _ _).trans ih
+  -- Both DDSs answer the latest input exactly on the declared domain.
+  funext xs
+  simp only [Interface.automatonDDS, filterDom, automatonSystem, hs, DDS.ofFunction]
 
 /-- Sample `s ← initial` once and update it with `step`; later queries draw nothing.
 The resulting typed system has interface and domain `T`. -/

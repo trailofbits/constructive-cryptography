@@ -16,7 +16,9 @@ this normalized law as a typed game. The bit is not returned to the caller
 monitoring changes only the hidden bit. `PDG.ofAutomaton_badProbability` and
 `PDG.ofAutomaton_goodProbability` pull condition and transcript events back to `initial`.
 `TypedGame.ofAutomaton_unsetProbability` gives the complementary unset probability on admitted
-query lists.
+query lists. `TypedGame.ofAutomaton_mass_unsetMBOs` identifies the all-unset cumulative
+law with visible replies jointly with the final condition being false, when the condition
+is initially false.
 
 ## References
 
@@ -81,6 +83,35 @@ state `s ← initial`. Visible replies and retained updates are exactly those of
 noncomputable def TypedGame.ofAutomaton : TypedGame A :=
   ofPDG (PDG.ofAutomaton A step initial bad).1 (PDG.ofAutomaton A step initial bad).2
     (PDG.ofAutomaton_visible A step initial bad)
+
+/-- If the condition is initially false, the cumulative mass with every MBO unset is the
+initial-law mass of visible replies jointly with the final condition being false. -/
+lemma TypedGame.ofAutomaton_mass_unsetMBOs
+    -- `hzero` rules out an initially reached event on every possible initial state.
+    (hzero : ∀ s ∈ initial.1.support, ¬ (bad s).1 [])
+    -- `h` is the visible query/reply transcript.
+    (h : List ((Σ i, A.X i) × Σ i, A.Y i)) :
+    (TypedGame.ofAutomaton A step initial bad).1.1 (unsetMBOs h) =
+      initial.1.mass (fun s => Replies (filterDom A.domain (automatonSystem step s))
+        (h.map Prod.fst) (h.map Prod.snd) ∧ ¬ (bad s).1 (h.map Prod.fst)) := by
+  -- Before any query the mass is one; afterwards monotonicity reduces all bits to the last.
+  rcases List.eq_nil_or_concat h with rfl | ⟨h, z, rfl⟩
+  · rw [unsetMBOs, List.map_nil, RandomSystem.mass_nil]
+    symm
+    exact initial.mass_eq_one_of_support _ (fun s hs => ⟨replies_nil _, hzero s hs⟩)
+  · change (PDG.behavior (PDG.ofAutomaton A step initial bad).1
+      (PDG.ofAutomaton A step initial bad).2) _ = _
+    rw [PDG.behavior_apply, PDG.ofAutomaton, ProbDist.map_val, mass_fTransform]
+    apply mass_congr
+    intro s
+    simp only [List.concat_eq_append, unsetMBOs, List.map_map, Function.comp_def]
+    simpa only [List.map_map, Function.comp_def, Interface.automatonDDS] using
+      DDG.replies_withMBO_unset_iff
+      (⟨(A.automatonDDS step s).1, (A.automatonDDS step s).2.1⟩, bad s)
+      (xs := (h ++ [z]).map Prod.fst)
+      (by rw [List.map_append, List.map_singleton]
+          exact List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _))
+      ((h ++ [z]).map Prod.snd)
 
 /-- On admitted queries, the MBO is unset with one minus the probability of `bad`. -/
 lemma TypedGame.ofAutomaton_unsetProbability
