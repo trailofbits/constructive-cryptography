@@ -170,13 +170,12 @@ theorem encryptThenMAC.system.enc_dec_eq_of_correct
       (encryptThenMAC.system scheme mac q).1 (h ++ [(⟨.enc, m⟩, ⟨.enc, ct⟩)]) := by
   -- Both extensions lie in the assembly's total-query domain.
   have hdEnc : (AE M (C × T) q).inputDomain h ⟨.enc, m⟩ := by
-    refine ⟨List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _), ?_⟩
-    simp only [List.length_append, List.length_map, List.length_singleton]
+    apply Interface.queryBudget_inputDomain_iff.mpr
     omega
   have hdDec : (AE M (C × T) q).inputDomain
       (h ++ [(⟨.enc, m⟩, ⟨.enc, ct⟩)]) ⟨.dec, ct⟩ := by
-    refine ⟨List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _), ?_⟩
-    simp only [List.length_append, List.length_map, List.length_singleton]
+    apply Interface.queryBudget_inputDomain_iff.mpr
+    simp only [List.length_append, List.length_singleton]
     omega
   -- A supported encrypted/tagged pair decrypts to `some m`, preserving the prefix mass.
   rw [encryptThenMAC.system.eq_keyed]
