@@ -3,8 +3,10 @@ module
 public import Commons.Constructions.EncryptThenMAC
 public import Commons.Constructions.KEMDEM
 public import Commons.Constructions.KEMDEM.Correctness
+public import Commons.Constructions.EncryptThenMAC.Correctness
 public import Commons.Constructions.TranscriptCompletion
 public import Commons.Definitions.AEAD
+public import Commons.Definitions.AEAD.Keyed
 public import Commons.Definitions.Cipher
 public import Commons.Definitions.DiffieHellman
 public import Commons.Definitions.Encryption
@@ -13,6 +15,7 @@ public import Commons.Definitions.Ideal
 public import Commons.Definitions.KEM
 public import Commons.Definitions.Nonce
 public import Commons.Definitions.MAC
+public import Commons.Definitions.MAC.Keyed
 public import Commons.Definitions.PRG
 public import Commons.Definitions.PublicKeyEncryption
 public import Commons.Definitions.PublicKeyEncryption.Keyed
