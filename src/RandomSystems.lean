@@ -3,6 +3,8 @@ module
 public import RandomSystems.Distance.Observation
 public import RandomSystems.Typed.Completion
 public import RandomSystems.Typed.Distinguisher
+public import RandomSystems.Typed.Solver
+public import RandomSystems.Typed.Guessing
 public import RandomSystems.Distance.Mixture
 public import RandomSystems.Typed.SamplingDistance
 public import RandomSystems.Cumulative.Revealed
@@ -49,6 +51,7 @@ public import RandomSystems.Distance.Absorption
 public import RandomSystems.Distance.Coupling
 public import RandomSystems.Distance.Decision
 public import RandomSystems.Distance.Distinguisher
+public import RandomSystems.Distance.DecisionLaw
 public import RandomSystems.Distance.HCoefficient
 public import RandomSystems.Distance.ParallelObservation
 public import RandomSystems.Distance.Restriction
