@@ -1,6 +1,7 @@
 module
 
 public import Commons.Constructions.KEMDEM
+public import Commons.Constructions.KEMDEM.Correctness
 public import Commons.Constructions.TranscriptCompletion
 public import Commons.Definitions.AEAD
 public import Commons.Definitions.Cipher
