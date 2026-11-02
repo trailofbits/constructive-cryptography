@@ -25,6 +25,8 @@ Relates signed, nonnegative and probability distributions.
 * `statDist_eq_weight_sub_weight_inf`: `δ(X, Y) = |X| − |X ⊓ Y|`, the overlap formula of
   [1, Definition 3, p. 10]
 * `isProbDist_normalize`: `normalize X` is a probability law for `X ≥ 0` with `|X| ≠ 0`
+* `normalizeOr_val_of_weight_ne_zero`, `mem_support_normalizeOr_iff`: at positive weight,
+  normalization rescales the masses and preserves exactly their support
 * `weight_smul_normalizeOr`: `|X| • normalizeOr X hX fallback = X`, including at weight zero,
   where nonnegativity forces `X = 0`
 * `mass_finset_sum`: `(∑ i ∈ s, Xᵢ)(E) = ∑ i ∈ s, Xᵢ(E)` for signed laws; with `mass_smul`,
@@ -206,6 +208,33 @@ lemma weight_smul_normalizeOr
   · -- At positive weight, `|X| · |X|⁻¹ · X = X`.
     change X.weight • (X.weight⁻¹ • X) = X
     rw [smul_smul, mul_inv_cancel₀ hw, one_smul]
+
+/-- At nonzero weight, `normalizeOr` is scalar normalization. -/
+lemma normalizeOr_val_of_weight_ne_zero
+    -- `hμ` makes the masses of `μ` nonnegative; `hw` excludes the fallback branch.
+    (μ : Distribution A) (hμ : μ.NonNeg) (fallback : ProbDist A) (hw : μ.weight ≠ 0) :
+    (μ.normalizeOr hμ fallback).1 = μ.weight⁻¹ • μ := by
+  classical
+  simp only [normalizeOr, dite_eq_right hw, normalize]
+
+/-- Positive rescaling preserves exactly the atoms in the support. -/
+lemma mem_support_normalizeOr_iff
+    -- `μ` is nonnegative by `hμ`; `hw` excludes zero weight, independently of `fallback`.
+    (μ : Distribution A) (hμ : μ.NonNeg) (fallback : ProbDist A) (hw : μ.weight ≠ 0)
+    -- `a` is an atom whose mass normalization preserves or excludes.
+    (a : A) : a ∈ (μ.normalizeOr hμ fallback).1.support ↔ a ∈ μ.support := by
+  rw [normalizeOr_val_of_weight_ne_zero μ hμ fallback hw]
+  simp only [Finsupp.mem_support_iff, Finsupp.smul_apply, smul_eq_mul,
+    mul_ne_zero_iff]
+  exact and_iff_right (inv_ne_zero hw)
+
+/-- A nonnegative law with a nonzero atom has nonzero total weight. -/
+lemma weight_ne_zero_of_apply_ne_zero
+    -- `ha` witnesses a nonzero mass of the nonnegative law `μ`.
+    (μ : Distribution A) (hμ : μ.NonNeg) {a : A} (ha : μ a ≠ 0) : μ.weight ≠ 0 := by
+  intro hw
+  have hz := eq_zero_of_nonNeg_of_weight_eq_zero hμ hw
+  exact ha (congrArg (fun ν : Distribution A => ν a) hz)
 
 /-! ## Overlaps -/
 

@@ -1,5 +1,6 @@
 module
 
+public import Probability.Conditioning
 public import Probability.FiniteSupport
 public import Probability.Replay
 public import Probability.Counting
