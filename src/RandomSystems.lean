@@ -20,6 +20,7 @@ public import RandomSystems.Converter.Identity
 public import RandomSystems.Converter.PartialConverter
 public import RandomSystems.Converter.PartialIdentity
 public import RandomSystems.Converter.Program
+public import RandomSystems.Converter.ProgramSchedule
 public import RandomSystems.Converter.ProgramAttachment
 public import RandomSystems.Converter.ProbProgramAttachment
 public import RandomSystems.Converter.ParallelPDS
@@ -67,6 +68,7 @@ public import RandomSystems.PDS.Filter
 public import RandomSystems.PDS.Function
 public import RandomSystems.PDS.PDS
 public import RandomSystems.System.Basic
+public import RandomSystems.System.Restriction
 public import RandomSystems.System.DDE
 public import RandomSystems.System.InterfaceSystem
 public import RandomSystems.System.Memoryless
@@ -78,6 +80,7 @@ public import RandomSystems.Typed.Context
 public import RandomSystems.Typed.ConverterCoherence
 public import RandomSystems.Typed.DDCCoherence
 public import RandomSystems.Typed.Distance
+public import RandomSystems.Typed.DSL.Collect
 public import RandomSystems.Typed.DSL.Converters
 public import RandomSystems.Typed.DSL.Probability
 public import RandomSystems.Typed.DSL.Programs

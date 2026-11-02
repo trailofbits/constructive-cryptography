@@ -30,6 +30,9 @@ and the carriers may live in different universes.
 * `piDep_eq_pi`: with one carrier `A k = A`, `piDep μ` is the homogeneous product `pi μ`
 * `fTransform_piDep`: coordinatewise pushforward commutes with the product,
   `(a ↦ (k ↦ f k (a k)))_* (piDep μ) = piDep (k ↦ (f k)_* (μ k))`
+* `piDep_single`: independent point laws give the point law on their tuple
+* `piDep_fin_zero`, `piDep_fin_succ`: ordered tuples split into their first coordinate and tail
+* `fTransform_piDep_piCongrLeft`: an explicit index equivalence transports the product law
 * `independent_product_piDep`: two product families regroup as one family of pairs,
   `piDep μ × piDep ν = unzip_* (piDep (k ↦ μ k × ν k))`, `unzip p = ((p k).1)_k, ((p k).2)_k`
 
@@ -75,13 +78,13 @@ lemma piDep_isProbDist {A : K → Type*} {μ : ∀ k, Distribution (A k)}
     (hμ : ∀ k, (μ k).isProbDist) : (piDep μ).isProbDist := by
   refine ⟨fun f => ?_, ?_⟩
   · -- Every component mass is nonnegative, so their product is nonnegative.
-    rw [piDep, Finsupp.onFinset_apply]
+    rw [piDep_apply]
     exact Finset.prod_nonneg fun k _ => (hμ k).1 (f k)
   · -- Sum the weight over the box `B = ∏ k, supp μ_k`, which contains the support.
     rw [weight_eq_finsupp_sum, Finsupp.sum_of_support_subset (piDep μ)
       (s := Fintype.piFinset fun k => (μ k).support)
       Finsupp.support_onFinset_subset _ (fun _ _ => rfl)]
-    simp only [piDep, Finsupp.onFinset_apply]
+    simp only [piDep_apply]
     -- Exchange sum and product: `∑_{f ∈ B} ∏_k μ_k(f k) = ∏_k ∑_{a ∈ supp μ_k} μ_k(a)`.
     rw [← Finset.prod_univ_sum]
     -- Each factor is the weight of `μ k`, which is one.
@@ -130,7 +133,7 @@ theorem piDep_mass_forall {A : K → Type*} (μ : ∀ k, Distribution (A k)) (Q 
       ∏ k, (if Q k (f k) then μ k (f k) else 0) := by
     intro f
     rw [Finset.prod_ite_zero]
-    simp only [piDep, Finsupp.onFinset_apply, Finset.mem_univ, forall_const]
+    simp only [piDep_apply, Finset.mem_univ, forall_const]
   simp only [h1]
   -- Exchange sum and product over the box:
   -- `∑_{f ∈ B} ∏_k 1[Q_k(f k)] μ_k(f k) = ∏_k ∑_{a ∈ supp μ_k} 1[Q_k(a)] μ_k(a)`.
@@ -156,7 +159,75 @@ lemma fTransform_piDep {A : K → Type*} {B : K → Type*} (μ : ∀ k, Distribu
       mass_congr _ fun a => ⟨fun h k => congrFun h k, fun h => funext h⟩
     _ = ∏ k, (μ k).mass (fun a => f k a = g k) :=
       piDep_mass_forall μ (fun k a => f k a = g k)
-    _ = _ := by simp only [piDep, Finsupp.onFinset_apply, fTransform_apply_eq_mass]
+    _ = _ := by simp only [piDep_apply, fTransform_apply_eq_mass]
+
+/-- Independent point laws give the point law on their tuple. -/
+lemma piDep_single
+    -- `f k` is the fixed outcome at coordinate `k` of the family `A`.
+    {A : K → Type*} (f : ∀ k, A k) :
+    piDep (fun k => Finsupp.single (f k) 1) = Finsupp.single f 1 := by
+  classical
+  apply Finsupp.ext
+  intro g
+  by_cases hg : g = f
+  · subst g
+    simp only [piDep_apply, Finsupp.single_eq_same, Finset.prod_const_one]
+  · -- A different tuple differs at one coordinate, whose point mass is zero.
+    obtain ⟨k, hk⟩ : ∃ k, f k ≠ g k := by
+      by_contra hn
+      push Not at hn
+      exact hg (funext fun k => (hn k).symm)
+    rw [Finsupp.single_eq_of_ne hg]
+    change (∏ k, (Finsupp.single (f k) 1) (g k)) = 0
+    exact Finset.prod_eq_zero (Finset.mem_univ k) (Finsupp.single_eq_of_ne hk.symm)
+
+/-- The empty product is the point law on the unique empty tuple. -/
+lemma piDep_fin_zero
+    -- `A` is an empty family of outcome types; `μ` has no coordinates to sample.
+    {A : Fin 0 → Type*} (μ : ∀ i, Distribution (A i)) :
+    piDep μ = Finsupp.single (fun i => Fin.elim0 i) 1 := by
+  -- With no coordinates, the supplied family is also the family of empty-tuple point laws.
+  have hμ : μ = fun i => Finsupp.single (Fin.elim0 i) 1 := by
+    funext i
+    exact Fin.elim0 i
+  rw [hμ, piDep_single]
+
+/-- An ordered product samples its first coordinate and its remaining tuple independently. -/
+lemma piDep_fin_succ
+    -- `A i` is the outcome type at position `i`; `μ i` is its finitely supported law.
+    {n : ℕ} {A : Fin (n + 1) → Type*} (μ : ∀ i, Distribution (A i)) :
+    piDep μ = fTransform
+      (fun p : A 0 × ((i : Fin n) → A i.succ) => Fin.cons p.1 p.2)
+      (prod (μ 0) (piDep fun i : Fin n => μ i.succ)) := by
+  classical
+  -- Prepending the first outcome is a bijection onto complete tuples.
+  have hinj : Function.Injective
+      (fun p : A 0 × ((i : Fin n) → A i.succ) => Fin.cons p.1 p.2) := by
+    intro p q h
+    exact Prod.ext (congrFun h 0) (funext fun i => congrFun h i.succ)
+  ext f
+  have he : Fin.cons (f 0) (fun i : Fin n => f i.succ) = f := Fin.cons_self_tail f
+  conv_rhs => rw [← he]
+  rw [fTransform_injective_apply _ _ hinj (f 0, fun i : Fin n => f i.succ), prod_apply]
+  -- The tuple mass factors into coordinate zero and the product over its tail.
+  change (∏ i, μ i (f i)) = μ 0 (f 0) * ∏ i : Fin n, μ i.succ (f i.succ)
+  exact Fin.prod_univ_succ _
+
+/-- Reindexing an independent tuple along an explicit equivalence preserves its product law. -/
+lemma fTransform_piDep_piCongrLeft
+    -- `e` identifies the chosen finite index order `L` with the original family index `K`.
+    {L : Type*} [Fintype L] (e : L ≃ K)
+    -- `A k` carries coordinate `k`; `μ k` is its finitely supported law.
+    {A : K → Type*} (μ : ∀ k, Distribution (A k)) :
+    fTransform (Equiv.piCongrLeft A e) (piDep fun i => μ (e i)) = piDep μ := by
+  classical
+  ext f
+  -- The reindexing equivalence has exactly one preimage of each complete tuple.
+  have he := (Equiv.piCongrLeft A e).apply_symm_apply f
+  conv_lhs => rw [← he]
+  rw [fTransform_injective_apply _ _ (Equiv.piCongrLeft A e).injective]
+  simp only [piDep_apply, Equiv.piCongrLeft_symm_apply]
+  exact e.prod_comp (fun k => μ k (f k))
 
 open Classical in
 /-- Two product families regroup as one product family of pairs:
@@ -180,6 +251,6 @@ lemma independent_product_piDep {A : K → Type*} {B : K → Type*}
   obtain ⟨a, b⟩ := p
   rw [fTransform_injective_apply _ _ hinj (fun k => (a k, b k)), prod_apply]
   -- `∏ k, μ k (a k) * ν k (b k) = (∏ k, μ k (a k)) * ∏ k, ν k (b k)`.
-  simp only [piDep, Finsupp.onFinset_apply, prod_apply, Finset.prod_mul_distrib]
+  simp only [piDep_apply, prod_apply, Finset.prod_mul_distrib]
 
 end Probability.Distribution
