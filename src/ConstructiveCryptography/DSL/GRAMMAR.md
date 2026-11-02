@@ -485,8 +485,8 @@ before/after proofs, expression guards, negative tests and exact rewrite traces 
 [elabExactDecls]: Elaborator.lean#L826
 [elabFilter]: Elaborator.lean#L1139
 [sourcesAt]: Elaborator.lean#L730
-[MemorylessSource]: ../../Commons/Definitions/Ideal.lean#L117
-[MemorylessSource.memoryless_eq]: ../../Commons/Definitions/Ideal.lean#L124
+[MemorylessSource]: ../../Commons/Definitions/Ideal.lean#L321
+[MemorylessSource.memoryless_eq]: ../../Commons/Definitions/Ideal.lean#L328
 [WriteThrough]: ../../Examples/DSL/Components.lean#L108
 [cc_normalize]: ../Tactics/Basic.lean#L34
 [cc_nonexpand]: ../Tactics/Categorical.lean#L171

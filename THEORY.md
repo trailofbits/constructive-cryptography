@@ -322,7 +322,7 @@ extension are in [Examples](src/Examples/README.md).
 [PDS.behavior]: src/RandomSystems/Cumulative/Cumulative.lean#L220
 [RandomSystem.exists_presentation]: src/RandomSystems/Cumulative/Presentation.lean#L306
 [RandomSystem.ofPDSClass_bijective]: src/RandomSystems/Cumulative/Presentation.lean#L316
-[RandomSystem.parallel]: src/RandomSystems/Cumulative/CumulativeOperations.lean#L135
+[RandomSystem.parallel]: src/RandomSystems/Cumulative/CumulativeOperations.lean#L136
 [IsDDC]: src/RandomSystems/DDC/DDC.lean#L131
 [PDCBehavior]: src/RandomSystems/Converter/PDCBehavior.lean#L71
 [PDCBehavior.ofPDC]: src/RandomSystems/Converter/PDCBehavior.lean#L175

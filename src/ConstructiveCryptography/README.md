@@ -452,13 +452,13 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [Interface.cc_distance_eq]: Instances/Algebra.lean#L278
 [TypedSystem.transcriptPseudoEMetricSpace]: ../RandomSystems/Typed/Distance.lean#L26
 [RandomSystem.transcriptDistance_eq_iSup_behavior]: ../RandomSystems/Distance/Distinguisher.lean#L250
-[Interface.games]: Instances/Game.lean#L77
-[Interface.distinctionGames]: Instances/Game.lean#L107
+[Interface.games]: Instances/Game.lean#L54
+[Interface.distinctionGames]: Instances/Game.lean#L84
 [Domain.SolverBehavior]: ../RandomSystems/Game/MBOAttachment.lean#L2178
-[Interface.win_le]: Instances/Game.lean#L157
-[Interface.dist_visible_le]: Instances/Game.lean#L173
-[Interface.conditionallyEquivalent_ofPDG_iff]: Instances/Game.lean#L187
-[Interface.game_dist_le]: Instances/Game.lean#L200
+[Interface.win_le]: Instances/Game.lean#L134
+[Interface.dist_visible_le]: Instances/Game.lean#L153
+[Interface.conditionallyEquivalent_ofPDG_iff]: Instances/Game.lean#L170
+[Interface.game_dist_le]: Instances/Game.lean#L183
 [notation-distance]: Notation/Basic.lean#L40
 [notation-parallel]: Notation/Basic.lean#L52
 [notation-constructs]: Notation/Basic.lean#L86
@@ -572,13 +572,13 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [Interface.resourcesLaxMonoidal]: Instances/Algebra.lean#L136
 [Interface.rightUnitor]: Instances/Monoidal.lean#L65
 [Interface.rightUnitor_naturality]: Instances/Monoidal.lean#L105
-[Interface.solvers]: Instances/Game.lean#L71
+[Interface.solvers]: Instances/Game.lean#L48
 [Interface.swap]: Instances/Monoidal.lean#L70
 [Interface.tensor]: ../RandomSystems/Typed/Parallel.lean#L89
 [Interface.tensor_comp]: Instances/Monoidal.lean#L91
 [Interface.triangle]: Instances/Monoidal.lean#L136
 [Interface.unit]: ../RandomSystems/Typed/InterfaceCoherence.lean#L94
-[Interface.winners]: Instances/Game.lean#L66
+[Interface.winners]: Instances/Game.lean#L43
 [PDCBehavior.attach]: ../RandomSystems/Converter/ConverterAttachment.lean#L161
 [PDCBehavior.attach_comp]: ../RandomSystems/Converter/ConverterAttachment.lean#L281
 [PDCBehavior.attach_id]: ../RandomSystems/Converter/ConverterAttachment.lean#L268
@@ -592,7 +592,7 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [PDCBehavior.tensor_id]: ../RandomSystems/Converter/ConverterTensor.lean#L709
 [RandomSystem.ConditionallyEquivalent]: ../RandomSystems/Game/MBO.lean#L529
 [RandomSystem.MonotoneMBO]: ../RandomSystems/Game/MBO.lean#L309
-[RandomSystem.parallel]: ../RandomSystems/Cumulative/CumulativeOperations.lean#L135
+[RandomSystem.parallel]: ../RandomSystems/Cumulative/CumulativeOperations.lean#L136
 [RandomSystem.visible]: ../RandomSystems/Game/MBO.lean#L344
 [RandomSystem.visible_attach_liftMBO]: ../RandomSystems/Game/MBOAttachment.lean#L628
 [TypedConverter]: ../RandomSystems/Typed/Interface.lean#L150
@@ -624,8 +624,8 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 
 [Games.win_le_of_reduction]: Game.lean#L89
 [Problem.performance_le_of_reduction]: Problem.lean#L54
-[Interface.gameAction]: Instances/Game.lean#L82
-[Interface.distinctionGameAction]: Instances/Game.lean#L140
+[Interface.gameAction]: Instances/Game.lean#L59
+[Interface.distinctionGameAction]: Instances/Game.lean#L117
 [Domain.SolverBehavior.decision]: ../RandomSystems/Game/MBOAttachment.lean#L2189
 [Domain.SolverBehavior.decision_absorb]: ../RandomSystems/Game/MBOAttachment.lean#L2238
 [TypedConverter.identity_attachGame]: ../RandomSystems/Typed/Game.lean#L65
