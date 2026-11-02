@@ -61,6 +61,24 @@ example {A B : Interface} {K L : Type} (R : TypedSystem A)
   -- Move the draw `(k, l) ← P × Q` outside the parallel composition, then split it.
   rw [TypedSystem.parallel_sample_right, TypedSystem.sample_prod]
 
+/-- Independent draws group as
+`sample P R ∥ sample Q S = sample (P.prod Q) (fun kl => R kl.1 ∥ S kl.2)`. -/
+example
+    -- `A`, `B` are the ordered component interfaces; `K`, `L` carry independent samples.
+    {A B : Interface} {K L : Type}
+    -- `P`, `Q` are normalized laws; `R k` and `S l` retain the respective draw.
+    (P : Distribution K) [Distribution.IsProbability P]
+    (Q : Distribution L) [Distribution.IsProbability Q]
+    (R : K → TypedSystem A) (S : L → TypedSystem B) :
+    TypedSystem.sample P R ∥ TypedSystem.sample Q S =
+      TypedSystem.sample (P.prod Q) (fun kl => R kl.1 ∥ S kl.2) := by
+  -- Scope `P` first, then `Q` inside it: this is the order of the product `P.prod Q`.
+  simp only [Interface.cc_parallel_eq]
+  rw [TypedSystem.parallel_sample_left]
+  simp only [TypedSystem.parallel_sample_right, TypedSystem.sample_prod]
+
+#print axioms TypedSystem.parallel_sample_left
+
 /-! ### Independence boundary -/
 
 /-- One port with query alphabet `X = {⋆}` and reply alphabet `Y = {false, true}²`.

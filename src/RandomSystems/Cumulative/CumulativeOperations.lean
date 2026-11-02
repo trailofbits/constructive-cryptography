@@ -24,14 +24,15 @@ alphabets, with product probabilities on the two component transcripts.
   component transcripts
 * `parallel_mass_of_presentations`, `PDS.parallel_mass`: parallel composition of
   presentations presents the parallel composition
-* `parallel_mix_right`: parallel composition distributes over mixtures
+* `parallel_mix_left`, `parallel_mix_right`: parallel composition distributes over mixtures
 -/
 
 @[expose] public section
 
 namespace SystemAlgebra.RandomSystem
 
-open Classical Probability
+open Probability
+
 
 variable {A B C E ι : Type}
 
@@ -144,6 +145,7 @@ section Parallel
 
 variable [Fintype A] [Fintype B] [Fintype C] [Fintype E] {D : Domain A B} {D' : Domain C E}
 
+open Classical in
 /-- Independent parallel composition, with its combined input/output alphabets. -/
 noncomputable def parallel (R : RandomSystem A B D) (S : RandomSystem C E D') :
     RandomSystem (Two A C) (Two B E) (D.parallel D') :=
@@ -161,26 +163,27 @@ noncomputable def parallel (R : RandomSystem A B D) (S : RandomSystem C E D') :
         · simp [parallelConsistent_snoc, hh]
         · simp [hh, Distribution.weight]
       rcases x with ⟨_ | ⟨⟨⟩⟩, x⟩
-      · refine ⟨S (parallelRight h) • Distribution.fTransform (fun y : B => (⟨none, y⟩ : Two B E)) (R.extensionLaw (parallelLeft h) x),
+      · refine ⟨S (parallelRight h) • Distribution.fTransform
+          (fun y : B => (⟨none, y⟩ : Two B E)) (R.extensionLaw (parallelLeft h) x),
           ?_, ?_⟩
         · intro y
           rcases y with ⟨_ | ⟨⟩, y⟩
-          ·
-            rw [Finsupp.smul_apply, smul_eq_mul,
+          · rw [Finsupp.smul_apply, smul_eq_mul,
               Distribution.fTransform_injective_apply _ _ (by intro a b h; simpa using h),
               extensionLaw_apply]
             simp [parallelConsistent_snoc, hh, parallelLeft, parallelRight,
               List.filterMap_append, mul_comm]
-          ·
-            rw [Finsupp.smul_apply, smul_eq_mul]
-            have hz : Distribution.fTransform (fun y : B => (⟨none, y⟩ : Two B E)) (R.extensionLaw (parallelLeft h) x)
+          · rw [Finsupp.smul_apply, smul_eq_mul]
+            have hz : Distribution.fTransform (fun y : B => (⟨none, y⟩ : Two B E))
+                (R.extensionLaw (parallelLeft h) x)
                 (⟨some (), y⟩ : Two B E) = 0 :=
               Finsupp.mapDomain_of_notMem_range _ _ (by rintro ⟨b, hb⟩; cases hb)
             simp [hz, parallelConsistent_snoc]
         · unfold Distribution.weight at ⊢
           rw [Finsupp.sum_smul_index (fun _ => rfl), ← Finsupp.mul_sum]
           change S (parallelRight h) *
-            (Distribution.fTransform (fun y : B => (⟨none, y⟩ : Two B E)) (R.extensionLaw (parallelLeft h) x)).weight = _
+            (Distribution.fTransform (fun y : B => (⟨none, y⟩ : Two B E))
+              (R.extensionLaw (parallelLeft h) x)).weight = _
           rw [Distribution.weight_fTransform, extensionLaw_weight]
           by_cases hb : (parallelRight h).length ≤ D'.bound
           · have hadm : (D.parallel D').admits h ⟨none, x⟩ ↔ D (parallelLeft h) x :=
@@ -192,25 +195,26 @@ noncomputable def parallel (R : RandomSystem A B D) (S : RandomSystem C E D') :
               simp
           · rw [S.mass_eq_zero_of_bound_lt (not_le.mp hb), zero_mul,
               ite_eq_right (fun h' => hb h'.2.1)]
-      · refine ⟨R (parallelLeft h) • Distribution.fTransform (fun y : E => (⟨some (), y⟩ : Two B E)) (S.extensionLaw (parallelRight h) x),
+      · refine ⟨R (parallelLeft h) • Distribution.fTransform
+          (fun y : E => (⟨some (), y⟩ : Two B E)) (S.extensionLaw (parallelRight h) x),
           ?_, ?_⟩
         · intro y
           rcases y with ⟨_ | ⟨⟩, y⟩
-          ·
-            rw [Finsupp.smul_apply, smul_eq_mul]
-            have hz : Distribution.fTransform (fun y : E => (⟨some (), y⟩ : Two B E)) (S.extensionLaw (parallelRight h) x)
+          · rw [Finsupp.smul_apply, smul_eq_mul]
+            have hz : Distribution.fTransform (fun y : E => (⟨some (), y⟩ : Two B E))
+                (S.extensionLaw (parallelRight h) x)
                 (⟨none, y⟩ : Two B E) = 0 :=
               Finsupp.mapDomain_of_notMem_range _ _ (by rintro ⟨b, hb⟩; cases hb)
             simp [hz, parallelConsistent_snoc]
-          ·
-            rw [Finsupp.smul_apply, smul_eq_mul,
+          · rw [Finsupp.smul_apply, smul_eq_mul,
               Distribution.fTransform_injective_apply _ _ (by intro a b h; simpa using h),
               extensionLaw_apply]
             simp [parallelConsistent_snoc, hh, parallelLeft, parallelRight, List.filterMap_append]
         · unfold Distribution.weight at ⊢
           rw [Finsupp.sum_smul_index (fun _ => rfl), ← Finsupp.mul_sum]
           change R (parallelLeft h) *
-            (Distribution.fTransform (fun y : E => (⟨some (), y⟩ : Two B E)) (S.extensionLaw (parallelRight h) x)).weight = _
+            (Distribution.fTransform (fun y : E => (⟨some (), y⟩ : Two B E))
+              (S.extensionLaw (parallelRight h) x)).weight = _
           rw [Distribution.weight_fTransform, extensionLaw_weight]
           by_cases hb : (parallelLeft h).length ≤ D.bound
           · have hadm : (D.parallel D').admits h ⟨some (), x⟩ ↔ D' (parallelRight h) x :=
@@ -223,10 +227,26 @@ noncomputable def parallel (R : RandomSystem A B D) (S : RandomSystem C E D') :
           · rw [R.mass_eq_zero_of_bound_lt (not_le.mp hb), zero_mul,
               ite_eq_right (fun h' => hb h'.2.1)]⟩
 
+open Classical in
 lemma parallel_mass (R : RandomSystem A B D) (S : RandomSystem C E D')
     (h : List ((Two A C) × (Two B E))) :
     parallel R S h =
       if parallelConsistent h then R (parallelLeft h) * S (parallelRight h) else 0 := rfl
+
+/-- A left retained draw scopes over parallel composition:
+`parallel (mix P R) S = mix P (fun i => parallel (R i) S)`. -/
+lemma parallel_mix_left
+    -- `P` draws `i : ι`; `R i` has query/reply alphabets `A`, `B` and domain `D`.
+    -- `S` has alphabets `C`, `E` and domain `D'`, and takes no `i`.
+    (P : Distribution.ProbDist ι) (R : ι → RandomSystem A B D) (S : RandomSystem C E D') :
+    parallel (mix P R) S = mix P (fun i => parallel (R i) S) := by
+  apply RandomSystem.ext
+  intro h
+  -- The fixed right transcript factor distributes over the left mixture.
+  simp only [parallel_mass, mix_mass]
+  by_cases hc : parallelConsistent h
+  · simp only [ite_eq_left hc, Finset.sum_mul, mul_assoc]
+  · simp only [ite_eq_right hc, mul_zero, Finset.sum_const_zero]
 
 lemma parallel_mix_right (R : RandomSystem A B D) (P : Distribution.ProbDist ι)
     (S : ι → RandomSystem C E D') :
@@ -344,7 +364,8 @@ end SystemAlgebra.RandomSystem
 
 namespace SystemAlgebra.PDS
 
-open Classical Probability
+open Probability
+
 
 variable {A B C E : Type} [Fintype A] [Fintype B] [Fintype C] [Fintype E]
   {D : Domain A B} {D' : Domain C E}
@@ -386,7 +407,8 @@ lemma hasDomain_trim_pair {s : System A B} {t : System C E} (hs : HasDomain D s)
 
 /-- Independent parallel sampling, using the existing system operation and its
 reachable part. Trimming preserves every completed transcript. -/
-noncomputable def parallel (P : PDS A B D) (Q : PDS C E D') : PDS (Two A C) (Two B E) (D.parallel D') :=
+noncomputable def parallel (P : PDS A B D) (Q : PDS C E D') :
+    PDS (Two A C) (Two B E) (D.parallel D') :=
   Distribution.fTransform (fun st : {s : System A B // IsDDS s ∧ HasDomain D s} ×
       {s : System C E // IsDDS s ∧ HasDomain D' s} =>
     ⟨trim (pair st.1.1 st.2.1), SilentAtEmpty.isDDS_trim (parAll_silentAtEmpty _),
@@ -397,12 +419,15 @@ lemma parallel_isProbDist {P : PDS A B D} {Q : PDS C E D'}
     (hP : P.isProbDist) (hQ : Q.isProbDist) : (parallel P Q).isProbDist :=
   Distribution.fTransform_isProbDist _ (Distribution.prod_isProbDist P Q hP hQ)
 
+open Classical in
 lemma parallel_mass (P : PDS A B D) (Q : PDS C E D')
     (h : List ((Two A C) × (Two B E))) :
     behaviorMass (parallel P Q) (h.map Prod.fst) (h.map Prod.snd) =
       if RandomSystem.parallelConsistent h then
-        behaviorMass P ((RandomSystem.parallelLeft h).map Prod.fst) ((RandomSystem.parallelLeft h).map Prod.snd) *
-        behaviorMass Q ((RandomSystem.parallelRight h).map Prod.fst) ((RandomSystem.parallelRight h).map Prod.snd)
+        behaviorMass P ((RandomSystem.parallelLeft h).map Prod.fst)
+            ((RandomSystem.parallelLeft h).map Prod.snd) *
+        behaviorMass Q ((RandomSystem.parallelRight h).map Prod.fst)
+            ((RandomSystem.parallelRight h).map Prod.snd)
       else 0 := by
   rw [behaviorMass, parallel, Distribution.mass_fTransform]
   simp only [replies_trim_iff]
