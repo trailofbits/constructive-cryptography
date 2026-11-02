@@ -41,7 +41,7 @@ Search both names and mathematical vocabulary, including the owning layer's depe
 
 ```sh
 rg -n 'StrongURP|URP|permutation' src/Commons src/RandomSystems src/Probability
-rg -n 'jointLaw|prodProbDist|ProbDist.map' src/Probability src/RandomSystems
+rg -n 'jointLaw|prodProbDist|ProbDist\.(map|pi)' src/Probability src/RandomSystems
 ```
 
 Read the declaration and its documentation, then use `#check` or `#print` in the assembly probe
@@ -93,8 +93,8 @@ Build normalized laws directly: `ProbDist.pi μ` samples independent coordinates
 Use `ProbDist.piDep μ` when coordinate `i` has its own outcome type. Combine these laws with
 `prodProbDist`, `ProbDist.map` and `ProbDist.bind`; their normalization proofs travel with them.
 `TypedSystem.source`, `TypedSystem.parallelAllPDS` and `tensorAllPDC` use these operations.
-Sampling the resulting table once retains all its entries; making a fresh draw on each
-invocation remains a separate choice in the system definition.
+A table sampled once keeps its entries, so repeated reads agree. `TypedSystem.source` reads
+each entry once, giving fresh samples; sampling inside a procedure draws anew on each call.
 
 ## Review and automation
 

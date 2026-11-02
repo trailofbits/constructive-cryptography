@@ -114,7 +114,7 @@ exercised in [Usability][ExUse].
 [cca_bisim]: AuthenticatedEncryption/Oracle.lean#L191
 [aeIdeal_bisim]: AuthenticatedEncryption/Oracle.lean#L244
 [encryptionReal_bisim]: AuthenticatedEncryption/Oracle.lean#L373
-[hybrid_ideal_distance_le]: AuthenticatedEncryption/Collision.lean#L524
+[hybrid_ideal_distance_le]: AuthenticatedEncryption/Collision.lean#L525
 [correctedChain]: AuthenticatedEncryption/Security.lean#L132
 [correctedChain_cca]: AuthenticatedEncryption/Security.lean#L151
 [correctedChain_ptxt]: AuthenticatedEncryption/Security.lean#L156

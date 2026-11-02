@@ -57,7 +57,8 @@ namespace AuthenticatedEncryption
 
 variable {K M C : Type} [Fintype K] [Fintype M] [Fintype C] [DecidableEq K] [DecidableEq M]
 
-/-- The law of a source's table: `k` independent samples. -/
+/-- The raw law of `k` independent samples from `law`:
+`tableLaw law k t = ∏ i, law (t i)`. -/
 noncomputable abbrev tableLaw {X : Type} (law : Distribution.ProbDist X) (k : ℕ) :
     Distribution (Fin k → X) :=
   (Distribution.ProbDist.pi fun _ : Fin k => law).1
