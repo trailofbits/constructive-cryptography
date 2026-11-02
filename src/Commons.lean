@@ -1,5 +1,6 @@
 module
 
+public import Commons.Constructions.EncryptThenMAC
 public import Commons.Constructions.KEMDEM
 public import Commons.Constructions.KEMDEM.Correctness
 public import Commons.Constructions.TranscriptCompletion

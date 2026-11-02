@@ -18,6 +18,7 @@ public import Tests.LazyRandomFunction
 public import Tests.RSARandomization
 public import Tests.RevealedHCoefficient
 public import Tests.AuthenticatedEncryption
+public import Tests.EncryptThenMAC
 public import Tests.EncryptionCorrectness
 public import Tests.PublicKeyEncryptionCorrectness
 public import Tests.AdaptiveUniformEvaluations
