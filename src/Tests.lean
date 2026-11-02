@@ -19,6 +19,7 @@ public import Tests.UnforgeabilityRecording
 public import Tests.LazyRandomFunction
 public import Tests.LazyRandomPermutation
 public import Tests.MonotoneMonitors
+public import Tests.CollisionBound
 public import Tests.RSARandomization
 public import Tests.RevealedHCoefficient
 public import Tests.AuthenticatedEncryption

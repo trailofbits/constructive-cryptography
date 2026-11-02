@@ -36,6 +36,8 @@ identifies all cumulative probabilities. The retained-key law in
 
 ## Main results
 
+* `URF.single_mass`: on a single-port admitted transcript, URF mass is the uniform-table
+  probability of supplying every recorded reply
 * `URF.lazy_eq`: the lazy table equals `URF` on every history admitted by `A.domain`
 * `MemorylessSource.memoryless_eq`, `MemorylessSource.eq_ofMemoryless`: the source of `ν`
   equals the memoryless system of `ν`, at the cumulative and typed levels
@@ -85,6 +87,46 @@ def URF
 namespace URF
 
 open Distribution
+
+section SinglePort
+
+-- `I` is the sole port; `X`, `Y` are its finite query/reply alphabets.
+variable {I X Y : Type} [Unique I] [Fintype X] [Fintype Y] [Nonempty Y]
+    -- `D` is the selected nonempty, prefix-closed query domain, bounded by `q`.
+    (D : List (Σ _ : I, X) → Prop)
+    (hD : ¬ D [] ∧ ∀ {p h}, p <+: h → p ≠ [] → D h → D p)
+    (q : ℕ) (hq : ∀ xs, D xs → xs.length ≤ q)
+
+local notation "A" => (Interface.mk I (fun _ => X) (fun _ => Y) D hD q hq)
+
+open Classical in
+/-- On an admitted single-port transcript, the URF mass is the probability that a uniform
+function supplies every recorded reply. Repeated inputs share that function value. -/
+lemma single_mass
+    -- `h` records tagged query/reply pairs; `admitted` permits the initial empty transcript.
+    (h : List ((Σ _ : I, X) × Σ _ : I, Y))
+    (admitted : h = [] ∨ D (h.map Prod.fst)) :
+    (Commons.URF A).1 h = (uniform (X → Y)).mass (fun f => ∀ z ∈ h, f z.1.2 = z.2.2) := by
+  -- Expose the sampled family, then remove its unique port by a uniform-preserving equivalence.
+  rw [Commons.URF, TypedSystem.sample_ofFunction_mass, behaviorMass, mass_fTransform]
+  simp only [DDS.replies_ofFunction_iff, List.map_eq_nil_iff]
+  change (uniform (I → X → Y)).mass (fun f =>
+    (h = [] ∨ D (h.map Prod.fst)) ∧
+      h.map Prod.snd = (h.map Prod.fst).map (fun x => (⟨x.1, f x.1 x.2⟩ : Σ _ : I, Y))) = _
+  simp only [admitted, true_and]
+  rw [← fTransform_equiv_uniform (Equiv.funUnique I (X → Y)).symm, mass_fTransform]
+  -- At the sole port, equality of tagged replies is equality of their values.
+  apply mass_congr
+  intro f
+  change h.map Prod.snd = (h.map Prod.fst).map (fun x => (⟨x.1, f x.2⟩ : Σ _ : I, Y)) ↔ _
+  rw [List.map_map, List.map_eq_map_iff]
+  constructor
+  · intro hr z hz
+    exact (congrArg Sigma.snd (hr z hz)).symm
+  · intro hr z hz
+    exact Sigma.ext (Subsingleton.elim _ _) (heq_of_eq (hr z hz).symm)
+
+end SinglePort
 
 -- `A` fixes ports, finite alphabets and admitted histories; every reply type is nonempty.
 variable (A : Interface) [∀ i, Nonempty (A.Y i)]
