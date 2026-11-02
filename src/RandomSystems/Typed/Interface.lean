@@ -5,70 +5,67 @@ public import RandomSystems.Converter.ConverterAttachment
 /-!
 # Interfaces, typed systems and typed converters
 
-An interface is the tuple `A = (I, X, Y, D)`: finitely many labels, finite input and output
-alphabets at each label, and a finite domain of input histories, prefix-closed and without
-the empty history. A typed system on `A` is a random system on these alphabets over this domain
-that replies at the queried interface. A typed converter from `A` to `B` is the behavior of a PDC
-from `B`'s domain (inside) to `A`'s domain (outside); it acts on typed systems by the
-attachment of PDC behaviors.
-Sources: MR16, §3 (printed pp. 6–8); Jost, Definitions 2.2.1–2.2.2 (printed pp. 16–18);
-CR18, Definitions 3.8, 3.9 and 3.17 (printed pp. 61–64).
+`Interface` packages ports `I`, query/reply alphabets `X i`, `Y i`, and a bounded input-history
+domain `D = domain`. A `TypedSystem A` is a cumulative behavior on that domain, replying at
+the queried port. `TypedConverter A B` carries a PDC behavior from inside domain `B` to outside
+domain `A`; `α • R` (`TypedConverter.attach`) sends `R : TypedSystem B` to `TypedSystem A`.
+The carriers are indexed by finite interfaces, using the systems and converters of
+[2, Definitions 2.2.1–2.2.2, pp. 16–18] and [3, Definitions 3.8–3.9, p. 62; Definition 3.17, p. 64].
 
-## Main definitions
+`Interface.queryBudget` and `Interface.portBudget` admit total and per-port query bounds.
+`Interface.queryBudget_domain_map` transfers one-query maps when `A.bound ≤ q`;
+`Interface.queryBudget_inputDomain_iff` reduces next-query admission to a length inequality.
+`TypedSystem.ofPDS` presents a sampled deterministic system; `TypedSystem.exists_ofPDS` gives
+such a presentation for every typed behavior.
 
-* `Interface`: labels, alphabets and a finite domain
-* `Interface.queryBudget I X Y q`: the domain of at most `q` queries
-* `Interface.portBudget I X Y q`: the domain of at most `q i` queries at each label `i`
-* `TypedSystem A`: typed systems on `A`
-* `TypedSystem.ofPDS`, `TypedSystem.ofDeterministic`: the typed system of a PDS of
-  deterministic systems, and of one deterministic system
-* `TypedConverter A B`: typed converters from `A` to `B`, behaviors of PDCs
-* `TypedConverter.comp`, `TypedConverter.id`: serial composition and the identity, of PDC
-  behaviors
-* `TypedConverter.ofDDC`: the typed converter of a DDC from `B`'s domain to `A`'s
-* `TypedConverter.attach`: attachment of a typed converter to a typed system
+`TypedConverter.ofDDC_eq_comp` turns raw equality with a trimmed serial DDC into equality of
+typed converters, independently of their certified bounds. `TypedConverter.identity_attach`
+and `TypedConverter.comp_smul` lift the PDC attachment laws; the latter is the serial law of
+[1, §3.3, p. 7].
 
-## Main results
+## References
 
-* `Interface.queryBudget_domain_map`: one-query maps preserve a supplied aggregate query bound
-* `TypedSystem.exists_ofPDS`: every typed system is the typed system of a PDS
-* `TypedConverter.identity_attach`: attaching the identity leaves a typed system unchanged
-* `TypedConverter.comp_smul`: attaching a serial composition attaches the inner converter first
-* `TypedConverter.ofDDC_apply`: the typed converter of a DDC is one on its transcripts
-* `TypedConverter.ofDDC_eq_comp`: a DDC equal to the trimmed serial wiring of `α` (outside) and
-  `β` (inside) is `comp (ofDDC α) (ofDDC β)`, whatever bound it is certified with
+1. U. Maurer and R. Renner. *From Indifferentiability to Constructive Cryptography (and Back)*.
+   TCC 2016-B. Cryptology ePrint Archive, Paper 2016/903, 2016.
+2. D. Jost. *On Generalizations of Composable Security*. Doctoral thesis,
+   Diss. ETH No. 26723, ETH Zurich, 2020.
+3. U. Maurer. *Cryptography Foundations*. Lecture notes, ETH Zurich, Spring 2018.
 -/
 
 @[expose] public section
 
 namespace SystemAlgebra
 
-/-- The interface-and-domain tuple indexing a class of typed systems. -/
+/-- `A = (I, X, Y, D)` indexes systems on finite ports and alphabets with bounded domain `D`. -/
 structure Interface where
-  /-- Local interface labels. -/
+  /-- `I` indexes the ports exposed to the caller. -/
   I : Type
-  /-- Input alphabet at each interface. -/
+  /-- `X i` is the query type at port `i : I`. -/
   X : I → Type
-  /-- Output alphabet at each interface. -/
+  /-- `Y i` is the reply type at port `i : I`. -/
   Y : I → Type
   [instFintypeI : Fintype I]
   [instFintypeX : ∀ i, Fintype (X i)]
   [instFintypeY : ∀ i, Fintype (Y i)]
-  /-- The domain of input histories. -/
+  /-- `domain xs` admits the complete list `xs` of port-tagged inputs. -/
   domain : List (Σ i, X i) → Prop
-  /-- Silent before the first query, and closed under nonempty prefixes. -/
+  /-- `domain` excludes `[]` and admits each nonempty prefix of an admitted history. -/
   nonempty_prefix : ¬ domain [] ∧ ∀ {p h}, p <+: h → p ≠ [] → domain h → domain p
-  /-- A bound on the number of queries. -/
+  /-- `bound` is a uniform upper bound on the number of admitted queries. -/
   bound : ℕ
+  /-- `length_le` states `h.length ≤ bound` whenever `domain h`. -/
   length_le : ∀ h, domain h → h.length ≤ bound
 
 attribute [instance] Interface.instFintypeI Interface.instFintypeX Interface.instFintypeY
 
 namespace Interface
 
-/-- The domain of at most `q` queries. -/
-abbrev queryBudget (I : Type) [Fintype I] (X Y : I → Type) [∀ i, Fintype (X i)]
-    [∀ i, Fintype (Y i)] (q : ℕ) : Interface where
+/-- `D = {h | h ≠ [] ∧ h.length ≤ q}` admits at most `q` queries in total. -/
+abbrev queryBudget
+    -- `I` indexes finite ports; `X i`, `Y i` carry their finite query and reply alphabets.
+    (I : Type) [Fintype I] (X Y : I → Type) [∀ i, Fintype (X i)] [∀ i, Fintype (Y i)]
+    -- `q` bounds the total length of an admitted input history.
+    (q : ℕ) : Interface where
   I := I
   X := X
   Y := Y
@@ -93,9 +90,12 @@ lemma queryBudget_domain_map
   -- Each outside input contributes one query, so mapping preserves the aggregate length.
   exact (List.length_map request).trans_le ((A.length_le xs hx).trans hq)
 
-/-- The domain of at most `q i` queries at each label `i`. -/
-abbrev portBudget (I : Type) [Fintype I] (X Y : I → Type) [∀ i, Fintype (X i)]
-    [∀ i, Fintype (Y i)] (q : I → ℕ) : Interface where
+/-- `D = {h | h ≠ [] ∧ ∀ i, (restrict i h).length ≤ q i}` bounds each port separately. -/
+abbrev portBudget
+    -- `I` indexes finite ports; `X i`, `Y i` carry their finite query and reply alphabets.
+    (I : Type) [Fintype I] (X Y : I → Type) [∀ i, Fintype (X i)] [∀ i, Fintype (Y i)]
+    -- `q i` bounds the number of inputs sent to port `i`.
+    (q : I → ℕ) : Interface where
   I := I
   X := X
   Y := Y
@@ -105,9 +105,30 @@ abbrev portBudget (I : Type) [Fintype I] (X Y : I → Type) [∀ i, Fintype (X i
   bound := ∑ i, q i
   length_le h hd := (length_eq_sum_restrict h).trans_le (Finset.sum_le_sum fun i _ => hd.2 i)
 
-/-- The input domain of `A`, as a domain of random systems. -/
+/-- `A.inputDomain h x = A.domain (h.map Prod.fst ++ [x])`: admit input `x` after transcript `h`. -/
 abbrev inputDomain (A : Interface) : Domain (Σ i, A.X i) (Σ i, A.Y i) :=
   Domain.ofInputs A.domain A.bound A.length_le
+
+/-- For `queryBudget I X Y q`, `inputDomain h x ↔ h.length < q`. -/
+lemma queryBudget_inputDomain_iff
+    -- `I`, `X`, `Y` give the ports, queries and replies; `q` bounds the complete input history.
+    {I : Type} [Fintype I] {X Y : I → Type} [∀ i, Fintype (X i)] [∀ i, Fintype (Y i)]
+    {q : ℕ}
+    -- `h` is the past transcript; `x` is the next port-tagged input.
+    {h : List ((Σ i, X i) × (Σ i, Y i))} {x : Σ i, X i} :
+    (queryBudget I X Y q).inputDomain h x ↔ h.length < q := by
+  -- The new input makes the history nonempty and increases its length by one.
+  change (h.map Prod.fst ++ [x] ≠ [] ∧ (h.map Prod.fst ++ [x]).length ≤ q) ↔ _
+  have hne : h.map Prod.fst ++ [x] ≠ [] :=
+    List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _)
+  constructor
+  · intro hd
+    simpa only [List.length_append, List.length_map, List.length_singleton,
+      Nat.add_one_le_iff] using hd.2
+  · intro hl
+    refine ⟨hne, ?_⟩
+    simpa only [List.length_append, List.length_map, List.length_singleton,
+      Nat.add_one_le_iff] using hl
 
 end Interface
 
@@ -137,8 +158,12 @@ noncomputable def TypedSystem.ofDeterministic {A : Interface} (s : InterfaceSyst
   TypedSystem.ofPDS ⟨Finsupp.single ⟨s, hs⟩ 1, Probability.Distribution.isProbDist_single _⟩
 
 open Classical in
-lemma TypedSystem.ofDeterministic_mass {A : Interface} (s : InterfaceSystem A.I A.X A.Y)
+/-- A deterministic presentation gives mass one to its reply transcripts and zero elsewhere. -/
+lemma TypedSystem.ofDeterministic_mass
+    -- `s` is the deterministic system on interface `A`, certified by `hs` on exactly its domain.
+    {A : Interface} (s : InterfaceSystem A.I A.X A.Y)
     (hs : IsDDS s ∧ SystemAlgebra.RepliesAtQueriedInterface s ∧ ∀ h, (s h).Dom ↔ A.domain h)
+    -- `h` is the query/reply transcript whose cumulative probability is tested.
     (h : List ((Σ i, A.X i) × (Σ i, A.Y i))) :
     (TypedSystem.ofDeterministic s hs).1 h =
       if Replies s (h.map Prod.fst) (h.map Prod.snd) then 1 else 0 := by
@@ -176,28 +201,30 @@ lemma ofDDC_apply {A B : Interface} (α : InsideOutsideSystem A.I B.I A.X A.Y B.
       if Replies α (t.map Prod.fst) (t.map Prod.snd) then 1 else 0 :=
   PDCBehavior.ofDDC_apply α hα t
 
-/-- **A direct DDC presents the serial composition.** For DDCs `α` (outside, `A` to `B`) and
-`β` (inside, `B` to `C`), a DDC `γ = trim (serialM α β)` certified with its own bound `c` gives
-`ofDDC γ hγ = comp (ofDDC α hα) (ofDDC β hβ)`, although `c` need not be the product bound
-`b * a` of `IsDDCFrom.comp`.
+/-- If `γ = trim (serialM α β)`, its typed behavior is `comp (ofDDC α hα) (ofDDC β hβ)`.
+The certified bound `c` may differ from the product bound `b * a` of `IsDDCFrom.comp`.
+Each bound limits consecutive inside outputs [2, Definition 2.2.2, pp. 17–18].
 
 ```text
     A ┌───┐ B ┌───┐ C             A ┌────────────────────────┐ C
   ────┤ α ├───┤ β ├────    =    ────┤ γ = trim (serialM α β) ├────
       └───┘   └───┘                 └────────────────────────┘
 ```
-
-This is a presentation bridge of the repository, not a source statement: a typed converter is
-a cumulative behavior, which does not depend on the bound certified for a DDC. The bound is the
-finite bound on consecutive inside outputs of Jost, Definition 2.2.2 (printed pp. 17–18). The
-attachment law of serial composition, MR16 §3.3 (printed p. 7), “(β ∘ α)ⁱR = βⁱ(αⁱR)” with the
-paper's `β` outside, is `comp_smul`. -/
-lemma ofDDC_eq_comp {A B C : Interface}
+-/
+lemma ofDDC_eq_comp
+    -- `A`, `B`, `C` are the outside, intermediate and inside interfaces.
+    {A B C : Interface}
+    -- `α` is outside, `β` inside, and `γ` their complete direct DDC presentation.
     {α : InsideOutsideSystem A.I B.I A.X A.Y B.X B.Y}
     {β : InsideOutsideSystem B.I C.I B.X B.Y C.X C.Y}
-    {γ : InsideOutsideSystem A.I C.I A.X A.Y C.X C.Y} {a b c : Nat}
+    {γ : InsideOutsideSystem A.I C.I A.X A.Y C.X C.Y}
+    -- `a`, `b`, `c` bound consecutive inside calls in `α`, `β`, `γ`, respectively.
+    {a b c : Nat}
+    -- `hα`, `hβ`, `hγ` certify DDC behavior and preservation of their declared domains.
     (hα : IsDDCFrom B.domain A.domain a α) (hβ : IsDDCFrom C.domain B.domain b β)
-    (hγ : IsDDCFrom C.domain A.domain c γ) (he : γ = trim (serialM α β)) :
+    (hγ : IsDDCFrom C.domain A.domain c γ)
+    -- `he` identifies the complete trimmed DDC, including its off-tree values.
+    (he : γ = trim (serialM α β)) :
     ofDDC γ hγ = comp (ofDDC α hα) (ofDDC β hβ) := by
   -- `PDCBehavior.comp_ofDDC`: the composition is `ofDDC (trim (serialM α β))` with bound `b * a`.
   change PDCBehavior.ofDDC γ hγ =
@@ -220,6 +247,7 @@ noncomputable instance {A B : Interface} :
     HSMul (TypedConverter A B) (TypedSystem B) (TypedSystem A) :=
   ⟨attach⟩
 
+/-- `(α • R).1` attaches the PDC behavior `α` to the cumulative behavior `R.1`. -/
 lemma smul_val {A B : Interface} (α : TypedConverter A B) (R : TypedSystem B) :
     (α • R).1 = PDCBehavior.attach B.nonempty_prefix A.nonempty_prefix α R.1 R.2 := rfl
 
@@ -228,10 +256,14 @@ lemma identity_attach {A : Interface} (R : TypedSystem A) :
     (TypedConverter.id A • R : TypedSystem A) = R :=
   Subtype.ext (PDCBehavior.attach_id A.nonempty_prefix R.1 R.2)
 
-/-- **Serial attachment** (MR16 §3.3, printed p. 7: “(β ∘ α)ⁱR = βⁱ(αⁱR)”): attaching a
-serial composition attaches the inner converter first. -/
-theorem comp_smul {A B C : Interface} (α : TypedConverter A B) (β : TypedConverter B C)
-    (R : TypedSystem C) : comp α β • R = α • (β • R) :=
+/-- Attach the inner converter first: `comp α β • R = α • (β • R)`.
+[1, §3.3, p. 7]: “(β ∘ α)ⁱR = βⁱ(αⁱR)”, where the source's `β`, `α` are `α`, `β` here. -/
+theorem comp_smul
+    -- `A`, `B`, `C` are the outside, intermediate and inside interfaces.
+    {A B C : Interface}
+    -- `α` is the outside converter and `β` the inside converter, attached to system `R` on `C`.
+    (α : TypedConverter A B) (β : TypedConverter B C) (R : TypedSystem C) :
+    comp α β • R = α • (β • R) :=
   Subtype.ext (PDCBehavior.attach_comp C.nonempty_prefix A.nonempty_prefix B.nonempty_prefix
     α β R.1 R.2)
 
