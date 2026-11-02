@@ -147,7 +147,10 @@ def encryptThenMAC.system
     (q : ℕ) : TypedSystem (AE M (C × T) q) :=
   encryptThenMAC M C T • (AE.system scheme ∥ MAC.system mac)
 
-/-- The construction attaches its converter to the two independent retained-key components. -/
+/-- Expose the declared converter attachment to the two independent retained-key components.
+`cc_normalize` unfolds this one name and keeps the component systems and converter as atoms.
+Apply equations about the whole named system before exposing its assembly. -/
+@[cc_normalization]
 lemma encryptThenMAC.system_eq
     -- `scheme`, `mac` are the components; `q` bounds the outside queries.
     (scheme : SymmetricEncryption K M C) (mac : MAC L C T) (q : ℕ) :
