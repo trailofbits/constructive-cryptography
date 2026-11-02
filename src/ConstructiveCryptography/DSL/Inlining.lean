@@ -16,25 +16,27 @@ port-preserving and costed forms. A converter with its own source is first resha
 serial, right-context and parallel-automaton laws:
 
 ```text
-  (P ≫ rightContext B (ofAutomaton C g ν)) • ofAutomaton B f μ
-    = P • (ofAutomaton B f μ ∥ ofAutomaton C g ν)         comp_smul, attach_rightContext
-    = P • ofAutomaton (B ⊗ C) (parallelStep f g) (μ × ν)  parallel_ofAutomaton
-    = ofAutomaton A (P.combine (parallelStep f g)) …       the automaton law of P's constructor
+  (α ≫ rightContext B (ofAutomaton C g η)) • ofAutomaton B f ξ
+    = α • (ofAutomaton B f ξ ∥ ofAutomaton C g η)         comp_smul, attach_rightContext
+    = α • ofAutomaton (B ⊗ C) (parallelStep f g) (ξ × η)  parallel_ofAutomaton
+    = ofAutomaton A (P.combine (parallelStep f g)) …       α's constructor law, for program P
 ```
+
+A direct attachment to the two parallel automata enters this chain at its second line.
 
 `inline using hR` takes an explicit certificate `hR : R = TypedSystem.ofMemoryless B ν`
 and applies the typed memoryless composition law of the displayed constructor
 (`TypedConverter.ofProgram_smul_ofMemoryless` and its port-preserving and costed forms).
-For `C` the converter of a program `P` with call bound `b`:
+For `α` the converter of a program `P` with call bound `b`:
 
 ```text
-  C • R = ofMemoryless A κ   ⇐   ∀ s o u, P.memorylessReplyLaw ν s o u b [] = κ o u
+  α • R = ofMemoryless A κ   ⇐   ∀ s o u, P.memorylessReplyLaw ν s o u b [] = (κ o u).1
 ```
 
 Raw goals and certificates `R.1 = memoryless _ (portLaw ν)` use the same laws through the
 cumulative projection. The certificate is always supplied explicitly.
 
-It then splits the generated `Option` state and the procedure labels, and rewrites each reply
+`inline` then splits the generated `Option` state and the procedure labels, and rewrites each reply
 law with the generated invocation equations. A second certificate `hT` is for the converter's
 own source `T` beside its inside system; the program then runs against `parallelLaw ν ν'`.
 
@@ -74,7 +76,8 @@ def attachmentParts : TacticM (Expr × Expr) := withMainContext do
   let args := attachment.getAppArgs
   return (args[args.size - 2]!, args[args.size - 1]!)
 
-/-- The displayed constructor keeps an exact-cost converter's selected domain guarantee. -/
+/-- The head constant of the attached converter; selecting its law keeps an exact-cost
+converter's domain guarantee. -/
 def attachmentConstructor : TacticM Name := do
   let (converter, _) ← attachmentParts
   let some constructor := converter.getAppFn.constName?
@@ -90,7 +93,9 @@ def exposeOwnSource : TacticM Unit := do
   let args := converter.getAppArgs
   unless args.back!.isAppOf ``TypedConverter.rightContext do
     throwError "The inner converter is not a displayed right context."
-  evalTactic (← `(tactic| rw [Interface.comp_smul, TypedConverter.attach_rightContext]))
+  let serialLaw := if converter.isAppOf ``TypedConverter.comp then
+    ``TypedConverter.comp_smul else ``Interface.comp_smul
+  evalTactic (← `(tactic| rw [$(mkIdent serialLaw):ident, TypedConverter.attach_rightContext]))
 
 /-- Rewrite one displayed automaton attachment with its constructor's composition law. -/
 def inlineAutomaton : TacticM Unit := do
@@ -105,7 +110,7 @@ def inlineAutomaton : TacticM Unit := do
     | name => throwError "No automaton inlining rule for {name}."
   evalTactic (← `(tactic| rw (transparency := .default) [$(mkIdent law):ident]))
 
-/-- Recognize equality in the typed system carrier, retaining the selected interface. -/
+/-- Whether `statement` is an equality in `TypedSystem A`, for some interface `A`. -/
 def isTypedSystemEquality (statement : Expr) : MetaM Bool := do
   let some (carrier, _, _) := statement.eq? | return false
   withNewMCtxDepth do

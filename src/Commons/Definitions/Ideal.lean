@@ -40,16 +40,20 @@ namespace Commons
 
 open SystemAlgebra Probability
 
+-- Query `eval(x)` with `x : X` and receive a reply in `Y`.
 interface Evaluation(X Y : Type) [Fintype X] [Fintype Y]
   eval(x : X) → Y
 
+-- Query a function or its inverse on `X`.
 interface Bidirectional(X : Type) [Fintype X]
   forward(x : X) → X
   inverse(y : X) → X
 
+-- The tweak `t : T` selects a function on `X`.
 interface TweakedEvaluation(T X : Type) [Fintype T] [Fintype X]
   eval(tweak : T, x : X) → X
 
+-- The tweak selects one permutation on `X` for both forward and inverse queries.
 interface TweakedBidirectional(T X : Type) [Fintype T] [Fintype X]
   forward(tweak : T, x : X) → X
   inverse(tweak : T, y : X) → X
@@ -58,23 +62,28 @@ noncomputable section
 
 
 open Classical in
-/-- **The uniform random function** on `A`: at each label, a uniformly random function from its
-inputs to its outputs. On `Evaluation X Y q` it is the `(X, Y)`-URF. -/
-def URF (A : Interface) [∀ i, Nonempty (A.Y i)] : TypedSystem A :=
+/-- Sample `f ∼ 𝒰[∀ i, A.X i → A.Y i]` once; answer each admitted `i(x)` with `f i x`.
+The functions at distinct ports are independent. On `Evaluation X Y q` this is the `(X, Y)`-URF. -/
+def URF
+    -- `A` selects ports, alphabets and domain; inhabited replies make the function law nonempty.
+    (A : Interface) [∀ i, Nonempty (A.Y i)] : TypedSystem A :=
   TypedSystem.sample (Distribution.uniform (∀ i, A.X i → A.Y i)) TypedSystem.ofFunction
 
 open Classical in
-/-- **The uniform random permutation** on `A`: at each label, a uniformly random bijection from its
-inputs to its outputs. On `Evaluation X X q` it is the `X`-URP. -/
-def URP (A : Interface) [∀ i, Nonempty (A.X i ≃ A.Y i)] : TypedSystem A :=
+/-- Sample `π ∼ 𝒰[∀ i, A.X i ≃ A.Y i]` once; answer each admitted `i(x)` with `π i x`.
+The bijections at distinct ports are independent. On `Evaluation X X q` this is the `X`-URP. -/
+def URP
+    -- `A` selects ports, alphabets and domain; each port must admit an input/output bijection.
+    (A : Interface) [∀ i, Nonempty (A.X i ≃ A.Y i)] : TypedSystem A :=
   TypedSystem.sample (Distribution.uniform (∀ i, A.X i ≃ A.Y i))
     fun π => TypedSystem.ofFunction fun i x => π i x
 
+-- `T` carries tweaks, `X` carries permutation inputs and outputs; `q` bounds total queries.
 variable (T X : Type) [Fintype T] [Fintype X] {q : ℕ}
 
 open Classical in
-/-- **The strong uniform random permutation**: a uniformly random permutation of `X`, answering
-forward queries with it and inverse queries with its inverse. -/
+/-- Retain `π ∼ 𝒰[Equiv.Perm X]`; answer `forward(x)` with `π x` and `inverse(y)` with
+`π⁻¹ y`, for at most `q` queries across both ports. -/
 def StrongURP : TypedSystem (Bidirectional X q) :=
   TypedSystem.sample (Distribution.uniform (Equiv.Perm X)) fun π =>
     TypedSystem.ofFunction fun
@@ -82,15 +91,15 @@ def StrongURP : TypedSystem (Bidirectional X q) :=
       | .inverse => fun y => π.symm y
 
 open Classical in
-/-- **The tweakable uniform random permutation**: an independent uniformly random permutation of
-`X` for each tweak. -/
+/-- Retain independent `π t ∼ 𝒰[Equiv.Perm X]` for each tweak `t : T`.
+Each `eval(t, x)` returns `π t x`, for at most `q` queries across all tweaks. -/
 def TweakableURP : TypedSystem (TweakedEvaluation T X q) :=
   TypedSystem.sample (Distribution.uniform (T → Equiv.Perm X)) fun π =>
     TypedSystem.ofFunction fun _ tx => π tx.1 tx.2
 
 open Classical in
-/-- **The strong tweakable uniform random permutation**: the tweakable URP, answering inverse
-queries with the inverse permutation of their tweak. -/
+/-- Retain independent `π t ∼ 𝒰[Equiv.Perm X]`; answer `forward(t, x)` with `π t x`
+and `inverse(t, y)` with `(π t)⁻¹ y`, for at most `q` queries across both ports and all tweaks. -/
 def TweakableStrongURP : TypedSystem (TweakedBidirectional T X q) :=
   TypedSystem.sample (Distribution.uniform (T → Equiv.Perm X)) fun π =>
     TypedSystem.ofFunction fun
@@ -103,8 +112,8 @@ end
 
 open SystemAlgebra.DSL
 
--- On `Evaluation Unit Y`, each admitted `eval(())` returns a fresh `y ∼ ν`.
--- The selected total or per-port budget bounds the number of triggers [1, Definition 3.1, p. 55].
+-- On `Evaluation Unit Y`, each admitted `eval(())` returns a fresh `y ∼ ν`
+-- [1, Definition 3.1, p. 55]. The selected total or per-port budget bounds the number of triggers.
 system MemorylessSource(Y : Type) [Fintype Y] (ν : Distribution.ProbDist Y) : Evaluation Unit Y
   on eval(_input : Unit) → Y
     y ←$ ν

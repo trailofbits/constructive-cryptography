@@ -128,9 +128,12 @@ interface and its declared domain. The [source][TypedSystem.source_eq_ofMemoryle
 [parallel][TypedSystem.parallel_ofMemoryless] equations rewrite assemblies directly as typed
 systems. A [bounded program][TypedConverter.ofProgram_smul_ofMemoryless],
 [port-preserving program][TypedConverter.ofPreservingProgram_smul_ofMemoryless] or
-[costed program][TypedConverter.ofCostedProgram_smul_ofMemoryless] returns a typed memoryless
-system when its one-invocation law is independent of the program state. The inside system's
-memorylessness is supplied as an explicit typed equality.
+[costed program][TypedConverter.ofCostedProgram_smul_ofMemoryless] attached to `ofMemoryless B ν`
+gives `ofMemoryless A κ` when its one-invocation reply law is `κ` in every program state. Supply
+inside memorylessness as an explicit typed equality. For an own source beside the inside system,
+[parallel certificates][TypedSystem.parallel_eq_ofMemoryless] combine their reply laws;
+[the own-source contract][TypedConverter.ofPreservingProgram_comp_rightContext_smul_memoryless]
+gives the cumulative form.
 **Functional systems** are given by [reply functions][TypedSystem.ofFunction], by
 [conditional reply laws][TypedSystem.ofConditional], or by
 [sampling once][TypedSystem.sample] and keeping the sample.
@@ -247,9 +250,14 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedSystem.ofAutomaton]: Automaton.lean#L57
 [TypedSystem.ofAutomaton_map_congr]: Automaton.lean#L72
 [TypedSystem.parallel_ofAutomaton]: Automaton.lean#L96
-[TypedSystem.ofMemoryless]: Memoryless.lean#L54
-[TypedSystem.source_eq_ofMemoryless]: Memoryless.lean#L148
-[TypedSystem.parallel_ofMemoryless]: Memoryless.lean#L219
+[TypedSystem.ofMemoryless]: Memoryless.lean#L57
+[TypedSystem.source_eq_ofMemoryless]: Memoryless.lean#L151
+[TypedSystem.parallel_ofMemoryless]: Memoryless.lean#L231
+[TypedSystem.parallel_eq_ofMemoryless]: Memoryless.lean#L241
+[TypedConverter.ofProgram_smul_ofMemoryless]: Memoryless.lean#L350
+[TypedConverter.ofPreservingProgram_smul_ofMemoryless]: Memoryless.lean#L368
+[TypedConverter.ofCostedProgram_smul_ofMemoryless]: Memoryless.lean#L389
+[TypedConverter.ofPreservingProgram_comp_rightContext_smul_memoryless]: Memoryless.lean#L321
 [TypedSystem.ofFunction]: Functional.lean#L62
 [TypedSystem.ofConditional]: Functional.lean#L44
 [TypedSystem.sample]: Functional.lean#L183
@@ -275,9 +283,3 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedConverter.parallelAll_attach]: ParallelAllAttachment.lean
 [TypedConverter.parallelAll_attach_ofFunction]: ParallelAllAttachment.lean
 [TypedSystem.parallelAll_option_mass]: ParallelAllRegroup.lean#L53
-
-[TypedConverter.ofProgram_smul_ofMemoryless]: Memoryless.lean#L311
-
-[TypedConverter.ofPreservingProgram_smul_ofMemoryless]: Memoryless.lean#L327
-
-[TypedConverter.ofCostedProgram_smul_ofMemoryless]: Memoryless.lean#L348

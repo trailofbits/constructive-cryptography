@@ -8,7 +8,7 @@ public import RandomSystems.System.Memoryless
 # Memoryless systems on interfaces
 
 `TypedSystem.ofMemoryless A ν` answers each admitted query `i(x)` with a fresh reply
-`y ∼ ν i x`, independently of earlier exchanges [1, Definition 3.1, §3.6.1].
+`y ∼ ν i x`, independently of earlier exchanges [1, Definition 3.1, p. 55; §3.6.1, p. 65].
 `ofMemoryless_val` identifies this typed system with its cumulative behavior;
 `eq_memoryless_of_eq_ofMemoryless` projects a supplied typed contract to that behavior.
 
@@ -19,21 +19,24 @@ Their typed forms, `source_eq_ofMemoryless`, `parallel_ofMemoryless` and
 
 The program contracts `TypedConverter.ofProgram_smul_ofMemoryless`,
 `ofPreservingProgram_smul_ofMemoryless` and `ofCostedProgram_smul_ofMemoryless` give
-`P • ofMemoryless B ν = ofMemoryless A κ` when every invocation of `P` has reply law `κ`.
+`α • ofMemoryless B ν = ofMemoryless A κ` for the converter `α` of a program `P` with
+call bound `b`, when `∀ s o u, P.memorylessReplyLaw ν s o u b [] = (κ o u).1`.
 They reuse `PDCBehavior.attach_ofDDC_ofProgramOn_memoryless`; the corresponding
 `_smul_memoryless` lemmas state the same laws on cumulative behavior.
 
-A converter's own source stays beside its inside resource:
+`ofPreservingProgram_comp_rightContext_smul_memoryless` places an independent memoryless
+resource `T` beside the inside resource `R`:
 
 ```text
               ┌───┐ ── j(x) ──► R     reply y ∼ ν j x
   o(u) ──────►│ P │ ◄──── y ───
-       ◄── v ─│   │ ── k(()) ──► T     fresh independent randomness z ∼ ν' k ()
+       ◄── v ─│   │ ── k(w) ──► T     independent reply z ∼ ν' k w
               └───┘ ◄──── z ───
-  comp P (rightContext B T) • R = ofMemoryless A κ
+  (comp α (rightContext B T) • R).1 = memoryless A.inputDomain (portLaw κ)
 ```
 
-The parallel certificate supplies `parallelLaw ν ν'`; the invocation law determines `κ`.
+Here the invocation hypothesis is
+`∀ s o u, P.memorylessReplyLaw (parallelLaw ν ν') s o u b [] = (κ o u).1`.
 
 ## References
 
@@ -92,7 +95,7 @@ lemma source_eq_memoryless
     -- The transcript probability is the mass of its producing tables under `law^q`.
     rw [TypedSystem.source, ofAutomaton_mass, ProbDist.map_val, ProbDist.pi_val,
       mass_fTransform]
-  -- Extending `h` by reply `z` requires the next table entry to equal `z`.
+  -- A table gives `h · ((), z)` iff it gives `h` and `t h.length = z`.
   have hsnoc : ∀ h z (hlt : h.length < q), ((Interface.source Z q).domain
       (h.map Prod.fst ++ [⟨(), ()⟩])) → ∀ t, event (h ++ [(⟨(), ()⟩, ⟨(), z⟩)]) t ↔
         event h t ∧ t ⟨h.length, hlt⟩ = z := by
@@ -145,20 +148,29 @@ lemma source_eq_memoryless
   rw [portLaw_apply_mk]
 
 /-- The source of `q` independent samples is the typed memoryless system of `law`. -/
-lemma source_eq_ofMemoryless {Z : Type} [Fintype Z] (law : ProbDist Z) (q : ℕ) :
+lemma source_eq_ofMemoryless
+    -- `Z` carries replies; `law` is sampled independently at each of the `q` triggers.
+    {Z : Type} [Fintype Z] (law : ProbDist Z) (q : ℕ) :
     source law q = ofMemoryless (Interface.source Z q) (fun _ _ => law) :=
   Subtype.ext (source_eq_memoryless law q)
 
 /-- Independent components reply according to the queried port's law, `parallelLaw ν₁ ν₂`.
 The raw parallel law is transported through the tensor's port labels. -/
-lemma parallel_eq_memoryless {A B : Interface} {R : TypedSystem A} {T : TypedSystem B}
+lemma parallel_eq_memoryless
+    -- `R` and `T` are the systems on the selected interfaces `A` and `B`.
+    {A B : Interface} {R : TypedSystem A} {T : TypedSystem B}
+    -- `ν₁` and `ν₂` give their portwise reply laws; `hR` and `hT` certify fresh replies.
     {ν₁ : ∀ i, A.X i → ProbDist (A.Y i)} {ν₂ : ∀ j, B.X j → ProbDist (B.Y j)}
     (hR : R.1 = memoryless A.inputDomain (portLaw ν₁))
     (hT : T.1 = memoryless B.inputDomain (portLaw ν₂)) :
     (parallel R T).1 = memoryless (tensor A B).inputDomain (portLaw (parallelLaw ν₁ ν₂)) := by
-  -- The raw parallel law assigns each query to its component:
+  -- `e` below relabels the tensor transcript as a raw parallel transcript:
   --   inl i(x) ──► R ──► y ∼ ν₁ i x
   --   inr j(x) ──► T ──► y ∼ ν₂ j x.
+  -- For e(x, y) = (x', y'), the raw chain rule gives
+  --   P∥[e(h · (x, y))] = P∥[e h] · portLaw (twoLaw ν₁' ν₂') x' y',
+  -- with ν₁' = portLaw ν₁ and ν₂' = portLaw ν₂; comparing port labels gives
+  -- P∥[e h] · portLaw (parallelLaw ν₁ ν₂) x y.
   have hsys := RandomSystem.parallel_memoryless A.inputDomain B.inputDomain (portLaw ν₁)
     (portLaw ν₂)
   -- Write the two memoryless systems of `hsys` as `R.1` and `T.1` (`hR`, `hT`).
@@ -171,7 +183,7 @@ lemma parallel_eq_memoryless {A B : Interface} {R : TypedSystem A} {T : TypedSys
   change RandomSystem.parallel R.1 T.1 ((h ++ [(x, y)]).map e) =
     RandomSystem.parallel R.1 T.1 (h.map e) * (portLaw (parallelLaw ν₁ ν₂) x).1 y
   rw [List.map_append, List.map_singleton]
-  -- Zero-probability prefixes need no domain inference from positive behavior.
+  -- `parallel_admits_iff` needs P∥[e h] ≠ 0, so impossible prefixes come first.
   by_cases hz : RandomSystem.parallel R.1 T.1 (h.map e) = 0
   · -- An impossible transcript stays impossible.
     rw [hz, zero_mul]
@@ -229,7 +241,7 @@ lemma parallel_ofMemoryless
 lemma parallel_eq_ofMemoryless
     -- `R` and `T` retain their selected interfaces `A` and `B`.
     {A B : Interface} {R : TypedSystem A} {T : TypedSystem B}
-    -- `ν₁` and `ν₂` give the replies at their respective ports.
+    -- `ν₁` and `ν₂` give portwise laws; `hR` and `hT` identify the two fresh-reply systems.
     {ν₁ : ∀ i, A.X i → ProbDist (A.Y i)} {ν₂ : ∀ j, B.X j → ProbDist (B.Y j)}
     (hR : R = ofMemoryless A ν₁) (hT : T = ofMemoryless B ν₂) :
     parallel R T = ofMemoryless (tensor A B) (parallelLaw ν₁ ν₂) := by
@@ -244,26 +256,39 @@ variable {A B : Interface} {S : Type}
 
 /-- If every invocation against fresh replies `ν` has law `κ`, attachment gives `memoryless κ`.
 The domain guarantee `hB` admits all inside histories generated by the bound `hb`. -/
-lemma ofProgram_smul_memoryless (s : S) (P : Program S A.I B.I A.X A.Y B.X B.Y) {b : ℕ}
+lemma ofProgram_smul_memoryless
+    -- `P` starts at `s`, answers at `A`, and calls `B`; `b` bounds each invocation.
+    (s : S) (P : Program S A.I B.I A.X A.Y B.X B.Y) {b : ℕ}
+    -- `hb` certifies the call bound; `hB` admits the resulting inside histories.
     (hb : P.Bounded b) (hB : ∀ xs, xs ≠ [] → xs.length ≤ b * A.bound → B.domain xs)
+    -- `R` is the inside system, with fresh reply law `ν` certified by `hR`; `κ` is the target law.
     {R : TypedSystem B} {ν : ∀ j, B.X j → ProbDist (B.Y j)} {κ : ∀ o, A.X o → ProbDist (A.Y o)}
     (hR : R.1 = memoryless B.inputDomain (portLaw ν))
+    -- `hκ` gives reply law `κ o u` from every program state `s'`.
     (hκ : ∀ s' o u, P.memorylessReplyLaw ν s' o u b [] = (κ o u).1) :
     (ofProgram s P hb hB • R).1 = memoryless A.inputDomain (portLaw κ) :=
-  -- The underlying DDC has the same invocation law; `R.2` keeps replies at the queried port.
-  -- The cumulative attachment theorem therefore gives the chain rule of `κ`.
+  -- `ofProgram` is the behavior of `DDC.ofProgramOn s P A.domain`; `R.2` keeps replies
+  -- at the queried port. The attachment theorem therefore gives the memoryless system of `κ`.
   PDCBehavior.attach_ofDDC_ofProgramOn_memoryless B.nonempty_prefix A.nonempty_prefix s P hb _ hκ hR
     R.2
 
 /-- A port-preserving program with state-independent reply law `κ` gives `memoryless κ`.
 `ι` routes outside ports; `q`, `hA` and `hB` retain their selected query allowances. -/
-lemma ofPreservingProgram_smul_memoryless (s : S) (P : Program S A.I B.I A.X A.Y B.X B.Y)
-    {b : ℕ} (hb : P.Bounded b) (ι : A.I → Option B.I) (hι : P.PortPreserving ι) (q : A.I → ℕ)
+lemma ofPreservingProgram_smul_memoryless
+    -- `P` starts at `s`; `hb` bounds each invocation by `b` inside calls.
+    (s : S) (P : Program S A.I B.I A.X A.Y B.X B.Y) {b : ℕ} (hb : P.Bounded b)
+    -- `ι o` selects a controlled port; `hι` permits at most one call there from `o`.
+    (ι : A.I → Option B.I) (hι : P.PortPreserving ι)
+    -- `q o` bounds outside calls at `o`; `hA` certifies this on `A.domain`.
+    (q : A.I → ℕ)
     (hA : ∀ xs, A.domain xs → ∀ o, (SystemAlgebra.restrict o xs).length ≤ q o)
+    -- `hB` admits histories respecting the total bound and the controlled ports' allowances.
     (hB : ∀ ys, ys ≠ [] → ys.length ≤ b * A.bound →
       (∀ o j, ι o = some j → (SystemAlgebra.restrict j ys).length ≤ q o) → B.domain ys)
+    -- `R` has fresh portwise law `ν` by `hR`; `κ` is the claimed outside law.
     {R : TypedSystem B} {ν : ∀ j, B.X j → ProbDist (B.Y j)} {κ : ∀ o, A.X o → ProbDist (A.Y o)}
     (hR : R.1 = memoryless B.inputDomain (portLaw ν))
+    -- `hκ` gives reply law `κ o u` from every program state `s'`.
     (hκ : ∀ s' o u, P.memorylessReplyLaw ν s' o u b [] = (κ o u).1) :
     (ofPreservingProgram s P hb ι hι q hA hB • R).1 = memoryless A.inputDomain (portLaw κ) :=
   -- Port preservation supplies the domain guarantee for the same underlying program DDC.
@@ -272,12 +297,18 @@ lemma ofPreservingProgram_smul_memoryless (s : S) (P : Program S A.I B.I A.X A.Y
 
 /-- A costed program with state-independent reply law `κ` gives `memoryless κ` on `A.domain`.
 `hc` certifies inside-call costs; `hA` limits their accumulated cost to `q`. -/
-lemma ofCostedProgram_smul_memoryless (s : S) (P : Program S A.I B.I A.X A.Y B.X B.Y)
-    {b : ℕ} (hb : P.Bounded b) (cost : (Σ o, A.X o) → ℕ) (hc : P.Costs cost) {q : ℕ}
+lemma ofCostedProgram_smul_memoryless
+    -- `P` starts at `s`; `hb` bounds each invocation by `b` inside calls.
+    (s : S) (P : Program S A.I B.I A.X A.Y B.X B.Y) {b : ℕ} (hb : P.Bounded b)
+    -- `cost x` counts inside calls for query `x`; `hc` certifies it, and `q` bounds the total.
+    (cost : (Σ o, A.X o) → ℕ) (hc : P.Costs cost) {q : ℕ}
+    -- `hA` bounds accumulated outside cost; `hB` admits inside histories up to that bound.
     (hA : ∀ us, A.domain us → (us.map cost).sum ≤ q)
     (hB : ∀ xs, xs ≠ [] → xs.length ≤ q → B.domain xs)
+    -- `R` has fresh portwise law `ν` by `hR`; `κ` is the claimed outside law.
     {R : TypedSystem B} {ν : ∀ j, B.X j → ProbDist (B.Y j)} {κ : ∀ o, A.X o → ProbDist (A.Y o)}
     (hR : R.1 = memoryless B.inputDomain (portLaw ν))
+    -- `hκ` gives reply law `κ o u` from every program state `s'`.
     (hκ : ∀ s' o u, P.memorylessReplyLaw ν s' o u b [] = (κ o u).1) :
     (ofCostedProgram s P hb cost hc hA hB • R).1 =
       memoryless A.inputDomain (portLaw κ) :=
@@ -287,16 +318,24 @@ lemma ofCostedProgram_smul_memoryless (s : S) (P : Program S A.I B.I A.X A.Y B.X
 
 /-- Attaching a program with its own memoryless source gives `memoryless κ` when every
 invocation against the side-by-side law `parallelLaw ν ν'` has law `κ`. -/
-lemma ofPreservingProgram_comp_rightContext_smul_memoryless {C : Interface} (s : S)
+lemma ofPreservingProgram_comp_rightContext_smul_memoryless
+    -- `C` is the auxiliary resource's interface; `P` starts at `s` and calls both `B` and `C`.
+    {C : Interface} (s : S)
     (P : Program S A.I (tensor B C).I A.X A.Y (tensor B C).X (tensor B C).Y) {b : ℕ}
+    -- `hb` bounds each invocation by `b`; `hι` limits calls to each port selected by `ι`.
     (hb : P.Bounded b) (ι : A.I → Option (tensor B C).I) (hι : P.PortPreserving ι)
+    -- `q o` bounds calls at outside port `o`; `hA` certifies it on `A.domain`.
     (q : A.I → ℕ) (hA : ∀ xs, A.domain xs → ∀ o, (SystemAlgebra.restrict o xs).length ≤ q o)
+    -- `hB` admits the resulting histories of the combined inside interface `B ⊗ C`.
     (hB : ∀ ys, ys ≠ [] → ys.length ≤ b * A.bound →
       (∀ o j, ι o = some j → (SystemAlgebra.restrict j ys).length ≤ q o) → (tensor B C).domain ys)
+    -- `R` and `T` have fresh portwise laws `ν` and `ν'`; `κ` is the claimed outside law.
     {R : TypedSystem B} {T : TypedSystem C} {ν : ∀ j, B.X j → ProbDist (B.Y j)}
     {ν' : ∀ k, C.X k → ProbDist (C.Y k)} {κ : ∀ o, A.X o → ProbDist (A.Y o)}
+    -- `hR` and `hT` certify those laws for the two independent components.
     (hR : R.1 = memoryless B.inputDomain (portLaw ν))
     (hT : T.1 = memoryless C.inputDomain (portLaw ν'))
+    -- `hκ` gives reply law `κ o u` from every state `s'` against their side-by-side law.
     (hκ : ∀ s' o u, P.memorylessReplyLaw (parallelLaw ν ν') s' o u b [] = (κ o u).1) :
     (comp (ofPreservingProgram s P hb ι hι q hA hB) (rightContext B T) • R).1 =
       memoryless A.inputDomain (portLaw κ) := by
@@ -311,16 +350,18 @@ This is `ofProgram_smul_memoryless` as an equality of typed systems. -/
 lemma ofProgram_smul_ofMemoryless
     -- `s` is the initial state; `P` queries `B` while answering queries at `A`.
     (s : S) (P : Program S A.I B.I A.X A.Y B.X B.Y) {b : ℕ}
-    -- `hb` bounds each invocation; `hB` admits the resulting inside histories.
+    -- `hb` bounds each invocation by `b`; `hB` admits the resulting inside histories.
     (hb : P.Bounded b) (hB : ∀ xs, xs ≠ [] → xs.length ≤ b * A.bound → B.domain xs)
-    -- `ν` gives the inside reply laws; `κ` gives the claimed outside laws.
+    -- `R` is the inside system; `ν` gives its reply laws and `κ` the claimed outside laws.
     {R : TypedSystem B} {ν : ∀ j, B.X j → ProbDist (B.Y j)}
     {κ : ∀ o, A.X o → ProbDist (A.Y o)}
+    -- `hR` certifies that `R` gives fresh replies with law `ν`.
     (hR : R = TypedSystem.ofMemoryless B ν)
     -- `hκ` requires the same reply law from every state, including resumed invocations.
     (hκ : ∀ s' o u, P.memorylessReplyLaw ν s' o u b [] = (κ o u).1) :
     ofProgram s P hb hB • R = TypedSystem.ofMemoryless A κ :=
-  Subtype.ext (ofProgram_smul_memoryless s P hb hB (congrArg Subtype.val hR) hκ)
+  Subtype.ext (ofProgram_smul_memoryless s P hb hB
+    (TypedSystem.eq_memoryless_of_eq_ofMemoryless hR) hκ)
 
 /-- A port-preserving program with state-independent reply law `κ` gives `ofMemoryless A κ`.
 The selected domains and per-port allowances are those of the supplied converter. -/
@@ -334,14 +375,14 @@ lemma ofPreservingProgram_smul_ofMemoryless
     (hA : ∀ xs, A.domain xs → ∀ o, (SystemAlgebra.restrict o xs).length ≤ q o)
     (hB : ∀ ys, ys ≠ [] → ys.length ≤ b * A.bound →
       (∀ o j, ι o = some j → (SystemAlgebra.restrict j ys).length ≤ q o) → B.domain ys)
-    -- `hR` identifies the inside resource's fresh law `ν`; `κ` is the outside reply law.
+    -- `hR` identifies the inside system `R` with fresh law `ν`; `κ` is the outside reply law.
     {R : TypedSystem B} {ν : ∀ j, B.X j → ProbDist (B.Y j)}
     {κ : ∀ o, A.X o → ProbDist (A.Y o)} (hR : R = TypedSystem.ofMemoryless B ν)
     -- `hκ` gives reply law `κ o u` from every state `s'`, including resumed invocations.
     (hκ : ∀ s' o u, P.memorylessReplyLaw ν s' o u b [] = (κ o u).1) :
     ofPreservingProgram s P hb ι hι q hA hB • R = TypedSystem.ofMemoryless A κ :=
   Subtype.ext (ofPreservingProgram_smul_memoryless s P hb ι hι q hA hB
-    (congrArg Subtype.val hR) hκ)
+    (TypedSystem.eq_memoryless_of_eq_ofMemoryless hR) hκ)
 
 /-- A costed program with state-independent reply law `κ` gives `ofMemoryless A κ`.
 The outside domain retains the converter's cumulative cost restriction. -/
@@ -353,14 +394,14 @@ lemma ofCostedProgram_smul_ofMemoryless
     -- `hA` limits the accumulated cost to `q`; `hB` admits the resulting inside histories.
     (hA : ∀ us, A.domain us → (us.map cost).sum ≤ q)
     (hB : ∀ xs, xs ≠ [] → xs.length ≤ q → B.domain xs)
-    -- `hR` identifies the inside resource's fresh law `ν`; `κ` is the outside reply law.
+    -- `hR` identifies the inside system `R` with fresh law `ν`; `κ` is the outside reply law.
     {R : TypedSystem B} {ν : ∀ j, B.X j → ProbDist (B.Y j)}
     {κ : ∀ o, A.X o → ProbDist (A.Y o)} (hR : R = TypedSystem.ofMemoryless B ν)
     -- `hκ` gives reply law `κ o u` from every state `s'`, including resumed invocations.
     (hκ : ∀ s' o u, P.memorylessReplyLaw ν s' o u b [] = (κ o u).1) :
     ofCostedProgram s P hb cost hc hA hB • R = TypedSystem.ofMemoryless A κ :=
   Subtype.ext (ofCostedProgram_smul_memoryless s P hb cost hc hA hB
-    (congrArg Subtype.val hR) hκ)
+    (TypedSystem.eq_memoryless_of_eq_ofMemoryless hR) hκ)
 
 end TypedConverter
 

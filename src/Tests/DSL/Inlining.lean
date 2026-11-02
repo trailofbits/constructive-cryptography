@@ -84,8 +84,8 @@ example (q work : ℕ) :
   inline
   rfl
 
--- The memoryless rule, with the certificate `hR : R = mem(ν)`, keeps that same cost restriction
--- on the outside histories: `Negate.exact • mem(ν) = mem(fun i x => map not (ν i x))`.
+-- The cumulative certificate `hR : R.1 = memoryless …` keeps the outside cost restriction:
+-- `Negate.exact • mem(ν) = mem(fun i x => map not (ν i x))`.
 example (q work : ℕ) (R : TypedSystem (Bits work))
     (ν : Bits.Port → Bool → ProbDist Bool)
     (hR : R.1 = RandomSystem.memoryless (Bits work).inputDomain (RandomSystem.portLaw ν)) :
@@ -200,22 +200,29 @@ example {A B C : Interface} {S R T : Type} (s : S)
   inline
   rfl
 
--- An own source stays beside the inside system, with independent initial states. The serial and
--- right-context laws place the `g`-automaton beside the `f`-automaton, and the parallel-automaton
--- law makes them one automaton with step `parallelStep f g`, started from `μ × ν`.
+-- Explicit typed `comp` places the independent `g`-automaton beside the inside `f`-automaton.
+-- The parallel law gives step `parallelStep f g` and initial law `μ × ν`.
 example {A B C : Interface} {S R T : Type} (s : S)
     (P : Program S A.I (B ⊗ C).I A.X A.Y (B ⊗ C).X (B ⊗ C).Y) {b : ℕ}
     (hb : P.Bounded b)
     (hBC : ∀ xs, xs ≠ [] → xs.length ≤ b * A.bound → (B ⊗ C).domain xs)
     (f : R → (i : B.I) → B.X i → R × B.Y i)
     (g : T → (j : C.I) → C.X j → T × C.Y j) (μ : ProbDist R) (ν : ProbDist T) :
-    (TypedConverter.ofProgram s P hb hBC ≫
-        TypedConverter.rightContext B (TypedSystem.ofAutomaton C g ν)) •
+    TypedConverter.comp (TypedConverter.ofProgram s P hb hBC)
+        (TypedConverter.rightContext B (TypedSystem.ofAutomaton C g ν)) •
         TypedSystem.ofAutomaton B f μ =
       TypedSystem.ofAutomaton A (P.combine (parallelStep f g) hb)
         (ProbDist.map (fun rt => (s, rt)) (prodProbDist μ ν)) := by
   inline
   rfl
+
+-- An arbitrary inner converter `α` is not the displayed own-source context required by `inline`.
+example (q : Bits.Port → ℕ) (α : TypedConverter (Bits.perPort q) (Bits.perPort q))
+    (R : TypedSystem (Bits.perPort q))
+    (h : (Negate.perPort (budget := q) ≫ α) • Echo.perPort (budget := q) = R) :
+    (Negate.perPort (budget := q) ≫ α) • Echo.perPort (budget := q) = R := by
+  fail_if_success inline
+  exact h
 
 -- One initial draw `bit ← 𝒰[Bool]` is retained by every later invocation: `get(_) ⇒ bit`.
 system Retained : Bits

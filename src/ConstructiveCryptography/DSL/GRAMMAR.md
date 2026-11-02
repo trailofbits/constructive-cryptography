@@ -273,7 +273,7 @@ system. The [memoryless source][MemorylessSource] `y ←$ ν; return y`
 [is the memoryless system of `ν`][MemorylessSource.memoryless_eq], so systems built from programs
 and memoryless sources are compared by the laws of one reply, through the composition laws of
 [typed systems](../../RandomSystems/Typed/README.md#filters-contexts-sources-and-functional-systems):
-each hop of [PRG length extension][ExPRG] is one rewrite.
+each hop of [PRG length extension][ExPRG] rewrites with these contracts and an identity of laws.
 
 ### Invocation equations and `inline`
 
@@ -322,13 +322,15 @@ beside the inside automaton, and both are one automaton with step `parallelStep`
 attachments to parallel sources use the same source and parallel normalization. With a
 certificate `hR : R = TypedSystem.ofMemoryless B ν`, the typed memoryless contract of that
 constructor reduces `C • R = TypedSystem.ofMemoryless A κ` to the reply law of one invocation
-in every state. Cumulative equalities are also accepted as certificates and goals:
+in every state:
 
 ```math
 \forall s\,o\,u,\quad \mathrm{memorylessReplyLaw}\;\nu\;s\;o\;u = \kappa\;o\;u .
 ```
 
-It then splits only the generated `Option` state (`none` before initialization, `some s`
+Cumulative equalities are also accepted as certificates and goals.
+
+`inline` then splits only the generated `Option` state (`none` before initialization, `some s`
 after) and the procedure labels, and rewrites with the generated equations. A second
 certificate is for the converter's own source beside its inside system: the two certificates
 combine through `TypedSystem.parallel_eq_ofMemoryless`, and the program then runs against their
@@ -480,8 +482,8 @@ before/after proofs, expression guards, negative tests and exact rewrite traces 
 [elabExactDecls]: Elaborator.lean#L826
 [elabFilter]: Elaborator.lean#L1139
 [sourcesAt]: Elaborator.lean#L730
-[MemorylessSource]: ../../Commons/Definitions/Ideal.lean#L108
-[MemorylessSource.memoryless_eq]: ../../Commons/Definitions/Ideal.lean#L115
+[MemorylessSource]: ../../Commons/Definitions/Ideal.lean#L117
+[MemorylessSource.memoryless_eq]: ../../Commons/Definitions/Ideal.lean#L124
 [WriteThrough]: ../../Examples/DSL/Components.lean#L108
 [cc_normalize]: ../Tactics/Basic.lean#L34
 [cc_nonexpand]: ../Tactics/Categorical.lean#L171
