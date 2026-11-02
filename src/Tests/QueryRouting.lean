@@ -22,6 +22,8 @@ that no renaming of labels expresses.
   map that uses the retained outside input on the `Unit` port.
 * The unrestricted domains `F = E = True`, which contain `[]`, check the domain theorem under
   nonempty-prefix closure alone.
+* Encoding `x` as `(true,x)` meets a restricted inside domain; projecting a pair reply to its
+  second coordinate gives the functional and memoryless contracts directly.
 -/
 
 @[expose] public section
@@ -128,5 +130,60 @@ example : IsDDCFrom (fun _ => True) (fun _ => True) 1
   -- `E = True` holds at every request image `us.map request`.
   · intro us _
     trivial
+
+open Probability.Distribution
+
+/-- One Boolean query and reply port, usable at most `q` times. -/
+abbrev bits (q : ℕ) : Interface :=
+  Interface.queryBudget Unit (fun _ => Bool) (fun _ => Bool) q
+
+/-- Pair-valued queries and replies on nonempty histories of at most `q` queries, all tagged
+`true` in the first coordinate. The reply's second coordinate is the payload. -/
+abbrev encodedPairs (q : ℕ) : Interface :=
+  (Interface.queryBudget Unit (fun _ => Bool × Bool) (fun _ => Bool × Bool) q).restrict
+    (fun xs => ∀ x ∈ xs, x.2.1 = true)
+    (fun _ _ hp hd x hx => hd x (hp.subset hx))
+
+/-- `x ↦ (true,x)` sends the outside query to the encoded inside domain. -/
+def encode (x : Σ _ : Unit, Bool) : Σ _ : Unit, Bool × Bool := ⟨(), (true, x.2)⟩
+
+/-- The encoding preserves nonemptiness and length, and sets every domain tag to `true`. -/
+lemma encode_domain (q : ℕ) (xs : List (Σ _ : Unit, Bool)) (hx : (bits q).domain xs) :
+    (encodedPairs q).domain (xs.map encode) := by
+  refine ⟨⟨fun he => hx.1 (List.map_eq_nil_iff.mp he),
+    (List.length_map encode).trans_le hx.2⟩, ?_⟩
+  intro y hy
+  obtain ⟨x, _, rfl⟩ := List.mem_map.mp hy
+  rfl
+
+/-- The inside domain rejects a false tag even though the query has the right type. -/
+example (q : ℕ) : ¬ (encodedPairs q).domain [⟨(), (false, false)⟩] := by
+  intro hd
+  have hf := hd.2 ⟨(), (false, false)⟩ (List.mem_singleton_self _)
+  cases hf
+
+/-- Input encoding followed by reply projection needs only its history-domain certificate. -/
+example (q : ℕ) (f : Bool × Bool → Bool × Bool) :
+    TypedConverter.routing (A := bits q) (B := encodedPairs q)
+        encode (fun _ r => r.2.2) (encode_domain q) •
+      TypedSystem.ofFunction (A := encodedPairs q) (fun _ => f) =
+        TypedSystem.ofFunction (A := bits q) (fun _ x => (f (true, x)).2) :=
+  TypedConverter.routing_smul_ofFunction (A := bits q) (B := encodedPairs q)
+    encode (fun _ r => r.2.2) (encode_domain q) (fun _ => f)
+
+/-- Fresh pair replies remain fresh after projecting the payload; no table is retained. -/
+example (q : ℕ) (ν : Bool × Bool → ProbDist (Bool × Bool)) :
+    TypedConverter.routing (A := bits q) (B := encodedPairs q)
+        encode (fun _ r => r.2.2) (encode_domain q) •
+      TypedSystem.ofMemoryless (encodedPairs q) (fun _ => ν) =
+        TypedSystem.ofMemoryless (bits q) (fun _ x => ProbDist.map Prod.snd (ν (true, x))) :=
+  TypedConverter.routing_smul_ofMemoryless (A := bits q) (B := encodedPairs q)
+    encode (fun _ r => r.2.2)
+    (encode_domain q) (fun _ => ν)
+
+#print axioms routingConverter_query_count
+#print axioms routingConverter_eq_ofProgramOn
+#print axioms TypedConverter.routing_smul_ofFunction
+#print axioms TypedConverter.routing_smul_ofMemoryless
 
 end SystemAlgebra.Tests.QueryRouting

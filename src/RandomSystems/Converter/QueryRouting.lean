@@ -187,6 +187,38 @@ lemma routingConverter_isDDCFrom {O J : Type} {U V : O → Type} {X Y : J → Ty
   exact hd.elim (fun he => Or.inl (by rw [he]; rfl))
     (fun hd => Or.inr (hmap _ hd))
 
+/-- Every outside input contributes exactly its requested inside query, including a pending
+invocation. The equality holds for arbitrary replies admitted by the converter. -/
+lemma routingConverter_queries
+    -- `O`, `J` carry outside and inside ports; `U`, `X` and `V`, `Y` carry queries and replies.
+    {O J : Type} {U V : O → Type} {X Y : J → Type}
+    -- `request u` is the inside query; `answer u r` translates the returned reply.
+    (request : (Σ o, U o) → Σ j, X j)
+    (answer : (u : Σ o, U o) → (Σ j, Y j) → V u.1)
+    -- `F` admits outside histories, and `T` is any actual converter transcript.
+    {F : List (Σ o, U o) → Prop}
+    {T : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))}
+    (hr : Replies (routingConverter request answer F) (T.map Prod.fst) (T.map Prod.snd)) :
+    insideQueries (T.map Prod.snd) = (outsideInputs (T.map Prod.fst)).map request :=
+  routingCall_queries request answer T
+    (hr.mono fun h y hy => canon_mem
+      ((filterDom_mem_iff (fun xs => outsideInputs xs = [] ∨ F (outsideInputs xs))
+        _ h y).mp hy).2)
+
+/-- The router spends exactly one inside query per outside input, counting pending calls. -/
+lemma routingConverter_query_count
+    -- `O`, `J` carry ports; `U`, `X` and `V`, `Y` carry queries and replies.
+    {O J : Type} {U V : O → Type} {X Y : J → Type}
+    -- `request`, `answer` give the translation on the outside domain `F`.
+    (request : (Σ o, U o) → Σ j, X j)
+    (answer : (u : Σ o, U o) → (Σ j, Y j) → V u.1)
+    {F : List (Σ o, U o) → Prop}
+    -- `hr` is any converter transcript `T`, including one ending with an inside query.
+    {T : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))}
+    (hr : Replies (routingConverter request answer F) (T.map Prod.fst) (T.map Prod.snd)) :
+    (insideQueries (T.map Prod.snd)).length = (outsideInputs (T.map Prod.fst)).length := by
+  rw [routingConverter_queries request answer hr, List.length_map]
+
 /-- **The router against fixed functions**: for `us ∈ F` and inside functions `f_j`, the router
 has the completed transcript of `us`, in which each call `u = (o,v)` with `(j,x) = request u`
 reads
