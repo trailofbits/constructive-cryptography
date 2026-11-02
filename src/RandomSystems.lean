@@ -87,6 +87,7 @@ public import RandomSystems.Typed.DSL.Programs
 public import RandomSystems.Typed.DSL.Syntax
 public import RandomSystems.Typed.DSL.Tactics
 public import RandomSystems.Typed.Filter
+public import RandomSystems.Typed.FiniteFamilyCollect
 public import RandomSystems.Typed.Functional
 public import RandomSystems.Typed.CallRuleFunctional
 public import RandomSystems.Typed.Game

@@ -63,6 +63,8 @@ public import Tests.TypedProbAutomaton
 public import Tests.TypedNaryParallel
 public import Tests.TypedNaryMemoryless
 
+public import Tests.FiniteFamilyCollect
+
 /-! Axiom audits per layer and of the Commons library, the checks of the
 authenticated-encryption example,
 counterexamples, DSL diagnostics and semantics, and the tests of the cryptographic-algebra,
