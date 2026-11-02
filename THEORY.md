@@ -337,23 +337,23 @@ extension are in [Examples](src/Examples/README.md).
 [Domain.Distinguisher]: src/RandomSystems/Distance/Distinguisher.lean#L126
 [RandomSystem.transcriptDistance_eq_iSup]: src/RandomSystems/Distance/Distinguisher.lean#L158
 [Domain.DistinguisherBehavior]: src/RandomSystems/Distance/Distinguisher.lean#L211
-[RandomSystem.MonotoneMBO]: src/RandomSystems/Game/MBO.lean#L309
-[RandomSystem.visible]: src/RandomSystems/Game/MBO.lean#L344
-[RandomSystem.winProbability]: src/RandomSystems/Game/MBO.lean#L486
-[RandomSystem.ConditionallyEquivalent]: src/RandomSystems/Game/MBO.lean#L529
-[RandomSystem.GameEquivalent]: src/RandomSystems/Game/MBO.lean#L543
-[Domain.Distinguisher.advantage_le_winProbability]: src/RandomSystems/Game/MBO.lean#L762
-[Domain.Distinguisher.advantage_le_winProbability_of_gameEquivalent]: src/RandomSystems/Game/MBO.lean#L880
+[RandomSystem.MonotoneMBO]: src/RandomSystems/Game/MBO.lean#L311
+[RandomSystem.visible]: src/RandomSystems/Game/MBO.lean#L362
+[RandomSystem.winProbability]: src/RandomSystems/Game/MBO.lean#L504
+[RandomSystem.ConditionallyEquivalent]: src/RandomSystems/Game/MBO.lean#L547
+[RandomSystem.GameEquivalent]: src/RandomSystems/Game/MBO.lean#L561
+[Domain.Distinguisher.advantage_le_winProbability]: src/RandomSystems/Game/MBO.lean#L780
+[Domain.Distinguisher.advantage_le_winProbability_of_gameEquivalent]: src/RandomSystems/Game/MBO.lean#L898
 [PDCBehavior.liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L464
 
 <!-- Declarations: §2 -->
 
-[Interface]: src/RandomSystems/Typed/Interface.lean#L47
-[TypedSystem]: src/RandomSystems/Typed/Interface.lean#L115
-[TypedConverter]: src/RandomSystems/Typed/Interface.lean#L150
-[TypedConverter.comp]: src/RandomSystems/Typed/Interface.lean#L157
-[TypedConverter.id]: src/RandomSystems/Typed/Interface.lean#L162
-[TypedConverter.attach]: src/RandomSystems/Typed/Interface.lean#L213
+[Interface]: src/RandomSystems/Typed/Interface.lean#L40
+[TypedSystem]: src/RandomSystems/Typed/Interface.lean#L136
+[TypedConverter]: src/RandomSystems/Typed/Interface.lean#L175
+[TypedConverter.comp]: src/RandomSystems/Typed/Interface.lean#L182
+[TypedConverter.id]: src/RandomSystems/Typed/Interface.lean#L187
+[TypedConverter.attach]: src/RandomSystems/Typed/Interface.lean#L240
 [Interface.tensor]: src/RandomSystems/Typed/Parallel.lean#L89
 [TypedSystem.parallel]: src/RandomSystems/Typed/Parallel.lean#L157
 [TypedConverter.parallel]: src/RandomSystems/Typed/Parallel.lean#L214
@@ -390,6 +390,6 @@ extension are in [Examples](src/Examples/README.md).
 [SymmetricEncryption.encryptions]: src/Commons/Definitions/Encryption.lean#L106
 [AE.INDCCA]: src/Commons/Definitions/AEAD.lean#L232
 [correctedChain]: src/Examples/AuthenticatedEncryption/Security.lean#L137
-[collision_mass_le]: src/Examples/AuthenticatedEncryption/Collision.lean#L64
+[collision_mass_le]: src/Examples/AuthenticatedEncryption/Collision.lean#L65
 [exists_pair_one_sub_supAgreement_le]: src/Probability/MultiCoupling.lean#L620
 [not_supAgreement_disagreement_le_every_pair]: src/Probability/MultiCoupling.lean#L782
