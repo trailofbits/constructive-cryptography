@@ -4,6 +4,7 @@ public import Commons.Constructions.EncryptThenMAC
 public import Commons.Constructions.KEMDEM
 public import Commons.Constructions.KEMDEM.Correctness
 public import Commons.Constructions.EncryptThenMAC.Correctness
+public import Commons.Constructions.HashAndSign
 public import Commons.Constructions.NonceEncryptThenMAC
 public import Commons.Constructions.TranscriptCompletion
 public import Commons.Definitions.AEAD
@@ -25,6 +26,7 @@ public import Commons.Definitions.PublicKeyEncryption
 public import Commons.Definitions.PublicKeyEncryption.Keyed
 public import Commons.Definitions.RSA
 public import Commons.Definitions.Signature
+public import Commons.Definitions.Signature.Keyed
 public import Commons.Definitions.StreamCipher
 public import Commons.Definitions.UniversalHash
 public import Commons.Schemes.BlockCipher.AES
