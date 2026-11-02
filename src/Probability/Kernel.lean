@@ -1,6 +1,6 @@
 module
 
-public import Probability.Distribution
+public import Probability.DependentProduct
 public import Mathlib.LinearAlgebra.Finsupp.LinearCombination
 
 /-!
@@ -26,8 +26,9 @@ initializations, and `prodProbDist_map` combines independent initialized draws:
 
 For dependent draws, `ProbDist.jointLaw μ K` retains both outcomes with law `μ(h) · K h z`.
 `ProbDist.jointLaw_fst` recovers `μ`; `ProbDist.jointLaw_map` transports both coordinates.
-For independent tables, `pi_eq_bindK_update` samples one cell first and fixes it in the
-remaining table. Each law has finite support; the outcome types are arbitrary.
+For independent tables, `piDep_eq_bindK_update` samples one cell first and fixes it in the
+remaining table; `pi_eq_bindK_update` specializes to one common outcome type. Each law has
+finite support; the outcome types are arbitrary.
 
 ## References
 
@@ -278,13 +279,18 @@ lemma prod_eq_bindK (μ : Distribution A) (ν : Distribution B) :
 
 /-- **Disintegration of an independent product** at one coordinate: sample that coordinate first,
 then the product with that coordinate fixed. -/
-lemma pi_eq_bindK_update {ι : Type*} [Fintype ι] [DecidableEq ι] (μ : ι → Distribution A)
-    (n : ι) : pi μ = bindK (μ n) fun z => pi (Function.update μ n (Finsupp.single z 1)) := by
+lemma piDep_eq_bindK_update
+    -- `ι` indexes outcome types `A i`; `μ i` is the raw law of coordinate `i`.
+    {ι : Type*} [Fintype ι] [DecidableEq ι] {A : ι → Type*}
+    (μ : ∀ i, Distribution (A i))
+    -- `n` is revealed first; the remaining law fixes that coordinate to its sampled value.
+    (n : ι) :
+    piDep μ = bindK (μ n) fun z => piDep (Function.update μ n (Finsupp.single z 1)) := by
   classical
   -- Compare at a sample `t`: `∏ᵢ μᵢ(tᵢ)` on the left.
   ext t
   -- With coordinate `n` fixed to `z`, the product is `[t n = z] · ∏_{i ≠ n} μᵢ(tᵢ)`.
-  have hrest : ∀ z : A, (∏ i, Function.update μ n (Finsupp.single z 1) i (t i)) =
+  have hrest : ∀ z : A n, (∏ i, Function.update μ n (Finsupp.single z 1) i (t i)) =
       (Finsupp.single z (1 : ℝ)) (t n) * ∏ i ∈ Finset.univ.erase n, μ i (t i) := by
     intro z
     -- Split off the factor at `n`, which the update sets to the point mass at `z` ...
@@ -294,8 +300,8 @@ lemma pi_eq_bindK_update {ι : Type*} [Fintype ι] [DecidableEq ι] (μ : ι →
     exact Finset.prod_congr rfl fun i hi => by
       rw [Function.update_of_ne (Finset.ne_of_mem_erase hi)]
   -- Mixing over `z ← μ n` keeps the term `z = t n`: `μ n (t n) · ∏_{i ≠ n} μᵢ(tᵢ)`.
-  rw [pi_apply, bindK_apply]
-  simp only [pi_apply, hrest, Finsupp.single_apply]
+  rw [piDep_apply, bindK_apply]
+  simp only [piDep_apply, hrest, Finsupp.single_apply]
   -- Split the factor at `n` off the left side too: `μ n (t n) · ∏_{i ≠ n} μᵢ(tᵢ)`.
   rw [← Finset.mul_prod_erase Finset.univ _ (Finset.mem_univ n), Finsupp.sum]
   -- On the right, the term at `z` is `μ n z · ∏_{i ≠ n} μᵢ(tᵢ)` if `z = t n`, and zero otherwise.
@@ -306,18 +312,35 @@ lemma pi_eq_bindK_update {ι : Type*} [Fintype ι] [DecidableEq ι] (μ : ι →
   · rfl
   · rw [Finsupp.notMem_support_iff.mp h, zero_mul]
 
+/-- With one coordinate fixed to `z`, every supported dependent function has `z` there. -/
+lemma eq_of_mem_support_piDep_update
+    -- `μ i` is the law at coordinate `i : ι`, whose outcomes lie in `A i`.
+    {ι : Type*} [Fintype ι] [DecidableEq ι] {A : ι → Type*}
+    (μ : ∀ i, Distribution (A i))
+    -- `n` is the fixed coordinate and `z` its prescribed value.
+    (n : ι) (z : A n)
+    -- `ht` places the whole function `t` in the product with coordinate `n` fixed.
+    {t : ∀ i, A i}
+    (ht : t ∈ (piDep (Function.update μ n (Finsupp.single z 1))).support) : t n = z := by
+  classical
+  rw [Finsupp.mem_support_iff, piDep_apply] at ht
+  by_contra hne
+  apply ht
+  -- A different value at `n` makes that coordinate's point-mass factor zero.
+  refine Finset.prod_eq_zero (Finset.mem_univ n) ?_
+  rw [Function.update_self, Finsupp.single_apply, ite_eq_right (Ne.symm hne)]
+
+/-- Disintegration at one coordinate for independent laws with a common outcome type. -/
+lemma pi_eq_bindK_update {ι : Type*} [Fintype ι] [DecidableEq ι] (μ : ι → Distribution A)
+    (n : ι) : pi μ = bindK (μ n) fun z => pi (Function.update μ n (Finsupp.single z 1)) := by
+  simpa only [piDep_eq_pi] using piDep_eq_bindK_update μ n
+
 /-- With one coordinate fixed to `z`, every possible sample has `z` there. -/
 lemma eq_of_mem_support_pi_update {ι : Type*} [Fintype ι] [DecidableEq ι]
     (μ : ι → Distribution A) (n : ι) (z : A) {t : ι → A}
     (ht : t ∈ (pi (Function.update μ n (Finsupp.single z 1))).support) : t n = z := by
-  classical
-  -- Otherwise the factor at `n`, the point mass at `z`, vanishes at `t n`.
-  rw [Finsupp.mem_support_iff, pi_apply] at ht
-  by_contra hne
-  apply ht
-  -- The product `∏ᵢ` vanishes: its factor at `n`, `single z 1 (t n)`, is zero as `t n ≠ z`.
-  refine Finset.prod_eq_zero (Finset.mem_univ n) ?_
-  rw [Function.update_self, Finsupp.single_apply, ite_eq_right (Ne.symm hne)]
+  apply eq_of_mem_support_piDep_update μ n z
+  simpa only [piDep_eq_pi] using ht
 
 /-! ### Probability laws -/
 
