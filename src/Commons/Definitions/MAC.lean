@@ -12,7 +12,9 @@ public import ConstructiveCryptography.Notation
 draws a fresh independent table from `MAC.tags` and selects the current key/message entry.
 
 `MAC.EUF` accepts only valid tags on previously tagged messages; `MAC.SUF` accepts only valid
-previously issued pairs. The pairs `MAC.EUFCMA.systems` and `MAC.SUFCMA.systems` compare the
+previously issued pairs. Both record with `List.insert` and test with `List.contains`:
+`List.mem_insert_iff` gives the membership update, and `List.insert_of_mem` makes repeated
+recording inert. The pairs `MAC.EUFCMA.systems` and `MAC.SUFCMA.systems` compare the
 scheme oracle with these restrictions. This uses the substitution presentation of integrity
 from [1, Definitions 2.3.6–2.3.7, p. 21]. The strong form's fresh-pair condition corresponds
 to [2, Attack Game 6.2, p. 221].
@@ -89,31 +91,36 @@ system MAC.system
   on verify(message : M, tag : T) → Bool
     return mac.verify key message tag
 
--- Record each tagged message; accept a tag only if it verifies and its message was tagged.
+-- Retain requested messages in `tagged`; verification returns `valid && tagged.contains message`.
+-- Insert the message before requesting its tag; repeated requests preserve `tagged`.
 converter MAC.EUF(M T : Type) [Fintype M] [Fintype T] [DecidableEq M] : Tagging M T
   inside tagging : Tagging M T
   initialize
     tagged ← ([] : List M)
   on tag(message : M) → T
-    tagged ← tagged ++ [message]
+    tagged ← tagged.insert message
     t ← tagging.tag(message)
     return t
   on verify(message : M, tag : T) → Bool
     valid ← tagging.verify(message, tag)
-    return valid && decide (message ∈ tagged)
+    return valid && tagged.contains message
 
--- Record each tagged pair; accept a tag only if it verifies and the pair was tagged.
-converter MAC.SUF(M T : Type) [Fintype M] [Fintype T] [DecidableEq M] [DecidableEq T] : Tagging M T
+-- Retain returned pairs in `tagged`; verification returns
+-- `valid && tagged.contains (message, tag)`.
+-- Insert the pair after receiving the tag. Freshness in [2, Attack Game 6.2, p. 221] means
+-- "not among the previously signed pairs"; this restriction rejects such fresh pairs.
+converter MAC.SUF(M T : Type)
+    [Fintype M] [Fintype T] [DecidableEq M] [DecidableEq T] : Tagging M T
   inside tagging : Tagging M T
   initialize
     tagged ← ([] : List (M × T))
   on tag(message : M) → T
     t ← tagging.tag(message)
-    tagged ← tagged ++ [(message, t)]
+    tagged ← tagged.insert (message, t)
     return t
   on verify(message : M, tag : T) → Bool
     valid ← tagging.verify(message, tag)
-    return valid && decide ((message, tag) ∈ tagged)
+    return valid && tagged.contains (message, tag)
 
 /-- **The systems of EUF-CMA**: the real system and the one whose verification accepts only tags
 on tagged messages, for `k ← G`, at the budget `q` per port. -/
