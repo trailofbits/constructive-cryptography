@@ -42,6 +42,8 @@ Sources: CR18, §3.7.1 (games), Definition 4.5 (the winning probability), Defini
 
 ## Main results
 
+* `RandomSystem.sum_unsetMBOs_add_sum_tagMBO`: the next hidden bit partitions the all-unset
+  mass, supplying the normalization step for adaptive game bounds
 * `RandomSystem.visible`: the visible system is a random system on the input domain
 * `RandomSystem.abs_decisionProbability_sub_le_winProbability`,
   `Domain.Distinguisher.advantage_le_winProbability`: conditional equivalence bounds the
@@ -337,6 +339,22 @@ lemma RandomSystem.sum_tagMBO (G : RandomSystem A (Σ j, withMBO Y j) (Domain.of
     exact add_comm _ _
   rw [hsum, hw]
   congr
+
+/-- At an admitted query, the all-unset mass splits into replies keeping the MBO unset and
+replies setting it. -/
+lemma RandomSystem.sum_unsetMBOs_add_sum_tagMBO
+    -- `G` has input domain `E`, bounded by `m` through `hE`.
+    (G : RandomSystem A (Σ j, withMBO Y j) (Domain.ofInputs E m hE))
+    -- `h` records visible replies; `hx` admits the next query `x` after its inputs.
+    {h : List (A × Σ j, Y j)} {x : A} (hx : E (h.map Prod.fst ++ [x])) :
+    (∑ y, G (unsetMBOs (h ++ [(x, y)]))) +
+      (∑ y, G (unsetMBOs h ++ [(x, tagMBO true y)])) = G (unsetMBOs h) := by
+  -- Unsetting bits preserves queries, so normalization applies on the original input history.
+  have hsum := G.sum_tagMBO (unsetMBOs h) x
+  have hfst : (unsetMBOs h).map Prod.fst = h.map Prod.fst := by
+    simp only [unsetMBOs, List.map_map, Function.comp_def]
+  rw [hfst, ite_eq_left hx, Finset.sum_add_distrib] at hsum
+  simpa only [unsetMBOs, List.map_append, List.map_singleton] using hsum
 
 open scoped Classical in
 /-- **The visible system** `S⁻` of a game, which ignores the MBO (CR18, Definition 4.18): the
