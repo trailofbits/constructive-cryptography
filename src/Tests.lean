@@ -38,6 +38,7 @@ public import Tests.QueryRouting
 public import Tests.ResourceSpecification
 public import Tests.SamplingAlgebra
 public import Tests.SerialAccounting
+public import Tests.SharedRouting
 public import Tests.Substitution.Axioms
 public import Tests.Substitution.Calculation
 public import Tests.Substitution.Construction
