@@ -24,6 +24,7 @@ Ideal systems are in the `Commons` namespace; typed systems and converters are i
 | Retained state | `TypedSystem.sample` in [Functional]; `ofAutomaton` in [Automaton] |
 | Hidden monotone event on retained state | `TypedGame.ofAutomaton` in [AutomatonGame] |
 | URF distinct-input collision game | `URF.collisionGame` in [CollisionGame] |
+| Adaptive URF collision bound | `URF.collisionGame_win_le` in [CollisionBound] |
 | Retained state with fresh transitions | `TypedSystem.ofProbAutomaton` in [ProbAutomaton] |
 | Retained key as an automaton | `TypedSystem.ofProbAutomaton_eq_keyed` in [KeyedAutomaton] |
 | Program with fresh inside transitions | `TypedConverter.ofProgram_smul_ofProbAutomaton` in [ProbProgramAttachment] |
@@ -55,6 +56,7 @@ Ideal systems are in the `Commons` namespace; typed systems and converters are i
 [Automaton]: src/RandomSystems/Typed/Automaton.lean
 [AutomatonGame]: src/RandomSystems/Typed/AutomatonGame.lean
 [CollisionGame]: src/Commons/Definitions/CollisionGame.lean
+[CollisionBound]: src/Commons/Definitions/CollisionBound.lean
 [ProbAutomaton]: src/RandomSystems/Typed/ProbAutomaton.lean
 [KeyedAutomaton]: src/RandomSystems/Typed/KeyedAutomaton.lean
 [ProbProgramAttachment]: src/RandomSystems/Typed/ProbProgramAttachment.lean

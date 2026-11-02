@@ -11,6 +11,7 @@ public import Commons.Definitions.AEAD
 public import Commons.Definitions.AEAD.Keyed
 public import Commons.Definitions.Cipher
 public import Commons.Definitions.CollisionGame
+public import Commons.Definitions.CollisionBound
 public import Commons.Definitions.DiffieHellman
 public import Commons.Definitions.Encryption
 public import Commons.Definitions.Hash
