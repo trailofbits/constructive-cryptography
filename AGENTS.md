@@ -419,6 +419,8 @@ hypothesis, invariant or reason. One sentence per local step is usually enough;
 use more when the mathematics or representation needs it.
 
 - Review every change against these rules for mathematical accuracy as well as wording.
+  In each modified file, also improve the existing module introduction and comments along the
+  affected argument: correct unclear mathematics, explain missing steps and remove repetition.
 - Begin each substantive module with a `/-! ... -/` introduction explaining
   its mathematical purpose, the objects involved, the principal results by
   declaration name, and their role in the proof chain. Group related results

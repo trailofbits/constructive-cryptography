@@ -73,6 +73,10 @@ then uses only the supplied component equation. The
 next step: named normalized laws, component equations, whole-system equations, then transcript
 probabilities.
 
+The [PRG example](src/Examples/PRGLengthExtension.lean) defines its real world with
+`MemorylessSource` and the mapped seed law. Its converter contracts use explicit equalities
+`R = TypedSystem.ofMemoryless A ν`; `inline using` leaves only the reply-law calculation.
+
 ## Reuse preserves sampling scope
 
 Three cases differ:
