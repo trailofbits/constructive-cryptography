@@ -4,6 +4,7 @@ public import RandomSystems.Distance.Observation
 public import RandomSystems.Typed.Completion
 public import RandomSystems.Typed.Distinguisher
 public import RandomSystems.Typed.Solver
+public import RandomSystems.Typed.Guessing
 public import RandomSystems.Distance.Mixture
 public import RandomSystems.Typed.SamplingDistance
 public import RandomSystems.Cumulative.Revealed
@@ -119,4 +120,3 @@ systems, probabilistic automata and memoryless systems, converters and attachmen
 composition, distance and games; typed systems, typed converters and typed distinguishers on
 interfaces, and the programs and converters of the component DSL.
 -/
-public import RandomSystems.Typed.Guessing
