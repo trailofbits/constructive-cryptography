@@ -87,6 +87,7 @@ public import RandomSystems.Typed.Game
 public import RandomSystems.Typed.Interface
 public import RandomSystems.Typed.InterfaceCoherence
 public import RandomSystems.Typed.Keyed
+public import RandomSystems.Typed.KeyedAutomaton
 public import RandomSystems.Typed.Memoryless
 public import RandomSystems.Typed.Parallel
 public import RandomSystems.Typed.ParallelAttachment
@@ -96,6 +97,7 @@ public import RandomSystems.Typed.ParallelAllAttachment
 public import RandomSystems.Typed.ParallelAllRegroup
 public import RandomSystems.Typed.PresentedGame
 public import RandomSystems.Typed.ProbAutomaton
+public import RandomSystems.Typed.ProbProgramAttachment
 public import RandomSystems.Typed.Relabel
 public import RandomSystems.Typed.QueryRouting
 public import RandomSystems.Typed.SamplingAlgebra
