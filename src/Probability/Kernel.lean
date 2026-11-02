@@ -18,7 +18,8 @@ This represents a "conditional probability distribution" `p_{Y|X}` [1, §3.6.1, 
 `fTransform_bindK` and `bindK_fTransform` move deterministic maps through those draws.
 
 `ProbDist.map` and `ProbDist.bind` retain normalization. `ProbDist.map_map` composes
-initializations, and `prodProbDist_map` combines independent initialized draws:
+initializations; `ProbDist.map_pi_apply` selects one coordinate of an independent table.
+`prodProbDist_map` combines independent initialized draws:
 
 ```text
 (f_* P) × (g_* Q) = (f × g)_* (P × Q).
@@ -371,6 +372,19 @@ lemma map_map
     map f (map g P) = map (f ∘ g) P :=
   -- Both sides have the same underlying distribution: `fTransform f ∘ fTransform g`.
   Subtype.ext (fTransform_fTransform _ _ _)
+
+/-- Selecting coordinate `i` has law `μ i`: `(ProbDist.pi μ).map (fun f => f i) = μ i`. -/
+lemma map_pi_apply
+    -- `ι` indexes the finite table of independent coordinates.
+    {ι : Type*} [Fintype ι] [DecidableEq ι]
+    -- `μ j` is the law of coordinate `j`; `i` selects the observed coordinate.
+    (μ : ι → ProbDist A) (i : ι) :
+    (ProbDist.pi μ).map (fun f => f i) = μ i := by
+  apply Subtype.ext
+  change marginalAt (Distribution.pi (fun j => (μ j).1)) i = _
+  -- Every unobserved coordinate has weight one in the product-marginal equation.
+  rw [marginalAt_pi]
+  simp only [IsProbability.weight_eq_one, Finset.prod_const_one, one_smul]
 
 /-- Sequential sampling: `bind P f (b) = ∑ₐ P(a) · f(a)(b)`. -/
 noncomputable def bind
