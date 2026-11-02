@@ -2,6 +2,7 @@ module
 
 public import RandomSystems.Typed.DSL.Converters
 public import RandomSystems.Typed.Context
+public import RandomSystems.Typed.ProbAutomaton
 public import RandomSystems.System.Memoryless
 
 /-!
@@ -9,6 +10,7 @@ public import RandomSystems.System.Memoryless
 
 `TypedSystem.ofMemoryless A ν` answers each admitted query `i(x)` with a fresh reply
 `y ∼ ν i x`, independently of earlier exchanges [1, Definition 3.1, p. 55; §3.6.1, p. 65].
+`parallel_source_eq_ofProbAutomaton` presents two independent sources as one fresh automaton.
 `ofMemoryless_val` identifies this typed system with its cumulative behavior;
 `eq_memoryless_of_eq_ofMemoryless` projects a supplied typed contract to that behavior.
 
@@ -236,6 +238,21 @@ lemma parallel_ofMemoryless
     parallel (ofMemoryless A ν₁) (ofMemoryless B ν₂) =
       ofMemoryless (tensor A B) (parallelLaw ν₁ ν₂) :=
   Subtype.ext (parallel_eq_memoryless rfl rfl)
+
+/-- Two independent sources form a fresh automaton: left queries reply from `P`,
+right queries from `Q`, with the tensor domain of their separate allowances `q` and `r`. -/
+lemma parallel_source_eq_ofProbAutomaton
+    -- `K`, `L` carry source replies; `P`, `Q` are their independent per-call laws.
+    {K L : Type} [Fintype K] [Fintype L] (P : ProbDist K) (Q : ProbDist L)
+    -- `q`, `r` are the respective source allowances, retained in the tensor domain.
+    (q r : ℕ) :
+    parallel (source P q) (source Q r) =
+      ofProbAutomaton ((Interface.source K q).tensor (Interface.source L r))
+        (ProbStep.fresh (parallelLaw (fun _ _ => P) (fun _ _ => Q))) (ProbDist.single ()) := by
+  -- Both sources give fresh replies; their parallel law is the fresh automaton's law.
+  rw [source_eq_ofMemoryless, source_eq_ofMemoryless, parallel_ofMemoryless]
+  exact Subtype.ext (RandomSystem.ofProbAutomaton_eq_memoryless _
+    (ProbStep.memoryless_fresh _) _).symm
 
 /-- Two supplied fresh-reply contracts compose to the side-by-side law `parallelLaw ν₁ ν₂`. -/
 lemma parallel_eq_ofMemoryless

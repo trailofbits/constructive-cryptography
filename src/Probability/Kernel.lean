@@ -386,6 +386,16 @@ lemma map_pi_apply
   rw [marginalAt_pi]
   simp only [IsProbability.weight_eq_one, Finset.prod_const_one, one_smul]
 
+/-- Mapping `g` over table coordinate `i` gives the pushforward of that coordinate's law. -/
+lemma map_pi_apply_comp
+    -- `ι` indexes independent table entries; `g : A → B` transforms the selected entry.
+    {ι : Type*} [Fintype ι] [DecidableEq ι]
+    -- `μ j` is the law of entry `j`; `i` selects the observed entry.
+    (μ : ι → ProbDist A) (i : ι) (g : A → B) :
+    (ProbDist.pi μ).map (fun f => g (f i)) = (μ i).map g :=
+  (map_map g (fun f : ι → A => f i) (ProbDist.pi μ)).symm.trans
+    (congrArg (ProbDist.map g) (map_pi_apply μ i))
+
 /-- Sequential sampling: `bind P f (b) = ∑ₐ P(a) · f(a)(b)`. -/
 noncomputable def bind
     -- `P` samples `a : A`; `f a` is the normalized law of the next outcome in `B`.

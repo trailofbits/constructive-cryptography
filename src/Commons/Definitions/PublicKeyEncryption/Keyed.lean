@@ -101,9 +101,8 @@ lemma PKE.system.body_probCombine
         Finsupp.single ((some k, ()), table (k.1, m)) 1) =
       fTransform (fun y => ((some k, ()), y)) (scheme.enc k.1 m).1 := by
     rw [bindK_single_comp]
-    exact congrArg Subtype.val ((ProbDist.map_map (fun y => ((some k, ()), y))
-      (fun table => table (k.1, m)) scheme.encryptions).symm.trans
-      (congrArg (ProbDist.map (fun y => ((some k, ()), y))) (scheme.encryptions_map k.1 m)))
+    exact congrArg Subtype.val (ProbDist.map_pi_apply_comp
+      (fun pm : PK × M => scheme.enc pm.1 pm.2) (k.1, m) (fun y => ((some k, ()), y)))
   -- The six cases are the three query types, before and after the first key draw.
   apply Subtype.ext
   cases keys <;> cases i <;>
@@ -119,11 +118,8 @@ lemma PKE.system.randomness_eq_ofProbAutomaton
     -- `scheme` selects the laws; `q` is the source allowance at each component.
     (scheme : PublicKeyEncryption PK SK M C) (q : ℕ) :
     PKE.system.randomness scheme q = TypedSystem.ofProbAutomaton _
-      (ProbStep.fresh (PKE.system.randomnessLaw scheme)) (ProbDist.single ()) := by
-  rw [PKE.system.randomness, TypedSystem.source_eq_ofMemoryless,
-    TypedSystem.source_eq_ofMemoryless, TypedSystem.parallel_ofMemoryless]
-  exact Subtype.ext (RandomSystem.ofProbAutomaton_eq_memoryless _
-    (ProbStep.memoryless_fresh _) _).symm
+      (ProbStep.fresh (PKE.system.randomnessLaw scheme)) (ProbDist.single ()) :=
+  TypedSystem.parallel_source_eq_ofProbAutomaton scheme.gen scheme.encryptions q q
 
 /-- The PKE system retains one generated pair and draws each encryption reply freshly.
 Equality of cumulative probabilities covers all admitted adaptive and repeated queries. -/
