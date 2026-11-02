@@ -83,6 +83,7 @@ lemma four_exchange_mass
 end
 
 #print axioms PublicKeyEncryption.encryptions_map
+#print axioms TypedSystem.ofProbAutomaton_eq_keyed_of_optional_key
 #print axioms PKE.system.perPort_eq_keyed
 #print axioms PKE.INDCCA.systems_eq_keyed
 #print axioms four_exchange_mass
