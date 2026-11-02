@@ -70,11 +70,11 @@ noncomputable section
 
 variable {PK SK M Sig : Type} [Fintype PK] [Fintype SK] [Fintype M] [Fintype Sig]
 
-/-- Independent signatures under every secret key on every message. -/
+/-- The table law `signatures scheme f = ∏ km, scheme.sign km.1 km.2 (f km)`: independent
+signatures for every secret-key/message pair. -/
 def SignatureScheme.signatures [DecidableEq SK] [DecidableEq M]
     (scheme : SignatureScheme PK SK M Sig) : Distribution.ProbDist (SK × M → Sig) :=
-  ⟨Distribution.pi fun km => (scheme.sign km.1 km.2).1,
-    Distribution.pi_isProbDist fun km => (scheme.sign km.1 km.2).2⟩
+  Distribution.ProbDist.pi fun km => scheme.sign km.1 km.2
 
 -- The public key, `S_sk` and `V_pk` for `(pk, sk) ← G`: on `m`, output `σ ← S(sk, m)`; on
 -- `(m, σ)`, output `V(pk, m, σ)`.

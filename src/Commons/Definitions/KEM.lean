@@ -69,11 +69,11 @@ noncomputable section
 
 variable {PK SK C K : Type} [Fintype PK] [Fintype SK] [Fintype C] [Fintype K]
 
-/-- Independent encapsulations under every public key. -/
+/-- The table law `encapsulations kem f = ∏ pk, kem.encaps pk (f pk)`: one independent
+encapsulation outcome per public key. -/
 def KEM.encapsulations [DecidableEq PK] (kem : KEM PK SK C K) :
     Distribution.ProbDist (PK → C × K) :=
-  ⟨Distribution.pi fun pk => (kem.encaps pk).1,
-    Distribution.pi_isProbDist fun pk => (kem.encaps pk).2⟩
+  Distribution.ProbDist.pi kem.encaps
 
 -- The public key, `E_pk` and `D_sk` for `(pk, sk) ← G`: on `encaps`, output `(c, k) ← E(pk)`;
 -- on `c`, output `D(sk, c)`.

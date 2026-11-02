@@ -1,5 +1,6 @@
 module
 
+public import Probability.Kernel
 public import Probability.DependentProduct
 public import RandomSystems.Cumulative.ParallelAll
 public import RandomSystems.Converter.ConverterTensor
@@ -688,11 +689,9 @@ noncomputable def tensorAllPDC
       (fun o => V o.1 o.2) (fun j => X j.1 j.2) (fun j => Y j.1 j.2) //
       IsDDCFrom (parallelAllInputs E) (parallelAllInputs F)
         (Finset.univ.sup b) c} :=
-  ⟨Distribution.fTransform
-      (fun f => ⟨tensorAllL fun k => (f k).1, IsDDCFrom.tensorAllL fun k => (f k).2⟩)
-      (Distribution.piDep fun k => (P k).1),
-    Distribution.fTransform_isProbDist _
-      (Distribution.piDep_isProbDist fun k => (P k).2)⟩
+  Distribution.ProbDist.map
+    (fun f => ⟨tensorAllL fun k => (f k).1, IsDDCFrom.tensorAllL fun k => (f k).2⟩)
+    (Distribution.ProbDist.piDep P)
 
 omit [∀ k, Fintype (O k)] [∀ k, Fintype (J k)] [∀ k o, Fintype (U k o)]
   [∀ k o, Fintype (V k o)] [∀ k j, Fintype (X k j)] [∀ k j, Fintype (Y k j)] in
@@ -726,6 +725,7 @@ lemma behaviorMass_tensorAllPDC
   -- `Replies (⨂ₖ f k) t` iff `t` is admitted, `t'` tag-consistent and every `f k` replies
   -- `t'|k`; the left side is the `piDep P` mass of that event.
   unfold behaviorMass tensorAllPDC
+  simp only [Distribution.ProbDist.map_val, Distribution.ProbDist.piDep_val]
   rw [Distribution.mass_fTransform]
   simp only [tensorAllL, replies_canon_iff _ tensorAllRaw_silentAtEmpty,
     replies_tensorAllRaw_iff]

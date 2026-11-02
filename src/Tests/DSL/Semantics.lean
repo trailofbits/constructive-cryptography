@@ -10,14 +10,14 @@ every call (`freshBits_independent`), sampling at initialization persists
 (`secretBit_retained`), two ports share the private state (`counter_interleaving`), also at
 per-port budgets, where a port exhausts only its own budget (`counter_perPort_interleaving`,
 `counter_perPort_exceeded`); the write-through converter maps its writes to the store and its
-reads to nothing, so the store's budget is that of the writes. A system that samples is its program attached to its sources, the
-automaton combining the program with the source's table of samples; the first two checks
-compute that automaton.
+reads to nothing, so the store's budget is that of the writes. A system that samples is its
+program attached to its sources, the automaton combining the program with the source's table
+of samples; the first two checks compute that automaton.
 -/
 
 @[expose] public section
 
-open Classical SystemAlgebra SystemAlgebra.DSL SystemAlgebra.Interface Probability
+open SystemAlgebra SystemAlgebra.DSL SystemAlgebra.Interface Probability
 open scoped SystemAlgebra.DSL
 
 namespace DSLTests.Semantics
@@ -110,7 +110,8 @@ lemma freshBits_independent {q : ℕ} (bs : List Bool) (hq : bs.length ≤ q) :
   have hK : bs.length ≤ FreshBits.bound * q := hq.trans (Nat.le_mul_of_pos_left q hb)
   rw [FreshBits, FreshBits.randomness, FreshBits.program, TypedSystem.source,
     TypedConverter.ofProgram_smul_ofAutomaton, TypedSystem.ofAutomaton_mass,
-    Distribution.mass_fTransform, Distribution.mass_fTransform, ← mass_prefix bs hK]
+    Distribution.mass_fTransform, Distribution.ProbDist.map_val, Distribution.ProbDist.pi_val,
+    Distribution.mass_fTransform, ← mass_prefix bs hK]
   refine Distribution.mass_congr _ fun t => ?_
   simp only [List.map_map, Function.comp_def]
   rw [replies_filterDom_iff (FreshBits.outer q).nonempty_prefix.2 _
@@ -135,7 +136,8 @@ lemma secretBit_retained (q : ℕ) (b : Bool) :
     (SecretBit (budget := q)).1 [(⟨.bit, ()⟩, ⟨.bit, b⟩), (⟨.bit, ()⟩, ⟨.bit, !b⟩)] = 0 := by
   rw [SecretBit, SecretBit.randomness, SecretBit.program, TypedSystem.source,
     TypedConverter.ofProgram_smul_ofAutomaton, TypedSystem.ofAutomaton_mass,
-    Distribution.mass_fTransform, Distribution.mass_fTransform]
+    Distribution.mass_fTransform, Distribution.ProbDist.map_val, Distribution.ProbDist.pi_val,
+    Distribution.mass_fTransform]
   refine Distribution.mass_eq_zero_of_forall_not _ fun t hr => ?_
   have hr := replies_filterDom _ _ hr
   change Replies _ ([] ++ [(⟨.bit, ()⟩ : Sigma SecretBit.Input)] ++ [⟨.bit, ()⟩])

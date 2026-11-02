@@ -64,11 +64,11 @@ noncomputable section
 
 variable {K M T : Type} [Fintype K] [Fintype M] [Fintype T]
 
-/-- Independent tags under every key on every message. -/
+/-- The table law `tags mac f = ∏ km, mac.tag km.1 km.2 (f km)`: independent tags for
+every key/message pair. -/
 def MAC.tags [DecidableEq K] [DecidableEq M] (mac : MAC K M T) :
     Distribution.ProbDist (K × M → T) :=
-  ⟨Distribution.pi fun km => (mac.tag km.1 km.2).1,
-    Distribution.pi_isProbDist fun km => (mac.tag km.1 km.2).2⟩
+  Distribution.ProbDist.pi fun km => mac.tag km.1 km.2
 
 -- `S_k` and `V_k` for `k ← G`: on `m`, output `t ← S(k, m)`; on `(m, t)`, output `V(k, m, t)`.
 system MAC.Real(mac : MAC K M T) [DecidableEq K] [DecidableEq M] : Tagging M T

@@ -24,8 +24,10 @@ review_sites() {
       declaration = declaration "[[:space:]]+)*"
       declaration = declaration "(def|abbrev|system|converter|interface|structure|class)"
       declaration = declaration "[[:space:]]"
-      construction = "((TypedSystem|Resource)\\.sample|Distribution\\.(uniform|prod|pi|fTransform)"
-      construction = construction "|ProbDist\\.(map|bind|jointLaw)|prodProbDist)([^[:alnum:]_]|$)"
+      construction = "((TypedSystem|Resource)\\.sample"
+      construction = construction "|Distribution\\.(uniform|prod|pi|piDep|fTransform)"
+      construction = construction "|ProbDist\\.(map|bind|jointLaw|pi|piDep)|prodProbDist)"
+      construction = construction "([^[:alnum:]_]|$)"
       construction = construction "|←\\$|𝒰\\["
     }
     function inspect(text, line) {

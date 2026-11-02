@@ -86,7 +86,7 @@ lemma collision_mass_le [Nonempty M] {k : ℕ} (known : List M) (hk : known.leng
         simp [entry_of_lt _ _ hi, hi]
       -- The marginal of an independent product is its `i`-th factor scaled by the weights of
       -- the others; the factor is uniform, `1/|M|` at `m`, and every weight is 1.
-      rw [e, tableLaw, Distribution.marginalAt_pi]
+      rw [e, tableLaw, Distribution.ProbDist.pi_val, Distribution.marginalAt_pi]
       simp [DSL.uniform, Distribution.uniform_apply, Distribution.weight_uniform]
     -- `i ≥ k`: the event requires `i < k`, so it is empty: probability `0 ≤ 1/|M|`.
     · exact (Distribution.mass_eq_zero_of_forall_not _ fun t ht => hi ht.1).le.trans
@@ -365,6 +365,7 @@ lemma ideal_mass_hybridTables (xs : List (Σ i, (AE.perPort M C q).X i))
     -- table), and the first entries of a table of independent samples are a table of
     -- independent samples (`fTransform_pi_castLE`).
     dsimp only [realTableLaw, ccaTableLaw, idealLaw, idealTableLaw, Distribution.prodProbDist]
+    simp only [Distribution.ProbDist.pi_val]
     rw [truncateTables, Distribution.fTransform_prod, Distribution.fTransform_prod,
       Distribution.fTransform_id,
       Distribution.fTransform_pi_castLE _ (AE.Real.law1 scheme).2.2,
