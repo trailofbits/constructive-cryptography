@@ -24,9 +24,17 @@ The security predicates bound the advantage of each typed distinguisher selected
 `AdmissibleDistinguishers` by the supplied `error d`, using the system-pair convention of
 [1, §2.3.1, p. 14]. No closure of the selected tests is assumed.
 
+`PublicKeyEncryption.Correct` requires recovery for supported generated key pairs and
+supported encryption outputs. `PublicKeyEncryption.Correct.mass_dec_eq_one` gives probability-one
+recovery; `PublicKeyEncryption.Correct.dec_eq_some_of_mem_encryptions` transfers the support
+contract to supported encryption tables. The local body equations `PKE.system.publicKey_eq` and
+`PKE.system.enc_eq` describe replies at an assumed retained pair and supplied table response.
+`PKE.system.dec_eq_of_correct` recovers that encryption when the pair and table are supported.
+
 ## Main definitions
 
 * `PublicKeyEncryption PK SK M C`: the syntax
+* `PublicKeyEncryption.Correct`: correctness for generated key pairs
 * `PKE PK M C`: the interface of the public key, encryption and decryption
 * `PKE.system scheme`: the public key, `E_pk` and `D_sk` for `(pk, sk) ← G`
 * `PKE.CCA`: the random-message transformation
@@ -60,6 +68,29 @@ structure PublicKeyEncryption
   /-- Decryption `D`; `none` is rejection. -/
   dec : SK → C → Option M
 
+/-- Each supported encryption under a generated key pair decrypts to its original message.
+[2, Definition 11.1, p. 436]: “decryption undoes encryption.” This support contract gives
+`Pr[D(sk, E(pk, m)) = m] = 1`; `some m` distinguishes recovery from rejection. -/
+def PublicKeyEncryption.Correct
+    -- `PK`, `SK`, `M`, `C` carry public keys, secret keys, messages and ciphertexts.
+    {PK SK M C : Type}
+    -- `scheme` supplies joint key generation, probabilistic encryption and decryption.
+    (scheme : PublicKeyEncryption PK SK M C) : Prop :=
+  -- `(pk, sk)` must occur together under `scheme.gen`; `ciphertext` is possible under `pk`.
+  ∀ pk sk, (pk, sk) ∈ scheme.gen.1.support → ∀ message ciphertext,
+    ciphertext ∈ (scheme.enc pk message).1.support → scheme.dec sk ciphertext = some message
+
+/-- Correct decryption of an encryption has probability one for each generated key pair:
+`Pr[D(sk, E(pk, m)) = m] = 1` [2, Definition 11.1, p. 436]. -/
+lemma PublicKeyEncryption.Correct.mass_dec_eq_one
+    -- `scheme` supplies the laws on `PK`, `SK`, `M`, `C`; `correct` is its support contract.
+    {PK SK M C : Type} {scheme : PublicKeyEncryption PK SK M C} (correct : scheme.Correct)
+    -- `(pk, sk)` is one supported generated pair; `message` is the plaintext being encrypted.
+    {pk : PK} {sk : SK} (hkeys : (pk, sk) ∈ scheme.gen.1.support) (message : M) :
+    (scheme.enc pk message).1.mass (fun ciphertext => scheme.dec sk ciphertext = some message) =
+      1 :=
+  Distribution.ProbDist.mass_eq_one_of_support _ _ (correct pk sk hkeys message)
+
 interface PKE(PK M C : Type) [Fintype PK] [Fintype M] [Fintype C]
   publicKey() → PK
   enc(message : M) → C
@@ -75,6 +106,19 @@ ciphertexts for every public-key/message pair. -/
 def PublicKeyEncryption.encryptions [DecidableEq PK] [DecidableEq M]
     (scheme : PublicKeyEncryption PK SK M C) : Distribution.ProbDist (PK × M → C) :=
   Distribution.ProbDist.pi fun pm => scheme.enc pm.1 pm.2
+
+omit [Fintype SK] [Fintype C] in
+/-- Each supported encryption table decrypts correctly at every generated pair and message. -/
+lemma PublicKeyEncryption.Correct.dec_eq_some_of_mem_encryptions [DecidableEq PK] [DecidableEq M]
+    -- `correct` relates `scheme.enc` at public keys `PK` to `scheme.dec` at secret keys `SK`.
+    {scheme : PublicKeyEncryption PK SK M C} (correct : scheme.Correct)
+    -- `hkeys` keeps the generated pair together; `table` is one supported encryption-table draw.
+    {pk : PK} {sk : SK} (hkeys : (pk, sk) ∈ scheme.gen.1.support) {table : PK × M → C}
+    -- `htable` asserts table support; `message` is the plaintext whose entry is decrypted.
+    (htable : table ∈ scheme.encryptions.1.support) (message : M) :
+    scheme.dec sk (table (pk, message)) = some message :=
+  correct pk sk hkeys message _
+    ((Distribution.ProbDist.mem_support_pi_iff _ _).mp htable (pk, message))
 
 -- Retain `(pk, sk) ← scheme.gen` and publish `pk` [2, Definition 11.1, p. 436].
 -- Each `enc(m)` draws a fresh `scheme.enc pk m`; `dec(c)` returns `scheme.dec sk c`.
@@ -92,6 +136,44 @@ system PKE.system
     return encryptions (keys.1, message)
   on dec(ciphertext : C) → Option M
     return scheme.dec keys.2 ciphertext
+
+/-- At an assumed retained pair, the local public-key reply publishes `pk` and keeps the pair.
+`Sum.inl` marks a completed reply, containing the retained state and returned value. -/
+lemma PKE.system.publicKey_eq [DecidableEq PK] [DecidableEq M]
+    -- `scheme` supplies the key-pair law and the encryption and decryption operations.
+    (scheme : PublicKeyEncryption PK SK M C)
+    -- `pk` and `sk` are the public and secret keys in the supplied state.
+    (pk : PK) (sk : SK) :
+    PKE.system.body scheme (some (pk, sk)) .publicKey () [] =
+      .inl (some (pk, sk), pk) := by
+  simp only [PKE.system.body, returnProg]
+
+/-- At an assumed retained pair, the local encryption reply selects the supplied table entry.
+The one-entry source history records the table reply at `Sum.inr ()`; `Sum.inl` marks completion. -/
+lemma PKE.system.enc_eq [DecidableEq PK] [DecidableEq M]
+    -- `scheme` supplies the laws; `pk` and `sk` are the retained public and secret keys.
+    (scheme : PublicKeyEncryption PK SK M C) (pk : PK) (sk : SK)
+    -- `table` is the supplied source response; `message` is the queried plaintext.
+    (table : PK × M → C) (message : M) :
+    PKE.system.body scheme (some (pk, sk)) .enc message
+        [(⟨.inr (), ()⟩, ⟨.inr (), table⟩)] =
+      .inl (some (pk, sk), table (pk, message)) := by
+  simp only [PKE.system.body, callProg, returnProg, ↓reduceDIte]
+
+/-- At a supported retained pair, local decryption of a supported table entry recovers its
+message. The completed reply `Sum.inl` also records the unchanged retained pair. -/
+lemma PKE.system.dec_eq_of_correct [DecidableEq PK] [DecidableEq M]
+    -- `correct` is the support contract for `scheme` on public keys `PK` and secret keys `SK`.
+    (scheme : PublicKeyEncryption PK SK M C) (correct : scheme.Correct)
+    -- `hkeys` asserts that the retained pair `(pk, sk)` occurs under joint key generation.
+    {pk : PK} {sk : SK} (hkeys : (pk, sk) ∈ scheme.gen.1.support)
+    -- `htable` puts `table` in the encryption-law support; `message` selects its queried entry.
+    {table : PK × M → C} (htable : table ∈ scheme.encryptions.1.support) (message : M) :
+    PKE.system.body scheme (some (pk, sk)) .dec (table (pk, message)) [] =
+      .inl (some (pk, sk), some message) := by
+  -- The table's supported ciphertext decrypts to `some message` at the paired secret key.
+  simp only [PKE.system.body, returnProg,
+    correct.dec_eq_some_of_mem_encryptions hkeys htable message]
 
 -- Encrypt a random message `m̃` instead of `m` and record `(c, m)`; on `c`, output its first
 -- recorded message, otherwise forward `c` [1, p. 18, footnote 2]. `List.lookup_append` keeps
