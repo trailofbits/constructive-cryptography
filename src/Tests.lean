@@ -9,6 +9,7 @@ public import Tests.Games
 public import Tests.Problem
 public import Tests.GameConsumers
 public import Tests.Guessing
+public import Tests.RecordingGuard
 public import Tests.AllDistinguishers
 public import Tests.MixtureObservation
 public import Tests.ProofErgonomics

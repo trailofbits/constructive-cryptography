@@ -49,7 +49,7 @@ noncomputable def decisionLaw
 
 /-- Each Boolean mass is the probability of that final decision on the completed transcript. -/
 lemma decisionLaw_apply
-    -- `R` supplies port-correct replies; `b` is the final decision being tested.
+    -- `R` replies at queried ports by `hR`; `b` is the final decision being tested.
     (R : RandomSystem (Σ i, X i) (Σ i, Y i) 𝒟) (hR : R.RepliesAtQueriedInterface)
     (b : Bool) :
     (decisionLaw P R hR).1 b = P.1.sum fun D w => w *

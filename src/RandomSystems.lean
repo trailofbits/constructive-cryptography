@@ -20,6 +20,7 @@ public import RandomSystems.Converter.Identity
 public import RandomSystems.Converter.PartialConverter
 public import RandomSystems.Converter.PartialIdentity
 public import RandomSystems.Converter.Program
+public import RandomSystems.Converter.ForwardingProgram
 public import RandomSystems.Converter.ProgramSchedule
 public import RandomSystems.Converter.ProgramAttachment
 public import RandomSystems.Converter.ProbProgramAttachment
@@ -107,6 +108,7 @@ public import RandomSystems.Typed.PresentedGame
 public import RandomSystems.Typed.ProbAutomaton
 public import RandomSystems.Typed.ProbProgramAttachment
 public import RandomSystems.Typed.Relabel
+public import RandomSystems.Typed.RecordingGuard
 public import RandomSystems.Typed.QueryRouting
 public import RandomSystems.Typed.SamplingAlgebra
 public import RandomSystems.Typed.Source
