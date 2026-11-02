@@ -11,6 +11,7 @@ public import Commons.Definitions.KEM
 public import Commons.Definitions.MAC
 public import Commons.Definitions.PRG
 public import Commons.Definitions.PublicKeyEncryption
+public import Commons.Definitions.PublicKeyEncryption.Keyed
 public import Commons.Definitions.RSA
 public import Commons.Definitions.Signature
 public import Commons.Definitions.UniversalHash

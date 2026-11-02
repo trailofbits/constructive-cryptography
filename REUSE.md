@@ -80,6 +80,8 @@ The client supplies the mathematical inputs to existing objects:
 Keep types and domains in shared declarations, and explain parameters beside their binders.
 Use construction names for objects; real/ideal labels identify their roles in an experiment.
 Choose the standard object before writing its implementation or introducing another wrapper.
+The [PKE correspondence](src/Commons/Definitions/PublicKeyEncryption/Keyed.lean) exposes
+`TypedSystem.keyed` under the existing CCA converter, with one pair and fresh encryption replies.
 
 1. Map the intended objects and laws to existing declarations. For each gap, state the missing
    capability. Put this short mapping in the task update or ignored `Scratch/` working notes.
