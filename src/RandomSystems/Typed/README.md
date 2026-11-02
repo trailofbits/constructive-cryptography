@@ -123,6 +123,13 @@ the same deterministic system for every $`\omega`$, then
 [their sampled automata are equal typed systems][TypedSystem.ofAutomaton_map_congr] on the
 interface's domain. A bisimulation for each draw thus yields an equation of typed systems, which
 rewrites under attachment and parallel composition.
+A [**probabilistic automaton**][TypedSystem.ofProbAutomaton] starts from a normalized law
+`init` and, at each admitted `i(x)`, draws `(s', y)` from the normalized kernel `step s i x`,
+retains `s'`, and returns `y` at `i`. Its state type may be infinite; each law has finite support.
+The constructor uses the existing cumulative random system on the interface's domain.
+[A kernel simulation][TypedSystem.ofProbAutomaton_eq_of_simulation] preserving an input-history
+invariant at admitted queries gives equality of typed systems.
+[Point transitions][TypedSystem.ofProbAutomaton_ofDeterministic] recover `ofAutomaton`.
 A [**memoryless system**][TypedSystem.ofMemoryless] answers each admitted query `i(x)`
 with a fresh draw from `ν i x`. In `TypedSystem.ofMemoryless A ν`, `A` selects the
 interface and its declared domain. The [source][TypedSystem.source_eq_ofMemoryless] and
@@ -255,6 +262,9 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedSystem.ofAutomaton]: Automaton.lean#L55
 [TypedSystem.ofAutomaton_map_congr]: Automaton.lean#L76
 [TypedSystem.parallel_ofAutomaton]: Automaton.lean#L100
+[TypedSystem.ofProbAutomaton]: ProbAutomaton.lean
+[TypedSystem.ofProbAutomaton_eq_of_simulation]: ProbAutomaton.lean
+[TypedSystem.ofProbAutomaton_ofDeterministic]: ProbAutomaton.lean
 [TypedSystem.ofMemoryless]: Memoryless.lean#L57
 [TypedSystem.source_eq_ofMemoryless]: Memoryless.lean#L151
 [TypedSystem.parallel_ofMemoryless]: Memoryless.lean#L231

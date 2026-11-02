@@ -18,6 +18,7 @@ Ideal systems are in the `Commons` namespace; typed systems and converters are i
 | Fresh query-dependent replies | `TypedSystem.ofMemoryless` in [Memoryless] |
 | Retained key, fresh replies | `TypedSystem.keyed` in [Keyed] |
 | Retained state | `TypedSystem.sample` in [Functional]; `ofAutomaton` in [Automaton] |
+| Retained state with fresh transitions | `TypedSystem.ofProbAutomaton` in [ProbAutomaton] |
 | Independent joint law | `prodProbDist` in [Distribution] |
 | Independent finite family of draws | `ProbDist.pi` in [Distribution] |
 | Independent draws with different outcome types | `ProbDist.piDep` in [DependentProduct] |
@@ -34,6 +35,7 @@ Ideal systems are in the `Commons` namespace; typed systems and converters are i
 [Memoryless]: src/RandomSystems/Typed/Memoryless.lean
 [Functional]: src/RandomSystems/Typed/Functional.lean
 [Automaton]: src/RandomSystems/Typed/Automaton.lean
+[ProbAutomaton]: src/RandomSystems/Typed/ProbAutomaton.lean
 [Distribution]: src/Probability/Distribution.lean
 [DependentProduct]: src/Probability/DependentProduct.lean
 [Kernel]: src/Probability/Kernel.lean

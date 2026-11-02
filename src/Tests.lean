@@ -48,6 +48,7 @@ public import Tests.TypedConverterComposition
 public import Tests.Keyed
 public import Tests.TypedSampling
 public import Tests.TypedMemoryless
+public import Tests.TypedProbAutomaton
 public import Tests.TypedNaryParallel
 
 /-! Axiom audits per layer and of the Commons library, the checks of the
