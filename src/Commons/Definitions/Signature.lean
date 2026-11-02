@@ -13,11 +13,14 @@ and offers signing and verification. Each signing call draws a fresh table from
 `SignatureScheme.signatures` and selects the current secret-key/message entry.
 
 `SignatureScheme.EUF` accepts only valid signatures on previously signed messages;
-`SignatureScheme.SUF` accepts only valid previously issued pairs.
+`SignatureScheme.SUF` accepts only valid previously issued pairs. Both use `List.insert` and
+`List.contains`; `List.mem_insert_iff` gives the membership update, and `List.insert_of_mem`
+makes repeated recording inert.
 `SignatureScheme.EUFCMA.systems` and `SignatureScheme.SUFCMA.systems` compare the scheme oracle
 with these restrictions, adapting the integrity
-substitutions of [1, Definitions 2.3.6–2.3.7, p. 21]. The new-message and new-pair conditions
-are those of [2, Attack Games 13.1–13.2, pp. 529–530].
+substitutions of [1, Definitions 2.3.6–2.3.7, p. 21]. They adapt the new-message and new-pair
+conditions of [2, Attack Games 13.1–13.2, pp. 529–530], testing freshness at each verification
+query against the earlier signing queries.
 
 The security predicates bound each typed distinguisher's advantage by `error d`, following
 [1, §2.3.1, p. 14]. `AdmissibleDistinguishers` selects the tests, with no closure assumed.
@@ -99,7 +102,9 @@ system SignatureScheme.system
   on verify(message : M, signature : Sig) → Bool
     return scheme.verify keys.1 message signature
 
--- Record each signed message; accept a signature only if it verifies and its message was signed.
+-- Retain requested messages in `signed`; verification returns `valid && signed.contains message`.
+-- Insert the message before requesting its signature. The condition "m is new" in
+-- [2, Attack Game 13.1, p. 530] is tested against the messages requested so far.
 converter SignatureScheme.EUF(PK M Sig : Type)
     [Fintype PK] [Fintype M] [Fintype Sig] [DecidableEq M] : Signing PK M Sig
   inside signing : Signing PK M Sig
@@ -109,14 +114,17 @@ converter SignatureScheme.EUF(PK M Sig : Type)
     pk ← signing.publicKey()
     return pk
   on sign(message : M) → Sig
-    signed ← signed ++ [message]
+    signed ← signed.insert message
     signature ← signing.sign(message)
     return signature
   on verify(message : M, signature : Sig) → Bool
     valid ← signing.verify(message, signature)
-    return valid && decide (message ∈ signed)
+    return valid && signed.contains message
 
--- Record each signed pair; accept a signature only if it verifies and the pair was signed.
+-- Retain returned pairs in `signed`; verification returns
+-- `valid && signed.contains (message, signature)`.
+-- Insert the pair after receiving the signature. The condition "(m, σ) is new" in
+-- [2, Attack Game 13.2, p. 530] is tested against the pairs returned so far.
 converter SignatureScheme.SUF(PK M Sig : Type)
     [Fintype PK] [Fintype M] [Fintype Sig] [DecidableEq M] [DecidableEq Sig] : Signing PK M Sig
   inside signing : Signing PK M Sig
@@ -127,11 +135,11 @@ converter SignatureScheme.SUF(PK M Sig : Type)
     return pk
   on sign(message : M) → Sig
     signature ← signing.sign(message)
-    signed ← signed ++ [(message, signature)]
+    signed ← signed.insert (message, signature)
     return signature
   on verify(message : M, signature : Sig) → Bool
     valid ← signing.verify(message, signature)
-    return valid && decide ((message, signature) ∈ signed)
+    return valid && signed.contains (message, signature)
 
 /-- **The systems of EUF-CMA**: the real system and the one whose verification accepts only
 signatures on signed messages, for `(pk, sk) ← G`, at the budget `q` per port. -/
