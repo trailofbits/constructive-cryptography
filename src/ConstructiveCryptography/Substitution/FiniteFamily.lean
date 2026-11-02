@@ -30,6 +30,8 @@ prefix-update equations in `parallelAllImplication` identify the consecutive hyb
 `distance_smul_parallelAll_le_sum` applies the implication distance bound:
 converter non-expansion transports each component bound, then the hybrid errors add. Its
 empty-family case has identical endpoints and zero distance.
+`distance_parallelAll_update_le` specializes common-context non-expansion to two families
+differing at one tag, so a normalized component update has its own local distance bound.
 
 `substitutesWithin_smul_parallelAll` transports component contracts for a chosen observation
 model through the same witness. Each reduction, its admissibility proof, and its advantage
@@ -58,6 +60,18 @@ namespace SystemAlgebra.Substitution
 -- `K` names the finite components; `A k` fixes each component's ports, alphabets and domain.
 -- `C` is the outside interface of their common converter context.
 variable {K : Type} [Fintype K] [DecidableEq K] {A : K → Interface} {C : Interface}
+
+/-- Replacing one component of an independent family costs at most that component's distance.
+The exact isolation equation exposes the common converter, whose attachment is non-expanding. -/
+lemma distance_parallelAll_update_le
+    -- `R j` supplies the fixed components for `j ≠ k`; `k` is the changed component's tag.
+    (R : ∀ j, TypedSystem (A j)) (k : K)
+    -- `S`, `T` are the replacement pair at the same component interface `A k`.
+    (S T : TypedSystem (A k)) :
+    Δ (∥ j, Function.update R k S j) (∥ j, Function.update R k T j) ≤ Δ S T := by
+  rw [← TypedConverter.parallelAllContext_smul R k S,
+    ← TypedConverter.parallelAllContext_smul R k T]
+  exact Interface.distance_smul_le (TypedConverter.parallelAllContext R k) S T
 
 /-- The family after `m` replacements: component `k` is `S k` exactly when its position in
 `order` is below `m`, and is `R k` otherwise. All members keep their original interfaces. -/

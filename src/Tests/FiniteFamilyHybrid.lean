@@ -36,6 +36,17 @@ example
   simpa only [TypedConverter.comp_smul] using distance_smul_parallelAll_le_sum R S order
     (TypedConverter.comp context (⨂ₘ k, α k)) error step
 
+/-- The normalized update families retain a direct bound from the changed component alone. -/
+example
+    -- `K` tags the component interfaces `A j`.
+    {K : Type} [Fintype K] [DecidableEq K] {A : K → Interface}
+    -- `R j` fixes components outside the selected tag `k`.
+    (R : ∀ k, TypedSystem (A k)) (k : K)
+    -- `S`, `T` are the component pair; `hlocal` supplies their scalar budget `ε`.
+    (S T : TypedSystem (A k)) (ε : ℝ≥0) (hlocal : Δ S T ≤ ε) :
+    Δ (∥ j, Function.update R k S j) (∥ j, Function.update R k T j) ≤ ε :=
+  (distance_parallelAll_update_le R k S T).trans hlocal
+
 section Endpoints
 
 -- `R k`, `S k` are the original and replacement systems at the same tuple-component interface.
@@ -157,6 +168,7 @@ example
     (fun i => Fin.elim0 i) (fun i => Fin.elim0 i) (fun i => Fin.elim0 i)
     (fun _ _ => 0) (fun i => Fin.elim0 i)
 
+#print axioms SystemAlgebra.Substitution.distance_parallelAll_update_le
 #print axioms SystemAlgebra.Substitution.parallelAllImplication
 #print axioms SystemAlgebra.Substitution.distance_smul_parallelAll_le_sum
 #print axioms SystemAlgebra.Substitution.substitutesWithin_smul_parallelAll
