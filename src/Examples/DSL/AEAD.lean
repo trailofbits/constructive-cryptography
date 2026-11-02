@@ -3,6 +3,7 @@ module
 public import Examples.DSL.AES
 public import Commons.Schemes.Stream.CTR
 public import Commons.Schemes.MAC.PMAC
+public import Commons.Constructions.NonceEncryptThenMAC
 
 /-!
 AES-CTR followed by PMAC, with independent keys and associated data, from the CTR and PMAC
@@ -12,8 +13,8 @@ the caller's security obligation, and decryption may repeat a nonce. PMAC authen
 the associated data and the ciphertext, with fixed-width lengths, and decryption checks the tag
 with PMAC's verification.
 
-The combination and its length-delimited authentication encoding are specified here; this is not
-a claim of a standardized AEAD mode or a security reduction.
+The generic `Commons.nonceEncryptThenMAC` converter supplies the nonce/AD wiring. This example
+supplies its CTR and PMAC components and the length-delimited authentication encoding.
 -/
 
 @[expose] public section
@@ -43,35 +44,16 @@ def authenticationBytes (input : Nonce × Message × Message) : List UInt8 :=
   nonce.toList ++ encodeNat 8 associatedData.val.length ++ encodeNat 8 ciphertext.val.length ++
     associatedData.val ++ ciphertext.val
 
-interface AEAD
-  encrypt(nonce : Nonce, associatedData : Message, message : Message) → Message × Block
-  decrypt(nonce : Nonce, associatedData : Message, ciphertext : Message, tag : Block) →
-    Option Message
-
-converter EncryptThenMAC : AEAD
-  inside cipher : StreamCipher (2 ^ 36)
-  inside auth : Tagging (Nonce × Message × Message) Block
-  on encrypt(nonce : Nonce, associatedData : Message, message : Message) → Message × Block
-    ciphertext ← cipher.crypt(nonce, message)
-    tag ← auth.tag(nonce, associatedData, ciphertext)
-    return (ciphertext, tag)
-  on decrypt(nonce : Nonce, associatedData : Message, ciphertext : Message, tag : Block) →
-      Option Message
-    valid ← auth.verify((nonce, associatedData, ciphertext), tag)
-    if valid
-      message ← cipher.crypt(nonce, ciphertext)
-      return some message
-    else
-      return none
-
 system AESCTR ≔ CTR (2 ^ 36) • AES
 system AESPMAC ≔ PMAC authenticationBytes • AES
-system AuthenticatedEncryption ≔ EncryptThenMAC • (AESCTR ∥ AESPMAC)
+system AuthenticatedEncryption ≔
+  nonceEncryptThenMAC Nonce Message Message Block • (AESCTR ∥ AESPMAC)
 
 /-- The combined converter uses two independently keyed AES systems. -/
 lemma authenticatedEncryption_eq (q : ℕ) :
     AuthenticatedEncryption (budget := q) =
-      (EncryptThenMAC ≫ (CTR (2 ^ 36) ⊗ₘ PMAC authenticationBytes)) • (AES ∥ AES) := by
+      (nonceEncryptThenMAC Nonce Message Message Block ≫
+        (CTR (2 ^ 36) ⊗ₘ PMAC authenticationBytes)) • (AES ∥ AES) := by
   unfold AuthenticatedEncryption AESCTR AESPMAC
   cc_normalize
 

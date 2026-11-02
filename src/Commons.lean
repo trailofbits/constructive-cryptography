@@ -4,6 +4,7 @@ public import Commons.Constructions.EncryptThenMAC
 public import Commons.Constructions.KEMDEM
 public import Commons.Constructions.KEMDEM.Correctness
 public import Commons.Constructions.EncryptThenMAC.Correctness
+public import Commons.Constructions.NonceEncryptThenMAC
 public import Commons.Constructions.TranscriptCompletion
 public import Commons.Definitions.AEAD
 public import Commons.Definitions.AEAD.Keyed
@@ -15,6 +16,7 @@ public import Commons.Definitions.Ideal
 public import Commons.Definitions.LazyPermutation
 public import Commons.Definitions.KEM
 public import Commons.Definitions.Nonce
+public import Commons.Definitions.NonceAEAD
 public import Commons.Definitions.MAC
 public import Commons.Definitions.MAC.Keyed
 public import Commons.Definitions.PRG
@@ -22,6 +24,7 @@ public import Commons.Definitions.PublicKeyEncryption
 public import Commons.Definitions.PublicKeyEncryption.Keyed
 public import Commons.Definitions.RSA
 public import Commons.Definitions.Signature
+public import Commons.Definitions.StreamCipher
 public import Commons.Definitions.UniversalHash
 public import Commons.Schemes.BlockCipher.AES
 public import Commons.Schemes.Hash.Keccak

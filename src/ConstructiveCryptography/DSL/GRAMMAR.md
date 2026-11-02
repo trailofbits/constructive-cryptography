@@ -378,10 +378,11 @@ can have a different number of blocks; `CBC.exact` types it by the total number 
 These examples specify systems; they do not establish new security bounds.
 
 `Examples/DSL/AEAD.lean` builds AES-CTR with PMAC authentication and associated data from
-three converters: `CTR` and `PMAC` of Commons, and `EncryptThenMAC`. Its complete assembly is
+three Commons converters: `CTR`, `PMAC` and `nonceEncryptThenMAC`. Its complete assembly is
 
 ```lean
-EncryptThenMAC • ((CTR (2 ^ 36) • AES) ∥ (PMAC authenticationBytes • AES))
+nonceEncryptThenMAC Nonce Message Message Block •
+  ((CTR (2 ^ 36) • AES) ∥ (PMAC authenticationBytes • AES))
 ```
 
 The two AES systems sample independent AES-256 keys. Messages and associated

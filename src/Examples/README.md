@@ -106,7 +106,7 @@ exercised in [Usability][ExUse].
 [Encryption.system]: ../Commons/Definitions/Encryption.lean#L125
 [BlockCipher]: ../Commons/Definitions/Cipher.lean#L37
 [AES-blockCipher]: ../Commons/Schemes/BlockCipher/AES.lean#L391
-[CTR]: ../Commons/Schemes/Stream/CTR.lean#L126
+[CTR]: ../Commons/Schemes/Stream/CTR.lean#L123
 [PMAC]: ../Commons/Schemes/MAC/PMAC.lean#L119
 [oracleStep]: AuthenticatedEncryption/Oracle.lean#L43
 [real_bisim]: AuthenticatedEncryption/Oracle.lean#L327
@@ -138,4 +138,4 @@ exercised in [Usability][ExUse].
 [FirstRequests]: DSL/Components.lean#L120
 [AES-system]: DSL/AES.lean#L33
 [CBC]: DSL/AES.lean#L61
-[EncryptThenMAC]: DSL/AEAD.lean#L51
+[EncryptThenMAC]: DSL/AEAD.lean#L49
