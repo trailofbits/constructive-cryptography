@@ -54,16 +54,12 @@ variable {PK SK M C : Type} [Fintype PK] [Fintype SK] [Fintype M] [Fintype C]
   [DecidableEq PK] [DecidableEq M]
 
 omit [Fintype SK] [Fintype C] in
-/-- Selecting the entry `(pk, m)` of an independent encryption table gives `scheme.enc pk m`. -/
+/-- Entry `(pk, m)` of the independent encryption table has law `scheme.enc pk m`. -/
 lemma PublicKeyEncryption.encryptions_map
     -- `scheme` supplies the encryption laws; `pk`, `m` select the requested ciphertext.
     (scheme : PublicKeyEncryption PK SK M C) (pk : PK) (m : M) :
-    scheme.encryptions.map (fun f => f (pk, m)) = scheme.enc pk m := by
-  -- Every other coordinate has weight one in `marginalAt_pi`.
-  apply Subtype.ext
-  change marginalAt (Distribution.pi (fun pm : PK × M => (scheme.enc pm.1 pm.2).1)) (pk, m) = _
-  rw [marginalAt_pi]
-  simp only [IsProbability.weight_eq_one, Finset.prod_const_one, one_smul]
+    scheme.encryptions.map (fun f => f (pk, m)) = scheme.enc pk m :=
+  ProbDist.map_pi_apply (fun pm : PK × M => scheme.enc pm.1 pm.2) (pk, m)
 
 /-- At retained `keys = (pk, sk)`, publish `pk`, encrypt freshly under `pk`, and decrypt under `sk`.
 The port types are independent of the budget. -/
