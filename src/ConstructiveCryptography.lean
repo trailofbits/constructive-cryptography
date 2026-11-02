@@ -35,6 +35,7 @@ public import ConstructiveCryptography.Specification.Star
 public import ConstructiveCryptography.Specification.Star.Metric
 public import ConstructiveCryptography.Substitution.Basic
 public import ConstructiveCryptography.Substitution.Construction
+public import ConstructiveCryptography.Substitution.FiniteFamily
 public import ConstructiveCryptography.Substitution.Implication
 public import ConstructiveCryptography.Substitution.Quantitative
 public import ConstructiveCryptography.Substitution.Reduction
