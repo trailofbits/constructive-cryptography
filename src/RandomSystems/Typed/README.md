@@ -122,10 +122,12 @@ the same deterministic system for every $`\omega`$, then
 [their sampled automata are equal typed systems][TypedSystem.ofAutomaton_map_congr] on the
 interface's domain. A bisimulation for each draw thus yields an equation of typed systems, which
 rewrites under attachment and parallel composition.
-A source [is memoryless][TypedSystem.source_eq_memoryless],
-memoryless systems [side by side are memoryless][TypedSystem.parallel_eq_memoryless], and the
-converter of a program [maps a memoryless system to the memoryless system of its reply
-law][TypedConverter.ofProgram_smul_memoryless], also
+A [**memoryless system**][TypedSystem.ofMemoryless] answers each admitted query `i(x)`
+with a fresh draw from `ν i x`. In `TypedSystem.ofMemoryless A ν`, `A` selects the
+interface and its declared domain. The [source][TypedSystem.source_eq_ofMemoryless] and
+[parallel][TypedSystem.parallel_ofMemoryless] equations rewrite assemblies directly as typed
+systems. The converter of a program [maps a memoryless system to the memoryless system of its
+reply law][TypedConverter.ofProgram_smul_memoryless], also
 [for port-preserving programs][TypedConverter.ofPreservingProgram_smul_memoryless] and
 [with its own sources beside its inside interface][TypedConverter.ofPreservingProgram_comp_rightContext_smul_memoryless]:
 the composition law of [converters](../README.md#converters) on their random systems.
@@ -245,11 +247,12 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedSystem.ofAutomaton]: Automaton.lean#L57
 [TypedSystem.ofAutomaton_map_congr]: Automaton.lean#L72
 [TypedSystem.parallel_ofAutomaton]: Automaton.lean#L96
-[TypedSystem.source_eq_memoryless]: Memoryless.lean#L51
-[TypedSystem.parallel_eq_memoryless]: Memoryless.lean#L150
-[TypedConverter.ofProgram_smul_memoryless]: Memoryless.lean#L245
-[TypedConverter.ofPreservingProgram_smul_memoryless]: Memoryless.lean#L266
-[TypedConverter.ofPreservingProgram_comp_rightContext_smul_memoryless]: Memoryless.lean#L283
+[TypedSystem.ofMemoryless]: Memoryless.lean#L61
+[TypedSystem.source_eq_ofMemoryless]: Memoryless.lean#L171
+[TypedSystem.parallel_ofMemoryless]: Memoryless.lean#L266
+[TypedConverter.ofProgram_smul_memoryless]: Memoryless.lean#L284
+[TypedConverter.ofPreservingProgram_smul_memoryless]: Memoryless.lean#L305
+[TypedConverter.ofPreservingProgram_comp_rightContext_smul_memoryless]: Memoryless.lean#L339
 [TypedSystem.ofFunction]: Functional.lean#L62
 [TypedSystem.ofConditional]: Functional.lean#L44
 [TypedSystem.sample]: Functional.lean#L183

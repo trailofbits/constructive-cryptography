@@ -15,6 +15,7 @@ Ideal systems are in the `Commons` namespace; typed systems and converters are i
 | Forward and inverse queries to one permutation | `StrongURP` in [Ideal] |
 | Independent permutation per tweak | `TweakableURP`, `TweakableStrongURP` in [Ideal] |
 | Fresh samples | `TypedSystem.source` in [Source]; `MemorylessSource` in [Ideal] |
+| Fresh query-dependent replies | `TypedSystem.ofMemoryless` in [Memoryless] |
 | Retained state | `TypedSystem.sample` in [Functional]; `ofAutomaton` in [Automaton] |
 | Independent joint law | `prodProbDist` in [Distribution] |
 | Independent finite family of draws | `ProbDist.pi` in [Distribution] |
@@ -27,6 +28,7 @@ Ideal systems are in the `Commons` namespace; typed systems and converters are i
 
 [Ideal]: src/Commons/Definitions/Ideal.lean
 [Source]: src/RandomSystems/Typed/Source.lean
+[Memoryless]: src/RandomSystems/Typed/Memoryless.lean
 [Functional]: src/RandomSystems/Typed/Functional.lean
 [Automaton]: src/RandomSystems/Typed/Automaton.lean
 [Distribution]: src/Probability/Distribution.lean
