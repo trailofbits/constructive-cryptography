@@ -3,6 +3,7 @@ module
 public import RandomSystems.Distance.Observation
 public import RandomSystems.Typed.Completion
 public import RandomSystems.Typed.Distinguisher
+public import RandomSystems.Typed.Solver
 public import RandomSystems.Distance.Mixture
 public import RandomSystems.Typed.SamplingDistance
 public import RandomSystems.Cumulative.Revealed
@@ -49,6 +50,7 @@ public import RandomSystems.Distance.Absorption
 public import RandomSystems.Distance.Coupling
 public import RandomSystems.Distance.Decision
 public import RandomSystems.Distance.Distinguisher
+public import RandomSystems.Distance.DecisionLaw
 public import RandomSystems.Distance.HCoefficient
 public import RandomSystems.Distance.ParallelObservation
 public import RandomSystems.Distance.Restriction
@@ -113,3 +115,4 @@ systems, probabilistic automata and memoryless systems, converters and attachmen
 composition, distance and games; typed systems, typed converters and typed distinguishers on
 interfaces, and the programs and converters of the component DSL.
 -/
+public import RandomSystems.Typed.Guessing

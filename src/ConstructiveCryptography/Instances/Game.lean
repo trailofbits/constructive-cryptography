@@ -3,55 +3,32 @@ module
 public import ConstructiveCryptography.Notation.Basic
 public import ConstructiveCryptography.Instances.Algebra
 public import RandomSystems.Typed.Game
+public import RandomSystems.Typed.Solver
 public import RandomSystems.Typed.PresentedGame
 
 /-!
 # Games on interfaces
 
-Interfaces are an instance of the evaluation classes `Games` (CR18, §§4.4.3, 4.5.1) and
-`DistinctionGames` (CR18, §§4.10–4.11), and of their converter actions `GameAction` and
-`DistinctionGameAction` (CR18, §4.7.2); these four instances are where the abstractions meet
-random systems. The carrier `Game A` is the typed games `TypedGame A`, MBO random systems as CR18
-instantiates games (§3.7.1). Winners and solvers are probabilistic distinguishers, through their
-behaviors `Domain.SolverBehavior`: a winner does not see the MBO (`DDE.blindMBO`).
+`games` instantiates `Games` with `TypedGame A` and real winning probabilities
+[1, §§4.4.3, 4.5.1]. `winners` and `solvers` use `TypedSolver A`: one compatible stopping
+interaction supplies both the decision and winning views. The winner does not see the
+monotone binary output (`DDE.blindMBO`).
 
-* `games`: the class is abstract over a preordered performance space `Ω`; this instance selects
-  `Ω = ℝ`, and `winners` are the winning probabilities of the solver behaviors. No range axiom
-  is added.
-* `gameAction`, over the same `ℝ`: `attachGame` is `TypedConverter.attachGame`, the attachment
-  of the MBO-forwarding lift `PDCBehavior.liftMBO`. Its identity and serial laws are
-  `TypedConverter.identity_attachGame` and `TypedConverter.comp_attachGame`
-  (`RandomSystems.Typed.Game`); `closed_attach` is discharged by `Domain.SolverBehavior.absorb`.
-* `distinctionGames`: `solvers` are the pairs of views of the solver behaviors, `visible` is
-  `TypedGame.visible`, the visible system `RandomSystem.visible`, and `ConditionallyEquivalent` is
-  `RandomSystem.ConditionallyEquivalent`. The axiom `solvers_winner` holds by the definition of
-  the winners, and `advantage_le_win` by `Domain.Distinguisher.advantage_le_winProbability`.
-* `distinctionGameAction`: `solvers_closed_attach` is discharged by
-  `Domain.SolverBehavior.absorb`, and `visible_attachGame` by
-  `RandomSystem.visible_attach_liftMBO`.
+`gameAction` attaches converters through their MBO-forwarding lifts. Identity and serial
+attachment follow the typed game laws; `TypedSolver.absorb` supplies closure of the selected
+winners. `distinctionGameAction` uses the same absorption for both solver views and preserves
+visibility [1, §4.7.2].
 
-Conditional equivalence then bounds the distance of the visible system of a game by the
-probability that its MBO is set on fixed queries (CR18, Theorem 4.17), through
-`RandomSystem.transcriptDistance_visible_le_of_unsetProbability`. For a game presented by a
-discrete game (`TypedGame.ofPDG`), the bound on the condition bounds the distance from the
-presented typed system. The statements use `Δ` and `|≡` from the abstract
-`Notation.Basic`, read at these instances; the interface frontend `Notation` is not imported.
+`distinctionGames` relates the views by conditional equivalence: if `G |≡ T`, a solver's
+advantage between `G.visible` and `T` is at most its winning probability on `G`
+(`Domain.Distinguisher.advantage_le_winProbability`). `win_le` transfers bounds to the admitted
+winning evaluations. `dist_visible_le` then bounds `Δ G.visible T` by `ε` when every possible
+query sequence leaves the MBO unset with probability at least `1 - ε` [1, Theorem 4.17].
+`game_dist_le` and `game_dist_ofSingleFunction_le` apply this to presented discrete games.
 
-## Main definitions
+## References
 
-* `Interface.winners A`, `Interface.solvers A`: the winners and solvers on `A`
-* `Interface.games`, `Interface.gameAction`, `Interface.distinctionGames`,
-  `Interface.distinctionGameAction`: the instances
-
-## Main results
-
-* `Interface.win_le`: a bound on winning by every distinguisher bounds winning by every winner
-* `Interface.dist_visible_le`: conditional equivalence bounds the distance of the visible
-  typed system
-* `Interface.conditionallyEquivalent_ofPDG_iff`: the conditional equivalence of a presented game
-  is that of the game on random systems
-* `Interface.game_dist_le`, `Interface.game_dist_ofSingleFunction_le`: the distance bound for a
-  presented game and for a single-label sampled-function game
+1. U. Maurer. *Cryptography Foundations*. Lecture notes, ETH Zurich, Spring 2018.
 -/
 
 @[expose] public section
@@ -64,16 +41,16 @@ open scoped SystemAlgebra NNReal
 /-- The winners on `A`: the winning probabilities of the solver behaviors on the input domain of
 `A`. -/
 def winners (A : Interface) : Set (TypedGame A → ℝ) :=
-  Set.range fun s : Domain.SolverBehavior (Y := A.Y) A.domain A.bound A.length_le =>
-    fun G => s.1.2 ⟨G.1.1, G.1.2, G.2⟩
+  Set.range fun s : TypedSolver A =>
+    s.winProbability
 
-/-- The solvers on `A`: the solver behaviors on the input domain of `A`. -/
+/-- The admitted pairs of decision and winning evaluations on interface `A`. -/
 def solvers (A : Interface) : Set ((TypedSystem A → ℝ) × (TypedGame A → ℝ)) :=
-  Set.range fun s : Domain.SolverBehavior (Y := A.Y) A.domain A.bound A.length_le =>
-    (fun R => s.1.1 R, fun G => s.1.2 ⟨G.1.1, G.1.2, G.2⟩)
+  Set.range fun s : TypedSolver A =>
+    (s.decision.1, s.winProbability)
 
 /-- Interfaces select real performance: the winners are the winning views of the joint solver
-behaviors, which are winning probabilities. No range axiom is recorded. -/
+behaviors, which are winning probabilities. -/
 noncomputable instance games : Games Interface TypedGame ℝ where
   winners := winners
 
@@ -84,12 +61,12 @@ noncomputable instance gameAction : GameAction Interface TypedGame ℝ where
   attachGame_identity := TypedConverter.identity_attachGame
   attachGame_serial := TypedConverter.comp_attachGame
   -- Axiom `closed_attach`, discharged by the systems-level construction
-  -- `Domain.SolverBehavior.absorb` (a solver behavior with a PDC absorbed).
+  -- `TypedSolver.absorb` (a solver behavior with a PDC absorbed).
   closed_attach {A B} α := by
     -- The winner on `A` is the winning probability of a solver behavior `s`.
     rintro _ ⟨s, rfl⟩
     -- Absorb `α` into `s`: a solver behavior on `B`, which wins `G` as `s` wins the lift of
-    -- `α` attached to `G`, by definition of the absorbed solver (`rfl`). The lift forwards the
+    -- `α` attached to `G`, by `winProbability_absorb`. The lift forwards the
     -- MBO `a` of `G`; `s` reads only `y` (`DDE.blindMBO`), and `a` only scores the win:
     --
     --   ┌──────────────────────────────┐
@@ -98,7 +75,7 @@ noncomputable instance gameAction : GameAction Interface TypedGame ℝ where
     --   │ └───┘ ◀──y──┬─ └────────┘    │ ◀─(v,a)─ └───┘
     --   │             └─ a ─▶ win      │
     --   └──────────────────────────────┘
-    exact ⟨s.absorb B.nonempty_prefix A.nonempty_prefix α, rfl⟩
+    exact ⟨s.absorb α, funext (s.winProbability_absorb α)⟩
 
 /-- **Interfaces are an instance of `DistinctionGames`** with carrier `TypedSystem` and games
 `TypedGame`: the solvers are the solver behaviors, `visible` is `TypedGame.visible`, the visible
@@ -127,11 +104,11 @@ noncomputable instance distinctionGames : DistinctionGames Interface TypedSystem
     rintro A G T _ hc ⟨s, rfl⟩
     -- `s` comes from one probabilistic distinguisher `P`: its decisions are `P`'s decision
     -- probabilities (`hP`) and its winning probabilities are `P`'s (`hW`).
-    obtain ⟨P, hP, hW⟩ := s.2
-    change |s.1.1 G.visible - s.1.1 T| ≤ s.1.2 ⟨G.1.1, G.1.2, G.2⟩
+    obtain ⟨P, hP, hW⟩ := s.exists_realization
+    change |s.decision.1 G.visible - s.decision.1 T| ≤ s.winProbability G
     -- Rewrite the goal in terms of `P`:
     --   |Pr[P → 1 on G⁻] − Pr[P → 1 on T]| ≤ Pr[P sets the MBO of G]
-    rw [hP G.visible, hP T, hW ⟨G.1.1, G.1.2, G.2⟩]
+    rw [hP G.visible, hP T, hW G]
     -- Conditional equivalence `G |≡ T` bounds `P`'s advantage by its winning probability.
     exact P.advantage_le_winProbability G.1.2 T.2 G.2 hc
 
@@ -140,11 +117,11 @@ with attachment. This is the CC integration of the systems-level game laws. -/
 noncomputable instance distinctionGameAction :
     DistinctionGameAction Interface TypedSystem TypedGame where
   -- Axiom `solvers_closed_attach`, discharged by the systems-level construction
-  -- `Domain.SolverBehavior.absorb`: `s` with `α` absorbed decides on `R` as `s` decides on
+  -- `TypedSolver.absorb`: `s` with `α` absorbed decides on `R` as `s` decides on
   -- `α • R`, and wins `G` as `s` wins the lift of `α` attached to `G` (both by `rfl`).
   solvers_closed_attach {A B} α := by
     rintro _ ⟨s, rfl⟩
-    exact ⟨s.absorb B.nonempty_prefix A.nonempty_prefix α, rfl⟩
+    exact ⟨s.absorb α, rfl⟩
   -- Axiom `visible_attachGame`, discharged by the systems-level theorem
   -- `RandomSystem.visible_attach_liftMBO`: `(lift α • G)⁻ = α • G⁻`.
   visible_attachGame {A B} α G :=
@@ -154,26 +131,32 @@ noncomputable instance distinctionGameAction :
 /-- **Winning by every distinguisher bounds winning by every winner**: a bound on the winning
 probability of every distinguisher for the game's system bounds the winning probability of
 every winner. -/
-lemma win_le {A : Interface} {G : TypedGame A} {ε : ℝ}
+lemma win_le
+    -- `A` selects the interface; `G` is a game on it and `ε` bounds its winning probability.
+    {A : Interface} {G : TypedGame A} {ε : ℝ}
+    -- `hW` bounds every compatible distinguisher; `hw` admits the winning evaluation.
     (hW : ∀ P : A.inputDomain.Distinguisher, P.winProbability G.1.1 ≤ ε)
     {winner : TypedGame A → ℝ} (hw : winner ∈ Games.winners A) : winner G ≤ ε := by
   -- The winner is the winning probability of a solver behavior `s`, which is that of one
   -- probabilistic distinguisher `P` (`hP`).
   obtain ⟨s, rfl⟩ := hw
-  obtain ⟨P, -, hP⟩ := s.2
-  change s.1.2 ⟨G.1.1, G.1.2, G.2⟩ ≤ ε
+  obtain ⟨P, -, hP⟩ := s.exists_realization
+  change s.winProbability G ≤ ε
   -- So the winner wins `G` with `P`'s winning probability, which `hW` bounds.
   rw [hP]
   exact hW P
 
-/-- **Conditional equivalence bounds the distance of the visible system** (CR18,
-Theorem 4.17): a game on an interface conditionally equivalent to a typed system `T`, whose MBO
+/-- **Conditional equivalence bounds the distance of the visible system** [1, Theorem 4.17]:
+a game on an interface conditionally equivalent to a typed system `T`, whose MBO
 stays unset with probability at least `1 - ε` on the queries of each transcript of `T`, has its
 visible typed system within `ε` of `T`. -/
-theorem dist_visible_le {A : Interface} {G : TypedGame A} {T : TypedSystem A}
-    (hc : DistinctionGames.ConditionallyEquivalent G T) {ε : ℝ≥0}
+theorem dist_visible_le
+    -- `G` is the game on interface `A`; `T` is the comparison system on that same interface.
+    {A : Interface} {G : TypedGame A} {T : TypedSystem A}
+    -- `hc` equates their behavior until the MBO is set; `ε` bounds that event's probability.
+    (hc : G |≡ T) {ε : ℝ≥0}
     (hε : ∀ h, T.1 h ≠ 0 → 1 - ε ≤ G.1.1.unsetProbability (h.map Prod.fst)) :
-    CryptographicAlgebra.distance (DistinctionGames.visible G) T ≤ ε := by
+    Δ G.visible T ≤ ε := by
   -- The distance of `CompatiblePseudoMetric` (its field `fibreMetric`) on interfaces is the
   -- systems-level transcript distance of the random systems.
   rw [cc_distance_eq]
@@ -197,9 +180,13 @@ lemma conditionallyEquivalent_ofPDG_iff {A : Interface}
 of a probabilistic discrete game `G` present `R`, the game it presents is conditionally
 equivalent to `S`, and the condition holds with probability at most `ε` on the empty and on
 every admitted query sequence, then `R` and `S` are at most `ε` apart. -/
-theorem game_dist_le {A : Interface}
+theorem game_dist_le
+    -- `A` fixes the interface and domain of the presented game `G` and systems `R`, `S`.
+    {A : Interface}
     {G : PDG (Σ i, A.X i) (Σ i, A.Y i) A.inputDomain} {hG : G.isProbDist} {R S : TypedSystem A}
+    -- `visible` identifies `R` with the visible system presented by `G`.
     (visible : R.1 = PDS.behavior G.underlying (PDG.underlying_probability hG))
+    -- `equiv` compares with `S` until bad; `hbad` bounds bad on each admitted query sequence.
     (equiv : TypedGame.ofPDG G hG visible |≡ S) {ε : ℝ≥0}
     (hbad : ∀ xs, xs = [] ∨ A.domain xs → G.badProbability xs ≤ ε) :
     Δ R S ≤ ε := by
@@ -212,8 +199,7 @@ theorem game_dist_le {A : Interface}
   have bound := dist_visible_le equiv
     (PDG.one_sub_le_unsetProbability_behavior hG A.nonempty_prefix hbad)
   -- The visible system of the presented game is `R` (`TypedGame.visible_ofPDG`).
-  rwa [show DistinctionGames.visible (TypedGame.ofPDG G hG visible) = R from
-    TypedGame.visible_ofPDG G hG visible] at bound
+  rwa [TypedGame.visible_ofPDG G hG visible] at bound
 
 /-- **Conditional equivalence bounds the distance of a sampled-function game**: the typed system
 sampling the function is at most `ε` from a typed system conditionally equivalent to the game

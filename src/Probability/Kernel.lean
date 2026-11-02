@@ -209,6 +209,15 @@ lemma weight_bindK (μ : Distribution A) (f : A → Distribution B) :
   -- A point mass of weight `w` at `a`: the weight of `w • f a` is `w` times that of `f a`.
   | single a w => simp [weight_smul]
 
+/-- An event's mass in a mixture is the weighted sum of its masses in the component laws. -/
+lemma mass_bindK
+    -- `μ` samples `a`; `f a` is the next-outcome law, and `E` is an event on that outcome.
+    (μ : Distribution A) (f : A → Distribution B) (E : B → Prop) :
+    (bindK μ f).mass E = μ.sum (fun a w => w * (f a).mass E) := by
+  -- Restrict to the event and sum the conditional weights.
+  rw [← weight_restrict, restrict_bindK, weight_bindK]
+  simp only [weight_restrict]
+
 /-- **A kernel of weight one preserves the weight.** -/
 lemma weight_bindK_of_weight {μ : Distribution A} {f : A → Distribution B}
     (hf : ∀ a ∈ μ.support, (f a).weight = 1) : (bindK μ f).weight = μ.weight := by
