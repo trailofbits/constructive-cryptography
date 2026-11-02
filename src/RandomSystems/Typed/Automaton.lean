@@ -6,28 +6,21 @@ public import RandomSystems.Typed.SystemParallel
 /-!
 # Automata as typed systems
 
-An automaton whose initial state is sampled from a law is a typed system: the behavior of its
-deterministic systems on the interface's domain, one for each initial state [1, Definition 2,
-p. 6: "specifying the internal randomness and the initial state"]. Parallel composition runs
-two such automata side by side from independent initial states. Two automata initialized from
-one common draw are equal typed systems when they give the same deterministic system for each
-draw; a bisimulation for each draw thus yields an equation of typed systems, which rewrites
-under attachment and parallel composition.
+`TypedSystem.ofAutomaton T step initial` draws an initial state once, then
+updates it with `step` on the domain of `T`. This is a random automaton
+[1, Definition 2, p. 6: "specifying the internal randomness and the initial state"].
 
-## Main definitions
+`ofAutomaton_mass` gives its cumulative probability at a transcript `h`:
 
-* `Interface.automatonDDS T step s`: the deterministic system of the automaton started in `s`
-* `TypedSystem.ofAutomaton T step initial`: the automaton with initial state sampled from
-  `initial`
+```text
+Pr[h] = Pr[s ← initial : automatonSystem step s answers h on T.domain].
+```
 
-## Main results
-
-* `TypedSystem.ofAutomaton_mass`: a transcript has the mass of the initial states from which
-  the automaton gives it
-* `TypedSystem.ofAutomaton_map_congr`: pointwise equality of initialized automata gives equality
-  of their typed systems under a common sampling law, even with different state spaces
-* `TypedSystem.parallel_ofAutomaton`: parallel automata are the automaton running both side by
-  side
+`ofAutomaton_map_congr` compares two state representations initialized from the same law:
+pointwise equality for each draw yields equality of typed systems. `parallel_ofAutomaton`
+assembles two automata using `parallelStep` and the independent initial law `prodProbDist P Q`.
+A bisimulation for each draw yields an equation of typed systems, which rewrites under
+attachment and parallel composition.
 
 ## References
 
@@ -41,9 +34,13 @@ namespace SystemAlgebra
 
 open Probability Interface
 
-variable {S : Type} (T : Interface) (step : S → (i : T.I) → T.X i → S × T.Y i)
+-- `S` carries retained states; `T` gives query/reply types and the admitted input histories.
+variable {S : Type} (T : Interface)
+    -- At port `i`, `step s i x = (s', y)` updates the state and returns the reply.
+    (step : S → (i : T.I) → T.X i → S × T.Y i)
 
-/-- The deterministic system of the automaton started in `s`, on `T`'s domain. -/
+/-- Start in `s`, apply `step` to each query, and admit exactly `T.domain`.
+Thus `(automatonDDS T step s).1 = filterDom T.domain (automatonSystem step s)`. -/
 noncomputable def Interface.automatonDDS (s : S) : {r : InterfaceSystem T.I T.X T.Y //
     IsDDS r ∧ RepliesAtQueriedInterface r ∧ ∀ h, (r h).Dom ↔ T.domain h} :=
   ⟨filterDom T.domain (automatonSystem step s),
@@ -53,16 +50,23 @@ noncomputable def Interface.automatonDDS (s : S) : {r : InterfaceSystem T.I T.X 
       rw [filterDom_dom, automatonSystem_dom]
       exact ⟨fun hd => hd.1, fun hd => ⟨hd, fun he => T.nonempty_prefix.1 (he ▸ hd)⟩⟩⟩
 
-/-- **The typed system of an automaton** with its initial state sampled from `initial`. -/
-noncomputable def TypedSystem.ofAutomaton (initial : Distribution.ProbDist S) : TypedSystem T :=
+/-- Sample `s ← initial` once and update it with `step`; later queries draw nothing.
+The resulting typed system has interface and domain `T`. -/
+noncomputable def TypedSystem.ofAutomaton
+    -- `initial` supplies the law of the retained starting state `s : S`.
+    (initial : Distribution.ProbDist S) : TypedSystem T :=
   TypedSystem.ofPDS ⟨Distribution.fTransform (automatonDDS T step) initial.1,
     Distribution.fTransform_isProbDist _ initial.2⟩
 
-/-- A transcript has the mass of the initial states from which the automaton gives it. -/
-lemma TypedSystem.ofAutomaton_mass (initial : Distribution.ProbDist S)
+/-- `Pr[h]` is the `initial`-mass of states whose automaton answers the transcript `h`. -/
+lemma TypedSystem.ofAutomaton_mass
+    -- `initial` is the law of the starting state `s : S`.
+    (initial : Distribution.ProbDist S)
+    -- `h` pairs the `k`-th tagged query with the `k`-th tagged reply on `T`.
     (h : List ((Σ i, T.X i) × (Σ i, T.Y i))) :
     (TypedSystem.ofAutomaton T step initial).1 h = initial.1.mass fun s =>
       Replies (filterDom T.domain (automatonSystem step s)) (h.map Prod.fst) (h.map Prod.snd) := by
+  -- Pull the transcript event back from deterministic systems to their initial states.
   change behaviorMass _ _ _ = _
   rw [behaviorMass, Distribution.mass_fTransform]
   rfl
@@ -91,14 +95,18 @@ lemma TypedSystem.ofAutomaton_map_congr
   intro ω
   rw [same]
 
-/-- **Parallel automata** are the automaton running both side by side from independent initial
-states. -/
-lemma TypedSystem.parallel_ofAutomaton {A B : Interface} {S T : Type}
+/-- Parallel composition uses `parallelStep f g` and independent initial law `prodProbDist P Q`.
+A query changes only the state of its selected component. -/
+lemma TypedSystem.parallel_ofAutomaton
+    -- `A`, `B` are the component interfaces; `S`, `T` carry their retained states.
+    {A B : Interface} {S T : Type}
+    -- `f`, `g` update their component state and return a reply at the queried port.
     (f : S → (i : A.I) → A.X i → S × A.Y i) (g : T → (j : B.I) → B.X j → T × B.Y j)
+    -- `P`, `Q` independently initialize the two states, each retained across later queries.
     (P : Distribution.ProbDist S) (Q : Distribution.ProbDist T) :
     parallel (ofAutomaton A f P) (ofAutomaton B g Q) =
-      ofAutomaton (tensor A B) (parallelStep f g)
-        ⟨Distribution.prod P.1 Q.1, Distribution.prod_isProbDist _ _ P.2 Q.2⟩ := by
+      ofAutomaton (tensor A B) (parallelStep f g) (Distribution.prodProbDist P Q) := by
+  -- Both cumulative laws are measured over the same independent starting states `(s, t)`.
   apply Subtype.ext
   apply RandomSystem.ext
   intro h
@@ -107,6 +115,7 @@ lemma TypedSystem.parallel_ofAutomaton {A B : Interface} {S T : Type}
       (fun t => filterDom B.domain (automatonSystem g t))
       (ofAutomaton_mass A f P) (ofAutomaton_mass B g Q),
     ofAutomaton_mass]
+  -- At each `(s, t)`, parallel deterministic automata follow exactly `parallelStep f g`.
   refine Distribution.mass_congr _ fun st => ?_
   rw [parallel_automatonSystem f g A.nonempty_prefix B.nonempty_prefix]
 

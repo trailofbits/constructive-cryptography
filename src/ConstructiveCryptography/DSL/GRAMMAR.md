@@ -337,8 +337,8 @@ combine through `TypedSystem.parallel_eq_ofMemoryless`, and the program then run
 side-by-side laws `parallelLaw ν ν'`.
 
 The command applies only the existing attachment laws and generated equations. The caller
-proves the remaining identities of probability laws, such as an identity or composed
-pushforward or a product law, and any state relations. In particular, a sample retained by
+proves the remaining identities of probability laws and any state relations. Initial-state
+laws normalize with `prodProbDist_map` and `ProbDist.map_map`. In particular, a sample retained by
 initialization becomes a point law at the stored value on resumed calls; inlining does not
 replace it with fresh independent samples. [PRG length extension][ExPRG] defines its real world
 as the mapped `MemorylessSource`; its two converter contracts use `inline` followed by
@@ -465,15 +465,17 @@ before/after proofs, expression guards, negative tests and exact rewrite traces 
 [Interface.queryBudget]: ../../RandomSystems/Typed/Interface.lean#L69
 [Interface.portBudget]: ../../RandomSystems/Typed/Interface.lean#L80
 [TypedSystem.source]: ../../RandomSystems/Typed/Source.lean#L55
-[TypedSystem.ofAutomaton]: ../../RandomSystems/Typed/Automaton.lean#L57
+[TypedSystem.ofAutomaton]: ../../RandomSystems/Typed/Automaton.lean#L55
 [TypedConverter.rightContext]: ../../RandomSystems/Typed/Context.lean#L113
 [TypedConverter.filter]: ../../RandomSystems/Typed/Filter.lean#L53
-[TypedConverter.ofProgram]: ../../RandomSystems/Typed/DSL/Converters.lean#L43
-[TypedConverter.ofCostedProgram]: ../../RandomSystems/Typed/DSL/Converters.lean#L56
-[TypedConverter.ofPreservingProgram]: ../../RandomSystems/Typed/DSL/Converters.lean#L74
-[TypedConverter.ofProgram_smul_ofAutomaton]: ../../RandomSystems/Typed/DSL/Converters.lean#L155
-[TypedConverter.ofPreservingProgram_smul_ofAutomaton]: ../../RandomSystems/Typed/DSL/Converters.lean#L165
-[TypedConverter.ofCostedProgram_smul_ofAutomaton]: ../../RandomSystems/Typed/DSL/Converters.lean#L183
+[TypedConverter.ofProgram]: ../../RandomSystems/Typed/DSL/Converters.lean#L46
+[TypedConverter.ofCostedProgram]: ../../RandomSystems/Typed/DSL/Converters.lean#L64
+[TypedConverter.ofPreservingProgram]: ../../RandomSystems/Typed/DSL/Converters.lean#L87
+[TypedConverter.ofProgram_smul_ofAutomaton]: ../../RandomSystems/Typed/DSL/Converters.lean#L195
+[TypedConverter.ofPreservingProgram_smul_ofAutomaton]:
+  ../../RandomSystems/Typed/DSL/Converters.lean#L209
+[TypedConverter.ofCostedProgram_smul_ofAutomaton]:
+  ../../RandomSystems/Typed/DSL/Converters.lean#L230
 [desugarSampling]: Elaborator.lean#L206
 [elabInterface]: Elaborator.lean#L366
 [elabComponent]: Elaborator.lean#L998

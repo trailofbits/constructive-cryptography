@@ -5,14 +5,15 @@ public import Examples.DSL.Components
 /-!
 # DSL semantics across calls
 
-Checks on the systems of `Examples.DSL.Components`: sampling inside a procedure is fresh on
-every call (`freshBits_independent`), sampling at initialization persists
-(`secretBit_retained`), two ports share the private state (`counter_interleaving`), also at
-per-port budgets, where a port exhausts only its own budget (`counter_perPort_interleaving`,
-`counter_perPort_exceeded`); the write-through converter maps its writes to the store and its
-reads to nothing, so the store's budget is that of the writes. A system that samples is its
-program attached to its sources, the automaton combining the program with the source's table
-of samples; the first two checks compute that automaton.
+The systems in `Examples.DSL.Components` distinguish fresh draws, retained draws and shared
+state. `freshBits_independent` assigns each admitted `n`-bit reply sequence mass `(1/2)^n`:
+`freshBits_replies` identifies its source-table prefix and `mass_prefix` measures that event.
+`secretBit_retained` gives opposite successive replies mass zero because both read one stored bit.
+
+The counter checks share state across ports, including per-port query allowances. The
+write-through checks count only writes against the store's budget; reads use the converter's
+retained value. Sampling tests expose the combined program/source automaton before measuring
+its transcript event.
 -/
 
 @[expose] public section
@@ -30,6 +31,8 @@ lemma freshBits_invoke {K : ℕ} (t : Fin K → Bool) (st : Option Unit) (k : �
         if hk : k < K then t ⟨k, hk⟩ else Classical.choice FreshBits.law1.nonempty) := by
   cases st <;> simp [Program.invoke, FreshBits.body, callProg, returnProg, sourceStep]
 
+/-- After the calls encoded by `bs`, the source counter is `bs.length`; initialization has
+finished exactly when that list is nonempty. -/
 lemma freshBits_stateAfter {K : ℕ} (t : Fin K → Bool) (bs : List Bool) :
     stateAfter (FreshBits.body.combine (sourceStep FreshBits.law1) FreshBits.bound_spec)
         (none, (t, 0)) (bs.map fun _ => ⟨.bit, ()⟩) =
@@ -41,6 +44,8 @@ lemma freshBits_stateAfter {K : ℕ} (t : Fin K → Bool) (bs : List Bool) :
     rw [Program.combine_eq_of_invoke _ _ (freshBits_invoke t _ bs.length)]
     simp
 
+/-- For `bs.length ≤ K`, the automaton returns `bs` exactly when its first table entries
+are `t[k] = bs[k]`. -/
 lemma freshBits_replies {K : ℕ} (t : Fin K → Bool) (bs : List Bool) (hn : bs.length ≤ K) :
     Replies (automatonSystem (FreshBits.body.combine (sourceStep FreshBits.law1)
         FreshBits.bound_spec) (none, (t, 0)))
@@ -67,6 +72,8 @@ lemma freshBits_replies {K : ℕ} (t : Fin K → Bool) (bs : List Bool) (hn : bs
       have hk' := h k (by simp; omega)
       rwa [List.getElem_append_left hk] at hk'
 
+/-- Fixing the first `bs.length` entries of an independent fair-bit table has mass
+`(1/2)^bs.length`, provided those entries fit in its `K` cells. -/
 lemma mass_prefix {K : ℕ} (bs : List Bool) (hn : bs.length ≤ K) :
     (Distribution.pi fun _ : Fin K => (𝒰[Bool]).1).mass
         (fun tbl => ∀ k (hk : k < bs.length), tbl ⟨k, by omega⟩ = bs[k]) =
@@ -105,13 +112,17 @@ lemma mass_prefix {K : ℕ} (bs : List Bool) (hn : bs.length ≤ K) :
 lemma freshBits_independent {q : ℕ} (bs : List Bool) (hq : bs.length ≤ q) :
     (FreshBits (budget := q)).1 (bs.map fun b => (⟨.bit, ()⟩, ⟨.bit, b⟩)) =
       (1 / 2) ^ bs.length := by
+  -- Every invocation reads one source entry; the generated table covers all admitted calls.
   have hb : 1 ≤ FreshBits.bound := FreshBits.bound_spec none .bit () [] ⟨(), ()⟩
     (Program.consistent_nil FreshBits.body none _ _) (by simp [FreshBits.body, callProg])
   have hK : bs.length ≤ FreshBits.bound * q := hq.trans (Nat.le_mul_of_pos_left q hb)
+  -- Pull the transcript event through program initialization to the independent table law.
   rw [FreshBits, FreshBits.randomness, FreshBits.program, TypedSystem.source,
     TypedConverter.ofProgram_smul_ofAutomaton, TypedSystem.ofAutomaton_mass,
-    Distribution.mass_fTransform, Distribution.ProbDist.map_val, Distribution.ProbDist.pi_val,
+    Distribution.ProbDist.map_val, Distribution.mass_fTransform, Distribution.ProbDist.map_val,
+    Distribution.ProbDist.pi_val,
     Distribution.mass_fTransform, ← mass_prefix bs hK]
+  -- Within the declared domain, the transcript is exactly the prescribed table prefix.
   refine Distribution.mass_congr _ fun t => ?_
   simp only [List.map_map, Function.comp_def]
   rw [replies_filterDom_iff (FreshBits.outer q).nonempty_prefix.2 _
@@ -126,6 +137,7 @@ lemma secretBit_combine_first {K : ℕ} (t : Fin K → Bool) :
   Program.combine_eq_of_invoke _ _ (n := 1) (by
     simp [Program.invoke, SecretBit.body, callProg, returnProg, sourceStep])
 
+/-- A resumed call returns the stored bit `v` and preserves the source table and counter `r`. -/
 lemma secretBit_combine_later {K : ℕ} (v : Bool) (r : (Fin K → Bool) × ℕ) :
     SecretBit.body.combine (sourceStep SecretBit.law1) SecretBit.bound_spec (some v, r) .bit () =
       ((some v, r), v) :=
@@ -134,10 +146,13 @@ lemma secretBit_combine_later {K : ℕ} (v : Bool) (r : (Fin K → Bool) × ℕ)
 /-- Sampling at initialization retains the same bit on later calls, at every budget. -/
 lemma secretBit_retained (q : ℕ) (b : Bool) :
     (SecretBit (budget := q)).1 [(⟨.bit, ()⟩, ⟨.bit, b⟩), (⟨.bit, ()⟩, ⟨.bit, !b⟩)] = 0 := by
+  -- Measure the transcript under the initial source table, including the retained-bit state.
   rw [SecretBit, SecretBit.randomness, SecretBit.program, TypedSystem.source,
     TypedConverter.ofProgram_smul_ofAutomaton, TypedSystem.ofAutomaton_mass,
-    Distribution.mass_fTransform, Distribution.ProbDist.map_val, Distribution.ProbDist.pi_val,
+    Distribution.ProbDist.map_val, Distribution.mass_fTransform, Distribution.ProbDist.map_val,
+    Distribution.ProbDist.pi_val,
     Distribution.mass_fTransform]
+  -- No initial table can produce both `b` and `!b` from the one stored bit.
   refine Distribution.mass_eq_zero_of_forall_not _ fun t hr => ?_
   have hr := replies_filterDom _ _ hr
   change Replies _ ([] ++ [(⟨.bit, ()⟩ : Sigma SecretBit.Input)] ++ [⟨.bit, ()⟩])
@@ -146,6 +161,7 @@ lemma secretBit_retained (q : ℕ) (b : Bool) :
   obtain ⟨-, h₁⟩ := replies_snoc.mp hr
   rw [automatonSystem_snoc] at h₁ h₂
   rw [stateAfter_snoc, stateAfter_nil] at h₂
+  -- The first call stores its reply; the second preserves and returns that same value.
   rw [stateAfter_nil, secretBit_combine_first] at h₁
   rw [secretBit_combine_first, secretBit_combine_later] at h₂
   simp only [Part.some_inj, Sigma.mk.injEq, heq_eq_eq, true_and] at h₁ h₂

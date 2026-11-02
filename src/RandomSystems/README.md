@@ -216,7 +216,7 @@ of the program's inside queries:
 [ProbStep.SimulatesAt]: System/ProbAutomaton.lean#L264
 [RandomSystem.ofProbAutomaton_eq_of_simulation]: System/ProbAutomaton.lean#L404
 [RandomSystem.ofProbAutomaton_ofDeterministic_apply]: System/ProbAutomaton.lean#L539
-[RandomSystem.ofProbAutomaton_eq_drawStep]: Converter/ProbProgramAttachment.lean#L947
+[RandomSystem.ofProbAutomaton_eq_drawStep]: Converter/ProbProgramAttachment.lean#L878
 [RandomSystem.memoryless]: System/Memoryless.lean#L69
 [RandomSystem.eq_memoryless_of_snoc]: System/Memoryless.lean#L88
 [RandomSystem.parallel_memoryless]: System/Memoryless.lean#L150
@@ -262,10 +262,11 @@ of the program's inside queries:
 [Program.inline]: Converter/ProgramAttachment.lean#L262
 [Program.combine]: Converter/ProgramAttachment.lean#L433
 [Program.trim_apply_ofProgramOn_automaton]: Converter/ProgramAttachment.lean#L613
-[Program.probCombine]: Converter/ProbProgramAttachment.lean#L191
-[RandomSystem.ofProbAutomaton_probCombine_eq_of_simulation]: Converter/ProbProgramAttachment.lean#L511
-[PDCBehavior.attach_ofDDC_ofProgramOn_ofProbAutomaton]: Converter/ProbProgramAttachment.lean#L1106
-[PDCBehavior.attach_ofDDC_ofProgramOn_ofDeterministic]: Converter/ProbProgramAttachment.lean#L1020
+[Program.probCombine]: Converter/ProbProgramAttachment.lean#L176
+[RandomSystem.ofProbAutomaton_probCombine_eq_of_simulation]:
+  Converter/ProbProgramAttachment.lean#L473
+[PDCBehavior.attach_ofDDC_ofProgramOn_ofProbAutomaton]: Converter/ProbProgramAttachment.lean#L1021
+[PDCBehavior.attach_ofDDC_ofProgramOn_ofDeterministic]: Converter/ProbProgramAttachment.lean#L946
 [Program.memorylessReplyLaw]: System/Memoryless.lean#L317
 [Program.memoryless_probCombine]: System/Memoryless.lean#L404
 [PDCBehavior.attach_ofDDC_ofProgramOn_memoryless]: System/Memoryless.lean#L435

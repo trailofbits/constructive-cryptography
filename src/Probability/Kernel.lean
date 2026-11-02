@@ -6,42 +6,28 @@ public import Mathlib.LinearAlgebra.Finsupp.LinearCombination
 /-!
 # Kernels
 
-A kernel `f : A → Distribution B` gives a law of a second outcome for every value of a first one:
-a conditional probability distribution `p_{Y|X}` [1, §3.6.1, p. 65]. Its mixture over a law `μ`
-of the first outcome is the law of the second (`bindK`),
+A kernel `f : A → Distribution B` assigns a law to every first outcome `a : A`.
+Its mixture `bindK μ f` draws `a ← μ`, then `b ← f a`:
 
+```text
+(bindK μ f)(b) = ∑ₐ μ(a) · f(a)(b).
 ```
-  (bindK μ f)(b) = ∑ₐ μ(a) · f(a)(b).
+
+This represents a "conditional probability distribution" `p_{Y|X}` [1, §3.6.1, p. 65].
+`bindK_bindK` composes successive draws; `bindK_single_one` removes a point kernel.
+`fTransform_bindK` and `bindK_fTransform` move deterministic maps through those draws.
+
+`ProbDist.map` and `ProbDist.bind` retain normalization. `ProbDist.map_map` composes
+initializations, and `prodProbDist_map` combines independent initialized draws:
+
+```text
+(f_* P) × (g_* Q) = (f × g)_* (P × Q).
 ```
 
-A pushforward is the point kernel of its function, an independent product samples its factors one
-after the other, and kernels of probability laws mix probability laws into probability laws.
-Retaining both draws gives the joint law `μ(h) · K h z`, whose first marginal is `μ`; no outcome
-type needs to be finite.
-
-## Main definitions
-
-* `Distribution.bindK μ f`: the mixture of the kernel `f` over `μ`
-* `Distribution.ProbDist.map f P`: the law of `f a` for `a ← P`
-* `Distribution.ProbDist.bind P f`: the law of `b ← f a` for `a ← P`
-* `Distribution.ProbDist.jointLaw μ K`: the joint law of `h ← μ; z ← K h`, retaining both
-
-## Main results
-
-* `Distribution.bindK_bindK`, `Distribution.bindK_single_one`: mixtures compose, and the point
-  kernel leaves a law unchanged
-* `Distribution.bindK_single_comp`, `Distribution.fTransform_bindK`,
-  `Distribution.bindK_fTransform`: a pushforward is the point kernel of its function, and passes
-  through mixtures
-* `Distribution.weight_bindK_of_weight`, `Distribution.bindK_nonNeg`: kernels of laws preserve the
-  weight and nonnegativity
-* `Distribution.prod_eq_bindK`, `Distribution.pi_eq_bindK_update`: independent products as
-  mixtures
-* `Distribution.ProbDist.map_map`: pushing forward twice is pushing forward along the composite
-* `Distribution.ProbDist.bind_const`: sampling a constant probability kernel returns its law
-* `Distribution.ProbDist.jointLaw_fst`: the first marginal of `jointLaw μ K` is `μ`
-* `Distribution.ProbDist.jointLaw_map`: `(decodeH × decodeZ)_* (jointLaw μ' K') = jointLaw μ K`
-  when `decodeH_* μ' = μ` and `decodeZ_* (K' h) = K (decodeH h)`, for arbitrary maps
+For dependent draws, `ProbDist.jointLaw μ K` retains both outcomes with law `μ(h) · K h z`.
+`ProbDist.jointLaw_fst` recovers `μ`; `ProbDist.jointLaw_map` transports both coordinates.
+For independent tables, `pi_eq_bindK_update` samples one cell first and fixes it in the
+remaining table. Each law has finite support; the outcome types are arbitrary.
 
 ## References
 
@@ -52,6 +38,7 @@ type needs to be finite.
 
 namespace Probability.Distribution
 
+-- `A`, `B`, `C` carry successive outcomes; their laws have finite support.
 variable {A B C : Type*}
 
 /-! ### Kernels -/
@@ -336,26 +323,34 @@ lemma eq_of_mem_support_pi_update {ι : Type*} [Fintype ι] [DecidableEq ι]
 
 namespace ProbDist
 
-/-- **The pushforward** of a law: the law of `f a` for `a ← P`. -/
-noncomputable def map (f : A → B) (P : ProbDist A) : ProbDist B :=
+/-- The pushforward `f_* P`: draw `a ← P` and return `f a`. -/
+noncomputable def map
+    -- `f : A → B` transforms the outcome; `P` supplies its law on `A`.
+    (f : A → B) (P : ProbDist A) : ProbDist B :=
   ⟨fTransform f P.1, fTransform_isProbDist f P.2⟩
 
+/-- The underlying distribution of `f_* P` is `fTransform f P.1`. -/
 @[simp] lemma map_val (f : A → B) (P : ProbDist A) : (map f P).1 = fTransform f P.1 := rfl
 
-/-- **Pushing forward twice** is pushing forward along the composite. -/
-lemma map_map (f : B → C) (g : A → B) (P : ProbDist A) :
+/-- Successive deterministic maps compose: `f_* (g_* P) = (f ∘ g)_* P`. -/
+lemma map_map
+    -- `g` transforms the draw from `P` first, then `f` transforms that result.
+    (f : B → C) (g : A → B) (P : ProbDist A) :
     map f (map g P) = map (f ∘ g) P :=
   -- Both sides have the same underlying distribution: `fTransform f ∘ fTransform g`.
   Subtype.ext (fTransform_fTransform _ _ _)
 
-/-- **Sequential composition**: the law of `b ← f a` for `a ← P`, the mixture of `f` over `P`. -/
-noncomputable def bind (P : ProbDist A) (f : A → ProbDist B) : ProbDist B :=
+/-- Sequential sampling: `bind P f (b) = ∑ₐ P(a) · f(a)(b)`. -/
+noncomputable def bind
+    -- `P` samples `a : A`; `f a` is the normalized law of the next outcome in `B`.
+    (P : ProbDist A) (f : A → ProbDist B) : ProbDist B :=
   ⟨bindK P.1 fun a => (f a).1,
     -- nonnegative: a mixture of nonnegative laws over the nonnegative law `P`
     bindK_nonNeg P.2.1 fun a => (f a).2.1,
     -- weight one: each `f a` has weight one, so the mixture keeps the weight of `P`, which is one
     (weight_bindK_of_weight fun a _ => (f a).2.2).trans P.2.2⟩
 
+/-- Forgetting normalization gives the underlying kernel mixture. -/
 @[simp] lemma bind_val (P : ProbDist A) (f : A → ProbDist B) :
     (bind P f).1 = bindK P.1 fun a => (f a).1 := rfl
 
@@ -432,5 +427,18 @@ lemma jointLaw_map
   exact congrArg (fTransform (fun z => (decodeH h, z))) (congrArg Subtype.val (hK h))
 
 end ProbDist
+
+/-! ### Independent normalized laws -/
+
+/-- Independent pushforwards form the pushforward of the product:
+`(f_* P) × (g_* Q) = (f × g)_* (P × Q)`. -/
+lemma prodProbDist_map
+    -- `A`, `B` carry independent draws; `S`, `T` carry their images under `f`, `g`.
+    {S T : Type*} (f : A → S) (g : B → T)
+    -- `P`, `Q` are normalized laws; `prodProbDist P Q` samples their coordinates independently.
+    (P : ProbDist A) (Q : ProbDist B) :
+    prodProbDist (ProbDist.map f P) (ProbDist.map g Q) =
+      ProbDist.map (Prod.map f g) (prodProbDist P Q) :=
+  Subtype.ext (fTransform_prod f g P.1 Q.1).symm
 
 end Probability.Distribution

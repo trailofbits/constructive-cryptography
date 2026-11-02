@@ -7,52 +7,41 @@ public import RandomSystems.System.ProbAutomaton
 /-!
 # Attaching a program to a probabilistic automaton
 
-Run against a probabilistic automaton, a program answers each outside query by an invocation in
-which the automaton answers the inside queries, from its state, with fresh steps. This is again a
-probabilistic automaton, on pairs of states (`Program.probCombine`). The main theorem says that it
-is the attachment of the program's converter to the automaton, as random systems:
+`Program.probCombine` runs a program `P` against an inside transition law `step`. Each
+invocation returns a law of the two new states and the outside reply:
 
+```text
+     u              x
+  ──────► [P, s] ──────► [step, r]      (r', y) ← step r x, fresh per inside query
+  ◄──────        ◄──────
+     v              y
+  Program.probCombine: (s, r), u ↦ law of ((s', r'), v)
+  Proof table: independent t(c) ← drawLaw rec c; t retained in (r, k, t)
 ```
-        u            ┌─────┐   q        ┌───────────┐
-  ─────────────────►│  P  ├───────────►│ automaton │        =    ┌─────────────────────┐
-  ◄─────────────────┤ (s) │◄───────────┤ (step, r) │             │ P run against step  │
-        v            └─────┘   y        └───────────┘             │ from (s, r)         │
-                                                                  └─────────────────────┘
-```
 
-A system `C(·)` invoking an internal system `F` is the combined system `C(F)` [1, §3.3]; for a
-deterministic automaton this is the inlining theorem `Program.inline_automatonSystem`. The
-probabilistic case is reduced to it: a probabilistic automaton is a random automaton in the sense
-of [1, Definition 2], a deterministic automaton whose internal randomness, a table of the draws of
-every step from every reachable state, is sampled once with the initial state. Reading this table
-in order is drawing afresh (a simulation, `simulatesAt_drawStep`), the program attached to each
-deterministic automaton is the combined automaton, and the program respects simulations.
+This is the combined system `C(F)` of [1, §3.3, p. 9: "then the combined random system is C(F)"].
+`PDCBehavior.attach_ofDDC_ofProgramOn_ofProbAutomaton` identifies it with converter attachment.
 
-## Main definitions
+The proof represents fresh transitions by one retained table of independent draws, indexed
+by the step number, reachable state and query: a random automaton in the sense of
+[1, Definition 2, p. 6: "specifying the internal randomness and the initial state"].
+`ProbStep.recording` runs `step` and appends each draw to a record. Given that record,
+`ProbStep.drawKernel` fixes recorded cells and independently samples the others.
+`ProbStep.simulatesAt_drawStep` shows that reading the table simulates recording;
+`ProbStep.simulatesAt_forget` shows that forgetting the record simulates it too.
+Together they give `RandomSystem.ofProbAutomaton_eq_drawStep` on inputs of at most `m ≤ L` queries.
 
-* `Program.probInvoke`, `Program.probCombine`: an invocation against a probabilistic step, and
-  the program run against a probabilistic automaton, a probabilistic automaton on pairs of states
-* `ProbStep.reachable`, `ProbStep.recording`, `ProbStep.drawStep`, `ProbStep.drawKernel`: the
-  states reachable from the initial law, the step recording its draws, the deterministic step
-  reading pre-sampled draws, and the law of the draws given the recorded ones
-
-## Main results
-
-* `Program.ofDeterministic_combine`: against a deterministic automaton, the program run against its
-  point steps is the combined automaton
-* `Program.simulatesAt_probCombine`, `RandomSystem.ofProbAutomaton_probCombine_eq_of_simulation`:
-  a program respects simulations of the automaton it is run against
-* `RandomSystem.ofProbAutomaton_eq_drawStep`: a probabilistic automaton is a deterministic
-  automaton reading pre-sampled draws
-* `PDCBehavior.attach_ofDDC_ofProgramOn_ofDeterministic`: attaching a program to a deterministic
-  automaton with a random initial state
-* `PDCBehavior.attach_ofDDC_ofProgramOn_ofProbAutomaton`: attaching a program to a probabilistic
-  automaton is the program run against it
+For attachment, take `L = m + b * n`, covering both the inside domain bound `m` and the
+`b * n` calls made by `n` program invocations. `attach_ofDDC_ofProgramOn_ofDeterministic`
+and `Program.ofDeterministic_combine` identify the program against the table's point steps.
+`RandomSystem.ofProbAutomaton_probCombine_eq_of_simulation` transports both simulations
+through the program, returning from the table through the record to `step` from `init`.
+`ProbStep.drawKernel_val` exposes the raw cell law for the simulation calculation.
 
 ## References
 
-1. U. Maurer. Indistinguishability of Random Systems. In *Advances in Cryptology – EUROCRYPT
-   2002*, LNCS 2332, Springer, 2002.
+1. U. Maurer. Indistinguishability of Random Systems. In *Advances in Cryptology —
+   EUROCRYPT 2002*, LNCS 2332, pp. 110–132, Springer, 2002. Page numbers refer to the preprint.
 -/
 
 @[expose] public section
@@ -61,19 +50,22 @@ namespace SystemAlgebra
 
 open Probability Probability.Distribution
 
+-- `S`, `R` carry program and inside states; `O`, `J` carry outside and inside port labels.
+-- `U o`, `V o` are outside query/reply types; `X j`, `Y j` are inside query/reply types.
 variable {S O J R : Type} {U V : O → Type} {X Y : J → Type}
 
 /-! ### Programs against probabilistic steps -/
 
 namespace Program
 
+-- `P` chooses the next inside query or final outside reply; `stepR` draws an inside transition.
 variable (P : Program S O J U V X Y) (stepR : ProbStep R J X Y)
 
 /-- **An invocation against a probabilistic step**: the body runs from the exchanges `h`, the
 automaton in the state `r` answering its inside queries, with at most `n` more of them; the law
 of the next states and of the reply.
 
-```
+```text
   body(h) = reply (s', v)   ⟶   point law at ((s', r), v)
   body(h) = query q         ⟶   (r', y) ← step r q;  continue from r' with h · (q, y)
 ```
@@ -148,15 +140,9 @@ lemma probInvoke_nonNeg (s : S) (o : O) (u : U o) :
 lemma probInvoke_weight {b : ℕ} (hP : P.Bounded b) (s : S) (o : O) (u : U o) :
     ∀ n r h, P.Consistent s o u h → b ≤ n + h.length →
       (P.probInvoke stepR s o u n r h).weight = 1 := by
-  -- Plan: induction on the number `n` of inside queries left, keeping `b ≤ n + |h|`: the
-  -- queries left and the queries the body has made reach its bound `b`.
-  -- 1. No query left: a reply is a point law, of weight one; a query cannot happen, since
-  --    the body has made `|h| ≥ b` queries and a bounded body asks only after fewer than `b`.
-  -- 2. `n + 1` queries left: a reply as in 1; a query `q` is a draw of the step, a probability
-  --    law, followed from each possible draw by a continuation of weight one (induction).
+  -- Induct on the remaining queries, preserving `b ≤ n + h.length`.
   intro n
   induction n with
-  -- Step 1: no query left.
   | zero =>
     intro r h hc hb
     cases hq : P s o u h with
@@ -166,7 +152,6 @@ lemma probInvoke_weight {b : ℕ} (hP : P.Bounded b) (s : S) (o : O) (u : U o) :
     | inr q =>
       -- a query with no query left: impossible, the body has made its `b` queries already
       exact absurd (hP s o u h q hc hq) (by omega)
-  -- Step 2: `n + 1` queries left.
   | succ n ih =>
     intro r h hc hb
     cases hq : P s o u h with
@@ -186,8 +171,8 @@ lemma probInvoke_weight {b : ℕ} (hP : P.Bounded b) (s : S) (o : O) (u : U o) :
       exact ih _ _ (hc.snoc hq y) (by simp; omega)
 
 variable (P stepR) in
-/-- **The program run against a probabilistic automaton**, a probabilistic automaton on pairs of
-states: each outside query runs an invocation, the automaton answering its inside queries. -/
+/-- The combined transition from `(s, r)` on outside query `⟨o, u⟩` is
+`probInvoke stepR s o u b r []`: the law of the next paired state and the reply. -/
 noncomputable def probCombine {b : ℕ} (hP : P.Bounded b) : ProbStep (S × R) O U V :=
   -- From `(s, r)` at `⟨o, u⟩`: the invocation from no exchanges with the whole budget `b`, a
   -- nonnegative law of weight one since the program is bounded.
@@ -203,15 +188,9 @@ lemma probCombine_val {b : ℕ} (hP : P.Bounded b) (sr : S × R) (o : O) (u : U 
 lemma probInvoke_ofDeterministic (stepD : R → (j : J) → X j → R × Y j) (s : S) (o : O)
     (u : U o) : ∀ n r h v, P.invoke stepD s o u n r h = some v →
       P.probInvoke (ProbStep.ofDeterministic stepD) s o u n r h = Finsupp.single v 1 := by
-  -- Plan: induction on the number `n` of inside queries left, along the deterministic
-  -- invocation, which completes with `v`.
-  -- 1. No query left: the body replies and both invocations give its reply; a query would
-  --    leave the deterministic invocation incomplete.
-  -- 2. `n + 1` queries left: a reply as in 1; on a query `q` the point step has the single
-  --    outcome `stepD r q`, so the invocation is its continuation from it (induction).
+  -- Follow the completed deterministic invocation by induction on the remaining queries.
   intro n
   induction n with
-  -- Step 1: no query left.
   | zero =>
     intro r h v hv
     cases hq : P s o u h with
@@ -222,7 +201,6 @@ lemma probInvoke_ofDeterministic (stepD : R → (j : J) → X j → R × Y j) (s
     | inr q =>
       -- the body asks with no query left: the invocation does not complete
       simp [invoke, hq] at hv
-  -- Step 2: `n + 1` queries left.
   | succ n ih =>
     intro r h v hv
     cases hq : P s o u h with
@@ -257,9 +235,12 @@ lemma ofDeterministic_combine (stepD : R → (j : J) → X j → R × Y j) {b : 
 
 section Simulation
 
+-- `R₁`, `R₂` carry the two inside states; `stepR₁`, `stepR₂` answer the same inside interface.
 variable {R₁ R₂ : Type} {stepR₁ : ProbStep R₁ J X Y} {stepR₂ : ProbStep R₂ J X Y}
-  {K : R₁ → Distribution.ProbDist R₂} {E : List (Σ j, X j) → Prop}
-  {invR : List (Σ j, X j) → R₁ → Prop}
+    -- `K r₁` represents state `r₁` by a law of states in `R₂`; `E` admits inside query histories.
+    {K : R₁ → Distribution.ProbDist R₂} {E : List (Σ j, X j) → Prop}
+    -- `invR τ r₁` is the state invariant after inside queries `τ`.
+    {invR : List (Σ j, X j) → R₁ → Prop}
 
 variable (P) in
 /-- After the inside queries `τ`, every inside query of an invocation at `⟨o, u⟩` in the state `s`
@@ -287,13 +268,7 @@ lemma probInvoke_simulation
   --     ▼                                   ▼
   --     r₂ ─── P against stepR₂ ────► ((s', r₂'), v)
   --
-  -- Plan: induction on `n`.
-  -- 1. The body replies on `h`: no inside step; both sides are the kernel image of `r`,
-  --    paired with the body's state and reply, which depend on `h` only.
-  -- 2. The body asks with no query left: no mass on both sides.
-  -- 3. The body asks `q` with `n + 1` queries left: `q` is admitted and `invR` holds at `r`,
-  --    so one inside step is a simulation square; the next state keeps `invR`, so the rest of
-  --    the invocation is a square by induction. Glue the two squares:
+  -- An admitted query gives one simulation square; `hpres` enables the continuation square:
   --
   --     r  ── stepR₁, q ──► (r', y)  ── rest against stepR₁ ──► ((s', r''), v)
   --     │                    │                                        │
@@ -306,25 +281,21 @@ lemma probInvoke_simulation
   | zero =>
     intro r h _ _
     cases hq : P s o u h with
-    -- Step 1, with no query left.
     | inl a =>
       -- the body replies: the inside state is only moved by the kernel
       simp only [probInvoke_inl hq, bindK_single, one_smul]
       -- a point kernel along `r₂ ↦ ((s', r₂), v)` is the pushforward of `K r` along it
       exact bindK_single_comp _ _
-    -- Step 2.
     | inr q =>
       -- the body asks with no query left: no mass on both sides
       simp only [probInvoke_zero_inr hq, bindK_zero, bindK_zero_right]
   | succ n ih =>
     intro r h hc hr
     cases hq : P s o u h with
-    -- Step 1, with `n + 1` queries left.
     | inl a =>
       -- the body replies: the inside state is only moved by the kernel
       simp only [probInvoke_inl hq, bindK_single, one_smul]
       exact bindK_single_comp _ _
-    -- Step 3.
     | inr q =>
       -- the body asks `q`, which is admitted, so the simulation step applies at `r`
       have hE := hgood h q hc hq
@@ -379,40 +350,29 @@ lemma probInvoke_support
     ∀ n r h, P.Consistent s o u h → invR (τ ++ h.map Prod.fst) r →
       ∀ p ∈ (P.probInvoke stepR₁ s o u n r h).support, ∃ hf, P.Consistent s o u hf ∧
         h <+: hf ∧ P s o u hf = .inl (p.1.1, p.2) ∧ invR (τ ++ hf.map Prod.fst) p.1.2 := by
-  -- Plan: induction on the number `n` of inside queries left; the exchanges `hf` are those
-  -- on which the body replies.
-  -- 1. The body replies on `h`: the only outcome is its reply, with `hf = h`.
-  -- 2. The body asks with no query left: no outcome.
-  -- 3. The body asks `q` with `n + 1` queries left: an outcome comes from a possible draw
-  --    `(r', y)` of the step and an outcome of the rest of the invocation from `h · (q, y)`.
-  --    The query is admitted, so `r'` keeps the invariant (`hpres`); by induction the rest
-  --    ends on exchanges `hf` extending `h · (q, y)`, hence `h`.
+  -- Induction constructs final exchanges `hf` while preserving `invR` along each fresh draw.
   intro n
   induction n with
   | zero =>
     intro r h hc hr p hp
     cases hq : P s o u h with
-    -- Step 1, with no query left.
     | inl a =>
       -- the body replies on `h` itself: the outcome is its reply
       rw [probInvoke_inl hq, Finsupp.mem_support_single] at hp
       rw [hp.1]
       -- `hf = h`: the body's own exchanges, a prefix of themselves, with the invariant
       exact ⟨h, hc, List.prefix_refl _, hq, hr⟩
-    -- Step 2.
     | inr q =>
       -- no query left: no outcome
       rw [probInvoke_zero_inr hq] at hp; simp at hp
   | succ n ih =>
     intro r h hc hr p hp
     cases hq : P s o u h with
-    -- Step 1, with `n + 1` queries left.
     | inl a =>
       -- the body replies on `h` itself: the outcome is its reply
       rw [probInvoke_inl hq, Finsupp.mem_support_single] at hp
       rw [hp.1]
       exact ⟨h, hc, List.prefix_refl _, hq, hr⟩
-    -- Step 3.
     | inr q =>
       -- the outcome comes from a possible draw `p'` and the rest of the invocation
       rw [probInvoke_succ_inr hq] at hp
@@ -427,8 +387,10 @@ lemma probInvoke_support
       -- `h` is a prefix of `h · (q, y)`, hence of `hf`
       exact ⟨hf, hcf, (List.prefix_append h _).trans hpf, hf₁, hf₂⟩
 
-/-- The kernel on the inside state, the program state unchanged. -/
-noncomputable def insideKernel (K : R₁ → Distribution.ProbDist R₂) (sr : S × R₁) :
+/-- Map `(s, r₁)` to `(s, r₂)` with `r₂ ← K r₁`, leaving the program state fixed. -/
+noncomputable def insideKernel
+    -- `K` changes the inside-state representation; `sr` supplies the program and inside states.
+    (K : R₁ → Distribution.ProbDist R₂) (sr : S × R₁) :
     Distribution.ProbDist (S × R₂) :=
   (K sr.2).map fun r₂ => (sr.1, r₂)
 
@@ -504,45 +466,38 @@ variable [Fintype (Σ o, U o)] [Fintype (Σ o, V o)]
 before the program's total budget `b * n`, then the program run against the two automata gives
 the same random system on the outside domain `F`, of at most `n` queries.
 
-```
+```text
   P run against stepR₁ from (s, r)   =   P run against stepR₂ from (s, K r)
 ```
 -/
-lemma RandomSystem.ofProbAutomaton_probCombine_eq_of_simulation {F : List (Σ o, U o) → Prop}
-    {n : ℕ} {hF : ∀ h, F h → h.length ≤ n} (P : Program S O J U V X Y) {b : ℕ}
-    (hP : P.Bounded b) {R₁ R₂ : Type} (stepR₁ : ProbStep R₁ J X Y) (stepR₂ : ProbStep R₂ J X Y)
+lemma RandomSystem.ofProbAutomaton_probCombine_eq_of_simulation
+    -- `F` admits outside histories of length at most `n`, as certified by `hF`.
+    {F : List (Σ o, U o) → Prop} {n : ℕ} {hF : ∀ h, F h → h.length ≤ n}
+    -- `P` makes at most `b` inside queries per invocation, as certified by `hP`.
+    (P : Program S O J U V X Y) {b : ℕ} (hP : P.Bounded b)
+    -- `stepR₁`, `stepR₂` answer the same inside interface using states `R₁`, `R₂`.
+    {R₁ R₂ : Type} (stepR₁ : ProbStep R₁ J X Y) (stepR₂ : ProbStep R₂ J X Y)
+    -- `K r` represents an `R₁` state by a law on `R₂`; `invR τ r` tracks it after queries `τ`.
     (K : R₁ → Distribution.ProbDist R₂) (invR : List (Σ j, X j) → R₁ → Prop)
+    -- `hpres` preserves `invR` at every supported next state before the total bound `b * n`.
     (hpres : ∀ τ r q, invR τ r → τ.length < b * n →
       ∀ p ∈ (stepR₁.outcome r q).support, invR (τ ++ [q]) p.1)
+    -- `hsim` equates the next joint state/reply laws through `K` at those states and queries.
     (hsim : ∀ τ r q, invR τ r → τ.length < b * n → ProbStep.SimulatesAt stepR₁ stepR₂ K r q)
+    -- `s` starts the program; `init` starts the inside automaton with `invR []`, by `hinit`.
     (s : S) (init : Distribution.ProbDist R₁) (hinit : ∀ r ∈ init.1.support, invR [] r) :
     RandomSystem.ofProbAutomaton (Domain.ofInputs F n hF) (P.probCombine stepR₁ hP)
         (init.map fun r => (s, r)) =
       RandomSystem.ofProbAutomaton (Domain.ofInputs F n hF) (P.probCombine stepR₂ hP)
         ((init.bind K).map fun r => (s, r)) := by
-  -- Plan: the two combined automata are compared along the kernel on the inside state, by
-  -- `RandomSystem.ofProbAutomaton_eq_of_simulation` on the outside domain `F`.
-  -- 1. Admit the inside queries within the total budget `b * n`, and restate the hypotheses
-  --    for them.
-  -- 2. After `xs` outside queries and at most `b · |xs|` inside ones, an invocation at an
-  --    outside query that `F` admits stays within the budget.
-  -- 3. The outside invariant: an inside history `τ` of at most `b · |xs|` queries with
-  --    `invR τ` at the inside state; each outside step keeps it (`probCombine_support`).
-  -- 4. Each outside step from such a state is a simulation step (`simulatesAt_probCombine`),
-  --    and the initial states `(s, r)` satisfy the invariant with `τ = []`.
-  -- 5. Equal random systems along the outside simulation; the kernel image of the initial
-  --    law is the initial law of the right-hand side.
-  -- Step 1: the budget.
-  -- The inside queries admitted: those before the total budget, `τ ++ [q]` of length `≤ b * n`.
+  -- Admit exactly the inside histories within the total bound `b * n`.
   let E : List (Σ j, X j) → Prop := fun τ => τ.length ≤ b * n
-  -- The hypotheses, at the admitted inside queries.
-  -- (`τ ++ [q]` of length `≤ b * n` is `τ` of length `< b * n`)
+  -- Admission of `τ ++ [q]` is exactly `τ.length < b * n`, where the hypotheses apply.
   have hsim' : ∀ τ r q, invR τ r → E (τ ++ [q]) → ProbStep.SimulatesAt stepR₁ stepR₂ K r q :=
     fun τ r q hr hq => hsim τ r q hr (by simp [E] at hq; omega)
   have hpres' : ∀ τ r q, invR τ r → E (τ ++ [q]) →
       ∀ p ∈ (stepR₁.outcome r q).support, invR (τ ++ [q]) p.1 :=
     fun τ r q hr hq => hpres τ r q hr (by simp [E] at hq; omega)
-  -- Step 2: invocations within the budget.
   -- An invocation after `xs` outside queries, with at most `b` inside queries per earlier one,
   -- keeps its inside queries within the budget when the outside domain admits one more.
   have good : ∀ xs (sr : S × R₁) x τ, τ.length ≤ b * xs.length → F (xs ++ [x]) →
@@ -554,9 +509,7 @@ lemma RandomSystem.ofProbAutomaton_probCombine_eq_of_simulation {F : List (Σ o,
     simp only [E, List.length_append, List.length_map, List.length_singleton]
     -- `|τ| + |h| + 1 ≤ b·|xs| + b = b·(|xs| + 1) ≤ b·n`
     nlinarith
-  -- Step 3: the outside invariant.
-  -- The outside invariant: some inside history `τ`, at most `b` queries per outside query,
-  -- satisfies `invR` at the inside state.
+  -- After `xs`, retain an inside history `τ` with `invR τ` and `τ.length ≤ b * xs.length`.
   let inv : List (Σ o, U o) → S × R₁ → Prop :=
     fun xs sr => ∃ τ, invR τ sr.2 ∧ τ.length ≤ b * xs.length
   -- Each outside step keeps it: an invocation adds its own exchanges `hf`, at most `b`.
@@ -572,13 +525,12 @@ lemma RandomSystem.ofProbAutomaton_probCombine_eq_of_simulation {F : List (Σ o,
     simp only [List.length_append, List.length_map, List.length_singleton]
     -- `|τ| + |hf| ≤ b·|xs| + b = b·(|xs| + 1)`
     nlinarith
-  -- Step 4: the outside simulation.
   -- Each outside step is a simulation step: the program respects the inside simulation.
   have hsim_out : ∀ xs sr x, inv xs sr → F (xs ++ [x]) →
       ProbStep.SimulatesAt (P.probCombine stepR₁ hP) (P.probCombine stepR₂ hP)
         (Program.insideKernel K) sr x := by
     rintro xs sr x ⟨τ, hτ, hl⟩ hx
-    -- the invocation is admitted (Step 2), and `invR τ` holds at the inside state
+    -- `good` admits this invocation, and `invR τ` holds at its starting inside state.
     exact Program.simulatesAt_probCombine P hP hsim' hpres' hτ (good xs sr x τ hl hx)
   -- Initially the inside history is empty.
   have hinit_out : ∀ sr ∈ (init.map fun r => (s, r)).1.support, inv [] sr := by
@@ -586,13 +538,11 @@ lemma RandomSystem.ofProbAutomaton_probCombine_eq_of_simulation {F : List (Σ o,
     -- an initial state is `(s, r)` for a possible `r` of `init`; take `τ = []`
     obtain ⟨r, hr, rfl⟩ := mem_support_fTransform _ _ hsr
     exact ⟨[], hinit r hr, le_refl _⟩
-  -- Step 5: conclude.
-  -- Equal random systems along the outside simulation ...
+  -- The outside simulation equates the cumulative laws on `F`.
   rw [RandomSystem.ofProbAutomaton_eq_of_simulation (E := F) (bound := n) (hE := hF)
     (P.probCombine stepR₁ hP) (P.probCombine stepR₂ hP) (Program.insideKernel K) inv hpres_out
     hsim_out _ hinit_out]
-  -- ... from the kernel image of `(s, r)` for `r ← init`: `(s, r₂)` for `r₂ ← init.bind K`.
-  -- equal systems from equal initial laws
+  -- Its initial kernel image is `(s, r₂)` with `r₂ ← init.bind K`, as on the right.
   congr 1
   apply Subtype.ext
   simp only [ProbDist.bind_val, ProbDist.map_val, Program.insideKernel, bindK_fTransform,
@@ -609,7 +559,8 @@ variable (step : ProbStep R J X Y)
 /-- A record of one step: the state and the query, and the drawn next state and reply. -/
 abbrev Draw (R J : Type) (X Y : J → Type) := (R × Σ j, X j) × (R × Σ j, Y j)
 
-/-- **The step recording its draws**: it steps as `step` and appends the draw to its record. -/
+/-- Draw `(r', y) ← step r j x`, reply `y`, and change `(r, rec)` to
+`(r', rec ++ [((r, ⟨j, x⟩), (r', ⟨j, y⟩))])`. -/
 noncomputable def recording : ProbStep (R × List (Draw R J X Y)) J X Y :=
   fun rd j x => (step rd.1 j x).map fun o =>
     ((o.1, rd.2 ++ [((rd.1, ⟨j, x⟩), tagged ⟨j, x⟩ o)]), o.2)
@@ -665,7 +616,9 @@ lemma bind_forget (init : Distribution.ProbDist R) :
 variable [Fintype (Σ j, X j)] (init : Distribution R)
 
 open scoped Classical in
-/-- **The states reachable** from the initial law in at most `k` steps. -/
+/-- States reachable from `init` in at most `k` transitions:
+`reachable 0 = init.support` and
+`reachable (k+1) = reachable k ∪ ⋃ r ∈ reachable k, ⋃ x, fst '' support(step.outcome r x)`. -/
 noncomputable def reachable : ℕ → Finset R
   | 0 => init.support
   | k + 1 => reachable k ∪ (reachable k).biUnion fun r =>
@@ -723,7 +676,7 @@ open scoped Classical in
 /-- **The deterministic step reading pre-sampled draws**: in the state `r` with `k` steps done
 and the table `t`, the query `x` is answered by the draw in the cell `(k, r, x)`.
 
-```
+```text
   state (r, k, t)  ──x──►  (t(k, r, x) = (r', y))  ──►  state (r', k + 1, t), reply y
 ```
 -/
@@ -742,9 +695,11 @@ noncomputable def drawStep :
     else ((rkt.1, rkt.2.1 + 1, rkt.2.2), d.2)
 
 open scoped Classical in
-/-- The law of the draw in a cell, given the recorded draws: the recorded one if the cell was
-read, a fresh step otherwise. -/
-noncomputable def drawLaw (rec : List (Draw R J X Y)) (c : step.Cell init L) :
+/-- For cell `c = (k, r, x)`, use `δ_o` when record entry `rec[k] = ((r, x), o)`;
+otherwise use the fresh transition law `step.outcome r x`. -/
+noncomputable def drawLaw
+    -- `rec` lists the draws already made; `c` selects a time, reachable state and query.
+    (rec : List (Draw R J X Y)) (c : step.Cell init L) :
     Distribution (R × Σ j, Y j) :=
   -- a step already done: its recorded draw if it read this cell, a fresh step otherwise
   if h : c.1.val < rec.length then
@@ -753,7 +708,7 @@ noncomputable def drawLaw (rec : List (Draw R J X Y)) (c : step.Cell init L) :
   -- a step not yet done: a fresh step
   else step.outcome c.2.1.val c.2.2
 
-/-- The law of a cell is a probability law: a point mass or a step. -/
+/-- Each cell law is normalized: it is a point mass or a tagged transition law. -/
 lemma drawLaw_isProbDist (rec : List (Draw R J X Y)) (c : step.Cell init L) :
     (step.drawLaw init L rec c).isProbDist := by
   unfold drawLaw
@@ -765,55 +720,45 @@ lemma drawLaw_isProbDist (rec : List (Draw R J X Y)) (c : step.Cell init L) :
   · exact fTransform_isProbDist _ (step _ _ _).2
 
 open scoped Classical in
-/-- **The law of the table given the recorded draws**: the recorded cells fixed, the others
-independent fresh steps; with the state and the number of steps done. -/
-noncomputable def drawKernel (rd : R × List (Draw R J X Y)) :
+/-- Given `rd = (r, rec)`, sample independent cells `t(c) ∼ drawLaw rec c` and return
+`(r, rec.length, t)`. Recorded cells are fixed; the remaining cells are fresh transitions. -/
+noncomputable def drawKernel
+    -- `rd` carries the current state `r` and the record `rec` of previous draws.
+    (rd : R × List (Draw R J X Y)) :
     Distribution.ProbDist (R × ℕ × (step.Cell init L → R × Σ j, Y j)) :=
   ProbDist.map (fun t => (rd.1, rd.2.length, t))
-    ⟨pi (step.drawLaw init L rd.2), pi_isProbDist fun c => step.drawLaw_isProbDist init L rd.2 c⟩
+    (ProbDist.pi fun c =>
+      ⟨step.drawLaw init L rd.2 c, step.drawLaw_isProbDist init L rd.2 c⟩)
 
 open scoped Classical in
-/-- Recording a draw in a cell fixes that cell. -/
+/-- The underlying table law is the product of its cell laws, paired with state and row. -/
+@[simp] lemma drawKernel_val (rd : R × List (Draw R J X Y)) :
+    (step.drawKernel init L rd).1 =
+      fTransform (fun t => (rd.1, rd.2.length, t)) (pi (step.drawLaw init L rd.2)) := rfl
+
+open scoped Classical in
+/-- Appending `((r, x), o)` fixes cell `(rec.length, r, x)` to `δ_o`; every other cell law
+is unchanged. -/
 lemma update_drawLaw (rec : List (Draw R J X Y)) (r : R) (x : Σ j, X j) (o : R × Σ j, Y j)
     (hk : rec.length < L) (hr : r ∈ step.reachable init L) :
     Function.update (step.drawLaw init L rec) (⟨rec.length, hk⟩, ⟨r, hr⟩, x) (Finsupp.single o 1) =
       step.drawLaw init L (rec ++ [((r, x), o)]) := by
-  -- Plan: the law of the table given `rec` has one row per step `k < L`, one cell per
-  -- reachable state and query in each row:
-  --
-  --   row k        cell (k, r', x')                          law given rec
-  --   k < |rec|    (r', x') the state and query read at k    point mass at the recorded draw
-  --                any other (r', x')                        fresh step
-  --   k ≥ |rec|    any (r', x')                              fresh step
-  --
-  -- Appending the draw `((r, x), o)` turns the cell `(|rec|, r, x)` into the point mass at `o`
-  -- and leaves every other cell as it was. By the row of the cell:
-  -- 1. the updated cell itself: both sides are the point mass at `o`;
-  -- 2. a row `k < |rec|`: both records have the entry `rec[k]`;
-  -- 3. another cell of row `|rec|`: the new entry is at another state or query, fresh step;
-  -- 4. a row `k > |rec|`: no entry in either record, fresh step.
-  -- Compare cell by cell.
+  -- The updated row is `rec.length`; earlier rows retain their entries and later rows stay fresh.
   funext c
   by_cases hc : c = (⟨rec.length, hk⟩, ⟨r, hr⟩, x)
-  -- Step 1: the updated cell.
-  · -- the new cell: the recorded draw `o`
-    subst hc
-    -- left: the update at its own cell; right: entry `|rec|` of the new record is the draw
-    -- `o`, read at this very state and query
+  -- At the updated cell, both laws are the point mass at `o`.
+  · subst hc
     simp [drawLaw]
-  -- Steps 2–4: on the left, any other cell keeps its law given `rec`.
+  -- At every other cell, compare the existing row with the appended record.
   · rw [Function.update_of_ne hc]
     unfold drawLaw
     by_cases hlt : c.1.val < rec.length
-    -- Step 2: a row already done.
-    · -- an earlier cell: the same record
-      -- (the entry `k < |rec|` of `rec ++ [_]` is `rec[k]`, so both case splits agree)
-      rw [dite_eq_left hlt, dite_eq_left (by simp; omega), List.getElem_append_left hlt]
+    -- Earlier rows read the same entry of `rec`.
+    · rw [dite_eq_left hlt, dite_eq_left (by simp; omega), List.getElem_append_left hlt]
     · by_cases heq : c.1.val = rec.length
-      -- Step 3: the row read now, at another state or query.
-      · -- a cell of the current step at another state or query: still a fresh step
+      · -- At this row, a different state/query still has its fresh transition law.
         rw [dite_eq_right hlt, dite_eq_left (by simp; omega)]
-        -- entry `|rec|` of the new record is the new draw
+        -- entry `rec.length` of the new record is the new draw
         have hget : (rec ++ [((r, x), o)])[c.1.val]'(by simp; omega) = ((r, x), o) := by
           simp [heq]
         rw [hget, ite_eq_right]
@@ -821,21 +766,20 @@ lemma update_drawLaw (rec : List (Draw R J X Y)) (r : R) (x : Σ j, X j) (o : R 
         intro h
         obtain ⟨h₁, h₂⟩ := Prod.mk.inj h
         apply hc
-        -- with that state and query, `c` (row `|rec|`) is the updated cell, against `hc`
+        -- with that state and query, `c` (row `rec.length`) is the updated cell, against `hc`
         -- (the bounds in the two triples are proofs, equal by proof irrelevance)
         obtain ⟨⟨k, hk'⟩, ⟨r', hr'⟩, x'⟩ := c
         simp only at heq h₁ h₂
         subst heq h₁ h₂
         rfl
-      -- Step 4: a row not yet reached.
-      · -- a later cell: a fresh step
-        rw [dite_eq_right hlt, dite_eq_right (by simp; omega)]
+      -- Later rows have no recorded draw and retain their fresh transition laws.
+      · rw [dite_eq_right hlt, dite_eq_right (by simp; omega)]
 
-/-- **Reading the next cell is drawing afresh**: while fewer than `L` steps are done from a
-reachable state, the deterministic step on the table of draws simulates the recording step,
-along the law of the table given the record.
+/-- From a reachable state before row `L`, reading the next table cell has the fresh
+transition law. Drawing the table then reading it has the same joint law as recording a
+fresh draw then sampling the updated conditional table.
 
-```
+```text
   (r, rec) ──── recording, x ────► ((r', rec · ((r, x), (r', y))), y)
      │                                        │
   drawKernel                               drawKernel
@@ -843,22 +787,14 @@ along the law of the table given the record.
   (r, k, t) ──── drawStep, x ────► ((r', k + 1, t), y)      t(k, r, x) = (r', y)
 ```
 -/
-lemma simulatesAt_drawStep (rd : R × List (Draw R J X Y)) (hk : rd.2.length < L)
+lemma simulatesAt_drawStep
+    -- `rd = (r, rec)` gives the current state and record; `hk` leaves a row in the table.
+    (rd : R × List (Draw R J X Y)) (hk : rd.2.length < L)
+    -- `hr` includes the state among the table's indices; `x` is the next tagged query.
     (hr : rd.1 ∈ step.reachable init L) (x : Σ j, X j) :
     SimulatesAt step.recording (ofDeterministic (step.drawStep init L)) (step.drawKernel init L)
       rd x := by
   classical
-  -- Plan, with `c = (|rec|, r, x)` the cell read now (row `|rec|`, state `r`, query `x`):
-  -- 1. Under the kernel the table `t` is sampled given `rec`, and `drawStep` reads `t(c)`.
-  -- 2. Disintegrate the independent table at `c`: first `o = t(c)`, a fresh step from `r`,
-  --    then the other cells, i.e. the table given `rec · ((r, x), o)` (`update_drawLaw`).
-  -- 3. That is the recording step's draw `o`, then the kernel at the extended record.
-  --
-  --   (t ← table given rec;  read t(c))
-  --     = (o ← step from r at x;  t ← table given rec · ((r, x), o);  read o)    Step 2
-  --     = (o ← recording from (r, rec) at x;  kernel at the extended record)     Step 3
-  --
-  -- Name the recorded state `(r, rec)` and the query `⟨j, x⟩`.
   obtain ⟨r, rec⟩ := rd
   obtain ⟨j, x⟩ := x
   simp only at hk hr
@@ -866,7 +802,7 @@ lemma simulatesAt_drawStep (rd : R × List (Draw R J X Y)) (hk : rd.2.length < L
   set c : step.Cell init L := (⟨rec.length, hk⟩, ⟨r, hr⟩, ⟨j, x⟩)
   -- Its law given the record is a fresh step of `step` from `r`.
   have hentry : step.drawLaw init L rec c = step.outcome r ⟨j, x⟩ := by
-    -- (no draw is recorded for row `|rec|` yet: the last case of `drawLaw`)
+    -- Row `rec.length` has no recorded draw yet.
     simp [drawLaw, c]
   -- The deterministic step reads the cell `c` (fewer than `L` steps, reachable state).
   have hread : ∀ t : step.Cell init L → R × Σ j, Y j,
@@ -874,60 +810,55 @@ lemma simulatesAt_drawStep (rd : R × List (Draw R J X Y)) (hk : rd.2.length < L
         (((untag ⟨j, x⟩ (t c) (Classical.choice (step r j x).nonempty)).1, rec.length + 1, t),
           (untag ⟨j, x⟩ (t c) (Classical.choice (step r j x).nonempty)).2) := by
     intro t
-    -- the guard of `drawStep` holds: `|rec| < L` and `r` is reachable in `L` steps
+    -- The guard holds: `rec.length < L` and `r` is reachable in `L` transitions.
     simp only [drawStep, dite_eq_left (And.intro hk hr), c]
   -- The simulation equation: the kernel then `drawStep`, against `recording` then the kernel.
   unfold SimulatesAt
   calc bindK (step.drawKernel init L (r, rec)).1
         (fun st => (ofDeterministic (step.drawStep init L)).outcome st ⟨j, x⟩)
-      -- Step 1: read the table.
-      -- the table `t` is sampled, and the deterministic step reads `t c`
+      -- Sample the conditional table and read its next cell `c`.
       = fTransform (fun t => (((untag ⟨j, x⟩ (t c) (Classical.choice (step r j x).nonempty)).1,
             rec.length + 1, t), (⟨j, (untag ⟨j, x⟩ (t c)
               (Classical.choice (step r j x).nonempty)).2⟩ : Σ j, Y j)))
           (pi (step.drawLaw init L rec)) := by
-        -- the kernel fixes `(r, |rec|)` and samples `t`; the point step at `(r, |rec|, t)`
-        -- reads `t c` (`hread`)
-        simp only [drawKernel, ProbDist.map_val, bindK_fTransform, Function.comp_def,
+        -- The point transition at each table is its pushforward under the cell-reading map.
+        simp only [drawKernel_val, bindK_fTransform, Function.comp_def,
           outcome_ofDeterministic, hread]
-        -- a point kernel along a map is the pushforward along it
         exact bindK_single_comp _ _
-      -- Step 2: disintegrate the table at the cell `c`.
-      -- sample the cell `c` first: a fresh step `o`, then the table with `c` fixed to `o`
+      -- Sample `o = t(c)` first, then the independent table with that cell fixed.
     _ = bindK (step.outcome r ⟨j, x⟩) fun o =>
           fTransform (fun t => (((untag ⟨j, x⟩ o (Classical.choice (step r j x).nonempty)).1,
             rec.length + 1, t), (⟨j, (untag ⟨j, x⟩ o
               (Classical.choice (step r j x).nonempty)).2⟩ : Σ j, Y j)))
           (pi (step.drawLaw init L (rec ++ [((r, ⟨j, x⟩), o)]))) := by
-        -- the independent table, disintegrated at the cell `c`, whose law is a fresh step
+        -- `pi_eq_bindK_update` isolates cell `c`; `hentry` identifies its fresh law.
         rw [pi_eq_bindK_update _ c, fTransform_bindK, hentry]
         refine bindK_congr fun o _ => ?_
-        -- with `c` fixed to `o`, the table is the table given the record with `o` appended ...
+        -- Fixing `c` to `o` is precisely appending this draw to the record.
         rw [update_drawLaw step init L rec r ⟨j, x⟩ o hk hr]
-        -- ... and every possible such table has `o` in the cell `c`
+        -- Every table in the updated support reads back `o` at `c`.
         refine fTransform_congr_support fun t ht => ?_
-        -- `t` is a possible table with `c` fixed to `o`, so `t c = o`
         rw [← update_drawLaw step init L rec r ⟨j, x⟩ o hk hr] at ht
         rw [eq_of_mem_support_pi_update _ _ o ht]
-      -- Step 3: the recording step, then the kernel.
-      -- the fresh step is the recording step's draw, and the table with the record is the
-      -- kernel image of the recorded state
+      -- This is the recording step followed by its updated conditional table law.
     _ = _ := by
-        -- unfold the recording step's draw and the kernel at the record of length `|rec| + 1`
-        simp only [outcome_recording, drawKernel, ProbDist.map_val, bindK_fTransform,
+        -- Both sides append the same draw and retain the same table at row `rec.length + 1`.
+        simp only [outcome_recording, drawKernel_val, bindK_fTransform,
           Function.comp_def, fTransform_fTransform, List.length_append, List.length_singleton]
-        -- draw from the untagged step on both sides
+        -- Untagging the tagged fresh draw recovers its state and reply.
         rw [outcome, bindK_fTransform, bindK_fTransform]
         refine bindK_congr fun o _ => ?_
-        -- untagging a tagged draw gives it back
         simp only [Function.comp_def, untag_tagged]
-        -- what is left: `tagged ⟨j, x⟩ o` is `(o.1, ⟨j, o.2⟩)`, by definition
         rfl
 
 end ProbStep
 
-/-- The draws of the initial law: no step done, all cells fresh. -/
-noncomputable def ProbStep.drawInit [Fintype (Σ j, X j)] (step : ProbStep R J X Y)
+/-- Draw `r₀ ← init`; for each cell `c = (k, r, x)`, independently draw
+`t(c) ← step.outcome r x`, then return `(r₀, 0, t)`. -/
+noncomputable def ProbStep.drawInit
+    -- The finite query alphabet and finite supports give finitely many reachable table cells.
+    [Fintype (Σ j, X j)] (step : ProbStep R J X Y)
+    -- `init` samples the initial state; `L` gives the number of table rows.
     (init : Distribution.ProbDist R) (L : ℕ) :
     Distribution.ProbDist (R × ℕ × (step.Cell init.1 L → R × Σ j, Y j)) :=
   (init.map fun r => (r, [])).bind (step.drawKernel init.1 L)
@@ -936,32 +867,25 @@ section
 
 variable [Fintype (Σ j, X j)] [Fintype (Σ j, Y j)]
 
-/-- **A probabilistic automaton is a random automaton** [1, Definition 2]: on any input domain
-of at most `L` queries, it is the deterministic automaton reading a table of pre-sampled draws,
-the table sampled once with the initial state.
+/-- A probabilistic automaton on a domain of at most `m ≤ L` queries equals the deterministic
+automaton reading a table sampled once with the initial state. This realizes
+[1, Definition 2, p. 6: "specifying the internal randomness and the initial state"].
 
-```
-  (step, init)  =  (recording, (init, []))  =  (drawStep, (r, 0, t) for r ← init, t ← draws)
+```text
+  (step, init)  =  (recording, (init, []))  =  (drawStep, drawInit)
 ```
 -/
-theorem RandomSystem.ofProbAutomaton_eq_drawStep {E : List (Σ j, X j) → Prop} {m : ℕ}
-    {hE : ∀ h, E h → h.length ≤ m} (step : ProbStep R J X Y) (init : Distribution.ProbDist R)
+theorem RandomSystem.ofProbAutomaton_eq_drawStep
+    -- `E` admits inside query histories; `hE` bounds their length by `m`.
+    {E : List (Σ j, X j) → Prop} {m : ℕ} {hE : ∀ h, E h → h.length ≤ m}
+    -- `step` supplies fresh transitions; `init` samples the initial inside state.
+    (step : ProbStep R J X Y) (init : Distribution.ProbDist R)
+    -- `L` is the number of retained table rows; `hL` covers every query admitted by `E`.
     {L : ℕ} (hL : m ≤ L) :
     RandomSystem.ofProbAutomaton (Domain.ofInputs E m hE) step init =
       RandomSystem.ofProbAutomaton (Domain.ofInputs E m hE)
         (ProbStep.ofDeterministic (step.drawStep init.1 L)) (step.drawInit init L) := by
-  -- Plan: the recording step sits between the two automata, linked by two simulations of it:
-  --
-  --   (step, init)
-  --     = (recording, (init, []))    `step` simulates it, forgetting the record
-  --     = (drawStep, drawInit)       `drawStep` simulates it, reading the table
-  --
-  -- 1. The invariant of the recording step, kept by each step and true initially.
-  -- 2. Along the domain (at most `m ≤ L` queries), `drawStep` simulates the recording step.
-  -- 3. The chain above, by `RandomSystem.ofProbAutomaton_eq_of_simulation` twice.
-  --
-  -- Step 1: the invariant.
-  -- The invariant of the recording step: one draw per query, from a reachable state.
+  -- One draw is recorded per query, and its state is reachable after that many transitions.
   let inv : List (Σ j, X j) → R × List (ProbStep.Draw R J X Y) → Prop :=
     fun xs rd => rd.2.length = xs.length ∧ rd.1 ∈ step.reachable init.1 xs.length
   -- Each query appends one draw, from a reachable state (`recording_reachable`).
@@ -973,7 +897,6 @@ theorem RandomSystem.ofProbAutomaton_eq_drawStep {E : List (Σ j, X j) → Prop}
   -- Initially: no draws, from a state in the support of `init`.
   have hinit : ∀ rd ∈ (init.map fun r => (r, ([] : List (ProbStep.Draw R J X Y)))).1.support,
       inv [] rd := fun _ hrd => step.recording_init_reachable init hrd
-  -- Step 2: the simulation by the table of draws.
   -- Along the domain, fewer than `L` steps are done, from states reachable in `L` steps: the
   -- deterministic step on the table of draws simulates the recording step.
   have hsim : ∀ xs rd x, inv xs rd → E (xs ++ [x]) →
@@ -986,7 +909,6 @@ theorem RandomSystem.ofProbAutomaton_eq_drawStep {E : List (Σ j, X j) → Prop}
     -- ... and the state, reachable in `|xs|` steps, is reachable in `L`
     exact step.simulatesAt_drawStep init.1 L rd (by omega)
       (step.reachable_mono init.1 (by omega) hr) x
-  -- Step 3: the chain.
   calc RandomSystem.ofProbAutomaton (Domain.ofInputs E m hE) step init
       -- the initial law is the recorded initial law, the record forgotten ...
       _ = RandomSystem.ofProbAutomaton (Domain.ofInputs E m hE) step
@@ -1009,16 +931,24 @@ end
 
 namespace PDCBehavior
 
+-- Finite port and query/reply types give finite presentations on the bounded domains.
 variable [Fintype O] [Fintype J] [∀ o, Fintype (U o)] [∀ o, Fintype (V o)] [∀ j, Fintype (X j)]
-  [∀ j, Fintype (Y j)] {E : List (Σ j, X j) → Prop} {m : ℕ} {hE : ∀ h, E h → h.length ≤ m}
-  {F : List (Σ o, U o) → Prop} {n : ℕ} {hF : ∀ h, F h → h.length ≤ n}
-  (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
-  (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
+    [∀ j, Fintype (Y j)]
+    -- `E`, `F` admit inside and outside histories; `hE`, `hF` bound their lengths by `m`, `n`.
+    {E : List (Σ j, X j) → Prop} {m : ℕ} {hE : ∀ h, E h → h.length ≤ m}
+    {F : List (Σ o, U o) → Prop} {n : ℕ} {hF : ∀ h, F h → h.length ≤ n}
+    -- `hE'`, `hF'` exclude empty histories and admit every nonempty prefix.
+    (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
+    (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
 
 /-- **Attaching a program to a deterministic automaton** with a random initial state: the
 combined automaton, its initial state paired with the program's. -/
-lemma attach_ofDDC_ofProgramOn_ofDeterministic (s : S) (P : Program S O J U V X Y) {b : ℕ}
-    (hb : P.Bounded b) (hα : IsDDCFrom E F b (DDC.ofProgramOn s P F))
+lemma attach_ofDDC_ofProgramOn_ofDeterministic
+    -- `s` starts program `P`; `hb` bounds each invocation by `b` inside queries.
+    (s : S) (P : Program S O J U V X Y) {b : ℕ} (hb : P.Bounded b)
+    -- `hα` gives exactly the converter domain over `F`, using only inside histories in `E`.
+    (hα : IsDDCFrom E F b (DDC.ofProgramOn s P F))
+    -- `stepR` updates the inside state deterministically; `init` samples its starting value.
     (stepR : R → (j : J) → X j → R × Y j) (init : Distribution.ProbDist R) :
     attach hE' hF' (ofDDC (DDC.ofProgramOn s P F) hα)
         (RandomSystem.ofProbAutomaton (Domain.ofInputs E m hE)
@@ -1026,19 +956,10 @@ lemma attach_ofDDC_ofProgramOn_ofDeterministic (s : S) (P : Program S O J U V X 
         (RandomSystem.ofProbAutomaton_repliesAtQueriedInterface _ _ _) =
       RandomSystem.ofProbAutomaton (Domain.ofInputs F n hF)
         (ProbStep.ofDeterministic (P.combine stepR hb)) (init.map fun r => (s, r)) := by
-  -- Plan: compare the probabilities of each outside transcript `t`.
-  -- 1. Present the automaton by the law of its deterministic systems `aut r`, `r ← init`.
-  -- 2. Present the converter by the point law at its DDC; the attachment of the presentations
-  --    gives `t` the mass, over `r ← init`, of "the DDC attached to `aut r` replies `t`".
-  -- 3. The combined automaton gives `t` the mass, over `r ← init`, of "the combined automaton
-  --    from `(s, r)` replies `t`".
-  -- 4. For each `r` the two systems are equal (`trim_apply_ofProgramOn_automaton`):
-  --
   --          ┌──────┐ ──q─▶ ┌──────────┐
   --   ──u──▶ │ P(s) │       │ stepR, r │   =   combined automaton `P.combine stepR`,
   --   ◀──v── └──────┘ ◀─y── └──────────┘       from `(s, r)`
   --
-  -- Step 1: the presentation of the automaton.
   -- The automaton started in `r`, on the domain `E`, as a deterministic system with domain `E`.
   let aut : R → {t : InterfaceSystem J X Y //
       IsDDS t ∧ RepliesAtQueriedInterface t ∧ ∀ h, (t h).Dom ↔ E h} := fun r =>
@@ -1063,7 +984,6 @@ lemma attach_ofDDC_ofProgramOn_ofDeterministic (s : S) (P : Program S O J U V X 
   -- Compare the probabilities of each outside transcript `t`.
   apply RandomSystem.ext
   intro t
-  -- Step 2: the attachment of the presentations.
   -- Present the converter by its DDC and the automaton by its deterministic systems.
   -- (The point law at the DDC presents `ofDDC` by definition: `fun _ => rfl`.)
   rw [attach_presents hE' hF' _ _ _ ⟨Finsupp.single ⟨_, hα⟩ 1, isProbDist_single _⟩
@@ -1072,10 +992,8 @@ lemma attach_ofDDC_ofProgramOn_ofDeterministic (s : S) (P : Program S O J U V X 
   -- state `r`, with probability `init r`.
   rw [behaviorMass_attachPDS, prod_single_left, mass_fTransform, ProbDist.map_val,
     mass_fTransform]
-  -- Step 3: the combined automaton.
   -- The other side: the combined automaton from each initial pair `(s, r)`.
   rw [RandomSystem.ofProbAutomaton_ofDeterministic_apply, ProbDist.map_val, mass_fTransform]
-  -- Step 4: equal systems for each initial state.
   -- Attached to each automaton, the program is the combined automaton.
   refine mass_congr _ fun r => ?_
   -- the trimmed attachment of the DDC to `aut r` is the combined automaton from `(s, r)`,
@@ -1083,43 +1001,36 @@ lemma attach_ofDDC_ofProgramOn_ofDeterministic (s : S) (P : Program S O J U V X 
   exact iff_of_eq (congrArg (fun z => Replies z (t.map Prod.fst) (t.map Prod.snd))
     (Program.trim_apply_ofProgramOn_automaton stepR hb s r hE' hF' hα))
 
-/-- **Attaching a program to a probabilistic automaton is the program run against it**: on the
-inside domain `E`, the converter of a bounded program on the outside domain `F`, attached to the
-probabilistic automaton of `step` started from `init`, is the probabilistic automaton of the
-program run against `step`, started from `s` and `init` [1, §3.3].
+/-- Attaching `P` to the probabilistic automaton `(step, init)` gives `P.probCombine step hb`
+with initial law `(r ↦ (s, r))_* init` on `F`. This is the composition of
+[1, §3.3, p. 9: "then the combined random system is C(F)"].
 
-```
-  P(s) attached to (step, init)   =   P run against step, from (s, r) for r ← init
+```text
+P • (step, init)
+  = P • (drawStep, drawInit)                    ofProbAutomaton_eq_drawStep
+  = (P.combine drawStep, (s, drawInit))          attach_ofDDC_ofProgramOn_ofDeterministic
+  = (P.probCombine drawStep, (s, drawInit))      Program.ofDeterministic_combine
+  = (P.probCombine recording, (s, (init, [])))   simulation of the recording step
+  = (P.probCombine step, (s, init))              simulation that forgets the record
 ```
 
-The proof presents the automaton by pre-sampled draws and uses the deterministic case:
-
-```
-  P • (step, init)
-    = P • (drawStep, draws)                       a random automaton   ofProbAutomaton_eq_drawStep
-    = (P.combine drawStep, (s, draws))            deterministic case   …_ofDeterministic
-    = (P run against drawStep, (s, draws))        point steps          ofDeterministic_combine
-    = (P run against recording, (s, (init, [])))  P respects the simulation
-    = (P run against step, (s, init))             P respects forgetting the record
-```
+The last two equalities use `ofProbAutomaton_probCombine_eq_of_simulation`, respectively with
+`ProbStep.simulatesAt_drawStep` and `ProbStep.simulatesAt_forget`. `drawStep` denotes its point
+transition law when passed to `probCombine`.
 -/
-theorem attach_ofDDC_ofProgramOn_ofProbAutomaton (s : S) (P : Program S O J U V X Y) {b : ℕ}
-    (hb : P.Bounded b) (hα : IsDDCFrom E F b (DDC.ofProgramOn s P F))
+theorem attach_ofDDC_ofProgramOn_ofProbAutomaton
+    -- `s` starts program `P`; `hb` bounds each invocation by `b` inside queries.
+    (s : S) (P : Program S O J U V X Y) {b : ℕ} (hb : P.Bounded b)
+    -- `hα` gives exactly the converter domain over `F`, using only inside histories in `E`.
+    (hα : IsDDCFrom E F b (DDC.ofProgramOn s P F))
+    -- `step` samples a fresh transition per inside query; `init` samples the starting state.
     (step : ProbStep R J X Y) (init : Distribution.ProbDist R) :
     attach hE' hF' (ofDDC (DDC.ofProgramOn s P F) hα)
         (RandomSystem.ofProbAutomaton (Domain.ofInputs E m hE) step init)
         (RandomSystem.ofProbAutomaton_repliesAtQueriedInterface _ _ _) =
       RandomSystem.ofProbAutomaton (Domain.ofInputs F n hF) (P.probCombine step hb)
         (init.map fun r => (s, r)) := by
-  -- Plan: the chain of the docstring, with tables of draws for `L = m + b * n` steps.
-  -- 1. The automaton is the deterministic automaton `drawStep` reading the table.
-  -- 2. Attached to it, the program is the combined automaton (the deterministic case).
-  -- 3. Its point steps are the program run against the point steps of `drawStep`.
-  -- 4. `drawStep` simulates the recording step, and the program respects this simulation ...
-  -- 5. ... and `step` simulates it too, forgetting the record: back to `step` from `init`.
-  --
-  -- Pre-sampled draws for at most `L = m + b * n` steps: enough for the inside domain and for
-  -- the inside queries of `n` invocations.
+  -- `L = m + b * n` covers both the inside domain and all calls by `n` invocations.
   let L := m + b * n
   -- Attachment depends on the random system only.
   have congr_attach : ∀ (α : PDCBehavior O J U V X Y E m hE F n hF)
@@ -1129,16 +1040,14 @@ theorem attach_ofDDC_ofProgramOn_ofProbAutomaton (s : S) (P : Program S O J U V 
     -- equal systems: the two proofs that it replies at the queried port are equal
     rintro α R₁ _ _ _ rfl
     rfl
-  -- Step 1: the automaton is the deterministic automaton reading pre-sampled draws.
-  -- (`m ≤ L`: the table covers the inside domain.)
+  -- `m ≤ L` permits replacement by the deterministic automaton reading its retained table.
   rw [congr_attach _ _ _ _ (RandomSystem.ofProbAutomaton_repliesAtQueriedInterface _ _ _)
     (RandomSystem.ofProbAutomaton_eq_drawStep step init (L := L) (by omega))]
-  -- Step 2: attached to a deterministic automaton, the program is the combined automaton ...
+  -- Deterministic attachment gives the combined transition rule.
   rw [attach_ofDDC_ofProgramOn_ofDeterministic hE' hF' s P hb hα]
-  -- Step 3: ... which is the program run against the point steps of the deterministic automaton.
+  -- Its point transitions are `probCombine` against the point transitions of `drawStep`.
   rw [Program.ofDeterministic_combine]
-  -- Steps 4 and 5: the program respects the simulations of Step 1, from the recorded initial
-  -- law. The invariant: one draw per inside query, from a reachable state.
+  -- Both simulations use one recorded draw per inside query and a reachable inside state.
   let inv : List (Σ j, X j) → R × List (ProbStep.Draw R J X Y) → Prop :=
     fun τ rd => rd.2.length = τ.length ∧ rd.1 ∈ step.reachable init.1 τ.length
   -- Each inside query appends one draw, from a reachable state (`recording_reachable`).
@@ -1156,25 +1065,20 @@ theorem attach_ofDDC_ofProgramOn_ofProbAutomaton (s : S) (P : Program S O J U V 
       ProbStep.SimulatesAt step.recording (ProbStep.ofDeterministic (step.drawStep init.1 L))
         (step.drawKernel init.1 L) rd q := by
     rintro τ rd q ⟨hl, hr⟩ hτ
-    -- `|rec| = |τ| < b * n ≤ L` draws, and the state, reachable in `|τ|` steps, is reachable
-    -- in `L`
+    -- The invariant gives `rd.2.length = τ.length < b * n ≤ L` and reachability within `L`.
     exact step.simulatesAt_drawStep init.1 L rd (by omega)
       (step.reachable_mono init.1 (by omega) hr) q
-  -- Step 4: the program run against the recording step is the one against the table of draws.
-  -- (Its right side starts from `(s, drawInit)`: `drawInit` is the kernel image of `(init, [])`.)
+  -- Transport the table simulation through `P`, starting from its kernel image `drawInit`.
   have draw := RandomSystem.ofProbAutomaton_probCombine_eq_of_simulation (hF := hF) P hb
     step.recording (ProbStep.ofDeterministic (step.drawStep init.1 L)) (step.drawKernel init.1 L)
     inv hpres hsim s _ hinit
-  -- Step 5: it is also the one against `step`, forgetting the record ...
+  -- Transport the forgetting simulation through `P` to recover the original inside automaton.
   have forget := RandomSystem.ofProbAutomaton_probCombine_eq_of_simulation (hF := hF) P hb
     step.recording step (fun rd => Distribution.ProbDist.single rd.1) inv hpres
     (fun τ rd q _ _ => step.simulatesAt_forget rd q) s _ hinit
-  -- ... from the initial law `init` itself.
+  -- Forgetting the empty record returns the initial law `init`.
   rw [ProbStep.bind_forget] at forget
-  -- The chain:
-  --   P against drawStep, from (s, drawInit)
-  --     = P against recording, from (s, (init, []))    (Step 4, `draw`)
-  --     = P against step, from (s, init)                (Step 5, `forget`)
+  -- `draw.symm` returns from the table to the recording automaton; `forget` removes the record.
   exact draw.symm.trans forget
 
 end PDCBehavior
