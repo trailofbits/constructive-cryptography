@@ -101,7 +101,7 @@ open Classical in
 /-- **The independent parallel PDS** on `tensorAll A`: sample `st ∼ piDep P`, one DDS per
 component, once; then answer by `r st = relabel (trim (parAll st)) regroup regroup⁻¹`, which
 retains each `st k` and feeds it its own history `h|k`. As a law,
-`parallelAllPDS P = fTransform r (piDep P)`, a probability law by `piDep_isProbDist`. -/
+`parallelAllPDS P = ProbDist.map r (ProbDist.piDep P)`, with normalization included. -/
 noncomputable def parallelAllPDS [DecidableEq K]
     (P : ∀ k, Distribution.ProbDist {s : InterfaceSystem (A k).I (A k).X (A k).Y //
       IsDDS s ∧ RepliesAtQueriedInterface s ∧ ∀ h, (s h).Dom ↔ (A k).domain h}) :
@@ -109,14 +109,11 @@ noncomputable def parallelAllPDS [DecidableEq K]
         (tensorAll A).Y //
       IsDDS r ∧ RepliesAtQueriedInterface r ∧
         ∀ h, (r h).Dom ↔ (tensorAll A).domain h} :=
-  ⟨Distribution.fTransform (fun s =>
-      ⟨relabel (trim (parAll (fun k => (s k).1)))
-        (Equiv.sigmaAssoc fun k i => (A k).X i)
-        (Equiv.sigmaAssoc fun k i => (A k).Y i).symm,
-       parallelAll_system_valid s⟩)
-      (Distribution.piDep (fun k => (P k).1)),
-    Distribution.fTransform_isProbDist _
-      (Distribution.piDep_isProbDist (fun k => (P k).2))⟩
+  Distribution.ProbDist.map (fun s =>
+    ⟨relabel (trim (parAll (fun k => (s k).1)))
+      (Equiv.sigmaAssoc fun k i => (A k).X i)
+      (Equiv.sigmaAssoc fun k i => (A k).Y i).symm,
+     parallelAll_system_valid s⟩) (Distribution.ProbDist.piDep P)
 
 open Classical in
 /-- **The independent parallel PDS presents the parallel typed system**:
@@ -143,7 +140,8 @@ lemma parallelAll_ofPDS [DecidableEq K]
         ∀ h, (s h).Dom ↔ (A k).domain h}).1) (fun _ _ => rfl)]
   -- The right side is the `piDep P`-mass of `{st | r st answers h}`, pulled back along `r`.
   change _ = behaviorMass _ _ _
-  simp only [behaviorMass, parallelAllPDS, Distribution.mass_fTransform]
+  simp only [behaviorMass, parallelAllPDS, Distribution.ProbDist.map_val,
+    Distribution.ProbDist.piDep_val, Distribution.mass_fTransform]
   symm
   apply Distribution.mass_congr
   intro s

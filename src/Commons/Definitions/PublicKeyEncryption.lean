@@ -63,11 +63,11 @@ noncomputable section
 
 variable {PK SK M C : Type} [Fintype PK] [Fintype SK] [Fintype M] [Fintype C]
 
-/-- Independent encryptions of every message under every public key. -/
+/-- The table law `encryptions scheme f = ∏ pm, scheme.enc pm.1 pm.2 (f pm)`: independent
+ciphertexts for every public-key/message pair. -/
 def PublicKeyEncryption.encryptions [DecidableEq PK] [DecidableEq M]
     (scheme : PublicKeyEncryption PK SK M C) : Distribution.ProbDist (PK × M → C) :=
-  ⟨Distribution.pi fun pm => (scheme.enc pm.1 pm.2).1,
-    Distribution.pi_isProbDist fun pm => (scheme.enc pm.1 pm.2).2⟩
+  Distribution.ProbDist.pi fun pm => scheme.enc pm.1 pm.2
 
 -- The public key, `E_pk` and `D_sk` for `(pk, sk) ← G`: on `m`, output `c ← E(pk, m)`; on `c`,
 -- output `D(sk, c)`.

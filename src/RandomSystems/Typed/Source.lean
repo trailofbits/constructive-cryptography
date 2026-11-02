@@ -55,7 +55,7 @@ of `q` independent samples. -/
 noncomputable def TypedSystem.source [Fintype X] (law : Distribution.ProbDist X) (q : ℕ) :
     TypedSystem (Interface.source X q) :=
   TypedSystem.ofAutomaton (Interface.source X q) (Interface.sourceStep law)
-    ⟨Distribution.fTransform (fun t => (t, 0)) (Distribution.pi fun _ : Fin q => law.1),
-      Distribution.fTransform_isProbDist _ (Distribution.pi_isProbDist fun _ => law.2)⟩
+    (Distribution.ProbDist.map (fun t => (t, 0))
+      (Distribution.ProbDist.pi fun _ : Fin q => law))
 
 end SystemAlgebra

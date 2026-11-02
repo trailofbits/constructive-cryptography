@@ -17,6 +17,8 @@ Ideal systems are in the `Commons` namespace; typed systems and converters are i
 | Fresh samples | `TypedSystem.source` in [Source]; `MemorylessSource` in [Ideal] |
 | Retained state | `TypedSystem.sample` in [Functional]; `ofAutomaton` in [Automaton] |
 | Independent joint law | `prodProbDist` in [Distribution] |
+| Independent finite family of draws | `ProbDist.pi` in [Distribution] |
+| Independent draws with different outcome types | `ProbDist.piDep` in [DependentProduct] |
 | Transformed or dependent law | `ProbDist.map`, `ProbDist.bind`, `ProbDist.jointLaw` in [Kernel] |
 | Root blinding | `ProbDist.blindRootSolver`, `ProbDist.rootSuccessLaw` in [Group] |
 | RSA unit-root blinding | `Commons.RSA.blinding_success_eq` in [RSA] |
@@ -28,6 +30,7 @@ Ideal systems are in the `Commons` namespace; typed systems and converters are i
 [Functional]: src/RandomSystems/Typed/Functional.lean
 [Automaton]: src/RandomSystems/Typed/Automaton.lean
 [Distribution]: src/Probability/Distribution.lean
+[DependentProduct]: src/Probability/DependentProduct.lean
 [Kernel]: src/Probability/Kernel.lean
 [Group]: src/Probability/Group.lean
 [RSA]: src/Commons/Definitions/RSA.lean
@@ -84,6 +87,14 @@ Similarly, define a construction's joint law once as `ProbDist Ω`. Worlds, tran
 and counting lemmas refer to that declaration or take it as an explicit parameter. Reuse its
 normalization proof through `.2`; unfold its product or kernel only where a probability
 argument needs it. A different representation gets a correspondence lemma in the owning layer.
+
+Build normalized laws directly: `ProbDist.pi μ` samples independent coordinates with laws
+`μ i`, and `ProbDist.pi (fun _ : Fin q => ν)` samples `q` independent values from `ν`.
+Use `ProbDist.piDep μ` when coordinate `i` has its own outcome type. Combine these laws with
+`prodProbDist`, `ProbDist.map` and `ProbDist.bind`; their normalization proofs travel with them.
+`TypedSystem.source`, `TypedSystem.parallelAllPDS` and `tensorAllPDC` use these operations.
+Sampling the resulting table once retains all its entries; making a fresh draw on each
+invocation remains a separate choice in the system definition.
 
 ## Review and automation
 

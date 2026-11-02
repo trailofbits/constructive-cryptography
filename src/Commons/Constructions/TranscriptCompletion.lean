@@ -71,7 +71,7 @@ open Classical in
 /-- The law of the private table `f : H → Z`: independent entries `f h' ← K h'`,
 `tableLaw K f = ∏_{h'} K h' (f h')`. -/
 noncomputable def tableLaw (K : H → ProbDist Z) : ProbDist (H → Z) :=
-  ⟨Distribution.pi fun h => (K h).1, Distribution.pi_isProbDist fun h => (K h).2⟩
+  ProbDist.pi K
 
 -- **The completing converter** `complete K`: on `eval(())` it queries the inner experiment
 -- once, `experiment.eval(()) ⇒ h`, draws a table `f ← tableLaw K` independent of that call,
@@ -121,7 +121,7 @@ lemma complete_smul_source
       congr 1
       -- The coordinate `h` of the product law `∏_{h'} K h'` is `K h`; the other factors
       -- have weight one.
-      simpa only [Distribution.marginalAt, Distribution.fTransform, tableLaw,
+      simpa only [Distribution.marginalAt, Distribution.fTransform, tableLaw, ProbDist.pi_val,
         (K _).2.weight_eq, Finset.prod_const_one, one_smul] using
           Distribution.marginalAt_pi (fun h => (K h).1) h
   rw [attached, MemorylessSource.memoryless_eq]

@@ -98,6 +98,7 @@ theorem parallelAll_attach (α : ∀ k, TypedConverter (A k) (B k))
     behaviorMass_attachPDS]
   change _ = behaviorMass _ _ _
   simp only [behaviorMass, tensorAllPDC, TypedSystem.parallelAllPDS, attachPDS,
+    Distribution.ProbDist.map_val, Distribution.ProbDist.piDep_val,
     Distribution.mass_fTransform, Distribution.fTransform_prod_left,
     Distribution.fTransform_prod_right]
   -- Regroup: `prod (piDep P) (piDep T)` is `piDep (k ↦ prod (P k) (T k))` pushed to the

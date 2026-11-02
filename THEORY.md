@@ -387,7 +387,7 @@ extension are in [Examples](src/Examples/README.md).
 [cc_construct]: src/ConstructiveCryptography/Tactics/Categorical.lean#L47
 [cc_calc]: src/ConstructiveCryptography/Tactics/Substitution.lean#L105
 [real_ideal_distance_le]: src/Examples/AuthenticatedEncryption/Security.lean#L162
-[SymmetricEncryption.encryptions]: src/Commons/Definitions/Encryption.lean#L72
+[SymmetricEncryption.encryptions]: src/Commons/Definitions/Encryption.lean#L73
 [AE.INDCCA]: src/Commons/Definitions/AEAD.lean#L172
 [correctedChain]: src/Examples/AuthenticatedEncryption/Security.lean#L132
 [collision_mass_le]: src/Examples/AuthenticatedEncryption/Collision.lean#L58

@@ -82,7 +82,8 @@ lemma source_eq_memoryless {Z : Type} [Fintype Z] (law : ProbDist Z) (q : ℕ) :
     -- The source is the automaton `sourceStep` started in `(t, 0)` (table `t`, counter `0`)
     -- for `t ← law^q`: a transcript has the mass of the initial states, hence of the tables,
     -- from which the automaton gives it.
-    rw [TypedSystem.source, ofAutomaton_mass, mass_fTransform]
+    rw [TypedSystem.source, ofAutomaton_mass, ProbDist.map_val, ProbDist.pi_val,
+      mass_fTransform]
   -- Step 2: one more trigger reads the next entry of the table.
   -- One more exchange: the table also gives `h · ((), z)` when the domain admits one more query
   -- and its entry `h.length` is `z`.

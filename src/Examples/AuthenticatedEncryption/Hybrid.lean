@@ -60,20 +60,20 @@ variable {K M C : Type} [Fintype K] [Fintype M] [Fintype C] [DecidableEq K] [Dec
 /-- The law of a source's table: `k` independent samples. -/
 noncomputable abbrev tableLaw {X : Type} (law : Distribution.ProbDist X) (k : ℕ) :
     Distribution (Fin k → X) :=
-  Distribution.pi fun _ => law.1
+  (Distribution.ProbDist.pi fun _ : Fin k => law).1
 
 omit [Fintype K] [Fintype M] [Fintype C] [DecidableEq K] [DecidableEq M] in
 lemma tableLaw_isProbDist {X : Type} (law : Distribution.ProbDist X) (k : ℕ) :
     (tableLaw law k).isProbDist :=
-  Distribution.pi_isProbDist fun _ => law.2
+  (Distribution.ProbDist.pi fun _ : Fin k => law).2
 
 /-- The real system's tables: `k` keys from `AE.Real.law1 scheme` and `k` encryption functions
 from `AE.Real.law2 scheme`, all drawn independently. -/
 noncomputable def realTableLaw (scheme : SymmetricEncryption K M C) (k : ℕ) :
     Distribution.ProbDist ((Fin k → K) × (Fin k → (K × M → C))) :=
   Distribution.prodProbDist
-    ⟨tableLaw (AE.Real.law1 scheme) k, tableLaw_isProbDist _ _⟩
-    ⟨tableLaw (AE.Real.law2 scheme) k, tableLaw_isProbDist _ _⟩
+    (Distribution.ProbDist.pi fun _ : Fin k => AE.Real.law1 scheme)
+    (Distribution.ProbDist.pi fun _ : Fin k => AE.Real.law2 scheme)
 
 /-- An oracle on `AE.perPort M C q`, with one retained draw and an initially empty message
 history `known`. Encryption appends its input to `known`; decryption keeps the state. -/
@@ -175,14 +175,14 @@ variable (M C) in
 replacement messages, each drawn from `AE.CCA.law1 M C`. -/
 noncomputable def ccaTableLaw (q : AE.Port → ℕ) :
     Distribution.ProbDist (Fin (AE.CCA.bound M C * ∑ i, q i) → M) :=
-  ⟨tableLaw (AE.CCA.law1 M C) (AE.CCA.bound M C * ∑ i, q i), tableLaw_isProbDist _ _⟩
+  Distribution.ProbDist.pi fun _ : Fin (AE.CCA.bound M C * ∑ i, q i) => AE.CCA.law1 M C
 
 variable (M C) in
 /-- The ideal converter's retained table: `AE.Ideal.bound M C * ∑ i, q i` independent
 replacement messages, each drawn from `AE.Ideal.law1 M C`. -/
 noncomputable def idealTableLaw (q : AE.Port → ℕ) :
     Distribution.ProbDist (Fin (AE.Ideal.bound M C * ∑ i, q i) → M) :=
-  ⟨tableLaw (AE.Ideal.law1 M C) (AE.Ideal.bound M C * ∑ i, q i), tableLaw_isProbDist _ _⟩
+  Distribution.ProbDist.pi fun _ : Fin (AE.Ideal.bound M C * ∑ i, q i) => AE.Ideal.law1 M C
 
 /-- The random-message transformation's automaton on an automaton, beside its source of
 replacement messages. -/

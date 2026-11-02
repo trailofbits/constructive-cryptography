@@ -68,11 +68,11 @@ noncomputable section
 
 variable {K M C : Type} [Fintype K] [Fintype M] [Fintype C]
 
-/-- Independent encryptions of every message under every key. -/
+/-- The table law `encryptions scheme f = ∏ km, scheme.enc km.1 km.2 (f km)`: independent
+ciphertexts for every key/message pair. -/
 def SymmetricEncryption.encryptions [DecidableEq K] [DecidableEq M]
     (scheme : SymmetricEncryption K M C) : Distribution.ProbDist (K × M → C) :=
-  ⟨Distribution.pi fun km => (scheme.enc km.1 km.2).1,
-    Distribution.pi_isProbDist fun km => (scheme.enc km.1 km.2).2⟩
+  Distribution.ProbDist.pi fun km => scheme.enc km.1 km.2
 
 -- `E_k` for `k ← Gen`: on `m`, output `c ← Enc_k(m)`.
 system Encryption.Real(scheme : SymmetricEncryption K M C)
