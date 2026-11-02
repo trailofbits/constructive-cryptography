@@ -13,12 +13,13 @@ dependent functions `f : ∀ k, A k` given by
 
 A factor vanishes as soon as `f k ∉ supp (μ k)`, so the support lies in the finite box
 `∏ k, supp (μ k)` (`Fintype.piFinset`) and the product is again finitely supported. The laws
-are raw distributions: real-valued, neither nonnegative nor normalized in general. The index
+may be raw real-valued distributions or normalized laws in `ProbDist`. The index
 and the carriers may live in different universes.
 
 ## Main definitions
 
 * `Distribution.piDep μ`: the independent product of the family `μ`
+* `Distribution.ProbDist.piDep μ`: the same heterogeneous product with normalization included
 
 ## Main results
 
@@ -82,6 +83,19 @@ lemma piDep_isProbDist {A : K → Type*} {μ : ∀ k, Distribution (A k)}
     refine Finset.prod_eq_one fun k _ => ?_
     have hw := (hμ k).2
     rwa [weight_eq_finsupp_sum, Finsupp.sum] at hw
+
+/-- Independent samples of different types, with mass `∏ k, μ k (f k)` at outcome `f`.
+The product carries its normalization proof. -/
+noncomputable def ProbDist.piDep
+    -- `K` indexes the independent draws; `A k` is the outcome type at coordinate `k`.
+    {A : K → Type*}
+    -- `μ k` supplies both the finite-support law and its normalization.
+    (μ : ∀ k, ProbDist (A k)) : ProbDist (∀ k, A k) :=
+  ⟨Distribution.piDep fun k => (μ k).1, piDep_isProbDist fun k => (μ k).2⟩
+
+/-- `(ProbDist.piDep μ).1 = piDep (fun k => (μ k).1)`. -/
+@[simp] lemma ProbDist.piDep_val {A : K → Type*} (μ : ∀ k, ProbDist (A k)) :
+    (ProbDist.piDep μ).1 = Distribution.piDep (fun k => (μ k).1) := rfl
 
 open Classical in
 /-- A rectangular event `{f | ∀ k, Q k (f k)}` has the product of the coordinate masses:

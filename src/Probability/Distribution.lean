@@ -12,7 +12,6 @@ public import Mathlib.LinearAlgebra.Finsupp.LSum
 public import Mathlib.Logic.Equiv.Fin.Basic
 public import Mathlib.Algebra.BigOperators.Fin
 
-@[expose] public section
 /-!
 # Finite distributions
 
@@ -29,7 +28,8 @@ Lanzenberger–Maurer, *Coupling of Random Systems*, Definitions 1, 2 and 4.
 * `fTransform f X`: the pushforward of `X` along `f`
 * `RV`, `PMF`, `condPMF`: random variables, their laws and conditional laws,
   with the notations `ℙ⟦X⟧` and `ℙ⟦X | Y⟧`
-* `prod`, `iidPow`, `clonePow`, `pi`: independent products
+* `prod`, `iidPow`, `clonePow`, `pi`: independent and shared-coordinate products
+* `ProbDist.pi`: independent samples from normalized coordinate laws
 
 ## Main results
 
@@ -714,7 +714,7 @@ def fTransform (f : A → B) (X : Distribution A) : Distribution B :=
 lemma fTransform_fTransform {A B C : Type*}
     (f : B → C) (g : A → B) (X : Distribution A) :
     fTransform f (fTransform g X) = fTransform (f ∘ g) X := by
-  show Finsupp.mapDomain f (Finsupp.mapDomain g X) = Finsupp.mapDomain (f ∘ g) X
+  change Finsupp.mapDomain f (Finsupp.mapDomain g X) = Finsupp.mapDomain (f ∘ g) X
   exact (Finsupp.mapDomain_comp (v := X)).symm
 
 /-- Pointwise evaluation of a pushforward is the mass of the fiber. -/
@@ -768,7 +768,7 @@ lemma mass_fTransform {A B : Type*}
     (f : A → B) (X : Distribution A) (P : B → Prop) :
     (fTransform f X).mass P = X.mass (fun a => P (f a)) := by
   unfold fTransform mass
-  show (Finsupp.mapDomain f X).sum (fun b w => if P b then w else 0) =
+  change (Finsupp.mapDomain f X).sum (fun b w => if P b then w else 0) =
       X.sum (fun a w => if P (f a) then w else 0)
   rw [Finsupp.sum_mapDomain_index
     (fun b => by by_cases hb : P b <;> simp [hb])
@@ -797,7 +797,7 @@ lemma weight_fTransform {A B : Type*}
     (f : A → B) (X : Distribution A) :
     (fTransform f X).weight = X.weight := by
   unfold weight
-  show (Finsupp.mapDomain f X).sum (fun _ w => w) = X.sum (fun _ w => w)
+  change (Finsupp.mapDomain f X).sum (fun _ w => w) = X.sum (fun _ w => w)
   rw [Finsupp.sum_mapDomain_index (fun _ => rfl) (fun _ _ _ => rfl)]
 
 /-- Pushforward preserves non-negativity: the mass at each image point is a
@@ -977,6 +977,7 @@ lemma fTransform_apply_eq_sum
       exact Finset.mem_filter.mpr ⟨ha_supp, hfa⟩
     exact Finsupp.notMem_support_iff.mp ha_supp
 
+omit [Fintype B] [Nonempty B] in
 /-- Pushforward of a uniform distribution evaluated at a point equals
 the fiber cardinality divided by the total cardinality.
 
@@ -1093,7 +1094,7 @@ lemma prod_apply (X : Distribution A) (Y : Distribution B) (a : A) (b : B) :
     prod X Y (a, b) = X a * Y b := by
   classical
   -- Push evaluation inside the nested sums and discharge each sum via `Finsupp.sum_eq_single`.
-  simp [prod, Finsupp.sum_apply]
+  simp only [prod, Finsupp.sum_apply]
   let g : A → ℝ → ℝ :=
     fun a' wa => Y.sum (fun b' wb => (Finsupp.single (a', b') (wa * wb)) (a, b))
   change X.sum g = X a * Y b
@@ -1228,7 +1229,8 @@ identical marginal `X`). -/
 lemma iidPow_weight (X : Distribution A) (q : ℕ) : (iidPow X q).weight = X.weight ^ q := by
   have hsub : (iidPow X q).support ⊆ Fintype.piFinset fun _ : Fin q => X.support :=
     fun f hf => Fintype.mem_piFinset.mpr fun i => Finsupp.mem_support_iff.mpr fun hi =>
-      (iidPow_apply X q f ▸ Finsupp.mem_support_iff.mp hf) (Finset.prod_eq_zero (Finset.mem_univ i) hi)
+      (iidPow_apply X q f ▸ Finsupp.mem_support_iff.mp hf)
+        (Finset.prod_eq_zero (Finset.mem_univ i) hi)
   have hX : ∀ _ : Fin q, ∑ a ∈ X.support, X a = X.weight := fun _ => by rw [weight, Finsupp.sum]
   calc (iidPow X q).weight
       = ∑ f ∈ Fintype.piFinset fun _ : Fin q => X.support, iidPow X q f := by
@@ -1242,7 +1244,8 @@ lemma iidPow_weight (X : Distribution A) (q : ℕ) : (iidPow X q).weight = X.wei
 
 /-- `X^q` is a probability distribution whenever `X` is (CR18 Def 4.9: `X^q` is again a random
 variable) — the n-ary analogue of `prod_isProbDist`. -/
-lemma iidPow_isProbDist {X : Distribution A} (hX : X.isProbDist) (q : ℕ) : (iidPow X q).isProbDist := by
+lemma iidPow_isProbDist {X : Distribution A} (hX : X.isProbDist) (q : ℕ) :
+    (iidPow X q).isProbDist := by
   refine ⟨fun f => ?_, ?_⟩
   · rw [iidPow_apply]
     exact Finset.prod_nonneg fun i _ => hX.nonNeg (f i)
@@ -1251,9 +1254,10 @@ lemma iidPow_isProbDist {X : Distribution A} (hX : X.isProbDist) (q : ℕ) : (ii
 /-- CR18 **Definition 4.10** (finite part). The **q-fold clone power** `X^[q]` of a distribution:
 `q` *clones* `X₁ = ⋯ = X_q` — the *same* value in every coordinate — each with marginal `X`. It is
 the pushforward (`fTransform`) of `X` along the **diagonal** `a ↦ (a,…,a)`, hence supported on the
-constant tuples with the constant-`a` tuple carrying mass `X a` (`clonePow_apply`). Contrast `iidPow`
-(independent copies): clones are *fully correlated*. (Example 4.11: clones of a uniform bit put mass
-½ on each of `(0,…,0)` and `(1,…,1)`. The countable version is omitted, as for Def 4.9 fn 24.) -/
+constant tuples, with mass `X a` at the constant-`a` tuple (`clonePow_apply`). Contrast `iidPow`
+(independent copies): clones are *fully correlated*. (Example 4.11: clones of a uniform bit
+put mass ½ on each of `(0,…,0)` and `(1,…,1)`. The countable version is omitted, as for
+Def 4.9 fn 24.) -/
 def clonePow (X : Distribution A) (q : ℕ) : Distribution (Fin q → A) :=
   fTransform (fun a _ => a) X
 
@@ -1407,8 +1411,8 @@ lemma prod_uniform :
 
 omit [Fintype A] [Nonempty A] in
 /-- The weight equals the Finsupp.sum with identity.  (`rfl`; needs no `Fintype`/`Nonempty` — those
-are section-variable leaks, omitted so callers over arbitrary carriers, e.g. `Distribution gs.Game`, can use
-it without spurious `Nonempty` obligations.) -/
+are section-variable leaks, omitted so callers over arbitrary carriers, such as
+`Distribution gs.Game`, can use it without spurious `Nonempty` obligations.) -/
 lemma weight_eq_finsupp_sum (X : Distribution A) :
     X.weight = X.sum (fun _ w => w) := by
   rfl
@@ -1420,7 +1424,7 @@ This is the pushforward functoriality law: `f_*(g_*(X)) = (f ∘ g)_*(X)`. -/
 lemma fTransform_comp
     (g : B → C) (f : A → B) (X : Distribution A) :
     fTransform g (fTransform f X) = fTransform (g ∘ f) X := by
-  show Finsupp.mapDomain g (Finsupp.mapDomain f X) = Finsupp.mapDomain (g ∘ f) X
+  change Finsupp.mapDomain g (Finsupp.mapDomain f X) = Finsupp.mapDomain (g ∘ f) X
   rw [Finsupp.mapDomain_comp]
 
 omit [Fintype A] [Nonempty A] [Fintype B] [Nonempty B] [Fintype C] [Nonempty C] in
@@ -1685,7 +1689,8 @@ lemma mass_prod_eq_sum {A' B' : Type} (P : Distribution A') (Q : Distribution B'
 
 lemma mass_prod_eq_sum_right {A' B' : Type} (P : Distribution A') (Q : Distribution B')
     (C : A' → B' → Prop) :
-    (Distribution.prod P Q).mass (fun p => C p.1 p.2) = Q.sum fun b w => w * P.mass (fun a => C a b) := by
+    (Distribution.prod P Q).mass (fun p => C p.1 p.2) =
+      Q.sum fun b w => w * P.mass (fun a => C a b) := by
   rw [← mass_prod_eq_sum Q P (fun b a => C a b), ← Distribution.fTransform_swap_prod,
     Distribution.mass_fTransform]
   rfl
@@ -1693,7 +1698,8 @@ lemma mass_prod_eq_sum_right {A' B' : Type} (P : Distribution A') (Q : Distribut
 lemma fTransform_prod_assoc {A B C D : Type} (f : (A × B) × C → D) (P : Distribution A)
     (Q : Distribution B) (R : Distribution C) :
     Distribution.fTransform f (Distribution.prod (Distribution.prod P Q) R) =
-      Distribution.fTransform (fun p => f ((p.1, p.2.1), p.2.2)) (Distribution.prod P (Distribution.prod Q R)) := by
+      Distribution.fTransform (fun p => f ((p.1, p.2.1), p.2.2))
+        (Distribution.prod P (Distribution.prod Q R)) := by
   rw [← Distribution.fTransform_assoc_prod, Distribution.fTransform_comp]
   rfl
 
@@ -1758,6 +1764,19 @@ lemma pi_isProbDist {ι : Type*} [Fintype ι] [DecidableEq ι] {μ : ι → Dist
   ⟨pi_nonNeg fun i => (h i).1, by
     rw [weight_pi]
     exact Finset.prod_eq_one fun i _ => (h i).2⟩
+
+/-- Independent samples with mass `(ProbDist.pi μ) f = ∏ i, μ i (f i)`.
+The product carries its normalization proof. -/
+noncomputable def ProbDist.pi
+    -- `ι` indexes the finitely many independent draws; `A` is their common outcome type.
+    {ι A : Type*} [Fintype ι] [DecidableEq ι]
+    -- `μ i` is the normalized law of coordinate `i`; its support is finite.
+    (μ : ι → ProbDist A) : ProbDist (ι → A) :=
+  ⟨Distribution.pi fun i => (μ i).1, pi_isProbDist fun i => (μ i).2⟩
+
+/-- `(ProbDist.pi μ).1 = pi (fun i => (μ i).1)`. -/
+@[simp] lemma ProbDist.pi_val {ι A : Type*} [Fintype ι] [DecidableEq ι]
+    (μ : ι → ProbDist A) : (ProbDist.pi μ).1 = Distribution.pi (fun i => (μ i).1) := rfl
 
 /-- Independent normalized distributions form a normalized distribution. -/
 instance {ι : Type*} [Fintype ι] [DecidableEq ι] (μ : ι → Distribution A)
@@ -1843,11 +1862,12 @@ lemma marginalAt_pi {ι : Type*} [Fintype ι] [DecidableEq ι] (μ : ι → Dist
 
 /-- Under an independent product, an event not depending on coordinate `i` is
 independent of the value at `i`. -/
-lemma mass_pi_and_eq {ι : Type*} [Fintype ι] [DecidableEq ι] [Fintype A] [DecidableEq A]
+lemma mass_pi_and_eq {ι : Type*} [Fintype ι] [DecidableEq ι] [Finite A]
     (μ : ι → Distribution A) (hμ : ∀ j, (μ j).weight = 1) (i : ι) (a : A)
     (ev : (ι → A) → Prop) (hev : ∀ f a', ev (Function.update f i a') ↔ ev f) :
     (pi μ).mass (fun f => ev f ∧ f i = a) = (pi μ).mass ev * μ i a := by
   classical
+  let : Fintype A := Fintype.ofFinite A
   -- The factor of the other coordinates, together with the event.
   let G : (ι → A) → ℝ := fun f => if ev f then ∏ j : {j // j ≠ i}, μ j (f j) else 0
   have hG : ∀ f a', G (Function.update f i a') = G f := by
@@ -1912,11 +1932,12 @@ lemma mass_pi_and_eq {ι : Type*} [Fintype ι] [DecidableEq ι] [Fintype A] [Dec
 
 /-- **Independent samples, truncated**: the first `k'` of `k` independent samples from a law of
 weight one are `k'` independent samples. -/
-lemma fTransform_pi_castLE [Fintype A] [DecidableEq A] (μ : Distribution A) (hμ : μ.weight = 1)
+lemma fTransform_pi_castLE [Finite A] (μ : Distribution A) (hμ : μ.weight = 1)
     {k' k : ℕ} (h : k' ≤ k) :
     fTransform (fun t : Fin k → A => fun i : Fin k' => t (Fin.castLE h i))
         (pi fun _ : Fin k => μ) = pi fun _ : Fin k' => μ := by
   classical
+  let : Fintype A := Fintype.ofFinite A
   obtain ⟨d, rfl⟩ := Nat.exists_eq_add_of_le h
   ext f
   rw [fTransform_apply_eq_mass, mass_eq_sum, pi_apply]

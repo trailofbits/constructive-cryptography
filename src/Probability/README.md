@@ -21,8 +21,11 @@ Distributions have [masses][mass] of events, [pushforwards][fTransform], [produc
 laws and of [families][pi], and [uniform][uniform] laws. The
 [heterogeneous finite product][piDep] assigns the product mass to a dependent family of
 coordinate outcomes. The alphabets may be infinite; only the index set and each support are
-finite. It is a probability law when each coordinate law is a probability law. A
-[**kernel**][bindK] $`f`$ is a conditional distribution [3, §3.6.1]; mixed over a law $`\mu`$
+finite. [`ProbDist.pi`](Distribution.lean) and [`ProbDist.piDep`](DependentProduct.lean)
+construct normalized independent families directly, carrying the coordinate normalization
+proofs into the product.
+For example, `ProbDist.pi (fun _ : Fin q => ν)` is the law of `q` independent samples from `ν`.
+A [**kernel**][bindK] $`f`$ is a conditional distribution [3, §3.6.1]; mixed over a law $`\mu`$
 it gives $`\sum_a \mu(a)\, f(a)`$:
 [mixtures compose][bindK_bindK], a pushforward
 [is the point kernel of its function][bindK_single_comp], and an independent product
@@ -136,9 +139,9 @@ injectivity of all replay and public sites; neither asserts independence on bad 
 [isProbDist]: Distribution.lean#L134
 [mass]: Distribution.lean#L223
 [fTransform]: Distribution.lean#L710
-[prod]: Distribution.lean#L1083
-[pi]: Distribution.lean#L1724
-[piDep]: DependentProduct.lean#L41
+[prod]: Distribution.lean#L1084
+[pi]: Distribution.lean#L1730
+[piDep]: DependentProduct.lean#L49
 [uniform]: Distribution.lean#L639
 [ProbDist.uniform]: Distribution.lean#L672
 [bindK]: Kernel.lean#L60
