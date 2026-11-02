@@ -95,6 +95,7 @@ public import RandomSystems.Typed.ParallelAllPresentation
 public import RandomSystems.Typed.ParallelAllAttachment
 public import RandomSystems.Typed.ParallelAllRegroup
 public import RandomSystems.Typed.PresentedGame
+public import RandomSystems.Typed.ProbAutomaton
 public import RandomSystems.Typed.Relabel
 public import RandomSystems.Typed.QueryRouting
 public import RandomSystems.Typed.SamplingAlgebra
