@@ -177,6 +177,12 @@ The draw is retained for the whole interaction and used only to select $`S_k`$. 
 left system $`R`$ is used for every $`k`$, with its own independent randomness. An environment
 may still adapt queries using either component's replies.
 
+The [finite-family collector](FiniteFamilyCollect.lean) sends one query to each tagged component
+in a supplied order `Fin n ≃ K`, then returns a function of the dependent reply tuple. Its domain
+condition checks each component's mapped outside history. The functional law collects the component
+functions; the source law returns fresh independent tuples, also on repeated invocations and for
+an empty family. The [tuple client](../../Tests/FiniteFamilyCollect.lean) exhibits these contracts.
+
 For a certified [direct call rule][callRule], query and return equations against a fixed inside
 function $`f`$ yield the
 [outside functional system][TypedConverter.ofDDC_callConverter_smul_ofFunction]; later inside
