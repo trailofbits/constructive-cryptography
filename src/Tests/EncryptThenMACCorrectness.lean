@@ -96,6 +96,7 @@ lemma retained_keys_roundtrip :
 
 end
 
+#print axioms TypedSystem.keyed_snoc_snoc_eq_of_support
 #print axioms AE.system.eq_keyed
 #print axioms MAC.system.eq_keyed
 #print axioms encryptThenMAC.system.eq_keyed
