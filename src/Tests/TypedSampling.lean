@@ -1,12 +1,14 @@
 module
 
+public import Probability.Kernel
 public import RandomSystems.Typed.Functional
 
 /-!
 # Retained sampling through typed operations
 
-One sample `k ← P` is drawn before the interaction and retained, never redrawn per query:
-attaching `α` sends every inside query to the same `R k`, and sampling `f(P)` is sampling `P`
+A draw `k ← P` is retained throughout the interaction. Normalized laws pass directly to
+`TypedSystem.sample`. Attaching `α` sends every inside query
+to the same `R k`, and sampling `f(P)` is sampling `P`
 and keeping `R (f k)`, for any map `f`, injective or not, and any probability law `P`.
 -/
 
@@ -15,19 +17,19 @@ and keeping `R (f k)`, for any map `f`, injective or not, and any probability la
 open Probability SystemAlgebra
 
 example {A B : Interface} (α : TypedConverter A B) (R : Bool → TypedSystem B) :
-    α • TypedSystem.sample (𝒰[Bool]).1 R =
-      TypedSystem.sample (𝒰[Bool]).1 (fun b => α • R b) :=
+    α • TypedSystem.sample 𝒰[Bool] R =
+      TypedSystem.sample 𝒰[Bool] (fun b => α • R b) :=
   TypedConverter.smul_sample α _ R
 
 example {A : Interface} (R : Bool → TypedSystem A) :
-    TypedSystem.sample (Distribution.fTransform not (𝒰[Bool]).1) R =
-      TypedSystem.sample (𝒰[Bool]).1 (fun b => R (not b)) :=
+    TypedSystem.sample (Distribution.ProbDist.map not 𝒰[Bool]) R =
+      TypedSystem.sample 𝒰[Bool] (fun b => R (not b)) :=
   TypedSystem.sample_fTransform not _ R
 
 /-- A constant map merges both Boolean sample values into one value. -/
 example {A : Interface} (R : Unit → TypedSystem A) :
-    TypedSystem.sample (Distribution.fTransform (fun _ : Bool => ()) (𝒰[Bool]).1) R =
-      TypedSystem.sample (𝒰[Bool]).1 (fun _ => R ()) :=
+    TypedSystem.sample (Distribution.ProbDist.map (fun _ : Bool => ()) 𝒰[Bool]) R =
+      TypedSystem.sample 𝒰[Bool] (fun _ : Bool => R ()) :=
   TypedSystem.sample_fTransform (fun _ : Bool => ()) _ R
 
 /-- A map-first call works for an arbitrary probability law, without assuming uniformity. -/

@@ -43,8 +43,8 @@ example {C : Type} [Category C] [MonoidalCategory C] {Phi : C → Type}
     [ConstructiveCryptography.CryptographicAlgebra C Phi] {A B : C} (R : Phi A) (S : Phi B) :
     R ∥ S = ConstructiveCryptography.CryptographicAlgebra.parallel R S := rfl
 
-/-- Attachment is non-expanding for the transcript metric, `Δ(αR, αS) ≤ Δ(R, S)`, by
-`cc_nonexpand`; the instance proves this field from the closure bound (Maurer 2011, Lemma 1). -/
+/-- Attachment is non-expanding, `Δ (α • R) (α • S) ≤ Δ R S`: closure under absorbing `α`
+gives the instance's bound, which `cc_nonexpand` applies. -/
 example {A B : Interface} (α : A ⟶ B) (R S : TypedSystem B) :
     Δ (α • R) (α • S) ≤ Δ R S := by
   cc_nonexpand
@@ -89,7 +89,7 @@ example {K : Type} [Fintype K] [DecidableEq K] {A B : K → Interface}
 for a normalized finite-support law `P` on an arbitrary, possibly infinite, type `S`. -/
 example {A B : Interface} {S : Type} (α : A ⟶ B) (P : Distribution.ProbDist S)
     (R : S → TypedSystem B) :
-    α • TypedSystem.sample P.1 R = TypedSystem.sample P.1 (fun s => α • R s) := by
+    α • TypedSystem.sample P R = TypedSystem.sample P (fun s => α • R s) := by
   cc_normalize
 
 /-- Nested samples `s ← P; t ← Q s`: the second law depends on the first draw, the carriers
@@ -97,30 +97,30 @@ example {A B : Interface} {S : Type} (α : A ⟶ B) (P : Distribution.ProbDist S
 example {A B : Interface} {S : Type} {T : S → Type} (α : A ⟶ B)
     (P : Distribution.ProbDist S) (Q : ∀ s, Distribution.ProbDist (T s))
     (R : ∀ s, T s → TypedSystem B) :
-    α • TypedSystem.sample P.1 (fun s => TypedSystem.sample (Q s).1 (R s)) =
-      TypedSystem.sample P.1 (fun s => TypedSystem.sample (Q s).1 (fun t => α • R s t)) := by
+    α • TypedSystem.sample P (fun s => TypedSystem.sample (Q s) (R s)) =
+      TypedSystem.sample P (fun s => TypedSystem.sample (Q s) (fun t => α • R s t)) := by
   cc_normalize
 
 /-- Serial order: `(α ≫ β) • sample P R = sample P (fun s => α • (β • R s))`, the inner `β`
 attached first. -/
 example {A B C : Interface} {S : Type} (α : A ⟶ B) (β : B ⟶ C)
     (P : Distribution.ProbDist S) (R : S → TypedSystem C) :
-    (α ≫ β) • TypedSystem.sample P.1 R =
-      TypedSystem.sample P.1 (fun s => α • (β • R s)) := by
+    (α ≫ β) • TypedSystem.sample P R =
+      TypedSystem.sample P (fun s => α • (β • R s)) := by
   cc_normalize
 
 /-- The same normal form for the direct composition `TypedConverter.comp α β`. -/
 example {A B C : Interface} {S : Type} (α : TypedConverter A B) (β : TypedConverter B C)
     (P : Distribution.ProbDist S) (R : S → TypedSystem C) :
-    TypedConverter.comp α β • TypedSystem.sample P.1 R =
-      TypedSystem.sample P.1 (fun s => α • (β • R s)) := by
+    TypedConverter.comp α β • TypedSystem.sample P R =
+      TypedSystem.sample P (fun s => α • (β • R s)) := by
   cc_normalize
 
 /-- `cc_construct` leaves `ResourceTheory.attach α (sample P R) = sample P (fun s => α • R s)`,
 an equation in the attachment field, which normalizes by the same laws. -/
 example {A B : Interface} {S : Type} (α : A ⟶ B) (P : Distribution.ProbDist S)
     (R : S → TypedSystem B) :
-    {TypedSystem.sample P.1 R} —[α]→ {TypedSystem.sample P.1 (fun s => α • R s)} := by
+    {TypedSystem.sample P R} —[α]→ {TypedSystem.sample P (fun s => α • R s)} := by
   cc_construct
   cc_normalize
 
@@ -153,15 +153,15 @@ example
 example {A B C D : Interface} {S : Type}
     (α : TypedConverter A B) (β : TypedConverter C D) (P : Distribution.ProbDist S)
     (R : S → TypedSystem B) (T : S → TypedSystem D) :
-    TypedConverter.parallel α β • TypedSystem.sample P.1 (fun s => R s ∥ T s) =
-      TypedSystem.sample P.1 (fun s => (α • R s) ∥ (β • T s)) := by
+    TypedConverter.parallel α β • TypedSystem.sample P (fun s => R s ∥ T s) =
+      TypedSystem.sample P (fun s => (α • R s) ∥ (β • T s)) := by
   cc_normalize
 
 /-- The same binary normal form from the categorical tensor `α ⊗ₘ β`. -/
 example {A B C D : Interface} {S : Type} (α : A ⟶ B) (β : C ⟶ D)
     (P : Distribution.ProbDist S) (R : S → TypedSystem B) (T : S → TypedSystem D) :
-    (α ⊗ₘ β) • TypedSystem.sample P.1 (fun s => R s ∥ T s) =
-      TypedSystem.sample P.1 (fun s => (α • R s) ∥ (β • T s)) := by
+    (α ⊗ₘ β) • TypedSystem.sample P (fun s => R s ∥ T s) =
+      TypedSystem.sample P (fun s => (α • R s) ∥ (β • T s)) := by
   cc_normalize
 
 /-- Serial composition of two families under one shared draw:
@@ -170,8 +170,8 @@ sample P (fun s => ∥ k, α k • (β k • R s k))`. -/
 example {K S : Type} [Fintype K] [DecidableEq K] {A B C : K → Interface}
     (α : ∀ k, A k ⟶ B k) (β : ∀ k, B k ⟶ C k)
     (P : Distribution.ProbDist S) (R : S → ∀ k, TypedSystem (C k)) :
-    ((⨂ₘ k, α k) ≫ (⨂ₘ k, β k)) • TypedSystem.sample P.1 (fun s => ∥ k, R s k) =
-      TypedSystem.sample P.1 (fun s => ∥ k, α k • (β k • R s k)) := by
+    ((⨂ₘ k, α k) ≫ (⨂ₘ k, β k)) • TypedSystem.sample P (fun s => ∥ k, R s k) =
+      TypedSystem.sample P (fun s => ∥ k, α k • (β k • R s k)) := by
   cc_normalize
 
 /-- Negative: under a separately supplied action `HSMul (A ⟶ B) (TypedSystem B) (TypedSystem A)`,
@@ -179,8 +179,8 @@ example {K S : Type} [Fintype K] [DecidableEq K] {A B C : K → Interface}
 example {A B : Interface} {S : Type}
     [_otherAction : HSMul (A ⟶ B) (TypedSystem B) (TypedSystem A)]
     (α : A ⟶ B) (P : Distribution.ProbDist S) (R : S → TypedSystem B)
-    (h : α • TypedSystem.sample P.1 R = TypedSystem.sample P.1 (fun s => α • R s)) :
-    α • TypedSystem.sample P.1 R = TypedSystem.sample P.1 (fun s => α • R s) := by
+    (h : α • TypedSystem.sample P R = TypedSystem.sample P (fun s => α • R s)) :
+    α • TypedSystem.sample P R = TypedSystem.sample P (fun s => α • R s) := by
   fail_if_success solve | cc_normalize
   exact h
 
@@ -292,7 +292,7 @@ trace: [Meta.Tactic.simp.rewrite] Interface.attach_eq_typed_smul:100:
 #guard_msgs (whitespace := lax) in
 example {A B : Interface} {S : Type} (α : A ⟶ B) (P : Distribution.ProbDist S)
     (R : S → TypedSystem B) :
-    {TypedSystem.sample P.1 R} —[α]→ {TypedSystem.sample P.1 (fun s => α • R s)} := by
+    {TypedSystem.sample P R} —[α]→ {TypedSystem.sample P (fun s => α • R s)} := by
   cc_construct
   cc_normalize?
 
