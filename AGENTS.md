@@ -400,6 +400,8 @@ globally; use `letI` or a wrapper carrier.
   mechanisms. Random-systems vocabulary is DDS, DDC, DDE and PDS; avoid
   operational names such as `exec`, `step`, `fuel`, `scheduler` and `reset`
   for mathematical objects.
+- Name reusable objects neutrally, such as `PKE.system`; real and ideal name
+  their roles in a particular comparison.
 - Preserve an existing declaration name as one atom inside theorem names, and
   state the operation and conclusion: `_iff`, `_eq`, `_le`, `_subset`, `_mono`,
   `_of_`, `_comp`.
