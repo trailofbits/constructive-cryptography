@@ -20,6 +20,8 @@ taken, minus the probability lost, does not decrease in expectation from one rou
 
 ## Main results
 
+* `transcriptCost_distinct_eq_choose`: charging only fresh tested inputs telescopes to
+  `C(r, 2) / N` after `r` distinct inputs, while repeated queries cost zero
 * `RandomSystem.one_sub_le_sum_tSupp`: a compatible environment sees the common part with
   probability at least one minus the largest cost of a possible transcript
 * `RandomSystem.transcriptDistance_le_of_transcriptCost_le`: two random systems above a common
@@ -52,6 +54,34 @@ lemma transcriptCost_snoc (β : List (A × B) → A → ℝ) (h : List (A × B))
   | cons z t ih =>
     simp only [List.cons_append, transcriptCost, ih]
     ring
+
+/-- Charging `d / N` only when the number of distinct tests grows from `d` to `d + 1`
+accumulates `C(r, 2) / N` after `r` distinct tests. -/
+lemma transcriptCost_distinct_eq_choose
+    -- `X`, `Y` carry queries and replies; `test` selects the tested value in `Z` for each query.
+    {X Y Z : Type} [DecidableEq Z] (test : X → Z)
+    -- `N` scales the cost; `h` is the complete query/reply transcript.
+    (N : ℝ) (h : List (X × Y)) :
+    transcriptCost (fun h x => if test x ∈ h.map (test ∘ Prod.fst) then 0 else
+      ((h.map (test ∘ Prod.fst)).toFinset.card : ℝ) / N) h =
+      ((h.map (test ∘ Prod.fst)).toFinset.card.choose 2 : ℝ) / N := by
+  induction h using List.reverseRecOn with
+  | nil => simp only [transcriptCost, List.map_nil, List.toFinset_nil, Finset.card_empty,
+      Nat.choose_zero_succ, Nat.cast_zero, zero_div]
+  | append_singleton h z ih =>
+    rw [transcriptCost_snoc, ih, List.map_append, List.map_singleton,
+      List.toFinset_append, List.toFinset_cons, List.toFinset_nil,
+      Finset.insert_empty, Finset.union_singleton]
+    simp only [Function.comp_apply]
+    by_cases hx : test z.1 ∈ h.map (test ∘ Prod.fst)
+    · -- A repeated test changes neither the distinct-input set nor its cost.
+      rw [ite_eq_left hx, Finset.insert_eq_of_mem (List.mem_toFinset.mpr hx), add_zero]
+    · -- A fresh test adds `d` unordered pairs, each charged `1 / N`.
+      rw [ite_eq_right hx, Finset.card_insert_of_notMem
+        (by simpa only [List.mem_toFinset] using hx)]
+      rw [Nat.choose_succ_succ, Nat.choose_one_right, Nat.cast_add]
+      ring
+
 
 end Cost
 

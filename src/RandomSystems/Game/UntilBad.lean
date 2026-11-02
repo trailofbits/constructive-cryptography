@@ -69,17 +69,9 @@ lemma RandomSystem.mass_unsetMBOs_sub_sum_le
     {h : List ((Σ i, X i) × Σ i, Y i)} {x : Σ i, X i} (hx : E (h.map Prod.fst ++ [x])) {b : ℝ}
     (hb : 0 ≤ b) (hset : ∑ y, G (unsetMBOs h ++ [(x, tagMBO true y)]) ≤ b * G (unsetMBOs h)) :
     G (unsetMBOs h) - ∑ y, G (unsetMBOs (h ++ [(x, y)])) ≤ b * G.visible h := by
-  -- Unsetting the MBOs keeps the queries, and unsets the MBO of the last reply.
-  have hfst : (unsetMBOs h).map Prod.fst = h.map Prod.fst := by
-    simp [unsetMBOs, Function.comp_def]
-  have hsnoc : ∀ y, unsetMBOs (h ++ [(x, y)]) = unsetMBOs h ++ [(x, tagMBO false y)] :=
-    fun y => by simp [unsetMBOs]
-  -- The replies to the admitted x with both MBOs weigh G(h unset) (sum_tagMBO), so the loss is
-  -- the probability that G sets the MBO at x.
-  have hsum := G.sum_tagMBO (unsetMBOs h) x
-  rw [hfst, ite_eq_left hx, Finset.sum_add_distrib] at hsum
-  simp only [hsnoc]
-  calc G (unsetMBOs h) - ∑ y, G (unsetMBOs h ++ [(x, tagMBO false y)])
+  -- The normalization split identifies the lost unset mass with the set-bit mass.
+  have hsum := G.sum_unsetMBOs_add_sum_tagMBO hx
+  calc G (unsetMBOs h) - ∑ y, G (unsetMBOs (h ++ [(x, y)]))
       = ∑ y, G (unsetMBOs h ++ [(x, tagMBO true y)]) := by linarith
     _ ≤ b * G (unsetMBOs h) := hset
     -- G(h unset) ≤ G⁻(h), and b ≥ 0.
