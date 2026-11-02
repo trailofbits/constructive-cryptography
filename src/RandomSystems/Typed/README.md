@@ -264,10 +264,10 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedDistinguisher.probability_absorb]: Distinguisher.lean#L53
 [TypedDistinguisher.absorb_id]: Distinguisher.lean#L58
 [TypedDistinguisher.absorb_comp]: Distinguisher.lean#L66
-[Interface.restrict]: Filter.lean#L36
-[TypedConverter.filter]: Filter.lean#L53
-[TypedConverter.filter_smul]: Filter.lean#L64
-[TypedConverter.filter_comp_filter_smul]: Filter.lean#L98
+[Interface.restrict]: Filter.lean#L38
+[TypedConverter.filter]: Filter.lean#L64
+[TypedConverter.filter_smul]: Filter.lean#L74
+[TypedConverter.filter_comp_filter_smul]: Filter.lean#L128
 [RandomSystem.restrict]: ../Distance/Restriction.lean#L64
 [TypedConverter.constant]: Context.lean#L82
 [TypedConverter.rightContext]: Context.lean#L113

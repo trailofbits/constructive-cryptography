@@ -8,6 +8,7 @@ public import Commons.Definitions.Encryption
 public import Commons.Definitions.Hash
 public import Commons.Definitions.Ideal
 public import Commons.Definitions.KEM
+public import Commons.Definitions.Nonce
 public import Commons.Definitions.MAC
 public import Commons.Definitions.PRG
 public import Commons.Definitions.PublicKeyEncryption
@@ -31,6 +32,6 @@ public import Commons.Tests.MLDSA
 public import Commons.Tests.MLKEM
 public import Commons.Tests.PMAC
 
-/-! Common ideal systems, schemes and security definitions, in the order of Boneh–Shoup:
-`Definitions` holds the ideal systems, the syntax of each primitive and its security
-definitions; `Schemes` holds the concrete schemes, and `Tests` their known-answer tests. -/
+/-! Common ideal systems, primitive syntax, domain restrictions and security definitions.
+`Definitions` holds these interfaces and contracts; `Schemes` holds concrete schemes,
+and `Tests` their known-answer tests. -/

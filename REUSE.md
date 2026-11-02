@@ -28,6 +28,7 @@ Ideal systems are in the `Commons` namespace; typed systems and converters are i
 | Independent initialized laws | `prodProbDist_map`, `ProbDist.map_map` in [Kernel] |
 | Root blinding | `ProbDist.blindRootSolver`, `ProbDist.rootSuccessLaw` in [Group] |
 | RSA unit-root blinding | `Commons.RSA.blinding_success_eq` in [RSA] |
+| Nonce-unique encryption inputs | `nonceRestricted` in [Nonce] |
 | Restricted interface | `TypedConverter.filter` in [Filter] |
 | Relabeled interface | `TypedConverter.rename` in [Relabel] |
 | One-query input and reply translation | `TypedConverter.routing` in [QueryRouting] |
@@ -47,6 +48,7 @@ Ideal systems are in the `Commons` namespace; typed systems and converters are i
 [Kernel]: src/Probability/Kernel.lean
 [Group]: src/Probability/Group.lean
 [RSA]: src/Commons/Definitions/RSA.lean
+[Nonce]: src/Commons/Definitions/Nonce.lean
 [Filter]: src/RandomSystems/Typed/Filter.lean
 [Relabel]: src/RandomSystems/Typed/Relabel.lean
 [QueryRouting]: src/RandomSystems/Typed/QueryRouting.lean
