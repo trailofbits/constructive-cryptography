@@ -24,8 +24,8 @@ ML-DSA depend only on `propext`, `Classical.choice` and `Quot.sound`.
 -- Commons.Definitions.Cipher
 #print axioms Commons.BlockCipher.perm
 #print axioms Commons.BlockCipher.encrypt_decrypt
-#print axioms Commons.BlockCipher.Real
-#print axioms Commons.BlockCipher.StrongReal
+#print axioms Commons.BlockCipher.system
+#print axioms Commons.BlockCipher.bidirectionalSystem
 
 -- Commons.Definitions.DiffieHellman
 #print axioms Commons.CDH.Real
@@ -35,7 +35,7 @@ ML-DSA depend only on `propext`, `Classical.choice` and `Quot.sound`.
 
 -- Commons.Definitions.Encryption
 #print axioms Commons.SymmetricEncryption.encryptions
-#print axioms Commons.Encryption.Real
+#print axioms Commons.Encryption.system
 #print axioms Commons.Encryption.CPA
 #print axioms Commons.Encryption.INDCPA.systems
 #print axioms Commons.Encryption.INDCPA
@@ -45,7 +45,7 @@ ML-DSA depend only on `propext`, `Classical.choice` and `Quot.sound`.
 #print axioms Commons.Encryption.LORCPA
 
 -- Commons.Definitions.AEAD
-#print axioms Commons.AE.Real
+#print axioms Commons.AE.system
 #print axioms Commons.AE.CCA
 #print axioms Commons.AE.PTXT
 #print axioms Commons.AE.CTXT
@@ -64,7 +64,7 @@ ML-DSA depend only on `propext`, `Classical.choice` and `Quot.sound`.
 -- Commons.Definitions.KEM
 #print axioms Commons.KEM.Correct
 #print axioms Commons.KEM.encapsulations
-#print axioms Commons.KEM.Real
+#print axioms Commons.KEM.system
 #print axioms Commons.KEM.CCA
 #print axioms Commons.KEM.INDCCA.systems
 #print axioms Commons.KEM.INDCCA
@@ -73,7 +73,7 @@ ML-DSA depend only on `propext`, `Classical.choice` and `Quot.sound`.
 
 -- Commons.Definitions.PublicKeyEncryption
 #print axioms Commons.PublicKeyEncryption.encryptions
-#print axioms Commons.PKE.Real
+#print axioms Commons.PKE.system
 #print axioms Commons.PKE.CCA
 #print axioms Commons.PKE.INDCCA.systems
 #print axioms Commons.PKE.INDCCA
@@ -83,7 +83,7 @@ ML-DSA depend only on `propext`, `Classical.choice` and `Quot.sound`.
 -- Commons.Definitions.MAC
 #print axioms Commons.MAC.Correct
 #print axioms Commons.MAC.tags
-#print axioms Commons.MAC.Real
+#print axioms Commons.MAC.system
 #print axioms Commons.MAC.EUF
 #print axioms Commons.MAC.SUF
 #print axioms Commons.MAC.EUFCMA.systems
@@ -114,7 +114,7 @@ ML-DSA depend only on `propext`, `Classical.choice` and `Quot.sound`.
 -- Commons.Definitions.Signature
 #print axioms Commons.SignatureScheme.Correct
 #print axioms Commons.SignatureScheme.signatures
-#print axioms Commons.SignatureScheme.Real
+#print axioms Commons.SignatureScheme.system
 #print axioms Commons.SignatureScheme.EUF
 #print axioms Commons.SignatureScheme.SUF
 #print axioms Commons.SignatureScheme.EUFCMA.systems

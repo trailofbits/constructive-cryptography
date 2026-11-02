@@ -7,7 +7,7 @@ public import Examples.AuthenticatedEncryption.Oracle
 
 Fix `scheme` and outside budget `q`. Write `O` for `oracleSystem` and `Oᴱ` for
 `encryptionOracleSystem`; they retain one draw across all queries. Let
-`μ = realTableLaw scheme (AE.Real.bound scheme * ∑ i, q i)`, `ν = ccaTableLaw M C q` and
+`μ = realTableLaw scheme (AE.system.bound scheme * ∑ i, q i)`, `ν = ccaTableLaw M C q` and
 `νᴵ = idealTableLaw M C q`. The component equations are:
 
 ```text
@@ -18,8 +18,9 @@ CCA   • O(e,d,L) = O(replacedEncrypt e, ccaDecrypt e d, L × ν)    cca_system
 Ideal • Oᴱ(e,L) = O(replacedEncrypt e, idealDecrypt e, L × νᴵ)    aeIdeal_system
 ```
 
-`Real`, `PTXT`, `CCA`, `Ideal` are the `AE.*.perPort` objects: the source's `⟦E_k,D_k⟧`,
-`ρ^ptxt`, `ρ^cca`, `ρ^ae` [1, §2.3.4, pp. 18–19]. `E` is `Encryption.Real.perPort scheme`;
+`Real` is `AE.system.perPort scheme`; `PTXT`, `CCA`, `Ideal` are `AE.PTXT.perPort`,
+`AE.CCA.perPort`, `AE.Ideal.perPort`: the source's `⟦E_k,D_k⟧`, `ρ^ptxt`, `ρ^cca`, `ρ^ae`
+[1, §2.3.4, pp. 18–19]. `E` is `Encryption.system.perPort scheme`;
 `μᴱ = realTableLaw scheme (idealTableSize scheme q)`. Both `E` and `Oᴱ` use the inside budget
 `AE.Ideal.insideBudget M C q`. The last two rows use their converter's replacement law.
 
@@ -66,15 +67,15 @@ lemma tableLaw_isProbDist {X : Type} (law : Distribution.ProbDist X) (k : ℕ) :
   (Distribution.ProbDist.pi fun _ : Fin k => law).2
 
 /-- The joint table law is `realTableLaw scheme k (tK,tE) =
-(∏ i, AE.Real.law1 scheme (tK i)) * (∏ i, AE.Real.law2 scheme (tE i))`.
+(∏ i, AE.system.law1 scheme (tK i)) * (∏ i, AE.system.law2 scheme (tE i))`.
 Here `law1` is `scheme.gen` and `law2` is `scheme.encryptions`. -/
 noncomputable def realTableLaw
     -- `scheme` supplies the key/encryption laws; `k` is the number of entries in each table.
     (scheme : SymmetricEncryption K M C) (k : ℕ) :
     Distribution.ProbDist ((Fin k → K) × (Fin k → (K × M → C))) :=
   Distribution.prodProbDist
-    (Distribution.ProbDist.pi fun _ : Fin k => AE.Real.law1 scheme)
-    (Distribution.ProbDist.pi fun _ : Fin k => AE.Real.law2 scheme)
+    (Distribution.ProbDist.pi fun _ : Fin k => AE.system.law1 scheme)
+    (Distribution.ProbDist.pi fun _ : Fin k => AE.system.law2 scheme)
 
 /-- On `AE.perPort M C q`, draw `ω` once and start at `(ω,[])`. On `enc(m)`, reply
 `encrypt ω known.length m` and append `m` to `known`; on `dec(c)`, reply `decrypt ω known c`
@@ -118,33 +119,33 @@ lemma oracleSystem_mass
   rw [oracleSystem, TypedSystem.ofAutomaton_mass, Distribution.ProbDist.map,
     Distribution.mass_fTransform]
 
-/-- `AE.Real.perPort` equals the automaton with transition `realStep scheme k`, initialized at
+/-- `AE.system.perPort` equals the automaton with transition `realStep scheme k`, initialized at
 `(none,((tK,0),(tE,0)))` for `(tK,tE) ← realTableLaw scheme k`, where
-`k = AE.Real.bound scheme * ∑ i, q i`.
+`k = AE.system.bound scheme * ∑ i, q i`.
 The key is unread (`none`) and both source counters are zero. -/
 lemma real_eq
     -- `scheme` fixes the cryptographic rules; `q p` bounds admitted queries at port `p`.
     (scheme : SymmetricEncryption K M C) (q : AE.Port → ℕ) :
-    AE.Real.perPort scheme (budget := q) = TypedSystem.ofAutomaton (AE.perPort M C q)
-      (realStep scheme (AE.Real.bound scheme * ∑ i, q i))
+    AE.system.perPort scheme (budget := q) = TypedSystem.ofAutomaton (AE.perPort M C q)
+      (realStep scheme (AE.system.bound scheme * ∑ i, q i))
       (Distribution.ProbDist.map (fun ω => (none, ((ω.1, 0), (ω.2, 0))))
-        (realTableLaw scheme (AE.Real.bound scheme * ∑ i, q i))) := by
+        (realTableLaw scheme (AE.system.bound scheme * ∑ i, q i))) := by
   inline
   -- Push initialization through the independent product, then compose with `(none,·)`.
   rw [Distribution.prodProbDist_map, Distribution.ProbDist.map_map]
   rfl
 
-/-- `Encryption.Real.perPort` equals the automaton with transition `encryptionRealStep scheme k`,
+/-- `Encryption.system.perPort` equals the automaton with transition `encryptionRealStep scheme k`,
 initialized at `(none,((tK,0),(tE,0)))` for `(tK,tE) ← realTableLaw scheme k`, with
-`k = Encryption.Real.bound scheme * ∑ i, q i`: key unread, both source counters zero. -/
+`k = Encryption.system.bound scheme * ∑ i, q i`: key unread, both source counters zero. -/
 lemma encryptionReal_eq
     -- `scheme` fixes the key/encryption laws; `q .enc` bounds admitted encryption queries.
     (scheme : SymmetricEncryption K M C) (q : Encryption.Port → ℕ) :
-    Encryption.Real.perPort scheme (budget := q) =
+    Encryption.system.perPort scheme (budget := q) =
       TypedSystem.ofAutomaton (Encryption.perPort M C q)
-        (encryptionRealStep scheme (Encryption.Real.bound scheme * ∑ i, q i))
+        (encryptionRealStep scheme (Encryption.system.bound scheme * ∑ i, q i))
         (Distribution.ProbDist.map (fun ω => (none, ((ω.1, 0), (ω.2, 0))))
-          (realTableLaw scheme (Encryption.Real.bound scheme * ∑ i, q i))) := by
+          (realTableLaw scheme (Encryption.system.bound scheme * ∑ i, q i))) := by
   inline
   -- Push initialization through the independent product, then compose with `(none,·)`.
   rw [Distribution.prodProbDist_map, Distribution.ProbDist.map_map]
@@ -268,13 +269,13 @@ end Replacement
 Admitted calls share `realKey scheme tK`, the first key-table entry; encryption `i` reads
 entry `i` of `tE`. -/
 lemma real_system (scheme : SymmetricEncryption K M C) (q : AE.Port → ℕ) :
-    AE.Real.perPort scheme (budget := q) =
+    AE.system.perPort scheme (budget := q) =
       oracleSystem q (realEncrypt scheme) (realDecrypt scheme)
-        (realTableLaw scheme (AE.Real.bound scheme * ∑ i, q i)) := by
+        (realTableLaw scheme (AE.system.bound scheme * ∑ i, q i)) := by
   rw [real_eq, oracleSystem]
   -- Both representations use the same key and encryption tables from `realTableLaw`.
   refine TypedSystem.ofAutomaton_map_congr _ _
-    (realTableLaw scheme (AE.Real.bound scheme * ∑ i, q i)) _ _ ?_
+    (realTableLaw scheme (AE.system.bound scheme * ∑ i, q i)) _ _ ?_
   intro ω
   -- The source counters are zero and the real program has not read its key.
   exact automatonSystem_eq_of_bisim _ (real_bisim scheme)
@@ -282,12 +283,12 @@ lemma real_system (scheme : SymmetricEncryption K M C) (q : AE.Port → ℕ) :
 
 /-- The real encryption system is its oracle on independent key and encryption tables. -/
 lemma encryptionReal_system (scheme : SymmetricEncryption K M C) (q : Encryption.Port → ℕ) :
-    Encryption.Real.perPort scheme (budget := q) =
+    Encryption.system.perPort scheme (budget := q) =
       encryptionOracleSystem q (realEncrypt scheme)
-        (realTableLaw scheme (Encryption.Real.bound scheme * ∑ i, q i)) := by
+        (realTableLaw scheme (Encryption.system.bound scheme * ∑ i, q i)) := by
   rw [encryptionReal_eq, encryptionOracleSystem]
   refine TypedSystem.ofAutomaton_map_congr _ _
-    (realTableLaw scheme (Encryption.Real.bound scheme * ∑ i, q i)) _ _ ?_
+    (realTableLaw scheme (Encryption.system.bound scheme * ∑ i, q i)) _ _ ?_
   intro ω
   -- Initially both representations retain the same tables, with counters zero and key unread.
   exact automatonSystem_eq_of_bisim _ (encryptionReal_bisim scheme)
@@ -368,7 +369,7 @@ The printed chain ends at `ρ^ptxt ∘ ρ^cca ∘ ρ^ptxt(⟦E_k,D_k⟧)` [1, p.
 `ρ^cca` corrects that chain, as proved in `Examples.AuthenticatedEncryption.Security`. -/
 noncomputable def Hybrid : TypedSystem (AE.perPort M C q) :=
   AE.PTXT.perPort M C • AE.CCA.perPort M C • AE.PTXT.perPort M C • AE.CCA.perPort M C •
-    AE.Real.perPort scheme
+    AE.system.perPort scheme
 
 /-- `hybridEncrypt scheme ((ω,t),t') i m =
 realEncrypt scheme ω i (entry (AE.CCA.law1 M C) t i)`: the ciphertext encrypts the inner
@@ -396,7 +397,7 @@ The inner and outer CCA converters each own one independent replacement table. -
 noncomputable abbrev hybridLaw :=
   Distribution.prodProbDist
     (Distribution.prodProbDist
-      (realTableLaw scheme (AE.Real.bound scheme * ∑ i, q i)) (ccaTableLaw M C q))
+      (realTableLaw scheme (AE.system.bound scheme * ∑ i, q i)) (ccaTableLaw M C q))
     (ccaTableLaw M C q)
 
 /-- The assembled hybrid equals its sampled oracle on `hybridLaw`, as typed systems. -/
@@ -423,9 +424,9 @@ noncomputable abbrev idealEncrypt
   replacedEncrypt (AE.Ideal.law1 M C) (realEncrypt scheme)
 
 /-- The real source tables cover the ideal's inside encryption budget, with at most
-`Encryption.Real.bound scheme` source calls per inside query. -/
+`Encryption.system.bound scheme` source calls per inside query. -/
 abbrev idealTableSize : ℕ :=
-  Encryption.Real.bound scheme * ∑ i, AE.Ideal.insideBudget M C q i
+  Encryption.system.bound scheme * ∑ i, AE.Ideal.insideBudget M C q i
 
 /-- Draw `(realTables, replacementTable)` independently. The key and encryption tables
 have `idealTableSize scheme q` entries; the replacement table belongs to the ideal converter. -/
@@ -434,7 +435,7 @@ noncomputable abbrev idealLaw :=
 
 /-- The ideal converter attached to real encryption equals its sampled oracle on `idealLaw`. -/
 lemma ideal_system :
-    AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme =
+    AE.Ideal.perPort M C (budget := q) • Encryption.system.perPort scheme =
       oracleSystem q (idealEncrypt scheme) (idealDecrypt (AE.Ideal.law1 M C) (realEncrypt scheme))
         (idealLaw scheme q) := by
   rw [encryptionReal_system, aeIdeal_system]
@@ -443,7 +444,7 @@ lemma ideal_system :
 lemma ideal_mass
     -- `h` records query–reply pairs at the outside AE ports.
     (h : List ((Σ i, (AE.perPort M C q).X i) × (Σ i, (AE.perPort M C q).Y i))) :
-    (AE.Ideal.perPort M C (budget := q) • Encryption.Real.perPort scheme :
+    (AE.Ideal.perPort M C (budget := q) • Encryption.system.perPort scheme :
         TypedSystem (AE.perPort M C q)).1 h =
       (idealLaw scheme q).1.mass fun ω =>
         Replies (filterDom (AE.perPort M C q).domain

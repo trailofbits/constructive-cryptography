@@ -156,7 +156,8 @@ noncomputable def idealDecrypt {k : ℕ} (law : Distribution.ProbDist M) (encryp
 
 lemma cca_combine_enc {k : ℕ} (encrypt : Ω → ℕ → M → C) (decrypt : Ω → List M → C → Option M)
     (table : Option (List (M × C))) (ω : Ω) (known : List M) (t : Fin k → M) (n : ℕ) (m : M) :
-    (AE.CCA.body M C).combine (parallelStep (oracleStep encrypt decrypt) (sourceStep (AE.CCA.law1 M C)))
+    (AE.CCA.body M C).combine
+        (parallelStep (oracleStep encrypt decrypt) (sourceStep (AE.CCA.law1 M C)))
         (AE.CCA.bound_spec M C) (table, ((ω, known), (t, n))) .enc m =
       ((some (table.getD [] ++ [(m, encrypt ω known.length (entry (AE.CCA.law1 M C) t n))]),
           ((ω, known ++ [entry (AE.CCA.law1 M C) t n]), (t, n + 1))),
@@ -169,7 +170,8 @@ lemma cca_combine_dec_replay {k : ℕ} (encrypt : Ω → ℕ → M → C)
     (decrypt : Ω → List M → C → Option M) (table : Option (List (M × C))) (ω : Ω)
     (known : List M) (r : (Fin k → M) × ℕ) (c : C) {m : M}
     (hr : AE.replay (table.getD []) c = some m) :
-    (AE.CCA.body M C).combine (parallelStep (oracleStep encrypt decrypt) (sourceStep (AE.CCA.law1 M C)))
+    (AE.CCA.body M C).combine
+        (parallelStep (oracleStep encrypt decrypt) (sourceStep (AE.CCA.law1 M C)))
         (AE.CCA.bound_spec M C) (table, ((ω, known), r)) .dec c =
       ((some (table.getD []), ((ω, known), r)), some m) :=
   Program.combine_eq_of_invoke _ _ (n := 0) (by
@@ -178,7 +180,8 @@ lemma cca_combine_dec_replay {k : ℕ} (encrypt : Ω → ℕ → M → C)
 lemma cca_combine_dec_fresh {k : ℕ} (encrypt : Ω → ℕ → M → C)
     (decrypt : Ω → List M → C → Option M) (table : Option (List (M × C))) (ω : Ω)
     (known : List M) (r : (Fin k → M) × ℕ) (c : C) (hr : AE.replay (table.getD []) c = none) :
-    (AE.CCA.body M C).combine (parallelStep (oracleStep encrypt decrypt) (sourceStep (AE.CCA.law1 M C)))
+    (AE.CCA.body M C).combine
+        (parallelStep (oracleStep encrypt decrypt) (sourceStep (AE.CCA.law1 M C)))
         (AE.CCA.bound_spec M C) (table, ((ω, known), r)) .dec c =
       ((some (table.getD []), ((ω, known), r)), decrypt ω known c) :=
   Program.combine_eq_of_invoke _ _ (n := 1) (by
@@ -273,46 +276,46 @@ section Systems
 variable {K : Type} [Fintype K] [DecidableEq K] [DecidableEq M] (scheme : SymmetricEncryption K M C)
 
 /-- The key of the real system: the first entry of its key table. -/
-noncomputable def realKey {k : ℕ} (tK : Fin k → K) : K := entry (AE.Real.law1 scheme) tK 0
+noncomputable def realKey {k : ℕ} (tK : Fin k → K) : K := entry (AE.system.law1 scheme) tK 0
 
 /-- The real system's automaton: its program against its key and encryption sources. -/
 noncomputable abbrev realStep (k : ℕ) :=
-  (AE.Real.body scheme).combine (parallelStep (sourceStep (q := k) (AE.Real.law1 scheme))
-    (sourceStep (q := k) (AE.Real.law2 scheme))) (AE.Real.bound_spec scheme)
+  (AE.system.body scheme).combine (parallelStep (sourceStep (q := k) (AE.system.law1 scheme))
+    (sourceStep (q := k) (AE.system.law2 scheme))) (AE.system.bound_spec scheme)
 
 lemma real_combine_enc_first {k : ℕ} (tK : Fin k → K) (tE : Fin k → (K × M → C)) (nE : ℕ)
     (m : M) :
     realStep scheme k (none, ((tK, 0), (tE, nE))) .enc m =
       ((some (realKey scheme tK), ((tK, 1), (tE, nE + 1))),
-        entry (AE.Real.law2 scheme) tE nE (realKey scheme tK, m)) :=
+        entry (AE.system.law2 scheme) tE nE (realKey scheme tK, m)) :=
   Program.combine_eq_of_invoke _ _ (n := 2) (by
-    simp [Program.invoke, AE.Real.body, callProg, returnProg, parallelStep, sourceStep, entry,
+    simp [Program.invoke, AE.system.body, callProg, returnProg, parallelStep, sourceStep, entry,
       realKey])
 
 lemma real_combine_enc_later {k : ℕ} (key : K) (tK : Fin k → K) (nK : ℕ)
     (tE : Fin k → (K × M → C)) (nE : ℕ) (m : M) :
     realStep scheme k (some key, ((tK, nK), (tE, nE))) .enc m =
-      ((some key, ((tK, nK), (tE, nE + 1))), entry (AE.Real.law2 scheme) tE nE (key, m)) :=
+      ((some key, ((tK, nK), (tE, nE + 1))), entry (AE.system.law2 scheme) tE nE (key, m)) :=
   Program.combine_eq_of_invoke _ _ (n := 1) (by
-    simp [Program.invoke, AE.Real.body, callProg, returnProg, parallelStep, sourceStep, entry])
+    simp [Program.invoke, AE.system.body, callProg, returnProg, parallelStep, sourceStep, entry])
 
 lemma real_combine_dec_first {k : ℕ} (tK : Fin k → K) (r : (Fin k → (K × M → C)) × ℕ)
     (c : C) :
     realStep scheme k (none, ((tK, 0), r)) .dec c =
       ((some (realKey scheme tK), ((tK, 1), r)), scheme.dec (realKey scheme tK) c) :=
   Program.combine_eq_of_invoke _ _ (n := 1) (by
-    simp [Program.invoke, AE.Real.body, callProg, returnProg, parallelStep, sourceStep, entry,
+    simp [Program.invoke, AE.system.body, callProg, returnProg, parallelStep, sourceStep, entry,
       realKey])
 
 lemma real_combine_dec_later {k : ℕ} (key : K) (r : ((Fin k → K) × ℕ) ×
     ((Fin k → (K × M → C)) × ℕ)) (c : C) :
     realStep scheme k (some key, r) .dec c = ((some key, r), scheme.dec key c) :=
-  Program.combine_eq_of_invoke _ _ (n := 0) (by simp [Program.invoke, AE.Real.body, returnProg])
+  Program.combine_eq_of_invoke _ _ (n := 0) (by simp [Program.invoke, AE.system.body, returnProg])
 
 /-- The real encryption: the `i`-th encryption reads entry `i` of the encryption table, under
 the key. -/
 noncomputable def realEncrypt {k : ℕ} : (Fin k → K) × (Fin k → (K × M → C)) → ℕ → M → C :=
-  fun ω i m => entry (AE.Real.law2 scheme) ω.2 i (realKey scheme ω.1, m)
+  fun ω i m => entry (AE.system.law2 scheme) ω.2 i (realKey scheme ω.1, m)
 
 /-- The real decryption, under the key. -/
 noncomputable def realDecrypt {k : ℕ} :
@@ -338,34 +341,35 @@ lemma real_bisim {k : ℕ} :
   · rw [real_combine_dec_later]
     simp [oracleStep, realDecrypt]
 
+-- The `encryptionReal` laws identify the real-world encryption component with its AE sources.
 omit [Fintype K] [Fintype M] [Fintype C] in
-lemma encryptionReal_law1 : Encryption.Real.law1 scheme = AE.Real.law1 scheme := rfl
+lemma encryptionReal_law1 : Encryption.system.law1 scheme = AE.system.law1 scheme := rfl
 
 omit [Fintype C] in
-lemma encryptionReal_law2 : Encryption.Real.law2 scheme = AE.Real.law2 scheme := rfl
+lemma encryptionReal_law2 : Encryption.system.law2 scheme = AE.system.law2 scheme := rfl
 
 /-- The real encryption system's automaton: its program against its key and encryption
 sources. -/
 noncomputable abbrev encryptionRealStep (k : ℕ) :=
-  (Encryption.Real.body scheme).combine (parallelStep
-    (sourceStep (q := k) (Encryption.Real.law1 scheme))
-    (sourceStep (q := k) (Encryption.Real.law2 scheme))) (Encryption.Real.bound_spec scheme)
+  (Encryption.system.body scheme).combine (parallelStep
+    (sourceStep (q := k) (Encryption.system.law1 scheme))
+    (sourceStep (q := k) (Encryption.system.law2 scheme))) (Encryption.system.bound_spec scheme)
 
 lemma encryptionReal_combine_first {k : ℕ} (tK : Fin k → K) (tE : Fin k → (K × M → C))
     (nE : ℕ) (m : M) :
     encryptionRealStep scheme k (none, ((tK, 0), (tE, nE))) .enc m =
       ((some (realKey scheme tK), ((tK, 1), (tE, nE + 1))),
-        entry (AE.Real.law2 scheme) tE nE (realKey scheme tK, m)) :=
+        entry (AE.system.law2 scheme) tE nE (realKey scheme tK, m)) :=
   Program.combine_eq_of_invoke _ _ (n := 2) (by
-    simp [Program.invoke, Encryption.Real.body, callProg, returnProg, parallelStep, sourceStep,
+    simp [Program.invoke, Encryption.system.body, callProg, returnProg, parallelStep, sourceStep,
       entry, realKey, encryptionReal_law1, encryptionReal_law2])
 
 lemma encryptionReal_combine_later {k : ℕ} (key : K) (tK : Fin k → K) (nK : ℕ)
     (tE : Fin k → (K × M → C)) (nE : ℕ) (m : M) :
     encryptionRealStep scheme k (some key, ((tK, nK), (tE, nE))) .enc m =
-      ((some key, ((tK, nK), (tE, nE + 1))), entry (AE.Real.law2 scheme) tE nE (key, m)) :=
+      ((some key, ((tK, nK), (tE, nE + 1))), entry (AE.system.law2 scheme) tE nE (key, m)) :=
   Program.combine_eq_of_invoke _ _ (n := 1) (by
-    simp [Program.invoke, Encryption.Real.body, callProg, returnProg, parallelStep, sourceStep,
+    simp [Program.invoke, Encryption.system.body, callProg, returnProg, parallelStep, sourceStep,
       entry, encryptionReal_law2])
 
 /-- **The real encryption system is an encryption oracle**: the `i`-th encryption reads entry `i`

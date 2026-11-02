@@ -6,30 +6,27 @@ public import ConstructiveCryptography.Notation
 /-!
 # Symmetric encryption
 
-Banfi, §2.3.4 (printed pp. 18–20). A symmetric-key encryption scheme `Π = (Gen, Enc, Dec)`
-(Definition 2.3.3), its encryption oracle `E_k` for `k ← Gen`, and security against
-chosen-plaintext attacks in the real-or-random form: `E_k` substitutes for `ρ^cpa(E_k)`, which
-encrypts a random message in place of each input (Definition 2.3.4). The message space `M` has
-one length, so a random message of the length of `m` is a uniform element of `M`.
+A symmetric-key encryption scheme `Π = (Gen, Enc, Dec)` [1, Definition 2.3.3, p. 18]
+supplies a key law, probabilistic encryption, and deterministic decryption. The message type
+`M` represents one length. `Encryption.system` retains one `k ← scheme.gen` and answers each
+message with a fresh ciphertext. `SymmetricEncryption.encryptions` supplies an independent
+table draw per encryption; the selected key/message entry has law `scheme.enc k m`.
 
-Encryption is a probabilistic function: each encryption samples, from the closed law
-`SymmetricEncryption.encryptions`, a ciphertext for every key and message, and returns the one
-of the current key and message.
+`Encryption.INDCPA.systems` is `(X, ρ^cpa • X)` for `X = Encryption.system.perPort scheme`.
+The converter `ρ^cpa` encrypts a uniform message in `M` in place of the requested message
+[1, Definition 2.3.4, p. 20].
+`Encryption.LORCPA.systems` instead encrypts the left or right member of each queried pair
+[2, Attack Game 5.2, pp. 181–182]. Both use the same scheme oracle as their component.
 
-A notion is the pair of its systems `(X₀, X₁)` (Banfi, §2.3.1), independent of the substitution
-relation; the predicate of the same name states it for the admitted distinguishers, `X₀ ≃[ε] X₁`.
-The admitted distinguishers are the typed distinguishers selected by the
-`AdmissibleDistinguishers` instance in scope, with no closure assumed, and `ε(d)` is the error
-allowed to each of them.
-
-The left-or-right form (Boneh–Shoup, Attack Game 5.2) takes a pair `(m_L, m_R)` per query and
-encrypts `m_L` in one system and `m_R` in the other, both transformations of `E_k`.
+The system pairs implement the substitution convention of [1, §2.3.1, p. 14]. Their security
+predicates bound the advantage of each typed distinguisher selected by the
+`AdmissibleDistinguishers` instance in scope, with the supplied `error d` and no closure assumed.
 
 ## Main definitions
 
 * `SymmetricEncryption K M C`: a symmetric-key encryption scheme `Π = (Gen, Enc, Dec)`
 * `Encryption M C`: the encryption interface
-* `Encryption.Real scheme`: `E_k` for `k ← Gen`
+* `Encryption.system scheme`: `E_k` for `k ← Gen`
 * `Encryption.CPA`: the transformation `ρ^cpa`, written so with `open Commons`
 * `Encryption.INDCPA.systems scheme q`: the systems `(E_k, ρ^cpa(E_k))` of ind-cpa
 * `Encryption.INDCPA scheme error`: ind-cpa for the admitted distinguishers,
@@ -38,6 +35,12 @@ encrypts `m_L` in one system and `m_R` in the other, both transformations of `E_
   the encryption of the left and of the right message
 * `Encryption.LORCPA.systems scheme q`, `Encryption.LORCPA scheme error`:
   left-or-right CPA
+
+## References
+
+1. F. Banfi. *A Composable Treatment of Anonymous Communication*. Doctoral thesis,
+   Diss. ETH No. 29663, ETH Zurich, 2023.
+2. D. Boneh and V. Shoup. *A Graduate Course in Applied Cryptography*. Version 0.6, 2023.
 -/
 
 @[expose] public section
@@ -47,11 +50,13 @@ namespace Commons
 open SystemAlgebra SystemAlgebra.DSL Probability
 open scoped SystemAlgebra SystemAlgebra.DSL
 
-/-- **A symmetric-key encryption scheme** `Π = (Gen, Enc, Dec)` (Banfi, Definition 2.3.3): a
+/-- **A symmetric-key encryption scheme** `Π = (Gen, Enc, Dec)` [1, Definition 2.3.3, p. 18]: a
 distribution over keys, a probabilistic encryption function and a deterministic decryption
 function (`none` is `⊥`). -/
-structure SymmetricEncryption (K M C : Type) where
-  /-- Key generation `Gen`. -/
+structure SymmetricEncryption
+    -- `K` carries keys, `M` fixed-length messages, and `C` ciphertexts.
+    (K M C : Type) where
+  /-- Key generation `Gen`, the “distribution over K” of [1, Definition 2.3.3, p. 18]. -/
   gen : Distribution.ProbDist K
   /-- Encryption `Enc`. -/
   enc : K → M → Distribution.ProbDist C
@@ -66,6 +71,7 @@ interface LeftRight(M C : Type) [Fintype M] [Fintype C]
 
 noncomputable section
 
+-- `K`, `M`, `C` carry keys, fixed-length messages and ciphertexts.
 variable {K M C : Type} [Fintype K] [Fintype M] [Fintype C]
 
 /-- The table law `encryptions scheme f = ∏ km, scheme.enc km.1 km.2 (f km)`: independent
@@ -74,8 +80,11 @@ def SymmetricEncryption.encryptions [DecidableEq K] [DecidableEq M]
     (scheme : SymmetricEncryption K M C) : Distribution.ProbDist (K × M → C) :=
   Distribution.ProbDist.pi fun km => scheme.enc km.1 km.2
 
--- `E_k` for `k ← Gen`: on `m`, output `c ← Enc_k(m)`.
-system Encryption.Real(scheme : SymmetricEncryption K M C)
+-- Retain `k ← scheme.gen`; each `enc(m)` returns a fresh `c ← scheme.enc k m`
+-- [1, §2.3.4, p. 18]. The interface admits the selected total or per-port query budget.
+system Encryption.system
+    -- `scheme.gen` supplies the retained key; `scheme.enc` supplies each fresh ciphertext.
+    (scheme : SymmetricEncryption K M C)
     [DecidableEq K] [DecidableEq M] : Encryption M C
   initialize
     key ←$ scheme.gen
@@ -91,15 +100,15 @@ converter Encryption.CPA(M C : Type) [Fintype M] [Fintype C] [Nonempty M] : Encr
     ciphertext ← encryption.enc(replacement)
     return ciphertext
 
-/-- `ρ^cpa`, as Banfi writes it. -/
+/-- The random-message transformation `ρ^cpa` of [1, §2.3.4, p. 18]. -/
 scoped notation "ρ^cpa" => Encryption.CPA.perPort _ _
 
-/-- **The systems of ind-cpa** (Banfi, Definition 2.3.4): `E_k` and `ρ^cpa(E_k)`, for `k ← Gen`,
+/-- **The systems of ind-cpa** [1, Definition 2.3.4, p. 20]: `E_k` and `ρ^cpa(E_k)`, for `k ← Gen`,
 at the budget `q` per port. -/
 def Encryption.INDCPA.systems [DecidableEq K] [DecidableEq M] [Nonempty M]
     (scheme : SymmetricEncryption K M C) (q : Encryption.Port → ℕ) :
     TypedSystem (Encryption.perPort M C q) × TypedSystem (Encryption.perPort M C q) :=
-  (Encryption.Real.perPort scheme, Encryption.CPA.perPort M C • Encryption.Real.perPort scheme)
+  (Encryption.system.perPort scheme, Encryption.CPA.perPort M C • Encryption.system.perPort scheme)
 
 /-- **ind-cpa** within `error`: against the admitted distinguishers, `E_k` substitutes for
 `ρ^cpa(E_k)`. -/
@@ -126,11 +135,11 @@ converter Encryption.Right(M C : Type) [Fintype M] [Fintype C] : LeftRight M C
     ciphertext ← encryption.enc(right)
     return ciphertext
 
-/-- **The systems of left-or-right CPA** (Boneh–Shoup, Attack Game 5.2): `E_k` on the left
+/-- **The systems of left-or-right CPA** [2, Attack Game 5.2, pp. 181–182]: `E_k` on the left
 message of each pair, and on the right one, for `k ← Gen`, at the budget `q`. -/
 def Encryption.LORCPA.systems [DecidableEq K] [DecidableEq M] (scheme : SymmetricEncryption K M C)
     (q : ℕ) : TypedSystem (LeftRight M C q) × TypedSystem (LeftRight M C q) :=
-  (Encryption.Left M C • Encryption.Real scheme, Encryption.Right M C • Encryption.Real scheme)
+  (Encryption.Left M C • Encryption.system scheme, Encryption.Right M C • Encryption.system scheme)
 
 /-- **Left-or-right CPA** within `error`: against the admitted distinguishers, encrypting the left
 messages substitutes for encrypting the right ones. -/

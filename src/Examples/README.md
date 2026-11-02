@@ -11,9 +11,9 @@ numbered [references](../../THEORY.md#references) of THEORY.md.
 ## Authenticated encryption
 
 The security of authenticated encryption [9, Theorem 2.3.10(4)], corrected, is in
-[Security][AESec]. Let $`R`$ be the real system [`AE.Real`][AE.Real], $`E`$ the encryption oracle
-[`Encryption.Real`][Encryption.Real], and $`I = \rho^{ae} E`$ the ideal system
-(`AE.Ideal • Encryption.Real`): [`AE.Ideal`][AE.Ideal], like [`AE.CTXT`][AE.CTXT]
+[Security][AESec]. Let $`R`$ be the real system [`AE.system`][AE.system], $`E`$ the encryption oracle
+[`Encryption.system`][Encryption.system], and $`I = \rho^{ae} E`$ the ideal system
+(`AE.Ideal • Encryption.system`): [`AE.Ideal`][AE.Ideal], like [`AE.CTXT`][AE.CTXT]
 ($`\rho^{ctxt}`$), is a converter from [`AE M C`][AE] to [`Encryption M C`][Encryption]. Let $`P`$ and $`C`$ be the
 [plaintext filter][AE.PTXT] `AE.PTXT` and the [random-message transformation][AE.CCA] `AE.CCA`,
 and $`q = (q_e, q_d)`$ the budgets per port. The corrected chain uses each assumption twice:
@@ -23,7 +23,7 @@ R \;\simeq_{\mathrm{ptxt}}\; P R \;\simeq_{\mathrm{cca}}\; P C R \;\simeq_{\math
 ```
 
 The last step is the [collision bound][hybrid_ideal_distance_le], which compares the hybrid
-with `AE.Ideal.perPort • Encryption.Real.perPort` ([Collision][AECol]). The results are the
+with `AE.Ideal.perPort • Encryption.system.perPort` ([Collision][AECol]). The results are the
 [counted witness][correctedChain], with [two uses of ind-cca][correctedChain_cca] and
 [two of int-ptxt][correctedChain_ptxt], the [advantage form][ae_of_ind_cca_int_ptxt], and the
 [distance form][real_ideal_distance_le]
@@ -92,34 +92,34 @@ exercised in [Usability][ExUse].
 
 <!-- Declarations -->
 
-[AE.Real]: ../Commons/Definitions/AEAD.lean#L58
-[AE]: ../Commons/Definitions/AEAD.lean#L41
-[Encryption]: ../Commons/Definitions/Encryption.lean#L58
-[AE.CCA]: ../Commons/Definitions/AEAD.lean#L69
-[AE.PTXT]: ../Commons/Definitions/AEAD.lean#L88
-[AE.CTXT]: ../Commons/Definitions/AEAD.lean#L102
-[AE.Ideal]: ../Commons/Definitions/AEAD.lean#L115
-[AE.INDCCA]: ../Commons/Definitions/AEAD.lean#L172
-[AE.INTPTXT]: ../Commons/Definitions/AEAD.lean#L181
-[AE.INTCTXT]: ../Commons/Definitions/AEAD.lean#L189
-[AE.Secure]: ../Commons/Definitions/AEAD.lean#L198
-[Encryption.Real]: ../Commons/Definitions/Encryption.lean#L75
-[BlockCipher]: ../Commons/Definitions/Cipher.lean#L33
+[AE.system]: ../Commons/Definitions/AEAD.lean#L67
+[AE]: ../Commons/Definitions/AEAD.lean#L47
+[Encryption]: ../Commons/Definitions/Encryption.lean#L66
+[AE.CCA]: ../Commons/Definitions/AEAD.lean#L80
+[AE.PTXT]: ../Commons/Definitions/AEAD.lean#L99
+[AE.CTXT]: ../Commons/Definitions/AEAD.lean#L113
+[AE.Ideal]: ../Commons/Definitions/AEAD.lean#L126
+[AE.INDCCA]: ../Commons/Definitions/AEAD.lean#L180
+[AE.INTPTXT]: ../Commons/Definitions/AEAD.lean#L189
+[AE.INTCTXT]: ../Commons/Definitions/AEAD.lean#L197
+[AE.Secure]: ../Commons/Definitions/AEAD.lean#L206
+[Encryption.system]: ../Commons/Definitions/Encryption.lean#L85
+[BlockCipher]: ../Commons/Definitions/Cipher.lean#L37
 [AES-blockCipher]: ../Commons/Schemes/BlockCipher/AES.lean#L391
 [CTR]: ../Commons/Schemes/Stream/CTR.lean#L126
 [PMAC]: ../Commons/Schemes/MAC/PMAC.lean#L119
 [oracleStep]: AuthenticatedEncryption/Oracle.lean#L43
-[real_bisim]: AuthenticatedEncryption/Oracle.lean#L324
+[real_bisim]: AuthenticatedEncryption/Oracle.lean#L327
 [ptxt_bisim]: AuthenticatedEncryption/Oracle.lean#L107
-[cca_bisim]: AuthenticatedEncryption/Oracle.lean#L191
-[aeIdeal_bisim]: AuthenticatedEncryption/Oracle.lean#L244
-[encryptionReal_bisim]: AuthenticatedEncryption/Oracle.lean#L373
-[hybrid_ideal_distance_le]: AuthenticatedEncryption/Collision.lean#L525
-[correctedChain]: AuthenticatedEncryption/Security.lean#L132
-[correctedChain_cca]: AuthenticatedEncryption/Security.lean#L151
-[correctedChain_ptxt]: AuthenticatedEncryption/Security.lean#L156
-[ae_of_ind_cca_int_ptxt]: AuthenticatedEncryption/Security.lean#L65
-[real_ideal_distance_le]: AuthenticatedEncryption/Security.lean#L162
+[cca_bisim]: AuthenticatedEncryption/Oracle.lean#L194
+[aeIdeal_bisim]: AuthenticatedEncryption/Oracle.lean#L247
+[encryptionReal_bisim]: AuthenticatedEncryption/Oracle.lean#L377
+[hybrid_ideal_distance_le]: AuthenticatedEncryption/Collision.lean#L526
+[correctedChain]: AuthenticatedEncryption/Security.lean#L137
+[correctedChain_cca]: AuthenticatedEncryption/Security.lean#L156
+[correctedChain_ptxt]: AuthenticatedEncryption/Security.lean#L161
+[ae_of_ind_cca_int_ptxt]: AuthenticatedEncryption/Security.lean#L70
+[real_ideal_distance_le]: AuthenticatedEncryption/Security.lean#L167
 [advantage_attach_le_win]: Games.lean#L118
 [win_attach_le]: Games.lean#L60
 [win_attach_comp_le]: Games.lean#L74

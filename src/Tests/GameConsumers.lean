@@ -80,7 +80,7 @@ lemma ae_joint {K M C : Type} [Fintype K] [Fintype M] [Fintype C]
     (s : Solver (AE.perPort M C q)) :
     |s.decision.1 (AuthenticatedEncryption.Hybrid scheme q) -
       s.decision.1 (AE.Ideal.perPort M C (budget := q) •
-        Encryption.Real.perPort scheme : TypedSystem (AE.perPort M C q))| ≤
+        Encryption.system.perPort scheme : TypedSystem (AE.perPort M C q))| ≤
       (q .enc : ℝ) ^ 2 / Fintype.card M :=
   GameExamples.hybrid_ideal_advantage_le scheme q ⟨s, rfl⟩
 

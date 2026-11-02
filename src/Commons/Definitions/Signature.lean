@@ -6,37 +6,40 @@ public import ConstructiveCryptography.Notation
 /-!
 # Digital signature schemes
 
-A signature scheme `(G, S, V)`: key generation, signing of a message with the secret key, and
-verification of a signature with the public key (Boneh–Shoup, Definition 13.1). It is correct
-when every signature verifies.
+`SignatureScheme` supplies key generation, probabilistic signing, and deterministic
+verification [2, Definition 13.1, pp. 528–529]. `SignatureScheme.Correct` states that supported
+signatures verify. `SignatureScheme.system` retains one key pair, publishes its public key,
+and offers signing and verification. Each signing call draws a fresh table from
+`SignatureScheme.signatures` and selects the current secret-key/message entry.
 
-Unforgeability under chosen-message attacks, as pairs of systems in the form of Banfi's
-int-ptxt and int-ctxt (Definitions 2.3.6–2.3.7, printed p. 21): the system of the public key, the
-signing oracle and the verification oracle, against the one whose verification accepts only what
-verifies and was issued. Existential unforgeability (Boneh–Shoup, Attack Game 13.1) accepts a
-signature on a signed message; strong unforgeability (Attack Game 13.2) accepts only a signed
-pair. A distinguisher tells the two systems apart exactly when it submits a forgery. Signing
-samples, from the closed law `SignatureScheme.signatures`, a signature under every secret key on
-every message, and returns the one of the current key and message.
+`SignatureScheme.EUF` accepts only valid signatures on previously signed messages;
+`SignatureScheme.SUF` accepts only valid previously issued pairs.
+`SignatureScheme.EUFCMA.systems` and `SignatureScheme.SUFCMA.systems` compare the scheme oracle
+with these restrictions, adapting the integrity
+substitutions of [1, Definitions 2.3.6–2.3.7, p. 21]. The new-message and new-pair conditions
+are those of [2, Attack Games 13.1–13.2, pp. 529–530].
 
-A notion is the pair of its systems `(X₀, X₁)` (Banfi, §2.3.1), independent of the substitution
-relation; the predicate of the same name states it for the admitted distinguishers, `X₀ ≃[ε] X₁`.
-The admitted distinguishers are the typed distinguishers selected by the
-`AdmissibleDistinguishers` instance in scope, with no closure assumed, and `ε(d)` is the error
-allowed to each of them.
+The security predicates bound each typed distinguisher's advantage by `error d`, following
+[1, §2.3.1, p. 14]. `AdmissibleDistinguishers` selects the tests, with no closure assumed.
 
 ## Main definitions
 
 * `SignatureScheme PK SK M Sig`: the syntax
 * `SignatureScheme.Correct`: correctness
 * `Signing PK M Sig`: the interface of the public key, signing and verification
-* `SignatureScheme.Real scheme`: the public key, `S_sk` and `V_pk` for `(pk, sk) ← G`
+* `SignatureScheme.system scheme`: the public key, `S_sk` and `V_pk` for `(pk, sk) ← G`
 * `SignatureScheme.EUF`, `SignatureScheme.SUF`: verification restricted to the signed messages,
   and to the signed pairs
 * `SignatureScheme.EUFCMA.systems`, `SignatureScheme.SUFCMA.systems`: the systems of EUF-CMA and
   SUF-CMA
 * `SignatureScheme.EUFCMA`, `SignatureScheme.SUFCMA`: these notions for the distinguisher
   advantage, within an error
+
+## References
+
+1. F. Banfi. *A Composable Treatment of Anonymous Communication*. Doctoral thesis,
+   Diss. ETH No. 29663, ETH Zurich, 2023.
+2. D. Boneh and V. Shoup. *A Graduate Course in Applied Cryptography*. Version 0.6, 2023.
 -/
 
 @[expose] public section
@@ -48,10 +51,12 @@ open scoped SystemAlgebra SystemAlgebra.DSL
 
 /-- **A signature scheme** with public keys `PK`, secret keys `SK`, messages `M` and signatures
 `Sig`. -/
-structure SignatureScheme (PK SK M Sig : Type) where
+structure SignatureScheme
+    -- `PK`, `SK` carry verification and signing keys; `M` messages; `Sig` signatures.
+    (PK SK M Sig : Type) where
   /-- Key generation `G`. -/
   gen : Distribution.ProbDist (PK × SK)
-  /-- Signing `S`. -/
+  /-- The “signing algorithm” of [2, Definition 13.1, p. 528], as a law on signatures. -/
   sign : SK → M → Distribution.ProbDist Sig
   /-- Verification `V`. -/
   verify : PK → M → Sig → Bool
@@ -68,6 +73,7 @@ interface Signing(PK M Sig : Type) [Fintype PK] [Fintype M] [Fintype Sig]
 
 noncomputable section
 
+-- `PK`, `SK` carry verification and signing keys; `M` messages; `Sig` signatures.
 variable {PK SK M Sig : Type} [Fintype PK] [Fintype SK] [Fintype M] [Fintype Sig]
 
 /-- The table law `signatures scheme f = ∏ km, scheme.sign km.1 km.2 (f km)`: independent
@@ -76,9 +82,12 @@ def SignatureScheme.signatures [DecidableEq SK] [DecidableEq M]
     (scheme : SignatureScheme PK SK M Sig) : Distribution.ProbDist (SK × M → Sig) :=
   Distribution.ProbDist.pi fun km => scheme.sign km.1 km.2
 
--- The public key, `S_sk` and `V_pk` for `(pk, sk) ← G`: on `m`, output `σ ← S(sk, m)`; on
--- `(m, σ)`, output `V(pk, m, σ)`.
-system SignatureScheme.Real(scheme : SignatureScheme PK SK M Sig)
+-- Retain `(pk, sk) ← scheme.gen` and publish `pk` [2, Definition 13.1, pp. 528–529].
+-- Each `sign(m)` draws a fresh `scheme.sign sk m`; `verify(m, σ)` returns `scheme.verify pk m σ`.
+-- The interface admits the selected total or per-port query budget.
+system SignatureScheme.system
+    -- `scheme` supplies the key-pair law and signing and verification operations.
+    (scheme : SignatureScheme PK SK M Sig)
     [DecidableEq SK] [DecidableEq M] : Signing PK M Sig
   initialize
     keys ←$ scheme.gen
@@ -130,8 +139,8 @@ def SignatureScheme.EUFCMA.systems [DecidableEq SK] [DecidableEq M]
     (scheme : SignatureScheme PK SK M Sig) (q : Signing.Port → ℕ) :
     TypedSystem (Signing.perPort PK M Sig q) ×
       TypedSystem (Signing.perPort PK M Sig q) :=
-  (SignatureScheme.Real.perPort scheme,
-    SignatureScheme.EUF.perPort PK M Sig • SignatureScheme.Real.perPort scheme)
+  (SignatureScheme.system.perPort scheme,
+    SignatureScheme.EUF.perPort PK M Sig • SignatureScheme.system.perPort scheme)
 
 /-- **The systems of SUF-CMA**: the real system and the one whose verification accepts only signed
 pairs, for `(pk, sk) ← G`, at the budget `q` per port. -/
@@ -139,8 +148,8 @@ def SignatureScheme.SUFCMA.systems [DecidableEq SK] [DecidableEq M] [DecidableEq
     (scheme : SignatureScheme PK SK M Sig) (q : Signing.Port → ℕ) :
     TypedSystem (Signing.perPort PK M Sig q) ×
       TypedSystem (Signing.perPort PK M Sig q) :=
-  (SignatureScheme.Real.perPort scheme,
-    SignatureScheme.SUF.perPort PK M Sig • SignatureScheme.Real.perPort scheme)
+  (SignatureScheme.system.perPort scheme,
+    SignatureScheme.SUF.perPort PK M Sig • SignatureScheme.system.perPort scheme)
 
 /-- **EUF-CMA** within `error`: against the admitted distinguishers, the real system substitutes
 for the one that accepts only signatures on signed messages. -/
