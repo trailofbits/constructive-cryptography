@@ -28,6 +28,7 @@ Ideal systems are in the `Commons` namespace; typed systems and converters are i
 | RSA unit-root blinding | `Commons.RSA.blinding_success_eq` in [RSA] |
 | Restricted interface | `TypedConverter.filter` in [Filter] |
 | Relabeled interface | `TypedConverter.rename` in [Relabel] |
+| One-query input and reply translation | `TypedConverter.routing` in [QueryRouting] |
 
 [Ideal]: src/Commons/Definitions/Ideal.lean
 [Source]: src/RandomSystems/Typed/Source.lean
@@ -43,6 +44,7 @@ Ideal systems are in the `Commons` namespace; typed systems and converters are i
 [RSA]: src/Commons/Definitions/RSA.lean
 [Filter]: src/RandomSystems/Typed/Filter.lean
 [Relabel]: src/RandomSystems/Typed/Relabel.lean
+[QueryRouting]: src/RandomSystems/Typed/QueryRouting.lean
 
 Search both names and mathematical vocabulary, including the owning layer's dependencies:
 

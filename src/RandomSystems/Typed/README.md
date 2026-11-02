@@ -188,6 +188,12 @@ g(u) = \operatorname{answer}\bigl(u,(j,f_j(x))\bigr).
 The input $`u`$ is retained until the inside reply arrives. For outside domain $`F`$ and
 inside domain $`E`$, the domain guarantee follows from
 $`F(us) \Rightarrow E(\operatorname{map}(\operatorname{request},us))`$.
+The typed constructor [**`routing`**][TypedConverter.routing] takes precisely this certificate.
+It spends one inside query per outside input, including a pending invocation. For fresh replies
+with law $`\nu_j(x)`$, its [memoryless attachment law][TypedConverter.routing_smul_ofMemoryless]
+pushes that law forward through $`y \mapsto \operatorname{answer}(u,(j,y))`$.
+The [input-encoding and output-projection clients](../../Tests/QueryRouting.lean) use this law
+on a restricted inside domain.
 
 ## Typed games
 
@@ -284,7 +290,9 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [callRule]: ../Converter/Calls.lean#L395
 [TypedConverter.ofDDC_callConverter_smul_ofFunction]: CallRuleFunctional.lean#L35
 [routingConverter]: ../Converter/QueryRouting.lean#L73
-[TypedConverter.ofDDC_routingConverter_smul_ofFunction]: QueryRouting.lean#L42
+[TypedConverter.ofDDC_routingConverter_smul_ofFunction]: QueryRouting.lean#L52
+[TypedConverter.routing]: QueryRouting.lean
+[TypedConverter.routing_smul_ofMemoryless]: QueryRouting.lean
 [Interface.withMBO]: Game.lean#L35
 [TypedGame]: Game.lean#L46
 [TypedConverter.attachGame]: Game.lean#L49
