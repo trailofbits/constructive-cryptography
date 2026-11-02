@@ -17,6 +17,7 @@ public import Tests.RSARandomization
 public import Tests.RevealedHCoefficient
 public import Tests.AuthenticatedEncryption
 public import Tests.EncryptionCorrectness
+public import Tests.PublicKeyEncryptionCorrectness
 public import Tests.AdaptiveUniformEvaluations
 public import Tests.Axioms.CC
 public import Tests.Axioms.Commons
