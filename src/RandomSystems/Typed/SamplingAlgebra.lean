@@ -25,8 +25,8 @@ mixture semantics of `sample`.
 
 * `sample_prod`: a product draw is two successive independent draws
 * `sample_comm`: two independent draws may be taken in either order
-* `parallel_sample_right`: a draw used only by the right component of `R ∥ sample P S` is
-  taken outside the parallel composition
+* `parallel_sample_left`, `parallel_sample_right`: a draw used only by one component is
+  taken outside the ordered parallel composition
 -/
 
 @[expose] public section
@@ -98,6 +98,24 @@ lemma parallel_sample_right {A B : Interface} {K : Type}
   rw [parallel_mass, sample_mass, TypedSystem.sample, RandomSystem.parallel_mix_right,
     RandomSystem.mix_mass]
   -- Each summand is the typed parallel mass of `R ∥ S k` at `h`.
+  simp only [parallel_mass]
+
+/-- A left retained draw scopes over parallel composition on `tensor A B`:
+`sample P R ∥ S = sample P (fun k => R k ∥ S)`. -/
+lemma parallel_sample_left
+    -- `A`, `B` retain their ordered interfaces and domains; `K` carries the left sample.
+    {A B : Interface} {K : Type}
+    -- `P` is sampled once; `R k` uses that draw, and `S` takes no `k`.
+    (P : Distribution K) [Distribution.IsProbability P]
+    (R : K → TypedSystem A) (S : TypedSystem B) :
+    parallel (TypedSystem.sample P R) S =
+      TypedSystem.sample P (fun k => parallel (R k) S) := by
+  apply Subtype.ext
+  apply RandomSystem.ext
+  intro h
+  -- Typed mass reads the raw tensor at the port-transported history, independently of `k`.
+  rw [parallel_mass, sample_mass, TypedSystem.sample,
+    RandomSystem.parallel_mix_left, RandomSystem.mix_mass]
   simp only [parallel_mass]
 
 end SystemAlgebra.TypedSystem
