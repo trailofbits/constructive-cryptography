@@ -235,20 +235,20 @@ typed system sampling the ideal function, under the fixed-query factorization.
 
 <!-- Declarations -->
 
-[Interface]: Interface.lean#L47
-[Interface.queryBudget]: Interface.lean#L70
-[Interface.portBudget]: Interface.lean#L97
+[Interface]: Interface.lean#L40
+[Interface.queryBudget]: Interface.lean#L64
+[Interface.portBudget]: Interface.lean#L94
 [restrict]: ../System/Basic.lean#L798
-[TypedSystem]: Interface.lean#L115
+[TypedSystem]: Interface.lean#L136
 [RandomSystem.RepliesAtQueriedInterface]: ../Cumulative/Cumulative.lean#L74
-[TypedConverter]: Interface.lean#L150
-[TypedConverter.ofDDC]: Interface.lean#L166
-[TypedConverter.comp]: Interface.lean#L157
-[TypedConverter.id]: Interface.lean#L162
-[TypedConverter.attach]: Interface.lean#L213
-[TypedConverter.identity_attach]: Interface.lean#L227
-[TypedConverter.comp_smul]: Interface.lean#L233
-[TypedConverter.ofDDC_eq_comp]: Interface.lean#L195
+[TypedConverter]: Interface.lean#L175
+[TypedConverter.ofDDC]: Interface.lean#L191
+[TypedConverter.comp]: Interface.lean#L182
+[TypedConverter.id]: Interface.lean#L187
+[TypedConverter.attach]: Interface.lean#L240
+[TypedConverter.identity_attach]: Interface.lean#L255
+[TypedConverter.comp_smul]: Interface.lean#L261
+[TypedConverter.ofDDC_eq_comp]: Interface.lean#L214
 [Interface.tensor]: Parallel.lean#L89
 [TypedSystem.parallel]: Parallel.lean#L157
 [TypedConverter.parallel]: Parallel.lean#L214
@@ -290,9 +290,9 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedConverter.attach_rightContext]: Context.lean#L126
 [TypedConverter.attach_leftContext]: Context.lean#L131
 [TypedSystem.source]: Source.lean#L55
-[TypedSystem.ofAutomaton]: Automaton.lean#L55
-[TypedSystem.ofAutomaton_map_congr]: Automaton.lean#L76
-[TypedSystem.parallel_ofAutomaton]: Automaton.lean#L100
+[TypedSystem.ofAutomaton]: Automaton.lean#L77
+[TypedSystem.ofAutomaton_map_congr]: Automaton.lean#L98
+[TypedSystem.parallel_ofAutomaton]: Automaton.lean#L122
 [TypedSystem.ofProbAutomaton]: ProbAutomaton.lean
 [TypedSystem.ofProbAutomaton_eq_of_simulation]: ProbAutomaton.lean
 [TypedSystem.ofProbAutomaton_ofDeterministic]: ProbAutomaton.lean

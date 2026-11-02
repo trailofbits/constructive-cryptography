@@ -131,20 +131,20 @@ between original and replacement messages.
 
 <!-- Declarations -->
 
-[RandomSystem.MonotoneMBO]: MBO.lean#L309
-[RandomSystem.visible]: MBO.lean#L344
-[DDE.blindMBO]: MBO.lean#L414
-[RandomSystem.winProbability]: MBO.lean#L486
-[RandomSystem.ConditionallyEquivalent]: MBO.lean#L529
-[RandomSystem.GameEquivalent]: MBO.lean#L543
-[Domain.Distinguisher.advantage_le_winProbability]: MBO.lean#L762
-[Domain.Distinguisher.winProbability_eq_of_gameEquivalent]: MBO.lean#L866
-[Domain.Distinguisher.advantage_le_winProbability_of_gameEquivalent]: MBO.lean#L880
-[Domain.Distinguisher.winProbability_le_of_unsetProbability]: MBO.lean#L957
-[RandomSystem.transcriptDistance_visible_le_of_unsetProbability]: MBO.lean#L982
-[Domain.Distinguisher.winProbability_le_of_transcriptCost_le]: UntilBad.lean#L152
-[RandomSystem.GameEquivalent.transcriptDistance_visible_le]: UntilBad.lean#L181
-[PDG.gameEquivalent_behavior_of_isCoupling]: UntilBad.lean#L213
+[RandomSystem.MonotoneMBO]: MBO.lean#L311
+[RandomSystem.visible]: MBO.lean#L362
+[DDE.blindMBO]: MBO.lean#L432
+[RandomSystem.winProbability]: MBO.lean#L504
+[RandomSystem.ConditionallyEquivalent]: MBO.lean#L547
+[RandomSystem.GameEquivalent]: MBO.lean#L561
+[Domain.Distinguisher.advantage_le_winProbability]: MBO.lean#L780
+[Domain.Distinguisher.winProbability_eq_of_gameEquivalent]: MBO.lean#L884
+[Domain.Distinguisher.advantage_le_winProbability_of_gameEquivalent]: MBO.lean#L898
+[Domain.Distinguisher.winProbability_le_of_unsetProbability]: MBO.lean#L975
+[RandomSystem.transcriptDistance_visible_le_of_unsetProbability]: MBO.lean#L1000
+[Domain.Distinguisher.winProbability_le_of_transcriptCost_le]: UntilBad.lean#L144
+[RandomSystem.GameEquivalent.transcriptDistance_visible_le]: UntilBad.lean#L173
+[PDG.gameEquivalent_behavior_of_isCoupling]: UntilBad.lean#L205
 [PDCBehavior.liftMBO]: MBOAttachment.lean#L464
 [PDCBehavior.liftMBO_id]: MBOAttachment.lean#L504
 [PDCBehavior.liftMBO_comp]: MBOAttachment.lean#L1524
