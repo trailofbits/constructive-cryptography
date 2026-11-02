@@ -217,20 +217,20 @@ typed system sampling the ideal function, under the fixed-query factorization.
 
 <!-- Declarations -->
 
-[Interface]: Interface.lean#L46
-[Interface.queryBudget]: Interface.lean#L69
-[Interface.portBudget]: Interface.lean#L80
+[Interface]: Interface.lean#L47
+[Interface.queryBudget]: Interface.lean#L70
+[Interface.portBudget]: Interface.lean#L97
 [restrict]: ../System/Basic.lean#L798
-[TypedSystem]: Interface.lean#L98
+[TypedSystem]: Interface.lean#L115
 [RandomSystem.RepliesAtQueriedInterface]: ../Cumulative/Cumulative.lean#L74
-[TypedConverter]: Interface.lean#L133
-[TypedConverter.ofDDC]: Interface.lean#L149
-[TypedConverter.comp]: Interface.lean#L140
-[TypedConverter.id]: Interface.lean#L145
-[TypedConverter.attach]: Interface.lean#L196
-[TypedConverter.identity_attach]: Interface.lean#L210
-[TypedConverter.comp_smul]: Interface.lean#L216
-[TypedConverter.ofDDC_eq_comp]: Interface.lean#L178
+[TypedConverter]: Interface.lean#L150
+[TypedConverter.ofDDC]: Interface.lean#L166
+[TypedConverter.comp]: Interface.lean#L157
+[TypedConverter.id]: Interface.lean#L162
+[TypedConverter.attach]: Interface.lean#L213
+[TypedConverter.identity_attach]: Interface.lean#L227
+[TypedConverter.comp_smul]: Interface.lean#L233
+[TypedConverter.ofDDC_eq_comp]: Interface.lean#L195
 [Interface.tensor]: Parallel.lean#L89
 [TypedSystem.parallel]: Parallel.lean#L157
 [TypedConverter.parallel]: Parallel.lean#L214
@@ -297,7 +297,7 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [callRule]: ../Converter/Calls.lean#L395
 [TypedConverter.ofDDC_callConverter_smul_ofFunction]: CallRuleFunctional.lean#L35
 [routingConverter]: ../Converter/QueryRouting.lean#L73
-[TypedConverter.ofDDC_routingConverter_smul_ofFunction]: QueryRouting.lean#L52
+[TypedConverter.ofDDC_routingConverter_smul_ofFunction]: QueryRouting.lean#L62
 [TypedConverter.routing]: QueryRouting.lean
 [TypedConverter.routing_smul_ofMemoryless]: QueryRouting.lean
 [Interface.withMBO]: Game.lean#L35

@@ -25,6 +25,10 @@ The interface carries plaintexts and ciphertexts, with a query budget per port.
 `AE.replay_eq_find?` gives the first-match form used by `AuthenticatedEncryption.replay_mem`
 in `Examples.AuthenticatedEncryption.Collision` to show that replay returns a recorded message.
 
+`AE.system.enc_dec_eq_of_correct` is the typed reply contract for a supported retained key and
+encryption-table draw: encryption returns the selected ciphertext and decryption recovers the
+message. It transfers `SymmetricEncryption.Correct` through the system's existing reply rules.
+
 ## Main definitions
 
 * `AE M C`: the encryption and decryption interface
@@ -100,6 +104,28 @@ system AE.system
     return encryptions (key, message)
   on dec(ciphertext : C) → Option M
     return scheme.dec key ciphertext
+
+/-- A supported encryption followed by decryption recovers the message at a retained key.
+The first equation gives the encryption reply; the second decrypts that same ciphertext. -/
+lemma AE.system.enc_dec_eq_of_correct [DecidableEq K] [DecidableEq M]
+    -- `scheme` supplies key, encryption and decryption laws on `K`, `M`, `C`.
+    (scheme : SymmetricEncryption K M C) (correct : scheme.Correct)
+    -- `hkey` witnesses that the retained `key` is supported by generation.
+    {key : K} (hkey : key ∈ scheme.gen.1.support)
+    -- `htable` supports the next draw `table`; `message` is the queried plaintext.
+    {table : K × M → C} (htable : table ∈ scheme.encryptions.1.support) (message : M) :
+    -- The encryption source is port `Sum.inr ()`; the key source is unused after initialization.
+    AE.system.body scheme (some key) .enc message
+        [(⟨.inr (), ()⟩, ⟨.inr (), table⟩)] =
+      .inl (some key, table (key, message)) ∧
+    AE.system.body scheme (some key) .dec (table (key, message)) [] =
+      .inl (some key, some message) := by
+  constructor
+  · -- The fresh table supplies the ciphertext at the retained key and queried message.
+    simp only [AE.system.body, callProg, returnProg, ↓reduceDIte]
+  · -- Table support supplies a supported ciphertext, so correctness excludes rejection.
+    simp only [AE.system.body, returnProg,
+      correct.dec_eq_some_of_mem_encryptions hkey htable message]
 
 -- `ρ^cca`: encrypt a random message `m̃` instead of `m` and record `(m, c)`; on `c`, output its
 -- first recorded message, otherwise forward `c`.

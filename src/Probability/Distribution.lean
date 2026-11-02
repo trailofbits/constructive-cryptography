@@ -16,8 +16,7 @@ public import Mathlib.Algebra.BigOperators.Fin
 # Finite distributions
 
 A distribution on `A` is a finitely supported function `A →₀ ℝ`. A probability
-distribution is a nonnegative distribution of weight `1`. Source:
-Lanzenberger–Maurer, *Coupling of Random Systems*, Definitions 1, 2 and 4.
+distribution is a nonnegative distribution of weight `1` [1, Definitions 1, 2 and 4].
 
 ## Main definitions
 
@@ -43,6 +42,13 @@ Lanzenberger–Maurer, *Coupling of Random Systems*, Definitions 1, 2 and 4.
   independent samples)
 * probability is preserved by pushforward, products and finite mixtures:
   `fTransform_isProbDist`, `prod_isProbDist`, `isProbDist_sum_smul`
+* `ProbDist.mem_support_pi_iff`: independent table support is coordinatewise support
+* `ProbDist.mass_eq_one_of_support`: a property of every supported draw has probability one
+
+## References
+
+1. D. Lanzenberger and U. Maurer. Coupling of Random Systems. In *Theory of Cryptography
+   (TCC 2020)*, Springer, 2020. Cryptology ePrint Archive, Paper 2020/1187.
 -/
 
 @[expose] public section
@@ -357,6 +363,17 @@ lemma mass_congr_of_support {A : Type*} (X : Distribution A) {P Q : A → Prop}
   unfold mass
   refine Finsupp.sum_congr fun a ha => ?_
   simp only [h a ha]
+
+/-- A property holding on the support of a normalized law has probability one. -/
+lemma ProbDist.mass_eq_one_of_support
+    -- `A` carries outcomes; `P` is their normalized law and `event` their tested property.
+    {A : Type*} (P : ProbDist A) (event : A → Prop)
+    -- `h` asserts `event` for every draw with nonzero mass under `P`.
+    (h : ∀ a ∈ P.1.support, event a) : P.1.mass event = 1 := by
+  -- The event agrees with `True` wherever `P` has mass, so its mass is the total weight.
+  rw [mass_congr_of_support P.1 (Q := fun _ => True) (fun a ha => iff_true_intro (h a ha)),
+    mass_true]
+  exact P.2.2
 
 open scoped Classical in
 /-- An event and its complement partition the total mass: `X(P) + X(¬P) = |X|`. -/
@@ -1777,6 +1794,17 @@ noncomputable def ProbDist.pi
 /-- `(ProbDist.pi μ).1 = pi (fun i => (μ i).1)`. -/
 @[simp] lemma ProbDist.pi_val {ι A : Type*} [Fintype ι] [DecidableEq ι]
     (μ : ι → ProbDist A) : (ProbDist.pi μ).1 = Distribution.pi (fun i => (μ i).1) := rfl
+
+/-- An independent table is supported exactly when every coordinate is supported. -/
+lemma ProbDist.mem_support_pi_iff
+    -- `ι` indexes the finite table; `A` carries coordinate outcomes.
+    {ι A : Type*} [Fintype ι] [DecidableEq ι]
+    -- `μ i` is the normalized law of coordinate `i`; `f` is the complete table.
+    (μ : ι → ProbDist A) (f : ι → A) :
+    f ∈ (ProbDist.pi μ).1.support ↔ ∀ i, f i ∈ (μ i).1.support := by
+  -- A finite product of real masses is nonzero exactly when every factor is nonzero.
+  simp only [Finsupp.mem_support_iff, ProbDist.pi_val, Distribution.pi_apply,
+    Finset.prod_ne_zero_iff, Finset.mem_univ, forall_const]
 
 /-- Independent normalized distributions form a normalized distribution. -/
 instance {ι : Type*} [Fintype ι] [DecidableEq ι] (μ : ι → Distribution A)

@@ -136,16 +136,16 @@ injectivity of all replay and public sites; neither asserts independence on bad 
 
 <!-- Declarations -->
 
-[Distribution]: Distribution.lean#L62
-[ProbDist]: Distribution.lean#L155
-[isProbDist]: Distribution.lean#L134
-[mass]: Distribution.lean#L223
-[fTransform]: Distribution.lean#L710
-[prod]: Distribution.lean#L1084
-[pi]: Distribution.lean#L1730
+[Distribution]: Distribution.lean#L68
+[ProbDist]: Distribution.lean#L161
+[isProbDist]: Distribution.lean#L140
+[mass]: Distribution.lean#L229
+[fTransform]: Distribution.lean#L727
+[prod]: Distribution.lean#L1101
+[pi]: Distribution.lean#L1747
 [piDep]: DependentProduct.lean#L49
-[uniform]: Distribution.lean#L639
-[ProbDist.uniform]: Distribution.lean#L672
+[uniform]: Distribution.lean#L656
+[ProbDist.uniform]: Distribution.lean#L689
 [bindK]: Kernel.lean#L47
 [bindK_bindK]: Kernel.lean#L93
 [bindK_single_comp]: Kernel.lean#L115
@@ -182,7 +182,7 @@ injectivity of all replay and public sites; neither asserts independence on bad 
 [uniform_mass_adaptive_eval_eq_mul]: Counting.lean#L611
 
 [uniform_mass_fresh_eval_eq]: Counting.lean#L217
-[mass_exists_pair_le_choose]: Distribution.lean#L511
+[mass_exists_pair_le_choose]: Distribution.lean#L528
 [uniform_mass_not_injOn_le_choose]: Counting.lean#L331
 
 [uniform_mass_fresh_projected_eval_eq]: Counting.lean#L356
