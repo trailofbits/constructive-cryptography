@@ -21,6 +21,7 @@ Ideal systems are in the `Commons` namespace; typed systems and converters are i
 | Independent finite family of draws | `ProbDist.pi` in [Distribution] |
 | Independent draws with different outcome types | `ProbDist.piDep` in [DependentProduct] |
 | Transformed or dependent law | `ProbDist.map`, `ProbDist.bind`, `ProbDist.jointLaw` in [Kernel] |
+| Independent initialized laws | `prodProbDist_map`, `ProbDist.map_map` in [Kernel] |
 | Root blinding | `ProbDist.blindRootSolver`, `ProbDist.rootSuccessLaw` in [Group] |
 | RSA unit-root blinding | `Commons.RSA.blinding_success_eq` in [RSA] |
 | Restricted interface | `TypedConverter.filter` in [Filter] |
@@ -68,10 +69,18 @@ the library does not apply its `AGENTS.md` to the consumer's checkout.
 The [compiled examples](src/Examples/Usability.lean) include a canonical permutation inside
 different surrounding assemblies. The
 [general comparison test](src/Tests/ProofErgonomics.lean) normalizes two different wirings and
-then uses only the supplied component equation. The
-[authenticated-encryption contracts](src/Examples/AuthenticatedEncryption/Hybrid.lean) show the
-next step: named normalized laws, component equations, whole-system equations, then transcript
-probabilities.
+then uses only the supplied component equation.
+
+For a retained-state component, use `ProbDist.map init P`; name `P` when it is a nontrivial
+law shared by several statements. The
+[AE assembly contracts](src/Examples/AuthenticatedEncryption/Hybrid.lean) compose named sources
+and programs before opening their transition rules. `inline` supplies the combined automaton;
+`prodProbDist_map` and `ProbDist.map_map` normalize its initial law, preserving independent draws.
+
+For each draw, `automatonSystem_eq_of_bisim` turns the local bisimulation into equality of
+deterministic systems. `TypedSystem.ofAutomaton_map_congr` lifts this equality when both
+representations use the same law `P`. Compose these component equations to obtain `hybrid_system`
+or `ideal_system`, then read transcript masses.
 
 The [PRG example](src/Examples/PRGLengthExtension.lean) defines its real world with
 `MemorylessSource` and the mapped seed law. Its converter contracts use explicit equalities
