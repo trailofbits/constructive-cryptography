@@ -30,6 +30,7 @@ Ideal systems are in the `Commons` namespace; typed systems and converters are i
 | Root blinding | `ProbDist.blindRootSolver`, `ProbDist.rootSuccessLaw` in [Group] |
 | RSA unit-root blinding | `Commons.RSA.blinding_success_eq` in [RSA] |
 | Nonce-unique encryption inputs | `nonceRestricted` in [Nonce] |
+| KEM–DEM composition | `KEMDEM.scheme` and `KEMDEM.correct` in [KEM–DEM](src/Commons/Constructions/KEMDEM.lean) |
 | Restricted interface | `TypedConverter.filter` in [Filter] |
 | Relabeled interface | `TypedConverter.rename` in [Relabel] |
 | One-query input and reply translation | `TypedConverter.routing` in [QueryRouting] |
