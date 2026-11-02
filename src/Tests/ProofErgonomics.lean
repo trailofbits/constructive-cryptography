@@ -232,7 +232,7 @@ example (α : ∀ _k : Bool, bitInterface ⟶ bitInterface)
 
 -- Diagnostic: one rewrite by the retained-sample law `TypedConverter.smul_sample`, no choice.
 /--
-trace: [Meta.Tactic.simp.rewrite] TypedConverter.smul_sample:1000:
+trace: [Meta.Tactic.simp.rewrite] TypedConverter.smul_sample:900:
       α • TypedSystem.sample (Distribution.uniform Bool) R
     ==>
       TypedSystem.sample (Distribution.uniform Bool) fun k => α • R k
@@ -274,7 +274,7 @@ trace: [Meta.Tactic.simp.rewrite] Interface.attach_eq_typed_smul:100:
       (have this := α;
         this) •
         TypedSystem.sample (↑P) R
-[Meta.Tactic.simp.rewrite] TypedConverter.smul_sample:1000:
+[Meta.Tactic.simp.rewrite] TypedConverter.smul_sample:900:
       α • TypedSystem.sample (↑P) R
     ==>
       TypedSystem.sample ↑P fun k => α • R k

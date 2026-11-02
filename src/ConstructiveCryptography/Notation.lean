@@ -2,6 +2,7 @@ module
 
 public import ConstructiveCryptography.Notation.Basic
 public import RandomSystems.Typed.ParallelAllAttachment
+public import RandomSystems.Typed.ParallelAllContext
 public import ConstructiveCryptography.Instances.Algebra
 public import ConstructiveCryptography.CryptographicAlgebra.Game
 public import ConstructiveCryptography.Tactics.Categorical
@@ -34,6 +35,11 @@ whole family; normalization never splits it into independent draws of the compon
 ```text
 sample s ← P; ∥ k, R s k    ≠    ∥ k, (sample s ← P; R s k)    in general
 ```
+
+The named family context uses `TypedConverter.parallelAllContext_smul`:
+`parallelAllContext R k • S = ∥ j, Function.update R k S j`. Its fixed components and selected
+replacement keep their declared domains; further component equalities remain explicit premises.
+Sample hoisting runs after structural attachment, keeping a draw in its owning component.
 -/
 
 @[expose] public section
@@ -91,13 +97,16 @@ attribute [cc_normalization 100] smul_eq_typed_smul attach_eq_typed_smul cc_para
 
 -- The typed laws: `(α ≫ β) • R = α • (β • R)`, `id • R = R`, binary and finite-family
 -- locality, and `α • sample P R = sample P (fun s => α • R s)`. None moves an initial sample
--- into a component, so a shared draw stays shared.
+-- into independent component draws, so a draw around the whole assembly stays shared.
 attribute [cc_normalization]
   TypedConverter.comp_smul
   TypedConverter.identity_attach
   TypedConverter.parallel_attach
-  TypedConverter.smul_sample
   TypedConverter.parallelAll_attach
+  TypedConverter.parallelAllContext_smul
+
+-- Hoist samples after structural attachment, so serial composition exposes a component's owner.
+attribute [cc_normalization 900] TypedConverter.smul_sample
 
 lemma tensor_smul {A B C D : Interface} (α : A ⟶ B) (β : C ⟶ D)
     (R : TypedSystem B) (S : TypedSystem D) :
