@@ -6,7 +6,7 @@ public import ConstructiveCryptography.Instances.Game
 /-!
 # Authenticated encryption: the collision step
 
-The corrected statistical step of Banfi's §2.3.4 (printed pp. 24–25). The hybrid oracle answers
+The corrected statistical step of [1, §2.3.4, pp. 24–25]. The hybrid oracle answers
 as the ideal oracle unless an original message equals one of the outer replacement messages.
 The outer replacement table is independent of the ideal system's tables, so the collision game,
 the hybrid with the collision as its condition, is conditionally equivalent to the ideal, and the
@@ -28,6 +28,12 @@ replacement message, in either order.
   the ideal
 * `collisionGame_badProbability_le`: the collision probability on admitted queries
 * `hybrid_ideal_distance_le`: the hybrid is within `q_e² / |M|` of the ideal
+
+## References
+
+1. F. Banfi. *A Composable Treatment of Anonymous Communication*. Doctoral thesis,
+   Diss. ETH No. 29663, ETH Zurich, 2023.
+   https://fabiobanfi.com/downloads/documents/dissertation.pdf
 -/
 
 @[expose] public section
@@ -124,6 +130,7 @@ omit [Fintype K] [Fintype M] [Fintype C] [DecidableEq K] [DecidableEq M] [Nonemp
 lemma replay_mem {l : List M} {l' : List C} {c : C} {m : M}
     (h : AE.replay (l.zip l') c = some m) : m ∈ l := by
   -- `replay` returns the message of the first entry `e` of the table whose ciphertext is `c`.
+  rw [AE.replay_eq_find?] at h
   obtain ⟨e, he, rfl⟩ := Option.map_eq_some_iff.mp h
   -- That entry lies in `l.zip l'`, so its message lies in `l`.
   exact (List.of_mem_zip (List.mem_of_find?_eq_some he)).1

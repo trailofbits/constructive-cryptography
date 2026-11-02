@@ -20,6 +20,11 @@ predicates bound each selected typed distinguisher's advantage by `error d`, fol
 [1, §2.3.1, p. 14]. `AdmissibleDistinguishers` selects the tests, with no closure assumed.
 The interface carries plaintexts and ciphertexts, with a query budget per port.
 
+`AE.replay` uses `List.lookup` after swapping each message/ciphertext pair.
+`List.lookup_append` preserves earlier matches when new records are appended.
+`AE.replay_eq_find?` gives the first-match form used by `AuthenticatedEncryption.replay_mem`
+in `Examples.AuthenticatedEncryption.Collision` to show that replay returns a recorded message.
+
 ## Main definitions
 
 * `AE M C`: the encryption and decryption interface
@@ -48,11 +53,32 @@ interface AE(M C : Type) [Fintype M] [Fintype C]
   enc(message : M) → C
   dec(ciphertext : C) → Option M
 
-/-- Banfi, printed p. 18, footnote 2: the first inserted message whose ciphertext is `c`. -/
-def AE.replay {M C : Type} [DecidableEq C] (table : List (M × C)) (c : C) : Option M :=
-  (table.find? fun entry => entry.2 == c).map Prod.fst
+/-- The first inserted message whose ciphertext is `c`, or `none` when absent:
+[1, p. 18, footnote 2], “the first corresponding element inserted in Q is taken.” -/
+def AE.replay
+    -- `M` carries messages and `C` ciphertexts; only ciphertexts are compared.
+    {M C : Type} [DecidableEq C]
+    -- `table` records message/ciphertext pairs chronologically; `c` is the requested ciphertext.
+    (table : List (M × C)) (c : C) : Option M :=
+  (table.map Prod.swap).lookup c
 
-/-- Banfi, printed p. 19: “if `m ∈ Q` then output `m`, otherwise output `⊥`”. -/
+/-- Replay is the message projection of the first record with ciphertext `c`. -/
+lemma AE.replay_eq_find?
+    -- `M` carries messages and `C` ciphertexts, with decidable ciphertext equality.
+    {M C : Type} [DecidableEq C]
+    -- `table` records message/ciphertext pairs in insertion order; `c` selects the first match.
+    (table : List (M × C)) (c : C) :
+    AE.replay table c = (table.find? fun entry => entry.2 == c).map Prod.fst := by
+  -- Both searches return the first successful optional value, with the pair fields exchanged.
+  rw [AE.replay, List.lookup_eq_findSome?, List.findSome?_map,
+    List.find?_eq_findSome?_guard, List.map_findSome?]
+  congr 1
+  funext entry
+  simp only [Function.comp_def, Prod.fst_swap, Prod.snd_swap, Option.guard]
+  rw [BEq.comm (a := c)]
+  split <;> rfl
+
+/-- [1, p. 19]: “if `m ∈ Q` then output `m`, otherwise output `⊥`”. -/
 def AE.retain {M : Type} [DecidableEq M] (known : List M) (message : Option M) : Option M :=
   message.bind fun m => if m ∈ known then some m else none
 
