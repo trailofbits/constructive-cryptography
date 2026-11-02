@@ -67,6 +67,7 @@ public import Tests.TypedNaryParallel
 public import Tests.TypedNaryMemoryless
 
 public import Tests.FiniteFamilyCollect
+public import Tests.TypedParallelAllContext
 
 /-! Axiom audits per layer and of the Commons library, the checks of the
 authenticated-encryption example,
