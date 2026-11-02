@@ -142,6 +142,8 @@ inside memorylessness as an explicit typed equality. For an own source beside th
 [parallel certificates][TypedSystem.parallel_eq_ofMemoryless] combine their reply laws;
 [the own-source contract][TypedConverter.ofPreservingProgram_comp_rightContext_smul_memoryless]
 gives the cumulative form.
+For [finite independent families](ParallelAllMemoryless.lean), the tagged port selects its
+component's fresh reply law; the domain remains `Interface.tensorAll` of the component domains.
 A [**keyed system**](Keyed.lean) retains `k ∼ P` and replies freshly from `ν k i x`.
 In `TypedSystem.keyed P ν`, all ports share the retained key; reply draws are independent
 conditional on it. `keyed_snoc` averages the fixed-key transcript/reply products, and

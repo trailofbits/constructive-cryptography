@@ -92,6 +92,7 @@ public import RandomSystems.Typed.Memoryless
 public import RandomSystems.Typed.Parallel
 public import RandomSystems.Typed.ParallelAttachment
 public import RandomSystems.Typed.ParallelAll
+public import RandomSystems.Typed.ParallelAllMemoryless
 public import RandomSystems.Typed.ParallelAllPresentation
 public import RandomSystems.Typed.ParallelAllAttachment
 public import RandomSystems.Typed.ParallelAllRegroup

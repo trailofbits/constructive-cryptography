@@ -57,6 +57,7 @@ public import Tests.TypedSampling
 public import Tests.TypedMemoryless
 public import Tests.TypedProbAutomaton
 public import Tests.TypedNaryParallel
+public import Tests.TypedNaryMemoryless
 
 /-! Axiom audits per layer and of the Commons library, the checks of the
 authenticated-encryption example,
