@@ -46,6 +46,7 @@ public import Tests.Substitution.Relaxation
 public import Tests.Substitution.Tactics
 public import Tests.TypedConverterComposition
 public import Tests.TypedSampling
+public import Tests.TypedMemoryless
 public import Tests.TypedNaryParallel
 
 /-! Axiom audits per layer and of the Commons library, the checks of the

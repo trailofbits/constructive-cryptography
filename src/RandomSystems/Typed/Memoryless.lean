@@ -22,10 +22,18 @@ beside its inside interface:
                comp P (rightContext B T) • R  =  mem(κ),   κ = P's reply law against ν, ν'
 ```
 
-Statements about typed systems are equalities of their random systems (`.1`).
+`TypedSystem.ofMemoryless A ν` constructs the system directly on its selected interface.
+`ofMemoryless_val` identifies its cumulative behavior, so the source and parallel laws give
+equalities of typed systems; the program contracts below use the same underlying behavior.
+
+## Main definitions
+
+* `TypedSystem.ofMemoryless`: fresh replies from a query-dependent law on the declared domain
 
 ## Main results
 
+* `TypedSystem.source_eq_ofMemoryless`, `TypedSystem.parallel_ofMemoryless`: typed source and
+  independent parallel equations
 * `TypedSystem.source_eq_memoryless`: a source of independent samples of `law` is memoryless
 * `TypedSystem.parallel_eq_memoryless`: memoryless systems side by side are memoryless
 * `TypedConverter.ofProgram_smul_memoryless`,
@@ -46,6 +54,20 @@ namespace SystemAlgebra
 open Probability Probability.Distribution RandomSystem Interface
 
 namespace TypedSystem
+
+/-- At each admitted query `i(x)`, draw a fresh reply `y ∼ ν i x` at port `i`.
+Each query independently uses the “discrete memoryless channel” of [1, §3.6.1, p. 65]
+on `A.domain`. -/
+noncomputable def ofMemoryless
+    -- `A` fixes the ports, query/reply types and admitted input histories.
+    (A : Interface)
+    -- `ν i x` is the reply law for `x : A.X i`, independent of earlier queries and replies.
+    (ν : ∀ i, A.X i → ProbDist (A.Y i)) : TypedSystem A :=
+  ofConditional fun _ i x _ => ν i x
+
+/-- The random system of `ofMemoryless A ν` is `memoryless A.inputDomain (portLaw ν)`. -/
+@[simp] lemma ofMemoryless_val {A : Interface} (ν : ∀ i, A.X i → ProbDist (A.Y i)) :
+    (ofMemoryless A ν).1 = memoryless A.inputDomain (portLaw ν) := rfl
 
 /-- **A source of independent samples is memoryless** [1, Definition 3.1]: the source of `q`
 samples of `law` replies to each trigger with a fresh sample of `law`. -/
@@ -145,6 +167,11 @@ lemma source_eq_memoryless {Z : Type} [Fintype Z] (law : ProbDist Z) (q : ℕ) :
   -- The reply law of the source at its port is `law`.
   rw [portLaw_apply_mk]
 
+/-- The source of `q` independent samples is the typed memoryless system of `law`. -/
+lemma source_eq_ofMemoryless {Z : Type} [Fintype Z] (law : ProbDist Z) (q : ℕ) :
+    source law q = ofMemoryless (Interface.source Z q) (fun _ _ => law) :=
+  Subtype.ext (source_eq_memoryless law q)
+
 /-- **Memoryless systems side by side are memoryless**: a query at a left port has the reply
 law of the left system, one at a right port the reply law of the right system. The typed parallel
 composition is the systems-level one, `RandomSystem.parallel_memoryless`, with the ports of the
@@ -234,6 +261,16 @@ lemma parallel_eq_memoryless {A B : Interface} {R : TypedSystem A} {T : TypedSys
       simp only [twoLaw, parallelLaw, portLaw_apply_mk]
     · simp only [twoLaw]
       rw [portLaw_apply_of_ne _ (by simpa using hl), portLaw_apply_of_ne _ (by simpa using hl)]
+
+/-- Independent parallel composition replies with the law of the queried component. -/
+lemma parallel_ofMemoryless
+    -- `A`, `B` retain their selected domains in the tensor interface.
+    {A B : Interface}
+    -- `ν₁ i x` and `ν₂ j y` are fresh reply laws at the two components' ports.
+    (ν₁ : ∀ i, A.X i → ProbDist (A.Y i)) (ν₂ : ∀ j, B.X j → ProbDist (B.Y j)) :
+    parallel (ofMemoryless A ν₁) (ofMemoryless B ν₂) =
+      ofMemoryless (tensor A B) (parallelLaw ν₁ ν₂) :=
+  Subtype.ext (parallel_eq_memoryless rfl rfl)
 
 end TypedSystem
 
