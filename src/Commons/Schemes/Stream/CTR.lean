@@ -2,6 +2,7 @@ module
 
 public import Commons.Schemes.Bytes
 public import Commons.Definitions.Ideal
+public import Commons.Definitions.StreamCipher
 public import Mathlib.Data.List.Iterate
 
 /-!
@@ -20,9 +21,8 @@ the counters must be distinct” (§6.5), so nonce uniqueness is the caller's ob
 * `CTR.inc32`, `CTR.counterBlocks`: the standard incrementing function and the counter blocks
 * `CTR.crypt E T₁`: CTR encryption and decryption under the block function `E`
 * `CTR.initialBlock nonce`: the initial block of a nonce
-* `StreamCipher ℓ`: the interface of a nonce-based stream cipher on byte strings of length at
-  most `ℓ`
-* `CTR ℓ`: CTR as a converter from `Evaluation (Bytes 16) (Bytes 16)` to `StreamCipher ℓ`
+* `CTR ℓ`: CTR as a converter from `Evaluation (Bytes 16) (Bytes 16)` to
+  `StreamCipher (Bytes 12) (ByteString ℓ)`
 
 ## Main statements
 
@@ -118,12 +118,9 @@ end CTR
 
 noncomputable section
 
-interface StreamCipher(ℓ : ℕ)
-  crypt(nonce : Bytes 12, message : ByteString ℓ) → ByteString ℓ
-
 -- CTR on the block function inside: query the block function at each counter block of the
 -- nonce, and XOR the outputs into the message.
-converter CTR(ℓ : ℕ) : StreamCipher ℓ
+converter CTR(ℓ : ℕ) : StreamCipher (Bytes 12) (ByteString ℓ)
   inside cipher : Evaluation (Bytes 16) (Bytes 16)
   on crypt(nonce : Bytes 12, message : ByteString ℓ) → ByteString ℓ
     outputs ← ([] : List (Bytes 16))

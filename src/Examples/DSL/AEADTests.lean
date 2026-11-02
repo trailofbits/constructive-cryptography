@@ -8,7 +8,7 @@ public meta import Commons.Tests.AES
 /-!
 # Checks of the AEAD example
 
-The interaction paths of `EncryptThenMAC` at every query budget: encryption, decryption with a
+The interaction paths of `nonceEncryptThenMAC` at every query budget: encryption, decryption with a
 tag that verifies, and rejection of one that does not. Arithmetic facts about the encodings, and
 the combination as functions, encrypting with `CTR.crypt` and `PMAC.pmac` under AES-256 and
 decrypting after verifying the tag: decryption inverts encryption, and a change of the nonce, the
@@ -25,22 +25,24 @@ namespace DSLExamples.Authenticated
 open Commons DSLExamples.Cipher
 
 /-- Each invocation makes at least one inside call. -/
-lemma bound_pos : 0 < EncryptThenMAC.bound :=
-  EncryptThenMAC.bound_spec none AEAD.Port.encrypt (0, ⟨[], by norm_num⟩, ⟨[], by norm_num⟩) []
+lemma bound_pos : 0 < nonceEncryptThenMAC.bound Nonce Message Message Block :=
+  nonceEncryptThenMAC.bound_spec Nonce Message Message Block none AEAD.Port.encrypt
+    (0, ⟨[], by norm_num⟩, ⟨[], by norm_num⟩) []
     ⟨.inl StreamCipher.Port.crypt, (0, ⟨[], by norm_num⟩)⟩
-    (Program.consistent_nil EncryptThenMAC.body none _ _) (by simp [EncryptThenMAC.body, callProg])
+    (Program.consistent_nil (nonceEncryptThenMAC.body Nonce Message Message Block) none _ _)
+    (by simp [nonceEncryptThenMAC.body, callProg])
 
-/-- Encryption calls CTR, tags the ciphertext, then returns the pair. -/
+/-- Encryption calls the cipher component, tags the ciphertext, then returns the pair. -/
 lemma encrypt_transcript {q : ℕ} (hq : 1 ≤ q) (nonce : Nonce)
     (ad message ciphertext : Message) (tag : Block) :
-    (EncryptThenMAC (budget := q)).1
+    (nonceEncryptThenMAC Nonce Message Message Block (budget := q)).1
       [(⟨⟨none, AEAD.Port.encrypt⟩, (nonce, ad, message)⟩,
         ⟨⟨some (), .inl StreamCipher.Port.crypt⟩, (nonce, message)⟩),
        (⟨⟨some (), .inl StreamCipher.Port.crypt⟩, ciphertext⟩,
         ⟨⟨some (), .inr Tagging.Port.tag⟩, (nonce, ad, ciphertext)⟩),
        (⟨⟨some (), .inr Tagging.Port.tag⟩, tag⟩,
         ⟨⟨none, AEAD.Port.encrypt⟩, (ciphertext, tag)⟩)] = 1 := by
-  simp only [EncryptThenMAC, EncryptThenMAC.program, TypedConverter.ofProgram,
+  simp only [nonceEncryptThenMAC, nonceEncryptThenMAC.program, TypedConverter.ofProgram,
     TypedConverter.ofDDC_apply]
   rw [ite_eq_left]
   refine ⟨rfl, fun k hk _ => ?_⟩
@@ -48,19 +50,19 @@ lemma encrypt_transcript {q : ℕ} (hq : 1 ≤ q) (nonce : Nonce)
   rcases k with _ | _ | _ | k <;> first
   | omega
   | simp [DDC.ofProgramOn, filterDom, DDC.ofProgram, Program.after, Program.run, Program.step,
-      Program.emit, EncryptThenMAC.body, callProg, returnProg, outsideInputs, splitIn, hq]
+      Program.emit, nonceEncryptThenMAC.body, callProg, returnProg, outsideInputs, splitIn, hq]
 
 /-- A tag that verifies permits exactly the requested decryption call. -/
 lemma decrypt_transcript {q : ℕ} (hq : 1 ≤ q) (nonce : Nonce)
     (ad ciphertext message : Message) (tag : Block) :
-    (EncryptThenMAC (budget := q)).1
+    (nonceEncryptThenMAC Nonce Message Message Block (budget := q)).1
       [(⟨⟨none, AEAD.Port.decrypt⟩, (nonce, ad, ciphertext, tag)⟩,
         ⟨⟨some (), .inr Tagging.Port.verify⟩, ((nonce, ad, ciphertext), tag)⟩),
        (⟨⟨some (), .inr Tagging.Port.verify⟩, true⟩,
         ⟨⟨some (), .inl StreamCipher.Port.crypt⟩, (nonce, ciphertext)⟩),
        (⟨⟨some (), .inl StreamCipher.Port.crypt⟩, message⟩,
         ⟨⟨none, AEAD.Port.decrypt⟩, some message⟩)] = 1 := by
-  simp only [EncryptThenMAC, EncryptThenMAC.program, TypedConverter.ofProgram,
+  simp only [nonceEncryptThenMAC, nonceEncryptThenMAC.program, TypedConverter.ofProgram,
     TypedConverter.ofDDC_apply]
   rw [ite_eq_left]
   refine ⟨rfl, fun k hk _ => ?_⟩
@@ -68,17 +70,17 @@ lemma decrypt_transcript {q : ℕ} (hq : 1 ≤ q) (nonce : Nonce)
   rcases k with _ | _ | _ | k <;> first
   | omega
   | simp [DDC.ofProgramOn, filterDom, DDC.ofProgram, Program.after, Program.run, Program.step,
-      Program.emit, EncryptThenMAC.body, callProg, returnProg, outsideInputs, splitIn, hq]
+      Program.emit, nonceEncryptThenMAC.body, callProg, returnProg, outsideInputs, splitIn, hq]
 
 /-- A tag that does not verify returns failure without querying the cipher. -/
 lemma decrypt_rejects {q : ℕ} (hq : 1 ≤ q) (nonce : Nonce) (ad ciphertext : Message)
     (tag : Block) :
-    (EncryptThenMAC (budget := q)).1
+    (nonceEncryptThenMAC Nonce Message Message Block (budget := q)).1
       [(⟨⟨none, AEAD.Port.decrypt⟩, (nonce, ad, ciphertext, tag)⟩,
         ⟨⟨some (), .inr Tagging.Port.verify⟩, ((nonce, ad, ciphertext), tag)⟩),
        (⟨⟨some (), .inr Tagging.Port.verify⟩, false⟩,
         ⟨⟨none, AEAD.Port.decrypt⟩, none⟩)] = 1 := by
-  simp only [EncryptThenMAC, EncryptThenMAC.program, TypedConverter.ofProgram,
+  simp only [nonceEncryptThenMAC, nonceEncryptThenMAC.program, TypedConverter.ofProgram,
     TypedConverter.ofDDC_apply]
   rw [ite_eq_left]
   refine ⟨rfl, fun k hk _ => ?_⟩
@@ -86,7 +88,7 @@ lemma decrypt_rejects {q : ℕ} (hq : 1 ≤ q) (nonce : Nonce) (ad ciphertext : 
   rcases k with _ | _ | k <;> first
   | omega
   | simp [DDC.ofProgramOn, filterDom, DDC.ofProgram, Program.after, Program.run, Program.step,
-      Program.emit, EncryptThenMAC.body, callProg, returnProg, outsideInputs, splitIn, hq]
+      Program.emit, nonceEncryptThenMAC.body, callProg, returnProg, outsideInputs, splitIn, hq]
 
 /-- A message needs at most `2³²` counter blocks, so the 32-bit counter does not wrap. -/
 lemma blockCount_le (message : Message) : CTR.blockCount message.val.length ≤ 2 ^ 32 := by
@@ -135,6 +137,8 @@ def message (xs : List UInt8) (h : xs.length ≤ 2 ^ 36) : Message := ⟨xs, h�
 
 -- One key pair encrypts messages of different lengths, including the empty message; decryption
 -- rejects a change of the nonce, the associated data, the ciphertext or the tag.
+-- Permanent executable known-answer regression for the concrete AES/PMAC assembly.
+set_option linter.hashCommand false in
 #guard
   let encryptionKey : AES.Key .aes256 := Tests.hexBytes _ (String.ofList (List.replicate 64 '0'))
   let authenticationKey : AES.Key .aes256 :=
