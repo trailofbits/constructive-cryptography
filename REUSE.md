@@ -53,9 +53,22 @@ or restriction, or an extension in the owning module. Keep the domain guarantee 
 
 ## Before implementation
 
-In a consumer project, put these discovery and assembly requirements in that project's
-contributor instructions and link to this guide at the dependency version being used. Importing
-the library does not apply its `AGENTS.md` to the consumer's checkout.
+The client supplies the mathematical inputs to existing objects:
+
+| Input | Existing boundary | Local obligation |
+| --- | --- | --- |
+| A retained draw | `TypedSystem.sample` | Which operations share it. |
+| Fresh reply laws | `TypedSystem.ofMemoryless` | Interface and admitted queries. |
+| Random transitions | `RandomSystem.ofProbAutomaton` | Domain, invariant or simulation. |
+| Uniform functions or permutations | [Ideal] | Interface and sharing. |
+| Independent families | `∥ k, R k`, `⨂ₘ k, α k` | Component contracts and call allowances. |
+| Relabeling or restriction | [Relabel], [Filter] | Wiring or admission. |
+| A standard scheme | e.g. `PKE.Real` | Algorithms and their contracts. |
+| A common context | `≫`, `•`, `∥`, `cc_normalize`, `cc_substitute` | Local equality or bound. |
+
+Keep types and domains in shared declarations, and explain parameters beside their binders.
+Use construction names for objects; real/ideal labels identify their roles in an experiment.
+Choose the standard object before writing its implementation or introducing another wrapper.
 
 1. Map the intended objects and laws to existing declarations. For each gap, state the missing
    capability. Put this short mapping in the task update or ignored `Scratch/` working notes.
@@ -65,6 +78,21 @@ the library does not apply its `AGENTS.md` to the consumer's checkout.
    contracts as hypotheses, then instantiate it with the chosen existing objects.
 4. Implement the missing components and their contracts. Keep reusable laws in the model's
    owning module, available to every world and proof that uses them.
+
+Check a changed boundary with the smallest relevant integration probe:
+
+- A retained parameter shared by several operations, with fresh replies on each call.
+- A finite parallel family and a shared component, preserving their different sampling scopes.
+- A standard construction assembled from named components and supplied contracts.
+
+Inspect the definition and elaborated goals. Routine normalization, wiring and transport should
+leave the stated local mathematics. A difficult local claim can remain an explicit hypothesis
+while the surrounding conditional theorem is checked; discharge it for an unconditional result.
+Add another example only when it exercises a different capability.
+
+Consumer projects must adopt this workflow in their own contributor instructions and link to
+this guide at their dependency version. Importing the library does not apply its `AGENTS.md`
+to that checkout.
 
 The [compiled examples](src/Examples/Usability.lean) include a canonical permutation inside
 different surrounding assemblies. The
