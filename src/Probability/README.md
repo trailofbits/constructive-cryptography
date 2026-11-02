@@ -116,7 +116,9 @@ therefore cost at most $`\binom{|S|}{2}/|Y|`$ on a fixed queried set $`S`$.
 A uniform-preserving [projection of a fresh full reply][uniform_mass_fresh_projected_eval_eq]
 remains uniform after a transcript event that ignores its coordinate. The
 [projected collision bound][uniform_mass_transcript_projected_collision_le] keeps the full
-reply table and charges only the visible output alphabet.
+reply table and charges only the visible output alphabet. The
+[distinct-input form][uniform_mass_transcript_collision_le_card] charges `d / |Y|` after `d`
+distinct tested inputs, and zero for a repeat on a collision-free history.
 [Disjoint finite table restrictions][uniform_mass_disjoint_events] factor for arbitrary
 events on their respective output tuples. The [base-set form]
 [uniform_mass_fresh_outputs_eq] applies when an event depends only on a named finite set
@@ -194,3 +196,5 @@ injectivity of all replay and public sites; neither asserts independence on bad 
 
 [uniform_mass_disjoint_events]: Counting.lean#L685
 [uniform_mass_fresh_outputs_eq]: Counting.lean#L729
+
+[uniform_mass_transcript_collision_le_card]: Counting/Collision.lean

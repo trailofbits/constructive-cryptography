@@ -4,6 +4,7 @@ public import Probability.Conditioning
 public import Probability.FiniteSupport
 public import Probability.Replay
 public import Probability.Counting
+public import Probability.Counting.Collision
 public import Probability.Coupling
 public import Probability.Distribution
 public import Probability.DependentProduct
