@@ -7,19 +7,19 @@ public import RandomSystems.Typed.ProbProgramAttachment
 /-!
 # Retained-key presentation of public-key encryption
 
-`PKE.system.perPort_eq_keyed` identifies the existing program attached to its sources with
+`PKE.system.perPort_eq_keyed` identifies the program attached to its sources with
 one key pair sampled from `scheme.gen` and fresh replies from `PKE.system.replyLaw`.
 Public-key reads and decryption use that pair; repeated encryption calls draw independently
 conditional on it.
 The operations follow [1, Definition 11.1, p. 436]: “E is a probabilistic algorithm” and
-“D is a deterministic algorithm”. The retained pair is that of the existing PKE system.
-
+“D is a deterministic algorithm”.
 `PublicKeyEncryption.encryptions_map` gives the encryption table's coordinate marginal.
 `PKE.system.body_probCombine` uses it for one invocation, including the initial key draw.
-The full equality attaches the existing independent sources and simulates the optional key
-state by `scheme.gen` before initialization and the point law at the stored pair afterwards.
-`TypedSystem.ofProbAutomaton_eq_keyed`, in `RandomSystems.Typed.KeyedAutomaton`, then removes
-this state representation without changing the interface's domain.
+`PKE.system.randomness_eq_ofProbAutomaton` presents the independent sources as fresh replies;
+`TypedConverter.ofProgram_smul_ofProbAutomaton` attaches the bounded program to them.
+`TypedSystem.ofProbAutomaton_eq_keyed_of_optional_key`, in `RandomSystems.Typed.KeyedAutomaton`,
+represents an absent key by `scheme.gen` and a stored pair by its point law. This removes the
+optional-state representation without changing the interface's domain.
 
 ```text
   publicKey(), enc(m), dec(c) ──► [retain (pk, sk) ∼ scheme.gen]
@@ -48,7 +48,8 @@ namespace Commons
 
 noncomputable section
 
--- `PK`, `SK` carry keys; `M`, `C` carry messages and ciphertexts.
+-- `PK`, `SK` carry keys; `M`, `C` carry messages and ciphertexts. The DSL interfaces require
+-- finite types; the encryption table indexes `PK × M` with decidable equality.
 variable {PK SK M C : Type} [Fintype PK] [Fintype SK] [Fintype M] [Fintype C]
   [DecidableEq PK] [DecidableEq M]
 
@@ -58,24 +59,24 @@ lemma PublicKeyEncryption.encryptions_map
     -- `scheme` supplies the encryption laws; `pk`, `m` select the requested ciphertext.
     (scheme : PublicKeyEncryption PK SK M C) (pk : PK) (m : M) :
     scheme.encryptions.map (fun f => f (pk, m)) = scheme.enc pk m := by
-  -- Every other coordinate has weight one in the existing product-marginal law.
+  -- Every other coordinate has weight one in `marginalAt_pi`.
   apply Subtype.ext
   change marginalAt (Distribution.pi (fun pm : PK × M => (scheme.enc pm.1 pm.2).1)) (pk, m) = _
   rw [marginalAt_pi]
   simp only [IsProbability.weight_eq_one, Finset.prod_const_one, one_smul]
 
 /-- At retained `keys = (pk, sk)`, publish `pk`, encrypt freshly under `pk`, and decrypt under `sk`.
-The reply law uses the existing public-key, encryption and decryption ports. -/
+The port types are independent of the budget. -/
 def PKE.system.replyLaw
     -- `scheme` supplies the algorithms; `keys` is the one pair shared by all three ports.
     (scheme : PublicKeyEncryption PK SK M C) (keys : PK × SK) :
-    -- `i` selects public-key publication, encryption or decryption, with its typed query.
+    -- `i` selects the port; budget `0` names its query/reply types, shared by all budgets.
     ∀ i, (PKE PK M C 0).X i → ProbDist ((PKE PK M C 0).Y i)
   | .publicKey, _ => ProbDist.single keys.1
   | .enc, m => scheme.enc keys.1 m
   | .dec, c => ProbDist.single (scheme.dec keys.2 c)
 
-/-- The existing source ports draw key pairs on the left and encryption tables on the right. -/
+/-- The source ports draw key pairs on the left and encryption tables on the right. -/
 def PKE.system.randomnessLaw
     -- `scheme.gen` and `scheme.encryptions` supply the two independent source laws.
     (scheme : PublicKeyEncryption PK SK M C) :
@@ -119,7 +120,7 @@ lemma PKE.system.body_probCombine
 
 /-- The two independent source components give fresh transitions with their parallel law. -/
 lemma PKE.system.randomness_eq_ofProbAutomaton
-    -- `scheme` selects the laws; `q` is the existing source allowance at each component.
+    -- `scheme` selects the laws; `q` is the source allowance at each component.
     (scheme : PublicKeyEncryption PK SK M C) (q : ℕ) :
     PKE.system.randomness scheme q = TypedSystem.ofProbAutomaton _
       (ProbStep.fresh (PKE.system.randomnessLaw scheme)) (ProbDist.single ()) := by
@@ -135,40 +136,18 @@ theorem PKE.system.perPort_eq_keyed
     (scheme : PublicKeyEncryption PK SK M C) (q : PKE.Port → ℕ) :
     PKE.system.perPort (budget := q) scheme =
       TypedSystem.keyed (A := PKE.perPort PK M C q) scheme.gen (PKE.system.replyLaw scheme) := by
-  -- Attach the source automaton through the bounded program with its existing domain proof.
+  -- Attach the source automaton through the bounded program with its domain proof.
   rw [PKE.system.perPort, PKE.system.randomness_eq_ofProbAutomaton,
     TypedConverter.ofProgram_smul_ofProbAutomaton]
-  let transition : ProbStep (PK × SK) PKE.Port (PKE PK M C 0).X (PKE PK M C 0).Y :=
-    fun k i x => (PKE.system.replyLaw scheme k i x).map fun y => (k, y)
-  -- Before initialization, represent the missing key by its law; afterwards keep its value.
-  let K : Option (PK × SK) × Unit → ProbDist (PK × SK)
-    | (none, _) => scheme.gen
-    | (some k, _) => ProbDist.single k
-  -- Every invocation ends with a stored pair, so the kernel commutes with every transition.
-  have hsim := TypedSystem.ofProbAutomaton_eq_of_simulation
-    (A := PKE.perPort PK M C q)
-    ((PKE.system.body scheme).probCombine (ProbStep.fresh (PKE.system.randomnessLaw scheme))
-      (PKE.system.bound_spec scheme)) transition K (fun _ _ => True)
-    (by intros; trivial)
-    (by
-      intro xs s x _ _
-      rcases s with ⟨keys, ⟨⟩⟩
-      unfold ProbStep.SimulatesAt ProbStep.outcome
-      rw [PKE.system.body_probCombine scheme keys x.1 x.2]
-      cases keys <;>
-        simp only [K, transition, ProbDist.bind_val, ProbDist.map_val, ProbDist.single,
-          bindK_single, one_smul, fTransform_bindK, bindK_bindK, fTransform_fTransform,
-          bindK_fTransform, Function.comp_def, ProbStep.tagged, fTransform_single,
-          bindK_single_comp])
-    ((ProbDist.single ()).map (fun r => (none, r))) (by intros; trivial)
-  -- The initial optional state represents exactly `scheme.gen`, including the empty transcript.
-  have hi : (((ProbDist.single ()).map (fun r => (none, r))).bind K) = scheme.gen := by
-    apply Subtype.ext
-    simp only [ProbDist.bind_val, ProbDist.map_val, ProbDist.single, fTransform_single,
-      bindK_single, one_smul, K]
-  rw [hi] at hsim
-  -- A fixed-state automaton is the existing retained-key system.
-  exact hsim.trans (TypedSystem.ofProbAutomaton_eq_keyed scheme.gen _)
+  -- The local optional-key contract identifies first-query sampling with one retained draw.
+  have hi : (ProbDist.single ()).map (fun r => ((none : Option (PK × SK)), r)) =
+      ProbDist.single (none, ()) := Subtype.ext (fTransform_single _ _ _)
+  rw [hi]
+  exact TypedSystem.ofProbAutomaton_eq_keyed_of_optional_key
+    (A := PKE.perPort PK M C q) scheme.gen (PKE.system.replyLaw scheme)
+    _ (by
+      intro keys i x
+      cases keys <;> exact PKE.system.body_probCombine scheme _ i x)
 
 /-- Both IND-CCA systems use the same retained-key presentation; the transformation is `PKE.CCA`. -/
 lemma PKE.INDCCA.systems_eq_keyed
