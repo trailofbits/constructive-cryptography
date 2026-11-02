@@ -83,6 +83,8 @@ lemma four_exchange_mass
 end
 
 #print axioms ProbDist.map_pi_apply
+#print axioms ProbDist.map_pi_apply_comp
+#print axioms TypedSystem.parallel_source_eq_ofProbAutomaton
 #print axioms PublicKeyEncryption.encryptions_map
 #print axioms TypedSystem.ofProbAutomaton_eq_keyed_of_optional_key
 #print axioms PKE.system.perPort_eq_keyed
