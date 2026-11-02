@@ -26,6 +26,7 @@ and the carriers may live in different universes.
 * `piDep_mass_forall`: for raw laws, a rectangular event has product mass,
   `(piDep μ).mass (fun f => ∀ k, Q k (f k)) = ∏ k, (μ k).mass (Q k)`
 * `piDep_isProbDist`: a finite product of probability laws is a probability law
+* `piDep_uniform`: independent uniform coordinates give a uniform dependent function
 * `piDep_eq_pi`: with one carrier `A k = A`, `piDep μ` is the homogeneous product `pi μ`
 * `fTransform_piDep`: coordinatewise pushforward commutes with the product,
   `(a ↦ (k ↦ f k (a k)))_* (piDep μ) = piDep (k ↦ (f k)_* (μ k))`
@@ -53,6 +54,10 @@ noncomputable def piDep {A : K → Type*} (μ : ∀ k, Distribution (A k)) :
     (fun _f hf => Fintype.mem_piFinset.mpr fun k =>
       Finsupp.mem_support_iff.mpr fun h0 =>
         hf (Finset.prod_eq_zero (Finset.mem_univ k) h0))
+
+/-- The product mass at `f` is the product of its coordinate masses. -/
+lemma piDep_apply {A : K → Type*} (μ : ∀ k, Distribution (A k)) (f : ∀ k, A k) :
+    piDep μ f = ∏ k, μ k (f k) := rfl
 
 /-- With one carrier `A k = A`, the dependent product is the homogeneous product:
 `piDep μ = pi μ`, both being `f ↦ ∏ k, μ k (f k)` for `f : K → A`. -/
@@ -96,6 +101,18 @@ noncomputable def ProbDist.piDep
 /-- `(ProbDist.piDep μ).1 = piDep (fun k => (μ k).1)`. -/
 @[simp] lemma ProbDist.piDep_val {A : K → Type*} (μ : ∀ k, ProbDist (A k)) :
     (ProbDist.piDep μ).1 = Distribution.piDep (fun k => (μ k).1) := rfl
+
+/-- Independent uniform coordinates give the uniform law on the whole dependent function. -/
+lemma piDep_uniform
+    -- Decidable equality on `K` fixes the finite enumeration of dependent functions.
+    [DecidableEq K]
+    -- `A k` is the finite nonempty outcome type at coordinate `k : K`.
+    {A : K → Type*} [∀ k, Fintype (A k)] [∀ k, Nonempty (A k)] :
+    piDep (fun k => uniform (A k)) = uniform (∀ k, A k) := by
+  -- The mass is the reciprocal of the product of the coordinate cardinalities.
+  ext f
+  simp only [piDep_apply, uniform_apply, one_div,
+    Fintype.card_pi, Nat.cast_prod, Finset.prod_inv_distrib]
 
 open Classical in
 /-- A rectangular event `{f | ∀ k, Q k (f k)}` has the product of the coordinate masses:
