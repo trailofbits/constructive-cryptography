@@ -17,6 +17,7 @@ Ideal systems are in the `Commons` namespace; typed systems and converters are i
 | Fresh samples | `TypedSystem.source` in [Source]; `MemorylessSource` in [Ideal] |
 | Fresh query-dependent replies | `TypedSystem.ofMemoryless` in [Memoryless] |
 | Ordered tuple collection | `TypedConverter.collect` and its functional/source laws in [Collector] |
+| Fixed finite-family context | `TypedConverter.parallelAllContext` in [FamilyContext] |
 | Fresh reply families | `TypedSystem.parallelAll_ofMemoryless` in [FamilyMemoryless] |
 | Retained key, fresh replies | `TypedSystem.keyed` in [Keyed] |
 | Retained state | `TypedSystem.sample` in [Functional]; `ofAutomaton` in [Automaton] |
@@ -42,6 +43,7 @@ Ideal systems are in the `Commons` namespace; typed systems and converters are i
 [Keyed]: src/RandomSystems/Typed/Keyed.lean
 [Memoryless]: src/RandomSystems/Typed/Memoryless.lean
 [Collector]: src/RandomSystems/Typed/FiniteFamilyCollect.lean
+[FamilyContext]: src/RandomSystems/Typed/ParallelAllContext.lean
 [FamilyMemoryless]: src/RandomSystems/Typed/ParallelAllMemoryless.lean
 [Functional]: src/RandomSystems/Typed/Functional.lean
 [Automaton]: src/RandomSystems/Typed/Automaton.lean

@@ -183,6 +183,13 @@ condition checks each component's mapped outside history. The functional law col
 functions; the source law returns fresh independent tuples, also on repeated invocations and for
 an empty family. The [tuple client](../../Tests/FiniteFamilyCollect.lean) exhibits these contracts.
 
+The [component context](ParallelAllContext.lean) exposes one selected component of a tagged family:
+`parallelAllContext R k • S = ∥ j, Function.update R k S j`. All fixed components retain their
+independent state. An explicit renaming identifies the single active interface with the family
+whose other members are empty units, preserving the component domains. This equation transports
+local replacements through a finite assembly; a selected observer class supplies its own closure
+under the context.
+
 For a certified [direct call rule][callRule], query and return equations against a fixed inside
 function $`f`$ yield the
 [outside functional system][TypedConverter.ofDDC_callConverter_smul_ofFunction]; later inside
