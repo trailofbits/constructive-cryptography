@@ -348,12 +348,12 @@ extension are in [Examples](src/Examples/README.md).
 
 <!-- Declarations: §2 -->
 
-[Interface]: src/RandomSystems/Typed/Interface.lean#L46
-[TypedSystem]: src/RandomSystems/Typed/Interface.lean#L98
-[TypedConverter]: src/RandomSystems/Typed/Interface.lean#L133
-[TypedConverter.comp]: src/RandomSystems/Typed/Interface.lean#L140
-[TypedConverter.id]: src/RandomSystems/Typed/Interface.lean#L145
-[TypedConverter.attach]: src/RandomSystems/Typed/Interface.lean#L196
+[Interface]: src/RandomSystems/Typed/Interface.lean#L47
+[TypedSystem]: src/RandomSystems/Typed/Interface.lean#L115
+[TypedConverter]: src/RandomSystems/Typed/Interface.lean#L150
+[TypedConverter.comp]: src/RandomSystems/Typed/Interface.lean#L157
+[TypedConverter.id]: src/RandomSystems/Typed/Interface.lean#L162
+[TypedConverter.attach]: src/RandomSystems/Typed/Interface.lean#L213
 [Interface.tensor]: src/RandomSystems/Typed/Parallel.lean#L89
 [TypedSystem.parallel]: src/RandomSystems/Typed/Parallel.lean#L157
 [TypedConverter.parallel]: src/RandomSystems/Typed/Parallel.lean#L214
@@ -387,9 +387,9 @@ extension are in [Examples](src/Examples/README.md).
 [cc_construct]: src/ConstructiveCryptography/Tactics/Categorical.lean#L47
 [cc_calc]: src/ConstructiveCryptography/Tactics/Substitution.lean#L105
 [real_ideal_distance_le]: src/Examples/AuthenticatedEncryption/Security.lean#L167
-[SymmetricEncryption.encryptions]: src/Commons/Definitions/Encryption.lean#L79
-[AE.INDCCA]: src/Commons/Definitions/AEAD.lean#L180
+[SymmetricEncryption.encryptions]: src/Commons/Definitions/Encryption.lean#L106
+[AE.INDCCA]: src/Commons/Definitions/AEAD.lean#L232
 [correctedChain]: src/Examples/AuthenticatedEncryption/Security.lean#L137
-[collision_mass_le]: src/Examples/AuthenticatedEncryption/Collision.lean#L58
+[collision_mass_le]: src/Examples/AuthenticatedEncryption/Collision.lean#L64
 [exists_pair_one_sub_supAgreement_le]: src/Probability/MultiCoupling.lean#L620
 [not_supAgreement_disagreement_le_every_pair]: src/Probability/MultiCoupling.lean#L782

@@ -92,18 +92,18 @@ exercised in [Usability][ExUse].
 
 <!-- Declarations -->
 
-[AE.system]: ../Commons/Definitions/AEAD.lean#L67
-[AE]: ../Commons/Definitions/AEAD.lean#L47
-[Encryption]: ../Commons/Definitions/Encryption.lean#L66
-[AE.CCA]: ../Commons/Definitions/AEAD.lean#L80
-[AE.PTXT]: ../Commons/Definitions/AEAD.lean#L99
-[AE.CTXT]: ../Commons/Definitions/AEAD.lean#L113
-[AE.Ideal]: ../Commons/Definitions/AEAD.lean#L126
-[AE.INDCCA]: ../Commons/Definitions/AEAD.lean#L180
-[AE.INTPTXT]: ../Commons/Definitions/AEAD.lean#L189
-[AE.INTCTXT]: ../Commons/Definitions/AEAD.lean#L197
-[AE.Secure]: ../Commons/Definitions/AEAD.lean#L206
-[Encryption.system]: ../Commons/Definitions/Encryption.lean#L85
+[AE.system]: ../Commons/Definitions/AEAD.lean#L97
+[AE]: ../Commons/Definitions/AEAD.lean#L56
+[Encryption]: ../Commons/Definitions/Encryption.lean#L93
+[AE.CCA]: ../Commons/Definitions/AEAD.lean#L132
+[AE.PTXT]: ../Commons/Definitions/AEAD.lean#L151
+[AE.CTXT]: ../Commons/Definitions/AEAD.lean#L165
+[AE.Ideal]: ../Commons/Definitions/AEAD.lean#L178
+[AE.INDCCA]: ../Commons/Definitions/AEAD.lean#L232
+[AE.INTPTXT]: ../Commons/Definitions/AEAD.lean#L241
+[AE.INTCTXT]: ../Commons/Definitions/AEAD.lean#L249
+[AE.Secure]: ../Commons/Definitions/AEAD.lean#L258
+[Encryption.system]: ../Commons/Definitions/Encryption.lean#L125
 [BlockCipher]: ../Commons/Definitions/Cipher.lean#L37
 [AES-blockCipher]: ../Commons/Schemes/BlockCipher/AES.lean#L391
 [CTR]: ../Commons/Schemes/Stream/CTR.lean#L126
@@ -114,7 +114,7 @@ exercised in [Usability][ExUse].
 [cca_bisim]: AuthenticatedEncryption/Oracle.lean#L194
 [aeIdeal_bisim]: AuthenticatedEncryption/Oracle.lean#L247
 [encryptionReal_bisim]: AuthenticatedEncryption/Oracle.lean#L377
-[hybrid_ideal_distance_le]: AuthenticatedEncryption/Collision.lean#L526
+[hybrid_ideal_distance_le]: AuthenticatedEncryption/Collision.lean#L533
 [correctedChain]: AuthenticatedEncryption/Security.lean#L137
 [correctedChain_cca]: AuthenticatedEncryption/Security.lean#L156
 [correctedChain_ptxt]: AuthenticatedEncryption/Security.lean#L161

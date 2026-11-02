@@ -18,6 +18,10 @@ The converter `ρ^cpa` encrypts a uniform message in `M` in place of the request
 `Encryption.LORCPA.systems` instead encrypts the left or right member of each queried pair
 [2, Attack Game 5.2, pp. 181–182]. Both use the same scheme oracle as their component.
 
+`SymmetricEncryption.Correct` requires every supported encryption under a generated key to
+decrypt to its original message. `Correct.mass_dec_eq_one` gives probability one, and
+`Correct.dec_eq_some_of_mem_encryptions` applies it to the named encryption-table law.
+
 The system pairs implement the substitution convention of [1, §2.3.1, p. 14]. Their security
 predicates bound the advantage of each typed distinguisher selected by the
 `AdmissibleDistinguishers` instance in scope, with the supplied `error d` and no closure assumed.
@@ -25,6 +29,7 @@ predicates bound the advantage of each typed distinguisher selected by the
 ## Main definitions
 
 * `SymmetricEncryption K M C`: a symmetric-key encryption scheme `Π = (Gen, Enc, Dec)`
+* `SymmetricEncryption.Correct`: correctness on generated keys and supported encryptions
 * `Encryption M C`: the encryption interface
 * `Encryption.system scheme`: `E_k` for `k ← Gen`
 * `Encryption.CPA`: the transformation `ρ^cpa`, written so with `open Commons`
@@ -63,6 +68,28 @@ structure SymmetricEncryption
   /-- Decryption `Dec`. -/
   dec : K → C → Option M
 
+/-- Every supported encryption under a generated key decrypts to its original message.
+[2, §2.2.1, p. 14]: “each of these possible ciphertexts should decrypt to m.”
+Keys range over `gen` support, using the key law of [1, Definition 2.3.3, p. 18];
+`some m` denotes recovery and `none` rejection. -/
+def SymmetricEncryption.Correct
+    -- `K`, `M`, `C` carry keys, messages and ciphertexts; `scheme` supplies their laws.
+    {K M C : Type} (scheme : SymmetricEncryption K M C) : Prop :=
+  -- `key` is generated with nonzero mass; `ciphertext` is a possible encryption of `message`.
+  ∀ key, key ∈ scheme.gen.1.support → ∀ message ciphertext,
+    ciphertext ∈ (scheme.enc key message).1.support → scheme.dec key ciphertext = some message
+
+/-- Correct decryption of an encryption has probability one for each generated key
+[2, §2.2.1, p. 14]. -/
+lemma SymmetricEncryption.Correct.mass_dec_eq_one
+    -- `scheme` has keys `K`, messages `M` and ciphertexts `C`; `correct` is its support contract.
+    {K M C : Type} {scheme : SymmetricEncryption K M C} (correct : scheme.Correct)
+    -- `hkey` witnesses that `key` is generated; `message` is the plaintext being encrypted.
+    {key : K} (hkey : key ∈ scheme.gen.1.support) (message : M) :
+    (scheme.enc key message).1.mass (fun ciphertext => scheme.dec key ciphertext = some message) =
+      1 :=
+  Distribution.ProbDist.mass_eq_one_of_support _ _ (correct key hkey message)
+
 interface Encryption(M C : Type) [Fintype M] [Fintype C]
   enc(message : M) → C
 
@@ -79,6 +106,19 @@ ciphertexts for every key/message pair. -/
 def SymmetricEncryption.encryptions [DecidableEq K] [DecidableEq M]
     (scheme : SymmetricEncryption K M C) : Distribution.ProbDist (K × M → C) :=
   Distribution.ProbDist.pi fun km => scheme.enc km.1 km.2
+
+omit [Fintype C] in
+/-- Every supported encryption table decrypts correctly at each generated key and message. -/
+lemma SymmetricEncryption.Correct.dec_eq_some_of_mem_encryptions
+    [DecidableEq K] [DecidableEq M]
+    -- `correct` is the support contract of the scheme with keys `K`, messages `M`, ciphertexts `C`.
+    {scheme : SymmetricEncryption K M C} (correct : scheme.Correct)
+    -- `hkey` witnesses that `key` is generated; `htable` supports `table` under the named law.
+    {key : K} (hkey : key ∈ scheme.gen.1.support) {table : K × M → C}
+    (htable : table ∈ scheme.encryptions.1.support) (message : M) :
+    scheme.dec key (table (key, message)) = some message :=
+  correct key hkey message _
+    ((Distribution.ProbDist.mem_support_pi_iff _ _).mp htable (key, message))
 
 -- Retain `k ← scheme.gen`; each `enc(m)` returns a fresh `c ← scheme.enc k m`
 -- [1, §2.3.4, p. 18]. The interface admits the selected total or per-port query budget.
