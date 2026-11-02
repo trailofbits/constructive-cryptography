@@ -22,14 +22,17 @@ serial, right-context and parallel-automaton laws:
     = ofAutomaton A (P.combine (parallelStep f g)) …       the automaton law of P's constructor
 ```
 
-`inline using hR` takes an explicit memorylessness certificate
-`hR : R.1 = memoryless _ (portLaw ν)` and applies the memoryless composition law of the displayed
-constructor (`TypedConverter.ofProgram_smul_memoryless` and its port-preserving and costed
-forms), for `C` the converter of a program `P` with call bound `b`:
+`inline using hR` takes an explicit certificate `hR : R = TypedSystem.ofMemoryless B ν`
+and applies the typed memoryless composition law of the displayed constructor
+(`TypedConverter.ofProgram_smul_ofMemoryless` and its port-preserving and costed forms).
+For `C` the converter of a program `P` with call bound `b`:
 
 ```text
-  (C • R).1 = memoryless _ (portLaw κ)   ⇐   ∀ s o u, P.memorylessReplyLaw ν s o u b [] = κ o u
+  C • R = ofMemoryless A κ   ⇐   ∀ s o u, P.memorylessReplyLaw ν s o u b [] = κ o u
 ```
+
+Raw goals and certificates `R.1 = memoryless _ (portLaw ν)` use the same laws through the
+cumulative projection. The certificate is always supplied explicitly.
 
 It then splits the generated `Option` state and the procedure labels, and rewrites each reply
 law with the generated invocation equations. A second certificate `hT` is for the converter's
@@ -61,22 +64,39 @@ def exposeInvocationLaws : TacticM Unit := do
   evalTactic (← `(tactic| all_goals
     simp -failIfUnchanged only [component_equations]))
 
-/-- The constructor of the converter at the attachment on the left of the equality. Inspecting
-this head keeps an exact-cost converter from being unfolded into a different budgeted form. -/
-def attachmentConstructor : TacticM Name := withMainContext do
+/-- The displayed converter and resource on the left of the equality. -/
+def attachmentParts : TacticM (Expr × Expr) := withMainContext do
   let target ← instantiateMVars (← getMainTarget)
   let some (_, lhs, _) := target.eq? | throwError "inline expects an equality of systems or laws."
   let some attachment := lhs.find? fun e =>
       e.isAppOf ``HSMul.hSMul || e.isAppOf ``TypedConverter.attach
     | throwError "No program attachment on the left of the equality."
   let args := attachment.getAppArgs
-  let converter := args[args.size - 2]!
+  return (args[args.size - 2]!, args[args.size - 1]!)
+
+/-- The displayed constructor keeps an exact-cost converter's selected domain guarantee. -/
+def attachmentConstructor : TacticM Name := do
+  let (converter, _) ← attachmentParts
   let some constructor := converter.getAppFn.constName?
     | throwError "The attached converter is not a displayed program constructor."
   return constructor
 
-/-- Rewrite one automaton attachment using the law for its displayed program constructor. -/
+/-- Place a displayed converter's own source beside its inside resource. -/
+def exposeOwnSource : TacticM Unit := do
+  let (converter, _) ← attachmentParts
+  unless converter.isAppOf ``CategoryTheory.CategoryStruct.comp ||
+      converter.isAppOf ``TypedConverter.comp do
+    throwError "No displayed serial composition with an own source."
+  let args := converter.getAppArgs
+  unless args.back!.isAppOf ``TypedConverter.rightContext do
+    throwError "The inner converter is not a displayed right context."
+  evalTactic (← `(tactic| rw [Interface.comp_smul, TypedConverter.attach_rightContext]))
+
+/-- Rewrite one displayed automaton attachment with its constructor's composition law. -/
 def inlineAutomaton : TacticM Unit := do
+  let (_, resource) ← attachmentParts
+  unless resource.isAppOf ``TypedSystem.ofAutomaton do
+    throwError "Inside resource is not a displayed automaton; supply its memoryless certificate."
   let law ← match ← attachmentConstructor with
     | ``TypedConverter.ofProgram => pure ``TypedConverter.ofProgram_smul_ofAutomaton
     | ``TypedConverter.ofPreservingProgram =>
@@ -85,19 +105,48 @@ def inlineAutomaton : TacticM Unit := do
     | name => throwError "No automaton inlining rule for {name}."
   evalTactic (← `(tactic| rw (transparency := .default) [$(mkIdent law):ident]))
 
-/-- Apply the memoryless composition law selected by the displayed program constructor,
-keeping its budget or cost guarantee and the supplied inside-system certificate. -/
+/-- Recognize equality in the typed system carrier, retaining the selected interface. -/
+def isTypedSystemEquality (statement : Expr) : MetaM Bool := do
+  let some (carrier, _, _) := statement.eq? | return false
+  withNewMCtxDepth do
+    let interface ← mkFreshExprMVar (mkConst ``Interface)
+    isDefEq carrier (mkApp (mkConst ``TypedSystem) interface)
+
+/-- Keep the supplied equality in the goal's carrier, projecting or lifting only at its boundary. -/
+def memorylessCertificate (certificate : TSyntax `term) (typedGoal : Bool) :
+    TacticM (TSyntax `term) := do
+  let saved ← saveState
+  let typed ← try
+    withMainContext do
+      let proof ← Term.elabTerm certificate none
+      isTypedSystemEquality (← instantiateMVars (← inferType proof))
+  finally
+    -- Inspect the carrier without retaining holes; the attachment later determines them.
+    saved.restore
+  if typed == typedGoal then
+    pure certificate
+  else if typedGoal then
+    `(Subtype.ext $certificate)
+  else
+    `(TypedSystem.eq_memoryless_of_eq_ofMemoryless $certificate)
+
+/-- Apply the memoryless law for the displayed constructor and the goal's carrier. -/
 def applyMemorylessLaw (certificate : TSyntax `term) : TacticM Unit := do
+  let typed ← withMainContext do
+    isTypedSystemEquality (← instantiateMVars (← getMainTarget))
   match ← attachmentConstructor with
   | ``TypedConverter.ofProgram =>
-    evalTactic (← `(tactic|
-      refine TypedConverter.ofProgram_smul_memoryless _ _ _ _ $certificate ?_))
+    let law := if typed then ``TypedConverter.ofProgram_smul_ofMemoryless
+      else ``TypedConverter.ofProgram_smul_memoryless
+    evalTactic (← `(tactic| refine $(mkIdent law):ident _ _ _ _ $certificate ?_))
   | ``TypedConverter.ofPreservingProgram =>
-    evalTactic (← `(tactic|
-      refine TypedConverter.ofPreservingProgram_smul_memoryless _ _ _ _ _ _ _ _ $certificate ?_))
+    let law := if typed then ``TypedConverter.ofPreservingProgram_smul_ofMemoryless
+      else ``TypedConverter.ofPreservingProgram_smul_memoryless
+    evalTactic (← `(tactic| refine $(mkIdent law):ident _ _ _ _ _ _ _ _ $certificate ?_))
   | ``TypedConverter.ofCostedProgram =>
-    evalTactic (← `(tactic|
-      refine TypedConverter.ofCostedProgram_smul_memoryless _ _ _ _ _ _ _ $certificate ?_))
+    let law := if typed then ``TypedConverter.ofCostedProgram_smul_ofMemoryless
+      else ``TypedConverter.ofCostedProgram_smul_memoryless
+    evalTactic (← `(tactic| refine $(mkIdent law):ident _ _ _ _ _ _ _ $certificate ?_))
   | name => throwError "No memoryless inlining rule for {name}."
 
 /-- Inline an attachment using its proved composition law. Registered wrappers are expanded
@@ -116,20 +165,26 @@ elab_rules : tactic
     if certificates.isEmpty then
       let saved ← saveState
       try
-        evalTactic (← `(tactic| rw [Interface.comp_smul, TypedConverter.attach_rightContext]))
-        evalTactic (← `(tactic| simp -failIfUnchanged only
-          [TypedSystem.source, TypedSystem.parallel_ofAutomaton]))
+        exposeOwnSource
       catch _ => saved.restore
+      evalTactic (← `(tactic| simp -failIfUnchanged only
+        [TypedSystem.source, TypedSystem.parallel_ofAutomaton]))
       unless (← getGoals).isEmpty do inlineAutomaton
       evalTactic (← `(tactic| all_goals simp -failIfUnchanged only [component_equations]))
     else
       if certificates.size > 2 then
         throwError "Supply the inside system's certificate and, optionally, its own source's."
-      let certificate := certificates[0]!
+      let typed ← withMainContext do
+        isTypedSystemEquality (← instantiateMVars (← getMainTarget))
+      let certificate ← memorylessCertificate certificates[0]! typed
       if certificates.size == 2 then
-        let source := certificates[1]!
-        evalTactic (← `(tactic| rw [Interface.comp_smul, TypedConverter.attach_rightContext]))
-        applyMemorylessLaw (← `(TypedSystem.parallel_eq_memoryless $certificate $source))
+        exposeOwnSource
+        let source ← memorylessCertificate certificates[1]! typed
+        let parallelCertificate ← if typed then
+          `(TypedSystem.parallel_eq_ofMemoryless $certificate $source)
+        else
+          `(TypedSystem.parallel_eq_memoryless $certificate $source)
+        applyMemorylessLaw parallelCertificate
       else
         applyMemorylessLaw certificate
       exposeInvocationLaws

@@ -318,11 +318,11 @@ domain and no other budget obligation arises. Without a certificate, `inline` re
 attachment as the combined automaton and simplifies with the generated equations. A converter
 with its own source is first reshaped by `Interface.comp_smul`,
 `TypedConverter.attach_rightContext` and `TypedSystem.parallel_ofAutomaton`: the source runs
-beside the inside automaton, and both are one automaton with step `parallelStep`. With a
-certificate `hR : R.1 = memoryless _ (portLaw ν)`, it applies the memoryless composition law of
-that constructor (`TypedConverter.ofProgram_smul_memoryless` and its port-preserving and costed
-forms), which reduces `(C • R).1 = memoryless _ (portLaw κ)` to the reply law of one invocation
-in every state:
+beside the inside automaton, and both are one automaton with step `parallelStep`. Direct
+attachments to parallel sources use the same source and parallel normalization. With a
+certificate `hR : R = TypedSystem.ofMemoryless B ν`, the typed memoryless contract of that
+constructor reduces `C • R = TypedSystem.ofMemoryless A κ` to the reply law of one invocation
+in every state. Cumulative equalities are also accepted as certificates and goals:
 
 ```math
 \forall s\,o\,u,\quad \mathrm{memorylessReplyLaw}\;\nu\;s\;o\;u = \kappa\;o\;u .
@@ -331,17 +331,16 @@ in every state:
 It then splits only the generated `Option` state (`none` before initialization, `some s`
 after) and the procedure labels, and rewrites with the generated equations. A second
 certificate is for the converter's own source beside its inside system: the two certificates
-give `TypedSystem.parallel_eq_memoryless`, and the program then runs against their side-by-side
-laws `parallelLaw ν ν'`.
+combine through `TypedSystem.parallel_eq_ofMemoryless`, and the program then runs against their
+side-by-side laws `parallelLaw ν ν'`.
 
 The command applies only the existing attachment laws and generated equations. The caller
 proves the remaining identities of probability laws, such as an identity or composed
 pushforward or a product law, and any state relations. In particular, a sample retained by
 initialization becomes a point law at the stored value on resumed calls; inlining does not
-replace it with fresh independent samples. The source identifications in
-[PRG length extension][ExPRG] use `inline` followed by reflexivity or the existing product-law
-identity, and [`MemorylessSource.memoryless_eq`][MemorylessSource.memoryless_eq] by
-`id_* ν = ν`.
+replace it with fresh independent samples. [PRG length extension][ExPRG] defines its real world
+as the mapped `MemorylessSource`; its two converter contracts use `inline` followed by
+reflexivity or the product-law identity.
 
 The assembly operators denote the existing CC operations. `α • R` applies a
 converter, `α ≫ β` composes converters, and `∥` and `⊗ₘ` compose systems and
@@ -481,8 +480,8 @@ before/after proofs, expression guards, negative tests and exact rewrite traces 
 [elabExactDecls]: Elaborator.lean#L826
 [elabFilter]: Elaborator.lean#L1139
 [sourcesAt]: Elaborator.lean#L730
-[MemorylessSource]: ../../Commons/Definitions/Ideal.lean#L103
-[MemorylessSource.memoryless_eq]: ../../Commons/Definitions/Ideal.lean#L111
+[MemorylessSource]: ../../Commons/Definitions/Ideal.lean#L108
+[MemorylessSource.memoryless_eq]: ../../Commons/Definitions/Ideal.lean#L115
 [WriteThrough]: ../../Examples/DSL/Components.lean#L108
 [cc_normalize]: ../Tactics/Basic.lean#L34
 [cc_nonexpand]: ../Tactics/Categorical.lean#L171

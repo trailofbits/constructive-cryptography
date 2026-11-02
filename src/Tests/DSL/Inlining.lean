@@ -8,7 +8,8 @@ These checks keep arbitrary inside transitions visible, distinguish retained and
 and exercise initialization, resumed calls, literal and symbolic loops and parallel outside
 labels. `inline` expands the registered wrappers itself: attachments to automata, exact-cost
 converters and own sources need no arguments, memoryless attachments take their certificate
-with `using`, and an unsupported goal fails.
+with `using`, and an unsupported goal fails. Typed and cumulative targets retain the selected
+domains; supplied certificates may use either carrier.
 -/
 
 @[expose] public section
@@ -96,6 +97,108 @@ example (q work : ℕ) (R : TypedSystem (Bits work))
         (RandomSystem.portLaw fun i x => ProbDist.map Bool.not (ν i x)) := by
   inline using hR
   all_goals rfl
+
+/-! ### Typed memoryless attachment -/
+
+-- An ordinary program preserves the explicitly supplied fresh-law contract.
+example (q : ℕ) (R : TypedSystem (Bits (Negate.bound * q)))
+    (ν : Bits.Port → Bool → ProbDist Bool)
+    (hR : R = TypedSystem.ofMemoryless (Bits (Negate.bound * q)) ν) :
+    Negate (budget := q) • R =
+      TypedSystem.ofMemoryless (Bits q) (fun i x => ProbDist.map Bool.not (ν i x)) := by
+  -- The tactic neither invents the certificate nor accepts a nonexistent own source.
+  fail_if_success inline
+  fail_if_success inline using hR, hR
+  inline using hR
+  all_goals rfl
+
+-- A raw certificate can also prove a typed goal for the per-port constructor.
+example (q : Bits.Port → ℕ) (R : TypedSystem (Bits.perPort q))
+    (ν : Bits.Port → Bool → ProbDist Bool)
+    (hR : R.1 = RandomSystem.memoryless (Bits.perPort q).inputDomain (RandomSystem.portLaw ν)) :
+    Negate.perPort (budget := q) • R =
+      TypedSystem.ofMemoryless (Bits.perPort q) (fun i x => ProbDist.map Bool.not (ν i x)) := by
+  inline using hR
+  all_goals rfl
+
+-- The typed exact-cost contract retains the restriction on accumulated inside calls.
+example (q work : ℕ) (R : TypedSystem (Bits work))
+    (ν : Bits.Port → Bool → ProbDist Bool)
+    (hR : R = TypedSystem.ofMemoryless (Bits work) ν) :
+    Negate.exact (queries := q) (budget := work) • R =
+      TypedSystem.ofMemoryless
+        (Interface.restrict (Bits q)
+          (fun h => (h.map fun x => Negate.cost x.1 x.2).sum ≤ work)
+          (cost_prefix_closed _ _))
+        (fun i x => ProbDist.map Bool.not (ν i x)) := by
+  inline using hR
+  all_goals rfl
+
+-- Typed certificates also retain the existing raw-goal route.
+example (q : Bits.Port → ℕ) (R : TypedSystem (Bits.perPort q))
+    (ν : Bits.Port → Bool → ProbDist Bool)
+    (hR : R = TypedSystem.ofMemoryless (Bits.perPort q) ν) :
+    (Negate.perPort (budget := q) • R).1 =
+      RandomSystem.memoryless (Bits.perPort q).inputDomain
+        (RandomSystem.portLaw fun i x => ProbDist.map Bool.not (ν i x)) := by
+  inline using hR
+  all_goals rfl
+
+-- An equality without an attachment is outside this tactic's contract.
+example {A : Interface} (R : TypedSystem A) (ν : ∀ i, A.X i → ProbDist (A.Y i))
+    (hR : R = TypedSystem.ofMemoryless A ν) : R = TypedSystem.ofMemoryless A ν := by
+  fail_if_success inline using hR
+  exact hR
+
+-- `get(x)`: query the inside bit, draw a fresh independent mask, and return their xor.
+converter Masked : Bits
+  inside bit : Bits
+  on get(x : Bool) → Bool
+    y ← bit.get(x)
+    mask ←$ 𝒰[Bool]
+    return mask != y
+
+-- Both supplied contracts are used: inside replies and the converter's fresh masks.
+example (q : Bits.Port → ℕ) (R : TypedSystem (Bits.perPort q))
+    (ν : Bits.Port → Bool → ProbDist Bool)
+    (hR : R = TypedSystem.ofMemoryless (Bits.perPort q) ν) :
+    Masked.perPort (budget := q) • R =
+      TypedSystem.ofMemoryless (Bits.perPort q)
+        (fun i x => ProbDist.bind (ν i x) (fun y => ProbDist.map (fun b => b != y) 𝒰[Bool])) := by
+  fail_if_success inline using hR
+  inline using hR, (TypedSystem.source_eq_ofMemoryless _ _)
+  all_goals rfl
+
+-- Typed source certificates with inferred law/budget also serve cumulative targets.
+example (q : Bits.Port → ℕ) (R : TypedSystem (Bits.perPort q))
+    (ν : Bits.Port → Bool → ProbDist Bool)
+    (hR : R = TypedSystem.ofMemoryless (Bits.perPort q) ν) :
+    (Masked.perPort (budget := q) • R).1 =
+      RandomSystem.memoryless (Bits.perPort q).inputDomain
+        (RandomSystem.portLaw fun i x =>
+          ProbDist.bind (ν i x) (fun y => ProbDist.map (fun b => b != y) 𝒰[Bool])) := by
+  inline using hR, (TypedSystem.source_eq_ofMemoryless _ _)
+  all_goals rfl
+
+#print axioms TypedSystem.eq_memoryless_of_eq_ofMemoryless
+#print axioms TypedSystem.parallel_eq_ofMemoryless
+#print axioms TypedConverter.ofProgram_smul_ofMemoryless
+#print axioms TypedConverter.ofPreservingProgram_smul_ofMemoryless
+#print axioms TypedConverter.ofCostedProgram_smul_ofMemoryless
+
+-- Direct parallel inputs normalize before applying the program's automaton contract.
+example {A B C : Interface} {S R T : Type} (s : S)
+    (P : Program S A.I (B ⊗ C).I A.X A.Y (B ⊗ C).X (B ⊗ C).Y) {b : ℕ}
+    (hb : P.Bounded b)
+    (hBC : ∀ xs, xs ≠ [] → xs.length ≤ b * A.bound → (B ⊗ C).domain xs)
+    (f : R → (i : B.I) → B.X i → R × B.Y i)
+    (g : T → (j : C.I) → C.X j → T × C.Y j) (μ : ProbDist R) (ν : ProbDist T) :
+    TypedConverter.ofProgram s P hb hBC •
+        TypedSystem.parallel (TypedSystem.ofAutomaton B f μ) (TypedSystem.ofAutomaton C g ν) =
+      TypedSystem.ofAutomaton A (P.combine (parallelStep f g) hb)
+        (ProbDist.map (fun rt => (s, rt)) (prodProbDist μ ν)) := by
+  inline
+  rfl
 
 -- An own source stays beside the inside system, with independent initial states. The serial and
 -- right-context laws place the `g`-automaton beside the `f`-automaton, and the parallel-automaton
