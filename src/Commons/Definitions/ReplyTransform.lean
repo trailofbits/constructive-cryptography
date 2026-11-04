@@ -7,8 +7,8 @@ public import RandomSystems.Typed.QueryRouting
 # Transforming evaluation replies
 
 `mapReplies f q` forwards an `eval(())` query once and returns `f x` on the inside reply `x`.
-The per-port allowance `q` is unchanged. `mapReplies_smul_memorylessSource` identifies the attached fresh
-source with the source of the mapped probability law.
+The per-port allowance `q` is unchanged. `mapReplies_smul_memorylessSource` identifies
+the attached source with the source of the mapped probability law.
 
 ```text
 caller ── eval(()) ──► [mapReplies f] ── eval(()) ──► source P
