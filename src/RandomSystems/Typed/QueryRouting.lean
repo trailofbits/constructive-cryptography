@@ -20,8 +20,13 @@ lets the reply alphabets `B.Y j` differ from `A.Y o` and from each other.
                 └───────────────────────┘            └────────────┘
 ```
 
+`mapReplies A f` forwards each query unchanged and returns `f i y` in a common output alphabet.
+It preserves `A.domain` exactly.
+
 ## Main results
 
+* `mapReplies_smul_ofFunction`, `mapReplies_smul_ofMemoryless` and `mapReplies_smul_source`:
+  contracts for reply mapping on deterministic systems, fresh laws and sources
 * `TypedConverter.routing`: one inside query and a translated reply, with an explicit domain map
 * `TypedConverter.routing_smul_ofFunction`: `α • ofFunction f = ofFunction g`
 * `TypedConverter.routing_smul_ofMemoryless`: fresh inside replies stay fresh; their laws are
@@ -142,5 +147,47 @@ lemma routing_smul_ofMemoryless
   exact Subtype.ext (PDCBehavior.attach_ofDDC_ofProgramOn_memoryless
     B.nonempty_prefix A.nonempty_prefix () (routingProgram request answer)
     (routingProgram_bounded request answer) hp hκ rfl (TypedSystem.ofMemoryless B ν).2)
+
+/-- Forward query `(i,x)` once and return `f i y` on reply `y : A.Y i`.
+The outside interface retains `A.domain`; successive calls share no converter state. -/
+noncomputable def mapReplies
+    -- `A` is the inside interface, including any restrictions on its input histories.
+    (A : Interface)
+    -- `Y` is the common outside reply alphabet; `f i` transforms replies at port `i`.
+    {Y : Type} [Fintype Y] (f : ∀ i, A.Y i → Y) :
+    TypedConverter (A.withReplies (fun _ => Y)) A :=
+  routing id (fun _ r => f r.1 r.2)
+    (fun _ h => by simpa only [List.map_id] using h)
+
+/-- Transforming the fixed reply `g i x` returns `f i (g i x)` on the same domain. -/
+lemma mapReplies_smul_ofFunction
+    -- `A` fixes the admitted queries; `f i` maps their inside replies to `Y`.
+    (A : Interface) {Y : Type} [Fintype Y] (f : ∀ i, A.Y i → Y)
+    -- `g i x` is the deterministic inside reply to query `x` at port `i`.
+    (g : ∀ i, A.X i → A.Y i) :
+    mapReplies A f • TypedSystem.ofFunction g =
+      TypedSystem.ofFunction (A := A.withReplies (fun _ => Y)) (fun i x => f i (g i x)) :=
+  routing_smul_ofFunction _ _ _ _
+
+/-- Fresh replies with law `ν i x` become fresh replies with law `(ν i x).map (f i)`. -/
+lemma mapReplies_smul_ofMemoryless
+    -- `A` fixes the admitted queries; `f i` transforms inside replies into `Y`.
+    (A : Interface) {Y : Type} [Fintype Y] (f : ∀ i, A.Y i → Y)
+    -- `ν i x` is the fresh inside reply law at query `(i,x)`.
+    (ν : ∀ i, A.X i → ProbDist (A.Y i)) :
+    mapReplies A f • TypedSystem.ofMemoryless A ν =
+      TypedSystem.ofMemoryless (A.withReplies (fun _ => Y)) (fun i x => (ν i x).map (f i)) :=
+  routing_smul_ofMemoryless _ _ _ _
+
+/-- Mapping each source reply by `f` gives the source of `P.map f`, with the same allowance. -/
+lemma mapReplies_smul_source
+    -- `X`, `Y` are the inside and outside reply alphabets; `f` transforms one reply.
+    {X Y : Type} [Fintype X] [Fintype Y] (f : X → Y)
+    -- `P` supplies fresh inside replies, for at most `q` calls.
+    (P : ProbDist X) (q : ℕ) :
+    mapReplies (Interface.source X q) (fun _ => f) • TypedSystem.source P q =
+      TypedSystem.source (P.map f) q := by
+  rw [TypedSystem.source_eq_ofMemoryless, TypedSystem.source_eq_ofMemoryless]
+  exact mapReplies_smul_ofMemoryless _ _ _
 
 end SystemAlgebra.TypedConverter
