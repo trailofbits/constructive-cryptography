@@ -43,6 +43,7 @@ public import Tests.NaryParallelConverters
 public import Tests.CompositionalCosts
 public import Tests.DSL.Axioms
 public import Tests.DSL.Diagnostics
+public import Tests.DSL.Documentation
 public import Tests.DSL.Inlining
 public import Tests.DSL.ParallelOutside
 public import Tests.DSL.ProbabilityNotation
