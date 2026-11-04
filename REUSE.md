@@ -48,8 +48,9 @@ Evaluation.sampleReplies P f b :
 
 Both make one inside call per outside call. `mapReplies` returns `f x`; `sampleReplies` draws
 `k ∼ P` afresh and returns `f k x`. Their contracts `mapReplies_smul_memorylessSource` and
-`sampleReplies_smul_memorylessSource` rewrite attachment to `MemorylessSource.perPort` into
-sources of `Q.map f` and `(prodProbDist P Q).map (fun kx => f kx.1 kx.2)` respectively.
+`sampleReplies_smul_memorylessSource` rewrite attachment to
+`MemorylessSource.perPort X Q (budget := b)` into sources of `Q.map f` and
+`(prodProbDist P Q).map (fun kx => f kx.1 kx.2)` respectively.
 Use `ProbDist.map_map`, `prodProbDist_map_left`, `prodProbDist_map_right` and
 `prodProbDist_uniform` for the remaining normalized-law equations.
 
