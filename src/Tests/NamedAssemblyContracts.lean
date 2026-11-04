@@ -17,6 +17,7 @@ The selected-test transport uses `d.absorb α` directly and requires explicit ad
 namespace Tests.NamedAssemblyContracts
 
 open Commons Commons.Evaluation ConstructiveCryptography SystemAlgebra Probability.Distribution
+open scoped ENNReal
 
 -- `S` carries finite nonempty seeds; `X`, `Y` carry finite replies.
 variable {S X Y : Type} [Fintype S] [Nonempty S] [Fintype X] [Fintype Y]
@@ -77,9 +78,26 @@ example [AdmissibleDistinguishers Interface TypedDistinguisher]
     (closed : AdmissibleDistinguishers.ClosedUnder
       (Phi := TypedSystem) (D := TypedDistinguisher) α)
     -- `h` bounds the inside comparison by `ε`, evaluated at each admitted inside test.
-    {R T : TypedSystem B} {ε : TypedDistinguisher B → ENNReal} (h : R ≃[ε] T) :
+    {R T : TypedSystem B} {ε : TypedDistinguisher B → ℝ≥0∞} (h : R ≃[ε] T) :
     α • R ≃[fun d => ε (d.absorb α)] α • T :=
   TypedConverter.substitutesWithin_attach α closed h
+
+/-- `cc_calc quantitative` reads an annotated goal and chains sources with error `ε + δ`. -/
+example
+    [AdmissibleDistinguishers Interface TypedDistinguisher]
+    -- `F`, `G`, `H : S → X` are the maps; `generated F q` uses fresh seeds for `q` calls.
+    (F G H : S → X) (q : ℕ)
+    -- `ε`, `δ` give each comparison's error at a test of `samples X q`.
+    (ε δ : TypedDistinguisher (samples X q) → ℝ≥0∞)
+    -- `first`, `second` bound the adjacent comparisons by those errors.
+    (first : generated F q ≃[ε] generated G q)
+    (second : generated G q ≃[δ] generated H q) :
+    generated F q ≃[fun d => ε d + δ d] generated H q := by
+  -- `have` annotates the goal; `cc_calc` reads the model beneath that annotation.
+  have firstStep := first
+  cc_calc quantitative
+    generated F q ≃[ε] generated G q := firstStep
+    _ ≃[δ] generated H q := second
 
 #print axioms mapped_in_context
 #print axioms TypedConverter.substitutesWithin_attach
