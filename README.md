@@ -60,6 +60,8 @@ printed pages, so that this correspondence can be reviewed.
 Contributor rules are in [AGENTS.md](AGENTS.md).
 The [reuse guide](REUSE.md) maps common objects to their owners and gives the assembly and
 definition-review workflow.
+The guided [PRG length-extension exercise](Exercises/README.md) covers definitions, assembly,
+contracts, security and reuse, with worked examples followed by open tasks.
 
 ## License
 
