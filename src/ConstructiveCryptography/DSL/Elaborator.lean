@@ -23,7 +23,9 @@ first invocation. Named `outside` components `a : A`, `b : B`, `c : C` give the 
 A converter gets its inferred per-call bound `C.bound` and an inside allowance
 of `C.bound` times its outside interface's bound, plus the exact arrow `C.exact` when its number of
 inside calls is a function of the input; a filter is the arrow from the restricted budget.
-System definitions take their budget from their outermost component. The compiler is a front end
+System definitions take their budget from their outermost component. Leading docstrings are
+attached to the public declaration and its generated per-port and exact forms.
+The compiler is a front end
 on the category of interfaces: systems are `TypedSystem`s, and converters, built from
 `TypedConverter.ofProgram` and its variants, are declared as arrows `A ⟶ B` of
 `Interface.category`, so that components assemble with `≫` and `⊗ₘ`.
@@ -989,6 +991,27 @@ def elabComponentEquations (name : Ident) (params : Array (TSyntax ``Term.bracke
         ($state : $stateTy) ($input : ($outer).X $label) :
         $step $args* $state $label $input using $step:ident))
 
+/-- Split a component command into its optional documentation and declaration body. -/
+def componentDocAndBody
+    -- `stx` is a system or converter command, with its optional docstring as the first field.
+    (stx : Syntax) : Option (TSyntax `Lean.Parser.Command.docComment) × Syntax :=
+  (if stx[0].isNone then none else some ⟨stx[0][0]⟩,
+    stx.modifyArgs (fun args => args.extract 1 args.size))
+
+/-- Document the component and its `.perPort` and `.exact` forms, when generated. -/
+def addComponentDocStrings
+    -- `name` identifies the component in the current namespace.
+    (name : Ident)
+    -- `params` supplies its binders to Lean's documentation elaborator; `doc` is the user's text.
+    (params : Array (TSyntax ``Term.bracketedBinder))
+    (doc : Option (TSyntax `Lean.Parser.Command.docComment)) : CommandElabM Unit := do
+  let some doc := doc | return
+  let owner := (← getCurrNamespace) ++ name.getId
+  for suffix in [Name.anonymous, `perPort, `exact] do
+    let decl := owner ++ suffix
+    if (← getEnv).contains decl then
+      liftTermElabM <| Lean.addDocString decl (mkNullNode (params.map (·.raw))) doc
+
 /-- A system or converter declaration. Its outside interface is the annotation, the ordered
 tensor of its named `outside` components, or its generated ports; an annotation and named
 components exclude each other. The private state of `initialize`, samples included, is shared
@@ -996,6 +1019,8 @@ by every procedure, whichever component it is on. -/
 @[command_elab systemComponentDecl, command_elab systemComponentTypedDecl,
   command_elab converterDecl, command_elab converterTypedDecl]
 def elabComponent : CommandElab := fun stx => do
+  -- Field indices below refer to the declaration body, after its optional docstring.
+  let (doc, stx) := componentDocAndBody stx
   let before ← getEnv
   let beforeErrors ← errorCount
   checkReserved stx
@@ -1113,6 +1138,7 @@ def elabComponent : CommandElab := fun stx => do
     if (← errorCount) == beforeErrors then
       elabComponentEquations name params σ oracles stateTy none
       registerComponentDefinitions name before
+      addComponentDocStrings name params doc
     return
   let (innerZero, _, calls) ← componentInside converting insides sites used (← `(0))
   let resultOf (resultType : TSyntax `term) : CommandElabM (TSyntax `term) :=
@@ -1133,6 +1159,7 @@ def elabComponent : CommandElab := fun stx => do
     elabExactDecls name params σ insides used oracles bodies calls input
   if (← errorCount) == beforeErrors then
     registerComponentDefinitions name before
+    addComponentDocStrings name params doc
 
 /-- A domain filter: forward the queries whose input history is admitted, and stop on the
 others. -/
@@ -1191,6 +1218,8 @@ partial def isConverterExpr (e : TSyntax `term) : Bool :=
 and `D` takes that family's budget, `BudgetOf D.outer`, so a tuple when the component has named
 outside components. -/
 @[command_elab systemDecl] def elabSystem : CommandElab := fun stx => do
+  -- Field indices below refer to the declaration body, after its optional docstring.
+  let (doc, stx) := componentDocAndBody stx
   let before ← getEnv
   let beforeErrors ← errorCount
   checkReserved stx
@@ -1219,5 +1248,6 @@ outside components. -/
     elabCommand (← `(noncomputable def $name:ident $params:bracketedBinder* := $rhs))
   if (← errorCount) == beforeErrors then
     registerComponentDefinitions name before
+    addComponentDocStrings name params doc
 
 end SystemAlgebra.DSL
