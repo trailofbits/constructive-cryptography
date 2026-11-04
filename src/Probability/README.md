@@ -34,6 +34,10 @@ it gives $`\sum_a \mu(a)\, f(a)`$:
 [constant probability kernel][ProbDist.bind_const] returns its law.
 [Successive maps][ProbDist.map_map] compose, and [independent maps][prodProbDist_map] satisfy
 $`(f_*P) \times (g_*Q) = (f \times g)_*(P \times Q)`$.
+[The identity map][ProbDist.map_id] leaves a law unchanged, so $`g=\mathrm{id}`$ or
+$`f=\mathrm{id}`$ gives the [left][prodProbDist_map_left] and
+[right][prodProbDist_map_right] one-coordinate forms.
+[Independent uniform coordinates][prodProbDist_uniform] form a uniform pair.
 A [joint law][ProbDist.jointLaw] retains both successive draws:
 $`J_{\mu,K}(h,z)=\mu(h)K(h,z)`$, with [first marginal][ProbDist.jointLaw_fst] $`\mu`$. For
 arbitrary maps $`d_H, d_Z`$ with $`(d_H)_*\mu'=\mu`$ and $`(d_Z)_*K'(h)=K(d_H h)`$,
@@ -152,10 +156,10 @@ injectivity of all replay and public sites; neither asserts independence on bad 
 [piDep]: DependentProduct.lean#L53
 [uniform]: Distribution.lean#L656
 [ProbDist.uniform]: Distribution.lean#L689
-[bindK]: Kernel.lean#L49
-[bindK_bindK]: Kernel.lean#L95
-[bindK_single_comp]: Kernel.lean#L117
-[pi_eq_bindK_update]: Kernel.lean#L344
+[bindK]: Kernel.lean#L51
+[bindK_bindK]: Kernel.lean#L97
+[bindK_single_comp]: Kernel.lean#L119
+[pi_eq_bindK_update]: Kernel.lean#L346
 [ProbDist.map]: Kernel.lean#L360
 [ProbDist.map_map]: Kernel.lean#L369
 [prodProbDist_map]: Kernel.lean#L491
@@ -198,3 +202,8 @@ injectivity of all replay and public sites; neither asserts independence on bad 
 [uniform_mass_fresh_outputs_eq]: Counting.lean#L729
 
 [uniform_mass_transcript_collision_le_card]: Counting/Collision.lean
+
+[ProbDist.map_id]: Kernel.lean#L371
+[prodProbDist_uniform]: Kernel.lean
+[prodProbDist_map_left]: Kernel.lean
+[prodProbDist_map_right]: Kernel.lean

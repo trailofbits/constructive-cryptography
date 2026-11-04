@@ -17,9 +17,11 @@ This represents a "conditional probability distribution" `p_{Y|X}` [1, §3.6.1, 
 `bindK_bindK` composes successive draws; `bindK_single_one` removes a point kernel.
 `fTransform_bindK` and `bindK_fTransform` move deterministic maps through those draws.
 
-`ProbDist.map` and `ProbDist.bind` retain normalization. `ProbDist.map_map` composes
-initializations; `ProbDist.map_pi_apply` selects one coordinate of an independent table.
-`prodProbDist_map` combines independent initialized draws:
+`ProbDist.map` and `ProbDist.bind` retain normalization. `ProbDist.map_id` removes the
+identity map; `ProbDist.map_map` composes deterministic transformations, and `ProbDist.map_pi_apply`
+selects one coordinate of an independent table. `prodProbDist_uniform` identifies independent
+uniform coordinates with a uniform pair. `prodProbDist_map` and its one-coordinate forms
+`prodProbDist_map_left`, `prodProbDist_map_right` transport independent draws:
 
 ```text
 (f_* P) × (g_* Q) = (f × g)_* (P × Q).
@@ -365,6 +367,10 @@ noncomputable def map
 /-- The underlying distribution of `f_* P` is `fTransform f P.1`. -/
 @[simp] lemma map_val (f : A → B) (P : ProbDist A) : (map f P).1 = fTransform f P.1 := rfl
 
+/-- The identity map leaves a law unchanged: `id_* P = P`. -/
+@[simp] lemma map_id (P : ProbDist A) : P.map id = P :=
+  Subtype.ext (fTransform_id P.1)
+
 /-- Successive deterministic maps compose: `f_* (g_* P) = (f ∘ g)_* P`. -/
 lemma map_map
     -- `g` transforms the draw from `P` first, then `f` transforms that result.
@@ -496,5 +502,26 @@ lemma prodProbDist_map
     prodProbDist (ProbDist.map f P) (ProbDist.map g Q) =
       ProbDist.map (Prod.map f g) (prodProbDist P Q) :=
   Subtype.ext (fTransform_prod f g P.1 Q.1).symm
+
+/-- Independent uniform coordinates have the uniform law on their product type. -/
+lemma prodProbDist_uniform
+    -- `A`, `B` are finite nonempty alphabets, so both uniform laws are normalized.
+    (A B : Type*) [Fintype A] [Nonempty A] [Fintype B] [Nonempty B] :
+    prodProbDist 𝒰[A] 𝒰[B] = 𝒰[A × B] :=
+  Subtype.ext prod_uniform
+
+/-- Transform only the first independent draw: `(f_* P) × Q = (f × id)_*(P × Q)`. -/
+lemma prodProbDist_map_left
+    -- `f` transforms outcomes in `A` to `C`; `P` and `Q` supply the independent draws.
+    (f : A → C) (P : ProbDist A) (Q : ProbDist B) :
+    prodProbDist (P.map f) Q = (prodProbDist P Q).map (Prod.map f id) := by
+  simpa only [ProbDist.map_id] using prodProbDist_map f id P Q
+
+/-- Transform only the second independent draw: `P × (g_* Q) = (id × g)_*(P × Q)`. -/
+lemma prodProbDist_map_right
+    -- `g` transforms outcomes in `B` to `C`; `P` and `Q` supply the independent draws.
+    (g : B → C) (P : ProbDist A) (Q : ProbDist B) :
+    prodProbDist P (Q.map g) = (prodProbDist P Q).map (Prod.map id g) := by
+  simpa only [ProbDist.map_id] using prodProbDist_map id g P Q
 
 end Probability.Distribution
