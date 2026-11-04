@@ -22,6 +22,7 @@ public import Commons.Definitions.Nonce
 public import Commons.Definitions.NonceAEAD
 public import Commons.Definitions.MAC
 public import Commons.Definitions.MAC.Keyed
+public import Commons.Definitions.ReplyTransform
 public import Commons.Definitions.PRG
 public import Commons.Definitions.PublicKeyEncryption
 public import Commons.Definitions.PublicKeyEncryption.Keyed
