@@ -5,8 +5,67 @@ law in a construction, identify its declaration, owner, parameters, domain and s
 Use the live declaration to check the fit. The map below supplies starting points, not a list
 of interchangeable objects.
 
-Ideal systems, schemes and constructions are in `Commons`; typed systems, converters and games
-are in `SystemAlgebra`. The probability operations below are in `Probability.Distribution`.
+Ideal systems and schemes are in `Commons`; specifications and constructions are in
+`ConstructiveCryptography`. Typed systems, converters and games belong to the `RandomSystems`
+library, namespace `SystemAlgebra`. The probability operations below are in
+`Probability.Distribution`.
+
+## Start from the type you need
+
+For a definition, choose a constructor by its return type. A `by` block is optional:
+`:= expression` and `:= by exact expression` supply the same object.
+
+**A law, `ProbDist Y`.** For `P : ProbDist X` and `f : X → Y`, `P.map f` is the normalized
+law of `f(x)`. `P.bind K` samples from `K x` after drawing `x`; `prodProbDist P Q` draws
+independently. `𝒰[X]` is already normalized. The raw operations `fTransform`, `bindK` and `prod`
+return `Distribution`, so their results do not directly fill a `ProbDist` goal.
+
+**A source, `TypedSystem A`.** The interface `A` determines which constructor fits.
+For a reply law `P : ProbDist Y`:
+
+- `TypedSystem.source P q` returns `TypedSystem (Interface.source Y q)`.
+  It uses the port `()` and a scalar allowance `q : ℕ`.
+- `MemorylessSource.perPort Y P (budget := b)` returns
+  `TypedSystem (Evaluation.perPort Unit Y b)`. It uses the port `.eval`;
+  `b : Evaluation.Port → ℕ` gives its allowance. `fun _ => q` assigns `q` to that sole port.
+
+Both draw afresh on each call. Their port types and domain presentations differ, so their
+return types must be matched explicitly. `TypedSystem.sample P R`, with
+`R : Y → TypedSystem A`, draws `y` once and behaves as `R y` throughout the interaction.
+
+**A converter, `TypedConverter A B`.** It exposes `A` and uses a system on `B`, so
+`α • R : TypedSystem A` when `R : TypedSystem B`. Reuse a stock converter with the required
+contract. For fresh evaluation replies, import `Commons.Definitions.ReplyTransform` and use:
+
+```lean
+-- f : X → Y; b : Evaluation.Port → ℕ
+Evaluation.mapReplies f b :
+  TypedConverter (Evaluation.perPort Unit Y b) (Evaluation.perPort Unit X b)
+-- P : ProbDist K; f : K → X → Y
+Evaluation.sampleReplies P f b :
+  TypedConverter (Evaluation.perPort Unit Y b) (Evaluation.perPort Unit X b)
+```
+
+Both make one inside call per outside call. `mapReplies` returns `f x`; `sampleReplies` draws
+`k ∼ P` afresh and returns `f k x`. Their contracts `mapReplies_smul_memorylessSource` and
+`sampleReplies_smul_memorylessSource` rewrite attachment to
+`MemorylessSource.perPort X Q (budget := b)` into sources of `Q.map f` and
+`(prodProbDist P Q).map (fun kx => f kx.1 kx.2)` respectively.
+Use `ProbDist.map_map`, `prodProbDist_map_left`, `prodProbDist_map_right` and
+`prodProbDist_uniform` for the remaining normalized-law equations.
+
+For a custom component, write a DSL `converter` declaration beside your definitions,
+then use its generated term. Put a short `/-- ... -/` input/output rule before it; the same
+documentation appears on the component and its `.perPort` and `.exact` forms, when generated.
+Declarations go outside `by`.
+The [declaration grammar](src/ConstructiveCryptography/DSL/GRAMMAR.md#grammar) and
+[budget forms](src/ConstructiveCryptography/DSL/GRAMMAR.md#interfaces-budgets-and-obligations)
+give the syntax and the types of `.perPort` and the other generated terms.
+
+Use `#check Name` or Go to Definition to inspect the full constructor signature, including its
+named `budget` argument. The object index below supplies owners for those declarations.
+
+## Object index
 
 | Needed object | Declaration and module |
 | --- | --- |
@@ -45,6 +104,9 @@ are in `SystemAlgebra`. The probability operations below are in `Probability.Dis
 | Nonce/AD encrypt-then-MAC | `nonceEncryptThenMAC` in [NonceEncryptThenMAC] |
 | Restricted interface | `TypedConverter.filter` in [Filter] |
 | Relabeled interface | `TypedConverter.rename` in [Relabel] |
+| Deterministic reply map | `Evaluation.mapReplies` in [ReplyTransform] |
+| Fresh randomized reply map | `Evaluation.sampleReplies` in [ReplyTransform] |
+| Reply map on an arbitrary input domain | `TypedConverter.mapReplies` in [QueryRouting] |
 | One-query input and reply translation | `TypedConverter.routing` in [QueryRouting] |
 | Shared access by tagged callers | `routing` in [QueryRouting], `smul_sample` in [Functional] |
 
@@ -216,3 +278,5 @@ component mathematics explicit. They do not choose the objects, their ownership 
 Compile the focused probes, run the changed-file linters, then the full build and source/axiom
 checks in [AGENTS.md](AGENTS.md). These checks establish the Lean claims; reuse and modeling
 still require reading the definitions.
+
+[ReplyTransform]: src/Commons/Definitions/ReplyTransform.lean
