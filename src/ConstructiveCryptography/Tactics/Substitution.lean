@@ -1,14 +1,16 @@
 module
 
 public import ConstructiveCryptography.Tactics.Basic
+public import ConstructiveCryptography.Instances.Substitution
 public import ConstructiveCryptography.Substitution.Quantitative
 public import ConstructiveCryptography.CryptographicAlgebra.DistinguisherAction
 
 /-!
 # Substitution proof commands
 
-Commands that apply the substitution laws to supplied terms (Banfi, Definition 2.3.1 and
-§2.3.1).
+Commands that apply named substitution laws to supplied terms. For typed systems,
+`TypedConverter.substitutesWithin_attach` gives the transported loss `fun d => ε (d.absorb α)`
+under explicit closure of the selected test class.
 
 * `cc_substitute relation through converter using premise` applies preservation.
 * `cc_substitution_chain relation using witness, premises` interprets a witness.
