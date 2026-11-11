@@ -63,6 +63,10 @@ scopes are open, the optional abstract scope selects these operations.
 The [finite-family metric laws](CryptographicAlgebra/FiniteParallel/PseudoMetric.lean) derive
 subadditivity from binary non-expansion and the explicit presentation isomorphisms.
 Single-component updates and shared-context NNReal budgets are corollaries.
+[Selected-component properties](CryptographicAlgebra/FiniteParallel/Specification.lean) use
+`Specification` and three explicit `Constructs` contracts: adjoin the tail, undo the split,
+then reindex. The property parameters follow those maps; only the selected component needs
+to satisfy the property.
 
 ### `CompatiblePseudoMetric C Φ`: distance
 
