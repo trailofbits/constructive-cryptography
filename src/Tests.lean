@@ -71,6 +71,7 @@ public import Tests.TypedProbAutomaton
 public import Tests.TypedNaryParallel
 public import Tests.TypedNaryMemoryless
 
+public import Tests.FiniteParallel
 public import Tests.FiniteFamilyCollect
 public import Tests.TypedParallelAllContext
 public import Tests.FiniteFamilyHybrid

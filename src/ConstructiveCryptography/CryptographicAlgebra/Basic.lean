@@ -737,4 +737,17 @@ end Specification
 
 end CryptographicAlgebra
 
+namespace ResourceTheory
+
+/-- An attachment equation through an isomorphism can be read in the inverse direction. -/
+lemma attach_iso_inv_of_eq
+    -- `C` carries interfaces; `Phi A` carries resources with contravariant attachment.
+    {C : Type u} [Category.{v} C] {Phi : C → Type w} [ResourceTheory C Phi]
+    -- `e.hom` presents resources on `B` at `A`; `h` identifies the presented resource.
+    {A B : C} (e : A ≅ B) (R : Phi A) (S : Phi B) (h : attach e.hom S = R) :
+    attach e.inv R = S := by
+  rw [← h, ← attach_serial, e.inv_hom_id, attach_identity]
+
+end ResourceTheory
+
 end ConstructiveCryptography
