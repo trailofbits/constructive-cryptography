@@ -17,6 +17,7 @@ are in `SystemAlgebra`. The probability operations below are in `Probability.Dis
 | Fresh samples | `TypedSystem.source` in [Source]; `MemorylessSource` in [Ideal] |
 | Fresh query-dependent replies | `TypedSystem.ofMemoryless` in [Memoryless] |
 | Ordered tuple collection | `TypedConverter.collect` in [Collector] |
+| Family reindexing | `TypedConverter.reindex` in [FamilyReindex] |
 | Abstract finite families | `FiniteParallel` in [FiniteParallel] |
 | Family hybrid | `parallelAllImplication`, `distance_smul_parallelAll_le_sum` in [FamilyHybrid] |
 | Fixed finite-family context | `TypedConverter.parallelAllContext` in [FamilyContext] |
@@ -66,6 +67,7 @@ are in `SystemAlgebra`. The probability operations below are in `Probability.Dis
 [Keyed]: src/RandomSystems/Typed/Keyed.lean
 [Memoryless]: src/RandomSystems/Typed/Memoryless.lean
 [Collector]: src/RandomSystems/Typed/FiniteFamilyCollect.lean
+[FamilyReindex]: src/RandomSystems/Typed/ParallelAllReindex.lean
 [FamilyHybrid]: src/ConstructiveCryptography/Substitution/FiniteFamily.lean
 [FamilyContext]: src/RandomSystems/Typed/ParallelAllContext.lean
 [FamilyMemoryless]: src/RandomSystems/Typed/ParallelAllMemoryless.lean

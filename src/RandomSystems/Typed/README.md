@@ -60,6 +60,13 @@ The theorem applies to arbitrary stochastic components. Its
 component realization equalities without revisiting their internal transcripts.
 [The binary bridge][TypedSystem.parallelAll_option_mass] uses an explicit alphabet
 equivalence; regrouping does not identify different interface types implicitly.
+Finite-family presentations use
+[`TypedSystem.parallelAll_reindex`](ParallelAllRegroup.lean),
+[`TypedSystem.parallelAll_optionSplit`](ParallelAllRegroup.lean), and
+[`TypedSystem.parallelAll_empty`](ParallelAllRegroup.lean).
+[`TypedConverter.reindex`](ParallelAllReindex/Defs.lean) is the forwarding converter;
+[its identity and composition laws](ParallelAllReindex.lean) follow from renaming.
+
 A sample shared outside the whole family remains shared, and an aggregate budget remains
 an aggregate restriction rather than a separate full budget for every component.
 A label-preserving
@@ -253,10 +260,10 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedSystem.parallel]: Parallel.lean#L157
 [TypedConverter.parallel]: Parallel.lean#L214
 [TypedConverter.parallel_attach]: ParallelAttachment.lean#L27
-[Interface.tensorAll]: ParallelAll.lean#L63
-[TypedSystem.parallelAll]: ParallelAll.lean#L160
-[TypedConverter.parallelAll]: ParallelAll.lean#L244
-[TypedSystem.ofFunction_parallelAll]: ParallelAll.lean#L272
+[Interface.tensorAll]: ParallelAll.lean#L66
+[TypedSystem.parallelAll]: ParallelAll.lean#L163
+[TypedConverter.parallelAll]: ParallelAll.lean#L245
+[TypedSystem.ofFunction_parallelAll]: ParallelAll.lean#L273
 [TypedSystem.parallelAllPDS]: ParallelAllPresentation.lean
 [TypedSystem.parallelAll_ofPDS]: ParallelAllPresentation.lean
 [TypedConverter.rename]: Relabel.lean#L52
@@ -330,4 +337,4 @@ typed system sampling the ideal function, under the fixed-query factorization.
 
 [TypedConverter.parallelAll_attach]: ParallelAllAttachment.lean
 [TypedConverter.parallelAll_attach_ofFunction]: ParallelAllAttachment.lean
-[TypedSystem.parallelAll_option_mass]: ParallelAllRegroup.lean#L53
+[TypedSystem.parallelAll_option_mass]: ParallelAllRegroup.lean#L46
