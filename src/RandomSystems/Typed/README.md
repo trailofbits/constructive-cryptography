@@ -52,6 +52,10 @@ heterogeneous component interfaces. A fixed function on the combined interface
 Independent deterministic component presentations combine through
 [parallelAllPDS][TypedSystem.parallelAllPDS], which presents the
 [same typed system][TypedSystem.parallelAll_ofPDS] as the n-ary parallel behavior.
+[`Interface.selectExchange`](ParallelAllSelection/Defs.lean) reads one component exchange;
+[its presentation laws](ParallelAllSelection.lean) preserve selection through reindexing and
+identify the selected head with the left exchange after an Option split.
+
 [General locality][TypedConverter.parallelAll_attach] attaches independently sampled
 converters to independently sampled resources component by component:
 
