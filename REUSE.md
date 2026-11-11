@@ -17,6 +17,7 @@ are in `SystemAlgebra`. The probability operations below are in `Probability.Dis
 | Fresh samples | `TypedSystem.source` in [Source]; `MemorylessSource` in [Ideal] |
 | Fresh query-dependent replies | `TypedSystem.ofMemoryless` in [Memoryless] |
 | Ordered tuple collection | `TypedConverter.collect` in [Collector] |
+| Abstract finite families | `FiniteParallel` in [FiniteParallel] |
 | Family hybrid | `parallelAllImplication`, `distance_smul_parallelAll_le_sum` in [FamilyHybrid] |
 | Fixed finite-family context | `TypedConverter.parallelAllContext` in [FamilyContext] |
 | Fresh reply families | `TypedSystem.parallelAll_ofMemoryless` in [FamilyMemoryless] |
@@ -216,3 +217,5 @@ component mathematics explicit. They do not choose the objects, their ownership 
 Compile the focused probes, run the changed-file linters, then the full build and source/axiom
 checks in [AGENTS.md](AGENTS.md). These checks establish the Lean claims; reuse and modeling
 still require reading the definitions.
+
+[FiniteParallel]: src/ConstructiveCryptography/CryptographicAlgebra/FiniteParallel.lean

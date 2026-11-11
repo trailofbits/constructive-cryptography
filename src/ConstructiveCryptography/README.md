@@ -49,6 +49,15 @@ R \parallel S \in \Phi(A \otimes B), \qquad \mathbf 1 \in \Phi(\mathbb I), \qqua
 Derived: [locality][CA.attach_parallel], [associativity][CA.parallel_assoc], and the
 [left][CA.parallel_dummy_left] and [right][CA.parallel_dummy_right] unit laws.
 
+### Finite parallel families
+
+[`FiniteParallel`](CryptographicAlgebra/FiniteParallel/Defs.lean) optionally selects finite
+interface, converter and resource families. Reindexing, `Option` splitting and the empty
+unit carry explicit isomorphisms compatible with resource attachment. The
+[derived laws](CryptographicAlgebra/FiniteParallel.lean) transport inverse presentations and
+factor attachment through the head and tail. Open scoped
+`ConstructiveCryptography.FiniteParallel` for `⨂ k, A k`, `⨂ₘ k, α k` and `∥ k, R k`.
+
 ### `CompatiblePseudoMetric C Φ`: distance
 
 The class [`CompatiblePseudoMetric`][CompatiblePseudoMetric] adds a pseudo-metric $`d`$, the
