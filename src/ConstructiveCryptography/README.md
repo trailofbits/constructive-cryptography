@@ -57,6 +57,9 @@ unit carry explicit isomorphisms compatible with resource attachment. The
 [derived laws](CryptographicAlgebra/FiniteParallel.lean) transport inverse presentations and
 factor attachment through the head and tail. Open scoped
 `ConstructiveCryptography.FiniteParallel` for `⨂ k, A k`, `⨂ₘ k, α k` and `∥ k, R k`.
+The [interface instance](Instances/FiniteParallel.lean) selects the existing typed operations
+and derives its fields from the systems-level regrouping and renaming laws. When both finite-family
+scopes are open, the optional abstract scope selects these operations.
 
 ### `CompatiblePseudoMetric C Φ`: distance
 
