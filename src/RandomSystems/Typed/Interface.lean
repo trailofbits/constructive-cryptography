@@ -13,6 +13,7 @@ The carriers are indexed by finite interfaces, using the systems and converters 
 [2, Definitions 2.2.1–2.2.2, pp. 16–18] and [3, Definitions 3.8–3.9, p. 62; Definition 3.17, p. 64].
 
 `Interface.queryBudget` and `Interface.portBudget` admit total and per-port query bounds.
+`Interface.withReplies` replaces reply alphabets while preserving ports, queries and domain.
 `Interface.queryBudget_domain_map` transfers one-query maps when `A.bound ≤ q`;
 `Interface.queryBudget_inputDomain_iff` reduces next-query admission to a length inequality.
 `TypedSystem.ofPDS` presents a sampled deterministic system; `TypedSystem.exists_ofPDS` gives
@@ -59,6 +60,12 @@ structure Interface where
 attribute [instance] Interface.instFintypeI Interface.instFintypeX Interface.instFintypeY
 
 namespace Interface
+
+/-- Replace `A.Y i` by `Y i`, retaining the queries, domain and bound of `A`. -/
+abbrev withReplies
+    -- `A` supplies the ports and admitted input histories; `Y i` is the new reply alphabet.
+    (A : Interface) (Y : A.I → Type) [∀ i, Fintype (Y i)] : Interface :=
+  { A with Y := Y, instFintypeY := inferInstance }
 
 /-- `D = {h | h ≠ [] ∧ h.length ≤ q}` admits at most `q` queries in total. -/
 abbrev queryBudget

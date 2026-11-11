@@ -46,6 +46,8 @@ are in `SystemAlgebra`. The probability operations below are in `Probability.Dis
 | Restricted interface | `TypedConverter.filter` in [Filter] |
 | Relabeled interface | `TypedConverter.rename` in [Relabel] |
 | One-query input and reply translation | `TypedConverter.routing` in [QueryRouting] |
+| Reply maps on the same query domain | `TypedConverter.mapReplies` in [QueryRouting] |
+| Evaluation reply maps | `Evaluation.mapReplies` in [ReplyTransform] |
 | Shared access by tagged callers | `routing` in [QueryRouting], `smul_sample` in [Functional] |
 
 [LazyPermutation]: src/Commons/Definitions/LazyPermutation.lean
@@ -83,6 +85,7 @@ are in `SystemAlgebra`. The probability operations below are in `Probability.Dis
 [Filter]: src/RandomSystems/Typed/Filter.lean
 [Relabel]: src/RandomSystems/Typed/Relabel.lean
 [QueryRouting]: src/RandomSystems/Typed/QueryRouting.lean
+[ReplyTransform]: src/Commons/Definitions/ReplyTransform.lean
 
 Search both names and mathematical vocabulary, including the owning layer's dependencies:
 
