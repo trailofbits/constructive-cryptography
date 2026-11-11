@@ -220,6 +220,14 @@ forward by `f i`; `mapReplies_smul_source` gives `source (P.map f) q` on the sin
 For evaluation ports, [`Evaluation.mapReplies`](../../Commons/Definitions/ReplyTransform.lean)
 provides the corresponding constructor and `mapReplies_smul_memorylessSource` contract.
 
+[`TypedConverter.sampleReplies`](ReplyTransform/Basic.lean) first draws an independent auxiliary
+value `k ∼ P`, then forwards the current query once and returns `f i k z` on reply `z`.
+The public interfaces keep allowance `q i`; the auxiliary source has capacity `2 * ∑ i, q i`.
+[`sampleReplies_smul_ofMemoryless`](ReplyTransform.lean) gives the fresh law
+`(prodProbDist P (ν i x)).map (fun kz => f i kz.1 kz.2)` on each invocation.
+The [repeated-call client](../../Tests/FreshReplyTransform.lean) distinguishes these independent
+draws from one retained value shared by all calls.
+
 To share one component among tagged callers, erase the caller tag in `request` and attach the
 router to that single system. `smul_sample` preserves its retained draw. The domain certificate
 checks all callers together: `Interface.queryBudget_domain_map` admits the mapped history when
