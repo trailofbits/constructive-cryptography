@@ -518,6 +518,21 @@ Keep titles and bodies short, concrete and factual.
 
 ## Verification
 
+For an ordinary edit, first run `scripts/check-focused.sh` with explicit canonical module names:
+
+```bash
+scripts/check-focused.sh --dependency Probability.Distribution --owner Probability.Kernel \
+  --consumer Tests.ProbabilityNotation --output Scratch/focused-kernel
+```
+
+The output directory must be new. The entry point requires Python 3 (standard library only)
+and provisioned manifest packages. Lake rebuilds the selected root-package dependency closure
+in isolation, reusing current external artifacts under its normal freshness rules. The output
+contains a source/dependency manifest, commands, exit codes, build log and generated artifacts.
+Warnings, failed commands, missing outputs and source changes during validation fail the check.
+`scripts/test-check-focused.sh` exercises failure controls in small temporary packages.
+Keep the full build and complete axiom audit below at integration.
+
 ```bash
 scripts/check-sources.sh
 lake build --wfail
