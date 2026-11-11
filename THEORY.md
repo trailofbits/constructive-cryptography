@@ -348,12 +348,12 @@ extension are in [Examples](src/Examples/README.md).
 
 <!-- Declarations: §2 -->
 
-[Interface]: src/RandomSystems/Typed/Interface.lean#L40
-[TypedSystem]: src/RandomSystems/Typed/Interface.lean#L136
-[TypedConverter]: src/RandomSystems/Typed/Interface.lean#L175
-[TypedConverter.comp]: src/RandomSystems/Typed/Interface.lean#L182
-[TypedConverter.id]: src/RandomSystems/Typed/Interface.lean#L187
-[TypedConverter.attach]: src/RandomSystems/Typed/Interface.lean#L240
+[Interface]: src/RandomSystems/Typed/Interface.lean#L41
+[TypedSystem]: src/RandomSystems/Typed/Interface.lean#L143
+[TypedConverter]: src/RandomSystems/Typed/Interface.lean#L182
+[TypedConverter.comp]: src/RandomSystems/Typed/Interface.lean#L189
+[TypedConverter.id]: src/RandomSystems/Typed/Interface.lean#L194
+[TypedConverter.attach]: src/RandomSystems/Typed/Interface.lean#L247
 [Interface.tensor]: src/RandomSystems/Typed/Parallel.lean#L89
 [TypedSystem.parallel]: src/RandomSystems/Typed/Parallel.lean#L157
 [TypedConverter.parallel]: src/RandomSystems/Typed/Parallel.lean#L214
