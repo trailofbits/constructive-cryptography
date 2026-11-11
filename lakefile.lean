@@ -3,6 +3,7 @@ open Lake DSL
 
 package ConstructiveCryptography where
   srcDir := "src"
+  buildDir := (get_config? focusedBuildDir).getD ".lake/build"
   leanOptions := #[
     ⟨`autoImplicit, false⟩,
     ⟨`relaxedAutoImplicit, false⟩

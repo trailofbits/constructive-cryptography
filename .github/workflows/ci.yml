@@ -56,6 +56,9 @@ jobs:
       - name: Get the Mathlib cache
         run: lake exe cache get
 
+      - name: Check focused validation failure controls
+        run: scripts/test-check-focused.sh
+
       - name: Build, failing on any warning
         run: lake build --wfail
 
