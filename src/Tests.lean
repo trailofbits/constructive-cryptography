@@ -10,6 +10,7 @@ public import Tests.Problem
 public import Tests.GameConsumers
 public import Tests.Guessing
 public import Tests.ContractApplication
+public import Tests.ReplyTransform
 public import Tests.RecordingGuard
 public import Tests.AllDistinguishers
 public import Tests.MixtureObservation

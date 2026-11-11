@@ -213,6 +213,13 @@ pushes that law forward through $`y \mapsto \operatorname{answer}(u,(j,y))`$.
 The [input-encoding and output-projection clients](../../Tests/QueryRouting.lean) use this law
 on a restricted inside domain.
 
+[`TypedConverter.mapReplies`](QueryRouting.lean) specializes routing to unchanged queries and
+reply maps `f i : A.Y i → Y`. Its outside interface `A.withReplies (fun _ => Y)` retains
+`A.domain` and the query allowance. `mapReplies_smul_ofMemoryless` pushes each fresh reply law
+forward by `f i`; `mapReplies_smul_source` gives `source (P.map f) q` on the single-port source.
+For evaluation ports, [`Evaluation.mapReplies`](../../Commons/Definitions/ReplyTransform.lean)
+provides the corresponding constructor and `mapReplies_smul_memorylessSource` contract.
+
 To share one component among tagged callers, erase the caller tag in `request` and attach the
 router to that single system. `smul_sample` preserves its retained draw. The domain certificate
 checks all callers together: `Interface.queryBudget_domain_map` admits the mapped history when
@@ -235,20 +242,20 @@ typed system sampling the ideal function, under the fixed-query factorization.
 
 <!-- Declarations -->
 
-[Interface]: Interface.lean#L40
-[Interface.queryBudget]: Interface.lean#L64
-[Interface.portBudget]: Interface.lean#L94
+[Interface]: Interface.lean#L41
+[Interface.queryBudget]: Interface.lean#L71
+[Interface.portBudget]: Interface.lean#L101
 [restrict]: ../System/Basic.lean#L798
-[TypedSystem]: Interface.lean#L136
+[TypedSystem]: Interface.lean#L143
 [RandomSystem.RepliesAtQueriedInterface]: ../Cumulative/Cumulative.lean#L74
-[TypedConverter]: Interface.lean#L175
-[TypedConverter.ofDDC]: Interface.lean#L191
-[TypedConverter.comp]: Interface.lean#L182
-[TypedConverter.id]: Interface.lean#L187
-[TypedConverter.attach]: Interface.lean#L240
-[TypedConverter.identity_attach]: Interface.lean#L255
-[TypedConverter.comp_smul]: Interface.lean#L261
-[TypedConverter.ofDDC_eq_comp]: Interface.lean#L214
+[TypedConverter]: Interface.lean#L182
+[TypedConverter.ofDDC]: Interface.lean#L198
+[TypedConverter.comp]: Interface.lean#L189
+[TypedConverter.id]: Interface.lean#L194
+[TypedConverter.attach]: Interface.lean#L247
+[TypedConverter.identity_attach]: Interface.lean#L262
+[TypedConverter.comp_smul]: Interface.lean#L268
+[TypedConverter.ofDDC_eq_comp]: Interface.lean#L221
 [Interface.tensor]: Parallel.lean#L89
 [TypedSystem.parallel]: Parallel.lean#L157
 [TypedConverter.parallel]: Parallel.lean#L214
@@ -315,7 +322,7 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [callRule]: ../Converter/Calls.lean#L395
 [TypedConverter.ofDDC_callConverter_smul_ofFunction]: CallRuleFunctional.lean#L35
 [routingConverter]: ../Converter/QueryRouting.lean#L73
-[TypedConverter.ofDDC_routingConverter_smul_ofFunction]: QueryRouting.lean#L62
+[TypedConverter.ofDDC_routingConverter_smul_ofFunction]: QueryRouting.lean#L67
 [TypedConverter.routing]: QueryRouting.lean
 [TypedConverter.routing_smul_ofMemoryless]: QueryRouting.lean
 [Interface.withMBO]: Game.lean#L35
