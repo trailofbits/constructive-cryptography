@@ -256,9 +256,9 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedConverter.identity_attach]: Interface.lean#L255
 [TypedConverter.comp_smul]: Interface.lean#L261
 [TypedConverter.ofDDC_eq_comp]: Interface.lean#L214
-[Interface.tensor]: Parallel.lean#L89
-[TypedSystem.parallel]: Parallel.lean#L157
-[TypedConverter.parallel]: Parallel.lean#L214
+[Interface.tensor]: Parallel.lean#L95
+[TypedSystem.parallel]: Parallel.lean#L195
+[TypedConverter.parallel]: Parallel.lean#L274
 [TypedConverter.parallel_attach]: ParallelAttachment.lean#L27
 [Interface.tensorAll]: ParallelAll.lean#L66
 [TypedSystem.parallelAll]: ParallelAll.lean#L163
