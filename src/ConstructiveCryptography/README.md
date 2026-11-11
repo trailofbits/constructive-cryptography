@@ -60,6 +60,9 @@ factor attachment through the head and tail. Open scoped
 The [interface instance](Instances/FiniteParallel.lean) selects the existing typed operations
 and derives its fields from the systems-level regrouping and renaming laws. When both finite-family
 scopes are open, the optional abstract scope selects these operations.
+The [finite-family metric laws](CryptographicAlgebra/FiniteParallel/PseudoMetric.lean) derive
+subadditivity from binary non-expansion and the explicit presentation isomorphisms.
+Single-component updates and shared-context NNReal budgets are corollaries.
 
 ### `CompatiblePseudoMetric C Φ`: distance
 
@@ -345,8 +348,8 @@ derivable targets form the [generated relation][generatedRelation], and they
 For a tagged finite family, [the assembly witness](Substitution/FiniteFamily.lean)
 `parallelAllImplication R S order context` replaces each component once in the supplied order.
 Its exact endpoints are `context • (∥ k, R k)` and `context • (∥ k, S k)`. The theorem
-`distance_smul_parallelAll_le_sum` transports the local component bounds through the fixed
-components and common context, then sums their budgets; an empty family has zero distance.
+`distance_smul_parallelAll_le_sum` applies the abstract finite-family metric bound, then
+non-expansion of the common context; an empty family has zero distance.
 `substitutesWithin_smul_parallelAll` uses the same witness with explicit reductions, class
 closure and advantage equations, evaluating each component's loss at its actual reduced test.
 
