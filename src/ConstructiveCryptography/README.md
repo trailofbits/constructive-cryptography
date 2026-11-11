@@ -633,7 +633,7 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [Interface.rightUnitor_naturality]: Instances/Monoidal.lean#L111
 [Interface.solvers]: Instances/Game.lean#L50
 [Interface.swap]: Instances/Monoidal.lean#L76
-[Interface.tensor]: ../RandomSystems/Typed/Parallel.lean#L89
+[Interface.tensor]: ../RandomSystems/Typed/Parallel.lean#L94
 [Interface.tensor_comp]: Instances/Monoidal.lean#L97
 [Interface.triangle]: Instances/Monoidal.lean#L142
 [Interface.unit]: ../RandomSystems/Typed/InterfaceCoherence.lean#L94
@@ -664,7 +664,7 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [TypedConverter.comp_smul]: ../RandomSystems/Typed/Interface.lean#L271
 [TypedConverter.id]: ../RandomSystems/Typed/Interface.lean#L196
 [TypedConverter.identity_attach]: ../RandomSystems/Typed/Interface.lean#L265
-[TypedConverter.parallel]: ../RandomSystems/Typed/Parallel.lean#L214
+[TypedConverter.parallel]: ../RandomSystems/Typed/Parallel.lean#L251
 [TypedConverter.parallel_attach]: ../RandomSystems/Typed/ParallelAttachment.lean#L27
 [TypedConverter.parallel_rename]: ../RandomSystems/Typed/TensorRename.lean#L132
 [TypedConverter.rename]: ../RandomSystems/Typed/Relabel.lean#L52
@@ -675,7 +675,7 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [TypedGame.visible]: ../RandomSystems/Typed/Game.lean#L92
 [TypedSystem]: ../RandomSystems/Typed/Interface.lean#L145
 [TypedSystem.dummy]: ../RandomSystems/Typed/SystemCoherence.lean#L101
-[TypedSystem.parallel]: ../RandomSystems/Typed/Parallel.lean#L157
+[TypedSystem.parallel]: ../RandomSystems/Typed/Parallel.lean#L193
 [TypedSystem.parallel_assoc_mass]: ../RandomSystems/Typed/SystemCoherence.lean#L89
 [TypedSystem.parallel_swap_mass]: ../RandomSystems/Typed/SystemCoherence.lean#L157
 [TypedSystem.parallel_unit_left_mass]: ../RandomSystems/Typed/SystemCoherence.lean#L107

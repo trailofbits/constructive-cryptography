@@ -354,9 +354,9 @@ extension are in [Examples](src/Examples/README.md).
 [TypedConverter.comp]: src/RandomSystems/Typed/Interface.lean#L191
 [TypedConverter.id]: src/RandomSystems/Typed/Interface.lean#L196
 [TypedConverter.attach]: src/RandomSystems/Typed/Interface.lean#L250
-[Interface.tensor]: src/RandomSystems/Typed/Parallel.lean#L89
-[TypedSystem.parallel]: src/RandomSystems/Typed/Parallel.lean#L157
-[TypedConverter.parallel]: src/RandomSystems/Typed/Parallel.lean#L214
+[Interface.tensor]: src/RandomSystems/Typed/Parallel.lean#L94
+[TypedSystem.parallel]: src/RandomSystems/Typed/Parallel.lean#L193
+[TypedConverter.parallel]: src/RandomSystems/Typed/Parallel.lean#L251
 [TypedConverter.parallel_attach]: src/RandomSystems/Typed/ParallelAttachment.lean#L27
 [TypedConverter.rename]: src/RandomSystems/Typed/Relabel.lean#L52
 [TypedSystem.source]: src/RandomSystems/Typed/Source.lean#L55

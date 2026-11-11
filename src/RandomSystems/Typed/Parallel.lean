@@ -26,6 +26,10 @@ of their PDC behaviors.
 * `TypedConverter.parallel_ofDDC`, `TypedConverter.parallel_ofDDC_id`,
   `TypedConverter.parallel_id_ofDDC`: parallel compositions of deterministic typed converters
   and identities as a single `ofDDC`
+* `tensor_inputDomain_inl_iff`: a left query projects to its component domain on every
+  consistent history
+* `TypedSystem.parallel_mass_snoc_inl`: a left extension factors into its left mass and
+  the unchanged right prefix mass, including zero-probability histories
 -/
 
 @[expose] public section
@@ -68,6 +72,7 @@ def swapAlphabet {I J : Type} (F : I → Type) (G : J → Type) :
 abbrev parallelDomain (A B : Interface) : List (Σ l, Sum.rec A.X B.X l) → Prop :=
   parallelInputs (F := Sum.rec A.X B.X) A.domain B.domain
 
+open Classical in
 lemma parallelDomain_swap (A B : Interface) (h : List (Σ l, Sum.rec A.X B.X l)) :
     parallelDomain B A (h.map (swapAlphabet A.X B.X)) ↔ parallelDomain A B h := by
   have hp :
@@ -109,6 +114,36 @@ instance instNonemptyTensorY {I J : Type} {F : I → Type} {G : J → Type}
 
 end Interface
 
+-- Retag exchanges by component: left is `none`, right is `some ()`.
+local notation:max "sides " A:max B:max h:max =>
+  List.map (Equiv.prodCongr (Equiv.symm (sumAlphabet (Sum.rec (Interface.X A) (Interface.X B))))
+    (Equiv.symm (sumAlphabet (Sum.rec (Interface.Y A) (Interface.Y B))))) h
+
+/-- After a consistent transcript `h`, the tensor admits a left query `inl i(x)` exactly when `A`
+admits `i(x)` after the left transcript and the right inputs are empty or lie in `B`'s domain. -/
+lemma tensor_inputDomain_inl_iff {A B : Interface}
+    -- `h` is a transcript of `A ⊗ B` whose exchanges are each with one side (`hc`).
+    (h : List ((Σ l, (A.tensor B).X l) × (Σ l, (A.tensor B).Y l)))
+    (hc : RandomSystem.parallelConsistent (sides A B h)) (i : A.I) (x : A.X i) :
+    (A.tensor B).inputDomain h ⟨.inl i, x⟩ ↔
+      A.inputDomain (RandomSystem.parallelLeft (sides A B h)) ⟨i, x⟩ ∧
+        ((RandomSystem.parallelRight (sides A B h)).map Prod.fst = [] ∨
+          B.domain ((RandomSystem.parallelRight (sides A B h)).map Prod.fst)) := by
+  -- Both sides read the inputs of `h` split by side; `i(x)` extends the left inputs only.
+  have hq : (sides A B h).map Prod.fst =
+      (h.map Prod.fst).map (sumAlphabet (Sum.rec A.X B.X)).symm := by
+    simp only [List.map_map]
+    rfl
+  change parallelInputs A.domain B.domain (h.map Prod.fst ++ [⟨.inl i, x⟩]) ↔
+    A.domain ((RandomSystem.parallelLeft (sides A B h)).map Prod.fst ++ [⟨i, x⟩]) ∧ _
+  rw [RandomSystem.parallelLeft_queries hc, RandomSystem.parallelRight_queries hc, hq]
+  have hx : (sumAlphabet (Sum.rec A.X B.X)).symm ⟨.inl i, x⟩ = ⟨none, ⟨i, x⟩⟩ := rfl
+  -- The extended history and its left part are nonempty; its right part is unchanged.
+  simp only [parallelInputs, List.map_append, List.map_cons, List.map_nil, hx, restrict_append,
+    restrict_cons_self, restrict_cons_ne, restrict_nil, List.append_nil, ne_eq,
+    List.append_eq_nil_iff, List.cons_ne_nil, reduceCtorEq, and_false, not_false_eq_true,
+    false_or, true_and]
+
 namespace TypedSystem
 
 open Interface
@@ -123,6 +158,7 @@ lemma possible_domain {A : Interface} (R : TypedSystem A)
     by_contra hd
     exact hp (R.1.mass_eq_zero_of_not_admitted hd y)
 
+open Classical in
 lemma parallel_admits_iff (A B : Interface) (R : TypedSystem A) (S : TypedSystem B)
     (h : List (Two (Σ i, A.X i) (Σ j, B.X j) × Two (Σ i, A.Y i) (Σ j, B.Y j)))
     (hp : RandomSystem.parallel R.1 S.1 h ≠ 0)
@@ -165,6 +201,7 @@ lemma parallel_admits_iff (A B : Interface) (R : TypedSystem A) (S : TypedSystem
   · have hla' : (RandomSystem.parallelLeft h).length ≤ A.inputDomain.bound := hla
     simp [Domain.parallel, hh, hla', ha, RandomSystem.parallelRight_queries hh]
 
+open Classical in
 /-- Parallel typed systems use the product cumulative behavior. The two domain
 descriptions agree on every possible history, including rejected next queries. -/
 noncomputable def parallel {A B : Interface} (R : TypedSystem A) (S : TypedSystem B) :
@@ -222,8 +259,30 @@ lemma parallel_mass {A B : Interface} (R : TypedSystem A) (S : TypedSystem B)
       (h.map ((sumAlphabet (Sum.rec A.X B.X)).symm.prodCongr
         (sumAlphabet (Sum.rec A.Y B.Y)).symm)) := rfl
 
+/-- A left reply extends the left transcript and retains the right prefix mass. -/
+lemma parallel_mass_snoc_inl {A B : Interface}
+    -- `R` and `S` are the independent resources at interfaces `A` and `B`.
+    (R : TypedSystem A) (S : TypedSystem B)
+    -- Every exchange in `h` stays on one side; its probability may be zero.
+    (h : List ((Σ l, (A.tensor B).X l) × (Σ l, (A.tensor B).Y l)))
+    (hc : RandomSystem.parallelConsistent (sides A B h))
+    -- `x` and `y` are a query and reply at the left port `i`.
+    (i : A.I) (x : A.X i) (y : A.Y i) :
+    (parallel R S).1 (h ++ [(⟨.inl i, x⟩, ⟨.inl i, y⟩)]) =
+      R.1 (RandomSystem.parallelLeft (sides A B h) ++ [(⟨i, x⟩, ⟨i, y⟩)]) *
+        S.1 (RandomSystem.parallelRight (sides A B h)) := by
+  -- Retag the new exchange, then factor its two projected histories.
+  rw [parallel_mass, List.map_append, List.map_singleton]
+  change RandomSystem.parallel R.1 S.1
+    (sides A B h ++ [(⟨none, ⟨i, x⟩⟩, ⟨none, ⟨i, y⟩⟩)]) = _
+  rw [RandomSystem.parallel_mass,
+    ite_eq_left (RandomSystem.parallelConsistent_snoc.mpr ⟨hc, rfl⟩)]
+  simp only [RandomSystem.parallelLeft, RandomSystem.parallelRight,
+    List.filterMap_append, List.filterMap_cons, List.filterMap_nil, List.append_nil]
+
 end TypedSystem
 
+open Classical in
 /-- **Parallel typed converters**: the parallel composition of the two PDC behaviors. -/
 noncomputable def TypedConverter.parallel {A B C D : Interface} (α : TypedConverter A B)
     (β : TypedConverter C D) : TypedConverter (Interface.tensor A C) (Interface.tensor B D) :=
