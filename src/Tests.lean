@@ -47,6 +47,7 @@ public import Tests.DSL.Inlining
 public import Tests.DSL.ParallelOutside
 public import Tests.DSL.ProbabilityNotation
 public import Tests.DSL.Semantics
+public import Tests.FreshReplyTransform
 public import Tests.NormalizedProbability
 public import Tests.ProbabilityNotation
 public import Tests.ProbabilityTablePatterns
