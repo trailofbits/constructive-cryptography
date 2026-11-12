@@ -7,8 +7,8 @@ public import RandomSystems.Converter.PDCBehavior
 
 A resource with domain `E` is a random system on the interface alphabets over the inputs
 in `E`, replying at the queried interface. A PDC from `E` to `F` attached to it is sampled
-independently of it, and the samples are attached deterministically (CR18, Definitions 3.9
-and 3.17, printed pp. 62–64); the result is a resource with domain `F`. Attaching the
+independently of it, and the samples are attached deterministically [1, Definitions 3.9
+and 3.17, pp. 62, 64]; the result is a resource with domain `F`. Attaching the
 identity changes nothing, and attaching a serial composition attaches the inner PDC first.
 
 ## Main definitions
@@ -21,7 +21,14 @@ identity changes nothing, and attaching a serial composition attaches the inner 
 * `RandomSystem.isResource_realization`: the realizations of possible choices of a resource
   are deterministic resources with the same domain
 * `PDCBehavior.attach_presents`: the attachment of presentations presents the attachment
+* `PDCBehavior.attach_ofDDC_presents`: deterministic attachment averages the resource replies
 * `PDCBehavior.attach_mix` (of a mixture), `PDCBehavior.attach_id`, `PDCBehavior.attach_comp`
+
+## References
+
+1. U. Maurer. *Cryptography Foundations*. Lecture notes, ETH Zurich, Spring 2018.
+2. U. Maurer and R. Renner. *From Indifferentiability to Constructive Cryptography (and Back)*.
+   In Theory of Cryptography (TCC 2016-B), LNCS 9985, Springer, 2016. ePrint 2016/903.
 -/
 
 @[expose] public section
@@ -156,8 +163,9 @@ lemma resource_connectionLaw (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] 
 
 namespace PDCBehavior
 
-/-- **Attachment** (CR18, Definitions 3.9 and 3.17): the PDC and the resource are
-sampled independently and connected. The result is a resource with domain `F`. -/
+/-- Attachment samples the PDC and resource independently; their connection has domain `F`.
+A PDC "is a random variable over a set of DDC" [1, Definition 3.17, p. 64]; its samples
+act by deterministic attachment [1, Definition 3.9, p. 62]. -/
 noncomputable def attach (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
     (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
     (α : PDCBehavior O J U V X Y E m hE F n hF)
@@ -222,6 +230,28 @@ lemma attach_presents (α : PDCBehavior O J U V X Y E m hE F n hF)
       behaviorMass (attachPDS hF' P Q).1 (h.map Prod.fst) (h.map Prod.snd) :=
   resource_connectionLaw hF' α.2.choose_spec P Q hP hQ h
 
+/-- A deterministic converter's attachment is the mass of its resource samples' replies. -/
+lemma attach_ofDDC_presents
+    -- `α` is fixed; `ha` certifies its inside domain `E` and outside domain `F`.
+    -- `b` bounds consecutive inside queries per invocation, independently of the horizons.
+    (α : InsideOutsideSystem O J U V X Y) {b : ℕ} (ha : IsDDCFrom E F b α)
+    -- `R` is the resource behavior; `hR` requires replies at the queried port.
+    (R : RandomSystem (Σ j, X j) (Σ j, Y j) (Domain.ofInputs E m hE))
+    (hR : R.RepliesAtQueriedInterface)
+    -- `Q` samples deterministic resources with domain `E`; `hQ` identifies its masses with `R`.
+    (Q : Distribution.ProbDist {s : InterfaceSystem J X Y //
+      IsDDS s ∧ RepliesAtQueriedInterface s ∧ ∀ xs, (s xs).Dom ↔ E xs})
+    (hQ : ∀ g, behaviorMass Q.1 (g.map Prod.fst) (g.map Prod.snd) = R g)
+    -- `h` is the outside query/reply transcript being observed.
+    (h : List ((Σ o, U o) × (Σ o, V o))) :
+    attach hE' hF' (ofDDC α ha : PDCBehavior O J U V X Y E m hE F n hF) R hR h =
+      Q.1.mass (fun s => Replies (apply α s.1) (h.map Prod.fst) (h.map Prod.snd)) := by
+  -- The converter point mass leaves only the resource sample to average.
+  rw [attach_presents hE' hF' _ R hR _ Q (fun _ => rfl) hQ, behaviorMass_attachPDS,
+    Distribution.prod_single_left, Distribution.mass_fTransform]
+  -- Canonicalization preserves every completed reply transcript.
+  exact Distribution.mass_congr _ (fun s => replies_trim_iff _ _ _)
+
 /-- **A completed internal transcript of probability one** gives its outside transcript
 probability one. -/
 lemma attach_mass_eq_one (α : PDCBehavior O J U V X Y E m hE F n hF)
@@ -271,13 +301,12 @@ lemma attach_id (R : RandomSystem (Σ j, X j) (Σ j, Y j) (Domain.ofInputs E m h
   obtain ⟨Q, hQ⟩ := RandomSystem.exists_resource_presentation hE' R hR
   apply RandomSystem.ext
   intro h
-  rw [attach_presents hE' hE' _ R hR _ Q (fun _ => rfl) hQ, behaviorMass_attachPDS,
-    Distribution.prod_single_left, Distribution.mass_fTransform, ← hQ]
+  rw [PDCBehavior.id, attach_ofDDC_presents hE' hE' _ _ R hR Q hQ, ← hQ]
   exact Distribution.mass_congr _ (fun s => by
-    rw [trim_apply_filter_of_dom hE' s.2.1 s.2.2.1 s.2.2.2])
+    rw [← replies_trim_iff, trim_apply_filter_of_dom hE' s.2.1 s.2.2.1 s.2.2.2])
 
-/-- **Serial attachment** (MR16 §3.3: `(β ∘ α)ⁱR = βⁱ(αⁱR)`): attaching a serial composition
-attaches the inner PDC first. -/
+/-- Serial attachment applies the inner PDC first:
+"(β ∘ α)ⁱR = βⁱ(αⁱR)" [2, §3.3, p. 7]. -/
 theorem attach_comp {M : Type} [Fintype M] {Xm Ym : M → Type} [∀ k, Fintype (Xm k)]
     [∀ k, Fintype (Ym k)] {F'' : List (Σ k, Xm k) → Prop} {n'' : ℕ}
     {hF'' : ∀ h, F'' h → h.length ≤ n''}
