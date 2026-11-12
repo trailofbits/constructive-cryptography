@@ -38,7 +38,9 @@ Successive cuts combine by the minimum horizon; an explicit `Finite q s` certifi
 The normalization predicate `IsRandomSystem D p` also accepts a query domain `D` with no
 global horizon. [Finite cuts](Cumulative/FiniteCuts.lean) place such a behavior in the existing
 bounded carrier: `IsRandomSystem.cut D p hp q` preserves masses through depth `q` and sets later
-masses to zero. `RandomSystem.limitMass` reconstructs a behavior from adjacent coherent cuts;
+masses to zero. `Domain.cutDomain_ofInputs` identifies an input-only cut with its input
+histories intersected with the length bound. `RandomSystem.limitMass` reconstructs a behavior from
+adjacent coherent cuts;
 `limitMass_cut` and `cut_limitMass` give the two round trips.
 
 [Converter total-query bounds](Converter/QueryBound.lean) use `InsideQueriesBounded α k`
@@ -244,10 +246,10 @@ of the program's inside queries:
 [IsBisim]: System/Automaton.lean#L74
 [automatonSystem_eq_of_bisim]: System/Automaton.lean#L93
 [DDE]: System/DDE.lean#L30
-[Domain]: PDS/PDS.lean#L75
-[Equivalent]: PDS/PDS.lean#L60
-[HasDomain]: PDS/PDS.lean#L118
-[PDS]: PDS/PDS.lean#L174
+[Domain]: PDS/PDS.lean#L76
+[Equivalent]: PDS/PDS.lean#L61
+[HasDomain]: PDS/PDS.lean#L130
+[PDS]: PDS/PDS.lean#L186
 [IsRandomSystem]: Cumulative/Cumulative.lean#L43
 [RandomSystem]: Cumulative/Cumulative.lean#L57
 [PDS.behavior]: Cumulative/Cumulative.lean#L220

@@ -23,6 +23,7 @@ the samples replying `ys` to `xs`. Source: [1, Definition 8, p. 13].
 ## Main results
 
 * `nextReply_apply`, `nextReply_weight_of_admitted`: the next-reply masses of a mixture
+* `Domain.cutDomain_ofInputs`: a finite input-only cut is an intersection with a length bound
 * `hasDomain_ofInputs_iff`: on an input domain `E`, having domain `E` is `dom(s) = E`
 * `HasDomain.length_le`, `HasDomain.finite`: complete transcripts and DDS replies respect the bound
 
@@ -111,6 +112,17 @@ def Domain.ofInputs (E : List A → Prop) (bound : ℕ) (hE : ∀ h, E h → h.l
 @[simp] lemma Domain.ofInputs_apply (E : List A → Prop) (bound : ℕ)
     (hE : ∀ h, E h → h.length ≤ bound) (h : List (A × B)) (x : A) :
     (Domain.ofInputs E bound hE : Domain A B) h x = E (h.map Prod.fst ++ [x]) := rfl
+
+/-- Cutting an input-only domain intersects its input histories with the finite horizon. -/
+lemma Domain.cutDomain_ofInputs
+    -- `E` admits input histories; `n` is the maximum number of queried inputs.
+    (E : List A → Prop) (n : ℕ) :
+    cutDomain (B := B) (fun h x => E (h.map Prod.fst ++ [x])) n =
+      Domain.ofInputs (fun xs => E xs ∧ xs.length ≤ n) n (fun _ hx => hx.2) := by
+  unfold cutDomain Domain.ofInputs
+  congr 1
+  funext h x
+  simp only [List.length_append, List.length_map, List.length_singleton, Nat.add_one_le_iff]
 
 /-- `s` has domain `D`: it answers exactly the queries `D` admits along its own
 transcripts. For a domain of input histories this is `dom(s) = D`
