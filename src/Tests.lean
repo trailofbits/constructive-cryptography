@@ -1,6 +1,7 @@
 module
 
 public import Tests.CumulativeFiniteCuts
+public import Tests.DeterministicFiniteCuts
 public import Tests.UnlimitedSource
 
 public import Tests.ProbabilityObservation
