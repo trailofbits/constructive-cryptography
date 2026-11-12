@@ -40,6 +40,7 @@ are in `SystemAlgebra`. The probability operations below are in `Probability.Dis
 | Retained state with fresh transitions | `TypedSystem.ofProbAutomaton` in [ProbAutomaton] |
 | Retained key as an automaton | `TypedSystem.ofProbAutomaton_eq_keyed` in [KeyedAutomaton] |
 | Program attachment | `TypedConverter.ofProgram_smul_ofProbAutomaton` in [ProgramAttachment] |
+| Sufficient inside horizon | `replies_apply_cutSystem_iff` in [inside cuts] |
 | Independent joint law | `prodProbDist` in [Distribution] |
 | Selected independent coordinates | `ProbDist.map_pi_comp` in [Kernel] |
 | Independent finite family of draws | `ProbDist.pi` in [Distribution] |
@@ -62,6 +63,7 @@ are in `SystemAlgebra`. The probability operations below are in `Probability.Dis
 
 [UnlimitedSource]: src/RandomSystems/System/Source.lean
 [SourceCuts]: src/RandomSystems/Typed/SourceCuts.lean
+[inside cuts]: src/RandomSystems/Converter/InsideCuts.lean
 [converter cuts]: src/RandomSystems/Converter/FiniteCuts.lean
 [query bounds]: src/RandomSystems/Converter/QueryBound.lean
 [parallel cuts]: src/RandomSystems/Cumulative/Parallel.lean

@@ -64,6 +64,7 @@ public import Tests.SamplingAlgebra
 public import Tests.SerialAccounting
 public import Tests.ConverterQueryBound
 public import Tests.ConverterFiniteCuts
+public import Tests.AttachmentInsideCuts
 public import Tests.SharedRouting
 public import Tests.Substitution.Axioms
 public import Tests.Substitution.Calculation
