@@ -18,6 +18,7 @@ are in `SystemAlgebra`. The probability operations below are in `Probability.Dis
 | Bounded source adapter | `TypedSystem.source_eq_cutMass` in [SourceCuts] |
 | Conditional table presentations | `presentation`, `cutSystem_realization_choiceAt` in [tables] |
 | Presentation existence | `IsRandomSystem.exists_pdsSequence` in [coherent tables] |
+| Independent cumulative parallel | `parallelMass`, `cutMass_parallelMass` in [parallel cuts] |
 | Retained mixtures of behaviors | `mixMass`, `cutMass_mixMass` in [cumulative mixtures] |
 | Coherent finite presentations | `PDSSequence`, `cut_behavior` in [PDSSequence] |
 | Deterministic observation cuts | `cutSystem` in [DeterministicCuts] |
@@ -59,6 +60,7 @@ are in `SystemAlgebra`. The probability operations below are in `Probability.Dis
 
 [UnlimitedSource]: src/RandomSystems/System/Source.lean
 [SourceCuts]: src/RandomSystems/Typed/SourceCuts.lean
+[parallel cuts]: src/RandomSystems/Cumulative/Parallel.lean
 [cumulative mixtures]: src/RandomSystems/Cumulative/Mixture.lean
 [coherent tables]: src/RandomSystems/Cumulative/Presentation/Sequence.lean
 [tables]: src/RandomSystems/Cumulative/Presentation.lean

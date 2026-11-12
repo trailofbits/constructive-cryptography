@@ -41,6 +41,11 @@ bounded carrier: `IsRandomSystem.cut D p hp q` preserves masses through depth `q
 masses to zero. `RandomSystem.limitMass` reconstructs a behavior from adjacent coherent cuts;
 `limitMass_cut` and `cut_limitMass` give the two round trips.
 
+[Independent parallel behaviors](Cumulative/Parallel.lean) multiply the masses of their
+projected transcripts. `parallelMass_isRandomSystem` retains matching query/reply tags and
+each selected component's query domain. `cutMass_parallelMass` keeps an explicit total
+observation cut when both components are cut at that horizon.
+
 [Finite retained mixtures](Cumulative/Mixture.lean) average whole-transcript masses using
 `mixMass`. They normalize on a shared query domain, commute with finite cuts, and agree with
 `RandomSystem.mix` on bounded systems. Their index type need not be finite.
@@ -243,8 +248,8 @@ of the program's inside queries:
 [RandomSystem.Compatible]: Cumulative/CumulativeObservation.lean#L263
 [RandomSystem.eq_iff_sLaw]: Cumulative/CumulativeObservation.lean#L648
 [RandomSystem.eq_iff_sLaw_fixedQueries]: Cumulative/CumulativeObservation.lean#L662
-[RandomSystem.mix]: Cumulative/CumulativeOperations.lean#L50
-[RandomSystem.parallel]: Cumulative/CumulativeOperations.lean#L136
+[RandomSystem.mix]: Cumulative/CumulativeOperations.lean#L52
+[RandomSystem.parallel]: Cumulative/CumulativeOperations.lean#L129
 [RandomSystem.parallelAll]: Cumulative/ParallelAll.lean#L197
 [RandomSystem.parallelAll_mass_of_presentations]: Cumulative/ParallelAllPresentation.lean#L64
 [tensorAllL]: Converter/ParallelAll.lean#L108

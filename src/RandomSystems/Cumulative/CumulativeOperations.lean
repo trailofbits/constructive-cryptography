@@ -1,6 +1,7 @@
 module
 
 public import RandomSystems.Cumulative.CumulativeObservation
+public import RandomSystems.Cumulative.Parallel.Defs
 
 /-!
 # Mixtures and parallel composition
@@ -85,31 +86,9 @@ lemma sLaw_mix (P : Distribution.ProbDist ι) (R : ι → RandomSystem A B D) (e
 
 end Mix
 
-/-- Project the exchanges belonging to the left component. -/
-def parallelLeft (h : List ((Two A C) × (Two B E))) : List (A × B) :=
-  h.filterMap fun z => match z with
-    | (⟨none, x⟩, ⟨none, y⟩) => some (x, y)
-    | _ => none
-
-/-- Project the exchanges belonging to the right component. -/
-def parallelRight (h : List ((Two A C) × (Two B E))) : List (C × E) :=
-  h.filterMap fun z => match z with
-    | (⟨some (), x⟩, ⟨some (), y⟩) => some (x, y)
-    | _ => none
-
-/-- An exchange is with one of the two independent components. -/
-def parallelConsistent (h : List ((Two A C) × (Two B E))) : Prop :=
-  ∀ z ∈ h, z.1.1 = z.2.1
-
 lemma parallelConsistent_snoc {h : List ((Two A C) × (Two B E))} {z} :
     parallelConsistent (h ++ [z]) ↔ parallelConsistent h ∧ z.1.1 = z.2.1 := by
   simp [parallelConsistent, or_imp, forall_and]
-
-/-- Parallel composition queries the selected component at its own history. -/
-def parallelAdmits (D : List (A × B) → A → Prop) (D' : List (C × E) → C → Prop)
-    (h : List ((Two A C) × (Two B E))) : Two A C → Prop
-  | ⟨none, x⟩ => D (parallelLeft h) x
-  | ⟨some (), x⟩ => D' (parallelRight h) x
 
 /-- Consistent transcripts split into their two component transcripts. -/
 lemma length_of_parallelConsistent {h : List ((Two A C) × (Two B E))}
@@ -149,7 +128,9 @@ open Classical in
 /-- Independent parallel composition, with its combined input/output alphabets. -/
 noncomputable def parallel (R : RandomSystem A B D) (S : RandomSystem C E D') :
     RandomSystem (Two A C) (Two B E) (D.parallel D') :=
-  ⟨fun h => if parallelConsistent h then R (parallelLeft h) * S (parallelRight h) else 0, by
+  ⟨parallelMass R S, by
+    change IsRandomSystem _
+      (fun h => if parallelConsistent h then R (parallelLeft h) * S (parallelRight h) else 0)
     refine ⟨by simp [parallelConsistent, parallelLeft, parallelRight, R.mass_nil, S.mass_nil],
       ?_, fun h x => ?_⟩
     · intro h
