@@ -47,6 +47,38 @@ example : IsDDS (cutSystem echo.1 1) := echo.2.cutSystem 1
 example : HasDomain (cutDomain echoDomain 1) (cutSystem echo.1 1) :=
   echo_hasDomain.cutSystem 1
 
+/-- The cut of the existing echo has an input-only domain with the additional length bound. -/
+lemma echo_cut_input_domain (n : ℕ) :
+    HasDomain (Domain.ofInputs (fun xs : List Bool =>
+      (xs ≠ [] ∧ xs.length ≤ 3) ∧ xs.length ≤ n) n (fun _ hx => hx.2))
+      (cutSystem echo.1 n) := by
+  have cut := echo_hasDomain.cutSystem n
+  change HasDomain (cutDomain (fun h x =>
+    (h.map Prod.fst ++ [x]) ≠ [] ∧ (h.map Prod.fst ++ [x]).length ≤ 3) n) _ at cut
+  rw [Domain.cutDomain_ofInputs (fun xs : List Bool => xs ≠ [] ∧ xs.length ≤ 3)] at cut
+  exact cut
+
+/-- The positive cut keeps the same evaluator with its certified two-input domain. -/
+example : HasDomain (Domain.ofInputs (fun xs : List Bool =>
+    (xs ≠ [] ∧ xs.length ≤ 3) ∧ xs.length ≤ 2) 2 (fun _ hx => hx.2))
+    (cutSystem echo.1 2) := echo_cut_input_domain 2
+
+/-- The zero cut also has its exact input-only certificate. -/
+example : HasDomain (Domain.ofInputs (fun xs : List Bool =>
+    (xs ≠ [] ∧ xs.length ≤ 3) ∧ xs.length ≤ 0) 0 (fun _ hx => hx.2))
+    (cutSystem echo.1 0) := echo_cut_input_domain 0
+
+/-- No first query is admitted by the zero-horizon input-only presentation. -/
+lemma zero_input_domain :
+    ¬ (Domain.ofInputs (B := Bool) (fun xs : List Bool =>
+      (xs ≠ [] ∧ xs.length ≤ 3) ∧ xs.length ≤ 0) 0 (fun _ hx => hx.2)) [] false := by
+  rw [← Domain.cutDomain_ofInputs]
+  exact fun h => Nat.not_lt_zero _ h.2
+
+#print axioms SystemAlgebra.Domain.cutDomain_ofInputs
+#print axioms echo_cut_input_domain
+#print axioms zero_input_domain
+
 #print axioms SystemAlgebra.cutSystem_cutSystem
 #print axioms SystemAlgebra.HasDomain.cutSystem
 #print axioms SystemAlgebra.HasDomain.finite
