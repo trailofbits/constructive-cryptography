@@ -40,6 +40,7 @@ public import RandomSystems.Cumulative.Cumulative
 public import RandomSystems.Cumulative.FiniteCuts
 public import RandomSystems.PDS.FiniteCuts
 public import RandomSystems.Cumulative.PDSSequence
+public import RandomSystems.Cumulative.Attachment
 public import RandomSystems.Cumulative.Mixture
 public import RandomSystems.Cumulative.Parallel
 public import RandomSystems.Cumulative.CumulativeAttachment
