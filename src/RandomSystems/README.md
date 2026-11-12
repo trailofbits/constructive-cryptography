@@ -90,6 +90,13 @@ and a probabilistic automaton
 [is a deterministic automaton reading pre-sampled draws][RandomSystem.ofProbAutomaton_eq_drawStep],
 sampled once with the initial state: a random automaton [4, Definition 2].
 
+The [unlimited fresh source](System/Source.lean) assigns a transcript
+$`h=[(x_1,y_1),\ldots,(x_n,y_n)]`$ mass $`\prod_{i=1}^n \nu(y_i)`$. Its finite reply
+vectors have the existing `ProbDist.pi` law. On a complete `q`-query horizon,
+`RandomSystem.memoryless_eq_cut_sourceMass` identifies the bounded memoryless behavior with
+its cut. [TypedSystem.source_eq_cutMass](Typed/SourceCuts.lean) gives the same correspondence
+for the existing single-port source.
+
 A random system is [**memoryless**][RandomSystem.memoryless] when the law of its reply depends only
 on the current query, never on the history: a source "can be memoryless or have memory"
 [3, Definition 3.1], and a single-input system given by a conditional distribution is a "discrete

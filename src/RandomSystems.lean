@@ -1,6 +1,7 @@
 module
 
 public import RandomSystems.Distance.Observation
+public import RandomSystems.Typed.SourceCuts
 public import RandomSystems.Typed.Completion
 public import RandomSystems.Typed.Distinguisher
 public import RandomSystems.Typed.Solver
