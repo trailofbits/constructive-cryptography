@@ -45,6 +45,9 @@ masses to zero. `RandomSystem.limitMass` reconstructs a behavior from adjacent c
 to count emitted inside queries, including a pending query, after each outside-input prefix.
 They pass to restrictions and compose through certified serial transcripts. Exact domain
 preservation is supplied separately by `IsDDCFrom.mapsDomain`.
+[Finite converter cuts](Converter/FiniteCuts.lean) intersect the original outside domain with
+the observation horizon and the inside domain with its total-query allowance.
+`IsDDCFrom.filterDom_of_insideQueriesBounded` supplies this exact certificate.
 
 [Independent parallel behaviors](Cumulative/Parallel.lean) multiply the masses of their
 projected transcripts. `parallelMass_isRandomSystem` retains matching query/reply tags and

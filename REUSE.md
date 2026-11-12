@@ -19,6 +19,7 @@ are in `SystemAlgebra`. The probability operations below are in `Probability.Dis
 | Conditional table presentations | `presentation`, `cutSystem_realization_choiceAt` in [tables] |
 | Presentation existence | `IsRandomSystem.exists_pdsSequence` in [coherent tables] |
 | Independent cumulative parallel | `parallelMass`, `cutMass_parallelMass` in [parallel cuts] |
+| Certified converter cuts | `IsDDCFrom.filterDom_of_insideQueriesBounded` in [converter cuts] |
 | Converter horizon bounds | `InsideQueriesBounded` in [query bounds] |
 | Retained mixtures of behaviors | `mixMass`, `cutMass_mixMass` in [cumulative mixtures] |
 | Coherent finite presentations | `PDSSequence`, `cut_behavior` in [PDSSequence] |
@@ -61,6 +62,7 @@ are in `SystemAlgebra`. The probability operations below are in `Probability.Dis
 
 [UnlimitedSource]: src/RandomSystems/System/Source.lean
 [SourceCuts]: src/RandomSystems/Typed/SourceCuts.lean
+[converter cuts]: src/RandomSystems/Converter/FiniteCuts.lean
 [query bounds]: src/RandomSystems/Converter/QueryBound.lean
 [parallel cuts]: src/RandomSystems/Cumulative/Parallel.lean
 [cumulative mixtures]: src/RandomSystems/Cumulative/Mixture.lean
