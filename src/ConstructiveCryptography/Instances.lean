@@ -5,6 +5,7 @@ public import ConstructiveCryptography.Instances.Monoidal
 public import ConstructiveCryptography.Instances.Algebra
 public import ConstructiveCryptography.Instances.Mixture
 public import ConstructiveCryptography.Instances.FiniteParallel
+public import ConstructiveCryptography.Instances.FiniteParallelFreshness
 public import ConstructiveCryptography.Instances.Game
 public import ConstructiveCryptography.Instances.SubmissionGame
 public import ConstructiveCryptography.Instances.Substitution
