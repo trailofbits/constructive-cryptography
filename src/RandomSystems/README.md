@@ -41,6 +41,13 @@ bounded carrier: `IsRandomSystem.cut D p hp q` preserves masses through depth `q
 masses to zero. `RandomSystem.limitMass` reconstructs a behavior from adjacent coherent cuts;
 `limitMass_cut` and `cut_limitMass` give the two round trips.
 
+A [coherent finite presentation](Cumulative/PDSSequence.lean) is a `PDSSequence A B D`:
+each level is a normalized finite law on DDSs with domain `cutDomain D n`, and restricting the
+next level by `PDS.cutSample` gives exactly the current sample law. `PDSSequence.behavior`
+uses finite-cut gluing to produce a normalized cumulative behavior. Its `cut_behavior` law
+recovers each level's behavior; `behavior_eq_iff` characterizes equality by behavioral
+equivalence of the levels, while their exact sample laws remain presentation data.
+
 A transcript follows a query strategy when every exchange prefix $`p\mathbin{+\!+}[(x,y)]`$
 has $`x\in\sigma(\operatorname{replies}(p))`$, the rule $`x_i = e(y_1,\dots,y_{i-1})`$ of
 [1, Definition 7, printed p. 12]
@@ -211,8 +218,8 @@ of the program's inside queries:
 [DDE]: System/DDE.lean#L30
 [Domain]: PDS/PDS.lean#L75
 [Equivalent]: PDS/PDS.lean#L60
-[HasDomain]: PDS/PDS.lean#L107
-[PDS]: PDS/PDS.lean#L163
+[HasDomain]: PDS/PDS.lean#L118
+[PDS]: PDS/PDS.lean#L174
 [IsRandomSystem]: Cumulative/Cumulative.lean#L43
 [RandomSystem]: Cumulative/Cumulative.lean#L57
 [PDS.behavior]: Cumulative/Cumulative.lean#L220

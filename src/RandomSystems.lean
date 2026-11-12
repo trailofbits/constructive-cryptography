@@ -36,6 +36,7 @@ public import RandomSystems.Cumulative.ConnectionObservation
 public import RandomSystems.Cumulative.Cumulative
 public import RandomSystems.Cumulative.FiniteCuts
 public import RandomSystems.PDS.FiniteCuts
+public import RandomSystems.Cumulative.PDSSequence
 public import RandomSystems.Cumulative.CumulativeAttachment
 public import RandomSystems.Cumulative.CumulativeObservation
 public import RandomSystems.Cumulative.CumulativeOperations

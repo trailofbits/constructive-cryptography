@@ -87,6 +87,17 @@ def cutDomain (D : List (A × B) → A → Prop) (q : ℕ) : Domain A B where
   bound := q
   length_lt _ _ hx := hx.2
 
+/-- Cutting a finite observation domain again at a smaller horizon gives the smaller cut. -/
+lemma cutDomain_cutDomain
+    -- `D` is the original query domain; `hmn` orders the two observation horizons.
+    (D : List (A × B) → A → Prop) {m n : ℕ} (hmn : m ≤ n) :
+    cutDomain (cutDomain D n) m = cutDomain D m := by
+  unfold cutDomain
+  congr 1
+  funext h x
+  exact propext ⟨fun hx => ⟨hx.1.1, hx.2⟩,
+    fun hx => ⟨⟨hx.1, hx.2.trans_le hmn⟩, hx.2⟩⟩
+
 /-- The domain determined by a set of input histories. -/
 def Domain.ofInputs (E : List A → Prop) (bound : ℕ) (hE : ∀ h, E h → h.length ≤ bound) :
     Domain A B where
