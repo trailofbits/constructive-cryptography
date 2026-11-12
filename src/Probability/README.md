@@ -24,6 +24,8 @@ coordinate outcomes. The alphabets may be infinite; only the index set and each 
 finite. [`ProbDist.pi`](Distribution.lean) and [`ProbDist.piDep`](DependentProduct.lean)
 construct normalized independent families directly, carrying the coordinate normalization
 proofs into the product.
+`ProbDist.map_pi_comp` restricts an independent table along an injective coordinate map,
+retaining the selected laws even when the coordinates have different distributions.
 For example, `ProbDist.pi (fun _ : Fin q => ν)` is the law of `q` independent samples from `ν`.
 A [**kernel**][bindK] $`f`$ is a conditional distribution [3, §3.6.1]; mixed over a law $`\mu`$
 it gives $`\sum_a \mu(a)\, f(a)`$:
@@ -149,21 +151,21 @@ injectivity of all replay and public sites; neither asserts independence on bad 
 [fTransform]: Distribution.lean#L727
 [prod]: Distribution.lean#L1101
 [pi]: Distribution.lean#L1747
-[piDep]: DependentProduct.lean#L53
+[piDep]: DependentProduct.lean#L54
 [uniform]: Distribution.lean#L656
 [ProbDist.uniform]: Distribution.lean#L689
-[bindK]: Kernel.lean#L49
-[bindK_bindK]: Kernel.lean#L95
-[bindK_single_comp]: Kernel.lean#L117
-[pi_eq_bindK_update]: Kernel.lean#L344
-[ProbDist.map]: Kernel.lean#L360
-[ProbDist.map_map]: Kernel.lean#L369
-[prodProbDist_map]: Kernel.lean#L491
-[ProbDist.bind]: Kernel.lean#L400
-[ProbDist.bind_const]: Kernel.lean#L414
-[ProbDist.jointLaw]: Kernel.lean#L432
-[ProbDist.jointLaw_fst]: Kernel.lean#L439
-[ProbDist.jointLaw_map]: Kernel.lean#L459
+[bindK]: Kernel.lean#L50
+[bindK_bindK]: Kernel.lean#L96
+[bindK_single_comp]: Kernel.lean#L118
+[pi_eq_bindK_update]: Kernel.lean#L345
+[ProbDist.map]: Kernel.lean#L361
+[ProbDist.map_map]: Kernel.lean#L370
+[prodProbDist_map]: Kernel.lean#L501
+[ProbDist.bind]: Kernel.lean#L410
+[ProbDist.bind_const]: Kernel.lean#L424
+[ProbDist.jointLaw]: Kernel.lean#L442
+[ProbDist.jointLaw_fst]: Kernel.lean#L449
+[ProbDist.jointLaw_map]: Kernel.lean#L469
 [normalizeOr]: Lift.lean#L189
 [statDist]: StatisticalDistance.lean#L99
 [statDist_triangle]: StatisticalDistance.lean#L249
