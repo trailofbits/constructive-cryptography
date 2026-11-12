@@ -43,6 +43,7 @@ public import RandomSystems.Cumulative.CumulativeOperations
 public import RandomSystems.Cumulative.ParallelAll
 public import RandomSystems.Cumulative.ParallelAllPresentation
 public import RandomSystems.Cumulative.Presentation
+public import RandomSystems.Cumulative.Presentation.Sequence
 public import RandomSystems.Cumulative.Subprobability
 public import RandomSystems.DDC.Absorb
 public import RandomSystems.DDC.CanonWiring

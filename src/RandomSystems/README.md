@@ -46,6 +46,10 @@ choices independently at each finite history node. `presentation_mass` gives its
 behavior. `cutSystem_realization_choiceAt` restricts a realization by restricting its table;
 `choiceLaw_cutMass` identifies short-node kernels with the original behavior's kernels.
 
+[Every normalized cumulative behavior](Cumulative/Presentation/Sequence.lean) over finite
+alphabets has such a coherent presentation: `IsRandomSystem.exists_pdsSequence` samples
+fixed conditional kernels at every horizon and recovers the original behavior.
+
 A [coherent finite presentation](Cumulative/PDSSequence.lean) is a `PDSSequence A B D`:
 each level is a normalized finite law on DDSs with domain `cutDomain D n`, and restricting the
 next level by `PDS.cutSample` gives exactly the current sample law. `PDSSequence.behavior`
