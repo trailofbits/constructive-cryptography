@@ -31,7 +31,6 @@ Definition 3.9 (printed p. 62).
 
 namespace SystemAlgebra
 
-open Classical
 
 variable {O M J : Type} {U V : O → Type} {Xm Ym : M → Type} {X Y : J → Type}
 
@@ -55,7 +54,8 @@ def allOutsideOutput :
   | ⟨⟨⟨some (), j⟩, h⟩, _⟩ => False.elim (h ⟨j, rfl⟩)
 
 /-- The system obtained by attaching all the converter's inside interfaces. -/
-noncomputable def apply (α : InsideOutsideSystem O J U V X Y) (R : InterfaceSystem J X Y) : InterfaceSystem O U V :=
+noncomputable def apply (α : InsideOutsideSystem O J U V X Y) (R : InterfaceSystem J X Y) :
+    InterfaceSystem O U V :=
   relabel (attachAlong id α R) allOutsideInput allOutsideOutput
 
 lemma apply_eq (α : InsideOutsideSystem O J U V X Y) (R : InterfaceSystem J X Y) :
@@ -271,7 +271,8 @@ lemma apply_forwardAll {R : InterfaceSystem J X Y} (hR : SilentAtEmpty R) :
   · rintro ⟨j, y⟩; exact Or.inr ⟨_, rfl, rfl⟩
 
 /-- Identity on a partial responding DDS, with its domain unchanged. -/
-lemma trim_apply_id {R : InterfaceSystem J X Y} (hR : IsDDS R) (hresp : RepliesAtQueriedInterface R) :
+lemma trim_apply_id {R : InterfaceSystem J X Y} (hR : IsDDS R)
+    (hresp : RepliesAtQueriedInterface R) :
     trim (apply (idConverter J X Y) R) = R := by
   apply IsDDS.eq_of_replies_iff
     (SilentAtEmpty.isDDS_trim (s := apply (idConverter J X Y) R)
@@ -282,7 +283,8 @@ lemma trim_apply_id {R : InterfaceSystem J X Y} (hR : IsDDS R) (hresp : RepliesA
   · intro hr
     rw [apply_eq] at hr
     have ht := hr.interconnect_mono (pair_mono (fun _ _ h => canon_mem h) (fun _ _ h => h))
-    change Replies (interconnect (pair (forwardAll J X Y) R) resourceRoute resourceInput) xs ys at ht
+    change Replies (interconnect (pair (forwardAll J X Y) R)
+      resourceRoute resourceInput) xs ys at ht
     rwa [← apply_eq, apply_forwardAll hR.1] at ht
   · exact replies_apply_id hresp
 
@@ -341,6 +343,19 @@ lemma pair_eq_on_prefixes_left {A B C D : Type} {s t : System A B} (R : System C
     simp only [restrict_none_snoc_left] at hp
     rw [pair_left, pair_left, he _ hp]
   · simp only [List.concat_eq_append, pair_right]
+
+/-- The right component is read only at prefixes of its own retained history. -/
+lemma pair_eq_on_prefixes_right {A B C D : Type} (α : System A B) {R S : System C D}
+    {H : List (Two A C)} (he : ∀ p, p <+: restrict (some ()) H → R p = S p) :
+    ∀ G, G <+: H → pair α R G = pair α S G := by
+  intro G hG
+  rcases List.eq_nil_or_concat G with rfl | ⟨G, ⟨_ | ⟨⟨⟩⟩, x⟩, rfl⟩
+  · rfl
+  · simp only [List.concat_eq_append, pair_left]
+  · simp only [List.concat_eq_append] at hG ⊢
+    have hp := restrict_prefix (some ()) hG
+    simp only [restrict_some_snoc_right] at hp
+    rw [pair_right, pair_right, he _ hp]
 
 /-- Domain preservation depends only on finite converter behavior. This is
 the closure principle used when lifting to fresh converters. -/

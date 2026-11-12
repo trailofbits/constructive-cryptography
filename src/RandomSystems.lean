@@ -33,6 +33,7 @@ public import RandomSystems.Converter.ResourceCanon
 public import RandomSystems.Converter.SerialAccounting
 public import RandomSystems.Converter.QueryBound
 public import RandomSystems.Converter.FiniteCuts
+public import RandomSystems.Converter.InsideCuts
 public import RandomSystems.Converter.QueryRouting
 public import RandomSystems.Cumulative.ConnectionObservation
 public import RandomSystems.Cumulative.Cumulative

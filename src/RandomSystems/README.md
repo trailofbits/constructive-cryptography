@@ -48,6 +48,8 @@ preservation is supplied separately by `IsDDCFrom.mapsDomain`.
 [Finite converter cuts](Converter/FiniteCuts.lean) intersect the original outside domain with
 the observation horizon and the inside domain with its total-query allowance.
 `IsDDCFrom.filterDom_of_insideQueriesBounded` supplies this exact certificate.
+[Inside cuts](Converter/InsideCuts.lean) preserve completed attachment replies through `q`
+when the resource is cut at `k q`; the canonical outside cuts are equal.
 
 [Independent parallel behaviors](Cumulative/Parallel.lean) multiply the masses of their
 projected transcripts. `parallelMass_isRandomSystem` retains matching query/reply tags and
