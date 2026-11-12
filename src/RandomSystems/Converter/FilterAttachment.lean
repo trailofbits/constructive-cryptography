@@ -2,25 +2,29 @@ module
 
 public import RandomSystems.Converter.PartialConverter
 public import RandomSystems.Converter.ResourceAttachment
+public import RandomSystems.PDS.FiniteCuts.Defs
 
 /-!
 # Filters
 
 A filter forwards the admitted queries and their replies; attaching it restricts the
-domain of a system. Source: CR18, §3.4.3 (printed p. 62).
+domain of a system [1, §3.4.3, p. 62].
 
 ## Main results
 
 * `Induces.outsideInputs_resource`: the converter receives exactly the outside queries
 * `trim_apply_filter`, `DDC.filter_attach`: attaching a filter is domain restriction
 * `apply_filterDom_outside`: restricting a converter's outside domain restricts its attachment
+* `apply_filterDom_outside_length`: an outside length filter gives the attachment's finite cut
+
+## References
+
+1. U. Maurer. *Cryptography Foundations*. Lecture notes, ETH Zurich, Spring 2018.
 -/
 
 @[expose] public section
 
 namespace SystemAlgebra
-
-open Classical
 
 variable {O J : Type} {U V : O → Type} {X Y : J → Type}
     {α : InsideOutsideSystem O J U V X Y} {R : InterfaceSystem J X Y}
@@ -136,6 +140,21 @@ lemma apply_filterDom_outside (F : List (Σ o, U o) → Prop)
     · rw [apply_eq, interconnect_eq_none Induces.nil] at hd
       exact hd
     · exact hu h
+
+/-- Filtering outside inputs at `q` gives exactly the attachment's `q`-query cut. -/
+lemma apply_filterDom_outside_length
+    -- `α` is the converter and `R` the inside resource; `q` counts outside inputs.
+    (α : InsideOutsideSystem O J U V X Y) (R : InterfaceSystem J X Y) (q : ℕ) :
+    apply (filterDom (fun xs => (outsideInputs xs).length ≤ q) α) R =
+      cutSystem (apply α R) q := by
+  -- The outside length bound already admits the empty input history.
+  have predicate : (fun xs => outsideInputs xs = [] ∨ (outsideInputs xs).length ≤ q) =
+      (fun xs : List (Σ l, twoFam U Y l) => (outsideInputs xs).length ≤ q) := by
+    funext xs
+    apply propext
+    exact ⟨fun hx => hx.elim (fun he => by rw [he]; exact Nat.zero_le q) id, Or.inr⟩
+  rw [cutSystem, ← predicate]
+  exact apply_filterDom_outside _ (fun hs _ hx => hs.length_le.trans hx)
 
 /-- Forwarding through a filter is exactly domain restriction, including
 undefined behavior. The proof reuses identity attachment on admitted prefixes. -/
