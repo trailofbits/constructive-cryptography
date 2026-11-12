@@ -41,6 +41,10 @@ bounded carrier: `IsRandomSystem.cut D p hp q` preserves masses through depth `q
 masses to zero. `RandomSystem.limitMass` reconstructs a behavior from adjacent coherent cuts;
 `limitMass_cut` and `cut_limitMass` give the two round trips.
 
+[Finite retained mixtures](Cumulative/Mixture.lean) average whole-transcript masses using
+`mixMass`. They normalize on a shared query domain, commute with finite cuts, and agree with
+`RandomSystem.mix` on bounded systems. Their index type need not be finite.
+
 The [conditional table presentation](Cumulative/Presentation.lean) samples the next-reply
 choices independently at each finite history node. `presentation_mass` gives its cumulative
 behavior. `cutSystem_realization_choiceAt` restricts a realization by restricting its table;
