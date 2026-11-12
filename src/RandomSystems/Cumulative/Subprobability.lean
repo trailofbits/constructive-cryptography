@@ -27,7 +27,7 @@ stopping. Exact normalization on a domain is a separate property.
 
 namespace SystemAlgebra
 
-open Classical Probability
+open Probability
 
 variable {A B : Type}
 
@@ -37,6 +37,7 @@ def IsSubprobabilistic (p : List (A × B) → ℝ) : Prop :=
     ∀ h x, ∃ μ : Distribution B,
       (∀ y, μ y = p (h ++ [(x, y)])) ∧ μ.weight ≤ p h
 
+open Classical in
 /-- Exact response probability on an advertised domain. -/
 def NormalizedOn (D : List (A × B) → A → Prop) (p : List (A × B) → ℝ) : Prop :=
   ∀ h x (μ : Distribution B), (∀ y, μ y = p (h ++ [(x, y)])) →
@@ -44,6 +45,7 @@ def NormalizedOn (D : List (A × B) → A → Prop) (p : List (A × B) → ℝ) 
 
 lemma IsRandomSystem.isSubprobabilistic {D : List (A × B) → A → Prop}
     {p : List (A × B) → ℝ} (hp : IsRandomSystem D p) : IsSubprobabilistic p := by
+  classical
   refine ⟨hp.1, hp.2.1, fun h x => ?_⟩
   obtain ⟨μ, hμ, hw⟩ := hp.2.2 h x
   refine ⟨μ, hμ, ?_⟩
@@ -112,14 +114,29 @@ lemma mass_eq_zero_of_prefix {h k : List (A × B)} (hk : h <+: k) (hz : p h = 0)
     rw [← List.append_assoc]
     exact le_antisymm (ih ▸ hp.mass_snoc_le _ z.1 z.2) (hp.2.1 _)
 
+open Classical in
 /-- A finite sampling choice is either a reply or no reply. `none` is used
 only in this probability space; the resulting system still has output type `B`. -/
 noncomputable def replyChoice (h : List (A × B)) (x : A) : Distribution (Option B) :=
   let μ : Distribution B := (hp.extensionLaw h x).mapRange (fun w => w / p h) (zero_div _)
   Distribution.fTransform some μ + Finsupp.single none (1 - μ.weight)
 
+/-- Equal incoming and next-reply masses give the same conditional reply-or-stop law. -/
+lemma replyChoice_congr
+    -- `hr` is another cumulative behavior; `h`, `x` fix the history and next query.
+    {r : List (A × B) → ℝ} (hr : IsSubprobabilistic r) (h : List (A × B)) (x : A)
+    (incoming : p h = r h) (next : ∀ y, p (h ++ [(x, y)]) = r (h ++ [(x, y)])) :
+    hp.replyChoice h x = hr.replyChoice h x := by
+  classical
+  have extension : hp.extensionLaw h x = hr.extensionLaw h x := by
+    apply Finsupp.ext
+    intro y
+    rw [hp.extensionLaw_apply, hr.extensionLaw_apply, next y]
+  simp only [replyChoice, extension, incoming]
+
 lemma replyChoice_some (h : List (A × B)) (x : A) (y : B) :
     hp.replyChoice h x (some y) = p (h ++ [(x, y)]) / p h := by
+  classical
   simp only [replyChoice, Finsupp.add_apply,
     Distribution.fTransform_injective_apply _ _ (Option.some_injective B),
     Finsupp.mapRange_apply, hp.extensionLaw_apply, Finsupp.single_apply,
@@ -127,6 +144,7 @@ lemma replyChoice_some (h : List (A × B)) (x : A) (y : B) :
 
 lemma replyChoice_isProbDist (h : List (A × B)) (x : A) :
     (hp.replyChoice h x).isProbDist := by
+  classical
   let μ : Distribution B := (hp.extensionLaw h x).mapRange (fun w => w / p h) (zero_div _)
   have hn : μ.NonNeg := fun y => div_nonneg (hp.extensionLaw_nonneg h x y) (hp.2.1 h)
   have hw : μ.weight ≤ 1 := by
