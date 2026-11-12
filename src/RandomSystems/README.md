@@ -60,6 +60,10 @@ projected transcripts. `parallelMass_isRandomSystem` retains matching query/repl
 each selected component's query domain. `cutMass_parallelMass` keeps an explicit total
 observation cut when both components are cut at that horizon.
 
+[Parallel input domains](Cumulative/ParallelInputs.lean) express the same independent product
+on `parallelInputs`. Admission agrees on nonzero histories; relabeling moves component tags
+into port labels, and component reply-port contracts propagate to the combined behavior.
+
 [Cumulative attachment](Cumulative/Attachment.lean) connects a deterministic converter to a
 normalized cumulative resource on input-only domains with matching reply ports.
 Its explicit monotone total-query
@@ -261,10 +265,10 @@ of the program's inside queries:
 [Equivalent]: PDS/PDS.lean#L61
 [HasDomain]: PDS/PDS.lean#L130
 [PDS]: PDS/PDS.lean#L186
-[IsRandomSystem]: Cumulative/Cumulative.lean#L43
-[RandomSystem]: Cumulative/Cumulative.lean#L57
-[PDS.behavior]: Cumulative/Cumulative.lean#L220
-[PDS.behavior_eq_iff]: Cumulative/Cumulative.lean#L229
+[IsRandomSystem]: Cumulative/Cumulative.lean#L53
+[RandomSystem]: Cumulative/Cumulative.lean#L131
+[PDS.behavior]: Cumulative/Cumulative.lean#L280
+[PDS.behavior_eq_iff]: Cumulative/Cumulative.lean#L289
 [RandomSystem.exists_presentation]: Cumulative/Presentation.lean#L86
 [RandomSystem.ofPDSClass_bijective]: Cumulative/Presentation.lean#L96
 [RandomSystem.sLaw]: Cumulative/CumulativeObservation.lean#L244

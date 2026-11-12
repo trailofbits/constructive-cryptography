@@ -7,6 +7,7 @@ public import Tests.CoherentPresentation
 public import Tests.CumulativeMixture
 public import Tests.CumulativeAttachment
 public import Tests.CumulativeParallel
+public import Tests.ParallelInputDomains
 public import Tests.ProductCoordinateMarginals
 public import Tests.ConditionalTableRestriction
 public import Tests.UnlimitedSource

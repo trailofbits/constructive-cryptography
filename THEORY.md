@@ -316,10 +316,10 @@ extension are in [Examples](src/Examples/README.md).
 [automatonSystem_eq_of_bisim]: src/RandomSystems/System/Automaton.lean#L93
 [Domain]: src/RandomSystems/PDS/PDS.lean#L76
 [PDS]: src/RandomSystems/PDS/PDS.lean#L186
-[IsRandomSystem]: src/RandomSystems/Cumulative/Cumulative.lean#L43
-[RandomSystem]: src/RandomSystems/Cumulative/Cumulative.lean#L57
-[RandomSystem.RepliesAtQueriedInterface]: src/RandomSystems/Cumulative/Cumulative.lean#L74
-[PDS.behavior]: src/RandomSystems/Cumulative/Cumulative.lean#L220
+[IsRandomSystem]: src/RandomSystems/Cumulative/Cumulative.lean#L53
+[RandomSystem]: src/RandomSystems/Cumulative/Cumulative.lean#L131
+[RandomSystem.RepliesAtQueriedInterface]: src/RandomSystems/Cumulative/Cumulative.lean#L148
+[PDS.behavior]: src/RandomSystems/Cumulative/Cumulative.lean#L280
 [RandomSystem.exists_presentation]: src/RandomSystems/Cumulative/Presentation.lean#L86
 [RandomSystem.ofPDSClass_bijective]: src/RandomSystems/Cumulative/Presentation.lean#L96
 [RandomSystem.parallel]: src/RandomSystems/Cumulative/CumulativeOperations.lean#L129
@@ -354,9 +354,9 @@ extension are in [Examples](src/Examples/README.md).
 [TypedConverter.comp]: src/RandomSystems/Typed/Interface.lean#L182
 [TypedConverter.id]: src/RandomSystems/Typed/Interface.lean#L187
 [TypedConverter.attach]: src/RandomSystems/Typed/Interface.lean#L240
-[Interface.tensor]: src/RandomSystems/Typed/Parallel.lean#L89
-[TypedSystem.parallel]: src/RandomSystems/Typed/Parallel.lean#L157
-[TypedConverter.parallel]: src/RandomSystems/Typed/Parallel.lean#L214
+[Interface.tensor]: src/RandomSystems/Typed/Parallel.lean#L84
+[TypedSystem.parallel]: src/RandomSystems/Typed/Parallel.lean#L135
+[TypedConverter.parallel]: src/RandomSystems/Typed/Parallel.lean#L165
 [TypedConverter.parallel_attach]: src/RandomSystems/Typed/ParallelAttachment.lean#L27
 [TypedConverter.rename]: src/RandomSystems/Typed/Relabel.lean#L52
 [TypedSystem.source]: src/RandomSystems/Typed/Source.lean#L55

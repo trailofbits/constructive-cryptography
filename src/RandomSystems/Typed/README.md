@@ -240,7 +240,7 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [Interface.portBudget]: Interface.lean#L94
 [restrict]: ../System/Basic.lean#L798
 [TypedSystem]: Interface.lean#L136
-[RandomSystem.RepliesAtQueriedInterface]: ../Cumulative/Cumulative.lean#L74
+[RandomSystem.RepliesAtQueriedInterface]: ../Cumulative/Cumulative.lean#L148
 [TypedConverter]: Interface.lean#L175
 [TypedConverter.ofDDC]: Interface.lean#L191
 [TypedConverter.comp]: Interface.lean#L182
