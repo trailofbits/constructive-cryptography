@@ -30,6 +30,7 @@ and the carriers may live in different universes.
 * `piDep_eq_pi`: with one carrier `A k = A`, `piDep μ` is the homogeneous product `pi μ`
 * `fTransform_piDep`: coordinatewise pushforward commutes with the product,
   `(a ↦ (k ↦ f k (a k)))_* (piDep μ) = piDep (k ↦ (f k)_* (μ k))`
+* `fTransform_pi_comp`: selecting distinct coordinates preserves their independent product law
 * `piDep_single`: independent point laws give the point law on their tuple
 * `piDep_fin_zero`, `piDep_fin_succ`: ordered tuples split into their first coordinate and tail
 * `fTransform_piDep_piCongrLeft`: an explicit index equivalence transports the product law
@@ -141,6 +142,45 @@ theorem piDep_mass_forall {A : K → Type*} (μ : ∀ k, Distribution (A k)) (Q 
   -- Each factor is the indicator sum defining `(μ k).mass (Q k)`.
   refine Finset.prod_congr rfl fun k _ => ?_
   rw [mass_eq_sum_of_support_subset (μ k) (s := (μ k).support) subset_rfl, Finset.sum_filter]
+
+/-- Selecting distinct coordinates from independent weight-one laws preserves their product law. -/
+lemma fTransform_pi_comp
+    -- `I` indexes the original table and `J` its selected coordinates; `Ω` carries outcomes.
+    {I J Ω : Type*} [Fintype I] [DecidableEq I] [Fintype J] [DecidableEq J]
+    -- `μ i` is the finitely supported signed law at coordinate `i`, with total weight one.
+    (μ : I → Distribution Ω) (hμ : ∀ i, (μ i).weight = 1)
+    -- `e` selects each coordinate at most once, so distinct draws remain independent.
+    (e : J → I) (he : Function.Injective e) :
+    fTransform (fun f j => f (e j)) (pi μ) = pi (fun j => μ (e j)) := by
+  classical
+  ext f
+  let Q : I → Ω → Prop := fun i a => ∀ j, e j = i → a = f j
+  -- Selected coordinates fix one value; all other coordinates impose no condition.
+  have selected (j : J) : (μ (e j)).mass (Q (e j)) = μ (e j) (f j) := by
+    calc
+      _ = (μ (e j)).mass (fun a => a = f j) := mass_congr _ fun a =>
+        ⟨fun ha => ha j rfl, fun ha j' hj => (he hj).symm ▸ ha⟩
+      _ = _ := mass_singleton _ _
+  have discarded (i : I) (hi : i ∉ Finset.univ.image e) : (μ i).mass (Q i) = 1 := by
+    calc
+      _ = (μ i).mass (fun _ => True) := mass_congr _ fun _ =>
+        iff_true_intro (fun j hj => (hi (Finset.mem_image.mpr ⟨j, Finset.mem_univ j, hj⟩)).elim)
+      _ = 1 := (mass_true _).trans (hμ i)
+  rw [fTransform_apply_eq_mass]
+  calc
+    _ = (piDep μ).mass (fun a => ∀ i, Q i (a i)) := by
+      rw [piDep_eq_pi]
+      apply mass_congr
+      intro a
+      exact ⟨fun ha i j hj => hj ▸ congrFun ha j, fun ha => funext fun j => ha (e j) j rfl⟩
+    _ = ∏ i, (μ i).mass (Q i) := piDep_mass_forall μ Q
+    -- Removing unit factors leaves exactly the injective image of the selected indices.
+    _ = ∏ i ∈ Finset.univ.image e, (μ i).mass (Q i) :=
+      (Finset.prod_subset (Finset.subset_univ _) (fun i _ hi => discarded i hi)).symm
+    _ = ∏ j, μ (e j) (f j) := by
+      rw [Finset.prod_image he.injOn]
+      exact Finset.prod_congr rfl fun j _ => selected j
+    _ = _ := (pi_apply _ _).symm
 
 open Classical in
 /-- A coordinatewise pushforward commutes with the finite product:

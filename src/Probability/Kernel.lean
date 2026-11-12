@@ -19,6 +19,7 @@ This represents a "conditional probability distribution" `p_{Y|X}` [1, §3.6.1, 
 
 `ProbDist.map` and `ProbDist.bind` retain normalization. `ProbDist.map_map` composes
 initializations; `ProbDist.map_pi_apply` selects one coordinate of an independent table.
+`ProbDist.map_pi_comp` selects any injective family of coordinates, retaining their separate laws.
 `prodProbDist_map` combines independent initialized draws:
 
 ```text
@@ -372,6 +373,15 @@ lemma map_map
     map f (map g P) = map (f ∘ g) P :=
   -- Both sides have the same underlying distribution: `fTransform f ∘ fTransform g`.
   Subtype.ext (fTransform_fTransform _ _ _)
+
+/-- Selecting distinct coordinates of an independent table gives their independent product law. -/
+lemma map_pi_comp
+    -- `I` and `J` index the original and selected tables; `Ω` is the common outcome type.
+    {I J Ω : Type*} [Fintype I] [DecidableEq I] [Fintype J] [DecidableEq J]
+    -- `μ i` is the normalized law of coordinate `i`; injective `e` selects the retained draws.
+    (μ : I → ProbDist Ω) (e : J → I) (he : Function.Injective e) :
+    (ProbDist.pi μ).map (fun f j => f (e j)) = ProbDist.pi (fun j => μ (e j)) :=
+  Subtype.ext (fTransform_pi_comp (fun i => (μ i).1) (fun i => (μ i).2.2) e he)
 
 /-- Selecting coordinate `i` has law `μ i`: `(ProbDist.pi μ).map (fun f => f i) = μ i`. -/
 lemma map_pi_apply

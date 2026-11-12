@@ -35,6 +35,7 @@ are in `SystemAlgebra`. The probability operations below are in `Probability.Dis
 | Retained key as an automaton | `TypedSystem.ofProbAutomaton_eq_keyed` in [KeyedAutomaton] |
 | Program attachment | `TypedConverter.ofProgram_smul_ofProbAutomaton` in [ProgramAttachment] |
 | Independent joint law | `prodProbDist` in [Distribution] |
+| Selected independent coordinates | `ProbDist.map_pi_comp` in [Kernel] |
 | Independent finite family of draws | `ProbDist.pi` in [Distribution] |
 | Independent draws with different outcome types | `ProbDist.piDep` in [DependentProduct] |
 | Transformed or dependent law | `ProbDist.map`, `ProbDist.bind`, `ProbDist.jointLaw` in [Kernel] |
