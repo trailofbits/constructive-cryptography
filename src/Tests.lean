@@ -1,5 +1,7 @@
 module
 
+public import Tests.CumulativeFiniteCuts
+
 public import Tests.ProbabilityObservation
 public import Tests.TranscriptCompletion
 public import Tests.Distinguishers

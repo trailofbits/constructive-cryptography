@@ -14,6 +14,7 @@ are in `SystemAlgebra`. The probability operations below are in `Probability.Dis
 | Random permutation | `URP` in [Ideal]; `URP.lazy_eq` in [LazyPermutation] |
 | Forward and inverse queries to one permutation | `StrongURP` in [Ideal] |
 | Independent permutation per tweak | `TweakableURP`, `TweakableStrongURP` in [Ideal] |
+| Finite observation cuts | `IsRandomSystem.cut`, `RandomSystem.limitMass` in [FiniteCuts] |
 | Fresh samples | `TypedSystem.source` in [Source]; `MemorylessSource` in [Ideal] |
 | Fresh query-dependent replies | `TypedSystem.ofMemoryless` in [Memoryless] |
 | Ordered tuple collection | `TypedConverter.collect` in [Collector] |
@@ -48,6 +49,7 @@ are in `SystemAlgebra`. The probability operations below are in `Probability.Dis
 | One-query input and reply translation | `TypedConverter.routing` in [QueryRouting] |
 | Shared access by tagged callers | `routing` in [QueryRouting], `smul_sample` in [Functional] |
 
+[FiniteCuts]: src/RandomSystems/Cumulative/FiniteCuts.lean
 [LazyPermutation]: src/Commons/Definitions/LazyPermutation.lean
 [Signature]: src/Commons/Definitions/Signature/Keyed.lean
 [EncryptThenMAC]: src/Commons/Constructions/EncryptThenMAC.lean
