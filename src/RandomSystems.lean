@@ -31,6 +31,7 @@ public import RandomSystems.Converter.PDCBehavior
 public import RandomSystems.Converter.ResourceAttachment
 public import RandomSystems.Converter.ResourceCanon
 public import RandomSystems.Converter.SerialAccounting
+public import RandomSystems.Converter.QueryBound
 public import RandomSystems.Converter.QueryRouting
 public import RandomSystems.Cumulative.ConnectionObservation
 public import RandomSystems.Cumulative.Cumulative
