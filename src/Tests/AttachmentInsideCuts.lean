@@ -3,7 +3,7 @@ module
 public import RandomSystems.Converter.InsideCuts
 public import Tests.DirectCalls
 
-/-! A sufficient inside cut preserves forwarding and two-query calls, including horizon zero. -/
+/-! Inside and outside cuts preserve forwarding and two-query calls through finite horizons. -/
 
 @[expose] public section
 
@@ -54,6 +54,30 @@ lemma toggle_cut (q : ℕ) :
     monotone_const (echo_ports 2) (DDS.ofFunction_dom _ _ _) q
 
 example := toggle_cut 0
+
+/-- Forwarding still returns the first echo reply through a one-query outside filter. -/
+lemma outside_one :
+    Replies (apply (filterDom (fun xs => (outsideInputs xs).length ≤ 1)
+      (idConverter Unit (fun _ => Bool) (fun _ => Bool))) (echo 3).1)
+      [⟨(), false⟩] [⟨(), false⟩] := by
+  rw [apply_filterDom_outside_length,
+    replies_cutSystem_iff _ _ (show ([⟨(), false⟩] : List (Σ _ : Unit, Bool)).length ≤ 1
+      from Nat.le_refl 1)]
+  apply replies_apply_id (echo_ports 3)
+  rw [echo, DDS.replies_ofFunction_iff]
+  exact ⟨Or.inr ⟨List.cons_ne_nil _ _, (Nat.le_succ 1).trans (Nat.le_succ 2)⟩, rfl⟩
+
+/-- The existing toggle call has no first reply through a zero-query outside filter. -/
+lemma outside_zero :
+    apply (filterDom (fun xs => (outsideInputs xs).length ≤ 0)
+      (callConverter (V := fun _ => Bool) (Y := fun _ => Bool) toggleCall
+        (boolInterface 1).domain)) (echo 2).1 [⟨(), false⟩] = Part.none := by
+  rw [apply_filterDom_outside_length]
+  exact cutSystem_apply_of_bound_lt _ _ _ (Nat.zero_lt_succ 0)
+
+#print axioms SystemAlgebra.apply_filterDom_outside_length
+#print axioms outside_one
+#print axioms outside_zero
 
 #print axioms SystemAlgebra.pair_eq_on_prefixes_right
 #print axioms SystemAlgebra.IsDDCFrom.replies_apply_cutSystem_iff

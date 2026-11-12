@@ -52,6 +52,8 @@ the observation horizon and the inside domain with its total-query allowance.
 `IsDDCFrom.filterDom_of_insideQueriesBounded` supplies this exact certificate.
 [Inside cuts](Converter/InsideCuts.lean) preserve completed attachment replies through `q`
 when the resource is cut at `k q`; the canonical outside cuts are equal.
+`apply_filterDom_outside_length` in [FilterAttachment](Converter/FilterAttachment.lean)
+commutes an outside length filter through attachment, yielding its `cutSystem` directly.
 
 [Independent parallel behaviors](Cumulative/Parallel.lean) multiply the masses of their
 projected transcripts. `parallelMass_isRandomSystem` retains matching query/reply tags and
