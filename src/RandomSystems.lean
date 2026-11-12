@@ -97,6 +97,7 @@ public import RandomSystems.Typed.Interface
 public import RandomSystems.Typed.InterfaceCoherence
 public import RandomSystems.Typed.Keyed
 public import RandomSystems.Typed.KeyedAutomaton
+public import RandomSystems.Typed.FreshComponent
 public import RandomSystems.Typed.Memoryless
 public import RandomSystems.Typed.Parallel
 public import RandomSystems.Typed.ParallelAttachment

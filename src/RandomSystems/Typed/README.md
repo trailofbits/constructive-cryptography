@@ -12,6 +12,10 @@ Every object here is a systems-level object; the instances of the classes in
 [ConstructiveCryptography](../../ConstructiveCryptography/README.md) use them as their fields.
 Citations refer to the numbered [references](../../../THEORY.md#references) of THEORY.md.
 
+`TypedSystem.AnswersFresh` bounds the selected next-reply mass after every admitted query.
+[Its laws](FreshComponent.lean) establish the contract for memoryless sources and preserve it
+under independent left parallel composition and explicit alphabet renaming.
+
 ## Interfaces, typed systems and typed converters
 
 An [**interface**][Interface] $`A = (I, X, Y, D)`$ has finitely many labels, finite alphabets

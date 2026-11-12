@@ -14,6 +14,7 @@ are in `SystemAlgebra`. The probability operations below are in `Probability.Dis
 | Random permutation | `URP` in [Ideal]; `URP.lazy_eq` in [LazyPermutation] |
 | Forward and inverse queries to one permutation | `StrongURP` in [Ideal] |
 | Independent permutation per tweak | `TweakableURP`, `TweakableStrongURP` in [Ideal] |
+| Selected fresh replies | `TypedSystem.AnswersFresh` in [FreshComponent] |
 | Fresh samples | `TypedSystem.source` in [Source]; `MemorylessSource` in [Ideal] |
 | Fresh query-dependent replies | `TypedSystem.ofMemoryless` in [Memoryless] |
 | Ordered tuple collection | `TypedConverter.collect` in [Collector] |
@@ -225,3 +226,5 @@ checks in [AGENTS.md](AGENTS.md). These checks establish the Lean claims; reuse 
 still require reading the definitions.
 
 [FiniteParallel]: src/ConstructiveCryptography/CryptographicAlgebra/FiniteParallel.lean
+
+[FreshComponent]: src/RandomSystems/Typed/FreshComponent.lean
