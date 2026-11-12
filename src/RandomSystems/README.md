@@ -41,6 +41,11 @@ bounded carrier: `IsRandomSystem.cut D p hp q` preserves masses through depth `q
 masses to zero. `RandomSystem.limitMass` reconstructs a behavior from adjacent coherent cuts;
 `limitMass_cut` and `cut_limitMass` give the two round trips.
 
+The [conditional table presentation](Cumulative/Presentation.lean) samples the next-reply
+choices independently at each finite history node. `presentation_mass` gives its cumulative
+behavior. `cutSystem_realization_choiceAt` restricts a realization by restricting its table;
+`choiceLaw_cutMass` identifies short-node kernels with the original behavior's kernels.
+
 A [coherent finite presentation](Cumulative/PDSSequence.lean) is a `PDSSequence A B D`:
 each level is a normalized finite law on DDSs with domain `cutDomain D n`, and restricting the
 next level by `PDS.cutSample` gives exactly the current sample law. `PDSSequence.behavior`
@@ -224,8 +229,8 @@ of the program's inside queries:
 [RandomSystem]: Cumulative/Cumulative.lean#L57
 [PDS.behavior]: Cumulative/Cumulative.lean#L220
 [PDS.behavior_eq_iff]: Cumulative/Cumulative.lean#L229
-[RandomSystem.exists_presentation]: Cumulative/Presentation.lean#L306
-[RandomSystem.ofPDSClass_bijective]: Cumulative/Presentation.lean#L316
+[RandomSystem.exists_presentation]: Cumulative/Presentation.lean#L86
+[RandomSystem.ofPDSClass_bijective]: Cumulative/Presentation.lean#L96
 [RandomSystem.sLaw]: Cumulative/CumulativeObservation.lean#L244
 [RandomSystem.Compatible]: Cumulative/CumulativeObservation.lean#L263
 [RandomSystem.eq_iff_sLaw]: Cumulative/CumulativeObservation.lean#L648

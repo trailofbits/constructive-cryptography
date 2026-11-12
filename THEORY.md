@@ -320,8 +320,8 @@ extension are in [Examples](src/Examples/README.md).
 [RandomSystem]: src/RandomSystems/Cumulative/Cumulative.lean#L57
 [RandomSystem.RepliesAtQueriedInterface]: src/RandomSystems/Cumulative/Cumulative.lean#L74
 [PDS.behavior]: src/RandomSystems/Cumulative/Cumulative.lean#L220
-[RandomSystem.exists_presentation]: src/RandomSystems/Cumulative/Presentation.lean#L306
-[RandomSystem.ofPDSClass_bijective]: src/RandomSystems/Cumulative/Presentation.lean#L316
+[RandomSystem.exists_presentation]: src/RandomSystems/Cumulative/Presentation.lean#L86
+[RandomSystem.ofPDSClass_bijective]: src/RandomSystems/Cumulative/Presentation.lean#L96
 [RandomSystem.parallel]: src/RandomSystems/Cumulative/CumulativeOperations.lean#L136
 [IsDDC]: src/RandomSystems/DDC/DDC.lean#L131
 [PDCBehavior]: src/RandomSystems/Converter/PDCBehavior.lean#L71
