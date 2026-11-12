@@ -27,6 +27,12 @@ next output, and a DDS [is determined by its completed replies][IsDDS.eq_of_repl
 [bisimilar][IsBisim] automata [have the same system][automatonSystem_eq_of_bisim]. An
 [environment][DDE] (DDE) chooses the next query from the replies so far.
 
+[Deterministic observation cuts](PDS/FiniteCuts.lean) use the existing domain filter:
+`cutSystem s q` retains every partial reply on histories of length at most `q`.
+The cut preserves `IsDDS` and has domain `cutDomain D q` when `s` has domain `D`.
+Successive cuts combine by the minimum horizon; an explicit `Finite q s` certificate gives
+`cutSystem s q = s`. `HasDomain.finite` supplies that certificate for a DDS on a bounded domain.
+
 ## Probabilistic systems
 
 The normalization predicate `IsRandomSystem D p` also accepts a query domain `D` with no
@@ -203,10 +209,10 @@ of the program's inside queries:
 [IsBisim]: System/Automaton.lean#L74
 [automatonSystem_eq_of_bisim]: System/Automaton.lean#L93
 [DDE]: System/DDE.lean#L30
-[Domain]: PDS/PDS.lean#L69
-[Equivalent]: PDS/PDS.lean#L54
-[HasDomain]: PDS/PDS.lean#L95
-[PDS]: PDS/PDS.lean#L137
+[Domain]: PDS/PDS.lean#L75
+[Equivalent]: PDS/PDS.lean#L60
+[HasDomain]: PDS/PDS.lean#L107
+[PDS]: PDS/PDS.lean#L163
 [IsRandomSystem]: Cumulative/Cumulative.lean#L43
 [RandomSystem]: Cumulative/Cumulative.lean#L57
 [PDS.behavior]: Cumulative/Cumulative.lean#L220

@@ -23,12 +23,6 @@ namespace SystemAlgebra
 -- `A` carries queries, `B` replies; `D h x` admits query `x` after transcript `h`.
 variable {A B : Type} (D : List (A × B) → A → Prop)
 
-/-- The observation cut admits `x` exactly when `D h x` and fewer than `q` replies occurred. -/
-def cutDomain (q : ℕ) : Domain A B where
-  admits h x := D h x ∧ h.length < q
-  bound := q
-  length_lt _ _ hx := hx.2
-
 /-- Retain the cumulative masses through depth `q` and set later masses to zero. -/
 def cutMass
     -- `p h` is the cumulative mass of transcript `h`; `q` is the observation horizon.

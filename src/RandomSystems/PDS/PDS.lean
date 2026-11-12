@@ -9,7 +9,7 @@ public import Probability.Distribution
 A domain gives the admitted next queries after each transcript, with a bound on the
 transcript length. A probabilistic discrete system (PDS) is a finite distribution over
 deterministic systems with one common domain; its cumulative behavior is the mass of
-the samples replying `ys` to `xs`. Source: Lanzenberger–Maurer, Definition 8 (printed p. 13).
+the samples replying `ys` to `xs`. Source: [1, Definition 8, p. 13].
 
 ## Main definitions
 
@@ -24,14 +24,19 @@ the samples replying `ys` to `xs`. Source: Lanzenberger–Maurer, Definition 8 (
 
 * `nextReply_apply`, `nextReply_weight_of_admitted`: the next-reply masses of a mixture
 * `hasDomain_ofInputs_iff`: on an input domain `E`, having domain `E` is `dom(s) = E`
-* `HasDomain.length_le`: transcripts stay within the domain's bound
+* `HasDomain.length_le`, `HasDomain.finite`: complete transcripts and DDS replies respect the bound
+
+## References
+
+1. D. Lanzenberger and U. Maurer. *Coupling of Random Systems*. In Theory of Cryptography
+   (TCC 2020), Springer, 2020. Cryptology ePrint Archive, Paper 2020/1187.
 -/
 
 @[expose] public section
 
 namespace SystemAlgebra
 
-open Classical Probability
+open Probability
 
 variable {A B : Type}
 
@@ -43,6 +48,7 @@ noncomputable def behaviorMass {p : System A B → Prop}
 lemma behaviorMass_ne_zero {p : System A B → Prop}
     {P : Distribution {s : System A B // p s}} {xs : List A} {ys : List B}
     (hm : behaviorMass P xs ys ≠ 0) : ∃ s ∈ P.support, Replies s.1 xs ys := by
+  classical
   change (∑ s ∈ P.support, if Replies s.1 xs ys then P s else 0) ≠ 0 at hm
   obtain ⟨s, hs, ht⟩ := Finset.exists_ne_zero_of_sum_ne_zero hm
   refine ⟨s, hs, ?_⟩
@@ -50,7 +56,7 @@ lemma behaviorMass_ne_zero {p : System A B → Prop}
   simp [hr] at ht
 
 /-- Equality of cumulative behavior. For partial-system equivalence, both presentations
-are compared in the same specified domain, as in Lanzenberger–Maurer Lemma 5. -/
+are compared in the same specified domain, as in [1, Lemma 5]. -/
 def Equivalent {p : System A B → Prop}
     (P Q : Distribution {s : System A B // p s}) : Prop :=
   ∀ xs ys, behaviorMass P xs ys = behaviorMass Q xs ys
@@ -75,6 +81,12 @@ structure Domain (A B : Type) where
 
 instance : CoeFun (Domain A B) (fun _ => List (A × B) → A → Prop) := ⟨Domain.admits⟩
 
+/-- The observation cut admits `x` exactly when `D h x` and fewer than `q` replies occurred. -/
+def cutDomain (D : List (A × B) → A → Prop) (q : ℕ) : Domain A B where
+  admits h x := D h x ∧ h.length < q
+  bound := q
+  length_lt _ _ hx := hx.2
+
 /-- The domain determined by a set of input histories. -/
 def Domain.ofInputs (E : List A → Prop) (bound : ℕ) (hE : ∀ h, E h → h.length ≤ bound) :
     Domain A B where
@@ -90,8 +102,8 @@ def Domain.ofInputs (E : List A → Prop) (bound : ℕ) (hE : ∀ h, E h → h.l
     (Domain.ofInputs E bound hE : Domain A B) h x = E (h.map Prod.fst ++ [x]) := rfl
 
 /-- `s` has domain `D`: it answers exactly the queries `D` admits along its own
-transcripts. For a domain of input histories this is `dom(s) = D` (Lanzenberger–Maurer,
-Definitions 5 and 8, printed pp. 11, 13). -/
+transcripts. For a domain of input histories this is `dom(s) = D`
+[1, Definitions 5 and 8, pp. 11, 13]. -/
 def HasDomain (D : Domain A B) (s : System A B) : Prop :=
   ∀ h x, Replies s (h.map Prod.fst) (h.map Prod.snd) →
     ((s (h.map Prod.fst ++ [x])).Dom ↔ D h x)
@@ -102,8 +114,8 @@ lemma HasDomain.ofInputs {E : List A → Prop} {bound : ℕ} {hE : ∀ h, E h �
     HasDomain (Domain.ofInputs E bound hE) s :=
   fun _ _ _ => hs _
 
-/-- **On an input domain, `HasDomain` is `dom(s) = E`** (Lanzenberger–Maurer, Definitions 5
-and 8, printed pp. 11, 13), for a DDS and a prefix-closed `E` without the empty history. -/
+/-- **On an input domain, `HasDomain` is `dom(s) = E`** [1, Definitions 5
+and 8, pp. 11, 13], for a DDS and a prefix-closed `E` without the empty history. -/
 lemma hasDomain_ofInputs_iff {E : List A → Prop} {bound : ℕ}
     {hE : ∀ h, E h → h.length ≤ bound} (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
     {s : System A B} (hs : IsDDS s) :
@@ -130,8 +142,22 @@ lemma HasDomain.length_le {D : Domain A B} {s : System A B} (hs : HasDomain D s)
     simp only [List.length_append, List.length_singleton]
     omega
 
+/-- A DDS with declared domain `D` has no defined reply beyond the domain's bound. -/
+lemma HasDomain.finite
+    -- `hd` fixes the domain of `s`; `hs` ensures every defined history has complete replies.
+    {D : Domain A B} {s : System A B} (hd : HasDomain D s) (hs : IsDDS s) :
+    Finite D.bound s := by
+  intro xs hx
+  have hne : xs ≠ [] := fun he => hs.1 (he ▸ hx)
+  obtain ⟨ys, replies⟩ := ((hs.reach_iff hne).mpr hx).exists_replies
+  -- The completed reply list turns the input history into a domain-bounded transcript.
+  have first : (xs.zip ys).map Prod.fst = xs := List.map_fst_zip (by rw [replies.length])
+  have second : (xs.zip ys).map Prod.snd = ys := List.map_snd_zip (by rw [replies.length])
+  have bound := hd.length_le (h := xs.zip ys) (by rw [first, second]; exact replies)
+  simpa only [List.length_zip, replies.length, Nat.min_self] using bound
+
 /-- A probabilistic discrete system: a finite distribution over deterministic systems
-with one common domain. Lanzenberger–Maurer, Definition 8 (printed p. 13):
+with one common domain. [1, Definition 8, p. 13]:
 "a distribution over (X, Y)-DDS such that all DDS in the support of S have the same
 domain", with "We always assume that S is finite". -/
 abbrev PDS (A B : Type) [Fintype A] [Fintype B] (D : Domain A B) :=
@@ -141,6 +167,7 @@ namespace PDS
 
 variable {p : System A B → Prop} (P : Distribution {s : System A B // p s})
 
+open Classical in
 /-- The mass of the next defined reply, jointly with the preceding replies. -/
 noncomputable def nextReply (xs : List A) (ys : List B) (x : A) : Distribution B :=
   ∑ s ∈ P.support,
@@ -152,6 +179,7 @@ noncomputable def nextReply (xs : List A) (ys : List B) (x : A) : Distribution B
 /-- Next-reply masses are precisely the extended cumulative masses. -/
 lemma nextReply_apply (xs : List A) (ys : List B) (x : A) (y : B) :
     nextReply P xs ys x y = behaviorMass P (xs ++ [x]) (ys ++ [y]) := by
+  classical
   simp only [nextReply, Finsupp.finsetSum_apply, behaviorMass, Distribution.mass, Finsupp.sum]
   apply Finset.sum_congr rfl
   intro s hs
@@ -174,6 +202,7 @@ lemma nextReply_nonneg (hP : P.NonNeg) (xs : List A) (ys : List B) (x : A) :
 lemma nextReply_weight (xs : List A) (ys : List B) (x : A) :
     (nextReply P xs ys x).weight =
       P.mass (fun s => Replies s.1 xs ys ∧ (s.1 (xs ++ [x])).Dom) := by
+  classical
   rw [nextReply, Distribution.weight_finset_sum]
   unfold Distribution.mass Finsupp.sum
   apply Finset.sum_congr rfl
@@ -190,6 +219,7 @@ lemma nextReply_weight_le (hP : P.NonNeg) (xs : List A) (ys : List B) (x : A) :
   rw [nextReply_weight]
   exact Distribution.mass_mono hP (fun _ h => h.1)
 
+open Classical in
 /-- On a specified preceding transcript, every sample that produced it admits the
 same next inputs. This also applies to converters, whose next port depends on the
 preceding output rather than only on the input sequence. -/

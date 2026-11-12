@@ -16,6 +16,7 @@ are in `SystemAlgebra`. The probability operations below are in `Probability.Dis
 | Independent permutation per tweak | `TweakableURP`, `TweakableStrongURP` in [Ideal] |
 | Unlimited fresh replies | `sourceMass` in [UnlimitedSource] |
 | Bounded source adapter | `TypedSystem.source_eq_cutMass` in [SourceCuts] |
+| Deterministic observation cuts | `cutSystem` in [DeterministicCuts] |
 | Finite observation cuts | `IsRandomSystem.cut`, `RandomSystem.limitMass` in [FiniteCuts] |
 | Fresh samples | `TypedSystem.source` in [Source]; `MemorylessSource` in [Ideal] |
 | Fresh query-dependent replies | `TypedSystem.ofMemoryless` in [Memoryless] |
@@ -53,6 +54,7 @@ are in `SystemAlgebra`. The probability operations below are in `Probability.Dis
 
 [UnlimitedSource]: src/RandomSystems/System/Source.lean
 [SourceCuts]: src/RandomSystems/Typed/SourceCuts.lean
+[DeterministicCuts]: src/RandomSystems/PDS/FiniteCuts.lean
 [FiniteCuts]: src/RandomSystems/Cumulative/FiniteCuts.lean
 [LazyPermutation]: src/Commons/Definitions/LazyPermutation.lean
 [Signature]: src/Commons/Definitions/Signature/Keyed.lean
