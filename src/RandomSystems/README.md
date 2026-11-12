@@ -303,10 +303,10 @@ of the program's inside queries:
 [PDCBehavior.comp_assoc]: Converter/PDCBehavior.lean#L347
 [PDCBehavior.id_comp]: Converter/PDCBehavior.lean#L395
 [PDCBehavior.comp_id]: Converter/PDCBehavior.lean#L385
-[PDCBehavior.attach]: Converter/ConverterAttachment.lean#L161
-[PDCBehavior.attach_presents]: Converter/ConverterAttachment.lean#L212
-[PDCBehavior.attach_id]: Converter/ConverterAttachment.lean#L268
-[PDCBehavior.attach_comp]: Converter/ConverterAttachment.lean#L281
+[PDCBehavior.attach]: Converter/ConverterAttachment.lean#L169
+[PDCBehavior.attach_presents]: Converter/ConverterAttachment.lean#L220
+[PDCBehavior.attach_id]: Converter/ConverterAttachment.lean#L298
+[PDCBehavior.attach_comp]: Converter/ConverterAttachment.lean#L310
 [PDCBehavior.tensor]: Converter/ConverterTensor.lean#L653
 [PDCBehavior.comp_tensor]: Converter/ConverterTensor.lean#L749
 [Program]: Converter/Program.lean#L49

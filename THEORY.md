@@ -328,9 +328,9 @@ extension are in [Examples](src/Examples/README.md).
 [PDCBehavior.ofPDC]: src/RandomSystems/Converter/PDCBehavior.lean#L175
 [PDCBehavior.comp]: src/RandomSystems/Converter/PDCBehavior.lean#L281
 [PDCBehavior.id]: src/RandomSystems/Converter/PDCBehavior.lean#L379
-[PDCBehavior.attach]: src/RandomSystems/Converter/ConverterAttachment.lean#L161
-[PDCBehavior.attach_id]: src/RandomSystems/Converter/ConverterAttachment.lean#L268
-[PDCBehavior.attach_comp]: src/RandomSystems/Converter/ConverterAttachment.lean#L281
+[PDCBehavior.attach]: src/RandomSystems/Converter/ConverterAttachment.lean#L169
+[PDCBehavior.attach_id]: src/RandomSystems/Converter/ConverterAttachment.lean#L298
+[PDCBehavior.attach_comp]: src/RandomSystems/Converter/ConverterAttachment.lean#L310
 [PDCBehavior.tensor]: src/RandomSystems/Converter/ConverterTensor.lean#L653
 [Program]: src/RandomSystems/Converter/Program.lean#L49
 [RandomSystem.transcriptDistance]: src/RandomSystems/Distance/Decision.lean#L249

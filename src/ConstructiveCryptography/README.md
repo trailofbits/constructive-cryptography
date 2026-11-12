@@ -579,9 +579,9 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [Interface.triangle]: Instances/Monoidal.lean#L136
 [Interface.unit]: ../RandomSystems/Typed/InterfaceCoherence.lean#L94
 [Interface.winners]: Instances/Game.lean#L43
-[PDCBehavior.attach]: ../RandomSystems/Converter/ConverterAttachment.lean#L161
-[PDCBehavior.attach_comp]: ../RandomSystems/Converter/ConverterAttachment.lean#L281
-[PDCBehavior.attach_id]: ../RandomSystems/Converter/ConverterAttachment.lean#L268
+[PDCBehavior.attach]: ../RandomSystems/Converter/ConverterAttachment.lean#L169
+[PDCBehavior.attach_comp]: ../RandomSystems/Converter/ConverterAttachment.lean#L310
+[PDCBehavior.attach_id]: ../RandomSystems/Converter/ConverterAttachment.lean#L298
 [PDCBehavior.comp_assoc]: ../RandomSystems/Converter/PDCBehavior.lean#L347
 [PDCBehavior.comp_id]: ../RandomSystems/Converter/PDCBehavior.lean#L385
 [PDCBehavior.comp_tensor]: ../RandomSystems/Converter/ConverterTensor.lean#L749
