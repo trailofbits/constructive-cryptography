@@ -62,6 +62,34 @@ lemma echo_cut (n : ℕ) :
       PDS.behavior (echoSequence.level n).1 (echoSequence.level n).2 :=
   echoSequence.cut_behavior n
 
+/-- A negative sample weight is retained when its echo transcript lies within the cut. -/
+lemma signed_cut_mass :
+    behaviorMass (fTransform (PDS.cutSample (fun _ _ => True)
+      (show 1 ≤ 3 from (Nat.le_succ 1).trans (Nat.le_succ 2)))
+      (Finsupp.single (echoAt 3) (-2))) [false] [false] = -2 := by
+  have within : ([false] : List Bool).length ≤ 1 := Nat.le_refl 1
+  rw [PDS.behaviorMass_fTransform_cutSystem _ _ 1 (fun _ => rfl), ite_eq_left within]
+  have replies : Replies (echoAt 3).1 [false] [false] := by
+    change Replies (cutSystem echo.1 3) [false] [false]
+    rw [replies_cutSystem_iff _ _ ((Nat.le_succ 1).trans (Nat.le_succ 2)),
+      echo, DDS.replies_ofFunction_iff]
+    exact ⟨Or.inr (List.cons_ne_nil _ _), rfl⟩
+  rw [behaviorMass, mass_single, ite_eq_left replies]
+
+/-- Later signed mass vanishes even when the target sample keeps only the trivial certificate. -/
+lemma signed_cut_later_mass :
+    behaviorMass (fTransform
+      (fun s : {s : System Bool Bool //
+        IsDDS s ∧ HasDomain (cutDomain (fun _ _ => True) 3) s} =>
+        (⟨cutSystem s.1 1, trivial⟩ : {_s : System Bool Bool // True}))
+      (Finsupp.single (echoAt 3) (-2))) [false, true] [false, true] = 0 := by
+  have beyond : ¬ ([false, true] : List Bool).length ≤ 1 := Nat.not_succ_le_self 1
+  rw [PDS.behaviorMass_fTransform_cutSystem _ _ 1 (fun _ => rfl), ite_eq_right beyond]
+
+#print axioms SystemAlgebra.PDS.behaviorMass_fTransform_cutSystem
+#print axioms signed_cut_mass
+#print axioms signed_cut_later_mass
+
 #print axioms SystemAlgebra.PDS.cutSample_refl
 #print axioms SystemAlgebra.PDS.cutSample_comp
 #print axioms SystemAlgebra.PDS.behaviorMass_cutSample

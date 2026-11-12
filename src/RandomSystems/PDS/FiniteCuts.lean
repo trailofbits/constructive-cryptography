@@ -9,7 +9,8 @@ public import RandomSystems.PDS.FiniteCuts.Defs
 `HasDomain.cutSystem` gives its exact transcript-dependent domain, `cutDomain D q`.
 `cutSystem_cutSystem` combines two cuts by the smaller horizon, and `cutSystem_eq_self`
 recovers any system already finite at that horizon. `replies_cutSystem_iff` preserves all
-completed replies within the cut, for the finite-PDS pushforward correspondence.
+completed replies within the cut. `PDS.behaviorMass_fTransform_cutSystem` shows that any
+sample map implementing a cut retains masses within it and sets later masses to zero.
 -/
 
 @[expose] public section
@@ -69,6 +70,31 @@ lemma cutSystem_eq_self
 
 namespace PDS
 
+/-- A sample map implementing a finite cut retains earlier masses and removes later ones. -/
+lemma behaviorMass_fTransform_cutSystem
+    -- `p`/`q` certify the source/target samples; `P` may have arbitrary signed weights.
+    {p q : System A B → Prop} (P : Probability.Distribution {s : System A B // p s})
+    (f : {s : System A B // p s} → {s : System A B // q s})
+    -- `hf` identifies the underlying system map as restriction to `m` inputs.
+    (m : ℕ) (hf : ∀ s, (f s).1 = cutSystem s.1 m)
+    (xs : List A) (ys : List B) :
+    behaviorMass (Probability.Distribution.fTransform f P) xs ys =
+      if xs.length ≤ m then behaviorMass P xs ys else 0 := by
+  rw [behaviorMass, Probability.Distribution.mass_fTransform]
+  by_cases hm : xs.length ≤ m
+  · rw [ite_eq_left hm]
+    exact Probability.Distribution.mass_congr P fun s => by
+      rw [hf]
+      exact replies_cutSystem_iff s.1 m hm
+  · rw [ite_eq_right hm]
+    -- A later completed transcript would require a reply beyond every sample's cut.
+    apply Probability.Distribution.mass_eq_zero_of_forall_not
+    intro s hs
+    have nonempty : xs ≠ [] := by intro he; subst xs; exact hm (Nat.zero_le m)
+    have domain := hs.dom nonempty
+    rw [hf, cutSystem_apply_of_bound_lt _ _ _ (Nat.lt_of_not_ge hm)] at domain
+    exact domain
+
 -- `D` gives the underlying query domain before any observation horizon is imposed.
 variable (D : List (A × B) → A → Prop)
 
@@ -105,8 +131,8 @@ lemma behaviorMass_cutSample {m n : ℕ} (hmn : m ≤ n)
     (xs : List A) (ys : List B) (hx : xs.length ≤ m) :
     behaviorMass (Probability.Distribution.fTransform (cutSample D hmn) P) xs ys =
       behaviorMass P xs ys := by
-  rw [behaviorMass, Probability.Distribution.mass_fTransform]
-  exact Probability.Distribution.mass_congr P fun s => replies_cutSystem_iff s.1 m hx
+  rw [behaviorMass_fTransform_cutSystem P (cutSample D hmn) m (fun _ => rfl),
+    ite_eq_left hx]
 
 end PDS
 
