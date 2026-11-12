@@ -10,9 +10,13 @@ cumulative probabilities: the probability `R h` of each transcript `h`. At an
 admitted query the reply probabilities sum to the probability of the preceding
 transcript; at any other query they vanish. A normalized PDS induces a random
 system, and two PDSs induce the same one exactly when they are equivalent.
-Source: Lanzenberger–Maurer, after Lemma 5 (printed p. 14): an equivalence class
+By [1, after Lemma 5, p. 14], an equivalence class
 is “characterized by the transcript distributions for all non-adaptive
 deterministic environments”.
+
+`IsRandomSystem` also normalizes bare cumulative functions without a global horizon.
+Its `congr_domain` and `relabel` laws transport normalization; `possible_inputs` identifies
+admitted input prefixes. The bounded `RandomSystem` constructors use these same contracts.
 
 ## Main definitions
 
@@ -29,21 +33,91 @@ deterministic environments”.
   equivalent PDSs
 * `mass_eq_zero_of_not_admitted`, `mass_eq_zero_of_bound_lt`: no mass outside the domain
 * `isRandomSystem_behaviorMass`: a mixture of systems with domain `D` is normalized on `D`
+
+## References
+
+1. D. Lanzenberger and U. Maurer. *Coupling of Random Systems*. In Theory of Cryptography
+   (TCC 2020), Springer, 2020. Cryptology ePrint Archive, Paper 2020/1187.
 -/
 
 @[expose] public section
 
 namespace SystemAlgebra
 
-open Classical Probability
+open Probability
 
 variable {A B : Type}
 
+open Classical in
 /-- Normalized cumulative behavior, with finite reply laws at admitted queries. -/
 def IsRandomSystem (D : List (A × B) → A → Prop) (p : List (A × B) → ℝ) : Prop :=
   p [] = 1 ∧ (∀ h, 0 ≤ p h) ∧
     ∀ h x, ∃ μ : Distribution B,
       (∀ y, μ y = p (h ++ [(x, y)])) ∧ μ.weight = if D h x then p h else 0
+
+namespace IsRandomSystem
+
+-- `D` admits next queries; `p` gives cumulative masses and `hp` their normalization.
+variable {D : List (A × B) → A → Prop} {p : List (A × B) → ℝ}
+
+/-- Domains that agree on nonzero histories normalize the same cumulative behavior. -/
+lemma congr_domain (hp : IsRandomSystem D p)
+    -- `E` is the new admission predicate; `he` identifies it wherever `p` is nonzero.
+    {E : List (A × B) → A → Prop}
+    (he : ∀ h, p h ≠ 0 → ∀ x, D h x ↔ E h x) : IsRandomSystem E p := by
+  classical
+  refine ⟨hp.1, hp.2.1, fun h x => ?_⟩
+  obtain ⟨μ, hm, hw⟩ := hp.2.2 h x
+  refine ⟨μ, hm, hw.trans ?_⟩
+  by_cases hz : p h = 0
+  · simp only [hz, ite_self]
+  · rw [he h hz x]
+
+/-- Alphabet equivalences transport normalization and the admission predicate together. -/
+lemma relabel (hp : IsRandomSystem D p)
+    -- `inputs` and `outputs` rename queries and replies into `A'` and `B'`.
+    {A' B' : Type} (inputs : A ≃ A') (outputs : B ≃ B') :
+    IsRandomSystem
+      (fun h x => D (h.map (inputs.symm.prodCongr outputs.symm)) (inputs.symm x))
+      (fun h => p (h.map (inputs.symm.prodCongr outputs.symm))) := by
+  classical
+  refine ⟨hp.1, fun h => hp.2.1 _, fun h x => ?_⟩
+  obtain ⟨μ, hm, hw⟩ := hp.2.2 (h.map (inputs.symm.prodCongr outputs.symm)) (inputs.symm x)
+  refine ⟨Distribution.fTransform outputs μ, ?_, ?_⟩
+  · intro y
+    have hy := Distribution.fTransform_injective_apply μ outputs outputs.injective (outputs.symm y)
+    simpa only [Equiv.apply_symm_apply, hm, List.map_append, List.map_singleton,
+      Equiv.prodCongr_apply, Prod.map_apply] using hy
+  · rw [Distribution.weight_fTransform, hw]
+
+/-- An inadmissible next query has zero mass for every reply. -/
+lemma mass_eq_zero_of_not_admitted (hp : IsRandomSystem D p)
+    -- `h` is the preceding transcript; `hd` rejects query `x`, and `y` is any reply.
+    {h : List (A × B)} {x : A} (hd : ¬ D h x) (y : B) : p (h ++ [(x, y)]) = 0 := by
+  classical
+  obtain ⟨μ, hm, hw⟩ := hp.2.2 h x
+  have hn : μ.NonNeg := fun z => (hm z).symm ▸ hp.2.1 _
+  apply le_antisymm _ (hp.2.1 _)
+  calc p (h ++ [(x, y)]) = μ y := (hm y).symm
+    _ ≤ μ.mass (· = y) := Distribution.apply_le_mass hn rfl
+    _ ≤ μ.weight := Distribution.mass_le_weight hn _
+    _ = 0 := by rw [hw, ite_eq_right hd]
+
+/-- A possible input history is empty or admitted by its input-only domain. -/
+lemma possible_inputs
+    -- `E` admits input histories; `hp` normalizes `p` on its next-input predicate.
+    {E : List A → Prop}
+    (hp : IsRandomSystem (fun h x => E (h.map Prod.fst ++ [x])) p)
+    {h : List (A × B)} (hh : p h ≠ 0) : h.map Prod.fst = [] ∨ E (h.map Prod.fst) := by
+  classical
+  rcases List.eq_nil_or_concat h with rfl | ⟨h, ⟨x, y⟩, rfl⟩
+  · exact Or.inl rfl
+  · apply Or.inr
+    simp only [List.concat_eq_append, List.map_append, List.map_singleton] at hh ⊢
+    by_contra hd
+    exact hh (hp.mass_eq_zero_of_not_admitted hd y)
+
+end IsRandomSystem
 
 /-- The domain after renaming the input and output alphabets. -/
 def Domain.relabel {A' B' : Type} (D : Domain A B) (inputs : A ≃ A') (outputs : B ≃ B') :
@@ -83,6 +157,7 @@ noncomputable def extensionLaw (R : RandomSystem A B D) (h : List (A × B)) (x :
 lemma extensionLaw_apply (R : RandomSystem A B D) (h : List (A × B)) (x : A) (y : B) :
     R.extensionLaw h x y = R (h ++ [(x, y)]) := (Classical.choose_spec (R.2.2.2 h x)).1 y
 
+open Classical in
 lemma extensionLaw_weight (R : RandomSystem A B D) (h : List (A × B)) (x : A) :
     (R.extensionLaw h x).weight = if D h x then R h else 0 :=
   (Classical.choose_spec (R.2.2.2 h x)).2
@@ -131,17 +206,7 @@ same cumulative behavior. Interface relabeling uses equivalences of sigma types.
 noncomputable def relabel {A' B' : Type} [Fintype A'] [Fintype B'] (R : RandomSystem A B D)
     (inputs : A ≃ A') (outputs : B ≃ B') :
     RandomSystem A' B' (D.relabel inputs outputs) :=
-  ⟨fun h => R (h.map (inputs.symm.prodCongr outputs.symm)), by
-    refine ⟨R.mass_nil, fun h => R.mass_nonneg _, fun h x => ?_⟩
-    refine ⟨Distribution.fTransform outputs
-      (R.extensionLaw (h.map (inputs.symm.prodCongr outputs.symm)) (inputs.symm x)), ?_, ?_⟩
-    · intro y
-      have hy := Distribution.fTransform_injective_apply
-        (R.extensionLaw (h.map (inputs.symm.prodCongr outputs.symm)) (inputs.symm x))
-        outputs outputs.injective (outputs.symm y)
-      simpa [extensionLaw_apply] using hy
-    · rw [Distribution.weight_fTransform, extensionLaw_weight]
-      rfl⟩
+  ⟨fun h => R (h.map (inputs.symm.prodCongr outputs.symm)), R.2.relabel inputs outputs⟩
 
 lemma relabel_mass {A' B' : Type} [Fintype A'] [Fintype B'] (R : RandomSystem A B D)
     (inputs : A ≃ A') (outputs : B ≃ B') (h : List (A' × B')) :
@@ -163,13 +228,8 @@ lemma relabel_injective {A' B' : Type} [Fintype A'] [Fintype B'] (inputs : A ≃
 
 /-- An inadmissible query has no reply mass at any output. -/
 lemma mass_eq_zero_of_not_admitted (R : RandomSystem A B D) {h : List (A × B)} {x : A}
-    (hd : ¬ D h x) (y : B) : R (h ++ [(x, y)]) = 0 := by
-  apply le_antisymm _ (R.mass_nonneg _)
-  rw [← extensionLaw_apply]
-  calc R.extensionLaw h x y ≤ (R.extensionLaw h x).mass (· = y) :=
-      Distribution.apply_le_mass (R.extensionLaw_nonneg h x) rfl
-    _ ≤ (R.extensionLaw h x).weight := Distribution.mass_le_weight (R.extensionLaw_nonneg h x) _
-    _ = 0 := by rw [extensionLaw_weight, ite_eq_right hd]
+    (hd : ¬ D h x) (y : B) : R (h ++ [(x, y)]) = 0 :=
+  R.2.mass_eq_zero_of_not_admitted hd y
 
 /-- A random system has no mass on transcripts longer than its domain's bound. -/
 lemma mass_eq_zero_of_bound_lt (R : RandomSystem A B D) {h : List (A × B)}
@@ -253,7 +313,8 @@ noncomputable def ofPDSClass : Quotient (pdsSetoid D) → RandomSystem A B D :=
   Quotient.lift (fun P => PDS.behavior P.1 P.2)
     (fun P Q h => (PDS.behavior_eq_iff P.2 Q.2).mpr h)
 
-@[simp] lemma ofPDSClass_mk (P : Distribution.ProbDist {s : System A B // IsDDS s ∧ HasDomain D s}) :
+@[simp] lemma ofPDSClass_mk
+    (P : Distribution.ProbDist {s : System A B // IsDDS s ∧ HasDomain D s}) :
     ofPDSClass D (Quotient.mk (pdsSetoid D) P) = PDS.behavior P.1 P.2 := rfl
 
 lemma ofPDSClass_injective : Function.Injective (ofPDSClass D) := by
@@ -290,6 +351,7 @@ section ConditionalConstructor
 
 variable (q : ∀ h x, D h x → Distribution.ProbDist B)
 
+open Classical in
 /-- The chain rule constructs cumulative masses from conditional reply distributions. -/
 noncomputable def conditionalMass (t : List (A × B)) : ℝ :=
   List.reverseRecOn t 1 fun h z p => if hd : D h z.1 then p * q h z.1 hd z.2 else 0
@@ -299,6 +361,7 @@ omit [Fintype A] [Fintype B] in
   simp [conditionalMass]
 
 omit [Fintype A] [Fintype B] in
+open Classical in
 lemma conditionalMass_snoc (h : List (A × B)) (x : A) (y : B) :
     conditionalMass q (h ++ [(x, y)]) =
       if hd : D h x then conditionalMass q h * q h x hd y else 0 := by
@@ -333,6 +396,7 @@ noncomputable def ofConditional : RandomSystem A B D :=
         rw [weighted, (q h x hd).2.2, mul_one]
     · exact ⟨0, fun y => by simp [conditionalMass_snoc, hd], by simp [hd, Distribution.weight]⟩⟩
 
+open Classical in
 lemma ofConditional_snoc (h : List (A × B)) (x : A) (y : B) :
     ofConditional q (h ++ [(x, y)]) =
       if hd : D h x then ofConditional q h * q h x hd y else 0 :=

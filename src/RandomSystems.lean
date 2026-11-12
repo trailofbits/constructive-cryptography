@@ -43,6 +43,7 @@ public import RandomSystems.Cumulative.PDSSequence
 public import RandomSystems.Cumulative.Attachment
 public import RandomSystems.Cumulative.Mixture
 public import RandomSystems.Cumulative.Parallel
+public import RandomSystems.Cumulative.ParallelInputs
 public import RandomSystems.Cumulative.CumulativeAttachment
 public import RandomSystems.Cumulative.CumulativeObservation
 public import RandomSystems.Cumulative.CumulativeOperations

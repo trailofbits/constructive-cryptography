@@ -220,6 +220,10 @@ Use `ProbDist.piDep μ` when coordinate `i` has its own outcome type. Combine th
 A table sampled once keeps its entries, so repeated reads agree. `TypedSystem.source` reads
 each entry once, giving fresh samples; sampling inside a procedure draws anew on each call.
 
+For independent cumulative components on input-only domains, use
+[`parallelMass_isRandomSystem_ofInputs`](src/RandomSystems/Cumulative/ParallelInputs.lean).
+Its raw port-preservation law also applies at zero-mass prefixes.
+
 For deterministic converters with a monotone total-query allowance, use
 [`IsRandomSystem.attachMass`](src/RandomSystems/Cumulative/Attachment/Defs.lean).
 Its finite cuts reuse bounded attachment; `cut_attachMass` and `attachMass_eq_attach`
