@@ -77,6 +77,8 @@ next level by `PDS.cutSample` gives exactly the current sample law. `PDSSequence
 uses finite-cut gluing to produce a normalized cumulative behavior. Its `cut_behavior` law
 recovers each level's behavior; `behavior_eq_iff` characterizes equality by behavioral
 equivalence of the levels, while their exact sample laws remain presentation data.
+`PDS.behaviorMass_fTransform_cutSystem` applies to any certified sample map implementing a
+cut: it retains earlier cumulative masses and removes later ones, even for signed weights.
 
 A transcript follows a query strategy when every exchange prefix $`p\mathbin{+\!+}[(x,y)]`$
 has $`x\in\sigma(\operatorname{replies}(p))`$, the rule $`x_i = e(y_1,\dots,y_{i-1})`$ of
