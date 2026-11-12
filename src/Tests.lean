@@ -2,6 +2,7 @@ module
 
 public import Tests.CumulativeFiniteCuts
 public import Tests.DeterministicFiniteCuts
+public import Tests.PDSSequence
 public import Tests.UnlimitedSource
 
 public import Tests.ProbabilityObservation

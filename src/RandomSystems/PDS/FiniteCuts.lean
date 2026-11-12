@@ -67,4 +67,47 @@ lemma cutSystem_eq_self
   · rw [cutSystem_apply_of_bound_lt s q xs (Nat.lt_of_not_ge hq)]
     exact (Part.eq_none_iff'.mpr (fun hd => hq (hs xs hd))).symm
 
+namespace PDS
+
+-- `D` gives the underlying query domain before any observation horizon is imposed.
+variable (D : List (A × B) → A → Prop)
+
+/-- Restrict a certified deterministic sample from horizon `n` to horizon `m`. -/
+noncomputable def cutSample
+    -- `hmn` ensures the target horizon is no larger than the sample's horizon.
+    {m n : ℕ} (hmn : m ≤ n)
+    (s : {s : System A B // IsDDS s ∧ HasDomain (cutDomain D n) s}) :
+    {s : System A B // IsDDS s ∧ HasDomain (cutDomain D m) s} :=
+  ⟨cutSystem s.1 m, s.2.1.cutSystem m, by
+    have domain := s.2.2.cutSystem m
+    rw [cutDomain_cutDomain D hmn] at domain
+    exact domain⟩
+
+/-- Restriction to a certified sample's own horizon is the identity. -/
+lemma cutSample_refl (n : ℕ)
+    (s : {s : System A B // IsDDS s ∧ HasDomain (cutDomain D n) s}) :
+    cutSample D (Nat.le_refl n) s = s :=
+  Subtype.ext (cutSystem_eq_self _ n (s.2.2.finite s.2.1))
+
+/-- Certified restrictions compose by the corresponding order of horizons. -/
+lemma cutSample_comp {k m n : ℕ} (hkm : k ≤ m) (hmn : m ≤ n)
+    (s : {s : System A B // IsDDS s ∧ HasDomain (cutDomain D n) s}) :
+    cutSample D hkm (cutSample D hmn s) = cutSample D (hkm.trans hmn) s := by
+  apply Subtype.ext
+  exact (cutSystem_cutSystem s.1 k m).trans (congrArg (cutSystem s.1) (min_eq_left hkm))
+
+/-- Pushing samples through a cut preserves every cumulative mass within that horizon. -/
+lemma behaviorMass_cutSample {m n : ℕ} (hmn : m ≤ n)
+    -- `P` is a finite signed mixture; this equality does not require normalization.
+    (P : Probability.Distribution
+      {s : System A B // IsDDS s ∧ HasDomain (cutDomain D n) s})
+    -- `xs`, `ys` are the queried and returned lists, with queries within horizon `m`.
+    (xs : List A) (ys : List B) (hx : xs.length ≤ m) :
+    behaviorMass (Probability.Distribution.fTransform (cutSample D hmn) P) xs ys =
+      behaviorMass P xs ys := by
+  rw [behaviorMass, Probability.Distribution.mass_fTransform]
+  exact Probability.Distribution.mass_congr P fun s => replies_cutSystem_iff s.1 m hx
+
+end PDS
+
 end SystemAlgebra

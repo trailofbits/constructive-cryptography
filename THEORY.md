@@ -315,7 +315,7 @@ extension are in [Examples](src/Examples/README.md).
 [IsDDS]: src/RandomSystems/System/Basic.lean#L81
 [automatonSystem_eq_of_bisim]: src/RandomSystems/System/Automaton.lean#L93
 [Domain]: src/RandomSystems/PDS/PDS.lean#L75
-[PDS]: src/RandomSystems/PDS/PDS.lean#L163
+[PDS]: src/RandomSystems/PDS/PDS.lean#L174
 [IsRandomSystem]: src/RandomSystems/Cumulative/Cumulative.lean#L43
 [RandomSystem]: src/RandomSystems/Cumulative/Cumulative.lean#L57
 [RandomSystem.RepliesAtQueriedInterface]: src/RandomSystems/Cumulative/Cumulative.lean#L74
