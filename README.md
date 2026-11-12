@@ -1,39 +1,24 @@
 # Constructive Cryptography on Random Systems
 
-This repository formalizes Constructive Cryptography [1, 2] in Lean 4. The
-framework is instantiated on a theory of random systems [3, 4] in which a
-system answers exactly on a declared domain of input histories, and a
-converter may stop at random. The classes of the framework are assumptions; their
-instances on interfaces take every field from the typed systems and typed
-converters of the random-systems library. The algebra of typed systems and
-converters is also stated in category-theoretic terms; a categorical model of
-composable security is given in [7].
+This library formalizes Constructive Cryptography in Lean 4 [1, 2]. Abstract laws describe
+resources, converters and security; random systems instantiate them [3, 4]. Constructions
+and proofs assemble components through those laws.
 
 ## Libraries
 
-The sources are under `src/`; module names follow their paths there. [THEORY.md](THEORY.md)
-shows the layers and how they connect, with each class and its instance. The READMEs linked in
-the table give the details of each library, with links to the Lean declarations.
+[THEORY.md](THEORY.md) explains the mathematical layers and their connections.
+Sources are under `src/`; each library's documentation gives its objects and laws.
 
-| Library | Content |
+| Library | Purpose |
 |---|---|
-| [`Probability`](src/Probability/README.md) | finitely supported distributions, kernels, statistical distance, couplings, expectation, counting |
-| [`RandomSystems`](src/RandomSystems/README.md) | systems and automata; deterministic converters and programs; distributions over deterministic systems; random systems given by their cumulative probabilities; probabilistic automata and memoryless systems; probabilistic converters, attachment and parallel composition; transcript distance and distinguishers ([`Distance`](src/RandomSystems/Distance/README.md)); games ([`Game`](src/RandomSystems/Game/README.md)); typed systems, typed converters, typed distinguishers and typed games on interfaces, with filters, contexts, sources, automata, memoryless and functional systems, and games presented by discrete games ([`Typed`](src/RandomSystems/Typed/README.md)); the programs and program converters of the DSL |
-| [`ConstructiveCryptography.Specification`, `.Construction`](src/ConstructiveCryptography/README.md#specifications-and-constructions) | specifications, constructions and relaxations over any carrier |
-| [`ConstructiveCryptography.Problem`, `.Game`](src/ConstructiveCryptography/README.md#games-solver-evaluations-and-converter-actions) | reductions over preordered performance spaces; admitted game evaluations in a selected performance space; real winning probabilities and their relation to distinguishing |
-| [`ConstructiveCryptography.Distinguisher`](src/ConstructiveCryptography/README.md#decisions-admitted-tests-and-absorption) | decision evaluation of distinguishers and the selection of admitted tests, without categories or metrics |
-| [`ConstructiveCryptography.CryptographicAlgebra`](src/ConstructiveCryptography/README.md#the-classes) | the classes of cryptographic algebras: resource theories, parallel composition, compatible pseudo-metrics and distinguisher classes, absorption of converters into distinguishers and per-reduction closure of admitted tests, relaxations |
-| [`ConstructiveCryptography.Instances`](src/ConstructiveCryptography/Instances.lean) | the instances of the classes on interfaces (category, monoidal category, cryptographic algebra, distinguisher class, decision evaluation and absorption, games), each field a systems-level object ([instance table](THEORY.md#interface-instance-table)); parallel compatibility of single-substitution relaxations |
-| [`ConstructiveCryptography.Notation`](src/ConstructiveCryptography/README.md#notation) | the notation `Δ`, `∥`, `≃[ε]`, `—[π]→`, `\|≡` over the classes (`Notation.Basic`); typed carrier hints and normalization rules on interfaces |
-| [`ConstructiveCryptography.Substitution`](src/ConstructiveCryptography/README.md#the-substitution-calculus) | the substitution calculus for constructions [6] |
-| [`ConstructiveCryptography.DSL`](src/ConstructiveCryptography/DSL/GRAMMAR.md) | a compiler from component declarations to typed systems and typed converters |
-| [`ConstructiveCryptography.Tactics`](src/ConstructiveCryptography/DSL/GRAMMAR.md#proof-commands) | proof commands, including the substitution calculations `cc_calc` |
-| `Commons` | common ideal systems (URF, URP and their strong and tweakable forms, memoryless sources), the CDH assumption as a pair of systems, the security notions as pairs of systems [6]: symmetric encryption (real-or-random and left-or-right CPA) and authenticated encryption (ind-cca, int-ptxt, int-ctxt, ae), public-key encryption and KEMs (IND-CPA, IND-CCA), MACs and signatures (EUF-CMA, SUF-CMA), PRGs, universal hashing (UHF, DUF) and collision resistance, and the schemes SHA-256, SHA-3, SHAKE, Keccak-256, ML-KEM [9] and ML-DSA [10] (the last two adapted from VCVio [11]) with known-answer tests, in the order of [8] |
-| [`Examples`](src/Examples/README.md) | authenticated encryption, AES, AEAD, PRG length extension, substitutions on interfaces, the proof commands |
-| `Tests` | axiom audits, counterexamples, DSL diagnostics and semantics, tests of the substitution calculus |
-
-Module docstrings cite the source of each definition and theorem, with the
-printed page.
+| [Probability](src/Probability/README.md) | Finite probability laws and bounds. |
+| [RandomSystems](src/RandomSystems/README.md) | Systems, converters, interaction, distances and games. |
+| [ConstructiveCryptography](src/ConstructiveCryptography/README.md) | Abstract resource laws, security and compositional proofs. |
+| [Instances](src/ConstructiveCryptography/Instances.lean) | Typed random systems instantiate the abstract laws. |
+| [DSL and proof commands](src/ConstructiveCryptography/DSL/GRAMMAR.md) | Mathematical declarations and calculations over components. |
+| [Commons](src/Commons.lean) | Reusable ideal systems, security notions and cryptographic primitives. |
+| [Examples](src/Examples/README.md) | Complete constructions and security arguments. |
+| [Tests](src/Tests.lean) | Regression tests and axiom audits. |
 
 ## Building
 
@@ -48,12 +33,9 @@ results; the accepted envelope is `propext`, `Classical.choice` and
 
 ## Notes on AI usage
 
-This library is developed with AI coding assistants, which wrote most of its
-Lean code and documentation under the direction of the authors. Lean checks
-every proof, and the axiom audits confirm that the main results depend only on
-the axioms listed above. Lean does not check that a definition matches the
-source it cites; module docstrings quote the source statements, with their
-printed pages, so that this correspondence can be reviewed.
+Most code and documentation were written with AI assistance under the authors' direction.
+Lean checks proofs; source correspondence requires human review. Module docstrings provide
+source quotations and page references for that review.
 
 ## Contributing
 
@@ -71,10 +53,5 @@ MIT; see [LICENSE](LICENSE).
 2. D. Jost. *On Generalizations of Composable Security*. Doctoral thesis, Diss. ETH No. 26723, ETH Zurich, 2020.
 3. D. Lanzenberger and U. Maurer. Coupling of Random Systems. In *Theory of Cryptography (TCC 2020)*, Springer, 2020. Cryptology ePrint Archive, Paper 2020/1187.
 4. U. Maurer. *Cryptography Foundations*. Lecture notes, ETH Zurich, Spring 2018.
-5. C.-D. Liu-Zhang and U. Maurer. Synchronous Constructive Cryptography. In *Theory of Cryptography (TCC 2020)*, LNCS 12552, pp. 439–472, Springer, 2020. Cryptology ePrint Archive, Paper 2020/1226.
-6. F. Banfi. *A Composable Treatment of Anonymous Communication*. Doctoral thesis, Diss. ETH No. 29663, ETH Zurich, 2023.
-7. A. Broadbent and M. Karvonen. Categorical composable cryptography: extended version. *Logical Methods in Computer Science* 19(4), Paper 30, 2023. doi:10.46298/lmcs-19(4:30)2023. arXiv:2208.13232.
-8. D. Boneh and V. Shoup. *A Graduate Course in Applied Cryptography*. Version 0.6, 2023.
-9. National Institute of Standards and Technology. *Module-Lattice-Based Key-Encapsulation Mechanism Standard*. FIPS 203, 2024. doi:10.6028/NIST.FIPS.203.
-10. National Institute of Standards and Technology. *Module-Lattice-Based Digital Signature Standard*. FIPS 204, 2024. doi:10.6028/NIST.FIPS.204.
-11. VCVio: a formal verification framework for cryptographic proofs in Lean. https://github.com/Verified-zkEVM/VCVio, commit `f5119c6`.
+
+Further references are in [THEORY.md](THEORY.md#references) and the owning modules.

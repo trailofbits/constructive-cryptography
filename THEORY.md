@@ -24,29 +24,74 @@ Probability ─▶ Random systems ─▶ Typed systems ══ instance ══▶
 
 ## 1. Random systems
 
-*Systems over finite alphabets, answering exactly on a bounded domain [1], [2, Chapter 2],
-[3, Chapter 3]. Laws are finitely supported distributions and $`\delta`$ is the statistical
-distance ([Probability](src/Probability/README.md)).*
+*Cumulative behavior is described on finite transcripts. Finite observation cuts connect
+unbounded interaction to the existing bounded model [1], [2, Chapter 2], [3, Chapter 3].
+Probability laws are finitely supported distributions; $`\delta`$ denotes statistical distance
+([Probability](src/Probability/README.md)).*
 
-**Systems.** A [deterministic system][IsDDS] (DDS) is a partial function from input histories to
-the next output, whose domain is closed under nonempty prefixes. A [domain][Domain]
-$`\mathcal D`$ admits next queries after each transcript, with a bound on the length, and a
-[PDS][PDS] is a finite distribution over DDSs with domain $`\mathcal D`$ [1, Definition 8]. A
-[**random system**][RandomSystem] is given by its cumulative probabilities $`p`$ on transcripts
-[1, after Lemma 5], [normalized][IsRandomSystem] on the domain:
+**Behavior.** A [deterministic system][IsDDS] (DDS) is a partial function from input histories to
+the next output, whose domain is closed under nonempty prefixes. It has no global length bound.
+A probabilistic behavior assigns a cumulative probability $`p(h)`$ to every finite transcript.
+The predicate [IsRandomSystem][IsRandomSystem] normalizes it on an admission relation
+$`D(h,x)`$, which says whether query $`x`$ is admitted after $`h`$:
 
 ```math
 p(\varepsilon) = 1, \qquad p \ge 0, \qquad
-\sum_{y} p\big(h \cdot (x, y)\big) =
-\begin{cases} p(h) & \text{if } x \text{ is admitted after } h, \\ 0 & \text{otherwise.} \end{cases}
+\sum_y p\big(h \cdot (x,y)\big) =
+\begin{cases}p(h) & D(h,x), \\ 0 & \text{otherwise.}\end{cases}
 ```
 
-A PDS [has a random system][PDS.behavior], and every random system
-[has a finite presentation][RandomSystem.exists_presentation]: random systems
-[are exactly the classes of equivalent PDSs][RandomSystem.ofPDSClass_bijective].
+Neither this predicate nor $`D`$ requires a global horizon. Equality of behaviors is equality
+of all cumulative probabilities.
 
-**Converters and attachment.** A [DDC][IsDDC] is a system on the converter alphabets with a bound
-on its consecutive inside queries [3, Definition 3.8]. A [PDC][PDCBehavior.ofPDC] is a distribution
+**Finite observations.** The [cut][CumulativeCuts] $`p|_n`$ retains $`p(h)`$ for $`|h|\le n`$
+and is zero beyond $`n`$. Its domain admits the queries of $`D`$ before depth $`n`$.
+Over finite alphabets, compatible bounded behaviors determine one behavior:
+
+```math
+(R_{n+1})|_n = R_n, \qquad p(h)=R_{|h|}(h), \qquad p|_n=R_n.
+```
+
+The existing [Domain][Domain] bundles an admission relation with a length bound, and
+[RandomSystem][RandomSystem] bundles normalized behavior on such a domain. These bounded
+objects are the finite cuts of the broader cumulative model.
+
+**Presentations.** A [PDS][PDS] is a finite distribution over DDSs sharing a bounded domain
+[1, Definition 8]. Its [behavior][PDS.behavior] records transcript probabilities. Every bounded
+random system [has a finite presentation][RandomSystem.exists_presentation]; equality of
+behaviors [characterizes equivalent PDSs][RandomSystem.ofPDSClass_bijective].
+
+For an arbitrary horizon, [PDSSequence][PDSSequence] instead supplies one finite probability
+law $`P_n`$ over DDSs cut to $`n`$, with exact pushforward coherence:
+
+```math
+(\operatorname{cut}_n)_*P_{n+1}=P_n.
+```
+
+[Every normalized cumulative behavior over finite alphabets has such a presentation][SequencePresentation].
+A sequence induces its behavior by reading each transcript at its own depth. Different
+sequences may present the same behavior; the presentation is not the semantic identity.
+[Retained mixtures][CumulativeMixtures] and [independent parallel composition][CumulativeParallel]
+commute with finite cuts.
+
+**Cumulative attachment.** With finite ports and query/reply alphabets, a fixed converter
+$`\alpha`$ has an [exact domain certificate][ConverterCuts], a bound on consecutive inside
+queries, and a monotone [total-query bound][QueryBounds] $`k`$. The latter counts emitted inside
+queries, including a pending call, through each outside-input prefix. The input domains exclude
+the empty history and are closed under nonempty prefixes. For deterministic converters,
+[attachment][CumulativeAttachment] is determined by bounded attachments:
+
+```math
+(\alpha\bullet R)|_q = \alpha|_q\bullet(R|_n), \qquad n\ge k(q).
+```
+
+Each finite attachment retains one resource sample. The resulting cumulative behavior is
+normalized, preserves reply ports, and is independent of the sufficient horizon and the
+chosen total-query bound. On bounded input domains it equals the existing deterministic
+attachment.
+
+**Bounded probabilistic converters.** A [DDC][IsDDC] is a system on the converter alphabets
+with a bound on its consecutive inside queries [3, Definition 3.8]. A [PDC][PDCBehavior.ofPDC] is a distribution
 over DDCs, and its [behavior][PDCBehavior] is a random system over the converter domain
 [3, Definitions 3.17–3.18]. PDC behaviors [compose][PDCBehavior.comp] associatively, with an
 [identity][PDCBehavior.id]. [Attachment][PDCBehavior.attach] $`\alpha R`$ samples the PDC, then
@@ -56,8 +101,8 @@ run [independently in parallel][RandomSystem.parallel], and so do two
 [PDC behaviors][PDCBehavior.tensor]. [RandomSystems](src/RandomSystems/README.md) adds automata,
 probabilistic automata, memoryless systems and programs.
 
-**Distance.** The [transcript distance][RandomSystem.transcriptDistance] is the largest
-statistical distance of the transcripts that an environment compatible with the domain sees within
+**Distance.** On the bounded domains used by the typed model below, the
+[transcript distance][RandomSystem.transcriptDistance] is the largest statistical distance of the transcripts that an environment compatible with the domain sees within
 $`n`$ queries. It [is the largest advantage][RandomSystem.transcriptDistance_eq_iSup] of a
 [probabilistic distinguisher][Domain.Distinguisher] $`P`$ [1, Definition 9]:
 
@@ -283,7 +328,10 @@ extension are in [Examples](src/Examples/README.md).
 
 ## Where the formalization departs from its sources
 
-1. **Everything is finite.** Interfaces carry finite labels and alphabets and a domain of bounded length, so typed systems are finite random systems with [finite presentations][RandomSystem.exists_presentation]. The sources allow infinite alphabets and unbounded interactions.
+1. **Finite alphabets and bounded typed interfaces.** Cumulative behaviors support unbounded
+   interaction through coherent finite presentations and certified deterministic attachment.
+   The typed interfaces, probabilistic converter algebra, distances and games described here
+   retain bounded domains. The sources also allow infinite alphabets.
 2. **Randomness enters DSL systems only through sources.** A sampled law must be closed: it may depend on declaration parameters, not on runtime values. A probabilistic encryption is therefore a [sampled table of ciphertexts][SymmetricEncryption.encryptions] ([Encryption][SymEnc]).
 3. **[9, Theorem 2.3.10(4)] needs a second [`ind-cca`][AE.INDCCA] step.** The printed chain `int-ptxt`, `ind-cca`, `int-ptxt`, followed by a collision bound, fails when a later message equals an earlier replacement message. The [corrected chain][correctedChain] and an [all-pairs collision bound][collision_mass_le] are in [Security][AESec] and [Collision][AECol].
 4. **[2, Theorem 2.29] holds with a [maximum over pairs][exists_pair_one_sub_supAgreement_le], not a minimum.** The minimum form [is refuted][not_supAgreement_disagreement_le_every_pair].
@@ -312,6 +360,14 @@ extension are in [Examples](src/Examples/README.md).
 
 <!-- Declarations: §1 -->
 
+[CumulativeCuts]: src/RandomSystems/Cumulative/FiniteCuts.lean
+[PDSSequence]: src/RandomSystems/PDS/Sequence/Defs.lean
+[SequencePresentation]: src/RandomSystems/Cumulative/Presentation/Sequence.lean
+[CumulativeMixtures]: src/RandomSystems/Cumulative/Mixture.lean
+[CumulativeParallel]: src/RandomSystems/Cumulative/Parallel.lean
+[QueryBounds]: src/RandomSystems/Converter/QueryBound/Defs.lean
+[ConverterCuts]: src/RandomSystems/Converter/FiniteCuts.lean
+[CumulativeAttachment]: src/RandomSystems/Cumulative/Attachment.lean
 [IsDDS]: src/RandomSystems/System/Basic.lean#L81
 [automatonSystem_eq_of_bisim]: src/RandomSystems/System/Automaton.lean#L93
 [Domain]: src/RandomSystems/PDS/PDS.lean#L76
