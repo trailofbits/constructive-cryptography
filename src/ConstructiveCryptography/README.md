@@ -68,6 +68,10 @@ Single-component updates and shared-context NNReal budgets are corollaries.
 then reindex. The property parameters follow those maps; only the selected component needs
 to satisfy the property.
 
+[Selected-component freshness](Instances/FiniteParallelFreshness.lean) instantiates finite-family
+property transport with `TypedSystem.AnswersFresh`: only the selected member needs the contract,
+and `Interface.selectExchange` identifies its observed exchanges in the independent family.
+
 ### `CompatiblePseudoMetric C Φ`: distance
 
 The class [`CompatiblePseudoMetric`][CompatiblePseudoMetric] adds a pseudo-metric $`d`$, the
