@@ -60,6 +60,13 @@ projected transcripts. `parallelMass_isRandomSystem` retains matching query/repl
 each selected component's query domain. `cutMass_parallelMass` keeps an explicit total
 observation cut when both components are cut at that horizon.
 
+[Cumulative attachment](Cumulative/Attachment.lean) connects a deterministic converter to a
+normalized cumulative resource on input-only domains with matching reply ports.
+Its explicit monotone total-query
+allowance bounds inside queries at each outside horizon. `attachCut` builds the finite
+connection; `attachMass` glues these cuts. Exact cut recovery, allowance independence and
+bounded attachment compatibility preserve the same input domains and converter behavior.
+
 [Finite retained mixtures](Cumulative/Mixture.lean) average whole-transcript masses using
 `mixMass`. They normalize on a shared query domain, commute with finite cuts, and agree with
 `RandomSystem.mix` on bounded systems. Their index type need not be finite.

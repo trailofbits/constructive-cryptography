@@ -5,6 +5,7 @@ public import Tests.DeterministicFiniteCuts
 public import Tests.PDSSequence
 public import Tests.CoherentPresentation
 public import Tests.CumulativeMixture
+public import Tests.CumulativeAttachment
 public import Tests.CumulativeParallel
 public import Tests.ProductCoordinateMarginals
 public import Tests.ConditionalTableRestriction

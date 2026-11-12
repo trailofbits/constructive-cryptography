@@ -220,6 +220,11 @@ Use `ProbDist.piDep μ` when coordinate `i` has its own outcome type. Combine th
 A table sampled once keeps its entries, so repeated reads agree. `TypedSystem.source` reads
 each entry once, giving fresh samples; sampling inside a procedure draws anew on each call.
 
+For deterministic converters with a monotone total-query allowance, use
+[`IsRandomSystem.attachMass`](src/RandomSystems/Cumulative/Attachment/Defs.lean).
+Its finite cuts reuse bounded attachment; `cut_attachMass` and `attachMass_eq_attach`
+connect the cumulative and bounded APIs with explicit domain and reply-port contracts.
+
 ## Review and automation
 
 From the repository being reviewed, run the aid against the current commit or the branch's base:
