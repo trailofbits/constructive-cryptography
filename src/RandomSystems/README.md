@@ -41,6 +41,11 @@ bounded carrier: `IsRandomSystem.cut D p hp q` preserves masses through depth `q
 masses to zero. `RandomSystem.limitMass` reconstructs a behavior from adjacent coherent cuts;
 `limitMass_cut` and `cut_limitMass` give the two round trips.
 
+[Converter total-query bounds](Converter/QueryBound.lean) use `InsideQueriesBounded α k`
+to count emitted inside queries, including a pending query, after each outside-input prefix.
+They pass to restrictions and compose through certified serial transcripts. Exact domain
+preservation is supplied separately by `IsDDCFrom.mapsDomain`.
+
 [Independent parallel behaviors](Cumulative/Parallel.lean) multiply the masses of their
 projected transcripts. `parallelMass_isRandomSystem` retains matching query/reply tags and
 each selected component's query domain. `cutMass_parallelMass` keeps an explicit total
