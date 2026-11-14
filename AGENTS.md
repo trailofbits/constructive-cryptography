@@ -509,6 +509,9 @@ its library root.
 Keep titles and bodies short, concrete and factual.
 
 - Issues state the problem, requested change and acceptance criteria.
+  For a reusable law, start with the mathematical question in the vocabulary of its owning layer.
+  Introduce each symbol where it is used. Give the equation or a small diagram when it clarifies
+  the change. Use a concrete example to show how a reader can check the law.
 - PRs state the resulting behavior, main change and relevant validation. Give dependencies
   in one line.
 - Remove work narratives, chronology, repeated background, promotional wording and routine
