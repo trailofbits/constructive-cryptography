@@ -61,6 +61,10 @@ namespace SystemAlgebra.Tests
 open SystemAlgebra
 open scoped SystemAlgebra
 
+-- The tag chooses an inhabited reply alphabet, including through a nested tensor.
+example (A B C : Interface) [∀ i, Nonempty (A.Y i)] [∀ j, Nonempty (B.Y j)]
+    [∀ k, Nonempty (C.Y k)] : ∀ l, Nonempty ((A.tensor (B.tensor C)).Y l) := inferInstance
+
 noncomputable section
 
 /-- Two components with different alphabets and budgets, each with the single port `()`:

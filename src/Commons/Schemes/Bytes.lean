@@ -72,6 +72,9 @@ instance {n : ℕ} : LawfulXor (Bytes n) where
 /-- **Byte strings of length at most `ℓ`.** -/
 abbrev ByteString (ℓ : ℕ) := { xs : List UInt8 // xs.length ≤ ℓ }
 
+/-- The empty string has length at most every bound, including zero. -/
+instance (ℓ : ℕ) : Nonempty (ByteString ℓ) := ⟨⟨[], Nat.zero_le ℓ⟩⟩
+
 /-- Byte strings of bounded length are finite: a byte string is its length and its bytes. -/
 noncomputable instance (ℓ : ℕ) : Fintype (ByteString ℓ) := by
   let encode (xs : ByteString ℓ) : Σ n : Fin (ℓ + 1), Fin n.val → UInt8 :=

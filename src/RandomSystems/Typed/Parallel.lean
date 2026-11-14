@@ -15,7 +15,7 @@ of their PDC behaviors.
 ## Main definitions
 
 * `Interface.parallelDomain A B`: the parallel domain of two interfaces
-* `Interface.tensor A B`: the parallel interface
+* `Interface.tensor A B`: the parallel interface, with inhabited replies when both sides have them
 * `TypedSystem.parallel R S`: the parallel composition of typed systems
 * `TypedConverter.parallel α β`: the parallel composition of typed converters
 
@@ -94,6 +94,14 @@ abbrev tensor (A B : Interface) : Interface where
   nonempty_prefix := parallelInputs_nonempty_prefix A.nonempty_prefix.2 B.nonempty_prefix.2
   bound := A.bound + B.bound
   length_le := parallelInputs_length_le A.length_le B.length_le
+
+/-- At a tensor port, the reply alphabet is the selected side's alphabet.
+`F` and `G` give the replies at the left and right ports, respectively. -/
+instance instNonemptyTensorY {I J : Type} {F : I → Type} {G : J → Type}
+    [∀ i, Nonempty (F i)] [∀ j, Nonempty (G j)] :
+    ∀ l, Nonempty (Sum.rec (motive := fun _ => Type) F G l)
+  | .inl i => inferInstanceAs (Nonempty (F i))
+  | .inr j => inferInstanceAs (Nonempty (G j))
 
 end Interface
 
