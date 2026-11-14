@@ -1,0 +1,30 @@
+name: Library change
+description: Propose a reusable law, construction, or improvement to the library.
+body:
+  - type: textarea
+    id: background
+    attributes:
+      label: Background
+      description: >-
+        Open with the question a library user needs to answer. Give just enough context to
+        understand it. For a mathematical change, name the objects in the layer that owns them.
+    validations:
+      required: true
+  - type: textarea
+    id: proposed-change
+    attributes:
+      label: Proposed change
+      description: >-
+        State one result or behavior. For a law, give its hypotheses and conclusion, introducing
+        each symbol where it appears. Use an equation or a small diagram when it says this more clearly.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria
+      description: >-
+        Give a concrete check and its expected outcome. For example, which two constructions
+        should agree, or which boundary case should a test distinguish?
+    validations:
+      required: true

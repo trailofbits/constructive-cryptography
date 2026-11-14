@@ -509,9 +509,9 @@ its library root.
 Keep titles and bodies short, concrete and factual.
 
 - When creating an issue or rewriting its body, including through `gh`, start from the matching
-  Markdown template in `.github/ISSUE_TEMPLATE/`. Copy its headings into the draft and replace
-  the prompts with the issue text. Preserve relevant links and technical details on edits.
-- Before publishing, run `scripts/check-issue-body.py KIND BODY.md` on the draft, where `KIND`
+  YAML form in `.github/ISSUE_TEMPLATE/`. Use its field labels as `###` headings in order.
+  Fill each section using its field description. Preserve links and technical details on edits.
+- Before publishing, run `scripts/check-issue-body.rb KIND BODY.md` on the draft, where `KIND`
   is `library-change` or `bug-report`. Pass that same file to `gh issue create` or
   `gh issue edit` with `--body-file`.
 - Issues state the problem, requested change and acceptance criteria.

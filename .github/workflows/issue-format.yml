@@ -1,0 +1,46 @@
+name: Issue format
+
+on:
+  issues:
+    types: [opened, edited, reopened]
+
+permissions: {}
+
+concurrency:
+  group: issue-format-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check the current body and update the format label
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          issue="repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER"
+          gh api "$issue" > "$RUNNER_TEMP/issue.json"
+          jq -r '.body // ""' "$RUNNER_TEMP/issue.json" > "$RUNNER_TEMP/body.md"
+
+          status=0
+          scripts/check-issue-body.rb auto "$RUNNER_TEMP/body.md" || status=$?
+          if (( status == 2 )); then
+            if ! gh api "repos/$GITHUB_REPOSITORY/labels/needs-format" --silent; then
+              gh label create needs-format --force --color FEF2C0 \
+                --description "Edit the issue body to fill in the required sections"
+            fi
+            gh api --method POST "$issue/labels" --input - --silent <<< '{"labels":["needs-format"]}'
+          elif (( status == 0 )) && jq -e '.labels | any(.name == "needs-format")' \
+              "$RUNNER_TEMP/issue.json" > /dev/null; then
+            gh api --method DELETE "$issue/labels/needs-format" --silent
+          fi
+          exit "$status"
