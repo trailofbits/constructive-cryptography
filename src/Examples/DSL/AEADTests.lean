@@ -24,6 +24,11 @@ open scoped SystemAlgebra SystemAlgebra.DSL
 namespace DSLExamples.Authenticated
 open Commons DSLExamples.Cipher
 
+-- The bounded message alphabet admits a uniform law at every length bound.
+noncomputable example (ℓ : ℕ) : Distribution.ProbDist (ByteString ℓ) := 𝒰[ByteString ℓ]
+
+example : Nonempty (ByteString 0) := inferInstance
+
 /-- Each invocation makes at least one inside call. -/
 lemma bound_pos : 0 < nonceEncryptThenMAC.bound Nonce Message Message Block :=
   nonceEncryptThenMAC.bound_spec Nonce Message Message Block none AEAD.Port.encrypt
