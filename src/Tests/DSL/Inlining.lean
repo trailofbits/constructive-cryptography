@@ -155,6 +155,13 @@ converter Masked : Bits
     mask ←$ 𝒰[Bool]
     return mask != y
 
+-- A private source remains beside the resource when exposing the program's attachment.
+example (q : ℕ) (R : TypedSystem (Bits (Masked.bound * q))) :
+    Masked (budget := q) • R =
+      Masked.program (budget := q) • (R ∥ Masked.randomness (Masked.bound * q)) := by
+  rw [Masked, Interface.comp_smul, TypedConverter.attach_rightContext]
+  rfl
+
 -- Both supplied contracts are used: inside replies and the converter's fresh masks.
 example (q : Bits.Port → ℕ) (R : TypedSystem (Bits.perPort q))
     (ν : Bits.Port → Bool → ProbDist Bool)
