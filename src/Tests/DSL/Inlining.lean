@@ -182,6 +182,15 @@ example (q : ℕ) (R : TypedSystem (Bits (Masked.bound * q))) :
   rw [Masked, Interface.comp_smul, TypedConverter.attach_rightContext]
   rfl
 
+-- Each member's budget determines its program and its inside allowance.
+example {K : Type} [Fintype K] [DecidableEq K] (q : K → ℕ) :
+    (⨂ₘ k, Negate (budget := q k)) =
+      (⨂ₘ k, TypedConverter.ofProgram none (Negate.bodyAt (q k))
+        Negate.bound_spec (fun _ hne hlen => ⟨hne, hlen⟩)) := rfl
+
+-- The sampled procedure's inside interface still includes its fresh source.
+example (q : ℕ) : (Masked.bodyAt q).Bounded Masked.bound := Masked.bound_spec
+
 -- Both supplied contracts are used: inside replies and the converter's fresh masks.
 example (q : Bits.Port → ℕ) (R : TypedSystem (Bits.perPort q))
     (ν : Bits.Port → Bool → ProbDist Bool)

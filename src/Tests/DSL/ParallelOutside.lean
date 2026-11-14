@@ -147,6 +147,9 @@ example : Forward.bound = 1 := rfl
 example (r w : ℕ) : Reading r ⊗ Writing w ⟶ Cell (Forward.bound * (r + w)) :=
   Forward (budget := (r, w))
 
+-- At the tuple budget `(r,w)` the converter runs its original body.
+example (r w : ℕ) : Forward.bodyAt (r, w) = Forward.body := rfl
+
 -- Per-port budgets outside; the inside allowance is the bound times their aggregate.
 example (q : Reading.Port ⊕ Writing.Port → ℕ) :
     Reading.perPort (fun i => q (.inl i)) ⊗ Writing.perPort (fun i => q (.inr i)) ⟶

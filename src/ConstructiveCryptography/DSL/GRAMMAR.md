@@ -239,7 +239,9 @@ sources [beside][TypedConverter.rightContext] the inside interface, or `C.progra
 samples nothing. In that case,
 `C.eq_ofProgram` gives `C = TypedConverter.ofProgram none C.body hb hB` at the chosen
 budget, using its generated call-bound and domain certificates. Rewrite with this equation
-under attachment to apply a program law without unfolding `C`. With
+under attachment to apply a program law without unfolding `C`.
+`C.bodyAt q` is the same body with the interfaces at budget `q`, for use in program-family laws.
+For a converter with fresh draws the inside interface includes its sources. With
 an annotated outside interface and a single inside interface it
 [also has a per-port typing][elabPerPortDecls] along a partial port
 map `C.portMap : I.Port → Option J.Port`, through the
