@@ -218,6 +218,14 @@ noncomputable example (q : Cache.Port → ℕ) :
 /-- Writes query the store; reads query nothing inside. -/
 example : WriteThrough.portMap .write = some .put ∧ WriteThrough.portMap .read = none := ⟨rfl, rfl⟩
 
+/-- At every budget `q`, the cache starts its declared program in state `none`.
+The converter supplies the call bound and admission of the store queries. -/
+example (q : ℕ) :
+    ∃ (hb : WriteThrough.body.Bounded WriteThrough.bound) (hB : _),
+      WriteThrough (budget := q) = TypedConverter.ofProgram (A := Cache q)
+        (B := Store (WriteThrough.bound * q)) none WriteThrough.body hb hB :=
+  WriteThrough.eq_ofProgram
+
 example (q : Cache.Port → ℕ) : WriteThrough.insideBudget q .put = q .write := rfl
 
 end DSLTests.Semantics
