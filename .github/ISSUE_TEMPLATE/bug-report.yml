@@ -1,0 +1,28 @@
+name: Bug report
+description: Report an incorrect result or unexpected library behavior.
+body:
+  - type: textarea
+    id: background
+    attributes:
+      label: Background
+      description: >-
+        What were you trying to define, prove, or run? Name the declaration or command involved.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: >-
+        Give the smallest Lean example or command that shows the problem.
+        Include the observed result or the relevant line of the error message.
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: >-
+        State what the example should produce. This gives the fix a concrete regression check.
+    validations:
+      required: true

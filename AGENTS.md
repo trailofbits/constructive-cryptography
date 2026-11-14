@@ -508,7 +508,16 @@ its library root.
 
 Keep titles and bodies short, concrete and factual.
 
+- When creating an issue or rewriting its body, including through `gh`, start from the matching
+  YAML form in `.github/ISSUE_TEMPLATE/`. Use its field labels as `###` headings in order.
+  Fill each section using its field description. Preserve links and technical details on edits.
+- Before publishing, run `scripts/check-issue-body.rb KIND BODY.md` on the draft, where `KIND`
+  is `library-change` or `bug-report`. Pass that same file to `gh issue create` or
+  `gh issue edit` with `--body-file`.
 - Issues state the problem, requested change and acceptance criteria.
+  For a reusable law, start with the mathematical question in the vocabulary of its owning layer.
+  Introduce each symbol where it is used. Give the equation or a small diagram when it clarifies
+  the change. Use a concrete example to show how a reader can check the law.
 - PRs state the resulting behavior, main change and relevant validation. Give dependencies
   in one line.
 - Remove work narratives, chronology, repeated background, promotional wording and routine
