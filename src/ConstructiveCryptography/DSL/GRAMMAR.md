@@ -282,7 +282,10 @@ each hop of [PRG length extension][ExPRG] rewrites with these contracts and an i
 A component declaration also generates proved equations for its procedures. For a procedure
 `get`, a deterministic system has `C.step_get`; a program has `C.body_get_initial` and
 `C.body_get_resumed`. The latter two distinguish `none` before initialization from `some state`
-afterward. A named outside procedure `read.get` puts its equations in `C.read`.
+afterward. For a converter without `initialize`, `C.body_get` applies at any state.
+When two ports are named `get` and `get_initial`, the latter uses `C.get_initial.body`
+so `C.body_get_initial` still names the first-call equation of `get`.
+A named outside procedure `read.get` puts its equations in `C.read`.
 
 When the compiler proves a displayed constant call bound, it also generates
 `C.combine_get_initial`, `C.combine_get_resumed`,
