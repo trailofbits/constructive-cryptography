@@ -790,6 +790,13 @@ def elabProgramDecls (converting : Bool) (name : Ident)
   let k ← if σ.outside.isEmpty then `($boundName $args* * $budget)
     else `($boundName $args* * ($sigB).bound)
   let (innerK, admitsK, _) ← componentInside converting insides sites used k
+  let bodyAt := Lean.mkIdent (name.getId ++ `bodyAt)
+  if converting then
+    -- Name the same body at this budget's interfaces, including the sources of fresh draws.
+    elabCommand (← `(noncomputable abbrev $bodyAt:ident $params:bracketedBinder*
+        ($budget : $budgetType) :
+        Program (Option $stateTy) ($sigB).I ($innerK).I ($sigB).X ($sigB).Y
+          ($innerK).X ($innerK).Y := $bodyName $args*))
   elabCommand (← `(noncomputable def $programName:ident $params:bracketedBinder*
         {$budget : $budgetType} :
       $sigB ⟶ $innerK :=
