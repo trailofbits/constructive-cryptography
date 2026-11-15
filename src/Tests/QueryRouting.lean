@@ -16,6 +16,8 @@ that no renaming of labels expresses.
                 └──────────────────────┘
 ```
 
+* A writer and a reader share a single Boolean register. A router complements the writer's
+  acknowledgement, and the reader observes exactly the written bit.
 * The identity oracle `f_j(x) = x` checks that the payload `x` is forwarded.
 * The port-returning oracle `f_j(x) = j` checks that the selected label is `b`.
 * Reply alphabets `Y_false = Unit`, `Y_true = Bool` check heterogeneous replies, with an answer
@@ -205,6 +207,65 @@ example (ν : ∀ j, heterogeneousInside.X j → ProbDist (heterogeneousInside.Y
         request answerAt request_domain • TypedSystem.ofMemoryless heterogeneousInside ν =
       TypedSystem.ofMemoryless outside (fun o x => (ν x.1 x.2).map (answerAt ⟨o, x⟩)) :=
   TypedConverter.routingAt_smul_ofMemoryless _ _ _ _
+
+/-! ## A writer and a reader sharing one register -/
+
+/-- Two ports, each admitting one Boolean query. -/
+abbrev registerPorts := (bits 1).tensor (bits 1)
+
+/-- The writer stores and acknowledges `b`; the reader returns the current register. -/
+def registerStep : Bool → (i : registerPorts.I) → registerPorts.X i → Bool × registerPorts.Y i
+  | _, .inl _, b => (b, b)
+  | r, .inr _, _ => (r, r)
+
+/-- Complement the writer's acknowledgement and pass the reader's reply through. -/
+def registerAnswer : (u : Σ i, registerPorts.X i) → registerPorts.Y u.1 → registerPorts.Y u.1
+  | ⟨.inl _, _⟩, y => !y
+  | ⟨.inr _, _⟩, y => y
+
+/-- Both ports forward their input unchanged, so the one-query-per-port domain is preserved. -/
+noncomputable def registerRouter : TypedConverter registerPorts registerPorts :=
+  TypedConverter.routingAt id registerAnswer (fun xs hx => by simpa only [List.map_id] using hx)
+
+/-- Writing `b` returns `!b`. The other caller then reads `b`, even if the initial bit differs.
+The probability includes both exchanges on the router's declared domain. -/
+lemma register_write_read_mass (initial b read : Bool) :
+    (registerRouter • TypedSystem.ofProbAutomaton registerPorts
+      (ProbStep.ofDeterministic registerStep) (ProbDist.single initial)).1
+        [(⟨.inl (), b⟩, ⟨.inl (), !b⟩), (⟨.inr (), false⟩, ⟨.inr (), read⟩)] =
+      if read = b then 1 else 0 := by
+  -- The stateful attachment law translates the reply while retaining the register update.
+  rw [registerRouter, TypedConverter.routingAt_smul_ofProbAutomaton]
+  simp only [id_eq]
+  let δ (r : Bool) (i : registerPorts.I) (x : registerPorts.X i) :=
+    ((registerStep r i x).1, registerAnswer ⟨i, x⟩ (registerStep r i x).2)
+  have hstep : ∀ r i x, ((ProbStep.ofDeterministic registerStep) r i x).map
+      (fun p => (p.1, registerAnswer ⟨i, x⟩ p.2)) = ProbStep.ofDeterministic δ r i x :=
+    fun _ _ _ => Subtype.ext (fTransform_single _ _ _)
+  rw [show (fun r i x => _) = ProbStep.ofDeterministic δ from funext₃ hstep,
+    TypedSystem.ofProbAutomaton_ofDeterministic, TypedSystem.ofAutomaton_mass]
+  -- The point initial law gives mass one exactly when both prescribed replies occur.
+  rw [ProbDist.single, mass_single]
+  congr 1
+  apply propext
+  let w : Σ i, registerPorts.X i := ⟨.inl (), b⟩
+  let q : Σ i, registerPorts.X i := ⟨.inr (), false⟩
+  change Replies (filterDom _ (automatonSystem δ initial)) [w, q] _ ↔ read = b
+  have legal : registerPorts.domain [w, q] := by
+    -- Each port receives exactly one call.
+    simp [registerPorts, Interface.tensor, Interface.parallelDomain, parallelInputs, w, q,
+      bits, Interface.queryBudget, sumAlphabet, restrict_cons_self, restrict_cons_ne]
+  rw [replies_filterDom_iff registerPorts.nonempty_prefix.2 _ (fun _ => legal)]
+  -- The write reaches state b, so the read reply is precisely b.
+  change Replies (automatonSystem δ initial) ([w] ++ [q]) ([⟨.inl (), !b⟩] ++ [⟨.inr (), read⟩]) ↔ _
+  rw [replies_snoc, automatonSystem_snoc]
+  have hw : Replies (automatonSystem δ initial) [w] [⟨.inl (), !b⟩] :=
+    (replies_snoc (xs := []) (ys := [])).mpr ⟨replies_nil _, rfl⟩
+  simp only [hw, true_and, Part.some_inj]
+  exact ⟨fun h => (eq_of_heq (Sigma.mk.inj_iff.mp h).2).symm, fun h => h ▸ rfl⟩
+
+#print axioms register_write_read_mass
+#print axioms TypedConverter.routingAt_smul_ofProbAutomaton
 
 #print axioms TypedConverter.routingAt_smul_ofMemoryless
 #print axioms TypedConverter.routingAt_smul_ofFunction
