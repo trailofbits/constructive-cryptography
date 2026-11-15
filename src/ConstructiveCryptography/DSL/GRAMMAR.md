@@ -498,3 +498,18 @@ before/after proofs, expression guards, negative tests and exact rewrite traces 
 [cc_usage]: ../Tactics/Substitution.lean#L260
 [cc_calc-statistical]: ../Tactics/Substitution.lean#L309
 [cc_calc-mixed]: ../Tactics/Substitution.lean#L312
+
+## One-call routers
+
+```lean
+router Flip (q : ℕ) : Bits q
+  inside bit : Bits q
+  on get(x : Bool) → Bool
+    y ← bit.get(x)
+    return !y
+```
+
+`Flip q` is `TypedConverter.routingAt (Flip.request q) (Flip.answer q) (Flip.request_domain q)`.
+The inside and outside annotations are interfaces at their declared budgets. For an inside
+domain with additional restrictions, a trailing `by` proves that mapping an admitted outside
+history by the generated request gives an admitted inside history.
