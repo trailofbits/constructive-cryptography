@@ -5,6 +5,7 @@ public import RandomSystems.Converter.ProgramSchedule
 public import RandomSystems.Typed.DSL.Programs
 public import RandomSystems.Typed.CallFunctional
 public import RandomSystems.Typed.Memoryless
+public import RandomSystems.Typed.ProbProgramAttachment
 
 /-!
 # Typed realization of input-dependent routing
@@ -24,6 +25,8 @@ lets the reply alphabets `B.Y j` differ from `A.Y o` and from each other.
 
 ## Main results
 
+* `TypedConverter.routingAt_smul_ofProbAutomaton`: every routed call updates the same inside
+  state and translates its reply at the requested port.
 * `TypedConverter.routingAt_smul_ofMemoryless`: at `request u = (j,x)`, the outside reply law
   is the image of the fresh inside law at `j(x)` under `answer u`. Point laws give
   `TypedConverter.routingAt_smul_ofFunction`.
@@ -164,6 +167,10 @@ noncomputable def routingAtProgram : Program Unit A.I B.I A.X A.Y B.X B.Y :=
 lemma routingAtProgram_costs : (routingAtProgram request answer).Costs (fun _ => 1) :=
   fun _ _ _ => DSL.callCost_call _ _ _ fun _ => DSL.callCost_return _
 
+/-- One inside call suffices to finish any invocation of the router. -/
+lemma routingAtProgram_bounded : (routingAtProgram request answer).Bounded 1 :=
+  fun s o x h q hc hq => (routingAtProgram_costs request answer s o x h hc).1 q hq
+
 /-- Route `u` to `(j,x) = request u` and return `answer u y` for its reply `y : B.Y j`. -/
 noncomputable def routingAt (request : (Σ o, A.X o) → Σ j, B.X j)
     (answer : (u : Σ o, A.X o) → B.Y (request u).1 → A.Y u.1)
@@ -193,16 +200,15 @@ lemma routingAt_smul_ofMemoryless
   -- Program attachment reduces the equality to the reply law of one invocation.
   apply Subtype.ext
   refine PDCBehavior.attach_ofDDC_ofProgramOn_memoryless B.nonempty_prefix A.nonempty_prefix
-    () (routingAtProgram request answer) (b := 1) ?_ _ (ν := ν)
+    () (routingAtProgram request answer) (routingAtProgram_bounded request answer) _ (ν := ν)
     (κ := fun o x => (ν (request ⟨o, x⟩).1 (request ⟨o, x⟩).2).map (answer ⟨o, x⟩))
     ?_ rfl (TypedSystem.ofMemoryless B ν).2
-  · exact fun s o x h q hc hq => (routingAtProgram_costs request answer s o x h hc).1 q hq
-  · intro s o x
-    -- The lone call draws from ν; the continuation returns the image of that draw.
-    rw [Program.memorylessReplyLaw_succ_inr (by rfl)]
-    simpa only [routingAtProgram, Program.memorylessReplyLaw, DSL.callProg, DSL.returnProg,
-      List.nil_append, ↓reduceDIte, ProbDist.map_val] using
-      bindK_single_comp (ν (request ⟨o, x⟩).1 (request ⟨o, x⟩).2).1 (answer ⟨o, x⟩)
+  intro s o x
+  -- The lone call draws from ν; the continuation returns the image of that draw.
+  rw [Program.memorylessReplyLaw_succ_inr (by rfl)]
+  simpa only [routingAtProgram, Program.memorylessReplyLaw, DSL.callProg, DSL.returnProg,
+    List.nil_append, ↓reduceDIte, ProbDist.map_val] using
+    bindK_single_comp (ν (request ⟨o, x⟩).1 (request ⟨o, x⟩).2).1 (answer ⟨o, x⟩)
 
 /-- Attachment to a fixed oracle computes `g(u) = answer u (f j x)` at `request u = (j,x)`. -/
 lemma routingAt_smul_ofFunction
@@ -221,6 +227,52 @@ lemma routingAt_smul_ofFunction
   congr 1
   funext o x
   exact Subtype.ext (fTransform_single _ _ _)
+
+/-- One invocation updates the inside state from `r` to `r'` and translates only its reply. -/
+lemma routingAtProgram_probCombine {R : Type}
+    (step : ProbStep R B.I B.X B.Y) (r : R) (o : A.I) (x : A.X o) :
+    (routingAtProgram request answer).probCombine step (routingAtProgram_bounded request answer)
+        ((), r) o x =
+      (step r (request ⟨o, x⟩).1 (request ⟨o, x⟩).2).map
+        (fun p => (((), p.1), answer ⟨o, x⟩ p.2)) := by
+  apply Subtype.ext
+  change (routingAtProgram request answer).probInvoke step () o x (0 + 1) r [] = _
+  -- Draw the inside transition at the requested port.
+  rw [Program.probInvoke_succ_inr (by rfl)]
+  simp only [ProbDist.map_val, ProbStep.outcome, ProbStep.tagged, bindK_fTransform,
+    Function.comp_def, List.nil_append]
+  -- On reply y, the continuation returns a point mass at the translated reply.
+  rw [← bindK_single_comp]
+  congr 1
+  funext p
+  apply Program.probInvoke_inl (a := ((), answer ⟨o, x⟩ p.2))
+  simp only [routingAtProgram, DSL.callProg, DSL.returnProg, ↓reduceDIte]
+
+/-- For `request u = (j,x)`, draw `(r',y) ← step r j x`, keep `r'` and return `answer u y`.
+All outside ports share the single state initialized by `μ`. -/
+lemma routingAt_smul_ofProbAutomaton {R : Type}
+    -- Every requested history must be legal for the inside automaton.
+    (hmap : ∀ us, A.domain us → B.domain (us.map request))
+    -- `step` updates the retained state in `R`; `μ` is its initial law.
+    (step : ProbStep R B.I B.X B.Y) (μ : ProbDist R) :
+    routingAt request answer hmap • TypedSystem.ofProbAutomaton B step μ =
+      TypedSystem.ofProbAutomaton A (fun r o x =>
+        (step r (request ⟨o, x⟩).1 (request ⟨o, x⟩).2).map
+          (fun p => (p.1, answer ⟨o, x⟩ p.2))) μ := by
+  -- Program attachment pairs the router's unit state with the one inside state.
+  let δ := (routingAtProgram request answer).probCombine step (routingAtProgram_bounded _ _)
+  calc
+    _ = TypedSystem.ofProbAutomaton A δ (μ.map fun r => ((), r)) :=
+      Subtype.ext (PDCBehavior.attach_ofDDC_ofProgramOn_ofProbAutomaton
+        B.nonempty_prefix A.nonempty_prefix () _ (routingAtProgram_bounded request answer) _ step μ)
+    -- The state map r ↦ ((), r) commutes with the single routed transition.
+    _ = _ := by
+      symm
+      apply TypedSystem.ofProbAutomaton_eq_of_stateMap _ δ (fun r => ((), r))
+      intro r o x
+      dsimp only [δ]
+      rw [routingAtProgram_probCombine, ProbDist.map_map]
+      rfl
 
 end RequestedPort
 

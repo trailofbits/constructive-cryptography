@@ -194,24 +194,20 @@ For a certified [direct call rule][callRule], query and return equations against
 function $`f`$ yield the
 [outside functional system][TypedConverter.ofDDC_callConverter_smul_ofFunction]; later inside
 queries of an invocation may depend on its earlier replies.
-An [input-dependent router][routingConverter] can move a payload field into the inside port label;
-its [typed attachment][TypedConverter.ofDDC_routingConverter_smul_ofFunction] returns the explicitly
-translated inside answer at the original outside port.
-Writing $`\operatorname{request}(u) = (j,x)`$, the outside function is
+For a one-call router `routingAt`, the request $r(u)=(j,x)$ selects the inside port.
+The answer $a_u$ takes a reply of type $Y_j$. Mapping every admitted outside history by $r$
+must give an admitted inside history. Attachment then acts on the reply as follows.
 
-```math
-g(u) = \operatorname{answer}\bigl(u,(j,f_j(x))\bigr).
-```
+| Inside system | Outside reply at $u$ |
+|---|---|
+| Fixed function $f$ | $a_u(f_j(x))$ |
+| Fresh replies of law $ν_j(x)$ | Draw $y$ from $ν_j(x)$ and return $a_u(y)$. |
+| Automaton in state $s$ | Draw $(s',y)$ from the transition at $(s,j,x)$, retain $s'$ and return $a_u(y)$. |
 
-The input $`u`$ is retained until the inside reply arrives. For outside domain $`F`$ and
-inside domain $`E`$, the domain guarantee follows from
-$`F(us) \Rightarrow E(\operatorname{map}(\operatorname{request},us))`$.
-The typed constructor [**`routing`**][TypedConverter.routing] takes precisely this certificate.
-It spends one inside query per outside input, including a pending invocation. For fresh replies
-with law $`\nu_j(x)`$, its [memoryless attachment law][TypedConverter.routing_smul_ofMemoryless]
-pushes that law forward through $`y \mapsto \operatorname{answer}(u,(j,y))`$.
-The [input-encoding and output-projection clients](../../Tests/QueryRouting.lean) use this law
-on a restricted inside domain.
+The [attachment laws](QueryRouting.lean) use the declared outside domain. The automaton keeps
+its initial law. [`routing`][TypedConverter.routing] accepts a translation on tagged replies.
+The [register test](../../Tests/QueryRouting.lean) writes on one port and reads the
+updated state on the other.
 
 To share one component among tagged callers, erase the caller tag in `request` and attach the
 router to that single system. `smul_sample` preserves its retained draw. The domain certificate
@@ -314,10 +310,7 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedSystem.parallel_sample_right]: SamplingAlgebra.lean#L87
 [callRule]: ../Converter/Calls.lean#L395
 [TypedConverter.ofDDC_callConverter_smul_ofFunction]: CallRuleFunctional.lean#L35
-[routingConverter]: ../Converter/QueryRouting.lean#L73
-[TypedConverter.ofDDC_routingConverter_smul_ofFunction]: QueryRouting.lean#L62
 [TypedConverter.routing]: QueryRouting.lean
-[TypedConverter.routing_smul_ofMemoryless]: QueryRouting.lean
 [Interface.withMBO]: Game.lean#L35
 [TypedGame]: Game.lean#L46
 [TypedConverter.attachGame]: Game.lean#L49
