@@ -199,6 +199,14 @@ example (q : ℕ) (f : Bool × Bool → Bool × Bool) :
     TypedSystem.ofFunction (A := bits q) (fun _ x => (f (true, x)).2) :=
   TypedConverter.routingAt_smul_ofFunction _ _ _ _
 
+/-- Each selected port draws from its own reply alphabet before the outside translation. -/
+example (ν : ∀ j, heterogeneousInside.X j → ProbDist (heterogeneousInside.Y j)) :
+    TypedConverter.routingAt (A := outside) (B := heterogeneousInside)
+        request answerAt request_domain • TypedSystem.ofMemoryless heterogeneousInside ν =
+      TypedSystem.ofMemoryless outside (fun o x => (ν x.1 x.2).map (answerAt ⟨o, x⟩)) :=
+  TypedConverter.routingAt_smul_ofMemoryless _ _ _ _
+
+#print axioms TypedConverter.routingAt_smul_ofMemoryless
 #print axioms TypedConverter.routingAt_smul_ofFunction
 #print axioms routingConverter_query_count
 #print axioms routingConverter_eq_ofProgramOn

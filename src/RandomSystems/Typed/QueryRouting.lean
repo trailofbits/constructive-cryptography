@@ -24,7 +24,9 @@ lets the reply alphabets `B.Y j` differ from `A.Y o` and from each other.
 
 ## Main results
 
-* `TypedConverter.routingAt_smul_ofFunction`: the answer takes a reply at the requested port
+* `TypedConverter.routingAt_smul_ofMemoryless`: at `request u = (j,x)`, the outside reply law
+  is the image of the fresh inside law at `j(x)` under `answer u`. Point laws give
+  `TypedConverter.routingAt_smul_ofFunction`.
 * `TypedConverter.routing`: one inside query and a translated reply, with an explicit domain map
 * `TypedConverter.routing_smul_ofFunction`: `α • ofFunction f = ofFunction g`
 * `TypedConverter.routing_smul_ofMemoryless`: fresh inside replies stay fresh; their laws are
@@ -180,6 +182,28 @@ noncomputable def routingAt (request : (Σ o, A.X o) → Σ j, B.X j)
     · intro us hus
       exact Or.inr (by simpa only [List.map_eq_flatMap] using hmap us hus))
 
+/-- At `request u = (j,x)`, a fresh draw `y ← ν j x` gives the outside reply `answer u y`. -/
+lemma routingAt_smul_ofMemoryless
+    -- Mapping an admitted history by `request` keeps every call inside the domain of `B`.
+    (hmap : ∀ us, A.domain us → B.domain (us.map request))
+    (ν : ∀ j, B.X j → ProbDist (B.Y j)) :
+    routingAt request answer hmap • TypedSystem.ofMemoryless B ν =
+      TypedSystem.ofMemoryless A (fun o x =>
+        (ν (request ⟨o, x⟩).1 (request ⟨o, x⟩).2).map (answer ⟨o, x⟩)) := by
+  -- Program attachment reduces the equality to the reply law of one invocation.
+  apply Subtype.ext
+  refine PDCBehavior.attach_ofDDC_ofProgramOn_memoryless B.nonempty_prefix A.nonempty_prefix
+    () (routingAtProgram request answer) (b := 1) ?_ _ (ν := ν)
+    (κ := fun o x => (ν (request ⟨o, x⟩).1 (request ⟨o, x⟩).2).map (answer ⟨o, x⟩))
+    ?_ rfl (TypedSystem.ofMemoryless B ν).2
+  · exact fun s o x h q hc hq => (routingAtProgram_costs request answer s o x h hc).1 q hq
+  · intro s o x
+    -- The lone call draws from ν; the continuation returns the image of that draw.
+    rw [Program.memorylessReplyLaw_succ_inr (by rfl)]
+    simpa only [routingAtProgram, Program.memorylessReplyLaw, DSL.callProg, DSL.returnProg,
+      List.nil_append, ↓reduceDIte, ProbDist.map_val] using
+      bindK_single_comp (ν (request ⟨o, x⟩).1 (request ⟨o, x⟩).2).1 (answer ⟨o, x⟩)
+
 /-- Attachment to a fixed oracle computes `g(u) = answer u (f j x)` at `request u = (j,x)`. -/
 lemma routingAt_smul_ofFunction
     (hmap : ∀ us, A.domain us → B.domain (us.map request))
@@ -188,18 +212,15 @@ lemma routingAt_smul_ofFunction
     routingAt request answer hmap • TypedSystem.ofFunction f =
       TypedSystem.ofFunction (fun o x =>
         answer ⟨o, x⟩ (f (request ⟨o, x⟩).1 (request ⟨o, x⟩).2)) := by
-  -- The program-attachment law reduces the system equality to one invocation.
-  apply Subtype.ext
-  refine PDCBehavior.attach_ofDDC_ofProgramOn_memoryless B.nonempty_prefix A.nonempty_prefix
-    () (routingAtProgram request answer) (b := 1) ?_ _ (ν := fun j x => ProbDist.single (f j x))
-    (κ := fun o x => ProbDist.single (answer ⟨o, x⟩ (f _ (request ⟨o, x⟩).2)))
-    ?_ rfl (TypedSystem.ofFunction f).2
-  · exact fun s o x h q hc hq => ((routingAtProgram_costs request answer s o x h hc).1 q hq)
-  · intro s o x
-    -- The inside point law returns f(j,x); its image is the point law at the translated reply.
-    rw [Program.memorylessReplyLaw_succ_inr (by rfl)]
-    simp only [routingAtProgram, Program.memorylessReplyLaw, DSL.callProg, DSL.returnProg,
-      List.nil_append, ↓reduceDIte, ProbDist.single, bindK_single, one_smul]
+  change routingAt request answer hmap •
+      TypedSystem.ofMemoryless B (fun j x => ProbDist.single (f j x)) =
+    TypedSystem.ofMemoryless A (fun o x =>
+      ProbDist.single (answer ⟨o, x⟩ (f _ (request ⟨o, x⟩).2)))
+  rw [routingAt_smul_ofMemoryless]
+  -- A translated point mass is the point mass at the translated reply.
+  congr 1
+  funext o x
+  exact Subtype.ext (fTransform_single _ _ _)
 
 end RequestedPort
 
