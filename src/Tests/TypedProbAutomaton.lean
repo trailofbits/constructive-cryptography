@@ -45,11 +45,10 @@ lemma countingStep_simulatesAt
     (s : CountingState) (x : Σ i, countingInterface.X i) :
     ProbStep.SimulatesAt countingStep (ProbStep.fresh fun _ _ => 𝒰[Bool])
       (fun _ => ProbDist.single ()) s x := by
-  -- Both routes keep the new fair reply and replace its counter by the unique unit state.
-  simp only [ProbStep.SimulatesAt, ProbDist.single, bindK_single, one_smul,
-    ProbStep.outcome, ProbStep.fresh, countingStep, ProbDist.map_val,
-    fTransform_fTransform, fTransform_single, bindK_single_comp]
-  rfl
+  -- Projecting the next counter to unit leaves precisely the fresh bit paired with unit.
+  apply ProbStep.simulatesAt_of_stateMap countingStep _ (fun _ => ())
+  simp only [countingStep, ProbStep.fresh, ProbDist.map_map, Function.comp_def, Prod.map_apply,
+    id_eq]
 
 /-- Removing the retained count gives the `ProbStep.fresh` automaton on the same domain. -/
 lemma countingSource_eq_fresh :
@@ -136,6 +135,7 @@ example
       α • TypedSystem.ofAutomaton A step init := by
   rw [TypedSystem.ofProbAutomaton_ofDeterministic]
 
+#print axioms TypedSystem.ofProbAutomaton_eq_of_stateMap
 #print axioms TypedSystem.ofProbAutomaton
 #print axioms TypedSystem.ofProbAutomaton_ofDeterministic
 #print axioms TypedSystem.ofProbAutomaton_eq_of_simulation

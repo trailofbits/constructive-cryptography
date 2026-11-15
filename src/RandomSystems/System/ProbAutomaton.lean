@@ -297,6 +297,30 @@ def SimulatesAt (K : S₁ → Distribution.ProbDist S₂) (s : S₁) (x : Σ i, 
     bindK (step₁.outcome s x) fun p => fTransform (fun s₂ => (s₂, p.2)) (K p.1).1
 
 omit [Fintype (Σ i, X i)] [Fintype (Σ i, Y i)] in
+/-- **A state map is a point simulation.** If `f` carries the step of `step₁` from `s` at `x` to
+the step of `step₂` from `f s`, with the same reply, then `step₂` simulates `step₁` at `s` and `x`
+along the point kernel `s ↦ δ_{f s}`:
+
+```
+        s ──── step₁, x ────► (s', y)
+        │                        │
+        f                      f × id
+        ▼                        ▼
+       f s ─── step₂, x ────► (f s', y)
+```
+-/
+lemma simulatesAt_of_stateMap
+    -- `f` maps the states of `step₁` to those of `step₂`; `s` is a state and `x` a tagged query.
+    (f : S₁ → S₂) {s : S₁} {x : Σ i, X i}
+    -- `h`: `(f × id)_* (step₁ s x) = step₂ (f s) x`.
+    (h : (step₁ s x.1 x.2).map (Prod.map f id) = step₂ (f s) x.1 x.2) :
+    SimulatesAt step₁ step₂ (fun s => Distribution.ProbDist.single (f s)) s x := by
+  -- Both sides push `step₁ s x` forward along `(s', y) ↦ (f s', ⟨x.1, y⟩)`.
+  simp only [SimulatesAt, outcome, ← h, Distribution.ProbDist.single, ProbDist.map_val,
+    bindK_single, one_smul, fTransform_single, bindK_single_comp, fTransform_fTransform]
+  rfl
+
+omit [Fintype (Σ i, X i)] [Fintype (Σ i, Y i)] in
 open scoped Classical in
 /-- The states of a pushforward into pairs `(a, c)` with second component `y`. -/
 lemma fTransform_fst_restrict_pair {A C : Type} (ν : Distribution A) (c y : C) :
