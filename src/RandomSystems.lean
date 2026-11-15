@@ -24,6 +24,7 @@ public import RandomSystems.Converter.ForwardingProgram
 public import RandomSystems.Converter.ProgramSchedule
 public import RandomSystems.Converter.ProgramAttachment
 public import RandomSystems.Converter.ProbProgramAttachment
+public import RandomSystems.Converter.ProbProgramTensor
 public import RandomSystems.Converter.ParallelPDS
 public import RandomSystems.Converter.ParallelAll
 public import RandomSystems.Converter.PDCBehavior
