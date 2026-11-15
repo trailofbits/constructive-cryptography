@@ -184,6 +184,51 @@ noncomputable def probCombine {b : ℕ} (hP : P.Bounded b) : ProbStep (S × R) O
 lemma probCombine_val {b : ℕ} (hP : P.Bounded b) (sr : S × R) (o : O) (u : U o) :
     (P.probCombine stepR hP sr o u).1 = P.probInvoke stepR sr.1 o u b sr.2 [] := rfl
 
+/-- **Budget independence**: once the queries left cover the bound `b`, an invocation's law does
+not depend on how many are left. -/
+lemma probInvoke_congr
+    -- `step` answers the inside queries; `hP` bounds every invocation by `b` inside queries.
+    (step : ProbStep R J X Y) {b : ℕ} (hP : P.Bounded b) (s : S) (o : O) (u : U o) :
+    ∀ n n' r h, P.Consistent s o u h → b ≤ n + h.length → b ≤ n' + h.length →
+      P.probInvoke step s o u n r h = P.probInvoke step s o u n' r h := by
+  intro n
+  induction n with
+  | zero =>
+    intro n' r h hc hb hb'
+    cases hq : P s o u h with
+    | inl a => rw [probInvoke_inl hq, probInvoke_inl hq]
+    -- A query with no query left is excluded by the bound.
+    | inr q => exact absurd (hP s o u h q hc hq) (by omega)
+  | succ n ih =>
+    intro n' r h hc hb hb'
+    cases hq : P s o u h with
+    | inl a => rw [probInvoke_inl hq, probInvoke_inl hq]
+    | inr q =>
+      -- The body asks `q`, so both budgets have a query left; the continuations agree.
+      obtain ⟨m, rfl⟩ : ∃ m, n' = m + 1 :=
+        ⟨n' - 1, by have := hP s o u h q hc hq; omega⟩
+      rw [probInvoke_succ_inr hq, probInvoke_succ_inr hq]
+      refine bindK_congr fun p hp => ?_
+      obtain ⟨y, hy⟩ := step.mem_support_outcome hp
+      rw [hy]
+      exact ih _ _ _ (hc.snoc hq y)
+        (by simp only [List.length_append, List.length_singleton]; omega)
+        (by simp only [List.length_append, List.length_singleton]; omega)
+
+/-- The combined step does not depend on the chosen invocation bound. -/
+lemma probCombine_congr
+    -- `step` answers the inside queries; `hb`, `hb'` are two bounds of the same program.
+    (step : ProbStep R J X Y) {b b' : ℕ} (hb : P.Bounded b) (hb' : P.Bounded b') :
+    P.probCombine step hb = P.probCombine step hb' := by
+  funext sr o u
+  apply Subtype.ext
+  -- Both budgets are compared with `max b b'`, which covers either bound.
+  rw [probCombine_val, probCombine_val,
+    probInvoke_congr step hb _ _ _ b (max b b') _ _ (consistent_nil P _ _ _) (le_refl b)
+      (le_max_left b b'),
+    probInvoke_congr step hb' _ _ _ b' (max b b') _ _ (consistent_nil P _ _ _) (le_refl b')
+      (le_max_right b b')]
+
 /-- Against a deterministic automaton, an invocation is the point law of its completion. -/
 lemma probInvoke_ofDeterministic (stepD : R → (j : J) → X j → R × Y j) (s : S) (o : O)
     (u : U o) : ∀ n r h v, P.invoke stepD s o u n r h = some v →
