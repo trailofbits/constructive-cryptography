@@ -151,6 +151,8 @@ conditional on it. `keyed_snoc` averages the fixed-key transcript/reply products
 [An automaton retaining its key](KeyedAutomaton.lean) and drawing each reply from `ν k i x`
 is equal to that keyed system. [Program attachment](ProbProgramAttachment.lean) combines
 a bounded program with a probabilistic automaton, retaining both states.
+[One-sided attachment](JointAutomaton.lean) runs the program on either side of a joint automaton.
+A query at the other side updates the same resource state and preserves the program state.
 **Functional systems** are given by [reply functions][TypedSystem.ofFunction], by
 [conditional reply laws][TypedSystem.ofConditional], or by
 [sampling once][TypedSystem.sample] and keeping the sample.
