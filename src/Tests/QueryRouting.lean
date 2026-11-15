@@ -181,6 +181,25 @@ example (q : ℕ) (ν : Bool × Bool → ProbDist (Bool × Bool)) :
     encode (fun _ r => r.2.2)
     (encode_domain q) (fun _ => ν)
 
+/-- At the false port the reply is unit; at the true port negate the Boolean reply. -/
+def answerAt : (u : Σ o, outside.X o) → heterogeneousInside.Y (request u).1 → outside.Y u.1
+  | ⟨_, false, x⟩, _ => x
+  | ⟨_, true, _⟩, y => !y
+
+example : TypedConverter.routingAt (A := outside) (B := heterogeneousInside)
+    request answerAt request_domain • TypedSystem.ofFunction heterogeneousOracle =
+      TypedSystem.ofFunction (fun o x => answerAt ⟨o, x⟩ (heterogeneousOracle x.1 x.2)) :=
+  TypedConverter.routingAt_smul_ofFunction _ _ _ _
+
+-- Routing to the restricted oracle still requires the tag certificate.
+example (q : ℕ) (f : Bool × Bool → Bool × Bool) :
+    TypedConverter.routingAt (A := bits q) (B := encodedPairs q)
+      encode (fun _ y => y.2) (encode_domain q) •
+      TypedSystem.ofFunction (A := encodedPairs q) (fun _ => f) =
+    TypedSystem.ofFunction (A := bits q) (fun _ x => (f (true, x)).2) :=
+  TypedConverter.routingAt_smul_ofFunction _ _ _ _
+
+#print axioms TypedConverter.routingAt_smul_ofFunction
 #print axioms routingConverter_query_count
 #print axioms routingConverter_eq_ofProgramOn
 #print axioms TypedConverter.routing_smul_ofFunction
