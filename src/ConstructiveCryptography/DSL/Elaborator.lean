@@ -51,6 +51,13 @@ partial def tupleTerm (xs : Array (TSyntax `term)) : CommandElabM (TSyntax `term
     let tail ← tupleTerm (xs.extract 1 xs.size)
     `(($(xs[0]!), $tail))
 
+/-- The product `T₁ × (T₂ × …)` of the types `ts`, and `Unit` for none. -/
+def tupleType (ts : Array (TSyntax `term)) : CommandElabM (TSyntax `term) := do
+  if ts.isEmpty then return ← `(Unit)
+  let mut ty := ts.back!
+  for t in ts.pop.reverse do ty ← `($t × $ty)
+  return ty
+
 def statements (b : Syntax) : Array Syntax := b[0].getArgs
 
 partial def identifiers (s : Syntax) : Array Name :=
@@ -878,10 +885,7 @@ def procedureSignature (name : Ident) (σ : Signature) (persistent : Array Ident
       throwErrorAt a "Oracle parameter shadows persistent binding."
   let label ← σ.label name ⟨procedure[1]⟩
   let types : Array (TSyntax `term) := procedure[3].getSepArgs.map (fun a => ⟨a[2]⟩)
-  let mut argType ← `(Unit)
-  if !types.isEmpty then
-    argType := types.back!
-    for t in types.pop.reverse do argType ← `($t × $argType)
+  let argType ← tupleType types
   return (procArgs, label, argType, ⟨procedure[6]⟩)
 
 /-- The step of a procedure of a system that samples nothing. -/

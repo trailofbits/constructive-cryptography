@@ -203,4 +203,16 @@ lemma routingAt_smul_ofFunction
 
 end RequestedPort
 
+/-- **Routed histories within the allowance**: if `B` admits every nonempty history of at most
+`A.bound` queries, the requests `us.map request` of an admitted history `us` of `A` are admitted,
+one inside query per outside query. -/
+lemma routingAt_domain_of_length_le {A B : Interface}
+    -- `request u` is the inside query of the outside query `u`.
+    (request : (Σ o, A.X o) → Σ j, B.X j)
+    -- `hB` admits in `B` every nonempty history of at most `A.bound` queries.
+    (hB : ∀ xs, xs ≠ [] → xs.length ≤ A.bound → B.domain xs) :
+    ∀ us, A.domain us → B.domain (us.map request) := fun us hus =>
+  hB _ (fun h => A.nonempty_prefix.1 (List.map_eq_nil_iff.mp h ▸ hus))
+    ((List.length_map _).trans_le (A.length_le us hus))
+
 end SystemAlgebra.TypedConverter

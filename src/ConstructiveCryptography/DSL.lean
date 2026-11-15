@@ -2,11 +2,12 @@ module
 
 public import ConstructiveCryptography.DSL.Elaborator
 public import ConstructiveCryptography.DSL.Inlining
+public import ConstructiveCryptography.DSL.Router
 
 /-!
 # The cryptographic component DSL
 
-`interface`, `system`, `converter` and `filter` declarations elaborate to typed systems and
+`interface`, `system`, `converter`, `router` and `filter` declarations elaborate to typed systems and
 typed converters at every query budget: each component compiles to a deterministic program
 (`RandomSystems.Typed.DSL`), and its sampling to sources of fresh samples. Open
 `SystemAlgebra.DSL` and `open scoped SystemAlgebra SystemAlgebra.DSL` for the declarations and

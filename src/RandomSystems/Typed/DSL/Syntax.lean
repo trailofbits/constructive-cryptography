@@ -75,6 +75,8 @@ syntax (name := converterDecl) "converter " ident cryptoParam* cryptoMembers : c
 syntax (name := converterTypedDecl) "converter " ident cryptoParam* " : " lineTerm cryptoMembers :
   command
 syntax (name := systemDecl) "system " ident cryptoParam* " ≔ " term : command
+syntax (name := routerDecl) "router " ident cryptoParam* " : " lineTerm cryptoMembers
+  ("by" tacticSeq)? : command
 syntax (name := filterDecl) "filter " ident cryptoParam* " : " lineTerm
   "domain " ident " ↦ " lineTerm ("by" tacticSeq)? : command
 

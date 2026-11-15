@@ -221,3 +221,49 @@ example : WriteThrough.portMap .write = some .put ∧ WriteThrough.portMap .read
 example (q : Cache.Port → ℕ) : WriteThrough.insideBudget q .put = q .write := rfl
 
 end DSLTests.Semantics
+
+namespace DSLTests.Router
+
+-- A put at x forwards x to the store and adds one to its reply.
+router Flip (q : ℕ) : DSLExamples.Store q
+  inside store : DSLExamples.Store q
+  on put(x : Fin 16) → Fin 16
+    y ← store.put(x)
+    return y + 1
+
+example (q : ℕ) : Flip q =
+    TypedConverter.routingAt (Flip.request q) (Flip.answer q) (Flip.request_domain q) := rfl
+
+-- The attachment calculation uses the generated tables and the typed routing law.
+example (q : ℕ) (f : Fin 16 → Fin 16) :
+    Flip q • TypedSystem.ofFunction (A := DSLExamples.Store q) (fun _ => f) =
+      TypedSystem.ofFunction (A := DSLExamples.Store q) (fun _ x => f x + 1) := by
+  exact (TypedConverter.routingAt_smul_ofFunction _ _ (Flip.request_domain q) (fun _ => f)).trans
+    (congrArg TypedSystem.ofFunction (funext fun o => by cases o; rfl))
+
+-- Here the outside and inside port types have separate constructors named `put`.
+interface OtherStore
+  put(x : Fin 16) → Fin 16
+
+router Successor (q : ℕ) : DSLExamples.Store q
+  inside other : OtherStore q
+  on put(x : Fin 16) → Fin 16
+    y ← other.put(x + 1)
+    return y
+by
+  intro us hus
+  exact ⟨fun h => hus.1 (List.map_eq_nil_iff.mp h), (List.length_map _).trans_le hus.2⟩
+
+example (q : ℕ) (x : Fin 16) :
+    Successor.request q ⟨.put, x⟩ = ⟨OtherStore.Port.put, x + 1⟩ := rfl
+
+/-- error: A procedure of a router makes one call `y ← c.p(…)` and then returns. -/
+#guard_msgs in
+router Twice (q : ℕ) : DSLExamples.Store q
+  inside store : DSLExamples.Store q
+  on put(x : Fin 16) → Fin 16
+    y ← store.put(x)
+    z ← store.put(y)
+    return z
+
+end DSLTests.Router
