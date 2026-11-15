@@ -266,4 +266,119 @@ router Twice (q : ℕ) : DSLExamples.Store q
     z ← store.put(y)
     return z
 
+/-- A cell at a Boolean index, or the scalar reset port. -/
+inductive Cell where
+  | cell (b : Bool)
+  | reset
+  deriving DecidableEq
+
+instance : Fintype Cell :=
+  ⟨{.cell false, .cell true, .reset}, fun c => by rcases c with (_ | _) | _ <;> simp⟩
+
+/-- The interface of the indexed ports, each read by a unit query. -/
+abbrev Cells (q : ℕ) : Interface :=
+  Interface.queryBudget Cell (fun _ => Unit) (fun _ => Bool) q
+
+-- A router addressing an indexed port at both sides: `cell(b)` reads the cell `!b`.
+router Swap (q : ℕ) : Cells q
+  inside cells : Cells q
+  on cell(b : Bool) → Bool
+    y ← cells.cell(!b, ())
+    return y
+  on reset() → Bool
+    y ← cells.reset(())
+    return y
+
+/-- An indexed port is named by its index, first among the arguments. -/
+example (q : ℕ) (b y : Bool) (x : Unit) :
+    Swap.request q ⟨.cell b, x⟩ = ⟨.cell (!b), ()⟩ ∧
+      Swap.answer q ⟨.cell b, x⟩ y = y :=
+  ⟨Swap.request_cell q b x, Swap.answer_cell q b x y⟩
+
+/-- Cell zero holds a value in `Fin 3`, cell one holds a bit, and reset acknowledges with unit. -/
+def CellReply : Cell → Type
+  | .cell false => Fin 3
+  | .cell true => Bool
+  | .reset => Unit
+
+instance : ∀ l, Fintype (CellReply l)
+  | .cell false => inferInstanceAs (Fintype (Fin 3))
+  | .cell true => inferInstanceAs (Fintype Bool)
+  | .reset => inferInstanceAs (Fintype Unit)
+
+/-- At port `l`, a unit query receives a value of type `CellReply l`. -/
+abbrev IndexedCells (q : ℕ) : Interface :=
+  Interface.queryBudget Cell (fun _ => Unit) CellReply q
+
+-- Forward every query unchanged. The index in the result type determines how to read the reply.
+router ReadCell (q : ℕ) : IndexedCells q
+  inside cells : IndexedCells q
+  on cell(b : Bool) → CellReply (.cell b)
+    y ← cells.cell(b, ())
+    return y
+  on reset() → Unit
+    y ← cells.reset(())
+    return y
+
+example (q : ℕ) (b : Bool) (y : CellReply (.cell b)) :
+    ReadCell.answer q ⟨.cell b, ()⟩ y = y := ReadCell.answer_cell q b () y
+
+
+-- An ordinary converter uses the same indexed label and reads its reply in a program.
+converter Relay : IndexedCells
+  inside cells : IndexedCells
+  on cell(b : Bool) → CellReply (.cell b)
+    y ← cells.cell(b, ())
+    return y
+  on reset() → Unit
+    return ()
+
+example (b : Bool) (u : Unit) (h) :
+    Relay.body none (.cell b) u h =
+      callProg (Cell.cell b) () (fun y => returnProg (some (), y)) h :=
+  Relay.body_cell_initial b u h
+
+/-- Each member of this family exposes the cell and reset ports. -/
+abbrev Bank (q : ℕ) := Interface.tensorAll fun _ : Fin 2 => IndexedCells q
+
+router BankRead (q : ℕ) : Bank q
+  inside cells : Bank q
+  on cell(k : Fin 2, b : Bool) → CellReply (.cell b)
+    y ← cells.cell(k, b, ())
+    return y
+  on reset(k : Fin 2) → Unit
+    y ← cells.reset(k, ())
+    return y
+
+example (q : ℕ) (k : Fin 2) (y : Fin 3) :
+    BankRead.answer q ⟨⟨k, .cell false⟩, ()⟩ y = y := BankRead.answer_cell q k false () y
+
+example (q : ℕ) (k : Fin 2) (y : Bool) :
+    BankRead.answer q ⟨⟨k, .cell true⟩, ()⟩ y = y := BankRead.answer_cell q k true () y
+
+-- Naming the two components distinguishes their otherwise identical `put` ports.
+router SelectStore (q : ℕ) : DSLExamples.Cache q
+  inside writes : DSLExamples.Store q
+  inside reads : DSLExamples.Store q
+  on write(x : Fin 16) → Fin 16
+    y ← writes.put(x)
+    return y
+  on read() → Fin 16
+    y ← reads.put(0)
+    return y
+
+example (q : ℕ) : (SelectStore.request q ⟨.read, ()⟩).1 = .inr DSLExamples.Store.Port.put :=
+  congrArg Sigma.fst (SelectStore.request_read q ())
+
+/-- error: Ambiguous port `cell`: several component paths match. -/
+#guard_msgs in
+router Ambiguous (q : ℕ) : Cells q
+  inside pair : (Cells q).tensor (Cells q)
+  on cell(b : Bool) → Bool
+    y ← pair.cell(b, ())
+    return y
+  on reset() → Bool
+    y ← pair.reset(())
+    return y
+
 end DSLTests.Router
