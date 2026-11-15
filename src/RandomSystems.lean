@@ -108,6 +108,7 @@ public import RandomSystems.Typed.ParallelAllContext
 public import RandomSystems.Typed.ParallelAllRegroup
 public import RandomSystems.Typed.PresentedGame
 public import RandomSystems.Typed.ProbAutomaton
+public import RandomSystems.Typed.ProgramTensor
 public import RandomSystems.Typed.ProbProgramAttachment
 public import RandomSystems.Typed.Relabel
 public import RandomSystems.Typed.RecordingGuard
