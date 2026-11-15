@@ -9,9 +9,9 @@ public import RandomSystems.Typed.Automaton
 `TypedSystem.ofProbAutomaton` packages `RandomSystem.ofProbAutomaton` with its queried-port
 proof on `A.inputDomain`. The state type may be infinite; each initial and transition law
 has finite support. `ofProbAutomaton_mass` gives the weight of the state sub-law after a
-transcript. `ofProbAutomaton_eq_of_simulation` lifts the kernel simulation law: preservation
-of an input-history invariant and commuting transitions at admitted queries give equality
-of typed systems.
+transcript. `ofProbAutomaton_eq_of_stateMap` changes the state representation by a map
+that commutes with each transition. More generally, `ofProbAutomaton_eq_of_simulation` gives equal
+typed systems when the transitions commute along a kernel at each admitted query.
 
 `ofProbAutomaton_ofDeterministic` identifies point transitions with `ofAutomaton`.
 In [1, Definition 2, p. 6], internal randomness is fixed in one seed;
@@ -101,5 +101,37 @@ lemma ofProbAutomaton_eq_of_simulation
     ofProbAutomaton A step₁ init = ofProbAutomaton A step₂ (init.bind K) :=
   Subtype.ext (RandomSystem.ofProbAutomaton_eq_of_simulation
     step₁ step₂ K inv hpres hsim init hinit)
+
+/-- **Equal automata along a state map.** Let `f : S → T` carry each step of `step₁` from `s` to
+the step of `step₂` from `f s`, with the same reply:
+
+```text
+  s ──── step₁, i(x) ────► (s', y)
+  │ f                        │ f × id
+  ▼                          ▼
+ f s ─── step₂, i(x) ────► (f s', y)
+```
+
+Then `step₁` from `s ← μ` and `step₂` from `t ← f_* μ` are the same typed system on `A`,
+by simulation along the point kernel `s ↦ δ_{f s}`. -/
+lemma ofProbAutomaton_eq_of_stateMap
+    -- `T` carries the states of `step₂`; `S` carries those of `step₁`.
+    {T : Type}
+    -- `step₁`, `step₂` give their normalized next-state/reply laws on the same interface `A`.
+    (step₁ : ProbStep S A.I A.X A.Y) (step₂ : ProbStep T A.I A.X A.Y)
+    -- `f` maps states; `h`: `(f × id)_* (step₁ s i x) = step₂ (f s) i x` at every query.
+    (f : S → T) (h : ∀ s i x, (step₁ s i x).map (Prod.map f id) = step₂ (f s) i x)
+    -- `μ` is the one initial draw of the state of `step₁`.
+    (μ : ProbDist S) :
+    ofProbAutomaton A step₁ μ = ofProbAutomaton A step₂ (μ.map f) := by
+  -- The point kernel simulates at every state and query, so the invariant is `True`.
+  have simulation := ofProbAutomaton_eq_of_simulation step₁ step₂
+    (fun s => ProbDist.single (f s)) (fun _ _ => True) (by intros; trivial)
+    (fun _ s x _ _ => ProbStep.simulatesAt_of_stateMap step₁ step₂ f (h s x.1 x.2))
+    μ (by intros; trivial)
+  -- The point-kernel image of `μ` is `f_* μ`.
+  have initial : μ.bind (fun s => ProbDist.single (f s)) = μ.map f :=
+    Subtype.ext (bindK_single_comp μ.1 f)
+  rwa [initial] at simulation
 
 end SystemAlgebra.TypedSystem
