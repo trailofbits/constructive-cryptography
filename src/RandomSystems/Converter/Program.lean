@@ -88,6 +88,22 @@ lemma Consistent.snoc {P : Program S O J U V X Y} {s : S} {o : O} {u : U o}
   · rw [List.take_left' rfl, List.getElem_append_right (le_refl _)]
     simpa using hq
 
+/-- Exchanges of a body are exchanges of each prefix. -/
+lemma exchangesOf_of_append {A : Type} {f : List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j)}
+    {h e : List ((Σ j, X j) × (Σ j, Y j))} (hc : ExchangesOf f (h ++ e)) : ExchangesOf f h :=
+  fun i hi => by
+    have := hc i (by simp only [List.length_append]; omega)
+    rwa [List.take_append_of_le_length hi.le, List.getElem_append_left hi] at this
+
+/-- The last exchange answers the body's query after the earlier ones, at its label. -/
+lemma exchangesOf_last {A : Type} {f : List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j)}
+    {h : List ((Σ j, X j) × (Σ j, Y j))} {e : (Σ j, X j) × (Σ j, Y j)}
+    (hc : ExchangesOf f (h ++ [e])) : f h = .inr e.1 ∧ e.2.1 = e.1.1 := by
+  have := hc h.length (by simp only [List.length_append, List.length_cons, List.length_nil,
+      zero_add, lt_add_iff_pos_right, Order.lt_one_iff])
+  rw [List.take_left' rfl, List.getElem_append_right (le_refl _)] at this
+  simpa only [Nat.sub_self, List.getElem_singleton] using this
+
 /-- **A bounded program's own exchanges** in one invocation number at most its bound. -/
 lemma Consistent.length_le {P : Program S O J U V X Y} {b : ℕ} (hP : P.Bounded b) {s : S} {o : O}
     {u : U o} {h : List ((Σ j, X j) × (Σ j, Y j))} (hc : P.Consistent s o u h) : h.length ≤ b := by
@@ -97,17 +113,8 @@ lemma Consistent.length_le {P : Program S O J U V X Y} {b : ℕ} (hP : P.Bounded
   · exact Nat.zero_le _
   -- `h = h' · z`:
   · rw [List.concat_eq_append] at hc ⊢
-    -- The last exchange answers a query the body made after the exchanges `h'` ...
-    have hz := hc h'.length (by simp)
-    rw [List.take_left' rfl, List.getElem_append_right (le_refl _)] at hz
-    -- ... which are its own exchanges too ...
-    have hc' : P.Consistent s o u h' := fun i hi => by
-      have := hc i (by simp; omega)
-      rwa [List.take_append_of_le_length hi.le, List.getElem_append_left hi] at this
-    -- ... so `h'` is shorter than the bound, and `h' · z` is within it.
-    -- The body still queries after its own exchanges `h'` (`hz.1`), so the bound of `P`
-    -- gives `h'.length < b`.
-    have := hP s o u h' _ hc' (by simpa using hz.1)
+    -- The final query follows the consistent prefix and is strictly within the bound.
+    have := hP s o u h' _ (exchangesOf_of_append hc) (exchangesOf_last hc).1
     -- Hence `(h' · z).length = h'.length + 1 ≤ b`.
     simp only [List.length_append, List.length_singleton]
     omega
