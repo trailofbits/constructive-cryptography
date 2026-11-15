@@ -45,7 +45,7 @@ are in `SystemAlgebra`. The probability operations below are in `Probability.Dis
 | Nonce/AD encrypt-then-MAC | `nonceEncryptThenMAC` in [NonceEncryptThenMAC] |
 | Restricted interface | `TypedConverter.filter` in [Filter] |
 | Relabeled interface | `TypedConverter.rename` in [Relabel] |
-| One-query input and reply translation | `TypedConverter.routing` in [QueryRouting] |
+| One-query input and reply translation | `TypedConverter.routingAt` (reply at the requested port) in [QueryRouting] |
 | Shared access by tagged callers | `routing` in [QueryRouting], `smul_sample` in [Functional] |
 
 [LazyPermutation]: src/Commons/Definitions/LazyPermutation.lean
