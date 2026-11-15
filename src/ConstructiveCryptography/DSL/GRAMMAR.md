@@ -513,3 +513,25 @@ router Flip (q : ℕ) : Bits q
 The inside and outside annotations are interfaces at their declared budgets. For an inside
 domain with additional restrictions, a trailing `by` proves that mapping an admitted outside
 history by the generated request gives an admitted inside history.
+
+### Indexed ports
+
+For a label constructor `cell (b : Bool)`, the leading `b` selects a port. The remaining
+arguments form its query. A router can forward a dependent reply directly:
+
+```lean
+on cell(b : Bool) → CellReply (.cell b)
+  y ← cells.cell(b, ())
+  return y
+```
+
+Here `()` is the unit query and `y` has type `CellReply (.cell b)`. In a family, write
+`on cell(k : K, b : Bool)` and `cells.cell(k, b, ())`: first choose the member, then the
+port in that member. Equations `C.request_cell` and `C.answer_cell` take the parameters,
+member and index, and query in that order. The answer equation also takes the inside reply.
+Repeated procedure names receive a numeric suffix in declaration order. Separate named
+`inside` components form an ordered tensor, so `left.cell(…)` and `right.cell(…)` select
+distinct components even when both have the same port name.
+
+An ordinary converter on a declared indexed interface uses the same leading port indices in
+its procedures and calls. Its body equations bind the indices before the input and history.

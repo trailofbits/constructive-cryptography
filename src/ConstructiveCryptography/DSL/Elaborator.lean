@@ -58,6 +58,11 @@ def tupleType (ts : Array (TSyntax `term)) : CommandElabM (TSyntax `term) := do
   for t in ts.pop.reverse do ty ← `($t × $ty)
   return ty
 
+/-- The binders `(i : T)` of a port's indices. -/
+def indexBinders (indices : Array Syntax) :
+    CommandElabM (Array (TSyntax ``Term.bracketedBinder)) :=
+  indices.mapM fun a => `(bracketedBinder| ($(⟨a[0]⟩):ident : $(⟨a[2]⟩)))
+
 def statements (b : Syntax) : Array Syntax := b[0].getArgs
 
 partial def identifiers (s : Syntax) : Array Name :=
@@ -96,40 +101,66 @@ inductive LowerMode
   | template
   deriving BEq
 
+/-- Apply constructor fields at the component port, inside any tensor tags around it. -/
+partial def applyPortIndices (label : TSyntax `term) (indices : Array (TSyntax `term)) :
+    CommandElabM (TSyntax `term) := do
+  if indices.isEmpty then return label
+  match label with
+  | `(Sum.inl $l) => `(Sum.inl $(← applyPortIndices l indices))
+  | `(Sum.inr $l) => `(Sum.inr $(← applyPortIndices l indices))
+  | _ => `($label $indices*)
+
+/-- Inside call names are qualified by their component. Each entry counts the arguments
+that select the label before the ordinary query arguments. -/
+abbrev PortArities := Array (Name × Nat)
+
+/-- The inside ports available to a procedure, with the indices selecting each called label. -/
+structure InsideCalls where
+  ports : Array (Name × TSyntax `term) := #[]
+  indices : PortArities := #[]
+
+/-- Split a call's arguments at the port constructor's arity. The first arguments choose
+the label, the rest supply the input at that label. -/
+def resolvePortCall (rhs : TSyntax `term) (calls : InsideCalls) :
+    CommandElabM (Option (TSyntax `term × TSyntax `term)) := do
+  let (name, args) : Name × Array (TSyntax `term) ← if rhs.raw.getKind == ``oracleCall then
+      pure (rhs.raw[0].getId, rhs.raw[2].getSepArgs.map (⟨·⟩))
+    else match rhs with
+      | `($f:ident $arg) => pure (f.getId, #[arg])
+      | _ => return none
+  let some (_, label) := calls.ports.find? (·.1 == name) | return none
+  let n := ((calls.indices.find? (·.1 == name)).map Prod.snd).getD 0
+  if args.size < n then throwErrorAt rhs "Supply the inside port indices first."
+  for arg in args.extract 0 n do checkPure arg calls.ports
+  return some (← applyPortIndices label (args.extract 0 n), ← tupleTerm (args.extract n args.size))
+
 def lowerAssignment (s : Syntax) (rest : TSyntax `term)
-    (calls : Array (Name × TSyntax `term)) (mode : LowerMode) : CommandElabM (TSyntax `term) := do
+    (calls : InsideCalls) (mode : LowerMode) : CommandElabM (TSyntax `term) := do
     let names := targetNames s[0]
     let pat ← tupleTerm (names.map fun x => ⟨x.raw⟩)
     let rhs : TSyntax `term := ⟨s[3]⟩
-    let called ← if rhs.raw.getKind == ``oracleCall then do
-        match calls.find? (·.1 == rhs.raw[0].getId) with
-        | some (_, label) =>
-          pure (some (label, ← tupleTerm (rhs.raw[2].getSepArgs.map (⟨·⟩))))
-        | none => pure none
-      else match rhs with
-        | `($f:ident $arg) => pure ((calls.find? (·.1 == f.getId)).map fun (_,label) => (label,arg))
-        | _ => pure none
+    let called ← resolvePortCall rhs calls
     let value := Lean.mkIdent (← liftCoreM <| mkFreshUserName `value)
     let k ← if s[1].isNone then `(fun $value:ident => let $pat:term := $value:ident; $rest)
       else `(fun ($value:ident : $(⟨s[1][1]⟩):term) => let $pat:term := $value:ident; $rest)
     if s.getKind == ``sampleStmt then
-      checkPure rhs calls
+      checkPure rhs calls.ports
       if mode == .template then return ← `($k (sampleWitness $rhs))
       throwErrorAt s "A sampling statement is compiled into a call to its source."
     if let some (label,arg) := called then
-      checkPure arg calls
+      checkPure arg calls.ports
       if mode == .program then return ← `(callProg $label $arg $k)
       if mode == .template then
         throwErrorAt s "Initialization cannot call inside ports; call them from a procedure."
       throwErrorAt s "Inside calls belong to converters."
-    checkPure rhs calls
+    checkPure rhs calls.ports
     if s[1].isNone then return ← `(let $pat:term := $rhs; $rest)
     return ← `(let $pat:term : $(⟨s[1][1]⟩):term := $rhs; $rest)
 
 /-- Build ordinary functions of inside histories. Sequencing is substitution of
 Lean functions, and a call consumes a history entry. -/
 partial def lowerFunction (ss : Array Syntax) (bound persistent : Array Ident)
-    (calls : Array (Name × TSyntax `term)) (finish : TSyntax `term) (mode : LowerMode) :
+    (calls : InsideCalls) (finish : TSyntax `term) (mode : LowerMode) :
     CommandElabM (TSyntax `term) := do
   if ss.isEmpty then
     if finish.raw.isMissing then throwError "Every procedure path must return a reply."
@@ -139,7 +170,7 @@ partial def lowerFunction (ss : Array Syntax) (bound persistent : Array Ident)
   if s.getKind == ``returnStmt then
     if mode == .template then throwErrorAt s "Initialization has no return; its bindings persist."
     if !tail.isEmpty then throwErrorAt s "Statements after return are unreachable."
-    checkPure s[1] calls
+    checkPure s[1] calls.ports
     let stored ← tupleTerm (persistent.map fun x => ⟨x.raw⟩)
     if mode == .program then return ← `(returnProg (some $stored, $(⟨s[1]⟩):term))
     return ← `(($stored, $(⟨s[1]⟩):term))
@@ -151,13 +182,13 @@ partial def lowerFunction (ss : Array Syntax) (bound persistent : Array Ident)
     return ← lowerAssignment s rest calls mode
   if tail.isEmpty && s.getKind == ``ifStmt &&
       returns s[2] && !s[3].isNone && returns s[3][1] then
-    checkPure s[1] calls
+    checkPure s[1] calls.ports
     let yes ← lowerFunction (statements s[2]) bound persistent calls finish mode
     let no ← lowerFunction (statements s[3][1]) bound persistent calls finish mode
     return ← `(if $(⟨s[1]⟩):term then $yes else $no)
   if tail.isEmpty && s.getKind == ``matchStmt &&
       s[2][0].getArgs.all (fun c => returns c[3]) then
-    checkPure s[1] calls
+    checkPure s[1] calls.ports
     let alts : Array (TSyntax ``Term.matchAlt) ← s[2][0].getArgs.mapM fun c => do
       let rhs ← lowerFunction (statements c[3]) bound persistent calls finish mode
       `(matchAltExpr| | $(⟨c[1]⟩):term => $rhs)
@@ -169,19 +200,19 @@ partial def lowerFunction (ss : Array Syntax) (bound persistent : Array Ident)
   let onward ← `($next:ident $values)
   let after ← `(fun $received:ident => let $values:term := $received:ident; $rest)
   if s.getKind == ``ifStmt then
-    checkPure s[1] calls
+    checkPure s[1] calls.ports
     let yes ← lowerFunction (statements s[2]) bound persistent calls onward mode
     let no ← if s[3].isNone then pure onward
       else lowerFunction (statements s[3][1]) bound persistent calls onward mode
     return ← `(let $next:ident := $after; if $(⟨s[1]⟩):term then $yes else $no)
   if s.getKind == ``matchStmt then
-    checkPure s[1] calls
+    checkPure s[1] calls.ports
     let alts : Array (TSyntax ``Term.matchAlt) ← s[2][0].getArgs.mapM fun c => do
       let rhs ← lowerFunction (statements c[3]) bound persistent calls onward mode
       `(matchAltExpr| | $(⟨c[1]⟩):term => $rhs)
     return ← `(let $next:ident := $after; match $(⟨s[1]⟩):term with $alts:matchAlt*)
   if s.getKind == ``forStmt then
-    checkPure s[3] calls
+    checkPure s[3] calls.ports
     let x : Ident := ⟨s[1]⟩
     if bound.any (·.getId == x.getId) then
       throwErrorAt s "Loop variable shadows an existing binding."
@@ -495,6 +526,8 @@ structure Signature where
   declared : Option (TSyntax `term)
   /-- The named outside components and their interface families, in declaration order. -/
   outside : Array (Ident × TSyntax `term) := #[]
+  /-- Number of constructor fields supplied before a declared port's input. -/
+  indices : PortArities := #[]
   labels : TSyntax `term
   inputs : TSyntax `term
   outputs : TSyntax `term
@@ -540,6 +573,36 @@ def Signature.label (σ : Signature) (name procedure : Ident) : CommandElabM (TS
   if !σ.outside.isEmpty then return ← outsideLabel σ.outside procedure
   if σ.declared.isSome then return ← `(.$procedure:ident)
   return ⟨(Lean.mkIdent (name.getId ++ `Port ++ procedure.getId)).raw⟩
+
+/-- The label of a procedure with arguments `arguments`, the binders of its indices and its
+other arguments: an indexed port `p i₁ … iₙ` of a declared interface takes its first `n`
+arguments as its indices, as a router's procedure does. -/
+def Signature.indexedLabel (σ : Signature) (name procedure : Ident) (arguments : Array Syntax) :
+    CommandElabM (TSyntax `term × Array (TSyntax ``Term.bracketedBinder) × Array Syntax) := do
+  let label ← σ.label name procedure
+  let some (_, n) := σ.indices.find? (·.1 == procedure.getId) | return (label, #[], arguments)
+  if arguments.size < n then throwErrorAt procedure "An indexed port names its indices first."
+  let indices := arguments.extract 0 n
+  let xs : Array (TSyntax `term) := indices.map (⟨·[0]⟩)
+  return (← `($label $xs*), ← indexBinders indices, arguments.extract n arguments.size)
+
+/-- The number of indices of the ports `ports` in the label type `labels`, elaborated in the
+context of `params`: the fields of the port's constructor (`derive (l : L)` has one). Ports
+without fields, and every port of a label type that is not an inductive type, are omitted. -/
+def portIndexCounts (params : Array (TSyntax ``Term.bracketedBinder)) (labels : TSyntax `term)
+    (ports : Array Name) : CommandElabM (Array (Name × Nat)) := do
+  try
+    runTermElabM fun _ => Term.withoutErrToSorry <|
+      Term.elabBinders (params.map (·.raw)) fun _ => do
+        let ty ← Term.elabType labels
+        Term.synthesizeSyntheticMVarsNoPostponing
+        let ty ← Meta.whnf (← instantiateMVars ty)
+        let .const n _ := ty.getAppFn | return #[]
+        let env ← getEnv
+        return ports.filterMap fun p => match env.find? (n ++ p) with
+          | some (.ctorInfo cv) => if cv.numFields == 0 then none else some (p, cv.numFields)
+          | _ => none
+  catch _ => return #[]
 
 /-- The outside interface at budget `k`, a tuple for several named components. -/
 def Signature.at (σ : Signature) (k : TSyntax `term) : CommandElabM (TSyntax `term) := do
@@ -677,6 +740,7 @@ def elabPerPortDecls (converting : Bool) (name : Ident)
             ← `(fun $o:ident => hc $o:ident _ rfl))
         else do
           let (_, _, declaredCalls) ← insideInterfaces insides used (← `(0))
+          unless σ.indices.isEmpty do return
           let some entries := insidePortMap oracles declaredCalls | return
           let qAlts ← entries.filterMapM fun (o, e) => e.mapM fun (_, l) =>
             `(Term.matchAltExpr| | $l => $q .$o:ident)
@@ -849,8 +913,8 @@ def elabExactDecls (name : Ident) (params : Array (TSyntax ``Term.bracketedBinde
   try
     let mut costAlts : Array (TSyntax ``Term.matchAlt) := #[]
     for (procedure, body) in oracles.zip bodies do
-      let procArgs : Array Ident := procedure[3].getSepArgs.map (fun a => ⟨a[0]⟩)
-      let label ← σ.label name ⟨procedure[1]⟩
+      let (label, _, arguments) ← σ.indexedLabel name ⟨procedure[1]⟩ procedure[3].getSepArgs
+      let procArgs : Array Ident := arguments.map (fun a => ⟨a[0]⟩)
       let mut c ← costOf body calls
       if !procArgs.isEmpty then
         let pat ← tupleTerm (procArgs.map fun x => ⟨x.raw⟩)
@@ -879,13 +943,12 @@ def procedureSignature (name : Ident) (σ : Signature) (persistent : Array Ident
     (procedure : Syntax) :
     CommandElabM (Array Ident × TSyntax `term × TSyntax `term × TSyntax `term) := do
   if !returns procedure[7] then throwErrorAt procedure "Every procedure path must return a reply."
-  let procArgs : Array Ident := procedure[3].getSepArgs.map (fun a => ⟨a[0]⟩)
-  for a in procArgs do
-    if persistent.any (·.getId == a.getId) then
-      throwErrorAt a "Oracle parameter shadows persistent binding."
-  let label ← σ.label name ⟨procedure[1]⟩
-  let types : Array (TSyntax `term) := procedure[3].getSepArgs.map (fun a => ⟨a[2]⟩)
-  let argType ← tupleType types
+  for a in procedure[3].getSepArgs do
+    if persistent.any (·.getId == a[0].getId) then
+      throwErrorAt a[0] "Oracle parameter shadows persistent binding."
+  let (label, _, arguments) ← σ.indexedLabel name ⟨procedure[1]⟩ procedure[3].getSepArgs
+  let procArgs : Array Ident := arguments.map fun a => ⟨a[0]⟩
+  let argType ← tupleType (arguments.map fun a => ⟨a[2]⟩)
   return (procArgs, label, argType, ⟨procedure[6]⟩)
 
 /-- The step of a procedure of a system that samples nothing. -/
@@ -894,7 +957,7 @@ def systemAlt (name : Ident) (σ : Signature) (persistent : Array Ident) (stored
   let (procArgs, label, argType, resultType) ← procedureSignature name σ persistent procedure
   let checkedBody ← annotateReturns procedure[7] resultType
   let mut body ← lowerFunction (statements checkedBody) (persistent ++ procArgs) persistent
-    #[] ⟨.missing⟩ .system
+    {} ⟨.missing⟩ .system
   if !procArgs.isEmpty then
     let pat ← tupleTerm (procArgs.map fun x => ⟨x.raw⟩)
     body ← `(let $pat:term := $input:ident; $body)
@@ -903,7 +966,7 @@ def systemAlt (name : Ident) (σ : Signature) (persistent : Array Ident) (stored
 
 /-- The program of a procedure: initialization first when no bindings are stored yet. -/
 def programAlt (name : Ident) (σ : Signature) (persistent : Array Ident) (stored : TSyntax `term)
-    (state input : Ident) (calls : Array (Name × TSyntax `term)) (initD : Array Syntax)
+    (state input : Ident) (calls : InsideCalls) (initD : Array Syntax)
     (resultOf : TSyntax `term → CommandElabM (TSyntax `term)) (procedure : Syntax)
     (bodyD : Array Syntax) : CommandElabM (TSyntax ``Term.matchAlt) := do
   let (procArgs, label, argType, resultType) ← procedureSignature name σ persistent procedure
@@ -949,7 +1012,8 @@ def elabComponentEquations (name : Ident) (params : Array (TSyntax ``Term.bracke
   let outer ← σ.zero
   for procedure in oracles do
     let proc : Ident := ⟨procedure[1]⟩
-    let label ← σ.label name proc
+    let (label, indexBs, _) ← σ.indexedLabel name proc procedure[3].getSepArgs
+    let params := params ++ indexBs
     let owner := name.getId ++ proc.getId.getPrefix
     let suffix := proc.getId.getString!
     if let some inner := inner then
@@ -1047,7 +1111,10 @@ def elabComponent : CommandElab := fun stx => do
     let d := domains[0]!
     pure (some ((⟨d[1]⟩ : Ident), (⟨d[3]⟩ : TSyntax `term),
       ← `(by $(⟨proofBlock[1]⟩):tacticSeq)))
+  let indices ← if typed then portIndexCounts params labels (oracles.map (·[1].getId))
+    else pure #[]
   let σ : Signature := {
+    indices,
     declared := if typed then some ⟨stx[4]⟩ else none
     outside, labels, inputs, outputs, fintypeInputs := fx, fintypeOutputs := fy, exactDomain }
   let sigAt := σ.at
@@ -1071,8 +1138,17 @@ def elabComponent : CommandElab := fun stx => do
   let initName := Lean.mkIdent (name.getId ++ `initial)
   let insides := members.filter (·.getKind == ``insideDecl)
   let used := members.flatMap identifiers
+  let mut insideIndices : PortArities := #[]
+  for d in insides do
+    let ty : TSyntax `term := ⟨d[3]⟩
+    if let `($_ → $_) := ty then continue
+    let portNames := used.filterMap fun n =>
+      if n.getPrefix == d[1].getId then some (Name.mkSimple n.getString!) else none
+    let fields ← portIndexCounts params (← `(($ty 0).I)) portNames
+    insideIndices := insideIndices ++ fields.map fun (n, k) => (d[1].getId ++ n, k)
   let (_, _, declaredCalls) ← insideInterfaces insides used (← `(0))
-  let template ← lowerFunction initStatements #[] #[] declaredCalls stored .template
+  let template ← lowerFunction initStatements #[] #[] ⟨declaredCalls, insideIndices⟩
+    stored .template
   elabCommand (← `(noncomputable def $initName:ident $params:bracketedBinder* := $template))
   -- The type of the private bindings, from the initial bindings themselves.
   let stateTy ← `(TypeOf $template)
@@ -1123,14 +1199,16 @@ def elabComponent : CommandElab := fun stx => do
     `(List ((Sigma ($innerZero).X) × (Sigma ($innerZero).Y)) →
         (Option $stateTy × $resultType) ⊕ Sigma ($innerZero).X)
   let alts ← (oracles.zip bodies).mapM fun (procedure, bodyD) =>
-    programAlt name σ persistent stored state input calls initD resultOf procedure bodyD
+    programAlt name σ persistent stored state input ⟨calls, insideIndices⟩ initD resultOf
+      procedure bodyD
   let counts := bodies.map fun b => callCount (initD ++ b) calls
   let displayedBound := if counts.all Option.isSome then
       some (counts.foldl (fun m c => max m (c.getD 0)) 0)
     else none
   let normalized ← elabProgramDecls converting name params σ insides sites lawNames used state alts
     innerZero stateTy displayedBound
-  elabPerPortDecls converting name params σ insides sites oracles used
+  if insideIndices.isEmpty then
+    elabPerPortDecls converting name params σ insides sites oracles used
   if (← errorCount) == beforeErrors then
     elabComponentEquations name params σ oracles stateTy (some innerZero) normalized
   if converting && sites.isEmpty then

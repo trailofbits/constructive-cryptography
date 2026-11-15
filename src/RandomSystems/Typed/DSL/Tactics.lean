@@ -32,16 +32,19 @@ elab "component_continuation" : tactic => withMainContext do
       saved.restore
   throwError "No matching loop continuation."
 
-/-- Split a procedure label through each tensor tag, then through the component's ports.
+/-- Split a procedure label through tensor tags and family members to its component port.
 Only the supplied label is split; input values and private state remain arbitrary. -/
 partial def componentCases (goal : MVarId) (label : FVarId) : MetaM (List MVarId) :=
   goal.withContext do
-    let tensor := (← whnf (← label.getType)).isAppOf ``Sum
+    let labels ← whnf (← label.getType)
+    let tensor := labels.isAppOf ``Sum
+    let family := labels.isAppOf ``Sigma
     let cases ← goal.cases label
-    if !tensor then return cases.toList.map (·.mvarId)
+    if !tensor && !family then return cases.toList.map (·.mvarId)
     let mut goals := []
     for c in cases do
-      let #[.fvar port] := c.fields | throwError "Expected one label in a tensor component."
+      -- A tensor contributes a tag; a family contributes a member and its port.
+      let some (.fvar port) := c.fields.back? | throwError "Expected a component port."
       goals := goals ++ (← componentCases c.mvarId port)
     return goals
 
