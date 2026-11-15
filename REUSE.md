@@ -28,6 +28,7 @@ are in `SystemAlgebra`. The probability operations below are in `Probability.Dis
 | Adaptive URF collision bound | `URF.collisionGame_win_le` in [CollisionBound] |
 | Retained state with fresh transitions | `TypedSystem.ofProbAutomaton` in [ProbAutomaton] |
 | Retained key as an automaton | `TypedSystem.ofProbAutomaton_eq_keyed` in [KeyedAutomaton] |
+| Attach to one side of a joint automaton | `parallel_id_smul_ofProbAutomaton`, `id_parallel_smul_ofProbAutomaton` in [JointAutomaton] |
 | Program attachment | `TypedConverter.ofProgram_smul_ofProbAutomaton` in [ProgramAttachment] |
 | Independent joint law | `prodProbDist` in [Distribution] |
 | Independent finite family of draws | `ProbDist.pi` in [Distribution] |
@@ -72,6 +73,7 @@ are in `SystemAlgebra`. The probability operations below are in `Probability.Dis
 [Automaton]: src/RandomSystems/Typed/Automaton.lean
 [ProbAutomaton]: src/RandomSystems/Typed/ProbAutomaton.lean
 [KeyedAutomaton]: src/RandomSystems/Typed/KeyedAutomaton.lean
+[JointAutomaton]: src/RandomSystems/Typed/JointAutomaton.lean
 [ProgramAttachment]: src/RandomSystems/Typed/ProbProgramAttachment.lean
 [Distribution]: src/Probability/Distribution.lean
 [DependentProduct]: src/Probability/DependentProduct.lean

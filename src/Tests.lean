@@ -48,6 +48,7 @@ public import Tests.DSL.ProbabilityNotation
 public import Tests.DSL.Semantics
 public import Tests.ProbabilityNotation
 public import Tests.ProbabilityTablePatterns
+public import Tests.JointAutomatonAttachment
 public import Tests.QueryRouting
 public import Tests.ResourceSpecification
 public import Tests.SamplingAlgebra
