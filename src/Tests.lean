@@ -85,6 +85,7 @@ public import Tests.TranscriptLaw
 public import Tests.RandomFunctionCollision
 public import Tests.RatioCost
 public import Tests.FilteredRatio
+public import Tests.CompositeNotation
 
 /-! Axiom audits per layer and of the Commons library, the checks of the
 authenticated-encryption example,
