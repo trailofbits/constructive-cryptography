@@ -22,6 +22,7 @@ laws use `RandomSystem.ofConditional`, sampling uses `RandomSystem.mix`.
   admitted transcripts
 * `TypedSystem.eq_ofFunction`: probability one on the functional transcripts
   determines the typed system
+* `TypedSystem.sample_ofFunction_mass_eq`: event mass of draws supplying the transcript replies
 * `TypedSystem.sample_ofFunction_mass`: sampled functions are the finite PDS of the
   function systems
 * `TypedSystem.sample_fTransform`, `TypedConverter.smul_sample`: a retained sample commutes with
@@ -32,7 +33,7 @@ laws use `RandomSystem.ofConditional`, sampling uses `RandomSystem.mix`.
 
 namespace SystemAlgebra
 
-open Classical Probability
+open Probability
 open scoped BigOperators
 
 
@@ -40,6 +41,7 @@ namespace TypedSystem
 
 variable {A : Interface}
 
+open Classical in
 /-- Conditional reply distributions at the queried interface, on the declared domain. -/
 noncomputable def ofConditional
     (q : ∀ (h : List ((Σ i, A.X i) × (Σ i, A.Y i))) (i : A.I) (x : A.X i),
@@ -62,6 +64,7 @@ noncomputable def ofConditional
 noncomputable def ofFunction (f : ∀ i, A.X i → A.Y i) : TypedSystem A :=
   ofConditional fun _ i x _ => ⟨Finsupp.single (f i x) 1, Distribution.isProbDist_single _⟩
 
+open Classical in
 lemma ofFunction_snoc (f : ∀ i, A.X i → A.Y i)
     (h : List ((Σ i, A.X i) × (Σ i, A.Y i))) (x : Σ i, A.X i) (y : Σ i, A.Y i) :
     (ofFunction f).1 (h ++ [(x, y)]) =
@@ -82,6 +85,7 @@ lemma ofFunction_mass_eq_one (f : ∀ i, A.X i → A.Y i)
     (hd : h = [] ∨ A.domain (h.map Prod.fst))
     (he : ∀ z ∈ h, z.2 = ⟨z.1.1, f z.1.1 z.1.2⟩) :
     (ofFunction f).1 h = 1 := by
+  classical
   induction h using List.reverseRecOn with
   | nil => exact RandomSystem.mass_nil _
   | append_singleton h z ih =>
@@ -111,6 +115,7 @@ lemma ofFunction_answers (f : ∀ i, A.X i → A.Y i)
     · simp at hm
     · exact (hm rfl).elim
 
+open Classical in
 /-- The cumulative law of a function is the indicator of its admitted
 query/reply histories. -/
 lemma ofFunction_mass (f : ∀ i, A.X i → A.Y i)
@@ -204,6 +209,23 @@ lemma sample_fTransform {K L : Type} (f : K → L) (P : Distribution K)
   intro h
   exact Distribution.sum_fTransform_mul f P (fun k => (R k).1 h)
 
+/-- The mass of sampled functions is the probability that the draw supplies every reply. -/
+lemma sample_ofFunction_mass_eq
+    -- `A` fixes the query/reply alphabets and domain; `P` is one retained initial draw.
+    {A : Interface} {K : Type} (P : Distribution K) [Distribution.IsProbability P]
+    (f : K → ∀ i, A.X i → A.Y i)
+    -- `h` is the full outside transcript, including repeated inputs.
+    (h : List ((Σ i, A.X i) × (Σ i, A.Y i))) :
+    (TypedSystem.sample P (fun k => TypedSystem.ofFunction (f k))).1 h =
+      P.mass (fun k => (h = [] ∨ A.domain (h.map Prod.fst)) ∧
+        ∀ z ∈ h, z.2 = ⟨z.1.1, f k z.1.1 z.1.2⟩) := by
+  classical
+  rw [TypedSystem.sample_mass, Distribution.mass, Finsupp.sum]
+  apply Finset.sum_congr rfl
+  intro k _
+  rw [TypedSystem.ofFunction_mass]
+  split_ifs <;> simp only [mul_one, mul_zero]
+
 /-- Initial sampling of functions is their existing finite DDS presentation. -/
 lemma sample_ofFunction_mass {K : Type} (P : Distribution K)
     [Distribution.IsProbability P] (f : K → ∀ i, A.X i → A.Y i)
@@ -212,18 +234,15 @@ lemma sample_ofFunction_mass {K : Type} (P : Distribution K)
       behaviorMass (Distribution.fTransform
         (fun k => DDS.ofFunction A.domain A.nonempty_prefix
           (fun x => ⟨x.1, f k x.1 x.2⟩)) P) (h.map Prod.fst) (h.map Prod.snd) := by
-  rw [sample_mass, behaviorMass, Distribution.mass_fTransform]
-  unfold Distribution.mass Finsupp.sum
-  apply Finset.sum_congr rfl
-  intro k _
-  dsimp only
-  simp only [ofFunction_mass, DDS.replies_ofFunction_iff]
+  rw [sample_ofFunction_mass_eq, behaviorMass, Distribution.mass_fTransform]
+  apply Distribution.mass_congr
+  intro k
+  simp only [DDS.replies_ofFunction_iff]
   have answers : h.map Prod.snd = (h.map Prod.fst).map (fun x => ⟨x.1, f k x.1 x.2⟩) ↔
       ∀ z ∈ h, z.2 = ⟨z.1.1, f k z.1.1 z.1.2⟩ := by
     rw [List.map_map, List.map_eq_map_iff]
     rfl
   simp only [answers, List.map_eq_nil_iff]
-  split_ifs <;> simp
 
 end TypedSystem
 
