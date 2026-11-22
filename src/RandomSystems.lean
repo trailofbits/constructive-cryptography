@@ -120,6 +120,7 @@ public import RandomSystems.Typed.TensorRename
 
 public import RandomSystems.Typed.RandomFunction
 public import RandomSystems.Typed.TranscriptLaw
+public import RandomSystems.Typed.RandomFunctionCollision
 
 /-!
 Random systems: raw systems and connection, deterministic converters, PDSs, cumulative random
