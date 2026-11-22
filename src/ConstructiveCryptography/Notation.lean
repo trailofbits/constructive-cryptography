@@ -13,7 +13,7 @@ public import ConstructiveCryptography.Tactics.Categorical
 All notation, `Δ R S`, `R ∥ S`, `R ≃[ε] S`, `𝓡 —[π]→ 𝒮`, `𝓡 —[π; ε]→ 𝒮` and `G |≡ T`, is
 defined over the abstract classes in `ConstructiveCryptography.Notation.Basic`, and reads the
 selected instances. This module sits above the interface instances and the proof commands and
-defines no notation of its own; on interfaces `Δ` is the transcript distance and `≃[ε]`
+adds typed serial and tensor notation; on interfaces `Δ` is the transcript distance and `≃[ε]`
 quantifies over the `AdmissibleDistinguishers` instance a statement installs. Second
 handlers for `Δ` and `∥` (`elabTypedCCDistance`, `elabTypedCCParallel`, sharing
 `elabTypedCCOperands`) first read each operand as a typed system on its own interface, so that
@@ -36,6 +36,10 @@ whole family; normalization never splits it into independent draws of the compon
 sample s ← P; ∥ k, R s k    ≠    ∥ k, (sample s ← P; R s k)    in general
 ```
 
+Serial `α ≫ β` and tensor `α ⊗ₘ β` accept direct `TypedConverter` operands.
+`elabTypedCCArrows` tries the selected categorical operation first, and supplies `Interface`
+only when neither the operands nor the expected type selects another category.
+
 The named family context uses `TypedConverter.parallelAllContext_smul`:
 `parallelAllContext R k • S = ∥ j, Function.update R k S j`. Its fixed components and selected
 replacement keep their declared domains; further component equalities remain explicit premises.
@@ -47,6 +51,162 @@ Sample hoisting runs after structural attachment, keeping a draw in its owning c
 namespace SystemAlgebra
 
 open CategoryTheory CategoryTheory.MonoidalCategory
+
+/-- Serial composition with the same right-associative binding power as categorical `≫`. -/
+scoped syntax:80 (name := ccComposition) (priority := high) term:81 " ≫ " term:80 : term
+
+/-- Tensor of arrows with the same right-associative binding power as Mathlib's `⊗ₘ`. -/
+scoped syntax:70 (name := ccTensorHom) (priority := high) term:71 " ⊗ₘ " term:70 : term
+
+open Lean Elab Term in
+/-- Rewrite directly nested `≫` nodes, including parenthesized ones, to `CategoryStruct.comp`.
+One generic attempt covers that chain without re-entering this handler; other operands keep
+their syntax. -/
+meta partial def ccCompositionGenericSyntax (stx : TSyntax `term) : TermElabM (TSyntax `term) := do
+  match stx with
+  | `($α ≫ $β) =>
+    let α ← ccCompositionGenericSyntax α
+    let β ← ccCompositionGenericSyntax β
+    `(CategoryTheory.CategoryStruct.comp $α $β)
+  | `(($term)) =>
+    let term ← ccCompositionGenericSyntax term
+    `(($term))
+  | _ => return stx
+
+open Lean Elab Term in
+/-- Rewrite directly nested `⊗ₘ` nodes, including parenthesized ones, to
+`MonoidalCategoryStruct.tensorHom`, as `ccCompositionGenericSyntax` does for `≫`. -/
+meta partial def ccTensorGenericSyntax (stx : TSyntax `term) : TermElabM (TSyntax `term) := do
+  match stx with
+  | `($α ⊗ₘ $β) =>
+    let α ← ccTensorGenericSyntax α
+    let β ← ccTensorGenericSyntax β
+    `(CategoryTheory.MonoidalCategoryStruct.tensorHom $α $β)
+  | `(($term)) =>
+    let term ← ccTensorGenericSyntax term
+    `(($term))
+  | _ => return stx
+
+open Lean Meta Elab Term in
+/-- Return `some true` for a `Quiver.Hom` over objects other than `Interface`, `some false`
+for `Interface` or a non-morphism type, and `none` while the head or object type is unresolved.
+Unfold aliases only up to `Quiver.Hom`, before its field reduces to the converter carrier. -/
+meta def ccCompositionHasOtherCategory (type : Expr) : TermElabM (Option Bool) := do
+  let mut type := (← instantiateMVars type).consumeMData
+  while !type.isAppOf ``Quiver.Hom do
+    if type.getAppFn.isMVar then return none
+    let some unfolded ← unfoldDefinition? type | return some false
+    type := unfolded.consumeMData
+  let obj ← whnf type.getAppArgs[0]!
+  if obj.getAppFn.isMVar then return none
+  return some (!obj.isConstOf ``Interface)
+
+open Lean Meta Elab Term in
+/-- Inspect the category selected by an operand alone, restoring all state afterward.
+The first pass reads selections with pending endpoint capabilities; the second synthesizes
+postponed types. An operand that fails alone selects nothing (`some false`). -/
+meta def ccCompositionOperandHasOtherCategory
+    (stx : TSyntax `term) : TermElabM (Option Bool) := do
+  let saved ← saveState
+  let generic ← ccCompositionGenericSyntax stx
+  try
+    try
+      let selected ← withoutErrToSorry do
+        let term ← elabTerm generic none
+        ccCompositionHasOtherCategory (← inferType term)
+      if selected == some true then return selected
+    catch _ => pure ()
+    saved.restore (restoreInfo := true)
+    withoutErrToSorry <| withSynthesize do
+      let term ← elabTerm generic none
+      ccCompositionHasOtherCategory (← inferType term)
+  catch _ =>
+    return some false
+  finally
+    saved.restore (restoreInfo := true)
+
+open Lean Elab Term in
+/-- Elaborate a binary operation on arrows `α`, `β`. `generic` is the operation of whatever
+category and instances the operands and `expectedType?` select. `typed` is the same operation
+with only its category fixed to `Interface` and both operands read as `TypedConverter _ _`.
+
+The invariant: `typed` is tried only after `generic` fails, and only if neither
+`expectedType?` nor an operand selects another category. Since `typed` names no instance,
+composition and tensor remain those in scope.
+
+* The first generic attempt finishes synthesis, so it fails only when this reading fails.
+* Every later attempt starts from the saved state, so a discarded reading leaves no
+  metavariable assignment or postponed problem behind.
+* A selected category keeps the generic reading.
+* While the category is unresolved, a generic reading that exposes a category is kept;
+  otherwise elaboration postpones, because a later argument may still select a category.
+* The typed reading leaves endpoint constraints to the enclosing expression.
+* If every attempt fails at once, the first generic error is reported. -/
+meta def elabTypedCCArrows
+    -- `generic`, `typed` are the two readings of the operation on operands `α`, `β`.
+    (generic typed α β : TSyntax `term) (expectedType? : Option Expr) : TermElabM Expr := do
+  let saved ← saveState
+  try
+    withoutErrToSorry <| withSynthesize do
+      elabTerm generic expectedType?
+  catch genericError =>
+    saved.restore (restoreInfo := true)
+    let genericOnly : TermElabM Expr := do
+      try
+        withoutErrToSorry <| elabTerm generic expectedType?
+      catch _ =>
+        saved.restore (restoreInfo := true)
+        throw genericError
+    let expectedSelection ← match expectedType? with
+      | some type => ccCompositionHasOtherCategory type
+      | none => pure (some false)
+    let leftSelection ← ccCompositionOperandHasOtherCategory α
+    let rightSelection ← ccCompositionOperandHasOtherCategory β
+    saved.restore (restoreInfo := true)
+    if expectedSelection == some true || leftSelection == some true ||
+        rightSelection == some true then
+      genericOnly
+    else
+      if expectedSelection.isNone || leftSelection.isNone || rightSelection.isNone then
+        -- Keep the generic category visible while endpoint constraints wait.
+        try
+          let term ← withoutErrToSorry <| elabTerm generic expectedType?
+          if (← ccCompositionHasOtherCategory (← Lean.Meta.inferType term)).isSome then
+            return term
+        catch _ => pure ()
+        saved.restore (restoreInfo := true)
+        -- A later argument may still select the category before typed hints are considered.
+        tryPostpone
+      -- No other category is selected: read both operands as direct converters in Interface.
+      try
+        withoutErrToSorry <| elabTerm typed expectedType?
+      catch _ =>
+        saved.restore (restoreInfo := true)
+        throw genericError
+
+open Lean Elab Term in
+/-- `α ≫ β` by `elabTypedCCArrows`: composition in the selected category, or composition in
+`Interface` of direct converters when no other category is selected. -/
+@[term_elab ccComposition]
+meta def elabTypedCCComposition : TermElab
+  -- `α`, `β` are the serial operands; `expectedType?` may determine their outside endpoints.
+  | `($α ≫ $β), expectedType? => do
+    elabTypedCCArrows (← ccCompositionGenericSyntax (← `($α ≫ $β)))
+      (← `(CategoryTheory.CategoryStruct.comp (obj := SystemAlgebra.Interface)
+        ($α : TypedConverter _ _) ($β : TypedConverter _ _))) α β expectedType?
+  | _, _ => throwUnsupportedSyntax
+
+open Lean Elab Term in
+/-- `α ⊗ₘ β` by `elabTypedCCArrows`: the tensor of the selected monoidal structure, or, when no
+other category is selected, the tensor in `Interface` of direct converters. -/
+@[term_elab ccTensorHom]
+meta def elabTypedCCTensorHom : TermElab
+  -- `α`, `β` are the tensor operands; `expectedType?` may determine their endpoints.
+  | `($α ⊗ₘ $β), expectedType? => do
+    elabTypedCCArrows (← ccTensorGenericSyntax (← `($α ⊗ₘ $β)))
+      (← `(CategoryTheory.MonoidalCategoryStruct.tensorHom (C := SystemAlgebra.Interface)
+        ($α : TypedConverter _ _) ($β : TypedConverter _ _))) α β expectedType?
+  | _, _ => throwUnsupportedSyntax
 
 open Lean Elab Term in
 /-- Elaborate `operation (R : TypedSystem _) (S : TypedSystem _)` for a binary CC operation
