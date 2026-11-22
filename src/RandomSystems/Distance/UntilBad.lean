@@ -45,6 +45,13 @@ def transcriptCost (β : List (A × B) → A → ℝ) : List (A × B) → ℝ
   | [] => 0
   | z :: t => β [] z.1 + transcriptCost (fun p x => β (z :: p) x) t
 
+/-- Charging zero at every query gives zero total cost. -/
+lemma transcriptCost_zero (h : List (A × B)) :
+    transcriptCost (fun _ _ => 0) h = 0 := by
+  induction h with
+  | nil => rfl
+  | cons z h ih => simpa only [transcriptCost, zero_add] using ih
+
 /-- One more step adds its cost. -/
 lemma transcriptCost_snoc (β : List (A × B) → A → ℝ) (h : List (A × B)) (x : A) (y : B) :
     transcriptCost β (h ++ [(x, y)]) = transcriptCost β h + β h x := by
