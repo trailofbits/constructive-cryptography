@@ -34,23 +34,23 @@ trace: [Meta.Tactic.simp.rewrite] encryptThenMAC.system_eq:1000:
 [Meta.Tactic.simp.rewrite] Interface.cc_parallel_eq:100:
       AE.system scheme ∥ mac.system
     ==>
-      (AE.system scheme).parallel mac.system
+      AE.system scheme ∥ mac.system
 [Meta.Tactic.simp.rewrite] Interface.smul_eq_typed_smul:100:
-      encryptThenMAC M C T • (AE.system scheme).parallel mac.system
+      encryptThenMAC M C T • (AE.system scheme ∥ mac.system)
     ==>
       (have this := encryptThenMAC M C T;
         this) •
-        (AE.system scheme).parallel mac.system
+        (AE.system scheme ∥ mac.system)
 [Meta.Tactic.simp.rewrite] Interface.cc_parallel_eq:100:
       R ∥ mac.system
     ==>
-      R.parallel mac.system
+      R ∥ mac.system
 [Meta.Tactic.simp.rewrite] Interface.smul_eq_typed_smul:100:
-      encryptThenMAC M C T • R.parallel mac.system
+      encryptThenMAC M C T • (R ∥ mac.system)
     ==>
       (have this := encryptThenMAC M C T;
         this) •
-        R.parallel mac.system
+        (R ∥ mac.system)
 -/
 #guard_msgs (whitespace := lax) in
 example

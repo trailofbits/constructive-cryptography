@@ -32,6 +32,10 @@ are in `SystemAlgebra`. The probability operations below are in `Probability.Dis
 | Independent joint law | `prodProbDist` in [Distribution] |
 | Independent finite family of draws | `ProbDist.pi` in [Distribution] |
 | Independent draws with different outcome types | `ProbDist.piDep` in [DependentProduct] |
+| Select coordinates of different types | `ProbDist.map_piDep_comp` in [Kernel] |
+| Routed table equality off input collisions | `TypedSystem.sample_piDep_comp_mass_eq` in [RandomSystems/Typed/RandomFunction.lean](src/RandomSystems/Typed/RandomFunction.lean) |
+| Ideal-transcript collision bound | `TypedSystem.sample_piDep_comp_advantage_le_collision_mass` in [RandomSystems/Typed/RandomFunctionCollision.lean](src/RandomSystems/Typed/RandomFunctionCollision.lean) |
+| Ratio and accumulated loss, through a common filter | `RandomSystem.filtered_distance_le_of_ratio_and_cost` in [RandomSystems/Typed/FilterDistance.lean](src/RandomSystems/Typed/FilterDistance.lean) |
 | Transformed or dependent law | `ProbDist.map`, `ProbDist.bind`, `ProbDist.jointLaw` in [Kernel] |
 | Independent initialized laws | `prodProbDist_map`, `ProbDist.map_map` in [Kernel] |
 | Root blinding | `ProbDist.blindRootSolver`, `ProbDist.rootSuccessLaw` in [Group] |

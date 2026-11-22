@@ -6,44 +6,38 @@ public import RandomSystems.Typed.ParallelAllContext
 public import ConstructiveCryptography.Instances.Algebra
 public import ConstructiveCryptography.CryptographicAlgebra.Game
 public import ConstructiveCryptography.Tactics.Categorical
+public meta import Mathlib.Util.DelabNonCanonical
 
 /-!
 # Notation frontend for interfaces
 
-All notation, `Δ R S`, `R ∥ S`, `R ≃[ε] S`, `𝓡 —[π]→ 𝒮`, `𝓡 —[π; ε]→ 𝒮` and `G |≡ T`, is
-defined over the abstract classes in `ConstructiveCryptography.Notation.Basic`, and reads the
-selected instances. This module sits above the interface instances and the proof commands and
-adds typed serial and tensor notation; on interfaces `Δ` is the transcript distance and `≃[ε]`
-quantifies over the `AdmissibleDistinguishers` instance a statement installs. Second
-handlers for `Δ` and `∥` (`elabTypedCCDistance`, `elabTypedCCParallel`, sharing
-`elabTypedCCOperands`) first read each operand as a typed system on its own interface, so that
-attachments such as `Δ (α • R) (α • S)` or `α • R ∥ β • S` infer their interfaces and budgets.
-If that fails they restore the elaboration state and defer to the generic handlers, so any
-other carrier keeps its own metric and parallel operation. The hints select nothing: both
-paths produce the same `distance R S` or `parallel R S`. The
-compatibility laws of the distance are restated with `∥` for the `cc_nonexpand` tactic, and
-`cc_normalize` applies locality, `(α ⊗ₘ β) • (R ∥ S) = α • R ∥ β • S`, whether the interfaces
-are written with `⊗` or with `Interface.tensor`. The categorical action, the direct typed
-action and the attachment field of `Interface.resourceTheory` are identified by definitional
-bridges, and `cc_parallel_eq` rewrites the abstract `parallel` to `TypedSystem.parallel`, so
-all normalize by the same typed laws, also after serial composition or `cc_construct`. Attachment
-enters an initial sample, `α • sample P R = sample P (fun s => α • R s)`, for any normalized
-law `P`, including nested samples whose laws depend on earlier draws, and acts componentwise on
-a finite family, `(⨂ₘ k, α k) • (∥ k, R k) = ∥ k, α k • R k`. A shared draw stays outside the
-whole family; normalization never splits it into independent draws of the components:
+The notation in `ConstructiveCryptography.Notation.Basic` uses the selected abstract
+instances. This frontend also accepts direct typed systems and converters in `Δ`, `∥`,
+`≫` and `⊗ₘ`, inferring their interfaces and budgets. It preserves any selected alternative
+metric or composition. Direct typed operations print in the same notation when the selected
+instances agree.
+
+`cc_normalize` applies the serial, parallel and sampling laws:
+
+* `(α ⊗ₘ β) • (R ∥ S) = α • R ∥ β • S`;
+* `α • sample P R = sample P (fun s => α • R s)` for normalized `P`;
+* `(⨂ₘ k, α k) • (∥ k, R k) = ∥ k, α k • R k`.
+
+A retained draw stays shared, including when later sample laws depend on it:
 
 ```text
 sample s ← P; ∥ k, R s k    ≠    ∥ k, (sample s ← P; R s k)    in general
 ```
 
-Serial `α ≫ β` and tensor `α ⊗ₘ β` accept direct `TypedConverter` operands.
-`elabTypedCCArrows` tries the selected categorical operation first, and supplies `Interface`
-only when neither the operands nor the expected type selects another category.
+`TypedConverter.parallelAllContext_smul` isolates one component:
+`parallelAllContext R k • S = ∥ j, Function.update R k S j`.
+The context keeps the fixed components and their declared domains. Further component
+equalities remain explicit premises.
 
-The named family context uses `TypedConverter.parallelAllContext_smul`:
-`parallelAllContext R k • S = ∥ j, Function.update R k S j`. Its fixed components and selected
-replacement keep their declared domains; further component equalities remain explicit premises.
-Sample hoisting runs after structural attachment, keeping a draw in its owning component.
+## References
+
+1. U. Maurer and R. Renner. From Indifferentiability to Constructive Cryptography (and Back).
+   TCC 2016-B. Cryptology ePrint Archive, Paper 2016/903.
 -/
 
 @[expose] public section
@@ -91,7 +85,7 @@ open Lean Meta Elab Term in
 /-- Return `some true` for a `Quiver.Hom` over objects other than `Interface`, `some false`
 for `Interface` or a non-morphism type, and `none` while the head or object type is unresolved.
 Unfold aliases only up to `Quiver.Hom`, before its field reduces to the converter carrier. -/
-meta def ccCompositionHasOtherCategory (type : Expr) : TermElabM (Option Bool) := do
+meta def ccCompositionHasOtherCategory (type : Expr) : MetaM (Option Bool) := do
   let mut type := (← instantiateMVars type).consumeMData
   while !type.isAppOf ``Quiver.Hom do
     if type.getAppFn.isMVar then return none
@@ -245,6 +239,90 @@ meta def elabTypedCCParallel : TermElab
       R S expectedType?
   | _, _ => throwUnsupportedSyntax
 
+open Lean Meta PrettyPrinter.Delaborator in
+/-- Include local class-valued declarations when checking whether displayed notation is canonical.
+Pretty-printing can run with a local context whose instance table has not been restored. -/
+meta def withCCTypedDisplayInstances {α : Type} (action : DelabM α) : DelabM α := do
+  let declarations := (← getLCtx).foldl (fun acc declaration => declaration :: acc) []
+  withLocalInstances declarations.reverse action
+
+open Lean Meta PrettyPrinter.Delaborator SubExpr in
+/-- Print a direct typed binary operation only when the notation reads the same selected
+instances and neither operand selects a different category. -/
+meta def delabTypedCCBinary (arity : Nat) (instances : Array Name)
+    (render : Term → Term → DelabM Term) : Delab :=
+  whenPPOption Lean.getPPNotation <| whenNotPPOption Lean.getPPExplicit <|
+    withOverApp arity <| withCCTypedDisplayInstances do
+      for instanceName in instances do
+        guard (← isCanonicalInstance (mkConst instanceName))
+      for index in #[arity - 2, arity - 1] do
+        let type ← withNaryArg index do inferType (← getExpr)
+        guard ((← ccCompositionHasOtherCategory type) == some false)
+      render (← withNaryArg (arity - 2) delab) (← withNaryArg (arity - 1) delab)
+
+open Lean Meta PrettyPrinter.Delaborator SubExpr in
+/-- Direct typed serial composition displays as `α ≫ β` under the canonical category. -/
+@[delab app.SystemAlgebra.TypedConverter.comp]
+meta def delabTypedCCComposition : Delab := withCCTypedDisplayInstances do
+  let categoryStruct ← mkAppOptM ``CategoryTheory.Category.toCategoryStruct
+    #[some (mkConst ``Interface), some (mkConst ``Interface.category)]
+  guard (← isCanonicalInstance categoryStruct)
+  delabTypedCCBinary 5 #[``Interface.category] fun α β => `($α ≫ $β)
+
+open Lean PrettyPrinter.Delaborator in
+/-- Direct typed converter parallel displays as `α ⊗ₘ β` under the selected canonical tensor. -/
+@[delab app.SystemAlgebra.TypedConverter.parallel]
+meta def delabTypedCCTensor : Delab :=
+  delabTypedCCBinary 6 #[``Interface.category, ``Interface.monoidalStruct]
+    fun α β => `($α ⊗ₘ $β)
+
+open Lean PrettyPrinter.Delaborator in
+/-- Direct typed system parallel displays as `R ∥ S` when the selected algebra agrees. -/
+@[delab app.SystemAlgebra.TypedSystem.parallel]
+meta def delabTypedCCSystemParallel : Delab :=
+  delabTypedCCBinary 4 #[``Interface.category, ``Interface.monoidal,
+    ``Interface.resourceTheory, ``Interface.cryptographicAlgebra] fun R S => `($R ∥ $S)
+
+open Lean Meta PrettyPrinter.Delaborator SubExpr in
+/-- The direct identity displays as `𝟙 A` when the selected category structure agrees. -/
+@[delab app.SystemAlgebra.TypedConverter.id]
+meta def delabTypedCCIdentity : Delab :=
+  whenPPOption Lean.getPPNotation <| whenNotPPOption Lean.getPPExplicit <|
+    withOverApp 1 <| withCCTypedDisplayInstances do
+      let categoryStruct ← mkAppOptM ``CategoryTheory.Category.toCategoryStruct
+        #[some (mkConst ``Interface), some (mkConst ``Interface.category)]
+      guard (← isCanonicalInstance categoryStruct)
+      let A ← withNaryArg 0 delab
+      `(𝟙 $A)
+
+open Lean PrettyPrinter.Delaborator in
+/-- Direct binary interfaces print as `A ⊗ B` when the selected tensor is canonical. -/
+@[delab app.SystemAlgebra.Interface.tensor]
+meta def delabTypedCCInterfaceTensor : Delab :=
+  delabTypedCCBinary 2 #[``Interface.category, ``Interface.monoidalStruct]
+    fun A B => `($A ⊗ $B)
+
+open Lean Meta PrettyPrinter.Delaborator SubExpr in
+/-- Direct attachment prints as `α • R` only when that notation selects the same action. -/
+@[delab app.SystemAlgebra.TypedConverter.attach]
+meta def delabTypedCCAttachment : Delab :=
+  whenPPOption Lean.getPPNotation <| whenNotPPOption Lean.getPPExplicit <|
+    withOverApp 4 <| withCCTypedDisplayInstances do
+      let expression ← getExpr
+      let arguments := expression.getAppArgs
+      let converterType ← inferType arguments[2]!
+      let resourceType ← inferType arguments[3]!
+      let resultType ← inferType expression
+      let actionType ← mkAppM ``HSMul #[converterType, resourceType, resultType]
+      let action ← synthInstance actionType
+      let applied ← mkAppOptM ``HSMul.hSMul
+        #[some converterType, some resourceType, some resultType, some action,
+          some arguments[2]!, some arguments[3]!]
+      guard (← isDefEq applied expression)
+      let α ← withNaryArg 2 delab
+      let R ← withNaryArg 3 delab
+      `($α • $R)
+
 namespace Interface
 
 attribute [cc_normalization] comp_smul identity_attach
@@ -296,8 +374,8 @@ lemma distance_smul_le {A B : Interface} (α : A ⟶ B) (R S : TypedSystem B) :
 /-- Opposite typed attachments that exchange two system pairs preserve their distance: for
 `forward : A ⟶ B` and `backward : B ⟶ A`, the four equalities `forward • R = R'`,
 `forward • S = S'`, `backward • R' = R` and `backward • S' = S` give `Δ R' S' = Δ R S`.
-The interface form of `distance_eq_of_mutual_attach`; Maurer--Renner 2016, Definition 2
-(printed p. 11): “d(αR, αS) ≤ d(R, S) for all α”. -/
+The interface form of `distance_eq_of_mutual_attach`; [1, Definition 2, p. 11]:
+“d(αR, αS) ≤ d(R, S) for all α”. -/
 lemma distance_eq_of_mutual_smul {A B : Interface}
     (forward : A ⟶ B) (backward : B ⟶ A)
     (R S : TypedSystem B) (R' S' : TypedSystem A)
