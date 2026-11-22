@@ -396,6 +396,17 @@ lemma map_pi_apply_comp
   (map_map g (fun f : ι → A => f i) (ProbDist.pi μ)).symm.trans
     (congrArg (ProbDist.map g) (map_pi_apply μ i))
 
+/-- Selecting distinct coordinates from an independent table gives their product law. -/
+lemma map_piDep_comp
+    -- `I` indexes the original table; `J` indexes the selected outcomes from the family `A`.
+    {I J : Type*} [Fintype I] [Fintype J] {A : I → Type*}
+    -- `μ i` is the normalized coordinate law; `he` prevents `e` from duplicating a draw.
+    (μ : ∀ i, ProbDist (A i)) (e : J → I) (he : Function.Injective e) :
+    (ProbDist.piDep μ).map (fun f j => f (e j)) = ProbDist.piDep fun j => μ (e j) := by
+  apply Subtype.ext
+  exact fTransform_piDep_comp_of_weight_eq_one (fun i => (μ i).1) e he
+    (fun i _ => (μ i).2.2)
+
 /-- Sequential sampling: `bind P f (b) = ∑ₐ P(a) · f(a)(b)`. -/
 noncomputable def bind
     -- `P` samples `a : A`; `f a` is the normalized law of the next outcome in `B`.
