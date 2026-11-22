@@ -83,6 +83,7 @@ public import Tests.DependentCoordinateMarginals
 public import Tests.RoutedRandomFunction
 public import Tests.TranscriptLaw
 public import Tests.RandomFunctionCollision
+public import Tests.RatioCost
 
 /-! Axiom audits per layer and of the Commons library, the checks of the
 authenticated-encryption example,
