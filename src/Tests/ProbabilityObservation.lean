@@ -59,4 +59,16 @@ example :
 #print axioms Distribution.ProbDist.jointLaw_fst
 #print axioms Distribution.ProbDist.jointLaw_map
 
+/-- A nonconstant gap averages under any nonnegative Boolean law, including mass above one. -/
+example (μ : Distribution Bool) (hμ : μ.NonNeg) :
+    |μ.expect (fun b => if b then (2 : ℝ) else 0)| ≤
+      μ.expect (fun b => if b then (2 : ℝ) else 0) := by
+  have bound := abs_expect_sub_expect_le_expect hμ
+    (fun b => if b then (2 : ℝ) else 0) (fun _ => 0)
+    (fun b => if b then (2 : ℝ) else 0)
+    (by intro b; cases b <;> norm_num)
+  simpa only [expect_const, zero_mul, sub_zero] using bound
+
+#print axioms abs_expect_sub_expect_le_expect
+
 end Probability.Tests.Observation

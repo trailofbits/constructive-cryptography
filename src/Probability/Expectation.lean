@@ -22,7 +22,7 @@ The expectation `𝔼_X[f] = ∑ₐ X(a) · f(a)` over a finite distribution.
   `expect_mul_sq_le_sq_mul_sq` (Cauchy–Schwarz)
 * `variance_nonneg`, `variance_eq_expect_sq_sub_sq_expect`
 * Jensen: `ConcaveOn.le_map_expect`, `ConvexOn.map_expect_le`
-* `expect_fTransform`, `expect_prod_eq`
+* `expect_fTransform`, `expect_prod_eq`, `abs_expect_sub_expect_le_expect`
 * `expect_comp_eq_sum_mass`: `𝔼_X[ε ∘ classOf] = ∑_c ε(c) · X(classOf = c)`
 -/
 
@@ -186,6 +186,20 @@ lemma expect_mono {X : Distribution A} (hX : X.NonNeg) {f g : A → ℝ}
     (h : ∀ a, f a ≤ g a) :
     X.expect f ≤ X.expect g :=
   Finset.sum_le_sum fun a _ => mul_le_mul_of_nonneg_left (h a) (hX a)
+
+/-- Pointwise gaps bounded by `ε a` give an average gap bounded by `𝔼_X[ε]`. -/
+lemma abs_expect_sub_expect_le_expect
+    -- `X` is a nonnegative finite law; its total weight need not be one.
+    {X : Distribution A} (hX : X.NonNeg)
+    -- `f`, `g` are the compared observations; `ε a` bounds their gap at outcome `a`.
+    (f g ε : A → ℝ) (h : ∀ a, |f a - g a| ≤ ε a) :
+    |X.expect f - X.expect g| ≤ X.expect ε := by
+  apply abs_sub_le_iff.mpr
+  constructor
+  · rw [← expect_sub_right]
+    exact expect_mono hX (fun a => (abs_sub_le_iff.mp (h a)).1)
+  · rw [← expect_sub_right]
+    exact expect_mono hX (fun a => (abs_sub_le_iff.mp (h a)).2)
 
 /-- A uniform bound on `f` over the support bounds the expectation by
 `c · |X|`.  `NonNeg` layer; the bound is only required where `X` has mass. -/
