@@ -1,14 +1,16 @@
 module
 
 public import ConstructiveCryptography.Tactics.Basic
+public import ConstructiveCryptography.Instances.Substitution
 public import ConstructiveCryptography.Substitution.Quantitative
 public import ConstructiveCryptography.CryptographicAlgebra.DistinguisherAction
 
 /-!
 # Substitution proof commands
 
-Commands that apply the substitution laws to supplied terms (Banfi, Definition 2.3.1 and
-§2.3.1).
+Commands that apply named substitution laws to supplied terms. For typed systems,
+`TypedConverter.substitutesWithin_attach` gives the transported loss `fun d => ε (d.absorb α)`
+under explicit closure of the selected test class.
 
 * `cc_substitute relation through converter using premise` applies preservation.
 * `cc_substitution_chain relation using witness, premises` interprets a witness.
@@ -101,7 +103,7 @@ syntax ppIndent(colGe term:51 " ≃ " term " := " "← " term) : ccSubstitutionC
 
 syntax ccSubstitutionCalcSteps := ppLine withPosition(
   ccSubstitutionCalcStep (ppLine linebreak ccSubstitutionCalcStep)*)
-/-- A Banfi substitution calculation elaborated through Lean's existing `calc`. -/
+/-- A substitution calculation elaborated through Lean's existing `calc`. -/
 syntax (name := ccCalc) "cc_calc " term:max ccSubstitutionCalcSteps : tactic
 
 open Lean Elab Tactic in
@@ -255,8 +257,7 @@ partial def ccUsageRule? (witness : Expr) : MetaM (Option (Name × Expr)) := do
     return none
 
 open Lean Meta Elab Tactic in
-/-- Normalize use counts by constructor-directed structural laws, not by
-enumerating positions or trying unrelated count rules at default transparency. -/
+/-- Normalize use counts by constructor-directed structural laws. -/
 elab "cc_usage" : tactic => Lean.Elab.Tactic.withMainContext do
   let rec findUsage (expression : Expr) : MetaM (Option (Expr × Name × Expr)) := do
     if expression.isAppOf ``SubstitutionRelation.Implication.usageCount &&
@@ -322,7 +323,8 @@ open Lean Meta in
 /-- Read the selected substitution model from the goal, unfolding only its outer definition
 until `SubstitutesWithin` is exposed. This does not search for a security model. -/
 partial def ccSubstitutionModel (target : Expr) : MetaM Expr := do
-  let target ← instantiateMVars target
+  -- `have` can wrap the goal in `noImplicitLambda` metadata, hiding its head constant.
+  let target := (← instantiateMVars target).consumeMData
   if target.getAppFn.isConstOf
       ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin then
     return target.getAppArgs[3]!

@@ -3,9 +3,10 @@ module
 public import RandomSystems.Typed.Context
 public import ConstructiveCryptography.Substitution.Relaxation
 public import ConstructiveCryptography.Instances.Algebra
+public import ConstructiveCryptography.Notation.Basic
 
 /-!
-# Substitution images and parallel composition
+# Typed substitution and parallel composition
 
 For interfaces, the fixed contexts `TypedConverter.rightContext` and `TypedConverter.leftContext`
 realize parallel composition with a fixed typed system. A single-substitution relaxation whose
@@ -25,11 +26,16 @@ So placing a fixed system beside a one-use image `ρ(X₀)` is the one-use image
 composite transformation `context ≫ ρ`, with the same fixed system beside `ρ(X₁)`. These are
 exact equalities of typed systems; no error is involved.
 
-## Main results
+`TypedConverter.substitutesWithin_attach` transports a selected-test bound through attachment,
+with the typed reduced test `d.absorb α`. `singleSubstitutionRelaxation_parallelCompatible`
+lifts one-use substitution images through both ordered parallel contexts.
 
-* `singleSubstitutionRelaxation_parallelCompatible`
+## References
 
-Source: Banfi 2023, §4.1.4; Jost, §2.2.2.
+1. F. Banfi. *A Composable Treatment of Anonymous Communication*. Doctoral thesis,
+   Diss. ETH No. 29663, ETH Zurich, 2023.
+2. D. Jost. *On Generalizations of Composable Security*. Doctoral thesis,
+   Diss. ETH No. 26723, ETH Zurich, 2020.
 -/
 
 @[expose] public section
@@ -45,29 +51,22 @@ open CategoryTheory CategoryTheory.MonoidalCategory
 open ConstructiveCryptography.CryptographicAlgebra
 
 
-/-- The literal one-use substitution relaxation preserves independent
-parallel composition under explicit closure of the admitted transformations in both
-ordered context positions.
-
-Banfi, Section 4.1.4 (printed p. 76), requires an "(efficient) transformation".
-These closure hypotheses do not assert that arbitrary converters are efficient.
-Jost's locality equation, Proposition 2.2.3 (printed p. 18), supplies
-"composition order independence"; its concrete RS realization is already
-proved by the two context-attachment equations.
-
-With `φ_A = singleSubstitutionRelaxation (transformations A) left right (diagonal A)`, for
-specifications `𝒮` on `A` and `𝒯` on `B`:
+/-- One-use substitution preserves independent parallel composition when admitted transformations
+are closed under both ordered contexts for every fixed system.
+Write `φ_A = singleSubstitutionRelaxation (transformations A) left right (diagonal A)`.
+For specifications `𝒮` on `A` and `𝒯` on `B`, with `X₀ = left`, `X₁ = right`:
 
 ```text
 φ_A(𝒮) ∥ 𝒯 ⊆ φ_{A⊗B}(𝒮 ∥ 𝒯)       ρ(X₀) ∥ T = (rightContext A T ≫ ρ)(X₀)
 𝒮 ∥ φ_B(𝒯) ⊆ φ_{A⊗B}(𝒮 ∥ 𝒯)       S ∥ ρ(X₀) = (leftContext S B ≫ ρ)(X₀)
 ```
 
-Here `S ∈ 𝒮`, `T ∈ 𝒯`, and `ρ` is the admitted transformation witnessing the relaxed
-component. Its `X₁`-side `ρ(X₁)` lies in `𝒮` (resp. `𝒯`), so `ρ(X₁) ∥ T` (resp.
-`S ∥ ρ(X₁)`) lies in `𝒮 ∥ 𝒯`.
-The two positions are handled by different contexts, so no symmetry of `∥` is used. The
-closure hypotheses quantify over every fixed system `context`. -/
+Here `S ∈ 𝒮`, `T ∈ 𝒯`, and `ρ` is the admitted witness at the replaced interface. The same
+context at `X₁` gives `ρ(X₁) ∥ T ∈ 𝒮 ∥ 𝒯` or `S ∥ ρ(X₁) ∈ 𝒮 ∥ 𝒯`, respectively.
+[1, §4.1.4, p. 76] requires an “(efficient) transformation”; `transformations` is an explicit
+admitted class whose efficiency is a property of the caller's model.
+[2, Proposition 2.2.3, p. 18] gives “composition order independence”, instantiated here by
+the two context-attachment equations. -/
 theorem singleSubstitutionRelaxation_parallelCompatible
     -- `D : Interface` is the interface of the assumption's two systems.
     {D : Interface}
@@ -139,3 +138,25 @@ theorem singleSubstitutionRelaxation_parallelCompatible
 end
 
 end SystemAlgebra.Substitution
+
+namespace SystemAlgebra.TypedConverter
+
+open ConstructiveCryptography
+
+/-- A selected-test bound survives attachment through `α`, at the reduced test `d.absorb α`. -/
+lemma substitutesWithin_attach
+    -- The instance selects the admitted tests at every interface.
+    [AdmissibleDistinguishers Interface TypedDistinguisher]
+    -- `A` is the outside interface; `B` carries the compared inside systems.
+    {A B : Interface} (α : TypedConverter A B)
+    -- `closed` admits `d.absorb α` whenever the outside test `d` is admitted.
+    (closed : AdmissibleDistinguishers.ClosedUnder
+      (Phi := TypedSystem) (D := TypedDistinguisher) α)
+    -- `h` bounds the advantage between `R`, `S` by the inside-test-dependent error `ε`.
+    {R S : TypedSystem B} {ε : TypedDistinguisher B → ENNReal} (h : R ≃[ε] S) :
+    α • R ≃[fun d => ε (d.absorb α)] α • S := by
+  -- The interface instance interprets abstract absorption as typed converter absorption.
+  simpa only [DistinguisherAction.absorb] using
+    (AdmissibleDistinguishers.substitutesWithin_attach α closed h)
+
+end SystemAlgebra.TypedConverter
