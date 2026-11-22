@@ -77,6 +77,9 @@ public import Tests.FiniteFamilyHybrid
 public import Tests.NamedAssemblyNormalization
 public import Tests.AuthoringWorkflows
 
+public import Tests.TypedComposition
+public import Tests.TypedTensor
+
 /-! Axiom audits per layer and of the Commons library, the checks of the
 authenticated-encryption example,
 counterexamples, DSL diagnostics and semantics, and the tests of the cryptographic-algebra,
