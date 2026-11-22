@@ -37,7 +37,7 @@ normalization rules for interfaces.
 namespace SystemAlgebra
 
 /-- Distance in the selected compatible pseudo-metric. -/
-scoped syntax (name := ccDistance) "Δ " term:max term:max : term
+scoped syntax (name := ccDistance) "Δ " term:max ppSpace term:max : term
 
 open Lean Elab Term in
 /-- The generic handler: `Δ R S` elaborates to `distance R S`, the carrier and its metric being

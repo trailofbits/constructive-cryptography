@@ -61,7 +61,7 @@ cc_calc mixed model using domination
 
 This proves `model.SubstitutesWithin (fun D => loss₁ D + ε + loss₂ D) X Y`.
 `cc_calc quantitative model` allows only concrete steps and `cc_calc statistical` only
-statistical steps.
+statistical steps. Statistical calculations retain the carrier and distance selected by the goal.
 
 `cc_calc quantitative` and `cc_calc mixed`, written without a model, read the exact model of
 the goal `model.SubstitutesWithin error X Y` (`ccSubstitutionModel`). The inferred mixed form
@@ -330,16 +330,43 @@ partial def ccSubstitutionModel (target : Expr) : MetaM Expr := do
     return ← ccSubstitutionModel expanded
   throwError "cc_calc needs a substitution goal to infer its selected distinguisher model"
 
+open Lean Meta in
+/-- Read the selected distance and its resource type from a statistical goal. Keeping these
+terms fixes the outside interface of every displayed endpoint before elaborating attachment. -/
+partial def ccStatisticalDistance (target : Expr) : MetaM (Expr × Expr) := do
+  let target := (← instantiateMVars target).consumeMData
+  if target.isAppOfArity ``LE.le 4 then
+    let mut left := target.getAppArgs[2]!
+    while true do
+      if left.isAppOf ``ConstructiveCryptography.CryptographicAlgebra.distance then
+        let arguments := left.getAppArgs
+        let resourceType ← inferType arguments[arguments.size - 2]!
+        return (mkAppN left.getAppFn (arguments.extract 0 (arguments.size - 2)), resourceType)
+      if let .fvar id := left.getAppFn then
+        let some value := (← id.getDecl).value? | break
+        left := (mkAppN value left.getAppArgs).headBeta.consumeMData
+      else
+        let some expanded ← unfoldDefinition? left | break
+        left := expanded.consumeMData
+  if let some expanded ← unfoldDefinition? target then
+    return ← ccStatisticalDistance expanded
+  throwError "cc_calc statistical needs a goal bounding the selected resource distance"
+
 open ConstructiveCryptography.CryptographicAlgebra in
 open Lean Elab Tactic in
 /-- Assemble only the displayed triangle steps, keeping statistical and
 distinguisher-dependent budgets distinct. Exact joins contribute no error. -/
 def elaborateCCQuantitativeCalc (model? domination? : Option (TSyntax `term))
-    (block : TSyntax ``ccQuantitativeCalcSteps) : TacticM Unit := do
+    (block : TSyntax ``ccQuantitativeCalcSteps) : TacticM Unit := withMainContext do
   let `(ccQuantitativeCalcSteps|
     $initial:ccQuantitativeCalcStep
     $following*) := block
     | throwUnsupportedSyntax
+  let (distanceTerm, carrier?) ← match model? with
+    | some _ => pure (← `(distance), none)
+    | none => do
+      let (metric, carrier) ← ccStatisticalDistance (← getMainTarget)
+      pure (← Term.exprToSyntax metric, some (← Term.exprToSyntax carrier))
   let mut start? : Option (TSyntax `term) := none
   let mut current? : Option (TSyntax `term) := none
   let mut prefixProof ← `(rfl)
@@ -359,6 +386,10 @@ def elaborateCCQuantitativeCalc (model? domination? : Option (TSyntax `term))
       | _ => throwUnsupportedSyntax
     let previous := if previous.raw.isOfKind ``Lean.Parser.Term.hole then
       current?.getD previous else previous
+    -- Exact joins need the same outside carrier before their attachments are elaborated.
+    let (previous, next) ← match carrier? with
+      | some carrier => pure (← `(($previous : $carrier)), ← `(($next : $carrier)))
+      | none => pure (previous, next)
     let start := start?.getD previous
     start? := some start
     let current := current?.getD previous
@@ -366,7 +397,9 @@ def elaborateCCQuantitativeCalc (model? domination? : Option (TSyntax `term))
     let proposition ← match model? with
       | some model => ``(fun budget left right =>
           DistinguisherAdvantage.SubstitutesWithin $model budget left right)
-      | none => ``(fun budget left right => distance left right ≤ budget)
+      | none => do
+        let some carrier := carrier? | throwError "missing statistical resource type"
+        `(fun budget (left right : $carrier) => $distanceTerm left right ≤ budget)
     match budget? with
     | none =>
       let equation ← `(Eq.trans $adjacent (show $previous = $next from $proof))
@@ -383,11 +416,13 @@ def elaborateCCQuantitativeCalc (model? domination? : Option (TSyntax `term))
         if reverse then
           leaf ← `((ConstructiveCryptography.CryptographicAlgebra.distance_comm _ _).trans_le
             $proof)
-        leaf ← `(show distance $previous $next ≤ $budget from by
+        -- Check the supplied proof normally; automatic attachment matching keeps systems folded.
+        leaf ← `(show $distanceTerm $previous $next ≤ $budget from by
           first
           | cc_exact_rule "cc_calc supplied distance" => $leaf
-          | cc_exact_rule "cc_calc distance_attach_le" =>
-              (distance_attach_le _ _ _).trans $leaf)
+          | with_reducible
+              cc_exact_rule "cc_calc distance_attach_le" =>
+                (distance_attach_le _ _ _).trans $leaf)
         if let some model := model? then
           let some domination := domination? |
             throwError "statistical steps need `cc_calc mixed model using domination`"
