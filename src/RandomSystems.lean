@@ -118,6 +118,8 @@ public import RandomSystems.Typed.SystemCoherence
 public import RandomSystems.Typed.SystemParallel
 public import RandomSystems.Typed.TensorRename
 
+public import RandomSystems.Typed.RandomFunction
+
 /-!
 Random systems: raw systems and connection, deterministic converters, PDSs, cumulative random
 systems, probabilistic automata and memoryless systems, converters and attachment, parallel
