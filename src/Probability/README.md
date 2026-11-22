@@ -24,6 +24,8 @@ coordinate outcomes. The alphabets may be infinite; only the index set and each 
 finite. [`ProbDist.pi`](Distribution.lean) and [`ProbDist.piDep`](DependentProduct.lean)
 construct normalized independent families directly, carrying the coordinate normalization
 proofs into the product.
+`ProbDist.map_piDep_comp` selects distinct coordinates of a dependent product,
+preserving each coordinate's outcome type and law.
 For example, `ProbDist.pi (fun _ : Fin q => ν)` is the law of `q` independent samples from `ν`.
 A [**kernel**][bindK] $`f`$ is a conditional distribution [3, §3.6.1]; mixed over a law $`\mu`$
 it gives $`\sum_a \mu(a)\, f(a)`$:

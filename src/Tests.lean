@@ -79,6 +79,7 @@ public import Tests.AuthoringWorkflows
 
 public import Tests.TypedComposition
 public import Tests.TypedTensor
+public import Tests.DependentCoordinateMarginals
 
 /-! Axiom audits per layer and of the Commons library, the checks of the
 authenticated-encryption example,

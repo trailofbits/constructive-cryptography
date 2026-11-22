@@ -30,6 +30,8 @@ and the carriers may live in different universes.
 * `piDep_eq_pi`: with one carrier `A k = A`, `piDep μ` is the homogeneous product `pi μ`
 * `fTransform_piDep`: coordinatewise pushforward commutes with the product,
   `(a ↦ (k ↦ f k (a k)))_* (piDep μ) = piDep (k ↦ (f k)_* (μ k))`
+* `fTransform_piDep_comp_of_weight_eq_one`: selecting distinct coordinates preserves their laws
+  when the discarded coordinates have weight one
 * `piDep_single`: independent point laws give the point law on their tuple
 * `piDep_fin_zero`, `piDep_fin_succ`: ordered tuples split into their first coordinate and tail
 * `fTransform_piDep_piCongrLeft`: an explicit index equivalence transports the product law
@@ -228,6 +230,67 @@ lemma fTransform_piDep_piCongrLeft
   rw [fTransform_injective_apply _ _ (Equiv.piCongrLeft A e).injective]
   simp only [piDep_apply, Equiv.piCongrLeft_symm_apply]
   exact e.prod_comp (fun k => μ k (f k))
+
+/-- Splitting a tuple indexed by `I ⊕ J` gives the product of its two subfamilies. -/
+lemma fTransform_piDep_sumPiEquivProdPi
+    -- `I` and `J` index the two groups; `A k` is the outcome type at their tagged index `k`.
+    {I J : Type*} [Fintype I] [Fintype J] {A : I ⊕ J → Type*}
+    -- `μ k` is a finitely supported signed law; no weight or positivity condition is needed.
+    (μ : ∀ k, Distribution (A k)) :
+    fTransform (Equiv.sumPiEquivProdPi A) (piDep μ) =
+      prod (piDep fun i => μ (.inl i)) (piDep fun j => μ (.inr j)) := by
+  ext p
+  -- The splitting equivalence has one preimage of each pair of tuples.
+  let e := Equiv.sumPiEquivProdPi A
+  have point := fTransform_injective_apply (piDep μ) e e.injective (e.symm p)
+  rw [e.apply_symm_apply] at point
+  rw [point, prod_apply]
+  -- Its coefficient is the product over the left indices times that over the right indices.
+  simp only [piDep_apply, Fintype.prod_sum_type, e, Equiv.sumPiEquivProdPi_symm_apply]
+
+/-- Injective coordinate selection keeps the selected product law if omitted factors have
+weight one. Selected factors may have arbitrary signed mass. -/
+lemma fTransform_piDep_comp_of_weight_eq_one
+    -- `I` indexes the full table; `J` indexes selected entries with outcome types `A (e j)`.
+    {I J : Type*} [Fintype I] [Fintype J] {A : I → Type*}
+    -- `μ i` is the raw coordinate law; `e` selects distinct coordinates by `he`.
+    (μ : ∀ i, Distribution (A i)) (e : J → I) (he : Function.Injective e)
+    -- `hweight` normalizes exactly the coordinates that the selection discards.
+    (hweight : ∀ i, i ∉ Set.range e → (μ i).weight = 1) :
+    fTransform (fun f j => f (e j)) (piDep μ) = piDep fun j => μ (e j) := by
+  classical
+  -- Reindex the table as the selected coordinates followed by their complement.
+  let e' : J ⊕ ↑((Set.range e)ᶜ : Set I) ≃ I :=
+    (Equiv.sumCongr (Equiv.ofInjective e he) (Equiv.refl _)).trans
+      (Equiv.Set.sumCompl (Set.range e))
+  let split := (Equiv.piCongrLeft A e').symm.trans
+    (Equiv.sumPiEquivProdPi (fun k => A (e' k)))
+  have splitLaw : fTransform split (piDep μ) =
+      prod (piDep fun j => μ (e j))
+        (piDep fun k : ↑((Set.range e)ᶜ : Set I) => μ k) := by
+    rw [← fTransform_piDep_piCongrLeft e' μ, fTransform_fTransform]
+    have cancel : split ∘ Equiv.piCongrLeft A e' =
+        Equiv.sumPiEquivProdPi (fun k => A (e' k)) := by
+      funext f
+      simp only [Function.comp_apply, split, Equiv.trans_apply, Equiv.symm_apply_apply]
+    rw [cancel]
+    exact fTransform_piDep_sumPiEquivProdPi _
+  -- The discarded product has weight one by the rectangular-event product identity.
+  have dropped : (piDep fun k : ↑((Set.range e)ᶜ : Set I) => μ k).weight = 1 := by
+    have mass := piDep_mass_forall (fun k : ↑((Set.range e)ᶜ : Set I) => μ k)
+      (fun _ _ => True)
+    simp only [implies_true, mass_true] at mass
+    rw [mass]
+    exact Finset.prod_eq_one fun k _ => hweight k k.property
+  -- Project away that factor; the retained marginal is therefore unscaled.
+  have projected := congrArg (fTransform Prod.fst) splitLaw
+  rw [fTransform_fTransform] at projected
+  -- The first component of `split f` is `j ↦ f (e j)`, since `e' (inl j) = e j`.
+  change fTransform (fun f j => f (e j)) (piDep μ) =
+    fTransform Prod.fst (prod (piDep fun j => μ (e j))
+      (piDep fun k : ↑((Set.range e)ᶜ : Set I) => μ k)) at projected
+  rw [fTransform_fst_prod, dropped, one_smul] at projected
+  exact projected
 
 open Classical in
 /-- Two product families regroup as one product family of pairs:
