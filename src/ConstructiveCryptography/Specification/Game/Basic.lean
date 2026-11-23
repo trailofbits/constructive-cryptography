@@ -13,7 +13,7 @@ public import Mathlib.Order.Nat
 # Specifications defined by test bounds
 
 `gameSpec tests error` consists of the resources whose admitted tests are
-bounded by `error`. The test values belong to a selected preordered type.
+bounded by `error`. Membership compares each test value to the selected threshold.
 `MonotoneTestFamily` indexes increasing sets of tests by natural numbers. A smaller threshold
 is a stronger resource guarantee; this does not reverse the solver's performance order, since
 bounding a solver's success more tightly is a stronger guarantee about the resource. Distance
@@ -25,6 +25,11 @@ gameSpec tests error = {resource | ∀ test ∈ tests, test resource ≤ error}
 
 The specification shrinks as `error` decreases (`gameSpec_mono`) or as tests are added
 (`gameSpec_antitone`). With no tests it admits every resource.
+
+## References
+
+1. D. Jost. *On Generalizations of Composable Security*. Doctoral thesis,
+   Diss. ETH No. 26723, ETH Zurich, 2020.
 -/
 
 @[expose] public section
@@ -36,17 +41,16 @@ universe u v
 variable
     -- `X` is an arbitrary type of resources.
     {X : Type u}
-    -- `Bound` is the type of test values, preordered so that a value `≤ error` is acceptable;
-    -- no arithmetic, bottom element, boundedness or totality is assumed.
-    {Bound : Type v} [Preorder Bound]
+    -- Test values in `Bound` are acceptable when they compare below the threshold.
+    {Bound : Type v}
 
 /-- Resources on which every admitted test is bounded by `error`: `R` meets
 `gameSpec tests error` when `test R ≤ error` for every `test ∈ tests`, uniformly over the
 tests, each evaluated on the resource alone.
 
-Jost, Section 2.2.1 (printed p. 15): “the set R of objects satisfying that
+[1, §2.2.1, p. 15]: “the set R of objects satisfying that
 property”. Here the property is the repository's selected family of test bounds. -/
-def gameSpec
+def gameSpec [LE Bound]
     -- `tests` is a selected set of tests `test : X → Bound`, each valuing a resource, e.g. a
     -- distinguisher's advantage; no efficiency or closure condition is imposed.
     (tests : Set (X → Bound))
@@ -54,9 +58,22 @@ def gameSpec
     (error : Bound) : Specification X :=
   {resource | ∀ test ∈ tests, test resource ≤ error}
 
+/-- Testing the output of `f` pulls the guarantee back to its inputs:
+`f ⁻¹' gameSpec tests ε = gameSpec {test ∘ f | test ∈ tests} ε`. -/
+lemma preimage_gameSpec {Y : Type*} [LE Bound]
+    -- `f` takes an input in `X` to the object in `Y` that the tests observe.
+    (f : X → Y) (tests : Set (Y → Bound)) (error : Bound) :
+    f ⁻¹' gameSpec tests error = gameSpec ((fun test => test ∘ f) '' tests) error := by
+  ext x
+  constructor
+  · rintro bounded _ ⟨test, admitted, rfl⟩
+    exact bounded test admitted
+  · intro bounded test admitted
+    exact bounded (test ∘ f) ⟨test, admitted, rfl⟩
+
 /-- A larger error bound gives a weaker game specification: `error ≤ error'` in `Bound`
 implies `gameSpec tests error ⊆ gameSpec tests error'`, by transitivity of the preorder. -/
-lemma gameSpec_mono {tests : Set (X → Bound)}
+lemma gameSpec_mono [Preorder Bound] {tests : Set (X → Bound)}
     {error error' : Bound} (included : error ≤ error') :
     gameSpec tests error ⊆ gameSpec tests error' :=
   fun _ admitted test testAdmitted =>
@@ -64,7 +81,7 @@ lemma gameSpec_mono {tests : Set (X → Bound)}
 
 /-- More admitted tests give a stronger game specification: `tests ⊆ tests'` implies
 `gameSpec tests' error ⊆ gameSpec tests error`, at the same threshold `error`. -/
-lemma gameSpec_antitone {tests tests' : Set (X → Bound)}
+lemma gameSpec_antitone [LE Bound] {tests tests' : Set (X → Bound)}
     (included : tests ⊆ tests') {error : Bound} :
     gameSpec tests' error ⊆ gameSpec tests error :=
   fun _ admitted test testAdmitted => admitted test (included testAdmitted)
@@ -83,7 +100,7 @@ structure MonotoneTestFamily
 
 /-- A bound at a higher index implies the same bound at every lower index, because the lower
 test set is a subset. -/
-lemma MonotoneTestFamily.mem_gameSpec_of_le
+lemma MonotoneTestFamily.mem_gameSpec_of_le [LE Bound]
     (family : MonotoneTestFamily X Bound)
     -- `ordered` says index `lower` is at most `higher`, so `family.tests lower` is smaller.
     {lower higher : Nat} (ordered : lower ≤ higher)

@@ -1,6 +1,8 @@
 module
 
 public import ConstructiveCryptography.Game
+public import ConstructiveCryptography.Specification.Game.Basic
+public import Mathlib.Tactic.NormNum
 
 /-!
 # Games without categorical assumptions
@@ -76,6 +78,32 @@ example {G H Ω : Type} (W : G → Ω) (α : H → G) (game : H) :
     letI : HSMul (H → G) H G := ⟨fun f x => f x⟩
     Games.absorb W α game = W (α game) := rfl
 
+/-- Empty output tests give every Boolean input an admissible natural-number observation. -/
+example (f : Bool → Nat) (ε : Nat) :
+    f ⁻¹' Specification.gameSpec (∅ : Set (Nat → Nat)) ε = Set.univ := by
+  rw [Specification.preimage_gameSpec]
+  ext x
+  simp only [Set.image_empty, Specification.gameSpec, Set.mem_ofPred_eq, Set.mem_empty_iff_false,
+    false_implies, implies_true, Set.mem_univ]
+
+/-- The identity test accepts output zero and rejects output two at threshold one. -/
+example : (fun b : Bool => if b then 2 else 0) ⁻¹'
+    Specification.gameSpec ({id} : Set (ℕ → ℕ)) 1 = {false} := by
+  rw [Specification.preimage_gameSpec]
+  ext b
+  simp only [Set.image_singleton, Specification.gameSpec, Set.mem_ofPred_eq,
+    Set.mem_singleton_iff, forall_eq, Function.comp_apply, id_eq]
+  cases b <;> norm_num
+
+/-- Pullback requires only the selected comparison relation on test values. -/
+example {X Y Bound : Type*} [LE Bound] (f : X → Y) (test : Y → Bound)
+    (error : Bound) (x : X) :
+    x ∈ f ⁻¹' Specification.gameSpec {test} error ↔ test (f x) ≤ error := by
+  rw [Specification.preimage_gameSpec]
+  simp only [Set.image_singleton, Specification.gameSpec, Set.mem_ofPred_eq,
+    Set.mem_singleton_iff, forall_eq, Function.comp_apply]
+
+#print axioms Specification.preimage_gameSpec
 #print axioms win_le_of_two_reductions
 #print axioms product_performance_le
 #print axioms advantage_le_of_win_le
