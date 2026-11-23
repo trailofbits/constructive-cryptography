@@ -29,6 +29,7 @@ public import Tests.EncryptThenMAC
 public import Tests.EncryptThenMACCorrectness
 public import Tests.NonceEncryptThenMAC
 public import Tests.HashAndSign
+public import Tests.HashSpecification
 public import Tests.EncryptionCorrectness
 public import Tests.PublicKeyEncryptionCorrectness
 public import Tests.AdaptiveUniformEvaluations
