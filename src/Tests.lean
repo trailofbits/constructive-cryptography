@@ -56,6 +56,7 @@ public import Tests.DSL.Semantics
 public import Tests.FreshReplyTransform
 public import Tests.NamedAssemblyContracts
 public import Tests.NormalizedProbability
+public import Tests.SecondMoment
 public import Tests.ProbabilityNotation
 public import Tests.ProbabilityTablePatterns
 public import Tests.QueryRouting

@@ -369,6 +369,25 @@ lemma expect_comp_eq_sum_mass {A C : Type*} [Fintype C]
     (fun h => absurd (Finset.mem_univ _) h)]
   simp only [mul_comm, ↓reduceIte]
 
+/-- The first and second moments of a nonnegative count `f` lower-bound the mass of a hit.
+The weights in `P` need only be nonnegative. -/
+theorem expect_sq_le_mass_pos_mul_second {P : Distribution A} (weights : P.NonNeg)
+    (f : A → ℝ) (nonnegative : ∀ x, 0 ≤ f x) :
+    P.expect f ^ 2 ≤ P.mass (fun x => 0 < f x) * P.expect (fun x => f x ^ 2) := by
+  classical
+  -- On the positive event the indicator times the count recovers the whole count.
+  have recover (x : A) : (if 0 < f x then (1 : ℝ) else 0) * f x = f x := by
+    by_cases h : 0 < f x
+    · simp only [ite_eq_left h, one_mul]
+    · rw [ite_eq_right h, zero_mul]
+      exact le_antisymm (nonnegative x) (le_of_not_gt h)
+  have indicator (x : A) : (if 0 < f x then (1 : ℝ) else 0) ^ 2 =
+      (if 0 < f x then 1 else 0) := by split <;> norm_num
+  -- Cauchy–Schwarz pairs the indicator with the count.
+  simpa only [recover, indicator, expect_indicator] using
+    expect_mul_sq_le_sq_mul_sq weights (fun x => if 0 < f x then (1 : ℝ) else 0) f
+
+
 end Distribution
 
 end Probability
