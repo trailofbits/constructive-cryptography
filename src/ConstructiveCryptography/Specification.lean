@@ -2,7 +2,7 @@ module
 
 public import ConstructiveCryptography.Construction.Basic
 public import ConstructiveCryptography.Specification.Basic
-public import ConstructiveCryptography.Specification.Game.Basic
+public import ConstructiveCryptography.Specification.Game.Separation
 public import ConstructiveCryptography.Specification.Maps
 public import ConstructiveCryptography.Specification.Relaxation.Kernel
 
