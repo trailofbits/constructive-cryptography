@@ -104,7 +104,7 @@ example : Construction.Unconstructible
   apply Specification.unconstructible_of_test
   intro b _
   refine ⟨(), Set.mem_univ _, _, ⟨b, rfl⟩, ?_⟩
-  simp only [if_pos rfl, Nat.not_succ_le_zero]
+  norm_num
 
 #print axioms Domain.SolverBehavior.decision
 #print axioms Domain.SolverBehavior.decision_surjective
