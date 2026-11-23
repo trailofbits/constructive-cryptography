@@ -14,6 +14,9 @@ idempotent, monotone in the class, and preserved by constructions that commute w
 class. A simulator equation or distance bound proves construction into the star-relaxed
 ideal (MR16, §§4.2–4.3, Lemma 5, printed pp. 12–13).
 
+An arbitrary set of simulators changing the right port gives a `simulatorImage`.
+Honest-port constructions preserve this image with the same error.
+
 ## Notation
 
 Class converters are endomorphisms `β : A ⟶ A` of one fixed interface. MR16 writes `Rβ`,
@@ -383,6 +386,55 @@ theorem constructs_of_simulator [CompatiblePseudoMetric C Phi] {A B : C}
   rw [constructs_epsilonRelaxation_iff]
   -- Insert the admitted simulator as the nearby star member.
   exact constructsWithin_star_of_simulator simulator admitted close
+
+section SimulatorImage
+
+open CategoryTheory.MonoidalCategory
+open ConstructiveCryptography.Specification (lift mem_lift_iff)
+
+/-- Attach an admitted simulator at the right port of every resource in `S`. -/
+def simulatorImage {H P Q : C}
+    -- `simulators` may change port `Q` into `P`. The honest port `H` stays fixed.
+    (simulators : Set (P ⟶ Q)) (S : Specification (Phi (H ⊗ Q))) :
+    Specification (Phi (H ⊗ P)) :=
+  lift (fun R => (fun σ : P ⟶ Q => attach (H ◁ σ) R) '' simulators) S
+
+/-- The honest protocol and the chosen simulator act on disjoint ports, in either order. -/
+lemma Constructs.simulatorImage {H H' P Q : C}
+    (π : H' ⟶ H) (simulators : Set (P ⟶ Q))
+    -- `S` and `T` describe the input and output of the honest protocol at port `Q`.
+    {S : Specification (Phi (H ⊗ Q))} {T : Specification (Phi (H' ⊗ Q))}
+    (h : Constructs (π ▷ Q) S T) :
+    Constructs (π ▷ P) (simulatorImage simulators S) (simulatorImage simulators T) := by
+  refine ConstructiveCryptography.Specification.Constructs.map_between
+    (g := attach (Phi := Phi) (π ▷ P)) h
+    (Specification.simulatorImage (Phi := Phi) (H := H) simulators)
+    (Specification.simulatorImage (Phi := Phi) (H := H') simulators) ?_ ?_
+  · exact OrderHomClass.mono (lift _)
+  rintro _ ⟨_, hx, rfl⟩
+  obtain ⟨R, hR, σ, hσ, rfl⟩ := mem_lift_iff.mp hx
+  apply mem_lift_iff.mpr
+  refine ⟨attach (π ▷ Q) R, ⟨R, hR, rfl⟩, σ, hσ, ?_⟩
+  simp only [← attach_serial, whisker_exchange]
+
+/-- The same simulator preserves the error between the constructed resource and its witness. -/
+lemma ConstructsWithin.simulatorImage [CompatiblePseudoMetric C Phi] {H H' P Q : C}
+    (π : H' ⟶ H) (simulators : Set (P ⟶ Q))
+    {S : Specification (Phi (H ⊗ Q))} {T : Specification (Phi (H' ⊗ Q))} {ε : ENNReal}
+    (h : ConstructsWithin (π ▷ Q) S T ε) :
+    ConstructsWithin (π ▷ P) (simulatorImage simulators S) (simulatorImage simulators T) ε := by
+  intro X hX
+  obtain ⟨R, hR, σ, hσ, rfl⟩ := mem_lift_iff.mp hX
+  obtain ⟨M, hM, close⟩ := constructsWithin_iff.mp h R hR
+  -- Attach the very same simulator to the ideal witness for R.
+  refine ⟨attach (H' ◁ σ) M, mem_lift_iff.mpr ⟨M, hM, σ, hσ, rfl⟩, ?_⟩
+  change distance (attach (π ▷ P) (attach (H ◁ σ) R)) (attach (H' ◁ σ) M) ≤ ε
+  have commute : attach (π ▷ P) (attach (H ◁ σ) R) = attach (H' ◁ σ) (attach (π ▷ Q) R) := by
+    simp only [← attach_serial, whisker_exchange]
+  rw [commute]
+  exact (distance_attach_le (H' ◁ σ) _ _).trans close
+
+end SimulatorImage
 
 end Specification
 
