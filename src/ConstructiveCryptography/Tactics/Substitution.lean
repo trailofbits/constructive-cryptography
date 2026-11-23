@@ -1,6 +1,6 @@
 module
 
-public import ConstructiveCryptography.Tactics.Basic
+public import ConstructiveCryptography.Tactics.Categorical
 public import ConstructiveCryptography.Instances.Substitution
 public import ConstructiveCryptography.Substitution.Quantitative
 public import ConstructiveCryptography.CryptographicAlgebra.DistinguisherAction
@@ -63,7 +63,9 @@ cc_calc mixed model using domination
 
 This proves `model.SubstitutesWithin (fun D => loss₁ D + ε + loss₂ D) X Y`.
 `cc_calc quantitative model` allows only concrete steps and `cc_calc statistical` only
-statistical steps. Statistical calculations retain the carrier and distance selected by the goal.
+statistical steps. A supplied component bound moves through attachment or ordered parallel by
+`cc_nonexpand`. A family of bounds moves through a common retained law using its uniform
+or expected error. The goal selects the carrier and distance.
 
 `cc_calc quantitative` and `cc_calc mixed`, written without a model, read the exact model of
 the goal `model.SubstitutesWithin error X Y` (`ccSubstitutionModel`). The inferred mixed form
@@ -418,13 +420,24 @@ def elaborateCCQuantitativeCalc (model? domination? : Option (TSyntax `term))
         if reverse then
           leaf ← `((ConstructiveCryptography.CryptographicAlgebra.distance_comm _ _).trans_le
             $proof)
-        -- Check the supplied proof normally; automatic attachment matching keeps systems folded.
+        -- A reversed family bound switches the order separately at each sampled index.
+        let sampleBound ← if reverse then
+          `(fun k => (ConstructiveCryptography.CryptographicAlgebra.distance_comm _ _).trans_le
+            ($original k))
+          else pure original
         leaf ← `(show $distanceTerm $previous $next ≤ $budget from by
           first
           | cc_exact_rule "cc_calc supplied distance" => $leaf
           | with_reducible
-              cc_exact_rule "cc_calc distance_attach_le" =>
-                (distance_attach_le _ _ _).trans $leaf)
+              cc_exact_rule "cc_calc non-expansion" => by
+                refine le_trans ?_ $leaf
+                cc_nonexpand
+          | with_reducible
+              cc_exact_rule "cc_calc distance_sample_le" =>
+                SystemAlgebra.Interface.distance_sample_le _ _ _ _ $sampleBound
+          | with_reducible
+              cc_exact_rule "cc_calc distance_sample_le_expect" =>
+                SystemAlgebra.Interface.distance_sample_le_expect _ _ _ _ $sampleBound)
         if let some model := model? then
           let some domination := domination? |
             throwError "statistical steps need `cc_calc mixed model using domination`"
