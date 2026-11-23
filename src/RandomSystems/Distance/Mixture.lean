@@ -4,7 +4,7 @@ public import RandomSystems.Distance.Distinguisher
 public import Probability.Lift
 
 /-!
-# Decision probabilities of sampled systems
+# Observation and distance of sampled systems
 
 The initial mixture `RandomSystem.mix P R` chooses `k` with law `P` once, then answers every
 query as `R k`; its cumulative probabilities are
@@ -38,13 +38,16 @@ Pr[D(mix P R) = 1] = ∑ k ∈ supp P, P(k) · Pr[D(R k) = 1].
   carry the product weight `D(d) · P(k)`; exchanging the two finite sums gives the
   component average.
 
-`TypedSystem.transcriptDistance_sample_le` in `RandomSystems.Typed.SamplingDistance` uses
-the second identity to bound the advantage between two families sampled with a common law.
+* `RandomSystem.transcriptDistance_mix_le_expect`: the distance of two mixtures with the same
+  law is at most the expected component error. `sLaw_mix` identifies each observed law with
+  a kernel mixture; `statDist_bindK_le_expect` averages its conditional distances.
+  The typed and public resource-distance laws apply this result directly.
 -/
 
 @[expose] public section
 
 open Probability
+open scoped NNReal
 
 namespace SystemAlgebra
 
@@ -90,5 +93,36 @@ lemma Domain.Distinguisher.probability_mix {K I : Type} [Fintype I]
   intro d _
   -- The summands agree: D(d) · (P(k) · p) = P(k) · (D(d) · p).
   ring
+
+/-- Retaining an index drawn from `P` bounds the distance by the expected component error:
+`Δ(mix P R, mix P S) ≤ E_P[ε]`. -/
+theorem RandomSystem.transcriptDistance_mix_le_expect
+    -- `I` indexes ports; `X i` and `Y i` are their finite query and reply alphabets.
+    {I : Type} [Fintype I] {X Y : I → Type}
+    [∀ i, Fintype (X i)] [∀ i, Fintype (Y i)]
+    -- Both families use the same domain; `P` selects one retained component `k : K`.
+    {domain : Domain (Σ i, X i) (Σ i, Y i)} {K : Type}
+    (P : Distribution.ProbDist K) (R S : K → RandomSystem _ _ domain)
+    -- `ε k` bounds the component distance wherever the sampling law has mass.
+    (ε : K → ℝ≥0)
+    (bound : ∀ k ∈ P.1.support, (R k).transcriptDistance (S k) ≤ (ε k : ENNReal)) :
+    (mix P R).transcriptDistance (mix P S) ≤
+      (Real.toNNReal (P.1.expect (fun k => (ε k : ℝ))) : ENNReal) := by
+  -- Fix one compatible observation and apply the probability-level kernel mixture bound.
+  apply transcriptDistance_le
+  intro E n queries compatible
+  rw [sLaw_mix, sLaw_mix]
+  change statDist (Distribution.bindK P.1 (fun k => (R k).sLaw E.1 n))
+    (Distribution.bindK P.1 (fun k => (S k).sLaw E.1 n)) ≤ _
+  calc
+    _ ≤ P.1.expect (fun k => statDist ((R k).sLaw E.1 n) ((S k).sLaw E.1 n)) :=
+      statDist_bindK_le_expect P.1 P.2.1 _ _
+    _ ≤ P.1.expect (fun k => (ε k : ℝ)) := by
+      apply Distribution.expect_mono_of_support P.2.1
+      intro k supported
+      exact ENNReal.ofReal_le_coe.mp
+        ((statDist_le_transcriptDistance queries compatible (R k) (S k)).trans
+          (bound k supported))
+    _ ≤ _ := Real.le_coe_toNNReal _
 
 end SystemAlgebra

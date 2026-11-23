@@ -1,7 +1,7 @@
 module
 
 public import Tests.TypedNaryParallel
-public import RandomSystems.Typed.SamplingDistance
+public import ConstructiveCryptography.Instances.Algebra
 
 /-!
 # Observation and distance of initially sampled systems
@@ -30,7 +30,7 @@ Concrete checks on the fixtures `bitInterface` and `fixedBit c : ()(()) ⇒ c` o
 @[expose] public section
 
 open Probability SystemAlgebra
-open scoped NNReal
+open scoped NNReal SystemAlgebra
 
 /-- `D.probability (mix P R) = P.expect (k ↦ D.probability (R k))` for a compatible `D`:
 `probability_mix` in the `expect` spelling, `expect P f = ∑ k ∈ supp P, P(k) · f k`. -/
@@ -45,36 +45,47 @@ example {A : Interface} {K : Type} (P : Distribution.ProbDist K)
 from a `Fintype K` assumption. -/
 example {A : Interface} {K : Type} (P : Distribution K) [Distribution.IsProbability P]
     (R S : K → TypedSystem A) (error : ℝ≥0)
-    (bound : ∀ k, (R k).1.transcriptDistance (S k).1 ≤ error) :
-    (TypedSystem.sample P R).1.transcriptDistance (TypedSystem.sample P S).1 ≤ error :=
-  TypedSystem.transcriptDistance_sample_le P R S error bound
+    (bound : ∀ k, Δ (R k) (S k) ≤ error) :
+    Δ (TypedSystem.sample P R) (TypedSystem.sample P S) ≤ error :=
+  Interface.distance_sample_le P R S error bound
 
 /-- With `R b = S b` for each `b : Bool`, `Δ(R b, S b) = 0`, so
 `Δ(sample U R, sample U S) ≤ 0` for the uniform law `U(b) = 1/2`. -/
 example {A : Interface} (R S : Bool → TypedSystem A)
     (same : ∀ b, R b = S b) :
-    (TypedSystem.sample (Distribution.uniform Bool) R).1.transcriptDistance
-      (TypedSystem.sample (Distribution.uniform Bool) S).1 ≤ (0 : ℝ≥0) := by
-  -- Reduce the mixture bound to the distance of each pair of components.
-  apply TypedSystem.transcriptDistance_sample_le
+    Δ (TypedSystem.sample (Distribution.uniform Bool) R)
+      (TypedSystem.sample (Distribution.uniform Bool) S) ≤ (0 : ℝ≥0) := by
+  apply Interface.distance_sample_le
   intro b
-  -- The components coincide, so every transcript law has zero distance from itself.
-  rw [same b]
-  simp only [RandomSystem.transcriptDistance, statDist_self, ENNReal.ofReal_zero,
-    ENNReal.iSup_zero, ciSup_const, ENNReal.coe_zero, Std.le_refl]
+  -- At each index the compared resources coincide.
+  simp only [same b, ConstructiveCryptography.CryptographicAlgebra.distance_self,
+    ENNReal.coe_zero, le_refl]
 
-/-- The common-law bound does not apply to `Δ(sample P R, sample Q S)` for different laws
-`P`, `Q`: the term `transcriptDistance_sample_le P R S` has `sample P S` in place of
-`sample Q S`, and the guard checks that it fails to elaborate against this goal. -/
+/-- Applying the bound with `P` fixes the law on both sides of the comparison. -/
 example {A : Interface} {K : Type} (P Q : Distribution K)
     [Distribution.IsProbability P] [Distribution.IsProbability Q]
     (R S : K → TypedSystem A) (error : ℝ≥0)
-    (_bound : ∀ k, (R k).1.transcriptDistance (S k).1 ≤ error) : True := by
+    (_bound : ∀ k, Δ (R k) (S k) ≤ error) : True := by
   fail_if_success
-    have : (TypedSystem.sample P R).1.transcriptDistance (TypedSystem.sample Q S).1 ≤ error :=
-      TypedSystem.transcriptDistance_sample_le P R S error _bound
+    have : Δ (TypedSystem.sample P R) (TypedSystem.sample Q S) ≤ error :=
+      Interface.distance_sample_le P R S error _bound
   trivial
 
+/-- The point law `δ₇` needs a component bound only at `7`, with no reply-port assumptions. -/
+example {domain : Domain (Σ _ : Bool, Unit) (Σ _ : Bool, Unit)}
+    (R S : ℕ → RandomSystem _ _ domain) (ε : NNReal)
+    (bound : (R 7).transcriptDistance (S 7) ≤ (ε : ENNReal)) :
+    (RandomSystem.mix (Distribution.ProbDist.single 7) R).transcriptDistance
+      (RandomSystem.mix (Distribution.ProbDist.single 7) S) ≤ (ε : ENNReal) := by
+  simpa only [Distribution.expect_const, Distribution.ProbDist.single,
+    Distribution.weight_single, mul_one, Real.toNNReal_coe] using
+    RandomSystem.transcriptDistance_mix_le_expect (Distribution.ProbDist.single 7)
+      R S (fun _ => ε) (by
+        intro k supported
+        have hk : k = 7 := (Finsupp.mem_support_single k 7 (1 : ℝ)).mp supported |>.1
+        simpa only [hk] using bound)
+
+#print axioms RandomSystem.transcriptDistance_mix_le_expect
 #print axioms Domain.Distinguisher.probability_mix
 #print axioms TypedSystem.transcriptDistance_sample_le
 
@@ -198,6 +209,35 @@ example {A : Interface} (R : ℕ → TypedSystem A) (D : A.inputDomain.Distingui
   rw [biasedNat, Distribution.expect_add_left, Distribution.expect_smul_left,
     Distribution.expect_smul_left]
   simp only [Distribution.expect, Finsupp.sum_single_index, zero_mul, one_mul]
+
+/-- Only the positive indices can differ from the constant-false resource. Under `biasedNat`
+they have total mass `2/3`, so the weighted error improves on the uniform bound of one. -/
+example :
+    Δ (TypedSystem.sample biasedNat natBit) (TypedSystem.sample biasedNat (fun _ => fixedBit false))
+      ≤ (2 / 3 : NNReal) := by
+  let ε : ℕ → NNReal := fun k => if k = 0 then 0 else 1
+  have component (k : ℕ) : Δ (natBit k) (fixedBit false) ≤ (ε k : ENNReal) := by
+    cases k with
+    | zero =>
+      -- Both resources always return false at index zero.
+      simp only [natBit, ε, ite_true, ConstructiveCryptography.CryptographicAlgebra.distance_self,
+        ENNReal.coe_zero, le_refl]
+    | succ k =>
+      -- At every other index the normalized transcript distance is at most one.
+      exact RandomSystem.transcriptDistance_le_one (natBit (k + 1)).2 (fixedBit false).2
+  have weighted := Interface.distance_sample_le_expect biasedNat natBit
+    (fun _ => fixedBit false) ε component
+  -- The two atoms carry errors zero and one, respectively.
+  have average : biasedNat.expect (fun k => (ε k : ℝ)) = 2 / 3 := by
+    rw [biasedNat, Distribution.expect_add_left, Distribution.expect_smul_left,
+      Distribution.expect_smul_left]
+    norm_num [Distribution.expect, ε, Finsupp.sum_single_index]
+  have cast : Real.toNNReal (2 / 3) = (2 / 3 : NNReal) := by
+    apply NNReal.eq
+    norm_num
+  simpa only [average, cast] using weighted
+
+#print axioms Interface.distance_sample_le_expect
 
 #print axioms sample_single_distance_eq_one
 

@@ -5,12 +5,14 @@ public import ConstructiveCryptography.CryptographicAlgebra.DistinguisherAction
 public import RandomSystems.Distance.RevealedHCoefficient
 public import RandomSystems.Typed.Context
 public import RandomSystems.Typed.ParallelAttachment
+public import RandomSystems.Typed.SamplingDistance
 public import RandomSystems.Typed.SystemCoherence
 public import RandomSystems.Typed.Distance
 public import ConstructiveCryptography.Instances.Monoidal
 public import ConstructiveCryptography.CryptographicAlgebra.Distinguisher
 public import RandomSystems.Distance.Distinguisher
 public import ConstructiveCryptography.Substitution.Reduction
+public import ConstructiveCryptography.Notation.Basic
 
 /-!
 # Interfaces as a cryptographic algebra
@@ -75,6 +77,8 @@ domination law needed by statistical steps of a substitution chain.
   distance of `Interface.distinguishers A`
 * `Interface.cc_distance_eq`: the distance is the transcript distance of the random systems, by
   definition
+* `Interface.distance_sample_le_expect`: the distance of two retained samples is at most their
+  expected component error
 * `Interface.distance_le_of_hCoefficient`: an H-coefficient argument bounds the distance
 * `Interface.projectLeft_eq`, `Interface.projectRight_eq`, `Interface.projectLeft_smul_parallel`,
   `Interface.projectRight_smul_parallel`, `Interface.projectLeft_smul_sample_parallel`,
@@ -323,6 +327,31 @@ lemma cc_distance_eq {A : Interface} (R S : TypedSystem A) :
     ConstructiveCryptography.CryptographicAlgebra.distance R S =
       R.1.transcriptDistance S.1 := by
   rfl
+
+section Sampling
+
+open Probability
+open scoped SystemAlgebra NNReal
+
+/-- If the components have errors `ε k`, retaining a draw from `P` gives
+`Δ (sample P R) (sample P S) ≤ E_P[ε]`. -/
+lemma distance_sample_le_expect {A : Interface} {K : Type}
+    (P : Distribution K) [Distribution.IsProbability P]
+    (R S : K → TypedSystem A) (ε : K → ℝ≥0)
+    (bound : ∀ k, Δ (R k) (S k) ≤ (ε k : ENNReal)) :
+    Δ (TypedSystem.sample P R) (TypedSystem.sample P S) ≤
+      (Real.toNNReal (P.expect (fun k => (ε k : ℝ))) : ENNReal) :=
+  TypedSystem.transcriptDistance_sample_le_expect P R S ε bound
+
+/-- A common component bound `ε` also bounds the distance between both retained samples. -/
+lemma distance_sample_le {A : Interface} {K : Type}
+    (P : Distribution K) [Distribution.IsProbability P]
+    (R S : K → TypedSystem A) (ε : ℝ≥0)
+    (bound : ∀ k, Δ (R k) (S k) ≤ (ε : ENNReal)) :
+    Δ (TypedSystem.sample P R) (TypedSystem.sample P S) ≤ (ε : ENNReal) :=
+  TypedSystem.transcriptDistance_sample_le P R S ε bound
+
+end Sampling
 
 /-- **An H-coefficient argument bounds the CC distance** of typed systems on `A`:
 `distance R S ≤ error`, since that distance is the transcript distance of `R.1` and `S.1`. -/
