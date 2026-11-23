@@ -25,6 +25,7 @@ public import ConstructiveCryptography.Specification.Game
 public import ConstructiveCryptography.Specification.Game.Basic
 public import ConstructiveCryptography.Specification.Maps
 public import ConstructiveCryptography.Specification.Metric
+public import ConstructiveCryptography.Specification.Metric.Separation
 public import ConstructiveCryptography.Specification.Parallel
 public import ConstructiveCryptography.Specification.Relaxation.Basic
 public import ConstructiveCryptography.Specification.Relaxation.Closure

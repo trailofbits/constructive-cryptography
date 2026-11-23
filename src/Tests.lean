@@ -6,6 +6,7 @@ public import Tests.Distinguishers
 public import Tests.DistinguisherAction
 public import Tests.TranscriptHorizon
 public import Tests.Games
+public import Tests.MetricSeparation
 public import Tests.Problem
 public import Tests.GameConsumers
 public import Tests.Guessing
