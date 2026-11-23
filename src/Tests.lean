@@ -1,6 +1,7 @@
 module
 
 public import Tests.ProbabilityObservation
+public import Tests.SignedObservation
 public import Tests.TranscriptCompletion
 public import Tests.Distinguishers
 public import Tests.DistinguisherAction
