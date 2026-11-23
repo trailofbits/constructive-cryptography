@@ -14,6 +14,7 @@ public import RandomSystems.Converter.ConverterDomain
 public import RandomSystems.Converter.ConverterRelabel
 public import RandomSystems.Converter.ConverterTensor
 public import RandomSystems.Converter.CallRuleTranscript
+public import RandomSystems.Converter.CallCharge
 public import RandomSystems.Converter.EmptyInterface
 public import RandomSystems.Converter.FilterAttachment
 public import RandomSystems.Converter.Identity
