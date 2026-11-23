@@ -235,8 +235,11 @@ a system without an exact domain [also gets][elabPerPortDecls]
 
 A [`converter C : I`][elabComponent] with `inside J` generates `C : I q ⟶ J (C.bound * q)`,
 compiled to `C.program ≫ TypedConverter.rightContext J (C.randomness k)`: its program with its
-sources
-[beside][TypedConverter.rightContext] the inside interface, or `C.program` when it samples nothing. With
+sources [beside][TypedConverter.rightContext] the inside interface, or `C.program` when it
+samples nothing. In that case,
+`C.eq_ofProgram` gives `C = TypedConverter.ofProgram none C.body hb hB` at the chosen
+budget, using its generated call-bound and domain certificates. Rewrite with this equation
+under attachment to apply a program law without unfolding `C`. With
 an annotated outside interface and a single inside interface it
 [also has a per-port typing][elabPerPortDecls] along a partial port
 map `C.portMap : I.Port → Option J.Port`, through the

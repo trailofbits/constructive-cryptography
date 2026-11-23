@@ -218,6 +218,15 @@ noncomputable example (q : Cache.Port → ℕ) :
 /-- Writes query the store; reads query nothing inside. -/
 example : WriteThrough.portMap .write = some .put ∧ WriteThrough.portMap .read = none := ⟨rfl, rfl⟩
 
+/-- The program attachment contract rewrites beneath the named converter at any budget. -/
+example (q : ℕ) (R : TypedSystem (Store (WriteThrough.bound * q)))
+    (S : TypedSystem (Cache q))
+    (h : TypedConverter.ofProgram (A := Cache q) (B := Store (WriteThrough.bound * q))
+      none WriteThrough.body WriteThrough.bound_spec (fun _ hne hlen => ⟨hne, hlen⟩) • R = S) :
+    WriteThrough (budget := q) • R = S := by
+  rw [WriteThrough.eq_ofProgram]
+  exact h
+
 example (q : Cache.Port → ℕ) : WriteThrough.insideBudget q .put = q .write := rfl
 
 end DSLTests.Semantics

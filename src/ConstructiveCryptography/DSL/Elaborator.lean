@@ -806,6 +806,12 @@ def elabProgramDecls (converting : Bool) (name : Ident)
       elabCommand (← `(noncomputable def $name:ident $params:bracketedBinder*
         {$budget : $budgetType} :
           $sigB ⟶ $declK := $programName $args* (budget := $budget)))
+      -- Expose the body at the caller's budget. The generated program supplies both certificates.
+      let eqName := Lean.mkIdent (name.getId ++ `eq_ofProgram)
+      elabCommand (← `(theorem $eqName:ident $params:bracketedBinder* {$budget : $budgetType} :
+          ($name $args* (budget := $budget) : $sigB ⟶ $declK) =
+            TypedConverter.ofProgram (A := $sigB) (B := $declK) none ($bodyName $args*)
+              ($boundSpecName $args*) $admitsK := rfl))
     else
       elabCommand (← `(noncomputable def $name:ident $params:bracketedBinder*
         {$budget : $budgetType} :
