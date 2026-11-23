@@ -242,6 +242,26 @@ Their budget hypotheses admit both queries of the roundtrip.
 Consumer projects adopt this workflow in their own contributor instructions and link to this
 guide at their dependency version. The library's `AGENTS.md` applies to this checkout.
 
+### Prove an application for every resource satisfying its input guarantee
+
+Start from the output specification `T`. For a construction `f`, the input guarantee
+`S` suffices when `f '' S ⊆ T`. Choose `S` once and certify each implementation by membership.
+
+For collision resistance, fix the ideal collision experiment, the admitted observers and
+the error `ε`. The application is [`Hash.CR.constructs_attach`](src/Commons/Definitions/Hash/Specification.lean).
+Given an adapter `α` and admission of each absorbed observer, it takes every member of
+`Hash.CR.specification K M ε` to the outside guarantee with error `D ↦ ε (D.absorb α)`.
+[The two-query test](src/Tests/HashSpecification.lean) supplies the Boolean identity and
+complement hashes. Each has zero error because it gives the ideal reply on every message pair.
+An observer can both read the key and submit a pair.
+
+When reviewing a construction, match the implementation equation to the public ports and
+domain used by the guarantee. Check which choices can depend on the input: membership in
+a simulator image permits a witness for each resource; a uniform simulator must be chosen
+before that resource. For a quantitative claim, exhibit an admitted case with a useful
+bound. A query allowance counts requests. A time-bounded claim also needs an admitted
+observer model whose reductions preserve its computational bound.
+
 ## Reuse preserves sampling scope
 
 Three cases differ:
