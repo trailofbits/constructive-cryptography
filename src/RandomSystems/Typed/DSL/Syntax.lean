@@ -6,7 +6,8 @@ public import Lean
 # Surface syntax
 
 Indentation-based declarations of interfaces, systems, converters and filters, and their effect
-statements. Pure expressions, types and proofs use Lean's own parsers.
+statements. Systems and converters accept leading Lean docstrings.
+Pure expressions, types and proofs use Lean's own parsers.
 -/
 
 @[expose] public meta section
@@ -67,14 +68,19 @@ def cryptoPorts := leading_parser
   many1Indent (ppLine >> categoryParser `cryptoPort 0)
 
 syntax (name := interfaceDecl) "interface " ident cryptoParam* cryptoPorts : command
-syntax (name := systemComponentDecl) "system " ident cryptoParam* cryptoMembers
+syntax (name := systemComponentDecl) (Parser.Command.docComment)?
+  "system " ident cryptoParam* cryptoMembers
   ("by" tacticSeq)? : command
-syntax (name := systemComponentTypedDecl) "system " ident cryptoParam* " : " lineTerm cryptoMembers
+syntax (name := systemComponentTypedDecl) (Parser.Command.docComment)?
+  "system " ident cryptoParam* " : " lineTerm cryptoMembers
   ("by" tacticSeq)? : command
-syntax (name := converterDecl) "converter " ident cryptoParam* cryptoMembers : command
-syntax (name := converterTypedDecl) "converter " ident cryptoParam* " : " lineTerm cryptoMembers :
+syntax (name := converterDecl) (Parser.Command.docComment)?
+  "converter " ident cryptoParam* cryptoMembers : command
+syntax (name := converterTypedDecl) (Parser.Command.docComment)?
+  "converter " ident cryptoParam* " : " lineTerm cryptoMembers :
   command
-syntax (name := systemDecl) "system " ident cryptoParam* " ≔ " term : command
+syntax (name := systemDecl) (Parser.Command.docComment)?
+  "system " ident cryptoParam* " ≔ " term : command
 syntax (name := filterDecl) "filter " ident cryptoParam* " : " lineTerm
   "domain " ident " ↦ " lineTerm ("by" tacticSeq)? : command
 

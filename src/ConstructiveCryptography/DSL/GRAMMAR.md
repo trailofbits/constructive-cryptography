@@ -15,6 +15,22 @@ interfaces](../README.md#the-instances-on-interfaces),
 so that components assemble with `≫` and `⊗ₘ`. Citations refer to the numbered
 [references](../../../THEORY.md#references) of THEORY.md.
 
+System and converter declarations accept a leading `/-- ... -/` docstring. State the query,
+reply and sampling rule there. Lean exposes it on the component and its `.perPort` and `.exact`
+forms when those forms are generated. For example:
+
+```lean
+/-- Each eval(()) queries one inside bit b and returns its negation. -/
+converter Negate : Evaluation Unit Bool
+  inside oracle : Evaluation Unit Bool
+  on eval(_trigger : Unit) → Bool
+    b ← oracle.eval(())
+    return !b
+```
+
+Use the [constructor guide](../../../REUSE.md#start-from-the-type-you-need) for laws, sources
+and reusable reply transformations before defining a custom component.
+
 ## Grammar
 
 `block(P)` is a newline followed by one or more equally indented occurrences
@@ -23,6 +39,7 @@ denote optional syntax; quoted brackets are literal. `*` means repetition.
 
 ```text
 declaration ::= interface | system | converter | filter | system_definition | LeanDeclaration
+docstring   ::= "/--" Text "-/"
 parameters  ::= ("(" names ":" Type ")" | "[" Instance "]")*
 arguments   ::= [argument ("," argument)*]
 argument    ::= Name ":" Type
@@ -30,11 +47,11 @@ argument    ::= Name ":" Type
 interface ::= "interface" Name parameters block(port)
 port      ::= Name "(" arguments ")" "→" Type
 
-system ::= "system" Name parameters [":" InterfaceApplication]
+system ::= [docstring] "system" Name parameters [":" InterfaceApplication]
            block(system_member) ["by" Proof]
 system_member ::= requirement | domain | outside | initialization | reply
 
-converter ::= "converter" Name parameters [":" InterfaceApplication]
+converter ::= [docstring] "converter" Name parameters [":" InterfaceApplication]
               block(converter_member)
 converter_member ::= requirement | outside | inside | initialization | reply
 outside       ::= "outside" Name ":" InterfaceApplication
@@ -62,7 +79,7 @@ matching     ::= "match" Expression block(match_case)
 match_case   ::= "|" Pattern "→" block(statement)
 returning    ::= "return" Expression
 
-system_definition ::= "system" Name parameters "≔" SystemExpression
+system_definition ::= [docstring] "system" Name parameters "≔" SystemExpression
 SystemExpression ::= ComponentExpression | "(" SystemExpression ")"
                    | SystemExpression "∥" SystemExpression
                    | SystemExpression "≫" SystemExpression
