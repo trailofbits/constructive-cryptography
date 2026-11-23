@@ -1,6 +1,7 @@
 module
 
 public import ConstructiveCryptography.Game
+public import ConstructiveCryptography.Specification.Game.Basic
 
 /-!
 # Games without categorical assumptions
@@ -75,6 +76,14 @@ lemma advantage_le_of_win_le {I : Type u} {Phi : I → Type v} {Game : I → Typ
 example {G H Ω : Type} (W : G → Ω) (α : H → G) (game : H) :
     letI : HSMul (H → G) H G := ⟨fun f x => f x⟩
     Games.absorb W α game = W (α game) := rfl
+
+/-- Empty output tests give every Boolean input an admissible natural-number observation. -/
+example (f : Bool → Nat) (ε : Nat) :
+    f ⁻¹' Specification.gameSpec (∅ : Set (Nat → Nat)) ε = Set.univ := by
+  rw [Specification.preimage_gameSpec]
+  ext x
+  simp only [Set.image_empty, Specification.gameSpec, Set.mem_ofPred_eq, Set.mem_empty_iff_false,
+    false_implies, implies_true, Set.mem_univ]
 
 #print axioms win_le_of_two_reductions
 #print axioms product_performance_le
