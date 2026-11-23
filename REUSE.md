@@ -58,6 +58,10 @@ For a custom component, write a DSL `converter` declaration beside your definiti
 then use its generated term. Put a short `/-- ... -/` input/output rule before it; the same
 documentation appears on the component and its `.perPort` and `.exact` forms, when generated.
 Declarations go outside `by`.
+For a converter without its own random source, `rw [C.eq_ofProgram]` exposes the program
+under attachment. `C.bodyAt q` supplies the same body at a family's budget; without an
+initializer, `C.body_port` describes that port at any state. A converter with a random source
+keeps it in `C.program ≫ TypedConverter.rightContext _ (C.randomness k)`.
 The [declaration grammar](src/ConstructiveCryptography/DSL/GRAMMAR.md#grammar) and
 [budget forms](src/ConstructiveCryptography/DSL/GRAMMAR.md#interfaces-budgets-and-obligations)
 give the syntax and the types of `.perPort` and the other generated terms.

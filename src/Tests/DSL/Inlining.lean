@@ -56,6 +56,12 @@ example (s : Option Unit) (x : Bool) :
     TwoReads.body s .get_initial x [] = TwoReads.body none .get x [] := by
   rw [TwoReads.get_initial.body, TwoReads.body_get_initial]
 
+-- A port whose equation uses the qualified `.body` name still documents a program action.
+run_cmd do
+  let doc ← Lean.findDocString? (← Lean.getEnv) ``TwoReads.get_initial.body
+  unless doc.any (·.startsWith "Given this invocation's inside exchanges") do
+    throwError "Expected program documentation for the qualified body equation"
+
 -- The step equation of a system that samples nothing.
 example (st : Unit) (x : Bool) : Echo.step st .get x = ((), x) := by
   simp only [component_equations]

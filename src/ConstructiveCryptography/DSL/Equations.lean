@@ -74,7 +74,7 @@ elab "component_equation " name:ident binders:bracketedBinder* " : " lhs:term
           "The reply law of this invocation against fresh inside replies of `law`. "
         else if short.startsWith "combine_" then
           "The next pair of states and reply from one invocation against `insideStep`. "
-        else if short.startsWith "body_" then
+        else if short.startsWith "body_" || short == "body" then
           "Given this invocation's inside exchanges, its next query or its next state and reply. "
         else
           "The next private state and reply at this procedure's input. "

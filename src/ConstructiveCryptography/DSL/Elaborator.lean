@@ -795,7 +795,9 @@ def elabProgramDecls (converting : Bool) (name : Ident)
   let bodyAt := Lean.mkIdent (name.getId ++ `bodyAt)
   if converting then
     -- Name the same body at this budget's interfaces, including the sources of fresh draws.
-    elabCommand (← `(noncomputable abbrev $bodyAt:ident $params:bracketedBinder*
+    elabCommand (← `(
+      /-- The declared program at this budget, including its inside random sources. -/
+      noncomputable abbrev $bodyAt:ident $params:bracketedBinder*
         ($budget : $budgetType) :
         Program (Option $stateTy) ($sigB).I ($innerK).I ($sigB).X ($sigB).Y
           ($innerK).X ($innerK).Y := $bodyName $args*))
@@ -817,7 +819,9 @@ def elabProgramDecls (converting : Bool) (name : Ident)
           $sigB ⟶ $declK := $programName $args* (budget := $budget)))
       -- Expose the body at the caller's budget. The generated program supplies both certificates.
       let eqName := Lean.mkIdent (name.getId ++ `eq_ofProgram)
-      elabCommand (← `(theorem $eqName:ident $params:bracketedBinder* {$budget : $budgetType} :
+      elabCommand (← `(
+        /-- The converter is its declared program, before initialization, at this budget. -/
+        theorem $eqName:ident $params:bracketedBinder* {$budget : $budgetType} :
           ($name $args* (budget := $budget) : $sigB ⟶ $declK) =
             TypedConverter.ofProgram (A := $sigB) (B := $declK) none ($bodyName $args*)
               ($boundSpecName $args*) $admitsK := rfl))

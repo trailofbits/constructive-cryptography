@@ -24,6 +24,11 @@ system Fixed : BitSource
   on draw() → Bool
     return false
 
+/-- Every `draw()` returns the chosen bit `b`. -/
+system Chosen (b : Bool) : BitSource
+  on draw() → Bool
+    return b
+
 /-- Every `draw()` returns a fresh uniform bit. -/
 system Fresh
   on draw() → Bool
@@ -53,6 +58,12 @@ run_cmd do
   for (name, expected) in [
       (``Fixed, "Every `draw()` returns `false`."),
       (``Fixed.perPort, "Every `draw()` returns `false`."),
+      (``Chosen, "Every `draw()` returns the chosen bit `b`."),
+      (``Chosen.perPort, "Every `draw()` returns the chosen bit `b`."),
+      (``Negate.eq_ofProgram,
+        "The converter is its declared program, before initialization, at this budget."),
+      (``Negate.bodyAt,
+        "The declared program at this budget, including its inside random sources."),
       (``Fresh, "Every `draw()` returns a fresh uniform bit."),
       (``Fresh.perPort, "Every `draw()` returns a fresh uniform bit."),
       (``Negate, "Every `draw()` forwards one inside draw and negates its reply."),
