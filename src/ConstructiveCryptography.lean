@@ -8,6 +8,7 @@ public import ConstructiveCryptography.CryptographicAlgebra.DistinguisherAction
 public import ConstructiveCryptography.CryptographicAlgebra.Epsilon
 public import ConstructiveCryptography.CryptographicAlgebra.Game
 public import ConstructiveCryptography.CryptographicAlgebra.PseudoMetric
+public import ConstructiveCryptography.CryptographicAlgebra.PublicPort
 public import ConstructiveCryptography.CryptographicAlgebra.Relaxation
 public import ConstructiveCryptography.CryptographicAlgebra.Star
 public import ConstructiveCryptography.DSL

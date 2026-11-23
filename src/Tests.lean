@@ -49,6 +49,7 @@ public import Tests.DSL.Semantics
 public import Tests.ProbabilityNotation
 public import Tests.ProbabilityTablePatterns
 public import Tests.QueryRouting
+public import Tests.PublicPort
 public import Tests.ResourceSpecification
 public import Tests.SamplingAlgebra
 public import Tests.SerialAccounting
