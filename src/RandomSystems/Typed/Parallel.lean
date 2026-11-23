@@ -15,7 +15,7 @@ of their PDC behaviors.
 ## Main definitions
 
 * `Interface.parallelDomain A B`: the parallel domain of two interfaces
-* `Interface.tensor A B`: the parallel interface
+* `Interface.tensor A B`: the parallel interface, with inhabited replies when both sides have them
 * `TypedSystem.parallel R S`: the parallel composition of typed systems
 * `TypedConverter.parallel α β`: the parallel composition of typed converters
 
@@ -29,13 +29,12 @@ of their PDC behaviors.
 
 namespace SystemAlgebra.RandomSystem
 
-open Classical
-
 /-- Admission at impossible histories has no effect on cumulative behavior. -/
 def withDomain {A B : Type} [Fintype A] [Fintype B] {D E : Domain A B}
     (R : RandomSystem A B D)
     (he : ∀ h, R h ≠ 0 → ∀ x, D h x ↔ E h x) : RandomSystem A B E :=
   ⟨R.1, R.mass_nil, R.mass_nonneg, fun h x => by
+    classical
     obtain ⟨μ, hm, hw⟩ := R.2.2.2 h x
     refine ⟨μ, hm, hw.trans ?_⟩
     by_cases hz : R h = 0
@@ -46,7 +45,7 @@ end SystemAlgebra.RandomSystem
 
 namespace SystemAlgebra
 
-open Classical Probability
+open Probability
 
 namespace Interface
 
@@ -78,8 +77,10 @@ lemma parallelDomain_swap (A B : Interface) (h : List (Σ l, Sum.rec A.X B.X l))
     | cons x h ih =>
       rcases x with ⟨(i | j), x⟩ <;>
         simpa only [List.map_cons, swapAlphabet, sumAlphabet, Equiv.coe_fn_mk,
-          Equiv.coe_fn_symm_mk, restrict_cons_self, restrict_cons_ne (by simp : (none : Option Unit) ≠ some ()),
-          restrict_cons_ne (by simp : (some () : Option Unit) ≠ none), List.cons.injEq, true_and] using ih
+          Equiv.coe_fn_symm_mk, restrict_cons_self,
+          restrict_cons_ne (by simp : (none : Option Unit) ≠ some ()),
+          restrict_cons_ne (by simp : (some () : Option Unit) ≠ none),
+          List.cons.injEq, true_and] using ih
   simp only [parallelDomain, parallelInputs, hp.1, hp.2]
   have hn : h.map (swapAlphabet A.X B.X) ≠ [] ↔ h ≠ [] := not_congr List.map_eq_nil_iff
   rw [hn]
@@ -94,6 +95,14 @@ abbrev tensor (A B : Interface) : Interface where
   nonempty_prefix := parallelInputs_nonempty_prefix A.nonempty_prefix.2 B.nonempty_prefix.2
   bound := A.bound + B.bound
   length_le := parallelInputs_length_le A.length_le B.length_le
+
+/-- At a tensor port, the reply alphabet is the selected side's alphabet.
+`F` and `G` give the replies at the left and right ports, respectively. -/
+instance instNonemptyTensorY {I J : Type} {F : I → Type} {G : J → Type}
+    [∀ i, Nonempty (F i)] [∀ j, Nonempty (G j)] :
+    ∀ l, Nonempty (Sum.rec (motive := fun _ => Type) F G l)
+  | .inl i => inferInstanceAs (Nonempty (F i))
+  | .inr j => inferInstanceAs (Nonempty (G j))
 
 end Interface
 
@@ -119,6 +128,7 @@ lemma parallel_admits_iff (A B : Interface) (R : TypedSystem A) (S : TypedSystem
     parallelDomain A B
       ((h.map Prod.fst).map (sumAlphabet (Sum.rec A.X B.X)) ++
         [sumAlphabet (Sum.rec A.X B.X) x]) := by
+  classical
   have hh : RandomSystem.parallelConsistent h := by
     by_contra hn
     exact hp (by simp [RandomSystem.parallel_mass, hn])
@@ -156,6 +166,7 @@ lemma parallel_admits_iff (A B : Interface) (R : TypedSystem A) (S : TypedSystem
 descriptions agree on every possible history, including rejected next queries. -/
 noncomputable def parallel {A B : Interface} (R : TypedSystem A) (S : TypedSystem B) :
     TypedSystem (tensor A B) := by
+  classical
   let eX := sumAlphabet (Sum.rec A.X B.X)
   let eY := sumAlphabet (Sum.rec A.Y B.Y)
   let T := (RandomSystem.parallel R.1 S.1).relabel eX eY
