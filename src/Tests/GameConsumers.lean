@@ -1,5 +1,6 @@
 module
 
+public import ConstructiveCryptography.Specification.Game.Separation
 public import Examples.Games
 public import RandomSystems.Typed.Guessing
 public import Examples.PRGLengthExtension
@@ -95,6 +96,15 @@ lemma ae_joint {K M C : Type} [Fintype K] [Fintype M] [Fintype C]
 example {A : Interface} (R S : TypedSystem A) :
     Δ R S = ⨆ D : TypedDistinguisher A, D.advantage R S :=
   RandomSystem.transcriptDistance_eq_iSup_behavior R S
+
+/-- Each constant-bit constructor fails the test that recognizes its own bit. -/
+example : Construction.Unconstructible
+    (fun (b : Bool) => Specification.Constructs (fun _ : Unit => b)) Set.univ Set.univ
+    (Specification.gameSpec (Set.range fun b : Bool => fun x => if x = b then 1 else 0) 0) := by
+  apply Specification.unconstructible_of_test
+  intro b _
+  refine ⟨(), Set.mem_univ _, _, ⟨b, rfl⟩, ?_⟩
+  simp only [if_pos rfl, Nat.not_succ_le_zero]
 
 #print axioms Domain.SolverBehavior.decision
 #print axioms Domain.SolverBehavior.decision_surjective
