@@ -36,6 +36,26 @@ converter Negate : Bits
     y ← bit.get(x)
     return !y
 
+-- At either phase, the first inside request is `get(x)`.
+example (s : Option Unit) (x : Bool) :
+    Negate.body s .get x [] = Sum.inr ⟨Bits.Port.get, x⟩ := by
+  simp only [Negate.body_get, callProg]
+
+-- Both outside ports forward to the same bit oracle. Their names share a phase suffix.
+converter TwoReads
+  inside bit : Bits
+  on get(x : Bool) → Bool
+    y ← bit.get(x)
+    return y
+  on get_initial(x : Bool) → Bool
+    y ← bit.get(x)
+    return y
+
+-- The original phase equation and the other port’s state-independent equation coexist.
+example (s : Option Unit) (x : Bool) :
+    TwoReads.body s .get_initial x [] = TwoReads.body none .get x [] := by
+  rw [TwoReads.get_initial.body, TwoReads.body_get_initial]
+
 -- The step equation of a system that samples nothing.
 example (st : Unit) (x : Bool) : Echo.step st .get x = ((), x) := by
   simp only [component_equations]

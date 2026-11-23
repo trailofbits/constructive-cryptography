@@ -911,10 +911,13 @@ def programAlt (name : Ident) (σ : Signature) (persistent : Array Ident) (store
   let (procArgs, label, argType, resultType) ← procedureSignature name σ persistent procedure
   let checked ← bodyD.mapM (annotateReturns · resultType)
   let resumed ← lowerFunction checked (persistent ++ procArgs) persistent calls ⟨.missing⟩ .program
-  let first ← lowerFunction (initD ++ checked) procArgs persistent calls ⟨.missing⟩ .program
-  let mut body ← `(match $state:ident with
-    | some $stored:term => $resumed
-    | none => $first)
+  -- With no initialization the same procedure runs at every invocation.
+  let mut body := resumed
+  unless initD.isEmpty do
+    let first ← lowerFunction (initD ++ checked) procArgs persistent calls ⟨.missing⟩ .program
+    body ← `(match $state:ident with
+      | some $stored:term => $resumed
+      | none => $first)
   if !procArgs.isEmpty then
     let pat ← tupleTerm (procArgs.map fun x => ⟨x.raw⟩)
     body ← `(let $pat:term := $input:ident; $body)
@@ -936,7 +939,8 @@ memoryless reply law. Initialization and later calls have separate equations, so
 sample is never replaced by a fresh one. Loops over symbolic lists stay folds. -/
 def elabComponentEquations (name : Ident) (params : Array (TSyntax ``Term.bracketedBinder))
     (σ : Signature) (oracles : Array Syntax) (stateTy : TSyntax `term)
-    (inner : Option (TSyntax `term)) (normalizeInvocation : Bool := true) : CommandElabM Unit := do
+    (inner : Option (TSyntax `term)) (normalizeInvocation : Bool := true)
+    (statelessConverter : Bool := false) : CommandElabM Unit := do
   let args := binderArgs params
   let body := Lean.mkIdent (name.getId ++ `body)
   let step := Lean.mkIdent (name.getId ++ `step)
@@ -955,12 +959,24 @@ def elabComponentEquations (name : Ident) (params : Array (TSyntax ``Term.bracke
     let owner := name.getId ++ proc.getId.getPrefix
     let suffix := proc.getId.getString!
     if let some inner := inner then
+      let history := Lean.mkIdent (← liftCoreM <| mkFreshUserName `exchanges)
+      if statelessConverter then
+        -- Keep the phase equations of a sibling port, e.g. `get` beside `get_initial`.
+        let usesPhaseName := oracles.any fun other =>
+          let port := other[1].getId
+          port.getPrefix == proc.getId.getPrefix &&
+            (suffix == port.getString! ++ "_initial" || suffix == port.getString! ++ "_resumed")
+        let bodyEq := Lean.mkIdent (if usesPhaseName then name.getId ++ proc.getId ++ `body
+          else owner ++ Name.mkSimple ("body_" ++ suffix))
+        elabCommand (← `(component_equation $bodyEq:ident $params:bracketedBinder*
+          ($state : Option $stateTy) ($input : ($outer).X $label)
+          ($history : List ((Sigma ($inner).X) × (Sigma ($inner).Y))) :
+          $body $args* $state $label $input $history using $body:ident))
       for initial in [true, false] do
         let stateBinders ← if initial then pure #[]
           else pure #[← `(bracketedBinder| ($state : $stateTy))]
         let current ← if initial then `(none) else `(some $state:ident)
         let phase := if initial then "_initial" else "_resumed"
-        let history := Lean.mkIdent (← liftCoreM <| mkFreshUserName `exchanges)
         let bodyEq := Lean.mkIdent (owner ++ Name.mkSimple ("body_" ++ suffix ++ phase))
         elabCommand (← `(component_equation $bodyEq:ident $params:bracketedBinder*
           $stateBinders:bracketedBinder* ($input : ($outer).X $label)
@@ -1135,6 +1151,7 @@ def elabComponent : CommandElab := fun stx => do
   elabPerPortDecls converting name params σ insides sites oracles used
   if (← errorCount) == beforeErrors then
     elabComponentEquations name params σ oracles stateTy (some innerZero) normalized
+        (converting && inits.isEmpty)
   if converting && sites.isEmpty then
     elabExactDecls name params σ insides used oracles bodies calls input
   if (← errorCount) == beforeErrors then
