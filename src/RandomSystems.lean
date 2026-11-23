@@ -55,6 +55,7 @@ public import RandomSystems.Distance.Decision
 public import RandomSystems.Distance.Distinguisher
 public import RandomSystems.Distance.DecisionLaw
 public import RandomSystems.Distance.SignedObservation
+public import RandomSystems.Distance.UniformTrials
 public import RandomSystems.Distance.HCoefficient
 public import RandomSystems.Distance.ParallelObservation
 public import RandomSystems.Distance.Restriction
