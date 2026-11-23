@@ -99,6 +99,26 @@ def ParallelCompatible
     parallel left (relaxation B right) ⊆
       relaxation (A ⊗ B) (parallel left right)
 
+/-- A relaxation compatible with every fixed parallel context transports parallel specifications
+in both component positions. Each inclusion uses the same fixed resource on both sides. -/
+lemma ParallelCompatible.of_fixed_contexts
+    -- `φ A` relaxes specifications of resources on interface `A`.
+    {φ : ∀ A : C, ConstructiveCryptography.Relaxation (Phi A)}
+    -- A fixed right component `s` transports relaxation of the left specification `S`.
+    (right : ∀ {A B : C} (s : Phi B) (S : Specification (Phi A)),
+      (CryptographicAlgebra.parallel · s) '' φ A S ⊆
+        φ (A ⊗ B) ((CryptographicAlgebra.parallel · s) '' S))
+    -- A fixed left component `r` transports relaxation of the right specification `T`.
+    (left : ∀ {A B : C} (r : Phi A) (T : Specification (Phi B)),
+      (CryptographicAlgebra.parallel r) '' φ B T ⊆
+        φ (A ⊗ B) ((CryptographicAlgebra.parallel r) '' T)) :
+    ParallelCompatible φ := by
+  intro A B S T
+  exact ⟨ConstructiveCryptography.Specification.image2_subset_of_fixed_right
+      (φ (A ⊗ B)).mono (fun s _ => right s S),
+    ConstructiveCryptography.Specification.image2_subset_of_fixed_left
+      (φ (A ⊗ B)).mono (fun r _ => left r T)⟩
+
 omit [MonoidalCategory C] [CryptographicAlgebra C Phi] in
 /-- Pointwise composition of compatible relaxation families is compatible. If `outer` and
 `inner` are converter-compatible families, so is the family whose relaxation on `A` applies

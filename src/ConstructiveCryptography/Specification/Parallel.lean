@@ -31,6 +31,29 @@ variable {X : Type u} {Y : Type v} {Z : Type w}
 -- `X'`, `Y'` and `Z'` are the corresponding types after construction.
 variable {X' : Type u'} {Y' : Type v'} {Z' : Type w'}
 
+/-- To transport the left input of a binary image, it suffices to transport each image
+with its right input fixed. The target map may enlarge specifications monotonically. -/
+lemma image2_subset_of_fixed_right
+    -- `place x y` combines an input `x : X` with a context `y : Y` to give an output in `Z`.
+    {place : X → Y → Z} {source base : Set X} {contexts : Set Y}
+    -- `target` acts on output specifications and respects inclusion.
+    {target : Set Z → Set Z} (mono : Monotone target)
+    -- For each admitted `y`, its image of `source` meets the guarantee for its image of `base`.
+    (fixed : ∀ y ∈ contexts, (place · y) '' source ⊆ target ((place · y) '' base)) :
+    Set.image2 place source contexts ⊆ target (Set.image2 place base contexts) :=
+  Set.image2_subset_iff_right.mpr fun y hy =>
+    (fixed y hy).trans (mono (Set.image_subset_image2_left hy))
+
+/-- Transport the right input of a binary image, keeping the left context fixed in each image. -/
+lemma image2_subset_of_fixed_left
+    -- `place x y` places the varying input `y` on the right of context `x`.
+    {place : X → Y → Z} {contexts : Set X} {source base : Set Y}
+    {target : Set Z → Set Z} (mono : Monotone target)
+    (fixed : ∀ x ∈ contexts, place x '' source ⊆ target (place x '' base)) :
+    Set.image2 place contexts source ⊆ target (Set.image2 place contexts base) :=
+  Set.image2_subset_iff_left.mpr fun x hx =>
+    (fixed x hx).trans (mono (Set.image_subset_image2_right hx))
+
 /-- Compatible parallel maps preserve component constructions: `combined` constructs
 `{parallel' x' y' | x' ∈ target, y' ∈ context'}` from `{parallel x y | x ∈ source, y ∈ context}`.
 
