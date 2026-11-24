@@ -51,6 +51,11 @@ public import Commons.Schemes.MAC.PMAC
 public import Commons.Schemes.Signature.MLDSA.Concrete.Laws
 public import Commons.Schemes.Sponge.Uniform
 public import Commons.Schemes.Sponge.Basic
+public import Commons.Schemes.Sponge.Indifferentiability
+public import Commons.Schemes.Sponge.Indifferentiability.GameEquiv
+public import Commons.Schemes.Sponge.Indifferentiability.HCoefficient
+public import Commons.Schemes.Sponge.Indifferentiability.IdealGame
+public import Commons.Schemes.Sponge.Simulator
 public import Commons.Schemes.Sponge.Table
 public import Commons.Schemes.Stream.CTR
 public import Commons.Tests.AES
