@@ -93,6 +93,7 @@ public import Tests.FilteredRatio
 public import Tests.CompositeNotation
 public import Tests.ParallelCoherenceHom
 public import Tests.HashExtractor
+public import Tests.ActiveUserBank
 
 /-! Axiom audits per layer and of the Commons library, the checks of the
 authenticated-encryption example,
