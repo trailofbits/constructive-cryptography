@@ -221,12 +221,14 @@ typed converters, and the counterexamples, depend only on `propext`, `Classical.
 #print axioms SystemAlgebra.PDCBehavior.liftMBO_comp
 #print axioms SystemAlgebra.RandomSystem.visible_attach_liftMBO
 #print axioms SystemAlgebra.RandomSystem.MonotoneMBO.attach_liftMBO
+#print axioms SystemAlgebra.RandomSystem.GameEquivalent.attach_liftMBO
 #print axioms SystemAlgebra.RandomSystem.winProbability_attach_liftMBO
 #print axioms SystemAlgebra.Domain.Distinguisher.exists_absorbAll_winProbability
 #print axioms SystemAlgebra.Domain.SolverBehavior.absorb
 #print axioms SystemAlgebra.Domain.SolverBehavior.decision_absorb
 #print axioms SystemAlgebra.TypedConverter.identity_attachGame
 #print axioms SystemAlgebra.TypedConverter.comp_attachGame
+#print axioms SystemAlgebra.TypedConverter.attachGame_gameEquivalent
 
 -- RandomSystems.Game.UntilBad
 #print axioms SystemAlgebra.Domain.Distinguisher.winProbability_le_of_transcriptCost_le

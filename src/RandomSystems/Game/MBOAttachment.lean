@@ -2244,4 +2244,282 @@ lemma Domain.SolverBehavior.decision_absorb
 
 end SolverAbsorption
 
+/-! ## Transport of equivalence as games -/
+
+section GameEquivalence
+
+variable {O J : Type} {U V : O → Type} {X Y : J → Type}
+
+/-- Along any consistent interaction with the resource-connection strategy, the inside MBOs
+received by the converter followed by any pending reply MBO equal the MBOs emitted by the
+inside game. -/
+lemma follows_resource_mbo_invariant
+    {us : List (Σ o, U o)}
+    {t : List (Two (Σ l, twoFam U (withMBO Y) l) (Σ j, X j) ×
+      Two (Σ l, twoFam (withMBO V) X l) (Σ j, withMBO Y j))}
+    (hc : FollowsStrategy (connectionQueries resourceRoute resourceInput us) t)
+    (hpar : RandomSystem.parallelConsistent t) :
+    ((RandomSystem.parallelLeft t).map Prod.fst).filterMap inputMBO ++
+        pendingMBO (t.map Prod.snd) =
+      (RandomSystem.parallelRight t).map fun z => z.2.2.2 := by
+  induction t using List.reverseRecOn with
+  | nil => simp [pendingMBO, RandomSystem.parallelLeft, RandomSystem.parallelRight]
+  | append_singleton t z ih =>
+    obtain ⟨hc', hx⟩ := FollowsStrategy.snoc_iff.mp hc
+    obtain ⟨hpar', hside⟩ := RandomSystem.parallelConsistent_snoc.mp hpar
+    have hinv := ih hc' hpar'
+    rcases z with ⟨x, y⟩
+    have hfeed : (∃ u, x = resourceInput u ∧ pendingMBO (t.map Prod.snd) = []) ∨
+        (∃ ys' : List (Two (Σ l, twoFam (withMBO V) X l) (Σ j, withMBO Y j)),
+          ∃ (j : J) (r : withMBO Y j),
+            t.map Prod.snd = ys' ++ [⟨some (), ⟨j, r⟩⟩] ∧ x = ⟨none, ⟨⟨some (), j⟩, r⟩⟩) ∨
+        (∃ ys' : List (Two (Σ l, twoFam (withMBO V) X l) (Σ j, withMBO Y j)),
+          ∃ (j : J) (q : X j),
+            t.map Prod.snd = ys' ++ [⟨none, ⟨⟨some (), j⟩, q⟩⟩] ∧ x = ⟨some (), ⟨j, q⟩⟩) := by
+      rcases List.eq_nil_or_concat (t.map Prod.snd) with hnil | ⟨ys', y', hlast⟩
+      · left
+        rw [hnil, connectionQueries_nil] at hx
+        cases us with
+        | nil => exact absurd hx (by simp)
+        | cons u us =>
+          refine ⟨u, ?_, by simp [hnil, pendingMBO]⟩
+          simpa [eq_comm] using hx
+      · rw [List.concat_eq_append] at hlast
+        rw [hlast] at hx
+        have hd' := connectionQueries_prefix _ _ _ _ _ (Part.dom_iff_mem.mpr ⟨x, hx⟩)
+        rcases y' with ⟨_ | ⟨⟩, y'⟩
+        · rcases y' with ⟨⟨_ | ⟨⟨⟩⟩, o⟩, v⟩
+          · left
+            have hx' := (connectionQueries_snoc_out resourceRoute resourceInput us ys'
+              (y := ⟨none, ⟨⟨none, o⟩, v⟩⟩) (b := ⟨o, v⟩) rfl) ▸ hx
+            simp only [Part.mem_ofOption, Option.mem_def, Option.map_eq_some_iff] at hx'
+            obtain ⟨u, -, rfl⟩ := hx'
+            exact ⟨u, rfl, by simp [hlast, pendingMBO]⟩
+          · right; right
+            have hx' := (connectionQueries_snoc_in resourceRoute resourceInput us ys'
+              (y := ⟨none, ⟨⟨some (), o⟩, v⟩⟩) (x := ⟨some (), ⟨o, v⟩⟩) rfl hd') ▸ hx
+            exact ⟨ys', o, v, hlast, Part.mem_some_iff.mp hx'⟩
+        · right; left
+          rcases y' with ⟨j, r⟩
+          have hx' := (connectionQueries_snoc_in resourceRoute resourceInput us ys'
+            (y := ⟨some (), ⟨j, r⟩⟩) (x := ⟨none, ⟨⟨some (), j⟩, r⟩⟩) rfl hd') ▸ hx
+          exact ⟨ys', j, r, hlast, Part.mem_some_iff.mp hx'⟩
+    rcases hfeed with ⟨u, rfl, hpend⟩ | ⟨ys', j, r, hlast, rfl⟩ | ⟨ys', j, q, hlast, rfl⟩
+    · rcases y with ⟨_ | ⟨⟩, cy⟩
+      · rw [hpend, List.append_nil] at hinv
+        have hleft : RandomSystem.parallelLeft (t ++ [(resourceInput u, ⟨none, cy⟩)]) =
+            RandomSystem.parallelLeft t ++ [(⟨⟨none, u.1⟩, u.2⟩, cy)] := by
+          simp [resourceInput, RandomSystem.parallelLeft, List.filterMap_append]
+        have hright : RandomSystem.parallelRight (t ++ [(resourceInput u, ⟨none, cy⟩)]) =
+            RandomSystem.parallelRight t := by
+          simp [resourceInput, RandomSystem.parallelRight, List.filterMap_append]
+        have hpend' : pendingMBO ((t ++ [(resourceInput u,
+            (⟨none, cy⟩ : Two (Σ l, twoFam (withMBO V) X l) (Σ j, withMBO Y j)))]).map Prod.snd) =
+            [] := by
+          simp [pendingMBO]
+        rw [hleft, hright, hpend', List.append_nil, List.map_append, List.map_singleton,
+          List.filterMap_append, List.filterMap_cons, List.filterMap_nil]
+        simpa [inputMBO] using hinv
+      · cases hside
+    · rcases y with ⟨_ | ⟨⟩, cy⟩
+      · have hpend : pendingMBO (t.map Prod.snd) = [r.2] := by simp [hlast, pendingMBO]
+        rw [hpend] at hinv
+        simpa [RandomSystem.parallelLeft, RandomSystem.parallelRight, List.filterMap_append,
+          List.map_append, inputMBO, pendingMBO, List.getLast?_append] using hinv
+      · cases hside
+    · rcases y with ⟨_ | ⟨⟩, ry⟩
+      · cases hside
+      · have hpend : pendingMBO (t.map Prod.snd) = [] := by simp [hlast, pendingMBO]
+        rw [hpend, List.append_nil] at hinv
+        simpa [RandomSystem.parallelLeft, RandomSystem.parallelRight, List.filterMap_append,
+          List.map_append, pendingMBO, List.getLast?_append] using congrArg (· ++ [ry.2.2]) hinv
+
+/-- `latestMBO` reads the last bit of the filtered inside-reply MBO list, or `false` if empty. -/
+lemma latestMBO_eq_getLast?_filterMap (l : List (Σ l, twoFam U (withMBO Y) l)) :
+    latestMBO l = ((l.filterMap inputMBO).getLast?).getD false := by
+  induction l using List.reverseRecOn with
+  | nil => rfl
+  | append_singleton l z ih =>
+    rw [latestMBO_snoc, List.filterMap_append]
+    cases hb : inputMBO z with
+    | none => simpa [hb] using ih
+    | some b => simp [hb]
+
+/-- On a completed tagged interaction whose exposed replies all carry MBO `false`, any monotone
+inside transcript must have every inside MBO unset. -/
+lemma parallelRight_eq_unsetMBOs_of_completed
+    {us : List (Σ o, U o)}
+    {t : List (Two (Σ l, twoFam U (withMBO Y) l) (Σ j, X j) ×
+      Two (Σ l, twoFam (withMBO V) X l) (Σ j, withMBO Y j))}
+    (hc : FollowsStrategy (connectionQueries resourceRoute resourceInput us) t)
+    (hpar : RandomSystem.parallelConsistent t)
+    (hstop : ¬ (connectionQueries resourceRoute resourceInput us (t.map Prod.snd)).Dom)
+    (htag : TaggedMBO (RandomSystem.parallelLeft t))
+    (hexp : ∀ v ∈ exposedReplies (resourceRoute (U := U)) (t.map Prod.snd), v.2.2 = false)
+    (hmono : ((RandomSystem.parallelRight t).map fun z => z.2.2.2).Pairwise (· ≤ ·)) :
+    RandomSystem.parallelRight t =
+      unsetMBOs ((RandomSystem.parallelRight t).map (Prod.map id forgetMBO)) := by
+  have hbits := follows_resource_mbo_invariant hc hpar
+  have hlastFalse : (((RandomSystem.parallelRight t).map fun z => z.2.2.2).getLast?).getD false =
+      false := by
+    rcases List.eq_nil_or_concat t with rfl | ⟨p, z, rfl⟩
+    · rfl
+    · rw [List.concat_eq_append] at hc hpar hstop htag hexp hbits ⊢
+      obtain ⟨-, hx⟩ := FollowsStrategy.snoc_iff.mp hc
+      obtain ⟨-, hside⟩ := RandomSystem.parallelConsistent_snoc.mp hpar
+      have hdom : (exposedReplies resourceRoute (p.map Prod.snd)).length < us.length :=
+        Part.dom_iff_mem.mpr ⟨z.1, hx⟩
+      have hge : us.length ≤ (exposedReplies resourceRoute ((p ++ [z]).map Prod.snd)).length :=
+        Nat.le_of_not_gt hstop
+      rcases z with ⟨x, y⟩
+      rcases y with ⟨_ | ⟨⟩, cy⟩
+      · rcases cy with ⟨⟨_ | ⟨⟨⟩⟩, o⟩, v⟩
+        · have hpend : pendingMBO
+              ((p ++ [(x, (⟨none, ⟨⟨none, o⟩, v⟩⟩ :
+                Two (Σ l, twoFam (withMBO V) X l) (Σ j, withMBO Y j)))]).map Prod.snd) = [] := by
+            simp [pendingMBO]
+          rw [hpend, List.append_nil] at hbits
+          rcases x with ⟨_ | ⟨⟩, cx⟩
+          · have hleft : RandomSystem.parallelLeft (p ++ [(⟨none, cx⟩, ⟨none, ⟨⟨none, o⟩, v⟩⟩)]) =
+                RandomSystem.parallelLeft p ++ [(cx, ⟨⟨none, o⟩, v⟩)] := by
+              simp [RandomSystem.parallelLeft, List.filterMap_append]
+            rw [hleft] at htag
+            have hv := (taggedMBO_snoc.mp htag).2
+            simp only [outsideMap, forgetMBO, tagMBO, Sigma.mk.inj_iff, heq_eq_eq, true_and] at hv
+            have hv2 : v.2 = latestMBO ((RandomSystem.parallelLeft p).map Prod.fst ++ [cx]) :=
+              congrArg Prod.snd hv
+            have hmem : (⟨o, v⟩ : Σ o, withMBO V o) ∈
+                exposedReplies (resourceRoute (U := U))
+                  ((p ++ [((⟨none, cx⟩ : Two (Σ l, twoFam U (withMBO Y) l) (Σ j, X j)),
+                    (⟨none, ⟨⟨none, o⟩, v⟩⟩ :
+                      Two (Σ l, twoFam (withMBO V) X l) (Σ j, withMBO Y j)))]).map Prod.snd) := by
+              rw [List.map_append, List.map_singleton,
+                exposedReplies_snoc_out (resourceRoute (U := U)) _ (b := ⟨o, v⟩) rfl]
+              simp
+            have hvfalse : v.2 = false := hexp ⟨o, v⟩ hmem
+            rw [← hbits, hleft, List.map_append, List.map_singleton,
+              ← latestMBO_eq_getLast?_filterMap, ← hv2, hvfalse]
+          · cases hside
+        · exfalso
+          rw [List.map_append, List.map_singleton,
+            exposedReplies_snoc_in resourceRoute _ (x := ⟨some (), ⟨o, v⟩⟩) rfl] at hge
+          omega
+      · exfalso
+        rw [List.map_append, List.map_singleton,
+          exposedReplies_snoc_in resourceRoute _
+            (x := ⟨none, ⟨⟨some (), cy.1⟩, cy.2⟩⟩) rfl] at hge
+        omega
+  have hall : ∀ z ∈ RandomSystem.parallelRight t, z.2.2.2 = false := by
+    intro z hz
+    rcases List.eq_nil_or_concat (RandomSystem.parallelRight t) with hnil | ⟨q, w, hq⟩
+    · simp [hnil] at hz
+    · rw [List.concat_eq_append] at hq
+      rw [hq, List.map_append, List.map_singleton, List.getLast?_append_of_ne_nil _ (by simp)]
+        at hlastFalse
+      have hw : w.2.2.2 = false := by simpa using hlastFalse
+      rw [hq, List.map_append, List.map_singleton, List.pairwise_append] at hmono
+      rw [hq, List.mem_append, List.mem_singleton] at hz
+      rcases hz with hz | rfl
+      · have hle : z.2.2.2 ≤ w.2.2.2 :=
+          hmono.2.2 z.2.2.2 (List.mem_map.mpr ⟨z, hz, rfl⟩) w.2.2.2 (by simp)
+        rw [hw] at hle
+        exact Bool.eq_false_iff.mpr fun ht => by
+          rw [ht] at hle
+          exact Bool.noConfusion (hle rfl)
+      · exact hw
+  have hmap : ∀ l : List ((Σ j, X j) × Σ j, withMBO Y j), (∀ z ∈ l, z.2.2.2 = false) →
+      l = unsetMBOs (l.map (Prod.map id forgetMBO)) := by
+    intro l hl
+    induction l with
+    | nil => rfl
+    | cons z l ih =>
+      rcases z with ⟨x, ⟨j, y, b⟩⟩
+      have hb : b = false := hl (x, ⟨j, (y, b)⟩) (by simp)
+      subst hb
+      simp only [unsetMBOs, List.map_cons, Prod.map_apply, id_eq, forgetMBO, tagMBO]
+      exact congrArg (List.cons _) (ih fun w hw => hl w (by simp [hw]))
+  exact hmap _ hall
+
+variable [Fintype O] [Fintype J] [∀ o, Fintype (U o)] [∀ o, Fintype (V o)]
+  [∀ j, Fintype (X j)] [∀ j, Fintype (Y j)]
+  {E : List (Σ j, X j) → Prop} {m : ℕ} {hE : ∀ h, E h → h.length ≤ m}
+  {F : List (Σ o, U o) → Prop} {n : ℕ} {hF : ∀ h, F h → h.length ≤ n}
+
+open scoped Classical in
+/-- **Equivalence as games is preserved by attaching a lifted PDC**: if two games agree on every
+transcript with all MBOs unset, then attaching the same MBO-forwarding lift preserves that
+agreement. -/
+theorem RandomSystem.GameEquivalent.attach_liftMBO
+    (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
+    (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
+    (α : PDCBehavior O J U V X Y E m hE F n hF)
+    {G H : RandomSystem (Σ j, X j) (Σ j, withMBO Y j) (Domain.ofInputs E m hE)}
+    (hG : G.RepliesAtQueriedInterface) (hH : H.RepliesAtQueriedInterface)
+    (hGm : G.MonotoneMBO) (hHm : H.MonotoneMBO)
+    (hGH : G.GameEquivalent H) :
+    (PDCBehavior.attach hE' hF' (PDCBehavior.liftMBO α) G hG).GameEquivalent
+      (PDCBehavior.attach hE' hF' (PDCBehavior.liftMBO α) H hH) := by
+  intro h
+  set L := PDCBehavior.liftMBO α
+  set us := (unsetMBOs h).map Prod.fst
+  set vs := (unsetMBOs h).map Prod.snd
+  set N := (2 * L.2.choose + 2) * us.length
+  change (RandomSystem.parallel L.1 G).connectionLaw resourceRoute resourceInput us N vs =
+    (RandomSystem.parallel L.1 H).connectionLaw resourceRoute resourceInput us N vs
+  simp only [RandomSystem.connectionLaw, Distribution.fTransform_apply_eq_mass]
+  have hterm : ∀ t, exposedReplies (resourceRoute (U := U)) (t.map Prod.snd) = vs →
+      ((RandomSystem.parallel L.1 G).sLaw (connectionQueries resourceRoute resourceInput us) N
+        |>.restrict fun t => ¬ (connectionQueries resourceRoute resourceInput us
+          (t.map Prod.snd)).Dom) t =
+      ((RandomSystem.parallel L.1 H).sLaw (connectionQueries resourceRoute resourceInput us) N
+        |>.restrict fun t => ¬ (connectionQueries resourceRoute resourceInput us
+          (t.map Prod.snd)).Dom) t := by
+    intro t hexp
+    rw [RandomSystem.sLaw_completed_apply, RandomSystem.sLaw_completed_apply]
+    split_ifs with hgood
+    · obtain ⟨hc, -, hstop⟩ := hgood
+      rw [RandomSystem.parallel_mass, RandomSystem.parallel_mass]
+      split_ifs with hpar
+      · rw [PDCBehavior.liftMBO_apply]
+        split_ifs with htag
+        · congr 1
+          have hexpFalse :
+              ∀ v ∈ exposedReplies (resourceRoute (U := U)) (t.map Prod.snd), v.2.2 = false := by
+            intro v hv
+            rw [hexp] at hv
+            simp only [vs, unsetMBOs, List.map_map, Function.comp_def, List.mem_map] at hv
+            obtain ⟨z, -, rfl⟩ := hv
+            rfl
+          by_cases hmono : ((RandomSystem.parallelRight t).map fun z => z.2.2.2).Pairwise (· ≤ ·)
+          · rw [parallelRight_eq_unsetMBOs_of_completed hc hpar hstop htag hexpFalse hmono]
+            exact hGH _
+          · have hG0 : G (RandomSystem.parallelRight t) = 0 := by
+              by_contra hne
+              exact hmono (hGm _ hne)
+            have hH0 : H (RandomSystem.parallelRight t) = 0 := by
+              by_contra hne
+              exact hmono (hHm _ hne)
+            rw [hG0, hH0]
+        · simp
+      · rfl
+    · rfl
+  have hmass_eq : ∀ {α : Type} (μ₁ μ₂ : Distribution α) (P : α → Prop),
+      (∀ t, P t → μ₁ t = μ₂ t) → μ₁.mass P = μ₂.mass P := by
+    intro α μ₁ μ₂ P hP
+    have hμ : μ₁.restrict P = μ₂.restrict P := by
+      apply Finsupp.ext
+      intro t
+      rw [Distribution.restrict_apply, Distribution.restrict_apply]
+      split_ifs with ht
+      · exact hP t ht
+      · rfl
+    have hweight (μ : Distribution α) : (μ.restrict P).weight = μ.mass P := by
+      simp only [Distribution.weight, Distribution.mass, Distribution.restrict, Finsupp.sum,
+        Finsupp.support_filter, Finset.sum_filter]
+      exact Finset.sum_congr rfl fun a _ => by split_ifs with ha <;> simp [ha]
+    rw [← hweight, ← hweight, hμ]
+  exact hmass_eq _ _ _ hterm
+
+end GameEquivalence
+
 end SystemAlgebra

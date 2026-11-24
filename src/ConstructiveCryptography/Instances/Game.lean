@@ -128,6 +128,33 @@ noncomputable instance distinctionGameAction :
     Subtype.ext (RandomSystem.visible_attach_liftMBO B.nonempty_prefix A.nonempty_prefix α G.1.1
       G.1.2)
 
+/-- **Interfaces instantiate `GameEquivalence`** with `TypedGame.GameEquivalent`: equivalent
+typed games share winning probabilities and bound distinguishing advantage between their
+visible typed systems. -/
+noncomputable instance gameEquivalence : GameEquivalence Interface TypedSystem TypedGame where
+  GameEquivalent G H := G.GameEquivalent H
+  gameEquivalent_refl := TypedGame.GameEquivalent.refl
+  gameEquivalent_symm := TypedGame.GameEquivalent.symm
+  gameEquivalent_trans := TypedGame.GameEquivalent.trans
+  win_eq := by
+    rintro A G H _ hGH ⟨s, rfl⟩
+    obtain ⟨P, -, hW⟩ := s.exists_realization
+    change s.winProbability G = s.winProbability H
+    rw [hW G, hW H]
+    exact P.winProbability_eq_of_gameEquivalent G.1.2 H.1.2 G.2 H.2 hGH
+  advantage_le_win := by
+    rintro A G H _ hGH ⟨s, rfl⟩
+    obtain ⟨P, hP, hW⟩ := s.exists_realization
+    change |s.decision.1 G.visible - s.decision.1 H.visible| ≤ s.winProbability G
+    rw [hP G.visible, hP H.visible, hW G]
+    exact P.advantage_le_winProbability_of_gameEquivalent G.1.2 H.1.2 G.2 hGH
+
+/-- **Interfaces instantiate `CompatibleGameEquivalence`**: attaching a typed converter via its
+MBO-forwarding lift transports equivalence as games. -/
+noncomputable instance compatibleGameEquivalence :
+    CompatibleGameEquivalence Interface TypedSystem TypedGame where
+  attachGame_gameEquivalent α := TypedConverter.attachGame_gameEquivalent α
+
 /-- **Winning by every distinguisher bounds winning by every winner**: a bound on the winning
 probability of every distinguisher for the game's system bounds the winning probability of
 every winner. -/

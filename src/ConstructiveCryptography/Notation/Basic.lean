@@ -16,6 +16,7 @@ R ≃[ε] S      ∀ d ∈ admissible A,               decision advantage agains
 𝓡 —[π]→ 𝒮     Constructs π 𝓡 𝒮                  π𝓡 ⊆ 𝒮
 𝓡 —[π; ε]→ 𝒮  ConstructsWithin π 𝓡 𝒮 ε          ∀ R ∈ 𝓡, ∃ S ∈ 𝒮, d(πR, S) ≤ ε
 G |≡ T        ConditionallyEquivalent G T       selected `DistinctionGames` field
+G ≡g H        GameEquivalent G H                selected `GameEquivalence` field
 ```
 
 The notation reads the instances in scope and selects none: the metric, the parallel
@@ -97,5 +98,10 @@ scoped notation:50 source " —[" converter "; " error "]→ " target:51 =>
 the `ConditionallyEquivalent` field of the selected `DistinctionGames` instance. -/
 scoped notation:50 G:51 " |≡ " T:51 =>
   ConstructiveCryptography.DistinctionGames.ConditionallyEquivalent G T
+
+/-- Equivalence as games `G ≡g H` (CR18, Definition 4.16): the `GameEquivalent` field of
+the selected `GameEquivalence` instance. -/
+scoped notation:50 G:51 " ≡g " H:51 =>
+  ConstructiveCryptography.GameEquivalence.GameEquivalent G H
 
 end SystemAlgebra

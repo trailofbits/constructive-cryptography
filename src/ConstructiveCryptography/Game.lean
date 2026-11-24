@@ -37,6 +37,7 @@ decision evaluation alone is not assumed to determine the winning evaluation.
 * `Games`: admitted winners in a selected preordered performance space
 * `Games.absorb`: a winner with a converter absorbed
 * `DistinctionGames`: the common solvers' decision and winning probabilities
+* `GameEquivalence`: optional equivalence-as-games contract on `DistinctionGames`
 
 ## Main results
 
@@ -159,5 +160,34 @@ class DistinctionGames
   advantage_le_win : ∀ {A : I} {game : Game A} {T : Phi A}
     {solver : (Phi A → ℝ) × (Game A → ℝ)}, ConditionallyEquivalent game T →
       solver ∈ solvers A → |solver.1 (visible game) - solver.1 T| ≤ solver.2 game
+
+/-- Optional equivalence-as-games contract on `DistinctionGames` (CR18, Definition 4.16,
+Lemmas 4.15–4.16): equivalent games share winning probabilities and bound the distinguishing
+advantage between their visible resources. -/
+class GameEquivalence
+    (I : Type u)
+    (Phi : outParam (I → Type w))
+    (Game : outParam (I → Type x))
+    [DistinctionGames I Phi Game] where
+  /-- Equivalence as games `G ≡g H` (CR18, Definition 4.16). -/
+  GameEquivalent : ∀ {A : I}, Game A → Game A → Prop
+  /-- Equivalence as games is reflexive. -/
+  gameEquivalent_refl : ∀ {A : I} (game : Game A), GameEquivalent game game
+  /-- Equivalence as games is symmetric. -/
+  gameEquivalent_symm : ∀ {A : I} {first second : Game A},
+    GameEquivalent first second → GameEquivalent second first
+  /-- Equivalence as games is transitive. -/
+  gameEquivalent_trans : ∀ {A : I} {first second third : Game A},
+    GameEquivalent first second → GameEquivalent second third → GameEquivalent first third
+  /-- Admitted winners win game-equivalent games alike (CR18, Lemma 4.15). -/
+  win_eq : ∀ {A : I} {first second : Game A} {winner : Game A → ℝ},
+    GameEquivalent first second → winner ∈ Games.winners A → winner first = winner second
+  /-- Fundamental lemma for game-equivalent games (CR18, Lemma 4.16): distinguishing the
+  visible resources is bounded by winning either game. -/
+  advantage_le_win : ∀ {A : I} {first second : Game A}
+    {solver : (Phi A → ℝ) × (Game A → ℝ)},
+    GameEquivalent first second → solver ∈ DistinctionGames.solvers A →
+      |solver.1 (DistinctionGames.visible first) - solver.1 (DistinctionGames.visible second)| ≤
+        solver.2 first
 
 end ConstructiveCryptography

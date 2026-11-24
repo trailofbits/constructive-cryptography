@@ -437,11 +437,13 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [advantageDistance]: CryptographicAlgebra/Distinguisher.lean#L60
 [CompatibleDistinguisherClass]: CryptographicAlgebra/Distinguisher.lean#L119
 [CompatibleDistinguisherClass.ofClosure]: CryptographicAlgebra/Distinguisher.lean#L177
-[Games]: Game.lean#L57
-[Games.absorb]: Game.lean#L73
+[Games]: Game.lean#L58
+[Games.absorb]: Game.lean#L74
 [Games.absorb_comp]: CryptographicAlgebra/Game.lean#L96
-[DistinctionGames]: Game.lean#L135
+[DistinctionGames]: Game.lean#L136
 [DistinctionGames.absorb]: CryptographicAlgebra/Game.lean#L140
+[GameEquivalence]: Game.lean#L167
+[CompatibleGameEquivalence]: CryptographicAlgebra/Game.lean#L153
 
 <!-- Declarations: the instances and the notation -->
 
@@ -460,17 +462,20 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [RandomSystem.transcriptDistance_eq_iSup_behavior]: ../RandomSystems/Distance/Distinguisher.lean#L250
 [Interface.games]: Instances/Game.lean#L54
 [Interface.distinctionGames]: Instances/Game.lean#L84
+[Interface.gameEquivalence]: Instances/Game.lean#L134
+[Interface.compatibleGameEquivalence]: Instances/Game.lean#L154
 [Domain.SolverBehavior]: ../RandomSystems/Game/MBOAttachment.lean#L2178
-[Interface.win_le]: Instances/Game.lean#L134
-[Interface.dist_visible_le]: Instances/Game.lean#L153
-[Interface.conditionallyEquivalent_ofPDG_iff]: Instances/Game.lean#L170
-[Interface.game_dist_le]: Instances/Game.lean#L183
-[notation-distance]: Notation/Basic.lean#L40
-[notation-parallel]: Notation/Basic.lean#L52
-[notation-constructs]: Notation/Basic.lean#L86
-[notation-constructsWithin]: Notation/Basic.lean#L92
-[notation-substitutes]: Notation/Basic.lean#L79
-[notation-conditionallyEquivalent]: Notation/Basic.lean#L98
+[Interface.win_le]: Instances/Game.lean#L161
+[Interface.dist_visible_le]: Instances/Game.lean#L180
+[Interface.conditionallyEquivalent_ofPDG_iff]: Instances/Game.lean#L197
+[Interface.game_dist_le]: Instances/Game.lean#L210
+[notation-distance]: Notation/Basic.lean#L41
+[notation-parallel]: Notation/Basic.lean#L53
+[notation-constructs]: Notation/Basic.lean#L87
+[notation-constructsWithin]: Notation/Basic.lean#L93
+[notation-substitutes]: Notation/Basic.lean#L80
+[notation-conditionallyEquivalent]: Notation/Basic.lean#L99
+[notation-gameEquivalent]: Notation/Basic.lean#L104
 
 <!-- Declarations: specifications and constructions -->
 
@@ -603,7 +608,7 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [RandomSystem.visible_attach_liftMBO]: ../RandomSystems/Game/MBOAttachment.lean#L628
 [TypedConverter]: ../RandomSystems/Typed/Interface.lean#L184
 [TypedConverter.attach]: ../RandomSystems/Typed/Interface.lean#L250
-[TypedConverter.attachGame]: ../RandomSystems/Typed/Game.lean#L49
+[TypedConverter.attachGame]: ../RandomSystems/Typed/Game.lean#L51
 [TypedConverter.comp]: ../RandomSystems/Typed/Interface.lean#L191
 [TypedConverter.comp_associator]: ../RandomSystems/Typed/ConverterCoherence.lean#L162
 [TypedConverter.comp_leftUnitor]: ../RandomSystems/Typed/ConverterCoherence.lean#L199
@@ -618,8 +623,8 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [TypedConverter.rename_comp]: ../RandomSystems/Typed/Relabel.lean#L84
 [TypedConverter.rename_mass]: ../RandomSystems/Typed/SystemParallel.lean#L59
 [TypedConverter.rename_refl]: ../RandomSystems/Typed/Relabel.lean#L71
-[TypedGame]: ../RandomSystems/Typed/Game.lean#L46
-[TypedGame.visible]: ../RandomSystems/Typed/Game.lean#L90
+[TypedGame]: ../RandomSystems/Typed/Game.lean#L48
+[TypedGame.visible]: ../RandomSystems/Typed/Game.lean#L92
 [TypedSystem]: ../RandomSystems/Typed/Interface.lean#L145
 [TypedSystem.dummy]: ../RandomSystems/Typed/SystemCoherence.lean#L101
 [TypedSystem.parallel]: ../RandomSystems/Typed/Parallel.lean#L157
@@ -628,11 +633,12 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [TypedSystem.parallel_unit_left_mass]: ../RandomSystems/Typed/SystemCoherence.lean#L107
 [TypedSystem.parallel_unit_right_mass]: ../RandomSystems/Typed/SystemCoherence.lean#L132
 
-[Games.win_le_of_reduction]: Game.lean#L89
+[Games.win_le_of_reduction]: Game.lean#L90
 [Problem.performance_le_of_reduction]: Problem.lean#L54
 [Interface.gameAction]: Instances/Game.lean#L59
 [Interface.distinctionGameAction]: Instances/Game.lean#L117
 [Domain.SolverBehavior.decision]: ../RandomSystems/Game/MBOAttachment.lean#L2189
 [Domain.SolverBehavior.decision_absorb]: ../RandomSystems/Game/MBOAttachment.lean#L2238
-[TypedConverter.identity_attachGame]: ../RandomSystems/Typed/Game.lean#L65
-[TypedConverter.comp_attachGame]: ../RandomSystems/Typed/Game.lean#L75
+[TypedConverter.identity_attachGame]: ../RandomSystems/Typed/Game.lean#L67
+[TypedConverter.comp_attachGame]: ../RandomSystems/Typed/Game.lean#L77
+[TypedConverter.attachGame_gameEquivalent]: ../RandomSystems/Typed/Game.lean#L111
