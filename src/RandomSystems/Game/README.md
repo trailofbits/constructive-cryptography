@@ -85,9 +85,11 @@ this action informally: a converter turns a game into a game, the MBO being neit
 affected by the converter [3, §4.7.2]. The lift is functorial: it
 [preserves identities][PDCBehavior.liftMBO_id], $`\hat{\mathrm{id}} = \mathrm{id}`$, and
 [composition][PDCBehavior.liftMBO_comp], $`\widehat{\alpha \beta} = \hat\alpha \hat\beta`$. It
-[keeps games games][RandomSystem.MonotoneMBO.attach_liftMBO] and
+[keeps games games][RandomSystem.MonotoneMBO.attach_liftMBO],
 [commutes with the visible system][RandomSystem.visible_attach_liftMBO],
-$`(\hat\alpha G)^- = \alpha\, G^-`$. A winner with $`\alpha`$ absorbed
+$`(\hat\alpha G)^- = \alpha\, G^-`$, and
+[preserves equivalence as games][RandomSystem.GameEquivalent.attach_liftMBO],
+$`G \overset{g}{\equiv} H \Longrightarrow \hat\alpha G \overset{g}{\equiv} \hat\alpha H`$. A winner with $`\alpha`$ absorbed
 wins $`G`$ [as the winner wins][RandomSystem.winProbability_attach_liftMBO] $`\hat\alpha G`$
 [3, §4.7.2, equation (4.9)]. A [**solver behavior**][Domain.SolverBehavior] pairs a probabilistic
 distinguisher's probability of outputting 1 on each random system with its winning probability
@@ -149,6 +151,7 @@ between original and replacement messages.
 [PDCBehavior.liftMBO_id]: MBOAttachment.lean#L504
 [PDCBehavior.liftMBO_comp]: MBOAttachment.lean#L1524
 [RandomSystem.MonotoneMBO.attach_liftMBO]: MBOAttachment.lean#L974
+[RandomSystem.GameEquivalent.attach_liftMBO]: MBOAttachment.lean#L2456
 [RandomSystem.visible_attach_liftMBO]: MBOAttachment.lean#L628
 [RandomSystem.winProbability_attach_liftMBO]: MBOAttachment.lean#L2088
 [Domain.SolverBehavior]: MBOAttachment.lean#L2178

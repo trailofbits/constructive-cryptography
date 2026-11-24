@@ -11,6 +11,8 @@ public import RandomSystems.Typed.Parallel
 A program `P` from outside interface `A` to inside interface `B` becomes a typed converter
 when its inside queries stay in `B.domain`. `ofProgram`, `ofCostedProgram`, and
 `ofPreservingProgram` establish this from total, exact-cost, or selected-port bounds.
+`ofDDC_ofProgramOn_eq_of_stateMap` and `ofDDC_ofProgramOn_eq_of_stateRel` compare program
+presentations by their retained states, independently of the domain certificates.
 
 Attaching it to an automaton runs `P` and the automaton together, the combined system `C(F)`
 of [1, §3.3, p. 9: "then the combined random system is C(F)"]:
@@ -41,6 +43,21 @@ namespace SystemAlgebra
 variable {S : Type}
 
 open Classical in
+/-- Domain certificate for `TypedConverter.ofProgram`. -/
+lemma TypedConverter.ofProgram_isDDCFrom
+    -- `A` is the outside interface, `B` the inside interface, and `s` the initial program state.
+    {A B : Interface} (s : S)
+    -- `P` supplies the query/reply rule; `hb` bounds inside queries per invocation by `b`.
+    (P : Program S A.I B.I A.X A.Y B.X B.Y) {b : ℕ} (hb : P.Bounded b)
+    -- `hB` admits every nonempty inside history within that total bound.
+    (hB : ∀ xs, xs ≠ [] → xs.length ≤ b * A.bound → B.domain xs) :
+    IsDDCFrom B.domain A.domain b (DDC.ofProgramOn s P A.domain) :=
+  DDC.ofProgramOn_isDDCFrom hb A.nonempty_prefix.2 fun h hr hF => by
+    by_cases hne : insideQueries (h.map Prod.snd) = []
+    · exact Or.inl hne
+    · exact Or.inr (hB _ hne
+        (DDC.insideQueries_length_le_of_budget hb A.length_le hr hF))
+
 /-- Run `P` from `s` on `A.domain`; each outside query makes at most `b` inside queries.
 The total inside length is at most `b * A.bound`. -/
 noncomputable def TypedConverter.ofProgram
@@ -51,14 +68,42 @@ noncomputable def TypedConverter.ofProgram
     -- `hB` admits every nonempty inside history within that total bound.
     (hB : ∀ xs, xs ≠ [] → xs.length ≤ b * A.bound → B.domain xs) : TypedConverter A B :=
   TypedConverter.ofDDC (DDC.ofProgramOn s P A.domain)
-    (DDC.ofProgramOn_isDDCFrom hb A.nonempty_prefix.2 fun h hr hF => by
-      -- An empty inside history needs no admission; otherwise the length bound gives it.
-      by_cases hne : insideQueries (h.map Prod.snd) = []
-      · exact Or.inl hne
-      · exact Or.inr (hB _ hne
-          (DDC.insideQueries_length_le_of_budget hb A.length_le hr hF)))
+    (TypedConverter.ofProgram_isDDCFrom s P hb hB)
+
+/-- `TypedConverter.ofProgram` is `TypedConverter.ofDDC` at `ofProgram_isDDCFrom`. -/
+lemma TypedConverter.ofProgram_eq_ofDDC
+    -- `A` is the outside interface, `B` the inside interface, and `s` the initial program state.
+    {A B : Interface} (s : S)
+    -- `P` supplies the query/reply rule; `hb` bounds inside queries per invocation by `b`.
+    (P : Program S A.I B.I A.X A.Y B.X B.Y) {b : ℕ} (hb : P.Bounded b)
+    -- `hB` admits every nonempty inside history within that total bound.
+    (hB : ∀ xs, xs ≠ [] → xs.length ≤ b * A.bound → B.domain xs) :
+    TypedConverter.ofProgram s P hb hB =
+      TypedConverter.ofDDC (DDC.ofProgramOn s P A.domain)
+        (TypedConverter.ofProgram_isDDCFrom s P hb hB) :=
+  rfl
 
 open Classical in
+/-- Domain certificate for `TypedConverter.ofCostedProgram`. -/
+lemma TypedConverter.ofCostedProgram_isDDCFrom
+    -- `A` is the outside interface, `B` the inside interface; `s` starts the retained state.
+    {A B : Interface} (s : S)
+    -- `P` gives the interaction rule; `hb` bounds each invocation by `b` inside queries.
+    (P : Program S A.I B.I A.X A.Y B.X B.Y) {b : ℕ} (hb : P.Bounded b)
+    -- `hc` gives exact per-query counts `cost`; `hA` bounds their sum by `q` on `A.domain`.
+    (cost : (Σ o, A.X o) → ℕ) (hc : P.Costs cost) {q : ℕ}
+    (hA : ∀ us, A.domain us → (us.map cost).sum ≤ q)
+    -- `hB` admits every nonempty inside history of length at most `q`.
+    (hB : ∀ xs, xs ≠ [] → xs.length ≤ q → B.domain xs) :
+    IsDDCFrom B.domain A.domain b (DDC.ofProgramOn s P A.domain) :=
+  DDC.ofProgramOn_isDDCFrom hb A.nonempty_prefix.2 fun h hr hF => by
+    by_cases hne : insideQueries (h.map Prod.snd) = []
+    · exact Or.inl hne
+    · refine Or.inr (hB _ hne ((DDC.insideQueries_length_le_of_costs hc hr).trans ?_))
+      rcases hF with he | hF
+      · rw [he]; exact Nat.zero_le _
+      · exact hA _ hF
+
 /-- Run `P` from `s` on `A.domain`, making `cost u` inside queries on outside query `u`.
 An outside history of total cost at most `q` gives at most `q` inside queries. -/
 noncomputable def TypedConverter.ofCostedProgram
@@ -72,16 +117,48 @@ noncomputable def TypedConverter.ofCostedProgram
     -- `hB` admits every nonempty inside history of length at most `q`.
     (hB : ∀ xs, xs ≠ [] → xs.length ≤ q → B.domain xs) : TypedConverter A B :=
   TypedConverter.ofDDC (DDC.ofProgramOn s P A.domain)
-    (DDC.ofProgramOn_isDDCFrom hb A.nonempty_prefix.2 fun h hr hF => by
-      by_cases hne : insideQueries (h.map Prod.snd) = []
-      · exact Or.inl hne
-      -- Exact invocation costs sum to a bound on the inside history.
-      · refine Or.inr (hB _ hne ((DDC.insideQueries_length_le_of_costs hc hr).trans ?_))
-        rcases hF with he | hF
-        · rw [he]; exact Nat.zero_le _
-        · exact hA _ hF)
+    (TypedConverter.ofCostedProgram_isDDCFrom s P hb cost hc hA hB)
+
+/-- `TypedConverter.ofCostedProgram` is `TypedConverter.ofDDC` at `ofCostedProgram_isDDCFrom`. -/
+lemma TypedConverter.ofCostedProgram_eq_ofDDC
+    -- `A` is the outside interface, `B` the inside interface; `s` starts the retained state.
+    {A B : Interface} (s : S)
+    -- `P` gives the interaction rule; `hb` bounds each invocation by `b` inside queries.
+    (P : Program S A.I B.I A.X A.Y B.X B.Y) {b : ℕ} (hb : P.Bounded b)
+    -- `hc` gives exact per-query counts `cost`; `hA` bounds their sum by `q` on `A.domain`.
+    (cost : (Σ o, A.X o) → ℕ) (hc : P.Costs cost) {q : ℕ}
+    (hA : ∀ us, A.domain us → (us.map cost).sum ≤ q)
+    -- `hB` admits every nonempty inside history of length at most `q`.
+    (hB : ∀ xs, xs ≠ [] → xs.length ≤ q → B.domain xs) :
+    TypedConverter.ofCostedProgram s P hb cost hc hA hB =
+      TypedConverter.ofDDC (DDC.ofProgramOn s P A.domain)
+        (TypedConverter.ofCostedProgram_isDDCFrom s P hb cost hc hA hB) :=
+  rfl
 
 open Classical in
+/-- Domain certificate for `TypedConverter.ofPreservingProgram`. -/
+lemma TypedConverter.ofPreservingProgram_isDDCFrom
+    -- `A`, `B` are the outside and inside interfaces; `s` starts the retained program state.
+    {A B : Interface} (s : S)
+    -- `P` gives the interaction rule; `hb` bounds all inside queries per invocation by `b`.
+    (P : Program S A.I B.I A.X A.Y B.X B.Y) {b : ℕ} (hb : P.Bounded b)
+    -- `ι` selects protected inside ports. `hι` permits a call at `ι o'` only from `o = o'`,
+    -- at most once per invocation; calls to other ports still count toward `b`.
+    (ι : A.I → Option B.I) (hι : P.PortPreserving ι) (q : A.I → ℕ)
+    -- `hA` bounds outside calls at `o` by `q o`; `hB` admits the resulting inside histories.
+    (hA : ∀ xs, A.domain xs → ∀ o, (SystemAlgebra.restrict o xs).length ≤ q o)
+    (hB : ∀ ys, ys ≠ [] → ys.length ≤ b * A.bound →
+      (∀ o j, ι o = some j → (SystemAlgebra.restrict j ys).length ≤ q o) → B.domain ys) :
+    IsDDCFrom B.domain A.domain b (DDC.ofProgramOn s P A.domain) :=
+  DDC.ofProgramOn_isDDCFrom hb A.nonempty_prefix.2 fun h hr hF => by
+    by_cases hne : insideQueries (h.map Prod.snd) = []
+    · exact Or.inl hne
+    · refine Or.inr (hB _ hne (DDC.insideQueries_length_le_of_budget hb A.length_le hr hF)
+        fun o j hj => (DDC.insideQueries_restrict_length_le hι hr hj).trans ?_)
+      rcases hF with he | hF
+      · rw [he]; exact Nat.zero_le _
+      · exact hA _ hF o
+
 /-- Run `P` from `s` on `A.domain`, with at most `q o` inside queries at each selected
 port `j` where `ι o = some j`. All inside queries together number at most `b * A.bound`. -/
 noncomputable def TypedConverter.ofPreservingProgram
@@ -98,15 +175,26 @@ noncomputable def TypedConverter.ofPreservingProgram
       (∀ o j, ι o = some j → (SystemAlgebra.restrict j ys).length ≤ q o) → B.domain ys) :
     TypedConverter A B :=
   TypedConverter.ofDDC (DDC.ofProgramOn s P A.domain)
-    (DDC.ofProgramOn_isDDCFrom hb A.nonempty_prefix.2 fun h hr hF => by
-      by_cases hne : insideQueries (h.map Prod.snd) = []
-      · exact Or.inl hne
-      -- Port preservation transfers each outside count; `hb` bounds the total count.
-      · refine Or.inr (hB _ hne (DDC.insideQueries_length_le_of_budget hb A.length_le hr hF)
-          fun o j hj => (DDC.insideQueries_restrict_length_le hι hr hj).trans ?_)
-        rcases hF with he | hF
-        · rw [he]; exact Nat.zero_le _
-        · exact hA _ hF o)
+    (TypedConverter.ofPreservingProgram_isDDCFrom s P hb ι hι q hA hB)
+
+/-- `TypedConverter.ofPreservingProgram` is `TypedConverter.ofDDC` at
+`ofPreservingProgram_isDDCFrom`. -/
+lemma TypedConverter.ofPreservingProgram_eq_ofDDC
+    -- `A`, `B` are the outside and inside interfaces; `s` starts the retained program state.
+    {A B : Interface} (s : S)
+    -- `P` gives the interaction rule; `hb` bounds all inside queries per invocation by `b`.
+    (P : Program S A.I B.I A.X A.Y B.X B.Y) {b : ℕ} (hb : P.Bounded b)
+    -- `ι` selects protected inside ports. `hι` permits a call at `ι o'` only from `o = o'`,
+    -- at most once per invocation; calls to other ports still count toward `b`.
+    (ι : A.I → Option B.I) (hι : P.PortPreserving ι) (q : A.I → ℕ)
+    -- `hA` bounds outside calls at `o` by `q o`; `hB` admits the resulting inside histories.
+    (hA : ∀ xs, A.domain xs → ∀ o, (SystemAlgebra.restrict o xs).length ≤ q o)
+    (hB : ∀ ys, ys ≠ [] → ys.length ≤ b * A.bound →
+      (∀ o j, ι o = some j → (SystemAlgebra.restrict j ys).length ≤ q o) → B.domain ys) :
+    TypedConverter.ofPreservingProgram s P hb ι hι q hA hB =
+      TypedConverter.ofDDC (DDC.ofProgramOn s P A.domain)
+        (TypedConverter.ofPreservingProgram_isDDCFrom s P hb ι hι q hA hB) :=
+  rfl
 
 /-- A tensor admits a history with left-port counts `≤ q o` and total length `≤ k`
 when `A` admits those port counts and `B` admits length `≤ k`. -/
@@ -244,5 +332,40 @@ lemma TypedConverter.ofCostedProgram_smul_ofAutomaton
       TypedSystem.ofAutomaton A (P.combine stepR hb)
         (Probability.Distribution.ProbDist.map (fun r => (s, r)) initial) :=
   TypedConverter.ofDDC_ofProgramOn_smul_ofAutomaton s P hb _ stepR initial
+
+/-- Two program converters whose bodies commute with a state map `f : S → T` define the same
+typed converter for any two domain certificates. -/
+lemma TypedConverter.ofDDC_ofProgramOn_eq_of_stateMap {T : Type} {A B : Interface}
+    {s : S} {b b' : ℕ}
+    (P : Program S A.I B.I A.X A.Y B.X B.Y) (Q : Program T A.I B.I A.X A.Y B.X B.Y)
+    -- `f` changes retained states from `S` to `T` on the same outside `A` and inside `B`.
+    (f : S → T)
+    -- `hf` preserves queries and replies, mapping only the next state.
+    (hf : ∀ σ o u h, Sum.map (Prod.map f id) id (P σ o u h) = Q (f σ) o u h)
+    -- `hP` and `hQ` certify these domains; their internal-query bounds may differ.
+    (hP : IsDDCFrom B.domain A.domain b (DDC.ofProgramOn s P A.domain))
+    (hQ : IsDDCFrom B.domain A.domain b' (DDC.ofProgramOn (f s) Q A.domain)) :
+    TypedConverter.ofDDC (DDC.ofProgramOn s P A.domain) hP =
+      TypedConverter.ofDDC (DDC.ofProgramOn (f s) Q A.domain) hQ :=
+  (TypedConverter.ofDDC_eq_iff hP hQ).mpr (DDC.ofProgramOn_eq_of_stateMap P Q f hf s A.domain)
+
+/-- Two program converters whose bodies preserve a state relation `R : S → T → Prop` define the
+same typed converter from related initial states, for any two domain certificates. -/
+lemma TypedConverter.ofDDC_ofProgramOn_eq_of_stateRel {T : Type} {A B : Interface}
+    {s : S} {t : T} {b b' : ℕ}
+    (P : Program S A.I B.I A.X A.Y B.X B.Y) (Q : Program T A.I B.I A.X A.Y B.X B.Y)
+    -- `R` relates retained states of `P` and `Q` on the same ports `A` and `B`.
+    (R : S → T → Prop)
+    -- `hrel` matches queries, or matches replies and relates the next states.
+    (hrel : ∀ σ τ o u h, R σ τ →
+      Sum.LiftRel (fun a b => R a.1 b.1 ∧ a.2 = b.2) Eq (P σ o u h) (Q τ o u h))
+    -- `hs` relates the chosen initial states.
+    (hs : R s t)
+    -- `hP` and `hQ` certify these domains; their internal-query bounds may differ.
+    (hP : IsDDCFrom B.domain A.domain b (DDC.ofProgramOn s P A.domain))
+    (hQ : IsDDCFrom B.domain A.domain b' (DDC.ofProgramOn t Q A.domain)) :
+    TypedConverter.ofDDC (DDC.ofProgramOn s P A.domain) hP =
+      TypedConverter.ofDDC (DDC.ofProgramOn t Q A.domain) hQ :=
+  (TypedConverter.ofDDC_eq_iff hP hQ).mpr (DDC.ofProgramOn_eq_of_stateRel P Q R hrel hs A.domain)
 
 end SystemAlgebra

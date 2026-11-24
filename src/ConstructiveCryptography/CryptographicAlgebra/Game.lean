@@ -156,6 +156,71 @@ lemma absorb_mem {A B : C} (converter : A ⟶ B) {solver : (Phi A → ℝ) × (G
 
 end DistinctionGames
 
+/-- Optional compatibility contract transporting equivalence as games through converter
+attachment: `G ≡g H → α • G ≡g α • H`. -/
+class CompatibleGameEquivalence
+    -- `C` carries interfaces; `A ⟶ B` converts an inside interface `B` to outside `A`.
+    (C : Type u) [Category.{v} C]
+    -- `Phi A` carries resources and `Game A` games at each interface `A : C`.
+    (Phi : C → Type w) [ResourceTheory C Phi]
+    (Game : C → Type x) [DistinctionGames C Phi Game]
+    -- The actions attach the same converter to both evaluations of a joint solver.
+    [GameAction C Game ℝ] [DistinctionGameAction C Phi Game]
+    [GameEquivalence C Phi Game] where
+  /-- Attaching a converter preserves equivalence as games. -/
+  attachGame_gameEquivalent : ∀ {A B : C} (converter : A ⟶ B) {first second : Game B},
+    GameEquivalence.GameEquivalent first second →
+      GameEquivalence.GameEquivalent
+        (GameAction.attachGame converter first) (GameAction.attachGame converter second)
+
+namespace GameEquivalence
+
+variable {C : Type u} [Category.{v} C] {Phi : C → Type w} [ResourceTheory C Phi]
+  {Game : C → Type x} [DistinctionGames C Phi Game] [GameAction C Game ℝ]
+  [DistinctionGameAction C Phi Game] [GameEquivalence C Phi Game]
+  [CompatibleGameEquivalence C Phi Game]
+
+/-- Attaching a converter preserves equivalence as games in action notation:
+`G ≡g H → α • G ≡g α • H`. -/
+lemma attach_gameEquivalent {A B : C} (converter : A ⟶ B) {first second : Game B}
+    (h : GameEquivalent first second) :
+    GameEquivalent (converter • first : Game A) (converter • second : Game A) :=
+  CompatibleGameEquivalence.attachGame_gameEquivalent converter h
+
+omit [ResourceTheory C Phi] [DistinctionGameAction C Phi Game]
+  [CompatibleGameEquivalence C Phi Game] in
+/-- Attaching the identity converter preserves equivalence as games. -/
+lemma attach_id_gameEquivalent {A : C} {first second : Game A}
+    (h : GameEquivalent first second) :
+    GameEquivalent ((𝟙 A) • first : Game A) ((𝟙 A) • second : Game A) := by
+  simpa only [Games.smul_eq_attachGame, GameAction.attachGame_identity] using h
+
+/-- Attaching a serial composition preserves equivalence as games. -/
+lemma attach_comp_gameEquivalent {A B D : C} (first : A ⟶ B) (second : B ⟶ D)
+    {G H : Game D} (h : GameEquivalent G H) :
+    GameEquivalent ((first ≫ second) • G : Game A) ((first ≫ second) • H : Game A) :=
+  attach_gameEquivalent (first ≫ second) h
+
+/-- An admitted winner wins two converter-attached equivalent games alike. -/
+lemma win_attach_eq {A B : C} (converter : A ⟶ B) {first second : Game B}
+    (h : GameEquivalent first second) {winner : Game A → ℝ} (hw : winner ∈ Games.winners A) :
+    winner (converter • first) = winner (converter • second) :=
+  win_eq (attach_gameEquivalent converter h) hw
+
+/-- Transported fundamental lemma: an admitted solver's advantage between `α • G⁻` and `α • H⁻`
+is at most its winning probability on `α • G`. -/
+lemma advantage_attach_le_win {A B : C} (converter : A ⟶ B) {first second : Game B}
+    (h : GameEquivalent first second) {solver : (Phi A → ℝ) × (Game A → ℝ)}
+    (hs : solver ∈ DistinctionGames.solvers A) :
+    |solver.1 (converter • DistinctionGames.visible first) -
+        solver.1 (converter • DistinctionGames.visible second)| ≤
+      solver.2 (converter • first) := by
+  have hle := advantage_le_win (attach_gameEquivalent converter h) hs
+  rw [DistinctionGameAction.visible_attachGame, DistinctionGameAction.visible_attachGame] at hle
+  exact hle
+
+end GameEquivalence
+
 section MetricBridge
 
 open CategoryTheory.MonoidalCategory

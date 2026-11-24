@@ -13,8 +13,8 @@ outside queries lie in `F` and whose inside replies answer queries in `E`. On fi
 domains its transcripts are bounded. A DDC from `E` to `F` answers exactly these inputs
 and queries only in `E`; attached to a resource with domain `E` it gives a resource with
 domain `F`.
-Sources: CR18, Definitions 3.8–3.9 (printed p. 62); Lanzenberger–Maurer,
-Definitions 5 and 8 (printed pp. 11, 13).
+The domain conventions follow [1, Definitions 3.8–3.9, p. 62] and
+[2, Definitions 5 and 8, pp. 11, 13].
 
 ## Main definitions
 
@@ -32,8 +32,17 @@ Definitions 5 and 8 (printed pp. 11, 13).
   to resources with domain `F`
 * `IsDDCFrom.eq_filterDom_of_replies_le`: a certified DDC below a partial DDC is its
   outside-domain restriction
+* `IsDDCFrom.replies_iff_of_next_eq`, `IsDDCFrom.eq_of_next_eq`: two DDCs from `E` to `F`
+  agreeing on every admitted next input after shared transcripts have the same transcripts and
+  are equal
 * `IsDDCFrom.replies_iff_of_le`: two DDCs from `E` to `F` below one system have the same
   transcripts
+
+## References
+
+1. U. Maurer. *Cryptography Foundations*. ETH Zurich lecture notes, Spring 2018.
+2. D. Lanzenberger and U. Maurer. *Coupling of Random Systems*. TCC 2020,
+   Cryptology ePrint Archive, Paper 2020/1187.
 -/
 
 @[expose] public section
@@ -325,6 +334,53 @@ lemma IsDDCFrom.outsideInputs_mem {E : List (Σ j, X j) → Prop} {F : List (Σ 
   · simp only [List.concat_eq_append, List.map_append, List.map_singleton] at hr ⊢
     obtain ⟨hr, hy⟩ := replies_snoc.mp hr
     exact Or.inr ((ha.answers h x hr).mp (by rw [hy]; trivial)).2.2.1
+
+/-- Two DDCs from `E` to `F` agreeing on every admitted next input after shared transcripts have
+the same transcripts. -/
+lemma IsDDCFrom.replies_iff_of_next_eq {E : List (Σ j, X j) → Prop} {F : List (Σ o, U o) → Prop}
+    {a c : InsideOutsideSystem O J U V X Y} {b b' : ℕ}
+    -- `E` admits inside queries; `F` admits outside queries. The bounds may differ.
+    (ha : IsDDCFrom E F b a) (hc : IsDDCFrom E F b' c)
+    -- `t` records inputs and outputs shared by both DDCs; `x` is the next admitted input.
+    -- Inputs are outside requests or inside replies; outputs are replies or inside requests.
+    (hnext : ∀ (t : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))) (x : Σ l, twoFam U Y l),
+      Replies a (t.map Prod.fst) (t.map Prod.snd) →
+      Replies c (t.map Prod.fst) (t.map Prod.snd) →
+      converterDomain E F t x →
+      a (t.map Prod.fst ++ [x]) = c (t.map Prod.fst ++ [x]))
+    (t : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))) :
+    Replies a (t.map Prod.fst) (t.map Prod.snd) ↔ Replies c (t.map Prod.fst) (t.map Prod.snd) := by
+  induction t using List.reverseRecOn with
+  | nil => exact ⟨fun _ => replies_nil _, fun _ => replies_nil _⟩
+  | append_singleton t z ih =>
+    -- The shared prefix admits the same next input; next-output equality extends it.
+    rcases z with ⟨x, y⟩
+    simp only [List.map_append, List.map_singleton, replies_snoc]
+    constructor
+    · rintro ⟨hra, hy⟩
+      have hrc := ih.mp hra
+      have hdom := (ha.answers t x hra).mp (by rw [hy]; trivial)
+      exact ⟨hrc, (hnext t x hra hrc hdom).symm.trans hy⟩
+    · rintro ⟨hrc, hy⟩
+      have hra := ih.mpr hrc
+      have hdom := (hc.answers t x hrc).mp (by rw [hy]; trivial)
+      exact ⟨hra, (hnext t x hra hrc hdom).trans hy⟩
+
+/-- Two DDCs from `E` to `F` agreeing on every admitted next input after shared transcripts are
+equal as partial functions. -/
+lemma IsDDCFrom.eq_of_next_eq {E : List (Σ j, X j) → Prop} {F : List (Σ o, U o) → Prop}
+    {a c : InsideOutsideSystem O J U V X Y} {b b' : ℕ}
+    -- `E` admits inside queries; `F` admits outside queries. The bounds may differ.
+    (ha : IsDDCFrom E F b a) (hc : IsDDCFrom E F b' c)
+    -- `t` records inputs and outputs shared by both DDCs; `x` is the next admitted input.
+    -- Inputs are outside requests or inside replies; outputs are replies or inside requests.
+    (hnext : ∀ (t : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))) (x : Σ l, twoFam U Y l),
+      Replies a (t.map Prod.fst) (t.map Prod.snd) →
+      Replies c (t.map Prod.fst) (t.map Prod.snd) →
+      converterDomain E F t x →
+      a (t.map Prod.fst ++ [x]) = c (t.map Prod.fst ++ [x])) :
+    a = c :=
+  ha.isDDC.eq_of_admitted_replies hc.isDDC fun t _ => ha.replies_iff_of_next_eq hc hnext t
 
 /-! ## The identity -/
 
@@ -1102,27 +1158,13 @@ lemma IsDDCFrom.replies_iff_of_le {γ s W : InsideOutsideSystem O M U V Xm Ym} {
     (hsW : ∀ xs ys, Replies s xs ys → Replies W xs ys)
     (h : List ((Σ l, twoFam U Ym l) × (Σ l, twoFam V Xm l))) :
     Replies γ (h.map Prod.fst) (h.map Prod.snd) ↔ Replies s (h.map Prod.fst) (h.map Prod.snd) := by
-  have key : ∀ {γ s : InsideOutsideSystem O M U V Xm Ym} {c b : ℕ}, IsDDCFrom F G c γ →
-      IsDDCFrom F G b s → (∀ xs ys, Replies γ xs ys → Replies W xs ys) →
-      (∀ xs ys, Replies s xs ys → Replies W xs ys) →
-      ∀ h : List ((Σ l, twoFam U Ym l) × (Σ l, twoFam V Xm l)),
-        Replies s (h.map Prod.fst) (h.map Prod.snd) → Replies γ (h.map Prod.fst) (h.map Prod.snd) := by
-    intro γ s c b hγ hs hγW hsW h hr
-    induction h using List.reverseRecOn with
-    | nil => exact replies_nil _
-    | append_singleton h z ih =>
-      rcases z with ⟨x, y⟩
-      simp only [List.map_append, List.map_singleton] at hr ⊢
-      obtain ⟨hrs, hy⟩ := replies_snoc.mp hr
-      have hrγ := ih hrs
-      have hd := (hγ.answers h x hrγ).mpr ((hs.answers h x hrs).mp (by rw [hy]; trivial))
-      obtain ⟨y', hy'⟩ := Part.dom_iff_mem.mp hd
-      have hr' := replies_snoc.mpr ⟨hrγ, Part.eq_some_iff.mpr hy'⟩
-      obtain rfl : y' = y := Part.mem_unique
-        (Part.eq_some_iff.mp (replies_snoc.mp (hγW _ _ hr')).2)
-        (Part.eq_some_iff.mp (replies_snoc.mp (hsW _ _ hr)).2)
-      exact hr'
-  exact ⟨key hs hγ hsW hγW h, key hγ hs hγW hsW h⟩
+  refine hγ.replies_iff_of_next_eq hs (fun t x hrγ hrs hx => ?_) h
+  -- Both replies must equal the unique reply of the common partial system `W`.
+  obtain ⟨yγ, hyγ⟩ := Part.dom_iff_mem.mp ((hγ.answers t x hrγ).mpr hx)
+  obtain ⟨ys, hys⟩ := Part.dom_iff_mem.mp ((hs.answers t x hrs).mpr hx)
+  have hwγ := (replies_snoc.mp (hγW _ _ (replies_snoc.mpr ⟨hrγ, Part.eq_some_iff.mpr hyγ⟩))).2
+  have hws := (replies_snoc.mp (hsW _ _ (replies_snoc.mpr ⟨hrs, Part.eq_some_iff.mpr hys⟩))).2
+  rw [Part.eq_some_iff.mpr hyγ, Part.eq_some_iff.mpr hys, ← hwγ, hws]
 
 /-- Composing with the identity on the inside changes no transcript. -/
 lemma IsDDCFrom.replies_serialM_filter (hβ : IsDDCFrom F G bβ β)

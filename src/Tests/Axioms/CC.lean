@@ -13,6 +13,9 @@ on interfaces, depend only on `propext`, `Classical.choice` and `Quot.sound`.
 
 -- ConstructiveCryptography.CryptographicAlgebra.Basic
 #print axioms ConstructiveCryptography.CryptographicAlgebra.attach_parallel
+#print axioms ConstructiveCryptography.CryptographicAlgebra.attach_whiskerLeft
+#print axioms ConstructiveCryptography.CryptographicAlgebra.attach_whiskerRight
+#print axioms ConstructiveCryptography.CryptographicAlgebra.whisker_attach_comm
 #print axioms ConstructiveCryptography.CryptographicAlgebra.parallel_assoc
 #print axioms ConstructiveCryptography.CryptographicAlgebra.associator_hom_attach
 #print axioms ConstructiveCryptography.CryptographicAlgebra.parallel_dummy_left
@@ -30,6 +33,11 @@ on interfaces, depend only on `propext`, `Classical.choice` and `Quot.sound`.
 #print axioms ConstructiveCryptography.Games.win_le_of_reduction
 #print axioms ConstructiveCryptography.Problem.performance_le_of_reduction
 #print axioms ConstructiveCryptography.DistinctionGames.absorb_mem
+#print axioms ConstructiveCryptography.GameEquivalence.attach_gameEquivalent
+#print axioms ConstructiveCryptography.GameEquivalence.attach_id_gameEquivalent
+#print axioms ConstructiveCryptography.GameEquivalence.attach_comp_gameEquivalent
+#print axioms ConstructiveCryptography.GameEquivalence.win_attach_eq
+#print axioms ConstructiveCryptography.GameEquivalence.advantage_attach_le_win
 #print axioms ConstructiveCryptography.DistinctionGames.distance_visible_le_of_winners
 #print axioms ConstructiveCryptography.DistinctionGames.distance_visible_le
 #print axioms ConstructiveCryptography.DistinctionGames.distance_visible_le_of_solvers
@@ -73,6 +81,9 @@ on interfaces, depend only on `propext`, `Classical.choice` and `Quot.sound`.
 #print axioms SystemAlgebra.Interface.leftUnitor_hom_attach
 #print axioms SystemAlgebra.Interface.parallel_dummy_right
 #print axioms SystemAlgebra.Interface.rightUnitor_hom_attach
+#print axioms SystemAlgebra.Interface.whiskerLeft_smul
+#print axioms SystemAlgebra.Interface.whiskerRight_smul
+#print axioms SystemAlgebra.Interface.whisker_smul_comm
 #print axioms SystemAlgebra.Interface.parallel_swap
 
 -- ConstructiveCryptography.Instances.Category
@@ -83,6 +94,8 @@ on interfaces, depend only on `propext`, `Classical.choice` and `Quot.sound`.
 -- ConstructiveCryptography.Instances.Game
 #print axioms SystemAlgebra.Interface.games
 #print axioms SystemAlgebra.Interface.distinctionGames
+#print axioms SystemAlgebra.Interface.gameEquivalence
+#print axioms SystemAlgebra.Interface.compatibleGameEquivalence
 #print axioms SystemAlgebra.Interface.win_le
 #print axioms SystemAlgebra.Interface.dist_visible_le
 #print axioms SystemAlgebra.Interface.distinguishers_covered_by_solvers

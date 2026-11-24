@@ -156,6 +156,10 @@ $`\iota`$ only at $`\iota(o)`$, at most once, and none of them when $`\iota(o)`$
 queries $`\iota(o)`$ [at most as often as it is queried at][DDC.insideQueries_restrict_length_le]
 $`o`$. On an outside domain, a bounded program
 [is a DDC from every inside domain containing its inside queries][DDC.ofProgramOn_isDDCFrom].
+A [state map or relation](Converter/Program.lean) preserving queries and replies gives equal
+program converters. The relation proof factors through the program on related state pairs;
+[typed equality](Typed/DSL/Converters.lean) follows for any domain certificates.
+
 Attached to an automaton, a program is [inlined][Program.inline] [4, §3.3]: the result is the
 [combined automaton][Program.combine] on pairs of states, also
 [on domains][Program.trim_apply_ofProgramOn_automaton].
@@ -225,10 +229,10 @@ of the program's inside queries:
 [IsDDC]: DDC/DDC.lean#L131
 [serialM]: DDC/Serial.lean#L59
 [IsDDC.comp]: DDC/Serial.lean#L519
-[converterDomain]: Converter/ConverterDomain.lean#L240
-[IsDDCFrom]: Converter/ConverterDomain.lean#L307
-[IsDDCFrom.mapsDomain]: Converter/ConverterDomain.lean#L682
-[IsDDCFrom.eq_filterDom_of_replies_le]: Converter/ConverterDomain.lean#L469
+[converterDomain]: Converter/ConverterDomain.lean#L246
+[IsDDCFrom]: Converter/ConverterDomain.lean#L313
+[IsDDCFrom.mapsDomain]: Converter/ConverterDomain.lean#L695
+[IsDDCFrom.eq_filterDom_of_replies_le]: Converter/ConverterDomain.lean#L482
 [IsDDC.comp_of_query_cost]: DDC/SerialCost.lean#L213
 [callRule]: Converter/Calls.lean#L395
 [callRule_completed_exact_length]: Converter/CallRuleTranscript.lean#L96
@@ -240,8 +244,8 @@ of the program's inside queries:
 [ofDDC_callConverter_smul_ofFunction]: Typed/CallRuleFunctional.lean#L35
 [routingConverter]: Converter/QueryRouting.lean#L73
 [routingCall_queries]: Converter/QueryRouting.lean#L112
-[PDCBehavior]: Converter/PDCBehavior.lean#L71
-[PDCBehavior.ofPDC]: Converter/PDCBehavior.lean#L175
+[PDCBehavior]: Converter/PDCBehavior.lean#L75
+[PDCBehavior.ofPDC]: Converter/PDCBehavior.lean#L179
 [PDCBehavior.comp]: Converter/PDCBehavior.lean#L281
 [PDCBehavior.id]: Converter/PDCBehavior.lean#L379
 [PDCBehavior.comp_assoc]: Converter/PDCBehavior.lean#L347

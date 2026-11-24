@@ -17,9 +17,11 @@ instances. This frontend also accepts direct typed systems and converters in `Δ
 metric or composition. Direct typed operations print in the same notation when the selected
 instances agree.
 
-`cc_normalize` applies the serial, parallel and sampling laws:
+`cc_normalize` applies the serial, parallel, projection and sampling laws:
 
 * `(α ⊗ₘ β) • (R ∥ S) = α • R ∥ β • S`;
+* `TypedConverter.projectLeft A B • (R ∥ S) = R` and
+  `TypedConverter.projectRight A B • (R ∥ S) = S`;
 * `α • sample P R = sample P (fun s => α • R s)` for normalized `P`;
 * `(⨂ₘ k, α k) • (∥ k, R k) = ∥ k, α k • R k`.
 
@@ -325,13 +327,25 @@ meta def delabTypedCCAttachment : Delab :=
 
 namespace Interface
 
-attribute [cc_normalization] comp_smul identity_attach associator_hom_attach
+attribute [cc_normalization]
+  comp_smul
+  identity_attach
+  associator_hom_attach
+  parallel_assoc
+  leftUnitor_hom_attach
+  parallel_dummy_left
+  rightUnitor_hom_attach
+  parallel_dummy_right
+  whiskerLeft_smul
+  whiskerRight_smul
+  whisker_smul_comm
 
 -- Definitional bridges, below the laws' default priority: the categorical action and the
 -- `resourceTheory` attachment field left by `cc_construct` are rewritten to `α • R` with
--- `α : TypedConverter A B`, and the abstract `parallel` to `TypedSystem.parallel`, where the
--- typed laws below apply.
-attribute [cc_normalization 100] smul_eq_typed_smul attach_eq_typed_smul cc_parallel_eq
+-- `α : TypedConverter A B`, and abstract `parallel`/`dummy` to `TypedSystem.parallel`/`dummy`,
+-- where the typed laws below apply.
+attribute [cc_normalization 100]
+  smul_eq_typed_smul attach_eq_typed_smul cc_parallel_eq cc_dummy_eq
 
 -- The typed laws: `(α ≫ β) • R = α • (β • R)`, `id • R = R`, binary and finite-family
 -- locality, and `α • sample P R = sample P (fun s => α • R s)`. None moves an initial sample
@@ -342,6 +356,8 @@ attribute [cc_normalization]
   TypedConverter.parallel_attach
   TypedConverter.parallelAll_attach
   TypedConverter.parallelAllContext_smul
+  TypedConverter.projectLeft_smul_parallel
+  TypedConverter.projectRight_smul_parallel
 
 -- Hoist samples after structural attachment, so serial composition exposes a component's owner.
 attribute [cc_normalization 900] TypedConverter.smul_sample
@@ -362,6 +378,32 @@ simproc [cc_normalization] tensorSmul (@HSMul.hSMul _ _ _ _ _ _) := fun e => do
   let_expr MonoidalCategoryStruct.tensorHom _ _ _ A B C D α β := f | return .continue
   let_expr TypedSystem.parallel _ _ R S := x | return .continue
   let proof := mkAppN (mkConst ``tensor_smul) #[A, B, C, D, α, β, R, S]
+  let_expr Eq _ lhs rhs := ← inferType proof | return .continue
+  unless ← withDefault (isDefEq e lhs) do return .continue
+  return .visit { expr := rhs, proof? := some (← mkExpectedTypeHint proof (← mkEq e rhs)) }
+
+open Lean Meta Simp in
+/-- `projectLeft_smul_parallel` whatever the spelling of the interfaces: the action of
+`TypedConverter.projectLeft A B` on `R ∥ S`, with types written through `⊗` or `Interface.tensor`,
+returns `R`. -/
+simproc [cc_normalization] projectLeftSmul (@HSMul.hSMul _ _ _ _ _ _) := fun e => do
+  let_expr HSMul.hSMul _ _ _ _ f x := e | return .continue
+  let_expr TypedConverter.projectLeft A B := f | return .continue
+  let_expr TypedSystem.parallel _ _ R S := x | return .continue
+  let proof := mkAppN (mkConst ``TypedConverter.projectLeft_smul_parallel) #[A, B, R, S]
+  let_expr Eq _ lhs rhs := ← inferType proof | return .continue
+  unless ← withDefault (isDefEq e lhs) do return .continue
+  return .visit { expr := rhs, proof? := some (← mkExpectedTypeHint proof (← mkEq e rhs)) }
+
+open Lean Meta Simp in
+/-- `projectRight_smul_parallel` whatever the spelling of the interfaces: the action of
+`TypedConverter.projectRight A B` on `R ∥ S`, with types written through `⊗` or `Interface.tensor`,
+returns `S`. -/
+simproc [cc_normalization] projectRightSmul (@HSMul.hSMul _ _ _ _ _ _) := fun e => do
+  let_expr HSMul.hSMul _ _ _ _ f x := e | return .continue
+  let_expr TypedConverter.projectRight A B := f | return .continue
+  let_expr TypedSystem.parallel _ _ R S := x | return .continue
+  let proof := mkAppN (mkConst ``TypedConverter.projectRight_smul_parallel) #[A, B, R, S]
   let_expr Eq _ lhs rhs := ← inferType proof | return .continue
   unless ← withDefault (isDefEq e lhs) do return .continue
   return .visit { expr := rhs, proof? := some (← mkExpectedTypeHint proof (← mkEq e rhs)) }
@@ -420,6 +462,129 @@ simproc [cc_normalization] associatorHomSmul (@HSMul.hSMul _ _ _ _ _ _) := fun e
   let_expr TypedSystem.parallel _ _ R ST := x | return .continue
   let_expr TypedSystem.parallel _ _ S T := ST | return .continue
   let proof := mkAppN (mkConst ``Interface.associator_hom_attach) #[A, B, C, R, S, T]
+  let_expr Eq _ lhs rhs := ← inferType proof | return .continue
+  unless ← withDefault (isDefEq e lhs) do return .continue
+  return .visit { expr := rhs, proof? := some (← mkExpectedTypeHint proof (← mkEq e rhs)) }
+
+open Lean Meta Simp in
+/-- `parallel_assoc` whatever the spelling of the associator or tensor: `(α_ A B C).inv •
+((R ∥ S) ∥ T) = R ∥ (S ∥ T)` when the interfaces use `⊗` or `Interface.tensor`. -/
+simproc [cc_normalization] associatorInvSmul (@HSMul.hSMul _ _ _ _ _ _) := fun e => do
+  let_expr HSMul.hSMul _ _ _ _ f x := e | return .continue
+  let_expr CategoryTheory.Iso.inv _ _ _ _ iso := f | return .continue
+  let (A, B, C) ← match_expr iso with
+    | CategoryTheory.MonoidalCategoryStruct.associator _ _ _ A B C => pure (A, B, C)
+    | Interface.associator A B C => pure (A, B, C)
+    | _ => return .continue
+  let_expr TypedSystem.parallel _ _ RS T := x | return .continue
+  let_expr TypedSystem.parallel _ _ R S := RS | return .continue
+  let proof := mkAppN (mkConst ``Interface.parallel_assoc) #[A, B, C, R, S, T]
+  let_expr Eq _ lhs rhs := ← inferType proof | return .continue
+  unless ← withDefault (isDefEq e lhs) do return .continue
+  return .visit { expr := rhs, proof? := some (← mkExpectedTypeHint proof (← mkEq e rhs)) }
+
+open Lean Meta Simp in
+/-- `leftUnitor_hom_attach` whatever the spelling of the left unitor or unit tensor:
+`(λ_ A).hom • R = TypedSystem.dummy ∥ R`. -/
+simproc [cc_normalization] leftUnitorHomSmul (@HSMul.hSMul _ _ _ _ _ _) := fun e => do
+  let_expr HSMul.hSMul _ β _ _ f R := e | return .continue
+  let_expr TypedSystem _ := β | return .continue
+  let_expr CategoryTheory.Iso.hom _ _ _ _ iso := f | return .continue
+  let A ← match_expr iso with
+    | CategoryTheory.MonoidalCategoryStruct.leftUnitor _ _ _ A => pure A
+    | Interface.leftUnitor A => pure A
+    | _ => return .continue
+  let proof := mkAppN (mkConst ``Interface.leftUnitor_hom_attach) #[A, R]
+  let_expr Eq _ lhs rhs := ← inferType proof | return .continue
+  unless ← withDefault (isDefEq e lhs) do return .continue
+  return .visit { expr := rhs, proof? := some (← mkExpectedTypeHint proof (← mkEq e rhs)) }
+
+open Lean Meta Simp in
+/-- `parallel_dummy_left` whatever the spelling of the left unitor or unit tensor:
+`(λ_ A).inv • (TypedSystem.dummy ∥ R) = R`. -/
+simproc [cc_normalization] leftUnitorInvSmul (@HSMul.hSMul _ _ _ _ _ _) := fun e => do
+  let_expr HSMul.hSMul _ _ _ _ f x := e | return .continue
+  let_expr CategoryTheory.Iso.inv _ _ _ _ iso := f | return .continue
+  let A ← match_expr iso with
+    | CategoryTheory.MonoidalCategoryStruct.leftUnitor _ _ _ A => pure A
+    | Interface.leftUnitor A => pure A
+    | _ => return .continue
+  let_expr TypedSystem.parallel _ _ d R := x | return .continue
+  let_expr TypedSystem.dummy := d | return .continue
+  let proof := mkAppN (mkConst ``Interface.parallel_dummy_left) #[A, R]
+  let_expr Eq _ lhs rhs := ← inferType proof | return .continue
+  unless ← withDefault (isDefEq e lhs) do return .continue
+  return .visit { expr := rhs, proof? := some (← mkExpectedTypeHint proof (← mkEq e rhs)) }
+
+open Lean Meta Simp in
+/-- `rightUnitor_hom_attach` whatever the spelling of the right unitor or unit tensor:
+`(ρ_ A).hom • R = R ∥ TypedSystem.dummy`. -/
+simproc [cc_normalization] rightUnitorHomSmul (@HSMul.hSMul _ _ _ _ _ _) := fun e => do
+  let_expr HSMul.hSMul _ β _ _ f R := e | return .continue
+  let_expr TypedSystem _ := β | return .continue
+  let_expr CategoryTheory.Iso.hom _ _ _ _ iso := f | return .continue
+  let A ← match_expr iso with
+    | CategoryTheory.MonoidalCategoryStruct.rightUnitor _ _ _ A => pure A
+    | Interface.rightUnitor A => pure A
+    | _ => return .continue
+  let proof := mkAppN (mkConst ``Interface.rightUnitor_hom_attach) #[A, R]
+  let_expr Eq _ lhs rhs := ← inferType proof | return .continue
+  unless ← withDefault (isDefEq e lhs) do return .continue
+  return .visit { expr := rhs, proof? := some (← mkExpectedTypeHint proof (← mkEq e rhs)) }
+
+open Lean Meta Simp in
+/-- `parallel_dummy_right` whatever the spelling of the right unitor or unit tensor:
+`(ρ_ A).inv • (R ∥ TypedSystem.dummy) = R`. -/
+simproc [cc_normalization] rightUnitorInvSmul (@HSMul.hSMul _ _ _ _ _ _) := fun e => do
+  let_expr HSMul.hSMul _ _ _ _ f x := e | return .continue
+  let_expr CategoryTheory.Iso.inv _ _ _ _ iso := f | return .continue
+  let A ← match_expr iso with
+    | CategoryTheory.MonoidalCategoryStruct.rightUnitor _ _ _ A => pure A
+    | Interface.rightUnitor A => pure A
+    | _ => return .continue
+  let_expr TypedSystem.parallel _ _ R d := x | return .continue
+  let_expr TypedSystem.dummy := d | return .continue
+  let proof := mkAppN (mkConst ``Interface.parallel_dummy_right) #[A, R]
+  let_expr Eq _ lhs rhs := ← inferType proof | return .continue
+  unless ← withDefault (isDefEq e lhs) do return .continue
+  return .visit { expr := rhs, proof? := some (← mkExpectedTypeHint proof (← mkEq e rhs)) }
+
+open Lean Meta Simp in
+/-- `whiskerLeft_smul` whatever the spelling of the tensor: `(A ◁ β) • (R ∥ S) = R ∥ (β • S)`. -/
+simproc [cc_normalization] whiskerLeftSmul (@HSMul.hSMul _ _ _ _ _ _) := fun e => do
+  let_expr HSMul.hSMul _ _ _ _ f x := e | return .continue
+  let_expr CategoryTheory.MonoidalCategoryStruct.whiskerLeft _ _ _ A B' B β := f | return .continue
+  let_expr TypedSystem.parallel _ _ R S := x | return .continue
+  let proof := mkAppN (mkConst ``Interface.whiskerLeft_smul) #[A, B, B', β, R, S]
+  let_expr Eq _ lhs rhs := ← inferType proof | return .continue
+  unless ← withDefault (isDefEq e lhs) do return .continue
+  return .visit { expr := rhs, proof? := some (← mkExpectedTypeHint proof (← mkEq e rhs)) }
+
+open Lean Meta Simp in
+/-- `whiskerRight_smul` whatever the spelling of the tensor: `(α ▷ B) • (R ∥ S) = (α • R) ∥ S`. -/
+simproc [cc_normalization] whiskerRightSmul (@HSMul.hSMul _ _ _ _ _ _) := fun e => do
+  let_expr HSMul.hSMul _ _ _ _ f x := e | return .continue
+  let_expr CategoryTheory.MonoidalCategoryStruct.whiskerRight _ _ _ A' A α B := f |
+    return .continue
+  let_expr TypedSystem.parallel _ _ R S := x | return .continue
+  let proof := mkAppN (mkConst ``Interface.whiskerRight_smul) #[A, A', B, α, R, S]
+  let_expr Eq _ lhs rhs := ← inferType proof | return .continue
+  unless ← withDefault (isDefEq e lhs) do return .continue
+  return .visit { expr := rhs, proof? := some (← mkExpectedTypeHint proof (← mkEq e rhs)) }
+
+open Lean Meta Simp in
+/-- `whisker_smul_comm` whatever the spelling of the tensor:
+`(α ▷ B') • ((A ◁ β) • R) = (A' ◁ β) • ((α ▷ B) • R)`. -/
+simproc [cc_normalization] whiskerSmulComm (@HSMul.hSMul _ _ _ _ _ _) := fun e => do
+  let_expr HSMul.hSMul _ β₁ _ _ f inner := e | return .continue
+  let_expr TypedSystem _ := β₁ | return .continue
+  let_expr CategoryTheory.MonoidalCategoryStruct.whiskerRight _ _ _ A' A α B' := f |
+    return .continue
+  let_expr HSMul.hSMul _ β₂ _ _ g R := inner | return .continue
+  let_expr TypedSystem _ := β₂ | return .continue
+  let_expr CategoryTheory.MonoidalCategoryStruct.whiskerLeft _ _ _ _ _ B β := g |
+    return .continue
+  let proof := mkAppN (mkConst ``Interface.whisker_smul_comm) #[A, A', B, B', α, β, R]
   let_expr Eq _ lhs rhs := ← inferType proof | return .continue
   unless ← withDefault (isDefEq e lhs) do return .continue
   return .visit { expr := rhs, proof? := some (← mkExpectedTypeHint proof (← mkEq e rhs)) }

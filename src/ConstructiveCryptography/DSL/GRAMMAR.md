@@ -488,20 +488,20 @@ before/after proofs, expression guards, negative tests and exact rewrite traces 
 [Program]: ../../RandomSystems/Converter/Program.lean#L49
 [Program.PortPreserving]: ../../RandomSystems/Converter/Program.lean#L127
 [automatonSystem_eq_of_bisim]: ../../RandomSystems/System/Automaton.lean#L93
-[Interface.queryBudget]: ../../RandomSystems/Typed/Interface.lean#L71
-[Interface.portBudget]: ../../RandomSystems/Typed/Interface.lean#L101
+[Interface.queryBudget]: ../../RandomSystems/Typed/Interface.lean#L73
+[Interface.portBudget]: ../../RandomSystems/Typed/Interface.lean#L103
 [TypedSystem.source]: ../../RandomSystems/Typed/Source.lean#L55
 [TypedSystem.ofAutomaton]: ../../RandomSystems/Typed/Automaton.lean#L77
-[TypedConverter.rightContext]: ../../RandomSystems/Typed/Context.lean#L113
+[TypedConverter.rightContext]: ../../RandomSystems/Typed/Context.lean#L134
 [TypedConverter.filter]: ../../RandomSystems/Typed/Filter.lean#L64
-[TypedConverter.ofProgram]: ../../RandomSystems/Typed/DSL/Converters.lean#L46
-[TypedConverter.ofCostedProgram]: ../../RandomSystems/Typed/DSL/Converters.lean#L64
-[TypedConverter.ofPreservingProgram]: ../../RandomSystems/Typed/DSL/Converters.lean#L87
-[TypedConverter.ofProgram_smul_ofAutomaton]: ../../RandomSystems/Typed/DSL/Converters.lean#L195
+[TypedConverter.ofProgram]: ../../RandomSystems/Typed/DSL/Converters.lean#L63
+[TypedConverter.ofCostedProgram]: ../../RandomSystems/Typed/DSL/Converters.lean#L109
+[TypedConverter.ofPreservingProgram]: ../../RandomSystems/Typed/DSL/Converters.lean#L164
+[TypedConverter.ofProgram_smul_ofAutomaton]: ../../RandomSystems/Typed/DSL/Converters.lean#L283
 [TypedConverter.ofPreservingProgram_smul_ofAutomaton]:
-  ../../RandomSystems/Typed/DSL/Converters.lean#L209
+  ../../RandomSystems/Typed/DSL/Converters.lean#L297
 [TypedConverter.ofCostedProgram_smul_ofAutomaton]:
-  ../../RandomSystems/Typed/DSL/Converters.lean#L230
+  ../../RandomSystems/Typed/DSL/Converters.lean#L318
 [desugarSampling]: Elaborator.lean#L206
 [elabInterface]: Elaborator.lean#L366
 [elabComponent]: Elaborator.lean#L998
@@ -514,10 +514,10 @@ before/after proofs, expression guards, negative tests and exact rewrite traces 
 [MemorylessSource.memoryless_eq]: ../../Commons/Definitions/Ideal.lean#L370
 [WriteThrough]: ../../Examples/DSL/Components.lean#L108
 [cc_normalize]: ../Tactics/Basic.lean#L34
-[cc_nonexpand]: ../Tactics/Categorical.lean#L171
+[cc_nonexpand]: ../Tactics/Categorical.lean#L180
 [cc_nonexpand-interfaces]: ../Notation.lean#L176
-[cc_triangle]: ../Tactics/Categorical.lean#L160
-[cc_construct]: ../Tactics/Categorical.lean#L47
+[cc_triangle]: ../Tactics/Categorical.lean#L169
+[cc_construct]: ../Tactics/Categorical.lean#L56
 [cc_calc]: ../Tactics/Substitution.lean#L105
 [cc_calc-counted]: ../Tactics/Substitution.lean#L164
 [cc_usage]: ../Tactics/Substitution.lean#L260

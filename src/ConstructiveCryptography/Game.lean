@@ -9,8 +9,8 @@ public import Mathlib.Basic.Real.Basic
 `Games I Game Ω` has interfaces `A : I`, games `G : Game A` on each interface, and a
 performance space `Ω` (Omega). It selects on each `A` the admitted winners `W : Game A → Ω`,
 where `W G` is the performance of `W` on `G`. The game model fixes `Ω`, as it fixes the
-family `Game`. CR18 Definition 4.2
-(printed p. 85) gives a “performance function” on a solver set into a partially ordered set;
+family `Game`. [1, Definition 4.2, p. 85]
+gives a “performance function” on a solver set into a partially ordered set;
 Definition 4.5 (p. 90) specializes ordinary games to winning probabilities in `[0,1]` and
 also considers multi-games with several winning events. Three notions stay apart:
 
@@ -37,10 +37,15 @@ decision evaluation alone is not assumed to determine the winning evaluation.
 * `Games`: admitted winners in a selected preordered performance space
 * `Games.absorb`: a winner with a converter absorbed
 * `DistinctionGames`: the common solvers' decision and winning probabilities
+* `GameEquivalence`: optional equivalence-as-games contract on `DistinctionGames`
 
 ## Main results
 
 * `Games.win_le_of_reduction`: hardness through a reduction between admitted winners
+
+## References
+
+1. U. Maurer. *Cryptography Foundations*. ETH Zürich lecture notes, Spring 2018.
 -/
 
 @[expose] public section
@@ -51,7 +56,7 @@ namespace ConstructiveCryptography
 
 universe u v w x y z
 
-/-- Games with a selected set of admitted winners. CR18 Definition 4.2 (printed p. 85)
+/-- Games with a selected set of admitted winners. [1, Definition 4.2, p. 85]
 uses a “partially ordered set” of performances; a preorder suffices for the reduction laws.
 Definition 4.5 (p. 90) specializes performances to winning probabilities. -/
 class Games
@@ -68,7 +73,7 @@ class Games
 namespace Games
 
 /-- Absorption groups the winner with a converter: `(Wα)(G) = W(αG)`.
-CR18 equation (4.9), printed p. 94: `ω(wc, g) = ω(w, cg)`.
+[1, equation (4.9), p. 94]: `ω(wc, g) = ω(w, cg)`.
 Only the attachment action is needed; no serial composition or category is assumed. -/
 def absorb
     -- `G` is the type of games with a converter attached; `H` is the type of games a
@@ -84,7 +89,7 @@ def absorb
   fun game => winner (converter • game)
 
 /-- A reduction transfers target hardness to `W G ≤ loss ε` for every admitted source winner.
-CR18 equation (4.3), printed p. 87: `p ≤ λ q ρ`, with `λ` represented by `loss`.
+[1, equation (4.3), p. 87]: `p ≤ λ q ρ`, with `λ` represented by `loss`.
 This applies `Problem.performance_le_of_reduction` to the admitted winners. -/
 lemma win_le_of_reduction
     -- `I` and `J` are the types of interfaces for the source and target problems.
@@ -130,7 +135,7 @@ lemma win_le_of_reduction
 end Games
 
 /-- Games related to distinguishing by a common solver's two performance functions.
-CR18 Lemma 4.16 (printed p. 107): `⟨S⁻ | T⁻⟩ ≤ S̄`; conditional equivalence supplies the
+[1, Lemma 4.16, p. 107]: `⟨S⁻ | T⁻⟩ ≤ S̄`; conditional equivalence supplies the
 game-to-resource form used in Theorem 4.17. No attachment action or metric is required. -/
 class DistinctionGames
     -- `I` is the type whose elements are interfaces, as in `Games`.
@@ -149,15 +154,46 @@ class DistinctionGames
   solvers_winner : ∀ {A : I} {solver : (Phi A → ℝ) × (Game A → ℝ)},
     solver ∈ solvers A → solver.2 ∈ winners A
   /-- The visible resource `G⁻`, with the game's hidden condition forgotten
-  (CR18 Definition 4.18, printed p. 107: “ignoring the MBO”). -/
+  [1, Definition 4.18, p. 107: “ignoring the MBO”]. -/
   visible : ∀ {A : I}, Game A → Phi A
-  /-- Conditional equivalence `G |≡ T` (CR18 Definition 4.19, printed p. 108). -/
+  /-- Conditional equivalence `G |≡ T` [1, Definition 4.19, p. 108]. -/
   ConditionallyEquivalent : ∀ {A : I}, Game A → Phi A → Prop
   /-- Conditional equivalence bounds this solver's absolute distinguishing advantage by its
   winning probability, `|d G⁻ - d T| ≤ w G` for a solver `(d, w)`, using both directions of
-  CR18 Lemma 4.16's signed bound. -/
+  the signed bound of [1, Lemma 4.16, p. 107]. -/
   advantage_le_win : ∀ {A : I} {game : Game A} {T : Phi A}
     {solver : (Phi A → ℝ) × (Game A → ℝ)}, ConditionallyEquivalent game T →
       solver ∈ solvers A → |solver.1 (visible game) - solver.1 T| ≤ solver.2 game
+
+/-- Equivalent games share winning probabilities and bound visible distinguishing advantage.
+[1, Definition 4.16, p. 105]: "their pre-winning behavior is identical." -/
+class GameEquivalence
+    -- `A : I` selects an interface; `Phi A` and `Game A` carry its resources and games.
+    (I : Type u)
+    (Phi : outParam (I → Type w))
+    (Game : outParam (I → Type x))
+    [DistinctionGames I Phi Game] where
+  /-- Equivalence as games `G ≡g H` [1, Definition 4.16, p. 105]. -/
+  GameEquivalent : ∀ {A : I}, Game A → Game A → Prop
+  /-- Equivalence as games is reflexive. -/
+  gameEquivalent_refl : ∀ {A : I} (game : Game A), GameEquivalent game game
+  /-- Equivalence as games is symmetric. -/
+  gameEquivalent_symm : ∀ {A : I} {first second : Game A},
+    GameEquivalent first second → GameEquivalent second first
+  /-- Equivalence as games is transitive. -/
+  gameEquivalent_trans : ∀ {A : I} {first second third : Game A},
+    GameEquivalent first second → GameEquivalent second third → GameEquivalent first third
+  /-- Admitted winners win game-equivalent games alike [1, Lemma 4.15, p. 106]. -/
+  -- `winner` is the winning evaluation of one admitted observer, shared by both games.
+  win_eq : ∀ {A : I} {first second : Game A} {winner : Game A → ℝ},
+    GameEquivalent first second → winner ∈ Games.winners A → winner first = winner second
+  /-- Fundamental lemma for game-equivalent games [1, Lemma 4.16, p. 107]: distinguishing the
+  visible resources is bounded by winning either game. -/
+  -- `solver.1` evaluates decisions on resources; `solver.2` scores wins on games.
+  advantage_le_win : ∀ {A : I} {first second : Game A}
+    {solver : (Phi A → ℝ) × (Game A → ℝ)},
+    GameEquivalent first second → solver ∈ DistinctionGames.solvers A →
+      |solver.1 (DistinctionGames.visible first) - solver.1 (DistinctionGames.visible second)| ≤
+        solver.2 first
 
 end ConstructiveCryptography

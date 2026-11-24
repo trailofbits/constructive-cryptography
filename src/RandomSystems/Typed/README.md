@@ -71,7 +71,9 @@ renamings [compose][TypedConverter.rename_comp], and the renaming by the identit
 [dummy system][TypedSystem.dummy] on the [interface without labels][Interface.unit] beside a typed
 system keeps its probabilities, on the [left][TypedSystem.parallel_unit_left_mass] and on the
 [right][TypedSystem.parallel_unit_right_mass], and [exchanging the two components][TypedSystem.parallel_swap_mass]
-of a parallel composition exchanges the labels of its transcripts. The regrouping renamings are
+of a parallel composition exchanges the labels of its transcripts. The
+[named unit converters](Unitors.lean) and their inverses retain the existing domains.
+Their cancellation and naturality laws live in `ConverterCoherence`. The regrouping renamings are
 natural for typed converters: [associativity][TypedConverter.comp_associator] and the
 [left][TypedConverter.comp_leftUnitor] and [right][TypedConverter.comp_rightUnitor] unit
 regroupings commute with parallel typed converters, and the parallel composition of two renamings
@@ -111,7 +113,16 @@ exposes a fixed one, and the fixed [right][TypedConverter.rightContext] and
 [left][TypedConverter.leftContext] **contexts** run a typed system beside:
 [attaching][TypedConverter.attach_rightContext] $`\mathrm{rightContext}\ A\ S`$ to $`R`$
 gives $`R \parallel S`$, and so does [attaching][TypedConverter.attach_leftContext]
-$`\mathrm{leftContext}\ R\ B`$ to $`S`$.
+$`\mathrm{leftContext}\ R\ B`$ to $`S`$. Dually, the ordered
+[left][TypedConverter.projectLeft] and [right][TypedConverter.projectRight] **projections**
+combine the inverse unit renamings with `id` and `discard`:
+[projecting][TypedConverter.projectLeft_smul_parallel] $`R \parallel S`$ returns $`R`$ or
+[$`S`$][TypedConverter.projectRight_smul_parallel],
+[preserves a retained shared draw][TypedConverter.projectLeft_smul_sample_parallel] on
+$`\mathrm{sample}(P, k \mapsto R_k \parallel S_k)`$ (and
+[on the right][TypedConverter.projectRight_smul_sample_parallel]), and is
+[natural][TypedConverter.projectLeft_comp_parallel] with respect to parallel converters (and
+[on the right][TypedConverter.projectRight_comp_parallel]).
 
 A [**source**][TypedSystem.source] answers with fresh independent samples of a law: a
 memoryless source [3, Definition 3.1] (the sources of [4, Definition 1] may have memory). An
@@ -251,20 +262,20 @@ typed system sampling the ideal function, under the fixed-query factorization.
 
 <!-- Declarations -->
 
-[Interface]: Interface.lean#L41
-[Interface.queryBudget]: Interface.lean#L71
-[Interface.portBudget]: Interface.lean#L101
+[Interface]: Interface.lean#L43
+[Interface.queryBudget]: Interface.lean#L73
+[Interface.portBudget]: Interface.lean#L103
 [restrict]: ../System/Basic.lean#L798
-[TypedSystem]: Interface.lean#L143
+[TypedSystem]: Interface.lean#L145
 [RandomSystem.RepliesAtQueriedInterface]: ../Cumulative/Cumulative.lean#L74
-[TypedConverter]: Interface.lean#L182
-[TypedConverter.ofDDC]: Interface.lean#L198
-[TypedConverter.comp]: Interface.lean#L189
-[TypedConverter.id]: Interface.lean#L194
-[TypedConverter.attach]: Interface.lean#L247
-[TypedConverter.identity_attach]: Interface.lean#L262
-[TypedConverter.comp_smul]: Interface.lean#L268
-[TypedConverter.ofDDC_eq_comp]: Interface.lean#L221
+[TypedConverter]: Interface.lean#L184
+[TypedConverter.ofDDC]: Interface.lean#L200
+[TypedConverter.comp]: Interface.lean#L191
+[TypedConverter.id]: Interface.lean#L196
+[TypedConverter.attach]: Interface.lean#L250
+[TypedConverter.identity_attach]: Interface.lean#L265
+[TypedConverter.comp_smul]: Interface.lean#L271
+[TypedConverter.ofDDC_eq_comp]: Interface.lean#L223
 [Interface.tensor]: Parallel.lean#L89
 [TypedSystem.parallel]: Parallel.lean#L157
 [TypedConverter.parallel]: Parallel.lean#L214
@@ -285,8 +296,8 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedSystem.parallel_unit_left_mass]: SystemCoherence.lean#L107
 [TypedSystem.parallel_unit_right_mass]: SystemCoherence.lean#L132
 [TypedSystem.parallel_swap_mass]: SystemCoherence.lean#L157
-[TypedConverter.comp_associator]: ConverterCoherence.lean#L162
-[TypedConverter.comp_leftUnitor]: ConverterCoherence.lean#L199
+[TypedConverter.comp_associator]: ConverterCoherence.lean#L165
+[TypedConverter.comp_leftUnitor]: ConverterCoherence.lean#L202
 [TypedConverter.comp_rightUnitor]: ConverterCoherence.lean#L228
 [TypedConverter.parallel_rename]: TensorRename.lean#L132
 [TypedSystem.transcriptPseudoEMetricSpace]: Distance.lean#L26
@@ -300,11 +311,19 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedConverter.filter_smul]: Filter.lean#L74
 [TypedConverter.filter_comp_filter_smul]: Filter.lean#L128
 [RandomSystem.restrict]: ../Distance/Restriction.lean#L64
-[TypedConverter.constant]: Context.lean#L82
-[TypedConverter.rightContext]: Context.lean#L113
-[TypedConverter.leftContext]: Context.lean#L120
-[TypedConverter.attach_rightContext]: Context.lean#L126
-[TypedConverter.attach_leftContext]: Context.lean#L131
+[TypedConverter.constant]: Context.lean#L109
+[TypedConverter.rightContext]: Context.lean#L134
+[TypedConverter.leftContext]: Context.lean#L139
+[TypedConverter.attach_rightContext]: Context.lean#L143
+[TypedConverter.attach_leftContext]: Context.lean#L148
+[TypedConverter.projectLeft]: Context.lean#L188
+[TypedConverter.projectRight]: Context.lean#L202
+[TypedConverter.projectLeft_smul_parallel]: Context.lean#L208
+[TypedConverter.projectRight_smul_parallel]: Context.lean#L217
+[TypedConverter.projectLeft_smul_sample_parallel]: Context.lean#L227
+[TypedConverter.projectRight_smul_sample_parallel]: Context.lean#L240
+[TypedConverter.projectLeft_comp_parallel]: Context.lean#L253
+[TypedConverter.projectRight_comp_parallel]: Context.lean#L296
 [TypedSystem.source]: Source.lean#L55
 [TypedSystem.ofAutomaton]: Automaton.lean#L77
 [TypedSystem.ofAutomaton_map_congr]: Automaton.lean#L98
