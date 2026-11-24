@@ -494,7 +494,7 @@ syntax ppIndent(colGe term:51 " —[" term "; " term "]→ " term " := " term) :
 syntax ccConstructionCalcSteps := ppLine withPosition(
   ccConstructionCalcStep (ppLine linebreak ccConstructionCalcStep)*)
 
-/-- Assemble a paper-style MR16 construction chain from exact (`—[π]→`), approximate
+/-- Assemble a construction chain from exact (`—[π]→`), approximate
 (`—[π; ε]→`), and exact-equality (`=`) steps, composing converters in attachment order and
 summing scalar budgets. -/
 syntax (name := ccCalcConstructs) "cc_calc " &"constructs" ccConstructionCalcSteps : tactic
@@ -670,10 +670,12 @@ def elaborateCCConstructionCalc (block : TSyntax ``ccConstructionCalcSteps) : Ta
         | exact $hIdent
         | exact $toWithin
         | exact $toWithinRelaxed))
-    let goal ← getMainGoal
-    Term.withoutErrToSorry <| withoutRecover <| Term.withSynthesize <| evalTactic close
-    if !(← getGoals).isEmpty || (← instantiateMVars (mkMVar goal)).hasSorry then
-      throwError "cc_calc constructs requires a complete proof for every step"
+    -- Check this calculation completely while preserving unrelated pending goals.
+    focus do
+      let goal ← getMainGoal
+      Term.withoutErrToSorry <| withoutRecover <| Term.withSynthesize <| evalTactic close
+      if !(← getGoals).isEmpty || (← instantiateMVars (mkMVar goal)).hasSorry then
+        throwError "cc_calc constructs requires a complete proof for every step"
 
 open Lean Elab Tactic in
 elab_rules : tactic

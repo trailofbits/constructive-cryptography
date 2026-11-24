@@ -7,7 +7,7 @@ public import ConstructiveCryptography
 /-!
 # Construction calculation chains (`cc_calc constructs`)
 
-Exercises paper-style MR16 construction chains over pure `ResourceTheory`, abstract
+Exercises construction chains over pure `ResourceTheory`, abstract
 `CryptographicAlgebra` / `CompatiblePseudoMetric`, and concrete `Interface` (`ActiveUserBank`
 and `Indifferentiability`), including mixed exact/approximate steps, converter and budget
 normalization, coexistence with `cc_calc statistical`, negative failure guards, and axioms.
@@ -65,6 +65,16 @@ example {A B : C} (π : A ⟶ B) (R₀ R₀' : Specification (Phi B)) (R₁ R₁
     R₀ = R₀' := h₀
     _  —[π]→ R₁ := h
     _  = R₁' := h₁
+
+/-- Closing the current construction leaves unrelated pending goals available. -/
+example {A B : C} (π : A ⟶ B)
+    (R : Specification (Phi B)) (S : Specification (Phi A))
+    (h : R —[π]→ S) : (R —[π]→ S) ∧ True := by
+  constructor
+  first
+  | cc_calc constructs
+      R —[π]→ S := h
+  trivial
 
 end ResourceTheoryOnly
 
