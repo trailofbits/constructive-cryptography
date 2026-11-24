@@ -56,6 +56,19 @@ abbrev Constructs
 `R —π→ S`. -/
 scoped notation:50 source " —[" f "]→ " target:51 => Constructs f source target
 
+/-- Transport a construction through maps that can change both resource carriers. -/
+theorem Constructs.map_between {X' Y' : Type*}
+    -- `f` is the original construction and `g` acts on the transformed inputs.
+    {f : X → Y} {g : X' → Y'} {source : Specification X} {target : Specification Y}
+    (construction : Constructs f source target)
+    -- `L` transports assumptions, while `M` transports guarantees and preserves inclusion.
+    (L : Specification X → Specification X') (M : Specification Y → Specification Y')
+    (mono : Monotone M)
+    -- On this source, applying `g` after `L` satisfies the image guarantee under `M`.
+    (compatible : g '' L source ⊆ M (f '' source)) :
+    Constructs g (L source) (M target) :=
+  Set.mapsTo_iff_image_subset.mpr (compatible.trans (mono construction.image_subset))
+
 /-- Compatible specification maps preserve an exact construction.
 
 Jost, Corollary 3.3.4 (printed p. 38), uses
@@ -87,9 +100,7 @@ theorem Constructs.map
     -- not only on `source`: `f '' sourceMap R ⊆ targetMap (f '' R)`.
     (compatible : ∀ specification,
       f '' sourceMap specification ⊆ targetMap (f '' specification)) :
-    Constructs f (sourceMap source) (targetMap target) := by
-  apply Set.mapsTo_iff_image_subset.mpr
-  -- Move the source map through f, then weaken the target specification.
-  exact (compatible source).trans (monotone construction.image_subset)
+    Constructs f (sourceMap source) (targetMap target) :=
+  construction.map_between sourceMap targetMap monotone (compatible source)
 
 end ConstructiveCryptography.Specification

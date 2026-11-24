@@ -6,7 +6,6 @@ public import ConstructiveCryptography.Notation
 /-!
 # Tests for deterministic converter comparison and closure
 
-Verifies the acceptance criteria of issue #386:
 * Two history functions differing on unreachable histories have equal reachable DDCs and define
   one typed converter (`IsDDCFrom.eq_of_next_eq`, `TypedConverter.ofDDC_eq_of_next_eq`), even
   under distinct certified internal-query bounds.
@@ -71,6 +70,7 @@ lemma echoWithFallback_not_inside (fallback : Bool)
 
 lemma echoWithFallback_canon_isResponsiveDDC (fallback : Bool) (b : ℕ) :
     IsResponsiveDDC b (canon (echoWithFallback fallback)) := by
+  -- Canonicalization removes unreachable inputs; the remaining converter echoes every request.
   refine ⟨⟨?_, ?_⟩, ?_, ?_, ?_, ?_⟩
   · simp [SilentAtEmpty, canon, echoWithFallback]
   · intro l₁ l₂ hp hne hd
@@ -84,6 +84,7 @@ lemma echoWithFallback_canon_isResponsiveDDC (fallback : Bool) (b : ℕ) :
       by_contra hc; simp [canon, hc] at hd
     obtain ⟨hh, -, hz⟩ := admissible_snoc.mp ha
     simpa [Admits, replyLabel_canon hh] using hz
+  -- Every output is outside, so the inside-query run has length zero.
   · intro h hd
     rcases List.eq_nil_or_concat h with rfl | ⟨h₀, z, rfl⟩
     · simp [insideRun]
@@ -97,6 +98,7 @@ lemma echoWithFallback_canon_isResponsiveDDC (fallback : Bool) (b : ℕ) :
     rw [admissible_canon_iff] at ha
     rw [canon_of_admissible ha]
     exact echoWithFallback_dom fallback hne
+  -- An admitted inside reply would require an inside query, which echo never emits.
   · intro h y o hy hyo
     have ha : Admissible (echoWithFallback fallback) h := by
       by_contra hc; simp [canon, hc] at hy
