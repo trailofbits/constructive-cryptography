@@ -98,6 +98,7 @@ public import Tests.SpongeTable
 public import Tests.Sponge
 public import Tests.PRF
 public import Tests.DeterministicConverterComparison
+public import Tests.ProgramConverterBisimulation
 
 /-! Axiom audits per layer and of the Commons library, the checks of the
 authenticated-encryption example,

@@ -33,6 +33,9 @@ its body does.
 * `DDC.insideQueries_length_le_of_costs`: exact costs bound the inside queries by the total cost
 * `DDC.insideQueries_restrict_length_le`: a port-preserving program queries `j = ι o` at most as
   often as it is queried at `o`
+* `DDC.ofProgram_eq_of_stateMap`, `DDC.ofProgramOn_eq_of_stateMap`,
+  `DDC.ofProgram_eq_of_stateRel`, `DDC.ofProgramOn_eq_of_stateRel`: comparing two program
+  converters along a state map or state relation
 -/
 
 @[expose] public section
@@ -731,5 +734,130 @@ lemma insideQueries_length_le_of_costs {cost : (Σ o, U o) → ℕ} (hP : P.Cost
         omega
 
 end DDC
+
+/-! ## State maps and state relations -/
+
+section StateComparison
+
+/-- Transport the state of a program mode along `f`. -/
+def Program.Mode.mapState {T : Type} (f : S → T) :
+    Program.Mode S O J U X Y → Program.Mode T O J U X Y
+  | .idle s => .idle (f s)
+  | .busy o s u h q => .busy o (f s) u h q
+
+/-- Mapping the state commutes with `Program.emit`. -/
+lemma Program.emit_stateMap {T : Type} {P : Program S O J U V X Y} {Q : Program T O J U V X Y}
+    (f : S → T) (hf : ∀ σ o u h, Sum.map (Prod.map f id) id (P σ o u h) = Q (f σ) o u h)
+    (s : S) (o : O) (u : U o) (h : List ((Σ j, X j) × (Σ j, Y j))) :
+    Prod.map (Program.Mode.mapState f) id (P.emit s o u h) = Q.emit (f s) o u h := by
+  have he := hf s o u h
+  unfold Program.emit
+  rcases hp : P s o u h with ⟨s', v⟩ | q <;>
+    simp [hp] at he <;> simp [← he, Program.Mode.mapState]
+
+/-- Mapping the state commutes with `Program.step`. -/
+lemma Program.step_stateMap {T : Type} {P : Program S O J U V X Y} {Q : Program T O J U V X Y}
+    (f : S → T) (hf : ∀ σ o u h, Sum.map (Prod.map f id) id (P σ o u h) = Q (f σ) o u h)
+    (m : Program.Mode S O J U X Y) (x : Σ l, twoFam U Y l) :
+    (P.step m x).map (Prod.map (Program.Mode.mapState f) id) = Q.step (m.mapState f) x := by
+  rcases m with s | ⟨o, s, u, h, q⟩ <;> rcases x with ⟨⟨_ | ⟨⟨⟩⟩, j⟩, v⟩
+  · simp [Program.step, Program.Mode.mapState, Program.emit_stateMap f hf]
+  · rfl
+  · rfl
+  · simp only [Program.step, Program.Mode.mapState]
+    split_ifs
+    · simp [Program.emit_stateMap f hf]
+    · rfl
+
+/-- Mapping the state commutes with `Program.after`. -/
+lemma Program.after_stateMap {T : Type} {P : Program S O J U V X Y} {Q : Program T O J U V X Y}
+    (f : S → T) (hf : ∀ σ o u h, Sum.map (Prod.map f id) id (P σ o u h) = Q (f σ) o u h)
+    (s : S) (xs : List (Σ l, twoFam U Y l)) :
+    (P.after s xs).map (Program.Mode.mapState f) = Q.after (f s) xs := by
+  induction xs using List.reverseRecOn with
+  | nil => rfl
+  | append_singleton xs x ih =>
+    rw [Program.after_snoc, Program.after_snoc, ← ih]
+    cases P.after s xs with
+    | none => rfl
+    | some m =>
+      simp only [Option.bind_some, Option.map_some, Option.map_map]
+      rw [← Program.step_stateMap f hf m x, Option.map_map]
+      rfl
+
+/-- Two programs whose bodies commute with a state map `f : S → T` define the same DDC. -/
+lemma DDC.ofProgram_eq_of_stateMap {T : Type} (P : Program S O J U V X Y)
+    (Q : Program T O J U V X Y) (f : S → T)
+    (hf : ∀ σ o u h, Sum.map (Prod.map f id) id (P σ o u h) = Q (f σ) o u h) (s : S) :
+    DDC.ofProgram s P = DDC.ofProgram (f s) Q := by
+  funext xs
+  rcases List.eq_nil_or_concat xs with rfl | ⟨xs, x, rfl⟩
+  · simp [DDC.ofProgram]
+  · rw [List.concat_eq_append, DDC.ofProgram_snoc, DDC.ofProgram_snoc,
+      ← Program.after_stateMap f hf s xs]
+    cases P.after s xs with
+    | none => rfl
+    | some m =>
+      simp only [Option.map_some, Option.bind_some]
+      rw [← Program.step_stateMap f hf m x, Option.map_map]
+      rfl
+
+/-- Two programs whose bodies commute with a state map `f : S → T` define the same DDC on any
+outside domain `F`. -/
+lemma DDC.ofProgramOn_eq_of_stateMap {T : Type} (P : Program S O J U V X Y)
+    (Q : Program T O J U V X Y) (f : S → T)
+    (hf : ∀ σ o u h, Sum.map (Prod.map f id) id (P σ o u h) = Q (f σ) o u h) (s : S)
+    (F : List (Σ o, U o) → Prop) :
+    DDC.ofProgramOn s P F = DDC.ofProgramOn (f s) Q F := by
+  rw [DDC.ofProgramOn, DDC.ofProgramOn, DDC.ofProgram_eq_of_stateMap P Q f hf s]
+
+/-- Two programs whose bodies preserve a state relation `R : S → T → Prop` define the same DDC
+from any related initial states. -/
+lemma DDC.ofProgram_eq_of_stateRel {T : Type} (P : Program S O J U V X Y)
+    (Q : Program T O J U V X Y) (R : S → T → Prop)
+    (hrel : ∀ σ τ o u h, R σ τ →
+      Sum.LiftRel (fun a b => R a.1 b.1 ∧ a.2 = b.2) Eq (P σ o u h) (Q τ o u h))
+    {s : S} {t : T} (hs : R s t) :
+    DDC.ofProgram s P = DDC.ofProgram t Q := by
+  let pairStep {o : O} :
+      ∀ {a : (S × V o) ⊕ (Σ j, X j)} {b : (T × V o) ⊕ (Σ j, X j)},
+        Sum.LiftRel (fun x y => R x.1 y.1 ∧ x.2 = y.2) Eq a b →
+        ({p : S × T // R p.1 p.2} × V o) ⊕ (Σ j, X j)
+    | .inl (σ', v), .inl (τ', _), hab =>
+      .inl (⟨(σ', τ'), by cases hab with | inl h' => exact h'.1⟩, v)
+    | .inr q, .inr _, _ => .inr q
+    | .inl _, .inr _, hab => False.elim (by cases hab)
+    | .inr _, .inl _, hab => False.elim (by cases hab)
+  have hleft {o : O} {a : (S × V o) ⊕ (Σ j, X j)} {b : (T × V o) ⊕ (Σ j, X j)}
+      (hab : Sum.LiftRel (fun x y => R x.1 y.1 ∧ x.2 = y.2) Eq a b) :
+      Sum.map (Prod.map (fun p : {p : S × T // R p.1 p.2} => p.1.1) id) id (pairStep hab) = a := by
+    cases hab <;> rfl
+  have hright {o : O} {a : (S × V o) ⊕ (Σ j, X j)} {b : (T × V o) ⊕ (Σ j, X j)}
+      (hab : Sum.LiftRel (fun x y => R x.1 y.1 ∧ x.2 = y.2) Eq a b) :
+      Sum.map (Prod.map (fun p : {p : S × T // R p.1 p.2} => p.1.2) id) id (pairStep hab) = b := by
+    cases hab with
+    | inl h' => simp only [pairStep, Sum.map_inl, Prod.map_apply, id_eq, h'.2]
+    | inr hq => simp only [pairStep, Sum.map_inr, id_eq, hq]
+  let PQ : Program {p : S × T // R p.1 p.2} O J U V X Y :=
+    fun ⟨⟨σ, τ⟩, hr⟩ o u h => pairStep (hrel σ τ o u h hr)
+  have h1 : DDC.ofProgram ⟨(s, t), hs⟩ PQ = DDC.ofProgram s P :=
+    DDC.ofProgram_eq_of_stateMap PQ P (fun p => p.1.1)
+      (fun ⟨⟨σ, τ⟩, hr⟩ o u h => hleft (hrel σ τ o u h hr)) ⟨(s, t), hs⟩
+  have h2 : DDC.ofProgram ⟨(s, t), hs⟩ PQ = DDC.ofProgram t Q :=
+    DDC.ofProgram_eq_of_stateMap PQ Q (fun p => p.1.2)
+      (fun ⟨⟨σ, τ⟩, hr⟩ o u h => hright (hrel σ τ o u h hr)) ⟨(s, t), hs⟩
+  exact h1.symm.trans h2
+
+/-- Two programs whose bodies preserve a state relation `R : S → T → Prop` define the same DDC on
+any outside domain `F` from related initial states. -/
+lemma DDC.ofProgramOn_eq_of_stateRel {T : Type} (P : Program S O J U V X Y)
+    (Q : Program T O J U V X Y) (R : S → T → Prop)
+    (hrel : ∀ σ τ o u h, R σ τ →
+      Sum.LiftRel (fun a b => R a.1 b.1 ∧ a.2 = b.2) Eq (P σ o u h) (Q τ o u h))
+    {s : S} {t : T} (hs : R s t) (F : List (Σ o, U o) → Prop) :
+    DDC.ofProgramOn s P F = DDC.ofProgramOn t Q F := by
+  rw [DDC.ofProgramOn, DDC.ofProgramOn, DDC.ofProgram_eq_of_stateRel P Q R hrel hs]
+
+end StateComparison
 
 end SystemAlgebra

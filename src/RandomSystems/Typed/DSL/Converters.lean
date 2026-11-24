@@ -245,4 +245,32 @@ lemma TypedConverter.ofCostedProgram_smul_ofAutomaton
         (Probability.Distribution.ProbDist.map (fun r => (s, r)) initial) :=
   TypedConverter.ofDDC_ofProgramOn_smul_ofAutomaton s P hb _ stepR initial
 
+/-- Two program converters whose bodies commute with a state map `f : S → T` define the same
+typed converter for any two domain certificates. -/
+theorem TypedConverter.ofDDC_ofProgramOn_eq_of_stateMap {T : Type} {A B : Interface}
+    {s : S} {b b' : ℕ}
+    (P : Program S A.I B.I A.X A.Y B.X B.Y) (Q : Program T A.I B.I A.X A.Y B.X B.Y)
+    (f : S → T)
+    (hf : ∀ σ o u h, Sum.map (Prod.map f id) id (P σ o u h) = Q (f σ) o u h)
+    (hP : IsDDCFrom B.domain A.domain b (DDC.ofProgramOn s P A.domain))
+    (hQ : IsDDCFrom B.domain A.domain b' (DDC.ofProgramOn (f s) Q A.domain)) :
+    TypedConverter.ofDDC (DDC.ofProgramOn s P A.domain) hP =
+      TypedConverter.ofDDC (DDC.ofProgramOn (f s) Q A.domain) hQ :=
+  (TypedConverter.ofDDC_eq_iff hP hQ).mpr (DDC.ofProgramOn_eq_of_stateMap P Q f hf s A.domain)
+
+/-- Two program converters whose bodies preserve a state relation `R : S → T → Prop` define the
+same typed converter from related initial states, for any two domain certificates. -/
+theorem TypedConverter.ofDDC_ofProgramOn_eq_of_stateRel {T : Type} {A B : Interface}
+    {s : S} {t : T} {b b' : ℕ}
+    (P : Program S A.I B.I A.X A.Y B.X B.Y) (Q : Program T A.I B.I A.X A.Y B.X B.Y)
+    (R : S → T → Prop)
+    (hrel : ∀ σ τ o u h, R σ τ →
+      Sum.LiftRel (fun a b => R a.1 b.1 ∧ a.2 = b.2) Eq (P σ o u h) (Q τ o u h))
+    (hs : R s t)
+    (hP : IsDDCFrom B.domain A.domain b (DDC.ofProgramOn s P A.domain))
+    (hQ : IsDDCFrom B.domain A.domain b' (DDC.ofProgramOn t Q A.domain)) :
+    TypedConverter.ofDDC (DDC.ofProgramOn s P A.domain) hP =
+      TypedConverter.ofDDC (DDC.ofProgramOn t Q A.domain) hQ :=
+  (TypedConverter.ofDDC_eq_iff hP hQ).mpr (DDC.ofProgramOn_eq_of_stateRel P Q R hrel hs A.domain)
+
 end SystemAlgebra
