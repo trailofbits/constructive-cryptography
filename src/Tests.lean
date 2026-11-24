@@ -85,6 +85,7 @@ public import Tests.AuthoringWorkflows
 public import Tests.TypedComposition
 public import Tests.TypedTensor
 public import Tests.DependentCoordinateMarginals
+public import Tests.IndependentTableCoincidence
 public import Tests.RoutedRandomFunction
 public import Tests.TranscriptLaw
 public import Tests.RandomFunctionCollision
