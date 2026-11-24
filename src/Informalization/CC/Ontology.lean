@@ -535,6 +535,20 @@ private def ccTypeHandler : TypeHandler where
     -- 10. Substitution implication witness
     if isImplicationType ty then
       return some { noun := ⟨"substitution chain", "substitution chains"⟩ }
+    -- 11. Query history predicate on `List (Sigma (fun i => Interface.X A i))`
+    if let .forallE _ dom body _ := ty then
+      if !body.hasLooseBVar 0 && body == .sort .zero then
+        if dom.getAppFn.consumeMData.isConstOf ``List then
+          if let some elemTy := dom.getAppArgs.back? then
+            if elemTy.getAppFn.consumeMData.isConstOf ``Sigma then
+              if let some (.lam _ _ fam _) := elemTy.getAppArgs.back? then
+                if fam.getAppFn.consumeMData.isConstOf `SystemAlgebra.Interface.X then
+                  if let some ifaceExpr := fam.getAppArgs[0]? then
+                    let ifaceTex ← exprToLatex ifaceExpr tbl
+                    return some {
+                      noun := ⟨"predicate", "predicates"⟩
+                      accessories := [s!"on query histories over \\({ifaceTex}\\)"]
+                    }
     return none
 
 /-! ## 3. Maurer-Voice CC Proposition Handlers (`Ontology.PropHandler`) -/
@@ -562,6 +576,14 @@ private def ccPropHandler : PropHandler where
   priority := 200
   renderProp := fun tbl prop => do
     let prop ← normalizeForPresentation prop
+    -- 0. Prefix-closed predicate quantifier: `∀ s t, s <+: t → P t → P s`
+    if let .forallE _ _ (.forallE _ _ body _) _ := prop then
+      if let .forallE _ prefDom (.forallE _ ptDom psDom _) _ := body then
+        if prefDom.getAppFn.consumeMData.isConstOf `List.IsPrefix then
+          let predFn := psDom.getAppFn.consumeMData
+          if predFn == ptDom.getAppFn.consumeMData && !predFn.hasLooseBVars then
+            let predTex ← exprToLatex predFn tbl
+            return some #[.text "the predicate ", .inlineMath predTex, .text " is prefix-closed"]
     let fn := prop.getAppFn.consumeMData
     let args := prop.getAppArgs
     let some head := fn.constName? | return none

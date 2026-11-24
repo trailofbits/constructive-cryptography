@@ -413,11 +413,47 @@ a:hover {
   color: var(--ink-secondary);
 }
 
+/* Numbered monograph section headings (ETH CADMO memoir style) */
+.cadmo-section-head {
+  margin: 3.4rem 0 1.4rem;
+  padding-top: 1.6rem;
+  border-top: 1px solid var(--rule-strong);
+}
+
+.cadmo-section-title {
+  margin: 0 0 0.45rem;
+  font-size: 1.42rem;
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.cadmo-section-num {
+  font-variant-numeric: lining-nums;
+  color: var(--ink-muted);
+  margin-right: 0.55rem;
+}
+
+.cadmo-section-intro {
+  margin: 0;
+  font-size: 0.96rem;
+  font-style: italic;
+  color: var(--ink-secondary);
+}
+
+.cadmo-chapter-setting {
+  margin: 0 0 2.2rem;
+  font-size: 0.93rem;
+  color: var(--ink-secondary);
+}
+
 /* ==========================================================================
    Aligned calculation chains (calc / cc_calc)
    ========================================================================== */
 .cadmo-calc {
   margin: 0.7rem 0;
+  overflow-x: auto;
+  max-width: 100%;
 }
 
 .cadmo-calc-intro {

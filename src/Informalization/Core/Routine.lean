@@ -66,6 +66,28 @@ private def isCongrHead (n : Name) : Bool :=
   n == ``congrArg || n == ``congrFun || n == ``congr || n == ``funext ||
   n == ``propext || n == ``Eq.symm || n == ``Eq.trans || n == ``Eq.mp || n == ``Eq.mpr
 
+private def isNonRoutineConstructor (n : Name) : Bool :=
+  n == ``And.intro || n == ``Exists.intro || n == ``Or.inl || n == ``Or.inr ||
+  n == ``Prod.mk || n == ``Sigma.mk || n == ``Iff.intro || n == ``Subtype.mk
+
+/-- Recursively check whether a proof subterm references ANY project-level theorem or
+marked `informal_joint` (fail-closed guard so routine compression never swallows real math). -/
+private partial def containsNonRoutineProof (env : Environment) (e : Expr) (fuel : Nat := 32) : Bool :=
+  if fuel == 0 then true
+  else match e.consumeMData with
+  | .const an _ =>
+      if (getOverlay env an).isProofJoint then true
+      else if isCoreOrMathlib an then false
+      else match env.find? an with
+        | some (.thmInfo _) => true
+        | _ => false
+  | .app f a =>
+      containsNonRoutineProof env f (fuel - 1) || containsNonRoutineProof env a (fuel - 1)
+  | .lam _ _ b _ => containsNonRoutineProof env b (fuel - 1)
+  | .letE _ _ v b _ =>
+      containsNonRoutineProof env v (fuel - 1) || containsNonRoutineProof env b (fuel - 1)
+  | _ => false
+
 /-- Classify a single proof term node as routine if it stays purely within core/Mathlib
 algebra, casts, reflexivity, or congruence, with no project-level cryptographic theorems inside. -/
 partial def classifyRoutine? (env : Environment) (proof : Expr) (fuel : Nat := 48) :
@@ -88,16 +110,11 @@ partial def classifyRoutine? (env : Environment) (proof : Expr) (fuel : Nat := 4
   | .app .. =>
       match proof.getAppFn.consumeMData with
       | .const name _ =>
-          if (getOverlay env name).isProofJoint then none
+          if (getOverlay env name).isProofJoint || isNonRoutineConstructor name then none
           else if name == ``Eq.refl || name == `le_rfl then some .reflexivity
           else if isCoreOrMathlib name then
-            -- Verify no explicit proof argument hides a non-routine project theorem!
-            let ok := proof.getAppArgs.all fun arg =>
-              match arg.getAppFn.consumeMData with
-              | .const an _ =>
-                  if (getOverlay env an).isProofJoint then false
-                  else isCoreOrMathlib an || !env.contains an
-              | _ => true
+            -- Recursively verify no proof argument hides ANY project theorem!
+            let ok := proof.getAppArgs.all fun arg => !containsNonRoutineProof env arg 24
             if ok then
               if isCastHead name then some .castAndCoercion
               else if isCongrHead name then some .congruenceAndExt

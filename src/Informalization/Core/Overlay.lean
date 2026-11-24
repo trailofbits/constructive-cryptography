@@ -41,6 +41,12 @@ structure DeclOverlay where
   hiddenArgs : List Nat := []
   /-- Render applications of this constant purely as its short symbol (e.g. `blockBytes (hash p)` -> `r`). -/
   isZeroArgNotation : Bool := false
+  /-- Presentation kind ("Theorem", "Lemma", "Proposition", "Corollary"). -/
+  entryKind? : Option String := none
+  /-- Optional paper section heading starting at this declaration. -/
+  sectionTitle? : Option String := none
+  /-- Optional 1-2 sentence Maurer-voice section overview shown under `sectionTitle?`. -/
+  sectionIntro? : Option String := none
   /-- Stop cross-lemma recursion at this declaration (e.g., low-level bit-slicing arithmetic). -/
   isOpaqueLeaf : Bool := false
   /-- Treat this declaration as a prominent mathematical proof joint (never auto-inlined). -/
@@ -57,6 +63,9 @@ private def mergeOverlay (old new : DeclOverlay) : DeclOverlay := {
   predPhrase?       := new.predPhrase? <|> old.predPhrase?
   hiddenArgs        := if new.hiddenArgs.isEmpty then old.hiddenArgs else new.hiddenArgs
   isZeroArgNotation := old.isZeroArgNotation || new.isZeroArgNotation
+  entryKind?        := new.entryKind? <|> old.entryKind?
+  sectionTitle?     := new.sectionTitle? <|> old.sectionTitle?
+  sectionIntro?     := new.sectionIntro? <|> old.sectionIntro?
   isOpaqueLeaf      := old.isOpaqueLeaf || new.isOpaqueLeaf
   isProofJoint      := old.isProofJoint || new.isProofJoint
 }
@@ -138,6 +147,17 @@ elab "informal_hide_args " id:ident idxs:num* : command =>
 /-- Override a local binder's display symbol inside a theorem (e.g. disambiguate `r` → `P`). -/
 elab "informal_binder " id:ident binder:str latex:str : command =>
   addCheckedOverlay id { binderAliases := #[(binder.getString, latex.getString)] }
+
+/-- Override the presentation header (`"Theorem"`, `"Lemma"`, `"Proposition"`, `"Corollary"`). -/
+elab "informal_kind " id:ident kind:str : command =>
+  addCheckedOverlay id { entryKind? := some kind.getString }
+
+/-- Start a named paper section at this declaration, with an optional concise overview sentence. -/
+elab "informal_section " id:ident title:str intro:(str)? : command =>
+  addCheckedOverlay id {
+    sectionTitle? := some title.getString
+    sectionIntro? := intro.map (·.getString)
+  }
 
 /-- Mark a low-level lemma as an opaque stop-point for cross-lemma recursion. -/
 elab "informal_opaque " id:ident : command =>

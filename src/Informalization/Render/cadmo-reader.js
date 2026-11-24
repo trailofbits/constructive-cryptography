@@ -759,7 +759,7 @@
     return h("aside", { class: "cadmo-margin", "aria-label": "Margin notes" }, ...items);
   }
 
-  function renderEntry(entry, idx) {
+  function renderEntry(entry, idx, suppressAmbient = false) {
     const ax = entry.axioms || { axioms: [], hasSorry: false };
     const proofNodes = projectNodes(entry.proof || []);
     return h("article", { class: "cadmo-entry", id: `decl-${entry.declaration}` },
@@ -774,7 +774,7 @@
           onClick: () => { state.inspector = { type: "axioms", entry }; renderAll(); }
         }, ax.hasSorry ? "sorry" : "axioms")
       ),
-      entry.ambient
+      (!suppressAmbient && entry.ambient)
         ? h("p", { class: "cadmo-ambient" },
             h("span", { class: "cadmo-ambient-label" }, "Setting."),
             renderInlines(entry.ambient.summary || [])
@@ -854,10 +854,39 @@
       doc.subtitle ? h("p", { class: "cadmo-doc-subtitle" }, doc.subtitle) : null
     );
 
+    const entries = doc.entries || [];
+    // Hoist shared chapter-level ambient setting ONCE so it never repeats 41 times
+    const firstAmbient = entries.find((e) => e.ambient && e.ambient.summary)?.ambient || null;
+    const bodyNodes = [];
+    if (firstAmbient) {
+      bodyNodes.push(
+        h("p", { class: "cadmo-chapter-setting" },
+          h("span", { class: "cadmo-ambient-label" }, "Standing conventions. "),
+          renderInlines(firstAmbient.summary || [])
+        )
+      );
+    }
+    let sectionNum = 0;
+    entries.forEach((entry, idx) => {
+      if (entry.sectionTitle) {
+        sectionNum += 1;
+        bodyNodes.push(
+          h("div", { class: "cadmo-section-head" },
+            h("h2", { class: "cadmo-section-title" },
+              h("span", { class: "cadmo-section-num" }, `${sectionNum}.`),
+              entry.sectionTitle
+            ),
+            entry.sectionIntro ? h("p", { class: "cadmo-section-intro" }, entry.sectionIntro) : null
+          )
+        );
+      }
+      bodyNodes.push(renderEntry(entry, idx, !!firstAmbient));
+    });
+
     const shell = h("div", { class: "cadmo-shell" },
       h("main", { class: "cadmo-main" },
         header,
-        ...(doc.entries || []).map(renderEntry)
+        ...bodyNodes
       ),
       renderMargin(glossaryItems)
     );

@@ -58,6 +58,8 @@ structure DecompCtx where
   lastFactFVar? : Option FVarId := none
   /-- Count of sequential `have` steps at the current block level. -/
   factIndex : Nat := 0
+  /-- True when proving the top-level theorem conclusion (suppresses verbatim restatement). -/
+  atRootConclusion : Bool := true
 
 /-- Callback allowing domain explainers to recursively decompile child proof terms. -/
 abbrev DecompileChild := DecompCtx → Expr → Expr → StateRefT DiscourseState MetaM (Array ProofNode)
@@ -297,7 +299,7 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
         let usesPrev := match ctx.lastFactFVar? with
           | some prevId => (Lean.collectFVars {} val).fvarIds.contains prevId
           | none => false
-        let factNodes ← decompileProof { ctx with lastFactFVar? := none, factIndex := 0 } ty val (fuel - 1)
+        let factNodes ← decompileProof { ctx with lastFactFVar? := none, factIndex := 0, atRootConclusion := false } ty val (fuel - 1)
         let goal ← buildGoalState ctx.tbl ty
         let factInl ← renderProposition ctx.tbl ty
         let opener ← do
@@ -352,6 +354,30 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
             return ← decompileProof ctx innerTy inner (fuel - 1)
         catch _ => pure ()
 
+  -- 3c. Split `And.intro p q` into two flowing sub-arguments (never collapsed as routine!)
+  if let .const head _ := proof.getAppFn.consumeMData then
+    if head == ``And.intro then
+      let args := proof.getAppArgs
+      if args.size ≥ 4 then
+        let pTy := args[args.size - 4]!
+        let qTy := args[args.size - 3]!
+        let pPf := args[args.size - 2]!
+        let qPf := args[args.size - 1]!
+        let subCtx := { ctx with lastFactFVar? := none, factIndex := 0, atRootConclusion := false }
+        let pNodes ← decompileProof subCtx pTy pPf (fuel - 1)
+        let qNodes ← decompileProof subCtx qTy qPf (fuel - 1)
+        let pInl ← renderProposition ctx.tbl pTy
+        let qInl ← renderProposition ctx.tbl qTy
+        let pGoal ← buildGoalState ctx.tbl pTy
+        let qGoal ← buildGoalState ctx.tbl qTy
+        let bothLe := pTy.getAppFn.consumeMData.isConstOf ``LE.le &&
+          (qTy.getAppFn.consumeMData.isConstOf ``LE.le || qTy.getAppFn.consumeMData.isConstOf ``And)
+        let lead1 := if bothLe then "For the lower bound, " else "First, "
+        let lead2 := if bothLe then "For the upper bound, " else "Second, "
+        let step1 : ProofNode := .step s!"andL-{fuel}" (#[.text lead1] ++ pInl ++ #[.text "."]) pNodes (some pGoal)
+        let step2 : ProofNode := .step s!"andR-{fuel}" (#[.text lead2] ++ qInl ++ #[.text "."]) qNodes (some qGoal)
+        return dedupSiblings #[step1, step2]
+
   -- 4. Detect `calc` / `cc_calc` chains (`Trans.trans` / `Eq.trans` / `LE.le.trans` / `SubstitutesWithin`)
   let chain ← flattenCalcChain proof expected
   if chain.size ≥ 2 then
@@ -405,8 +431,9 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
   if let .const declName _ := proof.getAppFn.consumeMData then
     let pArgs ← proofValuedArgs proof
     let mut premiseNodes : Array ProofNode := #[]
+    let subCtx := { ctx with lastFactFVar? := none, factIndex := 0, atRootConclusion := false }
     for (ap, aty) in pArgs do
-      let sub ← decompileProof ctx aty ap (fuel - 1)
+      let sub ← decompileProof subCtx aty ap (fuel - 1)
       premiseNodes := premiseNodes ++ sub
     let mut expandedBody : Array ProofNode := #[]
     let mut isWrap := false
@@ -417,6 +444,9 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
           ctx with
           seenDecls := ctx.seenDecls.insert declName
           lemmaDepth := ctx.lemmaDepth + 1
+          lastFactFVar? := none
+          factIndex := 0
+          atRootConclusion := false
         }
         expandedBody ← forallTelescope info.type fun _ innerTarget =>
           decompileProof childCtx innerTarget info.value (fuel - 1)
@@ -427,18 +457,27 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
     allChildren := allChildren ++ dedupSiblings (premiseNodes ++ expandedBody)
     if let some fa := ov.flowAfter? then
       allChildren := allChildren.push (.flowNote s!"flow-post-{declName}" fa "margin")
-    let conclInl ← renderProposition ctx.tbl expected
     let goal ← buildGoalState ctx.tbl expected
     let diagHtml ← (← diagramHookRef.get) expected
     let label := humanLemmaLabel env declName
     let st ← get
     let (opener, st') := st.pickOpener .justification
     set st'
-    let content : Array Inline :=
-      if isCoreOrMathlib declName then
-        #[.text s!"{opener} {label}, "] ++ conclInl ++ #[.text "."]
+    -- Avoid the "restatement reflex": at the root conclusion, never re-quote the whole theorem!
+    let content : Array Inline ←
+      if ctx.atRootConclusion then
+        if isCoreOrMathlib declName then
+          pure #[.text s!"The claim follows directly by {label}."]
+        else if premiseNodes.isEmpty then
+          pure #[.text "The claim follows from ", .emph label, .text "."]
+        else
+          pure #[.text "Applying ", .emph label, .text " to the checked premises establishes the claim."]
       else
-        #[.text s!"{opener} ", .emph label, .text ", "] ++ conclInl ++ #[.text "."]
+        let conclInl ← renderProposition ctx.tbl expected
+        if isCoreOrMathlib declName then
+          pure (#[.text s!"{opener} {label}, "] ++ conclInl ++ #[.text "."])
+        else
+          pure (#[.text s!"{opener} ", .emph label, .text ", "] ++ conclInl ++ #[.text "."])
     return #[.step s!"app-{declName}-{fuel}" content allChildren (some goal)
       diagHtml (some declName.toString) isWrap]
 
@@ -467,10 +506,13 @@ def informalizeDeclaration (declName : Name) (config : Config := {}) :
   let parsed ← parseTheoremStatement tbl info.type
   let diagHtml ← (← diagramHookRef.get) info.type
   let inspectors ← (← inspectorCollectorRef.get) tbl info.type
-  let header := match info with
-    | .thmInfo _ => "Theorem"
-    | .defnInfo _ => "Definition"
-    | _ => "Declaration"
+  let header := match ov.entryKind? with
+    | some k => k
+    | none =>
+      match info with
+      | .thmInfo _ => "Theorem"
+      | .defnInfo _ => "Definition"
+      | _ => "Declaration"
   let mut proofNodes : Array ProofNode := #[]
   if let some fb := ov.flowBefore? then
     proofNodes := proofNodes.push (.flowNote s!"doc-flow-pre-{declName}" fb "inline")
@@ -480,6 +522,7 @@ def informalizeDeclaration (declName : Name) (config : Config := {}) :
       tbl
       seenDecls := ({} : NameSet).insert declName
       lemmaDepth := 0
+      atRootConclusion := true
     }
     let (nodes, _) ← (decompileProof ctx info.type tinfo.value config.maxTermFuel).run {}
     proofNodes := dedupSiblings (proofNodes ++ nodes)
@@ -490,6 +533,8 @@ def informalizeDeclaration (declName : Name) (config : Config := {}) :
     header
     title? := ov.title? <|> some (humanLemmaLabel env declName)
     declaration := declName.toString
+    sectionTitle? := ov.sectionTitle?
+    sectionIntro? := ov.sectionIntro?
     ambient? := parsed.ambient?
     statement := parsed.paragraphs
     diagramHtml? := diagHtml

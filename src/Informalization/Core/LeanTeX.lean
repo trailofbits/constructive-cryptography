@@ -210,10 +210,27 @@ partial def renderAux (tbl : SymbolTable) (ctxPrec : Nat) (e : Expr) : MetaM Str
           let b ← renderAux tbl 30 body
           return parenIf ctxPrec 30 s!"{a} \\to {b}"
   | .lam nm dom body bi =>
-      withLocalDecl nm bi dom fun fv => do
-        let varStr ← renderAux tbl 100 fv
-        let bodyStr ← renderAux tbl 10 (body.instantiate1 fv)
-        return parenIf ctxPrec 10 s!"{varStr} \\mapsto {bodyStr}"
+      -- Drop vacuous unused `Unit`/`PUnit` lambdas (e.g., unkeyed `fun (_ : Unit) => H`)
+      let isUnitDom := dom.consumeMData == mkConst ``Unit || dom.consumeMData == mkConst ``PUnit
+      if isUnitDom && !body.hasLooseBVar 0 then
+        renderAux tbl ctxPrec body
+      else
+        -- Avoid shadowed `x ↦ x ↦ ...` when anonymous binders nest
+        let lctx ← getLCtx
+        let chosenNm :=
+          if (cleanBinderName? nm).isSome then nm
+          else
+            let existing := lctx.foldl (init := ([] : List String)) fun acc d =>
+              match cleanBinderName? d.userName with
+              | some s => s :: acc
+              | none => acc
+            let pool := ["x", "y", "z", "u", "v", "w"]
+            let fresh := (pool.find? (fun p => !existing.contains p)).getD "x"
+            Name.mkSimple fresh
+        withLocalDecl chosenNm bi dom fun fv => do
+          let varStr ← renderAux tbl 100 fv
+          let bodyStr ← renderAux tbl 10 (body.instantiate1 fv)
+          return parenIf ctxPrec 10 s!"{varStr} \\mapsto {bodyStr}"
   | .letE nm ty val body _ =>
       let valStr ← renderAux tbl 0 val
       withLetDecl nm ty val fun fv => do
@@ -353,6 +370,9 @@ where
         if head == `Dvd.dvd then
           let some (a, b) := lastTwo? args | return none
           return some (s!"{← renderAux tbl 50 a} \\mid {← renderAux tbl 50 b}", 50)
+        if head == `List.IsPrefix then
+          let some (a, b) := lastTwo? args | return none
+          return some (s!"{← renderAux tbl 50 a} \\preceq {← renderAux tbl 50 b}", 50)
         if head == `abs then
           let some a := argFromEnd? args 0 | return none
           return some (s!"\\left|{← renderAux tbl 0 a}\\right|", 90)

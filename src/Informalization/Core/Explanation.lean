@@ -200,11 +200,13 @@ structure AmbientSetting where
   suppressedTypeclasses : Array String := #[]
   deriving Repr, BEq, Inhabited, ToJson
 
-/-- One informalized declaration (Theorem, Lemma, Proposition, Definition, or Example). -/
+/-- One informalized declaration (Theorem, Lemma, Proposition, Corollary, Definition). -/
 structure Entry where
-  header : String := "Theorem"     -- "Theorem" | "Lemma" | "Proposition" | "Definition"
+  header : String := "Theorem"     -- "Theorem" | "Lemma" | "Proposition" | "Corollary" | "Definition"
   title? : Option String := none
   declaration : String
+  sectionTitle? : Option String := none
+  sectionIntro? : Option String := none
   ambient? : Option AmbientSetting := none
   statement : Array (Array Inline) -- paragraphs of the formal statement
   diagramHtml? : Option String := none

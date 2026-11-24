@@ -161,6 +161,40 @@ partial def renderProposition (tbl : SymbolTable) (prop : Expr) : MetaM (Array I
         return #[.inlineMath subjTex, .text (" " ++ phrase)]
       return #[.text phrase]
     if head == ``And && args.size ≥ 2 then
+      -- Flatten chained inequalities `a ≤ b ∧ b ≤ c (∧ c ≤ d)` into `a \le b \le c \le d`
+      let rec collectAnds : Expr → Array Expr
+        | e =>
+            let f := e.getAppFn.consumeMData
+            let as := e.getAppArgs
+            if f.isConstOf ``And && as.size ≥ 2 then
+              collectAnds as[as.size - 2]! ++ collectAnds as[as.size - 1]!
+            else #[e]
+      let parts := collectAnds prop
+      let mut leChain : Option (Array String) := some #[]
+      let mut prevRhs? : Option String := none
+      for part in parts do
+        let p ← normalizeForPresentation part
+        let pf := p.getAppFn.consumeMData
+        let pa := p.getAppArgs
+        if pf.isConstOf ``LE.le && pa.size ≥ 2 then
+          let lTex ← exprToLatex pa[pa.size - 2]! tbl
+          let rTex ← exprToLatex pa[pa.size - 1]! tbl
+          match prevRhs?, leChain with
+          | none, some arr =>
+              leChain := some (arr.push lTex |>.push rTex)
+              prevRhs? := some rTex
+          | some prev, some arr =>
+              if prev == lTex then
+                leChain := some (arr.push rTex)
+                prevRhs? := some rTex
+              else
+                leChain := none
+          | _, none => pure ()
+        else
+          leChain := none
+      if let some terms := leChain then
+        if terms.size ≥ 3 then
+          return #[.inlineMath (String.intercalate " \\le " terms.toList)]
       let a ← renderProposition tbl args[args.size - 2]!
       let b ← renderProposition tbl args[args.size - 1]!
       return a ++ #[.text ", and "] ++ b
@@ -332,15 +366,41 @@ private def factorRepeatedSubexprs (tbl : SymbolTable) (exprs : Array Expr) :
   inl := inl.push (.text ".")
   return (curTbl, some inl)
 
+/-- Helper: check if `sub` appears inside any `Inline` of `inls`. -/
+private def inlinesContain (inls : Array Inline) (needle : String) : Bool :=
+  inls.any fun
+    | .text s | .emph s | .inlineMath s => (s.splitOn needle).length > 1
+    | .displayMath s _ => (s.splitOn needle).length > 1
+    | .symbol _ d _ => (d.splitOn needle).length > 1
+    | .citation _ _ => false
+
+/-- Hoist leading `let x := v; body` bindings out of a theorem's conclusion into readable
+`"Write x = v"` prose definitions so display equations never print `let ... in let ... in`. -/
+private partial def hoistConclusionLets (tbl : SymbolTable) (e : Expr)
+    (acc : Array (String × String) := #[]) : MetaM (Array (String × String) × Expr) := do
+  match e.consumeMData with
+  | .letE nm ty val body _ =>
+      let isP ← try isProp ty catch _ => pure false
+      if isP then return (acc, e)
+      let valTex ← exprToLatex val tbl
+      withLetDecl nm ty val fun fv => do
+        let nmTex ← exprToLatex fv tbl
+        -- Bind `fv` in `tbl` to its clean name so `body` prints `R` instead of expanding `val`
+        let tbl' := tbl.withExprAlias fv nmTex
+        hoistConclusionLets tbl' (body.instantiate1 fv) (acc.push (nmTex, valTex))
+  | _ => return (acc, e)
+
 /-- Parse a theorem's full `Expr` type into:
 1. factored-out ambient setting (suppressed typeclasses & category boilerplate);
 2. aggregated entity introductions (`Let … be …`);
-3. automatic local shorthand definitions for repeated heavy subexpressions (`Write c₁ = …`);
+3. automatic local shorthand definitions for genuinely used repeated subexpressions + hoisted `let`s;
 4. explicit mathematical assumptions (`Assume that …`);
 5. the concluding claim (displayed cleanly, promoted to display math when substantial). -/
 def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr) : MetaM ParsedStatement := do
-  forallTelescope theoremType fun fvars conclusion => do
-    -- Collect prop assumptions & conclusion first so we can factor repeated subexpressions cleanly
+  forallTelescope theoremType fun fvars rawConclusion => do
+    -- Hoist leading `let R := ...; let S := ...; body` out of the conclusion first
+    let (letDefs, conclusion) ← hoistConclusionLets tbl rawConclusion
+    -- Collect prop assumptions & conclusion so we can factor repeated subexpressions cleanly
     let mut propExprs : Array Expr := #[]
     for fv in fvars do
       let decl ← fv.fvarId!.getDecl
@@ -397,11 +457,35 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr) : MetaM Parse
           typeStr := desc.typeLatex?.getD ""
           mentions := depNames
         }]
+    let conclInl ← renderProposition tbl conclusion
+    -- Keep ONLY `c_k` shorthands that actually appear in the rendered hypotheses, `let`s, or conclusion!
+    let allVisibleInls := hyps.foldl (· ++ ·) #[] ++ conclInl
+    let letDefsRendered : Array (String × String) := letDefs
+    let activeWriteDefs : Array (String × String) ← do
+      let mut active : Array (String × String) := #[]
+      for (pat, sym) in tbl.exprAliases do
+        if sym.startsWith "c_{" then
+          let usedInMain := inlinesContain allVisibleInls sym
+          let usedInLet := letDefsRendered.any fun (_, rhs) => (rhs.splitOn sym).length > 1
+          if usedInMain || usedInLet then
+            let rhs ← exprToLatex pat { tbl with exprAliases := tbl.exprAliases.filter (·.2 != sym) }
+            active := active.push (sym, rhs)
+      pure active
+    let allWriteDefs := activeWriteDefs ++ letDefsRendered
     let mut paragraphs : Array (Array Inline) := #[]
     if !intros.isEmpty then
       paragraphs := paragraphs.push #[.text (realizeIntros intros)]
-    if let some wp := writePara? then
-      paragraphs := paragraphs.push wp
+    if !allWriteDefs.isEmpty then
+      let mut inl : Array Inline := #[.text "Write "]
+      for i in [:allWriteDefs.size] do
+        let (sym, rhs) := allWriteDefs[i]!
+        if i > 0 then
+          inl := inl.push (.text (if i + 1 == allWriteDefs.size then " and " else ", "))
+        inl := inl.push (.inlineMath s!"{sym} = {rhs}")
+      inl := inl.push (.text ".")
+      paragraphs := paragraphs.push inl
+    else if let some _ := writePara? then
+      pure ()
     if !hyps.isEmpty then
       let mut assumeInl : Array Inline := #[.text "Assume that "]
       for i in [:hyps.size] do
@@ -410,7 +494,6 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr) : MetaM Parse
         assumeInl := assumeInl ++ hyps[i]!
       assumeInl := assumeInl.push (.text ".")
       paragraphs := paragraphs.push assumeInl
-    let conclInl ← renderProposition tbl conclusion
     let lead := if hyps.isEmpty && intros.isEmpty then "We have " else "Then "
     let conclPara : Array Inline :=
       match conclInl with
