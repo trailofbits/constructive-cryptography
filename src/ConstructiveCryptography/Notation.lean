@@ -325,7 +325,7 @@ meta def delabTypedCCAttachment : Delab :=
 
 namespace Interface
 
-attribute [cc_normalization] comp_smul identity_attach
+attribute [cc_normalization] comp_smul identity_attach associator_hom_attach
 
 -- Definitional bridges, below the laws' default priority: the categorical action and the
 -- `resourceTheory` attachment field left by `cc_construct` are rewritten to `α • R` with
@@ -406,6 +406,23 @@ lemma distance_parallel_le {A B : Interface}
     Δ (R ∥ T) (S ∥ U) ≤ Δ R S + Δ T U :=
   ConstructiveCryptography.CryptographicAlgebra.distance_parallel_le
     R S T U
+
+open Lean Meta Simp in
+/-- `associator_hom_attach` whatever the spelling of the associator or tensor: `(α_ A B C).hom •
+(R ∥ (S ∥ T)) = (R ∥ S) ∥ T` when the interfaces use `⊗` or `Interface.tensor`. -/
+simproc [cc_normalization] associatorHomSmul (@HSMul.hSMul _ _ _ _ _ _) := fun e => do
+  let_expr HSMul.hSMul _ _ _ _ f x := e | return .continue
+  let_expr CategoryTheory.Iso.hom _ _ _ _ iso := f | return .continue
+  let (A, B, C) ← match_expr iso with
+    | CategoryTheory.MonoidalCategoryStruct.associator _ _ _ A B C => pure (A, B, C)
+    | Interface.associator A B C => pure (A, B, C)
+    | _ => return .continue
+  let_expr TypedSystem.parallel _ _ R ST := x | return .continue
+  let_expr TypedSystem.parallel _ _ S T := ST | return .continue
+  let proof := mkAppN (mkConst ``Interface.associator_hom_attach) #[A, B, C, R, S, T]
+  let_expr Eq _ lhs rhs := ← inferType proof | return .continue
+  unless ← withDefault (isDefEq e lhs) do return .continue
+  return .visit { expr := rhs, proof? := some (← mkExpectedTypeHint proof (← mkEq e rhs)) }
 
 end Interface
 
