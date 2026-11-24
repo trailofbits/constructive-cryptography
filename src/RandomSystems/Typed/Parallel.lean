@@ -23,6 +23,9 @@ of their PDC behaviors.
 
 * `TypedSystem.parallel_admits_iff`: on possible histories, the parallel domain of the random
   systems is the domain of the parallel interface
+* `TypedConverter.parallel_ofDDC`, `TypedConverter.parallel_ofDDC_id`,
+  `TypedConverter.parallel_id_ofDDC`: parallel compositions of deterministic typed converters
+  and identities as a single `ofDDC`
 -/
 
 @[expose] public section
@@ -225,5 +228,49 @@ end TypedSystem
 noncomputable def TypedConverter.parallel {A B C D : Interface} (α : TypedConverter A B)
     (β : TypedConverter C D) : TypedConverter (Interface.tensor A C) (Interface.tensor B D) :=
   PDCBehavior.tensor α β
+
+/-- Parallel composition of two deterministic typed converters is the deterministic converter of
+`tensorL`. -/
+lemma TypedConverter.parallel_ofDDC {A B C D : Interface}
+    {α : InsideOutsideSystem A.I B.I A.X A.Y B.X B.Y}
+    {γ : InsideOutsideSystem C.I D.I C.X C.Y D.X D.Y} {bα bγ : ℕ}
+    (hα : IsDDCFrom B.domain A.domain bα α) (hγ : IsDDCFrom D.domain C.domain bγ γ) :
+    TypedConverter.parallel (TypedConverter.ofDDC α hα) (TypedConverter.ofDDC γ hγ) =
+      TypedConverter.ofDDC
+        (tensorL (U := Sum.rec A.X C.X) (V := Sum.rec A.Y C.Y)
+          (Xi := Sum.rec B.X D.X) (Yi := Sum.rec B.Y D.Y) α γ)
+        (IsDDCFrom.tensorL (U := Sum.rec A.X C.X) (V := Sum.rec A.Y C.Y)
+          (X := Sum.rec B.X D.X) (Y := Sum.rec B.Y D.Y) hα hγ) :=
+  PDCBehavior.tensor_ofDDC hα hγ
+
+/-- Parallel composition of a deterministic typed converter with an identity on the right. -/
+lemma TypedConverter.parallel_ofDDC_id {A B C : Interface}
+    {α : InsideOutsideSystem A.I B.I A.X A.Y B.X B.Y} {bα : ℕ}
+    (hα : IsDDCFrom B.domain A.domain bα α) :
+    TypedConverter.parallel (TypedConverter.ofDDC α hα) (TypedConverter.id C) =
+      TypedConverter.ofDDC
+        (tensorL (U := Sum.rec A.X C.X) (V := Sum.rec A.Y C.Y)
+          (Xi := Sum.rec B.X C.X) (Yi := Sum.rec B.Y C.Y) α
+          (DDC.filter (Y := C.Y) (fun h => h = [] ∨ C.domain h)
+            (prefix_or_nil C.nonempty_prefix.2)).1)
+        (IsDDCFrom.tensorL (U := Sum.rec A.X C.X) (V := Sum.rec A.Y C.Y)
+          (X := Sum.rec B.X C.X) (Y := Sum.rec B.Y C.Y)
+          hα (isDDCFrom_filter (Y := C.Y) C.nonempty_prefix)) :=
+  TypedConverter.parallel_ofDDC hα (isDDCFrom_filter (Y := C.Y) C.nonempty_prefix)
+
+/-- Parallel composition of an identity on the left with a deterministic typed converter. -/
+lemma TypedConverter.parallel_id_ofDDC {A B C : Interface}
+    {γ : InsideOutsideSystem B.I C.I B.X B.Y C.X C.Y} {bγ : ℕ}
+    (hγ : IsDDCFrom C.domain B.domain bγ γ) :
+    TypedConverter.parallel (TypedConverter.id A) (TypedConverter.ofDDC γ hγ) =
+      TypedConverter.ofDDC
+        (tensorL (U := Sum.rec A.X B.X) (V := Sum.rec A.Y B.Y)
+          (Xi := Sum.rec A.X C.X) (Yi := Sum.rec A.Y C.Y)
+          (DDC.filter (Y := A.Y) (fun h => h = [] ∨ A.domain h)
+            (prefix_or_nil A.nonempty_prefix.2)).1 γ)
+        (IsDDCFrom.tensorL (U := Sum.rec A.X B.X) (V := Sum.rec A.Y B.Y)
+          (X := Sum.rec A.X C.X) (Y := Sum.rec A.Y C.Y)
+          (isDDCFrom_filter (Y := A.Y) A.nonempty_prefix) hγ) :=
+  TypedConverter.parallel_ofDDC (isDDCFrom_filter (Y := A.Y) A.nonempty_prefix) hγ
 
 end SystemAlgebra

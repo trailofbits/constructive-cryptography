@@ -324,8 +324,8 @@ extension are in [Examples](src/Examples/README.md).
 [RandomSystem.ofPDSClass_bijective]: src/RandomSystems/Cumulative/Presentation.lean#L316
 [RandomSystem.parallel]: src/RandomSystems/Cumulative/CumulativeOperations.lean#L136
 [IsDDC]: src/RandomSystems/DDC/DDC.lean#L131
-[PDCBehavior]: src/RandomSystems/Converter/PDCBehavior.lean#L71
-[PDCBehavior.ofPDC]: src/RandomSystems/Converter/PDCBehavior.lean#L175
+[PDCBehavior]: src/RandomSystems/Converter/PDCBehavior.lean#L75
+[PDCBehavior.ofPDC]: src/RandomSystems/Converter/PDCBehavior.lean#L179
 [PDCBehavior.comp]: src/RandomSystems/Converter/PDCBehavior.lean#L281
 [PDCBehavior.id]: src/RandomSystems/Converter/PDCBehavior.lean#L379
 [PDCBehavior.attach]: src/RandomSystems/Converter/ConverterAttachment.lean#L161
@@ -348,12 +348,12 @@ extension are in [Examples](src/Examples/README.md).
 
 <!-- Declarations: §2 -->
 
-[Interface]: src/RandomSystems/Typed/Interface.lean#L41
-[TypedSystem]: src/RandomSystems/Typed/Interface.lean#L143
-[TypedConverter]: src/RandomSystems/Typed/Interface.lean#L182
-[TypedConverter.comp]: src/RandomSystems/Typed/Interface.lean#L189
-[TypedConverter.id]: src/RandomSystems/Typed/Interface.lean#L194
-[TypedConverter.attach]: src/RandomSystems/Typed/Interface.lean#L247
+[Interface]: src/RandomSystems/Typed/Interface.lean#L43
+[TypedSystem]: src/RandomSystems/Typed/Interface.lean#L145
+[TypedConverter]: src/RandomSystems/Typed/Interface.lean#L184
+[TypedConverter.comp]: src/RandomSystems/Typed/Interface.lean#L191
+[TypedConverter.id]: src/RandomSystems/Typed/Interface.lean#L196
+[TypedConverter.attach]: src/RandomSystems/Typed/Interface.lean#L250
 [Interface.tensor]: src/RandomSystems/Typed/Parallel.lean#L89
 [TypedSystem.parallel]: src/RandomSystems/Typed/Parallel.lean#L157
 [TypedConverter.parallel]: src/RandomSystems/Typed/Parallel.lean#L214
