@@ -40,6 +40,7 @@ public import ConstructiveCryptography.Substitution.Implication
 public import ConstructiveCryptography.Substitution.Quantitative
 public import ConstructiveCryptography.Substitution.Reduction
 public import ConstructiveCryptography.Substitution.Relaxation
+public import ConstructiveCryptography.Substitution.StructuredHybrid
 public import ConstructiveCryptography.Tactics.Basic
 public import ConstructiveCryptography.Tactics.Categorical
 public import ConstructiveCryptography.Tactics.ProofAutomationAttributes
