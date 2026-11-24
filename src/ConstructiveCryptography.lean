@@ -2,6 +2,7 @@ module
 
 public import ConstructiveCryptography.Construction.Basic
 public import ConstructiveCryptography.Construction.Defs
+public import ConstructiveCryptography.Construction.TwoPartyObstruction
 public import ConstructiveCryptography.CryptographicAlgebra.Basic
 public import ConstructiveCryptography.CryptographicAlgebra.Distinguisher
 public import ConstructiveCryptography.CryptographicAlgebra.DistinguisherAction
