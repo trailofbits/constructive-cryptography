@@ -86,6 +86,7 @@ public import Tests.AuthoringWorkflows
 public import Tests.TypedComposition
 public import Tests.TypedTensor
 public import Tests.DependentCoordinateMarginals
+public import Tests.IndependentTableCoincidence
 public import Tests.RoutedRandomFunction
 public import Tests.TranscriptLaw
 public import Tests.RandomFunctionCollision
@@ -99,6 +100,7 @@ public import Tests.SpongeTable
 public import Tests.Sponge
 public import Tests.PRF
 public import Tests.DeterministicConverterComparison
+public import Tests.WhiskerNormalization
 public import Tests.IndifferentiabilityComposition
 
 /-! Axiom audits per layer and of the Commons library, the checks of the
