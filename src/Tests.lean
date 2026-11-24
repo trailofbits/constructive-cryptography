@@ -124,6 +124,7 @@ public import Tests.GameEquivalenceTransport
 public import Tests.GameDistanceBound
 public import Tests.URFRetainedTable
 public import Tests.PermutationWalk
+public import Tests.PermutationTableGame
 
 /-! Axiom audits per layer and of the Commons library, the checks of the
 authenticated-encryption example,
