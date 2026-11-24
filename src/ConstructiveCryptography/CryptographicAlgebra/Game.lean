@@ -1,6 +1,7 @@
 module
 
 public import ConstructiveCryptography.CryptographicAlgebra.Basic
+public import ConstructiveCryptography.CryptographicAlgebra.Distinguisher
 public import ConstructiveCryptography.Game
 
 /-!
@@ -26,9 +27,12 @@ W -- α -- β -- G
 
 `Games.absorb_mem` uses closure of the admitted winners. `Games.absorb_comp` uses serial
 attachment; `DistinctionGames.absorb_mem` preserves the two evaluations of the same solver.
-On interfaces (`ConstructiveCryptography.Instances.Game`), the identity and serial laws are
-`TypedConverter.identity_attachGame` and `TypedConverter.comp_attachGame`, and both closure
-laws are `Domain.SolverBehavior.absorb`.
+Over a `CompatibleDistinguisherClass`, `DistinctionGames.distance_visible_le`,
+`distance_visible_le_of_winners`, and `distance_visible_le_of_solvers` lift a uniform winning
+bound under conditional equivalence and explicit solver coverage to a metric bound on
+`visible G` and `S`. On interfaces (`ConstructiveCryptography.Instances.Game`), the identity and
+serial laws are `TypedConverter.identity_attachGame` and `TypedConverter.comp_attachGame`, and
+both closure laws are `Domain.SolverBehavior.absorb`.
 -/
 
 @[expose] public section
@@ -147,5 +151,70 @@ lemma absorb_mem {A B : C} (converter : A ⟶ B) {solver : (Phi A → ℝ) × (G
   DistinctionGameAction.solvers_closed_attach converter h
 
 end DistinctionGames
+
+section MetricBridge
+
+open CategoryTheory.MonoidalCategory
+open scoped NNReal
+
+variable {C : Type u} [Category.{v} C] [MonoidalCategory C]
+  {Phi : C → Type w} [ResourceTheory C Phi] [CompatibleDistinguisherClass C Phi]
+  {Game : C → Type x} [DistinctionGames C Phi Game]
+
+/-- **Distinction-game distance bound** (CR18, Theorem 4.17): when every selected distinguisher
+is covered by an admitted joint solver, conditional equivalence `G |≡ S` and a uniform winning
+bound over admitted winners bound `distance (visible G) S`. -/
+theorem DistinctionGames.distance_visible_le_of_winners
+    {A : C} {G : Game A} {S : Phi A}
+    (hc : DistinctionGames.ConditionallyEquivalent G S)
+    (hcover : ∀ d ∈ CompatibleDistinguisherClass.distinguishers (Phi := Phi) A,
+      ∃ w : Game A → ℝ, (d, w) ∈ DistinctionGames.solvers A)
+    {ε : ENNReal}
+    (hwin : ∀ w ∈ Games.winners A, ENNReal.ofReal (w G) ≤ ε) :
+    CryptographicAlgebra.distance (DistinctionGames.visible G) S ≤ ε := by
+  change @edist _ (CompatiblePseudoMetric.fibreMetric A).toEDist
+    (DistinctionGames.visible G) S ≤ ε
+  rw [CompatibleDistinguisherClass.edist_eq]
+  apply advantageDistance_le
+  intro d hd
+  obtain ⟨w, hdw⟩ := hcover d hd
+  exact (ENNReal.ofReal_le_ofReal (DistinctionGames.advantage_le_win hc hdw)).trans
+    (hwin w (DistinctionGames.solvers_winner hdw))
+
+/-- **Distinction-game distance bound for a nonnegative real error**: conditional equivalence
+`G |≡ S`, explicit solver coverage, and `w G ≤ ε` for every admitted winner imply
+`distance (visible G) S ≤ ε`. -/
+theorem DistinctionGames.distance_visible_le
+    {A : C} {G : Game A} {S : Phi A}
+    (hc : DistinctionGames.ConditionallyEquivalent G S)
+    (hcover : ∀ d ∈ CompatibleDistinguisherClass.distinguishers (Phi := Phi) A,
+      ∃ w : Game A → ℝ, (d, w) ∈ DistinctionGames.solvers A)
+    {ε : ℝ≥0}
+    (hwin : ∀ w ∈ Games.winners A, w G ≤ ε) :
+    CryptographicAlgebra.distance (DistinctionGames.visible G) S ≤ ε := by
+  refine DistinctionGames.distance_visible_le_of_winners hc hcover fun w hw => ?_
+  exact (ENNReal.ofReal_le_ofReal (hwin w hw)).trans (by simp)
+
+/-- **Distinction-game distance bound from a uniform bound over admitted solvers**: conditional
+equivalence `G |≡ S`, explicit solver coverage, and `s.2 G ≤ ε` for every admitted solver
+imply `distance (visible G) S ≤ ε`. -/
+theorem DistinctionGames.distance_visible_le_of_solvers
+    {A : C} {G : Game A} {S : Phi A}
+    (hc : DistinctionGames.ConditionallyEquivalent G S)
+    (hcover : ∀ d ∈ CompatibleDistinguisherClass.distinguishers (Phi := Phi) A,
+      ∃ w : Game A → ℝ, (d, w) ∈ DistinctionGames.solvers A)
+    {ε : ℝ≥0}
+    (hwin : ∀ s ∈ DistinctionGames.solvers A, s.2 G ≤ ε) :
+    CryptographicAlgebra.distance (DistinctionGames.visible G) S ≤ ε := by
+  change @edist _ (CompatiblePseudoMetric.fibreMetric A).toEDist
+    (DistinctionGames.visible G) S ≤ ε
+  rw [CompatibleDistinguisherClass.edist_eq]
+  apply advantageDistance_le
+  intro d hd
+  obtain ⟨w, hdw⟩ := hcover d hd
+  exact (ENNReal.ofReal_le_ofReal
+    ((DistinctionGames.advantage_le_win hc hdw).trans (hwin (d, w) hdw))).trans (by simp)
+
+end MetricBridge
 
 end ConstructiveCryptography
