@@ -1,6 +1,7 @@
 module
 
 public import Commons.Schemes.Sponge.Basic
+import Mathlib.Data.Fin.Rev
 
 /-!
 # Contract and unit tests for the byte-oriented sponge construction
@@ -38,12 +39,19 @@ lemma small_pad_full_block :
     spongePadding smallParameters [0x11, 0x22] = [0x11, 0x22, 0x06, 0x80] := by
   rfl
 
+/-- Reversing the four state bytes after each of two blocks carries the first message byte
+back to the digest position. The second block consists entirely of padding. -/
+example :
+    let π : Equiv.Perm (ByteState 4) := Equiv.arrowCongr Fin.revPerm (Equiv.refl _)
+    List.ofFn (spongeHash smallParameters π [0x11, 0x22]) = [0x11] := by
+  rfl
+
 /-- Distinct messages never share the same padded byte string or block sequence under SHA3-256. -/
 lemma sha3_256_padding_and_blocks_injective :
-    Function.Injective (spongePadding sha3_256) ∧ Function.Injective (paddedBlocks sha3_256) :=
-  ⟨spongePadding_injective sha3_256 sha3_256_valid.2.2.2.2.1 sha3_256_valid.2.2.2.2.2,
-    paddedBlocks_injective sha3_256 sha3_256_valid.1
-      sha3_256_valid.2.2.2.2.1 sha3_256_valid.2.2.2.2.2⟩
+    Function.Injective (spongePadding sha3_256) ∧ Function.Injective (paddedBlocks sha3_256) := by
+  obtain ⟨rate_pos, _, _, _, suffix_ne, suffix_low⟩ := sha3_256_valid
+  exact ⟨spongePadding_injective _ suffix_ne suffix_low,
+    paddedBlocks_injective _ rate_pos suffix_ne suffix_low⟩
 
 /-- Every SHA-3 and Keccak-256 parameter set satisfies `Parameters.Valid` and produces
 rate-aligned padded inputs. -/

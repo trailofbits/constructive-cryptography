@@ -6,34 +6,19 @@ public import Mathlib.Data.List.OfFn
 /-!
 # Generic byte-oriented sponge construction
 
-A parameterized byte-oriented single-squeeze sponge construction over an arbitrary state
-permutation `π : Equiv.Perm (Fin stateBytes → BitVec 8)` [1, §4, §5.1]. Whereas
-`Commons.Schemes.Hash.Keccak` provides an executable `ByteArray` / `Array UInt64` implementation
-of concrete Keccak-f[1600], this module provides an abstract fixed-width byte-vector model for
-ideal-permutation security proofs, parameterized by `(stateBytes, rateBytes, outputBytes, suffix)`
-and connected directly to `Commons.Schemes.Sponge.Table`.
+Starting at zero, inject each padded rate block into the state and apply the permutation `π`.
+The digest is the first `outputBytes` of the final state [1, §§4, 5.1].
 
-## Main definitions
+```text
+message ──paddedBlocks──▶ blocks ──absorbBlocks (absorbBlock p) π──▶ state ──digestPart──▶ digest
+```
 
-* `Commons.Sponge.ByteState` and `Commons.Sponge.zeroState`: fixed-width byte vectors
-  `Fin n → BitVec 8`
-* `Commons.Sponge.Parameters` and `Commons.Sponge.Parameters.Valid`: generic sponge parameters and
-  standard SHA-3 / Keccak parameter sets
-* `Commons.Sponge.spongePadding`, `Commons.Sponge.paddedBlockCount`, and
-  `Commons.Sponge.paddedBlocks`: multi-rate `pad10*1` padding and fixed-width rate blocks
-* `Commons.Sponge.spongeHash`, `Commons.Sponge.spongeCalls`, and `Commons.Sponge.recordSponge`:
-  sponge evaluation, permutation call trace, and partial-permutation table recording
+`flatten_paddedBlocks` recovers the padded bytes, and `spongePadding_injective` recovers the
+message. `recordSponge_local` shows that the recorded permutation pairs suffice to reproduce
+its digest. For covered messages, `input_eq_of_spongeHash_eq` uses distinct forward digests
+to recover the final state and the table's rooted-path law to recover the blocks [2, §4.3].
 
-## Main results
-
-* `Commons.Sponge.spongePadding_length` and `Commons.Sponge.spongePadding_length_dvd`: padded
-  length equals `paddedBlockCount * rateBytes` and is divisible by `rateBytes`
-* `Commons.Sponge.spongePadding_injective` and `Commons.Sponge.paddedBlocks_injective`:
-  injectivity of `pad10*1` padding and its rate-block decomposition
-* `Commons.Sponge.recordSponge_local`: sponge evaluation depends only on the edges recorded in
-  `recordSponge`
-* `Commons.Sponge.input_eq_of_spongeHash_eq`: collision-freeness of covered inputs under any
-  capacity-collision-free table whose forward outputs have distinct digests [2, §4.3]
+The executable Keccak-f[1600] implementation lives in `Commons.Schemes.Hash.Keccak`.
 
 ## References
 
@@ -358,64 +343,23 @@ lemma flatten_blockSlices {α : Type*} (xs : List α) (m r : Nat) (fallback : α
     (hlen : xs.length = m * r) :
     ((List.range m).map fun k =>
       List.ofFn (fun i : Fin r => xs.getD (r * k + i.val) fallback)).flatten = xs := by
-  induction m generalizing xs with
-  | zero =>
-    simp only [Nat.zero_mul] at hlen
-    simp only [List.range_zero, List.map_nil, List.flatten_nil]
-    exact (List.length_eq_zero_iff.mp hlen).symm
-  | succ m ih =>
-    have hsplit : xs = xs.take r ++ xs.drop r := (List.take_append_drop r xs).symm
-    have hdropLen : (xs.drop r).length = m * r := by
-      rw [List.length_drop, hlen, Nat.succ_mul]
-      omega
-    have htakeLen : (xs.take r).length = r := by
-      rw [List.length_take, hlen, Nat.succ_mul]
-      omega
-    rw [List.range_succ_eq_map, List.map_cons, List.map_map, List.flatten_cons]
-    have hhead : List.ofFn (fun i : Fin r => xs.getD (r * 0 + i.val) fallback) = xs.take r := by
+  calc
+    _ = (List.ofFn fun k : Fin m =>
+          List.ofFn fun i : Fin r => xs.getD (r * k.val + i.val) fallback).flatten := by
+      apply congrArg List.flatten
       apply List.ext_getElem
-      · rw [List.length_ofFn, htakeLen]
+      · simp only [List.length_map, List.length_range, List.length_ofFn]
       · intro i hi hj
-        rw [List.getElem_ofFn, List.getElem_take]
-        have hlt : i < xs.length := by rw [hlen, Nat.succ_mul]; omega
-        simp only [Nat.mul_zero, Nat.zero_add, List.getD_eq_getElem?_getD,
-          List.getElem?_eq_getElem hlt, Option.getD_some]
-    have htail :
-        ((List.range m).map (fun k =>
-          List.ofFn (fun i : Fin r => xs.getD (r * (k + 1) + i.val) fallback))).flatten =
-          xs.drop r := by
-      have hmap :
-          (List.range m).map (fun k =>
-            List.ofFn (fun i : Fin r => xs.getD (r * (k + 1) + i.val) fallback)) =
-          (List.range m).map (fun k =>
-            List.ofFn (fun i : Fin r => (xs.drop r).getD (r * k + i.val) fallback)) := by
-        apply List.map_congr_left
-        intro k hk
-        apply List.ext_getElem
-        · simp only [List.length_ofFn]
-        · intro i hi hj
-          simp only [List.length_ofFn] at hi
-          have hkLt : k < m := List.mem_range.mp hk
-          have hkm : r * k + r ≤ m * r := by
-            rw [Nat.mul_comm r k, ← Nat.succ_mul]
-            exact Nat.mul_le_mul_right r (Nat.succ_le_of_lt hkLt)
-          have hidx1 : r * (k + 1) + i < xs.length := by
-            rw [hlen, Nat.mul_add, Nat.mul_one, Nat.succ_mul]
-            omega
-          have hidx2 : r * k + i < (xs.drop r).length := by
-            rw [hdropLen]
-            omega
-          simp only [List.getElem_ofFn, List.getD_eq_getElem?_getD,
-            List.getElem?_eq_getElem hidx1, List.getElem?_eq_getElem hidx2, Option.getD_some,
-            List.getElem_drop]
-          congr 1
-          rw [Nat.mul_add, Nat.mul_one]
-          omega
-      rw [hmap]
-      exact ih (xs.drop r) hdropLen
-    rw [hhead]
-    dsimp only [Function.comp_def]
-    rw [htail, ← hsplit]
+        simp only [List.getElem_map, List.getElem_range, List.getElem_ofFn]
+    -- Reading the blocks in order gives the flat byte at index `r * k + i`.
+    _ = List.ofFn (fun i : Fin (r * m) => xs.getD i.val fallback) :=
+      (List.ofFn_mul' (m := r) (n := m) (fun i => xs.getD i.val fallback)).symm
+    _ = xs := by
+      apply List.ext_getElem
+      · simpa only [List.length_ofFn, Nat.mul_comm r m] using hlen.symm
+      · intro i hi hj
+        simp only [List.getElem_ofFn, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hj,
+          Option.getD_some]
 
 /-- Flattening `paddedBlocks p input` recovers the exact padded byte string. -/
 lemma flatten_paddedBlocks (p : Parameters) (hr : 0 < p.rateBytes) (input : List (BitVec 8)) :
@@ -527,7 +471,7 @@ theorem recordSponge_local (p : Parameters) (π ρ : Equiv.Perm (ByteState p.sta
 capacity-collision-free and forward outputs have distinct digests [2, §4.3]. -/
 theorem input_eq_of_spongeHash_eq (p : Parameters) (hp : p.Valid)
     (table : List (PermutationEdge (ByteState p.stateBytes)))
-    -- Capacity collision-freeness and digest injectivity are supplied as orthogonal hypotheses.
+    -- `hg` separates reached states by capacity; `hdig` separates forward outputs by digest.
     (hg : CapacityCollisionFree (capacityPart p) (zeroState p.capacityBytes) table)
     (hdig : Set.InjOn (digestPart p) (forwardOutputs table))
     (π : Equiv.Perm (ByteState p.stateBytes)) (ha : AgreesWith table π)
@@ -536,30 +480,23 @@ theorem input_eq_of_spongeHash_eq (p : Parameters) (hp : p.Valid)
     (hs : ∀ x ∈ spongeCalls p π second, ∃ edge ∈ table, edge.input = x)
     (he : spongeHash p π first = spongeHash p π second) :
     first = second := by
-  have hfm :
-      absorbBlocks (absorbBlock p) π (zeroState p.stateBytes) (paddedBlocks p first) ∈
+  obtain ⟨rate_pos, rate_lt_state, _, _, suffix_ne, suffix_low⟩ := hp
+  -- Padding gives each covered message a last forward output, where the digest is injective.
+  have reached (msg : List (BitVec 8))
+      (covered : ∀ x ∈ spongeCalls p π msg, ∃ edge ∈ table, edge.input = x) :
+      absorbBlocks (absorbBlock p) π (zeroState p.stateBytes) (paddedBlocks p msg) ∈
         forwardOutputs table :=
     absorbBlocks_mem_forwardOutputs (capacityPart p) (zeroState p.capacityBytes)
       (absorbBlock p) (capacityPart_absorbBlock p) table hg π ha (zeroState p.stateBytes)
-      (Or.inl (capacityPart_zeroState p)) (paddedBlocks p first)
-      (paddedBlocks_ne_nil p hp.1 first) hf
-  have hsm :
-      absorbBlocks (absorbBlock p) π (zeroState p.stateBytes) (paddedBlocks p second) ∈
-        forwardOutputs table :=
-    absorbBlocks_mem_forwardOutputs (capacityPart p) (zeroState p.capacityBytes)
-      (absorbBlock p) (capacityPart_absorbBlock p) table hg π ha (zeroState p.stateBytes)
-      (Or.inl (capacityPart_zeroState p)) (paddedBlocks p second)
-      (paddedBlocks_ne_nil p hp.1 second) hs
-  have hstate :
-      absorbBlocks (absorbBlock p) π (zeroState p.stateBytes) (paddedBlocks p first) =
-        absorbBlocks (absorbBlock p) π (zeroState p.stateBytes) (paddedBlocks p second) :=
-    hdig hfm hsm he
+      (Or.inl (capacityPart_zeroState p)) _ (paddedBlocks_ne_nil p rate_pos msg) covered
+  have hstate := hdig (reached first hf) (reached second hs) he
+  -- The common final state fixes the rooted path, hence every absorbed block.
   have hblocks : paddedBlocks p first = paddedBlocks p second :=
     blocks_eq_of_absorbBlocks_eq (capacityPart p) (zeroState p.capacityBytes)
       (absorbBlock p) (capacityPart_absorbBlock p)
-      (absorbBlock_injective p (Nat.le_of_lt hp.2.1))
+      (absorbBlock_injective p rate_lt_state.le)
       (zeroState p.stateBytes) (capacityPart_zeroState p) table hg π ha
       (paddedBlocks p first) (paddedBlocks p second) hf hs hstate
-  exact paddedBlocks_injective p hp.1 hp.2.2.2.2.1 hp.2.2.2.2.2 hblocks
+  exact paddedBlocks_injective p rate_pos suffix_ne suffix_low hblocks
 
 end Commons.Sponge
