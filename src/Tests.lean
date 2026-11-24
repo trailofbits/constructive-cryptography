@@ -128,6 +128,7 @@ public import Tests.URFRetainedTable
 public import Tests.PermutationWalk
 public import Tests.PermutationTableGame
 public import Tests.BidirectionalSwitching
+public import Tests.SpongeCollision
 
 /-! Axiom audits per layer and of the Commons library, the checks of the
 authenticated-encryption example,
