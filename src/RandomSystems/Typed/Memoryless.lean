@@ -10,7 +10,8 @@ public import RandomSystems.System.Memoryless
 
 `TypedSystem.ofMemoryless A ν` answers each admitted query `i(x)` with a fresh reply
 `y ∼ ν i x`, independently of earlier exchanges [1, Definition 3.1, p. 55; §3.6.1, p. 65].
-`parallel_source_eq_ofProbAutomaton` presents two independent sources as one fresh automaton.
+`source_eq_ofProbAutomaton` presents a source as a one-state automaton with fresh replies.
+`parallel_source_eq_ofProbAutomaton` gives the corresponding presentation for two sources.
 `ofMemoryless_val` identifies this typed system with its cumulative behavior;
 `eq_memoryless_of_eq_ofMemoryless` projects a supplied typed contract to that behavior.
 
@@ -155,6 +156,16 @@ lemma source_eq_ofMemoryless
     {Z : Type} [Fintype Z] (law : ProbDist Z) (q : ℕ) :
     source law q = ofMemoryless (Interface.source Z q) (fun _ _ => law) :=
   Subtype.ext (source_eq_memoryless law q)
+
+/-- At each of the `q` allowed queries the source draws a fresh reply from `law`
+and returns to its unique state. -/
+lemma source_eq_ofProbAutomaton {Z : Type} [Fintype Z] (law : ProbDist Z) (q : ℕ) :
+    source law q =
+      ofProbAutomaton (Interface.source Z q) (ProbStep.fresh fun _ _ => law)
+        (ProbDist.single ()) := by
+  rw [source_eq_ofMemoryless]
+  exact Subtype.ext (RandomSystem.ofProbAutomaton_eq_memoryless _
+    (ProbStep.memoryless_fresh (fun _ _ => law)) (ProbDist.single ())).symm
 
 /-- Independent components reply according to the queried port's law, `parallelLaw ν₁ ν₂`.
 The raw parallel law is transported through the tensor's port labels. -/
