@@ -15,6 +15,7 @@ public import Commons.Definitions.CollisionBound
 public import Commons.Definitions.DiffieHellman
 public import Commons.Definitions.Encryption
 public import Commons.Definitions.Hash
+public import Commons.Definitions.Hash.Keyed
 public import Commons.Definitions.Ideal
 public import Commons.Definitions.LazyPermutation
 public import Commons.Definitions.KEM
