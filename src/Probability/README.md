@@ -139,6 +139,13 @@ For an adaptive evaluator whose complete output tuple pins its queried sites,
 tuples from fixed public values. Both retain the explicit pinned-fiber equivalence and
 injectivity of all replay and public sites; neither asserts independence on bad runs.
 
+For list-structured transcripts, [`Probability.List`](List.lean) translates list splits into
+bounded position quantifiers (`List.exists_eq_append_cons_iff`,
+`List.forall_prefix_concat_iff_forall_take`), lifts splits through `filterMap` and `filter`
+(`List.exists_split_of_filterMap_eq`, `List.exists_split_of_filter_eq`), and checks predicates
+against a running `foldl` state (`List.ForallScan`, `List.ForallScan.append`,
+`List.ForallScan.of_append_cons`).
+
 ## References
 
 1. D. Lanzenberger and U. Maurer. Coupling of Random Systems. In *Theory of Cryptography
