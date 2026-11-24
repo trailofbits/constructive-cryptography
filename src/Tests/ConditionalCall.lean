@@ -16,7 +16,7 @@ Checks `conditionalCall`, `conditionalCallConverter`, and `TypedConverter.condit
 * fixed-oracle attachment satisfies `C • [H] = [g_H]` on both branches;
 * the caller's outside domain is preserved verbatim, including all-pure outside histories whose
   oracle-branch request sequence is empty and outside domains larger than the inside budget;
-* serial composition reuses the `#39` accounting laws
+* serial composition reuses the serial accounting laws
   (`IsDDCFrom.comp_callConverter_query_count_le`);
 * CC composite notation (`•`, `∥`, `⊗ₘ`, `𝟙`) and `cc_normalize` work directly.
 -/

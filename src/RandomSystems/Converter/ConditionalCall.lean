@@ -21,36 +21,22 @@ without querying the inside interface. On inputs failing `branch`, it issues one
                       └─────────────────────────────────────────┘
 ```
 
-## Main definitions
+`conditionalCall` is the per-invocation rule; `conditionalCallConverter` restricts its canonical
+converter to the outside domain. `conditionalCallConverter_queries` identifies the emitted
+requests, including a pending call. `conditionalCallConverter_query_count` counts them with
+`conditionalCost`, and `conditionalCallConverter_isDDCFrom` transports their domain certificate.
+The serial bound reuses `comp_callConverter_query_count_le`; the fixed-function transcript law
+feeds `TypedConverter.conditionalCall_smul_ofFunction` in `RandomSystems.Typed.ConditionalCall`.
 
-* `conditionalCost branch u`: per-input inside-query cost (`0` on the pure branch, `1` on the
-  oracle branch)
-* `conditionalRequests branch request us`: the sequence of inside requests emitted by the
-  oracle-branch inputs of `us`
-* `conditionalCall branch pureReply request answer`: the per-invocation call rule
-* `conditionalCallConverter branch pureReply request answer F`: the converter over
-  `callConverter` keeping the outside domain `F`
-
-## Main results
-
-* `conditionalCall_phase`: biconditional phase condition against `conditionalCost`
-* `conditionalCall_isResponsiveDDC`: canonical responsiveness with bound `1`
-* `conditionalCall_queries`, `conditionalCallConverter_queries`: exact inside queries, including
-  a pending oracle-branch call as soon as it is sent
-* `conditionalCallConverter_query_count`: exact inside-query count equals the sum of
-  `conditionalCost` over outside inputs
-* `conditionalCall_completed_exact_length`: completed calls emit `0` or `1` inside requests
-* `conditionalCallConverter_isDDCFrom`: domain certificate keeping `F` when nonempty
-  oracle-branch request sequences lie in `E`
-* `IsDDCFrom.comp_conditionalCallConverter_query_count_le`: serial accounting when composed as an
-  inner converter
-* `replies_conditionalCallConverter_ofFunction`: completed transcripts against fixed inside
-  functions
 -/
 
 @[expose] public section
 
 namespace SystemAlgebra
+
+-- `O` and `J` carry outside and inside ports. At outside port `o`, `U o` is the query type
+-- and `V o` the reply type; `X j`, `Y j` are the corresponding alphabets at inside port `j`.
+variable {O J : Type} {U V : O → Type} {X Y : J → Type}
 
 /-- Inside-query cost of a single outside input `u`: `0` on the pure branch (`branch u`), `1` on
 the oracle branch (`¬ branch u`). -/
@@ -122,7 +108,7 @@ lemma conditionalRequests_length_le {O J : Type} {U : O → Type} {X : J → Typ
 /-- **The conditional call rule** for one invocation on outside input `u`: return `pureReply u`
 immediately when `branch u` holds; otherwise issue `request u` before any inside reply arrives
 and return `answer u r` on the inside reply `r`. -/
-def conditionalCall {O J : Type} {U V : O → Type} {X Y : J → Type}
+def conditionalCall
     (branch : (Σ o, U o) → Prop) [DecidablePred branch]
     (pureReply : (u : Σ o, U o) → V u.1)
     (request : (Σ o, U o) → Σ j, X j)
@@ -138,7 +124,7 @@ def conditionalCall {O J : Type} {U V : O → Type} {X Y : J → Type}
 
 /-- **The conditional oracle-call converter** on the outside domain `F`: the direct-call converter
 of `conditionalCall`, retaining the caller's outside domain `F`. -/
-noncomputable def conditionalCallConverter {O J : Type} {U V : O → Type} {X Y : J → Type}
+noncomputable def conditionalCallConverter
     (branch : (Σ o, U o) → Prop) [DecidablePred branch]
     (pureReply : (u : Σ o, U o) → V u.1)
     (request : (Σ o, U o) → Σ j, X j)
@@ -150,7 +136,7 @@ noncomputable def conditionalCallConverter {O J : Type} {U V : O → Type} {X Y 
 /-- **Biconditional phase condition**: `conditionalCall` emits an inside query if and only if
 `replies.length < conditionalCost branch u` (never on the pure branch, before the first reply on
 the oracle branch). -/
-lemma conditionalCall_phase {O J : Type} {U V : O → Type} {X Y : J → Type}
+lemma conditionalCall_phase
     (branch : (Σ o, U o) → Prop) [DecidablePred branch]
     (pureReply : (u : Σ o, U o) → V u.1)
     (request : (Σ o, U o) → Σ j, X j)
@@ -171,7 +157,7 @@ lemma conditionalCall_phase {O J : Type} {U V : O → Type} {X Y : J → Type}
         one_ne_zero, and_false]
 
 /-- The canonical conditional call rule is a responsive DDC with bound `1`. -/
-lemma conditionalCall_isResponsiveDDC {O J : Type} {U V : O → Type} {X Y : J → Type}
+lemma conditionalCall_isResponsiveDDC
     (branch : (Σ o, U o) → Prop) [DecidablePred branch]
     (pureReply : (u : Σ o, U o) → V u.1)
     (request : (Σ o, U o) → Σ j, X j)
@@ -190,7 +176,7 @@ lemma conditionalCall_isResponsiveDDC {O J : Type} {U V : O → Type} {X Y : J �
 /-- **Exact inside queries**: on every transcript of the raw conditional call rule, the inside
 queries are exactly the oracle-branch requests `conditionalRequests branch request` of the
 outside inputs, counting a pending oracle-branch request as soon as it is sent. -/
-lemma conditionalCall_queries {O J : Type} {U V : O → Type} {X Y : J → Type}
+lemma conditionalCall_queries
     (branch : (Σ o, U o) → Prop) [DecidablePred branch]
     (pureReply : (u : Σ o, U o) → V u.1)
     (request : (Σ o, U o) → Σ j, X j)
@@ -248,7 +234,7 @@ lemma conditionalCall_queries {O J : Type} {U V : O → Type} {X Y : J → Type}
 /-- **Domain certificate**: if `F` is closed under nonempty prefixes and every nonempty sequence
 of oracle-branch requests from an admitted outside history `us ∈ F` lies in `E`, then
 `conditionalCallConverter` is a DDC from `E` to `F` with bound `1`. -/
-lemma conditionalCallConverter_isDDCFrom {O J : Type} {U V : O → Type} {X Y : J → Type}
+lemma conditionalCallConverter_isDDCFrom
     (branch : (Σ o, U o) → Prop) [DecidablePred branch]
     (pureReply : (u : Σ o, U o) → V u.1)
     (request : (Σ o, U o) → Σ j, X j)
@@ -275,7 +261,7 @@ lemma conditionalCallConverter_isDDCFrom {O J : Type} {U V : O → Type} {X Y : 
 
 /-- Every transcript of `conditionalCallConverter` emits exactly the oracle-branch requests of
 its outside inputs, including a pending oracle-branch call as soon as it is sent. -/
-lemma conditionalCallConverter_queries {O J : Type} {U V : O → Type} {X Y : J → Type}
+lemma conditionalCallConverter_queries
     (branch : (Σ o, U o) → Prop) [DecidablePred branch]
     (pureReply : (u : Σ o, U o) → V u.1)
     (request : (Σ o, U o) → Σ j, X j)
@@ -293,7 +279,7 @@ lemma conditionalCallConverter_queries {O J : Type} {U V : O → Type} {X Y : J 
 
 /-- Every transcript of `conditionalCallConverter` spends `0` inside queries per pure-branch
 input and `1` per oracle-branch input, counting pending oracle calls as soon as they are sent. -/
-lemma conditionalCallConverter_query_count {O J : Type} {U V : O → Type} {X Y : J → Type}
+lemma conditionalCallConverter_query_count
     (branch : (Σ o, U o) → Prop) [DecidablePred branch]
     (pureReply : (u : Σ o, U o) → V u.1)
     (request : (Σ o, U o) → Σ j, X j)
@@ -309,7 +295,7 @@ lemma conditionalCallConverter_query_count {O J : Type} {U V : O → Type} {X Y 
 
 /-- A completed call of `conditionalCall` on `u` emits `conditionalCost branch u` inside queries
 (`0` on the pure branch, `1` on the oracle branch), via `callRule_completed_exact_length`. -/
-lemma conditionalCall_completed_exact_length {O J : Type} {U V : O → Type} {X Y : J → Type}
+lemma conditionalCall_completed_exact_length
     (branch : (Σ o, U o) → Prop) [DecidablePred branch]
     (pureReply : (u : Σ o, U o) → V u.1)
     (request : (Σ o, U o) → Σ j, X j)
@@ -354,7 +340,7 @@ lemma IsDDCFrom.comp_conditionalCallConverter_query_count_le
 /-- **Completed transcripts against fixed functions**: for `us ∈ F` and fixed inside functions
 `f_j`, each pure-branch input returns `pureReply u` with no inside query and each oracle-branch
 input queries `request u` once and returns `answer u (j, f_j x)`. -/
-lemma replies_conditionalCallConverter_ofFunction {O J : Type} {U V : O → Type} {X Y : J → Type}
+lemma replies_conditionalCallConverter_ofFunction
     (branch : (Σ o, U o) → Prop) [DecidablePred branch]
     (pureReply : (u : Σ o, U o) → V u.1)
     (request : (Σ o, U o) → Σ j, X j)
