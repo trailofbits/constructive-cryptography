@@ -111,6 +111,7 @@ public import RandomSystems.Typed.ProbAutomaton
 public import RandomSystems.Typed.ProbProgramAttachment
 public import RandomSystems.Typed.Relabel
 public import RandomSystems.Typed.RecordingGuard
+public import RandomSystems.Typed.WriteOnlyRecord
 public import RandomSystems.Typed.QueryRouting
 public import RandomSystems.Typed.ReplyTransform
 public import RandomSystems.Typed.SamplingAlgebra

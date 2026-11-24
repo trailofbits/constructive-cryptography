@@ -12,6 +12,7 @@ public import Tests.Guessing
 public import Tests.ContractApplication
 public import Tests.ReplyTransform
 public import Tests.RecordingGuard
+public import Tests.WriteOnlyRecord
 public import Tests.AllDistinguishers
 public import Tests.MixtureObservation
 public import Tests.ProofErgonomics
