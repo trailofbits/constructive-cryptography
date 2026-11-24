@@ -12,17 +12,15 @@ public import RandomSystems.Typed.QueryRouting
 `Hash.Real.eq_sample` identifies the DSL system `Hash.Real H` with one uniform key `k ←$ 𝒰[K]`
 retained for the whole interaction and the deterministic replies `Hash.reply H k`: `key()`
 returns `k` and `collide(m₀, m₁)` returns whether `H(k, m₀) = H(k, m₁)`.
-`Hash.Ideal.eq_sample` gives the ideal system the replies of the identity hash.
+`Hash.Ideal.eq_sample` specializes this presentation to the identity hash.
 
-The DSL program draws the key on its first query; `Hash.Real.body_probCombine` gives the
+The DSL program draws the key on its first query. `Hash.Real.body_probCombine` gives the
 optional-key transition contract, and `TypedSystem.ofProbAutomaton_eq_keyed_of_optional_key`
 moves the draw to initialization, as in `Commons.Definitions.MAC.Keyed`.
 
-`Hash.extractConverter extract` is a stateless one-query router (`TypedConverter.routing`)
-forwarding `key()` and mapping `collide p` to `collide (extract p)`. Scope: `extract : M' × M' →
-M × M` is a key-independent pair extractor, covering unkeyed hashes (`K = Unit`) and
-key-independent domain extensions rather than key-dependent or multi-query extraction. On the
-retained-key presentation it transports both systems (`Hash.extractConverter_smul_real`,
+`Hash.extractConverter extract` forwards `key()` and maps `collide p` to one inside query
+`collide (extract p)`. The pair map `extract` is independent of the key.
+The same converter transports both systems (`Hash.extractConverter_smul_real`,
 `Hash.extractConverter_smul_ideal`), lifting collision resistance (`Hash.CR.of_extractor`) and
 exact distinguisher advantage (`Hash.CR.advantage_eq_of_extractor`).
 
@@ -61,17 +59,6 @@ def Hash.reply (H : K → M → T) [DecidableEq T] (k : K) :
   | .key => fun _ => k
   | .collide => fun p => decide (H k p.1 = H k p.2)
 
-omit [Nonempty K] in
-/-- A single fresh source is a one-state fresh probabilistic automaton. -/
-lemma Hash.source_eq_ofProbAutomaton (P : ProbDist K) (n : ℕ) :
-    TypedSystem.source P n =
-      TypedSystem.ofProbAutomaton (Interface.source K n) (ProbStep.fresh fun _ _ => P)
-        (ProbDist.single ()) := by
-  rw [TypedSystem.source_eq_ofMemoryless]
-  exact Subtype.ext (RandomSystem.ofProbAutomaton_eq_memoryless
-    (Interface.source K n).inputDomain (ProbStep.memoryless_fresh (fun _ _ => P))
-    (ProbDist.single ())).symm
-
 /-- The DSL body draws a missing key once, then keeps it and replies by `Hash.reply H k`. -/
 lemma Hash.Real.body_probCombine
     (H : K → M → T) [DecidableEq T] (keys : Option K)
@@ -96,11 +83,13 @@ theorem Hash.Real.eq_sample (H : K → M → T) [DecidableEq T] (q : ℕ) :
     Hash.Real (budget := q) H =
       (sample k ←$ 𝒰[K];
         TypedSystem.ofFunction (A := KeyedCollision K M q) (Hash.reply H k)) := by
-  rw [Hash.Real, Hash.Real.program, Hash.Real.randomness, Hash.source_eq_ofProbAutomaton,
+  rw [Hash.Real, Hash.Real.program, Hash.Real.randomness, TypedSystem.source_eq_ofProbAutomaton,
     TypedConverter.ofProgram_smul_ofProbAutomaton]
+  -- Before the first query the hash holds no key and the fresh source has unit state.
   have hi : (ProbDist.single ()).map (fun r => ((none : Option K), r)) =
       ProbDist.single (none, ()) := Subtype.ext (fTransform_single _ _ _)
   rw [hi]
+  -- A first-query draw retained on every later query can be sampled at initialization.
   exact (TypedSystem.ofProbAutomaton_eq_keyed_of_optional_key
     (A := KeyedCollision K M q) (ProbDist.uniform K)
     (fun k i x => ProbDist.single (Hash.reply H k i x)) _ (by
@@ -108,43 +97,13 @@ theorem Hash.Real.eq_sample (H : K → M → T) [DecidableEq T] (q : ℕ) :
       cases keys <;> exact Hash.Real.body_probCombine H _ i x)).trans
     (TypedSystem.keyed_single _ _)
 
-/-- The ideal DSL body draws a missing key once, then keeps it and replies by the identity
-hash's `Hash.reply`. -/
-lemma Hash.Ideal.body_probCombine [DecidableEq M] (keys : Option K)
-    (i : KeyedCollision.Port) (x : (KeyedCollision K M 0).X i) :
-    (Hash.Ideal.body K M).probCombine (ProbStep.fresh fun _ _ => Hash.Ideal.law1 K M)
-      (Hash.Ideal.bound_spec K M) (keys, ()) i x =
-    match keys with
-    | none => (ProbDist.uniform K).bind fun k =>
-        (ProbDist.single (Hash.reply (fun (_ : K) (m : M) => m) k i x)).map
-          (fun y => ((some k, ()), y))
-    | some k => (ProbDist.single (Hash.reply (fun (_ : K) (m : M) => m) k i x)).map
-        (fun y => ((some k, ()), y)) := by
-  apply Subtype.ext
-  cases keys <;> cases i <;>
-    simp only [Program.probCombine, Program.probInvoke, Hash.Ideal.body,
-      callProg, returnProg, ProbStep.outcome, ProbStep.fresh, ProbDist.map_val,
-      fTransform_fTransform, Function.comp_def, ProbStep.tagged,
-      List.nil_append, ↓reduceDIte, Hash.reply, ProbDist.bind_val,
-      ProbDist.single, fTransform_single, bindK_single_comp] <;> rfl
-
 /-- **Retained-key presentation of `Hash.Ideal`**: one `k ←$ 𝒰[K]` with identity-hash replies. -/
 theorem Hash.Ideal.eq_sample [DecidableEq M] (q : ℕ) :
     Hash.Ideal K M (budget := q) =
       (sample k ←$ 𝒰[K];
         TypedSystem.ofFunction (A := KeyedCollision K M q)
-          (Hash.reply (fun (_ : K) (m : M) => m) k)) := by
-  rw [Hash.Ideal, Hash.Ideal.program, Hash.Ideal.randomness, Hash.source_eq_ofProbAutomaton,
-    TypedConverter.ofProgram_smul_ofProbAutomaton]
-  have hi : (ProbDist.single ()).map (fun r => ((none : Option K), r)) =
-      ProbDist.single (none, ()) := Subtype.ext (fTransform_single _ _ _)
-  rw [hi]
-  exact (TypedSystem.ofProbAutomaton_eq_keyed_of_optional_key
-    (A := KeyedCollision K M q) (ProbDist.uniform K)
-    (fun k i x => ProbDist.single (Hash.reply (fun (_ : K) (m : M) => m) k i x)) _ (by
-      intro keys i x
-      cases keys <;> exact Hash.Ideal.body_probCombine _ i x)).trans
-    (TypedSystem.keyed_single _ _)
+          (Hash.reply (fun (_ : K) (m : M) => m) k)) :=
+  Hash.Real.eq_sample (fun _ : K => @id M) q
 
 /-! ### Key-independent one-query extraction converter -/
 
@@ -173,8 +132,7 @@ lemma Hash.extractRequest_domain (extract : M' × M' → M × M) {q : ℕ}
     (KeyedCollision K M q).domain (us.map (Hash.extractRequest extract)) :=
   ⟨fun he => hus.1 (List.map_eq_nil_iff.mp he), (List.length_map _).trans_le hus.2⟩
 
-/-- **Key-independent one-query extraction converter** (stateless router; covers unkeyed hashes
-and key-independent domain extensions). -/
+/-- Forward a key request unchanged and send each candidate pair `p` to `extract p` in one call. -/
 def Hash.extractConverter (extract : M' × M' → M × M) (q : ℕ) :
     KeyedCollision K M' q ⟶ KeyedCollision K M q :=
   TypedConverter.routing (Hash.extractRequest extract) Hash.extractAnswer
@@ -211,11 +169,9 @@ theorem Hash.extractConverter_smul_ideal [DecidableEq M] [DecidableEq M']
     (extract : M' × M' → M × M) (q : ℕ)
     (hideal : ∀ p, (extract p).1 = (extract p).2 ↔ p.1 = p.2) :
     Hash.extractConverter extract q • Hash.Ideal K M (budget := q) =
-      Hash.Ideal K M' (budget := q) := by
-  rw [Hash.Ideal.eq_sample, Hash.Ideal.eq_sample, TypedConverter.smul_sample]
-  congr 1
-  funext k
-  exact Hash.extractConverter_smul_ofFunction _ _ extract q k hideal
+      Hash.Ideal K M' (budget := q) :=
+  Hash.extractConverter_smul_real (fun _ : K => @id M) (fun _ : K => @id M') extract q
+    (fun _ => hideal)
 
 /-! ### Collision lifting through the extraction converter -/
 
@@ -225,8 +181,10 @@ theorem Hash.CR.of_extractor {T' : Type} [DecidableEq M] [DecidableEq M']
     [DecidableEq T] [DecidableEq T'] [AdmissibleDistinguishers Interface TypedDistinguisher]
     {q : ℕ}
     (H : K → M → T) (G : K → M' → T') (extract : M' × M' → M × M)
+    -- `hreal` preserves digest equality at each key, and `hideal` preserves message equality.
     (hreal : ∀ k p, H k (extract p).1 = H k (extract p).2 ↔ G k p.1 = G k p.2)
     (hideal : ∀ p, (extract p).1 = (extract p).2 ↔ p.1 = p.2)
+    -- `closed` admits each outside observer after it absorbs this router.
     (closed : AdmissibleDistinguishers.ClosedUnder (Phi := TypedSystem)
       (D := TypedDistinguisher) (Hash.extractConverter (K := K) extract q))
     {error : TypedDistinguisher (KeyedCollision K M q) → ENNReal} (h : Hash.CR H error) :
