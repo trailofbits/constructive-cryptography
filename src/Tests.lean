@@ -80,6 +80,7 @@ public import Tests.MACAlgorithms
 public import Tests.PKEKeyed
 public import Tests.TypedSampling
 public import Tests.KeyGuessing
+public import Tests.DaviesMeyer
 public import Tests.TypedMemoryless
 public import Tests.TypedProbAutomaton
 public import Tests.TypedNaryParallel

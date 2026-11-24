@@ -37,6 +37,9 @@ public import Commons.Definitions.Signature.Keyed
 public import Commons.Definitions.StreamCipher
 public import Commons.Definitions.UniversalHash
 public import Commons.Schemes.BlockCipher.AES
+public import Commons.Schemes.Cipher.DaviesMeyer
+public import Commons.Schemes.Cipher.Context
+public import Commons.Schemes.Cipher.MultiContext
 public import Commons.Schemes.Hash.Keccak
 public import Commons.Schemes.Hash.SHA256
 public import Commons.Schemes.KEM.MLKEM.Concrete.Instance
