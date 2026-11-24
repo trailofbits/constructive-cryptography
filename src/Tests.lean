@@ -108,6 +108,7 @@ public import Tests.ProgramConverterBisimulation
 public import Tests.WhiskerNormalization
 public import Tests.IndifferentiabilityComposition
 public import Tests.ParallelProjections
+public import Tests.ConstructionCalc
 public import Tests.GameEquivalenceTransport
 public import Tests.GameDistanceBound
 

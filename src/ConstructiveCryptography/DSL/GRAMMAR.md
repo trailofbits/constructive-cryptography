@@ -453,7 +453,9 @@ The proof commands are in `ConstructiveCryptography.Tactics`.
 [`cc_nonexpand`][cc_nonexpand] applies the compatibility laws, on interfaces also
 [with the concrete parallel composition][cc_nonexpand-interfaces], [`cc_triangle`][cc_triangle]
 takes a hybrid step, and [`cc_construct`][cc_construct] reduces a construction to its equality or
-distance obligation. [`cc_calc relation`][cc_calc] proves $`X \simeq Y`$ from `=` and `≃` steps,
+distance obligation. [`cc_calc constructs`][cc_calc-constructs] chains exact (`—[π]→`),
+approximate (`—[π; ε]→`), and exact-equality (`=`) construction steps, composing converters in
+attachment order (`π₂ ≫ π₁`) and summing scalar budgets. [`cc_calc relation`][cc_calc] proves $`X \simeq Y`$ from `=` and `≃` steps,
 and [`cc_calc counted systems`][cc_calc-counted] builds an implication witness, whose uses
 [`cc_usage`][cc_usage] counts. [`cc_calc statistical`][cc_calc-statistical] proves
 $`d(X, Y) \le \sum_j \varepsilon_j`$ from `≈[ε]` steps, and
@@ -514,10 +516,11 @@ before/after proofs, expression guards, negative tests and exact rewrite traces 
 [MemorylessSource.memoryless_eq]: ../../Commons/Definitions/Ideal.lean#L370
 [WriteThrough]: ../../Examples/DSL/Components.lean#L108
 [cc_normalize]: ../Tactics/Basic.lean#L34
-[cc_nonexpand]: ../Tactics/Categorical.lean#L180
+[cc_nonexpand]: ../Tactics/Categorical.lean#L289
 [cc_nonexpand-interfaces]: ../Notation.lean#L176
-[cc_triangle]: ../Tactics/Categorical.lean#L169
-[cc_construct]: ../Tactics/Categorical.lean#L56
+[cc_triangle]: ../Tactics/Categorical.lean#L278
+[cc_construct]: ../Tactics/Categorical.lean#L165
+[cc_calc-constructs]: ../Tactics/Categorical.lean#L500
 [cc_calc]: ../Tactics/Substitution.lean#L105
 [cc_calc-counted]: ../Tactics/Substitution.lean#L164
 [cc_usage]: ../Tactics/Substitution.lean#L260
