@@ -2,6 +2,7 @@ module
 
 public import RandomSystems.Typed.DDCCoherence
 public import RandomSystems.Typed.TensorRename
+public import RandomSystems.Typed.Unitors
 
 /-!
 # Naturality of regrouping
@@ -16,13 +17,15 @@ one unrestricted regrouping, so they have the same transcripts.
 * `TypedConverter.comp_associator`: naturality of the associativity renaming
 * `TypedConverter.comp_leftUnitor`, `TypedConverter.comp_rightUnitor`: naturality of the unit
   renamings
+* `leftUnitorHom_comp_inv`, `rightUnitorHom_comp_inv` and the reverse laws: cancellation
+* `comp_leftUnitor_inv`, `comp_rightUnitor_inv`: inverse naturality, obtained by cancellation
 -/
 
 @[expose] public section
 
 namespace SystemAlgebra
 
-open Classical Probability
+open Probability
 
 namespace Interface
 
@@ -197,12 +200,9 @@ lemma comp_associator (α : TypedConverter A D) (β : TypedConverter B E)
 
 /-- **The left unit renaming is natural.** -/
 lemma comp_leftUnitor (α : TypedConverter A D) :
-    comp (parallel (TypedConverter.id unit) α)
-        (rename (Equiv.emptySum Empty D.I) (leftUnitAlphabet D.X) (leftUnitAlphabet D.Y)
-          (leftUnitAlphabet_fst D.X) (leftUnitAlphabet_fst D.Y) (parallelDomain_unit_left D)) =
-      comp (rename (Equiv.emptySum Empty A.I) (leftUnitAlphabet A.X) (leftUnitAlphabet A.Y)
-          (leftUnitAlphabet_fst A.X) (leftUnitAlphabet_fst A.Y) (parallelDomain_unit_left A))
-        α := by
+    comp (parallel (TypedConverter.id unit) α) (leftUnitorHom D) =
+      comp (leftUnitorHom A) α := by
+  unfold leftUnitorHom
   obtain ⟨rD, hrD, hD, hDle⟩ := exists_rename_eq_ofDDC (A := tensor unit D) (B := D) _ _ _
     (leftUnitAlphabet_fst D.X)
     (leftUnitAlphabet_fst D.Y) (parallelDomain_unit_left D)
@@ -226,12 +226,9 @@ lemma comp_leftUnitor (α : TypedConverter A D) :
 
 /-- **The right unit renaming is natural.** -/
 lemma comp_rightUnitor (α : TypedConverter A D) :
-    comp (parallel α (TypedConverter.id unit))
-        (rename (Equiv.sumEmpty D.I Empty) (rightUnitAlphabet D.X) (rightUnitAlphabet D.Y)
-          (rightUnitAlphabet_fst D.X) (rightUnitAlphabet_fst D.Y) (parallelDomain_unit_right D)) =
-      comp (rename (Equiv.sumEmpty A.I Empty) (rightUnitAlphabet A.X) (rightUnitAlphabet A.Y)
-          (rightUnitAlphabet_fst A.X) (rightUnitAlphabet_fst A.Y) (parallelDomain_unit_right A))
-        α := by
+    comp (parallel α (TypedConverter.id unit)) (rightUnitorHom D) =
+      comp (rightUnitorHom A) α := by
+  unfold rightUnitorHom
   obtain ⟨rD, hrD, hD, hDle⟩ := exists_rename_eq_ofDDC (A := tensor D unit) (B := D) _ _ _
     (rightUnitAlphabet_fst D.X)
     (rightUnitAlphabet_fst D.Y) (parallelDomain_unit_right D)
@@ -252,6 +249,86 @@ lemma comp_rightUnitor (α : TypedConverter A D) :
   apply Distribution.mass_congr
   intro p
   exact replies_rightUnitor_iff p.2 hrD hrA hDle hAle h
+
+/-- The left unit renaming and its inverse cancel on `tensor unit A`. -/
+lemma leftUnitorHom_comp_inv (A : Interface) :
+    comp (leftUnitorHom A) (leftUnitorInv A) = TypedConverter.id (tensor unit A) := by
+  rw [leftUnitorHom, leftUnitorInv, rename_comp]
+  simpa only [Equiv.self_trans_symm] using rename_refl (tensor unit A)
+
+/-- The left unit renaming and its inverse cancel on `A`. -/
+lemma leftUnitorInv_comp_hom (A : Interface) :
+    comp (leftUnitorInv A) (leftUnitorHom A) = TypedConverter.id A := by
+  rw [leftUnitorHom, leftUnitorInv, rename_comp]
+  simpa only [Equiv.symm_trans_self] using rename_refl A
+
+/-- The right unit renaming and its inverse cancel on `tensor A unit`. -/
+lemma rightUnitorHom_comp_inv (A : Interface) :
+    comp (rightUnitorHom A) (rightUnitorInv A) = TypedConverter.id (tensor A unit) := by
+  rw [rightUnitorHom, rightUnitorInv, rename_comp]
+  simpa only [Equiv.self_trans_symm] using rename_refl (tensor A unit)
+
+/-- The right unit renaming and its inverse cancel on `A`. -/
+lemma rightUnitorInv_comp_hom (A : Interface) :
+    comp (rightUnitorInv A) (rightUnitorHom A) = TypedConverter.id A := by
+  rw [rightUnitorHom, rightUnitorInv, rename_comp]
+  simpa only [Equiv.symm_trans_self] using rename_refl A
+
+/-- Moving `α` past the inverse right unit renaming preserves its action. -/
+lemma comp_rightUnitor_inv
+    -- `A`, `A'` are the outside and inside interfaces of `α`.
+    {A A' : Interface} (α : TypedConverter A A') :
+    comp (rightUnitorInv A) (parallel α (TypedConverter.id unit)) =
+      comp α (rightUnitorInv A') := by
+  -- Insert hom followed by inv, use forward naturality, then cancel inv followed by hom.
+  calc
+    comp (rightUnitorInv A) (parallel α (TypedConverter.id unit))
+        = comp (rightUnitorInv A) (comp (parallel α (TypedConverter.id unit))
+            (TypedConverter.id (tensor A' unit))) :=
+          congrArg (comp (rightUnitorInv A))
+            (PDCBehavior.comp_id _ (tensor A' unit).nonempty_prefix).symm
+    _ = comp (rightUnitorInv A) (comp (parallel α (TypedConverter.id unit))
+          (comp (rightUnitorHom A') (rightUnitorInv A'))) := by
+          rw [rightUnitorHom_comp_inv]
+    _ = comp (rightUnitorInv A) (comp
+          (comp (parallel α (TypedConverter.id unit)) (rightUnitorHom A')) (rightUnitorInv A')) :=
+          congrArg (comp (rightUnitorInv A)) (PDCBehavior.comp_assoc _ _ _).symm
+    _ = comp (rightUnitorInv A) (comp (comp (rightUnitorHom A) α) (rightUnitorInv A')) := by
+          rw [comp_rightUnitor α]
+    _ = comp (comp (rightUnitorInv A) (rightUnitorHom A)) (comp α (rightUnitorInv A')) := by
+          simp only [comp, PDCBehavior.comp_assoc]
+    _ = comp (TypedConverter.id A) (comp α (rightUnitorInv A')) := by
+          rw [rightUnitorInv_comp_hom]
+    _ = comp α (rightUnitorInv A') :=
+          PDCBehavior.id_comp _ A.nonempty_prefix
+
+/-- Moving `β` past the inverse left unit renaming preserves its action. -/
+lemma comp_leftUnitor_inv
+    -- `B`, `B'` are the outside and inside interfaces of `β`.
+    {B B' : Interface} (β : TypedConverter B B') :
+    comp (leftUnitorInv B) (parallel (TypedConverter.id unit) β) =
+      comp β (leftUnitorInv B') := by
+  -- Insert hom followed by inv, use forward naturality, then cancel inv followed by hom.
+  calc
+    comp (leftUnitorInv B) (parallel (TypedConverter.id unit) β)
+        = comp (leftUnitorInv B) (comp (parallel (TypedConverter.id unit) β)
+            (TypedConverter.id (tensor unit B'))) :=
+          congrArg (comp (leftUnitorInv B))
+            (PDCBehavior.comp_id _ (tensor unit B').nonempty_prefix).symm
+    _ = comp (leftUnitorInv B) (comp (parallel (TypedConverter.id unit) β)
+          (comp (leftUnitorHom B') (leftUnitorInv B'))) := by
+          rw [leftUnitorHom_comp_inv]
+    _ = comp (leftUnitorInv B) (comp (comp (parallel (TypedConverter.id unit) β) (leftUnitorHom B'))
+          (leftUnitorInv B')) :=
+          congrArg (comp (leftUnitorInv B)) (PDCBehavior.comp_assoc _ _ _).symm
+    _ = comp (leftUnitorInv B) (comp (comp (leftUnitorHom B) β) (leftUnitorInv B')) := by
+          rw [comp_leftUnitor β]
+    _ = comp (comp (leftUnitorInv B) (leftUnitorHom B)) (comp β (leftUnitorInv B')) := by
+          simp only [comp, PDCBehavior.comp_assoc]
+    _ = comp (TypedConverter.id B) (comp β (leftUnitorInv B')) := by
+          rw [leftUnitorInv_comp_hom]
+    _ = comp β (leftUnitorInv B') :=
+          PDCBehavior.id_comp _ B.nonempty_prefix
 
 end TypedConverter
 

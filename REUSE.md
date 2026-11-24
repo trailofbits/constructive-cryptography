@@ -112,6 +112,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Hidden-bit guessing | `TypedDistinguisher.guessingProbability` in [Guessing] |
 | Nonce/AD encrypt-then-MAC | `nonceEncryptThenMAC` in [NonceEncryptThenMAC] |
 | Restricted interface | `TypedConverter.filter` in [Filter] |
+| Unit renamings | `TypedConverter.leftUnitorHom`, `leftUnitorInv`, `rightUnitorHom`, `rightUnitorInv` in [Unitors](src/RandomSystems/Typed/Unitors.lean); cancellation and naturality in [ConverterCoherence](src/RandomSystems/Typed/ConverterCoherence.lean) |
 | Relabeled interface | `TypedConverter.rename` in [Relabel] |
 | Deterministic reply map | `Evaluation.mapReplies` in [ReplyTransform] |
 | Fresh randomized reply map | `Evaluation.sampleReplies` in [ReplyTransform] |

@@ -3,6 +3,7 @@ module
 public import RandomSystems.Typed.Distinguisher
 public import ConstructiveCryptography.CryptographicAlgebra.DistinguisherAction
 public import RandomSystems.Distance.RevealedHCoefficient
+public import RandomSystems.Typed.Context
 public import RandomSystems.Typed.ParallelAttachment
 public import RandomSystems.Typed.SystemCoherence
 public import RandomSystems.Typed.Distance
@@ -75,6 +76,13 @@ domination law needed by statistical steps of a substitution chain.
 * `Interface.cc_distance_eq`: the distance is the transcript distance of the random systems, by
   definition
 * `Interface.distance_le_of_hCoefficient`: an H-coefficient argument bounds the distance
+* `Interface.projectLeft_eq`, `Interface.projectRight_eq`, `Interface.projectLeft_smul_parallel`,
+  `Interface.projectRight_smul_parallel`, `Interface.projectLeft_smul_sample_parallel`,
+  `Interface.projectRight_smul_sample_parallel`, `Interface.projectLeft_comp_tensor`,
+  `Interface.projectLeft_comp_whiskerRight`, `Interface.projectRight_comp_tensor`,
+  `Interface.projectRight_comp_whiskerLeft`, `Interface.projectLeft_smul_tensor_smul`,
+  `Interface.projectRight_smul_tensor_smul`: instance-level laws of `TypedConverter.projectLeft` and
+  `TypedConverter.projectRight`
 -/
 
 @[expose] public section
@@ -112,22 +120,12 @@ lemma parallel_assoc {A B C : Interface} (R : TypedSystem A) (S : TypedSystem B)
   simp only [← Equiv.prodCongr_symm, List.map_map, Equiv.self_comp_symm, List.map_id]
 
 lemma parallel_dummy_left {A : Interface} (R : TypedSystem A) :
-    ((leftUnitor A).inv • TypedSystem.parallel TypedSystem.dummy R : TypedSystem A) = R := by
-  apply Subtype.ext
-  apply RandomSystem.ext
-  intro h
-  simp only [leftUnitor, isoOf]
-  rw [TypedConverter.rename_mass, TypedSystem.parallel_unit_left_mass]
-  simp only [← Equiv.prodCongr_symm, List.map_map, Equiv.self_comp_symm, List.map_id]
+    ((leftUnitor A).inv • TypedSystem.parallel TypedSystem.dummy R : TypedSystem A) = R :=
+  TypedConverter.leftUnitor_inv_attach R
 
 lemma parallel_dummy_right {A : Interface} (R : TypedSystem A) :
-    ((rightUnitor A).inv • TypedSystem.parallel R TypedSystem.dummy : TypedSystem A) = R := by
-  apply Subtype.ext
-  apply RandomSystem.ext
-  intro h
-  simp only [rightUnitor, isoOf]
-  rw [TypedConverter.rename_mass, TypedSystem.parallel_unit_right_mass]
-  simp only [← Equiv.prodCongr_symm, List.map_map, Equiv.self_comp_symm, List.map_id]
+    ((rightUnitor A).inv • TypedSystem.parallel R TypedSystem.dummy : TypedSystem A) = R :=
+  TypedConverter.rightUnitor_inv_attach R
 
 lemma parallel_swap {A B : Interface} (R : TypedSystem A) (S : TypedSystem B) :
     ((swap A B).hom • TypedSystem.parallel S R : TypedSystem (tensor A B)) =
@@ -348,5 +346,123 @@ noncomputable instance distinguisherAdvantageDominated
   advantage_le_distance d _ R S := by
     rw [cc_distance_eq]
     exact d.advantage_le_transcriptDistance R S
+
+/-- In the monoidal category of interfaces, `projectLeft A B` is
+`(ρ_ A).inv ≫ (𝟙 A ⊗ₘ discard B)`. -/
+lemma projectLeft_eq
+    -- `A` is the retained outside interface; `B` is the hidden parallel component.
+    (A B : Interface) :
+    (TypedConverter.projectLeft A B : A ⟶ A ⊗ B) =
+      (ρ_ A).inv ≫ (𝟙 A ⊗ₘ TypedConverter.discard B) := rfl
+
+/-- In the monoidal category of interfaces, `projectRight A B` is
+`(λ_ B).inv ≫ (discard A ⊗ₘ 𝟙 B)`. -/
+lemma projectRight_eq
+    -- `A` is the hidden parallel component; `B` is the retained outside interface.
+    (A B : Interface) :
+    (TypedConverter.projectRight A B : B ⟶ A ⊗ B) =
+      (λ_ B).inv ≫ (TypedConverter.discard A ⊗ₘ 𝟙 B) := rfl
+
+/-- Projecting the left component of a parallel resource returns `R`. -/
+lemma projectLeft_smul_parallel
+    -- `R` on `A` is retained; `S` on `B` is discarded.
+    {A B : Interface} (R : TypedSystem A) (S : TypedSystem B) :
+    TypedConverter.projectLeft A B •
+      ConstructiveCryptography.CryptographicAlgebra.parallel R S = R :=
+  TypedConverter.projectLeft_smul_parallel R S
+
+/-- Projecting the right component of a parallel resource returns `S`. -/
+lemma projectRight_smul_parallel
+    -- `R` on `A` is discarded; `S` on `B` is retained.
+    {A B : Interface} (R : TypedSystem A) (S : TypedSystem B) :
+    TypedConverter.projectRight A B •
+      ConstructiveCryptography.CryptographicAlgebra.parallel R S = S :=
+  TypedConverter.projectRight_smul_parallel R S
+
+/-- Projecting the left component of a sampled parallel resource preserves the retained draw
+`k ← P` and returns `TypedSystem.sample P R`. -/
+lemma projectLeft_smul_sample_parallel
+    -- `A`, `B` are the ordered component interfaces; `K` carries the shared initial draw.
+    {A B : Interface} {K : Type}
+    -- `P` is the normalized law drawn once before interaction.
+    (P : Probability.Distribution K) [Probability.Distribution.IsProbability P]
+    -- `R k` is retained and `S k` is discarded for that draw `k`.
+    (R : K → TypedSystem A) (S : K → TypedSystem B) :
+    TypedConverter.projectLeft A B • TypedSystem.sample P (fun k =>
+      ConstructiveCryptography.CryptographicAlgebra.parallel (R k) (S k)) =
+      TypedSystem.sample P R :=
+  TypedConverter.projectLeft_smul_sample_parallel P R S
+
+/-- Projecting the right component of a sampled parallel resource preserves the retained draw
+`k ← P` and returns `TypedSystem.sample P S`. -/
+lemma projectRight_smul_sample_parallel
+    -- `A`, `B` are the ordered component interfaces; `K` carries the shared initial draw.
+    {A B : Interface} {K : Type}
+    -- `P` is the normalized law drawn once before interaction.
+    (P : Probability.Distribution K) [Probability.Distribution.IsProbability P]
+    -- `R k` is discarded and `S k` is retained for that draw `k`.
+    (R : K → TypedSystem A) (S : K → TypedSystem B) :
+    TypedConverter.projectRight A B • TypedSystem.sample P (fun k =>
+      ConstructiveCryptography.CryptographicAlgebra.parallel (R k) (S k)) =
+      TypedSystem.sample P S :=
+  TypedConverter.projectRight_smul_sample_parallel P R S
+
+/-- Naturality of `projectLeft` under tensor of arrows:
+`projectLeft A B ≫ (α ⊗ₘ β) = α ≫ projectLeft A' B'`. -/
+lemma projectLeft_comp_tensor
+    -- `A`, `A'` are the retained interfaces of `α`; `B`, `B'` are the hidden interfaces of `β`.
+    {A A' B B' : Interface} (α : A ⟶ A') (β : B ⟶ B') :
+    (TypedConverter.projectLeft A B : A ⟶ A ⊗ B) ≫ (α ⊗ₘ β) =
+      α ≫ (TypedConverter.projectLeft A' B' : A' ⟶ A' ⊗ B') :=
+  TypedConverter.projectLeft_comp_parallel α β
+
+/-- Left projection commutes with a converter `α` on the retained component:
+`projectLeft A B ≫ (α ⊗ₘ 𝟙 B) = α ≫ projectLeft A' B`. -/
+lemma projectLeft_comp_whiskerRight
+    -- `A`, `A'` are the outside and inside interfaces of `α`; `B` is the hidden component.
+    {A A' B : Interface} (α : A ⟶ A') :
+    (TypedConverter.projectLeft A B : A ⟶ A ⊗ B) ≫ (α ⊗ₘ 𝟙 B) =
+      α ≫ (TypedConverter.projectLeft A' B : A' ⟶ A' ⊗ B) :=
+  TypedConverter.projectLeft_comp_parallel_id α
+
+/-- Naturality of `projectRight` under tensor of arrows:
+`projectRight A B ≫ (α ⊗ₘ β) = β ≫ projectRight A' B'`. -/
+lemma projectRight_comp_tensor
+    -- `A`, `A'` are the hidden interfaces of `α`; `B`, `B'` are the retained interfaces of `β`.
+    {A A' B B' : Interface} (α : A ⟶ A') (β : B ⟶ B') :
+    (TypedConverter.projectRight A B : B ⟶ A ⊗ B) ≫ (α ⊗ₘ β) =
+      β ≫ (TypedConverter.projectRight A' B' : B' ⟶ A' ⊗ B') :=
+  TypedConverter.projectRight_comp_parallel α β
+
+/-- Right projection commutes with a converter `β` on the retained component:
+`projectRight A B ≫ (𝟙 A ⊗ₘ β) = β ≫ projectRight A B'`. -/
+lemma projectRight_comp_whiskerLeft
+    -- `A` is the hidden component; `B`, `B'` are the outside and inside interfaces of `β`.
+    {A B B' : Interface} (β : B ⟶ B') :
+    (TypedConverter.projectRight A B : B ⟶ A ⊗ B) ≫ (𝟙 A ⊗ₘ β) =
+      β ≫ (TypedConverter.projectRight A B' : B' ⟶ A ⊗ B') :=
+  TypedConverter.projectRight_comp_parallel_id β
+
+/-- Attaching `α ⊗ₘ β` before `projectLeft A B` equals attaching `α` after `projectLeft A' B'`,
+for any (possibly correlated) typed system `T` on `A' ⊗ B'`. -/
+lemma projectLeft_smul_tensor_smul
+    -- `A`, `A'` are the retained interfaces and `B`, `B'` the hidden interfaces.
+    {A A' B B' : Interface}
+    -- `α` acts on the retained side, `β` on the hidden side, and `T` is any joint system.
+    (α : A ⟶ A') (β : B ⟶ B') (T : TypedSystem (A' ⊗ B')) :
+    TypedConverter.projectLeft A B • ((α ⊗ₘ β) • T) =
+      α • (TypedConverter.projectLeft A' B' • T) :=
+  TypedConverter.projectLeft_smul_parallel_smul α β T
+
+/-- Attaching `α ⊗ₘ β` before `projectRight A B` equals attaching `β` after `projectRight A' B'`,
+for any (possibly correlated) typed system `T` on `A' ⊗ B'`. -/
+lemma projectRight_smul_tensor_smul
+    -- `A`, `A'` are the hidden interfaces and `B`, `B'` the retained interfaces.
+    {A A' B B' : Interface}
+    -- `α` acts on the hidden side, `β` on the retained side, and `T` is any joint system.
+    (α : A ⟶ A') (β : B ⟶ B') (T : TypedSystem (A' ⊗ B')) :
+    TypedConverter.projectRight A B • ((α ⊗ₘ β) • T) =
+      β • (TypedConverter.projectRight A' B' • T) :=
+  TypedConverter.projectRight_smul_parallel_smul α β T
 
 end SystemAlgebra.Interface
