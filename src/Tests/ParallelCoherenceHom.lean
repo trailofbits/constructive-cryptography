@@ -23,6 +23,8 @@ open ConstructiveCryptography ConstructiveCryptography.CryptographicAlgebra
 
 section Abstract
 
+open scoped SystemAlgebra
+
 universe u v w
 
 variable {C : Type u} [Category.{v} C] [MonoidalCategory C]
@@ -37,6 +39,19 @@ example {A B D : C} (L : Phi A) (M : Phi B) (R : Phi D) :
 example {A B D : C} (L : Phi A) (M : Phi B) (R : Phi D) :
     attach (α_ A B D).hom (parallel L (parallel M R)) = parallel (parallel L M) R := by
   cc_normalize
+
+/-- The same regrouping is automatic in the public attachment and parallel notation. -/
+example {A B D : C} (L : Phi A) (M : Phi B) (R : Phi D) :
+    (α_ A B D).hom • (L ∥ (M ∥ R)) = (L ∥ M) ∥ R := by
+  cc_normalize
+
+/-- A converter `f` with the same source and target needs its own regrouping law. -/
+example {A B D : C} (f : (A ⊗ B) ⊗ D ⟶ A ⊗ (B ⊗ D)) (L : Phi A) (M : Phi B) (R : Phi D)
+    (h : f • (L ∥ (M ∥ R)) = (L ∥ M) ∥ R) :
+    f • (L ∥ (M ∥ R)) = (α_ A B D).hom • (L ∥ (M ∥ R)) := by
+  cc_normalize
+  guard_target =ₛ f • (L ∥ (M ∥ R)) = (L ∥ M) ∥ R
+  exact h
 
 /-- Forward left unitor places `dummy` on the left in any cryptographic algebra. -/
 example {A : C} (R : Phi A) :
