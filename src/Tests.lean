@@ -103,6 +103,7 @@ public import Tests.RoutedRandomFunction
 public import Tests.TranscriptLaw
 public import Tests.TwoPartyObstruction
 public import Tests.RandomFunctionCollision
+public import Tests.CollisionLower
 public import Tests.RatioCost
 public import Tests.FilteredRatio
 public import Tests.CompositeNotation
