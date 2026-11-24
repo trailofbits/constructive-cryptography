@@ -11,6 +11,7 @@ public import ConstructiveCryptography.CryptographicAlgebra.PseudoMetric
 public import ConstructiveCryptography.CryptographicAlgebra.Relaxation
 public import ConstructiveCryptography.CryptographicAlgebra.Star
 public import ConstructiveCryptography.CryptographicAlgebra.SimulatorComposition
+public import ConstructiveCryptography.CryptographicAlgebra.Indifferentiability
 public import ConstructiveCryptography.DSL
 public import ConstructiveCryptography.DSL.Elaborator
 public import ConstructiveCryptography.Distinguisher
