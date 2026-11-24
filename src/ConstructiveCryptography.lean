@@ -18,6 +18,7 @@ public import ConstructiveCryptography.DSL.Elaborator
 public import ConstructiveCryptography.Distinguisher
 public import ConstructiveCryptography.Game
 public import ConstructiveCryptography.Instances
+public import ConstructiveCryptography.Instances.KeyGuessing
 public import ConstructiveCryptography.Notation
 public import ConstructiveCryptography.Problem
 public import ConstructiveCryptography.Specification

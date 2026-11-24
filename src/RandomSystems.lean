@@ -99,6 +99,7 @@ public import RandomSystems.Typed.Interface
 public import RandomSystems.Typed.InterfaceCoherence
 public import RandomSystems.Typed.Keyed
 public import RandomSystems.Typed.KeyedAutomaton
+public import RandomSystems.Typed.KeyGuessing
 public import RandomSystems.Typed.Memoryless
 public import RandomSystems.Typed.Parallel
 public import RandomSystems.Typed.ParallelAttachment
@@ -117,6 +118,7 @@ public import RandomSystems.Typed.WriteOnlyRecord
 public import RandomSystems.Typed.QueryRouting
 public import RandomSystems.Typed.ConditionalCall
 public import RandomSystems.Typed.ReplyTransform
+public import RandomSystems.Typed.SampleLaws
 public import RandomSystems.Typed.SamplingAlgebra
 public import RandomSystems.Typed.SampleRelabel
 public import RandomSystems.Typed.Source

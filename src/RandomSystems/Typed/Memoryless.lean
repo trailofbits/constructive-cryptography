@@ -20,7 +20,8 @@ public import RandomSystems.System.Memoryless
 `source_eq_memoryless` proves the source law by exposing its table of independent samples.
 `parallel_eq_memoryless` transports the raw parallel law through the tensor's port labels.
 Their typed forms, `source_eq_ofMemoryless`, `parallel_ofMemoryless` and
-`parallel_eq_ofMemoryless`, compose these contracts without projecting cumulative behavior.
+`parallel_eq_ofMemoryless`, compose these contracts without projecting cumulative behavior;
+`parallel_ofFunction` is the point-law case of fixed functions.
 
 The program contracts `TypedConverter.ofProgram_smul_ofMemoryless`,
 `ofPreservingProgram_smul_ofMemoryless` and `ofCostedProgram_smul_ofMemoryless` give
@@ -294,6 +295,23 @@ lemma parallel_eq_ofMemoryless
     (hR : R = ofMemoryless A ν₁) (hT : T = ofMemoryless B ν₂) :
     parallel R T = ofMemoryless (tensor A B) (parallelLaw ν₁ ν₂) := by
   rw [hR, hT, parallel_ofMemoryless]
+
+/-- Independent fixed functions side by side are the fixed function selecting the queried
+component: `ofFunction f ∥ ofFunction g = ofFunction (Sum.rec f g)` on `tensor A B`. Fixed
+functions are the memoryless systems with point laws. -/
+lemma parallel_ofFunction
+    -- `A`, `B` retain their selected domains in the tensor interface.
+    {A B : Interface}
+    -- `f i x` and `g j y` are the fixed replies of the two components.
+    (f : ∀ i, A.X i → A.Y i) (g : ∀ j, B.X j → B.Y j) :
+    parallel (ofFunction f) (ofFunction g) = ofFunction (A := tensor A B) (Sum.rec f g) := by
+  change parallel (ofMemoryless A fun i x => ProbDist.single (f i x))
+      (ofMemoryless B fun j y => ProbDist.single (g j y)) =
+    ofMemoryless (tensor A B) fun l x => ProbDist.single (Sum.rec f g l x)
+  rw [parallel_ofMemoryless]
+  congr 1
+  funext l x
+  cases l <;> rfl
 
 end TypedSystem
 
