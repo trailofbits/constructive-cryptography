@@ -7,31 +7,21 @@ public import Mathlib.Data.Set.Function
 /-!
 # Directed partial-permutation tables for sponge proofs
 
-Partial-permutation transcripts for sponge security proofs record directed edges `(x, y, inverse)`
-of a permutation `π` over an arbitrary state type `State` [1, §4.3]. Forward queries produce fresh
-outputs `y = π(x)`; inverse queries produce fresh inputs `x = π⁻¹(y)`.
+A query at `x` and an inverse query at `π x` determine the same pair `(x, π x)`.
+`insertEdge` records the direction of the first query. `insertEdge_query_agrees_iff`
+characterizes the permutations consistent with the resulting table.
 
-## Main definitions
+For absorption, each block `b` gives one edge:
 
-* `Commons.Sponge.PermutationEdge`: directed permutation edge `(input, output, inverse)`
-* `Commons.Sponge.AgreesWith`, `Commons.Sponge.queryEdge`, `Commons.Sponge.insertEdge`,
-  `Commons.Sponge.recordedPairs`: edge consistency and deduplicating insertion
-* `Commons.Sponge.occupiedCapacities`, `Commons.Sponge.CapacityCollisionFree`,
-  `Commons.Sponge.AvoidsOccupiedCapacity`: capacity collision-avoidance invariants
-* `Commons.Sponge.absorbBlocks`, `Commons.Sponge.absorptionCalls`,
-  `Commons.Sponge.recordAbsorption`: abstract absorption paths and recorded edges
+```text
+state ──absorb b──▶ input ──π──▶ next state
+       same capacity
+```
 
-## Main results
-
-* `Commons.Sponge.rooted_edge_forward`: edges rooted at zero or a forward output are forward
-* `Commons.Sponge.capacityCollisionFree_append` and
-  `Commons.Sponge.capacityCollisionFree_insertEdge`: capacity invariant preservation
-* `Commons.Sponge.digest_injOn_append` and `Commons.Sponge.digest_injOn_insertEdge`: orthogonal
-  digest injectivity preservation
-* `Commons.Sponge.insertEdge_agrees_iff`, `Commons.Sponge.insertEdge_query_agrees_iff`,
-  `Commons.Sponge.recordedPairs_agrees_iff`: exact constraint equivalences
-* `Commons.Sponge.recordAbsorption_local` and `Commons.Sponge.blocks_eq_of_absorbBlocks_eq`:
-  absorption locality and unique recovery of covered rooted paths
+`recordAbsorption_local` lets a second permutation replay the path using the recorded pairs.
+Under `CapacityCollisionFree`, the capacity identifies each reached parent. If absorption at
+that parent is injective in the block, `blocks_eq_of_absorbBlocks_eq` recovers the whole block
+sequence from the final state. This uses the rooted graph of [1, §§3.2, 4.3].
 
 ## References
 
@@ -57,7 +47,7 @@ structure PermutationEdge (State : Type*) where
   inverse : Bool
   deriving DecidableEq
 
-/-- The freshly sampled endpoint of a directed permutation edge. -/
+/-- The answer to the query: the output of a forward call or the preimage of an inverse call. -/
 def PermutationEdge.freshEndpoint (edge : PermutationEdge State) : State :=
   if edge.inverse then edge.input else edge.output
 
@@ -81,6 +71,12 @@ def queryEdge (π : Equiv.Perm State) (inverse : Bool) (point : State) : Permuta
 def insertEdge [DecidableEq State] (table : List (PermutationEdge State))
     (edge : PermutationEdge State) : List (PermutationEdge State) :=
   if ∃ prev ∈ table, prev.input = edge.input then table else table ++ [edge]
+
+/-- A previously recorded input keeps its original edge, including its query direction. -/
+lemma insertEdge_eq_self_of_input_mem [DecidableEq State] {table : List (PermutationEdge State)}
+    {edge prev : PermutationEdge State} (hprev : prev ∈ table) (hx : prev.input = edge.input) :
+    insertEdge table edge = table :=
+  ite_eq_left ⟨prev, hprev, hx⟩
 
 /-- The set of distinct `(input, output)` constraint pairs present in `table`. -/
 def recordedPairs [DecidableEq State] (table : List (PermutationEdge State)) :
@@ -509,7 +505,7 @@ def recordAbsorption [DecidableEq State] (absorb : State → Block → State)
   | table, _, [] => table
   | table, state, block :: rest =>
     let x := absorb state block
-    let table' := insertEdge table ⟨x, π x, false⟩
+    let table' := insertEdge table (queryEdge π false x)
     recordAbsorption absorb π table' (π x) rest
 
 lemma absorbBlocks_nil (absorb : State → Block → State) (π : Equiv.Perm State)
@@ -565,8 +561,8 @@ lemma length_recordAbsorption_le [DecidableEq State] (absorb : State → Block �
   | cons block rest ih =>
     simp only [recordAbsorption, List.length_cons]
     have hstep :=
-      length_insertEdge_le table ⟨absorb state block, π (absorb state block), false⟩
-    have hrest := ih (insertEdge table ⟨absorb state block, π (absorb state block), false⟩)
+      length_insertEdge_le table (queryEdge π false (absorb state block))
+    have hrest := ih (insertEdge table (queryEdge π false (absorb state block)))
       (π (absorb state block))
     omega
 
@@ -615,7 +611,7 @@ theorem recordAbsorption_local [DecidableEq State] (absorb : State → Block →
     obtain ⟨edge, he, hi⟩ := hmem
     have hval : ρ (absorb state block) = π (absorb state block) := by
       rw [← hi, hρ edge he, hπ edge he]
-    simp only [recordAbsorption, absorbBlocks_cons, hval]
+    simp only [recordAbsorption, absorbBlocks_cons, queryEdge, Bool.false_eq_true, ↓reduceIte, hval]
     exact ih _ (π (absorb state block)) hπ hρ
 
 /-- Every nonempty rooted block sequence covered by a capacity-collision-free table ends at a
@@ -701,19 +697,17 @@ theorem blocks_eq_of_absorbBlocks_eq {Cap : Type*}
         (congrArg capacity he).trans hroot
       exact False.elim (hg.2.1 _ hmem hzero)
     | append_singleton second last =>
-      have hfp :
-          ∀ x ∈ absorptionCalls absorb π root first, ∃ edge ∈ table, edge.input = x := by
-        intro x hx
-        apply hf x
-        rw [absorptionCalls_append]
-        exact List.mem_append_left _ hx
-      have hsp :
-          ∀ x ∈ absorptionCalls absorb π root second, ∃ edge ∈ table, edge.input = x := by
-        intro x hx
-        apply hs x
-        rw [absorptionCalls_append]
-        exact List.mem_append_left _ hx
+      -- Dropping the last block keeps every earlier query covered by the same table.
+      have prefixCovered {bs : List Block} {b : Block}
+          (covered : ∀ x ∈ absorptionCalls absorb π root (bs ++ [b]),
+            ∃ edge ∈ table, edge.input = x) :
+          ∀ x ∈ absorptionCalls absorb π root bs, ∃ edge ∈ table, edge.input = x := by
+        rw [absorptionCalls_append] at covered
+        exact fun x hx => covered x (List.mem_append_left _ hx)
+      have hfp := prefixCovered hf
+      have hsp := prefixCovered hs
       simp only [absorbBlocks_append, absorbBlocks_cons, absorbBlocks_nil] at he
+      -- Equal final states have the same permutation input and hence the same parent capacity.
       have hx := π.injective he
       have hcapEq := congrArg capacity hx
       simp only [hcap] at hcapEq
@@ -721,6 +715,7 @@ theorem blocks_eq_of_absorbBlocks_eq {Cap : Type*}
         (absorbBlocks_reached capacity zeroCap absorb hcap root hroot table hg π ha first hfp)
         (absorbBlocks_reached capacity zeroCap absorb hcap root hroot table hg π ha second hsp)
         hcapEq
+      -- Once the parent is known, injectivity of absorption determines the last block.
       have hb : block = last := by
         rw [hparent] at hx
         exact hinj _ hx
