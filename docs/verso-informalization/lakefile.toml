@@ -1,0 +1,32 @@
+name = "verso-informalization"
+version = "0.1.0"
+defaultTargets = ["VersoInformalization", "verso-informalize"]
+
+# ---------------------------------------------------------------------------
+# Isolated Verso Consumer Package
+#
+# This package deliberately has NO dependency on the root `cc-informalization`
+# Lake workspace. It consumes the canonical `Explanation.Document` JSON
+# exported by `Informalization.Render.Json` so that Verso's Lean toolchain
+# pin can evolve independently of Lean 4.35.0 core.
+#
+# Offline-first default:
+#   `lake build` succeeds immediately with zero external network dependencies.
+#
+# Enabling full Verso publication backends (HTML manual, LaTeX/PDF, Slides):
+#   1. Pin `docs/verso-informalization/lean-toolchain` to the Lean release
+#      matched by your chosen Verso tag.
+#   2. Uncomment the `[[require]]` block below and run `lake update verso`.
+#
+# [[require]]
+# name = "verso"
+# git = "https://github.com/leanprover/verso"
+# rev = "main"
+# ---------------------------------------------------------------------------
+
+[[lean_lib]]
+name = "VersoInformalization"
+
+[[lean_exe]]
+name = "verso-informalize"
+root = "Main"

@@ -280,7 +280,12 @@ private def adjPrefix (adjs : List String) : String :=
   if adjs.isEmpty then "" else String.intercalate " " adjs ++ " "
 
 private def nameWithType (i : Intro) : String :=
-  if i.typeStr.isEmpty then i.name else i.name ++ " : " ++ i.typeStr
+  if i.typeStr.isEmpty then i.name
+  else if i.name.startsWith "\\(" && i.name.endsWith "\\)" then
+    let inner := ((i.name.drop 2).dropEnd 2).toString
+    s!"\\({inner} : {i.typeStr}\\)"
+  else
+    i.name ++ " : " ++ i.typeStr
 
 /-- Realize one aggregated introduction clause (without leading `"Let "` or trailing period),
 so multiple clauses can be coordinated smoothly into a single flowing sentence. -/
@@ -351,7 +356,7 @@ private def transitionCandidates : TransitionKind → List String
   | .setup         => ["Fix", "Consider", "Let"]
   | .elaboration   => ["More precisely,", "In other words,", "Specifically,"]
   | .consequence   => ["Hence,", "Therefore,", "It follows that", "Consequently,"]
-  | .justification => ["Since", "Because", "By"]
+  | .justification => ["By", "Applying", "From"]
   | .reduction     => ["It suffices to show that", "It remains to show that", "It suffices to bound"]
   | .caveat        => ["Note, however, that", "Observe that", "Remark that"]
   | .closing       => ["Combining these bounds yields", "Putting these steps together gives",

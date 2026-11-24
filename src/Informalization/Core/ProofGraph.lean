@@ -389,7 +389,7 @@ def informalizeDeclaration (declName : Name) (config : Config := {}) :
   let ov := getOverlay env declName
   let tbl := buildSymbolTable env declName
   let parsed ← parseTheoremStatement tbl info.type
-  let diagHtml ← (← diagramHookRef.get) parsed.conclusion
+  let diagHtml ← (← diagramHookRef.get) info.type
   let inspectors ← (← inspectorCollectorRef.get) tbl info.type
   let header := match info with
     | .thmInfo _ => "Theorem"

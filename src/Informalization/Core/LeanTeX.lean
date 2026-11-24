@@ -85,7 +85,7 @@ partial def formatMathIdent (s : String) : String :=
     -- Common Greek Unicode -> LaTeX commands
     match s with
     | "α" => "\\alpha" | "β" => "\\beta" | "γ" => "\\gamma" | "δ" => "\\delta"
-    | "ε" => "\\varepsilon" | "ζ" => "\\zeta" | "η" => "\\eta" | "θ" => "\\theta"
+    | "ε" => "\\varepsilon" | "ζ" => "\\zeta" | "η" => "\\eta" | "θ" => "\\theta" | "ι" => "\\iota"
     | "κ" => "\\kappa" | "λ" => "\\lambda" | "μ" => "\\mu" | "ν" => "\\nu"
     | "π" => "\\pi" | "ρ" => "\\rho" | "σ" => "\\sigma" | "τ" => "\\tau"
     | "φ" => "\\varphi" | "χ" => "\\chi" | "ψ" => "\\psi" | "ω" => "\\omega"
@@ -300,7 +300,8 @@ where
         let some (l, r) := lastTwo? args | return none
         return some ("\\max\\!\\left\\{" ++ (← renderAux tbl 0 l) ++ ",\\, " ++ (← renderAux tbl 0 r) ++ "\\right\\}", 85)
     | ``Membership.mem =>
-        let some (elem, set) := lastTwo? args | return none
+        -- In Lean/Mathlib `Membership.mem s x` means `x ∈ s`
+        let some (set, elem) := lastTwo? args | return none
         return some (s!"{← renderAux tbl 50 elem} \\in {← renderAux tbl 50 set}", 50)
     | ``HasSubset.Subset =>
         let some (l, r) := lastTwo? args | return none

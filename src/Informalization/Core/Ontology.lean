@@ -132,6 +132,9 @@ partial def renderProposition (tbl : SymbolTable) (prop : Expr) : MetaM (Array I
         let desc ← describeType tbl dom
         let varTex ← exprToLatex fv tbl
         let bodyInl ← renderProposition tbl (body.instantiate1 fv)
+        if desc.noun.singular.startsWith "element of \\(" && desc.noun.singular.endsWith "\\)" then
+          let setTex := ((desc.noun.singular.drop 13).dropEnd 2).toString
+          return #[.text "for every ", .inlineMath s!"{varTex} \\in {setTex}", .text ", "] ++ bodyInl
         let adj := if desc.adjectives.isEmpty then "" else String.intercalate " " desc.adjectives ++ " "
         let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
         return #[.text s!"for every {adj}{desc.noun.singular} ", .inlineMath varTex,

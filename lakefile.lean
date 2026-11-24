@@ -70,3 +70,8 @@ input_file cadmoScript where
 lean_lib Informalization where
   globs := #[.andSubmodules `Informalization]
   needs := #[cadmoStyles, cadmoScript]
+
+/-- Standalone CLI exporting checked ETH CADMO HTML & Verso JSON for any declaration. -/
+lean_exe informalize where
+  root := `Informalization.CLI
+  supportInterpreter := true

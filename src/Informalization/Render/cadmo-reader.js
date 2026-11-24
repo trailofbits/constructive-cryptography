@@ -59,10 +59,22 @@
       .replace(/\\tau/g, "τ")
       .replace(/\\phi/g, "φ")
       .replace(/\\psi/g, "ψ")
+      .replace(/\\iota\b/g, "ι")
+      .replace(/\\theta\b/g, "θ")
+      .replace(/\\lambda\b/g, "λ")
+      .replace(/\\mu\b/g, "μ")
+      .replace(/\\nu\b/g, "ν")
+      .replace(/\\ell\b/g, "ℓ")
+      .replace(/\\varphi\b/g, "φ")
       .replace(/\\parallel/g, "∥")
+      .replace(/\\otimes\b/g, "⊗")
+      .replace(/\\oplus\b/g, "⊕")
       .replace(/\\le\b/g, "≤")
       .replace(/\\ge\b/g, "≥")
+      .replace(/\\ne\b/g, "≠")
       .replace(/\\neq\b/g, "≠")
+      .replace(/\\implies\b/g, "⇒")
+      .replace(/\\iff\b/g, "⇔")
       .replace(/\\in\b/g, "∈")
       .replace(/\\notin\b/g, "∉")
       .replace(/\\subseteq\b/g, "⊆")
@@ -74,9 +86,14 @@
       .replace(/\\forall\b/g, "∀")
       .replace(/\\exists\b/g, "∃")
       .replace(/\\land\b/g, "∧")
+      .replace(/\\wedge\b/g, "∧")
       .replace(/\\lor\b/g, "∨")
+      .replace(/\\vee\b/g, "∨")
       .replace(/\\neg\b/g, "¬")
+      .replace(/\\sum\b/g, "∑")
+      .replace(/\\prod\b/g, "∏")
       .replace(/\\infty\b/g, "∞")
+      .replace(/\\mathbb\{R\}_\{\\ge 0\}\^\{\\infty\}/g, "ℝ≥0∞")
       .replace(/\\mathbb\{R\}_\{\\ge 0\}/g, "ℝ≥0")
       .replace(/\\mathbb\{R\}/g, "ℝ")
       .replace(/\\mathbb\{N\}/g, "ℕ")
@@ -134,11 +151,27 @@
     return el;
   }
 
+  /* Parse mixed prose containing inline \(...\) math delimiters into rich DOM nodes. */
+  function renderMixedText(str) {
+    const frag = document.createDocumentFragment();
+    if (!str) return frag;
+    const re = /\\\(([\s\S]*?)\\\)/g;
+    let last = 0;
+    let m;
+    while ((m = re.exec(str)) !== null) {
+      if (m.index > last) frag.appendChild(document.createTextNode(str.slice(last, m.index)));
+      frag.appendChild(renderMathSpan(m[1], false));
+      last = re.lastIndex;
+    }
+    if (last < str.length) frag.appendChild(document.createTextNode(str.slice(last)));
+    return frag;
+  }
+
   function renderInline(inl) {
     if (!inl || typeof inl !== "object") return document.createTextNode("");
     if (inl.text !== undefined) {
       const val = typeof inl.text === "string" ? inl.text : inl.text.value;
-      return document.createTextNode(val || "");
+      return renderMixedText(val || "");
     }
     if (inl.emph !== undefined) {
       const val = typeof inl.emph === "string" ? inl.emph : inl.emph.value;
@@ -466,8 +499,8 @@
         const g = state.inspector.goal;
         const ctxItems = (g.context || []).map((c) =>
           h("li", {},
-            c.name ? h("strong", {}, `${c.name}: `) : null,
-            c.description || ""
+            c.name ? h("strong", {}, renderMixedText(c.name), ": ") : null,
+            renderMixedText(c.description || "")
           )
         );
         items.push(h("section", { class: "cadmo-inspector-card" },

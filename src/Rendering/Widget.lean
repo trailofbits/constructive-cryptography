@@ -1,13 +1,15 @@
 import Rendering.CCWidget
 import ConstructiveCryptography.Notation.Basic
+import ConstructiveCryptography.CryptographicAlgebra.Indifferentiability
 
 /-!
 # CC diagrams in the Lean infoview
 
 This optional adapter registers the current abstract CC declarations. It connects
 `ResourceTheory.attach`, ordered `CryptographicAlgebra.parallel`, categorical
-serial and tensor composition, the selected distance, and construction judgments
-to the theory-free renderer. Argument positions count from the end.
+serial and tensor composition, the selected distance, construction judgments,
+indifferentiability relaxations, and game equivalences to the theory-free renderer.
+Argument positions count from the end.
 
 An abstract carrier `Phi A` is recognized through the explicit `ResourceTheory`
 capability in the local context. Categorical arrows become converters only in
@@ -34,4 +36,9 @@ cc_diagram_construction
   ConstructiveCryptography.CryptographicAlgebra.Specification.Constructs 1 2 0
 cc_diagram_construction_within
   ConstructiveCryptography.CryptographicAlgebra.Specification.ConstructsWithin 2 3 1 0
+cc_diagram_transparent ConstructiveCryptography.CryptographicAlgebra.Specification.simulatorImage 0
+cc_diagram_transparent ConstructiveCryptography.CryptographicAlgebra.Specification.star 0
+cc_diagram_transparent ConstructiveCryptography.Relaxation.relaxedBy 1
+cc_diagram_conditional ConstructiveCryptography.DistinctionGames.ConditionallyEquivalent 1 0
+cc_diagram_transparent ConstructiveCryptography.DistinctionGames.visible 0
 

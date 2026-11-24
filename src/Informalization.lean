@@ -13,3 +13,4 @@ import Informalization.Core.ProofGraph
 import Informalization.Render.Json
 import Informalization.Render.Html
 import Informalization.Render.Widget
+import Informalization.CC.All
