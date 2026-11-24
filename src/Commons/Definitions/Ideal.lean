@@ -36,6 +36,8 @@ identifies all cumulative probabilities. The retained-key law in
 
 ## Main results
 
+* `URF.eq_sample`, `URF.smul_eq_sample`: `URF A` and its converter attachments draw one retained
+  uniform function table for any `Fintype` enumeration of `∀ i, A.X i → A.Y i`
 * `URF.single_mass`: on a single-port admitted transcript, URF mass is the uniform-table
   probability of supplying every recorded reply
 * `URF.lazy_eq`: the lazy table equals `URF` on every history admitted by `A.domain`
@@ -87,6 +89,36 @@ def URF
 namespace URF
 
 open Distribution
+
+/-- `URF A` draws one uniform function table `f` once and answers each admitted `i(x)` with
+`f i x`, for any `Fintype` enumeration `inst` of `∀ i, A.X i → A.Y i`. -/
+lemma eq_sample
+    -- `A` selects ports, finite alphabets and domain; inhabited replies make the table space
+    -- nonempty.
+    (A : Interface) [∀ i, Nonempty (A.Y i)]
+    -- `inst` is any finite enumeration of the function tables on `A`.
+    [inst : Fintype (∀ i, A.X i → A.Y i)] :
+    Commons.URF A =
+      TypedSystem.sample (Distribution.uniform (∀ i, A.X i → A.Y i)) TypedSystem.ofFunction := by
+  -- Unfold `Commons.URF` and identify its classical `Fintype` witness with `inst`.
+  unfold Commons.URF
+  congr 1
+  exact uniform_congr_fintype _ inst
+
+/-- Attaching a converter `α` to `URF A` draws one uniform function table `f` once and runs `α`
+against `ofFunction f`, for any `Fintype` enumeration `inst` of `∀ i, A.X i → A.Y i`. -/
+lemma smul_eq_sample
+    -- `A` is the inside URF interface with nonempty reply alphabets; `B` is the outside interface.
+    {A B : Interface} [∀ i, Nonempty (A.Y i)]
+    -- `α` translates outside queries on `B` into admitted queries on `A`.
+    (α : TypedConverter B A)
+    -- `inst` is any finite enumeration of the function tables on `A`.
+    [inst : Fintype (∀ i, A.X i → A.Y i)] :
+    α • Commons.URF A =
+      TypedSystem.sample (Distribution.uniform (∀ i, A.X i → A.Y i))
+        (fun f => α • TypedSystem.ofFunction f) := by
+  -- Expose the retained uniform table at `inst`, then pull sampling across `α`.
+  rw [eq_sample A, TypedConverter.smul_sample]
 
 section SinglePort
 

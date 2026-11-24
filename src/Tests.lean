@@ -114,6 +114,7 @@ public import Tests.ParallelProjections
 public import Tests.ConstructionCalc
 public import Tests.GameEquivalenceTransport
 public import Tests.GameDistanceBound
+public import Tests.URFRetainedTable
 
 /-! Axiom audits per layer and of the Commons library, the checks of the
 authenticated-encryption example,
