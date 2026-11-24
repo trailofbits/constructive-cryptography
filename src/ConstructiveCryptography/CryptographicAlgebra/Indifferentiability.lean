@@ -11,6 +11,8 @@ An admitted right-port simulator `σ` turns the comparison
 specification (`constructs_of_simulatorImage`) [1, Lemma 5, p. 12].
 
 `Constructs.serial_simulatorImage` adds an honest-port application with error `δ`.
+`Constructs.serial_simulatorImage_trans` and `serial_simulatorImage_trans_subset` compose two
+indifferentiability constructions serially, combining their simulators via `simulatorImage_comp`.
 The application and simulator commute because they act on different ports.
 `mixed_application_of_indifferentiability` averages applications over a common key law,
 with one simulator serving every key.
@@ -99,6 +101,43 @@ theorem Constructs.serial_simulatorImage_whiskerRight {H H' H'' P Q : C}
   have composite : (κ ≫ π) ▷ P = (κ ▷ P) ≫ (π ▷ P) := comp_whiskerRight κ π P
   rw [constructs_iff_of_converter_eq composite]
   exact Constructs.serial_simulatorImage indifferentiable idealApplication
+
+/-- **Transitivity of indifferentiability**: composing two indifferentiable constructions yields
+an indifferentiable construction with composite simulators `σ ≫ τ` and added errors. -/
+theorem Constructs.serial_simulatorImage_trans {H H' P Q R B : C}
+    {protocol : H ⊗ P ⟶ B} {application : H' ⟶ H}
+    {outer : Set (P ⟶ Q)} {inner : Set (Q ⟶ R)}
+    {real : Specification (Phi B)} {source : Specification (Phi (H ⊗ Q))}
+    {target : Specification (Phi (H' ⊗ R))}
+    {outerError innerError : ENNReal}
+    (hOuter : real —[protocol]→
+      Specification.epsilonRelaxation outerError (Specification.simulatorImage outer source))
+    (hInner : source —[application ▷ Q]→
+      Specification.epsilonRelaxation innerError (Specification.simulatorImage inner target)) :
+    real —[(application ▷ P) ≫ protocol]→
+      Specification.epsilonRelaxation (outerError + innerError)
+        (Specification.simulatorImage (Set.image2 (· ≫ ·) outer inner) target) := by
+  rw [← simulatorImage_comp]
+  exact Constructs.serial_simulatorImage hOuter (constructs_epsilonRelaxation_iff.mp hInner)
+
+/-- Transitivity of indifferentiability into an explicitly budgeted composite simulator class
+`composites` admitting `σ ≫ τ` for all `σ ∈ outer` and `τ ∈ inner`. -/
+theorem Constructs.serial_simulatorImage_trans_subset {H H' P Q R B : C}
+    {protocol : H ⊗ P ⟶ B} {application : H' ⟶ H}
+    {outer : Set (P ⟶ Q)} {inner : Set (Q ⟶ R)} {composites : Set (P ⟶ R)}
+    {real : Specification (Phi B)} {source : Specification (Phi (H ⊗ Q))}
+    {target : Specification (Phi (H' ⊗ R))}
+    {outerError innerError : ENNReal}
+    (admitted : ∀ σ ∈ outer, ∀ τ ∈ inner, σ ≫ τ ∈ composites)
+    (hOuter : real —[protocol]→
+      Specification.epsilonRelaxation outerError (Specification.simulatorImage outer source))
+    (hInner : source —[application ▷ Q]→
+      Specification.epsilonRelaxation innerError (Specification.simulatorImage inner target)) :
+    real —[(application ▷ P) ≫ protocol]→
+      Specification.epsilonRelaxation (outerError + innerError)
+        (Specification.simulatorImage composites target) :=
+  (Constructs.serial_simulatorImage hOuter (constructs_epsilonRelaxation_iff.mp hInner)).mono
+    Set.Subset.rfl (epsilonRelaxation_mono (simulatorImage_comp_subset admitted target))
 
 /-- **Mixed or keyed application from indifferentiability**: composing a keyed family `κ k` with
 an indifferentiable realization `protocol : H ⊗ P ⟶ B` under an attachment-commuting, convex
