@@ -3,6 +3,7 @@ module
 public import Commons.Definitions.ActiveUserBank
 public import ConstructiveCryptography.Notation
 public import ConstructiveCryptography.Tactics.Substitution
+import Tests.MixtureObservation
 
 /-!
 # Tests for active-user bank specifications and registration
@@ -37,6 +38,27 @@ example {Registry B B' Out : Interface} (registry : TypedSystem Registry)
 example {B B' : Interface} (idealBank : TypedSystem B) (filterRows : B' ⟶ B) :
     idealBank ∈ ActiveUserBank.specification idealBank filterRows 0 :=
   ActiveUserBank.idealBank_mem_specification idealBank filterRows 0
+
+open SystemAlgebra.Tests in
+/-- A one-query observer separates the two bit banks perfectly. Hiding their only port admits
+both in the same zero-error specification; exposing it with the identity separates them. -/
+example :
+    let R := TypedSystem.sample (Finsupp.single true 1) fixedBit
+    let S := TypedSystem.sample (Finsupp.single false 1) fixedBit
+    R ∈ ActiveUserBank.specification S (TypedConverter.discard bitInterface) 0 ∧
+      R ∉ ActiveUserBank.specification S (𝟙 bitInterface) 0 := by
+  intro R S
+  constructor
+  · -- Discarding the port leaves the unique system on the empty interface.
+    apply ActiveUserBank.mem_specification_iff.mpr
+    have hidden (T : TypedSystem bitInterface) :
+        TypedConverter.discard bitInterface • T = TypedSystem.dummy := TypedSystem.empty_eq _
+    rw [hidden R, hidden S, distance_self]
+  · -- With the port exposed, a single reply distinguishes the two banks at distance one.
+    have exposed (T : TypedSystem bitInterface) : 𝟙 bitInterface • T = T := by cc_normalize
+    rw [ActiveUserBank.mem_specification_iff, exposed R, exposed S, Interface.cc_distance_eq,
+      MixtureObservation.sample_single_distance_eq_one]
+    exact not_le_of_gt zero_lt_one
 
 /-- `cc_normalize` unfolds the composed registration converter `(filterRegistration ≫ (𝟙 ⊗ₘ
 filterRows)) • (registry ∥ R)` to the nested registered bank presentation. -/
