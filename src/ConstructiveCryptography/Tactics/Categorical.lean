@@ -31,6 +31,7 @@ attribute [cc_normalization]
   CryptographicAlgebra.converter_parallel_identity
   CryptographicAlgebra.converter_parallel_serial
   CryptographicAlgebra.attach_parallel
+  CryptographicAlgebra.associator_hom_attach
   CryptographicAlgebra.Specification.parallel_singleton
   CryptographicAlgebra.Specification.star_idem
   CategoryTheory.Category.id_comp
