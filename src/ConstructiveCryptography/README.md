@@ -417,18 +417,18 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 
 <!-- Declarations: the classes -->
 
-[ResourceTheory]: CryptographicAlgebra/Basic.lean#L71
-[ResourceTheory.functor]: CryptographicAlgebra/Basic.lean#L105
-[CryptographicAlgebra]: CryptographicAlgebra/Basic.lean#L146
-[CA.parallel]: CryptographicAlgebra/Basic.lean#L192
-[CA.dummy]: CryptographicAlgebra/Basic.lean#L203
-[CA.attach_parallel]: CryptographicAlgebra/Basic.lean#L241
-[CA.parallel_assoc]: CryptographicAlgebra/Basic.lean#L292
-[CA.associator_hom_attach]: CryptographicAlgebra/Basic.lean#L306
-[CA.parallel_dummy_left]: CryptographicAlgebra/Basic.lean#L317
-[CA.leftUnitor_hom_attach]: CryptographicAlgebra/Basic.lean#L332
-[CA.parallel_dummy_right]: CryptographicAlgebra/Basic.lean#L343
-[CA.rightUnitor_hom_attach]: CryptographicAlgebra/Basic.lean#L358
+[ResourceTheory]: CryptographicAlgebra/Basic.lean#L77
+[ResourceTheory.functor]: CryptographicAlgebra/Basic.lean#L111
+[CryptographicAlgebra]: CryptographicAlgebra/Basic.lean#L152
+[CA.parallel]: CryptographicAlgebra/Basic.lean#L198
+[CA.dummy]: CryptographicAlgebra/Basic.lean#L209
+[CA.attach_parallel]: CryptographicAlgebra/Basic.lean#L247
+[CA.parallel_assoc]: CryptographicAlgebra/Basic.lean#L298
+[CA.associator_hom_attach]: CryptographicAlgebra/Basic.lean#L312
+[CA.parallel_dummy_left]: CryptographicAlgebra/Basic.lean#L323
+[CA.leftUnitor_hom_attach]: CryptographicAlgebra/Basic.lean#L338
+[CA.parallel_dummy_right]: CryptographicAlgebra/Basic.lean#L349
+[CA.rightUnitor_hom_attach]: CryptographicAlgebra/Basic.lean#L364
 [CompatiblePseudoMetric]: CryptographicAlgebra/PseudoMetric.lean#L63
 [CA.distance]: CryptographicAlgebra/PseudoMetric.lean#L99
 [distance_attach_le]: CryptographicAlgebra/PseudoMetric.lean#L131
@@ -477,11 +477,11 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [Specification]: Specification/Defs.lean#L30
 [Specification.Constructs]: Specification/Basic.lean#L45
 [Specification.ConstructsWithin]: Specification/Metric.lean#L49
-[CA.Specification.Constructs]: CryptographicAlgebra/Basic.lean#L538
+[CA.Specification.Constructs]: CryptographicAlgebra/Basic.lean#L544
 [CA.Specification.ConstructsWithin]: CryptographicAlgebra/PseudoMetric.lean#L265
-[Constructs.serial]: CryptographicAlgebra/Basic.lean#L628
+[Constructs.serial]: CryptographicAlgebra/Basic.lean#L634
 [ConstructsWithin.serial]: CryptographicAlgebra/PseudoMetric.lean#L335
-[Constructs.parallel]: CryptographicAlgebra/Basic.lean#L727
+[Constructs.parallel]: CryptographicAlgebra/Basic.lean#L733
 [ConstructsWithin.parallel]: CryptographicAlgebra/PseudoMetric.lean#L363
 [Relaxation]: Specification/Relaxation/Defs.lean#L46
 [Relaxation.Compatible]: CryptographicAlgebra/Relaxation.lean#L69

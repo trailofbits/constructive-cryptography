@@ -20,7 +20,7 @@ constructions compose serially and in parallel, and are insensitive to unchanged
 A converter `α : A ⟶ B` has outside interface `A` and inside interface `B`; `α ≫ β` places
 `α` outside `β`. Attachment `α • R` (the source's `αR`) therefore runs against the arrow.
 Resources `Phi A` are abstract carriers, not necessarily random systems; `parallel R S` is
-Jost's `[R, S]`.
+the notation `[R, S]` of [2].
 
 ```text
            α : A ⟶ B                    attach α : Phi B → Phi A
@@ -28,8 +28,8 @@ Jost's `[R, S]`.
   (α ≫ β) • R = α • (β • R)              for β : B ⟶ D, R : Phi D
 ```
 
-Sources: Maurer–Renner 2016 (MR16), §3 (printed pp. 6–8) and Definition 1 (printed p. 11);
-Jost, §2.2 (printed pp. 16–19).
+The resource and converter operations follow [1, §3, pp. 6–8; Definition 1, p. 11],
+with the typed formulation of [2, §2.2, pp. 16–19].
 
 ## Main definitions
 
@@ -50,6 +50,12 @@ Jost, §2.2 (printed pp. 16–19).
   parallel composition of resources
 * `CryptographicAlgebra.Specification.Constructs.serial`,
   `CryptographicAlgebra.Specification.Constructs.parallel`: composition of constructions
+
+## References
+
+1. U. Maurer and R. Renner. *From Indifferentiability to Constructive Cryptography (and Back)*.
+   TCC 2016-B, 2016.
+2. D. Jost. *On Generalizations of Composable Security*. ETH thesis 26723, 2020.
 -/
 
 @[expose] public section

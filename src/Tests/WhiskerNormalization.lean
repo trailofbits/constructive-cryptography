@@ -69,6 +69,15 @@ example {A B : C} (R : Phi (A ⊗ B)) :
     (A ◁ 𝟙 B) • R = R ∧ (𝟙 A ▷ B) • R = R := by
   constructor <;> cc_normalize
 
+/-- Two converters on the same port require their own commutation argument. -/
+example {A B : C} (α β : A ⟶ A) (R : Phi A) (S : Phi B)
+    (commute : α • (β • R) = β • (α • R)) :
+    ((α ≫ β) ▷ B) • (R ∥ S) = ((β ≫ α) ▷ B) • (R ∥ S) := by
+  cc_normalize
+  guard_target = parallel (α • (β • R)) S = parallel (β • (α • R)) S
+  fail_if_success solve | rfl
+  rw [commute]
+
 end Abstract
 
 section Interfaces
@@ -123,6 +132,8 @@ example {A K L P M : Interface}
     ((α ⊗ₘ 𝟙 P) ≫ (α_ K L P).hom ≫ (K ◁ share)) • (R ∥ S) =
       (α • (R ∥ T)) ∥ U := by
   cc_normalize
+  -- The assembly laws leave exactly the supplied component equation to use.
+  fail_if_success solve | rfl
   rw [hshare]
   cc_normalize
 

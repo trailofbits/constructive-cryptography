@@ -12,16 +12,25 @@ public meta import ConstructiveCryptography.Tactics.Basic
 /-!
 # Constructive Cryptography proof automation
 
-This opt-in module supplies deterministic assembly commands for the typed
-`CryptographicAlgebra` presentation.  Every semantic choice remains an explicit
-Lean term. Every command targets the typed `CryptographicAlgebra` presentation.
+The commands assemble constructions from explicit component equalities, distance bounds,
+and simulators. `cc_normalize` applies attachment, parallel, and coherence laws in any
+`CryptographicAlgebra`; the interface instance supplies their random-systems interpretation.
 
-The commands implement the paper-level steps of Maurer--Renner 2016.  Jost's
-typed attachment and ordered context laws provide the heterogeneous theorem
-heads used here; no symmetry or implicit interface rearrangement is assumed.
+Whiskering acts on one side of a parallel resource. Interchange orders attachments on
+opposite ports with the right-port converter outside; same-port order remains explicit.
+The `•` lemmas below expose the existing abstract laws to the simplifier's term index.
+
+## References
+
+1. U. Maurer and R. Renner. *From Indifferentiability to Constructive Cryptography (and Back)*.
+   TCC 2016-B, §§3–4.
+2. D. Jost. *On Generalizations of Composable Security*. ETH thesis 26723, 2020, §2.2.
 -/
 
 section SmulNormalization
+
+-- `C` carries interfaces and converters; `Φ A` carries resources on interface `A : C`.
+-- In every rule, `f : A ⟶ B` presents `A` by using a resource on `B`.
 
 open CategoryTheory MonoidalCategory ConstructiveCryptography
 
