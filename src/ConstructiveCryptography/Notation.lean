@@ -3,6 +3,7 @@ module
 public import ConstructiveCryptography.Notation.Basic
 public import RandomSystems.Typed.ParallelAllAttachment
 public import RandomSystems.Typed.ParallelAllContext
+public import RandomSystems.Typed.SampleLaws
 public import ConstructiveCryptography.Instances.Algebra
 public import ConstructiveCryptography.CryptographicAlgebra.Game
 public import ConstructiveCryptography.Tactics.Categorical
@@ -358,6 +359,7 @@ attribute [cc_normalization]
   TypedConverter.parallelAllContext_smul
   TypedConverter.projectLeft_smul_parallel
   TypedConverter.projectRight_smul_parallel
+  TypedSystem.sample_const
 
 -- Hoist samples after structural attachment, so serial composition exposes a component's owner.
 attribute [cc_normalization 900] TypedConverter.smul_sample
