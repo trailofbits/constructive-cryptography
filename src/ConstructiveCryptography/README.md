@@ -183,6 +183,14 @@ The [joint solver projection][Domain.SolverBehavior.decision] supplies an ordina
 behavior. It [commutes with absorption][Domain.SolverBehavior.decision_absorb], so a PRG proof
 can use the decision view while a game bound keeps both views of the same solver.
 
+Over a [`CompatibleDistinguisherClass`][CompatibleDistinguisherClass],
+[`DistinctionGames.distance_visible_le`][DistinctionGames.distance_visible_le] (and its `ENNReal`
+and solver-indexed variants [`distance_visible_le_of_winners`][DistinctionGames.distance_visible_le_of_winners]
+and [`distance_visible_le_of_solvers`][DistinctionGames.distance_visible_le_of_solvers]) lifts
+conditional equivalence $`G \mathrel{|\!\equiv} S`$ and a uniform winning bound to
+$`\Delta(G^-, S) \le \varepsilon`$, under an explicit solver-coverage hypothesis linking each
+selected distinguisher to an admitted joint solver.
+
 ## The instances on interfaces
 
 Interfaces are an instance of each class: the carrier $`\Phi A`$ is the
@@ -227,7 +235,12 @@ the winning probability of every distinguisher
 equivalent to a typed system $`T`$, $`G \mathrel{|\!\equiv} T`$, whose MBO stays unset with
 probability at least $`1 - \varepsilon`$ on fixed queries,
 [has its visible typed system within][Interface.dist_visible_le] $`\varepsilon`$ of $`T`$,
-$`\Delta(G^-, T) \le \varepsilon`$ [3, Theorem 4.17]. A presented typed game is conditionally
+$`\Delta(G^-, T) \le \varepsilon`$ [3, Theorem 4.17];
+[`Interface.dist_visible_le_of_winners`][Interface.dist_visible_le_of_winners] and
+[`Interface.dist_visible_le_of_win`][Interface.dist_visible_le_of_win] derive the same metric bound
+from a uniform winning bound through the abstract bridge and
+[`Interface.distinguishers_covered_by_solvers`][Interface.distinguishers_covered_by_solvers],
+without unfolding transcript distance. A presented typed game is conditionally
 equivalent to a typed system [exactly when][Interface.conditionallyEquivalent_ofPDG_iff] the game
 it presents on random systems is; if it is conditionally equivalent to $`S`$ and the condition
 holds with probability at most $`\varepsilon`$ on the empty and every admitted query sequence, the
@@ -437,18 +450,23 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [advantageDistance]: CryptographicAlgebra/Distinguisher.lean#L60
 [CompatibleDistinguisherClass]: CryptographicAlgebra/Distinguisher.lean#L119
 [CompatibleDistinguisherClass.ofClosure]: CryptographicAlgebra/Distinguisher.lean#L177
-[Games]: Game.lean#L57
-[Games.absorb]: Game.lean#L73
-[Games.absorb_comp]: CryptographicAlgebra/Game.lean#L96
-[DistinctionGames]: Game.lean#L135
-[DistinctionGames.absorb]: CryptographicAlgebra/Game.lean#L140
+[Games]: Game.lean#L62
+[Games.absorb]: Game.lean#L78
+[Games.absorb_comp]: CryptographicAlgebra/Game.lean#L104
+[DistinctionGames]: Game.lean#L140
+[DistinctionGames.absorb]: CryptographicAlgebra/Game.lean#L148
+[GameEquivalence]: Game.lean#L170
+[CompatibleGameEquivalence]: CryptographicAlgebra/Game.lean#L161
+[DistinctionGames.distance_visible_le_of_winners]: CryptographicAlgebra/Game.lean#L237
+[DistinctionGames.distance_visible_le]: CryptographicAlgebra/Game.lean#L261
+[DistinctionGames.distance_visible_le_of_solvers]: CryptographicAlgebra/Game.lean#L279
 
 <!-- Declarations: the instances and the notation -->
 
 [Interface.category]: Instances/Category.lean#L34
 [Interface.identity_attach]: Instances/Category.lean#L56
 [Interface.comp_smul]: Instances/Category.lean#L61
-[Interface.monoidal]: Instances/Monoidal.lean#L166
+[Interface.monoidal]: Instances/Monoidal.lean#L173
 [Interface.resourceTheory]: Instances/Algebra.lean#L88
 [Interface.cryptographicAlgebra]: Instances/Algebra.lean#L167
 [Interface.transcriptDistance_eq_advantageDistance]: Instances/Algebra.lean#L266
@@ -458,19 +476,25 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [Interface.cc_distance_eq]: Instances/Algebra.lean#L324
 [TypedSystem.transcriptPseudoEMetricSpace]: ../RandomSystems/Typed/Distance.lean#L26
 [RandomSystem.transcriptDistance_eq_iSup_behavior]: ../RandomSystems/Distance/Distinguisher.lean#L250
-[Interface.games]: Instances/Game.lean#L54
-[Interface.distinctionGames]: Instances/Game.lean#L84
+[Interface.games]: Instances/Game.lean#L56
+[Interface.distinctionGames]: Instances/Game.lean#L86
+[Interface.gameEquivalence]: Instances/Game.lean#L136
+[Interface.compatibleGameEquivalence]: Instances/Game.lean#L156
 [Domain.SolverBehavior]: ../RandomSystems/Game/MBOAttachment.lean#L2178
-[Interface.win_le]: Instances/Game.lean#L134
-[Interface.dist_visible_le]: Instances/Game.lean#L153
-[Interface.conditionallyEquivalent_ofPDG_iff]: Instances/Game.lean#L170
-[Interface.game_dist_le]: Instances/Game.lean#L183
-[notation-distance]: Notation/Basic.lean#L40
-[notation-parallel]: Notation/Basic.lean#L52
-[notation-constructs]: Notation/Basic.lean#L86
-[notation-constructsWithin]: Notation/Basic.lean#L92
-[notation-substitutes]: Notation/Basic.lean#L79
-[notation-conditionallyEquivalent]: Notation/Basic.lean#L98
+[Interface.win_le]: Instances/Game.lean#L163
+[Interface.dist_visible_le]: Instances/Game.lean#L182
+[Interface.conditionallyEquivalent_ofPDG_iff]: Instances/Game.lean#L226
+[Interface.game_dist_le]: Instances/Game.lean#L239
+[notation-distance]: Notation/Basic.lean#L41
+[notation-parallel]: Notation/Basic.lean#L53
+[notation-constructs]: Notation/Basic.lean#L87
+[notation-constructsWithin]: Notation/Basic.lean#L93
+[notation-substitutes]: Notation/Basic.lean#L80
+[notation-conditionallyEquivalent]: Notation/Basic.lean#L99
+[notation-gameEquivalent]: Notation/Basic.lean#L104
+[Interface.distinguishers_covered_by_solvers]: Instances/Game.lean#L197
+[Interface.dist_visible_le_of_winners]: Instances/Game.lean#L206
+[Interface.dist_visible_le_of_win]: Instances/Game.lean#L216
 
 <!-- Declarations: specifications and constructions -->
 
@@ -560,31 +584,31 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [Domain.SolverBehavior.absorb]: ../RandomSystems/Game/MBOAttachment.lean#L2217
 [Interface]: ../RandomSystems/Typed/Interface.lean#L43
 [Interface.associator]: Instances/Monoidal.lean#L56
-[Interface.associator_naturality]: Instances/Monoidal.lean#L96
+[Interface.associator_naturality]: Instances/Monoidal.lean#L102
 [Interface.distinguishers]: Instances/Algebra.lean#L229
 [Interface.distinguishers_attach]: Instances/Algebra.lean#L234
 [Interface.distinguishers_parallel_left]: Instances/Algebra.lean#L240
 [Interface.distinguishers_parallel_right]: Instances/Algebra.lean#L257
-[Interface.id_tensor_id]: Instances/Monoidal.lean#L88
+[Interface.id_tensor_id]: Instances/Monoidal.lean#L94
 [Interface.isoOf]: Instances/Monoidal.lean#L37
-[Interface.leftUnitor]: Instances/Monoidal.lean#L61
-[Interface.leftUnitor_naturality]: Instances/Monoidal.lean#L101
-[Interface.monoidalStruct]: Instances/Monoidal.lean#L75
+[Interface.leftUnitor]: Instances/Monoidal.lean#L62
+[Interface.leftUnitor_naturality]: Instances/Monoidal.lean#L107
+[Interface.monoidalStruct]: Instances/Monoidal.lean#L81
 [Interface.parallel_assoc]: Instances/Algebra.lean#L102
 [Interface.parallel_dummy_left]: Instances/Algebra.lean#L114
 [Interface.parallel_dummy_right]: Instances/Algebra.lean#L123
 [Interface.parallel_swap]: Instances/Algebra.lean#L132
-[Interface.pentagon]: Instances/Monoidal.lean#L109
+[Interface.pentagon]: Instances/Monoidal.lean#L115
 [Interface.resourcesLaxMonoidal]: Instances/Algebra.lean#L141
-[Interface.rightUnitor]: Instances/Monoidal.lean#L65
-[Interface.rightUnitor_naturality]: Instances/Monoidal.lean#L105
-[Interface.solvers]: Instances/Game.lean#L48
-[Interface.swap]: Instances/Monoidal.lean#L70
+[Interface.rightUnitor]: Instances/Monoidal.lean#L69
+[Interface.rightUnitor_naturality]: Instances/Monoidal.lean#L111
+[Interface.solvers]: Instances/Game.lean#L50
+[Interface.swap]: Instances/Monoidal.lean#L76
 [Interface.tensor]: ../RandomSystems/Typed/Parallel.lean#L89
-[Interface.tensor_comp]: Instances/Monoidal.lean#L91
-[Interface.triangle]: Instances/Monoidal.lean#L136
+[Interface.tensor_comp]: Instances/Monoidal.lean#L97
+[Interface.triangle]: Instances/Monoidal.lean#L142
 [Interface.unit]: ../RandomSystems/Typed/InterfaceCoherence.lean#L94
-[Interface.winners]: Instances/Game.lean#L43
+[Interface.winners]: Instances/Game.lean#L45
 [PDCBehavior.attach]: ../RandomSystems/Converter/ConverterAttachment.lean#L161
 [PDCBehavior.attach_comp]: ../RandomSystems/Converter/ConverterAttachment.lean#L281
 [PDCBehavior.attach_id]: ../RandomSystems/Converter/ConverterAttachment.lean#L268
@@ -603,10 +627,10 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [RandomSystem.visible_attach_liftMBO]: ../RandomSystems/Game/MBOAttachment.lean#L628
 [TypedConverter]: ../RandomSystems/Typed/Interface.lean#L184
 [TypedConverter.attach]: ../RandomSystems/Typed/Interface.lean#L250
-[TypedConverter.attachGame]: ../RandomSystems/Typed/Game.lean#L49
+[TypedConverter.attachGame]: ../RandomSystems/Typed/Game.lean#L51
 [TypedConverter.comp]: ../RandomSystems/Typed/Interface.lean#L191
-[TypedConverter.comp_associator]: ../RandomSystems/Typed/ConverterCoherence.lean#L162
-[TypedConverter.comp_leftUnitor]: ../RandomSystems/Typed/ConverterCoherence.lean#L199
+[TypedConverter.comp_associator]: ../RandomSystems/Typed/ConverterCoherence.lean#L165
+[TypedConverter.comp_leftUnitor]: ../RandomSystems/Typed/ConverterCoherence.lean#L202
 [TypedConverter.comp_rightUnitor]: ../RandomSystems/Typed/ConverterCoherence.lean#L228
 [TypedConverter.comp_smul]: ../RandomSystems/Typed/Interface.lean#L271
 [TypedConverter.id]: ../RandomSystems/Typed/Interface.lean#L196
@@ -618,8 +642,8 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [TypedConverter.rename_comp]: ../RandomSystems/Typed/Relabel.lean#L84
 [TypedConverter.rename_mass]: ../RandomSystems/Typed/SystemParallel.lean#L59
 [TypedConverter.rename_refl]: ../RandomSystems/Typed/Relabel.lean#L71
-[TypedGame]: ../RandomSystems/Typed/Game.lean#L46
-[TypedGame.visible]: ../RandomSystems/Typed/Game.lean#L90
+[TypedGame]: ../RandomSystems/Typed/Game.lean#L48
+[TypedGame.visible]: ../RandomSystems/Typed/Game.lean#L92
 [TypedSystem]: ../RandomSystems/Typed/Interface.lean#L145
 [TypedSystem.dummy]: ../RandomSystems/Typed/SystemCoherence.lean#L101
 [TypedSystem.parallel]: ../RandomSystems/Typed/Parallel.lean#L157
@@ -628,11 +652,12 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [TypedSystem.parallel_unit_left_mass]: ../RandomSystems/Typed/SystemCoherence.lean#L107
 [TypedSystem.parallel_unit_right_mass]: ../RandomSystems/Typed/SystemCoherence.lean#L132
 
-[Games.win_le_of_reduction]: Game.lean#L89
+[Games.win_le_of_reduction]: Game.lean#L94
 [Problem.performance_le_of_reduction]: Problem.lean#L54
-[Interface.gameAction]: Instances/Game.lean#L59
-[Interface.distinctionGameAction]: Instances/Game.lean#L117
+[Interface.gameAction]: Instances/Game.lean#L61
+[Interface.distinctionGameAction]: Instances/Game.lean#L119
 [Domain.SolverBehavior.decision]: ../RandomSystems/Game/MBOAttachment.lean#L2189
 [Domain.SolverBehavior.decision_absorb]: ../RandomSystems/Game/MBOAttachment.lean#L2238
-[TypedConverter.identity_attachGame]: ../RandomSystems/Typed/Game.lean#L65
-[TypedConverter.comp_attachGame]: ../RandomSystems/Typed/Game.lean#L75
+[TypedConverter.identity_attachGame]: ../RandomSystems/Typed/Game.lean#L67
+[TypedConverter.comp_attachGame]: ../RandomSystems/Typed/Game.lean#L77
+[TypedConverter.attachGame_gameEquivalent]: ../RandomSystems/Typed/Game.lean#L111

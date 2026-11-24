@@ -91,6 +91,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Adaptive URF collision bound | `URF.collisionGame_win_le` in [CollisionBound] |
 | Retained state with fresh transitions | `TypedSystem.ofProbAutomaton` in [ProbAutomaton] |
 | Retained key as an automaton | `TypedSystem.ofProbAutomaton_eq_keyed` in [KeyedAutomaton] |
+| Converter state comparison | `DDC.ofProgramOn_eq_of_stateMap`, `DDC.ofProgramOn_eq_of_stateRel` in [Program](src/RandomSystems/Converter/Program.lean); typed forms in [Converters](src/RandomSystems/Typed/DSL/Converters.lean) |
 | Program attachment | `TypedConverter.ofProgram_smul_ofProbAutomaton` in [ProgramAttachment] |
 | Independent joint law | `prodProbDist` in [Distribution] |
 | Independent finite family of draws | `ProbDist.pi` in [Distribution] |
@@ -111,6 +112,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Hidden-bit guessing | `TypedDistinguisher.guessingProbability` in [Guessing] |
 | Nonce/AD encrypt-then-MAC | `nonceEncryptThenMAC` in [NonceEncryptThenMAC] |
 | Restricted interface | `TypedConverter.filter` in [Filter] |
+| Unit renamings | `TypedConverter.leftUnitorHom`, `leftUnitorInv`, `rightUnitorHom`, `rightUnitorInv` in [Unitors](src/RandomSystems/Typed/Unitors.lean); cancellation and naturality in [ConverterCoherence](src/RandomSystems/Typed/ConverterCoherence.lean) |
 | Relabeled interface | `TypedConverter.rename` in [Relabel] |
 | Deterministic reply map | `Evaluation.mapReplies` in [ReplyTransform] |
 | Fresh randomized reply map | `Evaluation.sampleReplies` in [ReplyTransform] |

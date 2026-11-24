@@ -24,7 +24,9 @@ advantage between `G.visible` and `T` is at most its winning probability on `G`
 (`Domain.Distinguisher.advantage_le_winProbability`). `win_le` transfers bounds to the admitted
 winning evaluations. `dist_visible_le` then bounds `Δ G.visible T` by `ε` when every possible
 query sequence leaves the MBO unset with probability at least `1 - ε` [1, Theorem 4.17].
-`game_dist_le` and `game_dist_ofSingleFunction_le` apply this to presented discrete games.
+`dist_visible_le_of_winners` and `dist_visible_le_of_win` derive the metric bound from the abstract
+distinction-game bridge via `distinguishers_covered_by_solvers`, without unfolding transcript
+distance. `game_dist_le` and `game_dist_ofSingleFunction_le` apply this to presented discrete games.
 
 ## References
 
@@ -128,6 +130,33 @@ noncomputable instance distinctionGameAction :
     Subtype.ext (RandomSystem.visible_attach_liftMBO B.nonempty_prefix A.nonempty_prefix α G.1.1
       G.1.2)
 
+/-- **Interfaces instantiate `GameEquivalence`** with `TypedGame.GameEquivalent`: equivalent
+typed games share winning probabilities and bound distinguishing advantage between their
+visible typed systems. -/
+noncomputable instance gameEquivalence : GameEquivalence Interface TypedSystem TypedGame where
+  GameEquivalent G H := G.GameEquivalent H
+  gameEquivalent_refl := TypedGame.GameEquivalent.refl
+  gameEquivalent_symm := TypedGame.GameEquivalent.symm
+  gameEquivalent_trans := TypedGame.GameEquivalent.trans
+  win_eq := by
+    rintro A G H _ hGH ⟨s, rfl⟩
+    obtain ⟨P, -, hW⟩ := s.exists_realization
+    change s.winProbability G = s.winProbability H
+    rw [hW G, hW H]
+    exact P.winProbability_eq_of_gameEquivalent G.1.2 H.1.2 G.2 H.2 hGH
+  advantage_le_win := by
+    rintro A G H _ hGH ⟨s, rfl⟩
+    obtain ⟨P, hP, hW⟩ := s.exists_realization
+    change |s.decision.1 G.visible - s.decision.1 H.visible| ≤ s.winProbability G
+    rw [hP G.visible, hP H.visible, hW G]
+    exact P.advantage_le_winProbability_of_gameEquivalent G.1.2 H.1.2 G.2 hGH
+
+/-- **Interfaces instantiate `CompatibleGameEquivalence`**: attaching a typed converter via its
+MBO-forwarding lift transports equivalence as games. -/
+noncomputable instance compatibleGameEquivalence :
+    CompatibleGameEquivalence Interface TypedSystem TypedGame where
+  attachGame_gameEquivalent α := TypedConverter.attachGame_gameEquivalent α
+
 /-- **Winning by every distinguisher bounds winning by every winner**: a bound on the winning
 probability of every distinguisher for the game's system bounds the winning probability of
 every winner. -/
@@ -163,6 +192,33 @@ theorem dist_visible_le
   -- The systems-level bound: Δ(G⁻, T) ≤ ε when `G |≡ T` and the MBO of `G` stays unset with
   -- probability at least `1 - ε` on the queries of each transcript of `T`.
   exact RandomSystem.transcriptDistance_visible_le_of_unsetProbability G.1.2 T.2 G.2 hc hε
+
+/-- Every compatible typed distinguisher on `A` is covered by an admitted joint solver on `A`. -/
+lemma distinguishers_covered_by_solvers (A : Interface) :
+    ∀ d ∈ Interface.distinguishers A,
+      ∃ w : TypedGame A → ℝ, (d, w) ∈ DistinctionGames.solvers A := by
+  rintro _ ⟨D, rfl⟩
+  obtain ⟨s, hs⟩ := Domain.SolverBehavior.decision_surjective A.domain A.bound A.length_le D
+  exact ⟨TypedSolver.winProbability s, s, Prod.ext (congrArg Subtype.val hs) rfl⟩
+
+/-- Conditional equivalence `G |≡ T` and a uniform winning bound over admitted winners imply
+`Δ G.visible T ≤ ε`, derived via the abstract bridge without unfolding transcript distance. -/
+theorem dist_visible_le_of_winners
+    {A : Interface} {G : TypedGame A} {T : TypedSystem A}
+    (hc : G |≡ T) {ε : ℝ≥0}
+    (hwin : ∀ w ∈ Games.winners A, w G ≤ ε) :
+    Δ G.visible T ≤ ε :=
+  DistinctionGames.distance_visible_le hc (distinguishers_covered_by_solvers A) hwin
+
+/-- Conditional equivalence `G |≡ T` and a uniform winning bound over compatible distinguishers
+imply `Δ G.visible T ≤ ε`, derived via `dist_visible_le_of_winners` without unfolding transcript
+distance. -/
+theorem dist_visible_le_of_win
+    {A : Interface} {G : TypedGame A} {T : TypedSystem A}
+    (hc : G |≡ T) {ε : ℝ≥0}
+    (hW : ∀ P : A.inputDomain.Distinguisher, P.winProbability G.1.1 ≤ ε) :
+    Δ G.visible T ≤ ε :=
+  dist_visible_le_of_winners hc fun _ hw => win_le hW hw
 
 /-- The game a probabilistic discrete game presents is conditionally equivalent to a typed system
 exactly when its game on random systems is conditionally equivalent to the typed system's random

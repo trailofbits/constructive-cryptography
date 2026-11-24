@@ -156,6 +156,10 @@ $`\iota`$ only at $`\iota(o)`$, at most once, and none of them when $`\iota(o)`$
 queries $`\iota(o)`$ [at most as often as it is queried at][DDC.insideQueries_restrict_length_le]
 $`o`$. On an outside domain, a bounded program
 [is a DDC from every inside domain containing its inside queries][DDC.ofProgramOn_isDDCFrom].
+A [state map or relation](Converter/Program.lean) preserving queries and replies gives equal
+program converters. The relation proof factors through the program on related state pairs;
+[typed equality](Typed/DSL/Converters.lean) follows for any domain certificates.
+
 Attached to an automaton, a program is [inlined][Program.inline] [4, §3.3]: the result is the
 [combined automaton][Program.combine] on pairs of states, also
 [on domains][Program.trim_apply_ofProgramOn_automaton].

@@ -1,6 +1,7 @@
 module
 
 public import Tests.ProbabilityObservation
+public import Tests.ProbabilityList
 public import Tests.TranscriptCompletion
 public import Tests.Distinguishers
 public import Tests.DistinguisherAction
@@ -54,6 +55,7 @@ public import Tests.NormalizedProbability
 public import Tests.ProbabilityNotation
 public import Tests.ProbabilityTablePatterns
 public import Tests.QueryRouting
+public import Tests.ConditionalCall
 public import Tests.ResourceSpecification
 public import Tests.SimulatorComposition
 public import Tests.SamplingAlgebra
@@ -70,6 +72,7 @@ public import Tests.TypedConverterComposition
 public import Tests.NonceDomain
 public import Tests.KEMDEM
 public import Tests.Keyed
+public import Tests.MACAlgorithms
 public import Tests.PKEKeyed
 public import Tests.TypedSampling
 public import Tests.TypedMemoryless
@@ -93,6 +96,7 @@ public import Tests.RandomFunctionCollision
 public import Tests.RatioCost
 public import Tests.FilteredRatio
 public import Tests.CompositeNotation
+public import Tests.ProgramConverterCertificate
 public import Tests.ParallelCoherenceHom
 public import Tests.HashExtractor
 public import Tests.ActiveUserBank
@@ -100,9 +104,13 @@ public import Tests.SpongeTable
 public import Tests.Sponge
 public import Tests.PRF
 public import Tests.DeterministicConverterComparison
+public import Tests.ProgramConverterBisimulation
 public import Tests.WhiskerNormalization
 public import Tests.IndifferentiabilityComposition
+public import Tests.ParallelProjections
 public import Tests.ConstructionCalc
+public import Tests.GameEquivalenceTransport
+public import Tests.GameDistanceBound
 
 /-! Axiom audits per layer and of the Commons library, the checks of the
 authenticated-encryption example,

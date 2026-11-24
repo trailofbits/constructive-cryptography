@@ -18,6 +18,7 @@ the visible system `RandomSystem.visible`. Game attachment satisfies the attachm
 
 * `Interface.withMBO A`: the interface of `A` with the MBO
 * `TypedGame A`: typed games on `A`
+* `TypedGame.GameEquivalent G H`: equivalence as games on `A`
 * `TypedConverter.attachGame α G`: a typed converter attached to a typed game
 * `TypedGame.visible G`: the visible typed system of a typed game
 
@@ -25,6 +26,7 @@ the visible system `RandomSystem.visible`. Game attachment satisfies the attachm
 
 * `TypedConverter.identity_attachGame`, `TypedConverter.comp_attachGame`: the identity and
   serial laws of game attachment
+* `TypedConverter.attachGame_gameEquivalent`: converter attachment preserves equivalence as games
 -/
 
 @[expose] public section
@@ -89,5 +91,26 @@ lemma TypedConverter.comp_attachGame {A B C : Interface} (α : TypedConverter A 
 /-- The visible typed system of a typed game. -/
 noncomputable def TypedGame.visible {A : Interface} (G : TypedGame A) : TypedSystem A :=
   ⟨G.1.1.visible, G.1.2.visible⟩
+
+/-- Equivalence as games on typed games: agreement on every transcript with all MBOs unset. -/
+def TypedGame.GameEquivalent {A : Interface} (G H : TypedGame A) : Prop :=
+  G.1.1.GameEquivalent H.1.1
+
+lemma TypedGame.GameEquivalent.refl {A : Interface} (G : TypedGame A) : G.GameEquivalent G :=
+  fun _ => rfl
+
+lemma TypedGame.GameEquivalent.symm {A : Interface} {G H : TypedGame A}
+    (h : G.GameEquivalent H) : H.GameEquivalent G :=
+  fun t => (h t).symm
+
+lemma TypedGame.GameEquivalent.trans {A : Interface} {G H K : TypedGame A}
+    (h₁ : G.GameEquivalent H) (h₂ : H.GameEquivalent K) : G.GameEquivalent K :=
+  fun t => (h₁ t).trans (h₂ t)
+
+/-- Attaching a typed converter preserves equivalence as games. -/
+lemma TypedConverter.attachGame_gameEquivalent {A B : Interface} (α : TypedConverter A B)
+    {G H : TypedGame B} (hGH : G.GameEquivalent H) :
+    (α.attachGame G).GameEquivalent (α.attachGame H) :=
+  hGH.attach_liftMBO B.nonempty_prefix A.nonempty_prefix α G.1.2 H.1.2 G.2 H.2
 
 end SystemAlgebra
