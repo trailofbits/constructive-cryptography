@@ -16,7 +16,7 @@ space `Ω` (Omega) of `Games C Game Ω`: an absorbed winner `Wα` takes values i
 family `Phi`, closes the common solvers under absorbing a converter into both views at once,
 and commutes attachment with the visible resource.
 
-CR18 §4.7.2 (printed p. 94), equation (4.9), gives `ω(wc, g) = ω(w, cg)`. Absorption keeps
+[1, §4.7.2, p. 94], equation (4.9), gives `ω(wc, g) = ω(w, cg)`. Absorption keeps
 physical order, with the winner first:
 
 ```text
@@ -29,6 +29,10 @@ attachment; `DistinctionGames.absorb_mem` preserves the two evaluations of the s
 On interfaces (`ConstructiveCryptography.Instances.Game`), the identity and serial laws are
 `TypedConverter.identity_attachGame` and `TypedConverter.comp_attachGame`, and both closure
 laws are `Domain.SolverBehavior.absorb`.
+
+## References
+
+1. U. Maurer. *Cryptography Foundations*. ETH Zürich lecture notes, Spring 2018.
 -/
 
 @[expose] public section
@@ -42,7 +46,7 @@ open CategoryTheory
 universe u v w x y
 
 /-- Attachment of the CC converters to games, with identity, serial and admission laws.
-CR18 §4.7.2 (printed p. 94): “if g is a game, then cg is also a game.” -/
+[1, §4.7.2, p. 94]: “if g is a game, then cg is also a game.” -/
 class GameAction
     -- Objects `A : C` are interfaces; `α : A ⟶ B` is a converter from outside `A` to inside
     -- `B`, and `α ≫ β` places `α` outside `β`.
@@ -102,7 +106,7 @@ end Games
 
 /-- The CC action on a common solver's two evaluations, and on visible resources, over the
 probability instance `GameAction C Game ℝ`.
-CR18 §4.7.2 (printed p. 94) keeps the MBO “not being seen or affected” by the converter. -/
+[1, §4.7.2, p. 94] keeps the MBO “not being seen or affected” by the converter. -/
 class DistinctionGameAction
     -- Objects `A : C` are interfaces and morphisms `A ⟶ B` converters, as in `GameAction`.
     (C : Type u) [Category.{v} C]
@@ -151,9 +155,12 @@ end DistinctionGames
 /-- Optional compatibility contract transporting equivalence as games through converter
 attachment: `G ≡g H → α • G ≡g α • H`. -/
 class CompatibleGameEquivalence
+    -- `C` carries interfaces; `A ⟶ B` converts an inside interface `B` to outside `A`.
     (C : Type u) [Category.{v} C]
+    -- `Phi A` carries resources and `Game A` games at each interface `A : C`.
     (Phi : C → Type w) [ResourceTheory C Phi]
     (Game : C → Type x) [DistinctionGames C Phi Game]
+    -- The actions attach the same converter to both evaluations of a joint solver.
     [GameAction C Game ℝ] [DistinctionGameAction C Phi Game]
     [GameEquivalence C Phi Game] where
   /-- Attaching a converter preserves equivalence as games. -/
@@ -182,14 +189,13 @@ omit [ResourceTheory C Phi] [DistinctionGameAction C Phi Game]
 lemma attach_id_gameEquivalent {A : C} {first second : Game A}
     (h : GameEquivalent first second) :
     GameEquivalent ((𝟙 A) • first : Game A) ((𝟙 A) • second : Game A) := by
-  simpa [Games.smul_eq_attachGame, GameAction.attachGame_identity] using h
+  simpa only [Games.smul_eq_attachGame, GameAction.attachGame_identity] using h
 
 /-- Attaching a serial composition preserves equivalence as games. -/
 lemma attach_comp_gameEquivalent {A B D : C} (first : A ⟶ B) (second : B ⟶ D)
     {G H : Game D} (h : GameEquivalent G H) :
-    GameEquivalent ((first ≫ second) • G : Game A) ((first ≫ second) • H : Game A) := by
-  simpa [Games.smul_eq_attachGame, GameAction.attachGame_serial] using
-    attach_gameEquivalent first (attach_gameEquivalent second h)
+    GameEquivalent ((first ≫ second) • G : Game A) ((first ≫ second) • H : Game A) :=
+  attach_gameEquivalent (first ≫ second) h
 
 /-- An admitted winner wins two converter-attached equivalent games alike. -/
 lemma win_attach_eq {A B : C} (converter : A ⟶ B) {first second : Game B}

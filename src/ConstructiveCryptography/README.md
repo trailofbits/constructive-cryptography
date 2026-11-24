@@ -437,13 +437,13 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [advantageDistance]: CryptographicAlgebra/Distinguisher.lean#L60
 [CompatibleDistinguisherClass]: CryptographicAlgebra/Distinguisher.lean#L119
 [CompatibleDistinguisherClass.ofClosure]: CryptographicAlgebra/Distinguisher.lean#L177
-[Games]: Game.lean#L58
-[Games.absorb]: Game.lean#L74
-[Games.absorb_comp]: CryptographicAlgebra/Game.lean#L96
-[DistinctionGames]: Game.lean#L136
-[DistinctionGames.absorb]: CryptographicAlgebra/Game.lean#L140
-[GameEquivalence]: Game.lean#L167
-[CompatibleGameEquivalence]: CryptographicAlgebra/Game.lean#L153
+[Games]: Game.lean#L62
+[Games.absorb]: Game.lean#L78
+[Games.absorb_comp]: CryptographicAlgebra/Game.lean#L100
+[DistinctionGames]: Game.lean#L140
+[DistinctionGames.absorb]: CryptographicAlgebra/Game.lean#L144
+[GameEquivalence]: Game.lean#L170
+[CompatibleGameEquivalence]: CryptographicAlgebra/Game.lean#L157
 
 <!-- Declarations: the instances and the notation -->
 
@@ -633,7 +633,7 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [TypedSystem.parallel_unit_left_mass]: ../RandomSystems/Typed/SystemCoherence.lean#L107
 [TypedSystem.parallel_unit_right_mass]: ../RandomSystems/Typed/SystemCoherence.lean#L132
 
-[Games.win_le_of_reduction]: Game.lean#L90
+[Games.win_le_of_reduction]: Game.lean#L94
 [Problem.performance_le_of_reduction]: Problem.lean#L54
 [Interface.gameAction]: Instances/Game.lean#L59
 [Interface.distinctionGameAction]: Instances/Game.lean#L117

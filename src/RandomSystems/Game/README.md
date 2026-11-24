@@ -151,7 +151,7 @@ between original and replacement messages.
 [PDCBehavior.liftMBO_id]: MBOAttachment.lean#L504
 [PDCBehavior.liftMBO_comp]: MBOAttachment.lean#L1524
 [RandomSystem.MonotoneMBO.attach_liftMBO]: MBOAttachment.lean#L974
-[RandomSystem.GameEquivalent.attach_liftMBO]: MBOAttachment.lean#L2452
+[RandomSystem.GameEquivalent.attach_liftMBO]: MBOAttachment.lean#L2456
 [RandomSystem.visible_attach_liftMBO]: MBOAttachment.lean#L628
 [RandomSystem.winProbability_attach_liftMBO]: MBOAttachment.lean#L2088
 [Domain.SolverBehavior]: MBOAttachment.lean#L2178

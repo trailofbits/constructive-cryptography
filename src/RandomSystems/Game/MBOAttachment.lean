@@ -2359,7 +2359,9 @@ lemma parallelRight_eq_unsetMBOs_of_completed
     (hmono : ((RandomSystem.parallelRight t).map fun z => z.2.2.2).Pairwise (· ≤ ·)) :
     RandomSystem.parallelRight t =
       unsetMBOs ((RandomSystem.parallelRight t).map (Prod.map id forgetMBO)) := by
+  -- The pending-reply invariant identifies the inside MBO sequence received by the lift.
   have hbits := follows_resource_mbo_invariant hc hpar
+  -- Completion ends with an outside reply; its unset tag is the latest inside MBO.
   have hlastFalse : (((RandomSystem.parallelRight t).map fun z => z.2.2.2).getLast?).getD false =
       false := by
     rcases List.eq_nil_or_concat t with rfl | ⟨p, z, rfl⟩
@@ -2409,6 +2411,7 @@ lemma parallelRight_eq_unsetMBOs_of_completed
           exposedReplies_snoc_in resourceRoute _
             (x := ⟨none, ⟨⟨some (), cy.1⟩, cy.2⟩⟩) rfl] at hge
         omega
+  -- A monotone Boolean sequence ending at false has no earlier true bit.
   have hall : ∀ z ∈ RandomSystem.parallelRight t, z.2.2.2 = false := by
     intro z hz
     rcases List.eq_nil_or_concat (RandomSystem.parallelRight t) with hnil | ⟨q, w, hq⟩
@@ -2427,6 +2430,7 @@ lemma parallelRight_eq_unsetMBOs_of_completed
           rw [ht] at hle
           exact Bool.noConfusion (hle rfl)
       · exact hw
+  -- Forgetting and restoring false tags therefore leaves the inside transcript unchanged.
   have hmap : ∀ l : List ((Σ j, X j) × Σ j, withMBO Y j), (∀ z ∈ l, z.2.2.2 = false) →
       l = unsetMBOs (l.map (Prod.map id forgetMBO)) := by
     intro l hl
@@ -2460,6 +2464,7 @@ theorem RandomSystem.GameEquivalent.attach_liftMBO
     (PDCBehavior.attach hE' hF' (PDCBehavior.liftMBO α) G hG).GameEquivalent
       (PDCBehavior.attach hE' hF' (PDCBehavior.liftMBO α) H hH) := by
   intro h
+  -- Attachment sums completed joint interactions exposing this all-unset outside transcript.
   set L := PDCBehavior.liftMBO α
   set us := (unsetMBOs h).map Prod.fst
   set vs := (unsetMBOs h).map Prod.snd
@@ -2467,6 +2472,7 @@ theorem RandomSystem.GameEquivalent.attach_liftMBO
   change (RandomSystem.parallel L.1 G).connectionLaw resourceRoute resourceInput us N vs =
     (RandomSystem.parallel L.1 H).connectionLaw resourceRoute resourceInput us N vs
   simp only [RandomSystem.connectionLaw, Distribution.fTransform_apply_eq_mass]
+  -- Compare each summand with the converter factor held fixed.
   have hterm : ∀ t, exposedReplies (resourceRoute (U := U)) (t.map Prod.snd) = vs →
       ((RandomSystem.parallel L.1 G).sLaw (connectionQueries resourceRoute resourceInput us) N
         |>.restrict fun t => ¬ (connectionQueries resourceRoute resourceInput us
@@ -2490,6 +2496,7 @@ theorem RandomSystem.GameEquivalent.attach_liftMBO
             simp only [vs, unsetMBOs, List.map_map, Function.comp_def, List.mem_map] at hv
             obtain ⟨z, -, rfl⟩ := hv
             rfl
+          -- Monotone inside histories are all unset; other histories have zero game mass.
           by_cases hmono : ((RandomSystem.parallelRight t).map fun z => z.2.2.2).Pairwise (· ≤ ·)
           · rw [parallelRight_eq_unsetMBOs_of_completed hc hpar hstop htag hexpFalse hmono]
             exact hGH _
@@ -2503,6 +2510,7 @@ theorem RandomSystem.GameEquivalent.attach_liftMBO
         · simp
       · rfl
     · rfl
+  -- Equal weights on the selected fiber give equal outside transcript probabilities.
   have hmass_eq : ∀ {α : Type} (μ₁ μ₂ : Distribution α) (P : α → Prop),
       (∀ t, P t → μ₁ t = μ₂ t) → μ₁.mass P = μ₂.mass P := by
     intro α μ₁ μ₂ P hP
@@ -2513,11 +2521,7 @@ theorem RandomSystem.GameEquivalent.attach_liftMBO
       split_ifs with ht
       · exact hP t ht
       · rfl
-    have hweight (μ : Distribution α) : (μ.restrict P).weight = μ.mass P := by
-      simp only [Distribution.weight, Distribution.mass, Distribution.restrict, Finsupp.sum,
-        Finsupp.support_filter, Finset.sum_filter]
-      exact Finset.sum_congr rfl fun a _ => by split_ifs with ha <;> simp [ha]
-    rw [← hweight, ← hweight, hμ]
+    rw [← Distribution.weight_restrict, ← Distribution.weight_restrict, hμ]
   exact hmass_eq _ _ _ hterm
 
 end GameEquivalence
