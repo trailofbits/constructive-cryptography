@@ -116,6 +116,7 @@ public import RandomSystems.Typed.QueryRouting
 public import RandomSystems.Typed.ReplyTransform
 public import RandomSystems.Typed.SamplingAlgebra
 public import RandomSystems.Typed.Source
+public import RandomSystems.Typed.StructuredDistinguisher
 public import RandomSystems.Typed.SystemCoherence
 public import RandomSystems.Typed.SystemParallel
 public import RandomSystems.Typed.TensorRename
