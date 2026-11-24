@@ -58,13 +58,19 @@ noncomputable def associator (A B C : Interface) :
   isoOf (Equiv.sumAssoc A.I B.I C.I) (assocAlphabet A.X B.X C.X) (assocAlphabet A.Y B.Y C.Y)
     (assocAlphabet_fst A.X B.X C.X) (assocAlphabet_fst A.Y B.Y C.Y) (parallelDomain_assoc A B C)
 
-noncomputable def leftUnitor (A : Interface) : tensor unit A ≅ A :=
-  isoOf (Equiv.emptySum Empty A.I) (leftUnitAlphabet A.X) (leftUnitAlphabet A.Y)
-    (leftUnitAlphabet_fst A.X) (leftUnitAlphabet_fst A.Y) (parallelDomain_unit_left A)
+/-- Package the named left unit converters and their cancellation laws as an isomorphism. -/
+noncomputable def leftUnitor (A : Interface) : tensor unit A ≅ A where
+  hom := TypedConverter.leftUnitorHom A
+  inv := TypedConverter.leftUnitorInv A
+  hom_inv_id := TypedConverter.leftUnitorHom_comp_inv A
+  inv_hom_id := TypedConverter.leftUnitorInv_comp_hom A
 
-noncomputable def rightUnitor (A : Interface) : tensor A unit ≅ A :=
-  isoOf (Equiv.sumEmpty A.I Empty) (rightUnitAlphabet A.X) (rightUnitAlphabet A.Y)
-    (rightUnitAlphabet_fst A.X) (rightUnitAlphabet_fst A.Y) (parallelDomain_unit_right A)
+/-- Package the named right unit converters and their cancellation laws as an isomorphism. -/
+noncomputable def rightUnitor (A : Interface) : tensor A unit ≅ A where
+  hom := TypedConverter.rightUnitorHom A
+  inv := TypedConverter.rightUnitorInv A
+  hom_inv_id := TypedConverter.rightUnitorHom_comp_inv A
+  inv_hom_id := TypedConverter.rightUnitorInv_comp_hom A
 
 /-- Exchange the two interface families without changing their message values. -/
 noncomputable def swap (A B : Interface) : tensor A B ≅ tensor B A :=
@@ -139,7 +145,8 @@ lemma triangle (A B : Interface) :
       (TypedConverter.parallel (TypedConverter.id A) (leftUnitor B).hom) =
     TypedConverter.parallel (rightUnitor A).hom (TypedConverter.id B)
   rw [← TypedConverter.rename_refl A, ← TypedConverter.rename_refl B]
-  simp only [associator, leftUnitor, rightUnitor, isoOf]
+  simp only [associator, leftUnitor, rightUnitor, isoOf,
+    TypedConverter.leftUnitorHom, TypedConverter.rightUnitorHom]
   erw [TypedConverter.parallel_rename (A := A) (B := A) (C := tensor unit B) (D := B)]
   erw [TypedConverter.parallel_rename (A := tensor A unit) (B := A) (C := B) (D := B)]
   simp only [TypedConverter.rename_comp]

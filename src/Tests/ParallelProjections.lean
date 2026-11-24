@@ -80,7 +80,22 @@ noncomputable def rightConverter : TypedConverter rightOutside rightInside :=
     (fun _ r => r.2 == (1 : Fin 3))
     (fun _ h => Interface.queryBudget_domain_map _ (show 1 ≤ 2 by omega) h)
 
-/-! ## Acceptance criterion 1: projecting parallel resources on unequal interfaces -/
+/-! ## Unit converters and their categorical instance -/
+
+-- The categorical unitors use the systems-level converters in both directions.
+example : (ρ_ leftInside).hom = TypedConverter.rightUnitorHom leftInside := rfl
+example : (ρ_ leftInside).inv = TypedConverter.rightUnitorInv leftInside := rfl
+example : (λ_ rightInside).hom = TypedConverter.leftUnitorHom rightInside := rfl
+example : (λ_ rightInside).inv = TypedConverter.leftUnitorInv rightInside := rfl
+
+-- Cancellation crosses the typed-converter and categorical composition notations.
+example : TypedConverter.rightUnitorInv leftInside ≫ TypedConverter.rightUnitorHom leftInside =
+    𝟙 leftInside := TypedConverter.rightUnitorInv_comp_hom leftInside
+
+example : TypedConverter.leftUnitorHom rightInside ≫ TypedConverter.leftUnitorInv rightInside =
+    𝟙 (Interface.unit ⊗ rightInside) := TypedConverter.leftUnitorHom_comp_inv rightInside
+
+/-! ## Projecting parallel resources on unequal interfaces -/
 
 /-- Left projection of `R ∥ S` returns `R` via the instance law. -/
 example (R : TypedSystem leftInside) (S : TypedSystem rightInside) :
@@ -127,7 +142,7 @@ example : ¬ rightInside.domain (List.replicate 3 ⟨(), ()⟩) := by
   simp only [List.length_replicate] at hb
   omega
 
-/-! ## Acceptance criterion 2: projecting shared randomness without resampling -/
+/-! ## Projecting shared randomness without resampling -/
 
 /-- Projecting the left component of `jointShared` returns the left marginal on the same draw. -/
 example :
@@ -193,7 +208,7 @@ lemma projectLeft_jointShared_conflicting_mass :
   simp only [Fintype.sum_bool, Bool.true_eq_false, Bool.false_eq_true, and_false, false_and,
     ite_false, add_zero]
 
-/-! ## Acceptance criterion 3: naturality with nontrivial converters -/
+/-! ## Naturality with nontrivial converters -/
 
 /-- Left projection commutes with the nontrivial converter `leftConverter` on the retained side. -/
 example :
@@ -256,6 +271,13 @@ example :
   simp only [leftConverter_smul_leftBranch]
 
 /-! ## Axiom checks -/
+
+#print axioms SystemAlgebra.TypedConverter.leftUnitorHom_comp_inv
+#print axioms SystemAlgebra.TypedConverter.leftUnitorInv_comp_hom
+#print axioms SystemAlgebra.TypedConverter.rightUnitorHom_comp_inv
+#print axioms SystemAlgebra.TypedConverter.rightUnitorInv_comp_hom
+#print axioms SystemAlgebra.TypedConverter.comp_leftUnitor_inv
+#print axioms SystemAlgebra.TypedConverter.comp_rightUnitor_inv
 
 #print axioms SystemAlgebra.TypedConverter.eq_discard
 #print axioms SystemAlgebra.TypedConverter.comp_discard

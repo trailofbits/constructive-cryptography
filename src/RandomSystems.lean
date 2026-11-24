@@ -79,6 +79,7 @@ public import RandomSystems.System.Replies
 public import RandomSystems.Typed.Automaton
 public import RandomSystems.Typed.AutomatonGame
 public import RandomSystems.Typed.Context
+public import RandomSystems.Typed.Unitors
 public import RandomSystems.Typed.ConverterCoherence
 public import RandomSystems.Typed.DDCCoherence
 public import RandomSystems.Typed.Distance

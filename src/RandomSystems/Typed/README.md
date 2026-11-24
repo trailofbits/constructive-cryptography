@@ -71,7 +71,9 @@ renamings [compose][TypedConverter.rename_comp], and the renaming by the identit
 [dummy system][TypedSystem.dummy] on the [interface without labels][Interface.unit] beside a typed
 system keeps its probabilities, on the [left][TypedSystem.parallel_unit_left_mass] and on the
 [right][TypedSystem.parallel_unit_right_mass], and [exchanging the two components][TypedSystem.parallel_swap_mass]
-of a parallel composition exchanges the labels of its transcripts. The regrouping renamings are
+of a parallel composition exchanges the labels of its transcripts. The
+[named unit converters](Unitors.lean) and their inverses retain the existing domains.
+Their cancellation and naturality laws live in `ConverterCoherence`. The regrouping renamings are
 natural for typed converters: [associativity][TypedConverter.comp_associator] and the
 [left][TypedConverter.comp_leftUnitor] and [right][TypedConverter.comp_rightUnitor] unit
 regroupings commute with parallel typed converters, and the parallel composition of two renamings
@@ -294,8 +296,8 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedSystem.parallel_unit_left_mass]: SystemCoherence.lean#L107
 [TypedSystem.parallel_unit_right_mass]: SystemCoherence.lean#L132
 [TypedSystem.parallel_swap_mass]: SystemCoherence.lean#L157
-[TypedConverter.comp_associator]: ConverterCoherence.lean#L162
-[TypedConverter.comp_leftUnitor]: ConverterCoherence.lean#L199
+[TypedConverter.comp_associator]: ConverterCoherence.lean#L165
+[TypedConverter.comp_leftUnitor]: ConverterCoherence.lean#L202
 [TypedConverter.comp_rightUnitor]: ConverterCoherence.lean#L228
 [TypedConverter.parallel_rename]: TensorRename.lean#L132
 [TypedSystem.transcriptPseudoEMetricSpace]: Distance.lean#L26
@@ -309,19 +311,19 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedConverter.filter_smul]: Filter.lean#L74
 [TypedConverter.filter_comp_filter_smul]: Filter.lean#L128
 [RandomSystem.restrict]: ../Distance/Restriction.lean#L64
-[TypedConverter.constant]: Context.lean#L145
-[TypedConverter.rightContext]: Context.lean#L176
-[TypedConverter.leftContext]: Context.lean#L183
-[TypedConverter.attach_rightContext]: Context.lean#L189
-[TypedConverter.attach_leftContext]: Context.lean#L194
-[TypedConverter.projectLeft]: Context.lean#L362
-[TypedConverter.projectRight]: Context.lean#L384
-[TypedConverter.projectLeft_smul_parallel]: Context.lean#L398
-[TypedConverter.projectRight_smul_parallel]: Context.lean#L407
-[TypedConverter.projectLeft_smul_sample_parallel]: Context.lean#L417
-[TypedConverter.projectRight_smul_sample_parallel]: Context.lean#L430
-[TypedConverter.projectLeft_comp_parallel]: Context.lean#L443
-[TypedConverter.projectRight_comp_parallel]: Context.lean#L493
+[TypedConverter.constant]: Context.lean#L109
+[TypedConverter.rightContext]: Context.lean#L134
+[TypedConverter.leftContext]: Context.lean#L139
+[TypedConverter.attach_rightContext]: Context.lean#L143
+[TypedConverter.attach_leftContext]: Context.lean#L148
+[TypedConverter.projectLeft]: Context.lean#L188
+[TypedConverter.projectRight]: Context.lean#L202
+[TypedConverter.projectLeft_smul_parallel]: Context.lean#L208
+[TypedConverter.projectRight_smul_parallel]: Context.lean#L217
+[TypedConverter.projectLeft_smul_sample_parallel]: Context.lean#L227
+[TypedConverter.projectRight_smul_sample_parallel]: Context.lean#L240
+[TypedConverter.projectLeft_comp_parallel]: Context.lean#L253
+[TypedConverter.projectRight_comp_parallel]: Context.lean#L296
 [TypedSystem.source]: Source.lean#L55
 [TypedSystem.ofAutomaton]: Automaton.lean#L77
 [TypedSystem.ofAutomaton_map_congr]: Automaton.lean#L98
