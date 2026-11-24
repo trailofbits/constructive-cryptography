@@ -44,18 +44,27 @@ def cleanBinderName? (n : Name) : Option String :=
 def cleanBinderName (n : Name) (fallback : String := "x") : String :=
   (cleanBinderName? n).getD fallback
 
-/-- Clean a constant name to its short readable leaf (stripping module prefixes & hygiene). -/
+/-- Clean a constant name to its short readable leaf (stripping module prefixes & hygiene).
+For structural variant suffixes like `.perPort`, `.mk`, `.toFun`, preserve the meaningful
+parent stem (`Real.perPort` -> `"Real"`, `𝓡₁.perPort` -> `"𝓡₁"`). -/
 def shortConstName (n : Name) : String :=
   let n := n.eraseMacroScopes
   match n with
-  | .str _ leaf => (leaf.splitOn "✝").headD leaf
+  | .str parent leaf =>
+      let cleanLeaf := (leaf.splitOn "✝").headD leaf
+      if cleanLeaf == "perPort" || cleanLeaf == "mk" || cleanLeaf == "toFun" || cleanLeaf == "val" then
+        match parent with
+        | .str _ pLeaf => (pLeaf.splitOn "✝").headD pLeaf
+        | _ => cleanLeaf
+      else cleanLeaf
   | other => other.toString
 
 /-- Transparent numeric/coercion wrappers erased during presentation normalization.
 These never change the mathematical statement for a human reader; exact Lean terms remain
 available one click deeper in the Auditor view. -/
 private def transparentUnaryWrappers : List Name :=
-  [ `ENNReal.ofReal, `ENNReal.toReal, `NNReal.toReal, `Real.toNNReal,
+  [ `ENNReal.ofReal, `ENNReal.toReal, `ENNReal.ofNNReal, `ENNReal.coe,
+    `NNReal.toReal, `NNReal.coe, `Real.toNNReal, `Real.ofNNReal,
     `Nat.cast, `Int.cast, `Rat.cast, `NNReal.ofReal,
     `Coe.coe, `CoeHTCT.coe, `CoeTC.coe, `CoeT.coe, `CoeHead.coe, `CoeTail.coe,
     `Subtype.val, `id, `optParam, `outParam, `autoParam ]

@@ -216,16 +216,37 @@ private def isTrivialWrapperBody (env : Environment) (declName : Name) (body : E
         (!isCoreOrMathlib head && core.getAppArgs.size ≤ 16)
     | _ => false
 
-/-- Deduplicate adjacent/repeated identical sibling proof nodes (preventing the 15× spam bug). -/
-private def dedupSiblings (nodes : Array ProofNode) : Array ProofNode := Id.run do
+/-- Recursively deduplicate repeated identical sibling proof nodes (preventing 15× spam)
+and coalesce duplicate `routineReceipt` siblings of the same kind into one counted receipt
+at every level of the proof tree, including nodes built by domain `RuleExplainer`s. -/
+private partial def dedupSiblings (nodes : Array ProofNode) : Array ProofNode := Id.run do
+  let rec cleanNode : ProofNode → ProofNode
+    | .step id content children goal? diag origin isWrap defExp =>
+        .step id content (dedupSiblings children) goal? diag origin isWrap defExp
+    | .calcChain id intro steps goal? origin =>
+        .calcChain id intro (steps.map fun (s, ch) => (s, dedupSiblings ch)) goal? origin
+    | .routineReceipt id summary count details goal? =>
+        .routineReceipt id summary count (dedupSiblings details) goal?
+    | other => other
   let mut seen : Std.HashSet String := {}
+  let mut seenRoutineIdx : Std.HashMap String Nat := {}
   let mut out : Array ProofNode := #[]
-  for n in nodes do
-    let key := String.intercalate "|" (n.collectAllText.toList)
-    if !key.isEmpty && seen.contains key then
-      continue
-    seen := seen.insert key
-    out := out.push n
+  for raw in nodes do
+    let n := cleanNode raw
+    match n with
+    | .routineReceipt id summary count details goal? =>
+        if let some idx := seenRoutineIdx.get? summary then
+          if let .routineReceipt oid osum ocount odet ogoal := out[idx]! then
+            out := out.set! idx (.routineReceipt oid osum (ocount + count) (dedupSiblings (odet ++ details)) ogoal)
+        else
+          seenRoutineIdx := seenRoutineIdx.insert summary out.size
+          out := out.push (.routineReceipt id summary count details goal?)
+    | _ =>
+        let key := String.intercalate "|" (n.collectAllText.toList)
+        if !key.isEmpty && seen.contains key then
+          continue
+        seen := seen.insert key
+        out := out.push n
   return out
 
 /-- Core recursive decompiler: `(ctx, expectedProp, proofTerm) → Array ProofNode`. -/
@@ -275,6 +296,19 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
         return ← withLetDecl nm ty val fun fv =>
           decompileProof ctx expected (body.instantiate1 fv) (fuel - 1)
   | _, _ => pure ()
+
+  -- 3b. Transparently unwrap kernel cast/rewrite transport wrappers (`Eq.mp`, `Eq.mpr`,
+  -- `Iff.mp`, `Iff.mpr`, `id`) so Paper mode lands directly on genuine mathematical joints.
+  if let .const head _ := proof.getAppFn.consumeMData then
+    if head == ``Eq.mp || head == ``Eq.mpr || head == ``Iff.mp || head == ``Iff.mpr ||
+       head == ``id then
+      let args := proof.getAppArgs
+      if let some inner := args.back? then
+        try
+          let innerTy ← inferType inner
+          if ← isProp innerTy then
+            return ← decompileProof ctx innerTy inner (fuel - 1)
+        catch _ => pure ()
 
   -- 4. Detect `calc` / `cc_calc` chains (`Trans.trans` / `Eq.trans` / `LE.le.trans` / `SubstitutesWithin`)
   let chain ← flattenCalcChain proof expected
@@ -406,7 +440,7 @@ def informalizeDeclaration (declName : Name) (config : Config := {}) :
       lemmaDepth := 0
     }
     let (nodes, _) ← (decompileProof ctx info.type tinfo.value config.maxTermFuel).run {}
-    proofNodes := proofNodes ++ nodes
+    proofNodes := dedupSiblings (proofNodes ++ nodes)
   if let some fa := ov.flowAfter? then
     proofNodes := proofNodes.push (.flowNote s!"doc-flow-post-{declName}" fa "inline")
   let axioms ← auditAxioms declName

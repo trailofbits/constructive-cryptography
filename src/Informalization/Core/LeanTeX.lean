@@ -98,13 +98,22 @@ partial def formatMathIdent (s : String) : String :=
     | _ =>
       if s.length == 1 then escapeLatex s
       else
-        -- Split trailing digits into subscript if base is 1-2 chars (e.g. `x1` -> `x_1`)
+        -- Handle trailing prime (e.g. `H'` -> `H'`, `R'` -> `R'`)
+        if s.endsWith "'" && s.length == 2 then
+          let base := (s.dropEnd 1).toString
+          formatMathIdent base ++ "'"
+        else
+        -- Convert Unicode subscript digits `₀..₉` to ASCII digits for subscript splitting
+        let subDigit : Char → Option Char
+          | '₀' => some '0' | '₁' => some '1' | '₂' => some '2' | '₃' => some '3'
+          | '₄' => some '4' | '₅' => some '5' | '₆' => some '6' | '₇' => some '7'
+          | '₈' => some '8' | '₉' => some '9' | c => if c.isDigit then some c else none
         let chars := s.toList
-        let revDigits := chars.reverse.takeWhile Char.isDigit
+        let revDigits := chars.reverse.takeWhile fun c => (subDigit c).isSome
         let baseLen := chars.length - revDigits.length
         if !revDigits.isEmpty && baseLen > 0 && baseLen ≤ 2 then
           let base := String.ofList (chars.take baseLen)
-          let digits := String.ofList revDigits.reverse
+          let digits := String.ofList (revDigits.reverse.filterMap subDigit)
           formatMathIdent base ++ "_{" ++ digits ++ "}"
         else
           "\\mathrm{" ++ escapeLatex s ++ "}"
