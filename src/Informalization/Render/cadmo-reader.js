@@ -376,115 +376,170 @@
     }, "⊢");
   }
 
-  function renderProofNode(node) {
-    if (!node) return null;
+  /* ------------------------------------------------------------------------
+     Flowing paragraph proof renderer: consecutive `step` siblings flow inline
+     inside natural `<p class="cadmo-proof-para">` paragraphs (just like
+     Maurer–Renner / Kerodon), with quiet inline superscript ⊕ / ⊖ triggers.
+     Only when a sentence is expanded does an indented `.cadmo-expansion`
+     open right below it!
+     ------------------------------------------------------------------------ */
+  function renderProofFlow(rawNodes, opts = {}) {
+    const { leadIn = null, appendQed = false, depth = 0 } = opts;
+    const nodes = projectNodes(rawNodes || []);
+    const out = [];
+    let paraChildren = [];
+    let usedLeadIn = false;
 
-    if (node.kind === "flowNote") {
-      return h("p", { class: "cadmo-flow-note" }, node.text || "");
-    }
-
-    if (node.kind === "figure") {
-      return null; // Diagrams omitted from reading flow until bespoke SVG renderer lands
-    }
-
-    if (node.kind === "routineReceipt") {
-      const hasDetails = Array.isArray(node.details) && node.details.length > 0;
-      const isOpen = state.expanded.has(node.id);
-      const row = h("div", { class: "cadmo-routine" },
-        hasDetails
-          ? h("button", {
-              type: "button",
-              class: "cadmo-toggle",
-              "aria-expanded": isOpen ? "true" : "false",
-              onClick: () => toggleId(node.id)
-            }, isOpen ? "⊖" : "⊕")
-          : null,
-        `(${node.summary || "routine calculation"}; ${node.stepCount || 1} checked)`,
-        renderGoalButton(node.goal, node.summary || "Routine step")
-      );
-      if (hasDetails && isOpen) {
-        return h("div", { class: "cadmo-node" },
-          row,
-          h("div", { class: "cadmo-children" }, ...projectNodes(node.details).map(renderProofNode))
-        );
+    function flushPara(isLast = false) {
+      if (paraChildren.length === 0) return;
+      const p = h("p", { class: "cadmo-proof-para" }, ...paraChildren);
+      if (isLast && appendQed) {
+        p.appendChild(h("span", { class: "cadmo-qed", "aria-hidden": "true" }, "□"));
       }
-      return h("div", { class: "cadmo-node" }, row);
+      out.push(p);
+      paraChildren = [];
     }
 
-    if (node.kind === "calcChain") {
-      const rows = [];
-      (node.steps || []).forEach((item, idx) => {
-        const st = item.step || {};
-        const ch = projectNodes(item.children || []);
-        const sid = `${node.id}-s${idx}`;
-        const isOpen = state.expanded.has(sid);
-        rows.push(
-          h("tr", {},
-            h("td", { class: "cadmo-calc-lhs" }, idx === 0 ? renderMathSpan(st.lhsLatex || "", false) : ""),
-            h("td", { class: "cadmo-calc-rel" }, renderMathSpan(st.relationLatex || "=", false)),
-            h("td", { class: "cadmo-calc-rhs" }, renderMathSpan(st.rhsLatex || "", false)),
-            h("td", { class: "cadmo-calc-reason" },
-              ch.length > 0
-                ? h("button", {
-                    type: "button",
-                    class: "cadmo-toggle",
-                    "aria-expanded": isOpen ? "true" : "false",
-                    onClick: () => toggleId(sid)
-                  }, isOpen ? "⊖" : "⊕")
-                : null,
-              " ",
-              renderInlines(st.reason || [])
-            )
+    function ensureLeadIn() {
+      if (leadIn && !usedLeadIn) {
+        paraChildren.push(h("span", { class: "cadmo-proof-lead" }, leadIn));
+        usedLeadIn = true;
+      }
+    }
+
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+      if (!node || node.kind === "figure") continue;
+
+      if (node.kind === "flowNote") {
+        flushPara(false);
+        const p = h("p", { class: "cadmo-flow-note" }, node.text || "");
+        out.push(p);
+        continue;
+      }
+
+      if (node.kind === "routineReceipt") {
+        // In Paper mode at top level, keep pure routine receipts quiet unless there's no other step
+        if (state.mode === "paper" && depth === 0 && nodes.length > 1) continue;
+        const hasDetails = Array.isArray(node.details) && node.details.length > 0;
+        const isOpen = state.expanded.has(node.id);
+        ensureLeadIn();
+        paraChildren.push(
+          h("span", { class: "cadmo-sent cadmo-routine" },
+            hasDetails
+              ? h("button", {
+                  type: "button",
+                  class: "cadmo-inline-toggle",
+                  "aria-expanded": isOpen ? "true" : "false",
+                  onClick: () => toggleId(node.id)
+                }, isOpen ? "⊖" : "⊕")
+              : null,
+            `By ${node.summary || "routine algebra"}.`,
+            renderGoalButton(node.goal, node.summary || "Routine step")
           )
         );
-        if (ch.length > 0 && isOpen) {
-          rows.push(
-            h("tr", { class: "cadmo-calc-expand-row" },
-              h("td", { colspan: "4" },
-                h("div", { class: "cadmo-children" }, ...ch.map(renderProofNode))
-              )
-            )
-          );
+        if (hasDetails && isOpen) {
+          flushPara(false);
+          out.push(h("div", { class: "cadmo-expansion" },
+            ...renderProofFlow(node.details, { depth: depth + 1 })
+          ));
         }
-      });
-      return h("div", { class: "cadmo-calc" },
-        node.intro && node.intro.length > 0
-          ? h("p", { class: "cadmo-calc-intro" },
+        continue;
+      }
+
+      if (node.kind === "calcChain") {
+        if (node.intro && node.intro.length > 0) {
+          ensureLeadIn();
+          paraChildren.push(
+            h("span", { class: "cadmo-sent" },
               renderInlines(node.intro),
               renderGoalButton(node.goal, "Calculation target")
             )
-          : null,
-        h("table", { class: "cadmo-calc-table" }, h("tbody", {}, ...rows))
-      );
-    }
+          );
+        } else if (leadIn && !usedLeadIn) {
+          ensureLeadIn();
+        }
+        flushPara(false);
+        const rows = [];
+        (node.steps || []).forEach((item, idx) => {
+          const st = item.step || {};
+          const ch = projectNodes(item.children || []);
+          const sid = `${node.id}-s${idx}`;
+          const isOpen = state.expanded.has(sid);
+          rows.push(
+            h("tr", {},
+              h("td", { class: "cadmo-calc-lhs" }, idx === 0 ? renderMathSpan(st.lhsLatex || "", false) : ""),
+              h("td", { class: "cadmo-calc-rel" }, renderMathSpan(st.relationLatex || "=", false)),
+              h("td", { class: "cadmo-calc-rhs" }, renderMathSpan(st.rhsLatex || "", false)),
+              h("td", { class: "cadmo-calc-reason" },
+                renderInlines(st.reason || []),
+                ch.length > 0
+                  ? h("button", {
+                      type: "button",
+                      class: "cadmo-inline-toggle",
+                      "aria-expanded": isOpen ? "true" : "false",
+                      title: isOpen ? "Collapse justification" : "Expand justification",
+                      onClick: () => toggleId(sid)
+                    }, isOpen ? "⊖" : "⊕")
+                  : null
+              )
+            )
+          );
+          if (ch.length > 0 && isOpen) {
+            rows.push(
+              h("tr", { class: "cadmo-calc-expand-row" },
+                h("td", { colspan: "4" },
+                  h("div", { class: "cadmo-expansion" },
+                    ...renderProofFlow(ch, { depth: depth + 1 })
+                  )
+                )
+              )
+            );
+          }
+        });
+        out.push(h("div", { class: "cadmo-calc" },
+          h("table", { class: "cadmo-calc-table" }, h("tbody", {}, ...rows))
+        ));
+        continue;
+      }
 
-    const children = projectNodes(node.children || []);
-    const hasChildren = children.length > 0;
-    const isOpen = state.expanded.has(node.id);
-    return h("div", { class: "cadmo-node" + (node.isWrapper ? " is-wrapper" : "") },
-      h("div", { class: "cadmo-node-row" },
+      // Default: `step` — flows INLINE inside the current paragraph!
+      const children = projectNodes(node.children || []);
+      const hasChildren = children.length > 0;
+      const isOpen = state.expanded.has(node.id);
+      ensureLeadIn();
+      const sent = h("span", { class: "cadmo-sent" + (node.isWrapper ? " is-wrapper" : "") },
+        renderInlines(node.content || []),
         hasChildren
           ? h("button", {
               type: "button",
-              class: "cadmo-toggle",
+              class: "cadmo-inline-toggle",
               "aria-expanded": isOpen ? "true" : "false",
               title: isOpen ? "Collapse subproof" : "Expand subproof",
               onClick: () => toggleId(node.id)
             }, isOpen ? "⊖" : "⊕")
-          : h("span", { class: "cadmo-toggle-spacer", "aria-hidden": "true" }),
-        h("div", { class: "cadmo-node-body" },
-          renderInlines(node.content || []),
-          node.isWrapper ? h("span", { class: "cadmo-wrapper-tag" }, "[wrapper]") : null,
-          node.originDecl ? h("span", { class: "cadmo-origin-tag" }, node.originDecl) : null,
-          renderGoalButton(node.goal, node.originDecl || "Proof step")
-        )
-      ),
-      hasChildren
-        ? h("div", { class: "cadmo-children", hidden: !isOpen },
-            ...children.map(renderProofNode)
-          )
-        : null
-    );
+          : null,
+        node.isWrapper ? h("span", { class: "cadmo-wrapper-tag" }, "[wrapper]") : null,
+        node.originDecl ? h("span", { class: "cadmo-origin-tag" }, node.originDecl) : null,
+        renderGoalButton(node.goal, node.originDecl || "Proof step")
+      );
+      paraChildren.push(sent);
+
+      // Only break out an indented expansion block if THIS sentence is currently expanded!
+      if (hasChildren && isOpen) {
+        flushPara(false);
+        out.push(h("div", { class: "cadmo-expansion" },
+          ...renderProofFlow(children, { depth: depth + 1 })
+        ));
+      }
+    }
+
+    if (paraChildren.length > 0) {
+      flushPara(true);
+    } else if (appendQed) {
+      out.push(h("div", { class: "cadmo-qed", "aria-hidden": "true" }, "□"));
+    }
+    return out;
   }
 
   function toggleId(id) {
@@ -730,9 +785,7 @@
       ),
       proofNodes.length > 0
         ? h("section", { class: "cadmo-proof" },
-            h("span", { class: "cadmo-proof-lead" }, "Proof."),
-            ...proofNodes.map(renderProofNode),
-            h("div", { class: "cadmo-qed", "aria-hidden": "true" }, "□")
+            ...renderProofFlow(entry.proof || [], { leadIn: "Proof.", appendQed: true, depth: 0 })
           )
         : null
     );

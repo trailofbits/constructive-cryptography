@@ -33,6 +33,14 @@ structure DeclOverlay where
   flowAfter? : Option String := none
   symbolLatex? : Option String := none
   binderAliases : Array (String × String) := #[]
+  /-- Natural-language `(singular, plural)` noun for a domain type (kills "element of T"). -/
+  noun? : Option (String × String) := none
+  /-- Natural-language English predicate phrase for a domain proposition (e.g. "is a supported sponge"). -/
+  predPhrase? : Option String := none
+  /-- 0-based explicit argument positions suppressed when rendering applications of this constant. -/
+  hiddenArgs : List Nat := []
+  /-- Render applications of this constant purely as its short symbol (e.g. `blockBytes (hash p)` -> `r`). -/
+  isZeroArgNotation : Bool := false
   /-- Stop cross-lemma recursion at this declaration (e.g., low-level bit-slicing arithmetic). -/
   isOpaqueLeaf : Bool := false
   /-- Treat this declaration as a prominent mathematical proof joint (never auto-inlined). -/
@@ -40,13 +48,17 @@ structure DeclOverlay where
   deriving Inhabited, Repr
 
 private def mergeOverlay (old new : DeclOverlay) : DeclOverlay := {
-  title?        := new.title? <|> old.title?
-  flowBefore?   := new.flowBefore? <|> old.flowBefore?
-  flowAfter?    := new.flowAfter? <|> old.flowAfter?
-  symbolLatex?  := new.symbolLatex? <|> old.symbolLatex?
-  binderAliases := old.binderAliases ++ new.binderAliases
-  isOpaqueLeaf  := old.isOpaqueLeaf || new.isOpaqueLeaf
-  isProofJoint  := old.isProofJoint || new.isProofJoint
+  title?            := new.title? <|> old.title?
+  flowBefore?       := new.flowBefore? <|> old.flowBefore?
+  flowAfter?        := new.flowAfter? <|> old.flowAfter?
+  symbolLatex?      := new.symbolLatex? <|> old.symbolLatex?
+  binderAliases     := old.binderAliases ++ new.binderAliases
+  noun?             := new.noun? <|> old.noun?
+  predPhrase?       := new.predPhrase? <|> old.predPhrase?
+  hiddenArgs        := if new.hiddenArgs.isEmpty then old.hiddenArgs else new.hiddenArgs
+  isZeroArgNotation := old.isZeroArgNotation || new.isZeroArgNotation
+  isOpaqueLeaf      := old.isOpaqueLeaf || new.isOpaqueLeaf
+  isProofJoint      := old.isProofJoint || new.isProofJoint
 }
 
 initialize overlayExt :
@@ -66,14 +78,18 @@ initialize overlayExt :
 def getOverlay (env : Environment) (decl : Name) : DeclOverlay :=
   (overlayExt.getState env).getD decl {}
 
-/-- Build a `SymbolTable` populated with all registered constant symbols plus the binder
-aliases scoped to `rootDecl`. -/
+/-- Build a `SymbolTable` populated with all registered constant symbols, hidden ambient
+argument positions, zero-arg short symbols, and binder aliases scoped to `rootDecl`. -/
 def buildSymbolTable (env : Environment) (rootDecl : Name) : SymbolTable := Id.run do
   let state := overlayExt.getState env
   let mut tbl : SymbolTable := {}
   for (n, ov) in state.toList do
     if let some sym := ov.symbolLatex? then
       tbl := tbl.withConst n sym
+    if !ov.hiddenArgs.isEmpty then
+      tbl := tbl.withHiddenArgs n ov.hiddenArgs
+    if ov.isZeroArgNotation then
+      tbl := tbl.withZeroArgConst n
   let rootOv := getOverlay env rootDecl
   for (b, sym) in rootOv.binderAliases do
     tbl := tbl.withBinder b sym
@@ -98,6 +114,26 @@ elab "informal_flow_after " id:ident note:str : command =>
 /-- Register a clean LaTeX display symbol for a resolved constant (e.g. `Π±`). -/
 elab "informal_symbol " id:ident latex:str : command =>
   addCheckedOverlay id { symbolLatex? := some latex.getString }
+
+/-- Register a zero-arg short LaTeX symbol for a record projection or ambient quantity
+(e.g. `blockBytes (hash p)` → `r`, `customizationBytes limits` → `L_{\mathrm{cust}}`). -/
+elab "informal_short_symbol " id:ident latex:str : command =>
+  addCheckedOverlay id { symbolLatex? := some latex.getString, isZeroArgNotation := true }
+
+/-- Register natural English `(singular, plural)` noun phrasing for a domain type
+(eliminates `"element of MyStruct"`). -/
+elab "informal_noun " id:ident sg:str pl:str : command =>
+  addCheckedOverlay id { noun? := some (sg.getString, pl.getString) }
+
+/-- Register natural English predicate phrasing for a unary/ambient domain proposition
+(e.g. `supportedSponge p` → `"p is a supported sponge"`). -/
+elab "informal_pred " id:ident phrase:str : command =>
+  addCheckedOverlay id { predPhrase? := some phrase.getString }
+
+/-- Suppress ambient leading explicit arguments (0-based indices) when printing applications
+of a verbose Lean definition (e.g. `informal_hide_args keccakReal 0 1`). -/
+elab "informal_hide_args " id:ident idxs:num* : command =>
+  addCheckedOverlay id { hiddenArgs := idxs.toList.map (·.getNat) }
 
 /-- Override a local binder's display symbol inside a theorem (e.g. disambiguate `r` → `P`). -/
 elab "informal_binder " id:ident binder:str latex:str : command =>

@@ -257,7 +257,9 @@ a:hover {
 }
 
 /* ==========================================================================
-   Proof prose & whisper-quiet inline ⊕ / ⊖ unfolding
+   Flowing Proof Paragraphs (authentic Maurer–Renner / Kerodon / Kyle Miller)
+   Sibling sentences flow continuously inline; clicking ⊕ opens only that
+   sentence's checked subproof in a quiet indented expansion block.
    ========================================================================== */
 .cadmo-proof {
   margin-top: 0.9rem;
@@ -265,59 +267,87 @@ a:hover {
 
 .cadmo-proof-lead {
   font-style: italic;
-  margin-right: 0.35rem;
+  margin-right: 0.42rem;
 }
 
-.cadmo-qed {
-  text-align: right;
-  font-size: 0.88rem;
-  color: var(--ink-muted);
-  margin-top: 0.35rem;
-  user-select: none;
+.cadmo-proof-para {
+  margin: 0 0 0.72rem;
+  text-align: left;
+  hyphens: auto;
 }
 
-.cadmo-node {
-  margin: 0.42rem 0;
+.cadmo-sent {
+  display: inline;
 }
 
-.cadmo-node-row {
-  display: flex;
-  align-items: baseline;
-  gap: 0.38rem;
+.cadmo-sent + .cadmo-sent::before {
+  content: " ";
 }
 
-.cadmo-node-body {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.cadmo-toggle {
-  flex: 0 0 auto;
+.cadmo-inline-toggle {
   appearance: none;
   border: 0;
   background: none;
   color: var(--accent);
   font-family: var(--font-math);
-  font-size: 0.92rem;
+  font-size: 0.72em;
   line-height: 1;
-  width: 1.15rem;
-  padding: 0;
+  padding: 0 0.14rem;
+  margin-left: 0.08rem;
+  vertical-align: super;
+  cursor: pointer;
+  opacity: 0.65;
+  transition: opacity 120ms ease;
+}
+
+.cadmo-sent:hover .cadmo-inline-toggle,
+.cadmo-inline-toggle:hover,
+.cadmo-inline-toggle[aria-expanded="true"] {
+  opacity: 1;
+}
+
+.cadmo-expansion {
+  margin: 0.55rem 0 0.85rem 0.45rem;
+  padding: 0.2rem 0 0.1rem 1.15rem;
+  border-left: 1px solid var(--rule);
+  font-size: 0.96rem;
+}
+
+.cadmo-expansion > .cadmo-proof-para:last-child {
+  margin-bottom: 0.15rem;
+}
+
+.cadmo-qed {
+  display: inline-block;
+  float: right;
+  font-size: 0.88rem;
+  color: var(--ink-muted);
+  user-select: none;
+}
+
+.cadmo-proof::after {
+  content: "";
+  display: block;
+  clear: both;
+}
+
+.cadmo-toggle {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-family: var(--font-math);
+  font-size: 0.85rem;
+  line-height: 1;
+  padding: 0 0.18rem;
   cursor: pointer;
   opacity: 0.72;
 }
 
-.cadmo-toggle:hover {
-  opacity: 1;
-}
-
-.cadmo-toggle-spacer {
-  flex: 0 0 auto;
-  width: 1.15rem;
-  display: inline-block;
-}
+.cadmo-toggle:hover { opacity: 1; }
 
 .cadmo-children {
-  margin: 0.32rem 0 0.55rem 0.52rem;
+  margin: 0.35rem 0 0.55rem 0.52rem;
   padding-left: 1.05rem;
   border-left: 1px solid var(--rule);
 }
@@ -327,7 +357,7 @@ a:hover {
 .cadmo-origin-tag,
 .cadmo-wrapper-tag {
   display: none;
-  margin-left: 0.4rem;
+  margin-left: 0.35rem;
   font-family: var(--font-mono);
   font-size: 0.68rem;
   color: var(--ink-muted);
@@ -338,22 +368,23 @@ a:hover {
   display: inline;
 }
 
-/* Goal checkpoint marker: hidden until hover over the line so text stays pure */
+/* Goal checkpoint marker: hidden until hover over the sentence */
 .cadmo-goal-btn {
   appearance: none;
   border: 0;
   background: none;
   color: var(--ink-muted);
   font-family: var(--font-math);
-  font-size: 0.78rem;
-  padding: 0 0.22rem;
-  margin-left: 0.25rem;
+  font-size: 0.72rem;
+  padding: 0 0.16rem;
+  margin-left: 0.12rem;
+  vertical-align: super;
   cursor: pointer;
   opacity: 0;
   transition: opacity 120ms ease, color 120ms ease;
 }
 
-.cadmo-node-row:hover .cadmo-goal-btn,
+.cadmo-sent:hover .cadmo-goal-btn,
 .cadmo-calc-intro:hover .cadmo-goal-btn,
 .cadmo-routine:hover .cadmo-goal-btn,
 .cadmo-goal-btn:focus-visible,
@@ -369,14 +400,14 @@ a:hover {
 }
 
 .cadmo-routine {
-  margin: 0.3rem 0 0.3rem 1.53rem;
+  margin: 0.35rem 0;
   font-size: 0.88rem;
   font-style: italic;
   color: var(--ink-muted);
 }
 
 .cadmo-flow-note {
-  margin: 0.65rem 0;
+  margin: 0 0 0.7rem;
   font-size: 0.94rem;
   font-style: italic;
   color: var(--ink-secondary);

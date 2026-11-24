@@ -24,10 +24,14 @@ namespace Informalization.Core.LeanTeX
 open Lean Meta Informalization.Core.Hygiene
 
 /-- Scoped symbol overrides threaded through one informalization pass (e.g., mapping
-a constant name or local binder name to a preferred LaTeX symbol). -/
+a constant name, local binder name, or repeated subexpression to a preferred LaTeX symbol,
+and suppressing ambient leading explicit arguments on verbose Lean definitions). -/
 structure SymbolTable where
   constAliases : NameMap String := {}
   binderAliases : Std.HashMap String String := {}
+  hiddenArgs : NameMap (List Nat) := {}
+  zeroArgConsts : NameSet := {}
+  exprAliases : Array (Expr × String) := #[]
   deriving Inhabited
 
 def SymbolTable.withConst (t : SymbolTable) (n : Name) (latex : String) : SymbolTable :=
@@ -35,6 +39,15 @@ def SymbolTable.withConst (t : SymbolTable) (n : Name) (latex : String) : Symbol
 
 def SymbolTable.withBinder (t : SymbolTable) (binder : String) (latex : String) : SymbolTable :=
   { t with binderAliases := t.binderAliases.insert binder latex }
+
+def SymbolTable.withHiddenArgs (t : SymbolTable) (n : Name) (idxs : List Nat) : SymbolTable :=
+  { t with hiddenArgs := t.hiddenArgs.insert n idxs }
+
+def SymbolTable.withZeroArgConst (t : SymbolTable) (n : Name) : SymbolTable :=
+  { t with zeroArgConsts := t.zeroArgConsts.insert n }
+
+def SymbolTable.withExprAlias (t : SymbolTable) (e : Expr) (latex : String) : SymbolTable :=
+  { t with exprAliases := t.exprAliases.push (e, latex) }
 
 /-- Callback for recursive child printing with precedence `ctxPrec`. -/
 abbrev Recurse := Nat → Expr → MetaM String
@@ -145,6 +158,8 @@ private def natLit? (e : Expr) : Option Nat :=
 to their clean local-context names and `Fintype.card` / `Nat.choose` render idiomatically). -/
 partial def renderAux (tbl : SymbolTable) (ctxPrec : Nat) (e : Expr) : MetaM String := do
   let e ← instantiateMVars e
+  if let some (_, alias) := tbl.exprAliases.find? (fun (pat, _) => pat == e) then
+    return alias
   if let some n := natLit? e then
     return toString n
   match e with
@@ -222,13 +237,20 @@ partial def renderAux (tbl : SymbolTable) (ctxPrec : Nat) (e : Expr) : MetaM Str
         -- 2. Built-in core math 2D layout rules
         if let some (out, prec) ← renderCoreApp tbl head args then
           return parenIf ctxPrec prec out
-        -- 3. Generic constant application (omit implicit & typeclass arguments!)
+        -- 3. Zero-argument short notation (e.g. `blockBytes (hash p)` -> `r`)
+        if tbl.zeroArgConsts.contains head then
+          return ← renderAux tbl 95 fn
+        -- 4. Generic constant application (omit implicit, typeclass, and hidden ambient args!)
         let info ← getConstInfo head
         let explicitArgs ← collectExplicitArgs info.type args
+        let hidden := tbl.hiddenArgs.getD head []
+        let visibleArgs : Array Expr :=
+          (explicitArgs.foldl (init := (0, #[])) fun (i, acc) a =>
+            (i + 1, if hidden.contains i then acc else acc.push a)).2
         let headStr ← renderAux tbl 95 fn
-        if explicitArgs.isEmpty then
+        if visibleArgs.isEmpty then
           return headStr
-        let renderedArgs ← explicitArgs.mapM (renderAux tbl 0)
+        let renderedArgs ← visibleArgs.mapM (renderAux tbl 0)
         let argList := String.intercalate ", " renderedArgs.toList
         return parenIf ctxPrec 85 s!"{headStr}\\!\\left({argList}\\right)"
       else
@@ -328,6 +350,9 @@ where
         let some (l, r) := lastTwo? args | return none
         return some (s!"({← renderAux tbl 0 l}, {← renderAux tbl 0 r})", 90)
     | _ =>
+        if head == `Dvd.dvd then
+          let some (a, b) := lastTwo? args | return none
+          return some (s!"{← renderAux tbl 50 a} \\mid {← renderAux tbl 50 b}", 50)
         if head == `abs then
           let some a := argFromEnd? args 0 | return none
           return some (s!"\\left|{← renderAux tbl 0 a}\\right|", 90)

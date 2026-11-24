@@ -6,6 +6,7 @@ import Lean
 import Informalization.Core.Grammar
 import Informalization.Core.Hygiene
 import Informalization.Core.LeanTeX
+import Informalization.Core.Overlay
 import Informalization.Core.Explanation
 
 /-!
@@ -27,6 +28,7 @@ open Lean Meta
 open Informalization.Core.Grammar
 open Informalization.Core.Hygiene
 open Informalization.Core.LeanTeX
+open Informalization.Core.Overlay
 open Informalization.Core.Explanation
 
 /-- Semantic description of a mathematical type for entity introductions. -/
@@ -85,12 +87,17 @@ def interfaceAccessory (tbl : SymbolTable) (ifaceExpr : Expr) : MetaM String := 
     return s!"\\({tex}\\)"
   return withInterfacesPhrase rendered
 
-/-- Describe a binder's type using registered domain handlers first, then core math fallbacks. -/
+/-- Describe a binder's type using registered domain handlers and checked `informal_noun`
+overlays first, then core math fallbacks. -/
 def describeType (tbl : SymbolTable) (ty : Expr) : MetaM TypeDescription := do
   let ty ← normalizeForPresentation ty
   for h in (← typeHandlersRef.get) do
     if let some desc ← h.matchType tbl ty then
       return desc
+  if let .const head _ := ty.getAppFn.consumeMData then
+    let env ← getEnv
+    if let some (sg, pl) := (getOverlay env head).noun? then
+      return { noun := ⟨sg, pl⟩ }
   if ty.isSort then
     return { noun := ⟨"set", "sets"⟩ }
   if ty.isAppOf ``Nat || ty == mkConst ``Nat then
@@ -143,10 +150,16 @@ partial def renderProposition (tbl : SymbolTable) (prop : Expr) : MetaM (Array I
       let pInl ← renderProposition tbl dom
       let qInl ← renderProposition tbl body
       return #[.text "if "] ++ pInl ++ #[.text ", then "] ++ qInl
-  -- Logical connectives
+  -- Logical connectives & registered `informal_pred` overlays
   let fn := prop.getAppFn.consumeMData
   let args := prop.getAppArgs
   if let .const head _ := fn then
+    let env ← getEnv
+    if let some phrase := (getOverlay env head).predPhrase? then
+      if let some subject := args.back? then
+        let subjTex ← exprToLatex subject tbl
+        return #[.inlineMath subjTex, .text (" " ++ phrase)]
+      return #[.text phrase]
     if head == ``And && args.size ≥ 2 then
       let a ← renderProposition tbl args[args.size - 2]!
       let b ← renderProposition tbl args[args.size - 1]!
@@ -214,13 +227,101 @@ structure ParsedStatement where
   conclusion : Expr
   deriving Inhabited
 
+/-- Approximate AST size of an expression (used for generic repeated-subexpression factoring). -/
+private partial def exprSize : Expr → Nat
+  | .app f a => 1 + exprSize f + exprSize a
+  | .lam _ d b _ => 1 + exprSize d + exprSize b
+  | .forallE _ d b _ => 1 + exprSize d + exprSize b
+  | .letE _ t v b _ => 1 + exprSize t + exprSize v + exprSize b
+  | .mdata _ e => exprSize e
+  | .proj _ _ s => 1 + exprSize s
+  | _ => 1
+
+/-- Collect non-Prop application subexpressions occurring across `exprs` to automatically
+factor heavy repeated terms (like budget costs) into crisp local shorthands `"Write c₁ = …"`. -/
+private partial def collectCandidateSubexprs (tbl : SymbolTable) (e : Expr)
+    (counts : Std.HashMap Expr Nat) : MetaM (Std.HashMap Expr Nat) := do
+  let e ← normalizeForPresentation e
+  match e with
+  | .app .. =>
+      let mut m := counts
+      if !e.hasLooseBVars then
+        let sz := exprSize e
+        if sz ≥ 6 && sz ≤ 48 then
+          let isP ← try isProp e catch _ => pure true
+          let isTy ← try
+            let ty ← inferType e
+            pure ty.isSort
+          catch _ => pure true
+          let headName? := e.getAppFn.consumeMData.constName?
+          let isShort := match headName? with
+            | some hn => tbl.zeroArgConsts.contains hn
+            | none => false
+          if !isP && !isTy && !isShort then
+            m := m.insert e ((m.getD e 0) + 1)
+      for a in e.getAppArgs do
+        m ← collectCandidateSubexprs tbl a m
+      return m
+  | .forallE _ d b _ =>
+      let m ← collectCandidateSubexprs tbl d counts
+      if !b.hasLooseBVars then collectCandidateSubexprs tbl b m else return m
+  | _ => return counts
+
+/-- Factor up to 3 heavy repeated subexpressions across `exprs` into crisp local abbreviations
+`(c₁, c₂, …)`, returning the augmented `SymbolTable` and optional `"Write …"` paragraph. -/
+private def factorRepeatedSubexprs (tbl : SymbolTable) (exprs : Array Expr) :
+    MetaM (SymbolTable × Option (Array Inline)) := do
+  let mut counts : Std.HashMap Expr Nat := {}
+  for ex in exprs do
+    counts ← collectCandidateSubexprs tbl ex counts
+  let mut cands : Array (Expr × Nat × Nat) := #[]
+  for (ex, cnt) in counts.toList do
+    if cnt ≥ 2 then
+      cands := cands.push (ex, cnt, exprSize ex)
+  -- Prefer larger repeated subexpressions so we factor the meaningful chunk first
+  let sorted := cands.qsort fun (_, c1, s1) (_, c2, s2) =>
+    if s1 != s2 then s1 > s2 else c1 > c2
+  let mut curTbl := tbl
+  let mut defs : Array (String × String) := #[]
+  let mut chosenExprs : Array Expr := #[]
+  for (ex, _, _) in sorted do
+    if defs.size ≥ 3 then break
+    -- Skip if already contained inside a previously factored expression
+    if chosenExprs.any (fun prev => prev == ex) then continue
+    let tex ← exprToLatex ex curTbl
+    if tex.length < 24 then continue
+    let sym := "c_{" ++ toString (defs.size + 1) ++ "}"
+    defs := defs.push (sym, tex)
+    chosenExprs := chosenExprs.push ex
+    curTbl := curTbl.withExprAlias ex sym
+  if defs.isEmpty then
+    return (curTbl, none)
+  let mut inl : Array Inline := #[.text "Write "]
+  for i in [:defs.size] do
+    let (sym, rhs) := defs[i]!
+    if i > 0 then
+      inl := inl.push (.text (if i + 1 == defs.size then " and " else ", "))
+    inl := inl.push (.inlineMath s!"{sym} = {rhs}")
+  inl := inl.push (.text ".")
+  return (curTbl, some inl)
+
 /-- Parse a theorem's full `Expr` type into:
 1. factored-out ambient setting (suppressed typeclasses & category boilerplate);
 2. aggregated entity introductions (`Let … be …`);
-3. explicit mathematical assumptions (`Assume that …`);
-4. the concluding claim (displayed prominently). -/
+3. automatic local shorthand definitions for repeated heavy subexpressions (`Write c₁ = …`);
+4. explicit mathematical assumptions (`Assume that …`);
+5. the concluding claim (displayed cleanly, promoted to display math when substantial). -/
 def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr) : MetaM ParsedStatement := do
   forallTelescope theoremType fun fvars conclusion => do
+    -- Collect prop assumptions & conclusion first so we can factor repeated subexpressions cleanly
+    let mut propExprs : Array Expr := #[]
+    for fv in fvars do
+      let decl ← fv.fvarId!.getDecl
+      if ← isSuppressedLocalDecl decl then continue
+      if ← isProp decl.type then
+        propExprs := propExprs.push decl.type
+    let (tbl, writePara?) ← factorRepeatedSubexprs tbl (propExprs.push conclusion)
+
     let mut intros : List Intro := []
     let mut hyps : Array (Array Inline) := #[]
     let mut suppressed : Array String := #[]
@@ -272,6 +373,8 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr) : MetaM Parse
     let mut paragraphs : Array (Array Inline) := #[]
     if !intros.isEmpty then
       paragraphs := paragraphs.push #[.text (realizeIntros intros)]
+    if let some wp := writePara? then
+      paragraphs := paragraphs.push wp
     if !hyps.isEmpty then
       let mut assumeInl : Array Inline := #[.text "Assume that "]
       for i in [:hyps.size] do
@@ -281,11 +384,16 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr) : MetaM Parse
       assumeInl := assumeInl.push (.text ".")
       paragraphs := paragraphs.push assumeInl
     let conclInl ← renderProposition tbl conclusion
-    let conclPara :=
-      if hyps.isEmpty && intros.isEmpty then
-        #[.text "We have "] ++ conclInl ++ #[.text "."]
-      else
-        #[.text "Then "] ++ conclInl ++ #[.text "."]
+    let lead := if hyps.isEmpty && intros.isEmpty then "We have " else "Then "
+    let conclPara : Array Inline :=
+      match conclInl with
+      | #[.inlineMath tex] =>
+          if tex.length ≥ 36 then
+            #[.text (lead.trimAscii.toString), .displayMath tex "."]
+          else
+            #[.text lead, .inlineMath tex, .text "."]
+      | _ =>
+          #[.text lead] ++ conclInl ++ #[.text "."]
     paragraphs := paragraphs.push conclPara
     let ambient? :=
       if suppressed.isEmpty then none

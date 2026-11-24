@@ -54,6 +54,10 @@ structure DecompCtx where
   tbl : SymbolTable
   seenDecls : NameSet := {}
   lemmaDepth : Nat := 0
+  /-- Most recently introduced `have` fact (for causal vs. independent discourse transitions). -/
+  lastFactFVar? : Option FVarId := none
+  /-- Count of sequential `have` steps at the current block level. -/
+  factIndex : Nat := 0
 
 /-- Callback allowing domain explainers to recursively decompile child proof terms. -/
 abbrev DecompileChild := DecompCtx → Expr → Expr → StateRefT DiscourseState MetaM (Array ProofNode)
@@ -289,24 +293,51 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
   | _, .letE nm ty val body _ =>
       let isP ← isProp ty
       if isP then
-        -- Local intermediate fact (`have h : P := ...`) -> visible Maurer proof step!
-        let factNodes ← decompileProof ctx ty val (fuel - 1)
+        -- Local intermediate fact (`have h : P := ...`): choose causal vs. parallel transition!
+        let usesPrev := match ctx.lastFactFVar? with
+          | some prevId => (Lean.collectFVars {} val).fvarIds.contains prevId
+          | none => false
+        let factNodes ← decompileProof { ctx with lastFactFVar? := none, factIndex := 0 } ty val (fuel - 1)
         let goal ← buildGoalState ctx.tbl ty
         let factInl ← renderProposition ctx.tbl ty
-        let st ← get
-        let (opener, st') := st.pickOpener .consequence
-        set st'
+        let opener ← do
+          let st ← get
+          if usesPrev then
+            let (op, st') := st.pickOpener .consequence
+            set st'
+            pure op
+          else if ctx.factIndex == 0 then
+            pure "First,"
+          else
+            let parallelOps := #["Next,", "Moreover,", "In addition,", "Similarly,"]
+            pure (parallelOps[(ctx.factIndex - 1) % parallelOps.size]!)
         let headerStep : ProofNode :=
           .step s!"have-{fuel}"
             (#[.text s!"{opener} "] ++ factInl ++ #[.text "."])
             factNodes (some goal)
         let rest ← withLetDecl nm ty val fun fv =>
-          decompileProof ctx expected (body.instantiate1 fv) (fuel - 1)
+          let nextCtx := { ctx with lastFactFVar? := some fv.fvarId!, factIndex := ctx.factIndex + 1 }
+          decompileProof nextCtx expected (body.instantiate1 fv) (fuel - 1)
         return dedupSiblings (#[headerStep] ++ rest)
       else
         return ← withLetDecl nm ty val fun fv =>
           decompileProof ctx expected (body.instantiate1 fv) (fuel - 1)
   | _, _ => pure ()
+
+  -- 3a. Fold `funext` into natural pointwise prose instead of "Applying funext, ..."
+  if let .const head _ := proof.getAppFn.consumeMData then
+    if head == ``funext || head == `Function.funext then
+      if let some (.lam pnm dom pbody bi) := proof.getAppArgs.back? then
+        return ← withLocalDecl pnm bi dom fun fv => do
+          let xTex ← exprToLatex fv ctx.tbl
+          let bodyExpr := pbody.instantiate1 fv
+          let bodyTy ← inferType bodyExpr
+          let subNodes ← decompileProof { ctx with lastFactFVar? := none, factIndex := 0 } bodyTy bodyExpr (fuel - 1)
+          let bodyInl ← renderProposition ctx.tbl bodyTy
+          let goal ← buildGoalState ctx.tbl expected
+          return #[.step s!"funext-{fuel}"
+            (#[.text "Evaluating pointwise at ", .inlineMath xTex, .text ", "] ++ bodyInl ++ #[.text "."])
+            subNodes (some goal)]
 
   -- 3b. Transparently unwrap kernel cast/rewrite transport wrappers (`Eq.mp`, `Eq.mpr`,
   -- `Iff.mp`, `Iff.mpr`, `id`) so Paper mode lands directly on genuine mathematical joints.

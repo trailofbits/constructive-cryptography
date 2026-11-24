@@ -386,8 +386,8 @@ private def distinguisherAdvantageValHandler : AppHandler where
     let some d := argFromEnd? args 2 | return none
     return some ("\\Delta^{" ++ (← rec 0 d) ++ "}\\!\\left(" ++ (← rec 0 l) ++ ", " ++ (← rec 0 r) ++ "\\right)", 85)
 
-private def distinguisherProbHandler : AppHandler where
-  head := distinguisherProbabilityName
+private def distinguisherProbHandler (head : Name) : AppHandler where
+  head := head
   priority := 190
   run := fun _ rec _ args => do
     let some r := argFromEnd? args 0 | return none
@@ -565,6 +565,9 @@ private def ccPropHandler : PropHandler where
     let fn := prop.getAppFn.consumeMData
     let args := prop.getAppArgs
     let some head := fn.constName? | return none
+    let protocolLead (convTex : String) : Array Inline :=
+      if convTex == "\\mathrm{protocol}" || convTex == "protocol" then #[.text "the protocol"]
+      else #[.text "protocol ", .inlineMath convTex]
     -- 1. Exact construction: `Constructs π ℛ 𝒮`
     if head == constructsName && args.size ≥ 3 then
       let some tgt := argFromEnd? args 0 | return none
@@ -578,24 +581,21 @@ private def ccPropHandler : PropHandler where
         let epsTex ← exprToLatex eps tbl
         if let some (_, base) := matchSimulatorOrStar? inner then
           let baseTex ← exprToLatex (unwrapSingletonSpec base) tbl
-          return some #[
-            .text "protocol ", .inlineMath convTex,
+          return some (protocolLead convTex ++ #[
             .text s!" {verb} the ", .inlineMath epsTex,
             .text "-relaxed simulator specification ",
             .inlineMath ("\\left(" ++ baseTex ++ "^{*}\\right)^{" ++ epsTex ++ "}"),
             .text " from ", .inlineMath srcTex
-          ]
-        return some #[
-          .text "protocol ", .inlineMath convTex,
+          ])
+        return some (protocolLead convTex ++ #[
           .text s!" {verb} ", .inlineMath tgtTex,
           .text " from ", .inlineMath srcTex,
           .text " within error ", .inlineMath epsTex
-        ]
-      return some #[
-        .text "protocol ", .inlineMath convTex,
+        ])
+      return some (protocolLead convTex ++ #[
         .text s!" {verb} ", .inlineMath tgtTex,
         .text " from ", .inlineMath srcTex
-      ]
+      ])
     -- 2. Approximate construction: `ConstructsWithin π ℛ 𝒮 ε`
     if head == constructsWithinName && args.size ≥ 4 then
       let some err := argFromEnd? args 0 | return none
@@ -607,12 +607,11 @@ private def ccPropHandler : PropHandler where
       let tgtTex ← exprToLatex (unwrapSingletonSpec tgt) tbl
       let errTex ← exprToLatex err tbl
       let verb := verbConstruct.conjugate .singular
-      return some #[
-        .text "protocol ", .inlineMath convTex,
+      return some (protocolLead convTex ++ #[
         .text s!" {verb} ", .inlineMath tgtTex,
         .text " from ", .inlineMath srcTex,
         .text " within error ", .inlineMath errTex
-      ]
+      ])
     -- 3. Concrete substitution: `R ≃[ε] S`
     if head == substitutesWithinName && args.size ≥ 3 then
       let some rhs := argFromEnd? args 0 | return none
@@ -737,7 +736,9 @@ def registerAll : IO Unit := do
   registerAppHandler (distanceHandler transcriptDistanceName)
   registerAppHandler advantageDistanceHandler
   registerAppHandler distinguisherAdvantageValHandler
-  registerAppHandler distinguisherProbHandler
+  registerAppHandler (distinguisherProbHandler distinguisherProbabilityName)
+  registerAppHandler (distinguisherProbHandler `SystemAlgebra.TypedDistinguisher.probability)
+  registerAppHandler (distinguisherProbHandler `RandomSystem.decisionProbability)
   registerAppHandler (absorbHandler absorbName)
   registerAppHandler (absorbHandler typedDistinguisherAbsorbName)
   registerAppHandler (absorbHandler gamesAbsorbName)
