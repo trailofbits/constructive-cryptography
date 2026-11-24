@@ -1,6 +1,7 @@
 module
 
 public import Probability.List
+public import Mathlib.Tactic.NormNum
 
 /-!
 # List splits and fold-indexed predicates
@@ -9,7 +10,7 @@ Tests `List.exists_eq_append_cons_iff`, `List.forall_prefix_concat_iff_forall_ta
 `List.exists_split_of_filterMap_eq`, `List.exists_split_of_filter_eq`, and `List.ForallScan`
 on concrete lists:
 
-* deciding whether some entry of `[1, 2, 4]` exceeds the sum of the entries before it;
+* checking whether some entry of `[1, 2, 4]` exceeds the sum of the entries before it;
 * splitting `[1, 2, 3, 4]` at an entry of its even entries (`filterMap` and `filter`);
 * checking a predicate against the running sum on a list split in two.
 -/
@@ -19,21 +20,30 @@ on concrete lists:
 namespace Tests.ProbabilityList
 
 /-- Some entry of `[1, 2, 4]` is larger than the sum of the entries before it (`4 > 1 + 2`),
-decided via `List.exists_eq_append_cons_iff`. -/
+using `List.exists_eq_append_cons_iff`. -/
 example : ∃ p e s, ([1, 2, 4] : List ℕ) = p ++ e :: s ∧ p.sum < e := by
   rw [List.exists_eq_append_cons_iff]
-  decide
+  exact ⟨2, by norm_num, by norm_num⟩
 
 /-- No entry of `[0, 0, 0]` is strictly larger than the sum of the entries before it. -/
 example : ¬ ∃ p e s, ([0, 0, 0] : List ℕ) = p ++ e :: s ∧ p.sum < e := by
   rw [List.exists_eq_append_cons_iff]
-  decide
+  rintro ⟨i, hi, hlt⟩
+  have hzero : ([0, 0, 0] : List ℕ)[i] = 0 := by
+    have hm := List.getElem_mem hi
+    simpa only [List.mem_cons, List.not_mem_nil, or_false, or_self] using hm
+  rw [hzero] at hlt
+  exact Nat.not_lt_zero _ hlt
 
-/-- Every entry of `[1, 1, 2, 4]` is at most `1 + sum` of the entries before it, decided via
+/-- Every entry of `[1, 1, 2, 4]` is at most `1 + sum` of the entries before it, using
 `List.forall_prefix_concat_iff_forall_take`. -/
 example : ∀ p e, p ++ [e] <+: ([1, 1, 2, 4] : List ℕ) → e ≤ p.sum + 1 := by
   rw [List.forall_prefix_concat_iff_forall_take]
-  decide
+  intro i hi
+  have positions : i = 0 ∨ i = 1 ∨ i = 2 ∨ i = 3 := by
+    simp only [List.length_cons, List.length_nil] at hi
+    omega
+  rcases positions with rfl | rfl | rfl | rfl <;> norm_num
 
 /-- Splitting `[1, 2, 3, 4]` at the second even entry `4` (mapped to `2` via `filterMap`) recovers
 the preimage split `[1, 2, 3] ++ 4 :: []`. -/
@@ -57,13 +67,18 @@ example :
 example :
     List.ForallScan (· + ·) (fun c a => c ≤ a) 0 ([1, 2] ++ [3, 6]) ∧
       ([1, 2, 3] : List ℕ).foldl (· + ·) 0 ≤ 6 := by
-  have h1 : List.ForallScan (· + ·) (fun c a => c ≤ a) (0 : ℕ) [1, 2] := by decide
+  have h1 : List.ForallScan (· + ·) (fun c a => c ≤ a) (0 : ℕ) [1, 2] := by
+    norm_num [List.ForallScan, List.foldl_cons, List.foldl_nil]
   have h2 : List.ForallScan (· + ·) (fun c a => c ≤ a) (([1, 2] : List ℕ).foldl (· + ·) 0)
-      [3, 6] := by decide
+      [3, 6] := by norm_num [List.ForallScan, List.foldl_cons, List.foldl_nil]
   have h12 : List.ForallScan (· + ·) (fun c a => c ≤ a) (0 : ℕ) ([1, 2] ++ [3, 6]) :=
     h1.append h2
   refine ⟨h12, ?_⟩
   exact List.ForallScan.of_append_cons (l := [1, 2, 3]) (a := 6) (m := []) h12
+
+/-- The recursive instance supplies decidability from the entry predicate. -/
+example : Decidable (List.ForallScan (· + ·) (fun c a => c ≤ a) (0 : ℕ) [1, 2]) :=
+  inferInstance
 
 #print axioms List.exists_eq_append_cons_iff
 #print axioms List.forall_prefix_concat_iff_forall_take

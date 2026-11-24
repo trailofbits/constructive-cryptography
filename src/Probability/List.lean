@@ -78,12 +78,8 @@ lemma exists_split_of_filter_eq
     (h : l.filter p = pre ++ a :: post) :
     ∃ l₁ l₂, l = l₁ ++ a :: l₂ ∧ l₁.filter p = pre ∧ p a = true ∧ l₂.filter p = post := by
   let f : α → Option α := fun x => if p x then some x else none
-  have hfm : ∀ m : List α, m.filterMap f = m.filter p := fun m => by
-    induction m with
-    | nil => rfl
-    | cons x t ih =>
-      cases hpx : p x <;>
-        simp only [f, filterMap_cons, filter_cons, hpx, Bool.false_eq_true, ↓reduceIte, ih]
+  have hfm : ∀ m : List α, m.filterMap f = m.filter p :=
+    fun m => congrFun (filterMap_eq_filter (p := p)) m
   rw [← hfm l] at h
   obtain ⟨l₁, a', l₂, rfl, hpre, hfa, hpost⟩ := exists_split_of_filterMap_eq f l pre a post h
   have hpa : p a' = true ∧ a' = a := by
