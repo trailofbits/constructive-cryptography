@@ -46,8 +46,11 @@ R \parallel S \in \Phi(A \otimes B), \qquad \mathbf 1 \in \Phi(\mathbb I), \qqua
 (\alpha \otimes \beta)(R \parallel S) = \alpha R \parallel \beta S .
 ```
 
-Derived: [locality][CA.attach_parallel], [associativity][CA.parallel_assoc], and the
-[left][CA.parallel_dummy_left] and [right][CA.parallel_dummy_right] unit laws.
+Derived: [locality][CA.attach_parallel], [associativity][CA.parallel_assoc] (and its forward
+form [`associator_hom_attach`][CA.associator_hom_attach]), and the [left][CA.parallel_dummy_left]
+and [right][CA.parallel_dummy_right] unit laws (with forward forms
+[`leftUnitor_hom_attach`][CA.leftUnitor_hom_attach] and
+[`rightUnitor_hom_attach`][CA.rightUnitor_hom_attach]).
 
 ### `CompatiblePseudoMetric C Φ`: distance
 
@@ -414,15 +417,18 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 
 <!-- Declarations: the classes -->
 
-[ResourceTheory]: CryptographicAlgebra/Basic.lean#L68
-[ResourceTheory.functor]: CryptographicAlgebra/Basic.lean#L102
-[CryptographicAlgebra]: CryptographicAlgebra/Basic.lean#L143
-[CA.parallel]: CryptographicAlgebra/Basic.lean#L189
-[CA.dummy]: CryptographicAlgebra/Basic.lean#L200
-[CA.attach_parallel]: CryptographicAlgebra/Basic.lean#L238
-[CA.parallel_assoc]: CryptographicAlgebra/Basic.lean#L270
-[CA.parallel_dummy_left]: CryptographicAlgebra/Basic.lean#L288
-[CA.parallel_dummy_right]: CryptographicAlgebra/Basic.lean#L306
+[ResourceTheory]: CryptographicAlgebra/Basic.lean#L70
+[ResourceTheory.functor]: CryptographicAlgebra/Basic.lean#L104
+[CryptographicAlgebra]: CryptographicAlgebra/Basic.lean#L145
+[CA.parallel]: CryptographicAlgebra/Basic.lean#L191
+[CA.dummy]: CryptographicAlgebra/Basic.lean#L202
+[CA.attach_parallel]: CryptographicAlgebra/Basic.lean#L240
+[CA.parallel_assoc]: CryptographicAlgebra/Basic.lean#L272
+[CA.associator_hom_attach]: CryptographicAlgebra/Basic.lean#L286
+[CA.parallel_dummy_left]: CryptographicAlgebra/Basic.lean#L297
+[CA.leftUnitor_hom_attach]: CryptographicAlgebra/Basic.lean#L312
+[CA.parallel_dummy_right]: CryptographicAlgebra/Basic.lean#L323
+[CA.rightUnitor_hom_attach]: CryptographicAlgebra/Basic.lean#L338
 [CompatiblePseudoMetric]: CryptographicAlgebra/PseudoMetric.lean#L63
 [CA.distance]: CryptographicAlgebra/PseudoMetric.lean#L99
 [distance_attach_le]: CryptographicAlgebra/PseudoMetric.lean#L131
@@ -443,13 +449,13 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [Interface.identity_attach]: Instances/Category.lean#L56
 [Interface.comp_smul]: Instances/Category.lean#L61
 [Interface.monoidal]: Instances/Monoidal.lean#L166
-[Interface.resourceTheory]: Instances/Algebra.lean#L83
-[Interface.cryptographicAlgebra]: Instances/Algebra.lean#L162
-[Interface.transcriptDistance_eq_advantageDistance]: Instances/Algebra.lean#L220
-[Interface.compatibleDistinguisherClass]: Instances/Algebra.lean#L242
-[Interface.cc_parallel_eq]: Instances/Algebra.lean#L269
-[Interface.cc_dummy_eq]: Instances/Algebra.lean#L273
-[Interface.cc_distance_eq]: Instances/Algebra.lean#L278
+[Interface.resourceTheory]: Instances/Algebra.lean#L86
+[Interface.cryptographicAlgebra]: Instances/Algebra.lean#L165
+[Interface.transcriptDistance_eq_advantageDistance]: Instances/Algebra.lean#L243
+[Interface.compatibleDistinguisherClass]: Instances/Algebra.lean#L265
+[Interface.cc_parallel_eq]: Instances/Algebra.lean#L292
+[Interface.cc_dummy_eq]: Instances/Algebra.lean#L296
+[Interface.cc_distance_eq]: Instances/Algebra.lean#L301
 [TypedSystem.transcriptPseudoEMetricSpace]: ../RandomSystems/Typed/Distance.lean#L26
 [RandomSystem.transcriptDistance_eq_iSup_behavior]: ../RandomSystems/Distance/Distinguisher.lean#L250
 [Interface.games]: Instances/Game.lean#L54
@@ -471,11 +477,11 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [Specification]: Specification/Defs.lean#L30
 [Specification.Constructs]: Specification/Basic.lean#L45
 [Specification.ConstructsWithin]: Specification/Metric.lean#L49
-[CA.Specification.Constructs]: CryptographicAlgebra/Basic.lean#L493
+[CA.Specification.Constructs]: CryptographicAlgebra/Basic.lean#L518
 [CA.Specification.ConstructsWithin]: CryptographicAlgebra/PseudoMetric.lean#L265
-[Constructs.serial]: CryptographicAlgebra/Basic.lean#L583
+[Constructs.serial]: CryptographicAlgebra/Basic.lean#L608
 [ConstructsWithin.serial]: CryptographicAlgebra/PseudoMetric.lean#L335
-[Constructs.parallel]: CryptographicAlgebra/Basic.lean#L682
+[Constructs.parallel]: CryptographicAlgebra/Basic.lean#L707
 [ConstructsWithin.parallel]: CryptographicAlgebra/PseudoMetric.lean#L363
 [Relaxation]: Specification/Relaxation/Defs.lean#L46
 [Relaxation.Compatible]: CryptographicAlgebra/Relaxation.lean#L69
@@ -520,9 +526,9 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [Domain.DistinguisherBehavior]: ../RandomSystems/Distance/Distinguisher.lean#L211
 [DistinguisherBehavior.advantage_le_transcriptDistance]: ../RandomSystems/Distance/Distinguisher.lean#L242
 [DistinguisherBehavior.absorb]: ../RandomSystems/Distance/Distinguisher.lean#L295
-[Interface.distinguisherEvaluations]: Instances/Algebra.lean#L168
-[Interface.distinguisherAction]: Instances/Algebra.lean#L174
-[Interface.distinguisherAdvantageDominated]: Instances/Algebra.lean#L296
+[Interface.distinguisherEvaluations]: Instances/Algebra.lean#L191
+[Interface.distinguisherAction]: Instances/Algebra.lean#L197
+[Interface.distinguisherAdvantageDominated]: Instances/Algebra.lean#L319
 [DistinguisherAdvantage]: Distinguisher.lean#L58
 [Distinguishers]: Distinguisher.lean#L93
 [AdmissibleDistinguishers]: Distinguisher.lean#L104
@@ -555,21 +561,21 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [Interface]: ../RandomSystems/Typed/Interface.lean#L41
 [Interface.associator]: Instances/Monoidal.lean#L56
 [Interface.associator_naturality]: Instances/Monoidal.lean#L96
-[Interface.distinguishers]: Instances/Algebra.lean#L183
-[Interface.distinguishers_attach]: Instances/Algebra.lean#L188
-[Interface.distinguishers_parallel_left]: Instances/Algebra.lean#L194
-[Interface.distinguishers_parallel_right]: Instances/Algebra.lean#L211
+[Interface.distinguishers]: Instances/Algebra.lean#L206
+[Interface.distinguishers_attach]: Instances/Algebra.lean#L211
+[Interface.distinguishers_parallel_left]: Instances/Algebra.lean#L217
+[Interface.distinguishers_parallel_right]: Instances/Algebra.lean#L234
 [Interface.id_tensor_id]: Instances/Monoidal.lean#L88
 [Interface.isoOf]: Instances/Monoidal.lean#L37
 [Interface.leftUnitor]: Instances/Monoidal.lean#L61
 [Interface.leftUnitor_naturality]: Instances/Monoidal.lean#L101
 [Interface.monoidalStruct]: Instances/Monoidal.lean#L75
-[Interface.parallel_assoc]: Instances/Algebra.lean#L97
-[Interface.parallel_dummy_left]: Instances/Algebra.lean#L109
-[Interface.parallel_dummy_right]: Instances/Algebra.lean#L118
-[Interface.parallel_swap]: Instances/Algebra.lean#L127
+[Interface.parallel_assoc]: Instances/Algebra.lean#L100
+[Interface.parallel_dummy_left]: Instances/Algebra.lean#L112
+[Interface.parallel_dummy_right]: Instances/Algebra.lean#L121
+[Interface.parallel_swap]: Instances/Algebra.lean#L130
 [Interface.pentagon]: Instances/Monoidal.lean#L109
-[Interface.resourcesLaxMonoidal]: Instances/Algebra.lean#L136
+[Interface.resourcesLaxMonoidal]: Instances/Algebra.lean#L139
 [Interface.rightUnitor]: Instances/Monoidal.lean#L65
 [Interface.rightUnitor_naturality]: Instances/Monoidal.lean#L105
 [Interface.solvers]: Instances/Game.lean#L48
