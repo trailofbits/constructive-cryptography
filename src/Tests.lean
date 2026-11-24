@@ -108,6 +108,7 @@ public import Tests.ProgramConverterBisimulation
 public import Tests.WhiskerNormalization
 public import Tests.IndifferentiabilityComposition
 public import Tests.ParallelProjections
+public import Tests.GameEquivalenceTransport
 
 /-! Axiom audits per layer and of the Commons library, the checks of the
 authenticated-encryption example,
