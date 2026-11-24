@@ -208,6 +208,45 @@ lemma ofDDC_apply {A B : Interface} (α : InsideOutsideSystem A.I B.I A.X A.Y B.
       if Replies α (t.map Prod.fst) (t.map Prod.snd) then 1 else 0 :=
   PDCBehavior.ofDDC_apply α hα t
 
+/-- The identity converter is the deterministic converter of the forwarding filter on `A`. -/
+lemma id_eq_ofDDC_filter (A : Interface) :
+    TypedConverter.id A =
+      ofDDC (DDC.filter (Y := A.Y) (fun h => h = [] ∨ A.domain h)
+        (prefix_or_nil A.nonempty_prefix.2)).1
+        (isDDCFrom_filter (Y := A.Y) A.nonempty_prefix) :=
+  rfl
+
+/-- Two DDCs from `B` to `A` agreeing on every admitted next input after shared transcripts
+define the same typed converter. -/
+lemma ofDDC_eq_of_next_eq {A B : Interface}
+    {α γ : InsideOutsideSystem A.I B.I A.X A.Y B.X B.Y} {a c : ℕ}
+    (hα : IsDDCFrom B.domain A.domain a α) (hγ : IsDDCFrom B.domain A.domain c γ)
+    (hnext : ∀ (t : List ((Σ l, twoFam A.X B.Y l) × (Σ l, twoFam A.Y B.X l)))
+      (x : Σ l, twoFam A.X B.Y l),
+      Replies α (t.map Prod.fst) (t.map Prod.snd) →
+      Replies γ (t.map Prod.fst) (t.map Prod.snd) →
+      converterDomain B.domain A.domain t x →
+      α (t.map Prod.fst ++ [x]) = γ (t.map Prod.fst ++ [x])) :
+    ofDDC α hα = ofDDC γ hγ :=
+  PDCBehavior.ofDDC_eq_of_next_eq hα hγ hnext
+
+/-- Two deterministic typed converters are equal iff they have the same transcripts. -/
+lemma ofDDC_eq_iff_replies {A B : Interface}
+    {α γ : InsideOutsideSystem A.I B.I A.X A.Y B.X B.Y} {a c : ℕ}
+    (hα : IsDDCFrom B.domain A.domain a α) (hγ : IsDDCFrom B.domain A.domain c γ) :
+    ofDDC α hα = ofDDC γ hγ ↔
+      ∀ t : List ((Σ l, twoFam A.X B.Y l) × (Σ l, twoFam A.Y B.X l)),
+        Replies α (t.map Prod.fst) (t.map Prod.snd) ↔
+          Replies γ (t.map Prod.fst) (t.map Prod.snd) :=
+  PDCBehavior.ofDDC_eq_iff_replies hα hγ
+
+/-- Two deterministic typed converters are equal iff their underlying DDCs are equal. -/
+lemma ofDDC_eq_iff {A B : Interface}
+    {α γ : InsideOutsideSystem A.I B.I A.X A.Y B.X B.Y} {a c : ℕ}
+    (hα : IsDDCFrom B.domain A.domain a α) (hγ : IsDDCFrom B.domain A.domain c γ) :
+    ofDDC α hα = ofDDC γ hγ ↔ α = γ :=
+  PDCBehavior.ofDDC_eq_iff hα hγ
+
 /-- If `γ = trim (serialM α β)`, its typed behavior is `comp (ofDDC α hα) (ofDDC β hβ)`.
 The certified bound `c` may differ from the product bound `b * a` of `IsDDCFrom.comp`.
 Each bound limits consecutive inside outputs [2, Definition 2.2.2, pp. 17–18].
