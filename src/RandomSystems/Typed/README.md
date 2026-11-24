@@ -132,7 +132,9 @@ invariant at admitted queries gives equality of typed systems.
 [Point transitions][TypedSystem.ofProbAutomaton_ofDeterministic] recover `ofAutomaton`.
 A [**memoryless system**][TypedSystem.ofMemoryless] answers each admitted query `i(x)`
 with a fresh draw from `ν i x`. In `TypedSystem.ofMemoryless A ν`, `A` selects the
-interface and its declared domain. A [source][TypedSystem.source_eq_ofMemoryless] has a
+interface and its declared domain; [it is the one-state automaton][TypedSystem.ofMemoryless_eq_ofProbAutomaton]
+of its reply laws, specializing to [point laws for functions][TypedSystem.ofFunction_eq_ofProbAutomaton].
+A [source][TypedSystem.source_eq_ofMemoryless] has a
 [one-state automaton presentation][TypedSystem.source_eq_ofProbAutomaton].
 [Parallel composition][TypedSystem.parallel_ofMemoryless] combines the components' reply laws.
 A [bounded program][TypedConverter.ofProgram_smul_ofMemoryless],
@@ -312,15 +314,17 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedSystem.ofProbAutomaton]: ProbAutomaton.lean
 [TypedSystem.ofProbAutomaton_eq_of_simulation]: ProbAutomaton.lean
 [TypedSystem.ofProbAutomaton_ofDeterministic]: ProbAutomaton.lean
-[TypedSystem.ofMemoryless]: Memoryless.lean#L60
-[TypedSystem.source_eq_ofMemoryless]: Memoryless.lean#L154
-[TypedSystem.source_eq_ofProbAutomaton]: Memoryless.lean#L162
-[TypedSystem.parallel_ofMemoryless]: Memoryless.lean#L244
-[TypedSystem.parallel_eq_ofMemoryless]: Memoryless.lean#L269
-[TypedConverter.ofProgram_smul_ofMemoryless]: Memoryless.lean#L378
-[TypedConverter.ofPreservingProgram_smul_ofMemoryless]: Memoryless.lean#L396
-[TypedConverter.ofCostedProgram_smul_ofMemoryless]: Memoryless.lean#L417
-[TypedConverter.ofPreservingProgram_comp_rightContext_smul_memoryless]: Memoryless.lean#L349
+[TypedSystem.ofMemoryless]: Memoryless.lean#L62
+[TypedSystem.ofMemoryless_eq_ofProbAutomaton]: Memoryless.lean#L74
+[TypedSystem.ofFunction_eq_ofProbAutomaton]: Memoryless.lean#L84
+[TypedSystem.source_eq_ofMemoryless]: Memoryless.lean#L177
+[TypedSystem.source_eq_ofProbAutomaton]: Memoryless.lean#L185
+[TypedSystem.parallel_ofMemoryless]: Memoryless.lean#L265
+[TypedSystem.parallel_eq_ofMemoryless]: Memoryless.lean#L289
+[TypedConverter.ofProgram_smul_ofMemoryless]: Memoryless.lean#L398
+[TypedConverter.ofPreservingProgram_smul_ofMemoryless]: Memoryless.lean#L416
+[TypedConverter.ofCostedProgram_smul_ofMemoryless]: Memoryless.lean#L437
+[TypedConverter.ofPreservingProgram_comp_rightContext_smul_memoryless]: Memoryless.lean#L369
 [TypedSystem.ofFunction]: Functional.lean#L62
 [TypedSystem.ofConditional]: Functional.lean#L44
 [TypedSystem.sample]: Functional.lean#L183

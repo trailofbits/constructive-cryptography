@@ -10,6 +10,8 @@ public import RandomSystems.System.Memoryless
 
 `TypedSystem.ofMemoryless A ν` answers each admitted query `i(x)` with a fresh reply
 `y ∼ ν i x`, independently of earlier exchanges [1, Definition 3.1, p. 55; §3.6.1, p. 65].
+`ofMemoryless_eq_ofProbAutomaton` presents it as the one-state automaton of its reply laws, and
+`ofFunction_eq_ofProbAutomaton` specializes to point laws for a reply function.
 `source_eq_ofProbAutomaton` presents a source as a one-state automaton with fresh replies.
 `parallel_source_eq_ofProbAutomaton` gives the corresponding presentation for two sources.
 `ofMemoryless_val` identifies this typed system with its cumulative behavior;
@@ -67,6 +69,27 @@ noncomputable def ofMemoryless
 /-- The random system of `ofMemoryless A ν` is `memoryless A.inputDomain (portLaw ν)`. -/
 @[simp] lemma ofMemoryless_val {A : Interface} (ν : ∀ i, A.X i → ProbDist (A.Y i)) :
     (ofMemoryless A ν).1 = memoryless A.inputDomain (portLaw ν) := rfl
+
+/-- A memoryless system is the one-state automaton drawing fresh replies from `ν`. -/
+lemma ofMemoryless_eq_ofProbAutomaton
+    -- `A` fixes the ports, query/reply types, and admitted input histories.
+    {A : Interface}
+    -- `ν i x` is the fresh reply law at query `i(x)`.
+    (ν : ∀ i, A.X i → ProbDist (A.Y i)) :
+    ofMemoryless A ν = ofProbAutomaton A (ProbStep.fresh ν) (ProbDist.single ()) :=
+  Subtype.ext (RandomSystem.ofProbAutomaton_eq_memoryless A.inputDomain
+    (ProbStep.memoryless_fresh ν) (ProbDist.single ())).symm
+
+/-- A reply function is the one-state automaton drawing point masses at `f i x`. -/
+lemma ofFunction_eq_ofProbAutomaton
+    -- `A` fixes the ports, query/reply types, and admitted input histories.
+    {A : Interface}
+    -- `f i x` is the deterministic reply at query `i(x)`.
+    (f : ∀ i, A.X i → A.Y i) :
+    ofFunction (A := A) f =
+      ofProbAutomaton A (ProbStep.fresh fun i x => ProbDist.single (f i x))
+        (ProbDist.single ()) :=
+  ofMemoryless_eq_ofProbAutomaton (fun i x => ProbDist.single (f i x))
 
 /-- A typed fresh-reply contract identifies the same cumulative memoryless behavior. -/
 lemma eq_memoryless_of_eq_ofMemoryless
@@ -163,9 +186,7 @@ lemma source_eq_ofProbAutomaton {Z : Type} [Fintype Z] (law : ProbDist Z) (q : �
     source law q =
       ofProbAutomaton (Interface.source Z q) (ProbStep.fresh fun _ _ => law)
         (ProbDist.single ()) := by
-  rw [source_eq_ofMemoryless]
-  exact Subtype.ext (RandomSystem.ofProbAutomaton_eq_memoryless _
-    (ProbStep.memoryless_fresh (fun _ _ => law)) (ProbDist.single ())).symm
+  rw [source_eq_ofMemoryless, ofMemoryless_eq_ofProbAutomaton]
 
 /-- Independent components reply according to the queried port's law, `parallelLaw ν₁ ν₂`.
 The raw parallel law is transported through the tensor's port labels. -/
@@ -261,9 +282,8 @@ lemma parallel_source_eq_ofProbAutomaton
       ofProbAutomaton ((Interface.source K q).tensor (Interface.source L r))
         (ProbStep.fresh (parallelLaw (fun _ _ => P) (fun _ _ => Q))) (ProbDist.single ()) := by
   -- Both sources give fresh replies; their parallel law is the fresh automaton's law.
-  rw [source_eq_ofMemoryless, source_eq_ofMemoryless, parallel_ofMemoryless]
-  exact Subtype.ext (RandomSystem.ofProbAutomaton_eq_memoryless _
-    (ProbStep.memoryless_fresh _) _).symm
+  rw [source_eq_ofMemoryless, source_eq_ofMemoryless, parallel_ofMemoryless,
+    ofMemoryless_eq_ofProbAutomaton]
 
 /-- Two supplied fresh-reply contracts compose to the side-by-side law `parallelLaw ν₁ ν₂`. -/
 lemma parallel_eq_ofMemoryless
