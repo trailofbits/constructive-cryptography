@@ -2,6 +2,7 @@ module
 
 public import ConstructiveCryptography.DSL.Equations
 public import RandomSystems.Typed.DSL.Syntax
+public import RandomSystems.Typed.DSL.Source
 public import RandomSystems.Typed.DSL.Converters
 public import RandomSystems.Typed.DSL.Tactics
 public import RandomSystems.Typed.Source
@@ -364,8 +365,14 @@ def declareInterface (name : Ident) (params : Array Syntax)
   return (⟨portName.raw⟩, ← `($inputName:ident $inArgs*), ← `($outputName:ident $outArgs*), binders,
     ← `($fintypeInput:ident $inArgs*), ← `($fintypeOutput:ident $outArgs*))
 
+/-- The number of error messages logged so far. -/
+def errorCount : CommandElabM Nat := do
+  return (← get).messages.toList.countP (·.severity == .error)
+
 /-- An interface declaration: the family of its query budgets. -/
 @[command_elab interfaceDecl] def elabInterface : CommandElab := fun stx => do
+  let before ← getEnv
+  let beforeErrors ← errorCount
   let ports := stx[3][0].getArgs.map fun p =>
     ((⟨p[0]⟩ : Ident), p[2].getSepArgs, (⟨p[5]⟩ : TSyntax `term))
   let (labels, inputs, outputs, params, fx, fy) ← declareInterface ⟨stx[1]⟩ stx[2].getArgs ports
@@ -375,6 +382,8 @@ def declareInterface (name : Ident) (params : Array Syntax)
   elabCommand (← `(abbrev $perPortName:ident $params:bracketedBinder*
       (q : $labels → ℕ) : Interface :=
     @Interface.portBudget $labels _ $inputs $outputs $fx $fy q))
+  if (← errorCount) == beforeErrors then
+    recordSource ⟨stx[1]⟩ before stx (stx[3][0].getArgs.map (·, none, false))
 
 def parameterBinders (ps : Array Syntax) : CommandElabM (Array (TSyntax ``Term.bracketedBinder)) :=
   ps.mapM paramBinder
@@ -478,10 +487,6 @@ partial def callCount (ss : Array Syntax) (calls : Array (Name × TSyntax `term)
     let counts ← s[2][0].getArgs.mapM fun c => callCount (statements c[3]) calls
     return counts.foldl max 0 + (← callCount tail calls)
   none
-
-/-- The number of error messages logged so far. -/
-def errorCount : CommandElabM Nat := do
-  return (← get).messages.toList.countP (·.severity == .error)
 
 /-- What determines a component's outside interface at every budget: a declared interface
 family, named components of an ordered tensor, or generated labels and finite alphabets with
@@ -1062,6 +1067,11 @@ def elabComponent : CommandElab := fun stx => do
   let name : Ident := ⟨stx[1]⟩
   let members := stx[if typed then 5 else 3][0].getArgs
   let proofBlock := if converting then Syntax.missing else stx[if typed then 6 else 4]
+  let sourceParts := members.map fun m =>
+    (m, if m.getKind == ``oracleDecl then some m[7]
+      else if m.getKind == ``initializeDecl then some m[1] else none, false)
+  let sourceParts := if proofBlock.isNone then sourceParts
+    else sourceParts.push (proofBlock, some proofBlock[1], true)
   let oracles := members.filter (·.getKind == ``oracleDecl)
   if oracles.isEmpty then throwError "A system must declare at least one procedure."
   let outsideDecls := members.filter (·.getKind == ``outsideDecl)
@@ -1172,6 +1182,7 @@ def elabComponent : CommandElab := fun stx => do
       elabComponentEquations name params σ oracles stateTy none
       registerComponentDefinitions name before
       addComponentDocStrings name params doc
+      recordSource name before stx sourceParts
     return
   let (innerZero, _, calls) ← componentInside converting insides sites used (← `(0))
   let resultOf (resultType : TSyntax `term) : CommandElabM (TSyntax `term) :=
@@ -1194,10 +1205,13 @@ def elabComponent : CommandElab := fun stx => do
   if (← errorCount) == beforeErrors then
     registerComponentDefinitions name before
     addComponentDocStrings name params doc
+    recordSource name before stx sourceParts
 
 /-- A domain filter: forward the queries whose input history is admitted, and stop on the
 others. -/
 @[command_elab filterDecl] def elabFilter : CommandElab := fun stx => do
+  let before ← getEnv
+  let beforeErrors ← errorCount
   checkReserved stx
   let name : Ident := ⟨stx[1]⟩
   let params ← parameterBinders stx[2].getArgs
@@ -1220,6 +1234,7 @@ others. -/
   elabCommand (← `(noncomputable def $name:ident $params:bracketedBinder* {$budget : ℕ} :
       Interface.restrict ($sig $budget) (fun $bound:ident => $admits) $closed ⟶ ($sig $budget) :=
     TypedConverter.filter ($sig $budget) (fun $bound:ident => $admits) $closed))
+  if (← errorCount) == beforeErrors then recordSource name before stx #[]
 
 /-- The outside interface family of a system expression at budget `k`: the outer family of
 its outermost component. -/
@@ -1283,5 +1298,6 @@ outside components. -/
   if (← errorCount) == beforeErrors then
     registerComponentDefinitions name before
     addComponentDocStrings name params doc
+    recordSource name before stx #[]
 
 end SystemAlgebra.DSL

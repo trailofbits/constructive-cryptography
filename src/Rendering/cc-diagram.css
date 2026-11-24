@@ -1,0 +1,327 @@
+/* Geometry follows the expression tree. No viewport rule changes its order. */
+.ccw {
+  --cc-ink: var(--vscode-editor-foreground, #242424);
+  --cc-bg: var(--vscode-editor-background, #fff);
+  --cc-muted: var(--vscode-descriptionForeground, #62676b);
+  --cc-line: #72777c;
+  --cc-resource: #2563c4;
+  --cc-converter: #1e8449;
+  --cc-simulator: #0e7c7b;
+  color: var(--cc-ink);
+  margin-block: 12px;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+  font: 13px/1.5 system-ui, sans-serif;
+}
+body.vscode-dark .ccw, body.vscode-high-contrast .ccw {
+  --cc-line: #a2a7ae;
+  --cc-resource: #8eb6fa;
+  --cc-converter: #8ad5a3;
+  --cc-simulator: #7cd7d5;
+}
+@media (prefers-color-scheme: dark) {
+  body:not(.vscode-light) .ccw {
+    --cc-ink: var(--vscode-editor-foreground, #e4e6eb);
+    --cc-bg: var(--vscode-editor-background, #1e1e1e);
+    --cc-muted: var(--vscode-descriptionForeground, #b2b6bd);
+    --cc-line: #a2a7ae;
+    --cc-resource: #8eb6fa;
+    --cc-converter: #8ad5a3;
+    --cc-simulator: #7cd7d5;
+  }
+}
+.ccw summary { cursor: pointer; color: var(--cc-muted); font-size: 12px; }
+.ccw summary:focus-visible, .ccw button:focus-visible { outline: 2px solid var(--cc-resource); outline-offset: 3px; }
+.ccw .cc-surface { container: cc-diagram / inline-size; inline-size: 100%; min-inline-size: 0; }
+.ccw .cc-comparison {
+  display: flex; align-items: safe center; justify-content: safe center;
+  gap: 16px; padding: 12px; box-sizing: border-box;
+  max-inline-size: 100%; overflow-x: auto;
+}
+.ccw .cc-comparison-tail { display: flex; align-items: center; gap: 12px;
+  min-inline-size: 0; max-inline-size: 100%; }
+.ccw .cc-cards { min-inline-size: 0; }
+.ccw .cc-system, .ccw .cc-attachment, .ccw .cc-serial {
+  display: flex; align-items: center; flex: 0 0 auto; gap: 0;
+}
+.ccw .cc-system { padding: 4px 0; }
+.ccw .cc-system-body { display: flex; justify-content: center; }
+.ccw .cc-system-outer { align-self: center; }
+.ccw .cc-system-inner { align-self: center; }
+.ccw .cc-identifier .font-code { font: italic 17px/1.2 'STIX Two Math', 'Cambria Math', math; }
+.ccw .cc-node {
+  border: 1.5px solid currentColor; padding: 10px 18px;
+  min-inline-size: 72px; min-block-size: 44px; box-sizing: border-box; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--cc-bg); color: var(--cc-ink);
+  white-space: pre-wrap; overflow-wrap: anywhere; max-inline-size: 24rem;
+}
+.ccw .cc-node math { font-size: 17px; }
+.ccw .cc-resource { color: var(--cc-resource); border-radius: 1px; }
+.ccw .cc-converter { color: var(--cc-converter); border-radius: 999px; }
+.ccw .cc-simulator { color: var(--cc-simulator); border-radius: 999px; }
+.ccw .cc-specification { border-style: double; border-width: 3px; }
+.ccw .cc-opaque { border: 0; color: var(--cc-muted); font: 12px/1.5 ui-monospace, monospace; }
+.ccw .cc-selected { outline: 2px solid var(--cc-resource); outline-offset: 4px; }
+.ccw .cc-boundary { color: var(--cc-muted); padding-inline: 8px; }
+.ccw .cc-interface-label { display: inline-flex; align-items: center; gap: 5px; max-inline-size: 16rem; }
+.ccw .cc-interface-label > :first-child { min-inline-size: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ccw .cc-interface-label > .cc-inspector { flex-shrink: 0; }
+.ccw .cc-inspector { display: inline-block; font: 12px/1.5 system-ui, sans-serif; }
+.ccw .cc-inspector-trigger, .ccw .cc-inspector-static > summary {
+  color: var(--cc-muted); background: transparent; border: 0; padding: 0 2px;
+  font: inherit; cursor: pointer; list-style: none;
+}
+.ccw .cc-inspector-static > summary::-webkit-details-marker { display: none; }
+.ccw .cc-inspector-trigger[aria-pressed="true"] {
+  color: var(--cc-ink); text-decoration: underline; text-underline-offset: 3px;
+}
+.ccw .cc-inspector-body {
+  position: fixed; inset: auto; margin: 0; z-index: 100;
+  box-sizing: border-box; inline-size: max-content;
+  min-inline-size: min(12rem, calc(100vw - 16px));
+  max-inline-size: min(36rem, calc(100vw - 16px));
+  max-block-size: calc(100vh - 16px); overflow: auto; padding: 12px;
+  border: 1px solid var(--cc-line); border-radius: 5px;
+  background: var(--cc-bg); color: var(--cc-ink); text-align: start; white-space: normal;
+  box-shadow: 0 4px 18px #0002;
+}
+.ccw .cc-inspector-static > .cc-inspector-body { inset-block-start: 8px; inset-inline-end: 8px; }
+.ccw .cc-inspector-close {
+  float: right; border: 0; background: transparent; color: inherit; cursor: pointer;
+  font: 18px/1 system-ui, sans-serif; margin: -4px -4px 6px 10px; padding: 4px;
+}
+.ccw .cc-interface-info { font: 13px/1.65 system-ui, sans-serif; }
+.ccw .cc-interface-info code { font: inherit; }
+.ccw .cc-interface-info > :not(.cc-interface-source) .font-code { font: inherit; }
+.ccw .cc-interface-title { font-weight: 600; max-inline-size: 32ch; }
+.ccw .cc-interface-title, .ccw .cc-interface-info code { white-space: pre-wrap; overflow-wrap: anywhere; }
+.ccw .cc-interface-field { display: grid; grid-template-columns: 1.5rem minmax(0, 1fr); gap: 4px; }
+.ccw .cc-interface-field + .cc-interface-field { margin-block-start: 10px; }
+.ccw .cc-interface-field dt { color: var(--cc-muted); }
+.ccw .cc-interface-field dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ccw .cc-interface-domain { margin-block: 10px 0; }
+.ccw .cc-interface-domain dt { color: var(--cc-muted); font-size: 12px; margin-block-end: 3px; }
+.ccw .cc-interface-domain dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ccw .cc-interface-domain dd { font: 16px/1.6 'STIX Two Math', 'Cambria Math', math; }
+.ccw .cc-interface-source { margin-block-start: 12px; }
+.ccw .cc-interface-source { font: 12px/1.65 var(--vscode-editor-font-family, ui-monospace, monospace); }
+.ccw .cc-interface-source > code { display: block; padding-block-start: 8px; }
+.ccw .cc-port-signatures {
+  margin-block: 8px; inline-size: auto; max-inline-size: 100%; border-spacing: 0;
+}
+.ccw .cc-port-signatures th { color: var(--cc-muted); font-size: 12px; font-weight: 400; }
+.ccw .cc-port-signatures :is(td, th) {
+  padding: 2px 14px 2px 0; text-align: start; vertical-align: top;
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.ccw .cc-port-signatures :is(td, th):last-child { padding-inline-end: 0; }
+.ccw .cc-port-signatures .cc-alphabet { font: 16px/1.5 'STIX Two Math', 'Cambria Math', math; }
+.ccw .cc-interface-label [data-has-tooltip-on-hover], .ccw .cc-object-label [data-has-tooltip-on-hover] {
+  cursor: pointer;
+}
+.ccw math { font-family: 'STIX Two Math', 'Cambria Math', math; font-size: 15px; }
+.ccw .cc-literal-label { font: 13px/1.5 var(--vscode-editor-font-family, ui-monospace, monospace); white-space: pre-wrap; overflow-wrap: anywhere; }
+.ccw .cc-wire {
+  position: relative; display: flex; align-items: flex-end; justify-content: center;
+  align-self: center; flex: 0 0 auto; min-inline-size: 30px;
+  border-block-end: 1px solid var(--cc-line); block-size: 0;
+}
+.ccw .cc-wire-label { position: relative; bottom: 6px; padding-inline: 8px; color: var(--cc-muted); white-space: nowrap; }
+.ccw .cc-parallel {
+  position: relative; display: flex; flex-direction: column; gap: 16px;
+  border: 1px solid var(--cc-line); padding: 28px 12px 12px;
+}
+.ccw .cc-branch { display: flex; justify-content: flex-start; align-items: center; }
+.ccw .cc-group-label {
+  position: absolute; inset-block-start: 3px; inset-inline-start: 10px;
+  color: var(--cc-muted);
+  font: 17px/1.3 'STIX Two Math', math;
+}
+.ccw .cc-serial { position: relative; border: 1px solid var(--cc-converter); padding: 28px 10px 12px; border-radius: 5px; }
+.ccw .cc-tensor { border-color: var(--cc-converter); }
+.ccw .cc-named-composition {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  border: 1px solid var(--cc-line); padding: 12px;
+}
+.ccw :is(.cc-parallel, .cc-serial).cc-named { padding: 12px; }
+.ccw :is(.cc-named-composition, .cc-named) > .cc-group-label {
+  position: static; white-space: pre-wrap; overflow-wrap: anywhere;
+  max-inline-size: min(24rem, calc(100cqi - 64px));
+  font: 13px/1.5 var(--vscode-editor-font-family, ui-monospace, monospace);
+}
+.ccw .cc-serial.cc-named > .cc-group-label { margin: 0 10px 8px 0; }
+.ccw .cc-wrapper { display: flex; flex-direction: column; gap: 12px; }
+.ccw .cc-relation { display: flex; flex-direction: column; align-items: center; gap: 8px; padding-inline: 8px; }
+.ccw .cc-protocol { display: flex; align-items: center; gap: 4px; }
+.ccw .cc-relation-symbol { font: 22px/1.2 'STIX Two Math', math; }
+.ccw .cc-error { color: var(--cc-muted); white-space: pre-wrap; }
+.ccw .cc-source {
+  padding: 8px 0; white-space: pre-wrap; overflow-wrap: anywhere;
+  font: 12px/1.65 var(--vscode-editor-font-family, ui-monospace, monospace);
+  max-inline-size: 100%; overflow-x: auto;
+}
+.ccw .cc-source code { white-space: pre-wrap; }
+.ccw .cc-source-toggle { margin: 0 4px 4px; }
+.ccw .cc-pseudocode { color: var(--cc-ink); text-align: start; min-inline-size: 0; }
+.ccw .cc-pseudocode-panel { min-inline-size: 0; }
+.ccw.cc-pseudocode-panel > .cc-pseudocode {
+  border: 1px solid var(--cc-line); padding: 16px; margin-block-start: 8px;
+}
+.ccw .cc-pseudocode pre {
+  margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; tab-size: 2;
+  font: 12px/1.65 var(--vscode-editor-font-family, ui-monospace, monospace);
+}
+.ccw .cc-pseudocode-origin { color: var(--cc-muted); font-size: 11px; }
+.ccw .cc-pseudocode-heading { font-weight: 600; }
+.ccw .cc-pseudocode-sections {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: 12px 24px; margin-block: 12px;
+}
+.ccw .cc-pseudocode-sections > * { min-inline-size: 0; }
+.ccw .cc-pseudocode-clause, .ccw .cc-pseudocode-proof { grid-column: 1 / -1; }
+.ccw .cc-pseudocode-clause strong { font-weight: normal; }
+.ccw .cc-pseudocode-source { padding-block: 8px; }
+.ccw .cc-pseudocode-leaf { min-inline-size: 0; max-inline-size: 100%; }
+.ccw .cc-pseudocode-leaf > summary { color: inherit; font: inherit; }
+.ccw .cc-pseudocode-leaf > .cc-pseudocode { margin-block-start: 12px; }
+.ccw .cc-node:has(> .cc-pseudocode-leaf[open]) {
+  display: block; inline-size: 48rem; max-inline-size: calc(100cqi - 40px);
+  min-inline-size: 0; border-radius: 3px;
+}
+.ccw .cc-distance { display: flex; align-items: center; gap: 12px; }
+.ccw .cc-operator { font: 20px/1.2 'STIX Two Math', math; }
+.ccw .cc-delimiter { font: 24px/1.2 'STIX Two Math', math; }
+.ccw .cc-operands { display: flex; align-items: center; gap: 16px; }
+.ccw .cc-literal { font: 16px/1.5 ui-monospace, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ccw .cc-literal .font-code { font: inherit; }
+.ccw .cc-note, .ccw .cc-section { font-size: 12px; color: var(--cc-muted); padding-block: 8px; }
+.ccw .calc-stepper { min-inline-size: 0; }
+.ccw .calc-step-controls { position: relative; display: flex; justify-content: center; gap: 12px; align-items: center; margin-block: 8px 0; padding-inline: 28px; }
+.ccw .calc-step-controls button { color: var(--cc-ink); background: var(--cc-bg); border: 1px solid var(--cc-line); border-radius: 4px; padding: 4px 12px; cursor: pointer; }
+.ccw .calc-step-controls button:disabled { opacity: .4; cursor: default; }
+.ccw .calc-step-count { color: var(--cc-muted); font-size: 12px; }
+.ccw .rgd { min-inline-size: 0; }
+.ccw .cc-step-footer { display: flex; flex-wrap: wrap; align-items: start; gap: 4px 12px; padding-inline: 4px; }
+.ccw .cc-step-footer > .cc-source-toggle { flex: 1 1 80px; min-inline-size: 0; margin-inline: 0; }
+.ccw .cc-step-footer > .cc-proof-justification { margin: 0; max-inline-size: 100%; }
+.ccw .cc-step-navigation { color: var(--cc-muted); font-size: 12px; margin-inline-start: auto; }
+.ccw .cc-step-fallback { white-space: pre-wrap; overflow-wrap: anywhere; }
+.ccw .cc-step-statement { text-align: center; padding: 16px 8px;
+  font: 16px/1.5 var(--vscode-editor-font-family, ui-monospace, monospace); }
+.ccw .cc-step-statement .font-code { font: inherit; }
+.ccw .rgn { color: var(--cc-muted); font: 11px ui-monospace, monospace; }
+@container cc-diagram (max-width: 1100px) {
+  .ccw .cc-comparison:has(.cc-parallel) { flex-direction: column; }
+}
+@container cc-diagram (max-width: 1000px) {
+  /* Equal outer tracks keep the diagram body on the equation's math axis. */
+  .ccw .cc-system.cc-dense {
+    display: grid; grid-template-rows: 1fr auto 1fr; justify-items: center;
+  }
+  .ccw .cc-system.cc-dense > .cc-system-outer { align-self: end; }
+  .ccw .cc-system.cc-dense > .cc-system-inner { align-self: start; }
+  .ccw .cc-system.cc-dense :is(.cc-attachment, .cc-serial, .cc-branch) {
+    flex-direction: column;
+  }
+  .ccw .cc-system.cc-dense .cc-wire {
+    display: grid; grid-template-columns: 1fr 1fr; align-items: center;
+    inline-size: 14rem; min-inline-size: 0; min-block-size: 28px; block-size: auto; border: 0;
+    padding-block: 6px; box-sizing: border-box;
+  }
+  .ccw .cc-system.cc-dense .cc-wire::before {
+    content: ''; position: absolute; inset-block: 0; inset-inline-start: 50%;
+    border-inline-start: 1px solid var(--cc-line);
+  }
+  .ccw .cc-system.cc-dense .cc-wire-label {
+    grid-column: 2;
+    inset-inline-start: auto; bottom: auto; padding-inline: 8px;
+    text-align: start; min-inline-size: 0;
+    white-space: normal;
+  }
+}
+@container cc-diagram (max-width: 760px) {
+  .ccw .cc-comparison { flex-wrap: wrap; align-items: center; gap: 8px 12px; padding-inline: 8px; }
+  .ccw .cc-comparison:has(> .cc-system + .cc-relation) { flex-direction: column; }
+  .ccw .cc-distance { gap: 6px; min-inline-size: 0; }
+  .ccw .cc-operands { flex-wrap: wrap; justify-content: center; gap: 6px; min-inline-size: 0; }
+}
+@container cc-diagram (max-width: 460px) {
+  .ccw .cc-system { display: grid; grid-template-rows: 1fr auto 1fr; justify-items: center; }
+  .ccw .cc-system > .cc-system-outer { align-self: end; }
+  .ccw .cc-system > .cc-system-inner { align-self: start; }
+  .ccw .cc-attachment, .ccw .cc-serial { flex-direction: column; }
+  .ccw .cc-wire {
+    display: grid; grid-template-columns: 1fr 1fr; align-items: center;
+    inline-size: 14rem; min-inline-size: 0; min-block-size: 28px; block-size: auto; border: 0;
+    padding-block: 6px; box-sizing: border-box;
+  }
+  .ccw .cc-wire::before { content: ''; position: absolute; inset-block: 0; inset-inline-start: 50%; border-inline-start: 1px solid var(--cc-line); }
+  .ccw .cc-wire-label {
+    grid-column: 2;
+    inset-inline-start: auto; bottom: auto; padding-inline: 8px;
+    text-align: start; min-inline-size: 0;
+    white-space: normal;
+  }
+  .ccw .cc-boundary { padding-block: 4px; }
+  .ccw .cc-parallel { gap: 18px; }
+  .ccw .cc-branch { flex-direction: column; justify-content: center; }
+  .ccw .cc-node { max-inline-size: 15rem; }
+}
+@media (forced-colors: active) {
+  .ccw { --cc-line: CanvasText; --cc-resource: CanvasText; --cc-converter: CanvasText; --cc-simulator: CanvasText; }
+}
+
+/* Proof structure comes from witnesses and elaborated terms, never decorative connectors. */
+.cc-proof-view { container: cc-proof / inline-size; min-inline-size: 0; }
+.cc-proof-heading { display:flex; align-items:baseline; flex-wrap:wrap; gap:8px 16px; margin:12px 0; }
+.cc-proof-heading > :first-child { min-inline-size:0; overflow-wrap:anywhere; }
+.cc-proof-qualifier { color:var(--cc-muted); font-size:11px; }
+.cc-proof-parameters { display:flex; flex-wrap:wrap; gap:8px 24px; margin:12px 0; }
+.cc-proof-field { display:grid; grid-template-columns:minmax(24px,max-content) minmax(0,1fr); gap:12px;
+  margin:8px 0; align-items:baseline; min-inline-size:0; }
+.cc-proof-field > :first-child { color:var(--cc-muted); }
+.cc-proof-view code, .cc-proof-view pre, .cc-proof-justification pre,
+.cc-proof-view .code-with-infos { white-space:pre-wrap; overflow-wrap:anywhere; word-break:normal; }
+.cc-proof-details { padding:6px 0; min-inline-size:0; }
+.cc-proof-details > :not(summary) { margin-inline-start:10px; max-inline-size:calc(100% - 10px);
+  box-sizing:border-box; }
+.cc-proof-transition { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:12px;
+  margin:14px 0; min-inline-size:0; }
+.cc-proof-transition > :not(.cc-proof-use) { flex:1 1 220px; min-inline-size:0; }
+.cc-proof-transition .cc-comparison { padding:8px 4px; }
+.cc-proof-use { color:var(--cc-muted); font-size:20px; }
+.cc-proof-facts { display:flex; flex-wrap:wrap; gap:0 20px; align-items:baseline; }
+.cc-proof-facts .cc-proof-field { flex:0 1 auto; max-inline-size:100%; }
+.cc-proof-index { margin-top:10px; color:var(--cc-muted); }
+.cc-proof-justification { margin:6px 0; color:var(--cc-muted); min-inline-size:0; }
+.cc-proof-justification summary { width:fit-content; max-inline-size:100%; }
+.cc-proof-justification details > :not(summary) { margin:8px 0; }
+.cc-proof-obligations { margin:8px 0; border-inline-start:2px solid var(--cc-line); padding:0 10px; }
+.cc-proof-obligations > * { display:block; margin:6px 0; }
+.cc-proof-overview { position: absolute; inset-inline-end: 0; }
+.cc-proof-overview > summary { list-style: none; padding: 4px; }
+.cc-proof-overview > summary::-webkit-details-marker { display: none; }
+.cc-proof-overview nav { position: absolute; inset-inline-end: 0; z-index: 2;
+  display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; padding: 6px;
+  inline-size: max-content; max-inline-size: 220px; background: var(--cc-bg);
+  border: 1px solid var(--cc-line); border-radius: 4px; }
+.cc-proof-overview button { font:inherit; color:var(--cc-muted); background:none;
+  border:1px solid transparent; padding:3px 8px; cursor:pointer; }
+.cc-proof-overview button[aria-current] { color:var(--cc-ink); border-color:var(--cc-line); }
+.cc-proof-static-steps > * { margin:12px 0; }
+@container cc-proof (max-width: 500px) {
+  .cc-proof-transition { flex-direction:column; align-items:stretch; }
+  .cc-proof-transition > :not(.cc-proof-use) { flex:0 1 auto; }
+  .cc-proof-use { align-self:center; transform:rotate(90deg); }
+  .cc-proof-field { grid-template-columns:minmax(0,max-content) minmax(0,1fr); gap:8px; }
+}
+
+/* Method details use the same transient inspector as interfaces. */
+.cc-proof-method { display: flex; justify-content: center; }
+.cc-proof-method .cc-inspector-trigger { font: italic 13px math, serif; }
+.cc-h-source { min-inline-size: 0; }
+.cc-h-source :is(code, .font-code) { font-family: ui-monospace, monospace;
+  font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.cc-h-source .cc-proof-details { padding-block: 4px; }
+.cc-h-source .cc-proof-details > :not(summary) { display: block; margin-block: 6px; }

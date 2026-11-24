@@ -1,0 +1,779 @@
+/* ==========================================================================
+   ETH CADMO Thesis / Monograph Aesthetic (memoir + Herman Zapf's Palatino)
+   Designed for Constructive Cryptography human-first informalization.
+   ========================================================================== */
+
+:root {
+  /* Warm paper-ivory light palette (ETH CADMO ink & quiet slate accent) */
+  --cadmo-bg: #fdfcfa;
+  --cadmo-surface: #f6f4ef;
+  --cadmo-surface-raised: #ffffff;
+  --cadmo-ink: #1c1b19;
+  --cadmo-ink-soft: #4a4843;
+  --cadmo-muted: #6e6a62;
+  --cadmo-rule: #dedad0;
+  --cadmo-rule-strong: #c2bdb0;
+  --cadmo-accent: #1f4e79;        /* Muted ETH slate-blue */
+  --cadmo-accent-soft: #edf3f8;
+  --cadmo-accent-ink: #163a5c;
+  --cadmo-note-bg: #f8f6f0;
+  --cadmo-note-border: #d5cfc1;
+  --cadmo-ok: #256444;
+  --cadmo-warn: #8c5319;
+  --cadmo-shadow: 0 1px 2px rgba(28, 27, 25, 0.04), 0 6px 18px rgba(28, 27, 25, 0.05);
+
+  /* Typography */
+  --cadmo-serif: "Palatino Linotype", "URW Palladio L", "TeX Gyre Pagella",
+                 "Book Antiqua", Palatino, "Liberation Serif", Georgia, serif;
+  --cadmo-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+                system-ui, sans-serif;
+  --cadmo-mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas,
+                "Liberation Mono", monospace;
+
+  /* Proportions: classic monograph ~64–68ch measure + generous margin */
+  --cadmo-measure: 43rem;
+  --cadmo-margin-width: 21.5rem;
+  --cadmo-gap: 2.75rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --cadmo-bg: #16171a;
+    --cadmo-surface: #1d1f24;
+    --cadmo-surface-raised: #22252b;
+    --cadmo-ink: #e8e6e1;
+    --cadmo-ink-soft: #c5c2ba;
+    --cadmo-muted: #939088;
+    --cadmo-rule: #2d3038;
+    --cadmo-rule-strong: #404450;
+    --cadmo-accent: #7aaad8;
+    --cadmo-accent-soft: #1d2936;
+    --cadmo-accent-ink: #a9cbed;
+    --cadmo-note-bg: #1c1e22;
+    --cadmo-note-border: #333742;
+    --cadmo-ok: #68b88d;
+    --cadmo-warn: #e0a458;
+    --cadmo-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+}
+
+:root[data-theme="dark"] {
+  --cadmo-bg: #16171a;
+  --cadmo-surface: #1d1f24;
+  --cadmo-surface-raised: #22252b;
+  --cadmo-ink: #e8e6e1;
+  --cadmo-ink-soft: #c5c2ba;
+  --cadmo-muted: #939088;
+  --cadmo-rule: #2d3038;
+  --cadmo-rule-strong: #404450;
+  --cadmo-accent: #7aaad8;
+  --cadmo-accent-soft: #1d2936;
+  --cadmo-accent-ink: #a9cbed;
+  --cadmo-note-bg: #1c1e22;
+  --cadmo-note-border: #333742;
+  --cadmo-ok: #68b88d;
+  --cadmo-warn: #e0a458;
+  --cadmo-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  font-size: 17px;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  background: var(--cadmo-bg);
+  color: var(--cadmo-ink);
+  font-family: var(--cadmo-serif);
+  line-height: 1.66;
+  font-kerning: normal;
+  font-variant-numeric: oldstyle-nums proportional-nums;
+}
+
+/* Top quiet control bar */
+.cadmo-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: color-mix(in srgb, var(--cadmo-bg) 92%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--cadmo-rule);
+}
+
+.cadmo-toolbar-inner {
+  max-width: calc(var(--cadmo-measure) + var(--cadmo-margin-width) + var(--cadmo-gap) + 4rem);
+  margin: 0 auto;
+  padding: 0.65rem 2rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+}
+
+.cadmo-running-head {
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.08em;
+  font-size: 0.85rem;
+  color: var(--cadmo-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cadmo-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-family: var(--cadmo-sans);
+  font-size: 0.78rem;
+}
+
+.cadmo-segmented {
+  display: inline-flex;
+  border: 1px solid var(--cadmo-rule-strong);
+  border-radius: 999px;
+  padding: 2px;
+  background: var(--cadmo-surface);
+}
+
+.cadmo-segmented button {
+  border: 0;
+  background: transparent;
+  color: var(--cadmo-muted);
+  font: inherit;
+  padding: 0.22rem 0.72rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.cadmo-segmented button[aria-pressed="true"] {
+  background: var(--cadmo-accent);
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.cadmo-btn {
+  border: 1px solid var(--cadmo-rule-strong);
+  background: var(--cadmo-surface-raised);
+  color: var(--cadmo-ink-soft);
+  font: inherit;
+  padding: 0.26rem 0.68rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 140ms ease, color 140ms ease, background 140ms ease;
+}
+
+.cadmo-btn:hover {
+  border-color: var(--cadmo-accent);
+  color: var(--cadmo-accent-ink);
+}
+
+/* Two-column Tufte / CADMO layout: prose measure + quiet right margin inspector */
+.cadmo-shell {
+  max-width: calc(var(--cadmo-measure) + var(--cadmo-margin-width) + var(--cadmo-gap) + 4rem);
+  margin: 0 auto;
+  padding: 2.8rem 2rem 5rem;
+  display: grid;
+  grid-template-columns: minmax(0, var(--cadmo-measure)) minmax(17rem, var(--cadmo-margin-width));
+  gap: var(--cadmo-gap);
+  align-items: start;
+}
+
+.cadmo-main {
+  min-width: 0;
+}
+
+/* Monograph Header (CADMO chapter opening) */
+.cadmo-doc-header {
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--cadmo-rule);
+}
+
+.cadmo-kicker {
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.12em;
+  font-size: 0.88rem;
+  color: var(--cadmo-accent);
+  margin: 0 0 0.4rem;
+}
+
+.cadmo-doc-title {
+  font-weight: 400;
+  font-size: 2.05rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.55rem;
+  color: var(--cadmo-ink);
+}
+
+.cadmo-doc-subtitle {
+  margin: 0;
+  font-style: italic;
+  font-size: 1.05rem;
+  color: var(--cadmo-ink-soft);
+}
+
+/* Theorem / Lemma / Proposition / Definition Entry */
+.cadmo-entry {
+  margin-bottom: 3.2rem;
+}
+
+.cadmo-entry + .cadmo-entry {
+  padding-top: 2.2rem;
+  border-top: 1px solid var(--cadmo-rule);
+}
+
+.cadmo-entry-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.cadmo-entry-heading {
+  margin: 0;
+  font-size: 1.24rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.cadmo-entry-kind {
+  font-variant-caps: small-caps;
+  letter-spacing: 0.05em;
+  color: var(--cadmo-accent);
+  margin-right: 0.4rem;
+}
+
+.cadmo-entry-title {
+  font-weight: 400;
+  color: var(--cadmo-ink);
+}
+
+.cadmo-entry-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--cadmo-sans);
+  font-size: 0.72rem;
+  color: var(--cadmo-muted);
+}
+
+.cadmo-axiom-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--cadmo-rule);
+  background: var(--cadmo-surface);
+  color: var(--cadmo-ok);
+  cursor: pointer;
+}
+
+.cadmo-axiom-pill.has-sorry {
+  color: var(--cadmo-warn);
+  border-color: var(--cadmo-warn);
+}
+
+/* Ambient setting callout (factored out once per theorem) */
+.cadmo-ambient {
+  margin: 0 0 1rem;
+  padding: 0.72rem 1rem;
+  border-left: 2px solid var(--cadmo-rule-strong);
+  background: var(--cadmo-surface);
+  font-size: 0.94rem;
+  color: var(--cadmo-ink-soft);
+}
+
+.cadmo-ambient-label {
+  font-variant-caps: small-caps;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  color: var(--cadmo-muted);
+  margin-right: 0.45rem;
+}
+
+/* Statement body (CADMO theorem prose: clean roman with gentle distinction) */
+.cadmo-statement {
+  padding: 0.95rem 1.2rem;
+  border-left: 3px solid var(--cadmo-accent);
+  background: color-mix(in srgb, var(--cadmo-accent-soft) 45%, var(--cadmo-bg));
+  margin-bottom: 1.25rem;
+}
+
+.cadmo-statement p {
+  margin: 0 0 0.65rem;
+}
+
+.cadmo-statement p:last-child {
+  margin-bottom: 0;
+}
+
+/* Embedded CC Diagram figure */
+.cadmo-figure {
+  margin: 1.25rem 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--cadmo-rule);
+  border-radius: 4px;
+  background: var(--cadmo-surface-raised);
+  overflow-x: auto;
+}
+
+.cadmo-figure-caption {
+  margin-top: 0.55rem;
+  font-size: 0.88rem;
+  color: var(--cadmo-muted);
+  font-style: italic;
+}
+
+/* Proof section */
+.cadmo-proof {
+  margin-top: 1.1rem;
+}
+
+.cadmo-proof-lead {
+  font-style: italic;
+  font-weight: 600;
+  color: var(--cadmo-ink);
+  margin-right: 0.35rem;
+}
+
+.cadmo-qed {
+  text-align: right;
+  font-size: 0.95rem;
+  color: var(--cadmo-muted);
+  margin-top: 0.5rem;
+  user-select: none;
+}
+
+/* Proof tree nodes & quiet inline ⊕ / ⊖ controls */
+.cadmo-node {
+  margin: 0.55rem 0;
+}
+
+.cadmo-node-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.42rem;
+}
+
+.cadmo-node-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.cadmo-toggle {
+  flex: 0 0 auto;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--cadmo-accent);
+  font-family: var(--cadmo-sans);
+  font-size: 0.95rem;
+  line-height: 1;
+  width: 1.3rem;
+  height: 1.3rem;
+  padding: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 120ms ease, transform 120ms ease;
+}
+
+.cadmo-toggle:hover {
+  background: var(--cadmo-accent-soft);
+}
+
+.cadmo-toggle-spacer {
+  flex: 0 0 auto;
+  width: 1.3rem;
+  display: inline-block;
+}
+
+.cadmo-children {
+  margin: 0.4rem 0 0.6rem 0.62rem;
+  padding-left: 1.15rem;
+  border-left: 1.5px solid var(--cadmo-rule);
+}
+
+.cadmo-children[hidden] {
+  display: none;
+}
+
+.cadmo-node.is-wrapper > .cadmo-node-row .cadmo-wrapper-tag {
+  display: inline-block;
+  margin-left: 0.35rem;
+  font-family: var(--cadmo-sans);
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+  color: var(--cadmo-muted);
+  border: 1px solid var(--cadmo-rule);
+  border-radius: 4px;
+  padding: 0 0.32rem;
+  vertical-align: middle;
+}
+
+.cadmo-origin-tag {
+  display: none;
+  margin-left: 0.4rem;
+  font-family: var(--cadmo-mono);
+  font-size: 0.7rem;
+  color: var(--cadmo-muted);
+}
+
+[data-mode="auditor"] .cadmo-origin-tag {
+  display: inline;
+}
+
+/* Goal checkpoint button (opens Kyle Miller context + target inspector) */
+.cadmo-goal-btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--cadmo-muted);
+  font-family: var(--cadmo-sans);
+  font-size: 0.72rem;
+  padding: 0.06rem 0.32rem;
+  margin-left: 0.35rem;
+  border-radius: 4px;
+  cursor: pointer;
+  vertical-align: baseline;
+  opacity: 0.62;
+  transition: opacity 120ms ease, background 120ms ease, color 120ms ease;
+}
+
+.cadmo-goal-btn:hover,
+.cadmo-goal-btn[aria-pressed="true"] {
+  opacity: 1;
+  background: var(--cadmo-accent-soft);
+  color: var(--cadmo-accent-ink);
+}
+
+/* Routine algebra/cast receipt */
+.cadmo-routine {
+  margin: 0.45rem 0;
+  font-size: 0.9rem;
+  color: var(--cadmo-muted);
+  font-style: italic;
+}
+
+.cadmo-routine-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 4px;
+  border: 1px dashed var(--cadmo-rule-strong);
+  background: var(--cadmo-surface);
+  color: var(--cadmo-muted);
+  font-style: normal;
+  font-family: var(--cadmo-sans);
+  font-size: 0.74rem;
+}
+
+/* Optional ~10% inconsequential flow note (visually distinct from checked claims) */
+.cadmo-flow-note {
+  margin: 0.7rem 0;
+  padding: 0.55rem 0.9rem;
+  border-left: 2px solid var(--cadmo-note-border);
+  background: var(--cadmo-note-bg);
+  font-size: 0.91rem;
+  font-style: italic;
+  color: var(--cadmo-ink-soft);
+}
+
+.cadmo-flow-badge {
+  font-style: normal;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.08em;
+  font-size: 0.78rem;
+  color: var(--cadmo-muted);
+  margin-right: 0.45rem;
+}
+
+/* Aligned paper calculation chain (calc / cc_calc) */
+.cadmo-calc {
+  margin: 0.75rem 0;
+}
+
+.cadmo-calc-intro {
+  margin: 0 0 0.4rem;
+}
+
+.cadmo-calc-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.35rem 0;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.cadmo-calc-table td {
+  padding: 0.32rem 0.35rem;
+  vertical-align: baseline;
+}
+
+.cadmo-calc-lhs {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.cadmo-calc-rel {
+  text-align: center;
+  padding-inline: 0.55rem !important;
+  color: var(--cadmo-accent);
+  white-space: nowrap;
+}
+
+.cadmo-calc-rhs {
+  text-align: left;
+}
+
+.cadmo-calc-reason {
+  font-size: 0.86rem;
+  color: var(--cadmo-muted);
+  padding-left: 0.9rem !important;
+}
+
+.cadmo-calc-expand-row td {
+  padding: 0 0 0.55rem 1.4rem;
+}
+
+/* Underlined clickable symbols (subtle CADMO dotted underline) */
+.cadmo-sym {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 0 1px;
+  cursor: pointer;
+  border-bottom: 1px dotted color-mix(in srgb, var(--cadmo-accent) 60%, transparent);
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.cadmo-sym:hover,
+.cadmo-sym[aria-pressed="true"] {
+  background: var(--cadmo-accent-soft);
+  border-bottom-style: solid;
+  border-bottom-color: var(--cadmo-accent);
+}
+
+.cadmo-display-math {
+  display: block;
+  text-align: center;
+  margin: 0.75rem 0;
+  overflow-x: auto;
+  font-variant-numeric: lining-nums;
+}
+
+.cadmo-math {
+  font-variant-numeric: lining-nums;
+}
+
+.cadmo-citation {
+  font-family: var(--cadmo-sans);
+  font-size: 0.78rem;
+  color: var(--cadmo-accent);
+}
+
+/* Right Margin Inspector Panel (Symbol Inspector + Kyle Miller Goal Inspector) */
+.cadmo-margin {
+  position: sticky;
+  top: 4.1rem;
+  max-height: calc(100vh - 5.2rem);
+  overflow-y: auto;
+  padding-left: 1.25rem;
+  border-left: 1px solid var(--cadmo-rule);
+  font-size: 0.87rem;
+  line-height: 1.52;
+}
+
+.cadmo-inspector-card {
+  background: var(--cadmo-surface-raised);
+  border: 1px solid var(--cadmo-rule);
+  border-radius: 6px;
+  padding: 0.95rem 1rem;
+  box-shadow: var(--cadmo-shadow);
+  margin-bottom: 1rem;
+}
+
+.cadmo-inspector-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.65rem;
+  border-bottom: 1px solid var(--cadmo-rule);
+}
+
+.cadmo-inspector-kicker {
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.08em;
+  font-size: 0.78rem;
+  color: var(--cadmo-accent);
+}
+
+.cadmo-inspector-title {
+  margin: 0.15rem 0 0;
+  font-size: 1.02rem;
+  font-weight: 600;
+}
+
+.cadmo-inspector-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+  font-size: 0.82rem;
+}
+
+.cadmo-inspector-table th,
+.cadmo-inspector-table td {
+  text-align: left;
+  padding: 0.3rem 0.4rem;
+  border-bottom: 1px solid var(--cadmo-rule);
+  vertical-align: top;
+}
+
+.cadmo-inspector-table th {
+  font-variant-caps: small-caps;
+  color: var(--cadmo-muted);
+  font-weight: 600;
+}
+
+.cadmo-pseudocode {
+  margin: 0.5rem 0;
+  padding: 0.65rem 0.75rem;
+  border-radius: 4px;
+  background: var(--cadmo-surface);
+  border: 1px solid var(--cadmo-rule);
+  font-family: var(--cadmo-mono);
+  font-size: 0.75rem;
+  line-height: 1.48;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.cadmo-goal-ctx {
+  list-style: none;
+  margin: 0 0 0.65rem;
+  padding: 0;
+}
+
+.cadmo-goal-ctx li {
+  padding: 0.2rem 0;
+  border-bottom: 1px dotted var(--cadmo-rule);
+  font-size: 0.83rem;
+}
+
+.cadmo-goal-target {
+  padding: 0.55rem 0.7rem;
+  border-left: 2.5px solid var(--cadmo-accent);
+  background: var(--cadmo-accent-soft);
+  font-size: 0.86rem;
+}
+
+.cadmo-lean-details {
+  margin-top: 0.7rem;
+  font-family: var(--cadmo-sans);
+  font-size: 0.75rem;
+  color: var(--cadmo-muted);
+}
+
+.cadmo-lean-details summary {
+  cursor: pointer;
+}
+
+.cadmo-lean-code {
+  margin-top: 0.35rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 4px;
+  background: var(--cadmo-surface);
+  font-family: var(--cadmo-mono);
+  font-size: 0.72rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--cadmo-ink-soft);
+}
+
+.cadmo-symbol-index {
+  margin-top: 1rem;
+}
+
+.cadmo-symbol-index h4 {
+  margin: 0 0 0.45rem;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.08em;
+  font-size: 0.8rem;
+  color: var(--cadmo-muted);
+  font-weight: 600;
+}
+
+.cadmo-symbol-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.cadmo-symbol-chip {
+  border: 1px solid var(--cadmo-rule);
+  background: var(--cadmo-surface);
+  color: var(--cadmo-ink-soft);
+  border-radius: 4px;
+  padding: 0.16rem 0.45rem;
+  font-family: var(--cadmo-serif);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.cadmo-symbol-chip:hover {
+  border-color: var(--cadmo-accent);
+  color: var(--cadmo-accent-ink);
+}
+
+/* Harmonize embedded Rendering .ccw diagrams with CADMO ink */
+.cadmo-figure .ccw {
+  --cc-ink: var(--cadmo-ink);
+  --cc-bg: var(--cadmo-surface-raised);
+  --cc-muted: var(--cadmo-muted);
+  --cc-resource: var(--cadmo-accent);
+  margin-block: 0;
+}
+
+/* Responsive collapse to single column on narrower screens */
+@media (max-width: 1020px) {
+  .cadmo-shell {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 1.8rem 1.2rem 4rem;
+  }
+  .cadmo-margin {
+    position: static;
+    max-height: none;
+    border-left: 0;
+    border-top: 1px solid var(--cadmo-rule);
+    padding-left: 0;
+    padding-top: 1.25rem;
+  }
+}
+
+/* Clean academic print / PDF export */
+@media print {
+  .cadmo-toolbar, .cadmo-toggle, .cadmo-goal-btn { display: none !important; }
+  .cadmo-shell { display: block; padding: 0; max-width: none; }
+  .cadmo-margin { display: none; }
+  .cadmo-children { display: block !important; }
+  body { background: #fff; color: #000; font-size: 11pt; }
+}

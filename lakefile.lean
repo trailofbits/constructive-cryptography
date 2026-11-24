@@ -44,3 +44,29 @@ lean_lib Examples where
 @[default_target]
 lean_lib Tests where
   globs := #[.andSubmodules `Tests]
+
+input_file diagramStyles where
+  path := "src" / "Rendering" / "cc-diagram.css"
+  text := true
+
+input_file diagramInspector where
+  path := "src" / "Rendering" / "inspector.js"
+  text := true
+
+/-- Optional deterministic diagrams and static export for the Lean infoview. -/
+lean_lib Rendering where
+  globs := #[.andSubmodules `Rendering]
+  needs := #[diagramStyles, diagramInspector]
+
+input_file cadmoStyles where
+  path := "src" / "Informalization" / "Render" / "cadmo-reader.css"
+  text := true
+
+input_file cadmoScript where
+  path := "src" / "Informalization" / "Render" / "cadmo-reader.js"
+  text := true
+
+/-- Optional human-first informalization engine (Infoview, ETH CADMO HTML, Verso JSON). -/
+lean_lib Informalization where
+  globs := #[.andSubmodules `Informalization]
+  needs := #[cadmoStyles, cadmoScript]

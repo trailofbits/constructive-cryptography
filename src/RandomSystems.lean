@@ -87,6 +87,7 @@ public import RandomSystems.Typed.DSL.Converters
 public import RandomSystems.Typed.DSL.Probability
 public import RandomSystems.Typed.DSL.Programs
 public import RandomSystems.Typed.DSL.Syntax
+public import RandomSystems.Typed.DSL.Source
 public import RandomSystems.Typed.DSL.Tactics
 public import RandomSystems.Typed.Filter
 public import RandomSystems.Typed.FiniteFamilyCollect
