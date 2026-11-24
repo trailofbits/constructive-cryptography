@@ -38,6 +38,9 @@ on interfaces, depend only on `propext`, `Classical.choice` and `Quot.sound`.
 #print axioms ConstructiveCryptography.GameEquivalence.attach_comp_gameEquivalent
 #print axioms ConstructiveCryptography.GameEquivalence.win_attach_eq
 #print axioms ConstructiveCryptography.GameEquivalence.advantage_attach_le_win
+#print axioms ConstructiveCryptography.DistinctionGames.distance_visible_le_of_winners
+#print axioms ConstructiveCryptography.DistinctionGames.distance_visible_le
+#print axioms ConstructiveCryptography.DistinctionGames.distance_visible_le_of_solvers
 
 -- ConstructiveCryptography.CryptographicAlgebra.PseudoMetric
 #print axioms ConstructiveCryptography.CryptographicAlgebra.distance_attach_le
@@ -95,6 +98,9 @@ on interfaces, depend only on `propext`, `Classical.choice` and `Quot.sound`.
 #print axioms SystemAlgebra.Interface.compatibleGameEquivalence
 #print axioms SystemAlgebra.Interface.win_le
 #print axioms SystemAlgebra.Interface.dist_visible_le
+#print axioms SystemAlgebra.Interface.distinguishers_covered_by_solvers
+#print axioms SystemAlgebra.Interface.dist_visible_le_of_winners
+#print axioms SystemAlgebra.Interface.dist_visible_le_of_win
 #print axioms SystemAlgebra.Interface.game_dist_le
 #print axioms SystemAlgebra.Interface.game_dist_ofSingleFunction_le
 

@@ -1,6 +1,7 @@
 module
 
 public import ConstructiveCryptography.CryptographicAlgebra.Basic
+public import ConstructiveCryptography.CryptographicAlgebra.Distinguisher
 public import ConstructiveCryptography.Game
 
 /-!
@@ -26,9 +27,12 @@ W -- α -- β -- G
 
 `Games.absorb_mem` uses closure of the admitted winners. `Games.absorb_comp` uses serial
 attachment; `DistinctionGames.absorb_mem` preserves the two evaluations of the same solver.
-On interfaces (`ConstructiveCryptography.Instances.Game`), the identity and serial laws are
-`TypedConverter.identity_attachGame` and `TypedConverter.comp_attachGame`, and both closure
-laws are `Domain.SolverBehavior.absorb`.
+Over a `CompatibleDistinguisherClass`, `DistinctionGames.distance_visible_le`,
+`distance_visible_le_of_winners`, and `distance_visible_le_of_solvers` lift a uniform winning
+bound under conditional equivalence and explicit solver coverage to a metric bound on
+`visible G` and `S`. On interfaces (`ConstructiveCryptography.Instances.Game`), the identity and
+serial laws are `TypedConverter.identity_attachGame` and `TypedConverter.comp_attachGame`, and
+both closure laws are `Domain.SolverBehavior.absorb`.
 
 ## References
 
@@ -216,5 +220,83 @@ lemma advantage_attach_le_win {A B : C} (converter : A ⟶ B) {first second : Ga
   exact hle
 
 end GameEquivalence
+
+section MetricBridge
+
+open CategoryTheory.MonoidalCategory
+open scoped NNReal
+
+-- `A : C` selects an interface; `Phi A` carries resources and `Game A` its games.
+-- The selected distinguisher class defines the metric on each resource type.
+variable {C : Type u} [Category.{v} C] [MonoidalCategory C]
+  {Phi : C → Type w} [ResourceTheory C Phi] [CompatibleDistinguisherClass C Phi]
+  {Game : C → Type x} [DistinctionGames C Phi Game]
+
+/-- A uniform winning bound gives a distance bound by taking the supremum of the
+pointwise `DistinctionGames.advantage_le_win` inequalities. -/
+theorem DistinctionGames.distance_visible_le_of_winners
+    -- `G` is the game at interface `A`; `S` is the comparison resource there.
+    {A : C} {G : Game A} {S : Phi A}
+    -- `hc` bounds each admitted solver's visible advantage by its winning evaluation.
+    (hc : DistinctionGames.ConditionallyEquivalent G S)
+    -- `hcover` pairs every metric distinguisher `d` with an admitted winning view `w`.
+    (hcover : ∀ d ∈ CompatibleDistinguisherClass.distinguishers (Phi := Phi) A,
+      ∃ w : Game A → ℝ, (d, w) ∈ DistinctionGames.solvers A)
+    -- `ε` bounds every admitted winner's performance on `G`, after conversion to error units.
+    {ε : ENNReal}
+    (hwin : ∀ w ∈ Games.winners A, ENNReal.ofReal (w G) ≤ ε) :
+    CryptographicAlgebra.distance (DistinctionGames.visible G) S ≤ ε := by
+  change @edist _ (CompatiblePseudoMetric.fibreMetric A).toEDist
+    (DistinctionGames.visible G) S ≤ ε
+  rw [CompatibleDistinguisherClass.edist_eq]
+  apply advantageDistance_le
+  intro d hd
+  obtain ⟨w, hdw⟩ := hcover d hd
+  exact (ENNReal.ofReal_le_ofReal (DistinctionGames.advantage_le_win hc hdw)).trans
+    (hwin w (DistinctionGames.solvers_winner hdw))
+
+/-- **Distinction-game distance bound for a nonnegative real error**: conditional equivalence
+`G |≡ S`, explicit solver coverage, and `w G ≤ ε` for every admitted winner imply
+`distance (visible G) S ≤ ε`. -/
+lemma DistinctionGames.distance_visible_le
+    -- `G` is the game at interface `A`; `S` is the comparison resource there.
+    {A : C} {G : Game A} {S : Phi A}
+    -- `hc` bounds each admitted solver's visible advantage by its winning evaluation.
+    (hc : DistinctionGames.ConditionallyEquivalent G S)
+    -- `hcover` pairs every metric distinguisher `d` with an admitted winning view `w`.
+    (hcover : ∀ d ∈ CompatibleDistinguisherClass.distinguishers (Phi := Phi) A,
+      ∃ w : Game A → ℝ, (d, w) ∈ DistinctionGames.solvers A)
+    -- `ε` is a nonnegative real upper bound on the winning probabilities specified below.
+    {ε : ℝ≥0}
+    (hwin : ∀ w ∈ Games.winners A, w G ≤ ε) :
+    CryptographicAlgebra.distance (DistinctionGames.visible G) S ≤ ε := by
+  refine DistinctionGames.distance_visible_le_of_winners hc hcover fun w hw => ?_
+  exact (ENNReal.ofReal_le_ofReal (hwin w hw)).trans (by simp)
+
+/-- **Distinction-game distance bound from a uniform bound over admitted solvers**: conditional
+equivalence `G |≡ S`, explicit solver coverage, and `s.2 G ≤ ε` for every admitted solver
+imply `distance (visible G) S ≤ ε`. -/
+lemma DistinctionGames.distance_visible_le_of_solvers
+    -- `G` is the game at interface `A`; `S` is the comparison resource there.
+    {A : C} {G : Game A} {S : Phi A}
+    -- `hc` bounds each admitted solver's visible advantage by its winning evaluation.
+    (hc : DistinctionGames.ConditionallyEquivalent G S)
+    -- `hcover` pairs every metric distinguisher `d` with an admitted winning view `w`.
+    (hcover : ∀ d ∈ CompatibleDistinguisherClass.distinguishers (Phi := Phi) A,
+      ∃ w : Game A → ℝ, (d, w) ∈ DistinctionGames.solvers A)
+    -- `ε` is a nonnegative real upper bound on the winning probabilities specified below.
+    {ε : ℝ≥0}
+    (hwin : ∀ s ∈ DistinctionGames.solvers A, s.2 G ≤ ε) :
+    CryptographicAlgebra.distance (DistinctionGames.visible G) S ≤ ε := by
+  change @edist _ (CompatiblePseudoMetric.fibreMetric A).toEDist
+    (DistinctionGames.visible G) S ≤ ε
+  rw [CompatibleDistinguisherClass.edist_eq]
+  apply advantageDistance_le
+  intro d hd
+  obtain ⟨w, hdw⟩ := hcover d hd
+  exact (ENNReal.ofReal_le_ofReal
+    ((DistinctionGames.advantage_le_win hc hdw).trans (hwin (d, w) hdw))).trans (by simp)
+
+end MetricBridge
 
 end ConstructiveCryptography
