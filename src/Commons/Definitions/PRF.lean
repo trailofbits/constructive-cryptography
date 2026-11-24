@@ -10,18 +10,9 @@ A keyed function `F : K → X → Y` [1, §4.4, p. 131] is a pseudorandom functi
 `error` when its retained-key system `KeyedPRF.real F q` substitutes for the uniform random
 function `URF (Evaluation X Y q)` against the admitted distinguishers.
 
-Following `Commons.Definitions.Hash` and `Commons.Definitions.PRG`, `KeyedPRF.systems F q`
-packages the pair `(KeyedPRF.real F q, URF (Evaluation X Y q))` independently of the substitution
-relation, and `KeyedPRF F error` states `(KeyedPRF.systems F q).1 ≃[error]
-(KeyedPRF.systems F q).2`. `KeyedPRF.specification` collects the keyed systems meeting `error`,
-embeds into Jost's reduction relaxation [2, Definition 2.2.9, p. 22], and transports through
-converters via `KeyedPRF.of_converter`.
-
-## Main definitions
-
-* `KeyedPRF.real F q`: retained uniform key `k ←$ 𝒰[K]` answering `eval(x)` with `F k x`
-* `KeyedPRF.systems F q`, `KeyedPRF F error`: PRF security for admitted distinguishers
-* `KeyedPRF.specification K X Y error`: non-singleton specification of PRFs within `error`
+`KeyedPRF.systems` names the real and ideal pair. `KeyedPRF.specification` collects retained-key
+systems satisfying the chosen advantage bound. `KeyedPRF.of_converter` transfers security when
+a converter realizes the target family and preserves the ideal random function.
 
 ## References
 
@@ -76,7 +67,7 @@ lemma KeyedPRF.real_mem_specification {q : ℕ} {F : K → X → Y}
     KeyedPRF.real F q ∈ KeyedPRF.specification K X Y error :=
   ⟨F, rfl, h⟩
 
-/-- `KeyedPRF.specification` lies in Jost's reduction relaxation of `{URF (Evaluation X Y q)}`
+/-- `KeyedPRF.specification` lies in the reduction relaxation of `{URF (Evaluation X Y q)}`
 [2, Definition 2.2.9, p. 22]. -/
 lemma KeyedPRF.specification_subset_reductionRelaxation {q : ℕ}
     (error : TypedDistinguisher (Evaluation X Y q) → ENNReal) :
@@ -89,8 +80,11 @@ lemma KeyedPRF.specification_subset_reductionRelaxation {q : ℕ}
 
 /-- Converter transport for PRF security: if `α` maps `KeyedPRF.real F q` to `KeyedPRF.real G q'`
 and preserves `URF`, then `KeyedPRF F error` lifts to `KeyedPRF G (fun d => error (dα))`. -/
-theorem KeyedPRF.of_converter {X' Y' : Type} [Fintype X'] [Fintype Y'] [Nonempty Y'] {q q' : ℕ}
-    (α : Evaluation X' Y' q' ⟶ Evaluation X Y q) (F : K → X → Y) (G : K → X' → Y')
+theorem KeyedPRF.of_converter
+    -- `K'` carries the target family's keys, independently of the source key type `K`.
+    {K' X' Y' : Type} [Fintype K'] [Nonempty K']
+    [Fintype X'] [Fintype Y'] [Nonempty Y'] {q q' : ℕ}
+    (α : Evaluation X' Y' q' ⟶ Evaluation X Y q) (F : K → X → Y) (G : K' → X' → Y')
     (closed : AdmissibleDistinguishers.ClosedUnder (Phi := TypedSystem)
       (D := TypedDistinguisher) α)
     (hreal : α • KeyedPRF.real F q = KeyedPRF.real G q')

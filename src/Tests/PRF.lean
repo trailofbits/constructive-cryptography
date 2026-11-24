@@ -61,6 +61,27 @@ example {q : ℕ} (F : K → X → Y) {S : TypedSystem (Evaluation X Y q)}
     KeyedPRF.real F q ≃[error] URF (Evaluation X Y q) := h
     _ ≈[δ] S := hstat
 
+/-- A retained Boolean key gives equal replies to two different queries.
+The transcript with unequal replies has probability zero. -/
+example :
+    (KeyedPRF.real (fun k : Bool => fun _ : Bool => k) 2).1
+      [(⟨.eval, false⟩, ⟨.eval, true⟩), (⟨.eval, true⟩, ⟨.eval, false⟩)] = 0 := by
+  rw [KeyedPRF.real, TypedSystem.sample_mass]
+  apply Finset.sum_eq_zero
+  intro key _
+  cases key <;> simp only [TypedSystem.ofFunction_mass, Evaluation]
+  all_goals norm_num
+
+/-- Converter transport permits an independent key type for the target family. -/
+example {K' : Type} [Fintype K'] [Nonempty K'] {q : ℕ}
+    (F : K → X → Y) (G : K' → X → Y)
+    (α : Evaluation X Y q ⟶ Evaluation X Y q)
+    (hreal : α • KeyedPRF.real F q = KeyedPRF.real G q)
+    (hideal : α • URF (Evaluation X Y q) = URF (Evaluation X Y q))
+    {error : TypedDistinguisher (Evaluation X Y q) → ENNReal} (secure : KeyedPRF F error) :
+    KeyedPRF G (fun d => error (TypedDistinguisher.absorb d α)) :=
+  KeyedPRF.of_converter α F G (fun _ _ => Set.mem_univ _) hreal hideal secure
+
 #print axioms KeyedPRF.real_mem_specification
 #print axioms KeyedPRF.specification_subset_reductionRelaxation
 #print axioms KeyedPRF.of_converter
