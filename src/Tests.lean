@@ -89,6 +89,7 @@ public import Tests.DependentCoordinateMarginals
 public import Tests.IndependentTableCoincidence
 public import Tests.RoutedRandomFunction
 public import Tests.TranscriptLaw
+public import Tests.TwoPartyObstruction
 public import Tests.RandomFunctionCollision
 public import Tests.RatioCost
 public import Tests.FilteredRatio
