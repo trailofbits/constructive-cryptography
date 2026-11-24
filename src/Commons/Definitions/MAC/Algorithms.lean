@@ -30,8 +30,7 @@ at `mac.verify k m t`. -/
 def MAC.algorithms.replyLaw
     -- `mac` supplies the tagging law and deterministic verification predicate.
     (mac : MAC K M T) :
-    -- Budget `0` names the port alphabets, which are shared by every query budget.
-    ∀ i, (MACAlgorithms K M T 0).X i → ProbDist ((MACAlgorithms K M T 0).Y i)
+    ∀ i, MACAlgorithms.Input K M T i → ProbDist (MACAlgorithms.Output T i)
   | .tag, (k, m) => mac.tag k m
   | .verify, (k, m, t) => ProbDist.single (mac.verify k m t)
 
@@ -39,7 +38,7 @@ def MAC.algorithms.replyLaw
 lemma MAC.algorithms.memorylessReplyLaw_eq
     -- `mac` supplies the tagging law and verification predicate; `s` is the DSL state.
     (mac : MAC K M T) (s : Option Unit)
-    (i : MACAlgorithms.Port) (x : (MACAlgorithms K M T 0).X i) :
+    (i : MACAlgorithms.Port) (x : MACAlgorithms.Input K M T i) :
     (MAC.algorithms.body mac).memorylessReplyLaw (fun _ _ => MAC.algorithms.law1 mac) s i x
         1 [] = (MAC.algorithms.replyLaw mac i x).1 := by
   cases s <;> cases i with
