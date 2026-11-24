@@ -452,12 +452,12 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [CompatibleDistinguisherClass.ofClosure]: CryptographicAlgebra/Distinguisher.lean#L177
 [Games]: Game.lean#L57
 [Games.absorb]: Game.lean#L73
-[Games.absorb_comp]: CryptographicAlgebra/Game.lean#L100
+[Games.absorb_comp]: CryptographicAlgebra/Game.lean#L104
 [DistinctionGames]: Game.lean#L135
-[DistinctionGames.absorb]: CryptographicAlgebra/Game.lean#L144
-[DistinctionGames.distance_visible_le_of_winners]: CryptographicAlgebra/Game.lean#L167
-[DistinctionGames.distance_visible_le]: CryptographicAlgebra/Game.lean#L187
-[DistinctionGames.distance_visible_le_of_solvers]: CryptographicAlgebra/Game.lean#L201
+[DistinctionGames.absorb]: CryptographicAlgebra/Game.lean#L148
+[DistinctionGames.distance_visible_le_of_winners]: CryptographicAlgebra/Game.lean#L172
+[DistinctionGames.distance_visible_le]: CryptographicAlgebra/Game.lean#L196
+[DistinctionGames.distance_visible_le_of_solvers]: CryptographicAlgebra/Game.lean#L214
 
 <!-- Declarations: the instances and the notation -->
 
