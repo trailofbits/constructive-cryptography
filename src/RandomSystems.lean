@@ -33,6 +33,7 @@ public import RandomSystems.Converter.SerialAccounting
 public import RandomSystems.Converter.QueryRouting
 public import RandomSystems.Cumulative.ConnectionObservation
 public import RandomSystems.Cumulative.Cumulative
+public import RandomSystems.Cumulative.FiniteCuts
 public import RandomSystems.Cumulative.CumulativeAttachment
 public import RandomSystems.Cumulative.CumulativeObservation
 public import RandomSystems.Cumulative.CumulativeOperations

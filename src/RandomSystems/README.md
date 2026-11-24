@@ -29,6 +29,12 @@ next output, and a DDS [is determined by its completed replies][IsDDS.eq_of_repl
 
 ## Probabilistic systems
 
+The normalization predicate `IsRandomSystem D p` also accepts a query domain `D` with no
+global horizon. [Finite cuts](Cumulative/FiniteCuts.lean) place such a behavior in the existing
+bounded carrier: `IsRandomSystem.cut D p hp q` preserves masses through depth `q` and sets later
+masses to zero. `RandomSystem.limitMass` reconstructs a behavior from adjacent coherent cuts;
+`limitMass_cut` and `cut_limitMass` give the two round trips.
+
 A transcript follows a query strategy when every exchange prefix $`p\mathbin{+\!+}[(x,y)]`$
 has $`x\in\sigma(\operatorname{replies}(p))`$, the rule $`x_i = e(y_1,\dots,y_{i-1})`$ of
 [1, Definition 7, printed p. 12]
