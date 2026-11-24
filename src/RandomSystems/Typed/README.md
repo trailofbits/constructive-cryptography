@@ -251,20 +251,20 @@ typed system sampling the ideal function, under the fixed-query factorization.
 
 <!-- Declarations -->
 
-[Interface]: Interface.lean#L41
-[Interface.queryBudget]: Interface.lean#L71
-[Interface.portBudget]: Interface.lean#L101
+[Interface]: Interface.lean#L43
+[Interface.queryBudget]: Interface.lean#L73
+[Interface.portBudget]: Interface.lean#L103
 [restrict]: ../System/Basic.lean#L798
-[TypedSystem]: Interface.lean#L143
+[TypedSystem]: Interface.lean#L145
 [RandomSystem.RepliesAtQueriedInterface]: ../Cumulative/Cumulative.lean#L74
-[TypedConverter]: Interface.lean#L182
-[TypedConverter.ofDDC]: Interface.lean#L198
-[TypedConverter.comp]: Interface.lean#L189
-[TypedConverter.id]: Interface.lean#L194
-[TypedConverter.attach]: Interface.lean#L247
-[TypedConverter.identity_attach]: Interface.lean#L262
-[TypedConverter.comp_smul]: Interface.lean#L268
-[TypedConverter.ofDDC_eq_comp]: Interface.lean#L221
+[TypedConverter]: Interface.lean#L184
+[TypedConverter.ofDDC]: Interface.lean#L200
+[TypedConverter.comp]: Interface.lean#L191
+[TypedConverter.id]: Interface.lean#L196
+[TypedConverter.attach]: Interface.lean#L250
+[TypedConverter.identity_attach]: Interface.lean#L265
+[TypedConverter.comp_smul]: Interface.lean#L271
+[TypedConverter.ofDDC_eq_comp]: Interface.lean#L223
 [Interface.tensor]: Parallel.lean#L89
 [TypedSystem.parallel]: Parallel.lean#L157
 [TypedConverter.parallel]: Parallel.lean#L214

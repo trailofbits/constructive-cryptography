@@ -12,16 +12,49 @@ public meta import ConstructiveCryptography.Tactics.Basic
 /-!
 # Constructive Cryptography proof automation
 
-This opt-in module supplies deterministic assembly commands for the typed
-`CryptographicAlgebra` presentation.  Every semantic choice remains an explicit
-Lean term. Every command targets the typed `CryptographicAlgebra` presentation.
+The commands assemble constructions from explicit component equalities, distance bounds,
+and simulators. `cc_normalize` applies attachment, parallel, and coherence laws in any
+`CryptographicAlgebra`; the interface instance supplies their random-systems interpretation.
 
-The commands implement the paper-level steps of Maurer--Renner 2016.  Jost's
-typed attachment and ordered context laws provide the heterogeneous theorem
-heads used here; no symmetry or implicit interface rearrangement is assumed.
+Whiskering acts on one side of a parallel resource. Interchange orders attachments on
+opposite ports with the right-port converter outside; same-port order remains explicit.
+The `•` lemmas below expose the existing abstract laws to the simplifier's term index.
+
+## References
+
+1. U. Maurer and R. Renner. *From Indifferentiability to Constructive Cryptography (and Back)*.
+   TCC 2016-B, §§3–4.
+2. D. Jost. *On Generalizations of Composable Security*. ETH thesis 26723, 2020, §2.2.
 -/
 
-open CategoryTheory MonoidalCategory ConstructiveCryptography in
+section SmulNormalization
+
+-- `C` carries interfaces and converters; `Φ A` carries resources on interface `A : C`.
+-- In every rule, `f : A ⟶ B` presents `A` by using a resource on `B`.
+
+open CategoryTheory MonoidalCategory ConstructiveCryptography
+
+/-- Identity attachment leaves a resource unchanged in public `•` notation. -/
+@[cc_normalization] public lemma ConstructiveCryptography.CryptographicAlgebra.smul_identity
+    {C : Type*} [Category* C] {Φ : C → Type*} [ResourceTheory C Φ] {A : C} (R : Φ A) :
+    (𝟙 A) • R = R :=
+  attach_identity R
+
+/-- Serial attachment associates in public `•` notation. -/
+@[cc_normalization] public lemma ConstructiveCryptography.CryptographicAlgebra.smul_serial
+    {C : Type*} [Category* C] {Φ : C → Type*} [ResourceTheory C Φ] {A B D : C}
+    (f : A ⟶ B) (g : B ⟶ D) (R : Φ D) :
+    (f ≫ g) • R = f • (g • R) :=
+  attach_serial f g R
+
+/-- Parallel attachment distributes over parallel resources in public `•` notation. -/
+@[cc_normalization] public lemma ConstructiveCryptography.CryptographicAlgebra.smul_parallel
+    {C : Type*} [Category* C] [MonoidalCategory C] {Φ : C → Type*}
+    [ResourceTheory C Φ] [CryptographicAlgebra C Φ] {A A' B B' : C}
+    (f : A' ⟶ A) (g : B' ⟶ B) (R : Φ A) (S : Φ B) :
+    (f ⊗ₘ g) • parallel R S = parallel (f • R) (g • S) :=
+  attach_parallel f g R S
+
 /-- The associator regroups three resources. This spelling lets `cc_normalize` match `•`
 directly when the resource carrier is abstract. -/
 @[cc_normalization] public lemma ConstructiveCryptography.CryptographicAlgebra.associator_hom_smul
@@ -29,6 +62,67 @@ directly when the resource carrier is abstract. -/
     [ResourceTheory C Φ] [CryptographicAlgebra C Φ] {A B D : C} (L : Φ A) (M : Φ B) (R : Φ D) :
     (α_ A B D).hom • parallel L (parallel M R) = parallel (parallel L M) R :=
   associator_hom_attach L M R
+
+/-- The inverse associator regroups three resources in public `•` notation. -/
+@[cc_normalization] public lemma ConstructiveCryptography.CryptographicAlgebra.associator_inv_smul
+    {C : Type*} [Category* C] [MonoidalCategory C] {Φ : C → Type*}
+    [ResourceTheory C Φ] [CryptographicAlgebra C Φ] {A B D : C} (L : Φ A) (M : Φ B) (R : Φ D) :
+    (α_ A B D).inv • parallel (parallel L M) R = parallel L (parallel M R) :=
+  parallel_assoc L M R
+
+/-- The forward left unitor adjoins `dummy` on the left in public `•` notation. -/
+@[cc_normalization] public lemma ConstructiveCryptography.CryptographicAlgebra.leftUnitor_hom_smul
+    {C : Type*} [Category* C] [MonoidalCategory C] {Φ : C → Type*}
+    [ResourceTheory C Φ] [CryptographicAlgebra C Φ] {A : C} (R : Φ A) :
+    (λ_ A).hom • R = parallel (dummy (C := C)) R :=
+  leftUnitor_hom_attach R
+
+/-- The inverse left unitor drops a left `dummy` resource in public `•` notation. -/
+@[cc_normalization] public lemma ConstructiveCryptography.CryptographicAlgebra.leftUnitor_inv_smul
+    {C : Type*} [Category* C] [MonoidalCategory C] {Φ : C → Type*}
+    [ResourceTheory C Φ] [CryptographicAlgebra C Φ] {A : C} (R : Φ A) :
+    (λ_ A).inv • parallel (dummy (C := C)) R = R :=
+  parallel_dummy_left R
+
+/-- The forward right unitor adjoins `dummy` on the right in public `•` notation. -/
+@[cc_normalization] public lemma ConstructiveCryptography.CryptographicAlgebra.rightUnitor_hom_smul
+    {C : Type*} [Category* C] [MonoidalCategory C] {Φ : C → Type*}
+    [ResourceTheory C Φ] [CryptographicAlgebra C Φ] {A : C} (R : Φ A) :
+    (ρ_ A).hom • R = parallel R (dummy (C := C)) :=
+  rightUnitor_hom_attach R
+
+/-- The inverse right unitor drops a right `dummy` resource in public `•` notation. -/
+@[cc_normalization] public lemma ConstructiveCryptography.CryptographicAlgebra.rightUnitor_inv_smul
+    {C : Type*} [Category* C] [MonoidalCategory C] {Φ : C → Type*}
+    [ResourceTheory C Φ] [CryptographicAlgebra C Φ] {A : C} (R : Φ A) :
+    (ρ_ A).inv • parallel R (dummy (C := C)) = R :=
+  parallel_dummy_right R
+
+/-- Left-whiskering acts on the right component of a parallel resource in public `•` notation. -/
+@[cc_normalization] public lemma ConstructiveCryptography.CryptographicAlgebra.whiskerLeft_smul
+    {C : Type*} [Category* C] [MonoidalCategory C] {Φ : C → Type*}
+    [ResourceTheory C Φ] [CryptographicAlgebra C Φ] {A B B' : C}
+    (β : B' ⟶ B) (R : Φ A) (S : Φ B) :
+    (A ◁ β) • parallel R S = parallel R (β • S) :=
+  attach_whiskerLeft β R S
+
+/-- Right-whiskering acts on the left component of a parallel resource in public `•` notation. -/
+@[cc_normalization] public lemma ConstructiveCryptography.CryptographicAlgebra.whiskerRight_smul
+    {C : Type*} [Category* C] [MonoidalCategory C] {Φ : C → Type*}
+    [ResourceTheory C Φ] [CryptographicAlgebra C Φ] {A A' B : C}
+    (α : A' ⟶ A) (R : Φ A) (S : Φ B) :
+    (α ▷ B) • parallel R S = parallel (α • R) S :=
+  attach_whiskerRight α R S
+
+/-- Right-whiskering moves inside left-whiskering in public `•` notation. -/
+@[cc_normalization] public lemma ConstructiveCryptography.CryptographicAlgebra.whisker_smul_comm
+    {C : Type*} [Category* C] [MonoidalCategory C] {Φ : C → Type*}
+    [ResourceTheory C Φ] [CryptographicAlgebra C Φ] {A A' B B' : C}
+    (α : A' ⟶ A) (β : B' ⟶ B) (R : Φ (A ⊗ B)) :
+    (α ▷ B') • ((A ◁ β) • R) = (A' ◁ β) • ((α ▷ B) • R) :=
+  whisker_attach_comm α β R
+
+end SmulNormalization
 
 @[expose] public meta section
 
@@ -40,12 +134,24 @@ attribute [cc_normalization]
   CryptographicAlgebra.converter_parallel_identity
   CryptographicAlgebra.converter_parallel_serial
   CryptographicAlgebra.attach_parallel
+  CryptographicAlgebra.attach_whiskerLeft
+  CryptographicAlgebra.attach_whiskerRight
+  CryptographicAlgebra.whisker_attach_comm
+  CryptographicAlgebra.parallel_assoc
   CryptographicAlgebra.associator_hom_attach
+  CryptographicAlgebra.parallel_dummy_left
+  CryptographicAlgebra.leftUnitor_hom_attach
+  CryptographicAlgebra.parallel_dummy_right
+  CryptographicAlgebra.rightUnitor_hom_attach
   CryptographicAlgebra.Specification.parallel_singleton
   CryptographicAlgebra.Specification.star_idem
   CategoryTheory.Category.id_comp
   CategoryTheory.Category.comp_id
   CategoryTheory.Category.assoc
+  CategoryTheory.MonoidalCategory.comp_whiskerRight
+  CategoryTheory.MonoidalCategory.whiskerLeft_comp
+  CategoryTheory.MonoidalCategory.whiskerLeft_id
+  CategoryTheory.MonoidalCategory.id_whiskerRight
   zero_add
   add_zero
   Set.mem_singleton_iff

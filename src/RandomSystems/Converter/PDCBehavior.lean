@@ -6,12 +6,12 @@ public import RandomSystems.Cumulative.CumulativeAttachment
 /-!
 # Behaviors of PDCs
 
-A PDC is a distribution over DDCs (CR18, Definition 3.17, printed p. 64); its behavior
-is the behavior of a probabilistic system on the converter alphabets (Definition 3.18). For
+A PDC is a distribution over DDCs [1, Definition 3.17, p. 64]; its behavior is that of
+a probabilistic system on the converter alphabets [1, Definition 3.18, p. 64]. For
 DDCs from the inside domain `E` to the outside domain `F` with a common bound on
 consecutive inside queries, it is a random system over the converter domain. Serial
-composition samples the two PDCs independently and composes the samples (Definitions
-3.9, 3.17); it is associative, and the filter on `E` is its identity.
+composition samples the two PDCs independently and composes the samples [1, Definitions
+3.9, 3.17]; it is associative, and the filter on `E` is its identity.
 
 ## Main definitions
 
@@ -27,10 +27,16 @@ composition samples the two PDCs independently and composes the samples (Definit
   transcripts obey the DDC discipline is a PDC behavior
   from `E` to `F`
 * `PDCBehavior.ofDDC_apply`: a DDC's behavior is one on its transcripts and zero elsewhere
-* `PDCBehavior.ofDDC_eq_of_le`: DDCs from `E` to `F` below one system have the same
-  behavior
+* `PDCBehavior.ofDDC_eq_iff_replies`, `PDCBehavior.ofDDC_eq_iff`: DDC behaviors agree iff
+  their transcripts agree, and iff their DDCs are equal
+* `PDCBehavior.ofDDC_eq_of_next_eq`, `PDCBehavior.ofDDC_eq_of_le`: comparing deterministic
+  converter behaviors by their next outputs, and below one system
 * `PDCBehavior.comp_presents`: the composition of presentations presents the composition
 * `PDCBehavior.comp_assoc`, `PDCBehavior.comp_id`, `PDCBehavior.id_comp`
+
+## References
+
+1. U. Maurer. *Cryptography Foundations*. ETH Zurich lecture notes, Spring 2018.
 -/
 
 @[expose] public section
@@ -191,17 +197,54 @@ lemma ofDDC_apply (a : InsideOutsideSystem O J U V X Y) {b : ℕ} (ha : IsDDCFro
   change behaviorMass (Finsupp.single _ 1) _ _ = _
   simp only [behaviorMass, Distribution.mass_single]
 
+/-- Two DDC behaviors from `E` to `F` are equal iff they have the same transcripts. -/
+lemma ofDDC_eq_iff_replies {a c : InsideOutsideSystem O J U V X Y} {b b' : ℕ}
+    (ha : IsDDCFrom E F b a) (hc : IsDDCFrom E F b' c) :
+    (ofDDC a ha : PDCBehavior O J U V X Y E m hE F n hF) = ofDDC c hc ↔
+      ∀ t : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l)),
+        Replies a (t.map Prod.fst) (t.map Prod.snd) ↔
+          Replies c (t.map Prod.fst) (t.map Prod.snd) := by
+  classical
+  constructor
+  · intro heq t
+    -- A deterministic behavior assigns mass one exactly to its possible transcripts.
+    have ht := congrArg (fun α => α.1 t) heq
+    simp only [ofDDC_apply] at ht
+    by_cases hra : Replies a (t.map Prod.fst) (t.map Prod.snd) <;>
+      by_cases hrc : Replies c (t.map Prod.fst) (t.map Prod.snd) <;>
+      simp [hra, hrc] at ht ⊢
+  · intro hr
+    apply ext
+    intro t
+    simp only [ofDDC_apply, hr t]
+
+/-- Two DDC behaviors from `E` to `F` are equal iff their underlying DDCs are equal. -/
+lemma ofDDC_eq_iff {a c : InsideOutsideSystem O J U V X Y} {b b' : ℕ}
+    (ha : IsDDCFrom E F b a) (hc : IsDDCFrom E F b' c) :
+    (ofDDC a ha : PDCBehavior O J U V X Y E m hE F n hF) = ofDDC c hc ↔ a = c := by
+  rw [ofDDC_eq_iff_replies]
+  exact ⟨fun hr => ha.isDDC.eq_of_admitted_replies hc.isDDC fun t _ => hr t,
+    fun heq t => by rw [heq]⟩
+
+/-- Two DDCs from `E` to `F` agreeing on every admitted next input after shared transcripts have
+the same behavior. -/
+lemma ofDDC_eq_of_next_eq {a c : InsideOutsideSystem O J U V X Y} {b b' : ℕ}
+    (ha : IsDDCFrom E F b a) (hc : IsDDCFrom E F b' c)
+    (hnext : ∀ (t : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))) (x : Σ l, twoFam U Y l),
+      Replies a (t.map Prod.fst) (t.map Prod.snd) →
+      Replies c (t.map Prod.fst) (t.map Prod.snd) →
+      converterDomain E F t x →
+      a (t.map Prod.fst ++ [x]) = c (t.map Prod.fst ++ [x])) :
+    (ofDDC a ha : PDCBehavior O J U V X Y E m hE F n hF) = ofDDC c hc :=
+  (ofDDC_eq_iff_replies ha hc).mpr (ha.replies_iff_of_next_eq hc hnext)
+
 /-- **Two DDCs from `E` to `F` below one system have the same behavior.** -/
 lemma ofDDC_eq_of_le {a c W : InsideOutsideSystem O J U V X Y} {b b' : ℕ}
     (ha : IsDDCFrom E F b a) (hc : IsDDCFrom E F b' c)
     (haW : ∀ xs ys, Replies a xs ys → Replies W xs ys)
     (hcW : ∀ xs ys, Replies c xs ys → Replies W xs ys) :
-    (ofDDC a ha : PDCBehavior O J U V X Y E m hE F n hF) = ofDDC c hc := by
-  classical
-  apply ext
-  intro t
-  change behaviorMass (Finsupp.single _ 1) _ _ = behaviorMass (Finsupp.single _ 1) _ _
-  simp only [behaviorMass, Distribution.mass_single, ha.replies_iff_of_le hc haW hcW t]
+    (ofDDC a ha : PDCBehavior O J U V X Y E m hE F n hF) = ofDDC c hc :=
+  (ofDDC_eq_iff_replies ha hc).mpr (ha.replies_iff_of_le hc haW hcW)
 
 end PDCBehavior
 

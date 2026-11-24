@@ -20,7 +20,7 @@ constructions compose serially and in parallel, and are insensitive to unchanged
 A converter `α : A ⟶ B` has outside interface `A` and inside interface `B`; `α ≫ β` places
 `α` outside `β`. Attachment `α • R` (the source's `αR`) therefore runs against the arrow.
 Resources `Phi A` are abstract carriers, not necessarily random systems; `parallel R S` is
-Jost's `[R, S]`.
+the notation `[R, S]` of [2].
 
 ```text
            α : A ⟶ B                    attach α : Phi B → Phi A
@@ -28,8 +28,8 @@ Jost's `[R, S]`.
   (α ≫ β) • R = α • (β • R)              for β : B ⟶ D, R : Phi D
 ```
 
-Sources: Maurer–Renner 2016 (MR16), §3 (printed pp. 6–8) and Definition 1 (printed p. 11);
-Jost, §2.2 (printed pp. 16–19).
+The resource and converter operations follow [1, §3, pp. 6–8; Definition 1, p. 11],
+with the typed formulation of [2, §2.2, pp. 16–19].
 
 ## Main definitions
 
@@ -41,14 +41,21 @@ Jost, §2.2 (printed pp. 16–19).
 
 ## Main results
 
-* `ResourceTheory.attach_serial`, `CryptographicAlgebra.attach_parallel`: attachment is
-  functorial and local
+* `ResourceTheory.attach_serial`, `CryptographicAlgebra.attach_parallel`,
+  `CryptographicAlgebra.attach_whiskerLeft`, `CryptographicAlgebra.attach_whiskerRight`,
+  `CryptographicAlgebra.whisker_attach_comm`: functorial, local, and whiskering attachment
 * `CryptographicAlgebra.parallel_assoc`, `CryptographicAlgebra.associator_hom_attach`,
   `CryptographicAlgebra.parallel_dummy_left`, `CryptographicAlgebra.leftUnitor_hom_attach`,
   `CryptographicAlgebra.parallel_dummy_right`, `CryptographicAlgebra.rightUnitor_hom_attach`:
   parallel composition of resources
 * `CryptographicAlgebra.Specification.Constructs.serial`,
   `CryptographicAlgebra.Specification.Constructs.parallel`: composition of constructions
+
+## References
+
+1. U. Maurer and R. Renner. *From Indifferentiability to Constructive Cryptography (and Back)*.
+   TCC 2016-B, 2016.
+2. D. Jost. *On Generalizations of Composable Security*. ETH thesis 26723, 2020.
 -/
 
 @[expose] public section
@@ -254,6 +261,25 @@ theorem attach_parallel [CryptographicAlgebra C Phi]
   have naturality := LaxMonoidal.μ_natural (ResourceTheory.functor C Phi)
     leftConverter.op rightConverter.op
   exact types_congr_hom naturality (left, right) |>.symm
+
+/-- Left-whiskering `A ◁ β` acts on the right component of a parallel resource. -/
+lemma attach_whiskerLeft [CryptographicAlgebra C Phi] {A B B' : C}
+    (β : B' ⟶ B) (left : Phi A) (right : Phi B) :
+    attach (A ◁ β) (parallel left right) = parallel left (attach β right) := by
+  rw [← id_tensorHom, attach_parallel, attach_identity]
+
+/-- Right-whiskering `α ▷ B` acts on the left component of a parallel resource. -/
+lemma attach_whiskerRight [CryptographicAlgebra C Phi] {A A' B : C}
+    (α : A' ⟶ A) (left : Phi A) (right : Phi B) :
+    attach (α ▷ B) (parallel left right) = parallel (attach α left) right := by
+  rw [← tensorHom_id, attach_parallel, attach_identity]
+
+/-- Right-whiskering and left-whiskering attachments commute by monoidal interchange. -/
+lemma whisker_attach_comm [CryptographicAlgebra C Phi] {A A' B B' : C}
+    (α : A' ⟶ A) (β : B' ⟶ B) (resource : Phi (A ⊗ B)) :
+    attach (α ▷ B') (attach (A ◁ β) resource) =
+      attach (A' ◁ β) (attach (α ▷ B) resource) := by
+  simp only [← attach_serial, whisker_exchange]
 
 /-- Ordered resource parallel is associative through the routed associator. For
 `left : Phi A`, `middle : Phi B` and `right : Phi D`, the rebracketing converter
