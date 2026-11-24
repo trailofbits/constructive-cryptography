@@ -13,6 +13,9 @@ on interfaces, depend only on `propext`, `Classical.choice` and `Quot.sound`.
 
 -- ConstructiveCryptography.CryptographicAlgebra.Basic
 #print axioms ConstructiveCryptography.CryptographicAlgebra.attach_parallel
+#print axioms ConstructiveCryptography.CryptographicAlgebra.attach_whiskerLeft
+#print axioms ConstructiveCryptography.CryptographicAlgebra.attach_whiskerRight
+#print axioms ConstructiveCryptography.CryptographicAlgebra.whisker_attach_comm
 #print axioms ConstructiveCryptography.CryptographicAlgebra.parallel_assoc
 #print axioms ConstructiveCryptography.CryptographicAlgebra.associator_hom_attach
 #print axioms ConstructiveCryptography.CryptographicAlgebra.parallel_dummy_left
@@ -70,6 +73,9 @@ on interfaces, depend only on `propext`, `Classical.choice` and `Quot.sound`.
 #print axioms SystemAlgebra.Interface.leftUnitor_hom_attach
 #print axioms SystemAlgebra.Interface.parallel_dummy_right
 #print axioms SystemAlgebra.Interface.rightUnitor_hom_attach
+#print axioms SystemAlgebra.Interface.whiskerLeft_smul
+#print axioms SystemAlgebra.Interface.whiskerRight_smul
+#print axioms SystemAlgebra.Interface.whisker_smul_comm
 #print axioms SystemAlgebra.Interface.parallel_swap
 
 -- ConstructiveCryptography.Instances.Category

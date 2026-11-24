@@ -382,9 +382,9 @@ extension are in [Examples](src/Examples/README.md).
 <!-- Declarations: §5 and departures -->
 
 [cc_normalize]: src/ConstructiveCryptography/Tactics/Basic.lean#L34
-[cc_nonexpand]: src/ConstructiveCryptography/Tactics/Categorical.lean#L171
-[cc_triangle]: src/ConstructiveCryptography/Tactics/Categorical.lean#L160
-[cc_construct]: src/ConstructiveCryptography/Tactics/Categorical.lean#L47
+[cc_nonexpand]: src/ConstructiveCryptography/Tactics/Categorical.lean#L180
+[cc_triangle]: src/ConstructiveCryptography/Tactics/Categorical.lean#L169
+[cc_construct]: src/ConstructiveCryptography/Tactics/Categorical.lean#L56
 [cc_calc]: src/ConstructiveCryptography/Tactics/Substitution.lean#L105
 [real_ideal_distance_le]: src/Examples/AuthenticatedEncryption/Security.lean#L167
 [SymmetricEncryption.encryptions]: src/Commons/Definitions/Encryption.lean#L106
