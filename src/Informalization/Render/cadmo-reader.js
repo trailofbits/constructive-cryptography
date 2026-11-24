@@ -1,6 +1,7 @@
 /* ==========================================================================
    CADMO Interactive Proof Reader Controller
-   Consumes the canonical Informalization.Core.Explanation.Document JSON.
+   Print-authentic monograph reader: calm whitespace, on-demand sidenotes,
+   zero diagram clutter in the reading flow, real 2D offline math.
    ========================================================================== */
 (() => {
   const dataEl = document.getElementById("cadmo-document-data");
@@ -18,8 +19,10 @@
   const state = {
     mode: doc.defaultMode === "auditor" ? "auditor" : "paper",
     expanded: new Set(),
-    inspector: null, // { type: "symbol", item } | { type: "goal", goal, label } | { type: "axioms", entry }
-    theme: "auto"
+    inspector: null,        // null | { type: "symbol", item } | { type: "goal", goal, label } | { type: "axioms", entry }
+    glossaryOpen: false,    // hidden by default so right margin is pure calm paper
+    glossaryQuery: "",
+    theme: "light"          // archival paper by default
   };
 
   const inspectorByKey = new Map();
@@ -27,182 +30,212 @@
     inspectorByKey.set(ins.key, ins);
   }
 
+  function isGlossaryWorthy(ins) {
+    if (!ins || !ins.kind) return false;
+    if (ins.kind.parameter) return false;
+    const key = ins.key || "";
+    if (
+      key.startsWith("inst") ||
+      key.startsWith("CategoryTheory.") ||
+      key.includes(".inst") ||
+      key.endsWith(".toCategoryStruct") ||
+      key.endsWith(".absorb") ||
+      key.endsWith(".ClosedUnder") ||
+      key === "SystemAlgebra.TypedSystem" ||
+      key === "SystemAlgebra.TypedConverter" ||
+      key === "SystemAlgebra.TypedDistinguisher"
+    ) {
+      return false;
+    }
+    return true;
+  }
+
+  function glossaryCategory(ins) {
+    const k = ins.kind || {};
+    if (k.interfaceTable) return "Interfaces";
+    if (k.dslPseudocode || k.ccDiagram) return "Systems & Converters";
+    if (k.witnessCard) return "Proof Witnesses";
+    return "Definitions";
+  }
+
   /* ------------------------------------------------------------------------
-     Readable offline math formatter (used directly and upgraded by KaTeX
-     if KaTeX is available on the page).
+     Real 2D offline HTML math renderer (no external CDN required; upgrades
+     automatically to KaTeX if loaded).
      ------------------------------------------------------------------------ */
-  /* Balanced-brace command replacer so nested `{...}` (like `\mathbf{1}_{P}`) never truncate. */
-  function replaceBalanced1(str, cmd, fn) {
-    let out = "";
-    let i = 0;
-    const prefix = cmd + "{";
-    while (i < str.length) {
-      const idx = str.indexOf(prefix, i);
-      if (idx === -1) { out += str.slice(i); break; }
-      out += str.slice(i, idx);
+  function readBalanced(str, pos) {
+    if (pos >= str.length) return ["", pos];
+    if (str[pos] === "{") {
       let depth = 1;
-      let j = idx + prefix.length;
+      let j = pos + 1;
       while (j < str.length && depth > 0) {
         if (str[j] === "{") depth++;
         else if (str[j] === "}") depth--;
         j++;
       }
-      if (depth === 0) {
-        const inner = str.slice(idx + prefix.length, j - 1);
-        out += fn(replaceBalanced1(inner, cmd, fn));
-        i = j;
-      } else {
-        out += prefix;
-        i = idx + prefix.length;
-      }
+      return [str.slice(pos + 1, Math.max(pos + 1, j - 1)), j];
     }
-    return out;
+    if (str[pos] === "\\") {
+      let j = pos + 1;
+      while (j < str.length && /[A-Za-z]/.test(str[j])) j++;
+      if (j === pos + 1 && j < str.length) j++;
+      return [str.slice(pos, j), j];
+    }
+    return [str[pos], pos + 1];
   }
 
-  function replaceBalanced2(str, cmd, fn) {
-    let out = "";
+  const SYMBOL_MAP = {
+    varepsilon: "ε", epsilon: "ε", Delta: "Δ", Gamma: "Γ", Pi: "Π", Sigma: "Σ",
+    Phi: "Φ", Psi: "Ψ", Omega: "Ω", Lambda: "Λ", Theta: "Θ",
+    alpha: "α", beta: "β", gamma: "γ", delta: "δ", zeta: "ζ", eta: "η",
+    theta: "θ", iota: "ι", kappa: "κ", lambda: "λ", mu: "μ", nu: "ν",
+    pi: "π", rho: "ρ", sigma: "σ", tau: "τ", phi: "φ", varphi: "φ",
+    chi: "χ", psi: "ψ", omega: "ω", ell: "ℓ", star: "★",
+    varnothing: "∅", emptyset: "∅", infty: "∞",
+    parallel: "∥", otimes: "⊗", oplus: "⊕", equiv: "≡", simeq: "≃", approx: "≈",
+    le: "≤", ge: "≥", ne: "≠", neq: "≠", implies: "⇒", iff: "⇔",
+    in: "∈", notin: "∉", subseteq: "⊆", times: "×", cdot: "·", circ: "∘",
+    to: "→", mapsto: "↦", forall: "∀", exists: "∃", land: "∧", wedge: "∧",
+    lor: "∨", vee: "∨", neg: "¬", sum: "∑", prod: "∏", pm: "±",
+    Pr: "Pr", min: "min", max: "max", log: "log", exp: "exp"
+  };
+
+  function renderMathNodes(tex) {
+    const frag = document.createDocumentFragment();
     let i = 0;
-    const prefix = cmd + "{";
-    while (i < str.length) {
-      const idx = str.indexOf(prefix, i);
-      if (idx === -1) { out += str.slice(i); break; }
-      out += str.slice(i, idx);
-      let d1 = 1, j = idx + prefix.length;
-      while (j < str.length && d1 > 0) {
-        if (str[j] === "{") d1++; else if (str[j] === "}") d1--;
-        j++;
+    while (i < tex.length) {
+      const ch = tex[i];
+      if (ch === "{") {
+        const [inner, next] = readBalanced(tex, i);
+        frag.appendChild(renderMathNodes(inner));
+        i = next;
+        continue;
       }
-      if (d1 === 0 && str[j] === "{") {
-        const a1 = str.slice(idx + prefix.length, j - 1);
-        let d2 = 1, k = j + 1;
-        while (k < str.length && d2 > 0) {
-          if (str[k] === "{") d2++; else if (str[k] === "}") d2--;
-          k++;
-        }
-        if (d2 === 0) {
-          const a2 = str.slice(j + 1, k - 1);
-          out += fn(a1, a2);
-          i = k;
+      if (ch === "^" || ch === "_") {
+        const tag = ch === "^" ? "sup" : "sub";
+        const [arg, next] = readBalanced(tex, i + 1);
+        const el = document.createElement(tag);
+        el.appendChild(renderMathNodes(arg));
+        frag.appendChild(el);
+        i = next;
+        continue;
+      }
+      if (ch === "\\") {
+        let j = i + 1;
+        while (j < tex.length && /[A-Za-z]/.test(tex[j])) j++;
+        if (j === i + 1) {
+          const esc = tex[i + 1] || "";
+          if (esc === "," || esc === ";") frag.appendChild(document.createTextNode("\u2009"));
+          else if (esc === "!") { /* thin negative space */ }
+          else frag.appendChild(document.createTextNode(esc));
+          i += 2;
           continue;
         }
+        const cmd = tex.slice(i + 1, j);
+        i = j;
+        if (cmd === "left" || cmd === "right") continue;
+        if (cmd === "frac") {
+          const [num, p1] = readBalanced(tex, i);
+          const [den, p2] = readBalanced(tex, p1);
+          const wrap = document.createElement("span");
+          wrap.className = "cadmo-frac";
+          const nEl = document.createElement("span");
+          nEl.className = "cadmo-num";
+          nEl.appendChild(renderMathNodes(num));
+          const dEl = document.createElement("span");
+          dEl.className = "cadmo-den";
+          dEl.appendChild(renderMathNodes(den));
+          wrap.appendChild(nEl);
+          wrap.appendChild(dEl);
+          frag.appendChild(wrap);
+          i = p2;
+          continue;
+        }
+        if (cmd === "binom") {
+          const [n, p1] = readBalanced(tex, i);
+          const [k, p2] = readBalanced(tex, p1);
+          frag.appendChild(document.createTextNode("C("));
+          frag.appendChild(renderMathNodes(n));
+          frag.appendChild(document.createTextNode(", "));
+          frag.appendChild(renderMathNodes(k));
+          frag.appendChild(document.createTextNode(")"));
+          i = p2;
+          continue;
+        }
+        if (cmd === "xrightarrow") {
+          const [lbl, next] = readBalanced(tex, i);
+          frag.appendChild(document.createTextNode(" —["));
+          frag.appendChild(renderMathNodes(lbl));
+          frag.appendChild(document.createTextNode("]→ "));
+          i = next;
+          continue;
+        }
+        if (cmd === "mathbb") {
+          const [arg, next] = readBalanced(tex, i);
+          const bb = { R: "ℝ", N: "ℕ", Z: "ℤ", Q: "ℚ", C: "ℂ" }[arg] || arg;
+          frag.appendChild(document.createTextNode(bb));
+          i = next;
+          continue;
+        }
+        if (cmd === "mathcal") {
+          const [arg, next] = readBalanced(tex, i);
+          const span = document.createElement("span");
+          span.className = "cadmo-cal";
+          span.textContent = arg;
+          frag.appendChild(span);
+          i = next;
+          continue;
+        }
+        if (
+          cmd === "mathrm" || cmd === "mathsf" || cmd === "operatorname" ||
+          cmd === "text" || cmd === "texttt" || cmd === "mathbf" ||
+          cmd === "boldsymbol" || cmd === "mathrel"
+        ) {
+          const [arg, next] = readBalanced(tex, i);
+          const span = document.createElement("span");
+          span.className = "cadmo-op";
+          if (cmd === "mathbf" || cmd === "boldsymbol") span.style.fontWeight = "600";
+          if (cmd === "text" || cmd === "mathrm" || cmd === "mathsf" || cmd === "operatorname") {
+            span.textContent = arg.replace(/\\_/g, "_");
+          } else {
+            span.appendChild(renderMathNodes(arg));
+          }
+          frag.appendChild(span);
+          i = next;
+          continue;
+        }
+        if (SYMBOL_MAP[cmd] !== undefined) {
+          frag.appendChild(document.createTextNode(SYMBOL_MAP[cmd]));
+          continue;
+        }
+        frag.appendChild(document.createTextNode(cmd));
+        continue;
       }
-      out += prefix;
-      i = idx + prefix.length;
+      if (/[A-Za-z]/.test(ch)) {
+        const v = document.createElement("var");
+        v.textContent = ch;
+        frag.appendChild(v);
+        i++;
+        continue;
+      }
+      frag.appendChild(document.createTextNode(ch));
+      i++;
     }
-    return out;
-  }
-
-  function prettyFallbackMath(tex) {
-    if (!tex) return "";
-    let s = tex;
-    s = replaceBalanced2(s, "\\frac", (a, b) => `(${a})/(${b})`);
-    s = replaceBalanced2(s, "\\binom", (n, k) => `C(${n}, ${k})`);
-    s = replaceBalanced1(s, "\\xrightarrow", (x) => `—[${x}]→`);
-    s = replaceBalanced1(s, "\\simeq_", (x) => `≃[${x}]`);
-    s = replaceBalanced1(s, "\\approx_", (x) => `≈[${x}]`);
-    for (const cmd of ["\\mathcal", "\\mathrm", "\\mathbf", "\\boldsymbol", "\\operatorname", "\\mathsf", "\\text", "\\texttt", "\\mathrel"]) {
-      s = replaceBalanced1(s, cmd, (x) => x);
-    }
-    return s
-      .replace(/\\mathbb\{R\}_\{\\ge 0\}\^\{\\infty\}/g, "ℝ≥0∞")
-      .replace(/\\mathbb\{R\}_\{\\ge 0\}/g, "ℝ≥0")
-      .replace(/\\mathbb\{R\}/g, "ℝ")
-      .replace(/\\mathbb\{N\}/g, "ℕ")
-      .replace(/\\mathbb\{Z\}/g, "ℤ")
-      .replace(/\\mathbb\{Q\}/g, "ℚ")
-      .replace(/\\varepsilon/g, "ε")
-      .replace(/\\epsilon/g, "ε")
-      .replace(/\\Delta/g, "Δ")
-      .replace(/\\Gamma/g, "Γ")
-      .replace(/\\Pi/g, "Π")
-      .replace(/\\Sigma/g, "Σ")
-      .replace(/\\Phi/g, "Φ")
-      .replace(/\\pi\b/g, "π")
-      .replace(/\\sigma\b/g, "σ")
-      .replace(/\\kappa\b/g, "κ")
-      .replace(/\\alpha\b/g, "α")
-      .replace(/\\beta\b/g, "β")
-      .replace(/\\gamma\b/g, "γ")
-      .replace(/\\delta\b/g, "δ")
-      .replace(/\\rho\b/g, "ρ")
-      .replace(/\\tau\b/g, "τ")
-      .replace(/\\phi\b/g, "φ")
-      .replace(/\\varphi\b/g, "φ")
-      .replace(/\\psi\b/g, "ψ")
-      .replace(/\\iota\b/g, "ι")
-      .replace(/\\theta\b/g, "θ")
-      .replace(/\\lambda\b/g, "λ")
-      .replace(/\\mu\b/g, "μ")
-      .replace(/\\nu\b/g, "ν")
-      .replace(/\\ell\b/g, "ℓ")
-      .replace(/\\star\b/g, "★")
-      .replace(/\\varnothing\b/g, "∅")
-      .replace(/\\emptyset\b/g, "∅")
-      .replace(/\\parallel/g, "∥")
-      .replace(/\\otimes\b/g, "⊗")
-      .replace(/\\oplus\b/g, "⊕")
-      .replace(/\\equiv\b/g, "≡")
-      .replace(/\\simeq\b/g, "≃")
-      .replace(/\\approx\b/g, "≈")
-      .replace(/\\le\b/g, "≤")
-      .replace(/\\ge\b/g, "≥")
-      .replace(/\\ne\b/g, "≠")
-      .replace(/\\neq\b/g, "≠")
-      .replace(/\\implies\b/g, "⇒")
-      .replace(/\\iff\b/g, "⇔")
-      .replace(/\\in\b/g, "∈")
-      .replace(/\\notin\b/g, "∉")
-      .replace(/\\subseteq\b/g, "⊆")
-      .replace(/\\times\b/g, "×")
-      .replace(/\\cdot\b/g, "·")
-      .replace(/\\circ\b/g, "∘")
-      .replace(/\\to\b/g, "→")
-      .replace(/\\mapsto\b/g, "↦")
-      .replace(/\\forall\b/g, "∀")
-      .replace(/\\exists\b/g, "∃")
-      .replace(/\\land\b/g, "∧")
-      .replace(/\\wedge\b/g, "∧")
-      .replace(/\\lor\b/g, "∨")
-      .replace(/\\vee\b/g, "∨")
-      .replace(/\\neg\b/g, "¬")
-      .replace(/\\sum\b/g, "∑")
-      .replace(/\\prod\b/g, "∏")
-      .replace(/\\infty\b/g, "∞")
-      .replace(/\\Pr\b/g, "Pr")
-      .replace(/\\min\b/g, "min")
-      .replace(/\\max\b/g, "max")
-      .replace(/\\left\(/g, "(")
-      .replace(/\\right\)/g, ")")
-      .replace(/\\left\[/g, "[")
-      .replace(/\\right\]/g, "]")
-      .replace(/\\left\|/g, "|")
-      .replace(/\\right\|/g, "|")
-      .replace(/\\left\\\{/g, "{")
-      .replace(/\\right\\\}/g, "}")
-      .replace(/\\\{/g, "{")
-      .replace(/\\\}/g, "}")
-      .replace(/\\,/g, " ")
-      .replace(/\\;/g, " ")
-      .replace(/\\!/g, "")
-      .replace(/\\_/g, "_")
-      .replace(/\^\{\*\}/g, "*")
-      .replace(/_\{([A-Za-z0-9']+?)\}/g, "_$1")
-      .replace(/\^\{([A-Za-z0-9'+-]+?)\}/g, "^$1");
+    return frag;
   }
 
   function renderMathSpan(tex, displayMode = false) {
     const el = document.createElement(displayMode ? "div" : "span");
     el.className = displayMode ? "cadmo-display-math" : "cadmo-math";
-    el.dataset.latex = tex;
+    el.dataset.latex = tex || "";
     if (window.katex && typeof window.katex.render === "function") {
       try {
-        window.katex.render(tex, el, { displayMode, throwOnError: false });
+        window.katex.render(tex || "", el, { displayMode, throwOnError: false });
         return el;
       } catch (_) {
         /* fallback below */
       }
     }
-    el.textContent = prettyFallbackMath(tex);
+    el.appendChild(renderMathNodes(tex || ""));
     return el;
   }
 
@@ -228,7 +261,6 @@
     return el;
   }
 
-  /* Parse mixed prose containing inline \(...\) math delimiters into rich DOM nodes. */
   function renderMixedText(str) {
     const frag = document.createDocumentFragment();
     if (!str) return frag;
@@ -269,11 +301,10 @@
       const ins = inspectorByKey.get(sym.key);
       const isSelected = state.inspector && state.inspector.type === "symbol" &&
         state.inspector.item.key === sym.key;
-      const btn = h("button", {
+      return h("button", {
         type: "button",
         class: "cadmo-sym",
         "aria-pressed": isSelected ? "true" : "false",
-        title: ins ? `Inspect ${sym.display}` : sym.display,
         onClick: () => {
           if (ins) {
             state.inspector = { type: "symbol", item: ins };
@@ -281,11 +312,10 @@
           }
         }
       }, sym.isMath ? renderMathSpan(sym.display, false) : sym.display);
-      return btn;
     }
     if (inl.citation !== undefined) {
       const c = inl.citation;
-      return h("span", { class: "cadmo-citation", title: c.detail || "" }, `[${c.label}]`);
+      return h("span", { title: c.detail || "" }, `[${c.label}]`);
     }
     return document.createTextNode("");
   }
@@ -296,12 +326,6 @@
     return frag;
   }
 
-  /* ------------------------------------------------------------------------
-     Paper mode smart wrapper inlining: in Paper mode, a `step` marked
-     `isWrapper: true` with non-empty children transparently surfaces its
-     children instead of cluttering Level 0 with a Lean forwarding wrapper.
-     Auditor mode shows every declaration boundary verbatim.
-     ------------------------------------------------------------------------ */
   function projectNodes(nodes) {
     if (!Array.isArray(nodes)) return [];
     if (state.mode === "auditor") return nodes;
@@ -344,7 +368,7 @@
       type: "button",
       class: "cadmo-goal-btn",
       "aria-pressed": active ? "true" : "false",
-      title: "Inspect checked Lean goal state",
+      title: "Show checked proof state in margin",
       onClick: () => {
         state.inspector = { type: "goal", goal, label };
         renderAll();
@@ -352,57 +376,39 @@
     }, "⊢");
   }
 
-  function renderDiagramHtml(html) {
-    const wrap = h("div", { class: "cadmo-figure" });
-    wrap.innerHTML = html;
-    return wrap;
-  }
-
   function renderProofNode(node) {
     if (!node) return null;
 
     if (node.kind === "flowNote") {
-      return h("aside", { class: "cadmo-flow-note" },
-        h("span", { class: "cadmo-flow-badge" }, "Note"),
-        node.text || ""
-      );
+      return h("p", { class: "cadmo-flow-note" }, node.text || "");
     }
 
     if (node.kind === "figure") {
-      const fig = h("figure", { class: "cadmo-figure" });
-      const body = h("div", {});
-      body.innerHTML = node.html || "";
-      fig.appendChild(body);
-      if (node.caption && node.caption.length > 0) {
-        fig.appendChild(h("figcaption", { class: "cadmo-figure-caption" }, renderInlines(node.caption)));
-      }
-      return fig;
+      return null; // Diagrams omitted from reading flow until bespoke SVG renderer lands
     }
 
     if (node.kind === "routineReceipt") {
       const hasDetails = Array.isArray(node.details) && node.details.length > 0;
       const isOpen = state.expanded.has(node.id);
-      const chip = h("div", { class: "cadmo-routine" },
+      const row = h("div", { class: "cadmo-routine" },
         hasDetails
           ? h("button", {
               type: "button",
               class: "cadmo-toggle",
               "aria-expanded": isOpen ? "true" : "false",
-              onClick: () => { toggleId(node.id); }
+              onClick: () => toggleId(node.id)
             }, isOpen ? "⊖" : "⊕")
           : null,
-        h("span", { class: "cadmo-routine-chip" },
-          `${node.summary || "Routine calculation"} (${node.stepCount || 1} checked)`
-        ),
+        `(${node.summary || "routine calculation"}; ${node.stepCount || 1} checked)`,
         renderGoalButton(node.goal, node.summary || "Routine step")
       );
       if (hasDetails && isOpen) {
-        const box = h("div", { class: "cadmo-children" },
-          ...projectNodes(node.details).map(renderProofNode)
+        return h("div", { class: "cadmo-node" },
+          row,
+          h("div", { class: "cadmo-children" }, ...projectNodes(node.details).map(renderProofNode))
         );
-        return h("div", { class: "cadmo-node" }, chip, box);
       }
-      return h("div", { class: "cadmo-node" }, chip);
+      return h("div", { class: "cadmo-node" }, row);
     }
 
     if (node.kind === "calcChain") {
@@ -423,8 +429,7 @@
                     type: "button",
                     class: "cadmo-toggle",
                     "aria-expanded": isOpen ? "true" : "false",
-                    title: isOpen ? "Collapse step justification" : "Expand step justification",
-                    onClick: () => { toggleId(sid); }
+                    onClick: () => toggleId(sid)
                   }, isOpen ? "⊖" : "⊕")
                 : null,
               " ",
@@ -436,7 +441,6 @@
           rows.push(
             h("tr", { class: "cadmo-calc-expand-row" },
               h("td", { colspan: "4" },
-                st.diagramHtml ? renderDiagramHtml(st.diagramHtml) : null,
                 h("div", { class: "cadmo-children" }, ...ch.map(renderProofNode))
               )
             )
@@ -454,7 +458,6 @@
       );
     }
 
-    // Default: `step`
     const children = projectNodes(node.children || []);
     const hasChildren = children.length > 0;
     const isOpen = state.expanded.has(node.id);
@@ -466,17 +469,16 @@
               class: "cadmo-toggle",
               "aria-expanded": isOpen ? "true" : "false",
               title: isOpen ? "Collapse subproof" : "Expand subproof",
-              onClick: () => { toggleId(node.id); }
+              onClick: () => toggleId(node.id)
             }, isOpen ? "⊖" : "⊕")
           : h("span", { class: "cadmo-toggle-spacer", "aria-hidden": "true" }),
         h("div", { class: "cadmo-node-body" },
           renderInlines(node.content || []),
-          node.isWrapper ? h("span", { class: "cadmo-wrapper-tag" }, "wrapper") : null,
+          node.isWrapper ? h("span", { class: "cadmo-wrapper-tag" }, "[wrapper]") : null,
           node.originDecl ? h("span", { class: "cadmo-origin-tag" }, node.originDecl) : null,
           renderGoalButton(node.goal, node.originDecl || "Proof step")
         )
       ),
-      node.diagramHtml ? renderDiagramHtml(node.diagramHtml) : null,
       hasChildren
         ? h("div", { class: "cadmo-children", hidden: !isOpen },
             ...children.map(renderProofNode)
@@ -492,10 +494,12 @@
   }
 
   /* ------------------------------------------------------------------------
-     Type-Aware Margin Inspector (Symbols, Goal States, Axiom Footprint)
+     Tufte Sidenote Margin: completely blank by default.
+     Only renders what the reader explicitly requested.
      ------------------------------------------------------------------------ */
-  function renderInspectorPanel() {
+  function renderMargin(glossaryItems) {
     const items = [];
+
     if (state.inspector) {
       if (state.inspector.type === "symbol") {
         const ins = state.inspector.item;
@@ -505,9 +509,7 @@
         if (kind.interfaceTable) {
           kicker = "Interface";
           const it = kind.interfaceTable;
-          if (it.domainLatex) {
-            body.push(h("p", {}, "Domain: ", renderMathSpan(it.domainLatex, false)));
-          }
+          if (it.domainLatex) body.push(h("p", {}, "Domain: ", renderMathSpan(it.domainLatex, false)));
           const rows = (it.ports || []).map((p) =>
             h("tr", {},
               h("td", {}, p.port),
@@ -521,7 +523,7 @@
               h("tbody", {}, ...rows)
             ));
           }
-          if (it.budgetNote) body.push(h("p", {}, it.budgetNote));
+          if (it.budgetNote) body.push(h("p", {}, renderMixedText(it.budgetNote)));
         } else if (kind.dslPseudocode) {
           kicker = "System / Converter";
           const dp = kind.dslPseudocode;
@@ -531,7 +533,6 @@
           kicker = "CC Assembly";
           const d = kind.ccDiagram;
           if (d.summaryLatex) body.push(renderMathSpan(d.summaryLatex, true));
-          if (d.svgOrHtml) body.push(renderDiagramHtml(d.svgOrHtml));
         } else if (kind.mathDefinition) {
           kicker = "Definition";
           const md = kind.mathDefinition;
@@ -550,27 +551,26 @@
           body.push(h("p", {}, renderMixedText(kind.parameter.roleDescription || "")));
         }
 
-        const leanDetails = h("details", { class: "cadmo-lean-details" },
-          h("summary", {}, "Exact Lean signature"),
-          h("div", { class: "cadmo-lean-code" },
-            (ins.leanName ? `${ins.leanName} :\n` : "") + (ins.leanType || "")
-          )
-        );
-
-        items.push(h("section", { class: "cadmo-inspector-card" },
-          h("div", { class: "cadmo-inspector-head" },
+        items.push(h("section", { class: "cadmo-sidenote" },
+          h("div", { class: "cadmo-sidenote-head" },
             h("div", {},
-              h("div", { class: "cadmo-inspector-kicker" }, kicker),
-              h("h3", { class: "cadmo-inspector-title" }, renderMathSpan(ins.display, false))
+              h("div", { class: "cadmo-sidenote-kicker" }, kicker),
+              h("h3", { class: "cadmo-sidenote-title" }, renderMathSpan(ins.display, false))
             ),
             h("button", {
               type: "button",
-              class: "cadmo-btn",
+              class: "cadmo-close-btn",
+              "aria-label": "Dismiss note",
               onClick: () => { state.inspector = null; renderAll(); }
-            }, "Close")
+            }, "×")
           ),
           ...body,
-          leanDetails
+          h("details", { class: "cadmo-lean-details" },
+            h("summary", {}, "Lean signature"),
+            h("div", { class: "cadmo-lean-code" },
+              (ins.leanName ? `${ins.leanName} :\n` : "") + (ins.leanType || "")
+            )
+          )
         ));
       } else if (state.inspector.type === "goal") {
         const g = state.inspector.goal;
@@ -580,25 +580,26 @@
             renderMixedText(c.description || "")
           )
         );
-        items.push(h("section", { class: "cadmo-inspector-card" },
-          h("div", { class: "cadmo-inspector-head" },
+        items.push(h("section", { class: "cadmo-sidenote" },
+          h("div", { class: "cadmo-sidenote-head" },
             h("div", {},
-              h("div", { class: "cadmo-inspector-kicker" }, "Checked Proof State"),
-              h("h3", { class: "cadmo-inspector-title" }, state.inspector.label || "Goal")
+              h("div", { class: "cadmo-sidenote-kicker" }, "Proof state"),
+              h("h3", { class: "cadmo-sidenote-title" }, state.inspector.label || "Goal")
             ),
             h("button", {
               type: "button",
-              class: "cadmo-btn",
+              class: "cadmo-close-btn",
+              "aria-label": "Dismiss note",
               onClick: () => { state.inspector = null; renderAll(); }
-            }, "Close")
+            }, "×")
           ),
           ctxItems.length > 0
             ? h("div", {},
-                h("div", { class: "cadmo-inspector-kicker" }, "Context"),
+                h("div", { class: "cadmo-sidenote-kicker" }, "Context"),
                 h("ul", { class: "cadmo-goal-ctx" }, ...ctxItems)
               )
             : null,
-          h("div", { class: "cadmo-inspector-kicker" }, "Goal"),
+          h("div", { class: "cadmo-sidenote-kicker" }, "Goal"),
           h("div", { class: "cadmo-goal-target" }, renderMathSpan(g.targetLatex || "", false)),
           g.rawLeanGoal
             ? h("details", { class: "cadmo-lean-details" },
@@ -610,73 +611,116 @@
       } else if (state.inspector.type === "axioms") {
         const e = state.inspector.entry;
         const ax = e.axioms || { axioms: [], hasSorry: false };
-        items.push(h("section", { class: "cadmo-inspector-card" },
-          h("div", { class: "cadmo-inspector-head" },
+        items.push(h("section", { class: "cadmo-sidenote" },
+          h("div", { class: "cadmo-sidenote-head" },
             h("div", {},
-              h("div", { class: "cadmo-inspector-kicker" }, "Kernel Axiom Audit"),
-              h("h3", { class: "cadmo-inspector-title" }, e.title || e.declaration)
+              h("div", { class: "cadmo-sidenote-kicker" }, "Kernel verification"),
+              h("h3", { class: "cadmo-sidenote-title" }, e.title || e.declaration)
             ),
             h("button", {
               type: "button",
-              class: "cadmo-btn",
+              class: "cadmo-close-btn",
+              "aria-label": "Dismiss note",
               onClick: () => { state.inspector = null; renderAll(); }
-            }, "Close")
+            }, "×")
           ),
           h("p", {}, ax.hasSorry
             ? "Warning: this declaration depends on sorryAx."
-            : "Verified kernel proof with standard Lean axioms only."),
+            : "Verified by the Lean kernel using standard axioms only."),
           h("div", { class: "cadmo-lean-code" },
-            `Declaration: ${e.declaration}\nAxioms:\n` +
-            ((ax.axioms && ax.axioms.length > 0) ? ax.axioms.map((a) => `  • ${a}`).join("\n") : "  (none)")
+            `${e.declaration}\n\n` +
+            ((ax.axioms && ax.axioms.length > 0) ? ax.axioms.join("\n") : "(no axioms)")
           )
         ));
       }
-    } else {
-      items.push(h("div", { class: "cadmo-inspector-card" },
-        h("div", { class: "cadmo-inspector-kicker" }, "Interactive Inspector"),
-        h("p", { style: "margin:0.45rem 0 0;color:var(--cadmo-ink-soft);" },
-          "Click any underlined symbol to inspect its interface ports, pseudocode, or definition; " +
-          "click ⊕ to descend into a proof step, or ⊢ to view the checked Lean proof state."
-        )
+    }
+
+    if (state.glossaryOpen && glossaryItems.length > 0) {
+      const q = (state.glossaryQuery || "").trim().toLowerCase();
+      const filtered = q
+        ? glossaryItems.filter((ins) =>
+            (ins.display || "").toLowerCase().includes(q) ||
+            (ins.key || "").toLowerCase().includes(q)
+          )
+        : glossaryItems;
+
+      const grouped = new Map();
+      for (const cat of ["Interfaces", "Systems & Converters", "Proof Witnesses", "Definitions"]) {
+        grouped.set(cat, []);
+      }
+      for (const ins of filtered) {
+        const cat = glossaryCategory(ins);
+        if (!grouped.has(cat)) grouped.set(cat, []);
+        grouped.get(cat).push(ins);
+      }
+
+      const groupNodes = [];
+      for (const [cat, list] of grouped.entries()) {
+        if (list.length === 0) continue;
+        groupNodes.push(
+          h("div", { class: "cadmo-glossary-group" },
+            h("h5", {}, cat),
+            h("ul", { class: "cadmo-glossary-list" },
+              ...list.map((ins) =>
+                h("li", {},
+                  h("button", {
+                    type: "button",
+                    class: "cadmo-glossary-item",
+                    onClick: () => { state.inspector = { type: "symbol", item: ins }; renderAll(); }
+                  }, renderMathSpan(ins.display, false))
+                )
+              )
+            )
+          )
+        );
+      }
+
+      items.push(h("section", { class: "cadmo-sidenote" },
+        h("div", { class: "cadmo-sidenote-head" },
+          h("div", { class: "cadmo-sidenote-kicker" }, `Glossary (${glossaryItems.length})`),
+          h("button", {
+            type: "button",
+            class: "cadmo-close-btn",
+            "aria-label": "Close glossary",
+            onClick: () => { state.glossaryOpen = false; renderAll(); }
+          }, "×")
+        ),
+        glossaryItems.length > 6
+          ? h("input", {
+              type: "search",
+              class: "cadmo-glossary-filter",
+              placeholder: "Filter…",
+              value: state.glossaryQuery,
+              onInput: (ev) => {
+                state.glossaryQuery = ev.target.value;
+                renderAll();
+              }
+            })
+          : null,
+        ...groupNodes
       ));
     }
 
-    if ((doc.inspectors || []).length > 0) {
-      items.push(h("div", { class: "cadmo-symbol-index" },
-        h("h4", {}, "Symbols & Definitions"),
-        h("div", { class: "cadmo-symbol-chips" },
-          ...(doc.inspectors || []).map((ins) =>
-            h("button", {
-              type: "button",
-              class: "cadmo-symbol-chip",
-              onClick: () => { state.inspector = { type: "symbol", item: ins }; renderAll(); }
-            }, renderMathSpan(ins.display, false))
-          )
-        )
-      ));
-    }
-    return h("aside", { class: "cadmo-margin", "aria-label": "Inspector margin" }, ...items);
+    return h("aside", { class: "cadmo-margin", "aria-label": "Margin notes" }, ...items);
   }
 
-  function renderEntry(entry) {
+  function renderEntry(entry, idx) {
     const ax = entry.axioms || { axioms: [], hasSorry: false };
     const proofNodes = projectNodes(entry.proof || []);
     return h("article", { class: "cadmo-entry", id: `decl-${entry.declaration}` },
       h("header", { class: "cadmo-entry-head" },
         h("h2", { class: "cadmo-entry-heading" },
-          h("span", { class: "cadmo-entry-kind" }, entry.header || "Theorem"),
-          entry.title ? h("span", { class: "cadmo-entry-title" }, `(${entry.title}).`) : null
+          h("span", { class: "cadmo-entry-kind" }, `${entry.header || "Theorem"} ${idx + 1}.`),
+          entry.title ? h("span", { class: "cadmo-entry-title" }, ` (${entry.title})`) : null
         ),
-        h("div", { class: "cadmo-entry-meta" },
-          h("button", {
-            type: "button",
-            class: "cadmo-axiom-pill" + (ax.hasSorry ? " has-sorry" : ""),
-            onClick: () => { state.inspector = { type: "axioms", entry }; renderAll(); }
-          }, ax.hasSorry ? "⚠ sorry" : `✓ ${(ax.axioms || []).length} axioms`)
-        )
+        h("button", {
+          type: "button",
+          class: "cadmo-axiom-link" + (ax.hasSorry ? " has-sorry" : ""),
+          onClick: () => { state.inspector = { type: "axioms", entry }; renderAll(); }
+        }, ax.hasSorry ? "sorry" : "axioms")
       ),
       entry.ambient
-        ? h("div", { class: "cadmo-ambient" },
+        ? h("p", { class: "cadmo-ambient" },
             h("span", { class: "cadmo-ambient-label" }, "Setting."),
             renderInlines(entry.ambient.summary || [])
           )
@@ -684,7 +728,6 @@
       h("div", { class: "cadmo-statement" },
         ...(entry.statement || []).map((para) => h("p", {}, renderInlines(para)))
       ),
-      entry.diagramHtml ? renderDiagramHtml(entry.diagramHtml) : null,
       proofNodes.length > 0
         ? h("section", { class: "cadmo-proof" },
             h("span", { class: "cadmo-proof-lead" }, "Proof."),
@@ -697,57 +740,63 @@
 
   function renderAll() {
     document.documentElement.dataset.mode = state.mode;
-    if (state.theme === "light" || state.theme === "dark") {
-      document.documentElement.dataset.theme = state.theme;
-    } else {
-      delete document.documentElement.dataset.theme;
-    }
+    document.documentElement.dataset.theme = state.theme;
 
-    const toolbar = h("nav", { class: "cadmo-toolbar", "aria-label": "Document controls" },
-      h("div", { class: "cadmo-toolbar-inner" },
-        h("div", { class: "cadmo-running-head" }, doc.title || "Constructive Cryptography"),
-        h("div", { class: "cadmo-controls" },
-          h("div", { class: "cadmo-segmented", role: "group", "aria-label": "Disclosure mode" },
-            h("button", {
+    const glossaryItems = (doc.inspectors || []).filter(isGlossaryWorthy);
+    const hasContentsLink = !!document.querySelector('link[rel="contents"], a[data-cadmo-contents]');
+
+    const runningBar = h("header", { class: "cadmo-running-bar" },
+      h("div", { class: "cadmo-running-head" },
+        hasContentsLink ? null : (doc.title || "Constructive Cryptography")
+      ),
+      h("nav", { class: "cadmo-controls", "aria-label": "Reading options" },
+        h("button", {
+          type: "button",
+          class: "cadmo-text-btn",
+          "aria-pressed": state.mode === "paper" ? "true" : "false",
+          onClick: () => { state.mode = "paper"; renderAll(); }
+        }, "Paper"),
+        h("span", { class: "cadmo-sep" }, "·"),
+        h("button", {
+          type: "button",
+          class: "cadmo-text-btn",
+          "aria-pressed": state.mode === "auditor" ? "true" : "false",
+          onClick: () => { state.mode = "auditor"; renderAll(); }
+        }, "Auditor"),
+        h("span", { class: "cadmo-sep" }, "·"),
+        h("button", {
+          type: "button",
+          class: "cadmo-text-btn",
+          onClick: () => {
+            const allIds = [];
+            for (const e of doc.entries || []) collectAllExpandableIds(e.proof || [], allIds);
+            if (state.expanded.size > 0) state.expanded.clear();
+            else allIds.forEach((id) => state.expanded.add(id));
+            renderAll();
+          }
+        }, state.expanded.size > 0 ? "Collapse proofs" : "Expand proofs"),
+        glossaryItems.length > 0 ? h("span", { class: "cadmo-sep" }, "·") : null,
+        glossaryItems.length > 0
+          ? h("button", {
               type: "button",
-              "aria-pressed": state.mode === "paper" ? "true" : "false",
-              onClick: () => { state.mode = "paper"; renderAll(); }
-            }, "Paper"),
-            h("button", {
-              type: "button",
-              "aria-pressed": state.mode === "auditor" ? "true" : "false",
-              onClick: () => { state.mode = "auditor"; renderAll(); }
-            }, "Auditor")
-          ),
-          h("button", {
-            type: "button",
-            class: "cadmo-btn",
-            onClick: () => {
-              for (const e of doc.entries || []) {
-                for (const id of collectAllExpandableIds(e.proof || [])) state.expanded.add(id);
-              }
-              renderAll();
-            }
-          }, "Expand all"),
-          h("button", {
-            type: "button",
-            class: "cadmo-btn",
-            onClick: () => { state.expanded.clear(); renderAll(); }
-          }, "Collapse all"),
-          h("button", {
-            type: "button",
-            class: "cadmo-btn",
-            onClick: () => {
-              state.theme = state.theme === "dark" ? "light" : "dark";
-              renderAll();
-            }
-          }, state.theme === "dark" ? "Light ink" : "Dark ink")
-        )
+              class: "cadmo-text-btn",
+              "aria-pressed": state.glossaryOpen ? "true" : "false",
+              onClick: () => { state.glossaryOpen = !state.glossaryOpen; renderAll(); }
+            }, `Glossary (${glossaryItems.length})`)
+          : null,
+        h("span", { class: "cadmo-sep" }, "·"),
+        h("button", {
+          type: "button",
+          class: "cadmo-text-btn",
+          onClick: () => {
+            state.theme = state.theme === "dark" ? "light" : "dark";
+            renderAll();
+          }
+        }, state.theme === "dark" ? "Paper" : "Dark")
       )
     );
 
     const header = h("header", { class: "cadmo-doc-header" },
-      h("div", { class: "cadmo-kicker" }, "Constructive Cryptography · Checked Informalization"),
       h("h1", { class: "cadmo-doc-title" }, doc.title || "Untitled Document"),
       doc.subtitle ? h("p", { class: "cadmo-doc-subtitle" }, doc.subtitle) : null
     );
@@ -757,11 +806,11 @@
         header,
         ...(doc.entries || []).map(renderEntry)
       ),
-      renderInspectorPanel()
+      renderMargin(glossaryItems)
     );
 
     rootEl.innerHTML = "";
-    rootEl.appendChild(toolbar);
+    rootEl.appendChild(runningBar);
     rootEl.appendChild(shell);
   }
 

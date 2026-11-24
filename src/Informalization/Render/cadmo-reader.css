@@ -1,189 +1,146 @@
 /* ==========================================================================
-   ETH CADMO Thesis / Monograph Aesthetic (memoir + Herman Zapf's Palatino)
-   Designed for Constructive Cryptography human-first informalization.
+   ETH CADMO Monograph — Print-Authentic Editorial Stylesheet
+   Grounded in Tufte CSS, Butterick's Practical Typography, Kerodon, and
+   ETH Zurich CADMO (memoir + Herman Zapf's Palatino).
+   No cards. No drop shadows. No sticky app chrome. Text is the interface.
    ========================================================================== */
 
 :root {
-  /* Warm paper-ivory light palette (ETH CADMO ink & quiet slate accent) */
-  --cadmo-bg: #fdfcfa;
-  --cadmo-surface: #f6f4ef;
-  --cadmo-surface-raised: #ffffff;
-  --cadmo-ink: #1c1b19;
-  --cadmo-ink-soft: #4a4843;
-  --cadmo-muted: #6e6a62;
-  --cadmo-rule: #dedad0;
-  --cadmo-rule-strong: #c2bdb0;
-  --cadmo-accent: #1f4e79;        /* Muted ETH slate-blue */
-  --cadmo-accent-soft: #edf3f8;
-  --cadmo-accent-ink: #163a5c;
-  --cadmo-note-bg: #f8f6f0;
-  --cadmo-note-border: #d5cfc1;
-  --cadmo-ok: #256444;
-  --cadmo-warn: #8c5319;
-  --cadmo-shadow: 0 1px 2px rgba(28, 27, 25, 0.04), 0 6px 18px rgba(28, 27, 25, 0.05);
+  --paper: #fffff8;
+  --paper-alt: #f5f4eb;
+  --ink: #111111;
+  --ink-secondary: #4a4a45;
+  --ink-muted: #76756e;
+  --rule: #d8d6cc;
+  --rule-strong: #111111;
+  --accent: #1b3d63;        /* Quiet Swiss academic blue-black */
+  --accent-subtle: #edf2f7;
+  --warn: #8a2c17;
 
-  /* Typography */
-  --cadmo-serif: "Palatino Linotype", "URW Palladio L", "TeX Gyre Pagella",
-                 "Book Antiqua", Palatino, "Liberation Serif", Georgia, serif;
-  --cadmo-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
-                system-ui, sans-serif;
-  --cadmo-mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas,
-                "Liberation Mono", monospace;
+  --font-body: "Palatino Linotype", "URW Palladio L", "TeX Gyre Pagella",
+               "Book Antiqua", Palatino, Charter, Georgia, serif;
+  --font-math: "STIX Two Math", "Cambria Math", "TeX Gyre Pagella Math",
+               "Palatino Linotype", Palatino, serif;
+  --font-mono: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
 
-  /* Proportions: classic monograph ~64–68ch measure + generous margin */
-  --cadmo-measure: 43rem;
-  --cadmo-margin-width: 21.5rem;
-  --cadmo-gap: 2.75rem;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --cadmo-bg: #16171a;
-    --cadmo-surface: #1d1f24;
-    --cadmo-surface-raised: #22252b;
-    --cadmo-ink: #e8e6e1;
-    --cadmo-ink-soft: #c5c2ba;
-    --cadmo-muted: #939088;
-    --cadmo-rule: #2d3038;
-    --cadmo-rule-strong: #404450;
-    --cadmo-accent: #7aaad8;
-    --cadmo-accent-soft: #1d2936;
-    --cadmo-accent-ink: #a9cbed;
-    --cadmo-note-bg: #1c1e22;
-    --cadmo-note-border: #333742;
-    --cadmo-ok: #68b88d;
-    --cadmo-warn: #e0a458;
-    --cadmo-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.35);
-  }
+  --measure: 38rem;         /* ~62–65 characters per line (Butterick/Bringhurst) */
+  --margin-col: 18rem;
+  --gutter: 3.5rem;
 }
 
 :root[data-theme="dark"] {
-  --cadmo-bg: #16171a;
-  --cadmo-surface: #1d1f24;
-  --cadmo-surface-raised: #22252b;
-  --cadmo-ink: #e8e6e1;
-  --cadmo-ink-soft: #c5c2ba;
-  --cadmo-muted: #939088;
-  --cadmo-rule: #2d3038;
-  --cadmo-rule-strong: #404450;
-  --cadmo-accent: #7aaad8;
-  --cadmo-accent-soft: #1d2936;
-  --cadmo-accent-ink: #a9cbed;
-  --cadmo-note-bg: #1c1e22;
-  --cadmo-note-border: #333742;
-  --cadmo-ok: #68b88d;
-  --cadmo-warn: #e0a458;
-  --cadmo-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.35);
+  --paper: #161614;
+  --paper-alt: #1f1f1c;
+  --ink: #e4e2da;
+  --ink-secondary: #b6b3a8;
+  --ink-muted: #848177;
+  --rule: #2e2e29;
+  --rule-strong: #c8c5ba;
+  --accent: #8cb4dc;
+  --accent-subtle: #1e2833;
+  --warn: #df866c;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
 
 html {
   font-size: 17px;
-  scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
 body {
   margin: 0;
-  background: var(--cadmo-bg);
-  color: var(--cadmo-ink);
-  font-family: var(--cadmo-serif);
-  line-height: 1.66;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  line-height: 1.68;
   font-kerning: normal;
   font-variant-numeric: oldstyle-nums proportional-nums;
 }
 
-/* Top quiet control bar */
-.cadmo-toolbar {
-  position: sticky;
-  top: 0;
-  z-index: 40;
-  background: color-mix(in srgb, var(--cadmo-bg) 92%, transparent);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--cadmo-rule);
+a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--rule);
+  text-underline-offset: 3px;
 }
 
-.cadmo-toolbar-inner {
-  max-width: calc(var(--cadmo-measure) + var(--cadmo-margin-width) + var(--cadmo-gap) + 4rem);
+a:hover {
+  color: var(--accent);
+  text-decoration-color: var(--accent);
+}
+
+/* ==========================================================================
+   Non-sticky print running head (plain serif links, zero app chrome)
+   ========================================================================== */
+.cadmo-running-bar {
+  max-width: calc(var(--measure) + var(--margin-col) + var(--gutter) + 4rem);
   margin: 0 auto;
-  padding: 0.65rem 2rem;
+  padding: 1.6rem 2rem 0.7rem;
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  gap: 0.75rem 1.5rem;
+  gap: 0.5rem 2rem;
+  border-bottom: 1px solid var(--rule);
+  font-size: 0.85rem;
+  color: var(--ink-muted);
 }
 
 .cadmo-running-head {
   font-variant-caps: all-small-caps;
   letter-spacing: 0.08em;
-  font-size: 0.85rem;
-  color: var(--cadmo-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .cadmo-controls {
   display: flex;
-  align-items: center;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  font-family: var(--cadmo-sans);
-  font-size: 0.78rem;
+  align-items: baseline;
+  gap: 0.55rem;
+  font-style: italic;
 }
 
-.cadmo-segmented {
-  display: inline-flex;
-  border: 1px solid var(--cadmo-rule-strong);
-  border-radius: 999px;
-  padding: 2px;
-  background: var(--cadmo-surface);
+.cadmo-sep {
+  font-style: normal;
+  color: var(--rule);
+  user-select: none;
 }
 
-.cadmo-segmented button {
+.cadmo-text-btn {
+  appearance: none;
   border: 0;
-  background: transparent;
-  color: var(--cadmo-muted);
+  background: none;
+  padding: 0;
+  margin: 0;
   font: inherit;
-  padding: 0.22rem 0.72rem;
-  border-radius: 999px;
+  color: var(--ink-muted);
   cursor: pointer;
-  transition: background 140ms ease, color 140ms ease;
 }
 
-.cadmo-segmented button[aria-pressed="true"] {
-  background: var(--cadmo-accent);
-  color: #ffffff;
-  font-weight: 500;
+.cadmo-text-btn:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
-.cadmo-btn {
-  border: 1px solid var(--cadmo-rule-strong);
-  background: var(--cadmo-surface-raised);
-  color: var(--cadmo-ink-soft);
-  font: inherit;
-  padding: 0.26rem 0.68rem;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: border-color 140ms ease, color 140ms ease, background 140ms ease;
+.cadmo-text-btn[aria-pressed="true"] {
+  color: var(--ink);
+  font-style: normal;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
-.cadmo-btn:hover {
-  border-color: var(--cadmo-accent);
-  color: var(--cadmo-accent-ink);
-}
-
-/* Two-column Tufte / CADMO layout: prose measure + quiet right margin inspector */
+/* ==========================================================================
+   Asymmetrical Tufte / ETH CADMO page grid
+   ========================================================================== */
 .cadmo-shell {
-  max-width: calc(var(--cadmo-measure) + var(--cadmo-margin-width) + var(--cadmo-gap) + 4rem);
+  max-width: calc(var(--measure) + var(--margin-col) + var(--gutter) + 4rem);
   margin: 0 auto;
-  padding: 2.8rem 2rem 5rem;
+  padding: 3.2rem 2rem 6.5rem;
   display: grid;
-  grid-template-columns: minmax(0, var(--cadmo-measure)) minmax(17rem, var(--cadmo-margin-width));
-  gap: var(--cadmo-gap);
+  grid-template-columns: minmax(0, var(--measure)) minmax(14rem, var(--margin-col));
+  gap: var(--gutter);
   align-items: start;
 }
 
@@ -191,45 +148,39 @@ body {
   min-width: 0;
 }
 
-/* Monograph Header (CADMO chapter opening) */
+/* Chapter title block (classic Swiss monograph opening) */
 .cadmo-doc-header {
-  margin-bottom: 2.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid var(--cadmo-rule);
-}
-
-.cadmo-kicker {
-  font-variant-caps: all-small-caps;
-  letter-spacing: 0.12em;
-  font-size: 0.88rem;
-  color: var(--cadmo-accent);
-  margin: 0 0 0.4rem;
+  margin-bottom: 3.2rem;
+  padding-bottom: 1.4rem;
+  border-bottom: 1px solid var(--rule-strong);
 }
 
 .cadmo-doc-title {
   font-weight: 400;
-  font-size: 2.05rem;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
-  margin: 0 0 0.55rem;
-  color: var(--cadmo-ink);
+  font-size: 2.15rem;
+  line-height: 1.18;
+  letter-spacing: -0.015em;
+  margin: 0 0 0.6rem;
+  color: var(--ink);
 }
 
 .cadmo-doc-subtitle {
   margin: 0;
   font-style: italic;
-  font-size: 1.05rem;
-  color: var(--cadmo-ink-soft);
+  font-size: 1rem;
+  color: var(--ink-secondary);
 }
 
-/* Theorem / Lemma / Proposition / Definition Entry */
+/* ==========================================================================
+   Theorem / Lemma / Proposition (pure amsthm print layout, zero boxes)
+   ========================================================================== */
 .cadmo-entry {
-  margin-bottom: 3.2rem;
+  margin-bottom: 3.4rem;
 }
 
 .cadmo-entry + .cadmo-entry {
-  padding-top: 2.2rem;
-  border-top: 1px solid var(--cadmo-rule);
+  padding-top: 2.4rem;
+  border-top: 1px solid var(--rule);
 }
 
 .cadmo-entry-head {
@@ -237,135 +188,102 @@ body {
   flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 0.5rem 1rem;
-  margin-bottom: 0.8rem;
+  gap: 0.4rem 1rem;
+  margin-bottom: 0.65rem;
 }
 
 .cadmo-entry-heading {
   margin: 0;
-  font-size: 1.24rem;
-  font-weight: 600;
-  line-height: 1.35;
+  font-size: 1.08rem;
+  font-weight: 400;
+  line-height: 1.4;
 }
 
 .cadmo-entry-kind {
   font-variant-caps: small-caps;
-  letter-spacing: 0.05em;
-  color: var(--cadmo-accent);
-  margin-right: 0.4rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin-right: 0.3rem;
 }
 
 .cadmo-entry-title {
-  font-weight: 400;
-  color: var(--cadmo-ink);
+  font-style: italic;
+  color: var(--ink-secondary);
 }
 
-.cadmo-entry-meta {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-family: var(--cadmo-sans);
-  font-size: 0.72rem;
-  color: var(--cadmo-muted);
-}
-
-.cadmo-axiom-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.12rem 0.5rem;
-  border-radius: 999px;
-  border: 1px solid var(--cadmo-rule);
-  background: var(--cadmo-surface);
-  color: var(--cadmo-ok);
+.cadmo-axiom-link {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0;
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 0.8rem;
+  color: var(--ink-muted);
   cursor: pointer;
 }
 
-.cadmo-axiom-pill.has-sorry {
-  color: var(--cadmo-warn);
-  border-color: var(--cadmo-warn);
+.cadmo-axiom-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
-/* Ambient setting callout (factored out once per theorem) */
+.cadmo-axiom-link.has-sorry {
+  color: var(--warn);
+}
+
 .cadmo-ambient {
-  margin: 0 0 1rem;
-  padding: 0.72rem 1rem;
-  border-left: 2px solid var(--cadmo-rule-strong);
-  background: var(--cadmo-surface);
-  font-size: 0.94rem;
-  color: var(--cadmo-ink-soft);
+  margin: 0 0 0.75rem;
+  font-size: 0.92rem;
+  color: var(--ink-secondary);
 }
 
 .cadmo-ambient-label {
-  font-variant-caps: small-caps;
-  letter-spacing: 0.06em;
-  font-weight: 600;
-  color: var(--cadmo-muted);
-  margin-right: 0.45rem;
+  font-style: italic;
+  margin-right: 0.3rem;
 }
 
-/* Statement body (CADMO theorem prose: clean roman with gentle distinction) */
 .cadmo-statement {
-  padding: 0.95rem 1.2rem;
-  border-left: 3px solid var(--cadmo-accent);
-  background: color-mix(in srgb, var(--cadmo-accent-soft) 45%, var(--cadmo-bg));
-  margin-bottom: 1.25rem;
+  margin: 0 0 1.2rem;
 }
 
 .cadmo-statement p {
-  margin: 0 0 0.65rem;
+  margin: 0 0 0.6rem;
 }
 
 .cadmo-statement p:last-child {
   margin-bottom: 0;
 }
 
-/* Embedded CC Diagram figure */
-.cadmo-figure {
-  margin: 1.25rem 0;
-  padding: 0.85rem 1rem;
-  border: 1px solid var(--cadmo-rule);
-  border-radius: 4px;
-  background: var(--cadmo-surface-raised);
-  overflow-x: auto;
-}
-
-.cadmo-figure-caption {
-  margin-top: 0.55rem;
-  font-size: 0.88rem;
-  color: var(--cadmo-muted);
-  font-style: italic;
-}
-
-/* Proof section */
+/* ==========================================================================
+   Proof prose & whisper-quiet inline ⊕ / ⊖ unfolding
+   ========================================================================== */
 .cadmo-proof {
-  margin-top: 1.1rem;
+  margin-top: 0.9rem;
 }
 
 .cadmo-proof-lead {
   font-style: italic;
-  font-weight: 600;
-  color: var(--cadmo-ink);
   margin-right: 0.35rem;
 }
 
 .cadmo-qed {
   text-align: right;
-  font-size: 0.95rem;
-  color: var(--cadmo-muted);
-  margin-top: 0.5rem;
+  font-size: 0.88rem;
+  color: var(--ink-muted);
+  margin-top: 0.35rem;
   user-select: none;
 }
 
-/* Proof tree nodes & quiet inline ⊕ / ⊖ controls */
 .cadmo-node {
-  margin: 0.55rem 0;
+  margin: 0.42rem 0;
 }
 
 .cadmo-node-row {
   display: flex;
   align-items: baseline;
-  gap: 0.42rem;
+  gap: 0.38rem;
 }
 
 .cadmo-node-body {
@@ -377,410 +295,452 @@ body {
   flex: 0 0 auto;
   appearance: none;
   border: 0;
-  background: transparent;
-  color: var(--cadmo-accent);
-  font-family: var(--cadmo-sans);
-  font-size: 0.95rem;
+  background: none;
+  color: var(--accent);
+  font-family: var(--font-math);
+  font-size: 0.92rem;
   line-height: 1;
-  width: 1.3rem;
-  height: 1.3rem;
+  width: 1.15rem;
   padding: 0;
-  border-radius: 999px;
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 120ms ease, transform 120ms ease;
+  opacity: 0.72;
 }
 
 .cadmo-toggle:hover {
-  background: var(--cadmo-accent-soft);
+  opacity: 1;
 }
 
 .cadmo-toggle-spacer {
   flex: 0 0 auto;
-  width: 1.3rem;
+  width: 1.15rem;
   display: inline-block;
 }
 
 .cadmo-children {
-  margin: 0.4rem 0 0.6rem 0.62rem;
-  padding-left: 1.15rem;
-  border-left: 1.5px solid var(--cadmo-rule);
+  margin: 0.32rem 0 0.55rem 0.52rem;
+  padding-left: 1.05rem;
+  border-left: 1px solid var(--rule);
 }
 
-.cadmo-children[hidden] {
-  display: none;
-}
+.cadmo-children[hidden] { display: none; }
 
-.cadmo-node.is-wrapper > .cadmo-node-row .cadmo-wrapper-tag {
-  display: inline-block;
-  margin-left: 0.35rem;
-  font-family: var(--cadmo-sans);
-  font-size: 0.68rem;
-  letter-spacing: 0.03em;
-  color: var(--cadmo-muted);
-  border: 1px solid var(--cadmo-rule);
-  border-radius: 4px;
-  padding: 0 0.32rem;
-  vertical-align: middle;
-}
-
-.cadmo-origin-tag {
+.cadmo-origin-tag,
+.cadmo-wrapper-tag {
   display: none;
   margin-left: 0.4rem;
-  font-family: var(--cadmo-mono);
-  font-size: 0.7rem;
-  color: var(--cadmo-muted);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--ink-muted);
 }
 
-[data-mode="auditor"] .cadmo-origin-tag {
+[data-mode="auditor"] .cadmo-origin-tag,
+[data-mode="auditor"] .cadmo-wrapper-tag {
   display: inline;
 }
 
-/* Goal checkpoint button (opens Kyle Miller context + target inspector) */
+/* Goal checkpoint marker: hidden until hover over the line so text stays pure */
 .cadmo-goal-btn {
   appearance: none;
   border: 0;
-  background: transparent;
-  color: var(--cadmo-muted);
-  font-family: var(--cadmo-sans);
-  font-size: 0.72rem;
-  padding: 0.06rem 0.32rem;
-  margin-left: 0.35rem;
-  border-radius: 4px;
+  background: none;
+  color: var(--ink-muted);
+  font-family: var(--font-math);
+  font-size: 0.78rem;
+  padding: 0 0.22rem;
+  margin-left: 0.25rem;
   cursor: pointer;
-  vertical-align: baseline;
-  opacity: 0.62;
-  transition: opacity 120ms ease, background 120ms ease, color 120ms ease;
+  opacity: 0;
+  transition: opacity 120ms ease, color 120ms ease;
+}
+
+.cadmo-node-row:hover .cadmo-goal-btn,
+.cadmo-calc-intro:hover .cadmo-goal-btn,
+.cadmo-routine:hover .cadmo-goal-btn,
+.cadmo-goal-btn:focus-visible,
+.cadmo-goal-btn[aria-pressed="true"],
+[data-mode="auditor"] .cadmo-goal-btn {
+  opacity: 0.85;
 }
 
 .cadmo-goal-btn:hover,
 .cadmo-goal-btn[aria-pressed="true"] {
   opacity: 1;
-  background: var(--cadmo-accent-soft);
-  color: var(--cadmo-accent-ink);
+  color: var(--accent);
 }
 
-/* Routine algebra/cast receipt */
 .cadmo-routine {
-  margin: 0.45rem 0;
-  font-size: 0.9rem;
-  color: var(--cadmo-muted);
+  margin: 0.3rem 0 0.3rem 1.53rem;
+  font-size: 0.88rem;
   font-style: italic;
+  color: var(--ink-muted);
 }
 
-.cadmo-routine-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.32rem;
-  padding: 0.1rem 0.5rem;
-  border-radius: 4px;
-  border: 1px dashed var(--cadmo-rule-strong);
-  background: var(--cadmo-surface);
-  color: var(--cadmo-muted);
-  font-style: normal;
-  font-family: var(--cadmo-sans);
-  font-size: 0.74rem;
-}
-
-/* Optional ~10% inconsequential flow note (visually distinct from checked claims) */
 .cadmo-flow-note {
-  margin: 0.7rem 0;
-  padding: 0.55rem 0.9rem;
-  border-left: 2px solid var(--cadmo-note-border);
-  background: var(--cadmo-note-bg);
-  font-size: 0.91rem;
+  margin: 0.65rem 0;
+  font-size: 0.94rem;
   font-style: italic;
-  color: var(--cadmo-ink-soft);
+  color: var(--ink-secondary);
 }
 
-.cadmo-flow-badge {
-  font-style: normal;
-  font-variant-caps: all-small-caps;
-  letter-spacing: 0.08em;
-  font-size: 0.78rem;
-  color: var(--cadmo-muted);
-  margin-right: 0.45rem;
-}
-
-/* Aligned paper calculation chain (calc / cc_calc) */
+/* ==========================================================================
+   Aligned calculation chains (calc / cc_calc)
+   ========================================================================== */
 .cadmo-calc {
-  margin: 0.75rem 0;
+  margin: 0.7rem 0;
 }
 
 .cadmo-calc-intro {
-  margin: 0 0 0.4rem;
+  margin: 0 0 0.35rem;
 }
 
 .cadmo-calc-table {
   width: 100%;
   border-collapse: collapse;
-  margin: 0.35rem 0;
-  font-variant-numeric: lining-nums tabular-nums;
+  margin: 0.25rem 0;
 }
 
 .cadmo-calc-table td {
-  padding: 0.32rem 0.35rem;
+  padding: 0.26rem 0.25rem;
   vertical-align: baseline;
 }
 
-.cadmo-calc-lhs {
-  text-align: right;
-  white-space: nowrap;
-}
-
-.cadmo-calc-rel {
-  text-align: center;
-  padding-inline: 0.55rem !important;
-  color: var(--cadmo-accent);
-  white-space: nowrap;
-}
-
-.cadmo-calc-rhs {
-  text-align: left;
-}
-
+.cadmo-calc-lhs { text-align: right; white-space: nowrap; }
+.cadmo-calc-rel { text-align: center; padding-inline: 0.5rem !important; white-space: nowrap; }
+.cadmo-calc-rhs { text-align: left; }
 .cadmo-calc-reason {
   font-size: 0.86rem;
-  color: var(--cadmo-muted);
+  font-style: italic;
+  color: var(--ink-muted);
   padding-left: 0.9rem !important;
 }
 
 .cadmo-calc-expand-row td {
-  padding: 0 0 0.55rem 1.4rem;
+  padding: 0 0 0.5rem 1.2rem;
 }
 
-/* Underlined clickable symbols (subtle CADMO dotted underline) */
-.cadmo-sym {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  padding: 0 1px;
-  cursor: pointer;
-  border-bottom: 1px dotted color-mix(in srgb, var(--cadmo-accent) 60%, transparent);
-  transition: background 120ms ease, border-color 120ms ease;
+/* ==========================================================================
+   2D Mathematical Typography
+   ========================================================================== */
+.cadmo-math {
+  font-family: var(--font-math);
+  font-variant-numeric: lining-nums;
 }
 
-.cadmo-sym:hover,
-.cadmo-sym[aria-pressed="true"] {
-  background: var(--cadmo-accent-soft);
-  border-bottom-style: solid;
-  border-bottom-color: var(--cadmo-accent);
+.cadmo-math var { font-style: italic; }
+.cadmo-math .cadmo-op { font-style: normal; }
+.cadmo-math .cadmo-cal { font-style: italic; }
+
+.cadmo-math sub,
+.cadmo-math sup {
+  font-size: 0.74em;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
 }
+.cadmo-math sup { top: -0.42em; }
+.cadmo-math sub { bottom: -0.22em; }
+
+.cadmo-frac {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  vertical-align: middle;
+  margin: 0 0.14em;
+  font-size: 0.86em;
+  line-height: 1.1;
+}
+.cadmo-frac > .cadmo-num {
+  padding: 0 0.15em 0.08em;
+  border-bottom: 1px solid currentColor;
+}
+.cadmo-frac > .cadmo-den { padding: 0.08em 0.15em 0; }
 
 .cadmo-display-math {
   display: block;
   text-align: center;
-  margin: 0.75rem 0;
+  margin: 0.85rem 0;
   overflow-x: auto;
+  font-family: var(--font-math);
   font-variant-numeric: lining-nums;
 }
 
-.cadmo-math {
-  font-variant-numeric: lining-nums;
+.cadmo-sym {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  cursor: pointer;
+  border-bottom: 1px dotted var(--rule);
 }
 
-.cadmo-citation {
-  font-family: var(--cadmo-sans);
-  font-size: 0.78rem;
-  color: var(--cadmo-accent);
+.cadmo-sym:hover,
+.cadmo-sym[aria-pressed="true"] {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
-/* Right Margin Inspector Panel (Symbol Inspector + Kyle Miller Goal Inspector) */
+/* ==========================================================================
+   Tufte Sidenote Margin (completely blank until the reader requests a note)
+   ========================================================================== */
 .cadmo-margin {
   position: sticky;
-  top: 4.1rem;
-  max-height: calc(100vh - 5.2rem);
+  top: 2rem;
+  max-height: calc(100vh - 4rem);
   overflow-y: auto;
-  padding-left: 1.25rem;
-  border-left: 1px solid var(--cadmo-rule);
-  font-size: 0.87rem;
-  line-height: 1.52;
+  font-size: 0.84rem;
+  line-height: 1.54;
 }
 
-.cadmo-inspector-card {
-  background: var(--cadmo-surface-raised);
-  border: 1px solid var(--cadmo-rule);
-  border-radius: 6px;
-  padding: 0.95rem 1rem;
-  box-shadow: var(--cadmo-shadow);
-  margin-bottom: 1rem;
+.cadmo-sidenote {
+  border-top: 1px solid var(--rule-strong);
+  padding-top: 0.65rem;
+  margin-bottom: 1.8rem;
 }
 
-.cadmo-inspector-head {
+.cadmo-sidenote-head {
   display: flex;
-  align-items: flex-start;
+  align-items: baseline;
   justify-content: space-between;
   gap: 0.5rem;
-  padding-bottom: 0.5rem;
-  margin-bottom: 0.65rem;
-  border-bottom: 1px solid var(--cadmo-rule);
+  margin-bottom: 0.5rem;
 }
 
-.cadmo-inspector-head > div {
+.cadmo-sidenote-head > div {
   min-width: 0;
   flex: 1 1 auto;
 }
 
-.cadmo-inspector-kicker {
+.cadmo-sidenote-kicker {
   font-variant-caps: all-small-caps;
   letter-spacing: 0.08em;
   font-size: 0.78rem;
-  color: var(--cadmo-accent);
+  color: var(--ink-muted);
 }
 
-.cadmo-inspector-title {
-  margin: 0.15rem 0 0;
-  font-size: 1.02rem;
+.cadmo-sidenote-title {
+  margin: 0.1rem 0 0;
+  font-size: 0.96rem;
   font-weight: 600;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
 
+.cadmo-close-btn {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: var(--ink-muted);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0.2rem;
+  cursor: pointer;
+}
+.cadmo-close-btn:hover { color: var(--ink); }
+
 .cadmo-inspector-table {
   width: 100%;
   border-collapse: collapse;
   margin: 0.5rem 0;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
 }
-
 .cadmo-inspector-table th,
 .cadmo-inspector-table td {
   text-align: left;
-  padding: 0.3rem 0.4rem;
-  border-bottom: 1px solid var(--cadmo-rule);
+  padding: 0.24rem 0.3rem;
+  border-bottom: 1px solid var(--rule);
   vertical-align: top;
 }
-
 .cadmo-inspector-table th {
   font-variant-caps: small-caps;
-  color: var(--cadmo-muted);
+  color: var(--ink-muted);
   font-weight: 600;
 }
 
 .cadmo-pseudocode {
   margin: 0.5rem 0;
-  padding: 0.65rem 0.75rem;
-  border-radius: 4px;
-  background: var(--cadmo-surface);
-  border: 1px solid var(--cadmo-rule);
-  font-family: var(--cadmo-mono);
-  font-size: 0.75rem;
-  line-height: 1.48;
+  padding: 0.5rem 0.6rem;
+  background: var(--paper-alt);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.45;
   overflow-x: auto;
   white-space: pre;
 }
 
 .cadmo-goal-ctx {
   list-style: none;
-  margin: 0 0 0.65rem;
+  margin: 0 0 0.6rem;
   padding: 0;
 }
-
 .cadmo-goal-ctx li {
-  padding: 0.2rem 0;
-  border-bottom: 1px dotted var(--cadmo-rule);
-  font-size: 0.83rem;
+  padding: 0.16rem 0;
+  border-bottom: 1px dotted var(--rule);
+  font-size: 0.8rem;
 }
 
 .cadmo-goal-target {
-  padding: 0.55rem 0.7rem;
-  border-left: 2.5px solid var(--cadmo-accent);
-  background: var(--cadmo-accent-soft);
-  font-size: 0.86rem;
+  padding: 0.45rem 0.6rem;
+  border-left: 1.5px solid var(--accent);
+  background: var(--paper-alt);
+  font-size: 0.84rem;
 }
 
 .cadmo-lean-details {
-  margin-top: 0.7rem;
-  font-family: var(--cadmo-sans);
-  font-size: 0.75rem;
-  color: var(--cadmo-muted);
+  margin-top: 0.65rem;
+  font-size: 0.78rem;
+  font-style: italic;
+  color: var(--ink-muted);
 }
-
-.cadmo-lean-details summary {
-  cursor: pointer;
-}
+.cadmo-lean-details summary { cursor: pointer; }
 
 .cadmo-lean-code {
   margin-top: 0.35rem;
-  padding: 0.5rem 0.6rem;
-  border-radius: 4px;
-  background: var(--cadmo-surface);
-  font-family: var(--cadmo-mono);
-  font-size: 0.72rem;
+  padding: 0.45rem 0.55rem;
+  background: var(--paper-alt);
+  font-family: var(--font-mono);
+  font-style: normal;
+  font-size: 0.69rem;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  color: var(--cadmo-ink-soft);
+  color: var(--ink-secondary);
 }
 
-.cadmo-symbol-index {
-  margin-top: 1rem;
+/* On-demand Glossary sidenote (only rendered when reader clicks "Glossary") */
+.cadmo-glossary-filter {
+  width: 100%;
+  padding: 0.3rem 0.45rem;
+  margin: 0.35rem 0 0.65rem;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+}
+.cadmo-glossary-filter:focus {
+  outline: none;
+  border-bottom-color: var(--ink);
 }
 
-.cadmo-symbol-index h4 {
-  margin: 0 0 0.45rem;
+.cadmo-glossary-group { margin-bottom: 0.8rem; }
+.cadmo-glossary-group h5 {
+  margin: 0 0 0.25rem;
   font-variant-caps: all-small-caps;
   letter-spacing: 0.08em;
-  font-size: 0.8rem;
-  color: var(--cadmo-muted);
+  font-size: 0.78rem;
   font-weight: 600;
+  color: var(--ink-muted);
 }
-
-.cadmo-symbol-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
+.cadmo-glossary-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
-
-.cadmo-symbol-chip {
-  border: 1px solid var(--cadmo-rule);
-  background: var(--cadmo-surface);
-  color: var(--cadmo-ink-soft);
-  border-radius: 4px;
-  padding: 0.16rem 0.45rem;
-  font-family: var(--cadmo-serif);
-  font-size: 0.82rem;
+.cadmo-glossary-item {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0.12rem 0;
+  width: 100%;
+  text-align: left;
+  color: var(--ink-secondary);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
   cursor: pointer;
 }
-
-.cadmo-symbol-chip:hover {
-  border-color: var(--cadmo-accent);
-  color: var(--cadmo-accent-ink);
+.cadmo-glossary-item:hover {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
-/* Harmonize embedded Rendering .ccw diagrams with CADMO ink */
-.cadmo-figure .ccw {
-  --cc-ink: var(--cadmo-ink);
-  --cc-bg: var(--cadmo-surface-raised);
-  --cc-muted: var(--cadmo-muted);
-  --cc-resource: var(--cadmo-accent);
-  margin-block: 0;
+/* ==========================================================================
+   Monograph Table of Contents (print book TOC, zero cards)
+   ========================================================================== */
+.cadmo-toc-list {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0 0;
 }
 
-/* Responsive collapse to single column on narrower screens */
-@media (max-width: 1020px) {
+.cadmo-toc-item {
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.cadmo-toc-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.cadmo-toc-num {
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  margin-right: 0.7rem;
+}
+
+.cadmo-toc-link {
+  font-size: 1.08rem;
+  text-decoration: none;
+}
+
+.cadmo-toc-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.cadmo-toc-meta {
+  font-style: italic;
+  font-size: 0.82rem;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+.cadmo-toc-subtitle {
+  margin: 0.3rem 0 0 5.4rem;
+  font-size: 0.88rem;
+  font-style: italic;
+  color: var(--ink-secondary);
+}
+
+/* Chapter footer navigation */
+.cadmo-chapter-nav {
+  max-width: calc(var(--measure) + var(--margin-col) + var(--gutter) + 4rem);
+  margin: 0 auto;
+  padding: 1.2rem 2rem 3rem;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.9rem;
+  font-style: italic;
+  color: var(--ink-muted);
+}
+
+@media (max-width: 980px) {
   .cadmo-shell {
     grid-template-columns: minmax(0, 1fr);
-    padding: 1.8rem 1.2rem 4rem;
+    padding: 2rem 1.35rem 4rem;
+    gap: 2rem;
   }
   .cadmo-margin {
     position: static;
     max-height: none;
-    border-left: 0;
-    border-top: 1px solid var(--cadmo-rule);
-    padding-left: 0;
-    padding-top: 1.25rem;
   }
+  .cadmo-toc-subtitle { margin-left: 0; }
 }
 
-/* Clean academic print / PDF export */
 @media print {
-  .cadmo-toolbar, .cadmo-toggle, .cadmo-goal-btn { display: none !important; }
+  .cadmo-running-bar, .cadmo-toggle, .cadmo-goal-btn, .cadmo-margin, .cadmo-chapter-nav {
+    display: none !important;
+  }
   .cadmo-shell { display: block; padding: 0; max-width: none; }
-  .cadmo-margin { display: none; }
   .cadmo-children { display: block !important; }
   body { background: #fff; color: #000; font-size: 11pt; }
 }

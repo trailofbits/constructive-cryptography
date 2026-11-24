@@ -205,15 +205,31 @@ private def buildParameterRole (tbl : SymbolTable) (ty : Expr) : MetaM String :=
   let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
   return capitalizeFirst (ensurePeriod s!"{art} {adj}{desc.noun.singular}{acc}")
 
-/-- Collect all project-level constants referenced inside `e` (excluding core/Mathlib and
-ambient typeclass heads). -/
+/-- Internal Lean/category/plumbing constants that add noise rather than mathematical value
+to a human reader's glossary. -/
+private def isInspectorNoise (n : Name) : Bool :=
+  let s := n.toString
+  let leaf := shortConstName n
+  leaf.startsWith "inst" ||
+  s.startsWith "CategoryTheory." ||
+  s.endsWith ".toCategoryStruct" ||
+  s.endsWith ".toQuiver" ||
+  s.endsWith ".absorb" ||
+  s.endsWith ".ClosedUnder" ||
+  n == `SystemAlgebra.TypedSystem ||
+  n == `SystemAlgebra.TypedConverter ||
+  n == `SystemAlgebra.TypedDistinguisher
+
+/-- Collect all project-level constants referenced inside `e` (excluding core/Mathlib,
+ambient typeclass heads, and internal instance/category plumbing). -/
 private partial def collectProjectConstants (env : Environment) (e : Expr) : Array Name := Id.run do
   let mut visited : NameSet := {}
   let mut out : Array Name := #[]
   let rec go (cur : Expr) (acc : NameSet × Array Name) : NameSet × Array Name :=
     match cur with
     | .const n _ =>
-        if acc.1.contains n || isCoreOrMathlib n || ambientTypeclassHeads.contains n then acc
+        if acc.1.contains n || isCoreOrMathlib n || ambientTypeclassHeads.contains n ||
+            isInspectorNoise n then acc
         else if env.contains n then (acc.1.insert n, acc.2.push n)
         else acc
     | .app f a => go a (go f acc)

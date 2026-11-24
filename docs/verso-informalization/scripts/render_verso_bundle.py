@@ -293,11 +293,10 @@ def render_chapter_html(
         pager.append(f'<a href="{html.escape(next_link[0])}">{html.escape(next_link[1])} ›</a>')
     pager_html = " · ".join(pager)
     chapter_nav = (
-        '<div class="cadmo-chapter-nav" role="navigation" aria-label="Chapter navigation">'
-        '<div class="cadmo-chapter-nav-inner">'
+        '<footer class="cadmo-chapter-nav" role="navigation" aria-label="Chapter navigation">'
         f"<div>{nav_parts[0]}</div>"
         f"<div>{pager_html}</div>"
-        "</div></div>"
+        "</footer>"
     )
 
     prose_before_html = ""
@@ -321,7 +320,7 @@ def render_chapter_html(
         f'<script type="module" data-cc-inspector>{cc_inspector_js}</script>' if cc_inspector_js.strip() else ""
     )
 
-    full_cadmo_css = escape_css_for_style(cadmo_css + "\n" + EXTRA_VERSO_SITE_CSS)
+    full_cadmo_css = escape_css_for_style(cadmo_css)
     full_cc_css = escape_css_for_style(cc_css)
 
     return (
@@ -330,16 +329,15 @@ def render_chapter_html(
         "<head>\n"
         '  <meta charset="utf-8">\n'
         '  <meta name="viewport" content="width=device-width,initial-scale=1">\n'
-        '  <meta name="color-scheme" content="light dark">\n'
         f"  <title>{html.escape(chapter_title)} — {html.escape(monograph_title)}</title>\n"
         f"  <style data-cc-diagram>{full_cc_css}</style>\n"
         f"  <style data-cadmo-reader>{full_cadmo_css}</style>\n"
         "</head>\n"
         "<body>\n"
-        f"  {chapter_nav}\n"
         f"  {prose_before_html}\n"
         '  <div id="cadmo-root"></div>\n'
         f"  {prose_after_html}\n"
+        f"  {chapter_nav}\n"
         f'  <script id="cadmo-document-data" type="application/json">{json_payload}</script>\n'
         f"  <script data-cadmo-controller>{cadmo_js}</script>\n"
         f"  {inspector_script_tag}\n"
@@ -354,23 +352,24 @@ def render_index_html(
     chapters: List[Dict[str, Any]],
     cadmo_css: str,
 ) -> str:
-    full_css = escape_css_for_style(cadmo_css + "\n" + EXTRA_VERSO_SITE_CSS)
+    full_css = escape_css_for_style(cadmo_css)
     items_html: List[str] = []
     for idx, ch in enumerate(chapters):
         doc = ch["doc"]
         entries = doc.get("entries", [])
         has_sorry = any((e.get("axioms") or {}).get("hasSorry", False) for e in entries)
         total_decls = len(entries)
-        badge_cls = "cadmo-axiom-pill has-sorry" if has_sorry else "cadmo-axiom-pill"
-        badge_txt = "⚠ sorry" if has_sorry else f"✓ {total_decls} checked"
+        meta_txt = "contains sorry" if has_sorry else f"{total_decls} theorems"
         sub = doc.get("subtitle")
         sub_html = f'<p class="cadmo-toc-subtitle">{html.escape(sub)}</p>' if sub else ""
         items_html.append(
             '<li class="cadmo-toc-item">'
+            '<div class="cadmo-toc-row">'
             f'<a class="cadmo-toc-link" href="chapters/{html.escape(ch["slug"])}.html">'
             f'<span class="cadmo-toc-num">Chapter {idx + 1}</span>'
             f'{html.escape(ch["title"])}</a>'
-            f'<span class="{badge_cls}">{badge_txt}</span>'
+            f'<span class="cadmo-toc-meta">{meta_txt}</span>'
+            "</div>"
             f"{sub_html}"
             "</li>"
         )
@@ -387,7 +386,6 @@ def render_index_html(
         "<head>\n"
         '  <meta charset="utf-8">\n'
         '  <meta name="viewport" content="width=device-width,initial-scale=1">\n'
-        '  <meta name="color-scheme" content="light dark">\n'
         f"  <title>{html.escape(monograph_title)}</title>\n"
         f"  <style data-cadmo-reader>{full_css}</style>\n"
         "</head>\n"
@@ -395,25 +393,14 @@ def render_index_html(
         '  <div class="cadmo-shell">\n'
         '    <main class="cadmo-main">\n'
         '      <header class="cadmo-doc-header">\n'
-        '        <div class="cadmo-kicker">Constructive Cryptography · Verso CADMO Edition</div>\n'
         f'        <h1 class="cadmo-doc-title">{html.escape(monograph_title)}</h1>\n'
         f"        {subtitle_html}\n"
         "      </header>\n"
-        '      <section aria-label="Table of contents">\n'
+        '      <section aria-label="Contents">\n'
         f'        <ol class="cadmo-toc-list">{"".join(items_html)}</ol>\n'
         "      </section>\n"
         "    </main>\n"
-        '    <aside class="cadmo-margin" aria-label="Edition notes">\n'
-        '      <div class="cadmo-inspector-card">\n'
-        '        <div class="cadmo-inspector-kicker">Checked Informalization</div>\n'
-        '        <p style="margin:0.45rem 0 0;color:var(--cadmo-ink-soft);">'
-        "Every chapter is rendered directly from canonical Lean-checked "
-        "<code>Explanation.Document</code> JSON. Open any chapter to explore "
-        "recursive ⊕ proof steps, Paper/Auditor disclosure modes, and type-aware "
-        "symbol inspectors."
-        "        </p>\n"
-        "      </div>\n"
-        "    </aside>\n"
+        '    <aside class="cadmo-margin" aria-label="Colophon"></aside>\n'
         "  </div>\n"
         "</body>\n"
         "</html>\n"

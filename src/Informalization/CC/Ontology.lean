@@ -573,7 +573,6 @@ private def ccPropHandler : PropHandler where
       let srcTex ← exprToLatex (unwrapSingletonSpec src) tbl
       let convTex ← exprToLatex conv tbl
       let tgtTex ← exprToLatex (unwrapSingletonSpec tgt) tbl
-      let fullTex ← exprToLatex prop tbl
       let verb := verbConstruct.conjugate .singular
       if let some (eps, inner) := matchEpsilonRelaxationApp? tgt then
         let epsTex ← exprToLatex eps tbl
@@ -584,21 +583,18 @@ private def ccPropHandler : PropHandler where
             .text s!" {verb} the ", .inlineMath epsTex,
             .text "-relaxed simulator specification ",
             .inlineMath ("\\left(" ++ baseTex ++ "^{*}\\right)^{" ++ epsTex ++ "}"),
-            .text " from ", .inlineMath srcTex,
-            .text " (", .inlineMath fullTex, .text ")"
+            .text " from ", .inlineMath srcTex
           ]
         return some #[
           .text "protocol ", .inlineMath convTex,
           .text s!" {verb} ", .inlineMath tgtTex,
           .text " from ", .inlineMath srcTex,
-          .text " within error ", .inlineMath epsTex,
-          .text " (", .inlineMath fullTex, .text ")"
+          .text " within error ", .inlineMath epsTex
         ]
       return some #[
         .text "protocol ", .inlineMath convTex,
         .text s!" {verb} ", .inlineMath tgtTex,
-        .text " from ", .inlineMath srcTex,
-        .text " (", .inlineMath fullTex, .text ")"
+        .text " from ", .inlineMath srcTex
       ]
     -- 2. Approximate construction: `ConstructsWithin π ℛ 𝒮 ε`
     if head == constructsWithinName && args.size ≥ 4 then
@@ -610,14 +606,12 @@ private def ccPropHandler : PropHandler where
       let convTex ← exprToLatex conv tbl
       let tgtTex ← exprToLatex (unwrapSingletonSpec tgt) tbl
       let errTex ← exprToLatex err tbl
-      let fullTex ← exprToLatex prop tbl
       let verb := verbConstruct.conjugate .singular
       return some #[
         .text "protocol ", .inlineMath convTex,
         .text s!" {verb} ", .inlineMath tgtTex,
         .text " from ", .inlineMath srcTex,
-        .text " within error ", .inlineMath errTex,
-        .text " (", .inlineMath fullTex, .text ")"
+        .text " within error ", .inlineMath errTex
       ]
     -- 3. Concrete substitution: `R ≃[ε] S`
     if head == substitutesWithinName && args.size ≥ 3 then
@@ -627,12 +621,10 @@ private def ccPropHandler : PropHandler where
       let lhsTex ← exprToLatex lhs tbl
       let rhsTex ← exprToLatex rhs tbl
       let errTex ← exprToLatex err tbl
-      let fullTex ← exprToLatex prop tbl
       return some #[
         .text "the resource ", .inlineMath lhsTex,
         .text " can be substituted by ", .inlineMath rhsTex,
-        .text " within error ", .inlineMath errTex,
-        .text " (", .inlineMath fullTex, .text ")"
+        .text " within error ", .inlineMath errTex
       ]
     -- 4. Distinguisher class closure under absorbing a converter: `ClosedUnder α`
     if head == closedUnderName && args.size ≥ 1 then
@@ -648,11 +640,9 @@ private def ccPropHandler : PropHandler where
       let some game := argFromEnd? args 1 | return none
       let gameTex ← exprToLatex game tbl
       let tgtTex ← exprToLatex tgt tbl
-      let fullTex ← exprToLatex prop tbl
       return some #[
         .text "the game ", .inlineMath gameTex,
-        .text " is conditionally equivalent to ", .inlineMath tgtTex,
-        .text " (", .inlineMath fullTex, .text ")"
+        .text " is conditionally equivalent to ", .inlineMath tgtTex
       ]
     -- 6. Equivalence as games: `G ≡_g H`
     if head == rsGameEquivalentName && args.size ≥ 2 then
@@ -660,10 +650,9 @@ private def ccPropHandler : PropHandler where
       let some g := argFromEnd? args 1 | return none
       let gTex ← exprToLatex g tbl
       let hTex ← exprToLatex h tbl
-      let fullTex ← exprToLatex prop tbl
       return some #[
         .text "the games ", .inlineMath gTex, .text " and ", .inlineMath hTex,
-        .text " are equivalent as games (", .inlineMath fullTex, .text ")"
+        .text " are equivalent as games"
       ]
     -- 7. Monotone binary output predicate
     if head == monotoneMBOName && args.size ≥ 1 then
@@ -684,12 +673,10 @@ private def ccPropHandler : PropHandler where
           let r1Tex ← exprToLatex r1 tbl
           let r2Tex ← exprToLatex r2 tbl
           let epsTex ← exprToLatex rhs tbl
-          let fullTex ← exprToLatex prop tbl
           return some #[
             .text "the distinguishing distance between ", .inlineMath r1Tex,
             .text " and ", .inlineMath r2Tex,
-            .text " is at most ", .inlineMath epsTex,
-            .text " (", .inlineMath fullTex, .text ")"
+            .text " is at most ", .inlineMath epsTex
           ]
     -- 9. Membership in an ε-relaxation: `R ∈ (S^*)^ε` or `R ∈ S^ε`
     if head == ``Membership.mem && args.size ≥ 2 then
