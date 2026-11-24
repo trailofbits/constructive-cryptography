@@ -165,6 +165,21 @@ lemma map_substitutionImage_subset
     exact ⟨attach transformation right, center,
       (attach_serial converter transformation right).symm⟩
 
+/-- A fixed placement `place` transports a one-use image whenever attachment by `context`
+realizes that placement and composition with `context` preserves admission. -/
+lemma image_substitutionImage_subset_of_attach {A B D : C}
+    -- `context : A ⟶ B` realizes the function `place` on resources with interface `B`.
+    (place : Phi B → Phi A) (context : A ⟶ B) (realizes : ∀ r, attach context r = place r)
+    -- The selected transformations at `B` and `A` both access the assumption at `D`.
+    (inside : Set (B ⟶ D)) (outside : Set (A ⟶ D))
+    (closed : ∀ ρ ∈ inside, context ≫ ρ ∈ outside)
+    (left right : Phi D) (source : Specification (Phi B)) :
+    place '' substitutionImage inside left right source ⊆
+      substitutionImage outside left right (place '' source) := by
+  -- Identify the fixed placement with its converter once, at both endpoints.
+  rw [← funext realizes]
+  exact map_substitutionImage_subset context inside outside closed left right source
+
 /-- The one-use image with its supplied diagonal witnesses is compatible
 under exactly the supplied transformation-closure hypothesis.
 

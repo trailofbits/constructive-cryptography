@@ -24,6 +24,15 @@ universe u v w
 variable {C : Type u} [Category.{v} C]
 variable {Phi : C → Type w} [ResourceTheory C Phi]
 
+/-- Evaluating a selected family of placements preserves a guarantee when each admitted
+placement carries it. Placements outside the family have no obligations. -/
+example {X Y : Type*} (placements : Set (X → Y)) (source base : Set X)
+    (guarantee : Set Y → Set Y) (weaken : Monotone guarantee)
+    (fixed : ∀ f ∈ placements, f '' source ⊆ guarantee (f '' base)) :
+    Set.image2 (fun f x => f x) placements source ⊆
+      guarantee (Set.image2 (fun f x => f x) placements base) :=
+  ConstructiveCryptography.Specification.image2_subset_of_fixed_left weaken fixed
+
 -- The literal one-use statement works with a supplied transformation and two
 -- exact endpoints, without an unrelated substitution relation or reflexivity axiom.
 lemma construction_of_single_substitution {A B D E : C}

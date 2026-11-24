@@ -94,46 +94,23 @@ theorem singleSubstitutionRelaxation_parallelCompatible
     Specification.Relaxation.ParallelCompatible
       (fun A => Specification.singleSubstitutionRelaxation
         (transformations A) left right (diagonal A)) := by
-  intro A B source target
-  dsimp only
-  simp only [Specification.singleSubstitutionRelaxation_apply]
-  constructor
-  · rintro R ⟨original, ⟨transformation, allowed, leftEq, center⟩,
-      context, admitted, rfl⟩
-    -- Put the fixed right context around the same single transformation.
-    refine ⟨TypedConverter.rightContext A context ≫ transformation,
-      rightClosed A B context transformation allowed, ?_, ?_⟩
-    · exact (congrArg (fun R : TypedSystem A =>
-        TypedSystem.parallel R context) leftEq).trans
-        ((TypedConverter.attach_rightContext
-          (transformation • left) context).symm.trans
-          (Interface.comp_smul
-            (TypedConverter.rightContext A context) transformation left).symm)
-    · -- Its other endpoint is the same context around the admitted center.
-      refine ⟨transformation • right,
-        center, context, admitted, ?_⟩
-      exact (TypedConverter.attach_rightContext
-        (transformation • right) context).symm.trans
-        (Interface.comp_smul
-          (TypedConverter.rightContext A context) transformation right).symm
-  · rintro R ⟨context, admitted,
-      original, ⟨transformation, allowed, leftEq, center⟩, rfl⟩
-    -- The left context uses the other ordered converter, without a swap.
-    refine ⟨TypedConverter.leftContext context B ≫ transformation,
-      leftClosed A B context transformation allowed, ?_, ?_⟩
-    · exact (congrArg (fun R : TypedSystem B =>
-        TypedSystem.parallel context R) leftEq).trans
-        ((TypedConverter.attach_leftContext context
-          (transformation • left)).symm.trans
-          (Interface.comp_smul
-            (TypedConverter.leftContext context B) transformation left).symm)
-    · -- Membership of the unchanged component and the original center suffice.
-      refine ⟨context, admitted,
-        transformation • right, center, ?_⟩
-      exact (TypedConverter.attach_leftContext context
-        (transformation • right)).symm.trans
-        (Interface.comp_smul
-          (TypedConverter.leftContext context B) transformation right).symm
+  apply Specification.Relaxation.ParallelCompatible.of_fixed_contexts
+  · intro A B context source
+    -- The right-context converter realizes parallel placement on the left input.
+    simp only [Specification.singleSubstitutionRelaxation_apply]
+    exact Specification.image_substitutionImage_subset_of_attach
+      (C := Interface) (Phi := TypedSystem) (A := A ⊗ B) (B := A) (D := D)
+      (TypedSystem.parallel · context) (TypedConverter.rightContext A context)
+      (fun r => TypedConverter.attach_rightContext r context)
+      (transformations A) (transformations (A ⊗ B)) (rightClosed A B context) left right source
+  · intro A B context target
+    -- The left-context converter realizes placement on the right input in its original order.
+    simp only [Specification.singleSubstitutionRelaxation_apply]
+    exact Specification.image_substitutionImage_subset_of_attach
+      (C := Interface) (Phi := TypedSystem) (A := A ⊗ B) (B := B) (D := D)
+      (TypedSystem.parallel context) (TypedConverter.leftContext context B)
+      (fun s => TypedConverter.attach_leftContext context s)
+      (transformations B) (transformations (A ⊗ B)) (leftClosed A B context) left right target
 
 end
 
