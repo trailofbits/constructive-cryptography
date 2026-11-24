@@ -81,4 +81,13 @@ example {π : A ⟶ A} {converters : EndoFamily A} {R S : Specification (TypedSy
     ConstructsWithin π (star converters R) (star converters S) ε :=
   ConstructsWithin.star commutes construction
 
+/-- Adding a visible Boolean tag to the input and output leaves the guarantee on the value. -/
+example {X Y : Type} {f : X → Y} {S : Set X} {T : Set Y}
+    (h : ConstructiveCryptography.Specification.Constructs f S T) :
+    ConstructiveCryptography.Specification.Constructs (Prod.map f id)
+      (Prod.fst ⁻¹' S : Set (X × Bool)) (Prod.fst ⁻¹' T : Set (Y × Bool)) := by
+  apply h.map_between (Prod.fst ⁻¹' ·) (Prod.fst ⁻¹' ·) (fun _ _ sub => Set.preimage_mono sub)
+  rintro _ ⟨x, hx, rfl⟩
+  exact ⟨x.1, hx, rfl⟩
+
 end ResourceSpecificationTests
