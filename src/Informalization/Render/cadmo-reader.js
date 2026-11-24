@@ -96,6 +96,7 @@
     in: "∈", notin: "∉", subseteq: "⊆", times: "×", cdot: "·", circ: "∘",
     to: "→", mapsto: "↦", forall: "∀", exists: "∃", land: "∧", wedge: "∧",
     lor: "∨", vee: "∨", neg: "¬", sum: "∑", prod: "∏", pm: "±",
+    mid: "∣", preceq: "⪯", succeq: "⪰", top: "⊤", bot: "⊥", ldots: "…", dots: "…",
     Pr: "Pr", min: "min", max: "max", log: "log", exp: "exp"
   };
 
