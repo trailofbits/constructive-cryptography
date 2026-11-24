@@ -20,6 +20,7 @@ public import Commons.Definitions.Hash.Keyed
 public import Commons.Definitions.Ideal
 public import Commons.Definitions.Indifferentiability
 public import Commons.Definitions.LazyPermutation
+public import Commons.Definitions.PermutationTableGame
 public import Commons.Definitions.KEM
 public import Commons.Definitions.Nonce
 public import Commons.Definitions.NonceAEAD
