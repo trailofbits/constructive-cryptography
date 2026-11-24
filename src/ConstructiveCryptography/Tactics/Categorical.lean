@@ -21,6 +21,15 @@ typed attachment and ordered context laws provide the heterogeneous theorem
 heads used here; no symmetry or implicit interface rearrangement is assumed.
 -/
 
+open CategoryTheory MonoidalCategory ConstructiveCryptography in
+/-- The associator regroups three resources. This spelling lets `cc_normalize` match `•`
+directly when the resource carrier is abstract. -/
+@[cc_normalization] public lemma ConstructiveCryptography.CryptographicAlgebra.associator_hom_smul
+    {C : Type*} [Category* C] [MonoidalCategory C] {Φ : C → Type*}
+    [ResourceTheory C Φ] [CryptographicAlgebra C Φ] {A B D : C} (L : Φ A) (M : Φ B) (R : Φ D) :
+    (α_ A B D).hom • parallel L (parallel M R) = parallel (parallel L M) R :=
+  associator_hom_attach L M R
+
 @[expose] public meta section
 
 namespace ConstructiveCryptography
@@ -31,6 +40,7 @@ attribute [cc_normalization]
   CryptographicAlgebra.converter_parallel_identity
   CryptographicAlgebra.converter_parallel_serial
   CryptographicAlgebra.attach_parallel
+  CryptographicAlgebra.associator_hom_attach
   CryptographicAlgebra.Specification.parallel_singleton
   CryptographicAlgebra.Specification.star_idem
   CategoryTheory.Category.id_comp

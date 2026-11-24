@@ -43,8 +43,10 @@ Jost, §2.2 (printed pp. 16–19).
 
 * `ResourceTheory.attach_serial`, `CryptographicAlgebra.attach_parallel`: attachment is
   functorial and local
-* `CryptographicAlgebra.parallel_assoc`, `CryptographicAlgebra.parallel_dummy_left`,
-  `CryptographicAlgebra.parallel_dummy_right`: parallel composition of resources
+* `CryptographicAlgebra.parallel_assoc`, `CryptographicAlgebra.associator_hom_attach`,
+  `CryptographicAlgebra.parallel_dummy_left`, `CryptographicAlgebra.leftUnitor_hom_attach`,
+  `CryptographicAlgebra.parallel_dummy_right`, `CryptographicAlgebra.rightUnitor_hom_attach`:
+  parallel composition of resources
 * `CryptographicAlgebra.Specification.Constructs.serial`,
   `CryptographicAlgebra.Specification.Constructs.parallel`: composition of constructions
 -/
@@ -280,6 +282,13 @@ lemma parallel_assoc [CryptographicAlgebra C Phi] {A B D : C}
     (Opposite.op A) (Opposite.op B) (Opposite.op D)
   exact types_congr_hom associativity ((left, middle), right)
 
+/-- Attaching `(α_ A B D).hom` regroups `left ∥ (middle ∥ right)` to `(left ∥ middle) ∥ right`. -/
+lemma associator_hom_attach [CryptographicAlgebra C Phi] {A B D : C}
+    (left : Phi A) (middle : Phi B) (right : Phi D) :
+    attach (α_ A B D).hom (parallel left (parallel middle right)) =
+      parallel (parallel left middle) right := by
+  rw [← parallel_assoc left middle right, ← attach_serial, Iso.hom_inv_id, attach_identity]
+
 /-- The dummy resource is a left unit for resource parallel. The left unitor
 `λ_ A : 𝟙_ C ⊗ A ≅ A` has inverse converter `(λ_ A).inv : A ⟶ 𝟙_ C ⊗ A`; attaching it to
 `parallel dummy resource : Phi (𝟙_ C ⊗ A)` returns `resource : Phi A`. This is left
@@ -299,6 +308,14 @@ lemma parallel_dummy_left [CryptographicAlgebra C Phi] {A : C}
         (LaxMonoidal.ε (ResourceTheory.functor C Phi) PUnit.unit, resource)) = resource
   exact types_congr_hom unitality (PUnit.unit, resource) |>.symm
 
+/-- Attaching the forward left unitor `(λ_ A).hom` adjoins `dummy` on the left. -/
+lemma leftUnitor_hom_attach [CryptographicAlgebra C Phi] {A : C}
+    (resource : Phi A) :
+    attach (λ_ A).hom resource =
+      parallel (dummy (C := C)) resource := by
+  have h := congrArg (attach (λ_ A).hom) (parallel_dummy_left resource)
+  simpa only [← attach_serial, Iso.hom_inv_id, attach_identity] using h.symm
+
 /-- The dummy resource is a right unit for resource parallel: attaching the inverse right
 unitor `(ρ_ A).inv : A ⟶ A ⊗ 𝟙_ C` to `parallel resource dummy : Phi (A ⊗ 𝟙_ C)` returns
 `resource`. This is right unitality of `laxMonoidal`. -/
@@ -316,6 +333,14 @@ lemma parallel_dummy_right [CryptographicAlgebra C Phi] {A : C}
       (LaxMonoidal.μ (ResourceTheory.functor C Phi) (Opposite.op A) (𝟙_ (Opposite C))
         (resource, LaxMonoidal.ε (ResourceTheory.functor C Phi) PUnit.unit)) = resource
   exact types_congr_hom unitality (resource, PUnit.unit) |>.symm
+
+/-- Attaching the forward right unitor `(ρ_ A).hom` adjoins `dummy` on the right. -/
+lemma rightUnitor_hom_attach [CryptographicAlgebra C Phi] {A : C}
+    (resource : Phi A) :
+    attach (ρ_ A).hom resource =
+      parallel resource (dummy (C := C)) := by
+  have h := congrArg (attach (ρ_ A).hom) (parallel_dummy_right resource)
+  simpa only [← attach_serial, Iso.hom_inv_id, attach_identity] using h.symm
 
 namespace Specification
 
