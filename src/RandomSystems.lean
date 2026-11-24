@@ -117,6 +117,7 @@ public import RandomSystems.Typed.QueryRouting
 public import RandomSystems.Typed.ConditionalCall
 public import RandomSystems.Typed.ReplyTransform
 public import RandomSystems.Typed.SamplingAlgebra
+public import RandomSystems.Typed.SampleRelabel
 public import RandomSystems.Typed.Source
 public import RandomSystems.Typed.SystemCoherence
 public import RandomSystems.Typed.SystemParallel

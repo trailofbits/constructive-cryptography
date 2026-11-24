@@ -1986,6 +1986,39 @@ lemma fTransform_pi_castLE [Finite A] (μ : Distribution A) (hμ : μ.weight = 1
 
 end Products
 
+/-- A weighted sum over `P` is unchanged when `g₀ k = g₁ (s k)` on `supp P` for a
+`P`-preserving map `s`; `s` need not be bijective. -/
+lemma sum_mul_eq_of_fTransform_eq
+    -- `P` weights the draw `k`; `s` preserves `P` under pushforward.
+    {K : Type*} (P : Distribution K) (s : K → K) (hs : fTransform s P = P)
+    -- `g₀`, `g₁` are the compared real-valued weights on `K`.
+    (g₀ g₁ : K → ℝ) (h : ∀ k ∈ P.support, g₀ k = g₁ (s k)) :
+    P.sum (fun k w => w * g₀ k) = P.sum (fun k w => w * g₁ k) := by
+  calc
+    P.sum (fun k w => w * g₀ k)
+        = P.sum (fun k w => w * g₁ (s k)) :=
+          Finset.sum_congr rfl fun k hk => congrArg (P k * ·) (h k hk)
+    _   = (fTransform s P).sum (fun k w => w * g₁ k) :=
+          (sum_fTransform_mul s P g₁).symm
+    _   = P.sum (fun k w => w * g₁ k) := by rw [hs]
+
+/-- A `P`-weighted average of finite sums agrees when each index `u ∈ S` has its own
+`P`-preserving relabeling `s` matching `w₀ k u` to `w₁ (s k) u` on `supp P`. -/
+lemma sum_mul_sum_eq_of_fTransform_eq
+    -- `P` weights the draw `k`; `S` indexes the internal contributions summed for each `k`.
+    {K U : Type*} (P : Distribution K) (S : Finset U)
+    -- `w₀`, `w₁` give the contribution of `(k, u)`; `h` supplies one `P`-preserving map per `u`.
+    (w₀ w₁ : K → U → ℝ)
+    (h : ∀ u ∈ S, ∃ s : K → K, fTransform s P = P ∧
+      ∀ k ∈ P.support, w₀ k u = w₁ (s k) u) :
+    P.sum (fun k p => p * ∑ u ∈ S, w₀ k u) =
+      P.sum (fun k p => p * ∑ u ∈ S, w₁ k u) := by
+  simp only [Finsupp.sum, Finset.mul_sum]
+  rw [Finset.sum_comm, Finset.sum_comm (s := P.support)]
+  refine Finset.sum_congr rfl fun u hu => ?_
+  obtain ⟨s, hs, hEq⟩ := h u hu
+  exact sum_mul_eq_of_fTransform_eq P s hs (fun k => w₀ k u) (fun k => w₁ k u) hEq
+
 end Distribution
 
 /-- `𝒰[A]` is the normalized uniform law `Distribution.ProbDist.uniform A`, with

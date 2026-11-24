@@ -173,6 +173,11 @@ The sample is drawn once and shared by all queries, never redrawn: sampling a pu
 $`\mathrm{sample}(f(P), R) = \mathrm{sample}(P, R \circ f)`$, and attachment
 [commutes with the single draw][TypedConverter.smul_sample],
 $`\alpha\, \mathrm{sample}(P, R) = \mathrm{sample}(P, k \mapsto \alpha R_k)`$.
+When hidden reply components produce several internal histories for one visible transcript $`h`$,
+[per-history draw relabeling](SampleRelabel.lean) (`TypedSystem.sample_mass_eq_of_sum_relabel`,
+`TypedSystem.sample_mass_eq_of_display_relabel`, `TypedGame.sample_visible_mass_eq_of_relabel`)
+equates the visible probabilities whenever each contributing internal history admits its own
+$`P`$-preserving relabeling on $`\operatorname{supp} P`$.
 Two independent initial choices can be [grouped as a product][TypedSystem.sample_prod] or
 [sampled in either order][TypedSystem.sample_comm]: the second sampling law is fixed,
 independently of the first value. The laws may be nonuniform and the sample types infinite;
