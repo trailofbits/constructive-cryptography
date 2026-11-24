@@ -77,8 +77,7 @@ theorem ofProbAutomaton_eq_keyed
   rw [hsingle] at hsim
   rw [← hsim]
   -- The fresh-sampling automaton has the memoryless law of replies conditional on `k`.
-  exact Subtype.ext (RandomSystem.ofProbAutomaton_eq_memoryless A.inputDomain
-    (ProbStep.memoryless_fresh (ν k)) (ProbDist.single ()))
+  exact (ofMemoryless_eq_ofProbAutomaton (ν k)).symm
 
 /-- Keeping `k` unchanged and replying with `f k i x` retains one sampled function. -/
 lemma ofAutomaton_eq_sample
