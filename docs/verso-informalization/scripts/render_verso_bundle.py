@@ -318,7 +318,7 @@ def render_chapter_html(
             )
 
     inspector_script_tag = (
-        f"<script data-cc-inspector>{cc_inspector_js}</script>" if cc_inspector_js.strip() else ""
+        f'<script type="module" data-cc-inspector>{cc_inspector_js}</script>' if cc_inspector_js.strip() else ""
     )
 
     full_cadmo_css = escape_css_for_style(cadmo_css + "\n" + EXTRA_VERSO_SITE_CSS)

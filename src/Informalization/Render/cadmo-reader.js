@@ -31,44 +31,119 @@
      Readable offline math formatter (used directly and upgraded by KaTeX
      if KaTeX is available on the page).
      ------------------------------------------------------------------------ */
+  /* Balanced-brace command replacer so nested `{...}` (like `\mathbf{1}_{P}`) never truncate. */
+  function replaceBalanced1(str, cmd, fn) {
+    let out = "";
+    let i = 0;
+    const prefix = cmd + "{";
+    while (i < str.length) {
+      const idx = str.indexOf(prefix, i);
+      if (idx === -1) { out += str.slice(i); break; }
+      out += str.slice(i, idx);
+      let depth = 1;
+      let j = idx + prefix.length;
+      while (j < str.length && depth > 0) {
+        if (str[j] === "{") depth++;
+        else if (str[j] === "}") depth--;
+        j++;
+      }
+      if (depth === 0) {
+        const inner = str.slice(idx + prefix.length, j - 1);
+        out += fn(replaceBalanced1(inner, cmd, fn));
+        i = j;
+      } else {
+        out += prefix;
+        i = idx + prefix.length;
+      }
+    }
+    return out;
+  }
+
+  function replaceBalanced2(str, cmd, fn) {
+    let out = "";
+    let i = 0;
+    const prefix = cmd + "{";
+    while (i < str.length) {
+      const idx = str.indexOf(prefix, i);
+      if (idx === -1) { out += str.slice(i); break; }
+      out += str.slice(i, idx);
+      let d1 = 1, j = idx + prefix.length;
+      while (j < str.length && d1 > 0) {
+        if (str[j] === "{") d1++; else if (str[j] === "}") d1--;
+        j++;
+      }
+      if (d1 === 0 && str[j] === "{") {
+        const a1 = str.slice(idx + prefix.length, j - 1);
+        let d2 = 1, k = j + 1;
+        while (k < str.length && d2 > 0) {
+          if (str[k] === "{") d2++; else if (str[k] === "}") d2--;
+          k++;
+        }
+        if (d2 === 0) {
+          const a2 = str.slice(j + 1, k - 1);
+          out += fn(a1, a2);
+          i = k;
+          continue;
+        }
+      }
+      out += prefix;
+      i = idx + prefix.length;
+    }
+    return out;
+  }
+
   function prettyFallbackMath(tex) {
     if (!tex) return "";
-    return tex
-      .replace(/\\xrightarrow\{([^}]*)\}/g, "—[$1]→")
-      .replace(/\\simeq_\{([^}]*)\}/g, "≃[$1]")
-      .replace(/\\approx_\{([^}]*)\}/g, "≈[$1]")
-      .replace(/\\mathcal\{([^}]*)\}/g, "$1")
-      .replace(/\\mathrm\{([^}]*)\}/g, "$1")
-      .replace(/\\operatorname\{([^}]*)\}/g, "$1")
-      .replace(/\\mathsf\{([^}]*)\}/g, "$1")
-      .replace(/\\text\{([^}]*)\}/g, "$1")
-      .replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, "($1)/($2)")
+    let s = tex;
+    s = replaceBalanced2(s, "\\frac", (a, b) => `(${a})/(${b})`);
+    s = replaceBalanced2(s, "\\binom", (n, k) => `C(${n}, ${k})`);
+    s = replaceBalanced1(s, "\\xrightarrow", (x) => `—[${x}]→`);
+    s = replaceBalanced1(s, "\\simeq_", (x) => `≃[${x}]`);
+    s = replaceBalanced1(s, "\\approx_", (x) => `≈[${x}]`);
+    for (const cmd of ["\\mathcal", "\\mathrm", "\\mathbf", "\\boldsymbol", "\\operatorname", "\\mathsf", "\\text", "\\texttt", "\\mathrel"]) {
+      s = replaceBalanced1(s, cmd, (x) => x);
+    }
+    return s
+      .replace(/\\mathbb\{R\}_\{\\ge 0\}\^\{\\infty\}/g, "ℝ≥0∞")
+      .replace(/\\mathbb\{R\}_\{\\ge 0\}/g, "ℝ≥0")
+      .replace(/\\mathbb\{R\}/g, "ℝ")
+      .replace(/\\mathbb\{N\}/g, "ℕ")
+      .replace(/\\mathbb\{Z\}/g, "ℤ")
+      .replace(/\\mathbb\{Q\}/g, "ℚ")
       .replace(/\\varepsilon/g, "ε")
       .replace(/\\epsilon/g, "ε")
       .replace(/\\Delta/g, "Δ")
+      .replace(/\\Gamma/g, "Γ")
       .replace(/\\Pi/g, "Π")
       .replace(/\\Sigma/g, "Σ")
-      .replace(/\\pi/g, "π")
-      .replace(/\\sigma/g, "σ")
-      .replace(/\\kappa/g, "κ")
-      .replace(/\\alpha/g, "α")
-      .replace(/\\beta/g, "β")
-      .replace(/\\gamma/g, "γ")
-      .replace(/\\delta/g, "δ")
-      .replace(/\\rho/g, "ρ")
-      .replace(/\\tau/g, "τ")
-      .replace(/\\phi/g, "φ")
-      .replace(/\\psi/g, "ψ")
+      .replace(/\\Phi/g, "Φ")
+      .replace(/\\pi\b/g, "π")
+      .replace(/\\sigma\b/g, "σ")
+      .replace(/\\kappa\b/g, "κ")
+      .replace(/\\alpha\b/g, "α")
+      .replace(/\\beta\b/g, "β")
+      .replace(/\\gamma\b/g, "γ")
+      .replace(/\\delta\b/g, "δ")
+      .replace(/\\rho\b/g, "ρ")
+      .replace(/\\tau\b/g, "τ")
+      .replace(/\\phi\b/g, "φ")
+      .replace(/\\varphi\b/g, "φ")
+      .replace(/\\psi\b/g, "ψ")
       .replace(/\\iota\b/g, "ι")
       .replace(/\\theta\b/g, "θ")
       .replace(/\\lambda\b/g, "λ")
       .replace(/\\mu\b/g, "μ")
       .replace(/\\nu\b/g, "ν")
       .replace(/\\ell\b/g, "ℓ")
-      .replace(/\\varphi\b/g, "φ")
+      .replace(/\\star\b/g, "★")
+      .replace(/\\varnothing\b/g, "∅")
+      .replace(/\\emptyset\b/g, "∅")
       .replace(/\\parallel/g, "∥")
       .replace(/\\otimes\b/g, "⊗")
       .replace(/\\oplus\b/g, "⊕")
+      .replace(/\\equiv\b/g, "≡")
+      .replace(/\\simeq\b/g, "≃")
+      .replace(/\\approx\b/g, "≈")
       .replace(/\\le\b/g, "≤")
       .replace(/\\ge\b/g, "≥")
       .replace(/\\ne\b/g, "≠")
@@ -93,24 +168,26 @@
       .replace(/\\sum\b/g, "∑")
       .replace(/\\prod\b/g, "∏")
       .replace(/\\infty\b/g, "∞")
-      .replace(/\\mathbb\{R\}_\{\\ge 0\}\^\{\\infty\}/g, "ℝ≥0∞")
-      .replace(/\\mathbb\{R\}_\{\\ge 0\}/g, "ℝ≥0")
-      .replace(/\\mathbb\{R\}/g, "ℝ")
-      .replace(/\\mathbb\{N\}/g, "ℕ")
-      .replace(/\\mathbb\{Z\}/g, "ℤ")
-      .replace(/\\mathbb\{Q\}/g, "ℚ")
+      .replace(/\\Pr\b/g, "Pr")
+      .replace(/\\min\b/g, "min")
+      .replace(/\\max\b/g, "max")
       .replace(/\\left\(/g, "(")
       .replace(/\\right\)/g, ")")
       .replace(/\\left\[/g, "[")
       .replace(/\\right\]/g, "]")
       .replace(/\\left\|/g, "|")
       .replace(/\\right\|/g, "|")
+      .replace(/\\left\\\{/g, "{")
+      .replace(/\\right\\\}/g, "}")
       .replace(/\\\{/g, "{")
       .replace(/\\\}/g, "}")
       .replace(/\\,/g, " ")
       .replace(/\\;/g, " ")
       .replace(/\\!/g, "")
-      .replace(/\\_/g, "_");
+      .replace(/\\_/g, "_")
+      .replace(/\^\{\*\}/g, "*")
+      .replace(/_\{([A-Za-z0-9']+?)\}/g, "_$1")
+      .replace(/\^\{([A-Za-z0-9'+-]+?)\}/g, "^$1");
   }
 
   function renderMathSpan(tex, displayMode = false) {
@@ -458,19 +535,19 @@
         } else if (kind.mathDefinition) {
           kicker = "Definition";
           const md = kind.mathDefinition;
-          if (md.proseSummary) body.push(h("p", {}, md.proseSummary));
+          if (md.proseSummary) body.push(h("p", {}, renderMixedText(md.proseSummary)));
           if (md.equationLatex) body.push(renderMathSpan(md.equationLatex, true));
         } else if (kind.witnessCard) {
           kicker = "Witness";
           const wc = kind.witnessCard;
-          if (wc.title) body.push(h("p", {}, h("strong", {}, wc.title)));
+          if (wc.title) body.push(h("p", {}, h("strong", {}, renderMixedText(wc.title))));
           const rows = (wc.rows || []).map(([k, v]) =>
             h("tr", {}, h("th", {}, k), h("td", {}, renderMathSpan(v, false)))
           );
           body.push(h("table", { class: "cadmo-inspector-table" }, h("tbody", {}, ...rows)));
         } else if (kind.parameter) {
           kicker = "Parameter";
-          body.push(h("p", {}, kind.parameter.roleDescription || ""));
+          body.push(h("p", {}, renderMixedText(kind.parameter.roleDescription || "")));
         }
 
         const leanDetails = h("details", { class: "cadmo-lean-details" },
