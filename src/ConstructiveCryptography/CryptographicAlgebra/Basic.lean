@@ -41,8 +41,9 @@ Jost, §2.2 (printed pp. 16–19).
 
 ## Main results
 
-* `ResourceTheory.attach_serial`, `CryptographicAlgebra.attach_parallel`: attachment is
-  functorial and local
+* `ResourceTheory.attach_serial`, `CryptographicAlgebra.attach_parallel`,
+  `CryptographicAlgebra.attach_whiskerLeft`, `CryptographicAlgebra.attach_whiskerRight`,
+  `CryptographicAlgebra.whisker_attach_comm`: functorial, local, and whiskering attachment
 * `CryptographicAlgebra.parallel_assoc`, `CryptographicAlgebra.associator_hom_attach`,
   `CryptographicAlgebra.parallel_dummy_left`, `CryptographicAlgebra.leftUnitor_hom_attach`,
   `CryptographicAlgebra.parallel_dummy_right`, `CryptographicAlgebra.rightUnitor_hom_attach`:
@@ -254,6 +255,25 @@ theorem attach_parallel [CryptographicAlgebra C Phi]
   have naturality := LaxMonoidal.μ_natural (ResourceTheory.functor C Phi)
     leftConverter.op rightConverter.op
   exact types_congr_hom naturality (left, right) |>.symm
+
+/-- Left-whiskering `A ◁ β` acts on the right component of a parallel resource. -/
+lemma attach_whiskerLeft [CryptographicAlgebra C Phi] {A B B' : C}
+    (β : B' ⟶ B) (left : Phi A) (right : Phi B) :
+    attach (A ◁ β) (parallel left right) = parallel left (attach β right) := by
+  rw [← id_tensorHom, attach_parallel, attach_identity]
+
+/-- Right-whiskering `α ▷ B` acts on the left component of a parallel resource. -/
+lemma attach_whiskerRight [CryptographicAlgebra C Phi] {A A' B : C}
+    (α : A' ⟶ A) (left : Phi A) (right : Phi B) :
+    attach (α ▷ B) (parallel left right) = parallel (attach α left) right := by
+  rw [← tensorHom_id, attach_parallel, attach_identity]
+
+/-- Right-whiskering and left-whiskering attachments commute by monoidal interchange. -/
+lemma whisker_attach_comm [CryptographicAlgebra C Phi] {A A' B B' : C}
+    (α : A' ⟶ A) (β : B' ⟶ B) (resource : Phi (A ⊗ B)) :
+    attach (α ▷ B') (attach (A ◁ β) resource) =
+      attach (A' ◁ β) (attach (α ▷ B) resource) := by
+  simp only [← attach_serial, whisker_exchange]
 
 /-- Ordered resource parallel is associative through the routed associator. For
 `left : Phi A`, `middle : Phi B` and `right : Phi D`, the rebracketing converter
