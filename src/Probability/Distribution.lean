@@ -37,6 +37,8 @@ distribution is a nonnegative distribution of weight `1` [1, Definitions 1, 2 an
   the rest
 * pushforward: `mass_fTransform`, `weight_fTransform`, `fTransform_comp`,
   `fTransform_prod`, `fTransform_equiv_uniform`
+* `uniform_congr_fintype`, `ProbDist.uniform_congr_fintype`: the uniform law does not depend on
+  the chosen `Fintype` enumeration
 * products: `prod_apply`, `weight_prod`, `mass_prod_fst`, `mass_prod_snd`,
   `mass_prod_eq_sum`, `weight_pi`, `marginalAt_pi`, `fTransform_pi_castLE` (the first `k'` of `k`
   independent samples)
@@ -688,6 +690,30 @@ instance : IsProbability (uniform A) := ⟨uniform_nonNeg, weight_uniform⟩
 masses, together with the proof `uniform_isProbDist` that they are normalized. -/
 noncomputable def ProbDist.uniform (A : Type*) [Fintype A] [Nonempty A] : ProbDist A :=
   ⟨Distribution.uniform A, uniform_isProbDist⟩
+
+omit [Fintype A] [Nonempty A] [Fintype B] [Nonempty B]
+  [Fintype Ω] [Nonempty Ω] [Fintype C] [Nonempty C] in
+/-- Any two `Fintype` enumerations of the same nonempty type `A` define the same uniform
+distribution. -/
+lemma uniform_congr_fintype
+    -- `A` is the sample carrier; `inst₁` and `inst₂` are any two finite enumerations of `A`.
+    {A : Type*} (inst₁ inst₂ : Fintype A) [Nonempty A] :
+    @uniform A inst₁ _ = @uniform A inst₂ _ := by
+  -- Every carrier has at most one `Fintype` structure (`Subsingleton.elim`).
+  cases Subsingleton.elim inst₁ inst₂
+  rfl
+
+omit [Fintype A] [Nonempty A] [Fintype B] [Nonempty B]
+  [Fintype Ω] [Nonempty Ω] [Fintype C] [Nonempty C] in
+/-- Any two `Fintype` enumerations of the same nonempty type `A` define the same normalized
+uniform law. -/
+lemma ProbDist.uniform_congr_fintype
+    -- `A` is the sample carrier; `inst₁` and `inst₂` are any two finite enumerations of `A`.
+    {A : Type*} (inst₁ inst₂ : Fintype A) [Nonempty A] :
+    @ProbDist.uniform A inst₁ _ = @ProbDist.uniform A inst₂ _ := by
+  -- Every carrier has at most one `Fintype` structure (`Subsingleton.elim`).
+  cases Subsingleton.elim inst₁ inst₂
+  rfl
 
 /-- The unique probability distribution on a one-point sample space. -/
 def unitProbDist : ProbDist PUnit :=
