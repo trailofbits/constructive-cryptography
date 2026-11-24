@@ -124,7 +124,7 @@ example {H H' P Q : Interface} {K : Type} (law : Distribution K) [Distribution.I
   constructor <;> cc_normalize
 
 /-- Multi-step protocol assembly combining `(α ⊗ₘ 𝟙)` and `(α_ K L P).hom` with a whiskered
-right-port converter normalizes in one call. -/
+right-port converter reduces to the component equation `hshare`. -/
 example {A K L P M : Interface}
     (α : A ⟶ K ⊗ L) (share : L ⊗ P ⟶ M)
     (R : TypedSystem K) (S : TypedSystem M) (T : TypedSystem L) (U : TypedSystem P)
