@@ -48,7 +48,8 @@ def libraryPrefixes : List Name :=
     `Prod, `Sum, `Sigma, `Set, `Finset, `Fintype, `Function, `Equiv, `BitVec, `ByteArray,
     `Classical, `Decidable, `OfNat, `Add, `Sub, `Mul, `Div, `Pow, `HAdd, `HSub, `HMul, `HDiv, `HPow,
     `LE, `LT, `GE, `GT, `Min, `Max, `LinearOrder, `PartialOrder, `Preorder,
-    `Positivity, `NormNum, `Mathlib.Tactic, `Lean.Omega ]
+    `Positivity, `NormNum, `Mathlib.Tactic, `Lean.Omega,
+    `optParam, `autoParam, `outParam, `semiOutParam, `id, `ite, `dite ]
 
 /-- Does `n` live in Lean core / Mathlib (as opposed to CC or a downstream crypto project)? -/
 def isCoreOrMathlib (n : Name) : Bool :=

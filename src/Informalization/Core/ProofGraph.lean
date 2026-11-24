@@ -242,10 +242,21 @@ private partial def dedupSiblings (nodes : Array ProofNode) : Array ProofNode :=
           seenRoutineIdx := seenRoutineIdx.insert summary out.size
           out := out.push (.routineReceipt id summary count details goal?)
     | _ =>
-        let key := String.intercalate "|" (n.collectAllText.toList)
-        if !key.isEmpty && seen.contains key then
+        let visibleKey : String :=
+          match n with
+          | .step _ content _ _ _ _ _ _ =>
+              let parts := content.map fun
+                | .text s => s
+                | .emph s => s
+                | .inlineMath s => s
+                | .displayMath s p => s ++ p
+                | .symbol _ d _ => d
+                | .citation l d => l ++ " " ++ d
+              String.intercalate "|" parts.toList
+          | _ => String.intercalate "|" (n.collectAllText.toList)
+        if !visibleKey.isEmpty && seen.contains visibleKey then
           continue
-        seen := seen.insert key
+        seen := seen.insert visibleKey
         out := out.push n
   return out
 

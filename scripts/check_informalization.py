@@ -159,13 +159,18 @@ def inline_raw_texts(inl: Any) -> List[str]:
 
 def pretty_math_for_lint(tex: str) -> str:
     """Normalize common LaTeX macros to readable glyphs for cross-inline article lint."""
-    return (
+    s = (
         tex.replace("\\varepsilon", "ε")
         .replace("\\epsilon", "ε")
+        .replace("\\, ", " ")
+        .replace("\\; ", " ")
+        .replace(" \\,", " ")
+        .replace(" \\;", " ")
         .replace("\\,", " ")
         .replace("\\;", " ")
         .replace("\\!", "")
     )
+    return re.sub(r"  +", " ", s)
 
 
 def flatten_inlines_joined(inlines: Any) -> str:
