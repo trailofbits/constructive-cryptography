@@ -12,6 +12,7 @@ public import Probability.Expectation
 public import Probability.Group
 public import Probability.Kernel
 public import Probability.Lift
+public import Probability.List
 public import Probability.MultiCoupling
 public import Probability.StatisticalDistance
 

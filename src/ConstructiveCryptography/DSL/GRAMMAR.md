@@ -492,16 +492,16 @@ before/after proofs, expression guards, negative tests and exact rewrite traces 
 [Interface.portBudget]: ../../RandomSystems/Typed/Interface.lean#L103
 [TypedSystem.source]: ../../RandomSystems/Typed/Source.lean#L55
 [TypedSystem.ofAutomaton]: ../../RandomSystems/Typed/Automaton.lean#L77
-[TypedConverter.rightContext]: ../../RandomSystems/Typed/Context.lean#L113
+[TypedConverter.rightContext]: ../../RandomSystems/Typed/Context.lean#L134
 [TypedConverter.filter]: ../../RandomSystems/Typed/Filter.lean#L64
-[TypedConverter.ofProgram]: ../../RandomSystems/Typed/DSL/Converters.lean#L48
-[TypedConverter.ofCostedProgram]: ../../RandomSystems/Typed/DSL/Converters.lean#L66
-[TypedConverter.ofPreservingProgram]: ../../RandomSystems/Typed/DSL/Converters.lean#L89
-[TypedConverter.ofProgram_smul_ofAutomaton]: ../../RandomSystems/Typed/DSL/Converters.lean#L197
+[TypedConverter.ofProgram]: ../../RandomSystems/Typed/DSL/Converters.lean#L63
+[TypedConverter.ofCostedProgram]: ../../RandomSystems/Typed/DSL/Converters.lean#L109
+[TypedConverter.ofPreservingProgram]: ../../RandomSystems/Typed/DSL/Converters.lean#L164
+[TypedConverter.ofProgram_smul_ofAutomaton]: ../../RandomSystems/Typed/DSL/Converters.lean#L283
 [TypedConverter.ofPreservingProgram_smul_ofAutomaton]:
-  ../../RandomSystems/Typed/DSL/Converters.lean#L211
+  ../../RandomSystems/Typed/DSL/Converters.lean#L297
 [TypedConverter.ofCostedProgram_smul_ofAutomaton]:
-  ../../RandomSystems/Typed/DSL/Converters.lean#L232
+  ../../RandomSystems/Typed/DSL/Converters.lean#L318
 [desugarSampling]: Elaborator.lean#L206
 [elabInterface]: Elaborator.lean#L366
 [elabComponent]: Elaborator.lean#L998

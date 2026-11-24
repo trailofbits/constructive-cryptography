@@ -27,7 +27,9 @@ The security predicates bound each typed distinguisher's advantage by `error d`,
 * `MAC K M T`: the syntax
 * `MAC.Correct`: correctness
 * `Tagging M T`: the interface of tagging and verification
+* `MACAlgorithms K M T`: the stateless interface of tagging and verification with explicit keys
 * `MAC.system mac`: `S_k` and `V_k` for `k ← G`
+* `MAC.algorithms mac`: stateless `S(k, m)` and `V(k, m, t)` for caller-supplied keys
 * `MAC.EUF`, `MAC.SUF`: verification restricted to the tagged messages, and to the tagged pairs
 * `MAC.EUFCMA.systems`, `MAC.SUFCMA.systems`: the systems of EUF-CMA and SUF-CMA
 * `MAC.EUFCMA`, `MAC.SUFCMA`: these notions for the admitted distinguishers, within an error
@@ -67,6 +69,10 @@ interface Tagging(M T : Type) [Fintype M] [Fintype T]
   tag(message : M) → T
   verify(message : M, tag : T) → Bool
 
+interface MACAlgorithms(K M T : Type) [Fintype K] [Fintype M] [Fintype T]
+  tag(key : K, message : M) → T
+  verify(key : K, message : M, tag : T) → Bool
+
 noncomputable section
 
 -- `K` carries shared keys, `M` messages, and `T` authentication tags.
@@ -90,6 +96,17 @@ system MAC.system
     tags ←$ mac.tags
     return tags (key, message)
   on verify(message : M, tag : T) → Bool
+    return mac.verify key message tag
+
+/-- Stateless tagging and verification with the key passed as a query argument.
+Each `tag(k, m)` draws a fresh `mac.tag k m`; `verify(k, m, t)` returns `mac.verify k m t`. -/
+system MAC.algorithms
+    -- `mac` supplies the tagging law and verification predicate.
+    (mac : MAC K M T) [DecidableEq K] [DecidableEq M] : MACAlgorithms K M T
+  on tag(key : K, message : M) → T
+    tags ←$ mac.tags
+    return tags (key, message)
+  on verify(key : K, message : M, tag : T) → Bool
     return mac.verify key message tag
 
 -- Retain requested messages in `tagged`; verification returns `valid && tagged.contains message`.

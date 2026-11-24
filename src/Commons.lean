@@ -24,6 +24,7 @@ public import Commons.Definitions.KEM
 public import Commons.Definitions.Nonce
 public import Commons.Definitions.NonceAEAD
 public import Commons.Definitions.MAC
+public import Commons.Definitions.MAC.Algorithms
 public import Commons.Definitions.MAC.Keyed
 public import Commons.Definitions.ReplyTransform
 public import Commons.Definitions.PRF

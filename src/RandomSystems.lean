@@ -31,6 +31,7 @@ public import RandomSystems.Converter.ResourceAttachment
 public import RandomSystems.Converter.ResourceCanon
 public import RandomSystems.Converter.SerialAccounting
 public import RandomSystems.Converter.QueryRouting
+public import RandomSystems.Converter.ConditionalCall
 public import RandomSystems.Cumulative.ConnectionObservation
 public import RandomSystems.Cumulative.Cumulative
 public import RandomSystems.Cumulative.CumulativeAttachment
@@ -79,6 +80,7 @@ public import RandomSystems.System.Replies
 public import RandomSystems.Typed.Automaton
 public import RandomSystems.Typed.AutomatonGame
 public import RandomSystems.Typed.Context
+public import RandomSystems.Typed.Unitors
 public import RandomSystems.Typed.ConverterCoherence
 public import RandomSystems.Typed.DDCCoherence
 public import RandomSystems.Typed.Distance
@@ -112,6 +114,7 @@ public import RandomSystems.Typed.ProbProgramAttachment
 public import RandomSystems.Typed.Relabel
 public import RandomSystems.Typed.RecordingGuard
 public import RandomSystems.Typed.QueryRouting
+public import RandomSystems.Typed.ConditionalCall
 public import RandomSystems.Typed.ReplyTransform
 public import RandomSystems.Typed.SamplingAlgebra
 public import RandomSystems.Typed.Source
