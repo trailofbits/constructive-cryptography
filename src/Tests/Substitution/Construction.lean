@@ -1,5 +1,7 @@
 module
 
+public import ConstructiveCryptography.CryptographicAlgebra.Star
+
 public import ConstructiveCryptography.Substitution.Construction
 
 /-!
@@ -100,3 +102,19 @@ lemma construction_serial_disjoint [MonoidalCategory C]
   simpa only [← converter_parallel_serial, Category.id_comp] using result
 
 end Tests.Substitution.Construction
+
+namespace SimulatorImageTests
+
+open CategoryTheory CategoryTheory.MonoidalCategory ConstructiveCryptography
+open ConstructiveCryptography.CryptographicAlgebra
+
+/-- With no admitted simulator, even an inhabited input specification has empty image. -/
+example {C : Type} [Category C] [MonoidalCategory C] {Φ : C → Type} [ResourceTheory C Φ]
+    {H P Q : C} (S : Specification (Φ (H ⊗ Q))) :
+    CryptographicAlgebra.Specification.simulatorImage (∅ : Set (P ⟶ Q)) S = ∅ := by
+  apply Set.eq_empty_iff_forall_notMem.mpr
+  intro x hx
+  obtain ⟨_, _, σ, hσ, _⟩ := Specification.mem_lift_iff.mp hx
+  exact hσ
+
+end SimulatorImageTests
