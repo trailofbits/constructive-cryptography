@@ -21,7 +21,7 @@ preserves `CapacityCollisionFree`. -/
 lemma capacityCollisionFree_insertEdge_contract :
     let e1 : PermutationEdge (Fin 4) := ⟨0, 1, false⟩
     let e2 : PermutationEdge (Fin 4) := ⟨2, 3, true⟩
-    let eDup : PermutationEdge (Fin 4) := ⟨0, 0, false⟩
+    let eDup : PermutationEdge (Fin 4) := ⟨0, 1, true⟩
     let t1 := insertEdge ([] : List (PermutationEdge (Fin 4))) e1
     let t2 := insertEdge t1 e2
     let t3 := insertEdge t2 eDup
@@ -59,6 +59,15 @@ lemma capacityCollisionFree_insertEdge_contract :
       (by simp only [t1, insertEdge, List.not_mem_nil, false_and, exists_false, ↓reduceIte,
         List.nil_append, List.mem_singleton])
   exact False.elim (hfresh e1 hmem rfl)
+
+/-- After a forward query at `x`, an inverse query at `π x` returns along the same edge.
+The table keeps one entry with its original forward direction. -/
+example {State : Type*} [DecidableEq State] (π : Equiv.Perm State) (x : State) :
+    let forward := queryEdge π false x
+    insertEdge [forward] (queryEdge π true (π x)) = [forward] := by
+  intro forward
+  apply insertEdge_eq_self_of_input_mem (List.mem_singleton_self forward)
+  exact (π.symm_apply_apply x).symm
 
 /-- Orthogonal digest injectivity is preserved by `digest_injOn_insertEdge`. -/
 lemma digest_injOn_insertEdge_contract :
