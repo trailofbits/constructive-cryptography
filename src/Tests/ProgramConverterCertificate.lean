@@ -7,7 +7,7 @@ public import ConstructiveCryptography.Notation
 /-!
 # Tests for named program converter certificates
 
-Verifies the acceptance criteria of issue #398:
+Checks rewriting at named program certificates:
 * A family of forwarding programs equals the converter of their joint forwarding program as an
   equation at the named certificates (`TypedConverter.ofProgram_isDDCFrom`,
   `TypedConverter.ofProgram_eq_ofDDC`, `TypedConverter.ofPreservingProgram_eq_ofDDC`).
@@ -46,6 +46,7 @@ lemma forwardProgram_portPreserving (A : Interface) :
 lemma replies_forwardProgram_le_forwardAll (A : Interface) :
     ∀ xs ys, Replies (DDC.ofProgram () (forwardProgram A)) xs ys →
       Replies (forwardAll A.I A.X A.Y) xs ys := by
+  -- Track whether the primitive forwarder is idle or waiting for its one unchanged query.
   suffices key : ∀ t : List ((Σ l, twoFam A.X A.Y l) × (Σ l, twoFam A.Y A.X l)),
       Replies (DDC.ofProgram () (forwardProgram A)) (t.map Prod.fst) (t.map Prod.snd) →
         Replies (forwardAll A.I A.X A.Y) (t.map Prod.fst) (t.map Prod.snd) ∧
@@ -122,31 +123,7 @@ lemma length_restrict_eq_sigmaAssoc {K : Type} [Fintype K] (q : K → ℕ) (k : 
         hk (congrArg Sigma.fst h)
       simp [restrict, Equiv.sigmaAssoc, hk, hne, ih]
 
-/-- The parallel family of `forwardAll` converters is `forwardAll` on the joint interface. -/
-lemma tensorAllRaw_forwardAll {K : Type} [Fintype K] (A : K → Interface) :
-    tensorAllRaw (O := fun k => (A k).I) (J := fun k => (A k).I)
-      (U := fun k => (A k).X) (V := fun k => (A k).Y)
-      (X := fun k => (A k).X) (Y := fun k => (A k).Y)
-      (fun k => forwardAll (A k).I (A k).X (A k).Y) =
-      forwardAll (⨂ k, A k).I (⨂ k, A k).X (⨂ k, A k).Y := by
-  classical
-  funext xs
-  rcases List.eq_nil_or_concat xs with rfl | ⟨xs, x, rfl⟩
-  · simp [tensorAllRaw, relabel, parAll, forwardAll]
-  · rw [List.concat_eq_append]
-    rcases x with ⟨⟨_ | ⟨⟨⟩⟩, ⟨k, i⟩⟩, v⟩
-    · simp only [tensorAllRaw, relabel, parAll, List.map_append, List.map_singleton,
-        List.getLast?_append, List.getLast?_singleton, Option.some_or, restrict_append,
-        tensorAllInputs, Equiv.coe_fn_mk, restrict_cons_self, restrict_nil,
-        forwardAll_snoc_outer, Part.map_some]
-      rfl
-    · simp only [tensorAllRaw, relabel, parAll, List.map_append, List.map_singleton,
-        List.getLast?_append, List.getLast?_singleton, Option.some_or, restrict_append,
-        tensorAllInputs, Equiv.coe_fn_mk, restrict_cons_self, restrict_nil,
-        forwardAll_snoc_inner, Part.map_some]
-      rfl
-
-/-- Acceptance criterion 1: a family of forwarding programs equals the converter of their joint
+/-- A family of forwarding programs equals the converter of their joint
 forwarding program as an equation at the named certificates (`ofProgram_isDDCFrom` and
 `ofPreservingProgram_isDDCFrom`). -/
 lemma parallelAll_forwardProgram_eq_joint {K : Type} [Fintype K] (q : K → ℕ) :
@@ -170,6 +147,28 @@ lemma parallelAll_forwardProgram_eq_joint {K : Type} [Fintype K] (q : K → ℕ)
           · refine Or.inr ⟨he, ?_⟩
             rw [← length_restrict_eq_sigmaAssoc q k ys]
             exact hport ⟨k, ()⟩ ⟨k, ()⟩ rfl) := by
+  have tensorAllRaw_forwardAll {K : Type} [Fintype K] (A : K → Interface) :
+      tensorAllRaw (O := fun k => (A k).I) (J := fun k => (A k).I)
+        (U := fun k => (A k).X) (V := fun k => (A k).Y)
+        (X := fun k => (A k).X) (Y := fun k => (A k).Y)
+        (fun k => forwardAll (A k).I (A k).X (A k).Y) =
+        forwardAll (⨂ k, A k).I (⨂ k, A k).X (⨂ k, A k).Y := by
+    classical
+    funext xs
+    rcases List.eq_nil_or_concat xs with rfl | ⟨xs, x, rfl⟩
+    · simp [tensorAllRaw, relabel, parAll, forwardAll]
+    · rw [List.concat_eq_append]
+      rcases x with ⟨⟨_ | ⟨⟨⟩⟩, ⟨k, i⟩⟩, v⟩
+      · simp only [tensorAllRaw, relabel, parAll, List.map_append, List.map_singleton,
+          List.getLast?_append, List.getLast?_singleton, Option.some_or, restrict_append,
+          tensorAllInputs, Equiv.coe_fn_mk, restrict_cons_self, restrict_nil,
+          forwardAll_snoc_outer, Part.map_some]
+        rfl
+      · simp only [tensorAllRaw, relabel, parAll, List.map_append, List.map_singleton,
+          List.getLast?_append, List.getLast?_singleton, Option.some_or, restrict_append,
+          tensorAllInputs, Equiv.coe_fn_mk, restrict_cons_self, restrict_nil,
+          forwardAll_snoc_inner, Part.map_some]
+        rfl
   classical
   simp_rw [TypedConverter.ofProgram_eq_ofDDC, TypedConverter.ofPreservingProgram_eq_ofDDC]
   change PDCBehavior.tensorAll (fun k => PDCBehavior.ofDDC _ _) = PDCBehavior.ofDDC _ _
@@ -192,7 +191,7 @@ lemma parallelAll_forwardProgram_eq_joint {K : Type} [Fintype K] (q : K → ℕ)
     exact replies_forwardProgram_le_forwardAll _ xs ys
       (hr.mono fun h y hy => ((filterDom_mem_iff _ _ h y).mp hy).2)
 
-/-- Acceptance criterion 2: rewrite an `ofProgram` converter into `ofDDC` form via
+/-- Rewrite an `ofProgram` converter into `ofDDC` form via
 `ofProgram_eq_ofDDC` and apply `TypedConverter.ofDDC_ofProgramOn_smul_ofPDS` directly. -/
 example {A B : Interface} {S : Type} (s : S) (P : Program S A.I B.I A.X A.Y B.X B.Y) {b : ℕ}
     (hb : P.Bounded b) (hB : ∀ xs, xs ≠ [] → xs.length ≤ b * A.bound → B.domain xs)
