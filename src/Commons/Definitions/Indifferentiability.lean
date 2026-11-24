@@ -8,7 +8,8 @@ public import ConstructiveCryptography.Notation.Basic
 
 The specification contains resources within `ε` of `(H ◁ σ) • ideal` for some admitted
 `σ` [1, §§3.4, 4.2, pp. 8, 12]. `constructs_of_simulator` supplies this witness.
-`compose` and `compose_mixed` apply the algebra's composition laws to this specification.
+`compose`, `trans`, `trans_subset`, and `compose_mixed` apply the algebra's composition laws to
+this specification.
 
 ## References
 
@@ -72,6 +73,35 @@ lemma compose {H H' P Q B : C} {protocol : H ⊗ P ⟶ B} {application : H' ⟶ 
       epsilonRelaxation (indifferentiabilityError + applicationError)
         (simulatorImage simulators target) :=
   Constructs.serial_simulatorImage indifferentiable idealApplication
+
+/-- **Transitivity of indifferentiability**: composing two indifferentiable constructions yields
+`specification target (Set.image2 (· ≫ ·) outer inner) (outerError + innerError)`. -/
+lemma trans {H H' P Q R B : C} {protocol : H ⊗ P ⟶ B} {application : H' ⟶ H}
+    {outer : Set (P ⟶ Q)} {inner : Set (Q ⟶ R)}
+    {real : ConstructiveCryptography.Specification (Phi B)}
+    {middle : Phi (H ⊗ Q)} {target : Phi (H' ⊗ R)}
+    {outerError innerError : ENNReal}
+    (hOuter : real —[protocol]→ specification middle outer outerError)
+    (hInner : ({middle} : ConstructiveCryptography.Specification (Phi (H ⊗ Q)))
+      —[application ▷ Q]→ specification target inner innerError) :
+    real —[(application ▷ P) ≫ protocol]→
+      specification target (Set.image2 (· ≫ ·) outer inner) (outerError + innerError) :=
+  Constructs.serial_simulatorImage_trans hOuter hInner
+
+/-- Transitivity of indifferentiability into an explicitly budgeted composite simulator class
+`composites` admitting `σ ≫ τ` for every `σ ∈ outer` and `τ ∈ inner`. -/
+lemma trans_subset {H H' P Q R B : C} {protocol : H ⊗ P ⟶ B} {application : H' ⟶ H}
+    {outer : Set (P ⟶ Q)} {inner : Set (Q ⟶ R)} {composites : Set (P ⟶ R)}
+    {real : ConstructiveCryptography.Specification (Phi B)}
+    {middle : Phi (H ⊗ Q)} {target : Phi (H' ⊗ R)}
+    {outerError innerError : ENNReal}
+    (admitted : ∀ σ ∈ outer, ∀ τ ∈ inner, σ ≫ τ ∈ composites)
+    (hOuter : real —[protocol]→ specification middle outer outerError)
+    (hInner : ({middle} : ConstructiveCryptography.Specification (Phi (H ⊗ Q)))
+      —[application ▷ Q]→ specification target inner innerError) :
+    real —[(application ▷ P) ≫ protocol]→
+      specification target composites (outerError + innerError) :=
+  Constructs.serial_simulatorImage_trans_subset admitted hOuter hInner
 
 /-- Composing a keyed or mixed application `application k` with an arbitrary indifferentiable
 realization `protocol : H ⊗ P ⟶ B` yields `specification target simulators (ε + δ)`. -/

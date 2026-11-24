@@ -127,13 +127,42 @@ example {H H' P Q B : Interface} (protocol : H ⊗ P ⟶ B) (application : H' �
     _ = (H' ◁ simulator) • ((application ▷ Q) • ideal) := exchange
     _ ≈[δ] (H' ◁ simulator) • target := idealApplication
 
+/-- Two-layer indifferentiability transitivity on `Interface` with unequal ports `P`, `Q`, `R`,
+both into `Set.image2 (· ≫ ·) outer inner` and into an explicitly budgeted `composites` class. -/
+example {H H' P Q R B : Interface} (protocol : H ⊗ P ⟶ B) (application : H' ⟶ H)
+    (outer : Set (P ⟶ Q)) (inner : Set (Q ⟶ R)) (composites : Set (P ⟶ R))
+    (admitted : ∀ σ ∈ outer, ∀ τ ∈ inner, σ ≫ τ ∈ composites)
+    (σ : P ⟶ Q) (hσ : σ ∈ outer) (τ : Q ⟶ R) (hτ : τ ∈ inner)
+    (real : TypedSystem B) (middle : TypedSystem (H ⊗ Q)) (target : TypedSystem (H' ⊗ R))
+    {ε δ : ENNReal}
+    (hOuter : Δ (protocol • real) ((H ◁ σ) • middle) ≤ ε)
+    (hInner : Δ ((application ▷ Q) • middle) ((H' ◁ τ) • target) ≤ δ) :
+    (({real} : Specification (TypedSystem B)) —[(application ▷ P) ≫ protocol]→
+      Indifferentiability.specification target (Set.image2 (· ≫ ·) outer inner) (ε + δ)) ∧
+      (({real} : Specification (TypedSystem B)) —[(application ▷ P) ≫ protocol]→
+        Indifferentiability.specification target composites (ε + δ)) := by
+  have cOuter := Indifferentiability.constructs_of_simulator σ hσ hOuter
+  have cInner := Indifferentiability.constructs_of_simulator τ hτ hInner
+  exact ⟨Indifferentiability.trans cOuter cInner,
+    Indifferentiability.trans_subset admitted cOuter cInner⟩
+
+/-- `cc_normalize` unfolds serial composite-simulator attachment on `Interface`. -/
+example {H' P Q R : Interface} (σ : P ⟶ Q) (τ : Q ⟶ R) (target : TypedSystem (H' ⊗ R)) :
+    (H' ◁ (σ ≫ τ)) • target = (H' ◁ σ) • ((H' ◁ τ) • target) := by
+  rw [whiskerLeft_comp]
+  cc_normalize
+
 #print axioms constructs_of_simulatorImage
 #print axioms Constructs.serial_simulatorImage
 #print axioms Constructs.serial_simulatorImage_whiskerRight
+#print axioms Constructs.serial_simulatorImage_trans
+#print axioms Constructs.serial_simulatorImage_trans_subset
 #print axioms mixed_application_of_indifferentiability
 #print axioms mixed_application_of_indifferentiability_whiskerRight
 #print axioms Indifferentiability.constructs_of_simulator
 #print axioms Indifferentiability.compose
+#print axioms Indifferentiability.trans
+#print axioms Indifferentiability.trans_subset
 #print axioms Indifferentiability.compose_mixed
 
 end Tests.IndifferentiabilityComposition
