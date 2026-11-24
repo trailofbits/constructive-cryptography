@@ -96,6 +96,7 @@ public import Tests.HashExtractor
 public import Tests.ActiveUserBank
 public import Tests.SpongeTable
 public import Tests.Sponge
+public import Tests.PRF
 
 /-! Axiom audits per layer and of the Commons library, the checks of the
 authenticated-encryption example,
