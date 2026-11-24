@@ -63,6 +63,8 @@ domination law needed by statistical steps of a substitution chain.
 * `Interface.associator_hom_attach`, `Interface.leftUnitor_hom_attach`,
   `Interface.rightUnitor_hom_attach`: the forward associator and unitor attachment laws,
   instantiated from the `CryptographicAlgebra` class laws
+* `Interface.whiskerLeft_smul`, `Interface.whiskerRight_smul`, `Interface.whisker_smul_comm`:
+  whiskering attachment and interchange laws on typed systems, from the class laws
 * `Interface.parallel_swap`: parallel composition is commutative through the swap
 * `Interface.distinguishers_attach`, `Interface.distinguishers_parallel_left`,
   `Interface.distinguishers_parallel_right`: closure
@@ -185,6 +187,27 @@ lemma rightUnitor_hom_attach {A : Interface} (R : TypedSystem A) :
     ((rightUnitor A).hom • R : TypedSystem (tensor A unit)) =
       TypedSystem.parallel R TypedSystem.dummy :=
   ConstructiveCryptography.CryptographicAlgebra.rightUnitor_hom_attach R
+
+/-- Left-whiskering `A ◁ β` acts on the right typed system, from the class law. -/
+lemma whiskerLeft_smul {A B B' : Interface} (β : B' ⟶ B)
+    (R : TypedSystem A) (S : TypedSystem B) :
+    ((A ◁ β) • TypedSystem.parallel R S : TypedSystem (tensor A B')) =
+      TypedSystem.parallel R (β • S) :=
+  ConstructiveCryptography.CryptographicAlgebra.attach_whiskerLeft β R S
+
+/-- Right-whiskering `α ▷ B` acts on the left typed system, from the class law. -/
+lemma whiskerRight_smul {A A' B : Interface} (α : A' ⟶ A)
+    (R : TypedSystem A) (S : TypedSystem B) :
+    ((α ▷ B) • TypedSystem.parallel R S : TypedSystem (tensor A' B)) =
+      TypedSystem.parallel (α • R) S :=
+  ConstructiveCryptography.CryptographicAlgebra.attach_whiskerRight α R S
+
+/-- Right-whiskering and left-whiskering attachments commute on typed systems. -/
+lemma whisker_smul_comm {A A' B B' : Interface} (α : A' ⟶ A) (β : B' ⟶ B)
+    (R : TypedSystem (tensor A B)) :
+    ((α ▷ B') • ((A ◁ β) • R) : TypedSystem (tensor A' B')) =
+      (A' ◁ β) • ((α ▷ B) • R) :=
+  ConstructiveCryptography.CryptographicAlgebra.whisker_attach_comm α β R
 
 /-- Typed distinguishers evaluate by their output-1 behavior: `probability d R = d.1 R`, the
 probability that `d` connected to `R` outputs `1`. -/

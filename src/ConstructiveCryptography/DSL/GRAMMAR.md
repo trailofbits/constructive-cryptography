@@ -514,10 +514,10 @@ before/after proofs, expression guards, negative tests and exact rewrite traces 
 [MemorylessSource.memoryless_eq]: ../../Commons/Definitions/Ideal.lean#L370
 [WriteThrough]: ../../Examples/DSL/Components.lean#L108
 [cc_normalize]: ../Tactics/Basic.lean#L34
-[cc_nonexpand]: ../Tactics/Categorical.lean#L171
+[cc_nonexpand]: ../Tactics/Categorical.lean#L180
 [cc_nonexpand-interfaces]: ../Notation.lean#L176
-[cc_triangle]: ../Tactics/Categorical.lean#L160
-[cc_construct]: ../Tactics/Categorical.lean#L47
+[cc_triangle]: ../Tactics/Categorical.lean#L169
+[cc_construct]: ../Tactics/Categorical.lean#L56
 [cc_calc]: ../Tactics/Substitution.lean#L105
 [cc_calc-counted]: ../Tactics/Substitution.lean#L164
 [cc_usage]: ../Tactics/Substitution.lean#L260

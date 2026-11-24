@@ -19,7 +19,10 @@ This represents a "conditional probability distribution" `p_{Y|X}` [1, §3.6.1, 
 
 `ProbDist.map` and `ProbDist.bind` retain normalization. `ProbDist.map_id` removes the
 identity map; `ProbDist.map_map` composes deterministic transformations, and `ProbDist.map_pi_apply`
-selects one coordinate of an independent table. `prodProbDist_uniform` identifies independent
+selects one coordinate of an independent table. `ProbDist.map_piDep_comp` selects distinct
+coordinates of a dependent table, `ProbDist.map_piDep_comp_comp` factors a selection through an
+injective map, and `ProbDist.map_piDep_comp_eq_of_eq_iff` identifies tuple laws of tables with one
+entry law whenever the same indices coincide. `prodProbDist_uniform` identifies independent
 uniform coordinates with a uniform pair. `prodProbDist_map` and its one-coordinate forms
 `prodProbDist_map_left`, `prodProbDist_map_right` transport independent draws:
 
@@ -412,6 +415,47 @@ lemma map_piDep_comp
   apply Subtype.ext
   exact fTransform_piDep_comp_of_weight_eq_one (fun i => (μ i).1) e he
     (fun i _ => (μ i).2.2)
+
+/-- Selecting coordinates through an injective map `e` agrees with selecting on `e`'s domain. -/
+lemma map_piDep_comp_comp
+    -- `I` indexes the original table, `J` the intermediate domain, and `K` the output tuple.
+    {I J K : Type*} [Fintype I] [Fintype J] {A : I → Type*}
+    -- `μ i` is the normalized coordinate law; `e` injects `J` into `I`, and `π` indexes `J`.
+    (μ : ∀ i, ProbDist (A i)) (e : J → I) (he : Function.Injective e) (π : K → J) :
+    (ProbDist.piDep μ).map (fun f k => f (e (π k))) =
+      (ProbDist.piDep fun j => μ (e j)).map (fun g k => g (π k)) := by
+  rw [← map_piDep_comp μ e he, map_map]
+  rfl
+
+/-- For independent tables with one entry law, tuples with the same coincidence pattern have
+the same output law, even across different index domains `D` and `D'`. -/
+lemma map_piDep_comp_eq_of_eq_iff
+    -- `I` indexes the output tuple (possibly infinite); `D` and `D'` are the finite domains.
+    {I D D' Y : Type*} [Fintype D] [Fintype D']
+    -- `μ` is the common entry law; `d` and `d'` agree on which indices share a coordinate.
+    (μ : ProbDist Y) (d : I → D) (d' : I → D')
+    (h : ∀ i j, d i = d j ↔ d' i = d' j) :
+    (ProbDist.piDep fun _ : D => μ).map (fun f i => f (d i)) =
+      (ProbDist.piDep fun _ : D' => μ).map (fun f i => f (d' i)) := by
+  classical
+  -- Factor both tuples through the finite image `R = range d ⊆ D`.
+  let R := Set.range d
+  let : Fintype R := Fintype.ofFinite R
+  let π : I → R := fun i => ⟨d i, ⟨i, rfl⟩⟩
+  -- Pair each `x ∈ R` with `d' i` for one preimage `i`; `h` makes this injective.
+  let e' : R → D' := fun x => d' x.property.choose
+  have he' : Function.Injective e' := by
+    intro x y hxy
+    apply Subtype.ext
+    exact x.property.choose_spec.symm.trans (((h _ _).mpr hxy).trans y.property.choose_spec)
+  have hfactor : ∀ i, e' (π i) = d' i :=
+    fun i => (h _ _).mp (π i).property.choose_spec
+  -- Both sides reduce to evaluating an independent `μ`-table on `R` at `π`.
+  rw [map_piDep_comp_comp (fun _ : D => μ) Subtype.val Subtype.val_injective π]
+  have hcomp : (fun f : D' → Y => fun i => f (d' i)) = fun f i => f (e' (π i)) := by
+    funext f i
+    exact congrArg f (hfactor i).symm
+  rw [hcomp, map_piDep_comp_comp (fun _ : D' => μ) e' he' π]
 
 /-- Sequential sampling: `bind P f (b) = ∑ₐ P(a) · f(a)(b)`. -/
 noncomputable def bind
