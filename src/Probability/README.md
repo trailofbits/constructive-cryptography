@@ -24,8 +24,11 @@ coordinate outcomes. The alphabets may be infinite; only the index set and each 
 finite. [`ProbDist.pi`](Distribution.lean) and [`ProbDist.piDep`](DependentProduct.lean)
 construct normalized independent families directly, carrying the coordinate normalization
 proofs into the product.
-`ProbDist.map_piDep_comp` selects distinct coordinates of a dependent product,
-preserving each coordinate's outcome type and law.
+`ProbDist.map_piDep_comp` selects distinct coordinates of a dependent product, preserving each
+coordinate's outcome type and law; [`ProbDist.map_piDep_comp_comp`][ProbDist.map_piDep_comp_comp]
+factors a tuple selection through an injective map, and
+[`ProbDist.map_piDep_comp_eq_of_eq_iff`][ProbDist.map_piDep_comp_eq_of_eq_iff] equates tuple laws
+of independent tables with one entry law whenever the same indices coincide.
 For example, `ProbDist.pi (fun _ : Fin q => ν)` is the law of `q` independent samples from `ν`.
 A [**kernel**][bindK] $`f`$ is a conditional distribution [3, §3.6.1]; mixed over a law $`\mu`$
 it gives $`\sum_a \mu(a)\, f(a)`$:
@@ -158,18 +161,20 @@ injectivity of all replay and public sites; neither asserts independence on bad 
 [piDep]: DependentProduct.lean#L53
 [uniform]: Distribution.lean#L656
 [ProbDist.uniform]: Distribution.lean#L689
-[bindK]: Kernel.lean#L51
-[bindK_bindK]: Kernel.lean#L97
-[bindK_single_comp]: Kernel.lean#L119
-[pi_eq_bindK_update]: Kernel.lean#L346
-[ProbDist.map]: Kernel.lean#L362
-[ProbDist.map_map]: Kernel.lean#L375
-[prodProbDist_map]: Kernel.lean#L497
-[ProbDist.bind]: Kernel.lean#L406
-[ProbDist.bind_const]: Kernel.lean#L420
-[ProbDist.jointLaw]: Kernel.lean#L438
-[ProbDist.jointLaw_fst]: Kernel.lean#L445
-[ProbDist.jointLaw_map]: Kernel.lean#L465
+[bindK]: Kernel.lean#L54
+[bindK_bindK]: Kernel.lean#L100
+[bindK_single_comp]: Kernel.lean#L122
+[pi_eq_bindK_update]: Kernel.lean#L349
+[ProbDist.map]: Kernel.lean#L365
+[ProbDist.map_map]: Kernel.lean#L378
+[ProbDist.map_piDep_comp_comp]: Kernel.lean#L420
+[ProbDist.map_piDep_comp_eq_of_eq_iff]: Kernel.lean#L432
+[prodProbDist_map]: Kernel.lean#L552
+[ProbDist.bind]: Kernel.lean#L461
+[ProbDist.bind_const]: Kernel.lean#L475
+[ProbDist.jointLaw]: Kernel.lean#L493
+[ProbDist.jointLaw_fst]: Kernel.lean#L500
+[ProbDist.jointLaw_map]: Kernel.lean#L520
 [normalizeOr]: Lift.lean#L189
 [statDist]: StatisticalDistance.lean#L99
 [statDist_triangle]: StatisticalDistance.lean#L249
@@ -205,7 +210,7 @@ injectivity of all replay and public sites; neither asserts independence on bad 
 
 [uniform_mass_transcript_collision_le_card]: Counting/Collision.lean
 
-[ProbDist.map_id]: Kernel.lean#L371
-[prodProbDist_uniform]: Kernel.lean#L507
-[prodProbDist_map_left]: Kernel.lean#L514
-[prodProbDist_map_right]: Kernel.lean#L521
+[ProbDist.map_id]: Kernel.lean#L374
+[prodProbDist_uniform]: Kernel.lean#L562
+[prodProbDist_map_left]: Kernel.lean#L569
+[prodProbDist_map_right]: Kernel.lean#L576
