@@ -1,6 +1,7 @@
 module
 
 public import ConstructiveCryptography.Instances.Category
+public import ConstructiveCryptography.Instances.FilteredDistance
 public import ConstructiveCryptography.Instances.Monoidal
 public import ConstructiveCryptography.Instances.Algebra
 public import ConstructiveCryptography.Instances.Game

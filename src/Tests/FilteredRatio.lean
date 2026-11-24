@@ -1,6 +1,6 @@
 module
 
-public import RandomSystems.Typed.FilterDistance
+public import ConstructiveCryptography.Instances.FilteredDistance
 public import RandomSystems.Typed.Functional
 public import RandomSystems.Typed.Parallel
 
@@ -17,7 +17,7 @@ A Boolean-query test has positive loss `1/2` and a ratio that fails on an exclud
 namespace Tests.FilteredRatio
 
 open SystemAlgebra Probability
-open scoped NNReal BigOperators
+open scoped SystemAlgebra NNReal BigOperators
 
 /-- Boolean replies on at most two unit queries. -/
 abbrev replies := Interface.queryBudget Unit (fun _ => Unit) (fun _ => Bool) 2
@@ -144,11 +144,10 @@ example : ¬ (1 - (1 / 4 : ℝ)) * halfMass [(⟨(), true⟩, ⟨(), false⟩)] 
 
 /-- The filter permits the ratio-and-cost bound `1/4 + 1/2`, with the original positive cost. -/
 lemma filtered_positive_cost :
-    ((TypedConverter.filter bitQuery falseInputs (fun _ _ => falseInputs_prefix) •
-      echoReplies).1.transcriptDistance
-      (TypedConverter.filter bitQuery falseInputs (fun _ _ => falseInputs_prefix) •
-        constantReplies).1) ≤ ((1 / 4 : ℝ≥0) : ENNReal) + (1 / 2 : ℝ≥0) := by
-  apply RandomSystem.filtered_distance_le_of_ratio_and_cost echoReplies constantReplies
+    Δ (TypedConverter.filter bitQuery falseInputs (fun _ _ => falseInputs_prefix) • echoReplies)
+      (TypedConverter.filter bitQuery falseInputs (fun _ _ => falseInputs_prefix) • constantReplies)
+      ≤ ((1 / 4 : ℝ≥0) : ENNReal) + (1 / 2 : ℝ≥0) := by
+  apply Interface.distance_filter_le_of_ratio_and_cost echoReplies constantReplies
     falseInputs (fun _ _ => falseInputs_prefix) halfMass (1 / 4) (1 / 2)
   · intro h
     classical
@@ -168,6 +167,10 @@ lemma filtered_positive_cost :
   · simpa only [NNReal.coe_div, NNReal.coe_one, NNReal.coe_ofNat] using halfMass_ratio
   · exact fun h x _ hx => halfMass_loss h x hx
   · simpa only [NNReal.coe_div, NNReal.coe_one, NNReal.coe_ofNat] using half_cost_bound
+
+/-- Even before restricting inputs, normalized transcript laws give the unit upper bound. -/
+example : Δ echoReplies constantReplies ≤ 1 :=
+  Interface.distance_le_one echoReplies constantReplies
 
 #print axioms filtered_positive_cost
 
