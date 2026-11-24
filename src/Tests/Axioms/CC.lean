@@ -14,8 +14,11 @@ on interfaces, depend only on `propext`, `Classical.choice` and `Quot.sound`.
 -- ConstructiveCryptography.CryptographicAlgebra.Basic
 #print axioms ConstructiveCryptography.CryptographicAlgebra.attach_parallel
 #print axioms ConstructiveCryptography.CryptographicAlgebra.parallel_assoc
+#print axioms ConstructiveCryptography.CryptographicAlgebra.associator_hom_attach
 #print axioms ConstructiveCryptography.CryptographicAlgebra.parallel_dummy_left
+#print axioms ConstructiveCryptography.CryptographicAlgebra.leftUnitor_hom_attach
 #print axioms ConstructiveCryptography.CryptographicAlgebra.parallel_dummy_right
+#print axioms ConstructiveCryptography.CryptographicAlgebra.rightUnitor_hom_attach
 #print axioms ConstructiveCryptography.CryptographicAlgebra.Specification.Constructs.serial
 #print axioms ConstructiveCryptography.CryptographicAlgebra.Specification.Constructs.parallel
 
@@ -62,8 +65,11 @@ on interfaces, depend only on `propext`, `Classical.choice` and `Quot.sound`.
 -- ConstructiveCryptography.Instances.Algebra, continued
 #print axioms SystemAlgebra.Interface.distinguisherAdvantageDominated
 #print axioms SystemAlgebra.Interface.parallel_assoc
+#print axioms SystemAlgebra.Interface.associator_hom_attach
 #print axioms SystemAlgebra.Interface.parallel_dummy_left
+#print axioms SystemAlgebra.Interface.leftUnitor_hom_attach
 #print axioms SystemAlgebra.Interface.parallel_dummy_right
+#print axioms SystemAlgebra.Interface.rightUnitor_hom_attach
 #print axioms SystemAlgebra.Interface.parallel_swap
 
 -- ConstructiveCryptography.Instances.Category

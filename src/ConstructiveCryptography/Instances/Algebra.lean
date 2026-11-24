@@ -60,6 +60,9 @@ domination law needed by statistical steps of a substitution chain.
 
 * `Interface.parallel_assoc`, `Interface.parallel_dummy_left`, `Interface.parallel_dummy_right`:
   the lax monoidal laws through the regrouping isomorphisms
+* `Interface.associator_hom_attach`, `Interface.leftUnitor_hom_attach`,
+  `Interface.rightUnitor_hom_attach`: the forward associator and unitor attachment laws,
+  instantiated from the `CryptographicAlgebra` class laws
 * `Interface.parallel_swap`: parallel composition is commutative through the swap
 * `Interface.distinguishers_attach`, `Interface.distinguishers_parallel_left`,
   `Interface.distinguishers_parallel_right`: closure
@@ -162,6 +165,26 @@ noncomputable instance resourcesLaxMonoidal :
 noncomputable instance cryptographicAlgebra :
     ConstructiveCryptography.CryptographicAlgebra Interface TypedSystem where
   laxMonoidal := resourcesLaxMonoidal
+
+/-- Forward associator regroups three parallel typed systems, from the class law. -/
+lemma associator_hom_attach {A B C : Interface} (R : TypedSystem A) (S : TypedSystem B)
+    (T : TypedSystem C) :
+    ((associator A B C).hom • TypedSystem.parallel R (TypedSystem.parallel S T) :
+      TypedSystem (tensor (tensor A B) C)) =
+      TypedSystem.parallel (TypedSystem.parallel R S) T :=
+  ConstructiveCryptography.CryptographicAlgebra.associator_hom_attach R S T
+
+/-- Forward left unitor adjoins `TypedSystem.dummy` on the left, from the class law. -/
+lemma leftUnitor_hom_attach {A : Interface} (R : TypedSystem A) :
+    ((leftUnitor A).hom • R : TypedSystem (tensor unit A)) =
+      TypedSystem.parallel TypedSystem.dummy R :=
+  ConstructiveCryptography.CryptographicAlgebra.leftUnitor_hom_attach R
+
+/-- Forward right unitor adjoins `TypedSystem.dummy` on the right, from the class law. -/
+lemma rightUnitor_hom_attach {A : Interface} (R : TypedSystem A) :
+    ((rightUnitor A).hom • R : TypedSystem (tensor A unit)) =
+      TypedSystem.parallel R TypedSystem.dummy :=
+  ConstructiveCryptography.CryptographicAlgebra.rightUnitor_hom_attach R
 
 /-- Typed distinguishers evaluate by their output-1 behavior: `probability d R = d.1 R`, the
 probability that `d` connected to `R` outputs `1`. -/
