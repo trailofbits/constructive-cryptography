@@ -6,11 +6,9 @@ public import ConstructiveCryptography.Notation.Basic
 /-!
 # Indifferentiability specification
 
-Wraps the right-port simulator relaxation `simulatorImage` and `epsilonRelaxation` into the
-indifferentiability specification `Commons.Indifferentiability.specification ideal simulators error`
-[1, §§3.4, 4.2, pp. 8, 12], together with its simulator witness rule (`constructs_of_simulator`),
-serial application composition (`compose`), and mixed/keyed application composition
-(`compose_mixed`).
+The specification contains resources within `ε` of `(H ◁ σ) • ideal` for some admitted
+`σ` [1, §§3.4, 4.2, pp. 8, 12]. `constructs_of_simulator` supplies this witness.
+`compose` and `compose_mixed` apply the algebra's composition laws to this specification.
 
 ## References
 
