@@ -11,6 +11,8 @@ public import RandomSystems.Typed.Parallel
 A program `P` from outside interface `A` to inside interface `B` becomes a typed converter
 when its inside queries stay in `B.domain`. `ofProgram`, `ofCostedProgram`, and
 `ofPreservingProgram` establish this from total, exact-cost, or selected-port bounds.
+`ofDDC_ofProgramOn_eq_of_stateMap` and `ofDDC_ofProgramOn_eq_of_stateRel` compare program
+presentations by their retained states, independently of the domain certificates.
 
 Attaching it to an automaton runs `P` and the automaton together, the combined system `C(F)`
 of [1, §3.3, p. 9: "then the combined random system is C(F)"]:
@@ -244,5 +246,40 @@ lemma TypedConverter.ofCostedProgram_smul_ofAutomaton
       TypedSystem.ofAutomaton A (P.combine stepR hb)
         (Probability.Distribution.ProbDist.map (fun r => (s, r)) initial) :=
   TypedConverter.ofDDC_ofProgramOn_smul_ofAutomaton s P hb _ stepR initial
+
+/-- Two program converters whose bodies commute with a state map `f : S → T` define the same
+typed converter for any two domain certificates. -/
+lemma TypedConverter.ofDDC_ofProgramOn_eq_of_stateMap {T : Type} {A B : Interface}
+    {s : S} {b b' : ℕ}
+    (P : Program S A.I B.I A.X A.Y B.X B.Y) (Q : Program T A.I B.I A.X A.Y B.X B.Y)
+    -- `f` changes retained states from `S` to `T` on the same outside `A` and inside `B`.
+    (f : S → T)
+    -- `hf` preserves queries and replies, mapping only the next state.
+    (hf : ∀ σ o u h, Sum.map (Prod.map f id) id (P σ o u h) = Q (f σ) o u h)
+    -- `hP` and `hQ` certify these domains; their internal-query bounds may differ.
+    (hP : IsDDCFrom B.domain A.domain b (DDC.ofProgramOn s P A.domain))
+    (hQ : IsDDCFrom B.domain A.domain b' (DDC.ofProgramOn (f s) Q A.domain)) :
+    TypedConverter.ofDDC (DDC.ofProgramOn s P A.domain) hP =
+      TypedConverter.ofDDC (DDC.ofProgramOn (f s) Q A.domain) hQ :=
+  (TypedConverter.ofDDC_eq_iff hP hQ).mpr (DDC.ofProgramOn_eq_of_stateMap P Q f hf s A.domain)
+
+/-- Two program converters whose bodies preserve a state relation `R : S → T → Prop` define the
+same typed converter from related initial states, for any two domain certificates. -/
+lemma TypedConverter.ofDDC_ofProgramOn_eq_of_stateRel {T : Type} {A B : Interface}
+    {s : S} {t : T} {b b' : ℕ}
+    (P : Program S A.I B.I A.X A.Y B.X B.Y) (Q : Program T A.I B.I A.X A.Y B.X B.Y)
+    -- `R` relates retained states of `P` and `Q` on the same ports `A` and `B`.
+    (R : S → T → Prop)
+    -- `hrel` matches queries, or matches replies and relates the next states.
+    (hrel : ∀ σ τ o u h, R σ τ →
+      Sum.LiftRel (fun a b => R a.1 b.1 ∧ a.2 = b.2) Eq (P σ o u h) (Q τ o u h))
+    -- `hs` relates the chosen initial states.
+    (hs : R s t)
+    -- `hP` and `hQ` certify these domains; their internal-query bounds may differ.
+    (hP : IsDDCFrom B.domain A.domain b (DDC.ofProgramOn s P A.domain))
+    (hQ : IsDDCFrom B.domain A.domain b' (DDC.ofProgramOn t Q A.domain)) :
+    TypedConverter.ofDDC (DDC.ofProgramOn s P A.domain) hP =
+      TypedConverter.ofDDC (DDC.ofProgramOn t Q A.domain) hQ :=
+  (TypedConverter.ofDDC_eq_iff hP hQ).mpr (DDC.ofProgramOn_eq_of_stateRel P Q R hrel hs A.domain)
 
 end SystemAlgebra

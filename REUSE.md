@@ -91,6 +91,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Adaptive URF collision bound | `URF.collisionGame_win_le` in [CollisionBound] |
 | Retained state with fresh transitions | `TypedSystem.ofProbAutomaton` in [ProbAutomaton] |
 | Retained key as an automaton | `TypedSystem.ofProbAutomaton_eq_keyed` in [KeyedAutomaton] |
+| Converter state comparison | `DDC.ofProgramOn_eq_of_stateMap`, `DDC.ofProgramOn_eq_of_stateRel` in [Program](src/RandomSystems/Converter/Program.lean); typed forms in [Converters](src/RandomSystems/Typed/DSL/Converters.lean) |
 | Program attachment | `TypedConverter.ofProgram_smul_ofProbAutomaton` in [ProgramAttachment] |
 | Independent joint law | `prodProbDist` in [Distribution] |
 | Independent finite family of draws | `ProbDist.pi` in [Distribution] |
