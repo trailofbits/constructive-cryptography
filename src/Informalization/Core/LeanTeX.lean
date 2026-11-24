@@ -379,7 +379,10 @@ where
         if head == `Nat.choose then
           let some (n, k) := lastTwo? args | return none
           return some ("\\binom{" ++ (← renderAux tbl 0 n) ++ "}{" ++ (← renderAux tbl 0 k) ++ "}", 85)
-        if head == `Fintype.card || head == `Finset.card then
+        if head == `Fintype.card then
+          let some a := args[0]? | return none
+          return some (s!"\\left|{← renderAux tbl 0 a}\\right|", 90)
+        if head == `Finset.card then
           let some a := argFromEnd? args 0 | return none
           return some (s!"\\left|{← renderAux tbl 0 a}\\right|", 90)
         if head == `List.length then

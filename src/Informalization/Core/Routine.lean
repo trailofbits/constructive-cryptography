@@ -51,10 +51,19 @@ def libraryPrefixes : List Name :=
     `Positivity, `NormNum, `Mathlib.Tactic, `Lean.Omega,
     `optParam, `autoParam, `outParam, `semiOutParam, `id, `ite, `dite ]
 
+/-- Is `n` a Lean compiler-generated auxiliary theorem (`_proof_1`, `_simp_1`, `_eq_1`, etc.)? -/
+def isCompilerAuxDecl (n : Name) : Bool :=
+  n.isInternal ||
+  match n with
+  | .str _ s =>
+      s.startsWith "_proof_" || s.startsWith "_simp_" ||
+      s.startsWith "_eq_" || s.startsWith "_match_" || s.startsWith "_cstage"
+  | _ => false
+
 /-- Does `n` live in Lean core / Mathlib (as opposed to CC or a downstream crypto project)? -/
 def isCoreOrMathlib (n : Name) : Bool :=
   let root := n.getRoot
-  libraryPrefixes.contains root || libraryPrefixes.contains n
+  libraryPrefixes.contains root || libraryPrefixes.contains n || isCompilerAuxDecl n
 
 private def isCastHead (n : Name) : Bool :=
   let s := n.toString

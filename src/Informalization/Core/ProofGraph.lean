@@ -200,10 +200,11 @@ private def proofValuedArgs (term : Expr) : MetaM (Array (Expr × Expr)) := do
 overlay if present, otherwise clean spaced words). -/
 def humanLemmaLabel (env : Environment) (declName : Name) : String :=
   match (getOverlay env declName).title? with
-  | some t => t
+  | some t => t.trimAscii.toString
   | none =>
       let short := shortConstName declName
-      short.replace "_" " "
+      let words := (short.replace "_" " ").splitOn " " |>.filter (!·.isEmpty)
+      String.intercalate " " words
 
 /-- Heuristic detector for trivial 1-step forwarding/cast wrapper lemmas so Paper mode can
 auto-inline them cleanly (while Auditor mode still shows them). -/
