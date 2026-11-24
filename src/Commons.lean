@@ -9,6 +9,7 @@ public import Commons.Constructions.NonceEncryptThenMAC
 public import Commons.Constructions.TranscriptCompletion
 public import Commons.Definitions.AEAD
 public import Commons.Definitions.AEAD.Keyed
+public import Commons.Definitions.ActiveUserBank
 public import Commons.Definitions.Cipher
 public import Commons.Definitions.CollisionGame
 public import Commons.Definitions.CollisionBound
