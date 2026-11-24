@@ -55,6 +55,7 @@ public import Tests.ProbabilityNotation
 public import Tests.ProbabilityTablePatterns
 public import Tests.QueryRouting
 public import Tests.ResourceSpecification
+public import Tests.SimulatorComposition
 public import Tests.SamplingAlgebra
 public import Tests.SerialAccounting
 public import Tests.SharedRouting
