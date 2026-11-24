@@ -91,6 +91,7 @@ public import Tests.RandomFunctionCollision
 public import Tests.RatioCost
 public import Tests.FilteredRatio
 public import Tests.CompositeNotation
+public import Tests.SpongeTable
 
 /-! Axiom audits per layer and of the Commons library, the checks of the
 authenticated-encryption example,
