@@ -237,29 +237,58 @@ private partial def exprSize : Expr → Nat
   | .proj _ _ s => 1 + exprSize s
   | _ => 1
 
-/-- Collect non-Prop application subexpressions occurring across `exprs` to automatically
-factor heavy repeated terms (like budget costs) into crisp local shorthands `"Write c₁ = …"`. -/
+/-- Collect non-Prop, visible (explicit, non-hidden, non-typeclass) application subexpressions
+occurring across `exprs` to automatically factor heavy repeated terms into crisp shorthands. -/
 private partial def collectCandidateSubexprs (tbl : SymbolTable) (e : Expr)
     (counts : Std.HashMap Expr Nat) : MetaM (Std.HashMap Expr Nat) := do
   let e ← normalizeForPresentation e
   match e with
   | .app .. =>
       let mut m := counts
+      let fn := e.getAppFn.consumeMData
+      let args := e.getAppArgs
+      let headName? := fn.constName?
+      if let some hn := headName? then
+        if tbl.zeroArgConsts.contains hn then
+          return m
       if !e.hasLooseBVars then
         let sz := exprSize e
         if sz ≥ 6 && sz ≤ 48 then
           let isP ← try isProp e catch _ => pure true
-          let isTy ← try
+          let isTyOrInst ← try
             let ty ← inferType e
-            pure ty.isSort
+            if ty.isSort then pure true
+            else isAmbientTypeclass ty
           catch _ => pure true
-          let headName? := e.getAppFn.consumeMData.constName?
-          let isShort := match headName? with
-            | some hn => tbl.zeroArgConsts.contains hn
+          let isInstConst := match headName? with
+            | some hn => (shortConstName hn).startsWith "inst" || hn == ``OfNat.ofNat
             | none => false
-          if !isP && !isTy && !isShort then
+          if !isP && !isTyOrInst && !isInstConst then
             m := m.insert e ((m.getD e 0) + 1)
-      for a in e.getAppArgs do
+      -- Recurse ONLY into explicit, non-hidden arguments (never implicit typeclasses/interfaces!)
+      let recurseArgs ←
+        match headName? with
+        | some hn => do
+            try
+              let info ← getConstInfo hn
+              let mut curTy := info.type
+              let mut vis : Array Expr := #[]
+              let mut expIdx := 0
+              let hidden := tbl.hiddenArgs.getD hn []
+              for a in args do
+                curTy ← whnfD curTy
+                match curTy with
+                | .forallE _ _ body bi =>
+                    if bi.isExplicit then
+                      if !hidden.contains expIdx then
+                        vis := vis.push a
+                      expIdx := expIdx + 1
+                    curTy := body.instantiate1 a
+                | _ => vis := vis.push a
+              pure vis
+            catch _ => pure args
+        | none => pure args
+      for a in recurseArgs do
         m ← collectCandidateSubexprs tbl a m
       return m
   | .forallE _ d b _ =>
@@ -267,8 +296,8 @@ private partial def collectCandidateSubexprs (tbl : SymbolTable) (e : Expr)
       if !b.hasLooseBVars then collectCandidateSubexprs tbl b m else return m
   | _ => return counts
 
-/-- Factor up to 3 heavy repeated subexpressions across `exprs` into crisp local abbreviations
-`(c₁, c₂, …)`, returning the augmented `SymbolTable` and optional `"Write …"` paragraph. -/
+/-- Factor up to 3 heavy repeated visible subexpressions across `exprs` into crisp local
+abbreviations (`c₁, c₂, …`), keeping ONLY shorthands that visibly shorten the statement. -/
 private def factorRepeatedSubexprs (tbl : SymbolTable) (exprs : Array Expr) :
     MetaM (SymbolTable × Option (Array Inline)) := do
   let mut counts : Std.HashMap Expr Nat := {}
@@ -278,7 +307,6 @@ private def factorRepeatedSubexprs (tbl : SymbolTable) (exprs : Array Expr) :
   for (ex, cnt) in counts.toList do
     if cnt ≥ 2 then
       cands := cands.push (ex, cnt, exprSize ex)
-  -- Prefer larger repeated subexpressions so we factor the meaningful chunk first
   let sorted := cands.qsort fun (_, c1, s1) (_, c2, s2) =>
     if s1 != s2 then s1 > s2 else c1 > c2
   let mut curTbl := tbl
@@ -286,10 +314,9 @@ private def factorRepeatedSubexprs (tbl : SymbolTable) (exprs : Array Expr) :
   let mut chosenExprs : Array Expr := #[]
   for (ex, _, _) in sorted do
     if defs.size ≥ 3 then break
-    -- Skip if already contained inside a previously factored expression
     if chosenExprs.any (fun prev => prev == ex) then continue
     let tex ← exprToLatex ex curTbl
-    if tex.length < 24 then continue
+    if tex.length < 22 || (tex.splitOn "inst").length > 1 then continue
     let sym := "c_{" ++ toString (defs.size + 1) ++ "}"
     defs := defs.push (sym, tex)
     chosenExprs := chosenExprs.push ex

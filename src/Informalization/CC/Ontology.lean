@@ -377,8 +377,8 @@ private def advantageDistanceHandler : AppHandler where
     let some cls := argFromEnd? args 2 | return none
     return some ("\\Delta^{" ++ (← rec 0 cls) ++ "}\\!\\left(" ++ (← rec 0 l) ++ ", " ++ (← rec 0 r) ++ "\\right)", 85)
 
-private def distinguisherAdvantageValHandler : AppHandler where
-  head := distinguisherAdvantageValName
+private def distinguisherAdvantageValHandler (head : Name) : AppHandler where
+  head := head
   priority := 190
   run := fun _ rec _ args => do
     let some r := argFromEnd? args 0 | return none
@@ -735,10 +735,13 @@ def registerAll : IO Unit := do
   registerAppHandler (distanceHandler distanceName)
   registerAppHandler (distanceHandler transcriptDistanceName)
   registerAppHandler advantageDistanceHandler
-  registerAppHandler distinguisherAdvantageValHandler
+  registerAppHandler (distinguisherAdvantageValHandler distinguisherAdvantageValName)
+  registerAppHandler (distinguisherAdvantageValHandler `SystemAlgebra.Domain.Distinguisher.advantage)
+  registerAppHandler (distinguisherAdvantageValHandler `SystemAlgebra.Domain.DistinguisherBehavior.advantage)
   registerAppHandler (distinguisherProbHandler distinguisherProbabilityName)
+  registerAppHandler (distinguisherProbHandler `SystemAlgebra.Domain.Distinguisher.probability)
   registerAppHandler (distinguisherProbHandler `SystemAlgebra.TypedDistinguisher.probability)
-  registerAppHandler (distinguisherProbHandler `RandomSystem.decisionProbability)
+  registerAppHandler (distinguisherProbHandler `SystemAlgebra.RandomSystem.decisionProbability)
   registerAppHandler (absorbHandler absorbName)
   registerAppHandler (absorbHandler typedDistinguisherAbsorbName)
   registerAppHandler (absorbHandler gamesAbsorbName)
