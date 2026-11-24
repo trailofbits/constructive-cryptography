@@ -17,9 +17,11 @@ instances. This frontend also accepts direct typed systems and converters in `Δ
 metric or composition. Direct typed operations print in the same notation when the selected
 instances agree.
 
-`cc_normalize` applies the serial, parallel and sampling laws:
+`cc_normalize` applies the serial, parallel, projection and sampling laws:
 
 * `(α ⊗ₘ β) • (R ∥ S) = α • R ∥ β • S`;
+* `TypedConverter.projectLeft A B • (R ∥ S) = R` and
+  `TypedConverter.projectRight A B • (R ∥ S) = S`;
 * `α • sample P R = sample P (fun s => α • R s)` for normalized `P`;
 * `(⨂ₘ k, α k) • (∥ k, R k) = ∥ k, α k • R k`.
 
@@ -354,6 +356,8 @@ attribute [cc_normalization]
   TypedConverter.parallel_attach
   TypedConverter.parallelAll_attach
   TypedConverter.parallelAllContext_smul
+  TypedConverter.projectLeft_smul_parallel
+  TypedConverter.projectRight_smul_parallel
 
 -- Hoist samples after structural attachment, so serial composition exposes a component's owner.
 attribute [cc_normalization 900] TypedConverter.smul_sample
@@ -374,6 +378,32 @@ simproc [cc_normalization] tensorSmul (@HSMul.hSMul _ _ _ _ _ _) := fun e => do
   let_expr MonoidalCategoryStruct.tensorHom _ _ _ A B C D α β := f | return .continue
   let_expr TypedSystem.parallel _ _ R S := x | return .continue
   let proof := mkAppN (mkConst ``tensor_smul) #[A, B, C, D, α, β, R, S]
+  let_expr Eq _ lhs rhs := ← inferType proof | return .continue
+  unless ← withDefault (isDefEq e lhs) do return .continue
+  return .visit { expr := rhs, proof? := some (← mkExpectedTypeHint proof (← mkEq e rhs)) }
+
+open Lean Meta Simp in
+/-- `projectLeft_smul_parallel` whatever the spelling of the interfaces: the action of
+`TypedConverter.projectLeft A B` on `R ∥ S`, with types written through `⊗` or `Interface.tensor`,
+returns `R`. -/
+simproc [cc_normalization] projectLeftSmul (@HSMul.hSMul _ _ _ _ _ _) := fun e => do
+  let_expr HSMul.hSMul _ _ _ _ f x := e | return .continue
+  let_expr TypedConverter.projectLeft A B := f | return .continue
+  let_expr TypedSystem.parallel _ _ R S := x | return .continue
+  let proof := mkAppN (mkConst ``TypedConverter.projectLeft_smul_parallel) #[A, B, R, S]
+  let_expr Eq _ lhs rhs := ← inferType proof | return .continue
+  unless ← withDefault (isDefEq e lhs) do return .continue
+  return .visit { expr := rhs, proof? := some (← mkExpectedTypeHint proof (← mkEq e rhs)) }
+
+open Lean Meta Simp in
+/-- `projectRight_smul_parallel` whatever the spelling of the interfaces: the action of
+`TypedConverter.projectRight A B` on `R ∥ S`, with types written through `⊗` or `Interface.tensor`,
+returns `S`. -/
+simproc [cc_normalization] projectRightSmul (@HSMul.hSMul _ _ _ _ _ _) := fun e => do
+  let_expr HSMul.hSMul _ _ _ _ f x := e | return .continue
+  let_expr TypedConverter.projectRight A B := f | return .continue
+  let_expr TypedSystem.parallel _ _ R S := x | return .continue
+  let proof := mkAppN (mkConst ``TypedConverter.projectRight_smul_parallel) #[A, B, R, S]
   let_expr Eq _ lhs rhs := ← inferType proof | return .continue
   unless ← withDefault (isDefEq e lhs) do return .continue
   return .visit { expr := rhs, proof? := some (← mkExpectedTypeHint proof (← mkEq e rhs)) }

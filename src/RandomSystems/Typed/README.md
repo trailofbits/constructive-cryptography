@@ -111,7 +111,16 @@ exposes a fixed one, and the fixed [right][TypedConverter.rightContext] and
 [left][TypedConverter.leftContext] **contexts** run a typed system beside:
 [attaching][TypedConverter.attach_rightContext] $`\mathrm{rightContext}\ A\ S`$ to $`R`$
 gives $`R \parallel S`$, and so does [attaching][TypedConverter.attach_leftContext]
-$`\mathrm{leftContext}\ R\ B`$ to $`S`$.
+$`\mathrm{leftContext}\ R\ B`$ to $`S`$. Dually, the ordered
+[left][TypedConverter.projectLeft] and [right][TypedConverter.projectRight] **projections**
+combine the inverse unit renamings with `id` and `discard`:
+[projecting][TypedConverter.projectLeft_smul_parallel] $`R \parallel S`$ returns $`R`$ or
+[$`S`$][TypedConverter.projectRight_smul_parallel],
+[preserves a retained shared draw][TypedConverter.projectLeft_smul_sample_parallel] on
+$`\mathrm{sample}(P, k \mapsto R_k \parallel S_k)`$ (and
+[on the right][TypedConverter.projectRight_smul_sample_parallel]), and is
+[natural][TypedConverter.projectLeft_comp_parallel] with respect to parallel converters (and
+[on the right][TypedConverter.projectRight_comp_parallel]).
 
 A [**source**][TypedSystem.source] answers with fresh independent samples of a law: a
 memoryless source [3, Definition 3.1] (the sources of [4, Definition 1] may have memory). An
@@ -300,11 +309,19 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedConverter.filter_smul]: Filter.lean#L74
 [TypedConverter.filter_comp_filter_smul]: Filter.lean#L128
 [RandomSystem.restrict]: ../Distance/Restriction.lean#L64
-[TypedConverter.constant]: Context.lean#L82
-[TypedConverter.rightContext]: Context.lean#L113
-[TypedConverter.leftContext]: Context.lean#L120
-[TypedConverter.attach_rightContext]: Context.lean#L126
-[TypedConverter.attach_leftContext]: Context.lean#L131
+[TypedConverter.constant]: Context.lean#L145
+[TypedConverter.rightContext]: Context.lean#L176
+[TypedConverter.leftContext]: Context.lean#L183
+[TypedConverter.attach_rightContext]: Context.lean#L189
+[TypedConverter.attach_leftContext]: Context.lean#L194
+[TypedConverter.projectLeft]: Context.lean#L362
+[TypedConverter.projectRight]: Context.lean#L384
+[TypedConverter.projectLeft_smul_parallel]: Context.lean#L398
+[TypedConverter.projectRight_smul_parallel]: Context.lean#L407
+[TypedConverter.projectLeft_smul_sample_parallel]: Context.lean#L417
+[TypedConverter.projectRight_smul_sample_parallel]: Context.lean#L430
+[TypedConverter.projectLeft_comp_parallel]: Context.lean#L443
+[TypedConverter.projectRight_comp_parallel]: Context.lean#L493
 [TypedSystem.source]: Source.lean#L55
 [TypedSystem.ofAutomaton]: Automaton.lean#L77
 [TypedSystem.ofAutomaton_map_congr]: Automaton.lean#L98
