@@ -739,7 +739,10 @@ end DDC
 
 section StateComparison
 
-/-- Transport the state of a program mode along `f`. -/
+-- `S` and `T` carry retained states; `O` indexes outside queries `U o` and replies `V o`.
+-- `J` indexes inside queries `X j` and replies `Y j`. Both programs use these same ports.
+
+/-- Replace the retained state `s` by `f s`, preserving the invocation and pending query. -/
 def Program.Mode.mapState {T : Type} (f : S → T) :
     Program.Mode S O J U X Y → Program.Mode T O J U X Y
   | .idle s => .idle (f s)
@@ -787,7 +790,10 @@ lemma Program.after_stateMap {T : Type} {P : Program S O J U V X Y} {Q : Program
 
 /-- Two programs whose bodies commute with a state map `f : S → T` define the same DDC. -/
 lemma DDC.ofProgram_eq_of_stateMap {T : Type} (P : Program S O J U V X Y)
-    (Q : Program T O J U V X Y) (f : S → T)
+    (Q : Program T O J U V X Y)
+    -- `f` changes the state representation; it need not be injective.
+    (f : S → T)
+    -- `hf` preserves inside queries and final replies, mapping only the next state.
     (hf : ∀ σ o u h, Sum.map (Prod.map f id) id (P σ o u h) = Q (f σ) o u h) (s : S) :
     DDC.ofProgram s P = DDC.ofProgram (f s) Q := by
   funext xs
@@ -805,7 +811,10 @@ lemma DDC.ofProgram_eq_of_stateMap {T : Type} (P : Program S O J U V X Y)
 /-- Two programs whose bodies commute with a state map `f : S → T` define the same DDC on any
 outside domain `F`. -/
 lemma DDC.ofProgramOn_eq_of_stateMap {T : Type} (P : Program S O J U V X Y)
-    (Q : Program T O J U V X Y) (f : S → T)
+    (Q : Program T O J U V X Y)
+    -- `f` changes the state representation; it need not be injective.
+    (f : S → T)
+    -- `hf` preserves inside queries and final replies, mapping only the next state.
     (hf : ∀ σ o u h, Sum.map (Prod.map f id) id (P σ o u h) = Q (f σ) o u h) (s : S)
     (F : List (Σ o, U o) → Prop) :
     DDC.ofProgramOn s P F = DDC.ofProgramOn (f s) Q F := by
@@ -814,11 +823,15 @@ lemma DDC.ofProgramOn_eq_of_stateMap {T : Type} (P : Program S O J U V X Y)
 /-- Two programs whose bodies preserve a state relation `R : S → T → Prop` define the same DDC
 from any related initial states. -/
 lemma DDC.ofProgram_eq_of_stateRel {T : Type} (P : Program S O J U V X Y)
-    (Q : Program T O J U V X Y) (R : S → T → Prop)
+    (Q : Program T O J U V X Y)
+    -- `R σ τ` relates retained states of `P` and `Q`.
+    (R : S → T → Prop)
+    -- `hrel` matches each query, or matches the reply and relates the next states.
     (hrel : ∀ σ τ o u h, R σ τ →
       Sum.LiftRel (fun a b => R a.1 b.1 ∧ a.2 = b.2) Eq (P σ o u h) (Q τ o u h))
     {s : S} {t : T} (hs : R s t) :
     DDC.ofProgram s P = DDC.ofProgram t Q := by
+  -- Run on pairs in `R`; either projection recovers the corresponding original body.
   let pairStep {o : O} :
       ∀ {a : (S × V o) ⊕ (Σ j, X j)} {b : (T × V o) ⊕ (Σ j, X j)},
         Sum.LiftRel (fun x y => R x.1 y.1 ∧ x.2 = y.2) Eq a b →
@@ -828,6 +841,7 @@ lemma DDC.ofProgram_eq_of_stateRel {T : Type} (P : Program S O J U V X Y)
     | .inr q, .inr _, _ => .inr q
     | .inl _, .inr _, hab => False.elim (by cases hab)
     | .inr _, .inl _, hab => False.elim (by cases hab)
+  -- The paired body projects to `P` on the left and `Q` on the right.
   have hleft {o : O} {a : (S × V o) ⊕ (Σ j, X j)} {b : (T × V o) ⊕ (Σ j, X j)}
       (hab : Sum.LiftRel (fun x y => R x.1 y.1 ∧ x.2 = y.2) Eq a b) :
       Sum.map (Prod.map (fun p : {p : S × T // R p.1 p.2} => p.1.1) id) id (pairStep hab) = a := by
@@ -840,18 +854,24 @@ lemma DDC.ofProgram_eq_of_stateRel {T : Type} (P : Program S O J U V X Y)
     | inr hq => simp only [pairStep, Sum.map_inr, id_eq, hq]
   let PQ : Program {p : S × T // R p.1 p.2} O J U V X Y :=
     fun ⟨⟨σ, τ⟩, hr⟩ o u h => pairStep (hrel σ τ o u h hr)
+  -- Apply state-map equality to both projections of the same paired program.
   have h1 : DDC.ofProgram ⟨(s, t), hs⟩ PQ = DDC.ofProgram s P :=
     DDC.ofProgram_eq_of_stateMap PQ P (fun p => p.1.1)
       (fun ⟨⟨σ, τ⟩, hr⟩ o u h => hleft (hrel σ τ o u h hr)) ⟨(s, t), hs⟩
   have h2 : DDC.ofProgram ⟨(s, t), hs⟩ PQ = DDC.ofProgram t Q :=
     DDC.ofProgram_eq_of_stateMap PQ Q (fun p => p.1.2)
       (fun ⟨⟨σ, τ⟩, hr⟩ o u h => hright (hrel σ τ o u h hr)) ⟨(s, t), hs⟩
-  exact h1.symm.trans h2
+  calc
+    DDC.ofProgram s P = DDC.ofProgram ⟨(s, t), hs⟩ PQ := h1.symm
+    _ = DDC.ofProgram t Q := h2
 
 /-- Two programs whose bodies preserve a state relation `R : S → T → Prop` define the same DDC on
 any outside domain `F` from related initial states. -/
 lemma DDC.ofProgramOn_eq_of_stateRel {T : Type} (P : Program S O J U V X Y)
-    (Q : Program T O J U V X Y) (R : S → T → Prop)
+    (Q : Program T O J U V X Y)
+    -- `R σ τ` relates retained states of `P` and `Q`.
+    (R : S → T → Prop)
+    -- `hrel` matches each query, or matches the reply and relates the next states.
     (hrel : ∀ σ τ o u h, R σ τ →
       Sum.LiftRel (fun a b => R a.1 b.1 ∧ a.2 = b.2) Eq (P σ o u h) (Q τ o u h))
     {s : S} {t : T} (hs : R s t) (F : List (Σ o, U o) → Prop) :

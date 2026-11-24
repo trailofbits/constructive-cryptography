@@ -4,16 +4,12 @@ public import RandomSystems.Typed.DSL.Converters
 public import ConstructiveCryptography.Notation
 
 /-!
-# Tests for program converter comparison along state maps and relations
+# Program comparison by retained state
 
-Verifies the acceptance criteria of issue #387:
-* A program keeping a list of inputs and a program keeping its image under a non-injective map
-  define one typed converter (`TypedConverter.ofDDC_ofProgramOn_eq_of_stateMap`), with no system
-  attached and no automaton built.
-* Two programs with states `Unit × Unit` and `Unit` and the same bodies define one typed
-  converter along the universal relation (`TypedConverter.ofDDC_ofProgramOn_eq_of_stateRel`),
-  with no system attached and no automaton built.
-* `cc_normalize` composes cleanly with both comparison laws under `⊗ₘ`, `𝟙`, `•`, `∥`.
+`listProgram` records queries; `mappedListProgram` records their parity bits. A non-injective
+state map gives equal converters with different certificates. Equal parity images also give a
+many-to-many relation between lists. The forwarding bodies `pairStateProgram` and
+`unitStateProgram` test the universal relation and replacement under parallel attachment.
 -/
 
 @[expose] public section
@@ -31,7 +27,7 @@ abbrev SmallPort : Interface :=
   Interface.queryBudget Unit (fun _ => Fin 4) (fun _ => Bool) 2
 
 /-- Non-injective tag map collapsing `Fin 4` to its parity bit. -/
-def parity (x : Fin 4) : Bool := decide (x.val % 2 = 0)
+def parity (x : Fin 4) : Bool := x.val % 2 == 0
 
 /-- Program keeping the raw list of `Fin 4` queries; each invocation forwards `u` inside once
 and replies with whether `parity u` has been seen among recorded tags or the inside reply holds. -/
@@ -41,7 +37,7 @@ def listProgram :
   | _, (), u, [] => .inr ⟨(), u⟩
   | s, (), u, (_, ⟨(), y⟩) :: _ => .inl (u :: s, y || (s.map parity).contains (parity u))
 
-/-- Program keeping only the mapped list of parity bits. -/
+/-- Keep parity bits, query `u` once, then return `y || s.contains (parity u)`. -/
 def mappedListProgram :
     Program (List Bool) SmallPort.I SmallPort.I SmallPort.X SmallPort.Y
       SmallPort.X SmallPort.Y
@@ -83,7 +79,7 @@ lemma mappedListProgram_isDDCFrom (t : List Bool) :
           (mappedListProgram_bounded 1 le_rfl) SmallPort.length_le hr hF
 
 /-- The list program and mapped-list program define one typed converter, even with distinct
-certificates (`1` vs `2`), with no system attached and no automaton built. -/
+certificates (`1` vs `2`). -/
 lemma listProgram_eq_mappedListProgram (s : List (Fin 4)) :
     TypedConverter.ofDDC (DDC.ofProgramOn s listProgram SmallPort.domain)
         (listProgram_isDDCFrom s) =
@@ -94,6 +90,23 @@ lemma listProgram_eq_mappedListProgram (s : List (Fin 4)) :
   intro σ o u h
   rcases o with ⟨⟩
   rcases h with _ | ⟨⟨_, ⟨⟨⟩, y⟩⟩, _⟩ <;> rfl
+
+/-- Different lists with equal parity images form a many-to-many state relation. -/
+example : DDC.ofProgram [(0 : Fin 4)] listProgram =
+    DDC.ofProgram [(2 : Fin 4)] listProgram := by
+  apply DDC.ofProgram_eq_of_stateRel listProgram listProgram
+    (fun s t => s.map parity = t.map parity) ?_ (by rfl)
+  intro s t o u h related
+  rcases o with ⟨⟩
+  rcases h with _ | ⟨⟨_, ⟨⟨⟩, y⟩⟩, _⟩
+  · exact Sum.LiftRel.inr rfl
+  · apply Sum.LiftRel.inl
+    exact ⟨congrArg (List.cons (parity u)) related,
+      congrArg (fun tags => y || tags.contains (parity u)) related⟩
+
+/-- A prior query of the same parity changes the reply even when the inside answer is false. -/
+example : listProgram [0] () 2 [(⟨(), 2⟩, ⟨(), false⟩)] = .inl ([2, 0], true) := by
+  rfl
 
 /-- Forwarding program with state `Unit × Unit`. -/
 def pairStateProgram :
@@ -138,7 +151,7 @@ lemma unitStateProgram_isDDCFrom :
       simpa using DDC.insideQueries_length_le_of_budget hb SmallPort.length_le hr hF
 
 /-- `Unit × Unit` and `Unit` programs with identical bodies define one typed converter along the
-universal relation, with no system attached and no automaton built. -/
+universal relation. -/
 lemma pairStateProgram_eq_unitStateProgram :
     TypedConverter.ofDDC (DDC.ofProgramOn ((), ()) pairStateProgram SmallPort.domain)
         pairStateProgram_isDDCFrom =
