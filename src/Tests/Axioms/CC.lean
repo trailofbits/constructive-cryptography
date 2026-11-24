@@ -40,6 +40,12 @@ on interfaces, depend only on `propext`, `Classical.choice` and `Quot.sound`.
 #print axioms ConstructiveCryptography.CryptographicAlgebra.distance_parallel_le
 #print axioms ConstructiveCryptography.CryptographicAlgebra.Specification.ConstructsWithin.serial
 #print axioms ConstructiveCryptography.CryptographicAlgebra.Specification.ConstructsWithin.parallel
+open ConstructiveCryptography.CryptographicAlgebra.Specification in
+#print axioms Constructs.toConstructsWithin
+open ConstructiveCryptography.CryptographicAlgebra.Specification in
+#print axioms Constructs.serial_within
+open ConstructiveCryptography.CryptographicAlgebra.Specification in
+#print axioms ConstructsWithin.serial_exact
 
 -- ConstructiveCryptography.CryptographicAlgebra.Star
 #print axioms ConstructiveCryptography.CryptographicAlgebra.Specification.constructs_of_simulator

@@ -19,6 +19,8 @@ and simulators. `cc_normalize` applies attachment, parallel, and coherence laws 
 Whiskering acts on one side of a parallel resource. Interchange orders attachments on
 opposite ports with the right-port converter outside; same-port order remains explicit.
 The `•` lemmas below expose the existing abstract laws to the simplifier's term index.
+`cc_calc constructs` chains exact (`—[π]→`), approximate (`—[π; ε]→`), and exact-equality (`=`)
+steps into a single composed construction proof.
 
 ## References
 
@@ -479,6 +481,204 @@ macro_rules
               (by
                 simpa only [CategoryTheory.Category.assoc, add_assoc] using $approximateChain)
           | fail "cc_chain could not compose the supplied typed construction proofs")
+
+/-! ## Construction calculations -/
+
+/-- Paper-style construction steps alternating exact specification equalities, exact constructions
+`—[π]→`, and approximate constructions `—[π; ε]→`. -/
+declare_syntax_cat ccConstructionCalcStep
+syntax ppIndent(colGe term:51 " = " term " := " term) : ccConstructionCalcStep
+syntax ppIndent(colGe term:51 " —[" term "]→ " term " := " term) : ccConstructionCalcStep
+syntax ppIndent(colGe term:51 " —[" term "; " term "]→ " term " := " term) : ccConstructionCalcStep
+
+syntax ccConstructionCalcSteps := ppLine withPosition(
+  ccConstructionCalcStep (ppLine linebreak ccConstructionCalcStep)*)
+
+/-- Assemble a paper-style MR16 construction chain from exact (`—[π]→`), approximate
+(`—[π; ε]→`), and exact-equality (`=`) steps, composing converters in attachment order and
+summing scalar budgets. -/
+syntax (name := ccCalcConstructs) "cc_calc " &"constructs" ccConstructionCalcSteps : tactic
+
+open Lean Elab Tactic in
+open ConstructiveCryptography.CryptographicAlgebra.Specification in
+/-- Elaborate a `cc_calc constructs` block into a single composed `Constructs` or
+`ConstructsWithin` proof, closing the goal completely or failing without open goals. -/
+def elaborateCCConstructionCalc (block : TSyntax ``ccConstructionCalcSteps) : TacticM Unit :=
+  withMainContext do
+    let `(ccConstructionCalcSteps|
+      $initial:ccConstructionCalcStep
+      $following*) := block
+      | throwUnsupportedSyntax
+    let mut start? : Option (TSyntax `term) := none
+    let mut current? : Option (TSyntax `term) := none
+    let mut prefixEq? : Option (TSyntax `term) := none
+    -- Accumulated chain: `(isApprox, converter, proof, budget?)`.
+    let mut chain? : Option (Bool × TSyntax `term × TSyntax `term × Option (TSyntax `term)) := none
+    for step in #[initial] ++ following do
+      let (rawPrevious, next, stepConv?, stepBudget?, proof) ← match step with
+        | `(ccConstructionCalcStep| $previous:term = $next := $proof) =>
+            pure (previous, next, none, none, proof)
+        | `(ccConstructionCalcStep| $previous:term —[$conv]→ $next := $proof) =>
+            pure (previous, next, some conv, none, proof)
+        | `(ccConstructionCalcStep| $previous:term —[$conv; $budget]→ $next := $proof) =>
+            pure (previous, next, some conv, some budget, proof)
+        | _ => throwUnsupportedSyntax
+      let isHole := rawPrevious.raw.isOfKind ``Lean.Parser.Term.hole
+      let previous ← if isHole then
+        match current? with
+        | some prev => pure prev
+        | none => throwError "cc_calc constructs requires an explicit starting specification"
+      else
+        pure rawPrevious
+      let start := start?.getD previous
+      start? := some start
+      let current := current?.getD previous
+      let needsJoin := !isHole && current?.isSome
+      match stepConv?, stepBudget? with
+      | none, _ =>
+        let stepEq ← `(show $previous = $next from $proof)
+        let equation ← if needsJoin then
+          `(Eq.trans (show $current = $previous from rfl) $stepEq)
+        else
+          pure stepEq
+        match chain? with
+        | none =>
+          let nextPrefix ← match prefixEq? with
+            | none => pure equation
+            | some prevEq => `(Eq.trans $prevEq $equation)
+          prefixEq? := some nextPrefix
+        | some (false, conv, acc, none) =>
+          let pred ← ``(fun target => Constructs $conv $start target)
+          chain? := some (false, conv, ← `(Eq.mp (congrArg $pred $equation) $acc), none)
+        | some (true, conv, acc, some budget) =>
+          let pred ← ``(fun target => ConstructsWithin $conv $start target $budget)
+          chain? := some (true, conv, ← `(Eq.mp (congrArg $pred $equation) $acc), some budget)
+        | some _ => throwUnsupportedSyntax
+      | some conv, none =>
+        let stepType ← ``(Constructs $conv $previous $next)
+        let mut leaf ← `(show $stepType from by
+          cc_exact_rule "cc_calc constructs exact step" => $proof)
+        if needsJoin then
+          let pred ← ``(fun source => Constructs $conv source $next)
+          leaf ← `(Eq.mpr (congrArg $pred (show $current = $previous from rfl)) $leaf)
+        match chain? with
+        | none =>
+          if let some pEq := prefixEq? then
+            let pred ← ``(fun source => Constructs $conv source $next)
+            leaf ← `(Eq.mpr (congrArg $pred $pEq) $leaf)
+          chain? := some (false, conv, leaf, none)
+        | some (false, accConv, acc, none) =>
+          let combined ← ``(Constructs.serial $acc $leaf)
+          let compConv ← ``(CategoryTheory.CategoryStruct.comp $conv $accConv)
+          chain? := some (false, compConv, combined, none)
+        | some (true, accConv, acc, some accBudget) =>
+          let combined ← ``(ConstructsWithin.serial_exact $acc $leaf)
+          let compConv ← ``(CategoryTheory.CategoryStruct.comp $conv $accConv)
+          chain? := some (true, compConv, combined, some accBudget)
+        | some _ => throwUnsupportedSyntax
+      | some conv, some budget =>
+        let stepType ← ``(ConstructsWithin $conv $previous $next $budget)
+        let relaxedProof ← ``(constructs_epsilonRelaxation_iff.mp $proof)
+        let mut leaf ← `(show $stepType from by
+          first
+          | cc_exact_rule "cc_calc constructs approximate step" => $proof
+          | cc_exact_rule "cc_calc constructs epsilonRelaxation step" => $relaxedProof)
+        if needsJoin then
+          let pred ← ``(fun source => ConstructsWithin $conv source $next $budget)
+          leaf ← `(Eq.mpr (congrArg $pred (show $current = $previous from rfl)) $leaf)
+        match chain? with
+        | none =>
+          if let some pEq := prefixEq? then
+            let pred ← ``(fun source => ConstructsWithin $conv source $next $budget)
+            leaf ← `(Eq.mpr (congrArg $pred $pEq) $leaf)
+          chain? := some (true, conv, leaf, some budget)
+        | some (false, accConv, acc, none) =>
+          let combined ← ``(Constructs.serial_within $acc $leaf)
+          let compConv ← ``(CategoryTheory.CategoryStruct.comp $conv $accConv)
+          chain? := some (true, compConv, combined, some budget)
+        | some (true, accConv, acc, some accBudget) =>
+          let combined ← ``(ConstructsWithin.serial $acc $leaf)
+          let compConv ← ``(CategoryTheory.CategoryStruct.comp $conv $accConv)
+          chain? := some (true, compConv, combined, some (← `($accBudget + $budget)))
+        | some _ => throwUnsupportedSyntax
+      current? := some next
+    let some (isApprox, _, result, _) := chain?
+      | throwError "cc_calc constructs requires at least one construction step"
+    let hIdent := mkIdent (← mkFreshUserName `_cc_calc_chain)
+    let close ← if isApprox then
+      let relaxed ← ``(constructs_epsilonRelaxation_iff.mpr $hIdent)
+      `(tactic| (
+        have $hIdent := $result
+        solve
+        | with_reducible exact $hIdent
+        | with_reducible exact $relaxed
+        | simpa only [CategoryTheory.Category.assoc, CategoryTheory.Category.id_comp,
+            CategoryTheory.Category.comp_id,
+            CategoryTheory.MonoidalCategory.comp_whiskerRight,
+            CategoryTheory.MonoidalCategory.whiskerLeft_comp,
+            CategoryTheory.MonoidalCategory.id_whiskerRight,
+            CategoryTheory.MonoidalCategory.whiskerLeft_id,
+            CategoryTheory.MonoidalCategory.tensorHom_comp_tensorHom,
+            CategoryTheory.MonoidalCategory.id_tensorHom_id,
+            add_assoc, zero_add, add_zero] using $hIdent
+        | simpa only [CategoryTheory.Category.assoc, CategoryTheory.Category.id_comp,
+            CategoryTheory.Category.comp_id,
+            CategoryTheory.MonoidalCategory.comp_whiskerRight,
+            CategoryTheory.MonoidalCategory.whiskerLeft_comp,
+            CategoryTheory.MonoidalCategory.id_whiskerRight,
+            CategoryTheory.MonoidalCategory.whiskerLeft_id,
+            CategoryTheory.MonoidalCategory.tensorHom_comp_tensorHom,
+            CategoryTheory.MonoidalCategory.id_tensorHom_id,
+            add_assoc, zero_add, add_zero] using $relaxed
+        | exact $hIdent
+        | exact $relaxed))
+    else
+      let toWithin ← ``(Constructs.toConstructsWithin $hIdent)
+      let toWithinRelaxed ← ``(constructs_epsilonRelaxation_iff.mpr $toWithin)
+      `(tactic| (
+        have $hIdent := $result
+        solve
+        | with_reducible exact $hIdent
+        | simpa only [CategoryTheory.Category.assoc, CategoryTheory.Category.id_comp,
+            CategoryTheory.Category.comp_id,
+            CategoryTheory.MonoidalCategory.comp_whiskerRight,
+            CategoryTheory.MonoidalCategory.whiskerLeft_comp,
+            CategoryTheory.MonoidalCategory.id_whiskerRight,
+            CategoryTheory.MonoidalCategory.whiskerLeft_id,
+            CategoryTheory.MonoidalCategory.tensorHom_comp_tensorHom,
+            CategoryTheory.MonoidalCategory.id_tensorHom_id] using $hIdent
+        | with_reducible exact $toWithin
+        | with_reducible exact $toWithinRelaxed
+        | simpa only [CategoryTheory.Category.assoc, CategoryTheory.Category.id_comp,
+            CategoryTheory.Category.comp_id,
+            CategoryTheory.MonoidalCategory.comp_whiskerRight,
+            CategoryTheory.MonoidalCategory.whiskerLeft_comp,
+            CategoryTheory.MonoidalCategory.id_whiskerRight,
+            CategoryTheory.MonoidalCategory.whiskerLeft_id,
+            CategoryTheory.MonoidalCategory.tensorHom_comp_tensorHom,
+            CategoryTheory.MonoidalCategory.id_tensorHom_id,
+            add_assoc, zero_add, add_zero] using $toWithin
+        | simpa only [CategoryTheory.Category.assoc, CategoryTheory.Category.id_comp,
+            CategoryTheory.Category.comp_id,
+            CategoryTheory.MonoidalCategory.comp_whiskerRight,
+            CategoryTheory.MonoidalCategory.whiskerLeft_comp,
+            CategoryTheory.MonoidalCategory.id_whiskerRight,
+            CategoryTheory.MonoidalCategory.whiskerLeft_id,
+            CategoryTheory.MonoidalCategory.tensorHom_comp_tensorHom,
+            CategoryTheory.MonoidalCategory.id_tensorHom_id,
+            add_assoc, zero_add, add_zero] using $toWithinRelaxed
+        | exact $hIdent
+        | exact $toWithin
+        | exact $toWithinRelaxed))
+    let goal ← getMainGoal
+    Term.withoutErrToSorry <| withoutRecover <| Term.withSynthesize <| evalTactic close
+    if !(← getGoals).isEmpty || (← instantiateMVars (mkMVar goal)).hasSorry then
+      throwError "cc_calc constructs requires a complete proof for every step"
+
+open Lean Elab Tactic in
+elab_rules : tactic
+  | `(tactic| cc_calc constructs $block:ccConstructionCalcSteps) =>
+      elaborateCCConstructionCalc block
 
 
 open Lean Elab Tactic

@@ -432,6 +432,38 @@ lemma ConstructsWithin.right_context [CompatiblePseudoMetric C Phi]
     CryptographicAlgebra.parallel CryptographicAlgebra.parallel (attach (𝟙 A ⊗ₘ converter))
     (fun x y => by rw [attach_parallel, attach_identity]) (distance_parallel_right_le)
 
+/-- Exact construction implies approximate construction with error zero. -/
+lemma Constructs.toConstructsWithin [CompatiblePseudoMetric C Phi] {A B : C}
+    {converter : A ⟶ B} {source : Specification (Phi B)}
+    {target : Specification (Phi A)}
+    (construction : Constructs converter source target) :
+    ConstructsWithin converter source target 0 := by
+  let := CompatiblePseudoMetric.fibreMetric (Phi := Phi) A
+  intro resource admitted
+  exact ⟨attach converter resource, construction admitted, by simp⟩
+
+/-- Composing an inner exact construction with an outer approximate construction keeps the outer
+error budget directly without introducing a leading zero. -/
+lemma Constructs.serial_within [CompatiblePseudoMetric C Phi]
+    {A B D : C} {first : A ⟶ B} {second : B ⟶ D}
+    {source : Specification (Phi D)} {middle : Specification (Phi B)}
+    {target : Specification (Phi A)} {error : ENNReal}
+    (inner : Constructs second source middle)
+    (outer : ConstructsWithin first middle target error) :
+    ConstructsWithin (first ≫ second) source target error := by
+  simpa only [zero_add] using inner.toConstructsWithin.serial outer
+
+/-- Composing an inner approximate construction with an outer exact construction keeps the inner
+error budget directly without introducing a trailing zero. -/
+lemma ConstructsWithin.serial_exact [CompatiblePseudoMetric C Phi]
+    {A B D : C} {first : A ⟶ B} {second : B ⟶ D}
+    {source : Specification (Phi D)} {middle : Specification (Phi B)}
+    {target : Specification (Phi A)} {error : ENNReal}
+    (inner : ConstructsWithin second source middle error)
+    (outer : Constructs first middle target) :
+    ConstructsWithin (first ≫ second) source target error := by
+  simpa only [add_zero] using inner.serial outer.toConstructsWithin
+
 end Specification
 
 end CryptographicAlgebra
