@@ -59,6 +59,7 @@ public import Tests.SimulatorComposition
 public import Tests.SamplingAlgebra
 public import Tests.SerialAccounting
 public import Tests.SharedRouting
+public import Tests.CallCharge
 public import Tests.Substitution.Axioms
 public import Tests.Substitution.Calculation
 public import Tests.Substitution.Construction
