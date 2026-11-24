@@ -9,6 +9,7 @@ public import Probability.Counting.Guessing
 public import Probability.Permutation
 public import Probability.Permutation.Replay
 public import Probability.Permutation.Walk
+public import Probability.CollisionLower
 public import Probability.Coupling
 public import Probability.Distribution
 public import Probability.DependentProduct
