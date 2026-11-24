@@ -6,12 +6,12 @@ public import RandomSystems.Cumulative.CumulativeAttachment
 /-!
 # Behaviors of PDCs
 
-A PDC is a distribution over DDCs (CR18, Definition 3.17, printed p. 64); its behavior
-is the behavior of a probabilistic system on the converter alphabets (Definition 3.18). For
+A PDC is a distribution over DDCs [1, Definition 3.17, p. 64]; its behavior is that of
+a probabilistic system on the converter alphabets [1, Definition 3.18, p. 64]. For
 DDCs from the inside domain `E` to the outside domain `F` with a common bound on
 consecutive inside queries, it is a random system over the converter domain. Serial
-composition samples the two PDCs independently and composes the samples (Definitions
-3.9, 3.17); it is associative, and the filter on `E` is its identity.
+composition samples the two PDCs independently and composes the samples [1, Definitions
+3.9, 3.17]; it is associative, and the filter on `E` is its identity.
 
 ## Main definitions
 
@@ -33,6 +33,10 @@ composition samples the two PDCs independently and composes the samples (Definit
   converter behaviors by their next outputs, and below one system
 * `PDCBehavior.comp_presents`: the composition of presentations presents the composition
 * `PDCBehavior.comp_assoc`, `PDCBehavior.comp_id`, `PDCBehavior.id_comp`
+
+## References
+
+1. U. Maurer. *Cryptography Foundations*. ETH Zurich lecture notes, Spring 2018.
 -/
 
 @[expose] public section
@@ -203,6 +207,7 @@ lemma ofDDC_eq_iff_replies {a c : InsideOutsideSystem O J U V X Y} {b b' : ℕ}
   classical
   constructor
   · intro heq t
+    -- A deterministic behavior assigns mass one exactly to its possible transcripts.
     have ht := congrArg (fun α => α.1 t) heq
     simp only [ofDDC_apply] at ht
     by_cases hra : Replies a (t.map Prod.fst) (t.map Prod.snd) <;>
@@ -238,13 +243,8 @@ lemma ofDDC_eq_of_le {a c W : InsideOutsideSystem O J U V X Y} {b b' : ℕ}
     (ha : IsDDCFrom E F b a) (hc : IsDDCFrom E F b' c)
     (haW : ∀ xs ys, Replies a xs ys → Replies W xs ys)
     (hcW : ∀ xs ys, Replies c xs ys → Replies W xs ys) :
-    (ofDDC a ha : PDCBehavior O J U V X Y E m hE F n hF) = ofDDC c hc := by
-  refine ofDDC_eq_of_next_eq ha hc fun t x hra hrc hx => ?_
-  obtain ⟨ya, hya⟩ := Part.dom_iff_mem.mp ((ha.answers t x hra).mpr hx)
-  obtain ⟨yc, hyc⟩ := Part.dom_iff_mem.mp ((hc.answers t x hrc).mpr hx)
-  have hwa := (replies_snoc.mp (haW _ _ (replies_snoc.mpr ⟨hra, Part.eq_some_iff.mpr hya⟩))).2
-  have hwc := (replies_snoc.mp (hcW _ _ (replies_snoc.mpr ⟨hrc, Part.eq_some_iff.mpr hyc⟩))).2
-  rw [Part.eq_some_iff.mpr hya, Part.eq_some_iff.mpr hyc, ← hwa, hwc]
+    (ofDDC a ha : PDCBehavior O J U V X Y E m hE F n hF) = ofDDC c hc :=
+  (ofDDC_eq_iff_replies ha hc).mpr (ha.replies_iff_of_le hc haW hcW)
 
 end PDCBehavior
 

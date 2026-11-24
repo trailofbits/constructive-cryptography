@@ -13,8 +13,8 @@ outside queries lie in `F` and whose inside replies answer queries in `E`. On fi
 domains its transcripts are bounded. A DDC from `E` to `F` answers exactly these inputs
 and queries only in `E`; attached to a resource with domain `E` it gives a resource with
 domain `F`.
-Sources: CR18, Definitions 3.8–3.9 (printed p. 62); Lanzenberger–Maurer,
-Definitions 5 and 8 (printed pp. 11, 13).
+The domain conventions follow [1, Definitions 3.8–3.9, p. 62] and
+[2, Definitions 5 and 8, pp. 11, 13].
 
 ## Main definitions
 
@@ -37,6 +37,12 @@ Definitions 5 and 8 (printed pp. 11, 13).
   are equal
 * `IsDDCFrom.replies_iff_of_le`: two DDCs from `E` to `F` below one system have the same
   transcripts
+
+## References
+
+1. U. Maurer. *Cryptography Foundations*. ETH Zurich lecture notes, Spring 2018.
+2. D. Lanzenberger and U. Maurer. *Coupling of Random Systems*. TCC 2020,
+   Cryptology ePrint Archive, Paper 2020/1187.
 -/
 
 @[expose] public section
@@ -333,7 +339,10 @@ lemma IsDDCFrom.outsideInputs_mem {E : List (Σ j, X j) → Prop} {F : List (Σ 
 the same transcripts. -/
 lemma IsDDCFrom.replies_iff_of_next_eq {E : List (Σ j, X j) → Prop} {F : List (Σ o, U o) → Prop}
     {a c : InsideOutsideSystem O J U V X Y} {b b' : ℕ}
+    -- `E` admits inside queries; `F` admits outside queries. The bounds may differ.
     (ha : IsDDCFrom E F b a) (hc : IsDDCFrom E F b' c)
+    -- `t` records inputs and outputs shared by both DDCs; `x` is the next admitted input.
+    -- Inputs are outside requests or inside replies; outputs are replies or inside requests.
     (hnext : ∀ (t : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))) (x : Σ l, twoFam U Y l),
       Replies a (t.map Prod.fst) (t.map Prod.snd) →
       Replies c (t.map Prod.fst) (t.map Prod.snd) →
@@ -344,6 +353,7 @@ lemma IsDDCFrom.replies_iff_of_next_eq {E : List (Σ j, X j) → Prop} {F : List
   induction t using List.reverseRecOn with
   | nil => exact ⟨fun _ => replies_nil _, fun _ => replies_nil _⟩
   | append_singleton t z ih =>
+    -- The shared prefix admits the same next input; next-output equality extends it.
     rcases z with ⟨x, y⟩
     simp only [List.map_append, List.map_singleton, replies_snoc]
     constructor
@@ -360,7 +370,10 @@ lemma IsDDCFrom.replies_iff_of_next_eq {E : List (Σ j, X j) → Prop} {F : List
 equal as partial functions. -/
 lemma IsDDCFrom.eq_of_next_eq {E : List (Σ j, X j) → Prop} {F : List (Σ o, U o) → Prop}
     {a c : InsideOutsideSystem O J U V X Y} {b b' : ℕ}
+    -- `E` admits inside queries; `F` admits outside queries. The bounds may differ.
     (ha : IsDDCFrom E F b a) (hc : IsDDCFrom E F b' c)
+    -- `t` records inputs and outputs shared by both DDCs; `x` is the next admitted input.
+    -- Inputs are outside requests or inside replies; outputs are replies or inside requests.
     (hnext : ∀ (t : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))) (x : Σ l, twoFam U Y l),
       Replies a (t.map Prod.fst) (t.map Prod.snd) →
       Replies c (t.map Prod.fst) (t.map Prod.snd) →
@@ -1146,6 +1159,7 @@ lemma IsDDCFrom.replies_iff_of_le {γ s W : InsideOutsideSystem O M U V Xm Ym} {
     (h : List ((Σ l, twoFam U Ym l) × (Σ l, twoFam V Xm l))) :
     Replies γ (h.map Prod.fst) (h.map Prod.snd) ↔ Replies s (h.map Prod.fst) (h.map Prod.snd) := by
   refine hγ.replies_iff_of_next_eq hs (fun t x hrγ hrs hx => ?_) h
+  -- Both replies must equal the unique reply of the common partial system `W`.
   obtain ⟨yγ, hyγ⟩ := Part.dom_iff_mem.mp ((hγ.answers t x hrγ).mpr hx)
   obtain ⟨ys, hys⟩ := Part.dom_iff_mem.mp ((hs.answers t x hrs).mpr hx)
   have hwγ := (replies_snoc.mp (hγW _ _ (replies_snoc.mpr ⟨hrγ, Part.eq_some_iff.mpr hyγ⟩))).2

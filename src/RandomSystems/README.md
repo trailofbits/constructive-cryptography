@@ -225,10 +225,10 @@ of the program's inside queries:
 [IsDDC]: DDC/DDC.lean#L131
 [serialM]: DDC/Serial.lean#L59
 [IsDDC.comp]: DDC/Serial.lean#L519
-[converterDomain]: Converter/ConverterDomain.lean#L240
-[IsDDCFrom]: Converter/ConverterDomain.lean#L307
-[IsDDCFrom.mapsDomain]: Converter/ConverterDomain.lean#L682
-[IsDDCFrom.eq_filterDom_of_replies_le]: Converter/ConverterDomain.lean#L469
+[converterDomain]: Converter/ConverterDomain.lean#L246
+[IsDDCFrom]: Converter/ConverterDomain.lean#L313
+[IsDDCFrom.mapsDomain]: Converter/ConverterDomain.lean#L695
+[IsDDCFrom.eq_filterDom_of_replies_le]: Converter/ConverterDomain.lean#L482
 [IsDDC.comp_of_query_cost]: DDC/SerialCost.lean#L213
 [callRule]: Converter/Calls.lean#L395
 [callRule_completed_exact_length]: Converter/CallRuleTranscript.lean#L96
@@ -240,8 +240,8 @@ of the program's inside queries:
 [ofDDC_callConverter_smul_ofFunction]: Typed/CallRuleFunctional.lean#L35
 [routingConverter]: Converter/QueryRouting.lean#L73
 [routingCall_queries]: Converter/QueryRouting.lean#L112
-[PDCBehavior]: Converter/PDCBehavior.lean#L71
-[PDCBehavior.ofPDC]: Converter/PDCBehavior.lean#L175
+[PDCBehavior]: Converter/PDCBehavior.lean#L75
+[PDCBehavior.ofPDC]: Converter/PDCBehavior.lean#L179
 [PDCBehavior.comp]: Converter/PDCBehavior.lean#L281
 [PDCBehavior.id]: Converter/PDCBehavior.lean#L379
 [PDCBehavior.comp_assoc]: Converter/PDCBehavior.lean#L347

@@ -19,6 +19,8 @@ The carriers are indexed by finite interfaces, using the systems and converters 
 `TypedSystem.ofPDS` presents a sampled deterministic system; `TypedSystem.exists_ofPDS` gives
 such a presentation for every typed behavior.
 
+`TypedConverter.ofDDC_eq_iff` identifies equality of certified DDCs with equality of their
+typed behaviors. `TypedConverter.ofDDC_eq_of_next_eq` reduces it to admitted next inputs.
 `TypedConverter.ofDDC_eq_comp` turns raw equality with a trimmed serial DDC into equality of
 typed converters, independently of their certified bounds. `TypedConverter.identity_attach`
 and `TypedConverter.comp_smul` lift the PDC attachment laws; the latter is the serial law of
@@ -221,6 +223,7 @@ define the same typed converter. -/
 lemma ofDDC_eq_of_next_eq {A B : Interface}
     {α γ : InsideOutsideSystem A.I B.I A.X A.Y B.X B.Y} {a c : ℕ}
     (hα : IsDDCFrom B.domain A.domain a α) (hγ : IsDDCFrom B.domain A.domain c γ)
+    -- `t` is a shared converter transcript; `x` is an outside request or an inside reply.
     (hnext : ∀ (t : List ((Σ l, twoFam A.X B.Y l) × (Σ l, twoFam A.Y B.X l)))
       (x : Σ l, twoFam A.X B.Y l),
       Replies α (t.map Prod.fst) (t.map Prod.snd) →
