@@ -2542,7 +2542,8 @@ theorem idealSpongeGame_visible (hp : p.Valid) {encode : M → List (BitVec 8)}
     (idealSpongeGame p M spec q_pub).visible =
       (spec.toInterface ◁ spongeSimulator p M encode q_pub) •
         sharedIdealRO p M spec q_pub := by
-  have hsam := sample_ofProbAutomaton_eq (A := spec.toInterface ⊗ PrimitiveInterface p q_pub)
+  have hsam := TypedSystem.sample_ofProbAutomaton_eq
+    (A := spec.toInterface ⊗ PrimitiveInterface p q_pub)
     (μ := 𝒰[M → ByteState p.outputBytes]) (fun ro => idealFixedROStep p M spec q_pub ro)
     (fun _ => ProbDist.single [])
   rw [idealSpongeGame, TypedGame.visible_ofProbAutomaton, idealSponge_eq_sample p M hp spec q_pub]
