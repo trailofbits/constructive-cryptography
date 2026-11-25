@@ -73,6 +73,7 @@ named `budget` argument. The object index below supplies owners for those declar
 
 | Needed object | Declaration and module |
 | --- | --- |
+| Uniform sponge byte slices | `card_byteState`, `fTransform_capacityPart_uniform`, `fTransform_digestPart_uniform` in `Commons.Schemes.Sponge.Uniform` |
 | Random function | `URF`, `URF.lazy_eq` in [Ideal] |
 | Random permutation | `URP` in [Ideal]; `URP.lazy_eq` in [LazyPermutation] |
 | Forward and inverse queries to one permutation | `StrongURP` in [Ideal] |
