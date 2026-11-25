@@ -22,7 +22,7 @@ have matching lower bounds that need no uniformity of the map. For any `f : M �
   `m² / (2 (m² + |T|)) - m² / |M|` (`distinct_cross_collision_mass_ge`).
 
 ```text
-E[X]² ≤ Pr[X ≠ 0] · E[X²]            (Distribution.expect_sq_le_mass_ne_zero_mul_second, Cauchy–Schwarz)
+E[X]² ≤ Pr[X ≠ 0] · E[X²]       (Distribution.expect_sq_le_mass_ne_zero_mul_second)
 E[X]  = m² · Σ_t p_t²,   E[X²] ≤ 2 m² p₂ (m² p₂ + 1)       (crossCount_mean, crossCount_second_le)
 p₂ = Σ_t p_t² ≥ 1 / |T|                                  (pair_collision_mass_ge)
 ```
