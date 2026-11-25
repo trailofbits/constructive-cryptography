@@ -22,7 +22,7 @@ have matching lower bounds that need no uniformity of the map. For any `f : M �
   `m² / (2 (m² + |T|)) - m² / |M|` (`distinct_cross_collision_mass_ge`).
 
 ```text
-E[X]² ≤ Pr[X ≠ 0] · E[X²]            (nonzero_mass_mul_second_ge, Cauchy–Schwarz)
+E[X]² ≤ Pr[X ≠ 0] · E[X²]            (Distribution.expect_sq_le_mass_ne_zero_mul_second, Cauchy–Schwarz)
 E[X]  = m² · Σ_t p_t²,   E[X²] ≤ 2 m² p₂ (m² p₂ + 1)       (crossCount_mean, crossCount_second_le)
 p₂ = Σ_t p_t² ≥ 1 / |T|                                  (pair_collision_mass_ge)
 ```
@@ -322,24 +322,6 @@ lemma crossCount_second (f : M → T) :
   ring
 
 omit [Fintype M] [Nonempty M] [DecidableEq I] in
-/-- **Second-moment (Paley–Zygmund) bound**: `E[X]² ≤ Pr[X ≠ 0] · E[X²]` for any nonnegative
-weights, by Cauchy–Schwarz against the indicator of `X ≠ 0`. -/
-theorem nonzero_mass_mul_second_ge {A : Type u} (P : Distribution A) (hp : P.NonNeg)
-    (X : A → ℝ) :
-    P.expect X ^ 2 ≤ P.mass (fun a => X a ≠ 0) * P.expect (fun a => X a ^ 2) := by
-  classical
-  have h := Distribution.expect_mul_sq_le_sq_mul_sq hp
-    (fun a => if X a ≠ 0 then (1 : ℝ) else 0) X
-  have hm (a : A) : (if X a ≠ 0 then (1 : ℝ) else 0) * X a = X a := by
-    by_cases ha : X a = 0
-    · rw [ha, mul_zero]
-    · rw [ite_eq_left ha, one_mul]
-  have hs (a : A) : (if X a ≠ 0 then (1 : ℝ) else 0) ^ 2 =
-      if X a ≠ 0 then 1 else 0 := by
-    split_ifs <;> ring
-  simpa only [hm, hs, Distribution.expect_indicator] using h
-
-omit [Fintype M] [Nonempty M] [DecidableEq I] in
 /-- The cubic moment is absorbed: `2 m Σ_t P_t³ ≤ m² (Σ_t P_t²)² + Σ_t P_t²`. -/
 lemma cubic_moment_le (P : T → ℝ) (m : ℝ) :
     2 * m * (∑ t, P t ^ 3) ≤ m ^ 2 * (∑ t, P t ^ 2) ^ 2 + ∑ t, P t ^ 2 := by
@@ -412,7 +394,7 @@ theorem crossCount_nonzero_mass_ge [Nonempty I] [Nonempty T] (f : M → T) :
       ((Distribution.weight_fTransform f _).trans Distribution.weight_uniform)
     rwa [pair_collision_mass] at h
   have hp' : 0 < p₂ := lt_of_lt_of_le (one_div_pos.mpr ht) hp
-  have hc := nonzero_mass_mul_second_ge Q Distribution.uniform_nonNeg (crossCount f)
+  have hc := Distribution.expect_sq_le_mass_ne_zero_mul_second Q Distribution.uniform_nonNeg (crossCount f)
   have hsecond := crossCount_second_le (I := I) f
   have hmass : 0 ≤ Q.mass (fun seed => crossCount f seed ≠ 0) :=
     Distribution.uniform_nonNeg.mass_nonneg _

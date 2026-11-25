@@ -60,7 +60,7 @@ example :
 
 #print axioms pair_collision_mass_ge
 #print axioms distinct_pair_collision_mass_ge
-#print axioms nonzero_mass_mul_second_ge
+#print axioms Distribution.expect_sq_le_mass_ne_zero_mul_second
 #print axioms crossCount_nonzero_mass_ge
 #print axioms distinct_cross_collision_mass_ge
 
