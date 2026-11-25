@@ -1,8 +1,8 @@
 module
 
 public import Commons.Definitions.PermutationTableGame
-public import Commons.Schemes.Sponge.Basic
-public import Mathlib.Data.BitVec
+public import Commons.Schemes.Sponge.Uniform
+public import ConstructiveCryptography.Substitution.Reduction
 
 /-!
 # Adaptive collision resistance of the generic sponge construction
@@ -38,6 +38,7 @@ namespace Commons.Sponge
 
 open CategoryTheory SystemAlgebra Probability Probability.Distribution Probability.Counting
 open Commons.StrongURP
+open ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage
 open scoped BigOperators NNReal SystemAlgebra
 
 /-! ### Tight fresh-capacity set -/
@@ -186,57 +187,6 @@ end FreshCapacities
 
 section ByteStateUniform
 
-/-- `BitVec 8` is finite via `BitVec.equivFin`, giving `Fintype (ByteState n)`. -/
-instance instFintypeByte : Fintype (BitVec 8) :=
-  Fintype.ofEquiv (Fin (2 ^ 8)) BitVec.equivFin.toEquiv.symm
-
-lemma card_byteState (n : ℕ) : Fintype.card (ByteState n) = 256 ^ n := by
-  rw [Fintype.card_fun, Fintype.card_fin]
-  have hb : Fintype.card (BitVec 8) = 256 := by
-    rw [Fintype.card_congr BitVec.equivFin.toEquiv, Fintype.card_fin]
-    norm_num
-  rw [hb]
-
-/-- Projecting a uniform state onto its capacity bytes yields the uniform capacity law. -/
-lemma fTransform_capacityPart_uniform (p : Parameters) (hr : p.rateBytes ≤ p.stateBytes) :
-    Distribution.fTransform (capacityPart p) (Distribution.uniform (ByteState p.stateBytes)) =
-      Distribution.uniform (ByteState p.capacityBytes) := by
-  let idx : Fin p.capacityBytes → Fin p.stateBytes := fun i =>
-    ⟨p.rateBytes + i.val, by
-      have hi := i.isLt
-      simp only [Parameters.capacityBytes] at hi
-      omega⟩
-  have hinj : Function.Injective idx := by
-    intro a b h
-    have hv : p.rateBytes + a.val = p.rateBytes + b.val := congrArg Fin.val h
-    exact Fin.ext (by omega)
-  have hfun : capacityPart p = fun s i => s (idx i) := by
-    funext s i
-    have hlt : p.rateBytes + i.val < p.stateBytes := by
-      have hi := i.isLt
-      simp only [Parameters.capacityBytes] at hi
-      omega
-    simp only [capacityPart, idx, hlt, ↓reduceDIte]
-  rw [hfun]
-  exact Counting.fTransform_eval_uniform_eq_uniform idx hinj
-
-/-- Projecting a uniform state onto its digest bytes yields the uniform digest law. -/
-lemma fTransform_digestPart_uniform (p : Parameters) (ho : p.outputBytes ≤ p.stateBytes) :
-    Distribution.fTransform (digestPart p) (Distribution.uniform (ByteState p.stateBytes)) =
-      Distribution.uniform (ByteState p.outputBytes) := by
-  let idx : Fin p.outputBytes → Fin p.stateBytes := fun i =>
-    ⟨i.val, Nat.lt_of_lt_of_le i.isLt ho⟩
-  have hinj : Function.Injective idx := by
-    intro a b h
-    have hv : (idx a).val = (idx b).val := congrArg Fin.val h
-    exact Fin.ext hv
-  have hfun : digestPart p = fun s i => s (idx i) := by
-    funext s i
-    have hlt : i.val < p.stateBytes := Nat.lt_of_lt_of_le i.isLt ho
-    simp only [digestPart, idx, hlt, ↓reduceDIte]
-  rw [hfun]
-  exact Counting.fTransform_eval_uniform_eq_uniform idx hinj
-
 open Classical in
 /-- Probability that a uniform full state has capacity in `F`. -/
 lemma uniform_mass_capacityPart_mem (p : Parameters) (hr : p.rateBytes ≤ p.stateBytes)
@@ -282,10 +232,10 @@ lemma capacityCollisionGame_visible (p : Parameters) (q : ℕ) :
   tableMonitorGame_visible q _ (fun hsub hg => capacityCollisionFree_of_subset _ _ hsub hg)
 
 /-- Tight adaptive capacity-collision upper bound `(|S| / (|S| - q)) · C(q + 1, 2) / |C|`. -/
-def capacityCollisionBound (p : Parameters) (q : ℕ) : ℝ :=
-  ((Fintype.card (ByteState p.stateBytes) : ℝ) /
-      (Fintype.card (ByteState p.stateBytes) - q : ℝ)) *
-    (((q + 1).choose 2 : ℝ) / Fintype.card (ByteState p.capacityBytes))
+def capacityCollisionBound (p : Parameters) (q : ℕ) : ℝ≥0 :=
+  ((Fintype.card (ByteState p.stateBytes) : ℝ≥0) /
+      (Fintype.card (ByteState p.stateBytes) - q : ℕ)) *
+    (((q + 1).choose 2 : ℝ≥0) / Fintype.card (ByteState p.capacityBytes))
 
 open Classical in
 /-- Every compatible stopping distinguisher wins `capacityCollisionGame p q` with probability at
@@ -318,7 +268,8 @@ lemma capacityCollisionGame_winProbability_le (p : Parameters) (hp : p.Valid) (q
         exact div_le_div_of_nonneg_right hcard (Nat.cast_nonneg _))
     P
   refine hlin.trans (le_of_eq ?_)
-  dsimp only [capacityCollisionBound]
+  simp only [capacityCollisionBound, NNReal.coe_mul, NNReal.coe_div,
+    NNReal.coe_natCast, Nat.cast_sub hq.le]
   ring
 
 /-- Every admitted winner on `Bidirectional (ByteState p.stateBytes) q` breaks
@@ -339,9 +290,9 @@ theorem capacityCollisionGame_dist_le (p : Parameters) (hp : p.Valid) (q : ℕ)
     {T : TypedSystem (Bidirectional (ByteState p.stateBytes) q)}
     (hc : capacityCollisionGame p q |≡ T) :
     Δ (StrongURP (ByteState p.stateBytes) (q := q)) T ≤
-      ENNReal.ofReal (capacityCollisionBound p q) := by
+      (capacityCollisionBound p q : ENNReal) := by
   rw [← capacityCollisionGame_visible p q]
-  exact dist_visible_le_of_winProbability_le hc
+  exact Interface.dist_visible_le_of_win hc
     (capacityCollisionGame_winProbability_le p hp q hq)
 
 end
@@ -394,11 +345,11 @@ lemma spongeCollisionGame_visible (p : Parameters) (q : ℕ) :
 
 /-- Tight adaptive sponge collision upper bound
 `(|S| / (|S| - q)) · (C(q + 1, 2) / |C| + C(q, 2) / |O|)`. -/
-def spongeCollisionBound (p : Parameters) (q : ℕ) : ℝ :=
-  ((Fintype.card (ByteState p.stateBytes) : ℝ) /
-      (Fintype.card (ByteState p.stateBytes) - q : ℝ)) *
-    (((q + 1).choose 2 : ℝ) / Fintype.card (ByteState p.capacityBytes) +
-      (q.choose 2 : ℝ) / Fintype.card (ByteState p.outputBytes))
+def spongeCollisionBound (p : Parameters) (q : ℕ) : ℝ≥0 :=
+  ((Fintype.card (ByteState p.stateBytes) : ℝ≥0) /
+      (Fintype.card (ByteState p.stateBytes) - q : ℕ)) *
+    (((q + 1).choose 2 : ℝ≥0) / Fintype.card (ByteState p.capacityBytes) +
+      (q.choose 2 : ℝ≥0) / Fintype.card (ByteState p.outputBytes))
 
 open Classical in
 /-- Every compatible stopping distinguisher wins `spongeCollisionGame p q` with probability at
@@ -476,7 +427,8 @@ lemma spongeCollisionGame_winProbability_le (p : Parameters) (hp : p.Valid) (q :
           exact le_add_of_nonneg_right (div_nonneg (Nat.cast_nonneg _) (Nat.cast_nonneg _)))
     P
   refine hlin.trans (le_of_eq ?_)
-  dsimp only [spongeCollisionBound]
+  simp only [spongeCollisionBound, NNReal.coe_mul, NNReal.coe_div, NNReal.coe_add,
+    NNReal.coe_natCast, Nat.cast_sub hq.le]
   ring
 
 /-- Every admitted winner on `Bidirectional (ByteState p.stateBytes) q` triggers a capacity or
@@ -531,9 +483,9 @@ theorem spongeCollisionGame_dist_le (p : Parameters) (hp : p.Valid) (q : ℕ)
     {T : TypedSystem (Bidirectional (ByteState p.stateBytes) q)}
     (hc : spongeCollisionGame p q |≡ T) :
     Δ (StrongURP (ByteState p.stateBytes) (q := q)) T ≤
-      ENNReal.ofReal (spongeCollisionBound p q) := by
+      (spongeCollisionBound p q : ENNReal) := by
   rw [← spongeCollisionGame_visible p q]
-  exact dist_visible_le_of_winProbability_le hc (spongeCollisionGame_winProbability_le p hp q hq)
+  exact Interface.dist_visible_le_of_win hc (spongeCollisionGame_winProbability_le p hp q hq)
 
 /-- Attaching any converter `α` preserves the sponge collision distance bound. -/
 theorem spongeCollisionGame_attach_dist_le (p : Parameters) (hp : p.Valid) (q : ℕ)
@@ -542,7 +494,7 @@ theorem spongeCollisionGame_attach_dist_le (p : Parameters) (hp : p.Valid) (q : 
     {T : TypedSystem (Bidirectional (ByteState p.stateBytes) q)}
     (hc : spongeCollisionGame p q |≡ T) :
     Δ (α • StrongURP (ByteState p.stateBytes) (q := q)) (α • T) ≤
-      ENNReal.ofReal (spongeCollisionBound p q) :=
+      (spongeCollisionBound p q : ENNReal) :=
   (ConstructiveCryptography.CryptographicAlgebra.distance_attach_le α _ _).trans
     (spongeCollisionGame_dist_le p hp q hq hc)
 
@@ -555,8 +507,9 @@ theorem spongeCollisionGame_substitutesWithin
     {T : TypedSystem (Bidirectional (ByteState p.stateBytes) q)}
     (hc : spongeCollisionGame p q |≡ T) :
     StrongURP (ByteState p.stateBytes) (q := q) ≃[fun _ =>
-      ENNReal.ofReal (spongeCollisionBound p q)] T :=
-  substitutesWithin_of_dist_le (spongeCollisionGame_dist_le p hp q hq hc)
+      (spongeCollisionBound p q : ENNReal)] T :=
+  ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_distance
+    _ DominatedByDistance.advantage_le_distance (spongeCollisionGame_dist_le p hp q hq hc)
 
 end
 

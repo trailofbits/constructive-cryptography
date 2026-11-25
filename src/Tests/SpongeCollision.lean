@@ -116,14 +116,14 @@ lemma sha3_256_cc_calc_attach (q : ℕ) (hq : q < 256 ^ 200)
     (hc : spongeCollisionGame sha3_256 q |≡ T)
     (hnext : Δ ((α ≫ β) • T) U ≤ δ) :
     Δ (α • (β • StrongURP (ByteState sha3_256.stateBytes) (q := q))) U ≤
-      ENNReal.ofReal (spongeCollisionBound sha3_256 q) + δ := by
+      (spongeCollisionBound sha3_256 q : ENNReal) + δ := by
   have hnorm : α • (β • StrongURP (ByteState sha3_256.stateBytes) (q := q)) =
       (α ≫ β) • StrongURP (ByteState sha3_256.stateBytes) (q := q) := by
     cc_normalize
   rw [hnorm]
   cc_calc statistical
     (α ≫ β) • StrongURP (ByteState sha3_256.stateBytes) (q := q)
-      ≈[ENNReal.ofReal (spongeCollisionBound sha3_256 q)] (α ≫ β) • T :=
+      ≈[(spongeCollisionBound sha3_256 q : ENNReal)] (α ≫ β) • T :=
         spongeCollisionGame_attach_dist_le sha3_256 sha3_256_valid q
           (by rw [card_byteState]; exact hq) (α ≫ β) hc
     _ ≈[δ] U := hnext
@@ -136,7 +136,7 @@ lemma sha3_256_substitutesWithin
     {T : TypedSystem (Bidirectional (ByteState sha3_256.stateBytes) q)}
     (hc : spongeCollisionGame sha3_256 q |≡ T) :
     StrongURP (ByteState sha3_256.stateBytes) (q := q) ≃[fun _ =>
-      ENNReal.ofReal (spongeCollisionBound sha3_256 q)] T :=
+      (spongeCollisionBound sha3_256 q : ENNReal)] T :=
   spongeCollisionGame_substitutesWithin sha3_256 sha3_256_valid q
     (by rw [card_byteState]; exact hq) hc
 
