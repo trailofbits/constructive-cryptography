@@ -394,7 +394,8 @@ theorem crossCount_nonzero_mass_ge [Nonempty I] [Nonempty T] (f : M → T) :
       ((Distribution.weight_fTransform f _).trans Distribution.weight_uniform)
     rwa [pair_collision_mass] at h
   have hp' : 0 < p₂ := lt_of_lt_of_le (one_div_pos.mpr ht) hp
-  have hc := Distribution.expect_sq_le_mass_ne_zero_mul_second Q Distribution.uniform_nonNeg (crossCount f)
+  have hc := Distribution.expect_sq_le_mass_ne_zero_mul_second Q
+    Distribution.uniform_nonNeg (crossCount f)
   have hsecond := crossCount_second_le (I := I) f
   have hmass : 0 ≤ Q.mass (fun seed => crossCount f seed ≠ 0) :=
     Distribution.uniform_nonNeg.mass_nonneg _
