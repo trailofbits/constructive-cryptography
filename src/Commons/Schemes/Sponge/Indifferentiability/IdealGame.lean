@@ -62,8 +62,8 @@ lemma unsetMBOs_eq_of_good_simulation {A : Interface} {S₁ S₂ : Type}
           ((fTransform (ProbStep.tagged (Y := withMBO A.Y) ⟨o, u⟩) (step₂ (s₂,
             false) o u).1).restrict
             fun sy => sy.2 = (⟨o, (y, false)⟩ : Σ i, withMBO A.Y i))) :
-    (ofProbAutomatonGame step₁ init₁ hflag₁).1.1.GameEquivalent
-      (ofProbAutomatonGame step₂ init₂ hflag₂).1.1 := by
+    (TypedGame.ofProbAutomaton step₁ init₁ hflag₁).1.1.GameEquivalent
+      (TypedGame.ofProbAutomaton step₂ init₂ hflag₂).1.1 := by
   classical
   let liftK : S₁ × Bool → Distribution (S₂ × Bool) :=
     fun sb => if sb.2 = false then ((K sb.1).map fun s₂ => (s₂, false)).1 else 0
@@ -1611,7 +1611,7 @@ and whose monotone MBO monitors capacity collisions among public and hidden spon
 noncomputable def idealSpongeGame {encode : M → List (BitVec 8)} {w : ℕ}
     (spec : HonestWorkSpec p M encode w) (q_pub : ℕ) :
     TypedGame (spec.toInterface ⊗ PrimitiveInterface p q_pub) :=
-  ofProbAutomatonGame (idealSpongeGameStep p M spec q_pub) (idealGameInit p M)
+  TypedGame.ofProbAutomaton (idealSpongeGameStep p M spec q_pub) (idealGameInit p M)
     (idealSpongeGameStep_flag p M spec q_pub)
 
 omit [Fintype M] [DecidableEq M] in
@@ -1627,7 +1627,7 @@ lemma unsetMBOs_belief_le_visible {A : Interface} {S : Type}
         (unsetMBOs h)).support, sb.2 = false) ∧
     (∀ sb : S × Bool,
       step.belief A.withMBO.inputDomain (init.map fun s => (s, false)).1 (unsetMBOs h) sb ≤
-        (forgetMBOStep step).belief A.inputDomain (init.map fun s => (s, false)).1 h sb) := by
+        (ProbStep.forgetMBO step).belief A.inputDomain (init.map fun s => (s, false)).1 h sb) := by
   classical
   have hrestrict_nn : ∀ {α : Type} {μ : Distribution α} (_ : μ.NonNeg) (P : α → Prop),
       (μ.restrict P).NonNeg := fun hμ P a => by
@@ -1713,7 +1713,7 @@ lemma unsetMBOs_belief_le_visible {A : Interface} {S : Type}
     · rw [ite_eq_left (hadm_iff.mpr hadm), ite_eq_left hadm]
       constructor
       · intro sb hsb
-        obtain ⟨sb₀, _, hout⟩ := mem_support_transition step ⟨o, u⟩ (tagMBO false ⟨o', v⟩) hsb
+        obtain ⟨sb₀, _, hout⟩ := ProbStep.mem_support_transition step ⟨o, u⟩ (tagMBO false ⟨o', v⟩) hsb
         obtain ⟨q, hq, htag⟩ := mem_support_fTransform _ _ hout
         have hsbeq : q.1 = sb := congrArg Prod.fst htag
         have hzeq : (⟨o, q.2⟩ : Σ i, withMBO A.Y i) = tagMBO false ⟨o', v⟩ := congrArg Prod.snd htag
@@ -1725,27 +1725,27 @@ lemma unsetMBOs_belief_le_visible {A : Interface} {S : Type}
           exact congrArg Prod.snd hzeq
         rw [← hsbeq, ← hmb, hzb]
       · intro sb
-        have hvis_nn : ((forgetMBOStep step).belief A.inputDomain
+        have hvis_nn : ((ProbStep.forgetMBO step).belief A.inputDomain
             (init.map fun s => (s, false)).1 h).NonNeg := fun a =>
           (hbelief_nn h a).trans (ih.2 a)
         calc step.transition _ ⟨o, u⟩ (tagMBO false ⟨o', v⟩) sb
-            ≤ step.transition ((forgetMBOStep step).belief A.inputDomain
+            ≤ step.transition ((ProbStep.forgetMBO step).belief A.inputDomain
                 (init.map fun s => (s, false)).1 h) ⟨o, u⟩ (tagMBO false ⟨o', v⟩) sb :=
               hmono_trans _ _ ih.2 ⟨o, u⟩ (tagMBO false ⟨o', v⟩) sb
-          _ ≤ (step.transition ((forgetMBOStep step).belief A.inputDomain
+          _ ≤ (step.transition ((ProbStep.forgetMBO step).belief A.inputDomain
                 (init.map fun s => (s, false)).1 h) ⟨o, u⟩ (tagMBO false ⟨o', v⟩) +
-              step.transition ((forgetMBOStep step).belief A.inputDomain
+              step.transition ((ProbStep.forgetMBO step).belief A.inputDomain
                 (init.map fun s => (s, false)).1 h) ⟨o, u⟩ (tagMBO true ⟨o', v⟩)) sb := by
               rw [Finsupp.add_apply]
               linarith [hnonneg_trans _ hvis_nn ⟨o, u⟩ (tagMBO true ⟨o', v⟩) sb]
-          _ = (forgetMBOStep step).transition ((forgetMBOStep step).belief A.inputDomain
+          _ = (ProbStep.forgetMBO step).transition ((ProbStep.forgetMBO step).belief A.inputDomain
                 (init.map fun s => (s, false)).1 h) ⟨o, u⟩ ⟨o', v⟩ sb := by
               rw [transition_tagMBO_add]
     · rw [ite_eq_right (mt hadm_iff.mp hadm), ite_eq_right hadm]
       exact ⟨fun _ h => False.elim (Finset.notMem_empty _ h), fun _ => le_rfl⟩
 
 omit [Fintype M] [DecidableEq M] in
-/-- For any `ofProbAutomatonGame`, the total one-step MBO-set mass equals the expectation under
+/-- For any `TypedGame.ofProbAutomaton`, the total one-step MBO-set mass equals the expectation under
 the unset-MBO belief of the per-state probability that the next step emits MBO bit `true`. -/
 lemma ofProbAutomatonGame_sum_tagMBO_true {A : Interface} {S : Type}
     (step : ProbStep (S × Bool) A.I A.X (withMBO A.Y)) (init : ProbDist S)
@@ -1755,7 +1755,7 @@ lemma ofProbAutomatonGame_sum_tagMBO_true {A : Interface} {S : Type}
     (h : List ((Σ i, A.X i) × Σ i, A.Y i)) (xq : Σ i, A.X i)
     (hadm : A.inputDomain h xq) :
     ∑ y : Σ i, A.Y i,
-        (ofProbAutomatonGame step init hflag).1.1 (unsetMBOs h ++ [(xq, tagMBO true y)]) =
+        (TypedGame.ofProbAutomaton step init hflag).1.1 (unsetMBOs h ++ [(xq, tagMBO true y)]) =
       (step.belief A.withMBO.inputDomain (init.map fun s => (s, false)).1 (unsetMBOs h)).sum
         fun sb w => w * (step sb xq.1 xq.2).1.mass (fun q => q.2.2 = true) := by
   classical
@@ -1767,7 +1767,7 @@ lemma ofProbAutomatonGame_sum_tagMBO_true {A : Interface} {S : Type}
     rw [hfst]; exact hadm
   set μ := step.belief A.withMBO.inputDomain (init.map fun s => (s, false)).1 (unsetMBOs h)
   have hterm : ∀ y : Σ i, A.Y i,
-      (ofProbAutomatonGame step init hflag).1.1 (unsetMBOs h ++ [(⟨o, u⟩, tagMBO true y)]) =
+      (TypedGame.ofProbAutomaton step init hflag).1.1 (unsetMBOs h ++ [(⟨o, u⟩, tagMBO true y)]) =
         μ.sum fun sb w => w * (step sb o u).1.mass
           (fun q => (⟨o, q.2⟩ : Σ i, withMBO A.Y i) = tagMBO true y) := by
     intro y
@@ -1834,7 +1834,7 @@ lemma ofProbAutomatonGame_sum_tagMBO_true {A : Interface} {S : Type}
   exact hfib
 
 omit [DecidableEq M] in
-/-- Dropping the MBO flag from `forgetMBOStep idealSpongeGameStep` yields `idealPathVisStep`. -/
+/-- Dropping the MBO flag from `ProbStep.forgetMBO idealSpongeGameStep` yields `idealPathVisStep`. -/
 lemma forgetMBOStep_idealSpongeGameStep {encode : M → List (BitVec 8)} {w : ℕ}
     (spec : HonestWorkSpec p M encode w) (q_pub : ℕ)
     (s : (M → ByteState p.outputBytes) ×
@@ -1842,19 +1842,19 @@ lemma forgetMBOStep_idealSpongeGameStep {encode : M → List (BitVec 8)} {w : �
       List (List (ByteState p.rateBytes) × ByteState p.stateBytes))
     (b : Bool) (i : (spec.toInterface ⊗ PrimitiveInterface p q_pub).I)
     (x : (spec.toInterface ⊗ PrimitiveInterface p q_pub).X i) :
-    ((forgetMBOStep (idealSpongeGameStep p M spec q_pub)) (s, b) i x).map
+    ((ProbStep.forgetMBO (idealSpongeGameStep p M spec q_pub)) (s, b) i x).map
         (fun q => (q.1.1, q.2)) =
       idealPathVisStep p M spec q_pub s i x := by
   rcases s with ⟨ro, T_pub, hid⟩
   rcases i with i | i
   · cases i
-    simp only [forgetMBOStep, idealSpongeGameStep, idealPathVisStep, ProbDist.map_map]
+    simp only [ProbStep.forgetMBO, idealSpongeGameStep, idealPathVisStep, ProbDist.map_map]
     change ProbDist.map ((fun hid' => ((ro, T_pub, hid'), ro x)) ∘ Prod.fst) _ = _
     rw [← ProbDist.map_map, sampleHiddenPrefixesWithBad_map_fst, ProbDist.map_map]
     rfl
   · cases i with
     | forward =>
-      simp only [forgetMBOStep, idealSpongeGameStep, idealPathVisStep]
+      simp only [ProbStep.forgetMBO, idealSpongeGameStep, idealPathVisStep]
       cases lookupForwardEdge T_pub x with
       | some y =>
         apply Subtype.ext
@@ -1875,7 +1875,7 @@ lemma forgetMBOStep_idealSpongeGameStep {encode : M → List (BitVec 8)} {w : �
           | some m => simp only [ProbDist.map_map]; rfl
           | none => simp only [ProbDist.map_map]; rfl
     | inverse =>
-      simp only [forgetMBOStep, idealSpongeGameStep, idealPathVisStep]
+      simp only [ProbStep.forgetMBO, idealSpongeGameStep, idealPathVisStep]
       cases lookupInverseEdge T_pub x with
       | some x' =>
         apply Subtype.ext
@@ -1906,7 +1906,7 @@ lemma idealGhost_belief_rel (hp : p.Valid) {encode : M → List (BitVec 8)}
         (ProbDist.single ([] : List (PermutationEdge (ByteState p.stateBytes)))).map
           fun s => (ro, s)
     let μ_g := (idealGhostStep p M spec q_pub).belief A.inputDomain initG.1 h
-    let μ_v := (forgetMBOStep (idealSpongeGameStep p M spec q_pub)).belief A.inputDomain
+    let μ_v := (ProbStep.forgetMBO (idealSpongeGameStep p M spec q_pub)).belief A.inputDomain
       ((idealGameInit p M).map fun s => (s, false)).1 h
     let μ_i := stepI.belief A.inputDomain initI.1 h
     let (T_pub, keys, _) := replayGhost p M spec q_pub h
@@ -1941,7 +1941,7 @@ lemma idealGhost_belief_rel (hp : p.Valid) {encode : M → List (BitVec 8)}
       List (PermutationEdge (ByteState p.stateBytes)) ×
       List (List (ByteState p.rateBytes) × ByteState p.stateBytes)) × Bool))
       (xq : Σ o, A.X o) (yq : Σ o, A.Y o),
-      fTransform Prod.fst ((forgetMBOStep (idealSpongeGameStep p M spec q_pub)).transition μ xq yq)
+      fTransform Prod.fst ((ProbStep.forgetMBO (idealSpongeGameStep p M spec q_pub)).transition μ xq yq)
         =
         (idealPathVisStep p M spec q_pub).transition (fTransform Prod.fst μ) xq yq := by
     intro μ ⟨o, u⟩ yq
@@ -2001,7 +2001,7 @@ lemma idealGhost_belief_rel (hp : p.Valid) {encode : M → List (BitVec 8)}
     by_cases hadm : A.inputDomain h xq
     · rw [ite_eq_left hadm, ite_eq_left hadm, ite_eq_left hadm]
       set μ_g := (idealGhostStep p M spec q_pub).belief A.inputDomain initG.1 h
-      set μ_v := (forgetMBOStep (idealSpongeGameStep p M spec q_pub)).belief A.inputDomain
+      set μ_v := (ProbStep.forgetMBO (idealSpongeGameStep p M spec q_pub)).belief A.inputDomain
         ((idealGameInit p M).map fun s => (s, false)).1 h
       set μ_i := stepI.belief A.inputDomain initI.1 h
       rcases xq with ⟨o, u⟩; rcases yq with ⟨o', v⟩
@@ -2434,7 +2434,7 @@ lemma idealGhost_belief_rel (hp : p.Valid) {encode : M → List (BitVec 8)}
           exact ⟨h1, h2, h3⟩
         refine ⟨?_, ?_, ?_⟩
         · intro st' hst'
-          obtain ⟨st, hst, hout⟩ := mem_support_transition (idealGhostStep p M spec q_pub)
+          obtain ⟨st, hst, hout⟩ := ProbStep.mem_support_transition (idealGhostStep p M spec q_pub)
             ⟨o, u⟩ ⟨o, v⟩ hst'
           rcases st with ⟨ro, T', k'⟩
           rcases hsupp (ro, T', k') hst with ⟨hTeq, hkeq, hnd⟩
@@ -2543,7 +2543,7 @@ theorem idealSpongeGame_visible (hp : p.Valid) {encode : M → List (BitVec 8)}
   have hsam := sample_ofProbAutomaton_eq (A := spec.toInterface ⊗ PrimitiveInterface p q_pub)
     (μ := 𝒰[M → ByteState p.outputBytes]) (fun ro => idealFixedROStep p M spec q_pub ro)
     (fun _ => ProbDist.single [])
-  rw [idealSpongeGame, ofProbAutomatonGame_visible, idealSponge_eq_sample p M hp spec q_pub]
+  rw [idealSpongeGame, TypedGame.visible_ofProbAutomaton, idealSponge_eq_sample p M hp spec q_pub]
   change _ = TypedSystem.sample (𝒰[M → ByteState p.outputBytes]).1 _
   rw [hsam]
   apply Subtype.ext
@@ -2553,7 +2553,7 @@ theorem idealSpongeGame_visible (hp : p.Valid) {encode : M → List (BitVec 8)}
   rcases hrg : replayGhost p M spec q_pub h with ⟨T_pub, keys, a_cnt⟩
   rw [hrg] at hrel
   rcases hrel with ⟨_, hvis, hfix⟩
-  change ((forgetMBOStep (idealSpongeGameStep p M spec q_pub)).belief
+  change ((ProbStep.forgetMBO (idealSpongeGameStep p M spec q_pub)).belief
       (spec.toInterface ⊗ PrimitiveInterface p q_pub).inputDomain
       ((idealGameInit p M).map fun s => (s, false)).1 h).weight = _
   rw [← Distribution.weight_fTransform Prod.fst, ← hvis, Distribution.weight_bindK]
@@ -2589,13 +2589,13 @@ theorem idealSpongeGame_loss_le_gameStepCost (hp : p.Valid) {encode : M → List
   rw [hdiff]
   have htag := ofProbAutomatonGame_sum_tagMBO_true (idealSpongeGameStep p M spec q_pub)
     (idealGameInit p M) (idealSpongeGameStep_flag p M spec q_pub) h xq hadm
-  change ∑ y, (ofProbAutomatonGame (idealSpongeGameStep p M spec q_pub) (idealGameInit p M)
+  change ∑ y, (TypedGame.ofProbAutomaton (idealSpongeGameStep p M spec q_pub) (idealGameInit p M)
       (idealSpongeGameStep_flag p M spec q_pub)).1.1 (unsetMBOs h ++ [(xq, tagMBO true y)]) ≤ _
   rw [htag]
   let A := spec.toInterface ⊗ PrimitiveInterface p q_pub
   let μ_u := (idealSpongeGameStep p M spec q_pub).belief A.withMBO.inputDomain
     ((idealGameInit p M).map fun s => (s, false)).1 (unsetMBOs h)
-  let μ_v := (forgetMBOStep (idealSpongeGameStep p M spec q_pub)).belief A.inputDomain
+  let μ_v := (ProbStep.forgetMBO (idealSpongeGameStep p M spec q_pub)).belief A.inputDomain
     ((idealGameInit p M).map fun s => (s, false)).1 h
   have hble := unsetMBOs_belief_le_visible (idealSpongeGameStep p M spec q_pub) (idealGameInit p M)
     (idealSpongeGameStep_flag p M spec q_pub) h
@@ -3035,7 +3035,7 @@ theorem idealSpongeGame_loss_le_gameStepCost (hp : p.Valid) {encode : M → List
           have hwt : μ_g.weight = G.visible.1 h := by
             have hgv : G.visible.1 h = μ_v.weight := by
               change ((idealSpongeGame p M spec q_pub).visible.1 h) = _
-              rw [idealSpongeGame, ofProbAutomatonGame_visible]
+              rw [idealSpongeGame, TypedGame.visible_ofProbAutomaton]
               rfl
             rw [hgv, ← Distribution.weight_fTransform Prod.fst μ_v, ← hvis,
               Distribution.weight_bindK]

@@ -1,7 +1,7 @@
 module
 
 public import Commons.Definitions.BidirectionalSwitching
-public import Commons.Schemes.Sponge.Basic
+public import Commons.Schemes.Sponge.Uniform
 public import Mathlib.Data.BitVec
 public import RandomSystems.Typed.DSL.Converters
 public import RandomSystems.Typed.Memoryless
@@ -37,17 +37,6 @@ open scoped BigOperators NNReal SystemAlgebra ConstructiveCryptography MonoidalC
 /-! ### Byte-state splitting, reassembly, and capacity counting -/
 
 section ByteStateSplit
-
-/-- `BitVec 8` is finite via `BitVec.equivFin`, supplying `Fintype (ByteState n)`. -/
-instance instFintypeBitVec8 : Fintype (BitVec 8) :=
-  Fintype.ofEquiv (Fin (2 ^ 8)) BitVec.equivFin.toEquiv.symm
-
-/-- A `ByteState n` carries `256 ^ n` distinct values. -/
-lemma card_byteState (n : ℕ) : Fintype.card (ByteState n) = 256 ^ n := by
-  have hb : Fintype.card (BitVec 8) = 256 := by
-    rw [Fintype.card_congr BitVec.equivFin.toEquiv, Fintype.card_fin]
-    rfl
-  simp only [ByteState, Fintype.card_fun, Fintype.card_fin, hb]
 
 /-- Number of bytes in a sponge state after the `outputBytes` digest prefix. -/
 def tailBytes (p : Parameters) : ℕ :=
@@ -261,24 +250,6 @@ lemma fTransform_tailPart_uniform (p : Parameters) (ho : p.outputBytes ≤ p.sta
   rw [hcomp, ← fTransform_fTransform, fTransform_equiv_uniform, ← prod_uniform,
     fTransform_snd_prod, hw, one_smul]
 
-/-- Projecting a uniform state to its capacity yields the uniform capacity distribution. -/
-lemma fTransform_capacityPart_uniform (p : Parameters) (hp : p.Valid) :
-    fTransform (capacityPart p) (uniform (ByteState p.stateBytes)) =
-      uniform (ByteState p.capacityBytes) := by
-  have hcomp : capacityPart p = Prod.snd ∘ (stateRateCapEquiv p hp) := rfl
-  have hw : (uniform (ByteState p.rateBytes)).weight = 1 := (𝒰[ByteState p.rateBytes]).2.2
-  rw [hcomp, ← fTransform_fTransform, fTransform_equiv_uniform, ← prod_uniform,
-    fTransform_snd_prod, hw, one_smul]
-
-/-- Projecting a uniform state to its digest yields the uniform digest distribution. -/
-lemma fTransform_digestPart_uniform (p : Parameters) (ho : p.outputBytes ≤ p.stateBytes) :
-    fTransform (digestPart p) (uniform (ByteState p.stateBytes)) =
-      uniform (ByteState p.outputBytes) := by
-  have hcomp : digestPart p = Prod.fst ∘ (stateEquiv p ho) := rfl
-  have hw : (uniform (ByteState (tailBytes p))).weight = 1 := (𝒰[ByteState (tailBytes p)]).2.2
-  rw [hcomp, ← fTransform_fTransform, fTransform_equiv_uniform, ← prod_uniform,
-    fTransform_fst_prod, hw, one_smul]
-
 /-- Under a fixed digest `d`, uniform tail reassembly has uniform capacity projection. -/
 lemma fTransform_capacityPart_assembleState (p : Parameters) (hp : p.Valid)
     (d : ByteState p.outputBytes) :
@@ -384,7 +355,7 @@ lemma uniform_mass_cap_mem (p : Parameters) (hp : p.Valid)
   have h1 : (uniform (ByteState p.stateBytes)).mass (fun s => capacityPart p s ∈ caps) =
       (fTransform (capacityPart p) (uniform (ByteState p.stateBytes))).mass (fun c => c ∈ caps) :=
     (mass_fTransform (capacityPart p) (uniform (ByteState p.stateBytes)) (fun c => c ∈ caps)).symm
-  rw [h1, fTransform_capacityPart_uniform p hp]
+  rw [h1, fTransform_capacityPart_uniform p hp.2.1.le]
   classical
   have hsupp : (uniform (ByteState p.capacityBytes)).support = Finset.univ := by
     ext c
@@ -2163,7 +2134,7 @@ lemma parallel_ofFunction_ofProbAutomaton {A B : Interface} {S : Type}
               · exact hd
             rw [ProbStep.belief_snoc, ite_eq_left hBdom]
           · rw [ite_eq_right (fun ⟨h1, _, h2⟩ => hcond ⟨h1, h2⟩),
-              ite_eq_right (fun ⟨h1, _, h2⟩ => hcond ⟨h1, h2⟩), transition_zero]
+              ite_eq_right (fun ⟨h1, _, h2⟩ => hcond ⟨h1, h2⟩), ProbStep.transition_zero]
       · have hdom_snoc : ¬ (A ⊗ B).inputDomain h xq := hadm
         have hnot : ¬ (h ++ [(xq, yq)] = [] ∨
             (A ⊗ B).domain ((h ++ [(xq, yq)]).map Prod.fst)) := by

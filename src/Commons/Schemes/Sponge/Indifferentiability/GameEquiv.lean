@@ -507,7 +507,7 @@ lemma lazyPathGameStep_flag {encode : M → List (BitVec 8)} {w : ℕ}
 noncomputable def lazyPathGame {encode : M → List (BitVec 8)} {w : ℕ}
     (spec : HonestWorkSpec p M encode w) (q_pub : ℕ) :
     TypedGame (spec.toInterface ⊗ PrimitiveInterface p q_pub) :=
-  ofProbAutomatonGame (lazyPathGameStep p M spec q_pub) (ProbDist.single ([], []))
+  TypedGame.ofProbAutomaton (lazyPathGameStep p M spec q_pub) (ProbDist.single ([], []))
     (lazyPathGameStep_flag p M spec q_pub)
 
 /-- Inductive coupling of `sampleHiddenPrefixesWithBad` between `lazyPathGame` (uniform draws)
@@ -2515,7 +2515,7 @@ lemma realSpongeGameStep_flag {encode : M → List (BitVec 8)} {w : ℕ}
 noncomputable def realSpongeGame {encode : M → List (BitVec 8)} {w : ℕ}
     (spec : HonestWorkSpec p M encode w) (q_pub : ℕ) :
     TypedGame (spec.toInterface ⊗ PrimitiveInterface p q_pub) :=
-  ofProbAutomatonGame (realSpongeGameStep p M spec q_pub) (ProbDist.single ([], [], []))
+  TypedGame.ofProbAutomaton (realSpongeGameStep p M spec q_pub) (ProbDist.single ([], [], []))
     (realSpongeGameStep_flag p M spec q_pub)
 
 omit [DecidableEq M] in
@@ -2526,7 +2526,7 @@ theorem realSpongeGame_visible {encode : M → List (BitVec 8)} {w : ℕ}
       spongePublic p M spec q_pub •
         LazyBidirectionalRF (ByteState p.stateBytes) (w + q_pub) := by
   rw [spongePublic_smul_lazyBidirectionalRF_eq p M spec q_pub, realSpongeGame,
-    ofProbAutomatonGame_visible]
+    TypedGame.visible_ofProbAutomaton]
   let A := spec.toInterface ⊗ PrimitiveInterface p q_pub
   let K : ((List (ByteState p.stateBytes × ByteState p.stateBytes) ×
         List (PermutationEdge (ByteState p.stateBytes)) ×
@@ -2534,12 +2534,12 @@ theorem realSpongeGame_visible {encode : M → List (BitVec 8)} {w : ℕ}
       ProbDist (List (ByteState p.stateBytes × ByteState p.stateBytes)) :=
     fun sb => ProbDist.single sb.1.1
   have hsim := TypedSystem.ofProbAutomaton_eq_of_simulation (A := A)
-    (forgetMBOStep (realSpongeGameStep p M spec q_pub)) (realRFStep p M spec q_pub) K
+    (ProbStep.forgetMBO (realSpongeGameStep p M spec q_pub)) (realRFStep p M spec q_pub) K
     (fun _ _ => True) (fun _ _ _ _ _ _ _ => trivial)
     (by
       intro _ ⟨⟨T_full, T_pub, hid⟩, bad⟩ ⟨o, u⟩ _ _
       simp only [ProbStep.SimulatesAt, ProbStep.outcome, K, ProbDist.single, bindK_single,
-        one_smul, forgetMBOStep, ProbDist.map_val, fTransform_fTransform, fTransform_single]
+        one_smul, ProbStep.forgetMBO, ProbDist.map_val, fTransform_fTransform, fTransform_single]
       conv_rhs => rw [bindK_single_comp, fTransform_fTransform]
       rcases o with o | o
       · cases o
