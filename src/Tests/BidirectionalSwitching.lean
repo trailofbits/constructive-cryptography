@@ -1,10 +1,9 @@
 module
 
 public import Commons.Definitions.BidirectionalSwitching
-public import Commons.Schemes.Sponge.Basic
+public import Commons.Schemes.Sponge.Uniform
 public import ConstructiveCryptography.Notation
 public import ConstructiveCryptography.Tactics.Substitution
-public import Mathlib.Data.BitVec
 
 /-!
 # Tests for `Commons.Definitions.BidirectionalSwitching`
@@ -25,17 +24,6 @@ namespace Tests.BidirectionalSwitching
 
 open CategoryTheory SystemAlgebra Commons Commons.BidirectionalSwitching Commons.Sponge
 open scoped SystemAlgebra
-
-/-- `BitVec 8` is finite via `BitVec.equivFin`, supplying `Fintype (ByteState 200)`. -/
-instance instFintypeByte : Fintype (BitVec 8) :=
-  Fintype.ofEquiv (Fin (2 ^ 8)) BitVec.equivFin.toEquiv.symm
-
-lemma card_byteState (n : ℕ) : Fintype.card (ByteState n) = 256 ^ n := by
-  rw [Fintype.card_fun, Fintype.card_fin]
-  have hb : Fintype.card (BitVec 8) = 256 := by
-    rw [Fintype.card_congr BitVec.equivFin.toEquiv, Fintype.card_fin]
-    norm_num
-  rw [hb]
 
 /-! ## Concrete `Fin 8` contracts -/
 
@@ -182,5 +170,22 @@ lemma keccak_switching_substitutesWithin
 #print axioms Commons.strongURP_dist_lazyBidirectionalRF_le
 #print axioms Commons.strongURP_attach_dist_lazyBidirectionalRF_le
 #print axioms Commons.strongURP_substitutesWithin_lazyBidirectionalRF
+
+open Probability Probability.Distribution in
+/-- A colliding reply keeps the table unchanged, so the same query can sample a new reply. -/
+example : lazyBidirectionalRFStep (X := Bool) 3 [(false, false)] .forward true =
+    (𝒰[Bool]).map (fun y => if y then ([(false, false), (true, true)], true)
+      else ([(false, false)], false)) := by
+  unfold lazyBidirectionalRFStep lookupForward
+  simp only [List.lookup, Bool.false_eq_true, ↓reduceIte, List.map_cons, List.map_nil]
+  congr 1
+  funext y
+  cases y <;> rfl
+
+open Probability Probability.Distribution in
+/-- Once the non-colliding pair is recorded, the query replays its retained answer. -/
+example : lazyBidirectionalRFStep (X := Bool) 3 [(false, false), (true, true)] .forward true =
+    ProbDist.single ([(false, false), (true, true)], true) := by
+  rfl
 
 end Tests.BidirectionalSwitching
