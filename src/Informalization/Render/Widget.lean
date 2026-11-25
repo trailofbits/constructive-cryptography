@@ -152,6 +152,11 @@ def renderDocumentInfoview (doc : Document) : Html :=
     let titleStr := match e.title? with
       | some t => s!"{e.header} ({t})."
       | none => s!"{e.header}."
+    let sectionCtxEl := match e.sectionContext? with
+      | some sc =>
+          let secParas := sc.paragraphs.map fun p => .element "p" #[] (renderInlinesHtml p)
+          #[.element "div" #[("className", "cadmo-iv-ambient")] secParas]
+      | none => #[]
     let ambientEl := match e.ambient? with
       | some amb =>
           #[.element "div" #[("className", "cadmo-iv-ambient")]
@@ -166,6 +171,7 @@ def renderDocumentInfoview (doc : Document) : Html :=
         )]
     .element "section" #[] (
       #[.element "div" #[("className", "cadmo-iv-head")] #[.text titleStr]] ++
+      sectionCtxEl ++
       ambientEl ++
       #[.element "div" #[("className", "cadmo-iv-stmt")] stmtEls] ++
       proofEls

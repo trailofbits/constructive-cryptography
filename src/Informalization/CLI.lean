@@ -108,49 +108,62 @@ def parseCliArgs (args : List String) : Except String CliOptions :=
           else loop rest { opts with decls := opts.decls.push nm }
   loop args {}
 
+/-- Flatten all reader-facing text inside a single `SymbolInspector` for strict zero-leakage checks. -/
+private def collectInspectorTexts (ins : SymbolInspector) : Array String := Id.run do
+  let mut out : Array String := #[ins.display]
+  if let some rb := ins.roleBadge? then out := out.push rb
+  if let some ds := ins.docString? then out := out.push ds
+  for c in ins.clauses do out := out.push c
+  for hyp in ins.sectionAssumptions do
+    out := out ++ hyp.map Inline.collectText
+  match ins.kind with
+  | .mathDefinition eq summary =>
+      out := out.push eq
+      out := out.push summary
+  | .localShorthand eq desc =>
+      out := out.push eq
+      out := out.push desc
+  | .parameter desc => out := out.push desc
+  | .witnessCard title rows =>
+      out := out.push title
+      for (k, v) in rows do
+        out := out.push k
+        out := out.push v
+  | .interfaceTable ports dom budget =>
+      out := out.push dom
+      out := out.push budget
+      for r in ports do
+        out := out.push r.port
+        out := out.push r.queryLatex
+        out := out.push r.replyLatex
+  | .dslPseudocode hdr _ _ => out := out.push hdr
+  | .ccDiagram _ summary => out := out.push summary
+  return out
+
 /-- Flatten all reader-facing text across an entire `Document` for strict zero-leakage auditing. -/
 def collectDocumentTexts (doc : Document) : Array String := Id.run do
-  let inlineTexts (xs : Array Inline) : Array String :=
-    xs.map fun
-      | .text s => s
-      | .emph s => s
-      | .inlineMath s => s
-      | .displayMath s p => s ++ p
-      | .symbol _ d _ => d
-      | .citation l d => l ++ " " ++ d
+  let inlineTexts (xs : Array Inline) : Array String := xs.map Inline.collectText
   let mut out : Array String := #[doc.title]
   if let some sub := doc.subtitle? then
     out := out.push sub
   for entry in doc.entries do
     if let some t := entry.title? then
       out := out.push t
+    if let some sc := entry.sectionContext? then
+      for para in sc.paragraphs do
+        out := out ++ inlineTexts para
+      for ins in sc.inspectors do
+        out := out ++ collectInspectorTexts ins
     if let some amb := entry.ambient? then
       out := out ++ inlineTexts amb.summary
     for para in entry.statement do
       out := out ++ inlineTexts para
+    for ins in entry.localInspectors do
+      out := out ++ collectInspectorTexts ins
     for node in entry.proof do
       out := out ++ node.collectAllText
   for ins in doc.inspectors do
-    out := out.push ins.display
-    match ins.kind with
-    | .mathDefinition eq summary =>
-        out := out.push eq
-        out := out.push summary
-    | .parameter desc => out := out.push desc
-    | .witnessCard title rows =>
-        out := out.push title
-        for (k, v) in rows do
-          out := out.push k
-          out := out.push v
-    | .interfaceTable ports dom budget =>
-        out := out.push dom
-        out := out.push budget
-        for r in ports do
-          out := out.push r.port
-          out := out.push r.queryLatex
-          out := out.push r.replyLatex
-    | .dslPseudocode hdr _ _ => out := out.push hdr
-    | .ccDiagram _ summary => out := out.push summary
+    out := out ++ collectInspectorTexts ins
   return out
 
 /-- Run a `MetaM` computation against a loaded `Environment`. -/

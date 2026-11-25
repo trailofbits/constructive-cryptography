@@ -118,6 +118,7 @@ inductive InspectorKind
   | mathDefinition (equationLatex : String) (proseSummary : String := "")
   | witnessCard (title : String) (rows : Array (String × String))
   | parameter (roleDescription : String)
+  | localShorthand (equationLatex : String) (roleDescription : String := "")
   deriving Repr, BEq, Inhabited
 
 instance : ToJson InspectorKind where
@@ -153,6 +154,11 @@ instance : ToJson InspectorKind where
         Json.mkObj [("parameter", Json.mkObj [
           ("roleDescription", toJson roleDescription)
         ])]
+    | .localShorthand equationLatex roleDescription =>
+        Json.mkObj [("localShorthand", Json.mkObj [
+          ("equationLatex", toJson equationLatex),
+          ("roleDescription", toJson roleDescription)
+        ])]
 
 instance : FromJson InspectorKind where
   fromJson? j := do
@@ -184,10 +190,14 @@ instance : FromJson InspectorKind where
       | _ =>
           let roleDescription ← getFieldD v "roleDescription" ""
           return .parameter roleDescription
+    else if let .ok v := j.getObjVal? "localShorthand" then
+      let equationLatex ← getFieldD v "equationLatex" ""
+      let roleDescription ← getFieldD v "roleDescription" ""
+      return .localShorthand equationLatex roleDescription
     else
       .error s!"Unrecognized InspectorKind JSON: {j.compress}"
 
-/-- Complete checked inspector record for one symbol or declaration. -/
+/-- Complete checked inspector record for one symbol, shorthand, section parameter, or declaration. -/
 structure SymbolInspector where
   key : String
   display : String
@@ -196,6 +206,11 @@ structure SymbolInspector where
   leanType : String
   sourceFile? : Option String := none
   sourceLine? : Option Nat := none
+  roleBadge? : Option String := none
+  sectionId? : Option String := none
+  sectionAssumptions : Array (Array Inline) := #[]
+  clauses : Array String := #[]
+  docString? : Option String := none
   deriving Repr, BEq, Inhabited, ToJson
 
 instance : FromJson SymbolInspector where
@@ -207,7 +222,15 @@ instance : FromJson SymbolInspector where
     let leanType ← getFieldD j "leanType" ""
     let sourceFile? ← getOptField? j "sourceFile"
     let sourceLine? ← getOptField? j "sourceLine"
-    return { key, display, kind, leanName?, leanType, sourceFile?, sourceLine? }
+    let roleBadge? ← getOptField? j "roleBadge"
+    let sectionId? ← getOptField? j "sectionId"
+    let sectionAssumptions ← getFieldD j "sectionAssumptions" (#[] : Array (Array Inline))
+    let clauses ← getFieldD j "clauses" (#[] : Array String)
+    let docString? ← getOptField? j "docString"
+    return {
+      key, display, kind, leanName?, leanType, sourceFile?, sourceLine?,
+      roleBadge?, sectionId?, sectionAssumptions, clauses, docString?
+    }
 
 /-- One hygienized local context entry inside a Kyle Miller goal-state inspector. -/
 structure ContextEntry where
@@ -417,13 +440,35 @@ instance : FromJson AmbientSetting where
     let suppressedTypeclasses ← getFieldD j "suppressedTypeclasses" (#[] : Array String)
     return { summary, suppressedTypeclasses }
 
+/-- Section-fixed parameters and standing assumptions hoisted once per numbered paper section. -/
+structure SectionContext where
+  sectionId : String
+  sectionNumber : Nat
+  paragraphs : Array (Array Inline)
+  inspectors : Array SymbolInspector := #[]
+  deriving Repr, BEq, Inhabited, ToJson
+
+instance : FromJson SectionContext where
+  fromJson? j := do
+    let sectionId ← j.getObjValAs? String "sectionId"
+    let sectionNumber ← j.getObjValAs? Nat "sectionNumber"
+    let paragraphs ← getFieldD j "paragraphs" (#[] : Array (Array Inline))
+    let inspectors ← getFieldD j "inspectors" (#[] : Array SymbolInspector)
+    return { sectionId, sectionNumber, paragraphs, inspectors }
+
 /-- One informalized declaration (Theorem, Lemma, Proposition, Definition, or Example). -/
 structure Entry where
   header : String := "Theorem"
   title? : Option String := none
   declaration : String
+  sectionTitle? : Option String := none
+  sectionIntro? : Option String := none
+  sectionContext? : Option SectionContext := none
+  sectionId? : Option String := none
   ambient? : Option AmbientSetting := none
   statement : Array (Array Inline)
+  localInspectors : Array SymbolInspector := #[]
+  referencedKeys : Array String := #[]
   diagramHtml? : Option String := none
   proof : Array ProofNode := #[]
   axioms : AxiomAudit := ⟨#[], false⟩
@@ -434,12 +479,21 @@ instance : FromJson Entry where
     let header ← getFieldD j "header" "Theorem"
     let title? ← getOptField? j "title"
     let declaration ← j.getObjValAs? String "declaration"
+    let sectionTitle? ← getOptField? j "sectionTitle"
+    let sectionIntro? ← getOptField? j "sectionIntro"
+    let sectionContext? ← getOptField? j "sectionContext"
+    let sectionId? ← getOptField? j "sectionId"
     let ambient? ← getOptField? j "ambient"
     let statement ← getFieldD j "statement" (#[] : Array (Array Inline))
+    let localInspectors ← getFieldD j "localInspectors" (#[] : Array SymbolInspector)
+    let referencedKeys ← getFieldD j "referencedKeys" (#[] : Array String)
     let diagramHtml? ← getOptField? j "diagramHtml"
     let proof ← getFieldD j "proof" (#[] : Array ProofNode)
     let axioms ← getFieldD j "axioms" ({ axioms := #[], hasSorry := false } : AxiomAudit)
-    return { header, title?, declaration, ambient?, statement, diagramHtml?, proof, axioms }
+    return {
+      header, title?, declaration, sectionTitle?, sectionIntro?, sectionContext?,
+      sectionId?, ambient?, statement, localInspectors, referencedKeys, diagramHtml?, proof, axioms
+    }
 
 /-- Complete canonical informalization document consumed by Infoview, HTML, and Verso. -/
 structure Document where

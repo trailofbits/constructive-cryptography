@@ -175,6 +175,20 @@ def renderInspectorCardHtml (ins : SymbolInspector) : String :=
         ("Witness", hd ++ s!"<table class=\"cadmo-inspector-table\"><tbody>{rowHtml}</tbody></table>")
     | .parameter roleDescription =>
         ("Parameter", s!"<p>{escapeHtml roleDescription}</p>")
+    | .localShorthand equationLatex roleDescription =>
+        let prose := if roleDescription.isEmpty then "" else s!"<p>{escapeHtml roleDescription}</p>"
+        let eq := if equationLatex.isEmpty then "" else renderMathHtml equationLatex true
+        ("Local shorthand", prose ++ eq)
+  let finalKicker := ins.roleBadge?.getD kicker
+  let docHtml := match ins.docString? with
+    | some d => if d.isEmpty then "" else s!"<p class=\"cadmo-sidenote-doc\">{escapeHtml d}</p>"
+    | none => ""
+  let clausesHtml :=
+    if ins.clauses.isEmpty then ""
+    else
+      let items := String.join <| ins.clauses.toList.map fun c =>
+        s!"<li>{renderMathHtml c false}</li>"
+      s!"<ul class=\"cadmo-sidenote-clauses\">{items}</ul>"
   let leanSig :=
     (match ins.leanName? with | some nm => s!"{nm} :\n" | none => "") ++ ins.leanType
   let leanDetails :=
@@ -182,9 +196,9 @@ def renderInspectorCardHtml (ins : SymbolInspector) : String :=
     s!"<div class=\"cadmo-lean-code\">{escapeHtml leanSig}</div></details>"
   s!"<section class=\"cadmo-inspector-card\" data-inspector-key=\"{escapeHtml ins.key}\">" ++
   s!"<div class=\"cadmo-inspector-head\"><div>" ++
-  s!"<div class=\"cadmo-inspector-kicker\">{kicker}</div>" ++
+  s!"<div class=\"cadmo-inspector-kicker\">{escapeHtml finalKicker}</div>" ++
   s!"<h3 class=\"cadmo-inspector-title\">{renderMathHtml ins.display false}</h3>" ++
-  s!"</div></div>{bodyHtml}{leanDetails}</section>"
+  s!"</div></div>{bodyHtml}{docHtml}{clausesHtml}{leanDetails}</section>"
 
 /-- Project proof nodes according to `ViewMode`: in `paper` mode, transparent `isWrapper`
 steps with children are stepped through so Level 0 lands on genuine mathematical joints. -/
@@ -315,7 +329,26 @@ def renderEntryHtml (doc : Document) (entry : Entry) (mode : ViewMode := .paper)
       "<section class=\"cadmo-proof\"><span class=\"cadmo-proof-lead\">Proof.</span>" ++
       nodesHtml ++
       "<div class=\"cadmo-qed\" aria-hidden=\"true\">□</div></section>"
-  s!"<article class=\"cadmo-entry\" id=\"decl-{escapeHtml entry.declaration}\">" ++
+  let sectionHtml := match entry.sectionTitle? with
+    | some st =>
+        let secIntro := match entry.sectionIntro? with
+          | some si => s!"<p class=\"cadmo-section-intro\">{escapeHtml si}</p>"
+          | none => ""
+        let secCtx := match entry.sectionContext? with
+          | some sc =>
+              let paras := String.join <| sc.paragraphs.toList.map fun p =>
+                s!"<p>{renderInlinesHtml doc p}</p>"
+              s!"<div class=\"cadmo-section-context\" id=\"{escapeHtml sc.sectionId}-context\">" ++
+              s!"<span class=\"cadmo-section-context-label\">Section Context.</span>{paras}</div>"
+          | none => ""
+        let secNumHtml := match entry.sectionContext? with
+          | some sc => s!"<span class=\"cadmo-section-num\">{sc.sectionNumber}.</span>"
+          | none => ""
+        "<div class=\"cadmo-section-head\">" ++
+        s!"<h2 class=\"cadmo-section-title\">{secNumHtml}{escapeHtml st}</h2>" ++
+        s!"{secIntro}{secCtx}</div>"
+    | none => ""
+  s!"{sectionHtml}<article class=\"cadmo-entry\" id=\"decl-{escapeHtml entry.declaration}\">" ++
   s!"<header class=\"cadmo-entry-head\">" ++
   s!"<h2 class=\"cadmo-entry-heading\"><span class=\"cadmo-entry-kind\">{escapeHtml entry.header}</span>{titleSpan}</h2>" ++
   s!"<div class=\"cadmo-entry-meta\"><span class=\"{axiomClass}\">{axiomLabel}</span></div>" ++

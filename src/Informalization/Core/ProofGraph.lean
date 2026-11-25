@@ -81,6 +81,16 @@ initialize inspectorCollectorRef :
     IO.Ref (SymbolTable → Expr → MetaM (Array SymbolInspector)) ←
   IO.mkRef (fun _ _ => pure #[])
 
+/-- Scoped inspector collector returning
+`(localParamInspectors, typeConstInspectors, proofConstInspectors)`
+for a declaration, excluding parameters already hoisted into the section context. -/
+initialize scopedInspectorCollectorRef :
+    IO.Ref (SymbolTable → Name → Expr → Option Expr → Std.HashSet String → Array Name →
+      MetaM (Array SymbolInspector × Array SymbolInspector × Array SymbolInspector)) ←
+  IO.mkRef fun tbl _ ty _ _ _ => do
+    let all ← (← inspectorCollectorRef.get) tbl ty
+    return (#[], all, #[])
+
 initialize ruleExplainersRef : IO.Ref (Array RuleExplainer) ← IO.mkRef #[]
 
 def registerRuleExplainer (e : RuleExplainer) : IO Unit :=
@@ -92,6 +102,11 @@ def registerDiagramHook (f : Expr → MetaM (Option String)) : IO Unit :=
 
 def registerInspectorCollector (f : SymbolTable → Expr → MetaM (Array SymbolInspector)) : IO Unit :=
   inspectorCollectorRef.set f
+
+def registerScopedInspectorCollector
+    (f : SymbolTable → Name → Expr → Option Expr → Std.HashSet String → Array Name →
+      MetaM (Array SymbolInspector × Array SymbolInspector × Array SymbolInspector)) : IO Unit :=
+  scopedInspectorCollectorRef.set f
 
 /-- Extract binary relation `(relLatex, lhs, rhs)` if `prop` is a recognized chainable relation. -/
 def splitBinaryRelation? (tbl : SymbolTable) (prop : Expr) :
@@ -495,18 +510,79 @@ def auditAxioms (declName : Name) : MetaM AxiomAudit := do
   let hasSorry := axioms.contains ``sorryAx
   return { axioms := names, hasSorry }
 
-/-- Top-level entry point: informalize a checked Lean declaration into an `Explanation.Entry`
-plus all collected type-aware `SymbolInspector`s. -/
-def informalizeDeclaration (declName : Name) (config : Config := {}) :
-    MetaM (Entry × Array SymbolInspector) := do
+/-- Collect all math LaTeX strings inside an array of `Inline`s and `ProofNode`s so we know
+which proof-only definitions actually appear visibly in the informalized document. -/
+private partial def collectProofNodeMath : ProofNode → Array String
+  | .step _ content children _ _ _ _ _ =>
+      let own := content.filterMap fun
+        | .inlineMath s => some s
+        | .displayMath s _ => some s
+        | .symbol _ d true => some d
+        | _ => none
+      own ++ children.flatMap collectProofNodeMath
+  | .calcChain _ intro steps _ _ =>
+      let introM := intro.filterMap fun
+        | .inlineMath s => some s
+        | .displayMath s _ => some s
+        | .symbol _ d true => some d
+        | _ => none
+      let stepM := steps.flatMap fun (cs, ch) =>
+        let r := cs.reason.filterMap fun
+          | .inlineMath s => some s
+          | .displayMath s _ => some s
+          | .symbol _ d true => some d
+          | _ => none
+        #[cs.lhsLatex, cs.relationLatex, cs.rhsLatex] ++ r ++ ch.flatMap collectProofNodeMath
+      introM ++ stepM
+  | .routineReceipt _ _ _ details _ => details.flatMap collectProofNodeMath
+  | .flowNote _ _ _ => #[]
+  | .figure _ caption _ =>
+      caption.filterMap fun
+        | .inlineMath s => some s
+        | .displayMath s _ => some s
+        | .symbol _ d true => some d
+        | _ => none
+
+/-- Collect distinct `originDecl` names appearing anywhere in a `ProofNode` tree. -/
+private partial def collectOriginDecls : ProofNode → Array Name
+  | .step _ _ children _ _ origin? _ _ =>
+      let own := match origin? with | some s => #[s.toName] | none => #[]
+      own ++ children.flatMap collectOriginDecls
+  | .calcChain _ _ steps _ origin? =>
+      let own := match origin? with | some s => #[s.toName] | none => #[]
+      own ++ steps.flatMap fun (_, ch) => ch.flatMap collectOriginDecls
+  | .routineReceipt _ _ _ details _ => details.flatMap collectOriginDecls
+  | _ => #[]
+
+/-- Check whether `disp` appears as a rendered math token inside `mathSegs`. -/
+private def mathDispAppearsIn (mathSegs : Array String) (disp : String) : Bool :=
+  if disp.isEmpty then false
+  else if disp.length ≥ 2 then
+    mathSegs.any fun seg => (seg.splitOn disp).length > 1
+  else
+    let ch := disp.toList.head!
+    mathSegs.any fun seg =>
+      let chars := seg.toList
+      let rec check (prevAlpha : Bool) : List Char → Bool
+        | [] => false
+        | c :: rest =>
+            let nextAlpha := match rest with | d :: _ => d.isAlpha | [] => false
+            if c == ch && !prevAlpha && !nextAlpha then true
+            else check (c.isAlpha || c == '\\') rest
+      check false chars
+
+/-- Top-level entry point with optional section-fixed context hoisting:
+informalizes a checked Lean declaration into an `Explanation.Entry` (with scoped local
+shorthands & parameter inspectors) plus all referenced constant `SymbolInspector`s. -/
+def informalizeDeclarationWithContext (declName : Name) (config : Config := {})
+    (hoisted? : Option HoistedContext := none) : MetaM (Entry × Array SymbolInspector) := do
   let env ← getEnv
   let some info := env.find? declName
     | throwError "informalize: declaration `{declName}` not found in environment"
   let ov := getOverlay env declName
   let tbl := buildSymbolTable env declName
-  let parsed ← parseTheoremStatement tbl info.type
+  let parsed ← parseTheoremStatement tbl info.type hoisted?
   let diagHtml ← (← diagramHookRef.get) info.type
-  let inspectors ← (← inspectorCollectorRef.get) tbl info.type
   let header := match ov.entryKind? with
     | some k => k
     | none =>
@@ -517,6 +593,10 @@ def informalizeDeclaration (declName : Name) (config : Config := {}) :
   let mut proofNodes : Array ProofNode := #[]
   if let some fb := ov.flowBefore? then
     proofNodes := proofNodes.push (.flowNote s!"doc-flow-pre-{declName}" fb "inline")
+  let proofBody? : Option Expr :=
+    match info with
+    | .thmInfo tinfo => some tinfo.value
+    | _ => none
   if let .thmInfo tinfo := info then
     let ctx : DecompCtx := {
       config
@@ -529,19 +609,61 @@ def informalizeDeclaration (declName : Name) (config : Config := {}) :
     proofNodes := dedupSiblings (proofNodes ++ nodes)
   if let some fa := ov.flowAfter? then
     proofNodes := proofNodes.push (.flowNote s!"doc-flow-post-{declName}" fa "inline")
+  let hoistedSyms := match hoisted? with
+    | some h => h.paramSyms
+    | none => {}
+  let originDecls := proofNodes.flatMap collectOriginDecls
+  let (localParamInspectors, typeConstInspectors, proofConstInspectors) ←
+    (← scopedInspectorCollectorRef.get) tbl declName info.type proofBody? hoistedSyms originDecls
+  let shorthandInspectors : Array SymbolInspector :=
+    parsed.localShorthands.map fun sh => {
+      key := s!"local:{declName}:{sh.sym}"
+      display := sh.sym
+      kind := .localShorthand s!"{sh.sym} = {sh.rhsLatex}" sh.roleDescription
+      leanName? := none
+      leanType := sh.leanType
+      roleBadge? := some "local shorthand"
+    }
+  let localInspectors := localParamInspectors ++ shorthandInspectors
+  let statementMath : Array String := parsed.paragraphs.flatMap fun para =>
+    para.filterMap fun
+      | .inlineMath s => some s
+      | .displayMath s _ => some s
+      | .symbol _ d true => some d
+      | _ => none
+  let allMathSegs := statementMath ++ proofNodes.flatMap collectProofNodeMath
+  let mut seenConstKeys : Std.HashSet String := {}
+  let mut constInspectors : Array SymbolInspector := #[]
+  for ins in typeConstInspectors do
+    if !seenConstKeys.contains ins.key then
+      seenConstKeys := seenConstKeys.insert ins.key
+      constInspectors := constInspectors.push ins
+  for ins in proofConstInspectors do
+    if !seenConstKeys.contains ins.key && mathDispAppearsIn allMathSegs ins.display then
+      seenConstKeys := seenConstKeys.insert ins.key
+      constInspectors := constInspectors.push ins
   let axioms ← auditAxioms declName
+  let referencedKeys := constInspectors.map (·.key)
   let entry : Entry := {
     header
     title? := ov.title? <|> some (humanLemmaLabel env declName)
     declaration := declName.toString
     sectionTitle? := ov.sectionTitle?
     sectionIntro? := ov.sectionIntro?
+    sectionId? := hoisted?.bind (·.sectionId?)
     ambient? := parsed.ambient?
     statement := parsed.paragraphs
+    localInspectors
+    referencedKeys
     diagramHtml? := diagHtml
     proof := proofNodes
     axioms
   }
-  return (entry, inspectors)
+  return (entry, constInspectors)
+
+/-- Informalize a single standalone checked Lean declaration (no section hoisting). -/
+def informalizeDeclaration (declName : Name) (config : Config := {}) :
+    MetaM (Entry × Array SymbolInspector) :=
+  informalizeDeclarationWithContext declName config none
 
 end Informalization.Core.ProofGraph

@@ -40,6 +40,15 @@ inductive Inline
   | citation (label : String) (detail : String := "")
   deriving Repr, BEq, Inhabited, ToJson
 
+/-- Extract plain readable text/LaTeX from one `Inline` node. -/
+def Inline.collectText : Inline → String
+  | .text s => s
+  | .emph s => s
+  | .inlineMath s => s
+  | .displayMath s p => s ++ p
+  | .symbol _ d _ => d
+  | .citation l d => if d.isEmpty then l else l ++ " " ++ d
+
 /-- One row in a `Rendering`-style interface port table (`Port / Query / Reply`). -/
 structure PortRow where
   port : String
@@ -47,7 +56,7 @@ structure PortRow where
   replyLatex : String
   deriving Repr, BEq, Inhabited, ToJson
 
-/-- Type-aware inspector payload opened when a reader clicks any named symbol in prose. -/
+/-- Type-aware inspector payload opened when a reader hovers or clicks any named symbol in prose. -/
 inductive InspectorKind
   | interfaceTable (ports : Array PortRow) (domainLatex : String) (budgetNote : String := "")
   | dslPseudocode (header : String) (body : String) (fullSource : String)
@@ -55,9 +64,10 @@ inductive InspectorKind
   | mathDefinition (equationLatex : String) (proseSummary : String := "")
   | witnessCard (title : String) (rows : Array (String × String))
   | parameter (roleDescription : String)
+  | localShorthand (equationLatex : String) (roleDescription : String := "")
   deriving Repr, BEq, Inhabited, ToJson
 
-/-- Complete checked inspector record for one symbol/declaration. -/
+/-- Complete checked inspector record for one symbol, shorthand, section parameter, or declaration. -/
 structure SymbolInspector where
   key : String
   display : String
@@ -66,6 +76,11 @@ structure SymbolInspector where
   leanType : String
   sourceFile? : Option String := none
   sourceLine? : Option Nat := none
+  roleBadge? : Option String := none
+  sectionId? : Option String := none
+  sectionAssumptions : Array (Array Inline) := #[]
+  clauses : Array String := #[]
+  docString? : Option String := none
   deriving Repr, BEq, Inhabited, ToJson
 
 /-- One hygienized local context entry inside a Kyle Miller goal-state inspector.
@@ -194,6 +209,14 @@ structure AxiomAudit where
   hasSorry : Bool := false
   deriving Repr, BEq, Inhabited, ToJson
 
+/-- Section-fixed parameters and standing assumptions hoisted once per numbered paper section. -/
+structure SectionContext where
+  sectionId : String
+  sectionNumber : Nat
+  paragraphs : Array (Array Inline)
+  inspectors : Array SymbolInspector := #[]
+  deriving Repr, BEq, Inhabited, ToJson
+
 /-- Ambient context block factored out once per theorem/section (kills telescope repetition). -/
 structure AmbientSetting where
   summary : Array Inline
@@ -207,8 +230,12 @@ structure Entry where
   declaration : String
   sectionTitle? : Option String := none
   sectionIntro? : Option String := none
+  sectionContext? : Option SectionContext := none
+  sectionId? : Option String := none
   ambient? : Option AmbientSetting := none
   statement : Array (Array Inline) -- paragraphs of the formal statement
+  localInspectors : Array SymbolInspector := #[]
+  referencedKeys : Array String := #[]
   diagramHtml? : Option String := none
   proof : Array ProofNode := #[]
   axioms : AxiomAudit := ⟨#[], false⟩
@@ -227,14 +254,7 @@ structure Document where
 /-- Helper to flatten all visible prose/LaTeX strings inside a `ProofNode` for automated
 zero-leakage & typography quality gates. -/
 partial def ProofNode.collectAllText (n : ProofNode) : Array String :=
-  let inlineText (xs : Array Inline) : Array String :=
-    xs.map fun
-      | .text s => s
-      | .emph s => s
-      | .inlineMath s => s
-      | .displayMath s p => s ++ p
-      | .symbol _ d _ => d
-      | .citation l d => l ++ " " ++ d
+  let inlineText (xs : Array Inline) : Array String := xs.map Inline.collectText
   match n with
   | .step _ content children goal? _ _ _ _ =>
       let g := match goal? with

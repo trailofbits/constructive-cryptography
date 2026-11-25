@@ -513,6 +513,113 @@ class TestInformalizationCIAndVersoBundle(unittest.TestCase):
         self.assertIn("namespace VersoChapters.FixtureChapter", stub_txt)
         self.assertIn("ae_of_ind_cca_int_ptxt", stub_txt)
 
+    def test_section_context_and_hover_metadata(self) -> None:
+        fixture = make_clean_fixture()
+        fixture["inspectors"].append(
+            {
+                "key": "sym.pred",
+                "display": "\\mathrm{supportedSponge}",
+                "kind": {
+                    "mathDefinition": {
+                        "equationLatex": "\\mathrm{supportedSponge}(p) \\iff r > 0 \\wedge c > 0",
+                        "proseSummary": "Predicate on sponge parameter tuples.",
+                    }
+                },
+                "leanName": "supportedSponge",
+                "leanType": "SpongeParams -> Prop",
+                "roleBadge": "predicate",
+                "clauses": ["r > 0", "c > 0"],
+                "docString": "Valid parameter condition for SHA-3 sponges.",
+            }
+        )
+        entry = fixture["entries"][0]
+        entry["sectionTitle"] = "Sponge Parameters"
+        entry["sectionId"] = "sec-1"
+        entry["sectionContext"] = {
+            "sectionId": "sec-1",
+            "sectionNumber": 1,
+            "paragraphs": [
+                [
+                    {"text": {"value": "Throughout this section, let "}},
+                    {"inlineMath": {"latex": "p"}},
+                    {"text": {"value": " be a sponge parameter tuple and assume that "}},
+                    {"inlineMath": {"latex": "\\mathrm{supportedSponge}(p)"}},
+                    {"text": {"value": "."}},
+                ]
+            ],
+            "inspectors": [
+                {
+                    "key": "secparam:sec-1:p",
+                    "display": "p",
+                    "kind": {"parameter": {"roleDescription": "A sponge parameter tuple."}},
+                    "leanType": "SpongeParams",
+                    "roleBadge": "fixed in §1",
+                    "sectionId": "sec-1",
+                    "sectionAssumptions": [
+                        [{"inlineMath": {"latex": "\\mathrm{supportedSponge}(p)"}}]
+                    ],
+                }
+            ],
+        }
+        entry["localInspectors"] = [
+            {
+                "key": "shorthand:Decl:R",
+                "display": "R",
+                "kind": {
+                    "localShorthand": {
+                        "equationLatex": "R = R_{\\mathrm{MAC}}(4 \\cdot m, c_2, 0)",
+                        "roleDescription": "Local MAC system shorthand.",
+                    }
+                },
+                "leanType": "TypedSystem ...",
+                "roleBadge": "local shorthand",
+            }
+        ]
+        entry["referencedKeys"] = ["secparam:sec-1:p", "shorthand:Decl:R", "sym.pred"]
+
+        json_path = self.write_json("section_hover_clean.json", fixture)
+        res = run_check(str(json_path))
+        self.assertEqual(res.returncode, 0, msg=res.stdout + res.stderr)
+
+        out_dir = self.tmp_path / "section_hover_site"
+        subprocess.run(
+            [sys.executable, str(BUNDLE_SCRIPT), "--doc", str(json_path), "--out-dir", str(out_dir)],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        chapter_html = next((out_dir / "chapters").glob("*.html"))
+        res_html = run_check(str(chapter_html))
+        self.assertEqual(res_html.returncode, 0, msg=res_html.stdout + res_html.stderr)
+        html_txt = chapter_html.read_text(encoding="utf-8")
+        self.assertIn("Throughout this section, let", html_txt)
+        self.assertIn("cadmo-section-context", html_txt)
+        self.assertIn("annotateMathReferences", html_txt)
+        self.assertIn("cadmo-popover", html_txt)
+        self.assertIn("localShorthand", html_txt)
+
+        # Negative test: forbidden leakage in section context / hover docstring must fail CI
+        bad = copy.deepcopy(fixture)
+        bad["entries"][0]["localInspectors"][0]["docString"] = "Attached at interface A."
+        bad_path = self.write_json("section_hover_leak.json", bad)
+        res_bad = run_check(str(bad_path))
+        self.assertNotEqual(res_bad.returncode, 0)
+        self.assertIn("leakage", res_bad.stdout)
+
+        # Verso Lean CLI round-trip with new schema fields if built
+        exe = VERSO_PKG_DIR / ".lake" / "build" / "bin" / "verso-informalize"
+        if exe.is_file():
+            res_cli = subprocess.run([str(exe), "inspect", str(json_path)], capture_output=True, text=True)
+            self.assertEqual(res_cli.returncode, 0, msg=res_cli.stdout + res_cli.stderr)
+            body_out = self.tmp_path / "section_body.html"
+            res_body = subprocess.run(
+                [str(exe), "render-body", str(json_path), str(body_out)],
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(res_body.returncode, 0, msg=res_body.stdout + res_body.stderr)
+            self.assertIn("cadmo-section-context", body_out.read_text(encoding="utf-8"))
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

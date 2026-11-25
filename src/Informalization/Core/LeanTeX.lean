@@ -237,10 +237,21 @@ partial def renderAux (tbl : SymbolTable) (ctxPrec : Nat) (e : Expr) : MetaM Str
         let varStr ← renderAux tbl 100 fv
         let bodyStr ← renderAux tbl ctxPrec (body.instantiate1 fv)
         return "\\text{let } " ++ varStr ++ " = " ++ valStr ++ " \\text{ in } " ++ bodyStr
-  | .proj _ idx s =>
+  | .proj structName idx s =>
       let base ← renderAux tbl 90 s
-      let field := if idx == 0 then "1" else if idx == 1 then "2" else toString (idx + 1)
-      return parenIf ctxPrec 90 (base ++ "_{" ++ field ++ "}")
+      if structName == ``Prod || structName == ``PProd || structName == ``Sigma then
+        let field := if idx == 0 then "1" else if idx == 1 then "2" else toString (idx + 1)
+        return parenIf ctxPrec 90 (base ++ "_{" ++ field ++ "}")
+      let env ← getEnv
+      match getStructureInfo? env structName with
+      | some info =>
+          if h : idx < info.fieldNames.size then
+            let fname := info.fieldNames[idx]
+            return parenIf ctxPrec 90 (base ++ ".\\mathrm{" ++ escapeLatex fname.toString ++ "}")
+          else
+            return parenIf ctxPrec 90 (base ++ "_{" ++ toString (idx + 1) ++ "}")
+      | none =>
+          return parenIf ctxPrec 90 (base ++ "_{" ++ toString (idx + 1) ++ "}")
   | .app .. =>
       let fn := e.getAppFn.consumeMData
       let args := e.getAppArgs

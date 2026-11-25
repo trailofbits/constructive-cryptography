@@ -532,7 +532,7 @@ def check_proof_node_list(
 
 
 def check_inspectors(
-    inspectors: Any, file_path: str, violations: List[Violation]
+    inspectors: Any, file_path: str, violations: List[Violation], loc_prefix: str = "inspectors"
 ) -> Set[str]:
     keys: Set[str] = set()
     if not isinstance(inspectors, list):
@@ -540,14 +540,14 @@ def check_inspectors(
             Violation(
                 gate="structure",
                 file=file_path,
-                location="document.inspectors",
+                location=loc_prefix,
                 message="Expected list of SymbolInspector objects",
             )
         )
         return keys
 
     for idx, ins in enumerate(inspectors):
-        loc = f"inspectors[{idx}]"
+        loc = f"{loc_prefix}[{idx}]"
         if not isinstance(ins, dict):
             violations.append(
                 Violation(
@@ -573,6 +573,21 @@ def check_inspectors(
 
         disp = str(ins.get("display", ""))
         check_text_leakage(disp, file_path, f"{loc}.display", violations)
+
+        if ins.get("roleBadge") is not None:
+            rb = str(ins["roleBadge"])
+            check_text_leakage(rb, file_path, f"{loc}.roleBadge", violations)
+
+        if ins.get("docString") is not None:
+            ds = str(ins["docString"])
+            check_text_leakage(ds, file_path, f"{loc}.docString", violations)
+            check_prose_typography(ds, file_path, f"{loc}.docString", violations)
+
+        for cidx, cl in enumerate(ins.get("clauses") or []):
+            check_text_leakage(str(cl), file_path, f"{loc}.clauses[{cidx}]", violations)
+
+        for aidx, ap in enumerate(ins.get("sectionAssumptions") or []):
+            check_inlines(ap, keys, file_path, f"{loc}.sectionAssumptions[{aidx}]", violations)
 
         kind = ins.get("kind") or {}
         if not isinstance(kind, dict):
@@ -616,6 +631,14 @@ def check_inspectors(
             desc = p if isinstance(p, str) else str((p or {}).get("roleDescription", ""))
             check_text_leakage(desc, file_path, f"{loc}.parameter.roleDescription", violations)
             check_prose_typography(desc, file_path, f"{loc}.parameter.roleDescription", violations)
+        elif "localShorthand" in kind and isinstance(kind["localShorthand"], dict):
+            ls = kind["localShorthand"]
+            check_text_leakage(
+                str(ls.get("equationLatex", "")), file_path, f"{loc}.localShorthand.equationLatex", violations
+            )
+            rd = str(ls.get("roleDescription", ""))
+            check_text_leakage(rd, file_path, f"{loc}.localShorthand.roleDescription", violations)
+            check_prose_typography(rd, file_path, f"{loc}.localShorthand.roleDescription", violations)
         elif "ccDiagram" in kind and isinstance(kind["ccDiagram"], dict):
             check_text_leakage(
                 str(kind["ccDiagram"].get("summaryLatex", "")),
@@ -741,12 +764,58 @@ def check_document(
                         )
                     )
 
+        entry_inspector_keys: Set[str] = set(inspector_keys)
+
+        sec_ctx = entry.get("sectionContext")
+        if isinstance(sec_ctx, dict):
+            sc_keys = check_inspectors(
+                sec_ctx.get("inspectors") or [],
+                file_path,
+                violations,
+                f"{eloc_named}.sectionContext.inspectors",
+            )
+            entry_inspector_keys |= sc_keys
+            for spidx, spara in enumerate(sec_ctx.get("paragraphs") or []):
+                joined = check_inlines(
+                    spara,
+                    entry_inspector_keys,
+                    file_path,
+                    f"{eloc_named}.sectionContext.paragraphs[{spidx}]",
+                    violations,
+                )
+                if not joined.strip():
+                    violations.append(
+                        Violation(
+                            gate="structure",
+                            file=file_path,
+                            location=f"{eloc_named}.sectionContext.paragraphs[{spidx}]",
+                            message="Empty section context paragraph",
+                        )
+                    )
+
+        local_ins = entry.get("localInspectors")
+        if isinstance(local_ins, list):
+            entry_inspector_keys |= check_inspectors(
+                local_ins, file_path, violations, f"{eloc_named}.localInspectors"
+            )
+
+        for rkey in entry.get("referencedKeys") or []:
+            if rkey not in entry_inspector_keys:
+                violations.append(
+                    Violation(
+                        gate="structure",
+                        file=file_path,
+                        location=f"{eloc_named}.referencedKeys",
+                        message=f"referencedKey {rkey!r} does not exist in document/section/local inspectors",
+                    )
+                )
+
         # Ambient setting
         ambient = entry.get("ambient")
         if isinstance(ambient, dict):
             check_inlines(
                 ambient.get("summary", []),
-                inspector_keys,
+                entry_inspector_keys,
                 file_path,
                 f"{eloc_named}.ambient.summary",
                 violations,
@@ -767,7 +836,7 @@ def check_document(
             for pidx, para in enumerate(stmt):
                 joined = check_inlines(
                     para,
-                    inspector_keys,
+                    entry_inspector_keys,
                     file_path,
                     f"{eloc_named}.statement[{pidx}]",
                     violations,
@@ -785,7 +854,7 @@ def check_document(
         # Proof tree
         check_proof_node_list(
             entry.get("proof", []),
-            inspector_keys,
+            entry_inspector_keys,
             file_path,
             f"{eloc_named}.proof",
             violations,
@@ -891,10 +960,10 @@ def run_playwright_smoke(
                 )
 
             # Verify clicking an underlined symbol opens the margin inspector
-            syms = page.locator("button.cadmo-sym")
+            syms = page.locator("button.cadmo-sym, .cadmo-ref")
             if syms.count() > 0:
                 syms.first.click()
-                inspector_title = page.locator(".cadmo-margin .cadmo-inspector-title")
+                inspector_title = page.locator(".cadmo-margin .cadmo-inspector-title, .cadmo-margin .cadmo-sidenote-title")
                 if inspector_title.count() == 0:
                     report.violations.append(
                         Violation(

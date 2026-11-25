@@ -98,6 +98,8 @@ def describeType (tbl : SymbolTable) (ty : Expr) : MetaM TypeDescription := do
     let env ← getEnv
     if let some (sg, pl) := (getOverlay env head).noun? then
       return { noun := ⟨sg, pl⟩ }
+  if ty == .sort .zero then
+    return { noun := ⟨"proposition", "propositions"⟩ }
   if ty.isSort then
     return { noun := ⟨"set", "sets"⟩ }
   if ty.isAppOf ``Nat || ty == mkConst ``Nat then
@@ -254,11 +256,68 @@ def buildGoalState (tbl : SymbolTable) (target : Expr) : MetaM GoalState := do
     rawLeanGoal? := some rawTarget.pretty
   }
 
+/-- Canonical string key for an `Array Inline` (used to detect identical assumptions across a section). -/
+def inlinesCanonicalKey (inls : Array Inline) : String :=
+  String.intercalate "" (inls.toList.map Inline.collectText) |>.trimAscii.toString
+
+/-- Format a concise capitalized role description for a type `ty` (with optional adjectives such as `"finite"`). -/
+def formatParameterRole (tbl : SymbolTable) (ty : Expr) (adjectives : List String := []) : MetaM String := do
+  let desc ← describeType tbl ty
+  let mergedAdjs := adjectives.foldl (init := desc.adjectives) fun acc a =>
+    if acc.contains a then acc else a :: acc
+  let adj := if mergedAdjs.isEmpty then "" else String.intercalate " " mergedAdjs ++ " "
+  let art := article (adj ++ desc.noun.singular)
+  let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
+  return capitalizeFirst (ensurePeriod s!"{art} {adj}{desc.noun.singular}{acc}")
+
+/-- Section-fixed context passed into `parseTheoremStatement` so already-fixed parameters
+and assumptions are omitted from individual theorem statements in that section. -/
+structure HoistedContext where
+  paramSyms : Std.HashSet String := {}
+  hypKeys : Std.HashSet String := {}
+  sectionId? : Option String := none
+  sectionNumber? : Option Nat := none
+  deriving Inhabited
+
+/-- Checked metadata for a theorem-local shorthand (`Write c₁ = …` or `let R = …`). -/
+structure LocalShorthandInfo where
+  sym : String
+  rhsLatex : String
+  leanType : String
+  roleDescription : String
+  deriving Repr, Inhabited
+
+/-- Checked parameter metadata extracted while its `FVarId` is live in `LocalContext`. -/
+structure SigParam where
+  sym : String
+  cleanName : String
+  typeKey : String
+  intro : Intro
+  roleDescription : String
+  leanType : String
+  isDomainConfig : Bool
+  depSyms : Array String
+  deriving Repr, Inhabited
+
+/-- Checked hypothesis metadata extracted while its `FVarId` is live in `LocalContext`. -/
+structure SigHyp where
+  key : String
+  inlines : Array Inline
+  depSyms : Array String
+  deriving Repr, Inhabited
+
+/-- Extracted visible signature of one declaration for section-context hoisting analysis. -/
+structure SignatureSummary where
+  params : Array SigParam := #[]
+  hyps : Array SigHyp := #[]
+  deriving Inhabited
+
 /-- Structured decomposition of a theorem's top-level signature for Maurer-style presentation. -/
 structure ParsedStatement where
   ambient? : Option AmbientSetting
   paragraphs : Array (Array Inline)
   conclusion : Expr
+  localShorthands : Array LocalShorthandInfo := #[]
   deriving Inhabited
 
 /-- Approximate AST size of an expression (used for generic repeated-subexpression factoring). -/
@@ -333,7 +392,7 @@ private partial def collectCandidateSubexprs (tbl : SymbolTable) (e : Expr)
 /-- Factor up to 3 heavy repeated visible subexpressions across `exprs` into crisp local
 abbreviations (`c₁, c₂, …`), keeping ONLY shorthands that visibly shorten the statement. -/
 private def factorRepeatedSubexprs (tbl : SymbolTable) (exprs : Array Expr) :
-    MetaM (SymbolTable × Option (Array Inline)) := do
+    MetaM (SymbolTable × Array (String × Expr)) := do
   let mut counts : Std.HashMap Expr Nat := {}
   for ex in exprs do
     counts ← collectCandidateSubexprs tbl ex counts
@@ -344,7 +403,7 @@ private def factorRepeatedSubexprs (tbl : SymbolTable) (exprs : Array Expr) :
   let sorted := cands.qsort fun (_, c1, s1) (_, c2, s2) =>
     if s1 != s2 then s1 > s2 else c1 > c2
   let mut curTbl := tbl
-  let mut defs : Array (String × String) := #[]
+  let mut defs : Array (String × Expr) := #[]
   let mut chosenExprs : Array Expr := #[]
   for (ex, _, _) in sorted do
     if defs.size ≥ 3 then break
@@ -352,19 +411,10 @@ private def factorRepeatedSubexprs (tbl : SymbolTable) (exprs : Array Expr) :
     let tex ← exprToLatex ex curTbl
     if tex.length < 22 || (tex.splitOn "inst").length > 1 then continue
     let sym := "c_{" ++ toString (defs.size + 1) ++ "}"
-    defs := defs.push (sym, tex)
+    defs := defs.push (sym, ex)
     chosenExprs := chosenExprs.push ex
     curTbl := curTbl.withExprAlias ex sym
-  if defs.isEmpty then
-    return (curTbl, none)
-  let mut inl : Array Inline := #[.text "Write "]
-  for i in [:defs.size] do
-    let (sym, rhs) := defs[i]!
-    if i > 0 then
-      inl := inl.push (.text (if i + 1 == defs.size then " and " else ", "))
-    inl := inl.push (.inlineMath s!"{sym} = {rhs}")
-  inl := inl.push (.text ".")
-  return (curTbl, some inl)
+  return (curTbl, defs)
 
 /-- Helper: check if `sub` appears inside any `Inline` of `inls`. -/
 private def inlinesContain (inls : Array Inline) (needle : String) : Bool :=
@@ -390,8 +440,8 @@ private def replaceInInlines (old new : String) (inls : Array Inline) : Array In
 conclusion so `fv` stays live in the `LocalContext` throughout factoring and rendering,
 and display equations never print `let ... in let ... in`. -/
 private partial def withHoistedConclusionLets {α : Type} (tbl : SymbolTable) (e : Expr)
-    (acc : Array (String × Expr) := #[])
-    (k : SymbolTable → Array (String × Expr) → Expr → MetaM α) : MetaM α := do
+    (acc : Array (String × Expr × Expr) := #[])
+    (k : SymbolTable → Array (String × Expr × Expr) → Expr → MetaM α) : MetaM α := do
   match e.consumeMData with
   | .letE nm ty val body _ =>
       let isP ← try isProp ty catch _ => pure false
@@ -400,33 +450,153 @@ private partial def withHoistedConclusionLets {α : Type} (tbl : SymbolTable) (e
         withLetDecl nm ty val fun fv => do
           let nmTex ← exprToLatex fv tbl
           let tbl' := tbl.withExprAlias fv nmTex
-          withHoistedConclusionLets tbl' (body.instantiate1 fv) (acc.push (nmTex, val)) k
+          withHoistedConclusionLets tbl' (body.instantiate1 fv) (acc.push (nmTex, ty, val)) k
   | _ => k tbl acc e
+
+/-- Render `Expr` to a clean, macro-scope-free Lean type string. -/
+private def cleanTypeString (ty : Expr) : MetaM String := do
+  let ty ← normalizeForPresentation ty
+  return (← ppExpr ty).pretty (width := 100)
+
+/-- Decide whether `ty` represents a structured domain configuration / CC object
+eligible for majority-based section hoisting (excluding bare scalars `ℕ`, `ℤ`, `Bool`,
+`Type`, functions, and lists). -/
+private def isDomainConfigExpr (env : Environment) (desc : TypeDescription) (ty : Expr) : Bool :=
+  let ty := ty.consumeMData
+  let isScalarOrContainer :=
+    ty.isSort || ty == mkConst ``Nat || ty == mkConst ``Int || ty == mkConst ``Bool ||
+    ty == mkConst `Real || ty == mkConst `NNReal || ty == mkConst `ENNReal ||
+    ty.isAppOf ``List || ty.isAppOf ``Fin || ty.isAppOf ``Option || ty.isAppOf `Equiv.Perm ||
+    ty.isForall
+  if isScalarOrContainer then false
+  else
+    let hasNoun := match ty.getAppFn.consumeMData with
+      | .const head _ => (getOverlay env head).noun?.isSome
+      | _ => false
+    hasNoun || ["interface", "resource", "converter", "specification",
+                "game", "distinguisher"].contains desc.noun.singular
+
+/-- Extract visible parameters and hypotheses from `theoremType` for section-context hoisting. -/
+def extractSignatureSummary (tbl : SymbolTable) (theoremType : Expr) : MetaM SignatureSummary := do
+  let env ← getEnv
+  forallTelescope theoremType fun fvars _ => do
+    let mut finiteSets : List String := []
+    for fv in fvars do
+      let decl ← fv.fvarId!.getDecl
+      if ← isAmbientTypeclass decl.type then
+        let head := decl.type.getAppFn.consumeMData
+        if let .const hName _ := head then
+          if hName == `Fintype || hName == `Finite then
+            if let some carrier := decl.type.getAppArgs.back? then
+              if let .fvar cid := carrier.consumeMData then
+                let cdecl ← cid.getDecl
+                finiteSets := (cleanBinderName cdecl.userName) :: finiteSets
+    let mut params : Array SigParam := #[]
+    let mut hyps : Array SigHyp := #[]
+    let mut fvarToSym : Std.HashMap FVarId String := {}
+    for fv in fvars do
+      let decl ← fv.fvarId!.getDecl
+      if ← isSuppressedLocalDecl decl then continue
+      if ← isProp decl.type then
+        let hInl ← renderProposition tbl decl.type
+        let key := inlinesCanonicalKey hInl
+        let depIds := (Lean.collectFVars {} decl.type).fvarIds
+        let mut depSyms : Array String := #[]
+        for id in depIds do
+          if let some s := fvarToSym.get? id then
+            if !depSyms.contains s then
+              depSyms := depSyms.push s
+        hyps := hyps.push { key, inlines := hInl, depSyms }
+      else
+        let desc ← describeType tbl decl.type
+        if desc.isAmbient then continue
+        let clean := cleanBinderName decl.userName
+        let sym ← exprToLatex fv tbl
+        fvarToSym := fvarToSym.insert decl.fvarId sym
+        let adjs :=
+          if finiteSets.contains clean && !desc.adjectives.contains "finite" then
+            "finite" :: desc.adjectives
+          else desc.adjectives
+        let depIds := (Lean.collectFVars {} decl.type).fvarIds
+        let depNames ← depIds.toList.mapM fun id => do
+          let d ← id.getDecl
+          let s ← exprToLatex d.toExpr tbl
+          return s!"\\({s}\\)"
+        let mut depSyms : Array String := #[]
+        for id in depIds do
+          if let some s := fvarToSym.get? id then
+            if !depSyms.contains s then
+              depSyms := depSyms.push s
+        let typeTex ← exprToLatex decl.type tbl
+        let typeKey := s!"{typeTex}|{String.intercalate "," adjs}"
+        let intro : Intro := {
+          name := s!"\\({sym}\\)"
+          noun := desc.noun
+          adjectives := adjs
+          accessories := desc.accessories
+          subjunctive := true
+          typeStr := desc.typeLatex?.getD ""
+          mentions := depNames
+        }
+        let roleDescription ← formatParameterRole tbl decl.type
+          (if finiteSets.contains clean then ["finite"] else [])
+        let leanType ← cleanTypeString decl.type
+        let isDomCfg := isDomainConfigExpr env desc decl.type
+        params := params.push {
+          sym, cleanName := clean, typeKey, intro, roleDescription, leanType,
+          isDomainConfig := isDomCfg, depSyms
+        }
+    return { params, hyps }
+
+/-- Format hoisted section-fixed parameters and assumptions into a calm archival Section Context
+paragraph (*"Throughout this section, let … [and assume that …]."*). -/
+def formatSectionContextParagraphs (intros : List Intro) (hyps : Array (Array Inline)) :
+    Array (Array Inline) := Id.run do
+  if intros.isEmpty && hyps.isEmpty then return #[]
+  let mut para : Array Inline := #[]
+  let mut hasMultiIntro := false
+  if !intros.isEmpty then
+    let introSentence := realizeIntros intros
+    let rawBody :=
+      if introSentence.startsWith "Let " then
+        "Throughout this section, let " ++ (introSentence.drop 4).toString
+      else
+        "Throughout this section, " ++ lowercaseFirst introSentence
+    if !hyps.isEmpty then
+      let trimmed := if rawBody.endsWith "." then (rawBody.dropEnd 1).toString else rawBody
+      hasMultiIntro := trimmed.contains ',' || trimmed.contains ';'
+      para := para.push (.text (if hasMultiIntro then trimmed ++ "." else trimmed))
+    else
+      para := para.push (.text rawBody)
+  if !hyps.isEmpty then
+    let lead :=
+      if para.isEmpty then "Throughout this section, assume that "
+      else if hasMultiIntro then " Assume throughout that "
+      else " and assume that "
+    para := para.push (.text lead)
+    for i in [:hyps.size] do
+      if i > 0 then
+        let sep :=
+          if hyps.size == 2 then " and "
+          else if i + 1 == hyps.size then "; and "
+          else "; "
+        para := para.push (.text sep)
+      para := para ++ hyps[i]!
+    para := para.push (.text ".")
+  return #[para]
 
 /-- Parse a theorem's full `Expr` type into:
 1. factored-out ambient setting (suppressed typeclasses & category boilerplate);
-2. aggregated entity introductions (`Let … be …`);
+2. aggregated entity introductions (`Let … be …`), omitting any already-fixed section parameters;
 3. automatic local shorthand definitions for genuinely used repeated subexpressions + hoisted `let`s;
-4. explicit mathematical assumptions (`Assume that …`);
+4. explicit mathematical assumptions (`Assume that …`), omitting any already-fixed section assumptions;
 5. the concluding claim (displayed cleanly, promoted to display math when substantial). -/
-def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr) : MetaM ParsedStatement := do
+def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr)
+    (hoisted? : Option HoistedContext := none) : MetaM ParsedStatement := do
+  let hoisted := hoisted?.getD {}
   forallTelescope theoremType fun fvars rawConclusion => do
     -- Hoist leading `let R := ...; let S := ...; body` out of the conclusion in CPS
     withHoistedConclusionLets tbl rawConclusion #[] fun tbl letRawDefs conclusion => do
-      -- Collect prop assumptions, hoisted `let` values, & conclusion for subexpr factoring
-      let mut factorExprs : Array Expr := #[]
-      for fv in fvars do
-        let decl ← fv.fvarId!.getDecl
-        if ← isSuppressedLocalDecl decl then continue
-        if ← isProp decl.type then
-          factorExprs := factorExprs.push decl.type
-      for (_, lval) in letRawDefs do
-        factorExprs := factorExprs.push lval
-      factorExprs := factorExprs.push conclusion
-      let (tbl, _writePara?) ← factorRepeatedSubexprs tbl factorExprs
-
-      let mut intros : List Intro := []
-      let mut hyps : Array (Array Inline) := #[]
       let mut suppressed : Array String := #[]
       let mut finiteSets : List String := []
       -- First pass: collect `Fintype` / `Nonempty` modifiers attached to carrier variables
@@ -441,13 +611,39 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr) : MetaM Parse
                 if let .fvar cid := carrier.consumeMData then
                   let cdecl ← cid.getDecl
                   finiteSets := (cleanBinderName cdecl.userName) :: finiteSets
-      -- Second pass: classify visible binders into entity introductions vs. assumptions
+      -- Collect ONLY non-hoisted parameter types, non-hoisted hypotheses, hoisted `let` values,
+      -- and conclusion for repeated-subexpression factoring (never emit unused `c_k` from hoisted hyps!).
+      let mut factorExprs : Array Expr := #[]
       for fv in fvars do
         let decl ← fv.fvarId!.getDecl
         if ← isSuppressedLocalDecl decl then continue
         if ← isProp decl.type then
           let hInl ← renderProposition tbl decl.type
-          hyps := hyps.push hInl
+          if !hoisted.hypKeys.contains (inlinesCanonicalKey hInl) then
+            factorExprs := factorExprs.push decl.type
+        else
+          let desc ← describeType tbl decl.type
+          if desc.isAmbient then continue
+          let sym ← exprToLatex fv tbl
+          if !hoisted.paramSyms.contains sym then
+            factorExprs := factorExprs.push decl.type
+      for (_, _, lval) in letRawDefs do
+        factorExprs := factorExprs.push lval
+      factorExprs := factorExprs.push conclusion
+      let (tbl, _) ← factorRepeatedSubexprs tbl factorExprs
+
+      let mut intros : List Intro := []
+      let mut hyps : Array (Array Inline) := #[]
+      -- Second pass: classify visible binders into entity introductions vs. assumptions,
+      -- omitting parameters and hypotheses already fixed in the enclosing Section Context.
+      for fv in fvars do
+        let decl ← fv.fvarId!.getDecl
+        if ← isSuppressedLocalDecl decl then continue
+        if ← isProp decl.type then
+          let hInl ← renderProposition tbl decl.type
+          let key := inlinesCanonicalKey hInl
+          if !hoisted.hypKeys.contains key then
+            hyps := hyps.push hInl
         else
           let desc ← describeType tbl decl.type
           if desc.isAmbient then
@@ -455,6 +651,8 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr) : MetaM Parse
             continue
           let clean := cleanBinderName decl.userName
           let sym ← exprToLatex fv tbl
+          if hoisted.paramSyms.contains sym then
+            continue
           let adjs :=
             if finiteSets.contains clean && !desc.adjectives.contains "finite" then
               "finite" :: desc.adjectives
@@ -473,63 +671,91 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr) : MetaM Parse
             typeStr := desc.typeLatex?.getD ""
             mentions := depNames
           }]
-      let mut letDefsRendered : Array (String × String) := #[]
-      for (nmTex, valExpr) in letRawDefs do
+      let mut letDefsRendered : Array (String × String × String × String) := #[]
+      for (nmTex, tyExpr, valExpr) in letRawDefs do
         let valTex ← exprToLatex valExpr tbl
-        letDefsRendered := letDefsRendered.push (nmTex, valTex)
+        let leanTy ← cleanTypeString tyExpr
+        let roleDesc ← formatParameterRole tbl tyExpr
+        letDefsRendered := letDefsRendered.push (nmTex, valTex, leanTy, roleDesc)
       let mut conclInl ← renderProposition tbl conclusion
       -- Keep ONLY `c_k` shorthands transitively referenced by hypotheses, `let`s, or conclusion,
       -- ordered leaf-first (no forward references) and renumbered densely `c_1, c_2, …`.
       let allVisibleInls := hyps.foldl (· ++ ·) #[] ++ conclInl
-      let mut allCDefs : Array (String × String) := #[]
+      let introRendered := if intros.isEmpty then "" else realizeIntros intros
+      let replaceInIntro (src dst : String) (x : Intro) : Intro := {
+        x with
+        accessories := x.accessories.map (·.replace src dst)
+        typeStr := x.typeStr.replace src dst
+      }
+      let strContains (hay needle : String) : Bool :=
+        !needle.isEmpty && (hay.splitOn needle).length > 1
+      let mut allCDefs : Array (String × String × String × String) := #[]
       for (pat, sym) in tbl.exprAliases do
         if sym.startsWith "c_{" then
           let rhs ← exprToLatex pat { tbl with exprAliases := tbl.exprAliases.filter (·.2 != sym) }
-          allCDefs := allCDefs.push (sym, rhs)
+          let patMeta ← try
+            let pty ← inferType pat
+            pure (← cleanTypeString pty, ← formatParameterRole tbl pty)
+          catch _ =>
+            pure ("", "Local abbreviation.")
+          allCDefs := allCDefs.push (sym, rhs, patMeta.1, patMeta.2)
       let mut usedSyms : Std.HashSet String := {}
-      for (sym, _) in allCDefs do
+      for (sym, _, _, _) in allCDefs do
         let usedInMain := inlinesContain allVisibleInls sym
-        let usedInLet := letDefsRendered.any fun (_, rhs) => (rhs.splitOn sym).length > 1
-        if usedInMain || usedInLet then
+        let usedInIntro := strContains introRendered sym
+        let usedInLet := letDefsRendered.any fun (_, rhs, _, rd) =>
+          strContains rhs sym || strContains rd sym
+        if usedInMain || usedInIntro || usedInLet then
           usedSyms := usedSyms.insert sym
-      -- Fixed-point transitive closure (at most 3 shorthands)
+      -- Fixed-point transitive closure (checking both RHS and roleDescription)
       for _ in [:allCDefs.size] do
-        for (sym, rhs) in allCDefs do
+        for (sym, rhs, _, rd) in allCDefs do
           if usedSyms.contains sym then
-            for (otherSym, _) in allCDefs do
-              if otherSym != sym && (rhs.splitOn otherSym).length > 1 then
+            for (otherSym, _, _, _) in allCDefs do
+              if otherSym != sym && (strContains rhs otherSym || strContains rd otherSym) then
                 usedSyms := usedSyms.insert otherSym
-      let activeWriteDefs := allCDefs.filter (fun (sym, _) => usedSyms.contains sym)
+      let activeWriteDefs := allCDefs.filter (fun (sym, _, _, _) => usedSyms.contains sym)
       -- Order leaf-first: reverse `sorted` (which was largest-first) so subexpressions are defined before use
       let orderedWriteDefs := activeWriteDefs.reverse
       -- Two-phase collision-free renumbering (`oldSym` -> `__TMP_i__` -> `c_{i+1}`)
       let mut tmpWriteDefs := orderedWriteDefs
       for i in [:orderedWriteDefs.size] do
-        let (oldSym, _) := orderedWriteDefs[i]!
+        let (oldSym, _, _, _) := orderedWriteDefs[i]!
         let tmpTok := "__CADMO_C_" ++ toString i ++ "__"
+        intros := intros.map (replaceInIntro oldSym tmpTok)
         hyps := hyps.map (replaceInInlines oldSym tmpTok)
         conclInl := replaceInInlines oldSym tmpTok conclInl
-        letDefsRendered := letDefsRendered.map fun (n, r) => (n, r.replace oldSym tmpTok)
-        tmpWriteDefs := tmpWriteDefs.map fun (n, r) => (n, r.replace oldSym tmpTok)
-      let mut renumberedWriteDefs : Array (String × String) := #[]
+        letDefsRendered := letDefsRendered.map fun (n, r, lt, rd) =>
+          (n, r.replace oldSym tmpTok, lt, rd.replace oldSym tmpTok)
+        tmpWriteDefs := tmpWriteDefs.map fun (n, r, lt, rd) =>
+          (n, r.replace oldSym tmpTok, lt, rd.replace oldSym tmpTok)
+      let mut renumberedWriteDefs : Array (String × String × String × String) := #[]
       for i in [:tmpWriteDefs.size] do
         let tmpTok := "__CADMO_C_" ++ toString i ++ "__"
         let newSym := "c_{" ++ toString (i + 1) ++ "}"
+        intros := intros.map (replaceInIntro tmpTok newSym)
         hyps := hyps.map (replaceInInlines tmpTok newSym)
         conclInl := replaceInInlines tmpTok newSym conclInl
-        letDefsRendered := letDefsRendered.map fun (n, r) => (n, r.replace tmpTok newSym)
-        tmpWriteDefs := tmpWriteDefs.map fun (n, r) => (n, r.replace tmpTok newSym)
+        letDefsRendered := letDefsRendered.map fun (n, r, lt, rd) =>
+          (n, r.replace tmpTok newSym, lt, rd.replace tmpTok newSym)
+        tmpWriteDefs := tmpWriteDefs.map fun (n, r, lt, rd) =>
+          (n, r.replace tmpTok newSym, lt, rd.replace tmpTok newSym)
       for i in [:tmpWriteDefs.size] do
-        let (_, rhs) := tmpWriteDefs[i]!
-        renumberedWriteDefs := renumberedWriteDefs.push ("c_{" ++ toString (i + 1) ++ "}", rhs)
+        let (_, rhs, lt, rd) := tmpWriteDefs[i]!
+        renumberedWriteDefs := renumberedWriteDefs.push ("c_{" ++ toString (i + 1) ++ "}", rhs, lt, rd)
       let allWriteDefs := renumberedWriteDefs ++ letDefsRendered
+      let mut localShorthands : Array LocalShorthandInfo := #[]
+      for (sym, rhs, lt, rd) in allWriteDefs do
+        localShorthands := localShorthands.push {
+          sym, rhsLatex := rhs, leanType := lt, roleDescription := rd
+        }
       let mut paragraphs : Array (Array Inline) := #[]
       if !intros.isEmpty then
         paragraphs := paragraphs.push #[.text (realizeIntros intros)]
       if !allWriteDefs.isEmpty then
         let mut inl : Array Inline := #[.text "Write "]
         for i in [:allWriteDefs.size] do
-          let (sym, rhs) := allWriteDefs[i]!
+          let (sym, rhs, _, _) := allWriteDefs[i]!
           if i > 0 then
             inl := inl.push (.text (if i + 1 == allWriteDefs.size then " and " else ", "))
           inl := inl.push (.inlineMath s!"{sym} = {rhs}")
@@ -543,7 +769,7 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr) : MetaM Parse
           assumeInl := assumeInl ++ hyps[i]!
         assumeInl := assumeInl.push (.text ".")
         paragraphs := paragraphs.push assumeInl
-      let lead := if hyps.isEmpty && intros.isEmpty then "We have " else "Then "
+      let lead := if hyps.isEmpty && intros.isEmpty && allWriteDefs.isEmpty then "We have " else "Then "
       let conclPara : Array Inline :=
         match conclInl with
         | #[.inlineMath tex] =>
@@ -562,6 +788,6 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr) : MetaM Parse
             summary := #[.text "We work in the Constructive Cryptography framework over finite alphabets and compatible distinguishing metrics."]
             suppressedTypeclasses := uniq
           }
-      return { ambient?, paragraphs, conclusion := rawConclusion }
+      return { ambient?, paragraphs, conclusion := rawConclusion, localShorthands }
 
 end Informalization.Core.Ontology
