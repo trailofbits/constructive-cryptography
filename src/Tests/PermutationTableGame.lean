@@ -10,7 +10,7 @@ public import ConstructiveCryptography.Tactics.Substitution
 Exercises `tableMonitorGame`, `tableMonitorGame_visible`,
 `tableMonitorGame_set_mass_le_of_badEvent`, `tableMonitorGame_win_le_of_linear`,
 `tableMonitorGame_dist_le_of_linear`, and the abstract distance-to-substitution law on a
-finite permutation domain `Fin 8`, verifies `cc_normalize` and `cc_calc statistical` compatibility under
+finite permutation domain `Fin 8`, and verifies `cc_normalize` and `cc_calc statistical` with
 CC custom notation (`Δ`, `|≡`, `•`, `≃[...]`), and audits `#print axioms`.
 -/
 
