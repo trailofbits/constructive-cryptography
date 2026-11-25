@@ -865,19 +865,28 @@
           ensureLeadIn();
         }
         flushPara(false);
-        const rows = [];
-        (node.steps || []).forEach((item, idx) => {
+        const calcItems = [];
+        const steps = node.steps || [];
+        steps.forEach((item, idx) => {
           const st = item.step || {};
           const ch = paperVisibleChildren(item.justification || item.children || []);
           const sid = `${node.id}-s${idx}`;
           const isOpen = state.expanded.has(sid);
-          rows.push(
-            h("tr", {},
-              h("td", { class: "cadmo-calc-lhs" }, idx === 0 ? renderMathSpan(st.lhsLatex || "", false, scope) : ""),
-              h("td", { class: "cadmo-calc-rel" }, renderMathSpan(st.relationLatex || "=", false, scope)),
-              h("td", { class: "cadmo-calc-rhs" }, renderMathSpan(st.rhsLatex || "", false, scope)),
-              h("td", { class: "cadmo-calc-reason" },
+          if (idx === 0 && st.lhsLatex) {
+            calcItems.push(
+              h("div", { class: "cadmo-calc-lhs-line" },
+                renderMathSpan(st.lhsLatex || "", false, scope)
+              )
+            );
+          }
+          calcItems.push(
+            h("div", { class: "cadmo-calc-step-row" },
+              h("span", { class: "cadmo-calc-rel" }, renderMathSpan(st.relationLatex || "=", false, scope)),
+              h("span", { class: "cadmo-calc-rhs" }, renderMathSpan(st.rhsLatex || "", false, scope)),
+              h("span", { class: "cadmo-calc-reason" },
+                (st.reason && st.reason.length > 0) ? "(" : null,
                 renderInlines(st.reason || [], scope),
+                (st.reason && st.reason.length > 0) ? ")" : null,
                 ch.length > 0
                   ? h("button", {
                       type: "button",
@@ -891,19 +900,17 @@
             )
           );
           if (ch.length > 0 && isOpen) {
-            rows.push(
-              h("tr", { class: "cadmo-calc-expand-row" },
-                h("td", { colspan: "4" },
-                  h("div", { class: "cadmo-expansion cadmo-expanded-children" },
-                    ...renderProofFlow(ch, { depth: depth + 1, scope })
-                  )
+            calcItems.push(
+              h("div", { class: "cadmo-calc-expand-block" },
+                h("div", { class: "cadmo-expansion cadmo-expanded-children" },
+                  ...renderProofFlow(ch, { depth: depth + 1, scope })
                 )
               )
             );
           }
         });
         out.push(h("div", { class: "cadmo-calc" },
-          h("table", { class: "cadmo-calc-table" }, h("tbody", {}, ...rows))
+          h("div", { class: "cadmo-calc-list" }, ...calcItems)
         ));
         continue;
       }

@@ -495,41 +495,63 @@ a:hover {
    Aligned calculation chains (calc / cc_calc)
    ========================================================================== */
 .cadmo-calc {
-  margin: 0.7rem 0;
-  overflow-x: auto;
+  margin: 0.7rem 0 0.85rem;
   max-width: 100%;
-  -webkit-overflow-scrolling: touch;
 }
 
 .cadmo-calc-intro {
   margin: 0 0 0.35rem;
 }
 
-.cadmo-calc-table {
-  width: max-content;
-  min-width: 100%;
-  border-collapse: collapse;
-  margin: 0.25rem 0;
+.cadmo-calc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  margin: 0.3rem 0;
+  padding-left: 0.9rem;
 }
 
-.cadmo-calc-table td {
-  padding: 0.26rem 0.32rem;
-  vertical-align: baseline;
+.cadmo-calc-lhs-line {
+  font-family: var(--font-math);
+  overflow-wrap: anywhere;
+  margin-bottom: 0.1rem;
 }
 
-.cadmo-calc-lhs { text-align: right; white-space: nowrap; }
-.cadmo-calc-rel { text-align: center; padding-inline: 0.5rem !important; white-space: nowrap; }
-.cadmo-calc-rhs { text-align: left; min-width: 11rem; }
+.cadmo-calc-step-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.55rem;
+  row-gap: 0.15rem;
+  padding: 0.18rem 0;
+  padding-left: 1.1rem;
+}
+
+.cadmo-calc-rel {
+  font-family: var(--font-math);
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.cadmo-calc-rhs {
+  font-family: var(--font-math);
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .cadmo-calc-reason {
   font-size: 0.86rem;
   font-style: italic;
   color: var(--ink-muted);
-  padding-left: 0.9rem !important;
-  min-width: 13rem;
+  margin-left: auto;
+  padding-left: 0.6rem;
+  flex: 0 1 auto;
 }
 
-.cadmo-calc-expand-row td {
-  padding: 0 0 0.5rem 1.2rem;
+.cadmo-calc-expand-block {
+  margin: 0.2rem 0 0.45rem 1.2rem;
+  max-width: 100%;
 }
 
 /* ==========================================================================
