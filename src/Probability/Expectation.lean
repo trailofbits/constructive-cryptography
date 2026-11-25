@@ -20,6 +20,7 @@ The expectation `𝔼_X[f] = ∑ₐ X(a) · f(a)` over a finite distribution.
 * `expect_indicator`: the expectation of an indicator is a mass
 * `expect_nonneg`, `expect_mono`, `mass_ge_le_expect_div` (Markov),
   `expect_mul_sq_le_sq_mul_sq` (Cauchy–Schwarz)
+* `expect_sq_le_mass_ne_zero_mul_second`, `expect_sq_le_mass_pos_mul_second`: hit-mass bounds
 * `variance_nonneg`, `variance_eq_expect_sq_sub_sq_expect`
 * Jensen: `ConcaveOn.le_map_expect`, `ConvexOn.map_expect_le`
 * `expect_fTransform`, `expect_prod_eq`, `abs_expect_sub_expect_le_expect`
@@ -371,7 +372,7 @@ lemma expect_comp_eq_sum_mass {A C : Type*} [Fintype C]
 
 /-- The squared expectation is at most the nonzero mass times the second moment.
 Only the distribution weights must be nonnegative; `X` may take either sign. -/
-theorem expect_sq_le_mass_ne_zero_mul_second {A : Type u} (P : Distribution A) (hp : P.NonNeg)
+theorem expect_sq_le_mass_ne_zero_mul_second {A : Type*} (P : Distribution A) (hp : P.NonNeg)
     (X : A → ℝ) :
     P.expect X ^ 2 ≤ P.mass (fun a => X a ≠ 0) * P.expect (fun a => X a ^ 2) := by
   classical
@@ -395,7 +396,6 @@ theorem expect_sq_le_mass_pos_mul_second {P : Distribution A} (weights : P.NonNe
     P.mass_congr fun x => ⟨fun h => lt_of_le_of_ne (nonnegative x) h.symm, ne_of_gt⟩
   rw [← events]
   exact expect_sq_le_mass_ne_zero_mul_second P weights f
-
 
 end Distribution
 
