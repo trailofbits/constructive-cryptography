@@ -24,4 +24,13 @@ example {A : Type*} (P : Distribution A) (weights : P.NonNeg) :
       P.mass (fun _ => (0 : ℝ) < 0) * P.expect (fun _ => (0 : ℝ) ^ 2) :=
   expect_sq_le_mass_pos_mul_second weights (fun _ => 0) (fun _ => le_rfl)
 
+/-- A negative constant uses the nonzero event without a sign assumption on its value. -/
+example : (uniform Bool).expect (fun _ => (-1 : ℝ)) ^ 2 ≤
+    (uniform Bool).mass (fun _ => (-1 : ℝ) ≠ 0) *
+      (uniform Bool).expect (fun _ => (-1 : ℝ) ^ 2) :=
+  expect_sq_le_mass_ne_zero_mul_second _ uniform_nonNeg _
+
+#print axioms expect_sq_le_mass_ne_zero_mul_second
+#print axioms expect_sq_le_mass_pos_mul_second
+
 end Tests.SecondMoment
