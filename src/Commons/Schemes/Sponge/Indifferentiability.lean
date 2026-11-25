@@ -8,26 +8,29 @@ public import Commons.Schemes.Sponge.Simulator
 /-!
 # Generic indifferentiability of the byte-oriented sponge construction
 
-Constructs a shared ideal random oracle `sharedIdealRO` from `StrongURP (ByteState p.stateBytes)`
-via the single-squeeze sponge converter `spongePublic` and lazy simulator `spongeSimulator`
-[1, §§3–4], [2, §4], [3, §§3.4, 4.2].
+The real system is `spongePublic • StrongURP`; the ideal system is
+`(H ◁ spongeSimulator) • sharedIdealRO`, sharing one random oracle between the honest
+interface `H` and the simulator. This is the statistical, single-squeeze case of
+[1, Theorem 2, p. 15]: "A padded sponge construction calling a random permutation".
 
-Two independent proof engines establish the same unified distinguishing bound
-`indifferentiabilityBound p (w + q_pub) = Q^2 / |C| + C(Q, 2) / |S|`:
+`indifferentiability` packages the simulator and distance bound into
+`Commons.Indifferentiability.specification` [3, Lemma 5]. The proof has two routes:
 
-* **Path A (`Commons.Schemes.Sponge.Indifferentiability.GameEquiv`)**: switches `StrongURP` to
-  `LazyBidirectionalRF` (`C(Q, 2) / |S|`) and couples `realSpongeGame ≡g idealSpongeGame`
-  (`Q^2 / |C|`).
-* **Path B (`Commons.Schemes.Sponge.Indifferentiability.HCoefficient`)**: bounds the real/ideal
-  distance directly in one hop via `RatioCost` (also yielding the tight bound `Q^2 / |C|`).
+* `GameEquiv` combines bidirectional switching with equal unset-game transcript masses,
+  giving `Q² / |C| + choose(Q, 2) / |S|`.
+* `HCoefficient` adds the good-transcript ratio loss and the public collision cost,
+  giving `Q² / |C|` through `indifferentiability_tight`.
 
-Both work-budgeted (`HonestWorkSpec`) and fixed-budget (`Evaluation M (ByteState p.outputBytes) q`)
-interfaces are packaged into `Commons.Indifferentiability.specification`.
+Here `Q = w + q_pub`, `|C|` is the capacity alphabet size, and `|S|` the state alphabet size.
+`HonestWorkSpec` bounds absorbed block work; the fixed-budget corollaries charge the
+maximum padded length per honest query. The simulator uses independent draws with
+collision costs, as specified in `Commons.Schemes.Sponge.Simulator`.
 
 ## References
 
 1. G. Bertoni, J. Daemen, M. Peeters, and G. Van Assche. *On the Indifferentiability of the Sponge
    Construction*. In *Advances in Cryptology — EUROCRYPT 2008*, LNCS 4965, pp. 181–197, 2008.
+   Page references use https://keccak.team/files/SpongeIndifferentiability.pdf.
 2. U. Maurer. *Cryptography Foundations*. Lecture notes, ETH Zurich, Spring 2018.
 3. U. Maurer and R. Renner. *From Indifferentiability to Constructive Cryptography (and Back)*.
    In *Theory of Cryptography (TCC 2016-B)*, LNCS 9985, Springer, 2016.
@@ -44,18 +47,38 @@ open scoped BigOperators NNReal SystemAlgebra ConstructiveCryptography MonoidalC
 
 section PublicAPI
 
-variable (p : Parameters) (M : Type) [Fintype M] [DecidableEq M]
+variable
+  -- `p` fixes the state, rate, capacity and digest widths and the padding suffix.
+  (p : Parameters)
+  -- `M` is the finite message alphabet; each theorem supplies its byte encoding.
+  (M : Type) [Fintype M] [DecidableEq M]
 
-/-- Unified sponge indifferentiability error `Q^2 / |C| + C(Q, 2) / |S|` shared by both proof
-engines [1, Theorem 1]. -/
-noncomputable def indifferentiabilityBound (Q : ℕ) : ENNReal :=
-  ENNReal.ofReal
-    ((Q : ℝ) ^ 2 / (Fintype.card (ByteState p.capacityBytes) : ℝ) +
-      ((Q.choose 2 : ℕ) : ℝ) / (Fintype.card (ByteState p.stateBytes) : ℝ))
+/-- The game-equivalence route pays capacity collisions and bidirectional switching:
+`Q² / |C| + choose(Q, 2) / |S|`. -/
+noncomputable def indifferentiabilityBound (Q : ℕ) : ℝ≥0 :=
+  (Q : ℝ≥0) ^ 2 / Fintype.card (ByteState p.capacityBytes) +
+    (Q.choose 2 : ℝ≥0) / Fintype.card (ByteState p.stateBytes)
 
-/-- Tight 1-hop sponge indifferentiability error `Q^2 / |C|` [1, Theorem 1]. -/
-noncomputable def indifferentiabilityBoundTight (Q : ℕ) : ENNReal :=
-  ENNReal.ofReal ((Q : ℝ) ^ 2 / (Fintype.card (ByteState p.capacityBytes) : ℝ))
+/-- The direct transcript-ratio route pays the capacity-collision bound `Q² / |C|`. -/
+noncomputable def indifferentiabilityBoundTight (Q : ℕ) : ℝ≥0 :=
+  (Q : ℝ≥0) ^ 2 / Fintype.card (ByteState p.capacityBytes)
+
+/-- The nonnegative error has the same real-valued expression used by the transcript bound. -/
+lemma coe_indifferentiabilityBound (Q : ℕ) :
+    (indifferentiabilityBound p Q : ENNReal) = ENNReal.ofReal
+      ((Q : ℝ) ^ 2 / Fintype.card (ByteState p.capacityBytes) +
+        (Q.choose 2 : ℝ) / Fintype.card (ByteState p.stateBytes)) := by
+  rw [← ENNReal.ofReal_coe_nnreal]
+  simp only [indifferentiabilityBound, NNReal.coe_add, NNReal.coe_div,
+    NNReal.coe_pow, NNReal.coe_natCast]
+
+/-- The direct-route error agrees with the real-valued transcript bound. -/
+lemma coe_indifferentiabilityBoundTight (Q : ℕ) :
+    (indifferentiabilityBoundTight p Q : ENNReal) = ENNReal.ofReal
+      ((Q : ℝ) ^ 2 / Fintype.card (ByteState p.capacityBytes)) := by
+  rw [← ENNReal.ofReal_coe_nnreal]
+  simp only [indifferentiabilityBoundTight, NNReal.coe_div, NNReal.coe_pow,
+    NNReal.coe_natCast]
 
 /-! ### Work-budgeted indifferentiability (both proof engines) -/
 
@@ -68,8 +91,9 @@ theorem indifferentiability_distance_of_gameEquivalent (hp : p.Valid)
         StrongURP (ByteState p.stateBytes) (q := w + q_pub))
       ((spec.toInterface ◁ spongeSimulator p M encode q_pub) •
         sharedIdealRO p M spec q_pub) ≤
-      indifferentiabilityBound p (w + q_pub) :=
-  sponge_indifferentiability_of_gameEquivalent p M hp henc spec q_pub
+      indifferentiabilityBound p (w + q_pub) := by
+  rw [coe_indifferentiabilityBound]
+  exact sponge_indifferentiability_of_gameEquivalent p M hp henc spec q_pub
 
 /-- Distance bound via **Path B** (direct 1-hop H-coefficient via `RatioCost`). -/
 theorem indifferentiability_distance_of_hCoefficient (hp : p.Valid)
@@ -79,8 +103,9 @@ theorem indifferentiability_distance_of_hCoefficient (hp : p.Valid)
         StrongURP (ByteState p.stateBytes) (q := w + q_pub))
       ((spec.toInterface ◁ spongeSimulator p M encode q_pub) •
         sharedIdealRO p M spec q_pub) ≤
-      indifferentiabilityBound p (w + q_pub) :=
-  sponge_indifferentiability_of_hCoefficient p M hp henc spec q_pub
+      indifferentiabilityBound p (w + q_pub) := by
+  rw [coe_indifferentiabilityBound]
+  exact sponge_indifferentiability_of_hCoefficient p M hp henc spec q_pub
 
 /-- Tight `Q^2 / |C|` distance bound via **Path B** (direct 1-hop H-coefficient). -/
 theorem indifferentiability_distance_tight (hp : p.Valid)
@@ -90,12 +115,13 @@ theorem indifferentiability_distance_tight (hp : p.Valid)
         StrongURP (ByteState p.stateBytes) (q := w + q_pub))
       ((spec.toInterface ◁ spongeSimulator p M encode q_pub) •
         sharedIdealRO p M spec q_pub) ≤
-      indifferentiabilityBoundTight p (w + q_pub) :=
-  sponge_indifferentiability_hCoefficient_tight p M hp henc spec q_pub
+      indifferentiabilityBoundTight p (w + q_pub) := by
+  rw [coe_indifferentiabilityBoundTight]
+  exact sponge_indifferentiability_hCoefficient_tight p M hp henc spec q_pub
 
 open Classical in
 /-- Indifferentiability construction into `Commons.Indifferentiability.specification` via
-**Path A** (2-hop `≡g` game equivalence + `BidirectionalSwitching`) [1, Theorem 1],
+**Path A** (2-hop `≡g` game equivalence + `BidirectionalSwitching`) [1, Theorem 2, p. 15],
 [3, Lemma 5]. -/
 theorem indifferentiability_of_gameEquivalent (hp : p.Valid)
     {encode : M → List (BitVec 8)} (henc : Function.Injective encode) {w : ℕ}
@@ -111,7 +137,7 @@ theorem indifferentiability_of_gameEquivalent (hp : p.Valid)
     (indifferentiability_distance_of_gameEquivalent p M hp henc spec q_pub)
 
 /-- Indifferentiability construction into `Commons.Indifferentiability.specification` via
-**Path B** (direct 1-hop H-coefficient) [1, Theorem 1], [3, Lemma 5]. -/
+**Path B** (direct 1-hop H-coefficient) [1, Theorem 2, p. 15], [3, Lemma 5]. -/
 theorem indifferentiability_of_hCoefficient (hp : p.Valid)
     {encode : M → List (BitVec 8)} (henc : Function.Injective encode) {w : ℕ}
     (spec : HonestWorkSpec p M encode w) (q_pub : ℕ)
@@ -126,7 +152,7 @@ theorem indifferentiability_of_hCoefficient (hp : p.Valid)
     (indifferentiability_distance_of_hCoefficient p M hp henc spec q_pub)
 
 /-- Headline sponge indifferentiability construction into
-`Commons.Indifferentiability.specification` [1, Theorem 1], [3, Lemma 5]. -/
+`Commons.Indifferentiability.specification` [1, Theorem 2, p. 15], [3, Lemma 5]. -/
 theorem indifferentiability (hp : p.Valid)
     {encode : M → List (BitVec 8)} (henc : Function.Injective encode) {w : ℕ}
     (spec : HonestWorkSpec p M encode w) (q_pub : ℕ)

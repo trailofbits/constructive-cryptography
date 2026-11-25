@@ -91,7 +91,7 @@ sponge for both Path A and Path B. -/
 example (q_honest q_pub : ℕ) :
     let hmax : ∀ m : ByteState 1,
         paddedBlockCount smallSponge (encodeFixed 1 m).length ≤ 1 := fun m => by
-      rw [encodeFixed_length]; decide
+      rw [encodeFixed_length]; norm_num [paddedBlockCount, smallSponge]
     ({StrongURP (ByteState smallSponge.stateBytes) (q := q_honest * 1 + q_pub)} :
         Specification (TypedSystem (PrimitiveInterface smallSponge (q_honest * 1 + q_pub))))
         —[spongePublicFixed smallSponge (ByteState 1) (encodeFixed 1) 1 hmax q_honest q_pub]→
@@ -100,7 +100,8 @@ example (q_honest q_pub : ℕ) :
         {spongeSimulator smallSponge (ByteState 1) (encodeFixed 1) q_pub}
         (indifferentiabilityBound smallSponge (q_honest * 1 + q_pub)) :=
   indifferentiability_fixedBudget smallSponge (ByteState 1) smallSponge_valid
-    (encodeFixed_injective 1) 1 (fun m => by rw [encodeFixed_length]; decide)
+    (encodeFixed_injective 1) 1 (fun m => by
+      rw [encodeFixed_length]; norm_num [paddedBlockCount, smallSponge])
     q_honest q_pub (Set.mem_singleton _)
 
 /-- Explicit `GameEquivalent` (`≡g`) witness on the 4-byte sponge between `realSpongeGame` and
@@ -121,7 +122,7 @@ example (w q_pub : ℕ) :
 (fixed budget `Evaluation (ByteState 32) (ByteState 32) q_honest`). -/
 example (q_honest q_pub : ℕ) :
     let hmax : ∀ m : ByteState 32, paddedBlockCount sha3_256 (encodeFixed 32 m).length ≤ 1 :=
-      fun m => by rw [encodeFixed_length]; decide
+      fun m => by rw [encodeFixed_length]; norm_num [paddedBlockCount, sha3_256]
     ({StrongURP (ByteState sha3_256.stateBytes) (q := q_honest * 1 + q_pub)} :
         Specification (TypedSystem (PrimitiveInterface sha3_256 (q_honest * 1 + q_pub))))
         —[spongePublicFixed sha3_256 (ByteState 32) (encodeFixed 32) 1 hmax q_honest q_pub]→
@@ -137,10 +138,12 @@ example (q_honest q_pub : ℕ) :
         {spongeSimulator sha3_256 (ByteState 32) (encodeFixed 32) q_pub}
         (indifferentiabilityBoundTight sha3_256 (q_honest * 1 + q_pub)) :=
   ⟨indifferentiability_fixedBudget_of_gameEquivalent sha3_256 (ByteState 32) sha3_256_valid
-      (encodeFixed_injective 32) 1 (fun m => by rw [encodeFixed_length]; decide)
+      (encodeFixed_injective 32) 1 (fun m => by
+        rw [encodeFixed_length]; norm_num [paddedBlockCount, sha3_256])
       q_honest q_pub (Set.mem_singleton _),
     indifferentiability_fixedBudget_tight sha3_256 (ByteState 32) sha3_256_valid
-      (encodeFixed_injective 32) 1 (fun m => by rw [encodeFixed_length]; decide)
+      (encodeFixed_injective 32) 1 (fun m => by
+        rw [encodeFixed_length]; norm_num [paddedBlockCount, sha3_256])
       q_honest q_pub (Set.mem_singleton _)⟩
 
 /-- `sha3_384` indifferentiability via Path A and Path B (work-budgeted). -/
@@ -173,7 +176,7 @@ example (w q_pub : ℕ) :
 /-- `sha3_512` indifferentiability via Path A and Path B (fixed-budget). -/
 example (q_honest q_pub : ℕ) :
     let hmax : ∀ m : ByteState 32, paddedBlockCount sha3_512 (encodeFixed 32 m).length ≤ 1 :=
-      fun m => by rw [encodeFixed_length]; decide
+      fun m => by rw [encodeFixed_length]; norm_num [paddedBlockCount, sha3_512]
     ({StrongURP (ByteState sha3_512.stateBytes) (q := q_honest * 1 + q_pub)} :
         Specification (TypedSystem (PrimitiveInterface sha3_512 (q_honest * 1 + q_pub))))
         —[spongePublicFixed sha3_512 (ByteState 32) (encodeFixed 32) 1 hmax q_honest q_pub]→
@@ -189,10 +192,12 @@ example (q_honest q_pub : ℕ) :
         {spongeSimulator sha3_512 (ByteState 32) (encodeFixed 32) q_pub}
         (indifferentiabilityBound sha3_512 (q_honest * 1 + q_pub)) :=
   ⟨indifferentiability_fixedBudget_of_gameEquivalent sha3_512 (ByteState 32) sha3_512_valid
-      (encodeFixed_injective 32) 1 (fun m => by rw [encodeFixed_length]; decide)
+      (encodeFixed_injective 32) 1 (fun m => by
+        rw [encodeFixed_length]; norm_num [paddedBlockCount, sha3_512])
       q_honest q_pub (Set.mem_singleton _),
     indifferentiability_fixedBudget_of_hCoefficient sha3_512 (ByteState 32) sha3_512_valid
-      (encodeFixed_injective 32) 1 (fun m => by rw [encodeFixed_length]; decide)
+      (encodeFixed_injective 32) 1 (fun m => by
+        rw [encodeFixed_length]; norm_num [paddedBlockCount, sha3_512])
       q_honest q_pub (Set.mem_singleton _)⟩
 
 /-! ### Composition (`compose`, `compose_mixed`) and tactic interoperability -/
@@ -237,16 +242,7 @@ example {H' : Interface} {K : Type} [Fintype K] [Nonempty K] (w q_pub : ℕ)
       Commons.Indifferentiability.specification target
         {spongeSimulator sha3_256 (ByteState 32) (encodeFixed 32) q_pub}
         (indifferentiabilityBound sha3_256 (w + q_pub) + δ) := by
-  let ε : ℝ≥0 :=
-    ⟨(((w + q_pub : ℕ) : ℝ) ^ 2 /
-        (Fintype.card (ByteState sha3_256.capacityBytes) : ℝ) +
-      (((w + q_pub).choose 2 : ℕ) : ℝ) /
-        (Fintype.card (ByteState sha3_256.stateBytes) : ℝ)), by positivity⟩
-  have hε : indifferentiabilityBound sha3_256 (w + q_pub) = (ε : ENNReal) := by
-    unfold indifferentiabilityBound
-    rw [ENNReal.ofReal_eq_coe_nnreal (by positivity)]
-    rfl
-  rw [hε]
+  let ε := indifferentiabilityBound sha3_256 (w + q_pub)
   exact Commons.Indifferentiability.compose_mixed
     (TypedSystem.sample (𝒰[K]).1) (TypedSystem.sample (𝒰[K]).1)
     (spongeSimulator sha3_256 (ByteState 32) (encodeFixed 32) q_pub) (Set.mem_singleton _)
@@ -255,7 +251,7 @@ example {H' : Interface} {K : Type} [Fintype K] [Nonempty K] (w q_pub : ℕ)
     (fun a b hab => by
       simpa only [Interface.cc_distance_eq] using
         TypedSystem.transcriptDistance_sample_le (𝒰[K]).1 a b ε hab)
-    (hε ▸ indifferentiability_distance_of_gameEquivalent sha3_256 (ByteState 32) sha3_256_valid
+    (indifferentiability_distance_of_gameEquivalent sha3_256 (ByteState 32) sha3_256_valid
       (encodeFixed_injective 32) spec q_pub)
     idealApp
 

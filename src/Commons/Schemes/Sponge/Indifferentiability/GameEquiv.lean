@@ -4414,32 +4414,13 @@ theorem lazyBidirectionalRF_sponge_dist_ideal_le (hp : p.Valid)
                     (pre.map Prod.fst ++ [last.1])
                   simpa only [List.map_append, List.map_singleton] using hnd)
                 last.2
-        · clear hge hnonneg ε
-          induction h using List.reverseRecOn with
-          | nil => intro z hz; cases hz
-          | append_singleton pre last ih =>
-            rcases last with ⟨lx, ly⟩
-            have hlast : lx.1 = ly.1 := by
-              by_contra hne_p
-              exact hne (G.1.2.visible pre lx ly (fun h => hne_p h.symm))
-            have hpre : G.visible.1 pre ≠ 0 := by
-              intro h0
-              apply hne
-              rcases G.visible.1.2.2.2 pre lx with ⟨μ, hμ, hw⟩
-              have hnn : ∀ y, 0 ≤ μ y := fun y => by rw [hμ y]; exact G.visible.1.2.2.1 _
-              have hle : μ ly ≤ μ.weight := by
-                rw [Distribution.weight, Finsupp.sum]
-                by_cases hm : ly ∈ μ.support
-                · exact Finset.single_le_sum (fun y _ => hnn y) hm
-                · rw [Finsupp.notMem_support_iff.mp hm]
-                  exact Finset.sum_nonneg fun y _ => hnn y
-              have hw0 : μ.weight = 0 := by rw [hw, h0]; split_ifs <;> rfl
-              have hval0 : μ ly = 0 := le_antisymm (hw0 ▸ hle) (hnn ly)
-              exact (hμ ly).symm.trans hval0
-            intro z hz
-            rcases List.mem_append.mp hz with hz' | hz'
-            · exact ih hpre z hz'
-            · rw [List.mem_singleton.mp hz']; exact hlast)
+        · -- A mismatched reply makes its prefix, hence the full transcript, impossible.
+          intro z hz
+          obtain ⟨pre, post, rfl⟩ := List.mem_iff_append.mp hz
+          by_contra hport
+          exact hne (G.visible.1.mass_eq_zero_of_prefix
+            ⟨post, by simp only [List.append_assoc, List.singleton_append]⟩
+            (G.visible.2 pre z.1 z.2 (Ne.symm hport))))
   have hsymm : Δ H.visible G.visible = Δ G.visible H.visible :=
     ConstructiveCryptography.CryptographicAlgebra.distance_comm H.visible G.visible
   rw [hsymm]
