@@ -44,6 +44,7 @@ public import Commons.Schemes.KEM.MLKEM.KEM
 public import Commons.Schemes.MAC.NMAC
 public import Commons.Schemes.MAC.PMAC
 public import Commons.Schemes.Signature.MLDSA.Concrete.Laws
+public import Commons.Schemes.Sponge.Uniform
 public import Commons.Schemes.Sponge.Basic
 public import Commons.Schemes.Sponge.Table
 public import Commons.Schemes.Stream.CTR

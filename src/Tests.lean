@@ -1,5 +1,6 @@
 module
 
+public import Tests.SpongeUniform
 public import Tests.ProbabilityObservation
 public import Tests.ProbabilityList
 public import Tests.TranscriptCompletion
