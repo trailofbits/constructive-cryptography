@@ -10,8 +10,10 @@ completed interaction, has the inside MBO set. Internal calls made before the fi
 reply are part of that interaction.
 
 `attach_liftMBO_unset_eq_zero_of_reflectsMBO` rules out success with the MBO unset.
-`decisionProbability_le_winProbability_of_unset_eq_zero` then bounds success by winning,
-using the existing unset subdistribution and its missing mass.
+`event_mass_le_winProbability_of_unset_eq_zero` bounds any such event by winning, using
+the unset subdistribution and its missing mass. For concrete converters,
+`reflectsMBO_of_unset_eq_zero` reduces reflection to an inside unset-mass calculation;
+`liftMBO_ofDDC_ne_zero_iff` exposes the compiled converter’s execution.
 
 ```text
 caller ── queries ──▶ converter α ── internal calls ──▶ game G
@@ -34,6 +36,49 @@ variable {I : Type} [Fintype I] {X Y : I → Type}
   -- `E` is the admitted query domain, bounded by `m` queries.
   {E : List (Σ i, X i) → Prop} {m : ℕ} {hE : ∀ h, E h → h.length ≤ m}
 
+/-- A transcript event with zero unset mass has probability at most winning:
+`Pr[event on G.visible] ≤ Win(D,G)`. -/
+theorem RandomSystem.event_mass_le_winProbability_of_unset_eq_zero
+    -- `G` answers at the queried port and carries a monotone hidden bit.
+    {G : RandomSystem (Σ i, X i) (Σ i, withMBO Y i) (Domain.ofInputs E m hE)}
+    (hG : G.RepliesAtQueriedInterface) (hm : G.MonotoneMBO)
+    -- `D` is a stopping caller compatible with the game's domain.
+    (D : DDD I X Y) (hD : IsDDD D)
+    (hdc : (Domain.ofInputs E m hE : Domain (Σ i, X i) (Σ i, Y i)).DecisionCompatible D)
+    -- `event` reads the visible transcript; `hzero` excludes it while the MBO is unset.
+    (event : List ((Σ i, X i) × Σ i, Y i) → Prop)
+    (hzero : ∀ h, Good (ddeOf hD).1 hD.2.1.choose h →
+      event h → G (unsetMBOs h) = 0) :
+    (G.visible.sLaw (ddeOf hD).1 hD.2.1.choose).mass event ≤ G.winProbability D hD := by
+  classical
+  obtain ⟨ν, hν, hwin⟩ := G.exists_unset_winProbability hG hm D hD hdc
+  let μ := G.visible.sLaw (ddeOf hD).1 hD.2.1.choose
+  -- Unset mass is part of visible mass, transcript by transcript.
+  have hle : ∀ h, ν h ≤ μ h := by
+    intro h
+    rw [hν, RandomSystem.sLaw_apply]
+    split_ifs
+    · simpa only [forgetMBOs_unsetMBOs, ← RandomSystem.visible_apply] using
+        le_sumMBO G.mass_nonneg (unsetMBOs h)
+    · exact le_rfl
+  -- The common unset part gives no mass to the event.
+  have hz : ν.mass event = 0 := by
+    unfold Distribution.mass Finsupp.sum
+    apply Finset.sum_eq_zero
+    intro h _
+    dsimp only
+    split_ifs with ha
+    · rw [hν]
+      split_ifs with hg
+      · exact hzero h hg ha
+      · rfl
+    · rfl
+  -- All event mass lies in the missing mass, which is exactly winning.
+  have hb := Distribution.mass_sub_mass_le_of_le
+    (G.visible.sLaw_isProbDist (hdc.environment hD _ hG.visible) _).2
+    hle (fun _ => le_rfl) event
+  simpa only [hz, sub_zero, ← hwin] using hb
+
 /-- If every accepting completed transcript has zero unset mass, acceptance is bounded by
 winning: `Pr[accept on G.visible] ≤ Win(D,G)`. -/
 theorem RandomSystem.decisionProbability_le_winProbability_of_unset_eq_zero
@@ -47,34 +92,29 @@ theorem RandomSystem.decisionProbability_le_winProbability_of_unset_eq_zero
     (hzero : ∀ h, Good (ddeOf hD).1 hD.2.1.choose h →
       ⟨.dec, true⟩ ∈ (trim D) (dHist (h.map Prod.snd)) → G (unsetMBOs h) = 0) :
     G.visible.decisionProbability D hD ≤ G.winProbability D hD := by
-  classical
-  obtain ⟨ν, hν, hwin⟩ := G.exists_unset_winProbability hG hm D hD hdc
-  let μ := G.visible.sLaw (ddeOf hD).1 hD.2.1.choose
-  -- Unset mass is part of visible mass, transcript by transcript.
-  have hle : ∀ h, ν h ≤ μ h := by
-    intro h
-    rw [hν, RandomSystem.sLaw_apply]
-    split_ifs
-    · simpa only [forgetMBOs_unsetMBOs, ← RandomSystem.visible_apply] using
-        le_sumMBO G.mass_nonneg (unsetMBOs h)
-    · exact le_rfl
-  -- The common unset part gives no mass to acceptance.
-  have hz : ν.mass (fun h => ⟨.dec, true⟩ ∈ (trim D) (dHist (h.map Prod.snd))) = 0 := by
-    unfold Distribution.mass Finsupp.sum
-    apply Finset.sum_eq_zero
-    intro h _
-    dsimp only
-    split_ifs with ha
-    · rw [hν]
-      split_ifs with hg
-      · exact hzero h hg ha
-      · rfl
-    · rfl
-  -- All acceptance lies in the missing mass, which is exactly winning.
-  have hb := Distribution.mass_sub_mass_le_of_le
-    (G.visible.sLaw_isProbDist (hdc.environment hD _ hG.visible) _).2
-    hle (fun _ => le_rfl) (fun h => ⟨.dec, true⟩ ∈ (trim D) (dHist (h.map Prod.snd)))
-  simpa only [RandomSystem.decisionProbability, hz, sub_zero, ← hwin] using hb
+  simpa only [RandomSystem.decisionProbability] using
+    RandomSystem.event_mass_le_winProbability_of_unset_eq_zero hG hm D hD hdc
+      (fun h => (⟨.dec, true⟩ : Σ p, dOut X p) ∈ (trim D) (dHist (h.map Prod.snd))) hzero
+
+/-- A positive transcript whose all-unset version has zero mass has reached the hidden event. -/
+lemma RandomSystem.MonotoneMBO.finalMBO_eq_true_of_unset_eq_zero
+    {G : RandomSystem (Σ i, X i) (Σ i, withMBO Y i) (Domain.ofInputs E m hE)}
+    (hm : G.MonotoneMBO) {h} (hpos : G h ≠ 0)
+    (hzero : G (unsetMBOs (forgetMBOs h)) = 0) : finalMBO h = true := by
+  apply (finalMBO_eq_true_iff (hm h hpos)).mpr
+  intro hall
+  apply hpos
+  have he : unsetMBOs (forgetMBOs h) = h := by
+    simp only [unsetMBOs, forgetMBOs, List.map_map]
+    conv_rhs => rw [← List.map_id h]
+    apply List.map_congr_left
+    intro z hz
+    rcases z with ⟨x, i, y, b⟩
+    have hb := hall (x, ⟨i, y, b⟩) hz
+    change b = false at hb
+    subst b
+    rfl
+  rwa [he] at hzero
 
 end Decision
 
@@ -106,6 +146,44 @@ def PDCBehavior.ReflectsMBO
     (exposedReplies (resourceRoute (U := U)) (t.map Prod.snd)).map forgetMBO =
       h.map Prod.snd →
     success h → finalMBO (RandomSystem.parallelRight t) = true
+
+/-- To establish reflection, exclude the all-unset version of each successful inside trace.
+`hzero` receives positive masses for both component traces, with consistent wiring. -/
+lemma PDCBehavior.reflectsMBO_of_unset_eq_zero
+    (α : PDCBehavior O J U V X Y E m hE F n hF)
+    (G : RandomSystem (Σ j, X j) (Σ j, withMBO Y j) (Domain.ofInputs E m hE))
+    (hm : G.MonotoneMBO)
+    {success : List ((Σ o, U o) × Σ o, V o) → Prop}
+    -- `h` is the outside transcript; `t` contains the full converter/game interaction.
+    (hzero : ∀ h t,
+      FollowsStrategy (connectionQueries resourceRoute resourceInput (h.map Prod.fst)) t →
+      ¬ (connectionQueries resourceRoute resourceInput (h.map Prod.fst)
+        (t.map Prod.snd)).Dom →
+      RandomSystem.parallelConsistent t →
+      (PDCBehavior.liftMBO α).1 (RandomSystem.parallelLeft t) ≠ 0 →
+      G (RandomSystem.parallelRight t) ≠ 0 →
+      (exposedReplies (resourceRoute (U := U)) (t.map Prod.snd)).map forgetMBO =
+        h.map Prod.snd →
+      success h → G (unsetMBOs (forgetMBOs (RandomSystem.parallelRight t))) = 0) :
+    α.ReflectsMBO G success := by
+  intro h t hc hstop hpos hexp hs
+  rw [RandomSystem.parallel_mass] at hpos
+  split_ifs at hpos with hpar
+  · obtain ⟨hα, hG⟩ := mul_ne_zero_iff.mp hpos
+    exact hm.finalMBO_eq_true_of_unset_eq_zero hG (hzero h t hc hstop hpar hα hG hexp hs)
+  · exact (hpos rfl).elim
+
+open Classical in
+/-- The lift of a deterministic converter has positive mass exactly on its tagged executions.
+For compiled programs, use `TypedConverter.ofProgram_eq_ofDDC` first. -/
+lemma PDCBehavior.liftMBO_ofDDC_ne_zero_iff
+    -- `a` is the DDC certified by `ha`; `t` records its queries and tagged replies.
+    (a : InsideOutsideSystem O J U V X Y) {b : ℕ} (ha : IsDDCFrom E F b a) (t) :
+    (PDCBehavior.liftMBO (PDCBehavior.ofDDC a ha :
+      PDCBehavior O J U V X Y E m hE F n hF)).1 t ≠ 0 ↔
+      Replies (SystemAlgebra.liftMBO a) (t.map Prod.fst) (t.map Prod.snd) := by
+  rw [PDCBehavior.liftMBO_apply, PDCBehavior.ofDDC_apply, replies_liftMBO_iff]
+  split_ifs <;> simp_all
 
 /-- Reflection excludes successful outside transcripts with every MBO unset. -/
 lemma PDCBehavior.attach_liftMBO_unset_eq_zero_of_reflectsMBO
@@ -150,7 +228,6 @@ lemma PDCBehavior.attach_liftMBO_unset_eq_zero_of_reflectsMBO
     rw [hu] at hbits
     exact (finalMBO_eq_true_iff hbits).mp hb hall
   · exact hp rfl
-
 
 /-- Under the completed-interaction contract, outside acceptance is bounded by winning
 against the attached game. Absorption identifies this with winning against `G`. -/

@@ -2,6 +2,7 @@ module
 
 public import RandomSystems.Game.EventReflection
 public import RandomSystems.Typed.Solver
+public import RandomSystems.Typed.TranscriptLaw
 
 /-!
 # Event reflection under typed attachment
@@ -10,11 +11,27 @@ A compatible randomized caller `P` gives one joint solver, `TypedSolver.ofDistin
 `probability_attach_le_winProbability_absorb` turns its completed-interaction contract into
 `Pr[success on α • G.visible] ≤ Win(s.absorb α, G)`.
 The same caller supplies decisions and winning, including its final oracle calls.
+`Domain.Distinguisher.transcript_event_mass_le_winProbability` also bounds arbitrary
+visible transcript events, independently of the caller’s decision bit.
 -/
 
 @[expose] public section
 
 namespace SystemAlgebra
+
+/-- An observable transcript event excluded by the all-unset law costs at most winning.
+The stopping observer `P` may retain randomness and choose queries adaptively. -/
+theorem Domain.Distinguisher.transcript_event_mass_le_winProbability
+    {A : Interface} (P : A.inputDomain.Distinguisher) (G : TypedGame A)
+    -- `event` reads the visible transcript; `hzero` excludes it before the hidden event.
+    (event : List ((Σ i, A.X i) × Σ i, A.Y i) → Prop)
+    (hzero : ∀ h, event h → G.1.1 (unsetMBOs h) = 0) :
+    (P.transcriptLaw G.visible).1.mass event ≤ P.winProbability G.1.1 := by
+  rw [Domain.Distinguisher.transcriptLaw_mass, Domain.Distinguisher.winProbability]
+  exact Finsupp.sum_le_sum fun D _ => mul_le_mul_of_nonneg_left
+    (RandomSystem.event_mass_le_winProbability_of_unset_eq_zero G.1.2 G.2
+      D.1 D.2.1 D.2.2 event (fun h _ he => hzero h he)) (P.2.1 D)
+
 namespace TypedSolver
 
 /-- Solver `s` has one realization whose accepting completed interactions with `α,G`

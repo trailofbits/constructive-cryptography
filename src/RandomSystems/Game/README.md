@@ -114,6 +114,11 @@ then gives:
 
 The proof in [EventReflection.lean](EventReflection.lean) excludes successful unset transcripts
 using completed interactions, then applies the existing missing-mass and absorption laws.
+`reflectsMBO_of_unset_eq_zero` accepts a zero-unset-mass proof for the inside trace;
+`liftMBO_ofDDC_ne_zero_iff` exposes a deterministic converter’s execution.
+For any visible transcript predicate `event`,
+`Domain.Distinguisher.transcript_event_mass_le_winProbability` gives the same bound
+when `event h` implies `G (unsetMBOs h) = 0`.
 
 ## Discrete games
 
