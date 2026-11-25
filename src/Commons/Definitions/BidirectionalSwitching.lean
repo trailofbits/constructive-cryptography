@@ -1432,15 +1432,15 @@ open Classical in
 /-- Collision-monitoring game on `LazyBidirectionalRF X q`: sets the MBO when a fresh draw
 collides with the recorded domain or range. -/
 noncomputable def lazyBidirectionalRFGame : TypedGame (Bidirectional X q) :=
-  TypedGame.ofProbAutomaton (A := Bidirectional X q) (lazyBidirectionalRFGameStep q) (ProbDist.single [])
-    (lazyBidirectionalRFGameStep_flag q)
+  TypedGame.ofProbAutomaton (A := Bidirectional X q) (lazyBidirectionalRFGameStep q)
+    (ProbDist.single []) (lazyBidirectionalRFGameStep_flag q)
 
 open Classical in
 /-- Rejection-coin game on `StrongURP X`: draws uniformly from `X` on fresh queries, resamples
 from the unused set on a collision, and sets the MBO. -/
 noncomputable def strongURPRejectionGame : TypedGame (Bidirectional X q) :=
-  TypedGame.ofProbAutomaton (A := Bidirectional X q) (strongURPRejectionGameStep q) (ProbDist.single [])
-    (strongURPRejectionGameStep_flag q)
+  TypedGame.ofProbAutomaton (A := Bidirectional X q) (strongURPRejectionGameStep q)
+    (ProbDist.single []) (strongURPRejectionGameStep_flag q)
 
 open Classical in
 /-- Hiding the MBO of `lazyBidirectionalRFGame X q` recovers `LazyBidirectionalRF X q`. -/

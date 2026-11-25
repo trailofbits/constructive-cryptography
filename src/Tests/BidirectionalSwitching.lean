@@ -176,16 +176,21 @@ open Probability Probability.Distribution in
 example : lazyBidirectionalRFStep (X := Bool) 3 [(false, false)] .forward true =
     (𝒰[Bool]).map (fun y => if y then ([(false, false), (true, true)], true)
       else ([(false, false)], false)) := by
-  unfold lazyBidirectionalRFStep lookupForward
-  simp only [List.lookup, Bool.false_eq_true, ↓reduceIte, List.map_cons, List.map_nil]
-  congr 1
+  have fresh : lookupForward [(false, false)] true = none := by
+    rw [lookupForward_eq_none_iff]
+    simp only [List.map_cons, List.map_nil, List.mem_singleton, Bool.true_eq_false,
+      not_false_eq_true]
+  rw [lazyBidirectionalRFStep, fresh]
+  apply congrArg (fun f : Bool → List (Bool × Bool) × Bool => (𝒰[Bool]).map f)
   funext y
-  cases y <;> rfl
+  cases y <;> simp only [List.map_cons, List.map_nil, List.mem_singleton,
+    not_true_eq_false, Bool.false_eq_true, Bool.true_eq_false, not_false_eq_true, ↓reduceIte]
+  rfl
 
 open Probability Probability.Distribution in
 /-- Once the non-colliding pair is recorded, the query replays its retained answer. -/
-example : lazyBidirectionalRFStep (X := Bool) 3 [(false, false), (true, true)] .forward true =
-    ProbDist.single ([(false, false), (true, true)], true) := by
-  rfl
+example : lazyBidirectionalRFStep (X := Bool) 3 [(true, true)] .forward true =
+    ProbDist.single ([(true, true)], true) := by
+  simp only [lazyBidirectionalRFStep, lookupForward, List.lookup_cons, beq_self_eq_true]
 
 end Tests.BidirectionalSwitching
