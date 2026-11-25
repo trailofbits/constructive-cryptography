@@ -1,5 +1,6 @@
 module
 
+public import Tests.GameEventReflection
 public import Tests.ProbAutomatonSampling
 public import Tests.SpongeUniform
 public import Tests.ProbAutomatonGame

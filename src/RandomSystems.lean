@@ -1,5 +1,6 @@
 module
 
+public import RandomSystems.Typed.GameEventReflection
 public import RandomSystems.Distance.Observation
 public import RandomSystems.Typed.Completion
 public import RandomSystems.Typed.Distinguisher

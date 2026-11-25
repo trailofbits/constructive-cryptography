@@ -100,6 +100,21 @@ underlying distinguisher's output probabilities. The projection
 is the decision view with the same converter absorbed. The winning view remains available for
 the game bound; it is not reconstructed from decision probabilities.
 
+## Event reflection
+
+A reduction can prove that every legal completed accepting interaction sets the inside MBO.
+`Domain.Distinguisher.ReflectsMBO` states this contract for a randomized caller, including calls
+made by the converter before its final reply. `TypedSolver.probability_attach_le_winProbability_absorb`
+then gives:
+
+```math
+\Pr[\mathrm{accept}(A,\alpha \bullet G^-)]
+\le \mathrm{Win}(A.\mathrm{absorb}(\alpha),G).
+```
+
+The proof in [EventReflection.lean](EventReflection.lean) excludes successful unset transcripts
+using completed interactions, then applies the existing missing-mass and absorption laws.
+
 ## Discrete games
 
 Discrete games present games, as PDSs present random systems. A [discrete game][PDG] is a
