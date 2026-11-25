@@ -51,11 +51,13 @@ theorem subtype_overapplied_no_h_le_h
 
 informal_title subtype_overapplied_no_h_le_h "Over-Applied Subtype Unwrapping Regression"
 informal_kind subtype_overapplied_no_h_le_h "Theorem"
-informal_section subtype_overapplied_no_h_le_h "P0 Regression Suite"
+informal_section subtype_overapplied_no_h_le_h "Channel Composition and Structural Examples"
+informal_section_prelude subtype_overapplied_no_h_le_h "definition" "Setup" "Subtypes and Constructive Channel Roles"
+  "Distinguishing bounds operate over subtype-restricted domains while constructive channel compositions track shared key resources, authenticated and confidential channels, and protocol converters simultaneously."
 
 end SubtypeRegression
 
-/-! ## Regression 2: `JosMau20 Prop 6` Mixed Roles under `ChannelContext` -/
+/-! ## Regression 2: Channel-Context Mixed-Role Composition -/
 
 section JosMau20Prop6Regression
 paper_context ChannelContext
@@ -67,9 +69,9 @@ set_option linter.paperPresentation true
   (qualifier := "with interface {K}")]
 abbrev SharedKeyResource (K : Interface) : Type := TypedSystem K
 
-/-- Mixed-role ChannelContext theorem combining `EncKey` (`@[paper_role "shared key resource"]`),
-`AuthCh`/`SecCh` (channels), `π_ENC` (protocol), `σ` (simulator), and `E : SymmetricEncryption`
-(`PaperDescribe` L2) in a single statement without role clobbering. -/
+/-- Mixed-role channel-composition example combining a shared key resource, authenticated and
+hybrid channels, encryption and application converters, a simulator, and a symmetric-key encryption
+scheme in a single statement. -/
 theorem josMau20_prop6_mixed_roles
     {K A B P Q H : Interface} {K_E M C : Type} [Fintype K_E] [Fintype M] [Fintype C]
     (E : SymmetricEncryption K_E M C)
@@ -93,10 +95,10 @@ theorem josMau20_prop6_mixed_roles
       —[𝟙 B; ε₁]→ {SecCh} ∧
     (σ ∈ simulators ∧ Δ (π_app • SecCh) ((H ◁ σ) • IdealApp) ≤ ε₂) := by
   Proof overview "We verify both the channel-construction step from ${AuthCh} and ${EncKey} to ${SecCh} using ${π_ENC} and the admitted simulator bound for ${σ} in the presence of ${E}."
-  We conclude "Both the ${π_ENC} construction of ${SecCh} from ${AuthCh} and ${EncKey} and the ${σ} simulation bound against ${IdealApp} hold by assumption" by
+  We conclude "Both the ${π_ENC} construction of ${SecCh} from ${AuthCh} and ${EncKey} and the ${σ} simulation bound against ${IdealApp} hold by assumption." by
     exact ⟨hEnc, ⟨hSimAdmitted, hSimBound⟩⟩
 
-informal_title josMau20_prop6_mixed_roles "Mixed-Role Lattice Integrity (Channel Context)"
+informal_title josMau20_prop6_mixed_roles "Mixed-Role Channel Composition with Simulator Bounds"
 informal_kind josMau20_prop6_mixed_roles "Theorem"
 
 end JosMau20Prop6Regression
@@ -147,8 +149,8 @@ open Lean Elab Command in
     ``spine_induction_obtain_cases
   ]
   let doc ← liftTermElabM <| Informalization.Render.Json.buildDocument
-    "Hardened P0 Regression Suite"
-    (some "Mechanically verified regressions for Hygiene subtype unwrapping, 5-level ContextProfile lattice, and Spine/Mathlib printers")
+    "Constructive Channel Composition and Structural Proof Examples"
+    (some "Selected examples of constructive channel roles, subtype bounds, and structural induction")
     targetDecls
   let texts := Informalization.CLI.collectDocumentTexts doc
   let leaks := Informalization.Core.Hygiene.auditZeroLeakage texts

@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Research Team. All rights reserved.
 Released under Apache 2.0 license.
-Authors: Boneh–Shoup Batch A Replication
+Authors: Boneh–Shoup Foundations Formalization Team
 -/
 import Informalization.Verbose
 import Informalization.Render.Json
@@ -15,17 +15,16 @@ import Probability.DependentProduct
 import RandomSystems.Distance.Transcript
 
 /-!
-# Boneh–Shoup Replication (Part 1: Batch A)
+# Boneh–Shoup Foundations (Part 1: Perfect Security, PRGs, Statistical Distance, and the Difference Lemma)
 
-Faithful Lean 4.35 formalizations and Massot-style spaced-English `VerboseCC`
-proofs for five foundational theorems from Boneh & Shoup,
-*A Graduate Course in Applied Cryptography*:
+Formalizations and structured cryptographic proofs for five foundational theorems from
+Boneh & Shoup, *A Graduate Course in Applied Cryptography*:
 
-1. **Theorem 2.2** — *Perfect Security of the One-Time Pad* (§2.1, L1003–1011)
-2. **Theorem 3.2** — *Parallel Composition of Pseudorandom Generators* (§3.2.1, L3147–3371)
-3. **Theorem 3.3** — *Sequential Composition of Pseudorandom Generators* (§3.2.2, L3395–3487)
-4. **Theorem 3.11** — *Statistical Distance Bounds Distinguishing Advantage* (§3.10.2, L4616–4659)
-5. **Theorem 4.7** — *The Difference Lemma* (§4.6.2, L7071–7090)
+1. **Theorem 2.2** — *Perfect Security of the One-Time Pad* (§2.1)
+2. **Theorem 3.2** — *Parallel Composition of Pseudorandom Generators* (§3.4.1)
+3. **Theorem 3.3** — *Sequential Composition of Pseudorandom Generators* (§3.4.2)
+4. **Theorem 3.11** — *Statistical Distance Bounds Distinguishing Advantage* (§3.11)
+5. **Theorem 4.7** — *The Difference Lemma* (§4.4.3)
 -/
 
 namespace Tests.Informalization.BonehShoupPart1
@@ -184,6 +183,15 @@ lemma probOf_split {Ω : Type} (P : ProbDist Ω) (Z W : Ω → Prop) :
   rw [h1, h2]
   exact Distribution.mass_and_add_mass_not_and P.val Z W
 
+informal_title probOf_mono "monotonicity of probability"
+informal_opaque probOf_mono
+informal_title probOf_nonneg "nonnegativity of probability"
+informal_opaque probOf_nonneg
+informal_title probOf_congr "extensional equality of event probabilities"
+informal_opaque probOf_congr
+informal_title probOf_split "law of total probability over an event and its complement"
+informal_opaque probOf_split
+
 end SharedHelpers
 
 /-!
@@ -315,30 +323,40 @@ theorem theorem2_1_perfect_security_of_const_fiber
 informal_title theorem2_1_perfect_security_of_const_fiber "Theorem 2.1 (Condition (ii))"
 informal_kind theorem2_1_perfect_security_of_const_fiber "Theorem"
 
-/-- **Theorem 2.2 (Boneh–Shoup §2.1, L1003–1011):**
+/-- **Theorem 2.2 (Boneh–Shoup §2.1):**
     The one-time pad is a perfectly secure Shannon cipher. -/
 theorem theorem2_2_otp_perfect_security (L : ℕ)
     (E : ShannonCipher (BitString L) (BitString L) (BitString L))
     (hOTP : E = oneTimePad L) :
     PerfectlySecure E := by
   We claim hUnique : ∀ m c : BitString L, keyFiberCount E m c = 1
-    explaining "since for any fixed message and ciphertext in ${BitString L}, the unique key under ${oneTimePad L} encryption is their bitwise XOR" by
+    explaining "since for any fixed message $m$ and ciphertext $c$ in ${BitString L}, the unique key $k$ satisfying $k \\oplus m = c$ under ${oneTimePad L} is $k = m \\oplus c$" by
     subst hOTP
     intro m c
     exact keyFiberCount_eq_one_of_unique (oneTimePad L) m c (xorBits m c)
       (fun k => xorBits_eq_iff k m c)
-  We conclude "Therefore ${E} satisfies condition (ii) in Theorem 2.1 with constant fiber size ${(1 : ℕ)} for every ciphertext" by
+  We conclude "Therefore ${E} satisfies condition (ii) in Theorem 2.1 with constant key-fiber size $N_c =$ ${(1 : ℕ)} for every ciphertext" by
     exact theorem2_1_perfect_security_of_const_fiber E (fun c => ⟨1, fun m => hUnique m c⟩)
 
 informal_title theorem2_2_otp_perfect_security "Perfect Security of the One-Time Pad"
 informal_kind theorem2_2_otp_perfect_security "Theorem"
 informal_section theorem2_2_otp_perfect_security
   "Section 2.1 — Perfect Security and the One-Time Pad"
+informal_section_prelude theorem2_2_otp_perfect_security
+  "definition"
+  "Definition 2.1"
+  "Shannon Cipher and Perfect Security"
+  "A Shannon cipher $\\mathcal{E} = (E, D)$ over key space $\\mathcal{K}$, message space $\\mathcal{M}$, and ciphertext space $\\mathcal{C}$ consists of an encryption map $E : \\mathcal{K} \\times \\mathcal{M} \\to \\mathcal{C}$ and a decryption map $D : \\mathcal{K} \\times \\mathcal{C} \\to \\mathcal{M}$ satisfying correctness $D(k, E(k, m)) = m$ for all $k \\in \\mathcal{K}$ and $m \\in \\mathcal{M}$.\n\nFor finite nonempty $\\mathcal{K}$, $\\mathcal{E}$ is perfectly secure if for all $m_0, m_1 \\in \\mathcal{M}$ and all $c \\in \\mathcal{C}$, uniform key sampling $k \\leftarrow \\mathcal{U}[\\mathcal{K}]$ yields $\\Pr[E(k, m_0) = c] = \\Pr[E(k, m_1) = c]$. By Theorem 2.1 (Condition (ii)), $\\mathcal{E}$ is perfectly secure whenever for every $c \\in \\mathcal{C}$ there exists a constant $N_c \\in \\mathbb{N}$ such that $|\\{k \\in \\mathcal{K} : E(k, m) = c\\}| = N_c$ for all $m \\in \\mathcal{M}$."
+informal_section_prelude theorem2_2_otp_perfect_security
+  "construction"
+  "Construction 2.1"
+  "One-Time Pad"
+  "For a bit-length parameter $L \\in \\mathbb{N}$, the one-time pad $\\mathcal{E}_{\\mathrm{OTP}} = (E, D)$ is defined over $\\mathcal{K} = \\mathcal{M} = \\mathcal{C} = \\{0, 1\\}^L$ by bitwise exclusive-OR, where $(k \\oplus m) \\oplus m = k$ and $x \\oplus y = y \\oplus x$ ensure $D(k, E(k, m)) = m$:\n> $E(k, m) := k \\oplus m$\n> $D(k, c) := k \\oplus c$"
 
 end OneTimePadSection
 
 /-!
-## 2. Theorem 3.2 — Parallel Composition of PRGs (Boneh–Shoup §3.2.1, L3147–3371)
+## 2. Theorem 3.2 — Parallel Composition of PRGs (Boneh–Shoup §3.4.1)
 -/
 
 section ParallelPRGSection
@@ -392,15 +410,15 @@ noncomputable def parallelHybridCoord {S R : Type} [Fintype S] [Nonempty S]
     [Fintype R] [Nonempty R] {n : ℕ} (G : S → R) (j : ℕ) (i : Fin n) : ProbDist R :=
   if i.val < j then ProbDist.uniform R else pushDist (ProbDist.uniform S) G
 
-/-- Joint vector distribution `Hybrid j` over `R^n`: product over `i ∈ Fin n`
+/-- Joint vector distribution `Hybrid^‖ j` over `R^n`: product over `i ∈ Fin n`
     of `parallelHybridCoord`. -/
-@[math_notation "\\mathbf{Hybrid}_{#1}" (hide := [0, 1])]
+@[math_notation "\\mathbf{Hybrid}^{\\parallel}_{#1}" (hide := [0, 1])]
 noncomputable def parallelHybridDist {S R : Type} [Fintype S] [Nonempty S]
     [Fintype R] [Nonempty R] (G : S → R) (n j : ℕ) : ProbDist (Fin n → R) :=
   vecDist (fun i : Fin n => parallelHybridCoord G j i)
 
-/-- Winning probability `p_j = Pr[A(x) = 1]` when `x` is drawn from `Hybrid j`. -/
-@[math_notation "p_{#1}" (hide := [0, 1])]
+/-- Winning probability `p^‖_j = Pr[A(x) = 1]` when `x` is drawn from `Hybrid^‖ j`. -/
+@[math_notation "p^{\\parallel}_{#1}" (hide := [0, 1])]
 noncomputable def parallelHybridProb {S R : Type} [Fintype S] [Nonempty S]
     [Fintype R] [Nonempty R] {n : ℕ} (A : PRGAdversary (Fin n → R)) (G : S → R) (j : ℕ) : ℝ :=
   expectOf (parallelHybridDist G n j) (fun vec => (A.run vec).val true)
@@ -977,25 +995,27 @@ informal_symbol prgExp0 "\\Pr_0"
 informal_symbol prgExp1 "\\Pr_1"
 informal_symbol prgAdv "\\mathrm{PRGadv}"
 informal_symbol parallelPRG "G^{\\parallel}"
-informal_symbol parallelHybridDist "\\mathbf{Hybrid}"
-informal_symbol parallelHybridProb "p"
+informal_symbol parallelHybridDist "\\mathbf{Hybrid}^{\\parallel}"
+informal_symbol parallelHybridProb "p^{\\parallel}"
 informal_symbol parallelReduction "\\mathrm{Red}_{\\mathrm{par}}"
 informal_title parallelHybridProb_zero "Experiment 0 equivalence with Hybrid 0"
 informal_title parallelHybridProb_n "Experiment 1 equivalence with Hybrid n"
 informal_title parallelReduction_exp0_range "averaging Experiment 0 over uniformly random index"
 informal_title parallelReduction_exp1_range "averaging Experiment 1 over uniformly random index"
 
-/-- **Theorem 3.2 (Boneh–Shoup §3.2.1, L3147–3371):**
+/-- **Theorem 3.2 (Boneh–Shoup §3.4.1):**
     For any PRG `G : S → R`, any `n ≥ 1`, and any adversary `A` attacking the
-    `n`-fold parallel composition `G'(s₁, ..., sₙ) = (G(s₁), ..., G(sₙ))`,
-    there exists an adversary `B` attacking `G` (making one call to `A`) such that
-    `PRGadv[A, G'] = n · PRGadv[B, G]`. -/
+    `n`-fold parallel composition `G^‖(s₁, ..., sₙ) = (G(s₁), ..., G(sₙ))`,
+    there exists an adversary `B` attacking `G` (where `B` is an elementary wrapper around `A`)
+    such that `PRGadv[A, G^‖] = n · PRGadv[B, G]`. -/
 theorem theorem3_2_parallel_prg_composition
     {S R : Type} [Fintype S] [Nonempty S] [Fintype R] [Nonempty R]
     (G : S → R) (n : ℕ) (hn : 0 < n) (A : PRGAdversary (VecSpace n R)) :
     ∃ B : PRGAdversary R,
       prgAdv A (parallelPRG G n) = (n : ℝ) * prgAdv B G := by
-  Proof overview "We interpolate between ${parallelPRG G n} and uniform ${VecSpace n R} via ${n + 1} hybrids ${parallelHybridDist G n 0} through ${parallelHybridDist G n n}, construct a single-query reduction ${parallelReduction A G hn} that embeds its challenge at a uniformly random index, and evaluate the resulting telescoping sum."
+  Proof overview "We introduce ${n + 1} hybrid games ${parallelHybridDist G n 0} through ${parallelHybridDist G n n} interpolating between ${parallelPRG G n} and uniform ${VecSpace n R}. For each $0 \\le j \\le$ ${n}, let $p^{\\parallel}_j := \\Pr[\\mathcal{A}(\\mathbf{Hybrid}^{\\parallel}_j) = 1]$ denote the probability that ${A} outputs $1$ in Hybrid $j$. We construct a single-query reduction ${parallelReduction A G hn} (an elementary wrapper around ${A}) that embeds its challenge at a uniformly random index, and evaluate the resulting telescoping sum."
+  Present pseudocode "hybrid" "Hybrid $j$ ($0 \\le j \\le n$)"
+    "For each coordinate $i < j$, sample $r_i$ uniformly from ${R}\nFor each coordinate $i \\ge j$ up to ${n}, sample $s_i$ uniformly from ${S} and set $r_i$ by applying ${G} to $s_i$\nSend $(r_0, \\dots, r_{n-1})$ in ${VecSpace n R} to ${A} and output whatever ${A} outputs"
   We claim h0 : parallelHybridProb A G 0 = prgExp0 A (parallelPRG G n)
     explaining "since ${parallelHybridDist G n 0} draws fresh pseudorandom outputs on all ${n} coordinates and matches Experiment 0 of ${A} against ${parallelPRG G n}" by
     exact parallelHybridProb_zero A G
@@ -1004,7 +1024,9 @@ theorem theorem3_2_parallel_prg_composition
     exact parallelHybridProb_n A G
   New paragraph
   Consider adversary B : PRGAdversary R := parallelReduction A G hn
-    where "the single-query reduction that, given a challenge in ${R}, samples an index uniformly from ${Fin n}, fills all earlier coordinates uniformly from ${R}, inserts the challenge at that index, generates all later coordinates via ${G} on fresh seeds from ${S}, and outputs whatever ${A} outputs"
+    where "an elementary wrapper around ${A} making a single oracle call: given a challenge in ${R}, it samples an index uniformly from ${Fin n}, fills all earlier coordinates uniformly from ${R}, inserts the challenge at that index, generates all later coordinates via ${G} on fresh seeds from ${S}, and outputs whatever ${A} outputs"
+  Present pseudocode "reduction" "Reduction $\\mathcal{B}$"
+    "Upon receiving challenge $r$ in ${R}, ${B} plays the role of challenger to ${A}:\n  Sample $\\omega$ uniformly from ${Fin n}\n  For $i < \\omega$, sample $r_i$ uniformly from ${R}\n  Set $r_{\\omega} \\leftarrow r$\n  For $i > \\omega$ up to ${n}, sample $s_i$ uniformly from ${S} and set $r_i$ by applying ${G} to $s_i$\n  Send $(r_0, \\dots, r_{n-1})$ in ${VecSpace n R} to ${A} and output whatever ${A} outputs"
   We claim hB0 :
       prgExp0 B G = (1 / (n : ℝ)) * ∑ j ∈ Finset.range n, parallelHybridProb A G j
     explaining "since in Experiment 0 of ${B} against ${G}, conditioning on the random index places an output of ${G} at that coordinate, matching the corresponding hybrid and averaging ${parallelHybridProb A G 0} through ${parallelHybridProb A G (n - 1)}" by
@@ -1026,19 +1048,29 @@ theorem theorem3_2_parallel_prg_composition
             scaled_telescoping_abs (parallelHybridProb A G)
       _ = (1 / (n : ℝ)) * prgAdv A (parallelPRG G n) :=
             mul_abs_sub_eq_mul_prgAdv (1 / (n : ℝ)) A (parallelPRG G n) h0 hnEq
-  We conclude "We multiply both sides by ${n} and exhibit ${B} as the reduction adversary" by
+  We conclude "We multiply both sides by ${n} and exhibit ${B}, where ${B} is an elementary wrapper around ${A}, as the reduction adversary" by
     exact ⟨B, eq_mul_of_div_eq hn hAdv⟩
 
 informal_title theorem3_2_parallel_prg_composition
   "Parallel Composition of Pseudorandom Generators"
 informal_kind theorem3_2_parallel_prg_composition "Theorem"
 informal_section theorem3_2_parallel_prg_composition
-  "Section 3.2 — Parallel Composition of Pseudorandom Generators"
+  "Section 3.4.1 — Parallel Composition of Pseudorandom Generators"
+informal_section_prelude theorem3_2_parallel_prg_composition
+  "attackGame"
+  "Attack Game 3.1"
+  "Pseudorandom Generator Security"
+  "For a function $G : \\mathcal{S} \\to \\mathcal{R}$ over finite nonempty sets $\\mathcal{S}, \\mathcal{R}$ and an adversary $\\mathcal{A}$ outputting a bit $\\hat{b} \\in \\{0, 1\\}$, write $\\Pr_0[\\mathcal{A}, G] := \\Pr[W_0]$ and $\\Pr_1[\\mathcal{A}] := \\Pr[W_1]$ for the probabilities that $\\mathcal{A}$ outputs $1$ in Experiments $0$ and $1$ below, and define $\\mathrm{PRGadv}[\\mathcal{A}, G] := \\left|\\Pr_0[\\mathcal{A}, G] - \\Pr_1[\\mathcal{A}]\\right|$.\n> Experiment 0:\n>   $s \\leftarrow \\mathcal{U}[\\mathcal{S}],\\; r \\leftarrow G(s)$\n>   send $r$ to $\\mathcal{A}$ and output $\\hat{b} \\in \\{0, 1\\}$\n> Experiment 1:\n>   $r \\leftarrow \\mathcal{U}[\\mathcal{R}]$\n>   send $r$ to $\\mathcal{A}$ and output $\\hat{b} \\in \\{0, 1\\}$"
+informal_section_prelude theorem3_2_parallel_prg_composition
+  "construction"
+  "Construction 3.1"
+  "Parallel Composition of a PRG"
+  "Given a PRG $G : \\mathcal{S} \\to \\mathcal{R}$ and an integer $n \\ge 1$, its $n$-wise parallel composition is the function $G^{\\parallel n} : \\mathcal{S}^n \\to \\mathcal{R}^n$ defined on $(s_1, \\dots, s_n) \\in \\mathcal{S}^n$ by $$G^{\\parallel n}(s_1, \\dots, s_n) := (G(s_1), \\dots, G(s_n))$$."
 
 end ParallelPRGSection
 
 /-!
-## 3. Theorem 3.3 — Sequential Composition of PRGs (Boneh–Shoup §3.2.2, L3395–3487)
+## 3. Theorem 3.3 — Sequential Composition of PRGs (Boneh–Shoup §3.4.2)
 -/
 
 section SequentialPRGSection
@@ -1065,14 +1097,14 @@ noncomputable def seqPRG {R S : Type} [Nonempty R] (G : S → R × S) (n : ℕ) 
 /-- Hybrid `j` (`0 ≤ j ≤ n`) in Figure 3.6:
     sample random prefix `buf ← 𝒰[Fin n → R]` and seed `s ← 𝒰[S]`, then run `G`
     for the remaining `n - j` steps starting at position `j`. -/
-@[math_notation "\\mathbf{Hybrid}_{#1}" (hide := [0, 1])]
+@[math_notation "\\mathbf{Hybrid}^{\\mathrm{seq}}_{#1}" (hide := [0, 1])]
 noncomputable def seqHybridDist {R S : Type} [Fintype R] [Nonempty R] [Fintype S] [Nonempty S]
     (G : S → R × S) (n j : ℕ) : ProbDist ((Fin n → R) × S) :=
   pushDist (pairDist (ProbDist.uniform (Fin n → R)) (ProbDist.uniform S))
     (fun bs => seqFill G n (n - j) bs.1 bs.2)
 
-/-- Winning probability `p_j = Pr[A(x) = 1]` on `Hybrid j` of sequential composition. -/
-@[math_notation "p_{#1}" (hide := [0, 1])]
+/-- Winning probability `p^seq_j = Pr[A(x) = 1]` on `Hybrid^seq j` of sequential composition. -/
+@[math_notation "p^{\\mathrm{seq}}_{#1}" (hide := [0, 1])]
 noncomputable def seqHybridProb {R S : Type} [Fintype R] [Nonempty R] [Fintype S] [Nonempty S]
     {n : ℕ} (A : PRGAdversary ((Fin n → R) × S)) (G : S → R × S) (j : ℕ) : ℝ :=
   expectOf (seqHybridDist G n j) (fun out => (A.run out).val true)
@@ -1384,25 +1416,27 @@ private lemma seqReduction_exp1_range {R S : Type} [Fintype R] [Nonempty R]
     Fin.sum_univ_eq_sum_range (fun j => seqHybridProb A G (j + 1))]
 
 informal_symbol seqPRG "G^{\\mathrm{seq}}"
-informal_symbol seqHybridDist "\\mathbf{Hybrid}"
-informal_symbol seqHybridProb "p"
+informal_symbol seqHybridDist "\\mathbf{Hybrid}^{\\mathrm{seq}}"
+informal_symbol seqHybridProb "p^{\\mathrm{seq}}"
 informal_symbol seqReduction "\\mathrm{Red}_{\\mathrm{seq}}"
 informal_title seqHybridProb_zero "Experiment 0 equivalence with Hybrid 0"
 informal_title seqHybridProb_n "Experiment 1 equivalence with Hybrid n"
 informal_title seqReduction_exp0_range "averaging Experiment 0 over uniformly random step"
 informal_title seqReduction_exp1_range "averaging Experiment 1 over uniformly random step"
 
-/-- **Theorem 3.3 (Boneh–Shoup §3.2.2, L3395–3487):**
+/-- **Theorem 3.3 (Boneh–Shoup §3.4.2):**
     For any length-extending PRG `G : S → R × S`, any `n ≥ 1`, and any adversary `A`
-    attacking the `n`-step sequential composition `G'(s) = (r₁, ..., rₙ, sₙ)`,
-    there exists an adversary `B` attacking `G` (making one call to `A`) such that
-    `PRGadv[A, G'] = n · PRGadv[B, G]`. -/
+    attacking the `n`-step sequential composition `G^seq(s) = (r₁, ..., rₙ, sₙ)`,
+    there exists an adversary `B` attacking `G` (where `B` is an elementary wrapper around `A`)
+    such that `PRGadv[A, G^seq] = n · PRGadv[B, G]`. -/
 theorem theorem3_3_sequential_prg_composition
     {R S : Type} [Fintype R] [Nonempty R] [Fintype S] [Nonempty S]
     (G : S → R × S) (n : ℕ) (hn : 0 < n) (A : PRGAdversary (VecSpace n R × S)) :
     ∃ B : PRGAdversary (R × S),
       prgAdv A (seqPRG G n) = (n : ℝ) * prgAdv B G := by
-  Proof overview "We define ${n + 1} sequential hybrids ${seqHybridDist G n 0} through ${seqHybridDist G n n} replacing the initial output prefix with uniform blocks in ${R} before iterating ${G} for the remaining steps, construct a single-query reduction ${seqReduction A G hn}, and apply a telescoping sum."
+  Proof overview "We define ${n + 1} sequential hybrids ${seqHybridDist G n 0} through ${seqHybridDist G n n} replacing the initial output prefix with uniform blocks in ${R} and resampling the intermediate seed in ${S} before iterating ${G} for the remaining steps. For each $0 \\le j \\le$ ${n}, let $p^{\\mathrm{seq}}_j := \\Pr[\\mathcal{A}(\\mathbf{Hybrid}^{\\mathrm{seq}}_j) = 1]$ denote the probability that ${A} outputs $1$ in Hybrid $j$. We construct a single-query reduction ${seqReduction A G hn} (an elementary wrapper around ${A}) and evaluate the resulting telescoping sum."
+  Present pseudocode "hybrid" "Hybrid $j$ ($0 \\le j \\le n$)"
+    "For $0 \\le i < j$, sample $r_i$ uniformly from ${R}\nSample a fresh intermediate seed $s$ uniformly from ${S} at step $j$\nIterate ${G} for the remaining $n - j$ steps from $s$ to form $(r_j, \\dots, r_{n-1}, s_n)$\nSend $((r_0, \\dots, r_{n-1}), s_n)$ in ${VecSpace n R × S} to ${A} and output whatever ${A} outputs"
   We claim h0 : seqHybridProb A G 0 = prgExp0 A (seqPRG G n)
     explaining "since ${seqHybridDist G n 0} iterates ${G} for all ${n} steps from a fresh uniform seed in ${S} and matches Experiment 0 of ${A} against ${seqPRG G n}" by
     exact seqHybridProb_zero A G
@@ -1411,7 +1445,9 @@ theorem theorem3_3_sequential_prg_composition
     exact seqHybridProb_n A G
   New paragraph
   Consider adversary B : PRGAdversary (R × S) := seqReduction A G hn
-    where "the single-query reduction that, given a challenge in ${R × S}, picks an index uniformly from ${Fin n}, fills preceding blocks uniformly from ${R}, inserts the challenge pair at that index, iterates ${G} for the remaining steps, and outputs whatever ${A} outputs"
+    where "an elementary wrapper around ${A} making a single oracle call: given a challenge in ${R × S}, it picks an index uniformly from ${Fin n}, fills preceding blocks uniformly from ${R}, inserts the challenge pair at that index, iterates ${G} for the remaining steps, and outputs whatever ${A} outputs"
+  Present pseudocode "reduction" "Reduction $\\mathcal{B}$"
+    "Upon receiving challenge $(r, s)$ in ${R × S}, ${B} plays the role of challenger to ${A}:\n  Sample $\\omega$ uniformly from ${Fin n}\n  For $i < \\omega$, sample $r_i$ uniformly from ${R}\n  Set $(r_{\\omega}, s_{\\omega + 1}) \\leftarrow (r, s)$\n  Iterate ${G} for the remaining $n - (\\omega + 1)$ steps from $s_{\\omega + 1}$ to form $(r_{\\omega + 1}, \\dots, r_{n-1}, s_n)$\n  Send $((r_0, \\dots, r_{n-1}), s_n)$ in ${VecSpace n R × S} to ${A} and output whatever ${A} outputs"
   We claim hB0 :
       prgExp0 B G = (1 / (n : ℝ)) * ∑ j ∈ Finset.range n, seqHybridProb A G j
     explaining "since in Experiment 0 of ${B} against ${G}, conditioning on the chosen index makes the remaining ${G} iteration one step longer, matching the corresponding hybrid and averaging ${seqHybridProb A G 0} through ${seqHybridProb A G (n - 1)}" by
@@ -1433,19 +1469,24 @@ theorem theorem3_3_sequential_prg_composition
             scaled_telescoping_abs (seqHybridProb A G)
       _ = (1 / (n : ℝ)) * prgAdv A (seqPRG G n) :=
             mul_abs_sub_eq_mul_prgAdv (1 / (n : ℝ)) A (seqPRG G n) h0 hnEq
-  We conclude "We multiply both sides by ${n} and exhibit ${B} as the reduction adversary" by
+  We conclude "We multiply both sides by ${n} and exhibit ${B}, where ${B} is an elementary wrapper around ${A}, as the reduction adversary" by
     exact ⟨B, eq_mul_of_div_eq hn hAdv⟩
 
 informal_title theorem3_3_sequential_prg_composition
   "Sequential Composition of Pseudorandom Generators"
 informal_kind theorem3_3_sequential_prg_composition "Theorem"
 informal_section theorem3_3_sequential_prg_composition
-  "Section 3.2 — Sequential Composition of Pseudorandom Generators"
+  "Section 3.4.2 — Sequential Composition and Length Extension"
+informal_section_prelude theorem3_3_sequential_prg_composition
+  "construction"
+  "Construction 3.2"
+  "Sequential Length-Extending PRG"
+  "Given a length-extending PRG $G : \\mathcal{S} \\to \\mathcal{R} \\times \\mathcal{S}$ and an integer $n \\ge 1$, its $n$-wise sequential composition $G^{\\mathrm{seq}\\, n} : \\mathcal{S} \\to \\mathcal{R}^n \\times \\mathcal{S}$ iterates $G$ for $n$ steps starting from $s \\in \\mathcal{S}$:\n> $s_0 \\leftarrow s$\n> for $i \\leftarrow 1$ to $n$ do\n>   $(r_i, s_i) \\leftarrow G(s_{i-1})$\n> output $(r_1, \\dots, r_n, s_n)$"
 
 end SequentialPRGSection
 
 /-!
-## 4. Theorem 3.11 — Statistical Distance Bounds Distinguishing Advantage (Boneh–Shoup §3.10.2, L4616–4659)
+## 4. Theorem 3.11 — Statistical Distance Bounds Distinguishing Advantage (Boneh–Shoup §3.11)
 -/
 
 section StatisticalDistanceSection
@@ -1493,7 +1534,7 @@ noncomputable def distWinProb {R : Type} (P : ProbDist R) (A : DistAdversary R) 
 noncomputable def distAdv {R : Type} (A : DistAdversary R) (P₀ P₁ : ProbDist R) : ℝ :=
   |distWinProb P₀ A - distWinProb P₁ A|
 
-/-- **Theorem 3.10 (Boneh–Shoup §3.10.2, L4582–4614):**
+/-- **Theorem 3.10 (Boneh–Shoup §3.11):**
     For any distributions `P₀, P₁` on `R` and any event `E ⊆ R`,
     `|P₀[E] - P₁[E]| ≤ Δ(P₀, P₁)`. -/
 @[math_opaque]
@@ -1513,11 +1554,16 @@ private lemma distWinProb_det {R : Type} (P : ProbDist R) (A : DistAdversary R)
 private lemma distAdv_eq_abs {R : Type} (A : DistAdversary R) (P₀ P₁ : ProbDist R) :
     distAdv A P₀ P₁ = |distWinProb P₀ A - distWinProb P₁ A| := rfl
 
+@[informal_expand]
 private lemma abs_det_winProb_diff {R : Type} (P₀ P₁ : ProbDist R) (A : DistAdversary R)
     (t₀ : A.Coins) (hDet : Subsingleton A.Coins) :
     |distWinProb P₀ A - distWinProb P₁ A| =
       |probOf P₀ (acceptEvent A t₀) - probOf P₁ (acceptEvent A t₀)| := by
-  rw [distWinProb_det P₀ A t₀ hDet, distWinProb_det P₁ A t₀ hDet]
+  have h₀ : distWinProb P₀ A = probOf P₀ (acceptEvent A t₀) :=
+    distWinProb_det P₀ A t₀ hDet
+  have h₁ : distWinProb P₁ A = probOf P₁ (acceptEvent A t₀) :=
+    distWinProb_det P₁ A t₀ hDet
+  rw [h₀, h₁]
 
 private lemma distAdv_sub_expect {R : Type} (P₀ P₁ : ProbDist R) (A : DistAdversary R) :
     distWinProb P₀ A - distWinProb P₁ A =
@@ -1557,6 +1603,7 @@ private lemma avg_const_eq {T : Type} [Fintype T] [Nonempty T] (B : ℝ) :
 informal_title theorem3_10_statDist_bounds_event "Theorem 3.10"
 informal_kind theorem3_10_statDist_bounds_event "Theorem"
 informal_title distWinProb_det "deterministic win probability equals event mass"
+informal_opaque distWinProb_det
 informal_title distAdv_eq_abs "definition of distinguishing advantage"
 informal_title abs_det_winProb_diff "identifying deterministic win probabilities with event mass"
 informal_title distAdv_sub_expect_abs "averaging over coin choices"
@@ -1568,7 +1615,7 @@ informal_symbol distAdv "\\mathrm{Distadv}"
 informal_symbol Probability.statDist "\\Delta"
 informal_symbol acceptEvent "R'"
 
-/-- **Theorem 3.11 (Boneh–Shoup §3.10.2, L4616–4659):**
+/-- **Theorem 3.11 (Boneh–Shoup §3.11):**
     For any two distributions `P₀, P₁` over a finite set `R` and any distinguishing
     adversary `A` (deterministic or probabilistic), `Distadv[A, P₀, P₁] ≤ Δ(P₀, P₁)`. -/
 theorem theorem3_11_statDist_bounds_distAdv
@@ -1576,9 +1623,11 @@ theorem theorem3_11_statDist_bounds_distAdv
     distAdv A P₀ P₁ ≤ Probability.statDist P₀.val P₁.val := by
   With notation (distWinProb P₀ A) as "\\Pr[W_0]"
   With notation (distWinProb P₁ A) as "\\Pr[W_1]"
-  Proof overview "We treat deterministic and randomized distinguishers separately: for a deterministic adversary we apply Theorem 3.10 directly to its acceptance event, and for a randomized adversary we average over the coin space ${A.Coins} and apply the triangle inequality with Theorem 3.10."
+  Proof overview "We treat deterministic and randomized distinguishers separately over coin space ${A.Coins}. For each coin choice $t \\in \\mathcal{T}_{\\mathcal{A}}$, let $R'_t = \\{x : \\mathcal{A}(x; t) = 1\\}$ denote the coin-fixed acceptance event on ${R}, and reduce the bound to Theorem 3.10."
+  Present pseudocode "algorithm" "Coin-Fixed Acceptance Events"
+    "For each coin $t$ in ${A.Coins}, define $R'_t := \\{x \\in R : \\mathcal{A}(x; t) = 1\\}$ on ${R}\nWhen ${A} is deterministic, ${A.Coins} is a singleton $\\{t_0\\}$, so $R' := R'_{t_0}$ satisfies $\\Pr[W_b] = P_b[R']$\nWhen ${A} is probabilistic, averaging over ${A.Coins} gives $\\Pr[W_b] = \\frac{1}{|\\mathcal{T}_{\\mathcal{A}}|} \\sum_{t \\in \\mathcal{T}_{\\mathcal{A}}} P_b[R'_t]$ for ${P₀} and ${P₁}"
   We claim hDetCase : A.IsDet → distAdv A P₀ P₁ ≤ Probability.statDist P₀.val P₁.val
-    explaining "when ${A} is deterministic, fixing its unique coin defines a single acceptance event matching both experiment probabilities, so Theorem 3.10 gives the bound" by
+    explaining "when ${A} is deterministic, fixing its unique coin $t_0$ defines the single acceptance event $R' = R'_{t_0} = \\{x : \\mathcal{A}(x; t_0) = 1\\}$ with $\\Pr[W_0] = P_0[R']$ and $\\Pr[W_1] = P_1[R']$, so Theorem 3.10 yields the bound" by
     intro hDet
     let t₀ : A.Coins := Classical.arbitrary A.Coins
     With notation (probOf P₀ (acceptEvent A t₀)) as "P_0[R']"
@@ -1592,7 +1641,7 @@ theorem theorem3_11_statDist_bounds_distAdv
             theorem3_10_statDist_bounds_event P₀ P₁ (acceptEvent A t₀)
   New paragraph
   We claim hProbCase : A.IsProb → distAdv A P₀ P₁ ≤ Probability.statDist P₀.val P₁.val
-    explaining "when ${A} is probabilistic, averaging over ${A.Coins} reduces ${distAdv A P₀ P₁} via the triangle inequality and Theorem 3.10 to ${Probability.statDist P₀.val P₁.val}" by
+    explaining "when ${A} is probabilistic, introducing the coin-fixed acceptance event $R'_t = \\{x : \\mathcal{A}(x; t) = 1\\}$ and averaging over ${A.Coins} reduces ${distAdv A P₀ P₁} via the triangle inequality and Theorem 3.10 to ${Probability.statDist P₀.val P₁.val}" by
     intro _
     calc
       distAdv A P₀ P₁
@@ -1618,12 +1667,22 @@ informal_title theorem3_11_statDist_bounds_distAdv
   "Statistical Distance Bounds Distinguishing Advantage"
 informal_kind theorem3_11_statDist_bounds_distAdv "Theorem"
 informal_section theorem3_11_statDist_bounds_distAdv
-  "Section 3.10 — Statistical Distance and Distinguishing Advantage"
+  "Section 3.11 — Statistical Distance and Distinguishing Advantage"
+informal_section_prelude theorem3_11_statDist_bounds_distAdv
+  "definition"
+  "Definition 3.6"
+  "Statistical Distance"
+  "For probability distributions $P_0$ and $P_1$ on a finite set $R$, their statistical distance is $$\\Delta(P_0, P_1) = \\frac{1}{2} \\sum_{x \\in R} |P_0(x) - P_1(x)|$$.\n\nOn probability distributions over finite $R$, this equals the one-sided excess $\\sum_{x \\in R} \\max\\{P_0(x) - P_1(x), 0\\}$. By Theorem 3.10, $\\max_{R' \\subseteq R} |P_0[R'] - P_1[R']| = \\Delta(P_0, P_1)$, so $|P_0[R'] - P_1[R']| \\le \\Delta(P_0, P_1)$ for every event $R' \\subseteq R$."
+informal_section_prelude theorem3_11_statDist_bounds_distAdv
+  "attackGame"
+  "Attack Game 3.3"
+  "Distinguishing Game"
+  "Let $P_0$ and $P_1$ be probability distributions on a finite set $R$, and let $\\mathcal{A}$ be a randomized adversary with finite nonempty coin space $\\mathcal{T}_{\\mathcal{A}}$. For $b \\in \\{0, 1\\}$, write $\\Pr[\\mathcal{A}(P_b) = 1]$ for the acceptance probability in Experiment $b$ below, and define $\\mathrm{Distadv}[\\mathcal{A}, P_0, P_1] := \\left|\\Pr[\\mathcal{A}(P_0) = 1] - \\Pr[\\mathcal{A}(P_1) = 1]\\right|$.\n> Experiment $b$ ($b \\in \\{0, 1\\}$):\n>   sample $x \\leftarrow P_b$ and coins $t \\leftarrow \\mathcal{U}[\\mathcal{T}_{\\mathcal{A}}]$\n>   output $\\hat{b} \\leftarrow \\mathcal{A}(x; t) \\in \\{0, 1\\}$"
 
 end StatisticalDistanceSection
 
 /-!
-## 5. Theorem 4.7 — The Difference Lemma (Boneh–Shoup §4.6.2, L7071–7090)
+## 5. Theorem 4.7 — The Difference Lemma (Boneh–Shoup §4.4.3)
 -/
 
 section DifferenceLemmaSection
@@ -1639,15 +1698,23 @@ def evAnd {Ω : Type} (E F : Ω → Prop) : Ω → Prop := fun ω => E ω ∧ F 
 @[math_notation "\\overline{#1}"]
 def evCompl {Ω : Type} (E : Ω → Prop) : Ω → Prop := fun ω => ¬ E ω
 
+informal_symbol evAnd "\\land"
+informal_symbol evCompl "\\overline{\\cdot}"
+
+@[informal_expand]
 private lemma diffLemma_partition_step {Ω : Type} (P : ProbDist Ω) (W₀ W₁ Z : Ω → Prop) :
     |probOf P W₀ - probOf P W₁| =
       |(probOf P (evAnd W₀ Z) + probOf P (evAnd W₀ (evCompl Z))) -
        (probOf P (evAnd W₁ Z) + probOf P (evAnd W₁ (evCompl Z)))| := by
-  rw [← probOf_split P Z W₀, ← probOf_split P Z W₁]
-  rfl
+  have h₀ : probOf P (evAnd W₀ Z) + probOf P (evAnd W₀ (evCompl Z)) = probOf P W₀ :=
+    probOf_split P Z W₀
+  have h₁ : probOf P (evAnd W₁ Z) + probOf P (evAnd W₁ (evCompl Z)) = probOf P W₁ :=
+    probOf_split P Z W₁
+  rw [← h₀, ← h₁]
 
 informal_title diffLemma_partition_step "partitioning both events over Z and its complement"
 
+@[informal_expand]
 private lemma diffLemma_cancel_step {Ω : Type} (P : ProbDist Ω) (W₀ W₁ Z : Ω → Prop)
     (hEquiv : ∀ ω, W₀ ω ∧ ¬ Z ω ↔ W₁ ω ∧ ¬ Z ω) :
     |(probOf P (evAnd W₀ Z) + probOf P (evAnd W₀ (evCompl Z))) -
@@ -1655,23 +1722,28 @@ private lemma diffLemma_cancel_step {Ω : Type} (P : ProbDist Ω) (W₀ W₁ Z :
     |probOf P (evAnd W₀ Z) - probOf P (evAnd W₁ Z)| := by
   have hEq : probOf P (evAnd W₀ (evCompl Z)) = probOf P (evAnd W₁ (evCompl Z)) :=
     probOf_congr P hEquiv
-  rw [hEq]
-  ring_nf
+  have hSub :
+      (probOf P (evAnd W₀ Z) + probOf P (evAnd W₀ (evCompl Z))) -
+        (probOf P (evAnd W₁ Z) + probOf P (evAnd W₁ (evCompl Z))) =
+      probOf P (evAnd W₀ Z) - probOf P (evAnd W₁ Z) := by
+    rw [hEq]
+    ring
+  rw [hSub]
 
 informal_title diffLemma_cancel_step "cancelling the identical intersections with the complement of Z"
 
+@[informal_expand]
 private lemma diffLemma_interval_bound {Ω : Type} (P : ProbDist Ω) (W₀ W₁ Z : Ω → Prop) :
     |probOf P (evAnd W₀ Z) - probOf P (evAnd W₁ Z)| ≤ probOf P Z := by
   have h₀ : 0 ≤ probOf P (evAnd W₀ Z) ∧ probOf P (evAnd W₀ Z) ≤ probOf P Z :=
     ⟨probOf_nonneg P _, probOf_mono P fun _ h => h.2⟩
   have h₁ : 0 ≤ probOf P (evAnd W₁ Z) ∧ probOf P (evAnd W₁ Z) ≤ probOf P Z :=
     ⟨probOf_nonneg P _, probOf_mono P fun _ h => h.2⟩
-  rw [abs_le]
-  exact ⟨by linarith, by linarith⟩
+  exact abs_le.mpr ⟨by linarith [h₀.1, h₁.2], by linarith [h₀.2, h₁.1]⟩
 
 informal_title diffLemma_interval_bound "each intersection lying in [0, Pr[Z]]"
 
-/-- **Theorem 4.7 (The Difference Lemma, Boneh–Shoup §4.6.2, L7071–7090):**
+/-- **Theorem 4.7 (The Difference Lemma, Boneh–Shoup §4.4.3):**
     Let `W₀, W₁, Z` be events defined on the same probability space `P` such that
     `W₀ ∧ ¬ Z ↔ W₁ ∧ ¬ Z`. Then `|Pr[W₀] - Pr[W₁]| ≤ Pr[Z]`. -/
 theorem theorem4_7_difference_lemma
@@ -1685,7 +1757,7 @@ theorem theorem4_7_difference_lemma
   With notation (probOf P (evAnd W₀ (evCompl Z))) as "\\Pr[W_0 \\land \\overline{Z}]"
   With notation (probOf P (evAnd W₁ Z)) as "\\Pr[W_1 \\land Z]"
   With notation (probOf P (evAnd W₁ (evCompl Z))) as "\\Pr[W_1 \\land \\overline{Z}]"
-  Proof overview "We partition ${W₀} and ${W₁} over ${Z} and ${evCompl Z}, cancel the matching events on ${evCompl Z}, and bound the remaining difference by ${probOf P Z}."
+  Proof overview "We partition ${W₀} and ${W₁} over ${Z} and ${evCompl Z}, cancel the matching terms on ${evCompl Z} using the identical-until-bad equivalence, and bound the remaining difference using $0 \\le$ ${probOf P (evAnd W₀ Z)} $\\le$ ${probOf P Z} and $0 \\le$ ${probOf P (evAnd W₁ Z)} $\\le$ ${probOf P Z}."
   calc
     |probOf P W₀ - probOf P W₁|
         = |(probOf P (evAnd W₀ Z) + probOf P (evAnd W₀ (evCompl Z))) -
@@ -1698,7 +1770,12 @@ theorem theorem4_7_difference_lemma
 
 informal_title theorem4_7_difference_lemma "The Difference Lemma"
 informal_kind theorem4_7_difference_lemma "Theorem"
-informal_section theorem4_7_difference_lemma "Section 4.6 — The Difference Lemma"
+informal_section theorem4_7_difference_lemma "Section 4.4.3 — The Difference Lemma"
+informal_section_prelude theorem4_7_difference_lemma
+  "definition"
+  "Setup 4.1"
+  "Identical-Until-Bad Events"
+  "Let $W_0$, $W_1$, and $Z$ be events defined on a common probability space $(\\Omega, P)$, where $\\overline{Z}$ denotes the complement of the failure event $Z$. The events $W_0$ and $W_1$ are identical until bad (with respect to $Z$) if $W_0 \\land \\overline{Z} \\iff W_1 \\land \\overline{Z}$.\n\nIn game-playing proofs, two experiments are coupled on the same probability space $(\\Omega, P)$ so that executions avoiding the failure event $Z$ induce identical outcomes for $W_0$ and $W_1$, bounding $|\\Pr[W_0] - \\Pr[W_1]|$ by $\\Pr[Z]$."
 
 end DifferenceLemmaSection
 
@@ -1721,13 +1798,13 @@ open Lean Elab Command in
       ``theorem3_11_statDist_bounds_distAdv,
       ``theorem4_7_difference_lemma]
   let doc ← liftTermElabM <| Informalization.Render.Json.buildDocument
-    "Boneh–Shoup Replication (Part 1: Foundations & PRGs)"
-    "Batch A: Theorems 2.2, 3.2, 3.3, 3.11, and 4.7 in Massot-style Verbose-CC"
+    "Boneh–Shoup: Foundations and Pseudorandom Generators"
+    "Selected Foundations, Pseudorandom Generators, Statistical Distance, and the Difference Lemma"
     targetDecls
   let texts := Informalization.CLI.collectDocumentTexts doc
   let leaks := Informalization.Core.Hygiene.auditZeroLeakage texts
   unless leaks.isEmpty do
-    throwError "Verbose-CC informalization leaked {leaks.size} forbidden string(s): {leaks}"
+    throwError "BonehShoupPart1 informalization leaked {leaks.size} forbidden string(s): {leaks}"
   let outDir : System.FilePath :=
     "/Users/marcilunga/.gemini/antigravity/brain/63ffab73-7f96-4075-be50-4d10a715e8ee/scratch/cc-validation"
   IO.FS.createDirAll outDir

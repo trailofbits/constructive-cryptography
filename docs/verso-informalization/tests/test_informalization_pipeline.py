@@ -250,8 +250,8 @@ def make_clean_fixture() -> Dict[str, Any]:
                     "witnessCard": {
                         "title": "Monotone Binary Output Game",
                         "rows": [
-                            ["Bad event", "\\mathsf{forge}"],
-                            ["Underlying system", "G^-"],
+                            ["Bad event", "\\(\\mathsf{forge}\\)"],
+                            ["Underlying system", "\\(G^-\\)"],
                         ],
                     }
                 },
@@ -2137,6 +2137,512 @@ open Lean VersoInformalization.Schema VersoInformalization.CadmoBlocks
         res_dup = run_check(str(self.write_json("dup_pbox.json", dup_pbox)))
         self.assertNotEqual(res_dup.returncode, 0)
         self.assertIn("sibling-dedup", res_dup.stdout)
+
+    def test_wave_c_l1_soundness_and_l2_latex_hygiene(self) -> None:
+        # L1 negative: (\cdot)^{S^*} and \alphaG_{2} fail in ALL tiers
+        for label, mutator in [
+            (
+                "dropped_eps",
+                lambda d: d["entries"][0]["statement"][0].append(
+                    {"inlineMath": {"latex": "(\\cdot)^{S^*}"}}
+                ),
+            ),
+            (
+                "glued_alpha",
+                lambda d: d["entries"][0]["proof"][1]["children"][0]["steps"][0]["step"].__setitem__(
+                    "lhsLatex", "\\alphaG_{2}"
+                ),
+            ),
+        ]:
+            for tier in ("legacy", "authored"):
+                with self.subTest(l1=label, tier=tier):
+                    bad = make_clean_fixture()
+                    mutator(bad)
+                    p = self.write_json(f"l1_{label}_{tier}.json", bad)
+                    res = run_check("--tier", tier, str(p))
+                    self.assertNotEqual(res.returncode, 0)
+                    self.assertIn("L1-soundness", res.stdout)
+
+        # L1 positive: epsilonRelaxation definition := (\cdot)^{\mathrm{error}} passes
+        pos_l1 = make_clean_fixture()
+        pos_l1["inspectors"].append(
+            {
+                "key": "ConstructiveCryptography.CryptographicAlgebra.Specification.epsilonRelaxation",
+                "display": "\\varepsilon\\text{-relax}",
+                "kind": {
+                    "mathDefinition": {
+                        "equationLatex": "\\mathrm{epsilonRelaxation}\\!\\left(\\mathrm{error}\\right) := (\\cdot)^{\\mathrm{error}}",
+                        "proseSummary": "Epsilon relaxation operator.",
+                    }
+                },
+                "leanName": "ConstructiveCryptography.CryptographicAlgebra.Specification.epsilonRelaxation",
+                "leanType": "ENNReal -> Spec",
+            }
+        )
+        res_pos_l1 = run_check("--tier", "authored", str(self.write_json("l1_eps_def.json", pos_l1)))
+        self.assertEqual(res_pos_l1.returncode, 0, msg=res_pos_l1.stdout)
+
+        # L2 negative: double subscripts, ${...}, and raw TeX in plain-text inspector fields
+        l2_cases = [
+            (
+                "dbl_sub_braced",
+                lambda d: d["entries"][0]["statement"][0].append({"inlineMath": {"latex": "z_{1}_{2}"}}),
+            ),
+            (
+                "dbl_sub_bare",
+                lambda d: d["entries"][0]["statement"][0].append({"inlineMath": {"latex": "z_1_2"}}),
+            ),
+            (
+                "uninterp_template",
+                lambda d: d["entries"][0]["proof"][0].__setitem__("text", "Applied routine ${fixedBit false}."),
+            ),
+            (
+                "raw_mathcal_in_roleDesc",
+                lambda d: d["entries"][0].__setitem__(
+                    "localInspectors",
+                    [
+                        {
+                            "key": "sh.B",
+                            "display": "\\mathcal{B}",
+                            "kind": {
+                                "localShorthand": {
+                                    "equationLatex": "\\mathcal{B} = R",
+                                    "roleDescription": "Reduction \\mathcal{B} calling [\\,n\\,].",
+                                }
+                            },
+                            "leanType": "Converter",
+                        }
+                    ],
+                ),
+            ),
+            (
+                "raw_mathbf_in_proseSummary",
+                lambda d: d["inspectors"][1]["kind"]["mathDefinition"].__setitem__(
+                    "proseSummary", "Ideal channel \\mathbf{SEC}."
+                ),
+            ),
+            (
+                "raw_tex_in_witnessCard",
+                lambda d: d["inspectors"][3]["kind"]["witnessCard"]["rows"][0].__setitem__(
+                    1, "\\mathsf{forge}"
+                ),
+            ),
+        ]
+        for label, mutator in l2_cases:
+            for tier in ("legacy", "authored"):
+                with self.subTest(l2=label, tier=tier):
+                    bad = make_clean_fixture()
+                    mutator(bad)
+                    res = run_check("--tier", tier, str(self.write_json(f"l2_{label}_{tier}.json", bad)))
+                    self.assertNotEqual(res.returncode, 0)
+                    self.assertIn("L2-latex-hygiene", res.stdout)
+
+        # L2 positive: merged z_{1,2} subscript and properly delimited \(\mathcal{B}\) pass
+        pos_l2 = make_clean_fixture()
+        pos_l2["entries"][0]["statement"][0].append({"inlineMath": {"latex": "z_{1,2}"}})
+        pos_l2["entries"][0]["localInspectors"] = [
+            {
+                "key": "sh.B",
+                "display": "\\mathcal{B}",
+                "kind": {
+                    "localShorthand": {
+                        "equationLatex": "\\mathcal{B} = R",
+                        "roleDescription": "Reduction \\(\\mathcal{B}\\) on block length \\([\\,n\\,]\\).",
+                    }
+                },
+                "leanType": "Converter",
+            }
+        ]
+        res_pos_l2 = run_check("--tier", "authored", str(self.write_json("l2_clean.json", pos_l2)))
+        self.assertEqual(res_pos_l2.returncode, 0, msg=res_pos_l2.stdout)
+
+    def test_wave_c_l3_diagrams_l4_sections_and_l5_honest_dispatch(self) -> None:
+        # L3 negative: dangling dataKey on inlineMath + raw Lean tokens in every diagramHtml slot
+        bad_dk = make_clean_fixture()
+        bad_dk["entries"][0]["statement"][0].append(
+            {"inlineMath": {"latex": "X"}, "dataKey": "sym.dangling_math_key"}
+        )
+        res_dk = run_check(str(self.write_json("l3_bad_dk.json", bad_dk)))
+        self.assertNotEqual(res_dk.returncode, 0)
+        self.assertIn("L3-dangling-key", res_dk.stdout)
+
+        for tok in ("CategoryTheory.", "ConstructiveCryptography.", "SystemAlgebra.", "{real}", "{ideal}"):
+            for slot_name, mutator in [
+                ("entry", lambda d, t=tok: d["entries"][0].__setitem__("diagramHtml", f"<svg>{t}</svg>")),
+                (
+                    "calcStep",
+                    lambda d, t=tok: d["entries"][0]["proof"][1]["children"][0]["steps"][0]["step"].__setitem__(
+                        "diagramHtml", f"<svg>{t}</svg>"
+                    ),
+                ),
+                (
+                    "ccDiagram",
+                    lambda d, t=tok: d["inspectors"].append(
+                        {
+                            "key": "sym.diag",
+                            "display": "D",
+                            "kind": {"ccDiagram": {"summaryLatex": "D", "svgOrHtml": f"<svg>{t}</svg>"}},
+                            "leanName": "Test.D",
+                            "leanType": "TypedSystem",
+                        }
+                    ),
+                ),
+            ]:
+                with self.subTest(tok=tok, slot=slot_name):
+                    bad = make_clean_fixture()
+                    mutator(bad)
+                    res = run_check(str(self.write_json("l3_diag.json", bad)))
+                    self.assertNotEqual(res.returncode, 0)
+                    self.assertIn("L3-diagram-hygiene", res.stdout)
+
+        # L4 negative: sectionTitle with null sectionId + double-numbered sectionTitle + static HTML heading
+        bad_sec_id = make_clean_fixture()
+        bad_sec_id["entries"][0]["sectionTitle"] = "Section 2.1 — Perfect Security"
+        bad_sec_id["entries"][0]["sectionId"] = None
+        res_sid = run_check(str(self.write_json("l4_null_sid.json", bad_sec_id)))
+        self.assertNotEqual(res_sid.returncode, 0)
+        self.assertIn("L4-section-integrity", res_sid.stdout)
+
+        bad_dbl = make_clean_fixture()
+        bad_dbl["entries"][0]["sectionTitle"] = "1. Section 2.1 — Perfect Security"
+        bad_dbl["entries"][0]["sectionId"] = "sec-1"
+        res_dbl = run_check(str(self.write_json("l4_dbl.json", bad_dbl)))
+        self.assertNotEqual(res_dbl.returncode, 0)
+        self.assertIn("L4-section-integrity", res_dbl.stdout)
+
+        bad_html = self.tmp_path / "l4_bad_heading.html"
+        clean_json_str = json.dumps(make_clean_fixture())
+        bad_html.write_text(
+            "<!doctype html><html><head><style data-cadmo-reader>body{}</style></head><body>"
+            "<h2><span>1.</span> Section 2.1 — Perfect Security</h2>"
+            "<script data-cadmo-controller>console.log(1)</script>"
+            f"<script id='cadmo-document-data'>{clean_json_str}</script></body></html>",
+            encoding="utf-8",
+        )
+        res_html = run_check(str(bad_html))
+        self.assertNotEqual(res_html.returncode, 0)
+        self.assertIn("L4-section-integrity", res_html.stdout)
+
+        # L4 positive: clean sectionTitle + non-null sectionId passes
+        pos_sec = make_clean_fixture()
+        pos_sec["entries"][0]["sectionTitle"] = "Section 2.1 — Perfect Security"
+        pos_sec["entries"][0]["sectionId"] = "sec-1"
+        self.assertEqual(run_check("--tier", "authored", str(self.write_json("l4_clean.json", pos_sec))).returncode, 0)
+
+        # L5 negative: "by elementary algebra" on \simeq / \approx / \preceq
+        for rel in ("\\simeq_{\\varepsilon}", "\\approx_{\\delta}", "\\preceq"):
+            with self.subTest(rel=rel):
+                bad_l5 = make_clean_fixture()
+                st = bad_l5["entries"][0]["proof"][1]["children"][0]["steps"][0]["step"]
+                st["relationLatex"] = rel
+                st["reason"] = [{"text": {"value": "by elementary algebra"}}]
+                res_l5 = run_check(str(self.write_json("l5_bad.json", bad_l5)))
+                self.assertNotEqual(res_l5.returncode, 0)
+                self.assertIn("L5-honest-dispatch", res_l5.stdout)
+
+        # L5 positive: "by elementary algebra" on "=" is valid
+        pos_l5 = make_clean_fixture()
+        st_pos = pos_l5["entries"][0]["proof"][1]["children"][0]["steps"][0]["step"]
+        st_pos["relationLatex"] = "="
+        st_pos["reason"] = [{"text": {"value": "by elementary algebra"}}]
+        self.assertEqual(run_check("--tier", "authored", str(self.write_json("l5_ok.json", pos_l5))).returncode, 0)
+
+    def test_wave_c_l6_l7_l8_dag_budget_and_definitions(self) -> None:
+        # L6 negative: sibling entry body re-expansion inside children
+        def make_two_entry_doc(reexpand: bool, premise_only: bool = False) -> Dict[str, Any]:
+            doc = make_clean_fixture()
+            sib = copy.deepcopy(doc["entries"][0])
+            sib["declaration"] = "Examples.SibLemma"
+            sib["title"] = "Sibling Lemma"
+            sib["proof"] = [
+                {
+                    "kind": "step",
+                    "id": "sib-internal-1",
+                    "content": [{"text": {"value": "Internal sibling lemma proof step with enough length."}}],
+                    "children": [],
+                    "originDecl": "Examples.InternalSiblingHelper",
+                }
+            ]
+            caller = copy.deepcopy(doc["entries"][0])
+            caller["declaration"] = "Examples.CallerTheorem"
+            caller["title"] = "Caller Theorem"
+            children = []
+            if reexpand:
+                children = [copy.deepcopy(sib["proof"][0])]
+            elif premise_only:
+                children = [
+                    {
+                        "kind": "step",
+                        "id": "hyp-prem-0",
+                        "content": [{"text": {"value": "This holds by the assumed hypothesis."}}],
+                        "children": [],
+                        "isWrapper": True,
+                    },
+                    {
+                        "kind": "step",
+                        "id": "app-IndependentPremise-1",
+                        "content": [{"text": {"value": "Applying independent premise helper establishes the side condition."}}],
+                        "originDecl": "Examples.IndependentPremiseHelper",
+                        "children": [],
+                        "isWrapper": False,
+                    },
+                ]
+            caller["proof"] = [
+                {
+                    "kind": "step",
+                    "id": "call-sib",
+                    "content": [{"text": {"value": "Applying Sibling Lemma establishes the bound."}}],
+                    "originDecl": "Examples.SibLemma",
+                    "children": children,
+                }
+            ]
+            doc["entries"] = [sib, caller]
+            return doc
+
+        res_reexp = run_check(str(self.write_json("l6_reexp.json", make_two_entry_doc(reexpand=True))))
+        self.assertNotEqual(res_reexp.returncode, 0)
+        self.assertIn("L6-sibling-reexpansion", res_reexp.stdout)
+
+        # L6 positive: leaf citation (children=[]) AND call-site premise-only children pass
+        self.assertEqual(
+            run_check("--tier", "authored", str(self.write_json("l6_leaf.json", make_two_entry_doc(False)))).returncode,
+            0,
+        )
+        self.assertEqual(
+            run_check(
+                "--tier", "authored", str(self.write_json("l6_prem.json", make_two_entry_doc(False, premise_only=True)))
+            ).returncode,
+            0,
+        )
+
+        # L6 soft budget warning (> 60 nodes in authored) does not fail exit code
+        heavy = make_clean_fixture()
+        heavy["entries"][0]["proof"] = [
+            {
+                "kind": "step",
+                "id": f"s-{i}",
+                "content": [{"text": {"value": f"Distinct independent proof observation number {i}."}}],
+                "children": [],
+            }
+            for i in range(65)
+        ]
+        res_heavy = run_check("--tier", "authored", "--json-report", str(self.write_json("l6_heavy.json", heavy)))
+        self.assertEqual(res_heavy.returncode, 0, msg=res_heavy.stdout)
+        parsed_heavy = json.loads(res_heavy.stdout)
+        self.assertGreater(parsed_heavy["files"][0]["metrics"]["max_nodes_per_entry"], 60)
+        self.assertTrue(any(w["gate"] == "L6-node-budget" for w in parsed_heavy["files"][0]["warnings"]))
+
+        # L7 negative: < 20 entries JSON exceeding 2.5 MB fails L7-payload-budget
+        bloated = make_clean_fixture()
+        bloated["entries"][0]["proof"][0]["text"] = "Clean prose padding. " + ("x" * (2_700_000))
+        res_l7 = run_check(str(self.write_json("l7_bloat.json", bloated)))
+        self.assertNotEqual(res_l7.returncode, 0)
+        self.assertIn("L7-payload-budget", res_l7.stdout)
+
+        # L8 negative: dslPseudocode with empty body and empty fullSource fails; empty-eq ratio recorded
+        bad_dsl = make_clean_fixture()
+        bad_dsl["inspectors"][2]["kind"]["dslPseudocode"] = {"header": "Empty", "body": "", "fullSource": ""}
+        res_dsl = run_check(str(self.write_json("l8_empty_dsl.json", bad_dsl)))
+        self.assertNotEqual(res_dsl.returncode, 0)
+        self.assertIn("L8-empty-dsl", res_dsl.stdout)
+
+        metrics_doc = make_clean_fixture()
+        metrics_doc["inspectors"][1]["kind"]["mathDefinition"]["equationLatex"] = ""
+        res_m = run_check("--json-report", str(self.write_json("l8_metrics.json", metrics_doc)))
+        self.assertEqual(res_m.returncode, 0, msg=res_m.stdout)
+        m_json = json.loads(res_m.stdout)["files"][0]["metrics"]
+        self.assertEqual(m_json["math_def_count"], 1)
+        self.assertEqual(m_json["empty_equation_count"], 1)
+        self.assertEqual(m_json["empty_equation_ratio"], 1.0)
+
+    def test_wave_c_l9_l10_l11_and_l12_gates(self) -> None:
+        # L9a negative: dropped cc_calc step subproof fails in authored, passes in legacy
+        bad_cc_calc = make_clean_fixture()
+        bad_cc_calc["entries"][0]["proof"].append(
+            {
+                "kind": "calcChain",
+                "id": "vcc-hybrid-chain-2",
+                "intro": [{"text": {"value": "Proceeding through the hybrid chain:"}}],
+                "steps": [
+                    {
+                        "step": {
+                            "lhsLatex": "H_0",
+                            "relationLatex": "=",
+                            "rhsLatex": "H_1",
+                            "reason": [{"text": {"value": "by isolating the first PRG call"}}],
+                        },
+                        "children": [],
+                    }
+                ],
+            }
+        )
+        p_cc_calc = self.write_json("l9_cc_calc.json", bad_cc_calc)
+        self.assertEqual(run_check("--tier", "legacy", str(p_cc_calc)).returncode, 0)
+        res_cc_calc = run_check("--tier", "authored", str(p_cc_calc))
+        self.assertNotEqual(res_cc_calc.returncode, 0)
+        self.assertIn("L9-cc-calc-subproof", res_cc_calc.stdout)
+
+        # L9a positive: cc_calc step with children OR trivial reflexivity reason passes authored
+        ok_cc_calc = copy.deepcopy(bad_cc_calc)
+        ok_cc_calc["entries"][0]["proof"][-1]["steps"][0]["step"]["reason"] = [{"text": {"value": "by reflexivity"}}]
+        self.assertEqual(
+            run_check("--tier", "authored", str(self.write_json("l9_cc_calc_refl.json", ok_cc_calc))).returncode,
+            0,
+        )
+
+        # L9b negative: > 10% tautological 1-child leaf toggles fails authored
+        taut_doc = make_clean_fixture()
+        taut_doc["entries"][0]["proof"] = [
+            {
+                "kind": "step",
+                "id": f"taut-parent-{i}",
+                "content": [{"inlineMath": {"latex": f"x_{i} = y_{i}"}}],
+                "children": [
+                    {
+                        "kind": "step",
+                        "id": f"taut-child-{i}",
+                        "content": [
+                            {"text": {"value": "We obtain "}},
+                            {"inlineMath": {"latex": f"x_{i} = y_{i}"}},
+                            {"text": {"value": "."}},
+                        ],
+                        "children": [],
+                    }
+                ],
+            }
+            for i in range(4)
+        ]
+        p_taut = self.write_json("l9_taut.json", taut_doc)
+        self.assertEqual(run_check("--tier", "legacy", str(p_taut)).returncode, 0)
+        res_taut = run_check("--tier", "authored", str(p_taut))
+        self.assertNotEqual(res_taut.returncode, 0)
+        self.assertIn("L9-tautological-toggles", res_taut.stdout)
+
+        # L10 negative: missing sectionPreludes and ambient fails authored, warns legacy
+        no_frame = make_clean_fixture()
+        no_frame["entries"][0]["ambient"] = None
+        p_noframe = self.write_json("l10_noframe.json", no_frame)
+        res_nf_leg = run_check("--tier", "legacy", "--json-report", str(p_noframe))
+        self.assertEqual(res_nf_leg.returncode, 0)
+        self.assertTrue(any(w["gate"] == "L10-framing" for w in json.loads(res_nf_leg.stdout)["files"][0]["warnings"]))
+        res_nf_auth = run_check("--tier", "authored", str(p_noframe))
+        self.assertNotEqual(res_nf_auth.returncode, 0)
+        self.assertIn("L10-framing", res_nf_auth.stdout)
+
+        # L11 negatives (all tiers): jargon subtitles, \text{let } this, by dite
+        for field_val in [
+            "Generic informalization of Foo.lean",
+            "Contains cc_calc trace",
+            "Verbose-CC Benchmark",
+            "Expr.mdata decompiler",
+            "ContextProfile lattice",
+            "Zero per-theorem overlays",
+        ]:
+            for tier in ("legacy", "authored"):
+                with self.subTest(subtitle=field_val, tier=tier):
+                    bad = make_clean_fixture()
+                    bad["subtitle"] = field_val
+                    res = run_check("--tier", tier, str(self.write_json("l11_sub.json", bad)))
+                    self.assertNotEqual(res.returncode, 0)
+                    self.assertIn("L11-clean-prose", res.stdout)
+
+        for math_leak in ["\\text{let } this = x \\text{ in } x", "by dite"]:
+            for tier in ("legacy", "authored"):
+                with self.subTest(leak=math_leak, tier=tier):
+                    bad = make_clean_fixture()
+                    bad["entries"][0]["statement"][0].append({"inlineMath": {"latex": math_leak}})
+                    res = run_check("--tier", tier, str(self.write_json("l11_all.json", bad)))
+                    self.assertNotEqual(res.returncode, 0)
+                    self.assertIn("L11-clean-prose", res.stdout)
+
+        # L11 authored-only failures (legacy warns on .\mathrm{val} & ontology phrases; allows user \text{let })
+        for authored_leak, expect_legacy_warn in [
+            ("k.\\mathrm{val} = 0", True),
+            ("an extended nonnegative real", True),
+            ("a finite cryptographic space", True),
+            ("a subset with inside interface P", True),
+            ("\\text{let } B = q \\text{ in } B", False),
+        ]:
+            with self.subTest(authored_leak=authored_leak):
+                doc = make_clean_fixture()
+                doc["entries"][0]["proof"][0]["text"] = f"Check: {authored_leak}."
+                p = self.write_json("l11_auth.json", doc)
+                res_leg = run_check("--tier", "legacy", "--json-report", str(p))
+                self.assertEqual(res_leg.returncode, 0, msg=res_leg.stdout)
+                if expect_legacy_warn:
+                    self.assertTrue(
+                        any(w["gate"] == "L11-clean-prose" for w in json.loads(res_leg.stdout)["files"][0]["warnings"])
+                    )
+                res_auth = run_check("--tier", "authored", str(p))
+                self.assertNotEqual(res_auth.returncode, 0)
+                self.assertIn("L11-clean-prose", res_auth.stdout)
+
+        # L12 negative: duplicate global display across distinct leanNames fails authored, warns legacy
+        dup_disp = make_clean_fixture()
+        dup_disp["inspectors"].extend(
+            [
+                {
+                    "key": "sym.hyb.par",
+                    "display": "\\mathbf{Hybrid}",
+                    "kind": {"mathDefinition": {"equationLatex": "H_1 = 1", "proseSummary": "Parallel hybrid."}},
+                    "leanName": "Paper.parallelHybridDist",
+                    "leanType": "Dist",
+                },
+                {
+                    "key": "sym.hyb.seq",
+                    "display": "\\mathbf{Hybrid}",
+                    "kind": {"mathDefinition": {"equationLatex": "H_2 = 2", "proseSummary": "Sequential hybrid."}},
+                    "leanName": "Paper.seqHybridDist",
+                    "leanType": "Dist",
+                },
+            ]
+        )
+        p_l12 = self.write_json("l12_dup.json", dup_disp)
+        res_l12_leg = run_check("--tier", "legacy", "--json-report", str(p_l12))
+        self.assertEqual(res_l12_leg.returncode, 0)
+        self.assertTrue(
+            any(w["gate"] == "L12-namespace-collision" for w in json.loads(res_l12_leg.stdout)["files"][0]["warnings"])
+        )
+        res_l12_auth = run_check("--tier", "authored", str(p_l12))
+        self.assertNotEqual(res_l12_auth.returncode, 0)
+        self.assertIn("L12-namespace-collision", res_l12_auth.stdout)
+
+        # L12 positive: identical leanName OR polymorphic CC families (Constructs/ConstructsWithin, *.Port) pass authored
+        poly_disp = make_clean_fixture()
+        poly_disp["inspectors"].extend(
+            [
+                {
+                    "key": "Constructs",
+                    "display": "\\xrightarrow{\\pi}",
+                    "kind": {"mathDefinition": {"equationLatex": "A \\to B", "proseSummary": "Exact construction."}},
+                    "leanName": "ConstructiveCryptography.CryptographicAlgebra.Specification.Constructs",
+                    "leanType": "Prop",
+                },
+                {
+                    "key": "ConstructsWithin",
+                    "display": "\\xrightarrow{\\pi}",
+                    "kind": {"mathDefinition": {"equationLatex": "A \\to_{\\varepsilon} B", "proseSummary": "Approx construction."}},
+                    "leanName": "ConstructiveCryptography.CryptographicAlgebra.Specification.ConstructsWithin",
+                    "leanType": "Prop",
+                },
+                {
+                    "key": "Commons.AE.Port",
+                    "display": "\\mathrm{Port}",
+                    "kind": {"mathDefinition": {"equationLatex": "\\mathrm{Port}", "proseSummary": "AE port."}},
+                    "leanName": "Commons.AE.Port",
+                    "leanType": "Type",
+                },
+                {
+                    "key": "Commons.Evaluation.Port",
+                    "display": "\\mathrm{Port}",
+                    "kind": {"mathDefinition": {"equationLatex": "\\mathrm{Port}", "proseSummary": "Eval port."}},
+                    "leanName": "Commons.Evaluation.Port",
+                    "leanType": "Type",
+                },
+            ]
+        )
+        res_poly = run_check("--tier", "authored", str(self.write_json("l12_poly.json", poly_disp)))
+        self.assertEqual(res_poly.returncode, 0, msg=res_poly.stdout)
 
 
 if __name__ == "__main__":

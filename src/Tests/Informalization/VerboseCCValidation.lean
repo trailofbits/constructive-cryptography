@@ -49,13 +49,34 @@ open scoped VerboseCC
 
 noncomputable section
 
-/-! ## Flagship 1: PRG Length Extension (`SchemeContext`) -/
+informal_symbol Commons.Evaluation.Port "\\mathsf{Port}_{\\mathrm{eval}}"
+informal_symbol Commons.AE.Port "\\mathsf{Port}_{\\mathrm{AE}}"
+informal_symbol Commons.AE.system.perPort "\\mathrm{system}_{\\mathrm{AE}}"
+informal_symbol Commons.Encryption.system.perPort "\\mathrm{system}_{\\mathrm{enc}}"
+informal_symbol SystemAlgebra.PDS.behavior "\\mathrm{beh}_{\\mathrm{PDS}}"
+informal_symbol SystemAlgebra.PDG.behavior "\\mathrm{beh}_{\\mathrm{PDG}}"
+informal_symbol SystemAlgebra.TypedSystem.ofAutomaton "\\mathrm{ofAut}_{\\mathrm{sys}}"
+informal_symbol SystemAlgebra.PDG.ofAutomaton "\\mathrm{ofAut}_{\\mathrm{PDG}}"
+informal_symbol ConstructiveCryptography.AdmissibleDistinguishers.admissible "\\mathrm{admissible}_{\\mathcal{D}}"
+informal_symbol ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.admissible "\\mathrm{admissible}_{\\Delta}"
+
+informal_opaque GameExamples.collision_win_le
+informal_opaque GameExamples.collision_conditionallyEquivalent
+informal_opaque AuthenticatedEncryption.hybrid_ideal_distance_le
+informal_opaque AuthenticatedEncryption.collisionGame_conditionallyEquivalent
+informal_opaque AuthenticatedEncryption.collisionGame_badProbability_le
+informal_opaque AuthenticatedEncryption.collisionGame_isProbDist
+informal_opaque AuthenticatedEncryption.hybrid_visible
+informal_opaque AuthenticatedEncryption.hybrid_system
+informal_opaque SystemAlgebra.RandomSystem.RepliesAtQueriedInterface.of_visible
+
+/-! ## PRG Length Extension (`SchemeContext`) -/
 
 section SchemePRGSection
 paper_context SchemeContext
 
 /-- Doubling a PRG from `S → S × S` to `S → S × S × S` via the two-call converter constructions
-`𝓡₁` and `𝓡₂` incurs at most `ε + ε` distinguishing advantage against a uniform triple. -/
+`𝓡₁` and `𝓡₂` incurs at most `2 * ε` distinguishing advantage against a uniform triple. -/
 theorem prgLengthExtension_verbose
     {S : Type} [Fintype S] [Nonempty S]
     (G : S → S × S) {q : Commons.Evaluation.Port → ℕ} {ε : ENNReal}
@@ -64,13 +85,13 @@ theorem prgLengthExtension_verbose
       (Commons.MemorylessSource.perPort (S × S) 𝒰[S × S]) ≤ ε) :
     Δ (Examples.PRGLengthExtension.PRGReal.perPort (Examples.PRGLengthExtension.H G)
       (budget := q))
-      (Commons.MemorylessSource.perPort (S × S × S) 𝒰[S × S × S]) ≤ ε + ε := by
+      (Commons.MemorylessSource.perPort (S × S × S) 𝒰[S × S × S]) ≤ 2 * ε := by
   With notation (Examples.PRGLengthExtension.PRGReal.perPort G
-    (budget := Examples.PRGLengthExtension.𝓡₁.insideBudget G q)) as "\\mathbf{G}"
-    explaining "the single-call pseudorandom generator system on seed space $S$"
+    (budget := Examples.PRGLengthExtension.𝓡₁.insideBudget G q)) as "\\mathbf{G}_{q_1}"
+    explaining "the single-call pseudorandom generator system under the first-call budget $q_1$"
   With notation (Examples.PRGLengthExtension.PRGReal.perPort G
-    (budget := Examples.PRGLengthExtension.𝓡₂.insideBudget S q)) as "\\mathbf{G}"
-    explaining "the single-call pseudorandom generator system under the second-call budget"
+    (budget := Examples.PRGLengthExtension.𝓡₂.insideBudget S q)) as "\\mathbf{G}_{q_2}"
+    explaining "the single-call pseudorandom generator system under the second-call budget $q_2$"
   With notation (Commons.MemorylessSource.perPort (S × S) 𝒰[S × S]
     (budget := Examples.PRGLengthExtension.𝓡₁.insideBudget G q)) as "\\mathbf{U}_{S^2}"
     explaining "a uniform pair source on $S \\times S$"
@@ -83,7 +104,7 @@ theorem prgLengthExtension_verbose
     explaining "the converter factoring out the first call to $G$"
   With notation (Examples.PRGLengthExtension.𝓡₂.perPort S (budget := q)) as "\\mathcal{R}_2"
     explaining "the converter forwarding the uniform prefix and factoring out the second call to $G$"
-  Proof overview "We interpolate between ${Examples.PRGLengthExtension.PRGReal.perPort (Examples.PRGLengthExtension.H G) (budget := q)} and the ideal uniform triple ${Commons.MemorylessSource.perPort (S × S × S) 𝒰[S × S × S] (budget := q)} via two intermediate hybrids, replacing the first and second calls to ${G} in turn."
+  Proof overview "We interpolate between ${Examples.PRGLengthExtension.PRGReal.perPort (Examples.PRGLengthExtension.H G) (budget := q)} and the ideal uniform triple ${Commons.MemorylessSource.perPort (S × S × S) 𝒰[S × S × S] (budget := q)} under query budget ${q} via two intermediate hybrids, replacing the first and second calls to ${G} in turn."
   Define hybrid M₁ := Examples.PRGLengthExtension.𝓡₁.perPort G (budget := q) •
     Commons.MemorylessSource.perPort (S × S) 𝒰[S × S]
       (budget := Examples.PRGLengthExtension.𝓡₁.insideBudget G q)
@@ -110,7 +131,10 @@ theorem prgLengthExtension_verbose
       explaining "by non-expansion under ${Examples.PRGLengthExtension.𝓡₂.perPort S (budget := q)} applied to the base PRG assumption" by
     By non-expansion
     exact hPRG
-  New paragraph
+  Present pseudocode "hybrid" "Length-Extension Hybrid Sequence"
+    "on initial seed $s \\leftarrow \\mathcal{U}(S)$ under query budget ${q}:\n  extended generator: $(a, b) \\leftarrow G(s);\\; (c, d) \\leftarrow G(b);\\; \\mathbf{return}\\; (a, c, d)$\n  hybrid $M_1$: $(a, b) \\leftarrow \\mathcal{U}(S \\times S);\\; (c, d) \\leftarrow G(b);\\; \\mathbf{return}\\; (a, c, d)$\n  hybrid $M_2$: $a \\leftarrow \\mathcal{U}(S);\\; (c, d) \\leftarrow \\mathcal{U}(S \\times S);\\; \\mathbf{return}\\; (a, c, d)$"
+  New paragraph "Two-step hybrid chain."
+  rw [two_mul]
   By hybrid chain {
     cc_calc statistical
       Examples.PRGLengthExtension.PRGReal.perPort (Examples.PRGLengthExtension.H G) (budget := q)
@@ -140,6 +164,17 @@ theorem prgLengthExtension_verbose
 
 informal_title prgLengthExtension_verbose "Length Extension for Pseudorandom Generators"
 informal_kind prgLengthExtension_verbose "Theorem"
+informal_section prgLengthExtension_verbose
+  "PRG Length Extension via Two-Call Converters"
+  "We study sequential length extension of a pseudorandom generator over a finite nonempty seed space via two-call converters and non-expansion under query budget $q$."
+informal_section_prelude prgLengthExtension_verbose "symbolTable" "Notation" "PRG Length Extension Symbols"
+  "Parameter | Meaning\n---|---\n$S$ | Finite nonempty seed space\n$G : S \\to S \\times S$ | Base single-call pseudorandom generator\n$q$ | Per-port query budget on the outer evaluation interface\n$\\varepsilon$ | Distinguishing advantage bound for a single generator call"
+informal_section_prelude_decl prgLengthExtension_verbose Examples.PRGLengthExtension.H
+  "construction" "Definition" "Length-Extending Map H"
+informal_section_prelude_decl prgLengthExtension_verbose Examples.PRGLengthExtension.𝓡₁.perPort
+  "converterDef" "Converter" "First-Call Factoring Converter"
+informal_section_prelude_decl prgLengthExtension_verbose Examples.PRGLengthExtension.𝓡₂.perPort
+  "converterDef" "Converter" "Second-Call Factoring Converter"
 
 end SchemePRGSection
 
@@ -161,6 +196,7 @@ theorem aeadComposition_verbose
       —[macConv; ε₂]→ {aeIdeal}) :
     ({realChannel ∥ macKey} : Specification (TypedSystem (A ⊗ K)))
       —[macConv ≫ (encConv ▷ K); ε₁ + ε₂]→ {aeIdeal} := by
+  With role cpaChannel as "confidential channel"
   With role macKey as "authentication key"
   Proof overview "We first lift the confidentiality construction from ${realChannel} to ${cpaChannel} via ${encConv} within error ${ε₁} alongside the parallel authentication key ${macKey} using context insensitivity, then compose sequentially with the outer authentication step from ${cpaChannel ∥ macKey} to ${aeIdeal} via ${macConv}."
   By "sequential composability with the outer ${macConv} step on ${cpaChannel ∥ macKey}" it suffices to show hLifted :
@@ -171,6 +207,11 @@ theorem aeadComposition_verbose
 
 informal_title aeadComposition_verbose "Sequential Composition of Authenticated Encryption"
 informal_kind aeadComposition_verbose "Theorem"
+informal_section aeadComposition_verbose
+  "Authenticated Encryption Composition and Concrete Reduction"
+  "We formalize Banfi's constructive composition of authenticated encryption from confidentiality and plaintext integrity, first across abstract channels and then as a concrete finite-query reduction."
+informal_section_prelude aeadComposition_verbose "definition" "Composition Model" "Constructive AEAD Composition"
+  "In the constructive framework, authenticated encryption combines the $\\mathrm{INT}\\text{-}\\mathrm{PTXT}$ integrity filter and the $\\mathrm{IND}\\text{-}\\mathrm{CCA}$ decryption filter via hybrid reductions, relating the real AEAD system to the ideal encryption system up to a quadratic birthday collision penalty."
 
 end ChannelCompositionSection
 
@@ -178,7 +219,7 @@ section SchemeAEADSection
 paper_context SchemeContext
 
 /-- Concrete authenticated encryption advantage decomposition combining the plaintext-integrity
-and ciphertext-indistinguishability terms with the collision penalty. -/
+and ciphertext-indistinguishability terms (`2 * ε_p + 2 * ε_c`) with the collision penalty. -/
 theorem aeadHybridReduction_verbose
     {K M C : Type} [Fintype K] [Fintype M] [Fintype C]
     [DecidableEq K] [DecidableEq M] [DecidableEq C] [Nonempty M]
@@ -193,7 +234,7 @@ theorem aeadHybridReduction_verbose
     Δ (Commons.AE.system.perPort scheme (budget := q))
       (Commons.AE.Ideal.perPort M C (budget := q) •
         Commons.Encryption.system.perPort scheme (budget := Commons.AE.Ideal.insideBudget M C q)) ≤
-      ε_p + ε_c + ε_p + ε_c +
+      2 * ε_p + 2 * ε_c +
         (((q Commons.AE.Port.enc : ℝ≥0) ^ 2 / (Fintype.card M : ℝ≥0) : ℝ≥0) : ENNReal) := by
   With notation (Commons.AE.system.perPort scheme (budget := q)) as "\\mathcal{E}"
     explaining "the real authenticated-encryption system for $\\mathsf{scheme}$"
@@ -224,22 +265,31 @@ theorem aeadHybridReduction_verbose
       Δ (Commons.AE.system.perPort scheme (budget := q))
         (Commons.AE.CCA.perPort M C (budget := q) •
           Commons.AE.system.perPort scheme (budget := q)) ≤
-        ε_p + ε_c + ε_p + ε_c by {
+        2 * ε_p + 2 * ε_c by {
     By routine calculation "combining the AEAD collision-hybrid bound with the four component hops" {
       exact (AuthenticatedEncryption.real_ideal_distance_le scheme q).trans
         (add_le_add hBase le_rfl)
     }
   }
-  We conclude "Summing ${ε_p} and ${ε_c} twice yields the desired inequality" by {
-    exact add_le_add (add_le_add (add_le_add hPTXT hCCA) hPTXT) hCCA
+  We conclude "Summing ${ε_p} and ${ε_c} twice yields $2\\varepsilon_p + 2\\varepsilon_c$." by {
+    exact (add_le_add (add_le_add (add_le_add hPTXT hCCA) hPTXT) hCCA).trans_eq <| by
+      rw [two_mul ε_p, two_mul ε_c, add_assoc (ε_p + ε_c) ε_p ε_c,
+        add_assoc ε_p ε_c (ε_p + ε_c), add_comm ε_c (ε_p + ε_c),
+        add_assoc ε_p ε_c ε_c, ← add_assoc ε_p ε_p (ε_c + ε_c)]
   }
 
 informal_title aeadHybridReduction_verbose "Authenticated Encryption from IND-CCA and INT-PTXT"
 informal_kind aeadHybridReduction_verbose "Theorem"
+informal_section_prelude_decl aeadHybridReduction_verbose Commons.AE.PTXT.perPort
+  "converterDef" "Filter" "Plaintext-Integrity Filter Converter"
+informal_section_prelude_decl aeadHybridReduction_verbose Commons.AE.CCA.perPort
+  "converterDef" "Filter" "Chosen-Ciphertext Filter Converter"
+informal_section_prelude_decl aeadHybridReduction_verbose Commons.AE.Ideal.perPort
+  "converterDef" "Wrapper" "Ideal Authenticated-Encryption Converter"
 
 end SchemeAEADSection
 
-/-! ## Flagship 3: Indifferentiability Serial Simulator Composition (`IndiffContext`) -/
+/-! ## Indifferentiability Serial Simulator Composition (`IndiffContext`) -/
 
 section IndiffSection
 paper_context IndiffContext
@@ -266,7 +316,7 @@ theorem indiffSerialComposition_verbose
     We exhibit simulator simulator on interface P
     · exact admitted
     · exact indifferentiable
-  New paragraph
+  New paragraph "Application step and composition."
   We note hApp :
       ({ideal} : Specification (TypedSystem (H ⊗ Q))) —[application ▷ Q; δ]→ {target}
       explaining "from the assumed distance bound between ${(application ▷ Q) • ideal} and ${target} within error ${δ}" by
@@ -275,10 +325,15 @@ theorem indiffSerialComposition_verbose
 
 informal_title indiffSerialComposition_verbose "Serial Composition of Indifferentiable Constructions"
 informal_kind indiffSerialComposition_verbose "Theorem"
+informal_section indiffSerialComposition_verbose
+  "Indifferentiability and Serial Composition"
+  "Under Maurer--Renner indifferentiability, an honest application converter and a relaxed simulator specification compose sequentially by commuting the outer converter past the simulator on the adversarial interface."
+informal_section_prelude indiffSerialComposition_verbose "definition" "Specification" "Indifferentiability Simulator Relaxation"
+  "Given an ideal system $\\mathbf{S}$, an adversarial simulator class $\\Sigma$, and an error tolerance $\\varepsilon$, the indifferentiability specification collects all simulator images $\\Sigma \\cdot \\mathbf{S} = \\{(H \\triangleleft \\sigma) \\cdot \\mathbf{S} : \\sigma \\in \\Sigma\\}$ under statistical $\\varepsilon$-relaxation."
 
 end IndiffSection
 
-/-! ## Flagship 4 & 5: Games, H-Coefficients & Tightness Sandwich (`GameBasedContext`) -/
+/-! ## Games, H-Coefficients, and Tightness Sandwich (`GameBasedContext`) -/
 
 section GameBasedSection
 paper_context GameBasedContext
@@ -304,7 +359,7 @@ theorem gameCollision_verbose
     explaining "the ideal AEAD system"
   Proof overview "We identify ${AuthenticatedEncryption.Hybrid scheme q} as the underlying system obtained by ignoring the MBO of ${GameExamples.collision scheme q}, reduce any solver's advantage via conditional equivalence, and apply the birthday-style query bound."
   Ignoring the MBO of (GameExamples.collision scheme q) via (GameExamples.collision_visible scheme q)
-  New paragraph
+  New paragraph "Reduction via conditional equivalence."
   By "conditional equivalence between ${GameExamples.collision scheme q} and ${Commons.AE.Ideal.perPort M C (budget := q) • Commons.Encryption.system.perPort scheme (budget := Commons.AE.Ideal.insideBudget M C q)} while the MBO remains unset" it suffices to show hWin :
       s.2 (GameExamples.collision scheme q) ≤
         ↑(q Commons.AE.Port.enc) ^ 2 / ↑(Fintype.card M) by {
@@ -315,13 +370,18 @@ theorem gameCollision_verbose
       By conditional equivalence from (GameExamples.collision_conditionallyEquivalent scheme q) using hs
     exact hCond.trans hWin
   }
-  We conclude "Bounding the probability of provoking a plaintext-collision MBO across ${q Commons.AE.Port.enc} encryption queries establishes the bound" by {
+  We conclude "Bounding the probability of provoking a plaintext-collision MBO across ${q Commons.AE.Port.enc} encryption queries establishes the bound." by {
     exact GameExamples.collision_win_le scheme q
       (ConstructiveCryptography.DistinctionGames.solvers_winner hs)
   }
 
 informal_title gameCollision_verbose "Game-Playing Bound for AEAD Collisions"
 informal_kind gameCollision_verbose "Theorem"
+informal_section gameCollision_verbose
+  "Game Playing, Monotone Binary Outputs, and the H-Coefficient Technique"
+  "We connect code-based game-playing bounds for monotone binary outputs (MBOs) with the revealed H-coefficient technique and establish a tight one-query distinguisher sandwich."
+informal_section_prelude gameCollision_verbose "definition" "Game Model" "Monotone Binary Outputs and Conditional Equivalence"
+  "A game system $G$ exposes an underlying observable system $\\mathrm{visible}(G)$ together with a monotone binary output (MBO) flag. When two systems agree conditioned on the MBO remaining unset, any solver advantage is bounded by the winning probability $\\Pr[\\mathrm{MBO}(G) = 1]$."
 
 /-- Revealed Extended H-Technique with non-trivial ideal randomness and bad-transcript split,
 leaving the ideal reveal law, good-transcript ratio, and bad-mass combinatorics to standard Lean. -/
@@ -366,12 +426,16 @@ theorem extendedHCoefficient_verbose (A : Interface) (S : TypedSystem A) :
 
 informal_title extendedHCoefficient_verbose "Revealed H-Coefficient Security Bound"
 informal_kind extendedHCoefficient_verbose "Theorem"
+informal_section_prelude_decl extendedHCoefficient_verbose SystemAlgebra.RandomSystem.HCoefficient
+  "definition" "Technique" "Revealed H-Coefficient Witness"
 
-/-! ## Flagship 5: Tightness Sandwich (`lower_bound` + `upper_bound`) -/
+/-! ## Tightness Sandwich (`lower_bound` + `upper_bound`) -/
 
 /-- One-query Boolean bit interface with budget 1. -/
 abbrev bitInterface : Interface :=
   Interface.queryBudget Unit (fun _ => Unit) (fun _ => Bool) 1
+
+informal_symbol bitInterface "\\mathcal{I}_{\\mathrm{bit}}"
 
 /-- Deterministic bit system answering every single-port query with constant bit `c`. -/
 def fixedBit (c : Bool) : TypedSystem bitInterface :=
@@ -468,6 +532,8 @@ theorem bitDistinguishingTightness_verbose :
   Proof overview "We prove matching ${(1 / 2 : ℝ≥0)} lower and upper bounds on ${Δ (fixedBit false) sampledBit}: the lower bound exhibits ${bitObserverBehavior} checking for output ${Bool.true}, while the upper bound applies the Extended H-Technique."
   We prove matching lower and upper bounds :
   lower bound {
+    Present pseudocode "distinguisher" "One-Query Bit Distinguisher"
+      "distinguisher ${bitObserverBehavior} given oracle $\\mathbf{F}$:\n  query $b \\leftarrow \\mathbf{F}()$ on ${bitInterface}\n  return $b = \\mathsf{true}$"
     We exhibit distinguisher bitObserverBehavior
     By bounding decision probabilities of bitObserverBehavior via bitObserver_false_prob and bitObserver_sampled_prob
   }
@@ -550,6 +616,8 @@ theorem bitDistinguishingTightness_verbose :
 
 informal_title bitDistinguishingTightness_verbose "Tightness of One-Query Bit Distinguishing"
 informal_kind bitDistinguishingTightness_verbose "Theorem"
+informal_section_prelude bitDistinguishingTightness_verbose "interfaceSpec" "Bit Interface" "One-Query Boolean Bit Systems"
+  "Over the single-query Boolean interface $\\mathcal{I}_{\\mathrm{bit}}$ with unit budget, we compare the constant-false system $\\mathbf{F}_0$ against the uniform-bit mixture $\\mathbf{F}_{\\mathrm{rand}}$ drawing $c \\leftarrow \\mathcal{U}(\\{\\mathsf{false}, \\mathsf{true}\\})$ before answering the single query."
 
 end GameBasedSection
 
@@ -579,8 +647,8 @@ open Lean Elab Command in
     `Tests.Informalization.VerboseCCValidation.bitDistinguishingTightness_verbose
   ]
   let doc ← liftTermElabM <| Informalization.Render.Json.buildDocument
-    "Constructive Cryptography Proofs — Verbose-CC Validation"
-    (some "Seven flagship theorems authored with Verbose-CC and decompiled from kernel Expr.mdata traces")
+    "Constructive Cryptography Proofs"
+    (some "Selected theorems on pseudorandom generators, authenticated encryption, indifferentiability, games, and the H-coefficient technique")
     targetDecls
   let texts := Informalization.CLI.collectDocumentTexts doc
   let leaks := Informalization.Core.Hygiene.auditZeroLeakage texts

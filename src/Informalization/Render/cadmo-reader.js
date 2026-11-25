@@ -190,9 +190,15 @@
     parallel: "∥", otimes: "⊗", oplus: "⊕", equiv: "≡", simeq: "≃", approx: "≈",
     le: "≤", ge: "≥", ne: "≠", neq: "≠", implies: "⇒", iff: "⇔",
     in: "∈", notin: "∉", subseteq: "⊆", times: "×", cdot: "·", circ: "∘",
-    to: "→", mapsto: "↦", forall: "∀", exists: "∃", land: "∧", wedge: "∧",
+    to: "→", rightarrow: "→", leftarrow: "←", gets: "←", leftrightarrow: "↔",
+    Leftarrow: "⇐", Rightarrow: "⇒", Leftrightarrow: "⇔",
+    mapsto: "↦", forall: "∀", exists: "∃", land: "∧", wedge: "∧",
     lor: "∨", vee: "∨", neg: "¬", sum: "∑", prod: "∏", pm: "±",
-    mid: "∣", preceq: "⪯", succeq: "⪰", top: "⊤", bot: "⊥", ldots: "…", dots: "…",
+    mid: "∣", preceq: "⪯", succeq: "⪰", top: "⊤", bot: "⊥",
+    ldots: "…", cdots: "⋯", dots: "…", colon: ":", setminus: "∖",
+    cup: "∪", cap: "∩", subset: "⊂", supseteq: "⊇",
+    langle: "⟨", rangle: "⟩", lfloor: "⌊", rfloor: "⌋", lceil: "⌈", rceil: "⌉",
+    Vert: "∥", vert: "|",
     Pr: "Pr", min: "min", max: "max", log: "log", exp: "exp"
   };
 
@@ -223,6 +229,7 @@
           const esc = tex[i + 1] || "";
           if (esc === "," || esc === ";") frag.appendChild(document.createTextNode("\u2009"));
           else if (esc === "!") { /* thin negative space */ }
+          else if (esc === "|") frag.appendChild(document.createTextNode("∥"));
           else frag.appendChild(document.createTextNode(esc));
           i += 2;
           continue;
@@ -287,15 +294,50 @@
           continue;
         }
         if (
-          cmd === "mathrm" || cmd === "mathsf" || cmd === "operatorname" ||
-          cmd === "text" || cmd === "texttt" || cmd === "mathbf" ||
-          cmd === "boldsymbol" || cmd === "mathrel" || cmd === "mathit"
+          cmd === "hat" || cmd === "widehat" || cmd === "tilde" || cmd === "widetilde" ||
+          cmd === "bar" || cmd === "overline" || cmd === "vec"
         ) {
           const [arg, next] = readBalanced(tex, i);
           const span = document.createElement("span");
-          if (cmd === "text" || cmd === "texttt") {
-            span.className = "cadmo-mtext";
+          span.className = "cadmo-accent";
+          if (cmd === "overline" || cmd === "bar") {
+            span.style.textDecoration = "overline";
+            span.appendChild(renderMathNodes(arg));
+          } else {
+            const comb = (cmd === "hat" || cmd === "widehat") ? "\u0302"
+              : (cmd === "tilde" || cmd === "widetilde") ? "\u0303"
+              : "\u20D7";
+            const trimmed = arg.trim();
+            if (trimmed.length === 1 && /[A-Za-z]/.test(trimmed)) {
+              const v = document.createElement("var");
+              v.textContent = trimmed + comb;
+              span.appendChild(v);
+            } else {
+              span.appendChild(renderMathNodes(arg));
+              span.appendChild(document.createTextNode(comb));
+            }
+          }
+          frag.appendChild(span);
+          i = next;
+          continue;
+        }
+        if (
+          cmd === "mathrm" || cmd === "mathsf" || cmd === "operatorname" ||
+          cmd === "text" || cmd === "texttt" || cmd === "mathtt" ||
+          cmd === "mathbf" || cmd === "boldsymbol" || cmd === "mathrel" ||
+          cmd === "mathbin" || cmd === "mathord" || cmd === "mathit"
+        ) {
+          const [arg, next] = readBalanced(tex, i);
+          const span = document.createElement("span");
+          if (cmd === "text" || cmd === "texttt" || cmd === "mathtt") {
+            span.className = (cmd === "texttt" || cmd === "mathtt") ? "cadmo-mtext cadmo-tt" : "cadmo-mtext";
+            if (cmd === "texttt" || cmd === "mathtt") span.style.fontFamily = "var(--font-mono)";
             span.textContent = arg.replace(/\\_/g, "_");
+          } else if (cmd === "mathbin") {
+            span.className = "cadmo-msym";
+            span.appendChild(document.createTextNode(" "));
+            span.appendChild(renderMathNodes(arg));
+            span.appendChild(document.createTextNode(" "));
           } else if (cmd === "mathbf" || cmd === "boldsymbol") {
             span.className = "cadmo-op cadmo-bf";
             span.style.fontWeight = "600";
@@ -1331,6 +1373,7 @@
     function ensureLeadIn() {
       if (leadIn && !usedLeadIn) {
         paraChildren.push(h("span", { class: "cadmo-proof-lead" }, leadIn));
+        paraChildren.push(" ");
         usedLeadIn = true;
       }
     }
@@ -1341,6 +1384,7 @@
         const kids = [];
         if (leadIn && !usedLeadIn) {
           kids.push(h("span", { class: "cadmo-proof-lead" }, leadIn));
+          kids.push(" ");
           usedLeadIn = true;
         }
         kids.push(sentEl);
@@ -1348,6 +1392,9 @@
         if (childrenEl) out.push(childrenEl);
       } else {
         ensureLeadIn();
+        if (paraChildren.length > 0 && paraChildren[paraChildren.length - 1] !== " ") {
+          paraChildren.push(" ");
+        }
         paraChildren.push(sentEl);
         if (childrenEl) {
           flushPara(false);
@@ -2196,7 +2243,7 @@
               hasExplicitSecPrefix ? null : h("span", { class: "cadmo-section-num" }, `${secNumShown}.`),
               secTitleStr
             ),
-            entry.sectionIntro ? h("p", { class: "cadmo-section-intro" }, entry.sectionIntro) : null,
+            entry.sectionIntro ? h("p", { class: "cadmo-section-intro" }, renderMixedText(entry.sectionIntro, secScope)) : null,
             scParas
           )
         );
