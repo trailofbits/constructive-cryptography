@@ -90,7 +90,8 @@ def cipherSystem {Block State : Type} [Fintype Block] [Fintype State]
 /-- Translate a tagged cipher query to the corresponding forward or inverse port.
 Each outside query makes one inside query and returns its reply unchanged. -/
 def cipherRouting (Block State : Type) [Fintype Block] [Fintype State] (queries : Nat) :
-    TypedConverter (CipherInterface Block State queries) (TweakedBidirectional Block State queries) :=
+    TypedConverter (CipherInterface Block State queries)
+      (TweakedBidirectional Block State queries) :=
   TypedConverter.routing
     (fun u => if u.2.1 then ⟨.inverse, u.2.2⟩ else ⟨.forward, u.2.2⟩)
     (fun _ r => match r with | ⟨.forward, y⟩ => y | ⟨.inverse, y⟩ => y)
