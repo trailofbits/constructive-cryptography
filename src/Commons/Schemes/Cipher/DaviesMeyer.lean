@@ -3,6 +3,7 @@ module
 public import Commons.Definitions.Ideal
 public import ConstructiveCryptography.Notation
 public import Probability.Counting.Guessing
+public import RandomSystems.Typed.QueryRouting
 public import RandomSystems.Typed.KeyGuessing
 public import RandomSystems.Typed.Memoryless
 public import RandomSystems.Typed.SampleLaws
@@ -86,12 +87,37 @@ def cipherSystem {Block State : Type} [Fintype Block] [Fintype State]
     TypedSystem (CipherInterface Block State queries) :=
   system _ query => cipherReply E query
 
+/-- Translate a tagged cipher query to the corresponding forward or inverse port.
+Each outside query makes one inside query and returns its reply unchanged. -/
+def cipherRouting (Block State : Type) [Fintype Block] [Fintype State] (queries : Nat) :
+    TypedConverter (CipherInterface Block State queries) (TweakedBidirectional Block State queries) :=
+  TypedConverter.routing
+    (fun u => if u.2.1 then ⟨.inverse, u.2.2⟩ else ⟨.forward, u.2.2⟩)
+    (fun _ r => match r with | ⟨.forward, y⟩ => y | ⟨.inverse, y⟩ => y)
+    (fun _ hx => Interface.queryBudget_domain_map _ le_rfl hx)
+
 open Classical in
-/-- Independent uniform permutations per cipher key; forward and inverse queries share the same
-retained draw. -/
+/-- The standard tweakable ideal permutation, with its direction encoded in each query.
+Both directions at a key use the same retained permutation. -/
 def idealCipher (Block State : Type) [Fintype Block] [Fintype State] (queries : Nat) :
     TypedSystem (CipherInterface Block State queries) :=
-  sample E ←$ 𝒰[CipherFamily Block State]; cipherSystem E queries
+  cipherRouting Block State queries • TweakableStrongURP Block State (q := queries)
+
+open Classical in
+/-- Sampling the shared cipher family once presents the routed standard ideal cipher. -/
+lemma idealCipher_eq_sample (Block State : Type) [Fintype Block] [Fintype State]
+    (queries : Nat) :
+    idealCipher Block State queries =
+      TypedSystem.sample (Distribution.uniform (CipherFamily Block State))
+        (fun E => cipherSystem E queries) := by
+  rw [idealCipher, TweakableStrongURP, TypedConverter.smul_sample]
+  congr 1
+  funext E
+  rw [cipherRouting, TypedConverter.routing_smul_ofFunction]
+  apply congrArg TypedSystem.ofFunction
+  funext i query
+  rcases query with ⟨inverse, key, x⟩
+  cases inverse <;> rfl
 
 /-- Hidden chaining-key challenge port alongside a public forward/inverse cipher port, with
 separate query budgets. -/
