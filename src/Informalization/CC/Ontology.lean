@@ -7,6 +7,8 @@ import Informalization.Core.Grammar
 import Informalization.Core.Hygiene
 import Informalization.Core.LeanTeX
 import Informalization.Core.Ontology
+import Informalization.Core.Presentation
+import Informalization.Core.Overlay
 import Informalization.Core.Explanation
 import Informalization.CC.Registry
 
@@ -489,8 +491,14 @@ private def ccTypeHandler : TypeHandler where
     if ← isInterfaceType ty then
       return some { noun := nounInterface }
     -- 3. Resource (`Phi A` or `TypedSystem A`): arity-driven "with interface A" / "with interfaces H and P"
+    -- Respect `@[interface_resource_noun]` / `informal_noun` on any interface constant first.
     if let some iface ← resourceInterface? ty then
       let acc ← interfaceAccessory tbl iface
+      if let .const ifaceHead _ := iface.getAppFn.consumeMData then
+        let env ← getEnv
+        if let some (sg, pl) := (Core.Overlay.getOverlay env ifaceHead).noun? <|>
+            (Core.Presentation.getMathPresentation env ifaceHead).interfaceResourceNoun? then
+          return some { noun := ⟨sg, pl⟩, accessories := [acc] }
       return some { noun := nounResource, accessories := [acc] }
     -- 4. Converter (`A ⟶ B`, `Converter C A B`, or `TypedConverter A B`)
     if let some (outIface, inIface) ← converterInterfaces? ty then
@@ -713,7 +721,7 @@ private def ccPropHandler : PropHandler where
           let r2Tex ← exprToLatex r2 tbl
           let epsTex ← exprToLatex rhs tbl
           return some #[
-            .text "the distinguishing distance between ", .inlineMath r1Tex,
+            .text "the distinguishing advantage between ", .inlineMath r1Tex,
             .text " and ", .inlineMath r2Tex,
             .text " is at most ", .inlineMath epsTex
           ]
@@ -804,6 +812,15 @@ def registerAll : IO Unit := do
   -- Type & proposition ontology handlers
   registerTypeHandler ccTypeHandler
   registerPropHandler ccPropHandler
+  Core.Presentation.registerCCKnownCarrierHook fun ty => do
+    let t := ty.consumeMData
+    let isIface ← isInterfaceType t
+    let isRes := (← resourceInterface? t).isSome
+    let isConv := (← converterInterfaces? t).isSome
+    let isSpec := (← specificationInterface? t).isSome
+    let isGame := (← gameInterface? t).isSome
+    let isDist := (← distinguisherInterface? t).isSome
+    return isIface || isRes || isConv || isSpec || isGame || isDist
 
 initialize registerAll
 

@@ -97,46 +97,30 @@ partial def unwrapVerboseMData? : Expr → Option (MData × Expr)
       else unwrapVerboseMData? inner
   | _ => none
 
-/-- Search shallowly inside a step proof term for an annotated `cc_calc_step` reason. -/
-partial def findCalcStepReason? (e : Expr) (fuel : Nat := 16) : Option String :=
-  if fuel == 0 then none
-  else match e with
-  | .mdata kv inner =>
-      match mdataGetString? kv ccVerboseKindKey, mdataGetString? kv ccVerboseReasonKey with
-      | some "cc_calc_step", some r => some r
-      | _, _ => findCalcStepReason? inner (fuel - 1)
-  | .app f a =>
-      findCalcStepReason? a (fuel - 1) <|> findCalcStepReason? f (fuel - 1)
-  | .letE _ _ v b _ =>
-      findCalcStepReason? v (fuel - 1) <|> findCalcStepReason? b (fuel - 1)
+/-- Search inside a step proof term for an annotated `cc_calc_step` reason in $O(\text{DAG})$ time. -/
+def findCalcStepReason? (e : Expr) (_fuel : Nat := 16) : Option String :=
+  match e.find? fun sub =>
+    match sub with
+    | .mdata kv _ =>
+        mdataGetString? kv ccVerboseKindKey == some "cc_calc_step" &&
+          (mdataGetString? kv ccVerboseReasonKey).isSome
+    | _ => false with
+  | some (.mdata kv _) => mdataGetString? kv ccVerboseReasonKey
   | _ => none
 
-/-- Check whether an expression contains any `cc_calc_step` annotation in its shallow proof tree. -/
-partial def hasAnyCalcStepAnnotation (e : Expr) (fuel : Nat := 24) : Bool :=
-  if fuel == 0 then false
-  else match e with
-  | .mdata kv inner =>
-      mdataGetString? kv ccVerboseKindKey == some "cc_calc_step" ||
-        hasAnyCalcStepAnnotation inner (fuel - 1)
-  | .app f a =>
-      hasAnyCalcStepAnnotation f (fuel - 1) || hasAnyCalcStepAnnotation a (fuel - 1)
-  | .letE _ _ v b _ =>
-      hasAnyCalcStepAnnotation v (fuel - 1) || hasAnyCalcStepAnnotation b (fuel - 1)
-  | _ => false
+/-- Check whether an expression contains any `cc_calc_step` annotation in $O(\text{DAG})$ time. -/
+def hasAnyCalcStepAnnotation (e : Expr) (_fuel : Nat := 24) : Bool :=
+  (e.find? fun sub =>
+    match sub with
+    | .mdata kv _ => mdataGetString? kv ccVerboseKindKey == some "cc_calc_step"
+    | _ => false).isSome
 
-/-- Check whether an expression contains any Verbose-CC `mdata` annotation within `fuel`. -/
-partial def hasAnyVerboseAnnotation (e : Expr) (fuel : Nat := 32) : Bool :=
-  if fuel == 0 then false
-  else match e with
-  | .mdata kv inner =>
-      (mdataGetString? kv ccVerboseKindKey).isSome ||
-        hasAnyVerboseAnnotation inner (fuel - 1)
-  | .app f a =>
-      hasAnyVerboseAnnotation f (fuel - 1) || hasAnyVerboseAnnotation a (fuel - 1)
-  | .letE _ _ v b _ =>
-      hasAnyVerboseAnnotation v (fuel - 1) || hasAnyVerboseAnnotation b (fuel - 1)
-  | .lam _ _ b _ => hasAnyVerboseAnnotation b (fuel - 1)
-  | _ => false
+/-- Check whether an expression contains any Verbose-CC `mdata` annotation in $O(\text{DAG})$ time. -/
+def hasAnyVerboseAnnotation (e : Expr) (_fuel : Nat := 32) : Bool :=
+  (e.find? fun sub =>
+    match sub with
+    | .mdata kv _ => (mdataGetString? kv ccVerboseKindKey).isSome
+    | _ => false).isSome
 
 /-- Bounded AST node count (`> limit` stops early) so large combinatorial/arithmetic tactics
 (`simp`, `linarith`, `norm_num`) dropped from Verbose-CC are summarized cleanly without `whnf` blowup. -/
@@ -173,14 +157,99 @@ private def markStepEmitted : StateRefT DiscourseState MetaM Unit :=
   modify (·.markEmitted)
 
 private def subContextOf (ctx : DecompCtx) : DecompCtx :=
-  { ctx with lastFactFVar? := none, factIndex := 0, atRootConclusion := false, isProofStart := false }
+  { ctx with lastFactFVar? := none, factIndex := 0, atRootConclusion := false, isProofStart := false, isClosingGoal := false }
+
+private def visibleMathLengthTex (tex : String) : Nat :=
+  let s := tex
+    |>.replace "\\mathrm{" "" |>.replace "\\mathsf{" "" |>.replace "\\mathcal{" ""
+    |>.replace "\\mathbf{" "" |>.replace "\\mathbb{" "" |>.replace "\\text{" ""
+    |>.replace "\\left" "" |>.replace "\\right" ""
+    |>.replace "\\!" "" |>.replace "\\," " " |>.replace "\\;" " "
+    |>.replace "{" "" |>.replace "}" ""
+  s.trimAscii.toString.length
+
+private def hasSubstantialMath (tex : String) : Bool :=
+  visibleMathLengthTex tex ≥ 42 ||
+    (tex.splitOn " + ").length ≥ 3 ||
+    (tex.splitOn "\\sum").length > 1 ||
+    (tex.splitOn "\\frac").length > 1
+
+private def endsWithDisplayMath (inls : Array Inline) : Bool :=
+  match inls.back? with
+  | some (.displayMath _ _) => true
+  | _ => false
+
+private def appendSentencePunct (inls : Array Inline) (punct : String := ".") : Array Inline :=
+  if punct.isEmpty || endsWithDisplayMath inls then inls
+  else
+    match inls.back? with
+    | some (.text s) =>
+        let t := s.trimAscii.toString
+        if t.endsWith "." || t.endsWith "!" || t.endsWith "?" || t.endsWith ":" then inls
+        else inls.push (.text punct)
+    | _ => inls.push (.text punct)
+
+private def ppCleanType (e : Expr) : MetaM String := do
+  return (← ppExpr e).pretty
+
+private def formatPropSentence (tbl : SymbolTable) (prop : Expr) (punct : String := ".") :
+    MetaM (Array Inline) := do
+  let inls ← renderProposition tbl prop
+  if !inls.isEmpty then
+    match inls[inls.size - 1]! with
+    | .inlineMath tex =>
+        if hasSubstantialMath tex then
+          return inls.set! (inls.size - 1) (.displayMath tex punct)
+    | .displayMath _ _ => return inls
+    | _ => pure ()
+  return appendSentencePunct inls punct
+
+private def stripTrailingPeriod (s : String) : String :=
+  let t := s.trimAscii.toString
+  if t.endsWith "." then (t.dropEnd 1).toString else t
+
+private def startsLowerChar (s : String) : Bool :=
+  match s.trimAscii.toString.toList with
+  | c :: _ => c.isLower
+  | [] => false
+
+private def formatGameHeading (rawLabel : String) : String :=
+  let t := rawLabel.trimAscii.toString
+  let lower := t.toLower
+  if lower == "g0" || lower == "g_0" || lower == "g₀" || lower == "game0" || lower == "game_0" then "Game 0."
+  else if lower == "g1" || lower == "g_1" || lower == "g₁" || lower == "game1" || lower == "game_1" then "Game 1."
+  else if lower == "g2" || lower == "g_2" || lower == "g₂" || lower == "game2" || lower == "game_2" then "Game 2."
+  else if lower == "g3" || lower == "g_3" || lower == "g₃" || lower == "game3" || lower == "game_3" then "Game 3."
+  else if lower == "g4" || lower == "g_4" || lower == "g₄" || lower == "game4" || lower == "game_4" then "Game 4."
+  else if lower.startsWith "game" then
+    let numPart := (t.drop 4).trimAscii.toString
+    let numClean := if numPart.startsWith "_" then (numPart.drop 1).toString else numPart
+    if numClean.isEmpty then "Game." else s!"Game {numClean}."
+  else if t.endsWith "." then t
+  else s!"Game {t}."
+
+private def declTagFromCtx (ctx : DecompCtx) : String :=
+  match ctx.seenDecls.toList.head? with
+  | some n => n.toString
+  | none => "local"
+
+private def registerScopedNotationInspector (declTag sym rhsTex leanTy desc : String)
+    (badge : String := "notation") : IO Unit := do
+  registerProofNotationInspector {
+    key := s!"vcc:{declTag}:{badge}:{sym}"
+    display := sym
+    kind := .localShorthand s!"{sym} = {rhsTex}" desc
+    leanName? := none
+    leanType := leanTy
+    roleBadge? := some badge
+  }
 
 private def mkVerboseStep (ctx : DecompCtx) (id : String) (content : Array Inline)
     (children : Array ProofNode) (targetForGoal : Expr) (origin? : Option String := none)
     (defaultExpanded : Bool := false) :
     StateRefT DiscourseState MetaM ProofNode := do
   let goal ← buildGoalState ctx.tbl targetForGoal
-  let diagHtml ← (← diagramHookRef.get) targetForGoal
+  let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) targetForGoal else pure none
   return .step id content children (some goal) diagHtml origin? false defaultExpanded
 
 private partial def collectConsts (e : Expr) (acc : NameSet := {}) (fuel : Nat := 64) : NameSet :=
@@ -228,7 +297,7 @@ private def inferSufficesReason (env : Environment) (body : Expr) : String :=
   else if cs.contains ``SystemAlgebra.Domain.DistinguisherBehavior.advantage_le_transcriptDistance ||
           cs.contains ``SystemAlgebra.Domain.Distinguisher.advantage_le_transcriptDistance ||
           cs.contains ``ConstructiveCryptography.le_advantageDistance then
-    "since distinguishing distance bounds every compatible distinguisher's advantage"
+    "since $\\Delta$ bounds every compatible distinguisher's distinguishing advantage"
   else if cs.contains ``ConstructiveCryptography.CryptographicAlgebra.Specification.constructs_singleton_iff ||
           cs.contains ``ConstructiveCryptography.CryptographicAlgebra.Specification.constructsWithin_singleton_iff ||
           cs.contains ``ConstructiveCryptography.CryptographicAlgebra.Specification.constructs_singleton_epsilonRelaxation_iff ||
@@ -378,7 +447,7 @@ private partial def flattenVerboseCalc (tbl : SymbolTable) (proof expected : Exp
 private def describeVerboseHopReason (env : Environment) (tbl : SymbolTable) (hop : CalcHop) :
     MetaM (Array Inline) := do
   if let some custom := findCalcStepReason? hop.proof then
-    return #[.text custom]
+    return parseProseWithMath custom
   let fn := hop.proof.getAppFn.consumeMData
   match hop.kind with
   | .exactEq =>
@@ -392,14 +461,15 @@ private def describeVerboseHopReason (env : Environment) (tbl : SymbolTable) (ho
   | .statistical =>
       match fn with
       | .const cn _ =>
-          if cn == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_distance ||
-             cn == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_statistical then
+          if cn == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_distance then
+            pure #[.text "by distinguishing advantage bound"]
+          else if cn == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_statistical then
             pure #[.text "by statistical distance bound"]
           else if cn == ``ConstructiveCryptography.CryptographicAlgebra.distance_attach_le then
             pure #[.text "by non-expansion under converter attachment"]
           else
-            pure #[.text "by statistical bound (", .emph (humanLemmaLabel env cn), .text ")"]
-      | _ => pure #[.text "by statistical distance bound"]
+            pure #[.text "by distinguishing bound (", .emph (humanLemmaLabel env cn), .text ")"]
+      | _ => pure #[.text "by distinguishing bound"]
   | .computational =>
       match fn with
       | .const cn _ =>
@@ -429,12 +499,19 @@ private def buildAnnotatedCalcChain (ctx : DecompCtx) (decompileChild : Decompil
   let env ← getEnv
   let mut calcSteps : Array (CalcStep × Array ProofNode) := #[]
   let mut nComp : Nat := 0
+  let mut nDist : Nat := 0
   let mut nStat : Nat := 0
   let mut nEq : Nat := 0
   for hop in hops do
     match hop.kind with
     | .computational => nComp := nComp + 1
-    | .statistical => nStat := nStat + 1
+    | .statistical =>
+        let cs := collectConsts hop.proof
+        if cs.contains ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_statistical ||
+           cs.toList.any (fun n => (n.toString.splitOn "statDist").length > 1) then
+          nStat := nStat + 1
+        else
+          nDist := nDist + 1
     | .exactEq => nEq := nEq + 1
     let lhsTex ← exprToLatex hop.lhs ctx.tbl
     let rhsTex ← exprToLatex hop.rhs ctx.tbl
@@ -452,7 +529,7 @@ private def buildAnnotatedCalcChain (ctx : DecompCtx) (decompileChild : Decompil
           pure #[]
       else
         pure #[]
-    let diagHtml ← (← diagramHookRef.get) hop.prop
+    let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) hop.prop else pure none
     let cs : CalcStep := {
       lhsLatex := lhsTex
       relationLatex := hop.relLatex
@@ -465,6 +542,8 @@ private def buildAnnotatedCalcChain (ctx : DecompCtx) (decompileChild : Decompil
   let mut summaryParts : List String := []
   if nComp > 0 then
     summaryParts := summaryParts ++ [s!"{countPhrase nComp ⟨"computational substitution", "computational substitutions"⟩}"]
+  if nDist > 0 then
+    summaryParts := summaryParts ++ [s!"{countPhrase nDist ⟨"distinguishing bound", "distinguishing bounds"⟩}"]
   if nStat > 0 then
     summaryParts := summaryParts ++ [s!"{countPhrase nStat ⟨"statistical bound", "statistical bounds"⟩}"]
   if nEq > 0 then
@@ -573,58 +652,273 @@ def verboseCCExplainer : RuleExplainer where
     let env ← getEnv
 
     match kind with
+    -- 0. Proof overview roadmap and paragraph breaks
+    | "proof_overview" =>
+        markStepEmitted
+        let bodyInl := appendSentencePunct (parseProseWithMath (reason?.getD "")) "."
+        let step ← mkVerboseStep ctx s!"vcc-overview-{ctx.factIndex}" bodyInl #[] expected
+        let brk : ProofNode := .flowNote s!"vcc-para-overview-{ctx.factIndex}" "" "paragraph"
+        let rest ← decompileChild { ctx with isProofStart := false } expected inner
+        return some (#[step, brk] ++ rest)
+
+    | "paragraph" =>
+        markStepEmitted
+        let heading := reason?.getD ""
+        let brk : ProofNode := .flowNote s!"vcc-para-{ctx.factIndex}" heading "paragraph"
+        let rest ← decompileChild { ctx with isProofStart := false } expected inner
+        return some (#[brk] ++ rest)
+
+    -- 0b. Scoped paper notation (`With notation e as sym [explaining "..."]`)
+    | "with_notation" =>
+        let sym := label?.getD ""
+        let unwrapPair : Option (Expr × Expr) :=
+          match inner.consumeMData with
+          | .app fn val =>
+              match fn.consumeMData with
+              | .lam _ _ body _ => some (val, body.instantiate1 val)
+              | _ => none
+          | .letE _ _ val body _ => some (val, body.instantiate1 val)
+          | _ => none
+        match unwrapPair with
+        | some (val, nextProof) =>
+            let normVal ← normalizeForPresentation val
+            let tblWithout := { ctx.tbl with exprAliases := ctx.tbl.exprAliases.filter (·.2 != sym) }
+            let rhsTex ← exprToLatex normVal tblWithout
+            let (leanTy, roleDesc) ← try
+              let pty ← inferType normVal
+              pure (← ppCleanType pty, ← formatParameterRole ctx.tbl pty)
+            catch _ =>
+              pure ("", "Scoped paper notation.")
+            let desc := reason?.getD roleDesc
+            registerScopedNotationInspector (declTagFromCtx ctx) sym rhsTex leanTy desc "notation"
+            let nextTbl ← ctx.tbl.withNormalizedExprAlias val sym
+            let nextTbl := nextTbl.withExprAlias val.consumeMData sym
+            return some (← decompileChild { ctx with tbl := nextTbl } expected nextProof)
+        | none =>
+            return some (← decompileChild ctx expected inner)
+
+    | "with_notation_let" =>
+        match inner.consumeMData with
+        | .letE nm ty val body _ =>
+            let sym := label?.getD (formatMathIdent (nm.toString))
+            let normVal ← normalizeForPresentation val
+            let tblWithout := { ctx.tbl with exprAliases := ctx.tbl.exprAliases.filter (·.2 != sym) }
+            let rhsTex ← exprToLatex normVal tblWithout
+            let (leanTy, roleDesc) ← try
+              pure (← ppCleanType ty, ← formatParameterRole ctx.tbl ty)
+            catch _ =>
+              pure ("", "Scoped local notation.")
+            let desc := reason?.getD roleDesc
+            registerScopedNotationInspector (declTagFromCtx ctx) sym rhsTex leanTy desc "notation"
+            withLetDecl nm ty val fun fv => do
+              let goal ← buildGoalState ctx.tbl expected
+              markStepEmitted
+              let step : ProofNode :=
+                match reason? with
+                | some g =>
+                    if visibleMathLengthTex rhsTex ≥ 64 then
+                      .step s!"vcc-letnot-{ctx.factIndex}"
+                        (#[.text "Let ", .inlineMath sym, .text " denote "] ++ parseProseWithMath (stripTrailingPeriod g) ++ #[.text "."])
+                        #[] (some goal)
+                    else
+                      .step s!"vcc-letnot-{ctx.factIndex}"
+                        (#[.text "Let ", .inlineMath s!"{sym} := {rhsTex}", .text ", "] ++ parseProseWithMath (stripTrailingPeriod g) ++ #[.text "."])
+                        #[] (some goal)
+                | none =>
+                    .step s!"vcc-letnot-{ctx.factIndex}"
+                      #[.text "Let ", .inlineMath s!"{sym} := {rhsTex}", .text "."]
+                      #[] (some goal)
+              let nextTbl ← ctx.tbl.withNormalizedExprAlias val sym
+              let nextTbl := (nextTbl.withExprAlias val.consumeMData sym).withExprAlias fv sym
+              let rest ← decompileChild { ctx with tbl := nextTbl, isProofStart := false } expected (body.instantiate1 fv)
+              return some (#[step] ++ rest)
+        | _ => return some (← decompileChild ctx expected inner)
+
     -- 1. Individual `cc_calc` step wrapper: let outer chain read its reason, or unwrap cleanly
     | "cc_calc_step" =>
         return some (← decompileChild ctx expected inner)
 
-    -- 2. `Write x := e` local shorthand
+    -- 2. `Let x denote e` / `Write x := e` local shorthand
     | "write" =>
         match inner.consumeMData with
         | .letE nm ty val body _ =>
             withLetDecl nm ty val fun fv => do
               let symTex ← exprToLatex fv ctx.tbl
               let valTex ← exprToLatex val ctx.tbl
+              let (leanTy, roleDesc) ← try
+                pure (← ppCleanType ty, ← formatParameterRole ctx.tbl ty)
+              catch _ =>
+                pure ("", "Local definition.")
+              registerScopedNotationInspector (declTagFromCtx ctx) symTex valTex leanTy (reason?.getD roleDesc) "local shorthand"
               let goal ← buildGoalState ctx.tbl expected
               markStepEmitted
+              let defMath : Array Inline :=
+                if hasSubstantialMath valTex && reason?.isNone then
+                  #[.displayMath s!"{symTex} := {valTex}" "."]
+                else if reason?.isSome && visibleMathLengthTex valTex ≥ 56 then
+                  #[.inlineMath symTex]
+                else
+                  #[.inlineMath s!"{symTex} := {valTex}"]
+              let prose : Array Inline := match reason? with
+                | some g =>
+                    let gInl := parseProseWithMath (stripTrailingPeriod g)
+                    if visibleMathLengthTex valTex ≥ 56 then
+                      #[.text "Let "] ++ defMath ++ #[.text " be "] ++ gInl ++ #[.text "."]
+                    else
+                      #[.text "Let "] ++ defMath ++ #[.text ", "] ++ gInl ++ #[.text "."]
+                | none =>
+                    appendSentencePunct (#[.text "Let "] ++ defMath) "."
               let step : ProofNode :=
-                .step s!"vcc-write-{symTex}-{ctx.factIndex}"
-                  #[.text "Write ", .inlineMath s!"{symTex} := {valTex}", .text "."]
-                  #[] (some goal)
+                .step s!"vcc-write-{symTex}-{ctx.factIndex}" prose #[] (some goal)
               let rest ← decompileChild { ctx with isProofStart := false } expected (body.instantiate1 fv)
               return some (#[step] ++ rest)
         | _ => return some (← decompileChild ctx expected inner)
 
-    -- 3. `Introduce_hybrid H := e`
+    -- 3. `Define hybrid H := e` / `Introduce_hybrid H := e`
     | "hybrid" =>
         match inner.consumeMData with
         | .letE nm ty val body _ =>
             withLetDecl nm ty val fun fv => do
               let symTex ← exprToLatex fv ctx.tbl
               let valTex ← exprToLatex val ctx.tbl
+              let (leanTy, roleDesc) ← try
+                pure (← ppCleanType ty, ← formatParameterRole ctx.tbl ty)
+              catch _ =>
+                pure ("", "Intermediate hybrid system.")
+              registerScopedNotationInspector (declTagFromCtx ctx) symTex valTex leanTy (reason?.getD roleDesc) "hybrid"
               let goal ← buildGoalState ctx.tbl expected
               markStepEmitted
+              let prose : Array Inline := match reason? with
+                | some g =>
+                    let gClean := stripTrailingPeriod g
+                    let gLow := gClean.trimAscii.toString.toLower
+                    let gBody :=
+                      if gLow.startsWith "where " || gLow.startsWith "in which " || gLow.startsWith "such that " then gClean
+                      else s!"where {gClean}"
+                    let gInl := parseProseWithMath gBody
+                    if visibleMathLengthTex valTex ≥ 56 then
+                      #[.text "Define the intermediate hybrid ", .inlineMath symTex, .text ", "] ++ gInl ++ #[.text "."]
+                    else
+                      #[.text "Define the intermediate hybrid ", .inlineMath s!"{symTex} := {valTex}", .text ", "] ++ gInl ++ #[.text "."]
+                | none =>
+                    if hasSubstantialMath valTex then
+                      #[.text "Define the intermediate hybrid ", .displayMath s!"{symTex} := {valTex}" "."]
+                    else
+                      #[.text "Define the intermediate hybrid ", .inlineMath s!"{symTex} := {valTex}", .text "."]
               let step : ProofNode :=
-                .step s!"vcc-hybrid-{symTex}-{ctx.factIndex}"
-                  #[.text "Introduce the intermediate hybrid ", .inlineMath s!"{symTex} := {valTex}", .text "."]
-                  #[] (some goal)
+                .step s!"vcc-hybrid-{symTex}-{ctx.factIndex}" prose #[] (some goal)
               let rest ← decompileChild { ctx with isProofStart := false } expected (body.instantiate1 fv)
               return some (#[step] ++ rest)
         | _ => return some (← decompileChild ctx expected inner)
 
-    -- 4. `Claim h : P by ...` and `Fact h : P by ...`
+    -- 3b. `Define game G₀ := e` (opens its own Boneh–Shoup `Game k.` paragraph)
+    | "define_game" =>
+        match inner.consumeMData with
+        | .letE nm ty val body _ =>
+            withLetDecl nm ty val fun fv => do
+              let symTex ← exprToLatex fv ctx.tbl
+              let valTex ← exprToLatex val ctx.tbl
+              let (leanTy, roleDesc) ← try
+                pure (← ppCleanType ty, ← formatParameterRole ctx.tbl ty)
+              catch _ =>
+                pure ("", "Security game system.")
+              registerScopedNotationInspector (declTagFromCtx ctx) symTex valTex leanTy (reason?.getD roleDesc) "game"
+              let goal ← buildGoalState ctx.tbl expected
+              markStepEmitted
+              let headingRaw := role?.getD (formatGameHeading (label?.getD (toString nm)))
+              let heading := if headingRaw.endsWith "." then headingRaw else s!"{headingRaw}."
+              let prose : Array Inline := match reason? with
+                | some g =>
+                    let gClean := stripTrailingPeriod g
+                    let gLow := gClean.trimAscii.toString.toLower
+                    let gBody :=
+                      if gLow.startsWith "where " || gLow.startsWith "in which " then gClean
+                      else s!"in which {gClean}"
+                    let gInl := parseProseWithMath gBody
+                    if visibleMathLengthTex valTex ≥ 56 then
+                      #[.text "Let ", .inlineMath symTex, .text " be the game "] ++ parseProseWithMath gClean ++ #[.text "."]
+                    else
+                      #[.text "Define ", .inlineMath s!"{symTex} := {valTex}", .text ", "] ++ gInl ++ #[.text "."]
+                | none =>
+                    if hasSubstantialMath valTex then
+                      #[.text "Let ", .displayMath s!"{symTex} := {valTex}" "."]
+                    else
+                      #[.text "Let ", .inlineMath s!"{symTex} := {valTex}", .text "."]
+              let step : ProofNode :=
+                .step s!"vcc-game-{symTex}-{ctx.factIndex}" prose #[] (some goal)
+                  none none false false true (some heading)
+              let rest ← decompileChild { ctx with isProofStart := false } expected (body.instantiate1 fv)
+              return some (#[step] ++ rest)
+        | _ => return some (← decompileChild ctx expected inner)
+
+    -- 3c. `Consider adversary B := e`
+    | "let_adv" =>
+        match inner.consumeMData with
+        | .letE nm ty val body _ =>
+            withLetDecl nm ty val fun fv => do
+              let symTex ← exprToLatex fv ctx.tbl
+              let valTex ← exprToLatex val ctx.tbl
+              let (leanTy, roleDesc) ← try
+                pure (← ppCleanType ty, ← formatParameterRole ctx.tbl ty)
+              catch _ =>
+                pure ("", "Constructed reduction adversary.")
+              registerScopedNotationInspector (declTagFromCtx ctx) symTex valTex leanTy (reason?.getD roleDesc) "adversary"
+              let goal ← buildGoalState ctx.tbl expected
+              markStepEmitted
+              let prose : Array Inline := match reason? with
+                | some g =>
+                    let gClean := stripTrailingPeriod g
+                    let gLower := gClean.trimAscii.toString.toLower
+                    let gInl := parseProseWithMath gClean
+                    let conn :=
+                      if gLower.startsWith "that " || gLower.startsWith "which " || gLower.startsWith "who " || gLower.startsWith "as " || gLower.startsWith "acting " then " "
+                      else " that "
+                    if visibleMathLengthTex valTex ≥ 48 then
+                      #[.text "Construct an adversary ", .inlineMath symTex, .text conn] ++ gInl ++ #[.text "."]
+                    else
+                      #[.text "Construct an adversary ", .inlineMath s!"{symTex} := {valTex}", .text conn] ++ gInl ++ #[.text "."]
+                | none =>
+                    #[.text "Construct an adversary ", .inlineMath s!"{symTex} := {valTex}", .text "."]
+              let step : ProofNode :=
+                .step s!"vcc-adv-{symTex}-{ctx.factIndex}" prose #[] (some goal)
+              let rest ← decompileChild { ctx with isProofStart := false } expected (body.instantiate1 fv)
+              return some (#[step] ++ rest)
+        | _ => return some (← decompileChild ctx expected inner)
+
+    -- 4. `We claim` / `We note` / `Claim` / `Fact`
     | "claim" | "fact" =>
         match inner.consumeMData with
         | .letE nm ty val body _ =>
             markStepEmitted
             let valNodes ← decompileChild subCtx ty val
-            let tyInl ← renderProposition ctx.tbl ty
+            let propDisp ← formatPropSentence ctx.tbl ty "."
             let lead :=
               if kind == "claim" then
                 if ctx.factIndex == 0 then "We claim that " else "Next, we claim that "
               else
                 if ctx.factIndex == 0 then "First, observe that " else "Moreover, note that "
-            let step ← mkVerboseStep ctx s!"vcc-{kind}-{ctx.factIndex}"
-              (#[.text lead] ++ tyInl ++ #[.text "."]) valNodes ty
+            let content : Array Inline := match reason? with
+              | some r =>
+                  let rClean := stripTrailingPeriod r
+                  let rInl := parseProseWithMath rClean
+                  if endsWithDisplayMath propDisp then
+                    let rLow := rClean.trimAscii.toString.toLower
+                    let headStr :=
+                      if kind == "claim" then
+                        if ctx.factIndex == 0 then "We claim" else "Next, we claim"
+                      else
+                        if ctx.factIndex == 0 then "First, observe" else "Moreover, note"
+                    if rLow.startsWith "by " || rLow.startsWith "since " || rLow.startsWith "via " || rLow.startsWith "from " then
+                      #[.text s!"{headStr}, "] ++ rInl ++ #[.text ", that"] ++ propDisp
+                    else
+                      #[.text s!"{headStr} ("] ++ rInl ++ #[.text ") that"] ++ propDisp
+                  else
+                    let base := match propDisp.back? with
+                      | some (.text ".") => propDisp.pop
+                      | _ => propDisp
+                    #[.text lead] ++ base ++ #[.text ", "] ++ rInl ++ #[.text "."]
+              | none => #[.text lead] ++ propDisp
+            let step ← mkVerboseStep ctx s!"vcc-{kind}-{ctx.factIndex}" content valNodes ty
             let rest ← withLetDecl nm ty val fun fv =>
               let nextCtx :=
                 { ctx with lastFactFVar? := some fv.fvarId!, factIndex := ctx.factIndex + 1, isProofStart := false }
@@ -632,7 +926,58 @@ def verboseCCExplainer : RuleExplainer where
             return some (#[step] ++ rest)
         | _ => return some (← decompileChild ctx expected inner)
 
-    -- 5. `It_suffices_to_show P by/because ...`
+    -- 4b. `Since ... we get [h :] P` and `Since ... we conclude`
+    | "since" =>
+        match inner.consumeMData with
+        | .letE nm ty val body _ =>
+            markStepEmitted
+            let valNodes ← decompileChild subCtx ty val
+            let propDisp ← formatPropSentence ctx.tbl ty "."
+            let cs := collectConsts val
+            let usesPrev := match ctx.lastFactFVar? with
+              | some fid => (Lean.collectFVars {} val).fvarIds.contains fid
+              | none => false
+            let lead :=
+              if cs.contains ``ConstructiveCryptography.CryptographicAlgebra.distance_attach_le ||
+                 cs.contains ``ConstructiveCryptography.CryptographicAlgebra.distance_parallel_left_le ||
+                 cs.contains ``ConstructiveCryptography.CryptographicAlgebra.distance_parallel_right_le then
+                "By non-expansion, we obtain "
+              else if count?.getD 1 ≥ 2 then
+                "Combining the preceding bounds, we obtain "
+              else if usesPrev then
+                "From this, we obtain "
+              else
+                "Since the assumption holds, we obtain "
+            let step ← mkVerboseStep ctx s!"vcc-since-{ctx.factIndex}"
+              (#[.text lead] ++ propDisp) valNodes ty
+            let rest ← withLetDecl nm ty val fun fv =>
+              let nextCtx :=
+                { ctx with lastFactFVar? := some fv.fvarId!, factIndex := ctx.factIndex + 1, isProofStart := false }
+              decompileChild nextCtx expected (body.instantiate1 fv)
+            return some (#[step] ++ rest)
+        | _ => return some (← decompileChild ctx expected inner)
+
+    | "since_conclude" =>
+        markStepEmitted
+        let children ←
+          if (unwrapVerboseMData? inner).isSome then
+            decompileChild subCtx expected inner
+          else
+            decompilePremiseArgs subCtx decompileChild inner
+        let propDisp ← formatPropSentence ctx.tbl expected "."
+        let content : Array Inline ← match reason? with
+          | some r =>
+              let rInls := parseProseWithMath (stripTrailingPeriod r)
+              pure (rInls ++ #[.text ", which establishes "] ++ propDisp)
+          | none =>
+              if ctx.atRootConclusion || ctx.isClosingGoal then
+                pure (#[.text "Combining these bounds yields "] ++ propDisp)
+              else
+                pure (#[.text "From these bounds, we conclude "] ++ propDisp)
+        let step ← mkVerboseStep ctx s!"vcc-since-close-{ctx.factIndex}" content children expected (originOf env inner)
+        return some #[step]
+
+    -- 5. `By <reason> it suffices to show P` / `It suffices to show P by/because ...`
     | "suffices" =>
         match inner.consumeMData with
         | .letE hNm dom pProof body _ =>
@@ -642,12 +987,12 @@ def verboseCCExplainer : RuleExplainer where
               let rNodes ← decompileChild subCtx expected bodyInst
               let rPhrase := reason?.getD (inferSufficesReason env bodyInst)
               pure (rPhrase, rNodes)
-            let pInl ← renderProposition ctx.tbl dom
+            let pDisp ← formatPropSentence ctx.tbl dom "."
             let lead := capitalizeFirst reasonPhrase
             let sufficesStep ← mkVerboseStep ctx s!"vcc-suffices-{ctx.factIndex}"
-              (#[.text s!"{lead}, it suffices to show that "] ++ pInl ++ #[.text "."])
+              (parseProseWithMath s!"{lead}, it suffices to show that " ++ pDisp)
               reasonNodes dom
-            let rest ← decompileChild { ctx with atRootConclusion := false, isProofStart := false } dom pProof
+            let rest ← decompileChild { ctx with atRootConclusion := false, isProofStart := false, isClosingGoal := ctx.isClosingGoal } dom pProof
             return some (#[sufficesStep] ++ rest)
         | .app fn pProof =>
             match fn.consumeMData with
@@ -658,12 +1003,12 @@ def verboseCCExplainer : RuleExplainer where
                   let rNodes ← decompileChild subCtx expected bodyInst
                   let rPhrase := reason?.getD (inferSufficesReason env bodyInst)
                   pure (rPhrase, rNodes)
-                let pInl ← renderProposition ctx.tbl dom
+                let pDisp ← formatPropSentence ctx.tbl dom "."
                 let lead := capitalizeFirst reasonPhrase
                 let sufficesStep ← mkVerboseStep ctx s!"vcc-suffices-{ctx.factIndex}"
-                  (#[.text s!"{lead}, it suffices to show that "] ++ pInl ++ #[.text "."])
+                  (parseProseWithMath s!"{lead}, it suffices to show that " ++ pDisp)
                   reasonNodes dom
-                let rest ← decompileChild { ctx with atRootConclusion := false, isProofStart := false } dom pProof
+                let rest ← decompileChild { ctx with atRootConclusion := false, isProofStart := false, isClosingGoal := ctx.isClosingGoal } dom pProof
                 return some (#[sufficesStep] ++ rest)
             | _ => return some (← decompileChild ctx expected inner)
         | _ => return some (← decompileChild ctx expected inner)
@@ -814,14 +1159,23 @@ def verboseCCExplainer : RuleExplainer where
         let step ← mkVerboseStep ctx s!"vcc-triangle-{ctx.factIndex}" content children expected (originOf env inner)
         return some #[step]
 
-    -- 16. `By_non_expansion`
+    -- 16. `By non-expansion` / `By non-expansion from h`
     | "nonexpand" =>
         let op ← pickOpener .justification
-        let conclInl ← renderProposition ctx.tbl expected
+        let conclDisp ← formatPropSentence ctx.tbl expected "."
         let content : Array Inline :=
           #[.text s!"{op} non-expansion under converter attachment and parallel composition, "] ++
-          conclInl ++ #[.text "."]
+          conclDisp
         let step ← mkVerboseStep ctx s!"vcc-nonexpand-{ctx.factIndex}" content #[] expected (originOf env inner)
+        return some #[step]
+
+    | "nonexpand_from" =>
+        let op ← pickOpener .justification
+        let children ← decompilePremiseArgs subCtx decompileChild inner
+        let conclDisp ← formatPropSentence ctx.tbl expected "."
+        let content : Array Inline :=
+          #[.text s!"{op} non-expansion under converter attachment, "] ++ conclDisp
+        let step ← mkVerboseStep ctx s!"vcc-nonexpand-from-{ctx.factIndex}" content children expected (originOf env inner)
         return some #[step]
 
     -- 17. `Exhibit_simulator σ [for_interface E]`
@@ -928,7 +1282,38 @@ def verboseCCExplainer : RuleExplainer where
         let step ← mkVerboseStep ctx s!"vcc-ext-hcoeff-{ctx.factIndex}" content children expected (originOf env inner)
         return some #[step]
 
-    -- 23. `Exhibit_distinguisher D`
+    -- 22b. `By the Difference Lemma with bad event Z [where/explaining "..."] ...`
+    | "difference_lemma" =>
+        markStepEmitted
+        let (badVal?, realProof) :=
+          match inner.consumeMData with
+          | .app fn bad =>
+              match fn.consumeMData with
+              | .lam _ _ body _ => (some bad, body)
+              | _ => (none, inner)
+          | _ => (none, inner)
+        let badTex? ← match badVal?, label? with
+          | some bv, _ => pure (some (← exprToLatex bv ctx.tbl))
+          | none, some l => pure (some (formatMathIdent l))
+          | none, none => pure none
+        if let (some bv, some g) := (badVal?, reason?) then
+          let bt := badTex?.getD "Z"
+          let lty ← try ppCleanType (← inferType bv) catch _ => pure "Ω → Prop"
+          registerScopedNotationInspector (declTagFromCtx ctx) bt bt lty g "bad event"
+        let children ← decompilePremiseArgs subCtx decompileChild realProof
+        let conclDisp ← formatPropSentence ctx.tbl expected "."
+        let badPhrase : Array Inline := match badTex?, reason? with
+          | some bt, some g =>
+              #[.text " with bad event ", .inlineMath bt, .text " ("] ++ parseProseWithMath (stripTrailingPeriod g) ++ #[.text ")"]
+          | some bt, none => #[.text " with bad event ", .inlineMath bt]
+          | none, some g => #[.text ", "] ++ parseProseWithMath (stripTrailingPeriod g)
+          | none, none => #[]
+        let content : Array Inline :=
+          #[.text "By the Difference Lemma"] ++ badPhrase ++ #[.text ", "] ++ conclDisp
+        let step ← mkVerboseStep ctx s!"vcc-diff-lemma-{ctx.factIndex}" content children expected (originOf env realProof)
+        return some #[step]
+
+    -- 23. `We exhibit distinguisher D` / `Exhibit_distinguisher D`
     | "exhibit_distinguisher" =>
         markStepEmitted
         let advBody := do
@@ -947,14 +1332,15 @@ def verboseCCExplainer : RuleExplainer where
           let advTy ← inferType cur
           decompileChild subCtx advTy cur
         let children ← advBody
-        let conclInl ← renderProposition ctx.tbl expected
+        let conclDisp ← formatPropSentence ctx.tbl expected "."
         let distPhrase : Array Inline := match label? with
           | some d => #[.text "We exhibit the explicit compatible distinguisher ", .inlineMath (formatMathIdent d)]
           | none => #[.text "We exhibit an explicit compatible distinguisher"]
         let content : Array Inline :=
           distPhrase ++
-          #[.text "; since the distinguishing distance is the supremum of advantages over all compatible distinguishers, its advantage shows that "] ++
-          conclInl ++ #[.text "."]
+          #[.text "; since every compatible distinguisher's advantage is bounded by ",
+            .inlineMath "\\Delta", .text ", its advantage shows that "] ++
+          conclDisp
         let step ← mkVerboseStep ctx s!"vcc-exhibit-dist-{ctx.factIndex}" content children expected (originOf env inner)
         return some #[step]
 
@@ -1008,7 +1394,7 @@ def verboseCCExplainer : RuleExplainer where
           return some #[step1, step2, step3]
         return some (← decompileChild ctx expected inner)
 
-    -- 26. `Combining ...`
+    -- 26. `We conclude` / `Combining ...`
     | "combine" =>
         let op ← pickOpener .closing
         let children ←
@@ -1016,13 +1402,83 @@ def verboseCCExplainer : RuleExplainer where
             decompileChild subCtx expected inner
           else
             decompilePremiseArgs subCtx decompileChild inner
-        let conclInl ← renderProposition ctx.tbl expected
-        let content : Array Inline :=
-          if ctx.atRootConclusion then
-            #[.text s!"{op} the claimed security bound, completing the proof."]
-          else
-            #[.text s!"{op} "] ++ conclInl ++ #[.text "."]
+        let conclDisp ← formatPropSentence ctx.tbl expected "."
+        let content : Array Inline ← match reason? with
+          | some r =>
+              let rInls := parseProseWithMath (stripTrailingPeriod r)
+              pure (rInls ++ #[.text ", which establishes "] ++ conclDisp)
+          | none =>
+              if ctx.atRootConclusion || ctx.isClosingGoal then
+                pure (#[.text s!"{op} these bounds yields "] ++ conclDisp)
+              else
+                pure (#[.text s!"{op} "] ++ conclDisp)
         let step ← mkVerboseStep ctx s!"vcc-combine-{ctx.factIndex}" content children expected (originOf env inner)
+        return some #[step]
+
+    -- 27. `We reformulate` / `By cases on` / `Case` / `By telescoping sum` / `By union bound`
+    | "reformulate" =>
+        match inner.consumeMData with
+        | .letE nm ty val body _ =>
+            markStepEmitted
+            let valNodes ← decompileChild subCtx ty val
+            let tyDisp ← formatPropSentence ctx.tbl ty "."
+            let lead : Array Inline := match reason? with
+              | some g => #[.text "Reformulating this bound ("] ++ parseProseWithMath (stripTrailingPeriod g) ++ #[.text ") yields "]
+              | none => #[.text "Equivalently, we rewrite this as "]
+            let step ← mkVerboseStep ctx s!"vcc-reformulate-{ctx.factIndex}" (lead ++ tyDisp) valNodes ty
+            let rest ← withLetDecl nm ty val fun fv =>
+              decompileChild { ctx with lastFactFVar? := some fv.fvarId!, factIndex := ctx.factIndex + 1, isProofStart := false }
+                expected (body.instantiate1 fv)
+            return some (#[step] ++ rest)
+        | .app fn pProof =>
+            match fn.consumeMData with
+            | .lam hNm dom body bi =>
+                markStepEmitted
+                let rNodes ← withLocalDecl hNm bi dom fun fv =>
+                  decompileChild subCtx expected (body.instantiate1 fv)
+                let domDisp ← formatPropSentence ctx.tbl dom "."
+                let lead : Array Inline := match reason? with
+                  | some g => #[.text "Reformulating the goal ("] ++ parseProseWithMath (stripTrailingPeriod g) ++ #[.text ") yields "]
+                  | none => #[.text "Equivalently, we rewrite the target inequality as "]
+                let step ← mkVerboseStep ctx s!"vcc-reformulate-goal-{ctx.factIndex}" (lead ++ domDisp) rNodes dom
+                let rest ← decompileChild { ctx with atRootConclusion := false, isProofStart := false, isClosingGoal := ctx.isClosingGoal } dom pProof
+                return some (#[step] ++ rest)
+            | _ => return some (← decompileChild ctx expected inner)
+        | _ =>
+            return some (← decompileChild ctx expected inner)
+
+    | "cases" =>
+        return some (← decompileChild ctx expected inner)
+
+    | "case" =>
+        markStepEmitted
+        let hd := match label? with
+          | some l => if l.endsWith "." then l else s!"{l}."
+          | none => "Case."
+        let brk : ProofNode := .flowNote s!"vcc-case-{ctx.factIndex}" hd "paragraph"
+        let bodyNodes ← decompileChild { ctx with isProofStart := false } expected inner
+        return some (#[brk] ++ bodyNodes)
+
+    | "telescoping" =>
+        markStepEmitted
+        let g ← buildGoalState ctx.tbl expected
+        let details ← decompileChild { subCtx with lemmaDepth := subCtx.config.maxLemmaDepth } expected inner
+        let children : Array ProofNode := #[.routineReceipt s!"vcc-tele-rec-{ctx.factIndex}"
+          "telescoping intermediate hybrid sums" (max 1 details.size) details (some g)]
+        let conclDisp ← formatPropSentence ctx.tbl expected "."
+        let step ← mkVerboseStep ctx s!"vcc-telescoping-{ctx.factIndex}"
+          (#[.text "By a telescoping sum over consecutive hybrids, "] ++ conclDisp) children expected (originOf env inner)
+        return some #[step]
+
+    | "union_bound" =>
+        markStepEmitted
+        let g ← buildGoalState ctx.tbl expected
+        let details ← decompileChild { subCtx with lemmaDepth := subCtx.config.maxLemmaDepth } expected inner
+        let children : Array ProofNode := #[.routineReceipt s!"vcc-union-rec-{ctx.factIndex}"
+          "summing per-pair event probabilities via Finset union bound" (max 1 details.size) details (some g)]
+        let conclDisp ← formatPropSentence ctx.tbl expected "."
+        let step ← mkVerboseStep ctx s!"vcc-union-{ctx.factIndex}"
+          (#[.text "By the union bound, "] ++ conclDisp) children expected (originOf env inner)
         return some #[step]
 
     | _ =>

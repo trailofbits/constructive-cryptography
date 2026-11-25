@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Lean
 import Informalization.Core.LeanTeX
+import Informalization.Core.Presentation
 
 /-!
 # Compile-Time-Checked Optional Flow & Notation Overlay (~10% Layer)
@@ -24,7 +25,7 @@ in a lightweight companion module using the commands below.
 
 namespace Informalization.Core.Overlay
 
-open Lean Elab Command Informalization.Core.LeanTeX
+open Lean Elab Command Informalization.Core.LeanTeX Informalization.Core.Presentation
 
 /-- Presentation-only metadata attached to a resolved Lean declaration. -/
 structure DeclOverlay where
@@ -51,6 +52,8 @@ structure DeclOverlay where
   isOpaqueLeaf : Bool := false
   /-- Treat this declaration as a prominent mathematical proof joint (never auto-inlined). -/
   isProofJoint : Bool := false
+  /-- Declaration-scoped expression aliases `(nBinders, closedPattern, latexSymbol, gloss?)`. -/
+  theoremNotations : Array (Nat × Expr × String × Option String) := #[]
   deriving Inhabited, Repr
 
 private def mergeOverlay (old new : DeclOverlay) : DeclOverlay := {
@@ -68,6 +71,7 @@ private def mergeOverlay (old new : DeclOverlay) : DeclOverlay := {
   sectionIntro?     := new.sectionIntro? <|> old.sectionIntro?
   isOpaqueLeaf      := old.isOpaqueLeaf || new.isOpaqueLeaf
   isProofJoint      := old.isProofJoint || new.isProofJoint
+  theoremNotations  := old.theoremNotations ++ new.theoremNotations
 }
 
 initialize overlayExt :
@@ -87,11 +91,48 @@ initialize overlayExt :
 def getOverlay (env : Environment) (decl : Name) : DeclOverlay :=
   (overlayExt.getState env).getD decl {}
 
-/-- Build a `SymbolTable` populated with all registered constant symbols, hidden ambient
-argument positions, zero-arg short symbols, and binder aliases scoped to `rootDecl`. -/
+/-- Layered `(singular, plural)` noun lookup: `Overlay` wins over `@[interface_resource_noun]`
+and `@[paper_describe]` / `paper_describe_for`. -/
+def effectiveNoun? (env : Environment) (decl : Name) : Option (String × String) :=
+  (getOverlay env decl).noun? <|>
+  (getMathPresentation env decl).interfaceResourceNoun? <|>
+  (getPaperDescribeRule? env decl).map fun r => (r.noun.singular, r.noun.plural)
+
+/-- Layered predicate phrase lookup: `Overlay` (`informal_pred`) wins over `@[math_pred]`. -/
+def effectivePredPhrase? (env : Environment) (decl : Name) : Option String :=
+  (getOverlay env decl).predPhrase? <|> (getMathPresentation env decl).predPhrase?
+
+/-- Layered opaque-leaf guard: either `informal_opaque` or `@[math_opaque]`. -/
+def effectiveIsOpaqueLeaf (env : Environment) (decl : Name) : Bool :=
+  (getOverlay env decl).isOpaqueLeaf || (getMathPresentation env decl).isOpaqueLeaf
+
+/-- Layered proof-joint guard: either `informal_joint` or `@[math_joint]`. -/
+def effectiveIsProofJoint (env : Environment) (decl : Name) : Bool :=
+  (getOverlay env decl).isProofJoint || (getMathPresentation env decl).isProofJoint
+
+/-- Layered wrapper guard: `@[math_wrapper]`. -/
+def effectiveIsWrapper (env : Environment) (decl : Name) : Bool :=
+  (getMathPresentation env decl).isWrapper
+
+/-- Build a `SymbolTable` populated first with `@[math_notation]` (`mathPresentationExt`),
+then layered over by `Overlay` (`overlayExt`) so `SequenceHashOverlay.lean` and per-theorem
+`informal_binder` / notation overlays ALWAYS take precedence. -/
 def buildSymbolTable (env : Environment) (rootDecl : Name) : SymbolTable := Id.run do
-  let state := overlayExt.getState env
   let mut tbl : SymbolTable := {}
+  -- Layer 1: definition-site & module presentation registry (`Core/Presentation.lean`)
+  for (n, mp) in getAllMathPresentations env do
+    if let some sym := mp.symbolLatex? then
+      tbl := tbl.withConst n sym
+      if mp.isZeroArgNotation then
+        tbl := tbl.withShortAlias n sym
+    if let some tmpl := compileNotationTemplate? mp (mp.explicitNonPropArity?.getD 8) then
+      tbl := tbl.withConstTemplate n tmpl
+    if !mp.hiddenArgs.isEmpty then
+      tbl := tbl.withHiddenArgs n mp.hiddenArgs
+    if mp.isZeroArgNotation then
+      tbl := tbl.withZeroArgConst n
+  -- Layer 2: explicit overlay (`Core/Overlay.lean`) ALWAYS wins over Layer 1
+  let state := overlayExt.getState env
   for (n, ov) in state.toList do
     if let some sym := ov.symbolLatex? then
       tbl := tbl.withConst n sym
@@ -166,5 +207,30 @@ elab "informal_opaque " id:ident : command =>
 /-- Mark a lemma as a prominent proof joint that Paper mode should never auto-inline. -/
 elab "informal_joint " id:ident : command =>
   addCheckedOverlay id { isProofJoint := true }
+
+/-- Register a theorem-scoped paper notation alias `(expr ↦ latex)` elaborated inside `id`'s
+parameter telescope, with an optional author gloss for the hover inspector. -/
+elab "informal_theorem_notation " id:ident exprStx:term:max latex:str gloss?:(str)? : command => do
+  let decl ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo id
+  let entry ← Elab.Command.runTermElabM fun _ => do
+    let info ← getConstInfo decl
+    Meta.forallTelescope info.type fun fvars _ => do
+      let pat ← Elab.Term.elabTerm exprStx none
+      Elab.Term.synthesizeSyntheticMVarsNoPostponing
+      let pat ← instantiateMVars pat
+      let patTy ← Meta.inferType pat
+      let patTyW ← Meta.whnf patTy
+      if patTyW == Expr.sort .zero then
+        throwError "Formula-forgery guard: `informal_theorem_notation` cannot alias 0-ary `Prop` `{← Meta.ppExpr pat}` to `{latex.getString}`"
+      let isPred : Bool ←
+        if ← Meta.isProp patTy then pure true
+        else Meta.forallTelescopeReducing patTy fun _ body =>
+          return (← Meta.whnf body) == Expr.sort .zero
+      if isPred && Informalization.Core.Presentation.isFormulaForgeryString latex.getString then
+        throwError "Formula-forgery guard: `informal_theorem_notation` cannot alias predicate/Prop `{← Meta.ppExpr pat}` to formula string `{latex.getString}`"
+      let pat ← Informalization.Core.Hygiene.normalizeForPresentation pat
+      let closedPat := pat.abstract fvars
+      return (fvars.size, closedPat, latex.getString, gloss?.map (·.getString))
+  modifyEnv fun env => overlayExt.addEntry env (decl, { theoremNotations := #[entry] })
 
 end Informalization.Core.Overlay

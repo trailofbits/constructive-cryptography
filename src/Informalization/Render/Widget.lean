@@ -84,11 +84,15 @@ private def renderGoalHtml (g : GoalState) : Html :=
   ]
 
 private partial def renderProofNodeHtml : ProofNode → Html
-  | .flowNote _ txt _ =>
-      .element "div" #[("className", "cadmo-iv-note")] #[
-        .element "strong" #[] #[.text "Note. "],
-        .text txt
-      ]
+  | .flowNote _ txt placement =>
+      if placement == "paragraph" then
+        if txt.isEmpty then .element "div" #[("className", "cadmo-iv-para-break")] #[]
+        else .element "div" #[("className", "cadmo-iv-para-head")] #[.element "strong" #[] #[.text (txt ++ " ")]]
+      else
+        .element "div" #[("className", "cadmo-iv-note")] #[
+          .element "strong" #[] #[.text "Note. "],
+          .text txt
+        ]
   | .figure _ cap _ =>
       .element "div" #[("className", "cadmo-iv-note")] (renderInlinesHtml cap)
   | .routineReceipt _ summary count _ goal? =>
@@ -114,11 +118,14 @@ private partial def renderProofNodeHtml : ProofNode → Html
       .element "div" #[("className", "cadmo-iv-calc")] (
         #[.element "div" #[] (renderInlinesHtml intro)] ++ rows ++ extra
       )
-  | .step _ content children goal? _ _ isWrapper _ =>
+  | .step _ content children goal? _ _ isWrapper _ _ leadHeading? _ _ =>
       if isWrapper && !children.isEmpty then
         .element "div" #[] (children.map renderProofNodeHtml)
       else
-        let body := renderInlinesHtml content
+        let headingEls := match leadHeading? with
+          | some h => #[.element "span" #[("className", "cadmo-iv-para-head")] #[.element "strong" #[] #[.text (h ++ " ")]]]
+          | none => #[]
+        let body := headingEls ++ renderInlinesHtml content
         let extra := match goal? with | some g => #[renderGoalHtml g] | none => #[]
         if children.isEmpty then
           .element "div" #[("className", "cadmo-iv-leaf")] (body ++ extra)
@@ -159,8 +166,11 @@ def renderDocumentInfoview (doc : Document) : Html :=
       | none => #[]
     let ambientEl := match e.ambient? with
       | some amb =>
-          #[.element "div" #[("className", "cadmo-iv-ambient")]
-            (#[.element "strong" #[] #[.text "Setting. "]] ++ renderInlinesHtml amb.summary)]
+          let rawTxt := String.join (amb.summary.toList.map (·.collectText))
+          if (rawTxt.splitOn "We work in the Constructive Cryptography framework").length > 1 then #[]
+          else
+            #[.element "div" #[("className", "cadmo-iv-ambient")]
+              (#[.element "strong" #[] #[.text "Setting. "]] ++ renderInlinesHtml amb.summary)]
       | none => #[]
     let stmtEls := e.statement.map fun p => .element "p" #[] (renderInlinesHtml p)
     let proofEls :=

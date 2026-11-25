@@ -35,6 +35,7 @@ def cleanBinderName? (n : Name) : Option String :=
     let stripped := stripped.trimAscii.toString
     if stripped.isEmpty || stripped == "_" ||
         stripped.startsWith "_hyg" || stripped.startsWith "_uniq" ||
+        stripped.startsWith "_vcc_" || stripped.startsWith "_since_" ||
         stripped.startsWith "inst" || stripped.startsWith "x_" then
       none
     else
@@ -97,15 +98,64 @@ def shortConstName (n : Name) : String :=
       else cleanLeaf
   | other => other.toString
 
-/-- Transparent numeric/coercion wrappers erased during presentation normalization.
-These never change the mathematical statement for a human reader; exact Lean terms remain
-available one click deeper in the Auditor view. -/
-private def transparentUnaryWrappers : List Name :=
-  [ `ENNReal.ofReal, `ENNReal.toReal, `ENNReal.ofNNReal, `ENNReal.coe,
-    `NNReal.toReal, `NNReal.coe, `Real.toNNReal, `Real.ofNNReal,
-    `Nat.cast, `Int.cast, `Rat.cast, `NNReal.ofReal,
-    `Coe.coe, `CoeHTCT.coe, `CoeTC.coe, `CoeT.coe, `CoeHead.coe, `CoeTail.coe,
-    `Subtype.val, `id, `outParam ]
+/-- Transparent numeric/coercion wrappers erased during presentation normalization, with
+exact `(valArgIdx, expectedArity)` so over-applied wrappers like `Subtype.val α p g1 h`
+unwrap ONLY the wrapper (`g1`) and re-apply all trailing arguments (`h`). -/
+private def transparentWrapperSpecs : List (Name × Nat × Nat) :=
+  [ (`ENNReal.ofReal, 0, 1), (`ENNReal.toReal, 0, 1),
+    (`ENNReal.ofNNReal, 0, 1), (`ENNReal.coe, 0, 1),
+    (`NNReal.toReal, 0, 1), (`NNReal.coe, 0, 1), (`NNReal.ofReal, 0, 1),
+    (`Real.toNNReal, 0, 1), (`Real.ofNNReal, 0, 1),
+    (`Nat.cast, 2, 3), (`Int.cast, 2, 3), (`Rat.cast, 2, 3),
+    (`Coe.coe, 3, 4), (`CoeHTCT.coe, 3, 4), (`CoeTC.coe, 3, 4),
+    (`CoeT.coe, 1, 4), (`CoeHead.coe, 3, 4), (`CoeTail.coe, 3, 4),
+    (`CoeFun.coe, 3, 4), (`DFunLike.coe, 4, 5),
+    (``Subtype.val, 2, 3), (``Subtype.mk, 2, 4), (``id, 1, 2),
+    (``outParam, 0, 1), (``semiOutParam, 0, 1),
+    (``optParam, 0, 2), (``autoParam, 0, 2) ]
+
+/-- Extensible runtime registry for custom `@[math_wrapper]` `(valArgIdx, expectedArity)` entries. -/
+initialize extraWrapperSpecsRef : IO.Ref (NameMap (Nat × Nat)) ← IO.mkRef {}
+
+/-- Register a custom transparent wrapper constant `(valArgIdx, expectedArity)`. -/
+def registerTransparentWrapper (name : Name) (valArgIdx expectedArity : Nat) : IO Unit :=
+  extraWrapperSpecsRef.modify (·.insert name (valArgIdx, expectedArity))
+
+/-- Look up `(valArgIdx, expectedArity)` for a transparent wrapper constant. -/
+private def lookupWrapperSpec? (extra : NameMap (Nat × Nat)) (name : Name) : Option (Nat × Nat) :=
+  match extra.find? name with
+  | some spec => some spec
+  | none =>
+      match transparentWrapperSpecs.find? (·.1 == name) with
+      | some (_, valIdx, arity) => some (valIdx, arity)
+      | none => none
+
+/-- Strip `mdata` and macro hygiene scopes from binder names with $O(\text{DAG})$ memoization
+without unwrapping coercions/wrappers or beta-reducing terms (used for Auditor `rawLeanGoal`). -/
+def stripMacroScopesExpr (e : Expr) : Expr :=
+  let rec go (cur : Expr) : StateM (Std.HashMap Expr Expr) Expr := do
+    if !cur.hasLooseBVars then
+      if let some hit := (← get).get? cur then
+        return hit
+    let res ← match cur with
+      | .mdata _ inner => go inner
+      | .app f a => pure (.app (← go f) (← go a))
+      | .lam nm dom body bi =>
+          pure (.lam nm.eraseMacroScopes (← go dom) (← go body) bi)
+      | .forallE nm dom body bi =>
+          pure (.forallE nm.eraseMacroScopes (← go dom) (← go body) bi)
+      | .letE nm ty val body nd =>
+          pure (.letE nm.eraseMacroScopes (← go ty) (← go val) (← go body) nd)
+      | .proj s idx inner => pure (.proj s idx (← go inner))
+      | other => pure other
+    if !cur.hasLooseBVars then
+      modify fun m => m.insert cur res
+    return res
+  (go e).run' {}
+
+/-- Fast O(DAG) check whether an `Expr` references `sorryAx`. -/
+def exprContainsSorryAx (e : Expr) : Bool :=
+  e.foldConsts (init := false) fun n acc => acc || n == ``sorryAx
 
 /-- Heads of ambient algebraic / Lean-bookkeeping typeclasses that should be factored into
 the Ambient Setting once per document/section rather than repeated in every lemma header. -/
@@ -128,7 +178,7 @@ def ambientTypeclassHeads : List Name :=
     `ConstructiveCryptography.DistinctionGameAction ]
 
 /-- Is `ty` an ambient typeclass / bookkeeping instance? Uses fast syntactic lookup first
-before falling back to `isClass?` (`whnf`). -/
+and reducible-only `isClass?` so large project `def`s are never unfolded by `whnf`. -/
 def isAmbientTypeclass (ty : Expr) : MetaM Bool := do
   let ty ← instantiateMVars ty
   match ty.getAppFn.consumeMData with
@@ -136,7 +186,7 @@ def isAmbientTypeclass (ty : Expr) : MetaM Bool := do
       if ambientTypeclassHeads.contains name then return true
       let env ← getEnv
       if Lean.isClass env name then return true
-      return (← isClass? ty).isSome
+      return (← withTransparency .reducible (isClass? ty)).isSome
   | _ => return false
 
 /-- Check if a local declaration is an implementation detail, auxiliary decl, or ambient
@@ -158,6 +208,7 @@ def isSuppressedLocalDecl (d : LocalDecl) : MetaM Bool := do
 4. Preserves all cryptographic/mathematical definitions without unfolding them. -/
 partial def normalizeForPresentation (e : Expr) (fuel : Nat := 128) : MetaM Expr := do
   let e0 ← instantiateMVars e
+  let extraWrappers ← extraWrapperSpecsRef.get
   let rec go (cur : Expr) (rem : Nat) : StateRefT (Std.HashMap Expr Expr) MetaM Expr := do
     if rem == 0 then return cur
     let cacheKey? := if !cur.hasLooseBVars then some cur else none
@@ -178,18 +229,25 @@ partial def normalizeForPresentation (e : Expr) (fuel : Nat := 128) : MetaM Expr
               let args' ← args.mapM (go · (rem - 1))
               pure (mkAppN fn' args')
           else
-            let unwrap? := match fn with
+            let unwrapped? : Option Expr := match fn with
               | .const name _ =>
-                  if name == ``optParam || name == ``autoParam then args[0]?
-                  else if transparentUnaryWrappers.contains name then args.back?
-                  else none
+                  match lookupWrapperSpec? extraWrappers name with
+                  | some (valIdx, expectedArity) =>
+                      if args.size ≥ expectedArity && valIdx < expectedArity then
+                        some (mkAppN args[valIdx]! (args.extract expectedArity args.size))
+                      else none
+                  | none => none
               | _ => none
-            match unwrap? with
-            | some lastArg => go lastArg (rem - 1)
+            match unwrapped? with
+            | some unwrapped => go unwrapped (rem - 1)
             | none =>
                 let fn' ← go fn (rem - 1)
                 let args' ← args.mapM (go · (rem - 1))
-                pure (mkAppN fn' args')
+                let combined := mkAppN fn' args'
+                if fn'.isLambda && combined.headBeta != combined then
+                  go combined.headBeta (rem - 1)
+                else
+                  pure combined
       | .lam nm dom body bi =>
           let dom' ← go dom (rem - 1)
           let body' ← go body (rem - 1)
@@ -221,7 +279,8 @@ partial def normalizeForPresentation (e : Expr) (fuel : Nat := 128) : MetaM Expr
 def forbiddenLeakPatterns : List String :=
   [ "_hyg", "_uniq", "_@.", "None (", "asHom", "toDDC",
     "interface(s)", "user(s)", "query(s)", "resource(s)",
-    "at interface ", "whiskering", "ENNReal.ofReal" ]
+    "at interface ", "whiskering", "ENNReal.ofReal",
+    "distinguishing distance", "transcript distance", "Standing conventions." ]
 
 /-- Scan all rendered strings of a document and return any leakage violations. -/
 def auditZeroLeakage (texts : Array String) : Array String := Id.run do

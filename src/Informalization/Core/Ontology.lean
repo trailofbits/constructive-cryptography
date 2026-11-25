@@ -7,6 +7,7 @@ import Informalization.Core.Grammar
 import Informalization.Core.Hygiene
 import Informalization.Core.LeanTeX
 import Informalization.Core.Overlay
+import Informalization.Core.ContextProfile
 import Informalization.Core.Explanation
 
 /-!
@@ -29,6 +30,7 @@ open Informalization.Core.Grammar
 open Informalization.Core.Hygiene
 open Informalization.Core.LeanTeX
 open Informalization.Core.Overlay
+open Informalization.Core.ContextProfile
 open Informalization.Core.Explanation
 
 /-- Semantic description of a mathematical type for entity introductions. -/
@@ -92,15 +94,24 @@ def interfaceAccessory (tbl : SymbolTable) (ifaceExpr : Expr) : MetaM String := 
 
 /-- Describe a binder's type using registered domain handlers and checked `informal_noun`
 overlays first, then core math fallbacks. -/
-def describeType (tbl : SymbolTable) (ty : Expr) : MetaM TypeDescription := do
+partial def describeType (tbl : SymbolTable) (ty : Expr) : MetaM TypeDescription := do
   let ty ← normalizeForPresentation ty
   for h in (← typeHandlersRef.get) do
     if let some desc ← h.matchType tbl ty then
       return desc
   if let .const head _ := ty.getAppFn.consumeMData then
     let env ← getEnv
-    if let some (sg, pl) := (getOverlay env head).noun? then
+    if let some (sg, pl) := (getOverlay env head).noun? <|> (Presentation.getMathPresentation env head).interfaceResourceNoun? then
       return { noun := ⟨sg, pl⟩ }
+    if let some rule := Presentation.getPaperDescribeRule? env head then
+      let mut accessories : List String := []
+      if let some qTmpl := rule.qualifierTemplate? then
+        if let some info := env.find? head then
+          let expArgs ← Presentation.collectExplicitNonPropArgs info.type ty.getAppArgs
+          let qual ← Presentation.expandPureTemplate tbl qTmpl expArgs
+          if !qual.isEmpty then
+            accessories := [qual]
+      return { noun := rule.noun, accessories }
   if ty == .sort .zero then
     return { noun := ⟨"proposition", "propositions"⟩ }
   if ty.isSort then
@@ -119,6 +130,8 @@ def describeType (tbl : SymbolTable) (ty : Expr) : MetaM TypeDescription := do
     return { noun := ⟨"extended nonnegative real", "extended nonnegative reals"⟩ }
   if let .forallE _ dom body _ := ty then
     if !body.hasLooseBVar 0 then
+      if dom.isConstOf ``Unit || dom.isConstOf ``PUnit then
+        return ← describeType tbl body
       if body == .sort .zero then
         let domTex ← exprToLatex dom tbl
         return { noun := ⟨"predicate", "predicates"⟩, accessories := [s!"on \\({domTex}\\)"] }
@@ -128,10 +141,28 @@ def describeType (tbl : SymbolTable) (ty : Expr) : MetaM TypeDescription := do
   let tyTex ← exprToLatex ty tbl
   return { noun := ⟨s!"element of \\({tyTex}\\)", s!"elements of \\({tyTex}\\)"⟩ }
 
+/-- Context-aware 5-level type description resolution (`Core/ContextProfile.lean`), preserving
+ambient/witness status and CC structural accessories while enforcing the anti-clobbering lattice. -/
+def describeTypeWithContext (tbl : SymbolTable) (profile : PaperContextProfile)
+    (fv : Expr) (ty : Expr) (role? : Option SemanticRole)
+    (explicitRole? : Option String) (allBinders : Array (FVarId × Expr))
+    (visibleExprs : Array Expr) : MetaM TypeDescription := do
+  let baseDesc ← describeType tbl ty
+  let resolved ← resolveDescription5Level profile fv ty
+    baseDesc.noun baseDesc.accessories baseDesc.isAmbient baseDesc.isWitness
+    role? explicitRole? allBinders visibleExprs
+  return { baseDesc with noun := resolved.noun, accessories := resolved.accessories }
+
+/-- Canonical string key for an `Array Inline` (used to detect identical assumptions across a section). -/
+def inlinesCanonicalKey (inls : Array Inline) : String :=
+  String.intercalate "" (inls.toList.map Inline.collectText) |>.trimAscii.toString
+
 /-- Render a proposition into natural mathematical English + LaTeX (`Array Inline`),
 consulting registered CC/domain handlers first and falling back to clean `LeanTeX`. -/
 partial def renderProposition (tbl : SymbolTable) (prop : Expr) : MetaM (Array Inline) := do
   let prop ← normalizeForPresentation prop
+  if let some (_, symAlias) := tbl.exprAliases.reverse.find? (fun (pat, _) => pat.consumeMData == prop.consumeMData) then
+    return #[.inlineMath symAlias]
   for h in (← propHandlersRef.get) do
     if let some out ← h.renderProp tbl prop then
       return out
@@ -165,7 +196,7 @@ partial def renderProposition (tbl : SymbolTable) (prop : Expr) : MetaM (Array I
   let args := prop.getAppArgs
   if let .const head _ := fn then
     let env ← getEnv
-    if let some phrase := (getOverlay env head).predPhrase? then
+    if let some phrase := effectivePredPhrase? env head then
       if let some subject := args.back? then
         let subjTex ← exprToLatex subject tbl
         return #[.inlineMath subjTex, .text (" " ++ phrase)]
@@ -207,7 +238,14 @@ partial def renderProposition (tbl : SymbolTable) (prop : Expr) : MetaM (Array I
           return #[.inlineMath (String.intercalate " \\le " terms.toList)]
       let a ← renderProposition tbl args[args.size - 2]!
       let b ← renderProposition tbl args[args.size - 1]!
-      return a ++ #[.text ", and "] ++ b
+      match a, b with
+      | #[.inlineMath aTex], #[.inlineMath bTex] =>
+          return #[.inlineMath s!"{aTex} \\wedge {bTex}"]
+      | _, _ =>
+          let aTxt := inlinesCanonicalKey a
+          let bTxt := inlinesCanonicalKey b
+          let sep := if aTxt.contains ',' || bTxt.contains ',' then "; and " else " and "
+          return a ++ #[.text sep] ++ b
     if head == ``Iff && args.size ≥ 2 then
       let a ← renderProposition tbl args[args.size - 2]!
       let b ← renderProposition tbl args[args.size - 1]!
@@ -219,6 +257,10 @@ partial def renderProposition (tbl : SymbolTable) (prop : Expr) : MetaM (Array I
           let desc ← describeType tbl dom
           let varTex ← exprToLatex fv tbl
           let bodyInl ← renderProposition tbl (body.instantiate1 fv)
+          if desc.noun.singular.startsWith "element of \\(" && desc.noun.singular.endsWith "\\)" then
+            let setTex := ((desc.noun.singular.drop 13).dropEnd 2).toString
+            return #[.text "there exists ", .inlineMath s!"{varTex} \\in {setTex}",
+                     .text " such that "] ++ bodyInl
           let adj := if desc.adjectives.isEmpty then "" else String.intercalate " " desc.adjectives ++ " "
           let art := article (adj ++ desc.noun.singular)
           return #[.text s!"there exists {art} {adj}{desc.noun.singular} ", .inlineMath varTex,
@@ -243,41 +285,96 @@ private partial def exprDagSmall (e : Expr) (limit : Nat := 220) : Bool :=
       | _ => st
   (go e ({}, 0)).2 ≤ limit
 
+/-- Cached local-context entry for `buildGoalState` so unchanged parameters/hypotheses
+are not re-described across hundreds of proof nodes in the same declaration. -/
+private inductive CachedGoalDecl where
+  | suppressed
+  | largePropUnrendered
+  | ready (entry : ContextEntry) (alwaysShow : Bool)
+
+private initialize goalCtxDeclCacheRef :
+    IO.Ref (Std.HashMap (FVarId × UInt64) CachedGoalDecl) ← IO.mkRef {}
+
+/-- Clear the per-declaration `buildGoalState` local-context cache. -/
+def clearGoalCtxCache : IO Unit :=
+  goalCtxDeclCacheRef.set {}
+
 /-- Build a clean Kyle Miller `GoalState` from a live local context and target `Expr`.
 Suppresses ambient typeclasses and implementation details, and never prints `None`. -/
 def buildGoalState (tbl : SymbolTable) (target : Expr) : MetaM GoalState := do
   let lctx ← getLCtx
   let targetClean ← normalizeForPresentation target
   let targetFVars := (Lean.collectFVars {} targetClean).fvarIds
+  let aliasTag : UInt64 :=
+    tbl.exprAliases.foldl (init := hash tbl.exprAliases.size) fun a (_, s) => mixHash a (hash s)
+  let mut cache ← goalCtxDeclCacheRef.get
+  if cache.size ≥ 4096 then
+    cache := {}
+  let mut cacheDirty := false
   let mut entries : Array ContextEntry := #[]
   for decl in lctx do
-    if ← isSuppressedLocalDecl decl then continue
     let used := targetFVars.contains decl.fvarId
-    if ← isProp decl.type then
-      if !used && !exprDagSmall decl.type 160 then continue
-      let propTex ← exprToLatex decl.type tbl
-      entries := entries.push {
-        name? := cleanBinderName? decl.userName
-        description := s!"\\({propTex}\\)"
-        isHypothesis := true
-        usedInGoal := used
-      }
-    else
-      let desc ← describeType tbl decl.type
-      let sym ← exprToLatex decl.toExpr tbl
-      let adj := if desc.adjectives.isEmpty then "" else String.intercalate " " desc.adjectives ++ " "
-      let art := article (adj ++ desc.noun.singular)
-      let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
-      entries := entries.push {
-        name? := some s!"\\({sym}\\)"
-        description := s!"is {art} {adj}{desc.noun.singular}{acc}"
-        isHypothesis := false
-        usedInGoal := used
-      }
+    let key := (decl.fvarId, aliasTag)
+    match cache.get? key with
+    | some .suppressed => continue
+    | some (.ready entry alwaysShow) =>
+        if alwaysShow || used then
+          entries := entries.push { entry with usedInGoal := used }
+    | some .largePropUnrendered =>
+        if !used then continue
+        let propTex ← exprToLatex decl.type tbl
+        let entry : ContextEntry := {
+          name? := cleanBinderName? decl.userName
+          description := s!"\\({propTex}\\)"
+          isHypothesis := true
+          usedInGoal := true
+        }
+        cache := cache.insert key (.ready entry false)
+        cacheDirty := true
+        entries := entries.push entry
+    | none =>
+        if ← isSuppressedLocalDecl decl then
+          cache := cache.insert key .suppressed
+          cacheDirty := true
+          continue
+        if ← isProp decl.type then
+          let isSmall := exprDagSmall decl.type 160
+          if !used && !isSmall then
+            cache := cache.insert key .largePropUnrendered
+            cacheDirty := true
+            continue
+          let propTex ← exprToLatex decl.type tbl
+          let entry : ContextEntry := {
+            name? := cleanBinderName? decl.userName
+            description := s!"\\({propTex}\\)"
+            isHypothesis := true
+            usedInGoal := used
+          }
+          cache := cache.insert key (.ready entry isSmall)
+          cacheDirty := true
+          entries := entries.push entry
+        else
+          let desc ← describeType tbl decl.type
+          let sym ← exprToLatex decl.toExpr tbl
+          let adj := if desc.adjectives.isEmpty then "" else String.intercalate " " desc.adjectives ++ " "
+          let art := article (adj ++ desc.noun.singular)
+          let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
+          let entry : ContextEntry := {
+            name? := some s!"\\({sym}\\)"
+            description := s!"is {art} {adj}{desc.noun.singular}{acc}"
+            isHypothesis := false
+            usedInGoal := used
+          }
+          cache := cache.insert key (.ready entry true)
+          cacheDirty := true
+          entries := entries.push entry
+  if cacheDirty then
+    goalCtxDeclCacheRef.set cache
   let targetLatex ← exprToLatex targetClean tbl
+  let rawTarget := stripMacroScopesExpr (← instantiateMVars target)
   let rawTarget? ←
-    if exprDagSmall targetClean 240 then
-      pure (some (← ppExpr targetClean).pretty)
+    if !rawTarget.hasLooseBVars && exprDagSmall rawTarget 240 then
+      pure (some (← ppExpr rawTarget).pretty)
     else
       pure none
   return {
@@ -285,10 +382,6 @@ def buildGoalState (tbl : SymbolTable) (target : Expr) : MetaM GoalState := do
     targetLatex
     rawLeanGoal? := rawTarget?
   }
-
-/-- Canonical string key for an `Array Inline` (used to detect identical assumptions across a section). -/
-def inlinesCanonicalKey (inls : Array Inline) : String :=
-  String.intercalate "" (inls.toList.map Inline.collectText) |>.trimAscii.toString
 
 /-- Format a concise capitalized role description for a type `ty` (with optional adjectives such as `"finite"`). -/
 def formatParameterRole (tbl : SymbolTable) (ty : Expr) (adjectives : List String := []) : MetaM String := do
@@ -348,6 +441,7 @@ structure ParsedStatement where
   paragraphs : Array (Array Inline)
   conclusion : Expr
   localShorthands : Array LocalShorthandInfo := #[]
+  notationInspectors : Array SymbolInspector := #[]
   deriving Inhabited
 
 /-- Approximate AST size of an expression (used for generic repeated-subexpression factoring). -/
@@ -365,6 +459,8 @@ occurring across `exprs` to automatically factor heavy repeated terms into crisp
 private partial def collectCandidateSubexprs (tbl : SymbolTable) (e : Expr)
     (counts : Std.HashMap Expr Nat) : MetaM (Std.HashMap Expr Nat) := do
   let e ← normalizeForPresentation e
+  if tbl.exprAliases.any (fun (pat, _) => pat.consumeMData == e.consumeMData) then
+    return counts
   match e with
   | .app .. =>
       let mut m := counts
@@ -401,7 +497,7 @@ private partial def collectCandidateSubexprs (tbl : SymbolTable) (e : Expr)
               for a in args do
                 let f ← match curTy.consumeMData with
                   | x@(.forallE ..) => pure x
-                  | other => whnfD other
+                  | other => withTransparency .reducible (whnf other)
                 match f.consumeMData with
                 | .forallE _ _ body bi =>
                     if bi.isExplicit then
@@ -536,7 +632,7 @@ private def isDomainConfigExpr (env : Environment) (desc : TypeDescription) (ty 
   if isScalarOrContainer then false
   else
     let hasNoun := match ty.getAppFn.consumeMData with
-      | .const head _ => (getOverlay env head).noun?.isSome
+      | .const head _ => (effectiveNoun? env head).isSome
       | _ => false
     hasNoun || ["interface", "resource", "converter", "specification",
                 "game", "distinguisher"].contains desc.noun.singular
@@ -650,16 +746,155 @@ def formatSectionContextParagraphs (intros : List Intro) (hyps : Array (Array In
     para := para.push (.text ".")
   return #[para]
 
+private def kvGetStr? (kv : MData) (k : Name) : Option String :=
+  match kv.find k with
+  | some (.ofString s) => if s.isEmpty then none else some s
+  | _ => none
+
+initialize topProofRoleHookRef : IO.Ref (Expr → Array Expr → MetaM (Std.HashMap FVarId String)) ←
+  IO.mkRef (fun _ _ => pure {})
+
+initialize topProofNotationHookRef : IO.Ref (Expr → Array Expr → MetaM (Array (Expr × String × Option String))) ←
+  IO.mkRef (fun _ _ => pure #[])
+
+def registerTopProofRoleHook (f : Expr → Array Expr → MetaM (Std.HashMap FVarId String)) : IO Unit :=
+  topProofRoleHookRef.set f
+
+def registerTopProofNotationHook (f : Expr → Array Expr → MetaM (Array (Expr × String × Option String))) : IO Unit :=
+  topProofNotationHookRef.set f
+
+/-- Extract top-level `With notation` / `Let ... denote ... as ...` expression aliases from a
+checked proof body instantiated against `fvars`, so theorem statements share the exact same
+paper symbols as their proofs. -/
+private partial def collectTopProofNotations (proofBody? : Option Expr) (fvars : Array Expr) :
+    MetaM (Array (Expr × String × Option String)) := do
+  let some rawVal := proofBody? | return #[]
+  let mut cur := rawVal
+  for fv in fvars do
+    match cur.consumeMData with
+    | .lam _ _ b _ => cur := b.instantiate1 fv
+    | _ => break
+  let spineNotations ← (← topProofNotationHookRef.get) cur fvars
+  let rec scan (e : Expr) (fuel : Nat := 48) : Array (Expr × String × Option String) :=
+    if fuel == 0 then #[]
+    else match e with
+    | .mdata kv inner =>
+        match kvGetStr? kv `ccVerboseKind with
+        | some "with_notation" =>
+            let sym? := kvGetStr? kv `ccVerboseLabel
+            let gloss? := kvGetStr? kv `ccVerboseReason
+            match inner.consumeMData with
+            | .app fn val =>
+                match fn.consumeMData with
+                | .lam _ _ body _ =>
+                    let rest := scan (body.instantiate1 val) (fuel - 1)
+                    match sym? with
+                    | some sym => #[(val, sym, gloss?)] ++ rest
+                    | none => rest
+                | _ => scan inner (fuel - 1)
+            | _ => scan inner (fuel - 1)
+        | some "with_notation_let" =>
+            let sym? := kvGetStr? kv `ccVerboseLabel
+            let gloss? := kvGetStr? kv `ccVerboseReason
+            match inner.consumeMData with
+            | .letE _ _ val body _ =>
+                let rest := scan (body.instantiate1 val) (fuel - 1)
+                match sym? with
+                | some sym => #[(val, sym, gloss?)] ++ rest
+                | none => rest
+            | _ => scan inner (fuel - 1)
+        | some "write" | some "hybrid" | some "define_game" | some "let_adv" =>
+            match inner.consumeMData with
+            | .letE _ _ val body _ => scan (body.instantiate1 val) (fuel - 1)
+            | _ => scan inner (fuel - 1)
+        | some "proof_overview" | some "paragraph" | some "define_game_note" | some "with_role" =>
+            scan inner (fuel - 1)
+        | _ => scan inner (fuel - 1)
+    | _ => #[]
+  return spineNotations ++ scan cur
+
+/-- Extract top-level `With role` binder overrides from a checked proof body instantiated
+against `fvars`. -/
+private partial def collectTopProofRoles (proofBody? : Option Expr) (fvars : Array Expr) :
+    MetaM (Std.HashMap FVarId String) := do
+  let some rawVal := proofBody? | return {}
+  let mut cur := rawVal
+  for fv in fvars do
+    match cur.consumeMData with
+    | .lam _ _ b _ => cur := b.instantiate1 fv
+    | _ => break
+  let mut out ← (← topProofRoleHookRef.get) cur fvars
+  let rec collectFVarRoles (e : Expr) (m : Std.HashMap FVarId String) (fuel : Nat := 48) :
+      MetaM (Std.HashMap FVarId String) := do
+    if fuel == 0 then return m
+    match e with
+    | .mdata kv inner =>
+        let mut m' := m
+        if kvGetStr? kv `ccVerboseKind == some "with_role" then
+          if let (some bNm, some rStr) := (kvGetStr? kv `ccVerboseLabel, kvGetStr? kv `ccVerboseReason) then
+            for fv in fvars do
+              let d ← fv.fvarId!.getDecl
+              if (cleanBinderName d.userName) == bNm || d.userName.toString == bNm then
+                let merged := mergeRoleStrings m'[fv.fvarId!]? rStr
+                m' := m'.insert fv.fvarId! merged
+        match inner.consumeMData with
+        | .letE _ _ val body _ => collectFVarRoles (body.instantiate1 val) m' (fuel - 1)
+        | .app (.lam _ _ body _) val => collectFVarRoles (body.instantiate1 val) m' (fuel - 1)
+        | _ => collectFVarRoles inner m' (fuel - 1)
+    | _ => return m
+  out ← collectFVarRoles cur out
+  return out
+
 /-- Parse a theorem's full `Expr` type into:
-1. factored-out ambient setting (suppressed typeclasses & category boilerplate);
+1. factored-out ambient setting (none when only routine typeclasses were suppressed);
 2. aggregated entity introductions (`Let … be …`), omitting any already-fixed section parameters;
 3. automatic local shorthand definitions for genuinely used repeated subexpressions + hoisted `let`s;
 4. explicit mathematical assumptions (`Assume that …`), omitting any already-fixed section assumptions;
 5. the concluding claim (displayed cleanly, promoted to display math when substantial). -/
 def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr)
-    (hoisted? : Option HoistedContext := none) : MetaM ParsedStatement := do
+    (hoisted? : Option HoistedContext := none)
+    (proofBody? : Option Expr := none)
+    (theoremNotations : Array (Nat × Expr × String × Option String) := #[])
+    (declName : Name := .anonymous) : MetaM ParsedStatement := do
   let hoisted := hoisted?.getD {}
+  let env ← getEnv
+  let profile := getEffectiveContextProfile env declName
   forallTelescope theoremType fun fvars rawConclusion => do
+    let fvarRoles ← inferTheoremSemanticRoles fvars rawConclusion
+    let explicitRoles ← collectTopProofRoles proofBody? fvars
+    -- Apply declaration-level and top-of-proof scoped paper notations (`With notation`)
+    let mut rawNotations : Array (Expr × String × Option String) := #[]
+    for (nBind, closedPat, sym, gloss?) in theoremNotations do
+      if nBind ≤ fvars.size then
+        rawNotations := rawNotations.push (closedPat.instantiateRev (fvars.extract 0 nBind), sym, gloss?)
+    let proofNotations ← collectTopProofNotations proofBody? fvars
+    rawNotations := rawNotations ++ proofNotations
+    let mut tbl := tbl
+    let mut notationInspectors : Array SymbolInspector := #[]
+    for (patRaw, sym, gloss?) in rawNotations do
+      if !patRaw.hasLooseBVars && !patRaw.hasExprMVar then
+        let patNorm ← normalizeForPresentation patRaw
+        let rhsTex ← exprToLatex patNorm { tbl with exprAliases := tbl.exprAliases.filter (·.2 != sym) }
+        let (leanTy, roleDesc) ← try
+          let pty ← inferType patNorm
+          pure (← cleanTypeString pty, ← formatParameterRole tbl pty)
+        catch _ =>
+          pure ("", "Local paper notation.")
+        let desc := gloss?.getD roleDesc
+        let ins : SymbolInspector := {
+          key := s!"notation:{declName}:{sym}"
+          display := sym
+          kind := .localShorthand s!"{sym} = {rhsTex}" desc
+          leanName? := none
+          leanType := leanTy
+          roleBadge? := some "notation"
+        }
+        if let some existingIdx := notationInspectors.findIdx? (·.display == sym) then
+          if gloss?.isSome then
+            notationInspectors := notationInspectors.set! existingIdx ins
+        else
+          notationInspectors := notationInspectors.push ins
+        tbl := tbl.withExprAlias patNorm sym
     -- Hoist leading `let R := ...; let S := ...; body` out of the conclusion in CPS
     withHoistedConclusionLets tbl rawConclusion #[] fun tbl letRawDefs conclusion => do
       let mut suppressed : Array String := #[]
@@ -679,7 +914,8 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr)
       -- Collect candidate non-ambient, non-hoisted parameter binders and visible hypotheses,
       -- then filter out any unused ambient binders (both AST-unused and unreferenced in rendered
       -- conclusion/hypotheses/retained binders) via backwards dependency closure.
-      let mut candBinders : Array (Expr × TypeDescription × String × String) := #[]
+      let mut rawNonPropFVars : Array (Expr × Expr × String × String) := #[]
+      let mut allBinders : Array (FVarId × Expr) := #[]
       let mut keptPropTypes : Array Expr := #[]
       for fv in fvars do
         let decl ← fv.fvarId!.getDecl
@@ -689,14 +925,21 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr)
           if !hoisted.hypKeys.contains (inlinesCanonicalKey hInl) then
             keptPropTypes := keptPropTypes.push decl.type
         else
-          let desc ← describeType tbl decl.type
-          if desc.isAmbient then
-            suppressed := suppressed.push (cleanBinderName decl.userName)
-            continue
+          allBinders := allBinders.push (fv.fvarId!, decl.type)
           let clean := cleanBinderName decl.userName
           let sym ← exprToLatex fv tbl
-          if hoisted.paramSyms.contains sym then continue
-          candBinders := candBinders.push (fv, desc, clean, sym)
+          rawNonPropFVars := rawNonPropFVars.push (fv, decl.type, clean, sym)
+      let visibleStmtExprs : Array Expr := #[conclusion] ++ keptPropTypes
+      let mut candBinders : Array (Expr × TypeDescription × String × String) := #[]
+      for (fv, bty, clean, sym) in rawNonPropFVars do
+        let desc ← describeTypeWithContext tbl profile fv bty
+          (fvarRoles.get? fv.fvarId!) (explicitRoles.get? fv.fvarId!)
+          allBinders visibleStmtExprs
+        if desc.isAmbient then
+          suppressed := suppressed.push clean
+          continue
+        if hoisted.paramSyms.contains sym then continue
+        candBinders := candBinders.push (fv, desc, clean, sym)
       -- Stage 1 (AST backwards closure): keep binders referenced in conclusion, visible hyps,
       -- `letRawDefs`, or another retained binder's type (unless marked `isWitness`).
       let mut astNeeded : Std.HashSet FVarId := {}
@@ -779,18 +1022,17 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr)
         hyps.flatMap collectInlineMathStrings ++ collectInlineMathStrings conclInl
       for (_, valTex, _, _) in letDefsRendered do
         visibleMath := visibleMath.push valTex
-      -- Include expanded RHS of any `c_k` alias referenced in visible statement pieces so
-      -- variables appearing inside a shorthand's definition are recognized as visibly used.
-      for (pat, cSym) in tbl.exprAliases do
-        if cSym.startsWith "c_{" then
-          let usedInStmt :=
-            visibleMath.any (fun seg => (seg.splitOn cSym).length > 1) ||
-            stage1Intros.any fun (_, _, _, intr) =>
-              (intr.typeStr.splitOn cSym).length > 1 ||
-              intr.accessories.any (fun a => (a.splitOn cSym).length > 1)
-          if usedInStmt then
-            let rhs ← exprToLatex pat { tbl with exprAliases := tbl.exprAliases.filter (·.2 != cSym) }
-            visibleMath := visibleMath.push rhs
+      -- Include expanded RHS of any expression alias referenced in visible statement pieces so
+      -- variables appearing inside a notation or shorthand definition are recognized as visibly used.
+      for (pat, aliasSym) in tbl.exprAliases do
+        let usedInStmt :=
+          visibleMath.any (fun seg => (seg.splitOn aliasSym).length > 1) ||
+          stage1Intros.any fun (_, _, _, intr) =>
+            (intr.typeStr.splitOn aliasSym).length > 1 ||
+            intr.accessories.any (fun a => (a.splitOn aliasSym).length > 1)
+        if usedInStmt then
+          let rhs ← exprToLatex pat { tbl with exprAliases := tbl.exprAliases.filter (·.2 != aliasSym) }
+          visibleMath := visibleMath.push rhs
       let mut stage2Rev : Array Intro := #[]
       for (fv, desc, sym, intro) in stage1Intros.reverse do
         let usedVisibly :=
@@ -908,14 +1150,8 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr)
         | _ =>
             #[.text lead] ++ conclInl ++ #[.text "."]
       paragraphs := paragraphs.push conclPara
-      let ambient? :=
-        if suppressed.isEmpty then none
-        else
-          let uniq := suppressed.toList.eraseDups.toArray
-          some {
-            summary := #[.text "We work in the Constructive Cryptography framework over finite alphabets and compatible distinguishing metrics."]
-            suppressedTypeclasses := uniq
-          }
-      return { ambient?, paragraphs, conclusion := rawConclusion, localShorthands }
+      let ambient? : Option AmbientSetting := none
+      let _ := suppressed
+      return { ambient?, paragraphs, conclusion := rawConclusion, localShorthands, notationInspectors }
 
 end Informalization.Core.Ontology

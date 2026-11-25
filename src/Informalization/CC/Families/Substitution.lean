@@ -52,7 +52,7 @@ private def mkStep (ctx : DecompCtx) (id : String) (content : Array Inline)
     (children : Array ProofNode) (expected : Expr) (origin : Name) :
     StateRefT DiscourseState MetaM ProofNode := do
   let goal ← buildGoalState ctx.tbl expected
-  let diagHtml ← (← diagramHookRef.get) expected
+  let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) expected else pure none
   return .step id content children (some goal) diagHtml (some origin.toString)
 
 /-- Classification of a single hop extracted from a `cc_calc` hybrid chain. -/
@@ -210,14 +210,15 @@ private def describeHopReason (env : Environment) (tbl : SymbolTable) (hop : Ext
   | .statistical =>
       match fn with
       | .const cn _ =>
-          if cn == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_distance ||
-             cn == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_statistical then
+          if cn == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_distance then
+            return #[.text "by distinguishing advantage bound"]
+          else if cn == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_statistical then
             return #[.text "by statistical distance bound"]
           else if cn == ``ConstructiveCryptography.CryptographicAlgebra.distance_attach_le then
             return #[.text "by non-expansion under converter attachment"]
           else
-            return #[.text "by statistical bound (", .emph (humanLemmaLabel env cn), .text ")"]
-      | _ => return #[.text "by statistical distance bound"]
+            return #[.text "by advantage bound (", .emph (humanLemmaLabel env cn), .text ")"]
+      | _ => return #[.text "by distinguishing advantage bound"]
   | .computational =>
       match fn with
       | .const cn _ =>
@@ -277,7 +278,7 @@ def ccCalcChainExplainer : RuleExplainer where
             let n ← renderHypothesisStep ctx.tbl hop.prop fvid s!"calc-hyp-{fvid.name}-{hop.prop.hash}" (isWrap := true)
             pure #[n]
         | none => decompileChild subCtx hop.prop hop.proof
-      let diagHtml ← (← diagramHookRef.get) hop.prop
+      let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) hop.prop else pure none
       let cs : CalcStep := {
         lhsLatex := lhsTex
         relationLatex := hop.relLatex
@@ -310,7 +311,11 @@ def substitutionRuleExplainer : RuleExplainer where
     let fn := proof.getAppFn.consumeMData
     let args := proof.getAppArgs
     let some head := fn.constName? | return none
-    let conclInl ← renderProposition ctx.tbl expected
+    let finish (id : String) (mkMsg : Array Inline → Array Inline)
+        (children : Array ProofNode) := do
+      let conclInl ← renderProposition ctx.tbl expected
+      let node ← mkStep ctx id (mkMsg conclInl) children expected head
+      return some #[node]
     if head == ``ConstructiveCryptography.AdmissibleDistinguishers.substitutesWithin_context ||
        head == ``ConstructiveCryptography.AdmissibleDistinguishers.substitutesWithin_attach ||
        head == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.attach ||
@@ -330,54 +335,42 @@ def substitutionRuleExplainer : RuleExplainer where
         | some c => #[.text "the converter ", .inlineMath c,
                       .text " (absorbing ", .inlineMath c, .text " into the distinguisher)"]
         | none => #[.text "the surrounding converter context"]
-      let content : Array Inline :=
+      return ← finish s!"cc-sub-ctx-{head}" (fun conclInl =>
         #[.text s!"{op} transporting the substitution through "] ++ convPhrase ++
-        #[.text "—using closure of the distinguisher class—yields "] ++ conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-sub-ctx-{head}" content children expected head
-      return some #[node]
+        #[.text "—using closure of the distinguisher class—yields "] ++ conclInl ++ #[.text "."]) children
     if head == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_distance ||
        head == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_statistical then
       let op ← pickMaurerOpener .justification
       let children ← decompilePremiseArgs ctx decompileChild proof
-      let content : Array Inline :=
-        #[.text s!"{op} every admitted distinguisher's advantage is bounded by the statistical transcript distance, "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-sub-stat-{head}" content children expected head
-      return some #[node]
+      return ← finish s!"cc-sub-stat-{head}" (fun conclInl =>
+        #[.text s!"{op} every admitted distinguisher's advantage is bounded by the maximum distinguishing advantage, "] ++
+        conclInl ++ #[.text "."]) children
     if head == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.symm then
       let op ← pickMaurerOpener .elaboration
       let children ← decompilePremiseArgs ctx decompileChild proof
-      let content : Array Inline :=
+      return ← finish s!"cc-sub-symm-{head}" (fun conclInl =>
         #[.text s!"{op} by symmetry of distinguishing advantage, reversing the substitution preserves the error function and yields "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-sub-symm-{head}" content children expected head
-      return some #[node]
+        conclInl ++ #[.text "."]) children
     if head == ``ConstructiveCryptography.AdmissibleDistinguishers.ClosedUnder.comp then
       let op ← pickMaurerOpener .consequence
       let children ← decompilePremiseArgs ctx decompileChild proof
-      let content : Array Inline :=
+      return ← finish s!"cc-closed-comp-{head}" (fun conclInl =>
         #[.text s!"{op} absorbing a sequential composition of converters absorbs each converter in turn, so the distinguisher class remains closed: "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-closed-comp-{head}" content children expected head
-      return some #[node]
+        conclInl ++ #[.text "."]) children
     if head == ``ConstructiveCryptography.AdmissibleDistinguishers.ClosedUnder.identity ||
        head == ``ConstructiveCryptography.AdmissibleDistinguishers.all_closedUnder then
       let op ← pickMaurerOpener .elaboration
-      let content : Array Inline :=
+      return ← finish s!"cc-closed-triv-{head}" (fun conclInl =>
         #[.text s!"{op} the distinguisher class is trivially closed under this absorption: "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-closed-triv-{head}" content #[] expected head
-      return some #[node]
+        conclInl ++ #[.text "."]) #[]
     if head == ``ConstructiveCryptography.CryptographicAlgebra.SubstitutionRelation.Implication.substitutesWithin ||
        head == ``ConstructiveCryptography.CryptographicAlgebra.SubstitutionRelation.Implication.substitutesWithin_of_mixed ||
        head == ``ConstructiveCryptography.CryptographicAlgebra.SubstitutionRelation.derivable_substitutes then
       let op ← pickMaurerOpener .consequence
       let children ← decompilePremiseArgs ctx decompileChild proof
-      let content : Array Inline :=
+      return ← finish s!"cc-implication-{head}" (fun conclInl =>
         #[.text s!"{op} accumulating the per-step error budgets along the finite substitution chain yields "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-implication-{head}" content children expected head
-      return some #[node]
+        conclInl ++ #[.text "."]) children
     return none
 
 initialize

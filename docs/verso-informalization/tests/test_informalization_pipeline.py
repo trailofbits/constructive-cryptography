@@ -21,6 +21,20 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 CHECK_SCRIPT = REPO_ROOT / "scripts" / "check_informalization.py"
 BUNDLE_SCRIPT = REPO_ROOT / "docs" / "verso-informalization" / "scripts" / "render_verso_bundle.py"
 VERSO_PKG_DIR = REPO_ROOT / "docs" / "verso-informalization"
+CADMO_READER_JS = REPO_ROOT / "src" / "Informalization" / "Render" / "cadmo-reader.js"
+CADMO_READER_CSS = REPO_ROOT / "src" / "Informalization" / "Render" / "cadmo-reader.css"
+
+
+def find_js_runtime() -> list[str] | None:
+    import shutil
+    for cand in [
+        shutil.which("node"),
+        shutil.which("jsc"),
+        "/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc",
+    ]:
+        if cand and Path(cand).is_file():
+            return [cand]
+    return None
 
 
 def make_clean_fixture() -> Dict[str, Any]:
@@ -86,7 +100,7 @@ def make_clean_fixture() -> Dict[str, Any]:
                                 "kind": "calcChain",
                                 "id": "calc-1",
                                 "intro": [
-                                    {"text": {"value": "By the triangle inequality for distinguishing distance, we obtain:"}}
+                                    {"text": {"value": "By the triangle inequality for distinguishing advantage, we obtain:"}}
                                 ],
                                 "steps": [
                                     {
@@ -356,6 +370,9 @@ class TestInformalizationCIAndVersoBundle(unittest.TestCase):
             "admissibility closure",
             "visible system",
             "None (h : P)",
+            "distinguishing distance",
+            "transcript distance",
+            "Standing conventions.",
         ]:
             with self.subTest(bad_token=bad_token):
                 doc = make_clean_fixture()
@@ -556,7 +573,11 @@ class TestInformalizationCIAndVersoBundle(unittest.TestCase):
                     "roleBadge": "fixed in §1",
                     "sectionId": "sec-1",
                     "sectionAssumptions": [
-                        [{"inlineMath": {"latex": "\\mathrm{supportedSponge}(p)"}}]
+                        [
+                            {"inlineMath": {"latex": "\\mathrm{supportedSponge}(p)"}},
+                            {"text": {"value": " via "}},
+                            {"symbol": {"key": "sym.pred", "display": "\\mathrm{supportedSponge}", "isMath": True}},
+                        ]
                     ],
                 }
             ],
@@ -619,6 +640,442 @@ class TestInformalizationCIAndVersoBundle(unittest.TestCase):
             )
             self.assertEqual(res_body.returncode, 0, msg=res_body.stdout + res_body.stderr)
             self.assertIn("cadmo-section-context", body_out.read_text(encoding="utf-8"))
+
+    def test_two_tier_ci_legacy_vs_authored(self) -> None:
+        # Clean fixture must pass both legacy and authored tiers
+        clean = make_clean_fixture()
+        clean["entries"][0]["proof"].append(
+            {
+                "kind": "step",
+                "id": "claim-step",
+                "startsParagraph": True,
+                "leadHeading": "Claim 1.",
+                "trust": "kernelProvedClaim",
+                "content": [
+                    {
+                        "text": {"value": "For every distinguisher, the advantage stays bounded."},
+                        "trust": "kernelFormula",
+                    },
+                    {
+                        "text": {"value": "Intuitively, both hybrids behave identically."},
+                        "trust": "intuitionGloss",
+                    },
+                    {
+                        "symbol": {
+                            "key": "sym.key",
+                            "display": "\\mathbf{K}",
+                            "isMath": True,
+                        },
+                        "dataKey": "sym.key",
+                        "trust": "typedRef",
+                    },
+                ],
+                "children": [],
+                "isWrapper": False,
+                "defaultExpanded": False,
+            }
+        )
+        clean_path = self.write_json("clean_authored.json", clean)
+        self.assertEqual(run_check("--tier", "legacy", str(clean_path)).returncode, 0)
+        res_auth = run_check("--tier", "authored", str(clean_path))
+        self.assertEqual(res_auth.returncode, 0, msg=res_auth.stdout + res_auth.stderr)
+
+        # Authentic mathematical prose like "uniformly random element of \mathcal{K}" must PASS authored tier
+        clean_math_prose = make_clean_fixture()
+        clean_math_prose["entries"][0]["proof"][0]["text"] = (
+            "Sample a uniformly random element of $\\mathcal{K}$ and every element of $R$."
+        )
+        clean_math_path = self.write_json("clean_math_prose.json", clean_math_prose)
+        res_math_prose = run_check("--tier", "authored", str(clean_math_path))
+        self.assertEqual(res_math_prose.returncode, 0, msg=res_math_prose.stdout + res_math_prose.stderr)
+
+        # Authored-only leakage tokens pass legacy tier but fail authored tier
+        authored_only_tokens = [
+            "_vcc_p0",
+            "Exists(B => True)",
+            "\\mathrm{Exists}\\!\\left(B \\mapsto P\\right)",
+            "sum(univ, j => p j)",
+            "\\mathrm{sum}\\!\\left(\\mathrm{univ}, k \\mapsto f(k)\\right)",
+            "Sigma(x => T)",
+            "Subtype(x => P)",
+            "h.map Prod.fst",
+            "h.map Prod.snd",
+            "BitString(L)",
+            "Unit \\to A",
+            "Unit → A",
+            "certificate_proof_1",
+            "self.X",
+            "an element of \\(\\mathrm{PRGAdversary}(R)\\)",
+            "an element of ProbDist(R)",
+            "Defined as an element of \\(R\\).",
+        ]
+        for tok in authored_only_tokens:
+            with self.subTest(authored_token=tok):
+                doc = make_clean_fixture()
+                doc["entries"][0]["proof"][0]["text"] = f"Sample expression: {tok}"
+                p = self.write_json("tier_tok.json", doc)
+                res_leg = run_check("--tier", "legacy", str(p))
+                self.assertEqual(res_leg.returncode, 0, msg=f"legacy should allow {tok}: {res_leg.stdout}")
+                res_strict = run_check("--tier", "authored", str(p))
+                self.assertNotEqual(res_strict.returncode, 0, msg=f"authored must reject {tok}")
+                self.assertIn("zero-leakage", res_strict.stdout)
+
+        # Lowercase headers pass legacy tier but fail authored tier
+        for lc_header in ["theorem", "lemma", "proposition", "corollary"]:
+            with self.subTest(header=lc_header):
+                doc = make_clean_fixture()
+                doc["entries"][0]["header"] = lc_header
+                p = self.write_json("tier_hdr.json", doc)
+                self.assertEqual(run_check("--tier", "legacy", str(p)).returncode, 0)
+                res_strict = run_check("--tier", "authored", str(p))
+                self.assertNotEqual(res_strict.returncode, 0)
+                self.assertIn("Lowercase theorem header", res_strict.stdout)
+
+    def test_reject_embedded_style_in_diagram_html_and_unproved_sorry_both_tiers(self) -> None:
+        for tier in ("legacy", "authored"):
+            # 1. Embedded <style> inside entry.diagramHtml
+            doc_entry_style = make_clean_fixture()
+            doc_entry_style["entries"][0]["diagramHtml"] = "<style>.ccw{color:red}</style><div class='ccw'></div>"
+            p1 = self.write_json(f"style_entry_{tier}.json", doc_entry_style)
+            res1 = run_check("--tier", tier, str(p1))
+            self.assertNotEqual(res1.returncode, 0, msg=f"{tier} must reject <style> in entry.diagramHtml")
+            self.assertIn("diagram-style", res1.stdout)
+
+            # 2. Embedded <style> inside ProofNode.diagramHtml & CalcStep.diagramHtml
+            doc_node_style = make_clean_fixture()
+            doc_node_style["entries"][0]["proof"][1]["children"][0]["steps"][0]["step"]["diagramHtml"] = (
+                "<STYLE>.x{}</STYLE><div>ok</div>"
+            )
+            p2 = self.write_json(f"style_step_{tier}.json", doc_node_style)
+            res2 = run_check("--tier", tier, str(p2))
+            self.assertNotEqual(res2.returncode, 0, msg=f"{tier} must reject <style> in step.diagramHtml")
+            self.assertIn("diagram-style", res2.stdout)
+
+            # 3. [UNPROVED: sorry] must fail on BOTH tiers
+            doc_sorry = make_clean_fixture()
+            doc_sorry["entries"][0]["proof"][0]["text"] = "Subgoal [UNPROVED: sorry] remains open."
+            p3 = self.write_json(f"unproved_sorry_{tier}.json", doc_sorry)
+            res3 = run_check("--tier", tier, str(p3))
+            self.assertNotEqual(res3.returncode, 0, msg=f"{tier} must reject [UNPROVED: sorry]")
+            self.assertIn("[UNPROVED: sorry]", res3.stdout)
+
+    def test_font_sensitive_hover_and_dom_noise_suppression_js(self) -> None:
+        js_cmd = find_js_runtime()
+        if not js_cmd:
+            self.skipTest("No JS runtime (node or jsc) available")
+
+        harness = r"""
+        const jsSrc = __JS_SRC__;
+        // Minimal pure-JS DOM stub to test cadmo-reader.js helpers end-to-end
+        class FakeClassList {
+          constructor(el) { this.el = el; this._set = new Set(); }
+          _syncFromString(str) {
+            this._set = new Set(String(str || '').trim().split(/\s+/).filter(Boolean));
+          }
+          _syncToString() {
+            this.el._className = Array.from(this._set).join(' ');
+          }
+          add(...cls) { cls.forEach(c => this._set.add(c)); this._syncToString(); }
+          remove(...cls) { cls.forEach(c => this._set.delete(c)); this._syncToString(); }
+          contains(c) { return this._set.has(c); }
+        }
+        class FakeNode {
+          constructor(nodeType, tagName = '') {
+            this.nodeType = nodeType;
+            this.tagName = tagName.toUpperCase();
+            this.childNodes = [];
+            this.parentNode = null;
+            this.attrs = {};
+            this.dataset = {};
+            this.style = {};
+            this._className = '';
+            this.classList = new FakeClassList(this);
+            this._text = '';
+            this.isConnected = true;
+          }
+          get className() { return this._className; }
+          set className(v) { this._className = String(v || ''); this.classList._syncFromString(this._className); }
+          get children() { return this.childNodes.filter(n => n.nodeType === 1); }
+          get textContent() {
+            if (this.nodeType === 3) return this._text;
+            return this.childNodes.map(c => c.textContent).join('');
+          }
+          set textContent(v) {
+            if (this.nodeType === 3) { this._text = String(v || ''); return; }
+            this.childNodes = [];
+            if (v !== '' && v !== null && v !== undefined) {
+              this.appendChild(document.createTextNode(String(v)));
+            }
+          }
+          appendChild(child) {
+            if (!child) return child;
+            if (child.nodeType === 11) {
+              for (const k of [...child.childNodes]) this.appendChild(k);
+              return child;
+            }
+            if (child.parentNode) child.parentNode.removeChild(child);
+            child.parentNode = this;
+            this.childNodes.push(child);
+            return child;
+          }
+          removeChild(child) {
+            const idx = this.childNodes.indexOf(child);
+            if (idx >= 0) { this.childNodes.splice(idx, 1); child.parentNode = null; }
+            return child;
+          }
+          insertBefore(newNode, refNode) {
+            if (!refNode) return this.appendChild(newNode);
+            if (newNode.parentNode) newNode.parentNode.removeChild(newNode);
+            const idx = this.childNodes.indexOf(refNode);
+            newNode.parentNode = this;
+            if (idx >= 0) this.childNodes.splice(idx, 0, newNode);
+            else this.childNodes.push(newNode);
+            return newNode;
+          }
+          setAttribute(k, v) {
+            this.attrs[k] = String(v);
+            if (k === 'class') this.className = v;
+            if (k.startsWith('data-')) {
+              const camel = k.slice(5).replace(/-([a-z])/g, (_, ch) => ch.toUpperCase());
+              this.dataset[camel] = String(v);
+            }
+          }
+          getAttribute(k) { return Object.prototype.hasOwnProperty.call(this.attrs, k) ? this.attrs[k] : null; }
+          hasAttribute(k) { return Object.prototype.hasOwnProperty.call(this.attrs, k); }
+          addEventListener() {}
+          matchesSelectorOne(sel) {
+            sel = sel.trim();
+            if (!sel) return false;
+            if (sel.startsWith('[')) {
+              const attr = sel.slice(1, -1);
+              return this.hasAttribute(attr);
+            }
+            if (sel.startsWith('.')) return this.classList.contains(sel.slice(1));
+            return this.tagName === sel.toUpperCase();
+          }
+          closest(selectorList) {
+            const parts = selectorList.split(',').map(s => s.trim());
+            let cur = this;
+            while (cur && cur.nodeType === 1) {
+              if (parts.some(p => cur.matchesSelectorOne(p))) return cur;
+              cur = cur.parentNode;
+            }
+            return null;
+          }
+          querySelectorAll(selectorList) {
+            const parts = selectorList.split(',').map(s => s.trim());
+            const out = [];
+            const walk = (node) => {
+              for (const ch of node.children) {
+                if (parts.some(p => ch.matchesSelectorOne(p))) out.push(ch);
+                walk(ch);
+              }
+            };
+            walk(this);
+            return out;
+          }
+          querySelector(selectorList) { return this.querySelectorAll(selectorList)[0] || null; }
+        }
+        globalThis.document = {
+          getElementById: () => null,
+          createElement: (tag) => new FakeNode(1, tag),
+          createTextNode: (txt) => { const n = new FakeNode(3); n._text = String(txt || ''); return n; },
+          createDocumentFragment: () => new FakeNode(11),
+          addEventListener: () => {}
+        };
+        globalThis.window = globalThis;
+        eval(jsSrc);
+        const H = globalThis.__cadmoHelpers;
+        function assert(cond, msg) { if (!cond) throw new Error('ASSERT FAILED: ' + msg); }
+
+        // 1. Font-sensitive normalization checks
+        assert(H.normalizeMathToken('\\mathcal{E}') === 'cal:E', 'cal:E');
+        assert(H.normalizeMathToken('E') === 'E', 'plain E');
+        assert(H.normalizeMathToken('\\mathbf{G}') === 'bf:G', 'bf:G');
+        assert(H.normalizeMathToken('G') === 'G', 'plain G');
+        assert(H.normalizeMathToken('\\mathcal{B}') === 'cal:B', 'cal:B');
+        assert(H.normalizeMathToken('B') === 'B', 'plain B');
+        assert(H.normalizeMathToken('\\mathbf{F}') === 'bf:F', 'bf:F');
+        assert(H.normalizeMathToken('F') === 'F', 'plain F');
+        assert(H.normalizeMathToken('\\mathsf{AE}') === 'sf:AE', 'sf:AE');
+        assert(H.normalizeMathToken('\\mathbb{G}') === 'bb:G', 'bb:G');
+        assert(H.normalizeMathToken('\\mathbb{R}') === 'bb:R', 'bb:R latex');
+        assert(H.normalizeMathToken('ℝ') === 'bb:R', 'bb:R unicode');
+        assert(H.isNonHoverableToken('0') === true, 'digit 0 blocked');
+        assert(H.isNonHoverableToken('1') === true, 'digit 1 blocked');
+        assert(H.isNonHoverableToken('bf:0') === true, 'bf:0 blocked');
+        assert(H.stripEmbeddedStyles('<style>.a{}</style><div class="ccw">hi</div>') === '<div class="ccw">hi</div>', 'stripEmbeddedStyles');
+
+        // 2. Offline DOM annotation: {0,1}^L, R^n, and font disambiguation
+        const inspectors = [
+          { key: 'sym.calE', display: '\\mathcal{E}' },
+          { key: 'sym.E', display: 'E' },
+          { key: 'sym.bfG', display: '\\mathbf{G}' },
+          { key: 'sym.G', display: 'G' },
+          { key: 'sym.bbR', display: '\\mathbb{R}' },
+          { key: 'sym.L', display: 'L' },
+          { key: 'sym.R', display: 'R' },
+          { key: 'sym.n', display: 'n' }
+        ];
+        const scope = H.buildTokenScope(inspectors, [], [], null, [], false);
+
+        const m1 = document.createElement('span');
+        m1.className = 'cadmo-math';
+        m1.appendChild(H.renderMathNodes('\\{0, 1\\}^L'));
+        H.annotateOfflineMathContainer(m1, scope);
+        assert(m1.querySelectorAll('.cadmo-ref').length === 0, '{0,1}^L must have 0 .cadmo-ref');
+
+        const m2 = document.createElement('span');
+        m2.className = 'cadmo-math';
+        m2.appendChild(H.renderMathNodes('R^n'));
+        H.annotateOfflineMathContainer(m2, scope);
+        const supRefs = m2.querySelectorAll('sup .cadmo-ref');
+        assert(supRefs.length === 0, 'R^n sup must have 0 .cadmo-ref');
+        const allM2Refs = m2.querySelectorAll('.cadmo-ref');
+        assert(allM2Refs.length === 1 && allM2Refs[0].dataset.cadmoToken === 'R', 'R^n annotates only base R');
+
+        const m3 = document.createElement('span');
+        m3.className = 'cadmo-math';
+        m3.appendChild(H.renderMathNodes('\\mathcal{E} + E + \\mathbf{G} + G'));
+        H.annotateOfflineMathContainer(m3, scope);
+        const refs3 = m3.querySelectorAll('.cadmo-ref');
+        assert(refs3.length === 4, 'expected 4 font-disambiguated refs, got ' + refs3.length);
+        assert(refs3[0].dataset.cadmoToken === 'cal:E', 'first must be cal:E');
+        assert(refs3[1].dataset.cadmoToken === 'E', 'second must be E');
+        assert(refs3[2].dataset.cadmoToken === 'bf:G', 'third must be bf:G');
+        assert(refs3[3].dataset.cadmoToken === 'G', 'fourth must be G');
+
+        // 3. Mock KaTeX DOM annotation: block .msupsub/.mopen/.mclose/.mpunct/.op-limits + preserve .mathcal/.mathbf
+        const kRoot = document.createElement('span');
+        kRoot.className = 'katex-html';
+        const base = document.createElement('span');
+        base.className = 'base';
+        const mopen = document.createElement('span'); mopen.className = 'mopen'; mopen.textContent = '{';
+        const d0 = document.createElement('span'); d0.className = 'mord'; d0.textContent = '0';
+        const comma = document.createElement('span'); comma.className = 'mpunct'; comma.textContent = ',';
+        const mclose = document.createElement('span'); mclose.className = 'mclose';
+        const brace = document.createElement('span'); brace.className = 'mclose'; brace.textContent = '}';
+        const msup = document.createElement('span'); msup.className = 'msupsub';
+        const supL = document.createElement('span'); supL.className = 'mord mathnormal'; supL.textContent = 'L';
+        msup.appendChild(supL);
+        mclose.appendChild(brace);
+        mclose.appendChild(msup);
+        const calE = document.createElement('span'); calE.className = 'mord mathcal'; calE.textContent = 'E';
+        const plainE = document.createElement('span'); plainE.className = 'mord mathnormal'; plainE.textContent = 'E';
+        const bfG = document.createElement('span'); bfG.className = 'mord mathbf'; bfG.textContent = 'G';
+        const plainG = document.createElement('span'); plainG.className = 'mord mathnormal'; plainG.textContent = 'G';
+        const bbR = document.createElement('span'); bbR.className = 'mord mathbb'; bbR.textContent = 'R';
+        [mopen, d0, comma, mclose, calE, plainE, bfG, plainG, bbR].forEach(x => base.appendChild(x));
+        kRoot.appendChild(base);
+        H.annotateKatexMath(kRoot, scope);
+        assert(kRoot.querySelectorAll('.msupsub .cadmo-ref').length === 0, 'KaTeX .msupsub has 0 .cadmo-ref');
+        assert(kRoot.querySelectorAll('.mclose .cadmo-ref').length === 0, 'KaTeX .mclose has 0 .cadmo-ref');
+        const kRefs = kRoot.querySelectorAll('.cadmo-ref');
+        assert(kRefs.length === 5, 'KaTeX expected 5 refs, got ' + kRefs.length);
+        assert(kRefs[0].dataset.cadmoToken === 'cal:E', 'KaTeX cal:E');
+        assert(kRefs[1].dataset.cadmoToken === 'E', 'KaTeX E');
+        assert(kRefs[2].dataset.cadmoToken === 'bf:G', 'KaTeX bf:G');
+        assert(kRefs[3].dataset.cadmoToken === 'G', 'KaTeX G');
+        assert(kRefs[4].dataset.cadmoToken === 'bb:R', 'KaTeX bb:R');
+
+        // 4. ProofFlow: startsParagraph, leadHeading, and ProseTrust
+        const flowOut = H.renderProofFlow([
+          {
+            kind: 'step',
+            id: 's1',
+            startsParagraph: true,
+            leadHeading: 'Claim 1.',
+            trust: 'intuitionGloss',
+            content: [{ text: { value: 'First step.' } }],
+            children: []
+          },
+          {
+            kind: 'step',
+            id: 's2',
+            startsParagraph: true,
+            leadHeading: 'Game 1.',
+            trust: 'kernelProvedClaim',
+            content: [{ text: { value: 'Second step.' } }],
+            children: []
+          }
+        ], { depth: 0, scope: null });
+        assert(flowOut.length === 2, 'startsParagraph must split into 2 paragraphs');
+        assert(flowOut[0].querySelectorAll('.cadmo-para-heading').length === 1, 'leadHeading rendered');
+        assert(flowOut[0].querySelectorAll('.cadmo-trust-gloss').length === 1, 'intuitionGloss class rendered');
+        const outerSymEl = H.renderInline({
+          symbol: { key: 'sym.calE', display: '\\mathcal{E}', isMath: true },
+          dataKey: 'sym.calE',
+          trust: 'typedRef'
+        }, scope);
+        assert(outerSymEl.getAttribute('data-cadmo-key') === 'sym.calE', 'outer dataKey on symbol');
+        assert(outerSymEl.getAttribute('data-trust') === 'typedRef', 'outer trust on symbol');
+        print('JS_TESTS_OK');
+        """
+        js_src = CADMO_READER_JS.read_text(encoding="utf-8")
+        full_js = harness.replace("__JS_SRC__", json.dumps(js_src))
+        # Node uses console.log, jsc uses print; define print fallback if needed
+        full_js = "if (typeof print === 'undefined') { globalThis.print = console.log; }\n" + full_js
+        script_path = self.tmp_path / "test_cadmo_js.js"
+        script_path.write_text(full_js, encoding="utf-8")
+        res = subprocess.run([*js_cmd, str(script_path)], capture_output=True, text=True)
+        self.assertEqual(res.returncode, 0, msg=res.stdout + res.stderr)
+        self.assertIn("JS_TESTS_OK", res.stdout)
+
+        # Verify CSS fallback rules exist
+        css_txt = CADMO_READER_CSS.read_text(encoding="utf-8")
+        self.assertIn("sup .cadmo-ref", css_txt)
+        self.assertIn(".msupsub .cadmo-ref", css_txt)
+        self.assertIn(".cadmo-trust-gloss", css_txt)
+
+    def test_verso_schema_new_optional_fields_roundtrip(self) -> None:
+        exe = VERSO_PKG_DIR / ".lake" / "build" / "bin" / "verso-informalize"
+        if not exe.is_file():
+            self.skipTest("verso-informalize Lean binary not yet built")
+        fixture = make_clean_fixture()
+        fixture["entries"][0]["diagramHtml"] = "İ <style>.leak{color:red}</style><div class=\"ccw\">clean-diagram</div>"
+        fixture["entries"][0]["proof"].append(
+            {
+                "kind": "step",
+                "id": "claim-verso",
+                "startsParagraph": True,
+                "leadHeading": "Claim 1.",
+                "trust": "intuitionGloss",
+                "content": [
+                    {"text": {"value": "Author gloss sentence."}, "trust": "intuitionGloss"},
+                    {
+                        "symbol": {
+                            "key": "sym.key",
+                            "display": "\\mathbf{K}",
+                            "isMath": True,
+                        },
+                        "dataKey": "sym.key",
+                        "trust": "typedRef",
+                    },
+                ],
+                "children": [],
+                "isWrapper": False,
+                "defaultExpanded": False,
+            }
+        )
+        json_path = self.write_json("verso_new_fields.json", fixture)
+        res_inspect = subprocess.run([str(exe), "inspect", str(json_path)], capture_output=True, text=True)
+        self.assertEqual(res_inspect.returncode, 0, msg=res_inspect.stdout + res_inspect.stderr)
+
+        body_out = self.tmp_path / "verso_body.html"
+        res_body = subprocess.run(
+            [str(exe), "render-body", str(json_path), str(body_out), "--auditor"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(res_body.returncode, 0, msg=res_body.stdout + res_body.stderr)
+        body_html = body_out.read_text(encoding="utf-8")
+        self.assertIn("cadmo-para-break", body_html)
+        self.assertIn("cadmo-para-heading", body_html)
+        self.assertIn("Claim 1.", body_html)
+        self.assertIn("cadmo-trust-gloss", body_html)
+        self.assertIn("data-cadmo-key=\"sym.key\"", body_html)
+        self.assertIn("clean-diagram", body_html)
+        self.assertNotIn("<style>", body_html)
 
 
 if __name__ == "__main__":

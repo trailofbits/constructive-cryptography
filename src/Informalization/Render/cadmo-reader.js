@@ -4,20 +4,10 @@
    zero diagram clutter in the reading flow, real 2D offline math.
    ========================================================================== */
 (() => {
-  const dataEl = document.getElementById("cadmo-document-data");
-  const rootEl = document.getElementById("cadmo-root");
-  if (!dataEl || !rootEl) return;
-
-  let doc;
-  try {
-    doc = JSON.parse(dataEl.textContent || "{}");
-  } catch (err) {
-    rootEl.textContent = "Failed to parse informalization document JSON: " + err;
-    return;
-  }
+  let doc = {};
 
   const state = {
-    mode: doc.defaultMode === "auditor" ? "auditor" : "paper",
+    mode: "paper",
     expanded: new Set(),
     inspector: null,        // null | { type: "symbol", item } | { type: "goal", goal, label } | { type: "axioms", entry }
     glossaryOpen: false,    // hidden by default so right margin is pure calm paper
@@ -29,13 +19,68 @@
   const sectionContextById = new Map();
   const sectionRefKeys = new Map();
   const inspectorByKey = new Map();
-  for (const ins of doc.inspectors || []) {
-    inspectorByKey.set(ins.key, ins);
+
+  function stripEmbeddedStyles(htmlStr) {
+    if (!htmlStr) return "";
+    return String(htmlStr).replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "");
   }
-  {
+
+  function sanitizeProofNodes(nodes) {
+    if (!Array.isArray(nodes)) return;
+    for (const node of nodes) {
+      if (!node || typeof node !== "object") continue;
+      if (typeof node.diagramHtml === "string") {
+        node.diagramHtml = stripEmbeddedStyles(node.diagramHtml);
+      }
+      if (node.kind === "figure" && typeof node.html === "string") {
+        node.html = stripEmbeddedStyles(node.html);
+      }
+      if (Array.isArray(node.children)) sanitizeProofNodes(node.children);
+      if (Array.isArray(node.details)) sanitizeProofNodes(node.details);
+      if (Array.isArray(node.steps)) {
+        for (const item of node.steps) {
+          if (!item || typeof item !== "object") continue;
+          if (item.step && typeof item.step.diagramHtml === "string") {
+            item.step.diagramHtml = stripEmbeddedStyles(item.step.diagramHtml);
+          }
+          if (Array.isArray(item.children)) sanitizeProofNodes(item.children);
+        }
+      }
+    }
+  }
+
+  function sanitizeDocDiagrams(targetDoc) {
+    if (!targetDoc || typeof targetDoc !== "object") return;
+    const sanitizeIns = (ins) => {
+      if (ins && ins.kind && ins.kind.ccDiagram && typeof ins.kind.ccDiagram.svgOrHtml === "string") {
+        ins.kind.ccDiagram.svgOrHtml = stripEmbeddedStyles(ins.kind.ccDiagram.svgOrHtml);
+      }
+    };
+    for (const ins of targetDoc.inspectors || []) sanitizeIns(ins);
+    for (const entry of targetDoc.entries || []) {
+      if (!entry || typeof entry !== "object") continue;
+      if (typeof entry.diagramHtml === "string") {
+        entry.diagramHtml = stripEmbeddedStyles(entry.diagramHtml);
+      }
+      for (const ins of entry.localInspectors || []) sanitizeIns(ins);
+      if (entry.sectionContext && Array.isArray(entry.sectionContext.inspectors)) {
+        for (const ins of entry.sectionContext.inspectors) sanitizeIns(ins);
+      }
+      sanitizeProofNodes(entry.proof);
+    }
+  }
+
+  function initDocumentIndexes(targetDoc) {
+    secNumById.clear();
+    sectionContextById.clear();
+    sectionRefKeys.clear();
+    inspectorByKey.clear();
+    for (const ins of targetDoc.inspectors || []) {
+      inspectorByKey.set(ins.key, ins);
+    }
     let sNum = 0;
     let curSecId = null;
-    for (const entry of doc.entries || []) {
+    for (const entry of targetDoc.entries || []) {
       if (entry.sectionTitle) {
         sNum += 1;
         curSecId = (entry.sectionContext && entry.sectionContext.sectionId) ||
@@ -210,7 +255,7 @@
           const [arg, next] = readBalanced(tex, i);
           const bb = { R: "ℝ", N: "ℕ", Z: "ℤ", Q: "ℚ", C: "ℂ" }[arg] || arg;
           const span = document.createElement("span");
-          span.className = "cadmo-msym";
+          span.className = "cadmo-msym cadmo-bb";
           span.textContent = bb;
           frag.appendChild(span);
           i = next;
@@ -220,7 +265,8 @@
           const [arg, next] = readBalanced(tex, i);
           const span = document.createElement("span");
           span.className = "cadmo-cal";
-          span.textContent = arg;
+          if (arg.includes("\\")) span.appendChild(renderMathNodes(arg));
+          else span.textContent = arg;
           frag.appendChild(span);
           i = next;
           continue;
@@ -235,11 +281,20 @@
           if (cmd === "text" || cmd === "texttt") {
             span.className = "cadmo-mtext";
             span.textContent = arg.replace(/\\_/g, "_");
+          } else if (cmd === "mathbf" || cmd === "boldsymbol") {
+            span.className = "cadmo-op cadmo-bf";
+            span.style.fontWeight = "600";
+            span.appendChild(renderMathNodes(arg));
+          } else if (cmd === "mathsf") {
+            span.className = "cadmo-op cadmo-sf";
+            if (/\\(?![_])/.test(arg)) span.appendChild(renderMathNodes(arg));
+            else span.textContent = arg.replace(/\\_/g, "_");
           } else {
             span.className = "cadmo-op";
-            if (cmd === "mathbf" || cmd === "boldsymbol") span.style.fontWeight = "600";
-            if (cmd === "mathrm" || cmd === "mathsf" || cmd === "operatorname" || cmd === "mathit") {
-              span.textContent = arg.replace(/\\_/g, "_");
+            if (cmd === "mathrel") span.classList.add("cadmo-mrel-op");
+            if (cmd === "mathrm" || cmd === "operatorname" || cmd === "mathit") {
+              if (/\\(?![_])/.test(arg)) span.appendChild(renderMathNodes(arg));
+              else span.textContent = arg.replace(/\\_/g, "_");
             } else {
               span.appendChild(renderMathNodes(arg));
             }
@@ -285,9 +340,47 @@
     "⁸": "8", "⁹": "9"
   };
 
+  const FONT_PREFIX_RE = /^(cal|bf|sf|bb):/;
+  const BLOCKED_HOVER_SELECTOR =
+    "sup, sub, .msupsub, .op-limits, .accent-body, .mopen, .mclose, .mpunct, .mbin, .mrel, .cadmo-mtext, .mtext";
+
+  function stripFontPrefix(norm) {
+    return String(norm || "").replace(FONT_PREFIX_RE, "");
+  }
+
+  function extractFontPrefixFromLatex(raw) {
+    if (!raw) return "";
+    const s = String(raw).trim().replace(/^\{+/, "").trim();
+    const m = s.match(/^\\(mathcal|mathbf|boldsymbol|mathsf|mathbb)(?:\s*\{|\s+|\b)/);
+    if (m) {
+      switch (m[1]) {
+        case "mathcal": return "cal:";
+        case "mathbf":
+        case "boldsymbol": return "bf:";
+        case "mathsf": return "sf:";
+        case "mathbb": return "bb:";
+      }
+    }
+    const firstCp = s.codePointAt(0);
+    if (firstCp !== undefined) {
+      if (firstCp >= 0x1d400 && firstCp <= 0x1d433) return "bf:";
+      if ((firstCp >= 0x1d49c && firstCp <= 0x1d503) ||
+          "ℬℰℱℋℐℒℳℛ".includes(String.fromCodePoint(firstCp))) return "cal:";
+      if (firstCp >= 0x1d5a0 && firstCp <= 0x1d607) return "sf:";
+      if ((firstCp >= 0x1d538 && firstCp <= 0x1d56b) ||
+          "ℝℕℤℚℂ".includes(String.fromCodePoint(firstCp))) return "bb:";
+    }
+    return "";
+  }
+
   function normalizeUnicodeMath(str) {
+    const scriptMap = {
+      "ℬ": "B", "ℰ": "E", "ℱ": "F", "ℋ": "H", "ℐ": "I", "ℒ": "L", "ℳ": "M", "ℛ": "R",
+      "ℝ": "R", "ℕ": "N", "ℤ": "Z", "ℚ": "Q", "ℂ": "C"
+    };
     return Array.from(str || "").map((ch) => {
       if (UNICODE_SCRIPT_MAP[ch] !== undefined) return UNICODE_SCRIPT_MAP[ch];
+      if (scriptMap[ch] !== undefined) return scriptMap[ch];
       const cp = ch.codePointAt(0);
       if (cp >= 0x1d400 && cp <= 0x1d419) return String.fromCharCode(65 + (cp - 0x1d400));
       if (cp >= 0x1d41a && cp <= 0x1d433) return String.fromCharCode(97 + (cp - 0x1d41a));
@@ -299,38 +392,45 @@
     }).join("");
   }
 
-  function normalizeMathToken(raw) {
+  function normalizeMathToken(raw, fontPrefixOverride = null) {
     if (!raw) return "";
+    const prefix = fontPrefixOverride || extractFontPrefixFromLatex(raw);
     let s = normalizeUnicodeMath(String(raw)).replace(/[\u200b\u2009]/g, "");
     let prev;
     do {
       prev = s;
       s = s
-        .replace(/\\(?:mathrm|mathit|mathsf|mathbf|mathcal|operatorname|text|texttt|boldsymbol)\{([^{}]*)\}/g, "$1")
-        .replace(/\\mathbb\{([^{}]*)\}/g, (_, arg) => ({ R: "ℝ", N: "ℕ", Z: "ℤ", Q: "ℚ", C: "ℂ" }[arg] || arg));
+        .replace(/\\(?:mathrm|mathit|mathsf|mathbf|mathcal|mathbb|operatorname|text|texttt|boldsymbol)\{([^{}]*)\}/g, "$1");
     } while (s !== prev);
     s = s
       .replace(/\\(?:left|right|middle)\b/g, "")
       .replace(/\\[!,;: ]/g, "")
       .replace(/\\_/g, "_")
       .replace(/\\([A-Za-z]+)/g, (_, cmd) => (SYMBOL_MAP[cmd] !== undefined ? SYMBOL_MAP[cmd] : cmd))
-      .replace(/[{}_\s]/g, "");
-    return s;
+      .replace(/[{}_^\s]/g, "");
+    if (!s) return "";
+    return prefix + s;
   }
 
-  const NON_TOKEN_RE = /^[0-9()[\]{},.;:=<>+\-*/·⋅∣|!?~'"\\]+$/;
-  const NON_ATOM_REL_TEXT = /^[\u200b\u2009()[\]{},.;:=<>+\-*/·⋅∣|\s]+$/;
+  const NON_TOKEN_RE = /^[0-9()[\]{},.;:=<>+\-*/·⋅∣|!?~'"\\⟨⟩≤≥≠≡≃≈⇒⇔∈∉⊆×∘→↦∀∃∧∨¬∑∏±⪯⪰⊤⊥…\s]+$/;
   const elementCandidates = new WeakMap();
   const hoverInteractiveNodes = new Set();
 
-  function buildScope(localInspectors, sectionId, referencedKeys, includeSectionContextDefs = false) {
+  function isNonHoverableToken(norm) {
+    if (!norm) return true;
+    const bare = stripFontPrefix(norm);
+    if (!bare || bare.length > 48) return true;
+    return NON_TOKEN_RE.test(bare);
+  }
+
+  function buildTokenScope(localInspectors, sectionInspectors, docInspectors, sectionId, referencedKeys, includeSectionContextDefs = false) {
     const tokenMap = new Map();
     const tierMap = new Map(); // norm -> tier (1=local, 2=section, 3=global)
 
     function addCandidate(ins, tier) {
       if (!ins || !ins.display) return;
       const norm = normalizeMathToken(ins.display);
-      if (!norm || norm.length > 48 || NON_TOKEN_RE.test(norm)) return;
+      if (isNonHoverableToken(norm)) return;
       const existingTier = tierMap.get(norm);
       if (existingTier !== undefined && existingTier < tier) return; // local shadows section/global
       if (existingTier === undefined || tier < existingTier) {
@@ -346,14 +446,11 @@
     }
 
     for (const ins of localInspectors || []) addCandidate(ins, 1);
-    const secCtx = sectionId ? sectionContextById.get(sectionId) : null;
-    if (secCtx) {
-      for (const ins of secCtx.inspectors || []) addCandidate(ins, 2);
-    }
+    for (const ins of sectionInspectors || []) addCandidate(ins, 2);
 
     const refSet = new Set(referencedKeys || []);
     const useRefFilter = refSet.size > 0 && !includeSectionContextDefs;
-    for (const ins of doc.inspectors || []) {
+    for (const ins of docInspectors || []) {
       if (ins.sectionId && sectionId && ins.sectionId !== sectionId) continue;
       const k = ins.key || "";
       if (k.startsWith("sec:") || k.startsWith("param:") || k.startsWith("shorthand:") || k.startsWith("secparam:")) continue;
@@ -362,7 +459,7 @@
     }
     // Fallback: if Section Context mentions definitions/predicates not explicitly in sectionRefKeys
     if (includeSectionContextDefs || refSet.size === 0) {
-      for (const ins of doc.inspectors || []) {
+      for (const ins of docInspectors || []) {
         if (ins.sectionId && sectionId && ins.sectionId !== sectionId) continue;
         const k = ins.key || "";
         if (k.startsWith("sec:") || k.startsWith("param:") || k.startsWith("shorthand:") || k.startsWith("secparam:")) continue;
@@ -371,6 +468,18 @@
     }
 
     return { tokenMap, sectionId: sectionId || null };
+  }
+
+  function buildScope(localInspectors, sectionId, referencedKeys, includeSectionContextDefs = false) {
+    const secCtx = sectionId ? sectionContextById.get(sectionId) : null;
+    return buildTokenScope(
+      localInspectors,
+      secCtx ? (secCtx.inspectors || []) : [],
+      doc.inspectors || [],
+      sectionId,
+      referencedKeys,
+      includeSectionContextDefs
+    );
   }
 
   let activePopover = { anchor: null, candidates: [], index: 0 };
@@ -392,9 +501,10 @@
     }
   }
 
-  function attachInteractiveToken(el, candidates, displayHint) {
+  function attachInteractiveToken(el, candidates, displayHint, tokenKey = null) {
     elementCandidates.set(el, candidates);
     hoverInteractiveNodes.add(el);
+    if (tokenKey && el.dataset) el.dataset.cadmoToken = tokenKey;
     el.setAttribute("tabindex", "0");
     el.setAttribute("role", "button");
     const activeKey = state.inspector && state.inspector.type === "symbol"
@@ -438,30 +548,118 @@
        node.classList.contains("cadmo-msym"));
   }
 
+  function isBlockedHoverNode(node) {
+    if (!node || node.nodeType !== 1) return false;
+    if (node.tagName === "SUP" || node.tagName === "SUB") return true;
+    const cl = node.classList;
+    if (!cl) return false;
+    return (
+      cl.contains("msupsub") ||
+      cl.contains("op-limits") ||
+      cl.contains("accent-body") ||
+      cl.contains("mopen") ||
+      cl.contains("mclose") ||
+      cl.contains("mpunct") ||
+      cl.contains("mbin") ||
+      cl.contains("mrel") ||
+      cl.contains("cadmo-mtext") ||
+      cl.contains("mtext")
+    );
+  }
+
+  function hasBlockedHoverAncestor(node) {
+    if (!node || node.nodeType !== 1) return false;
+    if (typeof node.closest === "function") {
+      return !!node.closest(BLOCKED_HOVER_SELECTOR);
+    }
+    let cur = node.parentNode;
+    while (cur && cur.nodeType === 1) {
+      if (isBlockedHoverNode(cur)) return true;
+      cur = cur.parentNode;
+    }
+    return false;
+  }
+
+  function fontPrefixOfSingleElement(el) {
+    if (!el || el.nodeType !== 1) return "";
+    const cl = el.classList;
+    if (cl) {
+      if (cl.contains("cadmo-cal") || cl.contains("mathcal")) return "cal:";
+      if (cl.contains("cadmo-bf") || cl.contains("mathbf") || cl.contains("boldsymbol")) return "bf:";
+      if (cl.contains("cadmo-sf") || cl.contains("mathsf")) return "sf:";
+      if (cl.contains("cadmo-bb") || cl.contains("mathbb")) return "bb:";
+    }
+    if (el.style && (el.style.fontWeight === "bold" || el.style.fontWeight === "600" || Number(el.style.fontWeight) >= 600)) {
+      return "bf:";
+    }
+    return "";
+  }
+
+  function extractFontPrefixFromDomNode(node) {
+    if (!node || node.nodeType !== 1) return "";
+    const direct = fontPrefixOfSingleElement(node);
+    if (direct) return direct;
+    const kids = node.children ? Array.from(node.children) : [];
+    for (const child of kids) {
+      if (isBlockedHoverNode(child) || (child.classList && child.classList.contains("mspace"))) continue;
+      const p = extractFontPrefixFromDomNode(child);
+      if (p) return p;
+      if ((child.textContent || "").trim()) break;
+    }
+    return "";
+  }
+
+  function extractFontPrefixFromDomSlice(slice) {
+    if (!Array.isArray(slice) || slice.length === 0) return "";
+    for (const node of slice) {
+      if (!node || node.nodeType !== 1) continue;
+      if (isBlockedHoverNode(node)) continue;
+      const p = extractFontPrefixFromDomNode(node);
+      if (p) return p;
+      if ((node.textContent || "").trim()) break;
+    }
+    return "";
+  }
+
   function isRefTargetContainer(node) {
     return node && node.nodeType === 1 &&
       !node.classList.contains("cadmo-ref") &&
       !node.classList.contains("cadmo-sym") &&
+      !(node.hasAttribute && node.hasAttribute("data-cadmo-key")) &&
       !node.classList.contains("cadmo-mtext");
   }
 
-  function wrapSiblingSlice(parent, sliceNodes, candidates) {
+  function isStructuralOfflineContainer(node) {
+    if (!node || node.nodeType !== 1) return false;
+    if (isBlockedHoverNode(node)) return false;
+    if (fontPrefixOfSingleElement(node)) return false;
+    const cl = node.classList;
+    if (cl && (cl.contains("cadmo-op") || cl.contains("cadmo-msym") || cl.contains("cadmo-ref") || cl.contains("cadmo-sym"))) {
+      return false;
+    }
+    if (node.tagName === "VAR") return false;
+    return true;
+  }
+
+  function wrapSiblingSlice(parent, sliceNodes, candidates, tokenKey = null) {
     if (!sliceNodes || sliceNodes.length === 0) return;
+    if (hasBlockedHoverAncestor(parent)) return;
     const span = document.createElement("span");
     span.className = "cadmo-ref";
     const labelText = sliceNodes.map((n) => n.textContent || "").join("");
     parent.insertBefore(span, sliceNodes[0]);
     for (const n of sliceNodes) span.appendChild(n);
-    attachInteractiveToken(span, candidates, labelText);
+    attachInteractiveToken(span, candidates, labelText, tokenKey);
   }
 
   function annotateOfflineMathContainer(container, scope) {
     if (!container || !scope || !scope.tokenMap || scope.tokenMap.size === 0) return;
+    if (isBlockedHoverNode(container) || hasBlockedHoverAncestor(container)) return;
     const children = Array.from(container.childNodes);
     let i = 0;
     while (i < children.length) {
       const node = children[i];
-      if (node.nodeType !== 1 || !isRefTargetContainer(node)) {
+      if (node.nodeType !== 1 || !isRefTargetContainer(node) || isBlockedHoverNode(node)) {
         i += 1;
         continue;
       }
@@ -483,13 +681,19 @@
       const maxEnd = Math.min(children.length - 1, i + 7);
       for (let end = maxEnd; end >= i; end--) {
         if (isBareVarRun && end < varRunEnd) continue;
-        // Stop span at text nodes (except trailing none) or .cadmo-mtext
         let validSlice = true;
         for (let k = i; k <= end; k++) {
           const cur = children[k];
           if (cur.nodeType !== 1 || !isRefTargetContainer(cur)) {
             validSlice = false;
             break;
+          }
+          if (isBlockedHoverNode(cur)) {
+            const allowTrailingScript = k > i && (cur.tagName === "SUP" || cur.tagName === "SUB");
+            if (!allowTrailingScript) {
+              validSlice = false;
+              break;
+            }
           }
         }
         if (!validSlice) continue;
@@ -506,11 +710,12 @@
 
         const slice = children.slice(i, end + 1);
         const rawText = slice.map((n) => n.textContent || "").join("");
-        const norm = normalizeMathToken(rawText);
-        if (norm && !NON_TOKEN_RE.test(norm)) {
+        const domPrefix = extractFontPrefixFromDomSlice(slice);
+        const norm = normalizeMathToken(rawText, domPrefix);
+        if (!isNonHoverableToken(norm)) {
           const candidates = scope.tokenMap.get(norm);
           if (candidates && candidates.length > 0) {
-            wrapSiblingSlice(container, slice, candidates);
+            wrapSiblingSlice(container, slice, candidates, norm);
             i = end + 1;
             matched = true;
             break;
@@ -521,9 +726,8 @@
       if (matched) continue;
 
       if (isBareVarRun) {
-        // Multi-letter identifier like un-escaped `uniform`: skip whole run instead of slicing single letters
+        // Multi-letter identifier like un-escaped `uniform`: skip whole run without entering SUB
         if (varRunEnd + 1 < children.length && children[varRunEnd + 1].tagName === "SUB") {
-          annotateOfflineMathContainer(children[varRunEnd + 1], scope);
           i = varRunEnd + 2;
         } else {
           i = varRunEnd + 1;
@@ -531,27 +735,40 @@
         continue;
       }
 
-      annotateOfflineMathContainer(node, scope);
+      if (isStructuralOfflineContainer(node)) {
+        annotateOfflineMathContainer(node, scope);
+      }
       i += 1;
     }
   }
 
   function annotateKatexBase(baseEl, scope) {
+    if (!baseEl || isBlockedHoverNode(baseEl) || hasBlockedHoverAncestor(baseEl)) return;
     const items = Array.from(baseEl.children).filter(
-      (el) => el.classList && !el.classList.contains("cadmo-ref") && !el.classList.contains("mspace")
+      (el) => el.classList &&
+        !el.classList.contains("cadmo-ref") &&
+        !el.classList.contains("mspace") &&
+        !(el.hasAttribute && el.hasAttribute("data-cadmo-key"))
     );
     let i = 0;
     while (i < items.length) {
+      if (isBlockedHoverNode(items[i])) {
+        i += 1;
+        continue;
+      }
       let matched = false;
       const maxEnd = Math.min(items.length - 1, i + 6);
       for (let end = maxEnd; end >= i; end--) {
         const slice = items.slice(i, end + 1);
-        if (slice.some((el) => el.classList.contains("mtext"))) continue;
-        const norm = normalizeMathToken(slice.map((el) => el.textContent || "").join(""));
-        if (norm && !NON_TOKEN_RE.test(norm)) {
+        if (slice.some((el, idx) =>
+          isBlockedHoverNode(el) && !(idx > 0 && el.classList && el.classList.contains("msupsub"))
+        )) continue;
+        const domPrefix = extractFontPrefixFromDomSlice(slice);
+        const norm = normalizeMathToken(slice.map((el) => el.textContent || "").join(""), domPrefix);
+        if (!isNonHoverableToken(norm)) {
           const candidates = scope.tokenMap.get(norm);
           if (candidates && candidates.length > 0) {
-            wrapSiblingSlice(baseEl, slice, candidates);
+            wrapSiblingSlice(baseEl, slice, candidates, norm);
             i = end + 1;
             matched = true;
             break;
@@ -559,8 +776,29 @@
         }
       }
       if (!matched) {
-        const subContainers = items[i].querySelectorAll(".msupsub, .mfrac");
-        subContainers.forEach((sc) => annotateKatexMath(sc, scope));
+        const cur = items[i];
+        if (!isBlockedHoverNode(cur)) {
+          // Handle wrapper .mord containing base + superscript-only .msupsub (e.g. R^n, \mathbf{G}^2)
+          if (
+            cur.classList &&
+            cur.classList.contains("mord") &&
+            !fontPrefixOfSingleElement(cur) &&
+            cur.children &&
+            cur.children.length > 0 &&
+            !(cur.querySelector && cur.querySelector(".msupsub .vlist-t2"))
+          ) {
+            const hasDirectScript = Array.from(cur.children).some((c) => c.classList && c.classList.contains("msupsub"));
+            if (hasDirectScript) {
+              annotateKatexBase(cur, scope);
+            }
+          }
+          if (cur.querySelectorAll) {
+            const fracContainers = cur.querySelectorAll(".mfrac");
+            fracContainers.forEach((sc) => {
+              if (!hasBlockedHoverAncestor(sc)) annotateKatexMath(sc, scope);
+            });
+          }
+        }
         i += 1;
       }
     }
@@ -568,17 +806,34 @@
 
   function annotateKatexMath(root, scope) {
     if (!root || !scope || !scope.tokenMap || scope.tokenMap.size === 0) return;
-    const bases = root.querySelectorAll(".base");
+    if (isBlockedHoverNode(root) || hasBlockedHoverAncestor(root)) return;
+    const bases = root.querySelectorAll ? root.querySelectorAll(".base") : [];
     if (bases.length > 0) {
-      bases.forEach((b) => annotateKatexBase(b, scope));
+      bases.forEach((b) => {
+        if (!hasBlockedHoverAncestor(b)) annotateKatexBase(b, scope);
+      });
     } else {
       annotateKatexBase(root, scope);
     }
   }
 
   function annotateMathReferences(mathEl, scope) {
-    if (!mathEl || !scope || !scope.tokenMap || scope.tokenMap.size === 0) return;
-    const katexHtml = mathEl.querySelector(".katex-html");
+    if (!mathEl) return;
+    if (mathEl.querySelectorAll) {
+      const pinnedNodes = mathEl.querySelectorAll("[data-cadmo-key]");
+      pinnedNodes.forEach((pEl) => {
+        if (pEl.classList.contains("cadmo-ref") || pEl.classList.contains("cadmo-sym") || hasBlockedHoverAncestor(pEl)) return;
+        const pKey = pEl.getAttribute("data-cadmo-key");
+        if (!pKey) return;
+        const ins = inspectorByKey.get(pKey);
+        if (ins) {
+          pEl.classList.add("cadmo-ref");
+          attachInteractiveToken(pEl, [ins], pEl.textContent || ins.display, `key:${pKey}`);
+        }
+      });
+    }
+    if (!scope || !scope.tokenMap || scope.tokenMap.size === 0) return;
+    const katexHtml = mathEl.querySelector ? mathEl.querySelector(".katex-html") : null;
     if (katexHtml) {
       annotateKatexMath(katexHtml, scope);
     } else {
@@ -587,7 +842,7 @@
   }
 
   function renderMathSpan(tex, displayMode = false, scope = null) {
-    const el = document.createElement(displayMode ? "div" : "span");
+    const el = document.createElement("span");
     el.className = displayMode ? "cadmo-display-math" : "cadmo-math";
     el.dataset.latex = tex || "";
     if (window.katex && typeof window.katex.render === "function") {
@@ -629,61 +884,139 @@
   function renderMixedText(str, scope = null) {
     const frag = document.createDocumentFragment();
     if (!str) return frag;
-    const re = /\\\(([\s\S]*?)\\\)/g;
+    const text = String(str);
+    const re = /\\\(([\s\S]*?)\\\)|\\\[([\s\S]*?)\\\]|\$\$([\s\S]*?)\$\$|(?<!\\)\$([^$\n]+?)(?<!\\)\$|\\\$/g;
     let last = 0;
     let m;
-    while ((m = re.exec(str)) !== null) {
-      if (m.index > last) frag.appendChild(document.createTextNode(str.slice(last, m.index)));
-      frag.appendChild(renderMathSpan(m[1], false, scope));
+    while ((m = re.exec(text)) !== null) {
+      if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+      if (m[0] === "\\$") {
+        frag.appendChild(document.createTextNode("$"));
+      } else if (m[1] !== undefined) {
+        frag.appendChild(renderMathSpan(m[1], false, scope));
+      } else if (m[2] !== undefined) {
+        frag.appendChild(renderMathSpan(m[2], true, scope));
+      } else if (m[3] !== undefined) {
+        frag.appendChild(renderMathSpan(m[3], true, scope));
+      } else if (m[4] !== undefined) {
+        frag.appendChild(renderMathSpan(m[4], false, scope));
+      }
       last = re.lastIndex;
     }
-    if (last < str.length) frag.appendChild(document.createTextNode(str.slice(last)));
+    if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
     return frag;
+  }
+
+  function getTrustLevel(obj, variantObj = null) {
+    if (!obj || typeof obj !== "object") return null;
+    const t = (variantObj && typeof variantObj === "object" ? (variantObj.trust || variantObj.proseTrust) : null) ||
+      obj.trust || obj.proseTrust || null;
+    if (t === "kernelFormula" || t === "kernelProvedClaim" || t === "typedRef" || t === "intuitionGloss") {
+      return t;
+    }
+    return null;
+  }
+
+  function trustClassAndTitle(trust) {
+    if (!trust) return null;
+    if (trust === "intuitionGloss") {
+      return {
+        cls: "cadmo-trust-gloss",
+        title: state.mode === "auditor" ? "Authorial gloss (intuition)" : ""
+      };
+    }
+    const titles = {
+      kernelFormula: "Kernel-verified formula",
+      kernelProvedClaim: "Kernel-verified claim",
+      typedRef: "Kernel-verified typed reference"
+    };
+    return {
+      cls: "cadmo-trust-kernel",
+      title: state.mode === "auditor" ? (titles[trust] || "Kernel-verified") : ""
+    };
+  }
+
+  function applyInlineTrust(node, inl, variantObj = null) {
+    const trust = getTrustLevel(inl, variantObj);
+    const info = trustClassAndTitle(trust);
+    if (!info) return node;
+    if (node && node.nodeType === 1) {
+      node.classList.add(info.cls);
+      node.setAttribute("data-trust", trust);
+      if (info.title && !node.getAttribute("title")) node.setAttribute("title", info.title);
+      return node;
+    }
+    return h("span", {
+      class: info.cls,
+      "data-trust": trust,
+      title: info.title || null
+    }, node);
   }
 
   function renderInline(inl, scope = null) {
     if (!inl || typeof inl !== "object") return document.createTextNode("");
     if (inl.text !== undefined) {
       const val = typeof inl.text === "string" ? inl.text : inl.text.value;
-      return renderMixedText(val || "", scope);
+      return applyInlineTrust(renderMixedText(val || "", scope), inl, inl.text);
     }
     if (inl.emph !== undefined) {
       const val = typeof inl.emph === "string" ? inl.emph : inl.emph.value;
-      return h("em", {}, val || "");
+      return applyInlineTrust(h("em", {}, val || ""), inl, inl.emph);
     }
     if (inl.inlineMath !== undefined) {
-      const tex = typeof inl.inlineMath === "string" ? inl.inlineMath : inl.inlineMath.latex;
-      return renderMathSpan(tex || "", false, scope);
+      const obj = inl.inlineMath;
+      const tex = typeof obj === "string" ? obj : obj.latex;
+      const dataKey = (typeof obj === "object" && obj ? (obj.dataKey || obj["data-cadmo-key"]) : null) ||
+        inl.dataKey || inl["data-cadmo-key"] || null;
+      const ins = dataKey ? inspectorByKey.get(dataKey) : null;
+      const span = renderMathSpan(tex || "", false, ins ? null : scope);
+      if (dataKey) span.setAttribute("data-cadmo-key", dataKey);
+      if (ins && !hasBlockedHoverAncestor(span)) {
+        span.classList.add("cadmo-ref");
+        attachInteractiveToken(span, [ins], span.textContent || ins.display, `key:${dataKey}`);
+      }
+      return applyInlineTrust(span, inl, obj);
     }
     if (inl.displayMath !== undefined) {
       const obj = inl.displayMath;
       const tex = typeof obj === "string" ? obj : obj.latex;
       const punct = typeof obj === "object" && obj.punct ? obj.punct : "";
-      return renderMathSpan((tex || "") + (punct ? "\\," + punct : ""), true, scope);
+      const dataKey = (typeof obj === "object" && obj ? (obj.dataKey || obj["data-cadmo-key"]) : null) ||
+        inl.dataKey || inl["data-cadmo-key"] || null;
+      const ins = dataKey ? inspectorByKey.get(dataKey) : null;
+      const span = renderMathSpan((tex || "") + (punct ? "\\," + punct : ""), true, ins ? null : scope);
+      if (dataKey) span.setAttribute("data-cadmo-key", dataKey);
+      if (ins && !hasBlockedHoverAncestor(span)) {
+        span.classList.add("cadmo-ref");
+        attachInteractiveToken(span, [ins], span.textContent || ins.display, `key:${dataKey}`);
+      }
+      return applyInlineTrust(span, inl, obj);
     }
     if (inl.symbol !== undefined) {
       const sym = inl.symbol;
-      const ins = inspectorByKey.get(sym.key);
+      const pinnedKey = sym.dataKey || sym["data-cadmo-key"] || inl.dataKey || inl["data-cadmo-key"] || sym.key;
+      const ins = inspectorByKey.get(pinnedKey) || inspectorByKey.get(sym.key);
       const isSelected = state.inspector && state.inspector.type === "symbol" &&
-        state.inspector.item.key === sym.key;
+        state.inspector.item.key === (ins ? ins.key : pinnedKey);
       const btn = h("button", {
         type: "button",
         class: sym.isMath ? "cadmo-sym" : "cadmo-sym cadmo-sym-prose",
+        "data-cadmo-key": pinnedKey || "",
         "aria-pressed": isSelected ? "true" : "false"
       }, sym.isMath ? renderMathSpan(sym.display, false, null) : sym.display);
       if (ins) {
-        attachInteractiveToken(btn, [ins], sym.display);
+        attachInteractiveToken(btn, [ins], sym.display, `key:${ins.key}`);
       } else {
         btn.addEventListener("click", () => {
           state.inspector = null;
           renderMarginOnly();
         });
       }
-      return btn;
+      return applyInlineTrust(btn, inl, sym);
     }
     if (inl.citation !== undefined) {
       const c = inl.citation;
-      return h("span", { title: c.detail || "" }, `[${c.label}]`);
+      return applyInlineTrust(h("span", { title: c.detail || "" }, `[${c.label}]`), inl, c);
     }
     return document.createTextNode("");
   }
@@ -820,6 +1153,13 @@
 
       if (node.kind === "flowNote") {
         flushPara(false);
+        if (node.placement === "paragraph") {
+          if (node.text) {
+            ensureLeadIn();
+            paraChildren.push(h("span", { class: "cadmo-para-heading" }, renderMixedText(node.text + " ", scope)));
+          }
+          continue;
+        }
         const p = h("p", { class: "cadmo-flow-note" }, renderMixedText(node.text || "", scope));
         out.push(p);
         continue;
@@ -916,24 +1256,68 @@
       }
 
       // Default: `step` — flows INLINE inside depth-0 paragraph, or as separate block at depth > 0
+      if (node.startsParagraph) {
+        flushPara(false);
+      }
       const children = paperVisibleChildren(node.children || []);
       const hasChildren = children.length > 0;
       const isOpen = state.expanded.has(node.id);
-      const sent = h("span", { class: "cadmo-sent" + (node.isWrapper ? " is-wrapper" : "") },
-        renderInlines(node.content || [], scope),
-        hasChildren
-          ? h("button", {
-              type: "button",
-              class: "cadmo-inline-toggle",
-              "aria-expanded": isOpen ? "true" : "false",
-              title: isOpen ? "Collapse subproof" : "Expand subproof",
-              onClick: () => toggleId(node.id)
-            }, isOpen ? "⊖" : "⊕")
-          : null,
-        node.isWrapper ? h("span", { class: "cadmo-wrapper-tag" }, "[wrapper]") : null,
-        node.originDecl ? h("span", { class: "cadmo-origin-tag" }, node.originDecl) : null,
-        renderGoalButton(node.goal, node.originDecl || "Proof step")
-      );
+      const toggleBtn = hasChildren
+        ? h("button", {
+            type: "button",
+            class: "cadmo-inline-toggle",
+            "aria-expanded": isOpen ? "true" : "false",
+            title: isOpen ? "Collapse subproof" : "Expand subproof",
+            onClick: () => toggleId(node.id)
+          }, isOpen ? "⊖" : "⊕")
+        : null;
+      const stepTrust = getTrustLevel(node);
+      const stepTrustInfo = trustClassAndTitle(stepTrust);
+      const trustBadge = (stepTrust === "intuitionGloss")
+        ? h("span", { class: "cadmo-trust-badge" }, "[gloss]")
+        : null;
+      const wrapperTag = node.isWrapper ? h("span", { class: "cadmo-wrapper-tag" }, "[wrapper]") : null;
+      const originTag = node.originDecl ? h("span", { class: "cadmo-origin-tag" }, node.originDecl) : null;
+      const goalBtn = renderGoalButton(node.goal, node.originDecl || "Proof step");
+      const leadHeadingStr = typeof node.leadHeading === "string" ? node.leadHeading.trim() : "";
+      const leadHeadSpan = leadHeadingStr
+        ? h("span", { class: "cadmo-para-heading" }, renderMixedText(leadHeadingStr + " ", scope))
+        : null;
+      const contentArr = node.content || [];
+      const endsWithDisplay = contentArr.length > 0 && contentArr[contentArr.length - 1]?.displayMath !== undefined;
+      const sentClass = "cadmo-sent" +
+        (node.isWrapper ? " is-wrapper" : "") +
+        (stepTrustInfo ? ` ${stepTrustInfo.cls}` : "");
+      const sentAttrs = {
+        class: sentClass,
+        "data-trust": stepTrust || null,
+        title: (stepTrustInfo && stepTrustInfo.title) ? stepTrustInfo.title : null
+      };
+      let sent;
+      if (endsWithDisplay) {
+        const preInlines = contentArr.slice(0, -1);
+        const dispInl = contentArr[contentArr.length - 1];
+        sent = h("span", sentAttrs,
+          leadHeadSpan,
+          renderInlines(preInlines, scope),
+          h("span", { class: "cadmo-display-wrap" },
+            renderInline(dispInl, scope),
+            (toggleBtn || trustBadge || wrapperTag || originTag || goalBtn)
+              ? h("span", { class: "cadmo-display-controls" }, toggleBtn, trustBadge, wrapperTag, originTag, goalBtn)
+              : null
+          )
+        );
+      } else {
+        sent = h("span", sentAttrs,
+          leadHeadSpan,
+          renderInlines(contentArr, scope),
+          toggleBtn,
+          trustBadge,
+          wrapperTag,
+          originTag,
+          goalBtn
+        );
+      }
       const childrenEl = (hasChildren && isOpen)
         ? h("div", { class: "cadmo-expansion cadmo-expanded-children" },
             ...renderProofFlow(children, { depth: depth + 1, scope })
@@ -1221,13 +1605,17 @@
     });
   }
 
-  document.addEventListener("keydown", (ev) => {
-    if (ev.key === "Escape" && popoverEl && !popoverEl.hidden) {
-      hidePopover(true);
+  function initGlobalListeners() {
+    document.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape" && popoverEl && !popoverEl.hidden) {
+        hidePopover(true);
+      }
+    });
+    if (typeof window !== "undefined") {
+      window.addEventListener("scroll", schedulePopoverReposition, { passive: true });
+      window.addEventListener("resize", schedulePopoverReposition);
     }
-  });
-  window.addEventListener("scroll", schedulePopoverReposition, { passive: true });
-  window.addEventListener("resize", schedulePopoverReposition);
+  }
 
   /* ------------------------------------------------------------------------
      Tufte Sidenote Margin: completely blank by default.
@@ -1515,18 +1903,7 @@
     );
 
     const entries = doc.entries || [];
-    // Hoist shared chapter-level ambient setting ONCE so it never repeats 41 times
-    const firstAmbient = entries.find((e) => e.ambient && e.ambient.summary)?.ambient || null;
-    const chapterScope = buildScope([], null, [], true);
     const bodyNodes = [];
-    if (firstAmbient) {
-      bodyNodes.push(
-        h("p", { class: "cadmo-chapter-setting" },
-          h("span", { class: "cadmo-ambient-label" }, "Standing conventions. "),
-          renderInlines(firstAmbient.summary || [], chapterScope)
-        )
-      );
-    }
     let sectionNum = 0;
     let activeSecId = null;
     entries.forEach((entry, idx) => {
@@ -1570,7 +1947,11 @@
         entry.referencedKeys || [],
         false
       );
-      bodyNodes.push(renderEntry(entry, idx, !!firstAmbient, entryScope));
+      const isVacuousAmbient = entry.ambient && Array.isArray(entry.ambient.summary) &&
+        entry.ambient.summary.length === 1 &&
+        String((entry.ambient.summary[0]?.text?.value ?? entry.ambient.summary[0]?.text) || "")
+          .startsWith("We work in the Constructive Cryptography framework");
+      bodyNodes.push(renderEntry(entry, idx, !!isVacuousAmbient, entryScope));
     });
 
     marginElRef = renderMargin(glossaryItems);
@@ -1588,5 +1969,46 @@
     ensurePopoverEl();
   }
 
+  if (typeof globalThis !== "undefined") {
+    globalThis.__cadmoHelpers = {
+      SYMBOL_MAP,
+      stripEmbeddedStyles,
+      sanitizeDocDiagrams,
+      extractFontPrefixFromLatex,
+      normalizeUnicodeMath,
+      normalizeMathToken,
+      stripFontPrefix,
+      isNonHoverableToken,
+      isBlockedHoverNode,
+      hasBlockedHoverAncestor,
+      extractFontPrefixFromDomNode,
+      extractFontPrefixFromDomSlice,
+      buildTokenScope,
+      renderMathNodes,
+      annotateOfflineMathContainer,
+      annotateKatexBase,
+      annotateKatexMath,
+      annotateMathReferences,
+      getTrustLevel,
+      renderInline,
+      renderProofFlow
+    };
+  }
+
+  if (typeof document === "undefined") return;
+  const dataEl = document.getElementById("cadmo-document-data");
+  const rootEl = document.getElementById("cadmo-root");
+  if (!dataEl || !rootEl) return;
+
+  try {
+    doc = JSON.parse(dataEl.textContent || "{}");
+  } catch (err) {
+    rootEl.textContent = "Failed to parse informalization document JSON: " + err;
+    return;
+  }
+  sanitizeDocDiagrams(doc);
+  state.mode = doc.defaultMode === "auditor" ? "auditor" : "paper";
+  initDocumentIndexes(doc);
+  initGlobalListeners();
   renderAll();
 })();

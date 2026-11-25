@@ -2,7 +2,9 @@
 Copyright (c) 2026 Trail of Bits. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
+import Informalization.Core.Spine
 import Informalization.Verbose.Trace
+import Informalization.Verbose.ProseInterp
 import Informalization.Verbose.Syntax
 
 /-!

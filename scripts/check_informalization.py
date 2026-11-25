@@ -30,7 +30,15 @@ from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 STANDARD_AXIOMS: Set[str] = {"propext", "Classical.choice", "Quot.sound"}
 
-# Case-sensitive forbidden leakage patterns in reader-facing prose/math strings
+VALID_TIERS: Set[str] = {"legacy", "authored"}
+VALID_PROSE_TRUST: Set[str] = {
+    "kernelFormula",
+    "kernelProvedClaim",
+    "typedRef",
+    "intuitionGloss",
+}
+
+# Case-sensitive forbidden leakage patterns in reader-facing prose/math strings (ALL tiers)
 FORBIDDEN_CASE_SENSITIVE: Tuple[str, ...] = (
     "_hyg",
     "_uniq",
@@ -48,9 +56,52 @@ FORBIDDEN_CASE_SENSITIVE: Tuple[str, ...] = (
     "match ",
     "asHom",
     "toDDC",
+    "[UNPROVED: sorry]",
+    "sorryAx",
 )
 
-# Case-insensitive forbidden Lean / category-theory / legalism patterns
+# Additional case-sensitive leakage patterns enforced strictly in `--tier authored`
+AUTHORED_FORBIDDEN_CASE_SENSITIVE: Tuple[str, ...] = (
+    "_vcc_",
+    "Exists(",
+    "sum(univ",
+    "Sigma(",
+    "Subtype(",
+    "Prod.fst",
+    "Prod.snd",
+    "BitString(",
+    "Unit \\to",
+    "Unit →",
+    "_proof_",
+    "self.",
+)
+
+# Regexes catching LeanTeX `\mathrm{...}` renderings and Lean-type fallback prose in `--tier authored`
+AUTHORED_FORBIDDEN_REGEXES: Tuple[Tuple[re.Pattern[str], str], ...] = (
+    (re.compile(r"\\mathrm\{Exists\}(?:\\!|\\,|\s)*(?:\\left)?\("), "Exists("),
+    (re.compile(r"\\mathrm\{sum\}(?:\\!|\\,|\s)*(?:\\left)?\(\s*(?:\\mathrm\{univ\}|univ)"), "sum(univ"),
+    (re.compile(r"\\mathrm\{Sigma\}(?:\\!|\\,|\s)*(?:\\left)?\("), "Sigma("),
+    (re.compile(r"\\mathrm\{Subtype\}(?:\\!|\\,|\s)*(?:\\left)?\("), "Subtype("),
+    (re.compile(r"\\mathrm\{BitString\}(?:\\!|\\,|\s)*(?:\\left)?\("), "BitString("),
+    (re.compile(r"\\mathrm\{Unit\}\s*(?:\\to|→)"), "Unit \\to"),
+    (
+        re.compile(
+            r"\b(?:defined as\s+)?an?\s+element of\s+(?:\\\(|\\\[|\$|\s)*"
+            r"(?:\\mathrm\{[A-Za-z0-9_.]+\}|"
+            r"(?:ProbDist|BitString|SymmetricEncryption|MAC|BlockCipher|PRF|PRP|PRG|"
+            r"PRGAdversary|DistAdversary|ShannonCipher|TypedSystem|TypedConverter|"
+            r"TypedDistinguisher|ENNReal|NNReal|Finset|Fin|ZMod)\b)",
+            re.IGNORECASE,
+        ),
+        "element of <LeanType>",
+    ),
+    (
+        re.compile(r"\bdefined as\s+an?\s+element of\s+", re.IGNORECASE),
+        "Defined as an element of",
+    ),
+)
+
+# Case-insensitive forbidden Lean / category-theory / legalism patterns (ALL tiers)
 FORBIDDEN_CASE_INSENSITIVE: Tuple[str, ...] = (
     "at interface",
     "whiskering",
@@ -60,7 +111,22 @@ FORBIDDEN_CASE_INSENSITIVE: Tuple[str, ...] = (
     "user(s)",
     "query(s)",
     "resource(s)",
+    "distinguishing distance",
+    "transcript distance",
+    "standing conventions",
 )
+
+# Additional case-insensitive leakage patterns enforced strictly in `--tier authored`
+AUTHORED_FORBIDDEN_CASE_INSENSITIVE: Tuple[str, ...] = ()
+
+LOWERCASE_THEOREM_HEADERS: Set[str] = {
+    "theorem",
+    "lemma",
+    "proposition",
+    "corollary",
+}
+
+EMBEDDED_STYLE_RE = re.compile(r"<style\b", re.IGNORECASE)
 
 RAW_LAMBDA_RE = re.compile(r"\bfun\s+[A-Za-z_][A-Za-z0-9_']*\s*=>")
 
@@ -108,6 +174,7 @@ class Violation:
 class FileReport:
     path: str
     kind: str
+    tier: str = "legacy"
     violations: List[Violation] = dataclasses.field(default_factory=list)
     entries_checked: int = 0
     inspectors_checked: int = 0
@@ -208,8 +275,42 @@ def flatten_inlines_joined(inlines: Any) -> str:
     return "".join(parts)
 
 
+def check_no_embedded_styles(
+    html_str: Any, file_path: str, location: str, violations: List[Violation]
+) -> None:
+    if not isinstance(html_str, str) or not html_str:
+        return
+    if EMBEDDED_STYLE_RE.search(html_str):
+        violations.append(
+            Violation(
+                gate="diagram-style",
+                file=file_path,
+                location=location,
+                message="Embedded <style> tag found inside diagramHtml/HTML field (CSS must be hoisted once in <head>)",
+            )
+        )
+
+
+def check_trust_value(
+    obj: Any, file_path: str, location: str, violations: List[Violation]
+) -> None:
+    if not isinstance(obj, dict):
+        return
+    for fld in ("trust", "proseTrust"):
+        val = obj.get(fld)
+        if val is not None and val not in VALID_PROSE_TRUST:
+            violations.append(
+                Violation(
+                    gate="structure",
+                    file=file_path,
+                    location=f"{location}.{fld}",
+                    message=f"Invalid ProseTrust value {val!r} (expected one of {sorted(VALID_PROSE_TRUST)})",
+                )
+            )
+
+
 def check_text_leakage(
-    text: str, file_path: str, location: str, violations: List[Violation]
+    text: str, file_path: str, location: str, violations: List[Violation], tier: str = "legacy"
 ) -> None:
     if not text:
         return
@@ -243,6 +344,40 @@ def check_text_leakage(
                     message=f"Forbidden Lean/non-CC term '{pat}' in: {snippet(text)}",
                 )
             )
+    if tier == "authored":
+        emitted_authored: Set[str] = set()
+        for pat in AUTHORED_FORBIDDEN_CASE_SENSITIVE:
+            if pat in text:
+                emitted_authored.add(pat)
+                violations.append(
+                    Violation(
+                        gate="zero-leakage",
+                        file=file_path,
+                        location=location,
+                        message=f"Forbidden authored-tier pattern '{pat}' in: {snippet(text)}",
+                    )
+                )
+        for rx, label in AUTHORED_FORBIDDEN_REGEXES:
+            if label not in emitted_authored and rx.search(text):
+                emitted_authored.add(label)
+                violations.append(
+                    Violation(
+                        gate="zero-leakage",
+                        file=file_path,
+                        location=location,
+                        message=f"Forbidden authored-tier pattern '{label}' in: {snippet(text)}",
+                    )
+                )
+        for pat in AUTHORED_FORBIDDEN_CASE_INSENSITIVE:
+            if pat in lower:
+                violations.append(
+                    Violation(
+                        gate="zero-leakage",
+                        file=file_path,
+                        location=location,
+                        message=f"Forbidden authored-tier phrase '{pat}' in: {snippet(text)}",
+                    )
+                )
 
 
 def check_prose_typography(
@@ -286,6 +421,7 @@ def check_inlines(
     file_path: str,
     location: str,
     violations: List[Violation],
+    tier: str = "legacy",
 ) -> str:
     """Validate an Inline array for leakage, broken symbol keys, and joined typography."""
     if not isinstance(inlines, list):
@@ -310,29 +446,38 @@ def check_inlines(
                 )
             )
             continue
+        check_trust_value(inl, file_path, f"{location}[{idx}]", violations)
+        for v in inl.values():
+            if isinstance(v, dict):
+                check_trust_value(v, file_path, f"{location}[{idx}]", violations)
         for seg in inline_raw_texts(inl):
-            check_text_leakage(seg, file_path, f"{location}[{idx}]", violations)
+            check_text_leakage(seg, file_path, f"{location}[{idx}]", violations, tier=tier)
         if "symbol" in inl:
             sym = inl["symbol"]
-            key = sym.get("key") if isinstance(sym, dict) else None
-            if not key or key not in inspector_keys:
+            key = (
+                (sym.get("dataKey") or sym.get("data-cadmo-key") or inl.get("dataKey") or inl.get("data-cadmo-key") or sym.get("key"))
+                if isinstance(sym, dict)
+                else None
+            )
+            orig_key = sym.get("key") if isinstance(sym, dict) else None
+            if not orig_key or (orig_key not in inspector_keys and key not in inspector_keys):
                 violations.append(
                     Violation(
                         gate="structure",
                         file=file_path,
                         location=f"{location}[{idx}]",
-                        message=f"Broken inspector symbol key '{key}' (not found in document.inspectors)",
+                        message=f"Broken inspector symbol key '{orig_key}' (not found in document.inspectors)",
                     )
                 )
 
     joined = flatten_inlines_joined(inlines)
-    check_text_leakage(joined, file_path, location, violations)
+    check_text_leakage(joined, file_path, location, violations, tier=tier)
     check_prose_typography(joined, file_path, location, violations)
     return joined
 
 
 def check_goal_state(
-    goal: Any, file_path: str, location: str, violations: List[Violation]
+    goal: Any, file_path: str, location: str, violations: List[Violation], tier: str = "legacy"
 ) -> None:
     if goal is None:
         return
@@ -347,19 +492,32 @@ def check_goal_state(
         )
         return
     target = goal.get("targetLatex", "")
-    check_text_leakage(str(target), file_path, f"{location}.targetLatex", violations)
+    check_text_leakage(str(target), file_path, f"{location}.targetLatex", violations, tier=tier)
     target_prose = goal.get("targetProse")
     if target_prose:
-        check_text_leakage(str(target_prose), file_path, f"{location}.targetProse", violations)
+        check_text_leakage(str(target_prose), file_path, f"{location}.targetProse", violations, tier=tier)
         check_prose_typography(str(target_prose), file_path, f"{location}.targetProse", violations)
+    raw_goal = goal.get("rawLeanGoal")
+    if raw_goal:
+        raw_str = str(raw_goal)
+        for sorry_tok in ("sorryAx", "[UNPROVED: sorry]"):
+            if sorry_tok in raw_str:
+                violations.append(
+                    Violation(
+                        gate="zero-leakage",
+                        file=file_path,
+                        location=f"{location}.rawLeanGoal",
+                        message=f"Forbidden pattern '{sorry_tok}' in rawLeanGoal: {snippet(raw_str)}",
+                    )
+                )
     for idx, ctx in enumerate(goal.get("context") or []):
         if not isinstance(ctx, dict):
             continue
         nm = ctx.get("name")
         if nm is not None:
-            check_text_leakage(str(nm), file_path, f"{location}.context[{idx}].name", violations)
+            check_text_leakage(str(nm), file_path, f"{location}.context[{idx}].name", violations, tier=tier)
         desc = str(ctx.get("description", ""))
-        check_text_leakage(desc, file_path, f"{location}.context[{idx}].description", violations)
+        check_text_leakage(desc, file_path, f"{location}.context[{idx}].description", violations, tier=tier)
         check_prose_typography(desc, file_path, f"{location}.context[{idx}].description", violations)
 
 
@@ -367,7 +525,9 @@ def proof_node_canonical_text(node: Dict[str, Any]) -> str:
     """Compute canonical visible text block for sibling deduplication."""
     kind = node.get("kind")
     if kind == "step":
-        raw = flatten_inlines_joined(node.get("content", []))
+        lead = str(node.get("leadHeading") or "").strip()
+        body = flatten_inlines_joined(node.get("content", []))
+        raw = f"{lead} {body}".strip() if lead else body
     elif kind == "routineReceipt":
         raw = str(node.get("summary", ""))
     elif kind == "flowNote":
@@ -396,6 +556,7 @@ def check_proof_node_list(
     file_path: str,
     location: str,
     violations: List[Violation],
+    tier: str = "legacy",
 ) -> None:
     if not isinstance(nodes, list):
         violations.append(
@@ -455,22 +616,48 @@ def check_proof_node_list(
 
         # Recursive content + child checks
         if kind == "step":
+            check_trust_value(node, file_path, node_loc, violations)
+            if node.get("startsParagraph") is not None and not isinstance(node.get("startsParagraph"), bool):
+                violations.append(
+                    Violation(
+                        gate="structure",
+                        file=file_path,
+                        location=f"{node_loc}.startsParagraph",
+                        message="startsParagraph must be a boolean",
+                    )
+                )
+            lead = node.get("leadHeading")
+            if lead is not None:
+                if not isinstance(lead, str):
+                    violations.append(
+                        Violation(
+                            gate="structure",
+                            file=file_path,
+                            location=f"{node_loc}.leadHeading",
+                            message="leadHeading must be a string or null",
+                        )
+                    )
+                else:
+                    check_text_leakage(lead, file_path, f"{node_loc}.leadHeading", violations, tier=tier)
+                    check_prose_typography(lead, file_path, f"{node_loc}.leadHeading", violations)
+            check_no_embedded_styles(node.get("diagramHtml"), file_path, f"{node_loc}.diagramHtml", violations)
             check_inlines(
-                node.get("content", []), inspector_keys, file_path, f"{node_loc}.content", violations
+                node.get("content", []), inspector_keys, file_path, f"{node_loc}.content", violations, tier=tier
             )
-            check_goal_state(node.get("goal"), file_path, f"{node_loc}.goal", violations)
+            check_goal_state(node.get("goal"), file_path, f"{node_loc}.goal", violations, tier=tier)
             check_proof_node_list(
                 node.get("children", []),
                 inspector_keys,
                 file_path,
                 f"{node_loc}.children",
                 violations,
+                tier=tier,
             )
         elif kind == "calcChain":
             check_inlines(
-                node.get("intro", []), inspector_keys, file_path, f"{node_loc}.intro", violations
+                node.get("intro", []), inspector_keys, file_path, f"{node_loc}.intro", violations, tier=tier
             )
-            check_goal_state(node.get("goal"), file_path, f"{node_loc}.goal", violations)
+            check_goal_state(node.get("goal"), file_path, f"{node_loc}.goal", violations, tier=tier)
             steps = node.get("steps", [])
             if not isinstance(steps, list):
                 violations.append(
@@ -487,9 +674,10 @@ def check_proof_node_list(
                     if not isinstance(item, dict):
                         continue
                     st = item.get("step") or {}
+                    check_no_embedded_styles(st.get("diagramHtml"), file_path, f"{sloc}.step.diagramHtml", violations)
                     for fld in ("lhsLatex", "relationLatex", "rhsLatex"):
                         check_text_leakage(
-                            str(st.get(fld, "")), file_path, f"{sloc}.step.{fld}", violations
+                            str(st.get(fld, "")), file_path, f"{sloc}.step.{fld}", violations, tier=tier
                         )
                     check_inlines(
                         st.get("reason", []),
@@ -497,6 +685,7 @@ def check_proof_node_list(
                         file_path,
                         f"{sloc}.step.reason",
                         violations,
+                        tier=tier,
                     )
                     check_proof_node_list(
                         item.get("children", []),
@@ -504,35 +693,44 @@ def check_proof_node_list(
                         file_path,
                         f"{sloc}.children",
                         violations,
+                        tier=tier,
                     )
         elif kind == "routineReceipt":
             summary = str(node.get("summary", ""))
-            check_text_leakage(summary, file_path, f"{node_loc}.summary", violations)
+            check_text_leakage(summary, file_path, f"{node_loc}.summary", violations, tier=tier)
             check_prose_typography(summary, file_path, f"{node_loc}.summary", violations)
-            check_goal_state(node.get("goal"), file_path, f"{node_loc}.goal", violations)
+            check_goal_state(node.get("goal"), file_path, f"{node_loc}.goal", violations, tier=tier)
             check_proof_node_list(
                 node.get("details", []),
                 inspector_keys,
                 file_path,
                 f"{node_loc}.details",
                 violations,
+                tier=tier,
             )
         elif kind == "flowNote":
             text = str(node.get("text", ""))
-            check_text_leakage(text, file_path, f"{node_loc}.text", violations)
+            check_text_leakage(text, file_path, f"{node_loc}.text", violations, tier=tier)
             check_prose_typography(text, file_path, f"{node_loc}.text", violations)
         elif kind == "figure":
+            check_no_embedded_styles(node.get("html"), file_path, f"{node_loc}.html", violations)
             check_inlines(
                 node.get("caption", []),
                 inspector_keys,
                 file_path,
                 f"{node_loc}.caption",
                 violations,
+                tier=tier,
             )
 
 
 def check_inspectors(
-    inspectors: Any, file_path: str, violations: List[Violation], loc_prefix: str = "inspectors"
+    inspectors: Any,
+    file_path: str,
+    violations: List[Violation],
+    loc_prefix: str = "inspectors",
+    tier: str = "legacy",
+    known_keys: Optional[Set[str]] = None,
 ) -> Set[str]:
     keys: Set[str] = set()
     if not isinstance(inspectors, list):
@@ -571,23 +769,30 @@ def check_inspectors(
         else:
             keys.add(key)
 
+    valid_keys = set(known_keys or set()) | keys
+
+    for idx, ins in enumerate(inspectors):
+        loc = f"{loc_prefix}[{idx}]"
+        if not isinstance(ins, dict):
+            continue
+
         disp = str(ins.get("display", ""))
-        check_text_leakage(disp, file_path, f"{loc}.display", violations)
+        check_text_leakage(disp, file_path, f"{loc}.display", violations, tier=tier)
 
         if ins.get("roleBadge") is not None:
             rb = str(ins["roleBadge"])
-            check_text_leakage(rb, file_path, f"{loc}.roleBadge", violations)
+            check_text_leakage(rb, file_path, f"{loc}.roleBadge", violations, tier=tier)
 
         if ins.get("docString") is not None:
             ds = str(ins["docString"])
-            check_text_leakage(ds, file_path, f"{loc}.docString", violations)
+            check_text_leakage(ds, file_path, f"{loc}.docString", violations, tier=tier)
             check_prose_typography(ds, file_path, f"{loc}.docString", violations)
 
         for cidx, cl in enumerate(ins.get("clauses") or []):
-            check_text_leakage(str(cl), file_path, f"{loc}.clauses[{cidx}]", violations)
+            check_text_leakage(str(cl), file_path, f"{loc}.clauses[{cidx}]", violations, tier=tier)
 
         for aidx, ap in enumerate(ins.get("sectionAssumptions") or []):
-            check_inlines(ap, keys, file_path, f"{loc}.sectionAssumptions[{aidx}]", violations)
+            check_inlines(ap, valid_keys, file_path, f"{loc}.sectionAssumptions[{aidx}]", violations, tier=tier)
 
         kind = ins.get("kind") or {}
         if not isinstance(kind, dict):
@@ -595,10 +800,10 @@ def check_inspectors(
         if "interfaceTable" in kind and isinstance(kind["interfaceTable"], dict):
             it = kind["interfaceTable"]
             check_text_leakage(
-                str(it.get("domainLatex", "")), file_path, f"{loc}.interfaceTable.domainLatex", violations
+                str(it.get("domainLatex", "")), file_path, f"{loc}.interfaceTable.domainLatex", violations, tier=tier
             )
             bnote = str(it.get("budgetNote", ""))
-            check_text_leakage(bnote, file_path, f"{loc}.interfaceTable.budgetNote", violations)
+            check_text_leakage(bnote, file_path, f"{loc}.interfaceTable.budgetNote", violations, tier=tier)
             check_prose_typography(bnote, file_path, f"{loc}.interfaceTable.budgetNote", violations)
             for pidx, row in enumerate(it.get("ports") or []):
                 if isinstance(row, dict):
@@ -608,43 +813,59 @@ def check_inspectors(
                             file_path,
                             f"{loc}.interfaceTable.ports[{pidx}].{fld}",
                             violations,
+                            tier=tier,
                         )
         elif "mathDefinition" in kind and isinstance(kind["mathDefinition"], dict):
             md = kind["mathDefinition"]
             check_text_leakage(
-                str(md.get("equationLatex", "")), file_path, f"{loc}.mathDefinition.equationLatex", violations
+                str(md.get("equationLatex", "")),
+                file_path,
+                f"{loc}.mathDefinition.equationLatex",
+                violations,
+                tier=tier,
             )
             ps = str(md.get("proseSummary", ""))
-            check_text_leakage(ps, file_path, f"{loc}.mathDefinition.proseSummary", violations)
+            check_text_leakage(ps, file_path, f"{loc}.mathDefinition.proseSummary", violations, tier=tier)
             check_prose_typography(ps, file_path, f"{loc}.mathDefinition.proseSummary", violations)
         elif "witnessCard" in kind and isinstance(kind["witnessCard"], dict):
             wc = kind["witnessCard"]
             title = str(wc.get("title", ""))
-            check_text_leakage(title, file_path, f"{loc}.witnessCard.title", violations)
+            check_text_leakage(title, file_path, f"{loc}.witnessCard.title", violations, tier=tier)
             check_prose_typography(title, file_path, f"{loc}.witnessCard.title", violations)
             for ridx, row in enumerate(wc.get("rows") or []):
                 if isinstance(row, list) and len(row) == 2:
-                    check_text_leakage(str(row[0]), file_path, f"{loc}.witnessCard.rows[{ridx}][0]", violations)
-                    check_text_leakage(str(row[1]), file_path, f"{loc}.witnessCard.rows[{ridx}][1]", violations)
+                    check_text_leakage(str(row[0]), file_path, f"{loc}.witnessCard.rows[{ridx}][0]", violations, tier=tier)
+                    check_text_leakage(str(row[1]), file_path, f"{loc}.witnessCard.rows[{ridx}][1]", violations, tier=tier)
         elif "parameter" in kind:
             p = kind["parameter"]
             desc = p if isinstance(p, str) else str((p or {}).get("roleDescription", ""))
-            check_text_leakage(desc, file_path, f"{loc}.parameter.roleDescription", violations)
+            check_text_leakage(desc, file_path, f"{loc}.parameter.roleDescription", violations, tier=tier)
             check_prose_typography(desc, file_path, f"{loc}.parameter.roleDescription", violations)
         elif "localShorthand" in kind and isinstance(kind["localShorthand"], dict):
             ls = kind["localShorthand"]
             check_text_leakage(
-                str(ls.get("equationLatex", "")), file_path, f"{loc}.localShorthand.equationLatex", violations
+                str(ls.get("equationLatex", "")),
+                file_path,
+                f"{loc}.localShorthand.equationLatex",
+                violations,
+                tier=tier,
             )
             rd = str(ls.get("roleDescription", ""))
-            check_text_leakage(rd, file_path, f"{loc}.localShorthand.roleDescription", violations)
+            check_text_leakage(rd, file_path, f"{loc}.localShorthand.roleDescription", violations, tier=tier)
             check_prose_typography(rd, file_path, f"{loc}.localShorthand.roleDescription", violations)
         elif "ccDiagram" in kind and isinstance(kind["ccDiagram"], dict):
+            check_no_embedded_styles(
+                kind["ccDiagram"].get("svgOrHtml"),
+                file_path,
+                f"{loc}.ccDiagram.svgOrHtml",
+                violations,
+            )
             check_text_leakage(
                 str(kind["ccDiagram"].get("summaryLatex", "")),
                 file_path,
                 f"{loc}.ccDiagram.summaryLatex",
                 violations,
+                tier=tier,
             )
     return keys
 
@@ -654,6 +875,7 @@ def check_document(
     file_path: str,
     allow_axioms: bool,
     report: FileReport,
+    tier: str = "legacy",
 ) -> None:
     violations = report.violations
     if not isinstance(doc, dict):
@@ -678,16 +900,16 @@ def check_document(
             )
         )
     else:
-        check_text_leakage(title, file_path, "document.title", violations)
+        check_text_leakage(title, file_path, "document.title", violations, tier=tier)
         check_prose_typography(title, file_path, "document.title", violations)
 
     subtitle = doc.get("subtitle")
     if subtitle is not None:
-        check_text_leakage(str(subtitle), file_path, "document.subtitle", violations)
+        check_text_leakage(str(subtitle), file_path, "document.subtitle", violations, tier=tier)
         check_prose_typography(str(subtitle), file_path, "document.subtitle", violations)
 
     inspectors = doc.get("inspectors", [])
-    inspector_keys = check_inspectors(inspectors, file_path, violations)
+    inspector_keys = check_inspectors(inspectors, file_path, violations, tier=tier)
     report.inspectors_checked = len(inspector_keys)
 
     entries = doc.get("entries")
@@ -719,12 +941,31 @@ def check_document(
         decl = entry.get("declaration", f"<entry-{idx}>")
         eloc_named = f"entries[{idx}]({decl})"
 
-        if entry.get("header"):
-            check_text_leakage(str(entry["header"]), file_path, f"{eloc_named}.header", violations)
+        header = entry.get("header")
+        if header:
+            header_str = str(header)
+            check_text_leakage(header_str, file_path, f"{eloc_named}.header", violations, tier=tier)
+            if tier == "authored":
+                h_stripped = header_str.strip()
+                if h_stripped in LOWERCASE_THEOREM_HEADERS or (
+                    h_stripped.lower() in LOWERCASE_THEOREM_HEADERS and h_stripped[:1].islower()
+                ):
+                    violations.append(
+                        Violation(
+                            gate="typography",
+                            file=file_path,
+                            location=f"{eloc_named}.header",
+                            message=f"Lowercase theorem header {header_str!r} in --tier authored (must be Title Case)",
+                        )
+                    )
         if entry.get("title"):
             etitle = str(entry["title"])
-            check_text_leakage(etitle, file_path, f"{eloc_named}.title", violations)
+            check_text_leakage(etitle, file_path, f"{eloc_named}.title", violations, tier=tier)
             check_prose_typography(etitle, file_path, f"{eloc_named}.title", violations)
+
+        check_no_embedded_styles(
+            entry.get("diagramHtml"), file_path, f"{eloc_named}.diagramHtml", violations
+        )
 
         # Gate 2: Axiom audit
         ax_obj = entry.get("axioms") or {}
@@ -773,6 +1014,8 @@ def check_document(
                 file_path,
                 violations,
                 f"{eloc_named}.sectionContext.inspectors",
+                tier=tier,
+                known_keys=entry_inspector_keys,
             )
             entry_inspector_keys |= sc_keys
             for spidx, spara in enumerate(sec_ctx.get("paragraphs") or []):
@@ -782,6 +1025,7 @@ def check_document(
                     file_path,
                     f"{eloc_named}.sectionContext.paragraphs[{spidx}]",
                     violations,
+                    tier=tier,
                 )
                 if not joined.strip():
                     violations.append(
@@ -796,7 +1040,12 @@ def check_document(
         local_ins = entry.get("localInspectors")
         if isinstance(local_ins, list):
             entry_inspector_keys |= check_inspectors(
-                local_ins, file_path, violations, f"{eloc_named}.localInspectors"
+                local_ins,
+                file_path,
+                violations,
+                f"{eloc_named}.localInspectors",
+                tier=tier,
+                known_keys=entry_inspector_keys,
             )
 
         for rkey in entry.get("referencedKeys") or []:
@@ -819,6 +1068,7 @@ def check_document(
                 file_path,
                 f"{eloc_named}.ambient.summary",
                 violations,
+                tier=tier,
             )
 
         # Gate 3: Statement paragraphs (must be non-empty, no empty paragraphs)
@@ -840,6 +1090,7 @@ def check_document(
                     file_path,
                     f"{eloc_named}.statement[{pidx}]",
                     violations,
+                    tier=tier,
                 )
                 if not joined.strip():
                     violations.append(
@@ -858,6 +1109,7 @@ def check_document(
             file_path,
             f"{eloc_named}.proof",
             violations,
+            tier=tier,
         )
 
 
@@ -907,18 +1159,18 @@ def run_playwright_smoke(
                 )
 
             # Verify clicking ⊕ expands children
-            toggles = page.locator("button.cadmo-toggle")
+            toggles = page.locator("button.cadmo-inline-toggle, button.cadmo-toggle")
             if toggles.count() > 0:
                 first_toggle = toggles.first
                 before = first_toggle.get_attribute("aria-expanded")
                 first_toggle.click()
-                after = page.locator("button.cadmo-toggle").first.get_attribute("aria-expanded")
+                after = page.locator("button.cadmo-inline-toggle, button.cadmo-toggle").first.get_attribute("aria-expanded")
                 if before == after or after != "true":
                     report.violations.append(
                         Violation(
                             gate="playwright",
                             file=str(html_path),
-                            location="button.cadmo-toggle",
+                            location="button.cadmo-inline-toggle",
                             message=f"Clicking ⊕ did not expand children (aria-expanded: {before} -> {after})",
                         )
                     )
@@ -974,6 +1226,78 @@ def run_playwright_smoke(
                         )
                     )
 
+            # Verify 0 .cadmo-ref inside sup/sub/.msupsub/.op-limits/delimiters
+            blocked_refs = page.locator(
+                "sup .cadmo-ref, sub .cadmo-ref, .msupsub .cadmo-ref, "
+                ".op-limits .cadmo-ref, .accent-body .cadmo-ref, "
+                ".mopen .cadmo-ref, .mclose .cadmo-ref, .mpunct .cadmo-ref, "
+                ".mbin .cadmo-ref, .mrel .cadmo-ref"
+            ).count()
+            if blocked_refs > 0:
+                report.violations.append(
+                    Violation(
+                        gate="playwright",
+                        file=str(html_path),
+                        location=".cadmo-ref",
+                        message=f"Found {blocked_refs} .cadmo-ref hover anchor(s) inside sup/sub/.msupsub/delimiters",
+                    )
+                )
+
+            # Verify 0 bare numeric digit .cadmo-ref
+            digit_refs = page.evaluate(
+                "() => Array.from(document.querySelectorAll('.cadmo-ref')).filter(el => /^\\s*[0-9]+\\s*$/.test(el.textContent || '')).length"
+            )
+            if digit_refs > 0:
+                report.violations.append(
+                    Violation(
+                        gate="playwright",
+                        file=str(html_path),
+                        location=".cadmo-ref",
+                        message=f"Found {digit_refs} bare numeric digit .cadmo-ref hover anchor(s)",
+                    )
+                )
+
+            # Verify 0 font-prefix collisions across \\mathcal{E}/E, \\mathbf{G}/G, \\mathbb{R}/R, etc.
+            font_collisions = page.evaluate(
+                """() => {
+                  const issues = [];
+                  const helpers = window.__cadmoHelpers;
+                  if (helpers) {
+                    if (helpers.normalizeMathToken('\\\\mathcal{E}') === helpers.normalizeMathToken('E')) {
+                      issues.push('Font normalization collision between \\\\mathcal{E} and E');
+                    }
+                    if (helpers.normalizeMathToken('\\\\mathbf{G}') === helpers.normalizeMathToken('G')) {
+                      issues.push('Font normalization collision between \\\\mathbf{G} and G');
+                    }
+                    if (helpers.normalizeMathToken('\\\\mathbb{R}') !== 'bb:R') {
+                      issues.push('Expected normalizeMathToken(\\\\mathbb{R}) === bb:R');
+                    }
+                  }
+                  for (const ref of document.querySelectorAll('.cadmo-ref')) {
+                    const tok = ref.dataset ? (ref.dataset.cadmoToken || '') : '';
+                    if (!tok || tok.startsWith('key:')) continue;
+                    const domPrefix = helpers
+                      ? helpers.extractFontPrefixFromDomNode(ref)
+                      : '';
+                    const tokPrefixMatch = tok.match(/^(cal|bf|sf|bb):/);
+                    const tokPrefix = tokPrefixMatch ? (tokPrefixMatch[1] + ':') : '';
+                    if (domPrefix !== tokPrefix) {
+                      issues.push(`DOM font prefix (${domPrefix || 'plain'}) mismatched token (${tok})`);
+                    }
+                  }
+                  return issues;
+                }"""
+            )
+            for issue in font_collisions or []:
+                report.violations.append(
+                    Violation(
+                        gate="playwright",
+                        file=str(html_path),
+                        location=".cadmo-ref",
+                        message=str(issue),
+                    )
+                )
+
             if screenshot_path:
                 out_shot = Path(screenshot_path)
                 out_shot.parent.mkdir(parents=True, exist_ok=True)
@@ -1012,10 +1336,11 @@ def check_file(
     run_playwright: bool,
     screenshot_path: Optional[str],
     playwright_skip_if_missing: bool,
+    tier: str = "legacy",
 ) -> FileReport:
     suffix = path.suffix.lower()
     if not path.is_file():
-        rep = FileReport(path=str(path), kind="missing")
+        rep = FileReport(path=str(path), kind="missing", tier=tier)
         rep.violations.append(
             Violation(gate="io", file=str(path), location="file", message="File does not exist")
         )
@@ -1024,7 +1349,7 @@ def check_file(
     text = path.read_text(encoding="utf-8")
 
     if suffix == ".json":
-        rep = FileReport(path=str(path), kind="json")
+        rep = FileReport(path=str(path), kind="json", tier=tier)
         try:
             doc = json.loads(text)
         except json.JSONDecodeError as exc:
@@ -1037,20 +1362,22 @@ def check_file(
                 )
             )
             return rep
-        check_document(doc, str(path), allow_axioms=allow_axioms, report=rep)
+        check_document(doc, str(path), allow_axioms=allow_axioms, report=rep, tier=tier)
         return rep
 
     if suffix in (".html", ".htm"):
-        rep = FileReport(path=str(path), kind="html")
+        rep = FileReport(path=str(path), kind="html", tier=tier)
 
-        style_match = STYLE_CADMO_RE.search(text)
-        if not style_match or not style_match.group(1).strip():
+        style_matches = STYLE_CADMO_RE.findall(text)
+        if len(style_matches) != 1 or not style_matches[0].strip():
             rep.violations.append(
                 Violation(
                     gate="html-bundle",
                     file=str(path),
                     location="style[data-cadmo-reader]",
-                    message="HTML bundle missing non-empty <style data-cadmo-reader> CSS",
+                    message=(
+                        f"Expected exactly 1 non-empty <style data-cadmo-reader> CSS block, found {len(style_matches)}"
+                    ),
                 )
             )
 
@@ -1088,7 +1415,7 @@ def check_file(
                     )
                 )
             else:
-                check_document(doc, str(path), allow_axioms=allow_axioms, report=rep)
+                check_document(doc, str(path), allow_axioms=allow_axioms, report=rep, tier=tier)
 
         if run_playwright:
             run_playwright_smoke(
@@ -1099,7 +1426,7 @@ def check_file(
             )
         return rep
 
-    rep = FileReport(path=str(path), kind="unknown")
+    rep = FileReport(path=str(path), kind="unknown", tier=tier)
     rep.violations.append(
         Violation(
             gate="io",
@@ -1116,7 +1443,7 @@ def format_text_report(reports: Sequence[FileReport]) -> str:
     total_violations = sum(len(r.violations) for r in reports)
     for rep in reports:
         status = "PASS" if rep.ok else f"FAIL ({len(rep.violations)} issue(s))"
-        meta = f"[{rep.kind}] entries={rep.entries_checked} inspectors={rep.inspectors_checked}"
+        meta = f"[{rep.kind} tier={rep.tier}] entries={rep.entries_checked} inspectors={rep.inspectors_checked}"
         if rep.playwright_status:
             meta += f" playwright={rep.playwright_status}"
         lines.append(f"{status}: {rep.path}  {meta}")
@@ -1137,6 +1464,12 @@ def main(argv: Optional[List[str]] = None) -> int:
         description="Automated zero-leakage, axiom-audit, structural, typography, and optional Playwright CI gate for CC informalization artifacts."
     )
     parser.add_argument("files", nargs="+", help="Exported .json and/or .html artifact(s)")
+    parser.add_argument(
+        "--tier",
+        choices=sorted(VALID_TIERS),
+        default="legacy",
+        help="CI quality tier: 'legacy' (default, zero-edit legacy repos) or 'authored' (strict Spine-authored monographs)",
+    )
     parser.add_argument(
         "--allow-axioms",
         action="store_true",
@@ -1170,6 +1503,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             run_playwright=args.playwright,
             screenshot_path=args.screenshot,
             playwright_skip_if_missing=args.playwright_skip_if_missing,
+            tier=args.tier,
         )
         for f in args.files
     ]
@@ -1177,10 +1511,12 @@ def main(argv: Optional[List[str]] = None) -> int:
     if args.json_report:
         payload = {
             "ok": all(r.ok for r in reports),
+            "tier": args.tier,
             "files": [
                 {
                     "path": r.path,
                     "kind": r.kind,
+                    "tier": r.tier,
                     "ok": r.ok,
                     "entries_checked": r.entries_checked,
                     "inspectors_checked": r.inspectors_checked,

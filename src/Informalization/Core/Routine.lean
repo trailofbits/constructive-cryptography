@@ -3,6 +3,7 @@ Copyright (c) 2026 Trail of Bits. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Lean
+import Informalization.Core.Hygiene
 import Informalization.Core.Overlay
 
 /-!
@@ -63,8 +64,8 @@ cryptographic sub-proofs. -/
 private def libraryModuleRoots : List Name :=
   [ `Init, `Lean, `Std, `Batteries, `Mathlib, `Aesop, `Qq, `ProofWidgets ]
 
-/-- Is `n` a Lean compiler-generated auxiliary theorem (`_proof_1`, `_simp_1`, `_eq_1`, etc.)
-checking EVERY name component recursively? -/
+/-- Is `n` a Lean compiler-generated auxiliary theorem (`_proof_1`, `_simp_1`, `_eq_1`, etc.)?
+NEVER uses `Name.isInternal`, which falsely flags every `private` declaration (`_private.*`)! -/
 def isCompilerAuxDecl (n : Name) : Bool :=
   let rec hasAuxComp : Name → Bool
     | .anonymous => false
@@ -72,19 +73,25 @@ def isCompilerAuxDecl (n : Name) : Bool :=
     | .str p s =>
         s.startsWith "_proof_" || s.startsWith "_simp_" ||
         s.startsWith "_eq_" || s.startsWith "_match_" || s.startsWith "_cstage" ||
-        hasAuxComp p
-  n.isInternal || hasAuxComp n
+        s.startsWith "match_" || hasAuxComp p
+  if !Lean.isPrivateName n then
+    hasAuxComp n
+  else
+    hasAuxComp (Lean.privateToUserName n)
 
-/-- Does `n` live in Lean core / Mathlib (by namespace prefix or compiler aux check)? -/
+/-- Does `n` live in Lean core / Mathlib (by namespace prefix or compiler aux check)?
+Explicitly excludes `sorryAx` so incomplete proofs are NEVER disguised as routine. -/
 def isCoreOrMathlib (n : Name) : Bool :=
-  let root := n.getRoot
-  libraryPrefixes.contains root || libraryPrefixes.contains n || isCompilerAuxDecl n
+  if n == ``sorryAx then false
+  else
+    let root := n.getRoot
+    libraryPrefixes.contains root || libraryPrefixes.contains n || isCompilerAuxDecl n
 
 /-- Environment-aware check: does `n` live in Lean core / Mathlib (including root-namespace
-Mathlib lemmas and typeclass projections such as `IsOrderedAddMonoid.*`, `PosMulMono.*`,
-`AddLeftMono.*`, `AddRightMono.*`, `Finsupp.*`, `add_le_add`, etc.)? -/
+Mathlib lemmas and typeclass projections)? Explicitly excludes `sorryAx`. -/
 def isCoreOrMathlibIn (env : Environment) (n : Name) : Bool :=
-  if isCoreOrMathlib n then true
+  if n == ``sorryAx then false
+  else if isCoreOrMathlib n then true
   else match env.getModuleIdxFor? n with
     | some idx =>
         match env.header.moduleNames[idx.toNat]? with
@@ -120,9 +127,27 @@ private def isNonRoutineConstructor (n : Name) : Bool :=
 /-- Fast $O(\text{DAG})$ check (using Lean's memoized `foldConsts`) whether a proof subterm
 references ANY project-level theorem or marked `informal_joint` (fail-closed guard so routine
 compression never swallows real math, without exponential traversal on shared-DAG `simp` terms). -/
+private def isSpineAnnotationConst (n : Name) : Bool :=
+  n == `Informalization.Core.Spine.spineNode ||
+  n == `Informalization.Core.Spine.spineConclude ||
+  n == `Informalization.Core.Spine.spineRole ||
+  n == `Informalization.Core.Spine.spineNotation
+
+/-- Fast $O(\text{DAG})$ check (using Lean's memoized `Expr.find?`) whether `e` contains any
+Spine or Verbose-CC annotation marker, without exponential traversal on shared-DAG `simp` terms. -/
+private def exprHasSpineOrVerbose (e : Expr) : Bool :=
+  (e.find? fun sub =>
+    match sub with
+    | .const n _ => isSpineAnnotationConst n
+    | .mdata kv _ => kv.contains `ccVerboseKind
+    | _ => false).isSome
+
 private def containsNonRoutineProof (env : Environment) (e : Expr) : Bool :=
+  exprHasSpineOrVerbose e ||
   e.foldConsts (init := false) fun an acc =>
     if acc then true
+    else if an == ``sorryAx then true
+    else if isSpineAnnotationConst an then true
     else if (getOverlay env an).isProofJoint then true
     else if isCoreOrMathlibIn env an then false
     else match env.find? an with
@@ -130,10 +155,13 @@ private def containsNonRoutineProof (env : Environment) (e : Expr) : Bool :=
       | _ => false
 
 /-- Classify a single proof term node as routine if it stays purely within core/Mathlib
-algebra, casts, reflexivity, or congruence, with no project-level cryptographic theorems inside. -/
+algebra, casts, reflexivity, or congruence, with no project-level cryptographic theorems,
+Spine/Verbose authored structure, or `sorryAx` inside. -/
 partial def classifyRoutine? (env : Environment) (proof : Expr) (fuel : Nat := 64) :
     Option RoutineKind :=
   if fuel == 0 then none
+  else if Informalization.Core.Hygiene.exprContainsSorryAx proof then none
+  else if exprHasSpineOrVerbose proof then none
   else match proof.consumeMData with
   | .fvar _ => none
   | .lam _ _ body _ => classifyRoutine? env body (fuel - 1)

@@ -60,7 +60,7 @@ private def mkStep (ctx : DecompCtx) (id : String) (content : Array Inline)
     (children : Array ProofNode) (expected : Expr) (origin : Name) :
     StateRefT DiscourseState MetaM ProofNode := do
   let goal ← buildGoalState ctx.tbl expected
-  let diagHtml ← (← diagramHookRef.get) expected
+  let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) expected else pure none
   return .step id content children (some goal) diagHtml (some origin.toString)
 
 /-- Explainer for automaton/converter bisimulation, state-relation equivalence, and functional
@@ -70,7 +70,11 @@ def bisimulationAndRealizationExplainer : RuleExplainer where
   explain ctx decompileChild expected proof := do
     let fn := proof.getAppFn.consumeMData
     let some head := fn.constName? | return none
-    let conclInl ← renderProposition ctx.tbl expected
+    let finish (id : String) (mkMsg : Array Inline → Array Inline)
+        (children : Array ProofNode) := do
+      let conclInl ← renderProposition ctx.tbl expected
+      let node ← mkStep ctx id (mkMsg conclInl) children expected head
+      return some #[node]
     if head == ``SystemAlgebra.automatonSystem_eq_of_bisim ||
        head == ``SystemAlgebra.Program.combine_bisim ||
        head == ``SystemAlgebra.Program.invoke_bisim ||
@@ -78,11 +82,9 @@ def bisimulationAndRealizationExplainer : RuleExplainer where
        head == ``SystemAlgebra.IsBisim.comp then
       let op ← pickMaurerOpener .consequence
       let children ← decompilePremiseArgs ctx decompileChild proof
-      let content : Array Inline :=
+      return ← finish s!"cc-bisim-{head}" (fun conclInl =>
         #[.text s!"{op} by state bisimulation—preserving the invariant relation between internal states while producing identical replies to every query—we obtain "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-bisim-{head}" content children expected head
-      return some #[node]
+        conclInl ++ #[.text "."]) children
     if head == ``SystemAlgebra.DDC.ofProgram_eq_of_stateMap ||
        head == ``SystemAlgebra.DDC.ofProgramOn_eq_of_stateMap ||
        head == ``SystemAlgebra.DDC.ofProgram_eq_of_stateRel ||
@@ -90,33 +92,25 @@ def bisimulationAndRealizationExplainer : RuleExplainer where
        head == ``SystemAlgebra.TypedSystem.ofAutomaton_map_congr then
       let op ← pickMaurerOpener .elaboration
       let children ← decompilePremiseArgs ctx decompileChild proof
-      let content : Array Inline :=
+      return ← finish s!"cc-staterel-{head}" (fun conclInl =>
         #[.text s!"{op} because the two state representations induce identical input-output behavior on every draw, their resulting systems coincide: "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-staterel-{head}" content children expected head
-      return some #[node]
+        conclInl ++ #[.text "."]) children
     if head == ``SystemAlgebra.TypedSystem.eq_ofFunction then
       let op ← pickMaurerOpener .elaboration
       let children ← decompilePremiseArgs ctx decompileChild proof
-      let content : Array Inline :=
+      return ← finish s!"cc-func-{head}" (fun conclInl =>
         #[.text s!"{op} since the system answers every admissible query history deterministically with probability one according to the prescribed function, "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-func-{head}" content children expected head
-      return some #[node]
+        conclInl ++ #[.text "."]) children
     if head == ``SystemAlgebra.TypedSystem.parallel_ofAutomaton then
       let op ← pickMaurerOpener .elaboration
-      let content : Array Inline :=
+      return ← finish s!"cc-par-auto-{head}" (fun conclInl =>
         #[.text s!"{op} running two independent automata in parallel is equivalent to a single product automaton initialized from the product state distribution: "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-par-auto-{head}" content #[] expected head
-      return some #[node]
+        conclInl ++ #[.text "."]) #[]
     if head == ``Commons.URF.lazy_eq then
       let op ← pickMaurerOpener .elaboration
-      let content : Array Inline :=
+      return ← finish s!"cc-lazy-urf-{head}" (fun conclInl =>
         #[.text s!"{op} lazy sampling—recording replies and drawing uniformly only on fresh inputs—has the exact same cumulative transcript distribution as an eagerly sampled uniform random function: "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-lazy-urf-{head}" content #[] expected head
-      return some #[node]
+        conclInl ++ #[.text "."]) #[]
     return none
 
 /-- Explainer for memoryless sources, DSL converter attachment laws, sampling algebra, and
@@ -126,27 +120,27 @@ def memorylessAndSamplingExplainer : RuleExplainer where
   explain ctx decompileChild expected proof := do
     let fn := proof.getAppFn.consumeMData
     let some head := fn.constName? | return none
-    let conclInl ← renderProposition ctx.tbl expected
+    let finish (id : String) (mkMsg : Array Inline → Array Inline)
+        (children : Array ProofNode) := do
+      let conclInl ← renderProposition ctx.tbl expected
+      let node ← mkStep ctx id (mkMsg conclInl) children expected head
+      return some #[node]
     if head == ``Commons.MemorylessSource.eq_ofMemoryless ||
        head == ``Commons.MemorylessSource.memoryless_eq ||
        head == ``SystemAlgebra.TypedSystem.source_eq_ofMemoryless ||
        head == ``SystemAlgebra.TypedSystem.source_eq_memoryless then
       let op ← pickMaurerOpener .elaboration
-      let content : Array Inline :=
+      return ← finish s!"cc-mem-src-{head}" (fun conclInl =>
         #[.text s!"{op} because each admissible query draws an independent fresh reply from the source distribution, "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-mem-src-{head}" content #[] expected head
-      return some #[node]
+        conclInl ++ #[.text "."]) #[]
     if head == ``SystemAlgebra.TypedSystem.parallel_ofMemoryless ||
        head == ``SystemAlgebra.TypedSystem.parallel_eq_ofMemoryless ||
        head == ``SystemAlgebra.TypedSystem.parallel_eq_memoryless then
       let op ← pickMaurerOpener .elaboration
       let children ← decompilePremiseArgs ctx decompileChild proof
-      let content : Array Inline :=
+      return ← finish s!"cc-mem-par-{head}" (fun conclInl =>
         #[.text s!"{op} composing independent memoryless systems in parallel yields a memoryless system replying according to the queried component's law: "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-mem-par-{head}" content children expected head
-      return some #[node]
+        conclInl ++ #[.text "."]) children
     if head == ``SystemAlgebra.TypedConverter.ofProgram_smul_ofMemoryless ||
        head == ``SystemAlgebra.TypedConverter.ofPreservingProgram_smul_ofMemoryless ||
        head == ``SystemAlgebra.TypedConverter.ofCostedProgram_smul_ofMemoryless ||
@@ -156,47 +150,37 @@ def memorylessAndSamplingExplainer : RuleExplainer where
        head == ``SystemAlgebra.TypedConverter.ofPreservingProgram_comp_rightContext_smul_memoryless then
       let op ← pickMaurerOpener .consequence
       let children ← decompilePremiseArgs ctx decompileChild proof
-      let content : Array Inline :=
+      return ← finish s!"cc-mem-prog-{head}" (fun conclInl =>
         #[.text s!"{op} inlining the converter program against fresh inside replies shows that each invocation yields the state-independent reply law, establishing "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-mem-prog-{head}" content children expected head
-      return some #[node]
+        conclInl ++ #[.text "."]) children
     if head == ``SystemAlgebra.TypedSystem.sample_prod ||
        head == ``SystemAlgebra.TypedSystem.sample_comm ||
        head == ``SystemAlgebra.TypedSystem.sample_fTransform then
       let op ← pickMaurerOpener .elaboration
-      let content : Array Inline :=
+      return ← finish s!"cc-sample-alg-{head}" (fun conclInl =>
         #[.text s!"{op} by the algebra of retained initial draws (regrouping, reordering, or pushing forward the sampling law), "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-sample-alg-{head}" content #[] expected head
-      return some #[node]
+        conclInl ++ #[.text "."]) #[]
     if head == ``SystemAlgebra.TypedSystem.parallel_sample_left ||
        head == ``SystemAlgebra.TypedSystem.parallel_sample_right ||
        head == ``SystemAlgebra.TypedConverter.smul_sample then
       let op ← pickMaurerOpener .elaboration
-      let content : Array Inline :=
+      return ← finish s!"cc-sample-hoist-{head}" (fun conclInl =>
         #[.text s!"{op} hoisting the retained initial draw outside the parallel composition or converter attachment leaves every transcript probability unchanged, giving "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-sample-hoist-{head}" content #[] expected head
-      return some #[node]
+        conclInl ++ #[.text "."]) #[]
     if head == ``SystemAlgebra.TypedSystem.transcriptDistance_sample_le then
       let op ← pickMaurerOpener .consequence
       let children ← decompilePremiseArgs ctx decompileChild proof
-      let content : Array Inline :=
+      return ← finish s!"cc-sample-dist-{head}" (fun conclInl =>
         #[.text s!"{op} averaging the componentwise distinguishing bounds over the common initial draw preserves the uniform error bound, yielding "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-sample-dist-{head}" content children expected head
-      return some #[node]
+        conclInl ++ #[.text "."]) children
     if head == ``SystemAlgebra.TypedConverter.parallelAll_attach ||
        head == ``SystemAlgebra.TypedConverter.parallelAllContext_smul ||
        head == ``SystemAlgebra.TypedSystem.parallelAll_admits_iff then
       let op ← pickMaurerOpener .elaboration
       let children ← decompilePremiseArgs ctx decompileChild proof
-      let content : Array Inline :=
+      return ← finish s!"cc-parall-{head}" (fun conclInl =>
         #[.text s!"{op} attaching converters across an indexed parallel family acts independently on each tagged component, yielding "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-parall-{head}" content children expected head
-      return some #[node]
+        conclInl ++ #[.text "."]) children
     return none
 
 initialize

@@ -29,6 +29,21 @@ inductive ViewMode
   | auditor  -- expose every lemma boundary, routine receipt, and exact Lean goal state
   deriving DecidableEq, Repr, BEq, Inhabited, ToJson
 
+/-- Provenance / trust tier attached to every emitted prose fragment and inline token. -/
+inductive ProseTrust
+  | kernelFormula
+  | kernelProvedClaim
+  | typedRef
+  | intuitionGloss
+  deriving DecidableEq, Repr, BEq, Inhabited
+
+instance : ToJson ProseTrust where
+  toJson
+    | .kernelFormula     => Json.str "kernelFormula"
+    | .kernelProvedClaim => Json.str "kernelProvedClaim"
+    | .typedRef          => Json.str "typedRef"
+    | .intuitionGloss    => Json.str "intuitionGloss"
+
 /-- Inline content inside a mathematical sentence. Every underlined `symbol` points to a
 type-aware `SymbolInspector` entry by stable key. -/
 inductive Inline
@@ -48,6 +63,91 @@ def Inline.collectText : Inline → String
   | .displayMath s p => s ++ p
   | .symbol _ d _ => d
   | .citation l d => if d.isEmpty then l else l ++ " " ++ d
+
+/-- Split author prose containing `$...$`, `\(...\)`, `$$...$$`, or `\[...\]` math delimiters
+(respecting `\$` escapes) into structured `Array Inline` nodes so KaTeX, offline 2D math, Verso,
+Infoview, and hover-reference annotation all process embedded math identically. -/
+partial def parseProseWithMath (s : String) : Array Inline := Id.run do
+  let chars := s.toList
+  let n := chars.length
+  let arr := chars.toArray
+  let mut out : Array Inline := #[]
+  let mut textBuf : List Char := []
+  let mut i : Nat := 0
+
+  let flushText (buf : List Char) (acc : Array Inline) : Array Inline :=
+    if buf.isEmpty then acc
+    else acc.push (.text (String.ofList buf.reverse))
+
+  let findClosing (startIdx : Nat) (close1 : Char) (close2? : Option Char := none) : Option (String × Nat) := Id.run do
+    let mut j := startIdx
+    let mut inner : List Char := []
+    while j < n do
+      let c := arr[j]!
+      if c == '\\' && j + 1 < n && arr[j + 1]! == '$' && close1 == '$' && close2?.isNone then
+        inner := '$' :: '\\' :: inner
+        j := j + 2
+      else if close2?.isSome && c == close1 && j + 1 < n && arr[j + 1]! == close2?.get! then
+        return some ((String.ofList inner.reverse).trimAscii.toString, j + 2)
+      else if close2?.isNone && c == close1 then
+        return some ((String.ofList inner.reverse).trimAscii.toString, j + 1)
+      else
+        inner := c :: inner
+        j := j + 1
+    return none
+
+  while i < n do
+    let c := arr[i]!
+    if c == '\\' && i + 1 < n then
+      let nxt := arr[i + 1]!
+      if nxt == '$' then
+        textBuf := '$' :: textBuf
+        i := i + 2
+        continue
+      else if nxt == '(' then
+        if let some (math, nextI) := findClosing (i + 2) '\\' (some ')') then
+          out := flushText textBuf out
+          textBuf := []
+          out := out.push (.inlineMath math)
+          i := nextI
+          continue
+      else if nxt == '[' then
+        if let some (math, nextI) := findClosing (i + 2) '\\' (some ']') then
+          out := flushText textBuf out
+          textBuf := []
+          let mut punct := "."
+          let mut k := nextI
+          if k < n && (arr[k]! == '.' || arr[k]! == ',') then
+            punct := arr[k]!.toString
+            k := k + 1
+          out := out.push (.displayMath math punct)
+          i := k
+          continue
+    else if c == '$' then
+      if i + 1 < n && arr[i + 1]! == '$' then
+        if let some (math, nextI) := findClosing (i + 2) '$' (some '$') then
+          out := flushText textBuf out
+          textBuf := []
+          let mut punct := "."
+          let mut k := nextI
+          if k < n && (arr[k]! == '.' || arr[k]! == ',') then
+            punct := arr[k]!.toString
+            k := k + 1
+          out := out.push (.displayMath math punct)
+          i := k
+          continue
+      else
+        if let some (math, nextI) := findClosing (i + 1) '$' none then
+          out := flushText textBuf out
+          textBuf := []
+          out := out.push (.inlineMath math)
+          i := nextI
+          continue
+    textBuf := c :: textBuf
+    i := i + 1
+
+  out := flushText textBuf out
+  return out
 
 /-- One row in a `Rendering`-style interface port table (`Port / Query / Reply`). -/
 structure PortRow where
@@ -110,6 +210,24 @@ structure CalcStep where
   justification : Array (String × String) := #[]  -- lightweight metadata
   deriving Repr, BEq, Inhabited, ToJson
 
+/-- Serialize an `Inline` to JSON with optional `"trust"` and `"dataKey"` metadata while preserving
+all existing 6 constructor schemas identically. -/
+def inlineToJsonWithMeta (inl : Inline) (trust? : Option ProseTrust := none)
+    (dataKey? : Option String := none) : Json :=
+  let base := toJson inl
+  match base with
+  | .obj kvs =>
+      let kvs := match trust? with
+        | some t => kvs.insert "trust" (toJson t)
+        | none => kvs
+      let kvs := match dataKey?, inl with
+        | some dk, .symbol _ _ _
+        | some dk, .inlineMath _
+        | some dk, .displayMath _ _ => kvs.insert "dataKey" (Json.str dk)
+        | _, _ => kvs
+      .obj kvs
+  | other => other
+
 /-- A node in the single unified recursive proof tree. -/
 inductive ProofNode
   /-- A checked mathematical claim/step; clicking `⊕` expands `children`. -/
@@ -122,6 +240,10 @@ inductive ProofNode
       (originDecl? : Option String := none)
       (isWrapper : Bool := false)
       (defaultExpanded : Bool := false)
+      (startsParagraph : Bool := false)
+      (leadHeading? : Option String := none)
+      (trust? : Option ProseTrust := none)
+      (inlineMeta : Array (Option ProseTrust × Option String) := #[])
   /-- A paper-style `calc` / `cc_calc` chain (alternating `=`, `≃[ε]`, `≈[ε]`, `≤`). -/
   | calcChain
       (id : String)
@@ -150,11 +272,16 @@ inductive ProofNode
 
 mutual
   partial def proofNodeToJson : ProofNode → Json
-    | .step id content children goal? diagramHtml? originDecl? isWrapper defaultExpanded =>
-        Json.mkObj [
+    | .step id content children goal? diagramHtml? originDecl? isWrapper defaultExpanded
+            startsParagraph leadHeading? trust? inlineMeta =>
+        let contentJson := Json.arr <| content.mapIdx fun i inl =>
+          match inlineMeta[i]? with
+          | some (t?, dk?) => inlineToJsonWithMeta inl t? dk?
+          | none => toJson inl
+        let baseFields : List (String × Json) := [
           ("kind", "step"),
           ("id", toJson id),
-          ("content", toJson content),
+          ("content", contentJson),
           ("children", Json.arr (children.map proofNodeToJson)),
           ("goal", toJson goal?),
           ("diagramHtml", toJson diagramHtml?),
@@ -162,6 +289,15 @@ mutual
           ("isWrapper", toJson isWrapper),
           ("defaultExpanded", toJson defaultExpanded)
         ]
+        let extraPara : List (String × Json) :=
+          if startsParagraph then [("startsParagraph", toJson true)] else []
+        let extraHead : List (String × Json) := match leadHeading? with
+          | some h => [("leadHeading", toJson h)]
+          | none => []
+        let extraTrust : List (String × Json) := match trust? with
+          | some t => [("trust", toJson t)]
+          | none => []
+        Json.mkObj (baseFields ++ extraPara ++ extraHead ++ extraTrust)
     | .calcChain id intro steps goal? originDecl? =>
         let stepsJson := steps.map fun (s, sub) =>
           Json.mkObj [
@@ -256,7 +392,7 @@ zero-leakage & typography quality gates. -/
 partial def ProofNode.collectAllText (n : ProofNode) : Array String :=
   let inlineText (xs : Array Inline) : Array String := xs.map Inline.collectText
   match n with
-  | .step _ content children goal? _ _ _ _ =>
+  | .step _ content children goal? _ _ _ _ _ _ _ _ =>
       let g := match goal? with
         | some gs => #[gs.targetLatex] ++ gs.context.map (·.description)
         | none => #[]

@@ -62,6 +62,20 @@ structure DecompCtx where
   atRootConclusion : Bool := true
   /-- True when the next emitted sentence will be the very first sentence of the proof. -/
   isProofStart : Bool := true
+  /-- Free variables peeled along leading lambdas (for instantiating `theoremNotations`). -/
+  peeledFVars : Array Expr := #[]
+  /-- Declaration-level `informal_theorem_notation` entries `(nBinders, closedPat, latex, gloss?)`. -/
+  pendingNotations : Array (Nat × Expr × String × Option String) := #[]
+  /-- True once `It_suffices_to_show` / `By ... it suffices to show` reduced the root conclusion. -/
+  isClosingGoal : Bool := false
+
+/-- Per-declaration collector for proof-local notation & hybrid/game/adversary hover inspectors. -/
+initialize extraNotationInspectorsRef : IO.Ref (Array SymbolInspector) ← IO.mkRef #[]
+
+def registerProofNotationInspector (ins : SymbolInspector) : IO Unit :=
+  extraNotationInspectorsRef.modify fun arr =>
+    if arr.any (fun x => x.display == ins.display && x.key == ins.key) then arr
+    else arr.push ins
 
 /-- Callback allowing domain explainers to recursively decompile child proof terms. -/
 abbrev DecompileChild := DecompCtx → Expr → Expr → StateRefT DiscourseState MetaM (Array ProofNode)
@@ -77,6 +91,10 @@ structure RuleExplainer where
 a recognized CC expression or judgment into static HTML. -/
 initialize diagramHookRef : IO.Ref (Expr → MetaM (Option String)) ←
   IO.mkRef (fun _ => pure none)
+
+/-- Optional hook to clear per-declaration diagram caches when starting a new declaration. -/
+initialize clearDiagramCacheHookRef : IO.Ref (IO Unit) ←
+  IO.mkRef (pure ())
 
 /-- Optional type-aware symbol inspector collector (populated by `CC/Inspectors.lean`). -/
 initialize inspectorCollectorRef :
@@ -101,6 +119,9 @@ def registerRuleExplainer (e : RuleExplainer) : IO Unit :=
 
 def registerDiagramHook (f : Expr → MetaM (Option String)) : IO Unit :=
   diagramHookRef.set f
+
+def registerClearDiagramCacheHook (f : IO Unit) : IO Unit :=
+  clearDiagramCacheHookRef.set f
 
 def registerInspectorCollector (f : SymbolTable → Expr → MetaM (Array SymbolInspector)) : IO Unit :=
   inspectorCollectorRef.set f
@@ -190,7 +211,7 @@ private def fastProofValuedArgs (term : Expr) : MetaM (Array (Expr × Expr)) := 
         let tyStep? ← match curTy.consumeMData with
           | f@(.forallE ..) => pure (some f)
           | other =>
-              let w ← try whnfD other catch _ => pure other
+              let w ← try withTransparency .reducible (whnf other) catch _ => pure other
               match w.consumeMData with
               | f@(.forallE ..) => pure (some f)
               | _ => pure none
@@ -268,13 +289,18 @@ private def isNeverExpandedConst (declName : Name) : Bool :=
   declName == `of_eq_true || declName == `eq_self ||
   declName == ``Eq.refl || declName == ``rfl
 
-/-- Should we recurse into project lemma `declName`'s body? -/
+/-- Should we recurse into project lemma `declName`'s body?
+In legacy non-Spine mode, do NOT recursively expand `private` declarations unless explicitly
+marked `informal_joint`, preventing exponential blowup on SHA-3 helper DAGs while still citing
+the private lemma cleanly by name instead of swallowing it as routine. -/
 private def shouldExpandLemma (env : Environment) (ctx : DecompCtx) (declName : Name) : Bool :=
   if ctx.lemmaDepth ≥ ctx.config.maxLemmaDepth then false
   else if ctx.seenDecls.contains declName then false
+  else if declName == ``sorryAx then false
   else if isCoreOrMathlibIn env declName then false
   else if isNeverExpandedConst declName then false
-  else if (getOverlay env declName).isOpaqueLeaf then false
+  else if effectiveIsOpaqueLeaf env declName then false
+  else if Lean.isPrivateName declName && !effectiveIsProofJoint env declName then false
   else if ctx.config.projectNamespaces.isEmpty then
     match env.find? declName with
     | some (.thmInfo _) => true
@@ -430,7 +456,9 @@ private partial def betaInstantiateTheorem (info : TheoremVal) (levels : List Le
       | .lam _ _ vbody _ =>
           let tyW ← match ty.consumeMData with
             | .forallE .. => pure ty.consumeMData
-            | _ => whnfD ty
+            | _ =>
+                let r ← withTransparency .reducible (whnf ty)
+                if r.consumeMData.isForall then pure r else whnfD ty
           match tyW with
           | .forallE _ _ tbody _ =>
               let a := args[i]
@@ -444,7 +472,8 @@ private partial def betaInstantiateTheorem (info : TheoremVal) (levels : List Le
 /-- Heuristic detector for trivial 1-step forwarding/cast wrapper lemmas so Paper mode can
 auto-inline them cleanly (while Auditor mode still shows them). -/
 private def isTrivialWrapperBody (env : Environment) (declName : Name) (body : Expr) : Bool :=
-  if (getOverlay env declName).isProofJoint then false
+  if effectiveIsProofJoint env declName then false
+  else if effectiveIsWrapper env declName then true
   else
     let rec stripLams : Expr → Expr
       | .lam _ _ b _ => stripLams b
@@ -458,13 +487,31 @@ private def isTrivialWrapperBody (env : Environment) (declName : Name) (body : E
         (!isCoreOrMathlibIn env head && core.getAppArgs.size ≤ 16)
     | _ => false
 
+/-- Cap `diagramHtml?` emission on `ProofNode`s at nesting `depth ≤ maxDepth` (default `1`)
+so deeply nested child trees never duplicate multi-MB diagram HTML payloads. -/
+private partial def capDiagramHtmlDepth (maxDepth : Nat := 1) : Nat → ProofNode → ProofNode
+  | depth, .step id content children goal? diag origin isWrap defExp sp lh tr im =>
+      let keepDiag := if depth ≤ maxDepth then diag else none
+      .step id content (children.map (capDiagramHtmlDepth maxDepth (depth + 1)))
+        goal? keepDiag origin isWrap defExp sp lh tr im
+  | depth, .calcChain id intro steps goal? origin =>
+      let keepStep (s : CalcStep) : CalcStep :=
+        if depth ≤ maxDepth then s else { s with diagramHtml? := none }
+      let nextSteps := steps.map fun (s, ch) =>
+        (keepStep s, ch.map (capDiagramHtmlDepth maxDepth (depth + 1)))
+      .calcChain id intro nextSteps goal? origin
+  | depth, .routineReceipt id summary count details goal? =>
+      .routineReceipt id summary count
+        (details.map (capDiagramHtmlDepth maxDepth (depth + 1))) goal?
+  | _, other => other
+
 /-- Recursively deduplicate repeated identical sibling proof nodes (preventing 15× spam)
 and coalesce duplicate `routineReceipt` siblings of the same kind into one counted receipt
 at every level of the proof tree, including nodes built by domain `RuleExplainer`s. -/
 private partial def dedupSiblings (nodes : Array ProofNode) : Array ProofNode := Id.run do
   let rec cleanNode : ProofNode → ProofNode
-    | .step id content children goal? diag origin isWrap defExp =>
-        .step id content (dedupSiblings children) goal? diag origin isWrap defExp
+    | .step id content children goal? diag origin isWrap defExp sp lh tr im =>
+        .step id content (dedupSiblings children) goal? diag origin isWrap defExp sp lh tr im
     | .calcChain id intro steps goal? origin =>
         .calcChain id intro (steps.map fun (s, ch) => (s, dedupSiblings ch)) goal? origin
     | .routineReceipt id summary count details goal? =>
@@ -486,7 +533,7 @@ private partial def dedupSiblings (nodes : Array ProofNode) : Array ProofNode :=
     | _ =>
         let visibleKey : String :=
           match n with
-          | .step _ content _ _ _ _ _ _ =>
+          | .step _ content _ _ _ _ _ _ _ _ _ _ =>
               let parts := content.map fun
                 | .text s => s
                 | .emph s => s
@@ -505,7 +552,7 @@ private partial def dedupSiblings (nodes : Array ProofNode) : Array ProofNode :=
 /-- Collect all math LaTeX strings inside an array of `Inline`s and `ProofNode`s so we know
 which proof-only definitions or bound variables actually appear visibly in the document. -/
 private partial def collectProofNodeMath : ProofNode → Array String
-  | .step _ content children _ _ _ _ _ =>
+  | .step _ content children _ _ _ _ _ _ _ _ _ =>
       let own := content.filterMap fun
         | .inlineMath s => some s
         | .displayMath s _ => some s
@@ -568,6 +615,10 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
       return dedupSiblings nodes
 
   -- 2. Check routine algebra / casts / reflexivity (fail-closed)
+  if proof.getAppFn.consumeMData.isConstOf ``sorryAx then
+    let goal ← buildGoalState ctx.tbl expected
+    return #[.step s!"sorry-{fuel}" #[.text "[UNPROVED: sorry]"] #[] (some goal)]
+
   if let some rkind := classifyRoutine? env proof then
     let goal ← buildGoalState ctx.tbl expected
     return #[.routineReceipt s!"routine-{fuel}" rkind.label 1 #[] (some goal)]
@@ -588,12 +639,22 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
     let pre : Array Inline := #[.text "Fix any ", .inlineMath varTex, .text ". "]
     for idx in [:nodes.size] do
       match nodes[idx]! with
-      | .step id content ch goal diag orig false defExp =>
-          return nodes.set! idx (.step id (pre ++ content) ch goal diag orig false defExp)
+      | .step id content ch goal diag orig false defExp sp lh tr im =>
+          return nodes.set! idx (.step id (pre ++ content) ch goal diag orig false defExp sp lh tr im)
       | .calcChain id intro steps goal orig =>
           return nodes.set! idx (.calcChain id (pre ++ intro) steps goal orig)
       | _ => pure ()
     return nodes
+  let instantiatePendingNotations (baseCtx : DecompCtx) (fv : Expr) : MetaM DecompCtx := do
+    let fvs := baseCtx.peeledFVars.push fv
+    let mut tbl := baseCtx.tbl
+    for (nBind, closedPat, sym, _) in baseCtx.pendingNotations do
+      if nBind == fvs.size then
+        let instPat := closedPat.instantiateRev fvs
+        if !instPat.hasLooseBVars && !instPat.hasExprMVar then
+          let patNorm ← normalizeForPresentation instPat
+          tbl := tbl.withExprAlias patNorm sym
+    return { baseCtx with tbl, peeledFVars := fvs }
   match expected.consumeMData, proof with
   | .forallE nm dom body bi, .lam pnm _ pbody _ =>
       let useName ← chooseBinderName nm pnm
@@ -602,15 +663,17 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
           pure (!(← isProp dom) && !(← isAmbientTypeclass dom))
         else pure false
       return ← withLocalDecl useName bi dom fun fv => do
-        let nodes ← decompileProof ctx (body.instantiate1 fv) (pbody.instantiate1 fv) (fuel - 1)
+        let nextCtx ← instantiatePendingNotations ctx fv
+        let nodes ← decompileProof nextCtx (body.instantiate1 fv) (pbody.instantiate1 fv) (fuel - 1)
         if needIntro then
-          let varTex ← exprToLatex fv ctx.tbl
+          let varTex ← exprToLatex fv nextCtx.tbl
           return maybePrefixIntroVar varTex nodes
         return nodes
   | _, .mdata _ inner =>
       return ← decompileProof ctx expected inner (fuel - 1)
   | _, .lam pnm _ pbody _ =>
-      let expW ← whnfD expected.consumeMData
+      let expR ← withTransparency .reducible (whnf expected.consumeMData)
+      let expW ← if expR.consumeMData.isForall then pure expR else whnfD expected.consumeMData
       if let .forallE nm dom body bi := expW.consumeMData then
         let useName ← chooseBinderName nm pnm
         let needIntro ←
@@ -618,9 +681,10 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
             pure (!(← isProp dom) && !(← isAmbientTypeclass dom))
           else pure false
         return ← withLocalDecl useName bi dom fun fv => do
-          let nodes ← decompileProof ctx (body.instantiate1 fv) (pbody.instantiate1 fv) (fuel - 1)
+          let nextCtx ← instantiatePendingNotations ctx fv
+          let nodes ← decompileProof nextCtx (body.instantiate1 fv) (pbody.instantiate1 fv) (fuel - 1)
           if needIntro then
-            let varTex ← exprToLatex fv ctx.tbl
+            let varTex ← exprToLatex fv nextCtx.tbl
             return maybePrefixIntroVar varTex nodes
           return nodes
       else pure ()
@@ -830,13 +894,14 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
           let subCtx := { ctx with lastFactFVar? := none, factIndex := 0, atRootConclusion := false, isProofStart := false }
           let subNodes ← decompileProof subCtx stProp sp (fuel - 1)
           let reason : Array Inline ←
-            match sp.getAppFn.consumeMData with
+            if exprContainsSorryAx sp then pure #[.text "[UNPROVED: sorry]"]
+            else match sp.getAppFn.consumeMData with
             | .const cn _ =>
                 if isCoreOrMathlibIn env cn then pure #[.text "by elementary algebra"]
                 else pure #[.text s!"by {humanLemmaLabel env cn}"]
             | .fvar _ => pure #[.text "by assumption"]
             | _ => pure #[.text "by the checked subargument"]
-          let diagHtml ← (← diagramHookRef.get) stProp
+          let diagHtml ← if ctx.lemmaDepth ≤ 1 then (← diagramHookRef.get) stProp else pure none
           let cs : CalcStep := {
             lhsLatex := lhsTex
             relationLatex := rel
@@ -904,7 +969,10 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
     if let some fa := ov.flowAfter? then
       allChildren := allChildren.push (.flowNote s!"flow-post-{declName}" fa "margin")
     let goal ← buildGoalState ctx.tbl expected
-    let diagHtml ← (← diagramHookRef.get) expected
+    if exprContainsSorryAx proof &&
+       !allChildren.any (fun n => n.collectAllText.any (fun t => (t.splitOn "[UNPROVED: sorry]").length > 1)) then
+      allChildren := allChildren.push (.step s!"sorry-child-{fuel}" #[.text "[UNPROVED: sorry]"] #[] (some goal))
+    let diagHtml ← if ctx.lemmaDepth ≤ 1 then (← diagramHookRef.get) expected else pure none
     let isCore := isCoreOrMathlibIn env declName
     let isOrderMono :=
       declName == `add_le_add || declName == `mul_le_mul_of_nonneg_left ||
@@ -918,7 +986,8 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
     let isCaseSplit := declName == ``Or.elim || declName == ``Or.casesOn ||
       declName == ``Bool.rec || declName == ``Option.rec || declName == ``Sum.rec || declName == ``Or.rec
     let isDisjInj := declName == ``Or.inl || declName == ``Or.inr
-    let isCasesDestruct := !isCaseSplit && declName.toString.endsWith ".casesOn"
+    let isCasesDestruct := !isCaseSplit &&
+      (declName.toString.endsWith ".casesOn" || declName == ``Exists.elim)
     let isInductionRec :=
       !isCaseSplit && !isCasesDestruct && !declName.toString.startsWith "Eq." &&
       (declName == ``Nat.rec || declName == `Nat.recAux || declName == ``Nat.recOn ||
@@ -930,7 +999,7 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
       isWrap := true
     -- Avoid the "restatement reflex": at the root conclusion, never re-quote the whole theorem!
     let hasVisibleNonWrap := allChildren.any fun
-      | .step _ _ _ _ _ _ w _ => !w
+      | .step _ _ _ _ _ _ w _ _ _ _ _ => !w
       | _ => true
     let conclInl ← renderProposition ctx.tbl expected
     let content : Array Inline ←
@@ -961,8 +1030,10 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
     return #[.step s!"app-{declName}-{fuel}" content allChildren (some goal)
       diagHtml (some declName.toString) isWrap]
 
-  -- 7. Fallback: checked goal statement
+  -- 7. Fallback: checked goal statement (flagging any unexpanded `sorryAx`)
   let goal ← buildGoalState ctx.tbl expected
+  if exprContainsSorryAx proof then
+    return #[.step s!"sorry-fallback-{fuel}" #[.text "[UNPROVED: sorry]"] #[] (some goal)]
   let conclInl ← renderProposition ctx.tbl expected
   return #[.step s!"step-{fuel}" (#[.text "We obtain "] ++ conclInl ++ #[.text "."]) #[] (some goal)]
 
@@ -976,7 +1047,7 @@ def auditAxioms (declName : Name) : MetaM AxiomAudit := do
 
 /-- Collect distinct `originDecl` names appearing anywhere in a `ProofNode` tree. -/
 private partial def collectOriginDecls : ProofNode → Array Name
-  | .step _ _ children _ _ origin? _ _ =>
+  | .step _ _ children _ _ origin? _ _ _ _ _ _ =>
       let own := match origin? with | some s => #[s.toName] | none => #[]
       own ++ children.flatMap collectOriginDecls
   | .calcChain _ _ steps _ origin? =>
@@ -990,27 +1061,31 @@ informalizes a checked Lean declaration into an `Explanation.Entry` (with scoped
 shorthands & parameter inspectors) plus all referenced constant `SymbolInspector`s. -/
 def informalizeDeclarationWithContext (declName : Name) (config : Config := {})
     (hoisted? : Option HoistedContext := none) : MetaM (Entry × Array SymbolInspector) := do
+  clearGoalCtxCache
+  (← clearDiagramCacheHookRef.get)
   let env ← getEnv
   let some info := env.find? declName
     | throwError "informalize: declaration `{declName}` not found in environment"
   let ov := getOverlay env declName
   let tbl := buildSymbolTable env declName
-  let parsed ← parseTheoremStatement tbl info.type hoisted?
+  let proofBody? : Option Expr :=
+    match info with
+    | .thmInfo tinfo => some tinfo.value
+    | _ => none
+  let parsed ← parseTheoremStatement tbl info.type hoisted? proofBody? ov.theoremNotations declName
   let diagHtml ← (← diagramHookRef.get) info.type
-  let header := match ov.entryKind? with
+  let rawHeader := match ov.entryKind? with
     | some k => k
     | none =>
       match info with
       | .thmInfo _ => "Theorem"
       | .defnInfo _ => "Definition"
       | _ => "Declaration"
+  let header := capitalizeFirst rawHeader.trimAscii.toString
   let mut proofNodes : Array ProofNode := #[]
   if let some fb := ov.flowBefore? then
     proofNodes := proofNodes.push (.flowNote s!"doc-flow-pre-{declName}" fb "inline")
-  let proofBody? : Option Expr :=
-    match info with
-    | .thmInfo tinfo => some tinfo.value
-    | _ => none
+  extraNotationInspectorsRef.set #[]
   if let .thmInfo tinfo := info then
     let ctx : DecompCtx := {
       config
@@ -1018,9 +1093,13 @@ def informalizeDeclarationWithContext (declName : Name) (config : Config := {})
       seenDecls := ({} : NameSet).insert declName
       lemmaDepth := 0
       atRootConclusion := true
+      pendingNotations := ov.theoremNotations
+      isClosingGoal := true
     }
     let (nodes, _) ← (decompileProof ctx info.type tinfo.value config.maxTermFuel).run {}
-    proofNodes := dedupSiblings (proofNodes ++ nodes)
+    proofNodes := (dedupSiblings (proofNodes ++ nodes)).map (capDiagramHtmlDepth 1 0)
+  let extraProofNotations ← extraNotationInspectorsRef.get
+  extraNotationInspectorsRef.set #[]
   if let some fa := ov.flowAfter? then
     proofNodes := proofNodes.push (.flowNote s!"doc-flow-post-{declName}" fa "inline")
   let hoistedSyms := match hoisted? with
@@ -1038,7 +1117,11 @@ def informalizeDeclarationWithContext (declName : Name) (config : Config := {})
       leanType := sh.leanType
       roleBadge? := some "local shorthand"
     }
-  let localInspectors := localParamInspectors ++ shorthandInspectors
+  let mut mergedNotations : Array SymbolInspector := parsed.notationInspectors
+  for ins in extraProofNotations do
+    if !mergedNotations.any (fun x => x.display == ins.display) then
+      mergedNotations := mergedNotations.push ins
+  let localInspectors := mergedNotations ++ localParamInspectors ++ shorthandInspectors
   let statementMath : Array String := parsed.paragraphs.flatMap fun para =>
     para.filterMap fun
       | .inlineMath s => some s

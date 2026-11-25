@@ -49,10 +49,10 @@ private def mkStep (ctx : DecompCtx) (id : String) (content : Array Inline)
     (children : Array ProofNode) (expected : Expr) (origin : Name) :
     StateRefT DiscourseState MetaM ProofNode := do
   let goal ← buildGoalState ctx.tbl expected
-  let diagHtml ← (← diagramHookRef.get) expected
+  let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) expected else pure none
   return .step id content children (some goal) diagHtml (some origin.toString)
 
-/-- Check if `e` is a `≤` comparison whose left or right side is a CC/transcript distance. -/
+/-- Check if `e` is a `≤` comparison whose left or right side is a CC distinguishing advantage or distance. -/
 private def splitOrder? (e : Expr) : MetaM (Option (Expr × Expr)) := do
   let e ← normalizeForPresentation e
   if e.isAppOf ``LE.le || e.isAppOf ``LT.lt then
@@ -61,7 +61,7 @@ private def splitOrder? (e : Expr) : MetaM (Option (Expr × Expr)) := do
       return some (args[args.size - 2]!, args[args.size - 1]!)
   return none
 
-/-- Check whether an expression represents a CC distinguishing/transcript distance. -/
+/-- Check whether an expression represents a CC distinguishing advantage or statistical distance bound. -/
 private def isDistanceExpr (e : Expr) : MetaM Bool := do
   let e ← normalizeForPresentation e
   return e.isAppOf ``ConstructiveCryptography.CryptographicAlgebra.distance ||
@@ -74,7 +74,11 @@ def distinguisherLowerBoundExplainer : RuleExplainer where
     let fn := proof.getAppFn.consumeMData
     let args := proof.getAppArgs
     let some head := fn.constName? | return none
-    let conclInl ← renderProposition ctx.tbl expected
+    let finish (id : String) (mkMsg : Array Inline → Array Inline)
+        (children : Array ProofNode) := do
+      let conclInl ← renderProposition ctx.tbl expected
+      let node ← mkStep ctx id (mkMsg conclInl) children expected head
+      return some #[node]
     -- 1. Tightness sandwich: `And.intro hLower hUpper` where the same quantity is bounded below and above
     if head == ``And.intro && args.size ≥ 4 then
       let p1 := args[args.size - 2]!
@@ -102,11 +106,9 @@ def distinguisherLowerBoundExplainer : RuleExplainer where
           let node2 : ProofNode := .step "sandwich-part-2"
             (#[.text (if lowerFirst then "For the matching upper bound, " else "For the matching lower bound, ")] ++
              inl2 ++ #[.text "."]) sub2 (some g2)
-          let content : Array Inline :=
+          return ← finish "cc-tightness-sandwich" (fun conclInl =>
             #[.text s!"{op} combining the matching upper and lower bounds establishes the tightness sandwich "] ++
-            conclInl ++ #[.text "."]
-          let node ← mkStep ctx "cc-tightness-sandwich" content #[node1, node2] expected head
-          return some #[node]
+            conclInl ++ #[.text "."]) #[node1, node2]
     -- 2. Explicit distinguisher / environment-probe lower bounds
     if head == ``SystemAlgebra.Domain.Distinguisher.advantage_le_transcriptDistance ||
        head == ``SystemAlgebra.Domain.DistinguisherBehavior.advantage_le_transcriptDistance ||
@@ -114,35 +116,27 @@ def distinguisherLowerBoundExplainer : RuleExplainer where
        head == ``SystemAlgebra.RandomSystem.decisionProbability_gap_le then
       let op ← pickMaurerOpener .consequence
       let children ← decompilePremiseArgs ctx decompileChild proof
-      let content : Array Inline :=
-        #[.text s!"{op} because the distinguishing distance is the supremum of advantages over all compatible distinguishers, this explicit distinguisher yields the lower bound "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-lower-dist-{head}" content children expected head
-      return some #[node]
+      return ← finish s!"cc-lower-dist-{head}" (fun conclInl =>
+        #[.text s!"{op} because the maximum distinguishing advantage is the supremum of advantages over all compatible distinguishers, this explicit distinguisher yields the lower bound "] ++
+        conclInl ++ #[.text "."]) children
     if head == ``SystemAlgebra.RandomSystem.decisionProbability_envProbe then
       let op ← pickMaurerOpener .elaboration
       let children ← decompilePremiseArgs ctx decompileChild proof
-      let content : Array Inline :=
+      return ← finish s!"cc-envprobe-{head}" (fun conclInl =>
         #[.text s!"{op} running the query environment and testing the transcript event decides 1 with exactly the event probability: "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-envprobe-{head}" content children expected head
-      return some #[node]
+        conclInl ++ #[.text "."]) children
     if head == ``SystemAlgebra.RandomSystem.transcriptDistance_eq_iSup ||
        head == ``SystemAlgebra.RandomSystem.transcriptDistance_eq_iSup_behavior then
       let op ← pickMaurerOpener .elaboration
-      let content : Array Inline :=
-        #[.text s!"{op} characterizing the transcript distance as the supremum of distinguishing advantages gives "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-isup-char-{head}" content #[] expected head
-      return some #[node]
+      return ← finish s!"cc-isup-char-{head}" (fun conclInl =>
+        #[.text s!"{op} characterizing the maximum distinguishing advantage as the supremum over all compatible distinguishers gives "] ++
+        conclInl ++ #[.text "."]) #[]
     if head == ``SystemAlgebra.RandomSystem.transcriptDistance_le_of_advantage_le then
       let op ← pickMaurerOpener .reduction
       let children ← decompilePremiseArgs ctx decompileChild proof
-      let content : Array Inline :=
-        #[.text s!"{op} since the transcript distance is the supremum over all compatible distinguishers, bounding every distinguisher's advantage establishes "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-isup-le-{head}" content children expected head
-      return some #[node]
+      return ← finish s!"cc-isup-le-{head}" (fun conclInl =>
+        #[.text s!"{op} since the maximum distinguishing advantage is the supremum over all compatible distinguishers, bounding every distinguisher's advantage establishes "] ++
+        conclInl ++ #[.text "."]) children
     return none
 
 /-- Explainer for impossibility proofs, non-constructibility, and simulator obstructions. -/
@@ -165,35 +159,33 @@ def impossibilityObstructionExplainer : RuleExplainer where
             #[.text s!"{op} suppose toward a contradiction that an admitted construction existed; deriving a contradiction establishes the impossibility "] ++
             conclInl ++ #[.text "."]
           let goal ← buildGoalState ctx.tbl expected
-          let diagHtml ← (← diagramHookRef.get) expected
+          let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) expected else pure none
           return some #[.step "cc-unconstructible-contra" content children (some goal) diagHtml]
       return none
-    let conclInl ← renderProposition ctx.tbl expected
+    let finish (id : String) (mkMsg : Array Inline → Array Inline)
+        (children : Array ProofNode) := do
+      let conclInl ← renderProposition ctx.tbl expected
+      let node ← mkStep ctx id (mkMsg conclInl) children expected head
+      return some #[node]
     if head == ``ConstructiveCryptography.Construction.Unconstructible.of_imp then
       let op ← pickMaurerOpener .consequence
       let children ← decompilePremiseArgs ctx decompileChild proof
-      let content : Array Inline :=
+      return ← finish s!"cc-unconst-imp-{head}" (fun conclInl =>
         #[.text s!"{op} pulling back the existing impossibility result along the judgment implication establishes "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-unconst-imp-{head}" content children expected head
-      return some #[node]
+        conclInl ++ #[.text "."]) children
     if head == ``ConstructiveCryptography.Construction.Unconstructible.mono_constructors then
       let op ← pickMaurerOpener .elaboration
       let children ← decompilePremiseArgs ctx decompileChild proof
-      let content : Array Inline :=
+      return ← finish s!"cc-unconst-mono-{head}" (fun conclInl =>
         #[.text s!"{op} since no constructor in the larger class succeeds, restricting to a smaller class preserves non-constructibility: "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-unconst-mono-{head}" content children expected head
-      return some #[node]
+        conclInl ++ #[.text "."]) children
     if head == ``ConstructiveCryptography.CryptographicAlgebra.distance_eq_of_mutual_attach ||
        head == ``ConstructiveCryptography.CryptographicAlgebra.distance_attach_iso then
       let op ← pickMaurerOpener .elaboration
       let children ← decompilePremiseArgs ctx decompileChild proof
-      let content : Array Inline :=
-        #[.text s!"{op} by non-expansion in both directions, mutually invertible converter attachments preserve the distinguishing distance exactly: "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-dist-iso-{head}" content children expected head
-      return some #[node]
+      return ← finish s!"cc-dist-iso-{head}" (fun conclInl =>
+        #[.text s!"{op} by non-expansion in both directions, mutually invertible converter attachments preserve the maximum distinguishing advantage exactly: "] ++
+        conclInl ++ #[.text "."]) children
     return none
 
 initialize

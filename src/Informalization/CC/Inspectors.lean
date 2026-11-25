@@ -51,33 +51,107 @@ open Informalization.Core.Ontology
 open Informalization.Core.ProofGraph
 open Informalization.Core.Routine
 open Informalization.Core.Explanation
+open Informalization.Core.Presentation
 open Informalization.CC.Registry
 
 /-! ## 1. Static Box-and-Wire Diagram Hook (`Rendering` Integration) -/
 
+/-- Strip embedded `<style>...</style>` blocks from `CCWidget.staticHtml` output (since `Html.lean`
+hoists the shared CC stylesheet once into `<head>`). Uses Unicode-safe character arrays. -/
+private def stripEmbeddedStyles (html : String) : String := Id.run do
+  let arr := html.toList.toArray
+  let lower := arr.map Char.toLower
+  let n := arr.size
+  let matchAt (pos : Nat) (pat : Array Char) : Bool := Id.run do
+    if pos + pat.size > n then return false
+    for j in [:pat.size] do
+      if lower[pos + j]! != pat[j]! then return false
+    return true
+  let openTag := "<style".toList.toArray
+  let closeTag := "</style>".toList.toArray
+  let mut out : Array Char := #[]
+  let mut i := 0
+  while i < n do
+    if matchAt i openTag then
+      let nxt := if i + 6 < n then some lower[i + 6]! else none
+      let isTagStart := match nxt with
+        | some '>' | some ' ' | some '\t' | some '\n' | some '\r' => true
+        | _ => false
+      if isTagStart then
+        let mut j := i + 6
+        while j < n && !matchAt j closeTag do
+          j := j + 1
+        if j < n then
+          i := j + closeTag.size
+          continue
+    out := out.push arr[i]!
+    i := i + 1
+  return String.ofList out.toList
+
 /-- Render a checked Lean expression or CC judgment to self-contained static HTML using
 `Rendering`'s deterministic projection (`CCWidget.viewExprCore`, `CCWidget.renderJudgment`,
 `CCWidget.panel`, `CCWidget.staticHtml`). Returns `none` for non-CC expressions. -/
+private initialize diagHtmlCacheRef : IO.Ref (Std.HashMap Expr (Option String)) ← IO.mkRef {}
+
+private def withDiagHeartbeats {α : Type} (maxUserHB : Nat := 1500)
+    (x : MetaM (Option α)) : MetaM (Option α) := do
+  try
+    Lean.Core.withCurrHeartbeats <|
+      withTheReader Core.Context (fun c =>
+        let limit := maxUserHB * 1000
+        { c with maxHeartbeats := if c.maxHeartbeats == 0 then limit else min c.maxHeartbeats limit }) do
+        controlAt CoreM fun runInBase =>
+          Lean.Core.tryCatchRuntimeEx (runInBase x) fun ex =>
+            runInBase do
+              if ex.isMaxHeartbeat then return none
+              else throw ex
+  catch _ =>
+    return none
+
+private def isPureMathStdNamespace (n : Name) : Bool :=
+  let root := n.getRoot.toString
+  root == "Init" || root == "Lean" || root == "Std" || root == "Batteries" ||
+  root == "Mathlib" || root == "Core" || root == "Logic" ||
+  root == "Nat" || root == "Int" || root == "Bool" || root == "Prop" ||
+  root == "Real" || root == "NNReal" || root == "ENNReal" ||
+  root == "Fin" || root == "Finset" || root == "Set" || root == "List" ||
+  root == "Option" || root == "Prod" || root == "Sigma" || root == "Subtype" ||
+  root == "Eq" || root == "LE" || root == "LT" || root == "GE" || root == "GT" ||
+  root == "And" || root == "Or" || root == "Not" || root == "Iff" ||
+  root == "Exists" || root == "True" || root == "False" ||
+  root == "Decidable" || root == "ite" || root == "dite" || root == "Classical" ||
+  root == "OfNat" || root == "HAdd" || root == "HSub" || root == "HMul" ||
+  root == "HDiv" || root == "HPow" || root == "HMod" ||
+  root == "Add" || root == "Mul" || root == "Sub" || root == "Div" ||
+  root == "Mod" || root == "Neg" || root == "Inv" || root == "SMul" || root == "HSMul"
+
+private def exprMaybeHasCCDiagram (e : Expr) : Bool :=
+  e.hasFVar || e.foldConsts false fun n acc => acc || !isPureMathStdNamespace n
+
 def renderCCDiagramHtml? (e : Expr) : MetaM (Option String) := do
   let e ← instantiateMVars e
   if e.hasExprMVar || e.hasSorry || e.hasLevelMVar then
     return none
-  try
-    if let some (j, _) ← CCWidget.viewExprCore e false then
+  if !exprMaybeHasCCDiagram e then
+    return none
+  let cache ← diagHtmlCacheRef.get
+  if let some cached := cache[e]? then
+    return cached
+  let res ← (do
+    if let some (j, _) ← withDiagHeartbeats 300 (CCWidget.viewExprCore e false) then
       let html := CCWidget.panel (CCWidget.renderJudgment j #[])
       match CCWidget.staticHtml html with
-      | .ok rendered => return some rendered
-      | .error _ => return none
-  catch _ =>
-    pure ()
-  try
-    if let some viewHtml ← CCWidget.proofViewHtml? e false then
+      | .ok rendered => return some (stripEmbeddedStyles rendered)
+      | .error _ => pure ()
+    if let some viewHtml ← withDiagHeartbeats 300 (CCWidget.proofViewHtml? e false) then
       match CCWidget.staticHtml (CCWidget.proofPanel viewHtml) with
-      | .ok rendered => return some rendered
-      | .error _ => return none
-  catch _ =>
-    pure ()
-  return none
+      | .ok rendered => return some (stripEmbeddedStyles rendered)
+      | .error _ => pure ()
+    return none)
+  diagHtmlCacheRef.modify fun m =>
+    let m := if m.size ≥ 512 then {} else m
+    m.insert e res
+  return res
 
 /-! ## 2. Type-Aware Symbol Inspector Builders -/
 
@@ -193,7 +267,11 @@ private def buildMathDefinition (tbl : SymbolTable) (declName : Name) (info : De
       let adj := if desc.adjectives.isEmpty then "" else String.intercalate " " desc.adjectives ++ " "
       let art := article (adj ++ desc.noun.singular)
       let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
-      let summary := ensurePeriod s!"Defined as {art} {adj}{desc.noun.singular}{acc}"
+      let summary :=
+        if desc.noun.singular.startsWith "element of " then
+          ensurePeriod s!"Defined in {desc.noun.singular.drop 11}{acc}"
+        else
+          ensurePeriod s!"Defined as {art} {adj}{desc.noun.singular}{acc}"
       return (s!"{lhs} := {rhsTex}", summary)
   return .mathDefinition eqLatex proseSummary
 
@@ -254,9 +332,21 @@ private def cleanDocString? (env : Environment) (declName : Name) : IO (Option S
   let lower := s.toLower
   let bannedCI := [
     "at interface", "whiskering", "interface(s)", "admissibility closure",
-    "visible system", "user(s)", "query(s)", "resource(s)"
+    "visible system", "user(s)", "query(s)", "resource(s)",
+    "distinguishing distance", "transcript distance",
+    "defined as an element of",
+    "element of ennreal", "element of nnreal", "element of finset",
+    "element of fin ", "element of zmod", "element of probdist",
+    "element of bitstring", "element of typed", "element of distinguisher"
   ]
   if bannedCI.any (fun pat => (lower.splitOn pat).length > 1) then
+    return none
+  let bannedCS := [
+    "_vcc_", "Exists(", "sum(univ", "Sigma(", "Subtype(",
+    "Prod.fst", "Prod.snd", "BitString(", "Unit \\to", "Unit →",
+    "_proof_", "self."
+  ]
+  if bannedCS.any (fun pat => (s.splitOn pat).length > 1) then
     return none
   if !(auditZeroLeakage #[s]).isEmpty then
     return none
@@ -353,6 +443,12 @@ private def buildParameterRoleAndBadge (tbl : SymbolTable) (ty : Expr) :
     else "parameter"
   return (role, badge)
 
+/-- Check if an expression references compiler-generated `_proof_` / `match_` helpers or `sorryAx`. -/
+private def containsAuxOrMatchDecl (e : Expr) : Bool :=
+  containsMatchHelper e ||
+  e.foldConsts (init := false) fun n acc =>
+    acc || isCompilerAuxDecl n || n == ``sorryAx
+
 /-- Build an ambient-suppressed `InspectorKind.mathDefinition` plus `(roleBadge, clauses)`
 for a project `defnInfo`. -/
 private def buildMathDefinitionRich (tbl : SymbolTable) (declName : Name) (info : DefinitionVal) :
@@ -361,6 +457,7 @@ private def buildMathDefinitionRich (tbl : SymbolTable) (declName : Name) (info 
   forallTelescope info.type fun fvars bodyTy => do
     let mut explicitParams : Array String := #[]
     let mut explicitFVars : Array Expr := #[]
+    let mut selfFVars : Array Expr := #[]
     let mut domainNouns : List String := []
     let mut expIdx := 0
     let hidden := tbl.hiddenArgs.getD declName []
@@ -369,16 +466,20 @@ private def buildMathDefinitionRich (tbl : SymbolTable) (declName : Name) (info 
       let d ← fv.fvarId!.getDecl
       if ← isSuppressedLocalDecl d then continue
       if !d.binderInfo.isExplicit then continue
+      if ← isProp d.type then continue
       explicitFVars := explicitFVars.push fv
+      let cleanNm := cleanBinderName d.userName "x"
+      if cleanNm == "self" then
+        selfFVars := selfFVars.push fv
       let pTex ←
-        if isProj && cleanBinderName d.userName == "self" then pure "p"
+        if isProj && cleanNm == "self" then pure "x"
+        else if cleanNm == "self" then pure "x"
         else exprToLatex fv tbl
       if !hidden.contains expIdx then
         explicitParams := explicitParams.push pTex
-      if !(← isProp d.type) then
-        let pd ← describeType tbl d.type
-        if !pd.noun.singular.startsWith "element of" then
-          domainNouns := domainNouns ++ [pd.noun.plural]
+      let pd ← describeType tbl d.type
+      if !pd.noun.singular.startsWith "element of" then
+        domainNouns := domainNouns ++ [pd.noun.plural]
       expIdx := expIdx + 1
     let bodyTyClean ← normalizeForPresentation bodyTy
     let desc ← describeType tbl bodyTyClean
@@ -393,7 +494,9 @@ private def buildMathDefinitionRich (tbl : SymbolTable) (declName : Name) (info 
       else pure "definition"
     let lhsHead := tbl.constAliases.getD declName (formatMathIdent (shortConstName declName))
     let lhs :=
-      if explicitParams.isEmpty then lhsHead
+      if isProj && explicitParams.size == 1 then
+        s!"{explicitParams[0]!}.\\mathrm\{{escapeLatex (shortConstName declName)}}"
+      else if explicitParams.isEmpty then lhsHead
       else s!"{lhsHead}\\!\\left({String.intercalate ", " explicitParams.toList}\\right)"
     -- Instantiate the definition body with the same telescope fvars (stripping leading lambdas)
     let mut rhs := info.value
@@ -401,16 +504,28 @@ private def buildMathDefinitionRich (tbl : SymbolTable) (declName : Name) (info 
       match rhs.consumeMData with
       | .lam _ _ b _ => rhs := b.instantiate1 fv
       | _ => break
-    let rhsTbl :=
-      if isProj && explicitFVars.size == 1 then tbl.withExprAlias explicitFVars[0]! "p"
-      else tbl
+    let mut rhsTbl := tbl
+    for sfv in selfFVars do
+      rhsTbl := rhsTbl.withExprAlias sfv "x"
+    if isProj && explicitFVars.size == 1 && selfFVars.isEmpty then
+      rhsTbl := rhsTbl.withExprAlias explicitFVars[0]! (explicitParams.getD 0 "x")
     if rhs.approxDepth > 22 || !exprSizeBounded rhs 160 then
       let adj := if desc.adjectives.isEmpty then "" else String.intercalate " " desc.adjectives ++ " "
       let art := article (adj ++ desc.noun.singular)
       let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
       let summary :=
         if isProj then
-          s!"Projection field {shortConstName declName} ({art} {adj}{desc.noun.singular}{acc})."
+          if desc.noun.singular.startsWith "element of " then
+            s!"Projection field {shortConstName declName} (in {desc.noun.singular.drop 11}{acc})."
+          else
+            s!"Projection field {shortConstName declName} ({art} {adj}{desc.noun.singular}{acc})."
+        else if let some rule := getPaperDescribeRule? env declName then
+          if let some hTmpl := rule.hoverTemplate? then hTmpl
+          else if desc.noun.singular.startsWith "element of " then
+            ensurePeriod s!"Defined in {desc.noun.singular.drop 11}{acc}"
+          else ensurePeriod s!"Defined as {art} {adj}{desc.noun.singular}{acc}"
+        else if desc.noun.singular.startsWith "element of " then
+          ensurePeriod s!"Defined in {desc.noun.singular.drop 11}{acc}"
         else
           ensurePeriod s!"Defined as {art} {adj}{desc.noun.singular}{acc}"
       return (.mathDefinition "" summary, badge, #[])
@@ -420,14 +535,16 @@ private def buildMathDefinitionRich (tbl : SymbolTable) (declName : Name) (info 
       let rawClauses ← splitAndClauses rhsNorm
       let mut clauses : Array String := #[]
       for c in rawClauses do
-        clauses := clauses.push (← exprToLatex c rhsTbl)
+        if !containsAuxOrMatchDecl c then
+          clauses := clauses.push (← exprToLatex c rhsTbl)
       let summary :=
         if let some firstDom := domainNouns.head? then
           s!"Predicate on {firstDom}."
         else
           "Checked mathematical predicate."
       let eqLatex ←
-        if clauses.isEmpty then do
+        if containsAuxOrMatchDecl rhsNorm then pure ""
+        else if clauses.isEmpty then do
           pure s!"{lhs} := {← exprToLatex rhsNorm rhsTbl}"
         else
           pure s!"{lhs} \\iff {String.intercalate " \\wedge " clauses.toList}"
@@ -443,14 +560,14 @@ private def buildMathDefinitionRich (tbl : SymbolTable) (declName : Name) (info 
       let (sampleClauses, innerBody) ← extractSampleClauses rhsTbl rhsNorm
       let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
       let summary := ensurePeriod s!"{capitalizeFirst desc.noun.singular}{acc}"
-      if !sampleClauses.isEmpty || containsMatchHelper rhsNorm then
+      if !sampleClauses.isEmpty || containsAuxOrMatchDecl rhsNorm then
         let ifaceStr ← match ← resourceInterface? bodyTyClean with
           | some iface => do
               let itex ← exprToLatex iface rhsTbl
               pure s!"\\text\{Port behavior at } {itex}"
           | none => pure "\\text{Deterministic port evaluation}"
         let finalClauses ←
-          if containsMatchHelper innerBody then
+          if containsAuxOrMatchDecl innerBody then
             pure (sampleClauses.push ifaceStr)
           else do
             let bodyTex ← exprToLatex innerBody rhsTbl
@@ -462,12 +579,25 @@ private def buildMathDefinitionRich (tbl : SymbolTable) (declName : Name) (info 
     let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
     let summary :=
       if isProj then
-        s!"Projection field {shortConstName declName} ({art} {adj}{desc.noun.singular}{acc})."
+        if desc.noun.singular.startsWith "element of " then
+          s!"Projection field {shortConstName declName} (in {desc.noun.singular.drop 11}{acc})."
+        else
+          s!"Projection field {shortConstName declName} ({art} {adj}{desc.noun.singular}{acc})."
+      else if let some rule := getPaperDescribeRule? env declName then
+        match rule.hoverTemplate? with
+        | some hTmpl => hTmpl
+        | none =>
+            if desc.noun.singular.startsWith "element of " then
+              ensurePeriod s!"Defined in {desc.noun.singular.drop 11}{acc}"
+            else ensurePeriod s!"Defined as {art} {adj}{desc.noun.singular}{acc}"
+      else if desc.noun.singular.startsWith "element of " then
+        ensurePeriod s!"Defined in {desc.noun.singular.drop 11}{acc}"
       else
         ensurePeriod s!"Defined as {art} {adj}{desc.noun.singular}{acc}"
-    let eqLatex ←
-      if containsMatchHelper rhsNorm then pure ""
-      else pure s!"{lhs} := {← exprToLatex rhsNorm rhsTbl}"
+    let rhsTex ← if containsAuxOrMatchDecl rhsNorm then pure "" else exprToLatex rhsNorm rhsTbl
+    let eqLatex :=
+      if rhsTex.isEmpty || rhsTex == lhs || isProj then ""
+      else s!"{lhs} := {rhsTex}"
     return (.mathDefinition eqLatex summary, badge, #[])
 
 /-- Collect explicit project constants referenced inside `e` in $O(\text{DAG})$ time (excluding
@@ -502,7 +632,7 @@ private partial def collectExplicitProjectConstants (env : Environment) (e : Exp
                   else
                     curTy ← match curTy.consumeMData with
                       | f@(.forallE ..) => pure f
-                      | other => whnfD other
+                      | other => withTransparency .reducible (whnf other)
                     match curTy with
                     | .forallE _ dom body bi =>
                         if bi.isExplicit && (dom.hasLooseBVars || !(← isAmbientTypeclass dom)) then
@@ -546,7 +676,7 @@ registered `AppHandler`s rather than `constAliases`. -/
 private def specialCCOperatorMeta? (declName : Name) : Option (String × String × String) :=
   if declName == distanceName || declName == transcriptDistanceName then
     some ("\\Delta", "metric",
-      "Distinguishing distance: supremum of distinguishing advantages over all compatible distinguishers.")
+      "Maximum distinguishing advantage over all compatible distinguishers.")
   else if declName == advantageDistanceName || declName == distinguisherAdvantageValName then
     some ("\\Delta", "advantage",
       "Distinguishing advantage between two resources or systems.")
@@ -626,6 +756,17 @@ private def inspectConstant? (tbl : SymbolTable) (declName : Name) :
     return some {
       key, display, kind := defKind, leanName? := some key, leanType,
       sourceFile?, sourceLine?, roleBadge? := some badge, clauses, docString?
+    }
+  -- 6. Domain type / structure registered via `@[paper_describe]` / `paper_describe_for`
+  if let some rule := getPaperDescribeRule? env declName then
+    let art := article rule.noun.singular
+    let summary := match rule.hoverTemplate? with
+      | some h => h
+      | none => ensurePeriod (capitalizeFirst s!"{art} {rule.noun.singular}")
+    return some {
+      key, display, kind := .mathDefinition "" summary,
+      leanName? := some key, leanType, sourceFile?, sourceLine?,
+      roleBadge? := some "type", docString?
     }
   return none
 
@@ -752,6 +893,7 @@ def collectCCInspectors (tbl : SymbolTable) (theoremType : Expr) :
 /-- Register the CC diagram hook and type-aware symbol inspector collectors with `ProofGraph`. -/
 def registerAll : IO Unit := do
   registerDiagramHook renderCCDiagramHtml?
+  registerClearDiagramCacheHook (diagHtmlCacheRef.set {})
   registerInspectorCollector collectCCInspectors
   registerScopedInspectorCollector fun tbl declName theoremType proofBody? hoistedParamSyms extra =>
     collectScopedCCInspectors tbl declName theoremType proofBody? hoistedParamSyms extra

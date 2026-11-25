@@ -48,7 +48,7 @@ private def mkStep (ctx : DecompCtx) (id : String) (content : Array Inline)
     (children : Array ProofNode) (expected : Expr) (origin : Name) :
     StateRefT DiscourseState MetaM ProofNode := do
   let goal ← buildGoalState ctx.tbl expected
-  let diagHtml ← (← diagramHookRef.get) expected
+  let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) expected else pure none
   return .step id content children (some goal) diagHtml (some origin.toString)
 
 private def decompileSlotSubproof (ctx : DecompCtx) (decompileChild : DecompileChild)
@@ -142,7 +142,11 @@ def hCoefficientExplainer : RuleExplainer where
     let fn := proof.getAppFn.consumeMData
     let args := proof.getAppArgs
     let some head := fn.constName? | return none
-    let conclInl ← renderProposition ctx.tbl expected
+    let finish (id : String) (mkMsg : Array Inline → Array Inline)
+        (children : Array ProofNode) := do
+      let conclInl ← renderProposition ctx.tbl expected
+      let node ← mkStep ctx id (mkMsg conclInl) children expected head
+      return some #[node]
     if head == ``SystemAlgebra.Interface.distance_le_of_hCoefficient ||
        head == ``SystemAlgebra.RandomSystem.HCoefficient.transcriptDistance_le ||
        head == ``SystemAlgebra.RandomSystem.HCoefficient.transcriptDistance_le_nnreal then
@@ -155,19 +159,15 @@ def hCoefficientExplainer : RuleExplainer where
           if ty.isAppOf ``SystemAlgebra.RandomSystem.HCoefficient then
             witnessChildren := witnessChildren ++ (← explainHCoefficientWitness ctx decompileChild arg)
         catch _ => pure ()
-      let content : Array Inline :=
+      return ← finish s!"cc-hcoeff-{head}" (fun conclInl =>
         #[.text s!"{op} by the revealed-transcript H-coefficient technique—comparing the extended real and ideal transcript laws and forgetting the auxiliary reveal by data processing—we obtain "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-hcoeff-{head}" content witnessChildren expected head
-      return some #[node]
+        conclInl ++ #[.text "."]) witnessChildren
     if head == ``SystemAlgebra.RandomSystem.statDist_sLaw_le_of_reveal then
       let op ← pickMaurerOpener .consequence
       let children ← decompilePremiseArgs ctx decompileChild proof
-      let content : Array Inline :=
+      return ← finish s!"cc-reveal-expect-{head}" (fun conclInl =>
         #[.text s!"{op} by the expectation method on extended transcripts (applying data processing to marginalize out the revealed record), the statistical distance of the transcript laws is bounded by the ideal expected ratio defect: "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-reveal-expect-{head}" content children expected head
-      return some #[node]
+        conclInl ++ #[.text "."]) children
     if head == ``SystemAlgebra.RandomSystem.transcriptDistance_le_add_of_ratio_on_good then
       let op ← pickMaurerOpener .consequence
       let pArgs ← proofValuedArgs proof
@@ -189,11 +189,9 @@ def hCoefficientExplainer : RuleExplainer where
           children := children.push (.step s!"hcoeff-bad-{idx}"
             (#[.text "The bad-transcript mass under the ideal system is bounded by "] ++
              subInl ++ #[.text "."]) sub (some goal))
-      let content : Array Inline :=
+      return ← finish s!"cc-hcoeff-goodbad-{head}" (fun conclInl =>
         #[.text s!"{op} by Patarin's H-coefficient technique, splitting transcripts into a bad event and a good set with a uniform real-to-ideal probability ratio yields "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-hcoeff-goodbad-{head}" content children expected head
-      return some #[node]
+        conclInl ++ #[.text "."]) children
     if head == ``SystemAlgebra.RandomSystem.transcriptDistance_le_add_of_ratio_and_transcriptCost then
       let op ← pickMaurerOpener .consequence
       let pArgs ← proofValuedArgs proof
@@ -222,11 +220,9 @@ def hCoefficientExplainer : RuleExplainer where
           children := children.push (.step s!"rc-cost-{idx}"
             (#[.text "Along every possible ideal transcript, the accumulated step cost is bounded by "] ++
              subInl ++ #[.text "."]) sub (some goal))
-      let content : Array Inline :=
+      return ← finish s!"cc-ratiocost-{head}" (fun conclInl =>
         #[.text s!"{op} combining the retained good-mass potential (which bounds the cumulative bad-event loss) with the multiplicative real-to-good probability ratio yields "] ++
-        conclInl ++ #[.text "."]
-      let node ← mkStep ctx s!"cc-ratiocost-{head}" content children expected head
-      return some #[node]
+        conclInl ++ #[.text "."]) children
     return none
 
 initialize

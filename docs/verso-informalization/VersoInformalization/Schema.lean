@@ -36,28 +36,66 @@ instance : FromJson ViewMode where
     | Json.str "auditor" => .ok .auditor
     | other => .error s!"Expected ViewMode ('paper' | 'auditor'), got: {other.compress}"
 
+/-- Epistemic trust level distinguishing kernel-checked terms from authorial intuition glosses. -/
+inductive ProseTrust
+  | kernelFormula
+  | kernelProvedClaim
+  | typedRef
+  | intuitionGloss
+  deriving DecidableEq, Repr, BEq, Inhabited
+
+instance : ToJson ProseTrust where
+  toJson
+    | .kernelFormula => Json.str "kernelFormula"
+    | .kernelProvedClaim => Json.str "kernelProvedClaim"
+    | .typedRef => Json.str "typedRef"
+    | .intuitionGloss => Json.str "intuitionGloss"
+
+instance : FromJson ProseTrust where
+  fromJson?
+    | Json.str "kernelFormula" => .ok .kernelFormula
+    | Json.str "kernelProvedClaim" => .ok .kernelProvedClaim
+    | Json.str "typedRef" => .ok .typedRef
+    | Json.str "intuitionGloss" => .ok .intuitionGloss
+    | other =>
+        .error s!"Expected ProseTrust ('kernelFormula' | 'kernelProvedClaim' | 'typedRef' | 'intuitionGloss'), got: {other.compress}"
+
 /-- Inline content inside a mathematical sentence. -/
 inductive Inline
-  | text (value : String)
-  | emph (value : String)
-  | inlineMath (latex : String)
-  | displayMath (latex : String) (punct : String := ".")
-  | symbol (key : String) (display : String) (isMath : Bool := true)
-  | citation (label : String) (detail : String := "")
+  | text (value : String) (trust? : Option ProseTrust := none)
+  | emph (value : String) (trust? : Option ProseTrust := none)
+  | inlineMath (latex : String) (trust? : Option ProseTrust := none) (dataKey? : Option String := none)
+  | displayMath (latex : String) (punct : String := ".") (trust? : Option ProseTrust := none) (dataKey? : Option String := none)
+  | symbol (key : String) (display : String) (isMath : Bool := true) (trust? : Option ProseTrust := none) (dataKey? : Option String := none)
+  | citation (label : String) (detail : String := "") (trust? : Option ProseTrust := none)
   deriving Repr, BEq, Inhabited
+
+private def withOptTrust (fields : List (String × Json)) (trust? : Option ProseTrust) : List (String × Json) :=
+  match trust? with
+  | some t => fields ++ [("trust", toJson t)]
+  | none => fields
+
+private def withOptDataKey (fields : List (String × Json)) (dataKey? : Option String) : List (String × Json) :=
+  match dataKey? with
+  | some k => fields ++ [("dataKey", toJson k)]
+  | none => fields
 
 instance : ToJson Inline where
   toJson
-    | .text value => Json.mkObj [("text", Json.mkObj [("value", toJson value)])]
-    | .emph value => Json.mkObj [("emph", Json.mkObj [("value", toJson value)])]
-    | .inlineMath latex => Json.mkObj [("inlineMath", Json.mkObj [("latex", toJson latex)])]
-    | .displayMath latex punct =>
-        Json.mkObj [("displayMath", Json.mkObj [("latex", toJson latex), ("punct", toJson punct)])]
-    | .symbol key display isMath =>
-        Json.mkObj [("symbol", Json.mkObj [
-          ("key", toJson key), ("display", toJson display), ("isMath", toJson isMath)])]
-    | .citation label detail =>
-        Json.mkObj [("citation", Json.mkObj [("label", toJson label), ("detail", toJson detail)])]
+    | .text value trust? =>
+        Json.mkObj [("text", Json.mkObj (withOptTrust [("value", toJson value)] trust?))]
+    | .emph value trust? =>
+        Json.mkObj [("emph", Json.mkObj (withOptTrust [("value", toJson value)] trust?))]
+    | .inlineMath latex trust? dataKey? =>
+        Json.mkObj [("inlineMath", Json.mkObj (withOptDataKey (withOptTrust [("latex", toJson latex)] trust?) dataKey?))]
+    | .displayMath latex punct trust? dataKey? =>
+        Json.mkObj [("displayMath", Json.mkObj (withOptDataKey (withOptTrust [("latex", toJson latex), ("punct", toJson punct)] trust?) dataKey?))]
+    | .symbol key display isMath trust? dataKey? =>
+        Json.mkObj [("symbol", Json.mkObj (
+          withOptDataKey (withOptTrust [
+            ("key", toJson key), ("display", toJson display), ("isMath", toJson isMath)] trust?) dataKey?))]
+    | .citation label detail trust? =>
+        Json.mkObj [("citation", Json.mkObj (withOptTrust [("label", toJson label), ("detail", toJson detail)] trust?))]
 
 private def getOptField? [FromJson α] (j : Json) (key : String) : Except String (Option α) :=
   match j.getObjVal? key with
@@ -70,36 +108,57 @@ private def getFieldD [FromJson α] (j : Json) (key : String) (default : α) : E
   | some v => return v
   | none => return default
 
+private def getInlineTrust? (outer inner : Json) : Except String (Option ProseTrust) := do
+  if let some t ← getOptField? inner "trust" then return some t
+  if let some t ← getOptField? inner "proseTrust" then return some t
+  if let some t ← getOptField? outer "trust" then return some t
+  getOptField? outer "proseTrust"
+
+private def getInlineDataKey? (outer inner : Json) : Except String (Option String) := do
+  if let some k ← getOptField? inner "dataKey" then return some k
+  if let some k ← getOptField? inner "data-cadmo-key" then return some k
+  if let some k ← getOptField? outer "dataKey" then return some k
+  getOptField? outer "data-cadmo-key"
+
 instance : FromJson Inline where
   fromJson? j := do
     if let .ok v := j.getObjVal? "text" then
+      let trust? ← getInlineTrust? j v
       match v with
-      | Json.str s => return .text s
-      | _ => return .text (← v.getObjValAs? String "value")
+      | Json.str s => return .text s trust?
+      | _ => return .text (← v.getObjValAs? String "value") trust?
     else if let .ok v := j.getObjVal? "emph" then
+      let trust? ← getInlineTrust? j v
       match v with
-      | Json.str s => return .emph s
-      | _ => return .emph (← v.getObjValAs? String "value")
+      | Json.str s => return .emph s trust?
+      | _ => return .emph (← v.getObjValAs? String "value") trust?
     else if let .ok v := j.getObjVal? "inlineMath" then
+      let trust? ← getInlineTrust? j v
+      let dataKey? ← getInlineDataKey? j v
       match v with
-      | Json.str s => return .inlineMath s
-      | _ => return .inlineMath (← v.getObjValAs? String "latex")
+      | Json.str s => return .inlineMath s trust? dataKey?
+      | _ => return .inlineMath (← v.getObjValAs? String "latex") trust? dataKey?
     else if let .ok v := j.getObjVal? "displayMath" then
+      let trust? ← getInlineTrust? j v
+      let dataKey? ← getInlineDataKey? j v
       match v with
-      | Json.str s => return .displayMath s "."
+      | Json.str s => return .displayMath s "." trust? dataKey?
       | _ =>
           let latex ← v.getObjValAs? String "latex"
           let punct ← getFieldD v "punct" "."
-          return .displayMath latex punct
+          return .displayMath latex punct trust? dataKey?
     else if let .ok v := j.getObjVal? "symbol" then
+      let trust? ← getInlineTrust? j v
+      let dataKey? ← getInlineDataKey? j v
       let key ← v.getObjValAs? String "key"
       let display ← v.getObjValAs? String "display"
       let isMath ← getFieldD v "isMath" true
-      return .symbol key display isMath
+      return .symbol key display isMath trust? dataKey?
     else if let .ok v := j.getObjVal? "citation" then
+      let trust? ← getInlineTrust? j v
       let label ← v.getObjValAs? String "label"
       let detail ← getFieldD v "detail" ""
-      return .citation label detail
+      return .citation label detail trust?
     else
       .error s!"Unrecognized Inline JSON: {j.compress}"
 
@@ -295,6 +354,9 @@ inductive ProofNode
       (originDecl? : Option String := none)
       (isWrapper : Bool := false)
       (defaultExpanded : Bool := false)
+      (startsParagraph : Bool := false)
+      (leadHeading? : Option String := none)
+      (trust? : Option ProseTrust := none)
   | calcChain
       (id : String)
       (intro : Array Inline)
@@ -319,7 +381,8 @@ inductive ProofNode
 
 mutual
   partial def proofNodeToJson : ProofNode → Json
-    | .step id content children goal? diagramHtml? originDecl? isWrapper defaultExpanded =>
+    | .step id content children goal? diagramHtml? originDecl? isWrapper defaultExpanded
+        startsParagraph leadHeading? trust? =>
         Json.mkObj [
           ("kind", "step"),
           ("id", toJson id),
@@ -329,7 +392,10 @@ mutual
           ("diagramHtml", toJson diagramHtml?),
           ("originDecl", toJson originDecl?),
           ("isWrapper", toJson isWrapper),
-          ("defaultExpanded", toJson defaultExpanded)
+          ("defaultExpanded", toJson defaultExpanded),
+          ("startsParagraph", toJson startsParagraph),
+          ("leadHeading", toJson leadHeading?),
+          ("trust", toJson trust?)
         ]
     | .calcChain id intro steps goal? originDecl? =>
         let stepsJson := steps.map fun (s, sub) =>
@@ -382,7 +448,13 @@ mutual
         let originDecl? ← getOptField? j "originDecl"
         let isWrapper ← getFieldD j "isWrapper" false
         let defaultExpanded ← getFieldD j "defaultExpanded" false
+        let startsParagraph ← getFieldD j "startsParagraph" false
+        let leadHeading? ← getOptField? j "leadHeading"
+        let trust? ← match ← getOptField? j "trust" with
+          | some t => pure (some t)
+          | none => getOptField? j "proseTrust"
         return .step id content children goal? diagramHtml? originDecl? isWrapper defaultExpanded
+          startsParagraph leadHeading? trust?
     | "calcChain" =>
         let intro ← getFieldD j "intro" (#[] : Array Inline)
         let rawSteps ← getFieldD j "steps" (#[] : Array Json)

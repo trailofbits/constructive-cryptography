@@ -113,40 +113,162 @@ private def convertScriptGroupsHtml (escaped : String) : String :=
   String.ofList (convertScriptGroupsGo escaped.toList []).reverse
 
 /-- Render a math span (`displayMode = false`) or display block (`displayMode = true`). -/
-def renderMathHtml (latex : String) (displayMode : Bool := false) : String :=
+def renderMathHtml (latex : String) (displayMode : Bool := false) (dataKey? : Option String := none) : String :=
   let cls := if displayMode then "cadmo-display-math" else "cadmo-math"
   let tag := if displayMode then "div" else "span"
   let body := convertScriptGroupsHtml (escapeHtml (prettyFallbackMath latex))
-  s!"<{tag} class=\"{cls}\" data-latex=\"{escapeHtml latex}\">{body}</{tag}>"
+  let keyAttr := match dataKey? with
+    | some k => s!" data-cadmo-key=\"{escapeHtml k}\""
+    | none => ""
+  s!"<{tag} class=\"{cls}\" data-latex=\"{escapeHtml latex}\"{keyAttr}>{body}</{tag}>"
+
+private def trustClassAttr? (mode : ViewMode) : Option ProseTrust → Option (String × String × String)
+  | none => none
+  | some .intuitionGloss =>
+      let title := if mode == .auditor then "Authorial gloss (intuition)" else ""
+      some ("cadmo-trust-gloss", "intuitionGloss", title)
+  | some .kernelFormula =>
+      let title := if mode == .auditor then "Kernel-verified formula" else ""
+      some ("cadmo-trust-kernel", "kernelFormula", title)
+  | some .kernelProvedClaim =>
+      let title := if mode == .auditor then "Kernel-verified claim" else ""
+      some ("cadmo-trust-kernel", "kernelProvedClaim", title)
+  | some .typedRef =>
+      let title := if mode == .auditor then "Kernel-verified typed reference" else ""
+      some ("cadmo-trust-kernel", "typedRef", title)
+
+private def wrapTrustHtml (mode : ViewMode) (trust? : Option ProseTrust) (inner : String) : String :=
+  match trustClassAttr? mode trust? with
+  | none => inner
+  | some (cls, tag, title) =>
+      let titleAttr := if title.isEmpty then "" else s!" title=\"{escapeHtml title}\""
+      s!"<span class=\"{cls}\" data-trust=\"{tag}\"{titleAttr}>{inner}</span>"
 
 /-- Render a single `Inline` element. Underlined `symbol` buttons bind to `SymbolInspector` by key. -/
-def renderInlineHtml (doc : Document) : Inline → String
-  | .text value => escapeHtml value
-  | .emph value => s!"<em>{escapeHtml value}</em>"
-  | .inlineMath latex => renderMathHtml latex false
-  | .displayMath latex punct =>
+def renderInlineHtml (doc : Document) (mode : ViewMode := .paper) : Inline → String
+  | .text value trust? => wrapTrustHtml mode trust? (escapeHtml value)
+  | .emph value trust? => wrapTrustHtml mode trust? s!"<em>{escapeHtml value}</em>"
+  | .inlineMath latex trust? dataKey? =>
+      wrapTrustHtml mode trust? (renderMathHtml latex false dataKey?)
+  | .displayMath latex punct trust? dataKey? =>
       let full := if punct.isEmpty then latex else s!"{latex}\\,{punct}"
-      renderMathHtml full true
-  | .symbol key display isMath =>
-      let titleAttr := match doc.findInspector? key with
+      wrapTrustHtml mode trust? (renderMathHtml full true dataKey?)
+  | .symbol key display isMath trust? dataKey? =>
+      let pinnedKey := dataKey?.getD key
+      let titleAttr := match doc.findInspector? pinnedKey <|> doc.findInspector? key with
         | some _ => s!"Inspect {display}"
         | none => display
-      let inner := if isMath then renderMathHtml display false else escapeHtml display
-      s!"<button type=\"button\" class=\"cadmo-sym\" data-symbol-key=\"{escapeHtml key}\" " ++
+      let inner := if isMath then renderMathHtml display false none else escapeHtml display
+      let trustCls := match trustClassAttr? mode trust? with
+        | some (cls, _, _) => s!" {cls}"
+        | none => ""
+      let trustAttr := match trustClassAttr? mode trust? with
+        | some (_, tag, _) => s!" data-trust=\"{tag}\""
+        | none => ""
+      s!"<button type=\"button\" class=\"cadmo-sym{trustCls}\" data-symbol-key=\"{escapeHtml key}\" " ++
+      s!"data-cadmo-key=\"{escapeHtml pinnedKey}\"{trustAttr} " ++
       s!"aria-pressed=\"false\" title=\"{escapeHtml titleAttr}\">{inner}</button>"
-  | .citation label detail =>
-      s!"<span class=\"cadmo-citation\" title=\"{escapeHtml detail}\">[{escapeHtml label}]</span>"
+  | .citation label detail trust? =>
+      wrapTrustHtml mode trust?
+        s!"<span class=\"cadmo-citation\" title=\"{escapeHtml detail}\">[{escapeHtml label}]</span>"
 
 /-- Render an array of `Inline` elements. -/
-def renderInlinesHtml (doc : Document) (xs : Array Inline) : String :=
-  String.join (xs.toList.map (renderInlineHtml doc))
+def renderInlinesHtml (doc : Document) (xs : Array Inline) (mode : ViewMode := .paper) : String :=
+  String.join (xs.toList.map (renderInlineHtml doc mode))
 
-/-- Render an embedded `Rendering` CC diagram container. -/
+/-- Parse inline/display math delimiters (`$...$`, `\(...\)`) inside prose strings for static HTML. -/
+partial def renderMixedTextHtml (s : String) : String :=
+  let chars := s.toList
+  let arr := chars.toArray
+  let n := arr.size
+  let rec findClose (idx : Nat) (c1 : Char) (c2? : Option Char) (acc : List Char) : Option (String × Nat) :=
+    if h : idx < n then
+      let c := arr[idx]
+      if c == '\\' && idx + 1 < n && c2?.isNone && arr[idx + 1]! == '$' then
+        findClose (idx + 2) c1 c2? ('$' :: '\\' :: acc)
+      else if c2?.isSome && c == c1 && idx + 1 < n && arr[idx + 1]! == c2?.get! then
+        some ((String.ofList acc.reverse).trimAscii.toString, idx + 2)
+      else if c2?.isNone && c == c1 then
+        some ((String.ofList acc.reverse).trimAscii.toString, idx + 1)
+      else
+        findClose (idx + 1) c1 c2? (c :: acc)
+    else none
+  let rec go (i : Nat) (buf : List Char) (out : String) : String :=
+    if h : i < n then
+      let c := arr[i]
+      if c == '\\' && i + 1 < n then
+        let nxt := arr[i + 1]!
+        if nxt == '$' then
+          go (i + 2) ('$' :: buf) out
+        else if nxt == '(' then
+          match findClose (i + 2) '\\' (some ')') [] with
+          | some (m, j) => go j [] (out ++ escapeHtml (String.ofList buf.reverse) ++ renderMathHtml m false)
+          | none => go (i + 1) (c :: buf) out
+        else
+          go (i + 1) (c :: buf) out
+      else if c == '$' then
+        if i + 1 < n && arr[i + 1]! == '$' then
+          match findClose (i + 2) '$' (some '$') [] with
+          | some (m, j) => go j [] (out ++ escapeHtml (String.ofList buf.reverse) ++ renderMathHtml m true)
+          | none => go (i + 1) (c :: buf) out
+        else
+          match findClose (i + 1) '$' none [] with
+          | some (m, j) => go j [] (out ++ escapeHtml (String.ofList buf.reverse) ++ renderMathHtml m false)
+          | none => go (i + 1) (c :: buf) out
+      else
+        go (i + 1) (c :: buf) out
+    else
+      out ++ escapeHtml (String.ofList buf.reverse)
+  go 0 [] ""
+
+private def matchesSubArray (arr : Array Char) (idx : Nat) (pat : Array Char) : Bool :=
+  if idx + pat.size > arr.size then false
+  else Id.run do
+    for k in [:pat.size] do
+      if arr[idx + k]! != pat[k]! then
+        return false
+    return true
+
+/-- Strip any residual `<style>...</style>` blocks defensively from embedded diagram HTML. -/
+def stripEmbeddedStyles (s : String) : String :=
+  let arr := s.toList.toArray
+  let lowerArr := arr.map Char.toLower
+  let openPat := "<style".toList.toArray
+  let closePat := "</style>".toList.toArray
+  let n := arr.size
+  Id.run do
+    let mut i := 0
+    let mut out : List Char := []
+    while i < n do
+      if matchesSubArray lowerArr i openPat then
+        let nextIdx := i + openPat.size
+        let isStyleTag :=
+          nextIdx >= n ||
+          lowerArr[nextIdx]! == '>' ||
+          lowerArr[nextIdx]!.isWhitespace
+        if isStyleTag then
+          let mut j := nextIdx
+          let mut foundClose := false
+          while j + closePat.size <= n do
+            if matchesSubArray lowerArr j closePat then
+              i := j + closePat.size
+              foundClose := true
+              break
+            j := j + 1
+          if !foundClose then
+            break
+          continue
+      out := arr[i]! :: out
+      i := i + 1
+    return String.ofList out.reverse
+
+/-- Render an embedded `Rendering` CC diagram container (stripping any residual `<style>` tags). -/
 def renderDiagramFigureHtml (html : String) (caption? : Option String := none) : String :=
+  let cleanHtml := stripEmbeddedStyles html
   let cap := match caption? with
     | some c => s!"<figcaption class=\"cadmo-figure-caption\">{c}</figcaption>"
     | none => ""
-  s!"<figure class=\"cadmo-figure\"><div>{html}</div>{cap}</figure>"
+  s!"<figure class=\"cadmo-figure\"><div>{cleanHtml}</div>{cap}</figure>"
 
 /-- Render a Kyle Miller `GoalState` card (hygienized context + target). -/
 def renderGoalStateCardHtml (goal : GoalState) (label : String := "Proof step") : String :=
@@ -246,7 +368,7 @@ partial def projectNodes (mode : ViewMode) (nodes : Array ProofNode) : Array Pro
   | .paper =>
       nodes.foldl (init := #[]) fun acc n =>
         match n with
-        | .step _ _ children _ _ _ true _ =>
+        | .step _ _ children _ _ _ true _ _ _ _ =>
             if children.isEmpty then acc
             else acc ++ projectNodes mode children
         | _ => acc.push n
@@ -265,13 +387,19 @@ def visibleChildren (mode : ViewMode) (nodes : Array ProofNode) : Array ProofNod
         | _ => vis
       else vis
 
-/-- Render a recursive `ProofNode` in ETH CADMO style with quiet `⊕`/`⊖` disclosure controls. -/
+/-- Render a proof node in ETH CADMO style with quiet `⊕`/`⊖` disclosure controls. -/
 partial def renderProofNodeHtml (doc : Document) (mode : ViewMode := .paper) : ProofNode → String
-  | .flowNote id text _ =>
-      s!"<aside class=\"cadmo-flow-note\" data-node-id=\"{escapeHtml id}\">" ++
-      s!"<span class=\"cadmo-flow-badge\">Note</span>{escapeHtml text}</aside>"
+  | .flowNote id text placement =>
+      if placement == "paragraph" then
+        if text.isEmpty then
+          s!"<div class=\"cadmo-para-break\" data-node-id=\"{escapeHtml id}\"></div>"
+        else
+          s!"<p class=\"cadmo-proof-para\" data-node-id=\"{escapeHtml id}\"><span class=\"cadmo-para-heading\">{renderMixedTextHtml text}</span></p>"
+      else
+        s!"<aside class=\"cadmo-flow-note\" data-node-id=\"{escapeHtml id}\">" ++
+        s!"<span class=\"cadmo-flow-badge\">Note</span>{renderMixedTextHtml text}</aside>"
   | .figure id caption html =>
-      let cap? := if caption.isEmpty then none else some (renderInlinesHtml doc caption)
+      let cap? := if caption.isEmpty then none else some (renderInlinesHtml doc caption mode)
       s!"<div data-node-id=\"{escapeHtml id}\">{renderDiagramFigureHtml html cap?}</div>"
   | .routineReceipt id summary stepCount details _ =>
       let projected := visibleChildren mode details
@@ -293,7 +421,7 @@ partial def renderProofNodeHtml (doc : Document) (mode : ViewMode := .paper) : P
   | .calcChain id intro steps _ _ =>
       let introHtml :=
         if intro.isEmpty then ""
-        else s!"<p class=\"cadmo-calc-intro\">{renderInlinesHtml doc intro}</p>"
+        else s!"<p class=\"cadmo-calc-intro\">{renderInlinesHtml doc intro mode}</p>"
       let rows := String.join <| (steps.toList.zipIdx).map fun (((st : CalcStep), ch), idx) =>
         let projected := visibleChildren mode ch
         let sid := s!"{id}-s{idx}"
@@ -307,7 +435,7 @@ partial def renderProofNodeHtml (doc : Document) (mode : ViewMode := .paper) : P
           s!"<tr><td class=\"cadmo-calc-lhs\">{lhs}</td>" ++
           s!"<td class=\"cadmo-calc-rel\">{renderMathHtml st.relationLatex false}</td>" ++
           s!"<td class=\"cadmo-calc-rhs\">{renderMathHtml st.rhsLatex false}</td>" ++
-          s!"<td class=\"cadmo-calc-reason\">{toggle}{renderInlinesHtml doc st.reason}</td></tr>"
+          s!"<td class=\"cadmo-calc-reason\">{toggle}{renderInlinesHtml doc st.reason mode}</td></tr>"
         let expandRow :=
           if projected.isEmpty then ""
           else
@@ -320,7 +448,8 @@ partial def renderProofNodeHtml (doc : Document) (mode : ViewMode := .paper) : P
         mainRow ++ expandRow
       s!"<div class=\"cadmo-calc\" data-node-id=\"{escapeHtml id}\">{introHtml}" ++
       s!"<table class=\"cadmo-calc-table\"><tbody>{rows}</tbody></table></div>"
-  | .step id content children goal? diagramHtml? originDecl? isWrapper defaultExpanded =>
+  | .step id content children goal? diagramHtml? originDecl? isWrapper defaultExpanded
+      startsParagraph leadHeading? trust? =>
       let projected := visibleChildren mode children
       let hasChildren := !projected.isEmpty
       let expandedAttr := if defaultExpanded then "true" else "false"
@@ -348,10 +477,27 @@ partial def renderProofNodeHtml (doc : Document) (mode : ViewMode := .paper) : P
           let inner := String.join (projected.toList.map (renderProofNodeHtml doc mode))
           s!"<div class=\"cadmo-children cadmo-expanded-children\" id=\"children-{escapeHtml id}\"{hiddenAttr}>{inner}</div>"
         else ""
-      let cls := if isWrapper then "cadmo-node is-wrapper" else "cadmo-node"
-      s!"<div class=\"{cls}\" data-node-id=\"{escapeHtml id}\">" ++
+      let paraBreak := if startsParagraph then "<div class=\"cadmo-para-break\"></div>" else ""
+      let leadHeadHtml := match leadHeading? with
+        | some hd =>
+            let trimmed := hd.trimAscii.toString
+            if trimmed.isEmpty then ""
+            else s!"<span class=\"cadmo-para-heading\">{renderMixedTextHtml (trimmed ++ " ")}</span>"
+        | none => ""
+      let trustCls := match trustClassAttr? mode trust? with
+        | some (c, _, _) => s!" {c}"
+        | none => ""
+      let trustAttr := match trustClassAttr? mode trust? with
+        | some (_, tag, tTitle) =>
+            let tAttr := if tTitle.isEmpty then "" else s!" title=\"{escapeHtml tTitle}\""
+            s!" data-trust=\"{tag}\"{tAttr}"
+        | none => ""
+      let trustBadge :=
+        if trust? == some .intuitionGloss then "<span class=\"cadmo-trust-badge\">[gloss]</span>" else ""
+      let cls := (if isWrapper then "cadmo-node is-wrapper" else "cadmo-node") ++ trustCls
+      s!"{paraBreak}<div class=\"{cls}\" data-node-id=\"{escapeHtml id}\"{trustAttr}>" ++
       s!"<div class=\"cadmo-node-row\">{toggle}" ++
-      s!"<div class=\"cadmo-node-body\">{renderInlinesHtml doc content}{wrapperTag}{originTag}{goalBtn}</div>" ++
+      s!"<div class=\"cadmo-node-body\">{leadHeadHtml}{renderInlinesHtml doc content mode}{trustBadge}{wrapperTag}{originTag}{goalBtn}</div>" ++
       s!"</div>{diagHtml}{childrenHtml}</div>"
 
 /-- Render one `Entry` (Theorem, Lemma, Proposition, Definition) in ETH CADMO style. -/
@@ -365,11 +511,19 @@ def renderEntryHtml (doc : Document) (entry : Entry) (mode : ViewMode := .paper)
     else s!"✓ {entry.axioms.axioms.size} axioms"
   let ambientHtml := match entry.ambient? with
     | some amb =>
-        s!"<div class=\"cadmo-ambient\"><span class=\"cadmo-ambient-label\">Setting.</span>" ++
-        s!"{renderInlinesHtml doc amb.summary}</div>"
+        let rawTxt := String.join (amb.summary.toList.map fun (inl : Schema.Inline) =>
+          match inl with
+          | .text s _ | .emph s _ => s
+          | .inlineMath s _ _ | .displayMath s _ _ _ => s
+          | .symbol _ d _ _ _ => d
+          | .citation l _ _ => l)
+        if (rawTxt.splitOn "We work in the Constructive Cryptography framework").length > 1 then ""
+        else
+          s!"<div class=\"cadmo-ambient\"><span class=\"cadmo-ambient-label\">Setting.</span>" ++
+          s!"{renderInlinesHtml doc amb.summary mode}</div>"
     | none => ""
   let statementHtml := String.join <| entry.statement.toList.map fun para =>
-    s!"<p>{renderInlinesHtml doc para}</p>"
+    s!"<p>{renderInlinesHtml doc para mode}</p>"
   let diagramHtml := match entry.diagramHtml? with
     | some d => renderDiagramFigureHtml d
     | none => ""
@@ -389,7 +543,7 @@ def renderEntryHtml (doc : Document) (entry : Entry) (mode : ViewMode := .paper)
         let secCtx := match entry.sectionContext? with
           | some sc =>
               let paras := String.join <| sc.paragraphs.toList.map fun p =>
-                s!"<p>{renderInlinesHtml doc p}</p>"
+                s!"<p>{renderInlinesHtml doc p mode}</p>"
               s!"<div class=\"cadmo-section-context\" id=\"{escapeHtml sc.sectionId}-context\">" ++
               s!"<span class=\"cadmo-section-context-label\">Section Context.</span>{paras}</div>"
           | none => ""
