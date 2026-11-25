@@ -1713,7 +1713,8 @@ lemma unsetMBOs_belief_le_visible {A : Interface} {S : Type}
     · rw [ite_eq_left (hadm_iff.mpr hadm), ite_eq_left hadm]
       constructor
       · intro sb hsb
-        obtain ⟨sb₀, _, hout⟩ := ProbStep.mem_support_transition step ⟨o, u⟩ (tagMBO false ⟨o', v⟩) hsb
+        obtain ⟨sb₀, _, hout⟩ :=
+          ProbStep.mem_support_transition step ⟨o, u⟩ (tagMBO false ⟨o', v⟩) hsb
         obtain ⟨q, hq, htag⟩ := mem_support_fTransform _ _ hout
         have hsbeq : q.1 = sb := congrArg Prod.fst htag
         have hzeq : (⟨o, q.2⟩ : Σ i, withMBO A.Y i) = tagMBO false ⟨o', v⟩ := congrArg Prod.snd htag
@@ -1745,7 +1746,7 @@ lemma unsetMBOs_belief_le_visible {A : Interface} {S : Type}
       exact ⟨fun _ h => False.elim (Finset.notMem_empty _ h), fun _ => le_rfl⟩
 
 omit [Fintype M] [DecidableEq M] in
-/-- For any `TypedGame.ofProbAutomaton`, the total one-step MBO-set mass equals the expectation under
+/-- For `TypedGame.ofProbAutomaton`, the one-step MBO-set mass equals the expectation under
 the unset-MBO belief of the per-state probability that the next step emits MBO bit `true`. -/
 lemma ofProbAutomatonGame_sum_tagMBO_true {A : Interface} {S : Type}
     (step : ProbStep (S × Bool) A.I A.X (withMBO A.Y)) (init : ProbDist S)
@@ -1834,7 +1835,7 @@ lemma ofProbAutomatonGame_sum_tagMBO_true {A : Interface} {S : Type}
   exact hfib
 
 omit [DecidableEq M] in
-/-- Dropping the MBO flag from `ProbStep.forgetMBO idealSpongeGameStep` yields `idealPathVisStep`. -/
+/-- Dropping the state bit from the visible ideal game yields `idealPathVisStep`. -/
 lemma forgetMBOStep_idealSpongeGameStep {encode : M → List (BitVec 8)} {w : ℕ}
     (spec : HonestWorkSpec p M encode w) (q_pub : ℕ)
     (s : (M → ByteState p.outputBytes) ×
@@ -1941,7 +1942,8 @@ lemma idealGhost_belief_rel (hp : p.Valid) {encode : M → List (BitVec 8)}
       List (PermutationEdge (ByteState p.stateBytes)) ×
       List (List (ByteState p.rateBytes) × ByteState p.stateBytes)) × Bool))
       (xq : Σ o, A.X o) (yq : Σ o, A.Y o),
-      fTransform Prod.fst ((ProbStep.forgetMBO (idealSpongeGameStep p M spec q_pub)).transition μ xq yq)
+      fTransform Prod.fst
+        ((ProbStep.forgetMBO (idealSpongeGameStep p M spec q_pub)).transition μ xq yq)
         =
         (idealPathVisStep p M spec q_pub).transition (fTransform Prod.fst μ) xq yq := by
     intro μ ⟨o, u⟩ yq
