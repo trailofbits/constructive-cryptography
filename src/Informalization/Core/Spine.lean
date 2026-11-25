@@ -57,7 +57,7 @@ structure SpineSpanInfo where
 
 /-! ## 2. Kernel-Transparent Spine Combinators (Zero Trust Expansion) -/
 
-/-- Structural kind of a kernel-embedded Spine proof step (12 canonical node constructors). -/
+/-- Structural kind of a kernel-embedded Spine proof step (13 canonical node constructors). -/
 inductive SpineTag : Type
   | overview
   | setupEntity
@@ -71,6 +71,7 @@ inductive SpineTag : Type
   | sufficesStep
   | concludeStep
   | ccSpineLeaf
+  | pseudocodeBox
   deriving DecidableEq, Repr, Inhabited
 
 universe u
@@ -142,6 +143,7 @@ private def decodeSpineTag? (e : Expr) : Option SpineTag :=
   | .const ``SpineTag.sufficesStep _ => some .sufficesStep
   | .const ``SpineTag.concludeStep _ => some .concludeStep
   | .const ``SpineTag.ccSpineLeaf _ => some .ccSpineLeaf
+  | .const ``SpineTag.pseudocodeBox _ => some .pseudocodeBox
   | _ => none
 
 private def decodeProseTrust? (s : String) : Option ProseTrust :=
@@ -641,6 +643,26 @@ partial def extractSpineNode :
         let (content, inlineMeta) := appendPeriodClean inls im
         return some #[.step nodeId content children (some goal)
           none none false false startsPara leadHead? (nodeTrust? <|> some .kernelProvedClaim) inlineMeta]
+
+    | .pseudocodeBox =>
+        let boxKind :=
+          let k := leadHeadRaw.trimAscii.toString
+          if k.isEmpty then "algorithm" else k
+        let title := idHint
+        let rawLines := ((tmpl.replace "\r\n" "\n").replace "\r" "\n").splitOn "\n"
+        let mut pLines : Array PseudocodeLine := #[]
+        for rawLine in rawLines do
+          let chars := rawLine.toList
+          let leadWs := chars.takeWhile fun c => c == ' ' || c == '\t'
+          let leadSpaces := leadWs.foldl (init := 0) fun acc c => acc + (if c == '\t' then 2 else 1)
+          let trimmed := rawLine.trimAscii.toString
+          if !trimmed.isEmpty then
+            let (lineInls, _) ← renderSpineTemplate ctx.tbl trimmed anchors
+            pLines := pLines.push { indent := leadSpaces / 2, inlines := lineInls }
+        let pboxId := s!"pbox-{ctx.factIndex}-{title.hash}"
+        let boxNode : ProofNode := .pseudocodeBox pboxId title boxKind pLines (some goal) none
+        let rest ← decompileChild { ctx with isProofStart := false } expected inner
+        return some (#[boxNode] ++ rest)
 
   return none
 

@@ -52,7 +52,7 @@ private def mkStep (ctx : DecompCtx) (id : String) (content : Array Inline)
     (children : Array ProofNode) (expected : Expr) (origin : Name) :
     StateRefT DiscourseState MetaM ProofNode := do
   let goal ← buildGoalState ctx.tbl expected
-  let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) expected else pure none
+  let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) ctx.tbl expected else pure none
   return .step id content children (some goal) diagHtml (some origin.toString)
 
 /-- Classification of a single hop extracted from a `cc_calc` hybrid chain. -/
@@ -374,7 +374,7 @@ def ccCalcChainExplainer : RuleExplainer where
             let n ← renderHypothesisStep ctx.tbl hop.prop fvid s!"calc-hyp-{fvid.name}-{hop.prop.hash}" (isWrap := true)
             pure #[n]
         | none => decompileChild subCtx hop.prop hop.proof
-      let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) hop.prop else pure none
+      let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) ctx.tbl hop.prop else pure none
       let cs : CalcStep := {
         lhsLatex := lhsTex
         relationLatex := hop.relLatex

@@ -228,6 +228,32 @@ def inlineToJsonWithMeta (inl : Inline) (trust? : Option ProseTrust := none)
       .obj kvs
   | other => other
 
+/-- One line of an algorithm, hybrid, attack game, or DSL pseudocode block. -/
+structure PseudocodeLine where
+  indent : Nat := 0
+  inlines : Array Inline := #[]
+  deriving Repr, BEq, Inhabited, ToJson
+
+/-- One row in a pre-theorem symbol table or interface specification prelude. -/
+structure PreludeRow where
+  left : Array Inline := #[]
+  right : Array Inline := #[]
+  deriving Repr, BEq, Inhabited, ToJson
+
+/-- First-class pre-theorem exposition block (definition, construction, attack game,
+interface specification, converter definition, or symbol table) rendered before a theorem. -/
+structure PreludeBlock where
+  id : String
+  kind : String -- "definition" | "construction" | "attackGame" | "interfaceSpec" | "converterDef" | "symbolTable"
+  label : String := ""
+  title : String := ""
+  body : Array (Array Inline) := #[]
+  lines : Array PseudocodeLine := #[]
+  rows : Array PreludeRow := #[]
+  declKey? : Option String := none
+  diagramHtml? : Option String := none
+  deriving Repr, BEq, Inhabited, ToJson
+
 /-- A node in the single unified recursive proof tree. -/
 inductive ProofNode
   /-- A checked mathematical claim/step; clicking `⊕` expands `children`. -/
@@ -268,6 +294,14 @@ inductive ProofNode
       (id : String)
       (caption : Array Inline)
       (html : String)
+  /-- A structured inline algorithm, hybrid, reduction, attack-game, or distinguisher pseudocode box. -/
+  | pseudocodeBox
+      (id : String)
+      (title : String)
+      (boxKind : String := "algorithm") -- "attackGame" | "hybrid" | "reduction" | "distinguisher" | "algorithm"
+      (lines : Array PseudocodeLine)
+      (goal? : Option GoalState := none)
+      (originDecl? : Option String := none)
   deriving Repr, BEq, Inhabited
 
 mutual
@@ -335,6 +369,16 @@ mutual
           ("caption", toJson caption),
           ("html", toJson html)
         ]
+    | .pseudocodeBox id title boxKind lines goal? originDecl? =>
+        Json.mkObj [
+          ("kind", "pseudocodeBox"),
+          ("id", toJson id),
+          ("title", toJson title),
+          ("boxKind", toJson boxKind),
+          ("lines", toJson lines),
+          ("goal", toJson goal?),
+          ("originDecl", toJson originDecl?)
+        ]
 end
 
 instance : ToJson ProofNode := ⟨proofNodeToJson⟩
@@ -368,6 +412,7 @@ structure Entry where
   sectionIntro? : Option String := none
   sectionContext? : Option SectionContext := none
   sectionId? : Option String := none
+  sectionPreludes : Array PreludeBlock := #[]
   ambient? : Option AmbientSetting := none
   statement : Array (Array Inline) -- paragraphs of the formal statement
   localInspectors : Array SymbolInspector := #[]
@@ -409,5 +454,11 @@ partial def ProofNode.collectAllText (n : ProofNode) : Array String :=
       #[summary] ++ details.flatMap ProofNode.collectAllText
   | .flowNote _ text _ => #[text]
   | .figure _ caption _ => inlineText caption
+  | .pseudocodeBox _ title _ lines goal? _ =>
+      let lTxt := lines.flatMap fun l => inlineText l.inlines
+      let g := match goal? with
+        | some gs => #[gs.targetLatex] ++ gs.context.map (·.description)
+        | none => #[]
+      #[title] ++ lTxt ++ g
 
 end Informalization.Core.Explanation

@@ -95,6 +95,19 @@ private partial def renderProofNodeHtml : ProofNode → Html
         ]
   | .figure _ cap _ =>
       .element "div" #[("className", "cadmo-iv-note")] (renderInlinesHtml cap)
+  | .pseudocodeBox _ title boxKind lines goal? _ =>
+      let lineEls := lines.map fun ln =>
+        let padPx := ln.indent * 16
+        .element "div"
+          #[("className", "cadmo-iv-pbox-line"), ("style", s!"padding-left: {padPx}px;")]
+          (renderInlinesHtml ln.inlines)
+      let extra := match goal? with | some g => #[renderGoalHtml g] | none => #[]
+      .element "div" #[("className", "cadmo-iv-pbox")] (
+        #[.element "div" #[("className", "cadmo-iv-pbox-head")] #[
+          .element "strong" #[] #[.text (title ++ " ")],
+          .element "span" #[("className", "cadmo-iv-pbox-kind")] #[.text s!"[{boxKind}]"]
+        ]] ++ lineEls ++ extra
+      )
   | .routineReceipt _ summary count _ goal? =>
       let extra := match goal? with | some g => #[renderGoalHtml g] | none => #[]
       .element "div" #[("className", "cadmo-iv-routine")] (
@@ -151,7 +164,14 @@ private def infoviewCss : String :=
   ".cadmo-iv-display { text-align: center; margin: 6px 0; font-style: italic; }\n" ++
   ".cadmo-iv-goal { display: inline-block; margin-left: 6px; font-size: 0.82em; opacity: 0.8; }\n" ++
   ".cadmo-iv-goal-body { padding: 4px 8px; border-left: 2px solid #2b6cb0; margin-top: 4px; }\n" ++
-  ".cadmo-iv-calc-line { font-family: inherit; margin: 2px 0; }\n"
+  ".cadmo-iv-calc-line { font-family: inherit; margin: 2px 0; }\n" ++
+  ".cadmo-iv-pbox { border: 1px solid rgba(128,128,128,0.45); padding: 6px 10px; margin: 8px 0; border-radius: 3px; }\n" ++
+  ".cadmo-iv-pbox-head { margin-bottom: 4px; }\n" ++
+  ".cadmo-iv-pbox-kind { font-size: 0.8em; opacity: 0.75; }\n" ++
+  ".cadmo-iv-pbox-line { margin: 2px 0; }\n" ++
+  ".cadmo-iv-prelude { border-left: 3px solid #6b7280; padding: 6px 10px; margin: 8px 0; }\n" ++
+  ".cadmo-iv-prelude-table { border-collapse: collapse; margin-top: 4px; }\n" ++
+  ".cadmo-iv-prelude-table td { padding: 2px 8px; border-bottom: 1px solid rgba(128,128,128,0.25); }\n"
 
 /-- Convert a canonical `Document` into `ProofWidgets.Html` for live Infoview display. -/
 def renderDocumentInfoview (doc : Document) : Html :=
@@ -164,6 +184,30 @@ def renderDocumentInfoview (doc : Document) : Html :=
           let secParas := sc.paragraphs.map fun p => .element "p" #[] (renderInlinesHtml p)
           #[.element "div" #[("className", "cadmo-iv-ambient")] secParas]
       | none => #[]
+    let preludeEls := e.sectionPreludes.map fun pb =>
+      let headTxt :=
+        if !pb.label.isEmpty && !pb.title.isEmpty then s!"{pb.label} ({pb.title})."
+        else if !pb.label.isEmpty then s!"{pb.label}."
+        else if !pb.title.isEmpty then s!"{pb.title}."
+        else pb.kind
+      let bodyEls := pb.body.map fun p => .element "p" #[] (renderInlinesHtml p)
+      let lineEls := pb.lines.map fun ln =>
+        let padPx := ln.indent * 16
+        .element "div"
+          #[("className", "cadmo-iv-pbox-line"), ("style", s!"padding-left: {padPx}px;")]
+          (renderInlinesHtml ln.inlines)
+      let rowEls :=
+        if pb.rows.isEmpty then #[]
+        else
+          #[.element "table" #[("className", "cadmo-iv-prelude-table")] (pb.rows.map fun r =>
+            .element "tr" #[] #[
+              .element "td" #[] (renderInlinesHtml r.left),
+              .element "td" #[] (renderInlinesHtml r.right)
+            ])]
+      .element "div" #[("className", "cadmo-iv-prelude")] (
+        #[.element "div" #[("className", "cadmo-iv-pbox-head")] #[.element "strong" #[] #[.text headTxt]]] ++
+        bodyEls ++ lineEls ++ rowEls
+      )
     let ambientEl := match e.ambient? with
       | some amb =>
           let rawTxt := String.join (amb.summary.toList.map (·.collectText))
@@ -182,6 +226,7 @@ def renderDocumentInfoview (doc : Document) : Html :=
     .element "section" #[] (
       #[.element "div" #[("className", "cadmo-iv-head")] #[.text titleStr]] ++
       sectionCtxEl ++
+      preludeEls ++
       ambientEl ++
       #[.element "div" #[("className", "cadmo-iv-stmt")] stmtEls] ++
       proofEls

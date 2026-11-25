@@ -68,7 +68,7 @@ private def mkFamilyStep (ctx : DecompCtx) (id : String) (content : Array Inline
     (children : Array ProofNode) (expected : Expr) (origin : Name) :
     StateRefT DiscourseState MetaM ProofNode := do
   let goal ← buildGoalState ctx.tbl expected
-  let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) expected else pure none
+  let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) ctx.tbl expected else pure none
   return .step id content children (some goal) diagHtml (some origin.toString)
 
 /-- Explainer for serial, parallel, and context-insensitive CC construction steps. -/

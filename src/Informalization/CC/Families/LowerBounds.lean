@@ -49,7 +49,7 @@ private def mkStep (ctx : DecompCtx) (id : String) (content : Array Inline)
     (children : Array ProofNode) (expected : Expr) (origin : Name) :
     StateRefT DiscourseState MetaM ProofNode := do
   let goal ← buildGoalState ctx.tbl expected
-  let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) expected else pure none
+  let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) ctx.tbl expected else pure none
   return .step id content children (some goal) diagHtml (some origin.toString)
 
 /-- Check if `e` is a `≤` comparison whose left or right side is a CC distinguishing advantage or distance. -/
@@ -159,7 +159,7 @@ def impossibilityObstructionExplainer : RuleExplainer where
             #[.text s!"{op} suppose toward a contradiction that an admitted construction existed; deriving a contradiction establishes the impossibility "] ++
             conclInl ++ #[.text "."]
           let goal ← buildGoalState ctx.tbl expected
-          let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) expected else pure none
+          let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) ctx.tbl expected else pure none
           return some #[.step "cc-unconstructible-contra" content children (some goal) diagHtml]
       return none
     let finish (id : String) (mkMsg : Array Inline → Array Inline)

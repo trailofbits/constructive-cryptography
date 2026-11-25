@@ -71,6 +71,9 @@ inductive DeclRole where
   | conditional (leftFromEnd rightFromEnd : Nat)
   | construction (realFromEnd converterFromEnd idealFromEnd : Nat)
   | constructionWithin (realFromEnd converterFromEnd idealFromEnd errorFromEnd : Nat)
+  | substitution (leftFromEnd rightFromEnd errorFromEnd : Nat) (symbol : String)
+  | whiskerRight (convFromEnd ifaceFromEnd : Nat)
+  | whiskerLeft (ifaceFromEnd convFromEnd : Nat)
   | resourceType (interfaceFromEnd : Nat)
   | resourceFamily (categoryFromEnd familyFromEnd : Nat)
   | specificationType (interfaceFromEnd : Nat)
@@ -102,6 +105,8 @@ def DeclRole.indices : DeclRole → List Nat
   | .interfaceTensor a b | .resourceFamily a b => [a, b]
   | .attachment a b c | .construction a b c | .arrowType a b c => [a, b, c]
   | .constructionWithin a b c d => [a, b, c, d]
+  | .substitution a b c _ => [a, b, c]
+  | .whiskerRight a b | .whiskerLeft a b => [a, b]
   | .transparent a | .winning a _ | .resourceType a | .specificationType a => [a]
   | .action | .interfaceConstructor | .identity => []
 
@@ -200,6 +205,7 @@ elab_rules : command
         throwError "cc_diagram: no semantic rule registered for {n.getId}"
 
 def declRole? (e : Expr) : CoreM (Option DeclRole) := do
+  let e := e.consumeMData
   let .const head _ := e.getAppFn | return none
   let some info := (← getEnv).find? head | return none
   unless e.getAppNumArgs == info.type.getForallArity do return none
@@ -283,6 +289,12 @@ elab "cc_diagram_action " n:ident : command =>
   registerRole n .action
 elab "cc_diagram_construction_within " n:ident r:num c:num s:num e:num : command =>
   registerRole n (.constructionWithin r.getNat c.getNat s.getNat e.getNat)
+elab "cc_diagram_substitution " n:ident l:num r:num e:num s:str : command =>
+  registerRole n (.substitution l.getNat r.getNat e.getNat s.getString)
+elab "cc_diagram_whisker_right " n:ident c:num i:num : command =>
+  registerRole n (.whiskerRight c.getNat i.getNat)
+elab "cc_diagram_whisker_left " n:ident i:num c:num : command =>
+  registerRole n (.whiskerLeft i.getNat c.getNat)
 
 /-! ## Lossless view model -/
 
@@ -406,10 +418,373 @@ structure JudgmentView where
 
 /-! ## Expression projection -/
 
+/-- Scoped Unicode alias overrides threaded by `Informalization` diagram export while leaving
+interactive Lean Infoview behavior (`active := false`) 100% unchanged. -/
+structure DiagramAliases where
+  active : Bool := false
+  constAliases : NameMap String := {}
+  shortAliases : NameMap String := {}
+  binderAliases : Std.HashMap String String := {}
+  exprAliases : Array (Expr × String) := #[]
+  hiddenArgs : NameMap (List Nat) := {}
+  zeroArgConsts : NameSet := {}
+  constTemplates : NameMap String := {}
+  deriving Inhabited
+
+initialize diagramAliasesRef : IO.Ref DiagramAliases ← IO.mkRef {}
+
+def withDiagramAliases {α : Type} (aliases : DiagramAliases) (x : MetaM α) : MetaM α := do
+  let saved ← diagramAliasesRef.get
+  diagramAliasesRef.set aliases
+  try x
+  finally diagramAliasesRef.set saved
+
+private def diagramLeakPrefixes : List String := [
+  "CategoryTheory.MonoidalCategoryStruct.",
+  "CategoryTheory.CategoryStruct.",
+  "CategoryTheory.",
+  "ConstructiveCryptography.CryptographicAlgebra.Specification.",
+  "ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.",
+  "ConstructiveCryptography.CryptographicAlgebra.DistinctionGames.",
+  "ConstructiveCryptography.CryptographicAlgebra.",
+  "ConstructiveCryptography.SubstitutionRelation.",
+  "ConstructiveCryptography.Specification.",
+  "ConstructiveCryptography.",
+  "SystemAlgebra.Interface.",
+  "SystemAlgebra.DSL.",
+  "SystemAlgebra.",
+  "SequenceHash.SpongeTranscript.",
+  "SequenceHash.Implementation.",
+  "SequenceHash.",
+  "AuthenticatedEncryption.",
+  "Examples.PRGLengthExtension.",
+  "RandomSystems.Typed.",
+  "RandomSystems.",
+  "Probability.Distribution.",
+  "Probability.",
+  "Commons.Indifferentiability.",
+  "Commons."
+]
+
+private def sanitizeDiagramText (s : String) : String := Id.run do
+  let mut out := s
+  for pfx in diagramLeakPrefixes do
+    out := out.replace pfx ""
+  return out
+
+private def cleanDiagramBinder (n : Name) : String :=
+  let base := n.eraseMacroScopes.getString!
+  let cleaned := base.replace "✝" ""
+  if cleaned.isEmpty then "x" else cleaned
+
+private def shortDiagramConst (n : Name) : String := Id.run do
+  let rec dropSuffixes : Name → Name
+    | .str p "perPort" => dropSuffixes p
+    | .str p "system" => dropSuffixes p
+    | other => other
+  let n' := dropSuffixes n
+  match n' with
+  | .str p s =>
+    if (s == "Ideal" || s == "Real" || s == "Secure" || s == "INDCCA" ||
+        s == "INTPTXT" || s == "INTCTXT" || s == "Security" || s == "specification" ||
+        s == "leftContext" || s == "rightContext") && p != .anonymous then
+      let ps := p.getString!
+      if ps.isEmpty || ps == "Commons" || ps == "ConstructiveCryptography" then s
+      else s!"{ps}.{s}"
+    else s
+  | _ => sanitizeDiagramText n'.toString
+
+private def isDiagramPropOrTypeclass (dom : Expr) : MetaM Bool := do
+  if !dom.hasLooseBVars then
+    if ← (try isProp dom catch _ => pure false) then return true
+  let fn := dom.consumeMData.getAppFn.consumeMData
+  if let .const n _ := fn then
+    let env ← getEnv
+    if Lean.isClass env n then return true
+    let s := n.toString
+    if s == "ConstructiveCryptography.ResourceTheory" ||
+       s == "ConstructiveCryptography.CompatiblePseudoMetric" ||
+       s == "ConstructiveCryptography.AdmissibleDistinguishers" ||
+       s == "ConstructiveCryptography.CompatibleDistinguisherClass" ||
+       s == "ConstructiveCryptography.CryptographicAlgebra" then
+      return true
+  return false
+
+private def collectDiagramExplicitArgs (ty : Expr) (args : Array Expr)
+    (hidden : List Nat) : MetaM (Array Expr) := do
+  let mut curTy := ty
+  let mut expIdx := 0
+  let mut out : Array Expr := #[]
+  for arg in args do
+    let f ← match curTy.consumeMData with
+      | x@(.forallE ..) => pure x
+      | other => withTransparency .reducible (whnf other)
+    match f.consumeMData with
+    | .forallE _ dom body bi =>
+      if bi.isExplicit then
+        let skip ← isDiagramPropOrTypeclass dom
+        if !skip then
+          if !hidden.contains expIdx then
+            out := out.push arg
+          expIdx := expIdx + 1
+      curTy := body.instantiate1 arg
+    | _ =>
+      out := out.push arg
+  return out
+
+private partial def diagramExprText (aliases : DiagramAliases) (e : Expr)
+    (depth : Nat := 24) : MetaM String := do
+  if depth == 0 then return "…"
+  let eRaw := e.consumeMData
+  if let some (_, symAlias) := aliases.exprAliases.reverse.find?
+      (fun (pat, _) => pat.consumeMData == eRaw) then
+    return symAlias
+  let recGo : Expr → MetaM String := fun x => diagramExprText aliases x (depth - 1)
+  match eRaw with
+  | .lit (.natVal n) => return toString n
+  | .lit (.strVal s) => return reprStr s
+  | .fvar fid =>
+    let decl ← fid.getDecl
+    let clean := cleanDiagramBinder decl.userName
+    return (aliases.binderAliases.get? clean)
+      |>.orElse (fun _ => aliases.binderAliases.get? decl.userName.toString)
+      |>.getD clean
+  | .bvar i => return s!"x_{i}"
+  | .mvar _ => return "?"
+  | .sort .zero => return "Prop"
+  | .sort _ => return "Type"
+  | .mdata _ inner => diagramExprText aliases inner depth
+  | .letE nm ty val body _ =>
+    if !body.hasLooseBVar 0 then recGo body
+    else
+      let vName := cleanDiagramBinder nm
+      let vStr ← recGo val
+      withLetDecl (Name.mkSimple vName) ty val fun fv => do
+        let bStr ← recGo (body.instantiate1 fv)
+        return s!"({bStr} [where {vName} := {vStr}])"
+  | .lam nm dom body bi =>
+    let freshName := cleanDiagramBinder nm
+    withLocalDecl (Name.mkSimple freshName) bi dom fun fv => do
+      let vText ← recGo fv
+      let bText ← recGo (body.instantiate1 fv)
+      return s!"{vText} ↦ {bText}"
+  | .forallE nm dom body bi =>
+    if ← isDiagramPropOrTypeclass dom then
+      if !body.hasLooseBVar 0 then
+        if ← (try isProp dom catch _ => pure false) then
+          return s!"{← recGo dom} → {← recGo body}"
+        else
+          return ← recGo body
+      else
+        let freshName := cleanDiagramBinder nm
+        withLocalDecl (Name.mkSimple freshName) bi dom fun fv => recGo (body.instantiate1 fv)
+    else if !body.hasLooseBVar 0 then
+      return s!"{← recGo dom} → {← recGo body}"
+    else
+      let freshName := cleanDiagramBinder nm
+      withLocalDecl (Name.mkSimple freshName) bi dom fun fv => do
+        let vText ← recGo fv
+        let dText ← recGo dom
+        let bText ← recGo (body.instantiate1 fv)
+        return s!"∀ ({vText} : {dText}), {bText}"
+  | .proj structName idx s =>
+    if (structName == ``Subtype || structName == ``Fin) && idx == 0 then
+      return ← recGo s
+    let sText ← recGo s
+    if structName == ``Prod || structName == ``PProd || structName == ``Sigma then
+      return s!"{sText}.{idx + 1}"
+    if let some sinfo := getStructureInfo? (← getEnv) structName then
+      if h : idx < sinfo.fieldNames.size then
+        return s!"{sText}.{sinfo.fieldNames[idx].getString!}"
+    return s!"{sText}.{idx}"
+  | .const name _ =>
+    if name == ``Prod.fst || name == ``PProd.fst || name == ``Sigma.fst then return "π₁"
+    if name == ``Prod.snd || name == ``PProd.snd || name == ``Sigma.snd then return "π₂"
+    if name == `CategoryTheory.CategoryStruct.id then return "𝟙"
+    return (aliases.shortAliases.get? name)
+      |>.orElse (fun _ => aliases.constAliases.get? name)
+      |>.getD (shortDiagramConst name)
+  | .app .. =>
+    let fn := eRaw.getAppFn.consumeMData
+    let args := eRaw.getAppArgs
+    if let .const head _ := fn then
+      let headStr := head.toString
+      -- Transparent numeric/set/subtype coercions
+      if head == `Nat.cast || head == `Int.cast || head == ``Coe.coe ||
+         head == `CoeHTCF.coe || head == ``Subtype.val || head == ``Fin.val ||
+         headStr == "NNReal.toENNReal" || headStr == "ENNReal.ofReal" ||
+         headStr == "ENNReal.ofNNReal" || headStr == "ENNReal.coe" ||
+         headStr == "ENNReal.ofNat" || headStr == "Real.toNNReal" then
+        if let some inner := args.back? then
+          return ← recGo inner
+      if headStr == "Singleton.singleton" || headStr == "Set.singleton" then
+        if let some inner := args.back? then
+          return ← recGo inner
+      if head == ``OfNat.ofNat && args.size ≥ 2 then
+        return ← recGo args[1]!
+      -- Relaxation & indifferentiability wrappers
+      if headStr == "DFunLike.coe" && args.size ≥ 6 then
+        let relaxFn := args[4]!.consumeMData
+        let specArg := args[5]!
+        let rfName := relaxFn.getAppFn.consumeMData.constName?.map (·.toString) |>.getD ""
+        if (rfName == "ConstructiveCryptography.CryptographicAlgebra.Specification.epsilonRelaxation" ||
+            rfName == "ConstructiveCryptography.Specification.epsilonRelaxation") &&
+            relaxFn.getAppArgs.size ≥ 1 then
+          return s!"{← recGo specArg}^[{← recGo relaxFn.getAppArgs.back!}]"
+      if headStr == "ConstructiveCryptography.Relaxation.relaxedBy" && args.size ≥ 3 then
+        let specArg := args[args.size - 2]!
+        let relaxFn := args[args.size - 1]!.consumeMData
+        let rfName := relaxFn.getAppFn.consumeMData.constName?.map (·.toString) |>.getD ""
+        if (rfName == "ConstructiveCryptography.CryptographicAlgebra.Specification.epsilonRelaxation" ||
+            rfName == "ConstructiveCryptography.Specification.epsilonRelaxation") &&
+            relaxFn.getAppArgs.size ≥ 1 then
+          return s!"{← recGo specArg}^[{← recGo relaxFn.getAppArgs.back!}]"
+        return s!"{← recGo specArg}^[{← recGo relaxFn}]"
+      if headStr == "ConstructiveCryptography.CryptographicAlgebra.Specification.epsilonRelaxation" ||
+         headStr == "ConstructiveCryptography.Specification.epsilonRelaxation" then
+        if let some err := args.back? then
+          return s!"relax[{← recGo err}]"
+      if headStr == "ConstructiveCryptography.CryptographicAlgebra.Specification.simulatorImage" &&
+         args.size ≥ 2 then
+        return s!"{← recGo args[args.size - 2]!} • {← recGo args[args.size - 1]!}"
+      if headStr == "ConstructiveCryptography.CryptographicAlgebra.Specification.star" &&
+         args.size ≥ 1 then
+        return s!"{← recGo args.back!}*"
+      if headStr == "Commons.Indifferentiability.specification" && args.size ≥ 3 then
+        let idealT ← recGo args[args.size - 3]!
+        let simT ← recGo args[args.size - 2]!
+        let errT ← recGo args[args.size - 1]!
+        return s!"({simT} • {idealT})^[{errT}]"
+      -- Categorical, monoidal, and CC operators
+      if headStr == "CategoryTheory.MonoidalCategoryStruct.whiskerRight" && args.size ≥ 2 then
+        return s!"{← recGo args[args.size - 2]!} ▷ {← recGo args[args.size - 1]!}"
+      if headStr == "CategoryTheory.MonoidalCategoryStruct.whiskerLeft" && args.size ≥ 4 then
+        return s!"{← recGo args[args.size - 4]!} ◁ {← recGo args[args.size - 1]!}"
+      if headStr == "CategoryTheory.MonoidalCategoryStruct.tensorHom" && args.size ≥ 2 then
+        return s!"{← recGo args[args.size - 2]!} ⊗ₘ {← recGo args[args.size - 1]!}"
+      if headStr == "CategoryTheory.MonoidalCategoryStruct.tensorObj" && args.size ≥ 2 then
+        return s!"{← recGo args[args.size - 2]!} ⊗ {← recGo args[args.size - 1]!}"
+      if headStr == "CategoryTheory.CategoryStruct.comp" && args.size ≥ 2 then
+        return s!"{← recGo args[args.size - 2]!} ≫ {← recGo args[args.size - 1]!}"
+      if headStr == "CategoryTheory.CategoryStruct.id" then
+        return "𝟙"
+      if (headStr == "ConstructiveCryptography.CryptographicAlgebra.parallel" ||
+          headStr == "ConstructiveCryptography.CryptographicAlgebra.Specification.parallel") &&
+         args.size ≥ 2 then
+        return s!"{← recGo args[args.size - 2]!} ∥ {← recGo args[args.size - 1]!}"
+      if (head == ``HSMul.hSMul || head == ``SMul.smul ||
+          headStr == "ConstructiveCryptography.ResourceTheory.attach" ||
+          headStr == "ConstructiveCryptography.CryptographicAlgebra.Specification.map") &&
+         args.size ≥ 2 then
+        return s!"{← recGo args[args.size - 2]!} • {← recGo args[args.size - 1]!}"
+      if headStr == "ConstructiveCryptography.CryptographicAlgebra.distance" && args.size ≥ 2 then
+        return s!"Δ({← recGo args[args.size - 2]!}, {← recGo args[args.size - 1]!})"
+      if headStr == "ConstructiveCryptography.CryptographicAlgebra.Specification.Constructs" &&
+         args.size ≥ 3 then
+        return s!"{← recGo args[args.size - 2]!} —[{← recGo args[args.size - 3]!}]→ {← recGo args[args.size - 1]!}"
+      if headStr == "ConstructiveCryptography.CryptographicAlgebra.Specification.ConstructsWithin" &&
+         args.size ≥ 4 then
+        return s!"{← recGo args[args.size - 3]!} —[{← recGo args[args.size - 4]!}; {← recGo args[args.size - 1]!}]→ {← recGo args[args.size - 2]!}"
+      if headStr == "ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin" &&
+         args.size ≥ 3 then
+        return s!"{← recGo args[args.size - 2]!} ≃[{← recGo args[args.size - 3]!}] {← recGo args[args.size - 1]!}"
+      if (headStr == "ConstructiveCryptography.DistinguisherAction.absorb" ||
+          headStr == "SystemAlgebra.TypedDistinguisher.absorb") && args.size ≥ 2 then
+        return s!"{← recGo args[args.size - 2]!}({← recGo args[args.size - 1]!})"
+      if headStr == "SystemAlgebra.TypedConverter.leftContext" && args.size ≥ 2 then
+        return s!"({← recGo args[args.size - 2]!} ∥ 𝟙)"
+      if headStr == "SystemAlgebra.TypedConverter.rightContext" && args.size ≥ 2 then
+        return s!"(𝟙 ∥ {← recGo args[args.size - 1]!})"
+      if headStr == "ConstructiveCryptography.DistinctionGames.visible" && args.size ≥ 1 then
+        return s!"visible({← recGo args.back!})"
+      -- Common arithmetic / relations / types
+      if head == ``Eq && args.size == 3 then
+        return s!"{← recGo args[1]!} = {← recGo args[2]!}"
+      if head == ``LE.le && args.size == 4 then
+        return s!"{← recGo args[2]!} ≤ {← recGo args[3]!}"
+      if head == ``LT.lt && args.size == 4 then
+        return s!"{← recGo args[2]!} < {← recGo args[3]!}"
+      if head == ``GE.ge && args.size == 4 then
+        return s!"{← recGo args[2]!} ≥ {← recGo args[3]!}"
+      if head == ``GT.gt && args.size == 4 then
+        return s!"{← recGo args[2]!} > {← recGo args[3]!}"
+      if head == ``And && args.size == 2 then
+        return s!"{← recGo args[0]!} ∧ {← recGo args[1]!}"
+      if head == ``HAdd.hAdd && args.size == 6 then
+        return s!"{← recGo args[4]!} + {← recGo args[5]!}"
+      if head == ``HSub.hSub && args.size == 6 then
+        return s!"{← recGo args[4]!} - {← recGo args[5]!}"
+      if head == ``HMul.hMul && args.size == 6 then
+        return s!"{← recGo args[4]!} · {← recGo args[5]!}"
+      if head == ``HDiv.hDiv && args.size == 6 then
+        return s!"{← recGo args[4]!} / {← recGo args[5]!}"
+      if head == ``HPow.hPow && args.size == 6 then
+        return s!"{← recGo args[4]!}^{← recGo args[5]!}"
+      if (head == `Min.min || head == `Nat.min) && args.size ≥ 2 then
+        return s!"min({← recGo args[args.size - 2]!}, {← recGo args[args.size - 1]!})"
+      if (head == `Max.max || head == `Nat.max) && args.size ≥ 2 then
+        return s!"max({← recGo args[args.size - 2]!}, {← recGo args[args.size - 1]!})"
+      if head == ``Prod && args.size == 2 then
+        return s!"{← recGo args[0]!} × {← recGo args[1]!}"
+      if head == ``Prod.mk && args.size == 4 then
+        return s!"({← recGo args[2]!}, {← recGo args[3]!})"
+      if (head == ``Prod.fst || head == ``PProd.fst || head == ``Sigma.fst) && args.size ≥ 3 then
+        return s!"{← recGo args[2]!}.1"
+      if (head == ``Prod.snd || head == ``PProd.snd || head == ``Sigma.snd) && args.size ≥ 3 then
+        return s!"{← recGo args[2]!}.2"
+      if headStr == "Fintype.card" && args.size ≥ 1 then
+        return s!"|{← recGo args[0]!}|"
+      if headStr == "List.length" && args.size ≥ 1 then
+        return s!"|{← recGo args.back!}|"
+      if headStr == "Probability.Distribution.ProbDist.uniform" ||
+         headStr == "Probability.Distribution.uniform" ||
+         headStr == "Distribution.uniform" then
+        if let some info := (← getEnv).find? head then
+          let expArgs ← collectDiagramExplicitArgs info.type args []
+          if expArgs.size == 1 then
+            return s!"𝒰[{← recGo expArgs[0]!}]"
+      -- Template & zero-arg overrides from SymbolTable
+      if let some tmpl := aliases.constTemplates.get? head then
+        if let some info := (← getEnv).find? head then
+          let hidden := aliases.hiddenArgs.getD head []
+          let vis ← collectDiagramExplicitArgs info.type args hidden
+          let mut out := tmpl
+          for idx in [:vis.size] do
+            out := out.replace s!"#{idx + 1}" (← recGo vis[idx]!)
+          return sanitizeDiagramText out
+      if aliases.zeroArgConsts.contains head then
+        return ← recGo fn
+      if let some info := (← getEnv).find? head then
+        if !aliases.constAliases.contains head && !aliases.shortAliases.contains head then
+          if let some projInfo := (← getEnv).getProjectionFnInfo? head then
+            if let some (.ctorInfo cinfo) := (← getEnv).find? projInfo.ctorName then
+              let sName := cinfo.induct
+              if (sName == ``Fin || sName == ``Subtype) && projInfo.i == 0 &&
+                 args.size == projInfo.numParams + 1 then
+                return ← recGo args[projInfo.numParams]!
+        let hidden := aliases.hiddenArgs.getD head []
+        let vis ← collectDiagramExplicitArgs info.type args hidden
+        let headLabel ← recGo fn
+        if vis.isEmpty then
+          return headLabel
+        let argStrs ← vis.mapM recGo
+        return s!"{headLabel}({String.intercalate ", " argStrs.toList})"
+    let fnStr ← recGo fn
+    let vis ← try
+      let fTy ← inferType fn
+      collectDiagramExplicitArgs fTy args []
+    catch _ => pure args
+    if vis.isEmpty then return fnStr
+    let argStrs ← vis.mapM recGo
+    return s!"{fnStr}({String.intercalate ", " argStrs.toList})"
+
 def argPos (p : SubExpr.Pos) (arity i : Nat) : SubExpr.Pos :=
   ((arity - 1 - i).fold (fun _ _ q => q.pushAppFn) p).pushAppArg
 
 def ppShort (e : Expr) : MetaM String := do
+  let aliases ← diagramAliasesRef.get
+  if aliases.active then
+    return ← diagramExprText aliases e
   return (← Meta.ppExpr e).pretty (width := 100)
 
 /-- Replace only the tagged printing placeholder, never an argument with similar text. -/
@@ -427,14 +802,34 @@ partial def renamePrintedHead (head : Expr) (label : String) : Widget.CodeWithIn
 /-- Resolve explicit display names without changing the expression. A declaration nickname
 renames only its printed head; Lean still prints the application's arguments. -/
 def explicitLabel? (e : Expr) : MetaM (Option String) := do
+  let eRaw := e.consumeMData
   if let some (_, label) := (ccDiagramTermLabels.getState (← getEnv)).reverse.find?
-      (fun (term, _) => term == e) then return some label
-  if let .const name _ := e.getAppFn then
+      (fun (term, _) => term == eRaw) then return some label
+  if let .const name _ := eRaw.getAppFn.consumeMData then
     if let some label := (ccDiagramLabels.getState (← getEnv)).find? name then
-      if !e.isApp then return some label
-      return some (← withLocalDeclD `ccDisplayHead (← inferType e.getAppFn) fun head => do
-        let printed ← Widget.ppExprTagged (mkAppN head e.getAppArgs)
+      if !eRaw.isApp then return some label
+      let aliases ← diagramAliasesRef.get
+      if aliases.active then
+        return some (← diagramExprText { aliases with constAliases := aliases.constAliases.insert name label } eRaw)
+      return some (← withLocalDeclD `ccDisplayHead (← inferType eRaw.getAppFn) fun head => do
+        let printed ← Widget.ppExprTagged (mkAppN head eRaw.getAppArgs)
         return (renamePrintedHead head label printed).stripTags)
+  let aliases ← diagramAliasesRef.get
+  if aliases.active then
+    if let some (_, symAlias) := aliases.exprAliases.reverse.find?
+        (fun (pat, _) => pat.consumeMData == eRaw) then
+      return some symAlias
+    if (← declRole? eRaw).isNone then
+      match eRaw with
+      | .fvar fid =>
+        let decl ← fid.getDecl
+        let clean := cleanDiagramBinder decl.userName
+        if let some alias := aliases.binderAliases.get? clean <|> aliases.binderAliases.get? decl.userName.toString then
+          return some alias
+      | _ =>
+        if let .const name _ := eRaw.getAppFn.consumeMData then
+          if aliases.constAliases.contains name || aliases.shortAliases.contains name then
+            return some (← diagramExprText aliases eRaw)
   return none
 
 /-- Exact registered identities have the conventional label `𝟙`; their interfaces and full
@@ -449,10 +844,10 @@ def mathLabel (e : Expr) (depth : Nat := 32) : MetaM MathLabel := do
   match depth with
   | 0 => return .literal (← ppShort e)
   | depth + 1 =>
-    if let some label ← explicitLabel? e then return .literal label
+    if let some label ← explicitLabel? e then return .literal label e.isFVar
     if let some (.interfaceTensor lf rf) ← declRole? e then
-      if let some (_, l) := argFromEnd? e.getAppArgs lf then
-        if let some (_, r) := argFromEnd? e.getAppArgs rf then
+      if let some (_, l) := argFromEnd? e.consumeMData.getAppArgs lf then
+        if let some (_, r) := argFromEnd? e.consumeMData.getAppArgs rf then
           return .tensor (← mathLabel l depth) (← mathLabel r depth)
     return .literal (← ppShort e) e.isFVar
 
@@ -545,8 +940,10 @@ def interfaceDetailsOnly (e : Expr) (depth : Nat := 32) : MetaM Bool := do
     return false
 
 def interfaceOf (e : Expr) : MetaM Iface := do
+  let aliases ← diagramAliasesRef.get
+  let cleanNote (s : String) := if aliases.active then sanitizeDiagramText s else s
   let fields ← (← interfaceProjections e).mapM fun (symbol, projection, value) => do
-    let presentation ← if symbol == "D" then domainNotation value else pure ""
+    let presentation ← if symbol == "D" then cleanNote <$> domainNotation value else pure ""
     return { symbol, projection := ← ppShort projection,
              value := ← ppShort value, type := ← ppShort (← inferType projection),
              presentation : InterfaceField }
@@ -554,8 +951,8 @@ def interfaceOf (e : Expr) : MetaM Iface := do
     return { label, source := ← ppShort port,
              input := ← ppShort input, output := ← ppShort output,
              signature := ← ppShort (← mkArrow input output),
-             inputNotation := (← typeNotation input).text,
-             outputNotation := (← typeNotation output).text : InterfacePort }
+             inputNotation := cleanNote (← typeNotation input).text,
+             outputNotation := cleanNote (← typeNotation output).text : InterfacePort }
   let mut label ← mathLabel e
   let mut detailsOnly := false
   -- An anonymous interface record is deliberately elided, never renamed to an invented object.
@@ -629,6 +1026,7 @@ def elemOf (e : Expr) (p : SubExpr.Pos) (fallback : BoxKind := .chip) : MetaM El
 /-- Recognize action notation only for an explicitly registered instance.
 Arbitrary scalar multiplication is not converter attachment. -/
 def operationRole? (e : Expr) : CoreM (Option DeclRole) := do
+  let e := e.consumeMData
   if e.isAppOfArity ``HSMul.hSMul 6 then
     if let some .action ← declRole? e.getAppArgs[3]! then
       return some (.application 1 0)
@@ -637,10 +1035,37 @@ def operationRole? (e : Expr) : CoreM (Option DeclRole) := do
       return some (.application 1 0)
   return ← declRole? e
 
+private partial def unwrapDiagramSide (e : Expr) (depth : Nat := 8) : MetaM Expr := do
+  match depth with
+  | 0 => return e
+  | depth + 1 =>
+    let e := e.consumeMData
+    if e.isAppOfArity `Singleton.singleton 4 then
+      return ← unwrapDiagramSide e.getAppArgs[3]! depth
+    let pair? : Option (Nat × Expr) :=
+      match e with
+      | .proj ``Prod 0 s => some (0, s)
+      | .proj ``Prod 1 s => some (1, s)
+      | _ =>
+        if e.isAppOfArity ``Prod.fst 3 then some (0, e.getAppArgs[2]!)
+        else if e.isAppOfArity ``Prod.snd 3 then some (1, e.getAppArgs[2]!)
+        else none
+    if let some (idx, pair) := pair? then
+      let pairUnfolded ← do
+        let p := pair.consumeMData
+        if p.isAppOfArity ``Prod.mk 4 then pure p
+        else pure ((← withTransparency .default (Meta.unfoldDefinition? p)).getD p)
+      let p := pairUnfolded.consumeMData
+      if p.isAppOfArity ``Prod.mk 4 then
+        return ← unwrapDiagramSide p.getAppArgs[2 + idx]! depth
+    return e
+
 /-- Project only registered operations. In particular, no definitional unfolding
 can manufacture subexpression positions in the original term. -/
-def parseDiagram (e : Expr) (p : SubExpr.Pos := .root) (depth : Nat := 64)
+partial def parseDiagram (e : Expr) (p : SubExpr.Pos := .root) (depth : Nat := 64)
     (fallback : BoxKind := .chip) : MetaM Diagram := do
+  let aliases ← diagramAliasesRef.get
+  let e ← if aliases.active then unwrapDiagramSide e else pure e.consumeMData
   let el ← elemOf e p fallback
   match depth with
   | 0 => return .atom el
@@ -648,6 +1073,8 @@ def parseDiagram (e : Expr) (p : SubExpr.Pos := .root) (depth : Nat := 64)
     let args := e.getAppArgs
     let child (i : Nat) (kind : BoxKind := .chip) :=
       parseDiagram args[i]! (argPos p args.size i) depth kind
+    if aliases.active && e.getAppFn.consumeMData.isConstOf `Commons.Indifferentiability.specification && args.size ≥ 3 then
+      return .wrapper el (← child (args.size - 3) .res)
     if let some role ← operationRole? e then
       match role with
       | .application cf rf | .attachment _ cf rf =>
@@ -672,6 +1099,26 @@ def parseDiagram (e : Expr) (p : SubExpr.Pos := .root) (depth : Nat := 64)
               | .parallel .. => .parallel el l r
               | .serial .. => .serial el l r
               | _ => .tensor el l r
+      | .whiskerRight cf inf | .whiskerLeft inf cf =>
+        if el.kind != .conv then return .atom el
+        if let some (ci, _) := argFromEnd? args cf then
+          if let some (ii, ifaceExpr) := argFromEnd? args inf then
+            let convDiag ← child ci .conv
+            let wireIface? ← try some <$> interfaceOf ifaceExpr catch _ => pure none
+            let idSource ← ppShort ifaceExpr
+            let idEl : Elem := {
+              label := "𝟙"
+              source := idSource
+              type := s!"{idSource} ⟶ {idSource}"
+              kind := .conv
+              pos := (argPos p args.size ii).toArray
+              outer? := wireIface?
+              inner? := wireIface?
+            }
+            let idDiag := Diagram.atom idEl
+            return match role with
+              | .whiskerRight .. => .tensor el convDiag idDiag
+              | _ => .tensor el idDiag convDiag
       | .game sf _ | .transparent sf =>
         if let some (si, _) := argFromEnd? args sf then
           -- Retain the wrapper and all its arguments. No invented MBO lane.
@@ -712,7 +1159,7 @@ def AdvCard.isNum : AdvCard → Bool
 def parseJudgment? (e : Expr) (p : SubExpr.Pos := .root)
     (sel : Array (Array Nat) := #[]) : MetaM (Option JudgmentView) := do
   let _ := sel
-  let e ← instantiateMVars e
+  let e := (← instantiateMVars e).consumeMData
   let source ← ppShort e
   let sourcePos := p.toArray
   let args := e.getAppArgs
@@ -734,6 +1181,19 @@ def parseJudgment? (e : Expr) (p : SubExpr.Pos := .root)
                     eps? := some (← ppShort error)
                     epsPos? := some (argPos p args.size ei).toArray }
             return some j
+    | .substitution lf rf ef sym =>
+      if let some (li, l) := argFromEnd? args lf then
+        if let some (ri, r) := argFromEnd? args rf then
+          let mut j : JudgmentView :=
+            { real := ← parseSide l (argPos p args.size li),
+              ideal? := some (← parseSide r (argPos p args.size ri)),
+              rel := sym, source, sourcePos }
+          if let some (ei, error) := argFromEnd? args ef then
+            j :=
+              { j with
+                eps? := some (← ppShort error)
+                epsPos? := some (argPos p args.size ei).toArray }
+          return some j
     | .conditional lf rf =>
       if let some (li, l) := argFromEnd? args lf then
         if let some (ri, r) := argFromEnd? args rf then
@@ -746,6 +1206,8 @@ def parseJudgment? (e : Expr) (p : SubExpr.Pos := .root)
     if e.isAppOfArity ``Eq 3 then some (1, 2, "=")
     else if e.isAppOfArity ``LE.le 4 then some (2, 3, "≤")
     else if e.isAppOfArity ``LT.lt 4 then some (2, 3, "<")
+    else if e.isAppOfArity ``GE.ge 4 then some (2, 3, "≥")
+    else if e.isAppOfArity ``GT.gt 4 then some (2, 3, ">")
     else none
   if let some (li, ri, rel) := cmp? then
     let lp := argPos p args.size li
@@ -1108,8 +1570,12 @@ def renderJudgment (j : JudgmentView) (sel : Array (Array Nat))
       | _ => renderDiagram c sel codes
     annotation := annotation.push label
   if let some error := j.eps? then
-    annotation := annotation.push <| divClass "cc-error"
-      #[.text "; ", (j.epsPos?.bind (codeFor? codes)).getD (.text error)]
+    let epsChildren :=
+      if j.protocol?.isSome then
+        #[.text "; ", (j.epsPos?.bind (codeFor? codes)).getD (.text error)]
+      else
+        #[(j.epsPos?.bind (codeFor? codes)).getD (.text error)]
+    annotation := annotation.push <| divClass "cc-error" epsChildren
   if !annotation.isEmpty then relation := relation.push (divClass "cc-protocol" annotation)
   relation := relation.push (divClass "cc-relation-symbol" #[.text j.rel])
   let rel := divClass "cc-relation" relation
@@ -1393,15 +1859,50 @@ def renderRungs (rungs : Array Rung) (sel : Array (Array Nat))
   let stepper := Html.ofComponent CalcStepper { initialIndex, labels := rungs.map (·.title) } steps
   return stepper
 
+/-- Parse a CC judgment from a proposition, descending into conjunction arms and unfolding
+Prop-valued security wrapper definitions when the outer head is not itself a logical
+connective or registered `DeclRole`. -/
+partial def parseJudgmentInProp? (e : Expr) (p : SubExpr.Pos := .root)
+    (unfolded : Bool := false) (depth : Nat := 8) :
+    MetaM (Option (JudgmentView × Bool)) := do
+  let e := e.consumeMData
+  if let some j ← parseJudgment? e p then
+    return some (j, unfolded)
+  if depth == 0 then return none
+  if e.isAppOfArity ``And 2 then
+    let args := e.getAppArgs
+    if let some res ← parseJudgmentInProp? args[0]! (argPos p 2 0) unfolded (depth - 1) then
+      return some res
+    if let some res ← parseJudgmentInProp? args[1]! (argPos p 2 1) unfolded (depth - 1) then
+      return some res
+    return none
+  if let .const head _ := e.getAppFn.consumeMData then
+    if head == ``Eq || head == ``LE.le || head == ``LT.lt ||
+       head == ``GE.ge || head == ``GT.gt || head == ``Iff ||
+       head == ``Or || head == ``Not || head == ``Exists ||
+       head == ``True || head == ``False then
+      return none
+    if (← declRole? e).isNone && (← isProp e) then
+      if let some next ← withTransparency .default (Meta.unfoldDefinition? e) then
+        let rec zetaHead : Expr → Expr
+          | .letE _ _ v b _ => zetaHead (b.instantiate1 v)
+          | .mdata _ inner => zetaHead inner
+          | x => x
+        let next := zetaHead next
+        if next != e then
+          return ← forallTelescope next fun _ uBody =>
+            parseJudgmentInProp? uBody .root true (depth - 1)
+  return none
+
 /-- Project an already elaborated expression. Quantified statements keep their original source. -/
 def viewExprCore (e : Expr) (interactive : Bool) : MetaM (Option (JudgmentView × Codes)) := do
   let ty ← inferType e
   let stmt ← if (← isProp e) then pure e else if (← isProp ty) then pure ty else pure e
   if (← isProp stmt) then
     return ← forallTelescope stmt fun _ body => do
-      let some j ← parseJudgment? body | return none
+      let some (j, unfolded) ← parseJudgmentInProp? body | return none
       let j := { j with source := ← ppShort stmt }
-      let mut codes ← if interactive then buildCodes j body else pure #[]
+      let mut codes ← if interactive && !unfolded then buildCodes j body else pure #[]
       if interactive then
         codes := codes.filter (·.1 != (j.sourcePos, "source"))
         codes := codes.push ((j.sourcePos, "source"), ← interactiveCode stmt)

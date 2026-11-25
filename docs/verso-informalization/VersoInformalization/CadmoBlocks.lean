@@ -387,6 +387,66 @@ def visibleChildren (mode : ViewMode) (nodes : Array ProofNode) : Array ProofNod
         | _ => vis
       else vis
 
+private def renderPseudocodeLinesHtml (doc : Document) (lines : Array PseudocodeLine) (mode : ViewMode := .paper) : String :=
+  if lines.isEmpty then ""
+  else
+    let items := String.join <| lines.toList.map fun (ln : PseudocodeLine) =>
+      let styleAttr := if ln.indent > 0 then s!" style=\"padding-left: calc({ln.indent} * 1.4em)\"" else ""
+      s!"<div class=\"cadmo-pseudocode-line\" data-indent=\"{ln.indent}\"{styleAttr}>" ++
+      s!"{renderInlinesHtml doc ln.inlines mode}</div>"
+    s!"<div class=\"cadmo-pseudocode-lines\">{items}</div>"
+
+private def boxKindLabel : String → String
+  | "attackGame" => "Attack Game"
+  | "hybrid" => "Hybrid"
+  | "reduction" => "Reduction"
+  | "distinguisher" => "Distinguisher"
+  | "algorithm" => "Algorithm"
+  | other => other
+
+/-- Render one pre-theorem `PreludeBlock` (Definition, Construction, Attack Game, Interface, Converter, or Symbol Table). -/
+def renderPreludeBlockHtml (doc : Document) (p : PreludeBlock) (mode : ViewMode := .paper) : String :=
+  let labelTrim := p.label.trimAscii.toString
+  let titleTrim := p.title.trimAscii.toString
+  let labelHtml := if labelTrim.isEmpty then "" else s!"<span class=\"cadmo-prelude-label\">{escapeHtml labelTrim}</span>"
+  let titleHtml :=
+    if titleTrim.isEmpty then ""
+    else if labelTrim.isEmpty then s!"<span class=\"cadmo-prelude-title\">{renderMixedTextHtml titleTrim}</span>"
+    else s!" <span class=\"cadmo-prelude-title\">({renderMixedTextHtml titleTrim})</span>"
+  let inspectBtn := match p.declKey? with
+    | some k =>
+        if k.trimAscii.toString.isEmpty then ""
+        else s!"<button type=\"button\" class=\"cadmo-prelude-inspect cadmo-action-link\" data-cadmo-key=\"{escapeHtml k}\">Inspect</button>"
+    | none => ""
+  let headHtml :=
+    if labelHtml.isEmpty && titleHtml.isEmpty && inspectBtn.isEmpty then ""
+    else
+      s!"<div class=\"cadmo-prelude-head\">" ++
+      s!"<div class=\"cadmo-prelude-heading\">{labelHtml}{titleHtml}</div>" ++
+      s!"{inspectBtn}</div>"
+  let bodyHtml :=
+    if p.body.isEmpty then ""
+    else
+      let paras := String.join <| p.body.toList.map fun para =>
+        s!"<p>{renderInlinesHtml doc para mode}</p>"
+      s!"<div class=\"cadmo-prelude-body\">{paras}</div>"
+  let rowsHtml :=
+    if p.rows.isEmpty then ""
+    else
+      let trs := String.join <| p.rows.toList.map fun (r : PreludeRow) =>
+        s!"<tr><th scope=\"row\" class=\"cadmo-prelude-row-left\">{renderInlinesHtml doc r.left mode}</th>" ++
+        s!"<td class=\"cadmo-prelude-row-right\">{renderInlinesHtml doc r.right mode}</td></tr>"
+      s!"<table class=\"cadmo-prelude-table\"><tbody>{trs}</tbody></table>"
+  let linesHtml := renderPseudocodeLinesHtml doc p.lines mode
+  let diagHtml := match p.diagramHtml? with
+    | some d =>
+        let clean := (stripEmbeddedStyles d).trimAscii.toString
+        if clean.isEmpty then ""
+        else s!"<div class=\"cadmo-diagram cadmo-prelude-diagram\"><div class=\"cadmo-diagram-body\">{clean}</div></div>"
+    | none => ""
+  s!"<section class=\"cadmo-prelude cadmo-prelude-{escapeHtml p.kind}\" id=\"{escapeHtml p.id}\" data-prelude-kind=\"{escapeHtml p.kind}\">" ++
+  s!"{headHtml}{bodyHtml}{rowsHtml}{linesHtml}{diagHtml}</section>"
+
 /-- Render a proof node in ETH CADMO style with quiet `⊕`/`⊖` disclosure controls. -/
 partial def renderProofNodeHtml (doc : Document) (mode : ViewMode := .paper) : ProofNode → String
   | .flowNote id text placement =>
@@ -401,6 +461,28 @@ partial def renderProofNodeHtml (doc : Document) (mode : ViewMode := .paper) : P
   | .figure id caption html =>
       let cap? := if caption.isEmpty then none else some (renderInlinesHtml doc caption mode)
       s!"<div data-node-id=\"{escapeHtml id}\">{renderDiagramFigureHtml html cap?}</div>"
+  | .pseudocodeBox id title boxKind lines goal? originDecl? =>
+      let kindLabel := boxKindLabel boxKind
+      let titleTrim := title.trimAscii.toString
+      let titleHtml :=
+        if titleTrim.isEmpty then ""
+        else s!"<span class=\"cadmo-pbox-title\">{renderMixedTextHtml titleTrim}</span>"
+      let originTag := match originDecl? with
+        | some d => s!"<span class=\"cadmo-origin-tag\">{escapeHtml d}</span>"
+        | none => ""
+      let goalBtn := match goal? with
+        | some _ => "<button type=\"button\" class=\"cadmo-goal-btn\" title=\"Inspect checked Lean goal state\">⊢</button>"
+        | none => ""
+      let metaHtml :=
+        if originTag.isEmpty && goalBtn.isEmpty then ""
+        else s!"<div class=\"cadmo-pbox-meta\">{originTag}{goalBtn}</div>"
+      let linesHtml := renderPseudocodeLinesHtml doc lines mode
+      s!"<figure class=\"cadmo-pseudocode-box cadmo-pbox-{escapeHtml boxKind}\" " ++
+      s!"data-node-id=\"{escapeHtml id}\" data-box-kind=\"{escapeHtml boxKind}\">" ++
+      s!"<figcaption class=\"cadmo-pbox-head\">" ++
+      s!"<div class=\"cadmo-pbox-title-group\">" ++
+      s!"<span class=\"cadmo-pbox-kind\">{escapeHtml kindLabel}</span>{titleHtml}" ++
+      s!"</div>{metaHtml}</figcaption>{linesHtml}</figure>"
   | .routineReceipt id summary stepCount details _ =>
       let projected := visibleChildren mode details
       let hasDetails := !projected.isEmpty
@@ -554,7 +636,12 @@ def renderEntryHtml (doc : Document) (entry : Entry) (mode : ViewMode := .paper)
         s!"<h2 class=\"cadmo-section-title\">{secNumHtml}{escapeHtml st}</h2>" ++
         s!"{secIntro}{secCtx}</div>"
     | none => ""
-  s!"{sectionHtml}<article class=\"cadmo-entry\" id=\"decl-{escapeHtml entry.declaration}\">" ++
+  let preludesHtml :=
+    if entry.sectionPreludes.isEmpty then ""
+    else
+      let inner := String.join (entry.sectionPreludes.toList.map (renderPreludeBlockHtml doc · mode))
+      s!"<div class=\"cadmo-section-preludes\">{inner}</div>"
+  s!"{sectionHtml}{preludesHtml}<article class=\"cadmo-entry\" id=\"decl-{escapeHtml entry.declaration}\">" ++
   s!"<header class=\"cadmo-entry-head\">" ++
   s!"<h2 class=\"cadmo-entry-heading\"><span class=\"cadmo-entry-kind\">{escapeHtml entry.header}</span>{titleSpan}</h2>" ++
   s!"<div class=\"cadmo-entry-meta\"><span class=\"{axiomClass}\">{axiomLabel}</span></div>" ++

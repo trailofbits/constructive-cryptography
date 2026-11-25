@@ -157,6 +157,22 @@ def describeTypeWithContext (tbl : SymbolTable) (profile : PaperContextProfile)
 def inlinesCanonicalKey (inls : Array Inline) : String :=
   String.intercalate "" (inls.toList.map Inline.collectText) |>.trimAscii.toString
 
+/-- Fast bounded $O(\text{limit})$ DAG size check so huge expanded `simp` terms don't stall `ppExpr`. -/
+private partial def exprDagSmall (e : Expr) (limit : Nat := 220) : Bool :=
+  let rec go (cur : Expr) (st : Std.HashSet Expr × Nat) : Std.HashSet Expr × Nat :=
+    if st.2 > limit || st.1.contains cur then st
+    else
+      let st := (st.1.insert cur, st.2 + 1)
+      match cur with
+      | .app f a => go a (go f st)
+      | .lam _ d b _ => go b (go d st)
+      | .forallE _ d b _ => go b (go d st)
+      | .letE _ t v b _ => go b (go v (go t st))
+      | .mdata _ inner => go inner st
+      | .proj _ _ s => go s st
+      | _ => st
+  (go e ({}, 0)).2 ≤ limit
+
 /-- Render a proposition into natural mathematical English + LaTeX (`Array Inline`),
 consulting registered CC/domain handlers first and falling back to clean `LeanTeX`. -/
 partial def renderProposition (tbl : SymbolTable) (prop : Expr) : MetaM (Array Inline) := do
@@ -197,10 +213,28 @@ partial def renderProposition (tbl : SymbolTable) (prop : Expr) : MetaM (Array I
   if let .const head _ := fn then
     let env ← getEnv
     if let some phrase := effectivePredPhrase? env head then
-      if let some subject := args.back? then
-        let subjTex ← exprToLatex subject tbl
-        return #[.inlineMath subjTex, .text (" " ++ phrase)]
-      return #[.text phrase]
+      let glossInl ← do
+        let arity? := (Presentation.getMathPresentation env head).explicitNonPropArity?
+        if arity? == some 0 then
+          pure #[.text phrase]
+        else if let some subject := args.back? then
+          let subjTex ← exprToLatex subject tbl
+          pure #[.inlineMath subjTex, .text (" " ++ phrase)]
+        else
+          pure #[.text phrase]
+      if Presentation.isPredPreserveFormula env head then
+        if let some unfolded ← withTransparency .default (Meta.unfoldDefinition? prop) then
+          let uClean ← normalizeForPresentation unfolded
+          if uClean != prop && exprDagSmall uClean 180 then
+            let headRecurses := uClean.foldConsts false fun n acc => acc || n == head
+            let formulaInl ←
+              if headRecurses then
+                pure #[.inlineMath (← exprToLatex uClean tbl)]
+              else
+                renderProposition tbl uClean
+            if inlinesCanonicalKey formulaInl != inlinesCanonicalKey glossInl then
+              return glossInl ++ #[.text " (i.e., "] ++ formulaInl ++ #[.text ")"]
+      return glossInl
     if head == ``Function.Injective && args.size == 3 then
       let fTex ← exprToLatex args[2]! tbl
       return #[.inlineMath fTex, .text " is injective"]
@@ -276,22 +310,6 @@ partial def renderProposition (tbl : SymbolTable) (prop : Expr) : MetaM (Array I
   -- Default: clean 2D LaTeX formula
   let tex ← exprToLatex prop tbl
   return #[.inlineMath tex]
-
-/-- Fast bounded $O(\text{limit})$ DAG size check so huge expanded `simp` terms don't stall `ppExpr`. -/
-private partial def exprDagSmall (e : Expr) (limit : Nat := 220) : Bool :=
-  let rec go (cur : Expr) (st : Std.HashSet Expr × Nat) : Std.HashSet Expr × Nat :=
-    if st.2 > limit || st.1.contains cur then st
-    else
-      let st := (st.1.insert cur, st.2 + 1)
-      match cur with
-      | .app f a => go a (go f st)
-      | .lam _ d b _ => go b (go d st)
-      | .forallE _ d b _ => go b (go d st)
-      | .letE _ t v b _ => go b (go v (go t st))
-      | .mdata _ inner => go inner st
-      | .proj _ _ s => go s st
-      | _ => st
-  (go e ({}, 0)).2 ≤ limit
 
 /-- Cached local-context entry for `buildGoalState` so unchanged parameters/hypotheses
 are not re-described across hundreds of proof nodes in the same declaration. -/

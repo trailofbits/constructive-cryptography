@@ -90,8 +90,8 @@ structure RuleExplainer where
 
 /-- Optional diagram hook (registered by `CC/Inspectors.lean` using `Rendering`) that turns
 a recognized CC expression or judgment into static HTML. -/
-initialize diagramHookRef : IO.Ref (Expr → MetaM (Option String)) ←
-  IO.mkRef (fun _ => pure none)
+initialize diagramHookRef : IO.Ref (SymbolTable → Expr → MetaM (Option String)) ←
+  IO.mkRef (fun _ _ => pure none)
 
 /-- Optional hook to clear per-declaration diagram caches when starting a new declaration. -/
 initialize clearDiagramCacheHookRef : IO.Ref (IO Unit) ←
@@ -118,7 +118,7 @@ def registerRuleExplainer (e : RuleExplainer) : IO Unit :=
   ruleExplainersRef.modify fun arr =>
     (arr.push e).qsort fun a b => a.priority > b.priority
 
-def registerDiagramHook (f : Expr → MetaM (Option String)) : IO Unit :=
+def registerDiagramHook (f : SymbolTable → Expr → MetaM (Option String)) : IO Unit :=
   diagramHookRef.set f
 
 def registerClearDiagramCacheHook (f : IO Unit) : IO Unit :=
@@ -295,15 +295,20 @@ In legacy non-Spine mode, do NOT recursively expand `private` declarations unles
 marked `informal_joint`, preventing exponential blowup on SHA-3 helper DAGs while still citing
 the private lemma cleanly by name instead of swallowing it as routine. -/
 private def shouldExpandLemma (env : Environment) (ctx : DecompCtx) (declName : Name) : Bool :=
+  let expandAttr := Informalization.Core.Presentation.isInformalExpand env declName
   if ctx.lemmaDepth ≥ ctx.config.maxLemmaDepth then false
   else if ctx.seenDecls.contains declName then false
   else if ctx.docDecls.contains declName then false
-  else if ctx.lemmaDepth ≥ 1 && effectiveIsProofJoint env declName then false
+  else if ctx.lemmaDepth ≥ 1 && effectiveIsProofJoint env declName && !expandAttr then false
   else if declName == ``sorryAx then false
   else if isCoreOrMathlibIn env declName then false
   else if isNeverExpandedConst declName then false
-  else if effectiveIsOpaqueLeaf env declName then false
-  else if Lean.isPrivateName declName && !effectiveIsProofJoint env declName then false
+  else if effectiveIsOpaqueLeaf env declName && !expandAttr then false
+  else if Lean.isPrivateName declName && !effectiveIsProofJoint env declName && !expandAttr then false
+  else if expandAttr then
+    match env.find? declName with
+    | some (.thmInfo _) => true
+    | _ => false
   else if ctx.config.projectNamespaces.isEmpty then
     match env.find? declName with
     | some (.thmInfo _) => true
@@ -591,6 +596,134 @@ private partial def collectProofNodeMath : ProofNode → Array String
         | .displayMath s _ => some s
         | .symbol _ d true => some d
         | _ => none
+  | .pseudocodeBox _ _ _ lines _ _ =>
+      lines.flatMap fun l => l.inlines.filterMap fun
+        | .inlineMath s => some s
+        | .displayMath s _ => some s
+        | .symbol _ d true => some d
+        | _ => none
+
+private def normalizeMathToken (s : String) : String :=
+  let words := (s.replace "\n" " ").splitOn " " |>.filter (!·.isEmpty)
+  let joined := (String.intercalate " " words).trimAscii.toString
+  if joined.endsWith "." || joined.endsWith "," then
+    (joined.dropEnd 1).toString.trimAscii.toString
+  else
+    joined
+
+private def extractNormalizedMath (inls : Array Inline) : Array String :=
+  inls.filterMap fun
+    | .inlineMath s =>
+        let n := normalizeMathToken s
+        if n.isEmpty then none else some n
+    | .displayMath s _ =>
+        let n := normalizeMathToken s
+        if n.isEmpty then none else some n
+    | .symbol _ d true =>
+        let n := normalizeMathToken d
+        if n.isEmpty then none else some n
+    | _ => none
+
+private def normalizeProseForComparison (inls : Array Inline) : String := Id.run do
+  let raw := String.intercalate "" (inls.toList.map Inline.collectText)
+  let words := (raw.replace "\n" " ").splitOn " " |>.filter (!·.isEmpty)
+  let stripTrailingPunct (x : String) : String :=
+    let x := x.trimAscii.toString
+    if x.endsWith "." || x.endsWith "," || x.endsWith ";" || x.endsWith ":" then
+      (x.dropEnd 1).toString.trimAscii.toString
+    else x
+  let mut s := stripTrailingPunct ((String.intercalate " " words).trimAscii.toString.toLower)
+  let prefixes := [
+    "we obtain ", "we claim that ", "we claim ", "next, we claim that ", "next, we claim ",
+    "first, observe that ", "moreover, note that ", "therefore, ", "hence, ", "thus, ",
+    "consequently, ", "accordingly, ", "from this, ", "combining the preceding bounds, ",
+    "since the assumption holds, ", "by non-expansion, ", "by monotonicity, ",
+    "by extensionality, ", "by function extensionality, ", "unpacking the hypothesis yields "
+  ]
+  for _ in [:2] do
+    let mut matched := false
+    for p in prefixes do
+      if s.startsWith p then
+        s := (s.drop p.length).toString.trimAscii.toString
+        matched := true
+        break
+    if !matched && s.startsWith "by " then
+      let commaParts := s.splitOn ", "
+      if commaParts.length ≥ 2 then
+        let headPart := commaParts.headD ""
+        if !headPart.contains '$' && !headPart.contains '\\' then
+          s := (String.intercalate ", " (commaParts.drop 1)).trimAscii.toString
+  return stripTrailingPunct s
+
+private def isBareSingleSentenceRestatement (parentContent childContent : Array Inline) : Bool := Id.run do
+  let proseOnly := (String.intercalate "" (childContent.toList.filterMap fun
+    | .text t => some t
+    | .emph t => some t
+    | _ => none)).trimAscii.toString
+  if (proseOnly.splitOn ". ").length > 1 then
+    return false
+  let childRawWords :=
+    ((String.intercalate "" (childContent.toList.map Inline.collectText)).replace "\n" " ").splitOn " "
+      |>.filter (!·.isEmpty)
+  let childLow := (String.intercalate " " childRawWords).trimAscii.toString.toLower
+  if childLow.startsWith "this holds by the assumed " then
+    return true
+  let parentMath := extractNormalizedMath parentContent
+  let childMath := extractNormalizedMath childContent
+  let allChildMathInParent := childMath.all fun cm =>
+    parentMath.any fun pm => pm == cm || (cm.length ≥ 4 && (pm.splitOn cm).length > 1)
+  if !allChildMathInParent then
+    return false
+  let childNorm := normalizeProseForComparison childContent
+  let parentNorm := normalizeProseForComparison parentContent
+  if !childNorm.isEmpty && childNorm == parentNorm then
+    return true
+  if childLow.startsWith "the claim follows from " ||
+     childLow.startsWith "the claim follows directly by " then
+    return true
+  if childLow.startsWith "we obtain " || childLow.startsWith "therefore, " ||
+     childLow.startsWith "hence, " || childLow.startsWith "thus, " then
+    return !childMath.isEmpty
+  if childLow.startsWith "proceeding by " then
+    return !childMath.isEmpty
+  if childLow.startsWith "by " || childLow.startsWith "from " then
+    let commaParts := childLow.splitOn ", "
+    if commaParts.length ≥ 2 then
+      if !childMath.isEmpty then return true
+      let rhsNorm := normalizeProseForComparison #[.text (String.intercalate ", " (commaParts.drop 1))]
+      if !rhsNorm.isEmpty && (rhsNorm == parentNorm || (parentNorm.splitOn rhsNorm).length > 1) then
+        return true
+  return false
+
+/-- Eliminate tautological 1-child `⊕` leaves whose single child merely restates the parent's
+claim or formula without introducing new mathematics, diagrams, or sub-children, while
+preserving `origin? := origin? <|> cOrigin?` provenance. -/
+partial def collapseTautologicalSingleChild : ProofNode → ProofNode
+  | .step id content children goal? diag? origin? isWrap defExp startsPara leadHead? trust? inlineMeta =>
+      let children' := children.map collapseTautologicalSingleChild
+      let collapsed :=
+        if !isWrap && children'.size == 1 then
+          match children'[0]! with
+          | c@(.step _ cContent cChildren _ cDiag? cOrigin? _ _ _ _ _ _) =>
+              let hasSorry := c.collectAllText.any fun t => (t.splitOn "[UNPROVED: sorry]").length > 1
+              if cChildren.isEmpty && cDiag?.isNone && !hasSorry &&
+                 isBareSingleSentenceRestatement content cContent then
+                some cOrigin?
+              else
+                none
+          | _ => none
+        else
+          none
+      match collapsed with
+      | some cOrigin? =>
+          .step id content #[] goal? diag? (origin? <|> cOrigin?) isWrap defExp startsPara leadHead? trust? inlineMeta
+      | none =>
+          .step id content children' goal? diag? origin? isWrap defExp startsPara leadHead? trust? inlineMeta
+  | .calcChain id intro steps goal? origin? =>
+      .calcChain id intro (steps.map fun (cs, ch) => (cs, ch.map collapseTautologicalSingleChild)) goal? origin?
+  | .routineReceipt id summary count details goal? =>
+      .routineReceipt id summary count (details.map collapseTautologicalSingleChild) goal?
+  | other => other
 
 private def isStructuralCongrOrCast (head : Name) : Bool :=
   let s := head.toString
@@ -973,7 +1106,7 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
                   pure #[.text s!"by {humanLemmaLabel env cn}"]
             | .fvar _ => pure #[.text "by assumption"]
             | _ => pure #[.text "by the checked subargument"]
-          let diagHtml ← if ctx.lemmaDepth ≤ 1 then (← diagramHookRef.get) stProp else pure none
+          let diagHtml ← if ctx.lemmaDepth ≤ 1 then (← diagramHookRef.get) ctx.tbl stProp else pure none
           let cs : CalcStep := {
             lhsLatex := lhsTex
             relationLatex := rel
@@ -1083,7 +1216,7 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
        !allChildren.any (fun n => n.collectAllText.any (fun t => (t.splitOn "[UNPROVED: sorry]").length > 1)) then
       let sorryGoal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
       allChildren := allChildren.push (.step s!"sorry-child-{fuel}" #[.text "[UNPROVED: sorry]"] #[] (some sorryGoal))
-    let diagHtml ← if ctx.lemmaDepth ≤ 1 then (← diagramHookRef.get) expected else pure none
+    let diagHtml ← if ctx.lemmaDepth ≤ 1 then (← diagramHookRef.get) ctx.tbl expected else pure none
     -- Avoid the "restatement reflex": at the root conclusion, never re-quote the whole theorem!
     let hasVisibleNonWrap := allChildren.any fun
       | .step _ _ _ _ _ _ w _ _ _ _ _ => !w
@@ -1148,6 +1281,8 @@ private partial def collectOriginDecls : ProofNode → Array Name
       let own := match origin? with | some s => #[s.toName] | none => #[]
       own ++ steps.flatMap fun (_, ch) => ch.flatMap collectOriginDecls
   | .routineReceipt _ _ _ details _ => details.flatMap collectOriginDecls
+  | .pseudocodeBox _ _ _ _ _ origin? =>
+      match origin? with | some s => #[s.toName] | none => #[]
   | _ => #[]
 
 /-- Collect all `dataKey` / `.symbol` keys referenced inside an array of `Inline`s and optional `inlineMeta`. -/
@@ -1174,6 +1309,8 @@ private partial def collectProofNodeDataKeys : ProofNode → Array String
   | .routineReceipt _ _ _ details _ => details.flatMap collectProofNodeDataKeys
   | .flowNote _ _ _ => #[]
   | .figure _ caption _ => collectInlineDataKeys caption
+  | .pseudocodeBox _ _ _ lines _ _ =>
+      lines.flatMap fun l => collectInlineDataKeys l.inlines
 
 /-- Top-level entry point with optional section-fixed context hoisting:
 informalizes a checked Lean declaration into an `Explanation.Entry` (with scoped local
@@ -1193,7 +1330,7 @@ def informalizeDeclarationWithContext (declName : Name) (config : Config := {})
     | .thmInfo tinfo => some tinfo.value
     | _ => none
   let parsed ← parseTheoremStatement tbl info.type hoisted? proofBody? ov.theoremNotations declName
-  let diagHtml ← (← diagramHookRef.get) info.type
+  let diagHtml ← (← diagramHookRef.get) tbl info.type
   let rawHeader := match ov.entryKind? with
     | some k => k
     | none =>
@@ -1218,7 +1355,8 @@ def informalizeDeclarationWithContext (declName : Name) (config : Config := {})
       isClosingGoal := true
     }
     let (nodes, _) ← (decompileProof ctx info.type tinfo.value config.maxTermFuel).run {}
-    proofNodes := (dedupSiblings (proofNodes ++ nodes)).map (capDiagramHtmlDepth 1 0)
+    proofNodes := ((dedupSiblings (proofNodes ++ nodes)).map collapseTautologicalSingleChild).map
+      (capDiagramHtmlDepth 1 0)
   let extraProofNotations ← extraNotationInspectorsRef.get
   extraNotationInspectorsRef.set #[]
   if let some fa := ov.flowAfter? then

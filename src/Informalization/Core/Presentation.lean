@@ -58,6 +58,7 @@ syntax (name := Lean.Parser.Attr.paper_role) "paper_role" str : attr
 syntax (name := Lean.Parser.Attr.interface_resource_noun) "interface_resource_noun" str str : attr
 syntax (name := Lean.Parser.Attr.paper_module) "paper_module" : attr
 syntax (name := Lean.Parser.Attr.paper_describe) "paper_describe" str paperDescribeOpt* : attr
+syntax (name := Lean.Parser.Attr.informal_expand) "informal_expand" : attr
 
 namespace Informalization.Core.Presentation
 
@@ -97,9 +98,11 @@ structure MathPresentationEntry where
   superscriptArgs : List Nat := []
   isZeroArgNotation : Bool := false
   predPhrase? : Option String := none
+  predPreserveFormula : Bool := false
   isOpaqueLeaf : Bool := false
   isWrapper : Bool := false
   isProofJoint : Bool := false
+  isExpandedLemma : Bool := false
   paperRole? : Option String := none
   interfaceResourceNoun? : Option (String × String) := none
   explicitNonPropArity? : Option Nat := none
@@ -113,9 +116,11 @@ private def mergeMathPres (old new : MathPresentationEntry) : MathPresentationEn
   superscriptArgs       := if new.superscriptArgs.isEmpty then old.superscriptArgs else new.superscriptArgs
   isZeroArgNotation     := old.isZeroArgNotation || new.isZeroArgNotation
   predPhrase?           := new.predPhrase? <|> old.predPhrase?
+  predPreserveFormula   := old.predPreserveFormula || new.predPreserveFormula
   isOpaqueLeaf          := old.isOpaqueLeaf || new.isOpaqueLeaf
   isWrapper             := old.isWrapper || new.isWrapper
   isProofJoint          := old.isProofJoint || new.isProofJoint
+  isExpandedLemma       := old.isExpandedLemma || new.isExpandedLemma
   paperRole?            := new.paperRole? <|> old.paperRole?
   interfaceResourceNoun? := new.interfaceResourceNoun? <|> old.interfaceResourceNoun?
   explicitNonPropArity? := new.explicitNonPropArity? <|> old.explicitNonPropArity?
@@ -140,6 +145,12 @@ def getMathPresentation (env : Environment) (decl : Name) : MathPresentationEntr
 
 def getAllMathPresentations (env : Environment) : List (Name × MathPresentationEntry) :=
   (mathPresentationExt.getState env).toList
+
+def isInformalExpand (env : Environment) (decl : Name) : Bool :=
+  (getMathPresentation env decl).isExpandedLemma
+
+def isPredPreserveFormula (env : Environment) (decl : Name) : Bool :=
+  (getMathPresentation env decl).predPreserveFormula
 
 /-! ## 3. Pure-Data `PaperDescribeRule` (`paperDescribeExt`, ZERO `Meta.evalExpr`) -/
 
@@ -417,6 +428,7 @@ def validateUnpackFields (declName : Name) (fields : Array String) : MetaM Unit 
 syntax (name := paperDescribeForCmd) "paper_describe_for" ident str paperDescribeOpt* : command
 syntax (name := paperModuleCmd) "paper_module" : command
 syntax (name := scopedNotationCmd) "scoped_notation" ident str mathNotationOpt* : command
+syntax (name := informalPredGlossCmd) "informal_pred_gloss" ident str : command
 
 private def parseBoolIdent (stx : Syntax) : CoreM Bool := do
   match stx.getId with
@@ -486,24 +498,28 @@ initialize registerBuiltinAttribute {
     | _ => throwError "unexpected `@[math_notation]` syntax"
 }
 
+private def addMathPredFor (attrLabel : String) (declName : Name) (phrase : String)
+    (preserveFormula : Bool := false) : MetaM Unit := do
+  let (binders, bodyTy) ← getExplicitNonPropBinders declName
+  let bodyWhnf ← whnf bodyTy
+  if bodyWhnf != Expr.sort .zero then
+    throwError "`{attrLabel}` requires a `Prop`-returning declaration; `{declName}` returns `{← ppExpr bodyTy}`"
+  match validateBalancedBraces phrase with
+  | .error msg => throwError "{declName}: {msg}"
+  | .ok () => pure ()
+  modifyEnv fun env => mathPresentationExt.addEntry env (declName, {
+    predPhrase? := some phrase
+    predPreserveFormula := preserveFormula
+    explicitNonPropArity? := some binders.size
+  })
+
 initialize registerBuiltinAttribute {
   name := `math_pred
   descr := "Register a natural-language predicate phrase for a Prop-returning declaration"
   add := fun declName stx _ => do
     match stx with
     | `(attr| math_pred $phrase:str) =>
-        let _ ← MetaM.run' do
-          let (binders, bodyTy) ← getExplicitNonPropBinders declName
-          let bodyWhnf ← whnf bodyTy
-          if bodyWhnf != Expr.sort .zero then
-            throwError "`@[math_pred]` requires a `Prop`-returning declaration; `{declName}` returns `{← ppExpr bodyTy}`"
-          match validateBalancedBraces phrase.getString with
-          | .error msg => throwError "{declName}: {msg}"
-          | .ok () => pure ()
-          modifyEnv fun env => mathPresentationExt.addEntry env (declName, {
-            predPhrase? := some phrase.getString
-            explicitNonPropArity? := some binders.size
-          })
+        let _ ← MetaM.run' <| addMathPredFor "@[math_pred]" declName phrase.getString false
     | _ => throwError "unexpected `@[math_pred]` syntax"
 }
 
@@ -526,6 +542,13 @@ initialize registerBuiltinAttribute {
   descr := "Mark a lemma as a prominent proof joint that Paper mode must never inline"
   add := fun declName _ _ => do
     modifyEnv fun env => mathPresentationExt.addEntry env (declName, { isProofJoint := true })
+}
+
+initialize registerBuiltinAttribute {
+  name := `informal_expand
+  descr := "Mark a helper lemma to be expanded inline rather than collapsed as a lemma card"
+  add := fun declName _ _ => do
+    modifyEnv fun env => mathPresentationExt.addEntry env (declName, { isExpandedLemma := true })
 }
 
 initialize registerBuiltinAttribute {
@@ -623,6 +646,9 @@ elab_rules : command
   | `(scoped_notation $id:ident $tmpl:str $opts:mathNotationOpt*) => do
       let declName ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo id
       Command.liftTermElabM <| addMathNotationFor declName tmpl.getString opts
+  | `(informal_pred_gloss $id:ident $sg:str) => do
+      let declName ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo id
+      Command.liftTermElabM <| addMathPredFor "informal_pred_gloss" declName sg.getString true
 
 /-! ## 6. Font-Style Hook (`varStyle?` & Algebraic `.mathbb` Detection) -/
 

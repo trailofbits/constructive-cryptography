@@ -410,6 +410,8 @@ a:hover {
 .cadmo-calc-intro:hover .cadmo-goal-btn,
 .cadmo-routine:hover .cadmo-goal-btn,
 .cadmo-display-controls .cadmo-goal-btn,
+.cadmo-pbox-head:hover .cadmo-goal-btn,
+.cadmo-pseudocode-box:hover .cadmo-goal-btn,
 .cadmo-goal-btn:focus-visible,
 .cadmo-goal-btn[aria-pressed="true"],
 [data-mode="auditor"] .cadmo-goal-btn {
@@ -426,6 +428,8 @@ a:hover {
 .cadmo-calc-intro:hover .cadmo-goal-btn,
 .cadmo-routine:hover .cadmo-goal-btn,
 .cadmo-display-wrap:hover .cadmo-goal-btn,
+.cadmo-pbox-head:hover .cadmo-goal-btn,
+.cadmo-pseudocode-box:hover .cadmo-goal-btn,
 .cadmo-goal-btn:focus-visible,
 .cadmo-goal-btn[aria-pressed="true"],
 [data-mode="auditor"] .cadmo-goal-btn {
@@ -781,6 +785,7 @@ sub .cadmo-ref,
   margin: 0.9rem 0 1.15rem;
   max-width: 100%;
   min-width: 0;
+  overflow-x: auto;
   border: 1px solid var(--rule);
   border-radius: 3px;
   background: var(--paper-alt);
@@ -868,6 +873,7 @@ sub .cadmo-ref,
 /* Suppress duplicate nested "Diagram" summary inside mounted CCWidget panels */
 .cadmo-entry-diagram .cadmo-diagram-body > details.ccw[open] > summary,
 .cadmo-step-diagram .cadmo-diagram-body > details.ccw[open] > summary,
+.cadmo-prelude-diagram .cadmo-diagram-body > details.ccw[open] > summary,
 .cadmo-figure .cadmo-diagram-body > details.ccw[open] > summary {
   display: none;
 }
@@ -1257,6 +1263,198 @@ sub .cadmo-ref,
   color: var(--ink-muted);
 }
 
+/* ==========================================================================
+   Pre-Theorem Section Preludes (Definitions, Attack Games, Constructions,
+   Converters, Interfaces, & Symbol Tables) and Inline Pseudocode Boxes
+   ========================================================================== */
+.cadmo-section-preludes {
+  margin: 1.1rem 0 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.cadmo-prelude {
+  margin: 0;
+  font-family: var(--font-body);
+  font-style: normal;
+  line-height: 1.62;
+}
+
+.cadmo-prelude-definition {
+  padding: 0.5rem 0 0.5rem 1.05rem;
+  border-left: 2.5px solid var(--accent);
+}
+
+.cadmo-prelude-attackGame,
+.cadmo-prelude-construction,
+.cadmo-prelude-converterDef {
+  border: 1px solid var(--rule-strong);
+  border-top: 2px solid var(--accent);
+  border-radius: 2px;
+  background: var(--paper-alt);
+  padding: 0.85rem 1.1rem;
+}
+
+.cadmo-prelude-interfaceSpec {
+  border: 1px solid var(--rule);
+  border-left: 2.5px solid var(--accent);
+  border-radius: 2px;
+  background: var(--paper-alt);
+  padding: 0.78rem 1rem;
+}
+
+.cadmo-prelude-symbolTable {
+  border-top: 1.5px solid var(--rule-strong);
+  border-bottom: 1.5px solid var(--rule-strong);
+  padding: 0.65rem 0.15rem 0.72rem;
+}
+
+.cadmo-prelude-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 0.85rem;
+  margin-bottom: 0.45rem;
+}
+
+.cadmo-prelude-heading {
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.cadmo-prelude-label {
+  font-variant-caps: small-caps;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+}
+
+.cadmo-prelude-title {
+  font-weight: 600;
+  font-style: normal;
+  color: var(--ink);
+}
+
+.cadmo-prelude-inspect {
+  font-size: 0.78rem;
+  font-style: italic;
+  white-space: nowrap;
+}
+
+.cadmo-prelude-body p {
+  margin: 0 0 0.45rem;
+}
+
+.cadmo-prelude-body p:last-child {
+  margin-bottom: 0;
+}
+
+.cadmo-prelude-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.42rem;
+  font-size: 0.94rem;
+}
+
+.cadmo-prelude-table th,
+.cadmo-prelude-table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.32rem 0.5rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.cadmo-prelude-table tr:last-child th,
+.cadmo-prelude-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.cadmo-prelude-row-left {
+  width: 30%;
+  min-width: 6.5rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.cadmo-prelude-row-right {
+  color: var(--ink-secondary);
+}
+
+.cadmo-prelude-diagram {
+  margin: 0.65rem 0 0;
+}
+
+.cadmo-pseudocode-lines {
+  margin-top: 0.42rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  font-size: 0.94rem;
+  line-height: 1.56;
+}
+
+.cadmo-pseudocode-line {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.cadmo-pseudocode-box {
+  margin: 0.85rem 0 1.05rem;
+  border: 1px solid var(--rule-strong);
+  border-top: 2px solid var(--accent);
+  border-radius: 2px;
+  background: var(--paper-alt);
+  padding: 0.75rem 1.05rem;
+}
+
+.cadmo-pbox-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 0.75rem;
+  padding-bottom: 0.38rem;
+  margin-bottom: 0.45rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.cadmo-pbox-title-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.48rem;
+}
+
+.cadmo-pbox-kind {
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.06em;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--accent);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  background: var(--paper);
+  padding: 0.02rem 0.38rem;
+}
+
+.cadmo-pbox-title {
+  font-weight: 600;
+  font-size: 0.97rem;
+  color: var(--ink);
+}
+
+.cadmo-pbox-meta {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.cadmo-pbox-meta .cadmo-goal-btn {
+  vertical-align: baseline;
+}
+
 @media (max-width: 980px) {
   .cadmo-shell {
     grid-template-columns: minmax(0, 1fr);
@@ -1271,10 +1469,11 @@ sub .cadmo-ref,
 }
 
 @media print {
-  .cadmo-running-bar, .cadmo-toggle, .cadmo-goal-btn, .cadmo-margin, .cadmo-chapter-nav {
+  .cadmo-running-bar, .cadmo-toggle, .cadmo-goal-btn, .cadmo-margin, .cadmo-chapter-nav, .cadmo-prelude-inspect {
     display: none !important;
   }
   .cadmo-shell { display: block; padding: 0; max-width: none; }
   .cadmo-children { display: block !important; }
+  .cadmo-pseudocode-box, .cadmo-prelude { break-inside: avoid; }
   body { background: #fff; color: #000; font-size: 11pt; }
 }

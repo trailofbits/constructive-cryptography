@@ -1487,6 +1487,657 @@ class TestInformalizationCIAndVersoBundle(unittest.TestCase):
         self.assertIn("clean-diagram", body_html)
         self.assertNotIn("<style>", body_html)
 
+    def _make_wave_b_fixture(self, include_style_in_prelude_diag: bool = False) -> Dict[str, Any]:
+        doc = make_clean_fixture()
+        diag_prefix = "<style>.prelude-leak{color:red}</style>" if include_style_in_prelude_diag else ""
+        entry = doc["entries"][0]
+        entry["sectionTitle"] = "Authenticated Encryption"
+        entry["sectionId"] = "sec-ae"
+        entry["sectionContext"] = {
+            "sectionId": "sec-ae",
+            "sectionNumber": 3,
+            "paragraphs": [
+                [
+                    {"text": {"value": "Let "}},
+                    {"symbol": {"key": "sym.key", "display": "\\mathbf{K}", "isMath": True}},
+                    {"text": {"value": " be the shared secret key."}},
+                ]
+            ],
+            "inspectors": [],
+        }
+        entry["sectionPreludes"] = [
+            {
+                "id": "prelude-def-1",
+                "kind": "definition",
+                "label": "Definition 3.1",
+                "title": "PRG Security",
+                "body": [
+                    [
+                        {"text": {"value": "A generator "}},
+                        {"inlineMath": {"latex": "G"}},
+                        {"text": {"value": " is "}},
+                        {"inlineMath": {"latex": "\\varepsilon"}},
+                        {"text": {"value": "-secure if no distinguisher gains advantage above "}},
+                        {"inlineMath": {"latex": "\\varepsilon"}},
+                        {"text": {"value": "."}},
+                    ]
+                ],
+                "lines": [],
+                "rows": [],
+                "declKey": "sym.sec",
+                "diagramHtml": None,
+            },
+            {
+                "id": "prelude-game-1",
+                "kind": "attackGame",
+                "label": "Attack Game 3.1",
+                "title": "Authenticated Encryption Game",
+                "body": [
+                    [{"text": {"value": "The challenger samples a secret key and answers encryption queries."}}]
+                ],
+                "lines": [
+                    {"indent": 0, "inlines": [{"text": {"value": "1. Sample "}}, {"symbol": {"key": "sym.key", "display": "\\mathbf{K}", "isMath": True}}, {"text": {"value": " uniformly."}}]},
+                    {"indent": 1, "inlines": [{"text": {"value": "2. On query "}}, {"inlineMath": {"latex": "m"}}, {"text": {"value": ", compute "}}, {"inlineMath": {"latex": "c"}}, {"text": {"value": "."}}]},
+                    {"indent": 2, "inlines": [{"text": {"value": "Return ciphertext "}}, {"inlineMath": {"latex": "c"}}, {"text": {"value": "."}}]},
+                ],
+                "rows": [],
+                "declKey": "sym.game",
+                "diagramHtml": f'{diag_prefix}<div class="ccw"><svg id="prelude-game-svg" width="80" height="20"></svg></div>',
+            },
+            {
+                "id": "prelude-const-1",
+                "kind": "construction",
+                "label": "Construction 3.2",
+                "title": "Encrypt-then-MAC",
+                "body": [
+                    [{"text": {"value": "Compose "}}, {"symbol": {"key": "sym.encdec", "display": "\\pi_{\\mathsf{AE}}", "isMath": True}}, {"text": {"value": " sequentially."}}]
+                ],
+                "lines": [
+                    {"indent": 0, "inlines": [{"text": {"value": "on send(m):"}}]},
+                    {"indent": 1, "inlines": [{"text": {"value": "output "}}, {"inlineMath": {"latex": "\\pi_{\\mathsf{AE}}(m)"}}]},
+                ],
+                "rows": [],
+            },
+            {
+                "id": "prelude-iface-1",
+                "kind": "interfaceSpec",
+                "label": "Interface 3.3",
+                "title": "Channel Ports",
+                "body": [[{"text": {"value": "Honest ports expose send and receive operations."}}]],
+                "lines": [{"indent": 0, "inlines": [{"text": {"value": "port A: send(m)"}}]}],
+                "rows": [
+                    {"left": [{"inlineMath": {"latex": "A"}}], "right": [{"text": {"value": "Sender port"}}]},
+                ],
+                "declKey": "sym.key",
+            },
+            {
+                "id": "prelude-conv-1",
+                "kind": "converterDef",
+                "label": "Converter 3.4",
+                "title": "Cipher Converter",
+                "body": [[{"text": {"value": "Transforms an authenticated channel into a secure channel."}}]],
+                "lines": [
+                    {"indent": 0, "inlines": [{"text": {"value": "1. Read key from "}}, {"symbol": {"key": "sym.key", "display": "\\mathbf{K}", "isMath": True}}]},
+                    {"indent": 1, "inlines": [{"text": {"value": "2. Emit cipher."}}]},
+                ],
+                "rows": [],
+                "declKey": "sym.encdec",
+            },
+            {
+                "id": "prelude-sym-1",
+                "kind": "symbolTable",
+                "label": "Notation 3.5",
+                "title": "Section Symbols",
+                "body": [],
+                "lines": [],
+                "rows": [
+                    {
+                        "left": [{"symbol": {"key": "sym.key", "display": "\\mathbf{K}", "isMath": True}}],
+                        "right": [{"text": {"value": "Shared uniform secret key"}}],
+                    },
+                    {
+                        "left": [{"symbol": {"key": "sym.sec", "display": "\\mathbf{SEC}", "isMath": True}}],
+                        "right": [{"text": {"value": "Ideal confidential and authentic channel"}}],
+                    },
+                ],
+            },
+        ]
+        entry["proof"].append(
+            {
+                "kind": "pseudocodeBox",
+                "id": "pbox-red-1",
+                "title": "Reduction B",
+                "boxKind": "reduction",
+                "lines": [
+                    {"indent": 0, "inlines": [{"text": {"value": "1. Receive input "}}, {"inlineMath": {"latex": "x"}}]},
+                    {"indent": 1, "inlines": [{"text": {"value": "2. Invoke "}}, {"symbol": {"key": "sym.game", "display": "G", "isMath": True}}, {"text": {"value": " on "}}, {"inlineMath": {"latex": "x"}}]},
+                    {"indent": 2, "inlines": [{"text": {"value": "return bit "}}, {"inlineMath": {"latex": "b'"}}]},
+                ],
+                "goal": {
+                    "context": [{"name": "x", "description": "an input bitstring", "isHypothesis": False, "usedInGoal": True}],
+                    "targetLatex": "\\Delta(\\mathbf{K}, \\mathbf{SEC}) \\le \\varepsilon",
+                    "targetProse": "The reduction advantage is bounded by ε.",
+                },
+                "originDecl": "Examples.AuthenticatedEncryption.reductionB",
+            }
+        )
+        return doc
+
+    def test_wave_b_verso_schema_preludes_and_pseudocode_box_roundtrip(self) -> None:
+        fixture = self._make_wave_b_fixture(include_style_in_prelude_diag=True)
+        json_path = self.write_json("wave_b_schema.json", fixture)
+
+        exe = VERSO_PKG_DIR / ".lake" / "build" / "bin" / "verso-informalize"
+        if not exe.is_file():
+            self.skipTest("verso-informalize Lean binary not yet built")
+
+        res_inspect = subprocess.run([str(exe), "inspect", str(json_path)], capture_output=True, text=True)
+        self.assertEqual(res_inspect.returncode, 0, msg=res_inspect.stdout + res_inspect.stderr)
+
+        body_out = self.tmp_path / "wave_b_body.html"
+        res_body = subprocess.run(
+            [str(exe), "render-body", str(json_path), str(body_out), "--auditor"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(res_body.returncode, 0, msg=res_body.stdout + res_body.stderr)
+        body_html = body_out.read_text(encoding="utf-8")
+
+        # Preludes mount after sectionContext and BEFORE entry article
+        idx_ctx = body_html.index("cadmo-section-context")
+        idx_pre = body_html.index("cadmo-section-preludes")
+        idx_entry = body_html.index("<article class=\"cadmo-entry\"")
+        self.assertLess(idx_ctx, idx_pre)
+        self.assertLess(idx_pre, idx_entry)
+
+        for kind in ["definition", "attackGame", "construction", "interfaceSpec", "converterDef", "symbolTable"]:
+            self.assertIn(f"cadmo-prelude-{kind}", body_html)
+        self.assertIn("cadmo-prelude-table", body_html)
+        self.assertIn("cadmo-prelude-inspect", body_html)
+        self.assertIn("cadmo-pseudocode-box cadmo-pbox-reduction", body_html)
+        self.assertIn("padding-left: calc(1 * 1.4em)", body_html)
+        self.assertIn("padding-left: calc(2 * 1.4em)", body_html)
+        self.assertNotIn("<style>", body_html)
+        self.assertIn("prelude-game-svg", body_html)
+
+        # Direct Lean roundtrip check (FromJson -> ToJson -> FromJson == original) + legacy JSON decode
+        legacy_path = self.write_json("legacy_compat.json", make_clean_fixture())
+        lean_probe = VERSO_PKG_DIR / ".lake" / "roundtrip_probe.lean"
+        try:
+            lean_probe.write_text(
+                f"""import VersoInformalization.Schema
+import VersoInformalization.CadmoBlocks
+open Lean VersoInformalization.Schema VersoInformalization.CadmoBlocks
+
+#eval show IO Unit from do
+  let doc1 ← loadDocumentFile {json.dumps(str(json_path))}
+  let encoded := (toJson doc1).compress
+  let doc2 ← IO.ofExcept (parseDocumentJson encoded)
+  if doc1 != doc2 then
+    throw <| IO.userError "Roundtrip mismatch between doc1 and doc2"
+  let entry := doc2.entries[0]!
+  if entry.sectionPreludes.size != 6 then
+    throw <| IO.userError s!"Expected 6 sectionPreludes, got {{entry.sectionPreludes.size}}"
+  let hasPbox := entry.proof.any fun
+    | .pseudocodeBox _ _ _ _ _ _ => true
+    | _ => false
+  if !hasPbox then
+    throw <| IO.userError "Expected ProofNode.pseudocodeBox after roundtrip"
+  let legacy ← loadDocumentFile {json.dumps(str(legacy_path))}
+  if !legacy.entries[0]!.sectionPreludes.isEmpty then
+    throw <| IO.userError "Expected empty sectionPreludes on legacy doc"
+  IO.println "VERSO_ROUNDTRIP_OK"
+""",
+                encoding="utf-8",
+            )
+            res_lean = subprocess.run(
+                ["lake", "env", "lean", str(lean_probe)],
+                cwd=str(VERSO_PKG_DIR),
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(res_lean.returncode, 0, msg=res_lean.stdout + res_lean.stderr)
+            self.assertIn("VERSO_ROUNDTRIP_OK", res_lean.stdout)
+        finally:
+            if lean_probe.exists():
+                lean_probe.unlink()
+
+    def test_wave_b_preludes_and_pseudocode_box_dom_js(self) -> None:
+        js_cmd = find_js_runtime()
+        if not js_cmd:
+            self.skipTest("No JS runtime (node or jsc) available")
+
+        fixture = self._make_wave_b_fixture(include_style_in_prelude_diag=True)
+        # Also test a pseudocodeBox nested inside an isWrapper=true step to verify Paper mode preserves it
+        fixture["entries"][0]["proof"].append(
+            {
+                "kind": "step",
+                "id": "wrap-pbox",
+                "content": [{"text": {"value": "Wrapper forwarding to hybrid box."}}],
+                "isWrapper": True,
+                "defaultExpanded": False,
+                "children": [
+                    {
+                        "kind": "pseudocodeBox",
+                        "id": "pbox-hybrid-wrapped",
+                        "title": "Hybrid H_1",
+                        "boxKind": "hybrid",
+                        "lines": [
+                            {"indent": 0, "inlines": [{"text": {"value": "1. Replace "}}, {"symbol": {"key": "sym.key", "display": "\\mathbf{K}", "isMath": True}}, {"text": {"value": " with random."}}]},
+                            {"indent": 1, "inlines": [{"text": {"value": "2. Run distinguisher."}}]},
+                        ],
+                        "goal": None,
+                        "originDecl": "Examples.AuthenticatedEncryption.hybrid1",
+                    }
+                ],
+            }
+        )
+
+        harness = r"""
+        const jsSrc = __JS_SRC__;
+        const sampleDoc = __DOC_JSON__;
+        class FakeClassList {
+          constructor(el) { this.el = el; this._set = new Set(); }
+          _syncFromString(str) {
+            this._set = new Set(String(str || '').trim().split(/\s+/).filter(Boolean));
+          }
+          _syncToString() {
+            this.el._className = Array.from(this._set).join(' ');
+          }
+          add(...cls) { cls.forEach(c => this._set.add(c)); this._syncToString(); }
+          remove(...cls) { cls.forEach(c => this._set.delete(c)); this._syncToString(); }
+          contains(c) { return this._set.has(c); }
+        }
+        class FakeNode {
+          constructor(nodeType, tagName = '') {
+            this.nodeType = nodeType;
+            this.tagName = tagName.toUpperCase();
+            this.childNodes = [];
+            this.parentNode = null;
+            this.attrs = {};
+            this.dataset = {};
+            this.style = {};
+            this._className = '';
+            this._innerHTML = null;
+            this.classList = new FakeClassList(this);
+            this._text = '';
+            this.isConnected = true;
+          }
+          get className() { return this._className; }
+          set className(v) { this._className = String(v || ''); this.classList._syncFromString(this._className); }
+          get children() { return this.childNodes.filter(n => n.nodeType === 1); }
+          get innerHTML() {
+            if (this._innerHTML !== null && this.childNodes.length === 0) return this._innerHTML;
+            return this.childNodes.map(c => c.toHTML()).join('');
+          }
+          set innerHTML(v) {
+            this.childNodes = [];
+            this._innerHTML = String(v || '');
+          }
+          get textContent() {
+            if (this.nodeType === 3) return this._text;
+            return this.childNodes.map(c => c.textContent).join('');
+          }
+          set textContent(v) {
+            if (this.nodeType === 3) { this._text = String(v || ''); return; }
+            this.childNodes = [];
+            this._innerHTML = null;
+            if (v !== '' && v !== null && v !== undefined) {
+              this.appendChild(document.createTextNode(String(v)));
+            }
+          }
+          appendChild(child) {
+            if (!child) return child;
+            if (child.nodeType === 11) {
+              for (const k of [...child.childNodes]) this.appendChild(k);
+              return child;
+            }
+            if (child.parentNode) child.parentNode.removeChild(child);
+            child.parentNode = this;
+            this.childNodes.push(child);
+            return child;
+          }
+          removeChild(child) {
+            const idx = this.childNodes.indexOf(child);
+            if (idx >= 0) { this.childNodes.splice(idx, 1); child.parentNode = null; }
+            return child;
+          }
+          insertBefore(newNode, refNode) {
+            if (!refNode) return this.appendChild(newNode);
+            if (newNode.parentNode) newNode.parentNode.removeChild(newNode);
+            const idx = this.childNodes.indexOf(refNode);
+            newNode.parentNode = this;
+            if (idx >= 0) this.childNodes.splice(idx, 0, newNode);
+            else this.childNodes.push(newNode);
+            return newNode;
+          }
+          replaceWith(newNode) {
+            if (!this.parentNode) return;
+            this.parentNode.insertBefore(newNode, this);
+            this.parentNode.removeChild(this);
+          }
+          contains(target) {
+            let cur = target;
+            while (cur) {
+              if (cur === this) return true;
+              cur = cur.parentNode;
+            }
+            return false;
+          }
+          setAttribute(k, v) {
+            this.attrs[k] = String(v);
+            if (k === 'class') this.className = v;
+            if (k.startsWith('data-')) {
+              const camel = k.slice(5).replace(/-([a-z])/g, (_, ch) => ch.toUpperCase());
+              this.dataset[camel] = String(v);
+            }
+          }
+          getAttribute(k) { return Object.prototype.hasOwnProperty.call(this.attrs, k) ? this.attrs[k] : null; }
+          hasAttribute(k) { return Object.prototype.hasOwnProperty.call(this.attrs, k); }
+          addEventListener(ev, fn) {
+            this._listeners = this._listeners || {};
+            (this._listeners[ev] = this._listeners[ev] || []).push(fn);
+          }
+          dispatchClick() {
+            for (const fn of (this._listeners && this._listeners.click) || []) fn({ stopPropagation() {} });
+          }
+          matchesSelectorOne(sel) {
+            sel = sel.trim();
+            if (!sel) return false;
+            const tokens = sel.match(/(?:^[A-Za-z0-9_-]+|\.[A-Za-z0-9_-]+|\[[^\]]+\])/g);
+            if (!tokens || tokens.join('') !== sel) return false;
+            return tokens.every(tok => {
+              if (tok.startsWith('[')) {
+                const inner = tok.slice(1, -1);
+                const eq = inner.indexOf('=');
+                if (eq >= 0) {
+                  const k = inner.slice(0, eq).trim();
+                  const v = inner.slice(eq + 1).trim().replace(/^["']|["']$/g, '');
+                  return this.getAttribute(k) === v;
+                }
+                return this.hasAttribute(inner);
+              }
+              if (tok.startsWith('.')) return this.classList.contains(tok.slice(1));
+              return this.tagName === tok.toUpperCase();
+            });
+          }
+          matches(sel) {
+            return sel.split(',').some(p => this.matchesSelectorOne(p));
+          }
+          closest(selectorList) {
+            const parts = selectorList.split(',').map(s => s.trim());
+            let cur = this;
+            while (cur && cur.nodeType === 1) {
+              if (parts.some(p => cur.matchesSelectorOne(p))) return cur;
+              cur = cur.parentNode;
+            }
+            return null;
+          }
+          _queryDescendantChain(parts) {
+            if (parts.length === 0) return [];
+            const [head, ...tail] = parts;
+            const hits = [];
+            const walk = (node) => {
+              for (const ch of node.children) {
+                if (ch.matchesSelectorOne(head)) hits.push(ch);
+                walk(ch);
+              }
+            };
+            walk(this);
+            if (tail.length === 0) return hits;
+            const seen = new Set();
+            const out = [];
+            for (const h of hits) {
+              for (const sub of h._queryDescendantChain(tail)) {
+                if (!seen.has(sub)) {
+                  seen.add(sub);
+                  out.push(sub);
+                }
+              }
+            }
+            return out;
+          }
+          querySelectorAll(selectorList) {
+            const branches = selectorList.split(',').map(s => s.trim()).filter(Boolean);
+            const seen = new Set();
+            const out = [];
+            for (const b of branches) {
+              const parts = b.split(/\s+/).filter(Boolean);
+              for (const el of this._queryDescendantChain(parts)) {
+                if (!seen.has(el)) {
+                  seen.add(el);
+                  out.push(el);
+                }
+              }
+            }
+            return out;
+          }
+          querySelector(selectorList) { return this.querySelectorAll(selectorList)[0] || null; }
+          toHTML() {
+            if (this.nodeType === 3) return this._text;
+            const cls = this._className ? ` class="${this._className}"` : '';
+            const attrs = Object.entries(this.attrs).filter(([k]) => k !== 'class').map(([k, v]) => ` ${k}="${v}"`).join('');
+            return `<${this.tagName.toLowerCase()}${cls}${attrs}>${this.innerHTML}</${this.tagName.toLowerCase()}>`;
+          }
+        }
+        const rootEl = new FakeNode(1, 'div');
+        const dataEl = new FakeNode(1, 'script');
+        const bodyEl = new FakeNode(1, 'body');
+        const docEl = new FakeNode(1, 'html');
+        globalThis.document = {
+          documentElement: docEl,
+          body: bodyEl,
+          getElementById: (id) => {
+            if (id === 'cadmo-root') return rootEl;
+            if (id === 'cadmo-document-data') return dataEl;
+            return rootEl.querySelectorAll('[id]').find(n => n.getAttribute('id') === id) || null;
+          },
+          createElement: (tag) => new FakeNode(1, tag),
+          createTextNode: (txt) => { const n = new FakeNode(3); n._text = String(txt || ''); return n; },
+          createDocumentFragment: () => new FakeNode(11),
+          addEventListener: () => {},
+          querySelector: () => null
+        };
+        globalThis.window = globalThis;
+        globalThis.addEventListener = () => {};
+
+        // Mock KaTeX to verify KaTeX rendering + hover reference annotation inside preludes & pseudocodeBox
+        let katexCalls = 0;
+        globalThis.katex = {
+          render: (tex, el) => {
+            katexCalls += 1;
+            const kHtml = document.createElement('span');
+            kHtml.className = 'katex-html';
+            const base = document.createElement('span');
+            base.className = 'base';
+            const tok = document.createElement('span');
+            tok.className = 'mord';
+            tok.textContent = tex;
+            base.appendChild(tok);
+            kHtml.appendChild(base);
+            el.appendChild(kHtml);
+          }
+        };
+
+        dataEl.textContent = JSON.stringify(sampleDoc);
+        eval(jsSrc);
+        function assert(cond, msg) { if (!cond) throw new Error('ASSERT FAILED: ' + msg); }
+
+        assert(katexCalls > 0, 'KaTeX must run on math in preludes & pseudocodeBox');
+
+        // 1. Verify DOM order: section-head (with section-context) -> section-preludes -> entry
+        const mainEl = rootEl.querySelector('.cadmo-main');
+        assert(mainEl !== null, 'main element present');
+        const mainKids = mainEl.children;
+        const idxSecHead = mainKids.findIndex(el => el.classList.contains('cadmo-section-head'));
+        const idxPreludes = mainKids.findIndex(el => el.classList.contains('cadmo-section-preludes'));
+        const idxEntry = mainKids.findIndex(el => el.classList.contains('cadmo-entry'));
+        assert(idxSecHead >= 0 && idxPreludes > idxSecHead && idxEntry > idxPreludes,
+          `Expected sectionHead (${idxSecHead}) < sectionPreludes (${idxPreludes}) < entry (${idxEntry})`);
+        assert(mainKids[idxSecHead].querySelector('.cadmo-section-context') !== null, 'sectionContext mounted inside sectionHead');
+
+        // 2. Verify all 6 prelude kinds render cleanly
+        const preludesWrap = mainKids[idxPreludes];
+        for (const kind of ['definition', 'attackGame', 'construction', 'interfaceSpec', 'converterDef', 'symbolTable']) {
+          const el = preludesWrap.querySelector(`.cadmo-prelude-${kind}`);
+          assert(el !== null, `Missing prelude kind .cadmo-prelude-${kind}`);
+        }
+        const symTable = preludesWrap.querySelector('.cadmo-prelude-symbolTable table.cadmo-prelude-table');
+        assert(symTable && symTable.querySelectorAll('tr').length === 2, 'symbolTable renders 2 rows');
+        assert(symTable.querySelectorAll('button.cadmo-sym').length >= 2, 'symbolTable rows carry interactive symbols');
+
+        // 3. Verify indentation, stripped <style> diagram, and declKey inspect button in preludes
+        const gamePrelude = preludesWrap.querySelector('.cadmo-prelude-attackGame');
+        const gameLines = gamePrelude.querySelectorAll('.cadmo-pseudocode-line');
+        assert(gameLines.length === 3, 'attackGame has 3 pseudocode lines');
+        assert(gameLines[0].getAttribute('data-indent') === '0', 'indent 0');
+        assert(gameLines[1].getAttribute('data-indent') === '1' && gameLines[1].style.paddingLeft === 'calc(1 * 1.4em)', 'indent 1 padding-left');
+        assert(gameLines[2].getAttribute('data-indent') === '2' && gameLines[2].style.paddingLeft === 'calc(2 * 1.4em)', 'indent 2 padding-left');
+        const gameDiagBody = gamePrelude.querySelector('.cadmo-prelude-diagram .cadmo-diagram-body');
+        assert(gameDiagBody && gameDiagBody.innerHTML.includes('prelude-game-svg'), 'prelude diagramHtml mounted');
+        assert(!gameDiagBody.innerHTML.includes('<style'), 'prelude diagramHtml <style> stripped');
+
+        // Clicking declKey inspect button opens margin inspector card
+        const inspectBtn = gamePrelude.querySelector('button.cadmo-prelude-inspect');
+        assert(inspectBtn !== null && inspectBtn.getAttribute('data-cadmo-key') === 'sym.game', 'prelude declKey inspect button present');
+        inspectBtn.dispatchClick();
+        const sidenoteTitle = rootEl.querySelector('.cadmo-margin .cadmo-sidenote-title');
+        assert(sidenoteTitle && sidenoteTitle.textContent.includes('G'), 'clicking prelude Inspect button opens margin inspector');
+
+        // 4. Verify ProofNode.pseudocodeBox renders in Paper mode (including wrapper-unwrapped hybrid box)
+        const pboxesPaper = rootEl.querySelectorAll('figure.cadmo-pseudocode-box');
+        assert(pboxesPaper.length === 2, 'Paper mode must render both pseudocodeBox figures, got ' + pboxesPaper.length);
+        assert(rootEl.querySelector('figure.cadmo-pbox-reduction') !== null, 'reduction box rendered in Paper mode');
+        assert(rootEl.querySelector('figure.cadmo-pbox-hybrid') !== null, 'wrapper-nested hybrid box preserved in Paper mode');
+        const redBox = rootEl.querySelector('figure.cadmo-pbox-reduction');
+        assert(redBox.querySelector('.cadmo-pbox-kind').textContent === 'Reduction', 'boxKind pill rendered');
+        assert(redBox.querySelector('.cadmo-pbox-title').textContent === 'Reduction B', 'box title rendered');
+        const redLines = redBox.querySelectorAll('.cadmo-pseudocode-line');
+        assert(redLines.length === 3 && redLines[2].style.paddingLeft === 'calc(2 * 1.4em)', 'pseudocodeBox indented lines');
+        assert(redBox.querySelectorAll('button.cadmo-sym').length >= 1, 'pseudocodeBox line interactive symbol annotated');
+
+        // 5. Switch to Auditor mode and verify pseudocodeBox + goal button + origin tag work
+        const auditorBtn = rootEl.querySelector('.cadmo-controls').querySelectorAll('button').find(b => b.textContent === 'Auditor');
+        assert(auditorBtn, 'Auditor mode button present');
+        auditorBtn.dispatchClick();
+        assert(docEl.dataset.mode === 'auditor', 'mode switched to auditor');
+        const pboxesAuditorCollapsed = rootEl.querySelectorAll('figure.cadmo-pseudocode-box');
+        assert(pboxesAuditorCollapsed.length === 1, 'Auditor mode preserves top-level pseudocodeBox before expanding wrapper');
+        const expandAllBtn = rootEl.querySelector('.cadmo-controls').querySelectorAll('button').find(b => b.textContent.includes('Expand proofs'));
+        assert(expandAllBtn, 'Expand proofs button present in Auditor mode');
+        expandAllBtn.dispatchClick();
+        const pboxesAuditorExpanded = rootEl.querySelectorAll('figure.cadmo-pseudocode-box');
+        assert(pboxesAuditorExpanded.length === 2, 'Auditor mode preserves both pseudocodeBox figures after expanding wrapper, got ' + pboxesAuditorExpanded.length);
+        const redBoxAud = rootEl.querySelector('figure.cadmo-pbox-reduction');
+        assert(redBoxAud.querySelector('.cadmo-origin-tag').textContent.includes('reductionB'), 'originDecl tag shown on pseudocodeBox');
+        const goalBtn = redBoxAud.querySelector('button.cadmo-goal-btn');
+        assert(goalBtn !== null, 'goal button present on pseudocodeBox');
+        goalBtn.dispatchClick();
+        const goalSidenote = rootEl.querySelector('.cadmo-margin .cadmo-goal-target');
+        assert(goalSidenote && goalSidenote.textContent.includes('SEC'), 'clicking pseudocodeBox goal button opens GoalState in margin');
+
+        print('WAVE_B_JS_TESTS_OK');
+        """
+        js_src = CADMO_READER_JS.read_text(encoding="utf-8")
+        full_js = (
+            "if (typeof print === 'undefined') { globalThis.print = console.log; }\n"
+            + harness.replace("__JS_SRC__", json.dumps(js_src)).replace("__DOC_JSON__", json.dumps(fixture))
+        )
+        script_path = self.tmp_path / "test_wave_b_js.js"
+        script_path.write_text(full_js, encoding="utf-8")
+        res = subprocess.run([*js_cmd, str(script_path)], capture_output=True, text=True)
+        self.assertEqual(res.returncode, 0, msg=res.stdout + res.stderr)
+        self.assertIn("WAVE_B_JS_TESTS_OK", res.stdout)
+
+        css_txt = CADMO_READER_CSS.read_text(encoding="utf-8")
+        for req_css in [
+            ".cadmo-section-preludes",
+            ".cadmo-prelude-definition",
+            ".cadmo-prelude-attackGame",
+            ".cadmo-prelude-symbolTable",
+            ".cadmo-prelude-interfaceSpec",
+            ".cadmo-pseudocode-box",
+            ".cadmo-pseudocode-line",
+        ]:
+            self.assertIn(req_css, css_txt)
+
+    def test_wave_b_ci_gates_preludes_and_pseudocode_box(self) -> None:
+        clean = self._make_wave_b_fixture(include_style_in_prelude_diag=False)
+        clean_path = self.write_json("wave_b_clean.json", clean)
+        for tier in ("legacy", "authored"):
+            res = run_check("--tier", tier, str(clean_path))
+            self.assertEqual(res.returncode, 0, msg=f"tier={tier}: {res.stdout}\n{res.stderr}")
+
+        # Negative 1: zero-leakage in prelude label, title, body, lines, rows
+        leak_locations = [
+            ("label", lambda d: d["entries"][0]["sectionPreludes"][0].__setitem__("label", "Def x._hyg.9")),
+            ("title", lambda d: d["entries"][0]["sectionPreludes"][0].__setitem__("title", "Game at interface A")),
+            ("body", lambda d: d["entries"][0]["sectionPreludes"][0]["body"][0].append({"text": {"value": " via ENNReal.ofReal"}})),
+            ("lines", lambda d: d["entries"][0]["sectionPreludes"][1]["lines"][0]["inlines"].append({"text": {"value": " fun x => x"}})),
+            ("rows.left", lambda d: d["entries"][0]["sectionPreludes"][5]["rows"][0]["left"].append({"inlineMath": {"latex": "x._hyg.1"}})),
+            ("rows.right", lambda d: d["entries"][0]["sectionPreludes"][5]["rows"][0]["right"].append({"text": {"value": " uses whiskering"}})),
+        ]
+        for label, mutator in leak_locations:
+            with self.subTest(prelude_leak=label):
+                bad = copy.deepcopy(clean)
+                mutator(bad)
+                p = self.write_json(f"leak_prelude_{label}.json", bad)
+                res = run_check(str(p))
+                self.assertNotEqual(res.returncode, 0)
+                self.assertIn("zero-leakage", res.stdout)
+
+        # Negative 2: broken declKey & broken symbol key inside sectionPreludes
+        bad_decl_key = copy.deepcopy(clean)
+        bad_decl_key["entries"][0]["sectionPreludes"][0]["declKey"] = "sym.missing_decl"
+        res_dk = run_check(str(self.write_json("bad_prelude_dk.json", bad_decl_key)))
+        self.assertNotEqual(res_dk.returncode, 0)
+        self.assertIn("sym.missing_decl", res_dk.stdout)
+
+        bad_row_sym = copy.deepcopy(clean)
+        bad_row_sym["entries"][0]["sectionPreludes"][5]["rows"][0]["right"].append(
+            {"symbol": {"key": "sym.broken_row_sym", "display": "Z", "isMath": True}}
+        )
+        res_rs = run_check(str(self.write_json("bad_row_sym.json", bad_row_sym)))
+        self.assertNotEqual(res_rs.returncode, 0)
+        self.assertIn("sym.broken_row_sym", res_rs.stdout)
+
+        # Negative 3: embedded <style> in prelude.diagramHtml
+        bad_style = self._make_wave_b_fixture(include_style_in_prelude_diag=True)
+        res_st = run_check(str(self.write_json("bad_prelude_style.json", bad_style)))
+        self.assertNotEqual(res_st.returncode, 0)
+        self.assertIn("diagram-style", res_st.stdout)
+
+        # Negative 4: typography double space inside prelude & pseudocodeBox lines
+        bad_space = copy.deepcopy(clean)
+        bad_space["entries"][0]["sectionPreludes"][1]["lines"][0]["inlines"][0]["text"]["value"] = "1. Sample  key"
+        res_sp = run_check(str(self.write_json("bad_prelude_space.json", bad_space)))
+        self.assertNotEqual(res_sp.returncode, 0)
+        self.assertIn("typography", res_sp.stdout)
+
+        # Negative 5: pseudocodeBox zero-leakage (title, lines, goal), broken key, and sibling dedup
+        pbox_mutations = [
+            ("title_leak", "zero-leakage", lambda b: b.__setitem__("title", "Reduction x._hyg.3")),
+            ("line_leak", "zero-leakage", lambda b: b["lines"][0]["inlines"].append({"text": {"value": " Coe.coe x"}})),
+            ("goal_leak", "zero-leakage", lambda b: b["goal"].__setitem__("targetLatex", "ENNReal.ofReal x")),
+            ("broken_key", "sym.missing_pbox", lambda b: b["lines"][0]["inlines"].append({"symbol": {"key": "sym.missing_pbox", "display": "Q", "isMath": True}})),
+            ("double_space", "typography", lambda b: b["lines"][0]["inlines"][0]["text"].__setitem__("value", "1. Receive  input ")),
+        ]
+        for name, expected_msg, mutator in pbox_mutations:
+            with self.subTest(pbox=name):
+                bad = copy.deepcopy(clean)
+                mutator(bad["entries"][0]["proof"][-1])
+                res = run_check(str(self.write_json(f"bad_pbox_{name}.json", bad)))
+                self.assertNotEqual(res.returncode, 0)
+                self.assertIn(expected_msg, res.stdout)
+
+        dup_pbox = copy.deepcopy(clean)
+        dup_copy = copy.deepcopy(dup_pbox["entries"][0]["proof"][-1])
+        dup_copy["id"] = "pbox-red-2"
+        dup_pbox["entries"][0]["proof"].append(dup_copy)
+        res_dup = run_check(str(self.write_json("dup_pbox.json", dup_pbox)))
+        self.assertNotEqual(res_dup.returncode, 0)
+        self.assertIn("sibling-dedup", res_dup.stdout)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

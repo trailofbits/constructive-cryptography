@@ -62,6 +62,13 @@
       if (typeof entry.diagramHtml === "string") {
         entry.diagramHtml = stripEmbeddedStyles(entry.diagramHtml);
       }
+      if (Array.isArray(entry.sectionPreludes)) {
+        for (const p of entry.sectionPreludes) {
+          if (p && typeof p === "object" && typeof p.diagramHtml === "string") {
+            p.diagramHtml = stripEmbeddedStyles(p.diagramHtml);
+          }
+        }
+      }
       for (const ins of entry.localInspectors || []) sanitizeIns(ins);
       if (entry.sectionContext && Array.isArray(entry.sectionContext.inspectors)) {
         for (const ins of entry.sectionContext.inspectors) sanitizeIns(ins);
@@ -100,6 +107,13 @@
         if (!sectionRefKeys.has(eSecId)) sectionRefKeys.set(eSecId, new Set());
         const sset = sectionRefKeys.get(eSecId);
         for (const k of entry.referencedKeys) sset.add(k);
+      }
+      if (eSecId && Array.isArray(entry.sectionPreludes)) {
+        if (!sectionRefKeys.has(eSecId)) sectionRefKeys.set(eSecId, new Set());
+        const sset = sectionRefKeys.get(eSecId);
+        for (const p of entry.sectionPreludes) {
+          if (p && p.declKey) sset.add(p.declKey);
+        }
       }
       for (const ins of entry.localInspectors || []) {
         inspectorByKey.set(ins.key, ins);
@@ -1153,6 +1167,143 @@
     }, "⊢");
   }
 
+  const BOX_KIND_LABELS = {
+    attackGame: "Attack Game",
+    hybrid: "Hybrid",
+    reduction: "Reduction",
+    distinguisher: "Distinguisher",
+    algorithm: "Algorithm"
+  };
+
+  function boxKindLabel(boxKind) {
+    return BOX_KIND_LABELS[boxKind] || boxKind || "Algorithm";
+  }
+
+  function renderPseudocodeLines(lines, scope = null) {
+    if (!Array.isArray(lines) || lines.length === 0) return null;
+    return h("div", { class: "cadmo-pseudocode-lines" },
+      ...lines.map((ln) => {
+        const indent = Math.max(0, Number((ln && ln.indent) || 0));
+        const inlines = (ln && Array.isArray(ln.inlines)) ? ln.inlines : [];
+        const lineEl = h("div", {
+          class: "cadmo-pseudocode-line",
+          "data-indent": String(indent),
+          style: indent > 0 ? `padding-left: calc(${indent} * 1.4em)` : null
+        }, renderInlines(inlines, scope));
+        if (indent > 0 && lineEl.style) {
+          lineEl.style.paddingLeft = `calc(${indent} * 1.4em)`;
+        }
+        return lineEl;
+      })
+    );
+  }
+
+  function renderPseudocodeBox(node, scope = null) {
+    if (!node || typeof node !== "object") return null;
+    const boxKind = node.boxKind || "algorithm";
+    const titleStr = typeof node.title === "string" ? node.title.trim() : "";
+    const originTag = node.originDecl ? h("span", { class: "cadmo-origin-tag" }, node.originDecl) : null;
+    const goalBtn = renderGoalButton(node.goal, titleStr || node.originDecl || "Pseudocode box");
+    const hasMeta = !!(originTag || goalBtn);
+    return h("figure", {
+      class: `cadmo-pseudocode-box cadmo-pbox-${boxKind}`,
+      "data-node-id": node.id || null,
+      "data-box-kind": boxKind
+    },
+      h("figcaption", { class: "cadmo-pbox-head" },
+        h("div", { class: "cadmo-pbox-title-group" },
+          h("span", { class: "cadmo-pbox-kind" }, boxKindLabel(boxKind)),
+          titleStr ? h("span", { class: "cadmo-pbox-title" }, renderMixedText(titleStr, scope)) : null
+        ),
+        hasMeta ? h("div", { class: "cadmo-pbox-meta" }, originTag, goalBtn) : null
+      ),
+      renderPseudocodeLines(node.lines || [], scope)
+    );
+  }
+
+  function renderPreludeBlock(p, scope = null) {
+    if (!p || typeof p !== "object") return null;
+    const kind = p.kind || "definition";
+    const labelStr = typeof p.label === "string" ? p.label.trim() : "";
+    const titleStr = typeof p.title === "string" ? p.title.trim() : "";
+    const declKey = typeof p.declKey === "string" && p.declKey.trim() ? p.declKey.trim() : null;
+    const declIns = declKey ? inspectorByKey.get(declKey) : null;
+
+    let inspectBtn = null;
+    if (declKey) {
+      inspectBtn = h("button", {
+        type: "button",
+        class: "cadmo-prelude-inspect cadmo-action-link",
+        "data-cadmo-key": declKey
+      }, "Inspect");
+      if (declIns) {
+        attachInteractiveToken(
+          inspectBtn,
+          [declIns],
+          titleStr || labelStr || declIns.display || declKey,
+          `key:${declIns.key}`
+        );
+      } else {
+        inspectBtn.disabled = true;
+        inspectBtn.title = declKey;
+      }
+    }
+
+    const hasHeading = !!(labelStr || titleStr || inspectBtn);
+    const headEl = hasHeading
+      ? h("div", { class: "cadmo-prelude-head" },
+          h("div", { class: "cadmo-prelude-heading" },
+            labelStr ? h("span", { class: "cadmo-prelude-label" }, labelStr) : null,
+            titleStr
+              ? h("span", { class: "cadmo-prelude-title" },
+                  labelStr ? " (" : null,
+                  renderMixedText(titleStr, scope),
+                  labelStr ? ")" : null
+                )
+              : null
+          ),
+          inspectBtn
+        )
+      : null;
+
+    const bodyParas = Array.isArray(p.body) ? p.body : [];
+    const bodyEl = bodyParas.length > 0
+      ? h("div", { class: "cadmo-prelude-body" },
+          ...bodyParas.map((para) => h("p", {}, renderInlines(para, scope)))
+        )
+      : null;
+
+    const rows = Array.isArray(p.rows) ? p.rows : [];
+    const rowsEl = rows.length > 0
+      ? h("table", { class: "cadmo-prelude-table" },
+          h("tbody", {},
+            ...rows.map((r) =>
+              h("tr", {},
+                h("th", { scope: "row", class: "cadmo-prelude-row-left" }, renderInlines((r && r.left) || [], scope)),
+                h("td", { class: "cadmo-prelude-row-right" }, renderInlines((r && r.right) || [], scope))
+              )
+            )
+          )
+        )
+      : null;
+
+    const linesEl = renderPseudocodeLines(p.lines || [], scope);
+    const diagEl = renderCollapsibleDiagram(p.diagramHtml, "cadmo-prelude-diagram", "Diagram", true);
+
+    return h("section", {
+      class: `cadmo-prelude cadmo-prelude-${kind}`,
+      id: p.id || null,
+      "data-prelude-kind": kind
+    }, headEl, bodyEl, rowsEl, linesEl, diagEl);
+  }
+
+  function renderSectionPreludes(entry, scope = null) {
+    if (!entry || !Array.isArray(entry.sectionPreludes) || entry.sectionPreludes.length === 0) return null;
+    const blocks = entry.sectionPreludes.map((p) => renderPreludeBlock(p, scope)).filter(Boolean);
+    if (blocks.length === 0) return null;
+    return h("div", { class: "cadmo-section-preludes" }, ...blocks);
+  }
+
   /* ------------------------------------------------------------------------
      Flowing paragraph proof renderer: consecutive `step` siblings flow inline
      inside natural `<p class="cadmo-proof-para">` paragraphs (just like
@@ -1248,6 +1399,14 @@
           const p = h("p", { class: "cadmo-flow-note" }, renderMixedText(node.text || "", scope));
           out.push(p);
         }
+        continue;
+      }
+
+      if (node.kind === "pseudocodeBox") {
+        if (leadIn && !usedLeadIn) ensureLeadIn();
+        flushPara(false);
+        const boxEl = renderPseudocodeBox(node, scope);
+        if (boxEl) out.push(boxEl);
         continue;
       }
 
@@ -2043,6 +2202,17 @@
         );
       }
       const entrySecId = entry.sectionId || (entry.sectionContext && entry.sectionContext.sectionId) || activeSecId;
+      if (Array.isArray(entry.sectionPreludes) && entry.sectionPreludes.length > 0) {
+        const preludeKeys = entry.sectionPreludes.map((p) => p && p.declKey).filter(Boolean);
+        const preludeScope = buildScope(
+          entry.localInspectors || [],
+          entrySecId,
+          [...(entry.referencedKeys || []), ...preludeKeys],
+          true
+        );
+        const preludesEl = renderSectionPreludes(entry, preludeScope);
+        if (preludesEl) bodyNodes.push(preludesEl);
+      }
       const entryScope = buildScope(
         entry.localInspectors || [],
         entrySecId,
@@ -2094,6 +2264,11 @@
       annotateKatexMath,
       annotateMathReferences,
       getTrustLevel,
+      projectNodes,
+      renderPseudocodeLines,
+      renderPseudocodeBox,
+      renderPreludeBlock,
+      renderSectionPreludes,
       renderInline,
       renderProofFlow,
       renderInspectorRichBody,

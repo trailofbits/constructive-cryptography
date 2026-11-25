@@ -346,7 +346,7 @@ private def mkVerboseStep (ctx : DecompCtx) (id : String) (content : Array Inlin
     (defaultExpanded : Bool := false) :
     StateRefT DiscourseState MetaM ProofNode := do
   let goal ← buildGoalState ctx.tbl targetForGoal
-  let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) targetForGoal else pure none
+  let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) ctx.tbl targetForGoal else pure none
   return .step id content children (some goal) diagHtml origin? false defaultExpanded
 
 private partial def collectConsts (e : Expr) (acc : NameSet := {}) (fuel : Nat := 64) : NameSet :=
@@ -713,7 +713,7 @@ private def buildAnnotatedCalcChain (ctx : DecompCtx) (decompileChild : Decompil
             else
               decompileChild subCtx hop.prop rawStep
         | _ => decompileChild subCtx hop.prop rawStep
-    let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) hop.prop else pure none
+    let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) ctx.tbl hop.prop else pure none
     let cs : CalcStep := {
       lhsLatex := lhsTex
       relationLatex := hop.relLatex

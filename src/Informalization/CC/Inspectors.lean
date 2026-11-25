@@ -56,6 +56,11 @@ open Informalization.Core.Explanation
 open Informalization.Core.Presentation
 open Informalization.CC.Registry
 
+cc_diagram_substitution
+  ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin 1 0 2 "≃"
+cc_diagram_whisker_right CategoryTheory.MonoidalCategoryStruct.whiskerRight 1 0
+cc_diagram_whisker_left CategoryTheory.MonoidalCategoryStruct.whiskerLeft 3 0
+
 /-! ## 1. Static Box-and-Wire Diagram Hook (`Rendering` Integration) -/
 
 /-- Strip embedded `<style>...</style>` blocks from `CCWidget.staticHtml` output (since `Html.lean`
@@ -90,18 +95,135 @@ private def stripEmbeddedStyles (html : String) : String := Id.run do
     i := i + 1
   return String.ofList out.toList
 
+/-- Convert a LaTeX alias from `SymbolTable` into readable HTML/MathML-safe Unicode text
+so exported box-and-wire diagrams never leak raw backslashes or TeX commands. -/
+private def latexToDiagramUnicode (s : String) : String := Id.run do
+  let mut out := s
+  -- Preserve escaped literal braces `\{` and `\}` during TeX group stripping.
+  out := out.replace "\\{" "\uE001"
+  out := out.replace "\\}" "\uE002"
+  for (pat, rep) in [
+    ("\\llbracket", "⟦"), ("\\rrbracket", "⟧"),
+    ("\\langle", "⟨"), ("\\rangle", "⟩"),
+    ("\\mathcal{U}", "𝒰"), ("\\mathbb{N}", "ℕ"), ("\\mathbb{Z}", "ℤ"),
+    ("\\mathbb{R}", "ℝ"), ("\\mathbb{B}", "𝔹"), ("\\mathbb{1}", "𝟙"), ("\\mathbf{1}", "𝟙"),
+    ("\\$", "$"), ("\\_", "_"), ("\\%", "%"), ("\\&", "&"),
+    ("\\!", ""), ("\\,", ""), ("\\;", " "), ("\\:", " "),
+    ("\\quad", " "), ("\\qquad", " "),
+    ("\\left", ""), ("\\right", ""), ("\\mathbin", "")
+  ] do
+    out := out.replace pat rep
+  let rec stripFracOnce (chars : List Char) : Option String :=
+    let rec findFrac : List Char → List Char → Option String
+      | acc, '\\' :: 'f' :: 'r' :: 'a' :: 'c' :: '{' :: rest =>
+        let rec readGroup (depth : Nat) (grp : List Char) : List Char → Option (String × List Char)
+          | [] => none
+          | '}' :: rs =>
+            if depth == 0 then some (String.ofList grp.reverse, rs)
+            else readGroup (depth - 1) ('}' :: grp) rs
+          | '{' :: rs => readGroup (depth + 1) ('{' :: grp) rs
+          | c :: rs => readGroup depth (c :: grp) rs
+        match readGroup 0 [] rest with
+        | some (num, '{' :: afterNum) =>
+          match readGroup 0 [] afterNum with
+          | some (den, tail) =>
+            some (String.ofList acc.reverse ++ "(" ++ num ++ ")/(" ++ den ++ ")" ++ String.ofList tail)
+          | none => none
+        | _ => none
+      | acc, c :: rs => findFrac (c :: acc) rs
+      | _, [] => none
+    findFrac [] chars
+  for _ in [:8] do
+    match stripFracOnce out.toList with
+    | some next => out := next
+    | none => break
+  for w in [
+    "\\operatorname{", "\\mathrm{", "\\mathsf{", "\\mathbf{",
+    "\\mathit{", "\\mathcal{", "\\boldsymbol{", "\\mathbb{", "\\text{"
+  ] do
+    out := out.replace w ""
+  for (pat, rep) in [
+    ("\\varepsilon", "ε"), ("\\epsilon", "ε"),
+    ("\\varphi", "φ"), ("\\phi", "φ"), ("\\Phi", "Φ"),
+    ("\\psi", "ψ"), ("\\Psi", "Ψ"),
+    ("\\pi", "π"), ("\\Pi", "Π"),
+    ("\\rho", "ρ"), ("\\sigma", "σ"), ("\\Sigma", "Σ"),
+    ("\\delta", "δ"), ("\\Delta", "Δ"),
+    ("\\alpha", "α"), ("\\beta", "β"),
+    ("\\gamma", "γ"), ("\\Gamma", "Γ"),
+    ("\\lambda", "λ"), ("\\Lambda", "Λ"),
+    ("\\tau", "τ"), ("\\eta", "η"),
+    ("\\theta", "θ"), ("\\Theta", "Θ"),
+    ("\\mu", "μ"), ("\\nu", "ν"), ("\\kappa", "κ"),
+    ("\\omega", "ω"), ("\\Omega", "Ω"),
+    ("\\chi", "χ"), ("\\xi", "ξ"), ("\\zeta", "ζ"),
+    ("\\ell", "ℓ"), ("\\infty", "∞"),
+    ("\\pm", "±"), ("\\mp", "∓"), ("\\perp", "⊥"), ("\\top", "⊤"),
+    ("\\times", "×"), ("\\cdot", "·"), ("\\circ", "∘"), ("\\bullet", "•"),
+    ("\\otimes", "⊗"), ("\\parallel", "∥"), ("\\Vert", "∥"), ("\\mid", "|"),
+    ("\\longrightarrow", "⟶"), ("\\rightarrow", "→"), ("\\to", "→"), ("\\mapsto", "↦"),
+    ("\\simeq", "≃"), ("\\approx", "≈"), ("\\equiv", "≡"),
+    ("\\leq", "≤"), ("\\le", "≤"), ("\\geq", "≥"), ("\\ge", "≥"), ("\\neq", "≠"), ("\\ne", "≠"),
+    ("\\notin", "∉"), ("\\in", "∈"), ("\\subseteq", "⊆"),
+    ("\\cup", "∪"), ("\\cap", "∩"), ("\\emptyset", "∅"),
+    ("\\wedge", "∧"), ("\\vee", "∨"), ("\\neg", "¬"),
+    ("\\forall", "∀"), ("\\exists", "∃"),
+    ("\\sum", "∑"), ("\\prod", "∏")
+  ] do
+    out := out.replace pat rep
+  out := out.replace "{" ""
+  out := out.replace "}" ""
+  out := out.replace "\uE001" "{"
+  out := out.replace "\uE002" "}"
+  while (out.splitOn "  ").length > 1 do
+    out := out.replace "  " " "
+  return out.trimAscii.toString
+
+private def toDiagramAliases (tbl : SymbolTable) : CCWidget.DiagramAliases := {
+  active := true
+  constAliases := tbl.constAliases.toList.foldl (init := {}) fun acc (k, v) =>
+    acc.insert k (latexToDiagramUnicode v)
+  shortAliases := tbl.shortAliases.toList.foldl (init := {}) fun acc (k, v) =>
+    acc.insert k (latexToDiagramUnicode v)
+  binderAliases := tbl.binderAliases.toList.foldl (init := {}) fun acc (k, v) =>
+    acc.insert k (latexToDiagramUnicode v)
+  exprAliases := tbl.exprAliases.map fun (pat, v) => (pat, latexToDiagramUnicode v)
+  hiddenArgs := tbl.hiddenArgs
+  zeroArgConsts := tbl.zeroArgConsts
+  constTemplates := tbl.constTemplates.toList.foldl (init := {}) fun acc (k, v) =>
+    acc.insert k (latexToDiagramUnicode v)
+}
+
+private def symbolTableFingerprint (tbl : SymbolTable) : UInt64 := Id.run do
+  let mut h : UInt64 := 14695981039346656037
+  for (k, v) in tbl.constAliases.toList do
+    h := mixHash h (mixHash (hash k) (hash v))
+  for (k, v) in tbl.shortAliases.toList do
+    h := mixHash h (mixHash (hash k) (hash v))
+  for (k, v) in tbl.binderAliases.toList do
+    h := mixHash h (mixHash (hash k) (hash v))
+  for (pat, v) in tbl.exprAliases do
+    h := mixHash h (mixHash (hash pat) (hash v))
+  for (k, idxs) in tbl.hiddenArgs.toList do
+    h := mixHash h (mixHash (hash k) (hash idxs))
+  for n in tbl.zeroArgConsts.toList do
+    h := mixHash h (hash n)
+  for (k, v) in tbl.constTemplates.toList do
+    h := mixHash h (mixHash (hash k) (hash v))
+  return h
+
 /-- Render a checked Lean expression or CC judgment to self-contained static HTML using
 `Rendering`'s deterministic projection (`CCWidget.viewExprCore`, `CCWidget.renderJudgment`,
 `CCWidget.panel`, `CCWidget.staticHtml`). Returns `none` for non-CC expressions. -/
-private initialize diagHtmlCacheRef : IO.Ref (Std.HashMap Expr (Option String)) ← IO.mkRef {}
+private initialize diagHtmlCacheRef : IO.Ref (Std.HashMap (UInt64 × Expr) (Option String)) ← IO.mkRef {}
 
-private def withDiagHeartbeats {α : Type} (maxUserHB : Nat := 1500)
+private def withDiagHeartbeats {α : Type} (maxUserHB : Nat := 2500)
     (x : MetaM (Option α)) : MetaM (Option α) := do
   try
     Lean.Core.withCurrHeartbeats <|
       withTheReader Core.Context (fun c =>
         let limit := maxUserHB * 1000
-        { c with maxHeartbeats := if c.maxHeartbeats == 0 then limit else min c.maxHeartbeats limit }) do
+        { c with maxHeartbeats := if c.maxHeartbeats == 0 then 0 else max c.maxHeartbeats limit }) do
         controlAt CoreM fun runInBase =>
           Lean.Core.tryCatchRuntimeEx (runInBase x) fun ex =>
             runInBase do
@@ -130,29 +252,32 @@ private def isPureMathStdNamespace (n : Name) : Bool :=
 private def exprMaybeHasCCDiagram (e : Expr) : Bool :=
   e.hasFVar || e.foldConsts false fun n acc => acc || !isPureMathStdNamespace n
 
-def renderCCDiagramHtml? (e : Expr) : MetaM (Option String) := do
+def renderCCDiagramHtml? (tbl : SymbolTable := {}) (e : Expr) : MetaM (Option String) := do
   let e ← instantiateMVars e
   if e.hasExprMVar || e.hasSorry || e.hasLevelMVar then
     return none
   if !exprMaybeHasCCDiagram e then
     return none
+  let fp := symbolTableFingerprint tbl
+  let cacheKey := (fp, e)
   let cache ← diagHtmlCacheRef.get
-  if let some cached := cache[e]? then
+  if let some cached := cache[cacheKey]? then
     return cached
-  let res ← (do
-    if let some (j, _) ← withDiagHeartbeats 300 (CCWidget.viewExprCore e false) then
+  let aliases := toDiagramAliases tbl
+  let res ← CCWidget.withDiagramAliases aliases (do
+    if let some (j, _) ← withDiagHeartbeats 2500 (CCWidget.viewExprCore e false) then
       let html := CCWidget.panel (CCWidget.renderJudgment j #[])
       match CCWidget.staticHtml html with
       | .ok rendered => return some (stripEmbeddedStyles rendered)
       | .error _ => pure ()
-    if let some viewHtml ← withDiagHeartbeats 300 (CCWidget.proofViewHtml? e false) then
+    if let some viewHtml ← withDiagHeartbeats 2500 (CCWidget.proofViewHtml? e false) then
       match CCWidget.staticHtml (CCWidget.proofPanel viewHtml) with
       | .ok rendered => return some (stripEmbeddedStyles rendered)
       | .error _ => pure ()
     return none)
   diagHtmlCacheRef.modify fun m =>
     let m := if m.size ≥ 512 then {} else m
-    m.insert e res
+    m.insert cacheKey res
   return res
 
 /-! ## 2. Type-Aware Symbol Inspector Builders -/
@@ -462,6 +587,83 @@ private def containsAuxOrMatchDecl (e : Expr) : Bool :=
   e.foldConsts (init := false) fun n acc =>
     acc || n == ``sorryAx
 
+private def containsUnreducedCasesOrRec (e : Expr) : Bool :=
+  e.foldConsts (init := false) fun n acc =>
+    acc ||
+      let s := n.getString!
+      s == "casesOn" || s == "rec" || s == "recOn" || s == "noConfusion"
+
+private def tupleCasesStruct? (n : Name) : Option Name :=
+  if n == ``Prod.casesOn then some ``Prod
+  else if n == ``PProd.casesOn then some ``PProd
+  else if n == ``Sigma.casesOn then some ``Sigma
+  else if n == ``PSigma.casesOn then some ``PSigma
+  else none
+
+private def projectTupleField (structName : Name) (idx : Nat) (discr : Expr) : Expr :=
+  let d := discr.consumeMData
+  if d.isAppOfArity ``Prod.mk 4 && structName == ``Prod then d.getAppArgs[2 + idx]!
+  else if d.isAppOfArity ``PProd.mk 4 && structName == ``PProd then d.getAppArgs[2 + idx]!
+  else if d.isAppOfArity ``Sigma.mk 4 && structName == ``Sigma then d.getAppArgs[2 + idx]!
+  else if d.isAppOfArity ``PSigma.mk 4 && structName == ``PSigma then d.getAppArgs[2 + idx]!
+  else mkProj structName idx discr
+
+/-- Unfold compiler-generated `match_` helpers and tuple `.casesOn` destructuring
+(such as `let (A, B) := G seed` in `PRGLengthExtension.H`) into clean field
+projections without introducing `let` expressions. -/
+private partial def expandMatchHelpersForDef (e : Expr) (depth : Nat := 16) : MetaM Expr := do
+  if depth == 0 then return e
+  let e := e.consumeMData
+  match e with
+  | .app .. =>
+    let fn := e.getAppFn.consumeMData
+    let args := e.getAppArgs
+    if fn.isLambda then
+      let reduced := e.headBeta
+      if reduced != e then
+        return ← expandMatchHelpersForDef reduced (depth - 1)
+    if let .const head lvls := fn then
+      if (shortConstName head).startsWith "match_" then
+        let unfolded? ← do
+          if let some u ← withTransparency .default (Meta.unfoldDefinition? e) then
+            pure (some u.headBeta)
+          else if let some (.defnInfo dinfo) := (← getEnv).find? head then
+            pure (some (mkAppN (dinfo.value.instantiateLevelParams dinfo.levelParams lvls) args).headBeta)
+          else
+            pure none
+        if let some unfolded := unfolded? then
+          if unfolded != e then
+            return ← expandMatchHelpersForDef unfolded (depth - 1)
+      if let some structName := tupleCasesStruct? head then
+        if args.size ≥ 5 then
+          let discr := args[3]!
+          let k := args[4]!
+          let extra := args.extract 5 args.size
+          let f0 := projectTupleField structName 0 discr
+          let f1 := projectTupleField structName 1 discr
+          let next := (mkAppN (mkAppN k #[f0, f1]) extra).headBeta
+          return ← expandMatchHelpersForDef next (depth - 1)
+    let fn' ← expandMatchHelpersForDef fn (depth - 1)
+    let args' ← args.mapM (expandMatchHelpersForDef · (depth - 1))
+    let combined := mkAppN fn' args'
+    if fn'.isLambda && combined.headBeta != combined then
+      return ← expandMatchHelpersForDef combined.headBeta (depth - 1)
+    return combined
+  | .lam nm dom body bi =>
+    withLocalDecl nm bi dom fun fv => do
+      let inst ← expandMatchHelpersForDef (body.instantiate1 fv) (depth - 1)
+      mkLambdaFVars #[fv] inst
+  | .letE nm ty val body _ =>
+    let val' ← expandMatchHelpersForDef val (depth - 1)
+    if (cleanBinderName? nm).isNone || exprSizeBounded val' 32 then
+      return ← expandMatchHelpersForDef (body.instantiate1 val') (depth - 1)
+    withLetDecl nm ty val' fun fv => do
+      let inst ← expandMatchHelpersForDef (body.instantiate1 fv) (depth - 1)
+      mkLetFVars #[fv] inst
+  | .proj sName idx inner =>
+    return .proj sName idx (← expandMatchHelpersForDef inner (depth - 1))
+  | _ => return e
+
 private def buildStandardDefSummary (env : Environment) (declName : Name) (desc : TypeDescription)
     (isProj hasExplicitParams : Bool) (badge : String) : String :=
   let adj := if desc.adjectives.isEmpty then "" else String.intercalate " " desc.adjectives ++ " "
@@ -598,7 +800,16 @@ private def buildMathDefinitionRich (tbl : SymbolTable) (declName : Name) (info 
         return (.mathDefinition "" summary, badge, finalClauses)
     -- 4. Standard definition / projection
     let summary := buildStandardDefSummary env declName desc isProj (!explicitParams.isEmpty) badge
-    let rhsTex ← if containsAuxOrMatchDecl rhsNorm then pure "" else exprToLatex rhsNorm rhsTbl
+    let rhsForEq ←
+      if containsAuxOrMatchDecl rhsNorm then
+        let expanded ← expandMatchHelpersForDef rhsNorm
+        let expanded ← normalizeForPresentation expanded
+        if !containsAuxOrMatchDecl expanded && !containsUnreducedCasesOrRec expanded &&
+           exprSizeBounded expanded 600 then
+          pure expanded
+        else pure rhsNorm
+      else pure rhsNorm
+    let rhsTex ← if containsAuxOrMatchDecl rhsForEq then pure "" else exprToLatex rhsForEq rhsTbl
     let eqLatex :=
       if rhsTex.isEmpty || rhsTex == lhs || isProj then ""
       else s!"{lhs} := {rhsTex}"
@@ -751,7 +962,7 @@ private def inspectConstant? (tbl : SymbolTable) (declName : Name) :
       let isSpec := (← specificationInterface? bodyTy).isSome
       pure (isRes, isConv, isSpec)
     if (isRes || isConv || isSpec) && !info.type.isForall then
-      if let some diagHtml ← renderCCDiagramHtml? dinfo.value then
+      if let some diagHtml ← renderCCDiagramHtml? tbl dinfo.value then
         let sumTex ← exprToLatex dinfo.value tbl
         let badge := if isConv then "converter" else if isSpec then "specification" else "resource"
         return some {
@@ -901,7 +1112,7 @@ def collectScopedCCInspectors (tbl : SymbolTable) (declName : Name) (theoremType
           let isSpec := (← specificationInterface? decl.type).isSome
           if isRes || isConv || isSpec then
             let b := if isConv then "converter" else if isSpec then "specification" else "resource"
-            match ← renderCCDiagramHtml? fv with
+            match ← renderCCDiagramHtml? tbl fv with
             | some html => pure (.ccDiagram html display, b)
             | none =>
                 let (role, _) ← buildParameterRoleAndBadge tbl decl.type
@@ -949,7 +1160,7 @@ def collectCCInspectors (tbl : SymbolTable) (theoremType : Expr) :
 
 /-- Register the CC diagram hook and type-aware symbol inspector collectors with `ProofGraph`. -/
 def registerAll : IO Unit := do
-  registerDiagramHook renderCCDiagramHtml?
+  registerDiagramHook (fun tbl e => renderCCDiagramHtml? tbl e)
   registerClearDiagramCacheHook (diagHtmlCacheRef.set {})
   registerInspectorCollector collectCCInspectors
   registerScopedInspectorCollector fun tbl declName theoremType proofBody? hoistedParamSyms extra =>

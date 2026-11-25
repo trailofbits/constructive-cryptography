@@ -152,6 +152,7 @@ private def spineTagToExpr : SpineTag → Expr
   | .sufficesStep  => mkConst ``SpineTag.sufficesStep
   | .concludeStep  => mkConst ``SpineTag.concludeStep
   | .ccSpineLeaf   => mkConst ``SpineTag.ccSpineLeaf
+  | .pseudocodeBox => mkConst ``SpineTag.pseudocodeBox
 
 private def wrapSpineIfInterpolated (tag : SpineTag) (idHint : String)
     (startsPara : Bool) (leadHeading trust : String)
@@ -268,6 +269,36 @@ private def checkPropFormulaForgery (kind : String) (val valTy : Expr) (sym : St
   if isPredOrProof && isFormulaForgeryLatex sym then
     throwError "Formula-forgery guard: `{kind}` cannot alias `Prop`/predicate `{← ppExpr val}` to a formula string `{sym}`"
 
+/-- Per-declaration tracker of `(declName?, lastBytePos?, recorded (expr, trimmedSym))`
+for duplicate-symbol collision warnings inside a single theorem proof. -/
+private initialize proofNotationTrackerRef :
+    IO.Ref (Option Name × Option Nat × Array (Expr × String)) ←
+  IO.mkRef (none, none, #[])
+
+private def checkAndRecordProofNotation (val : Expr) (sym : String) : TacticM Unit := do
+  let declName? ← Term.getDeclName?
+  let curPos? := (← getRef).getPos?.map (·.byteIdx)
+  let symTrim := sym.trimAscii.toString
+  let lctx ← getLCtx
+  let (prevDecl?, prevPos?, prevEntries) ← proofNotationTrackerRef.get
+  let resetNeeded :=
+    declName? != prevDecl? ||
+    match curPos?, prevPos? with
+    | some cp, some pp => cp ≤ pp
+    | _, _ => false
+  let activeEntries :=
+    if resetNeeded then #[]
+    else
+      prevEntries.filter fun (prevVal, _) =>
+        (Lean.collectFVars {} prevVal).fvarIds.all lctx.contains
+  for (prevVal, prevSym) in activeEntries do
+    if prevSym == symTrim then
+      let sameExpr ← try withTransparency .reducible (Meta.isDefEq prevVal val) catch _ => pure false
+      if !sameExpr then
+        logWarning m!"Notation collision: symbol '{symTrim}' is mapped to two distinct expressions in the same proof; disambiguate with a distinct symbol or subscript."
+        break
+  proofNotationTrackerRef.set (declName?, curPos?, activeEntries.push (val, symTrim))
+
 /-- Attach a kernel-transparent `with_notation` binding `spineNotation` directly around `inner`
 (plus `MData` for legacy metadata), preserving all downstream steps and rejecting `Prop` forgery. -/
 private def elabWithNotation (valStx : TSyntax `term) (sym : String)
@@ -277,6 +308,7 @@ private def elabWithNotation (valStx : TSyntax `term) (sym : String)
     throwError "With notation: term contains `sorry`"
   let valTy ← inferType val
   checkPropFormulaForgery "With notation" val valTy sym
+  checkAndRecordProofNotation val sym
   let mvarId ← getMainGoal
   let target ← mvarId.getType
   let inner ← mkFreshExprSyntheticOpaqueMVar target (← mvarId.getTag)
@@ -294,6 +326,7 @@ private def elabLetDenoteAs (id : Ident) (tyOpt? : Option (TSyntax `term))
     | some t => pure t
     | none => inferType val
   checkPropFormulaForgery "Let ... denote ... as" val valTy sym
+  checkAndRecordProofNotation val sym
   let mvarId ← getMainGoal
   let target ← mvarId.getType
   let inner ← mkFreshExprSyntheticOpaqueMVar target (← mvarId.getTag)
@@ -1032,6 +1065,11 @@ scoped syntax (name := vccWithRole)
 scoped syntax (name := vccCCLeaf)
   "With" &"cc_leaf" (str)? "{" tacticSeq "}" : tactic
 
+/-- Structured inline algorithm, hybrid, reduction, attack-game, or distinguisher pseudocode box
+with live `${expr}` / `$[prop]` interpolation inside every line. -/
+scoped syntax (name := vccPresentPseudocode)
+  "Present" &"pseudocode" str str str : tactic
+
 /-- Introduce a Boneh–Shoup security game with automatic `Game k.` paragraph heading and hover card. -/
 scoped syntax (name := vccDefineGame)
   "Define" &"game" ident (" : " term)? " := " term (" titled " str)? (vccGlossClause)? : tactic
@@ -1071,6 +1109,15 @@ elab_rules : tactic
         | none => pure ("", mkConst ``spineNil)
       wrapGoalWithSpineNode .ccSpineLeaf "cc-leaf" tmpl false "" "kernelProvedClaim" witness fun g =>
         runTacticSeqOnGoal g tacSeq
+  | `(tactic| Present pseudocode $kind:str $title:str $body:str) => do
+      let k := kind.getString.trimAscii.toString
+      let validBoxKinds : List String := ["attackGame", "hybrid", "reduction", "distinguisher", "algorithm"]
+      unless validBoxKinds.contains k do
+        let allowed := String.intercalate ", " validBoxKinds
+        throwError "Unknown pseudocode box kind `{k}`; expected one of: {allowed}"
+      let (tmpl, witness) ← parseAndElabProseInterp body.getString
+      wrapGoalWithSpineNode .pseudocodeBox title.getString tmpl true k "kernelFormula" witness
+        fun g => pure [g]
   | `(tactic| With notation $e as $sym:str $[$g?:vccGlossClause]?) =>
       elabWithNotation e sym.getString (extractGloss? g?)
   | `(tactic| Let $id:ident $[: $ty]? denote $val $[as $sym?]? $[$g?:vccGlossClause]?) =>

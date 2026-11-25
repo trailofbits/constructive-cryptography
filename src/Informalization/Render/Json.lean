@@ -26,6 +26,7 @@ namespace Informalization.Render.Json
 
 open Lean Meta
 open Informalization.Core.Explanation
+open Informalization.Core.LeanTeX
 open Informalization.Core.Ontology
 open Informalization.Core.Overlay
 open Informalization.Core.ProofGraph
@@ -179,6 +180,133 @@ private def analyzeSectionHoisting (secNum : Nat) (grpDecls : Array Name) :
   }
   return some (secCtx, hoistedCtx)
 
+/-- Split multi-paragraph prelude body prose into parsed `Array Inline` paragraphs. -/
+private def parsePreludeParagraphs (txt : String) : Array (Array Inline) := Id.run do
+  let norm := (txt.replace "\r\n" "\n").replace "\r" "\n"
+  let mut out : Array (Array Inline) := #[]
+  for para in norm.splitOn "\n\n" do
+    let collapsed := (para.replace "\n" " ").trimAscii.toString
+    if !collapsed.isEmpty then
+      out := out.push (parseProseWithMath collapsed)
+  return out
+
+/-- Split DSL pseudocode source text into indented `PseudocodeLine`s. -/
+private def splitDslPreludeLines (src : String) : Array PseudocodeLine := Id.run do
+  let rawLines := ((src.replace "\r\n" "\n").replace "\r" "\n").splitOn "\n"
+  let mut out : Array PseudocodeLine := #[]
+  for rawLine in rawLines do
+    let leadWs := rawLine.toList.takeWhile fun c => c == ' ' || c == '\t'
+    let sp := leadWs.foldl (init := 0) fun acc c => acc + (if c == '\t' then 2 else 1)
+    let trimmed := rawLine.trimAscii.toString
+    if !trimmed.isEmpty then
+      let collapsed := String.intercalate " " (trimmed.splitOn " " |>.filter (!·.isEmpty))
+      out := out.push { indent := sp / 2, inlines := parseProseWithMath collapsed }
+  return out
+
+/-- Materialize `DeclOverlay.sectionPreludes` into checked `PreludeBlock`s, inspecting any
+declaration-backed `declName?` targets and ensuring their inspectors are present in `doc.inspectors`. -/
+private def materializeSectionPreludes (tbl : SymbolTable) (declName : Name)
+    (specs : Array PreludeSpec) (existingIns : Array SymbolInspector) :
+    MetaM (Array PreludeBlock × Array SymbolInspector × Array String) := do
+  let env ← getEnv
+  let mut blocks : Array PreludeBlock := #[]
+  let mut extraIns : Array SymbolInspector := #[]
+  let mut extraRefKeys : Array String := #[]
+  for idx in [:specs.size] do
+    let spec := specs[idx]!
+    let blockId := s!"prelude-{declName.toString}-{idx}"
+    let mut body := parsePreludeParagraphs spec.bodyText
+    let mut lines : Array PseudocodeLine := spec.lines.map fun (ind, ln) =>
+      { indent := ind, inlines := parseProseWithMath ln }
+    let mut rows : Array PreludeRow := spec.rows.map fun (l, r) =>
+      { left := parseProseWithMath l, right := parseProseWithMath r }
+    let mut declKey? : Option String := none
+    let mut diagramHtml? : Option String := none
+    if let some targetDecl := spec.declName? then
+      let existing? := (existingIns ++ extraIns).find? (·.key == targetDecl.toString)
+      let ins? ← match existing? with
+        | some ins => pure (some ins)
+        | none =>
+            let (_, typeIns, proofIns) ←
+              (← scopedInspectorCollectorRef.get) tbl targetDecl (mkConst ``True) none {} #[targetDecl]
+            let found? := (typeIns ++ proofIns).find? (·.key == targetDecl.toString)
+            if let some ins := found? then
+              extraIns := extraIns.push ins
+            pure found?
+      if let some ins := ins? then
+        declKey? := some ins.key
+        if !extraRefKeys.contains ins.key then
+          extraRefKeys := extraRefKeys.push ins.key
+        match ins.kind with
+        | .dslPseudocode _ dslBody fullSource =>
+            if lines.isEmpty && body.isEmpty then
+              let src := if dslBody.trimAscii.isEmpty then fullSource else dslBody
+              lines := splitDslPreludeLines src
+            if let some info := env.find? targetDecl then
+              let diagExpr := match info with
+                | .defnInfo dinfo => if !info.type.isForall then dinfo.value else info.type
+                | _ => info.type
+              diagramHtml? ← try (← diagramHookRef.get) tbl diagExpr catch _ => pure none
+        | .interfaceTable ports domainLatex budgetNote =>
+            if rows.isEmpty then
+              rows := ports.map fun p =>
+                { left := #[.text p.port], right := #[.inlineMath s!"{p.queryLatex} \\to {p.replyLatex}"] }
+            if body.isEmpty then
+              if !domainLatex.isEmpty then
+                body := body.push #[.text "Domain: ", .inlineMath domainLatex, .text "."]
+              if !budgetNote.trimAscii.isEmpty then
+                let bn := budgetNote.trimAscii.toString
+                body := body.push (parseProseWithMath (if bn.endsWith "." then bn else bn ++ "."))
+        | .ccDiagram svgOrHtml summaryLatex =>
+            diagramHtml? := some svgOrHtml
+            if body.isEmpty && !summaryLatex.trimAscii.isEmpty then
+              body := #[#[.displayMath summaryLatex "."]]
+        | .mathDefinition eqLatex proseSummary =>
+            if body.isEmpty then
+              if !proseSummary.trimAscii.isEmpty then
+                body := body.push (parseProseWithMath proseSummary)
+              if !eqLatex.trimAscii.isEmpty then
+                body := body.push #[.displayMath eqLatex "."]
+              for cl in ins.clauses do
+                if !cl.trimAscii.isEmpty then
+                  lines := lines.push { indent := 0, inlines := #[.inlineMath cl] }
+            if let some info := env.find? targetDecl then
+              diagramHtml? ← try (← diagramHookRef.get) tbl info.type catch _ => pure none
+        | .witnessCard cardTitle wRows =>
+            if body.isEmpty && !cardTitle.trimAscii.isEmpty then
+              body := #[#[.text (if cardTitle.endsWith "." then cardTitle else cardTitle ++ ".")]]
+            if rows.isEmpty then
+              rows := wRows.map fun (k, v) =>
+                { left := #[.text k], right := parseProseWithMath v }
+        | .parameter roleDesc =>
+            if body.isEmpty && !roleDesc.trimAscii.isEmpty then
+              body := #[parseProseWithMath roleDesc]
+        | .localShorthand eqLatex roleDesc =>
+            if body.isEmpty then
+              if !roleDesc.trimAscii.isEmpty then
+                body := body.push (parseProseWithMath roleDesc)
+              if !eqLatex.trimAscii.isEmpty then
+                body := body.push #[.displayMath eqLatex "."]
+      else
+        if let some info := env.find? targetDecl then
+          diagramHtml? ← try (← diagramHookRef.get) tbl info.type catch _ => pure none
+          if body.isEmpty then
+            let tyTex ← try exprToLatex info.type tbl catch _ => pure ""
+            if !tyTex.isEmpty then
+              body := #[#[.displayMath tyTex "."]]
+    blocks := blocks.push {
+      id := blockId
+      kind := spec.kind
+      label := spec.label
+      title := spec.title
+      body
+      lines
+      rows
+      declKey?
+      diagramHtml?
+    }
+  return (blocks, extraIns, extraRefKeys)
+
 /-- Build a canonical `Document` from an ordered list of declaration names, automatically
 hoisting section-fixed parameters & standing assumptions inside numbered sections. -/
 def buildDocument (title : String) (subtitle? : Option String := none)
@@ -200,13 +328,23 @@ def buildDocument (title : String) (subtitle? : Option String := none)
     for idx in [:grpDecls.size] do
       let d := grpDecls[idx]!
       let (entry, ins) ← informalizeDeclarationWithContext d config hoistedCtx? docDecls
+      let ov := getOverlay env d
+      let (sectionPreludes, preludeIns, preludeRefKeys) ←
+        if ov.sectionPreludes.isEmpty then pure (#[], #[], #[])
+        else materializeSectionPreludes (buildSymbolTable env d) d ov.sectionPreludes (inspectors ++ ins)
+      let mut refKeys := entry.referencedKeys
+      for rk in preludeRefKeys do
+        if !refKeys.contains rk then
+          refKeys := refKeys.push rk
       let entry := {
         entry with
         sectionId? := entry.sectionId? <|> secId?
         sectionContext? := if idx == 0 then secCtx? else entry.sectionContext?
+        sectionPreludes := entry.sectionPreludes ++ sectionPreludes
+        referencedKeys := refKeys
       }
       entries := entries.push entry
-      inspectors := inspectors ++ ins
+      inspectors := inspectors ++ ins ++ preludeIns
   return {
     title
     subtitle?

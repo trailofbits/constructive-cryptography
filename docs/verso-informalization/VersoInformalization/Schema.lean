@@ -343,6 +343,56 @@ instance : FromJson CalcStep where
     let justification ← getFieldD j "justification" (#[] : Array (String × String))
     return { lhsLatex, relationLatex, rhsLatex, reason, diagramHtml?, justification }
 
+/-- One indented line inside a structured `PreludeBlock` or `ProofNode.pseudocodeBox`. -/
+structure PseudocodeLine where
+  indent : Nat := 0
+  inlines : Array Inline := #[]
+  deriving Repr, BEq, Inhabited, ToJson
+
+instance : FromJson PseudocodeLine where
+  fromJson? j := do
+    let indent ← getFieldD j "indent" 0
+    let inlines ← getFieldD j "inlines" (#[] : Array Inline)
+    return { indent, inlines }
+
+/-- One two-column row inside a `symbolTable` or `interfaceSpec` prelude block. -/
+structure PreludeRow where
+  left : Array Inline := #[]
+  right : Array Inline := #[]
+  deriving Repr, BEq, Inhabited, ToJson
+
+instance : FromJson PreludeRow where
+  fromJson? j := do
+    let left ← getFieldD j "left" (#[] : Array Inline)
+    let right ← getFieldD j "right" (#[] : Array Inline)
+    return { left, right }
+
+/-- Pre-theorem exposition block (Definition, Construction, Attack Game, Interface, Converter, or Symbol Table). -/
+structure PreludeBlock where
+  id : String
+  kind : String
+  label : String := ""
+  title : String := ""
+  body : Array (Array Inline) := #[]
+  lines : Array PseudocodeLine := #[]
+  rows : Array PreludeRow := #[]
+  declKey? : Option String := none
+  diagramHtml? : Option String := none
+  deriving Repr, BEq, Inhabited, ToJson
+
+instance : FromJson PreludeBlock where
+  fromJson? j := do
+    let id ← j.getObjValAs? String "id"
+    let kind ← j.getObjValAs? String "kind"
+    let label ← getFieldD j "label" ""
+    let title ← getFieldD j "title" ""
+    let body ← getFieldD j "body" (#[] : Array (Array Inline))
+    let lines ← getFieldD j "lines" (#[] : Array PseudocodeLine)
+    let rows ← getFieldD j "rows" (#[] : Array PreludeRow)
+    let declKey? ← getOptField? j "declKey"
+    let diagramHtml? ← getOptField? j "diagramHtml"
+    return { id, kind, label, title, body, lines, rows, declKey?, diagramHtml? }
+
 /-- A node in the single unified recursive proof tree. -/
 inductive ProofNode
   | step
@@ -377,6 +427,13 @@ inductive ProofNode
       (id : String)
       (caption : Array Inline)
       (html : String)
+  | pseudocodeBox
+      (id : String)
+      (title : String)
+      (boxKind : String := "algorithm")
+      (lines : Array PseudocodeLine)
+      (goal? : Option GoalState := none)
+      (originDecl? : Option String := none)
   deriving Repr, BEq, Inhabited
 
 mutual
@@ -434,6 +491,16 @@ mutual
           ("caption", toJson caption),
           ("html", toJson html)
         ]
+    | .pseudocodeBox id title boxKind lines goal? originDecl? =>
+        Json.mkObj [
+          ("kind", "pseudocodeBox"),
+          ("id", toJson id),
+          ("title", toJson title),
+          ("boxKind", toJson boxKind),
+          ("lines", toJson lines),
+          ("goal", toJson goal?),
+          ("originDecl", toJson originDecl?)
+        ]
 
   partial def proofNodeFromJson? (j : Json) : Except String ProofNode := do
     let kind ← j.getObjValAs? String "kind"
@@ -481,6 +548,13 @@ mutual
         let caption ← getFieldD j "caption" (#[] : Array Inline)
         let html ← getFieldD j "html" ""
         return .figure id caption html
+    | "pseudocodeBox" =>
+        let title ← getFieldD j "title" ""
+        let boxKind ← getFieldD j "boxKind" "algorithm"
+        let lines ← getFieldD j "lines" (#[] : Array PseudocodeLine)
+        let goal? ← getOptField? j "goal"
+        let originDecl? ← getOptField? j "originDecl"
+        return .pseudocodeBox id title boxKind lines goal? originDecl?
     | other =>
         .error s!"Unknown ProofNode kind '{other}' on node '{id}'"
 end
@@ -537,6 +611,7 @@ structure Entry where
   sectionIntro? : Option String := none
   sectionContext? : Option SectionContext := none
   sectionId? : Option String := none
+  sectionPreludes : Array PreludeBlock := #[]
   ambient? : Option AmbientSetting := none
   statement : Array (Array Inline)
   localInspectors : Array SymbolInspector := #[]
@@ -555,6 +630,7 @@ instance : FromJson Entry where
     let sectionIntro? ← getOptField? j "sectionIntro"
     let sectionContext? ← getOptField? j "sectionContext"
     let sectionId? ← getOptField? j "sectionId"
+    let sectionPreludes ← getFieldD j "sectionPreludes" (#[] : Array PreludeBlock)
     let ambient? ← getOptField? j "ambient"
     let statement ← getFieldD j "statement" (#[] : Array (Array Inline))
     let localInspectors ← getFieldD j "localInspectors" (#[] : Array SymbolInspector)
@@ -564,7 +640,8 @@ instance : FromJson Entry where
     let axioms ← getFieldD j "axioms" ({ axioms := #[], hasSorry := false } : AxiomAudit)
     return {
       header, title?, declaration, sectionTitle?, sectionIntro?, sectionContext?,
-      sectionId?, ambient?, statement, localInspectors, referencedKeys, diagramHtml?, proof, axioms
+      sectionId?, sectionPreludes, ambient?, statement, localInspectors, referencedKeys,
+      diagramHtml?, proof, axioms
     }
 
 /-- Complete canonical informalization document consumed by Infoview, HTML, and Verso. -/

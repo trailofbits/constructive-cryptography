@@ -145,6 +145,24 @@ VALID_PROOF_NODE_KINDS: Set[str] = {
     "routineReceipt",
     "flowNote",
     "figure",
+    "pseudocodeBox",
+}
+
+VALID_PRELUDE_KINDS: Set[str] = {
+    "definition",
+    "construction",
+    "attackGame",
+    "interfaceSpec",
+    "converterDef",
+    "symbolTable",
+}
+
+VALID_PBOX_KINDS: Set[str] = {
+    "attackGame",
+    "hybrid",
+    "reduction",
+    "distinguisher",
+    "algorithm",
 }
 
 STYLE_CADMO_RE = re.compile(
@@ -553,9 +571,67 @@ def proof_node_canonical_text(node: Dict[str, Any]) -> str:
                 f"{flatten_inlines_joined(st.get('reason', []))}"
             )
         raw = intro + " | " + " ; ".join(step_parts)
+    elif kind == "pseudocodeBox":
+        title = str(node.get("title", "")).strip()
+        box_kind = str(node.get("boxKind", "")).strip()
+        line_parts: List[str] = []
+        for ln in node.get("lines") or []:
+            if isinstance(ln, dict):
+                line_parts.append(flatten_inlines_joined(ln.get("inlines", [])))
+        raw = f"{box_kind} {title} | " + " ; ".join(line_parts)
     else:
         raw = ""
     return re.sub(r"\s+", " ", raw).strip()
+
+
+def check_pseudocode_lines(
+    lines: Any,
+    inspector_keys: Set[str],
+    file_path: str,
+    location: str,
+    violations: List[Violation],
+    tier: str = "legacy",
+) -> None:
+    if not isinstance(lines, list):
+        violations.append(
+            Violation(
+                gate="structure",
+                file=file_path,
+                location=location,
+                message="lines must be a list of PseudocodeLine objects",
+            )
+        )
+        return
+    for lidx, ln in enumerate(lines):
+        lloc = f"{location}[{lidx}]"
+        if not isinstance(ln, dict):
+            violations.append(
+                Violation(
+                    gate="structure",
+                    file=file_path,
+                    location=lloc,
+                    message=f"PseudocodeLine must be an object, got {type(ln).__name__}",
+                )
+            )
+            continue
+        indent = ln.get("indent", 0)
+        if isinstance(indent, bool) or not isinstance(indent, int) or indent < 0:
+            violations.append(
+                Violation(
+                    gate="structure",
+                    file=file_path,
+                    location=f"{lloc}.indent",
+                    message=f"PseudocodeLine.indent must be a non-negative integer, got {indent!r}",
+                )
+            )
+        check_inlines(
+            ln.get("inlines", []),
+            inspector_keys,
+            file_path,
+            f"{lloc}.inlines",
+            violations,
+            tier=tier,
+        )
 
 
 def check_proof_node_list(
@@ -730,6 +806,197 @@ def check_proof_node_list(
                 violations,
                 tier=tier,
             )
+        elif kind == "pseudocodeBox":
+            box_kind = node.get("boxKind")
+            if box_kind is not None:
+                if not isinstance(box_kind, str) or box_kind not in VALID_PBOX_KINDS:
+                    violations.append(
+                        Violation(
+                            gate="structure",
+                            file=file_path,
+                            location=f"{node_loc}.boxKind",
+                            message=(
+                                f"Invalid pseudocodeBox boxKind {box_kind!r} "
+                                f"(expected one of {sorted(VALID_PBOX_KINDS)})"
+                            ),
+                        )
+                    )
+            title = node.get("title")
+            if title is not None:
+                if not isinstance(title, str):
+                    violations.append(
+                        Violation(
+                            gate="structure",
+                            file=file_path,
+                            location=f"{node_loc}.title",
+                            message="pseudocodeBox.title must be a string",
+                        )
+                    )
+                else:
+                    check_text_leakage(title, file_path, f"{node_loc}.title", violations, tier=tier)
+                    check_prose_typography(title, file_path, f"{node_loc}.title", violations)
+            if node.get("lines") is not None:
+                check_pseudocode_lines(
+                    node.get("lines"),
+                    inspector_keys,
+                    file_path,
+                    f"{node_loc}.lines",
+                    violations,
+                    tier=tier,
+                )
+            check_goal_state(node.get("goal"), file_path, f"{node_loc}.goal", violations, tier=tier)
+
+
+def check_section_preludes(
+    preludes: Any,
+    inspector_keys: Set[str],
+    file_path: str,
+    location: str,
+    violations: List[Violation],
+    tier: str = "legacy",
+) -> None:
+    if preludes is None:
+        return
+    if not isinstance(preludes, list):
+        violations.append(
+            Violation(
+                gate="structure",
+                file=file_path,
+                location=location,
+                message="sectionPreludes must be a list of PreludeBlock objects",
+            )
+        )
+        return
+    for pidx, prelude in enumerate(preludes):
+        ploc = f"{location}[{pidx}]"
+        if not isinstance(prelude, dict):
+            violations.append(
+                Violation(
+                    gate="structure",
+                    file=file_path,
+                    location=ploc,
+                    message=f"PreludeBlock must be an object, got {type(prelude).__name__}",
+                )
+            )
+            continue
+        pkind = prelude.get("kind")
+        if not isinstance(pkind, str) or pkind not in VALID_PRELUDE_KINDS:
+            violations.append(
+                Violation(
+                    gate="structure",
+                    file=file_path,
+                    location=f"{ploc}.kind",
+                    message=(
+                        f"Invalid PreludeBlock kind {pkind!r} "
+                        f"(expected one of {sorted(VALID_PRELUDE_KINDS)})"
+                    ),
+                )
+            )
+        for fld in ("label", "title"):
+            val = prelude.get(fld)
+            if val is not None:
+                if not isinstance(val, str):
+                    violations.append(
+                        Violation(
+                            gate="structure",
+                            file=file_path,
+                            location=f"{ploc}.{fld}",
+                            message=f"PreludeBlock.{fld} must be a string",
+                        )
+                    )
+                else:
+                    check_text_leakage(val, file_path, f"{ploc}.{fld}", violations, tier=tier)
+                    check_prose_typography(val, file_path, f"{ploc}.{fld}", violations)
+        body = prelude.get("body")
+        if body is not None:
+            if not isinstance(body, list):
+                violations.append(
+                    Violation(
+                        gate="structure",
+                        file=file_path,
+                        location=f"{ploc}.body",
+                        message="PreludeBlock.body must be a list of Inline paragraphs",
+                    )
+                )
+            else:
+                for bidx, para in enumerate(body):
+                    check_inlines(
+                        para,
+                        inspector_keys,
+                        file_path,
+                        f"{ploc}.body[{bidx}]",
+                        violations,
+                        tier=tier,
+                    )
+        if prelude.get("lines") is not None:
+            check_pseudocode_lines(
+                prelude.get("lines"),
+                inspector_keys,
+                file_path,
+                f"{ploc}.lines",
+                violations,
+                tier=tier,
+            )
+        rows = prelude.get("rows")
+        if rows is not None:
+            if not isinstance(rows, list):
+                violations.append(
+                    Violation(
+                        gate="structure",
+                        file=file_path,
+                        location=f"{ploc}.rows",
+                        message="PreludeBlock.rows must be a list of PreludeRow objects",
+                    )
+                )
+            else:
+                for ridx, row in enumerate(rows):
+                    rloc = f"{ploc}.rows[{ridx}]"
+                    if not isinstance(row, dict):
+                        violations.append(
+                            Violation(
+                                gate="structure",
+                                file=file_path,
+                                location=rloc,
+                                message=f"PreludeRow must be an object, got {type(row).__name__}",
+                            )
+                        )
+                        continue
+                    check_inlines(
+                        row.get("left", []),
+                        inspector_keys,
+                        file_path,
+                        f"{rloc}.left",
+                        violations,
+                        tier=tier,
+                    )
+                    check_inlines(
+                        row.get("right", []),
+                        inspector_keys,
+                        file_path,
+                        f"{rloc}.right",
+                        violations,
+                        tier=tier,
+                    )
+        decl_key = prelude.get("declKey")
+        if decl_key is not None:
+            if not isinstance(decl_key, str) or not decl_key or decl_key not in inspector_keys:
+                violations.append(
+                    Violation(
+                        gate="structure",
+                        file=file_path,
+                        location=f"{ploc}.declKey",
+                        message=(
+                            f"Broken prelude declKey {decl_key!r} "
+                            "(not found in document/section/local inspectors)"
+                        ),
+                    )
+                )
+        check_no_embedded_styles(
+            prelude.get("diagramHtml"),
+            file_path,
+            f"{ploc}.diagramHtml",
+            violations,
+        )
 
 
 def check_inspectors(
@@ -1066,6 +1333,15 @@ def check_document(
                         message=f"referencedKey {rkey!r} does not exist in document/section/local inspectors",
                     )
                 )
+
+        check_section_preludes(
+            entry.get("sectionPreludes"),
+            entry_inspector_keys,
+            file_path,
+            f"{eloc_named}.sectionPreludes",
+            violations,
+            tier=tier,
+        )
 
         # Ambient setting
         ambient = entry.get("ambient")
