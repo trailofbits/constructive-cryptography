@@ -9,8 +9,8 @@ public import ConstructiveCryptography.Tactics.Substitution
 
 Exercises `tableMonitorGame`, `tableMonitorGame_visible`,
 `tableMonitorGame_set_mass_le_of_badEvent`, `tableMonitorGame_win_le_of_linear`,
-`tableMonitorGame_dist_le_of_linear`, and `substitutesWithin_of_dist_le` on a concrete finite
-permutation domain `Fin 8`, verifies `cc_normalize` and `cc_calc statistical` compatibility under
+`tableMonitorGame_dist_le_of_linear`, and the abstract distance-to-substitution law on a
+finite permutation domain `Fin 8`, verifies `cc_normalize` and `cc_calc statistical` compatibility under
 CC custom notation (`Δ`, `|≡`, `•`, `≃[...]`), and audits `#print axioms`.
 -/
 
@@ -20,7 +20,8 @@ namespace Tests.PermutationTableGame
 
 open Commons Commons.Sponge Commons.StrongURP
 open CategoryTheory SystemAlgebra Probability Probability.Distribution
-open scoped SystemAlgebra
+open ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage
+open scoped NNReal SystemAlgebra
 
 /-- Concrete downward-closed predicate: no recorded edge lands on `0 : Fin 8`. -/
 def NoZeroFresh (table : List (PermutationEdge (Fin 8))) : Prop :=
@@ -103,20 +104,18 @@ example {A B : Interface} (α : A ⟶ B) (β : B ⟶ Bidirectional (Fin 8) 3)
     {T : TypedSystem (Bidirectional (Fin 8) 3)} {U : TypedSystem A} {δ : ENNReal}
     (hc : noZeroGame |≡ T) (hnext : Δ ((α ≫ β) • T) U ≤ δ) :
     Δ (α • (β • StrongURP (Fin 8) (q := 3))) U ≤
-      ENNReal.ofReal
-        (((Fintype.card (Fin 8) : ℝ) / (Fintype.card (Fin 8) - 3 : ℝ)) *
-          ((1 / 8 : ℝ) * (Nat.choose (3 + 1) 2 : ℝ) + 0 * (Nat.choose 3 2 : ℝ))) + δ := by
+      (((Fintype.card (Fin 8) : ℝ≥0) / (Fintype.card (Fin 8) - 3 : ℕ)) *
+        ((1 / 8 : ℝ≥0) * (Nat.choose (3 + 1) 2 : ℝ≥0) + 0 * (Nat.choose 3 2 : ℝ≥0)) : ℝ≥0) + δ := by
   have hnorm : α • (β • StrongURP (Fin 8) (q := 3)) =
       (α ≫ β) • StrongURP (Fin 8) (q := 3) := by
     cc_normalize
   rw [hnorm]
   have hbase := tableMonitorGame_dist_le_of_linear 3 card_fin8_gt_three NoZeroFresh noZeroFresh_nil
-    noZeroFresh_mono (1 / 8 : ℝ) 0 (by norm_num) le_rfl noZero_linear_bad hc
+    noZeroFresh_mono (1 / 8 : ℝ≥0) 0 noZero_linear_bad hc
   cc_calc statistical
     (α ≫ β) • StrongURP (Fin 8) (q := 3)
-      ≈[ENNReal.ofReal
-          (((Fintype.card (Fin 8) : ℝ) / (Fintype.card (Fin 8) - 3 : ℝ)) *
-            ((1 / 8 : ℝ) * (Nat.choose (3 + 1) 2 : ℝ) + 0 * (Nat.choose 3 2 : ℝ)))]
+      ≈[(((Fintype.card (Fin 8) : ℝ≥0) / (Fintype.card (Fin 8) - 3 : ℕ)) *
+          ((1 / 8 : ℝ≥0) * (Nat.choose (3 + 1) 2 : ℝ≥0) + 0 * (Nat.choose 3 2 : ℝ≥0)) : ℝ≥0)]
         (α ≫ β) • T :=
         (ConstructiveCryptography.CryptographicAlgebra.distance_attach_le (α ≫ β) _ _).trans hbase
     _ ≈[δ] U := hnext
@@ -125,20 +124,18 @@ example {A B : Interface} (α : A ⟶ B) (β : B ⟶ Bidirectional (Fin 8) 3)
 example [ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher]
     {T : TypedSystem (Bidirectional (Fin 8) 3)} (hc : noZeroGame |≡ T) :
     StrongURP (Fin 8) (q := 3) ≃[fun _ =>
-      ENNReal.ofReal
-        (((Fintype.card (Fin 8) : ℝ) / (Fintype.card (Fin 8) - 3 : ℝ)) *
-          ((1 / 8 : ℝ) * (Nat.choose (3 + 1) 2 : ℝ) + 0 * (Nat.choose 3 2 : ℝ)))] T :=
-  substitutesWithin_of_dist_le
+      (((Fintype.card (Fin 8) : ℝ≥0) / (Fintype.card (Fin 8) - 3 : ℕ)) *
+        ((1 / 8 : ℝ≥0) * (Nat.choose (3 + 1) 2 : ℝ≥0) + 0 * (Nat.choose 3 2 : ℝ≥0)) : ℝ≥0)] T :=
+  SubstitutesWithin.of_distance
+    _ DominatedByDistance.advantage_le_distance
     (tableMonitorGame_dist_le_of_linear 3 card_fin8_gt_three NoZeroFresh noZeroFresh_nil
-      noZeroFresh_mono (1 / 8 : ℝ) 0 (by norm_num) le_rfl noZero_linear_bad hc)
+      noZeroFresh_mono (1 / 8 : ℝ≥0) 0 noZero_linear_bad hc)
 
 #print axioms Commons.StrongURP.tableMonitorGame_visible
 #print axioms Commons.StrongURP.tableMonitorGame_unsetMBOs_eq
 #print axioms Commons.StrongURP.tableMonitorGame_set_mass_eq
 #print axioms Commons.StrongURP.tableMonitorGame_set_mass_le_of_badEvent
 #print axioms Commons.StrongURP.transcriptCost_linear_sum
-#print axioms Commons.StrongURP.dist_visible_le_of_winProbability_le
-#print axioms Commons.StrongURP.substitutesWithin_of_dist_le
 #print axioms Commons.StrongURP.tableMonitorGame_win_le_of_linear
 #print axioms Commons.StrongURP.tableMonitorGame_dist_le_of_linear
 

@@ -608,26 +608,6 @@ lemma transcriptCost_linear_sum {A B : Type} (a b : ℝ) (h : List (A × B)) :
     rw [h1, h2]
     ring
 
-/-- Conditional equivalence to a game whose winning probability is at most `ε` bounds the
-statistical distance `Δ G.visible T ≤ ENNReal.ofReal ε` [2, Theorem 4.17]. -/
-lemma dist_visible_le_of_winProbability_le {A : Interface} {G : TypedGame A} {T : TypedSystem A}
-    (hc : G |≡ T) {ε : ℝ}
-    (hW : ∀ P : A.inputDomain.Distinguisher, P.winProbability G.1.1 ≤ ε) :
-    Δ G.visible T ≤ ENNReal.ofReal ε := by
-  rw [Interface.cc_distance_eq, RandomSystem.transcriptDistance_eq_iSup G.visible.2 T.2]
-  refine iSup_le fun P => ?_
-  exact ENNReal.ofReal_le_ofReal ((P.advantage_le_winProbability G.1.2 T.2 G.2 hc).trans (hW P))
-
-/-- Any statistical distance bound `Δ R S ≤ ε` yields `R ≃[fun _ => ε] S` for any admissible
-distinguisher class. -/
-lemma substitutesWithin_of_dist_le
-    [ConstructiveCryptography.AdmissibleDistinguishers Interface TypedDistinguisher]
-    {A : Interface} {R S : TypedSystem A} {ε : ENNReal} (h : Δ R S ≤ ε) :
-    R ≃[fun _ => ε] S := by
-  intro d hd
-  open ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage in
-  exact (DominatedByDistance.advantage_le_distance d hd R S).trans h
-
 variable {X : Type} [Fintype X] [DecidableEq X]
 
 open Classical in
@@ -738,23 +718,27 @@ theorem tableMonitorGame_dist_le_of_linear [Nonempty X] (q : ℕ)
     (Good : List (PermutationEdge X) → Prop) (hGood_nil : Good [])
     (hGood_mono : ∀ {t₁ t₂ : List (PermutationEdge X)},
       (∀ e ∈ t₁, e ∈ t₂) → Good t₂ → Good t₁)
-    (a b : ℝ) (ha : 0 ≤ a) (hb : 0 ≤ b)
+    (a b : ℝ≥0)
     (hbad : ∀ (table : List (PermutationEdge X)) (inverse : Bool),
       Good table →
       ∃ bad : X → Prop,
         (∀ edge : PermutationEdge X, edge.inverse = inverse →
           ¬ Good (table ++ [edge]) → bad edge.freshEndpoint) ∧
         (Distribution.uniform X).mass bad ≤
-          a * (table.length + 1 : ℝ) + b * (table.length : ℝ))
+          (a : ℝ) * (table.length + 1 : ℝ) + (b : ℝ) * (table.length : ℝ))
     {T : TypedSystem (Bidirectional X q)}
     (hc : tableMonitorGame q Good hGood_mono |≡ T) :
     Δ (StrongURP X (q := q)) T ≤
-      ENNReal.ofReal
-        (((Fintype.card X : ℝ) / (Fintype.card X - q : ℝ)) *
-          (a * ((q + 1).choose 2 : ℝ) + b * (q.choose 2 : ℝ))) := by
+      (((Fintype.card X : ℝ≥0) / (Fintype.card X - q : ℕ)) *
+        (a * ((q + 1).choose 2 : ℝ≥0) + b * (q.choose 2 : ℝ≥0)) : ℝ≥0) := by
   rw [← tableMonitorGame_visible q Good hGood_mono]
-  exact dist_visible_le_of_winProbability_le hc
-    (tableMonitorGame_winProbability_le_of_linear q hq Good hGood_nil hGood_mono a b ha hb hbad)
+  -- Conditional equivalence transports the uniform winner bound through the abstract game law.
+  apply Interface.dist_visible_le_of_win hc
+  intro P
+  have hwin := tableMonitorGame_winProbability_le_of_linear q hq Good hGood_nil hGood_mono
+    (a : ℝ) (b : ℝ) a.property b.property hbad P
+  simpa only [NNReal.coe_mul, NNReal.coe_add, NNReal.coe_div, NNReal.coe_natCast,
+    Nat.cast_sub hq.le] using hwin
 
 end CostHelpers
 
