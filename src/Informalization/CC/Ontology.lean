@@ -80,30 +80,49 @@ private def matchWhiskerRight? (e : Expr) : Option (Expr × Expr) :=
     else none
   else none
 
-/-- Recognize an `epsilonRelaxation ε` expression, returning `ε`. -/
-private def matchEpsilonRelaxationFn? (e : Expr) : Option Expr :=
-  let e := e.consumeMData
-  let fn := e.getAppFn.consumeMData
-  if fn.isConstOf epsilonRelaxationName || fn.isConstOf specEpsilonRelaxationName then
-    e.getAppArgs.back?
-  else none
+private def countHeadForalls : Expr → Nat
+  | .forallE _ _ b _ => countHeadForalls b + 1
+  | .mdata _ b => countHeadForalls b
+  | _ => 0
 
-/-- Recognize `epsilonRelaxation ε S` (either via `DFunLike.coe` or `Relaxation.relaxedBy`),
-returning `(ε, S)`. -/
-private def matchEpsilonRelaxationApp? (e : Expr) : Option (Expr × Expr) :=
+private def epsilonBaseArity? (env : Environment) (fn : Expr) : Option Nat :=
+  match fn.constName? with
+  | some head =>
+      if head == epsilonRelaxationName || head == specEpsilonRelaxationName then
+        (env.find? head).map (fun info => countHeadForalls info.type)
+      else none
+  | none => none
+
+/-- Recognize an unapplied `epsilonRelaxation ε` expression, returning `ε`. -/
+private def matchEpsilonRelaxationFn? (env : Environment) (e : Expr) : Option Expr :=
   let e := e.consumeMData
   let fn := e.getAppFn.consumeMData
   let args := e.getAppArgs
-  if fn.isConstOf ``DFunLike.coe && args.size ≥ 6 then
+  match epsilonBaseArity? env fn with
+  | some baseArity =>
+      if baseArity > 0 && args.size == baseArity then args[baseArity - 1]? else none
+  | none => none
+
+/-- Recognize `(epsilonRelaxation ε) S` (directly after `DFunLike.coe` stripping, via
+`DFunLike.coe`, or via `Relaxation.relaxedBy`), returning `(ε, S)`. -/
+private def matchEpsilonRelaxationApp? (env : Environment) (e : Expr) : Option (Expr × Expr) :=
+  let e := e.consumeMData
+  let fn := e.getAppFn.consumeMData
+  let args := e.getAppArgs
+  if let some baseArity := epsilonBaseArity? env fn then
+    if baseArity > 0 && args.size ≥ baseArity + 1 then
+      some (args[baseArity - 1]!, args[baseArity]!)
+    else none
+  else if fn.isConstOf ``DFunLike.coe && args.size ≥ 6 then
     let relaxFn := args[args.size - 2]!
     let specArg := args[args.size - 1]!
-    match matchEpsilonRelaxationFn? relaxFn with
+    match matchEpsilonRelaxationFn? env relaxFn with
     | some eps => some (eps, specArg)
     | none => none
   else if fn.isConstOf relaxedByName && args.size ≥ 2 then
     let specArg := args[args.size - 2]!
     let relaxFn := args[args.size - 1]!
-    match matchEpsilonRelaxationFn? relaxFn with
+    match matchEpsilonRelaxationFn? env relaxFn with
     | some eps => some (eps, specArg)
     | none => none
   else none
@@ -167,14 +186,18 @@ private def renderAttachmentLatex (rec : Recurse) (conv res : Expr) : MetaM (Str
 `(S^*)^\varepsilon` for `epsilonRelaxation ε (simulatorImage Σ S)` or `star Σ S`. -/
 private def renderSpecLatex (tbl : SymbolTable) (rec : Recurse) (spec : Expr) : MetaM String := do
   let _ := tbl
-  if let some (eps, inner) := matchEpsilonRelaxationApp? spec then
+  let env ← getEnv
+  if let some (eps, inner) := matchEpsilonRelaxationApp? env spec then
     let epsTex ← rec 0 eps
     if let some (_, base) := matchSimulatorOrStar? inner then
       let baseTex ← rec 82 (unwrapSingletonSpec base)
       return "\\left(" ++ baseTex ++ "^{*}\\!\\right)^{" ++ epsTex ++ "}"
     else
       let innerTex ← rec 82 (unwrapSingletonSpec inner)
-      return innerTex ++ "^{" ++ epsTex ++ "}"
+      if (innerTex.splitOn "^").length > 1 || innerTex.contains ' ' then
+        return "\\left(" ++ innerTex ++ "\\right)^{" ++ epsTex ++ "}"
+      else
+        return innerTex ++ "^{" ++ epsTex ++ "}"
   if let some (_, base) := matchSimulatorOrStar? spec then
     let baseTex ← rec 82 (unwrapSingletonSpec base)
     return baseTex ++ "^{*}"
@@ -396,19 +419,39 @@ private def distinguisherProbHandler (head : Name) : AppHandler where
     let some d := argFromEnd? args 1 | return none
     return some (s!"\\Pr\\!\\left[{← rec 80 d}\\!\\left({← rec 0 r}\\right) = 1\\right]", 85)
 
+private partial def firstTwoExplicitIndices? (ty : Expr) (i : Nat := 0)
+    (first? : Option Nat := none) : Option (Nat × Nat) :=
+  match ty with
+  | .mdata _ b => firstTwoExplicitIndices? b i first?
+  | .forallE _ _ b bi =>
+      if bi == .default then
+        match first? with
+        | none => firstTwoExplicitIndices? b (i + 1) (some i)
+        | some idx0 => some (idx0, i)
+      else
+        firstTwoExplicitIndices? b (i + 1) first?
+  | _ => none
+
 private def absorbHandler (head : Name) : AppHandler where
   head := head
   priority := 190
   run := fun _ rec _ args => do
-    let some conv := argFromEnd? args 0 | return none
-    let some dist := argFromEnd? args 1 | return none
-    return some (s!"{← rec 80 dist}{← rec 80 conv}", 80)
+    let env ← getEnv
+    let some info := env.find? head | return none
+    let some (idx0, idx1) := firstTwoExplicitIndices? info.type | return none
+    let some dist := args[idx0]? | return none
+    let some conv := args[idx1]? | return none
+    let baseTex := juxtapose (← rec 80 dist) (← rec 80 conv)
+    if let some target := args[idx1 + 1]? then
+      return some (s!"{baseTex}({← rec 0 target})", 80)
+    return some (baseTex, 80)
 
 private def dfunLikeEpsilonHandler : AppHandler where
   head := ``DFunLike.coe
   priority := 200
   run := fun tbl rec e _ => do
-    if (matchEpsilonRelaxationApp? e).isSome then
+    let env ← getEnv
+    if (matchEpsilonRelaxationApp? env e).isSome then
       return some (← renderSpecLatex tbl rec e, 82)
     return none
 
@@ -416,16 +459,21 @@ private def relaxedByHandler : AppHandler where
   head := relaxedByName
   priority := 200
   run := fun tbl rec e _ => do
-    if (matchEpsilonRelaxationApp? e).isSome then
+    let env ← getEnv
+    if (matchEpsilonRelaxationApp? env e).isSome then
       return some (← renderSpecLatex tbl rec e, 82)
     return none
 
 private def epsilonRelaxationBareHandler (head : Name) : AppHandler where
   head := head
   priority := 180
-  run := fun _ rec _ args => do
-    let some err := argFromEnd? args 0 | return none
-    return some ("(\\cdot)^{" ++ (← rec 0 err) ++ "}", 82)
+  run := fun tbl rec e _ => do
+    let env ← getEnv
+    if (matchEpsilonRelaxationApp? env e).isSome then
+      return some (← renderSpecLatex tbl rec e, 82)
+    if let some err := matchEpsilonRelaxationFn? env e then
+      return some ("(\\cdot)^{" ++ (← rec 0 err) ++ "}", 82)
+    return none
 
 private def simulatorOrStarHandler (head : Name) : AppHandler where
   head := head
@@ -533,7 +581,13 @@ private def ccTypeHandler : TypeHandler where
     if let some iface ← gameInterface? ty then
       let acc ← interfaceAccessory tbl iface
       return some { noun := nounGame, accessories := [acc] }
-    -- 8. Distinguisher or solver (`D A`, `TypedDistinguisher A`, `TypedSolver A`)
+    -- 7b. Solver (`TypedSolver A` or `Domain.SolverBehavior ...`)
+    if fn.isConstOf typedSolverName && args.size ≥ 1 then
+      let acc ← interfaceAccessory tbl args.back!
+      return some { noun := ⟨"solver", "solvers"⟩, accessories := [acc] }
+    if fn.isConstOf `SystemAlgebra.Domain.SolverBehavior then
+      return some { noun := ⟨"solver", "solvers"⟩ }
+    -- 8. Distinguisher (`D A`, `TypedDistinguisher A`)
     if let some iface ← distinguisherInterface? ty then
       let acc ← interfaceAccessory tbl iface
       return some { noun := nounDistinguisher, accessories := [acc] }
@@ -625,7 +679,7 @@ private def ccPropHandler : PropHandler where
       let convTex ← exprToLatex conv tbl
       let tgtTex ← exprToLatex (unwrapSingletonSpec tgt) tbl
       let verb := verbConstruct.conjugate .singular
-      if let some (eps, inner) := matchEpsilonRelaxationApp? tgt then
+      if let some (eps, inner) := matchEpsilonRelaxationApp? (← getEnv) tgt then
         let epsTex ← exprToLatex eps tbl
         if let some (_, base) := matchSimulatorOrStar? inner then
           let baseTex ← exprToLatex (unwrapSingletonSpec base) tbl
@@ -729,7 +783,7 @@ private def ccPropHandler : PropHandler where
     if head == ``Membership.mem && args.size ≥ 2 then
       let some setExpr := argFromEnd? args 0 | return none
       let some elemExpr := argFromEnd? args 1 | return none
-      if let some (eps, inner) := matchEpsilonRelaxationApp? setExpr then
+      if let some (eps, inner) := matchEpsilonRelaxationApp? (← getEnv) setExpr then
         let elemTex ← exprToLatex elemExpr tbl
         let epsTex ← exprToLatex eps tbl
         let fullTex ← exprToLatex prop tbl
@@ -748,6 +802,24 @@ private def ccPropHandler : PropHandler where
           .text " of ", .inlineMath innerTex,
           .text " (", .inlineMath fullTex, .text ")"
         ]
+    return none
+
+/-- Low-priority fallback handler for generic `Prod` (`ordered pair`) and `Set` (`subset of X`)
+after CC-specific patterns (`Set (P ⟶ Q)`, `Set (Phi A)`, solver `Prod`) have had first claim. -/
+private def ccGenericContainerTypeHandler : TypeHandler where
+  priority := 50
+  matchType := fun tbl ty => do
+    let ty ← instantiateMVars ty
+    let fn := ty.getAppFn.consumeMData
+    let args := ty.getAppArgs
+    if fn.isConstOf ``Prod && args.size == 2 then
+      return some { noun := ⟨"ordered pair", "ordered pairs"⟩ }
+    if fn.isConstOf ``Set && args.size ≥ 1 then
+      let elemTex ← exprToLatex args.back! tbl
+      return some {
+        noun := ⟨"subset", "subsets"⟩
+        accessories := [s!"of \\({elemTex}\\)"]
+      }
     return none
 
 /-! ## 4. Module Initialization (Auto-Registration) -/
@@ -811,16 +883,24 @@ def registerAll : IO Unit := do
   registerAppHandler closedUnderLatexHandler
   -- Type & proposition ontology handlers
   registerTypeHandler ccTypeHandler
+  registerTypeHandler ccGenericContainerTypeHandler
   registerPropHandler ccPropHandler
   Core.Presentation.registerCCKnownCarrierHook fun ty => do
     let t := ty.consumeMData
+    let fn := t.getAppFn.consumeMData
+    let args := t.getAppArgs
     let isIface ← isInterfaceType t
     let isRes := (← resourceInterface? t).isSome
     let isConv := (← converterInterfaces? t).isSome
     let isSpec := (← specificationInterface? t).isSome
+    let isConvClass ←
+      if (fn.isConstOf ``Set || fn.isConstOf specificationName) && args.size ≥ 1 then
+        pure (← converterInterfaces? args.back!).isSome
+      else pure false
+    let isSolver := fn.isConstOf `SystemAlgebra.Domain.SolverBehavior
     let isGame := (← gameInterface? t).isSome
     let isDist := (← distinguisherInterface? t).isSome
-    return isIface || isRes || isConv || isSpec || isGame || isDist
+    return isIface || isRes || isConv || isSpec || isConvClass || isSolver || isGame || isDist
 
 initialize registerAll
 

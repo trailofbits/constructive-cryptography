@@ -294,6 +294,26 @@ initialize
 
 /-! ## 5. Top-Down Spine Extractor (`RuleExplainer`, Priority 1000) -/
 
+private def inlineCollectMixedText : Inline → String
+  | .text s => s
+  | .emph s => s
+  | .inlineMath s => "\\(" ++ s ++ "\\)"
+  | .displayMath s p => "\\(" ++ s ++ "\\)" ++ p
+  | .symbol _ d isMath => if isMath then "\\(" ++ d ++ "\\)" else d
+  | .citation l d => if d.isEmpty then l else l ++ " " ++ d
+
+private def capitalizeLeadingText (s : String) : String :=
+  let rec go : List Char → List Char
+    | [] => []
+    | c :: cs => if c.isWhitespace then c :: go cs else c.toUpper :: cs
+  String.ofList (go s.toList)
+
+private def capitalizeLeadingInlines (inls : Array Inline) : Array Inline :=
+  if inls.isEmpty then inls
+  else match inls[0]! with
+  | .text s => inls.set! 0 (.text (capitalizeLeadingText s))
+  | _ => inls
+
 private def appendPeriodClean (inls : Array Inline) (metas : Array (Option ProseTrust × Option String)) :
     Array Inline × Array (Option ProseTrust × Option String) :=
   if inls.isEmpty then (inls, metas)
@@ -386,7 +406,7 @@ partial def extractSpineNode :
     let inner := args[4]!
     let (content, inlineMeta) ← makeConcludeContent ctx expected reason witness
     let children ← decompileChild subCtx expected inner
-    let goal ← buildGoalState ctx.tbl expected
+    let goal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
     return some #[.step s!"spine-conclude-{ctx.factIndex}" content children (some goal)
       none none false false startsPara none (some .kernelProvedClaim) inlineMeta]
 
@@ -404,7 +424,7 @@ partial def extractSpineNode :
     let inner := args[8]!
     let anchors := extractAnchorArray witness
     let nodeId := s!"spine-{idHint}-{ctx.factIndex}"
-    let goal ← buildGoalState ctx.tbl expected
+    let goal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
 
     match tag with
     | .overview =>
@@ -425,7 +445,7 @@ partial def extractSpineNode :
               let (tInl, tMeta) ←
                 if tmpl.trimAscii.isEmpty then pure (#[], #[])
                 else renderSpineTemplate ctx.tbl tmpl anchors
-              let glossSummary := String.intercalate "" (tInl.toList.map Inline.collectText) |>.trimAscii.toString
+              let glossSummary := String.intercalate "" (tInl.toList.map inlineCollectMixedText) |>.trimAscii.toString
               let badge :=
                 if isGame then "game"
                 else if leadHead? == some "Adversary" then "adversary"
@@ -486,7 +506,7 @@ partial def extractSpineNode :
                 pure (appendPeriodClean
                   (#[.text "We claim "] ++ propInl ++ #[.text " ("] ++ tInl ++ #[.text ")"])
                   (#[(some .intuitionGloss, none)] ++ propMeta ++ #[(some .intuitionGloss, none)] ++ tMeta ++ #[(some .intuitionGloss, none)]))
-            let subGoal ← buildGoalState ctx.tbl ty
+            let subGoal ← buildGoalState ctx.tbl ty (ctx.lemmaDepth ≥ 1)
             let stp := ProofNode.step nodeId inls children (some subGoal)
               none none false false startsPara leadHead? (nodeTrust? <|> some .kernelProvedClaim) im
             let rest ← withLetDecl nm ty val fun fv =>
@@ -517,7 +537,7 @@ partial def extractSpineNode :
                 let (tInl, tMeta) ← renderSpineTemplate ctx.tbl tmpl anchors
                 pure (appendPeriodClean (tInl ++ #[.text ": "] ++ propInl)
                   (tMeta ++ #[(some .intuitionGloss, none)] ++ propMeta))
-            let subGoal ← buildGoalState ctx.tbl ty
+            let subGoal ← buildGoalState ctx.tbl ty (ctx.lemmaDepth ≥ 1)
             let stp := ProofNode.step nodeId content children (some subGoal)
               none none false false startsPara leadHead? (nodeTrust? <|> some .kernelProvedClaim) inlineMeta
             let rest ← withLetDecl nm ty val fun fv =>
@@ -550,6 +570,29 @@ partial def extractSpineNode :
             let conclInl ← renderProposition ctx.tbl expected
             let cm := conclInl.map fun _ => (some .kernelProvedClaim, none)
             pure (appendPeriodClean (#[.text s!"{defaultLead}, "] ++ conclInl) (#[(some .intuitionGloss, none)] ++ cm))
+          else if tag == .inductionStep then
+            let (tInl, tMeta) ← renderSpineTemplate ctx.tbl tmpl anchors
+            let tInl := capitalizeLeadingInlines tInl
+            let txt := String.intercalate "" (tInl.toList.map Inline.collectText) |>.trimAscii.toString
+            let low := txt.toLower
+            let hasClause := txt.endsWith "." ||
+              (low.splitOn "we show").length > 1 || (low.splitOn "we prove").length > 1 ||
+              (low.splitOn "we establish").length > 1 || (low.splitOn "establishes").length > 1 ||
+              (low.splitOn "shows").length > 1 || (low.splitOn "holds").length > 1
+            if hasClause then
+              pure (appendPeriodClean tInl tMeta)
+            else
+              let conclInl ← renderProposition ctx.tbl expected
+              let cm := conclInl.map fun _ => (some .kernelProvedClaim, none)
+              let strippedInl :=
+                match tInl.back? with
+                | some (.text t) =>
+                    let tr := t.trimAsciiEnd.toString
+                    let tr := if tr.endsWith "," then (tr.dropEnd 1).toString else tr
+                    tInl.pop.push (.text tr)
+                | _ => tInl
+              pure (appendPeriodClean (strippedInl ++ #[.text ", we prove "] ++ conclInl)
+                (tMeta ++ #[(some .intuitionGloss, none)] ++ cm))
           else
             let (tInl, tMeta) ← renderSpineTemplate ctx.tbl tmpl anchors
             pure (appendPeriodClean tInl tMeta)
@@ -570,6 +613,7 @@ partial def extractSpineNode :
             pure (#[.text "It suffices to show "] ++ propInl, #[(some .intuitionGloss, none)] ++ propMeta)
           else
             let (tInl, tMeta) ← renderSpineTemplate ctx.tbl tmpl anchors
+            let tInl := capitalizeLeadingInlines tInl
             pure (tInl ++ #[.text ", it suffices to show "] ++ propInl,
               tMeta ++ #[(some .intuitionGloss, none)] ++ propMeta)
         let (content, inlineMeta) := appendPeriodClean inls im

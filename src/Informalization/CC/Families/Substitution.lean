@@ -70,28 +70,60 @@ private structure ExtractedHop where
   proof : Expr
   prop : Expr
 
-/-- Detect if `prop` is `distance lhs rhs ≤ eps` and return `(lhs, rhs, eps)`. -/
+private def unfoldNonCoreOnce? (e : Expr) : MetaM (Option Expr) := do
+  let env ← getEnv
+  match e.getAppFn.consumeMData with
+  | .const cn _ =>
+      if Informalization.Core.Routine.isCoreOrMathlibIn env cn then return none
+      try
+        if let some u ← withTransparency .default (Meta.unfoldDefinition? e) then
+          if u != e then return some u
+      catch _ => pure ()
+      let w ← withTransparency .reducible (whnf e)
+      if w != e then return some w
+      return none
+  | _ => return none
+
+/-- Detect if `prop` is `distance lhs rhs ≤ eps` (unfolding non-core wrapper predicates if needed)
+and return `(lhs, rhs, eps)`. -/
 private def splitDistanceBound? (prop : Expr) : MetaM (Option (Expr × Expr × Expr)) := do
-  let prop ← normalizeForPresentation prop
-  if prop.isAppOf ``LE.le then
-    let args := prop.getAppArgs
-    if args.size ≥ 2 then
-      let lhs := args[args.size - 2]!
-      let rhs := args[args.size - 1]!
-      let lhs' ← normalizeForPresentation lhs
-      if lhs'.isAppOf ``ConstructiveCryptography.CryptographicAlgebra.distance then
-        let dArgs := lhs'.getAppArgs
-        if dArgs.size ≥ 2 then
-          return some (dArgs[dArgs.size - 2]!, dArgs[dArgs.size - 1]!, rhs)
+  let mut cur := prop
+  for _ in [0:6] do
+    let p ← normalizeForPresentation cur
+    if p.isAppOf ``LE.le then
+      let args := p.getAppArgs
+      if args.size ≥ 2 then
+        let lhs := args[args.size - 2]!
+        let rhs := args[args.size - 1]!
+        let lhs' ← normalizeForPresentation lhs
+        if lhs'.isAppOf ``ConstructiveCryptography.CryptographicAlgebra.distance then
+          let dArgs := lhs'.getAppArgs
+          if dArgs.size ≥ 2 then
+            return some (dArgs[dArgs.size - 2]!, dArgs[dArgs.size - 1]!, rhs)
+    match (← unfoldNonCoreOnce? cur) with
+    | some u => cur := u
+    | none =>
+        match (← unfoldNonCoreOnce? p) with
+        | some u => cur := u
+        | none => return none
   return none
 
-/-- Detect if `prop` is `SubstitutesWithin model err lhs rhs` and return `(err, lhs, rhs)`. -/
+/-- Detect if `prop` is `SubstitutesWithin model err lhs rhs` (unfolding non-core wrapper predicates
+like `AE.Secure` or `PRGSamples` if needed) and return `(err, lhs, rhs)`. -/
 private def splitSubstitutesWithin? (prop : Expr) : MetaM (Option (Expr × Expr × Expr)) := do
-  let prop ← normalizeForPresentation prop
-  if prop.isAppOf ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin then
-    let args := prop.getAppArgs
-    if args.size ≥ 3 then
-      return some (args[args.size - 3]!, args[args.size - 2]!, args[args.size - 1]!)
+  let mut cur := prop
+  for _ in [0:6] do
+    let p ← normalizeForPresentation cur
+    if p.isAppOf ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin then
+      let args := p.getAppArgs
+      if args.size ≥ 3 then
+        return some (args[args.size - 3]!, args[args.size - 2]!, args[args.size - 1]!)
+    match (← unfoldNonCoreOnce? cur) with
+    | some u => cur := u
+    | none =>
+        match (← unfoldNonCoreOnce? p) with
+        | some u => cur := u
+        | none => return none
   return none
 
 /-- Detect if `proof` is an equality transport `Eq.mp (congrArg f eqProof) inner` or
@@ -128,6 +160,17 @@ private def splitStatTriangle? (proof : Expr) : MetaM (Option (Expr × Expr)) :=
         return some (addArgs[addArgs.size - 2]!, addArgs[addArgs.size - 1]!)
   return none
 
+private partial def isReflEqProof (e : Expr) : Bool :=
+  let c := e.consumeMData
+  let fn := c.getAppFn.consumeMData
+  let args := c.getAppArgs
+  if fn.isConstOf ``Eq.refl || fn.isConstOf ``rfl then true
+  else if fn.isConstOf ``Eq.trans && args.size ≥ 2 then
+    isReflEqProof args[args.size - 2]! && isReflEqProof args[args.size - 1]!
+  else if fn.isConstOf ``congrArg && args.size ≥ 1 then
+    isReflEqProof args.back!
+  else false
+
 /-- Recursively flatten a `cc_calc` proof term (mixed, quantitative, or statistical) into
 ordered `ExtractedHop`s, preserving exact equality joins alongside approximation steps. -/
 private partial def flattenCCCalc (tbl : SymbolTable) (proof expected : Expr) (fuel : Nat := 32) :
@@ -159,13 +202,25 @@ private partial def flattenCCCalc (tbl : SymbolTable) (proof expected : Expr) (f
     let mut eqHops : Array ExtractedHop := #[]
     if let some (_, lhs, rhs) := eqTy.eq? then
       -- Skip reflexive no-op joins `X = X`
-      let isRefl := eqProof.consumeMData.isAppOf ``Eq.refl || eqProof.consumeMData.isConstOf ``rfl
-      if !isRefl && lhs != rhs then
-        eqHops := #[{ kind := .exactEq, lhs, rhs, relLatex := "=", proof := eqProof, prop := eqTy }]
+      if !isReflEqProof eqProof then
+        let lhsN ← normalizeForPresentation lhs
+        let rhsN ← normalizeForPresentation rhs
+        if lhsN != rhsN then
+          let lhsTex ← exprToLatex lhsN tbl
+          let rhsTex ← exprToLatex rhsN tbl
+          if lhsTex != rhsTex then
+            eqHops := #[{ kind := .exactEq, lhs := lhsN, rhs := rhsN, relLatex := "=", proof := eqProof, prop := eqTy }]
     if isRightJoin then
       return innerHops ++ eqHops
     else
       return eqHops ++ innerHops
+  -- Case 3b: Transparent proposition transport `Eq.mp / Eq.mpr pf inner` (e.g. predicate unfolding)
+  if (fn.isConstOf ``Eq.mp || fn.isConstOf ``Eq.mpr) && p.getAppArgs.size ≥ 2 then
+    let inner := p.getAppArgs.back!
+    let innerTy ← inferType inner
+    let innerHops ← flattenCCCalc tbl inner innerTy (fuel - 1)
+    if !innerHops.isEmpty then
+      return innerHops
   -- Leaf case: `SubstitutesWithin` (either statistical via `of_distance`/`of_statistical` or computational)
   if let some (err, lhs, rhs) ← splitSubstitutesWithin? expected then
     let isStat :=
@@ -190,11 +245,35 @@ private partial def flattenCCCalc (tbl : SymbolTable) (proof expected : Expr) (f
     }]
   return #[]
 
+private def exprHasConst (e : Expr) (target : Name) : Bool :=
+  e.foldConsts (init := false) fun n acc => acc || n == target
+
+/-- Peel `let`/`have` beta-redexes, `id`, and local let-bound fvars from a hop proof head. -/
+private partial def unwrapProofHead (e : Expr) (fuel : Nat := 16) : MetaM Expr := do
+  if fuel == 0 then return e.consumeMData
+  let c := e.consumeMData
+  match c with
+  | .fvar id =>
+      match (← id.getDecl).value? with
+      | some v => unwrapProofHead v (fuel - 1)
+      | none => return c
+  | .letE _ _ val body _ => unwrapProofHead (body.instantiate1 val) (fuel - 1)
+  | .app (.lam _ _ body _) val => unwrapProofHead (body.instantiate1 val) (fuel - 1)
+  | _ =>
+      if c.isAppOfArity ``id 2 then
+        unwrapProofHead c.appArg! (fuel - 1)
+      else
+        return c
+
 /-- Produce a concise Maurer-style reason label for one hop in a `cc_calc` chain. -/
 private def describeHopReason (env : Environment) (tbl : SymbolTable) (hop : ExtractedHop) :
     MetaM (Array Inline) := do
-  let fn := hop.proof.getAppFn.consumeMData
-  let args := hop.proof.getAppArgs
+  -- Unwrap local `let`/`have`/beta-redex wrappers (`R2c`) so `distance_attach_le` inside hops is seen.
+  let resolvedProof ← unwrapProofHead hop.proof
+  let fn := resolvedProof.getAppFn.consumeMData
+  let args := resolvedProof.getAppArgs
+  let hasAttachLe := exprHasConst resolvedProof ``ConstructiveCryptography.CryptographicAlgebra.distance_attach_le
+  let hasParallelLe := exprHasConst resolvedProof ``ConstructiveCryptography.CryptographicAlgebra.distance_parallel_le
   match hop.kind with
   | .exactEq =>
       match fn with
@@ -214,11 +293,25 @@ private def describeHopReason (env : Environment) (tbl : SymbolTable) (hop : Ext
             return #[.text "by distinguishing advantage bound"]
           else if cn == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_statistical then
             return #[.text "by statistical distance bound"]
-          else if cn == ``ConstructiveCryptography.CryptographicAlgebra.distance_attach_le then
+          else if cn == ``ConstructiveCryptography.CryptographicAlgebra.distance_attach_le ||
+                  (cn == ``LE.le.trans && hasAttachLe && !hasParallelLe) then
             return #[.text "by non-expansion under converter attachment"]
+          else if cn == ``ConstructiveCryptography.CryptographicAlgebra.distance_parallel_le ||
+                  (cn == ``LE.le.trans && hasParallelLe && !hasAttachLe) then
+            return #[.text "by non-expansion under parallel composition"]
+          else if cn == ``LE.le.trans && hasAttachLe && hasParallelLe then
+            return #[.text "by non-expansion under converter attachment and parallel composition"]
+          else if cn == ``le_rfl || cn == ``le_refl then
+            return #[.text "by reflexivity"]
           else
             return #[.text "by advantage bound (", .emph (humanLemmaLabel env cn), .text ")"]
-      | _ => return #[.text "by distinguishing advantage bound"]
+      | _ =>
+          if hasAttachLe && !hasParallelLe then
+            return #[.text "by non-expansion under converter attachment"]
+          else if hasParallelLe && !hasAttachLe then
+            return #[.text "by non-expansion under parallel composition"]
+          else
+            return #[.text "by distinguishing advantage bound"]
   | .computational =>
       match fn with
       | .const cn _ =>
@@ -227,8 +320,8 @@ private def describeHopReason (env : Environment) (tbl : SymbolTable) (hop : Ext
             -- Find the converter argument (first non-Prop explicit argument of arrow/converter type)
             for arg in args do
               try
-                let ty ← inferType arg
-                if ty.isAppOf `Quiver.Hom || ty.isAppOf `SystemAlgebra.TypedConverter then
+                let ty ← normalizeForPresentation (← inferType arg)
+                if ty.isAppOf ``Quiver.Hom || ty.isAppOf `SystemAlgebra.TypedConverter then
                   let convTex ← exprToLatex arg tbl
                   return #[.text "by substituting inside context ", .inlineMath convTex,
                            .text " (absorbing ", .inlineMath convTex, .text " into the distinguisher)"]
@@ -245,11 +338,14 @@ private def describeHopReason (env : Environment) (tbl : SymbolTable) (hop : Ext
 def ccCalcChainExplainer : RuleExplainer where
   priority := 155
   explain ctx decompileChild expected proof := do
-    let fn := proof.getAppFn.consumeMData
+    let p := proof.consumeMData
+    let fn := p.getAppFn.consumeMData
+    let args := p.getAppArgs
     let isChainRoot :=
       fn.isConstOf ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.trans ||
-      (← splitStatTriangle? proof).isSome ||
-      (← splitEqTransport? proof).isSome
+      (← splitStatTriangle? p).isSome ||
+      (← splitEqTransport? p).isSome ||
+      ((fn.isConstOf ``Eq.mp || fn.isConstOf ``Eq.mpr) && args.size ≥ 2)
     if !isChainRoot then return none
     -- Only trigger when the expected goal is a substitution or statistical distance bound
     let isSubGoal := (← splitSubstitutesWithin? expected).isSome

@@ -272,6 +272,52 @@ private def natLit? (e : Expr) : Option Nat :=
         | _ => none
       else none
 
+/-- Merge a subscript `field` onto `base`, avoiding invalid KaTeX double subscripts such as
+`z_{1}_{2}` by merging trailing `_{...}` into `z_{1,2}`. -/
+private def appendSubscript (base field : String) : String := Id.run do
+  if base.endsWith "}" then
+    let arr := base.toList.toArray
+    let mut depth : Int := 0
+    let mut matchIdx? : Option Nat := none
+    let mut i := arr.size
+    while i > 0 do
+      i := i - 1
+      let c := arr[i]!
+      let escaped := i > 0 && arr[i - 1]! == '\\'
+      if !escaped then
+        if c == '}' then depth := depth + 1
+        else if c == '{' then
+          depth := depth - 1
+          if depth == 0 then
+            matchIdx? := some i
+            break
+    match matchIdx? with
+    | some idx =>
+        if idx > 0 && arr[idx - 1]! == '_' && !(idx > 1 && arr[idx - 2]! == '\\') then
+          return (base.dropEnd 1).toString ++ "," ++ field ++ "}"
+        else
+          return base ++ "_{" ++ field ++ "}"
+    | none => return base ++ "_{" ++ field ++ "}"
+  else
+    let arr := base.toList.toArray
+    if arr.size ≥ 2 && arr[arr.size - 2]! == '_' &&
+       !(arr.size ≥ 3 && arr[arr.size - 3]! == '\\') && arr[arr.size - 1]!.isAlphanum then
+      return (base.dropEnd 1).toString ++ "{" ++ arr[arr.size - 1]!.toString ++ "," ++ field ++ "}"
+    else
+      return base ++ "_{" ++ field ++ "}"
+
+/-- If `e` is a finite `List.cons` chain ending in `List.nil`, return its element `Expr`s. -/
+private partial def collectListElems? (e : Expr) : Option (List Expr) :=
+  let e := e.consumeMData
+  let fn := e.getAppFn.consumeMData
+  let args := e.getAppArgs
+  if fn.isConstOf ``List.nil && args.size ≤ 1 then
+    some []
+  else if fn.isConstOf ``List.cons && args.size == 3 then
+    (collectListElems? args[2]!).map (args[1]! :: ·)
+  else
+    none
+
 /-- Core recursive `Expr → LaTeX` printer with per-call $O(\text{DAG})$ memoization on closed
 subterms (runs inside `MetaM` so free variables resolve cleanly). -/
 private partial def renderAuxMemo (memo : IO.Ref (Std.HashMap (Expr × Nat) String))
@@ -317,6 +363,11 @@ where
         if let some alias := tbl.shortAliases.get? name then
           return alias
         if let some alias := tbl.constAliases.get? name then
+          if (alias.splitOn "#1").length > 1 then
+            let mut cleanAlias := alias
+            for k in [1:10] do
+              cleanAlias := cleanAlias.replace s!"#{k}" "\\cdot"
+            return cleanAlias
           return alias
         match name with
         | ``Nat => return "\\mathbb{N}"
@@ -381,26 +432,34 @@ where
             let bodyStr ← recGo 10 (body.instantiate1 fv)
             return parenIf ctxPrec 10 s!"{varStr} \\mapsto {bodyStr}"
     | .letE nm ty val body _ =>
-        let valStr ← recGo 0 val
-        withLetDecl nm ty val fun fv => do
-          let varStr ← recGo 100 fv
-          let bodyStr ← recGo ctxPrec (body.instantiate1 fv)
-          return "\\text{let } " ++ varStr ++ " = " ++ valStr ++ " \\text{ in } " ++ bodyStr
+        if nm == `this || nm.eraseMacroScopes == `this || nm.hasMacroScopes || (cleanBinderName? nm).isNone then
+          let red ← normalizeForPresentation (body.instantiate1 val)
+          recGo ctxPrec red
+        else
+          let valStr ← recGo 0 val
+          withLetDecl nm ty val fun fv => do
+            let varStr ← recGo 100 fv
+            let bodyStr ← recGo ctxPrec (body.instantiate1 fv)
+            return "\\text{let } " ++ varStr ++ " = " ++ valStr ++ " \\text{ in } " ++ bodyStr
     | .proj structName idx s =>
+        if (structName == ``Fin || structName == ``Subtype) && idx == 0 then
+          return ← recGo ctxPrec s
         let base ← recGo 90 s
         if structName == ``Prod || structName == ``PProd || structName == ``Sigma then
           let field := if idx == 0 then "1" else if idx == 1 then "2" else toString (idx + 1)
-          return parenIf ctxPrec 90 (base ++ "_{" ++ field ++ "}")
+          return parenIf ctxPrec 90 (appendSubscript base field)
         let env ← getEnv
         match getStructureInfo? env structName with
         | some info =>
             if h : idx < info.fieldNames.size then
               let fname := info.fieldNames[idx]
+              if (structName == ``Fin || structName == ``Subtype) && fname == `val then
+                return ← recGo ctxPrec s
               return parenIf ctxPrec 90 (base ++ ".\\mathrm{" ++ escapeLatex fname.toString ++ "}")
             else
-              return parenIf ctxPrec 90 (base ++ "_{" ++ toString (idx + 1) ++ "}")
+              return parenIf ctxPrec 90 (appendSubscript base (toString (idx + 1)))
         | none =>
-            return parenIf ctxPrec 90 (base ++ "_{" ++ toString (idx + 1) ++ "}")
+            return parenIf ctxPrec 90 (appendSubscript base (toString (idx + 1)))
     | .app .. =>
         let fn := e.getAppFn.consumeMData
         let args := e.getAppArgs
@@ -422,10 +481,16 @@ where
             let visibleArgs : Array Expr :=
               (explicitArgs.foldl (init := (0, #[])) fun (i, acc) a =>
                 (i + 1, if hidden.contains i then acc else acc.push a)).2
+            if tmpl.trimAscii.toString == "#1 \\oplus #2" && visibleArgs.size == 2 then
+              let lStr ← recGo 65 visibleArgs[0]!
+              let rStr ← recGo 66 visibleArgs[1]!
+              return parenIf ctxPrec 65 (lStr ++ " \\oplus " ++ rStr)
             let renderedArgs ← visibleArgs.mapM (recGo 0)
             let mut out := tmpl
             for idx in [:renderedArgs.size] do
               out := out.replace s!"#{idx + 1}" renderedArgs[idx]!
+            for k in [renderedArgs.size + 1 : 10] do
+              out := out.replace s!"#{k}" "\\cdot"
             return parenIf ctxPrec 85 out
           -- 3. Zero-argument short notation (e.g. `blockBytes (hash p)` -> `r`)
           if tbl.zeroArgConsts.contains head then
@@ -436,9 +501,13 @@ where
             if let some projInfo := env.getProjectionFnInfo? head then
               if let some (.ctorInfo cinfo) := env.find? projInfo.ctorName then
                 let structName := cinfo.induct
+                if (structName == ``Fin || structName == ``Subtype) &&
+                   projInfo.i == 0 && args.size == projInfo.numParams + 1 then
+                  return ← recGo ctxPrec args[projInfo.numParams]!
                 if !Lean.isClass env structName &&
                    structName != ``Prod && structName != ``PProd &&
                    structName != ``Sigma && structName != ``Subtype &&
+                   structName != ``Fin &&
                    args.size > projInfo.numParams then
                   if let some sinfo := getStructureInfo? env structName then
                     if h : projInfo.i < sinfo.fieldNames.size then
@@ -637,7 +706,7 @@ where
           let pairStr ← recGo 90 pairExpr
           let projStr := match structField? with
             | some fname => s!"{pairStr}.\\mathrm\{{escapeLatex fname}}"
-            | none => s!"{pairStr}_\{{idxStr}}"
+            | none => appendSubscript pairStr idxStr
           if args.size == 3 then
             return some (projStr, 90)
           else
@@ -652,7 +721,7 @@ where
           let pred := args[1]!
           let (varStr, bodyStr) ← match pred.consumeMData with
             | .lam nm bDom body bi =>
-                let freshNm ← freshShadowFreeName nm "x"
+                let freshNm ← chooseUnshadowedBinderName nm #[bDom, body] "x"
                 withLocalDecl freshNm bi bDom fun fv => do
                   pure (← recGo 100 fv, ← recGo 10 (body.instantiate1 fv))
             | _ =>
@@ -835,6 +904,67 @@ where
         if head == `List.length then
           let some a := argFromEnd? args 0 | return none
           return some (s!"\\left|{← recGo 0 a}\\right|", 90)
+        if head == ``HXor.hXor then
+          let some (l, r) := exactBin? 6 | return none
+          return some ((← recGo 65 l) ++ " \\oplus " ++ (← recGo 66 r), 65)
+        if head == ``XorOp.xor then
+          let some (l, r) := exactBin? 4 | return none
+          return some ((← recGo 65 l) ++ " \\oplus " ++ (← recGo 66 r), 65)
+        if head == ``List.nil && args.size ≤ 1 then
+          return some ("[]", 95)
+        if head == ``List.cons && args.size == 3 then
+          if let some rest := collectListElems? args[2]! then
+            let elems := args[1]! :: rest
+            let strs ← elems.mapM (recGo 0)
+            return some ("[" ++ String.intercalate ", " strs ++ "]", 95)
+          else
+            return some ((← recGo 66 args[1]!) ++ " :: " ++ (← recGo 65 args[2]!), 65)
+        if head == ``HAppend.hAppend then
+          let some (l, r) := exactBin? 6 | return none
+          let ty0 ← try withTransparency .reducible (whnf args[0]!) catch _ => pure args[0]!
+          if ty0.consumeMData.isAppOf ``List then
+            return some ((← recGo 66 l) ++ " \\mathbin{+\\!\\!+} " ++ (← recGo 65 r), 65)
+        if head == ``List.append then
+          let some (l, r) := exactBin? 3 | return none
+          return some ((← recGo 66 l) ++ " \\mathbin{+\\!\\!+} " ++ (← recGo 65 r), 65)
+        if head == ``List.sum && args.size == 4 then
+          let listArg := args[3]!.consumeMData
+          if listArg.getAppFn.consumeMData.isConstOf ``List.map && listArg.getAppArgs.size == 4 then
+            let margs := listArg.getAppArgs
+            let dom := margs[0]!
+            let f := margs[2]!
+            let xs := margs[3]!
+            let xsStr ← recGo 0 xs
+            let (varStr, bodyStr) ← match f.consumeMData with
+              | .lam nm bDom body bi =>
+                  let freshNm ← freshShadowFreeName nm "x"
+                  withLocalDecl freshNm bi bDom fun fv => do
+                    pure (← recGo 100 fv, ← recGo 68 (body.instantiate1 fv))
+              | _ =>
+                  let freshNm ← freshShadowFreeName `x "x"
+                  withLocalDecl freshNm .default dom fun fv => do
+                    pure (← recGo 100 fv, ← recGo 68 (mkApp f fv))
+            return some ("\\sum_{" ++ varStr ++ " \\in " ++ xsStr ++ "} " ++ bodyStr, 68)
+        if head == `Nat.descFactorial && args.size == 2 then
+          return some ("(" ++ (← recGo 0 args[0]!) ++ ")_{" ++ (← recGo 0 args[1]!) ++ "}", 90)
+        if head == ``Function.Injective && args.size == 3 then
+          return some ((← recGo 85 args[2]!) ++ " \\text{ is injective}", 45)
+        if head == `Probability.Distribution.uniform ||
+           head == `Probability.Distribution.ProbDist.uniform ||
+           head == `Distribution.uniform then
+          if let some info := (← getEnv).find? head then
+            let expArgs ← collectExplicitArgs info.type args
+            if expArgs.size == 1 then
+              return some ("\\mathcal{U}[" ++ (← recGo 0 expArgs[0]!) ++ "]", 90)
+            else if expArgs.size == 2 then
+              return some ("\\mathcal{U}[" ++ (← recGo 0 expArgs[0]!) ++ "]\\!\\left(" ++ (← recGo 0 expArgs[1]!) ++ "\\right)", 85)
+        if head == `Probability.Distribution.mass || head == `Distribution.mass then
+          if let some info := (← getEnv).find? head then
+            let expArgs ← collectExplicitArgs info.type args
+            if expArgs.size == 2 then
+              let muStr ← recGo 90 expArgs[0]!
+              let evStr ← recGo 0 expArgs[1]!
+              return some (muStr ++ "\\!\\left(" ++ evStr ++ "\\right)", 85)
         if head == `Fin then
           let some n := argFromEnd? args 0 | return none
           return some (s!"[\\,{← recGo 0 n}\\,]", 90)

@@ -133,6 +133,7 @@
 
   function glossaryCategory(ins) {
     const k = ins.kind || {};
+    if (ins.roleBadge === "theorem") return "Cited Results";
     if (k.interfaceTable) return "Interfaces";
     if (k.dslPseudocode || k.ccDiagram) return "Systems & Converters";
     if (k.witnessCard) return "Proof Witnesses";
@@ -376,7 +377,8 @@
   function normalizeUnicodeMath(str) {
     const scriptMap = {
       "ℬ": "B", "ℰ": "E", "ℱ": "F", "ℋ": "H", "ℐ": "I", "ℒ": "L", "ℳ": "M", "ℛ": "R",
-      "ℝ": "R", "ℕ": "N", "ℤ": "Z", "ℚ": "Q", "ℂ": "C"
+      "ℯ": "e", "ℊ": "g", "ℴ": "o",
+      "ℝ": "R", "ℕ": "N", "ℤ": "Z", "ℚ": "Q", "ℂ": "C", "ℍ": "H", "ℙ": "P"
     };
     return Array.from(str || "").map((ch) => {
       if (UNICODE_SCRIPT_MAP[ch] !== undefined) return UNICODE_SCRIPT_MAP[ch];
@@ -386,6 +388,12 @@
       if (cp >= 0x1d41a && cp <= 0x1d433) return String.fromCharCode(97 + (cp - 0x1d41a));
       if (cp >= 0x1d434 && cp <= 0x1d44d) return String.fromCharCode(65 + (cp - 0x1d434));
       if (cp >= 0x1d44e && cp <= 0x1d467) return String.fromCharCode(97 + (cp - 0x1d44e));
+      if (cp >= 0x1d49c && cp <= 0x1d4b5) return String.fromCharCode(65 + (cp - 0x1d49c));
+      if (cp >= 0x1d4b6 && cp <= 0x1d4cf) return String.fromCharCode(97 + (cp - 0x1d4b6));
+      if (cp >= 0x1d4d0 && cp <= 0x1d4e9) return String.fromCharCode(65 + (cp - 0x1d4d0));
+      if (cp >= 0x1d4ea && cp <= 0x1d503) return String.fromCharCode(97 + (cp - 0x1d4ea));
+      if (cp >= 0x1d5a0 && cp <= 0x1d5b9) return String.fromCharCode(65 + (cp - 0x1d5a0));
+      if (cp >= 0x1d5ba && cp <= 0x1d5d3) return String.fromCharCode(97 + (cp - 0x1d5ba));
       if (cp >= 0x1d5d4 && cp <= 0x1d5ed) return String.fromCharCode(65 + (cp - 0x1d5d4));
       if (cp >= 0x1d5ee && cp <= 0x1d607) return String.fromCharCode(97 + (cp - 0x1d5ee));
       return ch;
@@ -403,6 +411,7 @@
         .replace(/\\(?:mathrm|mathit|mathsf|mathbf|mathcal|mathbb|operatorname|text|texttt|boldsymbol)\{([^{}]*)\}/g, "$1");
     } while (s !== prev);
     s = s
+      .replace(/\\(?:mathrm|mathit|mathsf|mathbf|mathcal|mathbb|operatorname|text|texttt|boldsymbol)\b\s*/g, "")
       .replace(/\\(?:left|right|middle)\b/g, "")
       .replace(/\\[!,;: ]/g, "")
       .replace(/\\_/g, "_")
@@ -467,7 +476,37 @@
       }
     }
 
-    return { tokenMap, sectionId: sectionId || null };
+    return { tokenMap, uniqueBareMap: buildUniqueBareMap(tokenMap), sectionId: sectionId || null };
+  }
+
+  function buildUniqueBareMap(tokenMap) {
+    const bareMap = new Map();
+    for (const [normKey, cands] of tokenMap.entries()) {
+      const bare = stripFontPrefix(normKey);
+      if (!bare) continue;
+      if (!bareMap.has(bare)) bareMap.set(bare, []);
+      const list = bareMap.get(bare);
+      for (const ins of cands) {
+        if (!list.some((x) => x.key === ins.key)) list.push(ins);
+      }
+    }
+    const uniqueBareMap = new Map();
+    for (const [bare, list] of bareMap.entries()) {
+      if (list.length === 1) uniqueBareMap.set(bare, list);
+    }
+    return uniqueBareMap;
+  }
+
+  function resolveTokenCandidates(scope, norm) {
+    if (!scope || !norm || isNonHoverableToken(norm)) return null;
+    const exact = scope.tokenMap && scope.tokenMap.get(norm);
+    if (exact && exact.length > 0) return exact;
+    if (scope.uniqueBareMap) {
+      const bare = stripFontPrefix(norm);
+      const fallback = scope.uniqueBareMap.get(bare);
+      if (fallback && fallback.length > 0) return fallback;
+    }
+    return null;
   }
 
   function buildScope(localInspectors, sectionId, referencedKeys, includeSectionContextDefs = false) {
@@ -713,7 +752,7 @@
         const domPrefix = extractFontPrefixFromDomSlice(slice);
         const norm = normalizeMathToken(rawText, domPrefix);
         if (!isNonHoverableToken(norm)) {
-          const candidates = scope.tokenMap.get(norm);
+          const candidates = resolveTokenCandidates(scope, norm);
           if (candidates && candidates.length > 0) {
             wrapSiblingSlice(container, slice, candidates, norm);
             i = end + 1;
@@ -766,7 +805,7 @@
         const domPrefix = extractFontPrefixFromDomSlice(slice);
         const norm = normalizeMathToken(slice.map((el) => el.textContent || "").join(""), domPrefix);
         if (!isNonHoverableToken(norm)) {
-          const candidates = scope.tokenMap.get(norm);
+          const candidates = resolveTokenCandidates(scope, norm);
           if (candidates && candidates.length > 0) {
             wrapSiblingSlice(baseEl, slice, candidates, norm);
             i = end + 1;
@@ -1052,6 +1091,24 @@
     return vis;
   }
 
+  function hasVisibleDiagramHtml(htmlStr) {
+    return stripEmbeddedStyles(htmlStr || "").trim().length > 0;
+  }
+
+  function renderCollapsibleDiagram(htmlStr, cls, summaryLabel, defaultOpen = false) {
+    const cleanHtml = stripEmbeddedStyles(htmlStr || "").trim();
+    if (!cleanHtml) return null;
+    const bodyEl = h("div", { class: "cadmo-diagram-body" });
+    bodyEl.innerHTML = cleanHtml;
+    return h("details", {
+      class: `cadmo-diagram ${cls}`,
+      open: defaultOpen ? true : null
+    },
+      h("summary", {}, summaryLabel),
+      bodyEl
+    );
+  }
+
   function collectAllExpandableIds(nodes, out = []) {
     for (const n of projectNodes(nodes || [])) {
       if (n.kind === "step") {
@@ -1063,7 +1120,8 @@
       } else if (n.kind === "calcChain") {
         (n.steps || []).forEach((s, idx) => {
           const vis = paperVisibleChildren(s.justification || s.children || []);
-          if (vis.length > 0) {
+          const hasDiag = s.step && hasVisibleDiagramHtml(s.step.diagramHtml);
+          if (vis.length > 0 || hasDiag) {
             out.push(`${n.id}-s${idx}`);
             collectAllExpandableIds(vis, out);
           }
@@ -1149,19 +1207,47 @@
 
     for (let i = 0; i < nodes.length; i++) {
       const node = nodes[i];
-      if (!node || node.kind === "figure") continue;
+      if (!node) continue;
+
+      if (node.kind === "figure") {
+        flushPara(false);
+        const cleanHtml = stripEmbeddedStyles(node.html || "").trim();
+        const capArr = Array.isArray(node.caption) ? node.caption : [];
+        const capStr = typeof node.caption === "string" ? node.caption.trim() : "";
+        const hasCaption = capArr.length > 0 || capStr.length > 0;
+        if (!cleanHtml && !hasCaption) continue;
+        const bodyDiv = h("div", { class: "cadmo-diagram-body" });
+        bodyDiv.innerHTML = cleanHtml;
+        out.push(
+          h("figure", {
+            class: "cadmo-diagram cadmo-figure",
+            "data-node-id": node.id || null
+          },
+            bodyDiv,
+            hasCaption
+              ? h("figcaption", { class: "cadmo-figure-caption" },
+                  capArr.length > 0 ? renderInlines(capArr, scope) : renderMixedText(capStr, scope)
+                )
+              : null
+          )
+        );
+        continue;
+      }
 
       if (node.kind === "flowNote") {
         flushPara(false);
+        const noteText = typeof node.text === "string" ? node.text.trim() : "";
         if (node.placement === "paragraph") {
-          if (node.text) {
+          if (noteText) {
             ensureLeadIn();
-            paraChildren.push(h("span", { class: "cadmo-para-heading" }, renderMixedText(node.text + " ", scope)));
+            paraChildren.push(h("span", { class: "cadmo-para-heading" }, renderMixedText(noteText + " ", scope)));
           }
           continue;
         }
-        const p = h("p", { class: "cadmo-flow-note" }, renderMixedText(node.text || "", scope));
-        out.push(p);
+        if (noteText) {
+          const p = h("p", { class: "cadmo-flow-note" }, renderMixedText(node.text || "", scope));
+          out.push(p);
+        }
         continue;
       }
 
@@ -1210,6 +1296,8 @@
         steps.forEach((item, idx) => {
           const st = item.step || {};
           const ch = paperVisibleChildren(item.justification || item.children || []);
+          const stepDiag = renderCollapsibleDiagram(st.diagramHtml, "cadmo-step-diagram", "Diagram", false);
+          const hasExpandable = ch.length > 0 || !!stepDiag;
           const sid = `${node.id}-s${idx}`;
           const isOpen = state.expanded.has(sid);
           if (idx === 0 && st.lhsLatex) {
@@ -1227,7 +1315,7 @@
                 (st.reason && st.reason.length > 0) ? "(" : null,
                 renderInlines(st.reason || [], scope),
                 (st.reason && st.reason.length > 0) ? ")" : null,
-                ch.length > 0
+                hasExpandable
                   ? h("button", {
                       type: "button",
                       class: "cadmo-inline-toggle",
@@ -1239,11 +1327,12 @@
               )
             )
           );
-          if (ch.length > 0 && isOpen) {
+          if (hasExpandable && isOpen) {
             calcItems.push(
               h("div", { class: "cadmo-calc-expand-block" },
                 h("div", { class: "cadmo-expansion cadmo-expanded-children" },
-                  ...renderProofFlow(ch, { depth: depth + 1, scope })
+                  stepDiag,
+                  ...(ch.length > 0 ? renderProofFlow(ch, { depth: depth + 1, scope }) : [])
                 )
               )
             );
@@ -1318,11 +1407,13 @@
           goalBtn
         );
       }
+      const stepDiag = renderCollapsibleDiagram(node.diagramHtml, "cadmo-step-diagram", "Diagram", false);
       const childrenEl = (hasChildren && isOpen)
         ? h("div", { class: "cadmo-expansion cadmo-expanded-children" },
+            stepDiag,
             ...renderProofFlow(children, { depth: depth + 1, scope })
           )
-        : null;
+        : (!hasChildren && stepDiag ? stepDiag : null);
       emitSentence(sent, childrenEl);
     }
 
@@ -1381,6 +1472,14 @@
       kicker = "CC Assembly";
       const d = kind.ccDiagram;
       if (d.summaryLatex) body.push(renderMathSpan(d.summaryLatex, true, null));
+      const cleanSvgOrHtml = stripEmbeddedStyles(d.svgOrHtml || "").trim();
+      if (cleanSvgOrHtml) {
+        const diagWrap = h("div", { class: "cadmo-diagram cadmo-inspector-diagram" });
+        const diagBody = h("div", { class: "cadmo-diagram-body" });
+        diagBody.innerHTML = cleanSvgOrHtml;
+        diagWrap.appendChild(diagBody);
+        body.push(diagWrap);
+      }
     } else if (kind.mathDefinition) {
       kicker = "Definition";
       const md = kind.mathDefinition;
@@ -1391,7 +1490,7 @@
       const wc = kind.witnessCard;
       if (wc.title) body.push(h("p", {}, h("strong", {}, renderMixedText(wc.title, null))));
       const rows = (wc.rows || []).map(([k, v]) =>
-        h("tr", {}, h("th", {}, k), h("td", {}, renderMathSpan(v, false, null)))
+        h("tr", {}, h("th", {}, k), h("td", {}, renderMixedText(v, null)))
       );
       body.push(h("table", { class: "cadmo-inspector-table" }, h("tbody", {}, ...rows)));
     } else if (kind.parameter) {
@@ -1734,7 +1833,7 @@
         : glossaryItems;
 
       const grouped = new Map();
-      for (const cat of ["Interfaces", "Systems & Converters", "Proof Witnesses", "Definitions"]) {
+      for (const cat of ["Interfaces", "Systems & Converters", "Proof Witnesses", "Definitions", "Cited Results"]) {
         grouped.set(cat, []);
       }
       for (const ins of filtered) {
@@ -1817,6 +1916,7 @@
       h("div", { class: "cadmo-statement" },
         ...(entry.statement || []).map((para) => h("p", {}, renderInlines(para, scope)))
       ),
+      renderCollapsibleDiagram(entry.diagramHtml, "cadmo-entry-diagram", "System diagram", true),
       proofNodes.length > 0
         ? h("section", { class: "cadmo-proof" },
             ...renderProofFlow(entry.proof || [], { leadIn: "Proof.", appendQed: true, depth: 0, scope })
@@ -1929,11 +2029,13 @@
               )
             )
           : null;
+        const secTitleStr = String(entry.sectionTitle);
+        const hasExplicitSecPrefix = /^\s*(?:Section|§|Chapter|Part)\s*\d/i.test(secTitleStr);
         bodyNodes.push(
           h("div", { class: "cadmo-section-head", id: secId },
             h("h2", { class: "cadmo-section-title" },
-              h("span", { class: "cadmo-section-num" }, `${secNumShown}.`),
-              entry.sectionTitle
+              hasExplicitSecPrefix ? null : h("span", { class: "cadmo-section-num" }, `${secNumShown}.`),
+              secTitleStr
             ),
             entry.sectionIntro ? h("p", { class: "cadmo-section-intro" }, entry.sectionIntro) : null,
             scParas
@@ -1984,14 +2086,19 @@
       extractFontPrefixFromDomNode,
       extractFontPrefixFromDomSlice,
       buildTokenScope,
+      resolveTokenCandidates,
       renderMathNodes,
+      renderMixedText,
       annotateOfflineMathContainer,
       annotateKatexBase,
       annotateKatexMath,
       annotateMathReferences,
       getTrustLevel,
       renderInline,
-      renderProofFlow
+      renderProofFlow,
+      renderInspectorRichBody,
+      renderEntry,
+      renderAll: typeof renderAll === "function" ? renderAll : null
     };
   }
 

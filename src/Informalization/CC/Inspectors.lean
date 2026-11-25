@@ -13,6 +13,7 @@ import Informalization.Core.Hygiene
 import Informalization.Core.LeanTeX
 import Informalization.Core.Ontology
 import Informalization.Core.ProofGraph
+import Informalization.Core.Overlay
 import Informalization.Core.Routine
 import Informalization.Core.Explanation
 import Informalization.CC.Registry
@@ -49,6 +50,7 @@ open Informalization.Core.Hygiene
 open Informalization.Core.LeanTeX
 open Informalization.Core.Ontology
 open Informalization.Core.ProofGraph
+open Informalization.Core.Overlay
 open Informalization.Core.Routine
 open Informalization.Core.Explanation
 open Informalization.Core.Presentation
@@ -206,9 +208,18 @@ private def buildInterfaceTable? (tbl : SymbolTable) (e : Expr) :
       pure ""
   return some (.interfaceTable rows domainLatex budgetNote)
 
+/-- Strip `.perPort` / `.typed` suffix when looking up parser-recorded DSL sources. -/
+private def dslLookupName (declName : Name) : Name :=
+  match declName with
+  | .str p "perPort" => p
+  | .str p "typed" => p
+  | _ => declName
+
 /-- Build an `InspectorKind.dslPseudocode` card from `SystemAlgebra.DSL.sourceDocuments`. -/
 private def buildDslPseudocode? (env : Environment) (declName : Name) : Option InspectorKind :=
-  match (SystemAlgebra.DSL.sourceDocuments.getState env).find? declName with
+  let docs := SystemAlgebra.DSL.sourceDocuments.getState env
+  let doc? := docs.find? declName <|> docs.find? (dslLookupName declName)
+  match doc? with
   | none => none
   | some doc =>
       let bodyParts := doc.sections.filterMap fun sec =>
@@ -344,7 +355,7 @@ private def cleanDocString? (env : Environment) (declName : Name) : IO (Option S
   let bannedCS := [
     "_vcc_", "Exists(", "sum(univ", "Sigma(", "Subtype(",
     "Prod.fst", "Prod.snd", "BitString(", "Unit \\to", "Unit →",
-    "_proof_", "self."
+    "_proof_", "self.", " => ", "fun "
   ]
   if bannedCS.any (fun pat => (s.splitOn pat).length > 1) then
     return none
@@ -358,7 +369,7 @@ private def containsMatchHelper (e : Expr) : Bool :=
     acc || (shortConstName n).startsWith "match_"
 
 /-- Fast bounded $O(\text{limit})$ DAG size check so pathological permutation tables never stall elaboration. -/
-private partial def exprSizeBounded (e : Expr) (limit : Nat := 160) : Bool :=
+private partial def exprSizeBounded (e : Expr) (limit : Nat := 450) : Bool :=
   let rec go (cur : Expr) (st : Std.HashSet Expr × Nat) : Std.HashSet Expr × Nat :=
     if st.2 > limit || st.1.contains cur then st
     else
@@ -438,16 +449,45 @@ private def buildParameterRoleAndBadge (tbl : SymbolTable) (ty : Expr) :
   let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
   let role := capitalizeFirst (ensurePeriod s!"{art} {adj}{desc.noun.singular}{acc}")
   let badge :=
-    if ["interface", "resource", "converter", "specification", "game", "distinguisher"].contains desc.noun.singular then
+    if ["interface", "resource", "converter", "specification", "game", "distinguisher", "solver"].contains desc.noun.singular then
       desc.noun.singular
     else "parameter"
   return (role, badge)
 
-/-- Check if an expression references compiler-generated `_proof_` / `match_` helpers or `sorryAx`. -/
+/-- Check if an expression references compiler-generated `match_` helpers or `sorryAx`.
+(Proof-only `_proof_` terms inside explicit structures are omitted by `LeanTeX.collectExplicitArgs`,
+so checking `match_` and `sorryAx` avoids falsely blanking definitions such as `oneTimePad`.) -/
 private def containsAuxOrMatchDecl (e : Expr) : Bool :=
   containsMatchHelper e ||
   e.foldConsts (init := false) fun n acc =>
-    acc || isCompilerAuxDecl n || n == ``sorryAx
+    acc || n == ``sorryAx
+
+private def buildStandardDefSummary (env : Environment) (declName : Name) (desc : TypeDescription)
+    (isProj hasExplicitParams : Bool) (badge : String) : String :=
+  let adj := if desc.adjectives.isEmpty then "" else String.intercalate " " desc.adjectives ++ " "
+  let art := article (adj ++ desc.noun.singular)
+  let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
+  if isProj then
+    if desc.noun.singular.startsWith "element of " then
+      s!"Projection field {shortConstName declName} (in {desc.noun.singular.drop 11}{acc})."
+    else
+      s!"Projection field {shortConstName declName} ({art} {adj}{desc.noun.singular}{acc})."
+  else if let some rule := getPaperDescribeRule? env declName then
+    match rule.hoverTemplate? with
+    | some hTmpl => hTmpl
+    | none =>
+        if desc.noun.singular.startsWith "element of " then
+          ensurePeriod s!"Defined in {desc.noun.singular.drop 11}{acc}"
+        else ensurePeriod s!"Defined as {art} {adj}{desc.noun.singular}{acc}"
+  else if hasExplicitParams && badge == "definition" then
+    if desc.noun.singular.startsWith "element of " then
+      ensurePeriod s!"Function returning a value in {desc.noun.singular.drop 11}{acc}"
+    else
+      ensurePeriod s!"Function returning {art} {adj}{desc.noun.singular}{acc}"
+  else if desc.noun.singular.startsWith "element of " then
+    ensurePeriod s!"Defined in {desc.noun.singular.drop 11}{acc}"
+  else
+    ensurePeriod s!"Defined as {art} {adj}{desc.noun.singular}{acc}"
 
 /-- Build an ambient-suppressed `InspectorKind.mathDefinition` plus `(roleBadge, clauses)`
 for a project `defnInfo`. -/
@@ -509,25 +549,8 @@ private def buildMathDefinitionRich (tbl : SymbolTable) (declName : Name) (info 
       rhsTbl := rhsTbl.withExprAlias sfv "x"
     if isProj && explicitFVars.size == 1 && selfFVars.isEmpty then
       rhsTbl := rhsTbl.withExprAlias explicitFVars[0]! (explicitParams.getD 0 "x")
-    if rhs.approxDepth > 22 || !exprSizeBounded rhs 160 then
-      let adj := if desc.adjectives.isEmpty then "" else String.intercalate " " desc.adjectives ++ " "
-      let art := article (adj ++ desc.noun.singular)
-      let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
-      let summary :=
-        if isProj then
-          if desc.noun.singular.startsWith "element of " then
-            s!"Projection field {shortConstName declName} (in {desc.noun.singular.drop 11}{acc})."
-          else
-            s!"Projection field {shortConstName declName} ({art} {adj}{desc.noun.singular}{acc})."
-        else if let some rule := getPaperDescribeRule? env declName then
-          if let some hTmpl := rule.hoverTemplate? then hTmpl
-          else if desc.noun.singular.startsWith "element of " then
-            ensurePeriod s!"Defined in {desc.noun.singular.drop 11}{acc}"
-          else ensurePeriod s!"Defined as {art} {adj}{desc.noun.singular}{acc}"
-        else if desc.noun.singular.startsWith "element of " then
-          ensurePeriod s!"Defined in {desc.noun.singular.drop 11}{acc}"
-        else
-          ensurePeriod s!"Defined as {art} {adj}{desc.noun.singular}{acc}"
+    if rhs.approxDepth > 55 || !exprSizeBounded rhs 900 then
+      let summary := buildStandardDefSummary env declName desc isProj (!explicitParams.isEmpty) badge
       return (.mathDefinition "" summary, badge, #[])
     let rhsNorm ← normalizeForPresentation rhs
     -- 1. Predicate (`→ Prop`): unfold conjunct clauses cleanly!
@@ -574,26 +597,7 @@ private def buildMathDefinitionRich (tbl : SymbolTable) (declName : Name) (info 
             pure (sampleClauses.push bodyTex)
         return (.mathDefinition "" summary, badge, finalClauses)
     -- 4. Standard definition / projection
-    let adj := if desc.adjectives.isEmpty then "" else String.intercalate " " desc.adjectives ++ " "
-    let art := article (adj ++ desc.noun.singular)
-    let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
-    let summary :=
-      if isProj then
-        if desc.noun.singular.startsWith "element of " then
-          s!"Projection field {shortConstName declName} (in {desc.noun.singular.drop 11}{acc})."
-        else
-          s!"Projection field {shortConstName declName} ({art} {adj}{desc.noun.singular}{acc})."
-      else if let some rule := getPaperDescribeRule? env declName then
-        match rule.hoverTemplate? with
-        | some hTmpl => hTmpl
-        | none =>
-            if desc.noun.singular.startsWith "element of " then
-              ensurePeriod s!"Defined in {desc.noun.singular.drop 11}{acc}"
-            else ensurePeriod s!"Defined as {art} {adj}{desc.noun.singular}{acc}"
-      else if desc.noun.singular.startsWith "element of " then
-        ensurePeriod s!"Defined in {desc.noun.singular.drop 11}{acc}"
-      else
-        ensurePeriod s!"Defined as {art} {adj}{desc.noun.singular}{acc}"
+    let summary := buildStandardDefSummary env declName desc isProj (!explicitParams.isEmpty) badge
     let rhsTex ← if containsAuxOrMatchDecl rhsNorm then pure "" else exprToLatex rhsNorm rhsTbl
     let eqLatex :=
       if rhsTex.isEmpty || rhsTex == lhs || isProj then ""
@@ -711,19 +715,23 @@ private def inspectConstant? (tbl : SymbolTable) (declName : Name) :
       roleBadge? := some badge, docString?
     }
   let display ← exprToLatex (mkConst declName) tbl
-  -- 1. DSL `converter` / `system` recorded by parser
+  let isInterfaceDecl ← forallTelescope info.type fun _ bodyTy =>
+    pure (bodyTy.consumeMData == mkConst interfaceName)
+  -- 1. DSL `converter` / `system` / `interface` recorded by parser
   if let some dslKind := buildDslPseudocode? env declName then
-    let badge ← forallTelescope info.type fun _ bodyTy => do
-      if (← converterInterfaces? bodyTy).isSome then pure "converter"
-      else if (← resourceInterface? bodyTy).isSome then pure "resource"
-      else pure "system / converter"
+    let badge ←
+      if isInterfaceDecl then pure "interface"
+      else forallTelescope info.type fun _ bodyTy => do
+        if (← converterInterfaces? bodyTy).isSome then pure "converter"
+        else if (← resourceInterface? bodyTy).isSome then pure "resource"
+        else pure "system / converter"
     return some {
       key, display, kind := dslKind, leanName? := some key, leanType,
       sourceFile?, sourceLine?, roleBadge? := some badge, docString?
     }
   -- 2. Closed `Interface` definition -> Port / Query / Reply / Domain table
   let cExpr := mkConst declName (info.levelParams.map Level.param)
-  if info.type.consumeMData == mkConst interfaceName then
+  if isInterfaceDecl && info.type.consumeMData == mkConst interfaceName then
     if let some tableKind ← buildInterfaceTable? tbl cExpr then
       return some {
         key, display, kind := tableKind, leanName? := some key, leanType,
@@ -757,12 +765,60 @@ private def inspectConstant? (tbl : SymbolTable) (declName : Name) :
       key, display, kind := defKind, leanName? := some key, leanType,
       sourceFile?, sourceLine?, roleBadge? := some badge, clauses, docString?
     }
+  -- 5b. Prerequisite theorems / lemmas (`B4`) -> theorem-statement hover card (non-private only)
+  if let .thmInfo tinfo := info then
+    if Lean.isPrivateName declName then return none
+    let title := (getOverlay env declName).title?.getD (humanDeclarationTitle env declName)
+    let summary := ensurePeriod title
+    let stmtLatex ←
+      if tinfo.type.approxDepth > 55 || !exprSizeBounded tinfo.type 900 then
+        pure ""
+      else
+        try exprToLatex tinfo.type tbl catch _ => pure ""
+    return some {
+      key, display := title, kind := .mathDefinition stmtLatex summary,
+      leanName? := some key, leanType, sourceFile?, sourceLine?,
+      roleBadge? := some "theorem", docString?
+    }
   -- 6. Domain type / structure registered via `@[paper_describe]` / `paper_describe_for`
+  -- Merge with structure field tuple equation (`R2a`) when the declaration is a Lean structure.
+  let buildStructEqLatex : MetaM String := do
+    if let some sinfo := Lean.getStructureInfo? env declName then
+      let params ← forallTelescope info.type fun fvars _ => do
+        let mut ps : Array String := #[]
+        for fv in fvars do
+          let d ← fv.fvarId!.getDecl
+          if d.binderInfo.isExplicit && !(← isProp d.type) then
+            ps := ps.push (← exprToLatex fv tbl)
+        pure ps
+      let lhsHead := tbl.constAliases.getD declName (formatMathIdent (shortConstName declName))
+      let lhs := if params.isEmpty then lhsHead else s!"{lhsHead}\\!\\left({String.intercalate ", " params.toList}\\right)"
+      let fieldNames := sinfo.fieldNames.map fun fn => formatMathIdent (shortConstName fn)
+      if fieldNames.isEmpty then return ""
+      else return s!"{lhs} := \\langle {String.intercalate ", " fieldNames.toList} \\rangle"
+    else return ""
   if let some rule := getPaperDescribeRule? env declName then
     let art := article rule.noun.singular
     let summary := match rule.hoverTemplate? with
       | some h => h
       | none => ensurePeriod (capitalizeFirst s!"{art} {rule.noun.singular}")
+    let eqLatex ← buildStructEqLatex
+    return some {
+      key, display, kind := .mathDefinition eqLatex summary,
+      leanName? := some key, leanType, sourceFile?, sourceLine?,
+      roleBadge? := some (if eqLatex.isEmpty then "type" else "structure"), docString?
+    }
+  -- 7. Unregistered structures / inductive types (`B3`: e.g. `ShannonCipher`, `DistAdversary`)
+  if let .inductInfo iinfo := info then
+    if let some sinfo := Lean.getStructureInfo? env declName then
+      let eqLatex ← buildStructEqLatex
+      let summary := s!"Mathematical structure with {countPhrase sinfo.fieldNames.size ⟨"component", "components"⟩}."
+      return some {
+        key, display, kind := .mathDefinition eqLatex summary,
+        leanName? := some key, leanType, sourceFile?, sourceLine?,
+        roleBadge? := some "structure", docString?
+      }
+    let summary := s!"Inductive type with {countPhrase iinfo.ctors.length ⟨"constructor", "constructors"⟩}."
     return some {
       key, display, kind := .mathDefinition "" summary,
       leanName? := some key, leanType, sourceFile?, sourceLine?,
@@ -870,6 +926,7 @@ def collectScopedCCInspectors (tbl : SymbolTable) (declName : Name) (theoremType
     | some body => collectProofDefConstants env body
     | none => #[]
   for od in extraOriginDecls do
+    proofConsts := proofConsts.push od
     if let some oinfo := env.find? od then
       proofConsts := proofConsts ++ (← collectExplicitProjectConstants env oinfo.type)
   let mut proofIns : Array SymbolInspector := #[]

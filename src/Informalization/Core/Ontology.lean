@@ -127,7 +127,7 @@ partial def describeType (tbl : SymbolTable) (ty : Expr) : MetaM TypeDescription
   if ty == mkConst `NNReal then
     return { noun := ⟨"nonnegative real number", "nonnegative real numbers"⟩ }
   if ty == mkConst `ENNReal then
-    return { noun := ⟨"extended nonnegative real", "extended nonnegative reals"⟩ }
+    return { noun := ⟨"nonnegative real", "nonnegative reals"⟩ }
   if let .forallE _ dom body _ := ty then
     if !body.hasLooseBVar 0 then
       if dom.isConstOf ``Unit || dom.isConstOf ``PUnit then
@@ -201,6 +201,14 @@ partial def renderProposition (tbl : SymbolTable) (prop : Expr) : MetaM (Array I
         let subjTex ← exprToLatex subject tbl
         return #[.inlineMath subjTex, .text (" " ++ phrase)]
       return #[.text phrase]
+    if head == ``Function.Injective && args.size == 3 then
+      let fTex ← exprToLatex args[2]! tbl
+      return #[.inlineMath fTex, .text " is injective"]
+    if head == ``Not && args.size == 1 then
+      let inner := args[0]!.consumeMData
+      if inner.getAppFn.consumeMData.isConstOf ``Function.Injective && inner.getAppArgs.size == 3 then
+        let fTex ← exprToLatex inner.getAppArgs[2]! tbl
+        return #[.inlineMath fTex, .text " is not injective"]
     if head == ``And && args.size ≥ 2 then
       -- Flatten chained inequalities `a ≤ b ∧ b ≤ c (∧ c ≤ d)` into `a \le b \le c \le d`
       let rec collectAnds : Expr → Array Expr
@@ -252,7 +260,7 @@ partial def renderProposition (tbl : SymbolTable) (prop : Expr) : MetaM (Array I
       return a ++ #[.text " if and only if "] ++ b
     if head == ``Exists && args.size ≥ 2 then
       if let .lam nm dom body bi := args[args.size - 1]! then
-        let freshNm ← freshShadowFreeName nm "x"
+        let freshNm ← chooseUnshadowedBinderName nm #[dom, body] "x"
         return ← withLocalDecl freshNm bi dom fun fv => do
           let desc ← describeType tbl dom
           let varTex ← exprToLatex fv tbl
@@ -301,12 +309,13 @@ def clearGoalCtxCache : IO Unit :=
 
 /-- Build a clean Kyle Miller `GoalState` from a live local context and target `Expr`.
 Suppresses ambient typeclasses and implementation details, and never prints `None`. -/
-def buildGoalState (tbl : SymbolTable) (target : Expr) : MetaM GoalState := do
+def buildGoalState (tbl : SymbolTable) (target : Expr) (onlyUsed : Bool := false) : MetaM GoalState := do
   let lctx ← getLCtx
   let targetClean ← normalizeForPresentation target
   let targetFVars := (Lean.collectFVars {} targetClean).fvarIds
   let aliasTag : UInt64 :=
-    tbl.exprAliases.foldl (init := hash tbl.exprAliases.size) fun a (_, s) => mixHash a (hash s)
+    tbl.exprAliases.foldl (init := hash tbl.exprAliases.size) fun a (pat, s) =>
+      mixHash a (mixHash (hash pat) (hash s))
   let mut cache ← goalCtxDeclCacheRef.get
   if cache.size ≥ 4096 then
     cache := {}
@@ -318,7 +327,7 @@ def buildGoalState (tbl : SymbolTable) (target : Expr) : MetaM GoalState := do
     match cache.get? key with
     | some .suppressed => continue
     | some (.ready entry alwaysShow) =>
-        if alwaysShow || used then
+        if (!onlyUsed && alwaysShow) || used then
           entries := entries.push { entry with usedInGoal := used }
     | some .largePropUnrendered =>
         if !used then continue
@@ -333,6 +342,8 @@ def buildGoalState (tbl : SymbolTable) (target : Expr) : MetaM GoalState := do
         cacheDirty := true
         entries := entries.push entry
     | none =>
+        if onlyUsed && !used then
+          continue
         if ← isSuppressedLocalDecl decl then
           cache := cache.insert key .suppressed
           cacheDirty := true

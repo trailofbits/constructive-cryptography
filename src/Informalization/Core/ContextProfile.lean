@@ -181,7 +181,7 @@ private def builtinProfiles : List PaperContextProfile := [
   baseCCProfile,
   { name := `SchemeContext
     parent? := some `BaseCC
-    carrierRoleNoun? := some ⟨"cryptographic space", "cryptographic spaces"⟩
+    carrierRoleNoun? := none
     roleNouns := [
       (.schemeUnderTest, ⟨"cryptographic scheme", "cryptographic schemes"⟩)
     ] },
@@ -216,7 +216,7 @@ private def builtinProfiles : List PaperContextProfile := [
     ] },
   { name := `GameBasedContext
     parent? := some `BaseCC
-    defaultResourceNoun? := some ⟨"game", "games"⟩
+    defaultResourceNoun? := none
     roleNouns := [
       (.realResource, ⟨"real-or-random game", "real-or-random games"⟩),
       (.idealResource, ⟨"idealized game", "idealized games"⟩),
@@ -442,13 +442,26 @@ where
     let args := e.getAppArgs
     if (fn.isConstOf simulatorImageName || fn.isConstOf starName) && args.size ≥ 2 then
       let acc := tagExprFVars acc args[args.size - 2]! .simulator
-      return tagExprFVars acc args[args.size - 1]! .idealResource
-    if (fn.isConstOf attachName || fn.isConstOf ``HSMul.hSMul) && args.size ≥ 2 then
+      return tagResourceTargetExpr acc args[args.size - 1]! .idealResource
+    if fn.isConstOf ``DFunLike.coe && args.size ≥ 6 then
+      let relaxFn := args[args.size - 2]!.consumeMData.getAppFn.consumeMData
+      if relaxFn.isConstOf epsilonRelaxationName || relaxFn.isConstOf specEpsilonRelaxationName then
+        return tagResourceTargetExpr acc args[args.size - 1]! defaultRole
+    if fn.isConstOf relaxedByName && args.size ≥ 2 then
+      let relaxFn := args[args.size - 1]!.consumeMData.getAppFn.consumeMData
+      if relaxFn.isConstOf epsilonRelaxationName || relaxFn.isConstOf specEpsilonRelaxationName then
+        return tagResourceTargetExpr acc args[args.size - 2]! defaultRole
+    if fn.isConstOf `Commons.Indifferentiability.specification && args.size ≥ 3 then
+      return tagResourceTargetExpr acc args[args.size - 3]! .idealResource
+    if (fn.isConstOf attachName || fn.isConstOf typedConverterAttachName ||
+        fn.isConstOf attachGameName || fn.isConstOf typedConverterAttachGameName ||
+        fn.isConstOf specMapName || fn.isConstOf ``HSMul.hSMul) && args.size ≥ 2 then
       let lhs := args[args.size - 2]!
       let rhs := args[args.size - 1]!
       let acc := tagConverterExpr acc lhs
       return tagResourceTargetExpr acc rhs defaultRole
-    if (fn.isConstOf parallelName || fn.isConstOf tensorObjName) && args.size ≥ 2 then
+    if (fn.isConstOf parallelName || fn.isConstOf specParallelName ||
+        fn.isConstOf typedSystemParallelName || fn.isConstOf tensorObjName) && args.size ≥ 2 then
       let lhs := args[args.size - 2]!
       let rhs := args[args.size - 1]!
       let acc := tagResourceTargetExpr acc lhs defaultRole
@@ -456,7 +469,9 @@ where
     if fn.isConstOf ``Singleton.singleton then
       if let some inner := args.back? then
         return tagResourceTargetExpr acc inner defaultRole
-    return tagExprFVars acc e defaultRole
+    if let .fvar fv := e then
+      return addJoinedRole acc fv defaultRole
+    return acc
 
 /-- Infer joined positional `SemanticRole` for every free variable in `theoremType` (given
 an optional pre-computed `forallTelescope`). `{.realResource, .idealResource} ↦ .hybridResource`. -/

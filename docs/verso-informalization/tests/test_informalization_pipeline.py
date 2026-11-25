@@ -842,7 +842,13 @@ class TestInformalizationCIAndVersoBundle(unittest.TestCase):
           }
           getAttribute(k) { return Object.prototype.hasOwnProperty.call(this.attrs, k) ? this.attrs[k] : null; }
           hasAttribute(k) { return Object.prototype.hasOwnProperty.call(this.attrs, k); }
-          addEventListener() {}
+          addEventListener(ev, fn) {
+            this._listeners = this._listeners || {};
+            (this._listeners[ev] = this._listeners[ev] || []).push(fn);
+          }
+          dispatchClick() {
+            for (const fn of (this._listeners && this._listeners.click) || []) fn({ stopPropagation() {} });
+          }
           matchesSelectorOne(sel) {
             sel = sel.trim();
             if (!sel) return false;
@@ -1026,6 +1032,410 @@ class TestInformalizationCIAndVersoBundle(unittest.TestCase):
         self.assertIn("sup .cadmo-ref", css_txt)
         self.assertIn(".msupsub .cadmo-ref", css_txt)
         self.assertIn(".cadmo-trust-gloss", css_txt)
+
+    def test_wave_a_diagrams_witness_sections_font_fallback_and_typography_js(self) -> None:
+        js_cmd = find_js_runtime()
+        if not js_cmd:
+            self.skipTest("No JS runtime (node or jsc) available")
+
+        harness = r"""
+        const jsSrc = __JS_SRC__;
+        class FakeClassList {
+          constructor(el) { this.el = el; this._set = new Set(); }
+          _syncFromString(str) {
+            this._set = new Set(String(str || '').trim().split(/\s+/).filter(Boolean));
+          }
+          _syncToString() {
+            this.el._className = Array.from(this._set).join(' ');
+          }
+          add(...cls) { cls.forEach(c => this._set.add(c)); this._syncToString(); }
+          remove(...cls) { cls.forEach(c => this._set.delete(c)); this._syncToString(); }
+          contains(c) { return this._set.has(c); }
+        }
+        class FakeNode {
+          constructor(nodeType, tagName = '') {
+            this.nodeType = nodeType;
+            this.tagName = tagName.toUpperCase();
+            this.childNodes = [];
+            this.parentNode = null;
+            this.attrs = {};
+            this.dataset = {};
+            this.style = {};
+            this._className = '';
+            this._innerHTML = null;
+            this.classList = new FakeClassList(this);
+            this._text = '';
+            this.isConnected = true;
+          }
+          get className() { return this._className; }
+          set className(v) { this._className = String(v || ''); this.classList._syncFromString(this._className); }
+          get children() { return this.childNodes.filter(n => n.nodeType === 1); }
+          get innerHTML() {
+            if (this._innerHTML !== null && this.childNodes.length === 0) return this._innerHTML;
+            return this.childNodes.map(c => c.toHTML()).join('');
+          }
+          set innerHTML(v) {
+            this.childNodes = [];
+            this._innerHTML = String(v || '');
+          }
+          get textContent() {
+            if (this.nodeType === 3) return this._text;
+            return this.childNodes.map(c => c.textContent).join('');
+          }
+          set textContent(v) {
+            if (this.nodeType === 3) { this._text = String(v || ''); return; }
+            this.childNodes = [];
+            this._innerHTML = null;
+            if (v !== '' && v !== null && v !== undefined) {
+              this.appendChild(document.createTextNode(String(v)));
+            }
+          }
+          appendChild(child) {
+            if (!child) return child;
+            if (child.nodeType === 11) {
+              for (const k of [...child.childNodes]) this.appendChild(k);
+              return child;
+            }
+            if (child.parentNode) child.parentNode.removeChild(child);
+            child.parentNode = this;
+            this.childNodes.push(child);
+            return child;
+          }
+          removeChild(child) {
+            const idx = this.childNodes.indexOf(child);
+            if (idx >= 0) { this.childNodes.splice(idx, 1); child.parentNode = null; }
+            return child;
+          }
+          insertBefore(newNode, refNode) {
+            if (!refNode) return this.appendChild(newNode);
+            if (newNode.parentNode) newNode.parentNode.removeChild(newNode);
+            const idx = this.childNodes.indexOf(refNode);
+            newNode.parentNode = this;
+            if (idx >= 0) this.childNodes.splice(idx, 0, newNode);
+            else this.childNodes.push(newNode);
+            return newNode;
+          }
+          setAttribute(k, v) {
+            this.attrs[k] = String(v);
+            if (k === 'class') this.className = v;
+            if (k.startsWith('data-')) {
+              const camel = k.slice(5).replace(/-([a-z])/g, (_, ch) => ch.toUpperCase());
+              this.dataset[camel] = String(v);
+            }
+          }
+          getAttribute(k) { return Object.prototype.hasOwnProperty.call(this.attrs, k) ? this.attrs[k] : null; }
+          hasAttribute(k) { return Object.prototype.hasOwnProperty.call(this.attrs, k); }
+          addEventListener(ev, fn) {
+            this._listeners = this._listeners || {};
+            (this._listeners[ev] = this._listeners[ev] || []).push(fn);
+          }
+          dispatchClick() {
+            for (const fn of (this._listeners && this._listeners.click) || []) fn({ stopPropagation() {} });
+          }
+          matchesSelectorOne(sel) {
+            sel = sel.trim();
+            if (!sel) return false;
+            const tokens = sel.match(/(?:^[A-Za-z0-9_-]+|\.[A-Za-z0-9_-]+|\[[^\]]+\])/g);
+            if (!tokens || tokens.join('') !== sel) return false;
+            return tokens.every(tok => {
+              if (tok.startsWith('[')) return this.hasAttribute(tok.slice(1, -1));
+              if (tok.startsWith('.')) return this.classList.contains(tok.slice(1));
+              return this.tagName === tok.toUpperCase();
+            });
+          }
+          closest(selectorList) {
+            const parts = selectorList.split(',').map(s => s.trim());
+            let cur = this;
+            while (cur && cur.nodeType === 1) {
+              if (parts.some(p => cur.matchesSelectorOne(p))) return cur;
+              cur = cur.parentNode;
+            }
+            return null;
+          }
+          querySelectorAll(selectorList) {
+            const parts = selectorList.split(',').map(s => s.trim());
+            const out = [];
+            const walk = (node) => {
+              for (const ch of node.children) {
+                if (parts.some(p => ch.matchesSelectorOne(p))) out.push(ch);
+                walk(ch);
+              }
+            };
+            walk(this);
+            return out;
+          }
+          querySelector(selectorList) { return this.querySelectorAll(selectorList)[0] || null; }
+          toHTML() {
+            if (this.nodeType === 3) return this._text;
+            const cls = this._className ? ` class="${this._className}"` : '';
+            const attrs = Object.entries(this.attrs).filter(([k]) => k !== 'class').map(([k, v]) => ` ${k}="${v}"`).join('');
+            return `<${this.tagName.toLowerCase()}${cls}${attrs}>${this.innerHTML}</${this.tagName.toLowerCase()}>`;
+          }
+        }
+        const rootEl = new FakeNode(1, 'div');
+        const dataEl = new FakeNode(1, 'script');
+        const bodyEl = new FakeNode(1, 'body');
+        const docEl = new FakeNode(1, 'html');
+        globalThis.document = {
+          documentElement: docEl,
+          body: bodyEl,
+          getElementById: (id) => id === 'cadmo-root' ? rootEl : (id === 'cadmo-document-data' ? dataEl : null),
+          createElement: (tag) => new FakeNode(1, tag),
+          createTextNode: (txt) => { const n = new FakeNode(3); n._text = String(txt || ''); return n; },
+          createDocumentFragment: () => new FakeNode(11),
+          addEventListener: () => {},
+          querySelector: () => null
+        };
+        globalThis.window = globalThis;
+        globalThis.addEventListener = () => {};
+
+        const sampleDoc = {
+          title: 'Wave A Renderer Fixture',
+          subtitle: 'Clean Subtitle',
+          defaultMode: 'paper',
+          entries: [
+            {
+              header: 'Theorem',
+              title: 'Section Numbering & Diagrams',
+              declaration: 'Test.thm1',
+              sectionTitle: 'Section 2.1 — Perfect Security',
+              sectionId: 'sec-1',
+              diagramHtml: '<style>.leak{color:red}</style><div class="ccw"><svg id="entry-svg"></svg></div>',
+              statement: [[{ text: { value: 'Let ' } }, { inlineMath: { latex: '\\mathbf{G}' } }, { text: { value: '.' } }]],
+              localInspectors: [
+                { key: 'ins.bfG', display: '\\mathbf{G}', kind: { parameter: { roleDescription: 'Bold system G' } }, leanType: 'TypedSystem' },
+                { key: 'ins.calR1', display: '\\mathcal{R}_1', kind: { parameter: { roleDescription: 'Reduction 1' } }, leanType: 'Converter' },
+                { key: 'ins.sfAE', display: '\\mathsf{AE}', kind: { parameter: { roleDescription: 'AE interface' } }, leanType: 'Interface' }
+              ],
+              referencedKeys: ['ins.cc'],
+              proof: [
+                {
+                  kind: 'step',
+                  id: 's-para-1',
+                  startsParagraph: true,
+                  content: [{ text: { value: 'First paragraph.' } }],
+                  children: []
+                },
+                {
+                  kind: 'flowNote',
+                  id: 'fn-empty-para',
+                  placement: 'paragraph',
+                  text: ''
+                },
+                {
+                  kind: 'step',
+                  id: 's-para-2',
+                  startsParagraph: false,
+                  diagramHtml: '<style>.leak2{}</style><div class="ccw"><svg id="childless-step-svg"></svg></div>',
+                  content: [{ text: { value: 'Second paragraph via flowNote.' } }],
+                  children: []
+                },
+                {
+                  kind: 'step',
+                  id: 's-with-diag-children',
+                  startsParagraph: true,
+                  diagramHtml: '<style>.leak3{}</style><div class="ccw"><svg id="parent-step-svg"></svg></div>',
+                  content: [{ text: { value: 'Step with children and diagram.' } }],
+                  defaultExpanded: false,
+                  children: [
+                    {
+                      kind: 'step',
+                      id: 's-child-1',
+                      content: [{ text: { value: 'Child justification.' } }],
+                      children: []
+                    }
+                  ]
+                },
+                {
+                  kind: 'calcChain',
+                  id: 'calc-diag',
+                  intro: [{ text: { value: 'Computing chain:' } }],
+                  steps: [
+                    {
+                      step: {
+                        lhsLatex: 'A',
+                        relationLatex: '=',
+                        rhsLatex: 'B',
+                        reason: [{ text: { value: 'by step' } }],
+                        diagramHtml: '<style>.leak4{}</style><div class="ccw"><svg id="calc-step-svg"></svg></div>'
+                      },
+                      children: []
+                    }
+                  ]
+                },
+                {
+                  kind: 'figure',
+                  id: 'fig-proof-1',
+                  caption: [{ text: { value: 'Caption with ' } }, { inlineMath: { latex: '\\mathcal{R}_1' } }],
+                  html: '<style>.figleak{}</style><svg id="fig-svg"></svg>'
+                }
+              ],
+              axioms: { axioms: ['propext'], hasSorry: false }
+            },
+            {
+              header: 'Lemma',
+              title: 'Unnumbered Section Title',
+              declaration: 'Test.lem2',
+              sectionTitle: 'Sponge Parameters',
+              sectionId: 'sec-2',
+              statement: [[{ text: { value: 'Statement.' } }]],
+              proof: [],
+              axioms: { axioms: ['propext'], hasSorry: false }
+            }
+          ],
+          inspectors: [
+            {
+              key: 'ins.cc',
+              display: 'R',
+              kind: {
+                ccDiagram: {
+                  summaryLatex: 'R \\parallel S',
+                  svgOrHtml: '<style>.ccleak{}</style><div class="ccw"><svg id="inspector-svg"></svg></div>'
+                }
+              },
+              leanType: 'TypedSystem'
+            },
+            {
+              key: 'ins.wc',
+              display: 'w',
+              kind: {
+                witnessCard: {
+                  title: 'H-Coefficient Witness',
+                  rows: [
+                    ['Real system', '\\(R\\)'],
+                    ['Structure', 'Sample law, real/ideal reveals, transcript classes, and expected error bound']
+                  ]
+                }
+              },
+              leanType: 'HCoefficient'
+            }
+          ]
+        };
+        dataEl.textContent = JSON.stringify(sampleDoc);
+        eval(jsSrc);
+        const H = globalThis.__cadmoHelpers;
+        function assert(cond, msg) { if (!cond) throw new Error('ASSERT FAILED: ' + msg); }
+
+        // (a) Diagrams & figures mounted cleanly with <style> stripped
+        const entryDiag = rootEl.querySelector('details.cadmo-entry-diagram');
+        assert(entryDiag !== null, 'entry.diagramHtml must mount details.cadmo-entry-diagram');
+        assert(entryDiag.hasAttribute('open'), 'entry.diagramHtml details must be open');
+        assert(entryDiag.querySelector('summary').textContent === 'System diagram', 'entry diagram summary');
+        const entryDiagBody = entryDiag.querySelector('.cadmo-diagram-body');
+        assert(entryDiagBody && entryDiagBody.innerHTML.includes('entry-svg'), 'entry diagram svg mounted');
+        assert(!entryDiagBody.innerHTML.includes('<style'), 'entry diagram style stripped');
+
+        const figEl = rootEl.querySelector('figure.cadmo-diagram.cadmo-figure');
+        assert(figEl !== null, 'ProofNode.figure must mount figure.cadmo-diagram.cadmo-figure');
+        assert(figEl.querySelector('.cadmo-diagram-body').innerHTML.includes('fig-svg'), 'figure svg mounted');
+        assert(!figEl.querySelector('.cadmo-diagram-body').innerHTML.includes('<style'), 'figure style stripped');
+        const figCap = figEl.querySelector('figcaption');
+        assert(figCap && figCap.textContent.includes('Caption with'), 'figure caption mounted');
+
+        // Childless step diagram mounts collapsed details.cadmo-step-diagram directly
+        const childlessStepDiag = rootEl.querySelector('details.cadmo-step-diagram');
+        assert(childlessStepDiag !== null, 'childless step diagramHtml mounts details.cadmo-step-diagram');
+        assert(!childlessStepDiag.hasAttribute('open'), 'step diagram collapsed by default');
+        assert(childlessStepDiag.querySelector('summary').textContent === 'Diagram', 'step diagram summary');
+        assert(childlessStepDiag.querySelector('.cadmo-diagram-body').innerHTML.includes('childless-step-svg'), 'childless step svg');
+
+        // Expand proofs to verify expanded step.diagramHtml & calcStep.diagramHtml mount inside expanded step
+        const controlsEl = rootEl.querySelector('.cadmo-controls');
+        const expandBtn = controlsEl.querySelectorAll('button').find(b => b.textContent.includes('Expand proofs'));
+        assert(expandBtn, 'Expand proofs button exists');
+        const stepWithChildrenToggle = rootEl.querySelectorAll('button.cadmo-inline-toggle');
+        assert(stepWithChildrenToggle.length >= 2, 'step and calc step with diagramHtml both get toggles');
+
+        // Inspect inspector ccDiagram
+        const ccBody = H.renderInspectorRichBody(sampleDoc.inspectors[0], { compact: false });
+        const insDiagNode = ccBody.body.find(n => n.classList && n.classList.contains('cadmo-inspector-diagram'));
+        assert(insDiagNode, 'ccDiagram must mount .cadmo-inspector-diagram');
+        assert(insDiagNode.querySelector('.cadmo-diagram-body').innerHTML.includes('inspector-svg'), 'ccDiagram svg mounted');
+        assert(!insDiagNode.querySelector('.cadmo-diagram-body').innerHTML.includes('<style'), 'ccDiagram style stripped');
+        assert(ccBody.body.some(n => n.classList && n.classList.contains('cadmo-display-math')), 'ccDiagram still renders summaryLatex');
+
+        // (b) witnessCard uses renderMixedText
+        const wcBody = H.renderInspectorRichBody(sampleDoc.inspectors[1], { compact: false });
+        const wcTable = wcBody.body.find(n => n.tagName === 'TABLE');
+        assert(wcTable, 'witnessCard renders table');
+        const tds = wcTable.querySelectorAll('td');
+        assert(tds.length === 2, '2 witnessCard rows');
+        assert(tds[0].querySelectorAll('.cadmo-math').length === 1 && tds[0].textContent === 'R', 'witnessCard \\(R\\) renders as inline math');
+        assert(tds[1].querySelectorAll('.cadmo-math').length === 0, 'witnessCard English prose must NOT be wrapped in cadmo-math');
+        assert(tds[1].textContent.includes('Sample law, real/ideal reveals'), 'witnessCard prose text intact');
+
+        // (c) Double section numbering suppressed when sectionTitle starts with Section/§/Chapter/Part + digit
+        const secTitles = rootEl.querySelectorAll('.cadmo-section-title');
+        assert(secTitles.length === 2, '2 section titles');
+        assert(secTitles[0].textContent === 'Section 2.1 — Perfect Security', 'no double prefix on Section 2.1, got: ' + secTitles[0].textContent);
+        assert(secTitles[0].querySelector('.cadmo-section-num') === null, 'no .cadmo-section-num span on Section 2.1');
+        assert(secTitles[1].querySelector('.cadmo-section-num').textContent === '2.', 'unnumbered title gets section number');
+
+        // (d) flowNote with placement=paragraph & empty text splits paragraphs with zero stray empty DOM nodes
+        const proofParas = rootEl.querySelectorAll('.cadmo-proof-para');
+        assert(proofParas.length === 3, 'flowNote splits paragraph cleanly into 3 paras, got ' + proofParas.length);
+        assert(rootEl.querySelectorAll('.cadmo-flow-note').length === 0, 'no stray .cadmo-flow-note');
+        assert(rootEl.querySelectorAll('.cadmo-para-heading').length === 0, 'no stray empty .cadmo-para-heading');
+
+        // (e) Font-sensitive hover disambiguation + unique bare fallback + blocked SUP/SUB/digits/delims
+        const mixedIns = [
+          { key: 'sym.calE', display: '\\mathcal{E}' },
+          { key: 'sym.E', display: 'E' },
+          { key: 'sym.bfG', display: '\\mathbf{G}' },
+          { key: 'sym.calR1', display: '\\mathcal{R}_1' },
+          { key: 'sym.sfAE', display: '\\mathsf{AE}' }
+        ];
+        const fScope = H.buildTokenScope(mixedIns, [], [], null, [], false);
+        assert(H.resolveTokenCandidates(fScope, 'cal:E')[0].key === 'sym.calE', 'cal:E exact');
+        assert(H.resolveTokenCandidates(fScope, 'E')[0].key === 'sym.E', 'plain E exact');
+        assert(H.resolveTokenCandidates(fScope, 'bf:E') === null, 'bf:E must not guess among cal:E and E');
+        assert(H.resolveTokenCandidates(fScope, 'bf:G')[0].key === 'sym.bfG', 'bf:G exact');
+        assert(H.resolveTokenCandidates(fScope, 'G')[0].key === 'sym.bfG', 'unique G falls back to bf:G');
+        assert(H.resolveTokenCandidates(fScope, 'AE')[0].key === 'sym.sfAE', 'unique AE falls back to sf:AE');
+
+        const exprSpan = document.createElement('span');
+        exprSpan.appendChild(H.renderMathNodes('\\mathbf{G} + \\mathcal{R}_1 + \\{0, 1\\}^E'));
+        H.annotateOfflineMathContainer(exprSpan, fScope);
+        const refs = exprSpan.querySelectorAll('.cadmo-ref');
+        assert(refs.length === 2, 'expected 2 refs (bf:G and cal:R1, blocking {0,1}^E), got ' + refs.length);
+        assert(refs[0].dataset.cadmoToken === 'bf:G', 'bf:G annotated');
+        assert(refs[1].dataset.cadmoToken === 'cal:R1', 'cal:R1 annotated');
+        assert(exprSpan.querySelectorAll('.cadmo-ref').filter(r => r.closest('sup')).length === 0, 'sup blocked');
+
+        // (f) Click Expand proofs and verify step.diagramHtml & calcStep.diagramHtml mount inside .cadmo-expansion
+        expandBtn.dispatchClick();
+        const expansions = rootEl.querySelectorAll('.cadmo-expansion');
+        const expandedStepDiags = expansions.flatMap(ex => ex.querySelectorAll('details.cadmo-step-diagram'));
+        assert(expandedStepDiags.length === 2, 'expanded step + calcStep must mount 2 details.cadmo-step-diagram inside .cadmo-expansion, got ' + expandedStepDiags.length);
+        const expandedHtmls = expandedStepDiags.map(d => d.querySelector('.cadmo-diagram-body').innerHTML);
+        assert(expandedHtmls.some(s => s.includes('parent-step-svg')), 'expanded parent step diagram mounted');
+        assert(expandedHtmls.some(s => s.includes('calc-step-svg')), 'expanded calc step diagram mounted');
+        assert(expandedHtmls.every(s => !s.includes('<style')), 'expanded step diagrams stripped <style>');
+        print('WAVE_A_JS_TESTS_OK');
+        """
+        js_src = CADMO_READER_JS.read_text(encoding="utf-8")
+        full_js = "if (typeof print === 'undefined') { globalThis.print = console.log; }\n" + harness.replace(
+            "__JS_SRC__", json.dumps(js_src)
+        )
+        script_path = self.tmp_path / "test_wave_a_js.js"
+        script_path.write_text(full_js, encoding="utf-8")
+        res = subprocess.run([*js_cmd, str(script_path)], capture_output=True, text=True)
+        self.assertEqual(res.returncode, 0, msg=res.stdout + res.stderr)
+        self.assertIn("WAVE_A_JS_TESTS_OK", res.stdout)
+
+        # Verify CSS classes for diagrams, dark-mode theme sync, hover cues, and zero-width goal button
+        css_txt = CADMO_READER_CSS.read_text(encoding="utf-8")
+        for req_css in [
+            ".cadmo-diagram",
+            ".cadmo-entry-diagram",
+            ".cadmo-step-diagram",
+            ".cadmo-inspector-diagram",
+            ".cadmo-diagram-body",
+            ":root[data-theme=\"dark\"] .cadmo-diagram .ccw",
+            ".cadmo-ref:hover",
+            "width: 0;",
+        ]:
+            self.assertIn(req_css, css_txt)
 
     def test_verso_schema_new_optional_fields_roundtrip(self) -> None:
         exe = VERSO_PKG_DIR / ".lake" / "build" / "bin" / "verso-informalize"

@@ -53,6 +53,7 @@ structure DecompCtx where
   config : Config
   tbl : SymbolTable
   seenDecls : NameSet := {}
+  docDecls : NameSet := {}
   lemmaDepth : Nat := 0
   /-- Most recently introduced `have` fact (for causal vs. independent discourse transitions). -/
   lastFactFVar? : Option FVarId := none
@@ -296,6 +297,8 @@ the private lemma cleanly by name instead of swallowing it as routine. -/
 private def shouldExpandLemma (env : Environment) (ctx : DecompCtx) (declName : Name) : Bool :=
   if ctx.lemmaDepth ≥ ctx.config.maxLemmaDepth then false
   else if ctx.seenDecls.contains declName then false
+  else if ctx.docDecls.contains declName then false
+  else if ctx.lemmaDepth ≥ 1 && effectiveIsProofJoint env declName then false
   else if declName == ``sorryAx then false
   else if isCoreOrMathlibIn env declName then false
   else if isNeverExpandedConst declName then false
@@ -332,9 +335,9 @@ def unwrapHypothesisFVar? : Expr → Option FVarId
 /-- Render a direct hypothesis `.fvar id` using its mathematical content (when concise) rather
 than printing an unintroduced Lean identifier (`hk`, `hR`, `this`, `hp`, `hred`). -/
 def renderHypothesisStep (tbl : SymbolTable) (expected : Expr) (id : FVarId)
-    (nodeId : String) (isWrap : Bool := false) : MetaM ProofNode := do
+    (nodeId : String) (isWrap : Bool := false) (onlyUsed : Bool := false) : MetaM ProofNode := do
   let decl ← id.getDecl
-  let goal ← buildGoalState tbl expected
+  let goal? ← if isWrap then pure none else some <$> buildGoalState tbl expected onlyUsed
   let hypInl ← renderProposition tbl decl.type
   let hypLen := (inlinesCanonicalKey hypInl).length
   let head := decl.type.getAppFn.consumeMData
@@ -346,7 +349,7 @@ def renderHypothesisStep (tbl : SymbolTable) (expected : Expr) (id : FVarId)
         #[.text "This holds by the assumption that "] ++ hypInl ++ #[.text "."]
     else
       #[.text "This holds by the assumed hypothesis."]
-  return .step nodeId content #[] (some goal) none none isWrap false
+  return .step nodeId content #[] goal? none none isWrap false
 
 /-- Decompile every non-typeclass proof-valued argument of `proof`, marking trivial bare
 hypothesis-passthroughs with `isWrapper := true` so Paper mode stays clean while Auditor mode
@@ -359,7 +362,8 @@ def decompilePremiseArgs (ctx : DecompCtx) (decompileChild : DecompileChild)
   for idx in [:pArgs.size] do
     let (ap, aty) := pArgs[idx]!
     if let some fvid := unwrapHypothesisFVar? ap then
-      let node ← renderHypothesisStep ctx.tbl aty fvid s!"hyp-prem-{idx}-{fvid.name}-{aty.hash}" (isWrap := true)
+      let node ← renderHypothesisStep ctx.tbl aty fvid s!"hyp-prem-{idx}-{fvid.name}-{aty.hash}"
+        (isWrap := true) (onlyUsed := (ctx.lemmaDepth ≥ 1))
       out := out.push node
     else
       let sub ← decompileChild subCtx aty ap
@@ -419,7 +423,9 @@ def humanLemmaLabel (env : Environment) (declName : Name) : String :=
         match cryptoAcronyms.find? (·.1 == low) with
         | some (_, acr) => acr
         | none => low
-      String.intercalate " " words
+      let raw := String.intercalate " " words
+      raw.replace "transcript distance" "distinguishing advantage"
+         |>.replace "distinguishing distance" "distinguishing advantage"
 
 /-- Format a Title-Cased fallback entry/document title for a declaration (respecting
 `informal_title`, stripping `_verbose`, splitting camelCase, and preserving acronyms). -/
@@ -435,7 +441,11 @@ def humanDeclarationTitle (env : Environment) (declName : Name) : String :=
         | none =>
             if idx > 0 && minorTitleWords.contains low then low
             else capitalizeFirst w
-      String.intercalate " " formatted
+      let raw := String.intercalate " " formatted
+      raw.replace "Transcript Distance" "Distinguishing Advantage"
+         |>.replace "Distinguishing Distance" "Distinguishing Advantage"
+         |>.replace "transcript distance" "distinguishing advantage"
+         |>.replace "distinguishing distance" "distinguishing advantage"
 
 /-- Beta-instantiate a called theorem's `type` and `value` with the caller's actual `args`
 (and universe levels), so expanded sub-proofs always use the caller's exact symbols.
@@ -597,6 +607,34 @@ private def isStructuralCongrOrCast (head : Name) : Bool :=
   head == `forall_congr' || head == `exists_congr || head == `not_congr ||
   s.endsWith "_congr" || s.endsWith "_congr_left" || s.endsWith "_congr_right"
 
+/-- Unwrap transparent kernel cast/transport wrappers (`Eq.mp`, `Eq.mpr`, `Iff.mp`, `Iff.mpr`,
+`Eq.rec`, `Eq.ndrec`, `id`, `of_eq_true`, `mdata`, unused lambdas) to expose the underlying proof head. -/
+private partial def unwrapCastProof (e : Expr) (fuel : Nat := 16) : Expr :=
+  if fuel == 0 then e
+  else match e with
+  | .mdata _ inner => unwrapCastProof inner (fuel - 1)
+  | .lam _ _ b _ => if !b.hasLooseBVar 0 then unwrapCastProof b (fuel - 1) else e
+  | .app .. =>
+      let fn := e.getAppFn.consumeMData
+      let args := e.getAppArgs
+      match fn with
+      | .const head _ =>
+          if (head == ``Eq.mp || head == ``Eq.mpr || head == ``Iff.mp || head == ``Iff.mpr) && args.size == 4 then
+            unwrapCastProof args[3]! (fuel - 1)
+          else if (head == ``Eq.mp || head == ``Eq.mpr || head == ``Iff.mp || head == ``Iff.mpr) && args.size > 4 then
+            unwrapCastProof ((args[3]!).beta (args.extract 4 args.size)) (fuel - 1)
+          else if head == ``id && args.size == 2 then
+            unwrapCastProof args[1]! (fuel - 1)
+          else if head == ``id && args.size > 2 then
+            unwrapCastProof ((args[1]!).beta (args.extract 2 args.size)) (fuel - 1)
+          else if (head == ``Eq.rec || head == ``Eq.ndrec) && args.size ≥ 6 then
+            unwrapCastProof ((args[3]!).beta (args.extract 6 args.size)) (fuel - 1)
+          else if head == `of_eq_true && args.size ≥ 1 then
+            unwrapCastProof args.back! (fuel - 1)
+          else e
+      | _ => e
+  | _ => e
+
 /-- Core recursive decompiler: `(ctx, expectedProp, proofTerm) → Array ProofNode`. -/
 partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
     (fuel : Nat := 96) : StateRefT DiscourseState MetaM (Array ProofNode) := do
@@ -616,12 +654,11 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
 
   -- 2. Check routine algebra / casts / reflexivity (fail-closed)
   if proof.getAppFn.consumeMData.isConstOf ``sorryAx then
-    let goal ← buildGoalState ctx.tbl expected
+    let goal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
     return #[.step s!"sorry-{fuel}" #[.text "[UNPROVED: sorry]"] #[] (some goal)]
 
   if let some rkind := classifyRoutine? env proof then
-    let goal ← buildGoalState ctx.tbl expected
-    return #[.routineReceipt s!"routine-{fuel}" rkind.label 1 #[] (some goal)]
+    return #[.routineReceipt s!"routine-{fuel}" rkind.label 1 #[] none]
 
   -- 3. Unwrap leading binders (`intro`) transparently into the live `LocalContext`,
   -- avoiding macro-scoped shadow collisions (`x` -> `w'`) and introducing arbitrary variables
@@ -696,7 +733,7 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
           | some prevId => (Lean.collectFVars {} val).fvarIds.contains prevId
           | none => false
         let factNodes ← decompileProof { ctx with lastFactFVar? := none, factIndex := 0, atRootConclusion := false, isProofStart := false } ty val (fuel - 1)
-        let goal ← buildGoalState ctx.tbl ty
+        let goal ← buildGoalState ctx.tbl ty (ctx.lemmaDepth ≥ 1)
         let factInl ← renderProposition ctx.tbl ty
         let opener ← do
           let st ← get
@@ -738,14 +775,14 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
             let bodyTy ← inferType bodyExpr
             let subNodes ← decompileProof { ctx with lastFactFVar? := none, factIndex := 0, isProofStart := false } bodyTy bodyExpr (fuel - 1)
             let bodyInl ← renderProposition ctx.tbl bodyTy
-            let goal ← buildGoalState ctx.tbl expected
+            let goal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
             return #[.step s!"funext-{fuel}"
               (#[.text "Evaluating pointwise at ", .inlineMath xTex, .text ", "] ++ bodyInl ++ #[.text "."])
               subNodes (some goal)]
       modify (·.markEmitted)
       let subNodes ← decompilePremiseArgs ctx (fun c e p => decompileProof c e p (fuel - 1)) proof
       let conclInl ← renderProposition ctx.tbl expected
-      let goal ← buildGoalState ctx.tbl expected
+      let goal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
       return #[.step s!"funext-{fuel}"
         (#[.text "By function extensionality, "] ++ conclInl ++ #[.text "."])
         subNodes (some goal)]
@@ -805,10 +842,18 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
         let qNodes ← decompileProof subCtx qTy qPf (fuel - 1)
         let pInl ← renderProposition ctx.tbl pTy
         let qInl ← renderProposition ctx.tbl qTy
-        let pGoal ← buildGoalState ctx.tbl pTy
-        let qGoal ← buildGoalState ctx.tbl qTy
-        let bothLe := pTy.getAppFn.consumeMData.isConstOf ``LE.le &&
-          (qTy.getAppFn.consumeMData.isConstOf ``LE.le || qTy.getAppFn.consumeMData.isConstOf ``And)
+        let pGoal ← buildGoalState ctx.tbl pTy (ctx.lemmaDepth ≥ 1)
+        let qGoal ← buildGoalState ctx.tbl qTy (ctx.lemmaDepth ≥ 1)
+        let pClean ← normalizeForPresentation pTy
+        let qClean ← normalizeForPresentation qTy
+        let bothLe ←
+          if pClean.getAppFn.consumeMData.isConstOf ``LE.le && pClean.getAppArgs.size == 4 &&
+             qClean.getAppFn.consumeMData.isConstOf ``LE.le && qClean.getAppArgs.size == 4 then
+            let x1 ← normalizeForPresentation pClean.getAppArgs[3]!
+            let x2 ← normalizeForPresentation qClean.getAppArgs[2]!
+            pure (x1 == x2)
+          else
+            pure false
         let lead1 := if bothLe then "For the lower bound, " else "First, "
         let lead2 := if bothLe then "For the upper bound, " else "Second, "
         let step1 : ProofNode := .step s!"andL-{fuel}" (#[.text lead1] ++ pInl ++ #[.text "."]) pNodes (some pGoal)
@@ -829,13 +874,13 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
         let qNodes ← decompileProof subCtx revTy mprPf (fuel - 1)
         let pInl ← renderProposition ctx.tbl aTy
         let qInl ← renderProposition ctx.tbl bTy
-        let pGoal ← buildGoalState ctx.tbl fwdTy
-        let qGoal ← buildGoalState ctx.tbl revTy
+        let pGoal ← buildGoalState ctx.tbl fwdTy (ctx.lemmaDepth ≥ 1)
+        let qGoal ← buildGoalState ctx.tbl revTy (ctx.lemmaDepth ≥ 1)
         let step1 : ProofNode := .step s!"iffL-{fuel}" (#[.text "For the forward direction, assuming "] ++ pInl ++ #[.text ", we show "] ++ qInl ++ #[.text "."]) pNodes (some pGoal)
         let step2 : ProofNode := .step s!"iffR-{fuel}" (#[.text "Conversely, assuming "] ++ qInl ++ #[.text ", we show "] ++ pInl ++ #[.text "."]) qNodes (some qGoal)
         return dedupSiblings #[step1, step2]
 
-  -- 3d. Handle `Exists.intro w h` cleanly ("Taking witness w, …")
+  -- 3d. Handle `Exists.intro w h` cleanly ("Taking x := w, …")
   if let .const head _ := proof.getAppFn.consumeMData then
     if head == ``Exists.intro then
       let args := proof.getAppArgs
@@ -845,20 +890,39 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
         let bodyProof := args[args.size - 1]!
         let bodyTy ← inferType bodyProof
         let wTex ← exprToLatex witness ctx.tbl
+        let binderInfo? : Option (Name × Expr) :=
+          let fromPred (p : Expr) : Option (Name × Expr) :=
+            match p.consumeMData with
+            | .lam nm d _ _ => if (cleanBinderName? nm).isSome then some (nm, d) else none
+            | _ => none
+          let expClean := expected.consumeMData
+          let fromExp :=
+            if expClean.isAppOf ``Exists && expClean.getAppArgs.size ≥ 2 then
+              fromPred expClean.getAppArgs[1]!
+            else none
+          fromExp <|> fromPred args[args.size - 3]!
+        let binderTex? ← match binderInfo? with
+          | some (nm, dom) =>
+              withLocalDecl nm .default dom fun fv => do
+                pure (some (← exprToLatex fv ctx.tbl))
+          | none => pure none
         let subCtx := { ctx with lastFactFVar? := none, factIndex := 0, atRootConclusion := false, isProofStart := false }
         let subNodes ← decompileProof subCtx bodyTy bodyProof (fuel - 1)
         let bodyInl ← renderProposition ctx.tbl bodyTy
-        let goal ← buildGoalState ctx.tbl expected
-        return #[.step s!"exists-{fuel}"
-          (#[.text "Taking witness ", .inlineMath wTex, .text ", "] ++ bodyInl ++ #[.text "."])
-          subNodes (some goal)]
+        let goal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
+        let leadInl : Array Inline := match binderTex? with
+          | some bTex =>
+              if bTex == wTex then #[.text "Taking witness ", .inlineMath wTex, .text ", "]
+              else #[.text "Taking ", .inlineMath s!"{bTex} := {wTex}", .text ", "]
+          | none => #[.text "Taking witness ", .inlineMath wTex, .text ", "]
+        return #[.step s!"exists-{fuel}" (leadInl ++ bodyInl ++ #[.text "."]) subNodes (some goal)]
 
   -- 3e. Handle `False.elim` and `absurd` cleanly ("This yields a contradiction.")
   if let .const head _ := proof.getAppFn.consumeMData then
     if head == ``False.elim || head == ``absurd then
       modify (·.markEmitted)
       let subNodes ← decompilePremiseArgs ctx (fun c e p => decompileProof c e p (fuel - 1)) proof
-      let goal ← buildGoalState ctx.tbl expected
+      let goal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
       return #[.step s!"contra-{fuel}" #[.text "This yields a contradiction."] subNodes (some goal)]
 
   -- 3f. Never emit compiler aux decls (`_simp_1`, `_proof_1`, ...) or structural congruence/cast
@@ -866,17 +930,16 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
   if let .const head _ := proof.getAppFn.consumeMData then
     if isStructuralCongrOrCast head then
       let subNodes ← decompilePremiseArgs ctx (fun c e p => decompileProof c e p (fuel - 1)) proof
-      let goal ← buildGoalState ctx.tbl expected
       if subNodes.isEmpty then
         let rk := if head == `eq_self || head == ``Eq.refl || head == ``rfl then
           RoutineKind.reflexivity.label else RoutineKind.congruenceAndExt.label
-        return #[.routineReceipt s!"routine-{fuel}" rk 1 #[] (some goal)]
+        return #[.routineReceipt s!"routine-{fuel}" rk 1 #[] none]
       else
         let conclInl ← renderProposition ctx.tbl expected
         let verb := if isCompilerAuxDecl head then "By simplification, " else "By substitution of equals, "
         return #[.step s!"wrap-congr-{fuel}"
           (#[.text verb] ++ conclInl ++ #[.text "."])
-          subNodes (some goal) none none true false]
+          subNodes none none none true false]
 
   -- 4. Detect `calc` / `cc_calc` chains (`Trans.trans` / `Eq.trans` / `LE.le.trans` / `le_trans` / `SubstitutesWithin`)
   let chain ← flattenCalcChain proof expected
@@ -893,12 +956,21 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
           let rhsTex ← exprToLatex rhs ctx.tbl
           let subCtx := { ctx with lastFactFVar? := none, factIndex := 0, atRootConclusion := false, isProofStart := false }
           let subNodes ← decompileProof subCtx stProp sp (fuel - 1)
+          let spUnwrapped := unwrapCastProof sp
+          let isNonAlgebraicRel :=
+            rel.startsWith "\\simeq" || rel.startsWith "\\approx" ||
+            rel.startsWith "\\preceq" || rel.startsWith "\\xrightarrow"
           let reason : Array Inline ←
             if exprContainsSorryAx sp then pure #[.text "[UNPROVED: sorry]"]
-            else match sp.getAppFn.consumeMData with
+            else match spUnwrapped.getAppFn.consumeMData with
             | .const cn _ =>
-                if isCoreOrMathlibIn env cn then pure #[.text "by elementary algebra"]
-                else pure #[.text s!"by {humanLemmaLabel env cn}"]
+                if cn == ``dite || cn == ``ite || cn == ``Decidable.byCases || cn == `Classical.byCases then
+                  pure #[.text "by case analysis"]
+                else if isCoreOrMathlibIn env cn then
+                  if isNonAlgebraicRel then pure #[.text "by the checked subargument"]
+                  else pure #[.text "by elementary algebra"]
+                else
+                  pure #[.text s!"by {humanLemmaLabel env cn}"]
             | .fvar _ => pure #[.text "by assumption"]
             | _ => pure #[.text "by the checked subargument"]
           let diagHtml ← if ctx.lemmaDepth ≤ 1 then (← diagramHookRef.get) stProp else pure none
@@ -912,19 +984,20 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
           calcSteps := calcSteps.push (cs, subNodes)
       | none => allParsed := false
     if allParsed && !calcSteps.isEmpty then
-      let goal ← buildGoalState ctx.tbl expected
+      let goal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
       let intro : Array Inline := #[.text s!"{opener} chaining the intermediate steps yields"]
       return #[.calcChain s!"calc-{fuel}" intro calcSteps (some goal)]
 
   -- 5. Direct hypothesis (`assumption`) or application headed by a local hypothesis `.fvar id`
   if let .fvar id := proof.consumeMData then
     modify (·.markEmitted)
-    return #[← renderHypothesisStep ctx.tbl expected id s!"hyp-{fuel}-{id.name}" (isWrap := false)]
+    return #[← renderHypothesisStep ctx.tbl expected id s!"hyp-{fuel}-{id.name}"
+      (isWrap := false) (onlyUsed := (ctx.lemmaDepth ≥ 1))]
 
   if let .fvar id := proof.getAppFn.consumeMData then
     modify (·.markEmitted)
     let decl ← id.getDecl
-    let goal ← buildGoalState ctx.tbl expected
+    let goal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
     let subNodes ← decompilePremiseArgs ctx (fun c e p => decompileProof c e p (fuel - 1)) proof
     let hypInl ← renderProposition ctx.tbl decl.type
     let hypLen := (inlinesCanonicalKey hypInl).length
@@ -968,11 +1041,7 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
     allChildren := allChildren ++ dedupSiblings (premiseNodes ++ expandedBody)
     if let some fa := ov.flowAfter? then
       allChildren := allChildren.push (.flowNote s!"flow-post-{declName}" fa "margin")
-    let goal ← buildGoalState ctx.tbl expected
-    if exprContainsSorryAx proof &&
-       !allChildren.any (fun n => n.collectAllText.any (fun t => (t.splitOn "[UNPROVED: sorry]").length > 1)) then
-      allChildren := allChildren.push (.step s!"sorry-child-{fuel}" #[.text "[UNPROVED: sorry]"] #[] (some goal))
-    let diagHtml ← if ctx.lemmaDepth ≤ 1 then (← diagramHookRef.get) expected else pure none
+    let hasSorry := exprContainsSorryAx proof
     let isCore := isCoreOrMathlibIn env declName
     let isOrderMono :=
       declName == `add_le_add || declName == `mul_le_mul_of_nonneg_left ||
@@ -980,11 +1049,21 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
       declName == `le_add_of_nonneg_left || declName == `le_add_of_nonneg_right ||
       declName == `sub_le_sub || declName == `sub_le_sub_left ||
       declName == `div_le_div_of_nonneg_left || declName == `add_pos'
-    if isCore && isOrderMono && allChildren.isEmpty then
-      return #[.routineReceipt s!"routine-{fuel}" RoutineKind.algebraAndOrder.label 1 #[] (some goal)]
+    let sName := shortConstName declName
+    let isNonnegHelper :=
+      !effectiveIsProofJoint env declName && !ctx.docDecls.contains declName &&
+      (sName.endsWith "_nonNeg" || sName.endsWith "_nonneg" ||
+       sName == "zero_le" || sName.endsWith ".zero_le" || sName.endsWith "_zero_le")
+    let onlyRoutine := allChildren.all fun
+      | .routineReceipt .. => true
+      | _ => false
+    if !hasSorry && (((isCore && isOrderMono) && allChildren.isEmpty) || (isNonnegHelper && onlyRoutine)) then
+      return #[.routineReceipt s!"routine-{fuel}" RoutineKind.algebraAndOrder.label 1 #[] none]
     let label := humanLemmaLabel env declName
     let isCaseSplit := declName == ``Or.elim || declName == ``Or.casesOn ||
-      declName == ``Bool.rec || declName == ``Option.rec || declName == ``Sum.rec || declName == ``Or.rec
+      declName == ``Bool.rec || declName == ``Option.rec || declName == ``Sum.rec || declName == ``Or.rec ||
+      declName == ``dite || declName == ``ite || declName == ``Decidable.byCases ||
+      declName == `Classical.byCases || declName == ``Decidable.casesOn
     let isDisjInj := declName == ``Or.inl || declName == ``Or.inr
     let isCasesDestruct := !isCaseSplit &&
       (declName.toString.endsWith ".casesOn" || declName == ``Exists.elim)
@@ -997,11 +1076,26 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
     let isExt := !isCore && (declName.toString.endsWith ".ext" || declName == ``Subtype.ext)
     if isOrderMono || isDisjInj || isCasesDestruct then
       isWrap := true
+    let goal? ←
+      if isWrap && !hasSorry then pure none
+      else some <$> buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
+    if hasSorry &&
+       !allChildren.any (fun n => n.collectAllText.any (fun t => (t.splitOn "[UNPROVED: sorry]").length > 1)) then
+      let sorryGoal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
+      allChildren := allChildren.push (.step s!"sorry-child-{fuel}" #[.text "[UNPROVED: sorry]"] #[] (some sorryGoal))
+    let diagHtml ← if ctx.lemmaDepth ≤ 1 then (← diagramHookRef.get) expected else pure none
     -- Avoid the "restatement reflex": at the root conclusion, never re-quote the whole theorem!
     let hasVisibleNonWrap := allChildren.any fun
       | .step _ _ _ _ _ _ w _ _ _ _ _ => !w
       | _ => true
     let conclInl ← renderProposition ctx.tbl expected
+    let citeInline : Inline :=
+      let isCitableThm :=
+        !isCore && !Lean.isPrivateName declName &&
+        (ctx.docDecls.contains declName || ov.title?.isSome || effectiveIsProofJoint env declName) &&
+        (match env.find? declName with | some (.thmInfo _) => true | _ => false)
+      if isCitableThm then .symbol declName.toString label false
+      else .emph label
     let content : Array Inline ←
       if isCaseSplit then
         pure (#[.text "Proceeding by case analysis, "] ++ conclInl ++ #[.text "."])
@@ -1019,19 +1113,19 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
         if isCore then
           pure #[.text s!"The claim follows directly by {label}."]
         else if !hasVisibleNonWrap then
-          pure #[.text "The claim follows from ", .emph label, .text "."]
+          pure #[.text "The claim follows from ", citeInline, .text "."]
         else
-          pure #[.text "Applying ", .emph label, .text " to the checked premises establishes the claim."]
+          pure #[.text "Applying ", citeInline, .text " to the checked premises establishes the claim."]
       else
         if isCore then
           pure (#[.text s!"{opener} {label}, "] ++ conclInl ++ #[.text "."])
         else
-          pure (#[.text s!"{opener} ", .emph label, .text ", "] ++ conclInl ++ #[.text "."])
-    return #[.step s!"app-{declName}-{fuel}" content allChildren (some goal)
+          pure (#[.text s!"{opener} ", citeInline, .text ", "] ++ conclInl ++ #[.text "."])
+    return #[.step s!"app-{declName}-{fuel}" content allChildren goal?
       diagHtml (some declName.toString) isWrap]
 
   -- 7. Fallback: checked goal statement (flagging any unexpanded `sorryAx`)
-  let goal ← buildGoalState ctx.tbl expected
+  let goal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
   if exprContainsSorryAx proof then
     return #[.step s!"sorry-fallback-{fuel}" #[.text "[UNPROVED: sorry]"] #[] (some goal)]
   let conclInl ← renderProposition ctx.tbl expected
@@ -1056,11 +1150,37 @@ private partial def collectOriginDecls : ProofNode → Array Name
   | .routineReceipt _ _ _ details _ => details.flatMap collectOriginDecls
   | _ => #[]
 
+/-- Collect all `dataKey` / `.symbol` keys referenced inside an array of `Inline`s and optional `inlineMeta`. -/
+private def collectInlineDataKeys (inls : Array Inline)
+    (metas : Array (Option ProseTrust × Option String) := #[]) : Array String := Id.run do
+  let mut out : Array String := #[]
+  for i in [:inls.size] do
+    match inls[i]! with
+    | .symbol k _ _ =>
+        if !k.isEmpty then out := out.push k
+    | _ => pure ()
+    if let some (_, some dk) := metas[i]? then
+      if !dk.isEmpty then out := out.push dk
+  return out
+
+/-- Collect all `dataKey` / `.symbol` keys referenced anywhere inside a `ProofNode` tree. -/
+private partial def collectProofNodeDataKeys : ProofNode → Array String
+  | .step _ content children _ _ _ _ _ _ _ _ inlineMeta =>
+      collectInlineDataKeys content inlineMeta ++ children.flatMap collectProofNodeDataKeys
+  | .calcChain _ intro steps _ _ =>
+      collectInlineDataKeys intro ++
+      steps.flatMap fun (cs, ch) =>
+        collectInlineDataKeys cs.reason ++ ch.flatMap collectProofNodeDataKeys
+  | .routineReceipt _ _ _ details _ => details.flatMap collectProofNodeDataKeys
+  | .flowNote _ _ _ => #[]
+  | .figure _ caption _ => collectInlineDataKeys caption
+
 /-- Top-level entry point with optional section-fixed context hoisting:
 informalizes a checked Lean declaration into an `Explanation.Entry` (with scoped local
 shorthands & parameter inspectors) plus all referenced constant `SymbolInspector`s. -/
 def informalizeDeclarationWithContext (declName : Name) (config : Config := {})
-    (hoisted? : Option HoistedContext := none) : MetaM (Entry × Array SymbolInspector) := do
+    (hoisted? : Option HoistedContext := none)
+    (docDecls : NameSet := {}) : MetaM (Entry × Array SymbolInspector) := do
   clearGoalCtxCache
   (← clearDiagramCacheHookRef.get)
   let env ← getEnv
@@ -1091,6 +1211,7 @@ def informalizeDeclarationWithContext (declName : Name) (config : Config := {})
       config
       tbl
       seenDecls := ({} : NameSet).insert declName
+      docDecls
       lemmaDepth := 0
       atRootConclusion := true
       pendingNotations := ov.theoremNotations
@@ -1106,8 +1227,18 @@ def informalizeDeclarationWithContext (declName : Name) (config : Config := {})
     | some h => h.paramSyms
     | none => {}
   let originDecls := proofNodes.flatMap collectOriginDecls
+  let dataKeyStrings :=
+    parsed.paragraphs.flatMap (collectInlineDataKeys ·) ++ proofNodes.flatMap collectProofNodeDataKeys
+  let mut dataKeySet : Std.HashSet String := {}
+  let mut dataKeyDecls : Array Name := #[]
+  for dk in dataKeyStrings do
+    if !dataKeySet.contains dk then
+      dataKeySet := dataKeySet.insert dk
+      let nm := dk.toName
+      if !nm.isAnonymous then
+        dataKeyDecls := dataKeyDecls.push nm
   let (localParamInspectors, typeConstInspectors, proofConstInspectors) ←
-    (← scopedInspectorCollectorRef.get) tbl declName info.type proofBody? hoistedSyms originDecls
+    (← scopedInspectorCollectorRef.get) tbl declName info.type proofBody? hoistedSyms (originDecls ++ dataKeyDecls)
   let shorthandInspectors : Array SymbolInspector :=
     parsed.localShorthands.map fun sh => {
       key := s!"local:{declName}:{sh.sym}"
@@ -1136,7 +1267,12 @@ def informalizeDeclarationWithContext (declName : Name) (config : Config := {})
       seenConstKeys := seenConstKeys.insert ins.key
       constInspectors := constInspectors.push ins
   for ins in proofConstInspectors do
-    if !seenConstKeys.contains ins.key && mathDispAppearsIn allMathSegs ins.display then
+    let keep :=
+      if ins.roleBadge? == some "theorem" then
+        dataKeySet.contains ins.key
+      else
+        dataKeySet.contains ins.key || mathDispAppearsIn allMathSegs ins.display
+    if !seenConstKeys.contains ins.key && keep then
       seenConstKeys := seenConstKeys.insert ins.key
       constInspectors := constInspectors.push ins
   let axioms ← auditAxioms declName

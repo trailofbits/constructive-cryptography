@@ -3,6 +3,7 @@ Copyright (c) 2026 Trail of Bits. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Informalization.Core.Presentation
+import Informalization.Core.Overlay
 import Informalization.CC.Registry
 import Commons.Definitions.Encryption
 import Commons.Definitions.MAC
@@ -30,6 +31,7 @@ structures without modifying upstream `Commons/` or `Probability/` files:
 namespace Informalization.CC.DomainDescribe
 
 open Informalization.Core.Presentation
+open Informalization.Core.Overlay
 
 paper_describe_for Commons.SymmetricEncryption "symmetric-key encryption scheme"
   (plural := "symmetric-key encryption schemes")
@@ -107,15 +109,6 @@ paper_describe_for List "finite sequence"
   (carrier := false)
   (qualifier := "over {0}")
 
-paper_describe_for Prod "ordered pair"
-  (plural := "ordered pairs")
-  (carrier := false)
-
-paper_describe_for Set "subset"
-  (plural := "subsets")
-  (carrier := false)
-  (qualifier := "of {0}")
-
 paper_describe_for Finset "finite set"
   (plural := "finite sets")
   (carrier := false)
@@ -128,5 +121,36 @@ paper_describe_for SystemAlgebra.Domain.Distinguisher "compatible distinguisher"
 paper_describe_for SystemAlgebra.Domain.DistinguisherBehavior "compatible distinguisher"
   (plural := "compatible distinguishers")
   (carrier := false)
+
+/-!
+## Opaque Proof-Boundary Guards (`C5`: MBO / PDG Internal Plumbing)
+
+Prevents proof-graph expansion from descending into low-level RandomSystems
+MBO/PDG internal coupling and unset-probability plumbing lemmas (while preserving
+top-level `RuleExplainer` summaries in `CC/Families/Games.lean`).
+-/
+
+informal_opaque SystemAlgebra.RandomSystem.RepliesAtQueriedInterface.of_visible
+informal_opaque SystemAlgebra.RandomSystem.mass_unsetMBOs_le_visible
+informal_opaque SystemAlgebra.RandomSystem.winProbability_le_of_unsetProbability
+informal_opaque SystemAlgebra.Domain.Distinguisher.winProbability_le_of_unsetProbability
+informal_opaque SystemAlgebra.RandomSystem.transcriptDistance_visible_le_of_unsetProbability
+informal_opaque SystemAlgebra.RandomSystem.GameEquivalent.transcriptDistance_visible_le
+informal_opaque SystemAlgebra.RandomSystem.GameEquivalent.winProbability_eq
+informal_opaque SystemAlgebra.PDG.visible_behavior
+informal_opaque SystemAlgebra.PDG.monotoneMBO_behavior
+informal_opaque SystemAlgebra.PDG.repliesAtQueriedInterface_behavior
+informal_opaque SystemAlgebra.PDG.exists_transcript_withMBO
+informal_opaque SystemAlgebra.PDG.unsetProbability_behavior
+informal_opaque SystemAlgebra.PDG.one_sub_le_unsetProbability_behavior
+informal_opaque SystemAlgebra.PDG.conditionallyEquivalent_behavior
+informal_opaque SystemAlgebra.PDG.gameEquivalent_behavior_of_isCoupling
+informal_opaque SystemAlgebra.Interface.win_le
+informal_opaque SystemAlgebra.Interface.dist_visible_le
+informal_opaque SystemAlgebra.Interface.conditionallyEquivalent_ofPDG_iff
+informal_opaque SystemAlgebra.Interface.game_dist_le
+informal_opaque SystemAlgebra.Interface.game_dist_ofSingleFunction_le
+informal_opaque SystemAlgebra.Domain.SolverBehavior.decision_surjective
+informal_opaque SystemAlgebra.Domain.SolverBehavior.decision_absorb
 
 end Informalization.CC.DomainDescribe

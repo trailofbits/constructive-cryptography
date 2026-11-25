@@ -53,7 +53,6 @@ FORBIDDEN_CASE_SENSITIVE: Tuple[str, ...] = (
     "autoParam",
     "optParam",
     "fun x =>",
-    "match ",
     "asHom",
     "toDDC",
     "[UNPROVED: sorry]",
@@ -331,6 +330,15 @@ def check_text_leakage(
                 file=file_path,
                 location=location,
                 message=f"Raw Lean lambda syntax found in: {snippet(text)}",
+            )
+        )
+    if re.search(r"\bmatch\s+\S[^\n]*\bwith\b", text):
+        violations.append(
+            Violation(
+                gate="zero-leakage",
+                file=file_path,
+                location=location,
+                message=f"Raw Lean match expression found in: {snippet(text)}",
             )
         )
     lower = text.lower()

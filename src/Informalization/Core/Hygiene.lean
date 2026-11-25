@@ -66,6 +66,26 @@ def freshShadowFreeName (nm : Name) (fallback : String := "x") : MetaM Name := d
     cand := base ++ "_" ++ toString (tries + 1)
   return Name.mkSimple cand
 
+/-- Choose a clean binder name without priming (e.g. `\mathcal{B}'`) unless a visible free
+variable occurring inside `scopeExprs` already carries the same clean name. -/
+def chooseUnshadowedBinderName (nm : Name) (scopeExprs : Array Expr)
+    (fallback : String := "x") : MetaM Name := do
+  match cleanBinderName? nm with
+  | none => freshShadowFreeName nm fallback
+  | some base =>
+      let lctx ← getLCtx
+      let mut conflict := false
+      for ex in scopeExprs do
+        for fvid in (Lean.collectFVars {} ex).fvarIds do
+          if let some d := lctx.find? fvid then
+            if !d.isAuxDecl && !d.isImplementationDetail && d.binderInfo != .instImplicit then
+              if cleanBinderName? d.userName == some base then
+                conflict := true
+      if conflict then
+        freshShadowFreeName nm fallback
+      else
+        return Name.mkSimple base
+
 /-- Check whether `disp` appears as a rendered math token inside `mathSegs`. -/
 def mathDispAppearsIn (mathSegs : Array String) (disp : String) : Bool :=
   if disp.isEmpty then false
@@ -110,7 +130,7 @@ private def transparentWrapperSpecs : List (Name × Nat × Nat) :=
     (`Coe.coe, 3, 4), (`CoeHTCT.coe, 3, 4), (`CoeTC.coe, 3, 4),
     (`CoeT.coe, 1, 4), (`CoeHead.coe, 3, 4), (`CoeTail.coe, 3, 4),
     (`CoeFun.coe, 3, 4), (`DFunLike.coe, 4, 5),
-    (``Subtype.val, 2, 3), (``Subtype.mk, 2, 4), (``id, 1, 2),
+    (``Subtype.val, 2, 3), (``Subtype.mk, 2, 4), (``Fin.val, 1, 2), (``id, 1, 2),
     (``outParam, 0, 1), (``semiOutParam, 0, 1),
     (``optParam, 0, 2), (``autoParam, 0, 2) ]
 
@@ -265,7 +285,7 @@ partial def normalizeForPresentation (e : Expr) (fuel : Nat := 128) : MetaM Expr
             let body' ← go body (rem - 1)
             pure (.letE nm ty' val' body' nondep)
       | .proj structName idx s =>
-          if structName == ``Subtype && idx == 0 then
+          if (structName == ``Subtype || structName == ``Fin) && idx == 0 then
             go s (rem - 1)
           else
             pure (.proj structName idx (← go s (rem - 1)))

@@ -92,14 +92,13 @@ private def analyzeSectionHoisting (secNum : Nat) (grpDecls : Array Name) :
         let ts := (symTypes.getD p.sym {}).insert p.typeKey
         symTypes := symTypes.insert p.sym ts
     entryParamSets := entryParamSets.push seenInEntry
-  -- 2. Select consistent, shared parameters (either 100% shared OR strict-majority domain config)
+  -- 2. Select consistent, shared parameters (must appear in every entry of the section)
   let mut candidateSyms : Array String := #[]
   for sym in orderedSyms do
     let consistent := (symTypes.getD sym {}).size == 1
     let cnt := symCount.getD sym 0
     if consistent then
-      let p := firstParam.get! sym
-      if cnt == total || (cnt ≥ 3 && cnt * 2 > total && p.isDomainConfig) then
+      if cnt == total then
         candidateSyms := candidateSyms.push sym
   -- 3. Topological dependency closure: only keep parameters whose dependencies are also hoisted
   let mut hoistedSet : Std.HashSet String := {}
@@ -142,7 +141,7 @@ private def analyzeSectionHoisting (secNum : Nat) (grpDecls : Array Name) :
   for hk in orderedHypKeys do
     let h := firstHyp.get! hk
     let cnt := hypCount.getD hk 0
-    if cnt ≥ 2 && (cnt == total || cnt * 2 > total) then
+    if cnt ≥ 2 && cnt == total then
       let entriesWithDeps := entryParamSets.foldl (init := 0) fun acc pset =>
         if h.depSyms.all pset.contains then acc + 1 else acc
       if entriesWithDeps == cnt then
@@ -183,23 +182,29 @@ private def analyzeSectionHoisting (secNum : Nat) (grpDecls : Array Name) :
 /-- Build a canonical `Document` from an ordered list of declaration names, automatically
 hoisting section-fixed parameters & standing assumptions inside numbered sections. -/
 def buildDocument (title : String) (subtitle? : Option String := none)
-    (decls : Array Name) (config : Informalization.Core.ProofGraph.Config := {}) : MetaM Document := do
+    (decls : Array Name) (config : Informalization.Core.ProofGraph.Config := {})
+    (extraDocDecls : Array Name := #[]) : MetaM Document := do
   let env ← getEnv
   let groups := groupDeclsBySection env decls
+  let docDecls : NameSet :=
+    (decls ++ extraDocDecls).foldl (init := {}) fun s d => s.insert d
   let mut entries : Array Entry := #[]
   let mut inspectors : Array SymbolInspector := #[]
   for (secNum?, grpDecls) in groups do
     let hoistedResult? ← match secNum? with
       | some secNum => analyzeSectionHoisting secNum grpDecls
       | none => pure none
+    let secId? := secNum?.map fun secNum => s!"sec-{secNum}"
     let secCtx? := hoistedResult?.map (·.1)
     let hoistedCtx? := hoistedResult?.map (·.2)
     for idx in [:grpDecls.size] do
       let d := grpDecls[idx]!
-      let (entry, ins) ← informalizeDeclarationWithContext d config hoistedCtx?
-      let entry :=
-        if idx == 0 then { entry with sectionContext? := secCtx? }
-        else entry
+      let (entry, ins) ← informalizeDeclarationWithContext d config hoistedCtx? docDecls
+      let entry := {
+        entry with
+        sectionId? := entry.sectionId? <|> secId?
+        sectionContext? := if idx == 0 then secCtx? else entry.sectionContext?
+      }
       entries := entries.push entry
       inspectors := inspectors ++ ins
   return {
@@ -210,9 +215,9 @@ def buildDocument (title : String) (subtitle? : Option String := none)
     inspectors := dedupInspectors inspectors
   }
 
-/-- Serialize a `Document` as pretty-printed JSON. -/
+/-- Serialize a `Document` as compact JSON. -/
 def renderDocumentJson (doc : Document) : String :=
-  (toJson doc).pretty
+  (toJson doc).compress
 
 /-- Write a checked declaration's `Document` JSON to disk. -/
 elab "#informalize_json " decl:ident " to " path:str : command => do

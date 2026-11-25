@@ -942,6 +942,23 @@ elab_rules : tactic
 
 /-- Explicit Paper-mode compression receipt for routine CC algebra & normalization, expandable in
 Auditor mode (`By_CC_routine { ... }` or standalone `By_CC_routine`). -/
+private def elabCCRoutineBlock (reason? : Option String)
+    (tacSeq : TSyntax ``Lean.Parser.Tactic.tacticSeq) : TacticM Unit :=
+  withMainContext do
+    if let some r := reason? then
+      if (r.splitOn "${").length > 1 || (r.splitOn "$[").length > 1 then
+        let (tmpl, witness) ← parseAndElabProseInterp r
+        let mvarId ← getMainGoal
+        let target ← mvarId.getType
+        let inner ← mkFreshExprSyntheticOpaqueMVar target (← mvarId.getTag)
+        let remaining ← runTacticSeqOnGoal inner.mvarId! tacSeq
+        let attached := mkApp (mkLambda `_ .default (mkConst ``Unit) inner) witness
+        mvarId.assign (wrapVerboseMData "cc_routine" attached (reason? := some tmpl))
+        replaceMainGoal remaining
+        return
+    wrapGoalWithMData "cc_routine" (reason? := reason?) fun g =>
+      runTacticSeqOnGoal g tacSeq
+
 scoped syntax (name := vccRoutineBlock)
   "By_CC_routine " (str)? "{" tacticSeq "}" : tactic
 
@@ -949,9 +966,7 @@ scoped syntax (name := vccRoutineAuto) "By_CC_routine" : tactic
 
 elab_rules : tactic
   | `(tactic| By_CC_routine $[$reason?:str]? { $tacSeq }) =>
-      let r? := reason?.map (·.getString)
-      wrapGoalWithMData "cc_routine" (reason? := r?) fun g => do
-        runTacticSeqOnGoal g tacSeq
+      elabCCRoutineBlock (reason?.map (·.getString)) tacSeq
   | `(tactic| By_CC_routine) =>
       wrapGoalWithMData "cc_routine" fun g => do
         runTacticOnGoal g (← `(tactic|
@@ -1112,12 +1127,12 @@ elab_rules : tactic
   | `(tactic| By $r:str it suffices to show $[$id?:ident :]? $prop by $tacSeq) =>
       let raw := r.getString.trimAscii.toString
       let low := raw.toLower
-      let msg := if low.startsWith "by " || low.startsWith "since " || low.startsWith "because " || low.startsWith "from " || low.startsWith "under " then raw else s!"by {raw}"
+      let msg := if low.startsWith "by " || low.startsWith "since " || low.startsWith "because " || low.startsWith "from " || low.startsWith "under " then Informalization.Core.Grammar.capitalizeFirst raw else s!"By {raw}"
       elabSuffices id? prop (some msg) tacSeq
   | `(tactic| By $r:str it suffices to show $[$id?:ident :]? $prop via $tacSeq) =>
       let raw := r.getString.trimAscii.toString
       let low := raw.toLower
-      let msg := if low.startsWith "by " || low.startsWith "since " || low.startsWith "because " || low.startsWith "from " || low.startsWith "under " then raw else s!"by {raw}"
+      let msg := if low.startsWith "by " || low.startsWith "since " || low.startsWith "because " || low.startsWith "from " || low.startsWith "under " then Informalization.Core.Grammar.capitalizeFirst raw else s!"By {raw}"
       elabSuffices id? prop (some msg) tacSeq
   | `(tactic| It suffices to show $[$id?:ident :]? $prop $[because $r?:str]? by $tacSeq) =>
       elabSuffices id? prop (r?.map (·.getString)) tacSeq
@@ -1217,12 +1232,10 @@ elab_rules : tactic
   | `(tactic| By hybrid chain { $tacSeq }) =>
       wrapGoalWithMData "hybrid_chain" fun g =>
         runTacticSeqOnGoal g tacSeq
-  | `(tactic| We exhibit simulator $sim $[on interface $iface?]?) =>
-      wrapGoalWithMData "exhibit_simulator" (label? := syntaxShortLabel? sim.raw)
-          (role? := iface?.bind (fun t => syntaxShortLabel? t.raw)) fun g => do
-        match iface? with
-        | some i => runTacticOnGoal g (← `(tactic| Exhibit_simulator $sim for_interface $i))
-        | none => runTacticOnGoal g (← `(tactic| Exhibit_simulator $sim))
+  | `(tactic| We exhibit simulator $sim $[on interface $iface?]?) => do
+      match iface? with
+      | some i => evalTactic (← `(tactic| Exhibit_simulator $sim for_interface $i))
+      | none => evalTactic (← `(tactic| Exhibit_simulator $sim))
   | `(tactic| By composition-order invariance $[composing]? $hInner and $hOuter $[using $hComm?]?) =>
       wrapGoalWithMData "compose_simulators" fun g => do
         match hComm? with
@@ -1365,14 +1378,12 @@ elab_rules : tactic
   | `(tactic| By the extended H-technique using $w) =>
       wrapGoalWithMData "extended_h_coeff" fun g => do
         runTacticOnGoal g (← `(tactic| By_extended_H_technique_using $w))
-  | `(tactic| We exhibit distinguisher $dist $[admissible by $ha?]?) =>
-      wrapGoalWithMData "exhibit_distinguisher" (label? := syntaxShortLabel? dist) fun g => do
-        match ha? with
-        | some ha => runTacticOnGoal g (← `(tactic| Exhibit_distinguisher $dist admissible_by $ha))
-        | none => runTacticOnGoal g (← `(tactic| Exhibit_distinguisher $dist))
-  | `(tactic| By bounding decision probabilities of $dist via $hr and $hi) =>
-      wrapGoalWithMData "lower_bound_adv" (label? := syntaxShortLabel? dist) fun g => do
-        runTacticOnGoal g (← `(tactic| Lower_bound_advantage_of $dist via $hr and $hi))
+  | `(tactic| We exhibit distinguisher $dist $[admissible by $ha?]?) => do
+      match ha? with
+      | some ha => evalTactic (← `(tactic| Exhibit_distinguisher $dist admissible_by $ha))
+      | none => evalTactic (← `(tactic| Exhibit_distinguisher $dist))
+  | `(tactic| By bounding decision probabilities of $dist via $hr and $hi) => do
+      evalTactic (← `(tactic| Lower_bound_advantage_of $dist via $hr and $hi))
   | `(tactic| We prove matching lower and upper bounds : lower bound { $lowTacs } upper bound { $upTacs }) =>
       wrapGoalWithMData "tightness_sandwich" (role? := some "lower_upper") fun g => do
         runTacticOnGoal g (← `(tactic| Tightness_sandwich lower_bound { $lowTacs } upper_bound { $upTacs }))
@@ -1411,11 +1422,9 @@ elab_rules : tactic
         | some ts => runTacticSeqOnGoal g ts
         | none => runTacticOnGoal g (← `(tactic| (first | norm_num | ring | linarith | rfl | simp)))
   | `(tactic| By routine calculation $[$r?:str]? { $tacSeq }) =>
-      wrapGoalWithMData "cc_routine" (reason? := r?.map (·.getString)) fun g =>
-        runTacticSeqOnGoal g tacSeq
-  | `(tactic| By routine calculation) =>
-      wrapGoalWithMData "cc_routine" fun g => do
-        runTacticOnGoal g (← `(tactic| By_CC_routine))
+      elabCCRoutineBlock (r?.map (·.getString)) tacSeq
+  | `(tactic| By routine calculation) => do
+      evalTactic (← `(tactic| By_CC_routine))
   | `(tactic| By cases on $[$id?:ident :]? $prop $[$g?:vccGlossClause]?) => do
       let reason? := extractGloss? g?
       let (tmpl, witness) ← match reason? with

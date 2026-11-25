@@ -10,6 +10,7 @@ import Informalization.Core.Ontology
 import Informalization.Core.Routine
 import Informalization.Core.Explanation
 import Informalization.Core.ProofGraph
+import Informalization.Core.Spine
 import ConstructiveCryptography.CryptographicAlgebra.Basic
 import ConstructiveCryptography.CryptographicAlgebra.PseudoMetric
 import ConstructiveCryptography.CryptographicAlgebra.DistinguisherAction
@@ -49,6 +50,7 @@ open Informalization.Core.Ontology
 open Informalization.Core.Routine
 open Informalization.Core.Explanation
 open Informalization.Core.ProofGraph
+open Informalization.Core.Spine
 
 /-! ## 1. `MData` Keys & Wrapper Helpers -/
 
@@ -200,9 +202,104 @@ private def formatPropSentence (tbl : SymbolTable) (prop : Expr) (punct : String
     | .inlineMath tex =>
         if hasSubstantialMath tex then
           return inls.set! (inls.size - 1) (.displayMath tex punct)
-    | .displayMath _ _ => return inls
+    | .displayMath tex p =>
+        return inls.set! (inls.size - 1) (.displayMath tex (if p.isEmpty then punct else p))
     | _ => pure ()
   return appendSentencePunct inls punct
+
+/-- Search an elaborated expression for an entity matching `label?` (or a semantic type
+predicate) and render it through `exprToLatex ... tbl` so theorem-local `With notation` and
+module `informal_symbol` aliases (`\sigma`, `D`) take precedence over raw tactic labels. -/
+private partial def findEntityLatex? (tbl : SymbolTable) (e : Expr) (label? : Option String)
+    (matchTy : Expr → MetaM Bool) (fuel : Nat := 12) : MetaM (Option String) := do
+  let rec visit (cur : Expr) (n : Nat) : MetaM (Option String) := do
+    if n == 0 then return none
+    let c := cur.consumeMData
+    if let some lbl := label? then
+      let matchesLbl : Bool ← match c with
+        | .const cn _ => pure (cn.toString == lbl || shortConstName cn == lbl)
+        | .fvar fvid => do
+            try
+              let d ← fvid.getDecl
+              pure (d.userName.toString == lbl)
+            catch _ => pure false
+        | _ => pure false
+      if matchesLbl then
+        return some (← exprToLatex c tbl)
+    if !c.hasLooseBVars then
+      try
+        let ty ← inferType c
+        if ← matchTy ty then
+          return some (← exprToLatex c tbl)
+      catch _ => pure ()
+    match c with
+    | .app .. =>
+        let args := c.getAppArgs
+        for arg in args.reverse do
+          if let some res ← visit arg (n - 1) then
+            return some res
+        visit c.getAppFn (n - 1)
+    | _ => return none
+  if let some hit ← visit e fuel then
+    return some hit
+  if let some lbl := label? then
+    for (cn, aliasTex) in tbl.constAliases do
+      if cn.toString == lbl || shortConstName cn == lbl then
+        return some aliasTex
+    let lctx ← getLCtx
+    for d in lctx do
+      if d.userName.toString == lbl then
+        if let some (_, aliasTex) := tbl.exprAliases.reverse.find? (fun (pat, _) =>
+            pat.consumeMData == mkFVar d.fvarId) then
+          return some aliasTex
+  return label?.map formatMathIdent
+
+private def isDistinguisherType (ty : Expr) : MetaM Bool := do
+  let t ← normalizeForPresentation ty
+  pure (t.isAppOf `SystemAlgebra.TypedDistinguisher ||
+        t.isAppOf `SystemAlgebra.Domain.DistinguisherBehavior ||
+        t.isAppOf `SystemAlgebra.Domain.Distinguisher)
+
+private def renderRoutineSummary (tbl : SymbolTable) (reason? : Option String) (inner : Expr) :
+    MetaM (String × Expr) := do
+  let defaultSum := "routine constructive-cryptography normalization and algebraic bookkeeping"
+  match inner with
+  | .app (.lam _ dom body _) witness =>
+      if dom.consumeMData == mkConst ``Unit && !body.hasLooseBVar 0 then
+        let tmpl := reason?.getD defaultSum
+        if (tmpl.splitOn "@@EXPR:").length > 1 || (tmpl.splitOn "@@PROP:").length > 1 then
+          let anchors := extractAnchorArray witness
+          let (inls, _) ← renderSpineTemplate tbl tmpl anchors
+          let mut parts : Array String := #[]
+          for inl in inls do
+            match inl with
+            | .text t => parts := parts.push t
+            | .emph t => parts := parts.push s!"*{t}*"
+            | .inlineMath tex => parts := parts.push s!"\\({tex}\\)"
+            | .displayMath tex p => parts := parts.push s!"\\({tex}\\){p}"
+            | .symbol _ d true => parts := parts.push s!"\\({d}\\)"
+            | .symbol _ d false => parts := parts.push d
+            | .citation l _ => parts := parts.push l
+          return ((String.intercalate "" parts.toList).trimAscii.toString, body)
+        return (tmpl, body)
+      return (reason?.getD defaultSum, inner)
+  | _ => return (reason?.getD defaultSum, inner)
+
+private def nonexpandPhrase (inner : Expr) : String :=
+  let cs : NameSet := inner.foldConsts (init := {}) fun n acc => acc.insert n
+  let hasParallel :=
+    cs.contains ``ConstructiveCryptography.CryptographicAlgebra.distance_parallel_le ||
+    cs.contains ``ConstructiveCryptography.CryptographicAlgebra.distance_parallel_left_le ||
+    cs.contains ``ConstructiveCryptography.CryptographicAlgebra.distance_parallel_right_le
+  let hasAttach :=
+    cs.contains ``ConstructiveCryptography.CryptographicAlgebra.distance_attach_le ||
+    cs.contains ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.attach
+  if hasAttach && hasParallel then
+    "non-expansion under converter attachment and parallel composition"
+  else if hasParallel then
+    "non-expansion under parallel composition"
+  else
+    "non-expansion under converter attachment"
 
 private def stripTrailingPeriod (s : String) : String :=
   let t := s.trimAscii.toString
@@ -355,25 +452,55 @@ private structure CalcHop where
   proof : Expr
   prop : Expr
 
+private def unfoldNonCorePredOnce? (e : Expr) : MetaM (Option Expr) := do
+  let env ← getEnv
+  match e.getAppFn.consumeMData with
+  | .const cn _ =>
+      if isCoreOrMathlibIn env cn then return none
+      try
+        if let some u ← withTransparency .default (Meta.unfoldDefinition? e) then
+          if u != e then return some u
+      catch _ => pure ()
+      let w ← withTransparency .reducible (whnf e)
+      if w != e then return some w
+      return none
+  | _ => return none
+
 private def splitDistLe? (prop : Expr) : MetaM (Option (Expr × Expr × Expr)) := do
-  let prop ← normalizeForPresentation prop
-  if prop.isAppOf ``LE.le then
-    let args := prop.getAppArgs
-    if args.size ≥ 2 then
-      let lhs ← normalizeForPresentation args[args.size - 2]!
-      let rhs := args[args.size - 1]!
-      if lhs.isAppOf ``ConstructiveCryptography.CryptographicAlgebra.distance then
-        let dArgs := lhs.getAppArgs
-        if dArgs.size ≥ 2 then
-          return some (dArgs[dArgs.size - 2]!, dArgs[dArgs.size - 1]!, rhs)
+  let mut cur := prop
+  for _ in [0:6] do
+    let p ← normalizeForPresentation cur
+    if p.isAppOf ``LE.le then
+      let args := p.getAppArgs
+      if args.size ≥ 2 then
+        let lhs ← normalizeForPresentation args[args.size - 2]!
+        let rhs := args[args.size - 1]!
+        if lhs.isAppOf ``ConstructiveCryptography.CryptographicAlgebra.distance then
+          let dArgs := lhs.getAppArgs
+          if dArgs.size ≥ 2 then
+            return some (dArgs[dArgs.size - 2]!, dArgs[dArgs.size - 1]!, rhs)
+    match (← unfoldNonCorePredOnce? cur) with
+    | some u => cur := u
+    | none =>
+        match (← unfoldNonCorePredOnce? p) with
+        | some u => cur := u
+        | none => return none
   return none
 
 private def splitSubstWithin? (prop : Expr) : MetaM (Option (Expr × Expr × Expr)) := do
-  let prop ← normalizeForPresentation prop
-  if prop.isAppOf ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin then
-    let args := prop.getAppArgs
-    if args.size ≥ 3 then
-      return some (args[args.size - 3]!, args[args.size - 2]!, args[args.size - 1]!)
+  let mut cur := prop
+  for _ in [0:6] do
+    let p ← normalizeForPresentation cur
+    if p.isAppOf ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin then
+      let args := p.getAppArgs
+      if args.size ≥ 3 then
+        return some (args[args.size - 3]!, args[args.size - 2]!, args[args.size - 1]!)
+    match (← unfoldNonCorePredOnce? cur) with
+    | some u => cur := u
+    | none =>
+        match (← unfoldNonCorePredOnce? p) with
+        | some u => cur := u
+        | none => return none
   return none
 
 private def splitEqTransport? (proof : Expr) : MetaM (Option (Bool × Expr × Expr)) := do
@@ -395,6 +522,17 @@ private def splitStatTri? (proof : Expr) : MetaM (Option (Expr × Expr)) := do
   if let some (_, p1, p2) ← extractTriangleData? proof then
     return some (p1, p2)
   return none
+
+private partial def isReflEqProof (e : Expr) : Bool :=
+  let c := e.consumeMData
+  let fn := c.getAppFn.consumeMData
+  let args := c.getAppArgs
+  if fn.isConstOf ``Eq.refl || fn.isConstOf ``rfl then true
+  else if fn.isConstOf ``Eq.trans && args.size ≥ 2 then
+    isReflEqProof args[args.size - 2]! && isReflEqProof args[args.size - 1]!
+  else if fn.isConstOf ``congrArg && args.size ≥ 1 then
+    isReflEqProof args.back!
+  else false
 
 private partial def flattenVerboseCalc (tbl : SymbolTable) (proof expected : Expr)
     (fuel : Nat := 32) : MetaM (Array CalcHop) := do
@@ -419,10 +557,21 @@ private partial def flattenVerboseCalc (tbl : SymbolTable) (proof expected : Exp
     let innerHops ← flattenVerboseCalc tbl inner innerTy (fuel - 1)
     let mut eqHops : Array CalcHop := #[]
     if let some (_, lhs, rhs) := eqTy.eq? then
-      let isRefl := eqProof.consumeMData.isAppOf ``Eq.refl || eqProof.consumeMData.isConstOf ``rfl
-      if !isRefl && lhs != rhs then
-        eqHops := #[{ kind := .exactEq, lhs, rhs, relLatex := "=", proof := eqProof, prop := eqTy }]
+      if !isReflEqProof eqProof then
+        let lhsN ← normalizeForPresentation lhs
+        let rhsN ← normalizeForPresentation rhs
+        if lhsN != rhsN then
+          let lhsTex ← exprToLatex lhsN tbl
+          let rhsTex ← exprToLatex rhsN tbl
+          if lhsTex != rhsTex then
+            eqHops := #[{ kind := .exactEq, lhs := lhsN, rhs := rhsN, relLatex := "=", proof := eqProof, prop := eqTy }]
     return if isRightJoin then innerHops ++ eqHops else eqHops ++ innerHops
+  if (fn.isConstOf ``Eq.mp || fn.isConstOf ``Eq.mpr) && p.getAppArgs.size ≥ 2 then
+    let inner := p.getAppArgs.back!
+    let innerTy ← inferType inner
+    let innerHops ← flattenVerboseCalc tbl inner innerTy (fuel - 1)
+    if !innerHops.isEmpty then
+      return innerHops
   if let some (err, lhs, rhs) ← splitSubstWithin? expected then
     let isStat :=
       fn.isConstOf ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_distance ||
@@ -459,14 +608,30 @@ private def describeVerboseHopReason (env : Environment) (tbl : SymbolTable) (ho
       | .fvar _ => pure #[.text "by the assumed system identity"]
       | _ => pure #[.text "by exact system identity"]
   | .statistical =>
+      let cs := collectConsts hop.proof
+      let hasAttachLe := cs.contains ``ConstructiveCryptography.CryptographicAlgebra.distance_attach_le
+      let hasParallelLe :=
+        cs.contains ``ConstructiveCryptography.CryptographicAlgebra.distance_parallel_le ||
+        cs.contains ``ConstructiveCryptography.CryptographicAlgebra.distance_parallel_left_le ||
+        cs.contains ``ConstructiveCryptography.CryptographicAlgebra.distance_parallel_right_le
       match fn with
       | .const cn _ =>
           if cn == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_distance then
             pure #[.text "by distinguishing advantage bound"]
           else if cn == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_statistical then
             pure #[.text "by statistical distance bound"]
-          else if cn == ``ConstructiveCryptography.CryptographicAlgebra.distance_attach_le then
+          else if cn == ``ConstructiveCryptography.CryptographicAlgebra.distance_attach_le ||
+                  (cn == ``LE.le.trans && hasAttachLe && !hasParallelLe) then
             pure #[.text "by non-expansion under converter attachment"]
+          else if cn == ``ConstructiveCryptography.CryptographicAlgebra.distance_parallel_le ||
+                  cn == ``ConstructiveCryptography.CryptographicAlgebra.distance_parallel_left_le ||
+                  cn == ``ConstructiveCryptography.CryptographicAlgebra.distance_parallel_right_le ||
+                  (cn == ``LE.le.trans && hasParallelLe && !hasAttachLe) then
+            pure #[.text "by non-expansion under parallel composition"]
+          else if cn == ``LE.le.trans && hasAttachLe && hasParallelLe then
+            pure #[.text "by non-expansion under converter attachment and parallel composition"]
+          else if cn == ``le_rfl || cn == ``le_refl then
+            pure #[.text "by reflexivity"]
           else
             pure #[.text "by distinguishing bound (", .emph (humanLemmaLabel env cn), .text ")"]
       | _ => pure #[.text "by distinguishing bound"]
@@ -516,19 +681,38 @@ private def buildAnnotatedCalcChain (ctx : DecompCtx) (decompileChild : Decompil
     let lhsTex ← exprToLatex hop.lhs ctx.tbl
     let rhsTex ← exprToLatex hop.rhs ctx.tbl
     let reason ← describeVerboseHopReason env ctx.tbl hop
-    let subNodes ←
-      if hasAnyVerboseAnnotation hop.proof && (unwrapHypothesisFVar? hop.proof).isNone then
-        -- Unwrap `cc_calc_step` `mdata` so inner `By_CC_routine` etc. surfaces without raw `calc-80` noise
-        let rawStep := match unwrapVerboseMData? hop.proof with
-          | some (kv, inner) =>
-              if mdataGetString? kv ccVerboseKindKey == some "cc_calc_step" then inner else hop.proof
-          | none => hop.proof
-        if (unwrapVerboseMData? rawStep).isSome then
-          decompileChild subCtx hop.prop rawStep
-        else
-          pure #[]
+    let subNodes ← do
+      -- Unwrap `cc_calc_step` `mdata` so inner `By_CC_routine`, assumptions, and subproofs decompile cleanly
+      let rawStep := match unwrapVerboseMData? hop.proof with
+        | some (kv, inner) =>
+            if mdataGetString? kv ccVerboseKindKey == some "cc_calc_step" then inner else hop.proof
+        | none => hop.proof
+      if let some fvid := unwrapHypothesisFVar? rawStep then
+        let n ← renderHypothesisStep ctx.tbl hop.prop fvid s!"vcc-calc-hyp-{fvid.name}-{calcSteps.size}" (isWrap := true)
+        pure #[n]
+      else if let some fvid := unwrapHypothesisFVar? hop.proof then
+        let n ← renderHypothesisStep ctx.tbl hop.prop fvid s!"vcc-calc-hyp-{fvid.name}-{calcSteps.size}" (isWrap := true)
+        pure #[n]
+      else if hasAnyVerboseAnnotation rawStep then
+        decompileChild subCtx hop.prop rawStep
       else
-        pure #[]
+        match rawStep.getAppFn.consumeMData with
+        | .const cn _ =>
+            let isTrivialNonExpand :=
+              cn == ``LE.le.trans &&
+              (collectConsts rawStep).toList.all fun c =>
+                isCoreOrMathlibIn env c ||
+                c == ``ConstructiveCryptography.CryptographicAlgebra.distance_attach_le ||
+                c == ``ConstructiveCryptography.CryptographicAlgebra.distance_parallel_le ||
+                c == ``ConstructiveCryptography.CryptographicAlgebra.distance_parallel_left_le ||
+                c == ``ConstructiveCryptography.CryptographicAlgebra.distance_parallel_right_le
+            if cn == ``le_rfl || cn == ``le_refl || cn == ``Eq.refl || cn == ``rfl ||
+               cn == ``ConstructiveCryptography.CryptographicAlgebra.distance_attach_le ||
+               isTrivialNonExpand then
+              pure #[]
+            else
+              decompileChild subCtx hop.prop rawStep
+        | _ => decompileChild subCtx hop.prop rawStep
     let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) hop.prop else pure none
     let cs : CalcStep := {
       lhsLatex := lhsTex
@@ -632,12 +816,15 @@ def verboseCCExplainer : RuleExplainer where
   explain ctx decompileChild expected proof := do
     -- Case A: Annotated `cc_calc` chain without outer `By_hybrid_chain` wrapper
     if unwrapVerboseMData? proof |>.isNone then
-      let fn := proof.getAppFn.consumeMData
+      let p := proof.consumeMData
+      let fn := p.getAppFn.consumeMData
+      let args := p.getAppArgs
       let isChainRoot :=
         fn.isConstOf ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.trans ||
-        (← splitStatTri? proof).isSome ||
-        (← splitEqTransport? proof).isSome
-      if isChainRoot && hasAnyCalcStepAnnotation proof then
+        (← splitStatTri? p).isSome ||
+        (← splitEqTransport? p).isSome ||
+        ((fn.isConstOf ``Eq.mp || fn.isConstOf ``Eq.mpr) && args.size ≥ 2)
+      if isChainRoot && hasAnyCalcStepAnnotation p then
         if let some nodes ← buildAnnotatedCalcChain ctx decompileChild expected proof "vcc-calc" then
           return some nodes
       return none
@@ -1017,13 +1204,13 @@ def verboseCCExplainer : RuleExplainer where
     | "cc_routine" =>
         markStepEmitted
         let routineCtx := { subCtx with lemmaDepth := subCtx.config.maxLemmaDepth }
-        let details ← match unwrapHypothesisFVar? inner with
+        let (summary, realInner) ← renderRoutineSummary ctx.tbl reason? inner
+        let details ← match unwrapHypothesisFVar? realInner with
           | some fvid => do
               let n ← renderHypothesisStep ctx.tbl expected fvid s!"vcc-routine-hyp-{fvid.name}" (isWrap := true)
               pure #[n]
-          | none => decompileChild routineCtx expected inner
+          | none => decompileChild routineCtx expected realInner
         let goal ← buildGoalState ctx.tbl expected
-        let summary := reason?.getD "routine constructive-cryptography normalization and algebraic bookkeeping"
         let cnt := count?.getD (max 1 details.size)
         return some #[.routineReceipt s!"vcc-routine-{ctx.factIndex}" summary cnt details (some goal)]
 
@@ -1164,7 +1351,7 @@ def verboseCCExplainer : RuleExplainer where
         let op ← pickOpener .justification
         let conclDisp ← formatPropSentence ctx.tbl expected "."
         let content : Array Inline :=
-          #[.text s!"{op} non-expansion under converter attachment and parallel composition, "] ++
+          #[.text s!"{op} {nonexpandPhrase inner}, "] ++
           conclDisp
         let step ← mkVerboseStep ctx s!"vcc-nonexpand-{ctx.factIndex}" content #[] expected (originOf env inner)
         return some #[step]
@@ -1174,32 +1361,28 @@ def verboseCCExplainer : RuleExplainer where
         let children ← decompilePremiseArgs subCtx decompileChild inner
         let conclDisp ← formatPropSentence ctx.tbl expected "."
         let content : Array Inline :=
-          #[.text s!"{op} non-expansion under converter attachment, "] ++ conclDisp
+          #[.text s!"{op} {nonexpandPhrase inner}, "] ++ conclDisp
         let step ← mkVerboseStep ctx s!"vcc-nonexpand-from-{ctx.factIndex}" content children expected (originOf env inner)
         return some #[step]
 
     -- 17. `Exhibit_simulator σ [for_interface E]`
     | "exhibit_simulator" =>
         markStepEmitted
-        let args := inner.getAppArgs
-        let simTex? ← match label? with
-          | some s => pure (some (formatMathIdent s))
-          | none => do
-              let mut found : Option String := none
-              for arg in args.reverse do
-                if found.isNone then
-                  try
-                    let ty ← inferType arg
-                    if ty.isAppOf ``Quiver.Hom || ty.isAppOf `SystemAlgebra.TypedConverter then
-                      found := some (← exprToLatex arg ctx.tbl)
-                  catch _ => pure ()
-              pure found
+        let simTex? ← findEntityLatex? ctx.tbl inner label? (fun ty => do
+          let t ← normalizeForPresentation ty
+          pure (t.isAppOf ``Quiver.Hom || t.isAppOf `SystemAlgebra.TypedConverter ||
+                t.isAppOf `ConstructiveCryptography.CryptographicAlgebra.Converter))
+        let ifaceTex? ← match role? with
+          | some _ => findEntityLatex? ctx.tbl inner role? (fun ty => do
+              let t ← normalizeForPresentation ty
+              pure (t.consumeMData == mkConst `SystemAlgebra.Interface))
+          | none => pure none
         let children ← decompilePremiseArgs subCtx decompileChild inner
-        let conclInl ← renderProposition ctx.tbl expected
-        let simPhrase : Array Inline := match simTex?, role? with
+        let conclDisp ← formatPropSentence ctx.tbl expected "."
+        let simPhrase : Array Inline := match simTex?, ifaceTex? with
           | some s, some iface =>
               #[.text "We exhibit the explicit simulator ", .inlineMath s,
-                .text " attached to the ", .inlineMath (formatMathIdent iface), .text "-interface"]
+                .text " attached to the ", .inlineMath iface, .text "-interface"]
           | some s, none =>
               #[.text "We exhibit the explicit simulator ", .inlineMath s,
                 .text " attached to the adversarial interface"]
@@ -1208,7 +1391,7 @@ def verboseCCExplainer : RuleExplainer where
         let content : Array Inline :=
           simPhrase ++
           #[.text " and verify both admissibility and the closeness bound, establishing that "] ++
-          conclInl ++ #[.text "."]
+          conclDisp
         let step ← mkVerboseStep ctx s!"vcc-exhibit-sim-{ctx.factIndex}" content children expected (originOf env inner)
         return some #[step]
 
@@ -1333,8 +1516,13 @@ def verboseCCExplainer : RuleExplainer where
           decompileChild subCtx advTy cur
         let children ← advBody
         let conclDisp ← formatPropSentence ctx.tbl expected "."
-        let distPhrase : Array Inline := match label? with
-          | some d => #[.text "We exhibit the explicit compatible distinguisher ", .inlineMath (formatMathIdent d)]
+        let distTex? ← do
+          let fromInner ← findEntityLatex? ctx.tbl inner label? isDistinguisherType
+          match fromInner with
+          | some s => pure (some s)
+          | none => findEntityLatex? ctx.tbl expected label? isDistinguisherType
+        let distPhrase : Array Inline := match distTex? with
+          | some d => #[.text "We exhibit the explicit compatible distinguisher ", .inlineMath d]
           | none => #[.text "We exhibit an explicit compatible distinguisher"]
         let content : Array Inline :=
           distPhrase ++
@@ -1352,13 +1540,14 @@ def verboseCCExplainer : RuleExplainer where
           #[.routineReceipt s!"vcc-lower-adv-rec-{ctx.factIndex}"
               "computing the decision probabilities on both systems and applying the triangle inequality"
               1 #[] (some g)]
-        let conclInl ← renderProposition ctx.tbl expected
-        let distPhrase : Array Inline := match label? with
-          | some d => #[.inlineMath (formatMathIdent d)]
+        let conclDisp ← formatPropSentence ctx.tbl expected "."
+        let distTex? ← findEntityLatex? ctx.tbl expected label? isDistinguisherType
+        let distPhrase : Array Inline := match distTex? with
+          | some d => #[.inlineMath d]
           | none => #[.text "the distinguisher"]
         let content : Array Inline :=
           #[.text s!"{op} bounding the decision probabilities of "] ++ distPhrase ++
-          #[.text " on the real and ideal systems separately shows that "] ++ conclInl ++ #[.text "."]
+          #[.text " on the real and ideal systems separately shows that "] ++ conclDisp
         let step ← mkVerboseStep ctx s!"vcc-lower-adv-{ctx.factIndex}" content children expected (originOf env inner)
         return some #[step]
 
@@ -1374,21 +1563,21 @@ def verboseCCExplainer : RuleExplainer where
           let t2 ← inferType p2
           let sub1 ← decompileChild subCtx t1 p1
           let sub2 ← decompileChild subCtx t2 p2
-          let inl1 ← renderProposition ctx.tbl t1
-          let inl2 ← renderProposition ctx.tbl t2
+          let disp1 ← formatPropSentence ctx.tbl t1 "."
+          let disp2 ← formatPropSentence ctx.tbl t2 "."
           let isUpperFirst := role? == some "upper_lower"
           let lead1 := if isUpperFirst then "For the upper bound, " else "For the lower bound, "
           let lead2 := if isUpperFirst then "For the matching lower bound, " else "For the matching upper bound, "
           let step1 ← mkVerboseStep ctx s!"vcc-sandwich-1-{ctx.factIndex}"
-            (#[.text lead1] ++ inl1 ++ #[.text "."]) sub1 t1
+            (#[.text lead1] ++ disp1) sub1 t1
           let step2 ← mkVerboseStep ctx s!"vcc-sandwich-2-{ctx.factIndex}"
-            (#[.text lead2] ++ inl2 ++ #[.text "."]) sub2 t2
-          let conclInl ← renderProposition ctx.tbl expected
+            (#[.text lead2] ++ disp2) sub2 t2
+          let conclDisp ← formatPropSentence ctx.tbl expected "."
           let closeContent : Array Inline :=
             if ctx.atRootConclusion then
               #[.text "Combining the matching lower and upper bounds establishes the tightness sandwich."]
             else
-              #[.text "Combining the matching lower and upper bounds establishes "] ++ conclInl ++ #[.text "."]
+              #[.text "Combining the matching lower and upper bounds establishes "] ++ conclDisp
           let step3 ← mkVerboseStep ctx s!"vcc-sandwich-close-{ctx.factIndex}"
             closeContent #[] expected
           return some #[step1, step2, step3]
