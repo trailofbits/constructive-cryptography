@@ -76,6 +76,13 @@ lemma bindK_apply (μ : Distribution A) (f : A → Distribution B) (b : B) :
   rw [Finsupp.linearCombination_apply, Finsupp.sum, Finsupp.finsetSum_apply]
   rfl
 
+/-- Binding a sum of kernels adds their resulting distributions. -/
+lemma bindK_add_right {α β : Type*} (μ : Distribution α) (f g : α → Distribution β) :
+    bindK μ (fun a => f a + g a) = bindK μ f + bindK μ g := by
+  ext b
+  simp only [bindK_apply, Finsupp.add_apply, mul_add, Finsupp.sum]
+  exact Finset.sum_add_distrib
+
 /-- A kernel that vanishes mixes to nothing. -/
 @[simp] lemma bindK_zero_right (μ : Distribution A) :
     bindK μ (fun _ => (0 : Distribution B)) = 0 := by
