@@ -16,23 +16,25 @@ import RandomSystems.Typed.Distinguisher
 /-!
 # End-to-End Validation of Paper-Grounded Verbose-CC Authoring & Trace Decompilation
 
-Five flagship Constructive Cryptography, Indifferentiability, Game-Playing, H-Coefficient,
+Seven flagship Constructive Cryptography, Indifferentiability, Game-Playing, H-Coefficient,
 and Tightness-Sandwich proofs authored with `open scoped VerboseCC`, with zero `sorry` and
 only standard Lean axioms (`propext`, `Classical.choice`, `Quot.sound`):
 
-1. **PRG Length Extension** (`prgLengthExtension_verbose`): `Write`, `Introduce_hybrid`, `Claim`,
-   `By_non_expansion`, `By_CC_routine`, and `By_hybrid_chain` with `because_of` step notes.
+1. **PRG Length Extension** (`prgLengthExtension_verbose`): `With notation`, `Proof overview`,
+   `Define hybrid ... where`, `We claim ... explaining`, `By non-expansion`, and `By hybrid chain`
+   with `because "..." => ...` step notes.
 2. **Authenticated Encryption Composition** (`aeadComposition_verbose` &
-   `aeadHybridReduction_verbose`): `It_suffices_to_show`, `By_context_insensitivity_right`,
-   `By_sequential_composition`, `By_CC_routine`.
+   `aeadHybridReduction_verbose`): `By "..." it suffices to show`, `By sequential composition`,
+   `By context insensitivity on the right`, `By routine calculation`, and `We conclude`.
 3. **Indifferentiability Serial Simulator Composition** (`indiffSerialComposition_verbose`):
-   `Claim`, `Exhibit_simulator`, `Fact`, `Construct_using`, `Compose_simulators`.
+   `We claim`, `We exhibit simulator`, `We note`, `Construct using`,
+   `By composition-order invariance`.
 4. **Games & Revealed Extended H-Technique** (`gameCollision_verbose` &
-   `extendedHCoefficient_verbose`): `Ignore_MBO_of`, `By_conditional_equivalence`, and
-   `By_extended_H_technique` dropping ideal-law, good-ratio, and bad-mass subgoals to Lean.
-5. **Tightness Sandwich** (`bitDistinguishingTightness_verbose`): `Tightness_sandwich` splitting
-   into matching `lower_bound` (with `Exhibit_distinguisher` and `Lower_bound_advantage_of`)
-   and `upper_bound` (with `By_extended_H_technique`).
+   `extendedHCoefficient_verbose`): `Ignoring the MBO of`, `By conditional equivalence`,
+   `Let ... denote ... explaining`, and `By the extended H-technique`.
+5. **Tightness Sandwich** (`bitDistinguishingTightness_verbose`): `We prove matching lower and upper bounds:`
+   splitting into `lower bound` (with `We exhibit distinguisher` and `By bounding decision probabilities`)
+   and `upper bound` (with `By the extended H-technique`).
 -/
 
 namespace Tests.Informalization.VerboseCCValidation
@@ -41,15 +43,19 @@ open CategoryTheory CategoryTheory.MonoidalCategory
 open ConstructiveCryptography ConstructiveCryptography.CryptographicAlgebra
 open ConstructiveCryptography.CryptographicAlgebra.Specification
 open SystemAlgebra Probability Commons
+open Informalization.Core.Presentation Informalization.Core.ContextProfile
 open scoped NNReal SystemAlgebra
 open scoped VerboseCC
 
 noncomputable section
 
-/-! ## Flagship 1: PRG Length Extension -/
+/-! ## Flagship 1: PRG Length Extension (`SchemeContext`) -/
+
+section SchemePRGSection
+paper_context SchemeContext
 
 /-- Doubling a PRG from `S → S × S` to `S → S × S × S` via the two-call converter constructions
-`𝓡₁` and `𝓡₂` incurs at most `ε + ε` distinguishing distance against a uniform triple. -/
+`𝓡₁` and `𝓡₂` incurs at most `ε + ε` distinguishing advantage against a uniform triple. -/
 theorem prgLengthExtension_verbose
     {S : Type} [Fintype S] [Nonempty S]
     (G : S → S × S) {q : Commons.Evaluation.Port → ℕ} {ε : ENNReal}
@@ -59,57 +65,88 @@ theorem prgLengthExtension_verbose
     Δ (Examples.PRGLengthExtension.PRGReal.perPort (Examples.PRGLengthExtension.H G)
       (budget := q))
       (Commons.MemorylessSource.perPort (S × S × S) 𝒰[S × S × S]) ≤ ε + ε := by
-  Write U := Commons.MemorylessSource.perPort (S × S) 𝒰[S × S]
-    (budget := Examples.PRGLengthExtension.𝓡₁.insideBudget G q)
-  Introduce_hybrid M₁ := Examples.PRGLengthExtension.𝓡₁.perPort G (budget := q) • U
-  Introduce_hybrid M₂ := Examples.PRGLengthExtension.𝓡₂.perPort S (budget := q) •
+  With notation (Examples.PRGLengthExtension.PRGReal.perPort G
+    (budget := Examples.PRGLengthExtension.𝓡₁.insideBudget G q)) as "\\mathbf{G}"
+    explaining "the single-call pseudorandom generator system on seed space $S$"
+  With notation (Examples.PRGLengthExtension.PRGReal.perPort G
+    (budget := Examples.PRGLengthExtension.𝓡₂.insideBudget S q)) as "\\mathbf{G}"
+    explaining "the single-call pseudorandom generator system under the second-call budget"
+  With notation (Commons.MemorylessSource.perPort (S × S) 𝒰[S × S]
+    (budget := Examples.PRGLengthExtension.𝓡₁.insideBudget G q)) as "\\mathbf{U}_{S^2}"
+    explaining "a uniform pair source on $S \\times S$"
+  With notation (Commons.MemorylessSource.perPort (S × S × S) 𝒰[S × S × S] (budget := q)) as "\\mathbf{U}_{S^3}"
+    explaining "a uniform triple source on $S \\times S \\times S$"
+  With notation (Examples.PRGLengthExtension.PRGReal.perPort (Examples.PRGLengthExtension.H G)
+    (budget := q)) as "\\mathbf{G}^{\\mathrm{ext}}"
+    explaining "the length-extended PRG system wrapping $H(s)$"
+  With notation (Examples.PRGLengthExtension.𝓡₁.perPort G (budget := q)) as "\\mathcal{R}_1"
+    explaining "the converter factoring out the first call to $G$"
+  With notation (Examples.PRGLengthExtension.𝓡₂.perPort S (budget := q)) as "\\mathcal{R}_2"
+    explaining "the converter forwarding the uniform prefix and factoring out the second call to $G$"
+  Proof overview "We interpolate between ${Examples.PRGLengthExtension.PRGReal.perPort (Examples.PRGLengthExtension.H G) (budget := q)} and the ideal uniform triple ${Commons.MemorylessSource.perPort (S × S × S) 𝒰[S × S × S] (budget := q)} via two intermediate hybrids, replacing the first and second calls to ${G} in turn."
+  Define hybrid M₁ := Examples.PRGLengthExtension.𝓡₁.perPort G (budget := q) •
+    Commons.MemorylessSource.perPort (S × S) 𝒰[S × S]
+      (budget := Examples.PRGLengthExtension.𝓡₁.insideBudget G q)
+    where "the first generator call is replaced by a fresh uniform pair while the second call remains pseudorandom"
+  Define hybrid M₂ := Examples.PRGLengthExtension.𝓡₂.perPort S (budget := q) •
     (@id (TypedSystem (Commons.Evaluation.perPort Unit (S × S)
-      (Examples.PRGLengthExtension.𝓡₂.insideBudget S q))) U)
-  Claim hFirstCall :
+      (Examples.PRGLengthExtension.𝓡₂.insideBudget S q)))
+      (Commons.MemorylessSource.perPort (S × S) 𝒰[S × S]
+        (budget := Examples.PRGLengthExtension.𝓡₁.insideBudget G q)))
+    where "both generator calls are replaced by independent uniform pairs"
+  We claim hFirstCall :
       Δ (Examples.PRGLengthExtension.𝓡₁.perPort G (budget := q) •
           Examples.PRGLengthExtension.PRGReal.perPort G
             (budget := Examples.PRGLengthExtension.𝓡₁.insideBudget G q))
-        M₁ ≤ ε by
-    By_non_expansion
+        M₁ ≤ ε
+      explaining "by non-expansion under ${Examples.PRGLengthExtension.𝓡₁.perPort G (budget := q)} applied to the base PRG assumption" by
+    By non-expansion
     exact hPRG
-  Claim hSecondCall :
+  We claim hSecondCall :
       Δ (Examples.PRGLengthExtension.𝓡₂.perPort S (budget := q) •
           Examples.PRGLengthExtension.PRGReal.perPort G
             (budget := Examples.PRGLengthExtension.𝓡₂.insideBudget S q))
-        M₂ ≤ ε by
-    By_non_expansion
+        M₂ ≤ ε
+      explaining "by non-expansion under ${Examples.PRGLengthExtension.𝓡₂.perPort S (budget := q)} applied to the base PRG assumption" by
+    By non-expansion
     exact hPRG
-  By_hybrid_chain {
+  New paragraph
+  By hybrid chain {
     cc_calc statistical
       Examples.PRGLengthExtension.PRGReal.perPort (Examples.PRGLengthExtension.H G) (budget := q)
         = Examples.PRGLengthExtension.𝓡₁.perPort G (budget := q) •
             Examples.PRGLengthExtension.PRGReal.perPort G
               (budget := Examples.PRGLengthExtension.𝓡₁.insideBudget G q) :=
-          because_of "by definition of the length-extending construction isolating the first PRG call" =>
+          because "by isolating the first PRG call via converter $\\mathcal{R}_1$" =>
             by
-              By_CC_routine "rewriting the length extension as a converter attachment" {
+              By routine calculation "rewriting the length extension as a converter attachment" {
                 exact Examples.PRGLengthExtension.prgReal_H_eq G q
               }
       _ ≈[ε] M₁ :=
-          because_of "by replacing the first PRG instance with a uniform pair via non-expansion" =>
+          because "by replacing the first PRG call with $\\mathbf{U}_{S^2}$ via non-expansion" =>
             hFirstCall
       _ = Examples.PRGLengthExtension.𝓡₂.perPort S (budget := q) •
             Examples.PRGLengthExtension.PRGReal.perPort G
               (budget := Examples.PRGLengthExtension.𝓡₂.insideBudget S q) :=
-          because_of "by regrouping the uniform prefix into the second-call converter" =>
+          because "by regrouping the uniform prefix into the second-call converter $\\mathcal{R}_2$" =>
             Examples.PRGLengthExtension.𝓡₁_smul_prgRand G q
       _ ≈[ε] M₂ :=
-          because_of "by replacing the second PRG instance with a uniform pair via non-expansion" =>
+          because "by replacing the second PRG call with $\\mathbf{U}_{S^2}$ via non-expansion" =>
             hSecondCall
       _ = Commons.MemorylessSource.perPort (S × S × S) 𝒰[S × S × S] (budget := q) :=
-          because_of "by folding the two independent uniform pairs into a uniform triple" =>
+          because "by folding the two independent uniform pairs into $\\mathbf{U}_{S^3}$" =>
             Examples.PRGLengthExtension.𝓡₂_smul_prgRand q
   }
 
-informal_title prgLengthExtension_verbose "PRG Length Extension (Verbose-CC)"
+informal_title prgLengthExtension_verbose "Length Extension for Pseudorandom Generators"
 informal_kind prgLengthExtension_verbose "Theorem"
 
-/-! ## Flagship 2: Authenticated Encryption Composition & Reduction -/
+end SchemePRGSection
+
+/-! ## Flagship 2: Authenticated Encryption Composition (`ChannelContext`) & Reduction (`SchemeContext`) -/
+
+section ChannelCompositionSection
+paper_context ChannelContext
 
 /-- Context-insensitive lifting of a symmetric encryption step alongside an authentication key,
 composed sequentially with an authenticated-encryption converter step. -/
@@ -124,17 +161,23 @@ theorem aeadComposition_verbose
       —[macConv; ε₂]→ {aeIdeal}) :
     ({realChannel ∥ macKey} : Specification (TypedSystem (A ⊗ K)))
       —[macConv ≫ (encConv ▷ K); ε₁ + ε₂]→ {aeIdeal} := by
-  It_suffices_to_show hLifted :
+  With role macKey as "authentication key"
+  Proof overview "We first lift the confidentiality construction from ${realChannel} to ${cpaChannel} via ${encConv} within error ${ε₁} alongside the parallel authentication key ${macKey} using context insensitivity, then compose sequentially with the outer authentication step from ${cpaChannel ∥ macKey} to ${aeIdeal} via ${macConv}."
+  By "sequential composability with the outer ${macConv} step on ${cpaChannel ∥ macKey}" it suffices to show hLifted :
       ({realChannel ∥ macKey} : Specification (TypedSystem (A ⊗ K)))
-        —[encConv ▷ K; ε₁]→ {cpaChannel ∥ macKey}
-      because "by sequential composability with the outer authentication step" via
-    By_sequential_composition hLifted and hMac
-  By_context_insensitivity_right {macKey} using hEnc
+        —[encConv ▷ K; ε₁]→ {cpaChannel ∥ macKey} by
+    By sequential composition of hLifted and hMac
+  By context insensitivity on the right with {macKey} using hEnc
 
-informal_title aeadComposition_verbose "Authenticated Encryption Composition (Verbose-CC)"
+informal_title aeadComposition_verbose "Sequential Composition of Authenticated Encryption"
 informal_kind aeadComposition_verbose "Theorem"
 
-/-- Concrete authenticated encryption distance decomposition combining the plaintext-integrity
+end ChannelCompositionSection
+
+section SchemeAEADSection
+paper_context SchemeContext
+
+/-- Concrete authenticated encryption advantage decomposition combining the plaintext-integrity
 and ciphertext-indistinguishability terms with the collision penalty. -/
 theorem aeadHybridReduction_verbose
     {K M C : Type} [Fintype K] [Fintype M] [Fintype C]
@@ -152,7 +195,23 @@ theorem aeadHybridReduction_verbose
         Commons.Encryption.system.perPort scheme (budget := Commons.AE.Ideal.insideBudget M C q)) ≤
       ε_p + ε_c + ε_p + ε_c +
         (((q Commons.AE.Port.enc : ℝ≥0) ^ 2 / (Fintype.card M : ℝ≥0) : ℝ≥0) : ENNReal) := by
-  It_suffices_to_show hBase :
+  With notation (Commons.AE.system.perPort scheme (budget := q)) as "\\mathcal{E}"
+    explaining "the real authenticated-encryption system for $\\mathsf{scheme}$"
+  With notation (Commons.AE.PTXT.perPort M C (budget := q)) as "\\mathsf{PTXT}"
+    explaining "the plaintext-integrity filter converter"
+  With notation (Commons.AE.CCA.perPort M C (budget := q)) as "\\mathsf{CCA}"
+    explaining "the chosen-ciphertext filter converter"
+  With notation (Commons.AE.PTXT.perPort M C (budget := q) •
+    Commons.AE.system.perPort scheme (budget := q)) as "\\mathcal{E}_{\\mathsf{ptxt}}"
+    explaining "the plaintext-filtered authenticated-encryption hybrid"
+  With notation (Commons.AE.CCA.perPort M C (budget := q) •
+    Commons.AE.system.perPort scheme (budget := q)) as "\\mathcal{E}_{\\mathsf{cca}}"
+    explaining "the CCA-filtered authenticated-encryption hybrid"
+  With notation (Commons.AE.Ideal.perPort M C (budget := q) •
+    Commons.Encryption.system.perPort scheme (budget := Commons.AE.Ideal.insideBudget M C q)) as "\\mathcal{E}_{\\mathsf{ideal}}"
+    explaining "the ideal authenticated-encryption system"
+  Proof overview "We reduce ${Δ (Commons.AE.system.perPort scheme (budget := q)) (Commons.AE.Ideal.perPort M C (budget := q) • Commons.Encryption.system.perPort scheme (budget := Commons.AE.Ideal.insideBudget M C q))} to the four PTXT/CCA hybrid transitions via the AEAD collision-hybrid bound, then substitute ${ε_p} and ${ε_c}."
+  By "the hybrid decomposition of ${scheme} together with the plaintext-collision penalty ${(q Commons.AE.Port.enc : ℝ≥0) ^ 2 / (Fintype.card M : ℝ≥0)}" it suffices to show hBase :
       Δ (Commons.AE.system.perPort scheme (budget := q))
         (Commons.AE.PTXT.perPort M C (budget := q) •
           Commons.AE.system.perPort scheme (budget := q)) +
@@ -165,23 +224,25 @@ theorem aeadHybridReduction_verbose
       Δ (Commons.AE.system.perPort scheme (budget := q))
         (Commons.AE.CCA.perPort M C (budget := q) •
           Commons.AE.system.perPort scheme (budget := q)) ≤
-        ε_p + ε_c + ε_p + ε_c
-      because "by the hybrid distance decomposition of authenticated encryption" via {
-    By_CC_routine "combining the AEAD hybrid bound with the per-component distance assumptions" {
+        ε_p + ε_c + ε_p + ε_c by {
+    By routine calculation "combining the AEAD collision-hybrid bound with the four component hops" {
       exact (AuthenticatedEncryption.real_ideal_distance_le scheme q).trans
         (add_le_add hBase le_rfl)
     }
   }
-  Combining {
-    By_CC_routine "summing the plaintext-integrity and IND-CCA component bounds" {
-      exact add_le_add (add_le_add (add_le_add hPTXT hCCA) hPTXT) hCCA
-    }
+  We conclude "Summing ${ε_p} and ${ε_c} twice yields the desired inequality" by {
+    exact add_le_add (add_le_add (add_le_add hPTXT hCCA) hPTXT) hCCA
   }
 
-informal_title aeadHybridReduction_verbose "AEAD Hybrid Distance Decomposition (Verbose-CC)"
+informal_title aeadHybridReduction_verbose "Authenticated Encryption from IND-CCA and INT-PTXT"
 informal_kind aeadHybridReduction_verbose "Theorem"
 
-/-! ## Flagship 3: Indifferentiability Serial Simulator Composition -/
+end SchemeAEADSection
+
+/-! ## Flagship 3: Indifferentiability Serial Simulator Composition (`IndiffContext`) -/
+
+section IndiffSection
+paper_context IndiffContext
 
 /-- Serial composition of an indifferentiable protocol and an ideal-world application via
 exhibition of the admitted simulator and composition-order invariance. -/
@@ -195,21 +256,32 @@ theorem indiffSerialComposition_verbose
     (idealApplication : Δ ((application ▷ Q) • ideal) target ≤ δ) :
     ({real} : Specification (TypedSystem B)) —[(application ▷ P) ≫ protocol]→
       Commons.Indifferentiability.specification target simulators (ε + δ) := by
-  Claim hIndiff :
+  With notation simulator as "\\sigma" explaining "the explicit indifferentiability simulator at the $P$-interface"
+  With notation simulators as "\\Sigma" explaining "the class of admitted simulators"
+  Proof overview "We first package ${protocol} as an indifferentiability claim via ${simulator} on the adversarial interface ${P}, turn the ${application} distance bound between ${(application ▷ Q) • ideal} and ${target} into a concrete construction step, and compose both serially."
+  We claim hIndiff :
       ({real} : Specification (TypedSystem B)) —[protocol]→
-        Commons.Indifferentiability.specification ideal simulators ε by
-    Exhibit_simulator simulator for_interface P
+        Commons.Indifferentiability.specification ideal simulators ε
+      explaining "by attaching ${simulator} on the adversarial interface ${P}" by
+    We exhibit simulator simulator on interface P
     · exact admitted
     · exact indifferentiable
-  Fact hApp :
-      ({ideal} : Specification (TypedSystem (H ⊗ Q))) —[application ▷ Q; δ]→ {target} by
-    Construct_using idealApplication
-  Compose_simulators hIndiff and hApp
+  New paragraph
+  We note hApp :
+      ({ideal} : Specification (TypedSystem (H ⊗ Q))) —[application ▷ Q; δ]→ {target}
+      explaining "from the assumed distance bound between ${(application ▷ Q) • ideal} and ${target} within error ${δ}" by
+    Construct using idealApplication
+  By composition-order invariance composing hIndiff and hApp
 
-informal_title indiffSerialComposition_verbose "Indifferentiability Serial Simulator Composition (Verbose-CC)"
+informal_title indiffSerialComposition_verbose "Serial Composition of Indifferentiable Constructions"
 informal_kind indiffSerialComposition_verbose "Theorem"
 
-/-! ## Flagship 4: Games & Revealed Extended H-Technique -/
+end IndiffSection
+
+/-! ## Flagship 4 & 5: Games, H-Coefficients & Tightness Sandwich (`GameBasedContext`) -/
+
+section GameBasedSection
+paper_context GameBasedContext
 
 /-- Any compatible solver's advantage between the AEAD collision-hybrid system and the ideal
 AEAD system is bounded by the plaintext-collision game-winning bound. -/
@@ -223,44 +295,54 @@ theorem gameCollision_verbose
     |s.1 (AuthenticatedEncryption.Hybrid scheme q) -
         s.1 (Commons.AE.Ideal.perPort M C • Commons.Encryption.system.perPort scheme)| ≤
       ↑(q Commons.AE.Port.enc) ^ 2 / ↑(Fintype.card M) := by
-  Ignore_MBO_of (GameExamples.collision scheme q) via (GameExamples.collision_visible scheme q)
-  It_suffices_to_show hWin :
+  With notation (GameExamples.collision scheme q) as "\\mathbf{G}_{\\mathrm{coll}}"
+    explaining "the collision game recording whether two encryption queries repeat a plaintext"
+  With notation (AuthenticatedEncryption.Hybrid scheme q) as "\\mathcal{H}"
+    explaining "the AEAD collision-hybrid system"
+  With notation (Commons.AE.Ideal.perPort M C (budget := q) •
+    Commons.Encryption.system.perPort scheme (budget := Commons.AE.Ideal.insideBudget M C q)) as "\\mathcal{E}_{\\mathsf{ideal}}"
+    explaining "the ideal AEAD system"
+  Proof overview "We identify ${AuthenticatedEncryption.Hybrid scheme q} as the underlying system obtained by ignoring the MBO of ${GameExamples.collision scheme q}, reduce any solver's advantage via conditional equivalence, and apply the birthday-style query bound."
+  Ignoring the MBO of (GameExamples.collision scheme q) via (GameExamples.collision_visible scheme q)
+  New paragraph
+  By "conditional equivalence between ${GameExamples.collision scheme q} and ${Commons.AE.Ideal.perPort M C (budget := q) • Commons.Encryption.system.perPort scheme (budget := Commons.AE.Ideal.insideBudget M C q)} while the MBO remains unset" it suffices to show hWin :
       s.2 (GameExamples.collision scheme q) ≤
-        ↑(q Commons.AE.Port.enc) ^ 2 / ↑(Fintype.card M)
-      because "because the collision game is conditionally equivalent to the ideal system while the MBO remains unset" via {
+        ↑(q Commons.AE.Port.enc) ^ 2 / ↑(Fintype.card M) by {
     have hCond :
         |s.1 (ConstructiveCryptography.DistinctionGames.visible (GameExamples.collision scheme q)) -
             s.1 (Commons.AE.Ideal.perPort M C • Commons.Encryption.system.perPort scheme)| ≤
           s.2 (GameExamples.collision scheme q) := by
-      By_conditional_equivalence (GameExamples.collision_conditionallyEquivalent scheme q) using hs
+      By conditional equivalence from (GameExamples.collision_conditionallyEquivalent scheme q) using hs
     exact hCond.trans hWin
   }
-  By_CC_routine "bounding the probability of provoking a plaintext collision MBO across encryption queries" {
+  We conclude "Bounding the probability of provoking a plaintext-collision MBO across ${q Commons.AE.Port.enc} encryption queries establishes the bound" by {
     exact GameExamples.collision_win_le scheme q
       (ConstructiveCryptography.DistinctionGames.solvers_winner hs)
   }
 
-informal_title gameCollision_verbose "AEAD Collision-Hybrid Bound via Conditional Equivalence (Verbose-CC)"
+informal_title gameCollision_verbose "Game-Playing Bound for AEAD Collisions"
 informal_kind gameCollision_verbose "Theorem"
 
 /-- Revealed Extended H-Technique with non-trivial ideal randomness and bad-transcript split,
 leaving the ideal reveal law, good-transcript ratio, and bad-mass combinatorics to standard Lean. -/
 theorem extendedHCoefficient_verbose (A : Interface) (S : TypedSystem A) :
     Δ S S ≤ ((1 / 2 : ℝ≥0) : ENNReal) := by
-  Write P := Probability.Distribution.ProbDist.single ()
-  Fact hp : S.1 = SystemAlgebra.RandomSystem.mix P (fun _ => S.1) by
-    By_CC_routine "verifying that the trivial one-point mixture reproduces the system" {
+  Proof overview "We express ${S} as a trivial one-point mixture and apply the revealed Extended H-Technique, augmenting ideal transcripts with an independent coin flip whose ${Bool.true} outcome is declared bad."
+  Let P denote Probability.Distribution.ProbDist.single ()
+    where "the degenerate one-point prior distribution on ${Unit}"
+  We note hp : S.1 = SystemAlgebra.RandomSystem.mix P (fun _ => S.1) by
+    By routine calculation "verifying that the trivial one-point mixture reproduces ${S}" {
       apply SystemAlgebra.RandomSystem.ext
       intro h
       simp only [SystemAlgebra.RandomSystem.mix_mass, ne_eq, one_ne_zero, not_false_eq_true,
         Finsupp.support_single, Finsupp.single_eq_same, one_mul, Finset.sum_const,
         Finset.card_singleton, one_smul, P, Probability.Distribution.ProbDist.single]
     }
-  By_extended_H_technique
-    mixing_real (fun _ => S.1) over P using hp
+  By the extended H-technique
+    mixing real (fun _ => S.1) over P using hp
     revealing (fun _ _ => false) and (fun _ => Probability.Distribution.uniform Bool)
-    with_bad_transcripts (fun τ => τ.2 = true) bound_by (1 / 2)
-    with_good_ratio_loss 0
+    with bad transcripts (fun τ => τ.2 = true) bound by (1 / 2)
+    with good ratio loss 0
   · exact fun _ => Probability.Distribution.uniform_isProbDist (A := Bool)
   · intro τ hg
     rcases τ with ⟨h, b⟩
@@ -282,7 +364,7 @@ theorem extendedHCoefficient_verbose (A : Interface) (S : TypedSystem A) :
     simp only [hmass, Probability.Distribution.expect_const,
       (S.1.sLaw_isProbDist (hE _ S.2) n).weight_eq, mul_one, le_refl]
 
-informal_title extendedHCoefficient_verbose "Extended H-Technique on Self-Distance (Verbose-CC)"
+informal_title extendedHCoefficient_verbose "Revealed H-Coefficient Security Bound"
 informal_kind extendedHCoefficient_verbose "Theorem"
 
 /-! ## Flagship 5: Tightness Sandwich (`lower_bound` + `upper_bound`) -/
@@ -379,26 +461,32 @@ explicit one-query distinguisher and upper bound via the Extended H-Technique. -
 theorem bitDistinguishingTightness_verbose :
     ((1 / 2 : ℝ≥0) : ENNReal) ≤ Δ (fixedBit false) sampledBit ∧
       Δ (fixedBit false) sampledBit ≤ ((1 / 2 : ℝ≥0) : ENNReal) := by
-  Tightness_sandwich
-  lower_bound {
-    Exhibit_distinguisher bitObserverBehavior
-    Lower_bound_advantage_of bitObserverBehavior via bitObserver_false_prob and bitObserver_sampled_prob
+  With notation (fixedBit false) as "\\mathbf{F}_0"
+    explaining "the constant-$\\mathsf{false}$ one-query bit system"
+  With notation sampledBit as "\\mathbf{F}_{\\mathrm{rand}}"
+    explaining "the uniformly randomized one-query bit system"
+  Proof overview "We prove matching ${(1 / 2 : ℝ≥0)} lower and upper bounds on ${Δ (fixedBit false) sampledBit}: the lower bound exhibits ${bitObserverBehavior} checking for output ${Bool.true}, while the upper bound applies the Extended H-Technique."
+  We prove matching lower and upper bounds :
+  lower bound {
+    We exhibit distinguisher bitObserverBehavior
+    By bounding decision probabilities of bitObserverBehavior via bitObserver_false_prob and bitObserver_sampled_prob
   }
-  upper_bound {
-    Write P₁ := Probability.Distribution.ProbDist.single ()
-    Fact hMix : (fixedBit false).1 = SystemAlgebra.RandomSystem.mix P₁ (fun _ => (fixedBit false).1) by
-      By_CC_routine "verifying that the trivial one-point mixture reproduces the constant-bit system" {
+  upper bound {
+    Let P₁ denote Probability.Distribution.ProbDist.single ()
+      where "the degenerate one-point distribution on ${Unit}"
+    We note hMix : (fixedBit false).1 = SystemAlgebra.RandomSystem.mix P₁ (fun _ => (fixedBit false).1) by
+      By routine calculation "verifying that the trivial one-point mixture reproduces ${fixedBit false}" {
         apply SystemAlgebra.RandomSystem.ext
         intro h
         simp only [SystemAlgebra.RandomSystem.mix_mass, P₁, Probability.Distribution.ProbDist.single,
           ne_eq, one_ne_zero, not_false_eq_true, Finsupp.support_single, Finsupp.single_eq_same,
           one_mul, Finset.sum_const, Finset.card_singleton, one_smul]
       }
-    By_extended_H_technique
-      mixing_real (fun _ => (fixedBit false).1) over P₁ using hMix
+    By the extended H-technique
+      mixing real (fun _ => (fixedBit false).1) over P₁ using hMix
       revealing (fun _ _ => ()) and (fun _ => Finsupp.single () 1)
-      with_bad_transcripts (fun τ => τ.1 = trueBitTranscript) bound_by (1 / 2)
-      with_good_ratio_loss 0
+      with bad transcripts (fun τ => τ.1 = trueBitTranscript) bound by (1 / 2)
+      with good ratio loss 0
     · exact fun _ => Probability.Distribution.isProbDist_single ()
     · intro τ hg
       rcases τ with ⟨h, ⟨⟩⟩
@@ -460,8 +548,10 @@ theorem bitDistinguishingTightness_verbose :
       linarith
   }
 
-informal_title bitDistinguishingTightness_verbose "One-Query Bit-Distinguishing Tightness Sandwich (Verbose-CC)"
+informal_title bitDistinguishingTightness_verbose "Tightness of One-Query Bit Distinguishing"
 informal_kind bitDistinguishingTightness_verbose "Theorem"
+
+end GameBasedSection
 
 end
 
@@ -490,7 +580,7 @@ open Lean Elab Command in
   ]
   let doc ← liftTermElabM <| Informalization.Render.Json.buildDocument
     "Constructive Cryptography Proofs — Verbose-CC Validation"
-    (some "Five flagship theorems authored with Verbose-CC and decompiled from kernel Expr.mdata traces")
+    (some "Seven flagship theorems authored with Verbose-CC and decompiled from kernel Expr.mdata traces")
     targetDecls
   let texts := Informalization.CLI.collectDocumentTexts doc
   let leaks := Informalization.Core.Hygiene.auditZeroLeakage texts
