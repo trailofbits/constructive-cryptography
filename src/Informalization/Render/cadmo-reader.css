@@ -902,6 +902,315 @@ sub .cadmo-ref,
   --cc-simulator: #7cd7d5;
 }
 
+/* Publication-grade CADMO diagram geometry & zero-overlap layout overrides */
+.cadmo-diag-scale-wrap {
+  display: block;
+  margin-inline: auto;
+  overflow: visible;
+  position: relative;
+}
+
+.cadmo-diagram .ccw .cc-surface {
+  padding: 8px 10px;
+  box-sizing: border-box;
+}
+
+.cadmo-diagram .ccw .cc-comparison,
+.cadmo-diagram .ccw .cc-comparison:has(.cc-parallel),
+.cadmo-diagram .ccw .cc-comparison:has(> .cc-system + .cc-relation) {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: safe center;
+  justify-content: safe center;
+  gap: 10px;
+  padding: 6px 8px;
+  max-inline-size: none;
+  overflow-x: visible;
+}
+
+.cadmo-diagram .ccw .cc-comparison:has(> .cc-cards) {
+  flex-wrap: wrap;
+  row-gap: 12px;
+}
+
+.cadmo-diagram .ccw .cc-cards {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: safe center;
+  gap: 10px 12px;
+  min-inline-size: 0;
+}
+
+.cadmo-diagram .ccw .cc-comparison-tail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: safe center;
+  gap: 10px;
+  min-inline-size: 0;
+}
+
+.cadmo-diagram .ccw .cc-distance {
+  display: flex;
+  align-items: center;
+  justify-content: safe center;
+  gap: 6px;
+}
+
+.cadmo-diagram .ccw .cc-operands {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: safe center;
+  gap: 10px 10px;
+  min-inline-size: 0;
+}
+
+.cadmo-diagram .ccw .cc-operator {
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+.cadmo-diagram .ccw .cc-delimiter {
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.cadmo-diagram .ccw .cc-system,
+.cadmo-diagram .ccw .cc-system.cc-dense {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: safe center;
+  flex: 0 0 auto;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.cadmo-diagram .ccw .cc-system > .cc-system-outer,
+.cadmo-diagram .ccw .cc-system.cc-dense > .cc-system-outer,
+.cadmo-diagram .ccw .cc-system > .cc-system-inner,
+.cadmo-diagram .ccw .cc-system.cc-dense > .cc-system-inner {
+  align-self: center;
+  flex: 0 0 auto;
+  max-inline-size: none;
+}
+
+.cadmo-diagram .ccw .cc-system-body {
+  display: flex;
+  align-items: center;
+  justify-content: safe center;
+  flex: 0 0 auto;
+}
+
+.cadmo-diagram .ccw .cc-attachment,
+.cadmo-diagram .ccw .cc-system.cc-dense .cc-attachment,
+.cadmo-diagram .ccw .cc-branch,
+.cadmo-diagram .ccw .cc-system.cc-dense .cc-branch {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+
+.cadmo-diagram .ccw .cc-attachment,
+.cadmo-diagram .ccw .cc-system.cc-dense .cc-attachment {
+  justify-content: safe center;
+}
+
+.cadmo-diagram .ccw .cc-branch,
+.cadmo-diagram .ccw .cc-system.cc-dense .cc-branch {
+  justify-content: flex-start;
+}
+
+.cadmo-diagram .ccw .cc-serial,
+.cadmo-diagram .ccw .cc-system.cc-dense .cc-serial {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: safe center;
+  flex: 0 0 auto;
+  gap: 6px;
+  padding: 20px 8px 8px;
+  border-radius: 4px;
+}
+
+.cadmo-diagram .ccw .cc-serial.cc-named {
+  padding: 8px;
+}
+
+.cadmo-diagram .ccw .cc-parallel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+  gap: 10px;
+  padding: 20px 10px 8px;
+}
+
+.cadmo-diagram .ccw .cc-parallel.cc-named {
+  padding: 8px;
+}
+
+.cadmo-diagram .ccw .cc-group-label {
+  font-size: 14px;
+  line-height: 1.2;
+  inset-block-start: 2px;
+  inset-inline-start: 8px;
+}
+
+.cadmo-diagram .ccw .cc-wire,
+.cadmo-diagram .ccw .cc-system.cc-dense .cc-wire {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  flex: 0 0 auto;
+  inline-size: auto;
+  min-inline-size: 26px;
+  block-size: auto;
+  min-block-size: 0;
+  padding-block: 0;
+  border: 0;
+  gap: 3px;
+}
+
+.cadmo-diagram .ccw .cc-wire:has(> .cc-wire-label),
+.cadmo-diagram .ccw .cc-system.cc-dense .cc-wire:has(> .cc-wire-label) {
+  padding-bottom: 12px;
+}
+
+.cadmo-diagram .ccw .cc-wire::before,
+.cadmo-diagram .ccw .cc-system.cc-dense .cc-wire::before {
+  content: none;
+  border: 0;
+}
+
+.cadmo-diagram .ccw .cc-wire::after,
+.cadmo-diagram .ccw .cc-system.cc-dense .cc-wire::after {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 1.5px;
+  background: var(--cc-line);
+}
+
+.cadmo-diagram .ccw .cc-wire-label,
+.cadmo-diagram .ccw .cc-system.cc-dense .cc-wire-label {
+  position: static;
+  inset: auto;
+  grid-column: auto;
+  font-size: 10.5px;
+  line-height: 1.15;
+  padding: 0 3px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.cadmo-diagram .ccw .cc-boundary {
+  position: static;
+  flex-shrink: 0;
+  padding-inline: 0;
+  padding-block: 0;
+  margin: 0 3px;
+  font-size: 10.5px;
+  line-height: 1.2;
+}
+
+.cadmo-diagram .ccw .cc-interface-label {
+  position: static;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 3px;
+  max-inline-size: none;
+  margin: 0 3px;
+  font-size: 10.5px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.cadmo-diagram .ccw .cc-interface-label > :not(.cc-inspector) {
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
+.cadmo-diagram .ccw .cc-interface-label .cc-literal-label,
+.cadmo-diagram .ccw .cc-interface-label math,
+.cadmo-diagram .ccw .cc-interface-label .cc-inspector {
+  font-size: 10.5px;
+  line-height: 1.2;
+}
+
+.cadmo-diagram .ccw .cc-node {
+  min-block-size: 30px;
+  min-inline-size: 38px;
+  padding: 5px 10px;
+  font-size: 12px;
+  line-height: 1.25;
+  border-width: 1.5px;
+  border-radius: 3px;
+  white-space: nowrap;
+  max-inline-size: none;
+  flex-shrink: 0;
+}
+
+.cadmo-diagram .ccw .cc-node.cc-converter,
+.cadmo-diagram .ccw .cc-node.cc-simulator {
+  border-radius: 999px;
+}
+
+.cadmo-diagram .ccw .cc-node.cc-specification {
+  border-width: 3px;
+}
+
+.cadmo-diagram .ccw .cc-node math {
+  font-size: 13px;
+}
+
+.cadmo-diagram .ccw .cc-node .cc-literal-label {
+  font-size: 12px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.cadmo-diagram .ccw .cc-identifier .font-code {
+  font-size: 13px;
+}
+
+.cadmo-diagram .ccw .cc-relation {
+  gap: 4px;
+  padding-inline: 4px;
+  flex-shrink: 0;
+}
+
+.cadmo-diagram .ccw .cc-relation-symbol {
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.cadmo-diagram .ccw .cc-error {
+  font-size: 11px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.cadmo-diagram .ccw .cc-source-toggle {
+  margin: 4px 2px 0;
+  font-size: 11px;
+}
+
+.cadmo-diagram .ccw .cc-source-toggle > summary {
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+
 /* ==========================================================================
    VS Code–Style Archival Hover Popover (pinned on click, quiet editorial UI)
    ========================================================================== */
@@ -1454,6 +1763,32 @@ sub .cadmo-ref,
 
 .cadmo-pbox-meta .cadmo-goal-btn {
   vertical-align: baseline;
+}
+
+/* Offline 2D piecewise cases block (`\begin{cases}...\end{cases}`) */
+.cadmo-cases {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  gap: 0.22rem;
+}
+.cadmo-cases-brace {
+  font-size: 1.55em;
+  line-height: 1;
+  font-weight: 300;
+}
+.cadmo-cases-body {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.12rem;
+  font-size: 0.92em;
+  line-height: 1.3;
+}
+.cadmo-cases-row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.55rem;
 }
 
 @media (max-width: 980px) {

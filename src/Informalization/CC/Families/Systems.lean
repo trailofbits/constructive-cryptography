@@ -83,7 +83,11 @@ def bisimulationAndRealizationExplainer : RuleExplainer where
       let op ← pickMaurerOpener .consequence
       let children ← decompilePremiseArgs ctx decompileChild proof
       return ← finish s!"cc-bisim-{head}" (fun conclInl =>
-        #[.text s!"{op} by state bisimulation—preserving the invariant relation between internal states while producing identical replies to every query—we obtain "] ++
+        let lead := match conclInl[0]? with
+          | some (.text s) =>
+              if s.startsWith "the " || s.startsWith "protocol " then "we obtain that " else "we obtain "
+          | _ => "we obtain "
+        #[.text s!"{op} by state bisimulation—preserving the invariant relation between internal states while producing identical replies to every query—{lead}"] ++
         conclInl ++ #[.text "."]) children
     if head == ``SystemAlgebra.DDC.ofProgram_eq_of_stateMap ||
        head == ``SystemAlgebra.DDC.ofProgramOn_eq_of_stateMap ||

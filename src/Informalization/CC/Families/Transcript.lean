@@ -160,7 +160,11 @@ def hCoefficientExplainer : RuleExplainer where
             witnessChildren := witnessChildren ++ (← explainHCoefficientWitness ctx decompileChild arg)
         catch _ => pure ()
       return ← finish s!"cc-hcoeff-{head}" (fun conclInl =>
-        #[.text s!"{op} by the revealed-transcript H-coefficient technique—comparing the extended real and ideal transcript laws and forgetting the auxiliary reveal by data processing—we obtain "] ++
+        let lead := match conclInl[0]? with
+          | some (.text s) =>
+              if s.startsWith "the " || s.startsWith "protocol " then "we obtain that " else "we obtain "
+          | _ => "we obtain "
+        #[.text s!"{op} by the revealed-transcript H-coefficient technique—comparing the extended real and ideal transcript laws and forgetting the auxiliary reveal by data processing—{lead}"] ++
         conclInl ++ #[.text "."]) witnessChildren
     if head == ``SystemAlgebra.RandomSystem.statDist_sLaw_le_of_reveal then
       let op ← pickMaurerOpener .consequence

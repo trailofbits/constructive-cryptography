@@ -92,6 +92,17 @@ def interfaceAccessory (tbl : SymbolTable) (ifaceExpr : Expr) : MetaM String := 
     return s!"\\({tex}\\)"
   return withInterfacesPhrase rendered
 
+/-- Nouns whose codomain is too generic to form `"family of <plural> indexed by X"`;
+those arrow types remain `"map"` (or a specialized type such as `"predicate"`). -/
+private def isGenericCodomainNoun (nounSingular : String) : Bool :=
+  let s := nounSingular.toLower
+  s == "set" || s == "proposition" || s == "natural number" || s == "integer" ||
+  s == "real number" || s == "nonnegative real" || s == "nonnegative real number" ||
+  s == "bit" || s == "function" || s == "map" || s == "ordered pair" ||
+  s == "predicate" || s == "boolean predicate" || s == "length assignment" ||
+  s == "resource family" || s == "finite sequence" || s == "finite set" ||
+  s == "subset" || s.startsWith "element of " || s.startsWith "family of "
+
 /-- Describe a binder's type using registered domain handlers and checked `informal_noun`
 overlays first, then core math fallbacks. -/
 partial def describeType (tbl : SymbolTable) (ty : Expr) : MetaM TypeDescription := do
@@ -128,16 +139,53 @@ partial def describeType (tbl : SymbolTable) (ty : Expr) : MetaM TypeDescription
     return { noun := ⟨"nonnegative real number", "nonnegative real numbers"⟩ }
   if ty == mkConst `ENNReal then
     return { noun := ⟨"nonnegative real", "nonnegative reals"⟩ }
-  if let .forallE _ dom body _ := ty then
+  if let .forallE nm dom body bi := ty then
+    if ← isAmbientTypeclass dom then
+      if body.hasLooseBVar 0 then
+        return ← withLocalDecl nm bi dom fun fv => describeType tbl (body.instantiate1 fv)
+      else
+        return ← describeType tbl body
+    if ← isProp ty then
+      return { noun := ⟨"proposition", "propositions"⟩ }
     if !body.hasLooseBVar 0 then
       if dom.isConstOf ``Unit || dom.isConstOf ``PUnit then
         return ← describeType tbl body
       if body == .sort .zero then
         let domTex ← exprToLatex dom tbl
         return { noun := ⟨"predicate", "predicates"⟩, accessories := [s!"on \\({domTex}\\)"] }
-      else
-        let tyTex ← exprToLatex ty tbl
-        return { noun := ⟨"function", "functions"⟩, typeLatex? := some tyTex }
+      let domClean := dom.consumeMData
+      let bodyClean := body.consumeMData
+      let domTex ← exprToLatex dom tbl
+      if bodyClean.isConstOf ``Bool then
+        return { noun := ⟨"Boolean predicate", "Boolean predicates"⟩, accessories := [s!"on \\({domTex}\\)"] }
+      if domClean.getAppFn.consumeMData.isConstOf ``Fin && bodyClean.isConstOf ``Nat then
+        return { noun := ⟨"length assignment", "length assignments"⟩, accessories := [s!"on \\({domTex}\\)"] }
+      if !domClean.isForall && !(← isProp dom) then
+        let codDesc ← describeType tbl body
+        if !codDesc.isAmbient && !isGenericCodomainNoun codDesc.noun.singular then
+          return {
+            noun := ⟨s!"family of {codDesc.noun.plural}", s!"families of {codDesc.noun.plural}"⟩
+            accessories := [s!"indexed by \\({domTex}\\)"]
+          }
+      let tyTex ← exprToLatex ty tbl
+      return { noun := ⟨"map", "maps"⟩, typeLatex? := some tyTex }
+    else
+      -- Dependent non-`Prop` arrow `(x : X) → Y x`: indexed family of domain objects when concrete
+      let domClean := dom.consumeMData
+      if !domClean.isForall && !(← isProp dom) then
+        let domTex ← exprToLatex dom tbl
+        let famDesc? ← withLocalDecl nm bi dom fun fv => do
+          let codDesc ← describeType tbl (body.instantiate1 fv)
+          if !codDesc.isAmbient && !isGenericCodomainNoun codDesc.noun.singular then
+            return some {
+              noun := ⟨s!"family of {codDesc.noun.plural}", s!"families of {codDesc.noun.plural}"⟩
+              accessories := [s!"indexed by \\({domTex}\\)"]
+            }
+          return none
+        if let some famDesc := famDesc? then
+          return famDesc
+      let tyTex ← exprToLatex ty tbl
+      return { noun := ⟨"map", "maps"⟩, typeLatex? := some tyTex }
   let tyTex ← exprToLatex ty tbl
   return { noun := ⟨s!"element of \\({tyTex}\\)", s!"elements of \\({tyTex}\\)"⟩ }
 
@@ -173,6 +221,42 @@ private partial def exprDagSmall (e : Expr) (limit : Nat := 220) : Bool :=
       | _ => st
   (go e ({}, 0)).2 ≤ limit
 
+/-- Canonical short math symbol when a quantifier binder's cleaned name collides with its noun
+(e.g. `distinguisher : Distinguisher I` -> `D`, avoiding `"for every distinguisher distinguisher"`). -/
+private def canonicalQuantBinderName (rawBinder : String) (nounSingular : String) : Option String :=
+  let b := rawBinder.toLower
+  let n := nounSingular.toLower
+  let headNoun := (n.splitOn " \\(").headD n |>.trimAscii.toString
+  let matchesNoun :=
+    b == n || b == headNoun ||
+    (b.length ≥ 4 && (headNoun.splitOn b).length > 1)
+  if !matchesNoun then none
+  else if (n.splitOn "distinguisher").length > 1 then some "D"
+  else if (n.splitOn "adversary").length > 1 then some "A"
+  else if (n.splitOn "simulator").length > 1 then some "S"
+  else if (n.splitOn "resource").length > 1 then some "R"
+  else if (n.splitOn "converter").length > 1 then some "c"
+  else if (n.splitOn "solver").length > 1 then some "s"
+  else if (n.splitOn "game").length > 1 then some "G"
+  else if (n.splitOn "environment").length > 1 then some "E"
+  else if (n.splitOn "transcript").length > 1 then some "h"
+  else some "x"
+
+/-- Choose an uncolliding quantifier binder `Name`, substituting a canonical symbol when an
+unaliased binder repeats its own noun (`"distinguisher"` -> `"D"`). -/
+private def resolveQuantBinderName (tbl : SymbolTable) (nm : Name) (nounSingular : String) : Name :=
+  let cleanRaw := cleanBinderName nm "x"
+  let hasDistinctAlias :=
+    match tbl.binderAliases.get? cleanRaw with
+    | some al =>
+        let alLower := al.toLower
+        alLower != cleanRaw.toLower && alLower != ("\\mathrm{" ++ cleanRaw.toLower ++ "}")
+    | none => false
+  if hasDistinctAlias then nm
+  else match canonicalQuantBinderName cleanRaw nounSingular with
+    | some sym => Name.mkSimple sym
+    | none => nm
+
 /-- Render a proposition into natural mathematical English + LaTeX (`Array Inline`),
 consulting registered CC/domain handlers first and falling back to clean `LeanTeX`. -/
 partial def renderProposition (tbl : SymbolTable) (prop : Expr) : MetaM (Array Inline) := do
@@ -194,19 +278,26 @@ partial def renderProposition (tbl : SymbolTable) (prop : Expr) : MetaM (Array I
         else
           renderProposition tbl body
       return #[.text "if "] ++ pInl ++ #[.text ", then "] ++ qInl
-    else if body.hasLooseBVar 0 then
-      let freshNm ← freshShadowFreeName nm "x"
-      return ← withLocalDecl freshNm bi dom fun fv => do
-        let desc ← describeType tbl dom
-        let varTex ← exprToLatex fv tbl
-        let bodyInl ← renderProposition tbl (body.instantiate1 fv)
-        if desc.noun.singular.startsWith "element of \\(" && desc.noun.singular.endsWith "\\)" then
-          let setTex := ((desc.noun.singular.drop 13).dropEnd 2).toString
-          return #[.text "for every ", .inlineMath s!"{varTex} \\in {setTex}", .text ", "] ++ bodyInl
+    else
+      let desc ← describeType tbl dom
+      if body.hasLooseBVar 0 then
+        let nmToUse := resolveQuantBinderName tbl nm desc.noun.singular
+        let freshNm ← freshShadowFreeName nmToUse "x"
+        return ← withLocalDecl freshNm bi dom fun fv => do
+          let varTex ← exprToLatex fv tbl
+          let bodyInl ← renderProposition tbl (body.instantiate1 fv)
+          if desc.noun.singular.startsWith "element of \\(" && desc.noun.singular.endsWith "\\)" then
+            let setTex := ((desc.noun.singular.drop 13).dropEnd 2).toString
+            return #[.text "for every ", .inlineMath s!"{varTex} \\in {setTex}", .text ", "] ++ bodyInl
+          let adj := if desc.adjectives.isEmpty then "" else String.intercalate " " desc.adjectives ++ " "
+          let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
+          return #[.text s!"for every {adj}{desc.noun.singular} ", .inlineMath varTex,
+                   .text s!"{acc}, "] ++ bodyInl
+      else
+        let bodyInl ← renderProposition tbl body
         let adj := if desc.adjectives.isEmpty then "" else String.intercalate " " desc.adjectives ++ " "
         let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
-        return #[.text s!"for every {adj}{desc.noun.singular} ", .inlineMath varTex,
-                 .text s!"{acc}, "] ++ bodyInl
+        return #[.text s!"for every {adj}{desc.noun.singular}{acc}, "] ++ bodyInl
   -- Logical connectives & registered `informal_pred` overlays
   let fn := prop.getAppFn.consumeMData
   let args := prop.getAppArgs
@@ -294,9 +385,10 @@ partial def renderProposition (tbl : SymbolTable) (prop : Expr) : MetaM (Array I
       return a ++ #[.text " if and only if "] ++ b
     if head == ``Exists && args.size ≥ 2 then
       if let .lam nm dom body bi := args[args.size - 1]! then
-        let freshNm ← chooseUnshadowedBinderName nm #[dom, body] "x"
+        let desc ← describeType tbl dom
+        let nmToUse := resolveQuantBinderName tbl nm desc.noun.singular
+        let freshNm ← chooseUnshadowedBinderName nmToUse #[dom, body] "x"
         return ← withLocalDecl freshNm bi dom fun fv => do
-          let desc ← describeType tbl dom
           let varTex ← exprToLatex fv tbl
           let bodyInl ← renderProposition tbl (body.instantiate1 fv)
           if desc.noun.singular.startsWith "element of \\(" && desc.noun.singular.endsWith "\\)" then
@@ -304,9 +396,10 @@ partial def renderProposition (tbl : SymbolTable) (prop : Expr) : MetaM (Array I
             return #[.text "there exists ", .inlineMath s!"{varTex} \\in {setTex}",
                      .text " such that "] ++ bodyInl
           let adj := if desc.adjectives.isEmpty then "" else String.intercalate " " desc.adjectives ++ " "
+          let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
           let art := article (adj ++ desc.noun.singular)
           return #[.text s!"there exists {art} {adj}{desc.noun.singular} ", .inlineMath varTex,
-                   .text " such that "] ++ bodyInl
+                   .text s!"{acc} such that "] ++ bodyInl
   -- Default: clean 2D LaTeX formula
   let tex ← exprToLatex prop tbl
   return #[.inlineMath tex]
@@ -1173,7 +1266,7 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr)
         match conclInl with
         | #[.inlineMath tex] =>
             if tex.length ≥ 36 then
-              #[.text (lead.trimAscii.toString), .displayMath tex "."]
+              #[.text lead, .displayMath tex "."]
             else
               #[.text lead, .inlineMath tex, .text "."]
         | _ =>

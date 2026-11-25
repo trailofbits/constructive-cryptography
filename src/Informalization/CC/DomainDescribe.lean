@@ -153,4 +153,32 @@ informal_opaque SystemAlgebra.Interface.game_dist_ofSingleFunction_le
 informal_opaque SystemAlgebra.Domain.SolverBehavior.decision_surjective
 informal_opaque SystemAlgebra.Domain.SolverBehavior.decision_absorb
 
+/-!
+## Opaque Proof-Boundary Guards (RandomSystems / Revealed H-Coefficient / Probability Plumbing)
+
+Keeps expanded proof trees mathematical by preventing descent into low-level transcript-law
+normalization, mixture mass, and finite-support distribution algebra while preserving top-level
+`RuleExplainer` summaries in `CC/Families/Transcript.lean`.
+-/
+
+informal_opaque SystemAlgebra.RandomSystem.ext
+informal_opaque SystemAlgebra.RandomSystem.mix_mass
+informal_opaque SystemAlgebra.RandomSystem.mass_nonneg
+informal_opaque SystemAlgebra.RandomSystem.sLaw_isProbDist
+informal_opaque SystemAlgebra.RandomSystem.sLaw_apply
+informal_opaque SystemAlgebra.RandomSystem.kernelLaw_eq_jointLaw
+informal_opaque SystemAlgebra.RandomSystem.revealMass_nonneg
+informal_opaque SystemAlgebra.RandomSystem.revealLaw_apply
+informal_opaque SystemAlgebra.RandomSystem.kernelLaw_apply
+informal_opaque SystemAlgebra.RandomSystem.kernelLaw_nonNeg
+informal_opaque SystemAlgebra.RandomSystem.fTransform_fst_revealLaw
+informal_opaque SystemAlgebra.RandomSystem.fTransform_fst_kernelLaw
+informal_opaque SystemAlgebra.RandomSystem.kernelLaw_mass_eq_expect
+informal_opaque SystemAlgebra.TypedSystem.possible_domain
+informal_opaque Probability.Distribution.uniform_isProbDist
+informal_opaque Probability.Distribution.isProbDist_single
+informal_opaque Probability.Distribution.mass_singleton
+informal_opaque Probability.Distribution.expect_const
+informal_opaque Probability.Distribution.uniform_apply
+
 end Informalization.CC.DomainDescribe

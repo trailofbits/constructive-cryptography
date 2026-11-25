@@ -316,6 +316,36 @@ private def capitalizeLeadingInlines (inls : Array Inline) : Array Inline :=
   | .text s => inls.set! 0 (.text (capitalizeLeadingText s))
   | _ => inls
 
+/-- Strip trailing `.`, `,`, `;`, and whitespace from an `Array Inline` (and keep optional
+`inlineMeta` aligned) before appending `, which establishes` or `, we prove`. -/
+def stripTrailingPunctInlinesWithMeta (inls : Array Inline)
+    (metas : Array (Option ProseTrust × Option String) := #[]) :
+    Array Inline × Array (Option ProseTrust × Option String) := Id.run do
+  let mut xs := inls
+  let mut ms := metas
+  while !xs.isEmpty do
+    match xs.back? with
+    | some (.text t) =>
+        let mut s := t.trimAsciiEnd.toString
+        while s.endsWith "." || s.endsWith "," || s.endsWith ";" do
+          s := (s.dropEnd 1).toString.trimAsciiEnd.toString
+        if s.isEmpty then
+          xs := xs.pop
+          if ms.size > xs.size then ms := ms.pop
+        else
+          xs := xs.pop.push (.text s)
+          break
+    | some (.displayMath math punct) =>
+        if !punct.isEmpty then
+          xs := xs.pop.push (.displayMath math "")
+        break
+    | _ => break
+  return (xs, ms)
+
+/-- Strip trailing `.`, `,`, `;`, and whitespace from an `Array Inline` before joining a clause. -/
+def stripTrailingPunctInlines (inls : Array Inline) : Array Inline :=
+  (stripTrailingPunctInlinesWithMeta inls).1
+
 private def appendPeriodClean (inls : Array Inline) (metas : Array (Option ProseTrust × Option String)) :
     Array Inline × Array (Option ProseTrust × Option String) :=
   if inls.isEmpty then (inls, metas)
@@ -324,7 +354,9 @@ private def appendPeriodClean (inls : Array Inline) (metas : Array (Option Prose
     | some (.text t) =>
         let trimmed := t.trimAsciiEnd.toString
         if trimmed.endsWith "." || trimmed.endsWith ":" then (inls, metas)
-        else (inls.pop.push (.text (trimmed ++ ".")), metas)
+        else
+          let base := if trimmed.endsWith "," || trimmed.endsWith ";" then (trimmed.dropEnd 1).toString.trimAsciiEnd.toString else trimmed
+          (inls.pop.push (.text (base ++ ".")), metas)
     | _ => (inls.push (.text "."), metas.push (some .intuitionGloss, none))
 
 private def isForwardEntityRole (leadHeading : String) : Bool :=
@@ -345,7 +377,8 @@ private def makeConcludeContent (ctx : DecompCtx) (expected : Expr)
     let lm := #[(some .intuitionGloss, none)] ++ conclMetas
     return appendPeriodClean lead lm
   else
-    let (rInls, rMetas) ← renderSpineTemplate ctx.tbl reason anchors
+    let (rInls0, rMetas0) ← renderSpineTemplate ctx.tbl reason anchors
+    let (rInls, rMetas) := stripTrailingPunctInlinesWithMeta rInls0 rMetas0
     let combined := rInls ++ #[.text ", which establishes "] ++ conclInl
     let cm := rMetas ++ #[(some .intuitionGloss, none)] ++ conclMetas
     return appendPeriodClean combined cm
@@ -586,15 +619,9 @@ partial def extractSpineNode :
             else
               let conclInl ← renderProposition ctx.tbl expected
               let cm := conclInl.map fun _ => (some .kernelProvedClaim, none)
-              let strippedInl :=
-                match tInl.back? with
-                | some (.text t) =>
-                    let tr := t.trimAsciiEnd.toString
-                    let tr := if tr.endsWith "," then (tr.dropEnd 1).toString else tr
-                    tInl.pop.push (.text tr)
-                | _ => tInl
+              let (strippedInl, strippedMeta) := stripTrailingPunctInlinesWithMeta tInl tMeta
               pure (appendPeriodClean (strippedInl ++ #[.text ", we prove "] ++ conclInl)
-                (tMeta ++ #[(some .intuitionGloss, none)] ++ cm))
+                (strippedMeta ++ #[(some .intuitionGloss, none)] ++ cm))
           else
             let (tInl, tMeta) ← renderSpineTemplate ctx.tbl tmpl anchors
             pure (appendPeriodClean tInl tMeta)
@@ -614,8 +641,8 @@ partial def extractSpineNode :
           if tmpl.trimAscii.isEmpty then
             pure (#[.text "It suffices to show "] ++ propInl, #[(some .intuitionGloss, none)] ++ propMeta)
           else
-            let (tInl, tMeta) ← renderSpineTemplate ctx.tbl tmpl anchors
-            let tInl := capitalizeLeadingInlines tInl
+            let (tInl0, tMeta0) ← renderSpineTemplate ctx.tbl tmpl anchors
+            let (tInl, tMeta) := stripTrailingPunctInlinesWithMeta (capitalizeLeadingInlines tInl0) tMeta0
             pure (tInl ++ #[.text ", it suffices to show "] ++ propInl,
               tMeta ++ #[(some .intuitionGloss, none)] ++ propMeta)
         let (content, inlineMeta) := appendPeriodClean inls im

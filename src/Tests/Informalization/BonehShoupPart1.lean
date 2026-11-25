@@ -1013,6 +1013,7 @@ theorem theorem3_2_parallel_prg_composition
     (G : S → R) (n : ℕ) (hn : 0 < n) (A : PRGAdversary (VecSpace n R)) :
     ∃ B : PRGAdversary R,
       prgAdv A (parallelPRG G n) = (n : ℝ) * prgAdv B G := by
+  With role G as "candidate generator"
   Proof overview "We introduce ${n + 1} hybrid games ${parallelHybridDist G n 0} through ${parallelHybridDist G n n} interpolating between ${parallelPRG G n} and uniform ${VecSpace n R}. For each $0 \\le j \\le$ ${n}, let $p^{\\parallel}_j := \\Pr[\\mathcal{A}(\\mathbf{Hybrid}^{\\parallel}_j) = 1]$ denote the probability that ${A} outputs $1$ in Hybrid $j$. We construct a single-query reduction ${parallelReduction A G hn} (an elementary wrapper around ${A}) that embeds its challenge at a uniformly random index, and evaluate the resulting telescoping sum."
   Present pseudocode "hybrid" "Hybrid $j$ ($0 \\le j \\le n$)"
     "For each coordinate $i < j$, sample $r_i$ uniformly from ${R}\nFor each coordinate $i \\ge j$ up to ${n}, sample $s_i$ uniformly from ${S} and set $r_i$ by applying ${G} to $s_i$\nSend $(r_0, \\dots, r_{n-1})$ in ${VecSpace n R} to ${A} and output whatever ${A} outputs"
@@ -1434,6 +1435,7 @@ theorem theorem3_3_sequential_prg_composition
     (G : S → R × S) (n : ℕ) (hn : 0 < n) (A : PRGAdversary (VecSpace n R × S)) :
     ∃ B : PRGAdversary (R × S),
       prgAdv A (seqPRG G n) = (n : ℝ) * prgAdv B G := by
+  With role G as "candidate generator"
   Proof overview "We define ${n + 1} sequential hybrids ${seqHybridDist G n 0} through ${seqHybridDist G n n} replacing the initial output prefix with uniform blocks in ${R} and resampling the intermediate seed in ${S} before iterating ${G} for the remaining steps. For each $0 \\le j \\le$ ${n}, let $p^{\\mathrm{seq}}_j := \\Pr[\\mathcal{A}(\\mathbf{Hybrid}^{\\mathrm{seq}}_j) = 1]$ denote the probability that ${A} outputs $1$ in Hybrid $j$. We construct a single-query reduction ${seqReduction A G hn} (an elementary wrapper around ${A}) and evaluate the resulting telescoping sum."
   Present pseudocode "hybrid" "Hybrid $j$ ($0 \\le j \\le n$)"
     "For $0 \\le i < j$, sample $r_i$ uniformly from ${R}\nSample a fresh intermediate seed $s$ uniformly from ${S} at step $j$\nIterate ${G} for the remaining $n - j$ steps from $s$ to form $(r_j, \\dots, r_{n-1}, s_n)$\nSend $((r_0, \\dots, r_{n-1}), s_n)$ in ${VecSpace n R × S} to ${A} and output whatever ${A} outputs"

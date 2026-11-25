@@ -532,6 +532,61 @@ private def collectDiagramExplicitArgs (ty : Expr) (args : Array Expr)
       out := out.push arg
   return out
 
+private def isCleanCompactEps (s : String) (limit : Nat) : Bool :=
+  let t := s.trimAscii.toString
+  !t.isEmpty && t.length ≤ limit &&
+  !t.contains '\n' && !t.contains '\r' &&
+  (t.splitOn "↦").length == 1 &&
+  (t.splitOn "•").length == 1 &&
+  (t.splitOn "Δ(").length == 1
+
+private def compactTypePower (s : String) : String :=
+  let parts := s.splitOn " × "
+  match parts with
+  | [a, b] =>
+    if a == b && !a.isEmpty && !a.contains ' ' && !a.contains '(' then s!"{a}²" else s
+  | [a, b, c] =>
+    if a == b && b == c && !a.isEmpty && !a.contains ' ' && !a.contains '(' then s!"{a}³" else s
+  | _ => s
+
+private def isArgCallHeadChar (c : Char) : Bool :=
+  c.isAlphanum || c == '_' || c == '±' || c == '\'' || c == '₀' || c == '₁' ||
+  c == '₂' || c == '₃' || c == '₄' || c == '₅' || c == '₆' || c == '₇' ||
+  c == '₈' || c == '₉' || c == '²' || c == '³' || c == ']' || c == '}'
+
+private def stripBalancedParenArgs (s : String) : String := Id.run do
+  let arr := s.toList.toArray
+  let mut out : Array Char := #[]
+  let mut i := 0
+  while i < arr.size do
+    let c := arr[i]!
+    if c == '(' && !out.isEmpty && isArgCallHeadChar out.back! then
+      let mut depth := 1
+      let mut j := i + 1
+      while j < arr.size && depth > 0 do
+        if arr[j]! == '(' then depth := depth + 1
+        else if arr[j]! == ')' then depth := depth - 1
+        j := j + 1
+      if depth == 0 then
+        i := j
+        continue
+    out := out.push c
+    i := i + 1
+  return (String.ofList out.toList).trimAscii.toString
+
+private def compactNodeCanvasLabel (s : String) : String :=
+  let t := s.trimAscii.toString
+  if t.startsWith "sample(" && (t.splitOn "↦").length > 1 then
+    let parts := (t.drop 7).toString.splitOn ","
+    let dist := (parts.headD "").trimAscii.toString
+    if !dist.isEmpty && dist.length ≤ 16 then s!"sample({dist}, …)" else "sample(…)"
+  else if t.startsWith "ofFunction(" && (t.splitOn "↦").length > 1 then
+    "ofFunction(…)"
+  else if t.length > 34 then
+    let stripped := stripBalancedParenArgs t
+    if !stripped.isEmpty && stripped.length < t.length then stripped else t
+  else t
+
 private partial def diagramExprText (aliases : DiagramAliases) (e : Expr)
     (depth : Nat := 24) : MetaM String := do
   if depth == 0 then return "…"
@@ -623,6 +678,8 @@ private partial def diagramExprText (aliases : DiagramAliases) (e : Expr)
       if head == ``OfNat.ofNat && args.size ≥ 2 then
         return ← recGo args[1]!
       -- Relaxation & indifferentiability wrappers
+      let fmtRelaxed := fun (specStr errStr : String) =>
+        if errStr.length ≤ 18 then s!"{specStr}^[{errStr}]" else specStr
       if headStr == "DFunLike.coe" && args.size ≥ 6 then
         let relaxFn := args[4]!.consumeMData
         let specArg := args[5]!
@@ -630,7 +687,7 @@ private partial def diagramExprText (aliases : DiagramAliases) (e : Expr)
         if (rfName == "ConstructiveCryptography.CryptographicAlgebra.Specification.epsilonRelaxation" ||
             rfName == "ConstructiveCryptography.Specification.epsilonRelaxation") &&
             relaxFn.getAppArgs.size ≥ 1 then
-          return s!"{← recGo specArg}^[{← recGo relaxFn.getAppArgs.back!}]"
+          return fmtRelaxed (← recGo specArg) (← recGo relaxFn.getAppArgs.back!)
       if headStr == "ConstructiveCryptography.Relaxation.relaxedBy" && args.size ≥ 3 then
         let specArg := args[args.size - 2]!
         let relaxFn := args[args.size - 1]!.consumeMData
@@ -638,8 +695,8 @@ private partial def diagramExprText (aliases : DiagramAliases) (e : Expr)
         if (rfName == "ConstructiveCryptography.CryptographicAlgebra.Specification.epsilonRelaxation" ||
             rfName == "ConstructiveCryptography.Specification.epsilonRelaxation") &&
             relaxFn.getAppArgs.size ≥ 1 then
-          return s!"{← recGo specArg}^[{← recGo relaxFn.getAppArgs.back!}]"
-        return s!"{← recGo specArg}^[{← recGo relaxFn}]"
+          return fmtRelaxed (← recGo specArg) (← recGo relaxFn.getAppArgs.back!)
+        return fmtRelaxed (← recGo specArg) (← recGo relaxFn)
       if headStr == "ConstructiveCryptography.CryptographicAlgebra.Specification.epsilonRelaxation" ||
          headStr == "ConstructiveCryptography.Specification.epsilonRelaxation" then
         if let some err := args.back? then
@@ -654,7 +711,9 @@ private partial def diagramExprText (aliases : DiagramAliases) (e : Expr)
         let idealT ← recGo args[args.size - 3]!
         let simT ← recGo args[args.size - 2]!
         let errT ← recGo args[args.size - 1]!
-        return s!"({simT} • {idealT})^[{errT}]"
+        if errT.length ≤ 18 then
+          return s!"({simT} • {idealT})^[{errT}]"
+        return s!"{simT} • {idealT}"
       -- Categorical, monoidal, and CC operators
       if headStr == "CategoryTheory.MonoidalCategoryStruct.whiskerRight" && args.size ≥ 2 then
         return s!"{← recGo args[args.size - 2]!} ▷ {← recGo args[args.size - 1]!}"
@@ -719,7 +778,11 @@ private partial def diagramExprText (aliases : DiagramAliases) (e : Expr)
       if head == ``HDiv.hDiv && args.size == 6 then
         return s!"{← recGo args[4]!} / {← recGo args[5]!}"
       if head == ``HPow.hPow && args.size == 6 then
-        return s!"{← recGo args[4]!}^{← recGo args[5]!}"
+        let baseStr ← recGo args[4]!
+        let expStr ← recGo args[5]!
+        if expStr == "2" then return s!"{baseStr}²"
+        if expStr == "3" then return s!"{baseStr}³"
+        return s!"{baseStr}^{expStr}"
       if (head == `Min.min || head == `Nat.min) && args.size ≥ 2 then
         return s!"min({← recGo args[args.size - 2]!}, {← recGo args[args.size - 1]!})"
       if (head == `Max.max || head == `Nat.max) && args.size ≥ 2 then
@@ -743,6 +806,44 @@ private partial def diagramExprText (aliases : DiagramAliases) (e : Expr)
           let expArgs ← collectDiagramExplicitArgs info.type args []
           if expArgs.size == 1 then
             return s!"𝒰[{← recGo expArgs[0]!}]"
+      -- Compact publication-grade labels for standard Commons & PRG components
+      if let some info := (← getEnv).find? head then
+        let customAlias? := aliases.constAliases.get? head <|> aliases.shortAliases.get? head
+        let visArgs ← collectDiagramExplicitArgs info.type args (aliases.hiddenArgs.getD head [])
+        if headStr == "Commons.AE.system" || headStr == "Commons.AE.system.perPort" then
+          let headLbl := match customAlias? with
+            | some a => if a == "system_AE" then "AE" else a
+            | none => "AE"
+          if visArgs.isEmpty then return headLbl
+          return s!"{headLbl}({← recGo visArgs[0]!})"
+        if headStr == "Commons.Encryption.system" || headStr == "Commons.Encryption.system.perPort" then
+          let headLbl := match customAlias? with
+            | some a => if a == "system_enc" then "Enc" else a
+            | none => "Enc"
+          if visArgs.isEmpty then return headLbl
+          return s!"{headLbl}({← recGo visArgs[0]!})"
+        if customAlias?.isNone then
+          if headStr == "Commons.AE.Ideal" || headStr == "Commons.AE.Ideal.perPort" then
+            return "Ideal"
+          if headStr == "Commons.AE.PTXT" || headStr == "Commons.AE.PTXT.perPort" then
+            return "PTXT"
+          if headStr == "Commons.AE.CCA" || headStr == "Commons.AE.CCA.perPort" then
+            return "CCA"
+          if headStr == "Commons.AE.CTXT" || headStr == "Commons.AE.CTXT.perPort" then
+            return "CTXT"
+          if headStr == "Commons.Encryption.CPA" || headStr == "Commons.Encryption.CPA.perPort" then
+            return "CPA"
+          if headStr == "Commons.MemorylessSource" || headStr == "Commons.MemorylessSource.perPort" then
+            if visArgs.size ≥ 2 then
+              let tStr := compactTypePower (← recGo visArgs[0]!)
+              let nuStr ← recGo visArgs[1]!
+              if nuStr.startsWith "𝒰[" then
+                return s!"𝒰({tStr})"
+              return s!"𝒰({nuStr})"
+          if headStr == "Examples.PRGLengthExtension.PRGReal" ||
+             headStr == "Examples.PRGLengthExtension.PRGReal.perPort" then
+            if visArgs.isEmpty then return "PRG"
+            return s!"PRG({← recGo visArgs[0]!})"
       -- Template & zero-arg overrides from SymbolTable
       if let some tmpl := aliases.constTemplates.get? head then
         if let some info := (← getEnv).find? head then
@@ -832,15 +933,90 @@ def explicitLabel? (e : Expr) : MetaM (Option String) := do
             return some (← diagramExprText aliases eRaw)
   return none
 
+private partial def MathLabel.flatText : MathLabel → String
+  | .literal s _ => s
+  | .tensor l r => s!"({l.flatText} ⊗ {r.flatText})"
+
+private partial def MathLabel.stripLongArgs : MathLabel → MathLabel
+  | .literal s id => .literal (stripBalancedParenArgs s) id
+  | .tensor l r => .tensor l.stripLongArgs r.stripLongArgs
+
+private def isExactDiagramLabel (aliases : DiagramAliases) (eRaw : Expr) : MetaM Bool := do
+  if (ccDiagramTermLabels.getState (← getEnv)).any (fun (term, _) => term == eRaw) then
+    return true
+  return aliases.exprAliases.any (fun (pat, _) => pat.consumeMData == eRaw)
+
 /-- Exact registered identities have the conventional label `𝟙`; their interfaces and full
 source remain attached to the same expression. Unknown declarations retain Lean's printer. -/
 def labelFor (e : Expr) : MetaM String := do
-  if let some label ← explicitLabel? e then return label
-  if (← declRole? e) == some .identity then return "𝟙"
-  return ← ppShort e
+  let aliases ← diagramAliasesRef.get
+  let raw ← if let some label ← explicitLabel? e then
+      pure label
+    else if (← declRole? e) == some .identity then
+      pure "𝟙"
+    else
+      ppShort e
+  if aliases.active && !(← isExactDiagramLabel aliases e.consumeMData) then
+    return compactNodeCanvasLabel raw
+  return raw
 
 /-- Bounded recursion gives a literal fallback for unusually deep terms. -/
-def mathLabel (e : Expr) (depth : Nat := 32) : MetaM MathLabel := do
+partial def mathLabel (e : Expr) (depth : Nat := 32) : MetaM MathLabel := do
+  let aliases ← diagramAliasesRef.get
+  let eRaw := e.consumeMData
+  if aliases.active then
+    if ← isExactDiagramLabel aliases eRaw then
+      if let some label ← explicitLabel? e then
+        return .literal label e.isFVar
+    match depth with
+    | 0 =>
+      let s ← ppShort e
+      return .literal (if s.length > 24 then stripBalancedParenArgs s else s)
+    | depth + 1 =>
+      if let some (.interfaceTensor lf rf) ← declRole? e then
+        if let some (_, l) := argFromEnd? eRaw.getAppArgs lf then
+          if let some (_, r) := argFromEnd? eRaw.getAppArgs rf then
+            let comb := MathLabel.tensor (← mathLabel l depth) (← mathLabel r depth)
+            if comb.flatText.length > 24 then
+              return comb.stripLongArgs
+            return comb
+      if let .const head _ := eRaw.getAppFn.consumeMData then
+        let headStr := head.toString
+        let args := eRaw.getAppArgs
+        if headStr == "Commons.AE" || headStr == "Commons.AE.perPort" then
+          return .literal "AE"
+        if headStr == "Commons.Encryption" || headStr == "Commons.Encryption.perPort" then
+          return .literal "Enc"
+        if headStr == "Commons.Evaluation" || headStr == "Commons.Evaluation.perPort" then
+          return .literal "Eval"
+        if headStr == "Commons.LeftRight" || headStr == "Commons.LeftRight.perPort" then
+          return .literal "LR"
+        if headStr == "Commons.Bidirectional" || headStr == "Commons.Bidirectional.perPort" then
+          return .literal "Eval±"
+        if headStr == "Commons.TweakedEvaluation" || headStr == "Commons.TweakedEvaluation.perPort" then
+          return .literal "TEval"
+        if headStr == "Commons.TweakedBidirectional" || headStr == "Commons.TweakedBidirectional.perPort" then
+          return .literal "TEval±"
+        if headStr == "SystemAlgebra.Interface.restrict" && args.size ≥ 3 then
+          let baseLbl ← mathLabel args[args.size - 3]! depth
+          let dStr ← ppShort args[args.size - 2]!
+          match baseLbl with
+          | .literal b id =>
+            if isCleanCompactEps dStr 10 && b.length + dStr.length + 2 ≤ 16 then
+              return .literal s!"{b}|_{dStr}" id
+            return baseLbl
+          | _ => return baseLbl
+        if (headStr == "SystemAlgebra.Interface.queryBudget" ||
+            headStr == "SystemAlgebra.Interface.portBudget") && !args.isEmpty then
+          let qStr ← ppShort args.back!
+          if isCleanCompactEps qStr 8 && qStr.length + 3 ≤ 16 then
+            return .literal s!"I|_{qStr}"
+          return .literal "I"
+      let s ← match ← explicitLabel? e with
+        | some label => pure label
+        | none => ppShort e
+      let compact := if s.length > 24 then stripBalancedParenArgs s else s
+      return .literal compact e.isFVar
   match depth with
   | 0 => return .literal (← ppShort e)
   | depth + 1 =>
@@ -964,7 +1140,8 @@ def interfaceOf (e : Expr) : MetaM Iface := do
         label := .literal "⟨…⟩"
         detailsOnly := true
   if let some name ← explicitLabel? e then
-    label := .literal name
+    if !aliases.active then
+      label := .literal name
     detailsOnly := false
   let mut enumerated := !ports.isEmpty
   for (symbol, _, value) in ← interfaceProjections e do
@@ -1082,7 +1259,11 @@ partial def parseDiagram (e : Expr) (p : SubExpr.Pos := .root) (depth : Nat := 6
           if let some (ri, _) := argFromEnd? args rf then
             let at? ← match role with
               | .attachment inf _ _ => match argFromEnd? args inf with
-                | some (_, iface) => pure (some (← ppShort iface))
+                | some (_, iface) =>
+                  if aliases.active then
+                    pure (some (← mathLabel iface).flatText)
+                  else
+                    pure (some (← ppShort iface))
                 | none => pure none
               | _ => pure none
             return .attach el (← child ci .conv) (← child ri .res) at?
@@ -1159,6 +1340,7 @@ def AdvCard.isNum : AdvCard → Bool
 def parseJudgment? (e : Expr) (p : SubExpr.Pos := .root)
     (sel : Array (Array Nat) := #[]) : MetaM (Option JudgmentView) := do
   let _ := sel
+  let aliases ← diagramAliasesRef.get
   let e := (← instantiateMVars e).consumeMData
   let source ← ppShort e
   let sourcePos := p.toArray
@@ -1176,10 +1358,12 @@ def parseJudgment? (e : Expr) (p : SubExpr.Pos := .root)
                 rel := "⟶", source, sourcePos }
             if let .constructionWithin _ _ _ ef := role then
               if let some (ei, error) := argFromEnd? args ef then
-                j :=
-                  { j with
-                    eps? := some (← ppShort error)
-                    epsPos? := some (argPos p args.size ei).toArray }
+                let errStr ← ppShort error
+                if !aliases.active || isCleanCompactEps errStr 22 then
+                  j :=
+                    { j with
+                      eps? := some errStr
+                      epsPos? := some (argPos p args.size ei).toArray }
             return some j
     | .substitution lf rf ef sym =>
       if let some (li, l) := argFromEnd? args lf then
@@ -1189,10 +1373,12 @@ def parseJudgment? (e : Expr) (p : SubExpr.Pos := .root)
               ideal? := some (← parseSide r (argPos p args.size ri)),
               rel := sym, source, sourcePos }
           if let some (ei, error) := argFromEnd? args ef then
-            j :=
-              { j with
-                eps? := some (← ppShort error)
-                epsPos? := some (argPos p args.size ei).toArray }
+            let errStr ← ppShort error
+            if !aliases.active || isCleanCompactEps errStr 22 then
+              j :=
+                { j with
+                  eps? := some errStr
+                  epsPos? := some (argPos p args.size ei).toArray }
           return some j
     | .conditional lf rf =>
       if let some (li, l) := argFromEnd? args lf then
@@ -1214,6 +1400,13 @@ def parseJudgment? (e : Expr) (p : SubExpr.Pos := .root)
     let rp := argPos p args.size ri
     let l ← parseAdv args[li]! lp
     let r ← parseAdv args[ri]! rp
+    if aliases.active && (rel == "≤" || rel == "<" || rel == "=") then
+      if let #[.dist _ a b] := l then
+        if r.all (·.isNum) then
+          let rhsStr ← ppShort args[ri]!
+          let eps? := if isCleanCompactEps rhsStr 20 then some rhsStr else none
+          let epsPos? := eps?.map fun _ => rp.toArray
+          return some { real := a, ideal? := some b, rel := "≈", eps?, epsPos?, source, sourcePos }
     if !(l.all (·.isNum) && r.all (·.isNum)) then
       return some { rel, bridge? := some (l, r), source, sourcePos }
     if rel == "=" then

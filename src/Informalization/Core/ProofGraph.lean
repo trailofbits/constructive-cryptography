@@ -356,6 +356,15 @@ def renderHypothesisStep (tbl : SymbolTable) (expected : Expr) (id : FVarId)
       #[.text "This holds by the assumed hypothesis."]
   return .step nodeId content #[] goal? none none isWrap false
 
+private def isVacuousRenderedEq (tbl : SymbolTable) (prop : Expr) : MetaM Bool := do
+  let p ← normalizeForPresentation prop
+  match p.eq? with
+  | some (_, lhs, rhs) =>
+      let lhsTex ← exprToLatex lhs tbl
+      let rhsTex ← exprToLatex rhs tbl
+      return lhsTex == rhsTex
+  | none => return false
+
 /-- Decompile every non-typeclass proof-valued argument of `proof`, marking trivial bare
 hypothesis-passthroughs with `isWrapper := true` so Paper mode stays clean while Auditor mode
 retains every premise edge. -/
@@ -366,6 +375,8 @@ def decompilePremiseArgs (ctx : DecompCtx) (decompileChild : DecompileChild)
   let mut out : Array ProofNode := #[]
   for idx in [:pArgs.size] do
     let (ap, aty) := pArgs[idx]!
+    if !exprContainsSorryAx ap && (← isVacuousRenderedEq ctx.tbl aty) then
+      continue
     if let some fvid := unwrapHypothesisFVar? ap then
       let node ← renderHypothesisStep ctx.tbl aty fvid s!"hyp-prem-{idx}-{fvid.name}-{aty.hash}"
         (isWrap := true) (onlyUsed := (ctx.lemmaDepth ≥ 1))
@@ -417,20 +428,124 @@ private def humanizeDeclWords (declName : Name) : List String :=
   let rawTokens := (short.replace "_" " ").splitOn " " |>.filter (!·.isEmpty)
   rawTokens.flatMap splitCamelCaseToken
 
+private def coreLemmaTitles : NameMap String :=
+  [ (`ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.DominatedByDistance.advantage_le_distance,
+      "the advantage-to-distance bound"),
+    (`AuthenticatedEncryption.hybrid_ideal_distance_le,
+      "the hybrid-to-ideal distance bound"),
+    (`ConstructiveCryptography.CompatiblePseudoMetric.edist_smul_le,
+      "converter contractivity"),
+    (`ConstructiveCryptography.CryptographicAlgebra.distance_attach_le,
+      "the converter attachment distance bound"),
+    (`GameExamples.collision_win_le,
+      "the collision winning-probability bound"),
+    (`ConstructiveCryptography.DistinctionGames.solvers_winner,
+      "the solver winning criterion"),
+    (`ConstructiveCryptography.DistinctionGames.advantage_le_win,
+      "the conditional-equivalence advantage bound"),
+    (`ConstructiveCryptography.CryptographicAlgebra.distance_parallel_le,
+      "parallel non-expansion"),
+    (`ConstructiveCryptography.CryptographicAlgebra.distance_parallel_left_le,
+      "left-parallel non-expansion"),
+    (`ConstructiveCryptography.CryptographicAlgebra.distance_parallel_right_le,
+      "right-parallel non-expansion"),
+    (`SystemAlgebra.Interface.distance_parallel_le,
+      "parallel non-expansion"),
+    (`SystemAlgebra.Interface.distance_parallel_left_le,
+      "left-parallel non-expansion"),
+    (`SystemAlgebra.Interface.distance_parallel_right_le,
+      "right-parallel non-expansion"),
+    (`ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.trans,
+      "transitivity of substitution"),
+    (`ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_distance,
+      "the distinguishing advantage bound"),
+    (`ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_statistical,
+      "the statistical distance bound"),
+    (`ConstructiveCryptography.AdmissibleDistinguishers.substitutesWithin_context,
+      "context absorption under substitution"),
+    (`ConstructiveCryptography.AdmissibleDistinguishers.substitutesWithin_attach,
+      "converter-attachment substitution"),
+    (`SystemAlgebra.TypedConverter.substitutesWithin_attach,
+      "converter-attachment substitution"),
+    (`SystemAlgebra.Domain.Distinguisher.advantage_le_winProbability,
+      "the conditional-equivalence advantage bound"),
+    (`GameExamples.hybrid_ideal_advantage_le,
+      "the hybrid-to-ideal advantage bound"),
+    (`AuthenticatedEncryption.real_ideal_distance_le,
+      "the AEAD hybrid distance bound"),
+    (`Examples.PRGLengthExtension.prgReal_H_eq,
+      "the length-extension attachment identity"),
+    (`Examples.PRGLengthExtension.𝓡₁_smul_prgRand,
+      "the first-call converter identity"),
+    (`Examples.PRGLengthExtension.𝓡₂_smul_prgRand,
+      "the second-call converter identity"),
+    (`Probability.Distribution.isProbDist_single,
+      "point-mass normalization"),
+    (`Probability.Distribution.ProbDist.single.eq_1,
+      "the point-mass distribution identity"),
+    (`SystemAlgebra.RandomSystem.transcriptDistance_le_one,
+      "the unit distance bound"),
+    (`SystemAlgebra.Domain.Distinguisher.advantage_le_transcriptDistance,
+      "the distinguisher advantage-to-distance bound"),
+    (`SystemAlgebra.Domain.DistinguisherBehavior.advantage_le_transcriptDistance,
+      "the distinguisher advantage-to-distance bound")
+  ].foldl (init := {}) fun m (n, t) => m.insert n t
+
+private def rewriteMathSuffixWords (words : List String) : List String := Id.run do
+  let mapped := words.map fun w =>
+    match w with
+    | "smul" => "attachment"
+    | "edist" => "distance"
+    | "mono" => "monotonicity"
+    | "symm" => "symmetry"
+    | "trans" => "transitivity"
+    | "refl" | "rfl" => "reflexivity"
+    | "nonneg" => "nonnegativity"
+    | "inj" => "injectivity"
+    | _ => w
+  let rec collapseAdj : List String → List String
+    | [] => []
+    | [x] => [x]
+    | x :: y :: rest =>
+        if x == y then collapseAdj (x :: rest) else x :: collapseAdj (y :: rest)
+  let rev := mapped.reverse
+  let rev := match rev with
+    | "le" :: r => if r.head? == some "bound" then r else "bound" :: r
+    | "lt" :: r => "bound" :: "strict" :: r
+    | "ge" :: r => "bound" :: "lower" :: r
+    | "gt" :: r => "bound" :: "lower" :: r
+    | "eq" :: r => if r.head? == some "identity" then r else "identity" :: r
+    | "iff" :: r => "equivalence" :: r
+    | n :: "eq" :: r =>
+        if n.all Char.isDigit then "identity" :: "defining" :: r
+        else n :: "eq" :: r
+    | _ => rev
+  let out := rev.reverse.map fun w =>
+    match w with
+    | "le" => "bound"
+    | "lt" => "strict"
+    | "eq" => "identity"
+    | _ => w
+  return collapseAdj out
+
 /-- Format an inline human label for a cited theorem/lemma name (respecting `informal_title`
-overlay if present, otherwise splitting camelCase/underscores cleanly). -/
+overlay if present, then core CC/game titles, otherwise splitting camelCase/underscores cleanly). -/
 def humanLemmaLabel (env : Environment) (declName : Name) : String :=
   match (getOverlay env declName).title? with
   | some t => t.trimAscii.toString
   | none =>
-      let words := humanizeDeclWords declName |>.map fun w =>
-        let low := w.toLower
-        match cryptoAcronyms.find? (·.1 == low) with
-        | some (_, acr) => acr
-        | none => low
-      let raw := String.intercalate " " words
-      raw.replace "transcript distance" "distinguishing advantage"
-         |>.replace "distinguishing distance" "distinguishing advantage"
+      match coreLemmaTitles.find? declName with
+      | some t => t
+      | none =>
+          let words0 := humanizeDeclWords declName |>.map fun w =>
+            let low := w.toLower
+            match cryptoAcronyms.find? (·.1 == low) with
+            | some (_, acr) => acr
+            | none => low
+          let words := rewriteMathSuffixWords words0
+          let raw := String.intercalate " " words
+          raw.replace "transcript distance" "distinguishing advantage"
+             |>.replace "distinguishing distance" "distinguishing advantage"
 
 /-- Format a Title-Cased fallback entry/document title for a declaration (respecting
 `informal_title`, stripping `_verbose`, splitting camelCase, and preserving acronyms). -/
@@ -438,7 +553,12 @@ def humanDeclarationTitle (env : Environment) (declName : Name) : String :=
   match (getOverlay env declName).title? with
   | some t => t.trimAscii.toString
   | none =>
-      let words := humanizeDeclWords declName
+      let words0 := humanizeDeclWords declName
+      let words := rewriteMathSuffixWords (words0.map fun w =>
+        let low := w.toLower
+        match cryptoAcronyms.find? (·.1 == low) with
+        | some (_, acr) => acr
+        | none => low)
       let formatted := words.mapIdx fun idx w =>
         let low := w.toLower
         match cryptoAcronyms.find? (·.1 == low) with
@@ -502,22 +622,25 @@ private def isTrivialWrapperBody (env : Environment) (declName : Name) (body : E
         (!isCoreOrMathlibIn env head && core.getAppArgs.size ≤ 16)
     | _ => false
 
-/-- Cap `diagramHtml?` emission on `ProofNode`s at nesting `depth ≤ maxDepth` (default `1`)
-so deeply nested child trees never duplicate multi-MB diagram HTML payloads. -/
-private partial def capDiagramHtmlDepth (maxDepth : Nat := 1) : Nat → ProofNode → ProofNode
+/-- Cap `diagramHtml?` emission on `ProofNode`s at nesting `depth ≤ maxDepth` (default `1`),
+and suppress child diagrams that are identical to the enclosing theorem's diagram. -/
+private partial def capDiagramHtmlDepth (maxDepth : Nat := 1) (parentDiag? : Option String := none) :
+    Nat → ProofNode → ProofNode
   | depth, .step id content children goal? diag origin isWrap defExp sp lh tr im =>
-      let keepDiag := if depth ≤ maxDepth then diag else none
-      .step id content (children.map (capDiagramHtmlDepth maxDepth (depth + 1)))
+      let keepDiag :=
+        if depth ≤ maxDepth && diag != parentDiag? then diag else none
+      let nextParent := keepDiag <|> parentDiag?
+      .step id content (children.map (capDiagramHtmlDepth maxDepth nextParent (depth + 1)))
         goal? keepDiag origin isWrap defExp sp lh tr im
   | depth, .calcChain id intro steps goal? origin =>
       let keepStep (s : CalcStep) : CalcStep :=
-        if depth ≤ maxDepth then s else { s with diagramHtml? := none }
+        if depth ≤ maxDepth && s.diagramHtml? != parentDiag? then s else { s with diagramHtml? := none }
       let nextSteps := steps.map fun (s, ch) =>
-        (keepStep s, ch.map (capDiagramHtmlDepth maxDepth (depth + 1)))
+        (keepStep s, ch.map (capDiagramHtmlDepth maxDepth parentDiag? (depth + 1)))
       .calcChain id intro nextSteps goal? origin
   | depth, .routineReceipt id summary count details goal? =>
       .routineReceipt id summary count
-        (details.map (capDiagramHtmlDepth maxDepth (depth + 1))) goal?
+        (details.map (capDiagramHtmlDepth maxDepth parentDiag? (depth + 1))) goal?
   | _, other => other
 
 /-- Recursively deduplicate repeated identical sibling proof nodes (preventing 15× spam)
@@ -674,6 +797,8 @@ private def isBareSingleSentenceRestatement (parentContent childContent : Array 
     parentMath.any fun pm => pm == cm || (cm.length ≥ 4 && (pm.splitOn cm).length > 1)
   if !allChildMathInParent then
     return false
+  if childLow.startsWith "this holds by the assumption that " then
+    return true
   let childNorm := normalizeProseForComparison childContent
   let parentNorm := normalizeProseForComparison parentContent
   if !childNorm.isEmpty && childNorm == parentNorm then
@@ -861,6 +986,11 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
   | _, .letE nm ty val body _ =>
       let isP ← isProp ty
       if isP then
+        if body == .bvar 0 then
+          return ← decompileProof ctx ty val (fuel - 1)
+        if !exprContainsSorryAx val && (← isVacuousRenderedEq ctx.tbl ty) then
+          return ← withLetDecl nm ty val fun fv =>
+            decompileProof ctx expected (body.instantiate1 fv) (fuel - 1)
         -- Local intermediate fact (`have h : P := ...`): choose causal vs. parallel transition!
         let usesPrev := match ctx.lastFactFVar? with
           | some prevId => (Lean.collectFVars {} val).fvarIds.contains prevId
@@ -1081,12 +1211,16 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
     let (opener, st') := st.pickOpener .elaboration
     set st'
     let mut calcSteps : Array (CalcStep × Array ProofNode) := #[]
+    let mut survivingChain : Array (Expr × Expr) := #[]
     let mut allParsed := true
     for (sp, stProp) in chain do
       match ← splitBinaryRelation? ctx.tbl stProp with
       | some (rel, lhs, rhs) =>
           let lhsTex ← exprToLatex lhs ctx.tbl
           let rhsTex ← exprToLatex rhs ctx.tbl
+          if rel == "=" && lhsTex == rhsTex && !exprContainsSorryAx sp then
+            continue
+          survivingChain := survivingChain.push (sp, stProp)
           let subCtx := { ctx with lastFactFVar? := none, factIndex := 0, atRootConclusion := false, isProofStart := false }
           let subNodes ← decompileProof subCtx stProp sp (fuel - 1)
           let spUnwrapped := unwrapCastProof sp
@@ -1116,18 +1250,28 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
           }
           calcSteps := calcSteps.push (cs, subNodes)
       | none => allParsed := false
-    if allParsed && !calcSteps.isEmpty then
-      let goal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
-      let intro : Array Inline := #[.text s!"{opener} chaining the intermediate steps yields"]
-      return #[.calcChain s!"calc-{fuel}" intro calcSteps (some goal)]
+    if allParsed then
+      if calcSteps.size == 1 then
+        let (sp1, stProp1) := survivingChain[0]!
+        return ← decompileProof ctx stProp1 sp1 (fuel - 1)
+      else if calcSteps.isEmpty && !ctx.atRootConclusion && !exprContainsSorryAx proof then
+        return #[.routineReceipt s!"routine-{fuel}" RoutineKind.reflexivity.label 1 #[] none]
+      else if !calcSteps.isEmpty then
+        let goal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
+        let intro : Array Inline := #[.text s!"{opener} chaining the intermediate steps yields"]
+        return #[.calcChain s!"calc-{fuel}" intro calcSteps (some goal)]
 
   -- 5. Direct hypothesis (`assumption`) or application headed by a local hypothesis `.fvar id`
   if let .fvar id := proof.consumeMData then
+    if !ctx.atRootConclusion && !exprContainsSorryAx proof && (← isVacuousRenderedEq ctx.tbl expected) then
+      return #[]
     modify (·.markEmitted)
     return #[← renderHypothesisStep ctx.tbl expected id s!"hyp-{fuel}-{id.name}"
       (isWrap := false) (onlyUsed := (ctx.lemmaDepth ≥ 1))]
 
   if let .fvar id := proof.getAppFn.consumeMData then
+    if !ctx.atRootConclusion && !exprContainsSorryAx proof && (← isVacuousRenderedEq ctx.tbl expected) then
+      return #[]
     modify (·.markEmitted)
     let decl ← id.getDecl
     let goal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
@@ -1258,9 +1402,12 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
       diagHtml (some declName.toString) isWrap]
 
   -- 7. Fallback: checked goal statement (flagging any unexpanded `sorryAx`)
-  let goal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
   if exprContainsSorryAx proof then
+    let goal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
     return #[.step s!"sorry-fallback-{fuel}" #[.text "[UNPROVED: sorry]"] #[] (some goal)]
+  if !ctx.atRootConclusion && (← isVacuousRenderedEq ctx.tbl expected) then
+    return #[]
+  let goal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
   let conclInl ← renderProposition ctx.tbl expected
   return #[.step s!"step-{fuel}" (#[.text "We obtain "] ++ conclInl ++ #[.text "."]) #[] (some goal)]
 
@@ -1356,7 +1503,7 @@ def informalizeDeclarationWithContext (declName : Name) (config : Config := {})
     }
     let (nodes, _) ← (decompileProof ctx info.type tinfo.value config.maxTermFuel).run {}
     proofNodes := ((dedupSiblings (proofNodes ++ nodes)).map collapseTautologicalSingleChild).map
-      (capDiagramHtmlDepth 1 0)
+      (capDiagramHtmlDepth 1 diagHtml 0)
   let extraProofNotations ← extraNotationInspectorsRef.get
   extraNotationInspectorsRef.set #[]
   if let some fa := ov.flowAfter? then

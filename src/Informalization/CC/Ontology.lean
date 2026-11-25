@@ -201,6 +201,13 @@ private def renderSpecLatex (tbl : SymbolTable) (rec : Recurse) (spec : Expr) : 
   if let some (_, base) := matchSimulatorOrStar? spec then
     let baseTex ← rec 82 (unwrapSingletonSpec base)
     return baseTex ++ "^{*}"
+  let specC := spec.consumeMData
+  if specC.getAppFn.consumeMData.isConstOf `Commons.Indifferentiability.specification &&
+     specC.getAppArgs.size ≥ 3 then
+    let args := specC.getAppArgs
+    let baseTex ← rec 82 (unwrapSingletonSpec args[args.size - 3]!)
+    let epsTex ← rec 0 args[args.size - 1]!
+    return "\\left(" ++ baseTex ++ "^{*}\\!\\right)^{" ++ epsTex ++ "}"
   rec 60 (unwrapSingletonSpec spec)
 
 /-! ## 1. 2D LaTeX Application Handlers (`LeanTeX.AppHandler`) -/
@@ -519,7 +526,189 @@ private def closedUnderLatexHandler : AppHandler where
     let some conv := argFromEnd? args 0 | return none
     return some ("\\mathcal{D} \\text{ closed under absorbing } " ++ (← rec 0 conv), 25)
 
+private partial def collectExplicitConstArgs (ty : Expr) (args : Array Expr)
+    (i : Nat := 0) (acc : Array Expr := #[]) : Array Expr :=
+  if i < args.size then
+    match ty with
+    | .mdata _ b => collectExplicitConstArgs b args i acc
+    | .forallE _ _ b bi =>
+        let acc' := if bi == .default then acc.push args[i]! else acc
+        collectExplicitConstArgs b args (i + 1) acc'
+    | _ =>
+        -- Trailing arguments past syntactic telescope
+        acc ++ args.extract i args.size
+  else acc
+
+private def explicitConstArgs (head : Name) (args : Array Expr) : MetaM (Array Expr) := do
+  let some info := (← getEnv).find? head | return args
+  return collectExplicitConstArgs info.type args
+
+/-- Unwrap `Interface.inputDomain A` (or `Domain.ofInputs (Interface.domain A) ...`) to `A`. -/
+private def unwrapInputDomain? (d : Expr) : MetaM (Option Expr) := do
+  let d ← normalizeForPresentation d
+  let fn := d.getAppFn.consumeMData
+  let args := d.getAppArgs
+  if fn.isConstOf ``SystemAlgebra.Interface.inputDomain && args.size == 1 then
+    return some args[0]!
+  if fn.isConstOf ``SystemAlgebra.Domain.ofInputs && args.size ≥ 3 then
+    let domFn := (args[args.size - 3]!).consumeMData
+    if domFn.getAppFn.consumeMData.isConstOf ``SystemAlgebra.Interface.domain then
+      return domFn.getAppArgs.back?
+    if let .proj s 6 ifaceExpr := domFn then
+      if s == ``SystemAlgebra.Interface then
+        return some ifaceExpr
+  return none
+
+private def isProbDistHandler : AppHandler where
+  head := ``Probability.Distribution.isProbDist
+  priority := 200
+  run := fun _ rec _ args => do
+    let some mu := argFromEnd? args 0 | return none
+    return some ((← rec 80 mu) ++ " \\in \\mathcal{P}", 50)
+
+private def queryBoundedHandler : AppHandler where
+  head := ``SystemAlgebra.QueryBounded
+  priority := 200
+  run := fun _ rec _ args => do
+    let some e := argFromEnd? args 0 | return none
+    let some n := argFromEnd? args 1 | return none
+    return some ("\\mathrm{queries}\\!\\left(" ++ (← rec 0 e) ++ "\\right) \\le " ++ (← rec 0 n), 50)
+
+private def inputDomainHandler : AppHandler where
+  head := ``SystemAlgebra.Interface.inputDomain
+  priority := 200
+  run := fun _ rec _ args => do
+    if args.size == 1 then
+      return some ("\\mathcal{D}\\!\\left(" ++ (← rec 0 args[0]!) ++ "\\right)", 85)
+    if args.size ≥ 3 then
+      let iface := args[0]!
+      let h := args[args.size - 2]!
+      let x := args[args.size - 1]!
+      return some ("\\mathrm{adm}_{" ++ (← rec 0 iface) ++ "}\\!\\left(" ++ (← rec 0 h) ++ ", " ++ (← rec 0 x) ++ "\\right)", 85)
+    return none
+
+private def domainAdmitsHandler : AppHandler where
+  head := ``SystemAlgebra.Domain.admits
+  priority := 200
+  run := fun _ rec _ args => do
+    let some x := argFromEnd? args 0 | return none
+    let some h := argFromEnd? args 1 | return none
+    let some d := argFromEnd? args 2 | return none
+    if let some iface ← unwrapInputDomain? d then
+      return some ("\\mathrm{adm}_{" ++ (← rec 0 iface) ++ "}\\!\\left(" ++ (← rec 0 h) ++ ", " ++ (← rec 0 x) ++ "\\right)", 85)
+    return some ("\\mathrm{adm}_{" ++ (← rec 0 d) ++ "}\\!\\left(" ++ (← rec 0 h) ++ ", " ++ (← rec 0 x) ++ "\\right)", 85)
+
+private def domainCompatibleHandler : AppHandler where
+  head := ``SystemAlgebra.Domain.Compatible
+  priority := 200
+  run := fun _ rec _ args => do
+    let some e := argFromEnd? args 0 | return none
+    let some d := argFromEnd? args 1 | return none
+    let target ← match ← unwrapInputDomain? d with
+      | some iface => rec 0 iface
+      | none => rec 0 d
+    return some ((← rec 80 e) ++ " \\perp_{\\mathrm{adm}} " ++ target, 50)
+
+private def rsCompatibleHandler : AppHandler where
+  head := ``SystemAlgebra.RandomSystem.Compatible
+  priority := 200
+  run := fun _ rec _ args => do
+    let some s := argFromEnd? args 0 | return none
+    let some r := argFromEnd? args 1 | return none
+    return some ((← rec 80 s) ++ " \\perp_{\\mathrm{adm}} " ++ (← rec 0 r), 50)
+
+private def kernelMassHandler : AppHandler where
+  head := ``SystemAlgebra.RandomSystem.kernelMass
+  priority := 200
+  run := fun _ rec _ args => do
+    let exp ← explicitConstArgs ``SystemAlgebra.RandomSystem.kernelMass args
+    if exp.size == 2 then
+      return some ("\\mu^{\\mathrm{id}}_{" ++ (← rec 0 exp[0]!) ++ ",\\," ++ (← rec 0 exp[1]!) ++ "}", 90)
+    if exp.size == 3 then
+      return some ("\\mu^{\\mathrm{id}}_{" ++ (← rec 0 exp[0]!) ++ ",\\," ++ (← rec 0 exp[1]!) ++ "}\\!\\left(" ++ (← rec 0 exp[2]!) ++ "\\right)", 85)
+    return none
+
+private def revealMassHandler : AppHandler where
+  head := ``SystemAlgebra.RandomSystem.revealMass
+  priority := 200
+  run := fun _ rec _ args => do
+    let exp ← explicitConstArgs ``SystemAlgebra.RandomSystem.revealMass args
+    if exp.size == 3 then
+      return some ("\\mu^{\\mathrm{rev}}_{" ++ (← rec 0 exp[0]!) ++ ",\\," ++ (← rec 0 exp[1]!) ++ "}", 90)
+    if exp.size == 4 then
+      return some ("\\mu^{\\mathrm{rev}}_{" ++ (← rec 0 exp[0]!) ++ ",\\," ++ (← rec 0 exp[1]!) ++ "}\\!\\left(" ++ (← rec 0 exp[3]!) ++ "\\right)", 85)
+    return none
+
+private def kernelLawHandler : AppHandler where
+  head := ``SystemAlgebra.RandomSystem.kernelLaw
+  priority := 200
+  run := fun _ rec _ args => do
+    let exp ← explicitConstArgs ``SystemAlgebra.RandomSystem.kernelLaw args
+    if exp.size == 4 then
+      return some ("\\mathcal{L}^{\\mathrm{id}}_{" ++ (← rec 0 exp[0]!) ++ ",\\," ++ (← rec 0 exp[1]!) ++ "}\\!\\left(" ++ (← rec 0 exp[2]!) ++ ", " ++ (← rec 0 exp[3]!) ++ "\\right)", 85)
+    if exp.size == 5 then
+      return some ("\\mathcal{L}^{\\mathrm{id}}_{" ++ (← rec 0 exp[0]!) ++ ",\\," ++ (← rec 0 exp[1]!) ++ "}\\!\\left(" ++ (← rec 0 exp[2]!) ++ ", " ++ (← rec 0 exp[3]!) ++ "\\right)\\!\\left(" ++ (← rec 0 exp[4]!) ++ "\\right)", 85)
+    return none
+
+private def revealLawHandler : AppHandler where
+  head := ``SystemAlgebra.RandomSystem.revealLaw
+  priority := 200
+  run := fun _ rec _ args => do
+    let exp ← explicitConstArgs ``SystemAlgebra.RandomSystem.revealLaw args
+    if exp.size == 5 then
+      return some ("\\mathcal{L}^{\\mathrm{rev}}_{" ++ (← rec 0 exp[0]!) ++ ",\\," ++ (← rec 0 exp[1]!) ++ "}\\!\\left(" ++ (← rec 0 exp[3]!) ++ ", " ++ (← rec 0 exp[4]!) ++ "\\right)", 85)
+    if exp.size == 6 then
+      return some ("\\mathcal{L}^{\\mathrm{rev}}_{" ++ (← rec 0 exp[0]!) ++ ",\\," ++ (← rec 0 exp[1]!) ++ "}\\!\\left(" ++ (← rec 0 exp[3]!) ++ ", " ++ (← rec 0 exp[4]!) ++ "\\right)\\!\\left(" ++ (← rec 0 exp[5]!) ++ "\\right)", 85)
+    return none
+
 /-! ## 2. Authentic CC Type Handlers (`Ontology.TypeHandler`) -/
+
+private def stripWithPrefix (acc : String) : String :=
+  if acc.startsWith "with " then (acc.drop 5).toString else acc
+
+private def isScalarRealCodomain (e : Expr) : Bool :=
+  let c := e.consumeMData
+  c == mkConst `Real || c == mkConst `NNReal || c == mkConst `ENNReal
+
+private def isPortDomain? (dom : Expr) : Bool :=
+  let d := dom.consumeMData
+  if d.getAppFn.consumeMData.isConstOf ``SystemAlgebra.Interface.I then true
+  else if let .proj s 0 _ := d then s == ``SystemAlgebra.Interface
+  else if let .const c _ := d.getAppFn.consumeMData then
+    (match c with | .str _ "Port" => true | _ => false) || c == `Port
+  else false
+
+private def extractTranscriptIface? (sig : Expr) (projIdx : Nat) (fnName : Name) : Option Expr :=
+  match sig.getAppArgs.back?.map Expr.consumeMData with
+  | none => none
+  | some last =>
+      let b := match last with
+        | .lam _ _ fam _ => fam.consumeMData
+        | other => other
+      let f := b.getAppFn.consumeMData
+      if f.isConstOf fnName then b.getAppArgs[0]?
+      else match f with
+        | .proj ``SystemAlgebra.Interface idx iface =>
+            if idx == projIdx then some iface else none
+        | _ => none
+
+private def isTranscriptList? (ty : Expr) : Option (Option Expr) :=
+  let t := ty.consumeMData
+  if !t.getAppFn.consumeMData.isConstOf ``List then none
+  else match t.getAppArgs.back? with
+    | none => none
+    | some elemTy =>
+        let elemClean := elemTy.consumeMData
+        if !elemClean.getAppFn.consumeMData.isConstOf ``Prod || elemClean.getAppArgs.size != 2 then none
+        else
+          let lhs := elemClean.getAppArgs[0]!.consumeMData
+          let rhs := elemClean.getAppArgs[1]!.consumeMData
+          if !lhs.getAppFn.consumeMData.isConstOf ``Sigma || !rhs.getAppFn.consumeMData.isConstOf ``Sigma then none
+          else
+            match extractTranscriptIface? lhs 1 ``SystemAlgebra.Interface.X,
+                  extractTranscriptIface? rhs 2 ``SystemAlgebra.Interface.Y with
+            | some il, some ir => if il == ir then some (some il) else some none
+            | _, _ => some none
 
 private def ccTypeHandler : TypeHandler where
   priority := 200
@@ -615,6 +804,71 @@ private def ccTypeHandler : TypeHandler where
     -- 10. Substitution implication witness
     if isImplicationType ty then
       return some { noun := ⟨"substitution chain", "substitution chains"⟩, isWitness := true }
+    -- 10b. Context-aware CC functional/arrow types (per-port budgets, advantage bounds, games, families)
+    if let .forallE _ dom body _ := ty then
+      if !body.hasLooseBVar 0 then
+        -- a) Per-port query budget `Port → ℕ` / `A.I → ℕ`
+        if body.consumeMData.isConstOf ``Nat && isPortDomain? dom then
+          let domTex ← exprToLatex dom tbl
+          return some {
+            noun := ⟨"per-port query budget", "per-port query budgets"⟩
+            accessories := [s!"on \\({domTex}\\)"]
+          }
+        -- b) Distinguisher advantage bound `Distinguisher(I) → ℝ / ℝ≥0 / ℝ≥0∞`
+        if isScalarRealCodomain body then
+          if let some iface ← distinguisherInterface? dom then
+            let ifacePhrase := stripWithPrefix (← interfaceAccessory tbl iface)
+            return some {
+              noun := ⟨"distinguisher advantage bound", "distinguisher advantage bounds"⟩
+              accessories := [s!"for {ifacePhrase}"]
+            }
+          let dFn := dom.getAppFn.consumeMData
+          if (dFn.isConstOf ``SystemAlgebra.Domain.Distinguisher ||
+              dFn.isConstOf ``SystemAlgebra.Domain.DistinguisherBehavior) &&
+             dom.getAppArgs.size ≥ 1 then
+            let domArg := dom.getAppArgs.back!
+            if let some iface ← unwrapInputDomain? domArg then
+              let ifacePhrase := stripWithPrefix (← interfaceAccessory tbl iface)
+              return some {
+                noun := ⟨"distinguisher advantage bound", "distinguisher advantage bounds"⟩
+                accessories := [s!"for {ifacePhrase}"]
+              }
+            let domTex ← exprToLatex domArg tbl
+            return some {
+              noun := ⟨"distinguisher advantage bound", "distinguisher advantage bounds"⟩
+              accessories := [s!"on \\({domTex}\\)"]
+            }
+          -- c) Game winning-probability functional `Game(A) → ℝ / ℝ≥0 / ℝ≥0∞`
+          if let some iface ← gameInterface? dom then
+            let aTex ← exprToLatex iface tbl
+            return some {
+              noun := ⟨"winning-probability function", "winning-probability functions"⟩
+              accessories := [s!"on games over \\({aTex}\\)"]
+            }
+        -- d) Indexed family of converters `K → (H' ⟶ H)`
+        if !dom.consumeMData.isForall then
+          if let some (outIface, inIface) ← converterInterfaces? body then
+            let kTex ← exprToLatex dom tbl
+            let inTex ← exprToLatex inIface tbl
+            let outTex ← exprToLatex outIface tbl
+            return some {
+              noun := ⟨"indexed family of converters", "indexed families of converters"⟩
+              accessories := [s!"indexed by \\({kTex}\\) from \\({inTex}\\) to \\({outTex}\\)"]
+            }
+    -- 10c. Deterministic environment `SystemAlgebra.DDE`
+    if fn.isConstOf ``SystemAlgebra.DDE then
+      return some { noun := ⟨"deterministic environment", "deterministic environments"⟩ }
+    -- 10d. Query/reply transcript `List ((Σ i, X i) × (Σ i, Y i))` and extended transcript `(h, z)`
+    if let some iface? := isTranscriptList? ty then
+      let accessories ← match iface? with
+        | some iface => do
+            let ifaceTex ← exprToLatex iface tbl
+            pure [s!"over \\({ifaceTex}\\)"]
+        | none => pure []
+      return some { noun := ⟨"transcript", "transcripts"⟩, accessories }
+    if fn.isConstOf ``Prod && args.size == 2 then
+      if (isTranscriptList? args[0]!).isSome then
+        return some { noun := ⟨"extended transcript", "extended transcripts"⟩ }
     -- 11. Query history predicate on `List (Sigma (fun i => Interface.X A i))`
     if let .forallE _ dom body _ := ty then
       if !body.hasLooseBVar 0 && body == .sort .zero then
@@ -666,7 +920,67 @@ private def ccPropHandler : PropHandler where
             return some #[.text "the predicate ", .inlineMath predTex, .text " is prefix-closed"]
     let fn := prop.getAppFn.consumeMData
     let args := prop.getAppArgs
+    -- 0b. Admissibility via Domain.admits projection `(A.inputDomain).admits h x` or over-applied `inputDomain A h x`
+    let renderAdmitsProp (domExpr hExpr xExpr : Expr) : MetaM (Option (Array Inline)) := do
+      let xTex ← exprToLatex xExpr tbl
+      let hTex ← exprToLatex hExpr tbl
+      if let some iface ← unwrapInputDomain? domExpr then
+        let iTex ← exprToLatex iface tbl
+        return some #[
+          .text "the query ", .inlineMath xTex,
+          .text " is admissible after transcript ", .inlineMath hTex,
+          .text " on ", .inlineMath iTex
+        ]
+      let dTex ← exprToLatex domExpr tbl
+      return some #[
+        .text "the query ", .inlineMath xTex,
+        .text " is admissible after transcript ", .inlineMath hTex,
+        .text " in ", .inlineMath dTex
+      ]
+    if let .proj ``SystemAlgebra.Domain 0 domExpr := fn then
+      if let (some hExpr, some xExpr) := (argFromEnd? args 1, argFromEnd? args 0) then
+        if let some out ← renderAdmitsProp domExpr hExpr xExpr then
+          return some out
     let some head := fn.constName? | return none
+    if head == ``SystemAlgebra.Domain.admits then
+      if let (some dExpr, some hExpr, some xExpr) := (argFromEnd? args 2, argFromEnd? args 1, argFromEnd? args 0) then
+        return ← renderAdmitsProp dExpr hExpr xExpr
+    if head == ``SystemAlgebra.Interface.inputDomain && args.size ≥ 3 then
+      return ← renderAdmitsProp (mkApp (.const ``SystemAlgebra.Interface.inputDomain []) args[0]!) args[args.size - 2]! args[args.size - 1]!
+    -- 0c. Normalized probability distribution predicate `isProbDist μ`
+    if head == ``Probability.Distribution.isProbDist then
+      if let some muExpr := argFromEnd? args 0 then
+        let muTex ← exprToLatex muExpr tbl
+        return some #[.inlineMath muTex, .text " is a valid probability distribution"]
+    -- 0d. Query-bounded environment `QueryBounded n E`
+    if head == ``SystemAlgebra.QueryBounded then
+      if let (some nExpr, some eExpr) := (argFromEnd? args 1, argFromEnd? args 0) then
+        let eTex ← exprToLatex eExpr tbl
+        let nTex ← exprToLatex nExpr tbl
+        let qWord := if nTex == "1" then " query" else " queries"
+        return some #[
+          .text "the environment ", .inlineMath eTex,
+          .text " respects the query budget of ", .inlineMath nTex, .text qWord
+        ]
+    -- 0e. Compatible environment / strategy predicates
+    if head == ``SystemAlgebra.Domain.Compatible then
+      if let (some dExpr, some eExpr) := (argFromEnd? args 1, argFromEnd? args 0) then
+        let eTex ← exprToLatex eExpr tbl
+        let targetTex ← match ← unwrapInputDomain? dExpr with
+          | some iface => exprToLatex iface tbl
+          | none => exprToLatex dExpr tbl
+        return some #[
+          .text "the environment ", .inlineMath eTex,
+          .text " is compatible with ", .inlineMath targetTex
+        ]
+    if head == ``SystemAlgebra.RandomSystem.Compatible then
+      if let (some rExpr, some sExpr) := (argFromEnd? args 1, argFromEnd? args 0) then
+        let sTex ← exprToLatex sExpr tbl
+        let rTex ← exprToLatex rExpr tbl
+        return some #[
+          .text "the strategy ", .inlineMath sTex,
+          .text " is compatible with ", .inlineMath rTex
+        ]
     let protocolLead (convTex : String) : Array Inline :=
       if convTex == "\\mathrm{protocol}" || convTex == "protocol" then #[.text "the protocol"]
       else #[.text "protocol ", .inlineMath convTex]
@@ -872,6 +1186,7 @@ def registerAll : IO Unit := do
   registerAppHandler (epsilonRelaxationBareHandler specEpsilonRelaxationName)
   registerAppHandler (simulatorOrStarHandler simulatorImageName)
   registerAppHandler (simulatorOrStarHandler starName)
+  registerAppHandler (simulatorOrStarHandler `Commons.Indifferentiability.specification)
   registerAppHandler (visibleHandler visibleName)
   registerAppHandler (visibleHandler rsVisibleName)
   registerAppHandler (visibleHandler typedGameVisibleName)
@@ -881,6 +1196,16 @@ def registerAll : IO Unit := do
   registerAppHandler (winProbabilityHandler rsWinProbabilityName 2 1)
   registerAppHandler (winProbabilityHandler typedSolverWinProbabilityName 0 1)
   registerAppHandler closedUnderLatexHandler
+  registerAppHandler isProbDistHandler
+  registerAppHandler queryBoundedHandler
+  registerAppHandler inputDomainHandler
+  registerAppHandler domainAdmitsHandler
+  registerAppHandler domainCompatibleHandler
+  registerAppHandler rsCompatibleHandler
+  registerAppHandler kernelMassHandler
+  registerAppHandler revealMassHandler
+  registerAppHandler kernelLawHandler
+  registerAppHandler revealLawHandler
   -- Type & proposition ontology handlers
   registerTypeHandler ccTypeHandler
   registerTypeHandler ccGenericContainerTypeHandler

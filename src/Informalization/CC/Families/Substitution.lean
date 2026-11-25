@@ -248,7 +248,7 @@ private partial def flattenCCCalc (tbl : SymbolTable) (proof expected : Expr) (f
 private def exprHasConst (e : Expr) (target : Name) : Bool :=
   e.foldConsts (init := false) fun n acc => acc || n == target
 
-/-- Peel `let`/`have` beta-redexes, `id`, and local let-bound fvars from a hop proof head. -/
+/-- Peel `let`/`have` beta-redexes, `id`, cast transports (`Eq.mp`/`Eq.mpr`), and local let-bound fvars from a hop proof head. -/
 private partial def unwrapProofHead (e : Expr) (fuel : Nat := 16) : MetaM Expr := do
   if fuel == 0 then return e.consumeMData
   let c := e.consumeMData
@@ -260,10 +260,25 @@ private partial def unwrapProofHead (e : Expr) (fuel : Nat := 16) : MetaM Expr :
   | .letE _ _ val body _ => unwrapProofHead (body.instantiate1 val) (fuel - 1)
   | .app (.lam _ _ body _) val => unwrapProofHead (body.instantiate1 val) (fuel - 1)
   | _ =>
-      if c.isAppOfArity ``id 2 then
-        unwrapProofHead c.appArg! (fuel - 1)
+      let fn := c.getAppFn.consumeMData
+      let args := c.getAppArgs
+      if fn.isConstOf ``id && args.size ≥ 2 then
+        if args.size == 2 then
+          unwrapProofHead args[1]! (fuel - 1)
+        else
+          unwrapProofHead ((args[1]!).beta (args.extract 2 args.size)) (fuel - 1)
+      else if (fn.isConstOf ``Eq.mp || fn.isConstOf ``Eq.mpr ||
+               fn.isConstOf ``Iff.mp || fn.isConstOf ``Iff.mpr) && args.size ≥ 4 then
+        if args.size == 4 then
+          unwrapProofHead args[3]! (fuel - 1)
+        else
+          unwrapProofHead ((args[3]!).beta (args.extract 4 args.size)) (fuel - 1)
       else
         return c
+
+private def isTrivialDistReflHead (fn : Expr) : Bool :=
+  fn.isConstOf ``le_rfl || fn.isConstOf ``le_refl ||
+  fn.isConstOf `LE.le.refl || fn.isConstOf ``Eq.refl || fn.isConstOf ``rfl
 
 /-- Produce a concise Maurer-style reason label for one hop in a `cc_calc` chain. -/
 private def describeHopReason (env : Environment) (tbl : SymbolTable) (hop : ExtractedHop) :
@@ -301,10 +316,14 @@ private def describeHopReason (env : Environment) (tbl : SymbolTable) (hop : Ext
             return #[.text "by non-expansion under parallel composition"]
           else if cn == ``LE.le.trans && hasAttachLe && hasParallelLe then
             return #[.text "by non-expansion under converter attachment and parallel composition"]
-          else if cn == ``le_rfl || cn == ``le_refl then
-            return #[.text "by reflexivity"]
+          else if isTrivialDistReflHead fn then
+            return #[.text "by definition of the distance"]
           else
-            return #[.text "by advantage bound (", .emph (humanLemmaLabel env cn), .text ")"]
+            let lbl := humanLemmaLabel env cn
+            if lbl.startsWith "the " || (lbl.splitOn "bound").length > 1 then
+              return #[.text s!"by {lbl}"]
+            else
+              return #[.text "by advantage bound (", .emph lbl, .text ")"]
       | _ =>
           if hasAttachLe && !hasParallelLe then
             return #[.text "by non-expansion under converter attachment"]
@@ -327,12 +346,32 @@ private def describeHopReason (env : Environment) (tbl : SymbolTable) (hop : Ext
                            .text " (absorbing ", .inlineMath convTex, .text " into the distinguisher)"]
               catch _ => pure ()
             return #[.text "by substituting inside a converter context"]
+          else if cn == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_distance then
+            return #[.text "by the distinguishing advantage bound"]
+          else if cn == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_statistical then
+            return #[.text "by statistical distance bound"]
+          else if isTrivialDistReflHead fn then
+            return #[.text "by definition of the distance"]
           else if cn == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.symm then
             return #[.text "by symmetry of substitution"]
           else
             return #[.text "by substitution (", .emph (humanLemmaLabel env cn), .text ")"]
       | .fvar _ => return #[.text "by the assumed substitution"]
       | _ => return #[.text "by substitution"]
+
+private def isFullProseClause (inls : Array Inline) : Bool :=
+  let plain := (String.intercalate "" (inls.toList.map Inline.collectText)).trimAscii.toString.toLower
+  plain.startsWith "the resource " ||
+  plain.startsWith "the system " ||
+  plain.startsWith "the protocol " ||
+  plain.startsWith "protocol " ||
+  plain.startsWith "for every " ||
+  (plain.splitOn " can be substituted").length > 1 ||
+  (plain.splitOn " constructs ").length > 1 ||
+  (plain.splitOn " is at most ").length > 1
+
+private def yieldsConnector (conclInl : Array Inline) : String :=
+  if isFullProseClause conclInl then "yields that " else "yields "
 
 /-- Explainer for multi-step `cc_calc` chains (mixed, quantitative, statistical). -/
 def ccCalcChainExplainer : RuleExplainer where
@@ -353,49 +392,41 @@ def ccCalcChainExplainer : RuleExplainer where
     if !isSubGoal && !isDistGoal then return none
     let hops ← flattenCCCalc ctx.tbl proof expected
     if hops.size < 2 then return none
-    let op ← pickMaurerOpener .elaboration
+    let _ ← pickMaurerOpener .elaboration
     let subCtx : DecompCtx :=
       { ctx with lastFactFVar? := none, factIndex := 0, atRootConclusion := false, isProofStart := false }
     let env ← getEnv
     let mut calcSteps : Array (CalcStep × Array ProofNode) := #[]
-    let mut nComp : Nat := 0
-    let mut nStat : Nat := 0
-    let mut nEq : Nat := 0
     for hop in hops do
-      match hop.kind with
-      | .computational => nComp := nComp + 1
-      | .statistical => nStat := nStat + 1
-      | .exactEq => nEq := nEq + 1
       let lhsTex ← exprToLatex hop.lhs ctx.tbl
       let rhsTex ← exprToLatex hop.rhs ctx.tbl
       let reason ← describeHopReason env ctx.tbl hop
-      let subNodes ← match unwrapHypothesisFVar? hop.proof with
-        | some fvid => do
-            let n ← renderHypothesisStep ctx.tbl hop.prop fvid s!"calc-hyp-{fvid.name}-{hop.prop.hash}" (isWrap := true)
-            pure #[n]
-        | none => decompileChild subCtx hop.prop hop.proof
-      let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) ctx.tbl hop.prop else pure none
+      let resolvedProof ← unwrapProofHead hop.proof
+      let resolvedFn := resolvedProof.getAppFn.consumeMData
+      let subNodes ←
+        if isTrivialDistReflHead resolvedFn && !exprContainsSorryAx hop.proof then
+          pure #[]
+        else
+          let cleanProof := match hop.proof.consumeMData with
+            | .letE _ _ val (.bvar 0) _ => val
+            | other => other
+          match unwrapHypothesisFVar? cleanProof with
+          | some fvid => do
+              let n ← renderHypothesisStep ctx.tbl hop.prop fvid s!"calc-hyp-{fvid.name}-{hop.prop.hash}" (isWrap := true)
+              pure #[n]
+          | none => decompileChild subCtx hop.prop cleanProof
       let cs : CalcStep := {
         lhsLatex := lhsTex
         relationLatex := hop.relLatex
         rhsLatex := rhsTex
         reason
-        diagramHtml? := diagHtml
+        diagramHtml? := none
       }
       calcSteps := calcSteps.push (cs, subNodes)
     let goal ← buildGoalState ctx.tbl expected
-    let mut summaryParts : List String := []
-    if nComp > 0 then
-      summaryParts := summaryParts ++ [s!"{countPhrase nComp ⟨"computational substitution", "computational substitutions"⟩}"]
-    if nStat > 0 then
-      summaryParts := summaryParts ++ [s!"{countPhrase nStat ⟨"statistical bound", "statistical bounds"⟩}"]
-    if nEq > 0 then
-      summaryParts := summaryParts ++ [s!"{countPhrase nEq ⟨"exact system identity", "exact system identities"⟩}"]
+    let nPhrase := countPhrase hops.size ⟨"hybrid transition", "hybrid transitions"⟩
     let ledgerText :=
-      if summaryParts.isEmpty then
-        s!"{op} chaining the intermediate hybrid systems yields"
-      else
-        s!"{op} proceeding through the hybrid chain ({joinAnd summaryParts}) and summing the per-step errors by the triangle inequality gives"
+      s!"We proceed through a chain of {nPhrase} and apply the triangle inequality:"
     let chainNode : ProofNode :=
       .calcChain s!"cc-calc-{hops.size}" #[.text ledgerText] calcSteps (some goal)
     return some #[chainNode]
@@ -433,7 +464,7 @@ def substitutionRuleExplainer : RuleExplainer where
         | none => #[.text "the surrounding converter context"]
       return ← finish s!"cc-sub-ctx-{head}" (fun conclInl =>
         #[.text s!"{op} transporting the substitution through "] ++ convPhrase ++
-        #[.text "—using closure of the distinguisher class—yields "] ++ conclInl ++ #[.text "."]) children
+        #[.text s!"—using closure of the distinguisher class—{yieldsConnector conclInl}" ] ++ conclInl ++ #[.text "."]) children
     if head == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_distance ||
        head == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_statistical then
       let op ← pickMaurerOpener .justification
@@ -445,7 +476,7 @@ def substitutionRuleExplainer : RuleExplainer where
       let op ← pickMaurerOpener .elaboration
       let children ← decompilePremiseArgs ctx decompileChild proof
       return ← finish s!"cc-sub-symm-{head}" (fun conclInl =>
-        #[.text s!"{op} by symmetry of distinguishing advantage, reversing the substitution preserves the error function and yields "] ++
+        #[.text s!"{op} by symmetry of distinguishing advantage, reversing the substitution preserves the error function and {yieldsConnector conclInl}"] ++
         conclInl ++ #[.text "."]) children
     if head == ``ConstructiveCryptography.AdmissibleDistinguishers.ClosedUnder.comp then
       let op ← pickMaurerOpener .consequence
@@ -465,7 +496,7 @@ def substitutionRuleExplainer : RuleExplainer where
       let op ← pickMaurerOpener .consequence
       let children ← decompilePremiseArgs ctx decompileChild proof
       return ← finish s!"cc-implication-{head}" (fun conclInl =>
-        #[.text s!"{op} accumulating the per-step error budgets along the finite substitution chain yields "] ++
+        #[.text s!"{op} accumulating the per-step error budgets along the finite substitution chain {yieldsConnector conclInl}"] ++
         conclInl ++ #[.text "."]) children
     return none
 

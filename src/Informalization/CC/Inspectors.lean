@@ -95,6 +95,53 @@ private def stripEmbeddedStyles (html : String) : String := Id.run do
     i := i + 1
   return String.ofList out.toList
 
+/-- Strip redundant outer parentheses from a Unicode diagram label (e.g. `((x))` -> `(x)` or
+bare `(x)` -> `x` without touching function calls `f(x)` or compound expressions `(A ⊗ B)`). -/
+private def stripRedundantDiagramParens (s : String) : String := Id.run do
+  let mut out := s.trimAscii.toString
+  for _ in [:4] do
+    if out.startsWith "(" && out.endsWith ")" && out.length ≥ 2 then
+      let arr := out.toList.toArray
+      let mut depth : Int := 0
+      let mut wrapsWhole := true
+      for i in [:arr.size] do
+        let c := arr[i]!
+        if c == '(' then depth := depth + 1
+        else if c == ')' then depth := depth - 1
+        if depth == 0 && i + 1 < arr.size then
+          wrapsWhole := false
+          break
+      if wrapsWhole then
+        let inner := (String.ofList (arr.extract 1 (arr.size - 1)).toList).trimAscii.toString
+        let hasCompoundOp := inner.any fun c =>
+          c == ' ' || c == ',' || c == '⊗' || c == '∥' || c == '+' || c == '-' ||
+          c == '·' || c == '/' || c == '×' || c == '→' || c == '⟶' || c == '∘' ||
+          c == '•' || c == '=' || c == '≤' || c == '≥' || c == '≃' || c == '≈'
+        let isDoubleWrapped := inner.startsWith "(" && inner.endsWith ")"
+        if isDoubleWrapped || !hasCompoundOp then
+          out := inner
+          continue
+    break
+  return out
+
+/-- Convert `^{2}` / `^2` and `^{3}` / `^3` into Unicode superscripts `²` / `³`
+without corrupting multi-digit exponents like `2^256`. -/
+private def convertSmallPowersToUnicode (s : String) : String := Id.run do
+  let mut out := s.replace "^{2}" "²" |>.replace "^{3}" "³"
+  let arr := out.toList.toArray
+  let mut res : Array Char := #[]
+  let mut i := 0
+  while i < arr.size do
+    if arr[i]! == '^' && i + 1 < arr.size && (arr[i + 1]! == '2' || arr[i + 1]! == '3') then
+      let nextIsDigit := i + 2 < arr.size && arr[i + 2]!.isDigit
+      if !nextIsDigit then
+        res := res.push (if arr[i + 1]! == '2' then '²' else '³')
+        i := i + 2
+        continue
+    res := res.push arr[i]!
+    i := i + 1
+  return String.ofList res.toList
+
 /-- Convert a LaTeX alias from `SymbolTable` into readable HTML/MathML-safe Unicode text
 so exported box-and-wire diagrams never leak raw backslashes or TeX commands. -/
 private def latexToDiagramUnicode (s : String) : String := Id.run do
@@ -108,9 +155,11 @@ private def latexToDiagramUnicode (s : String) : String := Id.run do
     ("\\mathcal{U}", "𝒰"), ("\\mathbb{N}", "ℕ"), ("\\mathbb{Z}", "ℤ"),
     ("\\mathbb{R}", "ℝ"), ("\\mathbb{B}", "𝔹"), ("\\mathbb{1}", "𝟙"), ("\\mathbf{1}", "𝟙"),
     ("\\$", "$"), ("\\_", "_"), ("\\%", "%"), ("\\&", "&"),
-    ("\\!", ""), ("\\,", ""), ("\\;", " "), ("\\:", " "),
+    ("\\!", ""), ("\\,", ""), ("\\;", " "), ("\\:", " "), ("\\ ", " "), ("\\~", " "),
     ("\\quad", " "), ("\\qquad", " "),
-    ("\\left", ""), ("\\right", ""), ("\\mathbin", "")
+    ("\\left", ""), ("\\right", ""), ("\\middle", ""),
+    ("\\bigl", ""), ("\\bigr", ""), ("\\Bigl", ""), ("\\Bigr", ""),
+    ("\\mathbin", "")
   ] do
     out := out.replace pat rep
   let rec stripFracOnce (chars : List Char) : Option String :=
@@ -139,7 +188,9 @@ private def latexToDiagramUnicode (s : String) : String := Id.run do
     | none => break
   for w in [
     "\\operatorname{", "\\mathrm{", "\\mathsf{", "\\mathbf{",
-    "\\mathit{", "\\mathcal{", "\\boldsymbol{", "\\mathbb{", "\\text{"
+    "\\mathit{", "\\mathcal{", "\\boldsymbol{", "\\mathbb{", "\\text{",
+    "\\textrm{", "\\textsf{", "\\textbf{", "\\texttt{",
+    "\\widehat{", "\\hat{", "\\widetilde{", "\\tilde{", "\\overline{", "\\bar{"
   ] do
     out := out.replace w ""
   for (pat, rep) in [
@@ -171,13 +222,16 @@ private def latexToDiagramUnicode (s : String) : String := Id.run do
     ("\\sum", "∑"), ("\\prod", "∏")
   ] do
     out := out.replace pat rep
+  out := convertSmallPowersToUnicode out
   out := out.replace "{" ""
   out := out.replace "}" ""
+  out := out.replace "^±" "±"
   out := out.replace "\uE001" "{"
   out := out.replace "\uE002" "}"
+  out := out.replace "\\!" "" |>.replace "\\," ""
   while (out.splitOn "  ").length > 1 do
     out := out.replace "  " " "
-  return out.trimAscii.toString
+  return stripRedundantDiagramParens out
 
 private def toDiagramAliases (tbl : SymbolTable) : CCWidget.DiagramAliases := {
   active := true

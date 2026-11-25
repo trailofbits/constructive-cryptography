@@ -51,14 +51,21 @@ noncomputable section
 
 informal_symbol Commons.Evaluation.Port "\\mathsf{Port}_{\\mathrm{eval}}"
 informal_symbol Commons.AE.Port "\\mathsf{Port}_{\\mathrm{AE}}"
-informal_symbol Commons.AE.system.perPort "\\mathrm{system}_{\\mathrm{AE}}"
-informal_symbol Commons.Encryption.system.perPort "\\mathrm{system}_{\\mathrm{enc}}"
+informal_symbol Commons.AE.system.perPort "\\mathbf{E}_{\\mathsf{AE}}"
+informal_symbol Commons.Encryption.system.perPort "\\mathbf{E}_{\\mathsf{enc}}"
+informal_symbol Commons.AE.PTXT.perPort "\\mathsf{PTXT}"
+informal_hide_args Commons.AE.PTXT.perPort 0 1
+informal_symbol Commons.AE.CCA.perPort "\\mathsf{CCA}"
+informal_hide_args Commons.AE.CCA.perPort 0 1
+informal_symbol Commons.AE.Ideal.perPort "\\mathsf{Ideal}"
+informal_hide_args Commons.AE.Ideal.perPort 0 1
 informal_symbol SystemAlgebra.PDS.behavior "\\mathrm{beh}_{\\mathrm{PDS}}"
 informal_symbol SystemAlgebra.PDG.behavior "\\mathrm{beh}_{\\mathrm{PDG}}"
 informal_symbol SystemAlgebra.TypedSystem.ofAutomaton "\\mathrm{ofAut}_{\\mathrm{sys}}"
 informal_symbol SystemAlgebra.PDG.ofAutomaton "\\mathrm{ofAut}_{\\mathrm{PDG}}"
 informal_symbol ConstructiveCryptography.AdmissibleDistinguishers.admissible "\\mathrm{admissible}_{\\mathcal{D}}"
 informal_symbol ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.admissible "\\mathrm{admissible}_{\\Delta}"
+informal_noun SystemAlgebra.DDE "interactive environment" "interactive environments"
 
 informal_opaque GameExamples.collision_win_le
 informal_opaque GameExamples.collision_conditionallyEquivalent
@@ -69,6 +76,18 @@ informal_opaque AuthenticatedEncryption.collisionGame_isProbDist
 informal_opaque AuthenticatedEncryption.hybrid_visible
 informal_opaque AuthenticatedEncryption.hybrid_system
 informal_opaque SystemAlgebra.RandomSystem.RepliesAtQueriedInterface.of_visible
+informal_opaque SystemAlgebra.RandomSystem.ext
+informal_opaque SystemAlgebra.RandomSystem.mix_mass
+informal_opaque SystemAlgebra.RandomSystem.kernelLaw_mass_eq_expect
+informal_opaque SystemAlgebra.RandomSystem.sLaw_isProbDist
+informal_opaque SystemAlgebra.RandomSystem.sLaw_apply
+informal_opaque Probability.Distribution.uniform_isProbDist
+informal_opaque Probability.Distribution.isProbDist_single
+informal_opaque Probability.Distribution.mass_singleton
+informal_opaque Probability.Distribution.expect_const
+informal_opaque Probability.Distribution.uniform_apply
+informal_title SystemAlgebra.RandomSystem.ext "random-system extensionality"
+informal_title Probability.Distribution.isProbDist_single "point-mass normalization"
 
 /-! ## PRG Length Extension (`SchemeContext`) -/
 
@@ -280,6 +299,8 @@ theorem aeadHybridReduction_verbose
 
 informal_title aeadHybridReduction_verbose "Authenticated Encryption from IND-CCA and INT-PTXT"
 informal_kind aeadHybridReduction_verbose "Theorem"
+informal_section_prelude aeadHybridReduction_verbose "symbolTable" "Notation" "Authenticated-Encryption Hybrid Systems"
+  "Symbol | Meaning\n---|---\n$\\mathcal{E}$ | Real authenticated-encryption system $\\mathbf{E}_{\\mathsf{AE}}(\\mathrm{scheme})$ under budget $q$\n$\\mathsf{PTXT},\\; \\mathsf{CCA}$ | Plaintext-integrity and chosen-ciphertext filter converters\n$\\mathcal{E}_{\\mathsf{ptxt}} := \\mathsf{PTXT} \\cdot \\mathcal{E}$ | Plaintext-filtered authenticated-encryption hybrid\n$\\mathcal{E}_{\\mathsf{cca}} := \\mathsf{CCA} \\cdot \\mathcal{E}$ | Chosen-ciphertext-filtered authenticated-encryption hybrid\n$\\mathcal{E}_{\\mathsf{ideal}} := \\mathsf{Ideal} \\cdot \\mathbf{E}_{\\mathsf{enc}}(\\mathrm{scheme})$ | Ideal authenticated-encryption system from encryption alone\n$\\varepsilon_p,\\; \\varepsilon_c$ | Bounds on the $\\mathsf{PTXT}$ and $\\mathsf{CCA}$ distinguishing advantages"
 informal_section_prelude_decl aeadHybridReduction_verbose Commons.AE.PTXT.perPort
   "converterDef" "Filter" "Plaintext-Integrity Filter Converter"
 informal_section_prelude_decl aeadHybridReduction_verbose Commons.AE.CCA.perPort
@@ -382,6 +403,8 @@ informal_section gameCollision_verbose
   "We connect code-based game-playing bounds for monotone binary outputs (MBOs) with the revealed H-coefficient technique and establish a tight one-query distinguisher sandwich."
 informal_section_prelude gameCollision_verbose "definition" "Game Model" "Monotone Binary Outputs and Conditional Equivalence"
   "A game system $G$ exposes an underlying observable system $\\mathrm{visible}(G)$ together with a monotone binary output (MBO) flag. When two systems agree conditioned on the MBO remaining unset, any solver advantage is bounded by the winning probability $\\Pr[\\mathrm{MBO}(G) = 1]$."
+informal_section_prelude gameCollision_verbose "symbolTable" "Notation" "Collision-Game Systems"
+  "Symbol | Meaning\n---|---\n$\\mathcal{H}$ | AEAD collision-hybrid system $\\mathsf{PTXT}\\,\\mathsf{CCA}\\,\\mathsf{PTXT}\\,\\mathsf{CCA}\\,\\mathcal{E}$\n$\\mathbf{G}_{\\mathrm{coll}}$ | Collision game whose observable system is $\\mathcal{H}$ and whose MBO flags repeated plaintexts\n$\\mathcal{E}_{\\mathsf{ideal}}$ | Ideal AEAD system $\\mathsf{Ideal}\\,\\mathbf{E}_{\\mathsf{enc}}(\\mathrm{scheme})$\n$s = (s_1, s_2)$ | Solver pair with system distinguisher $s_1$ and game-winning functional $s_2$"
 
 /-- Revealed Extended H-Technique with non-trivial ideal randomness and bad-transcript split,
 leaving the ideal reveal law, good-transcript ratio, and bad-mass combinatorics to standard Lean. -/

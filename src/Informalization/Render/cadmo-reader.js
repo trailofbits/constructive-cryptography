@@ -237,6 +237,48 @@
         const cmd = tex.slice(i + 1, j);
         i = j;
         if (cmd === "left" || cmd === "right") continue;
+        if (cmd === "begin") {
+          const [envName, afterBegin] = readBalanced(tex, i);
+          const endTag = `\\end{${envName}}`;
+          const endIdx = tex.indexOf(endTag, afterBegin);
+          if (envName === "cases" && endIdx !== -1) {
+            const inner = tex.slice(afterBegin, endIdx);
+            const rows = inner.split(/\\\\/);
+            const wrap = document.createElement("span");
+            wrap.className = "cadmo-cases";
+            const brace = document.createElement("span");
+            brace.className = "cadmo-cases-brace";
+            brace.textContent = "{";
+            wrap.appendChild(brace);
+            const body = document.createElement("span");
+            body.className = "cadmo-cases-body";
+            for (const rawRow of rows) {
+              const trimmed = rawRow.trim();
+              if (!trimmed) continue;
+              const rowEl = document.createElement("span");
+              rowEl.className = "cadmo-cases-row";
+              const cols = trimmed.split("&");
+              cols.forEach((col, ci) => {
+                const cell = document.createElement("span");
+                cell.className = ci === 0 ? "cadmo-cases-val" : "cadmo-cases-cond";
+                cell.appendChild(renderMathNodes(col.trim()));
+                rowEl.appendChild(cell);
+              });
+              body.appendChild(rowEl);
+            }
+            wrap.appendChild(body);
+            frag.appendChild(wrap);
+            i = endIdx + endTag.length;
+            continue;
+          }
+          i = afterBegin;
+          continue;
+        }
+        if (cmd === "end") {
+          const [, afterEnd] = readBalanced(tex, i);
+          i = afterEnd;
+          continue;
+        }
         if (cmd === "frac") {
           const [num, p1] = readBalanced(tex, i);
           const [den, p2] = readBalanced(tex, p1);
@@ -1151,18 +1193,128 @@
     return stripEmbeddedStyles(htmlStr || "").trim().length > 0;
   }
 
+  function fitDiagrams(root = (typeof document !== "undefined" ? document : null)) {
+    if (!root || typeof root.querySelectorAll !== "function") return;
+    let bodies;
+    try {
+      bodies = Array.from(root.querySelectorAll(".cadmo-diagram-body"));
+    } catch (_) {
+      return;
+    }
+    for (const body of bodies) {
+      if (!body || typeof body.querySelectorAll !== "function") continue;
+      const card = typeof body.closest === "function" ? body.closest(".cadmo-diagram") : null;
+      if (card && card.tagName === "DETAILS" && !card.open) continue;
+      const ccw = typeof body.querySelector === "function" ? body.querySelector("details.ccw") : null;
+      if (ccw && !ccw.open) continue;
+      const bodyW = Number(body.clientWidth || 0);
+      if (!(bodyW > 24)) continue;
+      const surface = typeof body.querySelector === "function" ? body.querySelector(".cc-surface") : null;
+      const surfW = surface ? Number(surface.clientWidth || 0) : 0;
+      const availW = surfW > 24
+        ? Math.max(120, Math.floor(surfW - 20))
+        : Math.max(120, Math.floor(bodyW - 16));
+
+      const comps = Array.from(body.querySelectorAll(".cc-comparison"));
+      for (const comp of comps) {
+        if (!comp || !comp.style) continue;
+        let wrap = comp.parentElement;
+        if (!wrap || !wrap.classList || !wrap.classList.contains("cadmo-diag-scale-wrap")) {
+          wrap = document.createElement("div");
+          wrap.className = "cadmo-diag-scale-wrap";
+          if (comp.parentNode) {
+            comp.parentNode.insertBefore(wrap, comp);
+            wrap.appendChild(comp);
+          }
+        }
+        comp.style.transform = "";
+        comp.style.transformOrigin = "";
+        comp.style.width = "";
+        comp.style.maxInlineSize = "";
+        comp.style.flexDirection = "";
+        comp.style.flexWrap = "";
+        const cardsEls = typeof comp.querySelectorAll === "function" ? Array.from(comp.querySelectorAll(".cc-cards")) : [];
+        for (const c of cardsEls) {
+          if (c && c.style) {
+            c.style.flexWrap = "";
+            c.style.maxInlineSize = "";
+          }
+        }
+        if (wrap && wrap.style) {
+          wrap.style.width = "";
+          wrap.style.height = "";
+          wrap.style.marginInline = "auto";
+          wrap.style.overflow = "visible";
+        }
+
+        let natW = Math.ceil(comp.scrollWidth || 0);
+        if (!(natW > 0)) continue;
+        if (natW > availW + 1) {
+          if (availW / natW < 0.55) {
+            if (cardsEls.length > 0) {
+              for (const c of cardsEls) {
+                if (c && c.style) {
+                  c.style.flexWrap = "wrap";
+                  c.style.maxInlineSize = availW + "px";
+                }
+              }
+            }
+            if (comp.children && comp.children.length > 1) {
+              comp.style.flexDirection = "column";
+            }
+            natW = Math.ceil(comp.scrollWidth || 0);
+          }
+          if (natW > availW + 1) {
+            comp.style.width = natW + "px";
+            comp.style.maxInlineSize = "none";
+            const measuredW = Math.max(natW, Math.ceil(comp.scrollWidth || natW));
+            const measuredH = Math.ceil(comp.scrollHeight || 0);
+            const scale = Math.min(1, Math.max(0.2, availW / measuredW));
+            comp.style.width = measuredW + "px";
+            comp.style.transformOrigin = "top left";
+            comp.style.transform = `scale(${scale})`;
+            if (wrap && wrap.style) {
+              wrap.style.width = Math.min(availW, Math.ceil(measuredW * scale)) + "px";
+              if (measuredH > 0) wrap.style.height = Math.ceil(measuredH * scale) + "px";
+              wrap.style.marginInline = "auto";
+              wrap.style.overflow = "visible";
+            }
+          }
+        } else if (wrap && wrap.style) {
+          wrap.style.width = "";
+          wrap.style.height = "";
+          wrap.style.marginInline = "auto";
+        }
+      }
+    }
+  }
+
+  function scheduleFitDiagrams(root = (typeof document !== "undefined" ? document : null)) {
+    if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
+      window.requestAnimationFrame(() => fitDiagrams(root));
+    } else {
+      fitDiagrams(root);
+    }
+  }
+
   function renderCollapsibleDiagram(htmlStr, cls, summaryLabel, defaultOpen = false) {
     const cleanHtml = stripEmbeddedStyles(htmlStr || "").trim();
     if (!cleanHtml) return null;
     const bodyEl = h("div", { class: "cadmo-diagram-body" });
     bodyEl.innerHTML = cleanHtml;
-    return h("details", {
+    const det = h("details", {
       class: `cadmo-diagram ${cls}`,
       open: defaultOpen ? true : null
     },
       h("summary", {}, summaryLabel),
       bodyEl
     );
+    if (typeof det.addEventListener === "function") {
+      det.addEventListener("toggle", () => {
+        if (det.open) scheduleFitDiagrams(det);
+      });
+    }
+    return det;
   }
 
   function collectAllExpandableIds(nodes, out = []) {
@@ -1881,6 +2033,7 @@
     pop.appendChild(h("div", { class: "cadmo-popover-body" }, ...body));
     pop.appendChild(actions);
     positionPopover(anchor);
+    scheduleFitDiagrams(pop);
   }
 
   function showPopover(anchorEl, candidates) {
@@ -1916,9 +2069,24 @@
         hidePopover(true);
       }
     });
+    document.addEventListener("toggle", (ev) => {
+      const t = ev && ev.target;
+      if (t && t.tagName === "DETAILS" && t.open && typeof t.closest === "function" &&
+          (t.classList.contains("cadmo-diagram") || t.classList.contains("ccw") || t.closest(".cadmo-diagram"))) {
+        scheduleFitDiagrams(t.closest(".cadmo-diagram") || t);
+      }
+    }, true);
     if (typeof window !== "undefined") {
+      let fitResizeTimer = null;
       window.addEventListener("scroll", schedulePopoverReposition, { passive: true });
-      window.addEventListener("resize", schedulePopoverReposition);
+      window.addEventListener("resize", () => {
+        schedulePopoverReposition();
+        if (fitResizeTimer) window.clearTimeout(fitResizeTimer);
+        fitResizeTimer = window.setTimeout(() => {
+          fitResizeTimer = null;
+          fitDiagrams(document);
+        }, 80);
+      });
     }
   }
 
@@ -2141,6 +2309,7 @@
     marginElRef.replaceWith(nextMargin);
     marginElRef = nextMargin;
     syncActiveAriaPressed();
+    scheduleFitDiagrams(marginElRef);
   }
 
   function renderAll() {
@@ -2286,6 +2455,7 @@
     rootEl.appendChild(runningBar);
     rootEl.appendChild(shell);
     ensurePopoverEl();
+    scheduleFitDiagrams(rootEl);
   }
 
   if (typeof globalThis !== "undefined") {
@@ -2293,6 +2463,7 @@
       SYMBOL_MAP,
       stripEmbeddedStyles,
       sanitizeDocDiagrams,
+      fitDiagrams,
       extractFontPrefixFromLatex,
       normalizeUnicodeMath,
       normalizeMathToken,

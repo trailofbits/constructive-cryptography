@@ -23,8 +23,18 @@ Cryptography examples with **zero per-theorem overlays or hardcoded essays**:
 
 informal_symbol Commons.Evaluation.Port "\\mathsf{Port}_{\\mathrm{eval}}"
 informal_symbol Commons.AE.Port "\\mathsf{Port}_{\\mathrm{AE}}"
-informal_symbol Commons.AE.system.perPort "\\mathrm{system}_{\\mathrm{AE}}"
-informal_symbol Commons.Encryption.system.perPort "\\mathrm{system}_{\\mathrm{enc}}"
+informal_symbol Commons.AE.perPort "\\mathsf{AE}"
+informal_symbol Commons.AE.system.perPort "\\mathbf{E}_{\\mathsf{AE}}"
+informal_symbol Commons.Encryption.system.perPort "\\mathbf{E}_{\\mathsf{enc}}"
+informal_symbol Commons.AE.PTXT.perPort "\\mathsf{PTXT}"
+informal_hide_args Commons.AE.PTXT.perPort 0 1
+informal_symbol Commons.AE.CCA.perPort "\\mathsf{CCA}"
+informal_hide_args Commons.AE.CCA.perPort 0 1
+informal_symbol Commons.AE.Ideal.perPort "\\mathsf{Ideal}"
+informal_hide_args Commons.AE.Ideal.perPort 0 1
+informal_symbol Commons.AE.Secure "\\mathsf{AE}\\text{-}\\mathsf{Sec}"
+informal_symbol Commons.AE.INTPTXT "\\mathsf{INT}\\text{-}\\mathsf{PTXT}"
+informal_symbol Commons.AE.INDCCA "\\mathsf{IND}\\text{-}\\mathsf{CCA}"
 informal_symbol SystemAlgebra.PDS.behavior "\\mathrm{beh}_{\\mathrm{PDS}}"
 informal_symbol SystemAlgebra.PDG.behavior "\\mathrm{beh}_{\\mathrm{PDG}}"
 informal_symbol SystemAlgebra.TypedSystem.ofAutomaton "\\mathrm{ofAut}_{\\mathrm{sys}}"
@@ -45,6 +55,14 @@ informal_opaque SystemAlgebra.RandomSystem.RepliesAtQueriedInterface.of_visible
 informal_title AuthenticatedEncryption.ae_of_ind_cca_int_ptxt
   "Authenticated Encryption from IND-CCA and INT-PTXT"
 informal_kind AuthenticatedEncryption.ae_of_ind_cca_int_ptxt "Theorem"
+informal_binder AuthenticatedEncryption.ae_of_ind_cca_int_ptxt "εptxt" "\\varepsilon_{\\mathsf{ptxt}}"
+informal_binder AuthenticatedEncryption.ae_of_ind_cca_int_ptxt "εcca" "\\varepsilon_{\\mathsf{cca}}"
+informal_section AuthenticatedEncryption.ae_of_ind_cca_int_ptxt
+  "Authenticated Encryption from INT-PTXT and IND-CCA"
+  "We prove Banfi's constructive composition theorem deriving authenticated encryption from plaintext integrity and chosen-ciphertext security, together with its concrete hybrid distance bound."
+informal_section_prelude AuthenticatedEncryption.ae_of_ind_cca_int_ptxt
+  "symbolTable" "Setting & Notation" "Authenticated-Encryption Interfaces, Spaces, and Distinguishers"
+  "We fix a symmetric-key encryption scheme $\\mathrm{scheme}$ over finite key space $K$, nonempty message space $M$, and ciphertext space $C$, with per-port query budget $q : \\mathsf{Port}_{\\mathrm{AE}} \\to \\mathbb{N}$ on the $\\mathsf{AE}(M, C, q)$ interface and an admissible distinguisher class $\\mathcal{D}$ (closed under absorbing $\\mathsf{PTXT}$ and $\\mathsf{CCA}$).\nSymbol | Meaning\n---|---\n$\\mathcal{D}$ | Admissible distinguisher class for $\\mathsf{AE}(M, C, q)$\n$M, C$ | Finite message and ciphertext spaces (suppressed in converter subscripts)\n$q$ | Per-port query budget (with $q(\\mathrm{enc})$ encryption queries)\n$\\mathbf{E}_{\\mathsf{AE}}(\\mathrm{scheme}),\\; \\mathbf{E}_{\\mathsf{enc}}(\\mathrm{scheme})$ | Real authenticated-encryption and encryption-only systems\n$\\varepsilon_{\\mathsf{ptxt}},\\; \\varepsilon_{\\mathsf{cca}}$ | Distinguisher-indexed error bounds for $\\mathsf{INT}\\text{-}\\mathsf{PTXT}$ and $\\mathsf{IND}\\text{-}\\mathsf{CCA}$"
 informal_section_prelude_decl AuthenticatedEncryption.ae_of_ind_cca_int_ptxt
   Commons.AE.PTXT.perPort "converterDef" "Filter" "Plaintext-Integrity Filter Converter"
 informal_section_prelude_decl AuthenticatedEncryption.ae_of_ind_cca_int_ptxt
@@ -92,8 +110,9 @@ informal_section_prelude_decl GameExamples.hybrid_ideal_advantage_le
 informal_title SystemAlgebra.Interface.distance_le_of_hCoefficient
   "Distinguishing Bound via the Revealed H-Coefficient Technique"
 informal_kind SystemAlgebra.Interface.distance_le_of_hCoefficient "Theorem"
-informal_section_prelude_decl SystemAlgebra.Interface.distance_le_of_hCoefficient
-  SystemAlgebra.RandomSystem.HCoefficient "definition" "Technique" "Revealed H-Coefficient Witness"
+informal_section_prelude SystemAlgebra.Interface.distance_le_of_hCoefficient
+  "definition" "Technique" "Revealed H-Coefficient Witness"
+  "An H-coefficient witness for resources $R$ and $S$ with error bound $\\varepsilon$ decomposes $R$ as a prior mixture over components, pairs real and ideal transcripts with auxiliary revealed randomness, partitions extended transcripts into finite classes with a pointwise real-to-ideal probability ratio defect on good transcripts, and bounds the total expected bad-transcript and ratio defect by $\\varepsilon$."
 
 #informalize_show Examples.PRGLengthExtension.prg_length_extension
 #informalize_show AuthenticatedEncryption.ae_of_ind_cca_int_ptxt

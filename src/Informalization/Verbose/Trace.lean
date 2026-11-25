@@ -186,8 +186,11 @@ private def appendSentencePunct (inls : Array Inline) (punct : String := ".") : 
   else
     match inls.back? with
     | some (.text s) =>
-        let t := s.trimAscii.toString
+        let t := s.trimAsciiEnd.toString
         if t.endsWith "." || t.endsWith "!" || t.endsWith "?" || t.endsWith ":" then inls
+        else if t.endsWith "," || t.endsWith ";" then
+          let base := (t.dropEnd 1).toString.trimAsciiEnd.toString
+          inls.pop.push (.text (base ++ punct))
         else inls.push (.text punct)
     | _ => inls.push (.text punct)
 
@@ -630,10 +633,14 @@ private def describeVerboseHopReason (env : Environment) (tbl : SymbolTable) (ho
             pure #[.text "by non-expansion under parallel composition"]
           else if cn == ``LE.le.trans && hasAttachLe && hasParallelLe then
             pure #[.text "by non-expansion under converter attachment and parallel composition"]
-          else if cn == ``le_rfl || cn == ``le_refl then
-            pure #[.text "by reflexivity"]
+          else if cn == ``le_rfl || cn == ``le_refl || cn == `LE.le.refl then
+            pure #[.text "by definition of the distance"]
           else
-            pure #[.text "by distinguishing bound (", .emph (humanLemmaLabel env cn), .text ")"]
+            let lbl := humanLemmaLabel env cn
+            if lbl.startsWith "the " || (lbl.splitOn "bound").length > 1 then
+              pure #[.text s!"by {lbl}"]
+            else
+              pure #[.text "by distinguishing bound (", .emph lbl, .text ")"]
       | _ => pure #[.text "by distinguishing bound"]
   | .computational =>
       match fn with
@@ -644,6 +651,10 @@ private def describeVerboseHopReason (env : Environment) (tbl : SymbolTable) (ho
               return #[.text "by substituting inside context ", .inlineMath convTex,
                        .text " (absorbing ", .inlineMath convTex, .text " into the distinguisher)"]
             pure #[.text "by substituting inside a converter context"]
+          else if cn == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_distance then
+            pure #[.text "by the distinguishing advantage bound"]
+          else if cn == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_statistical then
+            pure #[.text "by statistical distance bound"]
           else if cn == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.symm then
             pure #[.text "by symmetry of substitution"]
           else
@@ -659,25 +670,11 @@ private def buildAnnotatedCalcChain (ctx : DecompCtx) (decompileChild : Decompil
   if !isSubGoal && !isDistGoal then return none
   let hops ← flattenVerboseCalc ctx.tbl proof expected
   if hops.size < 2 then return none
-  let op ← pickOpener .elaboration
+  let _ ← pickOpener .elaboration
   let subCtx := subContextOf ctx
   let env ← getEnv
   let mut calcSteps : Array (CalcStep × Array ProofNode) := #[]
-  let mut nComp : Nat := 0
-  let mut nDist : Nat := 0
-  let mut nStat : Nat := 0
-  let mut nEq : Nat := 0
   for hop in hops do
-    match hop.kind with
-    | .computational => nComp := nComp + 1
-    | .statistical =>
-        let cs := collectConsts hop.proof
-        if cs.contains ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_statistical ||
-           cs.toList.any (fun n => (n.toString.splitOn "statDist").length > 1) then
-          nStat := nStat + 1
-        else
-          nDist := nDist + 1
-    | .exactEq => nEq := nEq + 1
     let lhsTex ← exprToLatex hop.lhs ctx.tbl
     let rhsTex ← exprToLatex hop.rhs ctx.tbl
     let reason ← describeVerboseHopReason env ctx.tbl hop
@@ -723,20 +720,9 @@ private def buildAnnotatedCalcChain (ctx : DecompCtx) (decompileChild : Decompil
     }
     calcSteps := calcSteps.push (cs, subNodes)
   let goal ← buildGoalState ctx.tbl expected
-  let mut summaryParts : List String := []
-  if nComp > 0 then
-    summaryParts := summaryParts ++ [s!"{countPhrase nComp ⟨"computational substitution", "computational substitutions"⟩}"]
-  if nDist > 0 then
-    summaryParts := summaryParts ++ [s!"{countPhrase nDist ⟨"distinguishing bound", "distinguishing bounds"⟩}"]
-  if nStat > 0 then
-    summaryParts := summaryParts ++ [s!"{countPhrase nStat ⟨"statistical bound", "statistical bounds"⟩}"]
-  if nEq > 0 then
-    summaryParts := summaryParts ++ [s!"{countPhrase nEq ⟨"exact system identity", "exact system identities"⟩}"]
+  let nPhrase := countPhrase hops.size ⟨"hybrid transition", "hybrid transitions"⟩
   let ledgerText :=
-    if summaryParts.isEmpty then
-      s!"{op} chaining the intermediate hybrid systems yields"
-    else
-      s!"{op} proceeding through the hybrid chain ({joinAnd summaryParts}) and combining the per-step bounds by the triangle inequality gives"
+    s!"We proceed through a chain of {nPhrase} and apply the triangle inequality:"
   return some #[.calcChain s!"{idPrefix}-{hops.size}" #[.text ledgerText] calcSteps (some goal)]
 
 /-! ## 4. Extended H-Coefficient Witness Extractor -/
@@ -764,6 +750,15 @@ private def decompileCombinatorialSubgoal (ctx : DecompCtx) (decompileChild : De
     let g ← buildGoalState ctx.tbl aty
     return #[.routineReceipt idTag summary 1 #[] (some g)]
 
+private partial def stripUnusedNonPropForalls (e : Expr) : MetaM Expr := do
+  match e.consumeMData with
+  | .forallE _ dom body _ =>
+      if !body.hasLooseBVar 0 && !(← isProp dom) then
+        stripUnusedNonPropForalls body
+      else
+        return e
+  | _ => return e
+
 private def extractHCoefficientChildren (ctx : DecompCtx) (decompileChild : DecompileChild)
     (proof : Expr) : StateRefT DiscourseState MetaM (Array ProofNode) := do
   let subCtx := subContextOf ctx
@@ -778,8 +773,9 @@ private def extractHCoefficientChildren (ctx : DecompCtx) (decompileChild : Deco
     let subProb ← decompileCombinatorialSubgoal subCtx decompileChild s!"vcc-hcoeff-prob-rec-{total}"
       "verifying that the auxiliary ideal reveal defines a probability distribution" atyProb apProb
     if !subProb.isEmpty then
-      let inlProb ← renderProposition ctx.tbl atyProb
-      let gProb ← buildGoalState ctx.tbl atyProb
+      let cleanProb ← stripUnusedNonPropForalls atyProb
+      let inlProb ← renderProposition ctx.tbl cleanProb
+      let gProb ← buildGoalState ctx.tbl cleanProb
       out := out.push (.step s!"vcc-hcoeff-prob-{total}"
         (#[.text "First, on the ideal side the auxiliary reveal defines a valid conditional probability law: "] ++
          inlProb ++ #[.text "."]) subProb (some gProb))
@@ -789,9 +785,14 @@ private def extractHCoefficientChildren (ctx : DecompCtx) (decompileChild : Deco
       "pointwise probability-ratio verification across good extended transcripts" atyRatio apRatio
     let inlRatio ← renderProposition ctx.tbl atyRatio
     let gRatio ← buildGoalState ctx.tbl atyRatio
+    let ratioLead :=
+      let txt := (String.intercalate "" (inlRatio.toList.map Inline.collectText)).trimAscii.toString.toLower
+      if txt.startsWith "for every" || txt.startsWith "if " then
+        "On every attainable good extended transcript, the real-to-ideal probability ratio condition holds: "
+      else
+        "On every attainable good extended transcript, the real-to-ideal probability ratio satisfies "
     out := out.push (.step s!"vcc-hcoeff-ratio-{total}"
-      (#[.text "On every attainable good extended transcript, the real-to-ideal probability ratio satisfies "] ++
-       inlRatio ++ #[.text "."]) subRatio (some gRatio))
+      (#[.text ratioLead] ++ inlRatio ++ #[.text "."]) subRatio (some gRatio))
     let (apBad, atyBad) := pArgs[total - 1]!
     let subBad ← decompileCombinatorialSubgoal subCtx decompileChild s!"vcc-hcoeff-bad-rec-{total}"
       "probability-mass bound over bad transcripts across compatible environments" atyBad apBad
@@ -905,11 +906,11 @@ def verboseCCExplainer : RuleExplainer where
                 | some g =>
                     if visibleMathLengthTex rhsTex ≥ 64 then
                       .step s!"vcc-letnot-{ctx.factIndex}"
-                        (#[.text "Let ", .inlineMath sym, .text " denote "] ++ parseProseWithMath (stripTrailingPeriod g) ++ #[.text "."])
+                        (#[.text "Let ", .inlineMath sym, .text " denote "] ++ stripTrailingPunctInlines (parseProseWithMath (stripTrailingPeriod g)) ++ #[.text "."])
                         #[] (some goal)
                     else
                       .step s!"vcc-letnot-{ctx.factIndex}"
-                        (#[.text "Let ", .inlineMath s!"{sym} := {rhsTex}", .text ", "] ++ parseProseWithMath (stripTrailingPeriod g) ++ #[.text "."])
+                        (#[.text "Let ", .inlineMath s!"{sym} := {rhsTex}", .text ", "] ++ stripTrailingPunctInlines (parseProseWithMath (stripTrailingPeriod g)) ++ #[.text "."])
                         #[] (some goal)
                 | none =>
                     .step s!"vcc-letnot-{ctx.factIndex}"
@@ -948,7 +949,7 @@ def verboseCCExplainer : RuleExplainer where
                   #[.inlineMath s!"{symTex} := {valTex}"]
               let prose : Array Inline := match reason? with
                 | some g =>
-                    let gInl := parseProseWithMath (stripTrailingPeriod g)
+                    let gInl := stripTrailingPunctInlines (parseProseWithMath (stripTrailingPeriod g))
                     if visibleMathLengthTex valTex ≥ 56 then
                       #[.text "Let "] ++ defMath ++ #[.text " be "] ++ gInl ++ #[.text "."]
                     else
@@ -1154,7 +1155,7 @@ def verboseCCExplainer : RuleExplainer where
         let propDisp ← formatPropSentence ctx.tbl expected "."
         let content : Array Inline ← match reason? with
           | some r =>
-              let rInls := parseProseWithMath (stripTrailingPeriod r)
+              let rInls := stripTrailingPunctInlines (parseProseWithMath (stripTrailingPeriod r))
               pure (rInls ++ #[.text ", which establishes "] ++ propDisp)
           | none =>
               if ctx.atRootConclusion || ctx.isClosingGoal then
@@ -1487,9 +1488,9 @@ def verboseCCExplainer : RuleExplainer where
         let conclDisp ← formatPropSentence ctx.tbl expected "."
         let badPhrase : Array Inline := match badTex?, reason? with
           | some bt, some g =>
-              #[.text " with bad event ", .inlineMath bt, .text " ("] ++ parseProseWithMath (stripTrailingPeriod g) ++ #[.text ")"]
+              #[.text " with bad event ", .inlineMath bt, .text " ("] ++ stripTrailingPunctInlines (parseProseWithMath (stripTrailingPeriod g)) ++ #[.text ")"]
           | some bt, none => #[.text " with bad event ", .inlineMath bt]
-          | none, some g => #[.text ", "] ++ parseProseWithMath (stripTrailingPeriod g)
+          | none, some g => #[.text ", "] ++ stripTrailingPunctInlines (parseProseWithMath (stripTrailingPeriod g))
           | none, none => #[]
         let content : Array Inline :=
           #[.text "By the Difference Lemma"] ++ badPhrase ++ #[.text ", "] ++ conclDisp
@@ -1594,7 +1595,7 @@ def verboseCCExplainer : RuleExplainer where
         let conclDisp ← formatPropSentence ctx.tbl expected "."
         let content : Array Inline ← match reason? with
           | some r =>
-              let rInls := parseProseWithMath (stripTrailingPeriod r)
+              let rInls := stripTrailingPunctInlines (parseProseWithMath (stripTrailingPeriod r))
               pure (rInls ++ #[.text ", which establishes "] ++ conclDisp)
           | none =>
               if ctx.atRootConclusion || ctx.isClosingGoal then
@@ -1612,7 +1613,7 @@ def verboseCCExplainer : RuleExplainer where
             let valNodes ← decompileChild subCtx ty val
             let tyDisp ← formatPropSentence ctx.tbl ty "."
             let lead : Array Inline := match reason? with
-              | some g => #[.text "Reformulating this bound ("] ++ parseProseWithMath (stripTrailingPeriod g) ++ #[.text ") yields "]
+              | some g => #[.text "Reformulating this bound ("] ++ stripTrailingPunctInlines (parseProseWithMath (stripTrailingPeriod g)) ++ #[.text ") yields "]
               | none => #[.text "Equivalently, we rewrite this as "]
             let step ← mkVerboseStep ctx s!"vcc-reformulate-{ctx.factIndex}" (lead ++ tyDisp) valNodes ty
             let rest ← withLetDecl nm ty val fun fv =>
@@ -1627,7 +1628,7 @@ def verboseCCExplainer : RuleExplainer where
                   decompileChild subCtx expected (body.instantiate1 fv)
                 let domDisp ← formatPropSentence ctx.tbl dom "."
                 let lead : Array Inline := match reason? with
-                  | some g => #[.text "Reformulating the goal ("] ++ parseProseWithMath (stripTrailingPeriod g) ++ #[.text ") yields "]
+                  | some g => #[.text "Reformulating the goal ("] ++ stripTrailingPunctInlines (parseProseWithMath (stripTrailingPeriod g)) ++ #[.text ") yields "]
                   | none => #[.text "Equivalently, we rewrite the target inequality as "]
                 let step ← mkVerboseStep ctx s!"vcc-reformulate-goal-{ctx.factIndex}" (lead ++ domDisp) rNodes dom
                 let rest ← decompileChild { ctx with atRootConclusion := false, isProofStart := false, isClosingGoal := ctx.isClosingGoal } dom pProof

@@ -73,7 +73,11 @@ def problemReductionExplainer : RuleExplainer where
       let op ← pickMaurerOpener .consequence
       let children ← decompilePremiseArgs ctx decompileChild proof
       return ← finish s!"cc-game-red-{head}" (fun conclInl =>
-        #[.text s!"{op} by reduction to the target problem—translating the uniform target bound through the monotone loss function—we obtain "] ++
+        let lead := match conclInl[0]? with
+          | some (.text s) =>
+              if s.startsWith "the " || s.startsWith "protocol " then "we obtain that " else "we obtain "
+          | _ => "we obtain "
+        #[.text s!"{op} by reduction to the target problem—translating the uniform target bound through the monotone loss function—{lead}"] ++
         conclInl ++ #[.text "."]) children
     if head == ``ConstructiveCryptography.Games.absorb_mem ||
        head == ``ConstructiveCryptography.DistinctionGames.absorb_mem then
