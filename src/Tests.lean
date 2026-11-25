@@ -114,6 +114,7 @@ public import Tests.HashExtractor
 public import Tests.ActiveUserBank
 public import Tests.SpongeTable
 public import Tests.Sponge
+public import Tests.SpongeIndifferentiability
 public import Tests.PRF
 public import Tests.DeterministicConverterComparison
 public import Tests.ProgramConverterBisimulation
