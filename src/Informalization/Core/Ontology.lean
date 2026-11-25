@@ -40,6 +40,9 @@ structure TypeDescription where
   typeLatex? : Option String := none
   /-- If true, this binder is ambient category/algebra plumbing and belongs in `AmbientSetting`. -/
   isAmbient : Bool := false
+  /-- If true, this binder is a proof witness (e.g. an H-coefficient witness) kept in introductions
+  even if the witness variable itself does not appear in the conclusion formula. -/
+  isWitness : Bool := false
   deriving Repr, Inhabited
 
 /-- Domain-extensible handler mapping a variable's type `Expr` to a `TypeDescription`. -/
@@ -132,12 +135,21 @@ partial def renderProposition (tbl : SymbolTable) (prop : Expr) : MetaM (Array I
   for h in (← propHandlersRef.get) do
     if let some out ← h.renderProp tbl prop then
       return out
-  -- Quantified `∀ x, P x`
+  -- Quantified `∀ x, P x` (with `Prop` domain rendered as implication even when dependent)
   if let .forallE nm dom body bi := prop then
-    if body.hasLooseBVar 0 then
-      if ← isAmbientTypeclass dom then
-        return ← withLocalDecl nm bi dom fun fv => renderProposition tbl (body.instantiate1 fv)
-      return ← withLocalDecl nm bi dom fun fv => do
+    if ← isAmbientTypeclass dom then
+      return ← withLocalDecl nm bi dom fun fv => renderProposition tbl (body.instantiate1 fv)
+    else if ← isProp dom then
+      let pInl ← renderProposition tbl dom
+      let qInl ←
+        if body.hasLooseBVar 0 then
+          withLocalDecl nm bi dom fun fv => renderProposition tbl (body.instantiate1 fv)
+        else
+          renderProposition tbl body
+      return #[.text "if "] ++ pInl ++ #[.text ", then "] ++ qInl
+    else if body.hasLooseBVar 0 then
+      let freshNm ← freshShadowFreeName nm "x"
+      return ← withLocalDecl freshNm bi dom fun fv => do
         let desc ← describeType tbl dom
         let varTex ← exprToLatex fv tbl
         let bodyInl ← renderProposition tbl (body.instantiate1 fv)
@@ -148,10 +160,6 @@ partial def renderProposition (tbl : SymbolTable) (prop : Expr) : MetaM (Array I
         let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
         return #[.text s!"for every {adj}{desc.noun.singular} ", .inlineMath varTex,
                  .text s!"{acc}, "] ++ bodyInl
-    else if ← isProp dom then
-      let pInl ← renderProposition tbl dom
-      let qInl ← renderProposition tbl body
-      return #[.text "if "] ++ pInl ++ #[.text ", then "] ++ qInl
   -- Logical connectives & registered `informal_pred` overlays
   let fn := prop.getAppFn.consumeMData
   let args := prop.getAppArgs
@@ -206,7 +214,8 @@ partial def renderProposition (tbl : SymbolTable) (prop : Expr) : MetaM (Array I
       return a ++ #[.text " if and only if "] ++ b
     if head == ``Exists && args.size ≥ 2 then
       if let .lam nm dom body bi := args[args.size - 1]! then
-        return ← withLocalDecl nm bi dom fun fv => do
+        let freshNm ← freshShadowFreeName nm "x"
+        return ← withLocalDecl freshNm bi dom fun fv => do
           let desc ← describeType tbl dom
           let varTex ← exprToLatex fv tbl
           let bodyInl ← renderProposition tbl (body.instantiate1 fv)
@@ -217,6 +226,22 @@ partial def renderProposition (tbl : SymbolTable) (prop : Expr) : MetaM (Array I
   -- Default: clean 2D LaTeX formula
   let tex ← exprToLatex prop tbl
   return #[.inlineMath tex]
+
+/-- Fast bounded $O(\text{limit})$ DAG size check so huge expanded `simp` terms don't stall `ppExpr`. -/
+private partial def exprDagSmall (e : Expr) (limit : Nat := 220) : Bool :=
+  let rec go (cur : Expr) (st : Std.HashSet Expr × Nat) : Std.HashSet Expr × Nat :=
+    if st.2 > limit || st.1.contains cur then st
+    else
+      let st := (st.1.insert cur, st.2 + 1)
+      match cur with
+      | .app f a => go a (go f st)
+      | .lam _ d b _ => go b (go d st)
+      | .forallE _ d b _ => go b (go d st)
+      | .letE _ t v b _ => go b (go v (go t st))
+      | .mdata _ inner => go inner st
+      | .proj _ _ s => go s st
+      | _ => st
+  (go e ({}, 0)).2 ≤ limit
 
 /-- Build a clean Kyle Miller `GoalState` from a live local context and target `Expr`.
 Suppresses ambient typeclasses and implementation details, and never prints `None`. -/
@@ -229,6 +254,7 @@ def buildGoalState (tbl : SymbolTable) (target : Expr) : MetaM GoalState := do
     if ← isSuppressedLocalDecl decl then continue
     let used := targetFVars.contains decl.fvarId
     if ← isProp decl.type then
+      if !used && !exprDagSmall decl.type 160 then continue
       let propTex ← exprToLatex decl.type tbl
       entries := entries.push {
         name? := cleanBinderName? decl.userName
@@ -249,11 +275,15 @@ def buildGoalState (tbl : SymbolTable) (target : Expr) : MetaM GoalState := do
         usedInGoal := used
       }
   let targetLatex ← exprToLatex targetClean tbl
-  let rawTarget ← ppExpr target
+  let rawTarget? ←
+    if exprDagSmall targetClean 240 then
+      pure (some (← ppExpr targetClean).pretty)
+    else
+      pure none
   return {
     context := entries
     targetLatex
-    rawLeanGoal? := some rawTarget.pretty
+    rawLeanGoal? := rawTarget?
   }
 
 /-- Canonical string key for an `Array Inline` (used to detect identical assumptions across a section). -/
@@ -369,8 +399,10 @@ private partial def collectCandidateSubexprs (tbl : SymbolTable) (e : Expr)
               let mut expIdx := 0
               let hidden := tbl.hiddenArgs.getD hn []
               for a in args do
-                curTy ← whnfD curTy
-                match curTy with
+                let f ← match curTy.consumeMData with
+                  | x@(.forallE ..) => pure x
+                  | other => whnfD other
+                match f.consumeMData with
                 | .forallE _ _ body bi =>
                     if bi.isExplicit then
                       if !hidden.contains expIdx then
@@ -388,6 +420,39 @@ private partial def collectCandidateSubexprs (tbl : SymbolTable) (e : Expr)
       let m ← collectCandidateSubexprs tbl d counts
       if !b.hasLooseBVars then collectCandidateSubexprs tbl b m else return m
   | _ => return counts
+
+/-- Approximate visible glyph length of rendered LaTeX (excluding markup macros like `\mathrm{`
+and `\left` / `\right`) so short terms such as `system(scheme)` or `Δ(fixedBit(false), sampledBit)`
+are never pointlessly replaced by `c₁`. -/
+private def visibleMathLength (tex : String) : Nat :=
+  let s := tex
+    |>.replace "\\mathrm{" "" |>.replace "\\mathsf{" "" |>.replace "\\mathcal{" ""
+    |>.replace "\\mathbf{" "" |>.replace "\\mathbb{" "" |>.replace "\\text{" ""
+    |>.replace "\\left" "" |>.replace "\\right" ""
+    |>.replace "\\!" "" |>.replace "\\," " " |>.replace "\\;" " "
+    |>.replace "{" "" |>.replace "}" ""
+    |>.replace "\\Delta" "Δ" |>.replace "\\varepsilon" "ε" |>.replace "\\epsilon" "ε"
+    |>.replace "\\times" "×" |>.replace "\\cdot" "·" |>.replace "\\parallel" "∥"
+    |>.replace "\\otimes" "⊗" |>.replace "\\le" "≤" |>.replace "\\ge" "≥"
+  s.trimAscii.toString.length
+
+/-- Extract inline math strings embedded as `\(...\)` inside an English prose string. -/
+private def extractEmbeddedMath (s : String) : Array String := Id.run do
+  let parts := s.splitOn "\\("
+  let mut out : Array String := #[]
+  for part in parts.drop 1 do
+    match part.splitOn "\\)" with
+    | m :: _ => out := out.push m
+    | [] => pure ()
+  return out
+
+private def collectInlineMathStrings (inls : Array Inline) : Array String :=
+  inls.flatMap fun
+    | .text s | .emph s => extractEmbeddedMath s
+    | .inlineMath s => #[s]
+    | .displayMath s _ => #[s]
+    | .symbol _ d true => #[d]
+    | _ => #[]
 
 /-- Factor up to 3 heavy repeated visible subexpressions across `exprs` into crisp local
 abbreviations (`c₁, c₂, …`), keeping ONLY shorthands that visibly shorten the statement. -/
@@ -409,7 +474,7 @@ private def factorRepeatedSubexprs (tbl : SymbolTable) (exprs : Array Expr) :
     if defs.size ≥ 3 then break
     if chosenExprs.any (fun prev => prev == ex) then continue
     let tex ← exprToLatex ex curTbl
-    if tex.length < 22 || (tex.splitOn "inst").length > 1 then continue
+    if visibleMathLength tex < 34 || (tex.splitOn "inst").length > 1 then continue
     let sym := "c_{" ++ toString (defs.size + 1) ++ "}"
     defs := defs.push (sym, ex)
     chosenExprs := chosenExprs.push ex
@@ -611,39 +676,18 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr)
                 if let .fvar cid := carrier.consumeMData then
                   let cdecl ← cid.getDecl
                   finiteSets := (cleanBinderName cdecl.userName) :: finiteSets
-      -- Collect ONLY non-hoisted parameter types, non-hoisted hypotheses, hoisted `let` values,
-      -- and conclusion for repeated-subexpression factoring (never emit unused `c_k` from hoisted hyps!).
-      let mut factorExprs : Array Expr := #[]
+      -- Collect candidate non-ambient, non-hoisted parameter binders and visible hypotheses,
+      -- then filter out any unused ambient binders (both AST-unused and unreferenced in rendered
+      -- conclusion/hypotheses/retained binders) via backwards dependency closure.
+      let mut candBinders : Array (Expr × TypeDescription × String × String) := #[]
+      let mut keptPropTypes : Array Expr := #[]
       for fv in fvars do
         let decl ← fv.fvarId!.getDecl
         if ← isSuppressedLocalDecl decl then continue
         if ← isProp decl.type then
           let hInl ← renderProposition tbl decl.type
           if !hoisted.hypKeys.contains (inlinesCanonicalKey hInl) then
-            factorExprs := factorExprs.push decl.type
-        else
-          let desc ← describeType tbl decl.type
-          if desc.isAmbient then continue
-          let sym ← exprToLatex fv tbl
-          if !hoisted.paramSyms.contains sym then
-            factorExprs := factorExprs.push decl.type
-      for (_, _, lval) in letRawDefs do
-        factorExprs := factorExprs.push lval
-      factorExprs := factorExprs.push conclusion
-      let (tbl, _) ← factorRepeatedSubexprs tbl factorExprs
-
-      let mut intros : List Intro := []
-      let mut hyps : Array (Array Inline) := #[]
-      -- Second pass: classify visible binders into entity introductions vs. assumptions,
-      -- omitting parameters and hypotheses already fixed in the enclosing Section Context.
-      for fv in fvars do
-        let decl ← fv.fvarId!.getDecl
-        if ← isSuppressedLocalDecl decl then continue
-        if ← isProp decl.type then
-          let hInl ← renderProposition tbl decl.type
-          let key := inlinesCanonicalKey hInl
-          if !hoisted.hypKeys.contains key then
-            hyps := hyps.push hInl
+            keptPropTypes := keptPropTypes.push decl.type
         else
           let desc ← describeType tbl decl.type
           if desc.isAmbient then
@@ -651,26 +695,51 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr)
             continue
           let clean := cleanBinderName decl.userName
           let sym ← exprToLatex fv tbl
-          if hoisted.paramSyms.contains sym then
-            continue
-          let adjs :=
-            if finiteSets.contains clean && !desc.adjectives.contains "finite" then
-              "finite" :: desc.adjectives
-            else desc.adjectives
-          let depFVars := (Lean.collectFVars {} decl.type).fvarIds
-          let depNames ← depFVars.toList.mapM fun id => do
-            let d ← id.getDecl
-            let s ← exprToLatex d.toExpr tbl
-            return s!"\\({s}\\)"
-          intros := intros ++ [{
-            name := s!"\\({sym}\\)"
-            noun := desc.noun
-            adjectives := adjs
-            accessories := desc.accessories
-            subjunctive := true
-            typeStr := desc.typeLatex?.getD ""
-            mentions := depNames
-          }]
+          if hoisted.paramSyms.contains sym then continue
+          candBinders := candBinders.push (fv, desc, clean, sym)
+      -- Stage 1 (AST backwards closure): keep binders referenced in conclusion, visible hyps,
+      -- `letRawDefs`, or another retained binder's type (unless marked `isWitness`).
+      let mut astNeeded : Std.HashSet FVarId := {}
+      for id in (Lean.collectFVars {} conclusion).fvarIds do
+        astNeeded := astNeeded.insert id
+      for pt in keptPropTypes do
+        for id in (Lean.collectFVars {} pt).fvarIds do
+          astNeeded := astNeeded.insert id
+      for (_, lty, lval) in letRawDefs do
+        for id in (Lean.collectFVars {} lty).fvarIds do
+          astNeeded := astNeeded.insert id
+        for id in (Lean.collectFVars {} lval).fvarIds do
+          astNeeded := astNeeded.insert id
+      -- Also keep dependencies of hoisted parameters/hyps? No, hoisted params are already omitted,
+      -- except a non-hoisted binder referenced by a retained binder's type stays via the reverse walk.
+      let mut stage1Rev : Array (Expr × TypeDescription × String × String) := #[]
+      for item in candBinders.reverse do
+        let (fv, desc, _, _) := item
+        let decl ← fv.fvarId!.getDecl
+        if desc.isWitness || astNeeded.contains fv.fvarId! then
+          stage1Rev := stage1Rev.push item
+          for id in (Lean.collectFVars {} decl.type).fvarIds do
+            astNeeded := astNeeded.insert id
+        else
+          suppressed := suppressed.push (cleanBinderName decl.userName)
+      let stage1Binders := stage1Rev.reverse
+
+      -- Collect ONLY retained non-hoisted parameter types, non-hoisted hypotheses, hoisted `let` values,
+      -- and conclusion for repeated-subexpression factoring (never emit unused `c_k` from dropped binders!).
+      let mut factorExprs : Array Expr := #[]
+      for (fv, _, _, _) in stage1Binders do
+        let decl ← fv.fvarId!.getDecl
+        factorExprs := factorExprs.push decl.type
+      for pt in keptPropTypes do
+        factorExprs := factorExprs.push pt
+      for (_, _, lval) in letRawDefs do
+        factorExprs := factorExprs.push lval
+      factorExprs := factorExprs.push conclusion
+      let (tbl, _) ← factorRepeatedSubexprs tbl factorExprs
+
+      let mut hyps : Array (Array Inline) := #[]
+      for pt in keptPropTypes do
+        hyps := hyps.push (← renderProposition tbl pt)
       let mut letDefsRendered : Array (String × String × String × String) := #[]
       for (nmTex, tyExpr, valExpr) in letRawDefs do
         let valTex ← exprToLatex valExpr tbl
@@ -678,6 +747,65 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr)
         let roleDesc ← formatParameterRole tbl tyExpr
         letDefsRendered := letDefsRendered.push (nmTex, valTex, leanTy, roleDesc)
       let mut conclInl ← renderProposition tbl conclusion
+
+      -- Build candidate `Intro`s for `stage1Binders`
+      let mut stage1Intros : Array (Expr × TypeDescription × String × Intro) := #[]
+      for (fv, desc, clean, sym) in stage1Binders do
+        let decl ← fv.fvarId!.getDecl
+        let adjs :=
+          if finiteSets.contains clean && !desc.adjectives.contains "finite" then
+            "finite" :: desc.adjectives
+          else desc.adjectives
+        let depFVars := (Lean.collectFVars {} decl.type).fvarIds
+        let depNames ← depFVars.toList.mapM fun id => do
+          let d ← id.getDecl
+          let s ← exprToLatex d.toExpr tbl
+          return s!"\\({s}\\)"
+        let intro : Intro := {
+          name := s!"\\({sym}\\)"
+          noun := desc.noun
+          adjectives := adjs
+          accessories := desc.accessories
+          subjunctive := true
+          typeStr := desc.typeLatex?.getD ""
+          mentions := depNames
+        }
+        stage1Intros := stage1Intros.push (fv, desc, sym, intro)
+
+      -- Stage 2 (Rendered-visibility backwards closure): drop binders like unused `C : Type u`
+      -- or implicit-only `q : Port → ℕ` whose symbol never appears visibly in the rendered
+      -- conclusion, hypotheses, let-defs, or any retained binder's accessories/type!
+      let mut visibleMath : Array String :=
+        hyps.flatMap collectInlineMathStrings ++ collectInlineMathStrings conclInl
+      for (_, valTex, _, _) in letDefsRendered do
+        visibleMath := visibleMath.push valTex
+      -- Include expanded RHS of any `c_k` alias referenced in visible statement pieces so
+      -- variables appearing inside a shorthand's definition are recognized as visibly used.
+      for (pat, cSym) in tbl.exprAliases do
+        if cSym.startsWith "c_{" then
+          let usedInStmt :=
+            visibleMath.any (fun seg => (seg.splitOn cSym).length > 1) ||
+            stage1Intros.any fun (_, _, _, intr) =>
+              (intr.typeStr.splitOn cSym).length > 1 ||
+              intr.accessories.any (fun a => (a.splitOn cSym).length > 1)
+          if usedInStmt then
+            let rhs ← exprToLatex pat { tbl with exprAliases := tbl.exprAliases.filter (·.2 != cSym) }
+            visibleMath := visibleMath.push rhs
+      let mut stage2Rev : Array Intro := #[]
+      for (fv, desc, sym, intro) in stage1Intros.reverse do
+        let usedVisibly :=
+          desc.isWitness || mathDispAppearsIn visibleMath sym
+        if usedVisibly then
+          stage2Rev := stage2Rev.push intro
+          if !intro.typeStr.isEmpty then
+            visibleMath := visibleMath.push intro.typeStr
+          visibleMath := visibleMath ++ extractEmbeddedMath intro.noun.singular
+          for acc in intro.accessories do
+            visibleMath := visibleMath ++ extractEmbeddedMath acc
+        else
+          let decl ← fv.fvarId!.getDecl
+          suppressed := suppressed.push (cleanBinderName decl.userName)
+      let mut intros : List Intro := stage2Rev.reverse.toList
       -- Keep ONLY `c_k` shorthands transitively referenced by hypotheses, `let`s, or conclusion,
       -- ordered leaf-first (no forward references) and renumbered densely `c_1, c_2, …`.
       let allVisibleInls := hyps.foldl (· ++ ·) #[] ++ conclInl

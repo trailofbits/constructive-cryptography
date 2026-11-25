@@ -218,7 +218,7 @@ def renderDocumentJson (doc : Document) : String :=
 elab "#informalize_json " decl:ident " to " path:str : command => do
   let jsonStr ← Elab.Command.runTermElabM fun _ => do
     let declName ← Elab.realizeGlobalConstNoOverloadWithInfo decl
-    let doc ← buildDocument (humanLemmaLabel (← getEnv) declName) none #[declName]
+    let doc ← buildDocument (humanDeclarationTitle (← getEnv) declName) none #[declName]
     return renderDocumentJson doc
   IO.FS.writeFile path.getString jsonStr
 

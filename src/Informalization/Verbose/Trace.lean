@@ -163,34 +163,17 @@ partial def exprCountBounded (e : Expr) (limit : Nat := 80) : Nat :=
 
 /-! ## 2. Proof-Term Inspection Helpers -/
 
-private def collectProofArgs (proof : Expr) : MetaM (Array (Expr × Expr)) := do
-  let env ← getEnv
-  let mut out : Array (Expr × Expr) := #[]
-  for arg in proof.getAppArgs do
-    try
-      let ty ← inferType arg
-      let isCls := match ty.consumeMData.getAppFn.constName? with
-        | some cn => Lean.isClass env cn
-        | none => false
-      if (← isProp ty) && !isCls then
-        out := out.push (arg, ty)
-    catch _ => pure ()
-  return out
-
-private def decompileProofArgs (ctx : DecompCtx) (decompileChild : DecompileChild)
-    (proof : Expr) : StateRefT DiscourseState MetaM (Array ProofNode) := do
-  let pArgs ← collectProofArgs proof
-  let mut children : Array ProofNode := #[]
-  for (ap, aty) in pArgs do
-    let sub ← decompileChild ctx aty ap
-    children := children ++ sub
-  return children
-
 private def pickOpener (kind : TransitionKind) : StateRefT DiscourseState MetaM String := do
   let st ← get
   let (op, st') := st.pickOpener kind
   set st'
   return op
+
+private def markStepEmitted : StateRefT DiscourseState MetaM Unit :=
+  modify (·.markEmitted)
+
+private def subContextOf (ctx : DecompCtx) : DecompCtx :=
+  { ctx with lastFactFVar? := none, factIndex := 0, atRootConclusion := false, isProofStart := false }
 
 private def mkVerboseStep (ctx : DecompCtx) (id : String) (content : Array Inline)
     (children : Array ProofNode) (targetForGoal : Expr) (origin? : Option String := none)
@@ -255,7 +238,7 @@ private def inferSufficesReason (env : Environment) (body : Expr) : String :=
   else
     -- Look for any project-domain lemma referenced in the reduction body
     let projName? := cs.toList.find? fun n =>
-      !isCoreOrMathlib n && !n.toString.startsWith "ConstructiveCryptography.CryptographicAlgebra.Specification"
+      !isCoreOrMathlibIn env n && !n.toString.startsWith "ConstructiveCryptography.CryptographicAlgebra.Specification"
     match projName? with
     | some pn => s!"by {humanLemmaLabel env pn}"
     | none => "by the checked reduction step"
@@ -350,7 +333,7 @@ private partial def flattenVerboseCalc (tbl : SymbolTable) (proof expected : Exp
   let p := proof.consumeMData
   let fn := p.getAppFn.consumeMData
   if fn.isConstOf ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.trans then
-    let pArgs ← collectProofArgs p
+    let pArgs ← proofValuedArgs p
     if pArgs.size == 2 then
       let (p1, t1) := pArgs[0]!
       let (p2, t2) := pArgs[1]!
@@ -404,11 +387,7 @@ private def describeVerboseHopReason (env : Environment) (tbl : SymbolTable) (ho
           if cn == ``Eq.trans then pure #[.text "by chaining exact system identities"]
           else if cn == ``Eq.symm then pure #[.text "by symmetry of exact system identity"]
           else pure #[.text "by exact identity (", .emph (humanLemmaLabel env cn), .text ")"]
-      | .fvar id =>
-          let decl ← id.getDecl
-          match cleanBinderName? decl.userName with
-          | some hn => pure #[.text "by identity ", .inlineMath (formatMathIdent hn)]
-          | none => pure #[.text "by the assumed identity"]
+      | .fvar _ => pure #[.text "by the assumed system identity"]
       | _ => pure #[.text "by exact system identity"]
   | .statistical =>
       match fn with
@@ -434,11 +413,7 @@ private def describeVerboseHopReason (env : Environment) (tbl : SymbolTable) (ho
             pure #[.text "by symmetry of substitution"]
           else
             pure #[.text "by substitution (", .emph (humanLemmaLabel env cn), .text ")"]
-      | .fvar id =>
-          let decl ← id.getDecl
-          match cleanBinderName? decl.userName with
-          | some hn => pure #[.text "by assumption ", .inlineMath (formatMathIdent hn)]
-          | none => pure #[.text "by the assumed substitution"]
+      | .fvar _ => pure #[.text "by the assumed substitution"]
       | _ => pure #[.text "by substitution"]
 
 private def buildAnnotatedCalcChain (ctx : DecompCtx) (decompileChild : DecompileChild)
@@ -449,6 +424,8 @@ private def buildAnnotatedCalcChain (ctx : DecompCtx) (decompileChild : Decompil
   if !isSubGoal && !isDistGoal then return none
   let hops ← flattenVerboseCalc ctx.tbl proof expected
   if hops.size < 2 then return none
+  let op ← pickOpener .elaboration
+  let subCtx := subContextOf ctx
   let env ← getEnv
   let mut calcSteps : Array (CalcStep × Array ProofNode) := #[]
   let mut nComp : Nat := 0
@@ -463,15 +440,14 @@ private def buildAnnotatedCalcChain (ctx : DecompCtx) (decompileChild : Decompil
     let rhsTex ← exprToLatex hop.rhs ctx.tbl
     let reason ← describeVerboseHopReason env ctx.tbl hop
     let subNodes ←
-      if hasAnyVerboseAnnotation hop.proof && !hop.proof.consumeMData.isFVar then
+      if hasAnyVerboseAnnotation hop.proof && (unwrapHypothesisFVar? hop.proof).isNone then
         -- Unwrap `cc_calc_step` `mdata` so inner `By_CC_routine` etc. surfaces without raw `calc-80` noise
         let rawStep := match unwrapVerboseMData? hop.proof with
           | some (kv, inner) =>
               if mdataGetString? kv ccVerboseKindKey == some "cc_calc_step" then inner else hop.proof
           | none => hop.proof
         if (unwrapVerboseMData? rawStep).isSome then
-          decompileChild { ctx with lastFactFVar? := none, factIndex := 0, atRootConclusion := false }
-            hop.prop rawStep
+          decompileChild subCtx hop.prop rawStep
         else
           pure #[]
       else
@@ -486,7 +462,6 @@ private def buildAnnotatedCalcChain (ctx : DecompCtx) (decompileChild : Decompil
     }
     calcSteps := calcSteps.push (cs, subNodes)
   let goal ← buildGoalState ctx.tbl expected
-  let op ← pickOpener .elaboration
   let mut summaryParts : List String := []
   if nComp > 0 then
     summaryParts := summaryParts ++ [s!"{countPhrase nComp ⟨"computational substitution", "computational substitutions"⟩}"]
@@ -517,6 +492,9 @@ private partial def findHCoeffOfGoodBad? (e : Expr) (fuel : Nat := 16) : Option 
 private def decompileCombinatorialSubgoal (ctx : DecompCtx) (decompileChild : DecompileChild)
     (idTag : String) (summary : String) (aty ap : Expr) :
     StateRefT DiscourseState MetaM (Array ProofNode) := do
+  if let some fvid := unwrapHypothesisFVar? ap then
+    let n ← renderHypothesisStep ctx.tbl aty fvid s!"{idTag}-{fvid.name}" (isWrap := true)
+    return #[n]
   if hasAnyVerboseAnnotation ap || exprCountBounded ap 45 < 45 then
     decompileChild ctx aty ap
   else
@@ -525,10 +503,10 @@ private def decompileCombinatorialSubgoal (ctx : DecompCtx) (decompileChild : De
 
 private def extractHCoefficientChildren (ctx : DecompCtx) (decompileChild : DecompileChild)
     (proof : Expr) : StateRefT DiscourseState MetaM (Array ProofNode) := do
-  let subCtx := { ctx with lastFactFVar? := none, factIndex := 0, atRootConclusion := false }
+  let subCtx := subContextOf ctx
   let some w := findHCoeffOfGoodBad? proof |
-    return ← decompileProofArgs subCtx decompileChild proof
-  let pArgs ← collectProofArgs w
+    return ← decompilePremiseArgs subCtx decompileChild proof
+  let pArgs ← proofValuedArgs w
   let total := pArgs.size
   let mut out : Array ProofNode := #[]
   -- `ofGoodBad` proof arguments end with: `[..., idealReveal_isProbDist, hε₁, ratio, bad]`
@@ -563,9 +541,9 @@ private def extractHCoefficientChildren (ctx : DecompCtx) (decompileChild : Deco
 
 /-! ## 5. Primary Verbose-CC `RuleExplainer` (Priority 500) -/
 
-private def originOf (inner : Expr) : Option String :=
+private def originOf (env : Environment) (inner : Expr) : Option String :=
   match inner.getAppFn.consumeMData with
-  | .const n _ => if isCoreOrMathlib n then none else some n.toString
+  | .const n _ => if isCoreOrMathlibIn env n then none else some n.toString
   | _ => none
 
 /-- High-priority `RuleExplainer` recognizing Verbose-CC `Expr.mdata` trace tags and rendering
@@ -591,7 +569,7 @@ def verboseCCExplainer : RuleExplainer where
     let reason? := mdataGetString? kv ccVerboseReasonKey
     let role? := mdataGetString? kv ccVerboseRoleKey
     let count? := mdataGetNat? kv ccVerboseCountKey
-    let subCtx : DecompCtx := { ctx with lastFactFVar? := none, factIndex := 0, atRootConclusion := false }
+    let subCtx := subContextOf ctx
     let env ← getEnv
 
     match kind with
@@ -607,11 +585,12 @@ def verboseCCExplainer : RuleExplainer where
               let symTex ← exprToLatex fv ctx.tbl
               let valTex ← exprToLatex val ctx.tbl
               let goal ← buildGoalState ctx.tbl expected
+              markStepEmitted
               let step : ProofNode :=
                 .step s!"vcc-write-{symTex}-{ctx.factIndex}"
                   #[.text "Write ", .inlineMath s!"{symTex} := {valTex}", .text "."]
                   #[] (some goal)
-              let rest ← decompileChild ctx expected (body.instantiate1 fv)
+              let rest ← decompileChild { ctx with isProofStart := false } expected (body.instantiate1 fv)
               return some (#[step] ++ rest)
         | _ => return some (← decompileChild ctx expected inner)
 
@@ -623,11 +602,12 @@ def verboseCCExplainer : RuleExplainer where
               let symTex ← exprToLatex fv ctx.tbl
               let valTex ← exprToLatex val ctx.tbl
               let goal ← buildGoalState ctx.tbl expected
+              markStepEmitted
               let step : ProofNode :=
                 .step s!"vcc-hybrid-{symTex}-{ctx.factIndex}"
                   #[.text "Introduce the intermediate hybrid ", .inlineMath s!"{symTex} := {valTex}", .text "."]
                   #[] (some goal)
-              let rest ← decompileChild ctx expected (body.instantiate1 fv)
+              let rest ← decompileChild { ctx with isProofStart := false } expected (body.instantiate1 fv)
               return some (#[step] ++ rest)
         | _ => return some (← decompileChild ctx expected inner)
 
@@ -635,6 +615,7 @@ def verboseCCExplainer : RuleExplainer where
     | "claim" | "fact" =>
         match inner.consumeMData with
         | .letE nm ty val body _ =>
+            markStepEmitted
             let valNodes ← decompileChild subCtx ty val
             let tyInl ← renderProposition ctx.tbl ty
             let lead :=
@@ -645,7 +626,8 @@ def verboseCCExplainer : RuleExplainer where
             let step ← mkVerboseStep ctx s!"vcc-{kind}-{ctx.factIndex}"
               (#[.text lead] ++ tyInl ++ #[.text "."]) valNodes ty
             let rest ← withLetDecl nm ty val fun fv =>
-              let nextCtx := { ctx with lastFactFVar? := some fv.fvarId!, factIndex := ctx.factIndex + 1 }
+              let nextCtx :=
+                { ctx with lastFactFVar? := some fv.fvarId!, factIndex := ctx.factIndex + 1, isProofStart := false }
               decompileChild nextCtx expected (body.instantiate1 fv)
             return some (#[step] ++ rest)
         | _ => return some (← decompileChild ctx expected inner)
@@ -654,6 +636,7 @@ def verboseCCExplainer : RuleExplainer where
     | "suffices" =>
         match inner.consumeMData with
         | .letE hNm dom pProof body _ =>
+            markStepEmitted
             let (reasonPhrase, reasonNodes) ← withLocalDecl hNm .default dom fun fv => do
               let bodyInst := body.instantiate1 fv
               let rNodes ← decompileChild subCtx expected bodyInst
@@ -664,11 +647,12 @@ def verboseCCExplainer : RuleExplainer where
             let sufficesStep ← mkVerboseStep ctx s!"vcc-suffices-{ctx.factIndex}"
               (#[.text s!"{lead}, it suffices to show that "] ++ pInl ++ #[.text "."])
               reasonNodes dom
-            let rest ← decompileChild { ctx with atRootConclusion := false } dom pProof
+            let rest ← decompileChild { ctx with atRootConclusion := false, isProofStart := false } dom pProof
             return some (#[sufficesStep] ++ rest)
         | .app fn pProof =>
             match fn.consumeMData with
             | .lam hNm dom body bi =>
+                markStepEmitted
                 let (reasonPhrase, reasonNodes) ← withLocalDecl hNm bi dom fun fv => do
                   let bodyInst := body.instantiate1 fv
                   let rNodes ← decompileChild subCtx expected bodyInst
@@ -679,14 +663,20 @@ def verboseCCExplainer : RuleExplainer where
                 let sufficesStep ← mkVerboseStep ctx s!"vcc-suffices-{ctx.factIndex}"
                   (#[.text s!"{lead}, it suffices to show that "] ++ pInl ++ #[.text "."])
                   reasonNodes dom
-                let rest ← decompileChild { ctx with atRootConclusion := false } dom pProof
+                let rest ← decompileChild { ctx with atRootConclusion := false, isProofStart := false } dom pProof
                 return some (#[sufficesStep] ++ rest)
             | _ => return some (← decompileChild ctx expected inner)
         | _ => return some (← decompileChild ctx expected inner)
 
     -- 6. `By_CC_routine { ... }` compression receipt (quiet in Paper mode, expandable in Auditor)
     | "cc_routine" =>
-        let details ← decompileChild subCtx expected inner
+        markStepEmitted
+        let routineCtx := { subCtx with lemmaDepth := subCtx.config.maxLemmaDepth }
+        let details ← match unwrapHypothesisFVar? inner with
+          | some fvid => do
+              let n ← renderHypothesisStep ctx.tbl expected fvid s!"vcc-routine-hyp-{fvid.name}" (isWrap := true)
+              pure #[n]
+          | none => decompileChild routineCtx expected inner
         let goal ← buildGoalState ctx.tbl expected
         let summary := reason?.getD "routine constructive-cryptography normalization and algebraic bookkeeping"
         let cnt := count?.getD (max 1 details.size)
@@ -700,84 +690,84 @@ def verboseCCExplainer : RuleExplainer where
 
     -- 8. `Construct_using h` / `Construct S from R via π using h`
     | "construct" =>
-        let children ← decompileProofArgs subCtx decompileChild inner
-        let conclInl ← renderProposition ctx.tbl expected
         let op ← pickOpener .consequence
+        let children ← decompilePremiseArgs subCtx decompileChild inner
+        let conclInl ← renderProposition ctx.tbl expected
         let content : Array Inline :=
           #[.text s!"{op} from the checked construction witness, "] ++ conclInl ++ #[.text "."]
-        let step ← mkVerboseStep ctx s!"vcc-construct-{ctx.factIndex}" content children expected (originOf inner)
+        let step ← mkVerboseStep ctx s!"vcc-construct-{ctx.factIndex}" content children expected (originOf env inner)
         return some #[step]
 
     -- 9. `Replace_converter_in h using hEq`
     | "replace_converter" =>
-        let children ← decompileProofArgs subCtx decompileChild inner
-        let conclInl ← renderProposition ctx.tbl expected
         let op ← pickOpener .elaboration
+        let children ← decompilePremiseArgs subCtx decompileChild inner
+        let conclInl ← renderProposition ctx.tbl expected
         let content : Array Inline :=
           #[.text s!"{op} since the two converters induce identical attachments, replacing the converter preserves the statement and shows that "] ++
           conclInl ++ #[.text "."]
-        let step ← mkVerboseStep ctx s!"vcc-replace-conv-{ctx.factIndex}" content children expected (originOf inner)
+        let step ← mkVerboseStep ctx s!"vcc-replace-conv-{ctx.factIndex}" content children expected (originOf env inner)
         return some #[step]
 
     -- 10. `By_sequential_composition h1 and h2`
     | "seq_comp" =>
-        let children ← decompileProofArgs subCtx decompileChild inner
-        let conclInl ← renderProposition ctx.tbl expected
         let op ← pickOpener .consequence
+        let children ← decompilePremiseArgs subCtx decompileChild inner
+        let conclInl ← renderProposition ctx.tbl expected
         let content : Array Inline :=
           #[.text s!"{op} composing the inner and outer construction steps sequentially shows that "] ++
           conclInl ++ #[.text "."]
-        let step ← mkVerboseStep ctx s!"vcc-seq-comp-{ctx.factIndex}" content children expected (originOf inner)
+        let step ← mkVerboseStep ctx s!"vcc-seq-comp-{ctx.factIndex}" content children expected (originOf env inner)
         return some #[step]
 
     -- 11. `By_parallel_composition hL and hR`
     | "par_comp" =>
-        let children ← decompileProofArgs subCtx decompileChild inner
-        let conclInl ← renderProposition ctx.tbl expected
         let op ← pickOpener .consequence
+        let children ← decompilePremiseArgs subCtx decompileChild inner
+        let conclInl ← renderProposition ctx.tbl expected
         let content : Array Inline :=
           #[.text s!"{op} placing the left and right constructions side by side by parallel composability establishes that "] ++
           conclInl ++ #[.text "."]
-        let step ← mkVerboseStep ctx s!"vcc-par-comp-{ctx.factIndex}" content children expected (originOf inner)
+        let step ← mkVerboseStep ctx s!"vcc-par-comp-{ctx.factIndex}" content children expected (originOf env inner)
         return some #[step]
 
     -- 12. `By_context_insensitivity_right` / `By_context_insensitivity_left`
     | "context_right" =>
-        let children ← decompileProofArgs subCtx decompileChild inner
-        let conclInl ← renderProposition ctx.tbl expected
         let op ← pickOpener .elaboration
+        let children ← decompilePremiseArgs subCtx decompileChild inner
+        let conclInl ← renderProposition ctx.tbl expected
         let content : Array Inline :=
           #[.text s!"{op} by context-insensitivity, making the untouched parallel resource available on the right preserves the construction and shows that "] ++
           conclInl ++ #[.text "."]
-        let step ← mkVerboseStep ctx s!"vcc-ctx-right-{ctx.factIndex}" content children expected (originOf inner)
+        let step ← mkVerboseStep ctx s!"vcc-ctx-right-{ctx.factIndex}" content children expected (originOf env inner)
         return some #[step]
 
     | "context_left" =>
-        let children ← decompileProofArgs subCtx decompileChild inner
-        let conclInl ← renderProposition ctx.tbl expected
         let op ← pickOpener .elaboration
+        let children ← decompilePremiseArgs subCtx decompileChild inner
+        let conclInl ← renderProposition ctx.tbl expected
         let content : Array Inline :=
           #[.text s!"{op} by context-insensitivity, making the untouched parallel resource available on the left preserves the construction and shows that "] ++
           conclInl ++ #[.text "."]
-        let step ← mkVerboseStep ctx s!"vcc-ctx-left-{ctx.factIndex}" content children expected (originOf inner)
+        let step ← mkVerboseStep ctx s!"vcc-ctx-left-{ctx.factIndex}" content children expected (originOf env inner)
         return some #[step]
 
     -- 13. `Pull_relaxation_through hOuter using hCompat from hInner`
     | "pull_relax" =>
-        let children ← decompileProofArgs subCtx decompileChild inner
-        let conclInl ← renderProposition ctx.tbl expected
         let op ← pickOpener .consequence
+        let children ← decompilePremiseArgs subCtx decompileChild inner
+        let conclInl ← renderProposition ctx.tbl expected
         let content : Array Inline :=
           #[.text s!"{op} pulling the relaxation to the outside through the outer protocol—accounting for the outer converter via the compatibility property—shows that "] ++
           conclInl ++ #[.text "."]
-        let step ← mkVerboseStep ctx s!"vcc-pull-relax-{ctx.factIndex}" content children expected (originOf inner)
+        let step ← mkVerboseStep ctx s!"vcc-pull-relax-{ctx.factIndex}" content children expected (originOf env inner)
         return some #[step]
 
     -- 14. `Substitute_in_context ...`
     | "substitute" =>
-        let children ← decompileProofArgs subCtx decompileChild inner
-        let conclInl ← renderProposition ctx.tbl expected
         let op ← pickOpener .elaboration
+        let children ← decompilePremiseArgs subCtx decompileChild inner
+        let conclInl ← renderProposition ctx.tbl expected
         let convTex? ← findConverterArgLatex? ctx.tbl inner
         let ctxPhrase : Array Inline := match convTex? with
           | some c =>
@@ -788,11 +778,12 @@ def verboseCCExplainer : RuleExplainer where
               #[.text "inside the surrounding converter context absorbs the context into the distinguisher and shows that "]
         let content : Array Inline :=
           #[.text s!"{op} substituting "] ++ ctxPhrase ++ conclInl ++ #[.text "."]
-        let step ← mkVerboseStep ctx s!"vcc-substitute-{ctx.factIndex}" content children expected (originOf inner)
+        let step ← mkVerboseStep ctx s!"vcc-substitute-{ctx.factIndex}" content children expected (originOf env inner)
         return some #[step]
 
     -- 15. `By_triangle_inequality_via M`
     | "triangle" =>
+        let op ← pickOpener .elaboration
         let mut children : Array ProofNode := #[]
         let mut midTex? : Option String := none
         if let some (mid, p1, p2) ← extractTriangleData? inner then
@@ -812,30 +803,30 @@ def verboseCCExplainer : RuleExplainer where
               (#[.text "For the second leg, "] ++ inl2 ++ #[.text "."]) sub2 (some g2)
           ]
         else
-          children ← decompileProofArgs subCtx decompileChild inner
+          children ← decompilePremiseArgs subCtx decompileChild inner
         let conclInl ← renderProposition ctx.tbl expected
-        let op ← pickOpener .elaboration
         let viaPhrase : Array Inline := match midTex? with
           | some m => #[.text " via the intermediate system ", .inlineMath m]
           | none => #[]
         let content : Array Inline :=
           #[.text s!"{op} applying the triangle inequality"] ++ viaPhrase ++
           #[.text " shows that "] ++ conclInl ++ #[.text "."]
-        let step ← mkVerboseStep ctx s!"vcc-triangle-{ctx.factIndex}" content children expected (originOf inner)
+        let step ← mkVerboseStep ctx s!"vcc-triangle-{ctx.factIndex}" content children expected (originOf env inner)
         return some #[step]
 
     -- 16. `By_non_expansion`
     | "nonexpand" =>
-        let conclInl ← renderProposition ctx.tbl expected
         let op ← pickOpener .justification
+        let conclInl ← renderProposition ctx.tbl expected
         let content : Array Inline :=
           #[.text s!"{op} non-expansion under converter attachment and parallel composition, "] ++
           conclInl ++ #[.text "."]
-        let step ← mkVerboseStep ctx s!"vcc-nonexpand-{ctx.factIndex}" content #[] expected (originOf inner)
+        let step ← mkVerboseStep ctx s!"vcc-nonexpand-{ctx.factIndex}" content #[] expected (originOf env inner)
         return some #[step]
 
     -- 17. `Exhibit_simulator σ [for_interface E]`
     | "exhibit_simulator" =>
+        markStepEmitted
         let args := inner.getAppArgs
         let simTex? ← match label? with
           | some s => pure (some (formatMathIdent s))
@@ -849,7 +840,7 @@ def verboseCCExplainer : RuleExplainer where
                       found := some (← exprToLatex arg ctx.tbl)
                   catch _ => pure ()
               pure found
-        let children ← decompileProofArgs subCtx decompileChild inner
+        let children ← decompilePremiseArgs subCtx decompileChild inner
         let conclInl ← renderProposition ctx.tbl expected
         let simPhrase : Array Inline := match simTex?, role? with
           | some s, some iface =>
@@ -864,21 +855,23 @@ def verboseCCExplainer : RuleExplainer where
           simPhrase ++
           #[.text " and verify both admissibility and the closeness bound, establishing that "] ++
           conclInl ++ #[.text "."]
-        let step ← mkVerboseStep ctx s!"vcc-exhibit-sim-{ctx.factIndex}" content children expected (originOf inner)
+        let step ← mkVerboseStep ctx s!"vcc-exhibit-sim-{ctx.factIndex}" content children expected (originOf env inner)
         return some #[step]
 
     -- 18. `Compose_simulators hInner and hOuter [using_commutation hCommutes]`
     | "compose_simulators" =>
-        let children ← decompileProofArgs subCtx decompileChild inner
+        markStepEmitted
+        let children ← decompilePremiseArgs subCtx decompileChild inner
         let conclInl ← renderProposition ctx.tbl expected
         let content : Array Inline :=
           #[.text "By composition-order invariance between the outer protocol and the inner simulator, composing the simulator constructions serially shows that "] ++
           conclInl ++ #[.text "."]
-        let step ← mkVerboseStep ctx s!"vcc-compose-sim-{ctx.factIndex}" content children expected (originOf inner)
+        let step ← mkVerboseStep ctx s!"vcc-compose-sim-{ctx.factIndex}" content children expected (originOf env inner)
         return some #[step]
 
     -- 19. `Ignore_MBO_of G`
     | "ignore_mbo" =>
+        markStepEmitted
         let (realRest, nextExpected) ← do
           let c := inner.consumeMData
           let fn := c.getAppFn.consumeMData
@@ -889,7 +882,7 @@ def verboseCCExplainer : RuleExplainer where
             pure (restExpr, restTy)
           else
             pure (inner, expected)
-        let restNodes ← decompileChild ctx nextExpected realRest
+        let restNodes ← decompileChild { ctx with isProofStart := false } nextExpected realRest
         let gPhrase : Array Inline := match label? with
           | some g =>
               #[.text "Let ", .inlineMath (formatMathIdent g ++ "^{-}"),
@@ -904,37 +897,40 @@ def verboseCCExplainer : RuleExplainer where
 
     -- 20. `By_fundamental_lemma_of_game_playing h`
     | "fundamental_game" =>
-        let children ← decompileProofArgs subCtx decompileChild inner
+        markStepEmitted
+        let children ← decompilePremiseArgs subCtx decompileChild inner
         let conclInl ← renderProposition ctx.tbl expected
         let content : Array Inline :=
           #[.text "By the fundamental lemma of game playing, any distinguisher between the underlying systems obtained by ignoring the MBO must provoke the MBO, showing that "] ++
           conclInl ++ #[.text "."]
-        let step ← mkVerboseStep ctx s!"vcc-fund-game-{ctx.factIndex}" content children expected (originOf inner)
+        let step ← mkVerboseStep ctx s!"vcc-fund-game-{ctx.factIndex}" content children expected (originOf env inner)
         return some #[step]
 
     -- 21. `By_conditional_equivalence h`
     | "cond_equiv" =>
-        let children ← decompileProofArgs subCtx decompileChild inner
+        markStepEmitted
+        let children ← decompilePremiseArgs subCtx decompileChild inner
         let conclInl ← renderProposition ctx.tbl expected
         let content : Array Inline :=
           #[.text "Since the game is conditionally equivalent to the target system while the monotone binary output (MBO) remains unset, we obtain "] ++
           conclInl ++ #[.text "."]
-        let step ← mkVerboseStep ctx s!"vcc-cond-equiv-{ctx.factIndex}" content children expected (originOf inner)
+        let step ← mkVerboseStep ctx s!"vcc-cond-equiv-{ctx.factIndex}" content children expected (originOf env inner)
         return some #[step]
 
     -- 22. `By_extended_H_technique ...`
     | "extended_h_coeff" =>
+        let op ← pickOpener .consequence
         let children ← extractHCoefficientChildren ctx decompileChild inner
         let conclInl ← renderProposition ctx.tbl expected
-        let op ← pickOpener .consequence
         let content : Array Inline :=
           #[.text s!"{op} extending both systems by revealing their auxiliary randomness and applying the extended H-technique—separately bounding the bad-transcript mass on the ideal side and the probability ratio on good transcripts—establishes that "] ++
           conclInl ++ #[.text "."]
-        let step ← mkVerboseStep ctx s!"vcc-ext-hcoeff-{ctx.factIndex}" content children expected (originOf inner)
+        let step ← mkVerboseStep ctx s!"vcc-ext-hcoeff-{ctx.factIndex}" content children expected (originOf env inner)
         return some #[step]
 
     -- 23. `Exhibit_distinguisher D`
     | "exhibit_distinguisher" =>
+        markStepEmitted
         let advBody := do
           let mut cur := inner
           for _ in [0:4] do
@@ -959,31 +955,32 @@ def verboseCCExplainer : RuleExplainer where
           distPhrase ++
           #[.text "; since the distinguishing distance is the supremum of advantages over all compatible distinguishers, its advantage shows that "] ++
           conclInl ++ #[.text "."]
-        let step ← mkVerboseStep ctx s!"vcc-exhibit-dist-{ctx.factIndex}" content children expected (originOf inner)
+        let step ← mkVerboseStep ctx s!"vcc-exhibit-dist-{ctx.factIndex}" content children expected (originOf env inner)
         return some #[step]
 
     -- 24. `Lower_bound_advantage_of D`
     | "lower_bound_adv" =>
+        let op ← pickOpener .consequence
         let g ← buildGoalState ctx.tbl expected
         let children : Array ProofNode :=
           #[.routineReceipt s!"vcc-lower-adv-rec-{ctx.factIndex}"
               "computing the decision probabilities on both systems and applying the triangle inequality"
               1 #[] (some g)]
         let conclInl ← renderProposition ctx.tbl expected
-        let op ← pickOpener .consequence
         let distPhrase : Array Inline := match label? with
           | some d => #[.inlineMath (formatMathIdent d)]
           | none => #[.text "the distinguisher"]
         let content : Array Inline :=
           #[.text s!"{op} bounding the decision probabilities of "] ++ distPhrase ++
           #[.text " on the real and ideal systems separately shows that "] ++ conclInl ++ #[.text "."]
-        let step ← mkVerboseStep ctx s!"vcc-lower-adv-{ctx.factIndex}" content children expected (originOf inner)
+        let step ← mkVerboseStep ctx s!"vcc-lower-adv-{ctx.factIndex}" content children expected (originOf env inner)
         return some #[step]
 
     -- 25. `Tightness_sandwich`
     | "tightness_sandwich" =>
         let c := inner.consumeMData
         if c.getAppFn.consumeMData.isConstOf ``And.intro && c.getAppArgs.size ≥ 4 then
+          markStepEmitted
           let args := c.getAppArgs
           let p1 := args[args.size - 2]!
           let p2 := args[args.size - 1]!
@@ -1013,15 +1010,19 @@ def verboseCCExplainer : RuleExplainer where
 
     -- 26. `Combining ...`
     | "combine" =>
-        let children ← decompileProofArgs subCtx decompileChild inner
-        let conclInl ← renderProposition ctx.tbl expected
         let op ← pickOpener .closing
+        let children ←
+          if (unwrapVerboseMData? inner).isSome then
+            decompileChild subCtx expected inner
+          else
+            decompilePremiseArgs subCtx decompileChild inner
+        let conclInl ← renderProposition ctx.tbl expected
         let content : Array Inline :=
           if ctx.atRootConclusion then
             #[.text s!"{op} the claimed security bound, completing the proof."]
           else
             #[.text s!"{op} "] ++ conclInl ++ #[.text "."]
-        let step ← mkVerboseStep ctx s!"vcc-combine-{ctx.factIndex}" content children expected (originOf inner)
+        let step ← mkVerboseStep ctx s!"vcc-combine-{ctx.factIndex}" content children expected (originOf env inner)
         return some #[step]
 
     | _ =>

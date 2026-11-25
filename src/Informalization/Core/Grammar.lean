@@ -362,16 +362,38 @@ private def transitionCandidates : TransitionKind → List String
   | .closing       => ["Combining these bounds yields", "Putting these steps together gives",
                        "This establishes"]
 
+private def initialCandidates : TransitionKind → List String
+  | .setup         => ["Fix", "Consider", "Let"]
+  | .elaboration   => ["To prove the claim,", "First,"]
+  | .consequence   => ["To prove the claim,", "First,"]
+  | .justification => ["By", "Applying", "From"]
+  | .reduction     => ["It suffices to show that", "It remains to show that", "It suffices to bound"]
+  | .caveat        => ["Observe that", "Note that"]
+  | .closing       => ["Direct verification establishes", "We establish"]
+
 /-- Pick a Maurer-style discourse opener for `kind`, rotating away from the immediately
-preceding opener so consecutive sentences keep natural literary rhythm. -/
+preceding opener so consecutive sentences keep natural literary rhythm. At the very start
+of a proof (`stepCounter == 0 && lastOpener?.isNone`), never open with `"Consequently,"`,
+`"Hence,"`, or `"Therefore,"`. -/
 def DiscourseState.pickOpener (st : DiscourseState) (kind : TransitionKind) :
     String × DiscourseState :=
-  let cands := transitionCandidates kind
+  let cands :=
+    if st.stepCounter == 0 && st.lastOpener?.isNone then
+      initialCandidates kind
+    else
+      transitionCandidates kind
   let filtered := match st.lastOpener? with
     | some prev => let f := cands.filter (· != prev); if f.isEmpty then cands else f
     | none => cands
   let chosen := filtered[st.stepCounter % filtered.length]?.getD ""
   (chosen, { st with lastOpener? := some chosen, stepCounter := st.stepCounter + 1 })
+
+/-- Record that a sentence has been emitted (advancing discourse state away from proof start). -/
+def DiscourseState.markEmitted (st : DiscourseState) (opener? : Option String := none) :
+    DiscourseState :=
+  { st with
+    lastOpener? := opener? <|> st.lastOpener?
+    stepCounter := st.stepCounter + 1 }
 
 /-! ## Knuth / Halmos Mathematical Typography Rules -/
 
@@ -450,10 +472,10 @@ private def convIntro (n : String) : Intro := { name := n, noun := nounConverter
         let (s2, _) := st.refer "\\(\\Pi^{\\pm}\\)" nounResource "uniform"
         (s1, s2)) == ("a uniform resource \\(\\Pi^{\\pm}\\)", "the resource \\(\\Pi^{\\pm}\\)")
 
--- Anti-repetition discourse cadence
+-- Anti-repetition discourse cadence & valid initial opener
 #guard (let (o1, st) := ({} : DiscourseState).pickOpener .consequence
         let (o2, _) := st.pickOpener .consequence
-        o1 != o2)
+        o1 != o2 && o1 != "Hence," && o1 != "Therefore," && o1 != "Consequently,")
 
 -- Knuth typography
 #guard protectLeadingMath "the resource" "\\(R\\) satisfies the bound." ==

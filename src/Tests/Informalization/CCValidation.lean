@@ -21,6 +21,34 @@ Cryptography examples with **zero per-theorem overlays or hardcoded essays**:
 4. Games, MBOs & Revealed H-Coefficient (`GameExamples.win_le_of_reduction`, `GameExamples.hybrid_ideal_advantage_le`, `SystemAlgebra.Interface.distance_le_of_hCoefficient`)
 -/
 
+informal_title AuthenticatedEncryption.ae_of_ind_cca_int_ptxt
+  "Authenticated Encryption from IND-CCA and INT-PTXT"
+informal_kind AuthenticatedEncryption.ae_of_ind_cca_int_ptxt "Theorem"
+informal_title AuthenticatedEncryption.real_ideal_distance_le
+  "Hybrid Distance Bound for Authenticated Encryption"
+informal_kind AuthenticatedEncryption.real_ideal_distance_le "Lemma"
+informal_title Examples.PRGLengthExtension.prg_length_extension
+  "Length Extension of a Pseudorandom Generator"
+informal_kind Examples.PRGLengthExtension.prg_length_extension "Theorem"
+informal_title ConstructiveCryptography.CryptographicAlgebra.Specification.constructs_of_simulatorImage
+  "Construction from an Admitted Simulator Witness"
+informal_kind ConstructiveCryptography.CryptographicAlgebra.Specification.constructs_of_simulatorImage "Lemma"
+informal_title ConstructiveCryptography.CryptographicAlgebra.Specification.Constructs.serial_simulatorImage
+  "Serial Composition under Indifferentiability"
+informal_kind ConstructiveCryptography.CryptographicAlgebra.Specification.Constructs.serial_simulatorImage "Theorem"
+informal_title ConstructiveCryptography.CryptographicAlgebra.Specification.mixed_application_of_indifferentiability
+  "Mixed Honest Applications with a Common Simulator"
+informal_kind ConstructiveCryptography.CryptographicAlgebra.Specification.mixed_application_of_indifferentiability "Theorem"
+informal_title GameExamples.win_le_of_reduction
+  "Winning Probability Bound under Game Reduction"
+informal_kind GameExamples.win_le_of_reduction "Lemma"
+informal_title GameExamples.hybrid_ideal_advantage_le
+  "AEAD Collision-Hybrid Advantage via Conditional Equivalence"
+informal_kind GameExamples.hybrid_ideal_advantage_le "Theorem"
+informal_title SystemAlgebra.Interface.distance_le_of_hCoefficient
+  "Distinguishing Bound via the Revealed H-Coefficient Technique"
+informal_kind SystemAlgebra.Interface.distance_le_of_hCoefficient "Theorem"
+
 #informalize_show Examples.PRGLengthExtension.prg_length_extension
 #informalize_show AuthenticatedEncryption.ae_of_ind_cca_int_ptxt
 #informalize_show ConstructiveCryptography.CryptographicAlgebra.Specification.Constructs.serial_simulatorImage

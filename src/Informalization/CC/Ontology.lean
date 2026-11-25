@@ -529,12 +529,30 @@ private def ccTypeHandler : TypeHandler where
     if let some iface ← distinguisherInterface? ty then
       let acc ← interfaceAccessory tbl iface
       return some { noun := nounDistinguisher, accessories := [acc] }
-    -- 9. H-coefficient witness
+    -- 8b. Game/distinguisher solver pair `(Phi A → ℝ) × (Game A → ℝ)`
+    if fn.isConstOf ``Prod && args.size == 2 then
+      if let (.forallE _ rTy rOut _, .forallE _ gTy gOut _) := (args[0]!, args[1]!) then
+        if rOut.consumeMData == mkConst `Real && gOut.consumeMData == mkConst `Real then
+          if let (some rIface, some gIface) := (← resourceInterface? rTy, ← gameInterface? gTy) then
+            if rIface == gIface then
+              let acc ← interfaceAccessory tbl rIface
+              return some { noun := ⟨"solver", "solvers"⟩, accessories := [acc] }
+    -- 9. H-coefficient witness (`HCoefficient R S error`)
     if isHCoefficientType ty then
-      return some { noun := ⟨"H-coefficient witness", "H-coefficient witnesses"⟩ }
+      let hArgs := ty.getAppArgs
+      if hArgs.size ≥ 3 then
+        let rTex ← exprToLatex hArgs[hArgs.size - 3]! tbl
+        let sTex ← exprToLatex hArgs[hArgs.size - 2]! tbl
+        let errTex ← exprToLatex hArgs[hArgs.size - 1]! tbl
+        return some {
+          noun := ⟨"H-coefficient witness", "H-coefficient witnesses"⟩
+          accessories := [s!"for \\({rTex}\\) and \\({sTex}\\) with error bound \\({errTex}\\)"]
+          isWitness := true
+        }
+      return some { noun := ⟨"H-coefficient witness", "H-coefficient witnesses"⟩, isWitness := true }
     -- 10. Substitution implication witness
     if isImplicationType ty then
-      return some { noun := ⟨"substitution chain", "substitution chains"⟩ }
+      return some { noun := ⟨"substitution chain", "substitution chains"⟩, isWitness := true }
     -- 11. Query history predicate on `List (Sigma (fun i => Interface.X A i))`
     if let .forallE _ dom body _ := ty then
       if !body.hasLooseBVar 0 && body == .sort .zero then
@@ -758,6 +776,7 @@ def registerAll : IO Unit := do
   registerAppHandler (distanceHandler transcriptDistanceName)
   registerAppHandler advantageDistanceHandler
   registerAppHandler (distinguisherAdvantageValHandler distinguisherAdvantageValName)
+  registerAppHandler (distinguisherAdvantageValHandler `ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.advantage)
   registerAppHandler (distinguisherAdvantageValHandler `SystemAlgebra.Domain.Distinguisher.advantage)
   registerAppHandler (distinguisherAdvantageValHandler `SystemAlgebra.Domain.DistinguisherBehavior.advantage)
   registerAppHandler (distinguisherProbHandler distinguisherProbabilityName)

@@ -500,7 +500,9 @@ private partial def collectExplicitProjectConstants (env : Environment) (e : Exp
                   if curTy.hasLooseBVars then
                     res := res.push a
                   else
-                    curTy ← whnfD curTy
+                    curTy ← match curTy.consumeMData with
+                      | f@(.forallE ..) => pure f
+                      | other => whnfD other
                     match curTy with
                     | .forallE _ dom body bi =>
                         if bi.isExplicit && (dom.hasLooseBVars || !(← isAmbientTypeclass dom)) then
@@ -655,21 +657,40 @@ def collectScopedCCInspectors (tbl : SymbolTable) (declName : Name) (theoremType
     if seen.contains ins.key then (acc, seen)
     else (acc.push ins, seen.insert ins.key)
   let (fvOut, typeConsts) ← forallTelescope theoremType fun fvars conclusion => do
-    let mut fvOut : Array SymbolInspector := #[]
+    let fam ← collectAmbientFamilies
+    let mut neededFVars : Std.HashSet FVarId := {}
+    for id in (Lean.collectFVars {} conclusion).fvarIds do
+      neededFVars := neededFVars.insert id
+    let mut candParams : Array (Expr × TypeDescription × String × String) := #[]
     let mut consts : Array Name := #[]
     for fv in fvars do
       let decl ← fv.fvarId!.getDecl
       if ← isSuppressedLocalDecl decl then continue
       if ← isProp decl.type then
         consts := consts ++ (← collectExplicitProjectConstants env decl.type)
+        for id in (Lean.collectFVars {} decl.type).fvarIds do
+          neededFVars := neededFVars.insert id
         continue
       let desc ← describeType tbl decl.type
       if desc.isAmbient then continue
-      consts := consts ++ (← collectExplicitProjectConstants env decl.type)
+      if fam.categories.any (fun c => c == fv) then continue
       let clean := cleanBinderName decl.userName
       let display ← exprToLatex fv tbl
       if hoistedParamSyms.contains display then
         continue
+      candParams := candParams.push (fv, desc, clean, display)
+    let mut keptRev : Array (Expr × TypeDescription × String × String) := #[]
+    for item in candParams.reverse do
+      let (fv, desc, _, _) := item
+      let decl ← fv.fvarId!.getDecl
+      if desc.isWitness || neededFVars.contains fv.fvarId! then
+        keptRev := keptRev.push item
+        for id in (Lean.collectFVars {} decl.type).fvarIds do
+          neededFVars := neededFVars.insert id
+    let mut fvOut : Array SymbolInspector := #[]
+    for (fv, _, clean, display) in keptRev.reverse do
+      let decl ← fv.fvarId!.getDecl
+      consts := consts ++ (← collectExplicitProjectConstants env decl.type)
       let leanType ← cleanLeanTypeStr decl.type
       let key := s!"param:{declName}:{clean}"
       let (kind, badge) : InspectorKind × String ← do

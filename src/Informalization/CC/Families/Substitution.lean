@@ -41,26 +41,6 @@ open Informalization.Core.Ontology
 open Informalization.Core.Explanation
 open Informalization.Core.ProofGraph
 
-/-- Extract all proof-valued arguments `(arg, propType)` from a proof application. -/
-private def collectProofArgs (proof : Expr) : MetaM (Array (Expr × Expr)) := do
-  let mut out : Array (Expr × Expr) := #[]
-  for arg in proof.getAppArgs do
-    try
-      let ty ← inferType arg
-      if ← isProp ty then
-        out := out.push (arg, ty)
-    catch _ => pure ()
-  return out
-
-private def decompileProofArgs (ctx : DecompCtx) (decompileChild : DecompileChild)
-    (proof : Expr) : StateRefT DiscourseState MetaM (Array ProofNode) := do
-  let pArgs ← collectProofArgs proof
-  let mut children : Array ProofNode := #[]
-  for (ap, aty) in pArgs do
-    let sub ← decompileChild ctx aty ap
-    children := children ++ sub
-  return children
-
 private def pickMaurerOpener (kind : TransitionKind) :
     StateRefT DiscourseState MetaM String := do
   let st ← get
@@ -157,7 +137,7 @@ private partial def flattenCCCalc (tbl : SymbolTable) (proof expected : Expr) (f
   let fn := p.getAppFn.consumeMData
   -- Case 1: `SubstitutesWithin.trans model p1 p2`
   if fn.isConstOf ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.trans then
-    let pArgs ← collectProofArgs p
+    let pArgs ← proofValuedArgs p
     if pArgs.size == 2 then
       let (p1, t1) := pArgs[0]!
       let (p2, t2) := pArgs[1]!
@@ -225,11 +205,7 @@ private def describeHopReason (env : Environment) (tbl : SymbolTable) (hop : Ext
             return #[.text "by symmetry of exact system identity"]
           else
             return #[.text "by exact identity (", .emph (humanLemmaLabel env cn), .text ")"]
-      | .fvar id =>
-          let decl ← id.getDecl
-          match cleanBinderName? decl.userName with
-          | some hn => return #[.text "by identity ", .inlineMath (formatMathIdent hn)]
-          | none => return #[.text "by the assumed identity"]
+      | .fvar _ => return #[.text "by the assumed system identity"]
       | _ => return #[.text "by exact system equality"]
   | .statistical =>
       match fn with
@@ -261,11 +237,7 @@ private def describeHopReason (env : Environment) (tbl : SymbolTable) (hop : Ext
             return #[.text "by symmetry of substitution"]
           else
             return #[.text "by substitution (", .emph (humanLemmaLabel env cn), .text ")"]
-      | .fvar id =>
-          let decl ← id.getDecl
-          match cleanBinderName? decl.userName with
-          | some hn => return #[.text "by assumption ", .inlineMath (formatMathIdent hn)]
-          | none => return #[.text "by the assumed substitution"]
+      | .fvar _ => return #[.text "by the assumed substitution"]
       | _ => return #[.text "by substitution"]
 
 /-- Explainer for multi-step `cc_calc` chains (mixed, quantitative, statistical). -/
@@ -284,6 +256,9 @@ def ccCalcChainExplainer : RuleExplainer where
     if !isSubGoal && !isDistGoal then return none
     let hops ← flattenCCCalc ctx.tbl proof expected
     if hops.size < 2 then return none
+    let op ← pickMaurerOpener .elaboration
+    let subCtx : DecompCtx :=
+      { ctx with lastFactFVar? := none, factIndex := 0, atRootConclusion := false, isProofStart := false }
     let env ← getEnv
     let mut calcSteps : Array (CalcStep × Array ProofNode) := #[]
     let mut nComp : Nat := 0
@@ -297,7 +272,11 @@ def ccCalcChainExplainer : RuleExplainer where
       let lhsTex ← exprToLatex hop.lhs ctx.tbl
       let rhsTex ← exprToLatex hop.rhs ctx.tbl
       let reason ← describeHopReason env ctx.tbl hop
-      let subNodes ← decompileChild ctx hop.prop hop.proof
+      let subNodes ← match unwrapHypothesisFVar? hop.proof with
+        | some fvid => do
+            let n ← renderHypothesisStep ctx.tbl hop.prop fvid s!"calc-hyp-{fvid.name}-{hop.prop.hash}" (isWrap := true)
+            pure #[n]
+        | none => decompileChild subCtx hop.prop hop.proof
       let diagHtml ← (← diagramHookRef.get) hop.prop
       let cs : CalcStep := {
         lhsLatex := lhsTex
@@ -308,7 +287,6 @@ def ccCalcChainExplainer : RuleExplainer where
       }
       calcSteps := calcSteps.push (cs, subNodes)
     let goal ← buildGoalState ctx.tbl expected
-    let op ← pickMaurerOpener .elaboration
     let mut summaryParts : List String := []
     if nComp > 0 then
       summaryParts := summaryParts ++ [s!"{countPhrase nComp ⟨"computational substitution", "computational substitutions"⟩}"]
@@ -337,8 +315,8 @@ def substitutionRuleExplainer : RuleExplainer where
        head == ``ConstructiveCryptography.AdmissibleDistinguishers.substitutesWithin_attach ||
        head == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.attach ||
        head == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.attach_serial then
-      let children ← decompileProofArgs ctx decompileChild proof
       let op ← pickMaurerOpener .elaboration
+      let children ← decompilePremiseArgs ctx decompileChild proof
       -- Try to find the converter term among arguments
       let mut convTex? : Option String := none
       for arg in args do
@@ -359,24 +337,24 @@ def substitutionRuleExplainer : RuleExplainer where
       return some #[node]
     if head == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_distance ||
        head == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_statistical then
-      let children ← decompileProofArgs ctx decompileChild proof
       let op ← pickMaurerOpener .justification
+      let children ← decompilePremiseArgs ctx decompileChild proof
       let content : Array Inline :=
         #[.text s!"{op} every admitted distinguisher's advantage is bounded by the statistical transcript distance, "] ++
         conclInl ++ #[.text "."]
       let node ← mkStep ctx s!"cc-sub-stat-{head}" content children expected head
       return some #[node]
     if head == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.symm then
-      let children ← decompileProofArgs ctx decompileChild proof
       let op ← pickMaurerOpener .elaboration
+      let children ← decompilePremiseArgs ctx decompileChild proof
       let content : Array Inline :=
         #[.text s!"{op} by symmetry of distinguishing advantage, reversing the substitution preserves the error function and yields "] ++
         conclInl ++ #[.text "."]
       let node ← mkStep ctx s!"cc-sub-symm-{head}" content children expected head
       return some #[node]
     if head == ``ConstructiveCryptography.AdmissibleDistinguishers.ClosedUnder.comp then
-      let children ← decompileProofArgs ctx decompileChild proof
       let op ← pickMaurerOpener .consequence
+      let children ← decompilePremiseArgs ctx decompileChild proof
       let content : Array Inline :=
         #[.text s!"{op} absorbing a sequential composition of converters absorbs each converter in turn, so the distinguisher class remains closed: "] ++
         conclInl ++ #[.text "."]
@@ -393,8 +371,8 @@ def substitutionRuleExplainer : RuleExplainer where
     if head == ``ConstructiveCryptography.CryptographicAlgebra.SubstitutionRelation.Implication.substitutesWithin ||
        head == ``ConstructiveCryptography.CryptographicAlgebra.SubstitutionRelation.Implication.substitutesWithin_of_mixed ||
        head == ``ConstructiveCryptography.CryptographicAlgebra.SubstitutionRelation.derivable_substitutes then
-      let children ← decompileProofArgs ctx decompileChild proof
       let op ← pickMaurerOpener .consequence
+      let children ← decompilePremiseArgs ctx decompileChild proof
       let content : Array Inline :=
         #[.text s!"{op} accumulating the per-step error budgets along the finite substitution chain yields "] ++
         conclInl ++ #[.text "."]

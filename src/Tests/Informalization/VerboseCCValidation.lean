@@ -49,39 +49,36 @@ noncomputable section
 /-! ## Flagship 1: PRG Length Extension -/
 
 /-- Doubling a PRG from `S → S × S` to `S → S × S × S` via the two-call converter constructions
-`𝓡₁` and `𝓡₂` incurs at most `ε₁ + ε₂` distinguishing distance against a uniform triple. -/
+`𝓡₁` and `𝓡₂` incurs at most `ε + ε` distinguishing distance against a uniform triple. -/
 theorem prgLengthExtension_verbose
     {S : Type} [Fintype S] [Nonempty S]
-    (G : S → S × S) (q : Commons.Evaluation.Port → ℕ) {ε₁ ε₂ : ENNReal}
-    (hPRG₁ : Δ (Examples.PRGLengthExtension.PRGReal.perPort G
+    (G : S → S × S) {q : Commons.Evaluation.Port → ℕ} {ε : ENNReal}
+    (hPRG : Δ (Examples.PRGLengthExtension.PRGReal.perPort G
       (budget := Examples.PRGLengthExtension.𝓡₁.insideBudget G q))
-      (Commons.MemorylessSource.perPort (S × S) 𝒰[S × S]) ≤ ε₁)
-    (hPRG₂ : Δ (Examples.PRGLengthExtension.PRGReal.perPort G
-      (budget := Examples.PRGLengthExtension.𝓡₂.insideBudget S q))
-      (Commons.MemorylessSource.perPort (S × S) 𝒰[S × S]) ≤ ε₂) :
+      (Commons.MemorylessSource.perPort (S × S) 𝒰[S × S]) ≤ ε) :
     Δ (Examples.PRGLengthExtension.PRGReal.perPort (Examples.PRGLengthExtension.H G)
       (budget := q))
-      (Commons.MemorylessSource.perPort (S × S × S) 𝒰[S × S × S]) ≤ ε₁ + ε₂ := by
-  Write U₁ := Commons.MemorylessSource.perPort (S × S) 𝒰[S × S]
+      (Commons.MemorylessSource.perPort (S × S × S) 𝒰[S × S × S]) ≤ ε + ε := by
+  Write U := Commons.MemorylessSource.perPort (S × S) 𝒰[S × S]
     (budget := Examples.PRGLengthExtension.𝓡₁.insideBudget G q)
-  Write U₂ := Commons.MemorylessSource.perPort (S × S) 𝒰[S × S]
-    (budget := Examples.PRGLengthExtension.𝓡₂.insideBudget S q)
-  Introduce_hybrid M₁ := Examples.PRGLengthExtension.𝓡₁.perPort G (budget := q) • U₁
-  Introduce_hybrid M₂ := Examples.PRGLengthExtension.𝓡₂.perPort S (budget := q) • U₂
-  Claim hStep1 :
+  Introduce_hybrid M₁ := Examples.PRGLengthExtension.𝓡₁.perPort G (budget := q) • U
+  Introduce_hybrid M₂ := Examples.PRGLengthExtension.𝓡₂.perPort S (budget := q) •
+    (@id (TypedSystem (Commons.Evaluation.perPort Unit (S × S)
+      (Examples.PRGLengthExtension.𝓡₂.insideBudget S q))) U)
+  Claim hFirstCall :
       Δ (Examples.PRGLengthExtension.𝓡₁.perPort G (budget := q) •
           Examples.PRGLengthExtension.PRGReal.perPort G
             (budget := Examples.PRGLengthExtension.𝓡₁.insideBudget G q))
-        M₁ ≤ ε₁ by
+        M₁ ≤ ε by
     By_non_expansion
-    exact hPRG₁
-  Claim hStep2 :
+    exact hPRG
+  Claim hSecondCall :
       Δ (Examples.PRGLengthExtension.𝓡₂.perPort S (budget := q) •
           Examples.PRGLengthExtension.PRGReal.perPort G
             (budget := Examples.PRGLengthExtension.𝓡₂.insideBudget S q))
-        M₂ ≤ ε₂ by
+        M₂ ≤ ε by
     By_non_expansion
-    exact hPRG₂
+    exact hPRG
   By_hybrid_chain {
     cc_calc statistical
       Examples.PRGLengthExtension.PRGReal.perPort (Examples.PRGLengthExtension.H G) (budget := q)
@@ -93,21 +90,24 @@ theorem prgLengthExtension_verbose
               By_CC_routine "rewriting the length extension as a converter attachment" {
                 exact Examples.PRGLengthExtension.prgReal_H_eq G q
               }
-      _ ≈[ε₁] M₁ :=
+      _ ≈[ε] M₁ :=
           because_of "by replacing the first PRG instance with a uniform pair via non-expansion" =>
-            hStep1
+            hFirstCall
       _ = Examples.PRGLengthExtension.𝓡₂.perPort S (budget := q) •
             Examples.PRGLengthExtension.PRGReal.perPort G
               (budget := Examples.PRGLengthExtension.𝓡₂.insideBudget S q) :=
           because_of "by regrouping the uniform prefix into the second-call converter" =>
             Examples.PRGLengthExtension.𝓡₁_smul_prgRand G q
-      _ ≈[ε₂] M₂ :=
+      _ ≈[ε] M₂ :=
           because_of "by replacing the second PRG instance with a uniform pair via non-expansion" =>
-            hStep2
+            hSecondCall
       _ = Commons.MemorylessSource.perPort (S × S × S) 𝒰[S × S × S] (budget := q) :=
           because_of "by folding the two independent uniform pairs into a uniform triple" =>
             Examples.PRGLengthExtension.𝓡₂_smul_prgRand q
   }
+
+informal_title prgLengthExtension_verbose "PRG Length Extension (Verbose-CC)"
+informal_kind prgLengthExtension_verbose "Theorem"
 
 /-! ## Flagship 2: Authenticated Encryption Composition & Reduction -/
 
@@ -131,23 +131,26 @@ theorem aeadComposition_verbose
     By_sequential_composition hLifted and hMac
   By_context_insensitivity_right {macKey} using hEnc
 
+informal_title aeadComposition_verbose "Authenticated Encryption Composition (Verbose-CC)"
+informal_kind aeadComposition_verbose "Theorem"
+
 /-- Concrete authenticated encryption distance decomposition combining the plaintext-integrity
 and ciphertext-indistinguishability terms with the collision penalty. -/
 theorem aeadHybridReduction_verbose
     {K M C : Type} [Fintype K] [Fintype M] [Fintype C]
     [DecidableEq K] [DecidableEq M] [DecidableEq C] [Nonempty M]
     (scheme : Commons.SymmetricEncryption K M C) (q : Commons.AE.Port → ℕ)
-    {εₚ ε_c : ENNReal}
+    {ε_p ε_c : ENNReal}
     (hPTXT : Δ (Commons.AE.system.perPort scheme (budget := q))
       (Commons.AE.PTXT.perPort M C (budget := q) •
-        Commons.AE.system.perPort scheme (budget := q)) ≤ εₚ)
+        Commons.AE.system.perPort scheme (budget := q)) ≤ ε_p)
     (hCCA : Δ (Commons.AE.system.perPort scheme (budget := q))
       (Commons.AE.CCA.perPort M C (budget := q) •
         Commons.AE.system.perPort scheme (budget := q)) ≤ ε_c) :
     Δ (Commons.AE.system.perPort scheme (budget := q))
       (Commons.AE.Ideal.perPort M C (budget := q) •
         Commons.Encryption.system.perPort scheme (budget := Commons.AE.Ideal.insideBudget M C q)) ≤
-      εₚ + ε_c + εₚ + ε_c +
+      ε_p + ε_c + ε_p + ε_c +
         (((q Commons.AE.Port.enc : ℝ≥0) ^ 2 / (Fintype.card M : ℝ≥0) : ℝ≥0) : ENNReal) := by
   It_suffices_to_show hBase :
       Δ (Commons.AE.system.perPort scheme (budget := q))
@@ -162,7 +165,7 @@ theorem aeadHybridReduction_verbose
       Δ (Commons.AE.system.perPort scheme (budget := q))
         (Commons.AE.CCA.perPort M C (budget := q) •
           Commons.AE.system.perPort scheme (budget := q)) ≤
-        εₚ + ε_c + εₚ + ε_c
+        ε_p + ε_c + ε_p + ε_c
       because "by the hybrid distance decomposition of authenticated encryption" via {
     By_CC_routine "combining the AEAD hybrid bound with the per-component distance assumptions" {
       exact (AuthenticatedEncryption.real_ideal_distance_le scheme q).trans
@@ -170,8 +173,13 @@ theorem aeadHybridReduction_verbose
     }
   }
   Combining {
-    exact add_le_add (add_le_add (add_le_add hPTXT hCCA) hPTXT) hCCA
+    By_CC_routine "summing the plaintext-integrity and IND-CCA component bounds" {
+      exact add_le_add (add_le_add (add_le_add hPTXT hCCA) hPTXT) hCCA
+    }
   }
+
+informal_title aeadHybridReduction_verbose "AEAD Hybrid Distance Decomposition (Verbose-CC)"
+informal_kind aeadHybridReduction_verbose "Theorem"
 
 /-! ## Flagship 3: Indifferentiability Serial Simulator Composition -/
 
@@ -197,6 +205,9 @@ theorem indiffSerialComposition_verbose
       ({ideal} : Specification (TypedSystem (H ⊗ Q))) —[application ▷ Q; δ]→ {target} by
     Construct_using idealApplication
   Compose_simulators hIndiff and hApp
+
+informal_title indiffSerialComposition_verbose "Indifferentiability Serial Simulator Composition (Verbose-CC)"
+informal_kind indiffSerialComposition_verbose "Theorem"
 
 /-! ## Flagship 4: Games & Revealed Extended H-Technique -/
 
@@ -229,17 +240,22 @@ theorem gameCollision_verbose
       (ConstructiveCryptography.DistinctionGames.solvers_winner hs)
   }
 
+informal_title gameCollision_verbose "AEAD Collision-Hybrid Bound via Conditional Equivalence (Verbose-CC)"
+informal_kind gameCollision_verbose "Theorem"
+
 /-- Revealed Extended H-Technique with non-trivial ideal randomness and bad-transcript split,
 leaving the ideal reveal law, good-transcript ratio, and bad-mass combinatorics to standard Lean. -/
 theorem extendedHCoefficient_verbose (A : Interface) (S : TypedSystem A) :
     Δ S S ≤ ((1 / 2 : ℝ≥0) : ENNReal) := by
   Write P := Probability.Distribution.ProbDist.single ()
   Fact hp : S.1 = SystemAlgebra.RandomSystem.mix P (fun _ => S.1) by
-    apply SystemAlgebra.RandomSystem.ext
-    intro h
-    simp only [SystemAlgebra.RandomSystem.mix_mass, ne_eq, one_ne_zero, not_false_eq_true,
-      Finsupp.support_single, Finsupp.single_eq_same, one_mul, Finset.sum_const,
-      Finset.card_singleton, one_smul, P, Probability.Distribution.ProbDist.single]
+    By_CC_routine "verifying that the trivial one-point mixture reproduces the system" {
+      apply SystemAlgebra.RandomSystem.ext
+      intro h
+      simp only [SystemAlgebra.RandomSystem.mix_mass, ne_eq, one_ne_zero, not_false_eq_true,
+        Finsupp.support_single, Finsupp.single_eq_same, one_mul, Finset.sum_const,
+        Finset.card_singleton, one_smul, P, Probability.Distribution.ProbDist.single]
+    }
   By_extended_H_technique
     mixing_real (fun _ => S.1) over P using hp
     revealing (fun _ _ => false) and (fun _ => Probability.Distribution.uniform Bool)
@@ -265,6 +281,9 @@ theorem extendedHCoefficient_verbose (A : Interface) (S : TypedSystem A) :
       norm_num [Probability.Distribution.uniform_apply]
     simp only [hmass, Probability.Distribution.expect_const,
       (S.1.sLaw_isProbDist (hE _ S.2) n).weight_eq, mul_one, le_refl]
+
+informal_title extendedHCoefficient_verbose "Extended H-Technique on Self-Distance (Verbose-CC)"
+informal_kind extendedHCoefficient_verbose "Theorem"
 
 /-! ## Flagship 5: Tightness Sandwich (`lower_bound` + `upper_bound`) -/
 
@@ -326,6 +345,8 @@ def bitObserver : bitInterface.inputDomain.Distinguisher :=
 /-- Typed behavior of `bitObserver`. -/
 def bitObserverBehavior : TypedDistinguisher bitInterface := bitObserver.behavior
 
+informal_symbol bitObserverBehavior "D"
+
 private lemma bitObserver_fixed_prob (b : Bool) :
     bitObserverBehavior.1 (fixedBit b) = if b then 1 else 0 := by
   change bitObserver.probability (fixedBit b).1 = if b then 1 else 0
@@ -366,11 +387,13 @@ theorem bitDistinguishingTightness_verbose :
   upper_bound {
     Write P₁ := Probability.Distribution.ProbDist.single ()
     Fact hMix : (fixedBit false).1 = SystemAlgebra.RandomSystem.mix P₁ (fun _ => (fixedBit false).1) by
-      apply SystemAlgebra.RandomSystem.ext
-      intro h
-      simp only [SystemAlgebra.RandomSystem.mix_mass, P₁, Probability.Distribution.ProbDist.single,
-        ne_eq, one_ne_zero, not_false_eq_true, Finsupp.support_single, Finsupp.single_eq_same,
-        one_mul, Finset.sum_const, Finset.card_singleton, one_smul]
+      By_CC_routine "verifying that the trivial one-point mixture reproduces the constant-bit system" {
+        apply SystemAlgebra.RandomSystem.ext
+        intro h
+        simp only [SystemAlgebra.RandomSystem.mix_mass, P₁, Probability.Distribution.ProbDist.single,
+          ne_eq, one_ne_zero, not_false_eq_true, Finsupp.support_single, Finsupp.single_eq_same,
+          one_mul, Finset.sum_const, Finset.card_singleton, one_smul]
+      }
     By_extended_H_technique
       mixing_real (fun _ => (fixedBit false).1) over P₁ using hMix
       revealing (fun _ _ => ()) and (fun _ => Finsupp.single () 1)
@@ -436,6 +459,9 @@ theorem bitDistinguishingTightness_verbose :
         convert rfl
       linarith
   }
+
+informal_title bitDistinguishingTightness_verbose "One-Query Bit-Distinguishing Tightness Sandwich (Verbose-CC)"
+informal_kind bitDistinguishingTightness_verbose "Theorem"
 
 end
 

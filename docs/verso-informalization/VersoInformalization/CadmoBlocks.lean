@@ -70,16 +70,53 @@ def prettyFallbackMath (tex : String) : String :=
     |>.replace "\\lor" "∨"
     |>.replace "\\neg" "¬"
     |>.replace "\\infty" "∞"
+    |>.replace "\\left(" "("
+    |>.replace "\\right)" ")"
+    |>.replace "\\left[" "["
+    |>.replace "\\right]" "]"
+    |>.replace "^{-}" "⁻"
     |>.replace "\\," " "
     |>.replace "\\;" " "
     |>.replace "\\!" ""
     |>.replace "\\_" "_"
 
+private def takeScriptGroup (cs : List Char) (depth : Nat) (inner : List Char) :
+    Option (List Char × List Char) :=
+  match cs with
+  | [] => none
+  | '{' :: more => takeScriptGroup more (depth + 1) ('{' :: inner)
+  | '}' :: more =>
+      if depth == 0 then some (inner.reverse, more)
+      else takeScriptGroup more (depth - 1) ('}' :: inner)
+  | x :: more => takeScriptGroup more depth (x :: inner)
+
+private partial def convertScriptGroupsGo (chars : List Char) (acc : List Char) : List Char :=
+  match chars with
+  | [] => acc
+  | c :: '{' :: rest =>
+      if c == '^' || c == '_' then
+        let tag := if c == '^' then "sup" else "sub"
+        match takeScriptGroup rest 0 [] with
+        | some (inner, tail) =>
+            let openTag := s!"<{tag}>".toList.reverse
+            let closeTag := s!"</{tag}>".toList.reverse
+            let renderedInner := (convertScriptGroupsGo inner []).reverse
+            convertScriptGroupsGo tail (closeTag ++ renderedInner ++ openTag ++ acc)
+        | none => convertScriptGroupsGo ('{' :: rest) (c :: acc)
+      else
+        convertScriptGroupsGo ('{' :: rest) (c :: acc)
+  | c :: rest => convertScriptGroupsGo rest (c :: acc)
+
+/-- Convert simple TeX `^{...}` / `_{...}` groups in already-escaped text into HTML `<sup>`/`<sub>`
+tags for crisp fallback math rendering before JS hydration. -/
+private def convertScriptGroupsHtml (escaped : String) : String :=
+  String.ofList (convertScriptGroupsGo escaped.toList []).reverse
+
 /-- Render a math span (`displayMode = false`) or display block (`displayMode = true`). -/
 def renderMathHtml (latex : String) (displayMode : Bool := false) : String :=
   let cls := if displayMode then "cadmo-display-math" else "cadmo-math"
   let tag := if displayMode then "div" else "span"
-  let body := escapeHtml (prettyFallbackMath latex)
+  let body := convertScriptGroupsHtml (escapeHtml (prettyFallbackMath latex))
   s!"<{tag} class=\"{cls}\" data-latex=\"{escapeHtml latex}\">{body}</{tag}>"
 
 /-- Render a single `Inline` element. Underlined `symbol` buttons bind to `SymbolInspector` by key. -/
@@ -201,7 +238,8 @@ def renderInspectorCardHtml (ins : SymbolInspector) : String :=
   s!"</div></div>{bodyHtml}{docHtml}{clausesHtml}{leanDetails}</section>"
 
 /-- Project proof nodes according to `ViewMode`: in `paper` mode, transparent `isWrapper`
-steps with children are stepped through so Level 0 lands on genuine mathematical joints. -/
+steps with children are stepped through so Level 0 lands on genuine mathematical joints,
+and leaf `isWrapper` nodes (such as bare hypothesis passthroughs) are hidden. -/
 partial def projectNodes (mode : ViewMode) (nodes : Array ProofNode) : Array ProofNode :=
   match mode with
   | .auditor => nodes
@@ -209,9 +247,23 @@ partial def projectNodes (mode : ViewMode) (nodes : Array ProofNode) : Array Pro
       nodes.foldl (init := #[]) fun acc n =>
         match n with
         | .step _ _ children _ _ _ true _ =>
-            if children.isEmpty then acc.push n
+            if children.isEmpty then acc
             else acc ++ projectNodes mode children
         | _ => acc.push n
+
+/-- Filter children visible in `mode`: in `paper` mode, omit a disclosure toggle when the
+visible children are empty or consist of a single `routineReceipt`. -/
+def visibleChildren (mode : ViewMode) (nodes : Array ProofNode) : Array ProofNode :=
+  let vis := projectNodes mode nodes
+  match mode with
+  | .auditor => vis
+  | .paper =>
+      if vis.isEmpty then #[]
+      else if vis.size == 1 then
+        match vis[0]! with
+        | .routineReceipt .. => #[]
+        | _ => vis
+      else vis
 
 /-- Render a recursive `ProofNode` in ETH CADMO style with quiet `⊕`/`⊖` disclosure controls. -/
 partial def renderProofNodeHtml (doc : Document) (mode : ViewMode := .paper) : ProofNode → String
@@ -222,7 +274,7 @@ partial def renderProofNodeHtml (doc : Document) (mode : ViewMode := .paper) : P
       let cap? := if caption.isEmpty then none else some (renderInlinesHtml doc caption)
       s!"<div data-node-id=\"{escapeHtml id}\">{renderDiagramFigureHtml html cap?}</div>"
   | .routineReceipt id summary stepCount details _ =>
-      let projected := projectNodes mode details
+      let projected := visibleChildren mode details
       let hasDetails := !projected.isEmpty
       let toggle :=
         if hasDetails then
@@ -232,18 +284,18 @@ partial def renderProofNodeHtml (doc : Document) (mode : ViewMode := .paper) : P
       let childrenHtml :=
         if hasDetails then
           let inner := String.join (projected.toList.map (renderProofNodeHtml doc mode))
-          s!"<div class=\"cadmo-children\" id=\"children-{escapeHtml id}\" hidden>{inner}</div>"
+          s!"<div class=\"cadmo-children cadmo-expanded-children\" id=\"children-{escapeHtml id}\" hidden>{inner}</div>"
         else ""
       s!"<div class=\"cadmo-node\" data-node-id=\"{escapeHtml id}\">" ++
-      s!"<div class=\"cadmo-routine\">{toggle}" ++
+      s!"<div class=\"cadmo-routine\">" ++
       s!"<span class=\"cadmo-routine-chip\">{escapeHtml summary} ({stepCount} checked)</span>" ++
-      s!"</div>{childrenHtml}</div>"
+      s!"{toggle}</div>{childrenHtml}</div>"
   | .calcChain id intro steps _ _ =>
       let introHtml :=
         if intro.isEmpty then ""
         else s!"<p class=\"cadmo-calc-intro\">{renderInlinesHtml doc intro}</p>"
       let rows := String.join <| (steps.toList.zipIdx).map fun (((st : CalcStep), ch), idx) =>
-        let projected := projectNodes mode ch
+        let projected := visibleChildren mode ch
         let sid := s!"{id}-s{idx}"
         let lhs := if idx == 0 then renderMathHtml st.lhsLatex false else ""
         let toggle :=
@@ -264,12 +316,12 @@ partial def renderProofNodeHtml (doc : Document) (mode : ViewMode := .paper) : P
               | none => ""
             let sub := String.join (projected.toList.map (renderProofNodeHtml doc mode))
             s!"<tr class=\"cadmo-calc-expand-row\" id=\"children-{escapeHtml sid}\" hidden>" ++
-            s!"<td colspan=\"4\">{diag}<div class=\"cadmo-children\">{sub}</div></td></tr>"
+            s!"<td colspan=\"4\">{diag}<div class=\"cadmo-children cadmo-expanded-children\">{sub}</div></td></tr>"
         mainRow ++ expandRow
       s!"<div class=\"cadmo-calc\" data-node-id=\"{escapeHtml id}\">{introHtml}" ++
       s!"<table class=\"cadmo-calc-table\"><tbody>{rows}</tbody></table></div>"
   | .step id content children goal? diagramHtml? originDecl? isWrapper defaultExpanded =>
-      let projected := projectNodes mode children
+      let projected := visibleChildren mode children
       let hasChildren := !projected.isEmpty
       let expandedAttr := if defaultExpanded then "true" else "false"
       let glyph := if defaultExpanded then "⊖" else "⊕"
@@ -294,7 +346,7 @@ partial def renderProofNodeHtml (doc : Document) (mode : ViewMode := .paper) : P
         if hasChildren then
           let hiddenAttr := if defaultExpanded then "" else " hidden"
           let inner := String.join (projected.toList.map (renderProofNodeHtml doc mode))
-          s!"<div class=\"cadmo-children\" id=\"children-{escapeHtml id}\"{hiddenAttr}>{inner}</div>"
+          s!"<div class=\"cadmo-children cadmo-expanded-children\" id=\"children-{escapeHtml id}\"{hiddenAttr}>{inner}</div>"
         else ""
       let cls := if isWrapper then "cadmo-node is-wrapper" else "cadmo-node"
       s!"<div class=\"{cls}\" data-node-id=\"{escapeHtml id}\">" ++

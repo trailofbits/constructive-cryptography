@@ -308,9 +308,23 @@ a:hover {
 
 .cadmo-expansion {
   margin: 0.55rem 0 0.85rem 0.45rem;
-  padding: 0.2rem 0 0.1rem 1.15rem;
+  padding: 0.25rem 0 0.15rem 1.15rem;
   border-left: 1px solid var(--rule);
   font-size: 0.96rem;
+}
+
+.cadmo-expanded-children {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cadmo-expanded-step {
+  line-height: 1.58;
+}
+
+.cadmo-expanded-step > .cadmo-sent {
+  display: inline;
 }
 
 .cadmo-expansion > .cadmo-proof-para:last-child {
@@ -484,6 +498,7 @@ a:hover {
   margin: 0.7rem 0;
   overflow-x: auto;
   max-width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 .cadmo-calc-intro {
@@ -491,24 +506,26 @@ a:hover {
 }
 
 .cadmo-calc-table {
-  width: 100%;
+  width: max-content;
+  min-width: 100%;
   border-collapse: collapse;
   margin: 0.25rem 0;
 }
 
 .cadmo-calc-table td {
-  padding: 0.26rem 0.25rem;
+  padding: 0.26rem 0.32rem;
   vertical-align: baseline;
 }
 
 .cadmo-calc-lhs { text-align: right; white-space: nowrap; }
 .cadmo-calc-rel { text-align: center; padding-inline: 0.5rem !important; white-space: nowrap; }
-.cadmo-calc-rhs { text-align: left; }
+.cadmo-calc-rhs { text-align: left; min-width: 11rem; }
 .cadmo-calc-reason {
   font-size: 0.86rem;
   font-style: italic;
   color: var(--ink-muted);
   padding-left: 0.9rem !important;
+  min-width: 13rem;
 }
 
 .cadmo-calc-expand-row td {
@@ -518,24 +535,32 @@ a:hover {
 /* ==========================================================================
    2D Mathematical Typography
    ========================================================================== */
-.cadmo-math {
+.cadmo-math,
+.cadmo-display-math {
   font-family: var(--font-math);
   font-variant-numeric: lining-nums;
 }
 
-.cadmo-math var { font-style: italic; }
-.cadmo-math .cadmo-op { font-style: normal; }
-.cadmo-math .cadmo-cal { font-style: italic; }
+.cadmo-math var,
+.cadmo-display-math var { font-style: italic; }
+.cadmo-math .cadmo-op,
+.cadmo-display-math .cadmo-op { font-style: normal; }
+.cadmo-math .cadmo-cal,
+.cadmo-display-math .cadmo-cal { font-style: italic; }
 
 .cadmo-math sub,
-.cadmo-math sup {
+.cadmo-math sup,
+.cadmo-display-math sub,
+.cadmo-display-math sup {
   font-size: 0.74em;
   line-height: 0;
   position: relative;
   vertical-align: baseline;
 }
-.cadmo-math sup { top: -0.42em; }
-.cadmo-math sub { bottom: -0.22em; }
+.cadmo-math sup,
+.cadmo-display-math sup { top: -0.42em; }
+.cadmo-math sub,
+.cadmo-display-math sub { bottom: -0.22em; }
 
 .cadmo-frac {
   display: inline-flex;

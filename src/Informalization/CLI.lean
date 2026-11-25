@@ -209,7 +209,7 @@ def runCli (opts : CliOptions) : IO UInt32 := do
     | some t => t
     | none =>
         match opts.decls[0]? with
-        | some d => humanLemmaLabel env d
+        | some d => humanDeclarationTitle env d
         | none => "Constructive Cryptography Informalization"
   let config : Informalization.Core.ProofGraph.Config := { maxLemmaDepth := opts.maxLemmaDepth }
   let doc ← runMetaOnEnv env (buildDocument title opts.subtitle? opts.decls config)

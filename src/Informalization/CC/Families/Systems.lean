@@ -49,25 +49,6 @@ open Informalization.Core.Ontology
 open Informalization.Core.Explanation
 open Informalization.Core.ProofGraph
 
-private def collectProofArgs (proof : Expr) : MetaM (Array (Expr × Expr)) := do
-  let mut out : Array (Expr × Expr) := #[]
-  for arg in proof.getAppArgs do
-    try
-      let ty ← inferType arg
-      if ← isProp ty then
-        out := out.push (arg, ty)
-    catch _ => pure ()
-  return out
-
-private def decompileProofArgs (ctx : DecompCtx) (decompileChild : DecompileChild)
-    (proof : Expr) : StateRefT DiscourseState MetaM (Array ProofNode) := do
-  let pArgs ← collectProofArgs proof
-  let mut children : Array ProofNode := #[]
-  for (ap, aty) in pArgs do
-    let sub ← decompileChild ctx aty ap
-    children := children ++ sub
-  return children
-
 private def pickMaurerOpener (kind : TransitionKind) :
     StateRefT DiscourseState MetaM String := do
   let st ← get
@@ -95,8 +76,8 @@ def bisimulationAndRealizationExplainer : RuleExplainer where
        head == ``SystemAlgebra.Program.invoke_bisim ||
        head == ``SystemAlgebra.parallelStep_bisim ||
        head == ``SystemAlgebra.IsBisim.comp then
-      let children ← decompileProofArgs ctx decompileChild proof
       let op ← pickMaurerOpener .consequence
+      let children ← decompilePremiseArgs ctx decompileChild proof
       let content : Array Inline :=
         #[.text s!"{op} by state bisimulation—preserving the invariant relation between internal states while producing identical replies to every query—we obtain "] ++
         conclInl ++ #[.text "."]
@@ -107,16 +88,16 @@ def bisimulationAndRealizationExplainer : RuleExplainer where
        head == ``SystemAlgebra.DDC.ofProgram_eq_of_stateRel ||
        head == ``SystemAlgebra.DDC.ofProgramOn_eq_of_stateRel ||
        head == ``SystemAlgebra.TypedSystem.ofAutomaton_map_congr then
-      let children ← decompileProofArgs ctx decompileChild proof
       let op ← pickMaurerOpener .elaboration
+      let children ← decompilePremiseArgs ctx decompileChild proof
       let content : Array Inline :=
         #[.text s!"{op} because the two state representations induce identical input-output behavior on every draw, their resulting systems coincide: "] ++
         conclInl ++ #[.text "."]
       let node ← mkStep ctx s!"cc-staterel-{head}" content children expected head
       return some #[node]
     if head == ``SystemAlgebra.TypedSystem.eq_ofFunction then
-      let children ← decompileProofArgs ctx decompileChild proof
       let op ← pickMaurerOpener .elaboration
+      let children ← decompilePremiseArgs ctx decompileChild proof
       let content : Array Inline :=
         #[.text s!"{op} since the system answers every admissible query history deterministically with probability one according to the prescribed function, "] ++
         conclInl ++ #[.text "."]
@@ -159,8 +140,8 @@ def memorylessAndSamplingExplainer : RuleExplainer where
     if head == ``SystemAlgebra.TypedSystem.parallel_ofMemoryless ||
        head == ``SystemAlgebra.TypedSystem.parallel_eq_ofMemoryless ||
        head == ``SystemAlgebra.TypedSystem.parallel_eq_memoryless then
-      let children ← decompileProofArgs ctx decompileChild proof
       let op ← pickMaurerOpener .elaboration
+      let children ← decompilePremiseArgs ctx decompileChild proof
       let content : Array Inline :=
         #[.text s!"{op} composing independent memoryless systems in parallel yields a memoryless system replying according to the queried component's law: "] ++
         conclInl ++ #[.text "."]
@@ -173,8 +154,8 @@ def memorylessAndSamplingExplainer : RuleExplainer where
        head == ``SystemAlgebra.TypedConverter.ofPreservingProgram_smul_memoryless ||
        head == ``SystemAlgebra.TypedConverter.ofCostedProgram_smul_memoryless ||
        head == ``SystemAlgebra.TypedConverter.ofPreservingProgram_comp_rightContext_smul_memoryless then
-      let children ← decompileProofArgs ctx decompileChild proof
       let op ← pickMaurerOpener .consequence
+      let children ← decompilePremiseArgs ctx decompileChild proof
       let content : Array Inline :=
         #[.text s!"{op} inlining the converter program against fresh inside replies shows that each invocation yields the state-independent reply law, establishing "] ++
         conclInl ++ #[.text "."]
@@ -199,8 +180,8 @@ def memorylessAndSamplingExplainer : RuleExplainer where
       let node ← mkStep ctx s!"cc-sample-hoist-{head}" content #[] expected head
       return some #[node]
     if head == ``SystemAlgebra.TypedSystem.transcriptDistance_sample_le then
-      let children ← decompileProofArgs ctx decompileChild proof
       let op ← pickMaurerOpener .consequence
+      let children ← decompilePremiseArgs ctx decompileChild proof
       let content : Array Inline :=
         #[.text s!"{op} averaging the componentwise distinguishing bounds over the common initial draw preserves the uniform error bound, yielding "] ++
         conclInl ++ #[.text "."]
@@ -209,8 +190,8 @@ def memorylessAndSamplingExplainer : RuleExplainer where
     if head == ``SystemAlgebra.TypedConverter.parallelAll_attach ||
        head == ``SystemAlgebra.TypedConverter.parallelAllContext_smul ||
        head == ``SystemAlgebra.TypedSystem.parallelAll_admits_iff then
-      let children ← decompileProofArgs ctx decompileChild proof
       let op ← pickMaurerOpener .elaboration
+      let children ← decompilePremiseArgs ctx decompileChild proof
       let content : Array Inline :=
         #[.text s!"{op} attaching converters across an indexed parallel family acts independently on each tagged component, yielding "] ++
         conclInl ++ #[.text "."]

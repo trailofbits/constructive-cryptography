@@ -699,30 +699,48 @@
     if (state.mode === "auditor") return nodes;
     const out = [];
     for (const n of nodes) {
-      if (n.kind === "step" && n.isWrapper && Array.isArray(n.children) && n.children.length > 0) {
-        out.push(...projectNodes(n.children));
-      } else {
+      if (n && n.kind === "step" && n.isWrapper) {
+        if (Array.isArray(n.children) && n.children.length > 0) {
+          out.push(...projectNodes(n.children));
+        }
+      } else if (n) {
         out.push(n);
       }
     }
     return out;
   }
 
+  function paperVisibleChildren(rawNodes) {
+    const vis = projectNodes(rawNodes || []);
+    if (state.mode === "auditor") return vis;
+    if (vis.length === 0) return [];
+    // Omit a Paper-mode disclosure toggle when the only visible child is a single routineReceipt
+    if (vis.length === 1 && vis[0] && vis[0].kind === "routineReceipt") return [];
+    return vis;
+  }
+
   function collectAllExpandableIds(nodes, out = []) {
-    for (const n of nodes || []) {
-      if (n.kind === "step" && Array.isArray(n.children) && n.children.length > 0) {
-        out.push(n.id);
-        collectAllExpandableIds(n.children, out);
+    for (const n of projectNodes(nodes || [])) {
+      if (n.kind === "step") {
+        const vis = paperVisibleChildren(n.children || []);
+        if (vis.length > 0) {
+          out.push(n.id);
+          collectAllExpandableIds(vis, out);
+        }
       } else if (n.kind === "calcChain") {
         (n.steps || []).forEach((s, idx) => {
-          if (Array.isArray(s.children) && s.children.length > 0) {
+          const vis = paperVisibleChildren(s.justification || s.children || []);
+          if (vis.length > 0) {
             out.push(`${n.id}-s${idx}`);
-            collectAllExpandableIds(s.children, out);
+            collectAllExpandableIds(vis, out);
           }
         });
-      } else if (n.kind === "routineReceipt" && Array.isArray(n.details) && n.details.length > 0) {
-        out.push(n.id);
-        collectAllExpandableIds(n.details, out);
+      } else if (n.kind === "routineReceipt") {
+        const vis = paperVisibleChildren(n.details || []);
+        if (vis.length > 0) {
+          out.push(n.id);
+          collectAllExpandableIds(vis, out);
+        }
       }
     }
     return out;
@@ -775,6 +793,27 @@
       }
     }
 
+    function emitSentence(sentEl, childrenEl = null) {
+      if (depth > 0) {
+        flushPara(false);
+        const kids = [];
+        if (leadIn && !usedLeadIn) {
+          kids.push(h("span", { class: "cadmo-proof-lead" }, leadIn));
+          usedLeadIn = true;
+        }
+        kids.push(sentEl);
+        out.push(h("div", { class: "cadmo-expanded-step" }, ...kids));
+        if (childrenEl) out.push(childrenEl);
+      } else {
+        ensureLeadIn();
+        paraChildren.push(sentEl);
+        if (childrenEl) {
+          flushPara(false);
+          out.push(childrenEl);
+        }
+      }
+    }
+
     for (let i = 0; i < nodes.length; i++) {
       const node = nodes[i];
       if (!node || node.kind === "figure") continue;
@@ -789,29 +828,27 @@
       if (node.kind === "routineReceipt") {
         // In Paper mode at top level, keep pure routine receipts quiet unless there's no other step
         if (state.mode === "paper" && depth === 0 && nodes.length > 1) continue;
-        const hasDetails = Array.isArray(node.details) && node.details.length > 0;
+        const details = paperVisibleChildren(node.details || []);
+        const hasDetails = details.length > 0;
         const isOpen = state.expanded.has(node.id);
-        ensureLeadIn();
-        paraChildren.push(
-          h("span", { class: "cadmo-sent cadmo-routine" },
-            hasDetails
-              ? h("button", {
-                  type: "button",
-                  class: "cadmo-inline-toggle",
-                  "aria-expanded": isOpen ? "true" : "false",
-                  onClick: () => toggleId(node.id)
-                }, isOpen ? "⊖" : "⊕")
-              : null,
-            renderMixedText(`By ${node.summary || "routine algebra"}.`, scope),
-            renderGoalButton(node.goal, node.summary || "Routine step")
-          )
+        const sent = h("span", { class: "cadmo-sent cadmo-routine" },
+          renderMixedText(`By ${node.summary || "routine algebra"}.`, scope),
+          hasDetails
+            ? h("button", {
+                type: "button",
+                class: "cadmo-inline-toggle",
+                "aria-expanded": isOpen ? "true" : "false",
+                onClick: () => toggleId(node.id)
+              }, isOpen ? "⊖" : "⊕")
+            : null,
+          renderGoalButton(node.goal, node.summary || "Routine step")
         );
-        if (hasDetails && isOpen) {
-          flushPara(false);
-          out.push(h("div", { class: "cadmo-expansion" },
-            ...renderProofFlow(node.details, { depth: depth + 1, scope })
-          ));
-        }
+        const childrenEl = (hasDetails && isOpen)
+          ? h("div", { class: "cadmo-expansion cadmo-expanded-children" },
+              ...renderProofFlow(details, { depth: depth + 1, scope })
+            )
+          : null;
+        emitSentence(sent, childrenEl);
         continue;
       }
 
@@ -831,7 +868,7 @@
         const rows = [];
         (node.steps || []).forEach((item, idx) => {
           const st = item.step || {};
-          const ch = projectNodes(item.children || []);
+          const ch = paperVisibleChildren(item.justification || item.children || []);
           const sid = `${node.id}-s${idx}`;
           const isOpen = state.expanded.has(sid);
           rows.push(
@@ -857,7 +894,7 @@
             rows.push(
               h("tr", { class: "cadmo-calc-expand-row" },
                 h("td", { colspan: "4" },
-                  h("div", { class: "cadmo-expansion" },
+                  h("div", { class: "cadmo-expansion cadmo-expanded-children" },
                     ...renderProofFlow(ch, { depth: depth + 1, scope })
                   )
                 )
@@ -871,11 +908,10 @@
         continue;
       }
 
-      // Default: `step` — flows INLINE inside the current paragraph!
-      const children = projectNodes(node.children || []);
+      // Default: `step` — flows INLINE inside depth-0 paragraph, or as separate block at depth > 0
+      const children = paperVisibleChildren(node.children || []);
       const hasChildren = children.length > 0;
       const isOpen = state.expanded.has(node.id);
-      ensureLeadIn();
       const sent = h("span", { class: "cadmo-sent" + (node.isWrapper ? " is-wrapper" : "") },
         renderInlines(node.content || [], scope),
         hasChildren
@@ -891,15 +927,12 @@
         node.originDecl ? h("span", { class: "cadmo-origin-tag" }, node.originDecl) : null,
         renderGoalButton(node.goal, node.originDecl || "Proof step")
       );
-      paraChildren.push(sent);
-
-      // Only break out an indented expansion block if THIS sentence is currently expanded!
-      if (hasChildren && isOpen) {
-        flushPara(false);
-        out.push(h("div", { class: "cadmo-expansion" },
-          ...renderProofFlow(children, { depth: depth + 1, scope })
-        ));
-      }
+      const childrenEl = (hasChildren && isOpen)
+        ? h("div", { class: "cadmo-expansion cadmo-expanded-children" },
+            ...renderProofFlow(children, { depth: depth + 1, scope })
+          )
+        : null;
+      emitSentence(sent, childrenEl);
     }
 
     if (paraChildren.length > 0) {

@@ -44,6 +44,44 @@ def cleanBinderName? (n : Name) : Option String :=
 def cleanBinderName (n : Name) (fallback : String := "x") : String :=
   (cleanBinderName? n).getD fallback
 
+/-- Pick a binder name that does not collide with any already-visible binder in `getLCtx`
+(appending `'`, `''`, etc. when shadowed). -/
+def freshShadowFreeName (nm : Name) (fallback : String := "x") : MetaM Name := do
+  let base := cleanBinderName nm fallback
+  let lctx ← getLCtx
+  let mut existing : Std.HashSet String := {}
+  for d in lctx do
+    if !d.isAuxDecl && !d.isImplementationDetail && d.binderInfo != .instImplicit then
+      if let some s := cleanBinderName? d.userName then
+        existing := existing.insert s
+  if !existing.contains base then
+    return Name.mkSimple base
+  let mut cand := base ++ "'"
+  let mut tries := 0
+  while existing.contains cand && tries < 8 do
+    cand := cand ++ "'"
+    tries := tries + 1
+  if existing.contains cand then
+    cand := base ++ "_" ++ toString (tries + 1)
+  return Name.mkSimple cand
+
+/-- Check whether `disp` appears as a rendered math token inside `mathSegs`. -/
+def mathDispAppearsIn (mathSegs : Array String) (disp : String) : Bool :=
+  if disp.isEmpty then false
+  else if disp.length ≥ 2 then
+    mathSegs.any fun seg => (seg.splitOn disp).length > 1
+  else
+    let ch := disp.toList.head!
+    mathSegs.any fun seg =>
+      let chars := seg.toList
+      let rec check (prevAlpha : Bool) : List Char → Bool
+        | [] => false
+        | c :: rest =>
+            let nextAlpha := match rest with | d :: _ => d.isAlpha | [] => false
+            if c == ch && !prevAlpha && !nextAlpha then true
+            else check (c.isAlpha || c == '\\') rest
+      check false chars
+
 /-- Clean a constant name to its short readable leaf (stripping module prefixes & hygiene).
 For structural variant suffixes like `.perPort`, `.mk`, `.toFun`, preserve the meaningful
 parent stem (`Real.perPort` -> `"Real"`, `𝓡₁.perPort` -> `"𝓡₁"`). -/
@@ -67,7 +105,7 @@ private def transparentUnaryWrappers : List Name :=
     `NNReal.toReal, `NNReal.coe, `Real.toNNReal, `Real.ofNNReal,
     `Nat.cast, `Int.cast, `Rat.cast, `NNReal.ofReal,
     `Coe.coe, `CoeHTCT.coe, `CoeTC.coe, `CoeT.coe, `CoeHead.coe, `CoeTail.coe,
-    `Subtype.val, `id, `optParam, `outParam, `autoParam ]
+    `Subtype.val, `id, `outParam ]
 
 /-- Heads of ambient algebraic / Lean-bookkeeping typeclasses that should be factored into
 the Ambient Setting once per document/section rather than repeated in every lemma header. -/
@@ -89,69 +127,95 @@ def ambientTypeclassHeads : List Name :=
     `ConstructiveCryptography.DistinctionGames,
     `ConstructiveCryptography.DistinctionGameAction ]
 
-/-- Is `ty` an ambient typeclass / bookkeeping instance? -/
+/-- Is `ty` an ambient typeclass / bookkeeping instance? Uses fast syntactic lookup first
+before falling back to `isClass?` (`whnf`). -/
 def isAmbientTypeclass (ty : Expr) : MetaM Bool := do
   let ty ← instantiateMVars ty
   match ty.getAppFn.consumeMData with
   | .const name _ =>
       if ambientTypeclassHeads.contains name then return true
+      let env ← getEnv
+      if Lean.isClass env name then return true
       return (← isClass? ty).isSome
   | _ => return false
 
 /-- Check if a local declaration is an implementation detail, auxiliary decl, or ambient
-typeclass instance that should stay out of ordinary human-facing proof contexts. -/
+typeclass instance using fast syntactic lookup (zero `whnf` on every goal context). -/
 def isSuppressedLocalDecl (d : LocalDecl) : MetaM Bool := do
   if d.isAuxDecl || d.isImplementationDetail then return true
   if d.binderInfo == .instImplicit then return true
-  isAmbientTypeclass d.type
+  let ty := d.type.consumeMData
+  match ty.getAppFn.consumeMData with
+  | .const name _ =>
+      let env ← getEnv
+      return ambientTypeclassHeads.contains name || Lean.isClass env name
+  | _ => return false
 
-/-- Deterministic presentation normalizer:
-1. Instantiates metavariables and strips `mdata`;
+/-- Deterministic presentation normalizer (with $O(\text{DAG})$ memoization on closed subterms):
+1. Instantiates metavariables once and strips `mdata`;
 2. Beta-reduces applied lambdas `(fun x => body) arg` (eliminating kernel lambda clutter);
 3. Unwraps transparent numeric/coercion wrappers (`ENNReal.ofReal`, `Nat.cast`, `Subtype.val`, …);
 4. Preserves all cryptographic/mathematical definitions without unfolding them. -/
 partial def normalizeForPresentation (e : Expr) (fuel : Nat := 128) : MetaM Expr := do
-  if fuel == 0 then return e
-  let e ← instantiateMVars e
-  match e with
-  | .mdata _ inner => normalizeForPresentation inner (fuel - 1)
-  | .app .. =>
-      let fn := e.getAppFn.consumeMData
-      let args := e.getAppArgs
-      -- Beta-reduce applied lambdas immediately (e.g. `(fun x => ...) v`)
-      if fn.isLambda then
-        let reduced := e.headBeta
-        if reduced != e then
-          return ← normalizeForPresentation reduced (fuel - 1)
-      -- Unwrap transparent unary coercion wrappers (last explicit argument is the value)
-      if let .const name _ := fn then
-        if transparentUnaryWrappers.contains name then
-          if let some lastArg := args.back? then
-            return ← normalizeForPresentation lastArg (fuel - 1)
-        -- `Set.mem_ofPred_eq` / `OfNat.ofNat` stays clean; normalize args otherwise
-      let fn' ← normalizeForPresentation fn (fuel - 1)
-      let args' ← args.mapM (normalizeForPresentation · (fuel - 1))
-      return mkAppN fn' args'
-  | .lam nm dom body bi =>
-      let dom' ← normalizeForPresentation dom (fuel - 1)
-      let body' ← normalizeForPresentation body (fuel - 1)
-      return .lam nm dom' body' bi
-  | .forallE nm dom body bi =>
-      let dom' ← normalizeForPresentation dom (fuel - 1)
-      let body' ← normalizeForPresentation body (fuel - 1)
-      return .forallE nm dom' body' bi
-  | .letE nm ty val body nondep =>
-      -- Inline synthetic let-bindings whose names are hygienic; keep human-named lets
-      let val' ← normalizeForPresentation val (fuel - 1)
-      if (cleanBinderName? nm).isNone then
-        normalizeForPresentation (body.instantiate1 val') (fuel - 1)
-      else
-        let ty' ← normalizeForPresentation ty (fuel - 1)
-        let body' ← normalizeForPresentation body (fuel - 1)
-        return .letE nm ty' val' body' nondep
-  | .proj structName idx s =>
-      return .proj structName idx (← normalizeForPresentation s (fuel - 1))
-  | _ => return e
+  let e0 ← instantiateMVars e
+  let rec go (cur : Expr) (rem : Nat) : StateRefT (Std.HashMap Expr Expr) MetaM Expr := do
+    if rem == 0 then return cur
+    let cacheKey? := if !cur.hasLooseBVars then some cur else none
+    if let some k := cacheKey? then
+      if let some hit := (← get).get? k then
+        return hit
+    let res ← match cur with
+      | .mdata _ inner => go inner (rem - 1)
+      | .app .. =>
+          let fn := cur.getAppFn.consumeMData
+          let args := cur.getAppArgs
+          if fn.isLambda then
+            let reduced := cur.headBeta
+            if reduced != cur then
+              go reduced (rem - 1)
+            else
+              let fn' ← go fn (rem - 1)
+              let args' ← args.mapM (go · (rem - 1))
+              pure (mkAppN fn' args')
+          else
+            let unwrap? := match fn with
+              | .const name _ =>
+                  if name == ``optParam || name == ``autoParam then args[0]?
+                  else if transparentUnaryWrappers.contains name then args.back?
+                  else none
+              | _ => none
+            match unwrap? with
+            | some lastArg => go lastArg (rem - 1)
+            | none =>
+                let fn' ← go fn (rem - 1)
+                let args' ← args.mapM (go · (rem - 1))
+                pure (mkAppN fn' args')
+      | .lam nm dom body bi =>
+          let dom' ← go dom (rem - 1)
+          let body' ← go body (rem - 1)
+          pure (.lam nm dom' body' bi)
+      | .forallE nm dom body bi =>
+          let dom' ← go dom (rem - 1)
+          let body' ← go body (rem - 1)
+          pure (.forallE nm dom' body' bi)
+      | .letE nm ty val body nondep =>
+          let val' ← go val (rem - 1)
+          if (cleanBinderName? nm).isNone then
+            go (body.instantiate1 val') (rem - 1)
+          else
+            let ty' ← go ty (rem - 1)
+            let body' ← go body (rem - 1)
+            pure (.letE nm ty' val' body' nondep)
+      | .proj structName idx s =>
+          if structName == ``Subtype && idx == 0 then
+            go s (rem - 1)
+          else
+            pure (.proj structName idx (← go s (rem - 1)))
+      | _ => pure cur
+    if let some k := cacheKey? then
+      modify (·.insert k res)
+    return res
+  (go e0 fuel).run' {}
 
 /-- Forbidden patterns that must NEVER appear in reader-facing output (automated CI gate). -/
 def forbiddenLeakPatterns : List String :=

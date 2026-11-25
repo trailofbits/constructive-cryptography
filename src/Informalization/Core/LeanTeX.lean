@@ -88,8 +88,9 @@ def escapeLatex (s : String) : String :=
       | _    => c.toString
 
 /-- Format a short mathematical identifier cleanly: single Latin/Greek letters stay bare
-italic (`x`, `q`, `ε`), multi-letter names use `\mathrm` or `\mathsf` cleanly, and
-trailing numeric subscripts render as `x_1`, `q_e`. -/
+italic (`x`, `q`, `ε`), multi-letter names use `\mathrm` cleanly, Unicode subscripts (`εₚ`,
+`x₁`) and ASCII short subscripts (`ε_c`, `x_0`, `q_e`, `ε_p`) render as `base_{sub}`, and
+trailing primes (`w'`, `w''`) are preserved. -/
 partial def formatMathIdent (s : String) : String :=
   let s := s.trimAscii.toString
   if s.isEmpty then "x"
@@ -110,26 +111,41 @@ partial def formatMathIdent (s : String) : String :=
     | "𝓟" => "\\mathcal{P}" | "𝒟" => "\\mathcal{D}" | "𝒰" => "\\mathcal{U}"
     | _ =>
       if s.length == 1 then escapeLatex s
+      else if s.endsWith "'" && s.length > 1 then
+        let base := (s.dropEnd 1).toString
+        formatMathIdent base ++ "'"
       else
-        -- Handle trailing prime (e.g. `H'` -> `H'`, `R'` -> `R'`)
-        if s.endsWith "'" && s.length == 2 then
-          let base := (s.dropEnd 1).toString
-          formatMathIdent base ++ "'"
+        -- Handle ASCII subscript `<ident>_<sub1..3>` (e.g. `ε_c`, `x_0`, `q_e`, `ε_p`)
+        let underParts := s.splitOn "_"
+        if underParts.length == 2 then
+          let base := underParts[0]!
+          let sub := underParts[1]!
+          if !base.isEmpty && !sub.isEmpty && sub.length ≤ 3 && sub.all Char.isAlphanum &&
+             (base.length ≤ 2 || (base.length ≤ 3 && sub.all Char.isDigit)) then
+            formatMathIdent base ++ "_{" ++ sub ++ "}"
+          else
+            "\\mathrm{" ++ escapeLatex s ++ "}"
         else
-        -- Convert Unicode subscript digits `₀..₉` to ASCII digits for subscript splitting
-        let subDigit : Char → Option Char
-          | '₀' => some '0' | '₁' => some '1' | '₂' => some '2' | '₃' => some '3'
-          | '₄' => some '4' | '₅' => some '5' | '₆' => some '6' | '₇' => some '7'
-          | '₈' => some '8' | '₉' => some '9' | c => if c.isDigit then some c else none
-        let chars := s.toList
-        let revDigits := chars.reverse.takeWhile fun c => (subDigit c).isSome
-        let baseLen := chars.length - revDigits.length
-        if !revDigits.isEmpty && baseLen > 0 && baseLen ≤ 2 then
-          let base := String.ofList (chars.take baseLen)
-          let digits := String.ofList (revDigits.reverse.filterMap subDigit)
-          formatMathIdent base ++ "_{" ++ digits ++ "}"
-        else
-          "\\mathrm{" ++ escapeLatex s ++ "}"
+          -- Convert Unicode subscript digits `₀..₉` and subscript letters `ₚ, ₑ, ...`
+          let subChar : Char → Option Char
+            | '₀' => some '0' | '₁' => some '1' | '₂' => some '2' | '₃' => some '3'
+            | '₄' => some '4' | '₅' => some '5' | '₆' => some '6' | '₇' => some '7'
+            | '₈' => some '8' | '₉' => some '9'
+            | 'ₐ' => some 'a' | 'ₑ' => some 'e' | 'ₕ' => some 'h' | 'ᵢ' => some 'i'
+            | 'ⱼ' => some 'j' | 'ₖ' => some 'k' | 'ₗ' => some 'l' | 'ₘ' => some 'm'
+            | 'ₙ' => some 'n' | 'ₒ' => some 'o' | 'ₚ' => some 'p' | 'ᵣ' => some 'r'
+            | 'ₛ' => some 's' | 'ₜ' => some 't' | 'ᵤ' => some 'u' | 'ᵥ' => some 'v'
+            | 'ₓ' => some 'x'
+            | c => if c.isDigit then some c else none
+          let chars := s.toList
+          let revSubs := chars.reverse.takeWhile fun c => (subChar c).isSome
+          let baseLen := chars.length - revSubs.length
+          if !revSubs.isEmpty && baseLen > 0 && baseLen ≤ 2 then
+            let base := String.ofList (chars.take baseLen)
+            let subStr := String.ofList (revSubs.reverse.filterMap subChar)
+            formatMathIdent base ++ "_{" ++ subStr ++ "}"
+          else
+            "\\mathrm{" ++ escapeLatex s ++ "}"
 
 /-- Wrap `s` in `\left(…\right)` iff `childPrec < ctxPrec`. -/
 def parenIf (ctxPrec childPrec : Nat) (s : String) : String :=
@@ -154,259 +170,299 @@ private def natLit? (e : Expr) : Option Nat :=
         | _ => none
       else none
 
-/-- Core recursive `Expr → LaTeX` printer (runs inside `MetaM` so free variables resolve
-to their clean local-context names and `Fintype.card` / `Nat.choose` render idiomatically). -/
-partial def renderAux (tbl : SymbolTable) (ctxPrec : Nat) (e : Expr) : MetaM String := do
+/-- Core recursive `Expr → LaTeX` printer with per-call $O(\text{DAG})$ memoization on closed
+subterms (runs inside `MetaM` so free variables resolve cleanly). -/
+private partial def renderAuxMemo (memo : IO.Ref (Std.HashMap (Expr × Nat) String))
+    (tbl : SymbolTable) (ctxPrec : Nat) (e : Expr) : MetaM String := do
   let e ← instantiateMVars e
-  if let some (_, alias) := tbl.exprAliases.find? (fun (pat, _) => pat == e) then
-    return alias
-  if let some n := natLit? e then
-    return toString n
-  match e with
-  | .mdata _ inner => renderAux tbl ctxPrec inner
-  | .lit (.natVal n) => return toString n
-  | .lit (.strVal s) => return "\\texttt{\"" ++ escapeLatex s ++ "\"}"
-  | .sort lvl =>
-      return if lvl.isZero then "\\mathrm{Prop}" else "\\mathrm{Type}"
-  | .fvar id =>
-      let decl ← id.getDecl
-      let clean := cleanBinderName decl.userName "x"
-      match tbl.binderAliases.get? clean with
-      | some alias => return alias
-      | none => return formatMathIdent clean
-  | .bvar i => return "x_{" ++ toString i ++ "}"
-  | .mvar _ => return "\\text{?}"
-  | .const name _ =>
-      if let some alias := tbl.constAliases.get? name then
-        return alias
-      match name with
-      | ``Nat => return "\\mathbb{N}"
-      | ``Int => return "\\mathbb{Z}"
-      | ``Bool => return "\\{0,1\\}"
-      | ``Unit | ``PUnit => return "\\{\\star\\}"
-      | ``Empty | ``PEmpty => return "\\emptyset"
-      | ``True => return "\\top"
-      | ``False => return "\\bot"
-      | _ =>
-          if name == `Real then return "\\mathbb{R}"
-          if name == `NNReal then return "\\mathbb{R}_{\\ge 0}"
-          if name == `ENNReal then return "\\mathbb{R}_{\\ge 0}^{\\infty}"
-          return formatMathIdent (shortConstName name)
-  | .forallE nm dom body bi =>
-      if body.hasLooseBVar 0 then
-        withLocalDecl nm bi dom fun fv => do
-          let varStr ← renderAux tbl 100 fv
-          let bodyStr ← renderAux tbl 10 (body.instantiate1 fv)
-          if ← isAmbientTypeclass dom then
-            return bodyStr
-          return parenIf ctxPrec 10 s!"\\forall {varStr},\\; {bodyStr}"
-      else
-        if ← isProp dom then
-          let a ← renderAux tbl 26 dom
-          let b ← renderAux tbl 25 body
-          return parenIf ctxPrec 25 s!"{a} \\implies {b}"
-        else
-          let a ← renderAux tbl 31 dom
-          let b ← renderAux tbl 30 body
-          return parenIf ctxPrec 30 s!"{a} \\to {b}"
-  | .lam nm dom body bi =>
-      -- Drop vacuous unused `Unit`/`PUnit` lambdas (e.g., unkeyed `fun (_ : Unit) => H`)
-      let isUnitDom := dom.consumeMData == mkConst ``Unit || dom.consumeMData == mkConst ``PUnit
-      if isUnitDom && !body.hasLooseBVar 0 then
-        renderAux tbl ctxPrec body
-      else
-        -- Avoid shadowed `x ↦ x ↦ ...` when anonymous binders nest
-        let lctx ← getLCtx
-        let chosenNm :=
-          if (cleanBinderName? nm).isSome then nm
-          else
-            let existing := lctx.foldl (init := ([] : List String)) fun acc d =>
-              match cleanBinderName? d.userName with
-              | some s => s :: acc
-              | none => acc
-            let pool := ["x", "y", "z", "u", "v", "w"]
-            let fresh := (pool.find? (fun p => !existing.contains p)).getD "x"
-            Name.mkSimple fresh
-        withLocalDecl chosenNm bi dom fun fv => do
-          let varStr ← renderAux tbl 100 fv
-          let bodyStr ← renderAux tbl 10 (body.instantiate1 fv)
-          return parenIf ctxPrec 10 s!"{varStr} \\mapsto {bodyStr}"
-  | .letE nm ty val body _ =>
-      let valStr ← renderAux tbl 0 val
-      withLetDecl nm ty val fun fv => do
-        let varStr ← renderAux tbl 100 fv
-        let bodyStr ← renderAux tbl ctxPrec (body.instantiate1 fv)
-        return "\\text{let } " ++ varStr ++ " = " ++ valStr ++ " \\text{ in } " ++ bodyStr
-  | .proj structName idx s =>
-      let base ← renderAux tbl 90 s
-      if structName == ``Prod || structName == ``PProd || structName == ``Sigma then
-        let field := if idx == 0 then "1" else if idx == 1 then "2" else toString (idx + 1)
-        return parenIf ctxPrec 90 (base ++ "_{" ++ field ++ "}")
-      let env ← getEnv
-      match getStructureInfo? env structName with
-      | some info =>
-          if h : idx < info.fieldNames.size then
-            let fname := info.fieldNames[idx]
-            return parenIf ctxPrec 90 (base ++ ".\\mathrm{" ++ escapeLatex fname.toString ++ "}")
-          else
-            return parenIf ctxPrec 90 (base ++ "_{" ++ toString (idx + 1) ++ "}")
-      | none =>
-          return parenIf ctxPrec 90 (base ++ "_{" ++ toString (idx + 1) ++ "}")
-  | .app .. =>
-      let fn := e.getAppFn.consumeMData
-      let args := e.getAppArgs
-      if let .const head _ := fn then
-        -- 1. Check domain-registered 2D handlers first (CC, Probability, SequenceHash, …)
-        let handlers ← latexAppHandlers.get
-        if let some hs := handlers.get? head then
-          for h in hs do
-            if let some (out, prec) ← h.run tbl (renderAux tbl) e args then
-              return parenIf ctxPrec prec out
-        -- 2. Built-in core math 2D layout rules
-        if let some (out, prec) ← renderCoreApp tbl head args then
-          return parenIf ctxPrec prec out
-        -- 3. Zero-argument short notation (e.g. `blockBytes (hash p)` -> `r`)
-        if tbl.zeroArgConsts.contains head then
-          return ← renderAux tbl 95 fn
-        -- 4. Generic constant application (omit implicit, typeclass, and hidden ambient args!)
-        let info ← getConstInfo head
-        let explicitArgs ← collectExplicitArgs info.type args
-        let hidden := tbl.hiddenArgs.getD head []
-        let visibleArgs : Array Expr :=
-          (explicitArgs.foldl (init := (0, #[])) fun (i, acc) a =>
-            (i + 1, if hidden.contains i then acc else acc.push a)).2
-        let headStr ← renderAux tbl 95 fn
-        if visibleArgs.isEmpty then
-          return headStr
-        let renderedArgs ← visibleArgs.mapM (renderAux tbl 0)
-        let argList := String.intercalate ", " renderedArgs.toList
-        return parenIf ctxPrec 85 s!"{headStr}\\!\\left({argList}\\right)"
-      else
-        let fnStr ← renderAux tbl 85 fn
-        let renderedArgs ← args.mapM (renderAux tbl 0)
-        let argList := String.intercalate ", " renderedArgs.toList
-        return parenIf ctxPrec 85 s!"{fnStr}\\!\\left({argList}\\right)"
+  let cacheKey? := if !e.hasLooseBVars && !e.hasExprMVar then some (e, ctxPrec) else none
+  if let some k := cacheKey? then
+    if let some hit := (← memo.get).get? k then
+      return hit
+  let out ← renderUncached e
+  if let some k := cacheKey? then
+    memo.modify (·.insert k out)
+  return out
 where
+  recGo (prec : Nat) (x : Expr) : MetaM String :=
+    renderAuxMemo memo tbl prec x
+  renderUncached (e : Expr) : MetaM String := do
+    if let some (_, alias) := tbl.exprAliases.find? (fun (pat, _) => pat == e) then
+      return alias
+    if let some n := natLit? e then
+      return toString n
+    match e with
+    | .mdata _ inner => recGo ctxPrec inner
+    | .lit (.natVal n) => return toString n
+    | .lit (.strVal s) => return "\\texttt{\"" ++ escapeLatex s ++ "\"}"
+    | .sort lvl =>
+        return if lvl.isZero then "\\mathrm{Prop}" else "\\mathrm{Type}"
+    | .fvar id =>
+        let decl ← id.getDecl
+        let clean := cleanBinderName decl.userName "x"
+        match tbl.binderAliases.get? clean with
+        | some alias => return alias
+        | none => return formatMathIdent clean
+    | .bvar i => return "x_{" ++ toString i ++ "}"
+    | .mvar _ => return "\\text{?}"
+    | .const name _ =>
+        if let some alias := tbl.constAliases.get? name then
+          return alias
+        match name with
+        | ``Nat => return "\\mathbb{N}"
+        | ``Int => return "\\mathbb{Z}"
+        | ``Bool => return "\\{0,1\\}"
+        | ``Unit | ``PUnit => return "\\{\\star\\}"
+        | ``Empty | ``PEmpty => return "\\emptyset"
+        | ``True => return "\\top"
+        | ``False => return "\\bot"
+        | _ =>
+            if name == `Real then return "\\mathbb{R}"
+            if name == `NNReal then return "\\mathbb{R}_{\\ge 0}"
+            if name == `ENNReal then return "\\mathbb{R}_{\\ge 0}^{\\infty}"
+            if name == ``Prod.fst || name == ``PProd.fst || name == ``Sigma.fst then return "\\pi_{1}"
+            if name == ``Prod.snd || name == ``PProd.snd || name == ``Sigma.snd then return "\\pi_{2}"
+            return formatMathIdent (shortConstName name)
+    | .forallE nm dom body bi =>
+        if ← isAmbientTypeclass dom then
+          withLocalDecl nm bi dom fun fv => recGo ctxPrec (body.instantiate1 fv)
+        else if ← isProp dom then
+          let a ← recGo 26 dom
+          let b ←
+            if body.hasLooseBVar 0 then
+              withLocalDecl nm bi dom fun fv => recGo 25 (body.instantiate1 fv)
+            else recGo 25 body
+          return parenIf ctxPrec 25 s!"{a} \\implies {b}"
+        else if body.hasLooseBVar 0 then
+          let freshNm ← freshShadowFreeName nm "x"
+          withLocalDecl freshNm bi dom fun fv => do
+            let varStr ← recGo 100 fv
+            let bodyStr ← recGo 10 (body.instantiate1 fv)
+            return parenIf ctxPrec 10 s!"\\forall {varStr},\\; {bodyStr}"
+        else
+          let a ← recGo 31 dom
+          let b ← recGo 30 body
+          return parenIf ctxPrec 30 s!"{a} \\to {b}"
+    | .lam nm dom body bi =>
+        -- Drop vacuous unused `Unit`/`PUnit` lambdas (e.g., unkeyed `fun (_ : Unit) => H`)
+        let isUnitDom := dom.consumeMData == mkConst ``Unit || dom.consumeMData == mkConst ``PUnit
+        if isUnitDom && !body.hasLooseBVar 0 then
+          recGo ctxPrec body
+        else
+          -- Avoid shadowed `x ↦ x ↦ ...` when binders collide with visible context
+          let chosenNm ←
+            if (cleanBinderName? nm).isSome then
+              freshShadowFreeName nm "x"
+            else
+              let lctx ← getLCtx
+              let existing := lctx.foldl (init := ([] : List String)) fun acc d =>
+                match cleanBinderName? d.userName with
+                | some s => s :: acc
+                | none => acc
+              let pool := ["x", "y", "z", "u", "v", "w"]
+              match pool.find? (fun p => !existing.contains p) with
+              | some fresh => pure (Name.mkSimple fresh)
+              | none => freshShadowFreeName nm "x"
+          withLocalDecl chosenNm bi dom fun fv => do
+            let varStr ← recGo 100 fv
+            let bodyStr ← recGo 10 (body.instantiate1 fv)
+            return parenIf ctxPrec 10 s!"{varStr} \\mapsto {bodyStr}"
+    | .letE nm ty val body _ =>
+        let valStr ← recGo 0 val
+        withLetDecl nm ty val fun fv => do
+          let varStr ← recGo 100 fv
+          let bodyStr ← recGo ctxPrec (body.instantiate1 fv)
+          return "\\text{let } " ++ varStr ++ " = " ++ valStr ++ " \\text{ in } " ++ bodyStr
+    | .proj structName idx s =>
+        let base ← recGo 90 s
+        if structName == ``Prod || structName == ``PProd || structName == ``Sigma then
+          let field := if idx == 0 then "1" else if idx == 1 then "2" else toString (idx + 1)
+          return parenIf ctxPrec 90 (base ++ "_{" ++ field ++ "}")
+        let env ← getEnv
+        match getStructureInfo? env structName with
+        | some info =>
+            if h : idx < info.fieldNames.size then
+              let fname := info.fieldNames[idx]
+              return parenIf ctxPrec 90 (base ++ ".\\mathrm{" ++ escapeLatex fname.toString ++ "}")
+            else
+              return parenIf ctxPrec 90 (base ++ "_{" ++ toString (idx + 1) ++ "}")
+        | none =>
+            return parenIf ctxPrec 90 (base ++ "_{" ++ toString (idx + 1) ++ "}")
+    | .app .. =>
+        let fn := e.getAppFn.consumeMData
+        let args := e.getAppArgs
+        if let .const head _ := fn then
+          -- 1. Check domain-registered 2D handlers first (CC, Probability, SequenceHash, …)
+          let handlers ← latexAppHandlers.get
+          if let some hs := handlers.get? head then
+            for h in hs do
+              if let some (out, prec) ← h.run tbl recGo e args then
+                return parenIf ctxPrec prec out
+          -- 2. Built-in core math 2D layout rules
+          if let some (out, prec) ← renderCoreApp tbl head args then
+            return parenIf ctxPrec prec out
+          -- 3. Zero-argument short notation (e.g. `blockBytes (hash p)` -> `r`)
+          if tbl.zeroArgConsts.contains head then
+            return ← recGo 95 fn
+          -- 4. Generic constant application (omit implicit, typeclass, and hidden ambient args!)
+          let info ← getConstInfo head
+          let explicitArgs ← collectExplicitArgs info.type args
+          let hidden := tbl.hiddenArgs.getD head []
+          let visibleArgs : Array Expr :=
+            (explicitArgs.foldl (init := (0, #[])) fun (i, acc) a =>
+              (i + 1, if hidden.contains i then acc else acc.push a)).2
+          let headStr ← recGo 95 fn
+          if visibleArgs.isEmpty then
+            return headStr
+          let renderedArgs ← visibleArgs.mapM (recGo 0)
+          let argList := String.intercalate ", " renderedArgs.toList
+          return parenIf ctxPrec 85 s!"{headStr}\\!\\left({argList}\\right)"
+        else
+          let fnStr ← recGo 85 fn
+          let renderedArgs ← args.mapM (recGo 0)
+          let argList := String.intercalate ", " renderedArgs.toList
+          return parenIf ctxPrec 85 s!"{fnStr}\\!\\left({argList}\\right)"
   collectExplicitArgs (ty : Expr) (args : Array Expr) : MetaM (Array Expr) := do
     let mut curTy := ty
     let mut out : Array Expr := #[]
     for arg in args do
-      curTy ← whnfD curTy
-      match curTy with
-      | .forallE _ _ body bi =>
+      let f ← match curTy.consumeMData with
+        | x@(.forallE ..) => pure x
+        | other => whnfD other
+      match f.consumeMData with
+      | .forallE _ dom body bi =>
           if bi.isExplicit then
-            out := out.push arg
+            let skipProof ←
+              if !dom.hasLooseBVars then
+                (try isProp dom catch _ => pure false)
+              else pure false
+            if !skipProof then
+              out := out.push arg
           curTy := body.instantiate1 arg
       | _ =>
           out := out.push arg
     return out
-
   renderCoreApp (tbl : SymbolTable) (head : Name) (args : Array Expr) :
       MetaM (Option (String × Nat)) := do
     match head with
     | ``Eq =>
         let some (l, r) := lastTwo? args | return none
-        return some (s!"{← renderAux tbl 50 l} = {← renderAux tbl 50 r}", 50)
+        return some (s!"{← recGo 50 l} = {← recGo 50 r}", 50)
     | ``Ne =>
         let some (l, r) := lastTwo? args | return none
-        return some (s!"{← renderAux tbl 50 l} \\ne {← renderAux tbl 50 r}", 50)
+        return some (s!"{← recGo 50 l} \\ne {← recGo 50 r}", 50)
     | ``LE.le =>
         let some (l, r) := lastTwo? args | return none
-        return some (s!"{← renderAux tbl 50 l} \\le {← renderAux tbl 50 r}", 50)
+        return some (s!"{← recGo 50 l} \\le {← recGo 50 r}", 50)
     | ``LT.lt =>
         let some (l, r) := lastTwo? args | return none
-        return some (s!"{← renderAux tbl 50 l} < {← renderAux tbl 50 r}", 50)
+        return some (s!"{← recGo 50 l} < {← recGo 50 r}", 50)
     | ``GE.ge =>
         let some (l, r) := lastTwo? args | return none
-        return some (s!"{← renderAux tbl 50 l} \\ge {← renderAux tbl 50 r}", 50)
+        return some (s!"{← recGo 50 l} \\ge {← recGo 50 r}", 50)
     | ``GT.gt =>
         let some (l, r) := lastTwo? args | return none
-        return some (s!"{← renderAux tbl 50 l} > {← renderAux tbl 50 r}", 50)
+        return some (s!"{← recGo 50 l} > {← recGo 50 r}", 50)
     | ``Iff =>
         let some (l, r) := lastTwo? args | return none
-        return some (s!"{← renderAux tbl 20 l} \\iff {← renderAux tbl 20 r}", 20)
+        return some (s!"{← recGo 20 l} \\iff {← recGo 20 r}", 20)
     | ``And =>
         let some (l, r) := lastTwo? args | return none
-        return some (s!"{← renderAux tbl 40 l} \\wedge {← renderAux tbl 40 r}", 40)
+        return some (s!"{← recGo 40 l} \\wedge {← recGo 40 r}", 40)
     | ``Or =>
         let some (l, r) := lastTwo? args | return none
-        return some (s!"{← renderAux tbl 35 l} \\vee {← renderAux tbl 35 r}", 35)
+        return some (s!"{← recGo 35 l} \\vee {← recGo 35 r}", 35)
     | ``Not =>
         let some a := argFromEnd? args 0 | return none
-        return some (s!"\\neg {← renderAux tbl 75 a}", 75)
+        return some (s!"\\neg {← recGo 75 a}", 75)
     | ``HAdd.hAdd | ``Add.add =>
         let some (l, r) := lastTwo? args | return none
-        return some (s!"{← renderAux tbl 65 l} + {← renderAux tbl 65 r}", 65)
+        return some (s!"{← recGo 65 l} + {← recGo 65 r}", 65)
     | ``HSub.hSub | ``Sub.sub =>
         let some (l, r) := lastTwo? args | return none
-        return some (s!"{← renderAux tbl 65 l} - {← renderAux tbl 66 r}", 65)
+        return some (s!"{← recGo 65 l} - {← recGo 66 r}", 65)
     | ``HMul.hMul | ``Mul.mul =>
         let some (l, r) := lastTwo? args | return none
-        return some (s!"{← renderAux tbl 70 l} \\cdot {← renderAux tbl 70 r}", 70)
+        return some (s!"{← recGo 70 l} \\cdot {← recGo 70 r}", 70)
     | ``HDiv.hDiv | ``Div.div =>
         let some (l, r) := lastTwo? args | return none
-        return some ("\\frac{" ++ (← renderAux tbl 0 l) ++ "}{" ++ (← renderAux tbl 0 r) ++ "}", 72)
+        return some ("\\frac{" ++ (← recGo 0 l) ++ "}{" ++ (← recGo 0 r) ++ "}", 72)
     | ``HPow.hPow | ``Pow.pow =>
         let some (l, r) := lastTwo? args | return none
-        return some ("{" ++ (← renderAux tbl 80 l) ++ "}^{" ++ (← renderAux tbl 0 r) ++ "}", 78)
+        return some ("{" ++ (← recGo 80 l) ++ "}^{" ++ (← recGo 0 r) ++ "}", 78)
     | ``Neg.neg =>
         let some a := argFromEnd? args 0 | return none
-        return some (s!"-{← renderAux tbl 75 a}", 75)
+        return some (s!"-{← recGo 75 a}", 75)
     | ``Min.min =>
         let some (l, r) := lastTwo? args | return none
-        return some ("\\min\\!\\left\\{" ++ (← renderAux tbl 0 l) ++ ",\\, " ++ (← renderAux tbl 0 r) ++ "\\right\\}", 85)
+        return some ("\\min\\!\\left\\{" ++ (← recGo 0 l) ++ ",\\, " ++ (← recGo 0 r) ++ "\\right\\}", 85)
     | ``Max.max =>
         let some (l, r) := lastTwo? args | return none
-        return some ("\\max\\!\\left\\{" ++ (← renderAux tbl 0 l) ++ ",\\, " ++ (← renderAux tbl 0 r) ++ "\\right\\}", 85)
+        return some ("\\max\\!\\left\\{" ++ (← recGo 0 l) ++ ",\\, " ++ (← recGo 0 r) ++ "\\right\\}", 85)
     | ``Membership.mem =>
-        -- In Lean/Mathlib `Membership.mem s x` means `x ∈ s`
         let some (set, elem) := lastTwo? args | return none
-        return some (s!"{← renderAux tbl 50 elem} \\in {← renderAux tbl 50 set}", 50)
+        return some (s!"{← recGo 50 elem} \\in {← recGo 50 set}", 50)
     | ``HasSubset.Subset =>
         let some (l, r) := lastTwo? args | return none
-        return some (s!"{← renderAux tbl 50 l} \\subseteq {← renderAux tbl 50 r}", 50)
+        return some (s!"{← recGo 50 l} \\subseteq {← recGo 50 r}", 50)
     | ``Singleton.singleton =>
         let some a := argFromEnd? args 0 | return none
-        return some ("\\{" ++ (← renderAux tbl 0 a) ++ "\\}", 90)
+        return some ("\\{" ++ (← recGo 0 a) ++ "\\}", 90)
     | ``Prod =>
         let some (l, r) := lastTwo? args | return none
-        return some (s!"{← renderAux tbl 60 l} \\times {← renderAux tbl 60 r}", 60)
+        return some (s!"{← recGo 60 l} \\times {← recGo 60 r}", 60)
     | ``Sum =>
         let some (l, r) := lastTwo? args | return none
-        return some (s!"{← renderAux tbl 60 l} \\oplus {← renderAux tbl 60 r}", 60)
+        return some (s!"{← recGo 60 l} \\oplus {← recGo 60 r}", 60)
     | ``Prod.mk =>
         let some (l, r) := lastTwo? args | return none
-        return some (s!"({← renderAux tbl 0 l}, {← renderAux tbl 0 r})", 90)
+        return some (s!"({← recGo 0 l}, {← recGo 0 r})", 90)
+    | ``Prod.fst | ``Prod.snd | ``PProd.fst | ``PProd.snd | ``Sigma.fst | ``Sigma.snd =>
+        if args.size ≥ 3 then
+          let idxStr :=
+            if head == ``Prod.fst || head == ``PProd.fst || head == ``Sigma.fst then "1" else "2"
+          let pairStr ← recGo 90 args[2]!
+          let projStr := s!"{pairStr}_\{{idxStr}}"
+          if args.size == 3 then
+            return some (projStr, 90)
+          else
+            let rest := args.extract 3 args.size
+            let renderedArgs ← rest.mapM (recGo 0)
+            let argList := String.intercalate ", " renderedArgs.toList
+            return some (s!"{projStr}\\!\\left({argList}\\right)", 85)
+        return none
     | _ =>
         if head == `Dvd.dvd then
           let some (a, b) := lastTwo? args | return none
-          return some (s!"{← renderAux tbl 50 a} \\mid {← renderAux tbl 50 b}", 50)
+          return some (s!"{← recGo 50 a} \\mid {← recGo 50 b}", 50)
         if head == `List.IsPrefix then
           let some (a, b) := lastTwo? args | return none
-          return some (s!"{← renderAux tbl 50 a} \\preceq {← renderAux tbl 50 b}", 50)
+          return some (s!"{← recGo 50 a} \\preceq {← recGo 50 b}", 50)
         if head == `abs then
           let some a := argFromEnd? args 0 | return none
-          return some (s!"\\left|{← renderAux tbl 0 a}\\right|", 90)
+          return some (s!"\\left|{← recGo 0 a}\\right|", 90)
         if head == `Nat.choose then
           let some (n, k) := lastTwo? args | return none
-          return some ("\\binom{" ++ (← renderAux tbl 0 n) ++ "}{" ++ (← renderAux tbl 0 k) ++ "}", 85)
+          return some ("\\binom{" ++ (← recGo 0 n) ++ "}{" ++ (← recGo 0 k) ++ "}", 85)
         if head == `Fintype.card then
           let some a := args[0]? | return none
-          return some (s!"\\left|{← renderAux tbl 0 a}\\right|", 90)
+          return some (s!"\\left|{← recGo 0 a}\\right|", 90)
         if head == `Finset.card then
           let some a := argFromEnd? args 0 | return none
-          return some (s!"\\left|{← renderAux tbl 0 a}\\right|", 90)
+          return some (s!"\\left|{← recGo 0 a}\\right|", 90)
         if head == `List.length then
           let some a := argFromEnd? args 0 | return none
-          return some (s!"\\left|{← renderAux tbl 0 a}\\right|", 90)
+          return some (s!"\\left|{← recGo 0 a}\\right|", 90)
         if head == `Fin then
           let some n := argFromEnd? args 0 | return none
-          return some (s!"[\\,{← renderAux tbl 0 n}\\,]", 90)
+          return some (s!"[\\,{← recGo 0 n}\\,]", 90)
         return none
 
-/-- Public entry point: run the hygiene/normalization firewall, then print 2D LaTeX. -/
+/-- Public entry point: run the hygiene/normalization firewall, then print 2D LaTeX
+with per-call $O(\text{DAG})$ memoization on closed subexpressions. -/
 def exprToLatex (e : Expr) (tbl : SymbolTable := {}) (ctxPrec : Nat := 0) : MetaM String := do
   let clean ← normalizeForPresentation e
-  renderAux tbl ctxPrec clean
+  let memo ← IO.mkRef ({} : Std.HashMap (Expr × Nat) String)
+  renderAuxMemo memo tbl ctxPrec clean
 
 end Informalization.Core.LeanTeX

@@ -68,7 +68,7 @@ def renderDocumentHtml (doc : Document) : String :=
 elab "#informalize_export " decl:ident " to " path:str : command => do
   let html ← Elab.Command.runTermElabM fun _ => do
     let declName ← Elab.realizeGlobalConstNoOverloadWithInfo decl
-    let doc ← buildDocument (humanLemmaLabel (← getEnv) declName) none #[declName]
+    let doc ← buildDocument (humanDeclarationTitle (← getEnv) declName) none #[declName]
     return renderDocumentHtml doc
   IO.FS.writeFile path.getString html
 
