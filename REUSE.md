@@ -75,6 +75,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | --- | --- |
 | Uniform sponge byte slices | `card_byteState`, `fTransform_capacityPart_uniform`, `fTransform_digestPart_uniform` in `Commons.Schemes.Sponge.Uniform` |
 | Probabilistic games with a hidden monotone bit | `TypedGame.ofProbAutomaton`, `TypedGame.visible_ofProbAutomaton` in `RandomSystems.Typed.ProbAutomatonGame` |
+| Retained parameter in an automaton | `TypedSystem.sample_ofProbAutomaton_eq` in `RandomSystems.Typed.ProbAutomatonSampling` |
 | Random function | `URF`, `URF.lazy_eq` in [Ideal] |
 | Random permutation | `URP` in [Ideal]; `URP.lazy_eq` in [LazyPermutation] |
 | Forward and inverse queries to one permutation | `StrongURP` in [Ideal] |
