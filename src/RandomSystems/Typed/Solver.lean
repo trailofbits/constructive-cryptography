@@ -12,6 +12,7 @@ the decision view; `TypedSolver.winProbability` evaluates the winning view on a 
 
 `TypedSolver.absorb` connects the solver to a converter. `decision_absorb` and
 `winProbability_absorb` show that both evaluations describe the same attached interaction.
+`ofDistinguisher` packages an explicit compatible caller with these two views.
 -/
 
 @[expose] public section
@@ -43,6 +44,13 @@ noncomputable def winProbability
     -- `G` is played on interface `A`; its MBO is hidden from `s` and used only to score winning.
     {A : Interface} (s : TypedSolver A) (G : TypedGame A) : ℝ :=
   s.1.2 ⟨G.1.1, G.1.2, G.2⟩
+
+/-- The decision and winning views of the same compatible randomized caller `P` on `A`. -/
+noncomputable def ofDistinguisher
+    -- `A` fixes the outside ports and domain on which `P` stops and produces a decision.
+    {A : Interface} (P : A.inputDomain.Distinguisher) : TypedSolver A :=
+  ⟨(fun R => P.probability R.1, fun G => P.winProbability G.1),
+    P, fun _ => rfl, fun _ => rfl⟩
 
 /-- One compatible distinguisher realizes both views of the joint solver. -/
 lemma exists_realization

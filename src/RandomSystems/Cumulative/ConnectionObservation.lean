@@ -21,6 +21,8 @@ system.
 
 * `replies_connection_iff`: completed transcripts characterize deterministic
   connections
+* `exists_completed_of_connectionLaw_ne_zero`: positive exposed replies have a positive
+  completed internal interaction
 * `connectionLaw_eq_mass`: on a presentation, connection probabilities are those of
   the deterministic connection
 * `exists_parallel_connection_presentations`: a connection of two random systems is
@@ -303,6 +305,24 @@ lemma connectionLaw_nonneg (R : RandomSystem X Y D) (route : Y → B ⊕ X)
     (inj : A → X) (us : List A) (n : ℕ) :
     (R.connectionLaw route inj us n).NonNeg :=
   ((sLaw_nonNeg n).restrict _).fTransform _
+
+/-- A positive exposed reply sequence has a positive completed internal interaction.
+`route` separates exposed replies from internal calls; `inj` submits the outside inputs `us`. -/
+lemma exists_completed_of_connectionLaw_ne_zero
+    (R : RandomSystem X Y D) (route : Y → B ⊕ X) (inj : A → X)
+    -- `us,vs` are the outside query/reply sequences; `n` bounds internal exchanges.
+    (us : List A) (n : ℕ) {vs : List B}
+    (hvs : R.connectionLaw route inj us n vs ≠ 0) :
+    ∃ t, FollowsStrategy (connectionQueries route inj us) t ∧ t.length ≤ n ∧
+      ¬ (connectionQueries route inj us (t.map Prod.snd)).Dom ∧
+      R t ≠ 0 ∧ exposedReplies route (t.map Prod.snd) = vs := by
+  -- A positive pushforward atom has a positive source atom in the completed law.
+  obtain ⟨t, ht, hexp⟩ := Distribution.mem_support_fTransform _ _
+    (Finsupp.mem_support_iff.mpr hvs)
+  rw [Finsupp.mem_support_iff, sLaw_completed_apply] at ht
+  split_ifs at ht with hc
+  · exact ⟨t, hc.1, hc.2.1, hc.2.2, ht, hexp⟩
+  · exact (ht rfl).elim
 
 /-- Every completed internal transcript contributes its probability to its
 exposed reply sequence. -/
