@@ -231,4 +231,6 @@ example {Block State : Type} [Fintype Block] [Fintype State] [Nonempty State]
 #print axioms CipherContext.security
 #print axioms CipherMultiContext.security
 
+#print axioms Commons.DaviesMeyer.idealCipher_eq_sample
+
 end Tests.DaviesMeyer
