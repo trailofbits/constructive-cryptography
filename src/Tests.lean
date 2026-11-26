@@ -148,6 +148,7 @@ public import Tests.ParallelProjections
 public import Tests.ConstructionCalc
 public import Tests.GameEquivalenceTransport
 public import Tests.GameTranscript
+public import Tests.TranscriptPartition
 public import Tests.AutomatonGame
 public import Tests.GameDistanceBound
 public import Tests.URFRetainedTable
