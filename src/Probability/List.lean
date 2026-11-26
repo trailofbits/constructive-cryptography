@@ -173,6 +173,27 @@ lemma ForallScan.append {α β : Type*} {f : β → α → β} {P : β → α �
   | nil => exact hm
   | cons a t ih => exact ⟨hl.1, ih hl.2 hm⟩
 
+/-- Replacing each item by a block preserves the scan when the block has the same state update
+and satisfies the target predicate from every admitted source state. -/
+lemma ForallScan.flatMap
+    -- `α`, `γ` carry source/target entries; `β` carries their common running state.
+    {α β γ : Type*} {f : β → α → β} {g : β → γ → β}
+    -- `P`, `Q` check the next source/target entry against its preceding state.
+    {P : β → α → Prop} {Q : β → γ → Prop}
+    (expand : α → List γ)
+    -- Each complete block has the source entry's update and respects the target scan.
+    (update : ∀ b a, (expand a).foldl g b = f b a)
+    (block : ∀ b a, P b a → ForallScan g Q b (expand a))
+    {b : β} {l : List α} (scan : ForallScan f P b l) :
+    ForallScan g Q b (l.flatMap expand) := by
+  induction l generalizing b with
+  | nil => trivial
+  | cons a l ih =>
+    change ForallScan g Q b (expand a ++ l.flatMap expand)
+    apply (block b a scan.1).append
+    rw [update]
+    exact ih scan.2
+
 /-- Splitting a scanned list as `l ++ a :: m` gives `P (l.foldl f b) a`. -/
 lemma ForallScan.of_append_cons {α β : Type*} {f : β → α → β} {P : β → α → Prop}
     {b : β} {l m : List α} {a : α}
