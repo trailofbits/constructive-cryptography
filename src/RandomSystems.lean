@@ -153,6 +153,7 @@ public import RandomSystems.Distance.RatioCost
 public import RandomSystems.Typed.FilterDistance
 public import RandomSystems.System.QueryRelabel
 public import RandomSystems.System.QueryRelabel.Laws
+public import RandomSystems.System.Interconnection
 
 /-!
 Random systems: raw systems and connection, deterministic converters, PDSs, cumulative random

@@ -123,6 +123,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Compare cumulative probabilities on good prefixes | `ProbStep.belief_eq_of_outcome_restrict_eq` and its system corollary in `RandomSystems.System.ProbAutomaton` |
 | Retained key as an automaton | `TypedSystem.ofProbAutomaton_eq_keyed` in [KeyedAutomaton] |
 | Move query/reply maps across attachment | `apply_relabel_inside_both` in `RandomSystems.DDC.DDCRelabel` |
+| Read selected external inputs from an interconnection history | `Exchange.filterMap_eq`, `Induces.filterMap_eq` in `RandomSystems.System.Interconnection` |
 | Use raw distinguisher query strategies and relabeling | `ddeOf`, `ddeOf_bounded`, `IsDDD.relabel` in `RandomSystems.System.Distinguisher` |
 | Transport completed interaction witnesses through query maps | `Transcript.relabel_input` in `RandomSystems.System.Replies` |
 | Transport deterministic transcripts through query and reply maps | `System.tr_relabel` and its input/output corollaries in `RandomSystems.System.Transcript` |
