@@ -130,6 +130,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Retry independent draws with an explicit fallback | `ProbDist.rejection`, `rejection_eq` in `Probability.Rejection` |
 | Replace lazy coordinate sampling by one retained random function | `Commons.randomFunction.lazy_eq` in `Commons.Definitions.RandomFunction.Laws` |
 | Compare exposed connection probabilities on completed internal histories | `RandomSystem.connectionLaw_apply_eq_of_completed` in `RandomSystems.Cumulative.ConnectionObservation` |
+| Describe computation, observation and submission commands with legal register access | `Commons.AbstractModel`, `Admitted` in `Commons.Definitions.AbstractModel` |
 | Evaluate a sampled game's condition on completed interactions | `PDG.winProbability_behavior` in `RandomSystems.Game.Transcript` |
 | Present a sampled monitor by one tagged reply function | `PDG.withMBO_ofFunction` in `RandomSystems.Game.FunctionGame` |
 | Test submitted values against predicates using one solver law | `TypedGame.submission`, `TypedSolver.exists_submission_law` in `RandomSystems.Typed.Submission` |
