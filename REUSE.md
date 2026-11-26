@@ -73,6 +73,7 @@ named `budget` argument. The object index below supplies owners for those declar
 
 | Needed object | Declaration and module |
 | --- | --- |
+| Share command types across different model interpretations | `AbstractModel.Port.Input`, `Port.Output` in `Commons.Definitions.AbstractModel` |
 | Expand entries while preserving fold-indexed checks | `List.ForallScan.flatMap` in `Probability.List` |
 | Keep first-occurrence ranks stable as inputs accumulate | `List.IsPrefix.eraseDups`, `List.nodup_eraseDups` in `Probability.List` |
 | Give a bounded strategy finite query alphabets | `exists_fin_query_encoding` in `RandomSystems.System.FiniteQueries` |
