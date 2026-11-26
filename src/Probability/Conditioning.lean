@@ -48,6 +48,15 @@ noncomputable def ProbDist.conditionOn
     (μ : ProbDist A) (E : A → Prop) (fallback : ProbDist A) : ProbDist A :=
   (μ.1.restrict E).normalizeOr (μ.2.1.restrict E) fallback
 
+/-- Multiplying the conditional law by its event mass recovers the restriction,
+including at zero event mass. -/
+lemma ProbDist.mass_smul_conditionOn
+    -- `μ` is the ambient law; `E` selects its retained mass; `fallback` fills a null event.
+    (μ : ProbDist A) (E : A → Prop) (fallback : ProbDist A) :
+    μ.1.mass E • (μ.conditionOn E fallback).1 = μ.1.restrict E := by
+  simpa only [conditionOn, weight_restrict] using
+    weight_smul_normalizeOr (μ.1.restrict E) (μ.2.1.restrict E) fallback
+
 /-- At nonzero event mass, conditioning is the normalized restriction. -/
 lemma ProbDist.conditionOn_val_of_mass_ne_zero
     -- `hE` excludes the fallback branch; `μ(E)` is the normalization factor.
