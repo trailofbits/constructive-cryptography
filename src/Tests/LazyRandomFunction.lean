@@ -5,10 +5,9 @@ public import Commons.Definitions.Ideal
 /-!
 # Lazy random-function checks
 
-The conditional laws verify exact replay after a recorded reply and uniform sampling at a
-fresh input. Different inputs and ports stay uniform for every first reply, including
-when the two ports have different reply types. `URF.lazy_eq` rewrites the full system under
-an arbitrary typed converter, preserving its compatible adaptive interaction.
+Concrete Boolean tables check hits, fresh inputs and repeated replies. The two-port table
+checks independence between heterogeneous reply types. Attachment preserves the equality
+between lazy and retained presentations at that interface.
 -/
 
 @[expose] public section
@@ -18,85 +17,86 @@ namespace LazyRandomFunctionTests
 open Commons SystemAlgebra Probability Probability.Distribution
 open scoped SystemAlgebra
 
--- `A` fixes the ports, query/reply alphabets and admitted input domain.
-variable (A : Interface) [∀ i, Nonempty (A.Y i)]
+/-- A Boolean-input, Boolean-reply port admitting at most two queries. -/
+abbrev bitInput : Interface := Interface.queryBudget Unit (fun _ => Bool) (fun _ => Bool) 2
 
-open Classical in
-/-- A stored reply yields a point transition and keeps every port's records unchanged. -/
-lemma tableLaw_lookup
-    -- `table i` already returns `y` on input `x` at port `i`.
-    (table : ∀ i, List (A.X i × A.Y i)) (i : A.I) (x : A.X i) (y : A.Y i)
-    (hit : (table i).lookup x = some y) :
-    URF.tableLaw A table i x = ProbDist.single (table, y) := by
-  apply Subtype.ext
-  simp only [URF.tableLaw, ProbStep.recordReplies, URF.replyLaw, hit, Option.elim_some,
-    Option.isNone_some,
-    Bool.false_eq_true, ite_false, ProbDist.map_val, ProbDist.single, fTransform_single]
-
-open Classical in
-/-- A fresh query draws uniformly and records the returned value only at its queried port. -/
-example (table : ∀ i, List (A.X i × A.Y i)) (i : A.I) (x : A.X i)
-    (miss : (table i).lookup x = none) :
-    URF.tableLaw A table i x =
-      𝒰[A.Y i].map (fun y => (Function.update table i (table i ++ [(x, y)]), y)) := by
-  simp only [URF.tableLaw, ProbStep.recordReplies, miss, Option.isNone_none, ite_true,
-    URF.replyLaw, Option.elim_none]
-
-open Classical in
-/-- After receiving `y` at a fresh input, repeating that input returns `y` with certainty. -/
-example (table : ∀ i, List (A.X i × A.Y i)) (i : A.I) (x : A.X i) (y : A.Y i)
-    (miss : (table i).lookup x = none) :
-    URF.tableLaw A (Function.update table i (table i ++ [(x, y)])) i x =
-      ProbDist.single (Function.update table i (table i ++ [(x, y)]), y) := by
-  apply tableLaw_lookup
-  simp only [Function.update_self, List.lookup_append, miss, Option.none_or,
-    List.lookup_cons_self]
-
-open Classical in
-/-- A different input at the same port stays uniform for every previously returned reply. -/
-lemma replyLaw_other_input
-    -- `x` was queried at port `i`, yielding `y`; `different` makes `z` a fresh input there.
-    (i : A.I) (x z : A.X i) (different : z ≠ x) (y : A.Y i) :
-    URF.replyLaw A (Function.update (fun _ => []) i [(x, y)]) i z = 𝒰[A.Y i] := by
-  simp only [URF.replyLaw, Function.update_self, List.lookup_cons, List.lookup_nil,
-    beq_eq_false_iff_ne.mpr different, Option.elim_none]
-
-open Classical in
-/-- A different port stays uniform for every first reply, expressing conditional independence. -/
-lemma replyLaw_other_port [DecidableEq A.I]
-    -- `i` and `j` are distinct ports; `y` is the reply just recorded at `i(x)`.
-    (i j : A.I) (different : j ≠ i) (x : A.X i) (y : A.Y i) (z : A.X j) :
-    URF.replyLaw A (Function.update (fun _ => []) i [(x, y)]) j z = 𝒰[A.Y j] := by
-  simp only [URF.replyLaw, Function.update_of_ne different, List.lookup_nil, Option.elim_none]
-
--- Each `bit(())` returns `Bool`; each `pair(())` returns `Bool × Bool`. The chosen allowance
--- bounds the total number of queries across both ports.
+-- The ports return `Bool` and `Bool × Bool`, with one shared total query allowance.
 interface IndependentPorts
   bit() → Bool
   pair() → Bool × Bool
 
-open Classical in
-/-- Both reply types are inhabited for every total query allowance `q`. -/
+/-- Both reply alphabets admit uniform laws at every allowance `q`. -/
 instance (q : ℕ) : ∀ i, Nonempty ((IndependentPorts q).Y i) := by
   intro i
   cases i <;> infer_instance
 
 open Classical in
-/-- Uniformity at the pair-valued port is unchanged by either possible bit-valued reply. -/
+/-- The stored entry `false ↦ true` returns `true` and leaves the table unchanged. -/
+example :
+    let records : Unit → List (Bool × Bool) := fun _ => [(false, true)]
+    URF.tableLaw bitInput records () false = ProbDist.single (records, true) := by
+  intro records
+  apply Subtype.ext
+  simp only [URF.tableLaw, randomFunction.tableLaw, ProbStep.recordReplies,
+    randomFunction.replyLaw, records, List.lookup_cons_self, Option.elim_some,
+    Option.isNone_some, Bool.false_eq_true, ite_false, ProbDist.map_val,
+    ProbDist.single, fTransform_single]
+
+open Classical in
+/-- Querying `true` after recording `false ↦ true` draws uniformly and appends that reply. -/
+example :
+    let records : Unit → List (Bool × Bool) := fun _ => [(false, true)]
+    URF.tableLaw bitInput records () true =
+      𝒰[Bool].map (fun y => (Function.update records () (records () ++ [(true, y)]), y)) := by
+  intro records
+  let : DecidableEq Bool := Classical.decEq Bool
+  let : BEq Bool := instBEqOfDecidableEq
+  have different : (true : Bool) ≠ false := by intro equal; cases equal
+  simp only [URF.tableLaw, randomFunction.tableLaw, ProbStep.recordReplies,
+    randomFunction.replyLaw, records, List.lookup_cons, List.lookup_nil,
+    beq_eq_false_iff_ne.mpr different, Option.elim_none, Option.isNone_none, ite_true]
+  congr 1
+  funext y
+  congr 1
+  funext u
+  cases u
+  simp only [Function.update_self]
+
+open Classical in
+/-- Repeating the fresh query reuses its reply `y`, for either Boolean value. -/
+example (y : Bool) :
+    let records : Unit → List (Bool × Bool) := fun _ => [(true, y)]
+    URF.tableLaw bitInput records () true = ProbDist.single (records, y) := by
+  intro records
+  apply Subtype.ext
+  simp only [URF.tableLaw, randomFunction.tableLaw, ProbStep.recordReplies,
+    randomFunction.replyLaw, records, List.lookup_cons_self, Option.elim_some,
+    Option.isNone_some, Bool.false_eq_true, ite_false, ProbDist.map_val,
+    ProbDist.single, fTransform_single]
+
+open Classical in
+/-- Recording either reply at `false` leaves the distinct input `true` uniform. -/
+example (y : Bool) : URF.replyLaw bitInput (fun _ => [(false, y)]) () true = 𝒰[Bool] := by
+  let : DecidableEq Bool := Classical.decEq Bool
+  let : BEq Bool := instBEqOfDecidableEq
+  have different : (true : Bool) ≠ false := by intro equal; cases equal
+  simp only [URF.replyLaw, randomFunction.replyLaw, List.lookup_cons, List.lookup_nil,
+    beq_eq_false_iff_ne.mpr different, Option.elim_none]
+
+open Classical in
+/-- A reply at the bit-valued port leaves the pair-valued port uniform. -/
 example (reply : Bool) :
     URF.replyLaw (IndependentPorts 2)
       (Function.update (fun _ => []) .bit [((), reply)]) .pair () = 𝒰[Bool × Bool] := by
   have distinct : IndependentPorts.Port.pair ≠ .bit := by
     intro impossible
     cases impossible
-  exact replyLaw_other_port (IndependentPorts 2) .bit .pair distinct () reply ()
+  simp only [URF.replyLaw, randomFunction.replyLaw, Function.update_of_ne distinct,
+    List.lookup_nil, Option.elim_none]
 
-open Classical in
-/-- Any domain-preserving adaptive converter sees exactly the existing URF behavior. -/
-example {B : Interface}
-    -- `α` presents the URF interface `A` through the outside interface `B`.
-    (α : TypedConverter B A) :
-    α • URF.lazy A = α • URF A := by
+/-- A compatible adaptive converter sees the same two-port retained function. -/
+example {B : Interface} (α : TypedConverter B (IndependentPorts 2)) :
+    α • URF.lazy (IndependentPorts 2) = α • URF (IndependentPorts 2) := by
   rw [URF.lazy_eq]
 
 #print axioms Commons.URF.lazy_eq

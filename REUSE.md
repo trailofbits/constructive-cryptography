@@ -128,6 +128,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Reconstruct an observation and its sample from a marginal | `eq_fTransform_of_graph_support`, `ProbDist.jointLaw_eq_map_of_fiber` in `Probability.Coupling` |
 | Condition a normalized law and recover the full observation–sample law | `ProbDist.conditionOn`, `jointLaw_conditionOn_eq_map` in `Probability.Conditioning` |
 | Retry independent draws with an explicit fallback | `ProbDist.rejection`, `rejection_eq` in `Probability.Rejection` |
+| Replace lazy coordinate sampling by one retained random function | `Commons.randomFunction.lazy_eq` in `Commons.Definitions.RandomFunction.Laws` |
 | Evaluate a sampled game's condition on completed interactions | `PDG.winProbability_behavior` in `RandomSystems.Game.Transcript` |
 | Test submitted values against predicates using one solver law | `TypedGame.submission`, `TypedSolver.exists_submission_law` in `RandomSystems.Typed.Submission` |
 | Submit a retained joint draw and read its exact event probability | `TypedSolver.submission`, `submission_winProbability`, `submission_onFinset_winProbability` in `RandomSystems.Typed.SubmissionSampling` |
