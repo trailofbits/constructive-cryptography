@@ -26,6 +26,8 @@ behind H-coefficient arguments. The carrier may be infinite; each law has finite
   `statDist_eq_half_sum_abs_of_weight_eq`, `statDist_eq_mass_sub_mass_pos`
 * event gaps: `mass_sub_mass_le_statDist`; expectation gaps:
   `abs_expect_sub_expect_le_mul_statDist`
+* kernel mixtures: `statDist_bindK_le_expect`, `statDist_bind_le_of_forall_le`;
+  `statDist_bindK_le` contracts distance under a common substochastic kernel
 * the optimal-test identity `sSup_avgSuccessProb_eq_half_add_half_statDist`
 * the expectation method `statDist_le_expect_of_ratio` [3, Lemma 2.2.1] and its good/bad
   specialization `statDist_le_probBad_add_of_ratio_on_good` [3, Corollary 2.2.2]
@@ -353,6 +355,25 @@ lemma statDist_fTransform_le_mass_of_eq_off {A B : Type*} {μ : Distribution A}
 
 /-! ### The distance/expectation bridge -/
 
+/-- A nonnegative test bounded by `M` has expectation gap at most `M · δ(X,Y)`.
+The signed laws `X` and `Y` may have different total weights. -/
+lemma expect_sub_expect_le_mul_statDist_of_nonneg
+    -- `X` and `Y` are finite signed laws on the outcome carrier `A`.
+    {A : Type*} (X Y : Distribution A)
+    -- `f` is the test; `lower` and `upper` put all its values in `[0,M]`.
+    (f : A → ℝ) {M : ℝ} (lower : ∀ a, 0 ≤ f a) (upper : ∀ a, f a ≤ M) :
+    X.expect f - Y.expect f ≤ M * statDist X Y := by
+  -- Negative mass differences contribute at most zero; positive ones contribute at most `M`.
+  rw [← Distribution.expect_sub_left, Distribution.expect, Finsupp.sum, statDist,
+    Finset.mul_sum]
+  refine Finset.sum_le_sum fun a _ => ?_
+  simp only [Finsupp.sub_apply]
+  rcases le_total 0 (X a - Y a) with positive | negative
+  · rw [max_eq_left positive]
+    nlinarith [upper a]
+  · rw [max_eq_right negative]
+    nlinarith [lower a]
+
 /-- **[2, Exercise 4.4]**, one-sided: a functional taking values in `[m, M]`
 moves by at most `(M − m) · δ(X, Y)`.
 
@@ -363,21 +384,15 @@ no `Fintype`. -/
 theorem expect_sub_expect_le_mul_statDist {A : Type*} (X Y : Distribution A) (f : A → ℝ)
     {m M : ℝ} (hw : X.weight = Y.weight) (hm : ∀ a, m ≤ f a) (hM : ∀ a, f a ≤ M) :
     X.expect f - Y.expect f ≤ (M - m) * statDist X Y := by
-  have hconst : (X - Y).expect (fun _ => m) = 0 := by
-    rw [Distribution.expect_sub_left, Distribution.expect_const, Distribution.expect_const, hw,
-      sub_self]
-  rw [← Distribution.expect_sub_left, ← sub_zero ((X - Y).expect f), ← hconst, statDist,
-    Finset.mul_sum, Distribution.expect, Distribution.expect, Finsupp.sum, Finsupp.sum,
-    ← Finset.sum_sub_distrib]
-  refine Finset.sum_le_sum fun a _ => ?_
-  have hd : (X - Y) a = X a - Y a := by simp
-  have hmM : m ≤ M := (hm a).trans (hM a)
-  rw [hd]
-  rcases le_total 0 (X a - Y a) with h | h
-  · rw [max_eq_left h]
-    nlinarith [hM a]
-  · rw [max_eq_right h]
-    nlinarith [hm a]
+  -- Subtracting the common lower endpoint leaves a nonnegative test bounded by `M - m`.
+  calc
+    X.expect f - Y.expect f =
+        X.expect (fun a => f a - m) - Y.expect (fun a => f a - m) := by
+      rw [Distribution.expect_sub_right, Distribution.expect_sub_right,
+        Distribution.expect_const, Distribution.expect_const, hw]
+      ring
+    _ ≤ _ := expect_sub_expect_le_mul_statDist_of_nonneg X Y (fun a => f a - m)
+      (fun a => sub_nonneg.mpr (hm a)) (fun a => sub_le_sub_right (hM a) m)
 
 /-- **[2, Exercise 4.4]**, the two-sided form the exercise asks to "state
 formally": for distributions of equal weight, a functional taking values in
@@ -416,6 +431,65 @@ lemma statDist_eq_mass_sub_mass_pos {A : Type*}
   · rw [ite_eq_left h, ite_eq_left h, max_eq_left (sub_nonneg.mpr h.le)]
   · rw [ite_eq_right h, ite_eq_right h, max_eq_right (sub_nonpos.mpr (not_lt.mp h))]
     simp
+
+/-! ### Kernel mixtures -/
+
+open Distribution in
+/-- Mixing two finite kernels with the same nonnegative weights bounds their distance by
+the weighted conditional distances. The kernels themselves may have signed weights. -/
+theorem statDist_bindK_le_expect
+    -- `μ` weighs first outcomes in `A`; `hμ` permits averaging inequalities.
+    {A B : Type*} (μ : Distribution A) (hμ : μ.NonNeg)
+    -- `K a` and `L a` are finite laws on `B` to compare at the first outcome `a`.
+    (K L : A → Distribution B) :
+    statDist (bindK μ K) (bindK μ L) ≤ μ.expect fun a => statDist (K a) (L a) := by
+  -- The optimal event's mixture gap is the mean of its conditional gaps.
+  rw [statDist_eq_mass_sub_mass_pos, mass_bindK, mass_bindK]
+  change μ.expect _ - μ.expect _ ≤ _
+  rw [← expect_sub_right]
+  exact expect_mono hμ fun a => mass_sub_mass_le_statDist _ _ _
+
+open Distribution in
+/-- Changing a probability kernel costs at most the mean of its conditional distances. -/
+lemma statDist_bind_le_expect
+    -- `P` is the common first law; `K a` and `L a` are normalized second laws.
+    {A B : Type*} (P : ProbDist A) (K L : A → ProbDist B) :
+    statDist (P.bind K).1 (P.bind L).1 ≤
+      P.1.expect fun a => statDist (K a).1 (L a).1 :=
+  statDist_bindK_le_expect P.1 P.2.1 (fun a => (K a).1) (fun a => (L a).1)
+
+open Distribution in
+/-- A uniform conditional distance bound holds for the whole mixture. -/
+lemma statDist_bind_le_of_forall_le
+    -- `P` selects the input to both kernels; only inputs in its support matter.
+    {A B : Type*} (P : ProbDist A) (K L : A → ProbDist B)
+    -- `ε` bounds each conditional distance at an input that can be drawn.
+    {ε : ℝ} (bound : ∀ a ∈ P.1.support, statDist (K a).1 (L a).1 ≤ ε) :
+    statDist (P.bind K).1 (P.bind L).1 ≤ ε := by
+  apply (statDist_bind_le_expect P K L).trans
+  simpa only [P.2.2, mul_one] using expect_le_mul_weight P.2.1 bound
+
+open Distribution in
+/-- Applying the same substochastic kernel cannot increase directed statistical distance. -/
+theorem statDist_bindK_le
+    -- `μ` and `ν` are finite signed first laws, with no equal-weight requirement.
+    {A B : Type*} (μ ν : Distribution A) (K : A → Distribution B)
+    -- Each `K a` has nonnegative weights and total mass at most one.
+    (nonnegative : ∀ a, (K a).NonNeg) (weight : ∀ a, (K a).weight ≤ 1) :
+    statDist (bindK μ K) (bindK ν K) ≤ statDist μ ν := by
+  -- Every output event pulls back to a test with values in `[0,1]`.
+  rw [statDist_eq_mass_sub_mass_pos, mass_bindK, mass_bindK]
+  change μ.expect _ - ν.expect _ ≤ _
+  simpa only [one_mul] using expect_sub_expect_le_mul_statDist_of_nonneg μ ν
+    (fun a => (K a).mass _) (fun a => (nonnegative a).mass_nonneg _)
+    (fun a => (mass_le_weight (nonnegative a) _).trans (weight a))
+
+open Distribution in
+/-- A common probability kernel preserves an initial statistical-distance bound. -/
+lemma statDist_bind_le {A B : Type*} (P Q : ProbDist A) (K : A → ProbDist B) :
+    statDist (P.bind K).1 (Q.bind K).1 ≤ statDist P.1 Q.1 :=
+  statDist_bindK_le P.1 Q.1 (fun a => (K a).1) (fun a => (K a).2.1)
+    (fun a => (K a).2.2.le)
 
 /-! ### The optimal-test identity -/
 
