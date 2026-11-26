@@ -83,7 +83,6 @@ lemma TypedConverter.ofProgram_eq_ofDDC
         (TypedConverter.ofProgram_isDDCFrom s P hb hB) :=
   rfl
 
-open Classical in
 /-- Domain certificate for `TypedConverter.ofCostedProgram`. -/
 lemma TypedConverter.ofCostedProgram_isDDCFrom
     -- `A` is the outside interface, `B` the inside interface; `s` starts the retained state.
@@ -96,13 +95,8 @@ lemma TypedConverter.ofCostedProgram_isDDCFrom
     -- `hB` admits every nonempty inside history of length at most `q`.
     (hB : ∀ xs, xs ≠ [] → xs.length ≤ q → B.domain xs) :
     IsDDCFrom B.domain A.domain b (DDC.ofProgramOn s P A.domain) :=
-  DDC.ofProgramOn_isDDCFrom hb A.nonempty_prefix.2 fun h hr hF => by
-    by_cases hne : insideQueries (h.map Prod.snd) = []
-    · exact Or.inl hne
-    · refine Or.inr (hB _ hne ((DDC.insideQueries_length_le_of_costs hc hr).trans ?_))
-      rcases hF with he | hF
-      · rw [he]; exact Nat.zero_le _
-      · exact hA _ hF
+  DDC.ofProgramOn_isDDCFrom_of_costs (s := s) (P := P)
+    hb A.nonempty_prefix.2 hc hA hB
 
 /-- Run `P` from `s` on `A.domain`, making `cost u` inside queries on outside query `u`.
 An outside history of total cost at most `q` gives at most `q` inside queries. -/
