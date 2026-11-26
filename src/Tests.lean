@@ -216,6 +216,7 @@ public import Tests.SpongeCollision
 public import Tests.AttachmentRelabel
 public import Tests.FiniteSet
 public import Tests.QueryRelabel
+public import Tests.FirstOccurrences
 
 /-! Axiom audits per layer and of the Commons library, the checks of the
 authenticated-encryption example,

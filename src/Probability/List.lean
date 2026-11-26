@@ -3,9 +3,12 @@ module
 public import Mathlib.Data.List.Basic
 
 /-!
-# List lookup, splits and fold-indexed predicates
+# First occurrences, list lookup and fold-indexed predicates
 
-Fresh-key lookup and reasoning about an entry together with its prefix:
+First occurrences, fresh-key lookup and reasoning about an entry with its prefix:
+
+* `List.IsPrefix.eraseDups` and `List.nodup_eraseDups`: retain first occurrences as
+  prefixes grow; existing `List.IsPrefix.idxOf_eq_of_mem` then keeps their ranks stable
 
 * `List.lookup_append_singleton_of_none`: appending a fresh key changes only that key
 
@@ -21,6 +24,32 @@ Fresh-key lookup and reasoning about an entry together with its prefix:
 @[expose] public section
 
 namespace List
+
+/-- Removing later repetitions preserves the prefix relation between input histories. -/
+lemma IsPrefix.eraseDups
+    -- `xs` is an input prefix of `ys`; the selected lawful comparison identifies repetitions.
+    {α : Type*} [BEq α] [LawfulBEq α] {xs ys : List α} (h : xs <+: ys) :
+    xs.eraseDups <+: ys.eraseDups := by
+  obtain ⟨zs, rfl⟩ := h
+  rw [eraseDups_append]
+  exact prefix_append _ _
+
+/-- The first-occurrence list contains each input at most once. -/
+lemma nodup_eraseDups
+    -- `xs` may repeat inputs; its lawful comparison agrees with equality in `α`.
+    {α : Type*} [BEq α] [LawfulBEq α] (xs : List α) : xs.eraseDups.Nodup := by
+  match xs with
+  | [] => exact nodup_nil
+  | a :: xs =>
+    rw [eraseDups_cons, nodup_cons]
+    refine ⟨?_, nodup_eraseDups (xs.filter fun b => !b == a)⟩
+    -- The retained head is excluded from every remaining first occurrence.
+    intro ha
+    have absent := (mem_filter.mp (mem_eraseDups.mp ha)).2
+    simp only [beq_self_eq_true, Bool.not_true, Bool.false_eq_true] at absent
+termination_by xs.length
+decreasing_by
+  exact Nat.lt_succ_of_le (length_filter_le _ _)
 
 /-- Appending the fresh entry `(a, b)` returns `b` at `a` and preserves every other lookup. -/
 lemma lookup_append_singleton_of_none
