@@ -1,7 +1,8 @@
 module
 
-public import ConstructiveCryptography.Substitution.Quantitative
+public import ConstructiveCryptography.Tactics.Substitution
 public import Mathlib.Tactic.FinCases
+public import Mathlib.Tactic.NormNum
 
 /-!
 # A mixed quantitative chain
@@ -103,5 +104,81 @@ lemma mixed_three_steps [MonoidalCategory C] [CompatiblePseudoMetric C Phi] {A :
       Fin.val_succ, Nat.reduceAdd, Nat.reduceEqDiff, Bool.false_eq_true,
       ↓reduceIte, add_zero, add_assoc] using total
 
+/-- The first step retains the Boolean observer tag and doubles the inside bound.
+The next step adds statistical error `δ` on the outside resources. -/
+example [MonoidalCategory C] [CompatiblePseudoMetric C Phi] {A : C} {Y : Type}
+    (outside : DistinguisherAdvantage C Phi (fun _ => Bool))
+    (inside : DistinguisherAdvantage Unit (fun _ => Y) (fun _ => Bool × Unit))
+    {R S T : Phi A} {U V : Y} {ε : Bool × Unit → ENNReal}
+    (closed : ∀ b ∈ outside.admissible A, (b, ()) ∈ inside.admissible ())
+    (twice : ∀ b ∈ outside.admissible A,
+      outside.advantage A b R S ≤ 2 * inside.advantage () (b, ()) U V)
+    (bound : inside.SubstitutesWithin (A := ()) ε U V)
+    (domination : ∀ b ∈ outside.admissible A, ∀ r s, outside.advantage A b r s ≤ distance r s)
+    {δ : ENNReal} (close : distance S T ≤ δ) :
+    outside.SubstitutesWithin (fun b => 2 * ε (b, ()) + δ) R T := by
+  have reduced := DistinguisherAdvantage.SubstitutesWithin.of_reduction outside inside
+    (fun b => (b, ())) (2 * ·) (fun _ _ h => mul_le_mul_right h 2)
+    (fun {_} hb => closed _ hb) twice bound
+  cc_calc mixed outside using domination
+    R ≃[fun b => 2 * ε (b, ())] S := reduced
+    _ ≈[δ] T := close
+
+/-- The outside test observes `2` on `true` and `0` on `false`; only test `true` is admitted. -/
+noncomputable def outsideModel :
+    DistinguisherAdvantage Unit (fun _ => Bool) (fun _ => Bool) := by
+  letI : Distinguishers Unit (fun _ => Bool) (fun _ => Bool) :=
+    ⟨fun {_} _ r => if r then 2 else 0⟩
+  exact Distinguishers.distinguisherAdvantage (fun _ => {true})
+
+/-- The inside tests observe `1` on `true` and `0` on `false`; only `(false, ())` is admitted. -/
+noncomputable def insideModel :
+    DistinguisherAdvantage Unit (fun _ => Bool) (fun _ => Bool × Unit) := by
+  letI : Distinguishers Unit (fun _ => Bool) (fun _ => Bool × Unit) :=
+    ⟨fun {_} _ r => if r then 1 else 0⟩
+  exact Distinguishers.distinguisherAdvantage (fun _ => {(false, ())})
+
+/-- `tagBudget (b, ())` is zero on the excluded tag and one on the admitted inside tag. -/
+def tagBudget (d : Bool × Unit) : ENNReal := if d.1 then 0 else 1
+
+/-- The reduction changes the tag and doubles the inside loss, without a resource category. -/
+example : outsideModel.SubstitutesWithin (A := ())
+    (fun b => 2 * tagBudget (!b, ())) false true := by
+  apply DistinguisherAdvantage.SubstitutesWithin.of_reduction outsideModel insideModel
+    (B := ()) (U := false) (V := true)
+    (fun b => (!b, ())) (2 * ·) (fun _ _ h => mul_le_mul_right h 2)
+  · rintro b (rfl : b = true)
+    exact Set.mem_singleton _
+  · intro b _
+    norm_num [outsideModel, insideModel, Distinguishers.distinguisherAdvantage,
+      Distinguishers.advantage, Distinguishers.probability]
+  · rintro d (rfl : d = (false, ()))
+    norm_num [insideModel, DistinguisherAdvantage.SubstitutesWithin,
+      Distinguishers.distinguisherAdvantage, Distinguishers.advantage,
+      Distinguishers.probability, tagBudget]
+
+/-- Keeping the tag satisfies the numerical reduction for every outside observer. -/
+example (b : Bool) : outsideModel.advantage () b false true ≤
+    2 * insideModel.advantage () (b, ()) false true := by
+  norm_num [outsideModel, insideModel, Distinguishers.distinguisherAdvantage,
+    Distinguishers.advantage, Distinguishers.probability]
+
+/-- That unchanged tag does not belong to the admitted inside class. -/
+example : ¬ Set.MapsTo (fun b => (b, ()))
+    (outsideModel.admissible ()) (insideModel.admissible ()) := by
+  intro closed
+  have impossible := closed (show true ∈ outsideModel.admissible () from Set.mem_singleton _)
+  simp only [insideModel, Distinguishers.distinguisherAdvantage, Set.mem_singleton_iff,
+    Prod.mk.injEq, Bool.true_eq_false, false_and] at impossible
+
+/-- Using that unadmitted test would incorrectly bound outside advantage `2` by `0`. -/
+example : ¬ outsideModel.SubstitutesWithin (A := ())
+    (fun b => 2 * tagBudget (b, ())) false true := by
+  intro bound
+  have impossible := bound true (Set.mem_singleton _)
+  norm_num [outsideModel, Distinguishers.distinguisherAdvantage, Distinguishers.advantage,
+    Distinguishers.probability, tagBudget] at impossible
+
+#print axioms DistinguisherAdvantage.SubstitutesWithin.of_reduction
 
 end Tests.Substitution.Quantitative

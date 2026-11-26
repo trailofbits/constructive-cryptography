@@ -17,8 +17,9 @@ specification collects the resources within the error of one of its resources.
 ## Reductions
 
 A reduction for a converter `α : A ⟶ B` (outside `A`, inside `B`) is a map
-`reduce : Distinguisher A → Distinguisher B`, Banfi's `D ↦ D ∘ ρ` with `ρ = α`. It goes in the
-same direction as `α`, opposite to attachment `Phi B → Phi A`; below, `α S` is `attach α S`:
+`reduce : Distinguisher A → Distinguisher B`, written `D ↦ D ∘ ρ` in [1], with `ρ = α`.
+It goes in the same direction as `α`, opposite to attachment `Phi B → Phi A`.
+Below, `α S` is `attach α S`:
 
 ```text
    Distinguisher A ──reduce──▶ Distinguisher B
@@ -48,7 +49,21 @@ defined in `ConstructiveCryptography.Distinguisher`.
 * `Specification.constructs_singleton_reductionRelaxation_iff`,
   `Specification.map_reductionRelaxation_subset`
 
-Source: Banfi 2023, §2.3.3; Jost, Definitions 2.2.8–2.2.9 and Theorem 2.2.10.
+`SubstitutesWithin.of_reduction` also permits a monotone loss `L` and different resource
+and observer carriers. The calculation is pointwise in the actual reduced observer:
+
+```text
+Δ_out(D, R, S) ≤ L(Δ_in(ρ D, U, V)) ≤ L(ε(ρ D)).
+```
+
+## References
+
+1. F. Banfi. *A Composable Treatment of Anonymous Communication*. Doctoral thesis,
+   ETH Zurich, 2023, §2.3.3.
+2. D. Jost. *On Generalizations of Composable Security*. Doctoral thesis, ETH Zurich, 2020,
+   Definitions 2.2.8–2.2.9 and Theorem 2.2.10.
+3. U. Maurer and R. Renner. *From Indifferentiability to Constructive Cryptography
+   (and Back)*. TCC 2016-B, 2016, Definition 1.
 -/
 
 @[expose] public section
@@ -71,7 +86,7 @@ variable {C : Type u} {Systems : C → Type w} {Distinguisher : C → Type x}
 /-- Concrete substitution within one explicit distinguisher-indexed error
 function.
 
-Banfi 2023, Section 2.3.3 (printed p. 16) uses the condition
+[1, §2.3.3, p. 16] uses the condition
 `Δ_D(S, T) ≤ ε(D)` for every admitted distinguisher `D`.
 
 ```text
@@ -84,12 +99,35 @@ statement holds vacuously. Error `0` is not equality of `left` and `right`. -/
 def SubstitutesWithin
     -- `model` selects admitted distinguishers and their per-distinguisher advantage.
     (model : DistinguisherAdvantage C Systems Distinguisher)
-    -- `error D` is Banfi's `ε(D)`, a budget for each distinguisher `D` on `A`, possibly `∞`.
+    -- `error D` is the source's `ε(D)`, a budget for each distinguisher `D` on `A`, possibly `∞`.
     {A : C} (error : Distinguisher A → ENNReal)
     -- `left`, `right : Systems A` are the two compared resources.
     (left right : Systems A) : Prop :=
   ∀ distinguisher, distinguisher ∈ model.admissible A →
     model.advantage A distinguisher left right ≤ error distinguisher
+
+/-- An admitted reduction `ρ` with monotone loss `L` carries the inside error to
+`D ↦ L (ε (ρ D))` on outside observers. -/
+theorem SubstitutesWithin.of_reduction
+    -- `J` indexes inside interfaces; `Resources B` and `Observer B` are their resources/tests.
+    {J : Type*} {Resources : J → Type*} {Observer : J → Type*}
+    -- `outside` and `inside` select the admitted observers and their advantages.
+    (outside : DistinguisherAdvantage C Systems Distinguisher)
+    (inside : DistinguisherAdvantage J Resources Observer)
+    -- `A : C` selects the outside interface, `B : J` the inside one; each pair is compared there.
+    {A : C} {B : J} {R S : Systems A} {U V : Resources B}
+    -- `ρ` maps the actual outside observer to the observer used by the inside proof.
+    (ρ : Distinguisher A → Observer B)
+    -- `L` transforms inside losses; `monotone` allows increasing the supplied inside bound.
+    (L : ENNReal → ENNReal) (monotone : Monotone L)
+    -- `closed` admits each reduced test; `reduction` bounds its outside advantage.
+    (closed : Set.MapsTo ρ (outside.admissible A) (inside.admissible B))
+    (reduction : ∀ D ∈ outside.admissible A,
+      outside.advantage A D R S ≤ L (inside.advantage B (ρ D) U V))
+    -- `ε` budgets each inside observer separately; `bound` applies on the selected class.
+    {ε : Observer B → ENNReal} (bound : inside.SubstitutesWithin ε U V) :
+    outside.SubstitutesWithin (fun D => L (ε (ρ D))) R S :=
+  fun D admitted => (reduction D admitted).trans (monotone (bound (ρ D) (closed admitted)))
 
 /-- Reversing a concrete substitution preserves its error function: a bound
 `Δ_D(left, right) ≤ error D` for every admitted `D` gives `Δ_D(right, left) ≤ error D`. -/
@@ -107,7 +145,7 @@ lemma SubstitutesWithin.symm
 
 /-- Consecutive concrete substitutions add their pointwise errors.
 
-Jost 2020, Theorem 2.2.10 (printed p. 22): “the errors just adding up.”
+[2, Theorem 2.2.10, p. 22]: “the errors just adding up.”
 The same distinguisher is used at both steps, so the budgets add pointwise in `D`. -/
 theorem SubstitutesWithin.trans
     -- `model` selects admitted distinguishers and their per-distinguisher advantage.
@@ -128,7 +166,7 @@ theorem SubstitutesWithin.trans
       (add_le_add (first distinguisher admitted) (second distinguisher admitted))
 
 /-- A uniform statistical observation bound gives a constant concrete loss.
-Banfi, §2.3.1 (p. 15): “rather than a substitution”. The observation may be a
+[1, §2.3.1, p. 15]: “rather than a substitution”. The observation may be a
 transcript distribution; a resource metric or category is not required.
 The conclusion is substitution within the constant error function `fun _ => error`. -/
 lemma SubstitutesWithin.of_statistical
@@ -154,7 +192,7 @@ lemma SubstitutesWithin.of_statistical
 variable [Category.{v} C] {Phi : C → Type w} [ResourceTheory C Phi]
 
 /-- A statistical step supplies a constant concrete loss `fun _ => error`, provided the
-selected advantage is dominated by distance. Banfi, Section 2.3.1 (printed p. 15),
+selected advantage is dominated by distance. [1, §2.3.1, p. 15],
 allows an approximate step "rather than a substitution". The domination
 hypothesis is explicit; no computational premise is promoted to a metric bound. -/
 lemma SubstitutesWithin.of_distance
@@ -179,7 +217,7 @@ lemma SubstitutesWithin.of_distance
 /-- An explicit black-box reduction transports a concrete substitution through
 converter attachment and precomposes its error function.
 
-Banfi 2023, Section 2.3.3 (printed p. 16) defines the transformed loss by
+[1, §2.3.3, p. 16] defines the transformed loss by
 `ε'(D) := ε(D ∘ ρ)`. The `reduce` argument is that composed distinguisher;
 its admissibility and the displayed advantage equality remain explicit. The loss is
 evaluated at the actual reduced distinguisher, not at a worst case over `B`. -/
@@ -188,7 +226,7 @@ lemma SubstitutesWithin.attach
     (model : DistinguisherAdvantage C Phi Distinguisher)
     -- `converter = ρ` (rho) is the transformation, outside `A`, inside `B`.
     {A B : C} (converter : A ⟶ B)
-    -- `reduce : Distinguisher A → Distinguisher B` is Banfi's `D ↦ D ∘ ρ`; its intended
+    -- `reduce : Distinguisher A → Distinguisher B` is the source's `D ↦ D ∘ ρ`; its intended
     -- reading (`D` with `converter` absorbed) is not assumed, only the two hypotheses below.
     (reduce : Distinguisher A → Distinguisher B)
     -- `reduce_admissible` says admitted `D` on `A` gives admitted `reduce D` on `B`.
@@ -220,7 +258,7 @@ lemma SubstitutesWithin.attach
 
 /-- Serial black-box reductions compose by nesting their distinguisher maps.
 
-This is the iterated form of Banfi 2023, Section 2.3.3 (printed p. 16):
+This is the iterated form of [1, §2.3.3, p. 16]:
 the final loss is `error (reduceInner (reduceOuter D))`, matching successive
 precomposition by the two named transformations.
 
@@ -298,22 +336,22 @@ namespace Specification
 -- candidate distinguishers on `A : C`.
 variable {C : Type u} {Phi : C → Type w} {Distinguisher : C → Type x}
 
-/-- Jost's pointwise reduction relaxation for one explicit advantage model and
+/-- The pointwise reduction relaxation for one explicit advantage model and
 distinguisher-indexed error function.
 
-Jost 2020, Definition 2.2.9 (printed p. 22):
+[2, Definition 2.2.9, p. 22]:
 “`R^ε := {S | ∀D : |Δ^D(R,S)| ≤ ε(D)}`.”
 
 For a center `R : Phi A`, the pointwise relaxation is
-`{S | model.SubstitutesWithin error R S}`, the center written first as in Jost; a
+`{S | model.SubstitutesWithin error R S}`, the center written first as in [2]; a
 specification is relaxed to the union of these sets over its members (see
-`mem_reductionRelaxation_iff`). Jost's “`∀D`” ranges over `model.admissible A` here, and
+`mem_reductionRelaxation_iff`). [2]’s “`∀D`” ranges over `model.admissible A` here, and
 his `|Δ^D(R,S)|` is the nonnegative `model.advantage A D R S`.
 Extensivity, `R ∈ R^ε`, holds because `advantage_self` gives advantage `0`. -/
 noncomputable def reductionRelaxation
     -- `model` selects admitted distinguishers and their per-distinguisher advantage.
     (model : DistinguisherAdvantage C Phi Distinguisher)
-    -- `error D` is Jost's `ε(D)`, a budget for each distinguisher `D` on `A`.
+    -- `error D` is [2]’s `ε(D)`, a budget for each distinguisher `D` on `A`.
     {A : C} (error : Distinguisher A → ENNReal) :
     ConstructiveCryptography.Relaxation (Phi A) :=
   ConstructiveCryptography.Relaxation.ofPointwise
@@ -337,7 +375,7 @@ lemma mem_reductionRelaxation_iff
 
 /-- Successive reduction relaxations add their errors pointwise.
 
-Jost 2020, Theorem 2.2.10 (printed p. 22):
+[2, Theorem 2.2.10, p. 22]:
 `(R^{ε₁})^{ε₂} ⊆ R^{ε₁+ε₂}`.
 The sum is pointwise, untruncated `ENNReal` addition. The inclusion may be strict. -/
 theorem reductionRelaxation_reductionRelaxation_subset
@@ -366,10 +404,10 @@ theorem reductionRelaxation_reductionRelaxation_subset
 variable [Category.{v} C] [ResourceTheory C Phi]
 
 /-- A concrete real/ideal reduction bound is the existing singleton
-construction into Jost's reduction relaxation.
+construction into the reduction relaxation.
 
-Jost, Definition 2.2.9 (printed p. 22): "R^ε := {S | ∀D : |Δᴰ(R,S)| ≤ ε(D)}".
-MR16, Definition 1 (printed p. 11): "π R ⊆ S". The supplied ideal may
+[2, Definition 2.2.9, p. 22]: "R^ε := {S | ∀D : |Δᴰ(R,S)| ≤ ε(D)}".
+[3, Definition 1, p. 11]: "π R ⊆ S". The supplied ideal may
 already have its explicitly chosen simulator attached.
 
 The construction `{real} —protocol→ {ideal}^error` holds exactly when
@@ -396,14 +434,14 @@ lemma constructs_singleton_reductionRelaxation_iff
     apply constructs_iff.mpr
     intro resource admitted
     obtain rfl := Set.mem_singleton_iff.mp admitted
-    -- Symmetry reconciles the real-first comparison with Jost's center-first set.
+    -- Symmetry reconciles the real-first comparison with the center-first set.
     exact (mem_reductionRelaxation_iff model).mpr
       ⟨ideal, Set.mem_singleton _, DistinguisherAdvantage.SubstitutesWithin.symm model bound⟩
 
 /-- Converter attachment pulls a reduction relaxation through its image and
 precomposes the error function with the explicit reduction.
 
-Jost 2020, Theorem 2.2.11 (printed p. 22) states
+[2, Theorem 2.2.11, p. 22] states
 `π(R^ε) ⊆ (πR)^{ε_π}` with `ε_π(D) := ε(Dπ(·))`.
 
 Here `map converter` is the direct image on `A` under attachment, and `ε_π` is
@@ -413,7 +451,7 @@ theorem map_reductionRelaxation_subset
     (model : DistinguisherAdvantage C Phi Distinguisher)
     -- `converter = π` (pi), outside `A`, inside `B`.
     {A B : C} (converter : A ⟶ B)
-    -- `reduce` is Jost's `D ↦ Dπ(·)`, from distinguishers on `A` to distinguishers on `B`.
+    -- `reduce` is [2]’s `D ↦ Dπ(·)`, from distinguishers on `A` to distinguishers on `B`.
     (reduce : Distinguisher A → Distinguisher B)
     -- `reduce_admissible` and `advantage_eq` are as in
     -- `DistinguisherAdvantage.SubstitutesWithin.attach`.
@@ -436,7 +474,7 @@ theorem map_reductionRelaxation_subset
   obtain ⟨center, admitted, close⟩ := originalRelaxed
   -- Attach the converter to the selected unrelaxed center.
   refine ⟨attach converter center, ⟨center, admitted, rfl⟩, ?_⟩
-  -- Banfi's composed distinguisher supplies the transformed bound.
+  -- The composed distinguisher supplies the transformed bound.
   exact DistinguisherAdvantage.SubstitutesWithin.attach model
     converter reduce reduce_admissible advantage_eq close
 
