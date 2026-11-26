@@ -12,7 +12,8 @@ Replies retain their requested types; `finish` receives the dependent tuple. The
 actual invocation order, while the inside interface keeps its original port labels.
 
 `collectCalls_cost` gives exactly `n` calls and `collectCalls_next` gives their exact order.
-`collectCalls_reply` computes the result of matching replies. Against fresh inside laws,
+`collectCalls_exchangesOf` certifies the scheduled query/reply trace; `collectCalls_reply`
+computes its completed result. Against fresh inside laws,
 `Program.memorylessReplyLaw_collectCalls` gives the pushforward of their independent product,
 using `piDep_fin_zero` and `piDep_fin_succ` from `Probability.DependentProduct`.
 
@@ -61,6 +62,36 @@ lemma collectCalls_cost
   | succ n ih =>
     -- One matching call precedes the remaining collection.
     exact callCost_call _ _ _ fun _ => ih _ _
+
+/-- The scheduled queries with replies at their requested ports form the body's own exchanges. -/
+lemma collectCalls_exchangesOf
+    -- `request` lists the calls; `finish` computes the completed result.
+    (n : ℕ) (request : Fin n → Σ j, X j)
+    (finish : ((i : Fin n) → Y (request i).1) → R)
+    -- `ys i` has the reply type of the port selected by `request i`.
+    (ys : (i : Fin n) → Y (request i).1) :
+    Program.ExchangesOf (collectCalls n request finish)
+      (List.ofFn fun i => (request i, ⟨(request i).1, ys i⟩)) := by
+  induction n with
+  | zero =>
+    intro i hi
+    simp only [List.ofFn_zero, List.length_nil, Nat.not_lt_zero] at hi
+  | succ n ih =>
+    intro i hi
+    cases i with
+    | zero =>
+      simp only [List.ofFn_succ, List.take_zero, collectCalls, callProg,
+        List.getElem_cons_zero]
+      exact ⟨True.intro, True.intro⟩
+    | succ i =>
+      -- After its first matching reply, collection follows the remaining schedule.
+      have tailIndex : i < (List.ofFn fun j : Fin n =>
+          (request j.succ, (⟨(request j.succ).1, ys j.succ⟩ : Σ j, Y j))).length := by
+        simpa only [List.length_ofFn, Nat.succ_lt_succ_iff] using hi
+      have tail := ih (fun j => request j.succ)
+        (fun zs => finish (Fin.cons (ys 0) zs)) (fun j => ys j.succ) i tailIndex
+      simpa only [List.ofFn_succ, List.take_succ_cons, List.getElem_cons_succ,
+        collectCalls, callProg, ↓reduceDIte] using tail
 
 /-- A complete sequence of matching replies returns `finish ys`. -/
 lemma collectCalls_reply

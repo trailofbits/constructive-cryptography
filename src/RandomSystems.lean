@@ -159,6 +159,7 @@ public import RandomSystems.Converter.ChronologicalLabeling
 public import RandomSystems.Converter.ChronologicalLabeling.Laws
 
 public import RandomSystems.Converter.ProgramTrace
+public import RandomSystems.Typed.DSL.CollectAttachment
 
 
 /-!
