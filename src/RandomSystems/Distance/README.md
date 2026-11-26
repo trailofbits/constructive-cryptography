@@ -204,7 +204,7 @@ Games build on this bound: see [Game](../Game/README.md#identical-until-bad).
 [RandomSystem.transcriptDistance]: Decision.lean#L276
 [Domain.Compatible]: Decision.lean#L213
 [Domain.DecisionCompatible]: Decision.lean#L219
-[QueryBounded]: ../System/DDE.lean#L34
+[QueryBounded]: ../System/DDE.lean#L39
 [IsDDD]: ../System/InterfaceSystem.lean#L972
 [RandomSystem.decisionProbability]: Decision.lean#L342
 [Domain.Distinguisher]: Distinguisher.lean#L126
