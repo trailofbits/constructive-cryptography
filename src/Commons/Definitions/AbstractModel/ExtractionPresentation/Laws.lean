@@ -30,27 +30,29 @@ variable
 /-- Fixed attachment gives each transcript the indicator that its composed DDS answers it. -/
 lemma registersConverter_smul_observations_mass (z : P × S)
     (h : List ((Σ i, (M.interface input k).X i) × (Σ i, (M.interface input k).Y i))) :
-    (M.registersConverter input k z.1 z.2 • M.observations k z.1).1 h =
+    (M.registersConverter input k (M.operate z.1) z.2 • M.observations k z.1).1 h =
       (Distribution.ProbDist.single z).1.mass
         (fun w => Replies (extractionDDS M input k w).1 (h.map Prod.fst) (h.map Prod.snd)) := by
-  change (M.registersConverter input k z.1 z.2 •
-    TypedSystem.ofFunction (A := M.observationInterface k) (M.evaluate z.1)).1 h = _
-  let observation := (M.observationInterface k).automatonDDS
-    (fun (_ : Unit) ρ values => ((), M.evaluate z.1 ρ values)) ()
-  -- Present only the fixed observation component by its existing deterministic evaluator.
-  have presentation : TypedSystem.ofFunction (A := M.observationInterface k)
-      (M.evaluate z.1) = TypedSystem.ofPDS (Distribution.ProbDist.single observation) :=
-    (TypedSystem.ofDeterministic_eq_ofFunction (A := M.observationInterface k)
-      (M.evaluate z.1)
-      observation.1 observation.2
-      (Interface.automatonDDS_eq_ofFunction (M.observationInterface k)
-        (fun (_ : Unit) => M.evaluate z.1) ())).symm
+  change (M.registersConverter input k (M.operate z.1) z.2 •
+    TypedSystem.ofFunction (A := M.observationInterface S k) (M.evaluate z.1)).1 h = _
+  let A := M.observationInterface S k
+  let reply : (Σ i, A.X i) → Σ i, A.Y i := fun v => ⟨v.1, M.evaluate z.1 v.1 v.2⟩
+  let fixed := DDS.ofFunction A.domain A.nonempty_prefix reply
+  have certified : IsDDS fixed.1 ∧ RepliesAtQueriedInterface fixed.1 ∧
+      ∀ h, (fixed.1 h).Dom ↔ A.domain h :=
+    ⟨fixed.2, DDS.ofFunction_repliesAtQueriedInterface A.domain A.nonempty_prefix reply
+      (fun _ _ _ => rfl), DDS.ofFunction_dom A.domain A.nonempty_prefix reply⟩
+  -- Present the fixed observation component by that same function DDS.
+  have presentation : TypedSystem.ofFunction (A := A) (M.evaluate z.1) =
+      TypedSystem.ofPDS (Distribution.ProbDist.single ⟨fixed.1, certified⟩) :=
+    (TypedSystem.ofDeterministic_eq_ofFunction (A := A)
+      (M.evaluate z.1) fixed.1 certified rfl).symm
   rw [presentation]
-  -- Attachment transports that component presentation through the unchanged register converter.
+  -- Attachment transports the function presentation through the unchanged register converter.
   refine (TypedConverter.ofDDC_smul_ofPDS_mass
-    (A := M.interface input k) (B := M.observationInterface k)
-    (registersDDC M input k z).2
-    (Distribution.ProbDist.single observation) h).trans ?_
+    (A := M.interface input k) (B := A)
+    (registersDDC M input k (M.operate z.1) z.2).2
+    (Distribution.ProbDist.single ⟨fixed.1, certified⟩) h).trans ?_
   simp only [Distribution.ProbDist.single, Distribution.mass_single]
   rfl
 
@@ -59,13 +61,16 @@ lemma extractionSystem_presents
     -- `D` is the common joint draw retained by the system and its discrete presentation.
     (D : Distribution.ProbDist (P × S)) :
     (M.extractionSystem input k D).1 =
-      PDS.behavior (PDG.underlying (extractionPDG M input k D).1)
-        (PDG.underlying_probability (extractionPDG M input k D).2) := by
+      PDS.behavior
+        (PDG.underlying (X := Σ i, (M.interface input k).X i)
+          (Y := Σ i, (M.interface input k).Y i) (extractionPDG M input k D).1)
+        (PDG.underlying_probability (X := Σ i, (M.interface input k).X i)
+          (Y := Σ i, (M.interface input k).Y i) (extractionPDG M input k D).2) := by
   apply RandomSystem.ext
   intro h
   -- The retained joint sample mixes the fixed component presentations.
   have mixture := RandomSystem.mix_mass_of_presentations D
-    (fun z => (M.registersConverter input k z.1 z.2 • M.observations k z.1).1)
+    (fun z => (M.registersConverter input k (M.operate z.1) z.2 • M.observations k z.1).1)
     (fun z => (Distribution.ProbDist.single z).1)
     (fun z => (extractionDDS M input k z).1)
     (fun z _ => registersConverter_smul_observations_mass M input k z) h
@@ -73,7 +78,8 @@ lemma extractionSystem_presents
   refine mixture.trans ?_
   -- Forgetting the hidden condition leaves the same deterministic system for every draw.
   change _ = behaviorMass _ _ _
-  simp only [PDG.underlying, behaviorMass, Distribution.mass_fTransform,
-    extractionPDG, Distribution.ProbDist.map_val]
+  simp only [PDG.underlying, behaviorMass, extractionPDG, Distribution.ProbDist.map_val]
+  dsimp only [interface] at h ⊢
+  rw [Distribution.mass_fTransform, Distribution.mass_fTransform]
 
 end Commons.AbstractModel

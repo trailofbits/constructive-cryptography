@@ -52,6 +52,7 @@ public import Tests.SampledSubmissionGames
 public import Tests.AbstractModel
 public import Tests.AbstractModelRegisters
 public import Tests.AbstractModelConverter
+public import Tests.AbstractModelRegisterPresentation
 public import Tests.AbstractModelExtraction
 public import Tests.AbstractModelExtractionGame
 public import Tests.GenericGroupDense

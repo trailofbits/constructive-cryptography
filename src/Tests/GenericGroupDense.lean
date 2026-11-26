@@ -29,8 +29,8 @@ example (π : Equiv.Perm (ZMod 5)) (values : Fin 0 → ZMod 5) :
 
 /-- Two observations of `x` both use the retained permutation `π`. -/
 def repeatedObservation (π : Equiv.Perm (ZMod 5)) (x : ZMod 5) :
-    List ((Σ i, (model.observationInterface 2).X i) ×
-      (Σ i, (model.observationInterface 2).Y i)) :=
+    List ((Σ i, (model.observationInterface (ZMod 5) 2).X i) ×
+      (Σ i, (model.observationInterface (ZMod 5) 2).Y i)) :=
   [(⟨(), fun _ => x⟩, ⟨(), π x⟩), (⟨(), fun _ => x⟩, ⟨(), π x⟩)]
 
 lemma same_permutation_replies (π : Equiv.Perm (ZMod 5)) (x : ZMod 5) :
@@ -47,7 +47,7 @@ lemma same_permutation_replies (π : Equiv.Perm (ZMod 5)) (x : ZMod 5) :
 /-- The same `(π,x)` sample owns both register interpretation and all observations. -/
 example : (denseGame (ZMod 5) (ι := Bool) false 2).visible =
     TypedSystem.sample (denseLaw (ZMod 5)).1 (fun z =>
-      model.registersConverter false 2 z.1 z.2 • model.observations 2 z.1) :=
+      model.registersConverter false 2 (model.operate z.1) z.2 • model.observations 2 z.1) :=
   model.extractionGame_visible false 2 (denseLaw (ZMod 5))
 
 /-- Observe the initial register, without changing its contents. -/

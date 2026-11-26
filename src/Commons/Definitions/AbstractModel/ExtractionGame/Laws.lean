@@ -39,11 +39,13 @@ lemma extractionGame_winProbability_submit
     apply (admitted_snoc_iff input k [] ⟨.submit, guess⟩).mpr
     simp [ordinary, reads]
   have score := PDG.winProbability_behavior_ofQueries_singleton
+    (X := (M.interface input k).X) (Y := (M.interface input k).Y)
     (M.extractionPDG input k D).1 (M.extractionPDG input k D).2
     ⟨.submit, guess⟩ admitted accept
   refine score.trans ?_
   -- The same sampled secret appears in the visible system and the extraction condition.
-  rw [PDG.badProbability, extractionPDG, ProbDist.map_val, mass_fTransform]
+  change (M.extractionPDG input k D).1.mass (fun g => g.1.2.1 [⟨.submit, guess⟩]) = _
+  rw [extractionPDG, ProbDist.map_val, mass_fTransform]
   apply mass_congr
   intro z
   change some guess = some z.2 ↔ z.2 = guess

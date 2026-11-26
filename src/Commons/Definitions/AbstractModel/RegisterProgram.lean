@@ -8,8 +8,8 @@ public import RandomSystems.Typed.DSL.Programs
 
 `registerProgram` stores only the completed command history. It computes register contents
 with `registers`, returns immediately on computation or submission, and makes one observation
-call on a query. `observationCost` counts that call. The fixed parameters `p,x` belong to the
-surrounding retained sample, not to separately sampled program state.
+call on a query. `observationCost` counts that call. The interpretation `op` and initial value `w`
+fix internal values. Outside commands and submitted guesses retain the model's types.
 -/
 
 @[expose] public section
@@ -19,20 +19,20 @@ namespace Commons.AbstractModel
 open SystemAlgebra SystemAlgebra.DSL
 
 variable
-  -- `M` supplies operations on `S`; `ι` gives register names without a finiteness requirement.
-  {S P ι : Type} (M : Commons.AbstractModel S P) [DecidableEq ι]
+  -- `M` fixes external commands and replies; `W` carries internal values, and `ι` names registers.
+  {S P W ι : Type} (M : Commons.AbstractModel S P) [DecidableEq ι]
 
 /-- `registerProgram` returns on compute/submit and calls `ρ(read(registers h,a))` on query.
-Missing reads are totalized by the retained `x`; admitted commands have initialized operands. -/
+Missing reads are totalized by the initial `w`; admitted commands have initialized operands. -/
 noncomputable def registerProgram
-    -- `input` initially contains `x`; `p` fixes the operation interpretation.
-    (input : ι) (p : P) (x : S) :
+    -- `input` initially contains `w`; `op` interprets computations on internal values `W`.
+    (input : ι) (op : (o : M.Operation) → (Fin (M.arity o) → W) → W) (w : W) :
     Program (List (M.Command ι)) (Port M.Operation M.Query) M.Query
-      (M.Input ι) M.Output (fun ρ => Fin (M.queryArity ρ) → S) M.Reply :=
+      (M.Input ι) M.Output (fun ρ => Fin (M.queryArity ρ) → W) M.Reply :=
   fun h i u => match i with
   | .compute o => returnProg (h ++ [⟨.compute o, u⟩], ())
   | .query ρ =>
-      callProg ρ ((read (M.registers (M.operate p) (initial input x) h) u).getD (fun _ => x))
+      callProg ρ ((read (M.registers op (initial input w) h) u).getD (fun _ => w))
         (fun y => returnProg (h ++ [⟨.query ρ, u⟩], y))
   | .submit => returnProg (h ++ [⟨.submit, u⟩], ())
 

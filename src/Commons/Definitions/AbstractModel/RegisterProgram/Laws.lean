@@ -19,11 +19,12 @@ open SystemAlgebra SystemAlgebra.DSL
 
 variable
   -- `M` gives the commands and interpretations; `ι` names registers.
-  {S P ι : Type} (M : Commons.AbstractModel S P) [DecidableEq ι]
+  {S P W ι : Type} (M : Commons.AbstractModel S P) [DecidableEq ι]
 
 /-- Every invocation makes at most one observation call. -/
-lemma registerProgram_bounded (input : ι) (p : P) (x : S) :
-    (M.registerProgram input p x).Bounded 1 := by
+lemma registerProgram_bounded (input : ι)
+    (op : (o : M.Operation) → (Fin (M.arity o) → W) → W) (w : W) :
+    (M.registerProgram input op w).Bounded 1 := by
   intro h i u
   cases i with
   | compute o => exact callBound_return 1 _
@@ -31,8 +32,9 @@ lemma registerProgram_bounded (input : ι) (p : P) (x : S) :
   | submit => exact callBound_return 1 _
 
 /-- The exact observation cost is 0 for compute/submit and 1 for query, including pending calls. -/
-lemma registerProgram_costs (input : ι) (p : P) (x : S) :
-    (M.registerProgram input p x).Costs M.observationCost := by
+lemma registerProgram_costs (input : ι)
+    (op : (o : M.Operation) → (Fin (M.arity o) → W) → W) (w : W) :
+    (M.registerProgram input op w).Costs M.observationCost := by
   intro h i u
   cases i with
   | compute o => exact callCost_return _
@@ -62,17 +64,18 @@ lemma observationCost_sum_le
 
 /-- On an admitted observation, totalization returns exactly the initialized operand tuple. -/
 lemma read_registers_getD
-    -- `input` starts with `x`; `p` fixes operations and `h` contains completed commands.
-    (input : ι) (p : P) (x : S) (h : List (M.Command ι))
+    -- `input` starts with `w`; `op` interprets operations and `h` contains completed commands.
+    (input : ι) (op : (o : M.Operation) → (Fin (M.arity o) → W) → W)
+    (w : W) (h : List (M.Command ι))
     -- `ρ(a)` is the next observation, admitted with ordinary allowance `k`.
     (ρ : M.Query) (a : Fin (M.queryArity ρ) → ι) (k : ℕ)
     (admitted : M.Admitted input k (h ++ [⟨.query ρ, a⟩])) :
-    some ((read (M.registers (M.operate p) (initial input x) h) a).getD (fun _ => x)) =
-      read (M.registers (M.operate p) (initial input x) h) a := by
-  have live := M.registers_isSome (M.operate p) (initial input x) input
-    (initial_isSome input x) h (fun t z hp =>
+    some ((read (M.registers op (initial input w) h) a).getD (fun _ => w)) =
+      read (M.registers op (initial input w) h) a := by
+  have live := M.registers_isSome op (initial input w) input
+    (initial_isSome input w) h (fun t z hp =>
       admitted.2.2.2 t z (hp.trans (List.prefix_append _ _)))
-  have ready : (read (M.registers (M.operate p) (initial input x) h) a).isSome := by
+  have ready : (read (M.registers op (initial input w) h) a).isSome := by
     apply (read_isSome _ a).mpr
     intro j
     apply (live (a j)).mpr
