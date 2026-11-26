@@ -201,12 +201,12 @@ Games build on this bound: see [Game](../Game/README.md#identical-until-bad).
 
 <!-- Declarations -->
 
-[RandomSystem.transcriptDistance]: Decision.lean#L249
-[Domain.Compatible]: Decision.lean#L186
-[Domain.DecisionCompatible]: Decision.lean#L192
+[RandomSystem.transcriptDistance]: Decision.lean#L276
+[Domain.Compatible]: Decision.lean#L213
+[Domain.DecisionCompatible]: Decision.lean#L219
 [QueryBounded]: ../System/DDE.lean#L34
 [IsDDD]: ../System/InterfaceSystem.lean#L972
-[RandomSystem.decisionProbability]: Decision.lean#L315
+[RandomSystem.decisionProbability]: Decision.lean#L342
 [Domain.Distinguisher]: Distinguisher.lean#L126
 [Domain.Distinguisher.probability]: Distinguisher.lean#L130
 [Domain.Distinguisher.advantage]: Distinguisher.lean#L136
