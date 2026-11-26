@@ -21,6 +21,7 @@ public import ConstructiveCryptography.Instances
 public import ConstructiveCryptography.Instances.KeyGuessing
 public import ConstructiveCryptography.Notation
 public import ConstructiveCryptography.Problem
+public import ConstructiveCryptography.Problem.Family
 public import ConstructiveCryptography.Specification
 public import ConstructiveCryptography.Specification.Action
 public import ConstructiveCryptography.Specification.Basic
