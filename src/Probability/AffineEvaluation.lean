@@ -15,6 +15,8 @@ adds `δ`.
 `mass_affine_not_injOn_le_choose` uses the existing unordered-pair union bound.
 The uniform corollaries replace `δ` by `1 / |R|`, and
 `mass_prod_uniform_eq_or_affine_not_injOn_le` averages over an independent seed.
+`expect_mass_le_of_affine_injOn_eq` transfers that bound to laws agreeing with the seed law
+wherever affine evaluation is injective, using equal-total-mass event transfer.
 
 The source counts “at most k(k + 1)/2 values x” [1, Appendix F.1, p. 27].
 Here `s` counts distinct coefficient pairs, including constants.
@@ -168,5 +170,44 @@ theorem mass_prod_uniform_eq_or_affine_not_injOn_le
       (div_le_div_of_nonneg_right (add_le_add le_rfl
         (Nat.cast_le.mpr (Nat.choose_le_choose 2 (hcard ω hω)))) (Nat.cast_nonneg _))
   · rw [μ.2.2, mul_one]
+
+/-- Laws agreeing with an independent seed law on injective affine evaluations inherit
+the guessing bound `(1 + C(M, 2)) / |R|`. -/
+theorem expect_mass_le_of_affine_injOn_eq
+    -- `Ω` carries outcomes; `μ` is the reference law and `T x` is the law at secret `x`.
+    {Ω : Type*} (μ : ProbDist Ω) (T : R → ProbDist Ω)
+    -- Each outcome chooses coefficient pairs `forms ω` and a candidate secret `guess ω`.
+    (forms : Ω → Finset (R × R)) (guess : Ω → R)
+    -- Success `W x ω` requires the candidate secret to equal `x`.
+    (W : R → Ω → Prop) (guessed : ∀ x ω, W x ω → x = guess ω)
+    -- `same` fixes the outcome masses whenever its affine expressions remain distinct.
+    (same : ∀ x ω, Set.InjOn (fun c : R × R => c.1 * x + c.2)
+      (forms ω : Set (R × R)) → (T x).1 ω = μ.1 ω)
+    -- `M` bounds the number of distinct expressions on the support of `μ`.
+    {M : ℕ} (hcard : ∀ ω ∈ μ.1.support, (forms ω).card ≤ M) :
+    (uniform R).expect (fun x => (T x).1.mass (W x)) ≤
+      (1 + (M.choose 2 : ℝ)) / Fintype.card R := by
+  classical
+  let covered (x : R) (ω : Ω) := x = guess ω ∨
+    ¬ Set.InjOn (fun c : R × R => c.1 * x + c.2) (forms ω : Set (R × R))
+  have fixed (x : R) : (T x).1.mass (W x) ≤ μ.1.mass (covered x) :=
+    mass_le_of_eq_on_compl (T x).1 μ.1 (T x).2.1
+      (fun ω h => Or.inl (guessed x ω h)) ((T x).2.2.trans μ.2.2.symm)
+      (fun ω outside => same x ω (of_not_not (fun h => outside (Or.inr h))))
+  calc
+    -- Transfer first at each secret, then average over the unchanged uniform law.
+    _ ≤ (uniform R).expect (fun x => μ.1.mass (covered x)) :=
+      expect_mono uniform_nonNeg fixed
+    _ = (prod (uniform R) μ.1).mass (fun xω => covered xω.1 xω.2) := by
+      symm
+      rw [← expect_indicator, expect_prod_eq]
+      apply congrArg (uniform R).expect
+      funext x
+      exact expect_indicator μ.1 (covered x)
+    -- Swap the independent draws to use the seed-first guessing-or-collision bound.
+    _ = (prodProbDist μ 𝒰[R]).1.mass (fun ωx => covered ωx.2 ωx.1) := by
+      rw [← fTransform_swap_prod μ.1 (uniform R), mass_fTransform]
+      rfl
+    _ ≤ _ := mass_prod_uniform_eq_or_affine_not_injOn_le μ forms guess hcard
 
 end Probability.Distribution
