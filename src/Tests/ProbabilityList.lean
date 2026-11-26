@@ -19,6 +19,20 @@ on concrete lists:
 
 namespace Tests.ProbabilityList
 
+/-- Adding key `3` retains the older binding at `2`, and defines the new binding at `3`. -/
+example (x : ℕ) :
+    ([(2, false)] ++ [(3, true)]).lookup x =
+      if x = 3 then some true else [(2, false)].lookup x :=
+  List.lookup_append_singleton_of_none [(2, false)] 3 true rfl x
+
+/-- A chosen lawful Boolean comparison preserves the old binding `false ↦ 7`. -/
+example [BEq Bool] [LawfulBEq Bool] (x : Bool) :
+    ([(false, 7)] ++ [(true, 9)] : List (Bool × ℕ)).lookup x =
+      if x = true then some 9 else [(false, 7)].lookup x := by
+  apply List.lookup_append_singleton_of_not_mem
+  simp only [List.map_cons, List.map_nil, List.mem_cons, List.not_mem_nil, or_false,
+    reduceCtorEq, not_false_eq_true]
+
 /-- Some entry of `[1, 2, 4]` is larger than the sum of the entries before it (`4 > 1 + 2`),
 using `List.exists_eq_append_cons_iff`. -/
 example : ∃ p e s, ([1, 2, 4] : List ℕ) = p ++ e :: s ∧ p.sum < e := by
@@ -80,6 +94,8 @@ example :
 example : Decidable (List.ForallScan (· + ·) (fun c a => c ≤ a) (0 : ℕ) [1, 2]) :=
   inferInstance
 
+#print axioms List.lookup_append_singleton_of_none
+#print axioms List.lookup_append_singleton_of_not_mem
 #print axioms List.exists_eq_append_cons_iff
 #print axioms List.forall_prefix_concat_iff_forall_take
 #print axioms List.exists_split_of_filterMap_eq

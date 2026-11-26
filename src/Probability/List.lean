@@ -3,9 +3,11 @@ module
 public import Mathlib.Data.List.Basic
 
 /-!
-# List splits and fold-indexed predicates
+# List lookup, splits and fold-indexed predicates
 
-Helpers for reasoning about an entry of a list together with the prefix before it:
+Fresh-key lookup and reasoning about an entry together with its prefix:
+
+* `List.lookup_append_singleton_of_none`: appending a fresh key changes only that key
 
 * `List.exists_eq_append_cons_iff` and `List.forall_prefix_concat_iff_forall_take`:
   translate existential and universal properties of splits `l = p ++ e :: s` into
@@ -19,6 +21,33 @@ Helpers for reasoning about an entry of a list together with the prefix before i
 @[expose] public section
 
 namespace List
+
+/-- Appending the fresh entry `(a, b)` returns `b` at `a` and preserves every other lookup. -/
+lemma lookup_append_singleton_of_none
+    -- `l` stores key-value pairs; its lawful comparison agrees with equality of keys.
+    {α β : Type*} [DecidableEq α] [BEq α] [LawfulBEq α]
+    (l : List (α × β)) (a : α) (b : β)
+    -- `hnone` says that `a` has no earlier binding; `x` is the key being read.
+    (hnone : l.lookup a = none) (x : α) :
+    (l ++ [(a, b)]).lookup x = if x = a then some b else l.lookup x := by
+  rw [lookup_append, lookup_cons, lookup_nil]
+  by_cases same : x = a
+  · subst x
+    simp only [hnone, beq_self_eq_true, ↓reduceIte, Option.none_or]
+  · simp only [beq_eq_false_iff_ne.mpr same, ite_eq_right same, Option.or_none]
+
+/-- A key absent from the stored keys can be appended without changing other lookups. -/
+lemma lookup_append_singleton_of_not_mem
+    -- `l` stores key-value pairs; `a` is absent from its key projection.
+    {α β : Type*} [DecidableEq α] [BEq α] [LawfulBEq α]
+    (l : List (α × β)) (a : α) (b : β) (hnot : a ∉ l.map Prod.fst) (x : α) :
+    (l ++ [(a, b)]).lookup x = if x = a then some b else l.lookup x := by
+  apply lookup_append_singleton_of_none l a b
+  apply lookup_eq_none_iff.mpr
+  intro pair member
+  apply bne_iff_ne.mpr
+  intro same
+  exact hnot (mem_map.mpr ⟨pair, member, same.symm⟩)
 
 /-- Splitting `l` as `p ++ e :: s` with `P p e` is equivalent to finding a position
 `i < l.length` where `P (l.take i) l[i]` holds. -/
