@@ -5,6 +5,7 @@ public import Probability.FiniteSupport
 public import Probability.Replay
 public import Probability.Counting
 public import Probability.Counting.BinomialRecurrence
+public import Probability.Counting.BinomialSum
 public import Probability.Counting.Collision
 public import Probability.Counting.Guessing
 public import Probability.Permutation
