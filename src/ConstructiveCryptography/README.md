@@ -153,6 +153,10 @@ p(s) \le \lambda(q(\rho(s))),\quad q(\rho(s)) \le \varepsilon
 of admitted winners. Source and target games may use different performance spaces; closure
 ensures the reduction maps admitted winners to admitted winners.
 
+[Uniform family reductions](Problem/Family.lean) fix one solver map for every target instance.
+They compare lower bounds on performance, then worst-case infima with explicit nonemptiness
+and boundedness assumptions. These laws require no games or interfaces.
+
 `DistinctionGames I Φ Game` selects paired decision and winning evaluations of a common
 solver, with real-valued probabilities, the visible resource $`G^-`$, and conditional equivalence.
 It specializes `Games I Game ℝ`. The game bound uses
