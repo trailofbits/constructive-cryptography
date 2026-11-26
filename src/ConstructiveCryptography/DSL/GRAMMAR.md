@@ -487,8 +487,8 @@ before/after proofs, expression guards, negative tests and exact rewrite traces 
 
 <!-- Declarations -->
 
-[Program]: ../../RandomSystems/Converter/Program.lean#L48
-[Program.PortPreserving]: ../../RandomSystems/Converter/Program.lean#L126
+[Program]: ../../RandomSystems/Converter/Program.lean#L50
+[Program.PortPreserving]: ../../RandomSystems/Converter/Program.lean#L128
 [automatonSystem_eq_of_bisim]: ../../RandomSystems/System/Automaton.lean#L93
 [Interface.queryBudget]: ../../RandomSystems/Typed/Interface.lean#L73
 [Interface.portBudget]: ../../RandomSystems/Typed/Interface.lean#L103
