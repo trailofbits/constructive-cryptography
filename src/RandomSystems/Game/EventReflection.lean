@@ -11,6 +11,8 @@ reply are part of that interaction.
 
 `attach_liftMBO_unset_eq_attach_visible_of_not_bad` identifies unset and visible attachment
 off an outside event that contains every completed inside win.
+`attach_liftMBO_unset_eq_ite_of_finalMBO_iff` combines this with the reverse implication: the
+unset coefficient is zero on that event and equals visible mass on its complement.
 `attach_liftMBO_unset_eq_zero_of_reflectsMBO` rules out success with the MBO unset.
 `event_mass_le_winProbability_of_unset_eq_zero` bounds any such event by winning, using
 the unset subdistribution and its missing mass. `winProbability_eq_mass_of_unset` gives
@@ -322,6 +324,44 @@ lemma PDCBehavior.attach_liftMBO_unset_eq_zero_of_reflectsMBO
     rw [hu] at hbits
     exact (finalMBO_eq_true_iff hbits).mp hb hall
   · exact hp rfl
+
+/-- Exact completed-event correspondence identifies the unset coefficient at `h`. -/
+lemma PDCBehavior.attach_liftMBO_unset_eq_ite_of_finalMBO_iff
+    -- `hE'` and `hF'` close the inside and outside domains under nonempty prefixes.
+    (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
+    (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
+    -- `α` connects the outside interface to the hidden-bit game `G`.
+    (α : PDCBehavior O J U V X Y E m hE F n hF)
+    (G : RandomSystem (Σ j, X j) (Σ j, withMBO Y j) (Domain.ofInputs E m hE))
+    -- `hG` preserves queried ports; `hm` keeps a reached bit set.
+    (hG : G.RepliesAtQueriedInterface) (hm : G.MonotoneMBO)
+    -- `h` is the visible outside transcript whose unset coefficient is identified.
+    (h : List ((Σ o, U o) × Σ o, V o))
+    -- `bad h` records exactly the hidden event on supported completed interactions displaying `h`.
+    (bad : List ((Σ o, U o) × Σ o, V o) → Prop) [DecidablePred bad]
+    (exactEvent : ∀ t,
+      FollowsStrategy (connectionQueries resourceRoute resourceInput (h.map Prod.fst)) t →
+      ¬ (connectionQueries resourceRoute resourceInput (h.map Prod.fst)
+        (t.map Prod.snd)).Dom →
+      RandomSystem.parallel (PDCBehavior.liftMBO α).1 G t ≠ 0 →
+      (exposedReplies (resourceRoute (U := U)) (t.map Prod.snd)).map forgetMBO =
+        h.map Prod.snd →
+      (finalMBO (RandomSystem.parallelRight t) = true ↔ bad h)) :
+    PDCBehavior.attach hE' hF' (PDCBehavior.liftMBO α) G hG (unsetMBOs h) =
+      if bad h then 0 else PDCBehavior.attach hE' hF' α G.visible hG.visible h := by
+  -- The outside event excludes unset mass; its complement retains all visible mass.
+  by_cases hb : bad h
+  · rw [ite_eq_left hb]
+    apply PDCBehavior.attach_liftMBO_unset_eq_zero_of_reflectsMBO
+      hE' hF' α G hG hm (success := fun k => k = h) ?_ rfl
+    intro k t follows stopped positive displayed same
+    subst k
+    exact (exactEvent t follows stopped positive displayed).mpr hb
+  · rw [ite_eq_right hb]
+    apply PDCBehavior.attach_liftMBO_unset_eq_attach_visible_of_not_bad
+      hE' hF' α G hG hm h bad hb
+    intro t follows stopped positive displayed reached
+    exact (exactEvent t follows stopped positive displayed).mp reached
 
 /-- Under the completed-interaction contract, outside acceptance is bounded by winning
 against the attached game. Absorption identifies this with winning against `G`. -/
