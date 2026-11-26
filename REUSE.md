@@ -83,7 +83,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Reduce game families through one converter | `Games.easier_of_attach_mem` in `ConstructiveCryptography.Game.Family` |
 | Test submitted values and decode them | `SubmissionGame`, `SubmissionGame.reindex` in `ConstructiveCryptography.Game.Submission` |
 | Retained parameter in an automaton | `TypedSystem.sample_ofProbAutomaton_eq` in `RandomSystems.Typed.ProbAutomatonSampling` |
-| Random function | `URF`, `URF.lazy_eq` in [Ideal] |
+| Random function | `randomFunction` with prescribed coordinate laws in [RandomFunction](src/Commons/Definitions/RandomFunction.lean); `URF`, `URF.lazy_eq` in [Ideal] |
 | Random permutation | `URP` in [Ideal]; `URP.lazy_eq` in [LazyPermutation] |
 | Forward and inverse queries to one permutation | `StrongURP` in [Ideal] |
 | Independent permutation per tweak | `TweakableURP`, `TweakableStrongURP` in [Ideal] |
