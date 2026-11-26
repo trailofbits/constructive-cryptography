@@ -90,6 +90,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Fresh samples | `TypedSystem.source` in [Source]; `MemorylessSource` in [Ideal] |
 | Fresh query-dependent replies | `TypedSystem.ofMemoryless` in [Memoryless] |
 | Ordered tuple collection | `TypedConverter.collect` in [Collector] |
+| Abstract finite families | `FiniteParallel` in [FiniteParallel] |
 | Family hybrid | `parallelAllImplication`, `distance_smul_parallelAll_le_sum` in [FamilyHybrid] |
 | Fixed finite-family context | `TypedConverter.parallelAllContext` in [FamilyContext] |
 | Fresh reply families | `TypedSystem.parallelAll_ofMemoryless` in [FamilyMemoryless] |
@@ -326,3 +327,4 @@ checks in [AGENTS.md](AGENTS.md). These checks establish the Lean claims; reuse 
 still require reading the definitions.
 
 [ReplyTransform]: src/Commons/Definitions/ReplyTransform.lean
+[FiniteParallel]: src/ConstructiveCryptography/CryptographicAlgebra/FiniteParallel.lean
