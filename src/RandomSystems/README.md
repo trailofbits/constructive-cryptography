@@ -238,12 +238,12 @@ of the program's inside queries:
 [IsDDCFrom.mapsDomain]: Converter/ConverterDomain.lean#L695
 [IsDDCFrom.eq_filterDom_of_replies_le]: Converter/ConverterDomain.lean#L482
 [IsDDC.comp_of_query_cost]: DDC/SerialCost.lean#L213
-[callRule]: Converter/Calls.lean#L395
+[callRule]: Converter/Calls.lean#L396
 [callRule_completed_exact_length]: Converter/CallRuleTranscript.lean#L96
-[callRule_isResponsiveDDC]: Converter/Calls.lean#L437
-[callRule_query_count]: Converter/Calls.lean#L485
-[callConverter]: Converter/Calls.lean#L503
-[callConverter_isDDCFrom]: Converter/Calls.lean#L518
+[callRule_isResponsiveDDC]: Converter/Calls.lean#L438
+[callRule_query_count]: Converter/Calls.lean#L486
+[callConverter]: Converter/Calls.lean#L504
+[callConverter_isDDCFrom]: Converter/Calls.lean#L560
 [replies_callConverter_of_schedule]: Converter/CallRuleTranscript.lean#L172
 [ofDDC_callConverter_smul_ofFunction]: Typed/CallRuleFunctional.lean#L35
 [routingConverter]: Converter/QueryRouting.lean#L73

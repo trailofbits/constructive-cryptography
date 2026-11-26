@@ -159,6 +159,7 @@ public import Tests.ConstructionCalc
 public import Tests.GameEquivalenceTransport
 public import Tests.GameTranscript
 public import Tests.FunctionalGameMonitor
+public import Tests.CallPhase
 public import Tests.SubmissionGame
 public import Tests.DiscreteGameUnset
 public import Tests.TranscriptPartition
