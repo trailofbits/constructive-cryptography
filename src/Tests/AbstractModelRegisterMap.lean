@@ -15,7 +15,7 @@ law covers an overwrite and missing operands, whose fallback is the initial valu
 
 namespace Tests.AbstractModelRegisterMap
 
-open Commons.AbstractModel SystemAlgebra SystemAlgebra.DSL
+open Probability Commons.AbstractModel SystemAlgebra SystemAlgebra.DSL
 open Tests.AbstractModel Tests.AbstractModelRegisters
 
 /-- Affine evaluation at zero transports the whole converter, with allowance two. -/

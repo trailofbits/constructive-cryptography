@@ -2,6 +2,7 @@ module
 
 public import Commons.Definitions.AbstractModel.Registers.Laws
 public import Tests.AbstractModel
+public import Probability.AffineEvaluation
 public import Mathlib.Algebra.Ring.Int.Defs
 
 /-!
@@ -18,7 +19,7 @@ at a noninjective evaluation point, after overwrites, and when an operand is mis
 
 namespace Tests.AbstractModelRegisters
 
-open Commons.AbstractModel Tests.AbstractModel
+open Probability Commons.AbstractModel Tests.AbstractModel
 
 /-- Interpret the model's unary operation on integers by `v ↦ v + 2`. -/
 def operate (_ : model.Operation) (values : Fin (model.arity ()) → ℤ) : ℤ :=
@@ -66,9 +67,6 @@ example : (model.registers operate initialRegisters [store, observe, submit] 7).
 example : ¬ (model.registers operate initialRegisters [store, observe, submit] 8).isSome := by
   rw [completed_initialized]
   simp [initialized, store, observe, submit, target]
-
-/-- The pair `(a,b)` represents the affine expression `a*x+b` at the fixed integer `x`. -/
-def affineEvaluation (x : ℤ) (p : ℤ × ℤ) : ℤ := p.1 * x + p.2
 
 /-- Adding two to an affine expression changes only its constant coefficient. -/
 def operateAffine (_ : model.Operation) (values : Fin (model.arity ()) → ℤ × ℤ) : ℤ × ℤ :=
