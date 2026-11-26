@@ -51,6 +51,7 @@ public import Tests.AbstractModel
 public import Tests.AbstractModelRegisters
 public import Tests.AbstractModelConverter
 public import Tests.AbstractModelExtraction
+public import Tests.AbstractModelExtractionGame
 public import Tests.SubmissionMap
 public import Tests.GameConsumers
 public import Tests.Guessing
