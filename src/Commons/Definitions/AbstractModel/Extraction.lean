@@ -7,7 +7,8 @@ public import RandomSystems.Game.DiscreteMBO
 /-!
 # Extraction in an abstract computation model
 
-`observations` evaluates the model's queries at a fixed parameter. `extractionSystem` retains
+`observationsDDS` and its typed form `observations` evaluate the model's queries at a fixed
+parameter. `extractionSystem` retains
 one joint draw `(p,x)` and attaches the register converter to those observations.
 `submitted` selects the first terminal guess; `extracted x` marks equality with the original
 secret, as in [1, Figure 1 and Definition 7, p. 8].
@@ -49,6 +50,15 @@ def extracted
     (x : S) : MC (M.Command ι) :=
   ⟨fun h => M.submitted h = some x,
     fun {_ _} pre reached => pre.findSome?_eq_some reached⟩
+
+/-- At most `k` observations, each replying `M.evaluate p ρ a` at its queried port.
+This is the deterministic presentation of `observations`, before finite typed packaging. -/
+noncomputable def observationsDDS
+    -- `k` bounds observations; `p` fixes their interpretation, with arbitrary value/reply types.
+    (k : ℕ) (p : P) : DDS (Σ ρ, Fin (M.queryArity ρ) → S) (Σ ρ, M.Reply ρ) :=
+  DDS.ofFunction (fun xs => xs ≠ [] ∧ xs.length ≤ k)
+    ⟨fun h => h.1 rfl, fun hp hne hh => ⟨hne, hp.length_le.trans hh.2⟩⟩
+    (fun v => ⟨v.1, M.evaluate p v.1 v.2⟩)
 
 variable [Fintype S] [Fintype M.Query] [∀ ρ, Fintype (M.Reply ρ)]
 

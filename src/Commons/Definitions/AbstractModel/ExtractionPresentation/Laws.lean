@@ -37,7 +37,7 @@ lemma registersConverter_smul_observations_mass (z : P × S)
     TypedSystem.ofFunction (A := M.observationInterface S k) (M.evaluate z.1)).1 h = _
   let A := M.observationInterface S k
   let reply : (Σ i, A.X i) → Σ i, A.Y i := fun v => ⟨v.1, M.evaluate z.1 v.1 v.2⟩
-  let fixed := DDS.ofFunction A.domain A.nonempty_prefix reply
+  let fixed := M.observationsDDS k z.1
   have certified : IsDDS fixed.1 ∧ RepliesAtQueriedInterface fixed.1 ∧
       ∀ h, (fixed.1 h).Dom ↔ A.domain h :=
     ⟨fixed.2, DDS.ofFunction_repliesAtQueriedInterface A.domain A.nonempty_prefix reply

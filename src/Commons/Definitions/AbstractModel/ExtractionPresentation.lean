@@ -34,14 +34,8 @@ variable
 /-- Attach the register DDC to fixed observations: the deterministic visible system at `(p,x)`. -/
 noncomputable def extractionDDS (z : P × S) :
     DDS (M.Command ι) (Σ i, M.Output i) :=
-  let E : List (Σ ρ, Fin (M.queryArity ρ) → S) → Prop :=
-    fun xs => xs ≠ [] ∧ xs.length ≤ k
-  let hE : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p :=
-    ⟨fun h => h.1 rfl, fun hp hne hh => ⟨hne, hp.length_le.trans hh.2⟩⟩
-  let observation := DDS.ofFunction E hE
-    (fun v => (⟨v.1, M.evaluate z.1 v.1 v.2⟩ : Σ ρ, M.Reply ρ))
   let converter := M.registersDDC input k (M.operate z.1) z.2
-  DDC.attach ⟨converter.1, ⟨1, converter.2.isDDC⟩⟩ observation
+  DDC.attach ⟨converter.1, ⟨1, converter.2.isDDC⟩⟩ (M.observationsDDS k z.1)
 
 /-- The attachment admits the original command domain, including terminal submission. -/
 lemma extractionDDS_domain (z : P × S) :
@@ -51,8 +45,7 @@ lemma extractionDDS_domain (z : P × S) :
     fun xs => xs ≠ [] ∧ xs.length ≤ k
   let hE : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p :=
     ⟨fun h => h.1 rfl, fun hp hne hh => ⟨hne, hp.length_le.trans hh.2⟩⟩
-  let observation := DDS.ofFunction E hE
-    (fun v => (⟨v.1, M.evaluate z.1 v.1 v.2⟩ : Σ ρ, M.Reply ρ))
+  let observation := M.observationsDDS k z.1
   exact HasDomain.ofInputs ((M.registersDDC input k (M.operate z.1) z.2).2.mapsDomain
     ⟨fun h => h.1 rfl, fun hp hne hh => hh.prefix hp hne⟩ observation.1 observation.2
     (DDS.ofFunction_repliesAtQueriedInterface E hE
