@@ -112,6 +112,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Transformed or dependent law | `ProbDist.map`, `ProbDist.bind`, `ProbDist.jointLaw` in [Kernel] |
 | Average a joint event over its first draw | `ProbDist.jointLaw_mass_eq_expect` in `Probability.Expectation` |
 | Propagate an adaptive potential bound | `expect_antitone_of_bindK` in `Probability.Expectation` |
+| Solve a finite binomial-count recurrence | `Probability.Counting.le_choose_mul_pow_of_succ_le` in `Probability.Counting.BinomialRecurrence` |
 | Average conditional distances or apply a common kernel | `statDist_bindK_le_expect`, `statDist_bindK_le` in `Probability.StatisticalDistance` |
 | Average errors under a retained component draw | `RandomSystem.transcriptDistance_mix_le_expect` in `RandomSystems.Distance.Mixture` |
 | Bound polynomial roots under an atom-mass bound | `mass_polynomial_eval_eq_zero_le`, `mass_polynomial_eval_eq_le` in `Probability.PolynomialEvaluation` |

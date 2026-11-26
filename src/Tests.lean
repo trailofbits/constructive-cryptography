@@ -4,6 +4,7 @@ public import Tests.JointLaw
 public import Tests.KernelDistance
 public import Tests.KernelPotential
 public import Tests.EventTransfer
+public import Tests.BinomialRecurrence
 public import Tests.PolynomialEvaluation
 public import Tests.AffineEvaluation
 public import Tests.AffineTransfer
