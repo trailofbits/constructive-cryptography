@@ -14,6 +14,7 @@ answers jointly with the unset condition factor through the ideal answers.
 `DDG.withMBO_ofFunction` gives a functional presentation when the hidden condition on each
 admitted history depends only on its last input. The same domain filter is retained, so the
 presentation also agrees on empty and rejected histories.
+`PDG.withMBO_ofFunction` lifts this presentation through the original sampling law.
 
 ## Main definitions
 
@@ -105,9 +106,30 @@ lemma ofFunction_badProbability (P : Distribution K) (f : K → X → Y)
 
 end Presentation
 
+-- `K` carries the retained draw; `I` indexes ports with query/reply alphabets `X i`, `Y i`.
 variable {K I : Type} [Fintype I] {X Y : I → Type} [∀ i, Fintype (X i)] [∀ i, Fintype (Y i)]
+    -- `D` admits nonempty query histories, is closed under their prefixes, and has this bound.
     (D : List (Σ i, X i) → Prop) (hD : ¬ D [] ∧ ∀ {p h}, p <+: h → p ≠ [] → D h → D p)
     (bound : ℕ) (hb : ∀ h, D h → h.length ≤ bound)
+
+/-- A sampled functional game whose condition is `p k x` on admitted histories samples the
+tagged function `x ↦ (f k x, p k x)` with the same retained sample `k`. -/
+lemma withMBO_ofFunction
+    -- `P` is the original finite distribution; this equality does not require normalization.
+    (P : Distribution K) (f : K → (Σ i, X i) → Σ i, Y i)
+    (bad : K → MC (Σ i, X i))
+    -- `p k x` expresses the condition of sample `k` after the final input `x`.
+    (p : K → (Σ i, X i) → Prop) [∀ k, DecidablePred (p k)]
+    (hcondition : ∀ k xs x, D (xs ++ [x]) → ((bad k).1 (xs ++ [x]) ↔ p k x)) :
+    (ofFunction D hD bound hb P f bad).withMBO =
+      PDS.ofFunction D hD bound hb
+        (fun k x => tagMBO (decide (p k x)) (f k x)) P := by
+  unfold PDG.withMBO PDG.ofFunction PDS.ofFunction
+  apply Distribution.fTransform_comp_eq_of_pointwise
+  intro k
+  apply Subtype.ext
+  exact congrArg (fun d : DDS (Σ i, X i) (Σ i, SystemAlgebra.withMBO Y i) => d.1)
+    (DDG.withMBO_ofFunction D hD (f k) (bad k) (p k) (hcondition k))
 
 /-- **A sampled-function game is conditionally equivalent to the ideal sampled function** once,
 on every fixed query sequence, the answers jointly with the unset condition factor through the

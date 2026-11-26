@@ -31,6 +31,7 @@ public import Tests.Distinguishers
 public import Tests.DistinguisherAction
 public import Tests.TranscriptHorizon
 public import Tests.Games
+public import Tests.FunctionGame
 public import Tests.Problem
 public import Tests.ProblemFamily
 public import Tests.GameFamily
