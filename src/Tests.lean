@@ -230,6 +230,7 @@ public import Tests.DomainExpansion
 public import Tests.RegisterObservation
 public import Tests.AbstractModelAddressMap
 public import Tests.AbstractModelDomainMap
+public import Tests.RegisterAddressCompiler
 
 /-! Axiom audits per layer and of the Commons library, the checks of the
 authenticated-encryption example,

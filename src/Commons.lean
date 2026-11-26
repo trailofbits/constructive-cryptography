@@ -90,6 +90,7 @@ public import Commons.Definitions.GenericGroup.Affine
 public import Commons.Definitions.GenericGroup.Affine.Laws
 public import Commons.Definitions.AbstractModel.DomainExpansion
 public import Commons.Definitions.AbstractModel.DomainExpansion.Laws
+public import Commons.Definitions.AbstractModel.RegisterDDC.AddressMap
 
 /-! Common ideal systems, primitive syntax, domain restrictions and security definitions.
 `Definitions` holds these interfaces and contracts; `Schemes` holds concrete schemes,
