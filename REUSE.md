@@ -118,6 +118,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Propagate an adaptive potential bound | `expect_antitone_of_bindK` in `Probability.Expectation` |
 | Solve a finite binomial-count recurrence | `Probability.Counting.le_choose_mul_pow_of_succ_le` in `Probability.Counting.BinomialRecurrence` |
 | Count subsets within finitely many occupied bins | `Finsupp.chooseSum`, `chooseSum_add_single`, `one_le_chooseSum_of_le` in `Probability.Counting.BinomialSum` |
+| Average bin-count increments under per-bin probability bounds | `expect_chooseSum_addDraw_le` in `Probability.Occupancy` |
 | Average conditional distances or apply a common kernel | `statDist_bindK_le_expect`, `statDist_bindK_le` in `Probability.StatisticalDistance` |
 | Average errors under a retained component draw | `RandomSystem.transcriptDistance_mix_le_expect` in `RandomSystems.Distance.Mixture` |
 | Bound polynomial roots under an atom-mass bound | `mass_polynomial_eval_eq_zero_le`, `mass_polynomial_eval_eq_le` in `Probability.PolynomialEvaluation` |
