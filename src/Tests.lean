@@ -172,6 +172,7 @@ public import Tests.ProgramConverterCertificate
 public import Tests.ProgramCostDomain
 public import Tests.ProgramMap
 public import Tests.ProgramQueryMap
+public import Tests.CallProgQueryMap
 public import Tests.FunctionPorts
 public import Tests.ParallelCoherenceHom
 public import Tests.HashExtractor
