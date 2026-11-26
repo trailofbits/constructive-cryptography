@@ -192,8 +192,8 @@ under that same initial law, retaining the sampled state's own monitor.
 [PDG.unsetProbability_behavior]: DiscreteMBO.lean#L335
 [PDG.one_sub_le_unsetProbability_behavior]: DiscreteMBO.lean#L438
 [PDG.conditionallyEquivalent_behavior]: DiscreteMBO.lean#L464
-[PDG.ofFunction]: FunctionGame.lean#L80
-[PDG.ofFunction_conditionallyEquivalent]: FunctionGame.lean#L116
+[PDG.ofFunction]: FunctionGame.lean#L81
+[PDG.ofFunction_conditionallyEquivalent]: FunctionGame.lean#L138
 
 [Domain.SolverBehavior.decision]: MBOAttachment.lean#L2189
 [Domain.SolverBehavior.decision_absorb]: MBOAttachment.lean#L2238

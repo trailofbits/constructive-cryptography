@@ -130,6 +130,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Retry independent draws with an explicit fallback | `ProbDist.rejection`, `rejection_eq` in `Probability.Rejection` |
 | Replace lazy coordinate sampling by one retained random function | `Commons.randomFunction.lazy_eq` in `Commons.Definitions.RandomFunction.Laws` |
 | Evaluate a sampled game's condition on completed interactions | `PDG.winProbability_behavior` in `RandomSystems.Game.Transcript` |
+| Present a sampled monitor by one tagged reply function | `PDG.withMBO_ofFunction` in `RandomSystems.Game.FunctionGame` |
 | Test submitted values against predicates using one solver law | `TypedGame.submission`, `TypedSolver.exists_submission_law` in `RandomSystems.Typed.Submission` |
 | Submit a retained joint draw and read its exact event probability | `TypedSolver.submission`, `submission_winProbability`, `submission_onFinset_winProbability` in `RandomSystems.Typed.SubmissionSampling` |
 | Evaluate an automaton's monitor under its initial law | `TypedGame.winProbability_ofAutomaton_at_bound` in `RandomSystems.Typed.AutomatonGame` |
