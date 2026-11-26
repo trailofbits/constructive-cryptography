@@ -26,6 +26,7 @@ public import RandomSystems.Converter.Identity
 public import RandomSystems.Converter.PartialConverter
 public import RandomSystems.Converter.PartialIdentity
 public import RandomSystems.Converter.Program
+public import RandomSystems.Converter.ProgramQueryMap
 public import RandomSystems.Converter.ForwardingProgram
 public import RandomSystems.Converter.ProgramSchedule
 public import RandomSystems.Converter.ProgramAttachment

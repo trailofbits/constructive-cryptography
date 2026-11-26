@@ -170,6 +170,7 @@ public import Tests.CompositeNotation
 public import Tests.ProgramConverterCertificate
 public import Tests.ProgramCostDomain
 public import Tests.ProgramMap
+public import Tests.ProgramQueryMap
 public import Tests.FunctionPorts
 public import Tests.ParallelCoherenceHom
 public import Tests.HashExtractor
