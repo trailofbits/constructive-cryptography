@@ -22,7 +22,7 @@ On this interface, `∥ k, R k` runs the components independently, each on its o
                  └─────────────────────┘
 
 and `⨂ₘ k, α k` composes the converter behaviors in the same way. The family is indexed by `K`;
-it is not identified with nested binary compositions, and no unitor is stated.
+explicit presentations are proved in `Typed.ParallelAllRegroup` and `Typed.ParallelAllReindex`.
 
 ## Main definitions
 
@@ -36,7 +36,10 @@ it is not identified with nested binary compositions, and no unitor is stated.
   the interface domain
 * `TypedSystem.ofFunction_parallelAll`: fixed component functions assemble componentwise
 
-Source: Jost, Thesis, printed p. 17.
+## References
+
+1. D. Jost. *On Generalizations of Composable Security*. Doctoral thesis,
+   Diss. ETH No. 26723, ETH Zurich, 2020.
 -/
 
 @[expose] public section
@@ -57,7 +60,7 @@ open Classical in
 * bound `∑ k, (A k).bound`.
 
 The tag `k` makes the component label sets disjoint. `K` is a genuinely finite index set; the
-label and alphabet finiteness is that of each `A k`. Jost, Thesis, printed p. 17: “A finite
+label and alphabet finiteness is that of each `A k`. [1, p. 17]: “A finite
 set of resources with disjoint interface sets can be viewed as a single one that provides
 each party access to the corresponding interfaces of all subsystems.” -/
 abbrev tensorAll (A : K → Interface) : Interface where
@@ -153,7 +156,7 @@ product of the component behaviors on the regrouped alphabets,
                 = 0                 otherwise.
 
 Each component keeps its own randomness and state and sees only its own exchanges `h|k`; a
-query at `⟨k, i⟩` is answered at `⟨k, i⟩`. Jost's finite view (printed p. 17, see
+query at `⟨k, i⟩` is answered at `⟨k, i⟩`. The finite view of [1, p. 17] (see
 `Interface.tensorAll`) applies to any family with disjoint interfaces; this definition is
 the independent specialization. A component sample drawn once and shared,
 `sample μ (fun c => ∥ k, R k c)`, is a different system. -/
@@ -238,9 +241,7 @@ it queries only inside labels `⟨k, j⟩` and replies at `⟨k, o⟩`:
   ── ⟨k', o'⟩ ──▶│  α k'  │── ⟨k', j'⟩ ──▶
                  └────────┘
 
-Converters are not resources; Jost's finite view (printed p. 17) concerns resources. This is
-the corresponding wiring of converters (Definition 2.2.2, printed pp. 17–18), taken as the
-definition. -/
+This is the corresponding converter wiring of [1, Definition 2.2.2, pp. 17–18]. -/
 noncomputable def parallelAll {A B : K → Interface} (α : ∀ k, TypedConverter (A k) (B k)) :
     TypedConverter (tensorAll A) (tensorAll B) :=
   PDCBehavior.tensorAll (O := fun k => (A k).I) (J := fun k => (B k).I)
