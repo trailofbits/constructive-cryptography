@@ -2,6 +2,7 @@ module
 
 public import Probability.Kernel
 public import RandomSystems.Typed.SystemParallel
+public import RandomSystems.System.AutomatonFunction
 
 /-!
 # Automata as typed systems
@@ -61,16 +62,8 @@ lemma Interface.automatonDDS_eq_ofFunction
     -- `f k i x` is the parameter's reply at port `i`; `k` stays unchanged.
     (f : K → ∀ i, A.X i → A.Y i) (k : K) :
     (A.automatonDDS (fun k i x => (k, f k i x)) k).1 =
-      (DDS.ofFunction A.domain A.nonempty_prefix (fun x => ⟨x.1, f k x.1 x.2⟩)).1 := by
-  classical
-  -- Every input leaves the retained parameter unchanged.
-  have hs (xs : List (Σ i, A.X i)) : stateAfter (fun k i x => (k, f k i x)) k xs = k := by
-    induction xs using List.reverseRecOn with
-    | nil => rfl
-    | append_singleton xs x ih => exact (stateAfter_snoc _ _ _ _).trans ih
-  -- Both DDSs answer the latest input exactly on the declared domain.
-  funext xs
-  simp only [Interface.automatonDDS, filterDom, automatonSystem, hs, DDS.ofFunction]
+      (DDS.ofFunction A.domain A.nonempty_prefix (fun x => ⟨x.1, f k x.1 x.2⟩)).1 :=
+  filterDom_automatonSystem_eq_ofFunction A.domain A.nonempty_prefix f k
 
 /-- Sample `s ← initial` once and update it with `step`; later queries draw nothing.
 The resulting typed system has interface and domain `T`. -/
