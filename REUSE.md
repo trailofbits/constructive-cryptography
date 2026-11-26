@@ -106,6 +106,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Ideal-transcript collision bound | `TypedSystem.sample_piDep_comp_advantage_le_collision_mass` in [RandomSystems/Typed/RandomFunctionCollision.lean](src/RandomSystems/Typed/RandomFunctionCollision.lean) |
 | Ratio and accumulated loss, through a common filter | `RandomSystem.filtered_distance_le_of_ratio_and_cost` in [RandomSystems/Typed/FilterDistance.lean](src/RandomSystems/Typed/FilterDistance.lean) |
 | Transformed or dependent law | `ProbDist.map`, `ProbDist.bind`, `ProbDist.jointLaw` in [Kernel] |
+| Average a joint event over its first draw | `ProbDist.jointLaw_mass_eq_expect` in `Probability.Expectation` |
 | Independent initialized laws | `prodProbDist_map`, `ProbDist.map_map` in [Kernel] |
 | Root blinding | `ProbDist.blindRootSolver`, `ProbDist.rootSuccessLaw` in [Group] |
 | RSA unit-root blinding | `Commons.RSA.blinding_success_eq` in [RSA] |

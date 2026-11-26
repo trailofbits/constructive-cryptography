@@ -1,6 +1,6 @@
 module
 
-public import Probability.Distribution
+public import Probability.Kernel
 public import Mathlib.Analysis.Real.Sqrt
 public import Mathlib.Analysis.Convex.Jensen
 
@@ -23,7 +23,9 @@ The expectation `𝔼_X[f] = ∑ₐ X(a) · f(a)` over a finite distribution.
 * `expect_sq_le_mass_ne_zero_mul_second`, `expect_sq_le_mass_pos_mul_second`: hit-mass bounds
 * `variance_nonneg`, `variance_eq_expect_sq_sub_sq_expect`
 * Jensen: `ConcaveOn.le_map_expect`, `ConvexOn.map_expect_le`
-* `expect_fTransform`, `expect_prod_eq`, `abs_expect_sub_expect_le_expect`
+* `expect_fTransform`, `expect_bindK`, `expect_prod_eq`, `abs_expect_sub_expect_le_expect`
+* `ProbDist.expect_jointLaw`, `ProbDist.jointLaw_mass_eq_expect`: average a value or event
+  over successive draws
 * `expect_comp_eq_sum_mass`: `𝔼_X[ε ∘ classOf] = ∑_c ε(c) · X(classOf = c)`
 -/
 
@@ -331,6 +333,44 @@ lemma expect_fTransform {B : Type*} (X : Distribution A) (f : A → B) (g : B �
   rw [Finsupp.sum_sum_index (fun _ => zero_mul (g _))
     (fun _ m₁ m₂ => add_mul m₁ m₂ (g _))]
   exact Finsupp.sum_congr fun a _ => by simp
+
+/-- Iterated expectation for a finite signed kernel:
+`𝔼_{μ.bindK K}[f] = 𝔼_μ[a ↦ 𝔼_{K a}[f]]`. -/
+lemma expect_bindK
+    -- `μ` weighs the first outcomes in `A`; `K a` weighs the next outcomes in `B`.
+    {B : Type*} (μ : Distribution A) (K : A → Distribution B)
+    -- `f b` is the value observed at the second outcome; all laws have finite support.
+    (f : B → ℝ) :
+    (bindK μ K).expect f = μ.expect fun a => (K a).expect f := by
+  -- Both sides are linear in the first law, so it suffices to check a single weighted outcome.
+  induction μ using Finsupp.induction_linear with
+  | zero => simp only [bindK_zero, expect_zero_left]
+  | add μ ν hμ hν => rw [bindK_add, expect_add_left, expect_add_left, hμ, hν]
+  | single a w =>
+    rw [bindK_single, expect_smul_left]
+    simp only [expect, Finsupp.sum_single_index, zero_mul]
+
+namespace ProbDist
+
+/-- A value on the joint draw is averaged first over `z ← K h`, then over `h ← μ`. -/
+lemma expect_jointLaw {H Z : Type*}
+    -- `μ` draws `h`; `K h` draws `z` given `h`; `f` assigns a real value to the pair.
+    (μ : ProbDist H) (K : H → ProbDist Z) (f : H × Z → ℝ) :
+    (jointLaw μ K).1.expect f = μ.1.expect fun h => (K h).1.expect fun z => f (h, z) := by
+  simp only [jointLaw, bind_val, expect_bindK, map_val, expect_fTransform, Function.comp_def]
+
+/-- Joint event mass is the expected conditional event mass:
+`Pr_{jointLaw μ K}[E] = 𝔼_{h ← μ}[Pr_{z ← K h}[E(h,z)]]`. -/
+lemma jointLaw_mass_eq_expect {H Z : Type*}
+    -- `μ` draws `h`; `K h` draws `z` given `h`; `E` is an event on both outcomes.
+    (μ : ProbDist H) (K : H → ProbDist Z) (E : H × Z → Prop) :
+    (jointLaw μ K).1.mass E = μ.1.expect fun h => (K h).1.mass fun z => E (h, z) := by
+  classical
+  -- An event is its indicator; iterated expectation averages the inner indicator first.
+  rw [← expect_indicator, expect_jointLaw]
+  simp only [expect_indicator]
+
+end ProbDist
 
 /-- Integrands agreeing on the finite support have the same signed expectation. -/
 lemma expect_congr_of_support {X : Distribution A} {f g : A → ℝ}
