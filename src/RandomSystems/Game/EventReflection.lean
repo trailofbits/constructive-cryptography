@@ -11,7 +11,9 @@ reply are part of that interaction.
 
 `attach_liftMBO_unset_eq_zero_of_reflectsMBO` rules out success with the MBO unset.
 `event_mass_le_winProbability_of_unset_eq_zero` bounds any such event by winning, using
-the unset subdistribution and its missing mass. For concrete converters,
+the unset subdistribution and its missing mass. `winProbability_eq_mass_of_unset` gives
+equality when the unset law is exactly a reference law restricted to the complementary event.
+Both contracts need only the caller's completed histories. For concrete converters,
 `reflectsMBO_of_unset_eq_zero` reduces reflection to an inside unset-mass calculation;
 `liftMBO_ofDDC_ne_zero_iff` exposes the compiled converter’s execution.
 
@@ -35,6 +37,42 @@ variable {I : Type} [Fintype I] {X Y : I → Type}
   [∀ i, Fintype (X i)] [∀ i, Fintype (Y i)]
   -- `E` is the admitted query domain, bounded by `m` queries.
   {E : List (Σ i, X i) → Prop} {m : ℕ} {hE : ∀ h, E h → h.length ≤ m}
+
+/-- If the unset law is the reference law off `event`, winning is its event mass. -/
+theorem RandomSystem.winProbability_eq_mass_of_unset
+    -- `G` carries the monotone bit; `R` supplies the reference transcript probabilities.
+    {G : RandomSystem (Σ i, X i) (Σ i, withMBO Y i) (Domain.ofInputs E m hE)}
+    {R : RandomSystem (Σ i, X i) (Σ i, Y i) (Domain.ofInputs E m hE)}
+    -- `hG` and `hR` preserve the queried port; `hm` keeps a reached bit set.
+    (hG : G.RepliesAtQueriedInterface) (hm : G.MonotoneMBO)
+    (hR : R.RepliesAtQueriedInterface)
+    -- `hD` certifies that `D` stops; `hdc` keeps its queries in the shared domain.
+    (D : DDD I X Y) (hD : IsDDD D)
+    (hdc : (Domain.ofInputs E m hE : Domain (Σ i, X i) (Σ i, Y i)).DecisionCompatible D)
+    -- `event` is scored only on completed histories; `unset` identifies their good mass.
+    (event : List ((Σ i, X i) × Σ i, Y i) → Prop) [DecidablePred event]
+    (unset : ∀ h, Good (ddeOf hD).1 hD.2.1.choose h →
+      G (unsetMBOs h) = if event h then 0 else R h) :
+    G.winProbability D hD = (R.sLaw (ddeOf hD).1 hD.2.1.choose).mass event := by
+  classical
+  let μ := R.sLaw (ddeOf hD).1 hD.2.1.choose
+  obtain ⟨ν, law, winning⟩ := G.exists_unset_winProbability hG hm D hD hdc
+  -- On completed histories the unset law is the reference law restricted to no event.
+  have same : ν = μ.restrict (fun h => ¬ event h) := by
+    ext h
+    rw [law, Distribution.restrict_apply]
+    dsimp only [μ]
+    rw [RandomSystem.sLaw_apply]
+    by_cases hg : Good (ddeOf hD).1 hD.2.1.choose h
+    · rw [ite_eq_left hg, ite_eq_left hg, unset h hg]
+      by_cases he : event h <;>
+        simp only [he, not_true_eq_false, not_false_eq_true, ite_true, ite_false]
+    · simp only [hg, ite_false, ite_self]
+  -- Winning is one minus the complementary mass of a normalized transcript law.
+  rw [winning, same, Distribution.weight_restrict]
+  have complement := Distribution.mass_add_compl μ event
+  rw [(R.sLaw_isProbDist (hdc.environment hD _ hR) _).2] at complement
+  linarith
 
 /-- A transcript event with zero unset mass has probability at most winning:
 `Pr[event on G.visible] ≤ Win(D,G)`. -/

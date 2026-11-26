@@ -15,6 +15,7 @@ public import Tests.PolynomialEvaluation
 public import Tests.AffineEvaluation
 public import Tests.AffineTransfer
 public import Tests.GameEventReflection
+public import Tests.GameEventScore
 public import Tests.ProbAutomatonSampling
 public import Tests.SpongeUniform
 public import Tests.ProbAutomatonGame
