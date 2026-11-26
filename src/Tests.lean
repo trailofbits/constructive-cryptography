@@ -240,6 +240,7 @@ public import Tests.ChronologicalSampling
 public import Tests.AbstractModelFiniteAddresses
 public import Tests.ListPermutation
 public import Tests.ChronologicalPermutation
+public import Tests.RestrictMembership
 
 /-! Axiom audits per layer and of the Commons library, the checks of the
 authenticated-encryption example,

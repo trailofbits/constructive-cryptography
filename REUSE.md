@@ -73,6 +73,7 @@ named `budget` argument. The object index below supplies owners for those declar
 
 | Needed object | Declaration and module |
 | --- | --- |
+| Find a tagged value from membership in its component history | `mem_restrict_iff` in `RandomSystems.System.Interconnection` |
 | Decode register commands using inverses only on their operands and destinations | `mapCommand_mapCommand_eq_of_inverse_on` in `Commons.Definitions.AbstractModel.Domain` |
 | Encode the register addresses used by a finite command set or bounded caller | `exists_fin_address_encoding`, `exists_fin_address_encoding_of_queryBounded` in `Commons.Definitions.AbstractModel.FiniteAddresses` |
 | Move outside query and reply maps through attachment | `relabel_apply_outside_both` in `RandomSystems.DDC.DDCRelabel` |

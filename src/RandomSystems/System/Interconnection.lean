@@ -8,6 +8,7 @@ public import RandomSystems.System.Basic
 `Exchange.filterMap_eq` erases internal feedback from a selected input history.
 `Induces.filterMap_eq` then identifies the selected internal history with the corresponding
 external inputs, in order. The laws include partial exchanges that end in silence.
+`mem_restrict_iff` characterizes membership in one component of a tagged history.
 
 ```text
 external input a ── inj ──► internal input ── s ──► exposed reply
@@ -19,6 +20,27 @@ external input a ── inj ──► internal input ── s ──► exposed 
 @[expose] public section
 
 namespace SystemAlgebra
+
+/-- A value occurs in the projected history exactly when its tagged form occurs in the history. -/
+lemma mem_restrict_iff
+    -- `K` labels components and `A k` is the value type carried by component `k`.
+    {K : Type} {A : K → Type}
+    -- `k` selects a component from `K`; `a : A k` is a value at that component.
+    (k : K) (a : A k)
+    -- `xs` retains every component tag, while `restrict k xs` removes the selected tag.
+    (xs : List (Σ k, A k)) :
+    a ∈ restrict k xs ↔ (⟨k, a⟩ : Σ k, A k) ∈ xs := by
+  classical
+  induction xs with
+  | nil => simp only [restrict_nil, List.not_mem_nil]
+  | cons x xs ih =>
+    obtain ⟨j, b⟩ := x
+    by_cases same : j = k
+    · subst j
+      simpa only [restrict_cons_self, List.mem_cons, Sigma.mk.inj_iff, heq_eq_eq,
+        true_and] using (or_congr Iff.rfl ih)
+    · simp only [restrict_cons_ne same, List.mem_cons, Sigma.mk.inj_iff,
+        Ne.symm same, false_and, false_or, ih]
 
 variable
   -- `A`, `B` carry external inputs/replies; `X`, `Y` carry internal inputs/outputs.
