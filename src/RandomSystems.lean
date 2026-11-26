@@ -69,6 +69,7 @@ public import RandomSystems.Distance.Transcript
 public import RandomSystems.Distance.UntilBad
 public import RandomSystems.Game.DiscreteMBO
 public import RandomSystems.Game.FunctionGame
+public import RandomSystems.Game.QueryRouting
 public import RandomSystems.Game.MBO
 public import RandomSystems.Game.Transcript
 public import RandomSystems.Game.MBOAttachment
@@ -129,6 +130,7 @@ public import RandomSystems.Typed.Relabel
 public import RandomSystems.Typed.RecordingGuard
 public import RandomSystems.Typed.WriteOnlyRecord
 public import RandomSystems.Typed.QueryRouting
+public import RandomSystems.Typed.GameRouting
 public import RandomSystems.Typed.ConditionalCall
 public import RandomSystems.Typed.ReplyTransform
 public import RandomSystems.Typed.SampleLaws

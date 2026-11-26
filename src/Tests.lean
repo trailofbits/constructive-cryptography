@@ -89,6 +89,7 @@ public import Tests.SecondMoment
 public import Tests.ProbabilityNotation
 public import Tests.ProbabilityTablePatterns
 public import Tests.QueryRouting
+public import Tests.GameQueryRouting
 public import Tests.ConditionalCall
 public import Tests.ResourceSpecification
 public import Tests.SimulatorComposition
