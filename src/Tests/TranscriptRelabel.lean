@@ -1,6 +1,7 @@
 module
 
 public import RandomSystems.System.Transcript
+public import RandomSystems.System.Replies
 
 /-!
 # Transcript relabeling with partial interaction
@@ -90,6 +91,28 @@ example : ((relabel twoReplies eraseQuery id).tr askBooleanOnce 4).map
 
 /-- A zero observation horizon returns no exchanges, independently of both maps. -/
 example : (relabel twoReplies eraseQuery eraseReply).tr askBoolean 0 = [] := rfl
+
+/-- The partial Boolean caller completes its first query and then stops. -/
+lemma once_actual :
+    Transcript (relabel twoReplies eraseQuery id) askBooleanOnce [true] [0] := by
+  apply Transcript.snoc Transcript.nil
+  · exact Part.mem_some true
+  · exact Part.mem_some 0
+
+/-- The noninjective map also transports inductively described completed interactions. -/
+example : Transcript twoReplies (fun ys => (askBooleanOnce ys).map eraseQuery) [()] [0] := by
+  simpa only [List.map_cons, List.map_nil, eraseQuery] using
+    once_actual.relabel_input eraseQuery
+
+example : askBooleanOnce [0] = Part.none := rfl
+
+/-- The empty interaction requires neither a query nor a reply to be defined. -/
+example : Transcript twoReplies (fun ys => (askBooleanOnce ys).map eraseQuery) [] [] :=
+  (Transcript.nil (s := relabel twoReplies eraseQuery id) (e := askBooleanOnce)).relabel_input
+    eraseQuery
+
+#print axioms Transcript.relabel_input
+#print axioms once_actual
 
 #print axioms System.tr_relabel
 #print axioms System.tr_relabel_input

@@ -192,8 +192,8 @@ of the program's inside queries:
 [PrefixClosed]: System/Basic.lean#L76
 [IsDDS]: System/Basic.lean#L81
 [interconnect]: System/Basic.lean#L229
-[Replies]: System/Replies.lean#L37
-[IsDDS.eq_of_replies_iff]: System/Replies.lean#L155
+[Replies]: System/Replies.lean#L38
+[IsDDS.eq_of_replies_iff]: System/Replies.lean#L156
 [automatonSystem]: System/Automaton.lean#L47
 [IsBisim]: System/Automaton.lean#L74
 [automatonSystem_eq_of_bisim]: System/Automaton.lean#L93
