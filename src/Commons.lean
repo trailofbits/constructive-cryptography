@@ -14,6 +14,10 @@ public import Commons.Definitions.AbstractModel
 public import Commons.Definitions.AbstractModel.Domain
 public import Commons.Definitions.AbstractModel.Registers
 public import Commons.Definitions.AbstractModel.Registers.Laws
+public import Commons.Definitions.AbstractModel.Interface
+public import Commons.Definitions.AbstractModel.RegisterProgram
+public import Commons.Definitions.AbstractModel.RegisterProgram.Laws
+public import Commons.Definitions.AbstractModel.RegisterConverter
 public import Commons.Definitions.BidirectionalSwitching
 public import Commons.Definitions.Cipher
 public import Commons.Definitions.CollisionGame

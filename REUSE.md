@@ -135,6 +135,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Compare exposed connection probabilities on completed internal histories | `RandomSystem.connectionLaw_apply_eq_of_completed` in `RandomSystems.Cumulative.ConnectionObservation` |
 | Describe computation, observation and submission commands with legal register access | `Commons.AbstractModel`, `Admitted` in `Commons.Definitions.AbstractModel` |
 | Interpret abstract commands over partial registers and certify initialized operands | `AbstractModel.registers`, `registers_isSome` in `Commons.Definitions.AbstractModel.Registers.Laws` |
+| Connect register commands to observations on their current values | `AbstractModel.registersConverter` in `Commons.Definitions.AbstractModel.RegisterConverter`, with exact observation costs and initialized-read domain |
 | Evaluate a sampled game's condition on completed interactions | `PDG.winProbability_behavior` in `RandomSystems.Game.Transcript` |
 | Present a sampled monitor by one tagged reply function | `PDG.withMBO_ofFunction` in `RandomSystems.Game.FunctionGame` |
 | Test submitted values against predicates using one solver law | `TypedGame.submission`, `TypedSolver.exists_submission_law` in `RandomSystems.Typed.Submission` |

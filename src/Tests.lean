@@ -42,6 +42,7 @@ public import Tests.SubmissionGames
 public import Tests.SampledSubmissionGames
 public import Tests.AbstractModel
 public import Tests.AbstractModelRegisters
+public import Tests.AbstractModelConverter
 public import Tests.SubmissionMap
 public import Tests.GameConsumers
 public import Tests.Guessing
