@@ -53,8 +53,10 @@ $`\lvert X\rvert^{-1}X`$ at nonzero weight and an explicit fallback law at weigh
 identity $`\lvert X\rvert\,\operatorname{normalizeOr}(X)=X`$ also holds at zero weight, where
 the fallback is multiplied by zero.
 [Conditioning on an observation](Conditioning.lean) then disintegrates a law into its
-normalized fibers. `ProbDist.uniformOn E fallback` names the normalized uniform restriction
-to `E`, using the explicit fallback at an empty event. Symmetries preserving a conditioning event preserve its restricted uniform
+normalized fibers. `ProbDist.conditionOn μ E fallback` normalizes an event restriction,
+using the explicit fallback at zero event mass; `ProbDist.uniformOn` specializes it to uniform
+sampling. `jointLaw_conditionOn_eq_map` recovers the full observation–sample law.
+Symmetries preserving a conditioning event preserve its restricted uniform
 law; equal masses on that event identify the normalized uniform restriction.
 
 The notation `𝒰[A]` denotes the [normalized uniform law][ProbDist.uniform] of type

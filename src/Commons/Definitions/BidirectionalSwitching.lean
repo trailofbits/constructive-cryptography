@@ -508,15 +508,18 @@ lemma completionLaw_eq_bind_forward (table : List (X × X))
     completionLaw table = (unusedForwardLaw table).bind
       (fun y => completionLaw (table ++ [(x, y)])) := by
   rw [← completionLaw_forward_eq_unusedForwardLaw table h x fresh]
-  apply Subtype.ext
-  rw [ProbDist.bind_val, ProbDist.map_val]
-  conv_lhs => unfold completionLaw ProbDist.uniformOn
-  rw [normalizeOr_eq_bindK_restrict _ _ _ (weight_restrict_uniform_ne_zero _ h) (fun π => π x)]
-  apply bindK_congr
-  intro y _
-  simp only [completionLaw, ProbDist.uniformOn, restrict_restrict]
-  congr 2
-  exact restrict_congr _ fun π => (mem_completions_append_iff table x y π).symm
+  -- Condition on the observed forward reply, then identify the extended records.
+  change (𝒰[Equiv.Perm X]).conditionOn (Membership.mem (completions table)) _ = _
+  rw [ProbDist.conditionOn_eq_bind _ _ _
+    (by simpa only [ProbDist.uniform, weight_restrict] using
+      weight_restrict_uniform_ne_zero (Membership.mem (completions table)) h)
+    (fun π => π x) (fun _ => 𝒰[Equiv.Perm X])]
+  congr 1
+  funext y
+  change (𝒰[Equiv.Perm X]).conditionOn _ _ = (𝒰[Equiv.Perm X]).conditionOn _ _
+  congr 1
+  funext π
+  exact propext (mem_completions_append_iff table x y π).symm
 
 open Classical in
 lemma completionLaw_eq_bind_inverse (table : List (X × X))
@@ -524,16 +527,18 @@ lemma completionLaw_eq_bind_inverse (table : List (X × X))
     completionLaw table = (unusedInverseLaw table).bind
       (fun x => completionLaw (table ++ [(x, y)])) := by
   rw [← completionLaw_inverse_eq_unusedInverseLaw table h y fresh]
-  apply Subtype.ext
-  rw [ProbDist.bind_val, ProbDist.map_val]
-  conv_lhs => unfold completionLaw ProbDist.uniformOn
-  rw [normalizeOr_eq_bindK_restrict _ _ _ (weight_restrict_uniform_ne_zero _ h)
-    (fun π => π.symm y)]
-  apply bindK_congr
-  intro x _
-  simp only [completionLaw, ProbDist.uniformOn, restrict_restrict]
-  congr 2
-  refine restrict_congr _ fun π => ?_
+  -- Condition on the observed inverse reply, then identify the extended records.
+  change (𝒰[Equiv.Perm X]).conditionOn (Membership.mem (completions table)) _ = _
+  rw [ProbDist.conditionOn_eq_bind _ _ _
+    (by simpa only [ProbDist.uniform, weight_restrict] using
+      weight_restrict_uniform_ne_zero (Membership.mem (completions table)) h)
+    (fun π => π.symm y) (fun _ => 𝒰[Equiv.Perm X])]
+  congr 1
+  funext x
+  change (𝒰[Equiv.Perm X]).conditionOn _ _ = (𝒰[Equiv.Perm X]).conditionOn _ _
+  congr 1
+  funext π
+  apply propext
   rw [mem_completions_append_iff]
   exact and_congr_right fun _ =>
     ⟨fun hsym => by rw [← hsym, π.apply_symm_apply],
@@ -711,16 +716,8 @@ lemma rejection_resample_eq_uniformOn (P : X → Prop) (hEx : ∃ a : X, P a) :
   have hX_pos : (0 : ℝ) < (Fintype.card X : ℝ) := by
     exact_mod_cast Fintype.card_pos (α := X)
   have hunif (y : X) : (ProbDist.uniformOn P 𝒰[X]).1 y =
-      if P y then 1 / ((Finset.univ.filter P).card : ℝ) else 0 := by
-    unfold ProbDist.uniformOn
-    have hne : ((Distribution.uniform X).restrict P).weight ≠ 0 :=
-      weight_restrict_uniform_ne_zero P hEx
-    rw [normalizeOr_val_of_weight_ne_zero _ _ _ hne, Finsupp.smul_apply, smul_eq_mul,
-      weight_restrict, Distribution.uniform_mass_eq_card_filter, restrict_apply]
-    split_ifs with hPy
-    · simp only [Distribution.uniform_apply]
-      field_simp [ne_of_gt hX_pos, ne_of_gt hU_pos]
-    · simp only [mul_zero]
+      if P y then 1 / ((Finset.univ.filter P).card : ℝ) else 0 :=
+    ProbDist.uniformOn_apply_of_nonempty P hEx 𝒰[X] y
   rw [Finsupp.sum_fintype _ _ (fun _ => by simp only [zero_mul])]
   have hsplit : ∑ r : X, (𝒰[X] : ProbDist X).1 r *
         (if P r then ProbDist.single r else ProbDist.uniformOn P 𝒰[X]).1 x =
