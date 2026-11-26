@@ -11,7 +11,8 @@ public import Mathlib.Data.Finset.Dedup
 interpreted at a parameter `p : P`. Computation stores a result in a selected register;
 queries return an observation; submission supplies a guess [1, §3.1 and Figure 1, pp. 7–8].
 
-`Input` and `Output` give these three named commands their alphabets. `Admitted input k`
+`Port.Input` and `Port.Output` give these commands their alphabets from their signature;
+`Input` and `Output` instantiate them at a model. `Admitted input k`
 allows at most `k` ordinary commands and one terminal submission, with every read referring
 to an initialized register. Registers have arbitrary names `ι`; `input : ι` names the one
 initially populated register. The domain certificates are in `AbstractModel.Domain`.
@@ -58,6 +59,31 @@ inductive Port (Operation Query : Type) where
   | submit
   deriving DecidableEq
 
+namespace Port
+
+variable {Operation Query : Type}
+
+/-- Computations give operand addresses and a destination; queries give operand addresses;
+submissions give a value. These input families depend only on the command signature. -/
+abbrev Input
+    -- `S` carries submitted guesses; `ι` names registers.
+    (S ι : Type)
+    -- `arity o` and `queryArity ρ` count the selected operand addresses.
+    (arity : Operation → ℕ) (queryArity : Query → ℕ) : Port Operation Query → Type
+  | .compute o => (Fin (arity o) → ι) × ι
+  | .query ρ => Fin (queryArity ρ) → ι
+  | .submit => S
+
+/-- Computations and submissions return unit; query `ρ` returns a value of `Reply ρ`. -/
+abbrev Output
+    -- `Reply` supplies the observation reply family, independently of its interpretation.
+    (Reply : Query → Type) : Port Operation Query → Type
+  | .compute _ => Unit
+  | .query ρ => Reply ρ
+  | .submit => Unit
+
+end Port
+
 variable
   -- `M` supplies the operations, arities and reply types on values `S` at parameters `P`.
   {S P : Type} (M : AbstractModel S P)
@@ -66,16 +92,11 @@ variable
 
 /-- A computation gives operand addresses and a destination; a query gives operand addresses;
 a submission gives a value. The destination is separate from `M.arity o` operands. -/
-abbrev Input : Port M.Operation M.Query → Type
-  | .compute o => (Fin (M.arity o) → ι) × ι
-  | .query ρ => Fin (M.queryArity ρ) → ι
-  | .submit => S
+abbrev Input : Port M.Operation M.Query → Type :=
+  Port.Input S ι M.arity M.queryArity
 
 /-- Computations and submissions acknowledge with `()`; query `ρ` returns `M.Reply ρ`. -/
-abbrev Output : Port M.Operation M.Query → Type
-  | .compute _ => Unit
-  | .query ρ => M.Reply ρ
-  | .submit => Unit
+abbrev Output : Port M.Operation M.Query → Type := Port.Output M.Reply
 
 /-- A command pairs its named port with the input for that port. -/
 abbrev Command := Σ i, M.Input ι i
