@@ -12,6 +12,8 @@ public import Commons.Definitions.AEAD.Keyed
 public import Commons.Definitions.ActiveUserBank
 public import Commons.Definitions.AbstractModel
 public import Commons.Definitions.AbstractModel.Domain
+public import Commons.Definitions.AbstractModel.Registers
+public import Commons.Definitions.AbstractModel.Registers.Laws
 public import Commons.Definitions.BidirectionalSwitching
 public import Commons.Definitions.Cipher
 public import Commons.Definitions.CollisionGame
