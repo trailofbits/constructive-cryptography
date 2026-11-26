@@ -14,6 +14,7 @@ public import Tests.ProbAutomatonGame
 public import Tests.ProbabilityObservation
 public import Tests.ProbabilityList
 public import Tests.TranscriptCompletion
+public import Tests.TranscriptRelabel
 public import Tests.Distinguishers
 public import Tests.DistinguisherAction
 public import Tests.TranscriptHorizon

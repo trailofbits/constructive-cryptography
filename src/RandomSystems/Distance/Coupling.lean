@@ -12,8 +12,8 @@ transcript law of that random system is the transformation of the PDS by the tra
 coupling of two PDSs is a joint distribution of the two; it bounds the statistical distance of
 the transcript laws by the probability that the two sampled systems give different transcripts,
 and the transcript distance of the two random systems by the probability that the two sampled
-systems differ. Sources: Lanzenberger–Maurer, Definitions 4 and 7 (printed pp. 10, 12),
-footnote 9 (printed p. 14), Definition 11 and Theorem 2 (printed p. 15).
+systems differ. These are the transcript and coupling laws of [1, Definitions 4 and 7,
+pp. 10, 12; footnote 9, p. 14; Definition 11 and Theorem 2, p. 15].
 
 ## Main definitions
 
@@ -21,6 +21,8 @@ footnote 9 (printed p. 14), Definition 11 and Theorem 2 (printed p. 15).
 
 ## Main results
 
+* `System.tr_relabel_output`: mapping replies commutes with interaction when the strategy
+  sees those same mapped replies
 * `System.tr_eq_iff`: when `s` answers the queries of `σ`, its transcript is the only transcript
   of `σ` within `n` rounds that `s` replies
 * `PDS.sLaw_behavior_eq_fTransform`: the transcript law of the random system of a PDS is the
@@ -29,6 +31,11 @@ footnote 9 (printed p. 14), Definition 11 and Theorem 2 (printed p. 15).
   statistical distance at most the probability that the transcripts differ
 * `PDS.transcriptDistance_behavior_le_of_isCoupling`: under a coupling, the transcript distance is
   at most the probability that the systems differ
+
+## References
+
+1. D. Lanzenberger and U. Maurer. *Coupling of Random Systems*. TCC 2020.
+   Cryptology ePrint Archive, Paper 2020/1187.
 -/
 
 @[expose] public section
@@ -46,7 +53,7 @@ namespace System
 
 open scoped Classical in
 /-- **The transcript** of the deterministic system `s` with the strategy `σ` within `n` rounds
-(Lanzenberger–Maurer, Definition 7, printed p. 12): "the sequence of pairs (x₁, y₁), (x₂, y₂),
+[1, Definition 7, p. 12]: "the sequence of pairs (x₁, y₁), (x₂, y₂),
 …, (x_l, y_l), defined for i ≥ 1 by xᵢ = e(y₁, …, yᵢ₋₁) and yᵢ = s(x₁, …, xᵢ)", and "If
 e(y₁, …, yᵢ₋₁) is undefined (the environment stops), the transcript ends and has length
 l = i − 1." It also ends after `n` rounds, and when `s` does not answer the query, which a
@@ -62,6 +69,25 @@ noncomputable def tr (s : System A B) (σ : List B →. A) : ℕ → List (A × 
       if hy : (s (h.map Prod.fst ++ [x])).Dom then h ++ [(x, (s (h.map Prod.fst ++ [x])).get hy)]
       else h
     else h
+
+/-- Relabeling replies commutes with interaction: the strategy sees the mapped replies,
+and the transcript keeps each original query paired with its mapped answer. -/
+lemma tr_relabel_output
+    -- `s` accepts queries in `A` and returns partial replies in `B`; `f` maps them to `C`.
+    {C : Type} (s : System A B) (f : B → C)
+    -- `σ` chooses queries from mapped reply histories; `n` is the observation horizon.
+    (σ : List C →. A) (n : ℕ) :
+    (relabel s id f).tr σ n =
+      (s.tr (fun ys => σ (ys.map f)) n).map (Prod.map id f) := by
+  classical
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+    -- Both interactions select the same next query; mapping preserves whether a reply exists.
+    simp only [tr, ih, List.map_map, Function.comp_def, Prod.map_fst, Prod.map_snd,
+      id_eq, relabel, List.map_id, Part.map]
+    split_ifs <;> simp only [List.map_append, List.map_singleton]
+    rfl
 
 variable {s : System A B} {σ : List B →. A}
 
@@ -162,7 +188,7 @@ namespace PDS
 variable [Fintype A] [Fintype B] {D : Domain A B}
 
 /-- **The transcript law of the random system of a PDS is the transformation of the PDS by the
-transcript** (Lanzenberger–Maurer, footnote 9, printed p. 14): "tr(S, e) denotes the
+transcript** [1, footnote 9, p. 14]: "tr(S, e) denotes the
 tr(·, e)-transformation of the distribution S (see Definition 4)". For a strategy `σ`
 compatible with the random system of `P`, the transcript law within `n` rounds is the
 pushforward of `P` by the transcript of the sampled system with `σ` within `n` rounds. -/
@@ -233,10 +259,9 @@ lemma statDist_sLaw_behavior_le_of_isCoupling {P Q : PDS A B D} (hP : P.isProbDi
 variable {I : Type} [Fintype I] {X Y : I → Type} [∀ i, Fintype (X i)] [∀ i, Fintype (Y i)]
   {𝒟 : Domain (Σ i, X i) (Σ i, Y i)}
 
-/-- **A coupling bounds the transcript distance** (the inequality of Lanzenberger–Maurer,
-Theorem 2, printed p. 15, for an arbitrary coupling): "For any two random systems S and T there
-exist PDS S ∈ S and T ∈ T with a joint distribution (or coupling) such that
-Adv(S, T) = Pr(S ≠ T)". If `J` is a joint distribution of the PDSs `P` and `Q` and the
+/-- **A coupling bounds the transcript distance** [1, Theorem 2, p. 15]: "For any two random
+systems S and T there exist PDS S ∈ S and T ∈ T with a joint distribution (or coupling) such
+that Adv(S, T) = Pr(S ≠ T)". If `J` is a joint distribution of the PDSs `P` and `Q` and the
 probability under `J` that the two sampled systems differ is at most `b`, the transcript
 distance of the random systems of `P` and `Q` is at most `b`. The paper obtains Theorem 2 as "an
 immediate consequence of Theorem 1 and the classical Coupling Lemma (Lemma 4)"; here, under

@@ -77,6 +77,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Probabilistic games with a hidden monotone bit | `TypedGame.ofProbAutomaton`, `TypedGame.visible_ofProbAutomaton` in `RandomSystems.Typed.ProbAutomatonGame` |
 | Bound success after final oracle calls | `TypedSolver.probability_attach_le_winProbability_absorb` with `s.ReflectsMBO α G` in `RandomSystems.Typed.GameEventReflection` |
 | Bound a visible transcript event by winning | `Domain.Distinguisher.transcript_event_mass_le_winProbability` in `RandomSystems.Typed.GameEventReflection` |
+| Map replies throughout a partial interaction | `System.tr_relabel_output` in `RandomSystems.Distance.Coupling` |
 | Compare worst-case performance across problem families | `Problem.Easier.worstCase_le` in `ConstructiveCryptography.Problem.Family` |
 | Reduce game families through one converter | `Games.easier_of_attach_mem` in `ConstructiveCryptography.Game.Family` |
 | Test submitted values and decode them | `SubmissionGame`, `SubmissionGame.reindex` in `ConstructiveCryptography.Game.Submission` |
