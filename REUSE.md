@@ -139,6 +139,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Describe computation, observation and submission commands with legal register access | `Commons.AbstractModel`, `Admitted` in `Commons.Definitions.AbstractModel` |
 | Interpret abstract commands over partial registers and certify initialized operands | `AbstractModel.registers`, `registers_isSome` in `Commons.Definitions.AbstractModel.Registers.Laws` |
 | Connect register commands to observations on their current values | `AbstractModel.registersConverter` in `Commons.Definitions.AbstractModel.RegisterConverter`, with exact observation costs and initialized-read domain |
+| Sample an abstract model and test its first submitted guess | `AbstractModel.extractionSystem`, `extracted` in `Commons.Definitions.AbstractModel.Extraction` |
 | Evaluate a sampled game's condition on completed interactions | `PDG.winProbability_behavior` in `RandomSystems.Game.Transcript` |
 | Present a sampled monitor by one tagged reply function | `PDG.withMBO_ofFunction` in `RandomSystems.Game.FunctionGame` |
 | Test submitted values against predicates using one solver law | `TypedGame.submission`, `TypedSolver.exists_submission_law` in `RandomSystems.Typed.Submission` |
