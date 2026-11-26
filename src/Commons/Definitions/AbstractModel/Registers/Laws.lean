@@ -17,6 +17,8 @@ legal-domain read certificate without a finiteness assumption on names or values
 operation-preserving map. The command history, observations and submitted values stay fixed.
 `write_mapCommand` and `registers_mapCommand` instead rename addresses along an embedding;
 computed values and submitted guesses remain unchanged.
+`registers_map_query` preserves contents through an observation block. `read_comp_of_eq_some`
+selects operands from a successful read, using the pointwise contract `read_eq_some_iff`.
 -/
 
 @[expose] public section
@@ -49,6 +51,36 @@ lemma read_isSome
   split_ifs with h
   · exact iff_of_true rfl h
   · exact iff_of_false Bool.false_ne_true h
+
+/-- Reading returns `v` exactly when every operand address stores its corresponding value. -/
+lemma read_eq_some_iff
+    -- `r` stores optional values; `a` selects operands and `v` is the proposed result tuple.
+    (r : ι → Option W) {n : ℕ} (a : Fin n → ι) (v : Fin n → W) :
+    read r a = some v ↔ ∀ j, r (a j) = some (v j) := by
+  constructor
+  · intro present
+    have ready : ∀ j, (r (a j)).isSome :=
+      (read_isSome r a).mp (by rw [present]; rfl)
+    have values : (fun j => (r (a j)).get (ready j)) = v := by
+      simpa only [read, dite_eq_left ready, Option.some.injEq] using present
+    intro j
+    exact (Option.eq_some_of_isSome (ready j)).trans (congrArg some (congrFun values j))
+  · intro present
+    have ready : ∀ j, (r (a j)).isSome := by intro j; rw [present j]; rfl
+    rw [read, dite_eq_left ready]
+    congr 1
+    funext j
+    exact Option.get_of_eq_some (ready j) (present j)
+
+/-- A successful operand tuple can be selected with repetition or with no selected entries. -/
+lemma read_comp_of_eq_some
+    -- `select` chooses each target operand from the successfully read source tuple `v`.
+    (r : ι → Option W) {n m : ℕ} (a : Fin n → ι) (v : Fin n → W)
+    (select : Fin m → Fin n) (present : read r a = some v) :
+    read r (a ∘ select) = some (v ∘ select) := by
+  apply (read_eq_some_iff r _ _).mpr
+  intro j
+  exact (read_eq_some_iff r a v).mp present (select j)
 
 /-- Reading along an address map is reading the same values at the mapped addresses. -/
 lemma read_comp
@@ -120,6 +152,15 @@ lemma registers_snoc
     (r : ι → Option W) (h : List (M.Command ι)) (z : M.Command ι) :
     M.registers operate r (h ++ [z]) = M.write operate (M.registers operate r h) z := by
   simp only [registers, List.foldl_append, List.foldl_cons, List.foldl_nil]
+
+/-- Observation commands leave all register contents unchanged, including on a partial block. -/
+lemma registers_map_query
+    -- `r` is the retained register map; `queries` is any complete or pending observation prefix.
+    (r : ι → Option W) (queries : List (Σ ρ : M.Query, Fin (M.queryArity ρ) → ι)) :
+    M.registers operate r (queries.map fun q => ⟨Port.query q.1, q.2⟩) = r := by
+  rw [registers, List.foldl_map]
+  change queries.foldl (fun r _ => r) r = r
+  exact List.foldl_fixed queries
 
 omit operate in
 /-- An operation-preserving interpretation commutes with one register command. -/
