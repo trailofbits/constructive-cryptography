@@ -30,6 +30,7 @@ public import Tests.RecordingGuard
 public import Tests.WriteOnlyRecord
 public import Tests.AllDistinguishers
 public import Tests.MixtureObservation
+public import Tests.SpecificationMixture
 public import Tests.ProofErgonomics
 public import Tests.Replay
 public import Tests.ReplayLookup
