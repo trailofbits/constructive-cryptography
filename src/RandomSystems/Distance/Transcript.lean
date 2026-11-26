@@ -1,7 +1,7 @@
 module
 
 public import RandomSystems.DDC.Absorb
-public import RandomSystems.System.DDE
+public import RandomSystems.System.Distinguisher
 public import Probability.StatisticalDistance
 
 /-!
@@ -11,22 +11,26 @@ An environment (DDE) generates the next query from the replies so far and stops 
 next query is undefined; it outputs no decision. A distinguisher (DDD) is a system with a
 trigger and a bit output, with a finite interaction discipline. An environment with a test
 of its completed transcript is a distinguisher, and the queries of a distinguisher form an
-environment. Source: Lanzenberger, Definitions 2.11–2.12 and 2.26 (printed pp. 14, 18).
+environment [1, Definitions 2.11–2.12 and 2.26, pp. 14, 18].
+
+`System.Distinguisher` supplies the query environment and raw relabeling laws.
 
 ## Main definitions
 
 * `envProbe E A`: an environment with a transcript test, as a distinguisher
-* `ddeOf hD`: the queries of a distinguisher, as an environment
-* `DPort.map`, `trigMap`, `decMap`: relabeling a distinguisher
+* `trigMap`, `decMap`: the external trigger and decision ports of a closed system
 
 ## Main results
 
 * `envProbe_isDDD`, `envOf_envProbe`: the probe is a distinguisher and asks the
   environment's queries
-* `ddeOf_bounded`: a distinguisher's environment is query-bounded
-* `IsDDD.relabel`: relabeling keeps a distinguisher
 * `abs_mass_sub_le_statDist`, `abs_average_sub_le`: distinguishing probabilities are
   bounded by statistical distance
+
+## References
+
+1. D. Lanzenberger. *A Theory of Random Systems, Games, and Hardness Amplification*.
+   Doctoral thesis, ETH Zurich.
 -/
 
 @[expose] public section
@@ -35,7 +39,6 @@ set_option linter.unusedSimpArgs false
 
 namespace SystemAlgebra
 
-open Classical
 open Probability (Distribution statDist)
 
 variable {X Y K : Type}
@@ -44,12 +47,14 @@ variable {X Y K : Type}
 
 section Queries
 
+open Classical in
 /-- The queries of `e` along the replies `ys`. -/
 noncomputable def qsOf {A B : Type} (e : List B →. A) (ys : List B) : List A :=
   (List.range ys.length).filterMap fun k => (e (ys.take k)).toOption
 
 lemma qsOf_snoc {A B : Type} {e : List B →. A} {ys : List B} {x y}
     (hx : x ∈ e ys) : qsOf e (ys ++ [y]) = qsOf e ys ++ [x] := by
+  classical
   unfold qsOf
   rw [List.length_append, List.length_singleton, List.range_succ, List.filterMap_append]
   congr 1
@@ -99,11 +104,13 @@ lemma EFits.snoc {ys : List (Σ i, Yi i)} (hv : EFits e ys) {x y} (hx : x ∈ e 
 variable (E : DDE (Σ i, Xi i) (Σ i, Yi i))
   (A : List (Σ i, Xi i) × List (Σ i, Yi i) → Prop)
 
+open Classical in
 /-- The next output: the environment's query, or the test of the completed transcript. -/
 noncomputable def envReply (ys : List (Σ i, Yi i)) : Part (Σ p, dOut Xi p) :=
   if h : (E.1 ys).Dom then Part.some ⟨.res ((E.1 ys).get h).1, ((E.1 ys).get h).2⟩
   else Part.some ⟨.dec, decide (A (qsOf E.1 ys, ys))⟩
 
+open Classical in
 /-- **The environment `E` with the test `A`** as a decision-producing distinguisher. It is
 silent on replies at the wrong label. -/
 noncomputable def envProbe : DDD K Xi Yi
@@ -116,6 +123,7 @@ variable {E A}
 
 lemma envProbe_dHist {ys : List (Σ i, Yi i)} (hv : EFits E.1 ys) :
     envProbe E A (dHist ys) = envReply E A ys := by
+  classical
   have hex : ∃ ys', ys.map envIn = ys'.map envIn ∧ EFits E.1 ys' := ⟨ys, rfl, hv⟩
   simp only [envProbe, dHist, dite_eq_left hex]
   have e : Classical.choose hex = ys :=
@@ -123,6 +131,7 @@ lemma envProbe_dHist {ys : List (Σ i, Yi i)} (hv : EFits E.1 ys) :
   rw [e]
 
 lemma envProbe_dom {w} (hd : (envProbe E A w).Dom) : ∃ ys, w = dHist ys ∧ EFits E.1 ys := by
+  classical
   match w, hd with
   | ⟨.start, ()⟩ :: ws, hd =>
     simp only [envProbe] at hd
@@ -136,6 +145,7 @@ lemma envProbe_dom {w} (hd : (envProbe E A w).Dom) : ∃ ys, w = dHist ys ∧ EF
 
 lemma envReply_of_mem {ys : List (Σ i, Yi i)} {x} (hx : x ∈ E.1 ys) :
     envReply E A ys = Part.some ⟨.res x.1, x.2⟩ := by
+  classical
   have hd : (E.1 ys).Dom := Part.dom_iff_mem.mpr ⟨x, hx⟩
   unfold envReply
   rw [dite_eq_left hd]
@@ -182,6 +192,7 @@ lemma envProbe_isDDD (hE : QueryBounded n E) : IsDDD (envProbe E A) := by
 
 lemma envOf_envProbe {ys : List (Σ i, Yi i)} (hv : EFits E.1 ys) :
     envOf (envProbe E A) ys = E.1 ys := by
+  classical
   unfold envOf
   rw [envProbe_dHist hv]
   by_cases hd : (E.1 ys).Dom
@@ -193,54 +204,17 @@ lemma envOf_envProbe {ys : List (Σ i, Yi i)} (hv : EFits E.1 ys) :
 
 end EnvProbe
 
-/-! ## A distinguisher's bit is determined by its transcript -/
-
-section OfDDD
-
-variable {Xi Yi : K → Type} {D : DDD K Xi Yi}
-
-/-- The environment of the queries of a distinguisher, on its reachable part. -/
-noncomputable def ddeOf (hD : IsDDD D) : DDE (Σ i, Xi i) (Σ i, Yi i) :=
-  ⟨envOf (trim D), fun ys y hd => by
-    obtain ⟨x, hx⟩ := Part.dom_iff_mem.mp hd
-    rw [mem_envOf] at hx
-    have hr : Reach D (dHist (ys ++ [y])) := by
-      by_contra h; simp [trim, h] at hx
-    rw [show dHist (ys ++ [y]) = dHist ys ++ [envIn y] by simp [dHist]] at hr
-    have hr₀ := (reach_snoc_iff.mp hr).1
-    have hd₀ : (D (dHist ys)).Dom := hr₀ _ [] (by simp) (dHist_ne_nil ys)
-    have hne := hD.2.2.2.2 _ _ hr
-    obtain ⟨o, ho⟩ := Part.dom_iff_mem.mp hd₀
-    rcases o with ⟨_ | _ | i, v⟩
-    · exact v.elim
-    · exact absurd (replyLabel_of_mem D ho) hne
-    · refine Part.dom_iff_mem.mpr ⟨⟨i, v⟩, mem_envOf.mpr ?_⟩
-      simp only [trim, ite_eq_left hr₀]
-      exact ho⟩
-
-/-- The environment of a distinguisher's queries is bounded by the distinguisher's bound. -/
-lemma ddeOf_bounded (hD : IsDDD D) : QueryBounded hD.2.1.choose (ddeOf hD) := by
-  intro ys hd
-  obtain ⟨x, hx⟩ := Part.dom_iff_mem.mp hd
-  have hx : x ∈ envOf (trim D) ys := hx
-  rw [mem_envOf] at hx
-  have hd' : (D (dHist ys)).Dom := by
-    by_cases h : Reach D (dHist ys)
-    · simp only [trim, ite_eq_left h] at hx; exact Part.dom_iff_mem.mpr ⟨_, hx⟩
-    · simp [trim, h] at hx
-  have := hD.2.1.choose_spec _ hd'
-  simp [dHist] at this
-  omega
+/-! ## Trimming preserves finite interaction -/
 
 lemma finite_trim {n : ℕ} {s : System X Y} (hs : Finite n s) : Finite n (trim s) := by
+  classical
   intro h hd
   apply hs
   by_contra hn
   by_cases hr : Reach s h
-  · simp [trim, hr] at hd; exact hn hd
+  · simp only [trim, ite_eq_left hr] at hd
+    exact hn hd
   · simp [trim, hr] at hd
-
-end OfDDD
 
 lemma abs_mass_sub_le_statDist {S : Type} (P Q : Distribution.ProbDist S) (A : S → Prop) :
     |P.1.mass A - Q.1.mass A| ≤ statDist P.1 Q.1 := by
@@ -256,10 +230,13 @@ section Utilities
 
 /-- Closing with the reachable part of an environment decides as closing with the
 environment. -/
-lemma close_trim_start {I : Type} {Xf Yf : I → Type} (D : DDD I Xf Yf) (R : InterfaceSystem I Xf Yf) :
+lemma close_trim_start {I : Type} {Xf Yf : I → Type}
+    (D : DDD I Xf Yf) (R : InterfaceSystem I Xf Yf) :
     close (trim D) R [startIn] = close D R [startIn] := by
+  classical
   rw [close_eq, close_eq]
-  have hb := EqOnReachable.interconnect (EqOnReachable.pair_left (trim_behEq D) R) closeRoute closeInj
+  have hb := EqOnReachable.interconnect
+    (EqOnReachable.pair_left (trim_behEq D) R) closeRoute closeInj
   by_cases hr : Reach (interconnect (pair (trim D) R) closeRoute closeInj) [startIn]
   · exact hb.2 _ hr (by simp)
   · have hr' := (not_congr (hb.1 _)).mp hr
@@ -273,6 +250,7 @@ bounds the difference of the averages. -/
 lemma abs_average_sub_le {S : Type} (A : Distribution.ProbDist S) (f g : S → ℝ) {ε : ℝ}
     (h : ∀ a, |f a - g a| ≤ ε) :
     |A.1.sum (fun a w => w * f a) - A.1.sum (fun a w => w * g a)| ≤ ε := by
+  classical
   have hw : A.1.sum (fun _ w => w) = 1 := A.2.2
   unfold Finsupp.sum at hw ⊢
   rw [← Finset.sum_sub_distrib]
@@ -286,81 +264,6 @@ lemma abs_average_sub_le {S : Type} (A : Distribution.ProbDist S) (f g : S → �
     _ = ε := by rw [← Finset.sum_mul, hw, one_mul]
 
 end Utilities
-
-/-! ## Renaming the labels of a distinguisher -/
-
-section RelabelDDD
-
-/-- Rename the labels of an environment port. -/
-def DPort.map {L L' : Type} (σ : L → L') : DPort L → DPort L'
-  | .start => .start
-  | .dec => .dec
-  | .res i => .res (σ i)
-
-variable {L L' : Type} {F G : DPort L → Type} {F' G' : DPort L' → Type}
-
-lemma reach_relabel_iff (D : InterfaceSystem (DPort L) F G) (f : (Σ p, F' p) → Σ p, F p)
-    (g : (Σ p, G p) → Σ p, G' p) (h : List (Σ p, F' p)) :
-    Reach (relabel D f g) h ↔ Reach D (h.map f) := by
-  induction h using List.reverseRecOn with
-  | nil => simp
-  | append_singleton h z ih =>
-    rw [reach_snoc_iff, ih, List.map_append, List.map_singleton, reach_snoc_iff]
-    simp [relabel]
-
-lemma replyLabel_relabel (D : InterfaceSystem (DPort L) F G) (f : (Σ p, F' p) → Σ p, F p)
-    (g : (Σ p, G p) → Σ p, G' p) (σ : L' ≃ L) (hg : ∀ y, (g y).1 = DPort.map σ.symm y.1)
-    (h : List (Σ p, F' p)) :
-    replyLabel (relabel D f g) h = (replyLabel D (h.map f)).map (DPort.map σ.symm) := by
-  unfold replyLabel
-  by_cases hd : (D (h.map f)).Dom
-  · have hd' : (relabel D f g h).Dom := by simpa [relabel] using hd
-    rw [dite_eq_left hd, dite_eq_left hd']
-    exact congrArg some (hg _)
-  · have hd' : ¬ (relabel D f g h).Dom := by simpa [relabel] using hd
-    rw [dite_eq_right hd, dite_eq_right hd']
-    rfl
-
-/-- **Renaming the labels of a distinguisher along a bijection gives a distinguisher.** -/
-lemma IsDDD.relabel {D : InterfaceSystem (DPort L) F G} (hD : IsDDD D) (f : (Σ p, F' p) → Σ p, F p)
-    (g : (Σ p, G p) → Σ p, G' p) (σ : L' ≃ L) (hf : ∀ z, (f z).1 = DPort.map σ z.1)
-    (hg : ∀ y, (g y).1 = DPort.map σ.symm y.1) : IsDDD (SystemAlgebra.relabel D f g) := by
-  obtain ⟨hre, ⟨n, hn⟩, htr, hres, hdec⟩ := hD
-  have hstart : ∀ p : DPort L', DPort.map σ p = .start ↔ p = .start := by
-    intro p; cases p <;> simp [DPort.map]
-  refine ⟨?_, ⟨n, fun h hd => ?_⟩, fun h z hr => ?_, fun h z i hr hl => ?_, fun h z hr hl => ?_⟩
-  · simpa [SilentAtEmpty, SystemAlgebra.relabel] using hre
-  · have := hn _ (by simpa [SystemAlgebra.relabel] using hd)
-    simpa using this
-  · rw [reach_relabel_iff, List.map_append, List.map_singleton] at hr
-    have := htr _ _ hr
-    rw [List.map_eq_nil_iff, hf, hstart] at this
-    exact this
-  · rw [reach_relabel_iff, List.map_append, List.map_singleton] at hr
-    rw [replyLabel_relabel D f g σ hg] at hl
-    obtain ⟨q, hq, e⟩ := Option.map_eq_some_iff.mp hl
-    rcases q with _ | _ | i'
-    · simp [DPort.map] at e
-    · simp [DPort.map] at e
-    · simp only [DPort.map, DPort.res.injEq] at e
-      have := hres _ _ _ hr hq
-      rw [hf] at this
-      rcases hz : z.1 with _ | _ | i''
-      · rw [hz] at this; simp [DPort.map] at this
-      · rw [hz] at this; simp [DPort.map] at this
-      · rw [hz] at this
-        simp only [DPort.map, DPort.res.injEq] at this
-        rw [← e, ← this]
-        simp
-  · rw [reach_relabel_iff, List.map_append, List.map_singleton] at hr
-    rw [replyLabel_relabel D f g σ hg] at hl
-    obtain ⟨q, hq, e⟩ := Option.map_eq_some_iff.mp hl
-    rcases q with _ | _ | i'
-    · simp [DPort.map] at e
-    · exact hdec _ _ hr hq
-    · simp [DPort.map] at e
-
-end RelabelDDD
 
 /-! ## Closing two systems side by side -/
 
@@ -379,7 +282,8 @@ def twoSum (K K' : Type) : Two K K' ≃ K ⊕ K' where
 
 /-- The trigger, between two closed systems. -/
 def trigMap {I I' : Type} {Xf Yf : I → Type} {Xf' Yf' : I' → Type} :
-    (Σ l : Free (closeSet I), twoFam (dIn Yf) Xf l.1) → Σ l : Free (closeSet I'), twoFam (dIn Yf') Xf' l.1
+    (Σ l : Free (closeSet I), twoFam (dIn Yf) Xf l.1) →
+      Σ l : Free (closeSet I'), twoFam (dIn Yf') Xf' l.1
   | ⟨⟨⟨none, .start⟩, _⟩, u⟩ => ⟨⟨⟨none, .start⟩, id⟩, u⟩
   | ⟨⟨⟨none, .dec⟩, _⟩, e⟩ => e.elim
   | ⟨⟨⟨none, .res i⟩, h⟩, _⟩ => absurd (res_mem_closeSet i) h
@@ -387,7 +291,8 @@ def trigMap {I I' : Type} {Xf Yf : I → Type} {Xf' Yf' : I' → Type} :
 
 /-- The decision, between two closed systems. -/
 def decMap {I I' : Type} {Xf Yf : I → Type} {Xf' Yf' : I' → Type} :
-    (Σ l : Free (closeSet I), twoFam (dOut Xf) Yf l.1) → Σ l : Free (closeSet I'), twoFam (dOut Xf') Yf' l.1
+    (Σ l : Free (closeSet I), twoFam (dOut Xf) Yf l.1) →
+      Σ l : Free (closeSet I'), twoFam (dOut Xf') Yf' l.1
   | ⟨⟨⟨none, .start⟩, _⟩, e⟩ => e.elim
   | ⟨⟨⟨none, .dec⟩, _⟩, b⟩ => ⟨⟨⟨none, .dec⟩, id⟩, b⟩
   | ⟨⟨⟨none, .res i⟩, h⟩, _⟩ => absurd (res_mem_closeSet i) h
@@ -404,8 +309,10 @@ lemma trigMap_eq {I I' : Type} {Xf Yf : I → Type} {Xf' Yf' : I' → Type} (z) 
 
 /-- Maps sending decisions to decisions do not change whether `1` is decided. -/
 lemma decOut_mem_map_iff {I I' : Type} {Xf Yf : I → Type} {Xf' Yf' : I' → Type}
-    (g : (Σ l : Free (closeSet I), twoFam (dOut Xf) Yf l.1) → Σ l : Free (closeSet I'), twoFam (dOut Xf') Yf' l.1)
-    (hg : ∀ b, g (decOut b) = decOut b) (P : Part (Σ l : Free (closeSet I), twoFam (dOut Xf) Yf l.1))
+    (g : (Σ l : Free (closeSet I), twoFam (dOut Xf) Yf l.1) →
+      Σ l : Free (closeSet I'), twoFam (dOut Xf') Yf' l.1)
+    (hg : ∀ b, g (decOut b) = decOut b)
+    (P : Part (Σ l : Free (closeSet I), twoFam (dOut Xf) Yf l.1))
     (c : Bool) : decOut c ∈ P.map g ↔ decOut c ∈ P := by
   constructor
   · intro h
