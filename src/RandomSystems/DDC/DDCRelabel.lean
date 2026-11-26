@@ -24,7 +24,8 @@ renaming converter that forwards between two outside vocabularies.
 * `trim_renameConverter_serialM`: composing with a renaming converter
   relabels
 * `renameConverter_id`, `renameConverter_comp`: functoriality
-* `apply_relabel_inside_both`: query/reply maps commute with attachment
+* `relabel_apply_outside_both`: outside query/reply maps commute with attachment
+* `apply_relabel_inside_both`: inside query/reply maps commute with attachment
 * `ResponsiveConverter.ofConverter_mass`: the behavior of a converter read as a
   probabilistic converter
 -/
@@ -246,6 +247,28 @@ lemma outsideMap_id :
     outsideMap (Y := Y) (id : (Σ o, U o) → (Σ o, U o)) = id := by
   funext z
   rcases z with ⟨⟨(_ | ⟨⟨⟩⟩), i⟩, z⟩ <;> rfl
+
+/-- Outside input and output maps commute with attaching the same inside resource. -/
+lemma relabel_apply_outside_both
+    -- `c` exposes ports `O` and calls `J`; `R` supplies those inside calls.
+    {O O' J : Type} {U V : O → Type} {U' V' : O' → Type} {X Y : J → Type}
+    (c : InsideOutsideSystem O J U V X Y) (R : InterfaceSystem J X Y)
+    -- `f` interprets the new outside queries; `g` exposes the old outside replies.
+    (f : (Σ o, U' o) → (Σ o, U o)) (g : (Σ o, V o) → (Σ o, V' o)) :
+    relabel (apply c R) f g = apply (relabel c (outsideMap f) (outsideMap g)) R := by
+  -- Both placements attach the same pair, with the maps absorbed into its routing.
+  rw [apply_eq, apply_eq, relabel_interconnect, pair_relabel_left, interconnect_relabel]
+  congr 1
+  · funext y
+    rcases y with ⟨_ | ⟨⟩, y⟩
+    · rcases y with ⟨⟨_ | ⟨⟨⟩⟩, o⟩, v⟩ <;> rfl
+    · rfl
+
+/-- Relabeling the outside replies of an attachment relabels those of the converter. -/
+lemma relabel_apply_outside {V' : O → Type} (c : InsideOutsideSystem O J U V' X Y)
+    (R : InterfaceSystem J X Y) (g : (Σ o, V' o) → (Σ o, V o)) :
+    relabel (apply c R) id g = apply (relabel c id (outsideMap g)) R := by
+  simpa only [outsideMap_id] using relabel_apply_outside_both c R id g
 
 lemma outsideMap_comp {O'' : Type} {U'' : O'' → Type}
     (f' : (Σ o, U'' o) → (Σ o, U' o)) :
