@@ -29,6 +29,7 @@ a sample.
   environment bounds the transcript distance
 * `RandomSystem.transcriptDistance_eq_iSup_domainBound`: the supremum may range over the
   compatible environments globally bounded by `𝒟.bound`, observed at `𝒟.bound`
+* `ddeOf_envProbe_queryBounded`: adding a final decision preserves the environment's query bound
 * `RandomSystem.decisionProbability_envProbe`: an environment followed by an event test
   decides `1` with the probability of the event
 * `RandomSystem.decisionProbability_gap_le`: decision gaps are at most the transcript
@@ -109,6 +110,32 @@ lemma envOf_trim_envProbe {I : Type} {X Y : I → Type}
   change ((trim (envProbe E A)) (dHist ys)).bind _ = _
   rw [trim, ite_eq_left (envProbe_reach A hv)]
   exact envOf_envProbe hv
+
+/-- Adding a final event decision preserves the environment's query horizon. The decision
+is not an oracle query, so the bound remains `n`. -/
+lemma ddeOf_envProbe_queryBounded
+    -- `I` indexes ports; `X i` and `Y i` carry the queries and replies at port `i`.
+    {I : Type} {X Y : I → Type} {E : DDE (Σ i, X i) (Σ i, Y i)}
+    -- `hn` bounds the queries of `E`; `event` only determines its final decision.
+    {n : ℕ} (hn : QueryBounded n E)
+    (event : List (Σ i, X i) × List (Σ i, Y i) → Prop) :
+    QueryBounded n (ddeOf (envProbe_isDDD (A := event) hn)) := by
+  intro ys hd
+  obtain ⟨x, hx⟩ := Part.dom_iff_mem.mp hd
+  change x ∈ envOf (trim (envProbe E event)) ys at hx
+  -- A query of the trimmed probe comes from a defined original probe output.
+  have raw : (envProbe E event (dHist ys)).Dom := by
+    have queried := mem_envOf.mp hx
+    by_cases hr : Reach (envProbe E event) (dHist ys)
+    · simp only [trim, ite_eq_left hr] at queried
+      exact Part.dom_iff_mem.mpr ⟨_, queried⟩
+    · simp only [trim, ite_eq_right hr, Part.notMem_none] at queried
+  -- On these replies the probe follows `E`, so its query has `E`'s original bound.
+  obtain ⟨zs, he, fits⟩ := envProbe_dom raw
+  have same : ys = zs := List.map_injective_iff.mpr envIn_injective (List.cons.inj he).2
+  subst zs
+  rw [envOf_trim_envProbe fits] at hx
+  exact hn ys (Part.dom_iff_mem.mpr ⟨x, hx⟩)
 
 namespace RandomSystem
 
