@@ -27,6 +27,7 @@ public import Commons.Definitions.Encryption
 public import Commons.Definitions.Hash
 public import Commons.Definitions.Hash.Keyed
 public import Commons.Definitions.Ideal
+public import Commons.Definitions.EvaluationSharing
 public import Commons.Definitions.Indifferentiability
 public import Commons.Definitions.LazyPermutation
 public import Commons.Definitions.PermutationTableGame
