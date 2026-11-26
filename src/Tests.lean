@@ -153,6 +153,7 @@ public import Tests.GameEquivalenceTransport
 public import Tests.GameTranscript
 public import Tests.DiscreteGameUnset
 public import Tests.TranscriptPartition
+public import Tests.ObservationKernel
 public import Tests.AutomatonGame
 public import Tests.GameDistanceBound
 public import Tests.URFRetainedTable

@@ -65,6 +65,10 @@ The [n-ary converter][tensorAllL] canonicalizes its complete-history rule and co
 component domain certificates; [stochastic converter families][PDCBehavior.tensorAll]
 sample their components independently.
 
+The [observation kernel](Cumulative/ObservationKernel.lean) extends each possible transcript
+by one interaction and retains stopped transcripts. `sLaw_succ_eq_bindK` expresses successive
+horizon laws as kernel mixtures, so probability bounds apply directly to adaptive observations.
+
 [Aggregate serial accounting][IsDDCFrom.comp_query_charge_le] uses costs of actual
 intermediate query values. The inner component's partial-transcript bound includes pending
 calls. An input-only composite budget additionally requires the outer weighted sum to be

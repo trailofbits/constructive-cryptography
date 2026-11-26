@@ -37,6 +37,8 @@ public import RandomSystems.Cumulative.ConnectionObservation
 public import RandomSystems.Cumulative.Cumulative
 public import RandomSystems.Cumulative.CumulativeAttachment
 public import RandomSystems.Cumulative.CumulativeObservation
+public import RandomSystems.Cumulative.Conditional
+public import RandomSystems.Cumulative.ObservationKernel
 public import RandomSystems.Cumulative.CumulativeOperations
 public import RandomSystems.Cumulative.ParallelAll
 public import RandomSystems.Cumulative.ParallelAllPresentation
