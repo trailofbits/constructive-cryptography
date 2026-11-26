@@ -505,6 +505,25 @@ noncomputable def RandomSystem.winProbability {D' : Domain (Σ i, X i) (Σ i, wi
     (G : RandomSystem (Σ i, X i) (Σ i, withMBO Y i) D') (D : DDD I X Y) (hD : IsDDD D) : ℝ :=
   (G.sLaw (DDE.blindMBO (ddeOf hD)).1 hD.2.1.choose).mass fun h => finalMBO h = true
 
+/-- The winning probability is the final-bit mass at any certified stopping horizon. -/
+lemma RandomSystem.winProbability_eq_mass_at_bound
+    -- `G` is the tagged system; `D` is the winner and `hD` certifies its decision rule.
+    {D' : Domain (Σ i, X i) (Σ i, withMBO Y i)}
+    (G : RandomSystem (Σ i, X i) (Σ i, withMBO Y i) D')
+    (D : DDD I X Y) (hD : IsDDD D)
+    -- `hn` says that the visible environment stops after at most `n` replies.
+    {n : ℕ} (hn : QueryBounded n (ddeOf hD)) :
+    G.winProbability D hD =
+      (G.sLaw (DDE.blindMBO (ddeOf hD)).1 n).mass (fun h => finalMBO h = true) := by
+  unfold winProbability
+  congr 1
+  apply G.sLaw_eq_of_query_bounds
+  · intro h _ _ hd
+    simpa only [List.length_map] using
+      ddeOf_bounded hD ((h.map Prod.snd).map forgetMBO) hd
+  · intro h _ _ hd
+    simpa only [List.length_map] using hn ((h.map Prod.snd).map forgetMBO) hd
+
 /-- The winning probability of a probabilistic distinguisher, used as a winner. -/
 noncomputable def Domain.Distinguisher.winProbability {𝒟 : Domain (Σ i, X i) (Σ i, Y i)}
     {D' : Domain (Σ i, X i) (Σ i, withMBO Y i)} (P : 𝒟.Distinguisher)
@@ -599,6 +618,24 @@ lemma RandomSystem.compatible_fixedQueries {B : Type} [Fintype B]
   rw [hx'', ← List.map_take, List.length_map] at *
   exact hp
 
+/-- A strategy compatible with the visible game stays compatible when it ignores the MBO. -/
+lemma RandomSystem.compatible_blindMBO
+    -- `G` admits queries from the input history; `e` observes only visible replies.
+    {G : RandomSystem (Σ i, X i) (Σ i, withMBO Y i) (Domain.ofInputs E m hE)}
+    {e : DDE (Σ i, X i) (Σ i, Y i)}
+    (hV : G.visible.Compatible e.1) : G.Compatible (DDE.blindMBO e).1 := by
+  intro h x hcons hGh hx
+  -- G h ≠ 0 makes the visible transcript possible: 0 < G h ≤ G⁻ (forgetMBOs h).
+  have hpos : G.visible (forgetMBOs h) ≠ 0 := by
+    have := le_sumMBO G.mass_nonneg h
+    rw [← RandomSystem.visible_apply] at this
+    exact ne_of_gt (lt_of_lt_of_le (lt_of_le_of_ne (G.mass_nonneg h) (Ne.symm hGh)) this)
+  -- e's query after the visible transcript is admitted, since G⁻ is compatible with e;
+  -- admission depends only on the queries, which forgetting the MBOs keeps.
+  have := hV (forgetMBOs h) x ((followsStrategy_blindMBO_iff e h).mp hcons) hpos
+    (by rwa [map_snd_forgetMBOs])
+  simpa only [Domain.ofInputs_apply, map_fst_forgetMBOs] using this
+
 open scoped Classical in
 /-- **Winning is one minus the unset mass**: the winning probability of a deterministic
 distinguisher is one minus the mass of its transcripts on which the MBO stays unset, which on
@@ -629,18 +666,7 @@ lemma RandomSystem.exists_unset_winProbability
   -- Step 1. G⁻ is compatible with e, since D is compatible with the input domain.
   have hV : G.visible.Compatible e.1 := hdc.environment hD _ hG.visible
   -- The game is compatible with the winner, which does not see the MBO.
-  have hB : G.Compatible (DDE.blindMBO e).1 := by
-    intro h x hcons hGh hx
-    -- G h ≠ 0 makes the visible transcript possible: 0 < G h ≤ G⁻ (forgetMBOs h).
-    have hpos : G.visible (forgetMBOs h) ≠ 0 := by
-      have := le_sumMBO G.mass_nonneg h
-      rw [← RandomSystem.visible_apply] at this
-      exact ne_of_gt (lt_of_lt_of_le (lt_of_le_of_ne (G.mass_nonneg h) (Ne.symm hGh)) this)
-    -- e's query after the visible transcript is admitted, since G⁻ is compatible with e;
-    -- admission depends only on the queries, which forgetting the MBOs keeps.
-    have := hV (forgetMBOs h) x ((followsStrategy_blindMBO_iff e h).mp hcons) hpos
-      (by rwa [map_snd_forgetMBOs])
-    simpa only [Domain.ofInputs_apply, map_fst_forgetMBOs] using this
+  have hB : G.Compatible (DDE.blindMBO e).1 := G.compatible_blindMBO hV
   -- Step 2. μ: the transcript law of G with W within n rounds; ν: its restriction to the
   -- transcripts with every MBO 0, with the MBOs forgotten.
   set μ := G.sLaw (DDE.blindMBO e).1 n

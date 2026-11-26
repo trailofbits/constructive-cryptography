@@ -143,6 +143,11 @@ presents is [conditionally equivalent to the ideal function][PDG.ofFunction_cond
 once, on every fixed query sequence, the answers jointly with the unset condition factor through
 the ideal answers.
 
+[The completed-interaction law](Transcript.lean) expresses winning as the mass of sampled
+games whose visible transcript is nonempty and satisfies their hidden condition. It applies
+at any certified stopping horizon and retains the sampled game's own condition. An immediate
+stop has score zero, even when the condition holds initially.
+
 A [retained-state automaton with a hidden condition][PDG.ofAutomaton] uses the same input
 interface and updates as its visible automaton. The initial normalized law selects both the
 starting state and its monotone predicate on query histories. Its
@@ -157,13 +162,13 @@ between original and replacement messages.
 [RandomSystem.visible]: MBO.lean#L362
 [DDE.blindMBO]: MBO.lean#L432
 [RandomSystem.winProbability]: MBO.lean#L504
-[RandomSystem.ConditionallyEquivalent]: MBO.lean#L547
-[RandomSystem.GameEquivalent]: MBO.lean#L561
-[Domain.Distinguisher.advantage_le_winProbability]: MBO.lean#L780
-[Domain.Distinguisher.winProbability_eq_of_gameEquivalent]: MBO.lean#L884
-[Domain.Distinguisher.advantage_le_winProbability_of_gameEquivalent]: MBO.lean#L898
-[Domain.Distinguisher.winProbability_le_of_unsetProbability]: MBO.lean#L975
-[RandomSystem.transcriptDistance_visible_le_of_unsetProbability]: MBO.lean#L1000
+[RandomSystem.ConditionallyEquivalent]: MBO.lean#L566
+[RandomSystem.GameEquivalent]: MBO.lean#L580
+[Domain.Distinguisher.advantage_le_winProbability]: MBO.lean#L806
+[Domain.Distinguisher.winProbability_eq_of_gameEquivalent]: MBO.lean#L910
+[Domain.Distinguisher.advantage_le_winProbability_of_gameEquivalent]: MBO.lean#L924
+[Domain.Distinguisher.winProbability_le_of_unsetProbability]: MBO.lean#L1001
+[RandomSystem.transcriptDistance_visible_le_of_unsetProbability]: MBO.lean#L1026
 [Domain.Distinguisher.winProbability_le_of_transcriptCost_le]: UntilBad.lean#L144
 [RandomSystem.GameEquivalent.transcriptDistance_visible_le]: UntilBad.lean#L173
 [PDG.gameEquivalent_behavior_of_isCoupling]: UntilBad.lean#L205

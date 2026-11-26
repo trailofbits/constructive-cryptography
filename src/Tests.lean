@@ -137,6 +137,7 @@ public import Tests.IndifferentiabilityComposition
 public import Tests.ParallelProjections
 public import Tests.ConstructionCalc
 public import Tests.GameEquivalenceTransport
+public import Tests.GameTranscript
 public import Tests.GameDistanceBound
 public import Tests.URFRetainedTable
 public import Tests.PermutationWalk
