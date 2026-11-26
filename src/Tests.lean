@@ -224,6 +224,7 @@ public import Tests.ForallScanFlatMap
 public import Tests.FiniteQueryEncoding
 public import Tests.ProgramInputMap
 public import Tests.AutomatonFunction
+public import Tests.CountPFlatMap
 
 /-! Axiom audits per layer and of the Commons library, the checks of the
 authenticated-encryption example,

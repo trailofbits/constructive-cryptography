@@ -75,6 +75,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | --- | --- |
 | Transport compiled converters through outside input maps | `Program.run_map_inputs`, `DDC.ofProgramOn_map_inputs_of_stepMap` in `RandomSystems.Converter.Program` |
 | Identify a retained evaluator with its fixed-function DDS | `filterDom_automatonSystem_eq_ofFunction` in `RandomSystems.System.AutomatonFunction` |
+| Bound selected replies produced by expanding list entries | `List.countP_flatMap_le_mul_countP` in `Probability.List` |
 | Implement one observation by a fixed schedule of selected observations | `AbstractModel.observationValueProgram`, `observationCommandProgram` in `Commons.Definitions.AbstractModel.ObservationRefinement` |
 | Present dense extraction with affine register values | `GenericGroup.extractionDDS_eq_affine` in `Commons.Definitions.GenericGroup.Affine.Laws` |
 | Evaluate affine coefficient pairs consistently | `Probability.affineEvaluation` in `Probability.AffineEvaluation` |

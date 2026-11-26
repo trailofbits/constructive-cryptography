@@ -10,6 +10,9 @@ First occurrences, fresh-key lookup and reasoning about an entry with its prefix
 * `List.IsPrefix.eraseDups` and `List.nodup_eraseDups`: retain first occurrences as
   prefixes grow; existing `List.IsPrefix.idxOf_eq_of_mem` then keeps their ranks stable
 
+* `List.countP_flatMap_le_mul_countP`: a per-block bound `c` gives
+  `countP q (l.flatMap expand) ≤ c * countP p l`
+
 * `List.lookup_append_singleton_of_none`: appending a fresh key changes only that key
 
 * `List.exists_eq_append_cons_iff` and `List.forall_prefix_concat_iff_forall_take`:
@@ -50,6 +53,26 @@ lemma nodup_eraseDups
 termination_by xs.length
 decreasing_by
   exact Nat.lt_succ_of_le (length_filter_le _ _)
+
+/-- Expanding a selected entry costs at most `c` selected outputs; other entries cost zero. -/
+lemma countP_flatMap_le_mul_countP
+    -- `p` selects source entries; `q` selects outputs of the expansion `expand`.
+    {α β : Type*} (p : α → Bool) (q : β → Bool) (expand : α → List β) (c : ℕ)
+    -- The cost contract is needed only for entries of the particular source list `l`.
+    {l : List α} (cost : ∀ a ∈ l, (expand a).countP q ≤ c * (if p a then 1 else 0)) :
+    (l.flatMap expand).countP q ≤ c * l.countP p := by
+  revert cost
+  induction l with
+  | nil =>
+    intro _
+    simp only [flatMap_nil, countP_nil, Nat.mul_zero, Nat.le_refl]
+  | cons a l ih =>
+    intro cost
+    rw [flatMap_cons, countP_append, countP_cons, Nat.mul_add]
+    have bound := Nat.add_le_add (cost a mem_cons_self)
+      (ih (fun b hb => cost b (mem_cons_of_mem _ hb)))
+    rw [Nat.add_comm (c * (if p a then 1 else 0)) (c * l.countP p)] at bound
+    exact bound
 
 /-- Appending the fresh entry `(a, b)` returns `b` at `a` and preserves every other lookup. -/
 lemma lookup_append_singleton_of_none
