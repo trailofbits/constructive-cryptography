@@ -156,6 +156,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Interpret register values through an operation homomorphism | `AbstractModel.registersDDC_relabel_of_map` in `Commons.Definitions.AbstractModel.RegisterDDC.Laws` |
 | Connect register commands to observations on their current values | `AbstractModel.registersDDC` in `Commons.Definitions.AbstractModel.RegisterDDC` for arbitrary internal values and register names; `registersConverter` adds the finite typed interface |
 | Certify raw program domains from exact query costs | `DDC.ofProgramOn_isDDCFrom_of_costs` in `RandomSystems.Converter.Program` |
+| Reuse fixed abstract-model observations as a DDS | `AbstractModel.observationsDDS` in `Commons.Definitions.AbstractModel.Extraction` |
 | Sample an abstract model and test its first submitted guess | `AbstractModel.extractionSystem`, `extracted` in `Commons.Definitions.AbstractModel.Extraction` |
 | Score extraction while preserving its composed visible system | `AbstractModel.extractionGame`, `extractionGame_visible` in `Commons.Definitions.AbstractModel.ExtractionGame` |
 | Evaluate an immediate terminal guess | `AbstractModel.extractionGame_winProbability_submit` in `Commons.Definitions.AbstractModel.ExtractionGame.Laws` |
