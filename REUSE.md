@@ -168,7 +168,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Fresh randomized reply map | `Evaluation.sampleReplies` in [ReplyTransform] |
 | Reply map on an arbitrary input domain | `TypedConverter.mapReplies` in [QueryRouting] |
 | Forward the hidden bit through a query router | `TypedConverter.liftMBO_routing` in `RandomSystems.Typed.GameRouting` |
-| One-query input and reply translation | `TypedConverter.routing` in [QueryRouting] |
+| One-query input and reply translation | `TypedConverter.routingAt` (reply at the requested port) in [QueryRouting] |
 | Reply maps on the same query domain | `TypedConverter.mapReplies` in [QueryRouting] |
 | Evaluation reply maps | `Evaluation.mapReplies` in [ReplyTransform] |
 | Fresh randomized reply maps | `TypedConverter.sampleReplies` in [FreshReplyTransform] |
