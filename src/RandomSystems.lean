@@ -64,6 +64,7 @@ public import RandomSystems.Distance.UntilBad
 public import RandomSystems.Game.DiscreteMBO
 public import RandomSystems.Game.FunctionGame
 public import RandomSystems.Game.MBO
+public import RandomSystems.Game.Transcript
 public import RandomSystems.Game.MBOAttachment
 public import RandomSystems.Game.UntilBad
 public import RandomSystems.PDS.Conditional
