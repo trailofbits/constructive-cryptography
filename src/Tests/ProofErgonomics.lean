@@ -92,6 +92,36 @@ example {A B : Interface} {S : Type} (α : A ⟶ B) (P : Distribution.ProbDist S
     α • TypedSystem.sample P R = TypedSystem.sample P (fun s => α • R s) := by
   cc_normalize
 
+/-- A retained draw passes through the right arm, then attachment, then the left arm of
+the outer parallel composition. The same sample still selects the entire resulting system. -/
+example {A B C D : Interface} {K : Type} (α : A ⟶ B ⊗ C)
+    (P : Distribution.ProbDist K) (R : TypedSystem B) (S : K → TypedSystem C)
+    (T : TypedSystem D) :
+    (α • (R ∥ TypedSystem.sample P S)) ∥ T =
+      TypedSystem.sample P (fun k => (α • (R ∥ S k)) ∥ T) := by
+  cc_normalize
+
+/-- The same normalization works with the sampled component on the left and the enclosing
+context on the right. No finiteness assumption is made on the sample carrier `K`. -/
+example {A B C D : Interface} {K : Type} (α : A ⟶ B ⊗ C)
+    (P : Distribution.ProbDist K) (R : K → TypedSystem B) (S : TypedSystem C)
+    (T : TypedSystem D) :
+    T ∥ (α • (TypedSystem.sample P R ∥ S)) =
+      TypedSystem.sample P (fun k => T ∥ (α • (R k ∥ S))) := by
+  cc_normalize
+
+/-- Hoisting through an outside arm retains the binder shared by both inside arms. -/
+example {A B C D : Interface} {K : Type} (α : A ⟶ B ⊗ C)
+    (P : Distribution.ProbDist K) (R : K → TypedSystem B) (S : K → TypedSystem C)
+    (T : TypedSystem D) (U : TypedSystem (A ⊗ D))
+    (h : (α • TypedSystem.sample P (fun k => R k ∥ S k)) ∥ T = U) :
+    TypedSystem.sample P (fun k => (α • (R k ∥ S k)) ∥ T) = U := by
+  cc_normalize at h
+  guard_hyp h :
+    TypedSystem.sample P (fun k => TypedSystem.parallel
+      ((α : TypedConverter A (B ⊗ C)) • TypedSystem.parallel (R k) (S k)) T) = U
+  exact h
+
 /-- Nested samples `s ← P; t ← Q s`: the second law depends on the first draw, the carriers
 `S` and `T s` need not be finite, and `α` enters both binders. -/
 example {A B : Interface} {S : Type} {T : S → Type} (α : A ⟶ B)

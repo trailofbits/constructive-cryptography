@@ -95,8 +95,12 @@ example
     (sample k ←$ P; R k ∥ S k) =
       (sample k ←$ P; R k) ∥ (sample k ←$ P; S k) := by
   cc_normalize
+  -- The left side keeps one shared index; the right side retains two independent indices.
   guard_target = TypedSystem.sample P.1 (fun k => TypedSystem.parallel (R k) (S k)) =
-    TypedSystem.parallel (TypedSystem.sample P.1 R) (TypedSystem.sample P.1 S)
+    TypedSystem.sample P.1 (fun right => TypedSystem.sample P.1
+      (fun left => TypedSystem.parallel (R left) (S right)))
+  fail_if_success solve | cc_normalize
+  cc_normalize at factorizes
   exact factorizes
 
 end Tests.ContractApplication
