@@ -11,6 +11,10 @@ of input histories; its visible systems are the sampled function. The game it pr
 conditionally equivalent to an ideal sampled function once, on every fixed query sequence, the
 answers jointly with the unset condition factor through the ideal answers.
 
+`DDG.withMBO_ofFunction` gives a functional presentation when the hidden condition on each
+admitted history depends only on its last input. The same domain filter is retained, so the
+presentation also agrees on empty and rejected histories.
+
 ## Main definitions
 
 * `PDG.ofFunction`: a sampled function with a hidden condition
@@ -26,6 +30,41 @@ answers jointly with the unset condition factor through the ideal answers.
 -/
 
 @[expose] public section
+
+namespace SystemAlgebra.DDG
+
+/-- If the condition on an admitted history is `p x` at its last input `x`, the game replies
+with `f x` tagged by that bit. Both presentations retain the domain `D`. -/
+lemma withMBO_ofFunction
+    -- `I` indexes ports; `X i` and `Y i` carry their query and visible reply values.
+    {I : Type} {X Y : I → Type}
+    -- `D` admits nonempty input histories and is closed under nonempty prefixes.
+    (D : List (Σ i, X i) → Prop)
+    (hD : ¬ D [] ∧ ∀ {initial history}, initial <+: history → initial ≠ [] →
+      D history → D initial)
+    -- `f` gives the visible reply; `condition` is the original monotone game condition.
+    (f : (Σ i, X i) → Σ i, Y i) (condition : MC (Σ i, X i))
+    -- `p x` computes the condition from the final input on admitted histories.
+    (p : (Σ i, X i) → Prop) [DecidablePred p]
+    (hcondition : ∀ xs x, D (xs ++ [x]) → (condition.1 (xs ++ [x]) ↔ p x)) :
+    withMBO (DDS.ofFunction D hD f, condition) =
+      DDS.ofFunction D hD (fun x => tagMBO (decide (p x)) (f x)) := by
+  classical
+  apply Subtype.ext
+  funext history
+  rcases List.eq_nil_or_concat history with rfl | ⟨xs, x, rfl⟩
+  · -- The empty input history emits no reply, regardless of the initial condition.
+    simp only [withMBO, DDS.ofFunction, hD.1, ite_false, Part.map_none]
+  · rw [List.concat_eq_append]
+    change ((DDS.ofFunction D hD f).1 (xs ++ [x])).map
+      (tagMBO (decide (condition.1 (xs ++ [x])))) = _
+    rw [DDS.ofFunction_snoc, DDS.ofFunction_snoc]
+    by_cases admitted : D (xs ++ [x])
+    · -- The supplied factorization identifies the condition bit at this reply.
+      simp only [admitted, ite_true, Part.map_some, hcondition xs x admitted]
+    · simp only [admitted, ite_false, Part.map_none]
+
+end SystemAlgebra.DDG
 
 namespace SystemAlgebra.PDG
 
