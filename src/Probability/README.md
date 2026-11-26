@@ -170,16 +170,16 @@ against a running `foldl` state (`List.ForallScan`, `List.ForallScan.append`,
 
 <!-- Declarations -->
 
-[Distribution]: Distribution.lean#L68
-[ProbDist]: Distribution.lean#L161
-[isProbDist]: Distribution.lean#L140
-[mass]: Distribution.lean#L229
-[fTransform]: Distribution.lean#L727
-[prod]: Distribution.lean#L1101
-[pi]: Distribution.lean#L1747
+[Distribution]: Distribution.lean#L72
+[ProbDist]: Distribution.lean#L165
+[isProbDist]: Distribution.lean#L144
+[mass]: Distribution.lean#L233
+[fTransform]: Distribution.lean#L792
+[prod]: Distribution.lean#L1166
+[pi]: Distribution.lean#L1812
 [piDep]: DependentProduct.lean#L53
-[uniform]: Distribution.lean#L656
-[ProbDist.uniform]: Distribution.lean#L689
+[uniform]: Distribution.lean#L697
+[ProbDist.uniform]: Distribution.lean#L730
 [bindK]: Kernel.lean#L54
 [bindK_bindK]: Kernel.lean#L100
 [bindK_single_comp]: Kernel.lean#L122
@@ -220,7 +220,7 @@ against a running `foldl` state (`List.ForallScan`, `List.ForallScan.append`,
 [uniform_mass_adaptive_eval_eq_mul]: Counting.lean#L611
 
 [uniform_mass_fresh_eval_eq]: Counting.lean#L217
-[mass_exists_pair_le_choose]: Distribution.lean#L528
+[mass_exists_pair_le_choose]: Distribution.lean#L532
 [uniform_mass_not_injOn_le_choose]: Counting.lean#L331
 
 [uniform_mass_fresh_projected_eval_eq]: Counting.lean#L356

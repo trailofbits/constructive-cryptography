@@ -35,6 +35,8 @@ distribution is a nonnegative distribution of weight `1` [1, Definitions 1, 2 an
 * the mass calculus: additivity, complements, monotonicity, `mass_le_weight`;
   `mass_sub_mass_le_of_le`, `abs_mass_sub_le_of_le`: laws above a common part differ by at most
   the rest
+* `mass_eq_of_eq_on_compl`, `mass_le_of_eq_on_compl`: equal-weight laws agreeing outside
+  an event give equal mass to that event and transfer bounds for its subevents
 * pushforward: `mass_fTransform`, `weight_fTransform`, `fTransform_comp`,
   `fTransform_prod`, `fTransform_equiv_uniform`
 * `uniform_congr_fintype`, `ProbDist.uniform_congr_fintype`: the uniform law does not depend on
@@ -590,6 +592,43 @@ lemma weight_restrict {A : Type*} (X : Distribution A) (P : A → Prop) :
     (X.restrict P).weight = X.mass P := by
   rw [← mass_true (X.restrict P), mass_restrict]
   simp
+
+/-- Agreement at every outcome of `P` gives equal event masses. -/
+lemma mass_eq_of_eq_on
+    -- `A` carries outcomes; `X`, `Y` assign their finitely supported, possibly signed masses.
+    {A : Type*} (X Y : Distribution A) (P : A → Prop)
+    (same : ∀ a, P a → X a = Y a) : X.mass P = Y.mass P := by
+  -- Restriction keeps precisely the atoms on which the two laws agree.
+  have restricted : X.restrict P = Y.restrict P := by
+    ext a
+    by_cases ha : P a <;> simp only [restrict_apply, ha, ite_true, ite_false]
+    exact same a ha
+  simpa only [weight_restrict] using congrArg weight restricted
+
+/-- Equal-weight laws agreeing outside `P` assign the same mass to `P`. -/
+lemma mass_eq_of_eq_on_compl
+    -- `A` carries outcomes; both laws may have signed masses.
+    {A : Type*} (X Y : Distribution A) (P : A → Prop)
+    -- `equalWeight` fixes the total, and `same` fixes every atom outside `P`.
+    (equalWeight : X.weight = Y.weight)
+    (same : ∀ a, ¬ P a → X a = Y a) : X.mass P = Y.mass P := by
+  have complement := mass_eq_of_eq_on X Y (fun a => ¬ P a) same
+  -- Equal totals and equal complementary masses leave equal masses inside the event.
+  have partition := (mass_add_compl X P).trans
+    (equalWeight.trans (mass_add_compl Y P).symm)
+  rw [complement] at partition
+  exact add_right_cancel partition
+
+/-- If `P ⊆ Q`, equal-weight laws agreeing outside `Q` satisfy `X(P) ≤ Y(Q)`.
+Only `X` needs nonnegative masses. -/
+lemma mass_le_of_eq_on_compl
+    -- `A` carries outcomes; `X` is nonnegative and `Y` is the comparison law.
+    {A : Type*} (X Y : Distribution A) (hX : X.NonNeg)
+    -- `P` is the event being bounded; `Q` covers it and every atom allowed to change.
+    {P Q : A → Prop} (covered : ∀ a, P a → Q a)
+    (equalWeight : X.weight = Y.weight)
+    (same : ∀ a, ¬ Q a → X a = Y a) : X.mass P ≤ Y.mass Q :=
+  (mass_mono hX covered).trans_eq (mass_eq_of_eq_on_compl X Y Q equalWeight same)
 
 end Distribution
 
