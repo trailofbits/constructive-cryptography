@@ -171,6 +171,7 @@ public import Tests.CompositeNotation
 public import Tests.ProgramConverterCertificate
 public import Tests.ProgramCostDomain
 public import Tests.ProgramMap
+public import Tests.ProgramFold
 public import Tests.ProgramQueryMap
 public import Tests.CallProgQueryMap
 public import Tests.FunctionPorts
