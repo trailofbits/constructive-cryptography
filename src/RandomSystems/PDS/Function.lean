@@ -1,6 +1,7 @@
 module
 
 public import RandomSystems.PDS.PDS
+public import RandomSystems.System.Observation
 
 /-!
 # Sampled functions
@@ -18,16 +19,16 @@ query. Sampling the function once and retaining it gives a PDS.
 
 * `DDS.replies_ofFunction_iff`: the transcripts of an evaluator are its pointwise
   replies
+* `DDS.ofFunction_repliesAtQueriedInterface`: admitted inputs receive replies at their own port
 -/
 
 @[expose] public section
 
 namespace SystemAlgebra
 
-open Classical
-
 namespace DDS
 
+open Classical in
 /-- Evaluate one fixed function on the most recent admitted input. -/
 noncomputable def ofFunction {X Y : Type} (D : List X → Prop)
     (hD : ¬ D [] ∧ ∀ {p h}, p <+: h → p ≠ [] → D h → D p)
@@ -44,11 +45,13 @@ noncomputable def ofFunction {X Y : Type} (D : List X → Prop)
 lemma ofFunction_dom {X Y : Type} (D : List X → Prop)
     (hD : ¬ D [] ∧ ∀ {p h}, p <+: h → p ≠ [] → D h → D p)
     (f : X → Y) (h : List X) : ((ofFunction D hD f).1 h).Dom ↔ D h := by
+  classical
   by_cases hd : D h
   · have hn : h ≠ [] := fun he => hD.1 (he ▸ hd)
     simp [ofFunction, hd, hn]
   · simp [ofFunction, hd]
 
+open Classical in
 lemma ofFunction_snoc {X Y : Type} (D : List X → Prop)
     (hD : ¬ D [] ∧ ∀ {p h}, p <+: h → p ≠ [] → D h → D p)
     (f : X → Y) (xs : List X) (x : X) :
@@ -56,12 +59,32 @@ lemma ofFunction_snoc {X Y : Type} (D : List X → Prop)
       if D (xs ++ [x]) then Part.some (f x) else Part.none := by
   simp [ofFunction]
 
+/-- A fixed evaluator replies at its queried port when its function preserves admitted ports. -/
+lemma ofFunction_repliesAtQueriedInterface
+    -- `I` labels ports; `X i` and `Y i` carry their queries and replies.
+    {I : Type} {X Y : I → Type}
+    -- `D` admits nonempty input histories and is closed under nonempty prefixes.
+    (D : List (Σ i, X i) → Prop)
+    (hD : ¬ D [] ∧ ∀ {p h}, p <+: h → p ≠ [] → D h → D p)
+    (f : (Σ i, X i) → Σ i, Y i)
+    -- `same` requires `f` to preserve the last query's port only when `D` admits it.
+    (same : ∀ h x, D (h ++ [x]) → (f x).1 = x.1) :
+    RepliesAtQueriedInterface (ofFunction D hD f).1 := by
+  classical
+  intro h x y hy
+  rw [ofFunction_snoc] at hy
+  split_ifs at hy with admitted
+  · exact (congrArg (fun z : Σ i, Y i => z.1) (Part.mem_some_iff.mp hy)).trans
+      (same h x admitted)
+  · exact (Part.notMem_none _ hy).elim
+
 /-- A fixed function's transcript consists precisely of its pointwise replies. -/
 lemma replies_ofFunction_iff {X Y : Type} (D : List X → Prop)
     (hD : ¬ D [] ∧ ∀ {p h}, p <+: h → p ≠ [] → D h → D p)
     (f : X → Y) (xs : List X) (ys : List Y) :
     Replies (ofFunction D hD f).1 xs ys ↔
       (xs = [] ∨ D xs) ∧ ys = xs.map f := by
+  classical
   induction xs using List.reverseRecOn generalizing ys with
   | nil =>
     constructor
@@ -123,7 +146,8 @@ instance [DecidableEq X] [Nonempty Y] (E : List X → Prop)
     (hE : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p) (bound : ℕ)
     (hb : ∀ h, E h → h.length ≤ bound) :
     Distribution.IsProbability (uniformFunction (Y := Y) E hE bound hb) :=
-  inferInstanceAs (Distribution.IsProbability (ofFunction E hE bound hb id (Distribution.uniform (X → Y))))
+  inferInstanceAs
+    (Distribution.IsProbability (ofFunction E hE bound hb id (Distribution.uniform (X → Y))))
 
 end PDS
 end SystemAlgebra

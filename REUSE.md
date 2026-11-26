@@ -118,6 +118,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Compare cumulative probabilities on good prefixes | `ProbStep.belief_eq_of_outcome_restrict_eq` and its system corollary in `RandomSystems.System.ProbAutomaton` |
 | Retained key as an automaton | `TypedSystem.ofProbAutomaton_eq_keyed` in [KeyedAutomaton] |
 | Transport program modes and emitted messages | `Program.run_map`, `DDC.ofProgramOn_relabel_of_stepMap` in `RandomSystems.Converter.Program` |
+| Certify fixed-function reply ports | `DDS.ofFunction_repliesAtQueriedInterface` in `RandomSystems.PDS.Function` |
 | Converter state comparison | `DDC.ofProgramOn_eq_of_stateMap`, `DDC.ofProgramOn_eq_of_stateRel` in [Program](src/RandomSystems/Converter/Program.lean); typed forms in [Converters](src/RandomSystems/Typed/DSL/Converters.lean) |
 | Program attachment | `TypedConverter.ofProgram_smul_ofProbAutomaton` in [ProgramAttachment] |
 | Independent joint law | `prodProbDist` in [Distribution] |
