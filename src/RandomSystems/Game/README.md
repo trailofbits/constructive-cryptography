@@ -176,13 +176,13 @@ under that same initial law, retaining the sampled state's own monitor.
 [PDG.gameEquivalent_behavior_of_isCoupling]: UntilBad.lean#L205
 [PDCBehavior.liftMBO]: MBOAttachment.lean#L466
 [PDCBehavior.liftMBO_id]: MBOAttachment.lean#L506
-[PDCBehavior.liftMBO_comp]: MBOAttachment.lean#L1542
-[RandomSystem.MonotoneMBO.attach_liftMBO]: MBOAttachment.lean#L961
-[RandomSystem.GameEquivalent.attach_liftMBO]: MBOAttachment.lean#L2493
-[RandomSystem.visible_attach_liftMBO]: MBOAttachment.lean#L614
-[RandomSystem.winProbability_attach_liftMBO]: MBOAttachment.lean#L2106
-[Domain.SolverBehavior]: MBOAttachment.lean#L2196
-[Domain.SolverBehavior.absorb]: MBOAttachment.lean#L2235
+[PDCBehavior.liftMBO_comp]: MBOAttachment.lean#L1527
+[RandomSystem.MonotoneMBO.attach_liftMBO]: MBOAttachment.lean#L946
+[RandomSystem.GameEquivalent.attach_liftMBO]: MBOAttachment.lean#L2478
+[RandomSystem.visible_attach_liftMBO]: MBOAttachment.lean#L599
+[RandomSystem.winProbability_attach_liftMBO]: MBOAttachment.lean#L2091
+[Domain.SolverBehavior]: MBOAttachment.lean#L2181
+[Domain.SolverBehavior.absorb]: MBOAttachment.lean#L2220
 [MC]: DiscreteMBO.lean#L50
 [DDG]: DiscreteMBO.lean#L54
 [PDG]: DiscreteMBO.lean#L58
@@ -195,8 +195,8 @@ under that same initial law, retaining the sampled state's own monitor.
 [PDG.ofFunction]: FunctionGame.lean#L81
 [PDG.ofFunction_conditionallyEquivalent]: FunctionGame.lean#L138
 
-[Domain.SolverBehavior.decision]: MBOAttachment.lean#L2207
-[Domain.SolverBehavior.decision_absorb]: MBOAttachment.lean#L2256
+[Domain.SolverBehavior.decision]: MBOAttachment.lean#L2192
+[Domain.SolverBehavior.decision_absorb]: MBOAttachment.lean#L2241
 
 [PDG.ofAutomaton]: ../Typed/AutomatonGame.lean
 [TypedGame.ofAutomaton]: ../Typed/AutomatonGame.lean

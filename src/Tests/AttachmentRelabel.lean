@@ -69,6 +69,33 @@ example :
         (relabel twoReplies id replyMap) :=
   apply_relabel_inside _ _ replyMap
 
+/-- The outside maps may identify queries and replies while preserving attachment. -/
+lemma combined_outside_attachment :
+    apply (relabel (forwardAll Unit (fun _ => ℕ) (fun _ => ℕ))
+      (outsideMap queryMap) (outsideMap replyMap)) twoReplies =
+      relabel twoReplies queryMap replyMap := by
+  rw [← relabel_apply_outside_both, apply_forwardAll (by simp [SilentAtEmpty, twoReplies])]
+
+/-- A first outside query is mapped before the inside call, then its answer is mapped back. -/
+example :
+    apply (relabel (forwardAll Unit (fun _ => ℕ) (fun _ => ℕ))
+      (outsideMap queryMap) (outsideMap replyMap)) twoReplies [⟨(), 3⟩] =
+      Part.some ⟨(), 2⟩ := by
+  rw [combined_outside_attachment]
+  rfl
+
+/-- The unanswered third inside call stays pending after the outside maps. -/
+example :
+    apply (relabel (forwardAll Unit (fun _ => ℕ) (fun _ => ℕ))
+      (outsideMap queryMap) (outsideMap replyMap)) twoReplies
+        [⟨(), 3⟩, ⟨(), 5⟩, ⟨(), 7⟩] = Part.none := by
+  rw [combined_outside_attachment]
+  exact Part.map_none replyMap
+
+#print axioms relabel_apply_outside_both
+#print axioms relabel_apply_outside
+#print axioms combined_outside_attachment
+
 #print axioms SystemAlgebra.insideMap_id
 #print axioms SystemAlgebra.apply_relabel_inside_both
 #print axioms SystemAlgebra.apply_relabel_inside

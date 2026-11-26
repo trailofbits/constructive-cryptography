@@ -523,21 +523,6 @@ section Visible
 
 variable {O J : Type} {U V : O → Type} {X Y : J → Type}
 
-/-- Relabeling the outside replies of an attachment relabels those of the converter. -/
-lemma relabel_apply_outside {V' : O → Type} (c : InsideOutsideSystem O J U V' X Y)
-    (R : InterfaceSystem J X Y) (g : (Σ o, V' o) → (Σ o, V o)) :
-    relabel (apply c R) id g = apply (relabel c id (outsideMap g)) R := by
-  -- Write both attachments as interconnections of `[c, R]`; relabeling the outside replies of
-  -- the attachment, or of `c`, moves into the routing table.
-  rw [apply_eq, apply_eq, relabel_interconnect, pair_relabel_left, interconnect_relabel]
-  -- Only the routing tables differ; compare them output by output.
-  congr 1
-  funext y
-  -- Outputs of `c` (outside reply or inside query) and replies of `R`.
-  rcases y with ⟨_ | ⟨⟩, y⟩
-  · rcases y with ⟨⟨_ | ⟨⟨⟩⟩, o⟩, v⟩ <;> rfl
-  · rfl
-
 /-- **Attaching a lift and forgetting the MBO** is attaching the converter to the system with the
 MBO forgotten. -/
 lemma relabel_trim_apply_liftMBO (a : InsideOutsideSystem O J U V X Y)
