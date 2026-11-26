@@ -75,6 +75,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | --- | --- |
 | Move outside query and reply maps through attachment | `relabel_apply_outside_both` in `RandomSystems.DDC.DDCRelabel` |
 | Extend distinct list-position labels to evaluated inputs | `List.exists_perm_apply_idxOf_eq` in `Probability.List.Permutation` |
+| Evaluate a completed adaptive invocation from its local trace | `Program.combine_eq_of_consistent_replies` in `RandomSystems.Converter.ProgramTrace` |
 | Transport complete register converters through address embeddings | `registersDDC_mapCommand` in `Commons.Definitions.AbstractModel.RegisterDDC.AddressMap` |
 | Transport oracle bodies through state and outside-query maps | `Program.step_stateInputMap` in `RandomSystems.Converter.Program`; `DSL.callProg_map` in `RandomSystems.Typed.DSL.Programs` |
 | Rename register addresses while preserving contents | `AbstractModel.mapInput`, `mapCommand`, `registers_mapCommand` in `Commons.Definitions.AbstractModel` and `Registers.Laws` |
