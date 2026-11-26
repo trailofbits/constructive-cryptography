@@ -1,6 +1,7 @@
 module
 
 public import RandomSystems.Cumulative.CumulativeObservation
+public import Probability.Kernel
 
 /-!
 # Mixtures and parallel composition
@@ -19,6 +20,7 @@ alphabets, with product probabilities on the two component transcripts.
 
 ## Main results
 
+* `mix_mass_of_presentations`: a mixture flattens its component presentations by kernel bind
 * `sLaw_mix`: the transcript law of a mixture is the mixture of the transcript laws
 * `replies_pair_iff`: the transcripts of a deterministic pair are the interleaved
   component transcripts
@@ -70,6 +72,22 @@ noncomputable def mix (P : Distribution.ProbDist ι) (R : ι → RandomSystem A 
 
 lemma mix_mass (P : Distribution.ProbDist ι) (R : ι → RandomSystem A B D)
     (h : List (A × B)) : mix P R h = ∑ i ∈ P.1.support, P.1 i * R i h := rfl
+
+/-- A retained mixture is presented by first sampling its index, then its system presentation. -/
+lemma mix_mass_of_presentations
+    -- `P` samples the retained index; `R a` is the corresponding system on the common domain.
+    {K L : Type} (P : Distribution.ProbDist K) (R : K → RandomSystem A B D)
+    -- `Q a` gives finite, possibly signed presentation weights; `s b` is its deterministic system.
+    (Q : K → Distribution L) (s : L → System A B)
+    -- Only indices in `P`'s support must present `R a` correctly on every transcript `h`.
+    (presents : ∀ a ∈ P.1.support, ∀ h,
+      R a h = (Q a).mass (fun b => Replies (s b) (h.map Prod.fst) (h.map Prod.snd)))
+    (h : List (A × B)) :
+    mix P R h = (Distribution.bindK P.1 Q).mass
+      (fun b => Replies (s b) (h.map Prod.fst) (h.map Prod.snd)) := by
+  -- The component presentation equations identify the two stages of the finite mixture.
+  rw [mix_mass, Distribution.mass_bindK]
+  exact Finset.sum_congr rfl fun a ha => congrArg (P.1 a * ·) (presents a ha h)
 
 /-- **The transcript law of a mixture** is the mixture of the transcript laws:
 `(mix P R).sLaw e n = ∑ₖ P(k) • (R k).sLaw e n`. -/

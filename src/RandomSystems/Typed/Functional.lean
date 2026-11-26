@@ -25,6 +25,7 @@ laws use `RandomSystem.ofConditional`, sampling uses `RandomSystem.mix`.
 * `TypedSystem.sample_ofFunction_mass_eq`: event mass of draws supplying the transcript replies
 * `TypedSystem.sample_ofFunction_mass`: sampled functions are the finite PDS of the
   function systems
+* `TypedSystem.sample_ofPDS`: dependent presentation sampling flattens by probability bind
 * `TypedSystem.sample_fTransform`, `TypedConverter.smul_sample`: a retained sample commutes with
   pushforward of its law and with converter attachment
 -/
@@ -195,6 +196,19 @@ noncomputable def sample {K : Type} (P : Distribution K) [Distribution.IsProbabi
 lemma sample_mass {K : Type} (P : Distribution K) [Distribution.IsProbability P]
     (R : K → TypedSystem A) h :
     (sample P R).1 h = ∑ k ∈ P.support, P k * (R k).1 h := rfl
+
+/-- Sampling a finite presentation and retaining its system is the flattened presentation. -/
+lemma sample_ofPDS
+    -- `P` samples the outer index; `Q a` samples a DDS with exactly `A`'s domain and reply ports.
+    {K : Type} (P : Distribution.ProbDist K)
+    (Q : K → Distribution.ProbDist {s : InterfaceSystem A.I A.X A.Y //
+      IsDDS s ∧ RepliesAtQueriedInterface s ∧ ∀ h, (s h).Dom ↔ A.domain h}) :
+    sample P.1 (fun a => ofPDS (Q a)) = ofPDS (P.bind Q) := by
+  apply Subtype.ext
+  apply RandomSystem.ext
+  intro h
+  exact RandomSystem.mix_mass_of_presentations P (fun a => (ofPDS (Q a)).1)
+    (fun a => (Q a).1) Subtype.val (fun _ _ _ => rfl) h
 
 /-- **Sampling a pushforward**: drawing `l ← f(P)` once equals drawing `k ← P` once and
 retaining `f k`, `sample (f(P)) R = sample P (R ∘ f)`; at every transcript `h`,

@@ -364,11 +364,11 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [TypedConverter.ofPreservingProgram_smul_ofMemoryless]: Memoryless.lean#L416
 [TypedConverter.ofCostedProgram_smul_ofMemoryless]: Memoryless.lean#L437
 [TypedConverter.ofPreservingProgram_comp_rightContext_smul_memoryless]: Memoryless.lean#L369
-[TypedSystem.ofFunction]: Functional.lean#L62
-[TypedSystem.ofConditional]: Functional.lean#L44
-[TypedSystem.sample]: Functional.lean#L183
-[TypedSystem.sample_fTransform]: Functional.lean#L197
-[TypedConverter.smul_sample]: Functional.lean#L242
+[TypedSystem.ofFunction]: Functional.lean#L63
+[TypedSystem.ofConditional]: Functional.lean#L45
+[TypedSystem.sample]: Functional.lean#L184
+[TypedSystem.sample_fTransform]: Functional.lean#L198
+[TypedConverter.smul_sample]: Functional.lean#L256
 [TypedSystem.sample_prod]: SamplingAlgebra.lean#L41
 [TypedSystem.sample_comm]: SamplingAlgebra.lean#L57
 [TypedSystem.parallel_sample_right]: SamplingAlgebra.lean#L87
