@@ -103,6 +103,18 @@ abbrev Command := Σ i, M.Input ι i
 
 variable {ι}
 
+/-- Map operand and destination addresses by `f` within each command port. -/
+def mapInput
+    -- `ι` and `κ` name registers; submitted values retain their carrier `S`.
+    {κ : Type} (f : ι → κ) : (o : Port M.Operation M.Query) → M.Input ι o → M.Input κ o
+  | .compute _, (a, t) => (f ∘ a, f t)
+  | .query _, a => f ∘ a
+  | .submit, x => x
+
+/-- Map command addresses with `mapInput`, preserving the named port and submitted value. -/
+def mapCommand {κ : Type} (f : ι → κ) : M.Command ι → M.Command κ :=
+  Sigma.map id (M.mapInput f)
+
 /-- `reads z` is the finite set of operand addresses of command `z`. -/
 def reads [DecidableEq ι] : M.Command ι → Finset ι
   | ⟨.compute _, (a, _)⟩ => Finset.univ.image a
