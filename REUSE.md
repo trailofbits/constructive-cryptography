@@ -129,6 +129,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Retry independent draws with an explicit fallback | `ProbDist.rejection`, `rejection_eq` in `Probability.Rejection` |
 | Evaluate a sampled game's condition on completed interactions | `PDG.winProbability_behavior` in `RandomSystems.Game.Transcript` |
 | Test submitted values against predicates using one solver law | `TypedGame.submission`, `TypedSolver.exists_submission_law` in `RandomSystems.Typed.Submission` |
+| Submit a retained joint draw and read its exact event probability | `TypedSolver.submission`, `submission_winProbability`, `submission_onFinset_winProbability` in `RandomSystems.Typed.SubmissionSampling` |
 | Evaluate an automaton's monitor under its initial law | `TypedGame.winProbability_ofAutomaton_at_bound` in `RandomSystems.Typed.AutomatonGame` |
 | Add a final decision without increasing an observer's query bound | `ddeOf_envProbe_queryBounded` in `RandomSystems.Distance.Decision` |
 | Propagate an adaptive potential bound | `expect_antitone_of_bindK` in `Probability.Expectation` |

@@ -34,6 +34,7 @@ public import Tests.Problem
 public import Tests.ProblemFamily
 public import Tests.GameFamily
 public import Tests.SubmissionGames
+public import Tests.SampledSubmissionGames
 public import Tests.GameConsumers
 public import Tests.Guessing
 public import Tests.ContractApplication
