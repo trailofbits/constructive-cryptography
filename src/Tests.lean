@@ -233,6 +233,8 @@ public import Tests.AbstractModelDomainMap
 public import Tests.RegisterAddressCompiler
 
 public import Tests.ProgramTrace
+public import Tests.CollectCallsTrace
+public import Tests.CollectAttachment
 
 public import Tests.ListPermutation
 
