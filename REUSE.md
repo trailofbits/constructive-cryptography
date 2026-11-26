@@ -105,6 +105,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Independent joint law | `prodProbDist` in [Distribution] |
 | Independent finite family of draws | `ProbDist.pi` in [Distribution] |
 | Independent draws with different outcome types | `ProbDist.piDep` in [DependentProduct] |
+| Regroup nested independent tables | `ProbDist.map_piDep_uncurry` in [Kernel] |
 | Select coordinates of different types | `ProbDist.map_piDep_comp` in [Kernel] |
 | Routed table equality off input collisions | `TypedSystem.sample_piDep_comp_mass_eq` in [RandomSystems/Typed/RandomFunction.lean](src/RandomSystems/Typed/RandomFunction.lean) |
 | Ideal-transcript collision bound | `TypedSystem.sample_piDep_comp_advantage_le_collision_mass` in [RandomSystems/Typed/RandomFunctionCollision.lean](src/RandomSystems/Typed/RandomFunctionCollision.lean) |

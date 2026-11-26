@@ -35,6 +35,7 @@ and the carriers may live in different universes.
 * `piDep_single`: independent point laws give the point law on their tuple
 * `piDep_fin_zero`, `piDep_fin_succ`: ordered tuples split into their first coordinate and tail
 * `fTransform_piDep_piCongrLeft`: an explicit index equivalence transports the product law
+* `fTransform_piDep_uncurry`: independent tables regroup as one table over paired indices
 * `independent_product_piDep`: two product families regroup as one family of pairs,
   `piDep μ × piDep ν = unzip_* (piDep (k ↦ μ k × ν k))`, `unzip p = ((p k).1)_k, ((p k).2)_k`
 
@@ -247,6 +248,23 @@ lemma fTransform_piDep_sumPiEquivProdPi
   rw [point, prod_apply]
   -- Its coefficient is the product over the left indices times that over the right indices.
   simp only [piDep_apply, Fintype.prod_sum_type, e, Equiv.sumPiEquivProdPi_symm_apply]
+
+/-- A table of independent tables is one independent table over the paired indices:
+`uncurry_* (∏ k, ∏ l : L k, μ k l) = ∏ p : Σ k, L k, μ p.1 p.2`. -/
+lemma fTransform_piDep_uncurry
+    -- `L k` indexes the finite inner table in group `k`; either index family may be empty.
+    {L : K → Type*} [∀ k, Fintype (L k)]
+    -- `A k l` is the outcome carrier at `⟨k, l⟩`; its signed law `μ k l` has finite support.
+    {A : ∀ k, L k → Type*} (μ : ∀ k l, Distribution (A k l)) :
+    fTransform (Equiv.piCurry A).symm (piDep fun k => piDep (μ k)) =
+      piDep (fun p : Σ k, L k => μ p.1 p.2) := by
+  ext f
+  -- Uncurrying has the unique preimage given by currying the complete table `f`.
+  change Finsupp.mapDomain (Equiv.piCurry A).symm (piDep fun k => piDep (μ k)) f = _
+  rw [Finsupp.mapDomain_equiv_apply]
+  simp only [piDep_apply]
+  -- Regroup the coordinate factors without changing any draw or its weight.
+  exact (Fintype.prod_sigma (fun p : Σ k, L k => μ p.1 p.2 (f p))).symm
 
 /-- Injective coordinate selection keeps the selected product law if omitted factors have
 weight one. Selected factors may have arbitrary signed mass. -/

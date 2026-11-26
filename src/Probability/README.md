@@ -24,6 +24,7 @@ coordinate outcomes. The alphabets may be infinite; only the index set and each 
 finite. [`ProbDist.pi`](Distribution.lean) and [`ProbDist.piDep`](DependentProduct.lean)
 construct normalized independent families directly, carrying the coordinate normalization
 proofs into the product.
+`ProbDist.map_piDep_uncurry` regroups nested independent tables over paired indices.
 `ProbDist.map_piDep_comp` selects distinct coordinates of a dependent product, preserving each
 coordinate's outcome type and law; [`ProbDist.map_piDep_comp_comp`][ProbDist.map_piDep_comp_comp]
 factors a tuple selection through an injective map, and
@@ -184,23 +185,23 @@ against a running `foldl` state (`List.ForallScan`, `List.ForallScan.append`,
 [fTransform]: Distribution.lean#L792
 [prod]: Distribution.lean#L1166
 [pi]: Distribution.lean#L1812
-[piDep]: DependentProduct.lean#L53
+[piDep]: DependentProduct.lean#L56
 [uniform]: Distribution.lean#L697
 [ProbDist.uniform]: Distribution.lean#L730
-[bindK]: Kernel.lean#L54
-[bindK_bindK]: Kernel.lean#L100
-[bindK_single_comp]: Kernel.lean#L122
-[pi_eq_bindK_update]: Kernel.lean#L349
-[ProbDist.map]: Kernel.lean#L365
-[ProbDist.map_map]: Kernel.lean#L378
-[ProbDist.map_piDep_comp_comp]: Kernel.lean#L420
-[ProbDist.map_piDep_comp_eq_of_eq_iff]: Kernel.lean#L432
-[prodProbDist_map]: Kernel.lean#L552
-[ProbDist.bind]: Kernel.lean#L461
-[ProbDist.bind_const]: Kernel.lean#L475
-[ProbDist.jointLaw]: Kernel.lean#L493
-[ProbDist.jointLaw_fst]: Kernel.lean#L500
-[ProbDist.jointLaw_map]: Kernel.lean#L520
+[bindK]: Kernel.lean#L56
+[bindK_bindK]: Kernel.lean#L109
+[bindK_single_comp]: Kernel.lean#L131
+[pi_eq_bindK_update]: Kernel.lean#L358
+[ProbDist.map]: Kernel.lean#L374
+[ProbDist.map_map]: Kernel.lean#L387
+[ProbDist.map_piDep_comp_comp]: Kernel.lean#L440
+[ProbDist.map_piDep_comp_eq_of_eq_iff]: Kernel.lean#L452
+[prodProbDist_map]: Kernel.lean#L572
+[ProbDist.bind]: Kernel.lean#L481
+[ProbDist.bind_const]: Kernel.lean#L495
+[ProbDist.jointLaw]: Kernel.lean#L513
+[ProbDist.jointLaw_fst]: Kernel.lean#L520
+[ProbDist.jointLaw_map]: Kernel.lean#L540
 [normalizeOr]: Lift.lean#L189
 [statDist]: StatisticalDistance.lean#L101
 [statDist_triangle]: StatisticalDistance.lean#L251
@@ -238,7 +239,7 @@ against a running `foldl` state (`List.ForallScan`, `List.ForallScan.append`,
 
 [uniform_mass_transcript_collision_le_card]: Counting/Collision.lean
 
-[ProbDist.map_id]: Kernel.lean#L374
-[prodProbDist_uniform]: Kernel.lean#L562
-[prodProbDist_map_left]: Kernel.lean#L569
-[prodProbDist_map_right]: Kernel.lean#L576
+[ProbDist.map_id]: Kernel.lean#L383
+[prodProbDist_uniform]: Kernel.lean#L582
+[prodProbDist_map_left]: Kernel.lean#L589
+[prodProbDist_map_right]: Kernel.lean#L596
