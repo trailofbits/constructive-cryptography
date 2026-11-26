@@ -238,6 +238,7 @@ public import Tests.CollectAttachment
 public import Tests.ChronologicalSampling
 
 public import Tests.ListPermutation
+public import Tests.ChronologicalPermutation
 
 /-! Axiom audits per layer and of the Commons library, the checks of the
 authenticated-encryption example,

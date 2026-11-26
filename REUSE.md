@@ -75,6 +75,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | --- | --- |
 | Move outside query and reply maps through attachment | `relabel_apply_outside_both` in `RandomSystems.DDC.DDCRelabel` |
 | Extend distinct list-position labels to evaluated inputs | `List.exists_perm_apply_idxOf_eq` in `Probability.List.Permutation` |
+| Compare chronological and evaluated inputs under one uniform permutation | `chronologicalLabelingProgram_uniform_mass_replies_eq_of_injOn` in `RandomSystems.Converter.ChronologicalLabeling.Uniform` |
 | Evaluate a completed adaptive invocation from its local trace | `Program.combine_eq_of_consistent_replies` in `RandomSystems.Converter.ProgramTrace` |
 | Certify a scheduled collection and attach it to retained state | `DSL.collectCalls_exchangesOf` in `RandomSystems.Typed.DSL.Collect`; `Program.combine_eq_of_collectCalls` in `CollectAttachment` |
 | Compare chronological labels under an invariant retained-function law | `chronologicalLabelingProgram_mass_replies_eq_of_fTransform_eq` in `RandomSystems.Converter.ChronologicalLabeling.Sampling` |
