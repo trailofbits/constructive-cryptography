@@ -15,6 +15,8 @@ legal-domain read certificate without a finiteness assumption on names or values
 
 `read_map`, `write_map` and `registers_map` transport register contents through an
 operation-preserving map. The command history, observations and submitted values stay fixed.
+`write_mapCommand` and `registers_mapCommand` instead rename addresses along an embedding;
+computed values and submitted guesses remain unchanged.
 -/
 
 @[expose] public section
@@ -48,6 +50,19 @@ lemma read_isSome
   · exact iff_of_true rfl h
   · exact iff_of_false Bool.false_ne_true h
 
+/-- Reading along an address map is reading the same values at the mapped addresses. -/
+lemma read_comp
+    -- `r` stores values on `κ`; `f` interprets addresses from `ι` and `a` selects operands.
+    {κ : Type} (r : κ → Option W) (f : ι → κ) {n : ℕ} (a : Fin n → ι) :
+    read (r ∘ f) a = read r (f ∘ a) := rfl
+
+/-- Restricting the initial map along an embedding recovers its designated input register. -/
+lemma initial_comp_embedding
+    -- `d` embeds addresses; injectivity keeps every other address uninitialized.
+    {κ : Type} [DecidableEq ι] [DecidableEq κ] (d : ι ↪ κ) (input : ι) (x : W) :
+    initial (d input) x ∘ d = initial input x :=
+  Function.update_comp_eq_of_injective (fun _ => none) d.injective input (some x)
+
 /-- Interpreting register values commutes with reading their operand tuple. -/
 lemma read_map
     -- `f` interprets internal values in `V`; `r` and `a` retain the same register addresses.
@@ -72,6 +87,33 @@ variable
   {S P : Type} {M : Commons.AbstractModel S P} [DecidableEq ι]
   (operate : (o : M.Operation) → (Fin (M.arity o) → W) → W)
 
+
+/-- Renaming one command by an embedding commutes with restricting register contents. -/
+lemma write_mapCommand
+    -- `d` embeds addresses without identifying distinct destinations or operands.
+    {κ : Type} [DecidableEq κ] (d : ι ↪ κ)
+    -- `r` gives target register contents; `z` uses source addresses.
+    (r : κ → Option W) (z : M.Command ι) :
+    M.write operate r (M.mapCommand d z) ∘ d = M.write operate (r ∘ d) z := by
+  obtain ⟨o | ρ | _, z⟩ := z
+  · obtain ⟨a, destination⟩ := z
+    change Function.update r (d destination) ((read r (d ∘ a)).map (operate o)) ∘ d =
+      Function.update (r ∘ d) destination ((read (r ∘ d) a).map (operate o))
+    rw [Function.update_comp_eq_of_injective _ d.injective, read_comp]
+  · rfl
+  · rfl
+
+/-- Renaming a command history by an embedding preserves values at corresponding addresses. -/
+theorem registers_mapCommand
+    -- `d` embeds source addresses in `κ`; stored values and operations stay unchanged.
+    {κ : Type} [DecidableEq κ] (d : ι ↪ κ)
+    (r : κ → Option W) (h : List (M.Command ι)) :
+    M.registers operate r (h.map (M.mapCommand d)) ∘ d =
+      M.registers operate (r ∘ d) h := by
+  unfold registers
+  rw [List.foldl_map]
+  exact (List.foldl_hom (fun r => r ∘ d)
+    (fun r z => (write_mapCommand operate d r z).symm)).symm
 /-- Appending a command applies its one register update after the earlier commands. -/
 lemma registers_snoc
     -- `r` is the initial map; `h` is the completed prefix and `z` the next command.
