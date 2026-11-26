@@ -1,15 +1,18 @@
 module
 
 public import RandomSystems.Converter.ProgramAttachment
+public import RandomSystems.System.Interconnection
 
 /-!
-# Completed invocation traces
+# Program traces
 
 `Program.invoke_eq_of_consistent_replies` evaluates an invocation from its exchange trace:
 the body must issue each recorded query, the inside automaton must return each recorded reply,
 and the body must then return. The inside state is the fold of those same queries.
 `Program.combine_eq_of_consistent_replies` carries this local contract to the existing
 attachment presentation, including adaptive bodies and invocations without inside calls.
+`DDC.exists_after_busy_of_mem_insideQueries` locates every issued query at a reached input
+prefix, including a query whose inside reply is still pending.
 -/
 
 @[expose] public section
@@ -88,3 +91,64 @@ lemma combine_eq_of_consistent_replies
     (P.invoke_eq_of_consistent_replies stepR s o u r h consistent replies returned)
 
 end SystemAlgebra.Program
+
+namespace SystemAlgebra.DDC
+
+/-- Every issued inside query occurs as the pending query of a reached input prefix. -/
+lemma exists_after_busy_of_mem_insideQueries
+    -- `S` carries retained state; `O` and `J` are outside and inside ports.
+    {S O J : Type}
+    -- `U`, `V` are outside query/reply families; `X`, `Y` are their inside counterparts.
+    {U V : O → Type} {X Y : J → Type}
+    -- `P` is the body, initialized in `s`; `h` records converter inputs and outputs.
+    {P : Program S O J U V X Y} {s : S}
+    {h : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l))}
+    (replies : Replies (DDC.ofProgram s P) (h.map Prod.fst) (h.map Prod.snd))
+    -- `q` is an inside query already emitted in `h`, whether answered or still pending.
+    {q : Σ j, X j} (issued : q ∈ insideQueries (h.map Prod.snd)) :
+    ∃ xs, xs <+: h.map Prod.fst ∧ ∃ o s', ∃ u : U o, ∃ exchanges,
+      P.after s xs = some (.busy o s' u exchanges q) := by
+  -- Locate the tagged output in the original transcript.
+  have tagged := (mem_restrict_iff
+    (A := optF (Σ o, V o) (fun _ : Unit => Σ j, X j))
+    (some ()) q ((h.map Prod.snd).map splitIn)).mp issued
+  obtain ⟨y, hy, same⟩ := List.mem_map.mp tagged
+  obtain ⟨z, hz, rfl⟩ := List.mem_map.mp hy
+  have output : z.2 = (⟨⟨some (), q.1⟩, q.2⟩ : Σ l, twoFam V X l) := by
+    rcases z with ⟨x, ⟨⟨_ | ⟨⟨⟩⟩, j⟩, v⟩⟩ <;> cases same; rfl
+  obtain ⟨before, after, shape⟩ := List.mem_iff_append.mp hz
+  -- The reply at this occurrence comes from one step of the existing compiler.
+  have value := replies.eq_some_of_eq_append shape
+  have member : z.2 ∈ DDC.ofProgram s P (before.map Prod.fst ++ [z.1]) := by
+    rw [value]
+    exact Part.mem_some _
+  obtain ⟨m, m', reached, advances⟩ := (mem_ofProgram_snoc s P _ _ _).mp member
+  have next : P.after s (before.map Prod.fst ++ [z.1]) = some m' :=
+    (Program.after_snoc_eq_some P s _ _ m').mpr ⟨m, z.2, reached, advances⟩
+  refine ⟨before.map Prod.fst ++ [z.1], ?_, ?_⟩
+  · refine ⟨after.map Prod.fst, ?_⟩
+    rw [shape, List.map_append, List.map_cons, List.append_assoc, List.singleton_append]
+  · -- An inside output leaves the compiler waiting for that same query.
+    rcases Program.step_cases P advances with ⟨s', o, u, _, _, emitted⟩ |
+      ⟨o, s', u, hs, pending, v, _, _, emitted⟩
+    · rcases Program.emit_cases P s' o u [] with ⟨s'', v, _, result⟩ | ⟨q', _, result⟩
+      · rw [result, output] at emitted
+        cases emitted
+      · rw [result, output] at emitted
+        have queryEq : q = q' := eq_of_heq
+          (Sigma.mk.inj_iff.mp (congrArg (splitIn ∘ Prod.snd) emitted)).2
+        subst q'
+        have modeEq : m' = _ := congrArg Prod.fst emitted
+        exact ⟨o, s', u, [], next.trans (congrArg some modeEq)⟩
+    · rcases Program.emit_cases P s' o u (hs ++ [(pending, ⟨pending.1, v⟩)]) with
+        ⟨s'', v', _, result⟩ | ⟨q', _, result⟩
+      · rw [result, output] at emitted
+        cases emitted
+      · rw [result, output] at emitted
+        have queryEq : q = q' := eq_of_heq
+          (Sigma.mk.inj_iff.mp (congrArg (splitIn ∘ Prod.snd) emitted)).2
+        subst q'
+        have modeEq : m' = _ := congrArg Prod.fst emitted
+        exact ⟨o, s', u, _, next.trans (congrArg some modeEq)⟩
+
+end SystemAlgebra.DDC
