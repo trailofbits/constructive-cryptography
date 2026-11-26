@@ -120,6 +120,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Average finitely many nonzero scores over arbitrary classes | `expect_comp_eq_sum_mass_of_eq_zero` in `Probability.Expectation` |
 | Reconstruct an observation and its sample from a marginal | `eq_fTransform_of_graph_support`, `ProbDist.jointLaw_eq_map_of_fiber` in `Probability.Coupling` |
 | Condition a normalized law and recover the full observation–sample law | `ProbDist.conditionOn`, `jointLaw_conditionOn_eq_map` in `Probability.Conditioning` |
+| Retry independent draws with an explicit fallback | `ProbDist.rejection`, `rejection_eq` in `Probability.Rejection` |
 | Evaluate a sampled game's condition on completed interactions | `PDG.winProbability_behavior` in `RandomSystems.Game.Transcript` |
 | Test submitted values against predicates using one solver law | `TypedGame.submission`, `TypedSolver.exists_submission_law` in `RandomSystems.Typed.Submission` |
 | Evaluate an automaton's monitor under its initial law | `TypedGame.winProbability_ofAutomaton_at_bound` in `RandomSystems.Typed.AutomatonGame` |
