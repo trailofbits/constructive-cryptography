@@ -7,6 +7,7 @@ public import Tests.EventTransfer
 public import Tests.BinomialRecurrence
 public import Tests.BinomialSum
 public import Tests.FiniteScoreExpectation
+public import Tests.GraphReconstruction
 public import Tests.PolynomialEvaluation
 public import Tests.AffineEvaluation
 public import Tests.AffineTransfer

@@ -1,27 +1,31 @@
 module
 
 public import Probability.Lift
+public import Probability.Kernel
 
 /-!
 # Couplings
 
-A coupling of `X` and `Y` is a joint distribution with marginals `X` and `Y`.
-Source: Lanzenberger–Maurer, *Coupling of Random Systems*, Lemma 4.
+`IsCoupling J X Y` specifies the two marginals of a signed joint law `J`.
+Nonnegativity is a separate hypothesis in the probability bounds.
 
-## Main definitions
+`eq_fTransform_of_graph_support` reconstructs a joint law supported on `b = f a`
+from its second marginal. `ProbDist.jointLaw_eq_map_of_fiber` applies this identity
+when an observation selects a conditional law of the latent outcome:
 
-* `IsCoupling J X Y`: `J` is a nonnegative joint law with marginals `X`, `Y`
-* `offDiagonalMass J`: the disagreement probability `Pr(X ≠ Y)` under `J`
-* `optimalJoint X Y`: the coupling attaining the bound
-* `Coupling X Y`, `Coupling.prDisagree`: the bundled presentation
-* `jointProfile`: an `n`-ary joint distribution with prescribed marginals
+```text
+observation b ← ν; latent a ← K b     =     latent a ← μ; return (f a, a)
+```
 
-## Main results
+`statDist_le_offDiagonalMass` bounds distance by disagreement under a nonnegative
+coupling; `exists_coupling_offDiagonalMass_eq` constructs one attaining equality [1].
+`Coupling` bundles these marginals and their normalization. `jointProfile` extends
+this presentation to finitely many prescribed marginals.
 
-* `statDist_le_offDiagonalMass`: `δ(X, Y) ≤ Pr(X ≠ Y)` for every coupling
-* `exists_coupling_offDiagonalMass_eq`: some coupling attains equality
-* `coupling_bound`, `optimal_coupling_exists`: the same, bundled
-* `jointProfile_marginal`, `jointProfile_weight`, `jointProfile_nonNeg`
+## References
+
+1. D. Lanzenberger and U. Maurer. *Coupling of Random Systems*. TCC 2020.
+   Cryptology ePrint Archive, Paper 2020/1187.
 -/
 
 @[expose] public section
@@ -32,24 +36,60 @@ open scoped BigOperators NNReal
 
 namespace Probability
 
-/-! ## Couplings on an arbitrary carrier (Lanzenberger Lemma 2.8) -/
+/-! ## Joint laws and their marginals -/
 
 namespace Distribution
 
-/-- **A coupling**: a joint law on `A × B` whose two marginals are the given
-laws.  Lanzenberger Lemma 2.8's setup, "a joint distribution of `X` and `Y`",
-with the marginals taken as pushforwards along the projections.
-
-A `Prop` on an arbitrary joint law rather than a bundled structure: the joint
-law is usually built first (or obtained from an interaction) and only then
-recognized as a coupling, and the two theorems below take the recognition as a
-hypothesis.  Non-negativity is deliberately *not* part of the predicate —
-`IsCoupling` says the marginals are right, which is a statement about the
-signed layer; the honesty of the joint law is the separate hypothesis
-`∀ p, 0 ≤ J p` wherever it is needed. -/
+/-- A joint law `J` has marginals `X` and `Y` when `fst_* J = X` and `snd_* J = Y`.
+This predicate is on signed laws; probability bounds assume nonnegativity separately. -/
 def IsCoupling {A B : Type*} (J : Distribution (A × B)) (X : Distribution A)
     (Y : Distribution B) : Prop :=
   fTransform Prod.fst J = X ∧ fTransform Prod.snd J = Y
+
+/-- A joint law supported on `b = f a` is determined by its second marginal:
+`J = (a ↦ (f a, a))_* (snd_* J)`. -/
+lemma eq_fTransform_of_graph_support
+    -- `A` carries latent outcomes, `B` observations; `J` is a finitely supported signed law.
+    {A B : Type*} (J : Distribution (B × A)) (f : A → B)
+    -- `graph` says each supported pair records the observation of its latent outcome.
+    (graph : ∀ p ∈ J.support, p.1 = f p.2) :
+    J = fTransform (fun a => (f a, a)) (fTransform Prod.snd J) := by
+  calc
+    J = fTransform id J := (fTransform_id J).symm
+    _ = fTransform ((fun a => (f a, a)) ∘ Prod.snd) J := by
+      -- On the support, recording the observation again leaves the pair unchanged.
+      exact Finsupp.mapDomain_congr fun p hp => Prod.ext (graph p hp) rfl
+    _ = _ := (fTransform_fTransform _ _ _).symm
+
+/-- If `ν.bind K = μ` and `K b` is supported on `f a = b`, the full joint law is
+`jointLaw ν K = μ.map (fun a => (f a, a))`. -/
+lemma ProbDist.jointLaw_eq_map_of_fiber
+    -- `μ` is the latent law on `A`; `ν` is the observation law on `B`; `f` observes an outcome.
+    {A B : Type*} (μ : ProbDist A) (ν : ProbDist B) (f : A → B)
+    -- `K b` supplies the latent outcome given observation `b`.
+    (K : B → ProbDist A)
+    -- `reconstruct` identifies the latent marginal; `fiber` identifies the observed value.
+    (reconstruct : ν.bind K = μ)
+    (fiber : ∀ b ∈ ν.1.support, ∀ a ∈ (K b).1.support, f a = b) :
+    jointLaw ν K = μ.map (fun a => (f a, a)) := by
+  -- Forgetting the observation leaves the mixture of the conditional laws.
+  have marginal : fTransform Prod.snd (jointLaw ν K).1 = μ.1 := by
+    change fTransform Prod.snd (bindK ν.1 fun b => fTransform (fun a => (b, a)) (K b).1) = _
+    rw [fTransform_bindK]
+    simp only [fTransform_fTransform, Function.comp_def]
+    change bindK ν.1 (fun b => fTransform id (K b).1) = _
+    simpa only [fTransform_id, ProbDist.bind_val] using congrArg Subtype.val reconstruct
+  apply Subtype.ext
+  calc
+    (jointLaw ν K).1 = fTransform (fun a => (f a, a))
+        (fTransform Prod.snd (jointLaw ν K).1) := by
+      apply eq_fTransform_of_graph_support
+      intro p hp
+      -- A supported joint draw comes from a supported observation and its conditional law.
+      obtain ⟨b, hb, hpair⟩ := mem_support_bindK hp
+      obtain ⟨a, ha, rfl⟩ := mem_support_fTransform _ _ hpair
+      exact (fiber b hb a ha).symm
+    _ = (μ.map (fun a => (f a, a))).1 := congrArg (fTransform _) marginal
 
 /-- **An honest coupling has honest marginals**, left slot.  A marginal is a
 pushforward (`IsCoupling`'s own clause), and a pushforward of a non-negative
@@ -587,7 +627,7 @@ lemma jointProfileList_support_default {I CH : Type*}
         exact Finsupp.mem_support_iff.mpr (mul_ne_zero_iff.mp hcq).2
       have hij : i ≠ j := fun h => hi (by simp [h])
       have hil : i ∉ l := fun h => hi (by simp [h])
-      show Function.update q j c i = d
+      change Function.update q j c i = d
       rw [Function.update_of_ne hij]
       exact ih q hq i hil
 
