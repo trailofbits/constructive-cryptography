@@ -96,24 +96,18 @@ lemma TypedGame.ofAutomaton_mass_unsetMBOs
     (TypedGame.ofAutomaton A step initial bad).1.1 (unsetMBOs h) =
       initial.1.mass (fun s => Replies (filterDom A.domain (automatonSystem step s))
         (h.map Prod.fst) (h.map Prod.snd) ∧ ¬ (bad s).1 (h.map Prod.fst)) := by
-  -- Before any query the mass is one; afterwards monotonicity reduces all bits to the last.
-  rcases List.eq_nil_or_concat h with rfl | ⟨h, z, rfl⟩
-  · rw [unsetMBOs, List.map_nil, RandomSystem.mass_nil]
-    symm
-    exact initial.mass_eq_one_of_support _ (fun s hs => ⟨replies_nil _, hzero s hs⟩)
-  · change (PDG.behavior (PDG.ofAutomaton A step initial bad).1
-      (PDG.ofAutomaton A step initial bad).2) _ = _
-    rw [PDG.behavior_apply, PDG.ofAutomaton, ProbDist.map_val, mass_fTransform]
-    apply mass_congr
-    intro s
-    simp only [List.concat_eq_append, unsetMBOs, List.map_map, Function.comp_def]
-    simpa only [List.map_map, Function.comp_def, Interface.automatonDDS] using
-      DDG.replies_withMBO_unset_iff
-      (⟨(A.automatonDDS step s).1, (A.automatonDDS step s).2.1⟩, bad s)
-      (xs := (h ++ [z]).map Prod.fst)
-      (by rw [List.map_append, List.map_singleton]
-          exact List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _))
-      ((h ++ [z]).map Prod.snd)
+  -- Pull the generic unset event back through the retained initial sample.
+  change (PDG.behavior (PDG.ofAutomaton A step initial bad).1
+    (PDG.ofAutomaton A step initial bad).2) _ = _
+  rw [PDG.behavior_unsetMBOs, PDG.ofAutomaton, ProbDist.map_val, mass_fTransform]
+  apply mass_congr_of_support
+  intro s hs
+  change (Replies (filterDom A.domain (automatonSystem step s))
+    (h.map Prod.fst) (h.map Prod.snd) ∧ (h = [] ∨ ¬ (bad s).1 (h.map Prod.fst))) ↔ _
+  -- On the empty history the supplied condition is false on every retained sample.
+  by_cases empty : h = []
+  · simp only [empty, List.map_nil, hzero s hs, not_false_eq_true, or_true]
+  · simp only [empty, false_or]
 
 /-- On admitted queries, the MBO is unset with one minus the probability of `bad`. -/
 lemma TypedGame.ofAutomaton_unsetProbability
