@@ -5,61 +5,29 @@ public import RandomSystems.Distance.Distinguisher
 /-!
 # Games with a monotone binary output
 
-A game is a random system whose replies carry a bit, the MBO, which once set stays set; the
-game is won when the MBO is set. Its visible system ignores the MBO: the probability of a
-transcript, whatever the MBOs. A probabilistic distinguisher, used as a winner, does not see the
-MBO; its winning probability is the probability that the MBO of the last reply is set when it
-stops, which on a game is the probability that the MBO has been set.
+A game `G` is a random system carrying a bit that stays set once reached. Its visible system
+forgets that bit: `G.visible h = sumMBO G h`. `tagMBOs h bs` assigns one bit per transcript
+position; `sumMBO_eq_sum_tagMBOs` expresses visible mass as the finite sum over those assignments.
 
-A game is conditionally equivalent to a random system `T` when, as long as the MBO is unset,
-it replies as `T`: the probability of a transcript with the MBO unset is the probability that
-the MBO is unset after its queries times the probability of the transcript under `T`. Each
-distinguisher's advantage between the visible system and `T` is then at most its winning
-probability. Its replies before the MBO is set are those of `T`, so the winner learns nothing
-about the MBO: if the MBO is set with probability at most `ε` on every fixed sequence of
-queries, every winner wins with probability at most `ε`, and the visible system is within `ε`
-of `T`.
+`winProbability` is the probability that the final bit is set when a stopping caller finishes.
+`MonotoneMBO` makes this equivalent to having reached the bit at any earlier reply [1, §3.7.1].
+`GameEquivalent` equates the all-unset transcript masses of two games [1, Definition 4.16].
+Its `winProbability_eq` and `abs_decisionProbability_sub_le` laws give equal winning
+probabilities and the fundamental bound [1, Lemmas 4.15–4.16], [2, Lemma 7].
 
-Two games are equivalent as games when they behave alike as long as the game is not won: they
-give every transcript with every MBO unset the same probability. A distinguisher then wins both
-alike, and its advantage between their visible systems is at most its winning probability: to
-tell them apart it must set the MBO (the fundamental lemma).
+`ConditionallyEquivalent G T` states
+`G(unsetMBOs h) = G.unsetProbability(queries h) * T(h)` [1, Definition 4.19].
+`abs_decisionProbability_sub_le_winProbability` bounds distinguishing from `T` by winning;
+`winProbability_le_of_unsetProbability` bounds adaptive winning from fixed-query unset mass.
+`sum_unsetMBOs_add_sum_tagMBO` partitions one next reply into unset and set mass, supplying
+the local normalization equation used by these bounds.
+`transcriptDistance_visible_le_of_unsetProbability` transfers the fixed-query bound to distance.
 
-Sources: CR18, §3.7.1 (games), Definition 4.5 (the winning probability), Definition 4.16
-(equivalence as games `G ≡g H`), Lemmas 4.15 and 4.16, Definition 4.18 (the visible system
-`S⁻`), Definition 4.19 (conditional equivalence), Theorem 4.17; Maurer 2002, Definition 5
-(`F^A ≡ G^C`), Lemma 6 (ii), Lemma 7 and Theorem 1 (i).
+## References
 
-## Main definitions
-
-* `withMBO Y`, `forgetMBO`, `tagMBO`: replies with the MBO
-* `RandomSystem.MonotoneMBO`: the MBO, once set, stays set
-* `sumMBO`, `RandomSystem.visible`: the visible system of a game
-* `DDE.blindMBO`, `finalMBO`, `RandomSystem.winProbability`,
-  `Domain.Distinguisher.winProbability`: winning
-* `RandomSystem.unsetProbability`, `RandomSystem.ConditionallyEquivalent`
-* `RandomSystem.GameEquivalent`: equivalence as games
-
-## Main results
-
-* `RandomSystem.sum_unsetMBOs_add_sum_tagMBO`: the next hidden bit partitions the all-unset
-  mass, supplying the normalization step for adaptive game bounds
-* `RandomSystem.visible`: the visible system is a random system on the input domain
-* `RandomSystem.abs_decisionProbability_sub_le_winProbability`,
-  `Domain.Distinguisher.advantage_le_winProbability`: conditional equivalence bounds the
-  advantage by the winning probability
-* `RandomSystem.GameEquivalent.winProbability_eq`,
-  `Domain.Distinguisher.winProbability_eq_of_gameEquivalent`: games equivalent as games are won
-  alike
-* `RandomSystem.GameEquivalent.abs_decisionProbability_sub_le`,
-  `Domain.Distinguisher.advantage_le_winProbability_of_gameEquivalent`: the fundamental lemma,
-  the advantage between the visible systems of games equivalent as games is at most the winning
-  probability
-* `RandomSystem.winProbability_le_of_unsetProbability`,
-  `Domain.Distinguisher.winProbability_le_of_unsetProbability`: under conditional equivalence,
-  the probability that the MBO is set on fixed queries bounds the winning probability
-* `RandomSystem.transcriptDistance_visible_le_of_unsetProbability`: it then bounds the
-  transcript distance between the visible system and the random system
+1. U. Maurer. *Cryptography Foundations*. Lecture notes, ETH Zurich, Spring 2018.
+2. U. Maurer. *Indistinguishability of Random Systems*. EUROCRYPT 2002,
+   LNCS 2332, pp. 110–132.
 -/
 
 @[expose] public section
@@ -272,6 +240,43 @@ def unsetMBOs (h : List (A × Σ j, Y j)) : List (A × Σ j, withMBO Y j) :=
 @[simp] lemma forgetMBOs_unsetMBOs (h : List (A × Σ j, Y j)) : forgetMBOs (unsetMBOs h) = h := by
   -- Giving each reply MBO 0 and then forgetting it is the identity on each entry.
   simp [forgetMBOs, unsetMBOs, Function.comp_def]
+
+/-- `tagMBOs h bs` gives transcript position `i` the bit `bs i`. -/
+def tagMBOs
+    -- `A` carries queries, `J` reply ports, and `Y j` replies before their bits are attached.
+    {A J : Type} {Y : J → Type} :
+    (h : List (A × Σ j, Y j)) → (Fin h.length → Bool) → List (A × Σ j, withMBO Y j)
+  | [], _ => []
+  | z :: t, bs => (z.1, tagMBO (bs 0) z.2) :: tagMBOs t (fun i => bs i.succ)
+
+/-- Forgetting the assigned bits recovers the visible transcript `h`. -/
+lemma forgetMBOs_tagMBOs {A J : Type} {Y : J → Type}
+    -- `h` is the visible transcript; `bs` chooses a bit for each position.
+    (h : List (A × Σ j, Y j)) (bs : Fin h.length → Bool) :
+    forgetMBOs (tagMBOs h bs) = h := by
+  induction h with
+  | nil => rfl
+  | cons z t ih =>
+    simp only [tagMBOs, forgetMBOs, List.map_cons]
+    exact congrArg (z :: ·) (ih (fun i => bs i.succ))
+
+/-- `sumMBO f h = ∑ bs, f (tagMBOs h bs)`, for arbitrary signed coefficients `f`. -/
+lemma sumMBO_eq_sum_tagMBOs {A J : Type} {Y : J → Type}
+    -- `f` weighs tagged histories; `h` fixes their visible queries and replies.
+    (f : List (A × Σ j, withMBO Y j) → ℝ) (h : List (A × Σ j, Y j)) :
+    sumMBO f h = ∑ bs : Fin h.length → Bool, f (tagMBOs h bs) := by
+  induction h generalizing f with
+  | nil =>
+    simp only [sumMBO, tagMBOs, List.length_nil]
+    rw [Finset.sum_const, Finset.card_univ, Fintype.card_unique, one_smul]
+  | cons z t ih =>
+    -- A bit assignment splits into its first bit and the assignment on the remaining entries.
+    simp only [sumMBO, List.length_cons]
+    rw [ih, ih]
+    let e : Bool × (Fin t.length → Bool) ≃ (Fin (t.length + 1) → Bool) :=
+      Fin.consEquiv (fun _ : Fin (t.length + 1) => Bool)
+    rw [← e.sum_comp, Fintype.sum_prod_type, Fintype.sum_bool, add_comm]
+    simp only [e, Fin.consEquiv, Equiv.coe_fn_mk, tagMBOs, Fin.cons_zero, Fin.cons_succ]
 
 lemma map_fst_forgetMBOs (h : List (A × Σ j, withMBO Y j)) :
     (forgetMBOs h).map Prod.fst = h.map Prod.fst := by

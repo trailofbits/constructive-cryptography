@@ -160,17 +160,17 @@ under that same initial law, retaining the sampled state's own monitor.
 
 <!-- Declarations -->
 
-[RandomSystem.MonotoneMBO]: MBO.lean#L311
-[RandomSystem.visible]: MBO.lean#L362
-[DDE.blindMBO]: MBO.lean#L432
-[RandomSystem.winProbability]: MBO.lean#L504
-[RandomSystem.ConditionallyEquivalent]: MBO.lean#L566
-[RandomSystem.GameEquivalent]: MBO.lean#L580
-[Domain.Distinguisher.advantage_le_winProbability]: MBO.lean#L806
-[Domain.Distinguisher.winProbability_eq_of_gameEquivalent]: MBO.lean#L910
-[Domain.Distinguisher.advantage_le_winProbability_of_gameEquivalent]: MBO.lean#L924
-[Domain.Distinguisher.winProbability_le_of_unsetProbability]: MBO.lean#L1001
-[RandomSystem.transcriptDistance_visible_le_of_unsetProbability]: MBO.lean#L1026
+[RandomSystem.MonotoneMBO]: MBO.lean#L316
+[RandomSystem.visible]: MBO.lean#L367
+[DDE.blindMBO]: MBO.lean#L437
+[RandomSystem.winProbability]: MBO.lean#L509
+[RandomSystem.ConditionallyEquivalent]: MBO.lean#L571
+[RandomSystem.GameEquivalent]: MBO.lean#L585
+[Domain.Distinguisher.advantage_le_winProbability]: MBO.lean#L811
+[Domain.Distinguisher.winProbability_eq_of_gameEquivalent]: MBO.lean#L915
+[Domain.Distinguisher.advantage_le_winProbability_of_gameEquivalent]: MBO.lean#L929
+[Domain.Distinguisher.winProbability_le_of_unsetProbability]: MBO.lean#L1006
+[RandomSystem.transcriptDistance_visible_le_of_unsetProbability]: MBO.lean#L1031
 [Domain.Distinguisher.winProbability_le_of_transcriptCost_le]: UntilBad.lean#L144
 [RandomSystem.GameEquivalent.transcriptDistance_visible_le]: UntilBad.lean#L173
 [PDG.gameEquivalent_behavior_of_isCoupling]: UntilBad.lean#L205
