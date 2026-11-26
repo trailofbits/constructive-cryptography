@@ -162,6 +162,7 @@ public import RandomSystems.Converter.ProgramTrace
 public import RandomSystems.Typed.DSL.CollectAttachment
 public import RandomSystems.Converter.ChronologicalLabeling.Sampling
 
+public import RandomSystems.Converter.ChronologicalLabeling.Uniform
 
 /-!
 Random systems: raw systems and connection, deterministic converters, PDSs, cumulative random
