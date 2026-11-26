@@ -124,6 +124,21 @@ example :
     (fun xs h => ⟨fun empty => h.1 (List.map_eq_nil_iff.mp empty),
       by simpa only [List.length_map] using h.2⟩) caller caller_isDDD caller_closes
 
+/-- The supported one-query caller keeps its exact bound after a noninjective coding. -/
+example : QueryBounded 1 (ddeOf (IsDDD.relabelQueries caller_isDDD code)) :=
+  (queryBounded_ddeOf_relabelQueries_iff caller_isDDD code 1).mpr
+    (ddeOf_envProbe_queryBounded (DDE.ofQueries_queryBounded [request]) (fun _ => True))
+
+/-- A caller that makes no resource query remains zero-bounded under the same coding. -/
+example : QueryBounded 0 (ddeOf (IsDDD.relabelQueries
+    (envProbe_isDDD (A := fun _ => True)
+      (DDE.ofQueries_queryBounded (X := Σ _ : Unit, ℕ) (Y := Σ _ : Unit, Bool) []))
+    code)) :=
+  (queryBounded_ddeOf_relabelQueries_iff _ code 0).mpr
+    (ddeOf_envProbe_queryBounded (DDE.ofQueries_queryBounded []) (fun _ => True))
+
+#print axioms queryBounded_ddeOf_relabelQueries_iff
+
 #print axioms decoded_strategy
 #print axioms final_decision
 #print axioms caller_closes
