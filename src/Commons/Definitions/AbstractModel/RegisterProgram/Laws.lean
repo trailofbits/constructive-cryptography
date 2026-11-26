@@ -2,6 +2,7 @@ module
 
 public import Commons.Definitions.AbstractModel.RegisterProgram
 public import Commons.Definitions.AbstractModel.Registers.Laws
+public import RandomSystems.Converter.ProgramTrace
 
 /-!
 # Laws of the register program
@@ -11,6 +12,8 @@ The outside command history and replies stay fixed. `registerProgram_costs` and
 `registerProgram_bounded` derive the exact 0/1/0 call pattern
 from the call/return laws. `observationCost_sum_le` compares its total with the ordinary-command
 budget. These are the certificates used by the typed register converter.
+`registerProgram_combine_query` identifies one successful read against a deterministic inside
+component, retaining both its updated state and the appended command history.
 -/
 
 @[expose] public section
@@ -73,6 +76,42 @@ lemma registerProgram_bounded (input : ι)
   | compute o => exact callBound_return 1 _
   | query ρ => exact callBound_call _ _ _ (fun _ => callBound_return 0 _)
   | submit => exact callBound_return 1 _
+
+/-- A successful register read supplies the one observation call; both retained states advance. -/
+lemma registerProgram_combine_query
+    -- `input` starts with `w`; `op` interprets the computation symbols.
+    (input : ι) (op : (o : M.Operation) → (Fin (M.arity o) → W) → W) (w : W)
+    -- `stepR` is the inside component on its retained state `R`.
+    {R : Type} (stepR : R → (ρ : M.Query) → (Fin (M.queryArity ρ) → W) → R × M.Reply ρ)
+    -- `h` is the completed command history; `ρ` reads the selected `addresses`.
+    (h : List (M.Command ι)) (ρ : M.Query) (addresses : Fin (M.queryArity ρ) → ι)
+    -- `present` certifies that the complete read succeeds with operand tuple `values`.
+    (values : Fin (M.queryArity ρ) → W)
+    (present : read (M.registers op (initial input w) h) addresses = some values)
+    -- `r` is the inside state before the observation call; `stepR` supplies its next state.
+    (r : R) :
+    (M.registerProgram input op w).combine stepR (M.registerProgram_bounded input op w)
+        (h, r) (.query ρ) addresses =
+      ((h ++ [⟨.query ρ, addresses⟩], (stepR r ρ values).1), (stepR r ρ values).2) := by
+  let q : Σ ρ, Fin (M.queryArity ρ) → W := ⟨ρ, values⟩
+  let t := [(q, (⟨ρ, (stepR r ρ values).2⟩ : Σ ρ, M.Reply ρ))]
+  have issued : M.registerProgram input op w h (.query ρ) addresses [] = .inr q := by
+    simp only [registerProgram, present, Option.getD_some, callProg, q]
+  have consistent : (M.registerProgram input op w).Consistent h (.query ρ) addresses t :=
+    (Program.consistent_nil (M.registerProgram input op w) h (.query ρ) addresses).snoc
+      (q := q) issued (stepR r ρ values).2
+  have actual : Replies (automatonSystem stepR r) (t.map Prod.fst) (t.map Prod.snd) := by
+    change Replies (automatonSystem stepR r) ([] ++ [q])
+      ([] ++ [⟨ρ, (stepR r ρ values).2⟩])
+    refine replies_snoc.mpr ⟨replies_nil _, ?_⟩
+    rw [automatonSystem_snoc]
+    rfl
+  have returned : M.registerProgram input op w h (.query ρ) addresses t =
+      .inl (h ++ [⟨.query ρ, addresses⟩], (stepR r ρ values).2) := by
+    simp only [registerProgram, t, callProg, ↓reduceDIte, returnProg]
+  exact (M.registerProgram input op w).combine_eq_of_consistent_replies stepR
+    (M.registerProgram_bounded input op w) h (.query ρ) addresses r t
+    consistent actual returned
 
 /-- The exact observation cost is 0 for compute/submit and 1 for query, including pending calls. -/
 lemma registerProgram_costs (input : ι)
