@@ -30,6 +30,7 @@ public import Tests.ProbabilityObservation
 public import Tests.JointLawTransport
 public import Tests.ConditionalProduct
 public import Tests.EvaluationSharing
+public import Tests.ConditionalRandomFunction
 public import Tests.ProbabilityList
 public import Tests.TranscriptCompletion
 public import Tests.TranscriptRelabel
