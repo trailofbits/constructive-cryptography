@@ -169,6 +169,7 @@ public import Tests.FilteredRatio
 public import Tests.CompositeNotation
 public import Tests.ProgramConverterCertificate
 public import Tests.ProgramCostDomain
+public import Tests.ProgramMap
 public import Tests.ParallelCoherenceHom
 public import Tests.HashExtractor
 public import Tests.ActiveUserBank
