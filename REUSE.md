@@ -148,6 +148,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Score extraction while preserving its composed visible system | `AbstractModel.extractionGame`, `extractionGame_visible` in `Commons.Definitions.AbstractModel.ExtractionGame` |
 | Evaluate a sampled game's condition on completed interactions | `PDG.winProbability_behavior` in `RandomSystems.Game.Transcript` |
 | Score one admitted query in a sampled game | `PDG.winProbability_behavior_ofQueries_singleton` in `RandomSystems.Game.Transcript` |
+| Bound the query set of a stopping environment | `finite_queries_before`, `finite_queries_of_queryBounded` in `RandomSystems.System.FiniteQueries` |
 | Present a sampled monitor by one tagged reply function | `PDG.withMBO_ofFunction` in `RandomSystems.Game.FunctionGame` |
 | Test submitted values against predicates using one solver law | `TypedGame.submission`, `TypedSolver.exists_submission_law` in `RandomSystems.Typed.Submission` |
 | Decode submissions and pull back their successful set | `TypedConverter.submissionMap`, `submissionMap_attachGame` in `RandomSystems.Typed.SubmissionMap` |
