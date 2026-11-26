@@ -9,6 +9,8 @@ public import RandomSystems.Game.MBOAttachment
 completed interaction, has the inside MBO set. Internal calls made before the final outside
 reply are part of that interaction.
 
+`attach_liftMBO_unset_eq_attach_visible_of_not_bad` identifies unset and visible attachment
+off an outside event that contains every completed inside win.
 `attach_liftMBO_unset_eq_zero_of_reflectsMBO` rules out success with the MBO unset.
 `event_mass_le_winProbability_of_unset_eq_zero` bounds any such event by winning, using
 the unset subdistribution and its missing mass. `winProbability_eq_mass_of_unset` gives
@@ -214,6 +216,68 @@ lemma PDCBehavior.liftMBO_ofDDC_ne_zero_iff
       Replies (SystemAlgebra.liftMBO a) (t.map Prod.fst) (t.map Prod.snd) := by
   rw [PDCBehavior.liftMBO_apply, PDCBehavior.ofDDC_apply, replies_liftMBO_iff]
   split_ifs <;> simp_all
+
+/-- Off the outside bad event, unset attachment equals attachment of the visible game. -/
+lemma PDCBehavior.attach_liftMBO_unset_eq_attach_visible_of_not_bad
+    -- `hE'` and `hF'` close the inside and outside domains under nonempty prefixes.
+    (hE' : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
+    (hF' : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
+    -- `α` connects the outside interface to the hidden-bit game `G`.
+    (α : PDCBehavior O J U V X Y E m hE F n hF)
+    (G : RandomSystem (Σ j, X j) (Σ j, withMBO Y j) (Domain.ofInputs E m hE))
+    -- `hG` preserves the queried port; `hm` keeps a reached bit set.
+    (hG : G.RepliesAtQueriedInterface) (hm : G.MonotoneMBO)
+    -- `h` is a fixed visible outside history; it is outside the selected bad event.
+    (h : List ((Σ o, U o) × Σ o, V o))
+    (bad : List ((Σ o, U o) × Σ o, V o) → Prop) (good : ¬ bad h)
+    -- Every supported completed interaction displaying `h` reflects an inside bad bit outside.
+    (insideBad : ∀ t,
+      FollowsStrategy (connectionQueries resourceRoute resourceInput (h.map Prod.fst)) t →
+      ¬ (connectionQueries resourceRoute resourceInput (h.map Prod.fst)
+        (t.map Prod.snd)).Dom →
+      RandomSystem.parallel (PDCBehavior.liftMBO α).1 G t ≠ 0 →
+      (exposedReplies (resourceRoute (U := U)) (t.map Prod.snd)).map forgetMBO =
+        h.map Prod.snd →
+      finalMBO (RandomSystem.parallelRight t) = true → bad h) :
+    PDCBehavior.attach hE' hF' (PDCBehavior.liftMBO α) G hG (unsetMBOs h) =
+      PDCBehavior.attach hE' hF' α G.visible hG.visible h := by
+  -- Visible attachment is the marginal of the lifted attachment.
+  let K := PDCBehavior.attach hE' hF' (PDCBehavior.liftMBO α) G hG
+  have monotone := hm.attach_liftMBO hE' hF' α hG
+  rw [← RandomSystem.visible_attach_liftMBO hE' hF' α G hG]
+  symm
+  apply K.visible_apply_eq_unsetMBOs_of_finalMBO_eq_false monotone
+  intro k displayed positive
+  -- Every supported outside history comes from a completed joint interaction.
+  obtain ⟨t, hc, _, stopped, joint, exposed⟩ :=
+    RandomSystem.exists_completed_of_connectionLaw_ne_zero _ _ _ _ _ positive
+  have jointPositive := joint
+  rw [RandomSystem.parallel_mass] at joint
+  split_ifs at joint with consistent
+  · obtain ⟨converterPositive, gamePositive⟩ := mul_ne_zero_iff.mp joint
+    have tagged : TaggedMBO (RandomSystem.parallelLeft t) := by
+      by_contra absent
+      exact converterPositive (by rw [PDCBehavior.liftMBO_apply, ite_eq_right absent])
+    have queries : k.map Prod.fst = h.map Prod.fst :=
+      (map_fst_forgetMBOs k).symm.trans (congrArg (List.map Prod.fst) displayed)
+    -- Off `bad`, no inside bit is set, so the tagged converter exposes only false bits.
+    have insideFalse : ∀ z ∈ RandomSystem.parallelRight t, z.2.2.2 = false := by
+      by_contra someTrue
+      apply good
+      apply insideBad t (by rwa [← queries]) (by rwa [← queries]) jointPositive
+      · rw [exposed, ← map_snd_forgetMBOs]
+        exact congrArg (List.map Prod.snd) displayed
+      · exact (finalMBO_eq_true_iff (hm _ gamePositive)).mpr someTrue
+    have outsideFalse := exposedReplies_all_false_of_parallelRight_all_false
+      hc consistent tagged insideFalse
+    apply Bool.eq_false_iff.mpr
+    intro finalTrue
+    apply (finalMBO_eq_true_iff (monotone k positive)).mp finalTrue
+    intro z hz
+    apply outsideFalse z.2
+    rw [exposed]
+    exact List.mem_map.mpr ⟨z, hz, rfl⟩
+  · exact (joint rfl).elim
 
 /-- Reflection excludes successful outside transcripts with every MBO unset. -/
 lemma PDCBehavior.attach_liftMBO_unset_eq_zero_of_reflectsMBO

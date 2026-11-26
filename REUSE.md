@@ -110,6 +110,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Hidden condition on initial draw and inputs | `TypedGame.ofAutomaton` in [AutomatonGame] |
 | Identify visible mass when the hidden bit remains unset | `RandomSystem.visible_apply_eq_unsetMBOs_of_finalMBO_eq_false`, from the signed coefficient law `sumMBO_eq_unsetMBOs_of_eq_zero`, in `RandomSystems.Game.MBO` |
 | Carry unset inside bits to outside replies | `exposedReplies_all_false_of_parallelRight_all_false` in `RandomSystems.Game.MBOAttachment` |
+| Identify unset attachment outside an observed bad event | `PDCBehavior.attach_liftMBO_unset_eq_attach_visible_of_not_bad` in `RandomSystems.Game.EventReflection` |
 | URF distinct-input collision game | `URF.collisionGame` in [CollisionGame] |
 | Adaptive URF collision bound | `URF.collisionGame_win_le` in [CollisionBound] |
 | Retained state with fresh transitions | `TypedSystem.ofProbAutomaton` in [ProbAutomaton] |
