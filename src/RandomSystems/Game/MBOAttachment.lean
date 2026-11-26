@@ -2431,18 +2431,7 @@ lemma parallelRight_eq_unsetMBOs_of_completed
           exact Bool.noConfusion (hle rfl)
       · exact hw
   -- Forgetting and restoring false tags therefore leaves the inside transcript unchanged.
-  have hmap : ∀ l : List ((Σ j, X j) × Σ j, withMBO Y j), (∀ z ∈ l, z.2.2.2 = false) →
-      l = unsetMBOs (l.map (Prod.map id forgetMBO)) := by
-    intro l hl
-    induction l with
-    | nil => rfl
-    | cons z l ih =>
-      rcases z with ⟨x, ⟨j, y, b⟩⟩
-      have hb : b = false := hl (x, ⟨j, (y, b)⟩) (by simp)
-      subst hb
-      simp only [unsetMBOs, List.map_cons, Prod.map_apply, id_eq, forgetMBO, tagMBO]
-      exact congrArg (List.cons _) (ih fun w hw => hl w (by simp [hw]))
-  exact hmap _ hall
+  exact (eq_unsetMBOs_iff _ _).mpr ⟨rfl, hall⟩
 
 variable [Fintype O] [Fintype J] [∀ o, Fintype (U o)] [∀ o, Fintype (V o)]
   [∀ j, Fintype (X j)] [∀ j, Fintype (Y j)]

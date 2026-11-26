@@ -142,16 +142,8 @@ lemma RandomSystem.MonotoneMBO.finalMBO_eq_true_of_unset_eq_zero
   apply (finalMBO_eq_true_iff (hm h hpos)).mpr
   intro hall
   apply hpos
-  have he : unsetMBOs (forgetMBOs h) = h := by
-    simp only [unsetMBOs, forgetMBOs, List.map_map]
-    conv_rhs => rw [← List.map_id h]
-    apply List.map_congr_left
-    intro z hz
-    rcases z with ⟨x, i, y, b⟩
-    have hb := hall (x, ⟨i, y, b⟩) hz
-    change b = false at hb
-    subst b
-    rfl
+  have he : unsetMBOs (forgetMBOs h) = h :=
+    ((eq_unsetMBOs_iff h (forgetMBOs h)).mpr ⟨rfl, hall⟩).symm
   rwa [he] at hzero
 
 end Decision

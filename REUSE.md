@@ -107,6 +107,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Retained state | `TypedSystem.sample` in [Functional]; `ofAutomaton` in [Automaton] |
 | Flatten dependent system presentations | `TypedSystem.sample_ofPDS` in [Functional]; `RandomSystem.mix_mass_of_presentations` in `RandomSystems.Cumulative.CumulativeOperations` |
 | Hidden condition on initial draw and inputs | `TypedGame.ofAutomaton` in [AutomatonGame] |
+| Identify visible mass when the hidden bit remains unset | `RandomSystem.visible_apply_eq_unsetMBOs_of_finalMBO_eq_false`, from the signed coefficient law `sumMBO_eq_unsetMBOs_of_eq_zero`, in `RandomSystems.Game.MBO` |
 | URF distinct-input collision game | `URF.collisionGame` in [CollisionGame] |
 | Adaptive URF collision bound | `URF.collisionGame_win_le` in [CollisionBound] |
 | Retained state with fresh transitions | `TypedSystem.ofProbAutomaton` in [ProbAutomaton] |

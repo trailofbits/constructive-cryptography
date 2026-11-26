@@ -160,17 +160,17 @@ under that same initial law, retaining the sampled state's own monitor.
 
 <!-- Declarations -->
 
-[RandomSystem.MonotoneMBO]: MBO.lean#L316
-[RandomSystem.visible]: MBO.lean#L367
-[DDE.blindMBO]: MBO.lean#L437
-[RandomSystem.winProbability]: MBO.lean#L509
-[RandomSystem.ConditionallyEquivalent]: MBO.lean#L571
-[RandomSystem.GameEquivalent]: MBO.lean#L585
-[Domain.Distinguisher.advantage_le_winProbability]: MBO.lean#L811
-[Domain.Distinguisher.winProbability_eq_of_gameEquivalent]: MBO.lean#L915
-[Domain.Distinguisher.advantage_le_winProbability_of_gameEquivalent]: MBO.lean#L929
-[Domain.Distinguisher.winProbability_le_of_unsetProbability]: MBO.lean#L1006
-[RandomSystem.transcriptDistance_visible_le_of_unsetProbability]: MBO.lean#L1031
+[RandomSystem.MonotoneMBO]: MBO.lean#L381
+[RandomSystem.visible]: MBO.lean#L432
+[DDE.blindMBO]: MBO.lean#L502
+[RandomSystem.winProbability]: MBO.lean#L597
+[RandomSystem.ConditionallyEquivalent]: MBO.lean#L659
+[RandomSystem.GameEquivalent]: MBO.lean#L673
+[Domain.Distinguisher.advantage_le_winProbability]: MBO.lean#L883
+[Domain.Distinguisher.winProbability_eq_of_gameEquivalent]: MBO.lean#L987
+[Domain.Distinguisher.advantage_le_winProbability_of_gameEquivalent]: MBO.lean#L1001
+[Domain.Distinguisher.winProbability_le_of_unsetProbability]: MBO.lean#L1078
+[RandomSystem.transcriptDistance_visible_le_of_unsetProbability]: MBO.lean#L1103
 [Domain.Distinguisher.winProbability_le_of_transcriptCost_le]: UntilBad.lean#L144
 [RandomSystem.GameEquivalent.transcriptDistance_visible_le]: UntilBad.lean#L173
 [PDG.gameEquivalent_behavior_of_isCoupling]: UntilBad.lean#L205
@@ -178,7 +178,7 @@ under that same initial law, retaining the sampled state's own monitor.
 [PDCBehavior.liftMBO_id]: MBOAttachment.lean#L504
 [PDCBehavior.liftMBO_comp]: MBOAttachment.lean#L1524
 [RandomSystem.MonotoneMBO.attach_liftMBO]: MBOAttachment.lean#L974
-[RandomSystem.GameEquivalent.attach_liftMBO]: MBOAttachment.lean#L2456
+[RandomSystem.GameEquivalent.attach_liftMBO]: MBOAttachment.lean#L2445
 [RandomSystem.visible_attach_liftMBO]: MBOAttachment.lean#L628
 [RandomSystem.winProbability_attach_liftMBO]: MBOAttachment.lean#L2088
 [Domain.SolverBehavior]: MBOAttachment.lean#L2178
