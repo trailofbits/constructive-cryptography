@@ -49,13 +49,12 @@ $`f=\mathrm{id}`$ gives the [left][prodProbDist_map_left] and
 [Independent kernels][bindK_piDep] commute with finite products;
 [`jointLaw_piDep`][ProbDist.jointLaw_piDep] regroups the resulting input–output pairs.
 A [joint law][ProbDist.jointLaw] retains both successive draws:
-$`J_{\mu,K}(h,z)=\mu(h)K(h,z)`$, with [first marginal][ProbDist.jointLaw_fst] $`\mu`$. For
-arbitrary maps $`d_H, d_Z`$ with $`(d_H)_*\mu'=\mu`$ and $`(d_Z)_*K'(h)=K(d_H h)`$,
-[`ProbDist.jointLaw_map`][ProbDist.jointLaw_map] gives
-$`(d_H\times d_Z)_*J_{\mu',K'}=J_{\mu,K}`$. The outcome types are arbitrary; each law has finite
-support. For a nonnegative mass function $`X`$, [`normalizeOr`][normalizeOr] is
+$`J_{\mu,K}(h,z)=\mu(h)K(h,z)`$, with [first marginal][ProbDist.jointLaw_fst] $`\mu`$. The [dependent transport law][ProbDist.jointLaw_map_dependent] allows the second map to depend
+on the first draw, with conditional correspondence required only on its support.
+[`jointLaw_map`][ProbDist.jointLaw_map] is the product-map case. The outcome types are arbitrary;
+each law has finite support. For a nonnegative mass function $`X`$, [`normalizeOr`][normalizeOr] is
 $`\lvert X\rvert^{-1}X`$ at nonzero weight and an explicit fallback law at weight zero. Its
-identity $`\lvert X\rvert\,\operatorname{normalizeOr}(X)=X`$ also holds at zero weight, where
+identity $`\lvert X\rvert\,\mathrm{normalizeOr}(X)=X`$ also holds at zero weight, where
 the fallback is multiplied by zero.
 [Conditioning on an observation](Conditioning.lean) then disintegrates a law into its
 normalized fibers. `ProbDist.conditionOn μ E fallback` normalizes an event restriction,
@@ -192,20 +191,20 @@ against a running `foldl` state (`List.ForallScan`, `List.ForallScan.append`,
 [piDep]: DependentProduct.lean#L56
 [uniform]: Distribution.lean#L697
 [ProbDist.uniform]: Distribution.lean#L730
-[bindK]: Kernel.lean#L60
-[bindK_bindK]: Kernel.lean#L122
-[bindK_single_comp]: Kernel.lean#L144
-[pi_eq_bindK_update]: Kernel.lean#L440
-[ProbDist.map]: Kernel.lean#L456
-[ProbDist.map_map]: Kernel.lean#L469
-[ProbDist.map_piDep_comp_comp]: Kernel.lean#L522
-[ProbDist.map_piDep_comp_eq_of_eq_iff]: Kernel.lean#L534
-[prodProbDist_map]: Kernel.lean#L662
-[ProbDist.bind]: Kernel.lean#L563
-[ProbDist.bind_const]: Kernel.lean#L577
-[ProbDist.jointLaw]: Kernel.lean#L591
-[ProbDist.jointLaw_fst]: Kernel.lean#L610
-[ProbDist.jointLaw_map]: Kernel.lean#L630
+[bindK]: Kernel.lean#L62
+[bindK_bindK]: Kernel.lean#L124
+[bindK_single_comp]: Kernel.lean#L146
+[pi_eq_bindK_update]: Kernel.lean#L442
+[ProbDist.map]: Kernel.lean#L458
+[ProbDist.map_map]: Kernel.lean#L471
+[ProbDist.map_piDep_comp_comp]: Kernel.lean#L524
+[ProbDist.map_piDep_comp_eq_of_eq_iff]: Kernel.lean#L536
+[prodProbDist_map]: Kernel.lean#L681
+[ProbDist.bind]: Kernel.lean#L565
+[ProbDist.bind_const]: Kernel.lean#L579
+[ProbDist.jointLaw]: Kernel.lean#L593
+[ProbDist.jointLaw_fst]: Kernel.lean#L612
+[ProbDist.jointLaw_map]: Kernel.lean#L661
 [normalizeOr]: Lift.lean#L189
 [statDist]: StatisticalDistance.lean#L103
 [statDist_triangle]: StatisticalDistance.lean#L274
@@ -243,11 +242,13 @@ against a running `foldl` state (`List.ForallScan`, `List.ForallScan.append`,
 
 [uniform_mass_transcript_collision_le_card]: Counting/Collision.lean
 
-[ProbDist.map_id]: Kernel.lean#L465
-[prodProbDist_uniform]: Kernel.lean#L672
-[prodProbDist_map_left]: Kernel.lean#L679
-[prodProbDist_map_right]: Kernel.lean#L686
+[ProbDist.map_id]: Kernel.lean#L467
+[prodProbDist_uniform]: Kernel.lean#L691
+[prodProbDist_map_left]: Kernel.lean#L698
+[prodProbDist_map_right]: Kernel.lean#L705
 
-[bindK_piDep]: Kernel.lean#L349
+[bindK_piDep]: Kernel.lean#L351
 
-[ProbDist.jointLaw_piDep]: Kernel.lean#L597
+[ProbDist.jointLaw_piDep]: Kernel.lean#L599
+
+[ProbDist.jointLaw_map_dependent]: Kernel.lean#L631
