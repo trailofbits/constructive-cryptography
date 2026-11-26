@@ -30,6 +30,7 @@ its body does.
   its inside queries
 * `DDC.insideQueries_length_le`, `DDC.insideQueries_length_le_of_budget`: `b` inside queries per
   invocation, `b * q` on `q` outside queries
+* `DDC.ofProgramOn_isDDCFrom_of_costs`: total query costs certify the inside domain
 * `DDC.insideQueries_length_le_of_costs`: exact costs bound the inside queries by the total cost
 * `DDC.insideQueries_restrict_length_le`: a port-preserving program queries `j = ι o` at most as
   often as it is queried at `o`
@@ -41,8 +42,6 @@ its body does.
 @[expose] public section
 
 namespace SystemAlgebra
-
-open Classical
 
 variable {S O J : Type} {U V : O → Type} {X Y : J → Type}
 
@@ -143,6 +142,7 @@ def emit (P : Program S O J U V X Y) (s : S) (o : O) (u : U o)
   | .inl (s', v) => (.idle s', ⟨⟨none, o⟩, v⟩)
   | .inr q => (.busy o s u h q, ⟨⟨some (), q.1⟩, q.2⟩)
 
+open Classical in
 /-- One input: an outside query starts an invocation, and the reply to the pending inside query
 continues it; no other input is admitted. -/
 noncomputable def step (P : Program S O J U V X Y) :
@@ -188,6 +188,7 @@ def Mode.credit (b : ℕ) : Mode S O J U X Y → ℕ
   | .idle _ => 0
   | .busy _ _ _ h _ => b - (h.length + 1)
 
+open Classical in
 /-- The query at `j` the current invocation may still make: one while an invocation at `o` has
 not made it. -/
 noncomputable def Mode.portCredit (o : O) (j : J) : Mode S O J U X Y → ℕ
@@ -291,7 +292,8 @@ end Program
 
 /-- The converter of a program started in the state `s`: its reply to the last input of a
 history, computed from the mode after the earlier inputs. -/
-noncomputable def DDC.ofProgram (s : S) (P : Program S O J U V X Y) : InsideOutsideSystem O J U V X Y :=
+noncomputable def DDC.ofProgram (s : S) (P : Program S O J U V X Y) :
+    InsideOutsideSystem O J U V X Y :=
   fun xs => Part.ofOption (xs.getLast?.bind fun x =>
     (P.after s xs.dropLast).bind fun m => (P.step m x).map Prod.snd)
 
@@ -347,6 +349,7 @@ lemma after_invariant {xs : List (Σ l, twoFam U Y l)} {m : Program.Mode S O J U
     m.Sound P ∧ insideRun (DDC.ofProgram s P) xs = m.pending ∧
       (∀ o, m.owner = some o → lastOuter xs = some o) ∧
       (∀ l, admitAfter (replyLabel (DDC.ofProgram s P) xs) l ↔ m.AdmitsLabel l) := by
+  classical
   induction xs using List.reverseRecOn generalizing m with
   | nil =>
     obtain rfl : m = .idle s := (Option.some.inj hm).symm
@@ -442,7 +445,8 @@ theorem ofProgram_isResponsiveDDC {b : ℕ} (hP : P.Bounded b) :
     obtain ⟨m, m', hm, hs⟩ := (mem_ofProgram_snoc s P h x y).mp hy
     have owner := (after_invariant hm).2.2.1
     rw [lastOuter_snoc]
-    rcases Program.step_cases P hs with ⟨s', o', u, rfl, rfl, he⟩ | ⟨o', s', u, h', q, v, rfl, rfl, he⟩
+    rcases Program.step_cases P hs with ⟨s', o', u, rfl, rfl, he⟩ |
+      ⟨o', s', u, h', q, v, rfl, rfl, he⟩
     · rcases Program.emit_cases P s' o' u [] with ⟨s'', w, _, hE⟩ | ⟨q, _, hE⟩
       · rw [hE] at he
         obtain ⟨-, rfl⟩ := Prod.mk.inj he
@@ -504,7 +508,8 @@ lemma insideQueries_length_le {b : ℕ} (hP : P.Bounded b)
     obtain rfl := Option.some.inj hm'
     have sound₀ := (after_invariant hm₀).1
     rw [insideQueries_append, outsideInputs_append, List.length_append, List.length_append]
-    rcases Program.step_cases P hs with ⟨s', o, u, rfl, rfl, he⟩ | ⟨o, s', u, hs', q, v, rfl, rfl, he⟩
+    rcases Program.step_cases P hs with ⟨s', o, u, rfl, rfl, he⟩ |
+      ⟨o, s', u, hs', q, v, rfl, rfl, he⟩
     · rcases Program.emit_cases P s' o u [] with ⟨s'', w, _, hE⟩ | ⟨q, hq, hE⟩
       · rw [hE] at he
         obtain ⟨rfl, rfl⟩ := Prod.mk.inj he
@@ -547,6 +552,7 @@ lemma insideQueries_restrict_length_le {ι : O → Option J} (hP : P.PortPreserv
     (hj : ι o = some j) :
     (restrict j (insideQueries (h.map Prod.snd))).length ≤
       (restrict o (outsideInputs (h.map Prod.fst))).length := by
+  classical
   suffices key : ∀ m, P.after s (h.map Prod.fst) = some m →
       (restrict j (insideQueries (h.map Prod.snd))).length + m.portCredit o j ≤
         (restrict o (outsideInputs (h.map Prod.fst))).length by
@@ -575,7 +581,8 @@ lemma insideQueries_restrict_length_le {ι : O → Option J} (hP : P.PortPreserv
     have sound₀ := (after_invariant hm₀).1
     rw [insideQueries_append, outsideInputs_append, restrict_append, restrict_append,
       List.length_append, List.length_append]
-    rcases Program.step_cases P hs with ⟨s', o₁, u, rfl, rfl, he⟩ | ⟨o₁, s', u, hs', q, v, rfl, rfl, he⟩
+    rcases Program.step_cases P hs with ⟨s', o₁, u, rfl, rfl, he⟩ |
+      ⟨o₁, s', u, hs', q, v, rfl, rfl, he⟩
     · rcases Program.emit_cases P s' o₁ u [] with ⟨s'', w, _, hE⟩ | ⟨q, hq, hE⟩
       · rw [hE] at he
         obtain ⟨rfl, rfl⟩ := Prod.mk.inj he
@@ -695,7 +702,8 @@ lemma insideQueries_length_le_of_costs {cost : (Σ o, U o) → ℕ} (hP : P.Cost
     have sound₀ := (after_invariant hm₀).1
     rw [insideQueries_append, outsideInputs_append, List.map_append, List.sum_append,
       List.length_append]
-    rcases Program.step_cases P hs with ⟨s', o, u, rfl, rfl, he⟩ | ⟨o, s', u, hs', q, v, rfl, rfl, he⟩
+    rcases Program.step_cases P hs with ⟨s', o, u, rfl, rfl, he⟩ |
+      ⟨o, s', u, hs', q, v, rfl, rfl, he⟩
     · have hc := hP s' o u [] (Program.consistent_nil P s' o u)
       rcases Program.emit_cases P s' o u [] with ⟨s'', w, hw, hE⟩ | ⟨q, hq, hE⟩
       · rw [hE] at he
@@ -732,6 +740,27 @@ lemma insideQueries_length_le_of_costs {cost : (Σ o, U o) → ℕ} (hP : P.Cost
           outsideInputs_inside _ _]
         simp only [List.map_nil, List.sum_nil, add_zero]
         omega
+
+/-- Exact outside-query costs certify that a program stays in the inside domain. -/
+lemma ofProgramOn_isDDCFrom_of_costs
+    -- `F` admits outside input histories; `E` admits inside query histories.
+    {E : List (Σ j, X j) → Prop} {F : List (Σ o, U o) → Prop}
+    -- `hP` bounds each invocation by `b`; `hF` closes the outside domain under prefixes.
+    {b q : ℕ} (hP : P.Bounded b)
+    (hF : ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
+    -- `cost u` is the exact call count; admitted outside histories have total cost at most `q`.
+    {cost : (Σ o, U o) → ℕ} (hcost : P.Costs cost)
+    (hFq : ∀ us, F us → (us.map cost).sum ≤ q)
+    -- `hE` admits every nonempty inside history within that total cost.
+    (hE : ∀ xs, xs ≠ [] → xs.length ≤ q → E xs) :
+    IsDDCFrom E F b (ofProgramOn s P F) :=
+  ofProgramOn_isDDCFrom hP hF fun h hr hAdmitted => by
+    by_cases hne : insideQueries (h.map Prod.snd) = []
+    · exact Or.inl hne
+    · refine Or.inr (hE _ hne ((insideQueries_length_le_of_costs hcost hr).trans ?_))
+      rcases hAdmitted with he | hf
+      · rw [he]; exact Nat.zero_le _
+      · exact hFq _ hf
 
 end DDC
 

@@ -146,6 +146,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Interpret abstract commands over partial registers and certify initialized operands | `AbstractModel.registers`, `registers_isSome` in `Commons.Definitions.AbstractModel.Registers.Laws` |
 | Transport register interpretation through an operation homomorphism | `read_map`, `initial_map`, `write_map`, `registers_map` in `Commons.Definitions.AbstractModel.Registers.Laws` |
 | Connect register commands to observations on their current values | `AbstractModel.registersConverter` in `Commons.Definitions.AbstractModel.RegisterConverter`, with exact observation costs and initialized-read domain |
+| Certify raw program domains from exact query costs | `DDC.ofProgramOn_isDDCFrom_of_costs` in `RandomSystems.Converter.Program` |
 | Sample an abstract model and test its first submitted guess | `AbstractModel.extractionSystem`, `extracted` in `Commons.Definitions.AbstractModel.Extraction` |
 | Score extraction while preserving its composed visible system | `AbstractModel.extractionGame`, `extractionGame_visible` in `Commons.Definitions.AbstractModel.ExtractionGame` |
 | Evaluate an immediate terminal guess | `AbstractModel.extractionGame_winProbability_submit` in `Commons.Definitions.AbstractModel.ExtractionGame.Laws` |
