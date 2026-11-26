@@ -56,6 +56,27 @@ example : model.Admitted () 1 [model.mapCommand (fun _ : ℕ => ()) observe] ∧
     have impossible := operands (Finset.mem_image.mpr ⟨0, Finset.mem_univ _, rfl⟩)
     simp [initialized] at impossible
 
+/-- Keep addresses 0 and 7, but collapse every other address to 0. -/
+def collapse (a : ℕ) : ℕ := if a == 7 then 7 else 0
+
+/-- The store reads 0 and writes 7, so decoding it requires no inverse elsewhere. -/
+lemma store_local_inverse :
+    model.mapCommand id (model.mapCommand collapse store) = store := by
+  apply mapCommand_mapCommand_eq_of_inverse_on
+  · intro a present
+    obtain ⟨j, _, rfl⟩ := Finset.mem_image.mp present
+    rfl
+  · intro a destination
+    have address : 7 = a := Option.some.inj destination
+    subst a
+    rfl
+
+/-- Distinct addresses outside that command's footprint may receive the same code. -/
+example : collapse 1 = collapse 2 := rfl
+
+#print axioms store_local_inverse
+#print axioms mapCommand_mapCommand_eq_of_inverse_on
+
 #print axioms mapCommand_leftInverse
 #print axioms initialized_mapCommand
 #print axioms Admitted.mapCommand
