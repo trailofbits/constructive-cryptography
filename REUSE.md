@@ -114,6 +114,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Average finitely many nonzero scores over arbitrary classes | `expect_comp_eq_sum_mass_of_eq_zero` in `Probability.Expectation` |
 | Reconstruct an observation and its sample from a marginal | `eq_fTransform_of_graph_support`, `ProbDist.jointLaw_eq_map_of_fiber` in `Probability.Coupling` |
 | Evaluate a sampled game's condition on completed interactions | `PDG.winProbability_behavior` in `RandomSystems.Game.Transcript` |
+| Evaluate an automaton's monitor under its initial law | `TypedGame.winProbability_ofAutomaton_at_bound` in `RandomSystems.Typed.AutomatonGame` |
 | Add a final decision without increasing an observer's query bound | `ddeOf_envProbe_queryBounded` in `RandomSystems.Distance.Decision` |
 | Propagate an adaptive potential bound | `expect_antitone_of_bindK` in `Probability.Expectation` |
 | Solve a finite binomial-count recurrence | `Probability.Counting.le_choose_mul_pow_of_succ_le` in `Probability.Counting.BinomialRecurrence` |

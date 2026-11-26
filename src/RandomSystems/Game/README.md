@@ -155,6 +155,8 @@ starting state and its monotone predicate on query histories. Its
 [the visible-system equation][TypedGame.visible_ofAutomaton]. This supplies one monitor
 constructor for the URF collision between distinct inputs and the separate AE collision
 between original and replacement messages.
+`TypedGame.winProbability_ofAutomaton_at_bound` evaluates the completed adaptive interaction
+under that same initial law, retaining the sampled state's own monitor.
 
 <!-- Declarations -->
 

@@ -2,6 +2,7 @@ module
 
 public import RandomSystems.Typed.Automaton
 public import RandomSystems.Typed.PresentedGame
+public import RandomSystems.Game.Transcript
 
 /-!
 # Automata with hidden monotone conditions
@@ -18,7 +19,8 @@ monitoring changes only the hidden bit. `PDG.ofAutomaton_badProbability` and
 `TypedGame.ofAutomaton_unsetProbability` gives the complementary unset probability on admitted
 query lists. `TypedGame.ofAutomaton_mass_unsetMBOs` identifies the all-unset cumulative
 law with visible replies jointly with the final condition being false, when the condition
-is initially false.
+is initially false. `TypedGame.winProbability_ofAutomaton_at_bound` instead scores the
+completed adaptive transcript: it pulls `PDG.winProbability_behavior` back to `initial`.
 
 ## References
 
@@ -128,5 +130,26 @@ lemma TypedGame.visible_ofAutomaton :
     (TypedGame.ofAutomaton A step initial bad).visible =
       TypedSystem.ofAutomaton A step initial :=
   visible_ofPDG _ _ _
+
+/-- The winning score is the initial-state mass of a nonempty completed transcript satisfying
+its retained condition. Winning requires a reply [1, p. 71]: "aᵢ = 1 for some i ≥ 1". -/
+lemma TypedGame.winProbability_ofAutomaton_at_bound
+    -- `D` is a stopping winner; `admitted` permits its queries on `A`.
+    (D : DDD A.I A.X A.Y) (hD : IsDDD D) (admitted : A.inputDomain.DecisionCompatible D)
+    -- `n` is any certified stopping horizon for the visible environment.
+    {n : ℕ} (hn : QueryBounded n (ddeOf hD)) :
+    (TypedGame.ofAutomaton A step initial bad).1.1.winProbability D hD =
+      initial.1.mass (fun s =>
+        let h := (A.automatonDDS step s).1.tr (ddeOf hD).1 n
+        h ≠ [] ∧ (bad s).1 (h.map Prod.fst)) := by
+  -- The typed game's visible system discharges compatibility of the actual winner.
+  have hC := admitted.environment hD
+    (TypedGame.ofAutomaton A step initial bad).visible.1
+    (TypedGame.ofAutomaton A step initial bad).visible.2
+  change (PDG.behavior (PDG.ofAutomaton A step initial bad).1
+    (PDG.ofAutomaton A step initial bad).2).winProbability D hD = _
+  -- Score the sampled game, then pull the condition back to its single retained initial state.
+  rw [PDG.winProbability_behavior _ _ _ _ hC hn, PDG.ofAutomaton,
+    ProbDist.map_val, mass_fTransform]
 
 end SystemAlgebra
