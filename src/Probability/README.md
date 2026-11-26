@@ -102,6 +102,8 @@ laws of one weight [is the weight of their overlap][supAgreement_eq_weight_overl
 the [Cauchy–Schwarz][expect_mul_sq_le_sq_mul_sq] and [Jensen's][ConvexOn.map_expect_le]
 inequalities. [Iterated expectation][expect_bindK] averages a kernel in two stages;
 [joint event averaging][jointLaw_mass_eq_expect] applies it to an event on both draws.
+[Polynomial evaluation](PolynomialEvaluation.lean) bounds root-event mass by degree times
+an atom-mass bound over any integral domain; equality of two polynomials uses their difference.
 Collision bounds [count][card_function_fiber_finset] the functions $`X \to Y`$
 agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X \rvert - \lvert S \rvert}`$.
 For a uniform function table, [a consistent query transcript][uniform_mass_transcript_eq]
