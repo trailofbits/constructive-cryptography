@@ -25,6 +25,7 @@ public import Tests.AttachmentEventReflection
 public import Tests.GameEventScore
 public import Tests.ProbAutomatonSampling
 public import Tests.MixturePresentation
+public import Tests.FunctionalPresentation
 public import Tests.SpongeUniform
 public import Tests.ProbAutomatonGame
 public import Tests.ProbabilityObservation
