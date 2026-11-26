@@ -20,6 +20,8 @@ taken, minus the probability lost, does not decrease in expectation from one rou
 
 ## Main results
 
+* `transcriptCost_eq_sub_of_snoc`: a potential increasing by each query cost gives the total
+  as its final value minus its initial value
 * `transcriptCost_distinct_eq_choose`: charging only fresh tested inputs telescopes to
   `C(r, 2) / N` after `r` distinct inputs, while repeated queries cost zero
 * `RandomSystem.one_sub_le_sum_tSupp`: a compatible environment sees the common part with
@@ -61,6 +63,20 @@ lemma transcriptCost_snoc (β : List (A × B) → A → ℝ) (h : List (A × B))
   | cons z t ih =>
     simp only [List.cons_append, transcriptCost, ih]
     ring
+
+/-- If each exchange increases `Φ` by its query cost, total cost is `Φ h - Φ []`. -/
+lemma transcriptCost_eq_sub_of_snoc
+    -- `β h x` charges query `x` after transcript `h`; `Φ h` is its real-valued potential.
+    (β : List (A × B) → A → ℝ) (Φ : List (A × B) → ℝ)
+    (increment : ∀ h x y, Φ (h ++ [(x, y)]) = Φ h + β h x)
+    (h : List (A × B)) : transcriptCost β h = Φ h - Φ [] := by
+  induction h using List.reverseRecOn with
+  | nil => simp only [transcriptCost, sub_self]
+  | append_singleton h z ih =>
+    calc
+      _ = transcriptCost β h + β h z.1 := transcriptCost_snoc β h z.1 z.2
+      _ = Φ h - Φ [] + β h z.1 := by rw [ih]
+      _ = Φ (h ++ [z]) - Φ [] := by rw [increment]; ring
 
 /-- Charging `d / N` only when the number of distinct tests grows from `d` to `d + 1`
 accumulates `C(r, 2) / N` after `r` distinct tests. -/

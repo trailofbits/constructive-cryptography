@@ -1904,15 +1904,17 @@ lemma lazyBidirectionalRFGame_set_mass_le
           exact_mod_cast hlen
         exact div_le_div_of_nonneg_right hcard (Nat.cast_nonneg _)
 
+/-- Charging `d / c` after `d` exchanges sums to `choose(length h,2) / c`. -/
 lemma transcriptCost_length_div {A B : Type} (c : ℝ) (h : List (A × B)) :
     transcriptCost (fun p _ => (p.length : ℝ) / c) h = (h.length.choose 2 : ℝ) / c := by
-  induction h using List.reverseRecOn with
-  | nil =>
-    simp only [transcriptCost, List.length_nil, Nat.choose_zero_succ, Nat.cast_zero, zero_div]
-  | append_singleton h z ih =>
-    rw [transcriptCost_snoc, ih, List.length_append, List.length_singleton,
-      Nat.choose_succ_succ, Nat.choose_one_right, Nat.cast_add]
-    ring
+  -- The pair-count potential increases by the number of earlier exchanges divided by `c`.
+  have total := transcriptCost_eq_sub_of_snoc (fun p _ => (p.length : ℝ) / c)
+    (fun p : List (A × B) => (p.length.choose 2 : ℝ) / c) (fun p x y => by
+      simp only [List.length_append, List.length_singleton, Nat.choose_succ_succ,
+        Nat.choose_one_right, Nat.cast_add, add_div]
+      ring) h
+  simpa only [List.length_nil, Nat.choose_zero_succ, Nat.cast_zero, zero_div, sub_zero]
+    using total
 
 open Classical in
 /-- Every compatible stopping distinguisher wins `lazyBidirectionalRFGame X q` with probability at
