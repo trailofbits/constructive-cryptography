@@ -148,6 +148,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Sample an abstract model and test its first submitted guess | `AbstractModel.extractionSystem`, `extracted` in `Commons.Definitions.AbstractModel.Extraction` |
 | Score extraction while preserving its composed visible system | `AbstractModel.extractionGame`, `extractionGame_visible` in `Commons.Definitions.AbstractModel.ExtractionGame` |
 | Evaluate an immediate terminal guess | `AbstractModel.extractionGame_winProbability_submit` in `Commons.Definitions.AbstractModel.ExtractionGame.Laws` |
+| Assemble the dense generic-group game | `GenericGroup.denseModel`, `denseLaw`, `denseGame` in `Commons.Definitions.GenericGroup.Dense` |
 | Evaluate a sampled game's condition on completed interactions | `PDG.winProbability_behavior` in `RandomSystems.Game.Transcript` |
 | Score one admitted query in a sampled game | `PDG.winProbability_behavior_ofQueries_singleton` in `RandomSystems.Game.Transcript` |
 | Bound the query set of a stopping environment | `finite_queries_before`, `finite_queries_of_queryBounded` in `RandomSystems.System.FiniteQueries` |
