@@ -81,6 +81,7 @@ public import RandomSystems.PDS.Filter
 public import RandomSystems.PDS.Function
 public import RandomSystems.PDS.PDS
 public import RandomSystems.System.Basic
+public import RandomSystems.System.Transcript
 public import RandomSystems.System.Restriction
 public import RandomSystems.System.DDE
 public import RandomSystems.System.FiniteQueries

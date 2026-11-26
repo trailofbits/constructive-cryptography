@@ -2,27 +2,21 @@ module
 
 public import RandomSystems.Distance.Decision
 public import Probability.Coupling
+public import RandomSystems.System.Transcript
 
 /-!
 # Couplings of random systems
 
-The transcript of a deterministic system with a strategy within `n` rounds is the sequence of
-query–reply pairs they exchange. For a strategy compatible with the random system of a PDS, the
-transcript law of that random system is the transformation of the PDS by the transcript map. A
-coupling of two PDSs is a joint distribution of the two; it bounds the statistical distance of
-the transcript laws by the probability that the two sampled systems give different transcripts,
-and the transcript distance of the two random systems by the probability that the two sampled
-systems differ. These are the transcript and coupling laws of [1, Definitions 4 and 7,
+`System.Transcript` defines deterministic interaction transcripts. For a strategy compatible
+with the random system of a PDS, its transcript law is the transformation of the PDS by the
+transcript map. A coupling of two PDSs is a joint distribution of the two. It bounds the statistical
+distance of their transcript laws by the probability that the sampled systems give different
+transcripts, and the transcript distance of their random systems by the probability that the
+sampled systems differ. These are the transcript and coupling laws of [1, Definitions 4 and 7,
 pp. 10, 12; footnote 9, p. 14; Definition 11 and Theorem 2, p. 15].
-
-## Main definitions
-
-* `System.tr s σ n`: the transcript of the deterministic system `s` with `σ` within `n` rounds
 
 ## Main results
 
-* `System.tr_relabel_output`: mapping replies commutes with interaction when the strategy
-  sees those same mapped replies
 * `System.tr_eq_iff`: when `s` answers the queries of `σ`, its transcript is the only transcript
   of `σ` within `n` rounds that `s` replies
 * `PDS.sLaw_behavior_eq_fTransform`: the transcript law of the random system of a PDS is the
@@ -50,44 +44,6 @@ variable {A B : Type}
 /-! ## The transcript of a deterministic system -/
 
 namespace System
-
-open scoped Classical in
-/-- **The transcript** of the deterministic system `s` with the strategy `σ` within `n` rounds
-[1, Definition 7, p. 12]: "the sequence of pairs (x₁, y₁), (x₂, y₂),
-…, (x_l, y_l), defined for i ≥ 1 by xᵢ = e(y₁, …, yᵢ₋₁) and yᵢ = s(x₁, …, xᵢ)", and "If
-e(y₁, …, yᵢ₋₁) is undefined (the environment stops), the transcript ends and has length
-l = i − 1." It also ends after `n` rounds, and when `s` does not answer the query, which a
-compatible strategy never asks. -/
-noncomputable def tr (s : System A B) (σ : List B →. A) : ℕ → List (A × B)
-  | 0 => []
-  | n + 1 =>
-    -- The transcript `h` of the first `n` rounds, extended by the query `x` of `σ` and the
-    -- reply of `s` to it, if both are defined.
-    let h := tr s σ n
-    if hx : (σ (h.map Prod.snd)).Dom then
-      let x := (σ (h.map Prod.snd)).get hx
-      if hy : (s (h.map Prod.fst ++ [x])).Dom then h ++ [(x, (s (h.map Prod.fst ++ [x])).get hy)]
-      else h
-    else h
-
-/-- Relabeling replies commutes with interaction: the strategy sees the mapped replies,
-and the transcript keeps each original query paired with its mapped answer. -/
-lemma tr_relabel_output
-    -- `s` accepts queries in `A` and returns partial replies in `B`; `f` maps them to `C`.
-    {C : Type} (s : System A B) (f : B → C)
-    -- `σ` chooses queries from mapped reply histories; `n` is the observation horizon.
-    (σ : List C →. A) (n : ℕ) :
-    (relabel s id f).tr σ n =
-      (s.tr (fun ys => σ (ys.map f)) n).map (Prod.map id f) := by
-  classical
-  induction n with
-  | zero => rfl
-  | succ n ih =>
-    -- Both interactions select the same next query; mapping preserves whether a reply exists.
-    simp only [tr, ih, List.map_map, Function.comp_def, Prod.map_fst, Prod.map_snd,
-      id_eq, relabel, List.map_id, Part.map]
-    split_ifs <;> simp only [List.map_append, List.map_singleton]
-    rfl
 
 variable {s : System A B} {σ : List B →. A}
 
