@@ -151,6 +151,8 @@ public import RandomSystems.Typed.TranscriptLaw
 public import RandomSystems.Typed.RandomFunctionCollision
 public import RandomSystems.Distance.RatioCost
 public import RandomSystems.Typed.FilterDistance
+public import RandomSystems.System.QueryRelabel
+public import RandomSystems.System.QueryRelabel.Laws
 
 /-!
 Random systems: raw systems and connection, deterministic converters, PDSs, cumulative random
