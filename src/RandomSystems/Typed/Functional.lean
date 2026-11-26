@@ -20,6 +20,8 @@ laws use `RandomSystem.ofConditional`, sampling uses `RandomSystem.mix`.
 
 * `TypedSystem.ofFunction_mass`: the behavior of a function is the indicator of its
   admitted transcripts
+* `TypedSystem.ofDeterministic_eq_ofFunction`: a certified function DDS has the same behavior
+  as the functional typed system
 * `TypedSystem.eq_ofFunction`: probability one on the functional transcripts
   determines the typed system
 * `TypedSystem.sample_ofFunction_mass_eq`: event mass of draws supplying the transcript replies
@@ -134,6 +136,26 @@ lemma ofFunction_mass (f : ∀ i, A.X i → A.Y i)
     obtain ⟨h, z, rfl⟩ := List.eq_nil_or_concat h |>.resolve_left (fun hn => hd (Or.inl hn))
     simp only [List.concat_eq_append, List.map_append, List.map_singleton] at hd ⊢
     rw [ofFunction_snoc, ite_eq_right (fun hc => hd (Or.inr hc))]
+
+/-- A certified DDS realizing `f` presents exactly the functional typed system on its domain. -/
+lemma ofDeterministic_eq_ofFunction
+    -- `A` fixes the ports and admitted histories; `f i x` is the reply at port `i`.
+    (f : ∀ i, A.X i → A.Y i)
+    -- `s` is a DDS with exactly `A`'s domain and matching reply ports, certified by `hs`.
+    (s : InterfaceSystem A.I A.X A.Y)
+    (hs : IsDDS s ∧ RepliesAtQueriedInterface s ∧ ∀ h, (s h).Dom ↔ A.domain h)
+    -- `realization` identifies `s` with the function evaluator on all input histories.
+    (realization : s =
+      (DDS.ofFunction A.domain A.nonempty_prefix (fun q => ⟨q.1, f q.1 q.2⟩)).1) :
+    ofDeterministic s hs = ofFunction f := by
+  classical
+  apply Subtype.ext
+  apply RandomSystem.ext
+  intro h
+  -- Both constructions assign mass one exactly to admitted transcripts with replies `f`.
+  rw [ofDeterministic_mass, realization, ofFunction_mass]
+  simp only [DDS.replies_ofFunction_iff, List.map_eq_nil_iff, List.map_map,
+    List.map_eq_map_iff, Function.comp_apply]
 
 /-- Probability one on the functional transcripts determines the entire
 behavior, including probability zero for every different answer. -/

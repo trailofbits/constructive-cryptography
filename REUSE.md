@@ -105,6 +105,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Retained key, fresh replies | `TypedSystem.keyed` in [Keyed] |
 | Signature oracle | `SignatureScheme.system.eq_keyed` in [Signature] |
 | Retained state | `TypedSystem.sample` in [Functional]; `ofAutomaton` in [Automaton] |
+| Identify a certified function DDS with its typed behavior | `TypedSystem.ofDeterministic_eq_ofFunction` in [Functional] |
 | Flatten dependent system presentations | `TypedSystem.sample_ofPDS` in [Functional]; `RandomSystem.mix_mass_of_presentations` in `RandomSystems.Cumulative.CumulativeOperations` |
 | Hidden condition on initial draw and inputs | `TypedGame.ofAutomaton` in [AutomatonGame] |
 | Identify visible mass when the hidden bit remains unset | `RandomSystem.visible_apply_eq_unsetMBOs_of_finalMBO_eq_false`, from the signed coefficient law `sumMBO_eq_unsetMBOs_of_eq_zero`, in `RandomSystems.Game.MBO` |
