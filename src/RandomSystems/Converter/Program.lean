@@ -19,6 +19,7 @@ its body does.
 * `Program.PortPreserving ι P`: along the partial port map `ι`, an invocation at `o` queries the
   labels `ι o'` only at `ι o`, at most once, and none of them when `ι o = none`
 * `Program.step`, `Program.after`: the program run over its inputs
+* `Program.after_fold`: a state projection computed by folding the outside queries
 * `DDC.ofProgram s P`: the converter of `P` started in the state `s`
 * `DDC.ofProgramOn s P F`: that converter on the outside domain `F`
 
@@ -765,6 +766,58 @@ lemma ofProgramOn_isDDCFrom_of_costs
       · exact hFq _ hf
 
 end DDC
+
+/-! ## State projections determined by outside queries -/
+
+/-- A projected state follows the fold of outside queries, counting a pending query once. -/
+lemma Program.after_fold {T : Type}
+    (P : Program S O J U V X Y)
+    -- `p` reads an accumulator from retained state; `next` incorporates one outside query.
+    (p : S → T) (next : T → (Σ o, U o) → T)
+    -- `returned` identifies the update when the current invocation completes.
+    (returned : ∀ s o u h s' v, P s o u h = .inl (s', v) →
+      p s' = next (p s) ⟨o, u⟩)
+    -- `accepted` retains the partial-input semantics; no equation is asserted on rejection.
+    (s : S) (inputs : List (Σ l, twoFam U Y l))
+    (m : Program.Mode S O J U X Y) (accepted : P.after s inputs = some m) :
+    -- A busy mode still stores the old state, so its current query contributes once.
+    (match m with
+      | .idle s' => p s'
+      | .busy o s' u _ _ => next (p s') ⟨o, u⟩) =
+      (outsideInputs inputs).foldl next (p s) := by
+  let value : Program.Mode S O J U X Y → T
+    | .idle s' => p s'
+    | .busy o s' u _ _ => next (p s') ⟨o, u⟩
+  have emitted s' o u h : value (P.emit s' o u h).1 = next (p s') ⟨o, u⟩ := by
+    rcases P.emit_cases s' o u h with ⟨s'', v, hv, he⟩ | ⟨q, _, he⟩
+    · rw [he]; exact returned s' o u h s'' v hv
+    · rw [he]
+  -- Relate the existing compiler fold to the list of inputs it has consumed.
+  have folded := List.foldl_rel (l := inputs)
+    (f := fun acc x => acc.bind fun m => (P.step m x).map Prod.fst)
+    (g := fun h x => h ++ [x])
+    (r := fun acc h => ∀ m, acc = some m →
+      value m = (outsideInputs h).foldl next (p s))
+    (a := some (.idle s)) (b := [])
+    (fun m hm => by cases hm; rfl) (by
+      intro x _ acc h invariant m hm
+      obtain ⟨m₀, hm₀, mapped⟩ := Option.bind_eq_some_iff.mp hm
+      obtain ⟨⟨m', y⟩, hstep, hm'⟩ := Option.map_eq_some_iff.mp mapped
+      cases hm'
+      have prior := invariant m₀ hm₀
+      rcases P.step_cases hstep with ⟨s', o, u, rfl, rfl, he⟩ |
+        ⟨o, s', u, hs, q, v, rfl, rfl, he⟩
+      · rw [outsideInputs_append, outsideInputs_outside, List.foldl_append,
+          List.foldl_cons, List.foldl_nil]
+        change value m' = next ((outsideInputs h).foldl next (p s)) ⟨o, u⟩
+        exact (congrArg (value ∘ Prod.fst) he).trans
+          ((emitted s' o u []).trans (congrArg (fun t => next t ⟨o, u⟩) prior))
+      · rw [outsideInputs_append, outsideInputs_inside, List.append_nil]
+        exact (congrArg (value ∘ Prod.fst) he).trans ((emitted s' o u _).trans prior))
+  have result : value m = (outsideInputs inputs).foldl next (p s) := by
+    simpa only [List.foldl_append_eq_append, ← List.flatMap_def,
+      List.flatMap_singleton', List.nil_append] using folded m accepted
+  cases m <;> exact result
 
 /-! ## Maps of program modes and emitted messages -/
 
