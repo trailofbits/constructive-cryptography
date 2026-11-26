@@ -156,6 +156,8 @@ ensures the reduction maps admitted winners to admitted winners.
 [Uniform family reductions](Problem/Family.lean) fix one solver map for every target instance.
 They compare lower bounds on performance, then worst-case infima with explicit nonemptiness
 and boundedness assumptions. These laws require no games or interfaces.
+[Game families](Game/Family.lean) instantiate them on admitted winners. Absorbing one
+converter supplies a uniform reduction when attached games belong to the source family.
 
 `DistinctionGames I Φ Game` selects paired decision and winning evaluations of a common
 solver, with real-valued probabilities, the visible resource $`G^-`$, and conditional equivalence.

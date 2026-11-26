@@ -78,6 +78,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Bound success after final oracle calls | `TypedSolver.probability_attach_le_winProbability_absorb` with `s.ReflectsMBO α G` in `RandomSystems.Typed.GameEventReflection` |
 | Bound a visible transcript event by winning | `Domain.Distinguisher.transcript_event_mass_le_winProbability` in `RandomSystems.Typed.GameEventReflection` |
 | Compare worst-case performance across problem families | `Problem.Easier.worstCase_le` in `ConstructiveCryptography.Problem.Family` |
+| Reduce game families through one converter | `Games.easier_of_attach_mem` in `ConstructiveCryptography.Game.Family` |
 | Retained parameter in an automaton | `TypedSystem.sample_ofProbAutomaton_eq` in `RandomSystems.Typed.ProbAutomatonSampling` |
 | Random function | `URF`, `URF.lazy_eq` in [Ideal] |
 | Random permutation | `URP` in [Ideal]; `URP.lazy_eq` in [LazyPermutation] |
