@@ -3,6 +3,7 @@ module
 public import Commons.Definitions.BidirectionalSwitching
 public import Commons.Schemes.Sponge.Uniform
 public import Mathlib.Data.BitVec
+public import Probability.List
 public import RandomSystems.Typed.DSL.Converters
 public import RandomSystems.Typed.Memoryless
 public import RandomSystems.Typed.ProbProgramAttachment
@@ -2378,34 +2379,6 @@ theorem idealSponge_eq_sample (hp : p.Valid) {encode : M → List (BitVec 8)} {w
     parallel_ofFunction_ofProbAutomaton]
 
 
-omit [Fintype M] [DecidableEq M] in
-lemma lookup_append_singleton_of_none {α β : Type*} [DecidableEq α]
-    (l : List (α × β)) (a : α) (b : β) (hnone : l.lookup a = none) (x : α) :
-    (l ++ [(a, b)]).lookup x = if x = a then some b else l.lookup x := by
-  induction l with
-  | nil =>
-    simp only [List.nil_append, List.lookup_cons, List.lookup_nil]
-    by_cases hx : x = a
-    · subst hx; simp only [beq_self_eq_true, ↓reduceIte]
-    · simp only [beq_eq_false_iff_ne.mpr hx, ite_eq_right hx]
-  | cons hd tl ih =>
-    rcases hd with ⟨k, v⟩
-    simp only [List.cons_append, List.lookup_cons] at hnone ⊢
-    by_cases hka : a == k
-    · simp only [hka, reduceCtorEq] at hnone
-    · simp only [Bool.not_eq_true] at hka
-      simp only [hka] at hnone
-      by_cases hxk : x == k
-      · have hne : x ≠ a := by
-          intro hxa
-          subst hxa
-          rw [hxk] at hka
-          exact Bool.noConfusion hka
-        simp only [hxk, ite_eq_right hne]
-      · simp only [Bool.not_eq_true] at hxk
-        simp only [hxk]
-        exact ih hnone
-
 /-- Lazy ideal sponge transition: samples both the public permutation table and the shared RO
 on demand. -/
 noncomputable def idealLazyStep {encode : M → List (BitVec 8)} {w : ℕ}
@@ -2483,7 +2456,7 @@ lemma roCompletionDist_disintegrate (roList : List (M × ByteState p.outputBytes
   congr 1
   funext m'
   dsimp only
-  rw [lookup_append_singleton_of_none roList m d hnone m']
+  rw [List.lookup_append_singleton_of_none roList m d hnone m']
   by_cases hm : m' = m
   · subst hm
     simp only [Function.update_self, ↓reduceIte, ProbDist.single]
@@ -2563,7 +2536,7 @@ theorem idealSponge_eq_lazy (hp : p.Valid) {encode : M → List (BitVec 8)} {w :
           apply bindK_congr
           intro ro hro
           have hlu' : (roList ++ [(u, d)]).lookup u = some d := by
-            rw [lookup_append_singleton_of_none roList u d hlu u, ite_eq_left rfl]
+            rw [List.lookup_append_singleton_of_none roList u d hlu u, ite_eq_left rfl]
           rw [roCompletionDist_lookup_some p M (roList ++ [(u, d)]) u d hlu' hro]
       · cases o with
         | forward =>
@@ -2633,7 +2606,7 @@ theorem idealSponge_eq_lazy (hp : p.Valid) {encode : M → List (BitVec 8)} {w :
                   apply bindK_congr
                   intro ro hmem
                   have hlu' : (roList ++ [(m, d)]).lookup m = some d := by
-                    rw [lookup_append_singleton_of_none roList m d hro m, ite_eq_left rfl]
+                    rw [List.lookup_append_singleton_of_none roList m d hro m, ite_eq_left rfl]
                   rw [roCompletionDist_lookup_some p M (roList ++ [(m, d)]) m d hlu' hmem]
                 have hdig :
                     (uniform (ByteState (tailBytes p))).bindK (fun t =>

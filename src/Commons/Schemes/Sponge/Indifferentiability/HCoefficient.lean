@@ -348,7 +348,7 @@ theorem replayGoodIdeal_inv (hp : p.Valid) {encode : M → List (BitVec 8)}
               have h0 := inv0.completedInRO m s hs
               have hne : m ≠ u := by
                 intro heq; subst heq; rw [h0] at hlu; cases hlu
-              rw [lookup_append_singleton_of_none ro0 u v hlu m, ite_eq_right hne]
+              rw [List.lookup_append_singleton_of_none ro0 u v hlu m, ite_eq_right hne]
               exact h0
             · intro md hmd
               simp only [uncompletedRO, List.filter_append, List.filter_cons, List.filter_nil,
@@ -369,14 +369,14 @@ theorem replayGoodIdeal_inv (hp : p.Valid) {encode : M → List (BitVec 8)}
                   dsimp only at hr0 ⊢
                   have hne : uw ≠ u := by
                     intro heq; subst heq; rw [hr0] at hlu; cases hlu
-                  rw [lookup_append_singleton_of_none ro0 u v hlu uw, ite_eq_right hne]
+                  rw [List.lookup_append_singleton_of_none ro0 u v hlu uw, ite_eq_right hne]
                   exact hr0
                 · cases ow; cases ow' <;> exact False.elim hr0
                 · cases ow <;> cases ow' <;> exact False.elim hr0
                 · cases ow <;> cases ow' <;> exact hr0
               · rw [List.mem_singleton.mp hw]
                 dsimp only
-                rw [lookup_append_singleton_of_none ro0 u v hlu u, ite_eq_left rfl]
+                rw [List.lookup_append_singleton_of_none ro0 u v hlu u, ite_eq_left rfl]
         · cases o; cases o' <;> cases hrep
         · cases o <;> cases o' <;> cases hrep
         · cases o <;> cases o'
@@ -533,7 +533,7 @@ theorem replayGoodIdeal_inv (hp : p.Valid) {encode : M → List (BitVec 8)}
                       have hlu0 := inv0.completedInRO m' s0 h0
                       have hne : m' ≠ m := by
                         intro he; subst he; rw [hlu0] at hro; cases hro
-                      rw [lookup_append_singleton_of_none ro0 m (digestPart p v) hro m',
+                      rw [List.lookup_append_singleton_of_none ro0 m (digestPart p v) hro m',
                         ite_eq_right hne]
                       exact hlu0
                     | none =>
@@ -543,7 +543,7 @@ theorem replayGoodIdeal_inv (hp : p.Valid) {encode : M → List (BitVec 8)}
                           encode henc table0 inv0.partialBij inv0.capFree hlu hcap hcm
                         have hEq : v = s := Option.some.inj (hmc.symm.trans hs)
                         subst hEq
-                        rw [lookup_append_singleton_of_none ro0 m (digestPart p v) hro m,
+                        rw [List.lookup_append_singleton_of_none ro0 m (digestPart p v) hro m,
                           ite_eq_left rfl]
                       · have hne_cm : completingMessage p encode table0 u ≠ some m' := by
                           rw [hcm]; intro he; exact hmm (Option.some.inj he).symm
@@ -585,7 +585,7 @@ theorem replayGoodIdeal_inv (hp : p.Valid) {encode : M → List (BitVec 8)}
                         dsimp only at hr ⊢
                         have hne : uw ≠ m := by
                           intro he; subst he; rw [hr] at hro; cases hro
-                        rw [lookup_append_singleton_of_none ro0 m (digestPart p v) hro uw,
+                        rw [List.lookup_append_singleton_of_none ro0 m (digestPart p v) hro uw,
                           ite_eq_right hne]
                         exact hr
                       · cases ow; cases ow' <;> exact False.elim hr

@@ -234,28 +234,6 @@ lemma lookup_eraseHiddenKey_of_ne
       · rfl
 
 omit [Fintype M] [DecidableEq M] in
-lemma lookup_append_singleton_of_not_mem
-    {α β : Type*} [DecidableEq α] [BEq α] [LawfulBEq α] (l : List (α × β)) (k : α) (v : β)
-    (hnot : k ∉ l.map Prod.fst) (k' : α) :
-    (l ++ [(k, v)]).lookup k' = if k' = k then some v else l.lookup k' := by
-  induction l with
-  | nil =>
-    simp only [List.nil_append, List.lookup_cons, List.lookup_nil]
-    by_cases hk : k' = k
-    · subst hk; simp only [beq_self_eq_true, ↓reduceIte]
-    · simp only [beq_false_of_ne hk, hk, ↓reduceIte]
-  | cons hd tl ih =>
-    rcases hd with ⟨k0, v0⟩
-    simp only [List.map_cons, List.mem_cons, not_or] at hnot
-    simp only [List.cons_append, List.lookup_cons]
-    by_cases h1 : k' = k0
-    · subst h1
-      have hne : k' ≠ k := Ne.symm hnot.1
-      simp only [beq_self_eq_true, hne, ↓reduceIte]
-    · simp only [beq_false_of_ne h1]
-      exact ih hnot.2
-
-omit [Fintype M] [DecidableEq M] in
 lemma lookup_eq_some_of_mem_map_fst
     {α β : Type*} [BEq α] [LawfulBEq α] (l : List (α × β)) {k : α}
     (hmem : k ∈ l.map Prod.fst) :
@@ -691,7 +669,7 @@ lemma sampleHiddenPrefixesWithBad_sim_ro (hp : p.Valid) {encode : M → List (Bi
         · subst hm
           unfold roOfState
           rw [hbs_unc.1, Function.update_self,
-            lookup_append_singleton_of_not_mem hid _ z hbs_unc.2]
+            List.lookup_append_singleton_of_not_mem hid _ z hbs_unc.2]
           simp only [↓reduceIte, Option.map_some]
         · unfold roOfState
           rw [Function.update_of_ne hm]
@@ -700,7 +678,7 @@ lemma sampleHiddenPrefixesWithBad_sim_ro (hp : p.Valid) {encode : M → List (Bi
           | none =>
             have hne_blk : paddedBlocks p (encode m') ≠ paddedBlocks p (encode m) := fun hEq =>
               hm (henc (paddedBlocks_injective p hp.1 hp.2.2.2.2.1 hp.2.2.2.2.2 hEq))
-            rw [lookup_append_singleton_of_not_mem hid _ z hbs_unc.2, ite_eq_right hne_blk]
+            rw [List.lookup_append_singleton_of_not_mem hid _ z hbs_unc.2, ite_eq_right hne_blk]
       have hlaw : ∀ ro, nodeLaw p M encode ro (paddedBlocks p (encode m)) =
           (𝒰[ByteState (tailBytes p)]).map fun t => assembleState p (ro m) t := fun ro =>
         nodeLaw_paddedBlocks p M hp encode henc ro m
@@ -715,7 +693,7 @@ lemma sampleHiddenPrefixesWithBad_sim_ro (hp : p.Valid) {encode : M → List (Bi
         | some s => rfl
         | none =>
           have hne_blk : paddedBlocks p (encode m') ≠ bs := fun hEq => hex ⟨m', hEq⟩
-          rw [lookup_append_singleton_of_not_mem hid _ z hbs_unc.2, ite_eq_right hne_blk]
+          rw [List.lookup_append_singleton_of_not_mem hid _ z hbs_unc.2, ite_eq_right hne_blk]
       have hlaw : ∀ ro, nodeLaw p M encode ro bs = 𝒰[ByteState p.stateBytes] := by
         intro ro; unfold nodeLaw; rw [dite_eq_right hex]
       simp_rw [roCompleteOfState, hro_eq, hlaw, probDist_map_eq_bind]
@@ -3117,7 +3095,7 @@ lemma realGoodInv_append_hidden (hp : p.Valid)
       · rw [hev] at hc; cases hc
       · obtain ⟨v, hv_lu, _⟩ := lookup_eq_some_of_mem_map_fst hid hh
         have hne : bs ≠ pref ++ [block] := fun hEq => hnothid (hEq ▸ hh)
-        rw [lookup_append_singleton_of_not_mem hid (pref ++ [block]) z hnothid bs,
+        rw [List.lookup_append_singleton_of_not_mem hid (pref ++ [block]) z hnothid bs,
           ite_eq_right hne]
   have hdrop : (pref ++ [block]).dropLast = pref := by
     rw [List.dropLast_append_of_ne_nil (List.cons_ne_nil _ _), List.dropLast_singleton,
@@ -3275,7 +3253,7 @@ lemma absorbRealGameBlocks_sim_sampleHidden (hp : p.Valid) (q : ℕ)
           evalWithHidden p T_pub (hid ++ [(pref ++ [block],
             z)]) (pref ++ [block]) = z := fun z => by
         rw [evalWithHidden, hunc, Option.getD_none,
-          lookup_append_singleton_of_not_mem hid (pref ++ [block]) z hnothid (pref ++ [block]),
+          List.lookup_append_singleton_of_not_mem hid (pref ++ [block]) z hnothid (pref ++ [block]),
           ite_eq_left rfl, Option.getD_some]
       constructor
       · intro r hr hr_false
