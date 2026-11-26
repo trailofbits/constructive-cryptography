@@ -301,7 +301,9 @@ open Classical in
 /-- **One more round**: a sum over the transcripts of `σ` within `m + 1` rounds is the sum, over
 the transcripts within `m` rounds, of the sum over their extensions by the possible replies to
 the next query of `σ`, or of the transcript itself when `σ` has stopped. -/
-lemma sum_tSupp_succ (f : List (A × B) → ℝ) (m : ℕ) :
+lemma sum_tSupp_succ
+    -- `f` assigns additive observations in `M` to transcripts; distributions are allowed.
+    {M : Type*} [AddCommMonoid M] (f : List (A × B) → M) (m : ℕ) :
     ∑ h ∈ tSupp R σ (m + 1), f h = ∑ h ∈ tSupp R σ m,
       if hd : (σ (h.map Prod.snd)).Dom then
         ∑ y ∈ (R.extensionLaw h ((σ (h.map Prod.snd)).get hd)).support,
