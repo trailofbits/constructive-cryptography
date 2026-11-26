@@ -34,6 +34,8 @@ uniform coordinates with a uniform pair. `prodProbDist_map` and its one-coordina
 (f_* P) × (g_* Q) = (f × g)_* (P × Q).
 ```
 
+`bindK_piDep` commutes independent coordinate kernels with their finite product.
+`ProbDist.jointLaw_piDep` retains each first coordinate beside its conditional second draw.
 For dependent draws, `ProbDist.jointLaw μ K` retains both outcomes with law `μ(h) · K h z`.
 `ProbDist.jointLaw_fst` recovers `μ`; `ProbDist.jointLaw_map` transports both coordinates.
 For independent tables, `piDep_eq_bindK_update` samples one cell first and fixes it in the
@@ -342,6 +344,45 @@ lemma prod_eq_bindK (μ : Distribution A) (ν : Distribution B) :
   · rfl
   · rw [Finsupp.notMem_support_iff.mp ha, zero_mul]
 
+/-- Independent coordinate kernels commute with their finite product:
+`(∏ᵢ μᵢ).bind (f ↦ ∏ᵢ κᵢ(fᵢ)) = ∏ᵢ (μᵢ.bind κᵢ)`. The finite laws may be signed. -/
+lemma bindK_piDep
+    -- `I` indexes the finite family; `A i` and `B i` carry its successive outcomes.
+    {I : Type*} [Fintype I] {A : I → Type*} {B : I → Type*}
+    -- `μ i` is the first law; `κ i a` is the second law given first outcome `a`.
+    (μ : ∀ i, Distribution (A i)) (κ : ∀ i, A i → Distribution (B i)) :
+    bindK (piDep μ) (fun f => piDep (fun i => κ i (f i))) =
+      piDep (fun i => bindK (μ i) (κ i)) := by
+  classical
+  ext g
+  -- Expand the mixture over the finite box of possible first coordinates.
+  rw [bindK_apply, Finsupp.sum_of_support_subset (piDep μ)
+    (s := Fintype.piFinset fun i => (μ i).support)
+    Finsupp.support_onFinset_subset
+    (fun f w => w * piDep (fun i => κ i (f i)) g) (fun _ _ => zero_mul _)]
+  simp only [piDep_apply, ← Finset.prod_mul_distrib]
+  -- Finite distributivity separates the sum into one mixture per coordinate.
+  rw [← Finset.prod_univ_sum (fun i => (μ i).support)
+    (fun i a => μ i a * κ i a (g i))]
+  simp only [bindK_apply, Finsupp.sum]
+
+/-- Retaining each kernel's input commutes with grouping the independent coordinate pairs. -/
+lemma bindK_piDep_pair
+    -- `I` indexes pairs with first carrier `A i` and second carrier `B i`.
+    {I : Type*} [Fintype I] {A : I → Type*} {B : I → Type*}
+    -- `μ i` and `κ i a` are arbitrary signed finite laws for these successive outcomes.
+    (μ : ∀ i, Distribution (A i)) (κ : ∀ i, A i → Distribution (B i)) :
+    bindK (piDep μ)
+        (fun f => fTransform (fun g => (f, g)) (piDep (fun i => κ i (f i)))) =
+      fTransform (fun p => ((fun i => (p i).1), (fun i => (p i).2)))
+        (piDep (fun i => bindK (μ i) (fun a => fTransform (fun b => (a, b)) (κ i a)))) := by
+  rw [← bindK_piDep, fTransform_bindK]
+  apply bindK_congr
+  intro f _
+  -- Given the first table f, unzipping the pairs gives exactly (f, second table).
+  rw [← fTransform_piDep, fTransform_fTransform]
+  rfl
+
 /-- **Disintegration of an independent product** at one coordinate: sample that coordinate first,
 then the product with that coordinate fixed. -/
 lemma piDep_eq_bindK_update
@@ -551,6 +592,18 @@ noncomputable def jointLaw
     -- `μ`: the law of `h`; `K h`: the conditional law of `z` given `h` [1, §3.6.1, p. 65].
     (μ : ProbDist H) (K : H → ProbDist Z) : ProbDist (H × Z) :=
   μ.bind fun h => ProbDist.map (fun z => (h, z)) (K h)
+
+/-- Independent joint coordinates equal a first table followed by its conditional second table. -/
+lemma jointLaw_piDep
+    -- `I` indexes coordinate pairs; their carriers `A i` and `B i` may differ and be infinite.
+    {I : Type*} [Fintype I] {A : I → Type*} {B : I → Type*}
+    -- `μ i` draws the first coordinate; `κ i a` draws the second given that same `a`.
+    (μ : ∀ i, ProbDist (A i)) (κ : ∀ i, A i → ProbDist (B i)) :
+    jointLaw (ProbDist.piDep μ) (fun f => ProbDist.piDep (fun i => κ i (f i))) =
+      (ProbDist.piDep (fun i => jointLaw (μ i) (κ i))).map
+        (fun p => ((fun i => (p i).1), (fun i => (p i).2))) := by
+  apply Subtype.ext
+  exact bindK_piDep_pair (fun i => (μ i).1) (fun i a => (κ i a).1)
 
 /-- The first marginal of the joint law is the original law,
 `fst_* (jointLaw μ K) = μ`: summing out `z` uses only that each `K h` has weight one. -/

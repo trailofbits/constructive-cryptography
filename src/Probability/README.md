@@ -46,6 +46,8 @@ $`(f_*P) \times (g_*Q) = (f \times g)_*(P \times Q)`$.
 $`f=\mathrm{id}`$ gives the [left][prodProbDist_map_left] and
 [right][prodProbDist_map_right] one-coordinate forms.
 [Independent uniform coordinates][prodProbDist_uniform] form a uniform pair.
+[Independent kernels][bindK_piDep] commute with finite products;
+[`jointLaw_piDep`][ProbDist.jointLaw_piDep] regroups the resulting input–output pairs.
 A [joint law][ProbDist.jointLaw] retains both successive draws:
 $`J_{\mu,K}(h,z)=\mu(h)K(h,z)`$, with [first marginal][ProbDist.jointLaw_fst] $`\mu`$. For
 arbitrary maps $`d_H, d_Z`$ with $`(d_H)_*\mu'=\mu`$ and $`(d_Z)_*K'(h)=K(d_H h)`$,
@@ -190,20 +192,20 @@ against a running `foldl` state (`List.ForallScan`, `List.ForallScan.append`,
 [piDep]: DependentProduct.lean#L56
 [uniform]: Distribution.lean#L697
 [ProbDist.uniform]: Distribution.lean#L730
-[bindK]: Kernel.lean#L58
-[bindK_bindK]: Kernel.lean#L120
-[bindK_single_comp]: Kernel.lean#L142
-[pi_eq_bindK_update]: Kernel.lean#L399
-[ProbDist.map]: Kernel.lean#L415
-[ProbDist.map_map]: Kernel.lean#L428
-[ProbDist.map_piDep_comp_comp]: Kernel.lean#L481
-[ProbDist.map_piDep_comp_eq_of_eq_iff]: Kernel.lean#L493
-[prodProbDist_map]: Kernel.lean#L609
-[ProbDist.bind]: Kernel.lean#L522
-[ProbDist.bind_const]: Kernel.lean#L536
-[ProbDist.jointLaw]: Kernel.lean#L550
-[ProbDist.jointLaw_fst]: Kernel.lean#L557
-[ProbDist.jointLaw_map]: Kernel.lean#L577
+[bindK]: Kernel.lean#L60
+[bindK_bindK]: Kernel.lean#L122
+[bindK_single_comp]: Kernel.lean#L144
+[pi_eq_bindK_update]: Kernel.lean#L440
+[ProbDist.map]: Kernel.lean#L456
+[ProbDist.map_map]: Kernel.lean#L469
+[ProbDist.map_piDep_comp_comp]: Kernel.lean#L522
+[ProbDist.map_piDep_comp_eq_of_eq_iff]: Kernel.lean#L534
+[prodProbDist_map]: Kernel.lean#L662
+[ProbDist.bind]: Kernel.lean#L563
+[ProbDist.bind_const]: Kernel.lean#L577
+[ProbDist.jointLaw]: Kernel.lean#L591
+[ProbDist.jointLaw_fst]: Kernel.lean#L610
+[ProbDist.jointLaw_map]: Kernel.lean#L630
 [normalizeOr]: Lift.lean#L189
 [statDist]: StatisticalDistance.lean#L103
 [statDist_triangle]: StatisticalDistance.lean#L274
@@ -241,7 +243,11 @@ against a running `foldl` state (`List.ForallScan`, `List.ForallScan.append`,
 
 [uniform_mass_transcript_collision_le_card]: Counting/Collision.lean
 
-[ProbDist.map_id]: Kernel.lean#L424
-[prodProbDist_uniform]: Kernel.lean#L619
-[prodProbDist_map_left]: Kernel.lean#L626
-[prodProbDist_map_right]: Kernel.lean#L633
+[ProbDist.map_id]: Kernel.lean#L465
+[prodProbDist_uniform]: Kernel.lean#L672
+[prodProbDist_map_left]: Kernel.lean#L679
+[prodProbDist_map_right]: Kernel.lean#L686
+
+[bindK_piDep]: Kernel.lean#L349
+
+[ProbDist.jointLaw_piDep]: Kernel.lean#L597
