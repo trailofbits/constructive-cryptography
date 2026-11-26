@@ -14,6 +14,7 @@ public import RandomSystems.Typed.SamplingDistance
 public import RandomSystems.Cumulative.Revealed
 public import RandomSystems.Distance.RevealedHCoefficient
 public import RandomSystems.Converter.ConverterAttachment
+public import RandomSystems.Converter.EventReflection
 public import RandomSystems.Converter.ConverterDomain
 public import RandomSystems.Converter.ConverterRelabel
 public import RandomSystems.Converter.ConverterTensor
