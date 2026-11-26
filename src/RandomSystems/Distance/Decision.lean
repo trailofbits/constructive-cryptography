@@ -1,6 +1,7 @@
 module
 
 public import RandomSystems.Distance.Transcript
+public import RandomSystems.System.QueryRelabel.Laws
 public import RandomSystems.Converter.ConverterAttachment
 
 /-!
@@ -486,5 +487,64 @@ lemma decisionCompatible_iff_deterministic
     exact ⟨hdec, fun x hx => (he _).mp (hquery x hx)⟩
 
 end Domain
+
+/-- Universal closing on exact source-domain DDSs transfers to the existing finite-domain
+compatibility notion after any admitted query recoding. -/
+lemma decisionCompatible_relabelQueries_of_closes
+    {I : Type} {X X' Y : I → Type}
+    -- Only the result's query and reply alphabets are finite.
+    [Fintype I] [∀ i, Fintype (X' i)] [∀ i, Fintype (Y i)]
+    -- `code` replaces each query while preserving its port and the reply alphabet.
+    (code : ∀ i, X i → X' i)
+    -- `F` is the raw source domain; `E` is the bounded coded domain.
+    {F : List (Σ i, X i) → Prop} {E : List (Σ i, X' i) → Prop}
+    -- `bounded` certifies the coded domain's maximum history length `m`.
+    {m : ℕ} {bounded : ∀ h, E h → h.length ≤ m}
+    -- Both domains are silent at the empty history and closed under nonempty prefixes.
+    (sourceDomain : ¬ F [] ∧ ∀ {p h}, p <+: h → p ≠ [] → F h → F p)
+    (targetDomain : ¬ E [] ∧ ∀ {p h}, p <+: h → p ≠ [] → E h → E p)
+    -- `mapDomain` preserves admitted input words under the query recoding.
+    (mapDomain : ∀ xs, F xs → E (xs.map (fun x => ⟨x.1, code x.1 x.2⟩)))
+    -- `D` is the source distinguisher; `valid` certifies its bounded interaction discipline.
+    (D : DDD I X Y) (valid : IsDDD D)
+    -- `closes` requires a decision on every correctly tagged DDS with domain exactly `F`.
+    (closes : ∀ S : InterfaceSystem I X Y, IsDDS S → RepliesAtQueriedInterface S →
+      (∀ xs, (S xs).Dom ↔ F xs) → (close D S [startIn]).Dom) :
+    (Domain.ofInputs E m bounded : Domain (Σ i, X' i) (Σ i, Y i)).DecisionCompatible
+      (DDD.relabelQueries D code) := by
+  apply (Domain.decisionCompatible_iff_deterministic targetDomain
+    (IsDDD.relabelQueries valid code)).mpr
+  intro R _ replyPort exactDomain
+  let S : InterfaceSystem I X Y :=
+    filterDom F (relabel R (fun x => ⟨x.1, code x.1 x.2⟩) id)
+  have sourceExact (xs : List (Σ i, X i)) : (S xs).Dom ↔ F xs := by
+    change (filterDom F _ xs).Dom ↔ F xs
+    rw [filterDom_dom]
+    change (F xs ∧ (R (xs.map (fun x => ⟨x.1, code x.1 x.2⟩))).Dom) ↔ F xs
+    rw [exactDomain]
+    exact ⟨And.left, fun admitted => ⟨admitted, mapDomain xs admitted⟩⟩
+  have sourceDDS : IsDDS S :=
+    ⟨fun defined => sourceDomain.1 ((sourceExact []).mp defined),
+      fun {_ _} hp nonempty defined => (sourceExact _).mpr
+        (sourceDomain.2 hp nonempty ((sourceExact _).mp defined))⟩
+  have sourceReplyPort : RepliesAtQueriedInterface S := by
+    intro xs q y hy
+    have reply := ((filterDom_mem_iff _ _ _ _).mp hy).2
+    exact (replyPort.relabel (fun x => ⟨x.1, code x.1 x.2⟩) id
+      (fun _ _ equal => equal)) xs q y reply
+  -- A source-domain DDS is available for every coded DDS, so source closing applies.
+  obtain ⟨output, present⟩ := Part.dom_iff_mem.mp (closes S sourceDDS sourceReplyPort sourceExact)
+  obtain ⟨decision, rfl⟩ := eq_decOut output
+  obtain ⟨xs, ys, actual, finalDecision⟩ := (close_decision decision).mp present
+  -- Remove the admission filter, then use raw query naturality on the actual interaction.
+  have mapped := Transcript.relabel_input (R := R)
+    (fun x : Σ i, X i => ⟨x.1, code x.1 x.2⟩)
+    (actual.of_replies (replies_filterDom F _ actual.replies))
+  rw [← funext (envOf_relabelQueries D code)] at mapped
+  refine Part.dom_iff_mem.mpr ⟨decOut decision, (close_decision decision).mpr
+    ⟨xs.map (fun x => ⟨x.1, code x.1 x.2⟩), ys, mapped, ?_⟩⟩
+  change _ ∈ (D ((dHist ys).map id)).map _
+  rw [List.map_id]
+  exact Part.mem_map _ finalDecision
 
 end SystemAlgebra
