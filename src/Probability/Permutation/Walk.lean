@@ -20,8 +20,8 @@ without-replacement counting laws for adaptive transcripts and public permutatio
 * `permutation_forward_reply_mass_le`, `permutation_inverse_reply_mass_le`,
   `permutation_reply_set_mass_le`, `permutation_reply_event_mass_le`: conditional upper bounds
   for fresh forward or inverse replies hitting a fixed set or event.
-* `permutation_avoid_mass_ge`: a family of fresh replies avoids its forbidden sets with
-  loss at most the sum of their conditional bounds; repeated requests are allowed.
+* `permutation_avoid_mass_ge` and `permutation_avoid_mass_ge_of_card_le`: fresh replies avoid
+  their forbidden sets with summed or common-cardinality loss; repeated requests are allowed.
 
 ## References
 
@@ -490,6 +490,38 @@ theorem permutation_avoid_mass_ge
   have bound := union.trans losses
   change (1 - _) * μ.mass agreed ≤ μ.mass (fun π => agreed π ∧ avoids π)
   linarith
+
+/-- If every forbidden set has at most `m` elements, the avoidance loss is at most
+`|indices| * m / (|S| - |points|)`. -/
+lemma permutation_avoid_mass_ge_of_card_le
+    -- `reference` fixes the recorded partial permutation on `points`.
+    (reference : Equiv.Perm S) (points : Finset S)
+    -- Request `i` uses direction `inverse i`, input `input i`, and forbidden set `bad i`.
+    {ι : Type*} (indices : Finset ι) (inverse : ι → Bool) (input : ι → S)
+    (bad : ι → Finset S)
+    (fresh : ∀ i ∈ indices,
+      if inverse i then input i ∉ points.image reference else input i ∉ points)
+    -- `m` bounds each forbidden set, including repeated requests.
+    (m : ℕ) (size : ∀ i ∈ indices, (bad i).card ≤ m) :
+    (1 - (indices.card : ℝ) * m / (Fintype.card S - points.card : ℝ)) *
+        (Distribution.uniform (Equiv.Perm S)).mass
+          (fun π => ∀ z ∈ points, π z = reference z) ≤
+      (Distribution.uniform (Equiv.Perm S)).mass
+        (fun π => (∀ z ∈ points, π z = reference z) ∧ ∀ i ∈ indices,
+          (if inverse i then π.symm (input i) else π (input i)) ∉ bad i) := by
+  have denominator : 0 ≤ (Fintype.card S - points.card : ℝ) :=
+    sub_nonneg.mpr (Nat.cast_le.mpr points.card_le_univ)
+  have loss : (∑ i ∈ indices, (bad i).card / (Fintype.card S - points.card : ℝ)) ≤
+      (indices.card : ℝ) * m / (Fintype.card S - points.card : ℝ) := by
+    calc
+      _ ≤ ∑ _i ∈ indices, (m : ℝ) / (Fintype.card S - points.card : ℝ) :=
+        Finset.sum_le_sum fun i hi =>
+          div_le_div_of_nonneg_right (Nat.cast_le.mpr (size i hi)) denominator
+      _ = _ := by rw [Finset.sum_const, nsmul_eq_mul, mul_div_assoc]
+  -- Increase the general union-bound loss using the supplied common cardinality bound.
+  exact (mul_le_mul_of_nonneg_right (sub_le_sub_left loss 1)
+    (Distribution.uniform_nonNeg.mass_nonneg _)).trans
+      (permutation_avoid_mass_ge reference points indices inverse input bad fresh)
 
 end ConditionalBounds
 
