@@ -16,6 +16,8 @@ Its mixture `bindK μ f` draws `a ← μ`, then `b ← f a`:
 This represents a "conditional probability distribution" `p_{Y|X}` [1, §3.6.1, p. 65].
 `bindK_bindK` composes successive draws; `bindK_single_one` removes a point kernel.
 `fTransform_bindK` and `bindK_fTransform` move deterministic maps through those draws.
+`bindK_ite_eq_add_restrict` separates a branching kernel by its input event;
+`bindK_ite_single` retains accepted draws and uses one fallback law on rejected draws.
 
 `ProbDist.map` and `ProbDist.bind` retain normalization. `ProbDist.map_id` removes the
 identity map; `ProbDist.map_map` composes deterministic transformations, and
@@ -84,6 +86,15 @@ lemma bindK_add_right {α β : Type*} (μ : Distribution α) (f g : α → Distr
   ext b
   simp only [bindK_apply, Finsupp.add_apply, mul_add, Finsupp.sum]
   exact Finset.sum_add_distrib
+
+/-- A constant kernel is scaled by the total input weight: `bindK μ (fun _ => ν) = |μ| • ν`. -/
+lemma bindK_const
+    -- `μ` is the signed input law; every input chooses the same signed output law `ν`.
+    (μ : Distribution A) (ν : Distribution B) :
+    bindK μ (fun _ => ν) = μ.weight • ν := by
+  ext b
+  rw [bindK_apply, Finsupp.sum, ← Finset.sum_mul]
+  rfl
 
 /-- A kernel that vanishes mixes to nothing. -/
 @[simp] lemma bindK_zero_right (μ : Distribution A) :
@@ -209,6 +220,36 @@ lemma bindK_ite (μ : Distribution A) (P : A → Prop) (f : A → Distribution B
     · simp [h, restrict, Finsupp.filter_single_of_pos _ h]
     -- not `P a`: the restriction drops the point mass, and both sides are zero
     · simp [h, restrict, Finsupp.filter_single_of_neg _ h]
+
+/-- A branching kernel splits into its two mixtures, restricted to the branch events. -/
+lemma bindK_ite_eq_add_restrict
+    -- `μ` weights inputs in `A`; `E` selects kernel `K`, and its complement selects `L`.
+    (μ : Distribution A) (E : A → Prop) [DecidablePred E]
+    (K L : A → Distribution B) :
+    bindK μ (fun a => if E a then K a else L a) =
+      bindK (μ.restrict E) K + bindK (μ.restrict (fun a => ¬ E a)) L := by
+  -- Extend both branches by zero, then use additivity and event restriction.
+  have branches : (fun a => if E a then K a else L a) =
+      fun a => (if E a then K a else 0) + (if ¬ E a then L a else 0) := by
+    funext a
+    by_cases h : E a <;> simp only [h, ↓reduceIte, not_true_eq_false, not_false_eq_true,
+      add_zero, zero_add]
+  rw [branches, bindK_add_right]
+  -- The restriction law fixes classical decisions; `ite_eq_ite` identifies the same branches.
+  apply congrArg₂ (· + ·)
+  · exact (bindK_congr fun a _ => (ite_eq_ite (E a) (K a) 0).mpr trivial).trans
+      (bindK_ite μ E K)
+  · exact (bindK_congr fun a _ => (ite_eq_ite (¬ E a) (L a) 0).mpr trivial).trans
+      (bindK_ite μ (fun a => ¬ E a) L)
+
+/-- Retaining draws in `E` and replacing the others by `ν` gives
+`μ|E + μ(Eᶜ) • ν`. The input and fallback laws may be signed. -/
+lemma bindK_ite_single
+    -- `μ` supplies the draw; `E` is the acceptance event; `ν` is the fallback law.
+    (μ ν : Distribution A) (E : A → Prop) [DecidablePred E] :
+    bindK μ (fun a => if E a then Finsupp.single a 1 else ν) =
+      μ.restrict E + μ.mass (fun a => ¬ E a) • ν := by
+  rw [bindK_ite_eq_add_restrict, bindK_single_one, bindK_const, weight_restrict]
 
 /-- **The weight of a mixture**: each weight of the kernel, weighted by `μ`. -/
 lemma weight_bindK (μ : Distribution A) (f : A → Distribution B) :
@@ -496,11 +537,7 @@ lemma bind_const
     -- `P` is the first-outcome law on `A`; `Q` is the same second-outcome law on `B` each time.
     (P : ProbDist A) (Q : ProbDist B) : P.bind (fun _ => Q) = Q := by
   apply Subtype.ext
-  ext b
-  -- Every summand has the factor `Q(b)`; the remaining weights sum to one.
-  rw [bind_val, bindK_apply, Finsupp.sum, ← Finset.sum_mul]
-  change P.1.weight * Q.1 b = Q.1 b
-  rw [P.2.weight_eq, one_mul]
+  rw [bind_val, bindK_const, P.2.weight_eq, one_smul]
 
 /-! ### Joint laws -/
 
