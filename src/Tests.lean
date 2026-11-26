@@ -217,6 +217,7 @@ public import Tests.AttachmentRelabel
 public import Tests.FiniteSet
 public import Tests.QueryRelabel
 public import Tests.TraceFilterMap
+public import Tests.ObservationRefinement
 public import Tests.GenericGroupAffine
 public import Tests.FirstOccurrences
 public import Tests.ForallScanFlatMap
