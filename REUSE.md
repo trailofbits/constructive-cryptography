@@ -120,6 +120,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Add a final decision without increasing an observer's query bound | `ddeOf_envProbe_queryBounded` in `RandomSystems.Distance.Decision` |
 | Propagate an adaptive potential bound | `expect_antitone_of_bindK` in `Probability.Expectation` |
 | Solve a finite binomial-count recurrence | `Probability.Counting.le_choose_mul_pow_of_succ_le` in `Probability.Counting.BinomialRecurrence` |
+| Bound a heavy bin under adaptive draws | `mass_occupancy_ge_le` in [Probability/Occupancy.lean](src/Probability/Occupancy.lean) |
 | Count subsets within finitely many occupied bins | `Finsupp.chooseSum`, `chooseSum_add_single`, `one_le_chooseSum_of_le` in `Probability.Counting.BinomialSum` |
 | Average bin-count increments under per-bin probability bounds | `expect_chooseSum_addDraw_le` in `Probability.Occupancy` |
 | Average conditional distances or apply a common kernel | `statDist_bindK_le_expect`, `statDist_bindK_le` in `Probability.StatisticalDistance` |
