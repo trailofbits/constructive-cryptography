@@ -20,6 +20,7 @@ public import Tests.AffineEvaluation
 public import Tests.AffineTransfer
 public import Tests.GameEventReflection
 public import Tests.MBOUnsetCoefficient
+public import Tests.MBOExposedBits
 public import Tests.AttachmentEventReflection
 public import Tests.GameEventScore
 public import Tests.ProbAutomatonSampling

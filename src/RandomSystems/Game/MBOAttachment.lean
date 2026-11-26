@@ -37,6 +37,8 @@ the proof of Lemma 4.9 use it.
 * `PDCBehavior.liftMBO_id`, `PDCBehavior.liftMBO_comp`: the lift is functorial
 * `RandomSystem.visible_attach_liftMBO`: attaching a lift attaches to the visible system
 * `RandomSystem.MonotoneMBO.attach_liftMBO`: attaching a lift to a game gives a game
+* `exposedReplies_all_false_of_parallelRight_all_false`: unset inside bits remain unset
+  in the outside replies of a consistent tagged interaction
 * `Domain.Distinguisher.exists_absorbAll_winProbability`: absorbing a PDC into a winner
 * `Domain.SolverBehavior.decision_surjective`, `Domain.SolverBehavior.decision_absorb`: every
   distinguisher behavior is a decision view, and the view commutes with absorption
@@ -691,15 +693,16 @@ section Monotone
 
 variable {O J : Type} {U V : O → Type} {X Y : J → Type}
 
-lemma latestMBO_eq (l : List (Σ l, twoFam U (withMBO Y) l)) :
+/-- `latestMBO` reads the last bit of the filtered inside-reply MBO list, or `false` if empty. -/
+lemma latestMBO_eq_getLast?_filterMap (l : List (Σ l, twoFam U (withMBO Y) l)) :
     latestMBO l = ((l.filterMap inputMBO).getLast?).getD false := by
-  -- Induction from the right: one more input changes both sides exactly when it is an inside
-  -- reply, and then both become its MBO.
   induction l using List.reverseRecOn with
   | nil => rfl
   | append_singleton l z ih =>
-    rw [latestMBO_snoc, ih, List.filterMap_append]
-    rcases z with ⟨⟨_ | ⟨⟨⟩⟩, j⟩, y⟩ <;> simp [inputMBO]
+    rw [latestMBO_snoc, List.filterMap_append]
+    cases hb : inputMBO z with
+    | none => simpa [hb] using ih
+    | some b => simp [hb]
 
 lemma getLast?_getD_le {l : List Bool} {b : Bool} (hp : (l ++ [b]).Pairwise (· ≤ ·)) :
     (l.getLast?).getD false ≤ b := by
@@ -839,7 +842,7 @@ lemma attach_tags_invariant {c : InsideOutsideSystem O J U (withMBO V) X (withMB
       | none => exact le_rfl
       | some b =>
         -- The old latest MBO is the last MBO received (or unset), ≤ `b` by monotonicity.
-        rw [latestMBO_eq]
+        rw [latestMBO_eq_getLast?_filterMap]
         exact getLast?_getD_le (hcx b hb)
     -- Steps 4–6: the three cases of Step 2.
     rcases hfeed with ⟨u, rfl, hpend⟩ | ⟨ys', j, r, rfl, rfl⟩ | ⟨ys', j, q, rfl, rfl⟩
@@ -1274,6 +1277,37 @@ def outputMBO {O J : Type} {V : O → Type} {X : J → Type} :
     (Σ l, twoFam (withMBO V) X l) → Option Bool
   | ⟨⟨none, _⟩, v⟩ => some v.2
   | ⟨⟨some (), _⟩, _⟩ => none
+
+/-- A tagged converter cannot produce a true output bit from all-false received bits. -/
+lemma TaggedMBO.outputMBO_eq_false_of_inputMBO_eq_false
+    -- `h` records the converter inputs and outputs, including their hidden bits.
+    {h : List ((Σ l, twoFam U (withMBO Y) l) × (Σ l, twoFam (withMBO V) X l))}
+    -- `tagged` makes each outside reply carry the latest received inside bit.
+    (tagged : TaggedMBO h)
+    -- `inputFalse` says that every inside bit received along `h` is unset.
+    (inputFalse : ∀ b ∈ (h.map Prod.fst).filterMap inputMBO, b = false) :
+    ∀ b ∈ (h.map Prod.snd).filterMap outputMBO, b = false := by
+  intro b hb
+  rw [List.filterMap_map] at hb
+  obtain ⟨z, hz, hbit⟩ := List.mem_filterMap.mp hb
+  obtain ⟨p, s, rfl⟩ := List.mem_iff_append.mp hz
+  have tag := tagged p z s rfl
+  have inputPrefix : p.map Prod.fst ++ [z.1] <+: (p ++ z :: s).map Prod.fst :=
+    ⟨s.map Prod.fst, by simp only [List.map_append, List.map_cons, List.append_assoc,
+      List.singleton_append]⟩
+  -- The input prefix contains only unset bits, so its latest bit is unset.
+  have latest : latestMBO (p.map Prod.fst ++ [z.1]) = false := by
+    rw [latestMBO_eq_getLast?_filterMap]
+    cases last : ((p.map Prod.fst ++ [z.1]).filterMap inputMBO).getLast? with
+    | none => rfl
+    | some c =>
+      exact inputFalse c ((inputPrefix.filterMap inputMBO).subset (List.mem_of_mem_getLast? last))
+  rcases z with ⟨x, ⟨⟨_ | ⟨⟨⟩⟩, o⟩, v⟩⟩
+  · have out := congrArg outputMBO tag
+    simp only [Function.comp_apply, outputMBO, outsideMap, forgetMBO, tagMBO,
+      Option.some.injEq] at out hbit
+    exact hbit.symm.trans (out.trans latest)
+  · cases hbit
 
 /-- The MBO of an output of a lift is the latest inside MBO. -/
 lemma outputMBO_liftMBO {O J : Type} {U V : O → Type} {X Y : J → Type}
@@ -2334,16 +2368,46 @@ lemma follows_resource_mbo_invariant
         simpa [RandomSystem.parallelLeft, RandomSystem.parallelRight, List.filterMap_append,
           List.map_append, pendingMBO, List.getLast?_append] using congrArg (· ++ [ry.2.2]) hinv
 
-/-- `latestMBO` reads the last bit of the filtered inside-reply MBO list, or `false` if empty. -/
-lemma latestMBO_eq_getLast?_filterMap (l : List (Σ l, twoFam U (withMBO Y) l)) :
-    latestMBO l = ((l.filterMap inputMBO).getLast?).getD false := by
-  induction l using List.reverseRecOn with
-  | nil => rfl
-  | append_singleton l z ih =>
-    rw [latestMBO_snoc, List.filterMap_append]
-    cases hb : inputMBO z with
-    | none => simpa [hb] using ih
-    | some b => simp [hb]
+/-- A consistent tagged connection exposes only false bits when every inside bit is false. -/
+lemma exposedReplies_all_false_of_parallelRight_all_false
+    -- `us` is the outside query sequence; `t` records both connected components.
+    {us : List (Σ o, U o)}
+    {t : List (Two (Σ l, twoFam U (withMBO Y) l) (Σ j, X j) ×
+      Two (Σ l, twoFam (withMBO V) X l) (Σ j, withMBO Y j))}
+    -- `hc` and `consistent` certify the routing and component labels of `t`.
+    (hc : FollowsStrategy (connectionQueries resourceRoute resourceInput us) t)
+    (consistent : RandomSystem.parallelConsistent t)
+    -- `tagged` forwards inside bits; `insideFalse` makes all such bits unset.
+    (tagged : TaggedMBO (RandomSystem.parallelLeft t))
+    (insideFalse : ∀ z ∈ RandomSystem.parallelRight t, z.2.2.2 = false) :
+    ∀ v ∈ exposedReplies (resourceRoute (U := U)) (t.map Prod.snd), v.2.2 = false := by
+  -- Every received bit occurs in the inside bit list, including when a reply is pending.
+  have received : ∀ b ∈ ((RandomSystem.parallelLeft t).map Prod.fst).filterMap inputMBO,
+      b = false := by
+    intro b hb
+    have allBits := List.mem_append_left (pendingMBO (t.map Prod.snd)) hb
+    rw [follows_resource_mbo_invariant hc consistent] at allBits
+    obtain ⟨z, hz, rfl⟩ := List.mem_map.mp allBits
+    exact insideFalse z hz
+  -- Tagging forwards the latest received bit; projection retains the outside replies.
+  have emitted := tagged.outputMBO_eq_false_of_inputMBO_eq_false received
+  intro v hv
+  rw [exposedReplies, List.filterMap_map] at hv
+  obtain ⟨⟨x, y⟩, hz, hy⟩ := List.mem_filterMap.mp hv
+  have side := consistent (x, y) hz
+  rcases y with ⟨_ | ⟨⟩, y⟩
+  · rcases y with ⟨⟨_ | ⟨⟨⟩⟩, o⟩, w⟩
+    · simp only [Function.comp_apply, resourceRoute, Sum.getLeft?_inl,
+        Option.some.injEq] at hy
+      subst v
+      rcases x with ⟨_ | ⟨⟩, x⟩
+      · apply emitted w.2
+        rw [List.filterMap_map]
+        exact List.mem_filterMap.mpr ⟨(x, ⟨⟨none, o⟩, w⟩),
+          List.mem_filterMap.mpr ⟨_, hz, rfl⟩, rfl⟩
+      · cases side
+    · cases hy
+  · cases hy
 
 /-- On a completed tagged interaction whose exposed replies all carry MBO `false`, any monotone
 inside transcript must have every inside MBO unset. -/
