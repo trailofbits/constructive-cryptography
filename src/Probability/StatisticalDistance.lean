@@ -22,6 +22,8 @@ behind H-coefficient arguments. The carrier may be infinite; each law has finite
 
 * `statDist_nonneg`, `statDist_self`, `statDist_symm_of_eq_weight`,
   `statDist_triangle`, `statDist_le_weight`
+* `statDist_add_smul_add_smul_of_nonneg`: a common signed offset cancels, and
+  nonnegative scaling multiplies the distance
 * equivalent forms: `statDist_eq_weight_sub_sum_min`,
   `statDist_eq_half_sum_abs_of_weight_eq`, `statDist_eq_mass_sub_mass_pos`
 * event gaps: `mass_sub_mass_le_statDist`; expectation gaps:
@@ -125,6 +127,27 @@ lemma statDist_eq_sum_of_support_subset {A : Type*} (X Y : Distribution A)
   rw [Finsupp.notMem_support_iff] at ha
   have h : X a - Y a = 0 := by simpa using ha
   rw [h, max_self]
+
+/-- A common offset cancels and nonnegative scaling factors out:
+`δ(Z + c • X, Z + c • Y) = c * δ(X,Y)`. -/
+lemma statDist_add_smul_add_smul_of_nonneg
+    -- `A` carries outcomes; `X`, `Y`, and the shared offset `Z` are signed finite laws.
+    {A : Type*} (Z X Y : Distribution A)
+    -- `c` scales the difference without reversing its positive part.
+    {c : ℝ} (hc : 0 ≤ c) :
+    statDist (Z + c • X) (Z + c • Y) = c * statDist X Y := by
+  have difference : (Z + c • X) - (Z + c • Y) = c • (X - Y) := by
+    rw [add_sub_add_left_eq_sub, smul_sub]
+  -- Both sums can use the finite support of the original difference, including when `c = 0`.
+  have support : ((Z + c • X) - (Z + c • Y)).support ⊆ (X - Y).support := by
+    rw [difference]
+    exact Finsupp.support_smul
+  rw [statDist_eq_sum_of_support_subset _ _ support, statDist, Finset.mul_sum]
+  apply Finset.sum_congr rfl
+  intro a _
+  -- Cancel the common mass, then factor the nonnegative scalar through the positive part.
+  simp only [Finsupp.add_apply, Finsupp.smul_apply, smul_eq_mul]
+  rw [add_sub_add_left_eq_sub, ← mul_sub, mul_max_of_nonneg _ _ hc, mul_zero]
 
 /-- Each summand of `statDist` is nonnegative, so the whole sum is. -/
 lemma statDist_nonneg {A : Type*} (X Y : Distribution A) :

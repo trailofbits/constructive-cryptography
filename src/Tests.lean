@@ -2,6 +2,7 @@ module
 
 public import Tests.JointLaw
 public import Tests.KernelDistance
+public import Tests.AffineDistance
 public import Tests.KernelBranch
 public import Tests.KernelPotential
 public import Tests.EventTransfer

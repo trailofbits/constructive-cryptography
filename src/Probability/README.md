@@ -203,10 +203,10 @@ against a running `foldl` state (`List.ForallScan`, `List.ForallScan.append`,
 [ProbDist.jointLaw_fst]: Kernel.lean#L557
 [ProbDist.jointLaw_map]: Kernel.lean#L577
 [normalizeOr]: Lift.lean#L189
-[statDist]: StatisticalDistance.lean#L101
-[statDist_triangle]: StatisticalDistance.lean#L251
-[statDist_fTransform_le]: StatisticalDistance.lean#L712
-[statDist_fTransform_le_expect_of_ratio]: StatisticalDistance.lean#L752
+[statDist]: StatisticalDistance.lean#L103
+[statDist_triangle]: StatisticalDistance.lean#L274
+[statDist_fTransform_le]: StatisticalDistance.lean#L735
+[statDist_fTransform_le_expect_of_ratio]: StatisticalDistance.lean#L775
 [statDist_eq_weight_posPart]: Lift.lean#L108
 [statDist_eq_weight_sub_weight_inf]: Lift.lean#L265
 [IsCoupling]: Coupling.lean#L45
