@@ -9,6 +9,7 @@ public import Probability.Kernel
 At input `false`, the reply is `true` with probability `1/3`; input `true` always gives
 `false`. Two reads of the first entry have probability `1/3`, rather than the independent
 draw probability `1/9`. Conflicting replies at the same entry have mass zero.
+The lazy presentation preserves these laws under attachment and retains optional `none` replies.
 -/
 
 @[expose] public section
@@ -92,6 +93,51 @@ example : (randomFunction bitEval (fun _ => entryLaw)).1
     hf.2 _ (List.mem_cons_of_mem _ (List.mem_cons_self ..))
   have same : true = false := eq_of_heq (Sigma.mk.inj_iff.mp (first.trans second.symm)).2
   cases same
+
+/-- Lazy repetition retains one biased draw, so the probability is `1/3`. -/
+example : (randomFunction.lazy bitEval (fun _ => entryLaw)).1
+    [(⟨(), false⟩, ⟨(), true⟩), (⟨(), false⟩, ⟨(), true⟩)] = 1 / 3 := by
+  rw [randomFunction.lazy_eq]
+  exact nonuniform_repeat_mass
+
+/-- An arbitrary compatible converter sees the same retained nonuniform function. -/
+example {B : Interface} (α : TypedConverter B bitEval) :
+    α • randomFunction.lazy bitEval (fun _ => entryLaw) =
+      α • randomFunction bitEval (fun _ => entryLaw) := by
+  rw [randomFunction.lazy_eq]
+
+-- The two ports carry genuinely different reply types; `none` is an ordinary retained reply.
+interface MixedReplies
+  bit() → Bool
+  optional() → Option Bool
+
+/-- The bit port is biased; the optional port returns `none` with probability `2/3`. -/
+noncomputable def mixedLaws (q : ℕ) :
+    ∀ i, (MixedReplies q).X i → ProbDist ((MixedReplies q).Y i)
+  | .bit, () => biased
+  | .optional, () => biased.map (fun b => if b then some true else none)
+
+open Classical in
+/-- A stored optional `none` is a hit: the table and reply are both retained with certainty. -/
+example :
+    let records : ∀ i, List ((MixedReplies 2).X i × (MixedReplies 2).Y i) :=
+      Function.update (fun _ => []) .optional [((), none)]
+    randomFunction.tableLaw (MixedReplies 2) (mixedLaws 2) records .optional () =
+      ProbDist.single (records, none) := by
+  intro records
+  apply Subtype.ext
+  simp only [randomFunction.tableLaw, ProbStep.recordReplies, randomFunction.replyLaw,
+    records, Function.update_self, List.lookup_cons_self, Option.elim_some,
+    Option.isNone_some, Bool.false_eq_true, ite_false, ProbDist.map_val,
+    ProbDist.single, fTransform_single]
+
+/-- The lazy correspondence also handles the heterogeneous optional-valued table. -/
+example : randomFunction.lazy (MixedReplies 2) (mixedLaws 2) =
+    randomFunction (MixedReplies 2) (mixedLaws 2) :=
+  randomFunction.lazy_eq (MixedReplies 2) (mixedLaws 2)
+
+#print axioms Commons.randomFunction.tableLaw_simulates
+#print axioms Commons.randomFunction.lazy_eq
 
 #print axioms Commons.randomFunction
 #print axioms Commons.URF.eq_randomFunction
