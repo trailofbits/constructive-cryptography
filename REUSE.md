@@ -73,6 +73,7 @@ named `budget` argument. The object index below supplies owners for those declar
 
 | Needed object | Declaration and module |
 | --- | --- |
+| Transport compiled converters through outside input maps | `Program.run_map_inputs`, `DDC.ofProgramOn_map_inputs_of_stepMap` in `RandomSystems.Converter.Program` |
 | Implement one observation by a fixed schedule of selected observations | `AbstractModel.observationValueProgram`, `observationCommandProgram` in `Commons.Definitions.AbstractModel.ObservationRefinement` |
 | Present dense extraction with affine register values | `GenericGroup.extractionDDS_eq_affine` in `Commons.Definitions.GenericGroup.Affine.Laws` |
 | Evaluate affine coefficient pairs consistently | `Probability.affineEvaluation` in `Probability.AffineEvaluation` |
