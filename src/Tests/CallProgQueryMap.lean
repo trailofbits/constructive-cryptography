@@ -53,6 +53,33 @@ example : mappedTwoCalls [(⟨true, 1⟩, ⟨true, 3⟩), (⟨false, 1⟩, ⟨fa
     .inl 11 := by
   simp only [mappedTwoCalls, callProg, ↓reduceDIte, returnProg]
 
+/-- The same two calls return their reply sum modulo two. -/
+noncomputable def parityTwoCalls :
+    List ((Σ _ : Bool, ℕ) × (Σ _ : Bool, ℕ)) → ℕ ⊕ (Σ _ : Bool, ℕ) :=
+  callProg true (queryMap true 5)
+    (fun y => callProg false (queryMap false (y + 4))
+      (fun z => returnProg ((y + z) % 2)))
+
+/-- Result mapping and query mapping compose through both existing call blocks. -/
+lemma twoCalls_map_result (h : List ((Σ _ : Bool, ℕ) × (Σ _ : Bool, ℕ))) :
+    Sum.map (fun n => n % 2) (Sigma.map id queryMap) (twoCalls h) =
+      parityTwoCalls (h.map (Prod.map (Sigma.map id queryMap) id)) := by
+  apply callProg_map
+  intro y t
+  exact callProg_map (fun n => n % 2) queryMap false (y + 4) _ _ (fun _ _ => rfl) t
+
+example : parityTwoCalls [] = .inr ⟨true, 1⟩ := rfl
+
+example : parityTwoCalls [(⟨true, 1⟩, ⟨false, 3⟩)] = .inr ⟨true, 1⟩ := by
+  simp only [parityTwoCalls, callProg, queryMap]
+  rw [dite_eq_right (by intro h; cases h)]
+
+example : parityTwoCalls [(⟨true, 1⟩, ⟨true, 3⟩), (⟨false, 1⟩, ⟨false, 8⟩)] =
+    .inl 1 := by
+  simp only [parityTwoCalls, callProg, ↓reduceDIte, returnProg]
+
+#print axioms SystemAlgebra.DSL.callProg_map
+#print axioms twoCalls_map_result
 #print axioms SystemAlgebra.DSL.callProg_queryMap
 #print axioms twoCalls_map
 

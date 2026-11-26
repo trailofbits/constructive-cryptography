@@ -16,6 +16,7 @@ renaming converter that forwards between two outside vocabularies.
 
 ## Main results
 
+* `outsideInputs_map_outsideMap`: outside-message maps commute with input projection
 * `IsResponsiveDDC.relabelOutside`: relabeling the outside preserves
   converters
 * `renameConverter_isResponsiveDDC`, `renameConverter_mapsDomain`: the renaming
@@ -40,6 +41,17 @@ def outsideMap (f : (Σ o, U o) → (Σ o, U' o)) :
     (Σ l, twoFam U Y l) → (Σ l, twoFam U' Y l)
   | ⟨⟨none, o⟩, u⟩ => ⟨⟨none, (f ⟨o, u⟩).1⟩, (f ⟨o, u⟩).2⟩
   | ⟨⟨some (), j⟩, y⟩ => ⟨⟨some (), j⟩, y⟩
+
+/-- Renaming outside messages commutes with projecting the outside input history. -/
+lemma outsideInputs_map_outsideMap
+    -- `f` maps complete outside messages; inside messages retain their labels and values.
+    (f : (Σ o, U o) → (Σ o, U' o)) (xs : List (Σ l, twoFam U Y l)) :
+    outsideInputs (xs.map (outsideMap f)) = (outsideInputs xs).map f := by
+  have split_map : splitIn ∘ outsideMap (Y := Y) f = twoMap f id ∘ splitIn := by
+    funext x
+    rcases x with ⟨⟨_ | ⟨⟨⟩⟩, i⟩, x⟩ <;> rfl
+  simp only [outsideInputs, List.map_map, split_map]
+  rw [← List.map_map, restrict_twoMap_none]
 
 lemma outsideMap_fst (e : O → O') (f : (Σ o, U o) → (Σ o, U' o))
     (hf : ∀ u, (f u).1 = e u.1) (z : Σ l, twoFam U Y l) :

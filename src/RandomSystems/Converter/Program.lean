@@ -1,6 +1,7 @@
 module
 
 public import RandomSystems.Converter.ConverterDomain
+public import RandomSystems.DDC.DDCRelabel
 
 /-!
 # Deterministic programs
@@ -35,6 +36,8 @@ its body does.
 * `DDC.insideQueries_length_le_of_costs`: exact costs bound the inside queries by the total cost
 * `DDC.insideQueries_restrict_length_le`: a port-preserving program queries `j = ι o` at most as
   often as it is queried at `o`
+* `Program.step_stateInputMap`: a body equation transports state and outside inputs,
+  including pending inside replies
 * `Program.run_map_inputs`, `DDC.ofProgram_map_inputs_of_stepMap`: commuting input and mode
   maps transport runs and the complete converter function, including off-tree histories
 * `Program.run_map`, `DDC.ofProgram_relabel_of_stepMap`: the identity-input instances
@@ -984,35 +987,77 @@ section StateComparison
 -- `S` and `T` carry retained states; `O` indexes outside queries `U o` and replies `V o`.
 -- `J` indexes inside queries `X j` and replies `Y j`. Both programs use these same ports.
 
+/-- Map retained states and outside inputs, preserving inside exchanges and pending queries. -/
+def Program.Mode.mapStateInput {T : Type} {U' : O → Type}
+    -- `f` maps retained states; `a o` maps outside queries at the same port `o`.
+    (f : S → T) (a : ∀ o, U o → U' o) :
+    Program.Mode S O J U X Y → Program.Mode T O J U' X Y
+  | .idle s => .idle (f s)
+  | .busy o s u h q => .busy o (f s) (a o u) h q
+
 /-- Replace the retained state `s` by `f s`, preserving the invocation and pending query. -/
 def Program.Mode.mapState {T : Type} (f : S → T) :
-    Program.Mode S O J U X Y → Program.Mode T O J U X Y
-  | .idle s => .idle (f s)
-  | .busy o s u h q => .busy o (f s) u h q
+    Program.Mode S O J U X Y → Program.Mode T O J U X Y :=
+  Program.Mode.mapStateInput f (fun _ => id)
+
+/-- A body equation transports its next state or pending query through `Program.emit`. -/
+lemma Program.emit_stateInputMap {T : Type} {U' : O → Type}
+    {P : Program S O J U V X Y} {Q : Program T O J U' V X Y}
+    -- `f` changes state representation and `a` changes outside inputs at their existing ports.
+    (f : S → T) (a : ∀ o, U o → U' o)
+    -- `bodyMap` preserves inside queries and replies while mapping the retained state.
+    (bodyMap : ∀ s o u h,
+      Sum.map (Prod.map f id) id (P s o u h) = Q (f s) o (a o u) h)
+    (s : S) (o : O) (u : U o) (h : List ((Σ j, X j) × (Σ j, Y j))) :
+    Prod.map (Program.Mode.mapStateInput f a) id (P.emit s o u h) =
+      Q.emit (f s) o (a o u) h := by
+  have same := bodyMap s o u h
+  unfold Program.emit
+  rcases hp : P s o u h with ⟨s', v⟩ | q
+  · simp only [hp, Sum.map_inl, Prod.map, id_eq] at same
+    rw [← same]
+    rfl
+  · simp only [hp, Sum.map_inr, id_eq] at same
+    rw [← same]
+    rfl
+
+/-- The body equation also transports pending replies and rejects the same wrong-port inputs. -/
+lemma Program.step_stateInputMap {T : Type} {U' : O → Type}
+    {P : Program S O J U V X Y} {Q : Program T O J U' V X Y}
+    -- `f` maps retained states; `a o` maps outside inputs without changing port `o`.
+    (f : S → T) (a : ∀ o, U o → U' o)
+    -- `bodyMap` preserves inside queries and final replies after these two maps.
+    (bodyMap : ∀ s o u h,
+      Sum.map (Prod.map f id) id (P s o u h) = Q (f s) o (a o u) h)
+    (m : Program.Mode S O J U X Y) (x : Σ l, twoFam U Y l) :
+    (P.step m x).map (Prod.map (Program.Mode.mapStateInput f a) id) =
+      Q.step (m.mapStateInput f a) (outsideMap (Sigma.map id a) x) := by
+  classical
+  rcases m with s | ⟨o, s, u, h, q⟩ <;> rcases x with ⟨⟨_ | ⟨⟨⟩⟩, j⟩, v⟩
+  · simp only [Program.step, Program.Mode.mapStateInput, outsideMap, Sigma.map,
+      Option.map_some, Program.emit_stateInputMap f a bodyMap, id_eq]
+  · rfl
+  · rfl
+  · simp only [Program.step, Program.Mode.mapStateInput, outsideMap]
+    split_ifs
+    · simp only [Option.map_some, Program.emit_stateInputMap f a bodyMap]
+    · rfl
 
 /-- Mapping the state commutes with `Program.emit`. -/
 lemma Program.emit_stateMap {T : Type} {P : Program S O J U V X Y} {Q : Program T O J U V X Y}
     (f : S → T) (hf : ∀ σ o u h, Sum.map (Prod.map f id) id (P σ o u h) = Q (f σ) o u h)
     (s : S) (o : O) (u : U o) (h : List ((Σ j, X j) × (Σ j, Y j))) :
-    Prod.map (Program.Mode.mapState f) id (P.emit s o u h) = Q.emit (f s) o u h := by
-  have he := hf s o u h
-  unfold Program.emit
-  rcases hp : P s o u h with ⟨s', v⟩ | q <;>
-    simp [hp] at he <;> simp [← he, Program.Mode.mapState]
+    Prod.map (Program.Mode.mapState f) id (P.emit s o u h) = Q.emit (f s) o u h :=
+  Program.emit_stateInputMap f (fun _ => id) hf s o u h
 
 /-- Mapping the state commutes with `Program.step`. -/
 lemma Program.step_stateMap {T : Type} {P : Program S O J U V X Y} {Q : Program T O J U V X Y}
     (f : S → T) (hf : ∀ σ o u h, Sum.map (Prod.map f id) id (P σ o u h) = Q (f σ) o u h)
     (m : Program.Mode S O J U X Y) (x : Σ l, twoFam U Y l) :
     (P.step m x).map (Prod.map (Program.Mode.mapState f) id) = Q.step (m.mapState f) x := by
-  rcases m with s | ⟨o, s, u, h, q⟩ <;> rcases x with ⟨⟨_ | ⟨⟨⟩⟩, j⟩, v⟩
-  · simp [Program.step, Program.Mode.mapState, Program.emit_stateMap f hf]
-  · rfl
-  · rfl
-  · simp only [Program.step, Program.Mode.mapState]
-    split_ifs
-    · simp [Program.emit_stateMap f hf]
-    · rfl
+  have same := Program.step_stateInputMap f (fun _ => id) hf m x
+  have identity : Sigma.map id (fun o => (id : U o → U o)) = id := rfl
+  simpa only [identity, outsideMap_id, id_eq, Program.Mode.mapState] using same
 
 /-- Mapping the state commutes with `Program.after`. -/
 lemma Program.after_stateMap {T : Type} {P : Program S O J U V X Y} {Q : Program T O J U V X Y}
