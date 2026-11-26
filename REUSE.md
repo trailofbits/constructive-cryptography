@@ -92,6 +92,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Ordered tuple collection | `TypedConverter.collect` in [Collector] |
 | Family reindexing | `TypedConverter.reindex` in [FamilyReindex] |
 | Finite-family distance | `distance_parallelAll_le_sum` in [FamilyDistance] |
+| Selected-component properties | `mem_parallelAll_of_mem` in [FamilySpecification] |
 | Abstract finite families | `FiniteParallel` in [FiniteParallel] |
 | Family hybrid | `parallelAllImplication`, `distance_smul_parallelAll_le_sum` in [FamilyHybrid] |
 | Fixed finite-family context | `TypedConverter.parallelAllContext` in [FamilyContext] |
@@ -180,6 +181,7 @@ named `budget` argument. The object index below supplies owners for those declar
 [Memoryless]: src/RandomSystems/Typed/Memoryless.lean
 [Collector]: src/RandomSystems/Typed/FiniteFamilyCollect.lean
 [FamilyReindex]: src/RandomSystems/Typed/ParallelAllReindex.lean
+[FamilySpecification]: src/ConstructiveCryptography/CryptographicAlgebra/FiniteParallel/Specification.lean
 [FamilyDistance]: src/ConstructiveCryptography/CryptographicAlgebra/FiniteParallel/PseudoMetric.lean
 [FamilyHybrid]: src/ConstructiveCryptography/Substitution/FiniteFamily.lean
 [FamilyContext]: src/RandomSystems/Typed/ParallelAllContext.lean
