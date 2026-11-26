@@ -154,6 +154,7 @@ public import RandomSystems.Typed.FilterDistance
 public import RandomSystems.System.QueryRelabel
 public import RandomSystems.System.QueryRelabel.Laws
 public import RandomSystems.System.Interconnection
+public import RandomSystems.System.AutomatonFunction
 
 /-!
 Random systems: raw systems and connection, deterministic converters, PDSs, cumulative random
