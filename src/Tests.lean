@@ -237,6 +237,7 @@ public import Tests.CollectCallsTrace
 public import Tests.CollectAttachment
 public import Tests.ChronologicalSampling
 
+public import Tests.AbstractModelFiniteAddresses
 public import Tests.ListPermutation
 public import Tests.ChronologicalPermutation
 
