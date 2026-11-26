@@ -135,10 +135,10 @@ lemma monitored_mass (h) : monitored.1.1 h =
   simp only [ProbDist.single, mass_single, monitoredDDS]
 
 /-- The compiled program consumes two replies and returns the second with its current MBO. -/
-lemma completed_converter_replies : Replies
+lemma completed_converter_replies (b : Bool) : Replies
     (liftMBO (DDC.ofProgramOn () verify outside.domain))
-    ((RandomSystem.parallelLeft (completed true)).map Prod.fst)
-    ((RandomSystem.parallelLeft (completed true)).map Prod.snd) := by
+    ((RandomSystem.parallelLeft (completed b)).map Prod.fst)
+    ((RandomSystem.parallelLeft (completed b)).map Prod.snd) := by
   refine ⟨rfl, ?_⟩
   intro k hk _
   change k < 3 at hk
@@ -168,7 +168,7 @@ lemma completed_replies : Replies
     ((completed true).map Prod.fst) ((completed true).map Prod.snd) :=
   (RandomSystem.replies_pair_iff _ _ _).mpr
     ⟨by simp [RandomSystem.parallelConsistent, completed, resourceInput],
-      completed_converter_replies, completed_game_replies⟩
+      completed_converter_replies true, completed_game_replies⟩
 
 /-- Completing the outside query includes the second inside call and hence sets the monitor. -/
 lemma verifier_reflects : verifier.ReflectsMBO monitored.1.1 (fun h => h.length = 1) := by
