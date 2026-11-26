@@ -72,13 +72,14 @@ compatible distinguisher $`D`$, [the decision probability](Mixture.lean) is an a
 taking the decision event's mass in the transcript mixture. `Domain.Distinguisher.probability_mix`
 then averages over the distinguisher's independent random choice.
 
-For two families on the same interface, the typed
-[`transcriptDistance_sample_le`](../Typed/SamplingDistance.lean) derives
-$`\Delta(\operatorname{sample}(P, R), \operatorname{sample}(P, S)) \le \varepsilon`$
-from $`\Delta(R_k, S_k) \le \varepsilon`$ for every $`k`$. For each distinguisher, the
-averaging lemma `abs_average_sub_le` in [Transcript](Transcript.lean) preserves the bound
-on its component advantages, using nonnegative weights summing to one. The law may be nonuniform,
-but it must be the same in both mixtures. Sampling itself does not reveal the component index.
+If component $k$ has error at most $\varepsilon_k$, the same averaging identity bounds
+the sampled distance by $\sum_k P(k)\varepsilon_k$.
+[The weighted and constant bounds](../Typed/SamplingDistance.lean) use the same normalized law
+in both experiments and allow an infinite index type with finite support.
+
+The underlying `RandomSystem.transcriptDistance_mix_le_expect` in [Mixture](Mixture.lean)
+needs component bounds only on the support of $P$. Its proof applies the probability-level
+kernel-distance bound to each observed transcript law; typed resource bounds are instances.
 
 ## Couplings
 
