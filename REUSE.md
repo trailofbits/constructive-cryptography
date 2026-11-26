@@ -144,6 +144,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Interpret abstract commands over partial registers and certify initialized operands | `AbstractModel.registers`, `registers_isSome` in `Commons.Definitions.AbstractModel.Registers.Laws` |
 | Connect register commands to observations on their current values | `AbstractModel.registersConverter` in `Commons.Definitions.AbstractModel.RegisterConverter`, with exact observation costs and initialized-read domain |
 | Sample an abstract model and test its first submitted guess | `AbstractModel.extractionSystem`, `extracted` in `Commons.Definitions.AbstractModel.Extraction` |
+| Score extraction while preserving its composed visible system | `AbstractModel.extractionGame`, `extractionGame_visible` in `Commons.Definitions.AbstractModel.ExtractionGame` |
 | Evaluate a sampled game's condition on completed interactions | `PDG.winProbability_behavior` in `RandomSystems.Game.Transcript` |
 | Score one admitted query in a sampled game | `PDG.winProbability_behavior_ofQueries_singleton` in `RandomSystems.Game.Transcript` |
 | Present a sampled monitor by one tagged reply function | `PDG.withMBO_ofFunction` in `RandomSystems.Game.FunctionGame` |
