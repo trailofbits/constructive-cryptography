@@ -88,6 +88,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Forward and inverse queries to one permutation | `StrongURP` in [Ideal] |
 | Independent permutation per tweak | `TweakableURP`, `TweakableStrongURP` in [Ideal] |
 | Selected family exchange | `Interface.selectExchange` in [FamilySelection] |
+| Selected family freshness | `AnswersFresh.parallelAll` in [FamilyFreshness] |
 | Selected fresh replies | `TypedSystem.AnswersFresh` in [FreshComponent] |
 | Fresh samples | `TypedSystem.source` in [Source]; `MemorylessSource` in [Ideal] |
 | Fresh query-dependent replies | `TypedSystem.ofMemoryless` in [Memoryless] |
@@ -343,4 +344,5 @@ still require reading the definitions.
 [FiniteParallel]: src/ConstructiveCryptography/CryptographicAlgebra/FiniteParallel.lean
 
 [FamilySelection]: src/RandomSystems/Typed/ParallelAllSelection.lean
+[FamilyFreshness]: src/ConstructiveCryptography/Instances/FiniteParallelFreshness.lean
 [FreshComponent]: src/RandomSystems/Typed/FreshComponent.lean
