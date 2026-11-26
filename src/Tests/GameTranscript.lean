@@ -122,6 +122,25 @@ example : let n := winner_isDDD.2.1.choose
         g.1.2.1 ((g.1.1.1.tr (ddeOf winner_isDDD).1 n).map Prod.fst)) :=
   PDG.winProbability_behavior _ _ _ _ winner_compatible (ddeOf_bounded winner_isDDD)
 
+/-- An initially true condition scores one after the admitted query, for every final decision. -/
+example (accept : List (Σ i, port.X i) × List (Σ i, port.Y i) → Prop) :
+    (PDG.behavior samples.1 samples.2).winProbability
+        (envProbe (DDE.ofQueries [⟨(), false⟩]) accept)
+        (envProbe_isDDD (DDE.ofQueries_queryBounded
+          (X := Σ i, port.X i) (Y := Σ i, port.Y i) [⟨(), false⟩])) = 1 := by
+  have admitted : port.domain [⟨(), false⟩] :=
+    ⟨List.cons_ne_nil _ _, by simp only [List.length_singleton]; omega⟩
+  calc
+    _ = PDG.badProbability samples.1 [⟨(), false⟩] :=
+      PDG.winProbability_behavior_ofQueries_singleton samples.1 samples.2
+        ⟨(), false⟩ admitted accept
+    _ = 1 := by
+      change PDG.badProbability
+        (PDG.ofAutomaton port echo (ProbDist.single ()) (fun _ => always)).1 [⟨(), false⟩] = 1
+      rw [PDG.ofAutomaton_badProbability]
+      simp only [always, ProbDist.single, mass_single, ite_true]
+
 #print axioms PDG.winProbability_behavior
+#print axioms PDG.winProbability_behavior_ofQueries_singleton
 
 end Tests.GameTranscript
