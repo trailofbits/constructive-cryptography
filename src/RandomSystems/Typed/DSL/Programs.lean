@@ -21,6 +21,7 @@ count the inside queries along the exchanges a body makes itself.
 
 ## Main results
 
+* `callProg_queryMap`: query relabeling propagates through a call and its continuation
 * `callBound_return`, `callBound_call`, `callBound_ite`, `callBound_foldr`,
   `callBound_uniform`: bounds of the statement forms
 * `callCost_return`, `callCost_call`, `callCost_foldr`: costs of the statement forms
@@ -32,7 +33,7 @@ count the inside queries along the exchanges a body makes itself.
 
 namespace SystemAlgebra.DSL
 
-open Classical Probability
+open Probability
 open Program (CallBound CallCost ExchangesOf PreservesAt)
 
 variable {J A : Type} {X Y : J → Type}
@@ -74,6 +75,7 @@ abbrev forEach {T C R : Type} (xs : List T) (step : T → (C → R) → C → R)
 /-- The body of a return statement. -/
 def returnProg (a : A) : List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j) := fun _ => .inl a
 
+open Classical in
 /-- The body of a call statement: query `x` at `j`, and continue with the reply. -/
 noncomputable def callProg (j : J) (x : X j)
     (k : Y j → List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j)) :
@@ -81,12 +83,39 @@ noncomputable def callProg (j : J) (x : X j)
   | [] => .inr ⟨j, x⟩
   | (_, ⟨j', y⟩) :: h => if hj : j' = j then k (hj ▸ y) h else .inr ⟨j, x⟩
 
+/-- Mapping inside queries commutes with a call when it commutes with the continuation. -/
+lemma callProg_queryMap
+    -- `J` labels ports, `A` carries final values, and `Y` is the unchanged reply family.
+    {J A : Type} {X X' Y : J → Type}
+    -- `f j` maps queries at port `j` from `X j` to `X' j`, retaining that port.
+    (f : ∀ j, X j → X' j) (j : J) (x : X j)
+    -- `k` and `k'` continue with the same reply, over the original and mapped exchange histories.
+    (k : Y j → List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j))
+    (k' : Y j → List ((Σ j, X' j) × (Σ j, Y j)) → A ⊕ (Σ j, X' j))
+    -- `same` says that mapping the continuation's queries preserves its final value.
+    (same : ∀ y h, Sum.map id (Sigma.map id f) (k y h) =
+      k' y (h.map (Prod.map (Sigma.map id f) id)))
+    (h : List ((Σ j, X j) × (Σ j, Y j))) :
+    Sum.map id (Sigma.map id f) (callProg j x k h) =
+      callProg j (f j x) k' (h.map (Prod.map (Sigma.map id f) id)) := by
+  classical
+  cases h with
+  | nil => rfl
+  | cons z h =>
+    obtain ⟨q, ⟨j', y⟩⟩ := z
+    -- The recorded reply retains its label, so both calls select the same continuation.
+    simp only [callProg, List.map_cons, Prod.map_apply, id_eq]
+    split_ifs with hj
+    · exact same (hj ▸ y) h
+    · rfl
+
 lemma callBound_return (b : ℕ) (a : A) :
     CallBound (X := X) (Y := Y) b (returnProg a) := by
   intro h q _ hq
   cases hq
 
-lemma _root_.SystemAlgebra.Program.CallBound.mono {a b : ℕ} {f : List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j)}
+lemma _root_.SystemAlgebra.Program.CallBound.mono {a b : ℕ}
+    {f : List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j)}
     (hf : CallBound a f) (hab : a ≤ b) : CallBound b f :=
   fun h q hc hq => (hf h q hc hq).trans_le hab
 
@@ -150,7 +179,8 @@ lemma callBound_uniform {S O : Type} {U V : O → Type}
     (fun p : S × (Σ o, U o) => cost p.1 p.2.1 p.2.2)
   exact ⟨b, fun s o u => (hcost s o u).mono (hbound (s, ⟨o, u⟩))⟩
 
-lemma _root_.SystemAlgebra.Program.CallCost.of_eq {m n : ℕ} {f : List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j)}
+lemma _root_.SystemAlgebra.Program.CallCost.of_eq {m n : ℕ}
+    {f : List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j)}
     (e : m = n) (hf : CallCost m f) : CallCost n f := e ▸ hf
 
 lemma callCost_return (a : A) : CallCost (X := X) (Y := Y) 0 (returnProg a) := by
