@@ -77,6 +77,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Extend distinct list-position labels to evaluated inputs | `List.exists_perm_apply_idxOf_eq` in `Probability.List.Permutation` |
 | Evaluate a completed adaptive invocation from its local trace | `Program.combine_eq_of_consistent_replies` in `RandomSystems.Converter.ProgramTrace` |
 | Certify a scheduled collection and attach it to retained state | `DSL.collectCalls_exchangesOf` in `RandomSystems.Typed.DSL.Collect`; `Program.combine_eq_of_collectCalls` in `CollectAttachment` |
+| Compare chronological labels under an invariant retained-function law | `chronologicalLabelingProgram_mass_replies_eq_of_fTransform_eq` in `RandomSystems.Converter.ChronologicalLabeling.Sampling` |
 | Transport complete register converters through address embeddings | `registersDDC_mapCommand` in `Commons.Definitions.AbstractModel.RegisterDDC.AddressMap` |
 | Transport oracle bodies through state and outside-query maps | `Program.step_stateInputMap` in `RandomSystems.Converter.Program`; `DSL.callProg_map` in `RandomSystems.Typed.DSL.Programs` |
 | Rename register addresses while preserving contents | `AbstractModel.mapInput`, `mapCommand`, `registers_mapCommand` in `Commons.Definitions.AbstractModel` and `Registers.Laws` |
