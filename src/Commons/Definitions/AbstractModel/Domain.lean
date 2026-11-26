@@ -87,19 +87,35 @@ lemma admitted_snoc_iff
 
 /-! ## Address maps -/
 
+/-- Decoding a command needs an inverse only on its operand and destination addresses. -/
+lemma mapCommand_mapCommand_eq_of_inverse_on
+    -- `f` encodes addresses and `g` decodes them; `z` is the command being transported.
+    {κ : Type} (f : ι → κ) (g : κ → ι) (z : M.Command ι)
+    -- `operands` and `destination` cover every address mentioned by `z`.
+    (operands : ∀ a ∈ M.reads z, g (f a) = a)
+    (destination : ∀ a, M.target z = some a → g (f a) = a) :
+    M.mapCommand g (M.mapCommand f z) = z := by
+  obtain ⟨o | ρ | _, z⟩ := z
+  · obtain ⟨a, target⟩ := z
+    have values (j : Fin (M.arity o)) : g (f (a j)) = a j :=
+      operands (a j) (Finset.mem_image.mpr ⟨j, Finset.mem_univ j, rfl⟩)
+    have target_eq := destination target rfl
+    simp only [mapCommand, Sigma.map, id_eq, mapInput, Function.comp_def, values, target_eq]
+  · have values (j : Fin (M.queryArity ρ)) : g (f (z j)) = z j :=
+      operands (z j) (Finset.mem_image.mpr ⟨j, Finset.mem_univ j, rfl⟩)
+    simp only [mapCommand, Sigma.map, id_eq, mapInput, Function.comp_def, values]
+  · rfl
+
 omit [DecidableEq ι] in
 /-- An address decoder also decodes operand vectors, destinations, and complete commands. -/
 lemma mapCommand_leftInverse
     -- `f` encodes addresses and `g` decodes them; submitted values are unchanged.
     {κ : Type} (f : ι → κ) (g : κ → ι) (inverse : Function.LeftInverse g f) :
     Function.LeftInverse (M.mapCommand g) (M.mapCommand f) := by
-  have decoded (x : ι) : g (f x) = x := inverse x
+  classical
   intro z
-  obtain ⟨o | ρ | _, z⟩ := z
-  · obtain ⟨a, destination⟩ := z
-    simp only [mapCommand, Sigma.map, id_eq, mapInput, Function.comp_def, decoded]
-  · simp only [mapCommand, Sigma.map, id_eq, mapInput, Function.comp_def, decoded]
-  · rfl
+  exact mapCommand_mapCommand_eq_of_inverse_on f g z
+    (fun a _ => inverse a) (fun a _ => inverse a)
 
 /-- The operands of a renamed command are the image of its original operands. -/
 lemma reads_mapCommand

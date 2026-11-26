@@ -73,6 +73,7 @@ named `budget` argument. The object index below supplies owners for those declar
 
 | Needed object | Declaration and module |
 | --- | --- |
+| Decode register commands using inverses only on their operands and destinations | `mapCommand_mapCommand_eq_of_inverse_on` in `Commons.Definitions.AbstractModel.Domain` |
 | Move outside query and reply maps through attachment | `relabel_apply_outside_both` in `RandomSystems.DDC.DDCRelabel` |
 | Extend distinct list-position labels to evaluated inputs | `List.exists_perm_apply_idxOf_eq` in `Probability.List.Permutation` |
 | Compare chronological and evaluated inputs under one uniform permutation | `chronologicalLabelingProgram_uniform_mass_replies_eq_of_injOn` in `RandomSystems.Converter.ChronologicalLabeling.Uniform` |
