@@ -2471,58 +2471,34 @@ theorem RandomSystem.GameEquivalent.attach_liftMBO
   set N := (2 * L.2.choose + 2) * us.length
   change (RandomSystem.parallel L.1 G).connectionLaw resourceRoute resourceInput us N vs =
     (RandomSystem.parallel L.1 H).connectionLaw resourceRoute resourceInput us N vs
-  simp only [RandomSystem.connectionLaw, Distribution.fTransform_apply_eq_mass]
-  -- Compare each summand with the converter factor held fixed.
-  have hterm : ∀ t, exposedReplies (resourceRoute (U := U)) (t.map Prod.snd) = vs →
-      ((RandomSystem.parallel L.1 G).sLaw (connectionQueries resourceRoute resourceInput us) N
-        |>.restrict fun t => ¬ (connectionQueries resourceRoute resourceInput us
-          (t.map Prod.snd)).Dom) t =
-      ((RandomSystem.parallel L.1 H).sLaw (connectionQueries resourceRoute resourceInput us) N
-        |>.restrict fun t => ¬ (connectionQueries resourceRoute resourceInput us
-          (t.map Prod.snd)).Dom) t := by
-    intro t hexp
-    rw [RandomSystem.sLaw_completed_apply, RandomSystem.sLaw_completed_apply]
-    split_ifs with hgood
-    · obtain ⟨hc, -, hstop⟩ := hgood
-      rw [RandomSystem.parallel_mass, RandomSystem.parallel_mass]
-      split_ifs with hpar
-      · rw [PDCBehavior.liftMBO_apply]
-        split_ifs with htag
-        · congr 1
-          have hexpFalse :
-              ∀ v ∈ exposedReplies (resourceRoute (U := U)) (t.map Prod.snd), v.2.2 = false := by
-            intro v hv
-            rw [hexp] at hv
-            simp only [vs, unsetMBOs, List.map_map, Function.comp_def, List.mem_map] at hv
-            obtain ⟨z, -, rfl⟩ := hv
-            rfl
-          -- Monotone inside histories are all unset; other histories have zero game mass.
-          by_cases hmono : ((RandomSystem.parallelRight t).map fun z => z.2.2.2).Pairwise (· ≤ ·)
-          · rw [parallelRight_eq_unsetMBOs_of_completed hc hpar hstop htag hexpFalse hmono]
-            exact hGH _
-          · have hG0 : G (RandomSystem.parallelRight t) = 0 := by
-              by_contra hne
-              exact hmono (hGm _ hne)
-            have hH0 : H (RandomSystem.parallelRight t) = 0 := by
-              by_contra hne
-              exact hmono (hHm _ hne)
-            rw [hG0, hH0]
-        · simp
-      · rfl
-    · rfl
-  -- Equal weights on the selected fiber give equal outside transcript probabilities.
-  have hmass_eq : ∀ {α : Type} (μ₁ μ₂ : Distribution α) (P : α → Prop),
-      (∀ t, P t → μ₁ t = μ₂ t) → μ₁.mass P = μ₂.mass P := by
-    intro α μ₁ μ₂ P hP
-    have hμ : μ₁.restrict P = μ₂.restrict P := by
-      apply Finsupp.ext
-      intro t
-      rw [Distribution.restrict_apply, Distribution.restrict_apply]
-      split_ifs with ht
-      · exact hP t ht
-      · rfl
-    rw [← Distribution.weight_restrict, ← Distribution.weight_restrict, hμ]
-  exact hmass_eq _ _ _ hterm
+  apply RandomSystem.connectionLaw_apply_eq_of_completed
+  intro t hc _ hstop hexp
+  -- Compare the component coefficients with the lifted converter factor held fixed.
+  rw [RandomSystem.parallel_mass, RandomSystem.parallel_mass]
+  split_ifs with hpar
+  · rw [PDCBehavior.liftMBO_apply]
+    split_ifs with htag
+    · congr 1
+      have hexpFalse :
+          ∀ v ∈ exposedReplies (resourceRoute (U := U)) (t.map Prod.snd), v.2.2 = false := by
+        intro v hv
+        rw [hexp] at hv
+        simp only [vs, unsetMBOs, List.map_map, Function.comp_def, List.mem_map] at hv
+        obtain ⟨z, -, rfl⟩ := hv
+        rfl
+      -- Monotone inside histories are all unset; other histories have zero game mass.
+      by_cases hmono : ((RandomSystem.parallelRight t).map fun z => z.2.2.2).Pairwise (· ≤ ·)
+      · rw [parallelRight_eq_unsetMBOs_of_completed hc hpar hstop htag hexpFalse hmono]
+        exact hGH _
+      · have hG0 : G (RandomSystem.parallelRight t) = 0 := by
+          by_contra hne
+          exact hmono (hGm _ hne)
+        have hH0 : H (RandomSystem.parallelRight t) = 0 := by
+          by_contra hne
+          exact hmono (hHm _ hne)
+        rw [hG0, hH0]
+    · simp
+  · rfl
 
 end GameEquivalence
 

@@ -23,6 +23,8 @@ system.
   connections
 * `exists_completed_of_connectionLaw_ne_zero`: positive exposed replies have a positive
   completed internal interaction
+* `connectionLaw_apply_eq_of_completed`: agreement on one completed internal fiber gives
+  equal exposed probability, even when the source domains differ
 * `connectionLaw_eq_mass`: on a presentation, connection probabilities are those of
   the deterministic connection
 * `exists_parallel_connection_presentations`: a connection of two random systems is
@@ -300,6 +302,30 @@ noncomputable def connectionLaw (R : RandomSystem X Y D) (route : Y → B ⊕ X)
   Distribution.fTransform (fun h => exposedReplies route (h.map Prod.snd))
     ((R.sLaw (connectionQueries route inj us) n).restrict
       fun h => ¬ (connectionQueries route inj us (h.map Prod.snd)).Dom)
+
+/-- Agreement on the completed interactions exposing `vs` gives the same connection mass. -/
+lemma connectionLaw_apply_eq_of_completed
+    -- `R,S` have the same internal alphabets `X,Y` but may have different domains `D,E`.
+    {E : Domain X Y} (R : RandomSystem X Y D) (S : RandomSystem X Y E)
+    -- `route` selects exposed replies or internal calls; `inj` submits the outside inputs `us`.
+    (route : Y → B ⊕ X) (inj : A → X) (us : List A)
+    -- `n` bounds internal exchanges; `vs` selects one exposed reply sequence.
+    (n : ℕ) (vs : List B)
+    -- `same` equates source coefficients on this completed fiber.
+    (same : ∀ t : List (X × Y),
+      FollowsStrategy (connectionQueries route inj us) t → t.length ≤ n →
+      ¬ (connectionQueries route inj us (t.map Prod.snd)).Dom →
+      exposedReplies route (t.map Prod.snd) = vs → R t = S t) :
+    R.connectionLaw route inj us n vs = S.connectionLaw route inj us n vs := by
+  classical
+  -- Pushforward collects exactly the completed interactions in this exposed fiber.
+  simp only [connectionLaw, Distribution.fTransform_apply_eq_mass]
+  apply Distribution.mass_eq_of_eq_on
+  intro t hexp
+  rw [sLaw_completed_apply, sLaw_completed_apply]
+  split_ifs with hc
+  · exact same t hc.1 hc.2.1 hc.2.2 hexp
+  · rfl
 
 lemma connectionLaw_nonneg (R : RandomSystem X Y D) (route : Y → B ⊕ X)
     (inj : A → X) (us : List A) (n : ℕ) :
