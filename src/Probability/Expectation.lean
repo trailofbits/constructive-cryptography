@@ -27,7 +27,8 @@ The expectation `𝔼_X[f] = ∑ₐ X(a) · f(a)` over a finite distribution.
 * `ProbDist.expect_jointLaw`, `ProbDist.jointLaw_mass_eq_expect`: average a value or event
   over successive draws
 * `expect_antitone_of_bindK`: conditional decreases give a nonincreasing expected potential
-* `expect_comp_eq_sum_mass`: `𝔼_X[ε ∘ classOf] = ∑_c ε(c) · X(classOf = c)`
+* `expect_comp_eq_sum_mass_of_eq_zero`, `expect_comp_eq_sum_mass`: group an expectation
+  by finitely many nonzero class scores
 -/
 
 @[expose] public section
@@ -422,21 +423,37 @@ lemma expect_prod_eq {A B : Type*} (first : Distribution A)
   simp only [Distribution.prod_apply, Distribution.expect, Finsupp.sum,
     Finset.mul_sum, mul_assoc]
 
-/-- **The expectation of an error constant on classes**, for a finite type of classes `C`:
-`𝔼_X[ε ∘ classOf] = ∑_c ε(c) · X(classOf = c)`. Signed layer: no hypothesis. -/
-lemma expect_comp_eq_sum_mass {A C : Type*} [Fintype C]
-    (X : Distribution A) (classOf : A → C) (ε : C → ℝ) :
-    X.expect (fun a => ε (classOf a)) = ∑ c, ε c * X.mass (fun a => classOf a = c) := by
+/-- Group an expectation by finitely many nonzero scores:
+`𝔼_X[ε ∘ f] = ∑ c ∈ s, ε(c) · X(f = c)`. -/
+lemma expect_comp_eq_sum_mass_of_eq_zero
+    -- `X` is a finite signed law on outcomes `A`; `f` sends outcomes to classes in `C`.
+    {A C : Type*} (X : Distribution A) (f : A → C)
+    -- `ε c` is the score of class `c`; it vanishes outside the selected finite set `s`.
+    (ε : C → ℝ) (s : Finset C) (outside : ∀ c ∉ s, ε c = 0) :
+    X.expect (fun a => ε (f a)) = ∑ c ∈ s, ε c * X.mass (fun a => f a = c) := by
   classical
-  -- Exchange the sums; each atom `a` contributes `X(a) · ε(classOf a)` to its own class only.
-  unfold Distribution.expect Distribution.mass Finsupp.sum
-  simp only [Finset.mul_sum]
-  rw [Finset.sum_comm]
-  refine Finset.sum_congr rfl fun a _ => ?_
-  rw [Finset.sum_eq_single (classOf a) (fun c _ hc => by simp only [Ne.symm hc, ↓reduceIte,
-    mul_zero])
-    (fun h => absurd (Finset.mem_univ _) h)]
-  simp only [mul_comm, ↓reduceIte]
+  -- A score is the sum of its class indicators, including zero outside `s`.
+  have expand (a : A) : ε (f a) = ∑ c ∈ s, if f a = c then ε c else 0 := by
+    rw [Finset.sum_ite_eq]
+    by_cases member : f a ∈ s
+    · rw [ite_eq_left member]
+    · rw [ite_eq_right member, outside _ member]
+  -- Average each indicator and retain its class's score.
+  calc
+    X.expect (fun a => ε (f a)) =
+        X.expect (fun a => ∑ c ∈ s, if f a = c then ε c else 0) :=
+      congrArg (X.expect) (funext expand)
+    _ = ∑ c ∈ s, ε c * X.mass (fun a => f a = c) := by
+      rw [expect_finset_sum]
+      exact Finset.sum_congr rfl fun c _ => expect_indicator_const X _ (ε c)
+
+/-- For finitely many classes, group every score by its class mass. -/
+lemma expect_comp_eq_sum_mass {A C : Type*} [Fintype C]
+    -- `classOf` assigns each outcome of the signed law `X` a class with score `ε`.
+    (X : Distribution A) (classOf : A → C) (ε : C → ℝ) :
+    X.expect (fun a => ε (classOf a)) = ∑ c, ε c * X.mass (fun a => classOf a = c) :=
+  expect_comp_eq_sum_mass_of_eq_zero X classOf ε Finset.univ
+    (fun c outside => (outside (Finset.mem_univ c)).elim)
 
 /-- The squared expectation is at most the nonzero mass times the second moment.
 Only the distribution weights must be nonnegative; `X` may take either sign. -/
