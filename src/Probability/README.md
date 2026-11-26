@@ -76,6 +76,10 @@ $`\delta(fX, fY) \le \delta(X, Y)`$; with [positive parts][statDist_eq_weight_po
 $`\delta(X, Y) = \lvert (X - Y)^{+} \rvert`$, and with [overlaps][statDist_eq_weight_sub_weight_inf]
 $`\delta(X, Y) = \lvert X \rvert - \lvert X \wedge Y \rvert`$.
 
+For dependent draws, `statDist_bindK_le_expect` averages the conditional distances.
+`statDist_bindK_le` gives data processing for any common nonnegative kernel of mass at most one.
+Both laws admit finite signed conditional or input laws as specified in their statements.
+
 [`statDist_fTransform_le_expect_of_ratio`][statDist_fTransform_le_expect_of_ratio] combines
 data processing [1, Lemma 3] with the expectation method [4, Lemma 2.2.1] after any common
 function $`f`$:
@@ -187,10 +191,10 @@ against a running `foldl` state (`List.ForallScan`, `List.ForallScan.append`,
 [ProbDist.jointLaw_fst]: Kernel.lean#L500
 [ProbDist.jointLaw_map]: Kernel.lean#L520
 [normalizeOr]: Lift.lean#L189
-[statDist]: StatisticalDistance.lean#L99
-[statDist_triangle]: StatisticalDistance.lean#L249
-[statDist_fTransform_le]: StatisticalDistance.lean#L638
-[statDist_fTransform_le_expect_of_ratio]: StatisticalDistance.lean#L678
+[statDist]: StatisticalDistance.lean#L101
+[statDist_triangle]: StatisticalDistance.lean#L251
+[statDist_fTransform_le]: StatisticalDistance.lean#L712
+[statDist_fTransform_le_expect_of_ratio]: StatisticalDistance.lean#L752
 [statDist_eq_weight_posPart]: Lift.lean#L108
 [statDist_eq_weight_sub_weight_inf]: Lift.lean#L265
 [IsCoupling]: Coupling.lean#L50
