@@ -92,6 +92,8 @@ public import Commons.Definitions.AbstractModel.DomainExpansion
 public import Commons.Definitions.AbstractModel.DomainExpansion.Laws
 public import Commons.Definitions.AbstractModel.RegisterDDC.AddressMap
 
+public import Commons.Definitions.AbstractModel.FiniteAddresses
+
 /-! Common ideal systems, primitive syntax, domain restrictions and security definitions.
 `Definitions` holds these interfaces and contracts; `Schemes` holds concrete schemes,
 and `Tests` their known-answer tests. -/
