@@ -517,7 +517,7 @@ before/after proofs, expression guards, negative tests and exact rewrite traces 
 [WriteThrough]: ../../Examples/DSL/Components.lean#L108
 [cc_normalize]: ../Tactics/Basic.lean#L34
 [cc_nonexpand]: ../Tactics/Categorical.lean#L289
-[cc_nonexpand-interfaces]: ../Notation.lean#L176
+[cc_nonexpand-interfaces]: ../Notation.lean#L177
 [cc_triangle]: ../Tactics/Categorical.lean#L278
 [cc_construct]: ../Tactics/Categorical.lean#L165
 [cc_calc-constructs]: ../Tactics/Categorical.lean#L500

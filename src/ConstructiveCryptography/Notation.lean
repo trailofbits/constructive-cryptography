@@ -24,6 +24,7 @@ instances agree.
 * `TypedConverter.projectLeft A B • (R ∥ S) = R` and
   `TypedConverter.projectRight A B • (R ∥ S) = S`;
 * `α • sample P R = sample P (fun s => α • R s)` for normalized `P`;
+* `R ∥ sample P S = sample P (fun s => R ∥ S s)`, and likewise on the left;
 * `(⨂ₘ k, α k) • (∥ k, R k) = ∥ k, α k • R k`.
 
 A retained draw stays shared, including when later sample laws depend on it:
@@ -361,8 +362,12 @@ attribute [cc_normalization]
   TypedConverter.projectRight_smul_parallel
   TypedSystem.sample_const
 
--- Hoist samples after structural attachment, so serial composition exposes a component's owner.
-attribute [cc_normalization 900] TypedConverter.smul_sample
+-- Hoist each retained sample through its surrounding attachment and parallel context.
+-- A sample enclosing both arms remains one shared draw.
+attribute [cc_normalization 900]
+  TypedConverter.smul_sample
+  TypedSystem.parallel_sample_left
+  TypedSystem.parallel_sample_right
 
 lemma tensor_smul {A B C D : Interface} (α : A ⟶ B) (β : C ⟶ D)
     (R : TypedSystem B) (S : TypedSystem D) :
