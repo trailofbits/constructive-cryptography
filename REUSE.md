@@ -124,6 +124,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Evaluate an automaton's monitor under its initial law | `TypedGame.winProbability_ofAutomaton_at_bound` in `RandomSystems.Typed.AutomatonGame` |
 | Add a final decision without increasing an observer's query bound | `ddeOf_envProbe_queryBounded` in `RandomSystems.Distance.Decision` |
 | Propagate an adaptive potential bound | `expect_antitone_of_bindK` in `Probability.Expectation` |
+| Express adaptive transcript evolution as a probability kernel | `RandomSystem.sLaw_succ_eq_bindK` in `RandomSystems.Cumulative.ObservationKernel` |
 | Solve a finite binomial-count recurrence | `Probability.Counting.le_choose_mul_pow_of_succ_le` in `Probability.Counting.BinomialRecurrence` |
 | Bound a heavy bin under adaptive draws | `mass_occupancy_ge_le` in [Probability/Occupancy.lean](src/Probability/Occupancy.lean) |
 | Count subsets within finitely many occupied bins | `Finsupp.chooseSum`, `chooseSum_add_single`, `one_le_chooseSum_of_le` in `Probability.Counting.BinomialSum` |
