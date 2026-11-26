@@ -45,31 +45,33 @@ lemma shared_admitted : model.Admitted false 3 [overwrite, observe false, observ
     · simp [reads, observe, initialized, overwrite, target]
   · simp [reads, observe, initialized, overwrite, target]
 
-example : model.registerProgram false () false [] (.compute ()) (fun _ => false, false) [] =
+example : model.registerProgram false (model.operate ()) false [] (.compute ())
+    (fun _ => false, false) [] =
     .inl ([overwrite], ()) := rfl
 
-example : model.registerProgram false () false [] .submit true [] =
+example : model.registerProgram false (model.operate ()) false [] .submit true [] =
     .inl ([⟨.submit, true⟩], ()) := rfl
 
 /-- After overwrite, the first pending observation requests the updated bit. -/
 lemma pending_request :
-    model.registerProgram false () false [overwrite] (.query false) (fun _ => false) [] =
+    model.registerProgram false (model.operate ()) false [overwrite] (.query false)
+      (fun _ => false) [] =
       .inr ⟨false, fun _ => true⟩ := by
   simp [registerProgram, callProg, registers, write, overwrite, Commons.AbstractModel.read,
     initial]
 
 /-- Completing the first observation preserves the same value for the second caller. -/
-example : model.registerProgram false () false [overwrite, observe false]
+example : model.registerProgram false (model.operate ()) false [overwrite, observe false]
     (.query true) (fun _ => false) [] = .inr ⟨true, fun _ => true⟩ := by
   simp [registerProgram, callProg, registers, write, overwrite, observe,
     Commons.AbstractModel.read, initial]
 
-example : (model.observationInterface 3).domain [⟨false, fun _ => true⟩] :=
+example : (model.observationInterface Bool 3).domain [⟨false, fun _ => true⟩] :=
   ⟨List.cons_ne_nil _ _, by simp only [List.length_singleton]; omega⟩
 
 /-- The full costed converter uses the source's initialized-register domain unchanged. -/
-example : TypedConverter (model.interface false 3) (model.observationInterface 3) :=
-  model.registersConverter false 3 () false
+example : TypedConverter (model.interface false 3) (model.observationInterface Bool 3) :=
+  model.registersConverter false 3 (model.operate ()) false
 
 example : ([overwrite, observe false, observe true].map model.observationCost).sum = 2 := rfl
 
@@ -84,9 +86,9 @@ example :
     let v : Σ l : Two (Port Unit Bool) Bool,
         twoFam model.Output (fun _ => Fin 1 → Bool) l :=
       ⟨⟨some (), false⟩, fun _ => false⟩
-    Replies (DDC.ofProgramOn [] (model.registerProgram false () false)
+    Replies (DDC.ofProgramOn [] (model.registerProgram false (model.operate ()) false)
       (model.Admitted false 1)) [u] [v] ∧
-      (model.observationInterface 1).domain (insideQueries [v]) ∧
+      (model.observationInterface Bool 1).domain (insideQueries [v]) ∧
         (insideQueries [v]).length = 1 := by
   intro u v
   have admitted : model.Admitted false 1 [⟨.query false, fun _ => false⟩] := by
@@ -96,18 +98,19 @@ example :
     outsideInputs_outside _ _
   have inside : insideQueries [v] = [⟨false, fun _ => false⟩] :=
     insideQueries_inside _ _
-  have request : model.registerProgram false () false [] (.query false)
+  have request : model.registerProgram false (model.operate ()) false [] (.query false)
       (fun _ => false) [] = .inr ⟨false, fun _ => false⟩ := by
     simp [registerProgram, callProg, registers, Commons.AbstractModel.read, initial]
   refine ⟨?_, ?_, ?_⟩
   · apply (replies_snoc (xs := []) (ys := [])).mpr
     refine ⟨replies_nil _, ?_⟩
     change filterDom (fun xs => outsideInputs xs = [] ∨ model.Admitted false 1 (outsideInputs xs))
-      (DDC.ofProgram [] (model.registerProgram false () false)) [u] = Part.some v
+      (DDC.ofProgram [] (model.registerProgram false (model.operate ()) false)) [u] = Part.some v
     rw [filterDom, ite_eq_left (Or.inr (outside ▸ admitted))]
     calc
-      _ = Part.ofOption (((model.registerProgram false () false).after [] []).bind
-          fun m => ((model.registerProgram false () false).step m u).map Prod.snd) :=
+      _ = Part.ofOption (((model.registerProgram false (model.operate ()) false).after [] []).bind
+          fun m => ((model.registerProgram false (model.operate ()) false).step m u).map
+            Prod.snd) :=
         DDC.ofProgram_snoc _ _ [] u
       _ = Part.some v := by
         simp only [Program.after_nil, Option.bind_some, u, Program.step, Program.emit, request]

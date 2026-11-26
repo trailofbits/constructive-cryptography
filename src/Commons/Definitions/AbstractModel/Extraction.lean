@@ -14,7 +14,7 @@ secret, as in [1, Figure 1 and Definition 7, p. 8].
 
 ```text
            ┌──────── retained (p,x) ← D ────────┐
-commands ──► registersConverter p x ─► observations p
+commands ──► registersConverter (M.operate p) x ─► observations p
            └──────────────────────────────────┘
                     first submitted guess = x
 ```
@@ -56,12 +56,12 @@ variable [Fintype S] [Fintype M.Query] [∀ ρ, Fintype (M.Reply ρ)]
 [1, §3.1, p. 7]. The domain allows at most `k` observations. -/
 noncomputable def observations
     -- `k` bounds observation calls; `p` fixes the model's observation functions.
-    (k : ℕ) (p : P) : TypedSystem (M.observationInterface k) :=
+    (k : ℕ) (p : P) : TypedSystem (M.observationInterface S k) :=
   TypedSystem.ofFunction (M.evaluate p)
 
 variable [DecidableEq ι] [Fintype ι] [Fintype M.Operation]
 
-/-- Draw `(p,x) ← D` once and retain `registersConverter p x • observations p`
+/-- Draw `(p,x) ← D` once and retain `registersConverter (M.operate p) x • observations p`
 [1, Figure 1, p. 8]. There are at most `k` ordinary commands and one terminal submission. -/
 noncomputable def extractionSystem
     -- `input` initially contains `x`; `k` counts computations and observations together.
@@ -69,6 +69,6 @@ noncomputable def extractionSystem
     -- `D` is the joint law of parameter `p` and secret `x`, with arbitrary dependence.
     (D : Distribution.ProbDist (P × S)) : TypedSystem (M.interface input k) :=
   TypedSystem.sample D.1 fun z =>
-    M.registersConverter input k z.1 z.2 • M.observations k z.1
+    M.registersConverter input k (M.operate z.1) z.2 • M.observations k z.1
 
 end Commons.AbstractModel
