@@ -21,7 +21,8 @@ count the inside queries along the exchanges a body makes itself.
 
 ## Main results
 
-* `callProg_queryMap`: query relabeling propagates through a call and its continuation
+* `callProg_map`: result and query maps propagate through a call and its continuation
+* `callProg_queryMap`: the identity-result instance
 * `callBound_return`, `callBound_call`, `callBound_ite`, `callBound_foldr`,
   `callBound_uniform`: bounds of the statement forms
 * `callCost_return`, `callCost_call`, `callCost_foldr`: costs of the statement forms
@@ -83,6 +84,32 @@ noncomputable def callProg (j : J) (x : X j)
   | [] => .inr ⟨j, x⟩
   | (_, ⟨j', y⟩) :: h => if hj : j' = j then k (hj ▸ y) h else .inr ⟨j, x⟩
 
+/-- Mapping final values and inside queries commutes with a call and its continuation. -/
+lemma callProg_map
+    -- `J` labels ports, `A` and `B` carry final values, and `Y` is the unchanged reply family.
+    {J A B : Type} {X X' Y : J → Type}
+    -- `r` maps final values; `f j` maps inside queries while retaining port `j`.
+    (r : A → B) (f : ∀ j, X j → X' j) (j : J) (x : X j)
+    -- `k` and `k'` continue with the same reply, over the original and mapped exchange histories.
+    (k : Y j → List ((Σ j, X j) × (Σ j, Y j)) → A ⊕ (Σ j, X j))
+    (k' : Y j → List ((Σ j, X' j) × (Σ j, Y j)) → B ⊕ (Σ j, X' j))
+    -- `same` says that mapping the continuation applies `r` to its final value.
+    (same : ∀ y h, Sum.map r (Sigma.map id f) (k y h) =
+      k' y (h.map (Prod.map (Sigma.map id f) id)))
+    (h : List ((Σ j, X j) × (Σ j, Y j))) :
+    Sum.map r (Sigma.map id f) (callProg j x k h) =
+      callProg j (f j x) k' (h.map (Prod.map (Sigma.map id f) id)) := by
+  classical
+  cases h with
+  | nil => rfl
+  | cons z h =>
+    obtain ⟨q, ⟨j', y⟩⟩ := z
+    -- The recorded reply retains its label, so both calls select the same continuation.
+    simp only [callProg, List.map_cons, Prod.map_apply, id_eq]
+    split_ifs with hj
+    · exact same (hj ▸ y) h
+    · rfl
+
 /-- Mapping inside queries commutes with a call when it commutes with the continuation. -/
 lemma callProg_queryMap
     -- `J` labels ports, `A` carries final values, and `Y` is the unchanged reply family.
@@ -97,17 +124,8 @@ lemma callProg_queryMap
       k' y (h.map (Prod.map (Sigma.map id f) id)))
     (h : List ((Σ j, X j) × (Σ j, Y j))) :
     Sum.map id (Sigma.map id f) (callProg j x k h) =
-      callProg j (f j x) k' (h.map (Prod.map (Sigma.map id f) id)) := by
-  classical
-  cases h with
-  | nil => rfl
-  | cons z h =>
-    obtain ⟨q, ⟨j', y⟩⟩ := z
-    -- The recorded reply retains its label, so both calls select the same continuation.
-    simp only [callProg, List.map_cons, Prod.map_apply, id_eq]
-    split_ifs with hj
-    · exact same (hj ▸ y) h
-    · rfl
+      callProg j (f j x) k' (h.map (Prod.map (Sigma.map id f) id)) :=
+  callProg_map id f j x k k' same h
 
 lemma callBound_return (b : ℕ) (a : A) :
     CallBound (X := X) (Y := Y) b (returnProg a) := by

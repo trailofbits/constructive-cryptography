@@ -26,9 +26,8 @@ def queryMap (u : Σ _ : Unit, ℕ) : Σ _ : Unit, Bool := ⟨(), u.2 == 0⟩
 
 /-- Rename the held outside query while retaining the state, exchanges, and pending call. -/
 def modeMap : Program.Mode Unit Unit Unit (fun _ => ℕ) (fun _ => Unit) (fun _ => Bool) →
-    Program.Mode Unit Unit Unit (fun _ => Bool) (fun _ => Unit) (fun _ => Bool)
-  | .idle s => .idle s
-  | .busy o s n h q => .busy o s (n == 0) h q
+    Program.Mode Unit Unit Unit (fun _ => Bool) (fun _ => Unit) (fun _ => Bool) :=
+  Program.Mode.mapStateInput id (fun _ n => n == 0)
 
 /-- Erasing the outside query preserves a step, including its pending inside reply. -/
 lemma step_commutes (m : Program.Mode Unit Unit Unit (fun _ => ℕ)
@@ -36,21 +35,15 @@ lemma step_commutes (m : Program.Mode Unit Unit Unit (fun _ => ℕ)
     (x : Σ l, twoFam (fun _ : Unit => ℕ) (fun _ : Unit => Bool) l) :
     (naturalQuery.step m x).map (Prod.map modeMap id) =
       ProgramQueryMap.unitQuery.step (modeMap m) (outsideMap queryMap x) := by
-  classical
-  rcases m with ⟨⟨⟩⟩ | ⟨⟨⟩, ⟨⟩, n, h, ⟨⟨⟩, ⟨⟩⟩⟩ <;>
-    rcases x with ⟨⟨_ | ⟨⟨⟩⟩, ⟨⟩⟩, u⟩
-  · rfl
-  · rfl
-  · rfl
-  · cases h with
-    | nil => simp only [Program.step, modeMap, outsideMap, ↓reduceIte,
-        List.nil_append, Program.emit, naturalQuery, ProgramQueryMap.unitQuery,
-        Option.map_some, Prod.map, id_eq]
-    | cons z h =>
-        rcases z with ⟨⟨⟨⟩, ⟨⟩⟩, ⟨⟨⟩, y⟩⟩
-        simp only [Program.step, modeMap, outsideMap, ↓reduceIte,
-          List.cons_append, Program.emit, naturalQuery, ProgramQueryMap.unitQuery,
-          Option.map_some, Prod.map, id_eq]
+  apply Program.step_stateInputMap id (fun _ n => n == 0)
+  intro s o n h
+  cases s
+  cases o
+  cases h with
+  | nil => rfl
+  | cons z h =>
+    obtain ⟨⟨⟨⟩, ⟨⟩⟩, ⟨⟨⟩, y⟩⟩ := z
+    rfl
 
 /-- The whole converter is transported by the input map, without an injectivity assumption. -/
 lemma converter_map (xs : List (Σ l, twoFam (fun _ : Unit => ℕ)
@@ -80,6 +73,11 @@ example : DDC.ofProgram () naturalQuery [⟨⟨none, ()⟩, 7⟩, ⟨⟨some (),
       [⟨⟨none, ()⟩, false⟩, ⟨⟨some (), ()⟩, true⟩] :=
   converter_map _
 
+/-- A pending call rejects a second outside query in both representations. -/
+example : naturalQuery.step (.busy () () 7 [] ⟨(), ()⟩) ⟨⟨none, ()⟩, 42⟩ = none := rfl
+
+#print axioms Program.emit_stateInputMap
+#print axioms Program.step_stateInputMap
 #print axioms Program.run_map_inputs
 #print axioms DDC.ofProgram_map_inputs_of_stepMap
 #print axioms DDC.ofProgramOn_map_inputs_of_stepMap
