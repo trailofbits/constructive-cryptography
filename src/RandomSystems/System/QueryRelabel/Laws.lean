@@ -10,6 +10,7 @@ public import RandomSystems.System.Distinguisher
 `IsDDD.relabelQueries` preserves its interaction discipline.
 `ddeOf_relabelQueries` maps its query strategy; `ddeOf_relabelQueries_map_decode`
 recovers that strategy when decoding is inverse on the queries it can propose.
+`queryBounded_ddeOf_relabelQueries_iff` preserves every stopping horizon.
 These laws combine with `System.tr_relabel_input` to transport completed observations.
 -/
 
@@ -66,6 +67,21 @@ lemma ddeOf_relabelQueries
   rw [show trim (DDD.relabelQueries D code) = DDD.relabelQueries (trim D) code from
     trim_relabel D id _]
   exact envOf_relabelQueries (trim D) code ys
+
+/-- Query relabeling preserves each stopping bound, including bound zero. -/
+lemma queryBounded_ddeOf_relabelQueries_iff
+    -- `valid` supplies the source caller's query environment; `code` changes only its queries.
+    {D : DDD I X Y} (valid : IsDDD D) (code : ∀ i, X i → X' i)
+    -- `n` is the same maximum number of queries before and after recoding.
+    (n : ℕ) :
+    QueryBounded n (ddeOf (IsDDD.relabelQueries valid code)) ↔
+      QueryBounded n (ddeOf valid) := by
+  have domains (ys : List (Σ i, Y i)) :
+      ((ddeOf (IsDDD.relabelQueries valid code)).1 ys).Dom ↔
+        ((ddeOf valid).1 ys).Dom := by
+    rw [ddeOf_relabelQueries, Part.map_Dom]
+  exact ⟨fun bounded ys h => bounded ys ((domains ys).mpr h),
+    fun bounded ys h => bounded ys ((domains ys).mp h)⟩
 
 /-- A decoder need undo the code only on queries the original strategy can propose. -/
 lemma ddeOf_relabelQueries_map_decode
