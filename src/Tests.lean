@@ -165,6 +165,7 @@ public import Tests.TranscriptPartition
 public import Tests.ObservationKernel
 public import Tests.SystemOccupancy
 public import Tests.TranscriptCost
+public import Tests.FreshInputCost
 public import Tests.AutomatonGame
 public import Tests.GameDistanceBound
 public import Tests.URFRetainedTable

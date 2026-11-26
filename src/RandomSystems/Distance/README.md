@@ -238,5 +238,5 @@ Games build on this bound: see [Game](../Game/README.md#identical-until-bad).
 [RandomSystem.transcriptDistance_restrict_le]: Restriction.lean#L136
 [RandomSystem.transcriptDistance_le_add_of_ratio_on_good]: HCoefficient.lean#L44
 [transcriptCost]: UntilBad.lean#L46
-[RandomSystem.one_sub_le_sum_tSupp]: UntilBad.lean#L115
-[RandomSystem.transcriptDistance_le_of_transcriptCost_le]: UntilBad.lean#L196
+[RandomSystem.one_sub_le_sum_tSupp]: UntilBad.lean#L145
+[RandomSystem.transcriptDistance_le_of_transcriptCost_le]: UntilBad.lean#L226
