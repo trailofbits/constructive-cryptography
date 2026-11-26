@@ -123,6 +123,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Split a kernel by an event | `bindK_ite_eq_add_restrict`, `bindK_ite_single` in [Kernel] |
 | Transformed or dependent law | `ProbDist.map`, `ProbDist.bind`, `ProbDist.jointLaw` in [Kernel] |
 | Commute independent kernels with finite products, retaining input–output pairs | `bindK_piDep`, `ProbDist.jointLaw_piDep` in `Probability.Kernel` |
+| Transform a conditional draw using its retained first outcome | `ProbDist.jointLaw_map_dependent` in `Probability.Kernel` |
 | Average a joint event over its first draw | `ProbDist.jointLaw_mass_eq_expect` in `Probability.Expectation` |
 | Average finitely many nonzero scores over arbitrary classes | `expect_comp_eq_sum_mass_of_eq_zero` in `Probability.Expectation` |
 | Reconstruct an observation and its sample from a marginal | `eq_fTransform_of_graph_support`, `ProbDist.jointLaw_eq_map_of_fiber` in `Probability.Coupling` |

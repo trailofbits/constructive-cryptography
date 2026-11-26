@@ -37,7 +37,9 @@ uniform coordinates with a uniform pair. `prodProbDist_map` and its one-coordina
 `bindK_piDep` commutes independent coordinate kernels with their finite product.
 `ProbDist.jointLaw_piDep` retains each first coordinate beside its conditional second draw.
 For dependent draws, `ProbDist.jointLaw μ K` retains both outcomes with law `μ(h) · K h z`.
-`ProbDist.jointLaw_fst` recovers `μ`; `ProbDist.jointLaw_map` transports both coordinates.
+`ProbDist.jointLaw_fst` recovers `μ`; `ProbDist.jointLaw_map_dependent` transports both
+coordinates, allowing the second map to depend on the first draw. `ProbDist.jointLaw_map`
+is its product-map case.
 For independent tables, `piDep_eq_bindK_update` samples one cell first and fixes it in the
 remaining table; `pi_eq_bindK_update` specializes to one common outcome type. Each law has
 finite support; the outcome types are arbitrary.
@@ -624,6 +626,35 @@ lemma jointLaw_fst
   -- Then `∑_h μ(h) · δ_h = μ`.
   simp only [ProbDist.map_val, fTransform_fTransform, Function.comp_def, hconst, bindK_single_one]
 
+/-- A joint pushforward may transform the second outcome using the first draw. Conditional
+transport is required only at first outcomes with positive mass. -/
+lemma jointLaw_map_dependent
+    -- `H',Z'` carry source outcomes; `H,Z` carry their transformed outcomes.
+    {H' Z' : Type*} (decodeH : H' → H)
+    -- `decodeZ h` transforms the second outcome using the original first outcome `h`.
+    (decodeZ : H' → Z' → Z)
+    -- `μ',K'` are the source first law and kernel; `μ,K` are their target laws.
+    (μ : ProbDist H) (μ' : ProbDist H') (K : H → ProbDist Z) (K' : H' → ProbDist Z')
+    -- `hμ` identifies the first pushforward; `decodeH` may merge first outcomes.
+    (hμ : μ'.map decodeH = μ)
+    -- `hK` identifies the conditional pushforward at each reachable source outcome.
+    (hK : ∀ h ∈ μ'.1.support, (K' h).map (decodeZ h) = K (decodeH h)) :
+    (jointLaw μ' K').map (fun pair => (decodeH pair.1, decodeZ pair.1 pair.2)) =
+      jointLaw μ K := by
+  apply Subtype.ext
+  change fTransform _ (μ'.1.bindK _) = μ.1.bindK _
+  -- Both sides draw the same source first outcome after transporting its marginal.
+  rw [← congrArg Subtype.val hμ]
+  simp only [ProbDist.map, bindK_fTransform, fTransform_bindK]
+  apply bindK_congr
+  intro h hh
+  -- Given `h`, apply its second-output map and then retain the transformed first outcome.
+  rw [fTransform_fTransform]
+  change fTransform ((fun z => (decodeH h, z)) ∘ decodeZ h) (K' h).1 = _
+  rw [← fTransform_fTransform]
+  exact congrArg (fTransform (fun z => (decodeH h, z)))
+    (congrArg Subtype.val (hK h hh))
+
 /-- Joint laws commute with pushforward along a product map: if `decodeH_* μ' = μ` and
 `decodeZ_* (K' h) = K (decodeH h)` for every `h`, then
 `(decodeH × decodeZ)_* (jointLaw μ' K') = jointLaw μ K`. -/
@@ -638,20 +669,8 @@ lemma jointLaw_map
     (hμ : ProbDist.map decodeH μ' = μ)
     -- `hK`: at every `h : H'`, `K' h` maps to the target conditional law at `decodeH h`.
     (hK : ∀ h, ProbDist.map decodeZ (K' h) = K (decodeH h)) :
-    ProbDist.map (Prod.map decodeH decodeZ) (jointLaw μ' K') = jointLaw μ K := by
-  apply Subtype.ext
-  change fTransform _ (μ'.1.bindK _) = μ.1.bindK _
-  -- Replace `μ` by `decodeH_* μ'`; both sides then draw `h ← μ'` first.
-  rw [← congrArg Subtype.val hμ]
-  simp only [ProbDist.map, bindK_fTransform, fTransform_bindK]
-  apply bindK_congr
-  intro h _
-  -- Given `h : H'`, decoding `(h, z')` gives `(decodeH h, decodeZ z')`, and
-  -- `decodeZ_* (K' h) = K (decodeH h)` is `hK h`.
-  rw [fTransform_fTransform]
-  change fTransform ((fun z => (decodeH h, z)) ∘ decodeZ) (K' h).1 = _
-  rw [← fTransform_fTransform]
-  exact congrArg (fTransform (fun z => (decodeH h, z))) (congrArg Subtype.val (hK h))
+    ProbDist.map (Prod.map decodeH decodeZ) (jointLaw μ' K') = jointLaw μ K :=
+  jointLaw_map_dependent decodeH (fun _ => decodeZ) μ μ' K K' hμ (fun h _ => hK h)
 
 end ProbDist
 
