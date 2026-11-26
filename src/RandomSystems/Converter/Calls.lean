@@ -40,6 +40,7 @@ converter input history,
   queries over its outside inputs `u`
 * `currentCall_query_charge`: the same bound for per-port charges on admitted transcripts
 * `callRule_isResponsiveDDC`: the canonical rule is a responsive DDC
+* `callConverter_currentCall_of_admits_inside`: a pending one-query call has no prior reply
 * `callConverter_isDDCFrom`: the direct-call converter is a DDC between explicit domains
 
 Converters as in [1, Definition 2.2.2]; DDCs as in [2, Definition 3.8].
@@ -501,6 +502,47 @@ noncomputable def callConverter {O J : Type} {U V : O → Type} {X Y : J → Typ
     (call : (u : Σ o, U o) → List (Σ j, Y j) → V u.1 ⊕ (Σ j, X j))
     (F : List (Σ o, U o) → Prop) : InsideOutsideSystem O J U V X Y :=
   filterDom (fun h => outsideInputs h = [] ∨ F (outsideInputs h)) (canon (callRule call))
+
+/-- When each invocation can query only before receiving a reply, an admitted inside reply
+belongs to a current invocation `(u, [])`. Earlier invocations contribute no replies to it. -/
+lemma callConverter_currentCall_of_admits_inside
+    -- `O`, `J` carry outside and inside ports, with query/reply alphabets `U`, `V` and `X`, `Y`.
+    {O J : Type} {U V : O → Type} {X Y : J → Type}
+    (call : (u : Σ o, U o) → List (Σ j, Y j) → V u.1 ⊕ (Σ j, X j))
+    -- `hphase` permits an inside query only while this invocation has received no replies.
+    (hphase : ∀ u rs, (call u rs).isRight = true → rs = [])
+    -- `F` is the selected domain of completed outside input histories.
+    (F : List (Σ o, U o) → Prop)
+    -- `T` is an actual transcript; `r` is an inside reply admitted after its last output.
+    (T : List ((Σ l, twoFam U Y l) × (Σ l, twoFam V X l)))
+    (hr : Replies (callConverter call F) (T.map Prod.fst) (T.map Prod.snd))
+    (r : Σ j, Y j) (hx : converterAdmits T ⟨⟨some (), r.1⟩, r.2⟩) :
+    ∃ u, currentCall (T.map Prod.fst).reverse [] = some (u, []) := by
+  rcases List.eq_nil_or_concat T with rfl | ⟨T, ⟨x, y⟩, rfl⟩
+  · simp only [converterAdmits, List.getLast?_nil, Option.map_none, admitAfter,
+      reduceCtorEq] at hx
+  · rw [List.concat_eq_append] at hr hx ⊢
+    have hi : IsInside y := by
+      obtain ⟨⟨_ | ⟨⟩, j⟩, y⟩ := y
+      · simp only [converterAdmits, List.getLast?_append_cons, List.getLast?_singleton,
+          Option.map_some, admitAfter, reduceCtorEq] at hx
+      · rfl
+    -- The last output is an actual inside query of the underlying call rule.
+    have hy : y ∈ callRule call ((T ++ [(x, y)]).map Prod.fst) := by
+      have hm : y ∈ callConverter call F (T.map Prod.fst ++ [x]) :=
+        Part.eq_some_iff.mp (replies_snoc.mp (by
+          simpa only [List.map_append, List.map_singleton] using hr)).2
+      have raw := canon_mem ((filterDom_mem_iff
+        (fun h => outsideInputs h = [] ∨ F (outsideInputs h))
+        (canon (callRule call)) _ y).mp hm).2
+      simpa only [List.map_append, List.map_singleton] using raw
+    have hd := (callRule_dom_iff call _).mp (Part.dom_iff_mem.mpr ⟨y, hy⟩)
+    cases hc : currentCall ((T ++ [(x, y)]).map Prod.fst).reverse [] with
+    | none => simp only [hc, Option.isSome_none, Bool.false_eq_true] at hd
+    | some invocation =>
+      obtain ⟨u, rs⟩ := invocation
+      have empty := hphase u rs ((callRule_inside_iff call _ u rs hc).mp ⟨y, hy, hi⟩)
+      exact ⟨u, congrArg (fun rs => some (u, rs)) empty⟩
 
 /-- **Query count of the direct-call converter**: under the one-way phase condition
 `(call u rs).isRight → rs.length < cost u` on arbitrary replies, every transcript `T` of
