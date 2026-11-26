@@ -1,5 +1,6 @@
 module
 
+public import Tests.JointLaw
 public import Tests.GameEventReflection
 public import Tests.ProbAutomatonSampling
 public import Tests.SpongeUniform

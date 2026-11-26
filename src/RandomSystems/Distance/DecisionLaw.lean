@@ -1,7 +1,7 @@
 module
 
 public import RandomSystems.Distance.Distinguisher
-public import Probability.Kernel
+public import Probability.Expectation
 
 /-!
 # Laws of final decisions
@@ -100,8 +100,7 @@ theorem guessingLaw_success
       (1 - P.probability (R false) + P.probability (R true)) / 2 := by
   classical
   -- Split on the uniform hidden bit and evaluate the matching decision in each world.
-  simp only [guessingLaw, ProbDist.jointLaw, ProbDist.bind_val, mass_bindK,
-    ProbDist.map_val, mass_fTransform, mass_singleton]
+  simp only [guessingLaw, ProbDist.jointLaw_mass_eq_expect, mass_singleton, expect]
   change (uniform Bool).sum (fun b w => w * (decisionLaw P (R b) (hR b)).1 b) = _
   rw [Finsupp.sum_fintype _ _ (fun _ => zero_mul _)]
   simp only [Fintype.sum_bool, uniform_apply, Fintype.card_bool, Nat.cast_ofNat]
