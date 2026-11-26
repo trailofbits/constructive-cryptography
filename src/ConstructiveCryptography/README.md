@@ -612,7 +612,7 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [substitutionRelaxation_idem]: Substitution/Relaxation.lean#L287
 [Implication.exists_serial_simulators]: Substitution/Construction.lean#L73
 [Constructs.derivable_serial_simulators]: Substitution/Construction.lean#L158
-[Domain.Distinguisher.advantage_le_winProbability]: ../RandomSystems/Game/MBO.lean#L785
+[Domain.Distinguisher.advantage_le_winProbability]: ../RandomSystems/Game/MBO.lean#L857
 [Domain.Distinguisher.exists_absorbRight]: ../RandomSystems/Distance/Distinguisher.lean#L334
 [Domain.SolverBehavior.absorb]: ../RandomSystems/Game/MBOAttachment.lean#L2217
 [Interface]: ../RandomSystems/Typed/Interface.lean#L43
@@ -653,10 +653,10 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [PDCBehavior.liftMBO_comp]: ../RandomSystems/Game/MBOAttachment.lean#L1524
 [PDCBehavior.liftMBO_id]: ../RandomSystems/Game/MBOAttachment.lean#L504
 [PDCBehavior.tensor_id]: ../RandomSystems/Converter/ConverterTensor.lean#L709
-[RandomSystem.ConditionallyEquivalent]: ../RandomSystems/Game/MBO.lean#L552
-[RandomSystem.MonotoneMBO]: ../RandomSystems/Game/MBO.lean#L316
+[RandomSystem.ConditionallyEquivalent]: ../RandomSystems/Game/MBO.lean#L640
+[RandomSystem.MonotoneMBO]: ../RandomSystems/Game/MBO.lean#L381
 [RandomSystem.parallel]: ../RandomSystems/Cumulative/CumulativeOperations.lean#L154
-[RandomSystem.visible]: ../RandomSystems/Game/MBO.lean#L367
+[RandomSystem.visible]: ../RandomSystems/Game/MBO.lean#L432
 [RandomSystem.visible_attach_liftMBO]: ../RandomSystems/Game/MBOAttachment.lean#L628
 [TypedConverter]: ../RandomSystems/Typed/Interface.lean#L184
 [TypedConverter.attach]: ../RandomSystems/Typed/Interface.lean#L250

@@ -8,6 +8,9 @@ public import RandomSystems.Distance.Distinguisher
 A game `G` is a random system carrying a bit that stays set once reached. Its visible system
 forgets that bit: `G.visible h = sumMBO G h`. `tagMBOs h bs` assigns one bit per transcript
 position; `sumMBO_eq_sum_tagMBOs` expresses visible mass as the finite sum over those assignments.
+`sumMBO_eq_unsetMBOs_of_eq_zero` retains its sole all-unset coefficient, for signed weights.
+`visible_apply_eq_unsetMBOs_of_finalMBO_eq_false` applies it when every supported representative
+of a visible history ends with an unset bit.
 
 `winProbability` is the probability that the final bit is set when a stopping caller finishes.
 `MonotoneMBO` makes this equivalent to having reached the bit at any earlier reply [1, §3.7.1].
@@ -241,6 +244,29 @@ def unsetMBOs (h : List (A × Σ j, Y j)) : List (A × Σ j, withMBO Y j) :=
   -- Giving each reply MBO 0 and then forgetting it is the identity on each entry.
   simp [forgetMBOs, unsetMBOs, Function.comp_def]
 
+/-- A tagged history is the all-unset representative exactly when its display is `h`
+and all of its bits are false. -/
+lemma eq_unsetMBOs_iff
+    {A J : Type} {Y : J → Type}
+    -- `k` carries reply bits; `h` is its visible query/reply history.
+    (k : List (A × Σ j, withMBO Y j)) (h : List (A × Σ j, Y j)) :
+    k = unsetMBOs h ↔ forgetMBOs k = h ∧ ∀ z ∈ k, z.2.2.2 = false := by
+  constructor
+  · rintro rfl
+    refine ⟨forgetMBOs_unsetMBOs h, fun z hz => ?_⟩
+    obtain ⟨w, _, rfl⟩ := List.mem_map.mp hz
+    rfl
+  · rintro ⟨rfl, hk⟩
+    symm
+    simp only [unsetMBOs, forgetMBOs, List.map_map]
+    conv_rhs => rw [← List.map_id k]
+    apply List.map_congr_left
+    intro z hz
+    have falseBit := hk z hz
+    simp only [Function.comp_apply, id]
+    rw [← falseBit]
+    rfl
+
 /-- `tagMBOs h bs` gives transcript position `i` the bit `bs i`. -/
 def tagMBOs
     -- `A` carries queries, `J` reply ports, and `Y j` replies before their bits are attached.
@@ -277,6 +303,45 @@ lemma sumMBO_eq_sum_tagMBOs {A J : Type} {Y : J → Type}
       Fin.consEquiv (fun _ : Fin (t.length + 1) => Bool)
     rw [← e.sum_comp, Fintype.sum_prod_type, Fintype.sum_bool, add_comm]
     simp only [e, Fin.consEquiv, Equiv.coe_fn_mk, tagMBOs, Fin.cons_zero, Fin.cons_succ]
+
+/-- A signed coefficient function supported only on the all-unset history has that
+coefficient as its visible sum. -/
+lemma sumMBO_eq_unsetMBOs_of_eq_zero
+    {A J : Type} {Y : J → Type}
+    -- `f` assigns signed coefficients; `h` selects one visible fiber.
+    (f : List (A × Σ j, withMBO Y j) → ℝ) (h : List (A × Σ j, Y j))
+    -- `zero` excludes every other tagged representative of that same fiber.
+    (zero : ∀ k, forgetMBOs k = h → k ≠ unsetMBOs h → f k = 0) :
+    sumMBO f h = f (unsetMBOs h) := by
+  classical
+  have injective : ∀ t : List (A × Σ j, Y j), Function.Injective (tagMBOs t) := by
+    intro t
+    induction t with
+    | nil => intro bs cs _; funext i; exact Fin.elim0 i
+    | cons z t ih =>
+      intro bs cs equal
+      have parts := List.cons.inj equal
+      have first := congrArg (fun w : A × Σ j, withMBO Y j => w.2.2.2) parts.1
+      have rest := ih parts.2
+      funext i
+      exact Fin.cases first (fun j => congrFun rest j) i
+  have falseTags : ∀ t : List (A × Σ j, Y j),
+      tagMBOs t (fun _ => false) = unsetMBOs t := by
+    intro t
+    induction t with
+    | nil => rfl
+    | cons z t ih => exact congrArg (List.cons (z.1, tagMBO false z.2)) ih
+  -- Enumerate bit assignments and keep their unique all-false assignment.
+  rw [sumMBO_eq_sum_tagMBOs]
+  calc
+    _ = f (tagMBOs h (fun _ => false)) := by
+      apply Finset.sum_eq_single (fun _ => false)
+      · intro bs _ different
+        exact zero _ (forgetMBOs_tagMBOs h bs)
+          (fun equal => different (injective h (equal.trans (falseTags h).symm)))
+      · intro absent
+        exact False.elim (absent (Finset.mem_univ _))
+    _ = _ := congrArg f (falseTags h)
 
 lemma map_fst_forgetMBOs (h : List (A × Σ j, withMBO Y j)) :
     (forgetMBOs h).map Prod.fst = h.map Prod.fst := by
@@ -504,6 +569,29 @@ lemma finalMBO_eq_true_iff {A : Type} {h : List (A × Σ i, withMBO Y i)}
       -- w = z: unset by assumption.
       · exact hz'
 
+/-- If every supported tagged representative of `h` ends with false, the monotone game
+has no visible mass beyond its all-unset representative. -/
+lemma RandomSystem.visible_apply_eq_unsetMBOs_of_finalMBO_eq_false
+    {A J : Type} [Fintype A] [Fintype J] {Y : J → Type}
+    [∀ j, Fintype (Y j)]
+    {E : List A → Prop} {m : ℕ} {hE : ∀ h, E h → h.length ≤ m}
+    -- `G` is the game on input domain `E`; `monotone` keeps each reached bit set.
+    (G : RandomSystem A (Σ j, withMBO Y j) (Domain.ofInputs E m hE))
+    (monotone : G.MonotoneMBO) (h : List (A × Σ j, Y j))
+    -- Only supported histories in the displayed fiber must end with an unset bit.
+    (finalFalse : ∀ k, forgetMBOs k = h → G k ≠ 0 → finalMBO k = false) :
+    G.visible h = G (unsetMBOs h) := by
+  rw [RandomSystem.visible_apply]
+  apply sumMBO_eq_unsetMBOs_of_eq_zero
+  intro k displayed different
+  by_contra nonzero
+  have allFalse : ∀ z ∈ k, z.2.2.2 = false := by
+    by_contra notAllFalse
+    have finalTrue := (finalMBO_eq_true_iff (monotone k nonzero)).mpr notAllFalse
+    rw [finalFalse k displayed nonzero] at finalTrue
+    cases finalTrue
+  exact different ((eq_unsetMBOs_iff k h).mpr ⟨displayed, allFalse⟩)
+
 /-- **The winning probability** of a deterministic distinguisher, used as a winner, for a
 game (CR18, Definition 4.5): the probability that the MBO is set when it stops. -/
 noncomputable def RandomSystem.winProbability {D' : Domain (Σ i, X i) (Σ i, withMBO Y i)}
@@ -680,24 +768,8 @@ lemma RandomSystem.exists_unset_winProbability
   -- Step 3. ν h is the μ-mass of the transcripts that forget to h with every MBO 0.
   · rw [Distribution.fTransform_apply_eq_mass, Distribution.mass_restrict]
     -- There is exactly one such transcript: h with every MBO 0.
-    have hcg : ∀ k, (forgetMBOs k = h ∧ ∀ z ∈ k, z.2.2.2 = false) ↔ k = unsetMBOs h := by
-      intro k
-      constructor
-      -- (→) Each entry of k has MBO 0, so it is its forgotten entry given MBO 0.
-      · rintro ⟨rfl, hk⟩
-        simp only [unsetMBOs, forgetMBOs, List.map_map]
-        conv_lhs => rw [← List.map_id k]
-        apply List.map_congr_left
-        intro z hz
-        have := hk z hz
-        simp only [Function.comp_apply, id]
-        rw [← this]
-        rfl
-      -- (←) unsetMBOs h forgets to h and all its MBOs are 0.
-      · rintro rfl
-        refine ⟨forgetMBOs_unsetMBOs h, fun z hz => ?_⟩
-        obtain ⟨w, -, rfl⟩ := List.mem_map.mp hz
-        rfl
+    have hcg : ∀ k, (forgetMBOs k = h ∧ ∀ z ∈ k, z.2.2.2 = false) ↔ k = unsetMBOs h :=
+      fun k => (eq_unsetMBOs_iff k h).symm
     -- μ at h with every MBO 0; that is complete for W iff h is complete for e.
     rw [Distribution.mass_congr _ hcg, Distribution.mass_singleton, sLaw_apply,
       good_blindMBO_iff, forgetMBOs_unsetMBOs]
