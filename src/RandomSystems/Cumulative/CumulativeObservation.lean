@@ -11,7 +11,7 @@ with a random system for at most `n` rounds gives a distribution on transcripts;
 when `σ` queries only within the domain, it is a probability distribution. Two random
 systems on one domain are equal exactly when all compatible environments see the same
 transcript laws; on a domain of input histories, fixed query sequences suffice.
-Source: Lanzenberger–Maurer, Definitions 7 and 10, Lemma 5 (printed pp. 12–14).
+Source: [1, Definitions 7 and 10, Lemma 5, pp. 12–14].
 
 ## Main definitions
 
@@ -24,6 +24,7 @@ Source: Lanzenberger–Maurer, Definitions 7 and 10, Lemma 5 (printed pp. 12–1
 
 ## Main results
 
+* `Good.fixedQueries`: complete fixed-query observations contain exactly `xs.take n`
 * `sLaw_isProbDist`: the transcript law of a compatible environment is a probability
   distribution
 * `sLaw_completed_stable`, `sLaw_eq_of_query_bounds`: larger round bounds do not change
@@ -38,6 +39,11 @@ Source: Lanzenberger–Maurer, Definitions 7 and 10, Lemma 5 (printed pp. 12–1
   environments (Definition 10)
 * `RandomSystem.eq_iff_sLaw_fixedQueries`: on input domains, fixed query sequences
   suffice (Lemma 5)
+
+## References
+
+1. D. Lanzenberger and U. Maurer. *Coupling of Random Systems*. TCC 2020.
+   Cryptology ePrint Archive, Paper 2020/1187.
 -/
 
 @[expose] public section
@@ -50,8 +56,8 @@ variable {A B : Type}
 variable (σ : List B →. A)
 
 /-- Each query follows `σ`: for every prefix `pre ++ [(x,y)]` of `h`,
-`x ∈ σ (pre.map Prod.snd)`. This is the environment equation of Lanzenberger–Maurer,
-Definition 7, printed p. 12: “xᵢ = e(y₁, …, yᵢ₋₁)”. -/
+`x ∈ σ (pre.map Prod.snd)`. The environment equation in [1, Definition 7, p. 12] is
+“xᵢ = e(y₁, …, yᵢ₋₁)”. -/
 def FollowsStrategy (h : List (A × B)) : Prop :=
   ∀ pre z, pre ++ [z] <+: h → z.1 ∈ σ (pre.map Prod.snd)
 
@@ -579,6 +585,21 @@ lemma FollowsStrategy.fixedQueries {xs : List A} {t : List (A × B)}
     refine ⟨by simp; omega, ?_⟩
     rw [List.map_append, he, List.length_append, List.length_singleton, List.take_add_one, hz']
     rfl
+
+/-- At horizon `n`, a completed fixed-query transcript contains exactly `xs.take n`. -/
+lemma Good.fixedQueries
+    -- `xs` is the full query list; `h` records its query–reply exchanges through horizon `n`.
+    {xs : List A} {n : ℕ} {h : List (A × B)}
+    (good : Good (fixedQueries xs) n h) : h.map Prod.fst = xs.take n := by
+  obtain ⟨_, queries⟩ := good.1.fixedQueries
+  rcases good.2 with length | ⟨short, stopped⟩
+  · exact queries.trans (congrArg xs.take length)
+  · -- Stopping before the horizon means the fixed list has been exhausted.
+    have exhausted : xs.length ≤ h.length := by
+      simpa only [SystemAlgebra.fixedQueries, List.length_map, Part.ofOption_dom,
+        isSome_getElem?, not_lt] using stopped
+    rw [queries, List.take_of_length_le exhausted,
+      List.take_of_length_le (exhausted.trans short.le)]
 
 open Classical in
 /-- The environment following the transcript `h`: it submits the queries of `h` while the

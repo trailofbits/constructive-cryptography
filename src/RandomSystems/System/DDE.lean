@@ -6,20 +6,25 @@ public import RandomSystems.System.Basic
 # Deterministic environments
 
 An environment is a query function with prefix-closed domain; it stops where it is
-undefined and outputs no decision. Source: Lanzenberger, *A Theory of Random
-Systems, Games, and Hardness Amplification*, Definition 2.11.
+undefined and outputs no decision [1, Definition 2.11].
 
 ## Main definitions
 
 * `DDE X Y`: deterministic environments
 * `QueryBounded n E`: `E` asks at most `n` queries
-* `DDE.ofQueries xs`: the environment that asks the fixed queries `xs`
+* `DDE.ofQueries xs`: the environment that asks the fixed queries `xs`;
+  `DDE.ofQueries_queryBounded` bounds it by `xs.length`
 * `limitQueries σ n`: a partial strategy `σ` truncated after `n` queries, on every reply history
 * `DDE.limitQueries E n`: the same truncation of `E`, as a prefix-closed environment
 
 `mem_limitQueries` gives the query rule and `DDE.limitQueries_queryBounded` the bound;
 `CumulativeObservation` and `Distance.Decision` use them to observe a system at its domain
 bound.
+
+## References
+
+1. D. Lanzenberger. *A Theory of Random Systems, Games, and Hardness Amplification*.
+   Doctoral thesis, ETH Zurich.
 -/
 
 @[expose] public section
@@ -53,6 +58,13 @@ def ofQueries {X Y : Type} (xs : List X) : DDE X Y :=
     intro ys y hd
     simp [fixedQueries, Part.ofOption_dom] at hd ⊢
     omega⟩
+
+/-- A fixed list `xs` makes at most `xs.length` queries, independently of the replies. -/
+lemma ofQueries_queryBounded
+    -- `X` and `Y` carry queries and replies; `xs` is the complete query list.
+    {X Y : Type} (xs : List X) : QueryBounded xs.length (ofQueries (Y := Y) xs) := by
+  intro ys hd
+  simpa only [ofQueries, fixedQueries, Part.ofOption_dom, isSome_getElem?] using hd
 
 variable {A B : Type}
 

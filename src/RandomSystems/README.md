@@ -197,7 +197,7 @@ of the program's inside queries:
 [automatonSystem]: System/Automaton.lean#L47
 [IsBisim]: System/Automaton.lean#L74
 [automatonSystem_eq_of_bisim]: System/Automaton.lean#L93
-[DDE]: System/DDE.lean#L30
+[DDE]: System/DDE.lean#L35
 [Domain]: PDS/PDS.lean#L69
 [Equivalent]: PDS/PDS.lean#L54
 [HasDomain]: PDS/PDS.lean#L95
@@ -208,10 +208,10 @@ of the program's inside queries:
 [PDS.behavior_eq_iff]: Cumulative/Cumulative.lean#L229
 [RandomSystem.exists_presentation]: Cumulative/Presentation.lean#L306
 [RandomSystem.ofPDSClass_bijective]: Cumulative/Presentation.lean#L316
-[RandomSystem.sLaw]: Cumulative/CumulativeObservation.lean#L244
-[RandomSystem.Compatible]: Cumulative/CumulativeObservation.lean#L263
-[RandomSystem.eq_iff_sLaw]: Cumulative/CumulativeObservation.lean#L648
-[RandomSystem.eq_iff_sLaw_fixedQueries]: Cumulative/CumulativeObservation.lean#L662
+[RandomSystem.sLaw]: Cumulative/CumulativeObservation.lean#L250
+[RandomSystem.Compatible]: Cumulative/CumulativeObservation.lean#L269
+[RandomSystem.eq_iff_sLaw]: Cumulative/CumulativeObservation.lean#L669
+[RandomSystem.eq_iff_sLaw_fixedQueries]: Cumulative/CumulativeObservation.lean#L683
 [RandomSystem.mix]: Cumulative/CumulativeOperations.lean#L50
 [RandomSystem.parallel]: Cumulative/CumulativeOperations.lean#L136
 [RandomSystem.parallelAll]: Cumulative/ParallelAll.lean#L197
