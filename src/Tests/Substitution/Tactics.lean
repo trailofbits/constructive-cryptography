@@ -213,13 +213,22 @@ example (model : DistinguisherAdvantage C Phi D) (R S : Phi A)
   cc_calc quantitative model
     S ≃[loss] R := ← bound
 
-/-- trace: [ConstructiveCryptography.ProofAutomation.rule] cc_calc distance_attach_le -/
+/-- trace: [ConstructiveCryptography.ProofAutomation.rule] cc_calc non-expansion -/
 #guard_msgs in
 set_option trace.ConstructiveCryptography.ProofAutomation.rule true in
 example (α : A ⟶ B) (R S : Phi B) (ε : ENNReal)
     (bound : distance R S ≤ ε) : distance (α • R) (α • S) ≤ ε := by
   cc_calc statistical
     α • R ≈[ε] α • S := bound
+
+/-- Either placement of a fixed parallel resource preserves a supplied bound. -/
+example (R S : Phi A) (T : Phi B) (ε : ENNReal) (h : distance R S ≤ ε) :
+    distance (parallel R T) (parallel S T) ≤ ε ∧ distance (parallel T R) (parallel T S) ≤ ε := by
+  constructor
+  · cc_calc statistical
+      parallel R T ≈[ε] parallel S T := h
+  · cc_calc statistical
+      parallel T R ≈[ε] parallel T S := h
 
 set_option linter.unreachableTactic false in
 example (model : DistinguisherAdvantage C Phi D) (R S _T : Phi A)
@@ -363,6 +372,33 @@ run_cmd do
 #print axioms Implication.usageCount_withEndpoints
 #print axioms DistinguisherAdvantage.SubstitutesWithin.of_distance
 #print axioms countedChain_usageCount
+section Sampling
+open SystemAlgebra Probability
+open scoped SystemAlgebra NNReal
+
+/-- A family bound is applied at the retained index; both samples use the supplied law. -/
+example {I : Interface} {K : Type} (P Q : Distribution K)
+    [Distribution.IsProbability P] [Distribution.IsProbability Q]
+    (R S : K → TypedSystem I) (ε : ℝ≥0) (bound : ∀ k, Δ (R k) (S k) ≤ ε) :
+    Δ (TypedSystem.sample P S) (TypedSystem.sample P R) ≤ ε := by
+  fail_if_success
+    have : Δ (TypedSystem.sample P R) (TypedSystem.sample Q S) ≤ ε := by
+      cc_calc statistical
+        TypedSystem.sample P R ≈[ε] TypedSystem.sample Q S := bound
+  cc_calc statistical
+    TypedSystem.sample P S ≈[ε] TypedSystem.sample P R := ← bound
+
+/-- A varying loss gives its mean with respect to the common law. -/
+example {I : Interface} {K : Type} (P : Distribution K) [Distribution.IsProbability P]
+    (R S : K → TypedSystem I) (ε : K → ℝ≥0) (bound : ∀ k, Δ (R k) (S k) ≤ ε k) :
+    Δ (TypedSystem.sample P R) (TypedSystem.sample P S) ≤
+        (Real.toNNReal (P.expect (fun k => (ε k : ℝ))) : ENNReal) := by
+  let average : ENNReal := Real.toNNReal (P.expect (fun k => (ε k : ℝ)))
+  cc_calc statistical
+    TypedSystem.sample P R ≈[average] TypedSystem.sample P S := bound
+
+end Sampling
+
 #print axioms statistical_chain
 #print axioms mixed_chain
 #print axioms observation_chain
