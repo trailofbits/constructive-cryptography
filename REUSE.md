@@ -77,6 +77,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Locate a program query, including its final pending call | `DDC.exists_after_busy_of_mem_insideQueries` in `RandomSystems.Converter.ProgramTrace` |
 | Preserve a caller's stopping bound under query recoding | `queryBounded_ddeOf_relabelQueries_iff` in `RandomSystems.System.QueryRelabel.Laws` |
 | Close a one-query probe from a correctly tagged reply | `close_envProbe_ofQueries_singleton` in `RandomSystems.Distance.Transcript` |
+| Evaluate a register observation against retained inside state | `registerProgram_combine_query` in `Commons.Definitions.AbstractModel.RegisterProgram.Laws` |
 | Decode register commands using inverses only on their operands and destinations | `mapCommand_mapCommand_eq_of_inverse_on` in `Commons.Definitions.AbstractModel.Domain` |
 | Encode the register addresses used by a finite command set or bounded caller | `exists_fin_address_encoding`, `exists_fin_address_encoding_of_queryBounded` in `Commons.Definitions.AbstractModel.FiniteAddresses` |
 | Move outside query and reply maps through attachment | `relabel_apply_outside_both` in `RandomSystems.DDC.DDCRelabel` |
