@@ -225,6 +225,7 @@ public import Tests.FiniteQueryEncoding
 public import Tests.ProgramInputMap
 public import Tests.AutomatonFunction
 public import Tests.CountPFlatMap
+public import Tests.DomainExpansion
 public import Tests.RegisterObservation
 public import Tests.AbstractModelAddressMap
 public import Tests.AbstractModelDomainMap
