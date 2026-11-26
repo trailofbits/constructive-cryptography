@@ -30,5 +30,7 @@ public import Probability.MultiCoupling
 public import Probability.StatisticalDistance
 public import Probability.FiniteSet
 
+public import Probability.List.Permutation
+
 /-! Finitely supported distributions, kernels, statistical distance, couplings, expectation and
 counting. -/

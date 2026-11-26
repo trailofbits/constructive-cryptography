@@ -73,6 +73,7 @@ named `budget` argument. The object index below supplies owners for those declar
 
 | Needed object | Declaration and module |
 | --- | --- |
+| Extend distinct list-position labels to evaluated inputs | `List.exists_perm_apply_idxOf_eq` in `Probability.List.Permutation` |
 | Transport complete register converters through address embeddings | `registersDDC_mapCommand` in `Commons.Definitions.AbstractModel.RegisterDDC.AddressMap` |
 | Transport oracle bodies through state and outside-query maps | `Program.step_stateInputMap` in `RandomSystems.Converter.Program`; `DSL.callProg_map` in `RandomSystems.Typed.DSL.Programs` |
 | Rename register addresses while preserving contents | `AbstractModel.mapInput`, `mapCommand`, `registers_mapCommand` in `Commons.Definitions.AbstractModel` and `Registers.Laws` |

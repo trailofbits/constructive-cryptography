@@ -232,6 +232,9 @@ public import Tests.AbstractModelAddressMap
 public import Tests.AbstractModelDomainMap
 public import Tests.RegisterAddressCompiler
 
+
+public import Tests.ListPermutation
+
 /-! Axiom audits per layer and of the Commons library, the checks of the
 authenticated-encryption example,
 counterexamples, DSL diagnostics and semantics, and the tests of the cryptographic-algebra,
