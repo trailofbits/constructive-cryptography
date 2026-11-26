@@ -8,47 +8,27 @@ public import Probability.Kernel
 /-!
 # Probabilistic automata
 
-A probabilistic automaton answers a query at a port from its state with a law on the next state
-and the reply at that port (a probabilistic step). Its random system is given by its state laws
-along a transcript: after a transcript `h`, the sub-law `belief h` of the states reached with the
-replies of `h`, whose weight is the probability of `h`. One more exchange `port(x)`, `port ⇒ y`
-moves this sub-law by one step and keeps the states that replied `y`:
+`ProbStep S I X Y` assigns each state and query a law on the next state and reply.
+`belief D init h` retains the state mass producing transcript `h` on domain `D`:
 
-```
-  belief (h · (x, y)) (s') = ∑ₛ belief h (s) · Pr[step s x = (s', y)]      (if the domain admits x)
-  P(h)                     = ∑ₛ belief h (s)
+```text
+belief (h · (x,y)) (s') = ∑ₛ belief h (s) · Pr[step s x = (s',y)]   if D h x
+Pr[h]                   = weight (belief h).
 ```
 
-On an input domain, two probabilistic automata have the same random system along a
-**simulation**: a kernel from the states of the first to those of the second such that, from the
-kernel image of a state, a step of the second is a step of the first followed by the kernel. A
-deterministic automaton is the probabilistic automaton of its point steps: with its initial state
-sampled, a transcript has the probability of the initial states from which the automaton gives
-it, as for a random automaton whose only randomness is its initial state [1, Definition 2].
+`belief_eq_of_outcome_restrict_eq` compares two kernels only at supported states and on
+selected reply branches of good prefixes. Taking weights gives
+`ofProbAutomaton_apply_eq_of_outcome_restrict_eq`. Good histories may depend on replies.
 
-## Main definitions
-
-* `ProbStep S I X Y`: a probabilistic step
-* `ProbStep.recordReplies`: retain first query/reply pairs using a supplied reply law
-* `ProbStep.outcome`, `ProbStep.transition`: the law of the next state and the reply, and the
-  states reached with a given reply
-* `ProbStep.belief D step init h`: the sub-law of the states after the transcript `h`
-* `RandomSystem.ofProbAutomaton D step init`: the random system of a probabilistic automaton
-* `ProbStep.SimulatesAt step₁ step₂ K s x`: a simulation step along the kernel `K`
-* `ProbStep.ofDeterministic step`: the probabilistic step of a deterministic automaton
-
-## Main results
-
-* `RandomSystem.ofProbAutomaton_repliesAtQueriedInterface`: a probabilistic automaton replies at
-  the queried port
-* `ProbStep.belief_simulation`, `RandomSystem.ofProbAutomaton_eq_of_simulation`: along a
-  simulation the state laws correspond, and on an input domain the random systems are equal
-* `RandomSystem.ofProbAutomaton_ofDeterministic_apply`: a deterministic automaton with a random
-  initial state is the probabilistic automaton of its point steps
+`belief_simulation` transports beliefs through a state kernel on input-domain histories;
+`ofProbAutomaton_eq_of_simulation` takes weights to identify the resulting systems.
+`ofProbAutomaton_ofDeterministic_apply` identifies deterministic transitions with their point
+kernels and retained initial draw [1, Definition 2]. `recordReplies` supplies a reusable
+first-reply table transition.
 
 ## References
 
-1. U. Maurer. Indistinguishability of Random Systems. In *Advances in Cryptology – EUROCRYPT
+1. U. Maurer. Indistinguishability of Random Systems. In *Advances in Cryptology — EUROCRYPT
    2002*, LNCS 2332, Springer, 2002.
 -/
 
@@ -190,6 +170,38 @@ lemma belief_snoc (h : List ((Σ i, X i) × (Σ i, Y i))) (x : Σ i, X i) (y : �
   --                               = 0                   otherwise
   simp [belief, beliefRev, List.reverse_append]
 
+/-- On good prefixes, only the selected reply branch and current belief support must agree. -/
+lemma belief_eq_of_outcome_restrict_eq
+    -- `S` is the shared state carrier; the two kernels use the same query/reply alphabets.
+    (step₁ step₂ : ProbStep S I X Y)
+    -- `D` is the common domain; `init` may be an arbitrary signed finite law.
+    (D : Domain (Σ i, X i) (Σ i, Y i)) (init : Distribution S)
+    -- `good` may inspect queries and replies; `closed` preserves it on every prefix.
+    (good : List ((Σ i, X i) × Σ i, Y i) → Prop)
+    (closed : ∀ p h, p <+: h → good h → good p)
+    -- `same` identifies selected-reply laws at states supported by the left prefix belief.
+    (same : ∀ h x y, good (h ++ [(x, y)]) → D h x →
+      ∀ s ∈ (step₁.belief D init h).support,
+        (step₁.outcome s x).restrict (fun p => p.2 = y) =
+          (step₂.outcome s x).restrict (fun p => p.2 = y))
+    (h : List ((Σ i, X i) × Σ i, Y i)) (hg : good h) :
+    step₁.belief D init h = step₂.belief D init h := by
+  classical
+  revert hg
+  induction h using List.reverseRecOn with
+  | nil => intro _; rfl
+  | append_singleton h e ih =>
+    obtain ⟨x, y⟩ := e
+    intro hg
+    have prefixGood : good h := closed h _ (List.prefix_append _ _) hg
+    rw [ProbStep.belief_snoc, ProbStep.belief_snoc]
+    split_ifs with admitted
+    · -- Equal prefix beliefs give one common support for the two mixture kernels.
+      rw [← ih prefixGood, ProbStep.transition, ProbStep.transition]
+      exact bindK_congr fun s hs => congrArg (fTransform Prod.fst)
+        (same h x y hg admitted s hs)
+    · rfl
+
 /-- The state laws of a nonnegative initial law are nonnegative. -/
 lemma belief_nonNeg (hinit : init.NonNeg) (h : List ((Σ i, X i) × (Σ i, Y i))) :
     (step.belief D init h).NonNeg := by
@@ -258,6 +270,26 @@ lemma RandomSystem.ofProbAutomaton_apply (D : Domain (Σ i, X i) (Σ i, Y i))
     (step : ProbStep S I X Y) (init : Distribution.ProbDist S)
     (h : List ((Σ i, X i) × (Σ i, Y i))) :
     RandomSystem.ofProbAutomaton D step init h = (step.belief D init.1 h).weight := rfl
+
+/-- The cumulative coefficient is the weight of the equal good-prefix belief. -/
+lemma RandomSystem.ofProbAutomaton_apply_eq_of_outcome_restrict_eq
+    -- `step₁,step₂` share the state carrier and query/reply alphabets.
+    (step₁ step₂ : ProbStep S I X Y)
+    -- `D` is their domain; `init` is the normalized initial state law.
+    (D : Domain (Σ i, X i) (Σ i, Y i)) (init : ProbDist S)
+    -- `good` selects reply-dependent histories; `closed` preserves it on prefixes.
+    (good : List ((Σ i, X i) × Σ i, Y i) → Prop)
+    (closed : ∀ p h, p <+: h → good h → good p)
+    -- `same` compares only the observed reply branch at supported prefix states.
+    (same : ∀ h x y, good (h ++ [(x, y)]) → D h x →
+      ∀ s ∈ (step₁.belief D init.1 h).support,
+        (step₁.outcome s x).restrict (fun p => p.2 = y) =
+          (step₂.outcome s x).restrict (fun p => p.2 = y))
+    (h : List ((Σ i, X i) × Σ i, Y i)) (hg : good h) :
+    RandomSystem.ofProbAutomaton D step₁ init h =
+      RandomSystem.ofProbAutomaton D step₂ init h :=
+  congrArg Distribution.weight
+    (ProbStep.belief_eq_of_outcome_restrict_eq step₁ step₂ D init.1 good closed same h hg)
 
 /-- **A probabilistic automaton replies at the queried port.** -/
 lemma RandomSystem.ofProbAutomaton_repliesAtQueriedInterface (D : Domain (Σ i, X i) (Σ i, Y i))

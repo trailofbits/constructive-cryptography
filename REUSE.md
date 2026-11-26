@@ -115,6 +115,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | URF distinct-input collision game | `URF.collisionGame` in [CollisionGame] |
 | Adaptive URF collision bound | `URF.collisionGame_win_le` in [CollisionBound] |
 | Retained state with fresh transitions | `TypedSystem.ofProbAutomaton` in [ProbAutomaton] |
+| Compare cumulative probabilities on good prefixes | `ProbStep.belief_eq_of_outcome_restrict_eq` and its system corollary in `RandomSystems.System.ProbAutomaton` |
 | Retained key as an automaton | `TypedSystem.ofProbAutomaton_eq_keyed` in [KeyedAutomaton] |
 | Converter state comparison | `DDC.ofProgramOn_eq_of_stateMap`, `DDC.ofProgramOn_eq_of_stateRel` in [Program](src/RandomSystems/Converter/Program.lean); typed forms in [Converters](src/RandomSystems/Typed/DSL/Converters.lean) |
 | Program attachment | `TypedConverter.ofProgram_smul_ofProbAutomaton` in [ProgramAttachment] |
