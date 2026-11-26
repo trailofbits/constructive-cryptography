@@ -18,6 +18,7 @@ public import Commons.Definitions.AbstractModel.Interface
 public import Commons.Definitions.AbstractModel.RegisterProgram
 public import Commons.Definitions.AbstractModel.RegisterProgram.Laws
 public import Commons.Definitions.AbstractModel.RegisterDDC
+public import Commons.Definitions.AbstractModel.RegisterDDC.Laws
 public import Commons.Definitions.AbstractModel.RegisterConverter
 public import Commons.Definitions.AbstractModel.Extraction
 public import Commons.Definitions.AbstractModel.ExtractionPresentation

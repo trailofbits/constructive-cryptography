@@ -152,6 +152,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Describe computation, observation and submission commands with legal register access | `Commons.AbstractModel`, `Admitted` in `Commons.Definitions.AbstractModel` |
 | Interpret abstract commands over partial registers and certify initialized operands | `AbstractModel.registers`, `registers_isSome` in `Commons.Definitions.AbstractModel.Registers.Laws` |
 | Transport register interpretation through an operation homomorphism | `read_map`, `initial_map`, `write_map`, `registers_map` in `Commons.Definitions.AbstractModel.Registers.Laws` |
+| Interpret register values through an operation homomorphism | `AbstractModel.registersDDC_relabel_of_map` in `Commons.Definitions.AbstractModel.RegisterDDC.Laws` |
 | Connect register commands to observations on their current values | `AbstractModel.registersDDC` in `Commons.Definitions.AbstractModel.RegisterDDC` for arbitrary internal values and register names; `registersConverter` adds the finite typed interface |
 | Certify raw program domains from exact query costs | `DDC.ofProgramOn_isDDCFrom_of_costs` in `RandomSystems.Converter.Program` |
 | Sample an abstract model and test its first submitted guess | `AbstractModel.extractionSystem`, `extracted` in `Commons.Definitions.AbstractModel.Extraction` |
