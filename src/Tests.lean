@@ -2,6 +2,7 @@ module
 
 public import Tests.JointLaw
 public import Tests.KernelDistance
+public import Tests.KernelPotential
 public import Tests.PolynomialEvaluation
 public import Tests.AffineEvaluation
 public import Tests.GameEventReflection
