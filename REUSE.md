@@ -117,6 +117,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Retained state with fresh transitions | `TypedSystem.ofProbAutomaton` in [ProbAutomaton] |
 | Compare cumulative probabilities on good prefixes | `ProbStep.belief_eq_of_outcome_restrict_eq` and its system corollary in `RandomSystems.System.ProbAutomaton` |
 | Retained key as an automaton | `TypedSystem.ofProbAutomaton_eq_keyed` in [KeyedAutomaton] |
+| Transport completed interaction witnesses through query maps | `Transcript.relabel_input` in `RandomSystems.System.Replies` |
 | Transport deterministic transcripts through query and reply maps | `System.tr_relabel` and its input/output corollaries in `RandomSystems.System.Transcript` |
 | Transport program modes and emitted messages | `Program.run_map`, `DDC.ofProgramOn_relabel_of_stepMap` in `RandomSystems.Converter.Program` |
 | Certify fixed-function reply ports | `DDS.ofFunction_repliesAtQueriedInterface` in `RandomSystems.PDS.Function` |

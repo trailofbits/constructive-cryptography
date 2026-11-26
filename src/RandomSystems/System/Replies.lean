@@ -22,6 +22,7 @@ determine the system, and they are the transcripts of the environment that submi
 * `replies_congr_of_prefix`: replies to a history depend only on its prefixes
 * `IsDDS.eq_of_replies_iff`: completed replies determine a deterministic system
 * `transcript_fixedQueries_iff`: replies are the transcripts of fixed queries
+* `Transcript.relabel_input`: mapping queries preserves an actual interaction
 * `Replies.suffix_le_run`, `Replies.exists_suffix_run`: consecutive replies with a
   property are counted by `run`
 * `trim_dom_of_admission`: exact next-query admission determines a prefix-closed domain
@@ -186,6 +187,23 @@ lemma Transcript.of_replies {s t : System A B} {e xs ys} (tr : Transcript s e xs
   | snoc tr hx hy ih =>
     obtain ⟨h₁, h₂⟩ := replies_snoc.mp h
     exact Transcript.snoc (ih h₁) hx (Part.eq_some_iff.mp h₂)
+
+/-- Mapping the queries of an actual interaction preserves its replies. -/
+lemma Transcript.relabel_input {A A' B : Type}
+    -- `R` receives inside queries; `f` maps the caller's outside queries to them.
+    {R : System A B} (f : A' → A)
+    -- `σ` may stop at any reply history; no inverse of `f` is required.
+    {σ : List B →. A'} {xs : List A'} {ys : List B}
+    (actual : Transcript (relabel R f id) σ xs ys) :
+    Transcript R (fun ys => (σ ys).map f) (xs.map f) ys := by
+  induction actual with
+  | nil => exact Transcript.nil
+  | @snoc xs ys x y _ asked replied ih =>
+    rw [List.map_append, List.map_singleton]
+    refine Transcript.snoc ih (Part.mem_map f asked) ?_
+    change y ∈ (R ((xs ++ [x]).map f)).map id at replied
+    have original : y ∈ R ((xs ++ [x]).map f) := replied
+    simpa only [List.map_append, List.map_singleton] using original
 
 lemma transcript_fixedQueries_of_replies {s : System A B} :
     ∀ {xs ys} (H : List A), xs <+: H → Replies s xs ys → Transcript s (fixedQueries H) xs ys := by
