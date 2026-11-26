@@ -112,6 +112,7 @@ public import Tests.KeyGuessing
 public import Tests.DaviesMeyer
 public import Tests.TypedMemoryless
 public import Tests.TypedProbAutomaton
+public import Tests.ParallelAllSelection
 public import Tests.TypedNaryParallel
 public import Tests.FreshComponent
 public import Tests.ParallelReply

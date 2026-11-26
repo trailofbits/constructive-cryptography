@@ -116,6 +116,7 @@ public import RandomSystems.Typed.ParallelAllPresentation
 public import RandomSystems.Typed.ParallelAllAttachment
 public import RandomSystems.Typed.ParallelAllContext
 public import RandomSystems.Typed.ParallelAllRegroup
+public import RandomSystems.Typed.ParallelAllSelection
 public import RandomSystems.Typed.ParallelAllReindex
 public import RandomSystems.Typed.PresentedGame
 public import RandomSystems.Typed.ProbAutomatonSampling
