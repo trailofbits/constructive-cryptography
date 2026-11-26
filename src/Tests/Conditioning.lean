@@ -66,6 +66,22 @@ example : ProbDist.uniformOn (fun b : Bool => b = true) (ProbDist.single false) 
   rw [ProbDist.uniformOn_apply_of_nonempty (fun b : Bool => b = true) ⟨true, rfl⟩]
   norm_num [Finset.filter_eq']
 
+/-- Rescaling a positive-mass conditional law recovers its unnormalized restriction. -/
+example : (5 / 6 : ℝ) • (biased.conditionOn (fun n => n / 2 = 0) (ProbDist.single 9)).1 =
+    biased.1.restrict (fun n => n / 2 = 0) := by
+  rw [← first_fiber_mass]
+  exact ProbDist.mass_smul_conditionOn _ _ _
+
+/-- The same equation applies at an unreachable fiber, independently of its fallback. -/
+example : (0 : ℝ) • (biased.conditionOn (fun n => n / 2 = 2) (ProbDist.single 9)).1 =
+    biased.1.restrict (fun n => n / 2 = 2) := by
+  have null : biased.1.mass (fun n => n / 2 = 2) = 0 := by
+    norm_num [biased, mass_add, mass_single]
+  rw [← null]
+  exact ProbDist.mass_smul_conditionOn _ _ _
+
+#print axioms ProbDist.mass_smul_conditionOn
+
 #print axioms ProbDist.conditionOn_eq_bind
 #print axioms ProbDist.uniformOn_apply_of_nonempty
 
