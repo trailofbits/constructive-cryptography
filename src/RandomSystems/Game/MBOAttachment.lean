@@ -538,22 +538,6 @@ lemma relabel_apply_outside {V' : O → Type} (c : InsideOutsideSystem O J U V' 
   · rcases y with ⟨⟨_ | ⟨⟨⟩⟩, o⟩, v⟩ <;> rfl
   · rfl
 
-/-- A converter relabeling its inside replies, attached to a resource, is the converter attached
-to the resource with its replies relabeled. -/
-lemma apply_relabel_inside {Y' : J → Type} (c : InsideOutsideSystem O J U V X Y)
-    (R : InterfaceSystem J X Y') (k : (Σ j, Y' j) → (Σ j, Y j)) :
-    apply (relabel c (insideMap k) id) R = apply c (relabel R id k) := by
-  -- Write both attachments as interconnections of `[c, R]`; relabeling the inputs of `c`, or the
-  -- replies of `R`, moves into the routing table and the injection.
-  rw [apply_eq, apply_eq, pair_relabel_left, interconnect_relabel, pair_relabel_right,
-    interconnect_relabel]
-  -- The routing tables agree output by output; the injections agree.
-  congr 1
-  · funext y
-    rcases y with ⟨_ | ⟨⟩, y⟩
-    · rcases y with ⟨⟨_ | ⟨⟨⟩⟩, o⟩, v⟩ <;> rfl
-    · rfl
-
 /-- **Attaching a lift and forgetting the MBO** is attaching the converter to the system with the
 MBO forgotten. -/
 lemma relabel_trim_apply_liftMBO (a : InsideOutsideSystem O J U V X Y)
