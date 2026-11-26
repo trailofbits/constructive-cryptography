@@ -73,6 +73,7 @@ named `budget` argument. The object index below supplies owners for those declar
 
 | Needed object | Declaration and module |
 | --- | --- |
+| Present dense extraction with affine register values | `GenericGroup.extractionDDS_eq_affine` in `Commons.Definitions.GenericGroup.Affine.Laws` |
 | Evaluate affine coefficient pairs consistently | `Probability.affineEvaluation` in `Probability.AffineEvaluation` |
 | Share command types across different model interpretations | `AbstractModel.Port.Input`, `Port.Output` in `Commons.Definitions.AbstractModel` |
 | Expand entries while preserving fold-indexed checks | `List.ForallScan.flatMap` in `Probability.List` |
