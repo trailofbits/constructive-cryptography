@@ -244,6 +244,7 @@ public import Tests.RestrictMembership
 public import Tests.ProgramIssuedQuery
 public import Tests.RegisterProgramAttachment
 public import Tests.AbstractModelExtractionAddressMap
+public import Tests.AbstractModelFiniteScore
 
 /-! Axiom audits per layer and of the Commons library, the checks of the
 authenticated-encryption example,

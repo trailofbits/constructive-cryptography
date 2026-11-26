@@ -73,6 +73,8 @@ named `budget` argument. The object index below supplies owners for those declar
 
 | Needed object | Declaration and module |
 | --- | --- |
+| Decode complete extraction transcripts on the caller's supported commands | `extractionDDS_tr_relabelQueries` in `Commons.Definitions.AbstractModel.ExtractionPresentation.Recoding` |
+| Preserve extraction scores with one finite code for every retained law | `extractionGame_winProbability_relabelQueries`, `exists_fin_extractionGame_winProbability_eq` in `Commons.Definitions.AbstractModel.ExtractionGame.Recoding` |
 | Find a tagged value from membership in its component history | `mem_restrict_iff` in `RandomSystems.System.Interconnection` |
 | Locate a program query, including its final pending call | `DDC.exists_after_busy_of_mem_insideQueries` in `RandomSystems.Converter.ProgramTrace` |
 | Preserve a caller's stopping bound under query recoding | `queryBounded_ddeOf_relabelQueries_iff` in `RandomSystems.System.QueryRelabel.Laws` |
