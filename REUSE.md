@@ -129,6 +129,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Express adaptive transcript evolution as a probability kernel | `RandomSystem.sLaw_succ_eq_bindK` in `RandomSystems.Cumulative.ObservationKernel` |
 | Solve a finite binomial-count recurrence | `Probability.Counting.le_choose_mul_pow_of_succ_le` in `Probability.Counting.BinomialRecurrence` |
 | Bound a heavy bin under adaptive draws | `mass_occupancy_ge_le` in [Probability/Occupancy.lean](src/Probability/Occupancy.lean) |
+| Apply the adaptive occupancy bound to a random system | `RandomSystem.sLaw_mass_occupancy_ge_le` in `RandomSystems.Cumulative.Occupancy` |
 | Count subsets within finitely many occupied bins | `Finsupp.chooseSum`, `chooseSum_add_single`, `one_le_chooseSum_of_le` in `Probability.Counting.BinomialSum` |
 | Average bin-count increments under per-bin probability bounds | `expect_chooseSum_addDraw_le` in `Probability.Occupancy` |
 | Average conditional distances or apply a common kernel | `statDist_bindK_le_expect`, `statDist_bindK_le` in `Probability.StatisticalDistance` |

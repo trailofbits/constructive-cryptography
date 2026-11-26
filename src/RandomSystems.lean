@@ -40,6 +40,7 @@ public import RandomSystems.Cumulative.CumulativeAttachment
 public import RandomSystems.Cumulative.CumulativeObservation
 public import RandomSystems.Cumulative.Conditional
 public import RandomSystems.Cumulative.ObservationKernel
+public import RandomSystems.Cumulative.Occupancy
 public import RandomSystems.Cumulative.CumulativeOperations
 public import RandomSystems.Cumulative.ParallelAll
 public import RandomSystems.Cumulative.ParallelAllPresentation
