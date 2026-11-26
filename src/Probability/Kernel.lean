@@ -18,11 +18,13 @@ This represents a "conditional probability distribution" `p_{Y|X}` [1, §3.6.1, 
 `fTransform_bindK` and `bindK_fTransform` move deterministic maps through those draws.
 
 `ProbDist.map` and `ProbDist.bind` retain normalization. `ProbDist.map_id` removes the
-identity map; `ProbDist.map_map` composes deterministic transformations, and `ProbDist.map_pi_apply`
-selects one coordinate of an independent table. `ProbDist.map_piDep_comp` selects distinct
-coordinates of a dependent table, `ProbDist.map_piDep_comp_comp` factors a selection through an
-injective map, and `ProbDist.map_piDep_comp_eq_of_eq_iff` identifies tuple laws of tables with one
-entry law whenever the same indices coincide. `prodProbDist_uniform` identifies independent
+identity map; `ProbDist.map_map` composes deterministic transformations, and
+`ProbDist.map_pi_apply` selects one coordinate of an independent table.
+`ProbDist.map_piDep_uncurry` regroups nested independent tables into one table over
+paired indices. `ProbDist.map_piDep_comp` selects distinct coordinates of a dependent
+table; `ProbDist.map_piDep_comp_comp` factors a selection through an injective map.
+`ProbDist.map_piDep_comp_eq_of_eq_iff` identifies tuple laws of tables with one entry
+law whenever the same indices coincide. `prodProbDist_uniform` identifies independent
 uniform coordinates with a uniform pair. `prodProbDist_map` and its one-coordinate forms
 `prodProbDist_map_left`, `prodProbDist_map_right` transport independent draws:
 
@@ -411,6 +413,17 @@ lemma map_pi_apply_comp
     (ProbDist.pi μ).map (fun f => g (f i)) = (μ i).map g :=
   (map_map g (fun f : ι → A => f i) (ProbDist.pi μ)).symm.trans
     (congrArg (ProbDist.map g) (map_pi_apply μ i))
+
+/-- Uncurrying independent normalized tables gives the normalized table over paired indices. -/
+lemma map_piDep_uncurry
+    -- `K` indexes groups and `L k` their entries; only these index types need be finite.
+    {K : Type*} [Fintype K] {L : K → Type*} [∀ k, Fintype (L k)]
+    -- `A k l` carries the outcome at `⟨k, l⟩`, with normalized law `μ k l`.
+    {A : ∀ k, L k → Type*} (μ : ∀ k l, ProbDist (A k l)) :
+    (ProbDist.piDep fun k => ProbDist.piDep (μ k)).map (Equiv.piCurry A).symm =
+      ProbDist.piDep (fun p : Σ k, L k => μ p.1 p.2) := by
+  apply Subtype.ext
+  exact fTransform_piDep_uncurry (fun k l => (μ k l).1)
 
 /-- Selecting distinct coordinates from an independent table gives their product law. -/
 lemma map_piDep_comp

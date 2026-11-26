@@ -64,6 +64,7 @@ public import Tests.Axioms.Commons
 public import Tests.Axioms.Systems
 public import Tests.Counterexamples
 public import Tests.DependentProduct
+public import Tests.DependentProductRegrouping
 public import Tests.DirectCalls
 public import Tests.NaryParallelSystems
 public import Tests.NaryParallelConverters
