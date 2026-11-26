@@ -25,6 +25,8 @@ finite. [`ProbDist.pi`](Distribution.lean) and [`ProbDist.piDep`](DependentProdu
 construct normalized independent families directly, carrying the coordinate normalization
 proofs into the product.
 `ProbDist.map_piDep_uncurry` regroups nested independent tables over paired indices.
+[`ProbDist.pinnedProduct`](PinnedProduct.lean) fixes selected coordinates to specified values.
+Its joint-law equation lets a proof sample one entry first and complete the same retained table.
 `ProbDist.map_piDep_comp` selects distinct coordinates of a dependent product, preserving each
 coordinate's outcome type and law; [`ProbDist.map_piDep_comp_comp`][ProbDist.map_piDep_comp_comp]
 factors a tuple selection through an injective map, and

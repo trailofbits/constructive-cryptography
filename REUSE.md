@@ -73,6 +73,7 @@ named `budget` argument. The object index below supplies owners for those declar
 
 | Needed object | Declaration and module |
 | --- | --- |
+| Independent table with prescribed entries | `ProbDist.pinnedProduct`, `fTransform_pinnedProduct_apply` in [PinnedProduct](src/Probability/PinnedProduct.lean) |
 | Uniform sponge byte slices | `card_byteState`, `fTransform_capacityPart_uniform`, `fTransform_digestPart_uniform` in `Commons.Schemes.Sponge.Uniform` |
 | Probabilistic games with a hidden monotone bit | `TypedGame.ofProbAutomaton`, `TypedGame.visible_ofProbAutomaton` in `RandomSystems.Typed.ProbAutomatonGame` |
 | Bound success after final oracle calls | `TypedSolver.probability_attach_le_winProbability_absorb` with `s.ReflectsMBO α G` in `RandomSystems.Typed.GameEventReflection` |

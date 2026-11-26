@@ -19,6 +19,7 @@ public import Probability.CollisionLower
 public import Probability.Coupling
 public import Probability.Distribution
 public import Probability.DependentProduct
+public import Probability.PinnedProduct
 public import Probability.Expectation
 public import Probability.Group
 public import Probability.Kernel

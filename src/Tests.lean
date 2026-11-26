@@ -171,6 +171,7 @@ public import Tests.AutomatonGame
 public import Tests.GameDistanceBound
 public import Tests.URFRetainedTable
 public import Tests.RandomFunction
+public import Tests.PinnedProduct
 public import Tests.PermutationWalk
 public import Tests.PermutationAvoidance
 public import Tests.PermutationTableGame
