@@ -2,6 +2,7 @@ module
 
 public import Commons.Definitions.AbstractModel
 public import Mathlib.Data.List.Basic
+public import Mathlib.Logic.Function.Basic
 
 /-!
 # Legal histories of an abstract computation model
@@ -10,6 +11,8 @@ public import Mathlib.Data.List.Basic
 under nonempty prefixes. `Admitted.length_le` bounds the total length by `k + 1`.
 `admitted_snoc_iff` checks the next command from the previous legal history and its initialized
 addresses. These certificates supply the domain of the register converter's outside interface.
+`Admitted.mapCommand` transports legality along any address map;
+`admitted_mapCommand_iff` reflects it along an embedding.
 -/
 
 @[expose] public section
@@ -81,5 +84,106 @@ lemma admitted_snoc_iff
       · simp only [List.prefix_nil, List.append_eq_nil_iff,
           List.cons_ne_nil, and_false] at hp
       · exact prior.2.2.2 t u hp
+
+/-! ## Address maps -/
+
+omit [DecidableEq ι] in
+/-- An address decoder also decodes operand vectors, destinations, and complete commands. -/
+lemma mapCommand_leftInverse
+    -- `f` encodes addresses and `g` decodes them; submitted values are unchanged.
+    {κ : Type} (f : ι → κ) (g : κ → ι) (inverse : Function.LeftInverse g f) :
+    Function.LeftInverse (M.mapCommand g) (M.mapCommand f) := by
+  have decoded (x : ι) : g (f x) = x := inverse x
+  intro z
+  obtain ⟨o | ρ | _, z⟩ := z
+  · obtain ⟨a, destination⟩ := z
+    simp only [mapCommand, Sigma.map, id_eq, mapInput, Function.comp_def, decoded]
+  · simp only [mapCommand, Sigma.map, id_eq, mapInput, Function.comp_def, decoded]
+  · rfl
+
+/-- The operands of a renamed command are the image of its original operands. -/
+lemma reads_mapCommand
+    {κ : Type} [DecidableEq κ] (f : ι → κ) (z : M.Command ι) :
+    M.reads (M.mapCommand f z) = (M.reads z).image f := by
+  obtain ⟨o | ρ | _, z⟩ := z
+  · obtain ⟨a, destination⟩ := z
+    simp only [mapCommand, Sigma.map, id_eq, mapInput, reads, Finset.image_image]
+  · simp only [mapCommand, Sigma.map, id_eq, mapInput, reads, Finset.image_image]
+  · simp only [mapCommand, Sigma.map, id_eq, mapInput, reads, Finset.image_empty]
+
+omit [DecidableEq ι] in
+/-- A computation's destination is renamed; a query or submission still has none. -/
+lemma target_mapCommand
+    {κ : Type} (f : ι → κ) (z : M.Command ι) :
+    M.target (M.mapCommand f z) = (M.target z).map f := by
+  obtain ⟨o | ρ | _, z⟩ := z
+  · obtain ⟨a, destination⟩ := z
+    rfl
+  · rfl
+  · rfl
+
+omit [DecidableEq ι] in
+/-- Address maps preserve which commands consume the ordinary-query allowance. -/
+lemma ordinary_mapCommand
+    {κ : Type} (f : ι → κ) (z : M.Command ι) :
+    M.ordinary (M.mapCommand f z) = M.ordinary z := by
+  obtain ⟨o | ρ | _, z⟩ := z
+  · obtain ⟨a, destination⟩ := z
+    rfl
+  · rfl
+  · rfl
+
+/-- Renaming the initial address and every destination maps the initialized-register set. -/
+lemma initialized_mapCommand
+    -- `f` maps addresses; `input` is initially populated and `h` contains completed commands.
+    {κ : Type} [DecidableEq κ] (f : ι → κ) (input : ι) (h : List (M.Command ι)) :
+    M.initialized (f input) (h.map (M.mapCommand f)) = (M.initialized input h).image f := by
+  have destinations : (h.map (M.mapCommand f)).filterMap M.target =
+      (h.filterMap M.target).map f := by
+    simp only [List.filterMap_map, List.map_filterMap, Function.comp_def, target_mapCommand]
+  simp only [initialized, Finset.image_insert]
+  congr 1
+  rw [destinations]
+  exact Multiset.toFinset_map f (h.filterMap M.target)
+
+/-- Every address map preserves legal reads, terminal submission, and the query allowance. -/
+lemma Admitted.mapCommand
+    -- `f` may identify addresses; every previously initialized operand remains initialized.
+    {κ : Type} [DecidableEq κ] (f : ι → κ)
+    {input : ι} {k : ℕ} {h : List (M.Command ι)} (admitted : M.Admitted input k h) :
+    M.Admitted (f input) k (h.map (M.mapCommand f)) := by
+  induction h using List.reverseRecOn with
+  | nil => exact (admitted.1 rfl).elim
+  | append_singleton h z ih =>
+    obtain ⟨prior, count, ordinary, operands⟩ := (admitted_snoc_iff input k h z).mp admitted
+    rw [List.map_append, List.map_singleton, admitted_snoc_iff]
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · rcases prior with rfl | prior
+      · exact Or.inl rfl
+      · exact Or.inr (ih prior)
+    · simpa only [List.countP_append, List.countP_cons, List.countP_nil, List.countP_map,
+        Function.comp_def, ordinary_mapCommand] using count
+    · simpa only [List.forall_mem_map, ordinary_mapCommand] using ordinary
+    · rw [reads_mapCommand, initialized_mapCommand]
+      exact Finset.image_mono f operands
+
+/-- An embedding preserves and reflects admission of a renamed history. -/
+theorem admitted_mapCommand_iff
+    -- `d` keeps distinct addresses distinct; `input` is the initially populated register.
+    {κ : Type} [DecidableEq κ] (d : ι ↪ κ) (input : ι) (k : ℕ)
+    (h : List (M.Command ι)) :
+    M.Admitted (d input) k (h.map (M.mapCommand d)) ↔ M.Admitted input k h := by
+  classical
+  -- The existing input address supplies a default only for the inverse outside `d`'s range.
+  let : Nonempty ι := ⟨input⟩
+  have inverse : Function.LeftInverse (Function.invFun d) d :=
+    Function.leftInverse_invFun d.injective
+  have commands := mapCommand_leftInverse (M := M) d (Function.invFun d) inverse
+  constructor
+  · intro admitted
+    have restored := admitted.mapCommand (Function.invFun d)
+    simpa only [inverse input, List.map_map, commands.comp_eq_id, List.map_id]
+      using restored
+  · exact fun admitted => admitted.mapCommand d
 
 end Commons.AbstractModel
