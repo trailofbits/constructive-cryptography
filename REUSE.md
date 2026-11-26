@@ -73,6 +73,7 @@ named `budget` argument. The object index below supplies owners for those declar
 
 | Needed object | Declaration and module |
 | --- | --- |
+| Keep first-occurrence ranks stable as inputs accumulate | `List.IsPrefix.eraseDups`, `List.nodup_eraseDups` in `Probability.List` |
 | Recode caller queries with support-local decoding | `DDD.relabelQueries`, `ddeOf_relabelQueries_map_decode`; domain transport in `RandomSystems.Distance.Decision` |
 | Encode a finite subset of an arbitrary alphabet | `Set.Finite.exists_fin_encoding` in `Probability.FiniteSet` |
 | Independent table with prescribed entries | `ProbDist.pinnedProduct`, `fTransform_pinnedProduct_apply` in [PinnedProduct](src/Probability/PinnedProduct.lean) |
