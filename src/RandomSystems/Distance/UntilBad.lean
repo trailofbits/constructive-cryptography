@@ -22,8 +22,8 @@ taken, minus the probability lost, does not decrease in expectation from one rou
 
 * `transcriptCost_eq_sub_of_snoc`: a potential increasing by each query cost gives the total
   as its final value minus its initial value
-* `transcriptCost_distinct_eq_choose`: charging only fresh tested inputs telescopes to
-  `C(r, 2) / N` after `r` distinct inputs, while repeated queries cost zero
+* `transcriptCost_distinct_eq_sub`: a potential of the distinct-input count charges only fresh
+  tests. Its linear and pair-count instances give `r · ε` and `C(r, 2) / N`.
 * `RandomSystem.one_sub_le_sum_tSupp`: a compatible environment sees the common part with
   probability at least one minus the largest cost of a possible transcript
 * `RandomSystem.transcriptDistance_le_of_transcriptCost_le`: two random systems above a common
@@ -78,6 +78,48 @@ lemma transcriptCost_eq_sub_of_snoc
       _ = Φ h - Φ [] + β h z.1 := by rw [ih]
       _ = Φ (h ++ [z]) - Φ [] := by rw [increment]; ring
 
+/-- Charging `v(d+1) - v(d)` on each fresh test gives `v(r) - v(0)` after `r` distinct tests. -/
+lemma transcriptCost_distinct_eq_sub
+    -- `test` selects the value in `Z` tested by a query in `X`; replies have type `Y`.
+    {X Y Z : Type} [DecidableEq Z] (test : X → Z)
+    -- `v d` is a real potential after `d` distinct tests; `h` is the query/reply transcript.
+    (v : ℕ → ℝ) (h : List (X × Y)) :
+    transcriptCost (fun p x => if test x ∈ p.map (test ∘ Prod.fst) then 0 else
+      v ((p.map (test ∘ Prod.fst)).toFinset.card + 1) -
+        v (p.map (test ∘ Prod.fst)).toFinset.card) h =
+      v (h.map (test ∘ Prod.fst)).toFinset.card - v 0 := by
+  have increment (p : List (X × Y)) (x : X) (y : Y) :
+      v ((p ++ [(x, y)]).map (test ∘ Prod.fst)).toFinset.card =
+        v (p.map (test ∘ Prod.fst)).toFinset.card +
+          (if test x ∈ p.map (test ∘ Prod.fst) then 0 else
+            v ((p.map (test ∘ Prod.fst)).toFinset.card + 1) -
+              v (p.map (test ∘ Prod.fst)).toFinset.card) := by
+    rw [List.map_append, List.map_singleton, List.toFinset_append, List.toFinset_cons,
+      List.toFinset_nil, Finset.insert_empty, Finset.union_singleton]
+    simp only [Function.comp_apply]
+    by_cases repeated : test x ∈ p.map (test ∘ Prod.fst)
+    · -- A repeated test keeps the set and contributes zero.
+      rw [ite_eq_left repeated, Finset.insert_eq_of_mem (List.mem_toFinset.mpr repeated),
+        add_zero]
+    · -- A fresh test increments the set cardinality, so its potential difference is charged.
+      rw [ite_eq_right repeated, Finset.card_insert_of_notMem
+        (by simpa only [List.mem_toFinset] using repeated)]
+      ring
+  simpa only [List.map_nil, List.toFinset_nil, Finset.card_empty] using
+    transcriptCost_eq_sub_of_snoc _
+      (fun p : List (X × Y) => v (p.map (test ∘ Prod.fst)).toFinset.card) increment h
+
+/-- Charging `ε` once per distinct tested value gives the number of such values times `ε`. -/
+lemma transcriptCost_fresh_eq_card_mul
+    -- `test` identifies query values that share one charge, even when the queries differ.
+    {X Y Z : Type} [DecidableEq Z] (test : X → Z)
+    (ε : ℝ) (h : List (X × Y)) :
+    transcriptCost (fun p x => if test x ∈ p.map (test ∘ Prod.fst) then 0 else ε) h =
+      ((h.map (test ∘ Prod.fst)).toFinset.card : ℝ) * ε := by
+  simpa only [Nat.cast_add, Nat.cast_one, add_mul, one_mul, add_sub_cancel_left,
+    Nat.cast_zero, zero_mul, sub_zero] using
+    transcriptCost_distinct_eq_sub test (fun n => (n : ℝ) * ε) h
+
 /-- Charging `d / N` only when the number of distinct tests grows from `d` to `d + 1`
 accumulates `C(r, 2) / N` after `r` distinct tests. -/
 lemma transcriptCost_distinct_eq_choose
@@ -88,22 +130,10 @@ lemma transcriptCost_distinct_eq_choose
     transcriptCost (fun h x => if test x ∈ h.map (test ∘ Prod.fst) then 0 else
       ((h.map (test ∘ Prod.fst)).toFinset.card : ℝ) / N) h =
       ((h.map (test ∘ Prod.fst)).toFinset.card.choose 2 : ℝ) / N := by
-  induction h using List.reverseRecOn with
-  | nil => simp only [transcriptCost, List.map_nil, List.toFinset_nil, Finset.card_empty,
-      Nat.choose_zero_succ, Nat.cast_zero, zero_div]
-  | append_singleton h z ih =>
-    rw [transcriptCost_snoc, ih, List.map_append, List.map_singleton,
-      List.toFinset_append, List.toFinset_cons, List.toFinset_nil,
-      Finset.insert_empty, Finset.union_singleton]
-    simp only [Function.comp_apply]
-    by_cases hx : test z.1 ∈ h.map (test ∘ Prod.fst)
-    · -- A repeated test changes neither the distinct-input set nor its cost.
-      rw [ite_eq_left hx, Finset.insert_eq_of_mem (List.mem_toFinset.mpr hx), add_zero]
-    · -- A fresh test adds `d` unordered pairs, each charged `1 / N`.
-      rw [ite_eq_right hx, Finset.card_insert_of_notMem
-        (by simpa only [List.mem_toFinset] using hx)]
-      rw [Nat.choose_succ_succ, Nat.choose_one_right, Nat.cast_add]
-      ring
+  -- The potential `choose(d,2)/N` increases by `d/N` at a fresh test.
+  simpa only [Nat.choose_succ_succ, Nat.choose_one_right, Nat.cast_add, add_div,
+    add_sub_cancel_right, Nat.choose_zero_succ, Nat.cast_zero, zero_div, sub_zero] using
+    transcriptCost_distinct_eq_sub test (fun n => (n.choose 2 : ℝ) / N) h
 
 
 end Cost
