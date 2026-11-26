@@ -116,6 +116,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Bound polynomial roots under an atom-mass bound | `mass_polynomial_eval_eq_zero_le`, `mass_polynomial_eval_eq_le` in `Probability.PolynomialEvaluation` |
 | Transfer an event bound through equality off an exceptional event | `mass_le_of_eq_on_compl` in `Probability.Distribution` |
 | Bound affine collisions and a fixed guess | `mass_affine_not_injOn_le_choose`, `mass_eq_or_affine_not_injOn_le` in `Probability.AffineEvaluation` |
+| Transfer an independent-secret bound through collision-free agreement | `expect_mass_le_of_affine_injOn_eq` in `Probability.AffineEvaluation` |
 | Independent initialized laws | `prodProbDist_map`, `ProbDist.map_map` in [Kernel] |
 | Root blinding | `ProbDist.blindRootSolver`, `ProbDist.rootSuccessLaw` in [Group] |
 | RSA unit-root blinding | `Commons.RSA.blinding_success_eq` in [RSA] |
