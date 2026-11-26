@@ -188,20 +188,20 @@ against a running `foldl` state (`List.ForallScan`, `List.ForallScan.append`,
 [piDep]: DependentProduct.lean#L56
 [uniform]: Distribution.lean#L697
 [ProbDist.uniform]: Distribution.lean#L730
-[bindK]: Kernel.lean#L56
-[bindK_bindK]: Kernel.lean#L109
-[bindK_single_comp]: Kernel.lean#L131
-[pi_eq_bindK_update]: Kernel.lean#L358
-[ProbDist.map]: Kernel.lean#L374
-[ProbDist.map_map]: Kernel.lean#L387
-[ProbDist.map_piDep_comp_comp]: Kernel.lean#L440
-[ProbDist.map_piDep_comp_eq_of_eq_iff]: Kernel.lean#L452
-[prodProbDist_map]: Kernel.lean#L572
-[ProbDist.bind]: Kernel.lean#L481
-[ProbDist.bind_const]: Kernel.lean#L495
-[ProbDist.jointLaw]: Kernel.lean#L513
-[ProbDist.jointLaw_fst]: Kernel.lean#L520
-[ProbDist.jointLaw_map]: Kernel.lean#L540
+[bindK]: Kernel.lean#L58
+[bindK_bindK]: Kernel.lean#L120
+[bindK_single_comp]: Kernel.lean#L142
+[pi_eq_bindK_update]: Kernel.lean#L399
+[ProbDist.map]: Kernel.lean#L415
+[ProbDist.map_map]: Kernel.lean#L428
+[ProbDist.map_piDep_comp_comp]: Kernel.lean#L481
+[ProbDist.map_piDep_comp_eq_of_eq_iff]: Kernel.lean#L493
+[prodProbDist_map]: Kernel.lean#L609
+[ProbDist.bind]: Kernel.lean#L522
+[ProbDist.bind_const]: Kernel.lean#L536
+[ProbDist.jointLaw]: Kernel.lean#L550
+[ProbDist.jointLaw_fst]: Kernel.lean#L557
+[ProbDist.jointLaw_map]: Kernel.lean#L577
 [normalizeOr]: Lift.lean#L189
 [statDist]: StatisticalDistance.lean#L101
 [statDist_triangle]: StatisticalDistance.lean#L251
@@ -239,7 +239,7 @@ against a running `foldl` state (`List.ForallScan`, `List.ForallScan.append`,
 
 [uniform_mass_transcript_collision_le_card]: Counting/Collision.lean
 
-[ProbDist.map_id]: Kernel.lean#L383
-[prodProbDist_uniform]: Kernel.lean#L582
-[prodProbDist_map_left]: Kernel.lean#L589
-[prodProbDist_map_right]: Kernel.lean#L596
+[ProbDist.map_id]: Kernel.lean#L424
+[prodProbDist_uniform]: Kernel.lean#L619
+[prodProbDist_map_left]: Kernel.lean#L626
+[prodProbDist_map_right]: Kernel.lean#L633

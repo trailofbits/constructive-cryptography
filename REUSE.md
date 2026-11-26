@@ -111,6 +111,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Routed table equality off input collisions | `TypedSystem.sample_piDep_comp_mass_eq` in [RandomSystems/Typed/RandomFunction.lean](src/RandomSystems/Typed/RandomFunction.lean) |
 | Ideal-transcript collision bound | `TypedSystem.sample_piDep_comp_advantage_le_collision_mass` in [RandomSystems/Typed/RandomFunctionCollision.lean](src/RandomSystems/Typed/RandomFunctionCollision.lean) |
 | Ratio and accumulated loss, through a common filter | `RandomSystem.filtered_distance_le_of_ratio_and_cost` in [RandomSystems/Typed/FilterDistance.lean](src/RandomSystems/Typed/FilterDistance.lean) |
+| Split a kernel by an event | `bindK_ite_eq_add_restrict`, `bindK_ite_single` in [Kernel] |
 | Transformed or dependent law | `ProbDist.map`, `ProbDist.bind`, `ProbDist.jointLaw` in [Kernel] |
 | Average a joint event over its first draw | `ProbDist.jointLaw_mass_eq_expect` in `Probability.Expectation` |
 | Average finitely many nonzero scores over arbitrary classes | `expect_comp_eq_sum_mass_of_eq_zero` in `Probability.Expectation` |
