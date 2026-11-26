@@ -113,6 +113,7 @@ public import Tests.DaviesMeyer
 public import Tests.TypedMemoryless
 public import Tests.TypedProbAutomaton
 public import Tests.TypedNaryParallel
+public import Tests.FreshComponent
 public import Tests.ParallelReply
 public import Tests.TypedNaryMemoryless
 
