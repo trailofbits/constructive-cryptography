@@ -22,6 +22,7 @@ public import Commons.Definitions.AbstractModel.Extraction
 public import Commons.Definitions.AbstractModel.ExtractionPresentation
 public import Commons.Definitions.AbstractModel.ExtractionPresentation.Laws
 public import Commons.Definitions.AbstractModel.ExtractionGame
+public import Commons.Definitions.AbstractModel.ExtractionGame.Laws
 public import Commons.Definitions.BidirectionalSwitching
 public import Commons.Definitions.Cipher
 public import Commons.Definitions.CollisionGame

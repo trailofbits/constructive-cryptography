@@ -1,7 +1,6 @@
 module
 
-public import Commons.Definitions.AbstractModel.ExtractionGame
-public import RandomSystems.Game.Transcript
+public import Commons.Definitions.AbstractModel.ExtractionGame.Laws
 public import Tests.AbstractModelExtraction
 
 /-!
@@ -40,16 +39,8 @@ lemma winner_isDDD : IsDDD winner := envProbe_isDDD submit_bounded
 /-- In this zero-ordinary-query test, the supplied joint law scores exactly its false secrets. -/
 lemma winning_probability (D : ProbDist (Unit × Bool)) :
     (model.extractionGame false 0 D).1.1.winProbability winner winner_isDDD =
-      D.1.mass (fun z => z.2 = false) := by
-  have score := PDG.winProbability_behavior_ofQueries_singleton
-    (model.extractionPDG false 0 D).1 (model.extractionPDG false 0 D).2 guess
-    Tests.AbstractModelExtraction.zero_query_extraction.1 (fun _ => False)
-  refine score.trans ?_
-  rw [PDG.badProbability, extractionPDG, ProbDist.map_val, mass_fTransform]
-  apply mass_congr
-  intro z
-  change some false = some z.2 ↔ z.2 = false
-  simp only [Option.some.injEq, eq_comm]
+      D.1.mass (fun z => z.2 = false) :=
+  model.extractionGame_winProbability_submit false 0 D false (fun _ => False)
 
 /-- One fair retained secret gives an immediate fixed guess success probability `1/2`. -/
 example :
@@ -71,6 +62,7 @@ example : (model.extractionGame false 0 (ProbDist.single ((), true))).1.1.winPro
 #print axioms Commons.AbstractModel.extractionSystem_presents
 #print axioms Commons.AbstractModel.extractionGame_visible
 #print axioms SystemAlgebra.PDG.winProbability_behavior_ofQueries_singleton
+#print axioms Commons.AbstractModel.extractionGame_winProbability_submit
 #print axioms winning_probability
 
 end Tests.AbstractModelExtractionGame
