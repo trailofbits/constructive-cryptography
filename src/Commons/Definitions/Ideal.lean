@@ -1,6 +1,7 @@
 module
 
 public import ConstructiveCryptography.DSL
+public import Commons.Definitions.RandomFunction
 public import RandomSystems.Typed.Functional
 public import RandomSystems.Typed.KeyedAutomaton
 public import RandomSystems.Typed.Memoryless
@@ -36,6 +37,7 @@ identifies all cumulative probabilities. The retained-key law in
 
 ## Main results
 
+* `URF.eq_randomFunction`: uniform coordinate laws give the existing retained uniform table
 * `URF.eq_sample`, `URF.smul_eq_sample`: `URF A` and its converter attachments draw one retained
   uniform function table for any `Fintype` enumeration of `∀ i, A.X i → A.Y i`
 * `URF.single_mass`: on a single-port admitted transcript, URF mass is the uniform-table
@@ -104,6 +106,16 @@ lemma eq_sample
   unfold Commons.URF
   congr 1
   exact uniform_congr_fintype _ inst
+
+/-- Uniform coordinate laws give `URF A`, retaining one table throughout the interaction. -/
+lemma eq_randomFunction
+    -- `A` supplies ports and finite alphabets; each reply alphabet admits a uniform law.
+    (A : Interface) [∀ i, Nonempty (A.Y i)] :
+    Commons.URF A = randomFunction A (fun i _ => 𝒰[A.Y i]) := by
+  classical
+  rw [eq_sample, randomFunction]
+  congr 1
+  simp only [ProbDist.piDep_val, ProbDist.uniform, piDep_uniform]
 
 /-- Attaching a converter `α` to `URF A` draws one uniform function table `f` once and runs `α`
 against `ofFunction f`, for any `Fintype` enumeration `inst` of `∀ i, A.X i → A.Y i`. -/
