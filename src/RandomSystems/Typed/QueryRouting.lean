@@ -1,6 +1,8 @@
 module
 
 public import RandomSystems.Converter.QueryRoutingProgram
+public import RandomSystems.Converter.ProgramSchedule
+public import RandomSystems.Typed.DSL.Programs
 public import RandomSystems.Typed.CallFunctional
 public import RandomSystems.Typed.Memoryless
 
@@ -25,6 +27,7 @@ It preserves `A.domain` exactly.
 
 ## Main results
 
+* `TypedConverter.routingAt_smul_ofFunction`: the answer takes a reply at the requested port
 * `mapReplies_smul_ofFunction`, `mapReplies_smul_ofMemoryless` and `mapReplies_smul_source`:
   contracts for reply mapping on deterministic systems, fresh laws and sources
 * `TypedConverter.routing`: one inside query and a translated reply, with an explicit domain map
@@ -191,5 +194,64 @@ lemma mapReplies_smul_source
       TypedSystem.source (P.map f) q := by
   rw [TypedSystem.source_eq_ofMemoryless, TypedSystem.source_eq_ofMemoryless]
   exact mapReplies_smul_ofMemoryless _ _ _
+
+section RequestedPort
+
+-- `A`, `B` are the outside and inside interfaces, including their admitted query histories.
+variable {A B : Interface}
+  -- `request u` selects the inside port and query for outside input `u`.
+  (request : (Σ o, A.X o) → Σ j, B.X j)
+  -- `answer u` translates a reply at that selected port to the outside reply alphabet.
+  (answer : (u : Σ o, A.X o) → B.Y (request u).1 → A.Y u.1)
+
+/-- With unit retained state, call `request u` once and return `answer u y` on its reply. -/
+noncomputable def routingAtProgram : Program Unit A.I B.I A.X A.Y B.X B.Y :=
+  fun _ o x => DSL.callProg (request ⟨o, x⟩).1 (request ⟨o, x⟩).2 fun y =>
+    DSL.returnProg ((), answer ⟨o, x⟩ y)
+
+/-- The reply translation returns immediately after the one designated call. -/
+lemma routingAtProgram_costs : (routingAtProgram request answer).Costs (fun _ => 1) :=
+  fun _ _ _ => DSL.callCost_call _ _ _ fun _ => DSL.callCost_return _
+
+/-- Route `u` to `(j,x) = request u` and return `answer u y` for its reply `y : B.Y j`. -/
+noncomputable def routingAt (request : (Σ o, A.X o) → Σ j, B.X j)
+    (answer : (u : Σ o, A.X o) → B.Y (request u).1 → A.Y u.1)
+    -- Each admitted outside history maps to an admitted history on B.
+    (hmap : ∀ us, A.domain us → B.domain (us.map request)) : TypedConverter A B :=
+  ofDDC (b := 1) (DDC.ofProgramOn () (routingAtProgram request answer) A.domain) (by
+    -- The singleton schedule covers the pending request as well as completed calls.
+    refine DDC.ofProgramOn_isDDCFrom_of_schedule (fun u => [request u])
+      (routingAtProgram_costs request answer) ?_ (b := 1) (fun _ => le_rfl)
+      B.nonempty_prefix.2 A.nonempty_prefix.2 ?_
+    · intro s o x h q hc hq
+      have hl := ((routingAtProgram_costs request answer s o x h hc).1 q hq)
+      have he := List.length_eq_zero_iff.mp (Nat.lt_one_iff.mp hl)
+      subst h
+      exact congrArg some (Sum.inr.inj hq)
+    · intro us hus
+      exact Or.inr (by simpa only [List.map_eq_flatMap] using hmap us hus))
+
+/-- Attachment to a fixed oracle computes `g(u) = answer u (f j x)` at `request u = (j,x)`. -/
+lemma routingAt_smul_ofFunction
+    (hmap : ∀ us, A.domain us → B.domain (us.map request))
+    -- `f j x` is the inside oracle's reply at the requested port.
+    (f : ∀ j, B.X j → B.Y j) :
+    routingAt request answer hmap • TypedSystem.ofFunction f =
+      TypedSystem.ofFunction (fun o x =>
+        answer ⟨o, x⟩ (f (request ⟨o, x⟩).1 (request ⟨o, x⟩).2)) := by
+  -- The program-attachment law reduces the system equality to one invocation.
+  apply Subtype.ext
+  refine PDCBehavior.attach_ofDDC_ofProgramOn_memoryless B.nonempty_prefix A.nonempty_prefix
+    () (routingAtProgram request answer) (b := 1) ?_ _ (ν := fun j x => ProbDist.single (f j x))
+    (κ := fun o x => ProbDist.single (answer ⟨o, x⟩ (f _ (request ⟨o, x⟩).2)))
+    ?_ rfl (TypedSystem.ofFunction f).2
+  · exact fun s o x h q hc hq => ((routingAtProgram_costs request answer s o x h hc).1 q hq)
+  · intro s o x
+    -- The inside point law returns f(j,x); its image is the point law at the translated reply.
+    rw [Program.memorylessReplyLaw_succ_inr (by rfl)]
+    simp only [routingAtProgram, Program.memorylessReplyLaw, DSL.callProg, DSL.returnProg,
+      List.nil_append, ↓reduceDIte, ProbDist.single, bindK_single, one_smul]
+
+end RequestedPort
 
 end SystemAlgebra.TypedConverter

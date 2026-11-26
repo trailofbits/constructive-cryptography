@@ -375,7 +375,7 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [callRule]: ../Converter/Calls.lean#L396
 [TypedConverter.ofDDC_callConverter_smul_ofFunction]: CallRuleFunctional.lean#L35
 [routingConverter]: ../Converter/QueryRouting.lean#L73
-[TypedConverter.ofDDC_routingConverter_smul_ofFunction]: QueryRouting.lean#L67
+[TypedConverter.ofDDC_routingConverter_smul_ofFunction]: QueryRouting.lean#L70
 [TypedConverter.routing]: QueryRouting.lean
 [TypedConverter.routing_smul_ofMemoryless]: QueryRouting.lean
 [Interface.withMBO]: Game.lean#L35

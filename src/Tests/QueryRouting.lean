@@ -181,6 +181,42 @@ example (q : ℕ) (ν : Bool × Bool → ProbDist (Bool × Bool)) :
     encode (fun _ r => r.2.2)
     (encode_domain q) (fun _ => ν)
 
+/-- At the false port the reply is unit; at the true port negate the Boolean reply. -/
+def answerAt : (u : Σ o, outside.X o) → heterogeneousInside.Y (request u).1 → outside.Y u.1
+  | ⟨_, false, x⟩, _ => x
+  | ⟨_, true, _⟩, y => !y
+
+example : TypedConverter.routingAt (A := outside) (B := heterogeneousInside)
+    request answerAt request_domain • TypedSystem.ofFunction heterogeneousOracle =
+      TypedSystem.ofFunction (fun o x => answerAt ⟨o, x⟩ (heterogeneousOracle x.1 x.2)) :=
+  TypedConverter.routingAt_smul_ofFunction _ _ _ _
+
+-- Routing to the restricted oracle still requires the tag certificate.
+example (q : ℕ) (f : Bool × Bool → Bool × Bool) :
+    TypedConverter.routingAt (A := bits q) (B := encodedPairs q)
+      encode (fun _ y => y.2) (encode_domain q) •
+      TypedSystem.ofFunction (A := encodedPairs q) (fun _ => f) =
+    TypedSystem.ofFunction (A := bits q) (fun _ x => (f (true, x)).2) :=
+  TypedConverter.routingAt_smul_ofFunction _ _ _ _
+
+/-- Before the first inside reply, the converter waits at the requested `true` port. -/
+example :
+    (TypedConverter.routingAtProgram (A := outside) (B := heterogeneousInside)
+      request answerAt).after () [⟨⟨none, ()⟩, (true, false)⟩] =
+        some (.busy () () (true, false) [] ⟨true, false⟩) := rfl
+
+/-- A one-query interface whose reply alphabet is empty. -/
+abbrev emptyReplies : Interface :=
+  Interface.queryBudget Unit (fun _ => Unit) (fun _ => Empty) 1
+
+/-- The requested-port constructor needs no inhabitant of its reply alphabet. -/
+example : Nonempty (TypedConverter emptyReplies emptyReplies) := by
+  refine ⟨TypedConverter.routingAt (A := emptyReplies) (B := emptyReplies)
+    id (fun _ y => y) ?_⟩
+  intro us admitted
+  simpa only [List.map_id] using admitted
+
+#print axioms TypedConverter.routingAt_smul_ofFunction
 #print axioms routingConverter_query_count
 #print axioms routingConverter_eq_ofProgramOn
 #print axioms TypedConverter.routing_smul_ofFunction
