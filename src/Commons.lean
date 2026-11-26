@@ -10,6 +10,8 @@ public import Commons.Constructions.TranscriptCompletion
 public import Commons.Definitions.AEAD
 public import Commons.Definitions.AEAD.Keyed
 public import Commons.Definitions.ActiveUserBank
+public import Commons.Definitions.AbstractModel
+public import Commons.Definitions.AbstractModel.Domain
 public import Commons.Definitions.BidirectionalSwitching
 public import Commons.Definitions.Cipher
 public import Commons.Definitions.CollisionGame
