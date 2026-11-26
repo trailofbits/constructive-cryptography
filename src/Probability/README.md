@@ -101,6 +101,9 @@ For a [coupling][IsCoupling] of $`X`$ and $`Y`$,
 $`\delta(X, Y) \le \Pr[X \ne Y]`$, and [some coupling attains it][exists_coupling_offDiagonalMass_eq].
 For the $`n`$-ary maximal coupling [2, Theorem 2.29], the [largest agreement][supAgreement] of $`n`$
 laws of one weight [is the weight of their overlap][supAgreement_eq_weight_overlapDist].
+`eq_fTransform_of_graph_support` reconstructs a signed joint law from its second marginal
+when the first component is a function of the second. `ProbDist.jointLaw_eq_map_of_fiber`
+uses this equality for conditional kernels supported on observation fibers.
 [**Expectation**][expect] is linear [in the distribution][expect_add_left] and
 [in the function][expect_add_right], with [Markov's][mass_ge_le_expect_div],
 the [Cauchy–Schwarz][expect_mul_sq_le_sq_mul_sq] and [Jensen's][ConvexOn.map_expect_le]
@@ -203,9 +206,9 @@ against a running `foldl` state (`List.ForallScan`, `List.ForallScan.append`,
 [statDist_fTransform_le_expect_of_ratio]: StatisticalDistance.lean#L752
 [statDist_eq_weight_posPart]: Lift.lean#L108
 [statDist_eq_weight_sub_weight_inf]: Lift.lean#L265
-[IsCoupling]: Coupling.lean#L50
-[statDist_le_offDiagonalMass]: Coupling.lean#L245
-[exists_coupling_offDiagonalMass_eq]: Coupling.lean#L324
+[IsCoupling]: Coupling.lean#L45
+[statDist_le_offDiagonalMass]: Coupling.lean#L285
+[exists_coupling_offDiagonalMass_eq]: Coupling.lean#L364
 [supAgreement]: MultiCoupling.lean#L91
 [supAgreement_eq_weight_overlapDist]: MultiCoupling.lean#L401
 [expect]: Expectation.lean#L54

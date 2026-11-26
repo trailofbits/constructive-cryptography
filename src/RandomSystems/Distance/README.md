@@ -223,7 +223,7 @@ Games build on this bound: see [Game](../Game/README.md#identical-until-bad).
 [DistinguisherBehavior.advantage_le_transcriptDistance]: Distinguisher.lean#L242
 [RandomSystem.transcriptDistance_eq_iSup_behavior]: Distinguisher.lean#L250
 [System.tr]: Coupling.lean#L61
-[IsCoupling]: ../../Probability/Coupling.lean#L50
+[IsCoupling]: ../../Probability/Coupling.lean#L45
 [PDS.sLaw_behavior_eq_fTransform]: Coupling.lean#L195
 [PDS.statDist_sLaw_behavior_le_of_isCoupling]: Coupling.lean#L243
 [PDS.transcriptDistance_behavior_le_of_isCoupling]: Coupling.lean#L270
