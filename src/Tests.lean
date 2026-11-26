@@ -1,6 +1,7 @@
 module
 
 public import Tests.JointLaw
+public import Tests.KernelProduct
 public import Tests.KernelDistance
 public import Tests.AffineDistance
 public import Tests.KernelBranch
