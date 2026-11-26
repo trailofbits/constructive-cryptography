@@ -7,6 +7,7 @@ public import RandomSystems.Typed.Distinguisher
 public import RandomSystems.Typed.Solver
 public import RandomSystems.Typed.Submission
 public import RandomSystems.Typed.SubmissionSampling
+public import RandomSystems.Typed.SubmissionMap
 public import RandomSystems.Typed.Guessing
 public import RandomSystems.Distance.Mixture
 public import RandomSystems.Typed.SamplingDistance

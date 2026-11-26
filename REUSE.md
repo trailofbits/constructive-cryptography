@@ -132,6 +132,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Evaluate a sampled game's condition on completed interactions | `PDG.winProbability_behavior` in `RandomSystems.Game.Transcript` |
 | Present a sampled monitor by one tagged reply function | `PDG.withMBO_ofFunction` in `RandomSystems.Game.FunctionGame` |
 | Test submitted values against predicates using one solver law | `TypedGame.submission`, `TypedSolver.exists_submission_law` in `RandomSystems.Typed.Submission` |
+| Decode submissions and pull back their successful set | `TypedConverter.submissionMap`, `submissionMap_attachGame` in `RandomSystems.Typed.SubmissionMap` |
 | Submit a retained joint draw and read its exact event probability | `TypedSolver.submission`, `submission_winProbability`, `submission_onFinset_winProbability` in `RandomSystems.Typed.SubmissionSampling` |
 | Evaluate an automaton's monitor under its initial law | `TypedGame.winProbability_ofAutomaton_at_bound` in `RandomSystems.Typed.AutomatonGame` |
 | Add a final decision without increasing an observer's query bound | `ddeOf_envProbe_queryBounded` in `RandomSystems.Distance.Decision` |
