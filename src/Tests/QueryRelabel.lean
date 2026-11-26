@@ -95,23 +95,12 @@ example : DDD.relabelQueries caller code (dHist [⟨(), false⟩]) = Part.some �
 
 /-- Every DDS on the one-query domain answers the fixed query, after which the caller decides. -/
 lemma caller_closes (S : InterfaceSystem Unit (fun _ => ℕ) (fun _ => Bool))
-    (_ : IsDDS S) (_ : RepliesAtQueriedInterface S)
+    (_ : IsDDS S) (replyPort : RepliesAtQueriedInterface S)
     (exactDomain : ∀ xs, (S xs).Dom ↔ xs ≠ [] ∧ xs.length ≤ 1) :
-    (close caller S [startIn]).Dom := by
-  have defined := (exactDomain [request]).mpr ⟨List.cons_ne_nil _ _, Nat.le_refl 1⟩
-  obtain ⟨⟨⟨⟩, b⟩, reply⟩ := Part.dom_iff_mem.mp defined
-  have asked : request ∈ envOf caller [] := by
-    rw [caller, envOf_envProbe EFits.nil]
-    exact Part.mem_some _
-  have actual := Transcript.snoc Transcript.nil asked reply
-  have fits : EFits queries.1 [⟨(), b⟩] :=
-    EFits.snoc EFits.nil (show request ∈ queries.1 [] from Part.mem_some _) rfl
-  refine Part.dom_iff_mem.mpr ⟨decOut true, (close_decision true).mpr
-    ⟨[request], [⟨(), b⟩], actual, ?_⟩⟩
-  rw [caller, envProbe_dHist fits]
-  have stopped : ¬ (queries.1 [⟨(), b⟩]).Dom := Part.not_none_dom
-  rw [envReply, dite_eq_right stopped]
-  simp only [decide_true, Part.mem_some_iff]
+    (close caller S [startIn]).Dom :=
+  close_envProbe_ofQueries_singleton S request
+    ((exactDomain [request]).mpr ⟨List.cons_ne_nil _ _, Nat.le_refl 1⟩)
+    (fun y hy => replyPort [] request y hy) (fun _ => True)
 
 /-- The legal-closing contract transfers at the same one-query domain. -/
 example :
@@ -141,6 +130,7 @@ example : QueryBounded 0 (ddeOf (IsDDD.relabelQueries
 
 #print axioms decoded_strategy
 #print axioms final_decision
+#print axioms close_envProbe_ofQueries_singleton
 #print axioms caller_closes
 #print axioms decisionCompatible_relabelQueries_of_closes
 

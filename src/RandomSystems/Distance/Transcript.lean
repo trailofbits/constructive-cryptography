@@ -204,6 +204,34 @@ lemma envOf_envProbe {ys : List (Σ i, Yi i)} (hv : EFits E.1 ys) :
 
 end EnvProbe
 
+/-- A one-query probe decides whenever the resource answers that query at its own port. -/
+lemma close_envProbe_ofQueries_singleton
+    -- `R` is the raw resource; its other queries and histories may be undefined.
+    {I : Type} {X Y : I → Type} (R : InterfaceSystem I X Y)
+    -- `q` is the sole query; `answers` supplies a reply with the matching port.
+    (q : Σ i, X i) (answers : (R [q]).Dom)
+    (replyPort : ∀ y ∈ R [q], y.1 = q.1)
+    -- `accept` decides from the completed query/reply pair of histories.
+    (accept : List (Σ i, X i) × List (Σ i, Y i) → Prop) :
+    (close (envProbe (DDE.ofQueries [q]) accept) R [startIn]).Dom := by
+  classical
+  obtain ⟨y, reply⟩ := Part.dom_iff_mem.mp answers
+  have fits : EFits (DDE.ofQueries (Y := Σ i, Y i) [q]).1 [y] :=
+    EFits.snoc EFits.nil (show q ∈ (DDE.ofQueries [q]).1 [] from Part.mem_some _)
+      (replyPort y reply)
+  have asked : q ∈ envOf (envProbe (DDE.ofQueries [q]) accept) [] := by
+    rw [envOf_envProbe EFits.nil]
+    exact Part.mem_some _
+  have actual := Transcript.snoc Transcript.nil asked reply
+  let decision := decide (accept (qsOf (DDE.ofQueries [q]).1 [y], [y]))
+  refine Part.dom_iff_mem.mpr ⟨decOut decision, (close_decision decision).mpr
+    ⟨[q], [y], actual, ?_⟩⟩
+  rw [envProbe_dHist fits]
+  have stopped : ¬ ((DDE.ofQueries [q]).1 [y]).Dom := Part.not_none_dom
+  rw [envReply, dite_eq_right stopped]
+  exact Part.mem_some _
+
+
 /-! ## Trimming preserves finite interaction -/
 
 lemma finite_trim {n : ℕ} {s : System X Y} (hs : Finite n s) : Finite n (trim s) := by
