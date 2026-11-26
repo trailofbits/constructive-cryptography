@@ -108,6 +108,8 @@ inequalities. [Iterated expectation][expect_bindK] averages a kernel in two stag
 [joint event averaging][jointLaw_mass_eq_expect] applies it to an event on both draws.
 [Polynomial evaluation](PolynomialEvaluation.lean) bounds root-event mass by degree times
 an atom-mass bound over any integral domain; equality of two polynomials uses their difference.
+[Affine evaluation](AffineEvaluation.lean) specializes this to collisions among distinct
+slope/intercept pairs and a fixed guess, then averages over an independent seed.
 Collision bounds [count][card_function_fiber_finset] the functions $`X \to Y`$
 agreeing with a map on a finite set $`S`$: there are $`\lvert Y \rvert^{\lvert X \rvert - \lvert S \rvert}`$.
 For a uniform function table, [a consistent query transcript][uniform_mass_transcript_eq]
