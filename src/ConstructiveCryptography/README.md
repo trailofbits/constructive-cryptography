@@ -52,6 +52,15 @@ and [right][CA.parallel_dummy_right] unit laws (with forward forms
 [`leftUnitor_hom_attach`][CA.leftUnitor_hom_attach] and
 [`rightUnitor_hom_attach`][CA.rightUnitor_hom_attach]).
 
+### Finite parallel families
+
+[`FiniteParallel`](CryptographicAlgebra/FiniteParallel/Defs.lean) optionally selects finite
+interface, converter and resource families. Reindexing, `Option` splitting and the empty
+unit carry explicit isomorphisms compatible with resource attachment. The
+[derived laws](CryptographicAlgebra/FiniteParallel.lean) transport inverse presentations and
+factor attachment through the head and tail. Open scoped
+`ConstructiveCryptography.FiniteParallel` for `⨂ k, A k`, `⨂ₘ k, α k` and `∥ k, R k`.
+
 ### `CompatiblePseudoMetric C Φ`: distance
 
 The class [`CompatiblePseudoMetric`][CompatiblePseudoMetric] adds a pseudo-metric $`d`$, the
