@@ -29,6 +29,15 @@ Here `s` counts distinct coefficient pairs, including constants.
 
 @[expose] public section
 
+namespace Probability
+
+/-- Evaluate the coefficient pair `(a,b)` at `x` as `a*x+b`. -/
+def affineEvaluation
+    -- `R` carries coefficients and arguments with the selected multiplication and addition.
+    {R : Type*} [Mul R] [Add R] (x : R) (c : R × R) : R := c.1 * x + c.2
+
+end Probability
+
 namespace Probability.Distribution
 
 open Polynomial
@@ -43,7 +52,7 @@ lemma mass_affine_eq_le
     (hatom : ∀ x, μ x ≤ δ)
     -- `c`, `d` are distinct slope/intercept pairs.
     {c d : R × R} (hne : c ≠ d) :
-    μ.mass (fun x => c.1 * x + c.2 = d.1 * x + d.2) ≤ δ := by
+    μ.mass (fun x => affineEvaluation x c = affineEvaluation x d) ≤ δ := by
   let difference : Polynomial R := C (c.1 - d.1) * X + C (c.2 - d.2)
   -- Zero coefficients would identify both slopes and both intercepts.
   have nonzero : difference ≠ 0 := by
@@ -62,11 +71,11 @@ lemma mass_affine_eq_le
       exact Nat.zero_le _
   -- Apply the polynomial root bound, then the degree-one bound.
   have roots := mass_polynomial_eval_eq_zero_le μ hμ difference nonzero hδ hatom
-  have event : μ.mass (fun x => c.1 * x + c.2 = d.1 * x + d.2) =
+  have event : μ.mass (fun x => affineEvaluation x c = affineEvaluation x d) =
       μ.mass (fun x => difference.eval x = 0) := by
     apply mass_congr
     intro x
-    simp only [difference, eval_add, eval_mul, eval_C, eval_X, sub_mul,
+    simp only [affineEvaluation, difference, eval_add, eval_mul, eval_C, eval_X, sub_mul,
       sub_add_sub_comm, sub_eq_zero]
   calc
     _ = μ.mass (fun x => difference.eval x = 0) := event
@@ -83,11 +92,11 @@ lemma mass_affine_not_injOn_le_choose
     (hatom : ∀ x, μ x ≤ δ)
     -- `s` contains the coefficient pairs; repeated expressions occur only once.
     (s : Finset (R × R)) :
-    μ.mass (fun x => ¬ Set.InjOn (fun c : R × R => c.1 * x + c.2)
+    μ.mass (fun x => ¬ Set.InjOn (affineEvaluation x)
       (s : Set (R × R))) ≤ (s.card.choose 2 : ℝ) * δ := by
   classical
   have pairs := mass_exists_pair_le_choose μ hμ s
-    (fun c d x => c.1 * x + c.2 = d.1 * x + d.2)
+    (fun c d x => affineEvaluation x c = affineEvaluation x d)
     (fun _ _ _ equal => equal.symm) δ
     (fun _ _ _ _ hne => mass_affine_eq_le μ hμ hδ hatom hne)
   -- Noninjectivity supplies the unordered pair charged by the union bound.
@@ -106,11 +115,11 @@ lemma mass_eq_or_affine_not_injOn_le
     -- `s` and `guess` are fixed before this argument is sampled.
     (s : Finset (R × R)) (guess : R) :
     μ.mass (fun x => x = guess ∨
-      ¬ Set.InjOn (fun c : R × R => c.1 * x + c.2) (s : Set (R × R))) ≤
+      ¬ Set.InjOn (affineEvaluation x) (s : Set (R × R))) ≤
         (1 + (s.card.choose 2 : ℝ)) * δ := by
   calc
     _ ≤ μ.mass (fun x => x = guess) + μ.mass (fun x =>
-        ¬ Set.InjOn (fun c : R × R => c.1 * x + c.2) (s : Set (R × R))) :=
+        ¬ Set.InjOn (affineEvaluation x) (s : Set (R × R))) :=
       mass_or_le hμ _ _
     _ ≤ δ + (s.card.choose 2 : ℝ) * δ :=
       add_le_add ((mass_singleton μ guess).trans_le (hatom guess))
@@ -123,7 +132,7 @@ variable [Fintype R]
 /-- Two distinct affine expressions collide at a uniform argument with probability at
 most `1 / |R|`. -/
 lemma uniform_mass_affine_eq_le {c d : R × R} (hne : c ≠ d) :
-    (uniform R).mass (fun x => c.1 * x + c.2 = d.1 * x + d.2) ≤
+    (uniform R).mass (fun x => affineEvaluation x c = affineEvaluation x d) ≤
       1 / (Fintype.card R : ℝ) :=
   mass_affine_eq_le _ uniform_nonNeg (by positivity) (fun x => (uniform_apply x).le) hne
 
@@ -131,7 +140,7 @@ lemma uniform_mass_affine_eq_le {c d : R × R} (hne : c ≠ d) :
 `C(|s|, 2) / |R|`. -/
 lemma uniform_mass_affine_not_injOn_le_choose (s : Finset (R × R)) :
     (uniform R).mass (fun x =>
-      ¬ Set.InjOn (fun c : R × R => c.1 * x + c.2) (s : Set (R × R))) ≤
+      ¬ Set.InjOn (affineEvaluation x) (s : Set (R × R))) ≤
         (s.card.choose 2 : ℝ) / Fintype.card R := by
   simpa only [mul_one_div] using mass_affine_not_injOn_le_choose
     (uniform R) uniform_nonNeg (by positivity) (fun x => (uniform_apply x).le) s
@@ -140,7 +149,7 @@ lemma uniform_mass_affine_not_injOn_le_choose (s : Finset (R × R)) :
 `(1 + C(|s|, 2)) / |R|`. -/
 lemma uniform_mass_eq_or_affine_not_injOn_le (s : Finset (R × R)) (guess : R) :
     (uniform R).mass (fun x => x = guess ∨
-      ¬ Set.InjOn (fun c : R × R => c.1 * x + c.2) (s : Set (R × R))) ≤
+      ¬ Set.InjOn (affineEvaluation x) (s : Set (R × R))) ≤
         (1 + (s.card.choose 2 : ℝ)) / Fintype.card R := by
   simpa only [mul_one_div] using mass_eq_or_affine_not_injOn_le
     (uniform R) uniform_nonNeg (by positivity) (fun x => (uniform_apply x).le) s guess
@@ -155,12 +164,12 @@ theorem mass_prod_uniform_eq_or_affine_not_injOn_le
     -- `M` bounds the distinct expressions at every seed with positive mass.
     {M : ℕ} (hcard : ∀ ω ∈ μ.1.support, (forms ω).card ≤ M) :
     (prodProbDist μ 𝒰[R]).1.mass (fun ωx => ωx.2 = guess ωx.1 ∨
-      ¬ Set.InjOn (fun c : R × R => c.1 * ωx.2 + c.2) (forms ωx.1 : Set (R × R))) ≤
+      ¬ Set.InjOn (affineEvaluation ωx.2) (forms ωx.1 : Set (R × R))) ≤
         (1 + (M.choose 2 : ℝ)) / Fintype.card R := by
   classical
   -- The product law averages fixed-seed probabilities without conditioning the argument.
   change (prod μ.1 (uniform R)).mass (fun ωx => ωx.2 = guess ωx.1 ∨
-    ¬ Set.InjOn (fun c : R × R => c.1 * ωx.2 + c.2) (forms ωx.1 : Set (R × R))) ≤ _
+    ¬ Set.InjOn (affineEvaluation ωx.2) (forms ωx.1 : Set (R × R))) ≤ _
   rw [← expect_indicator, expect_prod_eq]
   simp only [expect_indicator]
   refine (expect_le_mul_weight μ.2.1 (c :=
@@ -181,7 +190,7 @@ theorem expect_mass_le_of_affine_injOn_eq
     -- Success `W x ω` requires the candidate secret to equal `x`.
     (W : R → Ω → Prop) (guessed : ∀ x ω, W x ω → x = guess ω)
     -- `same` fixes the outcome masses whenever its affine expressions remain distinct.
-    (same : ∀ x ω, Set.InjOn (fun c : R × R => c.1 * x + c.2)
+    (same : ∀ x ω, Set.InjOn (affineEvaluation x)
       (forms ω : Set (R × R)) → (T x).1 ω = μ.1 ω)
     -- `M` bounds the number of distinct expressions on the support of `μ`.
     {M : ℕ} (hcard : ∀ ω ∈ μ.1.support, (forms ω).card ≤ M) :
@@ -189,7 +198,7 @@ theorem expect_mass_le_of_affine_injOn_eq
       (1 + (M.choose 2 : ℝ)) / Fintype.card R := by
   classical
   let covered (x : R) (ω : Ω) := x = guess ω ∨
-    ¬ Set.InjOn (fun c : R × R => c.1 * x + c.2) (forms ω : Set (R × R))
+    ¬ Set.InjOn (affineEvaluation x) (forms ω : Set (R × R))
   have fixed (x : R) : (T x).1.mass (W x) ≤ μ.1.mass (covered x) :=
     mass_le_of_eq_on_compl (T x).1 μ.1 (T x).2.1
       (fun ω h => Or.inl (guessed x ω h)) ((T x).2.2.trans μ.2.2.symm)
