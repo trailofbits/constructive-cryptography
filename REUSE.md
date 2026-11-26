@@ -109,6 +109,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Ratio and accumulated loss, through a common filter | `RandomSystem.filtered_distance_le_of_ratio_and_cost` in [RandomSystems/Typed/FilterDistance.lean](src/RandomSystems/Typed/FilterDistance.lean) |
 | Transformed or dependent law | `ProbDist.map`, `ProbDist.bind`, `ProbDist.jointLaw` in [Kernel] |
 | Average a joint event over its first draw | `ProbDist.jointLaw_mass_eq_expect` in `Probability.Expectation` |
+| Propagate an adaptive potential bound | `expect_antitone_of_bindK` in `Probability.Expectation` |
 | Average conditional distances or apply a common kernel | `statDist_bindK_le_expect`, `statDist_bindK_le` in `Probability.StatisticalDistance` |
 | Bound polynomial roots under an atom-mass bound | `mass_polynomial_eval_eq_zero_le`, `mass_polynomial_eval_eq_le` in `Probability.PolynomialEvaluation` |
 | Bound affine collisions and a fixed guess | `mass_affine_not_injOn_le_choose`, `mass_eq_or_affine_not_injOn_le` in `Probability.AffineEvaluation` |

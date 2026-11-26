@@ -26,6 +26,7 @@ The expectation `𝔼_X[f] = ∑ₐ X(a) · f(a)` over a finite distribution.
 * `expect_fTransform`, `expect_bindK`, `expect_prod_eq`, `abs_expect_sub_expect_le_expect`
 * `ProbDist.expect_jointLaw`, `ProbDist.jointLaw_mass_eq_expect`: average a value or event
   over successive draws
+* `expect_antitone_of_bindK`: conditional decreases give a nonincreasing expected potential
 * `expect_comp_eq_sum_mass`: `𝔼_X[ε ∘ classOf] = ∑_c ε(c) · X(classOf = c)`
 -/
 
@@ -183,12 +184,19 @@ lemma expect_nonneg {X : Distribution A} (hX : X.NonNeg) {f : A → ℝ}
     0 ≤ X.expect f :=
   Finset.sum_nonneg fun a _ => mul_nonneg (hX a) (hf a)
 
-/-- Monotonicity of expectation.  `NonNeg` layer: fails signed (one point of
-mass `-1`). -/
+/-- Comparing observations on the support is enough to compare their expectations. -/
+lemma expect_mono_of_support
+    -- `X` has nonnegative finite weights; only observations where `X` has mass matter.
+    {X : Distribution A} (hX : X.NonNeg) {f g : A → ℝ}
+    (bound : ∀ a ∈ X.support, f a ≤ g a) :
+    X.expect f ≤ X.expect g :=
+  Finset.sum_le_sum fun a ha => mul_le_mul_of_nonneg_left (bound a ha) (hX a)
+
+/-- Monotonicity of expectation under a nonnegative finite law. -/
 lemma expect_mono {X : Distribution A} (hX : X.NonNeg) {f g : A → ℝ}
     (h : ∀ a, f a ≤ g a) :
     X.expect f ≤ X.expect g :=
-  Finset.sum_le_sum fun a _ => mul_le_mul_of_nonneg_left (h a) (hX a)
+  expect_mono_of_support hX fun a _ => h a
 
 /-- Pointwise gaps bounded by `ε a` give an average gap bounded by `𝔼_X[ε]`. -/
 lemma abs_expect_sub_expect_le_expect
@@ -349,6 +357,26 @@ lemma expect_bindK
   | single a w =>
     rw [bindK_single, expect_smul_left]
     simp only [expect, Finsupp.sum_single_index, zero_mul]
+
+/-- A supported conditional decrease makes the expected potential nonincreasing in time. -/
+theorem expect_antitone_of_bindK
+    -- `A i` carries outcomes at time `i`; `μ i` has nonnegative finite weights there.
+    {A : ℕ → Type*} (μ : (i : ℕ) → Distribution (A i))
+    (nonnegative : ∀ i, (μ i).NonNeg)
+    -- `K i a` gives the next law from `a`; `evolution` connects it to the laws `μ`.
+    (K : (i : ℕ) → A i → Distribution (A (i + 1)))
+    (evolution : ∀ i, μ (i + 1) = bindK (μ i) (K i))
+    -- `V i a` is a real potential; `decrease` holds at every reachable `a`.
+    (V : (i : ℕ) → A i → ℝ)
+    (decrease : ∀ i a, a ∈ (μ i).support → (K i a).expect (V (i + 1)) ≤ V i a) :
+    Antitone (fun i => (μ i).expect (V i)) := by
+  apply antitone_nat_of_succ_le
+  intro i
+  calc
+    (μ (i + 1)).expect (V (i + 1)) =
+        (μ i).expect (fun a => (K i a).expect (V (i + 1))) := by
+      rw [evolution i, expect_bindK]
+    _ ≤ (μ i).expect (V i) := expect_mono_of_support (nonnegative i) (decrease i)
 
 namespace ProbDist
 
