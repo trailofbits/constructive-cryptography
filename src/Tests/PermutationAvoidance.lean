@@ -26,6 +26,19 @@ example : (1 / 2 : ℝ) ≤
   norm_num [Finset.sum_const, Distribution.mass_true, Distribution.weight_uniform] at bound
   exact bound
 
+/-- Given `π(0)=0`, the fresh forward and inverse replies at `1` each avoid at most `m` values. -/
+example (bad : Bool → Finset (Fin 4)) (m : ℕ)
+    (size : ∀ b, (bad b).card ≤ m) :
+    (1 - 2 * (m : ℝ) / 3) *
+        (Distribution.uniform (Equiv.Perm (Fin 4))).mass (fun π => π 0 = 0) ≤
+      (Distribution.uniform (Equiv.Perm (Fin 4))).mass
+        (fun π => π 0 = 0 ∧ π 1 ∉ bad false ∧ π.symm 1 ∉ bad true) := by
+  have bound := permutation_avoid_mass_ge_of_card_le (Equiv.refl (Fin 4)) {0}
+    (Finset.univ : Finset Bool) id (fun _ => 1) bad
+    (by intro b _; cases b <;> norm_num) m (by intro b _; exact size b)
+  norm_num at bound
+  exact bound
+
 /-- Forward and inverse requests share the same partial table and the same loss accounting. -/
 example :
     (1 / 3 : ℝ) * (Distribution.uniform (Equiv.Perm (Fin 4))).mass (fun π => π 0 = 0) ≤
@@ -59,5 +72,6 @@ example : (1 / 6 : ℝ) ≤
   exact bound
 
 #print axioms permutation_avoid_mass_ge
+#print axioms permutation_avoid_mass_ge_of_card_le
 
 end Tests.PermutationAvoidance
