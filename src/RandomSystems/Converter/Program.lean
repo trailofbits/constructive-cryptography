@@ -35,8 +35,9 @@ its body does.
 * `DDC.insideQueries_length_le_of_costs`: exact costs bound the inside queries by the total cost
 * `DDC.insideQueries_restrict_length_le`: a port-preserving program queries `j = ι o` at most as
   often as it is queried at `o`
-* `Program.run_map`, `DDC.ofProgram_relabel_of_stepMap`: a commuting step map transports
-  runs and the complete converter function, including off-tree histories
+* `Program.run_map_inputs`, `DDC.ofProgram_map_inputs_of_stepMap`: commuting input and mode
+  maps transport runs and the complete converter function, including off-tree histories
+* `Program.run_map`, `DDC.ofProgram_relabel_of_stepMap`: the identity-input instances
 * `DDC.ofProgram_eq_of_stateMap`, `DDC.ofProgramOn_eq_of_stateMap`,
   `DDC.ofProgram_eq_of_stateRel`, `DDC.ofProgramOn_eq_of_stateRel`: comparing two program
   converters along a state map or state relation
@@ -821,6 +822,101 @@ lemma Program.after_fold {T : Type}
 
 /-! ## Maps of program modes and emitted messages -/
 
+section InputComparison
+
+-- `P` and `Q` may use different outside query families `U` and `U′`.
+-- They retain states `S` and `T`, and receive inside replies from the same family `Y`.
+-- `V`, `V′` carry outside replies; `X`, `X′` carry the emitted inside queries.
+variable {T : Type} {U' V' : O → Type} {X' : J → Type}
+    (P : Program S O J U V X Y) (Q : Program T O J U' V' X' Y)
+
+/-- A commuting input and mode map transports the complete run. -/
+lemma Program.run_map_inputs
+    -- `inputMap` changes received messages; `modeMap` changes the retained invocation.
+    (inputMap : (Σ l, twoFam U Y l) → (Σ l, twoFam U' Y l))
+    (modeMap : Program.Mode S O J U X Y → Program.Mode T O J U' X' Y)
+    -- `outputMap` changes emitted replies and inside queries.
+    (outputMap : (Σ l, twoFam V X l) → (Σ l, twoFam V' X' l))
+    (stepMap : ∀ m x, (P.step m x).map (Prod.map modeMap outputMap) =
+      Q.step (modeMap m) (inputMap x))
+    (initial : Option (Program.Mode S O J U X Y))
+    (xs : List (Σ l, twoFam U Y l)) :
+    (P.run initial xs).map modeMap = Q.run (initial.map modeMap) (xs.map inputMap) := by
+  unfold Program.run
+  rw [List.foldl_map]
+  symm
+  apply List.foldl_hom (Option.map modeMap)
+  intro m x
+  cases m with
+  | none => rfl
+  | some m =>
+      simpa only [Option.map_some, Option.bind_some, Option.map_map, Function.comp_def,
+        Prod.map_fst] using
+        (congrArg (Option.map Prod.fst) (stepMap m x)).symm
+
+/-- A commuting step map transports the converter on every input history. -/
+lemma DDC.ofProgram_map_inputs_of_stepMap
+    -- `inputMap`, `modeMap`, and `outputMap` translate inputs, invocations, and outputs.
+    (inputMap : (Σ l, twoFam U Y l) → (Σ l, twoFam U' Y l))
+    (modeMap : Program.Mode S O J U X Y → Program.Mode T O J U' X' Y)
+    (outputMap : (Σ l, twoFam V X l) → (Σ l, twoFam V' X' l))
+    (stepMap : ∀ m x, (P.step m x).map (Prod.map modeMap outputMap) =
+      Q.step (modeMap m) (inputMap x))
+    -- `s` and `t` are corresponding initial states.
+    (s : S) (t : T) (initial : modeMap (.idle s) = .idle t)
+    (xs : List (Σ l, twoFam U Y l)) :
+    (DDC.ofProgram s P xs).map outputMap = DDC.ofProgram t Q (xs.map inputMap) := by
+  have afterMap (ys : List (Σ l, twoFam U Y l)) :
+      (P.after s ys).map modeMap = Q.after t (ys.map inputMap) := by
+    simpa only [Program.after, Option.map_some, initial] using
+      Program.run_map_inputs P Q inputMap modeMap outputMap stepMap (some (.idle s)) ys
+  rcases List.eq_nil_or_concat xs with rfl | ⟨ys, x, rfl⟩
+  · simp only [List.map_nil, DDC.ofProgram_nil, Part.map_none]
+  · simp only [List.concat_eq_append, List.map_append, List.map_singleton, DDC.ofProgram_snoc]
+    rw [← afterMap]
+    cases P.after s ys with
+    | none =>
+        simp only [Option.map_none, Option.bind_none]
+        exact Part.map_none outputMap
+    | some m =>
+        simp only [Option.map_some, Option.bind_some]
+        rw [← stepMap m x, Option.map_map]
+        cases P.step m x with
+        | none =>
+            simp only [Option.map_none]
+            exact Part.map_none outputMap
+        | some result => rfl
+
+/-- The same transport holds when the full input-history admission predicates correspond. -/
+lemma DDC.ofProgramOn_map_inputs_of_stepMap
+    -- `inputMap`, `modeMap`, and `outputMap` translate inputs, invocations, and outputs.
+    (inputMap : (Σ l, twoFam U Y l) → (Σ l, twoFam U' Y l))
+    (modeMap : Program.Mode S O J U X Y → Program.Mode T O J U' X' Y)
+    (outputMap : (Σ l, twoFam V X l) → (Σ l, twoFam V' X' l))
+    (stepMap : ∀ m x, (P.step m x).map (Prod.map modeMap outputMap) =
+      Q.step (modeMap m) (inputMap x))
+    (s : S) (t : T) (initial : modeMap (.idle s) = .idle t)
+    -- `F` and `G` admit outside histories; the compiler also permits no outside query yet.
+    (F : List (Σ o, U o) → Prop) (G : List (Σ o, U' o) → Prop)
+    -- `admitted` preserves acceptance of each full input history, including pending calls.
+    (admitted : ∀ xs, (outsideInputs xs = [] ∨ F (outsideInputs xs)) ↔
+      (outsideInputs (xs.map inputMap) = [] ∨ G (outsideInputs (xs.map inputMap))))
+    (xs : List (Σ l, twoFam U Y l)) :
+    (DDC.ofProgramOn s P F xs).map outputMap =
+      DDC.ofProgramOn t Q G (xs.map inputMap) := by
+  classical
+  simp only [DDC.ofProgramOn, filterDom]
+  by_cases allowed : outsideInputs xs = [] ∨ F (outsideInputs xs)
+  · have mapped := (admitted xs).mp allowed
+    rw [ite_eq_left allowed, ite_eq_left mapped]
+    exact DDC.ofProgram_map_inputs_of_stepMap P Q inputMap modeMap outputMap stepMap
+      s t initial xs
+  · have mapped := mt (admitted xs).mpr allowed
+    rw [ite_eq_right allowed, ite_eq_right mapped]
+    exact Part.map_none outputMap
+
+end InputComparison
+
 section ModeComparison
 
 -- `P` and `Q` receive the same outside queries `U` and inside replies `Y`.
@@ -840,16 +936,8 @@ lemma Program.run_map
     (initial : Option (Program.Mode S O J U X Y))
     (xs : List (Σ l, twoFam U Y l)) :
     (P.run initial xs).map modeMap = Q.run (initial.map modeMap) xs := by
-  unfold Program.run
-  symm
-  apply List.foldl_hom (Option.map modeMap)
-  intro m x
-  cases m with
-  | none => rfl
-  | some m =>
-      simpa only [Option.map_some, Option.bind_some, Option.map_map, Function.comp_def,
-        Prod.map_fst] using
-        (congrArg (Option.map Prod.fst) (stepMap m x)).symm
+  simpa only [List.map_id] using
+    Program.run_map_inputs P Q id modeMap outputMap stepMap initial xs
 
 /-- Step transport identifies the whole DDC function, including off-tree histories. -/
 lemma DDC.ofProgram_relabel_of_stepMap
@@ -863,27 +951,10 @@ lemma DDC.ofProgram_relabel_of_stepMap
     -- The initial idle states correspond under `modeMap`.
     (s : S) (t : T) (initial : modeMap (.idle s) = .idle t) :
     DDC.ofProgram t Q = relabel (DDC.ofProgram s P) id outputMap := by
-  have afterMap (xs : List (Σ l, twoFam U Y l)) :
-      (P.after s xs).map modeMap = Q.after t xs := by
-    simpa only [Program.after, Option.map_some, initial] using
-      Program.run_map P Q modeMap outputMap stepMap (some (.idle s)) xs
   funext xs
-  rcases List.eq_nil_or_concat xs with rfl | ⟨xs, x, rfl⟩
-  · simp only [DDC.ofProgram_nil, relabel, List.map_nil, Part.map_none]
-  · simp only [List.concat_eq_append, relabel, List.map_id, DDC.ofProgram_snoc]
-    rw [← afterMap]
-    cases P.after s xs with
-    | none =>
-        simp only [Option.map_none, Option.bind_none]
-        exact (Part.map_none outputMap).symm
-    | some m =>
-        simp only [Option.map_some, Option.bind_some]
-        rw [← stepMap m x, Option.map_map]
-        cases P.step m x with
-        | none =>
-            simp only [Option.map_none]
-            exact (Part.map_none outputMap).symm
-        | some result => rfl
+  simpa only [relabel, List.map_id] using
+    (DDC.ofProgram_map_inputs_of_stepMap P Q id modeMap outputMap stepMap
+      s t initial xs).symm
 
 /-- Filtering outside inputs is unchanged because the input map is the identity. -/
 lemma DDC.ofProgramOn_relabel_of_stepMap
@@ -899,13 +970,10 @@ lemma DDC.ofProgramOn_relabel_of_stepMap
     -- `F` is the same predicate on admitted outside query histories.
     (F : List (Σ o, U o) → Prop) :
     DDC.ofProgramOn t Q F = relabel (DDC.ofProgramOn s P F) id outputMap := by
-  classical
-  have h := DDC.ofProgram_relabel_of_stepMap P Q modeMap outputMap stepMap s t initial
   funext xs
-  simp only [DDC.ofProgramOn, filterDom, relabel, List.map_id]
-  split_ifs
-  · simpa only [relabel, List.map_id] using congrFun h xs
-  · exact (Part.map_none outputMap).symm
+  simpa only [relabel, List.map_id] using
+    (DDC.ofProgramOn_map_inputs_of_stepMap P Q id modeMap outputMap stepMap
+      s t initial F F (fun ys => by rw [List.map_id]) xs).symm
 
 end ModeComparison
 

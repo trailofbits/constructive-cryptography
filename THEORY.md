@@ -332,7 +332,7 @@ extension are in [Examples](src/Examples/README.md).
 [PDCBehavior.attach_id]: src/RandomSystems/Converter/ConverterAttachment.lean#L268
 [PDCBehavior.attach_comp]: src/RandomSystems/Converter/ConverterAttachment.lean#L281
 [PDCBehavior.tensor]: src/RandomSystems/Converter/ConverterTensor.lean#L653
-[Program]: src/RandomSystems/Converter/Program.lean#L51
+[Program]: src/RandomSystems/Converter/Program.lean#L55
 [RandomSystem.transcriptDistance]: src/RandomSystems/Distance/Decision.lean#L250
 [Domain.Distinguisher]: src/RandomSystems/Distance/Distinguisher.lean#L126
 [RandomSystem.transcriptDistance_eq_iSup]: src/RandomSystems/Distance/Distinguisher.lean#L158
