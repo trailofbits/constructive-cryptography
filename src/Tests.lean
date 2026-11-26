@@ -160,6 +160,7 @@ public import Tests.GameEquivalenceTransport
 public import Tests.GameTranscript
 public import Tests.FunctionalGameMonitor
 public import Tests.CallPhase
+public import Tests.CallRelabel
 public import Tests.FixedQueries
 public import Tests.SubmissionGame
 public import Tests.DiscreteGameUnset
