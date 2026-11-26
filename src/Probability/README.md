@@ -108,6 +108,8 @@ inequalities. [Iterated expectation][expect_bindK] averages a kernel in two stag
 [joint event averaging][jointLaw_mass_eq_expect] applies it to an event on both draws.
 `expect_antitone_of_bindK` propagates conditional potential decreases through time-dependent
 kernels. The drift bound is needed only at supported states, and state types may vary with time.
+`expect_comp_eq_sum_mass_of_eq_zero` groups scores by class mass when only finitely many
+class scores are nonzero, even over an infinite class type and a signed law.
 [Polynomial evaluation](PolynomialEvaluation.lean) bounds root-event mass by degree times
 an atom-mass bound over any integral domain; equality of two polynomials uses their difference.
 [Affine evaluation](AffineEvaluation.lean) specializes this to collisions among distinct
@@ -206,14 +208,14 @@ against a running `foldl` state (`List.ForallScan`, `List.ForallScan.append`,
 [exists_coupling_offDiagonalMass_eq]: Coupling.lean#L324
 [supAgreement]: MultiCoupling.lean#L91
 [supAgreement_eq_weight_overlapDist]: MultiCoupling.lean#L401
-[expect]: Expectation.lean#L53
-[expect_add_left]: Expectation.lean#L75
-[expect_add_right]: Expectation.lean#L105
-[mass_ge_le_expect_div]: Expectation.lean#L229
-[expect_mul_sq_le_sq_mul_sq]: Expectation.lean#L245
-[ConvexOn.map_expect_le]: Expectation.lean#L327
-[expect_bindK]: Expectation.lean#L347
-[jointLaw_mass_eq_expect]: Expectation.lean#L392
+[expect]: Expectation.lean#L54
+[expect_add_left]: Expectation.lean#L76
+[expect_add_right]: Expectation.lean#L106
+[mass_ge_le_expect_div]: Expectation.lean#L230
+[expect_mul_sq_le_sq_mul_sq]: Expectation.lean#L246
+[ConvexOn.map_expect_le]: Expectation.lean#L328
+[expect_bindK]: Expectation.lean#L348
+[jointLaw_mass_eq_expect]: Expectation.lean#L393
 [card_function_fiber_finset]: Counting.lean#L66
 [uniform_mass_transcript_eq]: Counting.lean#L483
 [fTransform_eval_uniform_eq_of_same_fibers]: Counting.lean#L539
