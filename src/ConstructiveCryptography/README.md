@@ -655,7 +655,7 @@ compose [9, Definition 2.4.3 and Theorem 2.4.4]: a witness
 [PDCBehavior.tensor_id]: ../RandomSystems/Converter/ConverterTensor.lean#L709
 [RandomSystem.ConditionallyEquivalent]: ../RandomSystems/Game/MBO.lean#L552
 [RandomSystem.MonotoneMBO]: ../RandomSystems/Game/MBO.lean#L316
-[RandomSystem.parallel]: ../RandomSystems/Cumulative/CumulativeOperations.lean#L136
+[RandomSystem.parallel]: ../RandomSystems/Cumulative/CumulativeOperations.lean#L154
 [RandomSystem.visible]: ../RandomSystems/Game/MBO.lean#L367
 [RandomSystem.visible_attach_liftMBO]: ../RandomSystems/Game/MBOAttachment.lean#L628
 [TypedConverter]: ../RandomSystems/Typed/Interface.lean#L184

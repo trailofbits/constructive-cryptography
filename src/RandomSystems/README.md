@@ -212,8 +212,8 @@ of the program's inside queries:
 [RandomSystem.Compatible]: Cumulative/CumulativeObservation.lean#L269
 [RandomSystem.eq_iff_sLaw]: Cumulative/CumulativeObservation.lean#L669
 [RandomSystem.eq_iff_sLaw_fixedQueries]: Cumulative/CumulativeObservation.lean#L683
-[RandomSystem.mix]: Cumulative/CumulativeOperations.lean#L50
-[RandomSystem.parallel]: Cumulative/CumulativeOperations.lean#L136
+[RandomSystem.mix]: Cumulative/CumulativeOperations.lean#L52
+[RandomSystem.parallel]: Cumulative/CumulativeOperations.lean#L154
 [RandomSystem.parallelAll]: Cumulative/ParallelAll.lean#L197
 [RandomSystem.parallelAll_mass_of_presentations]: Cumulative/ParallelAllPresentation.lean#L64
 [tensorAllL]: Converter/ParallelAll.lean#L108

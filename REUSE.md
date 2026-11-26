@@ -105,6 +105,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Retained key, fresh replies | `TypedSystem.keyed` in [Keyed] |
 | Signature oracle | `SignatureScheme.system.eq_keyed` in [Signature] |
 | Retained state | `TypedSystem.sample` in [Functional]; `ofAutomaton` in [Automaton] |
+| Flatten dependent system presentations | `TypedSystem.sample_ofPDS` in [Functional]; `RandomSystem.mix_mass_of_presentations` in `RandomSystems.Cumulative.CumulativeOperations` |
 | Hidden condition on initial draw and inputs | `TypedGame.ofAutomaton` in [AutomatonGame] |
 | URF distinct-input collision game | `URF.collisionGame` in [CollisionGame] |
 | Adaptive URF collision bound | `URF.collisionGame_win_le` in [CollisionBound] |
