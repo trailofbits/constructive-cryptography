@@ -158,6 +158,9 @@ public import RandomSystems.System.AutomatonFunction
 public import RandomSystems.Converter.ChronologicalLabeling
 public import RandomSystems.Converter.ChronologicalLabeling.Laws
 
+public import RandomSystems.Converter.ProgramTrace
+
+
 /-!
 Random systems: raw systems and connection, deterministic converters, PDSs, cumulative random
 systems, probabilistic automata and memoryless systems, converters and attachment, parallel

@@ -232,6 +232,7 @@ public import Tests.AbstractModelAddressMap
 public import Tests.AbstractModelDomainMap
 public import Tests.RegisterAddressCompiler
 
+public import Tests.ProgramTrace
 
 public import Tests.ListPermutation
 
