@@ -226,6 +226,7 @@ public import Tests.ProgramInputMap
 public import Tests.AutomatonFunction
 public import Tests.CountPFlatMap
 public import Tests.AbstractModelAddressMap
+public import Tests.AbstractModelDomainMap
 
 /-! Axiom audits per layer and of the Commons library, the checks of the
 authenticated-encryption example,
