@@ -230,18 +230,20 @@ lemma completionLaw_eq_bind
       (fun y => completionLaw A (Function.update table i (table i ++ [(x, y)]))) := by
   -- The unused-output law is the completion marginal at the fresh input.
   rw [← completionLaw_map_eq_unusedLaw A table h i x fresh]
-  apply Subtype.ext
-  rw [ProbDist.bind_val, ProbDist.map_val]
-  -- Disintegrate the restricted uniform law; a zero-mass fiber keeps its explicit fallback.
-  conv_lhs => unfold completionLaw ProbDist.uniformOn
-  rw [normalizeOr_eq_bindK_restrict _ _ _ (weight_restrict_uniform_ne_zero _ h)
-    (fun π => π i x)]
-  apply bindK_congr
-  intro y _
+  -- Disintegrate the conditional law at the fresh input, retaining normalized laws.
+  change (𝒰[∀ i, A.X i ≃ A.Y i]).conditionOn (Membership.mem (completions A table)) _ = _
+  rw [ProbDist.conditionOn_eq_bind _ _ _
+    (by simpa only [ProbDist.uniform, weight_restrict] using
+      weight_restrict_uniform_ne_zero (Membership.mem (completions A table)) h)
+    (fun π => π i x) (fun _ => 𝒰[∀ i, A.X i ≃ A.Y i])]
+  congr 1
+  funext y
   -- Appending the pair imposes exactly the old agreement event and this evaluation fiber.
-  simp only [completionLaw, ProbDist.uniformOn, restrict_restrict]
-  congr 2
-  exact restrict_congr _ fun π => (mem_completions_update_iff A table i x y π).symm
+  change (𝒰[∀ i, A.X i ≃ A.Y i]).conditionOn _ _ =
+    (𝒰[∀ i, A.X i ≃ A.Y i]).conditionOn _ _
+  congr 1
+  funext π
+  exact propext (mem_completions_update_iff A table i x y π).symm
 
 open Classical in
 /-- Every supported fresh reply leaves a nonempty set of completions. -/

@@ -8,6 +8,7 @@ public import Tests.BinomialRecurrence
 public import Tests.BinomialSum
 public import Tests.FiniteScoreExpectation
 public import Tests.GraphReconstruction
+public import Tests.Conditioning
 public import Tests.ProbeQueryBound
 public import Tests.Occupancy
 public import Tests.PolynomialEvaluation

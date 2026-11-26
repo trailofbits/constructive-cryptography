@@ -2,17 +2,27 @@ module
 
 public import Probability.Kernel
 public import Probability.Lift
+public import Probability.Coupling
 
 /-!
 # Conditional laws on finite supports
 
 An observation partitions a finitely supported law into fibers. Normalizing each fiber
 and mixing with its mass recovers the original law, including zero-mass fibers. The explicit
-fallback of `normalizeOr` is multiplied by zero there. `ProbDist.uniformOn E fallback` names
-the normalized uniform restriction to an event, with the explicit fallback at an empty event.
+fallback of `normalizeOr` is multiplied by zero there. `ProbDist.conditionOn μ E fallback`
+names the normalized restriction of `μ` to an event `E`; `ProbDist.uniformOn` specializes it
+to a uniform law. Their zero-mass events use the explicit fallback.
 
 `bindK_fTransform_normalizeOr_restrict` gives this disintegration before normalization;
 `normalizeOr_eq_bindK_restrict` gives it after normalization.
+`ProbDist.conditionOn_eq_bind` exposes this disintegration on normalized conditional laws;
+`ProbDist.uniformOn_apply_of_nonempty` gives their uniform atom formula.
+`ProbDist.jointLaw_conditionOn_eq_map` retains the observation and the latent outcome:
+
+```text
+b ← f_* μ; a ← μ conditioned on f(a) = b    =    a ← μ; return (f(a), a)
+```
+
 `ProbDist.eq_uniformOn_of_constant` identifies a conditional law from
 its support and equal point masses; `fTransform_uniform_restrict_of_equiv` supplies those
 equalities when a sample-space symmetry preserves the event. These identities express a
@@ -31,6 +41,49 @@ namespace Probability.Distribution
 -- `A` carries latent outcomes; `B` carries observed values. Both types may be infinite.
 variable {A B : Type*}
 
+/-- The conditional law `μ(· | E)`: restrict `μ` to `E` and divide by `μ(E)`.
+At zero event mass, return the explicitly selected `fallback`. -/
+noncomputable def ProbDist.conditionOn
+    -- `μ` is the ambient law on `A`; `E` is the event being conditioned on.
+    (μ : ProbDist A) (E : A → Prop) (fallback : ProbDist A) : ProbDist A :=
+  (μ.1.restrict E).normalizeOr (μ.2.1.restrict E) fallback
+
+/-- At nonzero event mass, conditioning is the normalized restriction. -/
+lemma ProbDist.conditionOn_val_of_mass_ne_zero
+    -- `hE` excludes the fallback branch; `μ(E)` is the normalization factor.
+    (μ : ProbDist A) (E : A → Prop) (fallback : ProbDist A) (hE : μ.1.mass E ≠ 0) :
+    (μ.conditionOn E fallback).1 = (μ.1.mass E)⁻¹ • μ.1.restrict E := by
+  simpa only [conditionOn, weight_restrict] using
+    normalizeOr_val_of_weight_ne_zero (μ.1.restrict E) (μ.2.1.restrict E) fallback
+      (by simpa only [weight_restrict] using hE)
+
+/-- At positive event mass, the conditional atom is `1_E(a) μ(a) / μ(E)`. -/
+lemma ProbDist.conditionOn_apply_of_mass_ne_zero
+    -- `E` selects the event; its decision determines whether the atom `a` is retained.
+    (μ : ProbDist A) (E : A → Prop) [DecidablePred E]
+    (fallback : ProbDist A) (hE : μ.1.mass E ≠ 0) (a : A) :
+    μ.conditionOn E fallback a = (if E a then μ a else 0) / μ.1.mass E := by
+  rw [conditionOn_val_of_mass_ne_zero μ E fallback hE]
+  simp only [Finsupp.smul_apply, smul_eq_mul, restrict_apply, div_eq_mul_inv]
+  by_cases ha : E a <;> simp only [ha, ite_true, ite_false, mul_comm]
+
+/-- Conditioning on a zero-mass event returns the selected fallback law. -/
+lemma ProbDist.conditionOn_of_mass_eq_zero
+    -- `hE` says the event is unreachable under `μ`, even if `E` itself is nonempty.
+    (μ : ProbDist A) (E : A → Prop) (fallback : ProbDist A) (hE : μ.1.mass E = 0) :
+    μ.conditionOn E fallback = fallback := by
+  simp only [conditionOn, normalizeOr, weight_restrict, hE, dite_true]
+
+/-- Conditioning on a nonzero-mass event keeps precisely the ambient atoms in that event. -/
+lemma ProbDist.mem_support_conditionOn_iff
+    -- `hE` excludes the fallback; `a` is a possible ambient outcome exactly when `a ∈ μ.support`.
+    (μ : ProbDist A) (E : A → Prop) (fallback : ProbDist A) (hE : μ.1.mass E ≠ 0)
+    (a : A) : a ∈ (μ.conditionOn E fallback).1.support ↔ a ∈ μ.1.support ∧ E a := by
+  classical
+  rw [conditionOn, mem_support_normalizeOr_iff _ _ _
+    (by simpa only [weight_restrict] using hE)]
+  simp only [restrict, Finsupp.support_filter, Finset.mem_filter]
+
 /-- Uniform on the event `E`, with `fallback` at an empty event. Its mass on a nonempty
 `E` is `1 / |E|` at each retained outcome and zero elsewhere. -/
 noncomputable def ProbDist.uniformOn
@@ -38,7 +91,7 @@ noncomputable def ProbDist.uniformOn
     [Fintype A] [Nonempty A] (E : A → Prop)
     -- `fallback` totalizes the law when the allowed set is empty.
     (fallback : ProbDist A) : ProbDist A :=
-  ((Distribution.uniform A).restrict E).normalizeOr (uniform_nonNeg.restrict E) fallback
+  (𝒰[A]).conditionOn E fallback
 
 /-- A nonempty event has positive mass under a finite uniform law. -/
 lemma weight_restrict_uniform_ne_zero
@@ -50,13 +103,30 @@ lemma weight_restrict_uniform_ne_zero
   rw [restrict_apply, ite_eq_left ha, uniform_apply]
   exact one_div_ne_zero (Nat.cast_ne_zero.mpr Fintype.card_ne_zero)
 
+/-- On a nonempty event `E`, its uniform conditional law assigns `1 / |E|` to each member. -/
+lemma ProbDist.uniformOn_apply_of_nonempty
+    -- `A` is the finite ambient alphabet; `hE` supplies a member of the conditioning event.
+    [Fintype A] [Nonempty A] (E : A → Prop) [DecidablePred E] (hE : ∃ a, E a)
+    -- `fallback` fills empty events only; `a` is the outcome being evaluated.
+    (fallback : ProbDist A) (a : A) :
+    uniformOn E fallback a = if E a then 1 / ((Finset.univ.filter E).card : ℝ) else 0 := by
+  have nonzero : (𝒰[A] : ProbDist A).1.mass E ≠ 0 := by
+    simpa only [uniform, weight_restrict] using weight_restrict_uniform_ne_zero E hE
+  rw [uniformOn, conditionOn_apply_of_mass_ne_zero _ _ _ nonzero]
+  simp only [uniform, Distribution.uniform_apply, uniform_mass_eq_card_filter]
+  by_cases ha : E a
+  · simp only [ha, ite_true]
+    -- The ambient alphabet size cancels from the atom mass and the event mass.
+    rw [div_div_div_comm, div_self (Nat.cast_ne_zero.mpr Fintype.card_ne_zero), div_one]
+  · simp only [ha, ite_false, zero_div]
+
 /-- Conditioning a uniform finite law on a nonempty event keeps exactly that event. -/
 lemma ProbDist.mem_support_uniformOn_iff
     -- `hE` makes the restriction to `E` nonzero, so `fallback` does not affect the atom `a`.
     [Fintype A] [Nonempty A] (E : A → Prop) (hE : ∃ a, E a)
     (fallback : ProbDist A) (a : A) :
     a ∈ (uniformOn E fallback).1.support ↔ E a := by
-  unfold uniformOn
+  unfold uniformOn conditionOn ProbDist.uniform
   rw [mem_support_normalizeOr_iff _ _ _ (weight_restrict_uniform_ne_zero E hE)]
   simp only [Finsupp.mem_support_iff, restrict_apply]
   split_ifs with ha
@@ -98,7 +168,8 @@ lemma ProbDist.eq_uniformOn_of_constant
   have hv (a : A) : ν.1 a =
       ((Distribution.uniform A).restrict E).weight⁻¹ *
         (if E a then (1 : ℝ) / Fintype.card A else 0) := by
-    change (((Distribution.uniform A).restrict E).normalizeOr _ _).1 a = _
+    change (((Distribution.uniform A).restrict E).normalizeOr
+      (uniform_nonNeg.restrict E) fallback).1 a = _
     rw [normalizeOr_val_of_weight_ne_zero _ _ _ (weight_restrict_uniform_ne_zero E hE)]
     simp only [Finsupp.smul_apply, smul_eq_mul, restrict_apply, uniform_apply]
   have hz (a : A) (ha : ¬E a) : μ.1 a = 0 :=
@@ -126,7 +197,7 @@ lemma ProbDist.map_uniformOn_of_equiv
     (fallback : ProbDist A) (e : A ≃ A) (he : ∀ a, E (e a) ↔ E a) :
     (uniformOn E fallback).map e = uniformOn E fallback := by
   apply Subtype.ext
-  simp only [map_val, uniformOn, normalizeOr_val_of_weight_ne_zero _ _ _
+  simp only [map_val, uniformOn, conditionOn, uniform, normalizeOr_val_of_weight_ne_zero _ _ _
     (weight_restrict_uniform_ne_zero E hE), fTransform_smul,
     fTransform_uniform_restrict_of_equiv E e he]
 
@@ -145,8 +216,8 @@ lemma ProbDist.uniformOn_of_forall_not
     uniformOn E fallback = fallback := by
   have hz : (Distribution.uniform A).restrict E = 0 := by
     rw [restrict_congr _ (fun a => iff_false_intro (hE a)), restrict_false]
-  simp only [uniformOn, hz, normalizeOr, show (0 : Distribution A).weight = 0 from rfl,
-    dite_true]
+  simp only [uniformOn, conditionOn, uniform, hz, normalizeOr,
+    show (0 : Distribution A).weight = 0 from rfl, dite_true]
 
 /-- Recover a law by observing `f` and then drawing from its normalized fiber. -/
 lemma bindK_fTransform_normalizeOr_restrict
@@ -196,5 +267,46 @@ lemma normalizeOr_eq_bindK_restrict
   rw [show bindK (μ.weight⁻¹ • fTransform f μ) _ =
       μ.weight⁻¹ • bindK (fTransform f μ) _ from map_smul _ _ _]
   rw [bindK_fTransform_normalizeOr_restrict _ hμ]
+
+/-- Disintegrate `μ(· | E)` by `f`: sample its observation, then condition the original law
+on `E ∧ f = b`. Zero-mass fibers may each use their own fallback law. -/
+lemma ProbDist.conditionOn_eq_bind
+    -- `μ` is the original law; `E` has nonzero mass by `hE`; `f` observes its outcome.
+    (μ : ProbDist A) (E : A → Prop) (fallback : ProbDist A) (hE : μ.1.mass E ≠ 0)
+    (f : A → B)
+    -- `fiberFallback b` fills an unreachable observation fiber; its outer weight is zero.
+    (fiberFallback : B → ProbDist A) :
+    μ.conditionOn E fallback = ((μ.conditionOn E fallback).map f).bind
+      (fun b => μ.conditionOn (fun a => E a ∧ f a = b) (fiberFallback b)) := by
+  have disintegrate := bindK_fTransform_normalizeOr_restrict
+    (μ.1.restrict E) (μ.2.1.restrict E) f fiberFallback
+  apply Subtype.ext
+  -- The ambient conditioning factor pulls through the observation and its mixture.
+  simp only [bind_val, map_val, conditionOn_val_of_mass_ne_zero μ E fallback hE,
+    fTransform_smul]
+  rw [show bindK ((μ.1.mass E)⁻¹ • fTransform f (μ.1.restrict E)) _ =
+    (μ.1.mass E)⁻¹ • bindK (fTransform f (μ.1.restrict E)) _ from map_smul _ _ _]
+  -- Mixing the original restricted fibers recovers their common unnormalized law.
+  simpa only [conditionOn, restrict_restrict] using
+    congrArg (fun ν : Distribution A => (μ.1.mass E)⁻¹ • ν) disintegrate.symm
+
+/-- Observing `f` and sampling its conditional fiber recovers the full observation–outcome law:
+`jointLaw (f_* μ) (b ↦ μ(· | f = b)) = (a ↦ (f a, a))_* μ`. -/
+lemma ProbDist.jointLaw_conditionOn_eq_map
+    -- `μ` is the latent law on `A`; `f : A → B` is the observed value.
+    (μ : ProbDist A) (f : A → B)
+    -- `fallback b` fills the unreachable fiber at `b`, which has zero outer probability.
+    (fallback : B → ProbDist A) :
+    jointLaw (μ.map f) (fun b => μ.conditionOn (fun a => f a = b) (fallback b)) =
+      μ.map (fun a => (f a, a)) := by
+  apply jointLaw_eq_map_of_fiber
+  · -- Existing disintegration recovers the latent marginal by mixing normalized fibers.
+    apply Subtype.ext
+    exact bindK_fTransform_normalizeOr_restrict μ.1 μ.2.1 f fallback
+  · intro b hb a ha
+    -- A supported observation has a nonzero-mass fiber; its conditional draws stay there.
+    have nonzero : μ.1.mass (fun a => f a = b) ≠ 0 := by
+      simpa only [map_val, fTransform_apply_eq_mass] using Finsupp.mem_support_iff.mp hb
+    exact ((mem_support_conditionOn_iff μ _ (fallback b) nonzero a).mp ha).2
 
 end Probability.Distribution
