@@ -48,6 +48,10 @@ $`f=\mathrm{id}`$ gives the [left][prodProbDist_map_left] and
 [Independent uniform coordinates][prodProbDist_uniform] form a uniform pair.
 [Independent kernels][bindK_piDep] commute with finite products;
 [`jointLaw_piDep`][ProbDist.jointLaw_piDep] regroups the resulting input–output pairs.
+[Conditional products](ConditionalProduct.lean) select independent private entries using an
+observation table. Coordinate joint-law contracts reconstruct the entire latent/observed pair,
+including dependent latent alphabets.
+
 A [joint law][ProbDist.jointLaw] retains both successive draws:
 $`J_{\mu,K}(h,z)=\mu(h)K(h,z)`$, with [first marginal][ProbDist.jointLaw_fst] $`\mu`$. The [dependent transport law][ProbDist.jointLaw_map_dependent] allows the second map to depend
 on the first draw, with conditional correspondence required only on its support.

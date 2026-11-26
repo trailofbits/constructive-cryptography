@@ -26,6 +26,7 @@ public import Tests.SpongeUniform
 public import Tests.ProbAutomatonGame
 public import Tests.ProbabilityObservation
 public import Tests.JointLawTransport
+public import Tests.ConditionalProduct
 public import Tests.ProbabilityList
 public import Tests.TranscriptCompletion
 public import Tests.TranscriptRelabel
