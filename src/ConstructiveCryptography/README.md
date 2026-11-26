@@ -159,6 +159,10 @@ and boundedness assumptions. These laws require no games or interfaces.
 [Game families](Game/Family.lean) instantiate them on admitted winners. Absorbing one
 converter supplies a uniform reduction when attached games belong to the source family.
 
+[Submission games](Game/Submission.lean) interpret predicates on submitted values, with
+explicit monotonicity and union-bound contracts on admitted evaluations. Decoding pulls
+predicates back along the decoder; scores need only an order and addition.
+
 `DistinctionGames I Φ Game` selects paired decision and winning evaluations of a common
 solver, with real-valued probabilities, the visible resource $`G^-`$, and conditional equivalence.
 It specializes `Games I Game ℝ`. The game bound uses
