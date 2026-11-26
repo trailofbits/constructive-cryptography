@@ -344,7 +344,7 @@ extension are in [Examples](src/Examples/README.md).
 [RandomSystem.GameEquivalent]: src/RandomSystems/Game/MBO.lean#L654
 [Domain.Distinguisher.advantage_le_winProbability]: src/RandomSystems/Game/MBO.lean#L857
 [Domain.Distinguisher.advantage_le_winProbability_of_gameEquivalent]: src/RandomSystems/Game/MBO.lean#L975
-[PDCBehavior.liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L464
+[PDCBehavior.liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L466
 
 <!-- Declarations: §2 -->
 

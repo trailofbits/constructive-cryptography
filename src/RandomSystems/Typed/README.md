@@ -381,7 +381,7 @@ typed system sampling the ideal function, under the fixed-query factorization.
 [Interface.withMBO]: Game.lean#L35
 [TypedGame]: Game.lean#L46
 [TypedConverter.attachGame]: Game.lean#L49
-[PDCBehavior.liftMBO]: ../Game/MBOAttachment.lean#L464
+[PDCBehavior.liftMBO]: ../Game/MBOAttachment.lean#L466
 [TypedGame.visible]: Game.lean#L90
 [TypedGame.ofPDG]: PresentedGame.lean#L45
 [TypedGame.visible_ofPDG]: PresentedGame.lean#L55
