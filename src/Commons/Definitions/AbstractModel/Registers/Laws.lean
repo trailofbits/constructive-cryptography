@@ -12,6 +12,9 @@ follow the value map and its initialized-address set through one command. Togeth
 `registers_isSome`: along histories whose reads are legal, the occupied registers are exactly
 the initial address and computation destinations. This supplies the register converter's
 legal-domain read certificate without a finiteness assumption on names or values.
+
+`read_map`, `write_map` and `registers_map` transport register contents through an
+operation-preserving map. The command history, observations and submitted values stay fixed.
 -/
 
 @[expose] public section
@@ -45,6 +48,25 @@ lemma read_isSome
   · exact iff_of_true rfl h
   · exact iff_of_false Bool.false_ne_true h
 
+/-- Interpreting register values commutes with reading their operand tuple. -/
+lemma read_map
+    -- `f` interprets internal values in `V`; `r` and `a` retain the same register addresses.
+    {V : Type} (f : W → V) (r : ι → Option W) {n : ℕ} (a : Fin n → ι) :
+    read (Option.map f ∘ r) a = (read r a).map (fun v => f ∘ v) := by
+  unfold read
+  simp only [Function.comp_apply, Option.isSome_map]
+  split_ifs
+  · simp only [Option.map_some, Option.get_map, Function.comp_def]
+  · rfl
+
+/-- Interpreting the initial register is the initial register of the interpreted value. -/
+lemma initial_map
+    -- `f` changes values only; `input` is the same designated address on both sides.
+    {V : Type} [DecidableEq ι] (f : W → V) (input : ι) (x : W) :
+    initial input (f x) = Option.map f ∘ initial input x := by
+  simp only [initial, Function.comp_update, Option.map_some]
+  rfl
+
 variable
   -- `M` gives command arities; `operate` interprets its operations on `W` at a fixed parameter.
   {S P : Type} {M : Commons.AbstractModel S P} [DecidableEq ι]
@@ -56,6 +78,41 @@ lemma registers_snoc
     (r : ι → Option W) (h : List (M.Command ι)) (z : M.Command ι) :
     M.registers operate r (h ++ [z]) = M.write operate (M.registers operate r h) z := by
   simp only [registers, List.foldl_append, List.foldl_cons, List.foldl_nil]
+
+omit operate in
+/-- An operation-preserving interpretation commutes with one register command. -/
+lemma write_map
+    -- `operateW` and `operateV` interpret the same operations on the two internal carriers.
+    {V : Type}
+    (operateW : (o : M.Operation) → (Fin (M.arity o) → W) → W)
+    (operateV : (o : M.Operation) → (Fin (M.arity o) → V) → V)
+    -- `f` interprets values; `hom` says that it preserves each operation on its operand tuple.
+    (f : W → V) (hom : ∀ o v, operateV o (f ∘ v) = f (operateW o v))
+    (r : ι → Option W) (z : M.Command ι) :
+    M.write operateV (Option.map f ∘ r) z = Option.map f ∘ M.write operateW r z := by
+  obtain ⟨o | ρ | _, z⟩ := z
+  · obtain ⟨a, destination⟩ := z
+    -- Read the same operands, interpret the computed value, then update the same destination.
+    simp only [write, read_map, Function.comp_update, Option.map_map]
+    congr 1
+    exact congrArg (fun g => (read r a).map g) (funext (hom o))
+  · rfl
+  · rfl
+
+omit operate in
+/-- An operation-preserving interpretation commutes with the whole command history. -/
+theorem registers_map
+    -- The command type keeps its external values `S`; only internal values `W` become `V`.
+    {V : Type}
+    (operateW : (o : M.Operation) → (Fin (M.arity o) → W) → W)
+    (operateV : (o : M.Operation) → (Fin (M.arity o) → V) → V)
+    (f : W → V) (hom : ∀ o v, operateV o (f ∘ v) = f (operateW o v))
+    -- `r` is the initial register map and `h` is the unchanged command history.
+    (r : ι → Option W) (h : List (M.Command ι)) :
+    M.registers operateV (Option.map f ∘ r) h =
+      Option.map f ∘ M.registers operateW r h :=
+  List.foldl_hom (fun r => Option.map f ∘ r)
+    (fun r z => write_map operateW operateV f hom r z)
 
 /-- A computation adds its destination to initialized addresses; other commands preserve them. -/
 lemma initialized_snoc
