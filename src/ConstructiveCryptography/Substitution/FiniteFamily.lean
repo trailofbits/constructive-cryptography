@@ -3,6 +3,8 @@ module
 public import RandomSystems.Typed.ParallelAllContext
 public import ConstructiveCryptography.Notation
 public import ConstructiveCryptography.Substitution.Quantitative
+public import ConstructiveCryptography.CryptographicAlgebra.FiniteParallel.PseudoMetric
+public import ConstructiveCryptography.Instances.FiniteParallel
 public import Mathlib.Basic.ENNReal.BigOperators
 
 /-!
@@ -27,11 +29,10 @@ context • (∥ k, R k) = ρ₀ • R (order 0)
 `TypedConverter.parallelAllContext_smul` in `RandomSystems.Typed.ParallelAllContext` proves
 `parallelAllContext R k • S = ∥ j, Function.update R k S j`. Serial attachment and the
 prefix-update equations in `parallelAllImplication` identify the consecutive hybrids.
-`distance_smul_parallelAll_le_sum` applies the implication distance bound:
-converter non-expansion transports each component bound, then the hybrid errors add. Its
-empty-family case has identical endpoints and zero distance.
-`distance_parallelAll_update_le` specializes common-context non-expansion to two families
-differing at one tag, so a normalized component update has its own local distance bound.
+`distance_smul_parallelAll_le_sum` applies the abstract finite-family metric bound from
+`CryptographicAlgebra.FiniteParallel.PseudoMetric`; converter non-expansion preserves the sum.
+`distance_parallelAll_update_le` applies the same abstract bound with one nonzero summand.
+These metric laws follow from the chosen finite-family instance.
 
 `substitutesWithin_smul_parallelAll` transports component contracts for a chosen observation
 model through the same witness. Each reduction, its admissibility proof, and its advantage
@@ -62,16 +63,15 @@ namespace SystemAlgebra.Substitution
 variable {K : Type} [Fintype K] [DecidableEq K] {A : K → Interface} {C : Interface}
 
 /-- Replacing one component of an independent family costs at most that component's distance.
-The exact isolation equation exposes the common converter, whose attachment is non-expanding. -/
+The abstract finite-family bound leaves only the changed component in its distance sum. -/
 lemma distance_parallelAll_update_le
     -- `R j` supplies the fixed components for `j ≠ k`; `k` is the changed component's tag.
     (R : ∀ j, TypedSystem (A j)) (k : K)
     -- `S`, `T` are the replacement pair at the same component interface `A k`.
     (S T : TypedSystem (A k)) :
     Δ (∥ j, Function.update R k S j) (∥ j, Function.update R k T j) ≤ Δ S T := by
-  rw [← TypedConverter.parallelAllContext_smul R k S,
-    ← TypedConverter.parallelAllContext_smul R k T]
-  exact Interface.distance_smul_le (TypedConverter.parallelAllContext R k) S T
+  simpa only [Interface.cc_parallelAll_eq] using
+    ConstructiveCryptography.FiniteParallel.distance_parallelAll_update_le R k S T
 
 /-- The family after `m` replacements: component `k` is `S k` exactly when its position in
 `order` is below `m`, and is `R k` otherwise. All members keep their original interfaces. -/
@@ -176,20 +176,11 @@ theorem distance_smul_parallelAll_le_sum
     -- `step k` is only the local bound; the conclusion sums these budgets without truncation.
     (step : ∀ k, Δ (R k) (S k) ≤ error k) :
     Δ (context • (∥ k, R k)) (context • (∥ k, S k)) ≤ (∑ k, error k : ℝ≥0) := by
-  cases n with
-  | zero =>
-    -- An empty index has only one family, so both assemblies are equal.
-    have heq : R = S := by funext k; exact Fin.elim0 (order.symm k)
-    rw [heq, distance_self]
-    exact bot_le
-  | succ n =>
-    -- The existing implication theorem transports local bounds through each isolation converter.
-    have hc := (parallelAllImplication R S order context).distance_le
-      (fun i => (error (order i) : ENNReal)) (fun i => step (order i))
-    change Δ (context • (∥ k, R k)) (context • (∥ k, S k)) ≤ _ at hc
-    -- Reindex the error sum by the supplied order; the systems retain their original tags.
-    rw [Equiv.sum_comp order (fun k => (error k : ENNReal))] at hc
-    simpa only [ENNReal.ofNNReal_finsetSum] using hc
+  -- The order remains available to callers; the metric bound uses only the component budgets.
+  let _order := order
+  simpa only [Interface.cc_parallelAll_eq] using
+    ConstructiveCryptography.FiniteParallel.distance_attach_parallelAll_le_sum
+      context R S error step
 
 /-- Component contracts in a chosen observation model give a bound for the assembled pair.
 [1, §2.3.3, p. 16] evaluates the loss as “ε′(Dκ) = ε(Dκρ)”. Here `d` is `Dκ`, the
