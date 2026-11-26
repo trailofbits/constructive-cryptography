@@ -23,6 +23,7 @@ renaming converter that forwards between two outside vocabularies.
 * `trim_renameConverter_serialM`: composing with a renaming converter
   relabels
 * `renameConverter_id`, `renameConverter_comp`: functoriality
+* `apply_relabel_inside_both`: query/reply maps commute with attachment
 * `ResponsiveConverter.ofConverter_mass`: the behavior of a converter read as a
   probabilistic converter
 -/
@@ -31,7 +32,6 @@ renaming converter that forwards between two outside vocabularies.
 
 namespace SystemAlgebra
 
-open Classical
 
 variable {O O' J : Type} {U V : O → Type} {U' V' : O' → Type} {X Y : J → Type}
 
@@ -61,6 +61,7 @@ include hg in
 lemma replyLabel_outsideMap (h : List (Σ l, twoFam U' Y l)) :
     replyLabel (relabel α (outsideMap f) (outsideMap g)) h =
       (replyLabel α (h.map (outsideMap f))).map (twoMap e.symm id) := by
+  classical
   unfold replyLabel
   by_cases hd : (α (h.map (outsideMap f))).Dom
   · have hd' : (relabel α (outsideMap f) (outsideMap g) h).Dom := by
@@ -126,7 +127,8 @@ lemma IsResponsiveDDC.relabelOutside {b : ℕ} (hα : IsResponsiveDDC b α) :
   · intro p h hp hn hd
     exact hα.dds.2 (hp.map (outsideMap f)) (fun he => hn (List.map_eq_nil_iff.mp he)) hd
   · rw [admits_outsideMap e f g hf hg α]
-    exact hα.admits _ _ (by simpa only [relabel, List.map_append, List.map_singleton, Part.map_Dom] using hd)
+    exact hα.admits _ _ (by
+      simpa only [relabel, List.map_append, List.map_singleton, Part.map_Dom] using hd)
   · rw [insideRun_outsideMap f g α]
     exact hα.bound _ hd
   · exact hα.responsive _ ((admissible_outsideMap e f g hf hg α h).mp ha)
@@ -148,6 +150,7 @@ include hf hg in
 lemma canon_outsideMap :
     canon (relabel α (outsideMap f) (outsideMap g)) =
       relabel (canon α) (outsideMap f) (outsideMap g) := by
+  classical
   funext h
   simp only [canon, admissible_outsideMap e f g hf hg α, relabel]
   split_ifs
@@ -204,10 +207,12 @@ lemma apply_relabel_forwardAll {R : InterfaceSystem O U V} (hR : SilentAtEmpty R
     exact Or.inr ⟨_, rfl, rfl⟩
 
 include hf hg in
-lemma trim_apply_renameConverter {R : InterfaceSystem O U V} (hR : IsDDS R) (hr : RepliesAtQueriedInterface R) :
+lemma trim_apply_renameConverter {R : InterfaceSystem O U V} (hR : IsDDS R)
+    (hr : RepliesAtQueriedInterface R) :
     trim (apply (renameConverter f g) R) = relabel R f g := by
   have he := canon_outsideMap e f g hf hg (forwardAll O U V)
-  change canon (relabel (forwardAll O U V) (outsideMap f) (outsideMap g)) = renameConverter f g at he
+  change canon (relabel (forwardAll O U V) (outsideMap f) (outsideMap g)) =
+    renameConverter f g at he
   rw [← he, trim_apply_canon (he.symm ▸ renameConverter_isResponsiveDDC e f g hf hg).isDDC hr,
     apply_relabel_forwardAll f g hR.1, trim_relabel, hR.trim_eq]
 
@@ -259,6 +264,42 @@ def insideMap (k : (Σ j, Y j) → (Σ j, Y' j)) :
     (Σ l, twoFam U Y l) → (Σ l, twoFam U Y' l)
   | ⟨⟨none, o⟩, u⟩ => ⟨⟨none, o⟩, u⟩
   | ⟨⟨some (), j⟩, y⟩ => ⟨⟨some (), (k ⟨j, y⟩).1⟩, (k ⟨j, y⟩).2⟩
+
+/-- Mapping inside messages by the identity leaves the complete message unchanged. -/
+lemma insideMap_id :
+    insideMap (U := U) (id : (Σ j, Y j) → (Σ j, Y j)) = id := by
+  funext z
+  rcases z with ⟨⟨(_ | ⟨⟨⟩⟩), j⟩, z⟩ <;> rfl
+
+/-- Query and reply maps can be placed on either side of the same attachment wire. -/
+lemma apply_relabel_inside_both
+    -- `c` exposes `O` and calls `J`; `R` provides the inside port family `J'`.
+    {O J J' : Type} {U V : O → Type} {X Y : J → Type} {X' Y' : J' → Type}
+    (c : InsideOutsideSystem O J U V X Y) (R : InterfaceSystem J' X' Y')
+    -- `f` maps queries toward `R`; `g` maps its replies back to `c`.
+    (f : (Σ j, X j) → (Σ j, X' j)) (g : (Σ j, Y' j) → (Σ j, Y j)) :
+    apply (relabel c (insideMap g) (insideMap f)) R = apply c (relabel R f g) := by
+  -- Both placements connect the same component pair, with maps absorbed into the routing.
+  rw [apply_eq, apply_eq, pair_relabel_left, interconnect_relabel,
+    pair_relabel_right, interconnect_relabel]
+  congr 1
+  · funext y
+    rcases y with ⟨_ | ⟨⟩, y⟩
+    · rcases y with ⟨⟨_ | ⟨⟨⟩⟩, o⟩, v⟩ <;> rfl
+    · rfl
+
+/-- A converter relabeling its inside replies, attached to a resource, is the converter attached
+to the resource with its replies relabeled. -/
+lemma apply_relabel_inside {Y' : J → Type} (c : InsideOutsideSystem O J U V X Y)
+    (R : InterfaceSystem J X Y') (k : (Σ j, Y' j) → (Σ j, Y j)) :
+    apply (relabel c (insideMap k) id) R = apply c (relabel R id k) := by
+  simpa only [insideMap_id] using apply_relabel_inside_both c R id k
+
+/-- Mapping a converter's inside queries is the same as mapping inputs to its resource. -/
+lemma apply_relabel_inside_queries {X' : J → Type} (c : InsideOutsideSystem O J U V X Y)
+    (R : InterfaceSystem J X' Y) (f : (Σ j, X j) → (Σ j, X' j)) :
+    apply (relabel c id (insideMap f)) R = apply c (relabel R f id) := by
+  simpa only [insideMap_id] using apply_relabel_inside_both c R f id
 
 lemma serialM_forwardAll_relabel (k : (Σ j, X j) → (Σ j, X' j))
     (l : (Σ j, Y' j) → (Σ j, Y j)) (hα : SilentAtEmpty α) :

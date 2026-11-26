@@ -213,6 +213,7 @@ public import Tests.PermutationAvoidance
 public import Tests.PermutationTableGame
 public import Tests.BidirectionalSwitching
 public import Tests.SpongeCollision
+public import Tests.AttachmentRelabel
 
 /-! Axiom audits per layer and of the Commons library, the checks of the
 authenticated-encryption example,
