@@ -379,10 +379,10 @@ private def buildInterfaceTable? (tbl : SymbolTable) (e : Expr) :
     let args := e.getAppArgs
     if fn.isConstOf interfaceQueryBudgetName && !args.isEmpty then
       let qTex ← exprToLatex args.back! tbl
-      pure s!"Total query budget: \\({qTex}\\)"
+      pure s!"Query bound: \\({qTex}\\)"
     else if fn.isConstOf interfacePortBudgetName && !args.isEmpty then
       let qTex ← exprToLatex args.back! tbl
-      pure s!"Per-port query budget: \\({qTex}\\)"
+      pure s!"Query budget: \\({qTex}\\)"
     else
       pure ""
   return some (.interfaceTable rows domainLatex budgetNote)
@@ -394,8 +394,168 @@ private def dslLookupName (declName : Name) : Name :=
   | .str p "typed" => p
   | _ => declName
 
+/-- Replace balanced `([] : List ...)` occurrences with `[]`. -/
+private def stripTypedNilList (s : String) : String := Id.run do
+  let arr := s.toList.toArray
+  let n := arr.size
+  let pat := "([] : List ".toList.toArray
+  let matchAt (pos : Nat) : Bool := Id.run do
+    if pos + pat.size > n then return false
+    for j in [:pat.size] do
+      if arr[pos + j]! != pat[j]! then return false
+    return true
+  let mut out : Array Char := #[]
+  let mut i := 0
+  while i < n do
+    if matchAt i then
+      let mut j := i + 1
+      let mut depth : Int := 1
+      while j < n && depth > 0 do
+        if arr[j]! == '(' then depth := depth + 1
+        else if arr[j]! == ')' then depth := depth - 1
+        j := j + 1
+      if depth == 0 then
+        out := out ++ #['[', ']']
+        i := j
+        continue
+    out := out.push arr[i]!
+    i := i + 1
+  return String.ofList out.toList
+
+/-- Strip trailing `: List <Type>` annotations on parameters/bindings (preserving line structure). -/
+private def stripListTypeAnnotations (s : String) : String := Id.run do
+  let arr := s.toList.toArray
+  let n := arr.size
+  let pat := " : List ".toList.toArray
+  let matchAt (pos : Nat) : Bool := Id.run do
+    if pos + pat.size > n then return false
+    for j in [:pat.size] do
+      if arr[pos + j]! != pat[j]! then return false
+    return true
+  let mut out : Array Char := #[]
+  let mut i := 0
+  while i < n do
+    if matchAt i then
+      let mut j := i + pat.size
+      let mut depth : Int := 0
+      while j < n do
+        let c := arr[j]!
+        if c == '(' || c == '[' || c == '{' then depth := depth + 1
+        else if c == ')' || c == ']' || c == '}' then
+          if depth == 0 then break
+          else depth := depth - 1
+        else if depth == 0 && (c == ',' || c == '\n' || c == '←' || c == '→') then
+          break
+        j := j + 1
+      i := j
+      continue
+    out := out.push arr[i]!
+    i := i + 1
+  return String.ofList out.toList
+
+/-- Replace `Option <T>` with `<T> ∪ {⊥}` in DSL pseudocode lines. -/
+private def formatOptionTypes (s : String) : String := Id.run do
+  let arr := s.toList.toArray
+  let n := arr.size
+  let pat := "Option ".toList.toArray
+  let matchAt (pos : Nat) : Bool := Id.run do
+    if pos + pat.size > n then return false
+    if pos > 0 && (arr[pos - 1]!.isAlphanum || arr[pos - 1]! == '_') then return false
+    for j in [:pat.size] do
+      if arr[pos + j]! != pat[j]! then return false
+    return true
+  let mut out : Array Char := #[]
+  let mut i := 0
+  while i < n do
+    if matchAt i then
+      let mut j := i + pat.size
+      if j < n && arr[j]! == '(' then
+        let mut depth : Int := 1
+        let start := j
+        j := j + 1
+        while j < n && depth > 0 do
+          if arr[j]! == '(' then depth := depth + 1
+          else if arr[j]! == ')' then depth := depth - 1
+          j := j + 1
+        let inner := String.ofList (arr.extract start j).toList
+        out := out ++ (inner ++ " ∪ {⊥}").toList.toArray
+        i := j
+        continue
+      else
+        let start := j
+        while j < n && (arr[j]!.isAlphanum || arr[j]! == '_' || arr[j]! == '.') do
+          j := j + 1
+        if j > start then
+          let inner := String.ofList (arr.extract start j).toList
+          out := out ++ (inner ++ " ∪ {⊥}").toList.toArray
+          i := j
+          continue
+    out := out.push arr[i]!
+    i := i + 1
+  return String.ofList out.toList
+
+/-- Strip Lean typeclass brackets `[Fintype ...]`, `[DecidableEq ...]`, etc. from DSL headers. -/
+private def stripTypeclassBrackets (s : String) : String := Id.run do
+  let arr := s.toList.toArray
+  let n := arr.size
+  let mut out : Array Char := #[]
+  let mut i := 0
+  while i < n do
+    if arr[i]! == '[' then
+      let mut j := i + 1
+      let mut depth : Int := 1
+      while j < n && depth > 0 do
+        if arr[j]! == '[' then depth := depth + 1
+        else if arr[j]! == ']' then depth := depth - 1
+        j := j + 1
+      let inner := String.ofList (arr.extract (i + 1) (if j > 0 then j - 1 else i + 1)).toList
+      let isTC := ["Fintype", "DecidableEq", "Nonempty", "Inhabited", "Decidable"].any fun tc =>
+        (inner.splitOn tc).length > 1
+      if depth == 0 && isTC then
+        i := j
+        continue
+    out := out.push arr[i]!
+    i := i + 1
+  return String.ofList out.toList
+
+/-- Strip Lean DSL syntax noise from parser-recorded pseudocode lines while preserving indentation. -/
+private def cleanDslPseudocodeText (raw : String) : String := Id.run do
+  let s0 := raw
+    |>.replace "(_input : Unit)" "()"
+    |>.replace "_input : Unit" ""
+    |>.replace "(_ : Unit)" "()"
+    |>.replace ".eval(())" ".eval()"
+    |>.replace "(())" "()"
+  let s1 := stripTypedNilList s0
+  let s2 := stripListTypeAnnotations s1
+  let s3 := formatOptionTypes s2
+  let lines := ((s3.replace "\r\n" "\n").replace "\r" "\n").splitOn "\n"
+  let cleanedLines := lines.map fun ln =>
+    let lead := String.ofList (ln.toList.takeWhile (· == ' '))
+    let body := (ln.drop lead.length).toString.trimAscii.toString
+    let words := body.splitOn " " |>.filter (!·.isEmpty)
+    if words.isEmpty then "" else lead ++ String.intercalate " " words
+  return String.intercalate "\n" cleanedLines |>.trimAscii.toString
+
+/-- Clean DSL header and ensure the converter/system symbol name appears prominently. -/
+private def cleanDslHeader (symUnicode : String) (rawHeader : String) : String := Id.run do
+  let h0 := stripTypeclassBrackets rawHeader
+    |>.replace " : Type" ""
+    |>.replace "(_input : Unit)" "()"
+  let lines := ((h0.replace "\r\n" "\n").replace "\r" "\n").splitOn "\n"
+  let cleaned := lines.filterMap fun ln =>
+    let words := ln.trimAscii.toString.splitOn " " |>.filter (!·.isEmpty)
+    if words.isEmpty then none else some (String.intercalate " " words)
+  let base := String.intercalate " · " cleaned
+  let sym := symUnicode.trimAscii.toString
+  if sym.isEmpty then base
+  else if base.isEmpty then sym
+  else if (base.splitOn sym).length > 1 then base
+  else s!"{sym} — {base}"
+
 /-- Build an `InspectorKind.dslPseudocode` card from `SystemAlgebra.DSL.sourceDocuments`. -/
-private def buildDslPseudocode? (env : Environment) (declName : Name) : Option InspectorKind :=
+private def buildDslPseudocode? (env : Environment) (declName : Name)
+    (symDisplay : String := "") : Option InspectorKind :=
   let docs := SystemAlgebra.DSL.sourceDocuments.getState env
   let doc? := docs.find? declName <|> docs.find? (dslLookupName declName)
   match doc? with
@@ -403,8 +563,12 @@ private def buildDslPseudocode? (env : Environment) (declName : Name) : Option I
   | some doc =>
       let bodyParts := doc.sections.filterMap fun sec =>
         if sec.proof then none else some (sec.header ++ sec.body)
-      let body := String.intercalate "\n" bodyParts.toList |>.trimAscii.toString
-      some (.dslPseudocode doc.header body doc.source)
+      let rawBody := String.intercalate "\n" bodyParts.toList |>.trimAscii.toString
+      let symUnicode := if symDisplay.isEmpty then "" else latexToDiagramUnicode symDisplay
+      let cleanHeader := cleanDslHeader symUnicode doc.header
+      let cleanBody := cleanDslPseudocodeText rawBody
+      let cleanSource := cleanDslPseudocodeText doc.source
+      some (.dslPseudocode cleanHeader cleanBody cleanSource)
 
 /-- Build an `InspectorKind.witnessCard` for an `HCoefficient` or `Implication` witness type. -/
 private def buildWitnessCard? (tbl : SymbolTable) (ty : Expr) : MetaM (Option InspectorKind) := do
@@ -454,15 +618,7 @@ private def buildMathDefinition (tbl : SymbolTable) (declName : Name) (info : De
         | .lam _ _ b _ => rhs := b.instantiate1 fv
         | _ => break
       let rhsTex ← exprToLatex rhs tbl
-      let adj := if desc.adjectives.isEmpty then "" else String.intercalate " " desc.adjectives ++ " "
-      let art := article (adj ++ desc.noun.singular)
-      let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
-      let summary :=
-        if desc.noun.singular.startsWith "element of " then
-          ensurePeriod s!"Defined in {desc.noun.singular.drop 11}{acc}"
-        else
-          ensurePeriod s!"Defined as {art} {adj}{desc.noun.singular}{acc}"
-      return (s!"{lhs} := {rhsTex}", summary)
+      return (s!"{lhs} := {rhsTex}", "")
   return .mathDefinition eqLatex proseSummary
 
 /-- Internal Lean/category/plumbing constants that add noise rather than mathematical value
@@ -718,32 +874,12 @@ private partial def expandMatchHelpersForDef (e : Expr) (depth : Nat := 16) : Me
     return .proj sName idx (← expandMatchHelpersForDef inner (depth - 1))
   | _ => return e
 
-private def buildStandardDefSummary (env : Environment) (declName : Name) (desc : TypeDescription)
-    (isProj hasExplicitParams : Bool) (badge : String) : String :=
-  let adj := if desc.adjectives.isEmpty then "" else String.intercalate " " desc.adjectives ++ " "
-  let art := article (adj ++ desc.noun.singular)
-  let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
-  if isProj then
-    if desc.noun.singular.startsWith "element of " then
-      s!"Projection field {shortConstName declName} (in {desc.noun.singular.drop 11}{acc})."
-    else
-      s!"Projection field {shortConstName declName} ({art} {adj}{desc.noun.singular}{acc})."
-  else if let some rule := getPaperDescribeRule? env declName then
-    match rule.hoverTemplate? with
-    | some hTmpl => hTmpl
-    | none =>
-        if desc.noun.singular.startsWith "element of " then
-          ensurePeriod s!"Defined in {desc.noun.singular.drop 11}{acc}"
-        else ensurePeriod s!"Defined as {art} {adj}{desc.noun.singular}{acc}"
-  else if hasExplicitParams && badge == "definition" then
-    if desc.noun.singular.startsWith "element of " then
-      ensurePeriod s!"Function returning a value in {desc.noun.singular.drop 11}{acc}"
-    else
-      ensurePeriod s!"Function returning {art} {adj}{desc.noun.singular}{acc}"
-  else if desc.noun.singular.startsWith "element of " then
-    ensurePeriod s!"Defined in {desc.noun.singular.drop 11}{acc}"
+private def buildStandardDefSummary (env : Environment) (declName : Name) (_desc : TypeDescription)
+    (_isProj _hasExplicitParams : Bool) (_badge : String) : String :=
+  if let some rule := getPaperDescribeRule? env declName then
+    rule.hoverTemplate?.getD ""
   else
-    ensurePeriod s!"Defined as {art} {adj}{desc.noun.singular}{acc}"
+    ""
 
 /-- Build an ambient-suppressed `InspectorKind.mathDefinition` plus `(roleBadge, clauses)`
 for a project `defnInfo`. -/
@@ -816,29 +952,20 @@ private def buildMathDefinitionRich (tbl : SymbolTable) (declName : Name) (info 
       for c in rawClauses do
         if !containsAuxOrMatchDecl c then
           clauses := clauses.push (← exprToLatex c rhsTbl)
-      let summary :=
-        if let some firstDom := domainNouns.head? then
-          s!"Predicate on {firstDom}."
-        else
-          "Checked mathematical predicate."
       let eqLatex ←
         if containsAuxOrMatchDecl rhsNorm then pure ""
         else if clauses.isEmpty then do
           pure s!"{lhs} := {← exprToLatex rhsNorm rhsTbl}"
         else
           pure s!"{lhs} \\iff {String.intercalate " \\wedge " clauses.toList}"
-      return (.mathDefinition eqLatex summary, badge, clauses)
+      return (.mathDefinition eqLatex "", badge, clauses)
     -- 2. Specification set comprehension (`Set (TypedSystem ...)`): extract membership condition!
     if badge == "specification" then
       if let some (setTex, clauses) ← unwrapSetComprehension? rhsTbl rhsNorm then
-        let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
-        let summary := ensurePeriod s!"{capitalizeFirst desc.noun.singular}{acc}"
-        return (.mathDefinition s!"{lhs} = {setTex}" summary, badge, clauses)
+        return (.mathDefinition s!"{lhs} = {setTex}" "", badge, clauses)
     -- 3. Resource with `TypedSystem.sample` / `TypedSystem.ofFunction` (`match_1` clean handling!)
     if badge == "resource" then
       let (sampleClauses, innerBody) ← extractSampleClauses rhsTbl rhsNorm
-      let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
-      let summary := ensurePeriod s!"{capitalizeFirst desc.noun.singular}{acc}"
       if !sampleClauses.isEmpty || containsAuxOrMatchDecl rhsNorm then
         let ifaceStr ← match ← resourceInterface? bodyTyClean with
           | some iface => do
@@ -851,7 +978,7 @@ private def buildMathDefinitionRich (tbl : SymbolTable) (declName : Name) (info 
           else do
             let bodyTex ← exprToLatex innerBody rhsTbl
             pure (sampleClauses.push bodyTex)
-        return (.mathDefinition "" summary, badge, finalClauses)
+        return (.mathDefinition "" "", badge, finalClauses)
     -- 4. Standard definition / projection
     let summary := buildStandardDefSummary env declName desc isProj (!explicitParams.isEmpty) badge
     let rhsForEq ←
@@ -983,7 +1110,7 @@ private def inspectConstant? (tbl : SymbolTable) (declName : Name) :
   let isInterfaceDecl ← forallTelescope info.type fun _ bodyTy =>
     pure (bodyTy.consumeMData == mkConst interfaceName)
   -- 1. DSL `converter` / `system` / `interface` recorded by parser
-  if let some dslKind := buildDslPseudocode? env declName then
+  if let some dslKind := buildDslPseudocode? env declName display then
     let badge ←
       if isInterfaceDecl then pure "interface"
       else forallTelescope info.type fun _ bodyTy => do
@@ -1058,15 +1185,22 @@ private def inspectConstant? (tbl : SymbolTable) (declName : Name) :
         pure ps
       let lhsHead := tbl.constAliases.getD declName (formatMathIdent (shortConstName declName))
       let lhs := if params.isEmpty then lhsHead else s!"{lhsHead}\\!\\left({String.intercalate ", " params.toList}\\right)"
-      let fieldNames := sinfo.fieldNames.map fun fn => formatMathIdent (shortConstName fn)
+      let mut fieldNames : Array String := #[]
+      for fn in sinfo.fieldNames do
+        let shortFn := shortConstName fn
+        if shortFn.startsWith "inst" then continue
+        let projName := declName ++ fn
+        let isInstField ← match env.find? projName with
+          | some pinfo =>
+              forallTelescope pinfo.type fun _ bodyTy => isAmbientTypeclass bodyTy
+          | none => pure false
+        if !isInstField then
+          fieldNames := fieldNames.push (formatMathIdent shortFn)
       if fieldNames.isEmpty then return ""
       else return s!"{lhs} := \\langle {String.intercalate ", " fieldNames.toList} \\rangle"
     else return ""
   if let some rule := getPaperDescribeRule? env declName then
-    let art := article rule.noun.singular
-    let summary := match rule.hoverTemplate? with
-      | some h => h
-      | none => ensurePeriod (capitalizeFirst s!"{art} {rule.noun.singular}")
+    let summary := rule.hoverTemplate?.getD ""
     let eqLatex ← buildStructEqLatex
     return some {
       key, display, kind := .mathDefinition eqLatex summary,
@@ -1074,18 +1208,16 @@ private def inspectConstant? (tbl : SymbolTable) (declName : Name) :
       roleBadge? := some (if eqLatex.isEmpty then "type" else "structure"), docString?
     }
   -- 7. Unregistered structures / inductive types (`B3`: e.g. `ShannonCipher`, `DistAdversary`)
-  if let .inductInfo iinfo := info then
-    if let some sinfo := Lean.getStructureInfo? env declName then
+  if let .inductInfo _ := info then
+    if (Lean.getStructureInfo? env declName).isSome then
       let eqLatex ← buildStructEqLatex
-      let summary := s!"Mathematical structure with {countPhrase sinfo.fieldNames.size ⟨"component", "components"⟩}."
       return some {
-        key, display, kind := .mathDefinition eqLatex summary,
+        key, display, kind := .mathDefinition eqLatex "",
         leanName? := some key, leanType, sourceFile?, sourceLine?,
         roleBadge? := some "structure", docString?
       }
-    let summary := s!"Inductive type with {countPhrase iinfo.ctors.length ⟨"constructor", "constructors"⟩}."
     return some {
-      key, display, kind := .mathDefinition "" summary,
+      key, display, kind := .mathDefinition "" "",
       leanName? := some key, leanType, sourceFile?, sourceLine?,
       roleBadge? := some "type", docString?
     }

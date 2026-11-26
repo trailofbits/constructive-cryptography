@@ -37,19 +37,12 @@ open Informalization.Core.Ontology
 open Informalization.Core.Explanation
 open Informalization.Core.ProofGraph
 
-private def pickMaurerOpener (kind : TransitionKind) :
-    StateRefT DiscourseState MetaM String := do
-  let st ← get
-  let (op, st') := st.pickOpener kind
-  set st'
-  return op
-
 private def mkStep (ctx : DecompCtx) (id : String) (content : Array Inline)
     (children : Array ProofNode) (expected : Expr) (origin : Name) :
     StateRefT DiscourseState MetaM ProofNode := do
+  modify (·.markEmitted)
   let goal ← buildGoalState ctx.tbl expected
-  let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) ctx.tbl expected else pure none
-  return .step id content children (some goal) diagHtml (some origin.toString)
+  return .step id content children (some goal) none (some origin.toString)
 
 private def decompileSlotSubproof (ctx : DecompCtx) (decompileChild : DecompileChild)
     (idTag : String) (aty ap : Expr) : StateRefT DiscourseState MetaM (Array ProofNode) := do
@@ -81,14 +74,14 @@ private partial def explainHCoefficientWitness (ctx : DecompCtx) (decompileChild
         let subInl ← renderProposition ctx.tbl aty
         let goal ← buildGoalState ctx.tbl aty
         children := children.push (.step s!"hcoeff-good-ratio-{idx}"
-          (#[.text "On every good extended transcript, the real-to-ideal probability ratio satisfies "] ++
+          (#[.text "On every good extended transcript, "] ++
            subInl ++ #[.text "."]) sub (some goal))
       else if idx + 1 == total then
         let sub ← decompileSlotSubproof ctx decompileChild s!"hcoeff-bad-mass-{idx}" aty ap
         let subInl ← renderProposition ctx.tbl aty
         let goal ← buildGoalState ctx.tbl aty
         children := children.push (.step s!"hcoeff-bad-mass-{idx}"
-          (#[.text "Under every compatible query-bounded environment, the ideal probability of a bad transcript is bounded by "] ++
+          (#[.text "The bad-transcript probability satisfies "] ++
            subInl ++ #[.text "."]) sub (some goal))
     return children
   if fn.isConstOf ``SystemAlgebra.RandomSystem.HCoefficient.mk then
@@ -102,14 +95,14 @@ private partial def explainHCoefficientWitness (ctx : DecompCtx) (decompileChild
         let subInl ← renderProposition ctx.tbl aty
         let goal ← buildGoalState ctx.tbl aty
         children := children.push (.step s!"hcoeff-class-ratio-{idx}"
-          (#[.text "For every extended transcript, the class-wise real-to-ideal ratio satisfies "] ++
+          (#[.text "For every extended transcript, the class-wise ratio satisfies "] ++
            subInl ++ #[.text "."]) sub (some goal))
       else if idx + 1 == total then
         let sub ← decompileSlotSubproof ctx decompileChild s!"hcoeff-class-bound-{idx}" aty ap
         let subInl ← renderProposition ctx.tbl aty
         let goal ← buildGoalState ctx.tbl aty
         children := children.push (.step s!"hcoeff-class-bound-{idx}"
-          (#[.text "Taking expectations over the transcript classes under any compatible environment yields "] ++
+          (#[.text "Taking expectations over transcript classes gives "] ++
            subInl ++ #[.text "."]) sub (some goal))
     return children
   -- If `witness` is a named project definition (e.g., `constantReveal`), try one unfold step
@@ -150,7 +143,6 @@ def hCoefficientExplainer : RuleExplainer where
     if head == ``SystemAlgebra.Interface.distance_le_of_hCoefficient ||
        head == ``SystemAlgebra.RandomSystem.HCoefficient.transcriptDistance_le ||
        head == ``SystemAlgebra.RandomSystem.HCoefficient.transcriptDistance_le_nnreal then
-      let op ← pickMaurerOpener .consequence
       -- Locate the `HCoefficient` witness argument among `args`
       let mut witnessChildren : Array ProofNode := #[]
       for arg in args do
@@ -160,20 +152,12 @@ def hCoefficientExplainer : RuleExplainer where
             witnessChildren := witnessChildren ++ (← explainHCoefficientWitness ctx decompileChild arg)
         catch _ => pure ()
       return ← finish s!"cc-hcoeff-{head}" (fun conclInl =>
-        let lead := match conclInl[0]? with
-          | some (.text s) =>
-              if s.startsWith "the " || s.startsWith "protocol " then "we obtain that " else "we obtain "
-          | _ => "we obtain "
-        #[.text s!"{op} by the revealed-transcript H-coefficient technique—comparing the extended real and ideal transcript laws and forgetting the auxiliary reveal by data processing—{lead}"] ++
-        conclInl ++ #[.text "."]) witnessChildren
+        #[.text "By the H-coefficient technique, "] ++ conclInl ++ #[.text "."]) witnessChildren
     if head == ``SystemAlgebra.RandomSystem.statDist_sLaw_le_of_reveal then
-      let op ← pickMaurerOpener .consequence
       let children ← decompilePremiseArgs ctx decompileChild proof
       return ← finish s!"cc-reveal-expect-{head}" (fun conclInl =>
-        #[.text s!"{op} by the expectation method on extended transcripts (applying data processing to marginalize out the revealed record), the statistical distance of the transcript laws is bounded by the ideal expected ratio defect: "] ++
-        conclInl ++ #[.text "."]) children
+        #[.text "By the extended H-coefficient expectation bound, "] ++ conclInl ++ #[.text "."]) children
     if head == ``SystemAlgebra.RandomSystem.transcriptDistance_le_add_of_ratio_on_good then
-      let op ← pickMaurerOpener .consequence
       let pArgs ← proofValuedArgs proof
       let mut children : Array ProofNode := #[]
       let total := pArgs.size
@@ -184,20 +168,18 @@ def hCoefficientExplainer : RuleExplainer where
           let subInl ← renderProposition ctx.tbl aty
           let goal ← buildGoalState ctx.tbl aty
           children := children.push (.step s!"hcoeff-ratio-{idx}"
-            (#[.text "For every good transcript, the real probability satisfies the ratio lower bound "] ++
+            (#[.text "For every good transcript, "] ++
              subInl ++ #[.text "."]) sub (some goal))
         else if idx + 1 == total then
           let sub ← decompileSlotSubproof ctx decompileChild s!"hcoeff-bad-{idx}" aty ap
           let subInl ← renderProposition ctx.tbl aty
           let goal ← buildGoalState ctx.tbl aty
           children := children.push (.step s!"hcoeff-bad-{idx}"
-            (#[.text "The bad-transcript mass under the ideal system is bounded by "] ++
+            (#[.text "The bad-transcript probability satisfies "] ++
              subInl ++ #[.text "."]) sub (some goal))
       return ← finish s!"cc-hcoeff-goodbad-{head}" (fun conclInl =>
-        #[.text s!"{op} by Patarin's H-coefficient technique, splitting transcripts into a bad event and a good set with a uniform real-to-ideal probability ratio yields "] ++
-        conclInl ++ #[.text "."]) children
+        #[.text "By the H-coefficient technique, "] ++ conclInl ++ #[.text "."]) children
     if head == ``SystemAlgebra.RandomSystem.transcriptDistance_le_add_of_ratio_and_transcriptCost then
-      let op ← pickMaurerOpener .consequence
       let pArgs ← proofValuedArgs proof
       let mut children : Array ProofNode := #[]
       let total := pArgs.size
@@ -208,25 +190,24 @@ def hCoefficientExplainer : RuleExplainer where
           let subInl ← renderProposition ctx.tbl aty
           let goal ← buildGoalState ctx.tbl aty
           children := children.push (.step s!"rc-ratio-{idx}"
-            (#[.text "On every transcript, the real system dominates the scaled good sub-mass: "] ++
+            (#[.text "On every transcript, "] ++
              subInl ++ #[.text "."]) sub (some goal))
         else if idx + 2 == total then
           let sub ← decompileSlotSubproof ctx decompileChild s!"rc-loss-{idx}" aty ap
           let subInl ← renderProposition ctx.tbl aty
           let goal ← buildGoalState ctx.tbl aty
           children := children.push (.step s!"rc-loss-{idx}"
-            (#[.text "Each admissible query loses at most the per-step cost from the good sub-mass: "] ++
+            (#[.text "At each query step, "] ++
              subInl ++ #[.text "."]) sub (some goal))
         else if idx + 1 == total then
           let sub ← decompileSlotSubproof ctx decompileChild s!"rc-cost-{idx}" aty ap
           let subInl ← renderProposition ctx.tbl aty
           let goal ← buildGoalState ctx.tbl aty
           children := children.push (.step s!"rc-cost-{idx}"
-            (#[.text "Along every possible ideal transcript, the accumulated step cost is bounded by "] ++
+            (#[.text "Along every ideal transcript, "] ++
              subInl ++ #[.text "."]) sub (some goal))
       return ← finish s!"cc-ratiocost-{head}" (fun conclInl =>
-        #[.text s!"{op} combining the retained good-mass potential (which bounds the cumulative bad-event loss) with the multiplicative real-to-good probability ratio yields "] ++
-        conclInl ++ #[.text "."]) children
+        #[.text "By the H-coefficient technique with per-step cost, "] ++ conclInl ++ #[.text "."]) children
     return none
 
 initialize

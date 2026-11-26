@@ -10,6 +10,7 @@ import Informalization.Core.Overlay
 import Informalization.Core.Ontology
 import Informalization.Core.Routine
 import Informalization.Core.Explanation
+import Informalization.Core.Register
 
 /-!
 # Cross-Lemma Recursive Proof Decompiler (90% Pure Kyle Miller Engine)
@@ -38,6 +39,7 @@ open Informalization.Core.Overlay
 open Informalization.Core.Ontology
 open Informalization.Core.Routine
 open Informalization.Core.Explanation
+open Informalization.Core.Register
 
 /-- Configuration for one informalization run. -/
 structure Config where
@@ -276,17 +278,60 @@ private partial def flattenCalcChain (proof expected : Expr) (fuel : Nat := 32) 
       return left ++ right
   | none => return #[(proof, expected)]
 
+private def isPlumbingNameStr (s : String) : Bool :=
+  s.startsWith "match_" || (s.splitOn ".match_").length > 1 || (s.splitOn "_match_").length > 1 ||
+  (s.splitOn "IsDDCFrom").length > 1 || (s.splitOn "isDDCFrom").length > 1 ||
+  (s.splitOn "ofPDS").length > 1 || (s.splitOn "ofDDC").length > 1 ||
+  (s.splitOn "of_pds").length > 1 || (s.splitOn "of_ddc").length > 1 ||
+  (s.splitOn "associator").length > 1 ||
+  (s.splitOn "getElem!").length > 1 || (s.splitOn "getElem?").length > 1 ||
+  (s.splitOn "toBitVec").length > 1 || (s.splitOn "ByteArray").length > 1
+
+private def isAstPlumbingHead (declName : Name) : Bool :=
+  let s := declName.toString
+  isCompilerAuxDecl declName || isPlumbingNameStr s ||
+  declName == ``Prod.casesOn || declName == ``PProd.casesOn ||
+  declName == ``Sigma.casesOn || declName == ``PSigma.casesOn ||
+  declName == ``Sum.inl || declName == ``Sum.inr ||
+  declName == ``Or.inl || declName == ``Or.inr ||
+  declName == ``And.left || declName == ``And.right ||
+  declName == ``Prod.fst || declName == ``Prod.snd ||
+  declName == ``PProd.fst || declName == ``PProd.snd ||
+  declName == `Set.mem_image || declName == `Set.mem_image2 ||
+  declName == `Set.mem_singleton_iff || declName == `Set.mem_singleton ||
+  declName == `Equiv.refl || declName == ``Eq.rec || declName == ``Eq.ndrec || declName == `Eq.drec ||
+  declName == ``Nat.rec || declName == `Nat.recAux || declName == ``Nat.recOn ||
+  declName == ``congrArg || declName == ``congrFun || declName == `congrFun' || declName == ``congr ||
+  declName == ``funext || declName == ``propext ||
+  declName == `CategoryTheory.MonoidalCategory.associator ||
+  declName == `List.getElem! || declName == `List.getElem? ||
+  declName == `GetElem.getElem || declName == `GetElem?.getElem? ||
+  declName == `ByteArray.toBitVec
+
+private def exprHasRawPlumbing (e : Expr) : Bool :=
+  e.foldConsts (init := false) fun cn acc =>
+    if acc then true
+    else
+      let s := cn.toString
+      isCompilerAuxDecl cn || isPlumbingNameStr s ||
+      cn == ``Prod.casesOn || cn == ``PProd.casesOn ||
+      cn == ``Sum.inl || cn == ``Sum.inr ||
+      cn == `Equiv.refl || cn == ``Eq.rec || cn == ``Eq.ndrec || cn == `Eq.drec ||
+      cn == ``Nat.rec || cn == `Nat.recAux || cn == ``Nat.recOn ||
+      cn == `CategoryTheory.MonoidalCategory.associator ||
+      cn == `List.getElem! || cn == `List.getElem? ||
+      cn == `GetElem.getElem || cn == `GetElem?.getElem? ||
+      cn == `ByteArray.toBitVec
+
 private def isNeverExpandedConst (declName : Name) : Bool :=
   let s := declName.toString
   let short := shortConstName declName
   s.endsWith ".ext" || s.endsWith ".ext_iff" || s.endsWith ".casesOn" ||
-  s.endsWith ".rec" || s.endsWith ".recOn" ||
-  s.startsWith "congr" || short == "ext" ||
-  declName == ``funext || declName == ``propext || declName == ``Subtype.ext ||
+  s.endsWith ".rec" || s.endsWith ".recOn" || s.endsWith ".recAux" ||
+  s.startsWith "congr" || short == "ext" || isAstPlumbingHead declName ||
   declName == ``Quotient.sound || declName == ``Exists.intro ||
   declName == ``False.elim || declName == ``absurd ||
-  declName == ``Or.elim || declName == ``Or.inl || declName == ``Or.inr ||
-  declName == ``Eq.rec || declName == ``Eq.ndrec || declName == `Eq.drec ||
+  declName == ``Or.elim ||
   declName == `of_eq_true || declName == `eq_self ||
   declName == ``Eq.refl || declName == ``rfl
 
@@ -305,16 +350,14 @@ private def shouldExpandLemma (env : Environment) (ctx : DecompCtx) (declName : 
   else if isNeverExpandedConst declName then false
   else if effectiveIsOpaqueLeaf env declName && !expandAttr then false
   else if Lean.isPrivateName declName && !effectiveIsProofJoint env declName && !expandAttr then false
-  else if expandAttr then
-    match env.find? declName with
-    | some (.thmInfo _) => true
-    | _ => false
-  else if ctx.config.projectNamespaces.isEmpty then
-    match env.find? declName with
-    | some (.thmInfo _) => true
-    | _ => false
   else
-    ctx.config.projectNamespaces.any (fun p => p.isPrefixOf declName)
+    let typeClean := match env.find? declName with
+      | some (.thmInfo info) => !exprHasRawPlumbing info.type
+      | _ => false
+    if !typeClean then false
+    else if expandAttr then true
+    else if ctx.config.projectNamespaces.isEmpty then true
+    else ctx.config.projectNamespaces.any (fun p => p.isPrefixOf declName)
 
 /-- Extract all non-typeclass proof-valued arguments `(arg, propType)` of an application `f a₁ … aₙ`. -/
 def proofValuedArgs (term : Expr) : MetaM (Array (Expr × Expr)) :=
@@ -378,9 +421,13 @@ def decompilePremiseArgs (ctx : DecompCtx) (decompileChild : DecompileChild)
     if !exprContainsSorryAx ap && (← isVacuousRenderedEq ctx.tbl aty) then
       continue
     if let some fvid := unwrapHypothesisFVar? ap then
-      let node ← renderHypothesisStep ctx.tbl aty fvid s!"hyp-prem-{idx}-{fvid.name}-{aty.hash}"
-        (isWrap := true) (onlyUsed := (ctx.lemmaDepth ≥ 1))
-      out := out.push node
+      let decl ← fvid.getDecl
+      let hypInl ← renderProposition ctx.tbl decl.type
+      let hypLen := (inlinesCanonicalKey hypInl).length
+      if hypLen > 0 && hypLen ≤ 60 then
+        let node ← renderHypothesisStep ctx.tbl aty fvid s!"hyp-prem-{idx}-{fvid.name}-{aty.hash}"
+          (isWrap := true) (onlyUsed := (ctx.lemmaDepth ≥ 1))
+        out := out.push node
     else
       let sub ← decompileChild subCtx aty ap
       out := out ++ sub
@@ -488,8 +535,65 @@ private def coreLemmaTitles : NameMap String :=
     (`SystemAlgebra.Domain.Distinguisher.advantage_le_transcriptDistance,
       "the distinguisher advantage-to-distance bound"),
     (`SystemAlgebra.Domain.DistinguisherBehavior.advantage_le_transcriptDistance,
-      "the distinguisher advantage-to-distance bound")
+      "the distinguisher advantage-to-distance bound"),
+    (``And.left, "conjunction elimination"),
+    (``And.right, "conjunction elimination"),
+    (``Prod.fst, "projection"),
+    (``Prod.snd, "projection"),
+    (``Or.inl, "disjunction introduction"),
+    (``Or.inr, "disjunction introduction"),
+    (``Sum.inl, "sum injection"),
+    (``Sum.inr, "sum injection"),
+    (``Eq.refl, "reflexivity"),
+    (``rfl, "reflexivity")
   ].foldl (init := {}) fun m (n, t) => m.insert n t
+
+private def sanitizeRawLemmaLabel (declName : Name) (raw : String) : String :=
+  let s := raw.trimAscii.toString
+  let low := s.toLower
+  let short := (shortConstName declName).toLower
+  if low == "with public port attach" then
+    "the public-port wiring identity"
+  else if (low.splitOn "ddc").length > 1 || (low.splitOn "pds").length > 1 ||
+          (low.splitOn "call converter").length > 1 || (low.splitOn "associator").length > 1 ||
+          (short.splitOn "ddc").length > 1 || (short.splitOn "pds").length > 1 then
+    "the wiring identity"
+  else if (low.splitOn "injective").length > 1 || (low.splitOn "injectivity").length > 1 ||
+          short.endsWith "_inj" || short.endsWith "injective" then
+    "injectivity"
+  else if low == "not bound of lower bound" || low.startsWith "not bound of " then
+    "the lower bound"
+  else if low.startsWith "of real" || (low.splitOn "of real").length > 1 ||
+          (low.splitOn "real bound").length > 1 ||
+          short.startsWith "of_real" || short.startsWith "ofreal" then
+    "the auxiliary bound"
+  else if low == "mass or bound" || low.endsWith " or bound" then
+    "the probability bound"
+  else if low == "bound min" || low == "min bound" then
+    "the minimum bound"
+  else if low == "transitivity strict bound" then
+    "transitivity"
+  else if low == "capacity card bound state" then
+    "the state-space bound"
+  else if low == "bound refined error bound" then
+    "the refined error bound"
+  else if low.startsWith "of " || short.startsWith "of_" ||
+          (low.splitOn " of fn").length > 1 || (low.splitOn " of val").length > 1 ||
+          (low.splitOn " of coe").length > 1 || (low.splitOn " of eq").length > 1 ||
+          (low.splitOn " of ne").length > 1 then
+    if (low.splitOn "bound").length > 1 || (low.splitOn "strict").length > 1 then
+      "the auxiliary bound"
+    else if (low.splitOn "identity").length > 1 || (low.splitOn "equivalence").length > 1 then
+      "the auxiliary identity"
+    else
+      "the auxiliary lemma"
+  else
+    let ws := s.splitOn " " |>.filter (!·.isEmpty)
+    if ws.length ≥ 2 && ws.head?.map (·.toLower) == some "bound" &&
+       ws.getLast?.map (·.toLower) == some "bound" then
+      String.intercalate " " ws.tail!
+    else
+      s
 
 private def rewriteMathSuffixWords (words : List String) : List String := Id.run do
   let mapped := words.map fun w =>
@@ -543,9 +647,10 @@ def humanLemmaLabel (env : Environment) (declName : Name) : String :=
             | some (_, acr) => acr
             | none => low
           let words := rewriteMathSuffixWords words0
-          let raw := String.intercalate " " words
-          raw.replace "transcript distance" "distinguishing advantage"
-             |>.replace "distinguishing distance" "distinguishing advantage"
+          let raw := (String.intercalate " " words)
+            |>.replace "transcript distance" "distinguishing advantage"
+            |>.replace "distinguishing distance" "distinguishing advantage"
+          sanitizeRawLemmaLabel declName raw
 
 /-- Format a Title-Cased fallback entry/document title for a declaration (respecting
 `informal_title`, stripping `_verbose`, splitting camelCase, and preserving acronyms). -/
@@ -622,25 +727,20 @@ private def isTrivialWrapperBody (env : Environment) (declName : Name) (body : E
         (!isCoreOrMathlibIn env head && core.getAppArgs.size ≤ 16)
     | _ => false
 
-/-- Cap `diagramHtml?` emission on `ProofNode`s at nesting `depth ≤ maxDepth` (default `1`),
-and suppress child diagrams that are identical to the enclosing theorem's diagram. -/
-private partial def capDiagramHtmlDepth (maxDepth : Nat := 1) (parentDiag? : Option String := none) :
+/-- Strip `diagramHtml?` from ALL `ProofNode`s (`steps` and `calcSteps`), keeping figures
+strictly at the entry level so `⊕` expansions stay clean and diagram-free. -/
+private partial def capDiagramHtmlDepth (_maxDepth : Nat := 0) (_parentDiag? : Option String := none) :
     Nat → ProofNode → ProofNode
-  | depth, .step id content children goal? diag origin isWrap defExp sp lh tr im =>
-      let keepDiag :=
-        if depth ≤ maxDepth && diag != parentDiag? then diag else none
-      let nextParent := keepDiag <|> parentDiag?
-      .step id content (children.map (capDiagramHtmlDepth maxDepth nextParent (depth + 1)))
-        goal? keepDiag origin isWrap defExp sp lh tr im
+  | depth, .step id content children goal? _ origin isWrap defExp sp lh tr im =>
+      .step id content (children.map (capDiagramHtmlDepth 0 none (depth + 1)))
+        goal? none origin isWrap defExp sp lh tr im
   | depth, .calcChain id intro steps goal? origin =>
-      let keepStep (s : CalcStep) : CalcStep :=
-        if depth ≤ maxDepth && s.diagramHtml? != parentDiag? then s else { s with diagramHtml? := none }
       let nextSteps := steps.map fun (s, ch) =>
-        (keepStep s, ch.map (capDiagramHtmlDepth maxDepth parentDiag? (depth + 1)))
+        ({ s with diagramHtml? := none }, ch.map (capDiagramHtmlDepth 0 none (depth + 1)))
       .calcChain id intro nextSteps goal? origin
   | depth, .routineReceipt id summary count details goal? =>
       .routineReceipt id summary count
-        (details.map (capDiagramHtmlDepth maxDepth parentDiag? (depth + 1))) goal?
+        (details.map (capDiagramHtmlDepth 0 none (depth + 1))) goal?
   | _, other => other
 
 /-- Recursively deduplicate repeated identical sibling proof nodes (preventing 15× spam)
@@ -778,6 +878,45 @@ private def normalizeProseForComparison (inls : Array Inline) : String := Id.run
           s := (String.intercalate ", " (commaParts.drop 1)).trimAscii.toString
   return stripTrailingPunct s
 
+private def containsSorryText (n : ProofNode) : Bool :=
+  n.collectAllText.any fun t => (t.splitOn "[UNPROVED: sorry]").length > 1
+
+private def isVacuousHypOrRoutineChild (n : ProofNode) : Bool :=
+  if containsSorryText n then false
+  else match n with
+  | .routineReceipt _ summary _ details _ =>
+      if !details.isEmpty then false
+      else
+        let low := summary.trimAscii.toString.toLower
+        low.startsWith "reflexiv" || low.startsWith "definitional" ||
+        low.startsWith "trivial" || low.startsWith "assumed" ||
+        low.startsWith "cast" || low.startsWith "coercion" ||
+        low.startsWith "congruence" || low.startsWith "extensional" ||
+        low.startsWith "elementary arithmetic" || low.startsWith "elementary algebra" ||
+        low.startsWith "low-level wiring" || low.startsWith "algebra"
+  | .step _ cContent cChildren _ cDiag? _ isWrap _ _ _ _ _ =>
+      if !cChildren.isEmpty || cDiag?.isSome then false
+      else
+        let raw := String.intercalate "" (cContent.toList.map Inline.collectText)
+        let words := (raw.replace "\n" " ").splitOn " " |>.filter (!·.isEmpty)
+        let low := (String.intercalate " " words).trimAscii.toString.toLower
+        let lowNoDot :=
+          if low.endsWith "." || low.endsWith "," then (low.dropEnd 1).toString.trimAscii.toString
+          else low
+        let hasMath := !(extractNormalizedMath cContent).isEmpty
+        low.startsWith "this holds by the assumed " ||
+        lowNoDot == "by definitional equality" ||
+        lowNoDot == "by reflexivity" ||
+        lowNoDot == "by definition" ||
+        lowNoDot == "by extensionality and substitution of equals" ||
+        lowNoDot == "by elementary algebra and inequalities" ||
+        lowNoDot == "by elementary algebra" ||
+        lowNoDot == "by substitution of equals" ||
+        (!hasMath && (low.startsWith "by definitional" || low.startsWith "by reflexivity" ||
+          low.startsWith "by extensionality" || low.startsWith "by elementary algebra")) ||
+        (isWrap && low.startsWith "this holds by the assumption")
+  | _ => false
+
 private def isBareSingleSentenceRestatement (parentContent childContent : Array Inline) : Bool := Id.run do
   let proseOnly := (String.intercalate "" (childContent.toList.filterMap fun
     | .text t => some t
@@ -790,6 +929,14 @@ private def isBareSingleSentenceRestatement (parentContent childContent : Array 
       |>.filter (!·.isEmpty)
   let childLow := (String.intercalate " " childRawWords).trimAscii.toString.toLower
   if childLow.startsWith "this holds by the assumed " then
+    return true
+  let childNoDot :=
+    if childLow.endsWith "." || childLow.endsWith "," then
+      (childLow.dropEnd 1).toString.trimAscii.toString
+    else childLow
+  if childNoDot == "by definitional equality" || childNoDot == "by reflexivity" ||
+     childNoDot == "by extensionality and substitution of equals" ||
+     childNoDot == "by elementary algebra and inequalities" then
     return true
   let parentMath := extractNormalizedMath parentContent
   let childMath := extractNormalizedMath childContent
@@ -809,9 +956,10 @@ private def isBareSingleSentenceRestatement (parentContent childContent : Array 
   if childLow.startsWith "we obtain " || childLow.startsWith "therefore, " ||
      childLow.startsWith "hence, " || childLow.startsWith "thus, " then
     return !childMath.isEmpty
-  if childLow.startsWith "proceeding by " then
+  if childLow.startsWith "proceeding by " || childLow.startsWith "by case analysis, " ||
+     childLow.startsWith "by structural induction, " then
     return !childMath.isEmpty
-  if childLow.startsWith "by " || childLow.startsWith "from " then
+  if childLow.startsWith "by " || childLow.startsWith "from " || childLow.startsWith "applying " then
     let commaParts := childLow.splitOn ", "
     if commaParts.length ≥ 2 then
       if !childMath.isEmpty then return true
@@ -820,18 +968,68 @@ private def isBareSingleSentenceRestatement (parentContent childContent : Array 
         return true
   return false
 
-/-- Eliminate tautological 1-child `⊕` leaves whose single child merely restates the parent's
-claim or formula without introducing new mathematics, diagrams, or sub-children, while
-preserving `origin? := origin? <|> cOrigin?` provenance. -/
+private def isCalcStepRestatement (cs : CalcStep) (child : ProofNode) : Bool :=
+  if isVacuousHypOrRoutineChild child then true
+  else match child with
+  | .step _ cContent cChildren _ cDiag? _ _ _ _ _ _ _ =>
+      if !cChildren.isEmpty || cDiag?.isSome || containsSorryText child then false
+      else
+        let proseOnly := (String.intercalate "" (cContent.toList.filterMap fun
+          | .text t => some t
+          | .emph t => some t
+          | _ => none)).trimAscii.toString
+        if (proseOnly.splitOn ". ").length > 1 then false
+        else
+          let lhsNorm := normalizeMathToken cs.lhsLatex
+          let rhsNorm := normalizeMathToken cs.rhsLatex
+          let reasonMath := extractNormalizedMath cs.reason
+          let allowedMath := #[lhsNorm, rhsNorm] ++ reasonMath
+          let cMath := extractNormalizedMath cContent
+          if cMath.isEmpty then false
+          else
+            cMath.all fun cm =>
+              let parts :=
+                if (cm.splitOn " = ").length == 2 then cm.splitOn " = "
+                else if (cm.splitOn " \\le ").length == 2 then cm.splitOn " \\le "
+                else if (cm.splitOn " \\simeq ").length == 2 then cm.splitOn " \\simeq "
+                else if (cm.splitOn " \\approx ").length == 2 then cm.splitOn " \\approx "
+                else [cm]
+              parts.all fun p =>
+                let pn := normalizeMathToken p
+                allowedMath.any fun am =>
+                  !am.isEmpty && (am == pn || (pn.length ≥ 4 && (am.splitOn pn).length > 1))
+  | _ => false
+
+private def isL9TrivialCalcReason (reason : Array Inline) : Bool :=
+  let raw := String.intercalate "" (reason.toList.map Inline.collectText)
+  let words := (raw.replace "\n" " ").splitOn " " |>.filter (!·.isEmpty)
+  let low := (String.intercalate " " words).trimAscii.toString.toLower
+  low.startsWith "by reflexivity" || low.startsWith "by definition" ||
+  low.startsWith "by rfl" || low.startsWith "by eq.refl" ||
+  low.startsWith "by le_refl" || low.startsWith "by le_rfl" ||
+  low.startsWith "by non-expansion"
+
+/-- Eliminate tautological 1-child `⊕` leaves and vacuous hypothesis/routine children whose
+contents merely restate the parent's claim or formula without introducing new mathematics,
+diagrams, or sub-children, while preserving `origin?` provenance and `L9` `vcc-calc` subproofs. -/
 partial def collapseTautologicalSingleChild : ProofNode → ProofNode
   | .step id content children goal? diag? origin? isWrap defExp startsPara leadHead? trust? inlineMeta =>
-      let children' := children.map collapseTautologicalSingleChild
-      let collapsed :=
-        if !isWrap && children'.size == 1 then
+      let children0 := children.map collapseTautologicalSingleChild
+      let nonVac := children0.filter (!isVacuousHypOrRoutineChild ·)
+      let children' :=
+        if !isWrap && !nonVac.isEmpty then nonVac
+        else children0
+      let allVacuous := !isWrap && !children'.isEmpty && children'.all isVacuousHypOrRoutineChild
+      let collapsed : Option (Option String) :=
+        if allVacuous then
+          let firstOrig := children'.findSome? fun
+            | .step _ _ _ _ _ o _ _ _ _ _ _ => o
+            | _ => none
+          some firstOrig
+        else if !isWrap && children'.size == 1 then
           match children'[0]! with
           | c@(.step _ cContent cChildren _ cDiag? cOrigin? _ _ _ _ _ _) =>
-              let hasSorry := c.collectAllText.any fun t => (t.splitOn "[UNPROVED: sorry]").length > 1
-              if cChildren.isEmpty && cDiag?.isNone && !hasSorry &&
+              if cChildren.isEmpty && cDiag?.isNone && !containsSorryText c &&
                  isBareSingleSentenceRestatement content cContent then
                 some cOrigin?
               else
@@ -845,7 +1043,18 @@ partial def collapseTautologicalSingleChild : ProofNode → ProofNode
       | none =>
           .step id content children' goal? diag? origin? isWrap defExp startsPara leadHead? trust? inlineMeta
   | .calcChain id intro steps goal? origin? =>
-      .calcChain id intro (steps.map fun (cs, ch) => (cs, ch.map collapseTautologicalSingleChild)) goal? origin?
+      let isCCCalc := id.startsWith "vcc-calc" || id.startsWith "vcc-hybrid-chain"
+      let steps' := steps.map fun (cs, ch) =>
+        let ch0 := ch.map collapseTautologicalSingleChild
+        let nonVac := ch0.filter (!isVacuousHypOrRoutineChild ·)
+        let ch1 := if !nonVac.isEmpty then nonVac else ch0
+        let canEmpty := !isCCCalc || isL9TrivialCalcReason cs.reason
+        let chFinal :=
+          if canEmpty && !ch1.isEmpty && ch1.all isVacuousHypOrRoutineChild then #[]
+          else if canEmpty && ch1.size == 1 && isCalcStepRestatement cs ch1[0]! then #[]
+          else ch1
+        (cs, chFinal)
+      .calcChain id intro steps' goal? origin?
   | .routineReceipt id summary count details goal? =>
       .routineReceipt id summary count (details.map collapseTautologicalSingleChild) goal?
   | other => other
@@ -893,6 +1102,225 @@ private partial def unwrapCastProof (e : Expr) (fuel : Nat := 16) : Expr :=
       | _ => e
   | _ => e
 
+private def kvStr? (kv : MData) (k : Name) : Option String :=
+  match kv.find k with
+  | some (DataValue.ofString s) => some s
+  | _ => none
+
+private partial def unwrapAnyByLeafMData? (e : Expr) : Option (String × String × Expr) :=
+  match unwrapByLeafMData? e with
+  | some hit => some hit
+  | none =>
+      match e with
+      | .mdata kv inner =>
+          if (kvStr? kv `ccVerboseKind).isSome then
+            none
+          else
+            match unwrapAnyByLeafMData? inner with
+            | some (k, s, inner') => some (k, s, .mdata kv inner')
+            | none => none
+      | .lam nm ty b bi =>
+          if !b.hasLooseBVar 0 then
+            match unwrapAnyByLeafMData? b with
+            | some (k, s, inner') => some (k, s, .lam nm ty inner' bi)
+            | none => none
+          else none
+      | _ => none
+
+private def isFalseGoalExpr (e : Expr) : Bool :=
+  e.consumeMData.isConstOf ``False
+
+private def lowercaseForClause (s : String) : String :=
+  match s.toList with
+  | c1 :: c2 :: rest =>
+      if c1.isUpper && c2.isLower then
+        String.ofList (c1.toLower :: c2 :: rest)
+      else s
+  | _ => s
+
+private def isGerundOpener (s : String) : Bool :=
+  let words := (s.trimAscii.toString.splitOn " ").filter (!·.isEmpty)
+  match words with
+  | w0 :: w1 :: _ =>
+      let l0 := w0.toLower
+      let l1 := w1.toLower
+      let gerundVerbs := [
+        "multiplying", "dividing", "adding", "subtracting", "summing", "combining",
+        "applying", "substituting", "rewriting", "unfolding", "rearranging",
+        "factoring", "simplifying", "canceling", "cancelling", "expanding",
+        "telescoping", "averaging", "integrating", "taking", "replacing",
+        "lifting", "pushing", "pulling", "composing", "attaching", "bounding",
+        "comparing", "dropping", "keeping", "splitting", "grouping", "collecting",
+        "using", "chaining", "evaluating", "restricting", "conditioning", "inverting"
+      ]
+      gerundVerbs.contains l0 ||
+      (l0.endsWith "ing" && (l1 == "both" || l1 == "over" || l1 == "by" || l1 == "the" ||
+        l1 == "two" || l1 == "each" || l1 == "all" || l1 == "out"))
+  | _ => false
+
+private def startsWithPreposition (s : String) : Bool :=
+  let low := s.trimAscii.toString.toLower
+  low.startsWith "by " || low.startsWith "from " || low.startsWith "via " ||
+  low.startsWith "since " || low.startsWith "using " || low.startsWith "applying " ||
+  low.startsWith "under " || low.startsWith "through " || low.startsWith "after " ||
+  low.startsWith "with "
+
+private def containsFiniteVerb (s : String) : Bool :=
+  let words := (s.trimAscii.toString.splitOn " ").filter (!·.isEmpty)
+  words.any fun w =>
+    let clean := ((w.replace "," "").replace "." "").replace ";" "" |>.toLower
+    clean == "gives" || clean == "shows" || clean == "yields" || clean == "implies" ||
+    clean == "establishes" || clean == "proves" || clean == "forces" || clean == "ensures" ||
+    clean == "entails" || clean == "holds" || clean == "follows"
+
+private def endsWithTransitiveVerb (s : String) : Bool :=
+  let words := (s.trimAscii.toString.splitOn " ").filter (!·.isEmpty)
+  match words.getLast? with
+  | some w =>
+      let clean := ((w.replace "," "").replace "." "").replace ";" "" |>.toLower
+      clean == "gives" || clean == "shows" || clean == "yields" || clean == "implies" ||
+      clean == "establishes" || clean == "proves" || clean == "forces" || clean == "ensures" ||
+      clean == "entails" || clean == "that"
+  | none => false
+
+private def formatCalcReasonText (label : String) : String :=
+  let s := label.trimAscii.toString
+  let low := s.toLower
+  if low == "reflexivity" || low == "eq.refl" || low == "rfl" then
+    "by definition"
+  else if startsWithPreposition s || isGerundOpener s || containsFiniteVerb s then
+    s
+  else
+    s!"by {s}"
+
+private def leafHasGerundLead (low : String) : Bool :=
+  [ "counting ", "summing ", "multiplying ", "dividing ", "rewriting ",
+    "applying ", "absorbing ", "combining ", "substituting ", "partitioning ",
+    "conditioning ", "unfolding ", "expanding ", "bounding ", "comparing ",
+    "splitting ", "checking ", "verifying ", "tracing ", "inducting "
+  ].any fun g => low.startsWith g
+
+private def leafHasFiniteVerb (low : String) : Bool :=
+  let padded := " " ++ low ++ " "
+  [ " is ", " are ", " was ", " were ", " has ", " have ", " had ",
+    " does ", " do ", " did ", " can ", " may ", " must ", " will ", " shall ",
+    " holds ", " hold ", " follows ", " follow ", " gives ", " give ",
+    " yields ", " yield ", " establishes ", " establish ", " implies ", " imply ",
+    " shows ", " show ", " satisfies ", " satisfy ", " agrees ", " agree ",
+    " contradicts ", " contradict ", " reduces ", " reduce ", " vanishes ", " vanish ",
+    " equals ", " equal ", " remains ", " remain ", " ensures ", " ensure "
+  ].any fun v => (padded.splitOn v).length > 1
+
+private def leafSmartLowerFirst (s : String) : String :=
+  if s.startsWith "The " then "the " ++ (s.drop 4).toString
+  else if s.startsWith "A " then "a " ++ (s.drop 2).toString
+  else if s.startsWith "An " then "an " ++ (s.drop 3).toString
+  else
+    let firstWord := (s.splitOn " ").headD s
+    let keepProper :=
+      [ "Markov", "Chernoff", "Hoeffding", "Bernstein", "Chebyshev", "Jensen",
+        "Bayes", "Keccak", "Sponge", "Boneh", "Shoup" ].any fun p => firstWord.startsWith p
+    if keepProper then s
+    else match s.toList with
+      | c1 :: c2 :: _ =>
+          if c1.isUpper && c2.isLower then lowercaseFirst s else s
+      | _ => s
+
+private def stripApplyingLead (s : String) : String :=
+  let low := s.toLower
+  if low.startsWith "applying the " || low.startsWith "applying a " || low.startsWith "applying an " then
+    (s.drop 9).trimAscii.toString
+  else s
+
+private def formatByLeafInlines (summary : String) (conclInl : Array Inline) : Array Inline :=
+  let s0 := summary.trimAscii.toString
+  let s := if s0.endsWith "," then (s0.dropEnd 1).trimAscii.toString else s0
+  let hadTrailingComma := s0.endsWith ","
+  if s.isEmpty then
+    #[.text "Direct verification yields "] ++ conclInl ++ #[.text "."]
+  else if !hadTrailingComma && (s.endsWith "." || s.endsWith "!" || s.endsWith "?") then
+    let parsed := parseProseWithMath s
+    match parsed[0]? with
+    | some (Inline.text t) => parsed.set! 0 (.text (capitalizeFirst t))
+    | _ => parsed
+  else
+    let parsed : Array Inline := parseProseWithMath s
+    let parsedCap : Array Inline := match parsed[0]? with
+      | some (Inline.text t) => parsed.set! 0 (.text (capitalizeFirst t))
+      | _ => parsed
+    let conclHasPunct := match conclInl.back? with
+      | some (.text t) =>
+          let tt := t.trimAscii.toString
+          tt.endsWith "." || tt.endsWith "!" || tt.endsWith "?"
+      | some (.displayMath _ p) => p == "." || p == "!" || p == "?"
+      | _ => false
+    let conclSuffix := if conclHasPunct then conclInl else conclInl ++ #[.text "."]
+    let low := s.toLower
+    let isSubordLead :=
+      low.startsWith "by " || low.startsWith "since " || low.startsWith "from " ||
+      low.startsWith "using " || low.startsWith "via " || low.startsWith "because " ||
+      low.startsWith "under "
+    if hadTrailingComma then
+      parsedCap ++ #[.text ", "] ++ conclSuffix
+    else if isSubordLead then
+      if (low.splitOn ",").length > 1 && leafHasFiniteVerb low then
+        parsedCap ++ #[.text "."]
+      else
+        parsedCap ++ #[.text ", "] ++ conclSuffix
+    else if leafHasGerundLead low then
+      if leafHasFiniteVerb low then
+        parsedCap ++ #[.text "."]
+      else
+        let core := stripApplyingLead s
+        parseProseWithMath ("By " ++ leafSmartLowerFirst core ++ ", ") ++ conclSuffix
+    else if leafHasFiniteVerb low then
+      parsedCap ++ #[.text "."]
+    else
+      parseProseWithMath ("By " ++ leafSmartLowerFirst s ++ ", ") ++ conclSuffix
+
+private def applyNotationsAtCount (tbl : SymbolTable) (fvs : Array Expr)
+    (pending : Array (Nat × Expr × String × Option String))
+    (targetCount : Nat) : MetaM SymbolTable := do
+  let mut out := tbl
+  for (nBind, closedPat, sym, _) in pending do
+    if nBind == targetCount && nBind ≤ fvs.size then
+      let instPat := closedPat.instantiateRev (fvs.extract 0 nBind)
+      if !instPat.hasLooseBVars && !instPat.hasExprMVar then
+        let patNorm ← normalizeForPresentation instPat
+        out := out.withExprAlias patNorm sym
+  return out
+
+private def isSetMembershipHead (e : Expr) : Bool :=
+  let clean := e.consumeMData
+  clean.isAppOf ``Membership.mem || clean.isAppOf `Set.mem
+
+private def hasSetMemLeafConst (e : Expr) : Bool :=
+  e.foldConsts (init := false) fun cn acc =>
+    acc ||
+    cn == `Set.mem_image || cn == `Set.mem_image2 ||
+    cn == `Set.mem_singleton_iff || cn == `Set.mem_singleton ||
+    cn == `Set.mem_setOf_eq || cn == `Set.mem_setOf
+
+private def collectConciseProofHyps (tbl : SymbolTable) (proof : Expr) :
+    MetaM (Array (Array Inline)) := do
+  let fvarIds := (Lean.collectFVars {} proof).fvarIds
+  let lctx ← getLCtx
+  let mut out : Array (Array Inline) := #[]
+  let mut seen : Std.HashSet String := {}
+  for fid in fvarIds do
+    if let some d := lctx.find? fid then
+      if d.isAuxDecl || d.isImplementationDetail then continue
+      if !(← isProp d.type) || (← isAmbientTypeclass d.type) then continue
+      if exprHasRawPlumbing d.type then continue
+      if ← isVacuousRenderedEq tbl d.type then continue
+      let hypInl ← renderProposition tbl d.type
+      let key := inlinesCanonicalKey hypInl
+      if key.length > 0 && key.length ≤ 60 && !seen.contains key then
+        seen := seen.insert key
+        out := out.push hypInl
+        if out.size ≥ 2 then break
+  return out
+
 /-- Core recursive decompiler: `(ctx, expectedProp, proofTerm) → Array ProofNode`. -/
 partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
     (fuel : Nat := 96) : StateRefT DiscourseState MetaM (Array ProofNode) := do
@@ -904,6 +1332,82 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
   -- 0. Never render Prop-valued typeclass instances (`PosMulMono`, `AddLeftMono`, etc.)
   if ← isTypeclassProp expected then
     return #[]
+
+  -- 0a. Preserve local `With notation` (`with_notation` / `with_notation_let`) shorthands
+  -- throughout the entire recursive proof tree before anything else consumes `.mdata`.
+  if let .mdata kv inner := proof then
+    match kvStr? kv `ccVerboseKind with
+    | some "with_notation" =>
+        if let (some sym, .app fn val) := (kvStr? kv `ccVerboseLabel, inner.consumeMData) then
+          if let .lam _ _ body _ := fn.consumeMData then
+            let mut nextTbl := ctx.tbl
+            nextTbl := nextTbl.withExprAlias val.consumeMData sym
+            let valNorm ← normalizeForPresentation val
+            nextTbl := nextTbl.withExprAlias valNorm sym
+            return ← decompileProof { ctx with tbl := nextTbl } expected (body.instantiate1 val) (fuel - 1)
+        return ← decompileProof ctx expected inner (fuel - 1)
+    | some "with_notation_let" =>
+        if let (some sym, .letE nm ty val body _) := (kvStr? kv `ccVerboseLabel, inner.consumeMData) then
+          return ← withLetDecl nm ty val fun fv => do
+            let mut nextTbl := ctx.tbl
+            nextTbl := nextTbl.withExprAlias fv sym
+            nextTbl := nextTbl.withExprAlias val.consumeMData sym
+            let valNorm ← normalizeForPresentation val
+            nextTbl := nextTbl.withExprAlias valNorm sym
+            decompileProof { ctx with tbl := nextTbl } expected (body.instantiate1 fv) (fuel - 1)
+        return ← decompileProof ctx expected inner (fuel - 1)
+    | _ => pure ()
+
+  -- 0b. Peel leading non-Prop `let` bindings on `expected` (e.g., `Write R = ... and S = ...`
+  -- hoisted in the theorem statement) so paper shorthands persist through the whole proof tree.
+  if let .letE nm ty val body _ := expected.consumeMData then
+    if !(← isProp ty) then
+      return ← withLetDecl nm ty val fun fv => do
+        let mut nextTbl := ctx.tbl
+        if !(← isAmbientTypeclass ty) then
+          let symOpt? :=
+            match cleanBinderName? nm with
+            | some s => some s
+            | none => if !nm.isAnonymous && !nm.hasMacroScopes then some nm.toString else none
+          if symOpt?.isSome then
+            let rawSymTex ← exprToLatex fv nextTbl
+            let symTex :=
+              if !nextTbl.usedNames.contains rawSymTex then rawSymTex
+              else
+                let cands := #[rawSymTex ++ "'", rawSymTex ++ "''"] ++
+                  (#["w", "z", "u", "v", "t", "y"].flatMap fun p =>
+                    (Array.range 5).map fun i => s!"{p}_\{{i + 1}}")
+                (cands.find? (!nextTbl.usedNames.contains ·)).getD (rawSymTex ++ "'")
+            nextTbl := nextTbl.withUsedName symTex
+            nextTbl := nextTbl.withExprAlias val.consumeMData symTex
+            let valNorm ← normalizeForPresentation val
+            nextTbl := nextTbl.withExprAlias valNorm symTex
+            nextTbl := nextTbl.withExprAlias fv symTex
+        let nextProof ← match proof.consumeMData with
+          | .letE _ pty pval pbody _ =>
+              let same ← try
+                if ← isProp pty then pure false
+                else withTransparency .reducible (isDefEq pval val)
+              catch _ => pure false
+              pure (if same then pbody.instantiate1 fv else proof)
+          | _ => pure proof
+        decompileProof { ctx with tbl := nextTbl } (body.instantiate1 fv) nextProof (fuel - 1)
+
+  -- 0c. Honor `by_leaf` (`unwrapByLeafMData?`): stop recursion immediately and emit one clean leaf
+  -- step using the author summary (while preserving `sorryAx` honestly).
+  if let some (_, summary, inner) := unwrapAnyByLeafMData? proof then
+    if exprContainsSorryAx inner then
+      let goal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
+      return #[.step s!"sorry-leaf-{fuel}" #[.text "[UNPROVED: sorry]"] #[] (some goal)]
+    if !ctx.atRootConclusion && (← isVacuousRenderedEq ctx.tbl expected) then
+      return #[]
+    modify (·.markEmitted)
+    let conclInl := ensureSymbolicPredClause (← renderProposition ctx.tbl expected)
+    let goal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
+    let content :=
+      if isFalseGoalExpr expected then #[.text "This contradicts the assumed bound."]
+      else formatByLeafInlines summary conclInl
+    return #[.step s!"byleaf-{fuel}" content #[] (some goal)]
 
   -- 1. Check domain-registered CC family explainers first
   for exp in (← ruleExplainersRef.get) do
@@ -918,37 +1422,66 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
   if let some rkind := classifyRoutine? env proof then
     return #[.routineReceipt s!"routine-{fuel}" rkind.label 1 #[] none]
 
+  -- 2b. Collapse pure `Set.mem_image` / `Set.mem_singleton_iff` proofs (`Sσ ∈ S*`) into a single
+  -- mathematical sentence instead of 6 nested existential/conjunction steps (`B4`), and apply the
+  -- hard AST opacity wall against raw plumbing terms inside expanded sub-lemmas (`lemmaDepth ≥ 1`).
+  if !exprContainsSorryAx proof && !exprContainsSorryAx expected then
+    if isSetMembershipHead expected && hasSetMemLeafConst proof then
+      modify (·.markEmitted)
+      let conclInl ← renderProposition ctx.tbl expected
+      let goal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
+      let hyps ← collectConciseProofHyps ctx.tbl proof
+      let content : Array Inline :=
+        match hyps.toList with
+        | [h0] => #[.text "Since "] ++ h0 ++ #[.text ", "] ++ conclInl ++ #[.text "."]
+        | h0 :: h1 :: _ => #[.text "Since "] ++ h0 ++ #[.text " and "] ++ h1 ++ #[.text ", "] ++ conclInl ++ #[.text "."]
+        | [] => #[.text "By definition, "] ++ conclInl ++ #[.text "."]
+      return #[.step s!"mem-{fuel}" content #[] (some goal)]
+    if ctx.lemmaDepth ≥ 1 && exprHasRawPlumbing expected then
+      return #[.routineReceipt s!"routine-{fuel}" "low-level wiring and representation verification" 1 #[] none]
+
   -- 3. Unwrap leading binders (`intro`) transparently into the live `LocalContext`,
   -- avoiding macro-scoped shadow collisions (`x` -> `w'`) and introducing arbitrary variables
-  -- inside subgoal universal quantifiers.
+  -- inside subgoal universal quantifiers without repetitive "Fix any ".
   let chooseBinderName (nm pnm : Name) : MetaM Name := do
     let base :=
       if !pnm.hasMacroScopes && (cleanBinderName? pnm).isSome then pnm
       else if (cleanBinderName? nm).isSome then nm
       else pnm
     freshShadowFreeName base "x"
-  let maybePrefixIntroVar (varTex : String) (nodes : Array ProofNode) : Array ProofNode := Id.run do
+  let joinIntroWithNext (varTex : String) (nodes : Array ProofNode) : Array ProofNode := Id.run do
     if nodes.isEmpty then return nodes
     let allMath := nodes.flatMap collectProofNodeMath
     if !mathDispAppearsIn allMath varTex then return nodes
-    let pre : Array Inline := #[.text "Fix any ", .inlineMath varTex, .text ". "]
     for idx in [:nodes.size] do
       match nodes[idx]! with
       | .step id content ch goal diag orig false defExp sp lh tr im =>
-          return nodes.set! idx (.step id (pre ++ content) ch goal diag orig false defExp sp lh tr im)
+          let newContent : Array Inline :=
+            match content[0]? with
+            | some (Inline.text "For any ") =>
+                #[.text "For any ", .inlineMath varTex, .text ", "] ++ content.extract 1 content.size
+            | some (Inline.text t) =>
+                #[.text "For any ", .inlineMath varTex, .text ", "] ++
+                  content.set! 0 (.text (lowercaseForClause t))
+            | _ =>
+                #[.text "For any ", .inlineMath varTex, .text ", "] ++ content
+          return nodes.set! idx (.step id newContent ch goal diag orig false defExp sp lh tr im)
       | .calcChain id intro steps goal orig =>
-          return nodes.set! idx (.calcChain id (pre ++ intro) steps goal orig)
+          let newIntro : Array Inline :=
+            match intro[0]? with
+            | some (Inline.text "For any ") =>
+                #[.text "For any ", .inlineMath varTex, .text ", "] ++ intro.extract 1 intro.size
+            | some (Inline.text t) =>
+                #[.text "For any ", .inlineMath varTex, .text ", "] ++
+                  intro.set! 0 (.text (lowercaseForClause t))
+            | _ =>
+                #[.text "For any ", .inlineMath varTex, .text ", "] ++ intro
+          return nodes.set! idx (.calcChain id newIntro steps goal orig)
       | _ => pure ()
     return nodes
   let instantiatePendingNotations (baseCtx : DecompCtx) (fv : Expr) : MetaM DecompCtx := do
     let fvs := baseCtx.peeledFVars.push fv
-    let mut tbl := baseCtx.tbl
-    for (nBind, closedPat, sym, _) in baseCtx.pendingNotations do
-      if nBind == fvs.size then
-        let instPat := closedPat.instantiateRev fvs
-        if !instPat.hasLooseBVars && !instPat.hasExprMVar then
-          let patNorm ← normalizeForPresentation instPat
-          tbl := tbl.withExprAlias patNorm sym
+    let tbl ← applyNotationsAtCount baseCtx.tbl fvs baseCtx.pendingNotations fvs.size
     return { baseCtx with tbl, peeledFVars := fvs }
   match expected.consumeMData, proof with
   | .forallE nm dom body bi, .lam pnm _ pbody _ =>
@@ -958,11 +1491,11 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
           pure (!(← isProp dom) && !(← isAmbientTypeclass dom))
         else pure false
       return ← withLocalDecl useName bi dom fun fv => do
-        let nextCtx ← instantiatePendingNotations ctx fv
+        let varTex ← exprToLatex fv ctx.tbl
+        let nextCtx ← instantiatePendingNotations { ctx with tbl := ctx.tbl.withUsedName varTex } fv
         let nodes ← decompileProof nextCtx (body.instantiate1 fv) (pbody.instantiate1 fv) (fuel - 1)
         if needIntro then
-          let varTex ← exprToLatex fv nextCtx.tbl
-          return maybePrefixIntroVar varTex nodes
+          return joinIntroWithNext varTex nodes
         return nodes
   | _, .mdata _ inner =>
       return ← decompileProof ctx expected inner (fuel - 1)
@@ -971,16 +1504,17 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
       let expW ← if expR.consumeMData.isForall then pure expR else whnfD expected.consumeMData
       if let .forallE nm dom body bi := expW.consumeMData then
         let useName ← chooseBinderName nm pnm
+        let expNotForall := !expected.consumeMData.isForall
         let needIntro ←
-          if !ctx.atRootConclusion && bi == .default && body.hasLooseBVar 0 then
+          if (!ctx.atRootConclusion || expNotForall) && bi == .default && body.hasLooseBVar 0 then
             pure (!(← isProp dom) && !(← isAmbientTypeclass dom))
           else pure false
         return ← withLocalDecl useName bi dom fun fv => do
-          let nextCtx ← instantiatePendingNotations ctx fv
+          let varTex ← exprToLatex fv ctx.tbl
+          let nextCtx ← instantiatePendingNotations { ctx with tbl := ctx.tbl.withUsedName varTex } fv
           let nodes ← decompileProof nextCtx (body.instantiate1 fv) (pbody.instantiate1 fv) (fuel - 1)
           if needIntro then
-            let varTex ← exprToLatex fv nextCtx.tbl
-            return maybePrefixIntroVar varTex nodes
+            return joinIntroWithNext varTex nodes
           return nodes
       else pure ()
   | _, .letE nm ty val body _ =>
@@ -991,18 +1525,20 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
         if !exprContainsSorryAx val && (← isVacuousRenderedEq ctx.tbl ty) then
           return ← withLetDecl nm ty val fun fv =>
             decompileProof ctx expected (body.instantiate1 fv) (fuel - 1)
-        -- Local intermediate fact (`have h : P := ...`): choose causal vs. parallel transition!
+        -- Local intermediate fact (`have h : P := ...`): choose causal vs. parallel transition
+        -- without emitting `"To prove the claim,"`.
         let usesPrev := match ctx.lastFactFVar? with
           | some prevId => (Lean.collectFVars {} val).fvarIds.contains prevId
           | none => false
         let factNodes ← decompileProof { ctx with lastFactFVar? := none, factIndex := 0, atRootConclusion := false, isProofStart := false } ty val (fuel - 1)
         let goal ← buildGoalState ctx.tbl ty (ctx.lemmaDepth ≥ 1)
-        let factInl ← renderProposition ctx.tbl ty
+        let factInl := ensureSymbolicPredClause (← renderProposition ctx.tbl ty)
         let opener ← do
           let st ← get
           if usesPrev && !(ctx.isProofStart && ctx.factIndex == 0 && st.stepCounter == 0) then
-            let (op, st') := st.pickOpener .consequence
-            set st'
+            let causalOps := #["Hence,", "Therefore,", "Consequently,", "Thus,"]
+            let op := causalOps[(ctx.factIndex + st.stepCounter) % causalOps.size]!
+            modify (·.markEmitted (some op))
             pure op
           else if ctx.factIndex == 0 then
             modify (·.markEmitted (some "First,"))
@@ -1021,8 +1557,39 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
           decompileProof nextCtx expected (body.instantiate1 fv) (fuel - 1)
         return dedupSiblings (#[headerStep] ++ rest)
       else
-        return ← withLetDecl nm ty val fun fv =>
-          decompileProof ctx expected (body.instantiate1 fv) (fuel - 1)
+        return ← withLetDecl nm ty val fun fv => do
+          let symOpt? :=
+            if !(← isAmbientTypeclass ty) then
+              match cleanBinderName? nm with
+              | some s => some s
+              | none => if !nm.isAnonymous && !nm.hasMacroScopes then some nm.toString else none
+            else none
+          let mut nextTbl := ctx.tbl
+          let mut symTex? : Option String := none
+          if symOpt?.isSome then
+            let rawTex ← exprToLatex fv nextTbl
+            let sTex := pickFreshLocalSymbol nextTbl.usedNames rawTex
+            symTex? := some sTex
+            nextTbl := nextTbl.withUsedName sTex
+            nextTbl := nextTbl.withExprAlias fv sTex
+            nextTbl := nextTbl.withExprAlias val.consumeMData sTex
+            let valNorm ← normalizeForPresentation val
+            nextTbl := nextTbl.withExprAlias valNorm sTex
+          let rest ← decompileProof { ctx with tbl := nextTbl } expected (body.instantiate1 fv) (fuel - 1)
+          match symTex? with
+          | some symTex =>
+              if !exprHasRawPlumbing val && !val.consumeMData.isFVar then
+                let allMath := rest.flatMap collectProofNodeMath
+                if mathDispAppearsIn allMath symTex then
+                  let valTex ← exprToLatex val ctx.tbl
+                  if !valTex.isEmpty && valTex != symTex then
+                    let defStep : ProofNode :=
+                      .step s!"let-{fuel}"
+                        #[.text "Define ", .inlineMath s!"{symTex} := {valTex}", .text "."]
+                        #[] none none none false
+                    return #[defStep] ++ rest
+              return rest
+          | none => return rest
   | _, _ => pure ()
 
   -- 3a. Fold `funext` into natural pointwise prose instead of "By funext, ..."
@@ -1037,14 +1604,14 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
             let bodyExpr := pbody.instantiate1 fv
             let bodyTy ← inferType bodyExpr
             let subNodes ← decompileProof { ctx with lastFactFVar? := none, factIndex := 0, isProofStart := false } bodyTy bodyExpr (fuel - 1)
-            let bodyInl ← renderProposition ctx.tbl bodyTy
+            let bodyInl := ensureSymbolicPredClause (← renderProposition ctx.tbl bodyTy)
             let goal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
             return #[.step s!"funext-{fuel}"
               (#[.text "Evaluating pointwise at ", .inlineMath xTex, .text ", "] ++ bodyInl ++ #[.text "."])
               subNodes (some goal)]
       modify (·.markEmitted)
       let subNodes ← decompilePremiseArgs ctx (fun c e p => decompileProof c e p (fuel - 1)) proof
-      let conclInl ← renderProposition ctx.tbl expected
+      let conclInl := ensureSymbolicPredClause (← renderProposition ctx.tbl expected)
       let goal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
       return #[.step s!"funext-{fuel}"
         (#[.text "By function extensionality, "] ++ conclInl ++ #[.text "."])
@@ -1103,8 +1670,8 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
         let subCtx := { ctx with lastFactFVar? := none, factIndex := 0, atRootConclusion := false, isProofStart := false }
         let pNodes ← decompileProof subCtx pTy pPf (fuel - 1)
         let qNodes ← decompileProof subCtx qTy qPf (fuel - 1)
-        let pInl ← renderProposition ctx.tbl pTy
-        let qInl ← renderProposition ctx.tbl qTy
+        let pInl := ensureSymbolicPredClause (← renderProposition ctx.tbl pTy)
+        let qInl := ensureSymbolicPredClause (← renderProposition ctx.tbl qTy)
         let pGoal ← buildGoalState ctx.tbl pTy (ctx.lemmaDepth ≥ 1)
         let qGoal ← buildGoalState ctx.tbl qTy (ctx.lemmaDepth ≥ 1)
         let pClean ← normalizeForPresentation pTy
@@ -1135,13 +1702,38 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
         let revTy := mkForall `h .default bTy aTy
         let pNodes ← decompileProof subCtx fwdTy mpPf (fuel - 1)
         let qNodes ← decompileProof subCtx revTy mprPf (fuel - 1)
-        let pInl ← renderProposition ctx.tbl aTy
-        let qInl ← renderProposition ctx.tbl bTy
+        let pInl := ensureSymbolicPredClause (← renderProposition ctx.tbl aTy)
+        let qInl := ensureSymbolicPredClause (← renderProposition ctx.tbl bTy)
         let pGoal ← buildGoalState ctx.tbl fwdTy (ctx.lemmaDepth ≥ 1)
         let qGoal ← buildGoalState ctx.tbl revTy (ctx.lemmaDepth ≥ 1)
-        let step1 : ProofNode := .step s!"iffL-{fuel}" (#[.text "For the forward direction, assuming "] ++ pInl ++ #[.text ", we show "] ++ qInl ++ #[.text "."]) pNodes (some pGoal)
-        let step2 : ProofNode := .step s!"iffR-{fuel}" (#[.text "Conversely, assuming "] ++ qInl ++ #[.text ", we show "] ++ pInl ++ #[.text "."]) qNodes (some qGoal)
+        let step1 : ProofNode := .step s!"iffL-{fuel}" (#[.text "Assume first that "] ++ pInl ++ #[.text "; we show "] ++ qInl ++ #[.text "."]) pNodes (some pGoal)
+        let step2 : ProofNode := .step s!"iffR-{fuel}" (#[.text "Conversely, assume "] ++ qInl ++ #[.text "; we show "] ++ pInl ++ #[.text "."]) qNodes (some qGoal)
         return dedupSiblings #[step1, step2]
+
+  -- 3c2. Handle kernel structure projections (`.proj` for `And.left`/`And.right`/`Prod.fst`/`Prod.snd`)
+  -- with `"In particular, ..."` rather than `"By right,"` / `"By left,"`.
+  if let .proj _ _ inner := proof.consumeMData then
+    if !ctx.atRootConclusion && !exprContainsSorryAx proof && (← isVacuousRenderedEq ctx.tbl expected) then
+      return #[]
+    modify (·.markEmitted)
+    if isFalseGoalExpr expected then
+      let goal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
+      return #[.step s!"proj-{fuel}" #[.text "This contradicts the assumed bound."] #[] (some goal)]
+    let conclInl := ensureSymbolicPredClause (← renderProposition ctx.tbl expected)
+    let hasSorry := exprContainsSorryAx proof
+    let goal? ←
+      if ctx.atRootConclusion || hasSorry then
+        some <$> buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
+      else pure none
+    if !hasSorry && (unwrapHypothesisFVar? inner).isSome then
+      return #[.step s!"proj-{fuel}" (#[.text "In particular, "] ++ conclInl ++ #[.text "."]) #[] goal? none none (!ctx.atRootConclusion)]
+    let subNodes ← try
+      let innerTy ← inferType inner
+      if ← isProp innerTy then
+        decompileProof { ctx with lastFactFVar? := none, factIndex := 0, atRootConclusion := false, isProofStart := false } innerTy inner (fuel - 1)
+      else pure #[]
+    catch _ => pure #[]
+    return #[.step s!"proj-{fuel}" (#[.text "In particular, "] ++ conclInl ++ #[.text "."]) subNodes goal? none none (!ctx.atRootConclusion)]
 
   -- 3d. Handle `Exists.intro w h` cleanly ("Taking x := w, …")
   if let .const head _ := proof.getAppFn.consumeMData then
@@ -1171,7 +1763,7 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
           | none => pure none
         let subCtx := { ctx with lastFactFVar? := none, factIndex := 0, atRootConclusion := false, isProofStart := false }
         let subNodes ← decompileProof subCtx bodyTy bodyProof (fuel - 1)
-        let bodyInl ← renderProposition ctx.tbl bodyTy
+        let bodyInl := ensureSymbolicPredClause (← renderProposition ctx.tbl bodyTy)
         let goal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
         let leadInl : Array Inline := match binderTex? with
           | some bTex =>
@@ -1180,25 +1772,33 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
           | none => #[.text "Taking witness ", .inlineMath wTex, .text ", "]
         return #[.step s!"exists-{fuel}" (leadInl ++ bodyInl ++ #[.text "."]) subNodes (some goal)]
 
-  -- 3e. Handle `False.elim` and `absurd` cleanly ("This yields a contradiction.")
+  -- 3e. Handle `False.elim` and `absurd` cleanly (never emit `⊥` in paper prose)
   if let .const head _ := proof.getAppFn.consumeMData then
     if head == ``False.elim || head == ``absurd then
       modify (·.markEmitted)
       let subNodes ← decompilePremiseArgs ctx (fun c e p => decompileProof c e p (fuel - 1)) proof
       let goal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
-      return #[.step s!"contra-{fuel}" #[.text "This yields a contradiction."] subNodes (some goal)]
+      let msg :=
+        if isFalseGoalExpr expected then "This contradicts the assumed bound."
+        else "This yields a contradiction."
+      return #[.step s!"contra-{fuel}" #[.text msg] subNodes (some goal)]
 
   -- 3f. Never emit compiler aux decls (`_simp_1`, `_proof_1`, ...) or structural congruence/cast
   -- combinators (`congr*`, `and_congr*`, `propext`, `Eq.ndrec`, ...) as named mathematical lemmas.
   if let .const head _ := proof.getAppFn.consumeMData then
     if isStructuralCongrOrCast head then
+      if ctx.lemmaDepth ≥ 1 && !exprContainsSorryAx proof && exprHasRawPlumbing expected then
+        return #[.routineReceipt s!"routine-{fuel}" "low-level wiring and representation verification" 1 #[] none]
       let subNodes ← decompilePremiseArgs ctx (fun c e p => decompileProof c e p (fuel - 1)) proof
       if subNodes.isEmpty then
         let rk := if head == `eq_self || head == ``Eq.refl || head == ``rfl then
           RoutineKind.reflexivity.label else RoutineKind.congruenceAndExt.label
         return #[.routineReceipt s!"routine-{fuel}" rk 1 #[] none]
+      else if isFalseGoalExpr expected then
+        return #[.step s!"wrap-congr-{fuel}" #[.text "This contradicts the assumed bound."]
+          subNodes none none none true false]
       else
-        let conclInl ← renderProposition ctx.tbl expected
+        let conclInl := ensureSymbolicPredClause (← renderProposition ctx.tbl expected)
         let verb := if isCompilerAuxDecl head then "By simplification, " else "By substitution of equals, "
         return #[.step s!"wrap-congr-{fuel}"
           (#[.text verb] ++ conclInl ++ #[.text "."])
@@ -1207,9 +1807,6 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
   -- 4. Detect `calc` / `cc_calc` chains (`Trans.trans` / `Eq.trans` / `LE.le.trans` / `le_trans` / `SubstitutesWithin`)
   let chain ← flattenCalcChain proof expected
   if chain.size ≥ 2 then
-    let st ← get
-    let (opener, st') := st.pickOpener .elaboration
-    set st'
     let mut calcSteps : Array (CalcStep × Array ProofNode) := #[]
     let mut survivingChain : Array (Expr × Expr) := #[]
     let mut allParsed := true
@@ -1222,8 +1819,14 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
             continue
           survivingChain := survivingChain.push (sp, stProp)
           let subCtx := { ctx with lastFactFVar? := none, factIndex := 0, atRootConclusion := false, isProofStart := false }
-          let subNodes ← decompileProof subCtx stProp sp (fuel - 1)
           let spUnwrapped := unwrapCastProof sp
+          let isTrivCalcSubproof := !exprContainsSorryAx sp &&
+            (spUnwrapped.consumeMData.isFVar ||
+             spUnwrapped.getAppFn.consumeMData.isConstOf ``Eq.refl ||
+             spUnwrapped.getAppFn.consumeMData.isConstOf ``rfl)
+          let subNodes ←
+            if isTrivCalcSubproof then pure #[]
+            else decompileProof subCtx stProp sp (fuel - 1)
           let isNonAlgebraicRel :=
             rel.startsWith "\\simeq" || rel.startsWith "\\approx" ||
             rel.startsWith "\\preceq" || rel.startsWith "\\xrightarrow"
@@ -1233,20 +1836,22 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
             | .const cn _ =>
                 if cn == ``dite || cn == ``ite || cn == ``Decidable.byCases || cn == `Classical.byCases then
                   pure #[.text "by case analysis"]
+                else if cn == ``Eq.refl || cn == ``rfl || cn == ``funext || cn == `Function.funext || cn == ``propext then
+                  pure #[.text "by definition"]
                 else if isCoreOrMathlibIn env cn then
                   if isNonAlgebraicRel then pure #[.text "by the checked subargument"]
-                  else pure #[.text "by elementary algebra"]
+                  else if rel == "=" then pure #[.text "by calculation"]
+                  else pure #[.text "by algebra"]
                 else
-                  pure #[.text s!"by {humanLemmaLabel env cn}"]
+                  pure #[.text (formatCalcReasonText (humanLemmaLabel env cn))]
             | .fvar _ => pure #[.text "by assumption"]
-            | _ => pure #[.text "by the checked subargument"]
-          let diagHtml ← if ctx.lemmaDepth ≤ 1 then (← diagramHookRef.get) ctx.tbl stProp else pure none
+            | _ => pure #[.text "by definition"]
           let cs : CalcStep := {
             lhsLatex := lhsTex
             relationLatex := rel
             rhsLatex := rhsTex
             reason
-            diagramHtml? := diagHtml
+            diagramHtml? := none
           }
           calcSteps := calcSteps.push (cs, subNodes)
       | none => allParsed := false
@@ -1258,7 +1863,15 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
         return #[.routineReceipt s!"routine-{fuel}" RoutineKind.reflexivity.label 1 #[] none]
       else if !calcSteps.isEmpty then
         let goal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
-        let intro : Array Inline := #[.text s!"{opener} chaining the intermediate steps yields"]
+        let allEq := calcSteps.all fun (cs, _) => cs.relationLatex == "="
+        let eqIntros := #["We compute:", "Direct calculation gives:", "We obtain:"]
+        let boundIntros := #["By the triangle inequality:", "Chaining the bounds gives:", "We obtain:"]
+        let st ← get
+        let introStr :=
+          if allEq then eqIntros[st.stepCounter % eqIntros.size]!
+          else boundIntros[st.stepCounter % boundIntros.size]!
+        modify (·.markEmitted (some introStr))
+        let intro : Array Inline := #[.text introStr]
         return #[.calcChain s!"calc-{fuel}" intro calcSteps (some goal)]
 
   -- 5. Direct hypothesis (`assumption`) or application headed by a local hypothesis `.fvar id`
@@ -1266,6 +1879,9 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
     if !ctx.atRootConclusion && !exprContainsSorryAx proof && (← isVacuousRenderedEq ctx.tbl expected) then
       return #[]
     modify (·.markEmitted)
+    if isFalseGoalExpr expected then
+      let goal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
+      return #[.step s!"hyp-{fuel}-{id.name}" #[.text "This contradicts the assumed bound."] #[] (some goal)]
     return #[← renderHypothesisStep ctx.tbl expected id s!"hyp-{fuel}-{id.name}"
       (isWrap := false) (onlyUsed := (ctx.lemmaDepth ≥ 1))]
 
@@ -1278,46 +1894,21 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
     let subNodes ← decompilePremiseArgs ctx (fun c e p => decompileProof c e p (fuel - 1)) proof
     let hypInl ← renderProposition ctx.tbl decl.type
     let hypLen := (inlinesCanonicalKey hypInl).length
-    let conclInl ← renderProposition ctx.tbl expected
+    let conclInl := ensureSymbolicPredClause (← renderProposition ctx.tbl expected)
     let lead : Array Inline :=
       if hypLen > 0 && hypLen ≤ 60 then
         #[.text "By the assumption that "] ++ hypInl ++ #[.text ", "]
       else
         #[.text "By the assumed hypothesis, "]
     let conclPhrase : Array Inline :=
-      if expected.consumeMData.isConstOf ``False then #[.text "this yields a contradiction."]
+      if isFalseGoalExpr expected then #[.text "this contradicts the assumed bound."]
       else conclInl ++ #[.text "."]
     return #[.step s!"hypapp-{fuel}-{id.name}" (lead ++ conclPhrase) subNodes (some goal)]
 
-  -- 6. Application of a named theorem/lemma (with beta-instantiated cross-lemma recursion & wrapper detection!)
+  -- 6. Application of a named theorem/lemma (with beta-instantiated cross-lemma recursion & opacity walls!)
   if let .const declName levels := proof.getAppFn.consumeMData then
     let st ← get
-    let (opener, st') := st.pickOpener .justification
-    set st'
-    let premiseNodes ← decompilePremiseArgs ctx (fun c e p => decompileProof c e p (fuel - 1)) proof
-    let mut expandedBody : Array ProofNode := #[]
-    let mut isWrap := false
-    if shouldExpandLemma env ctx declName then
-      if let some (.thmInfo info) := env.find? declName then
-        if let some (instTy, instVal) ← betaInstantiateTheorem info levels proof.getAppArgs then
-          isWrap := isTrivialWrapperBody env declName instVal
-          let childCtx : DecompCtx := {
-            ctx with
-            seenDecls := ctx.seenDecls.insert declName
-            lemmaDepth := ctx.lemmaDepth + 1
-            lastFactFVar? := none
-            factIndex := 0
-            atRootConclusion := false
-            isProofStart := false
-          }
-          expandedBody ← decompileProof childCtx instTy instVal (fuel - 1)
-    let ov := getOverlay env declName
-    let mut allChildren : Array ProofNode := #[]
-    if let some fb := ov.flowBefore? then
-      allChildren := allChildren.push (.flowNote s!"flow-pre-{declName}" fb "margin")
-    allChildren := allChildren ++ dedupSiblings (premiseNodes ++ expandedBody)
-    if let some fa := ov.flowAfter? then
-      allChildren := allChildren.push (.flowNote s!"flow-post-{declName}" fa "margin")
+    modify (·.markEmitted)
     let hasSorry := exprContainsSorryAx proof
     let isCore := isCoreOrMathlibIn env declName
     let isOrderMono :=
@@ -1326,6 +1917,57 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
       declName == `le_add_of_nonneg_left || declName == `le_add_of_nonneg_right ||
       declName == `sub_le_sub || declName == `sub_le_sub_left ||
       declName == `div_le_div_of_nonneg_left || declName == `add_pos'
+    let isCaseSplit := declName == ``Or.elim || declName == ``Or.casesOn ||
+      declName == ``Bool.rec || declName == ``Option.rec || declName == ``Sum.rec || declName == ``Or.rec ||
+      declName == ``dite || declName == ``ite || declName == ``Decidable.byCases ||
+      declName == `Classical.byCases || declName == ``Decidable.casesOn
+    let isProj := declName == ``And.left || declName == ``And.right ||
+      declName == ``Prod.fst || declName == ``Prod.snd ||
+      declName == ``PProd.fst || declName == ``PProd.snd
+    let isDisjInj := declName == ``Or.inl || declName == ``Or.inr ||
+      declName == ``Sum.inl || declName == ``Sum.inr
+    let isCasesDestruct := !isCaseSplit && !isProj && !isDisjInj &&
+      (declName.toString.endsWith ".casesOn" || declName == ``Exists.elim)
+    let isInductionRec :=
+      !isCaseSplit && !isCasesDestruct && !declName.toString.startsWith "Eq." &&
+      (declName == ``Nat.rec || declName == `Nat.recAux || declName == ``Nat.recOn ||
+       declName == ``List.rec || declName == ``List.recOn ||
+       declName.toString.endsWith ".rec" || declName.toString.endsWith ".recOn" ||
+       declName.toString.endsWith ".recAux")
+    let isExt := !isCore && (declName.toString.endsWith ".ext" || declName == ``Subtype.ext)
+    if !hasSorry && !isProj && !isDisjInj && !isCaseSplit && !isInductionRec && !isCasesDestruct then
+      if isAstPlumbingHead declName || (ctx.lemmaDepth ≥ 1 && exprHasRawPlumbing expected) then
+        return #[.routineReceipt s!"routine-{fuel}" "low-level wiring and representation verification" 1 #[] none]
+    let premiseNodes ←
+      if isProj && !hasSorry then pure #[]
+      else decompilePremiseArgs ctx (fun c e p => decompileProof c e p (fuel - 1)) proof
+    let ov := getOverlay env declName
+    let mut expandedBody : Array ProofNode := #[]
+    let mut isWrap := false
+    if shouldExpandLemma env ctx declName then
+      if let some (.thmInfo info) := env.find? declName then
+        if let some (instTy, instVal) ← betaInstantiateTheorem info levels proof.getAppArgs then
+          isWrap := isTrivialWrapperBody env declName instVal
+          let childTbl ← applyNotationsAtCount ctx.tbl #[] ov.theoremNotations 0
+          let childCtx : DecompCtx := {
+            ctx with
+            tbl := childTbl
+            seenDecls := ctx.seenDecls.insert declName
+            lemmaDepth := ctx.lemmaDepth + 1
+            lastFactFVar? := none
+            factIndex := 0
+            atRootConclusion := false
+            isProofStart := false
+            peeledFVars := #[]
+            pendingNotations := ov.theoremNotations
+          }
+          expandedBody ← decompileProof childCtx instTy instVal (fuel - 1)
+    let mut allChildren : Array ProofNode := #[]
+    if let some fb := ov.flowBefore? then
+      allChildren := allChildren.push (.flowNote s!"flow-pre-{declName}" fb "margin")
+    allChildren := allChildren ++ dedupSiblings (premiseNodes ++ expandedBody)
+    if let some fa := ov.flowAfter? then
+      allChildren := allChildren.push (.flowNote s!"flow-post-{declName}" fa "margin")
     let sName := shortConstName declName
     let isNonnegHelper :=
       !effectiveIsProofJoint env declName && !ctx.docDecls.contains declName &&
@@ -1337,21 +1979,7 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
     if !hasSorry && (((isCore && isOrderMono) && allChildren.isEmpty) || (isNonnegHelper && onlyRoutine)) then
       return #[.routineReceipt s!"routine-{fuel}" RoutineKind.algebraAndOrder.label 1 #[] none]
     let label := humanLemmaLabel env declName
-    let isCaseSplit := declName == ``Or.elim || declName == ``Or.casesOn ||
-      declName == ``Bool.rec || declName == ``Option.rec || declName == ``Sum.rec || declName == ``Or.rec ||
-      declName == ``dite || declName == ``ite || declName == ``Decidable.byCases ||
-      declName == `Classical.byCases || declName == ``Decidable.casesOn
-    let isDisjInj := declName == ``Or.inl || declName == ``Or.inr
-    let isCasesDestruct := !isCaseSplit &&
-      (declName.toString.endsWith ".casesOn" || declName == ``Exists.elim)
-    let isInductionRec :=
-      !isCaseSplit && !isCasesDestruct && !declName.toString.startsWith "Eq." &&
-      (declName == ``Nat.rec || declName == `Nat.recAux || declName == ``Nat.recOn ||
-       declName == ``List.rec || declName == ``List.recOn ||
-       declName.toString.endsWith ".rec" || declName.toString.endsWith ".recOn" ||
-       declName.toString.endsWith ".recAux")
-    let isExt := !isCore && (declName.toString.endsWith ".ext" || declName == ``Subtype.ext)
-    if isOrderMono || isDisjInj || isCasesDestruct then
+    if isOrderMono || isDisjInj || isCasesDestruct || (isProj && !ctx.atRootConclusion) then
       isWrap := true
     let goal? ←
       if isWrap && !hasSorry then pure none
@@ -1360,46 +1988,81 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
        !allChildren.any (fun n => n.collectAllText.any (fun t => (t.splitOn "[UNPROVED: sorry]").length > 1)) then
       let sorryGoal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
       allChildren := allChildren.push (.step s!"sorry-child-{fuel}" #[.text "[UNPROVED: sorry]"] #[] (some sorryGoal))
-    let diagHtml ← if ctx.lemmaDepth ≤ 1 then (← diagramHookRef.get) ctx.tbl expected else pure none
-    -- Avoid the "restatement reflex": at the root conclusion, never re-quote the whole theorem!
     let hasVisibleNonWrap := allChildren.any fun
       | .step _ _ _ _ _ _ w _ _ _ _ _ => !w
       | _ => true
-    let conclInl ← renderProposition ctx.tbl expected
-    let citeInline : Inline :=
-      let isCitableThm :=
-        !isCore && !Lean.isPrivateName declName &&
-        (ctx.docDecls.contains declName || ov.title?.isSome || effectiveIsProofJoint env declName) &&
-        (match env.find? declName with | some (.thmInfo _) => true | _ => false)
-      if isCitableThm then .symbol declName.toString label false
-      else .emph label
+    let rawConclInl ← renderProposition ctx.tbl expected
+    let conclInl := ensureSymbolicPredClause rawConclInl
+    let addedHoldVerb := conclInl.size > rawConclInl.size
+    let isCitableThm :=
+      !isCore && !Lean.isPrivateName declName &&
+      (ctx.docDecls.contains declName || ov.title?.isSome || effectiveIsProofJoint env declName) &&
+      (match env.find? declName with | some (.thmInfo _) => true | _ => false)
+    let mkCite (lbl : String) : Inline :=
+      if isCitableThm then .symbol declName.toString lbl false
+      else .emph lbl
+    let capLabel := capitalizeFirst label.trimAscii.toString
     let content : Array Inline ←
-      if isCaseSplit then
-        pure (#[.text "Proceeding by case analysis, "] ++ conclInl ++ #[.text "."])
+      if isFalseGoalExpr expected then
+        pure #[.text "This contradicts the assumed bound."]
+      else if isProj then
+        pure (#[.text "In particular, "] ++ conclInl ++ #[.text "."])
+      else if isCaseSplit then
+        pure (#[.text "By case analysis, "] ++ conclInl ++ #[.text "."])
       else if isInductionRec then
-        pure (#[.text "Proceeding by structural induction, "] ++ conclInl ++ #[.text "."])
+        pure (#[.text "By induction, "] ++ conclInl ++ #[.text "."])
       else if isDisjInj then
-        pure (#[.text "By the corresponding alternative, "] ++ conclInl ++ #[.text "."])
+        pure (#[.text "Hence, "] ++ conclInl ++ #[.text "."])
       else if isCasesDestruct then
-        pure (#[.text "Unpacking the hypothesis yields "] ++ conclInl ++ #[.text "."])
+        pure (#[.text "From the hypothesis, "] ++ conclInl ++ #[.text "."])
       else if isOrderMono then
         pure (#[.text "By monotonicity, "] ++ conclInl ++ #[.text "."])
       else if isExt || declName == ``Subtype.ext then
         pure (#[.text "By extensionality, "] ++ conclInl ++ #[.text "."])
       else if ctx.atRootConclusion then
         if isCore then
-          pure #[.text s!"The claim follows directly by {label}."]
+          if startsWithPreposition label then
+            pure #[.text s!"{capLabel}, the claim holds."]
+          else if containsFiniteVerb label then
+            let endPhrase := if endsWithTransitiveVerb label then " the claim." else "."
+            pure #[.text s!"{capLabel}{endPhrase}"]
+          else
+            pure #[.text s!"The claim follows from {label}."]
         else if !hasVisibleNonWrap then
-          pure #[.text "The claim follows from ", citeInline, .text "."]
+          pure #[.text "This follows from ", mkCite label, .text "."]
         else
-          pure #[.text "Applying ", citeInline, .text " to the checked premises establishes the claim."]
-      else
+          pure #[.text "By ", mkCite label, .text ", the claim holds."]
+      else if startsWithPreposition label then
         if isCore then
-          pure (#[.text s!"{opener} {label}, "] ++ conclInl ++ #[.text "."])
+          pure (#[.text s!"{capLabel}, "] ++ conclInl ++ #[.text "."])
         else
-          pure (#[.text s!"{opener} ", citeInline, .text ", "] ++ conclInl ++ #[.text "."])
+          pure (#[mkCite capLabel, .text ", "] ++ conclInl ++ #[.text "."])
+      else if isGerundOpener label then
+        let link :=
+          if addedHoldVerb then " shows that "
+          else match (conclInl[0]? : Option Inline) with
+            | some (.inlineMath _) | some (.symbol _ _ true) => " gives "
+            | _ => " shows that "
+        if isCore then
+          pure (#[.text s!"{capLabel}{link}"] ++ conclInl ++ #[.text "."])
+        else
+          pure (#[mkCite capLabel, .text link] ++ conclInl ++ #[.text "."])
+      else if containsFiniteVerb label then
+        let sep :=
+          if endsWithTransitiveVerb label then (if addedHoldVerb then " that " else " ")
+          else ", so "
+        if isCore then
+          pure (#[.text s!"{capLabel}{sep}"] ++ conclInl ++ #[.text "."])
+        else
+          pure (#[mkCite capLabel, .text sep] ++ conclInl ++ #[.text "."])
+      else
+        let prep := if st.stepCounter % 2 == 0 then "By " else "From "
+        if isCore then
+          pure (#[.text s!"{prep}{label}, "] ++ conclInl ++ #[.text "."])
+        else
+          pure (#[.text prep, mkCite label, .text ", "] ++ conclInl ++ #[.text "."])
     return #[.step s!"app-{declName}-{fuel}" content allChildren goal?
-      diagHtml (some declName.toString) isWrap]
+      none (some declName.toString) isWrap]
 
   -- 7. Fallback: checked goal statement (flagging any unexpanded `sorryAx`)
   if exprContainsSorryAx proof then
@@ -1408,8 +2071,12 @@ partial def decompileProof (ctx : DecompCtx) (expected proof : Expr)
   if !ctx.atRootConclusion && (← isVacuousRenderedEq ctx.tbl expected) then
     return #[]
   let goal ← buildGoalState ctx.tbl expected (ctx.lemmaDepth ≥ 1)
-  let conclInl ← renderProposition ctx.tbl expected
-  return #[.step s!"step-{fuel}" (#[.text "We obtain "] ++ conclInl ++ #[.text "."]) #[] (some goal)]
+  if isFalseGoalExpr expected then
+    return #[.step s!"step-{fuel}" #[.text "This contradicts the assumed bound."] #[] (some goal)]
+  let rawConclInl ← renderProposition ctx.tbl expected
+  let conclInl := ensureSymbolicPredClause rawConclInl
+  let lead := if conclInl.size > rawConclInl.size then "We obtain that " else "We obtain "
+  return #[.step s!"step-{fuel}" (#[.text lead] ++ conclInl ++ #[.text "."]) #[] (some goal)]
 
 /-- Collect the exact axiom footprint of a declaration (`propext`, `Classical.choice`,
 `Quot.sound`, flagging any `sorryAx`). -/
@@ -1471,7 +2138,17 @@ def informalizeDeclarationWithContext (declName : Name) (config : Config := {})
   let some info := env.find? declName
     | throwError "informalize: declaration `{declName}` not found in environment"
   let ov := getOverlay env declName
-  let tbl := buildSymbolTable env declName
+  let tbl0 := buildSymbolTable env declName
+  let tbl1 ← applyNotationsAtCount tbl0 #[] ov.theoremNotations 0
+  let tbl ← forallTelescope info.type fun fvars _ => do
+    let mut t := tbl1
+    for fv in fvars do
+      let decl ← fv.fvarId!.getDecl
+      if !(← isSuppressedLocalDecl decl) && !(← isProp decl.type) then
+        let sym ← exprToLatex fv t
+        t := t.withUsedName sym
+        t := t.withUsedName (cleanBinderName decl.userName)
+    return t
   let proofBody? : Option Expr :=
     match info with
     | .thmInfo tinfo => some tinfo.value
@@ -1503,7 +2180,7 @@ def informalizeDeclarationWithContext (declName : Name) (config : Config := {})
     }
     let (nodes, _) ← (decompileProof ctx info.type tinfo.value config.maxTermFuel).run {}
     proofNodes := ((dedupSiblings (proofNodes ++ nodes)).map collapseTautologicalSingleChild).map
-      (capDiagramHtmlDepth 1 diagHtml 0)
+      (capDiagramHtmlDepth 0 none 0)
   let extraProofNotations ← extraNotationInspectorsRef.get
   extraNotationInspectorsRef.set #[]
   if let some fa := ov.flowAfter? then

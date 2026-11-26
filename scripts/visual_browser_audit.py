@@ -269,11 +269,40 @@ AUDIT_JS = r"""
     }
   }
 
-  // 2. Collect rendered visible prose text (excluding hidden Lean disclosures, inspector drawers, buttons)
+  // 2. Collect rendered visible prose text (excluding hidden Lean disclosures, inspector drawers, buttons, KaTeX MathML)
   const mainEl = document.querySelector('.cadmo-main') || document.body;
   const clone = mainEl.cloneNode(true);
-  clone.querySelectorAll('.cc-source, .cc-inspector-body, .cadmo-diagram, .cadmo-axiom-link, .cadmo-goal-btn, .cadmo-toggle, .cadmo-origin-tag, script, style').forEach(el => el.remove());
-  const proseText = (clone.textContent || '').replace(/[ \t]+/g, ' ');
+  clone.querySelectorAll(
+    '.cc-source, .cc-inspector-body, .cadmo-diagram, .cadmo-axiom-link, .cadmo-goal-btn, ' +
+    '.cadmo-toggle, .cadmo-inline-toggle, .cadmo-origin-tag, .cadmo-wrapper-tag, .cadmo-trust-badge, ' +
+    '.katex-mathml, script, style'
+  ).forEach(el => el.remove());
+
+  function extractVisibleText(root) {
+    const BLOCK = new Set(['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'TR', 'SECTION', 'ARTICLE', 'HEADER', 'FIGCAPTION', 'BR', 'PRE']);
+    const CELL = new Set(['TD', 'TH']);
+    let out = '';
+    const walk = (n) => {
+      if (!n) return;
+      if (n.nodeType === 3) { out += n.nodeValue || ''; return; }
+      if (n.nodeType !== 1) return;
+      const tag = n.tagName;
+      if (BLOCK.has(tag) && out.length > 0 && !out.endsWith('\n')) out += '\n';
+      for (const c of n.childNodes) walk(c);
+      if (BLOCK.has(tag) && out.length > 0 && !out.endsWith('\n')) out += '\n';
+      else if (
+        (CELL.has(tag) || (n.classList && (n.classList.contains('cadmo-section-num') || n.classList.contains('cadmo-entry-kind')))) &&
+        out.length > 0 && !/[ \t\n]$/.test(out)
+      ) {
+        out += ' ';
+      }
+    };
+    walk(root);
+    return out.replace(/[ \t]+/g, ' ');
+  }
+
+  const proseText = extractVisibleText(clone);
+  const proseWords = proseText.trim().split(/\s+/).filter(Boolean).length;
 
   const prosePatterns = [
     ['missing-space-Then', /\bThen(?=[A-Z|0-9ΔΣΠ\[])/g],
@@ -289,44 +318,119 @@ AUDIT_JS = r"""
     ['raw-DDE-kernelMass', /\b(?:kernelMass|revealMass|kernelLaw|isProbDist|QueryBounded|inputDomain)\b/g],
     ['tautological-eq', /\b([A-Za-z][A-Za-z0-9_]{1,12})\s*=\s*\1(?![A-Za-z0-9_'])/g],
     ['literal-dollar-math', /\$[A-Za-z0-9_\\]+\$/g],
-    ['offline-tex-leak', /\b(?:leftarrow|rightarrow|hat[a-z]|tilde[a-z]|mathtt[A-Za-z0-9]|mathbin|begincases|endcases)\b/g],
+    ['offline-tex-leak', /\b(?:leftarrow|rightarrow|xleftarrow|xrightarrow|triangleright|triangleleft|bigsqcup|sqcup|perp|hat[a-z]|tilde[a-z]|mathtt[A-Za-z0-9]|mathbin|begincases|endcases)\b/g],
+    ['unrendered-bullet', /(?:[,(\[{=∥⊗⊕]\s*bullet\b|\bbullet\s*[,)\]}\]=∥⊗⊕]|(?<!\ba\s)(?<!\bthe\s)\bbullet\b(?!\s+(?:point|points|list|lists|item|items)))/g],
+    ['raw-markdown-bold', /\*\*[^*\n]{2,}\*\*/g],
+    ['raw-markdown-italic', /(?<!\w)\*[A-Za-z][^*\n]*?[^\s*\n]\*(?!\w)/g],
+    ['raw-latex-dash', /[A-Za-z0-9]--[A-Za-z0-9]/g],
+    ['reflection-auto-gloss', /Function returning |Mathematical structure with |Defined as a specification of|instFintypeClass/g],
+    ['raw-lean-ast-leak', /match_1|\binl\(|\binr\(|\bofPDS\b|\bIsDDCFrom\b|associator\.|getElem!|withPublicPort|sequenceAt|\bBy right,|\bBy left,|\bApplying right,|\bFrom right,|\bApplying by contradiction\b|\bBy by contradiction\b|\bBy of [a-z]/g],
+    ['unrendered-underline', /\b[A-Za-z0-9]+underline[A-Za-z0-9]*\b|\\underline\b/g],
+    ['literal-latex-tilde-ref', /\b(?:Theorem|Lemma|Proposition|Corollary|Distinguisher|Section|Table|Definition|Construction|Claim|Figure|Appendix|Remark|Example|Algorithm|Hybrid|Reduction|Chapter|Part)~\w|\b(?:Eq|Fig|Prop|Thm|Def|Cor|Lem|Sec)\.~[\w(]/g],
+    ['raw-negated-membership', /¬\s*\((?:[^()\n]|\([^()\n]*\))*∈/g],
+    ['banned-synthetic-cnl', /Base single-call|per-port query budget|nonnegative real|sponge parameter tuple|input-length limit specification|length assignment|for every ordered pair|candidate generator|In other words,|To prove the claim,|This holds by the assumed hypothesis\.|Applying multiplying|By unique preimage gives|Wave 1 —|Wave 2 —/gi],
+    ['banned-synthetic-cnl', /PTXTCCA/g],
+    ['missing-space-after-punct', /\.[A-Z]/g],
   ];
 
-  const proseIssues = [];
+  const proseIssueMap = new Map();
+  function addProseIssue(rule, sample) {
+    if (!proseIssueMap.has(rule)) proseIssueMap.set(rule, { rule, count: 0, samples: [] });
+    const entry = proseIssueMap.get(rule);
+    entry.count += 1;
+    if (entry.samples.length < 5) entry.samples.push(sample);
+  }
+
   for (const [name, re] of prosePatterns) {
-    const matches = [];
     let m;
-    while ((m = re.exec(proseText)) !== null && matches.length < 5) {
+    while ((m = re.exec(proseText)) !== null) {
       if (name === 'tautological-eq') {
         const sym = m[1];
         if (['n', 'm', 'k', 'q', 'r', 'c', 'x', 'y', 'z', 'i', 'j', 'b', 'p', 't', 's', 'a', 'd'].includes(sym)) continue;
       }
+      if (name === 'missing-space-after-punct') {
+        const before = proseText.slice(Math.max(0, m.index - 8), m.index + 1);
+        const around = proseText.slice(Math.max(0, m.index - 6), Math.min(proseText.length, m.index + 10));
+        if (/(?:^|[^A-Za-z])(?:e\.g\.|i\.e\.|U\.S\.|Ph\.D\.|A\.M\.|P\.M\.)$/i.test(before)) continue;
+        if (/^(?:U\.S\.|Ph\.D\.|e\.g\.|i\.e\.)/i.test(around.slice(Math.max(0, around.indexOf('.') - 1)))) continue;
+        if (/\.(?:PDF|HTML|JSON|PNG|SVG|MD|TXT|LEAN)\b/i.test(proseText.slice(m.index, m.index + 8))) continue;
+      }
       const start = Math.max(0, m.index - 25);
       const end = Math.min(proseText.length, m.index + m[0].length + 35);
-      matches.push(proseText.slice(start, end).replace(/\s+/g, ' ').trim());
+      addProseIssue(name, proseText.slice(start, end).replace(/\s+/g, ' ').trim());
     }
-    if (matches.length > 0) {
-      proseIssues.push({ rule: name, count: matches.length, samples: matches });
+  }
+
+  // Flag standalone Lean falsum `⊥` while allowing legitimate crypto decryption rejection (`returns ⊥`, `outputs ⊥`, `= ⊥`, `↦ ⊥`, `⊥)`, `{⊥}`)
+  const botRe = /⊥/g;
+  let bm;
+  while ((bm = botRe.exec(proseText)) !== null) {
+    const before = proseText.slice(Math.max(0, bm.index - 24), bm.index);
+    const after = proseText.slice(bm.index + 1, Math.min(proseText.length, bm.index + 12));
+    const isCryptoRejection =
+      /(?:returns?|returned|outputs?|outputted|rejects\s+with)\s*$/i.test(before) ||
+      /(?:=|≠|≡|↦)\s*$/.test(before) ||
+      (!/:\s*$/.test(before) && /^\s*\)/.test(after)) ||
+      (/\{\s*$/.test(before) && /^\s*\}/.test(after));
+    if (!isCryptoRejection) {
+      const start = Math.max(0, bm.index - 25);
+      const end = Math.min(proseText.length, bm.index + 35);
+      addProseIssue('raw-lean-ast-leak', proseText.slice(start, end).replace(/\s+/g, ' ').trim());
+    }
+  }
+
+  // Check for any unrendered `underline` inside math elements (catches `\underline{x}` / `underline x` as well as `Dunderlined`)
+  for (const mathEl of document.querySelectorAll('.cadmo-math, .cadmo-display-math')) {
+    const mt = (mathEl.innerText || mathEl.textContent || '');
+    if (/\bunderline/i.test(mt) && !/[A-Za-z0-9]+underline/.test(mt)) {
+      addProseIssue('unrendered-underline', mt.replace(/\s+/g, ' ').trim().slice(0, 90));
+    }
+  }
+
+  // Check banned per-theorem parameter tables (header cell "Parameter" or "Symbol"; analytical tables allowed)
+  for (const tbl of document.querySelectorAll('table.cadmo-prelude-table')) {
+    const firstCell = tbl.querySelector('thead th, thead td, tr:first-child th, tr:first-child td');
+    const hdr = (firstCell ? (firstCell.innerText || firstCell.textContent || '') : '').replace(/\s+/g, ' ').trim();
+    if (/^(?:Parameter|Symbol)$/i.test(hdr)) {
+      const prelude = tbl.closest('.cadmo-prelude');
+      const pLabel = prelude ? (prelude.querySelector('.cadmo-prelude-heading')?.innerText || '').trim() : '';
+      addProseIssue('banned-param-table', `${pLabel || 'table'} (first header: ${hdr})`);
     }
   }
 
   // Also check `by reflexivity` attached to ≈ (two different systems)
-  const calcReflIssues = [];
-  for (const row of document.querySelectorAll('.cadmo-calc-row, tr')) {
+  for (const row of document.querySelectorAll('.cadmo-calc-row, .cadmo-calc-step-row, tr')) {
     const t = (row.innerText || '').replace(/\s+/g, ' ').trim();
-    if (t.includes('by reflexivity') && t.includes('≈')) {
-      calcReflIssues.push(t.slice(0, 110));
+    if (t.includes('by reflexivity') && (t.includes('≈') || t.includes('≃'))) {
+      addProseIssue('misleading-by-reflexivity-on-approx', t.slice(0, 110));
     }
   }
-  if (calcReflIssues.length > 0) {
-    proseIssues.push({ rule: 'misleading-by-reflexivity-on-approx', count: calcReflIssues.length, samples: calcReflIssues.slice(0, 3) });
+
+  // Check duplicate SECTION CONTEXT. immediately preceding Setting. in the same section
+  for (const secHead of document.querySelectorAll('.cadmo-section-head')) {
+    const ctx = secHead.querySelector('.cadmo-section-context');
+    if (!ctx) continue;
+    let cur = secHead.nextElementSibling;
+    while (cur && !cur.classList.contains('cadmo-section-head')) {
+      const hasSetting = (cur.matches && (cur.matches('.cadmo-prelude-setting') || cur.matches('.cadmo-ambient'))) ||
+        (cur.querySelector && (cur.querySelector('.cadmo-prelude-setting') || cur.querySelector('.cadmo-ambient')));
+      if (hasSetting) {
+        const headingTxt = (secHead.querySelector('.cadmo-section-title')?.innerText || '').trim().slice(0, 60);
+        addProseIssue('duplicate-section-context-and-setting', `${headingTxt}: SECTION CONTEXT. precedes Setting.`);
+        break;
+      }
+      cur = cur.nextElementSibling;
+    }
   }
+
+  const proseIssues = Array.from(proseIssueMap.values());
 
   return {
     docOverflow,
     katexErrors,
     totalDiagrams: diagrams.length,
     visibleDiagrams: visibleDiagCount,
+    proseWords,
     diagramIssues,
     proseIssues,
   };
@@ -432,36 +536,76 @@ def audit_pages(
             }
 
             # State 1: collapsed
-            page_report["states"]["collapsed"] = client.eval_js(AUDIT_JS)
+            st_collapsed = client.eval_js(AUDIT_JS)
+            if st_collapsed["visibleDiagrams"] > 0:
+                st_collapsed["diagramIssues"].append({
+                    "index": -1,
+                    "entry": "diagrams-default-collapsed",
+                    "size": "n/a",
+                    "maxChildW": 0,
+                    "leftClip": 0,
+                    "rightClip": 0,
+                    "overlaps": [],
+                    "tall": False,
+                    "rawAsciiBlock": None,
+                    "message": f"Expected 0 visible diagrams in collapsed state, found {st_collapsed['visibleDiagrams']}/{st_collapsed['totalDiagrams']}",
+                })
+            page_report["states"]["collapsed"] = st_collapsed
             if screenshots_dir:
                 shot = client.call("Page.captureScreenshot", {"format": "png"})
                 (screenshots_dir / f"{slug}_collapsed.png").write_bytes(base64.b64decode(shot["data"]))
 
-            # State 2: partial expand (click first 4 ⊕ toggles + open first inner diagram)
+            # State 2: partial expand (click first 4 ⊕ toggles + open first inner/entry diagram)
             client.eval_js("""
             (() => {
               const btns = Array.from(document.querySelectorAll('.cadmo-inline-toggle[aria-expanded="false"], .cadmo-toggle[aria-expanded="false"]')).slice(0, 4);
               btns.forEach(b => b.click());
-              const firstInnerDiag = document.querySelector('details.cadmo-step-diagram, details.cadmo-calc-diagram');
-              if (firstInnerDiag) firstInnerDiag.open = true;
+              const firstDiag = document.querySelector('details.cadmo-step-diagram, details.cadmo-calc-diagram, details.cadmo-entry-diagram, details.cadmo-diagram');
+              if (firstDiag) {
+                firstDiag.open = true;
+                firstDiag.querySelectorAll('details.ccw').forEach(cc => { cc.open = true; });
+              }
+              if (window.__cadmoHelpers && window.__cadmoHelpers.fitDiagrams) {
+                window.__cadmoHelpers.fitDiagrams(document);
+              }
               return btns.length;
             })()
             """)
             time.sleep(0.25)
             page_report["states"]["partial"] = client.eval_js(AUDIT_JS)
 
-            # State 3: full expand (`Expand proofs` + open all diagram disclosures)
+            # State 3: full expand (`Expand proofs` + any remaining nested ⊕ toggles + open all diagram disclosures)
             client.eval_js("""
             (() => {
-              for (const b of document.querySelectorAll('button')) {
-                if ((b.textContent || '').trim() === 'Expand proofs') { b.click(); break; }
+              const findCtrlBtn = (lbl) => Array.from(document.querySelectorAll('.cadmo-controls button, button')).find(b => (b.textContent || '').trim() === lbl);
+              const collapseBtn = findCtrlBtn('Collapse proofs');
+              if (collapseBtn) collapseBtn.click();
+              const expandBtn = findCtrlBtn('Expand proofs');
+              if (expandBtn) expandBtn.click();
+              for (let pass = 0; pass < 8; pass++) {
+                const unexpanded = Array.from(document.querySelectorAll('.cadmo-inline-toggle[aria-expanded="false"], .cadmo-toggle[aria-expanded="false"]'));
+                if (unexpanded.length === 0) break;
+                unexpanded.forEach(b => b.click());
               }
               document.querySelectorAll('details.cadmo-diagram, .cadmo-diagram details.ccw').forEach(d => { d.open = true; });
+              if (window.__cadmoHelpers && window.__cadmoHelpers.fitDiagrams) {
+                window.__cadmoHelpers.fitDiagrams(document);
+              }
               return true;
             })()
             """)
             time.sleep(0.35)
-            page_report["states"]["expanded"] = client.eval_js(AUDIT_JS)
+            st_expanded = client.eval_js(AUDIT_JS)
+            page_report["states"]["expanded"] = st_expanded
+
+            c_words = st_collapsed.get("proseWords", 0)
+            e_words = st_expanded.get("proseWords", 0)
+            exp_ratio = round(e_words / max(1, c_words), 2)
+            page_report["telemetry"] = {
+                "collapsedWords": c_words,
+                "expandedWords": e_words,
+                "expRatio": exp_ratio,
+            }
             if screenshots_dir:
                 # Scroll to first diagram so screenshots actually display diagrams + theorem prose
                 client.eval_js("""
@@ -493,7 +637,7 @@ def main() -> int:
     ap.add_argument("--base-url", default="http://127.0.0.1:8765")
     ap.add_argument("--screenshots-dir", type=Path, default=None)
     ap.add_argument("--json-out", type=Path, default=None)
-    ap.add_argument("--strict", action="store_true", help="Exit 1 if any diagram or prose issue is found")
+    ap.add_argument("--strict", action="store_true", help="Exit 1 if any diagram, collapsed-figure, overflow, KaTeX, console, or prose issue is found")
     ap.add_argument("pages", nargs="+")
     args = ap.parse_args()
 
@@ -504,30 +648,55 @@ def main() -> int:
 
     total_diag_issues = 0
     total_prose_issues = 0
+    total_collapsed_diag_issues = 0
+    total_runtime_issues = 0
     for rel, pr in report.items():
-        print(f"\n=== {rel} (consoleErr={pr['consoleErrors']}) ===")
+        tel = pr.get("telemetry", {})
+        c_err = pr.get("consoleErrors", 0)
+        total_runtime_issues += c_err
+        print(
+            f"\n=== {rel} (consoleErr={c_err} collapsedWords={tel.get('collapsedWords', 0)} "
+            f"expandedWords={tel.get('expandedWords', 0)} expRatio={tel.get('expRatio', 0.0):.2f}x) ==="
+        )
         for st_name in ("collapsed", "partial", "expanded"):
             st = pr["states"][st_name]
             di = st["diagramIssues"]
             pi = st["proseIssues"]
+            if st_name == "collapsed":
+                total_collapsed_diag_issues += len(di)
             if st_name == "expanded":
                 total_diag_issues += len(di)
                 total_prose_issues += len(pi)
+                if st["docOverflow"] > 0 or st["katexErrors"] > 0:
+                    total_runtime_issues += 1
             print(f"  [{st_name:9s}] overflow={st['docOverflow']}px katexErr={st['katexErrors']} "
-                  f"visDiag={st['visibleDiagrams']}/{st['totalDiagrams']} diagIssues={len(di)} proseIssues={len(pi)}")
+                  f"visDiag={st['visibleDiagrams']}/{st['totalDiagrams']} words={st.get('proseWords', 0)} "
+                  f"diagIssues={len(di)} proseIssues={len(pi)}")
             if st_name in ("collapsed", "expanded"):
                 for d in di[:6]:
-                    print(f"    DIAG[{d['index']}] {d['entry'][:42]} ({d['size']}, childW={d['maxChildW']}): "
-                          f"clip=L{d['leftClip']}/R{d['rightClip']} ov={len(d['overlaps'])} tall={d['tall']} "
-                          f"ascii={bool(d['rawAsciiBlock'])}")
-                    for ov in d["overlaps"][:2]:
-                        print(f"      OVERLAP: {ov}")
+                    if d.get("entry") == "diagrams-default-collapsed":
+                        print(f"    DIAG[diagrams-default-collapsed] {d.get('message')}")
+                    else:
+                        print(f"    DIAG[{d['index']}] {d['entry'][:42]} ({d['size']}, childW={d['maxChildW']}): "
+                              f"clip=L{d['leftClip']}/R{d['rightClip']} ov={len(d['overlaps'])} tall={d['tall']} "
+                              f"ascii={bool(d['rawAsciiBlock'])}")
+                        for ov in d["overlaps"][:2]:
+                            print(f"      OVERLAP: {ov}")
                 if st_name == "expanded":
                     for p in pi:
                         print(f"    PROSE[{p['rule']}] x{p['count']}: {p['samples'][0]!r}")
 
-    print(f"\nSUMMARY (expanded): total_diag_issues={total_diag_issues}, total_prose_issues={total_prose_issues}")
-    if args.strict and (total_diag_issues > 0 or total_prose_issues > 0):
+    print(
+        f"\nSUMMARY (expanded + collapsed-gate): collapsed_diag_issues={total_collapsed_diag_issues}, "
+        f"total_diag_issues={total_diag_issues}, total_prose_issues={total_prose_issues}, "
+        f"runtime_issues={total_runtime_issues}"
+    )
+    if args.strict and (
+        total_collapsed_diag_issues > 0
+        or total_diag_issues > 0
+        or total_prose_issues > 0
+        or total_runtime_issues > 0
+    ):
         return 1
     return 0
 

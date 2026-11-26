@@ -250,6 +250,8 @@ VALID_PRELUDE_KINDS: Set[str] = {
     "interfaceSpec",
     "converterDef",
     "symbolTable",
+    "setting",
+    "motivation",
 }
 
 VALID_PBOX_KINDS: Set[str] = {

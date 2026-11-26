@@ -158,7 +158,31 @@
      Real 2D offline HTML math renderer (no external CDN required; upgrades
      automatically to KaTeX if loaded).
      ------------------------------------------------------------------------ */
+  function skipMathSpaces(str, pos) {
+    while (pos < str.length && /\s/.test(str[pos])) pos++;
+    return pos;
+  }
+
+  function readOptionalBracket(str, pos) {
+    const p = skipMathSpaces(str, pos);
+    if (p >= str.length || str[p] !== "[") return [null, pos];
+    let depth = 1;
+    let braceDepth = 0;
+    let j = p + 1;
+    while (j < str.length && depth > 0) {
+      if (str[j] === "{") braceDepth++;
+      else if (str[j] === "}" && braceDepth > 0) braceDepth--;
+      else if (braceDepth === 0) {
+        if (str[j] === "[") depth++;
+        else if (str[j] === "]") depth--;
+      }
+      j++;
+    }
+    return [str.slice(p + 1, Math.max(p + 1, j - 1)), j];
+  }
+
   function readBalanced(str, pos) {
+    pos = skipMathSpaces(str, pos);
     if (pos >= str.length) return ["", pos];
     if (str[pos] === "{") {
       let depth = 1;
@@ -185,20 +209,24 @@
     alpha: "α", beta: "β", gamma: "γ", delta: "δ", zeta: "ζ", eta: "η",
     theta: "θ", iota: "ι", kappa: "κ", lambda: "λ", mu: "μ", nu: "ν",
     pi: "π", rho: "ρ", sigma: "σ", tau: "τ", phi: "φ", varphi: "φ",
-    chi: "χ", psi: "ψ", omega: "ω", ell: "ℓ", star: "★",
+    chi: "χ", psi: "ψ", omega: "ω", ell: "ℓ", star: "★", bullet: "•",
     varnothing: "∅", emptyset: "∅", infty: "∞",
     parallel: "∥", otimes: "⊗", oplus: "⊕", equiv: "≡", simeq: "≃", approx: "≈",
+    cong: "≅", sim: "∼", models: "⊨", vdash: "⊢", Vdash: "⊩",
     le: "≤", ge: "≥", ne: "≠", neq: "≠", implies: "⇒", iff: "⇔",
     in: "∈", notin: "∉", subseteq: "⊆", times: "×", cdot: "·", circ: "∘",
     to: "→", rightarrow: "→", leftarrow: "←", gets: "←", leftrightarrow: "↔",
     Leftarrow: "⇐", Rightarrow: "⇒", Leftrightarrow: "⇔",
     mapsto: "↦", forall: "∀", exists: "∃", land: "∧", wedge: "∧",
     lor: "∨", vee: "∨", neg: "¬", sum: "∑", prod: "∏", pm: "±",
-    mid: "∣", preceq: "⪯", succeq: "⪰", top: "⊤", bot: "⊥",
+    mid: "∣", preceq: "⪯", succeq: "⪰", top: "⊤", bot: "⊥", perp: "⊥",
+    triangleright: "▷", triangleleft: "◁", bigsqcup: "⊔", sqcup: "⊔",
     ldots: "…", cdots: "⋯", dots: "…", colon: ":", setminus: "∖",
     cup: "∪", cap: "∩", subset: "⊂", supseteq: "⊇",
     langle: "⟨", rangle: "⟩", lfloor: "⌊", rfloor: "⌋", lceil: "⌈", rceil: "⌉",
     Vert: "∥", vert: "|",
+    quad: "\u2003", qquad: "\u2003\u2003", thinspace: "\u2009", enspace: "\u2002",
+    prime: "′",
     Pr: "Pr", min: "min", max: "max", log: "log", exp: "exp"
   };
 
@@ -307,12 +335,30 @@
           i = p2;
           continue;
         }
-        if (cmd === "xrightarrow") {
-          const [lbl, next] = readBalanced(tex, i);
-          frag.appendChild(document.createTextNode(" —["));
-          frag.appendChild(renderMathNodes(lbl));
-          frag.appendChild(document.createTextNode("]→ "));
-          i = next;
+        if (cmd === "xleftarrow" || cmd === "xrightarrow") {
+          const [below, p1] = readOptionalBracket(tex, i);
+          const [above, p2] = readBalanced(tex, p1);
+          const wrap = document.createElement("span");
+          wrap.className = "cadmo-xarrow cadmo-math-over";
+          if (above && above.trim()) {
+            const topEl = document.createElement("span");
+            topEl.className = "cadmo-xarrow-top";
+            topEl.appendChild(renderMathNodes(above.trim()));
+            wrap.appendChild(topEl);
+          }
+          const midEl = document.createElement("span");
+          midEl.className = "cadmo-xarrow-mid cadmo-msym";
+          midEl.textContent = cmd === "xleftarrow" ? "←" : "→";
+          wrap.appendChild(midEl);
+          if (below && below.trim()) {
+            wrap.classList.add("has-below");
+            const botEl = document.createElement("span");
+            botEl.className = "cadmo-xarrow-bot";
+            botEl.appendChild(renderMathNodes(below.trim()));
+            wrap.appendChild(botEl);
+          }
+          frag.appendChild(wrap);
+          i = p2;
           continue;
         }
         if (cmd === "mathbb") {
@@ -341,24 +387,34 @@
         ) {
           const [arg, next] = readBalanced(tex, i);
           const span = document.createElement("span");
-          span.className = "cadmo-accent";
-          if (cmd === "overline" || cmd === "bar") {
-            span.style.textDecoration = "overline";
-            span.appendChild(renderMathNodes(arg));
-          } else {
-            const comb = (cmd === "hat" || cmd === "widehat") ? "\u0302"
-              : (cmd === "tilde" || cmd === "widetilde") ? "\u0303"
-              : "\u20D7";
-            const trimmed = arg.trim();
-            if (trimmed.length === 1 && /[A-Za-z]/.test(trimmed)) {
-              const v = document.createElement("var");
-              v.textContent = trimmed + comb;
-              span.appendChild(v);
-            } else {
-              span.appendChild(renderMathNodes(arg));
-              span.appendChild(document.createTextNode(comb));
-            }
-          }
+          const kindCls = (cmd === "hat" || cmd === "widehat") ? "hat"
+            : (cmd === "tilde" || cmd === "widetilde") ? "tilde"
+            : (cmd === "bar" || cmd === "overline") ? "bar"
+            : "vec";
+          const trimmed = arg.trim();
+          const bareChars = trimmed
+            .replace(/\\(?:mathbf|boldsymbol|mathcal|mathsf|mathbb|mathrm|mathit|operatorname|text)\{([^{}]*)\}/g, "$1")
+            .replace(/\\[A-Za-z]+/g, "x")
+            .replace(/[{}\s^_]/g, "");
+          const isWide = cmd === "widehat" || cmd === "widetilde" || cmd === "overline" || bareChars.length > 1;
+          const isShort = bareChars.length === 1 && /^[acemnor-su-z]$/.test(bareChars) && !/\\(?:mathbf|mathcal|mathbb|mathsf)/.test(trimmed);
+          span.className = `cadmo-accent cadmo-accent-${kindCls}` +
+            (isWide ? " cadmo-accent-wide" : "") +
+            (isShort ? " cadmo-accent-short" : "");
+          span.setAttribute("data-accent", cmd);
+          const base = document.createElement("span");
+          base.className = "cadmo-accent-base";
+          base.appendChild(renderMathNodes(arg));
+          span.appendChild(base);
+          frag.appendChild(span);
+          i = next;
+          continue;
+        }
+        if (cmd === "underline") {
+          const [arg, next] = readBalanced(tex, i);
+          const span = document.createElement("span");
+          span.className = "cadmo-math-underline";
+          span.appendChild(renderMathNodes(arg));
           frag.appendChild(span);
           i = next;
           continue;
@@ -404,7 +460,9 @@
         }
         if (SYMBOL_MAP[cmd] !== undefined) {
           const span = document.createElement("span");
-          span.className = "cadmo-msym";
+          span.className = (cmd === "triangleright" || cmd === "triangleleft")
+            ? "cadmo-msym cadmo-msym-tri"
+            : "cadmo-msym";
           span.textContent = SYMBOL_MAP[cmd];
           frag.appendChild(span);
           continue;
@@ -420,6 +478,24 @@
         v.textContent = ch;
         frag.appendChild(v);
         i++;
+        continue;
+      }
+      if (ch === "'") {
+        let k = i;
+        while (k < tex.length && tex[k] === "'") k++;
+        let rem = k - i;
+        let primes = "";
+        while (rem >= 3) {
+          primes += "\u2034";
+          rem -= 3;
+        }
+        if (rem === 2) primes += "\u2033";
+        else if (rem === 1) primes += "\u2032";
+        const span = document.createElement("span");
+        span.className = "cadmo-msym cadmo-prime";
+        span.textContent = primes;
+        frag.appendChild(span);
+        i = k;
         continue;
       }
       frag.appendChild(document.createTextNode(ch));
@@ -449,7 +525,15 @@
 
   function extractFontPrefixFromLatex(raw) {
     if (!raw) return "";
-    const s = String(raw).trim().replace(/^\{+/, "").trim();
+    let s = String(raw).trim();
+    let prev;
+    do {
+      prev = s;
+      s = s
+        .replace(/^\{+/, "")
+        .replace(/^\\(?:widehat|widetilde|overline|underline|hat|tilde|bar|vec)\s*(?:\{\s*)?/, "")
+        .trim();
+    } while (s !== prev);
     const m = s.match(/^\\(mathcal|mathbf|boldsymbol|mathsf|mathbb)(?:\s*\{|\s+|\b)/);
     if (m) {
       switch (m[1]) {
@@ -473,12 +557,16 @@
   }
 
   function normalizeUnicodeMath(str) {
+    const primeMap = {
+      "\u2032": "'", "\u2033": "''", "\u2034": "'''", "\u2057": "''''"
+    };
     const scriptMap = {
       "ℬ": "B", "ℰ": "E", "ℱ": "F", "ℋ": "H", "ℐ": "I", "ℒ": "L", "ℳ": "M", "ℛ": "R",
       "ℯ": "e", "ℊ": "g", "ℴ": "o",
       "ℝ": "R", "ℕ": "N", "ℤ": "Z", "ℚ": "Q", "ℂ": "C", "ℍ": "H", "ℙ": "P"
     };
     return Array.from(str || "").map((ch) => {
+      if (primeMap[ch] !== undefined) return primeMap[ch];
       if (UNICODE_SCRIPT_MAP[ch] !== undefined) return UNICODE_SCRIPT_MAP[ch];
       if (scriptMap[ch] !== undefined) return scriptMap[ch];
       const cp = ch.codePointAt(0);
@@ -506,20 +594,25 @@
     do {
       prev = s;
       s = s
-        .replace(/\\(?:mathrm|mathit|mathsf|mathbf|mathcal|mathbb|operatorname|text|texttt|boldsymbol)\{([^{}]*)\}/g, "$1");
+        .replace(/\\(?:mathrm|mathit|mathsf|mathbf|mathcal|mathbb|operatorname|text|texttt|boldsymbol|widehat|widetilde|overline|underline|hat|tilde|bar|vec)\{([^{}]*)\}/g, "$1");
     } while (s !== prev);
     s = s
-      .replace(/\\(?:mathrm|mathit|mathsf|mathbf|mathcal|mathbb|operatorname|text|texttt|boldsymbol)\b\s*/g, "")
+      .replace(/\\(?:mathrm|mathit|mathsf|mathbf|mathcal|mathbb|operatorname|text|texttt|boldsymbol|widehat|widetilde|overline|underline|hat|tilde|bar|vec)\b\s*/g, "")
       .replace(/\\(?:left|right|middle)\b/g, "")
       .replace(/\\[!,;: ]/g, "")
       .replace(/\\_/g, "_")
       .replace(/\\([A-Za-z]+)/g, (_, cmd) => (SYMBOL_MAP[cmd] !== undefined ? SYMBOL_MAP[cmd] : cmd))
+      .replace(/\u2032/g, "'")
+      .replace(/\u2033/g, "''")
+      .replace(/\u2034/g, "'''")
+      .replace(/\u2057/g, "''''")
+      .replace(/[\u0300-\u036f\u20d0-\u20ff]/g, "")
       .replace(/[{}_^\s]/g, "");
     if (!s) return "";
     return prefix + s;
   }
 
-  const NON_TOKEN_RE = /^[0-9()[\]{},.;:=<>+\-*/·⋅∣|!?~'"\\⟨⟩≤≥≠≡≃≈⇒⇔∈∉⊆×∘→↦∀∃∧∨¬∑∏±⪯⪰⊤⊥…\s]+$/;
+  const NON_TOKEN_RE = /^[0-9()[\]{},.;:=<>+\-*/·⋅∣|!?~'"\\⟨⟩≤≥≠≡≃≈⇒⇔∈∉⊆×∘→←↔⇐↦∀∃∧∨¬∑∏±⪯⪰⊤⊥▷◁•⊔∖∼≅⊨⊢⊩…\s]+$/;
   const elementCandidates = new WeakMap();
   const hoverInteractiveNodes = new Set();
 
@@ -835,12 +928,12 @@
         }
         if (!validSlice) continue;
 
-        // Do not peel base alone when immediately followed by SUB (e.g. R_MAC or x_1)
+        // Do not peel base alone when immediately followed by SUB or prime (e.g. R_MAC, x_1, H'')
         if (
           end + 1 < children.length &&
           children[end + 1].nodeType === 1 &&
-          children[end + 1].tagName === "SUB" &&
-          isSubAtomEl(children[end])
+          (children[end + 1].tagName === "SUB" || children[end + 1].classList.contains("cadmo-prime")) &&
+          (isSubAtomEl(children[end]) || children[end].tagName === "SUB")
         ) {
           continue;
         }
@@ -978,20 +1071,29 @@
     }
   }
 
+  function normalizeMathLatex(tex) {
+    return String(tex || "")
+      .replace(/(\\(?:left|bigl|Bigl)?\[)(?:\\[,;:]|\s)+([^\[\]\n]*?)(?:\\[,;:]|\s)+(\\(?:right|bigr|Bigr)?\])/g, "$1$2$3")
+      .replace(/\[(?:\\[,;:])+\s*([^\[\]\n]*?)\s*(?:\\[,;:])+\]/g, "[$1]")
+      .replace(/\[\s+([A-Za-z0-9_{}\\]+?)\s*\]/g, "[$1]")
+      .replace(/\[\s*([A-Za-z0-9_{}\\]+?)\s+\]/g, "[$1]");
+  }
+
   function renderMathSpan(tex, displayMode = false, scope = null) {
+    const cleanTex = normalizeMathLatex(tex);
     const el = document.createElement("span");
     el.className = displayMode ? "cadmo-display-math" : "cadmo-math";
-    el.dataset.latex = tex || "";
+    el.dataset.latex = cleanTex;
     if (window.katex && typeof window.katex.render === "function") {
       try {
-        window.katex.render(tex || "", el, { displayMode, throwOnError: false });
+        window.katex.render(cleanTex, el, { displayMode, throwOnError: false });
         annotateMathReferences(el, scope);
         return el;
       } catch (_) {
         /* fallback below */
       }
     }
-    el.appendChild(renderMathNodes(tex || ""));
+    el.appendChild(renderMathNodes(cleanTex));
     annotateMathReferences(el, scope);
     return el;
   }
@@ -1018,15 +1120,50 @@
     return el;
   }
 
-  function renderMixedText(str, scope = null) {
+  function formatProseDashes(str) {
+    return String(str || "")
+      .replace(/---/g, "\u2014")
+      .replace(/(?<![-<])--(?!-|->)/g, "\u2013")
+      .replace(/([A-Za-z0-9.)])~(?=[A-Za-z0-9(\\$])/g, "$1\u00A0");
+  }
+
+  function renderProseSegment(seg) {
     const frag = document.createDocumentFragment();
-    if (!str) return frag;
-    const text = String(str);
+    if (!seg) return frag;
+    const text = String(seg);
+    const re = /\*\*([^\s*\n](?:[^*\n]*?[^\s*\n])?)\*\*|(?<![\w\\*])\*([^\s*\n](?:[^*\n]*?[^\s*\n])?)\*(?![\w*])/g;
+    let last = 0;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      if (m.index > last) {
+        frag.appendChild(document.createTextNode(formatProseDashes(text.slice(last, m.index))));
+      }
+      if (m[1] !== undefined) {
+        frag.appendChild(h("strong", {}, formatProseDashes(m[1])));
+      } else if (m[2] !== undefined) {
+        frag.appendChild(h("em", {}, formatProseDashes(m[2])));
+      }
+      last = re.lastIndex;
+    }
+    if (last < text.length) {
+      frag.appendChild(document.createTextNode(formatProseDashes(text.slice(last))));
+    }
+    return frag;
+  }
+
+  function renderMixedText(segOrStr, scope = null) {
+    const frag = document.createDocumentFragment();
+    if (!segOrStr) return frag;
+    const text = String(segOrStr);
     const re = /\\\(([\s\S]*?)\\\)|\\\[([\s\S]*?)\\\]|\$\$([\s\S]*?)\$\$|(?<!\\)\$([^$\n]+?)(?<!\\)\$|\\\$/g;
     let last = 0;
     let m;
     while ((m = re.exec(text)) !== null) {
-      if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+      if (m.index > last) {
+        let chunk = text.slice(last, m.index);
+        if (m[0] !== "\\$") chunk = chunk.replace(/([A-Za-z0-9.)])~$/, "$1\u00A0");
+        frag.appendChild(renderProseSegment(chunk));
+      }
       if (m[0] === "\\$") {
         frag.appendChild(document.createTextNode("$"));
       } else if (m[1] !== undefined) {
@@ -1040,7 +1177,7 @@
       }
       last = re.lastIndex;
     }
-    if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+    if (last < text.length) frag.appendChild(renderProseSegment(text.slice(last)));
     return frag;
   }
 
@@ -1048,7 +1185,13 @@
     if (!obj || typeof obj !== "object") return null;
     const t = (variantObj && typeof variantObj === "object" ? (variantObj.trust || variantObj.proseTrust) : null) ||
       obj.trust || obj.proseTrust || null;
-    if (t === "kernelFormula" || t === "kernelProvedClaim" || t === "typedRef" || t === "intuitionGloss") {
+    if (
+      t === "kernelFormula" ||
+      t === "kernelProvedClaim" ||
+      t === "typedRef" ||
+      t === "intuitionGloss" ||
+      t === "authorGloss"
+    ) {
       return t;
     }
     return null;
@@ -1056,10 +1199,12 @@
 
   function trustClassAndTitle(trust) {
     if (!trust) return null;
-    if (trust === "intuitionGloss") {
+    if (trust === "intuitionGloss" || trust === "authorGloss") {
       return {
         cls: "cadmo-trust-gloss",
-        title: state.mode === "auditor" ? "Authorial gloss (intuition)" : ""
+        title: state.mode === "auditor"
+          ? (trust === "authorGloss" ? "Authorial motivation (non-claiming)" : "Authorial gloss (intuition)")
+          : ""
       };
     }
     const titles = {
@@ -1098,7 +1243,7 @@
     }
     if (inl.emph !== undefined) {
       const val = typeof inl.emph === "string" ? inl.emph : inl.emph.value;
-      return applyInlineTrust(h("em", {}, val || ""), inl, inl.emph);
+      return applyInlineTrust(h("em", {}, renderMixedText(val || "", scope)), inl, inl.emph);
     }
     if (inl.inlineMath !== undefined) {
       const obj = inl.inlineMath;
@@ -1158,9 +1303,59 @@
     return document.createTextNode("");
   }
 
+  function inlineVisibleTailChar(inl) {
+    if (!inl || typeof inl !== "object") return "";
+    if (inl.text !== undefined) {
+      const v = typeof inl.text === "string" ? inl.text : inl.text.value;
+      return v ? v.slice(-1) : "";
+    }
+    if (inl.emph !== undefined) {
+      const v = typeof inl.emph === "string" ? inl.emph : inl.emph.value;
+      return v ? v.slice(-1) : "";
+    }
+    if (inl.inlineMath !== undefined) {
+      const obj = inl.inlineMath;
+      const t = typeof obj === "string" ? obj : (obj && obj.latex ? obj.latex : "");
+      return t ? t.trim().slice(-1) : "";
+    }
+    if (inl.displayMath !== undefined) {
+      const obj = inl.displayMath;
+      return typeof obj === "object" && obj && obj.punct ? String(obj.punct).slice(-1) : "";
+    }
+    if (inl.symbol !== undefined) {
+      return inl.symbol && inl.symbol.display ? String(inl.symbol.display).slice(-1) : "";
+    }
+    if (inl.citation !== undefined) return "]";
+    return "";
+  }
+
+  function inlineVisibleHeadText(inl) {
+    if (!inl || typeof inl !== "object") return "";
+    if (inl.text !== undefined) {
+      return String((typeof inl.text === "string" ? inl.text : inl.text.value) || "");
+    }
+    if (inl.emph !== undefined) {
+      return String((typeof inl.emph === "string" ? inl.emph : inl.emph.value) || "");
+    }
+    return "";
+  }
+
   function renderInlines(arr, scope = null) {
     const frag = document.createDocumentFragment();
-    for (const item of arr || []) frag.appendChild(renderInline(item, scope));
+    let prevTail = "";
+    for (const item of arr || []) {
+      const head = inlineVisibleHeadText(item);
+      if (
+        (prevTail === "." || prevTail === "!" || prevTail === "?") &&
+        head &&
+        /^[A-Za-z]/.test(head)
+      ) {
+        frag.appendChild(document.createTextNode(" "));
+      }
+      frag.appendChild(renderInline(item, scope));
+      const tail = inlineVisibleTailChar(item);
+      if (tail) prevTail = tail;
+    }
     return frag;
   }
 
@@ -1311,7 +1506,12 @@
     );
     if (typeof det.addEventListener === "function") {
       det.addEventListener("toggle", () => {
-        if (det.open) scheduleFitDiagrams(det);
+        if (det.open) {
+          if (typeof bodyEl.querySelectorAll === "function") {
+            bodyEl.querySelectorAll("details.ccw").forEach((cc) => { cc.open = true; });
+          }
+          scheduleFitDiagrams(det);
+        }
       });
     }
     return det;
@@ -1328,8 +1528,7 @@
       } else if (n.kind === "calcChain") {
         (n.steps || []).forEach((s, idx) => {
           const vis = paperVisibleChildren(s.justification || s.children || []);
-          const hasDiag = s.step && hasVisibleDiagramHtml(s.step.diagramHtml);
-          if (vis.length > 0 || hasDiag) {
+          if (vis.length > 0) {
             out.push(`${n.id}-s${idx}`);
             collectAllExpandableIds(vis, out);
           }
@@ -1415,13 +1614,43 @@
     );
   }
 
-  function renderPreludeBlock(p, scope = null) {
+  function renderPreludeBlock(p, scope = null, opts = {}) {
     if (!p || typeof p !== "object") return null;
     const kind = p.kind || "definition";
-    const labelStr = typeof p.label === "string" ? p.label.trim() : "";
+    const labelStr = typeof p.label === "string" ? formatProseDashes(p.label.trim()) : "";
     const titleStr = typeof p.title === "string" ? p.title.trim() : "";
     const declKey = typeof p.declKey === "string" && p.declKey.trim() ? p.declKey.trim() : null;
     const declIns = declKey ? inspectorByKey.get(declKey) : null;
+    const entryDiagNorm = opts && typeof opts.entryDiagramHtml === "string"
+      ? stripEmbeddedStyles(opts.entryDiagramHtml).trim()
+      : "";
+    const pDiagNorm = stripEmbeddedStyles(p.diagramHtml || "").trim();
+    const skipDiagram = (kind === "setting") ||
+      (kind === "construction" && !!entryDiagNorm && pDiagNorm === entryDiagNorm);
+
+    if (kind === "setting" || kind === "motivation") {
+      const bodyParas = Array.isArray(p.body) ? p.body : [];
+      const leadSpan = labelStr
+        ? h("span", { class: "cadmo-ambient-label" }, /[.!?]$/.test(labelStr) ? `${labelStr} ` : `${labelStr}. `)
+        : null;
+      const paras = bodyParas.length > 0
+        ? bodyParas.map((para, idx) =>
+            h("p", {}, idx === 0 ? leadSpan : null, renderInlines(para, scope))
+          )
+        : (titleStr ? [h("p", {}, leadSpan, renderMixedText(titleStr, scope))] : []);
+      if (paras.length === 0) return null;
+      const attrs = {
+        class: `cadmo-prelude cadmo-prelude-${kind}` + (kind === "motivation" ? " cadmo-trust-gloss" : ""),
+        id: p.id || null,
+        "data-prelude-kind": kind
+      };
+      if (kind === "motivation") {
+        attrs["data-trust"] = "authorGloss";
+        if (state.mode === "auditor") attrs.title = "Authorial motivation (non-claiming)";
+      }
+      const diagEl = skipDiagram ? null : renderCollapsibleDiagram(p.diagramHtml, "cadmo-prelude-diagram", "System figure", false);
+      return h("section", attrs, h("div", { class: "cadmo-prelude-body" }, ...paras), diagEl);
+    }
 
     let inspectBtn = null;
     if (declKey) {
@@ -1467,9 +1696,20 @@
         )
       : null;
 
+    const headers = Array.isArray(p.headers) ? p.headers : [];
+    const theadEl = headers.length > 0
+      ? h("thead", {},
+          h("tr", {},
+            ...headers.map((hd) =>
+              h("th", { scope: "col" }, Array.isArray(hd) ? renderInlines(hd, scope) : renderMixedText(String(hd || ""), scope))
+            )
+          )
+        )
+      : null;
     const rows = Array.isArray(p.rows) ? p.rows : [];
     const rowsEl = rows.length > 0
       ? h("table", { class: "cadmo-prelude-table" },
+          theadEl,
           h("tbody", {},
             ...rows.map((r) =>
               h("tr", {},
@@ -1482,7 +1722,7 @@
       : null;
 
     const linesEl = renderPseudocodeLines(p.lines || [], scope);
-    const diagEl = renderCollapsibleDiagram(p.diagramHtml, "cadmo-prelude-diagram", "Diagram", true);
+    const diagEl = skipDiagram ? null : renderCollapsibleDiagram(p.diagramHtml, "cadmo-prelude-diagram", "System figure", false);
 
     return h("section", {
       class: `cadmo-prelude cadmo-prelude-${kind}`,
@@ -1493,7 +1733,8 @@
 
   function renderSectionPreludes(entry, scope = null) {
     if (!entry || !Array.isArray(entry.sectionPreludes) || entry.sectionPreludes.length === 0) return null;
-    const blocks = entry.sectionPreludes.map((p) => renderPreludeBlock(p, scope)).filter(Boolean);
+    const opts = { entryDiagramHtml: entry.diagramHtml || "" };
+    const blocks = entry.sectionPreludes.map((p) => renderPreludeBlock(p, scope, opts)).filter(Boolean);
     if (blocks.length === 0) return null;
     return h("div", { class: "cadmo-section-preludes" }, ...blocks);
   }
@@ -1639,6 +1880,9 @@
       if (node.kind === "calcChain") {
         if (node.intro && node.intro.length > 0) {
           ensureLeadIn();
+          if (paraChildren.length > 0 && paraChildren[paraChildren.length - 1] !== " ") {
+            paraChildren.push(" ");
+          }
           paraChildren.push(
             h("span", { class: "cadmo-sent" },
               renderInlines(node.intro, scope),
@@ -1654,8 +1898,7 @@
         steps.forEach((item, idx) => {
           const st = item.step || {};
           const ch = paperVisibleChildren(item.justification || item.children || []);
-          const stepDiag = renderCollapsibleDiagram(st.diagramHtml, "cadmo-step-diagram", "Diagram", false);
-          const hasExpandable = ch.length > 0 || !!stepDiag;
+          const hasExpandable = ch.length > 0;
           const sid = `${node.id}-s${idx}`;
           const isOpen = state.expanded.has(sid);
           if (idx === 0 && st.lhsLatex) {
@@ -1689,8 +1932,7 @@
             calcItems.push(
               h("div", { class: "cadmo-calc-expand-block" },
                 h("div", { class: "cadmo-expansion cadmo-expanded-children" },
-                  stepDiag,
-                  ...(ch.length > 0 ? renderProofFlow(ch, { depth: depth + 1, scope }) : [])
+                  ...renderProofFlow(ch, { depth: depth + 1, scope })
                 )
               )
             );
@@ -1720,7 +1962,7 @@
         : null;
       const stepTrust = getTrustLevel(node);
       const stepTrustInfo = trustClassAndTitle(stepTrust);
-      const trustBadge = (stepTrust === "intuitionGloss")
+      const trustBadge = (stepTrust === "intuitionGloss" || stepTrust === "authorGloss")
         ? h("span", { class: "cadmo-trust-badge" }, "[gloss]")
         : null;
       const wrapperTag = node.isWrapper ? h("span", { class: "cadmo-wrapper-tag" }, "[wrapper]") : null;
@@ -1765,13 +2007,11 @@
           goalBtn
         );
       }
-      const stepDiag = renderCollapsibleDiagram(node.diagramHtml, "cadmo-step-diagram", "Diagram", false);
       const childrenEl = (hasChildren && isOpen)
         ? h("div", { class: "cadmo-expansion cadmo-expanded-children" },
-            stepDiag,
             ...renderProofFlow(children, { depth: depth + 1, scope })
           )
-        : (!hasChildren && stepDiag ? stepDiag : null);
+        : null;
       emitSentence(sent, childrenEl);
     }
 
@@ -2273,7 +2513,7 @@
       h("header", { class: "cadmo-entry-head" },
         h("h2", { class: "cadmo-entry-heading" },
           h("span", { class: "cadmo-entry-kind" }, `${entry.header || "Theorem"} ${idx + 1}.`),
-          entry.title ? h("span", { class: "cadmo-entry-title" }, ` (${entry.title})`) : null
+          entry.title ? h("span", { class: "cadmo-entry-title" }, " (", renderMixedText(entry.title, scope), ")") : null
         ),
         h("button", {
           type: "button",
@@ -2290,7 +2530,7 @@
       h("div", { class: "cadmo-statement" },
         ...(entry.statement || []).map((para) => h("p", {}, renderInlines(para, scope)))
       ),
-      renderCollapsibleDiagram(entry.diagramHtml, "cadmo-entry-diagram", "System diagram", true),
+      renderCollapsibleDiagram(entry.diagramHtml, "cadmo-entry-diagram", "System figure", false),
       proofNodes.length > 0
         ? h("section", { class: "cadmo-proof" },
             ...renderProofFlow(entry.proof || [], { leadIn: "Proof.", appendQed: true, depth: 0, scope })
@@ -2323,7 +2563,7 @@
 
     const runningBar = h("header", { class: "cadmo-running-bar" },
       h("div", { class: "cadmo-running-head" },
-        hasContentsLink ? null : (doc.title || "Constructive Cryptography")
+        hasContentsLink ? null : formatProseDashes(doc.title || "Constructive Cryptography")
       ),
       h("nav", { class: "cadmo-controls", "aria-label": "Reading options" },
         h("button", {
@@ -2373,11 +2613,24 @@
     );
 
     const header = h("header", { class: "cadmo-doc-header" },
-      h("h1", { class: "cadmo-doc-title" }, doc.title || "Untitled Document"),
-      doc.subtitle ? h("p", { class: "cadmo-doc-subtitle" }, doc.subtitle) : null
+      h("h1", { class: "cadmo-doc-title" }, formatProseDashes(doc.title || "Untitled Document")),
+      doc.subtitle ? h("p", { class: "cadmo-doc-subtitle" }, renderMixedText(doc.subtitle)) : null
     );
 
     const entries = doc.entries || [];
+    const sectionsWithSetting = new Set();
+    let scanSecIdx = 0;
+    for (const e of entries) {
+      if (e && e.sectionTitle) scanSecIdx += 1;
+      if (
+        scanSecIdx > 0 &&
+        Array.isArray(e && e.sectionPreludes) &&
+        e.sectionPreludes.some((p) => p && p.kind === "setting")
+      ) {
+        sectionsWithSetting.add(scanSecIdx);
+      }
+    }
+
     const bodyNodes = [];
     let sectionNum = 0;
     let activeSecId = null;
@@ -2394,7 +2647,8 @@
           Array.from(sectionRefKeys.get(secId) || []),
           true
         );
-        const scParas = sc && Array.isArray(sc.paragraphs) && sc.paragraphs.length > 0
+        const hasSettingPrelude = sectionsWithSetting.has(sectionNum);
+        const scParas = (!hasSettingPrelude && sc && Array.isArray(sc.paragraphs) && sc.paragraphs.length > 0)
           ? h("div", { class: "cadmo-section-context", id: `${secId}-context` },
               ...sc.paragraphs.map((p, pIdx) =>
                 h("p", {},
@@ -2410,7 +2664,8 @@
           h("div", { class: "cadmo-section-head", id: secId },
             h("h2", { class: "cadmo-section-title" },
               hasExplicitSecPrefix ? null : h("span", { class: "cadmo-section-num" }, `${secNumShown}.`),
-              secTitleStr
+              hasExplicitSecPrefix ? null : " ",
+              renderMixedText(secTitleStr, secScope)
             ),
             entry.sectionIntro ? h("p", { class: "cadmo-section-intro" }, renderMixedText(entry.sectionIntro, secScope)) : null,
             scParas
@@ -2476,6 +2731,7 @@
       buildTokenScope,
       resolveTokenCandidates,
       renderMathNodes,
+      formatProseDashes,
       renderMixedText,
       annotateOfflineMathContainer,
       annotateKatexBase,

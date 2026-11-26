@@ -153,15 +153,10 @@ private def isCCAttachmentHSMul (args : Array Expr) : MetaM Bool := do
   let isTarget := (← resourceInterface? resTy).isSome || (← gameInterface? resTy).isSome
   return isConv && isTarget
 
-/-- Join two juxtaposed CC math factors (`\alpha R`, `S\sigma`, `\mathrm{protocol}\,\mathrm{real}`):
-inserts a thin space `\,` whenever two multi-letter `\mathrm{...}` tokens would otherwise touch. -/
+/-- Join two juxtaposed CC math factors (`\alpha R`, `S\sigma`, `\mathsf{PTXT}\,\mathsf{CCA}`):
+delegates to `LeanTeX.juxtaposeMath` so styled tokens never glue together. -/
 private def juxtapose (left right : String) : String :=
-  if left.startsWith "\\mathrm{" || right.startsWith "\\mathrm{" then
-    s!"{left}\\,{right}"
-  else if left.endsWith "}" || left.endsWith ")" then
-    s!"{left}{right}"
-  else
-    s!"{left} {right}"
+  juxtaposeMath left right
 
 /-- Render converter attachment `conv • res` in authentic Maurer–Renner paper juxtaposition:
 * `(H ◁ σ) • S` renders as `S\sigma` (right/adversarial interface attachment);
@@ -331,7 +326,7 @@ private def parallelHandler (head : Name) : AppHandler where
   run := fun _ rec _ args => do
     let some r := argFromEnd? args 0 | return none
     let some l := argFromEnd? args 1 | return none
-    return some (s!"{← rec 60 l} \\parallel {← rec 60 r}", 60)
+    return some (s!"{← rec 60 (unwrapSingletonSpec l)} \\parallel {← rec 60 (unwrapSingletonSpec r)}", 60)
 
 private def interfaceTensorHandler (head : Name) : AppHandler where
   head := head
@@ -663,9 +658,6 @@ private def revealLawHandler : AppHandler where
 
 /-! ## 2. Authentic CC Type Handlers (`Ontology.TypeHandler`) -/
 
-private def stripWithPrefix (acc : String) : String :=
-  if acc.startsWith "with " then (acc.drop 5).toString else acc
-
 private def isScalarRealCodomain (e : Expr) : Bool :=
   let c := e.consumeMData
   c == mkConst `Real || c == mkConst `NNReal || c == mkConst `ENNReal
@@ -743,7 +735,7 @@ private def ccTypeHandler : TypeHandler where
       let outTex ← exprToLatex outIface tbl
       return some {
         noun := nounConverter
-        accessories := [s!"with inside interface \\({inTex}\\) and outside interface \\({outTex}\\)"]
+        accessories := [s!"from \\({inTex}\\) to \\({outTex}\\)"]
       }
     -- 5. Specification (`Specification (Phi A)` or `Set (Phi A)`)
     if let some iface ← specificationInterface? ty then
@@ -764,7 +756,7 @@ private def ccTypeHandler : TypeHandler where
         let outTex ← exprToLatex outIface tbl
         return some {
           noun := ⟨"class of converters", "classes of converters"⟩
-          accessories := [s!"with inside interface \\({inTex}\\) and outside interface \\({outTex}\\)"]
+          accessories := [s!"from \\({inTex}\\) to \\({outTex}\\)"]
         }
     -- 7. Game (`Game A` or `TypedGame A`)
     if let some iface ← gameInterface? ty then
@@ -804,40 +796,25 @@ private def ccTypeHandler : TypeHandler where
     -- 10. Substitution implication witness
     if isImplicationType ty then
       return some { noun := ⟨"substitution chain", "substitution chains"⟩, isWitness := true }
-    -- 10b. Context-aware CC functional/arrow types (per-port budgets, advantage bounds, games, families)
+    -- 10b. Context-aware CC functional/arrow types (query bounds/budgets, error functions, games, families)
     if let .forallE _ dom body _ := ty then
       if !body.hasLooseBVar 0 then
-        -- a) Per-port query budget `Port → ℕ` / `A.I → ℕ`
+        -- a) Query bound (`Evaluation.Port → ℕ`) vs multi-port query budget (`Port → ℕ` / `A.I → ℕ`)
         if body.consumeMData.isConstOf ``Nat && isPortDomain? dom then
-          let domTex ← exprToLatex dom tbl
-          return some {
-            noun := ⟨"per-port query budget", "per-port query budgets"⟩
-            accessories := [s!"on \\({domTex}\\)"]
-          }
-        -- b) Distinguisher advantage bound `Distinguisher(I) → ℝ / ℝ≥0 / ℝ≥0∞`
+          let isSinglePortEval := dom.consumeMData.getAppFn.consumeMData.isConstOf `Commons.Evaluation.Port
+          if isSinglePortEval then
+            return some { noun := ⟨"query bound", "query bounds"⟩, accessories := [] }
+          else
+            return some { noun := ⟨"query budget", "query budgets"⟩, accessories := [] }
+        -- b) Distinguisher error function `Distinguisher(I) → ℝ / ℝ≥0 / ℝ≥0∞`
         if isScalarRealCodomain body then
-          if let some iface ← distinguisherInterface? dom then
-            let ifacePhrase := stripWithPrefix (← interfaceAccessory tbl iface)
-            return some {
-              noun := ⟨"distinguisher advantage bound", "distinguisher advantage bounds"⟩
-              accessories := [s!"for {ifacePhrase}"]
-            }
+          if (← distinguisherInterface? dom).isSome then
+            return some { noun := ⟨"error function", "error functions"⟩, accessories := [] }
           let dFn := dom.getAppFn.consumeMData
           if (dFn.isConstOf ``SystemAlgebra.Domain.Distinguisher ||
               dFn.isConstOf ``SystemAlgebra.Domain.DistinguisherBehavior) &&
              dom.getAppArgs.size ≥ 1 then
-            let domArg := dom.getAppArgs.back!
-            if let some iface ← unwrapInputDomain? domArg then
-              let ifacePhrase := stripWithPrefix (← interfaceAccessory tbl iface)
-              return some {
-                noun := ⟨"distinguisher advantage bound", "distinguisher advantage bounds"⟩
-                accessories := [s!"for {ifacePhrase}"]
-              }
-            let domTex ← exprToLatex domArg tbl
-            return some {
-              noun := ⟨"distinguisher advantage bound", "distinguisher advantage bounds"⟩
-              accessories := [s!"on \\({domTex}\\)"]
-            }
+            return some { noun := ⟨"error function", "error functions"⟩, accessories := [] }
           -- c) Game winning-probability functional `Game(A) → ℝ / ℝ≥0 / ℝ≥0∞`
           if let some iface ← gameInterface? dom then
             let aTex ← exprToLatex iface tbl
@@ -845,15 +822,13 @@ private def ccTypeHandler : TypeHandler where
               noun := ⟨"winning-probability function", "winning-probability functions"⟩
               accessories := [s!"on games over \\({aTex}\\)"]
             }
-        -- d) Indexed family of converters `K → (H' ⟶ H)`
+        -- d) Family of converters `K → (H' ⟶ H)`
         if !dom.consumeMData.isForall then
-          if let some (outIface, inIface) ← converterInterfaces? body then
+          if (← converterInterfaces? body).isSome then
             let kTex ← exprToLatex dom tbl
-            let inTex ← exprToLatex inIface tbl
-            let outTex ← exprToLatex outIface tbl
             return some {
-              noun := ⟨"indexed family of converters", "indexed families of converters"⟩
-              accessories := [s!"indexed by \\({kTex}\\) from \\({inTex}\\) to \\({outTex}\\)"]
+              noun := ⟨"family of converters", "families of converters"⟩
+              accessories := [s!"indexed by \\({kTex}\\)"]
             }
     -- 10c. Deterministic environment `SystemAlgebra.DDE`
     if fn.isConstOf ``SystemAlgebra.DDE then
@@ -1118,7 +1093,7 @@ private def ccPropHandler : PropHandler where
         ]
     return none
 
-/-- Low-priority fallback handler for generic `Prod` (`ordered pair`) and `Set` (`subset of X`)
+/-- Low-priority fallback handler for generic `Prod` (`pair`) and `Set` (`subset of X`)
 after CC-specific patterns (`Set (P ⟶ Q)`, `Set (Phi A)`, solver `Prod`) have had first claim. -/
 private def ccGenericContainerTypeHandler : TypeHandler where
   priority := 50
@@ -1127,7 +1102,7 @@ private def ccGenericContainerTypeHandler : TypeHandler where
     let fn := ty.getAppFn.consumeMData
     let args := ty.getAppArgs
     if fn.isConstOf ``Prod && args.size == 2 then
-      return some { noun := ⟨"ordered pair", "ordered pairs"⟩ }
+      return some { noun := ⟨"pair", "pairs"⟩ }
     if fn.isConstOf ``Set && args.size ≥ 1 then
       let elemTex ← exprToLatex args.back! tbl
       return some {

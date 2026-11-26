@@ -43,19 +43,12 @@ open Informalization.Core.Ontology
 open Informalization.Core.Explanation
 open Informalization.Core.ProofGraph
 
-private def pickMaurerOpener (kind : TransitionKind) :
-    StateRefT DiscourseState MetaM String := do
-  let st ← get
-  let (op, st') := st.pickOpener kind
-  set st'
-  return op
-
 private def mkStep (ctx : DecompCtx) (id : String) (content : Array Inline)
     (children : Array ProofNode) (expected : Expr) (origin : Name) :
     StateRefT DiscourseState MetaM ProofNode := do
+  modify (·.markEmitted)
   let goal ← buildGoalState ctx.tbl expected
-  let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) ctx.tbl expected else pure none
-  return .step id content children (some goal) diagHtml (some origin.toString)
+  return .step id content children (some goal) none (some origin.toString)
 
 /-- Explainer for problem/game reductions and converter absorption into winners/solvers. -/
 def problemReductionExplainer : RuleExplainer where
@@ -70,32 +63,23 @@ def problemReductionExplainer : RuleExplainer where
       return some #[node]
     if head == ``ConstructiveCryptography.Problem.performance_le_of_reduction ||
        head == ``ConstructiveCryptography.Games.win_le_of_reduction then
-      let op ← pickMaurerOpener .consequence
       let children ← decompilePremiseArgs ctx decompileChild proof
       return ← finish s!"cc-game-red-{head}" (fun conclInl =>
-        let lead := match conclInl[0]? with
-          | some (.text s) =>
-              if s.startsWith "the " || s.startsWith "protocol " then "we obtain that " else "we obtain "
-          | _ => "we obtain "
-        #[.text s!"{op} by reduction to the target problem—translating the uniform target bound through the monotone loss function—{lead}"] ++
-        conclInl ++ #[.text "."]) children
+        #[.text "By reduction, "] ++ conclInl ++ #[.text "."]) children
     if head == ``ConstructiveCryptography.Games.absorb_mem ||
        head == ``ConstructiveCryptography.DistinctionGames.absorb_mem then
-      let op ← pickMaurerOpener .elaboration
       let children ← decompilePremiseArgs ctx decompileChild proof
       return ← finish s!"cc-game-absorb-{head}" (fun conclInl =>
-        #[.text s!"{op} absorbing the converter into the admitted solver produces an admitted solver for the inner game: "] ++
+        #[.text "Absorbing the converter into the solver gives "] ++
         conclInl ++ #[.text "."]) children
     if head == ``ConstructiveCryptography.Games.absorb_comp then
-      let op ← pickMaurerOpener .elaboration
       return ← finish s!"cc-game-absorb-comp-{head}" (fun conclInl =>
-        #[.text s!"{op} absorbing a serial composition of converters into a winner absorbs each converter in turn, giving "] ++
+        #[.text "Absorbing composed converters sequentially gives "] ++
         conclInl ++ #[.text "."]) #[]
     if head == ``SystemAlgebra.Interface.win_le then
-      let op ← pickMaurerOpener .reduction
       let children ← decompilePremiseArgs ctx decompileChild proof
       return ← finish s!"cc-game-winle-{head}" (fun conclInl =>
-        #[.text s!"{op} every admitted winner realizes a compatible probabilistic distinguisher, so bounding every distinguisher's winning probability establishes "] ++
+        #[.text "Bounding every compatible distinguisher's winning probability gives "] ++
         conclInl ++ #[.text "."]) children
     return none
 
@@ -112,51 +96,42 @@ def mboGameHopExplainer : RuleExplainer where
       return some #[node]
     if head == ``ConstructiveCryptography.DistinctionGames.advantage_le_win ||
        head == ``SystemAlgebra.Domain.Distinguisher.advantage_le_winProbability then
-      let op ← pickMaurerOpener .consequence
       let children ← decompilePremiseArgs ctx decompileChild proof
       return ← finish s!"cc-mbo-adv-{head}" (fun conclInl =>
-        #[.text s!"{op} because the game is conditionally equivalent to the comparison resource while its monotone binary output (MBO) stays unset, the distinguishing advantage between the underlying system ",
-          .inlineMath "G^{-}", .text " (obtained by ignoring the MBO) and the comparison resource is bounded by the winning probability: "] ++
-        conclInl ++ #[.text "."]) children
+        #[.text "By conditional equivalence, "] ++ conclInl ++ #[.text "."]) children
     if head == ``SystemAlgebra.Interface.dist_visible_le ||
        head == ``SystemAlgebra.Interface.game_dist_le ||
        head == ``SystemAlgebra.RandomSystem.transcriptDistance_visible_le_of_unsetProbability then
-      let op ← pickMaurerOpener .consequence
       let children ← decompilePremiseArgs ctx decompileChild proof
       return ← finish s!"cc-mbo-dist-{head}" (fun conclInl =>
-        #[.text s!"{op} combining conditional equivalence with the upper bound on setting the MBO over every admissible query sequence bounds the distinguishing advantage between the underlying system ",
-          .inlineMath "G^{-}", .text " and the target resource: "] ++
+        #[.text "By conditional equivalence and the MBO trigger bound, "] ++
         conclInl ++ #[.text "."]) children
     if head == ``SystemAlgebra.Domain.Distinguisher.winProbability_le_of_unsetProbability ||
        head == ``SystemAlgebra.RandomSystem.winProbability_le_of_unsetProbability ||
        head == ``SystemAlgebra.PDG.one_sub_le_unsetProbability_behavior then
-      let op ← pickMaurerOpener .elaboration
       let children ← decompilePremiseArgs ctx decompileChild proof
       return ← finish s!"cc-mbo-unset-{head}" (fun conclInl =>
-        #[.text s!"{op} since replies before the MBO is set reveal no information about the hidden bad condition, bounding the probability that the MBO is triggered on every fixed query sequence yields "] ++
+        #[.text "Bounding the probability of setting the MBO on each query sequence gives "] ++
         conclInl ++ #[.text "."]) children
     if head == ``SystemAlgebra.RandomSystem.GameEquivalent.transcriptDistance_visible_le ||
        head == ``SystemAlgebra.Domain.Distinguisher.advantage_le_winProbability_of_gameEquivalent ||
        head == ``SystemAlgebra.RandomSystem.GameEquivalent.winProbability_eq then
-      let op ← pickMaurerOpener .consequence
       let children ← decompilePremiseArgs ctx decompileChild proof
       return ← finish s!"cc-mbo-fund-{head}" (fun conclInl =>
-        #[.text s!"{op} by the fundamental lemma of game playing, two games that behave identically until the MBO is set share the same unset-MBO probability mass, so distinguishing their underlying systems requires setting the MBO: "] ++
+        #[.text "By the fundamental lemma of game playing, "] ++
         conclInl ++ #[.text "."]) children
     if head == ``SystemAlgebra.PDG.gameEquivalent_behavior_of_isCoupling then
-      let op ← pickMaurerOpener .elaboration
       let children ← decompilePremiseArgs ctx decompileChild proof
       return ← finish s!"cc-mbo-coupling-{head}" (fun conclInl =>
-        #[.text s!"{op} coupling the two discrete games so that their realizations share a common monotone bad condition and agree on all replies until that condition holds establishes game equivalence: "] ++
+        #[.text "Coupling the two games until their shared bad event establishes "] ++
         conclInl ++ #[.text "."]) children
     if head == ``SystemAlgebra.RandomSystem.transcriptDistance_le_of_transcriptCost_le ||
        head == ``SystemAlgebra.RandomSystem.winProbability_le_of_transcriptCost_le ||
        head == ``SystemAlgebra.Domain.Distinguisher.winProbability_le_of_transcriptCost_le ||
        head == ``SystemAlgebra.RandomSystem.one_sub_le_sum_tSupp then
-      let op ← pickMaurerOpener .consequence
       let children ← decompilePremiseArgs ctx decompileChild proof
       return ← finish s!"cc-untilbad-{head}" (fun conclInl =>
-        #[.text s!"{op} summing the per-query probability of leaving the common good part along every admissible transcript via the potential-function union bound yields "] ++
+        #[.text "Summing the per-query bad-event probabilities along each transcript gives "] ++
         conclInl ++ #[.text "."]) children
     return none
 

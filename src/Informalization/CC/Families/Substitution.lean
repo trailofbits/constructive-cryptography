@@ -41,19 +41,12 @@ open Informalization.Core.Ontology
 open Informalization.Core.Explanation
 open Informalization.Core.ProofGraph
 
-private def pickMaurerOpener (kind : TransitionKind) :
-    StateRefT DiscourseState MetaM String := do
-  let st ← get
-  let (op, st') := st.pickOpener kind
-  set st'
-  return op
-
 private def mkStep (ctx : DecompCtx) (id : String) (content : Array Inline)
     (children : Array ProofNode) (expected : Expr) (origin : Name) :
     StateRefT DiscourseState MetaM ProofNode := do
+  modify (·.markEmitted)
   let goal ← buildGoalState ctx.tbl expected
-  let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) ctx.tbl expected else pure none
-  return .step id content children (some goal) diagHtml (some origin.toString)
+  return .step id content children (some goal) none (some origin.toString)
 
 /-- Classification of a single hop extracted from a `cc_calc` hybrid chain. -/
 private inductive HopKind
@@ -280,6 +273,15 @@ private def isTrivialDistReflHead (fn : Expr) : Bool :=
   fn.isConstOf ``le_rfl || fn.isConstOf ``le_refl ||
   fn.isConstOf `LE.le.refl || fn.isConstOf ``Eq.refl || fn.isConstOf ``rfl
 
+private def formatSubReasonLabel (env : Environment) (cn : Name) : String :=
+  let lbl := humanLemmaLabel env cn
+  let low := lbl.trimAscii.toString.toLower
+  if low.startsWith "by " || low.startsWith "from " || low.startsWith "via " ||
+     low.startsWith "since " || low.startsWith "because " then
+    lbl
+  else
+    s!"by {lbl}"
+
 /-- Produce a concise Maurer-style reason label for one hop in a `cc_calc` chain. -/
 private def describeHopReason (env : Environment) (tbl : SymbolTable) (hop : ExtractedHop) :
     MetaM (Array Inline) := do
@@ -294,69 +296,58 @@ private def describeHopReason (env : Environment) (tbl : SymbolTable) (hop : Ext
       match fn with
       | .const cn _ =>
           if cn == ``Eq.trans then
-            return #[.text "by chaining exact system identities"]
+            return #[.text "by chaining identities"]
           else if cn == ``Eq.symm then
-            return #[.text "by symmetry of exact system identity"]
+            return #[.text "by symmetry"]
           else
-            return #[.text "by exact identity (", .emph (humanLemmaLabel env cn), .text ")"]
-      | .fvar _ => return #[.text "by the assumed system identity"]
-      | _ => return #[.text "by exact system equality"]
+            return #[.text (formatSubReasonLabel env cn)]
+      | .fvar _ => return #[.text "by assumption"]
+      | _ => return #[.text "by definition"]
   | .statistical =>
       match fn with
       | .const cn _ =>
           if cn == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_distance then
-            return #[.text "by distinguishing advantage bound"]
+            return #[.text "by the advantage bound"]
           else if cn == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_statistical then
-            return #[.text "by statistical distance bound"]
+            return #[.text "by statistical distance"]
           else if cn == ``ConstructiveCryptography.CryptographicAlgebra.distance_attach_le ||
-                  (cn == ``LE.le.trans && hasAttachLe && !hasParallelLe) then
-            return #[.text "by non-expansion under converter attachment"]
-          else if cn == ``ConstructiveCryptography.CryptographicAlgebra.distance_parallel_le ||
-                  (cn == ``LE.le.trans && hasParallelLe && !hasAttachLe) then
-            return #[.text "by non-expansion under parallel composition"]
-          else if cn == ``LE.le.trans && hasAttachLe && hasParallelLe then
-            return #[.text "by non-expansion under converter attachment and parallel composition"]
+                  (cn == ``LE.le.trans && hasAttachLe && !hasParallelLe) ||
+                  cn == ``ConstructiveCryptography.CryptographicAlgebra.distance_parallel_le ||
+                  (cn == ``LE.le.trans && (hasParallelLe || hasAttachLe)) then
+            return #[.text "by non-expansion"]
           else if isTrivialDistReflHead fn then
-            return #[.text "by definition of the distance"]
+            return #[.text "by definition"]
           else
-            let lbl := humanLemmaLabel env cn
-            if lbl.startsWith "the " || (lbl.splitOn "bound").length > 1 then
-              return #[.text s!"by {lbl}"]
-            else
-              return #[.text "by advantage bound (", .emph lbl, .text ")"]
+            return #[.text (formatSubReasonLabel env cn)]
       | _ =>
-          if hasAttachLe && !hasParallelLe then
-            return #[.text "by non-expansion under converter attachment"]
-          else if hasParallelLe && !hasAttachLe then
-            return #[.text "by non-expansion under parallel composition"]
+          if hasAttachLe || hasParallelLe then
+            return #[.text "by non-expansion"]
           else
-            return #[.text "by distinguishing advantage bound"]
+            return #[.text "by the advantage bound"]
   | .computational =>
       match fn with
       | .const cn _ =>
           if cn == ``ConstructiveCryptography.AdmissibleDistinguishers.substitutesWithin_context ||
              cn == ``ConstructiveCryptography.AdmissibleDistinguishers.substitutesWithin_attach then
-            -- Find the converter argument (first non-Prop explicit argument of arrow/converter type)
             for arg in args do
               try
                 let ty ← normalizeForPresentation (← inferType arg)
                 if ty.isAppOf ``Quiver.Hom || ty.isAppOf `SystemAlgebra.TypedConverter then
                   let convTex ← exprToLatex arg tbl
-                  return #[.text "by substituting inside context ", .inlineMath convTex,
-                           .text " (absorbing ", .inlineMath convTex, .text " into the distinguisher)"]
+                  return #[.text "by absorbing ", .inlineMath convTex]
               catch _ => pure ()
-            return #[.text "by substituting inside a converter context"]
+            return #[.text "by context absorption"]
           else if cn == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_distance then
-            return #[.text "by the distinguishing advantage bound"]
+            return #[.text "by the advantage bound"]
           else if cn == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_statistical then
-            return #[.text "by statistical distance bound"]
+            return #[.text "by statistical distance"]
           else if isTrivialDistReflHead fn then
-            return #[.text "by definition of the distance"]
+            return #[.text "by definition"]
           else if cn == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.symm then
-            return #[.text "by symmetry of substitution"]
+            return #[.text "by symmetry"]
           else
-            return #[.text "by substitution (", .emph (humanLemmaLabel env cn), .text ")"]
-      | .fvar _ => return #[.text "by the assumed substitution"]
+            return #[.text (formatSubReasonLabel env cn)]
+      | .fvar _ => return #[.text "by assumption"]
       | _ => return #[.text "by substitution"]
 
 private def isFullProseClause (inls : Array Inline) : Bool :=
@@ -369,9 +360,6 @@ private def isFullProseClause (inls : Array Inline) : Bool :=
   (plain.splitOn " can be substituted").length > 1 ||
   (plain.splitOn " constructs ").length > 1 ||
   (plain.splitOn " is at most ").length > 1
-
-private def yieldsConnector (conclInl : Array Inline) : String :=
-  if isFullProseClause conclInl then "yields that " else "yields "
 
 /-- Explainer for multi-step `cc_calc` chains (mixed, quantitative, statistical). -/
 def ccCalcChainExplainer : RuleExplainer where
@@ -392,7 +380,7 @@ def ccCalcChainExplainer : RuleExplainer where
     if !isSubGoal && !isDistGoal then return none
     let hops ← flattenCCCalc ctx.tbl proof expected
     if hops.size < 2 then return none
-    let _ ← pickMaurerOpener .elaboration
+    modify (·.markEmitted)
     let subCtx : DecompCtx :=
       { ctx with lastFactFVar? := none, factIndex := 0, atRootConclusion := false, isProofStart := false }
     let env ← getEnv
@@ -403,18 +391,23 @@ def ccCalcChainExplainer : RuleExplainer where
       let reason ← describeHopReason env ctx.tbl hop
       let resolvedProof ← unwrapProofHead hop.proof
       let resolvedFn := resolvedProof.getAppFn.consumeMData
+      let isZeroPremiseNonExpand :=
+        (resolvedFn.isConstOf ``ConstructiveCryptography.CryptographicAlgebra.distance_attach_le ||
+         resolvedFn.isConstOf ``ConstructiveCryptography.CryptographicAlgebra.distance_parallel_le ||
+         resolvedFn.isConstOf ``ConstructiveCryptography.CryptographicAlgebra.distance_parallel_left_le ||
+         resolvedFn.isConstOf ``ConstructiveCryptography.CryptographicAlgebra.distance_parallel_right_le) &&
+        !exprContainsSorryAx hop.proof
       let subNodes ←
-        if isTrivialDistReflHead resolvedFn && !exprContainsSorryAx hop.proof then
+        if (isTrivialDistReflHead resolvedFn && !exprContainsSorryAx hop.proof) || isZeroPremiseNonExpand then
           pure #[]
         else
           let cleanProof := match hop.proof.consumeMData with
             | .letE _ _ val (.bvar 0) _ => val
             | other => other
-          match unwrapHypothesisFVar? cleanProof with
-          | some fvid => do
-              let n ← renderHypothesisStep ctx.tbl hop.prop fvid s!"calc-hyp-{fvid.name}-{hop.prop.hash}" (isWrap := true)
-              pure #[n]
-          | none => decompileChild subCtx hop.prop cleanProof
+          if !exprContainsSorryAx hop.proof && (unwrapHypothesisFVar? cleanProof).isSome then
+            pure #[]
+          else
+            decompileChild subCtx hop.prop cleanProof
       let cs : CalcStep := {
         lhsLatex := lhsTex
         relationLatex := hop.relLatex
@@ -424,11 +417,8 @@ def ccCalcChainExplainer : RuleExplainer where
       }
       calcSteps := calcSteps.push (cs, subNodes)
     let goal ← buildGoalState ctx.tbl expected
-    let nPhrase := countPhrase hops.size ⟨"hybrid transition", "hybrid transitions"⟩
-    let ledgerText :=
-      s!"We proceed through a chain of {nPhrase} and apply the triangle inequality:"
     let chainNode : ProofNode :=
-      .calcChain s!"cc-calc-{hops.size}" #[.text ledgerText] calcSteps (some goal)
+      .calcChain s!"cc-calc-{hops.size}" #[.text "By the triangle inequality:"] calcSteps (some goal)
     return some #[chainNode]
 
 /-- Explainer for individual substitution, context-transport, closure, and counted-implication steps. -/
@@ -447,9 +437,7 @@ def substitutionRuleExplainer : RuleExplainer where
        head == ``ConstructiveCryptography.AdmissibleDistinguishers.substitutesWithin_attach ||
        head == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.attach ||
        head == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.attach_serial then
-      let op ← pickMaurerOpener .elaboration
       let children ← decompilePremiseArgs ctx decompileChild proof
-      -- Try to find the converter term among arguments
       let mut convTex? : Option String := none
       for arg in args do
         if convTex?.isNone then
@@ -459,44 +447,39 @@ def substitutionRuleExplainer : RuleExplainer where
               convTex? := some (← exprToLatex arg ctx.tbl)
           catch _ => pure ()
       let convPhrase : Array Inline := match convTex? with
-        | some c => #[.text "the converter ", .inlineMath c,
-                      .text " (absorbing ", .inlineMath c, .text " into the distinguisher)"]
-        | none => #[.text "the surrounding converter context"]
+        | some c => #[.text "Absorbing ", .inlineMath c, .text " into the distinguisher "]
+        | none => #[.text "Absorbing the converter into the distinguisher "]
       return ← finish s!"cc-sub-ctx-{head}" (fun conclInl =>
-        #[.text s!"{op} transporting the substitution through "] ++ convPhrase ++
-        #[.text s!"—using closure of the distinguisher class—{yieldsConnector conclInl}" ] ++ conclInl ++ #[.text "."]) children
+        let verb := if isFullProseClause conclInl then "shows that " else "gives "
+        convPhrase ++ #[.text verb] ++ conclInl ++ #[.text "."]) children
     if head == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_distance ||
        head == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.of_statistical then
-      let op ← pickMaurerOpener .justification
       let children ← decompilePremiseArgs ctx decompileChild proof
       return ← finish s!"cc-sub-stat-{head}" (fun conclInl =>
-        #[.text s!"{op} every admitted distinguisher's advantage is bounded by the maximum distinguishing advantage, "] ++
+        #[.text "Since ", .inlineMath "\\Delta", .text " bounds every admitted distinguisher's advantage, "] ++
         conclInl ++ #[.text "."]) children
     if head == ``ConstructiveCryptography.CryptographicAlgebra.DistinguisherAdvantage.SubstitutesWithin.symm then
-      let op ← pickMaurerOpener .elaboration
       let children ← decompilePremiseArgs ctx decompileChild proof
       return ← finish s!"cc-sub-symm-{head}" (fun conclInl =>
-        #[.text s!"{op} by symmetry of distinguishing advantage, reversing the substitution preserves the error function and {yieldsConnector conclInl}"] ++
+        #[.text "By symmetry of distinguishing advantage, "] ++
         conclInl ++ #[.text "."]) children
     if head == ``ConstructiveCryptography.AdmissibleDistinguishers.ClosedUnder.comp then
-      let op ← pickMaurerOpener .consequence
       let children ← decompilePremiseArgs ctx decompileChild proof
       return ← finish s!"cc-closed-comp-{head}" (fun conclInl =>
-        #[.text s!"{op} absorbing a sequential composition of converters absorbs each converter in turn, so the distinguisher class remains closed: "] ++
+        #[.text "By sequential closure of the distinguisher class, "] ++
         conclInl ++ #[.text "."]) children
     if head == ``ConstructiveCryptography.AdmissibleDistinguishers.ClosedUnder.identity ||
        head == ``ConstructiveCryptography.AdmissibleDistinguishers.all_closedUnder then
-      let op ← pickMaurerOpener .elaboration
       return ← finish s!"cc-closed-triv-{head}" (fun conclInl =>
-        #[.text s!"{op} the distinguisher class is trivially closed under this absorption: "] ++
+        #[.text "The distinguisher class is closed under the identity converter: "] ++
         conclInl ++ #[.text "."]) #[]
     if head == ``ConstructiveCryptography.CryptographicAlgebra.SubstitutionRelation.Implication.substitutesWithin ||
        head == ``ConstructiveCryptography.CryptographicAlgebra.SubstitutionRelation.Implication.substitutesWithin_of_mixed ||
        head == ``ConstructiveCryptography.CryptographicAlgebra.SubstitutionRelation.derivable_substitutes then
-      let op ← pickMaurerOpener .consequence
       let children ← decompilePremiseArgs ctx decompileChild proof
       return ← finish s!"cc-implication-{head}" (fun conclInl =>
-        #[.text s!"{op} accumulating the per-step error budgets along the finite substitution chain {yieldsConnector conclInl}"] ++
+        let verb := if isFullProseClause conclInl then "shows that " else "gives "
+        #[.text s!"Chaining the step error bounds {verb}"] ++
         conclInl ++ #[.text "."]) children
     return none
 

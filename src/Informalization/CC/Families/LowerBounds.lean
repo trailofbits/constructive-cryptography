@@ -38,19 +38,12 @@ open Informalization.Core.Ontology
 open Informalization.Core.Explanation
 open Informalization.Core.ProofGraph
 
-private def pickMaurerOpener (kind : TransitionKind) :
-    StateRefT DiscourseState MetaM String := do
-  let st ← get
-  let (op, st') := st.pickOpener kind
-  set st'
-  return op
-
 private def mkStep (ctx : DecompCtx) (id : String) (content : Array Inline)
     (children : Array ProofNode) (expected : Expr) (origin : Name) :
     StateRefT DiscourseState MetaM ProofNode := do
+  modify (·.markEmitted)
   let goal ← buildGoalState ctx.tbl expected
-  let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) ctx.tbl expected else pure none
-  return .step id content children (some goal) diagHtml (some origin.toString)
+  return .step id content children (some goal) none (some origin.toString)
 
 /-- Check if `e` is a `≤` comparison whose left or right side is a CC distinguishing advantage or distance. -/
 private def splitOrder? (e : Expr) : MetaM (Option (Expr × Expr)) := do
@@ -90,7 +83,6 @@ def distinguisherLowerBoundExplainer : RuleExplainer where
           ((← isDistanceExpr r1) && (← isDistanceExpr l2) && r1 == l2) ||
           ((← isDistanceExpr l1) && (← isDistanceExpr r2) && l1 == r2)
         if isSandwich then
-          let op ← pickMaurerOpener .consequence
           let subCtx : DecompCtx :=
             { ctx with lastFactFVar? := none, factIndex := 0, atRootConclusion := false, isProofStart := false }
           let sub1 ← decompileChild subCtx t1 p1
@@ -107,35 +99,31 @@ def distinguisherLowerBoundExplainer : RuleExplainer where
             (#[.text (if lowerFirst then "For the matching upper bound, " else "For the matching lower bound, ")] ++
              inl2 ++ #[.text "."]) sub2 (some g2)
           return ← finish "cc-tightness-sandwich" (fun conclInl =>
-            #[.text s!"{op} combining the matching upper and lower bounds establishes the tightness sandwich "] ++
+            #[.text "Combining the matching lower and upper bounds gives "] ++
             conclInl ++ #[.text "."]) #[node1, node2]
     -- 2. Explicit distinguisher / environment-probe lower bounds
     if head == ``SystemAlgebra.Domain.Distinguisher.advantage_le_transcriptDistance ||
        head == ``SystemAlgebra.Domain.DistinguisherBehavior.advantage_le_transcriptDistance ||
        head == ``SystemAlgebra.RandomSystem.statDist_le_transcriptDistance ||
        head == ``SystemAlgebra.RandomSystem.decisionProbability_gap_le then
-      let op ← pickMaurerOpener .consequence
       let children ← decompilePremiseArgs ctx decompileChild proof
       return ← finish s!"cc-lower-dist-{head}" (fun conclInl =>
-        #[.text s!"{op} because the maximum distinguishing advantage is the supremum of advantages over all compatible distinguishers, this explicit distinguisher yields the lower bound "] ++
+        #[.text "Since ", .inlineMath "\\Delta", .text " is the supremum over all compatible distinguishers, "] ++
         conclInl ++ #[.text "."]) children
     if head == ``SystemAlgebra.RandomSystem.decisionProbability_envProbe then
-      let op ← pickMaurerOpener .elaboration
       let children ← decompilePremiseArgs ctx decompileChild proof
       return ← finish s!"cc-envprobe-{head}" (fun conclInl =>
-        #[.text s!"{op} running the query environment and testing the transcript event decides 1 with exactly the event probability: "] ++
+        #[.text "Probing the transcript event directly gives "] ++
         conclInl ++ #[.text "."]) children
     if head == ``SystemAlgebra.RandomSystem.transcriptDistance_eq_iSup ||
        head == ``SystemAlgebra.RandomSystem.transcriptDistance_eq_iSup_behavior then
-      let op ← pickMaurerOpener .elaboration
       return ← finish s!"cc-isup-char-{head}" (fun conclInl =>
-        #[.text s!"{op} characterizing the maximum distinguishing advantage as the supremum over all compatible distinguishers gives "] ++
+        #[.text "Characterizing ", .inlineMath "\\Delta", .text " as the supremum over compatible distinguishers gives "] ++
         conclInl ++ #[.text "."]) #[]
     if head == ``SystemAlgebra.RandomSystem.transcriptDistance_le_of_advantage_le then
-      let op ← pickMaurerOpener .reduction
       let children ← decompilePremiseArgs ctx decompileChild proof
       return ← finish s!"cc-isup-le-{head}" (fun conclInl =>
-        #[.text s!"{op} since the maximum distinguishing advantage is the supremum over all compatible distinguishers, bounding every distinguisher's advantage establishes "] ++
+        #[.text "Bounding every compatible distinguisher's advantage gives "] ++
         conclInl ++ #[.text "."]) children
     return none
 
@@ -149,18 +137,17 @@ def impossibilityObstructionExplainer : RuleExplainer where
       let expClean ← normalizeForPresentation expected
       if expClean.isAppOf ``ConstructiveCryptography.Construction.Unconstructible then
         if let .lam nm dom body bi := proof.consumeMData then
-          let op ← pickMaurerOpener .setup
+          modify (·.markEmitted)
           let subCtx : DecompCtx :=
             { ctx with lastFactFVar? := none, factIndex := 0, atRootConclusion := false, isProofStart := false }
           let children ← withLocalDecl nm bi dom fun fv =>
             decompileChild subCtx (mkConst ``False) (body.instantiate1 fv)
           let conclInl ← renderProposition ctx.tbl expected
           let content : Array Inline :=
-            #[.text s!"{op} suppose toward a contradiction that an admitted construction existed; deriving a contradiction establishes the impossibility "] ++
+            #[.text "Suppose toward a contradiction that an admitted construction exists; deriving a contradiction establishes "] ++
             conclInl ++ #[.text "."]
           let goal ← buildGoalState ctx.tbl expected
-          let diagHtml ← if ctx.lemmaDepth == 0 then (← diagramHookRef.get) ctx.tbl expected else pure none
-          return some #[.step "cc-unconstructible-contra" content children (some goal) diagHtml]
+          return some #[.step "cc-unconstructible-contra" content children (some goal) none]
       return none
     let finish (id : String) (mkMsg : Array Inline → Array Inline)
         (children : Array ProofNode) := do
@@ -168,23 +155,20 @@ def impossibilityObstructionExplainer : RuleExplainer where
       let node ← mkStep ctx id (mkMsg conclInl) children expected head
       return some #[node]
     if head == ``ConstructiveCryptography.Construction.Unconstructible.of_imp then
-      let op ← pickMaurerOpener .consequence
       let children ← decompilePremiseArgs ctx decompileChild proof
       return ← finish s!"cc-unconst-imp-{head}" (fun conclInl =>
-        #[.text s!"{op} pulling back the existing impossibility result along the judgment implication establishes "] ++
+        #[.text "Pulling back the impossibility result along the implication establishes "] ++
         conclInl ++ #[.text "."]) children
     if head == ``ConstructiveCryptography.Construction.Unconstructible.mono_constructors then
-      let op ← pickMaurerOpener .elaboration
       let children ← decompilePremiseArgs ctx decompileChild proof
       return ← finish s!"cc-unconst-mono-{head}" (fun conclInl =>
-        #[.text s!"{op} since no constructor in the larger class succeeds, restricting to a smaller class preserves non-constructibility: "] ++
+        #[.text "Restricting to a smaller constructor class preserves impossibility: "] ++
         conclInl ++ #[.text "."]) children
     if head == ``ConstructiveCryptography.CryptographicAlgebra.distance_eq_of_mutual_attach ||
        head == ``ConstructiveCryptography.CryptographicAlgebra.distance_attach_iso then
-      let op ← pickMaurerOpener .elaboration
       let children ← decompilePremiseArgs ctx decompileChild proof
       return ← finish s!"cc-dist-iso-{head}" (fun conclInl =>
-        #[.text s!"{op} by non-expansion in both directions, mutually invertible converter attachments preserve the maximum distinguishing advantage exactly: "] ++
+        #[.text "By non-expansion in both directions, "] ++
         conclInl ++ #[.text "."]) children
     return none
 

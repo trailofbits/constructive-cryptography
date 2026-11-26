@@ -1174,12 +1174,44 @@ elab_rules : tactic
   | `(tactic| By $r:str it suffices to show $[$id?:ident :]? $prop by $tacSeq) =>
       let raw := r.getString.trimAscii.toString
       let low := raw.toLower
-      let msg := if low.startsWith "by " || low.startsWith "since " || low.startsWith "because " || low.startsWith "from " || low.startsWith "under " then Informalization.Core.Grammar.capitalizeFirst raw else s!"By {raw}"
+      let hasVerb :=
+        [" gives", " show", " shows", " yield", " yields", " establish", " establishes",
+         " implies", " ensure", " ensures", " bound", " bounds"].any fun v =>
+          (low.splitOn v).length > 1
+      let msg :=
+        if low.startsWith "by " || low.startsWith "since " || low.startsWith "because " ||
+           low.startsWith "from " || low.startsWith "under " || low.startsWith "using " ||
+           low.startsWith "via " || low.startsWith "applying " ||
+           low.startsWith "multiplying " || low.startsWith "combining " ||
+           low.startsWith "dividing " || low.startsWith "summing " ||
+           low.startsWith "substituting " || low.startsWith "rewriting " ||
+           low.startsWith "splitting " then
+          Informalization.Core.Grammar.capitalizeFirst raw
+        else if hasVerb then
+          s!"Since {Informalization.Core.Grammar.lowercaseFirst raw}"
+        else
+          s!"By {raw}"
       elabSuffices id? prop (some msg) tacSeq
   | `(tactic| By $r:str it suffices to show $[$id?:ident :]? $prop via $tacSeq) =>
       let raw := r.getString.trimAscii.toString
       let low := raw.toLower
-      let msg := if low.startsWith "by " || low.startsWith "since " || low.startsWith "because " || low.startsWith "from " || low.startsWith "under " then Informalization.Core.Grammar.capitalizeFirst raw else s!"By {raw}"
+      let hasVerb :=
+        [" gives", " show", " shows", " yield", " yields", " establish", " establishes",
+         " implies", " ensure", " ensures", " bound", " bounds"].any fun v =>
+          (low.splitOn v).length > 1
+      let msg :=
+        if low.startsWith "by " || low.startsWith "since " || low.startsWith "because " ||
+           low.startsWith "from " || low.startsWith "under " || low.startsWith "using " ||
+           low.startsWith "via " || low.startsWith "applying " ||
+           low.startsWith "multiplying " || low.startsWith "combining " ||
+           low.startsWith "dividing " || low.startsWith "summing " ||
+           low.startsWith "substituting " || low.startsWith "rewriting " ||
+           low.startsWith "splitting " then
+          Informalization.Core.Grammar.capitalizeFirst raw
+        else if hasVerb then
+          s!"Since {Informalization.Core.Grammar.lowercaseFirst raw}"
+        else
+          s!"By {raw}"
       elabSuffices id? prop (some msg) tacSeq
   | `(tactic| It suffices to show $[$id?:ident :]? $prop $[because $r?:str]? by $tacSeq) =>
       elabSuffices id? prop (r?.map (·.getString)) tacSeq

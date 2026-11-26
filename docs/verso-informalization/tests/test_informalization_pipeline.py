@@ -1316,11 +1316,11 @@ class TestInformalizationCIAndVersoBundle(unittest.TestCase):
         const H = globalThis.__cadmoHelpers;
         function assert(cond, msg) { if (!cond) throw new Error('ASSERT FAILED: ' + msg); }
 
-        // (a) Diagrams & figures mounted cleanly with <style> stripped
+        // (a) Diagrams & figures mounted cleanly with <style> stripped, default collapsed (P6)
         const entryDiag = rootEl.querySelector('details.cadmo-entry-diagram');
         assert(entryDiag !== null, 'entry.diagramHtml must mount details.cadmo-entry-diagram');
-        assert(entryDiag.hasAttribute('open'), 'entry.diagramHtml details must be open');
-        assert(entryDiag.querySelector('summary').textContent === 'System diagram', 'entry diagram summary');
+        assert(!entryDiag.hasAttribute('open'), 'entry.diagramHtml details must start collapsed by default (P6)');
+        assert(entryDiag.querySelector('summary').textContent === 'System figure', 'entry diagram summary must be System figure');
         const entryDiagBody = entryDiag.querySelector('.cadmo-diagram-body');
         assert(entryDiagBody && entryDiagBody.innerHTML.includes('entry-svg'), 'entry diagram svg mounted');
         assert(!entryDiagBody.innerHTML.includes('<style'), 'entry diagram style stripped');
@@ -1332,19 +1332,15 @@ class TestInformalizationCIAndVersoBundle(unittest.TestCase):
         const figCap = figEl.querySelector('figcaption');
         assert(figCap && figCap.textContent.includes('Caption with'), 'figure caption mounted');
 
-        // Childless step diagram mounts collapsed details.cadmo-step-diagram directly
-        const childlessStepDiag = rootEl.querySelector('details.cadmo-step-diagram');
-        assert(childlessStepDiag !== null, 'childless step diagramHtml mounts details.cadmo-step-diagram');
-        assert(!childlessStepDiag.hasAttribute('open'), 'step diagram collapsed by default');
-        assert(childlessStepDiag.querySelector('summary').textContent === 'Diagram', 'step diagram summary');
-        assert(childlessStepDiag.querySelector('.cadmo-diagram-body').innerHTML.includes('childless-step-svg'), 'childless step svg');
+        // Nested step.diagramHtml must NOT mount clutter inside proof steps (P6)
+        assert(rootEl.querySelectorAll('details.cadmo-step-diagram').length === 0, 'step.diagramHtml must not mount details.cadmo-step-diagram');
 
-        // Expand proofs to verify expanded step.diagramHtml & calcStep.diagramHtml mount inside expanded step
+        // Expand proofs to verify only steps with real children get toggles and 0 step diagrams mount inside ⊕
         const controlsEl = rootEl.querySelector('.cadmo-controls');
         const expandBtn = controlsEl.querySelectorAll('button').find(b => b.textContent.includes('Expand proofs'));
         assert(expandBtn, 'Expand proofs button exists');
         const stepWithChildrenToggle = rootEl.querySelectorAll('button.cadmo-inline-toggle');
-        assert(stepWithChildrenToggle.length >= 2, 'step and calc step with diagramHtml both get toggles');
+        assert(stepWithChildrenToggle.length === 1, 'only step with real children gets a toggle (calcStep diagramHtml alone does not), got ' + stepWithChildrenToggle.length);
 
         // Inspect inspector ccDiagram
         const ccBody = H.renderInspectorRichBody(sampleDoc.inspectors[0], { compact: false });
@@ -1402,15 +1398,48 @@ class TestInformalizationCIAndVersoBundle(unittest.TestCase):
         assert(refs[1].dataset.cadmoToken === 'cal:R1', 'cal:R1 annotated');
         assert(exprSpan.querySelectorAll('.cadmo-ref').filter(r => r.closest('sup')).length === 0, 'sup blocked');
 
-        // (f) Click Expand proofs and verify step.diagramHtml & calcStep.diagramHtml mount inside .cadmo-expansion
+        // (f) Click Expand proofs and verify zero nested step.diagramHtml / calcStep.diagramHtml inside .cadmo-expansion (P6),
+        // plus sentence/math spacing (Pr[Z].To prove and [\,n\,] -> [n]) and setting/motivation preludes
         expandBtn.dispatchClick();
         const expansions = rootEl.querySelectorAll('.cadmo-expansion');
         const expandedStepDiags = expansions.flatMap(ex => ex.querySelectorAll('details.cadmo-step-diagram'));
-        assert(expandedStepDiags.length === 2, 'expanded step + calcStep must mount 2 details.cadmo-step-diagram inside .cadmo-expansion, got ' + expandedStepDiags.length);
-        const expandedHtmls = expandedStepDiags.map(d => d.querySelector('.cadmo-diagram-body').innerHTML);
-        assert(expandedHtmls.some(s => s.includes('parent-step-svg')), 'expanded parent step diagram mounted');
-        assert(expandedHtmls.some(s => s.includes('calc-step-svg')), 'expanded calc step diagram mounted');
-        assert(expandedHtmls.every(s => !s.includes('<style')), 'expanded step diagrams stripped <style>');
+        assert(expandedStepDiags.length === 0, 'expanded step + calcStep must mount 0 details.cadmo-step-diagram inside .cadmo-expansion (P6), got ' + expandedStepDiags.length);
+
+        const spacedFlow = H.renderProofFlow([
+          {
+            kind: 'step',
+            id: 'sp-1',
+            content: [{ inlineMath: { latex: '\\Pr[Z]' } }, { text: { value: '.' } }],
+            children: []
+          },
+          {
+            kind: 'calcChain',
+            id: 'sp-calc',
+            intro: [{ text: { value: 'To prove the claim:' } }],
+            steps: [{ step: { lhsLatex: 'A', relationLatex: '=', rhsLatex: 'B', reason: [] }, children: [] }]
+          }
+        ], { depth: 0, scope: null });
+        assert(spacedFlow[0].textContent.includes('Pr[Z]. To prove'), 'calcChain intro must not glue onto previous period, got: ' + spacedFlow[0].textContent);
+
+        const bracketMath = H.renderInline({ inlineMath: { latex: '[\\,U\\,]' } }, null);
+        assert(bracketMath.textContent === '[U]', 'index-set [\\,U\\,] must normalize to [U], got: ' + JSON.stringify(bracketMath.textContent));
+
+        const settingPrelude = H.renderPreludeBlock({
+          id: 'pre-set',
+          kind: 'setting',
+          label: 'Setting',
+          body: [[{ text: { value: 'Fix seed space ' } }, { inlineMath: { latex: 'S' } }, { text: { value: '.' } }]]
+        }, null);
+        assert(settingPrelude && settingPrelude.classList.contains('cadmo-prelude-setting'), 'setting prelude class');
+        assert(settingPrelude.querySelector('table') === null, 'setting prelude must have zero table chrome');
+
+        const motivPrelude = H.renderPreludeBlock({
+          id: 'pre-mot',
+          kind: 'motivation',
+          body: [[{ text: { value: 'We interpolate in two hops.' } }]]
+        }, null);
+        assert(motivPrelude && motivPrelude.classList.contains('cadmo-prelude-motivation'), 'motivation prelude class');
+        assert(motivPrelude.getAttribute('data-trust') === 'authorGloss', 'motivation prelude gets authorGloss trust');
         print('WAVE_A_JS_TESTS_OK');
         """
         js_src = CADMO_READER_JS.read_text(encoding="utf-8")
@@ -2643,6 +2672,572 @@ open Lean VersoInformalization.Schema VersoInformalization.CadmoBlocks
         )
         res_poly = run_check("--tier", "authored", str(self.write_json("l12_poly.json", poly_disp)))
         self.assertEqual(res_poly.returncode, 0, msg=res_poly.stdout)
+
+    def test_iter3_math_accents_prose_formatting_and_chrome_suppression(self) -> None:
+        # 1. CI linter accepts PreludeBlock kind="setting" (and "motivation")
+        doc = make_clean_fixture()
+        entry = doc["entries"][0]
+        entry["sectionTitle"] = "Authenticated Encryption"
+        entry["sectionId"] = "sec-ae"
+        entry["sectionContext"] = {
+            "sectionId": "sec-ae",
+            "sectionNumber": 1,
+            "paragraphs": [[{"text": {"value": "Legacy context should be suppressed in JS."}}]],
+            "inspectors": [],
+        }
+        entry["sectionPreludes"] = [
+            {
+                "id": "pre-setting",
+                "kind": "setting",
+                "label": "Setting",
+                "body": [[{"text": {"value": "Maurer--Renner setting with *perfectly secure* ciphers."}}]],
+                "diagramHtml": entry["diagramHtml"],
+            },
+            {
+                "id": "pre-const",
+                "kind": "construction",
+                "label": "Construction 1",
+                "title": "Two-Stage Distinguisher (Maurer--Renner §5)",
+                "body": [[{"text": {"value": "**Stage 1:** sample "}}, {"inlineMath": {"latex": "k \\xleftarrow{\\$} \\{0,1\\}^{8r}"}}]],
+                "lines": [],
+                "rows": [],
+                "diagramHtml": entry["diagramHtml"],
+            },
+        ]
+        p_setting = self.write_json("iter3_setting_clean.json", doc)
+        for tier in ("legacy", "authored"):
+            res = run_check("--tier", tier, str(p_setting))
+            self.assertEqual(res.returncode, 0, msg=f"tier={tier}: {res.stdout}\n{res.stderr}")
+
+        # 2. JS renderer checks: missing math commands, accents, emphasis/dashes, and suppression
+        js_cmd = find_js_runtime()
+        if not js_cmd:
+            self.skipTest("No JS runtime (node or jsc) available")
+
+        harness = r"""
+        const jsSrc = __JS_SRC__;
+        const sampleDoc = __DOC_JSON__;
+        class FakeClassList {
+          constructor(el) { this.el = el; this._set = new Set(); }
+          _syncFromString(str) { this._set = new Set(String(str || '').trim().split(/\s+/).filter(Boolean)); }
+          _syncToString() { this.el._className = Array.from(this._set).join(' '); }
+          add(...cls) { cls.forEach(c => this._set.add(c)); this._syncToString(); }
+          remove(...cls) { cls.forEach(c => this._set.delete(c)); this._syncToString(); }
+          contains(c) { return this._set.has(c); }
+        }
+        class FakeNode {
+          constructor(nodeType, tagName = '') {
+            this.nodeType = nodeType;
+            this.tagName = tagName.toUpperCase();
+            this.childNodes = [];
+            this.parentNode = null;
+            this.attrs = {};
+            this.dataset = {};
+            this.style = {};
+            this._className = '';
+            this._innerHTML = null;
+            this.classList = new FakeClassList(this);
+            this._text = '';
+            this.isConnected = true;
+          }
+          get className() { return this._className; }
+          set className(v) { this._className = String(v || ''); this.classList._syncFromString(this._className); }
+          get children() { return this.childNodes.filter(n => n.nodeType === 1); }
+          get innerHTML() {
+            if (this._innerHTML !== null && this.childNodes.length === 0) return this._innerHTML;
+            return this.childNodes.map(c => c.toHTML()).join('');
+          }
+          set innerHTML(v) { this.childNodes = []; this._innerHTML = String(v || ''); }
+          get textContent() {
+            if (this.nodeType === 3) return this._text;
+            return this.childNodes.map(c => c.textContent).join('');
+          }
+          set textContent(v) {
+            if (this.nodeType === 3) { this._text = String(v || ''); return; }
+            this.childNodes = [];
+            this._innerHTML = null;
+            if (v !== '' && v !== null && v !== undefined) this.appendChild(document.createTextNode(String(v)));
+          }
+          appendChild(child) {
+            if (!child) return child;
+            if (child.nodeType === 11) {
+              for (const k of [...child.childNodes]) this.appendChild(k);
+              return child;
+            }
+            if (child.parentNode) child.parentNode.removeChild(child);
+            child.parentNode = this;
+            this.childNodes.push(child);
+            return child;
+          }
+          removeChild(child) {
+            const idx = this.childNodes.indexOf(child);
+            if (idx >= 0) { this.childNodes.splice(idx, 1); child.parentNode = null; }
+            return child;
+          }
+          insertBefore(newNode, refNode) {
+            if (!refNode) return this.appendChild(newNode);
+            if (newNode.parentNode) newNode.parentNode.removeChild(newNode);
+            const idx = this.childNodes.indexOf(refNode);
+            newNode.parentNode = this;
+            if (idx >= 0) this.childNodes.splice(idx, 0, newNode);
+            else this.childNodes.push(newNode);
+            return newNode;
+          }
+          setAttribute(k, v) {
+            this.attrs[k] = String(v);
+            if (k === 'class') this.className = v;
+            if (k.startsWith('data-')) {
+              const camel = k.slice(5).replace(/-([a-z])/g, (_, ch) => ch.toUpperCase());
+              this.dataset[camel] = String(v);
+            }
+          }
+          getAttribute(k) { return Object.prototype.hasOwnProperty.call(this.attrs, k) ? this.attrs[k] : null; }
+          hasAttribute(k) { return Object.prototype.hasOwnProperty.call(this.attrs, k); }
+          addEventListener() {}
+          matchesSelectorOne(sel) {
+            sel = sel.trim();
+            if (!sel) return false;
+            const tokens = sel.match(/(?:^[A-Za-z0-9_-]+|\.[A-Za-z0-9_-]+|\[[^\]]+\])/g);
+            if (!tokens || tokens.join('') !== sel) return false;
+            return tokens.every(tok => {
+              if (tok.startsWith('[')) {
+                const inner = tok.slice(1, -1);
+                const eq = inner.indexOf('=');
+                if (eq >= 0) {
+                  return this.getAttribute(inner.slice(0, eq).trim()) === inner.slice(eq + 1).trim().replace(/^["']|["']$/g, '');
+                }
+                return this.hasAttribute(inner);
+              }
+              if (tok.startsWith('.')) return this.classList.contains(tok.slice(1));
+              return this.tagName === tok.toUpperCase();
+            });
+          }
+          closest(selectorList) {
+            const parts = selectorList.split(',').map(s => s.trim());
+            let cur = this;
+            while (cur && cur.nodeType === 1) {
+              if (parts.some(p => cur.matchesSelectorOne(p))) return cur;
+              cur = cur.parentNode;
+            }
+            return null;
+          }
+          querySelectorAll(selectorList) {
+            const parts = selectorList.split(',').map(s => s.trim()).filter(Boolean);
+            const out = [];
+            const walk = (node) => {
+              for (const ch of node.children) {
+                if (parts.some(p => ch.matchesSelectorOne(p))) out.push(ch);
+                walk(ch);
+              }
+            };
+            walk(this);
+            return out;
+          }
+          querySelector(selectorList) { return this.querySelectorAll(selectorList)[0] || null; }
+          toHTML() {
+            if (this.nodeType === 3) return this._text;
+            const cls = this._className ? ` class="${this._className}"` : '';
+            const attrs = Object.entries(this.attrs).filter(([k]) => k !== 'class').map(([k, v]) => ` ${k}="${v}"`).join('');
+            return `<${this.tagName.toLowerCase()}${cls}${attrs}>${this.innerHTML}</${this.tagName.toLowerCase()}>`;
+          }
+        }
+        const rootEl = new FakeNode(1, 'div');
+        const dataEl = new FakeNode(1, 'script');
+        const bodyEl = new FakeNode(1, 'body');
+        const docEl = new FakeNode(1, 'html');
+        globalThis.document = {
+          documentElement: docEl,
+          body: bodyEl,
+          getElementById: (id) => id === 'cadmo-root' ? rootEl : (id === 'cadmo-document-data' ? dataEl : null),
+          createElement: (tag) => new FakeNode(1, tag),
+          createTextNode: (txt) => { const n = new FakeNode(3); n._text = String(txt || ''); return n; },
+          createDocumentFragment: () => new FakeNode(11),
+          addEventListener: () => {},
+          querySelector: () => null
+        };
+        globalThis.window = globalThis;
+        globalThis.addEventListener = () => {};
+        sampleDoc.subtitle = 'Maurer--Renner simulator witnesses';
+        dataEl.textContent = JSON.stringify(sampleDoc);
+        eval(jsSrc);
+        const H = globalThis.__cadmoHelpers;
+        function assert(cond, msg) { if (!cond) throw new Error('ASSERT FAILED: ' + msg); }
+
+        // (a) Missing LaTeX commands & stacked arrows
+        const symsWrap = document.createElement('span');
+        symsWrap.appendChild(H.renderMathNodes("\\pi' \\triangleright E,\\; (H \\triangleleft \\sigma)S,\\; (\\Phi, \\bullet, \\parallel, \\circ),\\; A \\setminus B,\\; \\bigsqcup_i \\sqcup X_i,\\; a \\leftarrow b"));
+        const symsTxt = symsWrap.textContent;
+        assert(symsTxt.includes('▷') && !symsTxt.includes('triangleright'), 'triangleright -> ▷: ' + symsTxt);
+        assert(symsTxt.includes('◁') && !symsTxt.includes('triangleleft'), 'triangleleft -> ◁: ' + symsTxt);
+        assert(symsTxt.includes('•') && !symsTxt.includes('bullet'), 'bullet -> •: ' + symsTxt);
+        assert(symsTxt.includes('∘') && symsTxt.includes('∖') && symsTxt.includes('⊔') && symsTxt.includes('←'), 'circ/setminus/sqcup/leftarrow');
+
+        const xarrWrap = document.createElement('span');
+        xarrWrap.appendChild(H.renderMathNodes('k \\xleftarrow{\\$} \\{0,1\\}^{8r},\\; A \\xleftarrow[D]{\\$} B,\\; \\mathbf{R} \\xrightarrow{\\pi} \\mathbf{S}'));
+        const xarrows = xarrWrap.querySelectorAll('.cadmo-xarrow');
+        assert(xarrows.length === 3, '3 stacked xarrows rendered');
+        assert(!xarrWrap.textContent.includes('xleftarrow') && !xarrWrap.textContent.includes('xrightarrow'), 'no literal arrow cmd');
+        assert(xarrows[0].querySelector('.cadmo-xarrow-top').textContent === '$', 'xleftarrow{$} top is $');
+        assert(xarrows[0].querySelector('.cadmo-xarrow-mid').textContent === '←', 'xleftarrow mid is ←');
+        assert(xarrows[1].querySelector('.cadmo-xarrow-bot').textContent === 'D', 'xleftarrow[D]{$} bot is D');
+        assert(xarrows[2].querySelector('.cadmo-xarrow-mid').textContent === '→', 'xrightarrow mid is →');
+
+        // (b) Accent rendering & font-aware hover matching on \hat{\mathbf{G}}
+        const accWrap = document.createElement('span');
+        accWrap.appendChild(H.renderMathNodes('\\hat{\\mathbf{G}} + \\hat{\\mathbf{S}} + \\tilde{z} + \\overline{Z}'));
+        const accEls = accWrap.querySelectorAll('.cadmo-accent');
+        assert(accEls.length === 4, '4 accent nodes');
+        assert(accEls[0].classList.contains('cadmo-accent-hat') && accEls[0].querySelector('.cadmo-bf').textContent === 'G', 'hat{mathbf{G}} preserves cadmo-bf inside cadmo-accent-hat');
+        assert(accEls[1].classList.contains('cadmo-accent-hat') && accEls[1].querySelector('.cadmo-bf').textContent === 'S', 'hat{mathbf{S}} preserves cadmo-bf');
+        assert(accEls[2].classList.contains('cadmo-accent-tilde') && accEls[2].textContent === 'z', 'tilde{z}');
+        assert(accEls[3].classList.contains('cadmo-accent-bar') && accEls[3].textContent === 'Z', 'overline{Z}');
+        assert(H.normalizeMathToken('\\hat{\\mathbf{G}}') === 'bf:G', 'normalizeMathToken(\\hat{\\mathbf{G}}) === bf:G');
+        const gScope = H.buildTokenScope([{ key: 'param:G', display: '\\hat{\\mathbf{G}}' }], [], [], null, [], false);
+        H.annotateOfflineMathContainer(accWrap, gScope);
+        const gRefs = accWrap.querySelectorAll('.cadmo-ref');
+        assert(gRefs.length === 1 && gRefs[0].dataset.cadmoToken === 'bf:G', '\\hat{\\mathbf{G}} annotated with bf:G');
+
+        // (c) Inline emphasis, stray-* preservation, and en/em dashes
+        const proseNode = H.renderMixedText('A cipher is *perfectly secure* with **Stage 1:** in Maurer--Renner (200--n) and B* and C* and 2 * 3 + 4 * 5 --- end $S^*$');
+        const ems = proseNode.querySelectorAll('em');
+        const strongs = proseNode.querySelectorAll('strong');
+        assert(ems.length === 1 && ems[0].textContent === 'perfectly secure', 'only balanced *italics* matched, got ' + ems.length);
+        assert(strongs.length === 1 && strongs[0].textContent === 'Stage 1:', 'balanced **bold** matched');
+        assert(proseNode.textContent.includes('Maurer\u2013Renner'), 'en-dash in Maurer--Renner');
+        assert(proseNode.textContent.includes('(200\u2013n)'), 'en-dash in (200--n)');
+        assert(proseNode.textContent.includes('B* and C*'), 'stray B* and C* untouched');
+        assert(proseNode.textContent.includes('2 * 3 + 4 * 5'), 'arithmetic * untouched');
+        assert(proseNode.textContent.includes('\u2014 end'), 'em-dash --- converted');
+        const dashOnly = H.renderMixedText('--');
+        assert(dashOnly.textContent === '\u2013', 'standalone -- inline converted to en-dash');
+
+        // (d) Subtitle dash, legacy SECTION CONTEXT. suppression on setting prelude, and duplicate SYSTEM FIGURE suppression
+        assert(rootEl.querySelector('.cadmo-doc-subtitle').textContent === 'Maurer\u2013Renner simulator witnesses', 'subtitle dashes converted');
+        assert(rootEl.querySelector('.cadmo-section-context') === null, 'SECTION CONTEXT. suppressed when section has setting prelude');
+        assert(rootEl.querySelectorAll('.cadmo-prelude-diagram').length === 0, 'redundant prelude SYSTEM FIGURE suppressed on setting and matching construction');
+        assert(rootEl.querySelectorAll('.cadmo-entry-diagram').length === 1, 'entry SYSTEM FIGURE still mounted');
+
+        print('ITER3_JS_TESTS_OK');
+        """
+        js_src = CADMO_READER_JS.read_text(encoding="utf-8")
+        full_js = (
+            "if (typeof print === 'undefined') { globalThis.print = console.log; }\n"
+            + harness.replace("__JS_SRC__", json.dumps(js_src)).replace("__DOC_JSON__", json.dumps(doc))
+        )
+        script_path = self.tmp_path / "test_iter3_js.js"
+        script_path.write_text(full_js, encoding="utf-8")
+        res_js = subprocess.run([*js_cmd, str(script_path)], capture_output=True, text=True)
+        self.assertEqual(res_js.returncode, 0, msg=res_js.stdout + res_js.stderr)
+        self.assertIn("ITER3_JS_TESTS_OK", res_js.stdout)
+
+        # 3. CSS checks: empty TOC + single header rule + Paper-mode calm inline vars + accent/xarrow styles
+        css_txt = CADMO_READER_CSS.read_text(encoding="utf-8")
+        for req_css in [
+            ".cadmo-toc:empty",
+            ".cadmo-doc-header + .cadmo-section-head",
+            ".cadmo-accent-hat::before",
+            ".cadmo-xarrow",
+            "border-bottom: 1px dotted transparent",
+            '[data-mode="auditor"] .cadmo-ref',
+        ]:
+            self.assertIn(req_css, css_txt)
+
+    def test_iter4_tilde_underline_primes_hat_display_and_audit_regex(self) -> None:
+        js_cmd = find_js_runtime()
+        if not js_cmd:
+            self.skipTest("No JS runtime (node or jsc) available")
+
+        audit_py_path = REPO_ROOT / "scripts" / "visual_browser_audit.py"
+        audit_ns: Dict[str, Any] = {}
+        audit_src = audit_py_path.read_text(encoding="utf-8")
+        # Extract AUDIT_JS string safely via AST without importing/running main
+        import ast
+        tree = ast.parse(audit_src, filename=str(audit_py_path))
+        audit_js = None
+        for node in tree.body:
+            if isinstance(node, ast.Assign):
+                for tgt in node.targets:
+                    if isinstance(tgt, ast.Name) and tgt.id == "AUDIT_JS":
+                        audit_js = ast.literal_eval(node.value)
+        self.assertIsInstance(audit_js, str)
+
+        harness = r"""
+        const jsSrc = __JS_SRC__;
+        const auditJs = __AUDIT_JS__;
+        class FakeClassList {
+          constructor(el) { this.el = el; this._set = new Set(); }
+          _syncFromString(str) { this._set = new Set(String(str || '').trim().split(/\s+/).filter(Boolean)); }
+          _syncToString() { this.el._className = Array.from(this._set).join(' '); }
+          add(...cls) { cls.forEach(c => this._set.add(c)); this._syncToString(); }
+          remove(...cls) { cls.forEach(c => this._set.delete(c)); this._syncToString(); }
+          contains(c) { return this._set.has(c); }
+        }
+        class FakeNode {
+          constructor(nodeType, tagName = '') {
+            this.nodeType = nodeType;
+            this.tagName = tagName.toUpperCase();
+            this.childNodes = [];
+            this.parentNode = null;
+            this.attrs = {};
+            this.dataset = {};
+            this.style = {};
+            this._className = '';
+            this.classList = new FakeClassList(this);
+            this._text = '';
+            this.isConnected = true;
+          }
+          get className() { return this._className; }
+          set className(v) { this._className = String(v || ''); this.classList._syncFromString(this._className); }
+          get children() { return this.childNodes.filter(n => n.nodeType === 1); }
+          get nodeValue() { return this.nodeType === 3 ? this._text : null; }
+          get textContent() {
+            if (this.nodeType === 3) return this._text;
+            return this.childNodes.map(c => c.textContent).join('');
+          }
+          set textContent(v) {
+            if (this.nodeType === 3) { this._text = String(v || ''); return; }
+            this.childNodes = [];
+            if (v !== '' && v !== null && v !== undefined) this.appendChild(document.createTextNode(String(v)));
+          }
+          get innerText() { return this.textContent; }
+          cloneNode(deep = false) {
+            const copy = new FakeNode(this.nodeType, this.tagName);
+            copy._text = this._text;
+            copy.attrs = { ...this.attrs };
+            copy.dataset = { ...this.dataset };
+            copy.className = this._className;
+            if (deep) {
+              for (const ch of this.childNodes) copy.appendChild(ch.cloneNode(true));
+            }
+            return copy;
+          }
+          remove() {
+            if (this.parentNode) this.parentNode.removeChild(this);
+          }
+          appendChild(child) {
+            if (!child) return child;
+            if (child.nodeType === 11) {
+              for (const k of [...child.childNodes]) this.appendChild(k);
+              return child;
+            }
+            if (child.parentNode) child.parentNode.removeChild(child);
+            child.parentNode = this;
+            this.childNodes.push(child);
+            return child;
+          }
+          removeChild(child) {
+            const idx = this.childNodes.indexOf(child);
+            if (idx >= 0) { this.childNodes.splice(idx, 1); child.parentNode = null; }
+            return child;
+          }
+          insertBefore(newNode, refNode) {
+            if (!refNode) return this.appendChild(newNode);
+            if (newNode.parentNode) newNode.parentNode.removeChild(newNode);
+            const idx = this.childNodes.indexOf(refNode);
+            newNode.parentNode = this;
+            if (idx >= 0) this.childNodes.splice(idx, 0, newNode);
+            else this.childNodes.push(newNode);
+            return newNode;
+          }
+          setAttribute(k, v) {
+            this.attrs[k] = String(v);
+            if (k === 'class') this.className = v;
+            if (k.startsWith('data-')) {
+              const camel = k.slice(5).replace(/-([a-z])/g, (_, ch) => ch.toUpperCase());
+              this.dataset[camel] = String(v);
+            }
+          }
+          getAttribute(k) { return Object.prototype.hasOwnProperty.call(this.attrs, k) ? this.attrs[k] : null; }
+          hasAttribute(k) { return Object.prototype.hasOwnProperty.call(this.attrs, k); }
+          addEventListener() {}
+          matchesSelectorOne(sel) {
+            sel = sel.trim();
+            if (!sel) return false;
+            const tokens = sel.match(/(?:^[A-Za-z0-9_-]+|\.[A-Za-z0-9_-]+|\[[^\]]+\])/g);
+            if (!tokens || tokens.join('') !== sel) return false;
+            return tokens.every(tok => {
+              if (tok.startsWith('[')) return this.hasAttribute(tok.slice(1, -1));
+              if (tok.startsWith('.')) return this.classList.contains(tok.slice(1));
+              return this.tagName === tok.toUpperCase();
+            });
+          }
+          closest(selectorList) {
+            const parts = selectorList.split(',').map(s => s.trim());
+            let cur = this;
+            while (cur && cur.nodeType === 1) {
+              if (parts.some(p => cur.matchesSelectorOne(p))) return cur;
+              cur = cur.parentNode;
+            }
+            return null;
+          }
+          querySelectorAll(selectorList) {
+            const parts = selectorList.split(',').map(s => s.trim()).filter(Boolean);
+            const out = [];
+            const walk = (node) => {
+              for (const ch of node.children) {
+                if (parts.some(p => ch.matchesSelectorOne(p))) out.push(ch);
+                walk(ch);
+              }
+            };
+            walk(this);
+            return out;
+          }
+          querySelector(selectorList) { return this.querySelectorAll(selectorList)[0] || null; }
+        }
+
+        const docEl = new FakeNode(1, 'html');
+        docEl.scrollWidth = 1000;
+        docEl.clientWidth = 1000;
+        const bodyEl = new FakeNode(1, 'body');
+        const mainEl = new FakeNode(1, 'main');
+        mainEl.className = 'cadmo-main';
+        bodyEl.appendChild(mainEl);
+
+        globalThis.document = {
+          documentElement: docEl,
+          body: bodyEl,
+          getElementById: () => null,
+          createElement: (tag) => new FakeNode(1, tag),
+          createTextNode: (txt) => { const n = new FakeNode(3); n._text = String(txt || ''); return n; },
+          createDocumentFragment: () => new FakeNode(11),
+          addEventListener: () => {},
+          querySelectorAll: (sel) => bodyEl.querySelectorAll(sel),
+          querySelector: (sel) => bodyEl.querySelector(sel)
+        };
+        globalThis.window = globalThis;
+        eval(jsSrc);
+        const H = globalThis.__cadmoHelpers;
+        function assert(cond, msg) { if (!cond) throw new Error('ASSERT FAILED: ' + msg); }
+
+        // 1. LaTeX ~ non-breaking space conversion in prose
+        const refProse = H.renderMixedText(
+          'See Proposition~1, Lemma~4, Distinguisher~1, Theorem~1, Section~2, Table~1, Definition~2.1, Eq.~(1), Section~$2$, and Lemma~\\(4\\).'
+        );
+        const refText = refProse.textContent;
+        assert(!refText.includes('~'), 'No literal ~ in ref prose: ' + refText);
+        assert(refText.includes('Proposition\u00A01'), 'Proposition~1 -> NBSP');
+        assert(refText.includes('Lemma\u00A04'), 'Lemma~4 -> NBSP');
+        assert(refText.includes('Distinguisher\u00A01'), 'Distinguisher~1 -> NBSP');
+        assert(refText.includes('Theorem\u00A01'), 'Theorem~1 -> NBSP');
+        assert(refText.includes('Section\u00A02'), 'Section~2 -> NBSP');
+        assert(refText.includes('Table\u00A01'), 'Table~1 -> NBSP');
+        assert(refText.includes('Definition\u00A02.1'), 'Definition~2.1 -> NBSP');
+        assert(refText.includes('Eq.\u00A0(1)'), 'Eq.~(1) -> NBSP');
+        assert(refText.includes('Section\u00A02'), 'Section~$2$ -> NBSP');
+        assert(refText.includes('Lemma\u00A04.'), 'Lemma~\\(4\\) -> NBSP');
+
+        const safeTilde = H.renderMixedText('Sampling a ~ X and b ~ Y, ~10, and https://example.com/~alice, plus $a ~ b$.');
+        assert(safeTilde.textContent.includes('a ~ X and b ~ Y'), 'standalone a ~ X preserved');
+        assert(safeTilde.textContent.includes('~10'), 'prefix ~10 preserved');
+        assert(safeTilde.textContent.includes('https://example.com/~alice'), 'URL ~ preserved');
+        assert(!safeTilde.textContent.includes('\u00A0'), 'no spurious NBSP on standalone ~ or math ~');
+
+        // 2. \underline{d} in renderMathNodes
+        const underWrap = document.createElement('span');
+        underWrap.className = 'cadmo-math';
+        underWrap.appendChild(H.renderMathNodes('1/D^{\\underline{d}} + \\underline{\\mathbf{x} + 1}'));
+        const uSpans = underWrap.querySelectorAll('.cadmo-math-underline');
+        assert(uSpans.length === 2, 'expected 2 .cadmo-math-underline spans, got ' + uSpans.length);
+        assert(uSpans[0].closest('sup') !== null, '\\underline{d} stays inside <sup>');
+        assert(uSpans[0].textContent === 'd', 'first underline arg is d');
+        assert(uSpans[1].querySelector('.cadmo-bf').textContent === 'x', 'recursive renderMathNodes inside \\underline');
+        assert(!/underline/i.test(underWrap.textContent), 'must not render literal underline/underlined: ' + underWrap.textContent);
+        assert(H.normalizeMathToken('\\underline{d}') === 'd', 'normalizeMathToken strips \\underline');
+
+        // 3. Consecutive primes H, H', H'', H'''
+        const primeWrap = document.createElement('span');
+        primeWrap.className = 'cadmo-math';
+        primeWrap.appendChild(H.renderMathNodes("H, H', H'', H'''"));
+        assert(primeWrap.textContent === 'H, H\u2032, H\u2033, H\u2034', 'primes render cleanly: ' + primeWrap.textContent);
+        const primeScope = H.buildTokenScope([
+          { key: 'p:H', display: 'H' },
+          { key: 'p:Hp', display: "H'" },
+          { key: 'p:Hpp', display: "H''" }
+        ], [], [], null, [], false);
+        H.annotateOfflineMathContainer(primeWrap, primeScope);
+        const primeRefs = primeWrap.querySelectorAll('.cadmo-ref');
+        assert(primeRefs.length === 3, 'H, H\', H\'\' annotated separately, got ' + primeRefs.length);
+        assert(primeRefs[0].dataset.cadmoToken === 'H', 'first ref is H');
+        assert(primeRefs[1].dataset.cadmoToken === "H'", "second ref is H'");
+        assert(primeRefs[2].dataset.cadmoToken === "H''", "third ref is H''");
+
+        // 4. \hat{\mathbf{G}}^{-} inside displayMath
+        const dispScope = H.buildTokenScope([{ key: 'param:G', display: '\\hat{\\mathbf{G}}' }], [], [], null, [], false);
+        const dispEl = H.renderInline({
+          displayMath: { latex: '\\Delta^{D}(\\alpha\\,\\hat{\\mathbf{G}}^{-}, \\alpha\\,\\mathbf{T}) \\le \\varepsilon', punct: '.' }
+        }, dispScope);
+        assert(dispEl.classList.contains('cadmo-display-math'), 'displayMath renders .cadmo-display-math');
+        const dispHat = dispEl.querySelector('.cadmo-accent.cadmo-accent-hat');
+        assert(dispHat !== null, 'displayMath contains .cadmo-accent.cadmo-accent-hat');
+        assert(dispHat.querySelector('.cadmo-bf').textContent === 'G', 'hat wraps \\mathbf{G}');
+        const dispRef = dispHat.closest('.cadmo-ref');
+        assert(dispRef !== null && dispRef.dataset.cadmoToken === 'bf:G', 'displayMath hat G annotated with bf:G');
+
+        // 5. visual_browser_audit.py AUDIT_JS regex checks
+        function runAuditOnParagraphs(paraSpecs) {
+          mainEl.childNodes = [];
+          for (const spec of paraSpecs) {
+            const p = document.createElement('p');
+            if (spec.mathText !== undefined) {
+              const m = document.createElement('span');
+              m.className = 'cadmo-math';
+              m.textContent = spec.mathText;
+              p.appendChild(m);
+            } else {
+              p.textContent = spec.text;
+            }
+            mainEl.appendChild(p);
+          }
+          return eval(auditJs);
+        }
+
+        const cleanBot = runAuditOnParagraphs([
+          { text: 'On a fresh query, Ideal returns ⊥, outputs ⊥, dec(c) = ⊥, dec(c) ≠ ⊥, c ↦ ⊥, or returns (⊥) and M ∪ {⊥}.' }
+        ]);
+        assert(cleanBot.proseIssues.length === 0, 'legitimate crypto rejection ⊥ must pass, got: ' + JSON.stringify(cleanBot.proseIssues));
+
+        for (const badBot of [
+          'By hypothesis, ⊥.',
+          'This gives ⊥.',
+          'Which yields ⊥.',
+          'We derive ⊥.',
+          'If (h : ⊥) then false.'
+        ]) {
+          const rep = runAuditOnParagraphs([{ text: badBot }]);
+          assert(rep.proseIssues.some(x => x.rule === 'raw-lean-ast-leak'), 'must flag Lean falsum: ' + badBot);
+        }
+
+        const underRep1 = runAuditOnParagraphs([{ text: 'Bound is 1/Dunderlined here.' }]);
+        assert(underRep1.proseIssues.some(x => x.rule === 'unrendered-underline'), 'must flag Dunderlined');
+
+        const underRep2 = runAuditOnParagraphs([{ mathText: 'underline d' }]);
+        assert(underRep2.proseIssues.some(x => x.rule === 'unrendered-underline'), 'must flag underline in math');
+
+        for (const badTilde of ['See Proposition~1.', 'By Lemma~4.', 'In Distinguisher~1.', 'By Theorem~1.']) {
+          const rep = runAuditOnParagraphs([{ text: badTilde }]);
+          assert(rep.proseIssues.some(x => x.rule === 'literal-latex-tilde-ref'), 'must flag tilde ref: ' + badTilde);
+        }
+
+        const notMemRep = runAuditOnParagraphs([{ text: 'For every τ, if ¬ (τ ∈ T_bad), then bound holds.' }]);
+        assert(notMemRep.proseIssues.some(x => x.rule === 'raw-negated-membership'), 'must flag ¬ (τ ∈ S)');
+
+        print('ITER4_JS_TESTS_OK');
+        """
+        js_src = CADMO_READER_JS.read_text(encoding="utf-8")
+        full_js = (
+            "if (typeof print === 'undefined') { globalThis.print = console.log; }\n"
+            + harness.replace("__JS_SRC__", json.dumps(js_src)).replace("__AUDIT_JS__", json.dumps(audit_js))
+        )
+        script_path = self.tmp_path / "test_iter4_js.js"
+        script_path.write_text(full_js, encoding="utf-8")
+        res = subprocess.run([*js_cmd, str(script_path)], capture_output=True, text=True)
+        self.assertEqual(res.returncode, 0, msg=res.stdout + res.stderr)
+        self.assertIn("ITER4_JS_TESTS_OK", res.stdout)
+
+        # Verify CSS rules for .cadmo-math-underline and .cadmo-display-math vertical padding
+        css_txt = CADMO_READER_CSS.read_text(encoding="utf-8")
+        self.assertIn(".cadmo-math-underline", css_txt)
+        self.assertIn("padding: 0.45em 0 0.22em", css_txt)
 
 
 if __name__ == "__main__":

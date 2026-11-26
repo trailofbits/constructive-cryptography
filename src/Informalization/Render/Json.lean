@@ -73,7 +73,7 @@ private def analyzeSectionHoisting (secNum : Nat) (grpDecls : Array Name) :
   for d in grpDecls do
     let some info := env.find? d | return none
     let tbl := buildSymbolTable env d
-    summaries := summaries.push (← extractSignatureSummary tbl info.type)
+    summaries := summaries.push (← extractSignatureSummary tbl info.type d)
   let total := summaries.size
   -- 1. Aggregate parameters across entries (detecting any symbol/type inconsistencies)
   let mut orderedSyms : Array String := #[]
@@ -222,7 +222,9 @@ private def materializeSectionPreludes (tbl : SymbolTable) (declName : Name)
       { left := parseProseWithMath l, right := parseProseWithMath r }
     let mut declKey? : Option String := none
     let mut diagramHtml? : Option String := none
-    if let some targetDecl := spec.declName? then
+    if spec.kind != "setting" then
+     if let some targetDecl := spec.declName? then
+      let allowDiagram := targetDecl != declName
       let existing? := (existingIns ++ extraIns).find? (·.key == targetDecl.toString)
       let ins? ← match existing? with
         | some ins => pure (some ins)
@@ -242,11 +244,12 @@ private def materializeSectionPreludes (tbl : SymbolTable) (declName : Name)
             if lines.isEmpty && body.isEmpty then
               let src := if dslBody.trimAscii.isEmpty then fullSource else dslBody
               lines := splitDslPreludeLines src
-            if let some info := env.find? targetDecl then
-              let diagExpr := match info with
-                | .defnInfo dinfo => if !info.type.isForall then dinfo.value else info.type
-                | _ => info.type
-              diagramHtml? ← try (← diagramHookRef.get) tbl diagExpr catch _ => pure none
+            if allowDiagram then
+              if let some info := env.find? targetDecl then
+                let diagExpr := match info with
+                  | .defnInfo dinfo => if !info.type.isForall then dinfo.value else info.type
+                  | _ => info.type
+                diagramHtml? ← try (← diagramHookRef.get) tbl diagExpr catch _ => pure none
         | .interfaceTable ports domainLatex budgetNote =>
             if rows.isEmpty then
               rows := ports.map fun p =>
@@ -258,7 +261,8 @@ private def materializeSectionPreludes (tbl : SymbolTable) (declName : Name)
                 let bn := budgetNote.trimAscii.toString
                 body := body.push (parseProseWithMath (if bn.endsWith "." then bn else bn ++ "."))
         | .ccDiagram svgOrHtml summaryLatex =>
-            diagramHtml? := some svgOrHtml
+            if allowDiagram then
+              diagramHtml? := some svgOrHtml
             if body.isEmpty && !summaryLatex.trimAscii.isEmpty then
               body := #[#[.displayMath summaryLatex "."]]
         | .mathDefinition eqLatex proseSummary =>
@@ -270,8 +274,9 @@ private def materializeSectionPreludes (tbl : SymbolTable) (declName : Name)
               for cl in ins.clauses do
                 if !cl.trimAscii.isEmpty then
                   lines := lines.push { indent := 0, inlines := #[.inlineMath cl] }
-            if let some info := env.find? targetDecl then
-              diagramHtml? ← try (← diagramHookRef.get) tbl info.type catch _ => pure none
+            if allowDiagram then
+              if let some info := env.find? targetDecl then
+                diagramHtml? ← try (← diagramHookRef.get) tbl info.type catch _ => pure none
         | .witnessCard cardTitle wRows =>
             if body.isEmpty && !cardTitle.trimAscii.isEmpty then
               body := #[#[.text (if cardTitle.endsWith "." then cardTitle else cardTitle ++ ".")]]
@@ -289,7 +294,8 @@ private def materializeSectionPreludes (tbl : SymbolTable) (declName : Name)
                 body := body.push #[.displayMath eqLatex "."]
       else
         if let some info := env.find? targetDecl then
-          diagramHtml? ← try (← diagramHookRef.get) tbl info.type catch _ => pure none
+          if allowDiagram then
+            diagramHtml? ← try (← diagramHookRef.get) tbl info.type catch _ => pure none
           if body.isEmpty then
             let tyTex ← try exprToLatex info.type tbl catch _ => pure ""
             if !tyTex.isEmpty then
@@ -319,9 +325,13 @@ def buildDocument (title : String) (subtitle? : Option String := none)
   let mut entries : Array Entry := #[]
   let mut inspectors : Array SymbolInspector := #[]
   for (secNum?, grpDecls) in groups do
-    let hoistedResult? ← match secNum? with
-      | some secNum => analyzeSectionHoisting secNum grpDecls
-      | none => pure none
+    let hasPaperSetting := grpDecls.any fun d =>
+      (getOverlay env d).sectionPreludes.any (·.kind == "setting")
+    let hoistedResult? ←
+      if hasPaperSetting then pure none
+      else match secNum? with
+        | some secNum => analyzeSectionHoisting secNum grpDecls
+        | none => pure none
     let secId? := secNum?.map fun secNum => s!"sec-{secNum}"
     let secCtx? := hoistedResult?.map (·.1)
     let hoistedCtx? := hoistedResult?.map (·.2)

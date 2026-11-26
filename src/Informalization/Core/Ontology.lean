@@ -9,6 +9,7 @@ import Informalization.Core.LeanTeX
 import Informalization.Core.Overlay
 import Informalization.Core.ContextProfile
 import Informalization.Core.Explanation
+import Informalization.Core.Register
 
 /-!
 # Compositional Ontology & Ambient-Scope Theorem Statement Planner
@@ -32,6 +33,7 @@ open Informalization.Core.LeanTeX
 open Informalization.Core.Overlay
 open Informalization.Core.ContextProfile
 open Informalization.Core.Explanation
+open Informalization.Core.Register
 
 /-- Semantic description of a mathematical type for entity introductions. -/
 structure TypeDescription where
@@ -97,9 +99,12 @@ those arrow types remain `"map"` (or a specialized type such as `"predicate"`). 
 private def isGenericCodomainNoun (nounSingular : String) : Bool :=
   let s := nounSingular.toLower
   s == "set" || s == "proposition" || s == "natural number" || s == "integer" ||
-  s == "real number" || s == "nonnegative real" || s == "nonnegative real number" ||
-  s == "bit" || s == "function" || s == "map" || s == "ordered pair" ||
-  s == "predicate" || s == "boolean predicate" || s == "length assignment" ||
+  s == "integer in \\(\\mathbb{n}\\)" || s == "real number" || s == "nonnegative scalar" ||
+  s == "nonnegative real" || s == "nonnegative real number" ||
+  s == "bit" || s == "function" || s == "map" || s == "pair" || s == "ordered pair" ||
+  s == "predicate" || s == "boolean predicate" || s == "event" ||
+  s == "key-length profile" || s == "length assignment" ||
+  s == "query bound" || s == "query budget" || s == "error function" ||
   s == "resource family" || s == "finite sequence" || s == "finite set" ||
   s == "subset" || s.startsWith "element of " || s.startsWith "family of "
 
@@ -128,17 +133,15 @@ partial def describeType (tbl : SymbolTable) (ty : Expr) : MetaM TypeDescription
   if ty.isSort then
     return { noun := ⟨"set", "sets"⟩ }
   if ty.isAppOf ``Nat || ty == mkConst ``Nat then
-    return { noun := ⟨"natural number", "natural numbers"⟩ }
+    return { noun := ⟨"integer in \\(\\mathbb{N}\\)", "integers in \\(\\mathbb{N}\\)"⟩ }
   if ty.isAppOf ``Int || ty == mkConst ``Int then
     return { noun := ⟨"integer", "integers"⟩ }
   if ty.isAppOf ``Bool || ty == mkConst ``Bool then
     return { noun := ⟨"bit", "bits"⟩ }
   if ty == mkConst `Real then
     return { noun := ⟨"real number", "real numbers"⟩ }
-  if ty == mkConst `NNReal then
-    return { noun := ⟨"nonnegative real number", "nonnegative real numbers"⟩ }
-  if ty == mkConst `ENNReal then
-    return { noun := ⟨"nonnegative real", "nonnegative reals"⟩ }
+  if ty == mkConst `NNReal || ty == mkConst `ENNReal then
+    return { noun := ⟨"nonnegative scalar", "nonnegative scalars"⟩ }
   if let .forallE nm dom body bi := ty then
     if ← isAmbientTypeclass dom then
       if body.hasLooseBVar 0 then
@@ -159,7 +162,7 @@ partial def describeType (tbl : SymbolTable) (ty : Expr) : MetaM TypeDescription
       if bodyClean.isConstOf ``Bool then
         return { noun := ⟨"Boolean predicate", "Boolean predicates"⟩, accessories := [s!"on \\({domTex}\\)"] }
       if domClean.getAppFn.consumeMData.isConstOf ``Fin && bodyClean.isConstOf ``Nat then
-        return { noun := ⟨"length assignment", "length assignments"⟩, accessories := [s!"on \\({domTex}\\)"] }
+        return { noun := ⟨"key-length profile", "key-length profiles"⟩, accessories := [s!"on \\({domTex}\\)"] }
       if !domClean.isForall && !(← isProp dom) then
         let codDesc ← describeType tbl body
         if !codDesc.isAmbient && !isGenericCodomainNoun codDesc.noun.singular then
@@ -186,6 +189,8 @@ partial def describeType (tbl : SymbolTable) (ty : Expr) : MetaM TypeDescription
           return famDesc
       let tyTex ← exprToLatex ty tbl
       return { noun := ⟨"map", "maps"⟩, typeLatex? := some tyTex }
+  if ty.isAppOf ``Prod && ty.getAppArgs.size == 2 then
+    return { noun := ⟨"pair", "pairs"⟩ }
   let tyTex ← exprToLatex ty tbl
   return { noun := ⟨s!"element of \\({tyTex}\\)", s!"elements of \\({tyTex}\\)"⟩ }
 
@@ -257,47 +262,516 @@ private def resolveQuantBinderName (tbl : SymbolTable) (nm : Name) (nounSingular
     | some sym => Name.mkSimple sym
     | none => nm
 
+private def collectVisiblePredArgs (tbl : SymbolTable) (head : Name) (args : Array Expr) :
+    MetaM (Array Expr) := do
+  let hidden := tbl.hiddenArgs.getD head []
+  let some info := (← getEnv).find? head | return args
+  let mut ty := info.type
+  let mut visible : Array Expr := #[]
+  for i in [:args.size] do
+    ty ← whnf ty
+    match ty with
+    | .forallE _ dom body bi =>
+        let isHidden := hidden.contains i
+        let isPropArg ← isProp dom
+        if bi.isExplicit && !isPropArg && !isHidden then
+          visible := visible.push args[i]!
+        ty := body.instantiate1 args[i]!
+    | _ =>
+        if !hidden.contains i then
+          visible := visible.push args[i]!
+  return visible
+
+private def isBinaryInfixPredPhrase (phrase : String) : Bool :=
+  let low := phrase.trimAscii.toString.toLower
+  [ " with", " to", " from", " of", " in", " on", " at", " by", " over", " under",
+    " against", " between", " into", " onto", " than", " as", " through", " within",
+    " across", " for", " equals", " respects", " satisfies", " implements", " realizes",
+    " extends", " divides", " contains", " dominates", " precedes"
+  ].any fun suf => low.endsWith suf
+
+private def predPhraseStartsWithVerb (phrase : String) : Bool :=
+  let first := (phrase.trimAscii.toString.splitOn " ").headD "" |>.toLower
+  let clean := ((first.replace "," "").replace "." "").replace ";" ""
+  [ "is", "are", "was", "were", "has", "have", "had",
+    "can", "may", "must", "does", "do", "did",
+    "satisfies", "satisfy", "agrees", "agree", "assigns", "assign",
+    "queries", "query", "preserves", "preserve", "respects", "respect",
+    "stays", "stay", "holds", "hold", "equals", "equal",
+    "lies", "lie", "exceeds", "exceed", "avoids", "avoid",
+    "matches", "match", "separates", "separate", "coincides", "coincide",
+    "achieves", "achieve", "constructs", "construct", "bounds", "bound",
+    "implies", "imply", "ensures", "ensure", "contains", "contain",
+    "depends", "depend", "terminates", "terminate"
+  ].contains clean
+
+private def hasNumericPlaceholders (phrase : String) (n : Nat) : Bool :=
+  (List.range n).any fun i => (phrase.splitOn ("{" ++ toString i ++ "}")).length > 1
+
+/-- True when English prose outside math delimiters (`\(...\)`, `\[...\]`, `$...$`)
+contains a comma or semicolon (ignoring commas inside math like `\,` or `f(a, b)`). -/
+def proseHasCommaOrSemi (s : String) : Bool := Id.run do
+  let arr := s.toList.toArray
+  let n := arr.size
+  let mut i := 0
+  let mut inParenMath := false
+  let mut inBracketMath := false
+  let mut inDollar := false
+  let mut inDoubleDollar := false
+  while i < n do
+    let c := arr[i]!
+    if inParenMath then
+      if c == '\\' && i + 1 < n && arr[i + 1]! == ')' then
+        inParenMath := false
+        i := i + 2
+      else
+        i := i + 1
+    else if inBracketMath then
+      if c == '\\' && i + 1 < n && arr[i + 1]! == ']' then
+        inBracketMath := false
+        i := i + 2
+      else
+        i := i + 1
+    else if inDoubleDollar then
+      if c == '$' && i + 1 < n && arr[i + 1]! == '$' then
+        inDoubleDollar := false
+        i := i + 2
+      else
+        i := i + 1
+    else if inDollar then
+      if c == '$' then
+        inDollar := false
+      i := i + 1
+    else
+      if c == '\\' && i + 1 < n then
+        let nxt := arr[i + 1]!
+        if nxt == '(' then
+          inParenMath := true; i := i + 2; continue
+        else if nxt == '[' then
+          inBracketMath := true; i := i + 2; continue
+        else if nxt == '$' then
+          i := i + 2; continue
+      if c == '$' then
+        if i + 1 < n && arr[i + 1]! == '$' then
+          inDoubleDollar := true; i := i + 2; continue
+        else
+          inDollar := true; i := i + 1; continue
+      if c == ',' || c == ';' then
+        return true
+      i := i + 1
+  return false
+
+/-- True when any non-math prose fragment in `inls` contains a comma or semicolon. -/
+def inlinesHasProseCommaOrSemi (inls : Array Inline) : Bool :=
+  inls.any fun
+    | .text s | .emph s => proseHasCommaOrSemi s
+    | .symbol _ d false => proseHasCommaOrSemi d
+    | .citation l d => proseHasCommaOrSemi l || proseHasCommaOrSemi d
+    | _ => false
+
+private def hasLatexCmd (tex cmd : String) : Bool :=
+  let parts := tex.splitOn cmd
+  parts.length > 1 &&
+    (parts.drop 1).any fun tail =>
+      match tail.toList.head? with
+      | none => true
+      | some c => !c.isAlpha
+
+private def relLatexCmds : List String :=
+  [ "\\le", "\\leq", "\\ge", "\\geq", "\\neq", "\\ne", "\\simeq", "\\approx",
+    "\\equiv", "\\subseteq", "\\subset", "\\supseteq", "\\supset",
+    "\\in", "\\notin", "\\xrightarrow", "\\xleftarrow", "\\preceq",
+    "\\implies", "\\iff", "\\forall", "\\exists"
+  ]
+
+private def hasRelationalMath (tex : String) : Bool :=
+  ["=", "<", ">"].any (fun tok => (tex.splitOn tok).length > 1) ||
+    relLatexCmds.any (hasLatexCmd tex)
+
+/-- True when a rendered LaTeX formula already carries a relational verb or quantifier. -/
+def hasMathVerbOrRelation (tex : String) : Bool :=
+  hasRelationalMath tex ||
+    [ "\\mid\\!\\equiv", " \\mid ", "\\perp_{\\mathrm{adm}}",
+      "\\text{ is ", "\\text{ are ", "\\text{ holds", "\\text{ satisfies"
+    ].any fun tok => (tex.splitOn tok).length > 1
+
+/-- Ensure a rendered proposition forms a grammatical clause when it is a bare symbolic
+predicate (such as `\mathsf{AE}\text{-}\mathsf{Sec}(\Pi, \varepsilon)`) without a relational verb. -/
+def ensureSymbolicPredClause (inls : Array Inline) : Array Inline :=
+  match inls with
+  | #[.inlineMath tex] =>
+      if hasMathVerbOrRelation tex then inls
+      else
+        let trimmed := tex.trimAscii.toString
+        if trimmed.startsWith "\\neg " &&
+           (trimmed.splitOn "\\wedge").length == 1 &&
+           (trimmed.splitOn "\\vee").length == 1 then
+          let body0 := (trimmed.drop 5).trimAscii.toString
+          let body :=
+            if body0.startsWith "\\left(" && body0.endsWith "\\right)" then
+              ((body0.drop 6).dropEnd 7).toString.trimAscii.toString
+            else body0
+          #[.inlineMath body, .text " does not hold"]
+        else
+          #[.inlineMath tex, .text " holds"]
+  | _ => inls
+
+private def isDeterministicEnvDesc (dom : Expr) (desc : TypeDescription) : Bool :=
+  let nLow := desc.noun.singular.toLower
+  let hasEnvWords :=
+    (nLow.splitOn "environment").length > 1 &&
+    ((nLow.splitOn "deterministic").length > 1 ||
+      desc.adjectives.any (·.toLower == "deterministic"))
+  let fnName := match dom.getAppFn.consumeMData with
+    | .const nm _ => nm.toString
+    | _ => ""
+  hasEnvWords || fnName.endsWith "DeterministicEnvironment" || fnName.endsWith ".DDE"
+
+private def isPlainNatDesc (dom : Expr) (desc : TypeDescription) : Bool :=
+  (dom.consumeMData.isConstOf ``Nat || desc.noun.singular == "integer in \\(\\mathbb{N}\\)") &&
+  desc.adjectives.isEmpty && desc.accessories.isEmpty
+
+private def propIsQueryBounded (prop : Expr) (fvN fvE : Expr) : Bool :=
+  let fvs := (Lean.collectFVars {} prop).fvarIds
+  let usesBoth := fvs.contains fvN.fvarId! && fvs.contains fvE.fvarId!
+  let fnOk := match prop.getAppFn.consumeMData with
+    | .const nm _ =>
+        let s := nm.toString
+        s.endsWith "QueryBounded" || s.endsWith "RespectsQueryBudget"
+    | _ => false
+  usesBoth && fnOk
+
+private def propIsCompatibleWithEnv (prop : Expr) (fvE : Expr) : Bool :=
+  let fvs := (Lean.collectFVars {} prop).fvarIds
+  let usesEnv := fvs.contains fvE.fvarId!
+  let fnOk := match prop.getAppFn.consumeMData with
+    | .const nm _ => nm.toString.endsWith "Compatible"
+    | _ => false
+  usesEnv && fnOk
+
+private def formatGuardChain (guards : Array (Array Inline)) (conclInl : Array Inline) : Array Inline := Id.run do
+  if guards.isEmpty then return conclInl
+  else if guards.size == 1 then
+    return #[.text "if "] ++ guards[0]! ++ #[.text ", then "] ++ conclInl
+  else if guards.size == 2 then
+    let g0 := guards[0]!
+    let g1 := guards[1]!
+    let hasPunct := inlinesHasProseCommaOrSemi g0 || inlinesHasProseCommaOrSemi g1
+    let sep := if hasPunct then ", and " else " and "
+    return #[.text "if "] ++ g0 ++ #[.text sep] ++ g1 ++ #[.text ", then "] ++ conclInl
+  else
+    let hasPunct := guards.any inlinesHasProseCommaOrSemi
+    let sep := if hasPunct then "; " else ", "
+    let lastSep := if hasPunct then "; and " else ", and "
+    let mut joined : Array Inline := #[]
+    for i in [:guards.size] do
+      if i > 0 then
+        joined := joined.push (.text (if i + 1 == guards.size then lastSep else sep))
+      joined := joined ++ guards[i]!
+    return #[.text "whenever "] ++ joined ++ #[.text ", we have "] ++ conclInl
+
+private def rewriteCCSubstitutionInlines (inls : Array Inline) : Array Inline := Id.run do
+  if inls.size < 4 then return inls
+  match inls[0]? with
+  | some (.text "the resource ") =>
+      let mut out : Array Inline := #[]
+      let mut replaced := false
+      for i in [1:inls.size] do
+        match inls[i]! with
+        | .text " can be substituted by " =>
+            out := out.push (.text " can be replaced by ")
+            replaced := true
+        | x => out := out.push x
+      if replaced then return out
+      else return inls
+  | _ => return inls
+
+private def flushQuants (accQuants : Array (Array Inline)) (bodyInl : Array Inline) :
+    Array Inline := Id.run do
+  if accQuants.isEmpty then return bodyInl
+  else if accQuants.size == 1 then
+    return #[.text "for "] ++ accQuants[0]! ++ #[.text ", "] ++ bodyInl
+  else if accQuants.size == 2 then
+    return #[.text "for "] ++ accQuants[0]! ++ #[.text " and "] ++ accQuants[1]! ++ #[.text ", "] ++ bodyInl
+  else
+    let hasPunct := accQuants.any inlinesHasProseCommaOrSemi
+    let sep := if hasPunct then "; " else ", "
+    let lastSep := if hasPunct then "; and " else ", and "
+    let mut out : Array Inline := #[.text "for "]
+    for i in [:accQuants.size] do
+      if i > 0 then
+        out := out.push (.text (if i + 1 == accQuants.size then lastSep else sep))
+      out := out ++ accQuants[i]!
+    return out ++ #[.text ", "] ++ bodyInl
+
+private def predHeadTextWithTail (headText varTex : String) (tailText : String := "") : Array Inline :=
+  if tailText.isEmpty then #[.text headText, .inlineMath varTex]
+  else #[.text headText, .inlineMath varTex, .text tailText]
+
 /-- Render a proposition into natural mathematical English + LaTeX (`Array Inline`),
-consulting registered CC/domain handlers first and falling back to clean `LeanTeX`. -/
-partial def renderProposition (tbl : SymbolTable) (prop : Expr) : MetaM (Array Inline) := do
+respecting `CryptoRegister`, consulting registered CC/domain handlers first, folding consecutive
+universal quantifiers and negated membership guards cleanly, and falling back to clean `LeanTeX`. -/
+partial def renderPropWithQuants (accQuants : Array (Array Inline)) (reg : CryptoRegister)
+    (tbl : SymbolTable) (prop : Expr) : MetaM (Array Inline) := do
   let prop ← normalizeForPresentation prop
+  if prop.consumeMData.isConstOf ``False then
+    return flushQuants accQuants #[.text "a contradiction"]
   if let some (_, symAlias) := tbl.exprAliases.reverse.find? (fun (pat, _) => pat.consumeMData == prop.consumeMData) then
-    return #[.inlineMath symAlias]
+    return flushQuants accQuants #[.inlineMath symAlias]
   for h in (← propHandlersRef.get) do
     if let some out ← h.renderProp tbl prop then
-      return out
+      return flushQuants accQuants (rewriteCCSubstitutionInlines out)
   -- Quantified `∀ x, P x` (with `Prop` domain rendered as implication even when dependent)
   if let .forallE nm dom body bi := prop then
     if ← isAmbientTypeclass dom then
-      return ← withLocalDecl nm bi dom fun fv => renderProposition tbl (body.instantiate1 fv)
+      return ← withLocalDecl nm bi dom fun fv =>
+        renderPropWithQuants accQuants reg tbl (body.instantiate1 fv)
     else if ← isProp dom then
-      let pInl ← renderProposition tbl dom
-      let qInl ←
-        if body.hasLooseBVar 0 then
-          withLocalDecl nm bi dom fun fv => renderProposition tbl (body.instantiate1 fv)
-        else
-          renderProposition tbl body
-      return #[.text "if "] ++ pInl ++ #[.text ", then "] ++ qInl
+      if !body.hasLooseBVar 0 && body.consumeMData.isConstOf ``False then
+        let domNorm ← normalizeForPresentation dom
+        if let some (elem, setExpr) := matchMembershipExpr? domNorm then
+          let eTex ← exprToLatex elem tbl
+          let sTex ← exprToLatex setExpr tbl
+          return flushQuants accQuants #[.inlineMath s!"{eTex} \\notin {sTex}"]
+      let rec collectPropGuards (acc : Array (Array Inline)) (cur : Expr) : MetaM (Array Inline) := do
+        let cur ← normalizeForPresentation cur
+        match cur with
+        | .forallE gNm gDom gBody gBi =>
+            if ← isAmbientTypeclass gDom then
+              withLocalDecl gNm gBi gDom fun fv => collectPropGuards acc (gBody.instantiate1 fv)
+            else if ← isProp gDom then
+              let gInl ← renderPropWithQuants #[] reg tbl gDom
+              if gBody.hasLooseBVar 0 then
+                withLocalDecl gNm gBi gDom fun fv => collectPropGuards (acc.push gInl) (gBody.instantiate1 fv)
+              else
+                collectPropGuards (acc.push gInl) gBody
+            else
+              let conclInl ← renderPropWithQuants #[] reg tbl cur
+              return formatGuardChain acc conclInl
+        | _ =>
+            let conclInl ← renderPropWithQuants #[] reg tbl cur
+            return formatGuardChain acc conclInl
+      let guarded ← collectPropGuards #[] prop
+      return flushQuants accQuants guarded
     else
       let desc ← describeType tbl dom
+      let domClean := dom.consumeMData
+      -- Fold Register C `∀ E (n : ℕ), QueryBounded n E → Compatible A E → P` (either order)
+      if body.hasLooseBVar 0 && isDeterministicEnvDesc dom desc then
+        let envNm := resolveQuantBinderName tbl nm desc.noun.singular
+        let freshEnvNm ← freshShadowFreeName envNm "E"
+        let regC? ← withLocalDecl freshEnvNm bi dom fun fvE => do
+          let eTex ← exprToLatex fvE tbl
+          let rec matchAfterEnv (compatSeen : Bool) (cur : Expr) : MetaM (Option (Array Inline)) := do
+            let cur ← normalizeForPresentation cur
+            match cur with
+            | .forallE cNm cDom cBody cBi =>
+                if ← isAmbientTypeclass cDom then
+                  withLocalDecl cNm cBi cDom fun fv =>
+                    matchAfterEnv compatSeen (cBody.instantiate1 fv)
+                else if ← isProp cDom then
+                  if !compatSeen && propIsCompatibleWithEnv cDom fvE then
+                    if cBody.hasLooseBVar 0 then
+                      withLocalDecl cNm cBi cDom fun fv => matchAfterEnv true (cBody.instantiate1 fv)
+                    else
+                      matchAfterEnv true cBody
+                  else pure none
+                else
+                  let cDesc ← describeType tbl cDom
+                  if isPlainNatDesc cDom cDesc && cBody.hasLooseBVar 0 then
+                    let nNm := resolveQuantBinderName tbl cNm cDesc.noun.singular
+                    let freshNNm ← freshShadowFreeName nNm "n"
+                    withLocalDecl freshNNm cBi cDom fun fvN => do
+                      let nTex ← exprToLatex fvN tbl
+                      let rec matchGuards (qbSeen : Bool) (cpSeen : Bool) (gCur : Expr) :
+                          MetaM (Option (Array Inline)) := do
+                        let gCur ← normalizeForPresentation gCur
+                        if qbSeen && cpSeen then
+                          let qHead : Array Inline := #[
+                            .text "every compatible ", .inlineMath nTex,
+                            .text "-query deterministic environment ", .inlineMath eTex
+                          ]
+                          return some (← renderPropWithQuants (accQuants.push qHead) reg tbl gCur)
+                        match gCur with
+                        | .forallE gNm gDom gBody gBi =>
+                            if ← isAmbientTypeclass gDom then
+                              withLocalDecl gNm gBi gDom fun fv => matchGuards qbSeen cpSeen (gBody.instantiate1 fv)
+                            else if ← isProp gDom then
+                              if !qbSeen && propIsQueryBounded gDom fvN fvE then
+                                if gBody.hasLooseBVar 0 then
+                                  withLocalDecl gNm gBi gDom fun fv => matchGuards true cpSeen (gBody.instantiate1 fv)
+                                else
+                                  matchGuards true cpSeen gBody
+                              else if !cpSeen && propIsCompatibleWithEnv gDom fvE then
+                                if gBody.hasLooseBVar 0 then
+                                  withLocalDecl gNm gBi gDom fun fv => matchGuards qbSeen true (gBody.instantiate1 fv)
+                                else
+                                  matchGuards qbSeen true gBody
+                              else pure none
+                            else pure none
+                        | _ => pure none
+                      matchGuards false compatSeen (cBody.instantiate1 fvN)
+                  else pure none
+            | _ => pure none
+          matchAfterEnv false (body.instantiate1 fvE)
+        if let some folded := regC? then
+          return folded
+      if body.hasLooseBVar 0 && isPlainNatDesc dom desc then
+        let nNm := resolveQuantBinderName tbl nm desc.noun.singular
+        let freshNNm ← freshShadowFreeName nNm "n"
+        let regC? ← withLocalDecl freshNNm bi dom fun fvN => do
+          let nTex ← exprToLatex fvN tbl
+          let cur ← normalizeForPresentation (body.instantiate1 fvN)
+          match cur with
+          | .forallE eNm eDom eBody eBi =>
+              let eDesc ← describeType tbl eDom
+              if !(← isProp eDom) && isDeterministicEnvDesc eDom eDesc && eBody.hasLooseBVar 0 then
+                let envNm := resolveQuantBinderName tbl eNm eDesc.noun.singular
+                let freshEnvNm ← freshShadowFreeName envNm "E"
+                withLocalDecl freshEnvNm eBi eDom fun fvE => do
+                  let eTex ← exprToLatex fvE tbl
+                  let rec matchGuards (qbSeen : Bool) (cpSeen : Bool) (gCur : Expr) :
+                      MetaM (Option (Array Inline)) := do
+                    let gCur ← normalizeForPresentation gCur
+                    if qbSeen && cpSeen then
+                      let qHead : Array Inline := #[
+                        .text "every compatible ", .inlineMath nTex,
+                        .text "-query deterministic environment ", .inlineMath eTex
+                      ]
+                      return some (← renderPropWithQuants (accQuants.push qHead) reg tbl gCur)
+                    match gCur with
+                    | .forallE gNm gDom gBody gBi =>
+                        if ← isAmbientTypeclass gDom then
+                          withLocalDecl gNm gBi gDom fun fv => matchGuards qbSeen cpSeen (gBody.instantiate1 fv)
+                        else if ← isProp gDom then
+                          if !qbSeen && propIsQueryBounded gDom fvN fvE then
+                            if gBody.hasLooseBVar 0 then
+                              withLocalDecl gNm gBi gDom fun fv => matchGuards true cpSeen (gBody.instantiate1 fv)
+                            else
+                              matchGuards true cpSeen gBody
+                          else if !cpSeen && propIsCompatibleWithEnv gDom fvE then
+                            if gBody.hasLooseBVar 0 then
+                              withLocalDecl gNm gBi gDom fun fv => matchGuards qbSeen true (gBody.instantiate1 fv)
+                            else
+                              matchGuards qbSeen true gBody
+                          else pure none
+                        else pure none
+                    | _ => pure none
+                  matchGuards false false (eBody.instantiate1 fvE)
+              else pure none
+          | _ => pure none
+        if let some folded := regC? then
+          return folded
       if body.hasLooseBVar 0 then
+        let domTex ← exprToLatex dom tbl
+        let rec collectSameDom (firstFv : Expr) (fvIds : Array FVarId) (varTexs : Array String) (cur : Expr) :
+            MetaM (Array Inline) := do
+          let cur ← normalizeForPresentation cur
+          let canJoin ← match cur with
+            | .forallE nm' dom' body' _ =>
+                if !(← isProp dom') && !(← isAmbientTypeclass dom') && body'.hasLooseBVar 0 then
+                  let fvsInDom := (Lean.collectFVars {} dom').fvarIds
+                  if fvsInDom.any fvIds.contains then pure none
+                  else
+                    let desc' ← describeType tbl dom'
+                    let domTex' ← exprToLatex dom' tbl
+                    if desc'.noun.singular == desc.noun.singular &&
+                       desc'.adjectives == desc.adjectives &&
+                       desc'.accessories == desc.accessories &&
+                       domTex' == domTex then
+                      pure (some (nm', dom', body', cur))
+                    else pure none
+                else pure none
+            | _ => pure none
+          match canJoin with
+          | some (nm', dom', body', _) =>
+              let bi' := match cur with | .forallE _ _ _ b => b | _ => .default
+              let nmToUse := resolveQuantBinderName tbl nm' desc.noun.singular
+              let freshNm ← freshShadowFreeName nmToUse "x"
+              withLocalDecl freshNm bi' dom' fun fv' => do
+                let vTex ← exprToLatex fv' tbl
+                collectSameDom firstFv (fvIds.push fv'.fvarId!) (varTexs.push vTex) (body'.instantiate1 fv')
+          | none =>
+              if varTexs.size == 1 && !isDeterministicEnvDesc dom desc then
+                if let .forallE gNm gDom gBody gBi := cur then
+                  if ← isProp gDom then
+                    let gDomNorm ← normalizeForPresentation gDom
+                    if let some (elem, setExpr) := matchNotMembershipExpr? gDomNorm then
+                      if elem.consumeMData == firstFv &&
+                         !(Lean.collectFVars {} setExpr).fvarIds.contains firstFv.fvarId! then
+                        let setTex ← exprToLatex setExpr tbl
+                        let qHead : Array Inline := #[.text "every ", .inlineMath s!"{varTexs[0]!} \\notin {setTex}"]
+                        if gBody.hasLooseBVar 0 then
+                          return ← withLocalDecl gNm gBi gDom fun fvH =>
+                            renderPropWithQuants (accQuants.push qHead) reg tbl (gBody.instantiate1 fvH)
+                        else
+                          return ← renderPropWithQuants (accQuants.push qHead) reg tbl gBody
+              let qHead : Array Inline ← do
+                if varTexs.size == 1 then
+                  let varTex := varTexs[0]!
+                  if desc.noun.singular.startsWith "element of \\(" && desc.noun.singular.endsWith "\\)" then
+                    let setTex := ((desc.noun.singular.drop 13).dropEnd 2).toString
+                    pure #[.text "every ", .inlineMath s!"{varTex} \\in {setTex}"]
+                  else if domClean.isAppOf ``Prod && domClean.getAppArgs.size == 2 && desc.adjectives.isEmpty && desc.accessories.isEmpty then
+                    let aTex ← exprToLatex domClean.getAppArgs[0]! tbl
+                    let bTex ← exprToLatex domClean.getAppArgs[1]! tbl
+                    pure #[.text "every pair ", .inlineMath s!"{varTex} \\in {aTex} \\times {bTex}"]
+                  else if desc.noun.singular == "pair" && desc.adjectives.isEmpty && desc.accessories.isEmpty then
+                    pure #[.text "every pair ", .inlineMath varTex]
+                  else if desc.noun.singular == "integer in \\(\\mathbb{N}\\)" && desc.adjectives.isEmpty && desc.accessories.isEmpty then
+                    pure #[.text "every ", .inlineMath s!"{varTex} \\in \\mathbb\{N}"]
+                  else if desc.noun.singular == "nonnegative scalar" && desc.adjectives.isEmpty && desc.accessories.isEmpty then
+                    pure #[.text "every ", .inlineMath s!"{varTex} \\ge 0"]
+                  else
+                    let adj := if desc.adjectives.isEmpty then "" else String.intercalate " " desc.adjectives ++ " "
+                    let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
+                    pure (predHeadTextWithTail s!"every {adj}{desc.noun.singular} " varTex acc)
+                else
+                  let varsTex := String.intercalate ", " varTexs.toList
+                  if desc.noun.singular.startsWith "element of \\(" && desc.noun.singular.endsWith "\\)" then
+                    let setTex := ((desc.noun.singular.drop 13).dropEnd 2).toString
+                    pure #[.text "all ", .inlineMath s!"{varsTex} \\in {setTex}"]
+                  else if domClean.isAppOf ``Prod && domClean.getAppArgs.size == 2 && desc.adjectives.isEmpty && desc.accessories.isEmpty then
+                    let aTex ← exprToLatex domClean.getAppArgs[0]! tbl
+                    let bTex ← exprToLatex domClean.getAppArgs[1]! tbl
+                    pure #[.text "all pairs ", .inlineMath s!"{varsTex} \\in {aTex} \\times {bTex}"]
+                  else if desc.noun.singular == "pair" && desc.adjectives.isEmpty && desc.accessories.isEmpty then
+                    pure #[.text "all pairs ", .inlineMath varsTex]
+                  else if desc.noun.singular == "integer in \\(\\mathbb{N}\\)" && desc.adjectives.isEmpty && desc.accessories.isEmpty then
+                    pure #[.text "all ", .inlineMath s!"{varsTex} \\in \\mathbb\{N}"]
+                  else if desc.noun.singular == "nonnegative scalar" && desc.adjectives.isEmpty && desc.accessories.isEmpty then
+                    pure #[.text "all ", .inlineMath s!"{varsTex} \\ge 0"]
+                  else if desc.noun.singular == "bitstring" && desc.adjectives.isEmpty && desc.accessories.length == 1 then
+                    let acc0 := desc.accessories.head!
+                    if acc0.startsWith "of length \\(" && acc0.endsWith "\\)" then
+                      let lenTex := ((acc0.drop 12).dropEnd 2).toString.trimAscii.toString
+                      let sup := if lenTex.length == 1 then lenTex else "{" ++ lenTex ++ "}"
+                      pure #[.text "all ", .inlineMath (varsTex ++ " \\in \\{0,1\\}^" ++ sup)]
+                    else
+                      let adj := if desc.adjectives.isEmpty then "" else String.intercalate " " desc.adjectives ++ " "
+                      let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
+                      pure (predHeadTextWithTail s!"all {adj}{desc.noun.plural} " varsTex acc)
+                  else
+                    let adj := if desc.adjectives.isEmpty then "" else String.intercalate " " desc.adjectives ++ " "
+                    let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
+                    pure (predHeadTextWithTail s!"all {adj}{desc.noun.plural} " varsTex acc)
+              return ← renderPropWithQuants (accQuants.push qHead) reg tbl cur
         let nmToUse := resolveQuantBinderName tbl nm desc.noun.singular
         let freshNm ← freshShadowFreeName nmToUse "x"
         return ← withLocalDecl freshNm bi dom fun fv => do
           let varTex ← exprToLatex fv tbl
-          let bodyInl ← renderProposition tbl (body.instantiate1 fv)
-          if desc.noun.singular.startsWith "element of \\(" && desc.noun.singular.endsWith "\\)" then
-            let setTex := ((desc.noun.singular.drop 13).dropEnd 2).toString
-            return #[.text "for every ", .inlineMath s!"{varTex} \\in {setTex}", .text ", "] ++ bodyInl
-          let adj := if desc.adjectives.isEmpty then "" else String.intercalate " " desc.adjectives ++ " "
-          let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
-          return #[.text s!"for every {adj}{desc.noun.singular} ", .inlineMath varTex,
-                   .text s!"{acc}, "] ++ bodyInl
+          collectSameDom fv #[fv.fvarId!] #[varTex] (body.instantiate1 fv)
       else
-        let bodyInl ← renderProposition tbl body
-        let adj := if desc.adjectives.isEmpty then "" else String.intercalate " " desc.adjectives ++ " "
-        let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
-        return #[.text s!"for every {adj}{desc.noun.singular}{acc}, "] ++ bodyInl
+        let qHead : Array Inline ← do
+          if domClean.isAppOf ``Prod && domClean.getAppArgs.size == 2 && desc.adjectives.isEmpty && desc.accessories.isEmpty then
+            let aTex ← exprToLatex domClean.getAppArgs[0]! tbl
+            let bTex ← exprToLatex domClean.getAppArgs[1]! tbl
+            pure #[.text "every pair in ", .inlineMath s!"{aTex} \\times {bTex}"]
+          else
+            let adj := if desc.adjectives.isEmpty then "" else String.intercalate " " desc.adjectives ++ " "
+            let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
+            pure #[.text s!"every {adj}{desc.noun.singular}{acc}"]
+        return ← renderPropWithQuants (accQuants.push qHead) reg tbl body
   -- Logical connectives & registered `informal_pred` overlays
   let fn := prop.getAppFn.consumeMData
   let args := prop.getAppArgs
@@ -307,33 +781,55 @@ partial def renderProposition (tbl : SymbolTable) (prop : Expr) : MetaM (Array I
       let glossInl ← do
         let arity? := (Presentation.getMathPresentation env head).explicitNonPropArity?
         if arity? == some 0 then
-          pure #[.text phrase]
-        else if let some subject := args.back? then
-          let subjTex ← exprToLatex subject tbl
-          pure #[.inlineMath subjTex, .text (" " ++ phrase)]
+          pure (parseProseWithMath phrase)
         else
-          pure #[.text phrase]
-      if Presentation.isPredPreserveFormula env head then
-        if let some unfolded ← withTransparency .default (Meta.unfoldDefinition? prop) then
-          let uClean ← normalizeForPresentation unfolded
-          if uClean != prop && exprDagSmall uClean 180 then
-            let headRecurses := uClean.foldConsts false fun n acc => acc || n == head
-            let formulaInl ←
-              if headRecurses then
-                pure #[.inlineMath (← exprToLatex uClean tbl)]
-              else
-                renderProposition tbl uClean
-            if inlinesCanonicalKey formulaInl != inlinesCanonicalKey glossInl then
-              return glossInl ++ #[.text " (i.e., "] ++ formulaInl ++ #[.text ")"]
-      return glossInl
+          let visArgs ← collectVisiblePredArgs tbl head args
+          if visArgs.isEmpty then
+            pure (parseProseWithMath phrase)
+          else if hasNumericPlaceholders phrase visArgs.size then
+            let mut subPhrase := phrase
+            for i in [:visArgs.size] do
+              let slot := "{" ++ toString i ++ "}"
+              if (subPhrase.splitOn slot).length > 1 then
+                let argTex ← exprToLatex visArgs[i]! tbl
+                subPhrase := subPhrase.replace slot s!"\\({argTex}\\)"
+            pure (parseProseWithMath subPhrase)
+          else if visArgs.size == 1 then
+            if predPhraseStartsWithVerb phrase then
+              let subjTex ← exprToLatex visArgs[0]! tbl
+              pure (#[.inlineMath subjTex, .text " "] ++ parseProseWithMath phrase)
+            else
+              pure (parseProseWithMath phrase)
+          else if isBinaryInfixPredPhrase phrase then
+            if visArgs.size == 2 then
+              let aTex ← exprToLatex visArgs[0]! tbl
+              let bTex ← exprToLatex visArgs[1]! tbl
+              pure #[.inlineMath aTex, .text (" " ++ phrase ++ " "), .inlineMath bTex]
+            else
+              let argTexs ← visArgs.mapM fun a => exprToLatex a tbl
+              let initTex := String.intercalate ", " argTexs.pop.toList
+              let lastTex := argTexs.back!
+              pure #[.inlineMath s!"({initTex})", .text (" " ++ phrase ++ " "), .inlineMath lastTex]
+          else if predPhraseStartsWithVerb phrase then
+            let argTexs ← visArgs.mapM fun a => exprToLatex a tbl
+            let tupleTex := String.intercalate ", " argTexs.toList
+            pure (#[.inlineMath s!"({tupleTex})", .text " "] ++ parseProseWithMath phrase)
+          else
+            pure (parseProseWithMath phrase)
+      return flushQuants accQuants glossInl
     if head == ``Function.Injective && args.size == 3 then
       let fTex ← exprToLatex args[2]! tbl
-      return #[.inlineMath fTex, .text " is injective"]
+      return flushQuants accQuants #[.inlineMath fTex, .text " is injective"]
     if head == ``Not && args.size == 1 then
       let inner := args[0]!.consumeMData
       if inner.getAppFn.consumeMData.isConstOf ``Function.Injective && inner.getAppArgs.size == 3 then
         let fTex ← exprToLatex inner.getAppArgs[2]! tbl
-        return #[.inlineMath fTex, .text " is not injective"]
+        return flushQuants accQuants #[.inlineMath fTex, .text " is not injective"]
+      let innerNorm ← normalizeForPresentation inner
+      if let some (elem, setExpr) := matchMembershipExpr? innerNorm then
+        let eTex ← exprToLatex elem tbl
+        let sTex ← exprToLatex setExpr tbl
+        return flushQuants accQuants #[.inlineMath s!"{eTex} \\notin {sTex}"]
     if head == ``And && args.size ≥ 2 then
       -- Flatten chained inequalities `a ≤ b ∧ b ≤ c (∧ c ≤ d)` into `a \le b \le c \le d`
       let rec collectAnds : Expr → Array Expr
@@ -368,41 +864,69 @@ partial def renderProposition (tbl : SymbolTable) (prop : Expr) : MetaM (Array I
           leChain := none
       if let some terms := leChain then
         if terms.size ≥ 3 then
-          return #[.inlineMath (String.intercalate " \\le " terms.toList)]
-      let a ← renderProposition tbl args[args.size - 2]!
-      let b ← renderProposition tbl args[args.size - 1]!
-      match a, b with
-      | #[.inlineMath aTex], #[.inlineMath bTex] =>
-          return #[.inlineMath s!"{aTex} \\wedge {bTex}"]
-      | _, _ =>
-          let aTxt := inlinesCanonicalKey a
-          let bTxt := inlinesCanonicalKey b
-          let sep := if aTxt.contains ',' || bTxt.contains ',' then "; and " else " and "
-          return a ++ #[.text sep] ++ b
+          return flushQuants accQuants #[.inlineMath (String.intercalate " \\le " terms.toList)]
+      let a ← renderPropWithQuants #[] reg tbl args[args.size - 2]!
+      let b ← renderPropWithQuants #[] reg tbl args[args.size - 1]!
+      let andInl := match a, b with
+        | #[.inlineMath aTex], #[.inlineMath bTex] =>
+            if hasRelationalMath aTex || hasRelationalMath bTex then
+              #[.inlineMath aTex, .text " and ", .inlineMath bTex]
+            else
+              #[.inlineMath s!"{aTex} \\wedge {bTex}"]
+        | _, _ =>
+            let sep := if inlinesHasProseCommaOrSemi a || inlinesHasProseCommaOrSemi b then ", and " else " and "
+            a ++ #[.text sep] ++ b
+      return flushQuants accQuants andInl
     if head == ``Iff && args.size ≥ 2 then
-      let a ← renderProposition tbl args[args.size - 2]!
-      let b ← renderProposition tbl args[args.size - 1]!
-      return a ++ #[.text " if and only if "] ++ b
+      let a ← renderPropWithQuants #[] reg tbl args[args.size - 2]!
+      let b ← renderPropWithQuants #[] reg tbl args[args.size - 1]!
+      return flushQuants accQuants (a ++ #[.text " if and only if "] ++ b)
     if head == ``Exists && args.size ≥ 2 then
       if let .lam nm dom body bi := args[args.size - 1]! then
         let desc ← describeType tbl dom
+        let domClean := dom.consumeMData
         let nmToUse := resolveQuantBinderName tbl nm desc.noun.singular
         let freshNm ← chooseUnshadowedBinderName nmToUse #[dom, body] "x"
-        return ← withLocalDecl freshNm bi dom fun fv => do
+        let exInl ← withLocalDecl freshNm bi dom fun fv => do
           let varTex ← exprToLatex fv tbl
-          let bodyInl ← renderProposition tbl (body.instantiate1 fv)
+          let bodyInl ← renderPropWithQuants #[] reg tbl (body.instantiate1 fv)
           if desc.noun.singular.startsWith "element of \\(" && desc.noun.singular.endsWith "\\)" then
             let setTex := ((desc.noun.singular.drop 13).dropEnd 2).toString
             return #[.text "there exists ", .inlineMath s!"{varTex} \\in {setTex}",
+                     .text " such that "] ++ bodyInl
+          if domClean.isAppOf ``Prod && domClean.getAppArgs.size == 2 && desc.adjectives.isEmpty && desc.accessories.isEmpty then
+            let aTex ← exprToLatex domClean.getAppArgs[0]! tbl
+            let bTex ← exprToLatex domClean.getAppArgs[1]! tbl
+            return #[.text "there exists a pair ", .inlineMath s!"{varTex} \\in {aTex} \\times {bTex}",
+                     .text " such that "] ++ bodyInl
+          if desc.noun.singular == "pair" && desc.adjectives.isEmpty && desc.accessories.isEmpty then
+            return #[.text "there exists a pair ", .inlineMath varTex,
+                     .text " such that "] ++ bodyInl
+          if desc.noun.singular == "integer in \\(\\mathbb{N}\\)" && desc.adjectives.isEmpty && desc.accessories.isEmpty then
+            return #[.text "there exists ", .inlineMath s!"{varTex} \\in \\mathbb\{N}",
+                     .text " such that "] ++ bodyInl
+          if desc.noun.singular == "nonnegative scalar" && desc.adjectives.isEmpty && desc.accessories.isEmpty then
+            return #[.text "there exists ", .inlineMath s!"{varTex} \\ge 0",
                      .text " such that "] ++ bodyInl
           let adj := if desc.adjectives.isEmpty then "" else String.intercalate " " desc.adjectives ++ " "
           let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
           let art := article (adj ++ desc.noun.singular)
           return #[.text s!"there exists {art} {adj}{desc.noun.singular} ", .inlineMath varTex,
                    .text s!"{acc} such that "] ++ bodyInl
+        return flushQuants accQuants exInl
   -- Default: clean 2D LaTeX formula
   let tex ← exprToLatex prop tbl
-  return #[.inlineMath tex]
+  return flushQuants accQuants #[.inlineMath tex]
+
+/-- Render a proposition into natural mathematical English + LaTeX (`Array Inline`),
+respecting `CryptoRegister`, consulting registered CC/domain handlers first, and falling back to clean `LeanTeX`. -/
+partial def renderPropositionAux (reg : CryptoRegister) (tbl : SymbolTable) (prop : Expr) : MetaM (Array Inline) :=
+  renderPropWithQuants #[] reg tbl prop
+
+/-- Render a proposition into natural mathematical English + LaTeX (`Array Inline`)
+using the default constructive register. -/
+partial def renderProposition (tbl : SymbolTable) (prop : Expr) : MetaM (Array Inline) :=
+  renderPropositionAux .constructive tbl prop
 
 /-- Cached local-context entry for `buildGoalState` so unchanged parameters/hypotheses
 are not re-described across hundreds of proof nodes in the same declaration. -/
@@ -478,12 +1002,19 @@ def buildGoalState (tbl : SymbolTable) (target : Expr) (onlyUsed : Bool := false
         else
           let desc ← describeType tbl decl.type
           let sym ← exprToLatex decl.toExpr tbl
-          let adj := if desc.adjectives.isEmpty then "" else String.intercalate " " desc.adjectives ++ " "
-          let art := article (adj ++ desc.noun.singular)
-          let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
+          let roleText :=
+            if desc.noun.singular == "integer in \\(\\mathbb{N}\\)" && desc.adjectives.isEmpty && desc.accessories.isEmpty then
+              "is in \\(\\mathbb{N}\\)"
+            else if desc.noun.singular == "nonnegative scalar" && desc.adjectives.isEmpty && desc.accessories.isEmpty then
+              "is in \\(\\mathbb{R}_{\\ge 0}\\)"
+            else
+              let adj := if desc.adjectives.isEmpty then "" else String.intercalate " " desc.adjectives ++ " "
+              let art := article (adj ++ desc.noun.singular)
+              let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
+              s!"is {art} {adj}{desc.noun.singular}{acc}"
           let entry : ContextEntry := {
             name? := some s!"\\({sym}\\)"
-            description := s!"is {art} {adj}{desc.noun.singular}{acc}"
+            description := roleText
             isHypothesis := false
             usedInGoal := used
           }
@@ -510,6 +1041,10 @@ def formatParameterRole (tbl : SymbolTable) (ty : Expr) (adjectives : List Strin
   let desc ← describeType tbl ty
   let mergedAdjs := adjectives.foldl (init := desc.adjectives) fun acc a =>
     if acc.contains a then acc else a :: acc
+  if desc.noun.singular == "integer in \\(\\mathbb{N}\\)" && mergedAdjs.isEmpty && desc.accessories.isEmpty then
+    return "Integer parameter in \\(\\mathbb{N}\\)."
+  if desc.noun.singular == "nonnegative scalar" && mergedAdjs.isEmpty && desc.accessories.isEmpty then
+    return "Nonnegative scalar (\\(\\ge 0\\))."
   let adj := if mergedAdjs.isEmpty then "" else String.intercalate " " mergedAdjs ++ " "
   let art := article (adj ++ desc.noun.singular)
   let acc := if desc.accessories.isEmpty then "" else " " ++ joinAnd desc.accessories
@@ -644,6 +1179,7 @@ and `\left` / `\right`) so short terms such as `system(scheme)` or `Δ(fixedBit(
 are never pointlessly replaced by `c₁`. -/
 private def visibleMathLength (tex : String) : Nat :=
   let s := tex
+    |>.replace "@@CADMO_W_0@@" "c1" |>.replace "@@CADMO_W_1@@" "c2" |>.replace "@@CADMO_W_2@@" "c3"
     |>.replace "\\mathrm{" "" |>.replace "\\mathsf{" "" |>.replace "\\mathcal{" ""
     |>.replace "\\mathbf{" "" |>.replace "\\mathbb{" "" |>.replace "\\text{" ""
     |>.replace "\\left" "" |>.replace "\\right" ""
@@ -673,7 +1209,8 @@ private def collectInlineMathStrings (inls : Array Inline) : Array String :=
     | _ => #[]
 
 /-- Factor up to 3 heavy repeated visible subexpressions across `exprs` into crisp local
-abbreviations (`c₁, c₂, …`), keeping ONLY shorthands that visibly shorten the statement. -/
+abbreviations using collision-free placeholder tokens until final non-colliding display symbols
+are allocated. -/
 private def factorRepeatedSubexprs (tbl : SymbolTable) (exprs : Array Expr) :
     MetaM (SymbolTable × Array (String × Expr)) := do
   let mut counts : Std.HashMap Expr Nat := {}
@@ -693,11 +1230,32 @@ private def factorRepeatedSubexprs (tbl : SymbolTable) (exprs : Array Expr) :
     if chosenExprs.any (fun prev => prev == ex) then continue
     let tex ← exprToLatex ex curTbl
     if visibleMathLength tex < 34 || (tex.splitOn "inst").length > 1 then continue
-    let sym := "c_{" ++ toString (defs.size + 1) ++ "}"
+    let sym := "@@CADMO_W_" ++ toString defs.size ++ "@@"
     defs := defs.push (sym, ex)
     chosenExprs := chosenExprs.push ex
     curTbl := curTbl.withExprAlias ex sym
   return (curTbl, defs)
+
+/-- Choose `count` fresh subscripted shorthand symbols (`c_1, c_2, ...` or `w_1, w_2, ...`)
+such that neither the bare prefix nor any subscripted symbol collides with `usedNames` or
+already-visible statement math. -/
+private def pickFreshShorthandFamily (used : Std.HashSet String) (visibleMath : Array String)
+    (count : Nat) : Array String := Id.run do
+  let isFree (tok : String) : Bool :=
+    !used.contains tok && !mathDispAppearsIn visibleMath tok
+  let prefixes := #["c", "w", "u", "v", "z", "t", "y", "a", "b"]
+  for pfx in prefixes do
+    let syms := (Array.range count).map fun i => s!"{pfx}_\{{i + 1}}"
+    if isFree pfx && syms.all isFree then
+      return syms
+  let mut out : Array String := #[]
+  let mut idx := 1
+  while out.size < count do
+    let cand := s!"s_\{{idx}}"
+    if isFree cand && !out.contains cand then
+      out := out.push cand
+    idx := idx + 1
+  return out
 
 /-- Helper: check if `sub` appears inside any `Inline` of `inls`. -/
 private def inlinesContain (inls : Array Inline) (needle : String) : Bool :=
@@ -721,7 +1279,8 @@ private def replaceInInlines (old new : String) (inls : Array Inline) : Array In
 
 /-- Continuation-passing hoist of leading `let x := v; body` bindings out of a theorem's
 conclusion so `fv` stays live in the `LocalContext` throughout factoring and rendering,
-and display equations never print `let ... in let ... in`. -/
+and display equations never print `let ... in let ... in`. Preserves distinct source names
+and avoids colliding with already-used binder display names in `tbl.usedNames`. -/
 private partial def withHoistedConclusionLets {α : Type} (tbl : SymbolTable) (e : Expr)
     (acc : Array (String × Expr × Expr) := #[])
     (k : SymbolTable → Array (String × Expr × Expr) → Expr → MetaM α) : MetaM α := do
@@ -731,8 +1290,9 @@ private partial def withHoistedConclusionLets {α : Type} (tbl : SymbolTable) (e
       if isP then k tbl acc e
       else
         withLetDecl nm ty val fun fv => do
-          let nmTex ← exprToLatex fv tbl
-          let tbl' := tbl.withExprAlias fv nmTex
+          let rawTex ← exprToLatex fv tbl
+          let nmTex := pickFreshLocalSymbol tbl.usedNames rawTex
+          let tbl' := (tbl.withExprAlias fv nmTex).withUsedName nmTex
           withHoistedConclusionLets tbl' (body.instantiate1 fv) (acc.push (nmTex, ty, val)) k
   | _ => k tbl acc e
 
@@ -759,8 +1319,17 @@ private def isDomainConfigExpr (env : Environment) (desc : TypeDescription) (ty 
     hasNoun || ["interface", "resource", "converter", "specification",
                 "game", "distinguisher"].contains desc.noun.singular
 
+private def propHeadName? (prop : Expr) : MetaM (Option Name) := do
+  if let .const h _ := prop.consumeMData.getAppFn.consumeMData then
+    return some h
+  let norm ← normalizeForPresentation prop
+  if let .const h _ := norm.consumeMData.getAppFn.consumeMData then
+    return some h
+  return none
+
 /-- Extract visible parameters and hypotheses from `theoremType` for section-context hoisting. -/
-def extractSignatureSummary (tbl : SymbolTable) (theoremType : Expr) : MetaM SignatureSummary := do
+def extractSignatureSummary (tbl : SymbolTable) (theoremType : Expr) (declName : Name := .anonymous) :
+    MetaM SignatureSummary := do
   let env ← getEnv
   forallTelescope theoremType fun fvars _ => do
     let mut finiteSets : List String := []
@@ -781,6 +1350,10 @@ def extractSignatureSummary (tbl : SymbolTable) (theoremType : Expr) : MetaM Sig
       let decl ← fv.fvarId!.getDecl
       if ← isSuppressedLocalDecl decl then continue
       if ← isProp decl.type then
+        if !declName.isAnonymous then
+          let pHead? ← propHeadName? decl.type
+          if pHead?.any (isPredicateSuppressedInSection env declName) then
+            continue
         let hInl ← renderProposition tbl decl.type
         let key := inlinesCanonicalKey hInl
         let depIds := (Lean.collectFVars {} decl.type).fvarIds
@@ -795,6 +1368,11 @@ def extractSignatureSummary (tbl : SymbolTable) (theoremType : Expr) : MetaM Sig
         if desc.isAmbient then continue
         let clean := cleanBinderName decl.userName
         let sym ← exprToLatex fv tbl
+        if !declName.isAnonymous then
+          if isBinderSuppressedInSection env declName clean ||
+             isBinderSuppressedInSection env declName sym ||
+             isBinderSuppressedInSection env declName decl.userName.toString then
+            continue
         fvarToSym := fvarToSym.insert decl.fvarId sym
         let adjs :=
           if finiteSets.contains clean && !desc.adjectives.contains "finite" then
@@ -831,6 +1409,118 @@ def extractSignatureSummary (tbl : SymbolTable) (theoremType : Expr) : MetaM Sig
         }
     return { params, hyps }
 
+private def stripInlineMathDelims (s : String) : String :=
+  let t := s.trimAscii.toString
+  if t.startsWith "\\(" && t.endsWith "\\)" then
+    ((t.drop 2).dropEnd 2).toString.trimAscii.toString
+  else
+    t
+
+private def isPlainNatIntro (x : Intro) : Bool :=
+  x.noun.singular == "integer in \\(\\mathbb{N}\\)" && x.adjectives.isEmpty && x.accessories.isEmpty
+
+private def isPlainNonnegIntro (x : Intro) : Bool :=
+  x.noun.singular == "nonnegative scalar" && x.adjectives.isEmpty && x.accessories.isEmpty
+
+private def elementOfSet? (x : Intro) : Option String :=
+  if x.noun.singular.startsWith "element of \\(" && x.noun.singular.endsWith "\\)" &&
+     x.adjectives.isEmpty && x.accessories.isEmpty then
+    some ((x.noun.singular.drop 13).dropEnd 2).toString
+  else
+    none
+
+private def isPlainRealIntro (x : Intro) : Bool :=
+  x.noun.singular == "real number" && x.adjectives.isEmpty && x.accessories.isEmpty
+
+private def stripIntroLeadAndPeriod (s : String) : String :=
+  let s1 := if s.startsWith "Let " then (s.drop 4).toString else lowercaseFirst s
+  let s2 := s1.trimAscii.toString
+  if s2.endsWith "." then (s2.dropEnd 1).toString else s2
+
+/-- Realize `Intro` items while compacting plain `Nat` parameters (`$q, W, P \in \mathbb{N}$`),
+plain set elements (`$x, y \in S$`), real scalars (`$x \in \mathbb{R}$`), and nonnegative
+scalar parameters (`$\varepsilon_1, \varepsilon_2 \ge 0$`) per Quantifier Economy (`Q3`, `Q5`).
+Joins 2 binder groups cleanly with `, and let ` (never `; and `), and reserves `; ` / `; and `
+strictly for 3+ clauses that contain internal English commas or semicolons. -/
+def realizeGroupedIntros (intros : List Intro) : String := Id.run do
+  if intros.isEmpty then return ""
+  let natIntros := intros.filter isPlainNatIntro
+  let nonnegIntros := intros.filter isPlainNonnegIntro
+  let realIntros := intros.filter isPlainRealIntro
+  let mut rawClauses : List (Bool × Bool × String) := []
+  let mut otherRun : List Intro := []
+  let mut emittedNat := false
+  let mut emittedNonneg := false
+  let mut emittedReal := false
+  let mut emittedSets : List String := []
+  let flushOther (run : List Intro) (acc : List (Bool × Bool × String)) :
+      List (Bool × Bool × String) :=
+    if run.isEmpty then acc
+    else
+      let parts := (mergeGroups run).map realizeIntroClause |>.filter (!·.isEmpty)
+      let tagged := parts.mapIdx fun idx c => (false, idx == 0, c)
+      acc ++ tagged
+  for x in intros do
+    if isPlainNatIntro x then
+      if !emittedNat then
+        rawClauses := flushOther otherRun rawClauses
+        otherRun := []
+        let names := String.intercalate ", " (natIntros.map (stripInlineMathDelims ·.name))
+        rawClauses := rawClauses ++ [(true, true, s!"\\({names} \\in \\mathbb\{N}\\)")]
+        emittedNat := true
+    else if isPlainNonnegIntro x then
+      if !emittedNonneg then
+        rawClauses := flushOther otherRun rawClauses
+        otherRun := []
+        let names := String.intercalate ", " (nonnegIntros.map (stripInlineMathDelims ·.name))
+        rawClauses := rawClauses ++ [(true, true, s!"\\({names} \\ge 0\\)")]
+        emittedNonneg := true
+    else if isPlainRealIntro x then
+      if !emittedReal then
+        rawClauses := flushOther otherRun rawClauses
+        otherRun := []
+        let names := String.intercalate ", " (realIntros.map (stripInlineMathDelims ·.name))
+        rawClauses := rawClauses ++ [(true, true, s!"\\({names} \\in \\mathbb\{R}\\)")]
+        emittedReal := true
+    else if let some setTex := elementOfSet? x then
+      if !emittedSets.contains setTex then
+        rawClauses := flushOther otherRun rawClauses
+        otherRun := []
+        let matching := intros.filter (fun y => elementOfSet? y == some setTex)
+        let names := String.intercalate ", " (matching.map (stripInlineMathDelims ·.name))
+        rawClauses := rawClauses ++ [(true, true, s!"\\({names} \\in {setTex}\\)")]
+        emittedSets := setTex :: emittedSets
+    else
+      otherRun := otherRun ++ [x]
+  rawClauses := flushOther otherRun rawClauses
+  -- Coalesce adjacent compact math clauses (`q ∈ ℕ` + `ε ≥ 0` -> `\(q \in \mathbb{N}\) and \(\varepsilon \ge 0\)`)
+  let mut clauses : List (Bool × Bool × String) := []
+  for (m, isHead, c) in rawClauses do
+    match clauses.reverse with
+    | (true, prevHead, prev) :: revTail =>
+        if m then clauses := revTail.reverse ++ [(true, prevHead, s!"{prev} and {c}")]
+        else clauses := clauses ++ [(m, isHead, c)]
+    | _ =>
+        clauses := clauses ++ [(m, isHead, c)]
+  match clauses with
+  | [] => ""
+  | [(_, _, c)] => s!"Let {c}."
+  | [(_, _, c0), (_, _, c1)] =>
+      s!"Let {c0}, and let {c1}."
+  | (_, _, c0) :: rest =>
+      let tailStrs := rest.map fun (isMath, isHead, c) =>
+        if isMath || isHead then s!"let {c}" else c
+      let allStrs := c0 :: tailStrs
+      let initStrs := allStrs.dropLast
+      let lastStr := allStrs.getLast!
+      let hasInternalPunct := allStrs.any proseHasCommaOrSemi
+      let body :=
+        if hasInternalPunct then
+          String.intercalate "; " initStrs ++ "; and " ++ lastStr
+        else
+          String.intercalate ", " initStrs ++ ", and " ++ lastStr
+      s!"Let {body}."
+
 /-- Format hoisted section-fixed parameters and assumptions into a calm archival Section Context
 paragraph (*"Throughout this section, let … [and assume that …]."*). -/
 def formatSectionContextParagraphs (intros : List Intro) (hyps : Array (Array Inline)) :
@@ -839,7 +1529,7 @@ def formatSectionContextParagraphs (intros : List Intro) (hyps : Array (Array In
   let mut para : Array Inline := #[]
   let mut hasMultiIntro := false
   if !intros.isEmpty then
-    let introSentence := realizeIntros intros
+    let introSentence := realizeGroupedIntros intros
     let rawBody :=
       if introSentence.startsWith "Let " then
         "Throughout this section, let " ++ (introSentence.drop 4).toString
@@ -847,7 +1537,7 @@ def formatSectionContextParagraphs (intros : List Intro) (hyps : Array (Array In
         "Throughout this section, " ++ lowercaseFirst introSentence
     if !hyps.isEmpty then
       let trimmed := if rawBody.endsWith "." then (rawBody.dropEnd 1).toString else rawBody
-      hasMultiIntro := trimmed.contains ',' || trimmed.contains ';'
+      hasMultiIntro := proseHasCommaOrSemi trimmed
       para := para.push (.text (if hasMultiIntro then trimmed ++ "." else trimmed))
     else
       para := para.push (.text rawBody)
@@ -857,12 +1547,16 @@ def formatSectionContextParagraphs (intros : List Intro) (hyps : Array (Array In
       else if hasMultiIntro then " Assume throughout that "
       else " and assume that "
     para := para.push (.text lead)
+    let hypsHaveProsePunct := hyps.any inlinesHasProseCommaOrSemi
     for i in [:hyps.size] do
       if i > 0 then
         let sep :=
-          if hyps.size == 2 then " and "
-          else if i + 1 == hyps.size then "; and "
-          else "; "
+          if hyps.size == 2 then
+            if hypsHaveProsePunct then ", and " else " and "
+          else if i + 1 == hyps.size then
+            if hypsHaveProsePunct then "; and " else ", and "
+          else
+            if hypsHaveProsePunct then "; " else ", "
         para := para.push (.text sep)
       para := para ++ hyps[i]!
     para := para.push (.text ".")
@@ -967,6 +1661,14 @@ private partial def collectTopProofRoles (proofBody? : Option Expr) (fvars : Arr
   out ← collectFVarRoles cur out
   return out
 
+private def endsWithSentencePunct (inls : Array Inline) : Bool :=
+  match inls.back? with
+  | some (.text s) =>
+      let t := s.trimAscii.toString
+      t.endsWith "." || t.endsWith "!" || t.endsWith "?"
+  | some (.displayMath _ p) => !p.trimAscii.toString.isEmpty
+  | _ => false
+
 /-- Parse a theorem's full `Expr` type into:
 1. factored-out ambient setting (none when only routine typeclasses were suppressed);
 2. aggregated entity introductions (`Let … be …`), omitting any already-fixed section parameters;
@@ -980,7 +1682,14 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr)
     (declName : Name := .anonymous) : MetaM ParsedStatement := do
   let hoisted := hoisted?.getD {}
   let env ← getEnv
-  let profile := getEffectiveContextProfile env declName
+  let reg := effectiveRegister env declName
+  let profile :=
+    match getEffectiveContextProfileName? env declName with
+    | some _ => getEffectiveContextProfile env declName
+    | none =>
+        match reg with
+        | .gameBased => resolveProfile env `GameBasedContext
+        | .constructive | .randomSystems => getEffectiveContextProfile env declName
   forallTelescope theoremType fun fvars rawConclusion => do
     let fvarRoles ← inferTheoremSemanticRoles fvars rawConclusion
     let explicitRoles ← collectTopProofRoles proofBody? fvars
@@ -1017,6 +1726,15 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr)
         else
           notationInspectors := notationInspectors.push ins
         tbl := tbl.withExprAlias patNorm sym
+        tbl := tbl.withUsedName sym
+    for ins in notationInspectors do
+      tbl := tbl.withUsedName ins.display
+    for fv in fvars do
+      let decl ← fv.fvarId!.getDecl
+      if !(← isSuppressedLocalDecl decl) && !(← isProp decl.type) then
+        let sym ← exprToLatex fv tbl
+        tbl := tbl.withUsedName sym
+        tbl := tbl.withUsedName (cleanBinderName decl.userName)
     -- Hoist leading `let R := ...; let S := ...; body` out of the conclusion in CPS
     withHoistedConclusionLets tbl rawConclusion #[] fun tbl letRawDefs conclusion => do
       let mut suppressed : Array String := #[]
@@ -1043,7 +1761,10 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr)
         let decl ← fv.fvarId!.getDecl
         if ← isSuppressedLocalDecl decl then continue
         if ← isProp decl.type then
-          let hInl ← renderProposition tbl decl.type
+          let pHead? ← propHeadName? decl.type
+          if pHead?.any (isPredicateSuppressedInSection env declName) then
+            continue
+          let hInl ← renderPropositionAux reg tbl decl.type
           if !hoisted.hypKeys.contains (inlinesCanonicalKey hInl) then
             keptPropTypes := keptPropTypes.push decl.type
         else
@@ -1051,16 +1772,33 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr)
           let clean := cleanBinderName decl.userName
           let sym ← exprToLatex fv tbl
           rawNonPropFVars := rawNonPropFVars.push (fv, decl.type, clean, sym)
+      let isProbDistDomain (dom : Expr) : Bool :=
+        rawNonPropFVars.any fun (_, pty, _, _) =>
+          let pClean := pty.consumeMData
+          let isPD := match pClean.getAppFn.consumeMData with
+            | .const nm _ => nm == `ProbDist || nm.toString.endsWith ".ProbDist"
+            | _ => false
+          isPD && pClean.getAppArgs.any (·.consumeMData == dom.consumeMData)
       let visibleStmtExprs : Array Expr := #[conclusion] ++ keptPropTypes
       let mut candBinders : Array (Expr × TypeDescription × String × String) := #[]
       for (fv, bty, clean, sym) in rawNonPropFVars do
-        let desc ← describeTypeWithContext tbl profile fv bty
+        let decl ← fv.fvarId!.getDecl
+        let mut desc ← describeTypeWithContext tbl profile fv bty
           (fvarRoles.get? fv.fvarId!) (explicitRoles.get? fv.fvarId!)
           allBinders visibleStmtExprs
+        if reg == .gameBased && desc.noun.singular == "predicate" then
+          if let .forallE _ dom _ _ := bty.consumeMData then
+            if isProbDistDomain dom then
+              desc := { desc with noun := ⟨"event", "events"⟩ }
         if desc.isAmbient then
           suppressed := suppressed.push clean
           continue
         if hoisted.paramSyms.contains sym then continue
+        if isBinderSuppressedInSection env declName clean ||
+           isBinderSuppressedInSection env declName sym ||
+           isBinderSuppressedInSection env declName decl.userName.toString then
+          suppressed := suppressed.push clean
+          continue
         candBinders := candBinders.push (fv, desc, clean, sym)
       -- Stage 1 (AST backwards closure): keep binders referenced in conclusion, visible hyps,
       -- `letRawDefs`, or another retained binder's type (unless marked `isWitness`).
@@ -1104,14 +1842,14 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr)
 
       let mut hyps : Array (Array Inline) := #[]
       for pt in keptPropTypes do
-        hyps := hyps.push (← renderProposition tbl pt)
+        hyps := hyps.push (← renderPropositionAux reg tbl pt)
       let mut letDefsRendered : Array (String × String × String × String) := #[]
       for (nmTex, tyExpr, valExpr) in letRawDefs do
         let valTex ← exprToLatex valExpr tbl
         let leanTy ← cleanTypeString tyExpr
         let roleDesc ← formatParameterRole tbl tyExpr
         letDefsRendered := letDefsRendered.push (nmTex, valTex, leanTy, roleDesc)
-      let mut conclInl ← renderProposition tbl conclusion
+      let mut conclInl ← renderPropositionAux reg tbl conclusion
 
       -- Build candidate `Intro`s for `stage1Binders`
       let mut stage1Intros : Array (Expr × TypeDescription × String × Intro) := #[]
@@ -1170,10 +1908,10 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr)
           let decl ← fv.fvarId!.getDecl
           suppressed := suppressed.push (cleanBinderName decl.userName)
       let mut intros : List Intro := stage2Rev.reverse.toList
-      -- Keep ONLY `c_k` shorthands transitively referenced by hypotheses, `let`s, or conclusion,
-      -- ordered leaf-first (no forward references) and renumbered densely `c_1, c_2, …`.
+      -- Keep ONLY auto-factored shorthands transitively referenced by hypotheses, `let`s, or conclusion,
+      -- ordered leaf-first (no forward references) and named cleanly without colliding with any binder.
       let allVisibleInls := hyps.foldl (· ++ ·) #[] ++ conclInl
-      let introRendered := if intros.isEmpty then "" else realizeIntros intros
+      let introRendered := if intros.isEmpty then "" else realizeGroupedIntros intros
       let replaceInIntro (src dst : String) (x : Intro) : Intro := {
         x with
         accessories := x.accessories.map (·.replace src dst)
@@ -1183,7 +1921,7 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr)
         !needle.isEmpty && (hay.splitOn needle).length > 1
       let mut allCDefs : Array (String × String × String × String) := #[]
       for (pat, sym) in tbl.exprAliases do
-        if sym.startsWith "c_{" then
+        if sym.startsWith "@@CADMO_W_" then
           let rhs ← exprToLatex pat { tbl with exprAliases := tbl.exprAliases.filter (·.2 != sym) }
           let patMeta ← try
             let pty ← inferType pat
@@ -1209,32 +1947,23 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr)
       let activeWriteDefs := allCDefs.filter (fun (sym, _, _, _) => usedSyms.contains sym)
       -- Order leaf-first: reverse `sorted` (which was largest-first) so subexpressions are defined before use
       let orderedWriteDefs := activeWriteDefs.reverse
-      -- Two-phase collision-free renumbering (`oldSym` -> `__TMP_i__` -> `c_{i+1}`)
-      let mut tmpWriteDefs := orderedWriteDefs
+      let allMathForCollision := visibleMath ++ (allCDefs.map (·.2.1))
+      let finalSyms := pickFreshShorthandFamily tbl.usedNames allMathForCollision orderedWriteDefs.size
+      let mut workWriteDefs := orderedWriteDefs
       for i in [:orderedWriteDefs.size] do
         let (oldSym, _, _, _) := orderedWriteDefs[i]!
-        let tmpTok := "__CADMO_C_" ++ toString i ++ "__"
-        intros := intros.map (replaceInIntro oldSym tmpTok)
-        hyps := hyps.map (replaceInInlines oldSym tmpTok)
-        conclInl := replaceInInlines oldSym tmpTok conclInl
+        let newSym := finalSyms[i]!
+        intros := intros.map (replaceInIntro oldSym newSym)
+        hyps := hyps.map (replaceInInlines oldSym newSym)
+        conclInl := replaceInInlines oldSym newSym conclInl
         letDefsRendered := letDefsRendered.map fun (n, r, lt, rd) =>
-          (n, r.replace oldSym tmpTok, lt, rd.replace oldSym tmpTok)
-        tmpWriteDefs := tmpWriteDefs.map fun (n, r, lt, rd) =>
-          (n, r.replace oldSym tmpTok, lt, rd.replace oldSym tmpTok)
+          (n, r.replace oldSym newSym, lt, rd.replace oldSym newSym)
+        workWriteDefs := workWriteDefs.map fun (n, r, lt, rd) =>
+          (n, r.replace oldSym newSym, lt, rd.replace oldSym newSym)
       let mut renumberedWriteDefs : Array (String × String × String × String) := #[]
-      for i in [:tmpWriteDefs.size] do
-        let tmpTok := "__CADMO_C_" ++ toString i ++ "__"
-        let newSym := "c_{" ++ toString (i + 1) ++ "}"
-        intros := intros.map (replaceInIntro tmpTok newSym)
-        hyps := hyps.map (replaceInInlines tmpTok newSym)
-        conclInl := replaceInInlines tmpTok newSym conclInl
-        letDefsRendered := letDefsRendered.map fun (n, r, lt, rd) =>
-          (n, r.replace tmpTok newSym, lt, rd.replace tmpTok newSym)
-        tmpWriteDefs := tmpWriteDefs.map fun (n, r, lt, rd) =>
-          (n, r.replace tmpTok newSym, lt, rd.replace tmpTok newSym)
-      for i in [:tmpWriteDefs.size] do
-        let (_, rhs, lt, rd) := tmpWriteDefs[i]!
-        renumberedWriteDefs := renumberedWriteDefs.push ("c_{" ++ toString (i + 1) ++ "}", rhs, lt, rd)
+      for i in [:workWriteDefs.size] do
+        let (_, rhs, lt, rd) := workWriteDefs[i]!
+        renumberedWriteDefs := renumberedWriteDefs.push (finalSyms[i]!, rhs, lt, rd)
       let allWriteDefs := renumberedWriteDefs ++ letDefsRendered
       let mut localShorthands : Array LocalShorthandInfo := #[]
       for (sym, rhs, lt, rd) in allWriteDefs do
@@ -1243,7 +1972,7 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr)
         }
       let mut paragraphs : Array (Array Inline) := #[]
       if !intros.isEmpty then
-        paragraphs := paragraphs.push #[.text (realizeIntros intros)]
+        paragraphs := paragraphs.push #[.text (realizeGroupedIntros intros)]
       if !allWriteDefs.isEmpty then
         let mut inl : Array Inline := #[.text "Write "]
         for i in [:allWriteDefs.size] do
@@ -1255,13 +1984,36 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr)
         paragraphs := paragraphs.push inl
       if !hyps.isEmpty then
         let mut assumeInl : Array Inline := #[.text "Assume that "]
+        let hypsHavePunct := hyps.any inlinesHasProseCommaOrSemi
         for i in [:hyps.size] do
           if i > 0 then
-            assumeInl := assumeInl.push (.text (if i + 1 == hyps.size then ", and " else "; "))
+            let sep :=
+              if hyps.size == 2 then (if hypsHavePunct then ", and " else " and ")
+              else if i + 1 == hyps.size then (if hypsHavePunct then "; and " else ", and ")
+              else (if hypsHavePunct then "; " else ", ")
+            assumeInl := assumeInl.push (.text sep)
           assumeInl := assumeInl ++ hyps[i]!
-        assumeInl := assumeInl.push (.text ".")
+        if !endsWithSentencePunct assumeInl then
+          assumeInl := assumeInl.push (.text ".")
         paragraphs := paragraphs.push assumeInl
+      let rawConclCount := conclInl.size
+      conclInl := ensureSymbolicPredClause conclInl
+      let addedVerb := conclInl.size > rawConclCount
       let lead := if hyps.isEmpty && intros.isEmpty && allWriteDefs.isEmpty then "We have " else "Then "
+      let capConcl (inls : Array Inline) : Array Inline :=
+        match inls[0]? with
+        | some (Inline.text t) => inls.set! 0 (.text (capitalizeFirst t))
+        | _ => inls
+      let isStandaloneProseClause : Bool :=
+        match conclInl[0]? with
+        | some (Inline.text t) =>
+            let low := t.trimAsciiStart.toString.toLower
+            low.startsWith "the distinguishing advantage between " ||
+            (low.startsWith "the " &&
+              (let txt := (inlinesCanonicalKey conclInl).toLower
+               [" is ", " are ", " can ", " holds", " constructs ", " satisfies ", " agrees ", " match ", " separate ", " avoid ", " coincide"].any fun v =>
+                 (txt.splitOn v).length > 1))
+        | _ => false
       let conclPara : Array Inline :=
         match conclInl with
         | #[.inlineMath tex] =>
@@ -1270,7 +2022,15 @@ def parseTheoremStatement (tbl : SymbolTable) (theoremType : Expr)
             else
               #[.text lead, .inlineMath tex, .text "."]
         | _ =>
-            #[.text lead] ++ conclInl ++ #[.text "."]
+            let body :=
+              if lead == "We have " && isStandaloneProseClause then
+                capConcl conclInl
+              else if lead == "We have " && addedVerb then
+                #[.text "We have that "] ++ conclInl
+              else
+                #[.text lead] ++ conclInl
+            if endsWithSentencePunct body then body
+            else body ++ #[.text "."]
       paragraphs := paragraphs.push conclPara
       let ambient? : Option AmbientSetting := none
       let _ := suppressed

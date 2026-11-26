@@ -44,6 +44,7 @@ structure SymbolTable where
   fvarStyles : Std.HashMap FVarId MathFontStyle := {}
   shortAliases : NameMap String := {}
   constTemplates : NameMap String := {}
+  usedNames : Std.HashSet String := {}
   deriving Inhabited
 
 def SymbolTable.withConst (t : SymbolTable) (n : Name) (latex : String) : SymbolTable :=
@@ -69,6 +70,12 @@ def SymbolTable.withShortAlias (t : SymbolTable) (n : Name) (latex : String) : S
 
 def SymbolTable.withConstTemplate (t : SymbolTable) (n : Name) (tmpl : String) : SymbolTable :=
   { t with constTemplates := t.constTemplates.insert n tmpl }
+
+def SymbolTable.withUsedName (t : SymbolTable) (s : String) : SymbolTable :=
+  if s.isEmpty then t else { t with usedNames := t.usedNames.insert s }
+
+def SymbolTable.withUsedNames (t : SymbolTable) (ss : Array String) : SymbolTable :=
+  ss.foldl SymbolTable.withUsedName t
 
 def SymbolTable.withNormalizedExprAlias (t : SymbolTable) (e : Expr) (latex : String) :
     MetaM SymbolTable := do
@@ -120,6 +127,31 @@ def escapeLatex (s : String) : String :=
       | '$'  => "\\$"
       | '~'  => "\\textasciitilde{}"
       | _    => c.toString
+
+/-- Whether a rendered LaTeX fragment contains a multi-letter styled command macro
+such as `\mathsf{...}`, `\mathbf{...}`, `\mathrm{...}`, `\mathcal{...}`, or `\mathbb{...}`. -/
+def hasStyledLatexMacro (s : String) : Bool :=
+  ["\\mathsf{", "\\mathbf{", "\\mathrm{", "\\mathcal{", "\\mathbb{",
+   "\\text{", "\\operatorname{", "\\boldsymbol{"].any fun m => (s.splitOn m).length > 1
+
+/-- Join two juxtaposed CC/mathematical tokens, always separating adjacent multi-letter styled
+tokens (`\mathsf{...}`, `\mathbf{...}`, `\mathrm{...}`, `\mathcal{...}`) with `\,` so tokens
+never glue together (e.g. `\mathsf{PTXT}\,\mathsf{CCA}\,\mathbf{E}_{\mathsf{AE}}`). -/
+def juxtaposeMath (left right : String) : String :=
+  let l := left.trimAscii.toString
+  let r := right.trimAscii.toString
+  if l.isEmpty then r
+  else if r.isEmpty then l
+  else if hasStyledLatexMacro l || hasStyledLatexMacro r then
+    s!"{l}\\,{r}"
+  else if l.endsWith "}" || l.endsWith ")" then
+    s!"{l}\\,{r}"
+  else if l.startsWith "\\" then
+    s!"{l} {r}"
+  else if l.length == 1 && r.startsWith "\\" then
+    s!"{l}{r}"
+  else
+    s!"{l}\\,{r}"
 
 /-- Format a short mathematical identifier cleanly: single Latin/Greek letters stay bare
 italic (`x`, `q`, `ε`), multi-letter names use `\mathrm` cleanly, Unicode subscripts (`εₚ`,
@@ -272,6 +304,84 @@ private def natLit? (e : Expr) : Option Nat :=
         | _ => none
       else none
 
+private def isZeroLit (e : Expr) : Bool :=
+  match natLit? e with
+  | some 0 => true
+  | _ =>
+      let c := e.consumeMData
+      c.isAppOf ``Zero.zero || c.isConstOf ``Nat.zero
+
+private def isOneLit (e : Expr) : Bool :=
+  match natLit? e with
+  | some 1 => true
+  | _ => e.consumeMData.isAppOf ``One.one
+
+/-- Sound display-only algebraic simplification (`x + 0 → x`, `0 + x → x`, `x - 0 → x`,
+`1 * x → x`, `x * 1 → x`), recursively handling nested identities such as `(1 - 0) · μ → μ`. -/
+private partial def simplifyDisplayArith (tbl : SymbolTable) (e : Expr) : Expr :=
+  let c := e.consumeMData
+  if tbl.exprAliases.any (fun (pat, _) => pat.consumeMData == c) then c
+  else
+    let fn := c.getAppFn.consumeMData
+    let args := c.getAppArgs
+    let exactBin? (arity : Nat) : Option (Expr × Expr) :=
+      if args.size == arity then some (args[arity - 2]!, args[arity - 1]!) else none
+    if fn.isConstOf ``HAdd.hAdd then
+      if let some (l, r) := exactBin? 6 then
+        let l' := simplifyDisplayArith tbl l
+        let r' := simplifyDisplayArith tbl r
+        if isZeroLit r' then l' else if isZeroLit l' then r' else c
+      else c
+    else if fn.isConstOf ``Add.add then
+      if let some (l, r) := exactBin? 4 then
+        let l' := simplifyDisplayArith tbl l
+        let r' := simplifyDisplayArith tbl r
+        if isZeroLit r' then l' else if isZeroLit l' then r' else c
+      else c
+    else if fn.isConstOf ``Nat.add then
+      if let some (l, r) := exactBin? 2 then
+        let l' := simplifyDisplayArith tbl l
+        let r' := simplifyDisplayArith tbl r
+        if isZeroLit r' then l' else if isZeroLit l' then r' else c
+      else c
+    else if fn.isConstOf ``HSub.hSub then
+      if let some (l, r) := exactBin? 6 then
+        let l' := simplifyDisplayArith tbl l
+        let r' := simplifyDisplayArith tbl r
+        if isZeroLit r' then l' else c
+      else c
+    else if fn.isConstOf ``Sub.sub then
+      if let some (l, r) := exactBin? 4 then
+        let l' := simplifyDisplayArith tbl l
+        let r' := simplifyDisplayArith tbl r
+        if isZeroLit r' then l' else c
+      else c
+    else if fn.isConstOf ``Nat.sub then
+      if let some (l, r) := exactBin? 2 then
+        let l' := simplifyDisplayArith tbl l
+        let r' := simplifyDisplayArith tbl r
+        if isZeroLit r' then l' else c
+      else c
+    else if fn.isConstOf ``HMul.hMul then
+      if let some (l, r) := exactBin? 6 then
+        let l' := simplifyDisplayArith tbl l
+        let r' := simplifyDisplayArith tbl r
+        if isOneLit l' then r' else if isOneLit r' then l' else c
+      else c
+    else if fn.isConstOf ``Mul.mul then
+      if let some (l, r) := exactBin? 4 then
+        let l' := simplifyDisplayArith tbl l
+        let r' := simplifyDisplayArith tbl r
+        if isOneLit l' then r' else if isOneLit r' then l' else c
+      else c
+    else if fn.isConstOf ``Nat.mul then
+      if let some (l, r) := exactBin? 2 then
+        let l' := simplifyDisplayArith tbl l
+        let r' := simplifyDisplayArith tbl r
+        if isOneLit l' then r' else if isOneLit r' then l' else c
+      else c
+    else c
+
 /-- Merge a subscript `field` onto `base`, avoiding invalid KaTeX double subscripts such as
 `z_{1}_{2}` by merging trailing `_{...}` into `z_{1,2}`. -/
 private def appendSubscript (base field : String) : String := Id.run do
@@ -317,6 +427,92 @@ private partial def collectListElems? (e : Expr) : Option (List Expr) :=
     (collectListElems? args[2]!).map (args[1]! :: ·)
   else
     none
+
+/-- Choose a bound variable name for `Finset.sum` / `Finset.prod` / `Finset.filter` / `List.sum`
+that never collides with free variables or rendered symbols in the domain/set expression
+(preventing bound-variable shadowing such as `∑_{x ∈ x}`). -/
+private def chooseUnshadowedSumBinder (tbl : SymbolTable) (nm : Name) (dom : Expr)
+    (avoidStrings : Array String) (avoidExprs : Array Expr) (fallback : String := "i") :
+    MetaM Name := do
+  let lctx ← getLCtx
+  let mut taken : Std.HashSet String := {}
+  for d in lctx do
+    if !d.isAuxDecl && !d.isImplementationDetail && d.binderInfo != .instImplicit then
+      if let some s := cleanBinderName? d.userName then
+        taken := taken.insert s
+  for ex in avoidExprs do
+    for fvid in (Lean.collectFVars {} ex).fvarIds do
+      if let some d := lctx.find? fvid then
+        taken := taken.insert (cleanBinderName d.userName "x")
+  let base := cleanBinderName nm fallback
+  let isFreeOfShadow (cand : String) : MetaM Bool := do
+    if taken.contains cand then return false
+    let candTex ←
+      match tbl.binderAliases.get? cand with
+      | some al => pure al
+      | none =>
+          withLocalDecl (Name.mkSimple cand) .default dom fun fv => do
+            match (← (← fvarStyleHookRef.get) fv.fvarId! dom) with
+            | some st => pure (applyMathFontStyle st cand)
+            | none => pure (formatMathIdent cand)
+    if avoidStrings.any (fun s => s == candTex || mathDispAppearsIn #[s] candTex) then
+      return false
+    if cand != candTex && avoidStrings.any (fun s => s == cand || mathDispAppearsIn #[s] cand) then
+      return false
+    return true
+  if ← isFreeOfShadow base then
+    return Name.mkSimple base
+  for cand in ["y", "t", "e", "j", "k", "u", "v"] do
+    if ← isFreeOfShadow cand then
+      return Name.mkSimple cand
+  let mut p := base ++ "'"
+  for _ in [:6] do
+    if ← isFreeOfShadow p then
+      return Name.mkSimple p
+    p := p ++ "'"
+  freshShadowFreeName nm fallback
+
+/-- Pick a fresh local LaTeX display name that avoids `usedNames` while preserving distinct
+non-colliding names. -/
+def pickFreshLocalSymbol (used : Std.HashSet String) (preferred : String) : String :=
+  if !used.contains preferred then preferred
+  else
+    let primed := #[preferred ++ "'", preferred ++ "''"]
+    match primed.find? (!used.contains ·) with
+    | some p => p
+    | none =>
+        let pool := #["w", "z", "u", "v", "t", "y", "a", "b"].flatMap fun pfx =>
+          #[1, 2, 3, 4, 5, 6].map fun i => s!"{pfx}_\{{i}}"
+        (pool.find? (!used.contains ·)).getD (preferred ++ "_{1}")
+
+/-- Recognize membership expressions `x ∈ S` (`Membership.mem`, `Set.Mem`, `Set.mem`, `List.Mem`),
+returning `(elem, set)`. -/
+def matchMembershipExpr? (e : Expr) : Option (Expr × Expr) :=
+  let c := e.consumeMData
+  let fn := c.getAppFn.consumeMData
+  let args := c.getAppArgs
+  if fn.isConstOf ``Membership.mem && args.size == 5 then
+    some (args[4]!, args[3]!)
+  else if fn.isConstOf `Set.Mem && args.size == 3 then
+    some (args[2]!, args[1]!)
+  else if fn.isConstOf `Set.mem && args.size == 3 then
+    some (args[1]!, args[2]!)
+  else if fn.isConstOf ``List.Mem && args.size == 3 then
+    some (args[1]!, args[2]!)
+  else
+    none
+
+/-- Recognize negated membership `¬ (x ∈ S)` or `(x ∈ S) → False`, returning `(elem, set)`. -/
+def matchNotMembershipExpr? (e : Expr) : Option (Expr × Expr) :=
+  let c := e.consumeMData
+  if c.isAppOf ``Not && c.getAppArgs.size == 1 then
+    matchMembershipExpr? c.getAppArgs[0]!
+  else match c with
+    | .forallE _ dom body _ =>
+        if !body.hasLooseBVar 0 && body.consumeMData.isConstOf ``False then
+          matchMembershipExpr? dom
+        else none
+    | _ => none
 
 /-- Core recursive `Expr → LaTeX` printer with per-call $O(\text{DAG})$ memoization on closed
 subterms (runs inside `MetaM` so free variables resolve cleanly). -/
@@ -376,7 +572,7 @@ where
         | ``Unit | ``PUnit => return "\\{\\star\\}"
         | ``Empty | ``PEmpty => return "\\emptyset"
         | ``True => return "\\top"
-        | ``False => return "\\bot"
+        | ``False => return "\\mathsf{False}"
         | _ =>
             if name == `Real then return "\\mathbb{R}"
             if name == `NNReal then return "\\mathbb{R}_{\\ge 0}"
@@ -391,6 +587,10 @@ where
         else if ← isAmbientTypeclass dom then
           withLocalDecl nm bi dom fun fv => recGo ctxPrec (body.instantiate1 fv)
         else if ← isProp dom then
+          if !body.hasLooseBVar 0 && body.consumeMData.isConstOf ``False then
+            let domNorm ← normalizeForPresentation dom
+            if let some (elem, set) := matchMembershipExpr? domNorm then
+              return parenIf ctxPrec 50 s!"{← recGo 50 elem} \\notin {← recGo 50 set}"
           let a ← recGo 26 dom
           let b ←
             if body.hasLooseBVar 0 then
@@ -470,6 +670,10 @@ where
             for h in hs do
               if let some (out, prec) ← h.run tbl recGo e args then
                 return parenIf ctxPrec prec out
+          -- 1b. Sound display-only algebraic identities (`x + 0`, `x - 0`, `1 * x`, `(1 - 0) * μ`)
+          let simp := simplifyDisplayArith tbl e
+          if simp != e.consumeMData then
+            return ← recGo ctxPrec simp
           -- 2. Built-in core math 2D layout rules
           if let some (out, prec) ← renderCoreApp tbl head args then
             return parenIf ctxPrec prec out
@@ -623,6 +827,9 @@ where
         return some (s!"{← recGo 35 l} \\vee {← recGo 35 r}", 35)
     | ``Not =>
         if args.size != 1 then return none
+        let innerNorm ← normalizeForPresentation args[0]!
+        if let some (elem, set) := matchMembershipExpr? innerNorm then
+          return some (s!"{← recGo 50 elem} \\notin {← recGo 50 set}", 50)
         return some (s!"\\neg {← recGo 75 args[0]!}", 75)
     | ``HAdd.hAdd =>
         let some (l, r) := exactBin? 6 | return none
@@ -799,70 +1006,60 @@ where
             return some (s!"\\left({casesStr}\\right)\\!\\left({argList}\\right)", 85)
         return none
     | _ =>
-        if head == `Finset.sum && args.size ≥ 5 then
+        let renderBigOp (opCmd : String) (opPrec : Nat) : MetaM (Option (String × Nat)) := do
+          if args.size < 5 then return none
           let dom := args[0]!
           let s := args[3]!
           let f := args[4]!
+          let isUniv := s.getAppFn.consumeMData.isConstOf `Finset.univ
+          let isRange := s.getAppFn.consumeMData.isConstOf `Finset.range && s.getAppArgs.size ≥ 1
+          let rangeBound? := if isRange then s.getAppArgs.back? else none
+          let sStr? ←
+            if isUniv then pure none
+            else if let some bnd := rangeBound? then some <$> recGo 0 bnd
+            else some <$> recGo 0 s
+          let avoidStrings := match sStr? with | some st => #[st] | none => #[]
+          let avoidExprs :=
+            if isUniv then #[]
+            else if let some bnd := rangeBound? then #[bnd]
+            else #[s]
           let (varStr, bodyStr) ← match f.consumeMData with
             | .lam nm bDom body bi =>
-                let freshNm ← freshShadowFreeName nm "i"
+                let freshNm ← chooseUnshadowedSumBinder tbl nm bDom avoidStrings avoidExprs "i"
                 withLocalDecl freshNm bi bDom fun fv => do
-                  pure (← recGo 100 fv, ← recGo 68 (body.instantiate1 fv))
+                  pure (← recGo 100 fv, ← recGo opPrec (body.instantiate1 fv))
             | _ =>
-                let freshNm ← freshShadowFreeName `i "i"
+                let freshNm ← chooseUnshadowedSumBinder tbl `i dom avoidStrings avoidExprs "i"
                 withLocalDecl freshNm .default dom fun fv => do
-                  pure (← recGo 100 fv, ← recGo 68 (mkApp f fv))
-          let sub ←
-            if s.getAppFn.consumeMData.isConstOf `Finset.univ then
-              pure varStr
-            else if s.getAppFn.consumeMData.isConstOf `Finset.range && s.getAppArgs.size ≥ 1 then
-              pure s!"{varStr} < {← recGo 0 s.getAppArgs.back!}"
-            else
-              pure s!"{varStr} \\in {← recGo 0 s}"
-          let sumStr := "\\sum_{" ++ sub ++ "} " ++ bodyStr
-          if args.size == 5 then return some (sumStr, 68)
+                  pure (← recGo 100 fv, ← recGo opPrec (mkApp f fv))
+          let sub :=
+            if isUniv then varStr
+            else if let some bndStr := sStr? then
+              if isRange then s!"{varStr} < {bndStr}" else s!"{varStr} \\in {bndStr}"
+            else varStr
+          let bigStr := opCmd ++ "_{" ++ sub ++ "} " ++ bodyStr
+          if args.size == 5 then return some (bigStr, opPrec)
           else
             let rest ← (args.extract 5 args.size).mapM (recGo 0)
-            return some (s!"\\left({sumStr}\\right)\\!\\left({String.intercalate ", " rest.toList}\\right)", 85)
-        if head == `Finset.prod && args.size ≥ 5 then
-          let dom := args[0]!
-          let s := args[3]!
-          let f := args[4]!
-          let (varStr, bodyStr) ← match f.consumeMData with
-            | .lam nm bDom body bi =>
-                let freshNm ← freshShadowFreeName nm "i"
-                withLocalDecl freshNm bi bDom fun fv => do
-                  pure (← recGo 100 fv, ← recGo 71 (body.instantiate1 fv))
-            | _ =>
-                let freshNm ← freshShadowFreeName `i "i"
-                withLocalDecl freshNm .default dom fun fv => do
-                  pure (← recGo 100 fv, ← recGo 71 (mkApp f fv))
-          let sub ←
-            if s.getAppFn.consumeMData.isConstOf `Finset.univ then
-              pure varStr
-            else if s.getAppFn.consumeMData.isConstOf `Finset.range && s.getAppArgs.size ≥ 1 then
-              pure s!"{varStr} < {← recGo 0 s.getAppArgs.back!}"
-            else
-              pure s!"{varStr} \\in {← recGo 0 s}"
-          let prodStr := "\\prod_{" ++ sub ++ "} " ++ bodyStr
-          if args.size == 5 then return some (prodStr, 71)
-          else
-            let rest ← (args.extract 5 args.size).mapM (recGo 0)
-            return some (s!"\\left({prodStr}\\right)\\!\\left({String.intercalate ", " rest.toList}\\right)", 85)
+            return some (s!"\\left({bigStr}\\right)\\!\\left({String.intercalate ", " rest.toList}\\right)", 85)
+        if head == `Finset.sum then
+          return ← renderBigOp "\\sum" 68
+        if head == `Finset.prod then
+          return ← renderBigOp "\\prod" 71
         if head == `Finset.filter && args.size ≥ 4 then
           let dom := args[0]!
           let pred := args[1]!
           let s := args[3]!
-          let setStr ←
-            if s.getAppFn.consumeMData.isConstOf `Finset.univ then recGo 0 dom
-            else recGo 0 s
+          let isUniv := s.getAppFn.consumeMData.isConstOf `Finset.univ
+          let setStr ← if isUniv then recGo 0 dom else recGo 0 s
+          let avoidExprs := if isUniv then #[dom] else #[s]
           let (varStr, predStr) ← match pred.consumeMData with
             | .lam nm bDom body bi =>
-                let freshNm ← freshShadowFreeName nm "x"
+                let freshNm ← chooseUnshadowedSumBinder tbl nm bDom #[setStr] avoidExprs "x"
                 withLocalDecl freshNm bi bDom fun fv => do
                   pure (← recGo 100 fv, ← recGo 0 (body.instantiate1 fv))
             | _ =>
-                let freshNm ← freshShadowFreeName `x "x"
+                let freshNm ← chooseUnshadowedSumBinder tbl `x dom #[setStr] avoidExprs "x"
                 withLocalDecl freshNm .default dom fun fv => do
                   pure (← recGo 100 fv, ← recGo 0 (mkApp pred fv))
           return some ("\\{" ++ varStr ++ " \\in " ++ setStr ++ " : " ++ predStr ++ "\\}", 90)
@@ -872,11 +1069,11 @@ where
           let domStr ← recGo 0 dom
           let (varStr, predStr) ← match pred.consumeMData with
             | .lam nm bDom body bi =>
-                let freshNm ← freshShadowFreeName nm "x"
+                let freshNm ← chooseUnshadowedSumBinder tbl nm bDom #[domStr] #[dom] "x"
                 withLocalDecl freshNm bi bDom fun fv => do
                   pure (← recGo 100 fv, ← recGo 0 (body.instantiate1 fv))
             | _ =>
-                let freshNm ← freshShadowFreeName `x "x"
+                let freshNm ← chooseUnshadowedSumBinder tbl `x dom #[domStr] #[dom] "x"
                 withLocalDecl freshNm .default dom fun fv => do
                   pure (← recGo 100 fv, ← recGo 0 (mkApp pred fv))
           return some ("\\{" ++ varStr ++ " \\in " ++ domStr ++ " : " ++ predStr ++ "\\}", 90)
@@ -937,11 +1134,11 @@ where
             let xsStr ← recGo 0 xs
             let (varStr, bodyStr) ← match f.consumeMData with
               | .lam nm bDom body bi =>
-                  let freshNm ← freshShadowFreeName nm "x"
+                  let freshNm ← chooseUnshadowedSumBinder tbl nm bDom #[xsStr] #[xs] "x"
                   withLocalDecl freshNm bi bDom fun fv => do
                     pure (← recGo 100 fv, ← recGo 68 (body.instantiate1 fv))
               | _ =>
-                  let freshNm ← freshShadowFreeName `x "x"
+                  let freshNm ← chooseUnshadowedSumBinder tbl `x dom #[xsStr] #[xs] "x"
                   withLocalDecl freshNm .default dom fun fv => do
                     pure (← recGo 100 fv, ← recGo 68 (mkApp f fv))
             return some ("\\sum_{" ++ varStr ++ " \\in " ++ xsStr ++ "} " ++ bodyStr, 68)
@@ -967,7 +1164,7 @@ where
               return some (muStr ++ "\\!\\left(" ++ evStr ++ "\\right)", 85)
         if head == `Fin then
           let some n := argFromEnd? args 0 | return none
-          return some (s!"[\\,{← recGo 0 n}\\,]", 90)
+          return some (s!"[{← recGo 0 n}]", 90)
         return none
 
 /-- Public entry point: run the hygiene/normalization firewall, then print 2D LaTeX

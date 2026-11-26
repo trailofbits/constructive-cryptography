@@ -152,6 +152,7 @@ private def decodeProseTrust? (s : String) : Option ProseTrust :=
   | "kernelProvedClaim" => some .kernelProvedClaim
   | "typedRef" => some .typedRef
   | "intuitionGloss" => some .intuitionGloss
+  | "authorGloss" => some .intuitionGloss
   | _ => none
 
 /-- Extract ordered `(isPropAnchor, expr)` anchors from a `spineCons`/`spineNil` kernel tree.
@@ -363,6 +364,17 @@ private def isForwardEntityRole (leadHeading : String) : Bool :=
   let low := leadHeading.toLower
   (low.splitOn "adversary").length > 1 || (low.splitOn "simulator").length > 1
 
+private def isProseClauseInlines (inls : Array Inline) : Bool :=
+  let plain := (String.intercalate "" (inls.toList.map Inline.collectText)).trimAscii.toString.toLower
+  plain.startsWith "there exists " || plain.startsWith "for every " ||
+  plain.startsWith "for all " || plain.startsWith "if " ||
+  plain.startsWith "the " || plain.startsWith "protocol " ||
+  plain.startsWith "every " || plain.startsWith "no " ||
+  (plain.splitOn " is ").length > 1 || (plain.splitOn " are ").length > 1 ||
+  (plain.splitOn " satisfies ").length > 1 || (plain.splitOn " satisfy ").length > 1 ||
+  (plain.splitOn " constructs ").length > 1 || (plain.splitOn " construct ").length > 1 ||
+  (plain.splitOn " holds").length > 1
+
 private def makeConcludeContent (ctx : DecompCtx) (expected : Expr)
     (reason : String) (witness : Expr) :
     MetaM (Array Inline × Array (Option ProseTrust × Option String)) := do
@@ -379,7 +391,8 @@ private def makeConcludeContent (ctx : DecompCtx) (expected : Expr)
   else
     let (rInls0, rMetas0) ← renderSpineTemplate ctx.tbl reason anchors
     let (rInls, rMetas) := stripTrailingPunctInlinesWithMeta rInls0 rMetas0
-    let combined := rInls ++ #[.text ", which establishes "] ++ conclInl
+    let bridge := if isProseClauseInlines conclInl then ", which establishes that " else ", which establishes "
+    let combined := rInls ++ #[.text bridge] ++ conclInl
     let cm := rMetas ++ #[(some .intuitionGloss, none)] ++ conclMetas
     return appendPeriodClean combined cm
 
@@ -498,8 +511,18 @@ partial def extractSpineNode :
                   roleBadge? := some badge
                 }
               catch _ => pure ()
+              let nextTbl ← do
+                if !symTex.isEmpty && (cleanBinderName? nm).isSome && !val.consumeMData.isFVar then
+                  let t1 ← ctx.tbl.withNormalizedExprAlias val symTex
+                  pure ((t1.withExprAlias val.consumeMData symTex).withExprAlias fv symTex)
+                else
+                  pure ctx.tbl
+              let rest ← decompileChild { ctx with tbl := nextTbl, isProofStart := false } expected (body.instantiate1 fv)
+              let nextIsBox := match rest[0]? with
+                | some (.pseudocodeBox ..) => true
+                | _ => false
               let (inls, im) ←
-                if tInl.isEmpty then
+                if tInl.isEmpty || nextIsBox then
                   let base : Array Inline := #[.text "Define ", .inlineMath s!"{symTex} := {valTex}"]
                   pure (appendPeriodClean base #[(some .intuitionGloss, none), (some .kernelFormula, none)])
                 else
@@ -513,7 +536,6 @@ partial def extractSpineNode :
                   leadHead? <|> some s!"{capitalizeFirst cleanNm}."
                 else leadHead?
               let sp := isGame || startsPara
-              let rest ← decompileChild { ctx with isProofStart := false } expected (body.instantiate1 fv)
               let stp := ProofNode.step nodeId inls #[] (some goal)
                 none none false false sp hd? (nodeTrust? <|> some .kernelFormula) im
               return some (#[stp] ++ rest)
@@ -532,15 +554,23 @@ partial def extractSpineNode :
             let propInl ← renderProposition ctx.tbl ty
             let propMeta : Array (Option ProseTrust × Option String) :=
               propInl.map fun _ => (some .kernelProvedClaim, none)
+            let openers := #["First, ", "Next, ", "Note that ", "Observe that ", "It follows that "]
+            let lead := openers[ctx.factIndex % openers.size]!
             let (inls, im) ←
               if tmpl.trimAscii.isEmpty then
-                let lead := if ctx.factIndex == 0 then "We claim that " else "Next, we claim that "
                 pure (appendPeriodClean (#[.text lead] ++ propInl) (#[(some .intuitionGloss, none)] ++ propMeta))
               else
                 let (tInl, tMeta) ← renderSpineTemplate ctx.tbl tmpl anchors
+                let tLow := (String.intercalate "" (tInl.toList.map Inline.collectText)).trimAscii.toString.toLower
+                let isSubord := tLow.startsWith "since " || tLow.startsWith "because " ||
+                  tLow.startsWith "as " || tLow.startsWith "by " || tLow.startsWith "from " ||
+                  tLow.startsWith "for "
+                let (sep, close) := if isSubord then (", ", "") else (" (", ")")
+                let closeInls : Array Inline := if close.isEmpty then #[] else #[.text close]
+                let closeMeta : Array (Option ProseTrust × Option String) := if close.isEmpty then #[] else #[(some .intuitionGloss, none)]
                 pure (appendPeriodClean
-                  (#[.text "We claim "] ++ propInl ++ #[.text " ("] ++ tInl ++ #[.text ")"])
-                  (#[(some .intuitionGloss, none)] ++ propMeta ++ #[(some .intuitionGloss, none)] ++ tMeta ++ #[(some .intuitionGloss, none)]))
+                  (#[.text lead] ++ propInl ++ #[.text sep] ++ tInl ++ closeInls)
+                  (#[(some .intuitionGloss, none)] ++ propMeta ++ #[(some .intuitionGloss, none)] ++ tMeta ++ closeMeta))
             let subGoal ← buildGoalState ctx.tbl ty (ctx.lemmaDepth ≥ 1)
             let stp := ProofNode.step nodeId inls children (some subGoal)
               none none false false startsPara leadHead? (nodeTrust? <|> some .kernelProvedClaim) im

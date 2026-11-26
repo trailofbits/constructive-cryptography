@@ -71,6 +71,10 @@ lean_lib Informalization where
   globs := #[.andSubmodules `Informalization]
   needs := #[cadmoStyles, cadmoScript]
 
+/-- Paper-centric formalizations written with the `Paper` register and `PaperProof` DSL. -/
+lean_lib Paper where
+  globs := #[.submodules `Paper]
+
 /-- Standalone CLI exporting checked ETH CADMO HTML & Verso JSON for any declaration. -/
 lean_exe informalize where
   root := `Informalization.CLI
