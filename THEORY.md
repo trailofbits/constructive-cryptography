@@ -337,13 +337,13 @@ extension are in [Examples](src/Examples/README.md).
 [Domain.Distinguisher]: src/RandomSystems/Distance/Distinguisher.lean#L126
 [RandomSystem.transcriptDistance_eq_iSup]: src/RandomSystems/Distance/Distinguisher.lean#L158
 [Domain.DistinguisherBehavior]: src/RandomSystems/Distance/Distinguisher.lean#L211
-[RandomSystem.MonotoneMBO]: src/RandomSystems/Game/MBO.lean#L311
-[RandomSystem.visible]: src/RandomSystems/Game/MBO.lean#L362
-[RandomSystem.winProbability]: src/RandomSystems/Game/MBO.lean#L504
-[RandomSystem.ConditionallyEquivalent]: src/RandomSystems/Game/MBO.lean#L547
-[RandomSystem.GameEquivalent]: src/RandomSystems/Game/MBO.lean#L561
-[Domain.Distinguisher.advantage_le_winProbability]: src/RandomSystems/Game/MBO.lean#L780
-[Domain.Distinguisher.advantage_le_winProbability_of_gameEquivalent]: src/RandomSystems/Game/MBO.lean#L898
+[RandomSystem.MonotoneMBO]: src/RandomSystems/Game/MBO.lean#L316
+[RandomSystem.visible]: src/RandomSystems/Game/MBO.lean#L367
+[RandomSystem.winProbability]: src/RandomSystems/Game/MBO.lean#L509
+[RandomSystem.ConditionallyEquivalent]: src/RandomSystems/Game/MBO.lean#L552
+[RandomSystem.GameEquivalent]: src/RandomSystems/Game/MBO.lean#L566
+[Domain.Distinguisher.advantage_le_winProbability]: src/RandomSystems/Game/MBO.lean#L785
+[Domain.Distinguisher.advantage_le_winProbability_of_gameEquivalent]: src/RandomSystems/Game/MBO.lean#L903
 [PDCBehavior.liftMBO]: src/RandomSystems/Game/MBOAttachment.lean#L464
 
 <!-- Declarations: §2 -->

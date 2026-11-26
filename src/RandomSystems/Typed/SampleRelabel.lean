@@ -7,8 +7,9 @@ public import RandomSystems.Typed.Game
 # Relabeling retained draws on visible transcripts
 
 A system that hides part of each reply sums over the internal histories displayed as a given
-visible transcript `h`. When two systems draw `k` once from the same law `P`, their visible
-probabilities at `h` agree if each contributing internal history `u` admits its own
+visible transcript `h`. `sumMBO_eq_sum_tagMBOs` in `RandomSystems.Game.MBO` supplies
+this expansion for hidden MBO bits. When two systems draw `k` once from the same law `P`, their
+visible probabilities at `h` agree if each contributing internal history `u` admits its own
 `P`-preserving relabeling `s` matching the two systems' contributions on `supp P`.
 
 ## Main results
@@ -97,38 +98,6 @@ lemma sample_mass_eq_of_display_relabel
 end TypedSystem
 
 namespace TypedGame
-
-/-- Tag each entry of visible transcript `h` with the MBO bit given by `bs`. -/
-def tagMBOs {A J : Type} {Y : J → Type} :
-    (h : List (A × Σ j, Y j)) → (Fin h.length → Bool) → List (A × Σ j, withMBO Y j)
-  | [], _ => []
-  | z :: t, bs => (z.1, tagMBO (bs 0) z.2) :: tagMBOs t (fun i => bs i.succ)
-
-/-- Forgetting MBO bits recovers the original visible transcript. -/
-lemma forgetMBOs_tagMBOs {A J : Type} {Y : J → Type} (h : List (A × Σ j, Y j))
-    (bs : Fin h.length → Bool) :
-    forgetMBOs (tagMBOs h bs) = h := by
-  induction h with
-  | nil => rfl
-  | cons z t ih =>
-    simp only [tagMBOs, forgetMBOs, List.map_cons]
-    exact congrArg (z :: ·) (ih (fun i => bs i.succ))
-
-/-- `sumMBO f h` sums `f` over all MBO bit assignments for the entries of `h`. -/
-lemma sumMBO_eq_sum_tagMBOs {A J : Type} {Y : J → Type}
-    (f : List (A × Σ j, withMBO Y j) → ℝ) (h : List (A × Σ j, Y j)) :
-    sumMBO f h = ∑ bs : Fin h.length → Bool, f (tagMBOs h bs) := by
-  induction h generalizing f with
-  | nil =>
-    simp only [sumMBO, tagMBOs, List.length_nil]
-    rw [Finset.sum_const, Finset.card_univ, Fintype.card_unique, one_smul]
-  | cons z t ih =>
-    simp only [sumMBO, List.length_cons]
-    rw [ih, ih]
-    let e : Bool × (Fin t.length → Bool) ≃ (Fin (t.length + 1) → Bool) :=
-      Fin.consEquiv (fun _ : Fin (t.length + 1) => Bool)
-    rw [← e.sum_comp, Fintype.sum_prod_type, Fintype.sum_bool, add_comm]
-    simp only [e, Fin.consEquiv, Equiv.coe_fn_mk, tagMBOs, Fin.cons_zero, Fin.cons_succ]
 
 /-- Two sampled typed games induce the same visible probability on `h` when every internal
 MBO-tagged transcript `u` displayed as `h` admits a `P`-preserving relabeling matching `G₀`
