@@ -140,6 +140,7 @@ public import Tests.GameEquivalenceTransport
 public import Tests.GameDistanceBound
 public import Tests.URFRetainedTable
 public import Tests.PermutationWalk
+public import Tests.PermutationAvoidance
 public import Tests.PermutationTableGame
 public import Tests.BidirectionalSwitching
 public import Tests.SpongeCollision

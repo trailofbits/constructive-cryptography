@@ -20,6 +20,8 @@ without-replacement counting laws for adaptive transcripts and public permutatio
 * `permutation_forward_reply_mass_le`, `permutation_inverse_reply_mass_le`,
   `permutation_reply_set_mass_le`, `permutation_reply_event_mass_le`: conditional upper bounds
   for fresh forward or inverse replies hitting a fixed set or event.
+* `permutation_avoid_mass_ge`: a family of fresh replies avoids its forbidden sets with
+  loss at most the sum of their conditional bounds; repeated requests are allowed.
 
 ## References
 
@@ -439,6 +441,55 @@ lemma permutation_reply_event_mass_le [Nonempty S]
   rw [Distribution.uniform_mass_eq_card_filter bad]
   have hc : (Fintype.card S : ℝ) ≠ 0 := by exact_mod_cast Fintype.card_ne_zero
   field_simp
+
+/-- Fresh replies avoid their forbidden sets with joint mass at least
+`Pr[table] · (1 - ∑ i, |bad i| / (|S| - |points|))`. Requests may repeat. -/
+theorem permutation_avoid_mass_ge
+    -- `reference` witnesses the consistent table recorded at inputs in `points`.
+    (reference : Equiv.Perm S) (points : Finset S)
+    -- `indices` selects finitely many requests; `inverse i` selects the direction at `input i`.
+    {ι : Type*} (indices : Finset ι) (inverse : ι → Bool) (input : ι → S)
+    -- `bad i` contains the forbidden replies; each request is fresh relative to the table.
+    (bad : ι → Finset S)
+    (fresh : ∀ i ∈ indices,
+      if inverse i then input i ∉ points.image reference else input i ∉ points) :
+    (1 - ∑ i ∈ indices, (bad i).card / (Fintype.card S - points.card : ℝ)) *
+        (Distribution.uniform (Equiv.Perm S)).mass
+          (fun π => ∀ z ∈ points, π z = reference z) ≤
+      (Distribution.uniform (Equiv.Perm S)).mass
+        (fun π => (∀ z ∈ points, π z = reference z) ∧ ∀ i ∈ indices,
+          (if inverse i then π.symm (input i) else π (input i)) ∉ bad i) := by
+  classical
+  let agreed (π : Equiv.Perm S) := ∀ z ∈ points, π z = reference z
+  let avoids (π : Equiv.Perm S) := ∀ i ∈ indices,
+    (if inverse i then π.symm (input i) else π (input i)) ∉ bad i
+  let failure (i : ι) (π : Equiv.Perm S) := agreed π ∧
+    (if inverse i then π.symm (input i) else π (input i)) ∈ bad i
+  let μ := Distribution.uniform (Equiv.Perm S)
+  -- Charge each request once, even when several requests read the same permutation edge.
+  have union := Distribution.mass_exists_le Distribution.uniform_nonNeg indices failure
+  have losses : (∑ i ∈ indices, μ.mass (failure i)) ≤
+      (∑ i ∈ indices, (bad i).card / (Fintype.card S - points.card : ℝ)) *
+        μ.mass agreed := by
+    rw [Finset.sum_mul]
+    exact Finset.sum_le_sum fun i hi =>
+      permutation_reply_set_mass_le reference points (bad i) (inverse i) (input i) (fresh i hi)
+  have failed : μ.mass (fun π => ¬ avoids π ∧ agreed π) =
+      μ.mass (fun π => ∃ i ∈ indices, failure i π) := by
+    apply Distribution.mass_congr
+    intro π
+    simp only [avoids, not_forall, not_not]
+    constructor
+    · rintro ⟨⟨i, hi, hb⟩, he⟩
+      exact ⟨i, hi, he, hb⟩
+    · rintro ⟨i, hi, he, hb⟩
+      exact ⟨⟨i, hi, hb⟩, he⟩
+  -- Agreement partitions into avoidance and failure; subtract the union-bound loss.
+  have partition := Distribution.mass_and_add_mass_not_and μ avoids agreed
+  rw [failed, Distribution.mass_congr μ (fun _ => and_comm)] at partition
+  have bound := union.trans losses
+  change (1 - _) * μ.mass agreed ≤ μ.mass (fun π => agreed π ∧ avoids π)
+  linarith
 
 end ConditionalBounds
 
