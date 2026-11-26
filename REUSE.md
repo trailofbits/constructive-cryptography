@@ -79,6 +79,7 @@ named `budget` argument. The object index below supplies owners for those declar
 | Bound success after final oracle calls | `TypedSolver.probability_attach_le_winProbability_absorb` with `s.ReflectsMBO α G` in `RandomSystems.Typed.GameEventReflection` |
 | Identify a game score with an event mass | `RandomSystem.winProbability_eq_mass_of_unset` in [Game/EventReflection](src/RandomSystems/Game/EventReflection.lean) |
 | Bound a visible transcript event by winning | `Domain.Distinguisher.transcript_event_mass_le_winProbability` in `RandomSystems.Typed.GameEventReflection` |
+| Transport component equality outside reflected events | `PDCBehavior.attach_apply_eq_of_not_bad` in `RandomSystems.Converter.EventReflection`; reflection covers either joint support |
 | Map replies throughout a partial interaction | `System.tr_relabel_output` in `RandomSystems.Distance.Coupling` |
 | Compare worst-case performance across problem families | `Problem.Easier.worstCase_le` in `ConstructiveCryptography.Problem.Family` |
 | Reduce game families through one converter | `Games.easier_of_attach_mem` in `ConstructiveCryptography.Game.Family` |
